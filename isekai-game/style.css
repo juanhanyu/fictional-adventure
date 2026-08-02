@@ -188,6 +188,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .map-cell.locked{opacity:.35;cursor:not-allowed}
 .map-cell .mc-icon{font-size:22px;display:block;margin-bottom:4px}
 .map-cell .mc-cost{font-size:10px;opacity:.5;margin-top:2px}
+.map-cell .mc-prereq{font-size:10px;line-height:1.35;color:#ffd98a;margin-top:5px}
 .map-cell .mc-tag{font-size:10px;color:var(--gold)}
 
 /* panel */
@@ -326,6 +327,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   pointer-events:none;
 }
 .bg-img-nursery{background-image:url(assets/bg/nursery.jpg);background-size:cover;background-position:center}
+.bg-img-bedroom{background-image:url(assets/bg/bedroom.jpg);background-size:cover;background-position:center}
+.bg-night-scene{filter:brightness(.38) saturate(.72) hue-rotate(8deg)}
 .bg-img-hallway{background-image:url(assets/bg/hallway.jpg);background-size:cover;background-position:center}
 .bg-img-parlor{background-image:url(assets/bg/parlor.jpg);background-size:cover;background-position:center}
 .bg-img-garden{background-image:url(assets/bg/garden.jpg);background-size:cover;background-position:center}

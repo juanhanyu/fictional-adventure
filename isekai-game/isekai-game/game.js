@@ -14,6 +14,11 @@ const MONTH_DAYS = [0,31,28,31,30,31,30,31,31,30,31,30,31];
 const SEASONS = ['春','夏','秋','冬'];
 const SEASON_ICON = ['🌸','☀️','🍂','❄️'];
 const SEASON_MONTH = {0:3, 1:6, 2:9, 3:12}; // representative month
+const TALK_ST_COST = 1;
+const TRAIN_ST_COST = 3;
+const TRAIN_MP_COST = 5;
+const REST_ST_GAIN = 3;
+const MARKET_NOELLE_LOVE = 2;
 function seasonOf(month){
   if(month>=3 && month<=5) return 0;
   if(month>=6 && month<=8) return 1;
@@ -135,6 +140,7 @@ const CHARS = {
 // ========== LOCATIONS ==========
 const LOCS = {
   // 公爵府
+  // The id remains stable for old saves; at age three this becomes the heroine's own room.
   nursery:{id:'nursery', name:'育婴室', icon:'🛏️', area:'公爵府', desc:'柔软的床铺与纱帐', bg:'bg-img-nursery bg-room', unlock:true, st:0, tags:['rest']},
   hallway:{id:'hallway', name:'长廊', icon:'🏛️', area:'公爵府', desc:'挂满祖先画像的走廊', bg:'bg-img-hallway bg-hall', unlock:true, st:1},
   parlor:{id:'parlor', name:'起居室', icon:'🛋️', area:'公爵府', desc:'阳光与地毯的起居室', bg:'bg-img-parlor bg-hall', unlock:true, st:1, tags:['talk']},
@@ -149,8 +155,9 @@ const LOCS = {
   secret:{id:'secret', name:'密道入口', icon:'🗝️', area:'公爵府', desc:'储藏室第三排砖', bg:'bg-void', unlock:false, st:1, tags:['egg']},
   // 外部
   town:{id:'town', name:'利维莫尔镇', icon:'🏘️', area:'领地', desc:'公爵领地的小镇', bg:'bg-img-town bg-town', unlock:false, st:3},
-  market:{id:'market', name:'材料市场', icon:'🛒', area:'王都', desc:'王都中央材料市场', bg:'bg-img-town bg-town', unlock:false, st:4, tags:['egg']},
-  beach:{id:'beach', name:'海滨别墅', icon:'🏖️', area:'领地', desc:'家族的海滨别墅', bg:'bg-img-beach bg-beach', unlock:false, st:2, tags:['talk']},
+  market:{id:'market', name:'材料市场', icon:'🛒', area:'王都', desc:'王都中央材料市场（入学后开放）', bg:'bg-img-town bg-town', unlock:false, st:4, tags:['egg']},
+  // The villa is reached only by its holiday story and never appears in free-roam routes.
+  beach:{id:'beach', name:'海滨别墅', icon:'🏖️', area:'度假地', desc:'与公爵府、学院都不直接连通的家族别墅', bg:'bg-img-beach bg-beach', unlock:false, st:0, tags:['talk'], storyOnly:true},
   // 学院
   dorm:{id:'dorm', name:'东区宿舍', icon:'🏠', area:'魔法大学', desc:'312号房间', bg:'bg-img-dorm bg-room', unlock:false, st:0, tags:['rest']},
   water_class:{id:'water_class', name:'水系教室', icon:'💧', area:'魔法大学', desc:'安娜·贝尔导师的教室', bg:'bg-img-classroom bg-school', unlock:false, st:1},
@@ -235,16 +242,12 @@ const EXITS = {
     {to:'cellar', label:'退回酒窖', icon:'🍷', x:50, y:30, st:0},
   ],
   town:[
+    // The town and ducal estate are explicitly connected in both directions.
     {to:'garden', label:'回公爵府', icon:'🌹', x:20, y:70, st:2},
-    {to:'market', label:'材料市场', icon:'🛒', x:75, y:45, st:2, needAge:4},
-    {to:'beach', label:'海滨方向', icon:'🏖️', x:50, y:20, st:3, needAge:8},
   ],
-  market:[
-    {to:'town', label:'回小镇', icon:'🏘️', x:20, y:60, st:1},
-  ],
-  beach:[
-    {to:'town', label:'回领地', icon:'🏘️', x:50, y:80, st:2},
-  ],
+  // The academy overview reaches the capital market; the villa is story-only.
+  market:[],
+  beach:[],
   dorm:[
     {to:'cafeteria', label:'食堂', icon:'🍮', x:70, y:40, st:1},
     {to:'library', label:'图书馆', icon:'📖', x:30, y:35, st:1},
@@ -313,7 +316,7 @@ const ALL_PICKS = {
   water_veil:{id:'water_veil', name:'水之帷幕', tier:0, tag:'赋魔法',
     desc:'凝聚水膜防御，可挡低级魔法与物理攻击。消耗中等。'},
   quiet_mind:{id:'quiet_mind', name:'静心', tier:0, tag:'赋技能·被动',
-    desc:'冥想效率翻倍，每日首次休息额外回复体力。'},
+    desc:'冥想效率翻倍；休息时额外回复少量魔力（体力仍固定回复3点）。'},
   baby_talk:{id:'baby_talk', name:'天籁初声', tier:0, tag:'赋技能·特殊',
     desc:'（婴儿期限定）说出的话更容易被家人理解并提升好感。长大后转化为「真诚之言」。'},
   mana_sip:{id:'mana_sip', name:'魔力小啜', tier:0, tag:'赋技能·被动',
@@ -370,7 +373,7 @@ const TASKS = [
   {id:'ice_hits', name:'冰上之战', desc:'在实战中命中一位冰系魔法使三次', exp:300, prog:0, max:3},
   {id:'taste_foreign', name:'异国之味', desc:'品尝一道从未接触过的异国料理', exp:80},
   {id:'clock_tower', name:'校园探索·钟塔', desc:'前往学院钟塔顶层，记录景观', exp:200},
-  {id:'market_walk', name:'王都漫步', desc:'前往王都中央材料市场', exp:120},
+  {id:'market_walk', name:'王都漫步', desc:'入学后，诺艾儿好感达到2，再前往王都中央材料市场', exp:120},
   {id:'lost_child', name:'迷途的旅人', desc:'帮助一位走失的孩子找到家人', exp:200},
   {id:'plant_tree', name:'并肩的树', desc:'与姐姐妹妹共同种下一棵树', exp:250},
   {id:'survive_night', name:'活下去', desc:'在逃亡的第一夜存活', exp:500},
@@ -398,7 +401,7 @@ function baseState(){
   return {
     name:'希尔维亚·维斯特利亚', alias:null,
     ageY:0, ageD:0, year:1, month:5, day:1, tod:1, season:0, // 春=0 出生年1年春
-    hp:8, mhp:8, mp:12, mmp:12, st:20, mst:20,
+    hp:8, mhp:8, mp:12, mmp:12, st:10, mst:10,
     atk:1, mag:4, pdef:0, mdef:0,
     lv:1, exp:0, next:100,
     tier:0, // 0无 1初级...
@@ -423,6 +426,12 @@ function baseState(){
     log:[],
     freeRoam:false,
     lastSafe:'nursery',
+    // 自动剧情、季度休息、NPC 季度排班与魔力透支状态
+    stories:[],
+    restQuarter:null,
+    npcScheduleKey:null,
+    npcSchedule:{},
+    illnessQuarters:0,
     // 养成四维（火山的女儿式）0-100
     stats:{ body:5, mind:15, mana:10, charm:8 },
     courses:{}, // id -> {lv, exp}
@@ -471,12 +480,9 @@ function addExp(n){
   if(n<=0) return; S.exp += n;
   let up=false;
   while(S.exp >= S.next){ S.exp -= S.next; S.lv++; S.next = Math.floor(S.next*1.15+20);
-    // 只涨上限与基础属性，不回满生命/魔力/体力
+    // 升级只提升战斗属性：不回复体力，也不提高体力上限。
     S.mhp+=3; S.mmp+=5; S.atk+=1; S.mag+=2; S.pdef+=1; S.mdef+=1;
     S.hp=Math.min(S.hp, S.mhp); S.mp=Math.min(S.mp, S.mmp);
-    // 体力上限随等级略增，但不回满
-    S.mst = Math.min(80, (S.mst||20) + 1);
-    S.st = Math.min(S.st, S.mst);
     up=true;
   }
   if(up){ sfx('level'); toast(`⭐ 升级！Lv.${S.lv}`); checkTierUp(); }
@@ -513,13 +519,70 @@ function ageStr(){
 function tierName(){ return TIERS[S.tier]||'无'; }
 
 // ========== TIME & STAMINA ==========
+function quarterKey(){
+  return `${S.year}:${S.season!=null ? S.season : seasonOf(S.month||3)}`;
+}
+
+// Exactly half of the former age-band caps. Levels never alter this table.
+function baseStaminaForAge(age=S.ageY){
+  if(age >= 13) return 21;
+  if(age >= 12) return 20;
+  if(age >= 8) return 18;
+  if(age >= 5) return 16;
+  if(age >= 3) return 14;
+  if(age >= 1) return 11;
+  return 10;
+}
+function syncStaminaCap(){
+  const penalty = (S.illnessQuarters||0) > 0 ? 2 : 0;
+  S.mst = Math.max(1, baseStaminaForAge() - penalty);
+  S.st = clamp(Number(S.st)||0, 0, S.mst);
+}
+
+function refreshDynamicLocations(){
+  const ownRoom = S.ageY >= 3 || !!flag('own_room');
+  const room = LOCS.nursery;
+  if(!room) return;
+  room.name = ownRoom ? '自己的房间' : '育婴室';
+  room.icon = ownRoom ? '🛌' : '🛏️';
+  room.desc = ownRoom ? '从育婴室改成的独立卧室，有床、书桌与书架' : '柔软的床铺与纱帐';
+  room.bg = ownRoom ? 'bg-img-bedroom bg-room' : 'bg-img-nursery bg-room';
+}
+
+const DEFAULT_UNLOCKED_LOCS = new Set(['nursery','hallway','parlor','garden','dining']);
+function resetLocationUnlocks(){
+  Object.values(LOCS).forEach(L=>{ L.unlock = DEFAULT_UNLOCKED_LOCS.has(L.id); });
+}
+function syncLocationUnlocks(){
+  refreshDynamicLocations();
+  // Home progression. The capital market and beach are intentionally not age unlocks.
+  if(S.ageY>=1){ LOCS.study.unlock=true; LOCS.training.unlock=true; }
+  if(S.ageY>=2){ LOCS.kitchen.unlock=true; LOCS.balcony.unlock=true; }
+  if(S.ageY>=4){ LOCS.chapel.unlock=true; LOCS.town.unlock=true; }
+  if(S.ageY>=6){ LOCS.cellar.unlock=true; }
+  if(flag('can_secret')) LOCS.secret.unlock=true;
+
+  if(S.phase==='academy'){
+    ['dorm','water_class','ice_class','library','cafeteria','training_field','clocktower','flowerhouse','memorial','market']
+      .forEach(id=>{ if(LOCS[id]) LOCS[id].unlock=true; });
+  }
+  if(S.phase==='journey' || S.phase==='finale'){
+    LOCS.road.unlock=true;
+    if(flag('arrived_jikan') || currentScene==='s_jikan_arrive'){
+      LOCS.jikan.unlock=true;
+      LOCS.northforest.unlock=true;
+    }
+  }
+  // Story-only: being unlocked never puts it on a map.
+  if((S.stories||[]).includes('s_beach') || currentScene==='s_beach') LOCS.beach.unlock=true;
+}
+
 function advanceTod(n=1){
   for(let i=0;i<n;i++){
     S.tod++;
     if(S.tod>=5){ S.tod=0; advanceDay(1); }
   }
-  // passive regen small
-  S.st = clamp(S.st+1, 0, S.mst);
+  // No passive stamina regeneration: one quarterly rest is the sole recovery action.
   updateHUD(); save();
 }
 function advanceDay(n=1){
@@ -527,45 +590,34 @@ function advanceDay(n=1){
     S.day++; S.dayCount++; S.ageD++;
     const md = MONTH_DAYS[S.month]||30;
     if(S.day>md){ S.day=1; S.month++; if(S.month>12){ S.month=1; S.year++; } }
-    // birthday: born month 5 day 1
     if(S.month===5 && S.day===1 && S.dayCount>1){ S.ageY++; S.ageD=0; }
-    // also roll age by total days as fallback
     const byDays = Math.floor(S.dayCount/365);
     if(byDays>S.ageY) { S.ageY=byDays; S.ageD=S.dayCount%365; }
-    // daily reset
     if(hasSkill('ice_palace')) flag('palace_today', 0);
-    flag('talked_today', {});
     checkAgeEvents();
   }
-  S.st = S.mst;
-  S.hp = clamp(S.hp+Math.floor(S.mhp*0.3),0,S.mhp);
-  S.mp = clamp(S.mp+Math.floor(S.mmp*0.3),0,S.mmp);
+  // A date rollover must not silently refill any resource bar.
+  syncStatsToAge();
 }
 
 function advanceSeason(n=1){
   for(let i=0;i<n;i++){
     S.season = ((S.season!=null?S.season:seasonOf(S.month)) + 1) % 4;
     if(S.season === 0) S.year++;
-    // set representative date
     S.month = SEASON_MONTH[S.season];
     S.day = 1;
     S.tod = 1;
     S.dayCount += 90;
     S.ageD += 90;
     while(S.ageD >= 365){ S.ageD -= 365; S.ageY++; }
-    // birthday rough: every 4 seasons
     if(hasSkill('ice_palace')) flag('palace_today', 0);
-    flag('talked_today', {});
-    // restore
-    S.st = S.mst;
+    flag('talked_quarter', {});
+    S.npcScheduleKey = null;
+    S.npcSchedule = {};
+    if((S.illnessQuarters||0)>0) S.illnessQuarters--;
+    // Seasonal recovery applies to HP/MP only; stamina never auto-recovers.
     S.hp = clamp(S.hp + Math.floor(S.mhp*0.5), 0, S.mhp);
     S.mp = clamp(S.mp + Math.floor(S.mmp*0.5), 0, S.mmp);
-    // unlocks by age
-    if(S.ageY>=1){ LOCS.study.unlock=true; LOCS.training.unlock=true; }
-    if(S.ageY>=2){ LOCS.kitchen.unlock=true; LOCS.balcony.unlock=true; }
-    if(S.ageY>=4){ LOCS.chapel.unlock=true; LOCS.town.unlock=true; LOCS.market.unlock=true; }
-    if(S.ageY>=6){ LOCS.cellar.unlock=true; }
-    if(S.ageY>=8){ LOCS.beach.unlock=true; }
   }
   syncStatsToAge();
   updateHUD();
@@ -574,39 +626,34 @@ function advanceSeason(n=1){
 }
 
 function spendST(n){
-  if(S.st < n){ toast('体力不足，先休息吧'); sfx('bad'); return false; }
-  S.st -= n; updateHUD();
-  if(S.st<=0){ toast('体力耗尽……强制休息'); forceRest(); }
+  if(S.st < n){
+    toast((S.restQuarter===quarterKey()) ? '体力不足；本季度已经休息过了，请推进季度' : '体力不足，先休息吧（本季度可恢复3点）');
+    sfx('bad');
+    return false;
+  }
+  S.st -= n;
+  updateHUD();
+  if(S.st<=0) toast('体力已经耗尽；可以休息一次或推进到下个季度');
   return true;
 }
 function forceRest(){
-  S.freeRoam=false;
-  playLines([
-    {text:'眼前一黑……体力已经到极限了。'},
-    {text:'不知被谁扶回了房间。'},
-    {do:()=>{ S.st=Math.floor(S.mst*0.5); S.loc=S.lastSafe||'nursery'; advanceTod(2); updateLocBar(); },
-     text:'休息之后，体力恢复了一些。', freeRoam:true}
-  ]);
+  // Compatibility for old callbacks: forced rest obeys the same quarterly rule.
+  doRest();
 }
-function checkAgeEvents(){
-  // handled by phase scenes mostly
-}
+function checkAgeEvents(){ refreshDynamicLocations(); }
 function syncStatsToAge(){
-  if(S.ageY>=1 && S.ageY<3){ S.mhp=Math.max(S.mhp,18); S.mmp=Math.max(S.mmp,20); S.mst=Math.max(S.mst,22); }
-  if(S.ageY>=3){ S.mhp=Math.max(S.mhp,35); S.mmp=Math.max(S.mmp,52); S.mag=Math.max(S.mag,12); S.mst=Math.max(S.mst,28); }
-  if(S.ageY>=5){ S.mhp=Math.max(S.mhp,55); S.mmp=Math.max(S.mmp,80); S.mag=Math.max(S.mag,22); S.lv=Math.max(S.lv,8); S.mst=Math.max(S.mst,32); }
-  if(S.ageY>=8){ S.mhp=Math.max(S.mhp,100); S.mmp=Math.max(S.mmp,150); S.mag=Math.max(S.mag,45); S.atk=Math.max(S.atk,12); S.lv=Math.max(S.lv,15); S.mst=Math.max(S.mst,36); if(S.phase==='prologue'||S.phase==='childhood') S.phase='youth'; }
+  if(S.ageY>=1 && S.ageY<3){ S.mhp=Math.max(S.mhp,18); S.mmp=Math.max(S.mmp,20); }
+  if(S.ageY>=3){ S.mhp=Math.max(S.mhp,35); S.mmp=Math.max(S.mmp,52); S.mag=Math.max(S.mag,12); }
+  if(S.ageY>=5){ S.mhp=Math.max(S.mhp,55); S.mmp=Math.max(S.mmp,80); S.mag=Math.max(S.mag,22); S.lv=Math.max(S.lv,8); }
+  if(S.ageY>=8){ S.mhp=Math.max(S.mhp,100); S.mmp=Math.max(S.mmp,150); S.mag=Math.max(S.mag,45); S.atk=Math.max(S.atk,12); S.lv=Math.max(S.lv,15); if(S.phase==='prologue'||S.phase==='childhood') S.phase='youth'; }
   if(S.ageY>=10){ S.mhp=Math.max(S.mhp,164); S.mmp=Math.max(S.mmp,285); S.mag=Math.max(S.mag,67); S.lv=Math.max(S.lv,22); }
-  if(S.ageY>=12){ S.lv=Math.max(S.lv,28); S.mst=Math.max(S.mst,40); }
-  if(S.ageY>=13){ S.lv=Math.max(S.lv,31); S.mmp=Math.max(S.mmp,324); S.mag=Math.max(S.mag,112); S.mst=Math.max(S.mst,42); }
-  // 不回满任何条
+  if(S.ageY>=12){ S.lv=Math.max(S.lv,28); }
+  if(S.ageY>=13){ S.lv=Math.max(S.lv,31); S.mmp=Math.max(S.mmp,324); S.mag=Math.max(S.mag,112); }
+  syncStaminaCap();
+  // Age and level progression never refill a resource bar.
   S.hp=Math.min(S.hp, S.mhp); S.mp=Math.min(S.mp, S.mmp); S.st=Math.min(S.st, S.mst);
   S.next = Math.max(S.next, 100+S.lv*20);
-  if(S.ageY>=1){ LOCS.study.unlock=true; LOCS.training.unlock=true; }
-  if(S.ageY>=2){ LOCS.kitchen.unlock=true; LOCS.balcony.unlock=true; }
-  if(S.ageY>=4){ LOCS.chapel.unlock=true; LOCS.town.unlock=true; LOCS.market.unlock=true; }
-  if(S.ageY>=6){ LOCS.cellar.unlock=true; }
-  if(S.ageY>=8){ LOCS.beach.unlock=true; }
+  syncLocationUnlocks();
   updateHUD();
 }
 function skipDays(n){ toast("已关闭快进"); return; }
@@ -614,7 +661,29 @@ function skipToAge(y){ toast("已关闭快进，请按季度推进"); return; }
 
 // ========== SAVE ==========
 function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
-function load(){ try{ const r=localStorage.getItem(SAVE_KEY); if(r){ S=Object.assign(baseState(), JSON.parse(r)); return true; } }catch(e){} return false; }
+function migrateLoadedState(raw){
+  S=Object.assign(baseState(), raw||{});
+  S.flags=S.flags&&typeof S.flags==='object'?S.flags:{};
+  S.stories=Array.isArray(S.stories)?S.stories:[];
+  S.npcSchedule=S.npcSchedule&&typeof S.npcSchedule==='object'?S.npcSchedule:{};
+  S.illnessQuarters=Math.max(0,Number(S.illnessQuarters)||0);
+  resetLocationUnlocks();
+  syncStatsToAge(); // clamps old high stamina saves to the new half-sized cap
+  if(LOCS[S.loc]?.storyOnly){ S.loc=S.phase==='academy'?'dorm':'nursery'; }
+  if(S.phase==='academy' && !phaseAreaAllowed(LOCS[S.loc]?.area)) S.loc='dorm';
+  if((S.phase==='journey'||S.phase==='finale') && !phaseAreaAllowed(LOCS[S.loc]?.area)) S.loc=flag('arrived_jikan')?'jikan':'road';
+  if((S.phase==='childhood'||S.phase==='youth'||S.phase==='prologue') && !phaseAreaAllowed(LOCS[S.loc]?.area)) S.loc='nursery';
+  refreshDynamicLocations();
+  syncLocationUnlocks();
+  S.st=Math.min(S.st,S.mst);
+}
+function load(){
+  try{
+    const r=localStorage.getItem(SAVE_KEY);
+    if(r){ migrateLoadedState(JSON.parse(r)); return true; }
+  }catch(e){ console.error('save load failed',e); }
+  return false;
+}
 function saveCodex(){ localStorage.setItem(CODEX_KEY, JSON.stringify(codex)); }
 function hasSave(){ return !!localStorage.getItem(SAVE_KEY); }
 
@@ -1009,15 +1078,15 @@ function showCard(vol, t, s, cb){
 function phaseAreaAllowed(area){
   const ph = S.phase;
   if(ph==='prologue' || ph==='childhood' || ph==='youth'){
-    return area==='公爵府' || area==='领地' || area==='王都';
+    // Before enrolment the capital market is not a free-roam destination.
+    return area==='公爵府' || area==='领地';
   }
   if(ph==='academy'){
-    // 入学后不可自由回公爵府
-    return area==='魔法大学' || area==='王都' || area==='领地';
+    // Campus and the capital market only; the estate/town are no longer a shortcut.
+    return area==='魔法大学' || area==='王都';
   }
   if(ph==='journey' || ph==='finale'){
-    // 旅途后不可自由回学院/公爵府
-    return area==='旅途' || area==='澄岚镇' || area==='王都';
+    return area==='旅途' || area==='澄岚镇';
   }
   return true;
 }
@@ -1033,7 +1102,7 @@ function canUseExit(ex){
   // 未满1岁：不能自由走动（除非特殊 fuss 事件）
   if(S.ageY < 1 && !ex.babyFuss && !ex.allowInfant) return false;
   const L = LOCS[ex.to];
-  if(!L) return false;
+  if(!L || L.storyOnly) return false;
   if(!phaseAreaAllowed(L.area)) return false;
   if(!L.unlock){
     if(ex.needAge!=null && S.ageY >= ex.needAge) L.unlock = true;
@@ -1109,7 +1178,8 @@ function renderHotspots(){
     b.style.top = (ex.y|| 50) + '%';
     const st = ex.st||0;
     const costTxt = st>0 ? `<span class="hs-cost">⚡${st}</span>` : '';
-    b.innerHTML = `<span class="hs-icon">${ex.icon||'➡️'}</span>${ex.label||LOCS[ex.to]?.name||ex.to}${costTxt}`;
+    const exitLabel = ex.to==='nursery' ? LOCS.nursery.name : (ex.label||LOCS[ex.to]?.name||ex.to);
+    b.innerHTML = `<span class="hs-icon">${ex.icon||'➡️'}</span>${exitLabel}${costTxt}`;
     b.onclick = (e)=>{
       e.stopPropagation();
       if(!S.freeRoam) return;
@@ -1126,7 +1196,7 @@ function renderHotspots(){
     b.className='hotspot person';
     b.style.left = (28 + i*22) + '%';
     b.style.top = '78%';
-    b.innerHTML = `<span class="hs-icon">💬</span>和${CHARS[id]?.short||id}说话`;
+    b.innerHTML = `<span class="hs-icon">💬</span>和${CHARS[id]?.short||id}说话<span class="hs-cost">⚡${TALK_ST_COST}</span>`;
     b.onclick=(e)=>{ e.stopPropagation(); if(!S.freeRoam) return; sfx('click'); talkTo(id); };
     box.appendChild(b);
   });
@@ -1163,16 +1233,20 @@ function updateLocBar(){
 function enterLoc(id){
   const L=LOCS[id];
   if(!L||!L.unlock){ toast('还不能去那里'); return; }
+  if(L.storyOnly){ toast('海滨别墅只能随度假剧情前往'); return; }
   if(!phaseAreaAllowed(L.area)){ toast('这个阶段不能去那里'); return; }
   S.loc=id; if(L.tags?.includes('rest')) S.lastSafe=id;
   updateLocBar(); clearPortraits();
   if(tryLocEgg(id)) return;
+  if(typeof tryStoryAction==='function' && tryStoryAction()) return;
   const amb = ambientText(id);
   playLines([{text:amb, freeRoam:true}]);
 }
 function ambientText(id){
   const map = {
-    nursery: '熟悉的育婴室。床头有纱帐，雕花的天花板。阳光从缝隙漏进来，在被子上投下晃动的光斑。门外是长廊。',
+    nursery: S.ageY>=3
+      ? '自己的房间。摇篮已经换成床铺，窗边多了书桌和矮书架；小时候的布偶还留在架子顶层。门外是长廊。'
+      : '熟悉的育婴室。床头有纱帐，雕花的天花板。阳光从缝隙漏进来，在被子上投下晃动的光斑。门外是长廊。',
     hallway: '长廊很长。墙上挂着穿甲胄的男人和华服的女人。窗外能看到庭院，远处有士兵巡逻。两侧有许多门。',
     parlor: '起居室里飘着红茶的香气。',
     garden: '花园的风带着花香。远处有园艺工在修剪。',
@@ -1213,11 +1287,15 @@ document.getElementById('action-bar').onclick = e=>{
 
 function openMap(){
   const g=$('map-grid'); g.innerHTML='';
-  const phaseLocs = Object.values(LOCS).filter(L=> L.unlock && phaseAreaAllowed(L.area));
+  const title = document.querySelector('#map-overlay .map-card h2');
+  if(title) title.textContent = S.phase==='academy' ? '🗺️ 校园与王都总览' : S.phase==='journey' ? '🗺️ 旅途总览' : '🗺️ 公爵府与小镇总览';
+  const phaseLocs = Object.values(LOCS).filter(L=> L.unlock && !L.storyOnly && phaseAreaAllowed(L.area));
   phaseLocs.forEach(L=>{
     const d=document.createElement('button');
     d.className='map-cell'+(S.loc===L.id?' here':'');
-    d.innerHTML=`<span class="mc-icon">${L.icon}</span>${L.name}<div class="mc-cost">${(L.st||0)>0?'⚡'+L.st+' · ':''}${L.area}</div>${L.tags?.includes('egg')&&!S.eggs.includes(L.id)?'<div class="mc-tag">？</div>':''}`;
+    const marketHint = L.id==='market' && !flag('met_huke')
+      ? `<div class="mc-prereq">剧情前置：诺艾儿好感 ${S.love.noelle||0}/${MARKET_NOELLE_LOVE}</div>` : '';
+    d.innerHTML=`<span class="mc-icon">${L.icon}</span>${L.name}<div class="mc-cost">${(L.st||0)>0?'⚡'+L.st+' · ':''}${L.area}</div>${marketHint}${L.tags?.includes('egg')&&!S.eggs.includes(L.id)?'<div class="mc-tag">？</div>':''}`;
     d.onclick=()=>{
       if(S.loc===L.id){ toast('已经在这里了'); return; }
       if((L.st||0)>0 && !spendST(L.st)) return;
@@ -1232,54 +1310,70 @@ function openMap(){
 $('btn-map-close').onclick=()=>show('map-overlay',0);
 $('btn-map').onclick=()=>{ if(S.freeRoam) openMap(); else toast('现在不能自由移动'); };
 
+function npcScheduleSignature(){
+  // Flags changing mid-quarter must not reshuffle people who were already placed.
+  return `${quarterKey()}|${S.phase}`;
+}
+function npcCandidateLocations(){
+  const a=S.ageY;
+  if(S.phase==='prologue'||S.phase==='childhood'||S.phase==='youth'){
+    if(a<1) return {sophia:['nursery'], beatrice:['nursery']};
+    const home = {
+      sophia:['nursery','parlor','dining','hallway','garden','study','kitchen','chapel'],
+      beatrice:['nursery','parlor','dining','hallway','garden','training','kitchen','balcony'],
+    };
+    if(a>=1) home.claude=['parlor','dining','hallway','study'];
+    if(a>=4) home.claude.push('training','chapel');
+    if(a>=6) home.claude.push('cellar');
+    if(flag('ch_alice_born')||a>=2) home.alice=['nursery','parlor','dining','hallway','garden','study','balcony'];
+    return home;
+  }
+  if(S.phase==='academy'){
+    const campus = {
+      emma:['dorm','library','cafeteria','water_class'],
+      beatrice:['training_field','cafeteria'],
+    };
+    if(flag('ch_tree')) campus.beatrice.push('memorial');
+    if(flag('met_noelle')) campus.noelle=['water_class','library','clocktower','cafeteria'];
+    if(flag('met_aino')) campus.aino=['ice_class','flowerhouse','training_field'];
+    if(flag('met_ajun')) campus.ajun=['cafeteria'];
+    if(flag('ch_tree')) campus.charlotte=['memorial'];
+    return campus;
+  }
+  if((S.phase==='journey'||S.phase==='finale') && flag('arrived_jikan')){
+    return {ji:['jikan'], jilan:['jikan']};
+  }
+  return {};
+}
+function ensureNpcSchedule(){
+  const key=npcScheduleSignature();
+  const sameQuarter=S.npcScheduleKey===key && S.npcSchedule && typeof S.npcSchedule==='object';
+  const schedule=sameQuarter ? S.npcSchedule : {};
+  let changed=!sameQuarter;
+  Object.entries(npcCandidateLocations()).forEach(([id,candidates])=>{
+    if(Object.prototype.hasOwnProperty.call(schedule,id)) return; // never move an assigned person mid-quarter
+    const possible=candidates.filter(loc=>LOCS[loc]?.unlock && !LOCS[loc]?.storyOnly && phaseAreaAllowed(LOCS[loc].area));
+    if(possible.length){ schedule[id]=possible[Math.floor(Math.random()*possible.length)]; changed=true; }
+  });
+  S.npcScheduleKey=key;
+  S.npcSchedule=schedule;
+  if(changed) save();
+  return schedule;
+}
 function whoIsHere(){
-  const loc=S.loc, ph=S.phase, tod=S.tod, a=S.ageY;
-  const list=[];
-  const add=(id)=>{ if(id && !list.includes(id)) list.push(id); };
-
-  if(ph==='prologue'||ph==='childhood'||ph==='youth'){
-    // 府内：几乎每个主要房间都该有人，不靠苛刻时段
-    if(loc==='nursery'){ add('sophia'); if(a>=0) add('beatrice'); if(flag('ch_alice_born')||a>=2) add('alice'); }
-    if(loc==='parlor'){ add('sophia'); add('beatrice'); if(flag('ch_alice_born')||a>=2) add('alice'); if(a>=1) add('claude'); }
-    if(loc==='dining'){ add('sophia'); add('beatrice'); if(flag('ch_alice_born')||a>=2) add('alice'); add('claude'); }
-    if(loc==='hallway'){ add('beatrice'); if(a>=0) add('sophia'); if(a>=3) add('claude'); if(flag('ch_alice_born')||a>=2) add('alice'); }
-    if(loc==='garden'){ add('beatrice'); if(flag('ch_alice_born')||a>=2) add('alice'); if(a>=4) add('sophia'); }
-    if(loc==='study'){ if(a>=1) add('sophia'); if(flag('ch_alice_born')||a>=3) add('alice'); if(a>=5) add('claude'); }
-    if(loc==='training'){ if(a>=4) add('beatrice'); if(a>=6) add('claude'); }
-    if(loc==='kitchen'){ add('sophia'); if(a>=2) add('beatrice'); }
-    if(loc==='balcony'){ if(a>=2) add('beatrice'); if(flag('ch_alice_born')||a>=3) add('alice'); }
-    if(loc==='chapel'){ add('sophia'); if(a>=4) add('claude'); }
-    if(loc==='cellar'){ if(a>=6) add('claude'); }
-    if(loc==='town' || loc==='market'){ /* passersby none fixed */ }
-    if(loc==='beach'){ add('beatrice'); if(flag('ch_alice_born')||a>=2) add('alice'); add('sophia'); }
-  }
-  if(ph==='academy'){
-    if(loc==='dorm'){ add('emma'); if(flag('met_noelle')) add('noelle'); }
-    if(loc==='library'||loc==='clocktower'){ add('noelle'); if(flag('met_noelle')) add('emma'); }
-    if(loc==='cafeteria'){ add('emma'); if(flag('met_noelle')) add('noelle'); if(flag('met_ajun')) add('ajun'); if(flag('ch_helena')) add('helena'); }
-    if(loc==='water_class'){ if(flag('met_noelle')) add('noelle'); add('emma'); }
-    if(loc==='ice_class'||loc==='flowerhouse'){ if(flag('met_aino')||true) add('aino'); }
-    if(loc==='training_field'){ if(flag('met_aino')) add('aino'); add('beatrice'); }
-    if(loc==='memorial'){ add('charlotte'); if(flag('ch_tree')){ add('beatrice'); add('alice'); } }
-  }
-  if(ph==='journey'||ph==='finale'){
-    if(loc==='jikan'){ add('ji'); add('jilan'); }
-    if(loc==='northforest'){ /* monsters */ }
-    if(loc==='road'){ /* travelers */ }
-  }
-  return list;
+  const schedule=ensureNpcSchedule();
+  return Object.keys(schedule).filter(id=>schedule[id]===S.loc);
 }
 
 function doTalk(){
   const peeps = whoIsHere();
   if(!peeps.length){
-    playLines([{text:'这里暂时没有可以交谈的人。\n换个房间，或到下个时段/季度再来看看。', freeRoam:true}]);
+    playLines([{text:'这个季度这里暂时没有可以交谈的人。\n每个人每季度只会随机出现在一个合适地点，多去别处看看吧。', freeRoam:true}]);
     return;
   }
-  // 若只有一人，直接谈
   if(peeps.length===1){ talkTo(peeps[0]); return; }
   const choices = peeps.map(id=>({
-    text:`和${CHARS[id]?.short||id}说话`,
+    text:`和${CHARS[id]?.short||id}说话（⚡${TALK_ST_COST}）`,
     do:()=>talkTo(id)
   }));
   choices.push({text:'还是算了', do:()=>enterFreeRoam()});
@@ -1288,132 +1382,92 @@ function doTalk(){
 
 function talkTo(id){
   if(!id || !CHARS[id]){ toast('没有对话对象'); return; }
-  let talked = flag('talked_today');
+  if(!whoIsHere().includes(id)){
+    playLines([{text:`${CHARS[id].short}这个季度不在这里。`, freeRoam:true}]);
+    return;
+  }
+  let talked = flag('talked_quarter');
   if(!talked || typeof talked !== 'object') talked = {};
-  // 同一人每天前3次都可聊，之后才提示聊够了
   const cnt = talked[id] || 0;
   if(cnt >= 3){
-    playLines([{ch:id, text:`（和${CHARS[id].short}暂时没什么新话题了。下个季度再来吧。）`, freeRoam:true}]);
+    playLines([{ch:id, text:`（和${CHARS[id].short}本季度已经聊过很多了。下个季度再来吧。）`, freeRoam:true}]);
     return;
   }
-  if(!spendST(0)){} // 交谈不再强制耗体，避免“点了没反应”
+  if(!spendST(TALK_ST_COST)){
+    if(!S.freeRoam) enterFreeRoam();
+    return;
+  }
   talked = Object.assign({}, talked, {[id]: cnt+1});
-  flag('talked_today', talked);
+  flag('talked_quarter', talked);
   know(id, 2+Math.floor(Math.random()*4));
-  // 小幅魅/社交成长
   if(S.stats) S.stats.charm = Math.min(100, (S.stats.charm||0) + 1);
   const lines = talkLines(id);
-  if(!lines || !lines.length){
-    playLines([{text:`（${CHARS[id].short}看了看你，什么也没说。空气有点微妙。）`, freeRoam:true}]);
-    return;
-  }
-  playLines(lines, ()=>enterFreeRoam());
+  playLines(lines && lines.length ? lines : [{text:`和${CHARS[id].short}聊了一会儿。`}], ()=>enterFreeRoam());
 }
 
+// Every line is keyed to the room where the scheduled NPC actually appears, so a
+// conversation cannot mention sitting in a dorm while its portrait is in a library.
+const LOCATION_TALKS = {
+  sophia:{
+    nursery:[['睡得好吗？窗帘要再拉开一点吗？','母亲替我理好床边的薄毯。'],['这个布偶从你出生时就在房里，我可舍不得丢。','她看了一眼床边，笑得很轻。']],
+    parlor:[['红茶刚好。坐下来陪母亲一会儿吧。','起居室里茶香很暖。']], dining:[['今天想吃什么？我让厨房少放一点糖。','银餐具映着母亲温柔的眼睛。']],
+    hallway:[['慢一点，长廊的地面刚打过蜡。','母亲在祖先画像前停了一会儿。']], garden:[['鸢尾开了。你父亲从前很喜欢。','花园的风吹动她银灰色的发尾。']],
+    study:[['这本书太高了，我替你拿。','她从书架上抽出一本薄薄的游记。']], kitchen:[['饼干还没凉。饭前只能吃一块。','厨房的甜香把命令变得毫无威慑力。']],
+    chapel:[['这里很安静，对吧？我小时候最喜欢第二排。','彩窗的蓝光落在她手背上。']]
+  },
+  beatrice:{
+    nursery:[['希尔维亚！我来检查你的房间！——其实就是来找你玩。','姐姐在床边坐下，又立刻被弹软的床垫逗笑了。']],
+    parlor:[['看！贝阿特丽丝大人把积木塔搭到这么高！','塔在起居室地毯上坚持了三秒。']], dining:[['今晚有松饼！我已经替你批准第二份了！','她把餐盘往我这边推了推。']],
+    hallway:[['我要去训练！这次绝对不会碰倒长廊的花瓶！','她刻意离花瓶远了两步。']], garden:[['火焰兔子差一点就成功了！花一朵都没烧到！','她身后的花圃确实完好无损。']],
+    training:[['听好了！今天的挥剑要稳，不能只靠力气！','木剑劈开练武场上方的风。']], kitchen:[['厨师说面糊不能乱搅。为什么不能？','她举着木勺，一脸认真。']],
+    balcony:[['从这里能看到整个庭院！以后这里就是秘密基地。','夜风把她宣布秘密的声音送出了很远。']],
+    training_field:[['学妹，看好了！贝阿特丽丝大人的标准起手式！','训练场上的木桩替我承受了下一击。']], cafeteria:[['食堂今天有蜂蜜松饼！我给你留了位置。','姐姐护着两只餐盘穿过人群。']],
+    memorial:[['树苗今天又高了一点。绝对有！','她蹲在纪念林的石牌边认真比划。']]
+  },
+  alice:{
+    nursery:[['……姐姐大人。我可以在这里看一会儿书吗？','她抱着绘本，在床边坐得端端正正。']], parlor:[['……姐姐大人。这里的阳光很暖。','她悄悄把座位挪近了一点。']],
+    dining:[['……甜点分你一半。','她把切得更大的那一半推给我。']], hallway:[['……姐姐大人，要一起走吗？','她在长廊里轻轻牵住我的袖口。']],
+    garden:[['……花，开了。蓝色的那朵最好看。','她在花坛边停下脚步。']], study:[['……这道历史题，可以教我吗？','书页已经翻到她做过标记的地方。']],
+    balcony:[['……今天的月亮很亮。再待一会儿，好吗？','她和我并肩靠在露台栏杆边。']]
+  },
+  claude:{
+    parlor:[['希尔维亚。坐吧，不必每次都行礼。','父亲放下起居室里的报纸。']], dining:[['好好吃饭。训练也不能空着肚子。','他说完，给我夹了一块肉。']],
+    hallway:[['走路看前面。别学你姐姐倒着跑。','父亲的视线越过我，确认长廊上没有某个金色身影。']], study:[['维斯特利亚的名字不是拿来压人的，是拿来负责的。','书房般安静的图书室让这句话显得更稳。']],
+    training:[['握剑不要太紧。手先放松。','父亲在练武场纠正了我的手腕。']], chapel:[['你母亲喜欢这个位置。别告诉她是我说的。','他在第二排座椅旁清了清嗓子。']],
+    cellar:[['这里不是玩耍的地方。看完就回楼上。','父亲检查了一遍酒窖最深处的门锁。']]
+  },
+  emma:{
+    dorm:[['我把桌面收拾好了！至少你的那一半！','宿舍另一半仍像一场彩色风暴。']], library:[['嘘——我知道要小声。这个重点到底是什么意思？','她压低声音，把学院图书馆的笔记推过来。']],
+    cafeteria:[['今天是焦糖布丁！我排队时帮你也拿了一份！','食堂的托盘上端端正正摆着两只布丁。']], water_class:[['水系作业你写完了吗？最后一道快把我淹死了。','她指了指教室讲台上的水杯。']]
+  },
+  noelle:{
+    water_class:[['你的水球还是太规整。下课后再做一次。','诺艾儿敲了敲水系教室的练习台。']], library:[['第三排那本公式推导，第八十七页印错了。','她在学院图书馆把正确公式写在纸边。'],['……虎克来信了。他说父亲这季会把药草送到王都材料市场。','她把弟弟画在信角的小太阳轻轻压平。']],
+    clocktower:[['……风很大，但这里安静。别告诉太多人。','钟塔上的橘猫在她脚边绕了一圈。']], cafeteria:[['我只是来吃饭。……那份布丁你不吃？','她在食堂对甜点多看了半秒。'],['我弟弟喜欢甜食。下次回信，我会把这里的布丁画给他。','她在食堂餐巾背面勾出一只小碗。']]
+  },
+  aino:{
+    ice_class:[['你的冰球里还有一个小气泡。再来。','冰系教室的石台很快覆上一层薄霜。']], flowerhouse:[['伊诺今天要换冷水。你来得正好。','花坊里的北极铃兰轻轻颤动。']],
+    training_field:[['规则不变。只用冰系，打中三次。','训练场地面已经被她冻出三条路线。']]
+  },
+  ajun:{cafeteria:[['咖喱！这次真的不辣！——对阿斯拉人来说大概不辣！','食堂角落飘来温暖的香料味。']]},
+  charlotte:{memorial:[['你浇水又浇多了。把沟往这边挪一点。','她在纪念林里扶正那块旧木牌。']]},
+  ji:{jikan:[['来都来了，先练三组步法。饭还没糊。大概。','霁馆主把竹剑扔了过来。']]},
+  jilan:{jikan:[['你回来啦！先坐，我拿药箱——不许说不用！','霁岚的脚步声响遍整座剑馆。']]}
+};
 function talkLines(id){
-  const a=S.ageY, n=CHARS[id]?.short||id;
-  const pick = arr => arr[Math.floor(Math.random()*arr.length)];
-  const wrap = (ch, lines) => lines; // already line objects
-
-  const pools = {
-    beatrice: a<1 ? [
-      [{ch:'beatrice',emo:'happy',speaker:'贝阿特丽丝',text:'妹妹！妹妹！看我！——妈妈说要轻一点……那我轻轻的！'}, {text:'她用胖乎乎的手指戳戳我的脸，又怕弄疼，缩了回去。', love:'beatrice', loveD:1}],
-      [{ch:'beatrice',emo:'happy',speaker:'贝阿特丽丝',text:'希尔维亚要快点长大！这样我们就能一起玩布偶了！'}, {text:'两岁的姐姐已经在发号施令了。', love:'beatrice', loveD:1}],
-      [{ch:'beatrice',emo:'happy',speaker:'贝阿特丽丝',text:'这是我的妹妹！谁都不许抱走！'}, {text:'她张开小小的胳膊挡在床边，理直气壮。', love:'beatrice', loveD:1}],
-    ] : [
-      [{ch:'beatrice',emo:'happy',speaker:'贝阿特丽丝',text:a<6?'希尔维亚！看我转圈——哇！地板好滑！':'听好了！贝阿特丽丝大人今天的训练量翻倍！'}, {text:a<6?'姐姐摔了个屁股墩，又立刻爬起来，笑得没心没肺。':'她说完就去练武场了，木剑带起的风差点掀翻花瓶。', love:'beatrice', loveD:1}],
-      [{ch:'beatrice',emo:'happy',speaker:'贝阿特丽丝',text:'妹妹要听姐姐的话！这是维斯特利亚家的规矩！……我刚定的。'}, {text:'理直气壮的样子意外地有说服力。大概只有她信。', love:'beatrice', loveD:1}],
-      [{ch:'beatrice',emo:'normal',speaker:'贝阿特丽丝',text:a<10?'火焰兔子！再差一点就成功了！':'论文第三款……希尔维亚你记性好，帮我看看！'}, {text:a<10?'窗帘安全地活过了今天。大概。':'她的桌上铺满草稿，笔帽被咬出牙印。', love:'beatrice', loveD:1}],
-      [{ch:'beatrice',emo:'happy',speaker:'贝阿特丽丝',text:'晚上想吃松饼！我去跟厨房说！贝阿特丽丝大人批准了！'}, {text:'她风风火火跑走了。厨房的人大概又要头疼。', love:'beatrice', loveD:1}],
-      [{ch:'beatrice',emo:'normal',speaker:'贝阿特丽丝',text:'……希尔维亚。你要是被谁欺负了，告诉我。我罩着你。'}, {text:'语气难得认真。我点点头。', love:'beatrice', loveD:1, know:'beatrice', knowD:2}],
-    ],
-    alice: a<2 ? [
-      [{text:'爱丽丝还太小，只会握住我的手指，眼睛亮亮的。', love:'alice', loveD:1}],
-    ] : [
-      [{ch:'alice',emo:'normal',speaker:'爱丽丝',text:'……姐姐大人。'}, {ch:'alice',emo:'smile',text:a<5?'……花，开了。':'……今天的风，很软。', love:'alice', loveD:1}],
-      [{ch:'alice',emo:'shy',speaker:'爱丽丝',text:'……姐姐大人。可以……坐近一点吗。'}, {text:'她轻轻拉了拉我的袖子。动作轻得像怕惊动什么。', love:'alice', loveD:1, know:'alice', knowD:3}],
-      [{ch:'alice',emo:'normal',speaker:'爱丽丝',text:a<8?'……请教我认字。':'……姐姐大人发呆的时候，在想什么？'}, {text:a<8?'她学得很快，快得有点犯规。':'我随口说「大地为什么会拉东西」。她眼睛亮了一下。', love:'alice', loveD:1, know:'alice', knowD:4}],
-      [{ch:'alice',emo:'smile',speaker:'爱丽丝',text:'……贝阿特丽丝姐姐又在炫耀了。……不过，我喜欢。'}, {text:'淡淡的语气，内容却意外地有自己的想法。', love:'alice', loveD:1}],
-      [{ch:'alice',emo:'shy',speaker:'爱丽丝',text:'……姐姐大人今天也……很好看。'}, {text:'说完就低头。耳尖有一点点红。', love:'alice', loveD:1}],
-    ],
-    sophia: a<1 ? [
-      [{ch:'sophia',emo:'normal',speaker:'索菲亚',text:'我的小宝贝……睡吧，妈妈在。'}, {text:'摇篮曲很轻。世界只剩下心跳和奶香。', love:'sophia', loveD:1}],
-      [{ch:'sophia',speaker:'索菲亚',text:'眼睛是蓝的呢……像你父亲。'}, {text:'她用指背碰了碰我的脸颊。'}, {text:'我还不会说话，只能看她。', love:'sophia', loveD:1}],
-    ] : [
-      [{ch:'sophia',emo:'normal',speaker:'索菲亚',text:a<6?'希尔维亚，有好好吃饭吗？':'希尔维亚，最近有没有太拼命练魔法？'}, {text:'母亲的手拂过我的头发。很轻，很暖。', love:'sophia', loveD:1}],
-      [{ch:'sophia',speaker:'索菲亚',text:'院子里的鸢尾开了。你父亲从前很喜欢。……别告诉他我说过。'}, {text:'她笑起来的时候，眼睛弯弯的。', love:'sophia', loveD:1, know:'sophia', knowD:3}],
-      [{ch:'sophia',speaker:'索菲亚',text:'三姐妹在一起的时候，家里最吵，也最像家。'}, {text:'我点点头。这句话我想记住。', love:'sophia', loveD:1}],
-      [{ch:'sophia',speaker:'索菲亚',text:'累了就靠一会儿。母亲还在。'}, {text:'膝枕的高度刚好。我几乎要睡着。', love:'sophia', loveD:1, st:2}],
-    ],
-    claude: a<1 ? [
-      [{ch:'claude',speaker:'克劳德',text:'……手好小。'}, {text:'他的声音放得很低，像怕惊醒整座府邸。大手覆上我的额头，又赶紧收回。', love:'claude', loveD:1}],
-    ] : [
-      [{ch:'claude',speaker:'克劳德',text:a<8?'希尔维亚。别学你姐姐爬柜子。':'希尔维亚。学业为重。有困难就写信回来。'}, {text:'父亲的话总是很短。但每一句都像钉子一样稳。', love:'claude', loveD:1, know:'claude', knowD:2}],
-      [{ch:'claude',speaker:'克劳德',text:'……你的眼睛，像你母亲。'}, {text:'他说完就清了清嗓子，装作去看公文。', love:'claude', loveD:1, know:'claude', knowD:3}],
-      [{ch:'claude',speaker:'克劳德',text:'维斯特利亚的名字，不是拿来压人的。是拿来负责的。'}, {text:'我记住了。', love:'claude', loveD:1, know:'claude', knowD:2}],
-      [{ch:'claude',speaker:'克劳德',text:'贝阿特丽丝又把花瓶……算了。你帮我看着点她。'}, {text:'公爵大人的太阳穴抽了一下。', love:'claude', loveD:1}],
-    ],
-    emma: [
-      [{ch:'emma',speaker:'艾玛',text:'希尔维亚！！食堂今天的布丁是焦糖味的！！我可以吃你那份吗！'}, {text:'门槛是一份布丁的朋友。很划算。', love:'emma', loveD:1}],
-      [{ch:'emma',speaker:'艾玛',text:'你知道吗，我把笔记按颜色分类了！虽然不一定有用，但很好看！'}, {text:'她的书桌像一座甜蜜的灾难现场。', love:'emma', loveD:1}],
-      [{ch:'emma',speaker:'艾玛',text:'……其实我有点想家。但有布丁就还好！'}, {text:'她笑得很用力。我把布丁推给她。', love:'emma', loveD:1, know:'emma', knowD:3}],
-    ],
-    noelle: [
-      [{ch:'noelle',speaker:'诺艾儿',text:'……早。今天的笔记我多抄了一份。给你。'}, {text:'她把笔记推过来，自己低头看书。耳尖有点红。', love:'noelle', loveD:1, know:'noelle', knowD:3}],
-      [{ch:'noelle',speaker:'诺艾儿',text:'图书馆第三排那本公式推导，第87页印错了。别信。'}, {text:'她说得像在汇报军情。', love:'noelle', loveD:1, know:'noelle', knowD:2}],
-      [{ch:'noelle',speaker:'诺艾儿',text:'……虎克来信了。他说想吃王都的糖。'}, {text:'她把信收进怀里，动作很轻。', love:'noelle', loveD:1, know:'noelle', knowD:4}],
-      [{ch:'noelle',speaker:'诺艾儿',text:'你的字……还是那么难认。'}, {text:'这大概是她表达关心的方式。', love:'noelle', loveD:1}],
-    ],
-    aino: [
-      [{ch:'aino',speaker:'艾诺',text:'你的冰，还有气泡。'}, {text:'她只说这一句。但周六训练场见——这是默认的。', love:'aino', loveD:1, know:'aino', knowD:2}],
-      [{ch:'aino',speaker:'艾诺',text:'花坊的水，下午两点换。你若路过，带一壶冷的。'}, {text:'这是在邀请吗？用艾诺语翻译，大概是。', love:'aino', loveD:1, know:'aino', knowD:3}],
-      [{ch:'aino',speaker:'艾诺',text:'……赫兰的雪，比这里像样。'}, {text:'她看着窗外，声音很轻。', love:'aino', loveD:1, know:'aino', knowD:2}],
-    ],
-    charlotte: [
-      [{ch:'charlotte',speaker:'夏洛特',text:'维斯特利亚。你浇水又浇多了。'}, {text:'她在照顾那棵旧树。木牌上的字被重新刻过。', know:'charlotte', knowD:3, love:'charlotte', loveD:1}],
-      [{ch:'charlotte',speaker:'夏洛特',text:'……别用那种眼神看我。我只是不想树死了碍眼。'}, {text:'嘴硬得像冰。', know:'charlotte', knowD:2, love:'charlotte', loveD:1}],
-      [{ch:'charlotte',speaker:'夏洛特',text:'你姐姐的嗓门，全校都能听见。这是噪音污染。'}, {text:'她扇子一合， indignant 得很精致。', love:'charlotte', loveD:1}],
-    ],
-    ajun: [
-      [{ch:'ajun',speaker:'阿琼',text:'希尔维亚！！要不要吃咖喱！！不辣的版本！！'}, {text:'他的热情大概来自巴依的阳光。', love:'ajun', loveD:1}],
-      [{ch:'ajun',speaker:'阿琼',text:'地图！我这次没拿反！……大概。'}, {text:'他背后的路牌指向相反方向。', love:'ajun', loveD:1}],
-      [{ch:'ajun',speaker:'阿琼',text:'沙之花给你看！——啊散了。再来一次！'}, {text:'金沙在掌心亮了一下，像短暂的夏天。', love:'ajun', loveD:1, know:'ajun', knowD:2}],
-    ],
-    helena: [
-      [{ch:'helena',speaker:'海伦娜',text:'希尔维亚！今天的云看起来像羊！你看你看！'}, {text:'她自带一盏灯。连吐槽都亮堂。', love:'helena', loveD:1}],
-      [{ch:'helena',speaker:'海伦娜',text:'要写信哦！我会画很多笑脸！'}, {text:'按这个增速，年底信纸一半都是笑脸。', love:'helena', loveD:1, know:'helena', knowD:2}],
-    ],
-    ji: [
-      [{ch:'ji',speaker:'霁馆主',text:'来都来了——练三组步法？还是先吃饭？今天的粥没糊。大概。'}, {text:'他说「大概」的时候我选择了练剑。', love:'ji', loveD:1}],
-      [{ch:'ji',speaker:'霁馆主',text:'剑不是锤子。你在拧毛巾。再松。'}, {text:'我松了。竹剑轻了半两。', love:'ji', loveD:1, know:'ji', knowD:2}],
-      [{ch:'ji',speaker:'霁馆主',text:'……这把剑跟了我三十年。你若走远路，带着。'}, {text:'他笑纹很深。像年轮。', love:'ji', loveD:1, know:'ji', knowD:3}],
-    ],
-    jilan: [
-      [{ch:'jilan',speaker:'霁岚',text:'你回来啦！北林怎么样？——啊你胳膊又挂彩了，我帮你上药！'}, {text:'她的力道依旧工业级。', love:'jilan', loveD:1}],
-      [{ch:'jilan',speaker:'霁岚',text:'紫蝴蝶！今天也在！好看吧！我自己买的！'}, {text:'和她褪色的练功服形成奇妙对比。', love:'jilan', loveD:1}],
-      [{ch:'jilan',speaker:'霁岚',text:'……其实我希望更多人来学剑。馆里太安静了。'}, {text:'她笑着说，眼神却飘向空房间的门牌钉孔。', love:'jilan', loveD:1, know:'jilan', knowD:3}],
-    ],
-    reno: [
-      [{ch:'reno',speaker:'雷纳德',text:'哟，小怪物。魔法大学还没把你开除吧？'}, {text:'叔叔懒洋洋地靠着门框，靴子上又是泥。', love:'reno', loveD:1}],
-      [{ch:'reno',speaker:'雷纳德',text:'北方的雪狼像滚动的雪球。真的。骗你是小狗。'}, {text:'他比划的长度越来越离谱。', love:'reno', loveD:1, know:'reno', knowD:2}],
-    ],
-    yaoshen: [
-      [{ch:'yaoshen',speaker:'药神',text:'小公主还好吗？药瓶可别打开哦。'}, {text:'他笑起来皱纹堆在一起，像一枚温热的章。', love:'yaoshen', loveD:1}],
-    ],
-    huke: [
-      [{ch:'huke',speaker:'虎克',text:'银色头发的姐姐！我记住你了！我以后也要考魔法大学！'}, {text:'他挺起小小的胸膛。像一只认真的雀。', love:'huke', loveD:1}],
-    ],
-  };
-
-  const pool = pools[id];
-  if(pool && pool.length){
-    const lines = pick(pool).map(L=>{
-      // deep copy plain objects
-      return Object.assign({}, L);
-    });
-    return lines;
+  const n=CHARS[id]?.short||id;
+  const choices=LOCATION_TALKS[id]?.[S.loc] || [];
+  if(choices.length){
+    const pair=choices[Math.floor(Math.random()*choices.length)];
+    return [
+      {ch:id, speaker:n, text:pair[0]},
+      {text:`${pair[1]}\n（交谈消耗体力 ${TALK_ST_COST}）`, love:id, loveD:1, know:id, knowD:2}
+    ];
   }
-  return [{text:`和${n}聊了一会儿。风从窗外进来，把话尾吹散了。`, know:id, knowD:2}];
+  const locName=LOCS[S.loc]?.name||'这里';
+  return [
+    {ch:id, speaker:n, text:`正巧在${locName}遇见你。最近还好吗？`},
+    {text:`我们站在${locName}聊了一会儿。\n（交谈消耗体力 ${TALK_ST_COST}）`, love:id, loveD:1, know:id, knowD:2}
+  ];
 }
 
 
@@ -1507,32 +1561,71 @@ function takeCourse(id){
 }
 
 
-function doTrain(){
-  const L=LOCS[S.loc];
-  if(!L.tags?.includes('train') && S.loc!=='garden' && S.loc!=='training' && S.loc!=='training_field' && S.loc!=='ice_class' && S.loc!=='northforest' && S.loc!=='jikan'){
-    playLines([{text:'这里不适合修行。去花园、练武场或训练场吧。', freeRoam:true}]); return;
-  }
-  if(!spendST(3)) return;
+function applyOvertrainingIllness(){
+  const alreadyIll = (S.illnessQuarters||0)>0;
+  S.illnessQuarters = 4;
+  flag('overtraining_illness_count', (flag('overtraining_illness_count')||0)+1);
+  syncStaminaCap();
+  updateHUD();
+  save();
+  return alreadyIll;
+}
+function performTraining(overexerted=false){
+  if(!spendST(TRAIN_ST_COST)){ enterFreeRoam(); return; }
+  const trainingLoc=S.loc;
+  S.mp = Math.max(0, S.mp-TRAIN_MP_COST);
   advanceTod(1);
+
+  if(overexerted){
+    const alreadyIll=applyOvertrainingIllness();
+    const recoveryLoc=(S.lastSafe && LOCS[S.lastSafe]) ? S.lastSafe : (S.phase==='academy'?'dorm':'nursery');
+    const recoveryText=LOCS[recoveryLoc]?.tags?.includes('rest')
+      ? '再次睁眼时，我已经躺在床上。医师说这是魔力透支引起的高热，不能再硬撑。'
+      : '再次睁眼时，我躺在临时铺好的毯子上。医师说这是魔力透支引起的高热，不能再硬撑。';
+    if(S.stats) addStat('body', 1);
+    playLines([
+      {text:'明明魔力已经不足，我还是站回训练位置。\n再一次。只要把术式挤出来就好。', loc:trainingLoc, bg:LOCS[trainingLoc]?.bg},
+      {text:'掌心没有凝出冰。身体深处却像被强行拧紧，耳边的声音一下子远了。', sfx:'bad'},
+      {text:recoveryText, loc:recoveryLoc, bg:LOCS[recoveryLoc]?.bg},
+      {text: alreadyIll
+        ? '旧症被重新引发。恢复期重新计算为一年；惩罚不会叠加。'
+        : '特殊剧情「魔力透支症」触发。\n未来一年（4个季度）体力上限 -2。'},
+      {text:`当前体力上限：${S.mst}。剩余恢复期：${S.illnessQuarters}个季度。`, freeRoam:true}
+    ]);
+    return;
+  }
+
   const lines = [{text:'开始修行……'}];
   if(S.affinity.includes('ice')||S.affinity.includes('water')){
-    lines.push({text:'将魔力引导至掌心。冰晶缓缓凝结。', sfx:'magic', mp:-5, exp:15+S.tier*5});
+    lines.push({text:'将魔力引导至掌心。冰晶缓缓凝结。', sfx:'magic', exp:15+S.tier*5});
     if(!flag('mana_awakened') && S.ageY>=3){
       lines.push({text:'——身体里有什么在流动。', flag:'mana_awakened', task:'mana_sense', ach:'lazy_genius'});
       lines.push({text:'系统发出提示音。经验值上涨。'});
       lines.push({do:()=>{ addExp(100); checkTierUp(); }});
     }
-    if(S.loc==='northforest'){
-      lines.push({text:'顺便清理了附近的魔物。', exp:40, gold:5});
-    }
+    if(S.loc==='northforest') lines.push({text:'顺便清理了附近的魔物。', exp:40, gold:5});
     if(S.loc==='jikan' || S.loc==='training'){
       lines.push({text:'竹剑的手感沉了些。身体记得住。', exp:20});
-      S.atk += 0.1; // accumulates
+      S.atk += 0.1;
     }
   }
   if(S.stats){ addStat('mana', 1); addStat('body', S.loc==='training'||S.loc==='jikan'||S.loc==='training_field'?2:1); }
-  lines.push({text:`修行结束。魔力适性与体能略有提升。\n体力-3。当前 ${S.st}/${S.mst}。`, freeRoam:true});
+  lines.push({text:`修行结束。魔力适性与体能略有提升。\n体力-${TRAIN_ST_COST}，魔力-${TRAIN_MP_COST}。当前体力 ${S.st}/${S.mst}。`, freeRoam:true});
   playLines(lines);
+}
+function doTrain(){
+  const L=LOCS[S.loc];
+  if(!L.tags?.includes('train') && S.loc!=='garden' && S.loc!=='training' && S.loc!=='training_field' && S.loc!=='ice_class' && S.loc!=='northforest' && S.loc!=='jikan'){
+    playLines([{text:'这里不适合修行。去花园、练武场或训练场吧。', freeRoam:true}]); return;
+  }
+  if(S.mp < TRAIN_MP_COST){
+    playLines([{text:`当前魔力只有 ${S.mp}/${S.mmp}，不足以完成一次修行。\n强行继续会透支魔力并引发生病剧情：一年内体力上限 -2。\n是否仍要继续？`, choices:[
+      {text:`仍然继续修行（⚡${TRAIN_ST_COST}，体力上限-2）`, cls:'danger', do:()=>performTraining(true)},
+      {text:'停止修行', do:()=>enterFreeRoam()}
+    ]}]);
+    return;
+  }
+  performTraining(false);
 }
 
 function doStudy(){
@@ -1556,32 +1649,41 @@ function doStudy(){
 }
 
 function doRest(){
-  if(!spendST(0)) {}
-  const isBed = LOCS[S.loc]?.tags?.includes('rest') || S.loc==='nursery'||S.loc==='dorm'||S.loc==='jikan';
-  if(!isBed && S.tod<4){
-    playLines([{text:'现在休息太早了。晚上回房间比较好。——或者直接推进到夜晚？', choices:[
-      {text:'推进到夜晚再睡', do:()=>{ while(S.tod!==4) advanceTod(1); doRest(); }},
-      {text:'算了', do:()=>enterFreeRoam()}
-    ]}]);
+  const key=quarterKey();
+  if(S.restQuarter===key){
+    playLines([{text:'本季度已经休息过一次了。\n想再次恢复体力，需要进入下个季度。', freeRoam:true}]);
     return;
   }
+  if(S.st>=S.mst){
+    playLines([{text:'现在体力是满的，不需要消耗本季度唯一一次休息。', freeRoam:true}]);
+    return;
+  }
+  const isBed = LOCS[S.loc]?.tags?.includes('rest') || S.loc==='nursery'||S.loc==='dorm'||S.loc==='jikan';
+  const before=S.st;
+  S.restQuarter=key;
+  S.st=clamp(S.st+REST_ST_GAIN,0,S.mst);
+  if(hasSkill('quiet_mind')) S.mp=clamp(S.mp+Math.max(1,Math.floor(S.mmp*0.1)),0,S.mmp);
+  const actual=S.st-before;
+  updateHUD(); save();
   playLines([
-    {text: isBed ? '躺到床上。闭上眼睛。' : '找了个角落靠着。眼皮很重。'},
-    {do:()=>{
-      const bonus = hasSkill('quiet_mind') ? 10 : 0;
-      S.st = S.mst; S.hp=S.mhp; S.mp=clamp(S.mp+Math.floor(S.mmp*0.5)+bonus,0,S.mmp);
-      advanceDay(1); S.tod=0;
-      // dream duel opportunity
-      maybeDreamDuel();
-    }},
-    {text:`睡到了${dateStr()}。体力与生命已恢复。`, freeRoam:true}
+    {text:isBed ? '在床上安静地躺了一会儿。' : '找了个安静的地方坐下，闭目休息。'},
+    {text:`本季度的休息次数已用完。\n体力固定恢复3点（本次实际 +${actual}）：${S.st}/${S.mst}。`, freeRoam:true}
   ]);
 }
 
 function doNextTime(){
-  // default: open season menu via override
+  const wasIll=(S.illnessQuarters||0)>0;
   advanceSeason(1);
-  playLines([{text:`时间来到 ${dateStr()}。`, do:()=>checkStoryGates(), freeRoam:true}]);
+  if(checkStoryGates()) return;
+  enterFreeRoam();
+  let tip=`${dateStr()}。风物换了季节。\n体力不会自动恢复；本季度可以休息一次，固定恢复${REST_ST_GAIN}点。`;
+  if(wasIll && !(S.illnessQuarters||0)) tip+='\n魔力透支症已经痊愈，体力上限恢复。';
+  if(S.phase==='academy' && storyStarted('s_beach') && !storyStarted('s_huke') && (S.love.noelle||0)<MARKET_NOELLE_LOVE){
+    tip+=`\n材料市场剧情前置：诺艾儿好感 ${S.love.noelle||0}/${MARKET_NOELLE_LOVE}。`;
+  }
+  $('text').innerHTML=escapeText(tip);
+  toast(`${dateStr()} · 新季度（体力不自动恢复）`);
+  updateHUD(); renderHotspots();
 }
 
 function maybeDreamDuel(){
@@ -1672,10 +1774,15 @@ function tryLocEgg(locId){
       ]);
     },
     market:()=>{
-      if(flag('met_huke')) return;
-      S.eggs.push('market');
-      doneTask('market_walk');
-      runScene('s_huke');
+      if(storyStarted('s_huke')) return;
+      if(S.phase!=='academy') return;
+      const loveNow=S.love.noelle||0;
+      if(!flag('met_noelle') || loveNow<MARKET_NOELLE_LOVE){
+        playLines([{text:`材料市场里人声嘈杂，但相关剧情尚未触发。\n前置条件：诺艾儿好感达到 ${MARKET_NOELLE_LOVE}（当前 ${loveNow}/${MARKET_NOELLE_LOVE}）。`, freeRoam:true}]);
+        return;
+      }
+      if(!S.eggs.includes('market')) S.eggs.push('market');
+      triggerAutomaticStory('s_huke');
     },
   };
   if(!eggs[locId]) return false;
@@ -1883,6 +1990,7 @@ function openPanel(tab){
       <div><b>经验</b> ${S.exp}/${S.next}</div><div><b>日期</b> ${dateStr()}</div>
       <div><b>生命</b> ${S.hp}/${S.mhp}</div><div><b>魔力</b> ${S.mp}/${S.mmp}</div>
       <div><b>体力</b> ${S.st}/${S.mst}</div><div><b>金币</b> ${S.gold}</div>
+      <div><b>本季休息</b> ${S.restQuarter===quarterKey()?'已使用':'可用（+3）'}</div><div><b>身体状态</b> ${(S.illnessQuarters||0)>0?`魔力透支症（${S.illnessQuarters}季）`:'健康'}</div>
       <div><b>攻击</b> ${Math.floor(S.atk)}</div><div><b>魔力值</b> ${Math.floor(S.mag)}</div>
       <div><b>物抗</b> ${S.pdef}</div><div><b>法抗</b> ${S.mdef}</div>
       <div><b>亲和</b> ❄️冰 · 💧水</div><div><b>阶段</b> ${S.phase}</div>
@@ -1961,13 +2069,103 @@ if($('btn-stats')) $('btn-stats').onclick=()=>openStatsPanel();
 if($('btn-stats-close')) $('btn-stats-close').onclick=()=>show('stats-overlay',0);
 
 
-// ========== STORY GATES ==========
+// ========== AUTOMATIC STORY GATES ==========
+const LEGACY_STORY_DONE = {
+  s_first_word:()=>!!S.tasks.first_word?.done,
+  s_alice_born:()=>!!flag('ch_alice_born'),
+  s_child_days:()=>!!flag('seen_child_days'),
+  s_own_room:()=>!!flag('seen_own_room'),
+  s_mana_awaken:()=>!!flag('mana_awakened'),
+  s_yaoshen:()=>!!flag('ch_yaoshen'),
+  s_sisters_grow:()=>!!flag('seen_sisters_grow'),
+  s_micro:()=>!!flag('ch_micro'),
+  s_beatrice_day:()=>!!flag('seen_beatrice_day'),
+  s_academy_start:()=>!!flag('ch_academy')||!!flag('left_home'),
+  s_noelle_meet:()=>!!flag('met_noelle'),
+  s_helena:()=>!!flag('ch_helena'),
+  s_ajun:()=>!!flag('met_ajun'),
+  s_aino_train:()=>!!flag('met_aino'),
+  s_tree:()=>!!flag('ch_tree'),
+  s_star_festival:()=>!!flag('ch_star'),
+  s_beach:()=>!!flag('ch_beach'),
+  s_huke:()=>!!flag('met_huke'),
+  s_turnpoint:()=>!!flag('did_turnpoint'),
+  s_jikan_arrive:()=>!!flag('arrived_jikan'),
+};
+const STORY_LOCATIONS = {
+  s_first_word:'nursery', s_alice_born:'nursery', s_child_days:'parlor',
+  s_own_room:'nursery', s_mana_awaken:'nursery', s_yaoshen:'dining',
+  s_sisters_grow:'garden', s_micro:'town', s_beatrice_day:'dining',
+  s_academy_start:'nursery', s_noelle_meet:'water_class', s_helena:'water_class',
+  s_ajun:'cafeteria', s_aino_train:'training_field', s_tree:'memorial',
+  s_star_festival:'memorial', s_beach:'beach', s_huke:'market',
+  s_turnpoint:'nursery', s_black_name:'road', s_jikan_arrive:'jikan',
+};
+function storyStarted(id){
+  if((S.stories||[]).includes(id)) return true;
+  try{ return !!LEGACY_STORY_DONE[id]?.(); }catch(e){ return false; }
+}
+function markStoryStarted(id){
+  S.stories=S.stories||[];
+  if(!S.stories.includes(id)) S.stories.push(id);
+}
+function triggerAutomaticStory(id){
+  if(id!=='s_ending_menu' && storyStarted(id)) return false;
+  if(id==='s_ending_menu') flag('ending_prompt_quarter',quarterKey());
+  else markStoryStarted(id);
+  // Keep legacy flags compatible with older UI and saves.
+  if(id==='s_alice_born') flag('ch_alice_born',1);
+  if(id==='s_child_days') flag('seen_child_days',1);
+  if(id==='s_own_room'){ flag('seen_own_room',1); flag('own_room',1); refreshDynamicLocations(); }
+  if(id==='s_yaoshen') flag('ch_yaoshen',1);
+  if(id==='s_sisters_grow') flag('seen_sisters_grow',1);
+  if(id==='s_beatrice_day') flag('seen_beatrice_day',1);
+  if(id==='s_academy_start') flag('ch_academy',1);
+  if(id==='s_turnpoint') flag('did_turnpoint',1);
+  if(id==='s_beach') LOCS.beach.unlock=true;
+  if(id==='s_huke' && !S.eggs.includes('market')) S.eggs.push('market');
+  save();
+  runScene(id);
+  return true;
+}
+function canTriggerMarketStory(){
+  return S.phase==='academy' && !!flag('met_noelle') && (S.love.noelle||0)>=MARKET_NOELLE_LOVE && !storyStarted('s_huke');
+}
+function nextAutomaticStory(){
+  const home=S.phase==='childhood'||S.phase==='youth';
+  const dueFirst=S.ageY>0 || S.ageD>=180;
+  const rules = [
+    ['s_first_word', home && dueFirst],
+    ['s_alice_born', home && S.ageY>=2 && storyStarted('s_first_word')],
+    ['s_child_days', home && S.ageY>=2 && storyStarted('s_alice_born')],
+    ['s_own_room', home && S.ageY>=3 && storyStarted('s_child_days')],
+    ['s_mana_awaken', home && S.ageY>=3 && storyStarted('s_own_room')],
+    ['s_yaoshen', home && S.ageY>=4 && storyStarted('s_mana_awaken')],
+    ['s_sisters_grow', home && S.ageY>=5 && storyStarted('s_yaoshen')],
+    ['s_micro', home && S.ageY>=8 && storyStarted('s_sisters_grow')],
+    ['s_beatrice_day', home && S.ageY>=9 && storyStarted('s_micro')],
+    ['s_academy_start', home && S.ageY>=12 && storyStarted('s_beatrice_day')],
+
+    ['s_noelle_meet', S.phase==='academy'],
+    ['s_helena', S.phase==='academy' && storyStarted('s_noelle_meet')],
+    ['s_aino_train', S.phase==='academy' && storyStarted('s_helena')],
+    ['s_ajun', S.phase==='academy' && storyStarted('s_aino_train')],
+    ['s_tree', S.phase==='academy' && storyStarted('s_ajun')],
+    ['s_star_festival', S.phase==='academy' && storyStarted('s_tree')],
+    ['s_beach', S.phase==='academy' && storyStarted('s_star_festival')],
+    ['s_huke', S.phase==='academy' && storyStarted('s_beach') && canTriggerMarketStory()],
+    ['s_turnpoint', S.phase==='academy' && S.ageY>=13 && storyStarted('s_huke')],
+
+    ['s_black_name', S.phase==='journey' && storyStarted('s_turnpoint')],
+    ['s_jikan_arrive', S.phase==='journey' && storyStarted('s_black_name')],
+    ['s_ending_menu', S.phase==='journey' && S.ageY>=15 && storyStarted('s_jikan_arrive') && flag('ending_prompt_quarter')!==quarterKey()],
+  ];
+  const found=rules.find(([id,ready])=>ready && !storyStarted(id));
+  return found?.[0]||null;
+}
 function checkStoryGates(){
-  if((S.phase==='childhood'||S.phase==='youth') && S.ageY>=2 && !flag('ch_alice_born')){ flag('ch_alice_born',1); runScene('s_alice_born'); return true; }
-  if(S.phase==='childhood' && S.ageY>=3 && !flag('mana_awakened') && !flag('ch_mana_scene')){ flag('ch_mana_scene',1); runScene('s_mana_awaken'); return true; }
-  if((S.phase==='childhood'||S.phase==='youth') && S.ageY>=4 && !flag('ch_yaoshen')){ flag('ch_yaoshen',1); runScene('s_yaoshen'); return true; }
-  if(S.phase==='youth' && S.ageY>=12 && !flag('ch_academy')){ flag('ch_academy',1); runScene('s_academy_start'); return true; }
-  return false;
+  const id=nextAutomaticStory();
+  return id ? triggerAutomaticStory(id) : false;
 }
 
 // ========== SCENES ==========
@@ -1982,8 +2180,16 @@ function runScene(id){
   show('action-bar', 0);
   const box = $('choices'); if(box) box.innerHTML = '';
   show('game-screen', 1);
+  if(sc.phase){ S.phase = sc.phase; syncLocationUnlocks(); }
+  const storyLoc=sc.loc||STORY_LOCATIONS[id];
+  if(storyLoc && LOCS[storyLoc]){
+    if(LOCS[storyLoc].storyOnly) LOCS[storyLoc].unlock=true;
+    S.loc=storyLoc;
+    if(LOCS[storyLoc].tags?.includes('rest')) S.lastSafe=storyLoc;
+    updateLocBar();
+  }
+  // Scene art intentionally overrides the location art when supplied.
   if(sc.bg) setBG(sc.bg);
-  if(sc.phase) S.phase = sc.phase;
   updateHUD();
   const go = ()=> playLines(sc.lines || [], sc.done);
   if(sc.card) showCard(sc.card.vol, sc.card.t, sc.card.s, go);
@@ -2401,7 +2607,7 @@ SCENES.s_ending_menu = {
 
 function ending(type){
   const map = {
-    home:{title:'小镇的丝之家', desc:'你在某个安静的地方停下了。有花，有粥，有偶尔糊掉的锅。体力值每天回满。发呆是正经事。\n「悠闲地生活」——原来真的可以做到。'},
+    home:{title:'小镇的丝之家', desc:'你在某个安静的地方停下了。有花，有粥，有偶尔糊掉的锅。日子终于慢了下来，发呆也是正经事。\n「悠闲地生活」——原来真的可以做到。'},
     adventure:{title:'冰与剑的远方', desc:'赫兰的风是锤子。你握着那把挂着紫色剑穗的剑，在雪原上走下去。\n变强。活着。有朝一日——把真相从冰层下挖出来。'},
     sisters:{title:'三姐妹的庭院', desc:'月虹螺的虹彩在灯下流转。歪蝴蝶结的手链，碎贝壳手绳，冰晶胸针。\n「只要是一起的，就是最好的礼物。」\n有些人已不在。有些温度还在。'},
   };
@@ -2416,52 +2622,33 @@ function ending(type){
 
 // ========== STORY CMD FROM ROAM ==========
 function tryStoryAction(){
-  // first word quest
-  if(S.phase==='childhood' && S.ageY===0 && S.ageD>=200 && !S.tasks.first_word?.done){
-    runScene('s_first_word'); return true;
+  // Location entry is also automatic; there is never a "剧情：..." choice.
+  if((S.phase==='childhood'||S.phase==='youth') && (S.ageY>0||S.ageD>=180) && !storyStarted('s_first_word')){
+    return triggerAutomaticStory('s_first_word');
   }
-  if(S.phase==='academy' && S.loc==='water_class' && !flag('met_noelle')){
-    flag('met_noelle',1); runScene('s_noelle_meet'); return true;
+  if(S.phase==='academy' && S.loc==='water_class' && !storyStarted('s_noelle_meet')){
+    return triggerAutomaticStory('s_noelle_meet');
   }
-  if(S.phase==='academy' && (S.love.noelle||0)>=1 && !flag('unlocked_clock')){
-    flag('unlocked_clock',1); LOCS.clocktower.unlock=true; LOCS.flowerhouse.unlock=true; LOCS.memorial.unlock=true;
-  }
-  if(S.phase==='journey' && S.loc==='road' && !flag('arrived_jikan') && S.dayCount>0){
-    // offer go to jikan
+  if(S.phase==='academy' && S.loc==='market' && canTriggerMarketStory()){
+    return triggerAutomaticStory('s_huke');
   }
   return false;
 }
 
-// story hooks after ambient freeRoam is fine via tryStoryAction on map/actions
-const _enterLocRaw = enterLoc;
-enterLoc = function(id){
-  _enterLocRaw(id);
-  // delay story so egg/ambient playLines can start first; only if still free
-  setTimeout(()=>{
-    if(S.freeRoam && !typing && !awaitingChoice) tryStoryAction();
-  }, 200);
-};
+// Location-triggered chapters are checked synchronously inside enterLoc().
 
 // ========== TITLE / BOOT ==========
 function newGame(){
   S=baseState();
   S.season = seasonOf(S.month);
-  Object.values(LOCS).forEach(L=>{ if(L.area==='公爵府' && ['nursery','hallway','parlor','garden','dining'].includes(L.id)) L.unlock=true; });
+  resetLocationUnlocks();
+  refreshDynamicLocations();
+  syncStaminaCap();
   show('title-screen',0); show('game-screen',1);
   runScene('s_start');
 }
 function continueGame(){
   if(!load()){ toast('没有存档'); return; }
-  // re-unlock locs by phase
-  Object.values(LOCS).forEach(L=>{
-    if(L.area==='公爵府') L.unlock=true;
-    if(S.phase==='academy'||S.phase==='journey'||S.phase==='finale'){
-      if(L.area==='魔法大学') L.unlock=true;
-    }
-    if(S.phase==='journey'||S.phase==='finale'){
-      if(['road','jikan','northforest','town','market'].includes(L.id)) L.unlock=true;
-    }
-  });
   show('title-screen',0); show('game-screen',1);
   updateHUD(); updateLocBar();
   if(S.freeRoam) enterFreeRoam();
@@ -2486,71 +2673,8 @@ $('btn-codex').onclick=()=>{
 };
 $('btn-codex-close').onclick=()=>show('codex',0);
 
-// ending shortcut in free roam - advance time much / menu
-// Add special next actions when age high
-const _doNext = doNextTime;
-doNextTime = function(){
-  const ch = [];
-  ch.push({
-    text: '🍂 进入下个季度',
-    do: function(){
-      advanceSeason(1);
-      if(checkStoryGates()) return;
-      enterFreeRoam();
-      var tip = dateStr() + '。风物换了季节。体力已恢复。\n点出口继续探索，或再开季度菜单。';
-      var te = $('text');
-      if(te) te.innerHTML = escapeText(tip);
-      toast(dateStr() + ' · 体力已恢复');
-      updateHUD();
-      renderHotspots();
-    }
-  });
-  ch.push({ text: '💤 休息（恢复体力）', do: function(){ doRest(); } });
-
-  if(S.phase==='childhood' || S.phase==='youth'){
-    if(S.ageY>=0 && !(S.tasks.first_word && S.tasks.first_word.done)) ch.push({text:'剧情：第一声', do:function(){ runScene('s_first_word'); }});
-    if(S.ageY>=2 && flag('ch_alice_born') && !flag('seen_child_days')) ch.push({text:'剧情：三姐妹的日常', do:function(){ flag('seen_child_days',1); runScene('s_child_days'); }});
-    if(S.ageY>=5 && !flag('seen_sisters_grow')) ch.push({text:'剧情：三姐妹的岁月', do:function(){ flag('seen_sisters_grow',1); runScene('s_sisters_grow'); }});
-    if(S.ageY>=8 && !flag('ch_micro')) ch.push({text:'剧情：微服出行', do:function(){ runScene('s_micro'); }});
-    if(S.ageY>=9 && flag('ch_micro') && !flag('seen_beatrice_day')) ch.push({text:'剧情：贝阿特丽丝大人的一天', do:function(){ flag('seen_beatrice_day',1); runScene('s_beatrice_day'); }});
-    if(S.ageY>=12 && !flag('ch_academy')) ch.push({text:'剧情：启程去魔法大学', do:function(){ flag('ch_academy',1); runScene('s_academy_start'); }});
-  }
-  if(S.phase==='academy'){
-    if(!flag('met_noelle')) ch.push({text:'剧情：同龄人', do:function(){ runScene('s_noelle_meet'); }});
-    if(!flag('ch_helena')) ch.push({text:'剧情：交换生', do:function(){ flag('ch_helena',1); runScene('s_helena'); }});
-    if(!flag('met_ajun')) ch.push({text:'剧情：巴依的客人', do:function(){ runScene('s_ajun'); }});
-    if(!flag('met_aino')) ch.push({text:'剧情：冰系实战', do:function(){ runScene('s_aino_train'); }});
-    if(flag('met_aino') && !flag('ch_tree')) ch.push({text:'剧情：种树', do:function(){ flag('ch_tree',1); runScene('s_tree'); }});
-    if(!flag('ch_star')) ch.push({text:'剧情：星辰祭', do:function(){ runScene('s_star_festival'); }});
-    if(!flag('ch_beach')) ch.push({text:'剧情：海滨暑假', do:function(){ flag('ch_beach',1); runScene('s_beach'); }});
-    if(LOCS.market && LOCS.market.unlock && !flag('met_huke')) ch.push({text:'剧情：材料市场', do:function(){ runScene('s_huke'); }});
-    if((flag('ch_helena')||flag('ch_tree')||flag('ch_star')) && !flag('did_turnpoint')){
-      ch.push({text:'剧情：寒假回家', do:function(){ flag('did_turnpoint',1); S.ageY=Math.max(S.ageY,13); syncStatsToAge(); runScene('s_turnpoint'); }});
-    }
-  }
-  if(S.phase==='journey' || S.phase==='finale'){
-    if(!S.alias || S.alias!=='眷寒渔') ch.push({text:'剧情：改名', do:function(){ runScene('s_black_name'); }});
-    if(!flag('arrived_jikan')) ch.push({text:'剧情：抵达霁馆', do:function(){ flag('arrived_jikan',1); runScene('s_jikan_arrive'); }});
-    else ch.push({text:'北林讨伐 ⚡3', do:function(){ if(!spendST(3)) return; startBattle({name:'灰棘狼群',emoji:'🐺',hp:50+S.lv*2,atk:6+S.tier*2,exp:35,gold:8},function(){ S.gold+=8; addExp(10); enterFreeRoam(); }); }});
-  }
-  ch.push({text:'结局选择', do:function(){ runScene('s_ending_menu'); }});
-  ch.push({text:'取消', do:function(){ enterFreeRoam(); }});
-
-  playLines([{text:'这个季度要做什么？\n（选「进入下个季度」会推进时间并恢复体力）', choices: ch}]);
-};
-
-
-// unlock study with age via rest/advance
-const _advDay = advanceDay;
-advanceDay = function(n){
-  _advDay(n);
-  if(S.ageY>=1){ LOCS.study.unlock=true; LOCS.training.unlock=true; }
-  if(S.ageY>=2){ LOCS.kitchen.unlock=true; LOCS.balcony.unlock=true; }
-  if(S.ageY>=4){ LOCS.chapel.unlock=true; LOCS.town.unlock=true; }
-  if(S.ageY>=6){ LOCS.cellar.unlock=true; }
-  if(S.ageY>=8 && S.tier<2 && flag('mana_awakened')){ /* mid tier via lv */ }
-  if(S.ageY>=3 && !flag('unlock_study_talk')){ flag('unlock_study_talk',1); }
-};
+// Plot chapters are no longer listed as choices. The quarter button advances time
+// immediately, then checkStoryGates() starts the single chronologically due chapter.
 
 // keyboard
 document.addEventListener('keydown', e=>{

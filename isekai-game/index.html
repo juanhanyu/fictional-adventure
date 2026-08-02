@@ -100,11 +100,11 @@
     <!-- 自由行动栏（探索模式） -->
     <nav id="action-bar" class="hidden">
       <button data-act="explore" class="abtn">🗺️ 总览</button>
-      <button data-act="talk" class="abtn">💬 交谈</button>
+      <button data-act="talk" class="abtn">💬 交谈 <small>⚡1</small></button>
       <button data-act="train" class="abtn">✨ 修行 <small>⚡3</small></button>
       <button data-act="study" class="abtn">📚 学习 <small>⚡2</small></button>
       <button data-act="course" class="abtn">📖 课程 <small>⚡2+</small></button>
-      <button data-act="rest" class="abtn">💤 休息 <small>恢复</small></button>
+      <button data-act="rest" class="abtn">💤 休息 <small>每季1次 · +3</small></button>
       <button data-act="item" class="abtn">🎒 物品</button>
       <button data-act="next" class="abtn primary">🍂 下个季度</button>
     </nav>
@@ -204,14 +204,15 @@
     <div class="end-card">
       <h2>？ 玩法说明</h2>
       <div class="help-body">
-        <p><b>🍂 季度回合</b>：时间按「年 · 春/夏/秋/冬」推进。点「下个季度」过回合。</p>
-        <p><b>💪 体力</b>：行动消耗体力。归零强制休息。休息/过季可恢复。</p>
-        <p><b>🚪 场景探索</b>：点画面上的门/出口按钮在相邻房间移动（如育婴室→长廊）。也可用「总览」。</p>
+        <p><b>🍂 季度回合</b>：点「下个季度」直接推进；达到年龄与前置条件的剧情会自动切换到正确场景播放，不再手动选择剧情。</p>
+        <p><b>💪 体力</b>：行动消耗体力；升级与过季都不会回复体力。每季度只能休息一次，固定恢复3点。</p>
+        <p><b>🚪 场景探索</b>：点门/出口在相邻地点移动。三岁后育婴室会改建为「自己的房间」；小镇与公爵府双向连通。</p>
         <p><b>🎁 勇者之赐</b>：等阶首次提升时触发，七选一赋技能（一生至多七次）。</p>
         <p><b>⚔️ 虚拟决斗</b>：梦中挑战了解度≥90%的人物，胜利可获技能。</p>
         <p><b>❄️ 冰晶宫殿</b>：冻结记忆、回看细节，提升了解度。</p>
-        <p><b>🎭 场景立绘</b>：有可对话角色在场时，会显示其立绘，点击即可交谈。</p>
-        <p><b>📍 阶段隔离</b>：入学后活动于校园；旅途后不再自由返回学院/公爵府。</p>
+        <p><b>🎭 场景立绘</b>：人物每季度只会随机出现在一个合理地点；交谈消耗1点体力，对话会匹配当前场景。</p>
+        <p><b>📍 阶段隔离</b>：入学前不能去王都材料市场；材料市场剧情要求诺艾儿好感≥2。海滨别墅是剧情专用地点，不与公爵府或学院连通。</p>
+        <p><b>⚠️ 魔力透支</b>：魔力不足时继续修行会先警告；执意继续将生病，一年内体力上限-2。</p>
         <p><b>💾 自动存档</b>：重要节点自动保存。无快进。</p>
       </div>
       <div class="end-btns"><button id="btn-help-close" class="tbtn">知道了</button></div>

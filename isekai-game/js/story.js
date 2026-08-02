@@ -11,10 +11,11 @@
     { id: 's_first_word', vol: '第一卷', title: '第一声', minAge: 0 },
     { id: 's_alice_born', vol: '第一卷', title: '第二章 三姐妹', minAge: 2 },
     { id: 's_child_days', vol: '第一卷', title: '第三章 每一天', minAge: 3 },
+    { id: 's_own_room', vol: '第一卷', title: '自己的房间', minAge: 3 },
     { id: 's_mana_awaken', vol: '第一卷', title: '魔力初感', minAge: 3 },
-    { id: 's_yaoshen', vol: '第一卷', title: '药神的宴会', minAge: 4 },
+    { id: 's_yaoshen', vol: '第一卷', title: '巴依晚宴·药神', minAge: 4 },
     { id: 's_sisters_grow', vol: '第一卷', title: '三姐妹的岁月', minAge: 5 },
-    { id: 's_micro', vol: '第一卷', title: '第4.1章 微服出行', minAge: 8 },
+    { id: 's_micro', vol: '第一卷', title: '第4.1章 微服出访', minAge: 8 },
     { id: 's_beatrice_day', vol: '第一卷', title: '第4.2章 贝阿特丽丝大人的一天', minAge: 9 },
     { id: 's_academy_start', vol: '第二卷 魔法大学篇', title: '第一章 离巢', minAge: 12 },
     { id: 's_noelle_meet', vol: '第二卷', title: '第二章 同龄人', phase: 'academy' },
@@ -101,7 +102,7 @@
       T('我就这么睁着眼睛，感受着凉凉的空气接触皮肤。\n——嗯。\n视野里是自己的身体。粉嫩的婴儿皮肤，细细的手脚。\n以及，确实是女孩子的身体。\n系统没有骗我。'),
       T('女仆很快给我换好了新的尿布，还顺手摸了摸我的脑袋，说了句什么，语气听起来像是在夸我乖。\n我躺在床上，盯着天花板，脑子里想的却是——\n……所以我真的变成女孩子了啊。\n这样的话，以后上厕所得坐着？\n以后……嗯，会来那个？\n以后——\n我的思绪发散到一半就停住了。\n因为我发现自己根本没多少抵触。'),
       T('这很奇怪。前世怎么说也当了十几年男生，突然变成女性，正常反应应该是恐慌、不适、或者至少别扭才对。但我心里只有一点淡淡的「原来是这样啊」，像是接受了一个无关紧要的事实。\n为什么呢。\n……算了，想不通就不想了。\n反正也不是什么坏事。\n我闭上眼睛，继续睡觉。'),
-      T('◇', { bg: 'bg-room', loc: 'nursery' }),
+      T('◇', { bg: 'bg-img-nursery bg-room', loc: 'nursery' }),
       T('大约一个月大的时候，我终于被抱出了房间。\n抱着我的是母亲。\n索菲亚·维斯特利亚。我从图鉴里知道了她的全名。银灰色的长发，蓝色的眼眸，气质温婉优雅，像是油画里走出来的贵妇人。\n她抱着我穿过走廊，一边走一边轻声对我说话。\n语言还是听不太懂，但我已经能辨认出一些简单的词汇——比如我的名字。\n希尔维亚。\n她叫我希尔维亚。'),
       {
         ch: 'sophia',
@@ -147,7 +148,7 @@
       T('我前世就不是那种有野心的人。成绩好是因为学习不难，不是因为我有多想考第一名。游戏和二次元了解一点是因为周围人在聊，不是因为我有多喜欢。\n现在也一样。\n系统给了我，我就看看。\n转生成女孩，就当女孩。\n公爵家的千金？听起来生活条件不错，挺好的。\n至于以后……\n以后再说吧。'),
       T('系统里最特殊的，大概是状态面板下一页的那个——\n「勇者之赐」\n当你的最高阶段首次提升时触发。时停。从七个选项中选择一项赋魔法或赋剑技。此生至多七次。\n世人用「等阶」衡量强弱；「等级」是系统独有的概念。\n名字挺中二的。\n我看了看自己胖乎乎的小手。\n……算了，不深究了。'),
       T(
-        '（自由行动开启）\n\n· 点画面上的门/出口在相邻房间移动\n· 有人在场时，场景中会显示对方立绘，可点击交谈\n· 下方：修行 / 学习 / 休息 / 🍂下个季度\n· 本阶段活动范围：公爵府\n· 点文本框推进对话（打字中再点=显示全文，再点=下一句）',
+        '（自由行动开启）\n\n· 点画面上的门/出口在相邻房间移动\n· 有人在场时，场景中会显示对方立绘，可点击交谈\n· 下方：修行 / 学习 / 休息 / 🍂下个季度（剧情到点自动触发）\n· 本阶段活动范围：公爵府\n· 点文本框推进对话（打字中再点=显示全文，再点=下一句）',
         { phase: 'childhood', freeRoam: true }
       ),
     ],
@@ -155,7 +156,7 @@
 
   // ========== 第一声 ==========
   SCENES.s_first_word = {
-    bg: 'bg-room',
+    bg: 'bg-img-nursery bg-room',
     loc: 'nursery',
     lines: [
       T('五个月大的时候，任务系统第一次亮了起来。\n🌟 新任务「第一声」\n📝 说出你人生中的第一个词\n🎁 奖励：经验值 ×50'),
@@ -225,7 +226,8 @@
 
   // ========== 三姐妹 ==========
   SCENES.s_alice_born = {
-    bg: 'bg-room',
+    bg: 'bg-img-nursery bg-room',
+    loc: 'nursery',
     phase: 'childhood',
     card: { vol: '第一卷', t: '第二章', s: '三姐妹' },
     lines: [
@@ -282,7 +284,8 @@
 
   // ========== 每一天（童年扩写） ==========
   SCENES.s_child_days = {
-    bg: 'bg-garden',
+    bg: 'bg-img-parlor bg-hall',
+    loc: 'parlor',
     phase: 'childhood',
     card: { vol: '第一卷', t: '第三章', s: '每一天' },
     lines: [
@@ -323,9 +326,28 @@
     ],
   };
 
+  // ========== 育婴室改造为自己的房间 ==========
+  SCENES.s_own_room = {
+    bg: 'bg-img-bedroom bg-room',
+    loc: 'nursery',
+    phase: 'childhood',
+    card: { vol: '第一卷', t: '三岁', s: '自己的房间' },
+    lines: [
+      T('三岁生日后的清晨，仆人把陪了我三年的摇篮搬出了房间。纱帐、换洗台和婴儿用的小柜子也一件件撤走。'),
+      T('原来的位置换成了一张真正的床。窗边多了书桌和矮书架，绘本、魔法启蒙书整整齐齐地排在上面。小时候的布偶没有丢，被放在书架最上层。'),
+      { ch: 'sophia', speaker: '索菲亚', text: '从今天起，这里就是希尔维亚自己的房间了。喜欢吗？' },
+      { speaker: '希尔维亚', text: '喜欢。' },
+      T('系统地图上的「育婴室」重新绘制，名称变成了「自己的房间」。门还是通向那条熟悉的长廊，但眼前已经不再是婴儿的场景。', {
+        flag: 'own_room',
+        freeRoam: true,
+      }),
+    ],
+  };
+
   // ========== 魔力初感 ==========
   SCENES.s_mana_awaken = {
-    bg: 'bg-room',
+    bg: 'bg-img-bedroom bg-night-scene',
+    loc: 'nursery',
     phase: 'childhood',
     lines: [
       T('三岁半的时候，我开始尝试使用魔力。\n书上说，感知魔力是学习魔法的第一步。每个人体内都有魔力，区别只在于多少。要使用魔法，首先得能感知到自己的魔力，然后学会引导它。\n具体方法是冥想。\n闭上眼睛，放空思绪，感受身体内部的流动。\n对我来说，这并不难。\n前世我就很擅长发呆——不如说，发呆是我最喜欢的事情。放空思绪对我来说就像呼吸一样自然。'),
@@ -350,8 +372,9 @@
 
   // ========== 药神 ==========
   SCENES.s_yaoshen = {
-    bg: 'bg-hall',
+    bg: 'bg-img-dining bg-hall',
     loc: 'dining',
+    card: { vol: '第一卷', t: '巴依晚宴', s: '药神' },
     lines: [
       T('四岁末的某一天，父亲带回来一位客人。\n那天本来是家族晚宴，庆祝什么外交事务的进展，我没怎么听清。母亲给我和姐姐换上了正式的礼服，嘱咐我们要有礼貌。'),
       {
@@ -406,7 +429,8 @@
 
   // ========== 三姐妹岁月 ==========
   SCENES.s_sisters_grow = {
-    bg: 'bg-garden',
+    bg: 'bg-img-garden bg-garden',
+    loc: 'garden',
     phase: 'youth',
     card: { vol: '第一卷', t: '成长', s: '五岁到十一岁' },
     lines: [
@@ -457,8 +481,9 @@
   // ========== 微服（扩写） ==========
   SCENES.s_micro = {
     bg: 'bg-img-town bg-town',
+    loc: 'town',
     phase: 'youth',
-    card: { vol: '第一卷', t: '第4.1章', s: '微服出行' },
+    card: { vol: '第一卷', t: '第4.1章', s: '微服出访' },
     lines: [
       {
         ch: 'beatrice',
@@ -506,7 +531,8 @@
 
   // ========== 贝蒂的一天 ==========
   SCENES.s_beatrice_day = {
-    bg: 'bg-room',
+    bg: 'bg-img-dining bg-hall',
+    loc: 'dining',
     phase: 'youth',
     card: { vol: '第一卷', t: '第4.2章', s: '贝阿特丽丝大人的一天' },
     lines: [
@@ -533,7 +559,8 @@
 
   // ========== 入学 ==========
   SCENES.s_academy_start = {
-    bg: 'bg-img-uni bg-school',
+    bg: 'bg-img-bedroom bg-room',
+    loc: 'nursery',
     phase: 'academy',
     card: { vol: '第二卷 魔法大学篇', t: '第一章', s: '离巢' },
     lines: [
@@ -610,7 +637,7 @@
       },
       T('姐姐把我抱得喘不过气。艾玛在旁边看得目瞪口呆。\n食堂很大。姐姐一边吃一边说个不停——基础课、专业课、冰系老师、法神大人偶尔会亲自授课……\n「总之，有什么不懂的就来问我！我可是你学姐！」\n「……谢谢姐姐。」\n她满意地笑了。'),
       T(
-        '（魔法大学阶段）\n活动范围：校园内。\n公爵府已不在可自由往返的范围——想家，写信吧。\n点出口在宿舍、教室、图书馆、食堂、训练场之间移动。\n有同学在场时，场景中会显示立绘。\n「🍂下个季度」可推进时间并解锁支线剧情。',
+        '（魔法大学阶段）\n活动范围：校园内。\n公爵府已不在可自由往返的范围——想家，写信吧。\n点出口在宿舍、教室、图书馆、食堂、训练场之间移动。\n有同学在场时，场景中会显示立绘。\n「🍂下个季度」会直接推进时间；达到条件的剧情会自动切换到正确场景播放。',
         { phase: 'academy', freeRoam: true }
       ),
     ],
@@ -618,7 +645,7 @@
 
   // ========== 同龄人·诺艾儿 ==========
   SCENES.s_noelle_meet = {
-    bg: 'bg-school',
+    bg: 'bg-img-classroom bg-school',
     loc: 'water_class',
     phase: 'academy',
     card: { vol: '第二卷', t: '第二章', s: '同龄人' },
@@ -656,7 +683,8 @@
   // —— 为控制单文件体积，以下章节仍保持「高密度完整段落」，可继续点季度解锁
 
   SCENES.s_helena = {
-    bg: 'bg-school',
+    bg: 'bg-img-classroom bg-school',
+    loc: 'water_class',
     phase: 'academy',
     card: { vol: '第二卷', t: '第三章', s: '访客' },
     lines: [
@@ -695,7 +723,8 @@
   };
 
   SCENES.s_ajun = {
-    bg: 'bg-hall',
+    bg: 'bg-img-cafeteria bg-hall',
+    loc: 'cafeteria',
     phase: 'academy',
     lines: [
       T('路边一个棕色皮肤、金发、穿着花里胡哨衣服的男生，正把一张地图翻过来转过去。\n「这个地图到底怎么看啊……北边是哪边……这个箭头为什么朝下……」\n他甚至把地图倒过来看了。'),
@@ -718,7 +747,7 @@
   };
 
   SCENES.s_aino_train = {
-    bg: 'bg-plain',
+    bg: 'bg-img-training bg-plain',
     loc: 'training_field',
     phase: 'academy',
     card: { vol: '第二卷', t: '第四章', s: '距离' },
@@ -774,7 +803,7 @@
   };
 
   SCENES.s_tree = {
-    bg: 'bg-garden',
+    bg: 'bg-img-garden bg-garden',
     loc: 'memorial',
     phase: 'academy',
     card: { vol: '第二卷', t: '第九章', s: '并肩的树' },
@@ -807,7 +836,8 @@
   };
 
   SCENES.s_star_festival = {
-    bg: 'bg-night',
+    bg: 'bg-img-night bg-night',
+    loc: 'memorial',
     phase: 'academy',
     card: { vol: '第二卷', t: '星辰祭', s: '并肩的树（下）' },
     lines: [
@@ -863,11 +893,12 @@
   };
 
   SCENES.s_beach = {
-    bg: 'bg-beach',
+    bg: 'bg-img-beach bg-beach',
+    loc: 'beach',
     phase: 'academy',
     card: { vol: '补章', t: '第七章', s: '海与贝壳' },
     lines: [
-      T('暑假。海滨别墅。\n姐姐在马车上睡着了，嘴角还挂着果酱渍。\n到了。\n「大海！！」'),
+      T('暑假。海滨别墅。\n这里没有通往公爵府或学院的自由路线，只能乘家族安排的长途马车抵达。\n姐姐在马车上睡着了，嘴角还挂着果酱渍。\n到了。\n「大海！！」'),
       {
         ch: 'alice',
         emo: 'shy',
@@ -917,16 +948,23 @@
           addItem({ id: 'shell_pin', name: '月虹螺胸针', icon: '🐚', desc: '三姐妹一起捞的。' });
         },
       },
-      T('十三岁的暑假。\n大海、贝壳、笨得可爱的姐姐、和太过聪明的妹妹。\n真好。', { freeRoam: true }),
+      T('十三岁的暑假。\n大海、贝壳、笨得可爱的姐姐、和太过聪明的妹妹。\n真好。'),
+      T('假期结束后，家族马车把我直接送回学院。海滨别墅从总览地图上隐去，仍然不与任何日常区域连通。', {
+        loc: 'dorm',
+        bg: 'bg-img-dorm bg-room',
+        freeRoam: true,
+      }),
     ],
   };
 
   SCENES.s_huke = {
     bg: 'bg-img-town bg-town',
+    loc: 'market',
     phase: 'academy',
     card: { vol: '第二卷', t: '第六章', s: '材料市场' },
     lines: [
-      T('王都中央材料市场，占了整整三条街。\n空气里混杂着干燥草草药的苦味、矿石粉尘的涩味、还有不知道哪个摊位在煮的魔物骨汤的膻味。'),
+      T('【前置条件达成：诺艾儿好感度达到 2】\n她终于愿意提起家里的事。我也因此留意到了从格林镇送来王都材料市场的货。'),
+      T('王都中央材料市场，占了整整三条街。\n空气里混杂着干燥草药的苦味、矿石粉尘的涩味、还有不知道哪个摊位在煮的魔物骨汤的膻味。'),
       { do: () => doneTask('market_walk') },
       T('巷口。\n三个人围着一个小男孩。\n男孩大概八九岁，衣服洗得发白但很干净，怀里死死抱着一个布包。他的眼眶红红的，嘴唇在抖，但没有松手。'),
       { speaker: '虎克', text: '把东西放下！这是我爹采的！你放开！' },
@@ -954,7 +992,8 @@
   };
 
   SCENES.s_turnpoint = {
-    bg: 'bg-night',
+    bg: 'bg-img-bedroom bg-night-scene',
+    loc: 'nursery',
     phase: 'finale',
     card: { vol: '—', t: '转折点（一）', s: '' },
     lines: [
@@ -1001,25 +1040,25 @@
       T('黑暗。\n石壁很厚。外面的声音变成隔水的嗡鸣。\n手在抖。\n凝了一小团冰。拇指大小。微光照亮脚下——粗糙石阶向下，窄得只容一人。\n第一步。第二步。第三步。\n越深越安静。公爵府的声音像被拉细的线，到某个转角之后断了。\n什么都听不到了。\n——贝蒂。爱丽丝。叔叔。\n「你叔叔在那边。」「你叔叔会带她们走。」\n叔叔的魔法很强。年轻时和法神是同窗。他会带她们走的。一定会的。\n跑起来了。'),
       T('出口。\n矮小石门，半掩。门外冬夜的灰蓝色。\n踏出去之前回头看了一眼。\n黑暗。\n高级魔法师。十五岁。同龄人里算天才。世界的尺度上——什么也不算。\n踏出去。\n泥土和枯叶。林地。冬天的树光着，枝丫插向天空。\n往东走了几步。回头。\n公爵府方向。隔着树林和城墙，天空有一片不正常的橘色。\n不是夕阳。\n是火光。', {
         task: 'survive_night',
-        ach: 'black_hair',
         bg: 'bg-img-forest bg-forest',
       }),
       {
         do: () => {
-          S.alias = '眷寒渔';
+          S.alias = null;
           S.phase = 'journey';
           flag('left_home', 1);
           flag('left_school', 1);
-          ['road', 'jikan', 'northforest'].forEach((id) => {
-            if (LOCS[id]) LOCS[id].unlock = true;
-          });
+          // 先只开放官道；霁馆与北林会在自动抵达剧情后开放。
+          LOCS.road.unlock = true;
+          LOCS.jikan.unlock = false;
+          LOCS.northforest.unlock = false;
           // lock academy & mansion free return
           S.loc = 'road';
           S.lastSafe = 'road';
           updateLocBar();
         },
       },
-      T('往东。\n不拐弯。不停。\n先活下来。\n\n（第三卷 旅途篇）\n你已无法自由返回公爵府与学院。\n前路只有官道、城镇与北林。\n以「眷寒渔」之名前行。', {
+      T('往东。\n不拐弯。不停。\n先活下来。\n\n（第三卷 旅途篇）\n你已无法自由返回公爵府与学院。\n前路只有官道、城镇与北林。\n下一步，要先隐藏身份，再决定用什么名字前行。', {
         phase: 'journey',
         freeRoam: true,
       }),
@@ -1028,6 +1067,7 @@
 
   SCENES.s_black_name = {
     bg: 'bg-img-town bg-town',
+    loc: 'road',
     phase: 'journey',
     card: { vol: '第三卷 旅途篇', t: '第一章', s: '黑与墨' },
     lines: [
@@ -1051,6 +1091,7 @@
 
   SCENES.s_jikan_arrive = {
     bg: 'bg-room',
+    loc: 'jikan',
     phase: 'journey',
     card: { vol: '第三卷', t: '霁馆', s: '草叶船' },
     lines: [

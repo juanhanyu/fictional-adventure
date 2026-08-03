@@ -13,7 +13,8 @@ const TOD_ICON = ['🌅','☀️','🌤','🌇','🌙'];
 const MONTH_DAYS = [0,31,28,31,30,31,30,31,31,30,31,30,31];
 const SEASONS = ['春','夏','秋','冬'];
 const SEASON_ICON = ['🌸','☀️','🍂','❄️'];
-const SEASON_MONTH = {0:3, 1:6, 2:9, 3:12}; // representative month
+const SEASON_MONTH = {0:3, 1:6, 2:9, 3:12}; // 季度首月: 春3月 夏6月 秋9月 冬12月
+const QUARTER_DAYS = [92, 92, 91, 90]; // 春(3-5月) 夏(6-8月) 秋(9-11月) 冬(12-2月) = 365
 function seasonOf(month){
   if(month>=3 && month<=5) return 0;
   if(month>=6 && month<=8) return 1;
@@ -421,7 +422,7 @@ const ACH = [
 function baseState(){
   return {
     name:'希尔维亚·维斯特利亚', alias:null,
-    ageY:0, ageD:121, year:1, month:5, day:1, tod:1, season:0, // 春=0 出生年1年5月1日(年中第121天)
+    ageY:0, ageD:0, year:0, month:3, day:1, tod:1, season:0, // 春=0 出生第0年3月1日
     hp:8, mhp:8, mp:12, mmp:12, st:5, mst:5,
     atk:1, mag:4, pdef:0, mdef:0,
     lv:1, exp:0, next:100,
@@ -568,16 +569,16 @@ function advanceDay(n=1){
 
 function advanceSeason(n=1){
   for(let i=0;i<n;i++){
+    const days = QUARTER_DAYS[S.season != null ? S.season : seasonOf(S.month)]; // 当前季度的天数
     S.season = ((S.season!=null?S.season:seasonOf(S.month)) + 1) % 4;
     if(S.season === 0) S.year++;
-    // set representative date
+    // 推进到下一季度节点
     S.month = SEASON_MONTH[S.season];
     S.day = 1;
     S.tod = 1;
-    S.dayCount += 90;
-    S.ageD += 90;
+    S.dayCount += days;
+    S.ageD += days;
     while(S.ageD >= 365){ S.ageD -= 365; S.ageY++; }
-    // birthday rough: every 4 seasons
     if(hasSkill('ice_palace')) flag('palace_today', 0);
     flag('talked_today', {});
     S.restThisSeason = 0;

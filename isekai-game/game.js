@@ -155,7 +155,7 @@ const LOCS = {
   secret:{id:'secret', name:'密道入口', icon:'🗝️', area:'公爵府', desc:'储藏室第三排砖', bg:'bg-void', unlock:false, st:1, tags:['egg']},
   // 外部
   town:{id:'town', name:'利维莫尔镇', icon:'🏘️', area:'领地', desc:'公爵领地的小镇', bg:'bg-img-town bg-town', unlock:false, st:3},
-  market:{id:'market', name:'材料市场', icon:'🛒', area:'王都', desc:'王都中央材料市场', bg:'bg-img-town bg-town', unlock:false, st:4, tags:['egg']},
+  market:{id:'market', name:'材料市场', icon:'🛒', area:'王都', desc:'王都中央材料市场（与公爵小镇不互通，从学院出发）', bg:'bg-img-town bg-town', unlock:false, st:4, tags:['egg']},
   beach:{id:'beach', name:'海滨别墅', icon:'🏖️', area:'领地', desc:'家族的海滨别墅', bg:'bg-img-beach bg-beach', unlock:false, st:2, tags:['talk']},
   ownroom:{id:'ownroom', name:'自己的房间', icon:'🛏️', area:'公爵府', desc:'属于自己的房间', bg:'bg-img-nursery bg-room', unlock:false, st:0, tags:['rest']},
   // 学院
@@ -168,6 +168,7 @@ const LOCS = {
   flowerhouse:{id:'flowerhouse', name:'校园花坊', icon:'🌺', area:'魔法大学', desc:'温室与北极铃兰', bg:'bg-img-flowerhouse bg-garden', unlock:false, st:1, tags:['egg']},
   training_field:{id:'training_field', name:'训练场', icon:'🗡️', area:'魔法大学', desc:'砂地与木桩', bg:'bg-img-training bg-plain', unlock:false, st:1, tags:['train']},
   memorial:{id:'memorial', name:'纪念林', icon:'🌳', area:'魔法大学', desc:'毕业生种下的树', bg:'bg-img-memorial bg-garden', unlock:false, st:2, tags:['egg']},
+  auditorium:{id:'auditorium', name:'礼堂', icon:'🏛️', area:'魔法大学', desc:'大礼堂，开学典礼与欢迎仪式在此举行', bg:'bg-img-auditorium bg-hall', unlock:false, st:1, tags:['talk']},
   // 旅途
   road:{id:'road', name:'官道', icon:'🛤️', area:'旅途', desc:'通往远方的路', bg:'bg-img-plain bg-plain', unlock:false, st:2},
   jikan:{id:'jikan', name:'霁馆', icon:'🏯', area:'澄岚镇', desc:'冷清却温暖的剑馆', bg:'bg-img-jikan bg-room', unlock:false, st:0, tags:['rest','train']},
@@ -249,11 +250,12 @@ const EXITS = {
   ],
   town:[
     {to:'garden', label:'回公爵府', icon:'🌹', x:20, y:70, st:2},
-    {to:'market', label:'材料市场', icon:'🛒', x:75, y:45, st:2, needAge:4, needPhase:'academy'},
+    // 材料市场与公爵小镇不互通，需从王都单独进入
     {to:'beach', label:'海滨方向', icon:'🏖️', x:50, y:20, st:3, needAge:8},
   ],
   market:[
-    {to:'town', label:'回小镇', icon:'🏘️', x:20, y:60, st:1},
+    // 材料市场不与公爵小镇互通，从学院/王都进入后只能回学院
+    {to:'dorm', label:'回学院宿舍', icon:'🏠', x:20, y:60, st:1},
   ],
   beach:[
     {to:'town', label:'回小镇', icon:'🏘️', x:50, y:80, st:2},
@@ -263,6 +265,8 @@ const EXITS = {
     {to:'library', label:'图书馆', icon:'📖', x:30, y:35, st:1},
     {to:'water_class', label:'水系教室', icon:'💧', x:80, y:65, st:1},
     {to:'training_field', label:'训练场', icon:'🗡️', x:20, y:70, st:1},
+    {to:'auditorium', label:'礼堂', icon:'🏛️', x:50, y:25, st:1},
+    {to:'market', label:'材料市场', icon:'🛒', x:35, y:80, st:2, needPhase:'academy'},
   ],
   water_class:[
     {to:'dorm', label:'宿舍', icon:'🏠', x:20, y:50, st:1},
@@ -302,6 +306,11 @@ const EXITS = {
     {to:'training_field', label:'训练场', icon:'🗡️', x:50, y:80, st:1},
     {to:'flowerhouse', label:'花坊', icon:'🌺', x:20, y:40, st:1},
     {to:'library', label:'图书馆', icon:'📖', x:80, y:55, st:1},
+  ],
+  auditorium:[
+    {to:'dorm', label:'宿舍', icon:'🏠', x:20, y:60, st:1},
+    {to:'cafeteria', label:'食堂', icon:'🍮', x:80, y:60, st:1},
+    {to:'water_class', label:'水系教室', icon:'💧', x:50, y:80, st:1},
   ],
   road:[
     {to:'jikan', label:'澄岚 · 霁馆', icon:'🏯', x:70, y:45, st:2},
@@ -1214,6 +1223,7 @@ function ambientText(id){
     memorial: '纪念林的树影婆娑。有一棵小树苗的石牌刻着三个名字。',
     jikan: '霁馆的院子安静。铁锅还在冒热气。',
     northforest: '北林的枯枝在头顶交错。空气里有魔物的气息。',
+    auditorium: '大礼堂穹顶高远。长椅排列整齐，讲台上方挂着学院纹章。阳光从彩窗投下斑斓光斑。',
   };
   return map[id] || `（${LOCS[id]?.name||id}）`;
 }
@@ -1288,7 +1298,8 @@ function whoIsHere(){
     if(loc==='balcony'){ if(a>=2) placeChar('beatrice',['balcony','hallway']); if(flag('ch_alice_born')||a>=3) placeChar('alice',['balcony']); }
     if(loc==='chapel'){ placeChar('sophia',['chapel','hallway']); if(a>=4) placeChar('claude',['chapel']); }
     if(loc==='cellar'){ if(a>=6) placeChar('claude',['cellar']); }
-    if(loc==='town' || loc==='market'){ /* random passers */ }
+    if(loc==='town'){ /* random passers */ }
+    if(loc==='market' && ph==='academy'){ /* market only accessible from academy */ }
     if(loc==='beach'){ if(!flag('ch_beatrice_leaves')) placeChar('beatrice',['beach','town']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['beach']); placeChar('sophia',['beach']); }
   }
   if(ph==='academy'){
@@ -1299,6 +1310,7 @@ function whoIsHere(){
     if(loc==='ice_class'||loc==='flowerhouse'){ if(flag('met_aino')||true) placeChar('aino',['ice_class','training_field']); placeChar('hol',['ice_class','library']); }
     if(loc==='training_field'){ if(flag('met_aino')) placeChar('aino',['training_field']); placeChar('beatrice',['training_field']); }
     if(loc==='memorial'){ placeChar('charlotte',['memorial']); if(flag('ch_tree')){ placeChar('beatrice',['memorial']); placeChar('alice',['memorial']); } }
+    if(loc==='auditorium'){ placeChar('fashen',['auditorium','cafeteria']); placeChar('hol',['auditorium','ice_class']); placeChar('anna',['auditorium','water_class']); }
   }
   if(ph==='journey'||ph==='finale'){
     if(loc==='jikan'){ placeChar('ji',['jikan']); placeChar('jilan',['jikan']); }
@@ -2064,17 +2076,53 @@ if($('btn-stats-close')) $('btn-stats-close').onclick=()=>show('stats-overlay',0
 
 // ========== STORY GATES ==========
 function checkStoryGates(){
-  if((S.phase==='childhood'||S.phase==='youth') && S.ageY>=2 && !flag('ch_alice_born')){ flag('ch_alice_born',1); runScene('s_alice_born'); return true; }
-  if(S.phase==='childhood' && S.ageY>=3 && !flag('mana_awakened') && !flag('ch_mana_scene')){ flag('ch_mana_scene',1); runScene('s_mana_awaken'); return true; }
-  if((S.phase==='childhood'||S.phase==='youth') && S.ageY>=4 && !flag('ch_yaoshen')){ flag('ch_yaoshen',1); runScene('s_yaoshen'); return true; }
-  if(S.phase==='youth' && S.ageY>=10 && !flag('ch_beatrice_leaves')){ flag('ch_beatrice_leaves',1); runScene('s_beatrice_leaves'); return true; }
-  if(S.phase==='youth' && S.ageY>=12 && !flag('ch_academy')){ flag('ch_academy',1); runScene('s_academy_start'); return true; }
-  // auto trigger key plots with correct scene
-  if(S.phase==='youth' && S.ageY>=8 && !flag('ch_micro')){ flag('ch_micro',1); runScene('s_micro'); return true; }
-  if(S.phase==='academy' && S.ageY>=12 && !flag('ch_beach')){ flag('ch_beach',1); runScene('s_beach'); return true; }
-  if(S.phase==='academy' && S.ageY>=13 && !flag('ch_star')){ flag('ch_star',1); runScene('s_star_festival'); return true; }
-  if(S.phase==='academy' && S.ageY>=12 && !flag('ch_helena')){ flag('ch_helena',1); runScene('s_helena'); return true; }
-  return false;
+  // 收集所有符合条件的剧情，按顺序触发
+  const queue = [];
+  if((S.phase==='childhood'||S.phase==='youth') && S.ageY>=2 && !flag('ch_alice_born')){ flag('ch_alice_born',1); queue.push('s_alice_born'); }
+  if(S.phase==='childhood' && S.ageY>=3 && !flag('mana_awakened') && !flag('ch_mana_scene')){ flag('ch_mana_scene',1); queue.push('s_mana_awaken'); }
+  if((S.phase==='childhood'||S.phase==='youth') && S.ageY>=4 && !flag('ch_yaoshen')){ flag('ch_yaoshen',1); queue.push('s_yaoshen'); }
+  if(S.phase==='youth' && S.ageY>=8 && !flag('ch_micro')){ flag('ch_micro',1); queue.push('s_micro'); }
+  if(S.phase==='youth' && S.ageY>=10 && !flag('ch_beatrice_leaves')){ flag('ch_beatrice_leaves',1); queue.push('s_beatrice_leaves'); }
+  if(S.phase==='youth' && S.ageY>=12 && !flag('ch_academy')){ flag('ch_academy',1); queue.push('s_academy_start'); }
+  // 学院阶段剧情
+  if(S.phase==='academy' && !flag('ch_opening_ceremony')){ flag('ch_opening_ceremony',1); queue.push('s_opening_ceremony'); }
+  if(S.phase==='academy' && S.ageY>=12 && !flag('ch_helena')){ flag('ch_helena',1); queue.push('s_helena'); }
+  if(S.phase==='academy' && S.ageY>=12 && !flag('ch_beach')){ flag('ch_beach',1); queue.push('s_beach'); }
+  if(S.phase==='academy' && S.ageY>=13 && !flag('ch_star')){ flag('ch_star',1); queue.push('s_star_festival'); }
+  if(!queue.length) return false;
+  // 逐个触发：第一个立即运行，后续在场景结束后自动衔接
+  runSceneQueue(queue, 0);
+  return true;
+}
+function runSceneQueue(queue, idx){
+  if(idx >= queue.length) return;
+  const id = queue[idx];
+  // 用 playLines 的 done 回调衔接下一个场景
+  const sc = SCENES[id];
+  if(!sc){ runSceneQueue(queue, idx+1); return; }
+  currentScene = id;
+  S.freeRoam = false;
+  awaitingChoice = false;
+  lineCB = null;
+  show('action-bar', 0);
+  const box = $('choices'); if(box) box.innerHTML = '';
+  show('game-screen', 1);
+  if(sc.bg) setBG(sc.bg);
+  if(sc.phase) S.phase = sc.phase;
+  if(sc.loc){ S.loc = sc.loc; updateLocBar(); }
+  updateHUD();
+  const nextCb = idx+1 < queue.length ? ()=>runSceneQueue(queue, idx+1) : null;
+  const go = ()=>{
+    // Override the done callback to chain to next scene
+    const origLines = sc.lines || [];
+    playLines(origLines, ()=>{
+      if(nextCb) nextCb();
+      else if(!S.freeRoam) enterFreeRoam();
+    });
+  };
+  if(sc.card) showCard(sc.card.vol, sc.card.t, sc.card.s, go);
+  else go();
+  save();
 }
 
 // ========== SCENES ==========
@@ -2249,7 +2297,7 @@ SCENES.s_academy_start = {
     {ch:'sophia', speaker:'索菲亚', text:'注意身体，按时吃饭。'},
     {ch:'claude', speaker:'克劳德', text:'你是维斯特利亚家的女儿。不必张扬，也不要妄自菲薄。'},
     {text:'马车驶离公爵府。妹妹站在门口，越来越小，变成一个白点。', know:'alice', knowD:5},
-    {do:()=>{ ['dorm','water_class','ice_class','library','cafeteria','training_field','clocktower','flowerhouse','memorial'].forEach(id=>{if(LOCS[id])LOCS[id].unlock=true;}); S.loc='dorm'; S.lastSafe='dorm'; updateLocBar(); }},
+    {do:()=>{ ['dorm','water_class','ice_class','library','cafeteria','training_field','clocktower','flowerhouse','memorial','auditorium','market'].forEach(id=>{if(LOCS[id])LOCS[id].unlock=true;}); S.loc='dorm'; S.lastSafe='dorm'; updateLocBar(); }},
     {bg:'bg-room', loc:'dorm', text:'东区宿舍 312。室友——'},
     {ch:'emma', speaker:'艾玛·克莱尔', text:'新室友！！我是艾玛！你可以叫我艾玛！银发蓝眼——你是维斯特利亚家的？！', know:'emma', knowD:18, love:'emma', loveD:1},
     {text:'她话很多。我懒得记太多名字。反正慢慢认识。'},
@@ -2262,7 +2310,7 @@ SCENES.s_academy_start = {
 SCENES.s_noelle_meet = {
   bg:'bg-school',
   lines:[
-    {text:'水系教室。靠窗的位置。'},
+    {text:'开学第一天。水系教室。靠窗的位置。'},
     {ch:'noelle', speaker:'诺艾儿', text:'这里有人吗？'},
     {speaker:'希尔维亚', text:'没人。'},
     {text:'短发，眼神锐利。坐下就看书。完全不自我介绍。\n……挺酷的。', know:'noelle', knowD:12},
@@ -2540,9 +2588,9 @@ SCENES.s_tree = {
 };
 
 SCENES.s_helena = {
-  bg:'bg-school', phase:'academy',
+  bg:'bg-img-auditorium bg-hall', loc:'auditorium', phase:'academy',
   lines:[
-    {text:'交换生。希里昂神圣国。白色长袍。'},
+    {text:'交换生。希里昂神圣国。白色长袍。欢迎仪式在大礼堂举行。'},
     {ch:'helena', speaker:'海伦娜', text:'我叫海伦娜·德尔菲！希尔维亚的名字好好听！和头发好配！', know:'helena', knowD:20},
     {text:'她要冰花。小心翼翼捧着，看了整整十分钟直到融化。'},
     {ch:'helena', speaker:'海伦娜', text:'这个送给你。神殿的信物。我唯一的那枚。'},
@@ -2681,17 +2729,15 @@ doNextTime = function(){
   });
   ch.push({ text: '💤 休息（恢复体力）', do: function(){ doRest(); } });
 
+  // 主要剧情已改为「进入下个季度」后自动触发，此处只保留支线/可选剧情
   if(S.phase==='childhood' || S.phase==='youth'){
     if(S.ageY>=0 && !(S.tasks.first_word && S.tasks.first_word.done)) ch.push({text:'剧情：第一声', do:function(){ runScene('s_first_word'); }});
     if(S.ageY>=2 && flag('ch_alice_born') && !flag('seen_child_days')) ch.push({text:'剧情：三姐妹的日常', do:function(){ flag('seen_child_days',1); runScene('s_child_days'); }});
     if(S.ageY>=5 && !flag('seen_sisters_grow')) ch.push({text:'剧情：三姐妹的岁月', do:function(){ flag('seen_sisters_grow',1); runScene('s_sisters_grow'); }});
-    // key plots auto via checkStoryGates on season advance; manual choices removed per rules
     if(S.ageY>=9 && flag('ch_micro') && !flag('seen_beatrice_day')) ch.push({text:'剧情：贝阿特丽丝大人的一天', do:function(){ flag('seen_beatrice_day',1); runScene('s_beatrice_day'); }});
-    if(S.ageY>=12 && !flag('ch_academy')) ch.push({text:'剧情：启程去魔法大学', do:function(){ flag('ch_academy',1); runScene('s_academy_start'); }});
   }
   if(S.phase==='academy'){
     if(!flag('met_noelle')) ch.push({text:'剧情：同龄人', do:function(){ runScene('s_noelle_meet'); }});
-    // key academy plots (beach, helena, star, huke) now auto-triggered via checkStoryGates; manual removed
     if(!flag('met_ajun')) ch.push({text:'剧情：巴依的客人', do:function(){ runScene('s_ajun'); }});
     if(!flag('met_aino')) ch.push({text:'剧情：冰系实战', do:function(){ runScene('s_aino_train'); }});
     if(flag('met_aino') && !flag('ch_tree')) ch.push({text:'剧情：种树', do:function(){ flag('ch_tree',1); runScene('s_tree'); }});

@@ -2067,9 +2067,10 @@ function checkStoryGates(){
   if(!flag('ch_yaoshen') && dateAtLeast(4,12)){ flag('ch_yaoshen',1); queue.push('s_yaoshen'); }
   if(!flag('ch_sisters_grow') && dateAtLeast(5,6)){ flag('ch_sisters_grow',1); queue.push('s_sisters_grow'); }
   if(!flag('ch_reno_arrive') && dateAtLeast(6,3)){ flag('ch_reno_arrive',1); queue.push('s_reno_arrive'); }
-  if(!flag('ch_micro') && S.ageY>=8){ flag('ch_micro',1); queue.push('s_micro'); }
-  if(!flag('ch_beatrice_day') && flag('ch_micro') && S.ageY>=9){ flag('ch_beatrice_day',1); queue.push('s_beatrice_day'); }
-  if(!flag('ch_beatrice_leaves') && S.ageY>=10){ flag('ch_beatrice_leaves',1); queue.push('s_beatrice_leaves'); }
+  if(!flag('ch_alice_affinity') && dateAtLeast(7,3)){ flag('ch_alice_affinity',1); queue.push('s_alice_affinity'); }
+  if(!flag('ch_beatrice_day') && dateAtLeast(7,12)){ flag('ch_beatrice_day',1); queue.push('s_beatrice_day'); }
+  if(!flag('ch_micro') && dateAtLeast(8,6)){ flag('ch_micro',1); queue.push('s_micro'); }
+  if(!flag('ch_beatrice_leaves') && dateAtLeast(10,3)){ flag('ch_beatrice_leaves',1); queue.push('s_beatrice_leaves'); }
   if(!flag('ch_academy') && S.ageY>=12){ flag('ch_academy',1); queue.push('s_academy_start'); }
   // 第二卷 学院篇
   if(S.phase==='academy' && !flag('ch_opening_ceremony')){ flag('ch_opening_ceremony',1); queue.push('s_opening_ceremony'); }
@@ -2354,6 +2355,30 @@ SCENES.s_reno_arrive = {
   ]
 };
 
+
+// ===== 爱丽丝亲和测试 (7岁) =====
+SCENES.s_alice_affinity = {
+  bg:'bg-img-auditorium bg-hall', phase:'youth',
+  card:{vol:'第一卷', t:'第五章', s:'风之亲和'},
+  lines:[
+    {text:'七岁。'},
+    {text:'爱丽丝终于到了做亲和测试的年纪。'},
+    {text:'全家人都在礼堂围观。爱丽丝把手放在水晶球上，表情严肃得像是在进行什么神圣的仪式。'},
+    {text:'几秒后，青色的光芒亮起，如同流动的风，纯净而轻盈。'},
+    {speaker:'魔法师', text:'风亲和！而且纯度极高！这是极为罕见的天赋啊！'},
+    {text:'大家都在欢呼，父亲更是难得地露出笑容。'},
+    {text:'只有当事人爱丽丝，看着那团青光，表情有一瞬间的……失落？'},
+    {ch:'alice', emo:'normal', speaker:'爱丽丝', text:'……是风啊。和姐姐大人不一样呢。'},
+    {text:'声音小得只有我听见了。原来是在纠结这个。'},
+    {bg:'bg-img-garden bg-garden', text:'测试结束后，她在花园找到了我。'},
+    {ch:'alice', emo:'shy', speaker:'爱丽丝', text:'……姐姐大人。虽然亲和不一样……但我以后还可以和你一起练习吗？'},
+    {text:'看着那双写满忐忑的眼睛，我伸手摸了摸她柔软的头发。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'傻瓜，魔法的基础原理是通用的。不管你是风还是火，只要你想练，我都在。'},
+    {text:'她的眼睛瞬间亮了，嘴角弯起一个好看的弧度。'},
+    {ch:'alice', emo:'smile', speaker:'爱丽丝', text:'……嗯！谢谢姐姐大人！'},
+    {text:'她笑得那么开心，让我也跟着心情变好了。', love:'alice', loveD:2, know:'alice', knowD:5, freeRoam:true},
+  ]
+};
 
 SCENES.s_beatrice_leaves = {
   bg:'bg-img-hallway bg-hall', phase:'youth',

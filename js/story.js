@@ -14,8 +14,10 @@
     { id: 's_mana_awaken', vol: '第一卷', title: '魔力初感', minAge: 3 },
     { id: 's_yaoshen', vol: '第一卷', title: '药神的宴会', minAge: 4 },
     { id: 's_sisters_grow', vol: '第一卷', title: '三姐妹的岁月', minAge: 5 },
+    { id: 's_reno_arrive', vol: '第一卷', title: '第四章 浪人叔叔', minAge: 6 },
+    { id: 's_alice_affinity', vol: '第一卷', title: '第五章 风之亲和', minAge: 7 },
+    { id: 's_beatrice_day', vol: '第一卷', title: '第4.2章 贝阿特丽丝大人的一天', minAge: 7 },
     { id: 's_micro', vol: '第一卷', title: '第4.1章 微服出行', minAge: 8 },
-    { id: 's_beatrice_day', vol: '第一卷', title: '第4.2章 贝阿特丽丝大人的一天', minAge: 9 },
     { id: 's_academy_start', vol: '第二卷 魔法大学篇', title: '第一章 离巢', minAge: 12 },
     { id: 's_noelle_meet', vol: '第二卷', title: '同龄人（12岁）', phase: 'academy' },
     { id: 's_opening_ceremony', vol: '第二卷', title: '开学典礼（12岁）', phase: 'academy' },
@@ -452,6 +454,31 @@
         loveD: 1,
         freeRoam: true,
       }),
+    ],
+  };
+
+  // ========== 爱丽丝亲和测试 ==========
+  SCENES.s_alice_affinity = {
+    bg: 'bg-img-auditorium bg-hall',
+    phase: 'youth',
+    card: { vol: '第一卷', t: '第五章', s: '风之亲和' },
+    lines: [
+      T('七岁。'),
+      T('爱丽丝终于到了做亲和测试的年纪。'),
+      T('全家人都在礼堂围观。爱丽丝把手放在水晶球上，表情严肃得像是在进行什么神圣的仪式。'),
+      T('几秒后，青色的光芒亮起，如同流动的风，纯净而轻盈。'),
+      { speaker: '魔法师', text: '风亲和！而且纯度极高！这是极为罕见的天赋啊！' },
+      T('大家都在欢呼，父亲更是难得地露出笑容。'),
+      T('只有当事人爱丽丝，看着那团青光，表情有一瞬间的……失落？'),
+      { ch: 'alice', emo: 'normal', speaker: '爱丽丝', text: '……是风啊。和姐姐大人不一样呢。' },
+      T('声音小得只有我听见了。原来是在纠结这个。'),
+      { bg: 'bg-img-garden bg-garden', text: '测试结束后，她在花园找到了我。' },
+      { ch: 'alice', emo: 'shy', speaker: '爱丽丝', text: '……姐姐大人。虽然亲和不一样……但我以后还可以和你一起练习吗？' },
+      T('看着那双写满忐忑的眼睛，我伸手摸了摸她柔软的头发。'),
+      { ch: 'sylvia', speaker: '希尔维亚', text: '傻瓜，魔法的基础原理是通用的。不管你是风还是火，只要你想练，我都在。' },
+      T('她的眼睛瞬间亮了，嘴角弯起一个好看的弧度。'),
+      { ch: 'alice', emo: 'smile', speaker: '爱丽丝', text: '……嗯！谢谢姐姐大人！' },
+      T('她笑得那么开心，让我也跟着心情变好了。', { love: 'alice', loveD: 2, know: 'alice', knowD: 5, freeRoam: true }),
     ],
   };
 

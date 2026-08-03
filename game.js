@@ -2071,12 +2071,13 @@ function checkStoryGates(){
   if(!flag('ch_beatrice_day') && dateAtLeast(7,12)){ flag('ch_beatrice_day',1); queue.push('s_beatrice_day'); }
   if(!flag('ch_micro') && dateAtLeast(8,6)){ flag('ch_micro',1); queue.push('s_micro'); }
   if(!flag('ch_beatrice_leaves') && dateAtLeast(10,3)){ flag('ch_beatrice_leaves',1); queue.push('s_beatrice_leaves'); }
-  if(!flag('ch_academy') && S.ageY>=12){ flag('ch_academy',1); queue.push('s_academy_start'); }
-  // 第二卷 学院篇
-  if(S.phase==='academy' && !flag('ch_opening_ceremony')){ flag('ch_opening_ceremony',1); queue.push('s_opening_ceremony'); }
-  if(S.phase==='academy' && !flag('met_noelle') && S.ageY>=12){ flag('met_noelle',1); queue.push('s_noelle_meet'); }
+  if(!flag('ch_academy') && dateAtLeast(12,3)){ flag('ch_academy',1); queue.push('s_academy_start'); }
+  // 第二卷 学院篇（开学典礼后依次触发）
+  if(S.phase==='academy' && !flag('ch_opening_ceremony') && flag('ch_academy')){ flag('ch_opening_ceremony',1); queue.push('s_opening_ceremony'); }
+  if(S.phase==='academy' && !flag('met_noelle') && flag('ch_opening_ceremony')){ flag('met_noelle',1); queue.push('s_noelle_meet'); }
+  if(S.phase==='academy' && !flag('met_aino') && flag('met_noelle')){ flag('met_aino',1); queue.push('s_aino_train'); }
+  if(S.phase==='academy' && !flag('met_charlotte') && flag('met_aino')){ flag('met_charlotte',1); queue.push('s_charlotte_meet'); }
   if(S.phase==='academy' && !flag('ch_helena') && S.ageY>=13){ flag('ch_helena',1); queue.push('s_helena'); }
-  if(S.phase==='academy' && !flag('met_aino') && S.ageY>=14){ flag('met_aino',1); queue.push('s_aino_train'); }
   if(S.phase==='academy' && !flag('met_ajun') && S.ageY>=14){ flag('met_ajun',1); queue.push('s_ajun'); }
   if(S.phase==='academy' && !flag('ch_tree') && S.ageY>=15){ flag('ch_tree',1); queue.push('s_tree'); }
   if(S.phase==='academy' && !flag('ch_beach') && S.ageY>=15){ flag('ch_beach',1); queue.push('s_beach'); }
@@ -2402,33 +2403,128 @@ SCENES.s_academy_start = {
   bg:'bg-img-uni bg-school', phase:'academy',
   card:{vol:'第二卷 魔法大学篇', t:'第一章', s:'离巢'},
   lines:[
-    {text:'十二岁。入学的日子。'},
-    {ch:'alice', emo:'shy', speaker:'爱丽丝', text:'……姐姐大人。我会想你的。每个月都要写信。'},
-    {ch:'sophia', speaker:'索菲亚', text:'注意身体，按时吃饭。'},
-    {ch:'claude', speaker:'克劳德', text:'你是维斯特利亚家的女儿。不必张扬，也不要妄自菲薄。'},
-    {text:'马车驶离公爵府。妹妹站在门口，越来越小，变成一个白点。', know:'alice', knowD:5},
+    {text:'十二岁。终于到了入学的年纪。这两年过得很快。练习魔法，陪妹妹，偶尔和姐姐的信件往来。平静而充实。'},
+    {ch:'alice', emo:'shy', speaker:'爱丽丝', text:'……姐姐大人。我到中级了。……三年后我也会去大学的。……到时候，姐姐大人会来接我吗？'},
+    {text:'「会。」她笑了，弧度很浅。「……那我等姐姐大人。」'},
+    {text:'出发的日子。清晨。我站在窗边，最后看了一眼熟悉的房间。床铺、书桌、书架。十二年。这里是我在这个世界的第一个家。'},
+    {ch:'claude', speaker:'克劳德', text:'希尔维亚。到了大学，好好学习。遇到困难可以找你姐姐，也可以找法神大人。你是维斯特利亚家的女儿。不必刻意张扬，但也不要妄自菲薄。'},
+    {ch:'sophia', speaker:'索菲亚', text:'注意身体，按时吃饭。想家了就写信回来。'},
+    {ch:'alice', emo:'shy', speaker:'爱丽丝', text:'……姐姐大人。路上小心。……到了要给我写信。……每个月都要写。……我会想姐姐大人的。'},
+    {text:'我伸出手，摸了摸她的头。「两年后来找我。」她用力点头。'},
+    {text:'马车缓缓驶离公爵府。妹妹站在门口，一直看着这边。越来越远，越来越小。最后变成一个白色的点，然后消失在视野里。', know:'alice', knowD:5},
     {do:()=>{ ['dorm','water_class','ice_class','library','cafeteria','training_field','clocktower','flowerhouse','memorial','auditorium','market'].forEach(id=>{if(LOCS[id])LOCS[id].unlock=true;}); S.loc='dorm'; S.lastSafe='dorm'; updateLocBar(); }},
-    {bg:'bg-room', loc:'dorm', text:'东区宿舍 312。室友——'},
-    {ch:'emma', speaker:'艾玛·克莱尔', text:'新室友！！我是艾玛！你可以叫我艾玛！银发蓝眼——你是维斯特利亚家的？！', know:'emma', knowD:18, love:'emma', loveD:1},
-    {text:'她话很多。我懒得记太多名字。反正慢慢认识。'},
-    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'希尔维亚！！你终于来了！！两年没见了！！', love:'beatrice', loveD:1},
-    {text:'姐姐把我抱得喘不过气。然后宣布要带我吃遍食堂。'},
-    {do:()=>{ S.loc='dorm'; S.lastSafe='dorm'; S.phase='academy'; updateLocBar(); }, text:'（魔法大学：自由探索校园、上课、交友、修行。\n点「推进时间」可看海伦娜/种树/星辰祭/海滨等剧情。）', freeRoam:true}
+    {text:'远处，高耸的尖塔，宏伟的城墙，在阳光下闪闪发光的魔法阵纹。阿斯拉魔法大学。'},
+    {bg:'bg-room', loc:'dorm', text:'东区宿舍 312。门没锁。推开门——'},
+    {ch:'emma', speaker:'艾玛·克莱尔', text:'新室友！！我是艾玛·克莱尔！你可以叫我艾玛！银色头发，蓝眼睛……你是维斯特利亚家的？！你姐姐也是——不对她是金色的来着？你和她不太像诶。她特别有活力，你看起来……嗯……比较安静？不过安静也挺好的！我话比较多，以后你多担待啊！', know:'emma', knowD:20, love:'emma', loveD:1},
+    {text:'她帮我把行李搬进来，一边搬一边说话。说了一串名字，我一个都没记住。不是记不住，是懒得记。反正以后慢慢认识。'},
+    {text:'晚饭时间，姐姐冲进来了。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'希尔维亚！！你终于来了！！我等了好久！！两年没见了诶！！长高了嘛！但还是没我高！走！带你去吃饭！学校食堂我都摸清楚了！', love:'beatrice', loveD:1},
+    {text:'姐姐把我抱得喘不过气。艾玛在旁边看得目瞪口呆。食堂。姐姐一边吃一边说个不停——基础课、专业课、冰系老师……'},
+    {do:()=>{ S.loc='dorm'; S.lastSafe='dorm'; S.phase='academy'; updateLocBar(); }, text:'（魔法大学：自由探索校园、上课、交友、修行。点「推进时间」可看后续剧情。）', freeRoam:true}
   ]
 };
 
 SCENES.s_noelle_meet = {
-  bg:'bg-school',
+  bg:'bg-school', phase:'academy',
+  card:{vol:'第二卷', t:'第二章', s:'同龄人'},
   lines:[
-    {text:'开学第一天。水系教室。靠窗的位置。'},
+    {text:'开学第一天。我被艾玛的尖叫声吵醒。'},
+    {ch:'emma', speaker:'艾玛', text:'啊啊啊啊要迟到了！！！'},
+    {text:'太阳才刚露出个头顶，离上课至少还有一个小时。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……还早。'},
+    {ch:'emma', speaker:'艾玛', text:'早什么早！第一天上课不能迟到！这是态度问题！'},
+    {text:'深蓝色长袍，胸口绣着学院纹章，袖口和领口镶着银边。穿上之后确实有种「我现在是个正经学生了」的错觉。'},
+    {bg:'bg-img-auditorium bg-hall', text:'新生集会在大礼堂举行。几百个十二岁左右的少年少女坐在下面。台上的中年教师开始念学校规章——食堂开放时间，图书馆借书规则，训练场使用须知……'},
+    {text:'我一边听一边在心里吐槽：这些东西不能印成小册子发下来吗？非要在这里念半个小时催眠曲？'},
+    {speaker:'老师', text:'——以上。现在请各位按亲和属性前往对应学院报到。水系往左，火系往右……'},
+    {bg:'bg-school', text:'水系学院的教室里已经坐了二十多人。我找了个靠窗的位置坐下。'},
     {ch:'noelle', speaker:'诺艾儿', text:'这里有人吗？'},
-    {speaker:'希尔维亚', text:'没人。'},
-    {text:'短发，眼神锐利。坐下就看书。完全不自我介绍。\n……挺酷的。', know:'noelle', knowD:12},
-    {text:'测试：让杯中水悬浮。她稳稳浮起三十厘米——平民，却考进了这里。'},
-    {text:'轮到我。水球旋转、分股、汇合。中级水准。教室安静了。'},
-    {ch:'noelle', speaker:'诺艾儿', text:'控制挺稳。但太规整了。像照着教科书做题。实战会吃亏。'},
-    {speaker:'希尔维亚', text:'我也没打算同情你。'},
-    {text:'她愣了一下，走了。\n这人挺有意思。', love:'noelle', loveD:1, freeRoam:true}
+    {ch:'sylvia', speaker:'希尔维亚', text:'没人。'},
+    {text:'「那我坐了。」她拉开椅子坐下，从书包里掏出一本厚得能砸死人的书，低头就看了起来。完全没有自我介绍的意思。……这人还挺酷的。', know:'noelle', knowD:15},
+    {ch:'anna', speaker:'安娜·贝尔', text:'欢迎来到水系学院。接下来做个小测试，了解一下大家的水平。让杯子里的水悬浮起来，能浮多高、多稳，就代表你们的控制力。'},
+    {text:'轮到她——水从杯子里升起，稳稳地悬浮在三十厘米的高度。'},
+    {ch:'anna', speaker:'安娜·贝尔', text:'不错。你叫什么名字？'},
+    {ch:'noelle', speaker:'诺艾儿', text:'诺艾儿。'},
+    {text:'导师看了看名单，表情有些微妙。「……平民？」教室里响起窃窃私语。'},
+    {ch:'noelle', speaker:'诺艾儿', text:'是。'},
+    {text:'诺艾儿面无表情地走回座位，像是那些议论跟她毫无关系，继续低头看书。这心理素质……我有点佩服她。'},
+    {text:'「下一个，希尔维亚·维斯特利亚。」我站起来，走上前。水升起来，悬浮，然后我让它旋转，分成几股细流，最后汇聚成一颗圆滚滚的水球。表面光滑得像镜子。'},
+    {text:'教室里安静了。导师看起来有点惊讶。'},
+    {ch:'anna', speaker:'安娜·贝尔', text:'……这是中级水准了。你入学前接受过训练？'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'家里教过一些。'},
+    {text:'走回座位的时候，感觉到无数道目光。有羡慕的，有好奇的，也有一些不太友善的。大概是在想「贵族果然资源多」之类的吧。这种事情，习惯就好。'},
+    {ch:'noelle', speaker:'诺艾儿', text:'喂。……你是公爵家的。刚才那个水球，控制得挺稳。但太规整了。像是在照着教科书做题。每一步都很精确，但没有变化。实战的时候会吃亏。'},
+    {text:'我愣了一下。叔叔以前也说过类似的话。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……你打过实战？'},
+    {ch:'noelle', speaker:'诺艾儿', text:'算是。我没有姓氏，也没有背景。不需要同情，也不需要照顾。'},
+    {text:'说完她就往门外走。我看着她的背影，想了想。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'我也没打算同情你。'},
+    {text:'她停下脚步，回过头，表情有些意外。然后她转身离开了。'},
+    {bg:'bg-img-cafeteria bg-hall', text:'中午，艾玛拖着我去食堂。'},
+    {ch:'emma', speaker:'艾玛', text:'快快快！去晚了好吃的就没了！'},
+    {text:'她盯着一小碟焦糖布丁，像一只发现猎物的猎犬。'},
+    {ch:'emma', speaker:'艾玛', text:'希尔维亚你知道吗！你在水系测试的事情已经传开了！大家都在说「公爵家的天才」什么的！当然啦——不过也有人说酸话……'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'随他们说吧。'},
+    {ch:'emma', speaker:'艾玛', text:'你心态真好。要是我，早气死了。'},
+    {text:'正说着，诺艾儿端着餐盘走过来。'},
+    {ch:'noelle', speaker:'诺艾儿', text:'这里有人吗？'},
+    {ch:'emma', speaker:'艾玛', text:'没有没有！快坐快坐！我是艾玛！她室友！'},
+    {ch:'noelle', speaker:'诺艾儿', text:'诺艾儿。'},
+    {ch:'emma', speaker:'艾玛', text:'诺艾儿……你是平民对吧？好厉害啊！平民考进来超难的吧？'},
+    {text:'诺艾儿的筷子顿了一下。'},
+    {ch:'noelle', speaker:'诺艾儿', text:'……你不觉得平民不该来这里？'},
+    {ch:'emma', speaker:'艾玛', text:'为什么？考进来就是有本事啊。'},
+    {text:'诺艾儿看着她，表情有些复杂。'},
+    {ch:'noelle', speaker:'诺艾儿', text:'……你和其他贵族不太一样。'},
+    {ch:'emma', speaker:'艾玛', text:'我家就是个小男爵啦，哪算什么贵族。而且希尔维亚是公爵家的，她也没什么架子对吧？'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'能力比身份重要。'},
+    {text:'诺艾儿盯着我看了好几秒。'},
+    {ch:'noelle', speaker:'诺艾儿', text:'……你是认真的？'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'嗯。'},
+    {text:'她低下头，继续吃饭。过了一会儿，轻声说：「……谢谢。」声音小得几乎听不见，像是不习惯说这种话。'},
+    {text:'下午，基础魔法理论课。所有新生一起上。教室门突然被推开了——一个金发女生走进来，穿着华丽的礼服，身后跟着两个侍女，走路带风，像是来巡视领地的女王。'},
+    {text:'教室里响起压抑的议论声。「贝尔蒙家的吧……」「王后母族诶！」「迟到了还这么大摇大摆的……」老师看了她一眼，皱了皱眉，但没说什么。大概是惹不起吧。'},
+    {text:'她似乎察觉到了我的视线，回过头。蓝色的眼眸扫过教室，最后锁定在我身上。四目相对。她的眼神里带着一股子傲气，还有一点……打量？我面无表情地看回去。她盯了我两秒，转回去继续听课。'},
+    {ch:'noelle', speaker:'诺艾儿', text:'她一直在看你。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'嗯。'},
+    {ch:'noelle', speaker:'诺艾儿', text:'你认识她？'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'不认识。'},
+    {ch:'noelle', speaker:'诺艾儿', text:'贝尔蒙家和维斯特利亚家不是对头吗？'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'大人的事，跟我没关系。'},
+    {text:'放学的时候，姐姐在路上堵住了我。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'希尔维亚！！第一天怎么样？交到朋友了吗？'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……还行。交到两个。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'谁谁谁？快说！'},
+    {text:'我把艾玛和诺艾儿的事简单说了一遍。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'艾玛我知道，你室友嘛。诺艾儿……平民？考进来的平民都是狠人啊。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……遇到了贝尔蒙家的。'},
+    {text:'姐姐的表情变了。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'夏洛特？那个傲慢狂？她昨天在走廊上撞到我，连句道歉都没有！我当然怼回去了！我说「那维斯特利亚家从不给傲慢的人让路」！'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……你这是赢了吗？'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'当然赢了！有事就找我！虽然我可能打不过她，但吵架绝对吵得过！'},
+    {text:'有个这样的姐姐，虽然吵，但也挺好的。', love:'noelle', loveD:1, know:'charlotte', knowD:5, freeRoam:true}
+  ]
+};
+
+SCENES.s_charlotte_meet = {
+  bg:'bg-hall', phase:'academy',
+  card:{vol:'第二卷', t:'第二章', s:'夏洛特'},
+  lines:[
+    {text:'回宿舍的路上。夏洛特·贝尔蒙带着两个侍女，穿着那件层层叠叠的华丽礼服，挡在路中央，像是一尊金灿灿的障碍物。'},
+    {ch:'charlotte', speaker:'夏洛特', text:'听说你在霍尔那老头的课上表现不错？'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'还行吧。'},
+    {ch:'charlotte', speaker:'夏洛特', text:'和你姐姐完全不是一个路子。贝阿特丽丝一见面就像个点着的爆竹，你倒是冷得让人想打喷嚏。那是赞美吗？你可以这么理解。'},
+    {text:'她走近几步，压低声音。'},
+    {ch:'charlotte', speaker:'夏洛特', text:'咱们两家在朝廷上的恩怨你肯定知道。所以，期中考试比一比？成绩。你要是输了，就承认维斯特利亚家这一代不如贝尔蒙家。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'那我要是赢了呢？'},
+    {text:'夏洛特愣了一下，似乎没想过这个可能性，随后有些僵硬地扬起下巴。'},
+    {ch:'charlotte', speaker:'夏洛特', text:'那我就承认你这个人还行。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……这赌注完全不对等吧？'},
+    {ch:'charlotte', speaker:'夏洛特', text:'嫌弃就算了，反正是你没胆量。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'行吧，反正我也没指望能从你那赢到什么。'},
+    {text:'夏洛特被我气得噎了一下，拎起裙角冷哼。'},
+    {ch:'charlotte', speaker:'夏洛特', text:'你给我等着！'},
+    {text:'这种拙劣的激将法，偏偏对我这种懒人挺管用——因为不答应的话，她大概会一直缠着我。', know:'charlotte', knowD:11, love:'charlotte', loveD:1, freeRoam:true}
   ]
 };
 
@@ -2701,35 +2797,165 @@ SCENES.s_tree = {
 
 SCENES.s_helena = {
   bg:'bg-img-auditorium bg-hall', loc:'auditorium', phase:'academy',
+  card:{vol:'第二卷', t:'第三章', s:'访客'},
   lines:[
-    {text:'交换生。希里昂神圣国。白色长袍。欢迎仪式在大礼堂举行。'},
-    {ch:'helena', speaker:'海伦娜', text:'我叫海伦娜·德尔菲！希尔维亚的名字好好听！和头发好配！', know:'helena', knowD:20},
-    {text:'她要冰花。小心翼翼捧着，看了整整十分钟直到融化。'},
-    {ch:'helena', speaker:'海伦娜', text:'这个送给你。神殿的信物。我唯一的那枚。'},
-    {item:{id:'cross', name:'银十字架', icon:'✝️', desc:'海伦娜所赠。神殿信物。'}, task:'first_friend', love:'helena', loveD:2},
-    {text:'马车远去。她在窗边大幅度挥手。', freeRoam:true}
+    {text:'期中考试后的第二周，学校里来了一批交换生。'},
+    {ch:'emma', speaker:'艾玛', text:'听说是希里昂神圣国来的！神圣国诶！那个传说中治愈魔法最厉害的国家！'},
+    {ch:'noelle', speaker:'诺艾儿', text:'治愈魔法啊……那确实是他们的强项。'},
+    {text:'欢迎仪式在大礼堂举行。交换生一共五个人，三男两女，穿着白色长袍，胸口绣着金色太阳纹章。法神大人亲自出席。'},
+    {text:'三个男生站得笔直，像三根白色的旗杆。两个女生站在最边上——一个黑发，一个金发。金发的那个在微笑。不是官方的、礼貌的微笑，而是真的在笑，眼睛弯成月牙，整个人像是自带了一盏灯。'},
+    {text:'她注意到了我。大概是因为银色头发比较显眼吧。她对我眨了眨眼。然后又转回去，继续听校长讲话，像什么都没发生过。'},
+    {ch:'emma', speaker:'艾玛', text:'……那个金发的女生好可爱啊……'},
+    {bg:'bg-school', text:'欢迎仪式结束后，金发的女生被分到了水系。'},
+    {ch:'helena', speaker:'海伦娜', text:'大家好！我叫海伦娜·德尔菲，来自希里昂神圣国，是神官见习生！接下来一个月请多多关照！', know:'helena', knowD:25},
+    {text:'她环顾教室。目光扫过好几个空位，最后准确无误地落在了我旁边的那个。'},
+    {ch:'helena', speaker:'海伦娜', text:'这里可以吗？你好呀！我叫海伦娜，你呢？'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'希尔维亚·维斯特利亚。'},
+    {ch:'helena', speaker:'海伦娜', text:'希尔维亚……好好听的名字！是银色的意思对吧？和你的头发好配！你的眼睛也好漂亮，是蓝色的呢！在我们国家，蓝色代表纯净和智慧！你的皮肤也好白——'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……上课了。'},
+    {ch:'helena', speaker:'海伦娜', text:'哦对哦！那下课再说！'},
+    {text:'下课后，下课铃响完第三秒她就转过来了。'},
+    {ch:'helena', speaker:'海伦娜', text:'希尔维亚！给我看看冰魔法嘛！'},
+    {bg:'bg-img-garden bg-garden', text:'花园里，我凝聚了一颗冰晶。'},
+    {ch:'helena', speaker:'海伦娜', text:'哇！好漂亮！像钻石一样！'},
+    {text:'她伸出手指戳了戳。「好凉！」「……那是冰。」「我知道啦！但是亲眼看到还是很神奇！我们国家冰系魔法师很少。」'},
+    {text:'她掌心泛起淡淡的柔光。'},
+    {ch:'helena', speaker:'海伦娜', text:'我是治愈系的。虽然还只是见习生，但简单的伤口已经可以治好了！以后你受伤了可以来找我！我免费给你治！'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……希望用不上。'},
+    {text:'「你可以做别的形状吗？比如……花？」我挥了挥手，冰晶变形——六片花瓣从中心舒展开来。'},
+    {ch:'helena', speaker:'海伦娜', text:'好厉害！好漂亮！那个那个，可以送给我吗？'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……会融化的。'},
+    {ch:'helena', speaker:'海伦娜', text:'没关系！我想要！'},
+    {text:'她双手合十，眼巴巴地看着我。大型犬的既视感。「……拿去吧。」'},
+    {text:'她小心翼翼地接过冰花，捧在手心里，像是捧着一件稀世珍宝。十指微微蜷起，留出一个小小的空间。'},
+    {ch:'helena', speaker:'海伦娜', text:'谢谢希尔维亚！我会一直看着它的！直到它融化为止！'},
+    {text:'她真的看了十分钟。这个人……没有距离感。明明才认识不到一个小时，但她的态度像是已经认识很久了。不是让人不舒服的那种热情，而是……很自然。'},
+    {text:'接下来几天，海伦娜几乎每天都来找我。频率之高，稳定性之强，堪称人形闹钟。上课坐在我旁边。下课拉我去吃饭。晚上有时还会来宿舍串门。'},
+    {ch:'emma', speaker:'艾玛', text:'你们认识才几天啊……怎么感觉比我和你还熟？她好像很喜欢你诶。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……可能只是对冰魔法感兴趣吧。'},
+    {text:'有一次她在治愈术练习课上踩到了自己的长袍下摆，后脑勺磕在了石板地上。「我没事没事！嘶……一点都不疼！」眼角还挂着泪珠。'},
+    {text:'我把手掌按在她后脑勺磕到的位置上。她的治愈魔法从我掌心下方泛起柔光，暖暖的。几秒后，肿包消下去了。'},
+    {ch:'helena', speaker:'海伦娜', text:'好了！谢谢希尔维亚！你的手好凉！以后我摔倒了你就帮我按着好不好？'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……你打算经常摔？'},
+    {ch:'helena', speaker:'海伦娜', text:'不是啦！万一嘛！'},
+    {text:'图书馆。诺艾儿坐在对面看书。海伦娜小跑过来，在我旁边坐下。'},
+    {ch:'helena', speaker:'海伦娜', text:'找到你们了！'},
+    {text:'她压低声音问「你们在看什么」，但她那种压低声音的方式，大概只比正常音量低了十分之一。'},
+    {ch:'noelle', speaker:'诺艾儿', text:'高级咒语解析。'},
+    {ch:'helena', speaker:'海伦娜', text:'好厉害……我看不懂……我们主要是神学和治愈术……阿斯拉的魔法教育真的很系统诶。'},
+    {text:'她托着下巴。「我们主要是神殿教育。从小就在神殿里学习，学经文，学仪式，学治愈术……被选中的人，从三四岁开始就要离开家人住在神殿里。一年能见一两次就不错了。」'},
+    {text:'她说得很平静，像是在说别人的事情。但我注意到，她的手指无意识地绞在一起。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……你想家吗？'},
+    {text:'她愣了一下，然后又笑了。「有时候会想呢。但是神殿里的姐姐们都很好。而且——能来这里交流，认识希尔维亚你们，我觉得很开心。」'},
+    {ch:'helena', speaker:'海伦娜', text:'希尔维亚虽然话不多，但人很好！诺艾儿虽然看起来冷冷的，但其实很认真！艾玛虽然有点吵，但很热情！'},
+    {ch:'noelle', speaker:'诺艾儿', text:'你观察得很仔细。'},
+    {ch:'helena', speaker:'海伦娜', text:'因为我很喜欢你们嘛！喜欢的人当然要好好了解！'},
+    {text:'这话说得毫无犹豫，像呼吸一样自然。'},
+    {text:'傍晚，海伦娜拉着我去看日落。'},
+    {ch:'helena', speaker:'海伦娜', text:'这里的日落和神圣国的不一样诶！神圣国的日落是金色的，这里的是橙红色的！'},
+    {text:'橙红色的光照在她脸上，把她的轮廓镀上了一层暖色。风吹过来，她的金发飘动了一下。'},
+    {ch:'helena', speaker:'海伦娜', text:'希尔维亚。你相信神明吗？'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……不知道。没想过这个问题。如果有神，那就有。如果没有，那就没有。对我的生活没什么影响。'},
+    {ch:'helena', speaker:'海伦娜', text:'希尔维亚好洒脱。我有时候想太多，会很累。但是来这里之后，看到大家都活得很自在……我有点羡慕。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……你也可以活得自在一点。'},
+    {ch:'helena', speaker:'海伦娜', text:'可以吗？'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'为什么不可以？'},
+    {text:'她看着我，眼神有些复杂。然后笑了。「希尔维亚说的话，总是让人觉得很简单呢。」「本来就很简单。」'},
+    {text:'最后一天晚上，海伦娜来宿舍找我。「希尔维亚，陪我走走吧。」不是平时那种元气满满的语气。安静了很多。'},
+    {text:'我们沿着校园的小路走，月光把影子拉得很长。路过花园的时候，她停下来。'},
+    {ch:'helena', speaker:'海伦娜', text:'这里。你给我冰花的地方。那朵冰花我看了十分钟。一直到它化成一小滩水。'},
+    {text:'她从袖子里掏出一个小东西。是一枚小小的十字架，银色的，做工精致，中央嵌着一粒极小的蓝宝石。'},
+    {ch:'helena', speaker:'海伦娜', text:'这个送给你。神殿的信物。每个见习生只有一枚。是我入殿的时候圣女大人亲手给的。所以才要给你呀。不重要的东西送出去有什么意思？如果以后你来神圣国，有这个我就知道是你来找我。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……我不一定会去。'},
+    {ch:'helena', speaker:'海伦娜', text:'没关系！就算你不来，你看到它的时候，也可以想起我嘛！'},
+    {text:'她合上我的手指，让十字架被包在掌心里。她的手覆在我的手上，温热而柔软。'},
+    {ch:'helena', speaker:'海伦娜', text:'希尔维亚，我很高兴认识你。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……我也是。'},
+    {ch:'helena', speaker:'海伦娜', text:'真的？'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'嗯。'},
+    {text:'她的笑容更灿烂了。月光下的笑容，和白天的不太一样。更柔和一些。'},
+    {ch:'helena', speaker:'海伦娜', text:'那我们就是朋友了！以后要给我写信哦！一言为定！不许反悔！'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'不反悔。'},
+    {text:'第二天，马车远去。她从窗户探出头，挥手幅度大得像在指挥交通。「再见啦希尔维亚——！给我写信——！」'},
+    {text:'我跟着她们走，手伸进口袋，摸到了那枚十字架。金属的触感凉凉的，但很快就被体温捂热了。和她的手一样的温度。', item:{id:'cross', name:'银十字架', icon:'✝️', desc:'海伦娜所赠。神殿信物。唯一的那枚。'}, love:'helena', loveD:2, flag:'ch_helena', know:'helena', knowD:38, freeRoam:true}
   ]
 };
 
 SCENES.s_ajun = {
-  bg:'bg-hall', phase:'academy',
+  bg:'bg-img-uni bg-school', phase:'academy',
+  card:{vol:'第二卷', t:'第四章', s:'异国之味'},
   lines:[
-    {text:'路边一个男生把地图倒过来看。'},
-    {ch:'ajun', speaker:'阿琼', text:'阿琼·普拉塔！巴依来的！维斯特利亚家？太好了刚来就遇到朋友！', know:'ajun', knowD:15, flag:'met_ajun'},
-    {text:'他掌心的沙之花在夕阳下像微小金片。维持了四十秒。'},
-    {text:'周日公共厨房。巴依咖喱。艾玛眼睛冒星星。诺艾儿吃了第二碗。', task:'taste_foreign', love:'ajun', loveD:1, freeRoam:true}
+    {text:'训练结束，我慢慢往回走，边走边活动肩膀。拐过一个弯，就看见一个人蹲在路边——棕色皮肤、金发、穿着花里胡哨衣服的男生，正把一张地图翻过来转过去。'},
+    {text:'「这个地图到底怎么看啊……北边是哪边……这个箭头为什么朝下……」他甚至把地图倒过来看了。'},
+    {ch:'ajun', speaker:'阿琼', text:'太好了！有人了！请问男生宿舍在哪边？我在这个路口转了四圈了！阿琼·普拉塔！从巴依王国来的！你好你好！', know:'ajun', knowD:18},
+    {text:'他跳起来，热情地伸出手，摇的幅度大概够给风车发电。'},
+    {ch:'ajun', speaker:'阿琼', text:'银发蓝眼！你是维斯特利亚家的对吧！我家里人告诉我的！说维斯特利亚家是阿斯拉的大贵族，和我们巴依关系一直很好！太好了！刚来就遇到朋友！'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'我们才刚认识……'},
+    {ch:'ajun', speaker:'阿琼', text:'认识了就是朋友嘛！'},
+    {text:'他一边走一边环顾四周，对什么都好奇。「哇，这个钟塔好高！」「那个花坛里种的是什么？好漂亮！」「月光草？晚上会发光？真的假的！！」'},
+    {text:'话题还会自动切换——从仙人掌讲到巴依的花卉，从花卉讲到香料，从香料讲到他奶奶做的咖喱。'},
+    {ch:'ajun', speaker:'阿琼', text:'我奶奶的咖喱是整条街最好吃的！她有一个祖传的香料配方！我偷看过一次，被她用勺子敲了头！不过她后来还是偷偷教我了，嘿嘿。你会做咖喱？'},
+    {text:'他掌心的沙子旋转起来，变成了一朵花的形状。沙粒在空中折射着夕阳的光，每一颗都像微小的金片。'},
+    {ch:'ajun', speaker:'阿琼', text:'沙之花，巴依小孩都会的入门魔法！送你了！不过没有魔力维持的话大概一分钟就散了。'},
+    {text:'四十秒左右，花瓣开始松散。'},
+    {ch:'ajun', speaker:'阿琼', text:'手艺还不太行，维持不了太久。我表叔做的沙花能撑半天呢！'},
+    {bg:'bg-img-cafeteria bg-hall', text:'周日。公共厨房。空气里飘着从没闻过的香味——浓郁、温暖、带着某种说不出的层次感。如果颜色有味道的话，这个味道大概是深金色的。'},
+    {ch:'ajun', speaker:'阿琼', text:'巴依咖喱！家传秘方！虽然有几种香料找不到，我用本地的替代了，但味道应该差不不多！'},
+    {text:'我尝了一口。辣。但不只是辣。先是一层温和的奶香，然后是各种说不出名字的香料依次登场，最后辣味才从舌根慢慢升起来。像是一首有起承转合的曲子。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'好吃。'},
+    {ch:'ajun', speaker:'阿琼', text:'真的！？太好了！'},
+    {text:'艾玛已经吃了三口，眼睛里冒着小星星。诺艾儿默默走过来坐下。'},
+    {ch:'noelle', speaker:'诺艾儿', text:'给我也来一碗。'},
+    {text:'她吃完了。而且把酱汁也蘸干净了。阿琼看着空碗，露出了一个比中了彩票还开心的笑容。', flag:'met_ajun', love:'ajun', loveD:1, freeRoam:true}
   ]
 };
 
 SCENES.s_aino_train = {
-  bg:'bg-plain', phase:'academy',
+  bg:'bg-school', phase:'academy',
+  card:{vol:'第二卷', t:'第四章', s:'距离'},
   lines:[
-    {ch:'aino', speaker:'艾诺', text:'规则简单。只用冰系。打中三次算赢。'},
-    {text:'她没有喊开始就动手。冰锥、地面结冰、侧面冰刺。'},
-    {ch:'aino', speaker:'艾诺', text:'太被动。魔力路径太长。试试不经过手，直接在目标位置凝冰。'},
-    {text:'第二轮 3:1。那分是倒地时蹦出的冰弹。', flag:'met_aino', flag2:1},
-    {do:()=>{ flag('ice_hits_prog', (flag('ice_hits_prog')||0)+1); const p=flag('ice_hits_prog')||0; if(p>=3) doneTask('ice_hits'); else toast('冰上之战 '+p+'/3'); }},
-    {ch:'aino', speaker:'艾诺', text:'有进步。下周继续。', love:'aino', loveD:1, know:'aino', knowD:10, freeRoam:true}
+    {text:'周三下午，冰系课程。这间教室小得寒碜，满打满算也就八个座位，透着一股「因为人少所以经费也不多」的凄凉感。'},
+    {text:'最靠窗的位置坐着一个银白色长发的少女。她单手托腮，盯着窗外的一只麻雀发呆，浅蓝色的眸子静悄悄的，皮肤白得像是从没见过太阳。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……你好。'},
+    {text:'她转过头，那眼神淡得像白开水。她轻轻点了下头，又把脸转回去了。'},
+    {text:'冰系的老师姓霍尔，是个看起来随时想下班的中年男人。'},
+    {ch:'hol', speaker:'霍尔', text:'冰是什么？冰就是不许动。你们得让魔力听话，让它把水锁死。把水冻成冰，要球形，越圆越好。做不到的，趁早转去水系。'},
+    {text:'金发男生第一个动手。几秒后，一块长得像仙人掌的冰疙瘩顶破了瓶口。「不合格，下一个。」'},
+    {text:'轮到我。圆滚滚的冰球悬在瓶子正中心，透亮得像颗大珍珠。'},
+    {ch:'hol', speaker:'霍尔', text:'维斯特利亚家的？手挺稳。塔尔维，你也做一个。'},
+    {text:'那个浅蓝色头发的女孩甚至没有看瓶子，只是伸出一根手指，朝桌面的方向随手一点。没有声音。但水已经不是水了。'},
+    {text:'一颗完美的冰球悬在瓶中。表面光滑得像打过蜡，透明度几乎和玻璃一样，连一个气泡都没有。我甚至没看清她是什么时候完成的。'},
+    {ch:'aino', speaker:'艾诺', text:'你的冰球，中心有个小气泡哦。'},
+    {text:'我低头看了半天，才在最深处发现一个针尖大的白点。这人……眼睛是显微镜吗？'},
+    {text:'下课后，艾诺在门口把我拦住了。'},
+    {ch:'aino', speaker:'艾诺', text:'你是双亲和？'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'嗯，水和冰。'},
+    {ch:'aino', speaker:'艾诺', text:'我是单亲和，只有冰。在赫兰，冰魔法是用来活命的。所以我不明白，你刚才为什么要慢慢结冰？那样很浪费时间。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'慢一点的话，结构会更稳一点吧？'},
+    {text:'她愣了一下，似乎在思考这个逻辑的合理性，最后点了点头。'},
+    {ch:'aino', speaker:'艾诺', text:'我叫艾诺·塔尔维。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'希尔维亚·维斯特利亚。'},
+    {ch:'aino', speaker:'艾诺', text:'我知道你，你姐姐在火系挺出名的。下周三见。别再弄出气泡了。'},
+    {text:'这赫兰的冰系魔法师，难不成嘴巴也能冻人么。'},
+    {bg:'bg-img-garden bg-garden', text:'下课后，我路过校园花坊。推开门，一股暖湿的空气扑面而来。然后我看见了一个不该出现在这里的人。'},
+    {text:'艾诺蹲在角落，背对着门口，面前是一盆小小的蓝色的花。她正用手指小心翼翼地拨弄花瓣上的水滴，动作轻得像在碰一只蝴蝶的翅膀。和课堂上那个冷着脸的人完全判若两人。'},
+    {ch:'aino', speaker:'艾诺', text:'……你来多久了？'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'刚到。'},
+    {text:'她站起身，转过来，脸上的表情已经恢复成标准的冰系同学模样。但我注意到她的耳尖有一点点红。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'这花……'},
+    {ch:'aino', speaker:'艾诺', text:'北极铃兰。赫兰公国的特产。只在极寒环境下开花。我用冰系魔法维持它的生长温度。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'你每天都来照顾它？'},
+    {ch:'aino', speaker:'艾诺', text:'不是每天。只是路过。'},
+    {text:'蹲在角落里拨弄花瓣叫「路过」。行吧。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'挺好看的。'},
+    {ch:'aino', speaker:'艾诺', text:'……嗯。'},
+    {ch:'aino', speaker:'艾诺', text:'你不许告诉别人。我在这里。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'好。'},
+    {text:'她看了我一眼，似乎在确认我是不是真的会保密。然后她走了。经过我身边的时候，脚步停顿了一下。'},
+    {ch:'aino', speaker:'艾诺', text:'……它叫伊诺。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'什么？'},
+    {ch:'aino', speaker:'艾诺', text:'花的名字。和我同名。在赫兰语里，伊诺是「冬天的孩子」的意思。'},
+    {text:'门关上了。我看着那盆蓝色的小花。花瓣上还挂着水滴，在温室的暖光里折射出细碎的光。冬天的孩子。挺适合她的。', know:'aino', knowD:12, love:'aino', loveD:1, flag:'met_aino', freeRoam:true}
   ]
 };
 
@@ -2753,9 +2979,6 @@ SCENES.s_black_name = {
 // ========== STORY CMD FROM ROAM ==========
 function tryStoryAction(){
   // first word now auto-triggers via checkStoryGates
-  if(S.phase==='academy' && S.loc==='water_class' && !flag('met_noelle')){
-    flag('met_noelle',1); runScene('s_noelle_meet'); return true;
-  }
   if(S.phase==='academy' && (S.love.noelle||0)>=1 && !flag('unlocked_clock')){
     flag('unlocked_clock',1); LOCS.clocktower.unlock=true; LOCS.flowerhouse.unlock=true; LOCS.memorial.unlock=true;
   }

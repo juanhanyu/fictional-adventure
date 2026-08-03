@@ -65,6 +65,10 @@ const PORTRAIT_FILES = {
   reno_normal:'assets/portraits/reno_normal.png',
   yaoshen_normal:'assets/portraits/yaoshen_normal.png',
   jilan_normal:'assets/portraits/jilan_normal.png',
+  ji_normal:'assets/portraits/ji_normal.png',
+  hol_normal:'assets/portraits/hol_normal.png',
+  fashen_normal:'assets/portraits/fashen_normal.png',
+  anna_normal:'assets/portraits/anna_normal.png',
 };
 function portraitAgeTier(){
   // 0 infant/hidden, 1 child <10, 2 teen+
@@ -106,7 +110,7 @@ const CSS_CHARS = {
   yaoshen:['药神','💊'], fashen:['法神','🔥'], fengshen:['风神','🌪️'],
   ji:['霁馆主','🗡️'], jilan:['霁岚','💜'], lein:['莱恩','🍃'],
   peilin:['沛霖','🍵'], huke:['虎克','👦'], maid:['女仆','🧹'],
-  teacher:['家庭教师','📖'], hol:['霍尔','📘'],
+  teacher:['家庭教师','📖'], hol:['霍尔','📘'], anna:['安娜·贝尔','💧'],
 };
 
 // ========== CHARACTERS META ==========
@@ -130,6 +134,8 @@ const CHARS = {
   lein:{name:'莱恩', short:'莱恩', css:'lein', role:'旅伴'},
   peilin:{name:'沛霖', short:'沛霖', css:'peilin', role:'药商'},
   huke:{name:'虎克', short:'虎克', css:'huke', role:'诺艾儿之弟'},
+  hol:{name:'霍尔', short:'霍尔', css:'hol', role:'冰系导师'},
+  anna:{name:'安娜·贝尔', short:'安娜', css:'anna', role:'水系导师'},
 };
 
 // ========== LOCATIONS ==========
@@ -161,10 +167,10 @@ const LOCS = {
   clocktower:{id:'clocktower', name:'钟塔顶层', icon:'🗼', area:'魔法大学', desc:'风很大的安静角落', bg:'bg-img-clocktower bg-school', unlock:false, st:2, tags:['egg','study']},
   flowerhouse:{id:'flowerhouse', name:'校园花坊', icon:'🌺', area:'魔法大学', desc:'温室与北极铃兰', bg:'bg-img-flowerhouse bg-garden', unlock:false, st:1, tags:['egg']},
   training_field:{id:'training_field', name:'训练场', icon:'🗡️', area:'魔法大学', desc:'砂地与木桩', bg:'bg-img-training bg-plain', unlock:false, st:1, tags:['train']},
-  memorial:{id:'memorial', name:'纪念林', icon:'🌳', area:'魔法大学', desc:'毕业生种下的树', bg:'bg-garden', unlock:false, st:2, tags:['egg']},
+  memorial:{id:'memorial', name:'纪念林', icon:'🌳', area:'魔法大学', desc:'毕业生种下的树', bg:'bg-img-memorial bg-garden', unlock:false, st:2, tags:['egg']},
   // 旅途
   road:{id:'road', name:'官道', icon:'🛤️', area:'旅途', desc:'通往远方的路', bg:'bg-img-plain bg-plain', unlock:false, st:2},
-  jikan:{id:'jikan', name:'霁馆', icon:'🏯', area:'澄岚镇', desc:'冷清却温暖的剑馆', bg:'bg-room', unlock:false, st:0, tags:['rest','train']},
+  jikan:{id:'jikan', name:'霁馆', icon:'🏯', area:'澄岚镇', desc:'冷清却温暖的剑馆', bg:'bg-img-jikan bg-room', unlock:false, st:0, tags:['rest','train']},
   northforest:{id:'northforest', name:'北林', icon:'🌲', area:'澄岚镇', desc:'魔物出没的林地', bg:'bg-img-forest bg-forest', unlock:false, st:3, tags:['train']},
 };
 
@@ -1288,8 +1294,8 @@ function whoIsHere(){
     if(loc==='dorm'){ placeChar('emma',['dorm','cafeteria']); if(flag('met_noelle')) placeChar('noelle',['dorm','library']); }
     if(loc==='library'||loc==='clocktower'){ placeChar('noelle',['library','cafeteria']); if(flag('met_noelle')) placeChar('emma',['library']); }
     if(loc==='cafeteria'){ placeChar('emma',['cafeteria','dorm']); if(flag('met_noelle')) placeChar('noelle',['cafeteria']); if(flag('met_ajun')) placeChar('ajun',['cafeteria']); if(flag('ch_helena')) placeChar('helena',['cafeteria']); }
-    if(loc==='water_class'){ if(flag('met_noelle')) placeChar('noelle',['water_class','library']); placeChar('emma',['water_class']); }
-    if(loc==='ice_class'||loc==='flowerhouse'){ if(flag('met_aino')||true) placeChar('aino',['ice_class','training_field']); }
+    if(loc==='water_class'){ if(flag('met_noelle')) placeChar('noelle',['water_class','library']); placeChar('emma',['water_class']); placeChar('anna',['water_class','cafeteria']); }
+    if(loc==='ice_class'||loc==='flowerhouse'){ if(flag('met_aino')||true) placeChar('aino',['ice_class','training_field']); placeChar('hol',['ice_class','library']); }
     if(loc==='training_field'){ if(flag('met_aino')) placeChar('aino',['training_field']); placeChar('beatrice',['training_field']); }
     if(loc==='memorial'){ placeChar('charlotte',['memorial']); if(flag('ch_tree')){ placeChar('beatrice',['memorial']); placeChar('alice',['memorial']); } }
   }
@@ -1414,6 +1420,20 @@ function talkLines(id){
       [{ch:'helena',speaker:'海伦娜',text:'希尔维亚！今天的云看起来像羊！你看你看！'}, {text:'她自带一盏灯。连吐槽都亮堂。', love:'helena', loveD:1}],
       [{ch:'helena',speaker:'海伦娜',text:'要写信哦！我会画很多笑脸！'}, {text:'按这个增速，年底信纸一半都是笑脸。', love:'helena', loveD:1, know:'helena', knowD:2}],
     ],
+    hol: [
+      [{ch:'hol',speaker:'霍尔',text:'……嗯。下课。……还有十分钟？那就自习。'}, {text:'他翻了一页杂志。封面是《赫兰温泉指南》。', love:'hol', loveD:1}],
+      [{ch:'hol',speaker:'霍尔',text:'你的冰球，气泡少了。继续。……别打扰我，这一章很重要。'}, {text:'他看的书和冰系教学毫无关系。', love:'hol', loveD:1, know:'hol', knowD:3}],
+      [{ch:'hol',speaker:'霍尔',text:'……窗台上的花快开了。你的冰膜刚好。'}, {text:'他嘴上说着不在意，但窗台上的花浇得比谁都勤。', love:'hol', loveD:1, know:'hol', knowD:4}],
+    ],
+    anna: [
+      [{ch:'anna',speaker:'安娜',text:'希尔维亚同学，水膜的控制很稳定！不过实战中可以再大胆一些，别怕犯错。'}, {text:'她说话语速很快，但每个字都很清楚。', love:'anna', loveD:1}],
+      [{ch:'anna',speaker:'安娜',text:'有什么不懂的随时来问我。我办公室在二楼，门从来不关。'}, {text:'她笑起来的时候，眼睛会弯成月牙。', love:'anna', loveD:1, know:'anna', knowD:3}],
+      [{ch:'anna',speaker:'安娜',text:'你的水球术很有天赋。但记住，水不只是攻击——它也可以是保护。'}, {text:'她说这话的时候，语调格外认真。', love:'anna', loveD:1, know:'anna', knowD:4}],
+    ],
+    fashen: [
+      [{ch:'fashen',speaker:'法神',text:'……维斯特利亚。你的成绩不错。但不要以为这样就够了。'}, {text:'她的气场压得人几乎站不直。', love:'fashen', loveD:1, know:'fashen', knowD:5}],
+      [{ch:'fashen',speaker:'法神',text:'你叔叔欠我钱。下次见面替我催他。'}, {text:'……原来这就是神级强者的日常吗。', love:'fashen', loveD:1, know:'fashen', knowD:3}],
+    ],
     ji: [
       [{ch:'ji',speaker:'霁馆主',text:'来都来了——练三组步法？还是先吃饭？今天的粥没糊。大概。'}, {text:'他说「大概」的时候我选择了练剑。', love:'ji', loveD:1}],
       [{ch:'ji',speaker:'霁馆主',text:'剑不是锤子。你在拧毛巾。再松。'}, {text:'我松了。竹剑轻了半两。', love:'ji', loveD:1, know:'ji', knowD:2}],
@@ -1521,6 +1541,15 @@ function doCourse(){
   choices.push({text:'取消', do:()=>enterFreeRoam()});
   playLines([{text:'要上哪一门课？', choices}]);
 }
+function courseTeacherCharId(teacherName){
+  const map = {
+    '家庭教师':'teacher', '自学/藏书':null, '剑术教官':null,
+    '通识教授':null, '安娜·贝尔':'anna', '霍尔':'hol',
+    '霁馆主':'ji',
+  };
+  return map[teacherName] || null;
+}
+
 function takeCourse(id){
   const c = COURSES[id]; if(!c) return;
   if(!spendST(c.st||2)) return;
@@ -1530,10 +1559,16 @@ function takeCourse(id){
   courseProgress(id, 5 + Math.floor((S.stats.mind||0)/20));
   addExp(8 + (S.stats.mind||0)/10);
   const lv = S.courses[id]?.lv || 0;
-  playLines([
-    {text:`【课程】${c.name}\n指导：${c.teacher}\n${c.desc}`},
-    {text:`练习结束。${parts.join('，')}。\n课程等级 Lv.${lv}。体力-${c.st||2}。`, freeRoam:true}
-  ]);
+  // map teacher name to character id for portrait
+  const teacherCharId = courseTeacherCharId(c.teacher);
+  const lines = [];
+  if(teacherCharId){
+    lines.push({ch:teacherCharId, speaker:c.teacher, text:`【课程】${c.name}\n${c.desc}`});
+  } else {
+    lines.push({text:`【课程】${c.name}\n指导：${c.teacher}\n${c.desc}`});
+  }
+  lines.push({text:`练习结束。${parts.join('，')}。\n课程等级 Lv.${lv}。体力-${c.st||2}。`, freeRoam:true});
+  playLines(lines);
   updateHUD();
 }
 

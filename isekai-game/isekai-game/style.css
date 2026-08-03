@@ -137,6 +137,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .css-p.lein{background:linear-gradient(180deg,#80a070,#405030)}
 .css-p.peilin{background:linear-gradient(180deg,#8090a0,#304050)}
 .css-p.huke{background:linear-gradient(180deg,#c0a070,#605030)}
+.css-p.anna{background:linear-gradient(180deg,#80b0d0,#406080)}
+.css-p.hol{background:linear-gradient(180deg,#708090,#304050)}
 .css-p.dim{filter:brightness(.45)}
 
 #css-portraits{position:absolute;left:0;right:0;bottom:150px;display:flex;justify-content:center;align-items:flex-end;pointer-events:none;z-index:4;min-height:100px}
@@ -357,6 +359,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .bg-img-cafeteria{background-image:url(assets/bg/cafeteria.jpg);background-size:cover;background-position:center}
 .bg-img-clocktower{background-image:url(assets/bg/clocktower.jpg);background-size:cover;background-position:center}
 .bg-img-flowerhouse{background-image:url(assets/bg/flowerhouse.jpg);background-size:cover;background-position:center}
+.bg-img-memorial{background-image:url(assets/bg/memorial.jpg);background-size:cover;background-position:center}
+.bg-img-jikan{background-image:url(assets/bg/jikan.jpg);background-size:cover;background-position:center}
 #hud-face img[src=""], #hud-face img:not([src]){background:#1a1520}
 
 /* ===== 独立养成面板 ===== */

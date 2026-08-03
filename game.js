@@ -421,7 +421,7 @@ const ACH = [
 function baseState(){
   return {
     name:'希尔维亚·维斯特利亚', alias:null,
-    ageY:0, ageD:0, year:1, month:5, day:1, tod:1, season:0, // 春=0 出生年1年春
+    ageY:0, ageD:121, year:1, month:5, day:1, tod:1, season:0, // 春=0 出生年1年5月1日(年中第121天)
     hp:8, mhp:8, mp:12, mmp:12, st:5, mst:5,
     atk:1, mag:4, pdef:0, mdef:0,
     lv:1, exp:0, next:100,
@@ -610,7 +610,7 @@ function forceRest(){
   playLines([
     {text:'眼前一黑……体力已经到极限了。'},
     {text:'不知被谁扶回了房间。'},
-    {do:()=>{ S.st=Math.floor(S.mst*0.5); S.loc=S.lastSafe||'nursery'; advanceTod(2); updateLocBar(); },
+    {do:()=>{ S.st=Math.floor(S.mst*0.5); S.loc=S.lastSafe||'nursery'; updateLocBar(); },
      text:'休息之后，体力恢复了一些。', freeRoam:true}
   ]);
 }
@@ -1255,7 +1255,6 @@ function openMap(){
     d.onclick=()=>{
       if(S.loc===L.id){ toast('已经在这里了'); return; }
       if((L.st||0)>0 && !spendST(L.st)) return;
-      if((L.st||0)>0) advanceTod(L.st>=3?1:0);
       show('map-overlay',0);
       enterLoc(L.id);
     };

@@ -509,20 +509,7 @@ function addExp(n){
   updateHUD();
 }
 function checkTierUp(){
-  let target = -1;
-  if(flag('mana_awakened') && !S.picksDone.includes(0)) target = 0;
-  if(S.lv >= 5 && flag('mana_awakened') && !S.picksDone.includes(1)) target = 1;
-  if(S.lv >= 15 && !S.picksDone.includes(2)) target = 2;
-  if(S.lv >= 30 && !S.picksDone.includes(3)) target = 3;
-  if(S.lv >= 45 && !S.picksDone.includes(4)) target = 4;
-  if(target >= 0){
-    // don't interrupt non-roam story dialogue
-    if(!S.freeRoam && currentScene && currentScene !== 's_mana_awaken'){
-      flag('pending_tier', target);
-      return;
-    }
-    triggerBraveGift(target);
-  }
+  // 勇者之赐完全由剧情驱动，不在此触发
 }
 function addItem(it){ S.inv.push(it); toast(`📦 获得：${it.name}`); sfx('ok'); }
 function dateStr(){
@@ -1183,11 +1170,6 @@ function enterFreeRoam(){
   }
   $('text').innerHTML = escapeText(tip);
   renderHotspots();
-  const pt=flag('pending_tier');
-  if(pt && !S.picksDone.includes(pt)){
-    flag('pending_tier', 0);
-    setTimeout(()=>triggerBraveGift(pt), 300);
-  }
 }
 function updateLocBar(){
   const L=LOCS[S.loc]; if(!L) return;
@@ -2210,7 +2192,6 @@ SCENES.s_start = {
     {text:'有一次女仆给我换尿布。\n视野里是自己的身体——粉嫩的婴儿皮肤，细细的手脚。\n以及，确实是女孩子的身体。'},
     {text:'……所以我真的变成女孩子了啊。\n以后上厕所得坐着？会来那个？\n思绪发散到一半就停住了——因为我发现自己根本没多少抵触。'},
     {text:'为什么呢。\n……算了，想不通就不想了。反正也不是什么坏事。\n我闭上眼睛，继续睡觉。'},
-    {text:'系统里还有一页——「勇者之赐」。\n最高阶段首次提升时，时停，七选一赋技能。此生至多七次。\n「等级」是系统独有的，世人只用等阶。'},
     {text:'我看了看自己胖乎乎的小手。\n……算了，不深究了。系统爱叫什么就叫什么吧。'},
     {text:'（自由行动开启）\n\n· 点画面上的「门/出口」在相邻房间移动（育婴室→长廊→……）\n· 下方：交谈 / 修行 / 学习 / 休息 / 🍂下个季度\n· 「总览」可看全部已解锁地点\n· 彩蛋藏在房间里，多走走。', phase:'childhood', freeRoam:true}
   ]

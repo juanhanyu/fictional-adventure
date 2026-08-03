@@ -361,6 +361,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .bg-img-flowerhouse{background-image:url(assets/bg/flowerhouse.jpg);background-size:cover;background-position:center}
 .bg-img-memorial{background-image:url(assets/bg/memorial.jpg);background-size:cover;background-position:center}
 .bg-img-jikan{background-image:url(assets/bg/jikan.jpg);background-size:cover;background-position:center}
+.bg-img-ice-classroom{background-image:url(assets/bg/ice_classroom.jpg);background-size:cover;background-position:center}
 #hud-face img[src=""], #hud-face img:not([src]){background:#1a1520}
 
 /* ===== 独立养成面板 ===== */

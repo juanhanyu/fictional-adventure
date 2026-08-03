@@ -161,7 +161,7 @@ const LOCS = {
   // 学院
   dorm:{id:'dorm', name:'东区宿舍', icon:'🏠', area:'魔法大学', desc:'312号房间', bg:'bg-img-dorm bg-room', unlock:false, st:0, tags:['rest']},
   water_class:{id:'water_class', name:'水系教室', icon:'💧', area:'魔法大学', desc:'安娜·贝尔导师的教室', bg:'bg-img-classroom bg-school', unlock:false, st:1},
-  ice_class:{id:'ice_class', name:'冰系教室', icon:'❄️', area:'魔法大学', desc:'只有八个座位的小教室', bg:'bg-img-classroom bg-school', unlock:false, st:1, tags:['train','egg']},
+  ice_class:{id:'ice_class', name:'冰系教室', icon:'❄️', area:'魔法大学', desc:'只有八个座位的小教室', bg:'bg-img-ice-classroom bg-school', unlock:false, st:1, tags:['train','egg']},
   library:{id:'library', name:'学院图书馆', icon:'📖', area:'魔法大学', desc:'靠墙双人桌是据点', bg:'bg-img-library bg-study', unlock:false, st:1, tags:['study']},
   cafeteria:{id:'cafeteria', name:'食堂', icon:'🍮', area:'魔法大学', desc:'布丁圣地', bg:'bg-img-cafeteria bg-hall', unlock:false, st:1, tags:['talk']},
   clocktower:{id:'clocktower', name:'钟塔顶层', icon:'🗼', area:'魔法大学', desc:'风很大的安静角落', bg:'bg-img-clocktower bg-school', unlock:false, st:2, tags:['egg','study']},
@@ -572,6 +572,7 @@ function advanceSeason(n=1){
     // birthday rough: every 4 seasons
     if(hasSkill('ice_palace')) flag('palace_today', 0);
     flag('talked_today', {});
+    S.restThisSeason = 0;
     // restore
     S.st = S.mst;
     S.hp = clamp(S.hp + Math.floor(S.mhp*0.5), 0, S.mhp);
@@ -1275,20 +1276,20 @@ function whoIsHere(){
   if(ph==='prologue'||ph==='childhood'||ph==='youth'){
     if(loc==='nursery' || (loc==='ownroom' && a>=8)){ 
     const room = (loc==='ownroom' && a>=8) ? 'ownroom' : 'nursery';
-    placeChar('sophia',[room,'parlor']); placeChar('beatrice',[room,'parlor','garden']); if(flag('ch_alice_born')||a>=2) placeChar('alice',[room,'parlor']); 
+    placeChar('sophia',[room,'parlor']); if(!flag('ch_beatrice_leaves')) placeChar('beatrice',[room,'parlor','garden']); if(flag('ch_alice_born')||a>=2) placeChar('alice',[room,'parlor']); 
   }
-    if(loc==='parlor'){ placeChar('sophia',['parlor','nursery','dining']); placeChar('beatrice',['parlor','garden']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['parlor']); if(a>=1) placeChar('claude',['parlor','dining']); }
-    if(loc==='dining'){ placeChar('sophia',['dining','parlor']); placeChar('beatrice',['dining','parlor']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['dining']); placeChar('claude',['dining','parlor']); }
-    if(loc==='hallway'){ placeChar('beatrice',['hallway','garden']); if(a>=0) placeChar('sophia',['hallway','parlor']); if(a>=3) placeChar('claude',['hallway']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['hallway']); }
-    if(loc==='garden'){ placeChar('beatrice',['garden','hallway']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['garden']); if(a>=4) placeChar('sophia',['garden']); }
+    if(loc==='parlor'){ placeChar('sophia',['parlor','nursery','dining']); if(!flag('ch_beatrice_leaves')) placeChar('beatrice',['parlor','garden']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['parlor']); if(a>=1) placeChar('claude',['parlor','dining']); }
+    if(loc==='dining'){ placeChar('sophia',['dining','parlor']); if(!flag('ch_beatrice_leaves')) placeChar('beatrice',['dining','parlor']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['dining']); placeChar('claude',['dining','parlor']); }
+    if(loc==='hallway'){ if(!flag('ch_beatrice_leaves')) placeChar('beatrice',['hallway','garden']); if(a>=0) placeChar('sophia',['hallway','parlor']); if(a>=3) placeChar('claude',['hallway']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['hallway']); }
+    if(loc==='garden'){ if(!flag('ch_beatrice_leaves')) placeChar('beatrice',['garden','hallway']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['garden']); if(a>=4) placeChar('sophia',['garden']); }
     if(loc==='study'){ if(a>=1) placeChar('sophia',['study','hallway']); if(flag('ch_alice_born')||a>=3) placeChar('alice',['study']); if(a>=5) placeChar('claude',['study']); }
-    if(loc==='training'){ if(a>=4) placeChar('beatrice',['training','garden']); if(a>=6) placeChar('claude',['training']); }
+    if(loc==='training'){ if(a>=4 && !flag('ch_beatrice_leaves')) placeChar('beatrice',['training','garden']); if(a>=6) placeChar('claude',['training']); }
     if(loc==='kitchen'){ placeChar('sophia',['kitchen','dining']); if(a>=2) placeChar('beatrice',['kitchen']); }
     if(loc==='balcony'){ if(a>=2) placeChar('beatrice',['balcony','hallway']); if(flag('ch_alice_born')||a>=3) placeChar('alice',['balcony']); }
     if(loc==='chapel'){ placeChar('sophia',['chapel','hallway']); if(a>=4) placeChar('claude',['chapel']); }
     if(loc==='cellar'){ if(a>=6) placeChar('claude',['cellar']); }
     if(loc==='town' || loc==='market'){ /* random passers */ }
-    if(loc==='beach'){ placeChar('beatrice',['beach','town']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['beach']); placeChar('sophia',['beach']); }
+    if(loc==='beach'){ if(!flag('ch_beatrice_leaves')) placeChar('beatrice',['beach','town']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['beach']); placeChar('sophia',['beach']); }
   }
   if(ph==='academy'){
     if(loc==='dorm'){ placeChar('emma',['dorm','cafeteria']); if(flag('met_noelle')) placeChar('noelle',['dorm','library']); }
@@ -1654,17 +1655,22 @@ function doRest(){
     return;
   }
   S.restThisSeason = 1;
+  const stRecover = Math.floor(S.mst / 3);
   playLines([
     {text: isBed ? '躺到床上。闭上眼睛。' : '找了个角落靠着。眼皮很重。'},
     {do:()=>{
       const bonus = hasSkill('quiet_mind') ? 10 : 0;
-      S.st = clamp(S.st + 3, 0, S.mst);
+      // save talk count so rest doesn't reset it
+      const savedTalked = flag('talked_today') || {};
+      S.st = clamp(S.st + stRecover, 0, S.mst);
       S.hp=S.mhp; S.mp=clamp(S.mp+Math.floor(S.mmp*0.5)+bonus,0,S.mmp);
       advanceDay(1); S.tod=0;
+      // restore talk count after advanceDay resets it
+      flag('talked_today', savedTalked);
       // dream duel opportunity
       maybeDreamDuel();
     }},
-    {text:`睡到了${dateStr()}。体力恢复3点。`, freeRoam:true}
+    {text:`睡到了${dateStr()}。体力恢复${stRecover}点。`, freeRoam:true}
   ]);
 }
 
@@ -2061,6 +2067,7 @@ function checkStoryGates(){
   if((S.phase==='childhood'||S.phase==='youth') && S.ageY>=2 && !flag('ch_alice_born')){ flag('ch_alice_born',1); runScene('s_alice_born'); return true; }
   if(S.phase==='childhood' && S.ageY>=3 && !flag('mana_awakened') && !flag('ch_mana_scene')){ flag('ch_mana_scene',1); runScene('s_mana_awaken'); return true; }
   if((S.phase==='childhood'||S.phase==='youth') && S.ageY>=4 && !flag('ch_yaoshen')){ flag('ch_yaoshen',1); runScene('s_yaoshen'); return true; }
+  if(S.phase==='youth' && S.ageY>=10 && !flag('ch_beatrice_leaves')){ flag('ch_beatrice_leaves',1); runScene('s_beatrice_leaves'); return true; }
   if(S.phase==='youth' && S.ageY>=12 && !flag('ch_academy')){ flag('ch_academy',1); runScene('s_academy_start'); return true; }
   // auto trigger key plots with correct scene
   if(S.phase==='youth' && S.ageY>=8 && !flag('ch_micro')){ flag('ch_micro',1); runScene('s_micro'); return true; }
@@ -2186,8 +2193,9 @@ SCENES.s_alice_born = {
     {text:'那天在房门外等了很久。婴儿的哭声传来。'},
     {ch:'claude', speaker:'克劳德', text:'是女孩。'},
     {ch:'sophia', speaker:'索菲亚', text:'这是你们的妹妹，爱丽丝。'},
-    {ch:'alice', emo:'normal', text:'白色的胎发，像新落的雪。很小，很软。', know:'alice', knowD:30},
-    {speaker:'索菲亚', text:'以后你就是姐姐了，要照顾她哦。'},
+    {text:'白色的胎发，像新落的雪。很小，很软。', know:'alice', knowD:30},
+    {ch:'alice', emo:'normal', speaker:'爱丽丝', text:'…………'},
+    {ch:'sophia', speaker:'索菲亚', text:'以后你就是姐姐了，要照顾她哦。'},
     {text:'照顾？\n嗯。好像也不是不可以。', unlock:['study','garden'], freeRoam:true}
   ]
 };
@@ -2212,6 +2220,23 @@ SCENES.s_yaoshen = {
 // childhood hub trigger for first word
 SCENES.s_child_hub = {
   lines:[{text:'日子一天天过去。', freeRoam:true}]
+};
+
+SCENES.s_beatrice_leaves = {
+  bg:'bg-img-hallway bg-hall', phase:'youth',
+  lines:[
+    {text:'十岁。姐姐要去魔法大学了。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'希尔维亚！姐姐要出发了！等我到了大学，一定把所有好玩的事都写信告诉你！'},
+    {ch:'sophia', speaker:'索菲亚', text:'贝阿特丽丝，路上小心。'},
+    {ch:'claude', speaker:'克劳德', text:'到了学校好好学习。别光顾着玩。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'知道啦知道啦！我可是贝阿特丽丝大人！一定会成为全校最厉害的！'},
+    {text:'姐姐在门口挥了挥手，跳上了马车。金色的头发在阳光下闪闪发亮。'},
+    {text:'马车走远了。门口变得安静。'},
+    {ch:'alice', emo:'shy', speaker:'爱丽丝', text:'……姐姐大人。贝阿特丽丝姐姐走了。'},
+    {text:'嗯。两年后我们也会去。'},
+    {ch:'alice', speaker:'爱丽丝', text:'……嗯。'},
+    {text:'公爵府安静了一些。少了那个大嗓门，走廊好像变长了。', freeRoam:true}
+  ]
 };
 
 // ----- ACADEMY -----
@@ -2353,7 +2378,7 @@ SCENES.s_alice_talk = {
 };
 
 SCENES.s_micro = {
-  bg:'bg-img-town bg-town', phase:'youth',
+  bg:'bg-img-town bg-town', loc:'town', phase:'youth',
   card:{vol:'第一卷', t:'第4.1章', s:'微服出行'},
   lines:[
     {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'我们去城里逛逛吧！三姐妹！微服出行！'},
@@ -2377,23 +2402,102 @@ SCENES.s_micro = {
 };
 
 SCENES.s_beach = {
-  bg:'bg-beach', phase:'academy',
+  bg:'bg-img-beach bg-beach', loc:'beach', phase:'academy',
   card:{vol:'第一卷', t:'第七章', s:'海与贝壳'},
   lines:[
-    {text:'暑假。海滨别墅。'},
-    {ch:'alice', emo:'shy', speaker:'爱丽丝', text:'……姐姐大人，路上辛苦了。'},
-    {text:'她抱得很紧。心跳又急又密。然后五秒内恢复淡然。'},
+    {text:'暑假。姐姐在马车上睡着了，嘴角还挂着果酱渍。'},
+    {text:'到了。'},
     {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'大海！！'},
-    {text:'母亲把父亲的公文锁进魔力柜。「谁碰都没事——但你父亲的手碰到会响遍整栋别墅。」'},
-    {ch:'sophia', speaker:'索菲亚', text:'识时务者为公爵。'},
-    {text:'姐姐每天下午四点消失，六点回来，头发乱，身上有红印，却很高兴。'},
-    {ch:'alice', speaker:'爱丽丝', text:'……姐姐，可能有心上人了。'},
-    {text:'我们跟踪她——'},
-    {ch:'beatrice', emo:'sad', speaker:'贝阿特丽丝', text:'（在学游泳。给爱丽丝做入学礼物。月虹螺。）'},
-    {text:'她哭了。说自己什么都做不好。'},
-    {speaker:'希尔维亚', text:'这种笨蛋姐姐，就是全天下最让人喜欢的姐姐。'},
-    {ch:'alice', emo:'smile', speaker:'爱丽丝', text:'……只要是一起的，就是最好的礼物。'},
-    {text:'三个人在礁石区捞了十二颗月虹螺。做成胸针、耳坠、手链。', ach:'shell_gift', love:'beatrice', loveD:1},
+    {text:'马车在别墅门前停稳的瞬间，姐姐"嗖"地弹起来，像一只装了弹簧的金毛犬。'},
+    {text:'别墅门口站着三个人。父亲穿着难得一见的休闲衬衫。母亲笑着朝我们挥手。'},
+    {text:'然后是妹妹。'},
+    {text:'爱丽丝站在母亲身侧，白色的长发被海风轻轻吹起。浅蓝色的连衣裙，双手安静地交叠在身前，表情是一贯的淡然。'},
+    {text:'看到我们下车，她的睫毛颤了一下。然后她走过来。'},
+    {ch:'alice', emo:'shy', speaker:'爱丽丝', text:'……姐姐大人，路上辛苦了。'},
+    {text:'然后她张开手臂，抱住了我。'},
+    {text:'力气一点也不"客气"。她的额头埋进我的肩窝，手臂紧紧箍住我的腰，整个人像一块磁铁"咔"地吸了上来。'},
+    {text:'心跳。很快。不是我的，是她的。隔着薄薄的夏装，一下一下，又急又密。'},
+    {speaker:'希尔维亚', text:'……嗯，我回来了。'},
+    {text:'我伸手摸了摸她的头发。她蹭了一下我的肩膀。'},
+    {text:'然后——松手。退后半步。双手重新交叠在身前。表情恢复淡然。'},
+    {text:'整个过程前后不超过五秒。'},
+    {text:'◇'},
+    {text:'行李搬进房间后，我在客厅目睹了一场精彩的夫妻攻防战。'},
+    {text:'父亲坐在沙发上，眼神反复飘向书房方向——那表情，像一只被人把狗粮锁进柜子的大型犬。'},
+    {ch:'sophia', speaker:'索菲亚', text:'你父亲出发前偷偷把公文塞进了行李箱夹层。我发现了，锁进了书房的柜子里。柜子上了魔力锁，只要你父亲的手碰到锁面，就会触发警报。会响遍整栋别墅的那种哦。'},
+    {text:'公爵大人正襟危坐，双手规规矩矩地放在膝盖上，脊背挺得笔直。'},
+    {ch:'claude', speaker:'克劳德', text:'索菲亚，巴依国的邦交文书——'},
+    {ch:'sophia', speaker:'索菲亚', text:'你写完了。'},
+    {ch:'claude', speaker:'克劳德', text:'驰驽帝国的使节下个月就到——'},
+    {ch:'sophia', speaker:'索菲亚', text:'有副官在。'},
+    {ch:'claude', speaker:'克劳德', text:'就看一份备忘——'},
+    {ch:'sophia', speaker:'索菲亚', text:'克劳德。'},
+    {text:'母亲连"大人"都省了，直接喊名字。'},
+    {text:'父亲闭上了嘴。识时务者为公爵。投降速度：零点三秒。'},
+    {text:'◇'},
+    {text:'下午，换泳装去海边。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'怎么样！贝阿特丽丝大人的泳装秀！打分！满分十分！'},
+    {speaker:'希尔维亚', text:'六分。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'为什么只有六分！！'},
+    {speaker:'希尔维亚', text:'冲浪板拿反了，扣两分。果酱渍还没擦，扣两分。'},
+    {text:'姐姐在浅水区蹦蹦跳跳地踩着浪，玩得不亦乐乎。'},
+    {text:'我找了块阴凉坐下，释放一缕冰霜之息给周围降温。妹妹蹭过来，靠在我旁边翻开书。'},
+    {text:'姐姐堆沙堡——成品像一坨被踩过的布丁。然后发现了一只寄居蟹，追着它满沙滩跑了三圈。'},
+    {ch:'alice', speaker:'爱丽丝', text:'……贝阿特丽丝姐姐跑的路线是圆形的。寄居蟹跑的路线也是圆形的。她们在绕同一个圈。'},
+    {text:'还真是。'},
+    {text:'◇'},
+    {text:'接下来几天，日子过得很悠闲。除了一件事。'},
+    {text:'姐姐每天下午四点消失，六点回来。精准得像上下班打卡。'},
+    {text:'回来时头发是乱的，呼吸比平时快，脸颊泛红，手臂和小腿上有红印。但她看起来很高兴。'},
+    {text:'每次回来第一件事就是冲进洗手间照镜子，一边照一边傻笑。'},
+    {ch:'alice', speaker:'爱丽丝', text:'……姐姐，可能有心上人了。每天固定时间消失，不想让人知道。回来时头发乱、呼吸快、脸上带红晕、还会照镜子傻笑。……这些特征加在一起，最符合的假设就是——在和某个人约会。'},
+    {text:'姐姐？恋爱？贝阿特丽丝·维斯特利亚？那个追寄居蟹追三圈的贝阿特丽丝？'},
+    {ch:'alice', speaker:'爱丽丝', text:'……明天下午，我们跟去看看。'},
+    {text:'◇'},
+    {text:'第五天，下午。我们跟踪姐姐穿过小镇东区，绕过码头边一排废弃仓库，来到了一片偏僻的海滩。'},
+    {text:'姐姐站在礁石旁边。和她站在一起的不是什么"心上人"——是一个老奶奶。'},
+    {text:'渔民。少说六十往上。'},
+    {text:'姐姐脱掉了外面的罩衫——里面穿着泳衣——跟着老奶奶走进了水里。'},
+    {text:'扑腾了两下。呛了。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'咳咳咳——好咸！！'},
+    {text:'所以。姐姐不会游泳。'},
+    {text:'贝阿特丽丝·维斯特利亚，十五岁，火系中级魔法师，自封"妹妹保镖"。找了个渔村老奶奶当教练，偷偷学游泳。'},
+    {text:'身上的红印是礁石磕的。头发乱是泡了海水。呼吸快是体力消耗。而照镜子傻笑——大概是觉得自己又进步了一点。'},
+    {text:'不是约会。不是心上人。是这个笨蛋在学游泳。'},
+    {text:'姐姐发现了我们。她的表情以肉眼可见的速度经历了震惊→恐慌→窘迫→崩溃四个阶段。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'哼！看到就看到了！我只是觉得游泳是贵族基本功！——就是为了能自己潜到深水区嘛！那边的礁石缝里有月虹螺！！我想亲手捞上来给爱丽丝做入学礼物！！买的谁不会买啊我就是想亲手——'},
+    {text:'话说到一半。她愣住了。嘴还张着，但声音没了。'},
+    {text:'月虹螺。深水区。亲手捞。给妹妹。做入学礼物。她全说了。'},
+    {ch:'beatrice', emo:'sad', speaker:'贝阿特丽丝', text:'……本来想在你入学那天给你惊喜的。……结果我连游泳都不会。练了快一个星期，连深水区的边都摸不到。……我是不是很笨？连给妹妹准备个入学礼物都做不好……明明是姐姐……什么都做不好。'},
+    {text:'她眼眶红红的。嘴唇在发抖。'},
+    {text:'我走进水里。海水凉凉的，没过膝盖。'},
+    {speaker:'希尔维亚', text:'你确实挺笨的。追寄居蟹追三圈那种笨。堆沙堡把自己金库踩塌了那种笨。微服私行花了不知道多少金币那种笨。'},
+    {ch:'beatrice', emo:'sad', speaker:'贝阿特丽丝', text:'你还提那个！！'},
+    {speaker:'希尔维亚', text:'但是——'},
+    {text:'我伸手，把她肩上那条海藻拿掉了。'},
+    {speaker:'希尔维亚', text:'——这种笨蛋姐姐，就是全天下最让人喜欢的姐姐。'},
+    {text:'妹妹不知道什么时候也走进了水里。她走到姐姐面前，仰起头。'},
+    {ch:'alice', emo:'smile', speaker:'爱丽丝', text:'……贝阿特丽丝姐姐。谢谢。……不管最后做不做得出来，谢谢你想为我做这些。……但是比起礼物——我更想和姐姐们一起待着。一起捞贝壳也好。一起呛水也好。一起被老奶奶骂也好。……只要是一起的，就是最好的礼物。'},
+    {text:'姐姐盯着她看了三秒。然后嘴巴一瘪，眼泪终于掉下来了。'},
+    {ch:'beatrice', emo:'sad', speaker:'贝阿特丽丝', text:'你们两个——你们两个——'},
+    {text:'她一把把我和妹妹搂进怀里。湿淋淋的、咸兮兮的、黏糊糊的拥抱。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'好！既然都知道了！那就一起捞！三个人总比一个人快！'},
+    {speaker:'希尔维亚', text:'我可以用冰魔法在水下开路。'},
+    {ch:'alice', speaker:'爱丽丝', text:'……我可以用风魔法辅助呼吸。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'你们两个作弊了吧？？'},
+    {speaker:'希尔维亚', text:'论作弊，不会游泳硬要潜深水区的那个人赢了。'},
+    {text:'老奶奶在岸上摇头，嘟囔了一句"城里人真会整"，拿起鱼竿走了。'},
+    {text:'接下来一个小时，我们在礁石区折腾得天翻地覆。一共找了十二颗月虹螺。'},
+    {text:'晚上，一家人围在客厅大桌前做饰品。'},
+    {text:'我做了一枚胸针。妹妹做了一对耳坠。姐姐做了一条手链——蝴蝶结歪歪扭扭的，她坚持说那是"不对称美学"。'},
+    {text:'妹妹没把耳坠留给自己。一只递给姐姐，一只递给我。'},
+    {ch:'alice', emo:'shy', speaker:'爱丽丝', text:'……一人一只。分开戴，但还是一对。'},
+    {text:'她从口袋里掏出一条用沙滩上随手捡的白色碎贝壳串成的手绳，绑在自己手腕上。'},
+    {ch:'alice', speaker:'爱丽丝', text:'……因为是和姐姐们一起捡的。……所以比什么都贵重。'},
+    {text:'姐姐的眼眶又红了。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'谁哭了！！是风！！'},
+    {ch:'alice', speaker:'爱丽丝', text:'……屋里没风。'},
+    {text:'十三岁的暑假。大海、贝壳、笨得可爱的姐姐、和太过聪明的妹妹。真好。', ach:'shell_gift', love:'beatrice', loveD:1},
     {do:()=>love('alice',1)},
     {item:{id:'shell_pin', name:'月虹螺胸针', icon:'🐚', desc:'三姐妹一起捞的。'}, freeRoam:true}
   ]
@@ -2484,36 +2588,7 @@ SCENES.s_black_name = {
 
 // endings
 // endings
-SCENES.s_ending_menu = {
-  bg:'bg-ending',
-  lines:[
-    {text:'旅途仍在继续。此刻的你，想走向哪一种未来？', choices:()=>{
-      const needTier = S.tier < 2;
-      const needLove = (S.love.beatrice||0)<2 || (S.love.alice||0)<2;
-      return [
-        {text:'🏠 小镇的丝之家（日常结局）', do:()=>ending('home')},
-        {text:'❄️ 冰与剑的远方（冒险结局）', do:()=>ending('adventure'), disabled:needTier, reason:needTier?'需要中级以上':''},
-        {text:'👭 三姐妹的庭院', do:()=>ending('sisters'), disabled:needLove, reason:needLove?'需要贝蒂与爱丽丝好感各≥2':''},
-        {text:'📖 继续自由探索', do:()=>enterFreeRoam()},
-      ];
-    }}
-  ]
-};
-
-function ending(type){
-  const map = {
-    home:{title:'小镇的丝之家', desc:'你在某个安静的地方停下了。有花，有粥，有偶尔糊掉的锅。体力值每天回满。发呆是正经事。\n「悠闲地生活」——原来真的可以做到。'},
-    adventure:{title:'冰与剑的远方', desc:'赫兰的风是锤子。你握着那把挂着紫色剑穗的剑，在雪原上走下去。\n变强。活着。有朝一日——把真相从冰层下挖出来。'},
-    sisters:{title:'三姐妹的庭院', desc:'月虹螺的虹彩在灯下流转。歪蝴蝶结的手链，碎贝壳手绳，冰晶胸针。\n「只要是一起的，就是最好的礼物。」\n有些人已不在。有些温度还在。'},
-  };
-  const e=map[type]||map.home;
-  if(!codex.endings.includes(type)){ codex.endings.push(type); saveCodex(); }
-  show('game-screen',0); show('ending-screen',1); setBG('bg-ending');
-  $('end-title').textContent=e.title;
-  $('end-desc').textContent=e.desc;
-  $('end-stats').innerHTML=`等阶 ${tierName()} · Lv.${S.lv} · 金币 ${S.gold}<br>成就 ${Object.keys(S.ach).length}/${ACH.length} · 死亡 ${S.deaths}<br>好感 贝蒂${S.love.beatrice||0} 爱丽丝${S.love.alice||0} 诺艾儿${S.love.noelle||0}`;
-  sfx('ok');
-}
+// ending system removed
 
 // ========== STORY CMD FROM ROAM ==========
 function tryStoryAction(){
@@ -2572,8 +2647,6 @@ function continueGame(){
 $('btn-new').onclick=()=>{ sfx('click'); newGame(); };
 $('btn-continue').onclick=()=>{ sfx('click'); continueGame(); };
 $('btn-title').onclick=()=>{ save(); show('game-screen',0); show('battle-screen',0); show('panel',0); show('title-screen',1); updateHUD(); };
-$('btn-title2').onclick=()=>{ show('ending-screen',0); show('title-screen',1); };
-$('btn-again').onclick=()=>{ show('ending-screen',0); newGame(); };
 $('btn-mute').onclick=()=>{ muted=!muted; localStorage.setItem(MUTE_KEY, muted?'1':'0'); $('btn-mute').textContent=muted?'🔇':'🔊'; };
 $('btn-help').onclick=()=>show('help-screen',1);
 $('btn-help-close').onclick=()=>show('help-screen',0);
@@ -2631,7 +2704,6 @@ doNextTime = function(){
     if(!flag('arrived_jikan')) ch.push({text:'剧情：抵达霁馆', do:function(){ flag('arrived_jikan',1); runScene('s_jikan_arrive'); }});
     else ch.push({text:'北林讨伐 ⚡3', do:function(){ if(!spendST(3)) return; startBattle({name:'灰棘狼群',emoji:'🐺',hp:50+S.lv*2,atk:6+S.tier*2,exp:35,gold:8},function(){ S.gold+=8; addExp(10); enterFreeRoam(); }); }});
   }
-  ch.push({text:'结局选择', do:function(){ runScene('s_ending_menu'); }});
   ch.push({text:'取消', do:function(){ enterFreeRoam(); }});
 
   playLines([{text:'这个季度要做什么？\n（选「进入下个季度」会推进时间并恢复体力）', choices: ch}]);

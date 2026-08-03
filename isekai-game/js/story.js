@@ -252,13 +252,10 @@
         speaker: '索菲亚',
         text: '这是你们的妹妹，爱丽丝。',
       },
-      {
-        ch: 'alice',
-        emo: 'normal',
-        text: '皱巴巴的，红红的，眼睛闭着，还在哇哇大哭。和我刚出生的时候应该差不多吧。',
+      T('皱巴巴的，红红的，眼睛闭着，还在哇哇大哭。和我刚出生的时候应该差不多吧。', {
         know: 'alice',
         knowD: 35,
-      },
+      }),
       {
         ch: 'beatrice',
         emo: 'happy',
@@ -457,6 +454,7 @@
   // ========== 微服（扩写） ==========
   SCENES.s_micro = {
     bg: 'bg-img-town bg-town',
+    loc: 'town',
     phase: 'youth',
     card: { vol: '第一卷', t: '第4.1章', s: '微服出行' },
     lines: [
@@ -863,7 +861,8 @@
   };
 
   SCENES.s_beach = {
-    bg: 'bg-beach',
+    bg: 'bg-img-beach bg-beach',
+    loc: 'beach',
     phase: 'academy',
     card: { vol: '补章', t: '第七章', s: '海与贝壳' },
     lines: [
@@ -1089,35 +1088,6 @@
         '（霁馆阶段）\n可在霁馆休息、学剑，去北林讨伐。\n你已离开学院与公爵府的日常轨道——它们不再出现在自由往返的出口里。\n活下去。变强。一步一步。',
         { ach: 'sword_begin', phase: 'journey', freeRoam: true }
       ),
-    ],
-  };
-
-  SCENES.s_ending_menu = {
-    bg: 'bg-ending',
-    lines: [
-      {
-        text: '旅途仍在继续。此刻的你，想走向哪一种未来？\n（也可以取消，继续探索。）',
-        choices: () => {
-          const needTier = S.tier < 2;
-          const needLove = (S.love.beatrice || 0) < 2 || (S.love.alice || 0) < 2;
-          return [
-            { text: '🏠 小镇的丝之家（日常结局）', do: () => ending('home') },
-            {
-              text: '❄️ 冰与剑的远方（冒险结局）',
-              do: () => ending('adventure'),
-              disabled: needTier,
-              reason: needTier ? '需要中级以上' : '',
-            },
-            {
-              text: '👭 三姐妹的庭院',
-              do: () => ending('sisters'),
-              disabled: needLove,
-              reason: needLove ? '需要贝蒂与爱丽丝好感各≥2' : '',
-            },
-            { text: '📖 继续自由探索', do: () => enterFreeRoam() },
-          ];
-        },
-      },
     ],
   };
 

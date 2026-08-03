@@ -561,7 +561,7 @@ function advanceDay(n=1){
     flag('talked_today', {});
     checkAgeEvents();
   }
-  S.st = clamp(S.st + Math.floor(S.mst*0.5), 0, S.mst);
+  // 不回复体力（体力只在休息和换季时回复）
   S.hp = clamp(S.hp+Math.floor(S.mhp*0.3),0,S.mhp);
   S.mp = clamp(S.mp+Math.floor(S.mmp*0.3),0,S.mmp);
 }
@@ -582,7 +582,7 @@ function advanceSeason(n=1){
     flag('talked_today', {});
     S.restThisSeason = 0;
     // restore
-    S.st = clamp(S.st + Math.floor(S.mst*0.5), 0, S.mst);
+    S.st = S.mst; // 换季体力回满
     S.hp = clamp(S.hp + Math.floor(S.mhp*0.5), 0, S.mhp);
     S.mp = clamp(S.mp + Math.floor(S.mmp*0.5), 0, S.mmp);
     // unlocks by age
@@ -1662,31 +1662,18 @@ function doRest(){
     return;
   }
   const isBed = LOCS[S.loc]?.tags?.includes('rest') || S.loc==='nursery'||S.loc==='dorm'||S.loc==='jikan' || S.loc==='ownroom';
-  if(!isBed && S.tod<4){
-    playLines([{text:'现在休息太早了。晚上回房间比较好。——或者直接推进到夜晚？', choices:[
-      {text:'推进到夜晚再睡', do:()=>{ while(S.tod!==4) advanceTod(1); doRest(); }},
-      {text:'算了', do:()=>enterFreeRoam()}
-    ]}]);
-    return;
-  }
   S.restThisSeason = 1;
   const stRecover = Math.floor(S.mst / 3);
   playLines([
     {text: isBed ? '躺到床上。闭上眼睛。' : '找了个角落靠着。眼皮很重。'},
     {do:()=>{
       const bonus = hasSkill('quiet_mind') ? 10 : 0;
-      // save talk count so rest doesn't reset it
-      const savedTalked = flag('talked_today') || {};
       S.hp=S.mhp; S.mp=clamp(S.mp+Math.floor(S.mmp*0.5)+bonus,0,S.mmp);
-      // 休息：睡一整夜，体力回满
-      S.st = S.mst;
-      advanceDay(1); S.tod=0;
-      // restore talk count after advanceDay resets it
-      flag('talked_today', savedTalked);
+      S.st = clamp(S.st + stRecover, 0, S.mst);
       // dream duel opportunity
       maybeDreamDuel();
     }},
-    {do:()=>{}, text:`睡到了${dateStr()}。体力回满。`, freeRoam:true}
+    {text:`休息片刻。体力恢复${stRecover}点。`, freeRoam:true}
   ]);
 }
 

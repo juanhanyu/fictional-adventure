@@ -509,12 +509,13 @@ function addExp(n){
   updateHUD();
 }
 function checkTierUp(){
-  let target = 0;
-  if(S.lv >= 2 && flag('mana_awakened')) target = 1;
-  if(S.lv >= 15) target = 2;
-  if(S.lv >= 30) target = 3;
-  if(S.lv >= 45) target = 4;
-  if(target > S.tier && !S.picksDone.includes(target)){
+  let target = -1;
+  if(flag('mana_awakened') && !S.picksDone.includes(0)) target = 0;
+  if(S.lv >= 5 && flag('mana_awakened') && !S.picksDone.includes(1)) target = 1;
+  if(S.lv >= 15 && !S.picksDone.includes(2)) target = 2;
+  if(S.lv >= 30 && !S.picksDone.includes(3)) target = 3;
+  if(S.lv >= 45 && !S.picksDone.includes(4)) target = 4;
+  if(target >= 0){
     // don't interrupt non-roam story dialogue
     if(!S.freeRoam && currentScene && currentScene !== 's_mana_awaken'){
       flag('pending_tier', target);
@@ -537,6 +538,8 @@ function ageStr(){
   return `${S.ageY}岁`;
 }
 function tierName(){ return TIERS[S.tier]||'无'; }
+// 日历比较：当前日期是否 >= 指定年月
+function dateAtLeast(y, m){ return S.year > y || (S.year === y && S.month >= m); }
 
 // ========== TIME & STAMINA ==========
 function advanceTod(n=1){
@@ -2073,33 +2076,31 @@ if($('btn-stats-close')) $('btn-stats-close').onclick=()=>show('stats-overlay',0
 
 // ========== STORY GATES ==========
 function checkStoryGates(){
-  // 收集所有符合条件的剧情，按年龄/章节顺序触发
-  // 第二卷章节按年龄分散：12岁入学→13岁海伦娜→14岁艾诺/阿琼→15岁并肩的树/海边/星辰祭→15冬转折点
   const queue = [];
-  // 第一卷 公爵篇
-  if((S.phase==='childhood'||S.phase==='youth') && S.ageY>=2 && !flag('ch_alice_born')){ flag('ch_alice_born',1); queue.push('s_alice_born'); }
-  if(S.phase==='childhood' && S.ageY>=3 && !flag('mana_awakened') && !flag('ch_mana_scene')){ flag('ch_mana_scene',1); queue.push('s_mana_awaken'); }
-  if((S.phase==='childhood'||S.phase==='youth') && S.ageY>=4 && !flag('ch_yaoshen')){ flag('ch_yaoshen',1); queue.push('s_yaoshen'); }
-  if(S.phase==='youth' && S.ageY>=8 && !flag('ch_micro')){ flag('ch_micro',1); queue.push('s_micro'); }
-  if(S.phase==='youth' && S.ageY>=10 && !flag('ch_beatrice_leaves')){ flag('ch_beatrice_leaves',1); queue.push('s_beatrice_leaves'); }
-  if(S.phase==='youth' && S.ageY>=12 && !flag('ch_academy')){ flag('ch_academy',1); queue.push('s_academy_start'); }
-  // 第二卷 学院篇（按章节顺序分散到不同年龄）
+  // 第一卷 公爵篇（按日历触发）
+  if(!flag('ch_first_word') && dateAtLeast(0,7)){ flag('ch_first_word',1); queue.push('s_first_word'); }
+  if(!flag('ch_alice_born') && dateAtLeast(2,6)){ flag('ch_alice_born',1); queue.push('s_alice_born'); }
+  if(!flag('ch_child_days') && flag('ch_alice_born') && dateAtLeast(3,9)){ flag('ch_child_days',1); queue.push('s_child_days'); }
+  if(!flag('mana_awakened') && !flag('ch_mana_scene') && dateAtLeast(3,9)){ flag('ch_mana_scene',1); queue.push('s_mana_awaken'); }
+  if(!flag('ch_yaoshen') && dateAtLeast(4,12)){ flag('ch_yaoshen',1); queue.push('s_yaoshen'); }
+  if(!flag('ch_sisters_grow') && dateAtLeast(5,6)){ flag('ch_sisters_grow',1); queue.push('s_sisters_grow'); }
+  if(!flag('ch_micro') && S.ageY>=8){ flag('ch_micro',1); queue.push('s_micro'); }
+  if(!flag('ch_beatrice_day') && flag('ch_micro') && S.ageY>=9){ flag('ch_beatrice_day',1); queue.push('s_beatrice_day'); }
+  if(!flag('ch_beatrice_leaves') && S.ageY>=10){ flag('ch_beatrice_leaves',1); queue.push('s_beatrice_leaves'); }
+  if(!flag('ch_academy') && S.ageY>=12){ flag('ch_academy',1); queue.push('s_academy_start'); }
+  // 第二卷 学院篇
   if(S.phase==='academy' && !flag('ch_opening_ceremony')){ flag('ch_opening_ceremony',1); queue.push('s_opening_ceremony'); }
-  // 12岁：同龄人（第二章）
-  if(S.phase==='academy' && S.ageY>=12 && !flag('met_noelle')){ flag('met_noelle',1); queue.push('s_noelle_meet'); }
-  // 13岁：访客/海伦娜（第三章）
-  if(S.phase==='academy' && S.ageY>=13 && !flag('ch_helena')){ flag('ch_helena',1); queue.push('s_helena'); }
-  // 14岁：距离/艾诺 + 异国之味/阿琼（第四章+支线）
-  if(S.phase==='academy' && S.ageY>=14 && !flag('met_aino')){ flag('met_aino',1); queue.push('s_aino_train'); }
-  if(S.phase==='academy' && S.ageY>=14 && !flag('met_ajun')){ flag('met_ajun',1); queue.push('s_ajun'); }
-  // 15岁春：并肩的树（第九章·上，重点章节）
-  if(S.phase==='academy' && S.ageY>=15 && !flag('ch_tree')){ flag('ch_tree',1); queue.push('s_tree'); }
-  // 15岁夏：海与贝壳（第七章）
-  if(S.phase==='academy' && S.ageY>=15 && !flag('ch_beach')){ flag('ch_beach',1); queue.push('s_beach'); }
-  // 15岁秋：星辰祭（第九章·下，并肩的树下）
-  if(S.phase==='academy' && S.ageY>=15 && !flag('ch_star')){ flag('ch_star',1); queue.push('s_star_festival'); }
-  // 15岁冬：转折点（一）强制触发
-  if(S.phase==='academy' && S.ageY>=15 && !flag('did_turnpoint')){ flag('did_turnpoint',1); queue.push('s_turnpoint'); }
+  if(S.phase==='academy' && !flag('met_noelle') && S.ageY>=12){ flag('met_noelle',1); queue.push('s_noelle_meet'); }
+  if(S.phase==='academy' && !flag('ch_helena') && S.ageY>=13){ flag('ch_helena',1); queue.push('s_helena'); }
+  if(S.phase==='academy' && !flag('met_aino') && S.ageY>=14){ flag('met_aino',1); queue.push('s_aino_train'); }
+  if(S.phase==='academy' && !flag('met_ajun') && S.ageY>=14){ flag('met_ajun',1); queue.push('s_ajun'); }
+  if(S.phase==='academy' && !flag('ch_tree') && S.ageY>=15){ flag('ch_tree',1); queue.push('s_tree'); }
+  if(S.phase==='academy' && !flag('ch_beach') && S.ageY>=15){ flag('ch_beach',1); queue.push('s_beach'); }
+  if(S.phase==='academy' && !flag('ch_star') && S.ageY>=15){ flag('ch_star',1); queue.push('s_star_festival'); }
+  if(S.phase==='academy' && !flag('did_turnpoint') && S.ageY>=15){ flag('did_turnpoint',1); queue.push('s_turnpoint'); }
+  // 旅途篇
+  if((S.phase==='journey'||S.phase==='finale') && !flag('arrived_jikan') && S.dayCount>0){ flag('arrived_jikan',1); queue.push('s_jikan_arrive'); }
+  if((S.phase==='journey'||S.phase==='finale') && (!S.alias||S.alias!=='眷寒渔') && !flag('ch_black_name')){ flag('ch_black_name',1); queue.push('s_black_name'); }
   if(!queue.length) return false;
   // 逐个触发：第一个立即运行，后续在场景结束后自动衔接
   runSceneQueue(queue, 0);
@@ -2410,7 +2411,8 @@ SCENES.s_mana_awaken = {
     {do:()=>{ addExp(100); checkTierUp(); }},
     {text:'系统发出提示音。任务「魔力初感」完成。经验值上涨。等级提升。'},
     {text:'属性涨了一点点。成长很慢，但总归在成长。\n婴儿嘛——不对，我已经三岁半了。'},
-    {text:'（等阶若提升，「勇者之赐」会在自由行动时触发。请点文本框慢慢看，不会自动跳句。）', freeRoam:true}
+    {text:'（「勇者之赐」即将触发——七个选项，未选者永久消失。）'},
+    {pickTier:0},
   ]
 };
 
@@ -2652,10 +2654,7 @@ SCENES.s_black_name = {
 
 // ========== STORY CMD FROM ROAM ==========
 function tryStoryAction(){
-  // first word quest
-  if(S.phase==='childhood' && S.ageY===0 && S.ageD>=200 && !S.tasks.first_word?.done){
-    runScene('s_first_word'); return true;
-  }
+  // first word now auto-triggers via checkStoryGates
   if(S.phase==='academy' && S.loc==='water_class' && !flag('met_noelle')){
     flag('met_noelle',1); runScene('s_noelle_meet'); return true;
   }
@@ -2663,7 +2662,7 @@ function tryStoryAction(){
     flag('unlocked_clock',1); LOCS.clocktower.unlock=true; LOCS.flowerhouse.unlock=true; LOCS.memorial.unlock=true;
   }
   if(S.phase==='journey' && S.loc==='road' && !flag('arrived_jikan') && S.dayCount>0){
-    // offer go to jikan
+    // arrived_jikan now auto-triggers via checkStoryGates
   }
   return false;
 }
@@ -2745,21 +2744,9 @@ doNextTime = function(){
   });
   ch.push({ text: '💤 休息（恢复体力）', do: function(){ doRest(); } });
 
-  // 主要剧情已改为「进入下个季度」后自动触发，此处只保留支线/可选剧情
-  if(S.phase==='childhood' || S.phase==='youth'){
-    if(S.ageY>=0 && !(S.tasks.first_word && S.tasks.first_word.done)) ch.push({text:'剧情：第一声', do:function(){ runScene('s_first_word'); }});
-    if(S.ageY>=2 && flag('ch_alice_born') && !flag('seen_child_days')) ch.push({text:'剧情：三姐妹的日常', do:function(){ flag('seen_child_days',1); runScene('s_child_days'); }});
-    if(S.ageY>=5 && !flag('seen_sisters_grow')) ch.push({text:'剧情：三姐妹的岁月', do:function(){ flag('seen_sisters_grow',1); runScene('s_sisters_grow'); }});
-    if(S.ageY>=9 && flag('ch_micro') && !flag('seen_beatrice_day')) ch.push({text:'剧情：贝阿特丽丝大人的一天', do:function(){ flag('seen_beatrice_day',1); runScene('s_beatrice_day'); }});
-  }
-  if(S.phase==='academy'){
-    // 学院主剧情已改为自动触发（同龄人→海伦娜→艾诺/阿琼→种树→海边→星辰祭→转折点）
-    // 仅保留材料市场等可选支线
-  }
+  // 所有剧情已改为换季自动触发
   if(S.phase==='journey' || S.phase==='finale'){
-    if(!S.alias || S.alias!=='眷寒渔') ch.push({text:'剧情：改名', do:function(){ runScene('s_black_name'); }});
-    if(!flag('arrived_jikan')) ch.push({text:'剧情：抵达霁馆', do:function(){ flag('arrived_jikan',1); runScene('s_jikan_arrive'); }});
-    else ch.push({text:'北林讨伐 ⚡3', do:function(){ if(!spendST(3)) return; startBattle({name:'灰棘狼群',emoji:'🐺',hp:50+S.lv*2,atk:6+S.tier*2,exp:35,gold:8},function(){ S.gold+=8; addExp(10); enterFreeRoam(); }); }});
+    ch.push({text:'北林讨伐 ⚡3', do:function(){ if(!spendST(3)) return; startBattle({name:'灰棘狼群',emoji:'🐺',hp:50+S.lv*2,atk:6+S.tier*2,exp:35,gold:8},function(){ S.gold+=8; addExp(10); enterFreeRoam(); }); }});
   }
   ch.push({text:'取消', do:function(){ enterFreeRoam(); }});
 

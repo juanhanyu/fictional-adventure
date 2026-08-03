@@ -2066,6 +2066,7 @@ function checkStoryGates(){
   if(!flag('mana_awakened') && !flag('ch_mana_scene') && dateAtLeast(3,9)){ flag('ch_mana_scene',1); queue.push('s_mana_awaken'); }
   if(!flag('ch_yaoshen') && dateAtLeast(4,12)){ flag('ch_yaoshen',1); queue.push('s_yaoshen'); }
   if(!flag('ch_sisters_grow') && dateAtLeast(5,6)){ flag('ch_sisters_grow',1); queue.push('s_sisters_grow'); }
+  if(!flag('ch_reno_arrive') && dateAtLeast(6,3)){ flag('ch_reno_arrive',1); queue.push('s_reno_arrive'); }
   if(!flag('ch_micro') && S.ageY>=8){ flag('ch_micro',1); queue.push('s_micro'); }
   if(!flag('ch_beatrice_day') && flag('ch_micro') && S.ageY>=9){ flag('ch_beatrice_day',1); queue.push('s_beatrice_day'); }
   if(!flag('ch_beatrice_leaves') && S.ageY>=10){ flag('ch_beatrice_leaves',1); queue.push('s_beatrice_leaves'); }
@@ -2262,6 +2263,97 @@ SCENES.s_yaoshen = {
 SCENES.s_child_hub = {
   lines:[{text:'日子一天天过去。', freeRoam:true}]
 };
+
+// ===== 三姐妹的岁月 (5岁) =====
+SCENES.s_sisters_grow = {
+  bg:'bg-img-parlor bg-hall', phase:'childhood',
+  card:{vol:'第一卷', t:'第三章', s:'三姐妹的岁月'},
+  lines:[
+    {text:'五岁。'},
+    {text:'姐姐贝阿特丽丝七岁，正处于精力过剩的年纪。妹妹爱丽丝三岁，正处于像个小尾巴一样黏人的年纪。'},
+    {text:'日子过得非常规律，规律到让我这种心理年龄早已成年的人感到一种养老般的舒适。'},
+    {text:'但我那姐姐显然不这么想。除了基础课程，她现在的日程表里塞满了魔法训练和剑术启蒙。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'身为贵族女性，只有魔法是不够的！万一遇到魔力耗尽的情况，我就用这把剑保护妹妹们！'},
+    {text:'她手里握着一把木剑，站在客厅中央发表宣言。挥剑带起的风声很吓人，转身横扫距离花瓶只有两厘米。'},
+    {text:'我默默地向后平移了一步，把花瓶也往后拖了一点。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……姐姐，保护我们的前提是，别先把我们打晕。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'怎么可能！我的剑术可是为了你们练的！谁敢欺负我妹妹，我就——'},
+    {text:'她激动的挥剑动作再次擦过花瓶边缘。我叹了口气，默默把花瓶又往后挪了挪。'},
+    {ch:'alice', emo:'normal', speaker:'爱丽丝', text:'……贝阿特丽丝姐姐真厉害。'},
+    {text:'爱丽丝适时地送上了捧场，眼神清澈崇拜。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'嘿嘿，是吧！等你们长大了，姐姐罩着你们！'},
+    {text:'这就是我的姐姐。元气满满，精力充沛，偶尔有点冒失。'},
+
+    {bg:'bg-img-study bg-study', text:'而相比之下，三岁的爱丽丝简直是省心模范。'},
+    {text:'面对老师的夸奖，爱丽丝的表现堪称教科书级别的"乖巧妹妹"。'},
+    {ch:'alice', emo:'shy', speaker:'爱丽丝', text:'……都是老师教得好。而且，比起姐姐们，我还差得远。'},
+    {text:'这一记直球把老师的好感度刷满了，连我也觉得很受用。'},
+    {text:'课后，这个"差得远"的小家伙蹭到了我身边。'},
+    {ch:'alice', emo:'normal', speaker:'爱丽丝', text:'……姐姐大人。有个历史问题不太懂，可以教我吗？'},
+    {text:'我耐心地给她讲了一遍。她听得很认真，点头的频率恰到好处。'},
+    {ch:'alice', emo:'smile', speaker:'爱丽丝', text:'……原来是这样。谢谢姐姐大人，姐姐大人真厉害。'},
+    {text:'她笑了笑，心满意足地走了。每次问的问题都不会太难让我尴尬，也不会太简单感觉敷衍。'},
+    {text:'算了，爱丽丝才三岁，会有什么心思呢。'},
+
+    {bg:'bg-img-garden bg-garden', text:'五岁这一年，我的魔法有了长足的进步。新技能「水流操控」极其好用，简直是懒人福音——它能不用起身就帮我把桌子上的红茶送到嘴边。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'希尔维亚！江湖救急！'},
+    {text:'姐姐惨烈的叫声从浴室传来。浴室仿佛刚经历了一场海啸，水管爆了，姐姐站在水帘洞中央，浑身湿透。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'快！用你的魔法把它停住！'},
+    {text:'虽然我是公爵千金，不是水管工，但看来这活儿只能我干了。'},
+    {text:'水流操控。漫天飞舞的水珠在我的引导下乖乖聚拢，缓缓流进浴缸。'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'得救了！希尔维亚你太神了！'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……只是暂时的。叫人来修吧。'},
+    {text:'姐姐因为太激动直接扑了过来。一个湿漉漉的拥抱。我的干爽衣服瞬间宣告阵亡。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……姐姐，你是在报复我吗？'},
+    {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'哎呀，反正都要换衣服嘛！'},
+    {text:'我面无表情地任由她抱着。算了，看在她笑得这么开心的份上。'},
+
+    {bg:'bg-img-garden bg-garden', text:'晚上，爱丽丝来找我，听说了浴室的事。'},
+    {ch:'alice', emo:'normal', speaker:'爱丽丝', text:'……姐姐大人用魔法控制住了那么大的水流？'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'勉强吧。'},
+    {ch:'alice', emo:'normal', speaker:'爱丽丝', text:'……姐姐大人好厉害。我也想学。等我测完亲和，姐姐大人可以教我吗？'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'当然，如果你不嫌我教得不好的话。'},
+    {ch:'alice', emo:'smile', speaker:'爱丽丝', text:'……只要是姐姐大人教的，就好。'},
+    {text:'不知道为什么，这孩子每次说这种话的时候，都真诚得让我无法拒绝。'},
+
+    {bg:'bg-img-garden bg-garden', text:'夏天到了，阿斯拉王国的夏天热得让人怀疑人生。不过我有着解暑神器：「冰霜之息」。'},
+    {text:'午后，蝉鸣声吵得人心烦。我和爱丽丝躲在树荫下。'},
+    {ch:'alice', emo:'normal', speaker:'爱丽丝', text:'……好热。'},
+    {text:'爱丽丝额头上渗出细密的汗珠，脸颊被热气蒸得粉扑扑的。'},
+    {text:'我张口，轻轻吐出一缕寒气。周围空气瞬间降温，爱丽丝舒服地眯起了眼睛，靠在我肩膀上。'},
+    {ch:'alice', emo:'smile', speaker:'爱丽丝', text:'……好凉快。姐姐大人是冰系真好。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'这算是对我天赋的最高赞扬吗？'},
+    {ch:'alice', emo:'smile', speaker:'爱丽丝', text:'……嗯。如果是火系的话，夏天就不能靠得这么近了。姐姐大人，再来一口？'},
+    {text:'看着她这副把我当成移动空调的样子，我忍不住笑了。那个下午，我们就这样靠在一起。很安静，很舒服。', freeRoam:true},
+  ]
+};
+
+// ===== 遇见雷纳德叔叔 (6岁) =====
+SCENES.s_reno_arrive = {
+  bg:'bg-img-dining bg-hall', phase:'youth',
+  card:{vol:'第一卷', t:'第四章', s:'浪人叔叔'},
+  lines:[
+    {text:'六岁。'},
+    {text:'传说中那个"离家出走"的叔叔回来了。我小时候模模糊糊见过他两三面，听说他还和阿斯拉魔法大学的校长法神从前是同学。'},
+    {text:'雷纳德·维斯特利亚，我父亲的弟弟。比起总是板着脸、威严满满的父亲，这位叔叔简直像是另一个物种。'},
+    {ch:'reno', speaker:'雷纳德', text:'惊喜！我回来啦！'},
+    {text:'他风尘仆仆地出现在餐厅门口，背着个巨大的包裹，靴子上全是泥巴，笑得像个没心没肺的大孩子。'},
+    {text:'父亲扶额叹气，母亲笑着摇头，只有贝阿特丽丝姐姐冲上去给了他一拳——当然没打中。'},
+    {text:'叔叔在家里住了半个月，我也终于明白了为什么法神大人会是他的同学——这人虽然看着不正经，但魔法造诣很高。'},
+    {text:'当然，他主要的作用还是讲故事。'},
+    {ch:'reno', speaker:'雷纳德', text:'驰弩帝国北边的森林里，有一种雪狼，大概有这么大——全身雪白，跑起来像一团滚动的雪球！'},
+    {text:'贝阿特丽丝姐姐听得两眼放光，恨不得立刻提剑去北边。爱丽丝则安静地坐在我旁边，偶尔问几个问题。'},
+    {ch:'alice', emo:'normal', speaker:'爱丽丝', text:'……那里的风大吗？暴风雪会持续多久？'},
+    {text:'问题虽然有点偏，但叔叔很高兴有人对细节感兴趣，讲得更起劲了。'},
+    {bg:'bg-img-nursery bg-room', text:'某天晚上，叔叔溜进我房间，检查了我的魔法进度。'},
+    {text:'看完我的冰晶术后，他收起了那副嬉皮笑脸的表情。'},
+    {ch:'reno', speaker:'雷纳德', text:'六岁能控制到这个程度，咱们家这是出了个小怪物啊。等你以后去了魔法大学，要是有人欺负你，就报我名字。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'报了有用吗？'},
+    {ch:'reno', speaker:'雷纳德', text:'大概有用吧……只要法神大人忘掉了我欠她钱的事。'},
+    {text:'看来以后还是尽量别报他的名字比较好。', know:'reno', knowD:20, freeRoam:true},
+  ]
+};
+
 
 SCENES.s_beatrice_leaves = {
   bg:'bg-img-hallway bg-hall', phase:'youth',

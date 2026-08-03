@@ -69,6 +69,8 @@ const PORTRAIT_FILES = {
   hol_normal:'assets/portraits/hol_normal.png',
   fashen_normal:'assets/portraits/fashen_normal.png',
   anna_normal:'assets/portraits/anna_normal.png',
+  sword_instructor:'assets/portraits/sword_instructor.png',
+  magic_teacher:'assets/portraits/magic_teacher.png',
 };
 function portraitAgeTier(){
   // 0 infant/hidden, 1 child <10, 2 teen+
@@ -111,6 +113,7 @@ const CSS_CHARS = {
   ji:['霁馆主','🗡️'], jilan:['霁岚','💜'], lein:['莱恩','🍃'],
   peilin:['沛霖','🍵'], huke:['虎克','👦'], maid:['女仆','🧹'],
   teacher:['家庭教师','📖'], hol:['霍尔','📘'], anna:['安娜·贝尔','💧'],
+  sword_instructor:['剑术教官','⚔️'], magic_teacher:['魔术教师','💫'],
 };
 
 // ========== CHARACTERS META ==========
@@ -136,6 +139,8 @@ const CHARS = {
   huke:{name:'虎克', short:'虎克', css:'huke', role:'诺艾儿之弟'},
   hol:{name:'霍尔', short:'霍尔', css:'hol', role:'冰系导师'},
   anna:{name:'安娜·贝尔', short:'安娜', css:'anna', role:'水系导师'},
+  sword_instructor:{name:'剑术教官', short:'教官', css:'sword_instructor', role:'剑术教官'},
+  magic_teacher:{name:'家庭魔术教师', short:'老师', css:'magic_teacher', role:'魔术教师'},
 };
 
 // ========== LOCATIONS ==========
@@ -166,6 +171,7 @@ const LOCS = {
   cafeteria:{id:'cafeteria', name:'食堂', icon:'🍮', area:'魔法大学', desc:'布丁圣地', bg:'bg-img-cafeteria bg-hall', unlock:false, st:1, tags:['talk']},
   clocktower:{id:'clocktower', name:'钟塔顶层', icon:'🗼', area:'魔法大学', desc:'风很大的安静角落', bg:'bg-img-clocktower bg-school', unlock:false, st:2, tags:['egg','study']},
   flowerhouse:{id:'flowerhouse', name:'校园花坊', icon:'🌺', area:'魔法大学', desc:'温室与北极铃兰', bg:'bg-img-flowerhouse bg-garden', unlock:false, st:1, tags:['egg']},
+  auditorium:{id:'auditorium', name:'大礼堂', icon:'🏛️', area:'魔法大学', desc:'举办典礼的宏伟礼堂', bg:'bg-img-auditorium bg-hall', unlock:false, st:1, tags:['talk']},
   training_field:{id:'training_field', name:'训练场', icon:'🗡️', area:'魔法大学', desc:'砂地与木桩', bg:'bg-img-training bg-plain', unlock:false, st:1, tags:['train']},
   memorial:{id:'memorial', name:'纪念林', icon:'🌳', area:'魔法大学', desc:'毕业生种下的树', bg:'bg-img-memorial bg-garden', unlock:false, st:2, tags:['egg']},
   // 旅途
@@ -263,6 +269,7 @@ const EXITS = {
     {to:'library', label:'图书馆', icon:'📖', x:30, y:35, st:1},
     {to:'water_class', label:'水系教室', icon:'💧', x:80, y:65, st:1},
     {to:'training_field', label:'训练场', icon:'🗡️', x:20, y:70, st:1},
+    {to:'auditorium', label:'大礼堂', icon:'🏛️', x:50, y:20, st:1},
   ],
   water_class:[
     {to:'dorm', label:'宿舍', icon:'🏠', x:20, y:50, st:1},
@@ -302,6 +309,10 @@ const EXITS = {
     {to:'training_field', label:'训练场', icon:'🗡️', x:50, y:80, st:1},
     {to:'flowerhouse', label:'花坊', icon:'🌺', x:20, y:40, st:1},
     {to:'library', label:'图书馆', icon:'📖', x:80, y:55, st:1},
+  ],
+  auditorium:[
+    {to:'dorm', label:'宿舍', icon:'🏠', x:50, y:80, st:1},
+    {to:'cafeteria', label:'食堂', icon:'🍮', x:80, y:60, st:1},
   ],
   road:[
     {to:'jikan', label:'澄岚 · 霁馆', icon:'🏯', x:70, y:45, st:2},
@@ -1282,8 +1293,8 @@ function whoIsHere(){
     if(loc==='dining'){ placeChar('sophia',['dining','parlor']); if(!flag('ch_beatrice_leaves')) placeChar('beatrice',['dining','parlor']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['dining']); placeChar('claude',['dining','parlor']); }
     if(loc==='hallway'){ if(!flag('ch_beatrice_leaves')) placeChar('beatrice',['hallway','garden']); if(a>=0) placeChar('sophia',['hallway','parlor']); if(a>=3) placeChar('claude',['hallway']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['hallway']); }
     if(loc==='garden'){ if(!flag('ch_beatrice_leaves')) placeChar('beatrice',['garden','hallway']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['garden']); if(a>=4) placeChar('sophia',['garden']); }
-    if(loc==='study'){ if(a>=1) placeChar('sophia',['study','hallway']); if(flag('ch_alice_born')||a>=3) placeChar('alice',['study']); if(a>=5) placeChar('claude',['study']); }
-    if(loc==='training'){ if(a>=4 && !flag('ch_beatrice_leaves')) placeChar('beatrice',['training','garden']); if(a>=6) placeChar('claude',['training']); }
+    if(loc==='study'){ if(a>=1) placeChar('sophia',['study','hallway']); if(flag('ch_alice_born')||a>=3) placeChar('alice',['study']); if(a>=5) placeChar('claude',['study']); if(a>=3) add('magic_teacher'); }
+    if(loc==='training'){ if(a>=4 && !flag('ch_beatrice_leaves')) placeChar('beatrice',['training','garden']); if(a>=6) placeChar('claude',['training']); if(a>=4) add('sword_instructor'); }
     if(loc==='kitchen'){ placeChar('sophia',['kitchen','dining']); if(a>=2) placeChar('beatrice',['kitchen']); }
     if(loc==='balcony'){ if(a>=2) placeChar('beatrice',['balcony','hallway']); if(flag('ch_alice_born')||a>=3) placeChar('alice',['balcony']); }
     if(loc==='chapel'){ placeChar('sophia',['chapel','hallway']); if(a>=4) placeChar('claude',['chapel']); }
@@ -1454,6 +1465,18 @@ function talkLines(id){
     ],
     huke: [
       [{ch:'huke',speaker:'虎克',text:'银色头发的姐姐！我记住你了！我以后也要考魔法大学！'}, {text:'他挺起小小的胸膛。像一只认真的雀。', love:'huke', loveD:1}],
+    ],
+    fashen: [
+      [{ch:'fashen',speaker:'法神',text:'……这堆文书谁写的？批一半就够了。剩下的烧了。'}, {text:'神级法师的行政管理风格令人战栗。', know:'fashen', knowD:2}],
+      [{ch:'fashen',speaker:'法神',text:'你的魔力控制……还行。比这群人强点。'}, {text:'从法神嘴里，"还行"大约是最高评价。', love:'fashen', loveD:1, know:'fashen', knowD:3}],
+    ],
+    sword_instructor: [
+      [{ch:'sword_instructor',speaker:'教官',text:'剑术需要冷静。观察对手的动作——不要急。'}, {text:'他的木剑轻轻点在我肩上。示范比说教管用。', know:'sword_instructor', knowD:2}],
+      [{ch:'sword_instructor',speaker:'教官',text:'进步了。但最后一下没稳住。明天继续。'}, {text:'他收起剑，转身。背影比任何人都稳。', love:'sword_instructor', loveD:1}],
+    ],
+    magic_teacher: [
+      [{ch:'magic_teacher',speaker:'家庭教师',text:'好！我们今天来复习火系魔法的基本原理——'}, {text:'她语速很快，像连珠炮。但每个重点都讲得清楚。', know:'magic_teacher', knowD:2}],
+      [{ch:'magic_teacher',speaker:'家庭教师',text:'希尔维亚大小姐学得真快！这么小就能认这么多字了！'}, {text:'她的惊讶每次都是真心的。', love:'magic_teacher', loveD:1}],
     ],
   };
 
@@ -2249,7 +2272,7 @@ SCENES.s_academy_start = {
     {ch:'sophia', speaker:'索菲亚', text:'注意身体，按时吃饭。'},
     {ch:'claude', speaker:'克劳德', text:'你是维斯特利亚家的女儿。不必张扬，也不要妄自菲薄。'},
     {text:'马车驶离公爵府。妹妹站在门口，越来越小，变成一个白点。', know:'alice', knowD:5},
-    {do:()=>{ ['dorm','water_class','ice_class','library','cafeteria','training_field','clocktower','flowerhouse','memorial'].forEach(id=>{if(LOCS[id])LOCS[id].unlock=true;}); S.loc='dorm'; S.lastSafe='dorm'; updateLocBar(); }},
+    {do:()=>{ ['dorm','water_class','ice_class','library','cafeteria','training_field','clocktower','flowerhouse','memorial','auditorium'].forEach(id=>{if(LOCS[id])LOCS[id].unlock=true;}); S.loc='dorm'; S.lastSafe='dorm'; updateLocBar(); }},
     {bg:'bg-room', loc:'dorm', text:'东区宿舍 312。室友——'},
     {ch:'emma', speaker:'艾玛·克莱尔', text:'新室友！！我是艾玛！你可以叫我艾玛！银发蓝眼——你是维斯特利亚家的？！', know:'emma', knowD:18, love:'emma', loveD:1},
     {text:'她话很多。我懒得记太多名字。反正慢慢认识。'},

@@ -69,6 +69,8 @@ const PORTRAIT_FILES = {
   hol_normal:'assets/portraits/hol_normal.png',
   fashen_normal:'assets/portraits/fashen_normal.png',
   anna_normal:'assets/portraits/anna_normal.png',
+  teacher_normal:'assets/portraits/teacher_normal.png',
+  huke_normal:'assets/portraits/huke_normal.png',
 };
 function portraitAgeTier(){
   // 0 infant/hidden, 1 child <10, 2 teen+
@@ -1963,13 +1965,18 @@ function openStatsPanel(){
   if(!S.stats) S.stats = {body:5, mind:15, mana:10, charm:8};
   const body = $('stats-body');
   if(!body){ openPanel('status'); return; }
+  // 主角立绘
+  const sE = flag('named');
+  const sAlias = S.alias === '眷寒渔';
+  const sSrc = sE ? resolvePortrait('sylvia', sAlias ? 'serious' : 'normal') : null;
+  const portraitHTML = sSrc ? `<div class="stats-portrait"><img src="${sSrc}" style="max-width:160px;max-height:200px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.3)"/></div>` : '';
   const meta = {
     body:{name:'体能', tip:'剑术、奔跑、持剑。影响近战与负重耐性。'},
     mind:{name:'心智', tip:'学习、记忆、理论。影响课程收益与了解度获取。'},
     mana:{name:'魔力适性', tip:'导引与塑形。影响法术稳定与魔力成长。'},
     charm:{name:'气质', tip:'仪态与人情。影响交谈、好感与交涉。'},
   };
-  body.innerHTML = `<div class="stat-orb">${['body','mind','mana','charm'].map(k=>{
+  body.innerHTML = `${portraitHTML}<div class="stat-orb">${['body','mind','mana','charm'].map(k=>{
     const v = Math.min(100, S.stats[k]|0);
     return `<div class="stat-item ${k}"><div class="si-top"><span class="si-name">${meta[k].name}</span><span class="si-val">${v}</span></div><div class="si-bar"><i style="width:${v}%"></i></div><div style="font-size:11px;opacity:.55;margin-top:6px">${meta[k].tip}</div></div>`;
   }).join('')}</div>
@@ -2005,7 +2012,10 @@ function openPanel(tab){
     if(!S.skills.length) body.innerHTML='<p style="opacity:.6">尚未获得特殊技能。</p>';
     else body.innerHTML = S.skills.map(id=>{
       const p=ALL_PICKS[id]||Object.values(DUEL_REWARDS).find(x=>x.id===id)||{name:id,desc:''};
-      return `<div class="p-skill"><div class="sk-name">${p.name||id}</div><div class="sk-desc">${p.desc||''}</div></div>`;
+      // 中文名映射
+      const cnNames={virtual_duel:'虚拟决斗',ice_sense:'寒息感知',water_veil:'水之帷幕',quiet_mind:'静心',baby_talk:'天籁初声',mana_sip:'魔力小啜',silk_thread:'千缕银丝',ice_palace:'冰晶宫殿',multi_cast:'二重咏唱',frost_armor:'霜铠',deep_read:'深读',mirror_ice:'镜冰',wind_step_s:'残影步（简）',heal_touch:'温手',mana_cycle:'魔战循环',domain_frost:'霜域',perfect_cast:'无咏唱具现',fate_eye:'因果薄片',sword_mana:'魔剑同化',memory_link:'记忆连丝',zero_field:'绝对零度逼近',temp_sense:'温度感知',wind_afterimage:'风行残像',mana_calc:'魔力精算',root_ice:'生根之冰',noble_bearing:'公爵气度',lullaby:'摇篮曲',etiquette:'贵族仪态',water_ball:'水球术',basic_guard:'基本防御架',theory_note:'理论笔记',water_veil_s:'水膜',ice_sphere:'完美冰球',root_step:'生根步',soft_cut:'送刀'};
+      const displayName = cnNames[id] || p.name || id;
+      return `<div class="p-skill"><div class="sk-name">${displayName}</div><div class="sk-desc">${p.desc||''}</div></div>`;
     }).join('') + (hasSkill('virtual_duel')?`<button class="tbtn" style="margin-top:10px" id="btn-duel">⚔️ 进入虚拟决斗</button>`:'');
     setTimeout(()=>{ const b=$('btn-duel'); if(b) b.onclick=()=>{ show('panel',0); openDuelMenu(); }; },0);
   } else if(tab==='tasks'){
@@ -2076,19 +2086,33 @@ if($('btn-stats-close')) $('btn-stats-close').onclick=()=>show('stats-overlay',0
 
 // ========== STORY GATES ==========
 function checkStoryGates(){
-  // 收集所有符合条件的剧情，按顺序触发
+  // 收集所有符合条件的剧情，按年龄/章节顺序触发
+  // 第二卷章节按年龄分散：12岁入学→13岁海伦娜→14岁艾诺/阿琼→15岁并肩的树/海边/星辰祭→15冬转折点
   const queue = [];
+  // 第一卷 公爵篇
   if((S.phase==='childhood'||S.phase==='youth') && S.ageY>=2 && !flag('ch_alice_born')){ flag('ch_alice_born',1); queue.push('s_alice_born'); }
   if(S.phase==='childhood' && S.ageY>=3 && !flag('mana_awakened') && !flag('ch_mana_scene')){ flag('ch_mana_scene',1); queue.push('s_mana_awaken'); }
   if((S.phase==='childhood'||S.phase==='youth') && S.ageY>=4 && !flag('ch_yaoshen')){ flag('ch_yaoshen',1); queue.push('s_yaoshen'); }
   if(S.phase==='youth' && S.ageY>=8 && !flag('ch_micro')){ flag('ch_micro',1); queue.push('s_micro'); }
   if(S.phase==='youth' && S.ageY>=10 && !flag('ch_beatrice_leaves')){ flag('ch_beatrice_leaves',1); queue.push('s_beatrice_leaves'); }
   if(S.phase==='youth' && S.ageY>=12 && !flag('ch_academy')){ flag('ch_academy',1); queue.push('s_academy_start'); }
-  // 学院阶段剧情
+  // 第二卷 学院篇（按章节顺序分散到不同年龄）
   if(S.phase==='academy' && !flag('ch_opening_ceremony')){ flag('ch_opening_ceremony',1); queue.push('s_opening_ceremony'); }
-  if(S.phase==='academy' && S.ageY>=12 && !flag('ch_helena')){ flag('ch_helena',1); queue.push('s_helena'); }
-  if(S.phase==='academy' && S.ageY>=12 && !flag('ch_beach')){ flag('ch_beach',1); queue.push('s_beach'); }
-  if(S.phase==='academy' && S.ageY>=13 && !flag('ch_star')){ flag('ch_star',1); queue.push('s_star_festival'); }
+  // 12岁：同龄人（第二章）
+  if(S.phase==='academy' && S.ageY>=12 && !flag('met_noelle')){ flag('met_noelle',1); queue.push('s_noelle_meet'); }
+  // 13岁：访客/海伦娜（第三章）
+  if(S.phase==='academy' && S.ageY>=13 && !flag('ch_helena')){ flag('ch_helena',1); queue.push('s_helena'); }
+  // 14岁：距离/艾诺 + 异国之味/阿琼（第四章+支线）
+  if(S.phase==='academy' && S.ageY>=14 && !flag('met_aino')){ flag('met_aino',1); queue.push('s_aino_train'); }
+  if(S.phase==='academy' && S.ageY>=14 && !flag('met_ajun')){ flag('met_ajun',1); queue.push('s_ajun'); }
+  // 15岁春：并肩的树（第九章·上，重点章节）
+  if(S.phase==='academy' && S.ageY>=15 && !flag('ch_tree')){ flag('ch_tree',1); queue.push('s_tree'); }
+  // 15岁夏：海与贝壳（第七章）
+  if(S.phase==='academy' && S.ageY>=15 && !flag('ch_beach')){ flag('ch_beach',1); queue.push('s_beach'); }
+  // 15岁秋：星辰祭（第九章·下，并肩的树下）
+  if(S.phase==='academy' && S.ageY>=15 && !flag('ch_star')){ flag('ch_star',1); queue.push('s_star_festival'); }
+  // 15岁冬：转折点（一）强制触发
+  if(S.phase==='academy' && S.ageY>=15 && !flag('did_turnpoint')){ flag('did_turnpoint',1); queue.push('s_turnpoint'); }
   if(!queue.length) return false;
   // 逐个触发：第一个立即运行，后续在场景结束后自动衔接
   runSceneQueue(queue, 0);
@@ -2343,7 +2367,8 @@ SCENES.s_turnpoint = {
   bg:'bg-night', phase:'finale',
   card:{vol:'第一卷', t:'转折点（一）', s:'——'},
   lines:[
-    {text:'寒假。公爵府。\n雷纳德叔叔背着大包风尘仆仆出现在餐厅门口，靴子上全是泥，笑得像没心没肺的大孩子。'},
+    {do:()=>{ S.ageY=Math.max(S.ageY,15); syncStatsToAge(); }},
+    {text:'十五岁的冬天。寒假。公爵府。\n雷纳德叔叔背着大包风尘仆仆出现在餐厅门口，靴子上全是泥，笑得像没心没肺的大孩子。'},
     {ch:'reno', speaker:'雷纳德', text:'惊喜！我回来啦！'},
     {text:'父亲扶额，母亲笑着摇头，贝蒂冲上去给了他一拳（没打中）。'},
     {text:'六个人坐在一张桌子上。姐姐的论文改完了——「十八遍！贝阿特丽丝大人的旷世巨著！」\n一切都很好。'},
@@ -2713,10 +2738,14 @@ $('btn-codex-close').onclick=()=>show('codex',0);
 const _doNext = doNextTime;
 doNextTime = function(){
   const ch = [];
+  // 婴儿期（<1岁）显示"下一年"，否则显示"下个季度"
+  const nextLabel = S.ageY < 1 ? '🍂 进入下一年' : '🍂 进入下个季度';
   ch.push({
-    text: '🍂 进入下个季度',
+    text: nextLabel,
     do: function(){
-      advanceSeason(1);
+      // 婴儿期每次推进一年（4个季度），否则推进一个季度
+      const steps = S.ageY < 1 ? 4 : 1;
+      for(let i = 0; i < steps; i++) advanceSeason(1);
       if(checkStoryGates()) return;
       enterFreeRoam();
       var tip = dateStr() + '。风物换了季节。体力已恢复。\n点出口继续探索，或再开季度菜单。';
@@ -2737,13 +2766,8 @@ doNextTime = function(){
     if(S.ageY>=9 && flag('ch_micro') && !flag('seen_beatrice_day')) ch.push({text:'剧情：贝阿特丽丝大人的一天', do:function(){ flag('seen_beatrice_day',1); runScene('s_beatrice_day'); }});
   }
   if(S.phase==='academy'){
-    if(!flag('met_noelle')) ch.push({text:'剧情：同龄人', do:function(){ runScene('s_noelle_meet'); }});
-    if(!flag('met_ajun')) ch.push({text:'剧情：巴依的客人', do:function(){ runScene('s_ajun'); }});
-    if(!flag('met_aino')) ch.push({text:'剧情：冰系实战', do:function(){ runScene('s_aino_train'); }});
-    if(flag('met_aino') && !flag('ch_tree')) ch.push({text:'剧情：种树', do:function(){ flag('ch_tree',1); runScene('s_tree'); }});
-    if((flag('ch_helena')||flag('ch_tree')||flag('ch_star')) && !flag('did_turnpoint')){
-      ch.push({text:'剧情：寒假回家', do:function(){ flag('did_turnpoint',1); S.ageY=Math.max(S.ageY,13); syncStatsToAge(); runScene('s_turnpoint'); }});
-    }
+    // 学院主剧情已改为自动触发（同龄人→海伦娜→艾诺/阿琼→种树→海边→星辰祭→转折点）
+    // 仅保留材料市场等可选支线
   }
   if(S.phase==='journey' || S.phase==='finale'){
     if(!S.alias || S.alias!=='眷寒渔') ch.push({text:'剧情：改名', do:function(){ runScene('s_black_name'); }});

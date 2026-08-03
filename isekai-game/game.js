@@ -65,6 +65,8 @@ const PORTRAIT_FILES = {
   reno_normal:'assets/portraits/reno_normal.png',
   yaoshen_normal:'assets/portraits/yaoshen_normal.png',
   jilan_normal:'assets/portraits/jilan_normal.png',
+  hol_normal:'assets/portraits/hol_normal.png',
+  teacher_normal:'assets/portraits/teacher_normal.png',
 };
 function portraitAgeTier(){
   // 0 infant/hidden, 1 child <10, 2 teen+
@@ -161,10 +163,10 @@ const LOCS = {
   clocktower:{id:'clocktower', name:'钟塔顶层', icon:'🗼', area:'魔法大学', desc:'风很大的安静角落', bg:'bg-img-clocktower bg-school', unlock:false, st:2, tags:['egg','study']},
   flowerhouse:{id:'flowerhouse', name:'校园花坊', icon:'🌺', area:'魔法大学', desc:'温室与北极铃兰', bg:'bg-img-flowerhouse bg-garden', unlock:false, st:1, tags:['egg']},
   training_field:{id:'training_field', name:'训练场', icon:'🗡️', area:'魔法大学', desc:'砂地与木桩', bg:'bg-img-training bg-plain', unlock:false, st:1, tags:['train']},
-  memorial:{id:'memorial', name:'纪念林', icon:'🌳', area:'魔法大学', desc:'毕业生种下的树', bg:'bg-garden', unlock:false, st:2, tags:['egg']},
+  memorial:{id:'memorial', name:'纪念林', icon:'🌳', area:'魔法大学', desc:'毕业生种下的树', bg:'bg-img-memorial bg-garden', unlock:false, st:2, tags:['egg']},
   // 旅途
   road:{id:'road', name:'官道', icon:'🛤️', area:'旅途', desc:'通往远方的路', bg:'bg-img-plain bg-plain', unlock:false, st:2},
-  jikan:{id:'jikan', name:'霁馆', icon:'🏯', area:'澄岚镇', desc:'冷清却温暖的剑馆', bg:'bg-room', unlock:false, st:0, tags:['rest','train']},
+  jikan:{id:'jikan', name:'霁馆', icon:'🏯', area:'澄岚镇', desc:'冷清却温暖的剑馆', bg:'bg-img-jikan bg-room', unlock:false, st:0, tags:['rest','train']},
   northforest:{id:'northforest', name:'北林', icon:'🌲', area:'澄岚镇', desc:'魔物出没的林地', bg:'bg-img-forest bg-forest', unlock:false, st:3, tags:['train']},
 };
 
@@ -446,7 +448,7 @@ let sceneQueue = [];
 let typing = false, typeTimer = null, fullText = '', textIdx = 0;
 let currentScene = null;
 let pendingPicks = null;
-let codex = JSON.parse(localStorage.getItem(CODEX_KEY) || '{"endings":[],"chars":[],"eggs":0}');
+let codex = JSON.parse(localStorage.getItem(CODEX_KEY) || '{"chars":[],"eggs":0}');  // 【删除】结局选择系统已删除
 
 // ========== UTILS ==========
 const $ = id => document.getElementById(id);
@@ -566,6 +568,8 @@ function advanceSeason(n=1){
     // birthday rough: every 4 seasons
     if(hasSkill('ice_palace')) flag('palace_today', 0);
     flag('talked_today', {});
+    // 【修复】每个季度重置休息次数
+    S.restThisSeason = 0;
     // restore
     S.st = S.mst;
     S.hp = clamp(S.hp + Math.floor(S.mhp*0.5), 0, S.mhp);
@@ -577,6 +581,11 @@ function advanceSeason(n=1){
     if(S.ageY>=6){ LOCS.cellar.unlock=true; }
     if(S.ageY>=8){ LOCS.beach.unlock=true; LOCS.ownroom.unlock=true; }
     if(S.ageY>=8 && S.loc==='nursery'){ S.loc='ownroom'; }
+    
+    // 【新增】姐姐去上学时自动触发剧情（13岁时进入academy阶段）
+    if(S.ageY>=13 && S.phase==='youth' && !flag('ch_academy')){
+      // 姐姐入学剧情会自动在checkStoryGates中触发
+    }
   }
   syncStatsToAge();
   updateHUD();
@@ -1266,23 +1275,51 @@ function whoIsHere(){
     if(assigned === loc) add(id);
   }
 
+  // 【修改】姐姐去上学后（flag:beatrice_left_home），她不再在公爵府内出现
+  const beatriceInMansion = !flag('beatrice_left_home');  // 姐姐还在公爵府才显示
+
   if(ph==='prologue'||ph==='childhood'||ph==='youth'){
     if(loc==='nursery' || (loc==='ownroom' && a>=8)){ 
     const room = (loc==='ownroom' && a>=8) ? 'ownroom' : 'nursery';
-    placeChar('sophia',[room,'parlor']); placeChar('beatrice',[room,'parlor','garden']); if(flag('ch_alice_born')||a>=2) placeChar('alice',[room,'parlor']); 
+    placeChar('sophia',[room,'parlor']); 
+    if(beatriceInMansion) placeChar('beatrice',[room,'parlor','garden']); 
+    if(flag('ch_alice_born')||a>=2) placeChar('alice',[room,'parlor']); 
   }
-    if(loc==='parlor'){ placeChar('sophia',['parlor','nursery','dining']); placeChar('beatrice',['parlor','garden']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['parlor']); if(a>=1) placeChar('claude',['parlor','dining']); }
-    if(loc==='dining'){ placeChar('sophia',['dining','parlor']); placeChar('beatrice',['dining','parlor']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['dining']); placeChar('claude',['dining','parlor']); }
-    if(loc==='hallway'){ placeChar('beatrice',['hallway','garden']); if(a>=0) placeChar('sophia',['hallway','parlor']); if(a>=3) placeChar('claude',['hallway']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['hallway']); }
-    if(loc==='garden'){ placeChar('beatrice',['garden','hallway']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['garden']); if(a>=4) placeChar('sophia',['garden']); }
+    if(loc==='parlor'){ 
+      placeChar('sophia',['parlor','nursery','dining']); 
+      if(beatriceInMansion) placeChar('beatrice',['parlor','garden']); 
+      if(flag('ch_alice_born')||a>=2) placeChar('alice',['parlor']); 
+      if(a>=1) placeChar('claude',['parlor','dining']); 
+    }
+    if(loc==='dining'){ 
+      placeChar('sophia',['dining','parlor']); 
+      if(beatriceInMansion) placeChar('beatrice',['dining','parlor']); 
+      if(flag('ch_alice_born')||a>=2) placeChar('alice',['dining']); 
+      placeChar('claude',['dining','parlor']); 
+    }
+    if(loc==='hallway'){ 
+      if(beatriceInMansion) placeChar('beatrice',['hallway','garden']); 
+      if(a>=0) placeChar('sophia',['hallway','parlor']); 
+      if(a>=3) placeChar('claude',['hallway']); 
+      if(flag('ch_alice_born')||a>=2) placeChar('alice',['hallway']); 
+    }
+    if(loc==='garden'){ 
+      if(beatriceInMansion) placeChar('beatrice',['garden','hallway']); 
+      if(flag('ch_alice_born')||a>=2) placeChar('alice',['garden']); 
+      if(a>=4) placeChar('sophia',['garden']); 
+    }
     if(loc==='study'){ if(a>=1) placeChar('sophia',['study','hallway']); if(flag('ch_alice_born')||a>=3) placeChar('alice',['study']); if(a>=5) placeChar('claude',['study']); }
-    if(loc==='training'){ if(a>=4) placeChar('beatrice',['training','garden']); if(a>=6) placeChar('claude',['training']); }
-    if(loc==='kitchen'){ placeChar('sophia',['kitchen','dining']); if(a>=2) placeChar('beatrice',['kitchen']); }
-    if(loc==='balcony'){ if(a>=2) placeChar('beatrice',['balcony','hallway']); if(flag('ch_alice_born')||a>=3) placeChar('alice',['balcony']); }
+    if(loc==='training'){ if(a>=4 && beatriceInMansion) placeChar('beatrice',['training','garden']); if(a>=6) placeChar('claude',['training']); }
+    if(loc==='kitchen'){ placeChar('sophia',['kitchen','dining']); if(a>=2 && beatriceInMansion) placeChar('beatrice',['kitchen']); }
+    if(loc==='balcony'){ if(a>=2 && beatriceInMansion) placeChar('beatrice',['balcony','hallway']); if(flag('ch_alice_born')||a>=3) placeChar('alice',['balcony']); }
     if(loc==='chapel'){ placeChar('sophia',['chapel','hallway']); if(a>=4) placeChar('claude',['chapel']); }
     if(loc==='cellar'){ if(a>=6) placeChar('claude',['cellar']); }
     if(loc==='town' || loc==='market'){ /* random passers */ }
-    if(loc==='beach'){ placeChar('beatrice',['beach','town']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['beach']); placeChar('sophia',['beach']); }
+    if(loc==='beach'){ 
+      if(beatriceInMansion) placeChar('beatrice',['beach','town']); 
+      if(flag('ch_alice_born')||a>=2) placeChar('alice',['beach']); 
+      placeChar('sophia',['beach']); 
+    }
   }
   if(ph==='academy'){
     if(loc==='dorm'){ placeChar('emma',['dorm','cafeteria']); if(flag('met_noelle')) placeChar('noelle',['dorm','library']); }
@@ -1530,8 +1567,27 @@ function takeCourse(id){
   courseProgress(id, 5 + Math.floor((S.stats.mind||0)/20));
   addExp(8 + (S.stats.mind||0)/10);
   const lv = S.courses[id]?.lv || 0;
+  // 【增强】老师立绘映射 - 匹配故事中的真实角色
+  const teacherCharMap = {
+    '家庭教师':'emma',      // 家庭教师用艾玛的立绘风格
+    '自学/藏书':'noelle',   // 自学时有诺艾儿指导
+    '剑术教官':'ji',       // 剑术教官是霁馆主
+    '通识教授':'fashen',    // 通识教授是法神（新增）
+    '安娜·贝尔':'noelle',  // 水系教授是诺艾儿
+    '霍尔':'hol',           // 霍尔老师
+    '霁馆主':'ji',         // 霁馆主
+  };
+  const teacherChar = teacherCharMap[c.teacher] || null;
+  // 显示老师立绘
+  const portraitLine = teacherChar ? {
+    ch:teacherChar, 
+    emo:'normal', 
+    slot:'center',
+    speaker:c.teacher, 
+    text:`【课程】${c.name}\n指导：${c.teacher}\n${c.desc}`
+  } : {text:`【课程】${c.name}\n指导：${c.teacher}\n${c.desc}`};
   playLines([
-    {text:`【课程】${c.name}\n指导：${c.teacher}\n${c.desc}`},
+    portraitLine,
     {text:`练习结束。${parts.join('，')}。\n课程等级 Lv.${lv}。体力-${c.st||2}。`, freeRoam:true}
   ]);
   updateHUD();
@@ -1619,17 +1675,20 @@ function doRest(){
     return;
   }
   S.restThisSeason = 1;
+  // 【修改】休息恢复体力上限的三分之一，向下取整
+  const restGain = Math.floor(S.mst / 3);
   playLines([
     {text: isBed ? '躺到床上。闭上眼睛。' : '找了个角落靠着。眼皮很重。'},
     {do:()=>{
       const bonus = hasSkill('quiet_mind') ? 10 : 0;
-      S.st = clamp(S.st + 3, 0, S.mst);
+      S.st = clamp(S.st + restGain, 0, S.mst);
       S.hp=S.mhp; S.mp=clamp(S.mp+Math.floor(S.mmp*0.5)+bonus,0,S.mmp);
       advanceDay(1); S.tod=0;
+      // 【修改】休息不再重置季度对话次数上限
       // dream duel opportunity
       maybeDreamDuel();
     }},
-    {text:`睡到了${dateStr()}。体力恢复3点。`, freeRoam:true}
+    {text:`睡到了${dateStr()}。体力恢复${restGain}点（体力上限的三分之一）。`, freeRoam:true}
   ]);
 }
 
@@ -2026,6 +2085,8 @@ function checkStoryGates(){
   if((S.phase==='childhood'||S.phase==='youth') && S.ageY>=2 && !flag('ch_alice_born')){ flag('ch_alice_born',1); runScene('s_alice_born'); return true; }
   if(S.phase==='childhood' && S.ageY>=3 && !flag('mana_awakened') && !flag('ch_mana_scene')){ flag('ch_mana_scene',1); runScene('s_mana_awaken'); return true; }
   if((S.phase==='childhood'||S.phase==='youth') && S.ageY>=4 && !flag('ch_yaoshen')){ flag('ch_yaoshen',1); runScene('s_yaoshen'); return true; }
+  // 【新增】姐姐去上学时自动触发剧情（13岁时）
+  if(S.phase==='youth' && S.ageY>=13 && !flag('beatrice_left_home') && !flag('ch_academy')){ flag('beatrice_left_home',1); runScene('s_beatrice_academy'); return true; }
   if(S.phase==='youth' && S.ageY>=12 && !flag('ch_academy')){ flag('ch_academy',1); runScene('s_academy_start'); return true; }
   // auto trigger key plots with correct scene
   if(S.phase==='youth' && S.ageY>=8 && !flag('ch_micro')){ flag('ch_micro',1); runScene('s_micro'); return true; }
@@ -2447,38 +2508,7 @@ SCENES.s_black_name = {
   ]
 };
 
-// endings
-// endings
-SCENES.s_ending_menu = {
-  bg:'bg-ending',
-  lines:[
-    {text:'旅途仍在继续。此刻的你，想走向哪一种未来？', choices:()=>{
-      const needTier = S.tier < 2;
-      const needLove = (S.love.beatrice||0)<2 || (S.love.alice||0)<2;
-      return [
-        {text:'🏠 小镇的丝之家（日常结局）', do:()=>ending('home')},
-        {text:'❄️ 冰与剑的远方（冒险结局）', do:()=>ending('adventure'), disabled:needTier, reason:needTier?'需要中级以上':''},
-        {text:'👭 三姐妹的庭院', do:()=>ending('sisters'), disabled:needLove, reason:needLove?'需要贝蒂与爱丽丝好感各≥2':''},
-        {text:'📖 继续自由探索', do:()=>enterFreeRoam()},
-      ];
-    }}
-  ]
-};
-
-function ending(type){
-  const map = {
-    home:{title:'小镇的丝之家', desc:'你在某个安静的地方停下了。有花，有粥，有偶尔糊掉的锅。体力值每天回满。发呆是正经事。\n「悠闲地生活」——原来真的可以做到。'},
-    adventure:{title:'冰与剑的远方', desc:'赫兰的风是锤子。你握着那把挂着紫色剑穗的剑，在雪原上走下去。\n变强。活着。有朝一日——把真相从冰层下挖出来。'},
-    sisters:{title:'三姐妹的庭院', desc:'月虹螺的虹彩在灯下流转。歪蝴蝶结的手链，碎贝壳手绳，冰晶胸针。\n「只要是一起的，就是最好的礼物。」\n有些人已不在。有些温度还在。'},
-  };
-  const e=map[type]||map.home;
-  if(!codex.endings.includes(type)){ codex.endings.push(type); saveCodex(); }
-  show('game-screen',0); show('ending-screen',1); setBG('bg-ending');
-  $('end-title').textContent=e.title;
-  $('end-desc').textContent=e.desc;
-  $('end-stats').innerHTML=`等阶 ${tierName()} · Lv.${S.lv} · 金币 ${S.gold}<br>成就 ${Object.keys(S.ach).length}/${ACH.length} · 死亡 ${S.deaths}<br>好感 贝蒂${S.love.beatrice||0} 爱丽丝${S.love.alice||0} 诺艾儿${S.love.noelle||0}`;
-  sfx('ok');
-}
+// 【已删除】结局选择系统
 
 // ========== STORY CMD FROM ROAM ==========
 function tryStoryAction(){
@@ -2537,8 +2567,7 @@ function continueGame(){
 $('btn-new').onclick=()=>{ sfx('click'); newGame(); };
 $('btn-continue').onclick=()=>{ sfx('click'); continueGame(); };
 $('btn-title').onclick=()=>{ save(); show('game-screen',0); show('battle-screen',0); show('panel',0); show('title-screen',1); updateHUD(); };
-$('btn-title2').onclick=()=>{ show('ending-screen',0); show('title-screen',1); };
-$('btn-again').onclick=()=>{ show('ending-screen',0); newGame(); };
+// 【删除】结局选择系统相关按钮已移除
 $('btn-mute').onclick=()=>{ muted=!muted; localStorage.setItem(MUTE_KEY, muted?'1':'0'); $('btn-mute').textContent=muted?'🔇':'🔊'; };
 $('btn-help').onclick=()=>show('help-screen',1);
 $('btn-help-close').onclick=()=>show('help-screen',0);
@@ -2546,7 +2575,7 @@ $('btn-codex').onclick=()=>{
   show('codex',1);
   const got = ACH.filter(a=>S.ach[a.id]);
   $('codex-list').innerHTML = `
-    <p style="margin-bottom:8px">结局 ${codex.endings?.length||0} · 成就 ${got.length}/${ACH.length}</p>
+    <p style="margin-bottom:8px">成就 ${got.length}/${ACH.length}</p>
     <p style="opacity:.7;font-size:12px">未解锁内容不会显示。</p>
     <div style="margin-top:12px">${got.map(a=>`<div class="p-ach">🏆 ${a.name}</div>`).join('') || '（空）'}</div>`;
 };
@@ -2596,7 +2625,6 @@ doNextTime = function(){
     if(!flag('arrived_jikan')) ch.push({text:'剧情：抵达霁馆', do:function(){ flag('arrived_jikan',1); runScene('s_jikan_arrive'); }});
     else ch.push({text:'北林讨伐 ⚡3', do:function(){ if(!spendST(3)) return; startBattle({name:'灰棘狼群',emoji:'🐺',hp:50+S.lv*2,atk:6+S.tier*2,exp:35,gold:8},function(){ S.gold+=8; addExp(10); enterFreeRoam(); }); }});
   }
-  ch.push({text:'结局选择', do:function(){ runScene('s_ending_menu'); }});
   ch.push({text:'取消', do:function(){ enterFreeRoam(); }});
 
   playLines([{text:'这个季度要做什么？\n（选「进入下个季度」会推进时间并恢复体力）', choices: ch}]);

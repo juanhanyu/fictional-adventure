@@ -422,7 +422,7 @@ function baseState(){
   return {
     name:'希尔维亚·维斯特利亚', alias:null,
     ageY:0, ageD:0, year:1, month:5, day:1, tod:1, season:0, // 春=0 出生年1年春
-    hp:8, mhp:8, mp:12, mmp:12, st:10, mst:10,
+    hp:8, mhp:8, mp:12, mmp:12, st:5, mst:5,
     atk:1, mag:4, pdef:0, mdef:0,
     lv:1, exp:0, next:100,
     tier:0, // 0无 1初级...
@@ -501,9 +501,7 @@ function addExp(n){
     // 只涨上限与基础属性，不回满生命/魔力/体力
     S.mhp+=3; S.mmp+=5; S.atk+=1; S.mag+=2; S.pdef+=1; S.mdef+=1;
     S.hp=Math.min(S.hp, S.mhp); S.mp=Math.min(S.mp, S.mmp);
-    // 体力上限随等级略增，但不回满
-    S.mst = Math.min(80, (S.mst||20) + 1);
-    S.st = Math.min(S.st, S.mst);
+    // 体力与等级脱钩，不因升级改变
     up=true;
   }
   if(up){ sfx('level'); toast(`⭐ 升级！Lv.${S.lv}`); checkTierUp(); }
@@ -545,8 +543,7 @@ function advanceTod(n=1){
     S.tod++;
     if(S.tod>=5){ S.tod=0; advanceDay(1); }
   }
-  // passive regen small
-  S.st = clamp(S.st+1, 0, S.mst);
+  // 不被动回复体力（体力只能通过休息/换日恢复）
   updateHUD(); save();
 }
 function advanceDay(n=1){
@@ -564,7 +561,7 @@ function advanceDay(n=1){
     flag('talked_today', {});
     checkAgeEvents();
   }
-  S.st = S.mst;
+  S.st = clamp(S.st + Math.floor(S.mst*0.5), 0, S.mst);
   S.hp = clamp(S.hp+Math.floor(S.mhp*0.3),0,S.mhp);
   S.mp = clamp(S.mp+Math.floor(S.mmp*0.3),0,S.mmp);
 }
@@ -585,7 +582,7 @@ function advanceSeason(n=1){
     flag('talked_today', {});
     S.restThisSeason = 0;
     // restore
-    S.st = S.mst;
+    S.st = clamp(S.st + Math.floor(S.mst*0.5), 0, S.mst);
     S.hp = clamp(S.hp + Math.floor(S.mhp*0.5), 0, S.mhp);
     S.mp = clamp(S.mp + Math.floor(S.mmp*0.5), 0, S.mmp);
     // unlocks by age
@@ -621,13 +618,17 @@ function checkAgeEvents(){
   // handled by phase scenes mostly
 }
 function syncStatsToAge(){
-  if(S.ageY>=1 && S.ageY<3){ S.mhp=Math.max(S.mhp,18); S.mmp=Math.max(S.mmp,20); S.mst=Math.max(S.mst,11); }
-  if(S.ageY>=3){ S.mhp=Math.max(S.mhp,35); S.mmp=Math.max(S.mmp,52); S.mag=Math.max(S.mag,12); S.mst=Math.max(S.mst,14); }
-  if(S.ageY>=5){ S.mhp=Math.max(S.mhp,55); S.mmp=Math.max(S.mmp,80); S.mag=Math.max(S.mag,22); S.lv=Math.max(S.lv,8); S.mst=Math.max(S.mst,16); }
-  if(S.ageY>=8){ S.mhp=Math.max(S.mhp,100); S.mmp=Math.max(S.mmp,150); S.mag=Math.max(S.mag,45); S.atk=Math.max(S.atk,12); S.lv=Math.max(S.lv,15); S.mst=Math.max(S.mst,18); if(S.phase==='prologue'||S.phase==='childhood') S.phase='youth'; }
+  // 体力上限：初始5，每2岁+1，最多额外+10（20岁时封顶15）
+  S.mst = Math.max(S.mst, 5 + Math.min(10, Math.floor(S.ageY / 2)));
+  S.st = Math.min(S.st, S.mst);
+  // 其他属性随年龄成长
+  if(S.ageY>=1 && S.ageY<3){ S.mhp=Math.max(S.mhp,18); S.mmp=Math.max(S.mmp,20); }
+  if(S.ageY>=3){ S.mhp=Math.max(S.mhp,35); S.mmp=Math.max(S.mmp,52); S.mag=Math.max(S.mag,12); }
+  if(S.ageY>=5){ S.mhp=Math.max(S.mhp,55); S.mmp=Math.max(S.mmp,80); S.mag=Math.max(S.mag,22); S.lv=Math.max(S.lv,8); }
+  if(S.ageY>=8){ S.mhp=Math.max(S.mhp,100); S.mmp=Math.max(S.mmp,150); S.mag=Math.max(S.mag,45); S.atk=Math.max(S.atk,12); S.lv=Math.max(S.lv,15); if(S.phase==='prologue'||S.phase==='childhood') S.phase='youth'; }
   if(S.ageY>=10){ S.mhp=Math.max(S.mhp,164); S.mmp=Math.max(S.mmp,285); S.mag=Math.max(S.mag,67); S.lv=Math.max(S.lv,22); }
-  if(S.ageY>=12){ S.lv=Math.max(S.lv,28); S.mst=Math.max(S.mst,20); }
-  if(S.ageY>=13){ S.lv=Math.max(S.lv,31); S.mmp=Math.max(S.mmp,324); S.mag=Math.max(S.mag,112); S.mst=Math.max(S.mst,21); }
+  if(S.ageY>=12){ S.lv=Math.max(S.lv,28); }
+  if(S.ageY>=13){ S.lv=Math.max(S.lv,31); S.mmp=Math.max(S.mmp,324); S.mag=Math.max(S.mag,112); }
   // 不回满任何条
   S.hp=Math.min(S.hp, S.mhp); S.mp=Math.min(S.mp, S.mmp); S.st=Math.min(S.st, S.mst);
   S.next = Math.max(S.next, 100+S.lv*20);
@@ -1625,11 +1626,11 @@ function doTrain(){
 
 function triggerSickPlot(){
   S.sickUntil = (S.dayCount || 0) + 365; // one year
-  S.mst = Math.max(5, (S.mst||10) - 2);
+  S.mst = Math.max(3, (S.mst||5) - 1);
   S.st = Math.min(S.st, S.mst);
   playLines([
     {text:'你强行继续修行，魔力逆流，身体出现异常。'},
-    {text:'一年内体力上限减少2点。', do:()=>{ S.st = Math.min(S.st, S.mst); }},
+    {text:'一年内体力上限减少1点。', do:()=>{ S.st = Math.min(S.st, S.mst); }},
     {text:'（生病剧情已触发）', freeRoam:true}
   ]);
 }
@@ -1676,15 +1677,16 @@ function doRest(){
       const bonus = hasSkill('quiet_mind') ? 10 : 0;
       // save talk count so rest doesn't reset it
       const savedTalked = flag('talked_today') || {};
-      S.st = clamp(S.st + stRecover, 0, S.mst);
       S.hp=S.mhp; S.mp=clamp(S.mp+Math.floor(S.mmp*0.5)+bonus,0,S.mmp);
+      // 休息：睡一整夜，体力回满
+      S.st = S.mst;
       advanceDay(1); S.tod=0;
       // restore talk count after advanceDay resets it
       flag('talked_today', savedTalked);
       // dream duel opportunity
       maybeDreamDuel();
     }},
-    {text:`睡到了${dateStr()}。体力恢复${stRecover}点。`, freeRoam:true}
+    {do:()=>{}, text:`睡到了${dateStr()}。体力回满。`, freeRoam:true}
   ]);
 }
 
@@ -2265,8 +2267,8 @@ SCENES.s_alice_born = {
     {text:'那天在房门外等了很久。婴儿的哭声传来。'},
     {ch:'claude', speaker:'克劳德', text:'是女孩。'},
     {ch:'sophia', speaker:'索菲亚', text:'这是你们的妹妹，爱丽丝。'},
-    {text:'白色的胎发，像新落的雪。很小，很软。', know:'alice', knowD:30},
-    {ch:'alice', emo:'normal', speaker:'爱丽丝', text:'…………'},
+    {ch:'alice', emo:'normal', text:'白色的胎发，像新落的雪。很小，很软。', know:'alice', knowD:30},
+    {ch:'alice', emo:'normal', speaker:'爱丽丝', text:'皱巴巴的，红红的，眼睛闭着，还在哇哇大哭。'},
     {ch:'sophia', speaker:'索菲亚', text:'以后你就是姐姐了，要照顾她哦。'},
     {text:'照顾？\n嗯。好像也不是不可以。', unlock:['study','garden'], freeRoam:true}
   ]

@@ -1595,7 +1595,6 @@ function doTrain(){
     playLines([{text:'这里不适合修行。去花园、练武场或训练场吧。', freeRoam:true}]); return;
   }
   if(!spendST(3)) return;
-  advanceTod(1);
   if(S.sickUntil > S.dayCount){
     playLines([{text:'你还在生病状态中，是否继续修行？', choices:[
       {text:'继续（触发生病剧情）', do:()=>{ triggerSickPlot(); }},
@@ -1641,7 +1640,6 @@ function doStudy(){
     playLines([{text:'这里没有可看的书。去图书室或图书馆吧。', freeRoam:true}]); return;
   }
   if(!spendST(2)) return;
-  advanceTod(1);
   const bonus = hasSkill('deep_read')||hasSkill('ice_palace') ? 10 : 0;
   if(S.stats) addStat('mind', 2);
   playLines([

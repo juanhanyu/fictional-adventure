@@ -542,8 +542,8 @@ function advanceDay(n=1){
     S.day++; S.dayCount++; S.ageD++;
     const md = MONTH_DAYS[S.month]||30;
     if(S.day>md){ S.day=1; S.month++; if(S.month>12){ S.month=1; S.year++; } }
-    // birthday: born month 5 day 1
-    if(S.month===5 && S.day===1 && S.dayCount>1){ S.ageY++; S.ageD=0; }
+    // birthday: born month 3 day 1
+    if(S.month===3 && S.day===1 && S.dayCount>1){ S.ageY++; S.ageD=0; }
     // also roll age by total days as fallback
     const byDays = Math.floor(S.dayCount/365);
     if(byDays>S.ageY) { S.ageY=byDays; S.ageD=S.dayCount%365; }
@@ -1020,9 +1020,8 @@ function showCard(vol, t, s, cb){
   show('card',1); sfx('page');
   let done=false;
   const finish=()=>{ if(done) return; done=true; show('card',0); if(cb) cb(); };
-  const timer=setTimeout(finish, 1600);
   const card=$('card');
-  card.onclick=()=>{ clearTimeout(timer); finish(); card.onclick=null; };
+  card.onclick=()=>{ finish(); card.onclick=null; };
 }
 
 // ========== FREE ROAM ==========

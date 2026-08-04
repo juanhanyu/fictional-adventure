@@ -2080,11 +2080,8 @@ function checkStoryGates(){
   if(S.phase==='academy' && !flag('met_charlotte') && flag('met_aino')){ flag('met_charlotte',1); queue.push('s_charlotte_meet'); }
   // 海伦娜访客（第三章，期中考试后第二周 → 12年9月）
   if(S.phase==='academy' && !flag('ch_helena') && dateAtLeast(12,9)){ flag('ch_helena',1); queue.push('s_helena'); }
-  // 与艾诺比试：海伦娜走后下一个季度才触发（第四章）
-  if(S.phase==='academy' && flag('ch_helena') && !flag('ch_aino_sparring')){
-    const hs = flag('helena_left_season'), hy = flag('helena_left_year');
-    if(hs!=null && hy!=null && (S.year*4+S.season > hy*4+hs+1)){ flag('ch_aino_sparring',1); queue.push('s_aino_sparring'); }
-  }
+  // 与艾诺比试（第四章，12年12月）
+  if(S.phase==='academy' && !flag('ch_aino_sparring') && dateAtLeast(12,12)){ flag('ch_aino_sparring',1); queue.push('s_aino_sparring'); }
   // 阿琼：比试之后（第四章）
   if(S.phase==='academy' && !flag('met_ajun') && flag('ch_aino_sparring')){ flag('met_ajun',1); queue.push('s_ajun'); }
   if(S.phase==='academy' && !flag('ch_tree') && S.ageY>=15){ flag('ch_tree',1); queue.push('s_tree'); }

@@ -2071,14 +2071,23 @@ function checkStoryGates(){
   if(!flag('ch_beatrice_day') && dateAtLeast(7,12)){ flag('ch_beatrice_day',1); queue.push('s_beatrice_day'); }
   if(!flag('ch_micro') && dateAtLeast(8,6)){ flag('ch_micro',1); queue.push('s_micro'); }
   if(!flag('ch_beatrice_leaves') && dateAtLeast(10,3)){ flag('ch_beatrice_leaves',1); queue.push('s_beatrice_leaves'); }
-  if(!flag('ch_academy') && dateAtLeast(12,3)){ flag('ch_academy',1); queue.push('s_academy_start'); }
+  if(!flag('ch_academy') && S.ageY>=12){ flag('ch_academy',1); queue.push('s_academy_start'); }
   // 第二卷 学院篇（开学典礼后依次触发）
   if(S.phase==='academy' && !flag('ch_opening_ceremony') && flag('ch_academy')){ flag('ch_opening_ceremony',1); queue.push('s_opening_ceremony'); }
   if(S.phase==='academy' && !flag('met_noelle') && flag('ch_opening_ceremony')){ flag('met_noelle',1); queue.push('s_noelle_meet'); }
-  if(S.phase==='academy' && !flag('met_aino') && flag('met_noelle')){ flag('met_aino',1); queue.push('s_aino_train'); }
+  // 初遇艾诺：接在诺艾儿剧情之后（第二章）
+  if(S.phase==='academy' && !flag('met_aino') && flag('met_noelle')){ flag('met_aino',1); queue.push('s_aino_meet'); }
+  // 夏洛特赌约：初遇艾诺之后（第二章）
   if(S.phase==='academy' && !flag('met_charlotte') && flag('met_aino')){ flag('met_charlotte',1); queue.push('s_charlotte_meet'); }
+  // 海伦娜访客（第三章，期中考试后第二周）
   if(S.phase==='academy' && !flag('ch_helena') && S.ageY>=13){ flag('ch_helena',1); queue.push('s_helena'); }
-  if(S.phase==='academy' && !flag('met_ajun') && S.ageY>=14){ flag('met_ajun',1); queue.push('s_ajun'); }
+  // 与艾诺比试：海伦娜走后下一个季度才触发（第四章）
+  if(S.phase==='academy' && flag('ch_helena') && !flag('ch_aino_sparring')){
+    const hs = flag('helena_left_season'), hy = flag('helena_left_year');
+    if(hs!=null && hy!=null && (S.year*4+S.season > hy*4+hs+1)){ flag('ch_aino_sparring',1); queue.push('s_aino_sparring'); }
+  }
+  // 阿琼：比试之后（第四章）
+  if(S.phase==='academy' && !flag('met_ajun') && flag('ch_aino_sparring')){ flag('met_ajun',1); queue.push('s_ajun'); }
   if(S.phase==='academy' && !flag('ch_tree') && S.ageY>=15){ flag('ch_tree',1); queue.push('s_tree'); }
   if(S.phase==='academy' && !flag('ch_beach') && S.ageY>=15){ flag('ch_beach',1); queue.push('s_beach'); }
   if(S.phase==='academy' && !flag('ch_star') && S.ageY>=15){ flag('ch_star',1); queue.push('s_star_festival'); }
@@ -2877,7 +2886,7 @@ SCENES.s_helena = {
     {ch:'helena', speaker:'海伦娜', text:'那我们就是朋友了！以后要给我写信哦！一言为定！不许反悔！'},
     {ch:'sylvia', speaker:'希尔维亚', text:'不反悔。'},
     {text:'第二天，马车远去。她从窗户探出头，挥手幅度大得像在指挥交通。「再见啦希尔维亚——！给我写信——！」'},
-    {text:'我跟着她们走，手伸进口袋，摸到了那枚十字架。金属的触感凉凉的，但很快就被体温捂热了。和她的手一样的温度。', item:{id:'cross', name:'银十字架', icon:'✝️', desc:'海伦娜所赠。神殿信物。唯一的那枚。'}, love:'helena', loveD:2, flag:'ch_helena', know:'helena', knowD:38, freeRoam:true}
+    {text:'我跟着她们走，手伸进口袋，摸到了那枚十字架。金属的触感凉凉的，但很快就被体温捂热了。和她的手一样的温度。', item:{id:'cross', name:'银十字架', icon:'✝️', desc:'海伦娜所赠。神殿信物。唯一的那枚。'}, love:'helena', loveD:2, flag:'ch_helena', know:'helena', knowD:38, do:()=>{ flag('helena_left_year', S.year); flag('helena_left_season', S.season); }, freeRoam:true}
   ]
 };
 
@@ -2906,13 +2915,14 @@ SCENES.s_ajun = {
     {ch:'ajun', speaker:'阿琼', text:'真的！？太好了！'},
     {text:'艾玛已经吃了三口，眼睛里冒着小星星。诺艾儿默默走过来坐下。'},
     {ch:'noelle', speaker:'诺艾儿', text:'给我也来一碗。'},
-    {text:'她吃完了。而且把酱汁也蘸干净了。阿琼看着空碗，露出了一个比中了彩票还开心的笑容。', flag:'met_ajun', love:'ajun', loveD:1, freeRoam:true}
+    {text:'她吃完了。而且把酱汁也蘸干净了。阿琼看着空碗，露出了一个比中了彩票还开心的笑容。', love:'ajun', loveD:1, freeRoam:true}
   ]
 };
 
-SCENES.s_aino_train = {
+// 初遇艾诺（第二章 同龄人：冰系课堂基本课 → 艾诺门口拦住）
+SCENES.s_aino_meet = {
   bg:'bg-school', phase:'academy',
-  card:{vol:'第二卷', t:'第四章', s:'距离'},
+  card:{vol:'第二卷', t:'第二章', s:'同龄人'},
   lines:[
     {text:'周三下午，冰系课程。这间教室小得寒碜，满打满算也就八个座位，透着一股「因为人少所以经费也不多」的凄凉感。'},
     {text:'最靠窗的位置坐着一个银白色长发的少女。她单手托腮，盯着窗外的一只麻雀发呆，浅蓝色的眸子静悄悄的，皮肤白得像是从没见过太阳。'},
@@ -2936,7 +2946,42 @@ SCENES.s_aino_train = {
     {ch:'aino', speaker:'艾诺', text:'我叫艾诺·塔尔维。'},
     {ch:'sylvia', speaker:'希尔维亚', text:'希尔维亚·维斯特利亚。'},
     {ch:'aino', speaker:'艾诺', text:'我知道你，你姐姐在火系挺出名的。下周三见。别再弄出气泡了。'},
-    {text:'这赫兰的冰系魔法师，难不成嘴巴也能冻人么。'},
+    {text:'这赫兰的冰系魔法师，难不成嘴巴也能冻人么。', know:'aino', knowD:8, love:'aino', loveD:1, freeRoam:true}
+  ]
+};
+
+// 与艾诺比试（第四章 距离：冰墙术 → 花坊 → 食堂 → 比试）
+SCENES.s_aino_sparring = {
+  bg:'bg-school', phase:'academy',
+  card:{vol:'第二卷', t:'第四章', s:'距离'},
+  lines:[
+    {text:'海伦娜走后的第三天，艾玛凑到我面前，眼睛瞪得圆圆的。'},
+    {ch:'emma', speaker:'艾玛', text:'希尔维亚！你最近发呆的时间变长了！'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……有吗？'},
+    {ch:'emma', speaker:'艾玛', text:'当然有！以前你发呆的时候，我叫你一声就回神了。现在要叫两三声！'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'可能是天气太好了。'},
+    {ch:'emma', speaker:'艾玛', text:'骗人！你是不是想海伦娜了？'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'……你要这么理解也行。'},
+    {text:'海伦娜在的时候，确实很热闹。现在她走了，日子又恢复了原来的节奏。慢悠悠的，安静的，适合发呆的节奏。'},
+    {text:'周三，冰系课程。今天学冰墙术。'},
+    {ch:'hol', speaker:'霍尔', text:'冰墙，就是大一点的冰盾。你们自己琢磨。'},
+    {text:'然后他就坐下了，翻开一本书看起来。书名是《极地美食指南》。上周那本是《北方冻原生存手册》，上上周是《雪地温泉一百选》。这个老师到底在搞什么跨界研究？'},
+    {text:'我试着凝聚冰墙。既然是大一点的冰盾，那结构应该差不多——魔力在空气中铺展开来，凝结，成型。一面冰墙出现在面前。看起来还不错？我伸手敲了敲。声音清脆单薄，跟敲窗户玻璃似的。然后它自己裂了。'},
+    {text:'「错了。」声音不是从讲台传来的。是从旁边。'},
+    {ch:'aino', speaker:'艾诺', text:'冰墙不是放大版的冰盾。'},
+    {text:'她蹲下来，手掌贴在地面上。「看好了。」魔力从她掌心流出，但不是往上，而是往下。地面微微震动，然后——一面冰墙从地底升起。像一棵树从土里长出来一样，稳稳当当。'},
+    {ch:'aino', speaker:'艾诺', text:'冰墙要有根。就像树一样。你只看到地上的部分，但地下还有同样深的根系。没有根，就是一面立着的冰板——风一吹就倒，拳头一砸就碎。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'为什么书上没写？'},
+    {ch:'aino', speaker:'艾诺', text:'书上写的都是理论。实战的时候，没有根的冰墙，一推就倒。'},
+    {text:'我蹲下来，试着把魔力往地下引。这感觉很奇怪。像是要把水倒进看不见的杯子里。第二面冰墙升起来了。比第一面稳。'},
+    {ch:'aino', speaker:'艾诺', text:'根不够深。至少再深一倍。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'我看不见地下的部分。'},
+    {ch:'aino', speaker:'艾诺', text:'所以要用魔力感知，不是用眼睛。'},
+    {text:'她说完转身回自己的位置。走了两步又回头。'},
+    {ch:'aino', speaker:'艾诺', text:'周六下午，训练场。实战练习。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'和你？'},
+    {ch:'aino', speaker:'艾诺', text:'不然呢？冰系就这么几个人，其他人都太弱了。你……勉强能打。'},
+    {text:'这算是认可吗？还是说只是找不到更好的沙包？算了，反正闲着也是闲着。'},
     {bg:'bg-img-garden bg-garden', text:'下课后，我路过校园花坊。推开门，一股暖湿的空气扑面而来。然后我看见了一个不该出现在这里的人。'},
     {text:'艾诺蹲在角落，背对着门口，面前是一盆小小的蓝色的花。她正用手指小心翼翼地拨弄花瓣上的水滴，动作轻得像在碰一只蝴蝶的翅膀。和课堂上那个冷着脸的人完全判若两人。'},
     {ch:'aino', speaker:'艾诺', text:'……你来多久了？'},
@@ -2955,7 +3000,39 @@ SCENES.s_aino_train = {
     {ch:'aino', speaker:'艾诺', text:'……它叫伊诺。'},
     {ch:'sylvia', speaker:'希尔维亚', text:'什么？'},
     {ch:'aino', speaker:'艾诺', text:'花的名字。和我同名。在赫兰语里，伊诺是「冬天的孩子」的意思。'},
-    {text:'门关上了。我看着那盆蓝色的小花。花瓣上还挂着水滴，在温室的暖光里折射出细碎的光。冬天的孩子。挺适合她的。', know:'aino', knowD:12, love:'aino', loveD:1, flag:'met_aino', freeRoam:true}
+    {text:'冬天的孩子。挺适合她的。', know:'aino', knowD:12, love:'aino', loveD:1},
+    {bg:'bg-img-cafeteria bg-cafeteria', text:'食堂，老位置。'},
+    {ch:'noelle', speaker:'诺艾儿', text:'这本书的重量可以当武器了吧。'},
+    {text:'她抱着一本能砸死人的《高级魔法公式推导》，一边吃饭一边在草稿纸上写写画画。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'确实。上次有个男生想搭讪，我举起这本书，他就跑了。'},
+    {ch:'noelle', speaker:'诺艾儿', text:'假的。但这本书确实很重。'},
+    {text:'我看着她，突然问：「累吗？」她的笔停了一下。然后抬起头，用一种很奇怪的眼神看着我。'},
+    {ch:'noelle', speaker:'诺艾儿', text:'你知道吗，你是第一个问我累不累的人。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'其他人都问什么？'},
+    {ch:'noelle', speaker:'诺艾儿', text:'「你是怎么做到的」，「你有什么秘诀」，「你是不是偷看了答案」。好像我能考第一是因为作弊，而不是因为我把吃饭的时间都用来学习。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'所以你累吗？'},
+    {text:'她沉默了。过了一会儿，轻声说：「累啊。累得要死。但是没办法。因为我是平民啊。你们贵族考不好，最多被家里骂两句。我考不好，就要滚回乡下种地。」'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'需要帮助吗？'},
+    {ch:'noelle', speaker:'诺艾儿', text:'不需要施舍。'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'不是施舍。是交易。你教我怎么更有效地学习，我借书给你看。我家里书很多，都是外面买不到的珍本。'},
+    {text:'她愣住了。「……真的？」'},
+    {ch:'sylvia', speaker:'希尔维亚', text:'真的。因为我觉得你值得。'},
+    {text:'她笑了。「成交。」她伸出手。我握住了。她的手很瘦，指尖有茧，但握手的力道很足。', love:'noelle', loveD:1, know:'noelle', knowD:5},
+    {bg:'bg-plain', text:'周六，训练场。艾诺穿着训练服等在那里，白发高高扎起，整个人像一把出鞘的剑。'},
+    {ch:'aino', speaker:'艾诺', text:'规则简单。只用冰系魔法，打中三次算赢。'},
+    {text:'最后一个字还没说完，她已经动了。三根冰锥破土而出，快得离谱。我本能侧身闪避，右肩还是被擦过。'},
+    {ch:'aino', speaker:'艾诺', text:'太慢了。战斗不是回合制比赛，不会有人喊「开始」再给你三秒准备时间。'},
+    {text:'冰墙要有根。像树一样。我学以致用——魔力向下延伸，冰盾从地面长出来。她的冰锥撞上我的冰盾，碎的不是我的。'},
+    {text:'但下一秒，脚下地面突然结冰，我脚底一滑——两根冰刺从侧面刺来。来不及立盾，勉强挡住一根，另一根擦着腰侧过去。'},
+    {ch:'aino', speaker:'艾诺', text:'太依赖正面防御。敌人不会永远从前面来。'},
+    {text:'她的进攻节奏越来越快——冰锥、冰刺、地面结冰、空中冰箭，四个方向同时施压。但我发现了：她冰锥从左侧飞来时，右手正在控制地面结冰——右侧有空档。'},
+    {text:'我赌了。不闪不避，左手凝冰盾挡住冰锥，右手同时甩出一根冰矛。冰矛直奔她右肩——被一面凭空出现的薄冰挡住。她甚至没有用手。'},
+    {ch:'aino', speaker:'艾诺', text:'思路对了。但速度差太多。你的魔力释放路径太长了——从脑子到手掌，经过五个节点。试试直接在目标位置凝聚，不经过手。'},
+    {text:'第二轮。我试着不走手——直接在她身侧的空气中凝聚冰晶。有那么一瞬间，冰晶真的闪了一下。然后一根冰锥把我放倒了。'},
+    {text:'3:1。那一分是我在倒地的瞬间，一颗冰弹从右侧空气中蹦出来，正好弹到她的手背上。'},
+    {ch:'aino', speaker:'艾诺', text:'……这算命中。'},
+    {text:'声音里好像有那么一丁点不情愿。'},
+    {ch:'aino', speaker:'艾诺', text:'有进步。下周继续。……为什么要陪你练？无聊。冰系就这几个人，你是唯一一个不会哭的。', flag:'ch_aino_sparring', freeRoam:true}
   ]
 };
 

@@ -2071,7 +2071,7 @@ function checkStoryGates(){
   if(!flag('ch_beatrice_day') && dateAtLeast(7,12)){ flag('ch_beatrice_day',1); queue.push('s_beatrice_day'); }
   if(!flag('ch_micro') && dateAtLeast(8,6)){ flag('ch_micro',1); queue.push('s_micro'); }
   if(!flag('ch_beatrice_leaves') && dateAtLeast(10,3)){ flag('ch_beatrice_leaves',1); queue.push('s_beatrice_leaves'); }
-  if(!flag('ch_academy') && S.ageY>=12){ flag('ch_academy',1); queue.push('s_academy_start'); }
+  if(!flag('ch_academy') && dateAtLeast(12,3)){ flag('ch_academy',1); queue.push('s_academy_start'); }
   // 第二卷 学院篇（开学典礼后依次触发）
   if(S.phase==='academy' && !flag('ch_opening_ceremony') && flag('ch_academy')){ flag('ch_opening_ceremony',1); queue.push('s_opening_ceremony'); }
   if(S.phase==='academy' && !flag('met_noelle') && flag('ch_opening_ceremony')){ flag('met_noelle',1); queue.push('s_noelle_meet'); }

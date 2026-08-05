@@ -72,6 +72,7 @@ const PORTRAIT_FILES = {
   anna_normal:'assets/portraits/anna_normal.png',
   teacher_normal:'assets/portraits/teacher_normal.png',
   lecturer_normal:'assets/portraits/magic_teacher.png',
+  instructor_normal:'assets/portraits/sword_instructor.png',
   huke_normal:'assets/portraits/huke_normal.png',
 };
 function portraitAgeTier(){
@@ -115,7 +116,7 @@ const CSS_CHARS = {
   ji:['霁馆主','🗡️'], jilan:['霁岚','💜'], lein:['莱恩','🍃'],
   peilin:['沛霖','🍵'], huke:['虎克','👦'], maid:['女仆','🧹'],
   teacher:['家庭教师','📖'], hol:['霍尔','📘'], anna:['安娜·贝尔','💧'],
-  lecturer:['中年教师','📜'],
+  lecturer:['中年教师','📜'], instructor:['剑术教官','⚔️'],
 };
 
 // ========== CHARACTERS META ==========
@@ -143,6 +144,7 @@ const CHARS = {
   anna:{name:'安娜·贝尔', short:'安娜', css:'anna', role:'水系导师'},
   teacher:{name:'家庭教师', short:'家庭教师', css:'teacher', role:'启蒙老师'},
   lecturer:{name:'中年教师', short:'中年教师', css:'teacher', role:'教务'},
+  instructor:{name:'剑术教官', short:'教官', css:'instructor', role:'教官'},
 };
 
 // 已习得魔法（非「勇者之赐」技能）的展示信息
@@ -1064,8 +1066,8 @@ function phaseAreaAllowed(area){
     return area==='公爵府' || area==='领地' || area==='王都';
   }
   if(ph==='academy'){
-    // 入学后不可自由回公爵府
-    return area==='魔法大学' || area==='王都' || area==='领地';
+    // 入学后不可自由回公爵府与领地（利维莫尔镇/海滨别墅等）
+    return area==='魔法大学' || area==='王都';
   }
   if(ph==='journey' || ph==='finale'){
     // 旅途后不可自由回学院/公爵府
@@ -1306,29 +1308,29 @@ function whoIsHere(){
   if(ph==='prologue'||ph==='childhood'||ph==='youth'){
     if(loc==='nursery' || (loc==='ownroom' && a>=8)){ 
     const room = (loc==='ownroom' && a>=8) ? 'ownroom' : 'nursery';
-    placeChar('sophia',[room,'parlor']); if(!flag('ch_beatrice_leaves')) placeChar('beatrice',[room,'parlor','garden']); if(flag('ch_alice_born')||a>=2) placeChar('alice',[room,'parlor']); 
+    placeChar('sophia',[room,'parlor']); if(!flag('ch_beatrice_leaves')) placeChar('beatrice',[room,'parlor','garden']); if(dateAtLeast(2,9)) placeChar('alice',[room,'parlor']); 
   }
-    if(loc==='parlor'){ placeChar('sophia',['parlor','nursery','dining']); if(!flag('ch_beatrice_leaves')) placeChar('beatrice',['parlor','garden']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['parlor']); if(a>=1) placeChar('claude',['parlor','dining']); }
-    if(loc==='dining'){ placeChar('sophia',['dining','parlor']); if(!flag('ch_beatrice_leaves')) placeChar('beatrice',['dining','parlor']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['dining']); placeChar('claude',['dining','parlor']); }
-    if(loc==='hallway'){ if(!flag('ch_beatrice_leaves')) placeChar('beatrice',['hallway','garden']); if(a>=0) placeChar('sophia',['hallway','parlor']); if(a>=3) placeChar('claude',['hallway']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['hallway']); }
-    if(loc==='garden'){ if(!flag('ch_beatrice_leaves')) placeChar('beatrice',['garden','hallway']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['garden']); if(a>=4) placeChar('sophia',['garden']); }
-    if(loc==='study'){ if(a>=1) placeChar('sophia',['study','hallway']); if(flag('ch_alice_born')||a>=3) placeChar('alice',['study']); if(a>=5) placeChar('claude',['study']); }
+    if(loc==='parlor'){ placeChar('sophia',['parlor','nursery','dining']); if(!flag('ch_beatrice_leaves')) placeChar('beatrice',['parlor','garden']); if(dateAtLeast(2,9)) placeChar('alice',['parlor']); if(a>=1) placeChar('claude',['parlor','dining']); }
+    if(loc==='dining'){ placeChar('sophia',['dining','parlor']); if(!flag('ch_beatrice_leaves')) placeChar('beatrice',['dining','parlor']); if(dateAtLeast(2,9)) placeChar('alice',['dining']); placeChar('claude',['dining','parlor']); }
+    if(loc==='hallway'){ if(!flag('ch_beatrice_leaves')) placeChar('beatrice',['hallway','garden']); if(a>=0) placeChar('sophia',['hallway','parlor']); if(a>=3) placeChar('claude',['hallway']); if(dateAtLeast(2,9)) placeChar('alice',['hallway']); }
+    if(loc==='garden'){ if(!flag('ch_beatrice_leaves')) placeChar('beatrice',['garden','hallway']); if(dateAtLeast(2,9)) placeChar('alice',['garden']); if(a>=4) placeChar('sophia',['garden']); }
+    if(loc==='study'){ if(a>=1) placeChar('sophia',['study','hallway']); if(dateAtLeast(2,9)) placeChar('alice',['study']); if(a>=5) placeChar('claude',['study']); }
     if(loc==='training'){ if(a>=4 && !flag('ch_beatrice_leaves')) placeChar('beatrice',['training','garden']); if(a>=6) placeChar('claude',['training']); }
     if(loc==='kitchen'){ placeChar('sophia',['kitchen','dining']); if(a>=2) placeChar('beatrice',['kitchen']); }
-    if(loc==='balcony'){ if(a>=2) placeChar('beatrice',['balcony','hallway']); if(flag('ch_alice_born')||a>=3) placeChar('alice',['balcony']); }
+    if(loc==='balcony'){ if(a>=2) placeChar('beatrice',['balcony','hallway']); if(dateAtLeast(2,9)) placeChar('alice',['balcony']); }
     if(loc==='chapel'){ placeChar('sophia',['chapel','hallway']); if(a>=4) placeChar('claude',['chapel']); }
     if(loc==='cellar'){ if(a>=6) placeChar('claude',['cellar']); }
     if(loc==='town'){ /* random passers */ }
     if(loc==='market' && ph==='academy'){ /* market only accessible from academy */ }
-    if(loc==='beach'){ if(!flag('ch_beatrice_leaves')) placeChar('beatrice',['beach','town']); if(flag('ch_alice_born')||a>=2) placeChar('alice',['beach']); placeChar('sophia',['beach']); }
+    if(loc==='beach'){ if(!flag('ch_beatrice_leaves')) placeChar('beatrice',['beach','town']); if(dateAtLeast(2,9)) placeChar('alice',['beach']); placeChar('sophia',['beach']); }
   }
   if(ph==='academy'){
-    if(loc==='dorm'){ placeChar('emma',['dorm','cafeteria']); if(flag('met_noelle')) placeChar('noelle',['dorm','library']); }
-    if(loc==='library'||loc==='clocktower'){ placeChar('noelle',['library','cafeteria']); if(flag('met_noelle')) placeChar('emma',['library']); }
-    if(loc==='cafeteria'){ placeChar('emma',['cafeteria','dorm']); if(flag('met_noelle')) placeChar('noelle',['cafeteria']); if(flag('met_ajun')) placeChar('ajun',['cafeteria']); if(flag('ch_helena')) placeChar('helena',['cafeteria']); }
+    if(loc==='dorm'){ placeChar('emma',['dorm','cafeteria']); if(flag('met_noelle')) placeChar('noelle',['dorm','library']); if(dateAtLeast(14,3)) placeChar('alice',['dorm','cafeteria','library']); }
+    if(loc==='library'||loc==='clocktower'){ placeChar('noelle',['library','cafeteria']); if(flag('met_noelle')) placeChar('emma',['library']); if(dateAtLeast(14,3)) placeChar('alice',['library','cafeteria','dorm']); }
+    if(loc==='cafeteria'){ placeChar('emma',['cafeteria','dorm']); if(flag('met_noelle')) placeChar('noelle',['cafeteria']); if(flag('met_ajun')) placeChar('ajun',['cafeteria']); if(flag('ch_helena')) placeChar('helena',['cafeteria']); if(dateAtLeast(14,3)) placeChar('alice',['cafeteria','dorm','library']); }
     if(loc==='water_class'){ if(flag('met_noelle')) placeChar('noelle',['water_class','library']); placeChar('emma',['water_class']); placeChar('anna',['water_class','cafeteria']); }
-    if(loc==='ice_class'||loc==='flowerhouse'){ if(flag('met_aino')||true) placeChar('aino',['ice_class','training_field']); placeChar('hol',['ice_class','library']); }
-    if(loc==='training_field'){ if(flag('met_aino')) placeChar('aino',['training_field']); placeChar('beatrice',['training_field']); }
+    if(loc==='ice_class'||loc==='flowerhouse'){ if((flag('met_aino')||true) && !dateAtLeast(14,3)) placeChar('aino',['ice_class','training_field']); placeChar('hol',['ice_class','library']); }
+    if(loc==='training_field'){ if(flag('met_aino') && !dateAtLeast(14,3)) placeChar('aino',['training_field']); placeChar('beatrice',['training_field']); }
     if(loc==='memorial'){ placeChar('charlotte',['memorial']); if(flag('ch_tree')){ placeChar('beatrice',['memorial']); placeChar('alice',['memorial']); } }
     if(loc==='auditorium'){ placeChar('hol',['auditorium','ice_class']); placeChar('anna',['auditorium','water_class']); }
   }
@@ -1695,7 +1697,8 @@ function doRest(){
 function doNextTime(){
   // default: open season menu via override
   advanceSeason(1);
-  playLines([{text:`时间来到 ${dateStr()}。`, do:()=>checkStoryGates(), freeRoam:true}]);
+  if(checkStoryGates()) return;
+  playLines([{text:`时间来到 ${dateStr()}。`, freeRoam:true}]);
 }
 
 function maybeDreamDuel(){
@@ -2132,10 +2135,18 @@ function checkStoryGates(){
   if(S.phase==='academy' && !flag('ch_aino_sparring') && dateAtLeast(12,12)){ flag('ch_aino_sparring',1); queue.push('s_aino_sparring'); }
   // 阿琼：比试之后（第四章）
   if(S.phase==='academy' && !flag('met_ajun') && flag('ch_aino_sparring')){ flag('met_ajun',1); queue.push('s_ajun'); }
-  if(S.phase==='academy' && !flag('ch_tree') && S.ageY>=15){ flag('ch_tree',1); queue.push('s_tree'); }
-  if(S.phase==='academy' && !flag('ch_beach') && S.ageY>=15){ flag('ch_beach',1); queue.push('s_beach'); }
-  if(S.phase==='academy' && !flag('ch_star') && S.ageY>=15){ flag('ch_star',1); queue.push('s_star_festival'); }
-  if(S.phase==='academy' && !flag('did_turnpoint') && S.ageY>=15){ flag('did_turnpoint',1); queue.push('s_turnpoint'); }
+  // 第八章 冰融之际·上（13年9月）
+  if(S.phase==='academy' && !flag('ch_ice_melt_1') && dateAtLeast(13,9)){ flag('ch_ice_melt_1',1); queue.push('s_ice_melt_1'); }
+  // 第八章 冰融之际·下（14年3月）
+  if(S.phase==='academy' && !flag('ch_ice_melt_2') && dateAtLeast(14,3)){ flag('ch_ice_melt_2',1); queue.push('s_ice_melt_2'); }
+  // 海边剧情（14年6月）
+  if(S.phase==='academy' && !flag('ch_beach') && dateAtLeast(14,6)){ flag('ch_beach',1); queue.push('s_beach'); }
+  // 并肩的树（15年3月）
+  if(S.phase==='academy' && !flag('ch_tree') && dateAtLeast(15,3)){ flag('ch_tree',1); queue.push('s_tree'); }
+  // 星辰祭（15年9月）
+  if(S.phase==='academy' && !flag('ch_star') && dateAtLeast(15,9)){ flag('ch_star',1); queue.push('s_star_festival'); }
+  // 转折点一（15年12月）
+  if(S.phase==='academy' && !flag('did_turnpoint') && dateAtLeast(15,12)){ flag('did_turnpoint',1); queue.push('s_turnpoint'); }
   // 旅途篇
   if((S.phase==='journey'||S.phase==='finale') && !flag('arrived_jikan') && S.dayCount>0){ flag('arrived_jikan',1); queue.push('s_jikan_arrive'); }
   if((S.phase==='journey'||S.phase==='finale') && (!S.alias||S.alias!=='眷寒渔') && !flag('ch_black_name')){ flag('ch_black_name',1); queue.push('s_black_name'); }
@@ -2610,3 +2621,16 @@ document.addEventListener('keydown', e=>{
 show('btn-continue', hasSave());
 updateHUD();
 console.log('[转生千金] ready · scenes', Object.keys(SCENES).length);
+if(typeof window !== 'undefined'){
+  window.SCENES = SCENES;
+  window.S = S;
+  window.whoIsHere = whoIsHere;
+  window.checkStoryGates = checkStoryGates;
+  window.phaseAreaAllowed = phaseAreaAllowed;
+  window.getStoryChain = ()=>storyChain;
+  window.love = typeof love !== 'undefined' ? love : ()=>{};
+  window.flag = typeof flag !== 'undefined' ? flag : ()=>{};
+  window.know = typeof know !== 'undefined' ? know : ()=>{};
+  window.sysPopup = typeof sysPopup !== 'undefined' ? sysPopup : ()=>{};
+  window.toast = typeof toast !== 'undefined' ? toast : ()=>{};
+}

@@ -55,6 +55,9 @@ const PORTRAIT_FILES = {
   alice_normal:'assets/portraits/alice_normal.png',
   alice_smile:'assets/portraits/alice_smile.png',
   alice_shy:'assets/portraits/alice_shy.png',
+  alice_child_normal:'assets/portraits/alice_child.png',
+  alice_child_smile:'assets/portraits/alice_child_smile.png',
+  alice_child_shy:'assets/portraits/alice_child_shy.png',
   sophia_normal:'assets/portraits/sophia_normal.png',
   claude_normal:'assets/portraits/claude_normal.png',
   noelle_normal:'assets/portraits/noelle_normal.png',
@@ -95,8 +98,8 @@ function resolvePortrait(charId, emotion){
     return PORTRAIT_FILES['beatrice_'+emo] || PORTRAIT_FILES.beatrice_normal;
   }
   if(charId==='alice'){
-    // child-like until 12
-    if(S.ageY < 12) return PORTRAIT_FILES.alice_normal; // only one set for now
+    // child-like until 12 (uses child portrait set with emotion support)
+    if(S.ageY < 12) return PORTRAIT_FILES['alice_child_'+emo] || PORTRAIT_FILES.alice_child_normal || PORTRAIT_FILES.alice_normal;
     return PORTRAIT_FILES['alice_'+emo] || PORTRAIT_FILES.alice_normal;
   }
   return PORTRAIT_FILES[charId+'_'+emo] || PORTRAIT_FILES[charId+'_normal'] || null;

@@ -74,6 +74,7 @@ const PORTRAIT_FILES = {
   lecturer_normal:'assets/portraits/magic_teacher.png',
   instructor_normal:'assets/portraits/sword_instructor.png',
   huke_normal:'assets/portraits/huke_normal.png',
+  maid_normal:'assets/portraits/maid_normal.png',
 };
 function portraitAgeTier(){
   // 0 infant/hidden, 1 child <10, 2 teen+

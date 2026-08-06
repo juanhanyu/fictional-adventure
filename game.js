@@ -98,8 +98,8 @@ function resolvePortrait(charId, emotion){
     return PORTRAIT_FILES['beatrice_'+emo] || PORTRAIT_FILES.beatrice_normal;
   }
   if(charId==='alice'){
-    // child-like until 12 (uses child portrait set with emotion support)
-    if(S.ageY < 12) return PORTRAIT_FILES['alice_child_'+emo] || PORTRAIT_FILES.alice_child_normal || PORTRAIT_FILES.alice_normal;
+    // child-like before age 5
+    if(S.ageY < 5) return PORTRAIT_FILES['alice_child_'+emo] || PORTRAIT_FILES.alice_child_normal || PORTRAIT_FILES.alice_normal;
     return PORTRAIT_FILES['alice_'+emo] || PORTRAIT_FILES.alice_normal;
   }
   return PORTRAIT_FILES[charId+'_'+emo] || PORTRAIT_FILES[charId+'_normal'] || null;
@@ -107,7 +107,7 @@ function resolvePortrait(charId, emotion){
 function portraitAgeTierFor(charId){
   if(charId==='sylvia') return portraitAgeTier();
   if(charId==='beatrice') return S.ageY < 10 ? 1 : 2;
-  if(charId==='alice') return S.ageY < 12 ? 1 : 2;
+  if(charId==='alice') return S.ageY < 5 ? 1 : 2;
   return 2;
 }
 

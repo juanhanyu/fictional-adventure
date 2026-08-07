@@ -55,6 +55,9 @@ const PORTRAIT_FILES = {
   alice_normal:'assets/portraits/alice_normal.png',
   alice_smile:'assets/portraits/alice_smile.png',
   alice_shy:'assets/portraits/alice_shy.png',
+  alice_child_normal:'assets/portraits/alice_child.png',
+  alice_child_smile:'assets/portraits/alice_child_smile.png',
+  alice_child_shy:'assets/portraits/alice_child_shy.png',
   sophia_normal:'assets/portraits/sophia_normal.png',
   claude_normal:'assets/portraits/claude_normal.png',
   noelle_normal:'assets/portraits/noelle_normal.png',
@@ -74,6 +77,22 @@ const PORTRAIT_FILES = {
   lecturer_normal:'assets/portraits/magic_teacher.png',
   instructor_normal:'assets/portraits/sword_instructor.png',
   huke_normal:'assets/portraits/huke_normal.png',
+  maid_normal:'assets/portraits/maid_normal.png',
+  teacher_middle:'assets/portraits/teacher_middle.png',
+  fengshen_normal:'assets/portraits/fengshen_normal.png',
+  jianshen_normal:'assets/portraits/jianshen_normal.png',
+  wanshen_normal:'assets/portraits/wanshen_normal.png',
+  shengnu_normal:'assets/portraits/shengnu_normal.png',
+  moshen_normal:'assets/portraits/moshen_normal.png',
+  alice_child_shy_lvl1:'assets/portraits/alice_child_shy_lvl1.png',
+  alice_child_shy_lvl2:'assets/portraits/alice_child_shy_lvl2.png',
+  alice_child_shy_lvl3:'assets/portraits/alice_child_shy_lvl3.png',
+  alice_child_shy_lvl4:'assets/portraits/alice_child_shy_lvl4.png',
+  alice_child_shy_lvl5:'assets/portraits/alice_child_shy_lvl5.png',
+  sylvia_age10:'assets/portraits/sylvia_age10.png',
+  sylvia_age11:'assets/portraits/sylvia_age11.png',
+  sylvia_age13:'assets/portraits/sylvia_age13.png',
+  sylvia_age14:'assets/portraits/sylvia_age14.png',
 };
 function portraitAgeTier(){
   // 0 infant/hidden, 1 child <10, 2 teen+
@@ -94,8 +113,8 @@ function resolvePortrait(charId, emotion){
     return PORTRAIT_FILES['beatrice_'+emo] || PORTRAIT_FILES.beatrice_normal;
   }
   if(charId==='alice'){
-    // child-like until 12
-    if(S.ageY < 12) return PORTRAIT_FILES.alice_normal; // only one set for now
+    // child-like before age 5
+    if(S.ageY < 5) return PORTRAIT_FILES['alice_child_'+emo] || PORTRAIT_FILES.alice_child_normal || PORTRAIT_FILES.alice_normal;
     return PORTRAIT_FILES['alice_'+emo] || PORTRAIT_FILES.alice_normal;
   }
   return PORTRAIT_FILES[charId+'_'+emo] || PORTRAIT_FILES[charId+'_normal'] || null;
@@ -103,7 +122,7 @@ function resolvePortrait(charId, emotion){
 function portraitAgeTierFor(charId){
   if(charId==='sylvia') return portraitAgeTier();
   if(charId==='beatrice') return S.ageY < 10 ? 1 : 2;
-  if(charId==='alice') return S.ageY < 12 ? 1 : 2;
+  if(charId==='alice') return S.ageY < 5 ? 1 : 2;
   return 2;
 }
 

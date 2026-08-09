@@ -921,16 +921,29 @@ function updateLive2D(charId, emotion = 'normal', slot = 'center', active = true
   }
   const mw = model.width || 800;
   const mh = model.height || 1000;
-  const scale = Math.min(stageW / mw, stageH / mh) * 0.55;
+  // ===== galgame / "甜蜜女友 2" 风格立绘布局 =====
+  // 1. scale: 让模型"半身像"占画面约 95% 高度（紧贴 + 大）。
+  //    模型原始 mh 大约等于全身高度，把全身装进画面意味着脸在画面正中。
+  //    我们要的是"半身像 / 大头照" → 模型略放大并裁掉下半部。
+  const scale = (stageH / mh) * 1.05;
   model.scale.set(scale);
   const drawW = mw * scale;
   const drawH = mh * scale;
-  let targetCenterX = stageW / 2;
-  if (slot === 'left') targetCenterX = stageW * 0.25;
-  if (slot === 'right') targetCenterX = stageW * 0.75;
+  // 2. 横向：单人 slot=center 居中；双人 left/right 偏两侧。
+  let targetCenterX;
+  if (slot === 'left') targetCenterX = stageW * 0.30;
+  else if (slot === 'right') targetCenterX = stageW * 0.70;
+  else targetCenterX = stageW * 0.50;
+  // 3. 纵向：模型的"脸部区域"在画面 1/3 高度。
+  //    模型脸部大致在 mh 的 ~22% 处（从顶往下），即 faceY = drawH * 0.22。
+  //    我们要 faceY 落在 stageH * 0.32（屏幕中上 1/3），推出 model.y：
+  //      model.y + drawH * 0.22 = stageH * 0.32
+  //      model.y = stageH * 0.32 - drawH * 0.22
+  // 简化用 "0.40 - 0.22 = 0.18" 经验系数：把模型顶端放到 ~12% 高度
   model.x = targetCenterX - drawW / 2;
-  model.y = stageH - drawH - 8;
-  model.alpha = active ? 1.0 : 0.45;
+  model.y = stageH * 0.10; // 顶端距屏幕顶 10%
+  // 4. 多人场景淡化非发言者
+  model.alpha = active ? 1.0 : 0.55;
   applyLive2DExpression(model, emotion);
   return true;
 }

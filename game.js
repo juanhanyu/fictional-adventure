@@ -710,25 +710,34 @@ function setBG(cls){
 const LIVE2D_FILES = {
   sylvia: 'assets/live2d/sylvia/sylvia.model3.json',
   alice: 'assets/live2d/alice/alice.model3.json',
-  beatrice: 'assets/live2d/beatrice/beatrice.model3.json',
 };
 
 let live2dApp = null;
 const live2dModels = {};
 
 function initLive2D() {
-  if (typeof PIXI === 'undefined' || !PIXI.live2d) return;
-  const canvas = document.getElementById('live2d-canvas');
-  if (!canvas) return;
+  if (typeof PIXI === 'undefined' || !PIXI.live2d) {
+    console.warn('[Live2D] PIXI or PIXI.live2d not loaded.');
+    return;
+  }
   try {
+    if (PIXI.live2d.Live2DModel && PIXI.live2d.Live2DModel.registerTicker) {
+      PIXI.live2d.Live2DModel.registerTicker(PIXI.Ticker);
+    }
+    const canvas = document.getElementById('live2d-canvas');
+    if (!canvas) return;
     live2dApp = new PIXI.Application({
       view: canvas,
       backgroundAlpha: 0,
       autoDensity: true,
       resizeTo: document.getElementById('stage') || window,
     });
+    // 启动时自动预加载配置的 Live2D 模型
+    Object.keys(LIVE2D_FILES).forEach(id => {
+      loadLive2DModel(id);
+    });
   } catch(e) {
-    console.warn('Live2D init skipped:', e);
+    console.warn('[Live2D] Init error:', e);
   }
 }
 
@@ -740,9 +749,10 @@ async function loadLive2DModel(charId) {
     live2dApp.stage.addChild(model);
     model.visible = false;
     live2dModels[charId] = model;
+    console.log('[Live2D] Successfully loaded model for:', charId);
     return model;
   } catch(e) {
-    console.warn('Live2D model not found for ' + charId + ', fallback to static PNG.');
+    console.warn('[Live2D] Model load failed for ' + charId + ', fallback to static PNG.', e);
     return null;
   }
 }
@@ -772,7 +782,7 @@ function hideAllLive2D() {
 // ========== PORTRAITS ==========
 function clearPortraits(){
   ['p-left','p-center','p-right'].forEach(id=>{
-    const el=$(id); el.classList.add('hidden'); el.classList.remove('active','dim');
+    const el=$(id); if(el){ el.classList.add('hidden'); el.classList.remove('active','dim'); }
   });
   $('css-portraits').innerHTML='';
   hideAllLive2D();
@@ -781,19 +791,29 @@ function clearPortraits(){
 function showPortrait(charId, emotion='normal', slot='center', active=true){
   if (charId === 'sylvia' && !flag('named')) {
     hideAllLive2D();
-    return;
-  }
-  if (live2dModels[charId]) {
-    updateLive2D(charId, emotion, slot, active);
-    return;
-  } else if (LIVE2D_FILES[charId]) {
-    loadLive2DModel(charId).then(m => {
-      if (m) updateLive2D(charId, emotion, slot, active);
-      else showStaticPortrait(charId, emotion, slot, active);
+    ['p-left','p-center','p-right'].forEach(id=>{
+      const el=$(id); if(el) el.classList.add('hidden');
     });
     return;
   }
+
+  // 若 Live2D 模型已成功加载，优先显示 Live2D，并隐藏静态 PNG
+  if (live2dModels[charId]) {
+    const ok = updateLive2D(charId, emotion, slot, active);
+    if (ok) {
+      const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
+      if (el) el.classList.add('hidden');
+      return;
+    }
+  }
+
+  // 默认显示静态 PNG 立绘
   showStaticPortrait(charId, emotion, slot, active);
+
+  // 若配置了 Live2D 但尚未加载完成，在后台异步预加载
+  if (LIVE2D_FILES[charId] && !live2dModels[charId]) {
+    loadLive2DModel(charId);
+  }
 }
 
 function showStaticPortrait(charId, emotion='normal', slot='center', active=true){

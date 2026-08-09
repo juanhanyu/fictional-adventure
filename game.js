@@ -734,10 +734,27 @@ let live2dApp = null;
 const live2dModels = {};
 let live2dInitialized = false;     // 是否已经成功 new PIXI.Application
 let live2dWaitForGameScreen = false; // 在等 #game-screen 出现后再 create app
+let live2dAppReady = null;          // Promise: 当 app 真正可用时 resolve
+let live2dAppReadyResolve = null;   // resolve 函数
+
+// 维护当前应该显示的"角色 → 状态"映射，供 app 就绪后重放
+// 形如 { 'sylvia': { emotion: 'smile', slot: 'center', active: true } }
+const live2dPendingPortraits = {};
+let live2dNeedsReplay = false;
 
 function ensureLive2DApp() {
-  if (live2dApp) return live2dApp;
+  if (live2dApp && live2dInitialized) {
+    // 已经初始化：如果之前没建 promise，补一个立刻 resolve 的
+    if (!live2dAppReadyResolve) {
+      live2dAppReadyResolve();
+      live2dAppReadyResolve = null;
+    }
+    return live2dApp;
+  }
   if (typeof PIXI === 'undefined' || !PIXI.live2d) {
+    if (!live2dAppReady) {
+      live2dAppReady = new Promise((res) => { live2dAppReadyResolve = res; });
+    }
     return null;
   }
   const canvas = document.getElementById('live2d-canvas');
@@ -749,6 +766,9 @@ function ensureLive2DApp() {
   if (!w || !h) {
     // 容器还是 hidden，延后
     live2dWaitForGameScreen = true;
+    if (!live2dAppReady) {
+      live2dAppReady = new Promise((res) => { live2dAppReadyResolve = res; });
+    }
     return null;
   }
   try {
@@ -772,14 +792,23 @@ function ensureLive2DApp() {
         PIXI.live2d.Live2DModel.registerTicker(PIXI.Ticker);
       }
     } catch(_) {}
+    console.log('[Live2D] app initialized @', w, 'x', h);
     // 预加载配置的 Live2D 模型
     Object.keys(LIVE2D_FILES).forEach(id => {
       loadLive2DModel(id);
     });
-    console.log('[Live2D] app initialized @', w, 'x', h);
+    // app 已就绪，resolve 任何等待中的 promise
+    if (live2dAppReadyResolve) {
+      live2dAppReadyResolve();
+      live2dAppReadyResolve = null;
+    }
     return live2dApp;
   } catch(e) {
     console.warn('[Live2D] Init error:', e);
+    if (live2dAppReadyResolve) {
+      live2dAppReadyResolve();
+      live2dAppReadyResolve = null;
+    }
     return null;
   }
 }
@@ -807,7 +836,26 @@ function tryLateInitLive2D() {
     }
     return;
   }
-  ensureLive2DApp();
+  if (ensureLive2DApp() && live2dNeedsReplay) {
+    // app 第一次建好 → 重放之前应该显示的 Live2D 立绘
+    live2dNeedsReplay = false;
+    Object.keys(live2dPendingPortraits).forEach(charId => {
+      const st = live2dPendingPortraits[charId];
+      // 等待模型加载好后切到 Live2D
+      const apply = () => {
+        const model = live2dModels[st.key];
+        if (!model) return;
+        const ok = updateLive2D(st.key, st.emotion, st.slot, st.active);
+        if (ok) {
+          const el = document.getElementById(st.slot==='left'?'p-left':st.slot==='right'?'p-right':'p-center');
+          if (el) el.classList.add('hidden');
+          const cp = document.getElementById('css-portraits'); if (cp) cp.innerHTML = '';
+        }
+      };
+      if (live2dModels[st.key]) apply();
+      else loadLive2DModel(st.key).then(() => apply());
+    });
+  }
 }
 
 function resizeLive2DCanvas() {
@@ -823,12 +871,22 @@ function resizeLive2DCanvas() {
 async function loadLive2DModel(charId) {
   if (!LIVE2D_FILES[charId]) return null;
   if (live2dModels[charId]) return live2dModels[charId];
-  // app 还没建好就先把请求挂起，等下个时机再发
+  // app 还没建好就等 app 就绪
   if (!live2dApp) {
-    if (!ensureLive2DApp()) return null;
+    if (!ensureLive2DApp()) {
+      // app 现在不可用（#game-screen 仍 hidden），等 promise
+      if (live2dAppReady) {
+        await live2dAppReady;
+      }
+      if (!live2dApp) {
+        // 仍然不可用 → 真的失败
+        return null;
+      }
+    }
   }
   try {
     const model = await PIXI.live2d.Live2DModel.from(LIVE2D_FILES[charId]);
+    if (!live2dApp || !live2dApp.stage) return null;
     live2dApp.stage.addChild(model);
     model.visible = false;
     live2dModels[charId] = model;
@@ -841,9 +899,6 @@ async function loadLive2DModel(charId) {
 }
 
 function applyLive2DExpression(model, emotion) {
-  // 1) 直查映射
-  // 2) 找不到就用第一个 expression（f00）
-  // 3) 都没有就跳过
   if (!model || typeof model.expression !== 'function') return;
   const name = LIVE2D_EXPRESSIONS[emotion] || LIVE2D_EXPRESSIONS.normal;
   try {
@@ -858,7 +913,6 @@ function updateLive2D(charId, emotion = 'normal', slot = 'center', active = true
   if (!model || !live2dApp) return false;
   resizeLive2DCanvas();
   model.visible = true;
-  // 用 live2dApp.screen 作为主尺寸；screen 为 0 时退回 window 兜底
   let stageW = live2dApp.screen?.width || 0;
   let stageH = live2dApp.screen?.height || 0;
   if (!stageW || !stageH) {
@@ -869,15 +923,12 @@ function updateLive2D(charId, emotion = 'normal', slot = 'center', active = true
   const mh = model.height || 1000;
   const scale = Math.min(stageW / mw, stageH / mh) * 0.55;
   model.scale.set(scale);
-  // 居中：水平按"目标中心"和"缩放后模型宽度的一半"来算
   const drawW = mw * scale;
   const drawH = mh * scale;
   let targetCenterX = stageW / 2;
   if (slot === 'left') targetCenterX = stageW * 0.25;
   if (slot === 'right') targetCenterX = stageW * 0.75;
-  // 锚点：PIXI 对象默认 anchor=(0,0) 且 pivot=(0,0)，所以 x/y 是模型左上角
   model.x = targetCenterX - drawW / 2;
-  // 底对齐：模型底边贴 stage 底（再留一点呼吸空间）
   model.y = stageH - drawH - 8;
   model.alpha = active ? 1.0 : 0.45;
   applyLive2DExpression(model, emotion);
@@ -895,6 +946,9 @@ function clearPortraits(){
   });
   $('css-portraits').innerHTML='';
   hideAllLive2D();
+  // 清空 pending 重放队列——避免旧的意图在新一轮 showPortrait 中泄漏
+  Object.keys(live2dPendingPortraits).forEach(k => delete live2dPendingPortraits[k]);
+  live2dNeedsReplay = false;
 }
 
 function showPortrait(charId, emotion='normal', slot='center', active=true){
@@ -910,38 +964,63 @@ function showPortrait(charId, emotion='normal', slot='center', active=true){
   tryLateInitLive2D();
   resizeLive2DCanvas();
 
-  // 年龄阶段分流：幼年期 (tier === 1) 优先使用幼年版 Live2D (如 sylvia_child, alice_child, beatrice_child)；少年/常规期 (tier === 2) 使用常规 Live2D！
+  // 年龄阶段分流：幼年期 (tier === 1) 优先使用幼年版 Live2D
   const tier = (typeof portraitAgeTierFor === 'function') ? portraitAgeTierFor(charId) : 2;
   const l2dKey = (tier === 1 && LIVE2D_FILES[charId + '_child']) ? (charId + '_child') : charId;
 
   if (LIVE2D_FILES[l2dKey]) {
-    if (live2dModels[l2dKey]) {
-      // 已经加载好：直接显示
+    // 记录"应该显示"的状态——如果 app 或模型还没就绪，等就绪后再重放
+    live2dPendingPortraits[charId] = { key: l2dKey, emotion, slot, active };
+
+    const showNow = () => {
+      const model = live2dModels[l2dKey];
+      if (!model) return false;
       const ok = updateLive2D(l2dKey, emotion, slot, active);
       if (ok) {
         const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
         if (el) el.classList.add('hidden');
-        // 同时把 CSS 头像层清空（避免叠加）
+        const cp = $('css-portraits'); if (cp) cp.innerHTML = '';
+        return true;
+      }
+      return false;
+    };
+
+    if (live2dApp && live2dInitialized) {
+      if (live2dModels[l2dKey]) {
+        // app + 模型都就绪 → 立刻显示
+        if (showNow()) return;
+        // showNow 返回 false 时继续往下走
+      } else {
+        // app 就绪但模型还在加载中
+        loadLive2DModel(l2dKey).then(m => {
+          if (m) {
+            showNow();
+          } else {
+            // 模型加载失败 → 回退 PNG
+            showStaticPortrait(charId, emotion, slot, active);
+          }
+        });
+        // 不显示 PNG 占位（避免被同步摆出来后挡 Live2D）
+        const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
+        if (el) el.classList.add('hidden');
         const cp = $('css-portraits'); if (cp) cp.innerHTML = '';
         return;
       }
     } else {
-      // ★ 关键：异步加载时必须 return，否则下面的 showStaticPortrait 会同步把 PNG 摆出来盖住未来的 Live2D
-      loadLive2DModel(l2dKey).then(m => {
-        if (m) {
-          updateLive2D(l2dKey, emotion, slot, active);
-          const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
-          if (el) el.classList.add('hidden');
-          const cp = $('css-portraits'); if (cp) cp.innerHTML = '';
-        } else {
-          // 加载失败 → 才回退到 PNG
-          showStaticPortrait(charId, emotion, slot, active);
-        }
-      });
-      // 在模型还没好的瞬间，仍暂时显示一个轻量的占位（不显示 PNG 立绘），免得画面空着
-      const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
-      if (el) el.classList.add('hidden');
-      const cp = $('css-portraits'); if (cp) cp.innerHTML = '';
+      // app 还没就绪（#game-screen 仍 hidden 等）→ 标记重放，等 app 就绪后由 tryLateInitLive2D 接管
+      live2dNeedsReplay = true;
+      // 暂时显示 PNG 占位（用户能看见东西），等 app 就绪后会被替换
+      showStaticPortrait(charId, emotion, slot, active);
+      // 同时挂一个 promise，等 app 就绪后清掉 PNG 占位切到 Live2D
+      if (live2dAppReady) {
+        live2dAppReady.then(() => {
+          // app 就绪后再调一次本函数
+          if (live2dInitialized && LIVE2D_FILES[l2dKey]) {
+            // 重新触发 showPortrait
+            showPortrait(charId, emotion, slot, active);
+          }
+        });
+      }
       return;
     }
   }

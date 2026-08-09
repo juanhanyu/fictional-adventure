@@ -1,22 +1,46 @@
 @echo off
 REM Ojou-sama Live2D Launcher
-REM Auto-finds index.html anywhere in the project tree, then starts a
-REM local HTTP server and opens the browser. No manual cd required.
-REM Just double-click.
+REM Strategy: find the directory that contains BOTH index.html AND game.js
+REM (i.e. the real project root), then start a local HTTP server there
+REM and open the browser. No manual cd required.
 
 setlocal
 
-REM Walk subdirs from this bat's location, find first index.html
-set "GAME_DIR=%~dp0"
+set "START_DIR=%~dp0"
+
+REM Check if index.html and game.js both live right next to this bat
+if exist "%START_DIR%index.html" if exist "%START_DIR%game.js" (
+    set "GAME_DIR=%START_DIR%"
+    goto :found
+)
+
+REM Otherwise walk subdirs: prefer directories that contain BOTH files
 for /f "delims=" %%I in ('dir /s /b /a-d "index.html" 2^>nul') do (
     if not defined FOUND_INDEX (
-        set "GAME_DIR=%%~dpI"
-        set "FOUND_INDEX=1"
+        if exist "%%~dpIgame.js" (
+            set "GAME_DIR=%%~dpI"
+            set "FOUND_INDEX=1"
+        )
     )
 )
 
+REM If still nothing, fall back to first index.html we can find
 if not defined FOUND_INDEX (
-    echo ERROR: No index.html found under %~dp0
+    for /f "delims=" %%I in ('dir /s /b /a-d "index.html" 2^>nul') do (
+        if not defined FOUND_INDEX (
+            set "GAME_DIR=%%~dpI"
+            set "FOUND_INDEX=1"
+        )
+    )
+)
+
+:found
+if not defined FOUND_INDEX (
+    echo.
+    echo ERROR: No index.html found under %START_DIR%
+    echo Tip: make sure you extracted the project ZIP and the bat is
+    echo      somewhere inside or above the project folder.
+    echo.
     pause
     goto :eof
 )

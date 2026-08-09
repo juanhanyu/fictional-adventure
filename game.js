@@ -706,14 +706,97 @@ function setBG(cls){
   (cls||'bg-title').split(/\s+/).forEach(c=>bg.classList.add(c));
 }
 
+// ========== LIVE2D SUPPORT ==========
+const LIVE2D_FILES = {
+  sylvia: 'assets/live2d/sylvia/sylvia.model3.json',
+  alice: 'assets/live2d/alice/alice.model3.json',
+  beatrice: 'assets/live2d/beatrice/beatrice.model3.json',
+};
+
+let live2dApp = null;
+const live2dModels = {};
+
+function initLive2D() {
+  if (typeof PIXI === 'undefined' || !PIXI.live2d) return;
+  const canvas = document.getElementById('live2d-canvas');
+  if (!canvas) return;
+  try {
+    live2dApp = new PIXI.Application({
+      view: canvas,
+      backgroundAlpha: 0,
+      autoDensity: true,
+      resizeTo: document.getElementById('stage') || window,
+    });
+  } catch(e) {
+    console.warn('Live2D init skipped:', e);
+  }
+}
+
+async function loadLive2DModel(charId) {
+  if (!live2dApp || !LIVE2D_FILES[charId]) return null;
+  if (live2dModels[charId]) return live2dModels[charId];
+  try {
+    const model = await PIXI.live2d.Live2DModel.from(LIVE2D_FILES[charId]);
+    live2dApp.stage.addChild(model);
+    model.visible = false;
+    live2dModels[charId] = model;
+    return model;
+  } catch(e) {
+    console.warn('Live2D model not found for ' + charId + ', fallback to static PNG.');
+    return null;
+  }
+}
+
+function updateLive2D(charId, emotion = 'normal', slot = 'center', active = true) {
+  const model = live2dModels[charId];
+  if (!model) return false;
+  model.visible = true;
+  const stageW = live2dApp ? live2dApp.screen.width : window.innerWidth;
+  const stageH = live2dApp ? live2dApp.screen.height : window.innerHeight;
+  const scale = Math.min(stageW / (model.width || 800), stageH / (model.height || 1000)) * 0.45;
+  model.scale.set(scale);
+  let targetX = stageW / 2;
+  if (slot === 'left') targetX = stageW * 0.25;
+  if (slot === 'right') targetX = stageW * 0.75;
+  model.x = targetX - (model.width / 2);
+  model.y = stageH - model.height;
+  model.alpha = active ? 1.0 : 0.45;
+  try { if (model.expression) model.expression(emotion); } catch(e){}
+  return true;
+}
+
+function hideAllLive2D() {
+  Object.values(live2dModels).forEach(m => { if (m) m.visible = false; });
+}
+
 // ========== PORTRAITS ==========
 function clearPortraits(){
   ['p-left','p-center','p-right'].forEach(id=>{
     const el=$(id); el.classList.add('hidden'); el.classList.remove('active','dim');
   });
   $('css-portraits').innerHTML='';
+  hideAllLive2D();
 }
+
 function showPortrait(charId, emotion='normal', slot='center', active=true){
+  if (charId === 'sylvia' && !flag('named')) {
+    hideAllLive2D();
+    return;
+  }
+  if (live2dModels[charId]) {
+    updateLive2D(charId, emotion, slot, active);
+    return;
+  } else if (LIVE2D_FILES[charId]) {
+    loadLive2DModel(charId).then(m => {
+      if (m) updateLive2D(charId, emotion, slot, active);
+      else showStaticPortrait(charId, emotion, slot, active);
+    });
+    return;
+  }
+  showStaticPortrait(charId, emotion, slot, active);
+}
+
+function showStaticPortrait(charId, emotion='normal', slot='center', active=true){
   const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emotion) : (PORTRAIT_FILES[charId+'_'+(emotion||'normal')]||PORTRAIT_FILES[charId+'_normal']);
   const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
   if(!el) return;
@@ -2637,6 +2720,7 @@ document.addEventListener('keydown', e=>{
 })();
 
 // boot
+if (typeof initLive2D === 'function') initLive2D();
 show('btn-continue', hasSave());
 updateHUD();
 console.log('[转生千金] ready · scenes', Object.keys(SCENES).length);

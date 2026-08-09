@@ -709,8 +709,11 @@ function setBG(cls){
 // ========== LIVE2D SUPPORT ==========
 const LIVE2D_FILES = {
   sylvia: 'assets/live2d/sylvia/sylvia.model3.json',
+  sylvia_child: 'assets/live2d/sylvia_child/sylvia_child.model3.json',
   alice: 'assets/live2d/alice/alice.model3.json',
+  alice_child: 'assets/live2d/alice_child/alice_child.model3.json',
   beatrice: 'assets/live2d/beatrice/beatrice.model3.json',
+  beatrice_child: 'assets/live2d/beatrice_child/beatrice_child.model3.json',
 };
 
 let live2dApp = null;
@@ -812,12 +815,13 @@ function showPortrait(charId, emotion='normal', slot='center', active=true){
 
   resizeLive2DCanvas();
 
-  // 年龄阶段分流：幼年期 (tier === 1) 统一显示精致的幼年静态 PNG 立绘；少年/常规期 (tier === 2) 开启 Live2D 动态立绘！
+  // 年龄阶段分流：幼年期 (tier === 1) 优先使用幼年版 Live2D (如 sylvia_child, alice_child, beatrice_child)；少年/常规期 (tier === 2) 使用常规 Live2D！
   const tier = (typeof portraitAgeTierFor === 'function') ? portraitAgeTierFor(charId) : 2;
+  const l2dKey = (tier === 1 && LIVE2D_FILES[charId + '_child']) ? (charId + '_child') : charId;
 
-  if (tier === 2 && LIVE2D_FILES[charId]) {
-    if (live2dModels[charId]) {
-      const ok = updateLive2D(charId, emotion, slot, active);
+  if (LIVE2D_FILES[l2dKey]) {
+    if (live2dModels[l2dKey]) {
+      const ok = updateLive2D(l2dKey, emotion, slot, active);
       if (ok) {
         const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
         if (el) el.classList.add('hidden');
@@ -825,9 +829,9 @@ function showPortrait(charId, emotion='normal', slot='center', active=true){
       }
     } else {
       // 在后台异步加载模型，加载完成后自动切换
-      loadLive2DModel(charId).then(m => {
+      loadLive2DModel(l2dKey).then(m => {
         if (m) {
-          updateLive2D(charId, emotion, slot, active);
+          updateLive2D(l2dKey, emotion, slot, active);
           const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
           if (el) el.classList.add('hidden');
         }
@@ -835,7 +839,7 @@ function showPortrait(charId, emotion='normal', slot='center', active=true){
     }
   }
 
-  // 幼年期或无 Live2D 时，显示静态 PNG 立绘
+  // 默认降级方案：显示静态 PNG 立绘
   showStaticPortrait(charId, emotion, slot, active);
 }
 

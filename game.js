@@ -716,49 +716,117 @@ const LIVE2D_FILES = {
   beatrice_child: 'assets/live2d/beatrice_child/beatrice_child.model3.json',
 };
 
+// 情绪名 → cubism3 expression 名映射（model3.json 里 expression 的 Name 字段）。
+// 找不到对应表情时回退到第一个可用表情，fallback 失败则保持当前表情。
+const LIVE2D_EXPRESSIONS = {
+  normal:   'f00',  // 默认 / 平静
+  smile:    'f01',
+  happy:    'f01',
+  serious:  'f03',
+  shy:      'f02',
+  sad:      'f04',
+  angry:    'f05',
+  surprised:'f06',
+  serious2: 'f07',
+};
+
 let live2dApp = null;
 const live2dModels = {};
+let live2dInitialized = false;     // 是否已经成功 new PIXI.Application
+let live2dWaitForGameScreen = false; // 在等 #game-screen 出现后再 create app
 
-function initLive2D() {
+function ensureLive2DApp() {
+  if (live2dApp) return live2dApp;
   if (typeof PIXI === 'undefined' || !PIXI.live2d) {
-    console.warn('[Live2D] PIXI or PIXI.live2d not loaded.');
-    return;
+    return null;
+  }
+  const canvas = document.getElementById('live2d-canvas');
+  if (!canvas) return null;
+  // 必须先有真实尺寸再 new Application，否则 canvas 会变成 0×0 且后续 resize 困难
+  const stage = document.getElementById('stage') || document.body;
+  const w = stage.clientWidth || window.innerWidth;
+  const h = stage.clientHeight || window.innerHeight;
+  if (!w || !h) {
+    // 容器还是 hidden，延后
+    live2dWaitForGameScreen = true;
+    return null;
   }
   try {
-    if (PIXI.live2d.Live2DModel && PIXI.live2d.Live2DModel.registerTicker) {
-      PIXI.live2d.Live2DModel.registerTicker(PIXI.Ticker);
-    }
-    const canvas = document.getElementById('live2d-canvas');
-    if (!canvas) return;
+    // 主动把 canvas 尺寸设到合理初值，避免 PIXI 拿 0×0
+    if (canvas.width !== w) canvas.width = w;
+    if (canvas.height !== h) canvas.height = h;
     live2dApp = new PIXI.Application({
       view: canvas,
       backgroundAlpha: 0,
       autoDensity: true,
-      resizeTo: document.getElementById('stage') || window,
+      width: w,
+      height: h,
+      resizeTo: stage,
     });
+    live2dInitialized = true;
+    live2dWaitForGameScreen = false;
+    // PIXI v7 中 Ticker 已是 Application 内部成员，registerTicker 仍可调用；
+    // 在 Application 创建后再 register 一次更稳妥。
+    try {
+      if (PIXI.live2d.Live2DModel && PIXI.live2d.Live2DModel.registerTicker && PIXI.Ticker) {
+        PIXI.live2d.Live2DModel.registerTicker(PIXI.Ticker);
+      }
+    } catch(_) {}
     // 预加载配置的 Live2D 模型
     Object.keys(LIVE2D_FILES).forEach(id => {
       loadLive2DModel(id);
     });
+    console.log('[Live2D] app initialized @', w, 'x', h);
+    return live2dApp;
   } catch(e) {
     console.warn('[Live2D] Init error:', e);
+    return null;
   }
 }
 
+function initLive2D() {
+  // 旧 API 保留：仅尝试一次（boot 阶段），但若容器仍是 hidden 就改为延后到 #game-screen 显示时
+  ensureLive2DApp();
+}
+
+// 在 #game-screen 第一次变为可见时初始化/重建 PIXI app
+function tryLateInitLive2D() {
+  if (live2dInitialized) {
+    // 已初始化：只要 resize 一下即可
+    if (live2dApp && live2dApp.renderer) {
+      const stage = document.getElementById('stage');
+      const w = stage?.clientWidth || window.innerWidth;
+      const h = stage?.clientHeight || window.innerHeight;
+      if (w > 0 && h > 0) {
+        try {
+          if (live2dApp.renderer.width !== w || live2dApp.renderer.height !== h) {
+            live2dApp.renderer.resize(w, h);
+          }
+        } catch(_) {}
+      }
+    }
+    return;
+  }
+  ensureLive2DApp();
+}
+
 function resizeLive2DCanvas() {
-  if (!live2dApp) return;
+  if (!live2dApp || !live2dApp.renderer) return;
   const stage = document.getElementById('stage');
-  if (!stage) return;
-  const w = stage.clientWidth || window.innerWidth;
-  const h = stage.clientHeight || window.innerHeight;
+  const w = stage?.clientWidth || window.innerWidth;
+  const h = stage?.clientHeight || window.innerHeight;
   if (w > 0 && h > 0 && (live2dApp.renderer.width !== w || live2dApp.renderer.height !== h)) {
-    live2dApp.renderer.resize(w, h);
+    try { live2dApp.renderer.resize(w, h); } catch(_) {}
   }
 }
 
 async function loadLive2DModel(charId) {
-  if (!live2dApp || !LIVE2D_FILES[charId]) return null;
+  if (!LIVE2D_FILES[charId]) return null;
   if (live2dModels[charId]) return live2dModels[charId];
+  // app 还没建好就先把请求挂起，等下个时机再发
+  if (!live2dApp) {
+    if (!ensureLive2DApp()) return null;
+  }
   try {
     const model = await PIXI.live2d.Live2DModel.from(LIVE2D_FILES[charId]);
     live2dApp.stage.addChild(model);
@@ -772,22 +840,47 @@ async function loadLive2DModel(charId) {
   }
 }
 
+function applyLive2DExpression(model, emotion) {
+  // 1) 直查映射
+  // 2) 找不到就用第一个 expression（f00）
+  // 3) 都没有就跳过
+  if (!model || typeof model.expression !== 'function') return;
+  const name = LIVE2D_EXPRESSIONS[emotion] || LIVE2D_EXPRESSIONS.normal;
+  try {
+    model.expression(name);
+  } catch (e) {
+    // 静默失败：keep current expression
+  }
+}
+
 function updateLive2D(charId, emotion = 'normal', slot = 'center', active = true) {
   const model = live2dModels[charId];
-  if (!model) return false;
+  if (!model || !live2dApp) return false;
   resizeLive2DCanvas();
   model.visible = true;
-  const stageW = live2dApp ? live2dApp.screen.width : window.innerWidth;
-  const stageH = live2dApp ? live2dApp.screen.height : window.innerHeight;
-  const scale = Math.min(stageW / (model.width || 800), stageH / (model.height || 1000)) * 0.55;
+  // 用 live2dApp.screen 作为主尺寸；screen 为 0 时退回 window 兜底
+  let stageW = live2dApp.screen?.width || 0;
+  let stageH = live2dApp.screen?.height || 0;
+  if (!stageW || !stageH) {
+    stageW = window.innerWidth;
+    stageH = window.innerHeight;
+  }
+  const mw = model.width || 800;
+  const mh = model.height || 1000;
+  const scale = Math.min(stageW / mw, stageH / mh) * 0.55;
   model.scale.set(scale);
-  let targetX = stageW / 2;
-  if (slot === 'left') targetX = stageW * 0.25;
-  if (slot === 'right') targetX = stageW * 0.75;
-  model.x = targetX - (model.width / 2);
-  model.y = stageH - model.height;
+  // 居中：水平按"目标中心"和"缩放后模型宽度的一半"来算
+  const drawW = mw * scale;
+  const drawH = mh * scale;
+  let targetCenterX = stageW / 2;
+  if (slot === 'left') targetCenterX = stageW * 0.25;
+  if (slot === 'right') targetCenterX = stageW * 0.75;
+  // 锚点：PIXI 对象默认 anchor=(0,0) 且 pivot=(0,0)，所以 x/y 是模型左上角
+  model.x = targetCenterX - drawW / 2;
+  // 底对齐：模型底边贴 stage 底（再留一点呼吸空间）
+  model.y = stageH - drawH - 8;
   model.alpha = active ? 1.0 : 0.45;
-  try { if (model.expression) model.expression(emotion); } catch(e){}
+  applyLive2DExpression(model, emotion);
   return true;
 }
 
@@ -813,6 +906,8 @@ function showPortrait(charId, emotion='normal', slot='center', active=true){
     return;
   }
 
+  // Live2D app 容器还没就绪时（如 #game-screen 仍 hidden）尝试延迟初始化
+  tryLateInitLive2D();
   resizeLive2DCanvas();
 
   // 年龄阶段分流：幼年期 (tier === 1) 优先使用幼年版 Live2D (如 sylvia_child, alice_child, beatrice_child)；少年/常规期 (tier === 2) 使用常规 Live2D！
@@ -821,25 +916,37 @@ function showPortrait(charId, emotion='normal', slot='center', active=true){
 
   if (LIVE2D_FILES[l2dKey]) {
     if (live2dModels[l2dKey]) {
+      // 已经加载好：直接显示
       const ok = updateLive2D(l2dKey, emotion, slot, active);
       if (ok) {
         const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
         if (el) el.classList.add('hidden');
+        // 同时把 CSS 头像层清空（避免叠加）
+        const cp = $('css-portraits'); if (cp) cp.innerHTML = '';
         return;
       }
     } else {
-      // 在后台异步加载模型，加载完成后自动切换
+      // ★ 关键：异步加载时必须 return，否则下面的 showStaticPortrait 会同步把 PNG 摆出来盖住未来的 Live2D
       loadLive2DModel(l2dKey).then(m => {
         if (m) {
           updateLive2D(l2dKey, emotion, slot, active);
           const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
           if (el) el.classList.add('hidden');
+          const cp = $('css-portraits'); if (cp) cp.innerHTML = '';
+        } else {
+          // 加载失败 → 才回退到 PNG
+          showStaticPortrait(charId, emotion, slot, active);
         }
       });
+      // 在模型还没好的瞬间，仍暂时显示一个轻量的占位（不显示 PNG 立绘），免得画面空着
+      const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
+      if (el) el.classList.add('hidden');
+      const cp = $('css-portraits'); if (cp) cp.innerHTML = '';
+      return;
     }
   }
 
-  // 默认降级方案：显示静态 PNG 立绘
+  // 默认降级方案：显示静态 PNG 立绘（仅当 Live2D 完全不可用时）
   showStaticPortrait(charId, emotion, slot, active);
 }
 
@@ -2689,6 +2796,23 @@ function continueGame(){
 $('btn-new').onclick=()=>{ sfx('click'); newGame(); };
 $('btn-continue').onclick=()=>{ sfx('click'); continueGame(); };
 $('btn-title').onclick=()=>{ save(); show('game-screen',0); show('battle-screen',0); show('panel',0); show('title-screen',1); updateHUD(); };
+
+// 观察 #game-screen 的显示状态：从 hidden 切到可见时尝试 late-init Live2D
+(function watchGameScreen(){
+  const gs = $('game-screen');
+  if (!gs || typeof MutationObserver === 'undefined') return;
+  const obs = new MutationObserver(() => {
+    if (gs && !gs.classList.contains('hidden')) {
+      tryLateInitLive2D();
+    }
+  });
+  obs.observe(gs, { attributes: true, attributeFilter: ['class'] });
+  // 兜底：首次启动时 game-screen 可能已经可见（例如直接进游戏）
+  if (!gs.classList.contains('hidden')) tryLateInitLive2D();
+})();
+
+// 兜底：窗口 resize 时重算 live2d 尺寸
+window.addEventListener('resize', () => { tryLateInitLive2D(); });
 $('btn-mute').onclick=()=>{ muted=!muted; localStorage.setItem(MUTE_KEY, muted?'1':'0'); $('btn-mute').textContent=muted?'🔇':'🔊'; };
 $('btn-help').onclick=()=>show('help-screen',1);
 $('btn-help-close').onclick=()=>show('help-screen',0);

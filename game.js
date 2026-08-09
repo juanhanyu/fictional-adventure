@@ -812,29 +812,31 @@ function showPortrait(charId, emotion='normal', slot='center', active=true){
 
   resizeLive2DCanvas();
 
-  // 若 Live2D 模型已成功加载，优先显示 Live2D，并隐藏静态 PNG
-  if (live2dModels[charId]) {
-    const ok = updateLive2D(charId, emotion, slot, active);
-    if (ok) {
-      const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
-      if (el) el.classList.add('hidden');
-      return;
+  // 年龄阶段分流：幼年期 (tier === 1) 统一显示精致的幼年静态 PNG 立绘；少年/常规期 (tier === 2) 开启 Live2D 动态立绘！
+  const tier = (typeof portraitAgeTierFor === 'function') ? portraitAgeTierFor(charId) : 2;
+
+  if (tier === 2 && LIVE2D_FILES[charId]) {
+    if (live2dModels[charId]) {
+      const ok = updateLive2D(charId, emotion, slot, active);
+      if (ok) {
+        const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
+        if (el) el.classList.add('hidden');
+        return;
+      }
+    } else {
+      // 在后台异步加载模型，加载完成后自动切换
+      loadLive2DModel(charId).then(m => {
+        if (m) {
+          updateLive2D(charId, emotion, slot, active);
+          const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
+          if (el) el.classList.add('hidden');
+        }
+      });
     }
   }
 
-  // 默认显示静态 PNG 立绘
+  // 幼年期或无 Live2D 时，显示静态 PNG 立绘
   showStaticPortrait(charId, emotion, slot, active);
-
-  // 若配置了 Live2D 但尚未加载完成，在后台异步预加载并在完成后自动渲染
-  if (LIVE2D_FILES[charId] && !live2dModels[charId]) {
-    loadLive2DModel(charId).then(m => {
-      if (m) {
-        updateLive2D(charId, emotion, slot, active);
-        const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
-        if (el) el.classList.add('hidden');
-      }
-    });
-  }
 }
 
 function showStaticPortrait(charId, emotion='normal', slot='center', active=true){

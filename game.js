@@ -710,6 +710,7 @@ function setBG(cls){
 const LIVE2D_FILES = {
   sylvia: 'assets/live2d/sylvia/sylvia.model3.json',
   alice: 'assets/live2d/alice/alice.model3.json',
+  beatrice: 'assets/live2d/beatrice/beatrice.model3.json',
 };
 
 let live2dApp = null;
@@ -732,12 +733,23 @@ function initLive2D() {
       autoDensity: true,
       resizeTo: document.getElementById('stage') || window,
     });
-    // 启动时自动预加载配置的 Live2D 模型
+    // 预加载配置的 Live2D 模型
     Object.keys(LIVE2D_FILES).forEach(id => {
       loadLive2DModel(id);
     });
   } catch(e) {
     console.warn('[Live2D] Init error:', e);
+  }
+}
+
+function resizeLive2DCanvas() {
+  if (!live2dApp) return;
+  const stage = document.getElementById('stage');
+  if (!stage) return;
+  const w = stage.clientWidth || window.innerWidth;
+  const h = stage.clientHeight || window.innerHeight;
+  if (w > 0 && h > 0 && (live2dApp.renderer.width !== w || live2dApp.renderer.height !== h)) {
+    live2dApp.renderer.resize(w, h);
   }
 }
 
@@ -760,10 +772,11 @@ async function loadLive2DModel(charId) {
 function updateLive2D(charId, emotion = 'normal', slot = 'center', active = true) {
   const model = live2dModels[charId];
   if (!model) return false;
+  resizeLive2DCanvas();
   model.visible = true;
   const stageW = live2dApp ? live2dApp.screen.width : window.innerWidth;
   const stageH = live2dApp ? live2dApp.screen.height : window.innerHeight;
-  const scale = Math.min(stageW / (model.width || 800), stageH / (model.height || 1000)) * 0.45;
+  const scale = Math.min(stageW / (model.width || 800), stageH / (model.height || 1000)) * 0.55;
   model.scale.set(scale);
   let targetX = stageW / 2;
   if (slot === 'left') targetX = stageW * 0.25;
@@ -797,6 +810,8 @@ function showPortrait(charId, emotion='normal', slot='center', active=true){
     return;
   }
 
+  resizeLive2DCanvas();
+
   // 若 Live2D 模型已成功加载，优先显示 Live2D，并隐藏静态 PNG
   if (live2dModels[charId]) {
     const ok = updateLive2D(charId, emotion, slot, active);
@@ -810,9 +825,15 @@ function showPortrait(charId, emotion='normal', slot='center', active=true){
   // 默认显示静态 PNG 立绘
   showStaticPortrait(charId, emotion, slot, active);
 
-  // 若配置了 Live2D 但尚未加载完成，在后台异步预加载
+  // 若配置了 Live2D 但尚未加载完成，在后台异步预加载并在完成后自动渲染
   if (LIVE2D_FILES[charId] && !live2dModels[charId]) {
-    loadLive2DModel(charId);
+    loadLive2DModel(charId).then(m => {
+      if (m) {
+        updateLive2D(charId, emotion, slot, active);
+        const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
+        if (el) el.classList.add('hidden');
+      }
+    });
   }
 }
 

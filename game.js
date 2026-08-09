@@ -43,14 +43,25 @@ function sfx(type){
 }
 
 // ========== PORTRAITS ==========
+// PNG 立绘两层路径：
+//   - assets/portraits_2d/   ← 生图新立绘（galgame 风，半身像）—— 优先使用
+//   - assets/portraits/      ← 旧立绘
+// 任意一层有图片，showPortrait 就能显示。
+const PORTRAITS_2D_DIR = 'assets/portraits_2d';
 const PORTRAIT_FILES = {
-  sylvia_normal:'assets/portraits/sylvia_normal.png',
-  sylvia_smile:'assets/portraits/sylvia_smile.png',
-  sylvia_serious:'assets/portraits/sylvia_serious.png',
+  sylvia_normal:'assets/portraits_2d/sylvia_normal.png',
+  sylvia_smile:'assets/portraits_2d/sylvia_smile.png',
+  sylvia_serious:'assets/portraits_2d/sylvia_serious.png',
+  sylvia_shy:'assets/portraits_2d/sylvia_shy.png',
+  sylvia_cry:'assets/portraits_2d/sylvia_cry.png',
+  sylvia_blush:'assets/portraits_2d/sylvia_blush.png',
   sylvia_child:'assets/portraits/sylvia_child.png',
-  beatrice_normal:'assets/portraits/beatrice_normal.png',
+  beatrice_normal:'assets/portraits_2d/beatrice_normal.png',
+  beatrice_smile:'assets/portraits_2d/beatrice_smile.png',
+  beatrice_angry:'assets/portraits_2d/beatrice_angry.png',
+  beatrice_sad:'assets/portraits_2d/beatrice_sad.png',
+  beatrice_shy:'assets/portraits_2d/beatrice_shy.png',
   beatrice_happy:'assets/portraits/beatrice_happy.png',
-  beatrice_sad:'assets/portraits/beatrice_sad.png',
   beatrice_child:'assets/portraits/beatrice_child.png',
   alice_normal:'assets/portraits/alice_normal.png',
   alice_smile:'assets/portraits/alice_smile.png',
@@ -93,6 +104,21 @@ const PORTRAIT_FILES = {
   sylvia_age11:'assets/portraits/sylvia_age11.png',
   sylvia_age13:'assets/portraits/sylvia_age13.png',
   sylvia_age14:'assets/portraits/sylvia_age14.png',
+};
+// Emotion 关键词 → 实际文件名（不带 _2d 后缀、char 名前缀）
+// 让 showPortrait 收到 'happy' / 'sad' / 'angry' 等 emotion 时，
+// 能找到对应的 *_smile.png / *_cry.png 等文件。
+const EMOTION_TO_2D_KEY = {
+  normal:   'normal',
+  happy:    'smile',
+  smile:    'smile',
+  serious:  'serious',
+  shy:      'shy',
+  sad:      'cry',
+  cry:      'cry',
+  angry:    'smile',  // 没专用 angry，先用 smile 占位（贝阿特丽丝有 angry 但其它角色没有）
+  surprised:'smile',
+  blush:    'blush',
 };
 function portraitAgeTier(){
   // 0 infant/hidden, 1 child <10, 2 teen+
@@ -987,6 +1013,14 @@ function clearPortraits(){
   live2dNeedsReplay = false;
 }
 
+// 按 emotion 推断 PNG 文件名（2d 立绘专用）
+function resolve2DPortraitPath(charId, emotion) {
+  const emo = EMOTION_TO_2D_KEY[emotion] || 'normal';
+  // 1) 优先 char_emo 2d
+  let p = `${PORTRAITS_2D_DIR}/${charId}_${emo}.png`;
+  return p;
+}
+
 function showPortrait(charId, emotion='normal', slot='center', active=true){
   if (charId === 'sylvia' && !flag('named')) {
     hideAllLive2D();
@@ -996,16 +1030,27 @@ function showPortrait(charId, emotion='normal', slot='center', active=true){
     return;
   }
 
-  // Live2D app 容器还没就绪时（如 #game-screen 仍 hidden）尝试延迟初始化
+  // === 第一优先：assets/portraits_2d/ 生图立绘（如果存在）===
+  // 不管 Live2D 模型存在与否，只要 2d PNG 在就用 2d PNG
+  // （这样可以保证生图路线的视觉效果，不会被通用 haru 模型覆盖）
+  const p2d = resolve2DPortraitPath(charId, emotion);
+  if (p2d) {
+    // 先 hide 所有 Live2D（如果之前显示了）
+    hideAllLive2D();
+    Object.keys(live2dPendingPortraits).forEach(k => delete live2dPendingPortraits[k]);
+    live2dNeedsReplay = false;
+    showStaticPortrait(charId, emotion, slot, active, p2d);
+    return;
+  }
+
+  // 之前 Live2D 代码保留——但因为上面优先 PNG，实际上一般不会到这里
   tryLateInitLive2D();
   resizeLive2DCanvas();
 
-  // 年龄阶段分流：幼年期 (tier === 1) 优先使用幼年版 Live2D
   const tier = (typeof portraitAgeTierFor === 'function') ? portraitAgeTierFor(charId) : 2;
   const l2dKey = (tier === 1 && LIVE2D_FILES[charId + '_child']) ? (charId + '_child') : charId;
 
   if (LIVE2D_FILES[l2dKey]) {
-    // 记录"应该显示"的状态——如果 app 或模型还没就绪，等就绪后再重放
     live2dPendingPortraits[charId] = { key: l2dKey, emotion, slot, active };
 
     const showNow = () => {
@@ -1023,36 +1068,23 @@ function showPortrait(charId, emotion='normal', slot='center', active=true){
 
     if (live2dApp && live2dInitialized) {
       if (live2dModels[l2dKey]) {
-        // app + 模型都就绪 → 立刻显示
         if (showNow()) return;
-        // showNow 返回 false 时继续往下走
       } else {
-        // app 就绪但模型还在加载中
         loadLive2DModel(l2dKey).then(m => {
-          if (m) {
-            showNow();
-          } else {
-            // 模型加载失败 → 回退 PNG
-            showStaticPortrait(charId, emotion, slot, active);
-          }
+          if (m) showNow();
+          else showStaticPortrait(charId, emotion, slot, active);
         });
-        // 不显示 PNG 占位（避免被同步摆出来后挡 Live2D）
         const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
         if (el) el.classList.add('hidden');
-        const cp = $('css-portraits'); if (cp) cp.innerHTML = '';
         return;
       }
     } else {
-      // app 还没就绪（#game-screen 仍 hidden 等）→ 标记重放，等 app 就绪后由 tryLateInitLive2D 接管
+      // app 还没就绪
       live2dNeedsReplay = true;
-      // 暂时显示 PNG 占位（用户能看见东西），等 app 就绪后会被替换
       showStaticPortrait(charId, emotion, slot, active);
-      // 同时挂一个 promise，等 app 就绪后清掉 PNG 占位切到 Live2D
       if (live2dAppReady) {
         live2dAppReady.then(() => {
-          // app 就绪后再调一次本函数
           if (live2dInitialized && LIVE2D_FILES[l2dKey]) {
-            // 重新触发 showPortrait
             showPortrait(charId, emotion, slot, active);
           }
         });
@@ -1061,12 +1093,17 @@ function showPortrait(charId, emotion='normal', slot='center', active=true){
     }
   }
 
-  // 默认降级方案：显示静态 PNG 立绘（仅当 Live2D 完全不可用时）
+  // 兜底：老 PNG 立绘
   showStaticPortrait(charId, emotion, slot, active);
 }
 
-function showStaticPortrait(charId, emotion='normal', slot='center', active=true){
-  const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emotion) : (PORTRAIT_FILES[charId+'_'+(emotion||'normal')]||PORTRAIT_FILES[charId+'_normal']);
+function showStaticPortrait(charId, emotion='normal', slot='center', active=true, explicitPath=null){
+  // explicitPath: 显式指定的图片路径（生图 2d 立绘专用）。如果给就用这个，
+  // 否则回退到 PORTRAIT_FILES 查表。
+  let file = explicitPath;
+  if(!file){
+    file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emotion) : (PORTRAIT_FILES[charId+'_'+(emotion||'normal')]||PORTRAIT_FILES[charId+'_normal']);
+  }
   const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
   if(!el) return;
   const img = el.querySelector('img');

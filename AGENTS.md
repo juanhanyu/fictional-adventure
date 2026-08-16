@@ -42,6 +42,28 @@
   `PORTRAIT_FILES`、`CHARS`、`CSS_CHARS` 里登记，否则回退到 CSS 占位立绘。
 - 法神（fashen）**仅**在明确剧本需要的对话/剧情中出现立绘；已移除其在学院内随机出现（自由探索）的设定。
 
+## 二点五、背景音乐 BGM 永久规则（硬性）
+
+音乐文件放在仓库根目录 `Music/`（`Music/<情境> <序号>.mp3`，如 `Music/Battle & Tension 1.mp3`）。
+引擎在 `game.js` 的 BGM 区块维护 `BGM_FILES`（曲目 key → 文件路径）与 `BGM_GROUPS`（情境类型 → 曲目 key 数组）。
+
+1. **所有场景必须显式配置 bgm（全覆盖）**：每个 `SCENES.x` 场景对象都必须带 `bgm: '类型'` 字段，
+   **严禁**依赖背景推断兜底。类型必须是 `BGM_GROUPS` 的 key 之一：
+   `battle` / `cheerful` / `academy` / `peaceful` / `relax` / `sacred` / `sad` / `emotional`。
+   新增场景若漏配 `bgm`，`tests/bgm_mapping.js` 会判失败——配好才算完成。
+2. **剧情场景用显式 bgm**：场景级 `bgm` 字段在场景启动时由 `runScene` / `stepChain` 强制播放
+   （`bgmPlayType(bgm, {force:true})`），**覆盖**背景推断。选曲要贴合剧情情绪（离别/逃亡用 `sad`，
+   欢快/热闹用 `cheerful`，学院课堂用 `academy`，礼堂/神圣用 `sacred`，夜晚用 `relax`，一般日常用 `peaceful`）。
+3. **自由探索按背景推断（也要全覆盖）**：切换地点走 `setBG` → `bgmSyncFromBG` → `bgmTypeForBg`，
+   由 `BG_CLASS_TYPE` 映射表把**每个**背景类对应到确定类型（兜底 `peaceful`）。新增背景类必须在
+   `BG_CLASS_TYPE` 里登记，否则视为遗漏。
+4. **同类型分组轮换（策略 B）**：`BGM_GROUPS` 内多首（如 `peaceful1`/`peaceful2`、`academy1`/`academy2`）
+   在同类型间**顺序交替**；**同类型不打断**——当前正播同类型时不重开，切换类型时才淡出→换曲→淡入。
+5. **曲目文件必须存在**：`BGM_FILES` 引用的 `.mp3` 必须真实存在于 `Music/`（测试会校验）。缺文件则
+   该场景静默无 BGM，属缺陷。
+6. 战斗 / 勇者之赐 / 决斗等特殊背景映射到对应类型（`bg-battle`→battle、`bg-pick`→sacred、`bg-duel`→battle），
+   自动覆盖日常音乐。
+
 ## 三、常见坑
 
 - 「背景不显示」多半是 `bg` 缺 `bg-img-*` 类，或 `loc` 写错 key。
@@ -49,4 +71,5 @@
   否则会拖到后续季度才触发。
 - 单句对话里塞多句话会违背「每次对话框显示一句话」；对话请拆成多个 `DUO`/`say` 行。
 - **面板表现形式规则（永久）**：原著受限于文本表达形式，在文中直接打出了系统面板参数；但在网页游戏呈现中，所有系统/状态/属性面板必须通过实际的游戏 UI 弹窗（如 `sysPopup`）或 HUD 呈现，**严禁在对话框剧情文本（`text`）中用纯文字打印面板参数**。
-- 改完请用 jsdom 测试台（参考 `node /tmp/test*.js` 之类）跑一遍，确认无 JS 报错、立绘/背景符合预期。
+- **状态面板必须实时渲染（永久）**：凡是「打开状态面板」的弹窗，正文一律调用 `statusPanelHTML()`（`game.js` 提供的单一数据源，右上角「📖 面板」也用它），**严禁硬编码等级/生命/魔力/攻击等数值**——否则会与玩家实际成长、右上角面板不一致。角色专属的叙事字段（如出生时的「性别 / 天赋亲和 / 状态」）可作为附加行写在 `statusPanelHTML()` 结果之前/之后。
+- 改完请用 jsdom 测试台跑一遍：`cd tests && npm test`（或 `node tests/run.js`），确认无 JS 报错、立绘/背景/面板符合预期。套件含静态校验（validate）、运行时冒烟（smoke）、门控流程（gate_flow）、全时间线通关（full_playthrough）、面板一致性（panel_consistency）。

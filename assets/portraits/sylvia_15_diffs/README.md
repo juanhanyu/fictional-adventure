@@ -8,3 +8,7 @@
 
 本轮新增：thinking / closed_smile / determined / speaking
 本轮失败未出图：surprised / annoyed / worried / sleepy
+
+## 第三批 03_*
+- surprised / sleepy / angry / laugh / teary / confused / wink
+- 未出图：worried / embarrassed / pout

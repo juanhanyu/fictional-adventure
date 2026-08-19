@@ -12,3 +12,7 @@
 ## 第三批 03_*
 - surprised / sleepy / angry / laugh / teary / confused / wink
 - 未出图：worried / embarrassed / pout
+
+## happy
+- happy_01 ~ happy_08：v3_06 底图，只改表情为 happy expression
+- 预选 happy_01 进 named/sylvia_teenage_happy.png

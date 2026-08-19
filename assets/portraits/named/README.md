@@ -3,7 +3,7 @@
 规则：`<角色>_<阶段>_<表情>.png`
 
 ## teenage
-sylvia_teenage_normal / sad / serious / sleepy / surprised / teary / wink
+sylvia_teenage_normal / sad / serious / sleepy / surprised / teary / wink / happy
 
 ## young
 sylvia_young_normal

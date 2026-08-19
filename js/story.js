@@ -42,7 +42,7 @@
   const say = (ch, text, extra) => Object.assign({ ch, speaker: null, text }, extra || {});
   // speaker names filled at runtime via CHARS if speaker omitted and ch set
 
-  /** 立绘列表：'alice' 或 ['beatrice','left','happy']；传 [] 表示清空舞台 */
+  /** 立绘列表：'alice' 或 ['beatrice','left','normal']；传 [] 表示清空舞台 */
   const P = (ids) =>
     (Array.isArray(ids) ? ids : [ids]).filter(Boolean).map((x) =>
       typeof x === 'string'
@@ -384,16 +384,16 @@
         knowD: 5,
       }),
 
-      N('爱丽丝六个月大的时候，会笑了。\n第一次笑是对着姐姐。', [['beatrice', 'left', 'happy'], ['alice', 'right', 'normal']], {
+      N('爱丽丝六个月大的时候，会笑了。\n第一次笑是对着姐姐。', [['beatrice', 'left', 'normal'], ['alice', 'right', 'normal']], {
         bg: 'bg-img-parlor bg-hall',
         loc: 'parlor',
       }),
-      N('那天姐姐在给她表演「贝阿特丽丝大人的厉害之处」——其实就是转圈圈加手舞足蹈——突然，爱丽丝笑了。\n声音很小，咯咯的，像是银铃。', [['beatrice', 'left', 'happy'], ['alice', 'right', 'normal']]),
-      say('beatrice', '她笑了！她对我笑了！', { emo: 'happy' }),
-      N('从那以后，姐姐每天都来表演。\n爱丽丝有时候会笑，有时候只是安静地看着。\n但只要她笑了，姐姐就会高兴一整天。', [['beatrice', 'left', 'happy'], ['alice', 'right', 'normal']]),
-      N('姐姐叉着腰对我说——', [['beatrice', 'center', 'happy']]),
-      say('beatrice', '听好了！爱丽丝最喜欢我！因为她对我笑得最多！', { emo: 'happy' }),
-      N('我看着她，没有反驳。\n虽然我觉得爱丽丝对我笑的次数也不少。', [['beatrice', 'center', 'happy']], {
+      N('那天姐姐在给她表演「贝阿特丽丝大人的厉害之处」——其实就是转圈圈加手舞足蹈——突然，爱丽丝笑了。\n声音很小，咯咯的，像是银铃。', [['beatrice', 'left', 'normal'], ['alice', 'right', 'normal']]),
+      say('beatrice', '她笑了！她对我笑了！', { emo: 'normal' }),
+      N('从那以后，姐姐每天都来表演。\n爱丽丝有时候会笑，有时候只是安静地看着。\n但只要她笑了，姐姐就会高兴一整天。', [['beatrice', 'left', 'normal'], ['alice', 'right', 'normal']]),
+      N('姐姐叉着腰对我说——', [['beatrice', 'center', 'normal']]),
+      say('beatrice', '听好了！爱丽丝最喜欢我！因为她对我笑得最多！', { emo: 'normal' }),
+      N('我看着她，没有反驳。\n虽然我觉得爱丽丝对我笑的次数也不少。', [['beatrice', 'center', 'normal']], {
         love: 'beatrice',
         loveD: 1,
       }),
@@ -429,14 +429,14 @@
         know: 'alice',
         knowD: 10,
       }),
-      N('从那以后，爱丽丝开始说话了。\n但她话很少。\n姐姐每天叽叽喳喳说个不停，爱丽丝就在旁边安静地听着。偶尔姐姐问她问题，她才会简短地回答一两个词。', [['beatrice', 'left', 'happy'], ['alice', 'right', 'normal']]),
-      say('beatrice', '爱丽丝！你喜欢红色还是蓝色？', { emo: 'happy', slot: 'left' }),
+      N('从那以后，爱丽丝开始说话了。\n但她话很少。\n姐姐每天叽叽喳喳说个不停，爱丽丝就在旁边安静地听着。偶尔姐姐问她问题，她才会简短地回答一两个词。', [['beatrice', 'left', 'normal'], ['alice', 'right', 'normal']]),
+      say('beatrice', '爱丽丝！你喜欢红色还是蓝色？', { emo: 'normal', slot: 'left' }),
       say('alice', '……蓝色。', { slot: 'right' }),
-      say('beatrice', '为什么？', { emo: 'happy', slot: 'left' }),
+      say('beatrice', '为什么？', { emo: 'normal', slot: 'left' }),
       say('alice', '……好看。', { slot: 'right' }),
-      say('beatrice', '哪里好看？', { emo: 'happy', slot: 'left' }),
+      say('beatrice', '哪里好看？', { emo: 'normal', slot: 'left' }),
       say('alice', '……天空。', { slot: 'right' }),
-      N('姐姐觉得她太安静了，总想逗她多说几句话。但爱丽丝似乎天生就是这种性格，问一句答一句，绝不多说。\n我倒是觉得挺好的。\n安静的孩子，省心。', [['beatrice', 'left', 'happy'], ['alice', 'right', 'normal']]),
+      N('姐姐觉得她太安静了，总想逗她多说几句话。但爱丽丝似乎天生就是这种性格，问一句答一句，绝不多说。\n我倒是觉得挺好的。\n安静的孩子，省心。', [['beatrice', 'left', 'normal'], ['alice', 'right', 'normal']]),
 
       N('爱丽丝一岁半的时候，发生了一件事。\n那天我在书房看书——说是看书，其实是在研究这个世界的魔法体系。书架上有不少相关的书籍，虽然大部分是入门级别的科普读物，但对我这个新手来说已经足够了。', [], {
         bg: 'bg-img-study bg-study',
@@ -561,16 +561,16 @@
     lines: [
       T('四岁。\n姐姐六岁，妹妹两岁。\n这一年，发生了几件事。'),
 
-      N('第一件事：姐姐开始系统学习魔法了。\n她的天赋亲和是火。', [['beatrice', 'center', 'happy']]),
-      say('beatrice', '看！', { emo: 'happy' }),
-      N('她兴奋地伸出手掌，掌心燃起一团小小的火焰。\n火焰跳动着，映得她的脸红扑扑的。', [['beatrice', 'center', 'happy']], { sfx: 'magic' }),
-      say('beatrice', '我会用魔法了！厉害吧？快夸我！', { emo: 'happy' }),
+      N('第一件事：姐姐开始系统学习魔法了。\n她的天赋亲和是火。', [['beatrice', 'center', 'normal']]),
+      say('beatrice', '看！', { emo: 'normal' }),
+      N('她兴奋地伸出手掌，掌心燃起一团小小的火焰。\n火焰跳动着，映得她的脸红扑扑的。', [['beatrice', 'center', 'normal']], { sfx: 'magic' }),
+      say('beatrice', '我会用魔法了！厉害吧？快夸我！', { emo: 'normal' }),
       say('sylvia', '厉害厉害。'),
-      N('我敷衍道。', [['beatrice', 'center', 'happy']]),
-      say('beatrice', '你这态度！算了，反正爱丽丝会夸我的！爱丽丝！你觉得姐姐厉害吗？', { emo: 'happy' }),
-      N('妹妹抬起头，安静地看着姐姐掌心的火焰。', [['beatrice', 'left', 'happy'], ['alice', 'right', 'normal']]),
+      N('我敷衍道。', [['beatrice', 'center', 'normal']]),
+      say('beatrice', '你这态度！算了，反正爱丽丝会夸我的！爱丽丝！你觉得姐姐厉害吗？', { emo: 'normal' }),
+      N('妹妹抬起头，安静地看着姐姐掌心的火焰。', [['beatrice', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '……厉害。', { slot: 'right' }),
-      say('beatrice', '对吧对吧！', { emo: 'happy', slot: 'left' }),
+      say('beatrice', '对吧对吧！', { emo: 'normal', slot: 'left' }),
       say('alice', '……可是，希尔维亚姐姐大人也会魔法。', { slot: 'right' }),
       N('姐姐一愣，转头看我。', [['beatrice', 'center', 'normal']]),
       say('beatrice', '你会了？'),
@@ -587,11 +587,11 @@
       say('beatrice', '你这是敷衍！', { slot: 'left' }),
       say('alice', '……不是。姐姐们都很厉害。我很……羡慕。', { slot: 'right' }),
       N('最后两个字说得很轻，但我听到了。\n姐姐也听到了，表情一下子软下来。', [['beatrice', 'left', 'normal'], ['alice', 'right', 'normal']]),
-      say('beatrice', '哼，算你有眼光！放心，等你长大了，贝阿特丽丝大人会教你魔法的！', { emo: 'happy', slot: 'left' }),
+      say('beatrice', '哼，算你有眼光！放心，等你长大了，贝阿特丽丝大人会教你魔法的！', { emo: 'normal', slot: 'left' }),
       say('alice', '……谢谢姐姐。', { slot: 'right' }),
-      say('beatrice', '不过首先要听我的话！', { emo: 'happy', slot: 'left' }),
+      say('beatrice', '不过首先要听我的话！', { emo: 'normal', slot: 'left' }),
       say('alice', '……好。', { slot: 'right' }),
-      N('妹妹乖巧地点头，眼睛却悄悄看向我。\n我对她笑了笑。\n她的嘴角也微微弯了一下。', [['beatrice', 'left', 'happy'], ['alice', 'right', 'normal']], {
+      N('妹妹乖巧地点头，眼睛却悄悄看向我。\n我对她笑了笑。\n她的嘴角也微微弯了一下。', [['beatrice', 'left', 'normal'], ['alice', 'right', 'normal']], {
         love: 'beatrice',
         loveD: 1,
       }),
@@ -841,17 +841,17 @@
     phase: 'youth',
     card: { vol: '第一卷', t: '成长', s: '五岁' },
     lines: [
-      N('五岁。姐姐七岁，妹妹三岁。\n日子过得非常规律，规律到让我这种心理年龄早已成年的人感到一种养老般的舒适。\n但我那姐姐显然不这么想。除了基础课程，她现在的日程表里塞满了魔法训练和剑术启蒙。', [['beatrice', 'center', 'happy']]),
+      N('五岁。姐姐七岁，妹妹三岁。\n日子过得非常规律，规律到让我这种心理年龄早已成年的人感到一种养老般的舒适。\n但我那姐姐显然不这么想。除了基础课程，她现在的日程表里塞满了魔法训练和剑术启蒙。', [['beatrice', 'center', 'normal']]),
       {
         ch: 'beatrice',
         emo: 'happy',
         speaker: '贝阿特丽丝',
         text: '身为贵族女性，只有魔法是不够的！万一遇到魔力耗尽的情况，我就用这把剑保护妹妹们！',
       },
-      N('哪怕是木剑，挥舞起来带起的风声也很吓人。特别是她刚才那个转身横扫，距离旁边看上去就很贵的花瓶只有两厘米。\n我默默地向后平移了一步，把花瓶也往后拖了一点。', [['beatrice', 'center', 'happy']]),
+      N('哪怕是木剑，挥舞起来带起的风声也很吓人。特别是她刚才那个转身横扫，距离旁边看上去就很贵的花瓶只有两厘米。\n我默默地向后平移了一步，把花瓶也往后拖了一点。', [['beatrice', 'center', 'normal']]),
       DUO(['sylvia','希尔维亚'], ['beatrice','贝阿特丽丝'], 'sylvia', '……姐姐，保护我们的前提是，别先把我们打晕。'),
       DUO(['beatrice','贝阿特丽丝'], ['sylvia','希尔维亚'], 'beatrice', '怎么可能！我的剑术可是为了你们练的！'),
-      N('她激动的挥剑动作再次擦过那个花瓶的边缘。\n我叹了口气，默默把花瓶又往后挪了挪。', [['beatrice','center','happy'],['sylvia','right','normal']]),
+      N('她激动的挥剑动作再次擦过那个花瓶的边缘。\n我叹了口气，默默把花瓶又往后挪了挪。', [['beatrice','center','normal'],['sylvia','right','normal']]),
       N('而相比之下，三岁的爱丽丝简直是省心模范。', [['alice','center','normal']]),
       say('lecturer', '爱丽丝大小姐简直是天才！这么小就能认这么多字！', { speaker: '家庭教师' }),
       N('面对老师的夸奖，爱丽丝的表现堪称教科书级别。', [['alice','center','normal']]),
@@ -864,7 +864,7 @@
       N('课后，这个「差得远」的小家伙蹭到了我身边。', [['alice','center','normal']]),
       { ch: 'alice', emo: 'normal', speaker: '爱丽丝', text: '……姐姐大人。有个历史问题不太懂，可以教我吗？' },
       N('我耐心地给她讲了一遍。她听得很认真，点头的频率恰到好处。', [['alice','center','normal']]),
-      { ch: 'alice', emo: 'smile', speaker: '爱丽丝', text: '……原来是这样。谢谢姐姐大人，姐姐大人真厉害。' },
+      { ch: 'alice', emo: 'happy', speaker: '爱丽丝', text: '……原来是这样。谢谢姐姐大人，姐姐大人真厉害。' },
       N('她笑了笑，心满意足地走了。\n我看着她的背影，想起之前她来问问题的场景。', [['alice','center','normal']]),
       N('每次的问题都不会太难让我尴尬，也不会太简单感觉敷衍。\n等等，是不是有什么不对。\n算了，爱丽丝才三岁，会有什么心思呢。', [['alice', 'center', 'normal']], {
         love: 'alice',
@@ -874,22 +874,22 @@
       }),
       N('五岁这一年，我的魔法有了长足的进步。\n新技能「水流操控」极其好用，简直是懒人福音。它不仅能用来战斗，更重要的是——它能不用起身就帮我把红茶送到嘴边。', [['beatrice', 'center', 'normal']]),
       N('当然，偶尔也要用来处理一些突发状况。', [['beatrice','center','normal']]),
-      { ch: 'beatrice', emo: 'happy', speaker: '贝阿特丽丝', text: '希尔维亚！江湖救急！' },
+      { ch: 'beatrice', emo: 'normal', speaker: '贝阿特丽丝', text: '希尔维亚！江湖救急！' },
       N('姐姐惨烈的叫声从浴室传来。水管爆了，水柱正欢快地冲刷着天花板。', [['beatrice','center','normal']]),
       N('姐姐站在水帘洞中央，浑身湿透，像只落汤的大金毛。', [['beatrice','center','normal']], {
         bg: 'bg-img-hallway bg-hall',
         loc: 'hallway',
       }),
-      { ch: 'beatrice', emo: 'happy', speaker: '贝阿特丽丝', text: '快！用你的魔法把它停住！' },
+      { ch: 'beatrice', emo: 'normal', speaker: '贝阿特丽丝', text: '快！用你的魔法把它停住！' },
       N('我看了看那个正在喷涌的缺口，叹了口气。\n虽然我是公爵千金，不是水管工，但看来这活儿只能我干了。', [['sylvia', 'center', 'normal']]),
       N('水流操控。\n漫天飞舞的水珠在我的引导下乖乖聚拢，像一条听话的水蛇，缓缓流进浴缸。', [['sylvia', 'center', 'normal']], { sfx: 'magic' }),
-      { ch: 'beatrice', emo: 'happy', speaker: '贝阿特丽丝', text: '得救了！' },
-      { ch: 'beatrice', emo: 'happy', speaker: '贝阿特丽丝', text: '希尔维亚你太神了！' },
+      { ch: 'beatrice', emo: 'normal', speaker: '贝阿特丽丝', text: '得救了！' },
+      { ch: 'beatrice', emo: 'normal', speaker: '贝阿特丽丝', text: '希尔维亚你太神了！' },
       { ch: 'sylvia', speaker: '希尔维亚', text: '……只是暂时的。叫人来修吧。' },
-      N('我正准备深藏功与名地退场，姐姐却因为太激动，直接扑了过来。\n一个湿漉漉的拥抱。我的干爽衣服瞬间宣告阵亡。', [['beatrice', 'center', 'happy']]),
+      N('我正准备深藏功与名地退场，姐姐却因为太激动，直接扑了过来。\n一个湿漉漉的拥抱。我的干爽衣服瞬间宣告阵亡。', [['beatrice', 'center', 'normal']]),
       { ch: 'sylvia', speaker: '希尔维亚', text: '……姐姐，你是在报复我吗？' },
-      { ch: 'beatrice', emo: 'happy', speaker: '贝阿特丽丝', text: '哎呀，反正都要换衣服嘛！' },
-      N('她嘿嘿笑着，反而抱得更紧了。\n我面无表情地任由她抱着。\n算了，看在她笑得这么开心的份上。', [['beatrice','center','happy']], {
+      { ch: 'beatrice', emo: 'normal', speaker: '贝阿特丽丝', text: '哎呀，反正都要换衣服嘛！' },
+      N('她嘿嘿笑着，反而抱得更紧了。\n我面无表情地任由她抱着。\n算了，看在她笑得这么开心的份上。', [['beatrice','center','normal']], {
         love: 'beatrice',
         loveD: 1,
       }),
@@ -901,7 +901,7 @@
       N('她看着我，眼神里有一种比平时更深切的期待。', [['alice', 'center', 'normal']]),
       { ch: 'alice', emo: 'normal', speaker: '爱丽丝', text: '我也想学。等我测完亲和，姐姐大人可以教我吗？' },
       { ch: 'sylvia', speaker: '希尔维亚', text: '当然，如果你不嫌我教得不好的话。' },
-      { ch: 'alice', emo: 'smile', speaker: '爱丽丝', text: '……只要是姐姐大人教的，就好。' },
+      { ch: 'alice', emo: 'happy', speaker: '爱丽丝', text: '……只要是姐姐大人教的，就好。' },
       N('她笑了一下。\n不知道为什么，这孩子每次说这种话的时候，都真诚得让我无法拒绝。', [['alice', 'center', 'normal']]),
       // —— 夏天，树荫下乘凉：冰霜之息（CG cool_off）——
       { cg: 'cool_off.png', text: '夏天到了，阿斯拉王国的夏天热得让人怀疑人生。\n不过我有着解暑神器：「冰霜之息」。' },
@@ -950,7 +950,7 @@
       T('看着那双写满忐忑的眼睛，我伸手摸了摸她柔软的头发。'),
       { ch: 'sylvia', speaker: '希尔维亚', text: '傻瓜，魔法的基础原理是通用的。不管你是风还是火，只要你想练，我都在。' },
       T('她的眼睛瞬间亮了，嘴角弯起一个好看的弧度。'),
-      { ch: 'alice', emo: 'smile', speaker: '爱丽丝', text: '……嗯！谢谢姐姐大人！' },
+      { ch: 'alice', emo: 'happy', speaker: '爱丽丝', text: '……嗯！谢谢姐姐大人！' },
       T('她笑得那么开心，让我也跟着心情变好了。', { love: 'alice', loveD: 2, know: 'alice', knowD: 5, freeRoam: true }),
     ],
   };

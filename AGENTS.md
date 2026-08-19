@@ -60,8 +60,10 @@
   训练/比试用 `training_field`（bg=`bg-img-training bg-plain`）。
 - 触发：季度推进时 `checkStoryGates()` 按 `dateAtLeast(y,m)`（如 `dateAtLeast(12,3)`）与 `flag`
   触发场景。多个场景用 `runSceneQueue([...])` 顺序播放，会在各自 `freeRoam` 处**自动衔接**下一个场景。
-- 立绘文件在 `assets/portraits/`，命名 `assets/portraits/<id>_<emo>.png`；新增 `ch` 必须同时在
-  `PORTRAIT_FILES`、`CHARS`、`CSS_CHARS` 里登记，否则回退到 CSS 占位立绘。
+- 立绘文件在 `assets/portraits/`，三姐妹命名 `<id>_<阶段>_<表情>.png`，阶段为 `child`(0-5)/`young`(6-11)/
+  `teenage`(12+)（引擎 `portraitTierName` 按主角年龄自动匹配，姐姐 beatrice=主角+2、妹妹 alice=主角-2）；
+  表情 `normal/sad/serious/shy/surprised/teary/wink/sleepy/happy` 等。新增 `ch` 必须同时在
+  `PORTRAIT_FILES`、`CHARS`、`CSS_CHARS` 里登记，否则回退到 CSS 占位立绘。表情选值详见「二点七」。
 - 法神（fashen）**仅**在明确剧本需要的对话/剧情中出现立绘；已移除其在学院内随机出现（自由探索）的设定。
 
 ## 二点五、背景音乐 BGM 永久规则（硬性）
@@ -90,6 +92,23 @@
    该场景静默无 BGM，属缺陷。
 6. 战斗 / 勇者之赐 / 决斗等特殊背景映射到对应类型（`bg-battle`→battle、`bg-pick`→sacred、`bg-duel`→battle），
    自动覆盖日常音乐。
+
+## 二点七、立绘表情语义（永久·按角色性格定制）
+
+立绘表情不是「统一按字面强度」选的，而是**按角色性格**定制的。写剧情时**大多数情况用 `normal`**，
+只有在角色情绪明显变化时才换表情。各角色表情的「长相/强度」由美术按性格生成，不能想当然：
+
+- **希尔维亚（主角，冷淡系）**：`normal` 是她的平静/面无表情常态。已具备各阶段 `happy`（激动/开心时用）。
+- **贝阿特丽丝（姐姐，阳光外放）**：`normal` 本身就是露齿笑——日常开心就体现在 normal 上，不需要再靠"更夸张"的表情。
+- **爱丽丝（妹妹，内敛安静）**：`happy` 也只是微微一笑，不会是大笑/咧嘴；`normal` 更淡。
+
+**缺失的表情是刻意的**：有的角色性格上不太可能出现某种表情，美术就没做对应文件（如贝蒂无 shy/happy、
+希尔维亚无 smile）。写剧情时不要为缺失的表情硬套其他图——`resolvePortrait` 会把缺的表情兜底到该档
+`normal`，视觉上已贴角色。**若某段剧情真的确实需要某个缺失的表情**（如某场景必须爱丽丝大哭但无 teary），
+应**提醒用户去补图**，而不是擅自挪用其他表情或自行替换。
+
+**接入新立绘时**：`assets/portraits/<id>_<阶段>_<表情>.png`，阶段名为 `child`(0-5)/`young`(6-11)/`teenage`(12+)，
+必须在 `PORTRAIT_FILES` 登记对应 key（`<id>_<阶段>_<表情>`），否则解析不到。
 
 ## 三、常见坑
 

@@ -271,6 +271,7 @@ const PORTRAIT_FILES = {
   sylvia_child_surprised:'assets/portraits/sylvia_child_surprised.png',
   sylvia_child_teary:'assets/portraits/sylvia_child_teary.png',
   sylvia_child_wink:'assets/portraits/sylvia_child_wink.png',
+  sylvia_child_happy:'assets/portraits/sylvia_child_happy.png',
   sylvia_young_normal:'assets/portraits/sylvia_young_normal.png',
   sylvia_young_sad:'assets/portraits/sylvia_young_sad.png',
   sylvia_young_serious:'assets/portraits/sylvia_young_serious.png',
@@ -278,6 +279,7 @@ const PORTRAIT_FILES = {
   sylvia_young_surprised:'assets/portraits/sylvia_young_surprised.png',
   sylvia_young_teary:'assets/portraits/sylvia_young_teary.png',
   sylvia_young_wink:'assets/portraits/sylvia_young_wink.png',
+  sylvia_young_happy:'assets/portraits/sylvia_young_happy.png',
   sylvia_teenage_normal:'assets/portraits/sylvia_teenage_normal.png',
   sylvia_teenage_sad:'assets/portraits/sylvia_teenage_sad.png',
   sylvia_teenage_serious:'assets/portraits/sylvia_teenage_serious.png',
@@ -285,6 +287,7 @@ const PORTRAIT_FILES = {
   sylvia_teenage_surprised:'assets/portraits/sylvia_teenage_surprised.png',
   sylvia_teenage_teary:'assets/portraits/sylvia_teenage_teary.png',
   sylvia_teenage_wink:'assets/portraits/sylvia_teenage_wink.png',
+  sylvia_teenage_happy:'assets/portraits/sylvia_teenage_happy.png',
   // 兜底：缺表情落到该档 normal
   sylvia_child:'assets/portraits/sylvia_child_normal.png',
   sylvia_normal:'assets/portraits/sylvia_young_normal.png',

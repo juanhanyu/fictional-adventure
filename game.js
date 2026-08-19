@@ -263,43 +263,62 @@ function bgmToggleMute(){
 
 // ========== PORTRAITS ==========
 const PORTRAIT_FILES = {
-  sylvia_normal:'assets/portraits/sylvia_normal.png',
-  sylvia_smile:'assets/portraits/sylvia_smile.png',
-  sylvia_serious:'assets/portraits/sylvia_serious.png',
-  sylvia_child:'assets/portraits/sylvia_child.png',
-  sylvia_child_normal:'assets/portraits/sylvia_child.png',
-  sylvia_child_smile:'assets/portraits/sylvia_child.png',
-  sylvia_child_serious:'assets/portraits/sylvia_child.png',
-  sylvia_youth_normal:'assets/portraits/sylvia_child.png',
-  sylvia_youth_smile:'assets/portraits/sylvia_child.png',
-  sylvia_youth_serious:'assets/portraits/sylvia_child.png',
-  sylvia_teenage_normal:'assets/portraits/sylvia_normal.png',
-  sylvia_teenage_smile:'assets/portraits/sylvia_smile.png',
-  sylvia_teenage_serious:'assets/portraits/sylvia_serious.png',
-  beatrice_normal:'assets/portraits/beatrice_normal.png',
-  beatrice_happy:'assets/portraits/beatrice_happy.png',
-  beatrice_sad:'assets/portraits/beatrice_sad.png',
-  beatrice_child:'assets/portraits/beatrice_child.png',
-  beatrice_child_normal:'assets/portraits/beatrice_child.png',
-  beatrice_child_happy:'assets/portraits/beatrice_child.png',
-  beatrice_child_sad:'assets/portraits/beatrice_child.png',
-  beatrice_youth_normal:'assets/portraits/beatrice_child.png',
-  beatrice_youth_happy:'assets/portraits/beatrice_child.png',
-  beatrice_teenage_normal:'assets/portraits/beatrice_normal.png',
-  beatrice_teenage_happy:'assets/portraits/beatrice_happy.png',
-  beatrice_teenage_sad:'assets/portraits/beatrice_sad.png',
-  alice_normal:'assets/portraits/alice_normal.png',
-  alice_smile:'assets/portraits/alice_smile.png',
-  alice_shy:'assets/portraits/alice_shy.png',
-  alice_child_normal:'assets/portraits/alice_child.png',
-  alice_child_smile:'assets/portraits/alice_child_smile.png',
+  // ==== 希尔维亚（主角）三阶段 ====
+  sylvia_child_normal:'assets/portraits/sylvia_child_normal.png',
+  sylvia_child_sad:'assets/portraits/sylvia_child_sad.png',
+  sylvia_child_serious:'assets/portraits/sylvia_child_serious.png',
+  sylvia_child_shy:'assets/portraits/sylvia_child_shy.png',
+  sylvia_child_surprised:'assets/portraits/sylvia_child_surprised.png',
+  sylvia_child_teary:'assets/portraits/sylvia_child_teary.png',
+  sylvia_child_wink:'assets/portraits/sylvia_child_wink.png',
+  sylvia_young_normal:'assets/portraits/sylvia_young_normal.png',
+  sylvia_young_sad:'assets/portraits/sylvia_young_sad.png',
+  sylvia_young_serious:'assets/portraits/sylvia_young_serious.png',
+  sylvia_young_shy:'assets/portraits/sylvia_young_shy.png',
+  sylvia_young_surprised:'assets/portraits/sylvia_young_surprised.png',
+  sylvia_young_teary:'assets/portraits/sylvia_young_teary.png',
+  sylvia_young_wink:'assets/portraits/sylvia_young_wink.png',
+  sylvia_teenage_normal:'assets/portraits/sylvia_teenage_normal.png',
+  sylvia_teenage_sad:'assets/portraits/sylvia_teenage_sad.png',
+  sylvia_teenage_serious:'assets/portraits/sylvia_teenage_serious.png',
+  sylvia_teenage_sleepy:'assets/portraits/sylvia_teenage_sleepy.png',
+  sylvia_teenage_surprised:'assets/portraits/sylvia_teenage_surprised.png',
+  sylvia_teenage_teary:'assets/portraits/sylvia_teenage_teary.png',
+  sylvia_teenage_wink:'assets/portraits/sylvia_teenage_wink.png',
+  // 兜底：缺表情落到该档 normal
+  sylvia_child:'assets/portraits/sylvia_child_normal.png',
+  sylvia_normal:'assets/portraits/sylvia_young_normal.png',
+  // ==== 贝阿特丽丝（姐姐=主角+2岁）三阶段 ====
+  beatrice_child_normal:'assets/portraits/beatrice_child_normal.png',
+  beatrice_young_normal:'assets/portraits/beatrice_young_normal.png',
+  beatrice_young_sad:'assets/portraits/beatrice_young_sad.png',
+  beatrice_young_serious:'assets/portraits/beatrice_young_serious.png',
+  beatrice_young_surprised:'assets/portraits/beatrice_young_surprised.png',
+  beatrice_young_teary:'assets/portraits/beatrice_young_teary.png',
+  beatrice_young_wink:'assets/portraits/beatrice_young_wink.png',
+  beatrice_teenage_normal:'assets/portraits/beatrice_teenage_normal.png',
+  beatrice_teenage_sad:'assets/portraits/beatrice_teenage_sad.png',
+  beatrice_teenage_teary:'assets/portraits/beatrice_teenage_teary.png',
+  // 兜底：缺表情落到该档 normal
+  beatrice_child:'assets/portraits/beatrice_child_normal.png',
+  beatrice_normal:'assets/portraits/beatrice_young_normal.png',
+  // ==== 爱丽丝（妹妹=主角-2岁）三阶段 ====
+  alice_child_normal:'assets/portraits/alice_child_normal.png',
+  alice_child_happy:'assets/portraits/alice_child_happy.png',
   alice_child_shy:'assets/portraits/alice_child_shy.png',
-  alice_youth_normal:'assets/portraits/alice_normal.png',
-  alice_youth_smile:'assets/portraits/alice_smile.png',
-  alice_youth_shy:'assets/portraits/alice_shy.png',
-  alice_teenage_normal:'assets/portraits/alice_normal.png',
-  alice_teenage_smile:'assets/portraits/alice_smile.png',
-  alice_teenage_shy:'assets/portraits/alice_shy.png',
+  alice_young_normal:'assets/portraits/alice_young_normal.png',
+  alice_young_happy:'assets/portraits/alice_young_happy.png',
+  alice_young_shy:'assets/portraits/alice_young_shy.png',
+  alice_teenage_normal:'assets/portraits/alice_teenage_normal.png',
+  alice_teenage_happy:'assets/portraits/alice_teenage_happy.png',
+  alice_teenage_sad:'assets/portraits/alice_teenage_sad.png',
+  alice_teenage_serious:'assets/portraits/alice_teenage_serious.png',
+  alice_teenage_shy:'assets/portraits/alice_teenage_shy.png',
+  alice_teenage_teary:'assets/portraits/alice_teenage_teary.png',
+  alice_teenage_wink:'assets/portraits/alice_teenage_wink.png',
+  // 兜底：缺表情落到该档 normal
+  alice_child:'assets/portraits/alice_child_normal.png',
+  alice_normal:'assets/portraits/alice_young_normal.png',
   sophia_normal:'assets/portraits/sophia_normal.png',
   claude_normal:'assets/portraits/claude_normal.png',
   noelle_normal:'assets/portraits/noelle_normal.png',
@@ -354,9 +373,9 @@ function portraitAgeTierFor(charId){
   if(charId==='sylvia') return portraitAgeTier();
   return portraitTierForAge(charAgeY(charId));
 }
-// 阶段名：用于拼立绘文件名 <id>_<阶段>_<表情>（如 alice_child_shy）
+// 阶段名：用于拼立绘文件名 <id>_<阶段>_<表情>（如 alice_child_shy、sylvia_young_normal）
 function portraitTierName(tier){
-  return tier===1 ? 'child' : tier===2 ? 'youth' : 'teenage';
+  return tier===1 ? 'child' : tier===2 ? 'young' : 'teenage';
 }
 function resolvePortrait(charId, emotion){
   const emo = emotion || 'normal';

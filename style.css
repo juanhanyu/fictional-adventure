@@ -39,9 +39,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .bg-img-night{background-image:url(assets/bg_night.jpg)}
 .bg-img-uni{background-image:url(assets/bg_uni.jpg)}
 .bg-img-plain{background-image:url(assets/bg_plain.jpg)}
-.bg-img-village{background-image:url(assets/bg_village.jpg)}
-.bg-img-castle{background-image:url(assets/bg_castle.jpg)}
-.bg-img-void{background-image:url(assets/bg_void.jpg)}
 
 #app{position:relative;z-index:3;height:100%;display:flex;flex-direction:column}
 

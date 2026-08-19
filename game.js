@@ -273,6 +273,9 @@ const PORTRAIT_FILES = {
   sylvia_youth_normal:'assets/portraits/sylvia_child.png',
   sylvia_youth_smile:'assets/portraits/sylvia_child.png',
   sylvia_youth_serious:'assets/portraits/sylvia_child.png',
+  sylvia_teenage_normal:'assets/portraits/sylvia_normal.png',
+  sylvia_teenage_smile:'assets/portraits/sylvia_smile.png',
+  sylvia_teenage_serious:'assets/portraits/sylvia_serious.png',
   beatrice_normal:'assets/portraits/beatrice_normal.png',
   beatrice_happy:'assets/portraits/beatrice_happy.png',
   beatrice_sad:'assets/portraits/beatrice_sad.png',
@@ -282,6 +285,9 @@ const PORTRAIT_FILES = {
   beatrice_child_sad:'assets/portraits/beatrice_child.png',
   beatrice_youth_normal:'assets/portraits/beatrice_child.png',
   beatrice_youth_happy:'assets/portraits/beatrice_child.png',
+  beatrice_teenage_normal:'assets/portraits/beatrice_normal.png',
+  beatrice_teenage_happy:'assets/portraits/beatrice_happy.png',
+  beatrice_teenage_sad:'assets/portraits/beatrice_sad.png',
   alice_normal:'assets/portraits/alice_normal.png',
   alice_smile:'assets/portraits/alice_smile.png',
   alice_shy:'assets/portraits/alice_shy.png',
@@ -291,6 +297,9 @@ const PORTRAIT_FILES = {
   alice_youth_normal:'assets/portraits/alice_normal.png',
   alice_youth_smile:'assets/portraits/alice_smile.png',
   alice_youth_shy:'assets/portraits/alice_shy.png',
+  alice_teenage_normal:'assets/portraits/alice_normal.png',
+  alice_teenage_smile:'assets/portraits/alice_smile.png',
+  alice_teenage_shy:'assets/portraits/alice_shy.png',
   sophia_normal:'assets/portraits/sophia_normal.png',
   claude_normal:'assets/portraits/claude_normal.png',
   noelle_normal:'assets/portraits/noelle_normal.png',
@@ -347,7 +356,7 @@ function portraitAgeTierFor(charId){
 }
 // 阶段名：用于拼立绘文件名 <id>_<阶段>_<表情>（如 alice_child_shy）
 function portraitTierName(tier){
-  return tier===1 ? 'child' : tier===2 ? 'youth' : 'normal';
+  return tier===1 ? 'child' : tier===2 ? 'youth' : 'teenage';
 }
 function resolvePortrait(charId, emotion){
   const emo = emotion || 'normal';

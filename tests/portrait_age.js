@@ -36,5 +36,15 @@ ok('妹妹10→youth(normal占位)', r.alice.includes('alice_normal'));
 r=testAge(4);
 ok('妹妹2岁(4-2)→child', r.alice.includes('alice_child'));
 
-console.log(fail===0?'\n  ✓ 全部通过':'\n  ✗ '+fail+' 处失败');
-process.exit(fail?1:0);
+// ===== 新增：验证档位名为 teenage（normal 作为表情）=====
+(function teenageCheck(){
+  win.__resetS();
+  const s=win.__getS(); s.ageY=14; s.flags.named=1; win.__setS(s);
+  ok('档位名 teenage(主角14岁)', win.portraitTierName(win.portraitAgeTierFor('sylvia'))==='teenage');
+  ok('teenage 档解析到 sylvia_normal 图', win.resolvePortrait('sylvia','normal').includes('sylvia_normal'));
+  // 表情 normal 独立存在（sylvia_teenage_normal 键）
+  ok('sylvia_teenage_normal 键存在', !!win.__PORTRAIT_FILES['sylvia_teenage_normal']);
+  ok('sylvia_teenage_smile 键存在', !!win.__PORTRAIT_FILES['sylvia_teenage_smile']);
+  console.log(fail===0?'\n  ✓ 全部通过':'\n  ✗ '+fail+' 处失败');
+  process.exit(fail?1:0);
+})();

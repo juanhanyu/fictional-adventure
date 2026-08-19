@@ -6,6 +6,19 @@
 
 > 本文件是所有协助本项目 AI **都必须遵守** 的永久约定。改动剧情 / 立绘 / 场景前，请先读完本文件与下方「引擎要点」。
 
+## 〇、版本控制与资源入库（永久·硬性）
+
+**所有新增素材（CG、音乐、图片、立绘等）和新增代码文件，必须在改动完成时立刻提交并推送到远程，绝不能让任何文件停留在「未跟踪」状态。** 曾发生过因未跟踪导致 CG/音乐脱离版本控制、远程缺失的问题，务必避免。
+
+- 工作流：改完一批 → `git status` 检查是否有 `??`（未跟踪）或 `M`（已修改）→ `git add -A` → `git commit` → `git push --force origin arena/019ff2a4-fictional-adventure`。
+- 每次 `git add -A` 前，务必确认以下目录/文件被纳入：
+  `assets/cg/`（CG 图）、`Music/`（BGM）、`assets/portraits/`（立绘）、`assets/bg/`（背景）、`tests/`（测试）、`.gitignore`、`index.html`、`game.js`、`js/story.js`、`style.css`、`AGENTS.md`。
+- 若发现 git 历史被重置（`git rev-parse HEAD` 不是自己上一次提交、`git status` 出现大量 `??`），应立即 `git add -A` 并提交推送，恢复远程与本地一致。
+- 提交后自检：`git status --short` 应为空；`git ls-tree -r --name-only HEAD -- assets/cg Music tests` 能列出对应文件；`git rev-parse HEAD` 与远程 `git ls-remote origin arena/019ff2a4-fictional-adventure` 一致。
+- 远程分支固定为 `arena/019ff2a4-fictional-adventure`，只推送到它，不要切到其他分支。
+
+
+
 ## 一、剧情编写永久规则（硬性）
 
 1. **照搬原作**：剧情内容严格依照原著《转生千金～到了异世界就要悠闲地生活》对应章节，

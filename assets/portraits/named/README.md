@@ -1,20 +1,14 @@
 # 正式命名立绘
 
 规则：`<角色>_<阶段>_<表情>.png`
-- 阶段：teenage = 15岁，young = 8岁
+- teenage = 15岁
+- young = 8岁
 
-## teenage（人工筛选 7 张）
-- sylvia_teenage_normal.png
-- sylvia_teenage_sad.png
-- sylvia_teenage_serious.png
-- sylvia_teenage_sleepy.png
-- sylvia_teenage_surprised.png
-- sylvia_teenage_teary.png
-- sylvia_teenage_wink.png
+## teenage
+sylvia_teenage_normal / sad / serious / sleepy / surprised / teary / wink
 
-## young（底图 young_normal + 已生成差分）
-- sylvia_young_normal.png
-- sylvia_young_serious.png
-- sylvia_young_wink.png
+## young
+sylvia_young_normal / serious / sad / shy / wink
 
-待补：sad / teary / surprised / shy
+待补：teary / surprised
+wink 使用上一版（本次重做未眨眼，未覆盖）

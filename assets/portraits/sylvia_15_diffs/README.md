@@ -14,5 +14,6 @@
 - 未出图：worried / embarrassed / pout
 
 ## happy
-- happy_01 ~ happy_08：v3_06 底图，只改表情为 happy expression
-- 预选 happy_01 进 named/sylvia_teenage_happy.png
+- happy_01 ~ happy_08：第一批（有脸红 / 眼睛变弯，已淘汰）
+- happy_v2_01 ~ happy_v2_03：按用户要求重做（不脸红、眼睛不变、露齿笑、背景不变）
+- 预选 happy_v2_01（_diff_review/happy_10）进 named/sylvia_teenage_happy.png

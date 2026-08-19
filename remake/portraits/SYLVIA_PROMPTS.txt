@@ -1,0 +1,52 @@
+# 希尔维亚三阶段立绘提示词
+# 差分规则：同一阶段只替换【表情】一句，其余一字不改。
+
+SHARED_TAIL=Japanese anime light novel character portrait, vertical 2:3, 1024x1536, upper body bust shot, plain light grey-blue studio background, no scenery, no other characters, no text, no watermark, high quality ultra detailed, same camera, same pose, same clothes, same hair.
+
+===== STAGE 1 CHILD normal =====
+Japanese anime light novel character portrait, vertical 2:3, 1024x1536, upper body bust shot, plain light grey-blue studio background, no scenery, no other characters, no text, no watermark, high quality ultra detailed.
+Sylvia Vesteria as a small child about seven years old, short silver-white bob hair with wispy center-parted bangs, large bright crystal-blue eyes, round childish face, pale porcelain skin.
+Hair accessory: a blue ribbon on the left side of her head with ornate gold filigree and an oval blue gem.
+Outfit: light blue child's noble dress, wide white lace collar, navy blue neck bow with a gold-framed oval blue gem brooch, white lace front placket with small gold buttons, navy sash tied at the waist, navy bows on the cuffs, hands held together in front.
+【表情】calm quiet neutral expression, closed mouth, still eyes, no smile.
+Same camera, same pose, same clothes, same hair.
+
+===== STAGE 1 CHILD smile =====
+(identical except)
+【表情】gentle small childish smile, soft warm eyes.
+
+===== STAGE 1 CHILD serious =====
+(identical except)
+【表情】serious closed mouth, slightly lowered brows, cold calm eyes.
+
+===== STAGE 2 ACADEMY normal =====
+Japanese anime light novel character portrait, vertical 2:3, 1024x1536, upper body bust shot, plain light grey-blue studio background, no scenery, no other characters, no text, no watermark, high quality ultra detailed.
+Sylvia Vesteria age thirteen to fifteen, long straight silver-white hair flowing down her back, wispy center-parted bangs, a small braid on the left side of her head, large bright crystal-blue eyes, slender youthful face, pale porcelain skin.
+Hair accessory: a navy blue ribbon on the left side with ornate gold filigree and an oval blue gem.
+Outfit: navy-blue and white academy noble dress, white ruffled high collar and lace jabot, navy neck bow with a gold-framed oval blue gem brooch and a hanging blue gem pendant, gold baroque embroidery on the sleeves, white undersleeves.
+【表情】calm quiet neutral expression, closed mouth, still eyes, no smile.
+Same camera, same pose, same clothes, same hair.
+
+===== STAGE 2 ACADEMY smile =====
+(identical except)
+【表情】gentle small smile, soft warm eyes.
+
+===== STAGE 2 ACADEMY serious =====
+(identical except)
+【表情】serious closed mouth, slightly lowered brows, cold calm eyes.
+
+===== STAGE 3 FUGITIVE / 眷寒渔 normal =====
+Japanese anime light novel character portrait, vertical 2:3, 1024x1536, upper body bust shot, plain light grey-blue studio background, no scenery, no other characters, no text, no watermark, high quality ultra detailed.
+Sylvia Vesteria age fourteen to fifteen in disguise as Juan Hanyu, same face as academy Sylvia but recolored, long straight black hair with no shine, wispy center-parted bangs, a small braid on the left side of her head, dark moss-green eyes, slender youthful face, pale porcelain skin, slightly thinner from travel.
+Hair accessory: none, no ribbon, no gem.
+Outfit: simple worn dark charcoal travel coat, plain white shirt, thin dull silver chain hidden at the collar, no noble embroidery, no academy crest, no jewelry.
+【表情】calm quiet neutral expression, closed mouth, still eyes, no smile.
+Same camera, same pose, same clothes, same hair.
+
+===== STAGE 3 FUGITIVE smile =====
+(identical except)
+【表情】gentle small smile, soft warm eyes.
+
+===== STAGE 3 FUGITIVE serious =====
+(identical except)
+【表情】serious closed mouth, slightly lowered brows, cold calm eyes.

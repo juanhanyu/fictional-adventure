@@ -1,0 +1,10 @@
+# 希尔维亚 15 岁差分（v3_06 底图）待人工筛选
+
+只改表情短语，其余提示词与定稿一致。
+
+- `00_normal_v3_06.png` 底图
+- `01_*` 上次审核通过的 smile / serious / sad
+- `02_*` 全部生成结果（含未过审与本轮新增）
+
+本轮新增：thinking / closed_smile / determined / speaking
+本轮失败未出图：surprised / annoyed / worried / sleepy

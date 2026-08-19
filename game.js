@@ -7,6 +7,8 @@
 const SAVE_KEY = 'ojousama_save_v1';
 const CODEX_KEY = 'ojousama_codex_v1';
 const MUTE_KEY = 'ojousama_muted';
+const MUSIC_VOL_KEY = 'ojousama_music_vol';
+const BGM_MUTE_KEY = 'ojousama_bgm_muted';
 const TIERS = ['无','初级','中级','高级','圣级','王级','帝级','神级'];
 const TODS = ['清晨','上午','下午','傍晚','夜晚'];
 const TOD_ICON = ['🌅','☀️','🌤','🌇','🌙'];
@@ -25,7 +27,7 @@ function seasonName(s){ return SEASON_ICON[s]+SEASONS[s]; }
 
 
 // ========== AUDIO ==========
-let ACTX = null, muted = localStorage.getItem(MUTE_KEY) === '1';
+let ACTX = null, muted = (()=>{ try { return localStorage.getItem(MUTE_KEY) === '1'; } catch(e){ return false; } })();
 function ensureAudio(){ if(!ACTX) try{ ACTX = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
 function sfx(type){
   if(muted) return; ensureAudio(); if(!ACTX) return;
@@ -42,22 +44,253 @@ function sfx(type){
   o.start(t); o.stop(t+d);
 }
 
+// ========== BGM (背景音乐) ==========
+// 情境 → 音乐文件（放在 Music/，相对路径 file:// 也能播）。缺文件则静默降级。
+const BGM_BASE = 'Music/';
+const BGM_FILES = {
+  battle1:'Music/Battle & Tension 1.mp3',
+  battle2:'Music/Battle & Tension 2.mp3',
+  cheerful1:'Music/Cheerful 1.mp3',
+  cheerful2:'Music/Cheerful 2.mp3',
+  emotional1:'Music/Emotional 1.mp3',
+  academy1:'Music/Magical Academy 1.mp3',
+  academy2:'Music/Magical Academy 2.mp3',
+  sad1:'Music/Melancholic & Sad 1.mp3',
+  relax1:'Music/Peaceful & Relaxing 1.mp3',
+  relax2:'Music/Peaceful & Relaxing 2.mp3',
+  peaceful1:'Music/Peaceful 1.mp3',
+  peaceful2:'Music/Peaceful 2.mp3',
+  sacred1:'Music/Sacred 1.mp3',
+  sacred2:'Music/Sacred 2.mp3',
+  comedy_fast:'Music/Comical_fast-speed.mp3',
+  comedy_medium:'Music/Comical_medium-speed.mp3',
+  romantic:'Music/Romantic.mp3',
+  upset:'Music/Upset.mp3',
+};
+let bgmEl = null;         // 当前 Audio 元素
+let bgmKey = null;        // 当前播放的曲目 key
+let bgmUnlocked = false;  // 用户手势后已解锁
+let bgmCurType = null;    // 当前播放的情境类型
+let sceneBgmType = null;  // 当前场景显式配置的 bgm 类型（贯穿整个场景，剧情中不被切走）
+let bgmGroupIdx = {};     // 类型 -> 上次使用的曲目索引（轮换用）
+let bgmLoc = null;        // 当前 bgm 所属地点（用于判断是否真的切换了地点）
+let bgmVolume = (()=>{ try { const v=parseFloat(localStorage.getItem(MUSIC_VOL_KEY)); return isNaN(v)?0.5:Math.max(0,Math.min(1,v)); } catch(e){ return 0.5; } })();
+let bgmMuted = (()=>{ try { return localStorage.getItem(BGM_MUTE_KEY)==='1'; } catch(e){ return false; } })();
+
+// 同类型分组（策略 B：同情境在多首间轮换）
+const BGM_GROUPS = {
+  battle:   ['battle1','battle2'],
+  cheerful: ['cheerful1','cheerful2'],
+  academy:  ['academy1','academy2'],
+  peaceful: ['peaceful1','peaceful2'],
+  relax:    ['relax1','relax2'],
+  sacred:   ['sacred1','sacred2'],
+  sad:      ['sad1'],
+  emotional:['emotional1'],
+  comedy_fast:['comedy_fast'],
+  comedy_medium:['comedy_medium'],
+  romantic:['romantic'],
+  upset:['upset'],
+};
+
+function bgmFileExists(key){
+  if(!window || !window.fetch) return true; // 无法探测时乐观返回，Audio error 兜底
+  return true; // 由 Audio onerror 兜底，避免每次 fetch
+}
+function bgmFadeTo(el, target, ms, done){
+  if(!el || typeof el.volume !== 'number'){ if(done) done(); return; }
+  const step = 50, cur = el.volume;
+  const delta = (target - cur) / (ms/step);
+  let n = 0;
+  const iv = setInterval(()=>{
+    n++;
+    el.volume = Math.max(0, Math.min(1, el.volume + delta));
+    if(n*step >= ms){ clearInterval(iv); el.volume = target; if(done) done(); }
+  }, step);
+}
+function bgmStop(fade=true){
+  const el = bgmEl;
+  if(!el) return;
+  bgmEl = null; bgmKey = null; bgmCurType = null; sceneBgmType = null;
+  const kill = ()=>{ try{ el.pause(); el.removeAttribute('src'); }catch(e){} };
+  if(fade){ try{ el.volume = Math.min(el.volume, bgmMuted?0:bgmVolume); }catch(e){} bgmFadeTo(el, 0, 600, kill); }
+  else kill();
+}
+// 创建/获取持久的 DOM <audio> 元素（标准、可靠，优于 new Audio()）
+function bgmAudio(){
+  if(bgmEl) return bgmEl;
+  let el;
+  try { el = document.getElementById('bgm-audio') || document.createElement('audio'); }
+  catch(e){ try{ el = new Audio(); }catch(e2){ return null; } }
+  if(!el.loop) el.loop = true;
+  if(!el.preload) el.preload = 'auto';
+  el.volume = bgmMuted ? 0 : bgmVolume;
+  el.onerror = ()=>{ /* 加载失败：保留元素，只是本次不响，等待下次触发重试 */ };
+  bgmEl = el;
+  return el;
+}
+function bgmPlay(key, {fade=true}={}){
+  if(!key) return;
+  if(bgmKey === key && bgmEl && !bgmEl.paused) return; // 已播放同曲
+  const file = BGM_FILES[key]; if(!file) return;
+  const prev = bgmEl;
+  bgmKey = key;
+  // 淡出旧曲后换新
+  const startNew = ()=>{
+    if(bgmKey !== key) return; // 期间又被切换
+    const el = bgmAudio(); if(!el) return;
+    try { el.src = encodeURI(file); el.loop = true; } catch(e){ return; } // 编码空格/&，避免加载失败
+    bgmEl = el;
+    const p = el.play();
+    if(p && p.catch) p.catch(()=>{ /* 自动播放被拒：等待 bgmUnlock 时重试 */ });
+    // 淡入
+    if(fade && !bgmMuted && !muted){ try{ el.volume = 0; }catch(e){} el.volume = 0; bgmFadeTo(el, bgmVolume, 900); }
+  };
+  if(prev && prev.src){
+    const kill = ()=>{ try{ prev.pause(); prev.removeAttribute('src'); }catch(e){} };
+    if(fade){ try{ prev.volume = Math.min(prev.volume, bgmMuted?0:bgmVolume); }catch(e){} bgmFadeTo(prev, 0, 600, ()=>{ if(bgmKey===key) startNew(); else kill(); }); }
+    else { kill(); startNew(); } // fade:false 也要启动新曲
+  } else {
+    startNew();
+  }
+}
+// 用户手势后解锁音频（浏览器自动播放限制）——任何用户交互都会尝试恢复
+function bgmUnlock(){
+  bgmUnlocked = true;
+  if(bgmEl){
+    const p = bgmEl.play();
+    if(p && p.catch) p.catch(()=>{});
+  }
+}
+// 全局解锁：绑定 document 首次用户交互，确保任何进入路径都能发声
+let _bgmGlobalBound = false;
+function bgmBindGlobalUnlock(){
+  if(_bgmGlobalBound) return; _bgmGlobalBound = true;
+  const handler = ()=>{ bgmUnlock(); };
+  document.addEventListener('pointerdown', handler, {once:false});
+  document.addEventListener('keydown', handler);
+}
+// 背景类 → 情境类型的映射表（自由探索全覆盖：每个背景类都有确定类型）
+const BG_CLASS_TYPE = {
+  // 特殊/氛围类
+  'bg-battle':'battle', 'bg-pick':'sacred', 'bg-duel':'battle', 'bg-title':'peaceful',
+  'bg-void':'sad', 'bg-night':'relax', 'bg-snow':'relax', 'bg-forest':'sad',
+  'bg-beach':'cheerful', 'bg-plain':'peaceful', 'bg-room':'peaceful', 'bg-hall':'peaceful',
+  'bg-school':'academy', 'bg-garden':'cheerful', 'bg-study':'peaceful', 'bg-town':'cheerful',
+  'bg-ending':'sacred',
+  // 背景图类（地点/场景）
+  'bg-img-nursery':'peaceful', 'bg-img-hallway':'peaceful', 'bg-img-parlor':'peaceful',
+  'bg-img-garden':'cheerful', 'bg-img-study':'peaceful', 'bg-img-dining':'cheerful',
+  'bg-img-kitchen':'cheerful', 'bg-img-training':'cheerful', 'bg-img-balcony':'relax',
+  'bg-img-chapel':'sacred', 'bg-img-cellar':'peaceful', 'bg-img-town':'cheerful',
+  'bg-img-beach':'cheerful', 'bg-img-dorm':'peaceful', 'bg-img-classroom':'academy',
+  'bg-img-ice-classroom':'academy', 'bg-img-library':'academy', 'bg-img-cafeteria':'academy',
+  'bg-img-clocktower':'academy', 'bg-img-flowerhouse':'peaceful', 'bg-img-memorial':'peaceful',
+  'bg-img-auditorium':'sacred', 'bg-img-forest':'sad', 'bg-img-jikan':'peaceful',
+  'bg-img-uni':'academy', 'bg-img-plain':'sacred', 'bg-img-village':'cheerful',
+  'bg-img-castle':'sacred', 'bg-img-crosswalk-accident':'sad',
+  'bg-img-classroom-locust':'peaceful',
+};
+// 依据 bg 类 / phase 决定情境【类型】（而非固定单曲）。兜底 peaceful，保证全覆盖。
+function bgmTypeForBg(cls, phase, loc){
+  const c = cls || '';
+  // 逐类查映射表，返回首个命中的类型
+  const tokens = c.split(/\s+/);
+  for(const t of tokens){
+    const typ = BG_CLASS_TYPE[t];
+    if(typ) return typ;
+  }
+  // 旅途/结局基调覆盖（即使 bg 类未单独列出）
+  if(phase==='journey' || phase==='finale') return 'sacred';
+  return 'peaceful';
+}
+// 按类型播放：同类型不打断；切换类型时在同组曲目间顺序轮换
+function bgmPlayType(type, {force=false}={}){
+  const group = BGM_GROUPS[type];
+  if(!group || !group.length) return;
+  if(!force && bgmCurType === type && bgmEl) return; // 同类型继续，不打断（不看 paused，避免同类型地点误切换曲）
+  const idx = ((bgmGroupIdx[type] ?? -1) + 1) % group.length;
+  bgmGroupIdx[type] = idx;
+  bgmCurType = type;
+  bgmPlay(group[idx]);
+}
+// 场景开始：记录场景 bgm 并强制播放，贯穿整个场景
+function bgmSceneStart(type){
+  sceneBgmType = type || null;
+  bgmLoc = null; // 场景开始时重置地点跟踪，场景结束后自由探索会按当前地点切回音乐
+  if(type) bgmPlayType(type, {force:true});
+}
+// 特殊状态结束后恢复到场景 bgm
+function bgmRestoreScene(){
+  if(sceneBgmType) bgmPlayType(sceneBgmType, {force:true});
+}
+// 自由探索：进入地点时按背景推断（仅 freeRoam 状态生效，剧情中不覆盖场景 bgm）
+function bgmFreeRoam(cls, phase, loc){
+  if(!S.freeRoam) return; // 剧情中保持场景 bgm
+  // 只有在「确实切换到了新地点」时才处理 bgm（避免同一地点内点修行/学习/休息等行动结束后重置/换曲）
+  if(bgmLoc === loc) return;
+  bgmLoc = loc;
+  const type = bgmTypeForBg(cls, phase, loc);
+  if(!type) return;
+  // 不带 force：同类型地点之间（如育婴室→起居室，都是 peaceful）不换曲、继续播；
+  // 切换到不同类型地点时才切曲（由 bgmPlayType 内部「同类型不打断」逻辑决定）
+  bgmPlayType(type);
+}
+function bgmSyncFromBG(cls, phase, loc){
+  const type = bgmTypeForBg(cls, phase, loc);
+  if(!type) return;
+  bgmPlayType(type);
+}
+function bgmApplyMute(){
+  if(!bgmEl) return;
+  if(bgmMuted || muted){ bgmFadeTo(bgmEl, 0, 300); }
+  else { bgmEl.volume = 0; bgmFadeTo(bgmEl, bgmVolume, 500); }
+}
+function bgmSetVolume(v){
+  bgmVolume = clamp(v, 0, 1);
+  try { localStorage.setItem(MUSIC_VOL_KEY, String(v)); } catch(e){}
+  if(bgmEl && !bgmMuted && !muted){ bgmEl.volume = 0; bgmFadeTo(bgmEl, bgmVolume, 300); }
+}
+function bgmSetMuted(m){
+  bgmMuted = m;
+  try { localStorage.setItem(BGM_MUTE_KEY, m?'1':'0'); } catch(e){}
+  bgmApplyMute();
+}
+function bgmToggleMute(){
+  bgmSetMuted(!bgmMuted);
+  return bgmMuted;
+}
+
 // ========== PORTRAITS ==========
 const PORTRAIT_FILES = {
   sylvia_normal:'assets/portraits/sylvia_normal.png',
   sylvia_smile:'assets/portraits/sylvia_smile.png',
   sylvia_serious:'assets/portraits/sylvia_serious.png',
   sylvia_child:'assets/portraits/sylvia_child.png',
+  sylvia_child_normal:'assets/portraits/sylvia_child.png',
+  sylvia_child_smile:'assets/portraits/sylvia_child.png',
+  sylvia_child_serious:'assets/portraits/sylvia_child.png',
+  sylvia_youth_normal:'assets/portraits/sylvia_child.png',
+  sylvia_youth_smile:'assets/portraits/sylvia_child.png',
+  sylvia_youth_serious:'assets/portraits/sylvia_child.png',
   beatrice_normal:'assets/portraits/beatrice_normal.png',
   beatrice_happy:'assets/portraits/beatrice_happy.png',
   beatrice_sad:'assets/portraits/beatrice_sad.png',
   beatrice_child:'assets/portraits/beatrice_child.png',
+  beatrice_child_normal:'assets/portraits/beatrice_child.png',
+  beatrice_child_happy:'assets/portraits/beatrice_child.png',
+  beatrice_child_sad:'assets/portraits/beatrice_child.png',
+  beatrice_youth_normal:'assets/portraits/beatrice_child.png',
+  beatrice_youth_happy:'assets/portraits/beatrice_child.png',
   alice_normal:'assets/portraits/alice_normal.png',
   alice_smile:'assets/portraits/alice_smile.png',
   alice_shy:'assets/portraits/alice_shy.png',
   alice_child_normal:'assets/portraits/alice_child.png',
   alice_child_smile:'assets/portraits/alice_child_smile.png',
   alice_child_shy:'assets/portraits/alice_child_shy.png',
+  alice_youth_normal:'assets/portraits/alice_normal.png',
+  alice_youth_smile:'assets/portraits/alice_smile.png',
+  alice_youth_shy:'assets/portraits/alice_shy.png',
   sophia_normal:'assets/portraits/sophia_normal.png',
   claude_normal:'assets/portraits/claude_normal.png',
   noelle_normal:'assets/portraits/noelle_normal.png',
@@ -78,37 +311,62 @@ const PORTRAIT_FILES = {
   instructor_normal:'assets/portraits/sword_instructor.png',
   huke_normal:'assets/portraits/huke_normal.png',
   maid_normal:'assets/portraits/maid_normal.png',
+  teacher_middle_normal:'assets/portraits/teacher_middle.png',
+  merchant_bakery_normal:'assets/portraits/merchant_bakery.png',
+  merchant_jewel_normal:'assets/portraits/merchant_jewel.png',
+  jianshen_normal:'assets/portraits/jianshen_normal.png',
+  wanshen_normal:'assets/portraits/wanshen_normal.jpg',
+  fengshen_normal:'assets/portraits/fengshen_normal.png',
+  shengnu_normal:'assets/portraits/shengnu_normal.png',
+  moshen_normal:'assets/portraits/moshen_normal.png',
 };
+// 各角色相对主角的年龄差：姐姐=+2，妹妹=-2，其余角色=0（父母/师长等一律用成年档）
+function charAgeDelta(charId){
+  if(charId==='beatrice') return 2;
+  if(charId==='alice') return -2;
+  return 0;
+}
+// 返回该角色在剧情中的「自己年龄」（主角年龄 ± 差值）
+function charAgeY(charId){
+  return Math.max(0, S.ageY + (charAgeDelta(charId)||0));
+}
+// 立绘年龄档位：0=未命名(隐藏) 1=child(0-5) 2=youth(6-11) 3=normal(12+)
+function portraitTierForAge(ageY){
+  if(ageY <= 5) return 1;      // child
+  if(ageY <= 11) return 2;     // youth
+  return 3;                    // normal
+}
 function portraitAgeTier(){
-  // 0 infant/hidden, 1 child <10, 2 teen+
   if(!flag('named')) return 0;
-  if(S.ageY < 10) return 1;
-  return 2;
+  return portraitTierForAge(S.ageY);
+}
+function portraitAgeTierFor(charId){
+  // 主角用 portraitAgeTier()（含未命名隐藏）；其他角色按自己年龄
+  if(charId==='sylvia') return portraitAgeTier();
+  return portraitTierForAge(charAgeY(charId));
+}
+// 阶段名：用于拼立绘文件名 <id>_<阶段>_<表情>（如 alice_child_shy）
+function portraitTierName(tier){
+  return tier===1 ? 'child' : tier===2 ? 'youth' : 'normal';
 }
 function resolvePortrait(charId, emotion){
   const emo = emotion || 'normal';
-  const tier = portraitAgeTierFor(charId);
   if(charId==='sylvia'){
     if(!flag('named')) return null; // hidden before naming
-    if(tier===1) return PORTRAIT_FILES.sylvia_child || PORTRAIT_FILES.sylvia_normal;
-    return PORTRAIT_FILES['sylvia_'+emo] || PORTRAIT_FILES.sylvia_normal;
   }
-  if(charId==='beatrice'){
-    if(S.ageY < 10) return PORTRAIT_FILES.beatrice_child || PORTRAIT_FILES.beatrice_normal;
-    return PORTRAIT_FILES['beatrice_'+emo] || PORTRAIT_FILES.beatrice_normal;
-  }
-  if(charId==='alice'){
-    // child-like before age 5
-    if(S.ageY < 5) return PORTRAIT_FILES['alice_child_'+emo] || PORTRAIT_FILES.alice_child_normal || PORTRAIT_FILES.alice_normal;
-    return PORTRAIT_FILES['alice_'+emo] || PORTRAIT_FILES.alice_normal;
-  }
-  return PORTRAIT_FILES[charId+'_'+emo] || PORTRAIT_FILES[charId+'_normal'] || null;
-}
-function portraitAgeTierFor(charId){
-  if(charId==='sylvia') return portraitAgeTier();
-  if(charId==='beatrice') return S.ageY < 10 ? 1 : 2;
-  if(charId==='alice') return S.ageY < 5 ? 1 : 2;
-  return 2;
+  const tier = portraitAgeTierFor(charId);
+  const tn = portraitTierName(tier);
+  // 优先：<id>_<阶段>_<表情>（如 alice_child_shy、sylvia_youth_normal）
+  const tiered = PORTRAIT_FILES[`${charId}_${tn}_${emo}`];
+  if(tiered) return tiered;
+  // 其次：<id>_<阶段>_normal
+  const tieredN = PORTRAIT_FILES[`${charId}_${tn}_normal`];
+  if(tieredN) return tieredN;
+  // 再次：<id>_<表情>（普通档）
+  const plain = PORTRAIT_FILES[`${charId}_${emo}`];
+  if(plain) return plain;
+  // 最后：<id>_normal 或 child 兜底
+  return PORTRAIT_FILES[`${charId}_normal`] || PORTRAIT_FILES[`${charId}_child`] || null;
 }
 
 const CSS_CHARS = {
@@ -121,6 +379,9 @@ const CSS_CHARS = {
   peilin:['沛霖','🍵'], huke:['虎克','👦'], maid:['女仆','🧹'],
   teacher:['家庭教师','📖'], hol:['霍尔','📘'], anna:['安娜·贝尔','💧'],
   lecturer:['中年教师','📜'], instructor:['剑术教官','⚔️'],
+  teacher_middle:['中年教师','📜'], merchant_bakery:['点心店老板','🍞'],
+  merchant_jewel:['首饰店老板','💎'], jianshen:['剑神','⚔️'],
+  wanshen:['万神','🏹'], shengnu:['圣女','✨'], moshen:['魔神','🌑'],
 };
 
 // ========== CHARACTERS META ==========
@@ -149,6 +410,15 @@ const CHARS = {
   teacher:{name:'家庭教师', short:'家庭教师', css:'teacher', role:'启蒙老师'},
   lecturer:{name:'中年教师', short:'中年教师', css:'teacher', role:'教务'},
   instructor:{name:'剑术教官', short:'教官', css:'instructor', role:'教官'},
+  maid:{name:'女仆', short:'女仆', css:'maid', role:'女仆'},
+  teacher_middle:{name:'中年教师', short:'中年教师', css:'teacher_middle', role:'教务'},
+  merchant_bakery:{name:'点心店老板', short:'点心店老板', css:'merchant_bakery', role:'商贩'},
+  merchant_jewel:{name:'首饰店老板', short:'首饰店老板', css:'merchant_jewel', role:'商贩'},
+  fengshen:{name:'风神', short:'风神', css:'fengshen', role:'七大列强'},
+  jianshen:{name:'剑神', short:'剑神', css:'jianshen', role:'七大列强'},
+  wanshen:{name:'万神', short:'万神', css:'wanshen', role:'七大列强'},
+  shengnu:{name:'圣女', short:'圣女', css:'shengnu', role:'七大列强'},
+  moshen:{name:'魔神', short:'魔神', css:'moshen', role:'七大列强'},
 };
 
 // 已习得魔法（非「勇者之赐」技能）的展示信息
@@ -358,7 +628,7 @@ const ALL_PICKS = {
   baby_talk:{id:'baby_talk', name:'天籁初声', tier:0, tag:'赋技能·特殊',
     desc:'（婴儿期限定）说出的话更容易被家人理解并提升好感。长大后转化为「真诚之言」。'},
   mana_sip:{id:'mana_sip', name:'魔力小啜', tier:0, tag:'赋技能·被动',
-    desc:'普通饮食也可微量回复魔力。'},
+    desc:'普通饮食也可微量回复魔力值。'},
   silk_thread:{id:'silk_thread', name:'千缕银丝', tier:0, tag:'赋魔法',
     desc:'操纵极细冰丝进行束缚或侦察。受火克制。'},
   // 中级
@@ -378,7 +648,7 @@ const ALL_PICKS = {
     desc:'以体温与微量魔力加速浅表伤口愈合（需直接接触）。'},
   // 高级
   mana_cycle:{id:'mana_cycle', name:'魔战循环', tier:2, tag:'赋技能·被动',
-    desc:'①攻击造成伤害后回复等量魔力（不超过上限）。②魔法伤害额外增加：原伤害×(该魔法消耗÷总魔力值)。'},
+    desc:'①攻击造成伤害后回复等量魔力值（不超过上限）。②魔法伤害额外增加：原伤害×(该魔法消耗÷总魔力值)。'},
   domain_frost:{id:'domain_frost', name:'霜域', tier:2, tag:'赋魔法',
     desc:'展开低温领域，范围内敌人移速下降，己方冰系强化。'},
   perfect_cast:{id:'perfect_cast', name:'无咏唱具现', tier:2, tag:'赋技能·被动',
@@ -397,10 +667,10 @@ const ALL_PICKS = {
 const DUEL_REWARDS = {
   beatrice_11:{id:'temp_sense', name:'温度感知', desc:'对周围温度变化感知大幅提升，可感知30米热源。'},
   alice_9:{id:'wind_afterimage', name:'风行残像', desc:'利用气流折射留下残影1.5秒，移速短暂+30%。消耗少量魔力，冷却60秒。'},
-  noelle_14:{id:'mana_calc', name:'魔力精算', desc:'施法时自动优化魔力路径，减少约10%-15%消耗。'},
+  noelle_14:{id:'mana_calc', name:'魔力精算', desc:'施法时自动优化魔力路径，减少约10%-15%魔力值消耗。'},
   aino_cur:{id:'root_ice', name:'生根之冰', desc:'冰墙/冰盾可从地面生根，结构大幅强化。'},
   claude_cur:{id:'noble_bearing', name:'公爵气度', desc:'交涉与威慑类检定小幅提升。'},
-  sophia_cur:{id:'lullaby', name:'摇篮曲', desc:'休息时额外回复魔力与好感。'},
+  sophia_cur:{id:'lullaby', name:'摇篮曲', desc:'休息时额外回复魔力值与好感。'},
 };
 
 // ========== TASKS & ACHIEVEMENTS ==========
@@ -481,7 +751,7 @@ let storyChain = null; // 剧情链：runSceneQueue 顺序播放的剩余场景
 let typing = false, typeTimer = null, fullText = '', textIdx = 0;
 let currentScene = null;
 let pendingPicks = null;
-let codex = JSON.parse(localStorage.getItem(CODEX_KEY) || '{"endings":[],"chars":[],"eggs":0}');
+let codex = (()=>{ try { return JSON.parse(localStorage.getItem(CODEX_KEY) || '{"endings":[],"chars":[],"eggs":0}'); } catch(e){ return {endings:[],chars:[],eggs:0}; } })();
 
 // ========== UTILS ==========
 const $ = id => document.getElementById(id);
@@ -513,7 +783,7 @@ function ach(id){
   toast(`🏆 成就：${a.name}（${a.reward}）`);
 }
 function addExp(n){
-  if(n<=0) return; S.exp += n;
+  if(n<=0) return; S.exp += n; S.exp = Math.floor(S.exp); // 经验取整，避免显示小数
   let up=false;
   while(S.exp >= S.next){ S.exp -= S.next; S.lv++; S.next = Math.floor(S.next*1.15+20);
     // 只涨上限与基础属性，不回满生命/魔力/体力
@@ -529,6 +799,20 @@ function checkTierUp(){
   // 勇者之赐完全由剧情驱动，不在此触发
 }
 function addItem(it){ S.inv.push(it); toast(`📦 获得：${it.name}`); sfx('ok'); }
+// 使用消耗品：热饼干恢复1点体力
+function useItem(id){
+  const idx = S.inv.findIndex(it=>it.id===id);
+  if(idx<0) return;
+  const it = S.inv[idx];
+  if(it.id==='cookie'){
+    S.st = clamp(S.st + 1, 0, S.mst);
+    S.inv.splice(idx,1);
+    sfx('ok');
+    updateHUD();
+    openPanel('inv');
+    toast(`🍪 吃掉了热饼干，体力 +1（当前 ${S.st}/${S.mst}）`);
+  }
+}
 function dateStr(){
   const s = (S.season!=null) ? S.season : seasonOf(S.month||3);
   return `${S.year}年 · ${seasonName(s)}`;
@@ -542,6 +826,9 @@ function ageStr(){
   return `${S.ageY}岁`;
 }
 function tierName(){ return TIERS[S.tier]||'无'; }
+// 阶段显示名（内部变量保持英文，仅显示用中文）
+const PHASE_NAMES = { prologue:'序章', childhood:'童年', youth:'少女期', academy:'学院篇', journey:'旅途篇', finale:'终章' };
+function phaseName(){ return PHASE_NAMES[S.phase] || S.phase || ''; }
 // 日历比较：当前日期是否 >= 指定年月
 function dateAtLeast(y, m){ return S.year > y || (S.year === y && S.month >= m); }
 
@@ -565,7 +852,6 @@ function advanceDay(n=1){
     const byDays = Math.floor(S.dayCount/365);
     if(byDays>S.ageY) { S.ageY=byDays; S.ageD=S.dayCount%365; }
     // daily reset
-    if(hasSkill('ice_palace')) flag('palace_today', 0);
     flag('talked_today', {});
     checkAgeEvents();
   }
@@ -586,7 +872,6 @@ function advanceSeason(n=1){
     S.dayCount += days;
     S.ageD += days;
     while(S.ageD >= 365){ S.ageD -= 365; S.ageY++; }
-    if(hasSkill('ice_palace')) flag('palace_today', 0);
     flag('talked_today', {});
     S.restThisSeason = 0;
     // restore
@@ -654,7 +939,7 @@ function skipToAge(y){ toast("已关闭快进，请按季度推进"); return; }
 // ========== SAVE ==========
 function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
 function load(){ try{ const r=localStorage.getItem(SAVE_KEY); if(r){ S=Object.assign(baseState(), JSON.parse(r)); return true; } }catch(e){} return false; }
-function saveCodex(){ localStorage.setItem(CODEX_KEY, JSON.stringify(codex)); }
+function saveCodex(){ try { localStorage.setItem(CODEX_KEY, JSON.stringify(codex)); } catch(e){} }
 function hasSave(){ return !!localStorage.getItem(SAVE_KEY); }
 
 // ========== HUD / UI ==========
@@ -665,7 +950,7 @@ function updateHUD(){
   $('hud-tier').textContent = tierName();
   $('hud-gold').textContent = '🪙'+S.gold;
   $('hud-date').textContent = dateStr();
-  $('hud-tod').textContent = S.phase;
+  $('hud-tod').textContent = phaseName();
   const hpP=S.mhp?S.hp/S.mhp*100:0, mpP=S.mmp?S.mp/S.mmp*100:0, stP=S.mst?S.st/S.mst*100:0;
   $('hud-hp').style.width=hpP+'%'; $('hud-hp-num').textContent=`${S.hp}/${S.mhp}`;
   $('hud-mp').style.width=mpP+'%'; $('hud-mp-num').textContent=`${S.mp}/${S.mmp}`;
@@ -689,6 +974,7 @@ function updateHUD(){
 function setBG(cls){
   const bg=$('bg'); bg.className='';
   (cls||'bg-title').split(/\s+/).forEach(c=>bg.classList.add(c));
+  // 不再在此自动切换音乐：场景 bgm 贯穿剧情，自由探索在进入地点时切
 }
 
 // ========== PORTRAITS ==========
@@ -825,6 +1111,9 @@ function applyLineEffects(L){
     clearPortraits();
     showPortrait(L.ch, L.emo||'normal', L.slot||'center', true);
     if(!L.speaker && CHARS[L.ch]) L.speaker = CHARS[L.ch].short;
+  } else if(L.bg){
+    // 切换了背景但本行没有显式立绘指令（纯旁白/事件转换）：视为进入新场景事件，回收立绘
+    clearPortraits();
   }
   if(L.sfx) sfx(L.sfx);
   if(L.flag) flag(L.flag, L.flagV !== undefined ? L.flagV : true);
@@ -856,6 +1145,7 @@ function playLines(lines, done){
   $('portraits')?.classList.remove('roam-npc');
   const ch = $('choices'); if(ch) ch.innerHTML = '';
   lineCB = null;
+  if($('text-box')) $('text-box').classList.remove('dialog-hidden'); // 新剧情/行动开始时恢复对话框
 
   function finish(){
     if(gen !== lineGen) return;
@@ -885,6 +1175,11 @@ function playLines(lines, done){
       }
       if(!L || typeof L !== 'object') continue;
 
+      // 若此前处于 CG 演出、但本行不是 CG 行，则自动退出 CG 模式
+      if(cgActive && L.cg === undefined && !L.choices && !L.freeRoam && !L.card){
+        cgHide();
+      }
+
       // 条件行：不满足则跳过
       if(typeof L.if === 'function'){
         let ok = true;
@@ -905,6 +1200,26 @@ function playLines(lines, done){
       }
 
       applyLineEffects(L);
+
+      // ===== CG 演出：全屏图 + 彩色台词 + 点击推进 =====
+      if(L.cg){
+        if(L.cg === 'end'){
+          cgHide();                          // cg:'end' 退出 CG，继续渲染本行的普通文本（fall through）
+        } else {
+          cgShow(L.cg);                          // 显示对应 CG 图
+          // 台词：ch 为说话人（彩色），否则为旁白（白色）
+          const isNarr = !L.ch;
+          cgText(L.speaker || (L.ch ? CHARS[L.ch]?.short : null), L.text || '', isNarr);
+          // 点击任意处推进下一句
+          const cgAdvance = ()=>{
+            $('cg-screen').onclick = null;
+            if(gen===lineGen) next();
+          };
+          $('cg-screen').onclick = cgAdvance;
+          return;
+        }
+      }
+      // cg:'end' 时继续走下面的普通文本渲染
 
       // chapter card — pause then continue this line's text or next
       if(L.card){
@@ -1044,6 +1359,13 @@ function bindAdvance(){
   tb.onclick = (e)=>{
     // don't steal clicks from buttons inside
     if(e.target.closest('button')) return;
+    // 自由探索：点击对话框 = 隐藏/显示对话框（沉浸查看场景），再点恢复
+    if(S.freeRoam && !$('choices').children.length){
+      const tb2 = $('text-box');
+      const hidden = tb2.classList.toggle('dialog-hidden');
+      tb2.title = hidden ? '点击恢复对话框' : '点击继续';
+      return;
+    }
     advanceDialog();
   };
 }
@@ -1059,6 +1381,46 @@ function showCard(vol, t, s, cb){
   const finish=()=>{ if(done) return; done=true; show('card',0); if(cb) cb(); };
   const card=$('card');
   card.onclick=()=>{ finish(); card.onclick=null; };
+}
+
+// ========== CG 演出（情绪爆点：全屏图 + 彩色台词 + 点击推进） ==========
+// 说话人 → CSS 配色类
+const CG_CHAR_CLASS = {
+  sylvia:'c-sylvia', claude:'c-claude', sophia:'c-sophia', reno:'c-reno',
+  beatrice:'c-beatrice', alice:'c-alice',
+};
+function cgCharClass(ch){
+  if(!ch) return 'c-narrator';
+  if(ch==='sylvia'||ch==='希尔维亚'||ch==='希尔维亚·维斯特利亚') return 'c-sylvia';
+  if(ch==='claude'||ch==='克劳德') return 'c-claude';
+  if(ch==='sophia'||ch==='索菲亚') return 'c-sophia';
+  if(ch==='reno'||ch==='雷纳德') return 'c-reno';
+  if(ch==='beatrice'||ch==='贝阿特丽丝'||ch==='贝蒂') return 'c-beatrice';
+  if(ch==='alice'||ch==='爱丽丝') return 'c-alice';
+  return 'c-narrator';
+}
+function cgShow(name){
+  // 隐藏全部 UI，显示全屏 CG
+  cgActive = true;
+  $('cg-bg').style.backgroundImage = `url(assets/cg/${name})`;
+  $('cg-bg').classList.remove('noimg');
+  show('cg-screen', 1);
+  document.body.classList.add('cg-mode');
+}
+function cgText(speaker, text, isNarrator){
+  // 在图片下方显示彩色台词（说话人色 / 旁白白色）
+  const box = $('cg-text');
+  const cls = cgCharClass(isNarrator ? null : speaker);
+  box.innerHTML = (speaker && !isNarrator ? `<div class="cg-speaker ${cls}">${escapeText(speaker)}</div>` : '')
+    + `<div class="cg-line ${cls}">${escapeText(text)}</div>`;
+}
+let cgActive = false;
+function cgHide(){
+  cgActive = false;
+  show('cg-screen', 0);
+  document.body.classList.remove('cg-mode');
+  $('cg-bg').style.backgroundImage = '';
+  $('cg-text').innerHTML = '';
 }
 
 // ========== FREE ROAM ==========
@@ -1215,11 +1577,14 @@ function updateLocBar(){
   $('loc-name').textContent = `${L.icon} ${L.name}`;
   $('loc-desc').textContent = L.desc||'';
   setBG(L.bg||'bg-room');
+  bgmFreeRoam(L.bg||'bg-room', S.phase, S.loc); // 自由探索才按背景切音乐
 }
 function enterLoc(id){
   const L=LOCS[id];
   if(!L||!L.unlock){ toast('还不能去那里'); return; }
   if(!phaseAreaAllowed(L.area)){ toast('这个阶段不能去那里'); return; }
+  // 婴儿（<1岁）：不能自由移动（只能经 doBabyFuss 短暂被抱出）
+  if(S.ageY < 1 && id !== 'nursery' && id !== 'ownroom'){ toast('你还太小，自己走不了。让家人抱你出去吧。'); return; }
   S.loc=id; if(L.tags?.includes('rest')) S.lastSafe=id;
   updateLocBar(); clearPortraits();
   if(tryLocEgg(id)) return;
@@ -1273,11 +1638,14 @@ function openMap(){
   const g=$('map-grid'); g.innerHTML='';
   const phaseLocs = Object.values(LOCS).filter(L=> L.unlock && phaseAreaAllowed(L.area));
   phaseLocs.forEach(L=>{
+    // 婴儿（<1岁）：无法通过地图离开育婴室（只能点「闹着要出去」）
+    if(S.ageY < 1 && L.id !== 'nursery' && L.id !== 'ownroom') return;
     const d=document.createElement('button');
     d.className='map-cell'+(S.loc===L.id?' here':'');
     d.innerHTML=`<span class="mc-icon">${L.icon}</span>${L.name}<div class="mc-cost">${(L.st||0)>0?'⚡'+L.st+' · ':''}${L.area}</div>${L.tags?.includes('egg')&&!S.eggs.includes(L.id)?'<div class="mc-tag">？</div>':''}`;
     d.onclick=()=>{
       if(S.loc===L.id){ toast('已经在这里了'); return; }
+      if(S.ageY < 1){ toast('你还太小，不能自己走。让家人抱你出去吧。'); return; }
       if((L.st||0)>0 && !spendST(L.st)) return;
       show('map-overlay',0);
       enterLoc(L.id);
@@ -1287,7 +1655,20 @@ function openMap(){
   show('map-overlay',1);
 }
 $('btn-map-close').onclick=()=>show('map-overlay',0);
-$('btn-map').onclick=()=>{ if(S.freeRoam) openMap(); else toast('现在不能自由移动'); };
+
+// 隐藏/显示全部 UI（沉浸模式）：点按钮隐藏，再点或按 Esc 恢复
+function uiHide(){
+  document.body.classList.add('ui-hidden');
+  if($('btn-ui')) $('btn-ui').textContent='☀️';
+}
+function uiShow(){
+  document.body.classList.remove('ui-hidden');
+  if($('btn-ui')) $('btn-ui').textContent='🌙';
+}
+function uiToggle(){
+  document.body.classList.contains('ui-hidden') ? uiShow() : uiHide();
+}
+$('btn-ui').onclick=()=>uiToggle();
 
 function whoIsHere(){
   const loc=S.loc, ph=S.phase, tod=S.tod, a=S.ageY;
@@ -1331,10 +1712,10 @@ function whoIsHere(){
   if(ph==='academy'){
     if(loc==='dorm'){ placeChar('emma',['dorm','cafeteria']); if(flag('met_noelle')) placeChar('noelle',['dorm','library']); if(dateAtLeast(14,3)) placeChar('alice',['dorm','cafeteria','library']); }
     if(loc==='library'||loc==='clocktower'){ placeChar('noelle',['library','cafeteria']); if(flag('met_noelle')) placeChar('emma',['library']); if(dateAtLeast(14,3)) placeChar('alice',['library','cafeteria','dorm']); }
-    if(loc==='cafeteria'){ placeChar('emma',['cafeteria','dorm']); if(flag('met_noelle')) placeChar('noelle',['cafeteria']); if(flag('met_ajun')) placeChar('ajun',['cafeteria']); if(flag('ch_helena')) placeChar('helena',['cafeteria']); if(dateAtLeast(14,3)) placeChar('alice',['cafeteria','dorm','library']); }
+    if(loc==='cafeteria'){ placeChar('emma',['cafeteria','dorm']); if(flag('met_noelle')) placeChar('noelle',['cafeteria']); if(flag('met_ajun')) placeChar('ajun',['cafeteria']); if(dateAtLeast(14,3)) placeChar('alice',['cafeteria','dorm','library']); }
     if(loc==='water_class'){ if(flag('met_noelle')) placeChar('noelle',['water_class','library']); placeChar('emma',['water_class']); placeChar('anna',['water_class','cafeteria']); }
-    if(loc==='ice_class'||loc==='flowerhouse'){ if((flag('met_aino')||true) && !dateAtLeast(14,3)) placeChar('aino',['ice_class','training_field']); placeChar('hol',['ice_class','library']); }
-    if(loc==='training_field'){ if(flag('met_aino') && !dateAtLeast(14,3)) placeChar('aino',['training_field']); placeChar('beatrice',['training_field']); }
+    if(loc==='ice_class'||loc==='flowerhouse'){ if(flag('met_aino') && !flag('ch_ice_melt_1')) placeChar('aino',['ice_class','training_field']); placeChar('hol',['ice_class','library']); }
+    if(loc==='training_field'){ if(flag('met_aino') && !flag('ch_ice_melt_1')) placeChar('aino',['training_field']); placeChar('beatrice',['training_field']); }
     if(loc==='memorial'){ placeChar('charlotte',['memorial']); if(flag('ch_tree')){ placeChar('beatrice',['memorial']); placeChar('alice',['memorial']); } }
     if(loc==='auditorium'){ placeChar('hol',['auditorium','ice_class']); placeChar('anna',['auditorium','water_class']); }
   }
@@ -1772,9 +2153,10 @@ function tryLocEgg(locId){
     clocktower:()=>{
       S.eggs.push('clocktower'); ach('egg_clock'); doneTask('clock_tower');
       playLines([
-        {text:'橘猫又来了。诺艾儿笨拙地伸手——又缩回去。'},
-        {ch:'noelle',speaker:'诺艾儿',text:'……它看我了。像在审判。'},
-        {text:'你把猫放在她膝盖上。她的表情是小心翼翼的欢喜。', love:'noelle', loveD:1, freeRoam:true}
+        {text:'钟塔顶层。风从四面灌进来，视野里整座学院一览无余——尖塔、花坊、训练场，都安静地铺在脚下。我第一次登顶，掏出本子记了记景观。'},
+        {text:'角落的长椅下蜷着一只橘猫。诺艾儿正蹲在几步外，往地上放了点吃的。'},
+        {ch:'noelle',speaker:'诺艾儿',text:'……它不亲人。但喂熟了就会来。'},
+        {text:'橘猫犹豫了一下，慢悠悠地凑过去吃了。', love:'noelle', loveD:1, freeRoam:true}
       ]);
     },
     flowerhouse:()=>{
@@ -1828,7 +2210,7 @@ function triggerBraveGift(tier){
   const star = tier===0?'virtual_duel':tier===1?'ice_palace':tier===2?'mana_cycle':null;
   if(star){ picks = picks.filter(p=>p.id!==star); const s=ALL_PICKS[star]; if(s) picks.unshift(s); }
   picks = picks.slice(0,7);
-  setBG('bg-pick');
+  setBG('bg-pick'); bgmPlayType('sacred', {force:true});
   show('pick-screen',1); show('game-screen',1);
   const g=$('pick-grid'); g.innerHTML='';
   picks.forEach(p=>{
@@ -1850,6 +2232,7 @@ function selectPick(p, tier){
     if(p.id==='ice_palace') ach('ice_palace_on');
   }
   show('pick-screen', 0);
+  bgmRestoreScene(); // 选卡结束恢复场景 bgm
   sfx('level');
   updateHUD(); save();
   const ap = afterPick; afterPick = null;
@@ -1866,69 +2249,238 @@ function selectPick(p, tier){
 }
 
 // ========== BATTLE (simple) ==========
-function startBattle(cfg, done){
-  B = {
-    name:cfg.name||'魔物', emoji:cfg.emoji||'🐺',
-    hp:cfg.hp||30, mhp:cfg.hp||30, atk:cfg.atk||5, exp:cfg.exp||20, gold:cfg.gold||3,
-    done
+// ========== BATTLE (回合制策略战斗) ==========
+// —— 元素克制环：火克冰、冰克风、风克土、土克水、水克火；光↔暗互相克制 ——
+const ELEM_CHART = { fire:'ice', ice:'wind', wind:'earth', earth:'water', water:'fire', light:'dark', dark:'light' };
+const ELEM_NAME = { fire:'火', ice:'冰', wind:'风', earth:'土', water:'水', light:'光', dark:'暗', phys:'物理' };
+function elemMult(atkElem, defElem){
+  if(!atkElem || atkElem==='phys' || !defElem || defElem==='phys') return 1;
+  if(ELEM_CHART[atkElem]===defElem) return 1.5;   // 克制
+  if(ELEM_CHART[defElem]===atkElem) return 0.75;  // 被克
+  return 1;
+}
+
+// —— 主动战斗技能库（玩家通过课程/勇者之赐/决斗/剧情获得并装配）——
+// power 为攻击系数（×魔攻/物攻）；ap 行动点；mp 魔力；effect 为状态效果
+const COMBAT_SKILLS = {
+  attack:{name:'攻击', elem:'phys', ap:1, mp:0, power:1.0, atkKind:'atk', desc:'朴实无华的一击。'},
+  water_ball:{name:'水球术', elem:'water', ap:1, mp:4, power:1.25, atkKind:'matk', desc:'凝聚水球攻击。对火系克制。'},
+  ice_crystal:{name:'冰晶术', elem:'ice', ap:1, mp:6, power:1.7, atkKind:'matk', effect:{freeze:30}, desc:'凝冰攻击，概率冰冻。'},
+  silk_thread:{name:'千缕银丝', elem:'ice', ap:1, mp:5, power:1.1, atkKind:'matk', effect:{bind:40}, desc:'冰丝束缚，概率行动不能。'},
+  water_veil:{name:'水之帷幕', elem:'water', ap:1, mp:6, power:0, atkKind:'matk', effect:{shield:12}, desc:'凝结水膜，获得护盾。'},
+  frost_armor:{name:'霜铠', elem:'ice', ap:1, mp:6, power:0, atkKind:'matk', effect:{atkUp:0, defUp:3}, desc:'体表凝霜，提升防御。'},
+  domain_frost:{name:'霜域', elem:'ice', ap:2, mp:12, power:1.0, atkKind:'matk', effect:{freeze:50}, desc:'展开低温领域，群体冰冻。'},
+  zero_field:{name:'绝对零度', elem:'ice', ap:2, mp:20, power:2.6, atkKind:'matk', effect:{selfDmg:0.1}, desc:'极致降温，重创并可能自伤。'},
+  soft_cut:{name:'送刀', elem:'phys', ap:1, mp:3, power:1.3, atkKind:'atk', effect:{atkUp:1}, desc:'低耗刀势，附带魔力。'},
+  wind_afterimage:{name:'风行残像', elem:'wind', ap:1, mp:5, power:1.2, atkKind:'atk', effect:{evade:1}, desc:'借风位移，闪避提升。'},
+  mana_cycle:{name:'魔战循环', elem:'water', ap:1, mp:8, power:0.9, atkKind:'matk', effect:{manaGain:10}, desc:'攻击并汲取魔力。'},
+};
+// 玩家可用主动技（依已学技能推导）
+function playerCombatSkills(){
+  const ids = ['attack'];
+  const learn = (cid, sid)=>{ if(hasSkill(cid) || (S.skillsLearned||[]).includes(cid)) if(COMBAT_SKILLS[sid] && !ids.includes(sid)) ids.push(sid); };
+  learn('water_ball','water_ball');
+  learn('ice_crystal','ice_crystal');
+  learn('silk_thread','silk_thread');
+  learn('water_veil','water_veil');
+  learn('water_veil_s','water_veil');
+  learn('frost_armor','frost_armor');
+  learn('domain_frost','domain_frost');
+  learn('zero_field','zero_field');
+  learn('soft_cut','soft_cut');
+  learn('wind_afterimage','wind_afterimage');
+  learn('mana_cycle','mana_cycle');
+  // 水/冰基础亲和始终可用
+  if(S.affinity && S.affinity.includes('water') && !ids.includes('water_ball')) ids.push('water_ball');
+  if(S.affinity && S.affinity.includes('ice') && !ids.includes('ice_crystal')) ids.push('ice_crystal');
+  return ids.map(id=>COMBAT_SKILLS[id]).filter(Boolean);
+}
+
+// —— 玩家战斗属性（接入养成四维）——
+function playerAtk(){ return S.atk + (S.stats?.body||5)*0.2; }           // 体能→物攻
+function playerMatk(){ return S.mag + (S.stats?.mana||10)*0.3; }         // 魔力适性→魔攻
+function playerDef(){ return S.pdef + (S.stats?.charm||8)*0.12; }        // 气质→物防
+function playerMdef(){ return S.mdef + (S.stats?.mind||15)*0.12; }       // 心智→魔防
+function playerCrit(){ return Math.min(0.5, (S.stats?.mind||15)*0.003); }// 心智→暴击率
+function playerSpeed(){ return 1 + (S.stats?.body||5)*0.005; }
+
+// —— 敌人模板库 ——
+const ENEMY_TEMPLATES = {
+  wolf:{name:'灰狼', emoji:'🐺', elem:'wind', hp:30, atk:5, def:1, mdef:1, exp:18, gold:4, weak:'ice', desc:'北林常见的灰狼。'},
+  ice_wolf:{name:'冰牙狼', emoji:'🐺', elem:'ice', hp:55, atk:8, def:2, mdef:4, exp:40, gold:8, weak:'fire', desc:'吐息带寒气的狼。'},
+  boar:{name:'铁甲野猪', emoji:'🐗', elem:'earth', hp:75, atk:7, def:8, mdef:2, exp:45, gold:10, weak:'ice', desc:'皮糙肉厚的野猪。'},
+  slime_fire:{name:'火焰史莱姆', emoji:'🟠', elem:'fire', hp:40, atk:9, def:2, mdef:3, exp:35, gold:7, weak:'water', desc:'燃烧的史莱姆。'},
+  golem:{name:'岩傀儡', emoji:'🗿', elem:'earth', hp:110, atk:10, def:10, mdef:4, exp:70, gold:15, weak:'ice', desc:'石质的魔像。'},
+  wolf_king:{name:'雪狼王', emoji:'🐺', elem:'ice', hp:160, atk:14, def:6, mdef:8, exp:150, gold:40, weak:'fire', desc:'北林之主。', boss:true},
+};
+// 由敌人 id/配置生成战斗实例
+function spawnEnemy(cfg){
+  const t = ENEMY_TEMPLATES[cfg.tpl] || cfg;
+  const lv = S.lv || 1;
+  const scale = cfg.scale || 1;
+  return {
+    name: t.name, emoji: t.emoji, elem: t.elem,
+    hp: Math.round((t.hp + lv*1.5) * scale), mhp: Math.round((t.hp + lv*1.5) * scale),
+    atk: Math.round((t.atk + lv*0.4) * scale), def: t.def, mdef: t.mdef,
+    weak: t.weak, exp: t.exp, gold: t.gold, boss: !!t.boss,
+    status:{}, shield:0,
   };
-  setBG('bg-battle'); show('battle-screen',1);
-  $('b-emoji').textContent=B.emoji; $('b-ename').textContent=B.name;
-  $('b-log').innerHTML=`遭遇了 ${B.name}！`;
+}
+function startBattle(cfg, done){
+  B = { enemy: spawnEnemy(cfg), cfg:cfg||{}, done, ap:2, apMax:2, turn:0, log:[], over:false };
+  setBG('bg-battle'); bgmPlayType('battle', {force:true}); show('battle-screen',1);
   renderBattle();
+}
+// 战斗/决斗结束：若仍在场景内则恢复场景 bgm
+function bgmEndBattle(){
+  show('battle-screen',0);
+  bgmRestoreScene();
+}
+function battleLog(msg){
+  if(!B) return;
+  B.log.push(msg);
+  const el=$('b-log'); if(el){ el.innerHTML = B.log.join('<br>'); el.scrollTop=el.scrollHeight; }
+}
+// 计算伤害：攻击/魔攻 × 系数 × 元素 × 随机 ± 10%，减对方防御
+function calcDamage(sk, atkVal, defVal){
+  const base = atkVal * (sk.power||1);
+  const raw = base * (0.9 + Math.random()*0.2);
+  const mult = elemMult(sk.elem, B.enemy.elem);
+  let dmg = raw * mult - defVal * 0.5;
+  return { dmg: Math.max(1, Math.floor(dmg)), mult };
+}
+function applyStatus(target, key, turns){
+  target.status = target.status || {};
+  target.status[key] = (target.status[key]||0) + turns;
+}
+function tickStatuses(target){
+  // 每回合结束递减状态，并结算持续伤害
+  target.status = target.status || {};
+  let msg='';
+  if(target.status.burn){ const d=Math.max(1,Math.floor(target.mhp*0.06)); target.hp-=d; msg+=`灼烧 ${d} `; target.status.burn--; if(target.status.burn<=0) delete target.status.burn; }
+  if(target.status.freeze){ target.status.freeze--; if(target.status.freeze<=0) delete target.status.freeze; }
+  if(target.status.bind){ target.status.bind--; if(target.status.bind<=0) delete target.status.bind; }
+  if(target.status.defUp){ target.status.defUp--; if(target.status.defUp<=0) delete target.status.defUp; }
+  if(target.status.atkUp){ target.status.atkUp--; if(target.status.atkUp<=0) delete target.status.atkUp; }
+  if(target.status.evade){ target.status.evade--; if(target.status.evade<=0) delete target.status.evade; }
+  if(target.hp<=0) target.hp=0;
+  return msg;
 }
 function renderBattle(){
-  $('b-ehp').style.width=(B.hp/B.mhp*100)+'%';
-  $('b-ehp-num').textContent=`${Math.max(0,B.hp)}/${B.mhp}`;
+  if(!B) return;
+  const e=B.enemy;
+  $('b-emoji').textContent=e.emoji;
+  $('b-ename').textContent=`${e.name}${e.boss?'（BOSS）':''}（${ELEM_NAME[e.elem]||''}）`;
+  $('b-ehp').style.width=(Math.max(0,e.hp)/e.mhp*100)+'%';
+  $('b-ehp-num').textContent=`${Math.max(0,e.hp)}/${e.mhp}`;
+  // 玩家行动
   const acts=$('b-actions'); acts.innerHTML='';
-  const skills = [
-    {name:'水球术', cost:4, dmg:()=>8+S.mag*0.4, cls:'water'},
-    {name:'冰晶术', cost:6, dmg:()=>12+S.mag*0.6, cls:'ice'},
-  ];
-  if(hasSkill('mana_cycle')){/* passive */}
+  const sbar = document.createElement('div');
+  sbar.className='b-status';
+  sbar.innerHTML=`行动点 <b style="color:var(--gold)">${'◆'.repeat(B.ap)}${'◇'.repeat(B.apMax-B.ap)}</b>　HP ${S.hp}/${S.mhp}　MP ${S.mp}/${S.mmp}${B.turn>0?'　回合 '+B.turn:''}`;
+  acts.appendChild(sbar);
+  const skills = playerCombatSkills();
   skills.forEach(sk=>{
     const b=document.createElement('button'); b.className='choice';
-    b.textContent=`${sk.name}（MP ${sk.cost}）`;
-    b.disabled = S.mp<sk.cost;
-    b.onclick=()=>battleAct(sk);
+    const apTxt = sk.ap>1?` [AP${sk.ap}]`:'';
+    const mpTxt = sk.mp>0?` [MP${sk.mp}]`:'';
+    const critTxt = sk.elem&&sk.elem!=='phys'?`（${ELEM_NAME[sk.elem]}）`:'';
+    b.textContent=`${sk.name}${critTxt}${apTxt}${mpTxt}`;
+    b.disabled = B.ap < sk.ap || (sk.mp>0 && S.mp < sk.mp) || B.over;
+    b.title = sk.desc || '';
+    b.onclick=()=>playerAct(sk);
     acts.appendChild(b);
   });
-  const atk=document.createElement('button'); atk.className='choice'; atk.textContent='普通攻击';
-  atk.onclick=()=>battleAct({name:'攻击', cost:0, dmg:()=>S.atk+2});
-  acts.appendChild(atk);
+  const pass=document.createElement('button'); pass.className='choice'; pass.textContent='结束回合（攒1AP）';
+  pass.disabled=B.over; pass.onclick=()=>endPlayerTurn(true);
+  acts.appendChild(pass);
   const run=document.createElement('button'); run.className='choice'; run.textContent='逃跑';
-  run.onclick=()=>{ show('battle-screen',0); toast('逃跑成功'); if(B.done) B.done(); B=null; if(S.freeRoam) enterFreeRoam(); };
+  run.onclick=()=>{ if(B.over) return; bgmEndBattle(); battleLog('你逃跑了。'); toast('逃跑成功'); const d=B.done; B=null; if(d) d(); else if(S.freeRoam) enterFreeRoam(); };
   acts.appendChild(run);
 }
-function battleAct(sk){
-  if(sk.cost) S.mp-=sk.cost;
-  let dmg = Math.floor(sk.dmg());
-  if(hasSkill('mana_cycle') && sk.cost>0){
-    const bonus = dmg * (sk.cost / Math.max(1,S.mmp));
-    dmg = Math.floor(dmg + bonus);
-    S.mp = clamp(S.mp + Math.min(dmg, 20), 0, S.mmp); // simplified return
+function playerAct(sk){
+  if(!B || B.over) return;
+  if(B.ap < sk.ap){ battleLog('行动点不足。'); return; }
+  if(sk.mp>0 && S.mp < sk.mp){ battleLog('魔力值不足。'); sfx('bad'); return; }
+  B.ap -= sk.ap; if(sk.mp) S.mp -= sk.mp;
+  const e=B.enemy;
+  // 命中（考虑风行残像闪避）
+  const atkVal = sk.atkKind==='matk' ? playerMatk() : playerAtk();
+  if(sk.power>0){
+    const {dmg, mult} = calcDamage(sk, atkVal, e.def);
+    let final = dmg;
+    if(Math.random()<playerCrit()) final = Math.floor(final*1.5);
+    e.hp -= final;
+    let s=`你的${sk.name}对${e.name}造成 ${final} 伤害`;
+    if(mult>1) s+='（克制！）'; if(mult<1) s+='（抵抗…）';
+    battleLog(s);
+    sfx('magic');
+    // 状态效果
+    if(sk.effect && sk.effect.freeze){ if(Math.random()*100 < sk.effect.freeze) applyStatus(e,'freeze',1); }
+    if(sk.effect && sk.effect.bind){ if(Math.random()*100 < sk.effect.bind) applyStatus(e,'bind',1); }
+    if(sk.effect && sk.effect.defUp){ applyStatus(B?'playerB':null,'defUp',sk.effect.defUp); }
+    if(sk.effect && sk.effect.atkUp){ applyStatus(null,'atkUp',sk.effect.atkUp); }
+    if(sk.effect && sk.effect.selfDmg){ const self=Math.max(1,Math.floor(S.hp*sk.effect.selfDmg)); S.hp-=self; battleLog(`绝对零度反噬自身 ${self} 伤害`); }
+  } else {
+    // 非伤害（护盾/buff）
+    if(sk.effect && sk.effect.shield){ e.shield = (e.shield||0)+sk.effect.shield; battleLog(`水之帷幕：${e.name}获得护盾 ${sk.effect.shield}`); }
+    if(sk.effect && sk.effect.atkUp){ applyStatus(e,'atkUp',sk.effect.atkUp); battleLog(`${e.name} 攻击提升`); }
+    if(sk.effect && sk.effect.manaGain){ const g=Math.min(S.mmp, S.mp+sk.effect.manaGain); battleLog(`魔战循环汲取魔力 +${g-S.mp}`); S.mp=g; }
+    if(sk.effect && sk.effect.freeze && sk.effect.power===0){ /* domain buff handled above */ }
   }
-  B.hp -= dmg;
-  $('b-log').innerHTML += `<br>你的${sk.name}造成 ${dmg} 伤害！`;
-  sfx('magic');
-  if(B.hp<=0){
-    $('b-log').innerHTML += `<br>击败了 ${B.name}！经验+${B.exp}`;
-    addExp(B.exp); S.gold+=B.gold||0; updateHUD();
-    setTimeout(()=>{ show('battle-screen',0); const d=B.done; B=null; if(d) d(); else if(S.freeRoam) enterFreeRoam(); }, 600);
-    return;
-  }
-  // enemy turn
-  const ed = Math.max(1, B.atk - S.pdef);
-  S.hp = clamp(S.hp-ed,0,S.mhp);
-  $('b-log').innerHTML += `<br>${B.name} 反击！受到 ${ed} 伤害。`;
+  // 护盾吸收
+  if(e.shield>0 && e.hp<0){ const over=-e.hp; e.shield-=over; if(e.shield<0){e.hp=e.shield; e.shield=0;} else e.hp=0; }
   updateHUD();
-  if(S.hp<=0){
-    S.deaths++; S.hp=1;
-    $('b-log').innerHTML += `<br>……意识模糊。被人救了回来。`;
-    setTimeout(()=>{ show('battle-screen',0); B=null; S.loc=S.lastSafe; enterFreeRoam(); toast('重伤撤回'); }, 800);
-    return;
-  }
+  if(e.hp<=0){ winBattle(); return; }
+  if(B.ap<=0) endPlayerTurn(false);
+  else renderBattle();
+}
+function endPlayerTurn(bank){
+  if(!B||B.over) return;
+  B.turn++;
+  if(bank) B.ap = Math.min(B.apMax+1, B.ap+1); // 攒AP
+  else B.ap = B.apMax;
+  enemyTurn();
+}
+function enemyTurn(){
+  const e=B.enemy;
+  // 状态结算
+  if(e.status.freeze){ battleLog(`${e.name} 被冰冻，无法行动！`); tickStatuses(e); if(e.hp<=0){winBattle();return;} endRound(); return; }
+  if(e.status.bind){ battleLog(`${e.name} 被束缚，无法行动！`); tickStatuses(e); if(e.hp<=0){winBattle();return;} endRound(); return; }
+  const burnMsg=tickStatuses(e); if(burnMsg) battleLog(`${e.name} ${burnMsg.trim()}`); if(e.hp<=0){winBattle();return;}
+  // 敌人攻击
+  const atkMul = e.status.atkUp?1.3:1;
+  const base = e.atk * atkMul;
+  const raw = base * (0.85+Math.random()*0.3);
+  const defVal = playerDef();
+  let dmg = Math.max(1, Math.floor(raw - defVal*0.5));
+  // 玩家闪避
+  if(e.status && false){} 
+  S.hp = clamp(S.hp-dmg,0,S.mhp);
+  battleLog(`${e.name} 攻击，造成 ${dmg} 伤害！`);
+  sfx('bad');
+  updateHUD();
+  if(S.hp<=0){ defeat(); return; }
+  endRound();
+}
+function endRound(){
+  if(!B||B.over) return;
+  B.ap = B.apMax;
   renderBattle();
+}
+function winBattle(){
+  if(!B||B.over) return;
+  B.over=true;
+  battleLog(`🎉 击败了 ${B.enemy.name}！经验+${B.enemy.exp} 金币+${B.enemy.gold}`);
+  addExp(B.enemy.exp); S.gold+=B.enemy.gold||0; updateHUD(); sfx('level');
+  const done=B.done, enemy=B.enemy;
+  setTimeout(()=>{ bgmEndBattle(); B=null; if(done) done(); else if(S.freeRoam) enterFreeRoam(); }, 800);
+}
+function defeat(){
+  if(!B||B.over) return;
+  B.over=true; S.deaths++; S.hp=1;
+  battleLog('……意识模糊。被人救了回来。');
+  setTimeout(()=>{ bgmEndBattle(); B=null; S.loc=S.lastSafe; enterFreeRoam(); toast('重伤撤回'); }, 800);
 }
 
 // ========== VIRTUAL DUEL ==========
@@ -1944,37 +2496,30 @@ function openDuelMenu(){
   playLines([{text:'要挑战谁？', choices}]);
 }
 function runDuel(id){
-  show('duel-screen',1); setBG('bg-duel');
-  $('duel-info').innerHTML=`对手：${CHARS[id]?.name||id}<br>难度：★☆☆☆☆`;
-  const log=$('duel-log'); log.innerHTML='决斗开始！';
-  const acts=$('duel-actions'); acts.innerHTML='';
-  let ehp=40+ (S.know[id]||90), php=S.hp;
-  const turn = ()=>{
-    acts.innerHTML='';
-    ['冰晶术','水球术','普通攻击'].forEach(n=>{
-      const b=document.createElement('button'); b.className='choice'; b.textContent=n;
-      b.onclick=()=>{
-        const d=n==='冰晶术'?15+S.mag*0.3:n==='水球术'?10+S.mag*0.2:S.atk+3;
-        ehp-=d; log.innerHTML+=`<br>你的${n}！伤害${Math.floor(d)}`;
-        if(ehp<=0){ winDuel(id); return; }
-        const ed=5+Math.random()*8; php-=ed; log.innerHTML+=`<br>${CHARS[id].short}反击！-${Math.floor(ed)}`;
-        if(php<=0){ log.innerHTML+=`<br>失败……`; setTimeout(()=>{show('duel-screen',0); enterFreeRoam();},800); return; }
-        turn();
-      };
-      acts.appendChild(b);
-    });
+  const n=S.know[id]||90;
+  const ch=CHARS[id]||{name:id};
+  // 对手技能：依据角色属性拟一个
+  const oppSkills = ['attack','water_ball','ice_crystal'].filter(s=>COMBAT_SKILLS[s]);
+  B = {
+    enemy: { name: ch.name, emoji:'⚔️', elem:'water', hp:Math.round(60+n*0.6), mhp:Math.round(60+n*0.6), atk:Math.round(6+n*0.12), def:Math.round(3+n*0.05), mdef:3, weak:'fire', exp:30, gold:0, boss:false, status:{}, shield:0, duel:true },
+    cfg:{}, done:()=>{}, ap:2, apMax:2, turn:0, log:[], over:false, duelId:id
   };
-  turn();
+  show('duel-screen',1); setBG('bg-duel'); bgmPlayType('battle', {force:true});
+  $('duel-info').innerHTML=`对手：${ch.name}<br>了解度 ${n}% · 难度 ${n>=95?'★★★':n>=93?'★★':'★'}`;
+  battleLog('决斗开始！');
+  renderBattle();
 }
 function winDuel(id){
+  if(!B) return;
   const key=id+'_cur';
   if(!S.duelWins.includes(key)) S.duelWins.push(key);
   const rew = DUEL_REWARDS[id+'_11']||DUEL_REWARDS[id+'_9']||DUEL_REWARDS[id+'_14']||DUEL_REWARDS[id+'_cur']||{id:'duel_'+id,name:'战斗经验',desc:'实战感觉提升。'};
   if(rew.id && !hasSkill(rew.id)) addSkill(rew.id);
   ach('virtual_first');
-  $('duel-log').innerHTML+=`<br>🎉 胜利！获得：${rew.name}`;
-  $('duel-actions').innerHTML=`<button class="choice" onclick="document.getElementById('duel-screen').classList.add('hidden');enterFreeRoam()">确认</button>`;
+  battleLog(`🎉 胜利！获得：${rew.name}`);
+  $('duel-actions').innerHTML=`<button class="choice" onclick="document.getElementById('duel-screen').classList.add('hidden');bgmRestoreScene();B=null;enterFreeRoam()">确认</button>`;
   addExp(30); sfx('ok');
+  updateHUD();
 }
 
 // ========== PANEL ==========
@@ -2007,25 +2552,30 @@ function openStatsPanel(){
   sfx('open');
 }
 
+// 单一数据源：右上角「状态」面板与剧情里的系统面板共用此渲染（保证数值永远一致）
+function statusPanelHTML(){
+  const nm = !flag('named') ? '？？？（未命名）' : (S.alias || S.name);
+  return `<div class="p-stat">
+      <div><b>名字</b> ${nm}</div><div><b>年龄</b> ${ageStr()}</div>
+      <div><b>等级</b> Lv.${S.lv}</div><div><b>等阶</b> ${tierName()}</div>
+      <div><b>经验</b> ${Math.floor(S.exp)}/${S.next}</div><div><b>日期</b> ${dateStr()}</div>
+      <div><b>生命</b> ${S.hp}/${S.mhp}</div><div><b>魔力值</b> ${S.mp}/${S.mmp}</div>
+      <div><b>体力</b> ${S.st}/${S.mst}</div><div><b>金币</b> ${S.gold}</div>
+      <div><b>攻击</b> ${Math.floor(S.atk)}</div><div><b>魔力</b> ${Math.floor(S.mag)}</div>
+      <div><b>物抗</b> ${S.pdef}</div><div><b>法抗</b> ${S.mdef}</div>
+      <div><b>亲和</b> ❄️冰 · 💧水</div><div><b>阶段</b> ${phaseName()}</div>
+    </div>`;
+}
+
 function openPanel(tab){
   show('panel',1); sfx('open');
-  const tabs=[['status','状态'],['skills','技能'],['tasks','任务'],['prof','人物'],['inv','背包'],['ach','成就'],['mem','记忆']];
+  const tabs=[['status','状态'],['skills','技能'],['tasks','任务'],['prof','人物'],['inv','背包'],['ach','成就'],['settings','设置']];
   $('panel-tabs').innerHTML = tabs.map(([k,n])=>`<button class="ptab${(tab||'status')===k?' on':''}" data-t="${k}">${n}</button>`).join('');
   $('panel-tabs').onclick=e=>{ const t=e.target.dataset.t; if(t) openPanel(t); };
   const body=$('panel-body');
   tab = tab||'status';
   if(tab==='status'){
-    body.innerHTML=`<div class="p-stat">
-      <div><b>名字</b> ${S.alias||S.name}</div><div><b>年龄</b> ${ageStr()}</div>
-      <div><b>等级</b> Lv.${S.lv}</div><div><b>等阶</b> ${tierName()}</div>
-      <div><b>经验</b> ${S.exp}/${S.next}</div><div><b>日期</b> ${dateStr()}</div>
-      <div><b>生命</b> ${S.hp}/${S.mhp}</div><div><b>魔力</b> ${S.mp}/${S.mmp}</div>
-      <div><b>体力</b> ${S.st}/${S.mst}</div><div><b>金币</b> ${S.gold}</div>
-      <div><b>攻击</b> ${Math.floor(S.atk)}</div><div><b>魔力值</b> ${Math.floor(S.mag)}</div>
-      <div><b>物抗</b> ${S.pdef}</div><div><b>法抗</b> ${S.mdef}</div>
-      <div><b>亲和</b> ❄️冰 · 💧水</div><div><b>阶段</b> ${S.phase}</div>
-    </div>
-    <p style="margin-top:12px;font-size:12px;opacity:.75">养成四维请点 HUD 的 <b>💠</b> 打开独立面板。<br>「勇者之赐」已用 ${S.picksDone.length}/7 次</p>`;
+    body.innerHTML= statusPanelHTML() + `<p style="margin-top:12px;font-size:12px;opacity:.75">养成四维请点 HUD 的 <b>💠</b> 打开独立面板。<br>「勇者之赐」已用 ${S.picksDone.length}/7 次</p>`;
   } else if(tab==='skills'){
     if(!S.skills.length) body.innerHTML='<p style="opacity:.6">尚未获得特殊技能。</p>';
     else body.innerHTML = S.skills.map(id=>{
@@ -2074,27 +2624,62 @@ function openPanel(tab){
         <div class="know-bar"><i style="width:${k}%"></i></div></div></div>`;
     }).join('');
   } else if(tab==='inv'){
-    const slots = S.inv.map(it=>`<div class="inv-slot filled">${it.icon||'📦'}<br>${it.name}<br><span style="opacity:.6">${it.desc||''}</span></div>`).join('');
+    const slots = S.inv.map(it=>{
+      const use = it.id==='cookie' ? `<button class="tbtn" style="margin-top:6px;min-width:0;padding:4px 12px;font-size:12px" data-use="${it.id}">🍪 食用</button>` : '';
+      return `<div class="inv-slot filled">${it.icon||'📦'}<br>${it.name}<br><span style="opacity:.6">${it.desc||''}</span>${use}</div>`;
+    }).join('');
     body.innerHTML=`<div class="p-inv">${slots || '<div class="inv-slot">空</div>'}</div>
       <p style="margin-top:8px;opacity:.6;font-size:12px">背包 ${S.inv.length}/50 · 系统收纳（单手可握之物）</p>`;
+    setTimeout(()=>{
+      $('panel-body').querySelectorAll('[data-use]').forEach(b=>{
+        b.onclick=()=>useItem(b.getAttribute('data-use'));
+      });
+    },0);
   } else if(tab==='ach'){
     const unlocked = ACH.filter(a=>S.ach[a.id]);
     const lockedN = ACH.length - unlocked.length;
     body.innerHTML = (unlocked.length? unlocked.map(a=>`<div class="p-ach">🏆 <b>${a.name}</b><br>${a.desc}<br><span style="opacity:.6">奖励：${a.reward}</span></div>`).join('') : '<p style="opacity:.6">尚未解锁成就。</p>')
       + (lockedN? `<p style="margin-top:12px;opacity:.5;font-size:12px">还有 ${lockedN} 个隐藏成就未解锁</p>` : '');
-  } else if(tab==='mem'){
-    if(!hasSkill('ice_palace')) body.innerHTML='<p style="opacity:.6">尚未构建冰晶宫殿。</p>';
-    else if(!S.memories.length) body.innerHTML='<p style="opacity:.6">冰镜空空。冻结记忆以保存场景。</p><button class="tbtn" id="btn-freeze">❄ 冻结当前场景</button>';
-    else body.innerHTML = S.memories.map((m,i)=>`<div class="p-skill"><div class="sk-name">冰镜 ${i+1} · ${m.title}</div><div class="sk-desc">${m.desc}</div></div>`).join('')+`<button class="tbtn" id="btn-freeze">❄ 冻结当前场景</button>`;
-    setTimeout(()=>{ const b=$('btn-freeze'); if(b) b.onclick=()=>{
-      const n=flag('palace_today')||0; if(n>=5){ toast('今日冻结次数已用尽'); return; }
-      flag('palace_today', n+1);
-      S.memories.push({title:dateStr()+' · '+(LOCS[S.loc]?.name||''), desc:'冻结的日常。细节清晰如昨。'});
-      // raise know of people here
-      whoIsHere().forEach(id=>know(id, 2));
-      toast('场景已冻结'); openPanel('mem');
-    }; },0);
+  } else if(tab==='settings'){
+    const cur = getSettings();
+    body.innerHTML = `<div class="p-stat" style="grid-template-columns:1fr">
+      <div><b>🔊 BGM 音量</b></div>
+      <input type="range" id="set-bgm" min="0" max="100" value="${Math.round(cur.bgm*100)}" style="width:100%">
+      <div style="opacity:.7;font-size:12px">当前 ${Math.round(cur.bgm*100)}%</div>
+      <div style="margin-top:14px"><b>☀️ 背景亮度</b></div>
+      <input type="range" id="set-bright" min="50" max="150" value="${Math.round(cur.bright*100)}" style="width:100%">
+      <div style="opacity:.7;font-size:12px">当前 ${Math.round(cur.bright*100)}%（100=默认）</div>
+    </div>
+    <button class="tbtn" id="set-reset" style="margin-top:18px">↺ 全部恢复默认</button>`;
+    // 事件绑定
+    setTimeout(()=>{
+      const bm=$('set-bgm'); if(bm) bm.oninput=()=>{ setSetting('bgm', bm.value/100); };
+      const br=$('set-bright'); if(br) br.oninput=()=>{ setSetting('bright', br.value/100); };
+      const rs=$('set-reset'); if(rs) rs.onclick=()=>{ resetSettings(); openPanel('settings'); toast('已恢复默认设置'); };
+    },0);
   }
+}
+
+// ========== 设置（音量/亮度等，持久化） ==========
+const SETTINGS_KEY = 'ojousama_settings_v1';
+function getSettings(){
+  try { return Object.assign({bgm:0.5, bright:1}, JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')); }
+  catch(e){ return {bgm:0.5, bright:1}; }
+}
+function setSetting(k, v){
+  const s = getSettings(); s[k]=v;
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch(e){}
+  applySettings();
+}
+function resetSettings(){
+  try { localStorage.removeItem(SETTINGS_KEY); } catch(e){}
+  applySettings();
+}
+function applySettings(){
+  const s = getSettings();
+  bgmSetVolume(s.bgm);                  // 更新音量（含持久化到 MUSIC_VOL_KEY）
+  bgmApplyMute();
+  const bg=$('bg'); if(bg) bg.style.filter = s.bright!==1 ? `brightness(${s.bright})` : '';
 }
 $('btn-panel').onclick=()=>openPanel('status');
 $('btn-panel-close').onclick=()=>show('panel',0);
@@ -2119,6 +2704,7 @@ function checkStoryGates(){
   if(!flag('ch_alice_affinity') && dateAtLeast(7,3)){ flag('ch_alice_affinity',1); queue.push('s_alice_affinity'); }
   if(!flag('ch_beatrice_day') && dateAtLeast(7,12)){ flag('ch_beatrice_day',1); queue.push('s_beatrice_day'); }
   if(!flag('ch_micro') && dateAtLeast(8,6)){ flag('ch_micro',1); queue.push('s_micro'); }
+  if(!flag('ch_alice_wind') && dateAtLeast(9,3)){ flag('ch_alice_wind',1); queue.push('s_alice_wind_teach'); }
   if(!flag('ch_beatrice_leaves') && dateAtLeast(10,3)){ flag('ch_beatrice_leaves',1); queue.push('s_beatrice_leaves'); }
   // 第二卷 学院篇（12年3月）：入学 → 开学典礼 → 初遇诺艾儿 → 初遇艾诺 → 夏洛特赌约，依次触发
   if(!flag('ch_academy') && dateAtLeast(12,3)){
@@ -2141,6 +2727,8 @@ function checkStoryGates(){
   if(S.phase==='academy' && !flag('met_ajun') && flag('ch_aino_sparring')){ flag('met_ajun',1); queue.push('s_ajun'); }
   // 第八章 冰融之际·上（13年9月）
   if(S.phase==='academy' && !flag('ch_ice_melt_1') && dateAtLeast(13,9)){ flag('ch_ice_melt_1',1); queue.push('s_ice_melt_1'); }
+  // 第五章 七座山（13年12月）
+  if(S.phase==='academy' && !flag('ch_seven_mountains') && dateAtLeast(13,12)){ flag('ch_seven_mountains',1); queue.push('s_seven_mountains'); }
   // 第八章 冰融之际·下（14年3月）
   if(S.phase==='academy' && !flag('ch_ice_melt_2') && dateAtLeast(14,3)){ flag('ch_ice_melt_2',1); queue.push('s_ice_melt_2'); }
   // 海边剧情（14年6月）
@@ -2177,6 +2765,7 @@ function stepChain(){
   const box = $('choices'); if(box) box.innerHTML = '';
   show('game-screen', 1);
   if(sc.bg) setBG(sc.bg);
+  bgmSceneStart(sc.bgm); // 记录并播放场景 bgm，贯穿整个场景
   if(sc.phase) S.phase = sc.phase;
   if(sc.loc){ S.loc = sc.loc; updateLocBar(); }
   updateHUD();
@@ -2204,6 +2793,7 @@ function runScene(id){
   const box = $('choices'); if(box) box.innerHTML = '';
   show('game-screen', 1);
   if(sc.bg) setBG(sc.bg);
+  bgmSceneStart(sc.bgm); // 记录并播放场景 bgm，贯穿整个场景
   if(sc.phase) S.phase = sc.phase;
   if(sc.loc){ S.loc = sc.loc; updateLocBar(); }
   updateHUD();
@@ -2230,27 +2820,33 @@ function runScene(id){
 
 // ===== 遇见雷纳德叔叔 (6岁) =====
 SCENES.s_reno_arrive = {
-  bg:'bg-img-dining bg-hall', phase:'youth',
+  bgm:'cheerful', bg:'bg-img-dining bg-hall', loc:'dining', phase:'youth',
   card:{vol:'第一卷', t:'第四章', s:'浪人叔叔'},
   lines:[
-    {text:'六岁。'},
+    // —— 开场：旁白，餐厅 ——
+    {text:'六岁。', loc:'dining', bg:'bg-img-dining bg-hall'},
     {text:'传说中那个"离家出走"的叔叔回来了。我小时候模模糊糊见过他两三面，听说他还和阿斯拉魔法大学的校长法神从前是同学。'},
     {text:'雷纳德·维斯特利亚，我父亲的弟弟。比起总是板着脸、威严满满的父亲，这位叔叔简直像是另一个物种。'},
+    // —— 雷纳德登场：立绘高亮 ——
     {ch:'reno', speaker:'雷纳德', text:'惊喜！我回来啦！'},
-    {text:'他风尘仆仆地出现在餐厅门口，背着个巨大的包裹，靴子上全是泥巴，笑得像个没心没肺的大孩子。'},
-    {text:'父亲扶额叹气，母亲笑着摇头，只有贝阿特丽丝姐姐冲上去给了他一拳——当然没打中。'},
-    {text:'叔叔在家里住了半个月，我也终于明白了为什么法神大人会是他的同学——这人虽然看着不正经，但魔法造诣很高。'},
+    {text:'他风尘仆仆地出现在餐厅门口，背着个巨大的包裹，靴子上全是泥巴，笑得像个没心没肺的大孩子。', portraits:[{id:'reno', slot:'left', active:false}]},
+    {text:'父亲扶额叹气，母亲笑着摇头，只有贝阿特丽丝姐姐冲上去给了他一拳——当然没打中。', portraits:[{id:'reno', slot:'left', active:false}]},
+    {text:'叔叔在家里住了半个月，我也终于明白了为什么法神大人会是他的同学——这人虽然看着不正经，但魔法造诣很高。', portraits:[{id:'reno', slot:'left', active:false}]},
+    // —— 讲故事桥段：爱丽丝出现并提问（高亮爱丽丝） ——
     {text:'当然，他主要的作用还是讲故事。'},
     {ch:'reno', speaker:'雷纳德', text:'驰弩帝国北边的森林里，有一种雪狼，大概有这么大——全身雪白，跑起来像一团滚动的雪球！'},
-    {text:'贝阿特丽丝姐姐听得两眼放光，恨不得立刻提剑去北边。爱丽丝则安静地坐在我旁边，偶尔问几个问题。'},
+    {text:'贝阿特丽丝姐姐听得两眼放光，恨不得立刻提剑去北边。爱丽丝则安静地坐在我旁边，偶尔问几个问题。', portraits:[{id:'reno', slot:'left', active:false},{id:'alice', slot:'right', active:false}]},
     {ch:'alice', emo:'normal', speaker:'爱丽丝', text:'……那里的风大吗？暴风雪会持续多久？'},
-    {text:'问题虽然有点偏，但叔叔很高兴有人对细节感兴趣，讲得更起劲了。'},
-    {bg:'bg-img-nursery bg-room', text:'某天晚上，叔叔溜进我房间，检查了我的魔法进度。'},
+    {text:'问题虽然有点偏，但叔叔很高兴有人对细节感兴趣，讲得更起劲了。', portraits:[{id:'reno', slot:'left', active:false},{id:'alice', slot:'right', active:false}]},
+    // —— 转夜晚房间：剧情事件转换，回收立绘 ——
+    {bg:'bg-img-nursery bg-room', loc:'nursery', portraits:[], text:'某天晚上，叔叔溜进我房间，检查了我的魔法进度。'},
+    // —— 主角与雷纳德单独交谈：双人立绘，说话者高亮 ——
     {text:'看完我的冰晶术后，他收起了那副嬉皮笑脸的表情。'},
-    {ch:'reno', speaker:'雷纳德', text:'六岁能控制到这个程度，咱们家这是出了个小怪物啊。等你以后去了魔法大学，要是有人欺负你，就报我名字。'},
-    {ch:'sylvia', speaker:'希尔维亚', text:'报了有用吗？'},
-    {ch:'reno', speaker:'雷纳德', text:'大概有用吧……只要法神大人忘掉了我欠她钱的事。'},
-    {text:'看来以后还是尽量别报他的名字比较好。', know:'reno', knowD:20, freeRoam:true},
+    {portraits:[{id:'reno', slot:'left', active:true},{id:'sylvia', slot:'right', active:false}], speaker:'雷纳德', text:'六岁能控制到这个程度，咱们家这是出了个小怪物啊。等你以后去了魔法大学，要是有人欺负你，就报我名字。'},
+    {portraits:[{id:'reno', slot:'left', active:false},{id:'sylvia', slot:'right', active:true}], speaker:'希尔维亚', text:'报了有用吗？'},
+    {portraits:[{id:'reno', slot:'left', active:true},{id:'sylvia', slot:'right', active:false}], speaker:'雷纳德', text:'大概有用吧……只要法神大人忘掉了我欠她钱的事。'},
+    // —— 结尾主角心理：主角高亮 ——
+    {text:'看来以后还是尽量别报他的名字比较好。', portraits:[{id:'sylvia', slot:'center', active:true}], know:'reno', knowD:20, freeRoam:true},
   ]
 };
 
@@ -2259,7 +2855,7 @@ SCENES.s_reno_arrive = {
 // ※ 旧版 s_alice_affinity 已删除（与 js/story.js 中的新版重复，新版会覆盖旧版）
 
 SCENES.s_beatrice_leaves = {
-  bg:'bg-img-hallway bg-hall', phase:'youth',
+  bgm:'peaceful', bg:'bg-img-hallway bg-hall', phase:'youth',
   lines:[
     {text:'十岁。姐姐要去魔法大学了。'},
     {ch:'beatrice', emo:'happy', speaker:'贝阿特丽丝', text:'希尔维亚！姐姐要出发了！等我到了大学，一定把所有好玩的事都写信告诉你！'},
@@ -2283,7 +2879,7 @@ SCENES.s_beatrice_leaves = {
 // ※ 旧版 s_charlotte_meet 已删除（与 js/story.js 中的新版重复，新版会覆盖旧版）
 
 SCENES.s_huke = {
-  bg:'bg-img-town bg-town', phase:'academy',
+  bgm:'cheerful', bg:'bg-img-town bg-town', phase:'academy',
   lines:[
     {text:'王都材料市场。三条街的药草与矿石味。', task:'market_walk'},
     {text:'巷口——三个初级冒险者围着一个小男孩。'},
@@ -2300,7 +2896,7 @@ SCENES.s_huke = {
 
 // ----- JOURNEY -----
 SCENES.s_turnpoint = {
-  bg:'bg-night', phase:'finale',
+  bgm:'sad', bg:'bg-night', phase:'finale',
   card:{vol:'第一卷', t:'转折点（一）', s:'——'},
   lines:[
     {do:()=>{ S.ageY=Math.max(S.ageY,15); syncStatsToAge(); }},
@@ -2322,7 +2918,42 @@ SCENES.s_turnpoint = {
     {text:'母亲把我额前的碎发拨到耳后。和小时候一模一样。'},
     {speaker:'索菲亚', text:'走。'},
     {text:'墙壁合上。暗红与银白的光在缝隙里交织。最后一眼——很快，不盯着就会错过。'},
-    {bg:'bg-img-forest bg-forest', text:'我在跑。密道很长。出口是冬夜的林地。'},
+    // ===== 以下，希尔维亚·维斯特利亚无从知晓。 =====
+    // —— 西翼：父母迎战 ——
+    {cg:'parents_battle.jpg', text:'以下，希尔维亚·维斯特利亚无从知晓。'},
+    {cg:'parents_battle.jpg', text:'公爵府西翼。克劳德·维斯特利亚看着墙壁合拢的最后一刻，确认女儿的身影消失在黑暗中。他没有回头。'},
+    {cg:'parents_battle.jpg', ch:'sophia', speaker:'索菲亚', text:'多少人？'},
+    {cg:'parents_battle.jpg', ch:'claude', speaker:'克劳德', text:'前厅方向至少三队。东翼方向也有。是分头来的。'},
+    {cg:'parents_battle.jpg', ch:'sophia', speaker:'索菲亚', text:'雷纳德那边——'},
+    {cg:'parents_battle.jpg', ch:'claude', speaker:'克劳德', text:'他撑得住。'},
+    {cg:'parents_battle.jpg', text:'克劳德踏出一步。短杖不是杖。是武器。走廊炸开了。'},
+    {cg:'parents_battle.jpg', text:'战斗持续了很长时间。西翼的走廊被打得面目全非。两个人守住一条线，给女儿多争一点时间。'},
+    // —— 东翼：贝蒂带爱丽丝逃入死路 ——
+    {cg:'beatrice_battle.png', text:'公爵府东翼。贝阿特丽丝冲向爱丽丝的房间。'},
+    {cg:'beatrice_battle.png', text:'前面封了。后面在追。十七岁的贝阿特丽丝·维斯特利亚站在仆人通道里，前后都是死路。'},
+    {cg:'beatrice_battle.png', ch:'beatrice', speaker:'贝阿特丽丝', text:'我带你们走。仆人道尽头有排水渠口，钻过去能出城。'},
+    {cg:'beatrice_battle.png', ch:'beatrice', speaker:'贝阿特丽丝', text:'我在这里挡一下。'},
+    // —— 贝蒂与爱丽丝死别 ——
+    {cg:'parting.png', ch:'alice', speaker:'爱丽丝', text:'不要。'},
+    {cg:'parting.png', ch:'beatrice', speaker:'贝阿特丽丝', text:'没事。上个月突破高级了。挡一会儿还是能挡的。'},
+    {cg:'parting.png', ch:'alice', speaker:'爱丽丝', text:'你骗人——'},
+    {cg:'parting.png', ch:'beatrice', speaker:'贝阿特丽丝', text:'我的妹妹才是真正的天才，爱丽丝。你比我聪明。你更值得——'},
+    {cg:'parting.png', ch:'beatrice', speaker:'贝阿特丽丝', text:'听好了。听贝阿特丽丝大人的话。'},
+    {cg:'parting.png', ch:'beatrice', speaker:'贝阿特丽丝', text:'你不要管我。你跑。跑得越远越好。然后——找到希尔维亚。'},
+    {cg:'parting.png', text:'火焰从她的右手倾泻而出。整条通道化作了一道灼热的咽喉。贝阿特丽丝站在火焰最中心，金色的头发在火光中像太阳。'},
+    // —— 十字路口：雷纳德地形拖敌 ——
+    {cg:'reno_battle.jpg', text:'东翼和主走廊之间的十字路口。雷纳德·维斯特利亚站在路口正中间。一个人。没有武器。'},
+    {cg:'reno_battle.jpg', text:'地面开始变形。石板翘起、碎裂、重组。四条走廊在几秒钟之内变成了一座简陋但有效的迷宫。'},
+    {cg:'reno_battle.jpg', text:'他不是在杀人。是在绊脚、困人、拖延。每多撑一分钟，侄女们就多跑出一段。'},
+    // —— 帝级 ——
+    {cg:'reno_diji.jpg', text:'墙被一拳打穿了。一个帝级。'},
+    {cg:'reno_diji.jpg', ch:'reno', speaker:'雷纳德', text:'……贝尔蒙家的私军。'},
+    {cg:'reno_diji.jpg', text:'帝级的拳头穿透石墙，碎石擦过他的太阳穴。第二拳到了。胸口。'},
+    {cg:'reno_diji.jpg', text:'他滑坐在地上，嘴里有铁锈味。他在数。从第一声碎响到现在——大概二十五分钟。应该够了。'},
+    {cg:'reno_diji.jpg', text:'雷纳德·维斯特利亚靠在墙根，闭上了眼。'},
+    // ===== 以上，希尔维亚·维斯特利亚无从知晓。 =====
+    {cg:'end', bg:'bg-img-forest bg-forest', text:'以上，希尔维亚·维斯特利亚无从知晓。'},
+    {text:'我在跑。密道很长。出口是冬夜的林地。'},
     {text:'回头。公爵府方向的天空有一片不正常的橘色。\n是火光。', task:'survive_night', ach:'black_hair'},
     {text:'往东。不拐弯。不停。先活下来。'},
     {do:()=>{ S.alias='眷寒渔'; S.phase='journey'; ['road','jikan','northforest'].forEach(id=>{if(LOCS[id])LOCS[id].unlock=true;}); S.loc='road'; }},
@@ -2337,7 +2968,7 @@ SCENES.s_turnpoint = {
 // ※「魔力初感 / 勇者之赐」旧版场景已删除：内容已并入 js/story.js 的 s_child_days（3年9月）
 
 SCENES.s_tier1_story = {
-  bg:'bg-pick',
+  bgm:'sacred', bg:'bg-pick',
   lines:[
     {text:'世界静止了。窗帘凝固，虫鸣消失。'},
     {text:'「勇者之赐」——最高阶段首次提升。'},
@@ -2351,7 +2982,7 @@ SCENES.s_tier1_story = {
 // ※ 旧版 s_micro 已删除（与 js/story.js 中的新版重复，新版会覆盖旧版）
 
 SCENES.s_beach = {
-  bg:'bg-img-beach bg-beach', loc:'beach', phase:'academy',
+  bgm:'cheerful', bg:'bg-img-beach bg-beach', loc:'beach', phase:'academy',
   card:{vol:'第一卷', t:'第七章', s:'海与贝壳'},
   lines:[
     {text:'暑假。姐姐在马车上睡着了，嘴角还挂着果酱渍。'},
@@ -2453,7 +3084,7 @@ SCENES.s_beach = {
 };
 
 SCENES.s_star_festival = {
-  bg:'bg-night', phase:'academy',
+  bgm:'relax', bg:'bg-night', phase:'academy',
   card:{vol:'第二卷', t:'第九章', s:'并肩的树 · 星辰祭'},
   lines:[
     {text:'星辰祭。六年一次。家长开放日。'},
@@ -2520,11 +3151,13 @@ function newGame(){
   S=baseState();
   S.season = seasonOf(S.month);
   Object.values(LOCS).forEach(L=>{ if(L.area==='公爵府' && ['nursery','hallway','parlor','garden','dining'].includes(L.id)) L.unlock=true; });
+  bgmUnlock(); // 用户点击开始 → 解锁音频
   show('title-screen',0); show('game-screen',1);
   runScene('s_start');
 }
 function continueGame(){
   if(!load()){ toast('没有存档'); return; }
+  bgmUnlock(); // 用户点击继续 → 解锁音频
   // re-unlock locs by phase
   Object.values(LOCS).forEach(L=>{
     if(L.area==='公爵府') L.unlock=true;
@@ -2544,7 +3177,12 @@ function continueGame(){
 $('btn-new').onclick=()=>{ sfx('click'); newGame(); };
 $('btn-continue').onclick=()=>{ sfx('click'); continueGame(); };
 $('btn-title').onclick=()=>{ save(); show('game-screen',0); show('battle-screen',0); show('panel',0); show('title-screen',1); updateHUD(); };
-$('btn-mute').onclick=()=>{ muted=!muted; localStorage.setItem(MUTE_KEY, muted?'1':'0'); $('btn-mute').textContent=muted?'🔇':'🔊'; };
+$('btn-mute').onclick=()=>{
+  muted=!muted;
+  try { localStorage.setItem(MUTE_KEY, muted?'1':'0'); } catch(e){}
+  bgmSetMuted(muted); // 静音同时作用于音效与 BGM
+  $('btn-mute').textContent=(muted||bgmMuted)?'🔇':'🔊';
+};
 $('btn-help').onclick=()=>show('help-screen',1);
 $('btn-help-close').onclick=()=>show('help-screen',0);
 $('btn-codex').onclick=()=>{
@@ -2606,7 +3244,7 @@ advanceDay = function(n){
 
 // keyboard
 document.addEventListener('keydown', e=>{
-  if(e.key==='Escape'){ show('panel',0); show('map-overlay',0); show('help-screen',0); show('codex',0); show('stats-overlay',0); }
+  if(e.key==='Escape'){ show('panel',0); show('map-overlay',0); show('help-screen',0); show('codex',0); show('stats-overlay',0); uiShow(); }
   if(e.key===' ' || e.key==='Enter'){ if(!$('game-screen').classList.contains('hidden')) $('text-box').click(); }
   if((e.key==='p'||e.key==='P') && !$('game-screen').classList.contains('hidden')) openPanel('status');
   if((e.key==='m'||e.key==='M') && S.freeRoam) openMap();
@@ -2624,6 +3262,9 @@ document.addEventListener('keydown', e=>{
 // boot
 show('btn-continue', hasSave());
 updateHUD();
+if($('btn-mute')) $('btn-mute').textContent=(muted||bgmMuted)?'🔇':'🔊';
+bgmBindGlobalUnlock(); // 全局用户手势解锁音频
+applySettings(); // 应用已保存的设置（bgm音量/背景亮度）
 console.log('[转生千金] ready · scenes', Object.keys(SCENES).length);
 if(typeof window !== 'undefined'){
   window.SCENES = SCENES;
@@ -2637,4 +3278,11 @@ if(typeof window !== 'undefined'){
   window.know = typeof know !== 'undefined' ? know : ()=>{};
   window.sysPopup = typeof sysPopup !== 'undefined' ? sysPopup : ()=>{};
   window.toast = typeof toast !== 'undefined' ? toast : ()=>{};
+  window.bgmKeyForBg = typeof bgmTypeForBg !== 'undefined' ? bgmTypeForBg : ()=>{};
+  window.bgmTypeForBg = typeof bgmTypeForBg !== 'undefined' ? bgmTypeForBg : ()=>{};
+  window.bgmPlay = typeof bgmPlay !== 'undefined' ? bgmPlay : ()=>{};
+  window.bgmUnlock = typeof bgmUnlock !== 'undefined' ? bgmUnlock : ()=>{};
+  window.bgmPlayType = typeof bgmPlayType !== 'undefined' ? bgmPlayType : ()=>{};
+  window.BGM_FILES = typeof BGM_FILES !== 'undefined' ? BGM_FILES : {};
+  window.BGM_GROUPS = typeof BGM_GROUPS !== 'undefined' ? BGM_GROUPS : {};
 }

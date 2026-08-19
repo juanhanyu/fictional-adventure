@@ -145,19 +145,19 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 /* text box */
 #text-box{position:relative;background:var(--box);color:var(--ink);border-radius:12px;padding:16px 18px 22px;min-height:110px;max-height:38vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.4);border:1px solid rgba(201,162,39,.25);cursor:pointer;z-index:6;flex-shrink:0}
-#speaker{display:inline-block;background:linear-gradient(135deg,#3a2850,#2a1838);color:#f0e6d0;padding:3px 14px;border-radius:6px 6px 0 0;font-size:13px;font-weight:600;margin:-16px 0 8px -4px;border:1px solid rgba(201,162,39,.3);border-bottom:none}
-#text{font-size:15px;line-height:1.85;white-space:pre-wrap;word-break:break-word}
-#text .sys{color:#4a6a9a;font-size:13px}
+#speaker{display:inline-block;background:linear-gradient(135deg,#3a2850,#2a1838);color:#f0e6d0;padding:4px 16px;border-radius:6px 6px 0 0;font-size:18px;font-weight:600;margin:-16px 0 10px -4px;border:1px solid rgba(201,162,39,.3);border-bottom:none}
+#text{font-size:20px;line-height:1.95;white-space:pre-wrap;word-break:break-word}
+#text .sys{color:#4a6a9a;font-size:17px}
 #text .em{color:var(--rose);font-style:normal}
 #text .gold{color:#8a7020}
 #text .ice{color:#2a6a9a}
 #more{position:absolute;right:14px;bottom:6px;font-size:12px;color:var(--gold);animation:pulse 1.2s infinite}
 
-#choices{display:flex;flex-direction:column;gap:8px;margin-top:10px;z-index:6;flex-shrink:0;max-height:40vh;overflow-y:auto}
-.choice{padding:12px 16px;background:linear-gradient(135deg,rgba(40,30,55,.95),rgba(25,18,40,.98));border:1px solid rgba(201,162,39,.3);border-radius:10px;font-size:14px;text-align:left;line-height:1.5;transition:.15s;color:#f0e6d0}
+#choices{display:flex;flex-direction:column;gap:8px;margin-top:10px;z-index:6;flex-shrink:0;max-height:40vh;overflow-y:auto;overflow-x:hidden;width:100%;max-width:min(560px,92vw);margin-left:auto;margin-right:auto}
+.choice{padding:12px 18px;background:linear-gradient(135deg,rgba(40,30,55,.95),rgba(25,18,40,.98));border:1px solid rgba(201,162,39,.3);border-radius:10px;font-size:17px;text-align:left;line-height:1.6;transition:.15s;color:#f0e6d0;box-sizing:border-box;max-width:100%;white-space:normal;overflow-wrap:break-word}
 .choice:hover:not(:disabled){border-color:var(--gold);background:linear-gradient(135deg,rgba(60,40,80,.95),rgba(35,25,55,.98));transform:translateX(4px)}
 .choice:disabled{opacity:.4;cursor:not-allowed}
-.choice .reason{display:block;font-size:11px;opacity:.55;margin-top:2px}
+.choice .reason{display:block;font-size:13px;opacity:.55;margin-top:2px}
 .choice.pick{border-color:rgba(110,181,255,.5);background:linear-gradient(135deg,rgba(30,40,70,.95),rgba(20,25,50,.98))}
 .choice.danger{border-color:rgba(200,80,80,.5)}
 .choice.love{border-color:rgba(200,100,140,.5)}
@@ -165,7 +165,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 /* action bar */
 #action-bar{display:flex;gap:6px;padding:8px 12px;background:rgba(15,10,25,.9);border-top:1px solid rgba(201,162,39,.2);flex-wrap:wrap;justify-content:center;flex-shrink:0;z-index:7}
-.abtn{padding:8px 14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;font-size:13px;transition:.15s}
+.abtn{padding:10px 16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;font-size:15px;transition:.15s}
 .abtn:hover{background:rgba(201,162,39,.18);border-color:var(--gold)}
 .abtn.primary{background:linear-gradient(135deg,rgba(80,50,120,.8),rgba(50,30,80,.9));border-color:rgba(201,162,39,.4)}
 .abtn:disabled{opacity:.35;cursor:not-allowed}
@@ -389,3 +389,64 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .abtn small{opacity:.7;font-size:10px;margin-left:2px}
 .hotspot .hs-cost{color:#e8b84a}
 .hotspot.locked-baby{opacity:.75;border-style:dashed}
+
+/* ===== 隐藏 UI（沉浸模式） ===== */
+body.ui-hidden #text-box,
+body.ui-hidden #speaker,
+body.ui-hidden #choices,
+body.ui-hidden #action-bar,
+body.ui-hidden #loc-bar,
+body.ui-hidden #more,
+body.ui-hidden #hotspots{
+  opacity:0 !important; pointer-events:none !important;
+}
+/* 沉浸模式：隐藏 HUD 内容，但保留右上角的「恢复」按钮 */
+body.ui-hidden #hud .hud-left{ opacity:0 !important; pointer-events:none !important; }
+body.ui-hidden #hud .hud-right #btn-stats,
+body.ui-hidden #hud .hud-right #btn-panel,
+body.ui-hidden #hud .hud-right #btn-mute,
+body.ui-hidden #hud .hud-right #btn-title{
+  opacity:0 !important; pointer-events:none !important;
+}
+body.ui-hidden #hud{ transition:opacity .3s; background:transparent !important; border-bottom-color:transparent !important; }
+body.ui-hidden #btn-ui{ opacity:1 !important; pointer-events:auto !important; }
+body.ui-hidden .p-slot, body.ui-hidden .css-p{ pointer-events:none !important }
+
+/* ===== 对话框独立隐藏（自由探索点击隐藏） ===== */
+#text-box.dialog-hidden{ opacity:0 !important; pointer-events:none !important; transition:opacity .3s }
+
+/* ===== CG 演出层（情绪爆点，隐藏所有UI） ===== */
+#cg-screen{position:fixed;inset:0;z-index:90;background:#000;cursor:pointer}
+#cg-bg{position:absolute;inset:0;background-size:contain;background-position:center;background-repeat:no-repeat}
+#cg-text{position:absolute;left:0;right:0;bottom:0;padding:22px 30px 40px;font-size:22px;line-height:1.9;
+  text-align:left;background:linear-gradient(180deg,transparent,rgba(0,0,0,.55) 55%,rgba(0,0,0,.78));min-height:120px}
+#cg-text .cg-speaker{font-weight:700;margin-bottom:6px;letter-spacing:.1em}
+#cg-text .cg-line{white-space:pre-wrap}
+/* 不同角色台词颜色 */
+#cg-text .c-sylvia{color:#bcd8ff}
+#cg-text .c-claude{color:#d8c8a0}
+#cg-text .c-sophia{color:#e8c8e0}
+#cg-text .c-reno{color:#a8d8a0}
+#cg-text .c-beatrice{color:#ffc070}
+#cg-text .c-alice{color:#d0d8f8}
+#cg-text .c-narrator{color:#f0f0f0}
+
+/* CG 演出时隐藏全部游戏 UI */
+body.cg-mode #hud,
+body.cg-mode #loc-bar,
+body.cg-mode #text-box,
+body.cg-mode #choices,
+body.cg-mode #action-bar,
+body.cg-mode #hotspots,
+body.cg-mode #more{
+  opacity:0 !important; pointer-events:none !important;
+}
+
+/* ===== 沉浸模式保留右上角恢复按钮 ===== */
+#btn-ui{ position:relative; z-index:10 }
+body.ui-hidden #btn-ui{
+  /* 独立于被隐藏的 #hud，固定在右上角，始终可见可点 */
+  position:fixed !important; top:10px; right:10px; z-index:200;
+  background:rgba(20,14,30,.85) !important; border:1px solid rgba(255,255,255,.25) !important;
+  opacity:1 !important; pointer-events:auto !important;
+}

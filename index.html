@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
+<audio id="bgm-audio" preload="auto" loop></audio>
 <div id="bg" class="bg-title"></div>
 <div id="bg-veil"></div>
 <div id="fx"></div>
@@ -63,7 +64,7 @@
       <div class="hud-right">
         <button id="btn-stats" class="chip" title="养成">💠</button>
         <button id="btn-panel" class="chip" title="面板">📖</button>
-        <button id="btn-map" class="chip" title="地图">🗺️</button>
+        <button id="btn-ui" class="chip" title="沉浸模式（隐藏/显示界面）">🌙</button>
         <button id="btn-mute" class="chip">🔊</button>
         <button id="btn-title" class="chip">🏠</button>
       </div>
@@ -99,7 +100,7 @@
 
     <!-- 自由行动栏（探索模式） -->
     <nav id="action-bar" class="hidden">
-      <button data-act="explore" class="abtn">🗺️ 总览</button>
+      <button data-act="explore" class="abtn">🗺️ 地图</button>
       <button data-act="talk" class="abtn">💬 交谈</button>
       <button data-act="train" class="abtn">✨ 修行 <small>⚡3</small></button>
       <button data-act="study" class="abtn">📚 学习 <small>⚡2</small></button>
@@ -164,9 +165,14 @@
     </div>
   </section>
 
+  <!-- ===== CG 演出层 ===== -->
+  <section id="cg-screen" class="hidden">
+    <div id="cg-bg"></div>
+    <div id="cg-text"></div>
+  </section>
+
   <!-- ===== 战斗 ===== -->
-  <section id="battle-screen" class="overlay hidden">
-    <div id="b-enemy">
+  <section id="battle-screen" class="overlay hidden">    <div id="b-enemy">
       <div id="b-emoji">🐺</div>
       <div id="b-ename">──</div>
       <div class="bar e-hp"><i id="b-ehp"></i><em id="b-ehp-num"></em></div>
@@ -192,7 +198,7 @@
       <div class="help-body">
         <p><b>🍂 季度回合</b>：时间按「年 · 春/夏/秋/冬」推进。点「下个季度」过回合。</p>
         <p><b>💪 体力</b>：行动消耗体力。归零强制休息。休息/过季可恢复。</p>
-        <p><b>🚪 场景探索</b>：点画面上的门/出口按钮在相邻房间移动（如育婴室→长廊）。也可用「总览」。</p>
+        <p><b>🚪 场景探索</b>：点画面上的门/出口按钮在相邻房间移动（如育婴室→长廊）。也可用「地图」。</p>
         <p><b>🎁 勇者之赐</b>：等阶首次提升时触发，七选一赋技能（一生至多七次）。</p>
         <p><b>⚔️ 虚拟决斗</b>：梦中挑战了解度≥90%的人物，胜利可获技能。</p>
         <p><b>❄️ 冰晶宫殿</b>：冻结记忆、回看细节，提升了解度。</p>

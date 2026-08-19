@@ -1,0 +1,16 @@
+{
+  "name": "ojousama-tests",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node run.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "jsdom": "^30.0.1"
+  },
+  "private": true
+}

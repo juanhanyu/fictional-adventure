@@ -429,6 +429,8 @@ body.ui-hidden .p-slot, body.ui-hidden .css-p{ pointer-events:none !important }
 #cg-text .c-reno{color:#a8d8a0}
 #cg-text .c-beatrice{color:#ffc070}
 #cg-text .c-alice{color:#d0d8f8}
+#cg-text .c-yaoshen{color:#a8e8b0}
+#cg-text .c-fashen{color:#ff9a80}
 #cg-text .c-narrator{color:#f0f0f0}
 
 /* CG 演出时隐藏全部游戏 UI */

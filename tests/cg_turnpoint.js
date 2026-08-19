@@ -9,11 +9,18 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   win.__resetS();
   win.__setS(Object.assign(win.__getS(),{ageY:15,year:15,month:12,day:1,phase:'finale',tod:1}));
   let cgCount=0, err=null, guard=0;
+  const seen=new Set();
   try {
     win.__runScene('s_turnpoint');
-    while(!win.__getS().freeRoam && guard<300){
+    while(!win.__getS().freeRoam && guard<400){
       guard++;
-      if(!$('cg-screen').classList.contains('hidden')){ cgCount++; $('cg-screen').onclick && $('cg-screen').onclick(); }
+      if(!$('cg-screen').classList.contains('hidden')){
+        cgCount++;
+        const bg=$('cg-bg').style.backgroundImage||'';
+        const m=bg.match(/assets\/cg\/([^)'"]+)/);
+        if(m) seen.add(m[1]);
+        $('cg-screen').onclick && $('cg-screen').onclick();
+      }
       else if(win.__drain && win.__drain.length){ win.__drain.shift()(); }
       else if($('card') && !$('card').classList.contains('hidden')){ $('card').onclick&&$('card').onclick(); }
       await sleep(3);
@@ -22,6 +29,8 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const st=win.__getS();
   ok('场景无崩溃', !err);
   ok('触发 CG 演出（>=6）', cgCount>=6);
+  ok('使用了新CG cool_off', seen.has('cool_off.png'));
+  console.log('  CG图集:', [...seen].join(', '));
   ok('走到自由探索', st.freeRoam===true);
   ok('已切换眷寒渔身份', st.alias==='眷寒渔');
   ok('CG 已退出', !win.document.body.classList.contains('cg-mode'));

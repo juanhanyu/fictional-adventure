@@ -19,7 +19,11 @@ function driveScene(id){
   try {
     win.__resetS();
     win.__runScene(id);
-    for(let g=0; g<10; g++){ if(vis('card')){ $('card').onclick && $('card').onclick(); continue; } break; }
+    for(let g=0; g<500; g++){
+      if(vis('cg-screen')){ $('cg-screen').onclick && $('cg-screen').onclick(); continue; }
+      if(vis('card')){ $('card').onclick && $('card').onclick(); continue; }
+      break;
+    }
     if(vis('pick-screen')) interactive.push([id,'PICK']);
     else if(vis('battle-screen')) interactive.push([id,'BATTLE']);
     else if(vis('duel-screen')) interactive.push([id,'DUEL']);

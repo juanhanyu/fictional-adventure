@@ -2955,11 +2955,11 @@ SCENES.s_turnpoint = {
     {cg:'reno_battle.jpg', text:'地面开始变形。石板翘起、碎裂、重组。四条走廊在几秒钟之内变成了一座简陋但有效的迷宫。'},
     {cg:'reno_battle.jpg', text:'他不是在杀人。是在绊脚、困人、拖延。每多撑一分钟，侄女们就多跑出一段。'},
     // —— 帝级 ——
-    {cg:'cool_off.png', text:'墙被一拳打穿了。一个帝级。'},
-    {cg:'cool_off.png', ch:'reno', speaker:'雷纳德', text:'……贝尔蒙家的私军。'},
-    {cg:'cool_off.png', text:'帝级的拳头穿透石墙，碎石擦过他的太阳穴。第二拳到了。胸口。'},
-    {cg:'cool_off.png', text:'他滑坐在地上，嘴里有铁锈味。他在数。从第一声碎响到现在——大概二十五分钟。应该够了。'},
-    {cg:'cool_off.png', text:'雷纳德·维斯特利亚靠在墙根，闭上了眼。'},
+    {cg:'reno_diji.jpg', text:'墙被一拳打穿了。一个帝级。'},
+    {cg:'reno_diji.jpg', ch:'reno', speaker:'雷纳德', text:'……贝尔蒙家的私军。'},
+    {cg:'reno_diji.jpg', text:'帝级的拳头穿透石墙，碎石擦过他的太阳穴。第二拳到了。胸口。'},
+    {cg:'reno_diji.jpg', text:'他滑坐在地上，嘴里有铁锈味。他在数。从第一声碎响到现在——大概二十五分钟。应该够了。'},
+    {cg:'reno_diji.jpg', text:'雷纳德·维斯特利亚靠在墙根，闭上了眼。'},
     // ===== 以上，希尔维亚·维斯特利亚无从知晓。 =====
     {cg:'end', bg:'bg-img-forest bg-forest', text:'以上，希尔维亚·维斯特利亚无从知晓。'},
     {text:'我在跑。密道很长。出口是冬夜的林地。'},

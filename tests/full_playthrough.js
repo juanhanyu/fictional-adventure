@@ -15,6 +15,7 @@ function drive(){
   const rec=()=>{ const cs=win.__getCurrentScene(); if(cs&&cs!==last){played.push(cs); last=cs;} };
   for(let i=0;i<40000;i++){
     rec();
+    if(vis('cg-screen')){ const c=$('cg-screen'); if(typeof c.onclick==='function'){ c.onclick(); continue; } }
     if(vis('card')){ const c=$('card'); if(typeof c.onclick==='function'){ c.onclick(); continue; } }
     if(win.__drain.length){ win.__drain.shift()(); continue; }
     const chain=win.__getStoryChain();

@@ -1227,6 +1227,11 @@ function playLines(lines, done){
     while(i < list.length){
       let L = list[i++];
 
+      // 防御：只要本场景仍是「视角」场景，每渲染一行都重新确保 HUD/地点标隐藏
+      // （避免某些渲染/刷新路径中途把 pov 状态清掉，导致「实际游玩不隐藏 UI」）
+      const sc0 = SCENES[currentScene];
+      if(sc0 && sc0.pov) setPov(true);
+
       // plain string
       if(typeof L === 'string'){
         setSpeaker(null);

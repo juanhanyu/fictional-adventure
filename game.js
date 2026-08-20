@@ -1159,6 +1159,8 @@ function applyLineEffects(L){
   if(!L || typeof L === 'string') return;
   if(L.bg) setBG(L.bg);
   if(L.loc){ S.loc = L.loc; updateLocBar(); }
+  // 行级 bgm：在场景内切换地点/背景时可强制指定并锁定 BGM，防止引擎误判为自由探索而切回 peaceful
+  if(L.bgm){ bgmSceneStart(L.bgm); }
   if(L.portraits){
     clearPortraits();
     L.portraits.forEach(p=> showPortrait(p.id, p.emo||'normal', p.slot||'center', p.active!==false));

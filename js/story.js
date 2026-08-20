@@ -963,7 +963,7 @@
     phase: 'youth',
     card: { vol: '第一卷', t: '第4.1章', s: '微服出行' },
     lines: [
-      T('今天姐姐突然兴致大发，叉着腰堵在我房间门口，像个即将发布重大决定的将军。', { bg: 'bg-img-nursery bg-room', loc: 'ownroom' }),
+      T('今天姐姐突然兴致大发，叉着腰堵在我房间门口，像个即将发布重大决定的将军。', { bg: 'bg-img-nursery bg-room', loc: 'ownroom', bgm: 'comedy_medium' }),
       DUO(['beatrice','贝阿特丽丝'], ['sylvia','希尔维亚'], 'beatrice', '我们去城里逛逛吧！'),
       DUO(['sylvia','希尔维亚'], ['beatrice','贝阿特丽丝'], 'sylvia', '……啊？'),
       DUO(['beatrice','贝阿特丽丝'], ['sylvia','希尔维亚'], 'beatrice', '三姐妹一起！微服出行！体验民间生活！不带那一堆讨厌的随从，就我们三个！'),

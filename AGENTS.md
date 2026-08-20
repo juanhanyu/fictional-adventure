@@ -92,6 +92,16 @@
    该场景静默无 BGM，属缺陷。
 6. 战斗 / 勇者之赐 / 决斗等特殊背景映射到对应类型（`bg-battle`→battle、`bg-pick`→sacred、`bg-duel`→battle），
    自动覆盖日常音乐。
+7. **绝不要给 `bgmFreeRoam` 加 `if(sceneBgmType) return;` 守卫（硬性教训）**：
+   曾在「微服私访」实机出现"配了 bgm 却不生效、沿用自由探索的 peaceful"的诡异 bug。
+   排查后根因是——`bgmFreeRoam` 里多加了这个守卫。场景内 BGM 的正确隔离**已由
+   `runScene`/`stepChain` 开头的 `S.freeRoam=false` 天然完成**（`bgmFreeRoam` 第一行
+   `if(!S.freeRoam) return` 就会返回，根本轮不到 `sceneBgmType` 判断）；而 `sceneBgmType`
+   在自由探索/场景切换间隙的残留，会被这个守卫误拦，导致 bgm 卡在错误状态放不出来。
+   因此：**场景 bgm 的贯穿只靠 `bgmSceneStart`（force 播放）+ `S.freeRoam=false` 即可，
+   `bgmFreeRoam` 不要再叠 `sceneBgmType` 守卫**。与之对应的，`enterFreeRoam` 里
+   `sceneBgmType = null` 的清空可以保留（用于自由探索恢复背景推断切曲），但 `bgmFreeRoam`
+   内部不要再用它做提前 return。（参照正确的 `game2.js`：它没有这个守卫。）
 
 ## 二点七、立绘表情语义（永久·按角色性格定制）
 

@@ -744,7 +744,7 @@
 
   // ========== 药神 ==========
   SCENES.s_yaoshen = {
-    bgm: 'sacred',
+    bgm: 'comedy_medium', // 临时：用户实机测试滑稽中速（Comical_medium-speed.mp3 带连字符）是否正常播放
     bg: 'bg-img-dining bg-hall',
     loc: 'dining',
     lines: [
@@ -938,7 +938,7 @@
     lines: [
       T('七岁。', { bg: 'bg-img-dining bg-hall', loc: 'dining' }),
       T('爱丽丝终于到了做亲和测试的年纪。', { bg: 'bg-img-dining bg-hall', loc: 'dining' }),
-      T('全家人都在礼堂围观。爱丽丝把手放在水晶球上，表情严肃得像是在进行什么神圣的仪式。', { bg: 'bg-img-auditorium bg-hall', loc: 'auditorium' }),
+      T('全家人都在礼堂围观。爱丽丝把手放在水晶球上，表情严肃得像是在进行什么神圣的仪式。', { bg: 'bg-img-dining bg-hall', loc: 'dining' }),
       T('几秒后，青色的光芒亮起，如同流动的风，纯净而轻盈。'),
       { speaker: '魔法师', text: '风亲和！而且纯度极高！这是极为罕见的天赋啊！' },
       T('大家都在欢呼，父亲更是难得地露出笑容。'),

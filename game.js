@@ -2856,6 +2856,8 @@ function stepChain(){
   if(sc.phase) S.phase = sc.phase;
   if(sc.loc){ S.loc = sc.loc; updateLocBar(); }
   updateHUD();
+  // 「视角」演出：pov 场景隐藏顶部 HUD（如贝阿特丽丝大人的一天，以贝蒂视角叙述）
+  if(sc.pov) document.body.classList.add('pov-hidden');
   const go = ()=> playLines(sc.lines || [], ()=>{
     // 场景在没有 freeRoam/choice 的情况下结束 → 衔接下一个场景
     if(storyChain && storyChain.idx < storyChain.queue.length){ stepChain(); }

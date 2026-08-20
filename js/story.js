@@ -744,7 +744,7 @@
 
   // ========== 药神 ==========
   SCENES.s_yaoshen = {
-    bgm: 'comedy_medium', // 临时：用户实机测试滑稽中速（Comical_medium-speed.mp3 带连字符）是否正常播放
+    bgm: 'sacred',
     bg: 'bg-img-dining bg-hall',
     loc: 'dining',
     lines: [

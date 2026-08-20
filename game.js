@@ -1623,11 +1623,16 @@ function renderHotspots(){
   });
 }
 
+function setPov(on){
+  document.body.classList.toggle('pov-hidden', !!on);
+  // 直接内联隐藏/恢复 HUD，确保「视角」一定生效（不依赖 CSS 特异性/缓存）
+  const hud=$('hud'); if(hud){ hud.style.opacity = on ? '0' : ''; hud.style.pointerEvents = on ? 'none' : ''; }
+}
 function enterFreeRoam(){
   // 若剧情链还有后续场景，则直接衔接，不进入自由行动
   if(storyChain && storyChain.idx < storyChain.queue.length){ stepChain(); return; }
   // 「视角」场景结束：恢复顶部 HUD
-  document.body.classList.remove('pov-hidden');
+  setPov(false);
   S.freeRoam=true; awaitingChoice=false; show('action-bar',1); updateHUD(); updateLocBar(); save();
   const box=$('choices'); if(box) box.innerHTML='';
   setSpeaker(null);
@@ -2857,7 +2862,7 @@ function stepChain(){
   if(sc.loc){ S.loc = sc.loc; updateLocBar(); }
   updateHUD();
   // 「视角」演出：pov 场景隐藏顶部 HUD（如贝阿特丽丝大人的一天，以贝蒂视角叙述）
-  if(sc.pov) document.body.classList.add('pov-hidden');
+  if(sc.pov) setPov(true);
   const go = ()=> playLines(sc.lines || [], ()=>{
     // 场景在没有 freeRoam/choice 的情况下结束 → 衔接下一个场景
     if(storyChain && storyChain.idx < storyChain.queue.length){ stepChain(); }
@@ -2887,7 +2892,7 @@ function runScene(id){
   if(sc.loc){ S.loc = sc.loc; updateLocBar(); }
   updateHUD();
   // 「视角」演出：pov 场景隐藏顶部 HUD（如贝阿特丽丝大人的一天，以贝蒂视角叙述）
-  if(sc.pov) document.body.classList.add('pov-hidden');
+  if(sc.pov) setPov(true);
   const go = ()=> playLines(sc.lines || [], sc.done);
   if(sc.card) showCard(sc.card.vol, sc.card.t, sc.card.s, go);
   else go();

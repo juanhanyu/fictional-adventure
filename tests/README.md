@@ -27,6 +27,8 @@ node tests/full_playthrough.js
 | `smoke.js` | **运行时冒烟**：同步桩逐场景跑 `playLines`，触发所有 `do:`/`if:` 闭包与效果副作用，捕捉崩溃。 |
 | `gate_flow.js` | **门控集成**：模拟指定时间/flag 触发门控，用「逐行排空」异步驱动验证场景队列按序完整播放。 |
 | `full_playthrough.js` | **全时间线通关模拟**：从出生起逐季度推进时间并触发门控，验证整部故事走通、无崩溃无卡死。 |
+| `bgm_comedy.js` | **微服私访 BGM**：`comedy_medium` key → `Comical_medium-speed.mp3` 映射/文件存在/`s_micro` 配曲/场景启动实际切曲。 |
+| `continue_scene_bgm.js` | **中途读档**：剧情进行中（s_micro，BGM=comedy_medium）刷新/回标题点「继续存档」必须恢复并重播当前场景\n  （场景 BGM 重新强制播放），多场景队列存档恢复后续场景衔接，自由探索存档不误恢复剧情。 |
 
 ## 关键点
 
@@ -46,3 +48,10 @@ node tests/full_playthrough.js
    CSS 占位。已在三处补登记。
 4. **纯色调背景缺图**：`s_yaoshen / s_charlotte_meet / s_aino_meet / s_aino_sparring / s_tree / s_jikan_arrive /
    s_first_word / s_alice_born / s_start(L34)` 等位置场景只用了色调类、未带对应 `bg-img-*`，按项目规则背景不显示，已补图。
+5. **中途读档丢剧情 + 场景 BGM 落回地点音乐**：存档不记录「进行中的场景」，`continueGame` 对剧情进行中的存档
+   直接播一句「（读取存档）」并进自由探索——剧情被丢弃，而章节 flag 已在触发时置位（如 `ch_micro`），该剧情永不重播；
+   BGM 也随之落回地点推断（微服私访 `s_micro` 开场地点 ownroom/hallway 均为 **peaceful**），表现为
+   「微服私访剧情中应播滑稽中速（comedy_medium）却播放了 peaceful」。已修复：`S` 新增 `scene / queue / qidx`
+   字段（`stepChain`/`runScene` 记录、`enterFreeRoam` 清空），`continueGame` 读到剧情进行中的存档时
+   恢复并重播当前场景（队列存档会重建 `storyChain`，播完自动衔接后续场景），`bgmSceneStart` 随之重新
+   强制播放场景配置的 BGM。另清理 `enterFreeRoam` 里耗尽后残留的悬空 `storyChain`。回归测试：`continue_scene_bgm.js`。

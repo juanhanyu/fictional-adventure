@@ -1004,7 +1004,7 @@ function updateHUD(){
   } else {
     face.style.opacity = '1';
     face.style.filter = 'none';
-    const src = resolvePortrait('sylvia', S.alias==='眷寒渔' ? 'serious' : 'normal');
+    const src = resolvePortrait('sylvia', 'normal');
     if(src) face.src = src;
   }
   show('btn-continue', hasSave());
@@ -2668,8 +2668,7 @@ function openStatsPanel(){
   if(!body){ openPanel('status'); return; }
   // 主角立绘
   const sE = flag('named');
-  const sAlias = S.alias === '眷寒渔';
-  const sSrc = sE ? resolvePortrait('sylvia', sAlias ? 'serious' : 'normal') : null;
+  const sSrc = sE ? resolvePortrait('sylvia', 'normal') : null;
   const portraitHTML = sSrc ? `<div class="stats-portrait"><img src="${sSrc}" style="max-width:160px;max-height:200px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.3)"/></div>` : '';
   const meta = {
     body:{name:'体能', tip:'剑术、奔跑、持剑。影响近战与负重耐性。'},

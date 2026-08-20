@@ -3403,6 +3403,12 @@ document.addEventListener('keydown', e=>{
       if(typeof $('cg-screen').onclick === 'function'){ $('cg-screen').onclick(); }
       return;
     }
+    // 章节报幕 card：空格/回车翻页
+    const cd=$('card');
+    if(cd && !cd.classList.contains('hidden')){
+      if(typeof cd.onclick === 'function'){ cd.onclick(); }
+      return;
+    }
     // 系统弹窗：空格/回车关闭
     const sp=$('sys-popup');
     if(sp && !sp.classList.contains('hidden')){ show(sp,0); return; }

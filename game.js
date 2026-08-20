@@ -144,7 +144,7 @@ function bgmPlay(key, {fade=true}={}){
     const p = el.play();
     if(p && p.catch) p.catch(()=>{ /* 自动播放被拒：等待 bgmUnlock 时重试 */ });
     // 淡入
-    if(fade && !bgmMuted && !muted){ try{ el.volume = 0; }catch(e){} el.volume = 0; bgmFadeTo(el, bgmVolume, 900); }
+    if(fade && !bgmMuted && !muted){ try{ el.volume = 0; }catch(e){} el.volume = 0; bgmFadeTo(el, bgmVolume, 650); }
   };
   if(prev && prev.src){
     const kill = ()=>{ try{ prev.pause(); prev.removeAttribute('src'); }catch(e){} };
@@ -1632,16 +1632,17 @@ function enterFreeRoam(){
   const box=$('choices'); if(box) box.innerHTML='';
   setSpeaker(null);
   const exits = (EXITS[S.loc]||[]).filter(ex=>ex.babyFuss||canUseExit(ex));
-  let tip;
+  let tip = null;
   if(S.ageY<1 && S.loc==='nursery'){
     tip = `（育婴室）\n你还太小，自己走不了多远。\n可以点「闹着要出去」让家人抱你看一眼——然后会被抱回来。\n或点 💠 查看养成、🍂 推进季度。`;
   } else if(exits.length && !flag('roam_hint_seen')){
-    // 每季度「点画面出口移动」提示只出现一次：玩家点过对话框隐藏后，本季度不再反复出现
+    // 每季度「点画面出口移动」提示只出现一次；玩家点过对话框后本季度不再显示该提示
     tip = `（${LOCS[S.loc]?.name||S.loc}）\n点画面出口移动（标 ⚡ 的会耗体力）。`;
-  } else {
+  } else if(!exits.length){
     tip = `（${LOCS[S.loc]?.name||S.loc}）\n想做什么？`;
   }
-  $('text').innerHTML = escapeText(tip);
+  // 本季度已看过出口提示（或无出口）：不再显示「（地点）点画面…」对话框，保持界面干净
+  if(tip !== null) $('text').innerHTML = escapeText(tip);
   renderHotspots();
 }
 function updateLocBar(){

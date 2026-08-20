@@ -1625,8 +1625,9 @@ function renderHotspots(){
 
 function setPov(on){
   document.body.classList.toggle('pov-hidden', !!on);
-  // 直接内联隐藏/恢复 HUD，确保「视角」一定生效（不依赖 CSS 特异性/缓存）
+  // 直接内联隐藏/恢复 HUD 与地点栏，确保「视角」一定生效（不依赖 CSS 特异性/缓存）
   const hud=$('hud'); if(hud){ hud.style.opacity = on ? '0' : ''; hud.style.pointerEvents = on ? 'none' : ''; }
+  const loc=$('loc-bar'); if(loc){ loc.style.opacity = on ? '0' : ''; loc.style.pointerEvents = on ? 'none' : ''; }
 }
 function enterFreeRoam(){
   // 若剧情链还有后续场景，则直接衔接，不进入自由行动

@@ -412,7 +412,8 @@ body.ui-hidden #btn-ui{ opacity:1 !important; pointer-events:auto !important; }
 body.ui-hidden .p-slot, body.ui-hidden .css-p{ pointer-events:none !important }
 
 /* ===== 「视角」演出：隐藏顶部 HUD（如贝阿特丽丝大人的一天，以角色视角叙述） ===== */
-body.pov-hidden #hud{ opacity:0 !important; pointer-events:none !important; transition:opacity .3s }
+body.pov-hidden #hud,
+body.pov-hidden #loc-bar{ opacity:0 !important; pointer-events:none !important; transition:opacity .3s }
 
 /* ===== 对话框独立隐藏（自由探索点击隐藏） ===== */
 #text-box.dialog-hidden{ opacity:0 !important; pointer-events:none !important; transition:opacity .3s }

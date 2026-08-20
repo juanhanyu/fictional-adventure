@@ -226,7 +226,8 @@ function bgmRestoreScene(){
 }
 // 自由探索：进入地点时按背景推断（仅 freeRoam 状态生效，剧情中不覆盖场景 bgm）
 function bgmFreeRoam(cls, phase, loc){
-  if(!S.freeRoam) return; // 剧情中保持场景 bgm
+  if(!S.freeRoam) return;          // 剧情中保持场景 bgm
+  if(sceneBgmType) return;         // 场景 bgm 贯穿，自由探索推断不得覆盖（修复：场景中换背景被 peaceful 覆盖）
   // 只有在「确实切换到了新地点」时才处理 bgm（避免同一地点内点修行/学习/休息等行动结束后重置/换曲）
   if(bgmLoc === loc) return;
   bgmLoc = loc;
@@ -1633,6 +1634,7 @@ function enterFreeRoam(){
   if(storyChain && storyChain.idx < storyChain.queue.length){ stepChain(); return; }
   // 「视角」场景结束：恢复顶部 HUD
   setPov(false);
+  sceneBgmType = null;             // 场景结束，进入自由探索：允许按背景推断切回日常音乐
   S.freeRoam=true; awaitingChoice=false; show('action-bar',1); updateHUD(); updateLocBar(); save();
   const box=$('choices'); if(box) box.innerHTML='';
   setSpeaker(null);

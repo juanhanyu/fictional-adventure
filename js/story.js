@@ -958,12 +958,12 @@
   // ========== 第4.1章 番外·微服出行 ==========
   SCENES.s_micro = {
     bgm: 'comedy_medium', // 微服私访：滑稽中速（连贯但非抓猫式急促）
-    bg: 'bg-img-nursery bg-room',
+    bg: 'bg-img-ownroom bg-room',
     loc: 'ownroom',
     phase: 'youth',
     card: { vol: '第一卷', t: '第4.1章', s: '微服出行' },
     lines: [
-      T('今天姐姐突然兴致大发，叉着腰堵在我房间门口，像个即将发布重大决定的将军。', { bg: 'bg-img-nursery bg-room', loc: 'ownroom', bgm: 'comedy_medium' }),
+      T('今天姐姐突然兴致大发，叉着腰堵在我房间门口，像个即将发布重大决定的将军。', { bg: 'bg-img-ownroom bg-room', loc: 'ownroom', bgm: 'comedy_medium' }),
       DUO(['beatrice','贝阿特丽丝'], ['sylvia','希尔维亚'], 'beatrice', '我们去城里逛逛吧！'),
       DUO(['sylvia','希尔维亚'], ['beatrice','贝阿特丽丝'], 'sylvia', '……啊？'),
       DUO(['beatrice','贝阿特丽丝'], ['sylvia','希尔维亚'], 'beatrice', '三姐妹一起！微服出行！体验民间生活！不带那一堆讨厌的随从，就我们三个！'),
@@ -1153,13 +1153,13 @@
   // ========== 第4.2章 番外·贝阿特丽丝大人的一天 ==========
   SCENES.s_beatrice_day = {
     bgm: 'cheerful',
-    bg: 'bg-img-nursery bg-room',
+    bg: 'bg-img-ownroom bg-room',
     loc: 'ownroom',
     phase: 'youth',
     pov: 'beatrice', // 「视角」演出：以贝蒂视角叙述，隐藏顶部 HUD
     card: { vol: '第一卷', t: '第4.2章', s: '贝阿特丽丝大人的一天' },
     lines: [
-      T('早晨。阳光透过窗帘照在我脸上，像是一根金色的手指在戳我：「起床啦！起床啦！」', { bg: 'bg-img-nursery bg-room', loc: 'ownroom' }),
+      T('早晨。阳光透过窗帘照在我脸上，像是一根金色的手指在戳我：「起床啦！起床啦！」', { bg: 'bg-img-ownroom bg-room', loc: 'ownroom' }),
       T('我翻了个身，把被子往头上一蒙。'),
       DUO(['maid','女仆'], ['beatrice','贝阿特丽丝'], 'maid', '贝阿特丽丝大小姐，该起床了。'),
       DUO(['beatrice','贝阿特丽丝'], ['maid','女仆'], 'beatrice', '再睡五分钟……'),
@@ -1256,7 +1256,7 @@
       DUO(['beatrice','贝阿特丽丝'], ['instructor','剑术教官'], 'beatrice', '我很冷静！！不用休息！再来！我一定要打中你一次！'),
       T('我冷静观察对手的重心和呼吸，往前一踏，剑尖直刺——教官侧身滑过，木剑点在我肩上。'),
       DUO(['instructor','剑术教官'], ['beatrice','贝阿特丽丝'], 'instructor', '进步了。但还是太急，最后一下没稳住。今天就到这里吧。'),
-      T('傍晚。我坐在房间里，心情低落。今天好像什么都没做好。敲门声响起。', { bg: 'bg-img-nursery bg-room', loc: 'ownroom' }),
+      T('傍晚。我坐在房间里，心情低落。今天好像什么都没做好。敲门声响起。', { bg: 'bg-img-ownroom bg-room', loc: 'ownroom' }),
       DUO(['alice','爱丽丝'], ['beatrice','贝阿特丽丝'], 'alice', '姐姐？'),
       DUO(['beatrice','贝阿特丽丝'], ['alice','爱丽丝'], 'beatrice', '进来。'),
       T('门开了，妹妹走进来。她手里端着一杯茶，小心翼翼的。'),

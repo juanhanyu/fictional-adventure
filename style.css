@@ -327,6 +327,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   pointer-events:none;
 }
 .bg-img-nursery{background-image:url(assets/bg/nursery.jpg);background-size:cover;background-position:center}
+.bg-img-ownroom{background-image:url(assets/bg/ownroom.jpg);background-size:cover;background-position:center}
 .bg-img-hallway{background-image:url(assets/bg/hallway.jpg);background-size:cover;background-position:center}
 .bg-img-parlor{background-image:url(assets/bg/parlor.jpg);background-size:cover;background-position:center}
 .bg-img-garden{background-image:url(assets/bg/garden.jpg);background-size:cover;background-position:center}

@@ -3251,6 +3251,36 @@ function newGame(){
   show('title-screen',0); show('game-screen',1);
   runScene('s_start');
 }
+
+/** 测试专用：直接跳转到8岁春（少女期，可触发微服私访） */
+function jumpToAge8Spring(){
+  sfx('click');
+  bgmUnlock();
+  S = baseState();
+  S.ageY = 8;
+  S.year = 8;
+  S.month = 3;
+  S.season = 0; // 春
+  S.st = S.mst;
+  S.hp = S.mhp;
+  S.mp = S.mmp;
+  S.phase = 'youth';
+  S.loc = 'ownroom';
+  
+  // 解锁公爵府主要区域
+  Object.values(LOCS).forEach(L=>{
+    if(L.area === '公爵府' || ['street', 'market', 'plaza'].includes(L.id)){
+      L.unlock = true;
+    }
+  });
+
+  show('title-screen', 0);
+  show('game-screen', 1);
+  updateHUD();
+  updateLocBar();
+  enterFreeRoam();
+  toast('已跳至8岁春（少女期）');
+}
 function continueGame(){
   if(!load()){ toast('没有存档'); return; }
   bgmUnlock(); // 用户点击继续 → 解锁音频
@@ -3271,6 +3301,7 @@ function continueGame(){
 }
 
 $('btn-new').onclick=()=>{ sfx('click'); newGame(); };
+$('btn-test-8y').onclick=()=> jumpToAge8Spring();
 $('btn-continue').onclick=()=>{ sfx('click'); continueGame(); };
 $('btn-title').onclick=()=>{ save(); show('game-screen',0); show('battle-screen',0); show('panel',0); show('title-screen',1); updateHUD(); };
 $('btn-mute').onclick=()=>{

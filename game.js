@@ -756,6 +756,9 @@ function baseState(){
     tasks:{}, // id -> {done,prog}
     ach:{},
     loc:'nursery',
+    scene:null,   // 进行中的场景 id（剧情中存档/读取时恢复用，防止剧情被中途丢弃）
+    queue:null,   // 场景所属的剧情队列（多场景连播时整体恢复用）
+    qidx:null,    // 队列中下一个待播索引（= 当前场景索引+1）
     phase:'prologue', // prologue | childhood | youth | academy | journey | finale
     dayCount:0,
     deaths:0,
@@ -1636,10 +1639,12 @@ function setPov(on){
 function enterFreeRoam(){
   // 若剧情链还有后续场景，则直接衔接，不进入自由行动
   if(storyChain && storyChain.idx < storyChain.queue.length){ stepChain(); return; }
+  storyChain = null; // 队列耗尽/无链：清掉残留引用，避免悬空剧情链
   // 「视角」场景结束：恢复顶部 HUD
   setPov(false);
   sceneBgmType = null; // 场景真正结束：清除场景 bgm，允许自由探索按背景推断切回日常音乐
-  S.freeRoam=true; awaitingChoice=false; show('action-bar',1); updateHUD(); updateLocBar(); save();
+  S.freeRoam=true; S.scene=null; S.queue=null; S.qidx=null; // 剧情结束：清掉剧情进度记录
+  awaitingChoice=false; show('action-bar',1); updateHUD(); updateLocBar(); save();
   const box=$('choices'); if(box) box.innerHTML='';
   setSpeaker(null);
   const exits = (EXITS[S.loc]||[]).filter(ex=>ex.babyFuss||canUseExit(ex));
@@ -2856,6 +2861,7 @@ function stepChain(){
   const sc = SCENES[id];
   if(!sc){ stepChain(); return; }
   currentScene = id;
+  S.scene = id; S.queue = storyChain.queue.slice(); S.qidx = storyChain.idx; // 记录剧情进度：中途存档/读取可恢复当前场景与后续队列
   S.freeRoam = false;
   awaitingChoice = false;
   lineCB = null;
@@ -2886,6 +2892,7 @@ function runScene(id){
   const sc = SCENES[id];
   if(!sc){ console.warn('missing scene', id); toast('剧情缺失：'+id); enterFreeRoam(); return; }
   currentScene = id;
+  S.scene = id; S.queue = null; S.qidx = null; // 独立场景：记录当前场景（无后续队列）
   S.freeRoam = false;
   awaitingChoice = false;
   lineCB = null;
@@ -3273,6 +3280,17 @@ function continueGame(){
   show('title-screen',0); show('game-screen',1);
   updateHUD(); updateLocBar();
   if(S.freeRoam) enterFreeRoam();
+  else if(S.scene && SCENES[S.scene]){
+    // 存档处于剧情进行中（刷新/中途回标题）：恢复当前场景重播，而不是丢弃剧情。
+    // 修复：微服私访等场景中途继续时，场景被中断、BGM 落回地点音乐（如 ownroom 的 peaceful），
+    // 而章节 flag 已置位导致该剧情永不重播。恢复后 bgmSceneStart 会按场景配置重新强制播放场景 BGM。
+    if(S.queue && S.queue.length){
+      storyChain = { queue: S.queue.slice(), idx: Math.max(0, (S.qidx || 1) - 1) }; // 从当前场景重播，播完自动衔接队列剩余场景
+      stepChain();
+    } else {
+      runScene(S.scene);
+    }
+  }
   else playLines([{text:`（读取存档）${dateStr()} · ${LOCS[S.loc]?.name||''}`, freeRoam:true}]);
 }
 

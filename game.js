@@ -917,6 +917,10 @@ function advanceSeason(n=1){
     if(S.ageY>=8){ LOCS.beach.unlock=true; LOCS.ownroom.unlock=true; }
     if(S.ageY>=8 && S.loc==='nursery'){ S.loc='ownroom'; }
   }
+  // 14岁9月起：若此前因特殊操作仍停在海滨别墅等学院外地点，强制跳回学院寝室
+  if(S.phase==='academy' && dateAtLeast(14,9) && !phaseAreaAllowed(LOCS[S.loc]?.area)){
+    S.loc='dorm'; updateLocBar(); setBG('bg-img-dorm bg-room'); renderHotspots();
+  }
   syncStatsToAge();
   updateHUD();
   save();
@@ -1019,6 +1023,8 @@ function showPortrait(charId, emotion='normal', slot='center', active=true){
   const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emotion) : (PORTRAIT_FILES[charId+'_'+(emotion||'normal')]||PORTRAIT_FILES[charId+'_normal']);
   const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
   if(!el) return;
+  // 记录当前角色，供 CSS 按角色微调立绘表现（如爱丽丝白色系高亮偏亮）
+  el.setAttribute('data-char', charId||'');
   const img = el.querySelector('img');
   const nm = el.querySelector('.p-name');
   // 未命名前不显示主角立绘
@@ -1430,13 +1436,17 @@ function cgCharClass(ch){
   if(ch==='alice'||ch==='爱丽丝') return 'c-alice';
   return 'c-narrator';
 }
+let cgImage = null;   // 当前 CG 图（避免连续同图时重复设 background 导致闪烁）
 function cgShow(name){
   // 隐藏全部 UI，显示全屏 CG
   cgActive = true;
-  $('cg-bg').style.backgroundImage = `url(assets/cg/${name})`;
+  if(name !== cgImage){                 // 仅当图片变化时才重设背景，杜绝连续点击时的闪烁
+    cgImage = name;
+    $('cg-bg').style.backgroundImage = `url(assets/cg/${name})`;
+  }
   $('cg-bg').classList.remove('noimg');
-  show('cg-screen', 1);
-  document.body.classList.add('cg-mode');
+  if($('cg-screen').classList.contains('hidden')) show('cg-screen', 1);
+  if(!document.body.classList.contains('cg-mode')) document.body.classList.add('cg-mode');
 }
 function cgText(speaker, text, isNarrator){
   // 在图片下方显示彩色台词（说话人色 / 旁白白色）
@@ -1448,6 +1458,7 @@ function cgText(speaker, text, isNarrator){
 let cgActive = false;
 function cgHide(){
   cgActive = false;
+  cgImage = null;
   show('cg-screen', 0);
   document.body.classList.remove('cg-mode');
   $('cg-bg').style.backgroundImage = '';
@@ -1667,7 +1678,12 @@ document.getElementById('action-bar').onclick = e=>{
 
 function openMap(){
   const g=$('map-grid'); g.innerHTML='';
-  const phaseLocs = Object.values(LOCS).filter(L=> L.unlock && phaseAreaAllowed(L.area));
+  const phaseLocs = Object.values(LOCS).filter(L=> {
+    if(!L.unlock || !phaseAreaAllowed(L.area)) return false;
+    // 逃亡（旅途/终章）后：学院与王都材料市场均不可再通过地图前往
+    if((S.phase==='journey' || S.phase==='finale') && (L.area==='魔法大学' || L.id==='market')) return false;
+    return true;
+  });
   phaseLocs.forEach(L=>{
     // 婴儿（<1岁）：无法通过地图离开育婴室（只能点「闹着要出去」）
     if(S.ageY < 1 && L.id !== 'nursery' && L.id !== 'ownroom') return;
@@ -2191,6 +2207,8 @@ function tryLocEgg(locId){
       ]);
     },
     flowerhouse:()=>{
+      // 艾诺离开（冰融之际·上 13年秋）后，花坊初到事件不再触发
+      if(flag('ch_ice_melt_1')) return;
       S.eggs.push('flowerhouse');
       playLines([
         {ch:'aino',speaker:'艾诺',text:'……它叫伊诺。冬天的孩子。'},

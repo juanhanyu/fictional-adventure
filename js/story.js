@@ -1506,7 +1506,7 @@
   // —— 为控制单文件体积，以下章节仍保持「高密度完整段落」，可继续点季度解锁
 
   SCENES.s_helena = {
-    bgm: 'cheerful',
+    bgm: 'sacred',
     bg: 'bg-img-cafeteria bg-room',
     loc: 'cafeteria',
     phase: 'academy',

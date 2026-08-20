@@ -16,7 +16,7 @@ win.cgText('克劳德', '穿鞋。', false);
 ok('cgText 显示说话人', $('cg-text').innerHTML.includes('穿鞋'));
 ok('cgText 说话人配色', $('cg-text').innerHTML.includes('c-claude'));
 win.cgHide();
-ok('cgHide 隐藏 cg-screen', $('cg-screen').classList.contains('hidden'));
+ok('cgHide 加 faded 淡出', $('cg-screen').classList.contains('faded'));
 ok('cgHide 移除 cg-mode', !win.document.body.classList.contains('cg-mode'));
 
 // 旁白白色

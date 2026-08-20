@@ -789,8 +789,11 @@ const $ = id => document.getElementById(id);
 const show = (el,on=true) => { if(typeof el==='string') el=$(el); if(el) el.classList.toggle('hidden', !on); };
 function toast(msg, ms=2200){ const t=$('toast'); t.textContent=msg; show(t,1); clearTimeout(t._t); t._t=setTimeout(()=>show(t,0),ms); }
 function sysPopup(title, body){
-  const p=$('sys-popup'); p.innerHTML=`<h3>${title}</h3><div>${body}</div><button class="sp-close" onclick="this.parentNode.classList.add('hidden')">确认</button>`;
+  const p=$('sys-popup');
+  p.innerHTML=`<h3>${title}</h3><div>${body}</div><button class="sp-close">确认</button>`;
   show(p,1); sfx('open');
+  // 点弹窗任意处或「确认」都关闭
+  p.onclick=()=>{ show(p,0); };
 }
 function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
 function hasSkill(id){ return S.skills.includes(id); }
@@ -905,6 +908,7 @@ function advanceSeason(n=1){
     while(S.ageD >= 365){ S.ageD -= 365; S.ageY++; }
     flag('talked_today', {});
     S.restThisSeason = 0;
+    flag('roam_hint_seen', 0);   // 每季度重置：自由探索「点画面出口」提示本季度只出现一次
     // restore
     S.st = S.mst; // 换季体力回满
     S.hp = clamp(S.hp + Math.floor(S.mhp*0.5), 0, S.mhp);
@@ -1007,8 +1011,21 @@ function updateHUD(){
 }
 
 function setBG(cls){
-  const bg=$('bg'); bg.className='';
-  (cls||'bg-title').split(/\s+/).forEach(c=>bg.classList.add(c));
+  const bg=$('bg');
+  const newCls = (cls||'bg-title').trim();
+  // 同背景不重复切（也避免多余淡出淡入）
+  if(bg.getAttribute('data-cls')===newCls) return;
+  const apply=()=>{
+    bg.className=''; bg.setAttribute('data-cls', newCls);
+    (newCls||'bg-title').split(/\s+/).forEach(c=>bg.classList.add(c));
+    bg.style.opacity='1';
+  };
+  if(bg.getAttribute('data-cls')){       // 已有背景 → 先淡出再切入（渐进渐出）
+    bg.style.opacity='0';
+    setTimeout(apply, 320);
+  } else {
+    apply();
+  }
   // 不再在此自动切换音乐：场景 bgm 贯穿剧情，自由探索在进入地点时切
 }
 
@@ -1401,6 +1418,8 @@ function bindAdvance(){
       const tb2 = $('text-box');
       const hidden = tb2.classList.toggle('dialog-hidden');
       tb2.title = hidden ? '点击恢复对话框' : '点击继续';
+      // 玩家点过对话框：本季度「点画面出口移动」提示不再出现
+      flag('roam_hint_seen', 1);
       return;
     }
     advanceDialog();
@@ -1445,7 +1464,12 @@ function cgShow(name){
     $('cg-bg').style.backgroundImage = `url(assets/cg/${name})`;
   }
   $('cg-bg').classList.remove('noimg');
-  if($('cg-screen').classList.contains('hidden')) show('cg-screen', 1);
+  const cs=$('cg-screen');
+  if(cs.classList.contains('hidden')){  // 首次进入 CG：淡入
+    cs.classList.add('faded');           // 从透明开始
+    show(cs, 1);
+    requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ cs.classList.remove('faded'); }); });
+  }
   if(!document.body.classList.contains('cg-mode')) document.body.classList.add('cg-mode');
 }
 function cgText(speaker, text, isNarrator){
@@ -1459,7 +1483,11 @@ let cgActive = false;
 function cgHide(){
   cgActive = false;
   cgImage = null;
-  show('cg-screen', 0);
+  const cs=$('cg-screen');
+  if(cs && !cs.classList.contains('hidden')){
+    cs.classList.add('faded');           // 淡出再隐藏
+    setTimeout(()=>{ show(cs, 0); cs.classList.remove('faded'); }, 400);
+  }
   document.body.classList.remove('cg-mode');
   $('cg-bg').style.backgroundImage = '';
   $('cg-text').innerHTML = '';
@@ -1598,6 +1626,8 @@ function renderHotspots(){
 function enterFreeRoam(){
   // 若剧情链还有后续场景，则直接衔接，不进入自由行动
   if(storyChain && storyChain.idx < storyChain.queue.length){ stepChain(); return; }
+  // 「视角」场景结束：恢复顶部 HUD
+  document.body.classList.remove('pov-hidden');
   S.freeRoam=true; awaitingChoice=false; show('action-bar',1); updateHUD(); updateLocBar(); save();
   const box=$('choices'); if(box) box.innerHTML='';
   setSpeaker(null);
@@ -1605,10 +1635,11 @@ function enterFreeRoam(){
   let tip;
   if(S.ageY<1 && S.loc==='nursery'){
     tip = `（育婴室）\n你还太小，自己走不了多远。\n可以点「闹着要出去」让家人抱你看一眼——然后会被抱回来。\n或点 💠 查看养成、🍂 推进季度。`;
+  } else if(exits.length && !flag('roam_hint_seen')){
+    // 每季度「点画面出口移动」提示只出现一次：玩家点过对话框隐藏后，本季度不再反复出现
+    tip = `（${LOCS[S.loc]?.name||S.loc}）\n点画面出口移动（标 ⚡ 的会耗体力）。`;
   } else {
-    tip = exits.length
-      ? `（${LOCS[S.loc]?.name||S.loc}）\n点画面出口移动（标 ⚡ 的会耗体力）。`
-      : `（${LOCS[S.loc]?.name||S.loc}）\n想做什么？`;
+    tip = `（${LOCS[S.loc]?.name||S.loc}）\n想做什么？`;
   }
   $('text').innerHTML = escapeText(tip);
   renderHotspots();
@@ -1846,7 +1877,7 @@ function talkLines(id){
     ] : [
       [{ch:'sophia',emo:'normal',speaker:'索菲亚',text:a<6?'希尔维亚，有好好吃饭吗？':'希尔维亚，最近有没有太拼命练魔法？'}, {text:'母亲的手拂过我的头发。很轻，很暖。', love:'sophia', loveD:1}],
       [{ch:'sophia',speaker:'索菲亚',text:'院子里的鸢尾开了。你父亲从前很喜欢。……别告诉他我说过。'}, {text:'她笑起来的时候，眼睛弯弯的。', love:'sophia', loveD:1, know:'sophia', knowD:3}],
-      [{ch:'sophia',speaker:'索菲亚',text:'三姐妹在一起的时候，家里最吵，也最像家。'}, {text:'我点点头。这句话我想记住。', love:'sophia', loveD:1}],
+      [{ch:'sophia',speaker:'索菲亚',text:'三姐妹在一起的时候，家里最吵，也最像家。'}, {text:'我点点头。这句话我想记住。', love:'sophia', loveD:1, if:()=>flag('ch_alice_born')}],
       [{ch:'sophia',speaker:'索菲亚',text:'累了就靠一会儿。母亲还在。'}, {text:'膝枕的高度刚好。我几乎要睡着。', love:'sophia', loveD:1, st:2}],
     ],
     claude: a<1 ? [
@@ -1925,7 +1956,10 @@ function talkLines(id){
 
   const pool = pools[id];
   if(pool && pool.length){
-    const lines = pick(pool).map(L=>{
+    // 过滤掉首行带 if 条件且当前不满足的对话组（如"三姐妹"需爱丽丝出生后才可聊）
+    const eligible = pool.filter(g=> !(g[0] && typeof g[0].if === 'function') || g[0].if());
+    const source = (eligible && eligible.length) ? eligible : pool;
+    const lines = pick(source).map(L=>{
       // deep copy plain objects
       return Object.assign({}, L);
     });
@@ -2718,7 +2752,9 @@ function getSettings(){
 function setSetting(k, v){
   const s = getSettings(); s[k]=v;
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch(e){}
-  applySettings();
+  // 只应用被改动的项：改亮度绝不触碰 bgm，避免滑动亮度时 BGM 反复淡入淡出卡顿
+  if(k==='bgm'){ bgmSetVolume(v); bgmApplyMute(); }
+  else if(k==='bright'){ applyBrightness(v); }
 }
 function resetSettings(){
   try { localStorage.removeItem(SETTINGS_KEY); } catch(e){}
@@ -2726,9 +2762,10 @@ function resetSettings(){
 }
 function applySettings(){
   const s = getSettings();
-  bgmSetVolume(s.bgm);                  // 更新音量（含持久化到 MUSIC_VOL_KEY）
-  bgmApplyMute();
-  const bg=$('bg'); if(bg) bg.style.filter = s.bright!==1 ? `brightness(${s.bright})` : '';
+  bgmSetVolume(s.bgm); bgmApplyMute(); applyBrightness(s.bright);
+}
+function applyBrightness(v){
+  const bg=$('bg'); if(bg) bg.style.filter = (v && v!==1) ? `brightness(${v})` : '';
 }
 $('btn-panel').onclick=()=>openPanel('status');
 $('btn-panel-close').onclick=()=>show('panel',0);
@@ -2846,6 +2883,8 @@ function runScene(id){
   if(sc.phase) S.phase = sc.phase;
   if(sc.loc){ S.loc = sc.loc; updateLocBar(); }
   updateHUD();
+  // 「视角」演出：pov 场景隐藏顶部 HUD（如贝阿特丽丝大人的一天，以贝蒂视角叙述）
+  if(sc.pov) document.body.classList.add('pov-hidden');
   const go = ()=> playLines(sc.lines || [], sc.done);
   if(sc.card) showCard(sc.card.vol, sc.card.t, sc.card.s, go);
   else go();
@@ -3294,7 +3333,21 @@ advanceDay = function(n){
 // keyboard
 document.addEventListener('keydown', e=>{
   if(e.key==='Escape'){ show('panel',0); show('map-overlay',0); show('help-screen',0); show('codex',0); show('stats-overlay',0); uiShow(); }
-  if(e.key===' ' || e.key==='Enter'){ if(!$('game-screen').classList.contains('hidden')) $('text-box').click(); }
+  if(e.key===' ' || e.key==='Enter'){
+    // CG 演出：空格/回车也能推进下一句
+    if(cgActive && !$('cg-screen').classList.contains('hidden')){
+      if(typeof $('cg-screen').onclick === 'function'){ $('cg-screen').onclick(); }
+      return;
+    }
+    // 系统弹窗：空格/回车关闭
+    const sp=$('sys-popup');
+    if(sp && !sp.classList.contains('hidden')){ show(sp,0); return; }
+    // 各面板：空格关闭
+    if(!$('panel').classList.contains('hidden')){ show('panel',0); return; }
+    if(!$('stats-overlay').classList.contains('hidden')){ show('stats-overlay',0); return; }
+    if(!$('map-overlay').classList.contains('hidden')){ show('map-overlay',0); return; }
+    if(!$('game-screen').classList.contains('hidden')) $('text-box').click();
+  }
   if((e.key==='p'||e.key==='P') && !$('game-screen').classList.contains('hidden')) openPanel('status');
   if((e.key==='m'||e.key==='M') && S.freeRoam) openMap();
 });

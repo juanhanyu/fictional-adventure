@@ -103,7 +103,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .p-slot.dim img{filter:brightness(.45) drop-shadow(0 4px 10px rgba(0,0,0,.4))}
 .p-slot.active img{filter:brightness(1.05) drop-shadow(0 8px 24px rgba(201,162,39,.3));transform:translateY(-4px)}
 /* 爱丽丝为白色系发肤，active 高亮过亮会刺眼，减弱其亮度 */
-.p-slot.active[data-char="alice"] img{filter:brightness(.9) drop-shadow(0 8px 24px rgba(201,162,39,.25));transform:translateY(-4px)}
+.p-slot.active[data-char="alice"] img{filter:brightness(.98) drop-shadow(0 8px 24px rgba(201,162,39,.25));transform:translateY(-4px)}
 .p-name{margin-top:4px;font-size:12px;padding:2px 10px;background:rgba(0,0,0,.55);border-radius:4px;color:#f0e6d0}
 .p-slot.left{align-self:flex-end;margin-right:auto}
 .p-slot.right{align-self:flex-end;margin-left:auto}
@@ -407,16 +407,20 @@ body.ui-hidden #hud .hud-right #btn-mute,
 body.ui-hidden #hud .hud-right #btn-title{
   opacity:0 !important; pointer-events:none !important;
 }
-body.ui-hidden #hud{ transition:opacity .3s; background:transparent !important; border-bottom-color:transparent !important; }
+body.ui-hidden #hud{ transition:opacity .3s; background:transparent !important; border-bottom-color:transparent !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
 body.ui-hidden #btn-ui{ opacity:1 !important; pointer-events:auto !important; }
 body.ui-hidden .p-slot, body.ui-hidden .css-p{ pointer-events:none !important }
+
+/* ===== 「视角」演出：隐藏顶部 HUD（如贝阿特丽丝大人的一天，以角色视角叙述） ===== */
+body.pov-hidden #hud{ opacity:0 !important; pointer-events:none !important; transition:opacity .3s }
 
 /* ===== 对话框独立隐藏（自由探索点击隐藏） ===== */
 #text-box.dialog-hidden{ opacity:0 !important; pointer-events:none !important; transition:opacity .3s }
 
 /* ===== CG 演出层（情绪爆点，隐藏所有UI） ===== */
-#cg-screen{position:fixed;inset:0;z-index:90;background:#000;cursor:pointer}
-#cg-bg{position:absolute;inset:0;background-size:contain;background-position:center;background-repeat:no-repeat}
+#cg-screen{position:fixed;inset:0;z-index:90;background:#000;cursor:pointer;transition:opacity .45s ease}
+#cg-screen.faded{opacity:0}
+#cg-bg{position:absolute;inset:0;background-size:contain;background-position:center;background-repeat:no-repeat;transition:opacity .45s ease}
 #cg-text{position:absolute;left:0;right:0;bottom:0;padding:22px 30px 40px;font-size:22px;line-height:1.9;
   text-align:left;background:linear-gradient(180deg,transparent,rgba(0,0,0,.55) 55%,rgba(0,0,0,.78));min-height:120px}
 #cg-text .cg-speaker{font-weight:700;margin-bottom:6px;letter-spacing:.1em}

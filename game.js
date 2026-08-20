@@ -1074,12 +1074,14 @@ function setSpeaker(name){
 // ========== TEXT ENGINE ==========
 let lineCB = null;
 let typeDoneCB = null;
+let typeBox = null;
 let lineGen = 0;
 let awaitingChoice = false;
 let afterPick = null; // 勇者之赐选卡后，继续播放的剩余台词 {rest, done}
 
-function typeText(str, cb){
-  const box = $('text');
+function typeText(str, cb, targetEl){
+  const box = targetEl || $('text');
+  typeBox = box;
   fullText = String(str ?? '');
   textIdx = 0;
   typing = true;
@@ -1128,7 +1130,7 @@ function skipType(){
   if(!typing) return false;
   clearInterval(typeTimer);
   typing = false;
-  $('text').innerHTML = escapeText(fullText);
+  if(typeBox) typeBox.innerHTML = escapeText(fullText);
   // Arm continue on NEXT click — do not auto-run next line
   lineCB = ()=>{
     const c = typeDoneCB;
@@ -1169,6 +1171,7 @@ function applyLineEffects(L){
     // 切换了背景但本行没有显式立绘指令（纯旁白/事件转换）：视为进入新场景事件，回收立绘
     clearPortraits();
   }
+  if(L.bgm) bgmSceneStart(L.bgm); 
   if(L.sfx) sfx(L.sfx);
   if(L.flag) flag(L.flag, L.flagV !== undefined ? L.flagV : true);
   if(L.love) love(L.love, L.loveD||1);
@@ -1263,13 +1266,14 @@ function playLines(lines, done){
           cgShow(L.cg);                          // 显示对应 CG 图
           // 台词：ch 为说话人（彩色），否则为旁白（白色）
           const isNarr = !L.ch;
-          cgText(L.speaker || (L.ch ? CHARS[L.ch]?.short : null), L.text || '', isNarr);
-          // 点击任意处推进下一句
-          const cgAdvance = ()=>{
-            $('cg-screen').onclick = null;
+          cgText(L.speaker || (L.ch ? CHARS[L.ch]?.short : null), L.text || '', isNarr, ()=>{
             if(gen===lineGen) next();
+          });
+          // 点击任意处推进（或跳过打字）：复用 advanceDialog 逻辑
+          $('cg-screen').onclick = (e)=>{
+            e.stopPropagation();
+            advanceDialog();
           };
-          $('cg-screen').onclick = cgAdvance;
           return;
         }
       }
@@ -1472,18 +1476,21 @@ function cgShow(name){
   }
   if(!document.body.classList.contains('cg-mode')) document.body.classList.add('cg-mode');
 }
-function cgText(speaker, text, isNarrator){
+function cgText(speaker, text, isNarrator, cb){
   // 在图片下方显示彩色台词（说话人色 / 旁白白色）
   const box = $('cg-text');
   const cls = cgCharClass(isNarrator ? null : speaker);
   box.innerHTML = (speaker && !isNarrator ? `<div class="cg-speaker ${cls}">${escapeText(speaker)}</div>` : '')
-    + `<div class="cg-line ${cls}">${escapeText(text)}</div>`;
+    + `<div class="cg-line ${cls}"></div>`;
+  const lineBox = box.querySelector('.cg-line');
+  typeText(text, cb, lineBox);
 }
 let cgActive = false;
 function cgHide(){
   cgActive = false;
   cgImage = null;
   const cs=$('cg-screen');
+  if(cs) cs.onclick = null;
   if(cs && !cs.classList.contains('hidden')){
     cs.classList.add('faded');           // 淡出再隐藏
     setTimeout(()=>{ show(cs, 0); cs.classList.remove('faded'); }, 400);
@@ -1627,6 +1634,7 @@ function setPov(on){
   document.body.classList.toggle('pov-hidden', !!on);
   // 直接内联隐藏/恢复 HUD，确保「视角」一定生效（不依赖 CSS 特异性/缓存）
   const hud=$('hud'); if(hud){ hud.style.opacity = on ? '0' : ''; hud.style.pointerEvents = on ? 'none' : ''; }
+  const locBar=$('loc-bar'); if(locBar){ locBar.style.opacity = on ? '0' : ''; locBar.style.pointerEvents = on ? 'none' : ''; }
 }
 function enterFreeRoam(){
   // 若剧情链还有后续场景，则直接衔接，不进入自由行动

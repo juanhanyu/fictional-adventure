@@ -59,7 +59,7 @@ function checkLine(scene, L, where){
   if(L.portraits){
     for(const p of L.portraits){
       if(!CHARS[p.id]) report('BAD_PCHAR', scene, `${where} portraits 角色「${p.id}」未登记`);
-      if(p.emo && !['normal','happy','sad','shy','smile','serious'].includes(p.emo)) report('BAD_EMO', scene, `${where} portraits emo「${p.emo}」非法`);
+      if(p.emo && !['normal','happy','sad','shy','smile','serious','surprised','wink','teary','sleepy'].includes(p.emo)) report('BAD_EMO', scene, `${where} portraits emo「${p.emo}」非法`);
       if(p.slot && !['left','center','right'].includes(p.slot)) report('BAD_SLOT', scene, `${where} slot「${p.slot}」非法`);
     }
   }

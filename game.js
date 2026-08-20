@@ -1262,11 +1262,24 @@ function playLines(lines, done){
           cgHide();                          // cg:'end' 退出 CG，继续渲染本行的普通文本（fall through）
         } else {
           cgShow(L.cg);                          // 显示对应 CG 图
-          // 台词：ch 为说话人（彩色），否则为旁白（白色）
+          // 台词：ch 为说话人（彩色），否则为旁白（白色），逐字快速打出
           const isNarr = !L.ch;
-          cgText(L.speaker || (L.ch ? CHARS[L.ch]?.short : null), L.text || '', isNarr);
-          // 点击任意处推进下一句
+          const spk = L.speaker || (L.ch ? CHARS[L.ch]?.short : null);
+          cgTextType(spk, L.text || '', isNarr, ()=>{   // 打字完成后的回调
+            if(gen!==lineGen) return;
+            $('cg-screen').onclick = ()=>{ $('cg-screen').onclick=null; if(gen===lineGen) next(); };
+          });
+          // 打字过程中点击：立刻补全整句（不推进），等再次点击才推进
           const cgAdvance = ()=>{
+            if(cgTyping){
+              cgTyping=false;
+              $('cg-screen').onclick = null;
+              // 立即显示完整台词并进入“点一下推进”状态
+              const box=$('cg-text');
+              box.innerHTML = cgSpeakerHtml + cgLineHtml;
+              $('cg-screen').onclick = ()=>{ $('cg-screen').onclick=null; if(gen===lineGen) next(); };
+              return;
+            }
             $('cg-screen').onclick = null;
             if(gen===lineGen) next();
           };
@@ -1473,17 +1486,48 @@ function cgShow(name){
   }
   if(!document.body.classList.contains('cg-mode')) document.body.classList.add('cg-mode');
 }
-function cgText(speaker, text, isNarrator){
-  // 在图片下方显示彩色台词（说话人色 / 旁白白色）
-  const box = $('cg-text');
+let cgTyping = false;      // CG 台词是否正在逐字打出
+let cgSpeakerHtml = '';    // 当前 CG 说话人 HTML（打字补全用）
+let cgLineHtml = '';       // 当前 CG 完整台词 HTML
+function cgBuildHtml(speaker, text, isNarrator){
   const cls = cgCharClass(isNarrator ? null : speaker);
-  box.innerHTML = (speaker && !isNarrator ? `<div class="cg-speaker ${cls}">${escapeText(speaker)}</div>` : '')
-    + `<div class="cg-line ${cls}">${escapeText(text)}</div>`;
+  return {
+    spk: (speaker && !isNarrator ? `<div class="cg-speaker ${cls}">${escapeText(speaker)}</div>` : ''),
+    line: `<div class="cg-line ${cls}">${escapeText(text)}</div>`,
+  };
+}
+// CG 台词逐字快速打出（与一般对话打字机速度一致）
+function cgTextType(speaker, text, isNarrator, done){
+  const box = $('cg-text');
+  const { spk, line } = cgBuildHtml(speaker, text, isNarrator);
+  cgSpeakerHtml = spk; cgLineHtml = line;
+  const full = text || '';
+  if(!full){ box.innerHTML = spk + line; if(done) done(); return; }
+  cgTyping = true;
+  let idx = 0;
+  box.innerHTML = spk + `<div class="cg-line ${cgCharClass(isNarrator?null:speaker)}"></div>`;
+  const timer = setInterval(()=>{
+    if(!cgTyping){ clearInterval(timer); return; }
+    idx = Math.min(full.length, idx + 2);
+    box.innerHTML = spk + `<div class="cg-line ${cgCharClass(isNarrator?null:speaker)}">${escapeText(full.slice(0,idx))}</div>`;
+    if(idx >= full.length){
+      clearInterval(timer); cgTyping = false;
+      box.innerHTML = spk + line;
+      if(done) done();
+    }
+  }, 16);
+}
+function cgText(speaker, text, isNarrator){
+  // 立即显示完整（用于测试/兜底）
+  const box = $('cg-text');
+  const { spk, line } = cgBuildHtml(speaker, text, isNarrator);
+  box.innerHTML = spk + line;
 }
 let cgActive = false;
 function cgHide(){
   cgActive = false;
   cgImage = null;
+  cgTyping = false;
   const cs=$('cg-screen');
   if(cs && !cs.classList.contains('hidden')){
     cs.classList.add('faded');           // 淡出再隐藏
@@ -1626,8 +1670,9 @@ function renderHotspots(){
 
 function setPov(on){
   document.body.classList.toggle('pov-hidden', !!on);
-  // 直接内联隐藏/恢复 HUD，确保「视角」一定生效（不依赖 CSS 特异性/缓存）
+  // 直接内联隐藏/恢复 HUD 与地点标，确保「视角」一定生效（不依赖 CSS 特异性/缓存）
   const hud=$('hud'); if(hud){ hud.style.opacity = on ? '0' : ''; hud.style.pointerEvents = on ? 'none' : ''; }
+  const lb=$('loc-bar'); if(lb){ lb.style.opacity = on ? '0' : ''; lb.style.pointerEvents = on ? 'none' : ''; }
 }
 function enterFreeRoam(){
   // 若剧情链还有后续场景，则直接衔接，不进入自由行动

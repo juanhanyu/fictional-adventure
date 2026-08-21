@@ -1244,10 +1244,9 @@ function applyLineEffects(L){
   if(L.bgm){ bgmSceneStart(L.bgm); }
   if(L.portraits){
     const arr = L.portraits.map(p=>({ id:p.id, emo:p.emo||'normal', active:p.active!==false }));
-    // 单角色旁白(N)：只聚焦该人，保留当前在场的主导者/对话者（避免主导者被顶掉→闪变）；
-    // 多角色(DUO等)：整体 diff 排布（主导者槽位保持、插话者替换对应槽位）。
-    if(arr.length === 1) applyStageFocus(arr[0]);
-    else applyStage(arr);
+    // 单角色旁白(N)：视为「本段聚焦该人」，替换舞台为该人（vignette 段切换）；
+    // 若需在多人对话中特写某动作同时保留主导者，剧情数据应写成 2 元素数组（聚焦人+主导者）。
+    applyStage(arr);
   } else if(L.ch){
     // 单人说：保留当前在场立绘（非说话人置暗，不消除），说话人高亮；若说话人不在场则加入
     applyStage(appendSpeaker(L.ch, L.emo||'normal'));

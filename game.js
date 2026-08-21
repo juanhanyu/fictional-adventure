@@ -1034,28 +1034,83 @@ function setBG(cls){
 
 // ========== PORTRAITS ==========
 const PORTRAIT_SLOTS = ['p-left','p-center','p-right','p-fourth'];
+let stage = [];            // 当前在场立绘 [{id,emo,active}]，顺序=左→右
+let stageSid = null;       // 当前所在场景id（用于场景切换时强制清台）
 function clearPortraits(){
+  // 立即隐藏全部（用于场景/自由探索重置）
   PORTRAIT_SLOTS.forEach(id=>{
     const el=$(id); if(!el) return;
-    el.classList.add('hidden'); el.classList.remove('active','dim');
+    el.classList.add('hidden'); el.classList.remove('active','dim','ps-enter','ps-leave');
   });
   $('css-portraits').innerHTML='';
+  stage = [];
+}
+// 单人说：基于当前 stage，让说话人高亮、其余在场者置暗；说话人不在场则追加
+function appendSpeaker(chId, emo){
+  const next = stage.map(s=>({ id:s.id, emo:s.id===chId?(emo||s.emo):s.emo, active:s.id===chId }));
+  if(!next.some(s=>s.id===chId)) next.push({ id:chId, emo:emo||'normal', active:true });
+  return next;
+}
+// 应用一组立绘：diff 当前 stage → 保留在场者(仅切换高亮/置暗)，离场者淡出，入场者淡入
+function applyStage(next){
+  next = Array.isArray(next) ? next.slice(0,4) : [];
+  // 1) 决定每个槽放谁（顺序=left→right）
+  const n = Math.max(stage.length, next.length);
+  for(let i=0;i<n;i++){
+    const sid = PORTRAIT_SLOTS[i]; if(!sid) break;
+    const el = $(sid); if(!el) continue;
+    const want = next[i] || null;
+    const have = stage[i] || null;
+    if(want && have && want.id===have.id){
+      // 同人：更新 emo/active，不重排、不闪
+      setPortrait(el, want.id, want.emo, want.active!==false);
+      if(el.classList.contains('ps-enter')) el.classList.remove('ps-enter');
+    } else if(want){
+      // 该槽换人/新增：淡入
+      setPortrait(el, want.id, want.emo, want.active!==false);
+      el.classList.remove('hidden');
+      // 触发淡入（先清 hidden 下一帧去 ps-enter）
+      el.classList.remove('ps-leave');
+      el.classList.add('ps-enter');
+      requestAnimationFrame(()=>{ el.classList.remove('ps-enter'); });
+    } else if(have){
+      // 该槽原本有人、现在空：淡出后隐藏
+      el.classList.add('ps-leave');
+      const _el=el;
+      setTimeout(()=>{ if(_el.classList.contains('ps-leave')){ _el.classList.add('hidden'); _el.classList.remove('ps-leave'); } }, 380);
+    }
+  }
+  // 2) 记录新 stage
+  stage = next.map(w=>({ id:w.id, emo:w.emo, active: w.active!==false }));
+  layoutPortraits();
+}
+function setPortrait(el, charId, emotion, active){
+  const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emotion) : (PORTRAIT_FILES[charId+'_'+(emotion||'normal')]||PORTRAIT_FILES[charId+'_normal']);
+  if(!file){ el.classList.add('hidden'); addCssPortrait(charId, active); return; }
+  const img = el.querySelector('img'); const nm = el.querySelector('.p-name');
+  if(charId==='sylvia' && !flag('named')){ el.classList.add('hidden'); return; }
+  img.src = file;
+  el.setAttribute('data-char', charId||'');
+  el.classList.remove('hidden');
+  nm.textContent = (charId==='sylvia' && !flag('named')) ? '？？？' : (CHARS[charId]?.short || charId);
+  el.classList.toggle('active', active); el.classList.toggle('dim', !active);
 }
 // 自适应立绘排布：按实际在场人数 N 分布（1/2/3/4 人各自居中/均匀），
 // 避免「固定槽位填空」的机械感。人数越多越向两侧展开，人数少则更居中。
 function layoutPortraits(){
-  const visible = PORTRAIT_SLOTS.map(id=>$(id)).filter(el=>el && !el.classList.contains('hidden'));
-  const N = visible.length;
+  // 以 stage 为基准（在场人数决定排布），避免淡出中的立绘仍被计导致错位
+  const N = stage.length;
   if(N === 0) return;
   const PRESET = {
     1: [50],
     2: [30, 70],
     3: [20, 50, 80],
     4: [14, 38, 62, 86],
-  }[N] || visible.map((_, i)=> 50);
-  visible.forEach((el, i)=>{
+  }[N] || Array.from({length:N},()=>50);
+  for(let i=0;i<N;i++){
+    const el = $(PORTRAIT_SLOTS[i]); if(!el) continue;
     el.style.left = (PRESET[i] ?? 50) + '%';
-  });
+  }
 }
 function showPortrait(charId, emotion='normal', slot='center', active=true){
   const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emotion) : (PORTRAIT_FILES[charId+'_'+(emotion||'normal')]||PORTRAIT_FILES[charId+'_normal']);
@@ -1182,17 +1237,15 @@ function applyLineEffects(L){
   // 行级 bgm：在场景内切换地点/背景时可强制指定并锁定 BGM，防止引擎误判为自由探索而切回 peaceful
   if(L.bgm){ bgmSceneStart(L.bgm); }
   if(L.portraits){
-    clearPortraits();
-    L.portraits.forEach(p=> showPortrait(p.id, p.emo||'normal', p.slot||'center', p.active!==false));
-    layoutPortraits();
+    // 显式给出在场立绘组（DUO 等）：按顺序 diff 处理（保留在场者、淡出离场者、淡入入场者）
+    applyStage(L.portraits.map(p=>({ id:p.id, emo:p.emo||'normal', active:p.active!==false })));
   } else if(L.ch){
-    clearPortraits();
-    showPortrait(L.ch, L.emo||'normal', L.slot||'center', true);
+    // 单人说：保留当前在场立绘（非说话人置暗，不消除），说话人高亮；若说话人不在场则加入
+    applyStage(appendSpeaker(L.ch, L.emo||'normal'));
     if(!L.speaker && CHARS[L.ch]) L.speaker = CHARS[L.ch].short;
-    layoutPortraits();
-  } else if(L.bg){
+  } else if(L.bg && stage.length){
     // 切换了背景但本行没有显式立绘指令（纯旁白/事件转换）：视为进入新场景事件，回收立绘
-    clearPortraits();
+    applyStage([]);
   }
   if(L.sfx) sfx(L.sfx);
   if(L.flag) flag(L.flag, L.flagV !== undefined ? L.flagV : true);
@@ -1665,6 +1718,7 @@ function renderHotspots(){
       };
     }
   });
+  stage = peeps.slice(0,4).map(id=>({id, emo:'normal', active:true})); // 供 layout 排布
   layoutPortraits();
   if(!usable.length && !peeps.length){ show(box,0); return; }
   show(box,1);
@@ -2932,6 +2986,7 @@ function stepChain(){
   show('action-bar', 0);
   const box = $('choices'); if(box) box.innerHTML = '';
   show('game-screen', 1);
+  clearPortraits();          // 场景切换：重置立绘舞台
   if(sc.bg) setBG(sc.bg);
   bgmSceneStart(sc.bgm); // 记录并播放场景 bgm，贯穿整个场景
   if(sc.phase) S.phase = sc.phase;
@@ -2962,6 +3017,7 @@ function runScene(id){
   show('action-bar', 0);
   const box = $('choices'); if(box) box.innerHTML = '';
   show('game-screen', 1);
+  clearPortraits();          // 场景切换：重置立绘舞台
   if(sc.bg) setBG(sc.bg);
   bgmSceneStart(sc.bgm); // 记录并播放场景 bgm，贯穿整个场景
   if(sc.phase) S.phase = sc.phase;

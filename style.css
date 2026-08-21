@@ -90,9 +90,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 /* ===== STAGE ===== */
 #game-screen{flex:1;display:flex;flex-direction:column;min-height:0}
-#stage{flex:1;display:flex;flex-direction:column;justify-content:flex-end;position:relative;min-height:0;padding:0;--boxh:172px;--bustw:140px}
-/* 自由探索：底部UI显示，对话框只放两行（矮一些）；剧情时底部UI隐藏，可放3-4行 */
-body.roam #stage{--boxh:120px}
+#stage{flex:1;display:flex;flex-direction:column;justify-content:flex-end;position:relative;min-height:0;padding:0;--boxh:154px;--bustw:140px}
+/* 自由探索：底部UI显示，对话栏容纳两排（矮）；剧情时底部UI隐藏，容纳三排 */
+body.roam #stage{--boxh:112px}
 
 #loc-bar{position:absolute;top:8px;left:12px;right:12px;display:flex;gap:10px;align-items:baseline;padding:6px 12px;background:rgba(0,0,0,.45);border-radius:6px;border-left:3px solid var(--gold);font-size:13px;z-index:5}
 #loc-name{font-weight:600;color:var(--gold)}

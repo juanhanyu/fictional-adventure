@@ -99,7 +99,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* portraits */
 #portraits{position:absolute;left:0;right:0;bottom:0;top:40px;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;z-index:4;gap:8px;padding:0 8px}
 .p-slot{display:flex;flex-direction:column;align-items:center;transition:all .4s;max-height:100%}
-.p-slot img{max-height:min(420px,55vh);max-width:min(280px,40vw);object-fit:contain;filter:drop-shadow(0 8px 20px rgba(0,0,0,.5));transition:filter .3s,transform .3s}
+.p-slot img{max-height:min(520px,80vh);max-width:min(320px,30vw);object-fit:contain;filter:drop-shadow(0 8px 20px rgba(0,0,0,.5));transition:filter .3s,transform .3s}
 .p-slot.dim img{filter:brightness(.45) drop-shadow(0 4px 10px rgba(0,0,0,.4))}
 .p-slot.active img{filter:brightness(1.05) drop-shadow(0 8px 24px rgba(201,162,39,.3));transform:translateY(-4px)}
 /* 爱丽丝为白色系发肤，active 高亮过亮会刺眼，减弱其亮度 */
@@ -267,7 +267,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 @media(max-width:600px){
   .title-main{font-size:40px}
   #hud-face{width:40px;height:40px}
-  .p-slot img{max-height:min(280px,40vh)}
+  .p-slot img{max-height:min(360px,60vh);max-width:min(200px,32vw)}
   .css-p{width:110px;height:160px}
   #text{font-size:14px}
   .abtn{padding:6px 10px;font-size:12px}
@@ -316,7 +316,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   cursor:pointer;
 }
 #portraits.roam-npc .p-slot img{
-  max-height:min(360px,48vh);
+  max-height:min(440px,72vh);
   filter:drop-shadow(0 8px 18px rgba(0,0,0,.55));
 }
 #portraits.roam-npc .p-slot:hover img{

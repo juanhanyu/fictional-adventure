@@ -1,7 +1,7 @@
 :root{
   --ink:#1a1520;--paper:#f7f0e6;--gold:#c9a227;--rose:#c45c7a;--ice:#6eb5ff;
   --water:#4a90c8;--fire:#e85d4c;--wind:#7bc47f;--night:#1b1430;
-  --hud:rgba(20,14,30,.82);--box:rgba(250,245,235,.62);--choice:#2a2038;
+  --hud:rgba(20,14,30,.82);--box:#faf5eb;--choice:#2a2038;
   --stamina:#e8b84a;--hp:#e07080;--mp:#6a9fe8;--ok:#5cb88a;
   --serif:'Noto Serif SC',serif;--brush:'Ma Shan Zheng',cursive;
 }
@@ -105,9 +105,9 @@ body.roam #stage{--boxh:96px}
 .p-slot.ps-leave{opacity:0}
 .p-slot img{max-height:min(440px,72vh);max-width:min(260px,26vw);object-fit:contain;filter:drop-shadow(0 8px 20px rgba(0,0,0,.5));transition:filter .3s,transform .3s}
 .p-slot.dim img{filter:brightness(.45) drop-shadow(0 4px 10px rgba(0,0,0,.4))}
-.p-slot.active img{filter:brightness(1.05) drop-shadow(0 8px 24px rgba(201,162,39,.3));transform:translateY(-4px)}
+.p-slot.active img{filter:brightness(1.05) drop-shadow(0 8px 24px rgba(201,162,39,.3))}
 /* 爱丽丝为白色系发肤，active 高亮过亮会刺眼，减弱其亮度 */
-.p-slot.active[data-char="alice"] img{filter:brightness(.98) drop-shadow(0 8px 24px rgba(201,162,39,.25));transform:translateY(-4px)}
+.p-slot.active[data-char="alice"] img{filter:brightness(.98) drop-shadow(0 8px 24px rgba(201,162,39,.25))}
 .p-name{margin-top:4px;font-size:12px;padding:2px 10px;background:rgba(0,0,0,.55);border-radius:4px;color:#f0e6d0;display:none}
 .p-slot.left,.p-slot.center,.p-slot.right,.p-slot.fourth{left:50%}
 
@@ -145,11 +145,11 @@ body.roam #stage{--boxh:96px}
 #css-portraits{position:absolute;left:0;right:0;bottom:var(--boxh);display:flex;justify-content:center;align-items:flex-end;pointer-events:none;z-index:4;min-height:100px}
 
 /* text box */
-#text-box{position:relative;height:var(--boxh);min-height:var(--boxh);background:var(--box);color:var(--ink);border-radius:0;padding:12px 22px 12px calc(var(--bustw) + 20px);box-shadow:none;border:none;cursor:pointer;z-index:6;flex-shrink:0;overflow:hidden;box-sizing:border-box}
+#text-box{position:relative;height:var(--boxh);min-height:var(--boxh);background:var(--box);color:var(--ink);border-radius:0;padding:12px 22px 12px calc(var(--bustw) + 20px);box-shadow:none;border:none;cursor:pointer;z-index:6;flex-shrink:0;overflow:visible;box-sizing:border-box}
 /* 对话内小立绘（说话人胸像）：置于对话栏左缘，下沿与屏幕下沿一致（bottom:0）；比栏高、上 1/4 超出栏顶 */
 #tb-speaker{position:absolute;left:8px;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;z-index:7;pointer-events:none}
-#tb-speaker img{width:calc(var(--bustw) - 18px);height:calc(var(--boxh) + 40px);object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5));transform:translateY(16px)}
-#tb-speaker-name{font-size:15px;color:#2a2038;background:rgba(255,255,255,.5);padding:2px 12px;border-radius:6px;letter-spacing:.05em;text-align:center;max-width:calc(var(--bustw) + 20px)}
+#tb-speaker img{width:calc(var(--bustw) - 18px);height:calc(var(--boxh) + 40px);object-fit:contain;object-position:bottom center;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5));transform:none}
+#tb-speaker-name{font-size:15px;color:#2a2038;background:rgba(255,255,255,.92);padding:2px 12px;border-radius:6px;letter-spacing:.05em;text-align:center;max-width:calc(var(--bustw) + 20px);position:relative;z-index:8;margin-top:-8px;box-shadow:0 2px 8px rgba(0,0,0,.18)}
 #speaker{display:none}
 #text{font-size:20px;line-height:1.75;white-space:pre-wrap;word-break:break-word;overflow:hidden}
 #text .sys{color:#4a6a9a;font-size:17px}
@@ -312,8 +312,6 @@ body.roam #stage{--boxh:96px}
 }
 .hotspot .hs-icon{ display:block; font-size:18px; margin-bottom:2px; }
 .hotspot .hs-cost{ display:block; font-size:10px; opacity:.55; margin-top:2px; }
-.hotspot.person{ border-color:rgba(110,181,255,.5); }
-.hotspot.person:hover{ border-color:var(--ice); }
 .hotspot.egg{ border-color:rgba(120,200,120,.55); }
 #hud-date{ letter-spacing:.04em; }
 
@@ -423,8 +421,6 @@ body.ui-hidden .p-slot, body.ui-hidden .css-p{ pointer-events:none !important }
 body.pov-hidden #hud,
 body.pov-hidden #loc-bar{ opacity:0 !important; pointer-events:none !important; transition:opacity .3s }
 
-/* ===== 对话框独立隐藏（自由探索点击隐藏） ===== */
-#text-box.dialog-hidden{ opacity:0 !important; pointer-events:none !important; transition:opacity .3s }
 
 /* ===== CG 演出层（情绪爆点，隐藏所有UI） ===== */
 #cg-screen{position:fixed;inset:0;z-index:90;background:#000;cursor:pointer;transition:opacity .45s ease}

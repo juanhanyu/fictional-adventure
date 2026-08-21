@@ -1313,7 +1313,6 @@ function playLines(lines, done){
   $('portraits')?.classList.remove('roam-npc');
   const ch = $('choices'); if(ch) ch.innerHTML = '';
   lineCB = null;
-  if($('text-box')) $('text-box').classList.remove('dialog-hidden'); // 新剧情/行动开始时恢复对话框
 
   function finish(){
     if(gen !== lineGen) return;
@@ -1545,15 +1544,6 @@ function bindAdvance(){
   tb.onclick = (e)=>{
     // don't steal clicks from buttons inside
     if(e.target.closest('button')) return;
-    // 自由探索：点击对话框 = 隐藏/显示对话框（沉浸查看场景），再点恢复
-    if(S.freeRoam && !$('choices').children.length){
-      const tb2 = $('text-box');
-      const hidden = tb2.classList.toggle('dialog-hidden');
-      tb2.title = hidden ? '点击恢复对话框' : '点击继续';
-      // 玩家点过对话框：本季度「点画面出口移动」提示不再出现
-      flag('roam_hint_seen', 1);
-      return;
-    }
     advanceDialog();
   };
 }
@@ -1771,16 +1761,6 @@ function renderHotspots(){
       if(ex.babyFuss){ doBabyFuss(ex.fussTo || 'parlor', st); return; }
       enterLoc(ex.to);
     };
-    box.appendChild(b);
-  });
-  // small talk chips near bottom if many
-  peeps.slice(0,3).forEach((id,i)=>{
-    const b=document.createElement('button');
-    b.className='hotspot person';
-    b.style.left = (28 + i*22) + '%';
-    b.style.top = '78%';
-    b.innerHTML = `<span class="hs-icon">💬</span>和${CHARS[id]?.short||id}说话`;
-    b.onclick=(e)=>{ e.stopPropagation(); if(!S.freeRoam) return; sfx('click'); talkTo(id); };
     box.appendChild(b);
   });
 }

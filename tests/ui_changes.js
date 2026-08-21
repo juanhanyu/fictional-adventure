@@ -44,11 +44,12 @@ ok('恢复默认 (bgm=0.5)', Math.abs(win.getSettings().bgm-0.5)<0.001);
 $('btn-ui').onclick(); ok('点击隐藏UI', win.document.body.classList.contains('ui-hidden'));
 $('btn-ui').onclick(); ok('再点恢复UI', !win.document.body.classList.contains('ui-hidden'));
 
-// 自由探索点对话框隐藏
+// 对话框永远常驻：自由探索点击也不隐藏
 win.__resetS(); const st3=win.__getS(); st3.freeRoam=true; win.__setS(st3);
 const tb=$('text-box');
-tb.onclick({target:tb}); ok('自由探索点对话框隐藏', tb.classList.contains('dialog-hidden'));
-tb.onclick({target:tb}); ok('再点恢复对话框', !tb.classList.contains('dialog-hidden'));
+tb.classList.remove('dialog-hidden');
+tb.onclick({target:tb});
+ok('自由探索点击不隐藏对话框', !tb.classList.contains('dialog-hidden'));
 
 console.log(fail===0?'\n  ✓ 全部通过':'\n  ✗ '+fail+' 处失败');
 process.exit(fail?1:0);

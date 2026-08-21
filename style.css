@@ -326,7 +326,6 @@ body.roam #stage{--boxh:96px}
 }
 #portraits.roam-npc .p-slot:hover img{
   filter:brightness(1.08) drop-shadow(0 8px 22px rgba(201,162,39,.35));
-  transform:translateY(-6px);
 }
 #portraits.roam-npc .p-name{
   pointer-events:none;

@@ -9,7 +9,7 @@ const vis=id=>{const el=win.document.getElementById(id);return el&&!el.classList
 const $=id=>win.document.getElementById(id);
 // 按舞台顺序(左→右)取可见立绘
 function orderedStage(){
-  return ['p-left','p-center','p-right','p-fourth'].filter(vis).map(s=>{
+  return ['p-left','p-center','p-right','p-fourth'].filter(s=>{const el=$(s);return el&&!el.classList.contains('hidden')&&!el.classList.contains('ps-leave');}).map(s=>{
     const e=$(s); return {char:e.getAttribute('data-char'), dim:e.classList.contains('dim')};
   });
 }
@@ -25,11 +25,11 @@ win.applyLineEffects({portraits:[{id:'beatrice',slot:'left',active:true},{id:'me
 st=orderedStage();
 ok('换回后 老板回右槽', st[0].char==='beatrice' && st[1].char==='merchant_bakery');
 
-// ② 单角色N聚焦保留在场者
+// ② 单角色N：替换舞台为该人（vignette 段切换）——贝蒂/老板都被老板取代
 win.applyLineEffects({portraits:[{id:'beatrice',slot:'left',active:true},{id:'merchant_bakery',slot:'right',active:false}]});
 win.applyLineEffects({portraits:[{id:'merchant_bakery',slot:'left',active:true}]});
 st=orderedStage();
-ok('单N聚焦老板后 贝蒂保留', st.some(s=>s.char==='beatrice') && st.some(s=>s.char==='merchant_bakery'));
+ok('单N聚焦老板后 舞台只剩老板', st.length===1 && st[0].char==='merchant_bakery');
 
 // ③ 单人说保留在场者置暗
 win.applyLineEffects({portraits:[{id:'beatrice',slot:'left',active:true},{id:'merchant_bakery',slot:'right',active:false}]});

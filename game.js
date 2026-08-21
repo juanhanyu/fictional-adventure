@@ -1045,6 +1045,12 @@ function clearPortraits(){
   $('css-portraits').innerHTML='';
   stage = [];
 }
+// 单角色旁白聚焦：保留当前在场者(主导/对话者)，只把 focus 人高亮、其余置暗；focus 人不在场则追加
+function applyStageFocus(f){
+  const next = stage.map(s=>({ id:s.id, emo:s.id===f.id?(f.emo||s.emo):s.emo, active:s.id===f.id }));
+  if(!next.some(s=>s.id===f.id)) next.push({ id:f.id, emo:f.emo||'normal', active:true });
+  applyStage(next);
+}
 // 单人说：基于当前 stage，让说话人高亮、其余在场者置暗；说话人不在场则追加
 function appendSpeaker(chId, emo){
   const next = stage.map(s=>({ id:s.id, emo:s.id===chId?(emo||s.emo):s.emo, active:s.id===chId }));
@@ -1077,7 +1083,7 @@ function applyStage(next){
       // 该槽原本有人、现在空：淡出后隐藏
       el.classList.add('ps-leave');
       const _el=el;
-      setTimeout(()=>{ if(_el.classList.contains('ps-leave')){ _el.classList.add('hidden'); _el.classList.remove('ps-leave'); } }, 380);
+      setTimeout(()=>{ if(_el.classList.contains('ps-leave')){ _el.classList.add('hidden'); _el.classList.remove('ps-leave'); } }, 240);
     }
   }
   // 2) 记录新 stage
@@ -1237,8 +1243,11 @@ function applyLineEffects(L){
   // 行级 bgm：在场景内切换地点/背景时可强制指定并锁定 BGM，防止引擎误判为自由探索而切回 peaceful
   if(L.bgm){ bgmSceneStart(L.bgm); }
   if(L.portraits){
-    // 显式给出在场立绘组（DUO 等）：按顺序 diff 处理（保留在场者、淡出离场者、淡入入场者）
-    applyStage(L.portraits.map(p=>({ id:p.id, emo:p.emo||'normal', active:p.active!==false })));
+    const arr = L.portraits.map(p=>({ id:p.id, emo:p.emo||'normal', active:p.active!==false }));
+    // 单角色旁白(N)：只聚焦该人，保留当前在场的主导者/对话者（避免主导者被顶掉→闪变）；
+    // 多角色(DUO等)：整体 diff 排布（主导者槽位保持、插话者替换对应槽位）。
+    if(arr.length === 1) applyStageFocus(arr[0]);
+    else applyStage(arr);
   } else if(L.ch){
     // 单人说：保留当前在场立绘（非说话人置暗，不消除），说话人高亮；若说话人不在场则加入
     applyStage(appendSpeaker(L.ch, L.emo||'normal'));

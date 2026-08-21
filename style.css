@@ -98,7 +98,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 /* portraits */
 #portraits{position:absolute;left:0;right:0;bottom:0;top:40px;pointer-events:none;z-index:4}
-.p-slot{position:absolute;bottom:0;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;transition:left .45s ease,opacity .35s ease;max-height:100%}
+.p-slot{position:absolute;bottom:0;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;transition:left .28s ease,opacity .22s ease;max-height:100%}
 .p-slot.ps-enter{opacity:0}
 .p-slot.ps-leave{opacity:0}
 .p-slot img{max-height:min(520px,80vh);max-width:min(320px,30vw);object-fit:contain;filter:drop-shadow(0 8px 20px rgba(0,0,0,.5));transition:filter .3s,transform .3s}

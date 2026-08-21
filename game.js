@@ -1033,15 +1033,33 @@ function setBG(cls){
 }
 
 // ========== PORTRAITS ==========
+const PORTRAIT_SLOTS = ['p-left','p-center','p-right','p-fourth'];
 function clearPortraits(){
-  ['p-left','p-center','p-right'].forEach(id=>{
-    const el=$(id); el.classList.add('hidden'); el.classList.remove('active','dim');
+  PORTRAIT_SLOTS.forEach(id=>{
+    const el=$(id); if(!el) return;
+    el.classList.add('hidden'); el.classList.remove('active','dim');
   });
   $('css-portraits').innerHTML='';
 }
+// 自适应立绘排布：按实际在场人数 N 分布（1/2/3/4 人各自居中/均匀），
+// 避免「固定槽位填空」的机械感。人数越多越向两侧展开，人数少则更居中。
+function layoutPortraits(){
+  const visible = PORTRAIT_SLOTS.map(id=>$(id)).filter(el=>el && !el.classList.contains('hidden'));
+  const N = visible.length;
+  if(N === 0) return;
+  const PRESET = {
+    1: [50],
+    2: [30, 70],
+    3: [20, 50, 80],
+    4: [14, 38, 62, 86],
+  }[N] || visible.map((_, i)=> 50);
+  visible.forEach((el, i)=>{
+    el.style.left = (PRESET[i] ?? 50) + '%';
+  });
+}
 function showPortrait(charId, emotion='normal', slot='center', active=true){
   const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emotion) : (PORTRAIT_FILES[charId+'_'+(emotion||'normal')]||PORTRAIT_FILES[charId+'_normal']);
-  const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
+  const el = $(slot==='left'?'p-left':slot==='right'?'p-right':slot==='fourth'?'p-fourth':'p-center');
   if(!el) return;
   // 记录当前角色，供 CSS 按角色微调立绘表现（如爱丽丝白色系高亮偏亮）
   el.setAttribute('data-char', charId||'');
@@ -1166,10 +1184,12 @@ function applyLineEffects(L){
   if(L.portraits){
     clearPortraits();
     L.portraits.forEach(p=> showPortrait(p.id, p.emo||'normal', p.slot||'center', p.active!==false));
+    layoutPortraits();
   } else if(L.ch){
     clearPortraits();
     showPortrait(L.ch, L.emo||'normal', L.slot||'center', true);
     if(!L.speaker && CHARS[L.ch]) L.speaker = CHARS[L.ch].short;
+    layoutPortraits();
   } else if(L.bg){
     // 切换了背景但本行没有显式立绘指令（纯旁白/事件转换）：视为进入新场景事件，回收立绘
     clearPortraits();
@@ -1629,11 +1649,11 @@ function renderHotspots(){
   clearPortraits();
   const pRoot = $('portraits');
   if(pRoot) pRoot.classList.add('roam-npc');
-  const slots = ['left','center','right'];
-  peeps.slice(0,3).forEach((id,i)=>{
+  const slots = ['left','center','right','fourth'];
+  peeps.slice(0,4).forEach((id,i)=>{
     const slot = slots[i] || 'center';
     showPortrait(id, 'normal', slot, true);
-    const el = $(slot==='left'?'p-left':slot==='right'?'p-right':'p-center');
+    const el = $(slot==='left'?'p-left':slot==='right'?'p-right':slot==='fourth'?'p-fourth':'p-center');
     if(el){
       el.style.pointerEvents = 'auto';
       el.style.cursor = 'pointer';
@@ -1645,6 +1665,7 @@ function renderHotspots(){
       };
     }
   });
+  layoutPortraits();
   if(!usable.length && !peeps.length){ show(box,0); return; }
   show(box,1);
   usable.forEach((ex,i)=>{

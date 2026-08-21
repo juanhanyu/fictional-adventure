@@ -1804,7 +1804,7 @@ function enterFreeRoam(){
   const exits = (EXITS[S.loc]||[]).filter(ex=>ex.babyFuss||canUseExit(ex));
   let tip = null;
   if(S.ageY<1 && S.loc==='nursery'){
-    tip = `（育婴室）\n你还太小，自己走不了多远。\n可以点「闹着要出去」让家人抱你看一眼——然后会被抱回来。\n或点 💠 查看养成、🍂 推进季度。`;
+    tip = `（育婴室）\n你还走不了太远，点「闹着要出去」让家人抱你出去。`;
   } else if(exits.length && !flag('roam_hint_seen')){
     // 每季度「点画面出口移动」提示只出现一次；玩家点过对话框后本季度不再显示该提示
     tip = `（${LOCS[S.loc]?.name||S.loc}）\n点画面出口移动（标 ⚡ 的会耗体力）。`;

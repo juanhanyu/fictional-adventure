@@ -1036,6 +1036,7 @@ function setBG(cls){
 const PORTRAIT_SLOTS = ['p-left','p-center','p-right','p-fourth'];
 let stage = [];            // 当前在场立绘 [{id,emo,active}]，顺序=左→右
 let stageSid = null;       // 当前所在场景id（用于场景切换时强制清台）
+let curSpeakerId = null;   // 当前说话人 id（对话框小胸像用）
 function clearPortraits(){
   // 立即隐藏全部（用于场景/自由探索重置）
   PORTRAIT_SLOTS.forEach(id=>{
@@ -1147,10 +1148,33 @@ function addCssPortrait(charId, active=true){
   d.innerHTML = `<div class="face"></div><div class="cn">${c[0]}</div>`;
   $('css-portraits').appendChild(d);
 }
-function setSpeaker(name){
+function setSpeaker(name, charId){
   const sp=$('speaker');
   if(name){ sp.textContent=name; sp.classList.remove('hidden'); }
   else sp.classList.add('hidden');
+  // 对话框左侧小胸像 + 名字：有名字才显示
+  const tb=$('tb-speaker'); if(!tb) return;
+  const img=$('tb-speaker-img'), nm=$('tb-speaker-name');
+  if(name){
+    tb.classList.remove('hidden');
+    nm.textContent = name;
+    // 尝试按说话人 id 解析立绘；若没给 id 则按名字模糊匹配
+    let id = charId || speakerIdFromName(name);
+    const src = id ? resolvePortrait(id, 'normal') : null;
+    img.src = src || '';
+    img.style.opacity = src ? '1' : '0.15';
+  } else {
+    tb.classList.add('hidden');
+  }
+}
+// 名字 → 角色 id（用于小胸像）
+function speakerIdFromName(name){
+  if(!name) return null;
+  const map = {'希尔维亚':'sylvia','贝阿特丽丝':'beatrice','贝蒂':'beatrice','爱丽丝':'alice','索菲亚':'sophia','克劳德':'claude'};
+  if(map[name]) return map[name];
+  // 其余角色按 CHARS.short 反查
+  for(const id in CHARS){ if(CHARS[id].short===name) return id; }
+  return null;
 }
 
 // ========== TEXT ENGINE ==========
@@ -1242,6 +1266,9 @@ function applyLineEffects(L){
   if(L.loc){ S.loc = L.loc; updateLocBar(); }
   // 行级 bgm：在场景内切换地点/背景时可强制指定并锁定 BGM，防止引擎误判为自由探索而切回 peaceful
   if(L.bgm){ bgmSceneStart(L.bgm); }
+  // 记录当前说话人 id（用于对话框左侧小胸像）：单人说=L.ch；DUO/portraits=active 者
+  curSpeakerId = L.ch || null;
+  if(L.portraits && L.portraits.length){ const act=L.portraits.find(p=>p.active!==false); if(act) curSpeakerId = act.id; }
   if(L.portraits){
     const arr = L.portraits.map(p=>({ id:p.id, emo:p.emo||'normal', active:p.active!==false }));
     // 单角色旁白(N)：视为「本段聚焦该人」，替换舞台为该人（vignette 段切换）；
@@ -1282,6 +1309,7 @@ function playLines(lines, done){
   awaitingChoice = false;
   show('action-bar', 0);
   show('hotspots', 0);
+  document.body.classList.remove('roam');   // 剧情：对话框用 3-4 行高度
   $('portraits')?.classList.remove('roam-npc');
   const ch = $('choices'); if(ch) ch.innerHTML = '';
   lineCB = null;
@@ -1384,7 +1412,7 @@ function playLines(lines, done){
         showCard(L.card.vol, L.card.t, L.card.s, ()=>{
           if(gen !== lineGen) return;
           if(L.text){
-            setSpeaker(L.speaker||null);
+            setSpeaker(L.speaker||null, curSpeakerId);
             typeText(L.text, ()=>{ if(gen===lineGen) next(); });
           } else next();
         });
@@ -1393,7 +1421,7 @@ function playLines(lines, done){
 
       if(L.choices){
         awaitingChoice = true;
-        setSpeaker(L.speaker||null);
+        setSpeaker(L.speaker||null, curSpeakerId);
         clearInterval(typeTimer);
         typing = false;
         typeDoneCB = null;
@@ -1407,7 +1435,7 @@ function playLines(lines, done){
       if(L.goto){ runScene(L.goto); return; }
 
       if(L.freeRoam){
-        setSpeaker(L.speaker||null);
+        setSpeaker(L.speaker||null, curSpeakerId);
         typeText(L.text || '（可以自由行动了。点击画面出口移动，或用下方按钮。）', ()=>{
           if(gen !== lineGen) return;
           enterFreeRoam();
@@ -1437,7 +1465,7 @@ function playLines(lines, done){
 
       // text line
       if(L.text){
-        setSpeaker(L.speaker||null);
+        setSpeaker(L.speaker||null, curSpeakerId);
         typeText(L.text, ()=>{ if(gen===lineGen) next(); });
         return;
       }
@@ -1770,6 +1798,7 @@ function enterFreeRoam(){
   setPov(false);
   sceneBgmType = null;             // 场景结束，进入自由探索：允许按背景推断切回日常音乐
   S.freeRoam=true; awaitingChoice=false; show('action-bar',1); updateHUD(); updateLocBar(); save();
+  document.body.classList.add('roam');   // 自由探索：对话框用两行高度
   const box=$('choices'); if(box) box.innerHTML='';
   setSpeaker(null);
   const exits = (EXITS[S.loc]||[]).filter(ex=>ex.babyFuss||canUseExit(ex));

@@ -1736,15 +1736,12 @@ function renderHotspots(){
     b.className = 'hotspot' + (ex.egg?' egg':'') + (ex.babyFuss?' locked-baby':'');
     b.style.left = (ex.x|| (20+i*20)) + '%';
     b.style.top = (ex.y|| 50) + '%';
-    const st = ex.st||0;
-    const costTxt = st>0 ? `<span class="hs-cost">⚡${st}</span>` : '';
-    b.innerHTML = `<span class="hs-icon">${ex.icon||'➡️'}</span>${ex.label||LOCS[ex.to]?.name||ex.to}${costTxt}`;
+    b.innerHTML = `<span class="hs-icon">${ex.icon||'➡️'}</span>${ex.label||LOCS[ex.to]?.name||ex.to}`;
     b.onclick = (e)=>{
       e.stopPropagation();
       if(!S.freeRoam) return;
       sfx('click');
       if(ex.babyFuss){ doBabyFuss(ex.fussTo || 'parlor', st); return; }
-      if(st>0 && !spendST(st)) return;
       enterLoc(ex.to);
     };
     box.appendChild(b);
@@ -1866,11 +1863,10 @@ function openMap(){
     if(S.ageY < 1 && L.id !== 'nursery' && L.id !== 'ownroom') return;
     const d=document.createElement('button');
     d.className='map-cell'+(S.loc===L.id?' here':'');
-    d.innerHTML=`<span class="mc-icon">${L.icon}</span>${L.name}<div class="mc-cost">${(L.st||0)>0?'⚡'+L.st+' · ':''}${L.area}</div>${L.tags?.includes('egg')&&!S.eggs.includes(L.id)?'<div class="mc-tag">？</div>':''}`;
+    d.innerHTML=`<span class="mc-icon">${L.icon}</span>${L.name}<div class="mc-cost">${L.area}</div>${L.tags?.includes('egg')&&!S.eggs.includes(L.id)?'<div class="mc-tag">？</div>':''}`;
     d.onclick=()=>{
       if(S.loc===L.id){ toast('已经在这里了'); return; }
       if(S.ageY < 1){ toast('你还太小，不能自己走。让家人抱你出去吧。'); return; }
-      if((L.st||0)>0 && !spendST(L.st)) return;
       show('map-overlay',0);
       enterLoc(L.id);
     };

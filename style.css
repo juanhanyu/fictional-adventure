@@ -159,6 +159,7 @@ body.roam #stage{--boxh:120px}
 #more{position:absolute;right:14px;bottom:6px;font-size:12px;color:var(--gold);animation:pulse 1.2s infinite}
 
 #choices{display:flex;flex-direction:column;gap:8px;margin-top:10px;z-index:6;flex-shrink:0;max-height:40vh;overflow-y:auto;overflow-x:hidden;width:100%}
+#choices:empty{display:none}
 .choice{width:100%;box-sizing:border-box;padding:12px 18px;background:linear-gradient(135deg,rgba(40,30,55,.6),rgba(25,18,40,.68));border:1px solid rgba(201,162,39,.3);border-radius:10px;font-size:17px;text-align:left;line-height:1.6;transition:.15s;color:#f0e6d0;max-width:100%;white-space:normal;overflow-wrap:break-word;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .choice:hover:not(:disabled){border-color:var(--gold);background:linear-gradient(135deg,rgba(60,40,80,.95),rgba(35,25,55,.98));transform:translateX(4px)}
 .choice:disabled{opacity:.4;cursor:not-allowed}

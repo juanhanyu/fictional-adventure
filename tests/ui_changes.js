@@ -66,7 +66,7 @@ ok('右下角小三角关闭季度风物框', tb.classList.contains('dialog-hidd
 ok('关闭季度风物框后执行后续逻辑', seasonClosed);
 ok('关闭自由探索提示时清理旧推进状态', win.eval('lineCB===null && typing===false && typeDoneCB===null'));
 
-// 回归：季度推进先持久化到期剧情，关闭风物框后再开始播放。
+// 回归：季度推进先持久化到期剧情，且不提前把剧情写成“已完成”。
 win.__resetS();
 const gateState=win.__getS();
 gateState.ageY=1; gateState.ageD=0; gateState.year=0; gateState.month=6; gateState.season=1;
@@ -76,26 +76,40 @@ win.doNextTime();
 ok('剧情门控前先显示季度风物框', tb.getAttribute('data-roam-prompt')==='season');
 ok('风物框出现前已持久化待播剧情',
   Array.isArray(win.__getS().storyPending) && win.__getS().storyPending.includes('s_first_word'));
-tb.onclick({target:more});
-ok('关闭风物框后触发到期剧情', win.__getCurrentScene()==='s_first_word' && !win.__getS().freeRoam);
+ok('排队阶段不提前写入剧情完成标记', !win.__getS().flags.ch_first_word);
+ok('右下角小三角有独立的提示关闭处理器', typeof more.onclick==='function');
+more.onclick({stopPropagation(){}});
+ok('点击小三角后直接触发到期剧情', win.__getCurrentScene()==='s_first_word' && !win.__getS().freeRoam);
 win.eval("storyChain=null; currentScene=null; S.storyPending=[]; resetDialogAdvanceState(); show('card',0);");
 
-// 旧存档可能只留下“已触发”标记、没有实际播放；迁移时应修复这些失配标记。
+// 即使待播队列被自由探索重置，未完成标记仍为空，下一次门控检查可以重新排队。
+win.__resetS();
+const lostQueueState=win.__getS();
+lostQueueState.ageY=1; lostQueueState.year=1; lostQueueState.month=3; lostQueueState.season=0;
+lostQueueState.phase='childhood'; lostQueueState.loc='nursery'; lostQueueState.freeRoam=true; lostQueueState.flags={};
+win.__setS(lostQueueState);
+win.eval('checkStoryGates({defer:true})');
+win.__getS().storyPending=[];
+win.eval('checkStoryGates({defer:true})');
+ok('待播队列丢失后能够重新建立',
+  !win.__getS().flags.ch_first_word && win.__getS().storyPending.includes('s_first_word'));
+
+// v3 迁移修复此前版本在排队阶段提前写入的 ch_* 标记。
 const repaired=win.eval(`migrateStorySave({
   phase:'childhood',
-  storyGateVersion:0,
+  storyGateVersion:2,
   storyPending:[],
   flags:{ch_first_word:1,ch_alice_born:1}
 })`);
-ok('旧存档会清除失配的已触发标记',
-  repaired.storyGateVersion===2 && !repaired.flags.ch_first_word && !repaired.flags.ch_alice_born);
+ok('v2 旧存档会清除失配的已触发标记',
+  repaired.storyGateVersion===3 && !repaired.flags.ch_first_word && !repaired.flags.ch_alice_born);
 
 // 页面中断后保存在 storyPending 的剧情，读档时必须能够继续。
 win.__resetS();
 const pendingState=win.__getS();
 pendingState.ageY=1; pendingState.year=0; pendingState.month=9; pendingState.season=2;
-pendingState.phase='childhood'; pendingState.flags={ch_first_word:1};
-pendingState.storyGateVersion=2; pendingState.storyPending=['s_first_word'];
+pendingState.phase='childhood'; pendingState.flags={};
+pendingState.storyGateVersion=3; pendingState.storyPending=['s_first_word'];
 win.__setS(pendingState);
 win.eval('resumePendingStories()');
 ok('读档恢复点能重新启动中断剧情',

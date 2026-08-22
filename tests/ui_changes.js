@@ -74,13 +74,18 @@ gateState.phase='childhood'; gateState.loc='nursery'; gateState.freeRoam=true; g
 win.__setS(gateState);
 win.doNextTime();
 ok('季度推进后立即触发到期剧情', win.__getCurrentScene()==='s_first_word' && !win.__getS().freeRoam);
-ok('有到期剧情时不等待季度风物框', tb.getAttribute('data-roam-prompt')!=='season');
+ok('剧情播放期间暂不显示季度风物框', tb.getAttribute('data-roam-prompt')!=='season');
 ok('剧情开始前已持久化当前待播场景',
   Array.isArray(win.__getS().storyPending) && win.__getS().storyPending.includes('s_first_word'));
 ok('剧情尚未完成时不提前写入完成标记', !win.__getS().flags.ch_first_word);
-win.eval("storyChain=null; currentScene=null; S.storyPending=[]; resetDialogAdvanceState(); show('card',0);");
+ok('剧情播放期间保留待显示的季度风物', win.__getS().seasonFlavorPending===true);
+win.eval("storyChain=null; enterFreeRoam(); show('card',0);");
+ok('剧情结束后自动显示季度风物框',
+  tb.getAttribute('data-roam-prompt')==='season' && win.__getS().seasonFlavorPending===false);
+more.onclick({stopPropagation(){}});
+win.eval("currentScene=null; S.storyPending=[]; resetDialogAdvanceState(); show('card',0);");
 
-// 没有到期剧情时才显示风物提示，小三角只负责关闭该提示。
+// 没有到期剧情时直接显示风物提示，小三角只负责关闭该提示。
 win.__resetS();
 const flavorState=win.__getS();
 flavorState.ageY=1; flavorState.ageD=0; flavorState.year=1; flavorState.month=3; flavorState.season=0;

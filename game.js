@@ -767,6 +767,8 @@ function baseState(){
     eggs:[],
     log:[],
     freeRoam:false,
+    storyGateVersion: 2,
+    storyPending: [], // 已到期但尚未完整播放的剧情；刷新/读档后自动恢复
     lastSafe:'nursery',
     // 养成四维（火山的女儿式）0-100
     stats:{ body:5, mind:15, mana:10, charm:8 },
@@ -1000,8 +1002,52 @@ function skipDays(n){ toast("已关闭快进"); return; }
 function skipToAge(y){ toast("已关闭快进，请按季度推进"); return; }
 
 // ========== SAVE ==========
+const STORY_GATE_VERSION = 2;
+const STORY_GATE_FLAGS = [
+  'ch_first_word','ch_alice_born','ch_child_days','ch_age4','ch_yaoshen','ch_sisters_grow',
+  'ch_reno_arrive','ch_alice_affinity','ch_beatrice_day','ch_micro','ch_alice_wind','ch_beatrice_leaves',
+  'ch_academy','ch_opening_ceremony','met_noelle','met_aino','met_charlotte',
+  'ch_helena','ch_aino_sparring','met_ajun','ch_ice_melt_1','ch_seven_mountains',
+  'ch_ice_melt_2','ch_beach','ch_tree','ch_star','did_turnpoint','arrived_jikan','ch_black_name'
+];
+const STORY_GATE_ACADEMY_FLAGS = [
+  'ch_helena','ch_aino_sparring','met_ajun','ch_ice_melt_1','ch_seven_mountains',
+  'ch_ice_melt_2','ch_beach','ch_tree','ch_star','did_turnpoint','arrived_jikan','ch_black_name'
+];
+const STORY_GATE_JOURNEY_FLAGS = ['arrived_jikan','ch_black_name'];
+
+function migrateStorySave(raw){
+  if(!raw || typeof raw!=='object') raw={};
+  raw.flags=Object.assign({},raw.flags||{});
+  if((raw.storyGateVersion||0) < STORY_GATE_VERSION){
+    const ph=raw.phase||'prologue';
+    const repairKeys=(ph==='journey'||ph==='finale')
+      ? STORY_GATE_JOURNEY_FLAGS
+      : ph==='academy'
+        ? STORY_GATE_ACADEMY_FLAGS
+        : STORY_GATE_FLAGS;
+    repairKeys.forEach(k=>{ delete raw.flags[k]; });
+    raw.storyPending=[];
+    raw.storyGateVersion=STORY_GATE_VERSION;
+    raw.flags.story_gate_repaired_v2=1;
+  }
+  if(!Array.isArray(raw.storyPending)) raw.storyPending=[];
+  return raw;
+}
+
 function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
-function load(){ try{ const r=localStorage.getItem(SAVE_KEY); if(r){ S=Object.assign(baseState(), JSON.parse(r)); return true; } }catch(e){} return false; }
+function load(){
+  try{
+    const r=localStorage.getItem(SAVE_KEY);
+    if(r){
+      const raw=migrateStorySave(JSON.parse(r));
+      S=Object.assign(baseState(), raw);
+      save();
+      return true;
+    }
+  }catch(e){ console.error('load save',e); }
+  return false;
+}
 function saveCodex(){ try { localStorage.setItem(CODEX_KEY, JSON.stringify(codex)); } catch(e){} }
 function hasSave(){ return !!localStorage.getItem(SAVE_KEY); }
 
@@ -1926,6 +1972,9 @@ function setPov(on){
 function enterFreeRoam(options={}){
   // 若剧情链还有后续场景，则直接衔接，不进入自由行动
   if(storyChain && storyChain.idx < storyChain.queue.length){ stepChain(); return; }
+  if(storyChain && storyChain.idx >= storyChain.queue.length) storyChain=null;
+  S.storyPending=[];
+  currentScene=null;
   resetDialogAdvanceState();
   // 「视角」场景结束：恢复顶部 HUD
   setPov(false);
@@ -3191,7 +3240,7 @@ if($('btn-stats-close')) $('btn-stats-close').onclick=()=>show('stats-overlay',0
 
 
 // ========== STORY GATES ==========
-function checkStoryGates(){
+function checkStoryGates(options={}){
   const queue = [];
   // 第一卷 公爵篇（按日历触发）
   if(!flag('ch_first_word') && dateAtLeast(0,7)){ flag('ch_first_word',1); queue.push('s_first_word'); }
@@ -3245,22 +3294,47 @@ function checkStoryGates(){
   // 旅途篇
   if((S.phase==='journey'||S.phase==='finale') && !flag('arrived_jikan') && S.dayCount>0){ flag('arrived_jikan',1); queue.push('s_jikan_arrive'); }
   if((S.phase==='journey'||S.phase==='finale') && (!S.alias||S.alias!=='眷寒渔') && !flag('ch_black_name')){ flag('ch_black_name',1); queue.push('s_black_name'); }
-  if(!queue.length) return false;
-  // 逐个触发：第一个立即运行，后续在场景结束后自动衔接
-  runSceneQueue(queue, 0);
+  const validQueue=queue.filter(id=>SCENES[id]);
+  if(!validQueue.length) return false;
+  // 季度风物框显示期间先把队列写入存档；即使刷新页面也不会丢失剧情。
+  if(options.defer){
+    S.storyPending=validQueue.slice();
+    save();
+    return true;
+  }
+  runSceneQueue(validQueue, 0);
+  return true;
+}
+function resumePendingStories(){
+  const pending=(Array.isArray(S.storyPending)?S.storyPending:[]).filter(id=>SCENES[id]);
+  if(!pending.length){ S.storyPending=[]; return false; }
+  runSceneQueue(pending,0);
   return true;
 }
 function runSceneQueue(queue, idx){
-  storyChain = { queue: (queue||[]).slice(), idx: idx || 0 };
+  const valid=(queue||[]).filter(id=>SCENES[id]);
+  const start=clamp(idx||0,0,valid.length);
+  if(start>=valid.length){ storyChain=null; S.storyPending=[]; save(); return false; }
+  storyChain = { queue: valid, idx: start };
+  S.storyPending=valid.slice(start);
+  save();
   stepChain();
+  return true;
 }
 function stepChain(){
   if(!storyChain) return;
-  if(storyChain.idx >= storyChain.queue.length){ storyChain = null; return; }
+  if(storyChain.idx >= storyChain.queue.length){
+    storyChain = null;
+    S.storyPending=[];
+    save();
+    return;
+  }
+  const currentIdx=storyChain.idx;
   const id = storyChain.queue[storyChain.idx++];
   const sc = SCENES[id];
   if(!sc){ stepChain(); return; }
   currentScene = id;
+  S.storyPending=storyChain.queue.slice(currentIdx);
   resetDialogAdvanceState();
   S.freeRoam = false;
   awaitingChoice = false;
@@ -3289,6 +3363,7 @@ function stepChain(){
 const SCENES = {};
 function runScene(id){
   storyChain = null;
+  S.storyPending=[id];
   const sc = SCENES[id];
   if(!sc){ console.warn('missing scene', id); toast('剧情缺失：'+id); enterFreeRoam(); return; }
   currentScene = id;
@@ -3684,6 +3759,9 @@ function continueGame(){
   });
   show('title-screen',0); show('game-screen',1);
   updateHUD(); updateLocBar();
+  // 先恢复被刷新中断的剧情；旧存档则重新检查并补播已到期剧情。
+  if(resumePendingStories()) return;
+  if(checkStoryGates()) return;
   if(S.freeRoam) enterFreeRoam();
   else playLines([{text:`（读取存档）${dateStr()} · ${LOCS[S.loc]?.name||''}`, freeRoam:true}]);
 }
@@ -3714,7 +3792,10 @@ doNextTime = function(){
   const steps = S.ageY < 1 ? 4 : 1;
   for(let i = 0; i < steps; i++) advanceSeason(1);
   enterFreeRoam({deferGreeting:true});
+  // 门控和持久化不再依赖风物框的小三角回调。
+  checkStoryGates({defer:true});
   showSeasonFlavor(()=>{
+    if(resumePendingStories()) return;
     if(checkStoryGates()) return;
     updateHUD();
     renderHotspots();

@@ -1206,6 +1206,17 @@ let awaitingChoice = false;
 let afterPick = null; // 勇者之赐选卡后，继续播放的剩余台词 {rest, done}
 let roamPromptDone = null; // 自由探索提示由右下角三角关闭后执行
 
+// 自由探索提示与剧情打字机共用一个对话框；每次切换模式必须清掉旧推进状态，
+// 否则右下角三角会被残留的 lineCB 当成普通剧情点击，季度剧情门控就不会执行。
+function resetDialogAdvanceState(){
+  clearInterval(typeTimer);
+  typing = false;
+  lineCB = null;
+  typeDoneCB = null;
+  fullText = '';
+  textIdx = 0;
+}
+
 // 按完整文本估算实际显示行数；无底部 UI 时依 1—3 行垂直居中
 function setDialogRows(str){
   const tb=$('text-box'), text=$('text');
@@ -1610,7 +1621,8 @@ function bindAdvance(){
     // don't steal clicks from buttons inside
     if(e.target.closest('button')) return;
     // 自由探索提示只有点击右下角小三角才能关闭；空格或点击框内其他位置均不关闭
-    if(S.freeRoam && !typing && !lineCB && !awaitingChoice){
+    const hasRoamPrompt = tb.hasAttribute('data-roam-prompt');
+    if(S.freeRoam && hasRoamPrompt && !typing && !awaitingChoice){
       const dismiss = !!(e.target.closest && e.target.closest('#more'));
       if(!dismiss) return;
       const promptKind=tb.getAttribute('data-roam-prompt');
@@ -1618,6 +1630,7 @@ function bindAdvance(){
       if(promptKind==='greeting' && greetingChar) markRoamGreetingDismissed(greetingChar);
       const afterPrompt=roamPromptDone;
       roamPromptDone=null;
+      resetDialogAdvanceState();
       tb.classList.add('dialog-hidden');
       tb.classList.remove('season-flavor');
       tb.removeAttribute('data-roam-prompt');
@@ -1913,6 +1926,7 @@ function setPov(on){
 function enterFreeRoam(options={}){
   // 若剧情链还有后续场景，则直接衔接，不进入自由行动
   if(storyChain && storyChain.idx < storyChain.queue.length){ stepChain(); return; }
+  resetDialogAdvanceState();
   // 「视角」场景结束：恢复顶部 HUD
   setPov(false);
   sceneBgmType = null;             // 场景结束，进入自由探索：允许按背景推断切回日常音乐
@@ -1946,6 +1960,7 @@ function seasonFlavorText(season=S.season){
 }
 function showSeasonFlavor(done){
   const tb=$('text-box');
+  resetDialogAdvanceState();
   const text=seasonFlavorText();
   setSpeaker(null);
   setDialogRows(text);
@@ -2046,6 +2061,7 @@ function maybeShowRoamGreeting(){
 
 function showRoamGreeting(charId, locId=S.loc){
   if(!charId || !CHARS[charId]) return false;
+  resetDialogAdvanceState();
   const tb=$('text-box');
   const greeting=roamGreetingText(charId, locId);
   roamPromptDone=null;
@@ -3245,9 +3261,9 @@ function stepChain(){
   const sc = SCENES[id];
   if(!sc){ stepChain(); return; }
   currentScene = id;
+  resetDialogAdvanceState();
   S.freeRoam = false;
   awaitingChoice = false;
-  lineCB = null;
   show('action-bar', 0);
   const box = $('choices'); if(box) box.innerHTML = '';
   show('game-screen', 1);
@@ -3276,9 +3292,9 @@ function runScene(id){
   const sc = SCENES[id];
   if(!sc){ console.warn('missing scene', id); toast('剧情缺失：'+id); enterFreeRoam(); return; }
   currentScene = id;
+  resetDialogAdvanceState();
   S.freeRoam = false;
   awaitingChoice = false;
-  lineCB = null;
   show('action-bar', 0);
   const box = $('choices'); if(box) box.innerHTML = '';
   show('game-screen', 1);

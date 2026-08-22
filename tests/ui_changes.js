@@ -1,5 +1,5 @@
 'use strict';
-// 验证 UI 改动：无 btn-map、btn-ui(🌙)、阶段中文、勇者之赐计数、无记忆模块、设置模块、自由探索点对话框隐藏
+// 验证 UI 改动：按钮/设置、自由探索提示关闭、季度直接推进与对话框恢复
 const h=require('./harness.js');
 const win=h.win;
 const $=(id)=>win.document.getElementById(id);
@@ -44,12 +44,16 @@ ok('恢复默认 (bgm=0.5)', Math.abs(win.getSettings().bgm-0.5)<0.001);
 $('btn-ui').onclick(); ok('点击隐藏UI', win.document.body.classList.contains('ui-hidden'));
 $('btn-ui').onclick(); ok('再点恢复UI', !win.document.body.classList.contains('ui-hidden'));
 
-// 对话框永远常驻：自由探索点击也不隐藏
+// 自由探索提示：点击一次后本季度隐藏；剧情开始时恢复
 win.__resetS(); const st3=win.__getS(); st3.freeRoam=true; win.__setS(st3);
 const tb=$('text-box');
 tb.classList.remove('dialog-hidden');
 tb.onclick({target:tb});
-ok('自由探索点击不隐藏对话框', !tb.classList.contains('dialog-hidden'));
+ok('自由探索点击隐藏提示对话框', tb.classList.contains('dialog-hidden'));
+ok('记录本季度提示已关闭', win.__getS().flags.roam_hint_seen===1);
+win.playLines([{text:'测试剧情'}]);
+ok('剧情开始恢复对话框', !tb.classList.contains('dialog-hidden'));
+ok('下个季度按钮直接推进、无二次选择对话框', !win.doNextTime.toString().includes('choices'));
 
 console.log(fail===0?'\n  ✓ 全部通过':'\n  ✗ '+fail+' 处失败');
 process.exit(fail?1:0);

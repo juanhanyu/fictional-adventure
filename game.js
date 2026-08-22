@@ -1309,7 +1309,9 @@ function playLines(lines, done){
   awaitingChoice = false;
   show('action-bar', 0);
   show('hotspots', 0);
-  document.body.classList.remove('roam');   // 剧情：对话框用 3-4 行高度
+  const dialogBox = $('text-box');
+  if(dialogBox){ dialogBox.classList.remove('dialog-hidden'); dialogBox.removeAttribute('data-roam-prompt'); }
+  document.body.classList.remove('roam');   // 剧情：恢复完整高度对话框
   $('portraits')?.classList.remove('roam-npc');
   const ch = $('choices'); if(ch) ch.innerHTML = '';
   lineCB = null;
@@ -1544,6 +1546,15 @@ function bindAdvance(){
   tb.onclick = (e)=>{
     // don't steal clicks from buttons inside
     if(e.target.closest('button')) return;
+    // 自由探索提示再次点击后，本季度不再显示地点/季度类提示；剧情对话不受影响
+    if(S.freeRoam && !typing && !lineCB && !awaitingChoice){
+      flag('roam_hint_seen', 1);
+      tb.classList.add('dialog-hidden');
+      tb.removeAttribute('data-roam-prompt');
+      $('text').innerHTML = '';
+      save();
+      return;
+    }
     advanceDialog();
   };
 }
@@ -1771,28 +1782,39 @@ function setPov(on){
   const hud=$('hud'); if(hud){ hud.style.opacity = on ? '0' : ''; hud.style.pointerEvents = on ? 'none' : ''; }
   const lb=$('loc-bar'); if(lb){ lb.style.opacity = on ? '0' : ''; lb.style.pointerEvents = on ? 'none' : ''; }
 }
-function enterFreeRoam(){
+function enterFreeRoam(options={}){
   // 若剧情链还有后续场景，则直接衔接，不进入自由行动
   if(storyChain && storyChain.idx < storyChain.queue.length){ stepChain(); return; }
   // 「视角」场景结束：恢复顶部 HUD
   setPov(false);
   sceneBgmType = null;             // 场景结束，进入自由探索：允许按背景推断切回日常音乐
   S.freeRoam=true; awaitingChoice=false; show('action-bar',1); updateHUD(); updateLocBar(); save();
-  document.body.classList.add('roam');   // 自由探索：对话框用两行高度
+  document.body.classList.add('roam');
   const box=$('choices'); if(box) box.innerHTML='';
   setSpeaker(null);
+  const nextBtn=document.querySelector('[data-act="next"]');
+  if(nextBtn) nextBtn.textContent = S.ageY < 1 ? '🍂 下一年' : '🍂 下个季度';
   const exits = (EXITS[S.loc]||[]).filter(ex=>ex.babyFuss||canUseExit(ex));
   let tip = null;
-  if(S.ageY<1 && S.loc==='nursery'){
-    tip = `（育婴室）\n你还走不了太远，点「闹着要出去」让家人抱你出去。`;
-  } else if(exits.length && !flag('roam_hint_seen')){
-    // 每季度「点画面出口移动」提示只出现一次；玩家点过对话框后本季度不再显示该提示
-    tip = `（${LOCS[S.loc]?.name||S.loc}）\n点画面出口移动（标 ⚡ 的会耗体力）。`;
-  } else if(!exits.length){
-    tip = `（${LOCS[S.loc]?.name||S.loc}）\n想做什么？`;
+  if(!options.suppressPrompt && !flag('roam_hint_seen')){
+    if(S.ageY<1 && S.loc==='nursery'){
+      tip = `（育婴室）\n你还走不了太远，点「闹着要出去」让家人抱你出去。`;
+    } else if(exits.length){
+      tip = `（${LOCS[S.loc]?.name||S.loc}）\n点画面出口移动（标 ⚡ 的会耗体力）。`;
+    } else {
+      tip = `（${LOCS[S.loc]?.name||S.loc}）\n想做什么？`;
+    }
   }
-  // 本季度已看过出口提示（或无出口）：不再显示「（地点）点画面…」对话框，保持界面干净
-  if(tip !== null) $('text').innerHTML = escapeText(tip);
+  const dialogBox=$('text-box');
+  if(tip !== null){
+    dialogBox.classList.remove('dialog-hidden');
+    dialogBox.setAttribute('data-roam-prompt','1');
+    $('text').innerHTML = escapeText(tip);
+  } else {
+    dialogBox.classList.add('dialog-hidden');
+    dialogBox.removeAttribute('data-roam-prompt');
+    $('text').innerHTML = '';
+  }
   renderHotspots();
 }
 function updateLocBar(){
@@ -3441,38 +3463,15 @@ $('btn-codex').onclick=()=>{
 };
 $('btn-codex-close').onclick=()=>show('codex',0);
 
-// ending shortcut in free roam - advance time much / menu
-// Add special next actions when age high
-const _doNext = doNextTime;
+// 自由探索底部按钮直接推进季度，不再弹出二次选择或换季提示对话框
 doNextTime = function(){
-  const ch = [];
-  // 婴儿期（<1岁）显示"下一年"，否则显示"下个季度"
-  const nextLabel = S.ageY < 1 ? '🍂 进入下一年' : '🍂 进入下个季度';
-  ch.push({
-    text: nextLabel,
-    do: function(){
-      // 婴儿期每次推进一年（4个季度），否则推进一个季度
-      const steps = S.ageY < 1 ? 4 : 1;
-      for(let i = 0; i < steps; i++) advanceSeason(1);
-      if(checkStoryGates()) return;
-      enterFreeRoam();
-      var tip = dateStr() + '。风物换了季节。体力已恢复。\n点出口继续探索，或再开季度菜单。';
-      var te = $('text');
-      if(te) te.innerHTML = escapeText(tip);
-      toast(dateStr() + ' · 体力已恢复');
-      updateHUD();
-      renderHotspots();
-    }
-  });
-  ch.push({ text: '💤 休息（恢复体力）', do: function(){ doRest(); } });
-
-  // 所有剧情已改为换季自动触发
-  if(S.phase==='journey' || S.phase==='finale'){
-    ch.push({text:'北林讨伐 ⚡3', do:function(){ if(!spendST(3)) return; startBattle({name:'灰棘狼群',emoji:'🐺',hp:50+S.lv*2,atk:6+S.tier*2,exp:35,gold:8},function(){ S.gold+=8; addExp(10); enterFreeRoam(); }); }});
-  }
-  ch.push({text:'取消', do:function(){ enterFreeRoam(); }});
-
-  playLines([{text:'这个季度要做什么？\n（选「进入下个季度」会推进时间并恢复体力）', choices: ch}]);
+  const steps = S.ageY < 1 ? 4 : 1;
+  for(let i = 0; i < steps; i++) advanceSeason(1);
+  if(checkStoryGates()) return;
+  enterFreeRoam({suppressPrompt:true});
+  toast(dateStr() + ' · 体力已恢复');
+  updateHUD();
+  renderHotspots();
 };
 
 

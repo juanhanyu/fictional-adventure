@@ -66,21 +66,32 @@ ok('右下角小三角关闭季度风物框', tb.classList.contains('dialog-hidd
 ok('关闭季度风物框后执行后续逻辑', seasonClosed);
 ok('关闭自由探索提示时清理旧推进状态', win.eval('lineCB===null && typing===false && typeDoneCB===null'));
 
-// 回归：季度推进先持久化到期剧情，且不提前把剧情写成“已完成”。
+// 回归：季度推进后，到期剧情应立即播放，与季度提示的小三角无关。
 win.__resetS();
 const gateState=win.__getS();
 gateState.ageY=1; gateState.ageD=0; gateState.year=0; gateState.month=6; gateState.season=1;
 gateState.phase='childhood'; gateState.loc='nursery'; gateState.freeRoam=true; gateState.flags={};
 win.__setS(gateState);
 win.doNextTime();
-ok('剧情门控前先显示季度风物框', tb.getAttribute('data-roam-prompt')==='season');
-ok('风物框出现前已持久化待播剧情',
+ok('季度推进后立即触发到期剧情', win.__getCurrentScene()==='s_first_word' && !win.__getS().freeRoam);
+ok('有到期剧情时不等待季度风物框', tb.getAttribute('data-roam-prompt')!=='season');
+ok('剧情开始前已持久化当前待播场景',
   Array.isArray(win.__getS().storyPending) && win.__getS().storyPending.includes('s_first_word'));
-ok('排队阶段不提前写入剧情完成标记', !win.__getS().flags.ch_first_word);
+ok('剧情尚未完成时不提前写入完成标记', !win.__getS().flags.ch_first_word);
+win.eval("storyChain=null; currentScene=null; S.storyPending=[]; resetDialogAdvanceState(); show('card',0);");
+
+// 没有到期剧情时才显示风物提示，小三角只负责关闭该提示。
+win.__resetS();
+const flavorState=win.__getS();
+flavorState.ageY=1; flavorState.ageD=0; flavorState.year=1; flavorState.month=3; flavorState.season=0;
+flavorState.phase='childhood'; flavorState.loc='nursery'; flavorState.freeRoam=true;
+flavorState.flags={ch_first_word:1};
+win.__setS(flavorState);
+win.doNextTime();
+ok('没有到期剧情时显示季度风物框', tb.getAttribute('data-roam-prompt')==='season');
 ok('右下角小三角有独立的提示关闭处理器', typeof more.onclick==='function');
 more.onclick({stopPropagation(){}});
-ok('点击小三角后直接触发到期剧情', win.__getCurrentScene()==='s_first_word' && !win.__getS().freeRoam);
-win.eval("storyChain=null; currentScene=null; S.storyPending=[]; resetDialogAdvanceState(); show('card',0);");
+ok('小三角只关闭普通季度提示', tb.classList.contains('dialog-hidden') && win.__getCurrentScene()===null);
 
 // 即使待播队列被自由探索重置，未完成标记仍为空，下一次门控检查可以重新排队。
 win.__resetS();

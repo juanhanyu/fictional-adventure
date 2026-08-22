@@ -769,6 +769,7 @@ function baseState(){
     freeRoam:false,
     storyGateVersion: 3,
     storyPending: [], // 已到期但尚未完整播放的剧情；刷新/读档后自动恢复
+    seasonFlavorPending: false, // 本次季度风物等待剧情结束后显示
     lastSafe:'nursery',
     // 养成四维（火山的女儿式）0-100
     stats:{ body:5, mind:15, mana:10, charm:8 },
@@ -2055,6 +2056,8 @@ function enterFreeRoam(options={}){
   dialogBox.removeAttribute('data-greeting-char');
   $('text').innerHTML = '';
   renderHotspots();
+  // 由季度推进触发的剧情全部结束后，再补显示该季度的风物提示。
+  if(showPendingSeasonFlavor()) return;
   if(!options.deferGreeting) maybeShowRoamGreeting();
 }
 
@@ -2082,6 +2085,15 @@ function showSeasonFlavor(done){
   roamPromptDone = typeof done==='function' ? done : null;
   save();
   return text;
+}
+function showPendingSeasonFlavor(){
+  if(!S.seasonFlavorPending) return false;
+  S.seasonFlavorPending=false;
+  showSeasonFlavor(()=>{
+    updateHUD();
+    renderHotspots();
+  });
+  return true;
 }
 
 function updateLocBar(){
@@ -3848,13 +3860,11 @@ doNextTime = function(){
   const steps = S.ageY < 1 ? 4 : 1;
   for(let i = 0; i < steps; i++) advanceSeason(1);
   enterFreeRoam({deferGreeting:true});
-  // 到期剧情由日期推进立即触发，与季度提示及其小三角完全无关。
+  // 无论本季度是否有剧情，风物提示都要显示；有剧情时延后到全部剧情结束。
+  S.seasonFlavorPending=true;
+  save();
   if(checkStoryGates()) return;
-  // 本季度没有剧情时，才显示普通风物提示。
-  showSeasonFlavor(()=>{
-    updateHUD();
-    renderHotspots();
-  });
+  showPendingSeasonFlavor();
   updateHUD();
   renderHotspots();
 };

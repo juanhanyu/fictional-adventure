@@ -84,16 +84,24 @@ ok('人物问候保留底部 UI', !$('action-bar').classList.contains('hidden'))
 ok('人物问候标记为 greeting', tb.getAttribute('data-roam-prompt')==='greeting');
 ok('人物问候显示角色小立绘', !$('tb-speaker').classList.contains('hidden'));
 
-// 无底部 UI 时按 1/2/3/4 行应用固定行位
+// 无底部 UI 时最多使用三行，并按实际行数垂直居中
 win.document.body.classList.remove('roam');
 win.setDialogRows('一行');
-ok('一行文本使用第二行位置', tb.classList.contains('dialog-rows-1'));
+ok('一行文本使用居中行位', tb.classList.contains('dialog-rows-1'));
 win.setDialogRows('第一行\n第二行');
-ok('两行文本使用二三行位置', tb.classList.contains('dialog-rows-2'));
+ok('两行文本使用居中行位', tb.classList.contains('dialog-rows-2'));
 win.setDialogRows('一\n二\n三');
-ok('三行文本使用一二三行位置', tb.classList.contains('dialog-rows-3'));
+ok('三行文本使用完整三行', tb.classList.contains('dialog-rows-3'));
 win.setDialogRows('一\n二\n三\n四');
-ok('四行文本完整容纳', tb.classList.contains('dialog-rows-4'));
+ok('四行及以上按三行容量处理', tb.classList.contains('dialog-rows-3') && !tb.classList.contains('dialog-rows-4'));
+
+// 底部 UI 高度以实测值写入 --abh，供自由探索对话框动态扣减
+const actionBar=$('action-bar'), gameScreen=$('game-screen');
+const oldRect=actionBar.getBoundingClientRect.bind(actionBar);
+actionBar.getBoundingClientRect=()=>({height:59});
+win.syncActionBarHeight();
+ok('底部 UI 实测高度写入 --abh', gameScreen.style.getPropertyValue('--abh')==='59px');
+actionBar.getBoundingClientRect=oldRect;
 
 console.log(fail===0?'\n  ✓ 全部通过':'\n  ✗ '+fail+' 处失败');
 process.exit(fail?1:0);

@@ -790,6 +790,28 @@ let codex = (()=>{ try { return JSON.parse(localStorage.getItem(CODEX_KEY) || '{
 // ========== UTILS ==========
 const $ = id => document.getElementById(id);
 const show = (el,on=true) => { if(typeof el==='string') el=$(el); if(el) el.classList.toggle('hidden', !on); };
+
+/* 底部 UI 高度由实际布局决定；只记录可见高度，剧情模式沿用固定 131px 对话框。 */
+function syncActionBarHeight(){
+  const bar=$('action-bar'), screen=$('game-screen');
+  if(!bar || !screen) return 0;
+  const h=Math.round(bar.getBoundingClientRect().height);
+  if(h>0) screen.style.setProperty('--abh', h+'px');
+  return h;
+}
+function bindActionBarHeight(){
+  const bar=$('action-bar');
+  if(!bar) return;
+  syncActionBarHeight();
+  if(window.ResizeObserver){
+    const observer=new window.ResizeObserver(syncActionBarHeight);
+    observer.observe(bar);
+    window.__actionBarHeightObserver=observer;
+  }
+  window.addEventListener('resize', syncActionBarHeight);
+}
+bindActionBarHeight();
+
 function toast(msg, ms=2200){ const t=$('toast'); t.textContent=msg; show(t,1); clearTimeout(t._t); t._t=setTimeout(()=>show(t,0),ms); }
 function sysPopup(title, body){
   const p=$('sys-popup');
@@ -1184,7 +1206,7 @@ let lineGen = 0;
 let awaitingChoice = false;
 let afterPick = null; // 勇者之赐选卡后，继续播放的剩余台词 {rest, done}
 
-// 按完整文本估算实际显示行数；无底部 UI 时依行数固定到四行网格
+// 按完整文本估算实际显示行数；无底部 UI 时依 1—3 行垂直居中
 function setDialogRows(str){
   const tb=$('text-box'), text=$('text');
   if(!tb || !text) return 1;
@@ -1214,7 +1236,7 @@ function setDialogRows(str){
       probe.remove();
     }
   }catch(e){}
-  rows=clamp(rows,1,4);
+  rows=clamp(rows,1,3);
   tb.classList.add('dialog-rows-'+rows);
   return rows;
 }

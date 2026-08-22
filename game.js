@@ -933,7 +933,6 @@ function advanceSeason(n=1){
     while(S.ageD >= 365){ S.ageD -= 365; S.ageY++; }
     flag('talked_today', {});
     S.restThisSeason = 0;
-    flag('roam_hint_seen', 0);   // 每季度重置：自由探索「点画面出口」提示本季度只出现一次
     // restore
     S.st = S.mst; // 换季体力回满
     S.hp = clamp(S.hp + Math.floor(S.mhp*0.5), 0, S.mhp);
@@ -1205,6 +1204,7 @@ let typeDoneCB = null;
 let lineGen = 0;
 let awaitingChoice = false;
 let afterPick = null; // 勇者之赐选卡后，继续播放的剩余台词 {rest, done}
+let roamPromptDone = null; // 自由探索提示由右下角三角关闭后执行
 
 // 按完整文本估算实际显示行数；无底部 UI 时依 1—3 行垂直居中
 function setDialogRows(str){
@@ -1495,11 +1495,15 @@ function playLines(lines, done){
       if(L.goto){ runScene(L.goto); return; }
 
       if(L.freeRoam){
-        setSpeaker(L.speaker||null, curSpeakerId);
-        typeText(L.text || '（可以自由行动了。点击画面出口移动，或用下方按钮。）', ()=>{
-          if(gen !== lineGen) return;
+        if(L.text){
+          setSpeaker(L.speaker||null, curSpeakerId);
+          typeText(L.text, ()=>{
+            if(gen !== lineGen) return;
+            enterFreeRoam();
+          });
+        } else {
           enterFreeRoam();
-        });
+        }
         return;
       }
 
@@ -1609,8 +1613,10 @@ function bindAdvance(){
     if(S.freeRoam && !typing && !lineCB && !awaitingChoice){
       const dismiss = !!(e.target.closest && e.target.closest('#more'));
       if(!dismiss) return;
-      if(tb.getAttribute('data-roam-prompt')==='hint') flag('roam_hint_seen', 1);
+      const afterPrompt=roamPromptDone;
+      roamPromptDone=null;
       tb.classList.add('dialog-hidden');
+      tb.classList.remove('season-flavor');
       tb.removeAttribute('data-roam-prompt');
       $('text').innerHTML = '';
       setSpeaker(null);
@@ -1619,6 +1625,7 @@ function bindAdvance(){
         el.classList.add('active'); el.classList.remove('dim');
       });
       save();
+      if(typeof afterPrompt==='function') afterPrompt();
       return;
     }
     advanceDialog();
@@ -1854,36 +1861,46 @@ function enterFreeRoam(options={}){
   // 「视角」场景结束：恢复顶部 HUD
   setPov(false);
   sceneBgmType = null;             // 场景结束，进入自由探索：允许按背景推断切回日常音乐
+  roamPromptDone = null;
   S.freeRoam=true; awaitingChoice=false; show('action-bar',1); updateHUD(); updateLocBar(); save();
   document.body.classList.add('roam');
   const box=$('choices'); if(box) box.innerHTML='';
   setSpeaker(null);
   const nextBtn=document.querySelector('[data-act="next"]');
   if(nextBtn) nextBtn.textContent = S.ageY < 1 ? '🍂 下一年' : '🍂 下个季度';
-  const exits = (EXITS[S.loc]||[]).filter(ex=>ex.babyFuss||canUseExit(ex));
-  let tip = null;
-  if(!options.suppressPrompt && !flag('roam_hint_seen')){
-    if(S.ageY<1 && S.loc==='nursery'){
-      tip = `（育婴室）\n你还走不了太远，点「闹着要出去」让家人抱你出去。`;
-    } else if(exits.length){
-      tip = `（${LOCS[S.loc]?.name||S.loc}）\n点画面出口移动（标 ⚡ 的会耗体力）。`;
-    } else {
-      tip = `（${LOCS[S.loc]?.name||S.loc}）\n想做什么？`;
-    }
-  }
+  // 不再自动显示“点击出口移动”等地点教学对话框。
   const dialogBox=$('text-box');
-  if(tip !== null){
-    dialogBox.classList.remove('dialog-hidden');
-    dialogBox.setAttribute('data-roam-prompt','hint');
-    setDialogRows(tip);
-    $('text').innerHTML = escapeText(tip);
-  } else {
-    dialogBox.classList.add('dialog-hidden');
-    dialogBox.removeAttribute('data-roam-prompt');
-    $('text').innerHTML = '';
-  }
+  dialogBox.classList.add('dialog-hidden');
+  dialogBox.classList.remove('season-flavor');
+  dialogBox.removeAttribute('data-roam-prompt');
+  $('text').innerHTML = '';
   renderHotspots();
 }
+
+const SEASON_FLAVOR = [
+  '风物：新芽初醒。',
+  '风物：蝉鸣入夏。',
+  '风物：叶染浅金。',
+  '风物：初雪落檐。'
+];
+function seasonFlavorText(season=S.season){
+  const s=clamp(Number(season)||0,0,3);
+  return dateStr()+'\n'+SEASON_FLAVOR[s];
+}
+function showSeasonFlavor(done){
+  const tb=$('text-box');
+  const text=seasonFlavorText();
+  setSpeaker(null);
+  setDialogRows(text);
+  $('text').innerHTML=escapeText(text);
+  tb.classList.remove('dialog-hidden');
+  tb.classList.add('season-flavor');
+  tb.setAttribute('data-roam-prompt','season');
+  roamPromptDone = typeof done==='function' ? done : null;
+  save();
+  return text;
+}
+
 function updateLocBar(){
   const L=LOCS[S.loc]; if(!L) return;
   show('loc-bar',1);
@@ -1924,10 +1941,10 @@ function roamGreetingText(charId, locId=S.loc){
   const a=S.ageY, n=CHARS[charId]?.short||charId;
   const detail=ROAM_PLACE_DETAIL[locId] || (LOCS[locId]?.name ? LOCS[locId].name+'今天很安静。' : '这里今天很安静。');
   switch(charId){
-    case 'sophia': return a<1 ? '醒了吗？妈妈在。'+detail : a<6 ? '希尔维亚，慢一点。'+detail : '希尔维亚，来得正好。'+detail;
+    case 'sophia': return a<1 ? '醒了吗？妈妈在。'+detail : a<6 ? '希尔维亚，想在这里待一会儿吗？'+detail : '希尔维亚，来得正好。'+detail;
     case 'beatrice': return a<1 ? '妹妹！看这里！'+detail : a<10 ? '希尔维亚！我正想找你！'+detail : '希尔维亚，来得正好！'+detail;
     case 'alice': return a<3 ? '……姐姐大人。'+detail : a<10 ? '……姐姐大人，你也来了。'+detail : '……姐姐大人。要一起待一会儿吗？'+detail;
-    case 'claude': return a<6 ? '希尔维亚。别跑太快。'+detail : '希尔维亚。既然来了，就别急着走。'+detail;
+    case 'claude': return a<6 ? '希尔维亚。看来你很喜欢这里。'+detail : '希尔维亚。既然来了，就别急着走。'+detail;
     case 'emma': return '希尔维亚！你也在这里！'+detail;
     case 'noelle': return '……来了？'+detail;
     case 'aino': return '……你来了。'+detail;
@@ -1944,6 +1961,8 @@ function showRoamGreeting(charId, locId=S.loc){
   if(!charId || !CHARS[charId]) return false;
   const tb=$('text-box');
   const greeting=roamGreetingText(charId, locId);
+  roamPromptDone=null;
+  tb.classList.remove('season-flavor');
   setSpeaker(CHARS[charId].short, charId);
   setDialogRows(greeting);
   $('text').innerHTML=escapeText(greeting);
@@ -3589,9 +3608,12 @@ $('btn-codex-close').onclick=()=>show('codex',0);
 doNextTime = function(){
   const steps = S.ageY < 1 ? 4 : 1;
   for(let i = 0; i < steps; i++) advanceSeason(1);
-  if(checkStoryGates()) return;
-  enterFreeRoam({suppressPrompt:true});
-  toast(dateStr() + ' · 体力已恢复');
+  enterFreeRoam();
+  showSeasonFlavor(()=>{
+    if(checkStoryGates()) return;
+    updateHUD();
+    renderHotspots();
+  });
   updateHUD();
   renderHotspots();
 };

@@ -44,19 +44,24 @@ ok('恢复默认 (bgm=0.5)', Math.abs(win.getSettings().bgm-0.5)<0.001);
 $('btn-ui').onclick(); ok('点击隐藏UI', win.document.body.classList.contains('ui-hidden'));
 $('btn-ui').onclick(); ok('再点恢复UI', !win.document.body.classList.contains('ui-hidden'));
 
-// 自由探索提示：只有右下角小三角可关闭；框内其他位置与空格均不得关闭
-win.__resetS(); const st3=win.__getS(); st3.freeRoam=true; win.__setS(st3);
+// 不再显示地点出口教学框；季度风物框只允许右下角三角关闭
+win.__resetS(); const st3=win.__getS(); st3.freeRoam=true; st3.season=2; win.__setS(st3);
 const tb=$('text-box'), more=$('more');
-tb.classList.remove('dialog-hidden');
-$('panel').classList.add('hidden');
+win.enterFreeRoam();
+ok('自由探索不显示地点出口教学框', tb.classList.contains('dialog-hidden'));
+ok('地点出口教学文案已移除', !win.enterFreeRoam.toString().includes('点击画面出口移动') && !win.playLines.toString().includes('点击画面出口移动'));
+let seasonClosed=false;
+win.showSeasonFlavor(()=>{ seasonClosed=true; });
+ok('季度切换显示风物对话框', !tb.classList.contains('dialog-hidden') && $('text').textContent.includes('风物：'));
+ok('季度风物保留底部 UI', !$('action-bar').classList.contains('hidden'));
+ok('季度风物标记为 season', tb.getAttribute('data-roam-prompt')==='season');
 tb.onclick({target:tb});
-ok('点击对话框其他位置不隐藏提示', !tb.classList.contains('dialog-hidden'));
+ok('点击风物框其他位置不关闭', !tb.classList.contains('dialog-hidden'));
 win.document.dispatchEvent(new win.KeyboardEvent('keydown', {key:' '}));
-ok('按空格不隐藏自由探索提示', !tb.classList.contains('dialog-hidden'));
-ok('空格与框内点击不记录已关闭', win.__getS().flags.roam_hint_seen!==1);
+ok('按空格不关闭季度风物框', !tb.classList.contains('dialog-hidden'));
 tb.onclick({target:more});
-ok('点击右下角小三角隐藏提示', tb.classList.contains('dialog-hidden'));
-ok('小三角记录本季度提示已关闭', win.__getS().flags.roam_hint_seen===1);
+ok('右下角小三角关闭季度风物框', tb.classList.contains('dialog-hidden'));
+ok('关闭季度风物框后执行后续逻辑', seasonClosed);
 
 // 婴儿期两个抱出按钮都可用，点击后进入抱出剧情并恢复对话框
 win.__resetS(); const infant=win.__getS(); infant.ageY=0; infant.loc='nursery'; infant.freeRoam=true; infant.st=5; win.__setS(infant);
@@ -68,7 +73,7 @@ try{ babyButtons[0].click(); }catch(e){ babyClickOK=false; }
 ok('婴儿出去按钮点击不报错', babyClickOK);
 ok('点击后进入抱出剧情', !win.__getS().freeRoam);
 ok('剧情开始恢复对话框', !tb.classList.contains('dialog-hidden'));
-ok('下个季度按钮直接推进、无二次选择对话框', !win.doNextTime.toString().includes('choices'));
+ok('下个季度按钮直接推进并显示风物框', !win.doNextTime.toString().includes('choices') && win.doNextTime.toString().includes('showSeasonFlavor'));
 
 // 进入空地点不再播放环境描述；有人时显示情境问候且保留底部 UI
 ok('普通进入地点不再调用环境描述对话', !win.eval('_enterLocRaw.toString()').includes('ambientText'));
@@ -78,6 +83,9 @@ const placeGreeting=win.roamGreetingText('sophia','library');
 ok('问候内容随地点变化', ageGreeting!==placeGreeting);
 const older=win.__getS(); older.ageY=15; win.__setS(older);
 ok('问候内容随主角年龄变化', win.roamGreetingText('sophia','garden')!==ageGreeting);
+const child=win.__getS(); child.ageY=4; win.__setS(child);
+const childGreetings=win.roamGreetingText('sophia','garden')+win.roamGreetingText('claude','garden');
+ok('幼年问候不再暗示主角乱跑', !childGreetings.includes('跑太快') && !childGreetings.includes('慢一点'));
 win.enterFreeRoam({suppressPrompt:true});
 win.showRoamGreeting('sophia','garden');
 ok('人物问候保留底部 UI', !$('action-bar').classList.contains('hidden'));

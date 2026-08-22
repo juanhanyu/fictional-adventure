@@ -90,7 +90,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 /* ===== STAGE ===== */
 #game-screen{flex:1;display:flex;flex-direction:column;min-height:0;--abh:60px;--dialog-gap:10px}
-#stage{flex:1;display:flex;flex-direction:column;justify-content:flex-end;position:relative;min-height:0;padding:0;--boxh:131px;--bustw:140px;--speaker-img-h:calc(var(--boxh) + 40px);--speaker-name-h:28px;--ph:min(440px,72vh)}
+#stage{flex:1;display:flex;flex-direction:column;justify-content:flex-end;position:relative;min-height:0;padding:0;--boxh:131px;--bustw:140px;--speaker-img-h:calc(var(--boxh) + 28px);--speaker-name-h:28px;--ph:min(440px,72vh)}
 /* 剧情框固定 131px；自由探索扣除 ResizeObserver 实测的底部 UI 高度，上沿保持距屏底 141px */
 body.roam #stage{--boxh:max(56px,calc(131px - var(--abh)))}
 
@@ -149,7 +149,7 @@ body.roam #stage{--boxh:max(56px,calc(131px - var(--abh)))}
 body.roam #text-box.dialog-hidden{opacity:0;visibility:hidden;pointer-events:none}
 /* 对话框左侧小立绘：固定统一高度，姓名牌独立占位，避免两者重叠 */
 #tb-speaker{position:absolute;left:12px;bottom:8px;width:var(--bustw);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;z-index:7;pointer-events:none}
-#tb-speaker img{width:calc(var(--bustw) - 18px);height:var(--speaker-img-h);flex:0 0 var(--speaker-img-h);object-fit:cover;object-position:top center;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5));transform:none}
+#tb-speaker img{width:calc(var(--bustw) - 18px);height:var(--speaker-img-h);flex:0 0 var(--speaker-img-h);object-fit:cover;object-position:top center;opacity:.94;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5));transform:none}
 #tb-speaker-name{font-size:15px;line-height:20px;min-height:var(--speaker-name-h);color:#2a2038;background:rgba(255,255,255,.92);padding:2px 12px;border-radius:6px;letter-spacing:.05em;text-align:center;max-width:calc(var(--bustw) + 20px);position:relative;z-index:8;margin-top:0;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.18)}
 #speaker{display:none}
 #text{height:calc(var(--boxh) - 24px);box-sizing:border-box;font-size:23px;line-height:1.45;white-space:pre-wrap;word-break:break-word;overflow:hidden;padding-top:0}
@@ -159,9 +159,10 @@ body:not(.roam) #text-box.dialog-rows-2 #text{padding-top:calc((var(--boxh) - 24
 body:not(.roam) #text-box.dialog-rows-3 #text{padding-top:max(0px,calc((var(--boxh) - 24px - 4.35em)/2))}
 /* 自由探索框较矮，缩小字号和纵向内边距，问候文字仍尽量垂直居中 */
 body.roam #text-box{padding-top:6px;padding-bottom:6px}
-body.roam #text{height:calc(var(--boxh) - 12px);font-size:17px;line-height:1.2}
-body.roam #text-box.dialog-rows-1 #text{padding-top:max(0px,calc((var(--boxh) - 12px - 1.2em)/2))}
-body.roam #text-box.dialog-rows-2 #text{padding-top:max(0px,calc((var(--boxh) - 12px - 2.4em)/2))}
+body.roam #text-box.season-flavor{padding-left:48px}
+body.roam #text{height:calc(var(--boxh) - 12px);font-size:20px;line-height:1.15}
+body.roam #text-box.dialog-rows-1 #text{padding-top:max(0px,calc((var(--boxh) - 12px - 1.15em)/2))}
+body.roam #text-box.dialog-rows-2 #text{padding-top:max(0px,calc((var(--boxh) - 12px - 2.3em)/2))}
 #text .sys{color:#4a6a9a;font-size:19px}
 #text .em{color:var(--rose);font-style:normal}
 #text .gold{color:#8a7020}

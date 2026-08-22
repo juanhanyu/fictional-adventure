@@ -767,7 +767,7 @@ function baseState(){
     eggs:[],
     log:[],
     freeRoam:false,
-    storyGateVersion: 2,
+    storyGateVersion: 3,
     storyPending: [], // 已到期但尚未完整播放的剧情；刷新/读档后自动恢复
     lastSafe:'nursery',
     // 养成四维（火山的女儿式）0-100
@@ -1002,7 +1002,7 @@ function skipDays(n){ toast("已关闭快进"); return; }
 function skipToAge(y){ toast("已关闭快进，请按季度推进"); return; }
 
 // ========== SAVE ==========
-const STORY_GATE_VERSION = 2;
+const STORY_GATE_VERSION = 3;
 const STORY_GATE_FLAGS = [
   'ch_first_word','ch_alice_born','ch_child_days','ch_age4','ch_yaoshen','ch_sisters_grow',
   'ch_reno_arrive','ch_alice_affinity','ch_beatrice_day','ch_micro','ch_alice_wind','ch_beatrice_leaves',
@@ -1015,6 +1015,47 @@ const STORY_GATE_ACADEMY_FLAGS = [
   'ch_ice_melt_2','ch_beach','ch_tree','ch_star','did_turnpoint','arrived_jikan','ch_black_name'
 ];
 const STORY_GATE_JOURNEY_FLAGS = ['arrived_jikan','ch_black_name'];
+const STORY_GATE_BY_SCENE = {
+  s_first_word:['ch_first_word'],
+  s_alice_born:['ch_alice_born'],
+  s_child_days:['ch_child_days'],
+  s_age4:['ch_age4'],
+  s_yaoshen:['ch_yaoshen'],
+  s_sisters_grow:['ch_sisters_grow'],
+  s_reno_arrive:['ch_reno_arrive'],
+  s_alice_affinity:['ch_alice_affinity'],
+  s_beatrice_day:['ch_beatrice_day'],
+  s_micro:['ch_micro'],
+  s_alice_wind_teach:['ch_alice_wind'],
+  s_beatrice_leaves:['ch_beatrice_leaves'],
+  s_academy_start:['ch_academy'],
+  s_opening_ceremony:['ch_opening_ceremony'],
+  s_noelle_meet:['met_noelle'],
+  s_aino_meet:['met_aino'],
+  s_charlotte_meet:['met_charlotte'],
+  s_helena:['ch_helena'],
+  s_aino_sparring:['ch_aino_sparring'],
+  s_ajun:['met_ajun'],
+  s_ice_melt_1:['ch_ice_melt_1'],
+  s_seven_mountains:['ch_seven_mountains'],
+  s_ice_melt_2:['ch_ice_melt_2'],
+  s_beach:['ch_beach'],
+  s_tree:['ch_tree'],
+  s_star_festival:['ch_star'],
+  s_turnpoint:['did_turnpoint'],
+  s_jikan_arrive:['arrived_jikan'],
+  s_black_name:['ch_black_name']
+};
+
+function markStoryGateCompleted(sceneId){
+  const keys=STORY_GATE_BY_SCENE[sceneId]||[];
+  let changed=false;
+  keys.forEach(k=>{
+    if(!flag(k)){ flag(k,1); changed=true; }
+  });
+  if(changed) save();
+  return changed;
+}
 
 function migrateStorySave(raw){
   if(!raw || typeof raw!=='object') raw={};
@@ -1029,7 +1070,7 @@ function migrateStorySave(raw){
     repairKeys.forEach(k=>{ delete raw.flags[k]; });
     raw.storyPending=[];
     raw.storyGateVersion=STORY_GATE_VERSION;
-    raw.flags.story_gate_repaired_v2=1;
+    raw.flags.story_gate_repaired_v3=1;
   }
   if(!Array.isArray(raw.storyPending)) raw.storyPending=[];
   return raw;
@@ -1660,36 +1701,54 @@ function showChoices(choices, onEmpty){
 }
 
 // click text box / stage to advance
+function dismissRoamPrompt(){
+  const tb=$('text-box');
+  if(!tb || !S.freeRoam || !tb.hasAttribute('data-roam-prompt') || typing || awaitingChoice) return false;
+  const promptKind=tb.getAttribute('data-roam-prompt');
+  const greetingChar=tb.getAttribute('data-greeting-char');
+  if(promptKind==='greeting' && greetingChar) markRoamGreetingDismissed(greetingChar);
+  const afterPrompt=roamPromptDone;
+  roamPromptDone=null;
+  resetDialogAdvanceState();
+  tb.classList.add('dialog-hidden');
+  tb.classList.remove('season-flavor');
+  tb.removeAttribute('data-roam-prompt');
+  tb.removeAttribute('data-greeting-char');
+  $('text').innerHTML='';
+  setSpeaker(null);
+  document.querySelectorAll('#portraits .p-slot').forEach(el=>{
+    if(el.classList.contains('hidden')) return;
+    el.classList.add('active'); el.classList.remove('dim');
+  });
+  save();
+
+  // 季度提示关闭后直接从存档队列启动剧情；不再依赖临时回调变量。
+  if(promptKind==='season'){
+    if(resumePendingStories()) return true;
+    if(checkStoryGates()) return true;
+  }
+  if(typeof afterPrompt==='function') afterPrompt();
+  if(S.freeRoam) maybeShowRoamGreeting();
+  return true;
+}
+
 function bindAdvance(){
-  const tb = $('text-box');
+  const tb=$('text-box');
   if(!tb) return;
-  tb.onclick = (e)=>{
-    // don't steal clicks from buttons inside
+  const more=$('more');
+  if(more){
+    more.onclick=e=>{
+      if(S.freeRoam && tb.hasAttribute('data-roam-prompt')){
+        if(e && typeof e.stopPropagation==='function') e.stopPropagation();
+        dismissRoamPrompt();
+      }
+    };
+  }
+  tb.onclick=e=>{
     if(e.target.closest('button')) return;
-    // 自由探索提示只有点击右下角小三角才能关闭；空格或点击框内其他位置均不关闭
-    const hasRoamPrompt = tb.hasAttribute('data-roam-prompt');
-    if(S.freeRoam && hasRoamPrompt && !typing && !awaitingChoice){
-      const dismiss = !!(e.target.closest && e.target.closest('#more'));
-      if(!dismiss) return;
-      const promptKind=tb.getAttribute('data-roam-prompt');
-      const greetingChar=tb.getAttribute('data-greeting-char');
-      if(promptKind==='greeting' && greetingChar) markRoamGreetingDismissed(greetingChar);
-      const afterPrompt=roamPromptDone;
-      roamPromptDone=null;
-      resetDialogAdvanceState();
-      tb.classList.add('dialog-hidden');
-      tb.classList.remove('season-flavor');
-      tb.removeAttribute('data-roam-prompt');
-      tb.removeAttribute('data-greeting-char');
-      $('text').innerHTML = '';
-      setSpeaker(null);
-      document.querySelectorAll('#portraits .p-slot').forEach(el=>{
-        if(el.classList.contains('hidden')) return;
-        el.classList.add('active'); el.classList.remove('dim');
-      });
-      save();
-      if(typeof afterPrompt==='function') afterPrompt();
-      if(S.freeRoam) maybeShowRoamGreeting();
+    if(S.freeRoam && tb.hasAttribute('data-roam-prompt') && !typing && !awaitingChoice){
+      const dismiss=!!(e.target.closest && e.target.closest('#more'));
+      if(dismiss) dismissRoamPrompt();
       return;
     }
     advanceDialog();
@@ -1970,6 +2029,8 @@ function setPov(on){
   const lb=$('loc-bar'); if(lb){ lb.style.opacity = on ? '0' : ''; lb.style.pointerEvents = on ? 'none' : ''; }
 }
 function enterFreeRoam(options={}){
+  // 到达自由探索代表当前场景已经完整结束；此时才提交门控完成标记。
+  if(currentScene) markStoryGateCompleted(currentScene);
   // 若剧情链还有后续场景，则直接衔接，不进入自由行动
   if(storyChain && storyChain.idx < storyChain.queue.length){ stepChain(); return; }
   if(storyChain && storyChain.idx >= storyChain.queue.length) storyChain=null;
@@ -3241,68 +3302,61 @@ if($('btn-stats-close')) $('btn-stats-close').onclick=()=>show('stats-overlay',0
 
 // ========== STORY GATES ==========
 function checkStoryGates(options={}){
-  const queue = [];
-  // 第一卷 公爵篇（按日历触发）
-  if(!flag('ch_first_word') && dateAtLeast(0,7)){ flag('ch_first_word',1); queue.push('s_first_word'); }
-  if(!flag('ch_alice_born') && dateAtLeast(2,6)){ flag('ch_alice_born',1); queue.push('s_alice_born'); }
-  // 3年9月：第二章「三姐妹」后半（妹妹很安静 → 魔力初感 → 勇者之赐）
-  // ※ 魔力初感 / 勇者之赐 已并入 s_child_days，原先重复的 s_mana_awaken 触发已移除
-  if(!flag('ch_child_days') && flag('ch_alice_born') && dateAtLeast(3,9)){ flag('ch_child_days',1); queue.push('s_child_days'); }
-  // 4年3月：第二章「四岁」
-  if(!flag('ch_age4') && dateAtLeast(4,3)){ flag('ch_age4',1); queue.push('s_age4'); }
-  if(!flag('ch_yaoshen') && dateAtLeast(4,12)){ flag('ch_yaoshen',1); queue.push('s_yaoshen'); }
-  if(!flag('ch_sisters_grow') && dateAtLeast(5,6)){ flag('ch_sisters_grow',1); queue.push('s_sisters_grow'); }
-  if(!flag('ch_reno_arrive') && dateAtLeast(6,3)){ flag('ch_reno_arrive',1); queue.push('s_reno_arrive'); }
-  if(!flag('ch_alice_affinity') && dateAtLeast(7,3)){ flag('ch_alice_affinity',1); queue.push('s_alice_affinity'); }
-  if(!flag('ch_beatrice_day') && dateAtLeast(7,12)){ flag('ch_beatrice_day',1); queue.push('s_beatrice_day'); }
-  if(!flag('ch_micro') && dateAtLeast(8,6)){ flag('ch_micro',1); queue.push('s_micro'); }
-  if(!flag('ch_alice_wind') && dateAtLeast(9,3)){ flag('ch_alice_wind',1); queue.push('s_alice_wind_teach'); }
-  if(!flag('ch_beatrice_leaves') && dateAtLeast(10,3)){ flag('ch_beatrice_leaves',1); queue.push('s_beatrice_leaves'); }
-  // 第二卷 学院篇（12年3月）：入学 → 开学典礼 → 初遇诺艾儿 → 初遇艾诺 → 夏洛特赌约，依次触发
-  if(!flag('ch_academy') && dateAtLeast(12,3)){
-    flag('ch_academy',1);
-    flag('ch_opening_ceremony',1);
-    flag('met_noelle',1);
-    flag('met_aino',1);
-    flag('met_charlotte',1);
-    queue.push('s_academy_start');
-    queue.push('s_opening_ceremony');
-    queue.push('s_noelle_meet');
-    queue.push('s_aino_meet');
-    queue.push('s_charlotte_meet');
-  }
-  // 海伦娜访客（第三章，期中考试后第二周 → 12年9月）
-  if(S.phase==='academy' && !flag('ch_helena') && dateAtLeast(12,9)){ flag('ch_helena',1); queue.push('s_helena'); }
-  // 与艾诺比试（第四章，12年12月）
-  if(S.phase==='academy' && !flag('ch_aino_sparring') && dateAtLeast(12,12)){ flag('ch_aino_sparring',1); queue.push('s_aino_sparring'); }
-  // 阿琼：比试之后（第四章）
-  if(S.phase==='academy' && !flag('met_ajun') && flag('ch_aino_sparring')){ flag('met_ajun',1); queue.push('s_ajun'); }
-  // 第八章 冰融之际·上（13年9月）
-  if(S.phase==='academy' && !flag('ch_ice_melt_1') && dateAtLeast(13,9)){ flag('ch_ice_melt_1',1); queue.push('s_ice_melt_1'); }
-  // 第五章 七座山（13年12月）
-  if(S.phase==='academy' && !flag('ch_seven_mountains') && dateAtLeast(13,12)){ flag('ch_seven_mountains',1); queue.push('s_seven_mountains'); }
-  // 第八章 冰融之际·下（14年3月）
-  if(S.phase==='academy' && !flag('ch_ice_melt_2') && dateAtLeast(14,3)){ flag('ch_ice_melt_2',1); queue.push('s_ice_melt_2'); }
-  // 海边剧情（14年6月）
-  if(S.phase==='academy' && !flag('ch_beach') && dateAtLeast(14,6)){ flag('ch_beach',1); queue.push('s_beach'); }
-  // 并肩的树（15年3月）
-  if(S.phase==='academy' && !flag('ch_tree') && dateAtLeast(15,3)){ flag('ch_tree',1); queue.push('s_tree'); }
-  // 星辰祭（15年9月）
-  if(S.phase==='academy' && !flag('ch_star') && dateAtLeast(15,9)){ flag('ch_star',1); queue.push('s_star_festival'); }
-  // 转折点一（15年12月）
-  if(S.phase==='academy' && !flag('did_turnpoint') && dateAtLeast(15,12)){ flag('did_turnpoint',1); queue.push('s_turnpoint'); }
-  // 旅途篇
-  if((S.phase==='journey'||S.phase==='finale') && !flag('arrived_jikan') && S.dayCount>0){ flag('arrived_jikan',1); queue.push('s_jikan_arrive'); }
-  if((S.phase==='journey'||S.phase==='finale') && (!S.alias||S.alias!=='眷寒渔') && !flag('ch_black_name')){ flag('ch_black_name',1); queue.push('s_black_name'); }
-  const validQueue=queue.filter(id=>SCENES[id]);
+  const queue=[];
+  const planned=new Set();
+  const hasGate=key=>!!flag(key)||planned.has(key);
+  const addGate=(key,condition,sceneId)=>{
+    if(hasGate(key)||!condition) return false;
+    planned.add(key);
+    (Array.isArray(sceneId)?sceneId:[sceneId]).forEach(id=>queue.push(id));
+    return true;
+  };
+
+  // 门控检查只建立播放队列，不提前写入“已完成”标记。
+  addGate('ch_first_word', dateAtLeast(0,7), 's_first_word');
+  addGate('ch_alice_born', dateAtLeast(2,6), 's_alice_born');
+  addGate('ch_child_days', hasGate('ch_alice_born') && dateAtLeast(3,9), 's_child_days');
+  addGate('ch_age4', dateAtLeast(4,3), 's_age4');
+  addGate('ch_yaoshen', dateAtLeast(4,12), 's_yaoshen');
+  addGate('ch_sisters_grow', dateAtLeast(5,6), 's_sisters_grow');
+  addGate('ch_reno_arrive', dateAtLeast(6,3), 's_reno_arrive');
+  addGate('ch_alice_affinity', dateAtLeast(7,3), 's_alice_affinity');
+  addGate('ch_beatrice_day', dateAtLeast(7,12), 's_beatrice_day');
+  addGate('ch_micro', dateAtLeast(8,6), 's_micro');
+  addGate('ch_alice_wind', dateAtLeast(9,3), 's_alice_wind_teach');
+  addGate('ch_beatrice_leaves', dateAtLeast(10,3), 's_beatrice_leaves');
+
+  // 即使玩家跨过多个年份，也在同一队列里依次补齐学院篇，不再依赖旧 phase 值。
+  const academyDue=dateAtLeast(12,3);
+  addGate('ch_academy', academyDue, 's_academy_start');
+  addGate('ch_opening_ceremony', academyDue, 's_opening_ceremony');
+  addGate('met_noelle', academyDue, 's_noelle_meet');
+  addGate('met_aino', academyDue, 's_aino_meet');
+  addGate('met_charlotte', academyDue, 's_charlotte_meet');
+  const academyTrack=S.phase==='academy'||hasGate('ch_academy');
+  addGate('ch_helena', academyTrack && dateAtLeast(12,9), 's_helena');
+  addGate('ch_aino_sparring', academyTrack && dateAtLeast(12,12), 's_aino_sparring');
+  addGate('met_ajun', academyTrack && hasGate('ch_aino_sparring'), 's_ajun');
+  addGate('ch_ice_melt_1', academyTrack && dateAtLeast(13,9), 's_ice_melt_1');
+  addGate('ch_seven_mountains', academyTrack && dateAtLeast(13,12), 's_seven_mountains');
+  addGate('ch_ice_melt_2', academyTrack && dateAtLeast(14,3), 's_ice_melt_2');
+  addGate('ch_beach', academyTrack && dateAtLeast(14,6), 's_beach');
+  addGate('ch_tree', academyTrack && dateAtLeast(15,3), 's_tree');
+  addGate('ch_star', academyTrack && dateAtLeast(15,9), 's_star_festival');
+  addGate('did_turnpoint', academyTrack && dateAtLeast(15,12), 's_turnpoint');
+
+  const journeyTrack=S.phase==='journey'||S.phase==='finale';
+  addGate('arrived_jikan', journeyTrack && S.dayCount>0, 's_jikan_arrive');
+  addGate('ch_black_name', journeyTrack && (!S.alias||S.alias!=='眷寒渔'), 's_black_name');
+
+  const validQueue=queue.filter((id,index)=>SCENES[id] && queue.indexOf(id)===index);
   if(!validQueue.length) return false;
-  // 季度风物框显示期间先把队列写入存档；即使刷新页面也不会丢失剧情。
   if(options.defer){
     S.storyPending=validQueue.slice();
     save();
     return true;
   }
-  runSceneQueue(validQueue, 0);
+  runSceneQueue(validQueue,0);
   return true;
 }
 function resumePendingStories(){
@@ -3350,7 +3404,8 @@ function stepChain(){
   // 「视角」演出：pov 场景隐藏顶部 HUD（如贝阿特丽丝大人的一天，以贝蒂视角叙述）
   if(sc.pov) setPov(true);
   const go = ()=> playLines(sc.lines || [], ()=>{
-    // 场景在没有 freeRoam/choice 的情况下结束 → 衔接下一个场景
+    // 只有场景确实播放结束，才写入对应的“已完成”门控标记。
+    markStoryGateCompleted(id);
     if(storyChain && storyChain.idx < storyChain.queue.length){ stepChain(); }
     else { storyChain = null; enterFreeRoam(); }
   });
@@ -3362,6 +3417,7 @@ function stepChain(){
 // ========== SCENES ==========
 const SCENES = {};
 function runScene(id){
+  if(currentScene && currentScene!==id) markStoryGateCompleted(currentScene);
   storyChain = null;
   S.storyPending=[id];
   const sc = SCENES[id];
@@ -3792,11 +3848,9 @@ doNextTime = function(){
   const steps = S.ageY < 1 ? 4 : 1;
   for(let i = 0; i < steps; i++) advanceSeason(1);
   enterFreeRoam({deferGreeting:true});
-  // 门控和持久化不再依赖风物框的小三角回调。
+  // 先记录到期队列；真正播放由季度提示的小三角直接调度。
   checkStoryGates({defer:true});
   showSeasonFlavor(()=>{
-    if(resumePendingStories()) return;
-    if(checkStoryGates()) return;
     updateHUD();
     renderHotspots();
   });

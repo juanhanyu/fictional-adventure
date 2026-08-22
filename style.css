@@ -91,16 +91,19 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* ===== STAGE ===== */
 #game-screen{flex:1;display:flex;flex-direction:column;min-height:0}
 /* 大立绘统一缩放：所有立绘按同一高度（--ph）显示，宽度随原图比例自适应，保证每个角色在屏幕上的比例一致 */
-#stage{flex:1;display:flex;flex-direction:column;justify-content:flex-end;position:relative;min-height:0;padding:0;--boxh:131px;--bustw:140px;--ph:min(440px,72vh)}
-/* 自由探索：底部UI显示，对话栏容纳两排（矮）；剧情时底部UI隐藏，容纳三排 */
-body.roam #stage{--boxh:96px}
+#stage{flex:1;display:flex;flex-direction:column;justify-content:flex-end;position:relative;min-height:0;padding:0;--boxh:131px;--bustw:140px;--boxm:10px;--ph:min(440px,72vh)}
+/* 自由探索（带底部UI）：对话框上沿与剧情模式（隐藏底部UI、仅对话框）保持同一相对位置 →
+   栏高 = 剧情栏高(131px) − 底部UI实际高度(--abh，由 ResizeObserver 实测) */
+body.roam #stage{--boxh:max(56px,calc(131px - var(--abh,58px)))}
+body.roam #text-box{padding:8px 22px 8px calc(var(--bustw) + 20px)}
+body.roam #text{font-size:18px;line-height:1.6}
 
 #loc-bar{position:absolute;top:8px;left:12px;right:12px;display:flex;gap:10px;align-items:baseline;padding:6px 12px;background:rgba(0,0,0,.45);border-radius:6px;border-left:3px solid var(--gold);font-size:13px;z-index:5}
 #loc-name{font-weight:600;color:var(--gold)}
 #loc-desc{opacity:.7;font-size:12px}
 
 /* portraits */
-#portraits{position:absolute;left:0;right:0;bottom:var(--boxh);top:40px;pointer-events:none;z-index:6}
+#portraits{position:absolute;left:0;right:0;bottom:calc(var(--boxh) + var(--boxm));top:40px;pointer-events:none;z-index:6}
 .p-slot{position:absolute;bottom:0;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;transition:left .28s ease,opacity .22s ease;max-height:100%}
 .p-slot.ps-enter{opacity:0}
 .p-slot.ps-leave{opacity:0}
@@ -143,13 +146,15 @@ body.roam #stage{--boxh:96px}
 .css-p.hol{background:linear-gradient(180deg,#708090,#304050)}
 .css-p.dim{filter:brightness(.45)}
 
-#css-portraits{position:absolute;left:0;right:0;bottom:var(--boxh);display:flex;justify-content:center;align-items:flex-end;pointer-events:none;z-index:4;min-height:100px}
+#css-portraits{position:absolute;left:0;right:0;bottom:calc(var(--boxh) + var(--boxm));display:flex;justify-content:center;align-items:flex-end;pointer-events:none;z-index:4;min-height:100px}
 
-/* text box */
-#text-box{position:relative;height:var(--boxh);min-height:var(--boxh);background:var(--box);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--ink);border-radius:0;padding:12px 22px 12px calc(var(--bustw) + 20px);box-shadow:none;border:none;cursor:pointer;z-index:6;flex-shrink:0;overflow:visible;box-sizing:border-box}
-/* 对话内小立绘（说话人胸像）：置于对话栏左缘，下沿与屏幕下沿一致（bottom:0）；比栏高、上 1/4 超出栏顶 */
+/* 对话框：圆角 + 描边 + 阴影 + 四周留白，做成悬浮的「框」而非通栏 */
+#text-box{position:relative;height:var(--boxh);min-height:var(--boxh);background:var(--box);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--ink);border-radius:14px;padding:12px 22px 12px calc(var(--bustw) + 20px);box-shadow:0 8px 28px rgba(0,0,0,.4);border:1px solid rgba(201,162,39,.45);cursor:pointer;z-index:6;flex-shrink:0;overflow:visible;box-sizing:border-box;margin:0 var(--boxm) var(--boxm)}
+/* 说话人小立绘组：置于对话框左缘，底部与对话框底边一致；小立绘向上超出框顶约 56px */
 #tb-speaker{position:absolute;left:8px;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;z-index:7;pointer-events:none}
-#tb-speaker img{width:calc(var(--bustw) - 18px);height:calc(var(--boxh) + 40px);object-fit:contain;object-position:bottom center;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5));transform:none}
+/* 对话内小立绘：统一高度（object-fit:cover 顶对齐裁切，所有角色小立绘同高），
+   底部留出 margin 让出名字条位置，避免小立绘盖住下面的角色名 */
+#tb-speaker img{width:calc(var(--bustw) - 18px);height:calc(var(--boxh) + 40px);object-fit:cover;object-position:top center;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5));transform:none;margin-bottom:16px}
 #tb-speaker-name{font-size:15px;color:#2a2038;background:rgba(255,255,255,.92);padding:2px 12px;border-radius:6px;letter-spacing:.05em;text-align:center;max-width:calc(var(--bustw) + 20px);position:relative;z-index:8;margin-top:-8px;box-shadow:0 2px 8px rgba(0,0,0,.18)}
 #speaker{display:none}
 #text{font-size:20px;line-height:1.75;white-space:pre-wrap;word-break:break-word;overflow:hidden}
@@ -159,7 +164,7 @@ body.roam #stage{--boxh:96px}
 #text .ice{color:#2a6a9a}
 #more{position:absolute;right:14px;bottom:6px;font-size:12px;color:var(--gold);animation:pulse 1.2s infinite}
 
-#choices{display:flex;flex-direction:column;gap:8px;margin-top:10px;z-index:6;flex-shrink:0;max-height:40vh;overflow-y:auto;overflow-x:hidden;width:100%}
+#choices{display:flex;flex-direction:column;gap:8px;margin:10px var(--boxm) var(--boxm);z-index:6;flex-shrink:0;max-height:40vh;overflow-y:auto;overflow-x:hidden;width:calc(100% - 2*var(--boxm))}
 #choices:empty{display:none}
 .choice{width:100%;box-sizing:border-box;padding:12px 18px;background:linear-gradient(135deg,rgba(40,30,55,.6),rgba(25,18,40,.68));border:1px solid rgba(201,162,39,.3);border-radius:10px;font-size:17px;text-align:left;line-height:1.6;transition:.15s;color:#f0e6d0;max-width:100%;white-space:normal;overflow-wrap:break-word;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .choice:hover:not(:disabled){border-color:var(--gold);background:linear-gradient(135deg,rgba(60,40,80,.95),rgba(35,25,55,.98));transform:translateX(4px)}
@@ -171,7 +176,8 @@ body.roam #stage{--boxh:96px}
 .choice.egg{border-color:rgba(120,200,120,.5)}
 
 /* action bar */
-#action-bar{display:flex;gap:6px;padding:8px 12px;background:rgba(15,10,25,.55);border-top:1px solid rgba(201,162,39,.2);flex-wrap:wrap;justify-content:center;flex-shrink:0;z-index:7;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+/* 底部UI：单行横向滚动（不换行）→ 高度恒定，保证自由探索时对话框上沿位置稳定 */
+#action-bar{display:flex;gap:6px;padding:8px 12px;background:rgba(15,10,25,.55);border-top:1px solid rgba(201,162,39,.2);flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;justify-content:flex-start;flex-shrink:0;z-index:7;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);-webkit-overflow-scrolling:touch}
 .abtn{padding:10px 16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;font-size:15px;transition:.15s}
 .abtn:hover{background:rgba(201,162,39,.18);border-color:var(--gold)}
 .abtn.primary{background:linear-gradient(135deg,rgba(80,50,120,.8),rgba(50,30,80,.9));border-color:rgba(201,162,39,.4)}

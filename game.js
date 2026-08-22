@@ -1247,6 +1247,9 @@ function skipType(){
 
 function advanceDialog(){
   if(awaitingChoice) return;
+  // 自由探索：玩家点过对话框后，本季度不再以「地点提示 / 季度提示」形式弹出提示性对话框
+  //（flag 在 advanceSeason 里每季度重置）
+  if(S.freeRoam) flag('roam_hint_seen', 1);
   // If still typing: complete the line only (stay on this message)
   if(typing){
     skipType();
@@ -1257,6 +1260,9 @@ function advanceDialog(){
     const fn = lineCB;
     lineCB = null;
     try { fn(); } catch(err){ console.error('lineCB error', err); enterFreeRoam(); }
+  } else if(S.freeRoam){
+    // 自由探索：无后续剧情、对话框里只剩残留提示时，点击即清空
+    const te = $('text'); if(te) te.innerHTML='';
   }
 }
 
@@ -1783,15 +1789,17 @@ function enterFreeRoam(){
   setSpeaker(null);
   const exits = (EXITS[S.loc]||[]).filter(ex=>ex.babyFuss||canUseExit(ex));
   let tip = null;
-  if(S.ageY<1 && S.loc==='nursery'){
-    tip = `（育婴室）\n你还走不了太远，点「闹着要出去」让家人抱你出去。`;
-  } else if(exits.length && !flag('roam_hint_seen')){
-    // 每季度「点画面出口移动」提示只出现一次；玩家点过对话框后本季度不再显示该提示
-    tip = `（${LOCS[S.loc]?.name||S.loc}）\n点画面出口移动（标 ⚡ 的会耗体力）。`;
-  } else if(!exits.length){
-    tip = `（${LOCS[S.loc]?.name||S.loc}）\n想做什么？`;
+  // 本季度玩家点过对话框后：不再显示任何「（地点）…」提示性对话框，保持界面干净
+  if(!flag('roam_hint_seen')){
+    if(S.ageY<1 && S.loc==='nursery'){
+      tip = `（育婴室）\n你还走不了太远，点「闹着要出去」让家人抱你出去。`;
+    } else if(exits.length){
+      // 「点画面出口移动」提示本季度只出现一次
+      tip = `（${LOCS[S.loc]?.name||S.loc}）\n点画面出口移动（标 ⚡ 的会耗体力）。`;
+    } else {
+      tip = `（${LOCS[S.loc]?.name||S.loc}）\n想做什么？`;
+    }
   }
-  // 本季度已看过出口提示（或无出口）：不再显示「（地点）点画面…」对话框，保持界面干净
   if(tip !== null) $('text').innerHTML = escapeText(tip);
   renderHotspots();
 }
@@ -1857,6 +1865,17 @@ document.getElementById('action-bar').onclick = e=>{
   else if(act==='item') openPanel('inv');
   else if(act==='next') doNextTime();
 };
+
+// 实测底部UI高度 → --abh：自由探索（带底部UI）时，
+// 对话框上沿 = 屏底 − 底部UI高 − (131px − 底部UI高) = 屏底 − 131px，
+// 与剧情模式（隐藏底部UI、仅对话框）的相对位置一致
+(function(){
+  const ab = $('action-bar');
+  if(!ab || typeof ResizeObserver === 'undefined') return;
+  new ResizeObserver(()=>{
+    document.documentElement.style.setProperty('--abh', (ab.classList.contains('hidden') ? 0 : ab.offsetHeight) + 'px');
+  }).observe(ab);
+})();
 
 function openMap(){
   const g=$('map-grid'); g.innerHTML='';
@@ -3456,9 +3475,7 @@ doNextTime = function(){
       for(let i = 0; i < steps; i++) advanceSeason(1);
       if(checkStoryGates()) return;
       enterFreeRoam();
-      var tip = dateStr() + '。风物换了季节。体力已恢复。\n点出口继续探索，或再开季度菜单。';
-      var te = $('text');
-      if(te) te.innerHTML = escapeText(tip);
+      // 换季不再向对话框写入提示（仅保留顶部 toast 通知）
       toast(dateStr() + ' · 体力已恢复');
       updateHUD();
       renderHotspots();

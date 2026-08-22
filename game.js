@@ -1546,8 +1546,10 @@ function bindAdvance(){
   tb.onclick = (e)=>{
     // don't steal clicks from buttons inside
     if(e.target.closest('button')) return;
-    // 自由探索提示再次点击后，本季度不再显示地点/季度类提示；剧情对话不受影响
+    // 自由探索提示只有点击右下角小三角才能关闭；空格或点击框内其他位置均不关闭
     if(S.freeRoam && !typing && !lineCB && !awaitingChoice){
+      const dismiss = !!(e.target.closest && e.target.closest('#more'));
+      if(!dismiss) return;
       flag('roam_hint_seen', 1);
       tb.classList.add('dialog-hidden');
       tb.removeAttribute('data-roam-prompt');
@@ -1769,7 +1771,7 @@ function renderHotspots(){
       e.stopPropagation();
       if(!S.freeRoam) return;
       sfx('click');
-      if(ex.babyFuss){ doBabyFuss(ex.fussTo || 'parlor', st); return; }
+      if(ex.babyFuss){ doBabyFuss(ex.fussTo || 'parlor', ex.st || 0); return; }
       enterLoc(ex.to);
     };
     box.appendChild(b);

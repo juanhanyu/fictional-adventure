@@ -44,14 +44,29 @@ ok('恢复默认 (bgm=0.5)', Math.abs(win.getSettings().bgm-0.5)<0.001);
 $('btn-ui').onclick(); ok('点击隐藏UI', win.document.body.classList.contains('ui-hidden'));
 $('btn-ui').onclick(); ok('再点恢复UI', !win.document.body.classList.contains('ui-hidden'));
 
-// 自由探索提示：点击一次后本季度隐藏；剧情开始时恢复
+// 自由探索提示：只有右下角小三角可关闭；框内其他位置与空格均不得关闭
 win.__resetS(); const st3=win.__getS(); st3.freeRoam=true; win.__setS(st3);
-const tb=$('text-box');
+const tb=$('text-box'), more=$('more');
 tb.classList.remove('dialog-hidden');
+$('panel').classList.add('hidden');
 tb.onclick({target:tb});
-ok('自由探索点击隐藏提示对话框', tb.classList.contains('dialog-hidden'));
-ok('记录本季度提示已关闭', win.__getS().flags.roam_hint_seen===1);
-win.playLines([{text:'测试剧情'}]);
+ok('点击对话框其他位置不隐藏提示', !tb.classList.contains('dialog-hidden'));
+win.document.dispatchEvent(new win.KeyboardEvent('keydown', {key:' '}));
+ok('按空格不隐藏自由探索提示', !tb.classList.contains('dialog-hidden'));
+ok('空格与框内点击不记录已关闭', win.__getS().flags.roam_hint_seen!==1);
+tb.onclick({target:more});
+ok('点击右下角小三角隐藏提示', tb.classList.contains('dialog-hidden'));
+ok('小三角记录本季度提示已关闭', win.__getS().flags.roam_hint_seen===1);
+
+// 婴儿期两个抱出按钮都可用，点击后进入抱出剧情并恢复对话框
+win.__resetS(); const infant=win.__getS(); infant.ageY=0; infant.loc='nursery'; infant.freeRoam=true; infant.st=5; win.__setS(infant);
+win.renderHotspots();
+const babyButtons=win.document.querySelectorAll('.hotspot.locked-baby');
+ok('婴儿期显示两个出去按钮', babyButtons.length===2);
+let babyClickOK=true;
+try{ babyButtons[0].click(); }catch(e){ babyClickOK=false; }
+ok('婴儿出去按钮点击不报错', babyClickOK);
+ok('点击后进入抱出剧情', !win.__getS().freeRoam);
 ok('剧情开始恢复对话框', !tb.classList.contains('dialog-hidden'));
 ok('下个季度按钮直接推进、无二次选择对话框', !win.doNextTime.toString().includes('choices'));
 

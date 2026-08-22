@@ -1,7 +1,7 @@
 :root{
   --ink:#1a1520;--paper:#f7f0e6;--gold:#c9a227;--rose:#c45c7a;--ice:#6eb5ff;
   --water:#4a90c8;--fire:#e85d4c;--wind:#7bc47f;--night:#1b1430;
-  --hud:rgba(20,14,30,.82);--box:#faf5eb;--choice:#2a2038;
+  --hud:rgba(20,14,30,.82);--box:rgba(250,245,235,.78);--choice:#2a2038;
   --stamina:#e8b84a;--hp:#e07080;--mp:#6a9fe8;--ok:#5cb88a;
   --serif:'Noto Serif SC',serif;--brush:'Ma Shan Zheng',cursive;
 }
@@ -90,7 +90,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 /* ===== STAGE ===== */
 #game-screen{flex:1;display:flex;flex-direction:column;min-height:0}
-#stage{flex:1;display:flex;flex-direction:column;justify-content:flex-end;position:relative;min-height:0;padding:0;--boxh:131px;--bustw:140px}
+/* 大立绘统一缩放：所有立绘按同一高度（--ph）显示，宽度随原图比例自适应，保证每个角色在屏幕上的比例一致 */
+#stage{flex:1;display:flex;flex-direction:column;justify-content:flex-end;position:relative;min-height:0;padding:0;--boxh:131px;--bustw:140px;--ph:min(440px,72vh)}
 /* 自由探索：底部UI显示，对话栏容纳两排（矮）；剧情时底部UI隐藏，容纳三排 */
 body.roam #stage{--boxh:96px}
 
@@ -103,7 +104,7 @@ body.roam #stage{--boxh:96px}
 .p-slot{position:absolute;bottom:0;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;transition:left .28s ease,opacity .22s ease;max-height:100%}
 .p-slot.ps-enter{opacity:0}
 .p-slot.ps-leave{opacity:0}
-.p-slot img{max-height:min(440px,72vh);max-width:min(260px,26vw);object-fit:contain;filter:drop-shadow(0 8px 20px rgba(0,0,0,.5));transition:filter .3s,transform .3s}
+.p-slot img{height:var(--ph);width:auto;object-fit:contain;object-position:bottom center;filter:drop-shadow(0 8px 20px rgba(0,0,0,.5));transition:filter .3s,transform .3s}
 .p-slot.dim img{filter:brightness(.45) drop-shadow(0 4px 10px rgba(0,0,0,.4))}
 .p-slot.active img{filter:brightness(1.05) drop-shadow(0 8px 24px rgba(201,162,39,.3))}
 /* 爱丽丝为白色系发肤，active 高亮过亮会刺眼，减弱其亮度 */
@@ -145,7 +146,7 @@ body.roam #stage{--boxh:96px}
 #css-portraits{position:absolute;left:0;right:0;bottom:var(--boxh);display:flex;justify-content:center;align-items:flex-end;pointer-events:none;z-index:4;min-height:100px}
 
 /* text box */
-#text-box{position:relative;height:var(--boxh);min-height:var(--boxh);background:var(--box);color:var(--ink);border-radius:0;padding:12px 22px 12px calc(var(--bustw) + 20px);box-shadow:none;border:none;cursor:pointer;z-index:6;flex-shrink:0;overflow:visible;box-sizing:border-box}
+#text-box{position:relative;height:var(--boxh);min-height:var(--boxh);background:var(--box);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--ink);border-radius:0;padding:12px 22px 12px calc(var(--bustw) + 20px);box-shadow:none;border:none;cursor:pointer;z-index:6;flex-shrink:0;overflow:visible;box-sizing:border-box}
 /* 对话内小立绘（说话人胸像）：置于对话栏左缘，下沿与屏幕下沿一致（bottom:0）；比栏高、上 1/4 超出栏顶 */
 #tb-speaker{position:absolute;left:8px;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;z-index:7;pointer-events:none}
 #tb-speaker img{width:calc(var(--bustw) - 18px);height:calc(var(--boxh) + 40px);object-fit:contain;object-position:bottom center;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5));transform:none}
@@ -274,7 +275,7 @@ body.roam #stage{--boxh:96px}
 @media(max-width:600px){
   .title-main{font-size:40px}
   #hud-face{width:40px;height:40px}
-  .p-slot img{max-height:min(300px,52vh);max-width:min(160px,26vw)}
+  #stage{--ph:min(300px,52vh)}
   .css-p{width:110px;height:160px}
   #text{font-size:17px}
   .abtn{padding:6px 10px;font-size:12px}
@@ -321,7 +322,10 @@ body.roam #stage{--boxh:96px}
   cursor:pointer;
 }
 #portraits.roam-npc .p-slot img{
-  max-height:min(440px,72vh);
+  height:var(--ph);
+  width:auto;
+  object-fit:contain;
+  object-position:bottom center;
   filter:drop-shadow(0 8px 18px rgba(0,0,0,.55));
 }
 #portraits.roam-npc .p-slot:hover img{

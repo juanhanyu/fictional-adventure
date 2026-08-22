@@ -70,5 +70,30 @@ ok('点击后进入抱出剧情', !win.__getS().freeRoam);
 ok('剧情开始恢复对话框', !tb.classList.contains('dialog-hidden'));
 ok('下个季度按钮直接推进、无二次选择对话框', !win.doNextTime.toString().includes('choices'));
 
+// 进入空地点不再播放环境描述；有人时显示情境问候且保留底部 UI
+ok('普通进入地点不再调用环境描述对话', !win.eval('_enterLocRaw.toString()').includes('ambientText'));
+win.__resetS(); const greetState=win.__getS(); greetState.freeRoam=true; greetState.ageY=8; greetState.loc='garden'; win.__setS(greetState);
+const ageGreeting=win.roamGreetingText('sophia','garden');
+const placeGreeting=win.roamGreetingText('sophia','library');
+ok('问候内容随地点变化', ageGreeting!==placeGreeting);
+const older=win.__getS(); older.ageY=15; win.__setS(older);
+ok('问候内容随主角年龄变化', win.roamGreetingText('sophia','garden')!==ageGreeting);
+win.enterFreeRoam({suppressPrompt:true});
+win.showRoamGreeting('sophia','garden');
+ok('人物问候保留底部 UI', !$('action-bar').classList.contains('hidden'));
+ok('人物问候标记为 greeting', tb.getAttribute('data-roam-prompt')==='greeting');
+ok('人物问候显示角色小立绘', !$('tb-speaker').classList.contains('hidden'));
+
+// 无底部 UI 时按 1/2/3/4 行应用固定行位
+win.document.body.classList.remove('roam');
+win.setDialogRows('一行');
+ok('一行文本使用第二行位置', tb.classList.contains('dialog-rows-1'));
+win.setDialogRows('第一行\n第二行');
+ok('两行文本使用二三行位置', tb.classList.contains('dialog-rows-2'));
+win.setDialogRows('一\n二\n三');
+ok('三行文本使用一二三行位置', tb.classList.contains('dialog-rows-3'));
+win.setDialogRows('一\n二\n三\n四');
+ok('四行文本完整容纳', tb.classList.contains('dialog-rows-4'));
+
 console.log(fail===0?'\n  ✓ 全部通过':'\n  ✗ '+fail+' 处失败');
 process.exit(fail?1:0);

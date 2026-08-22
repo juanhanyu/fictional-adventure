@@ -1184,9 +1184,45 @@ let lineGen = 0;
 let awaitingChoice = false;
 let afterPick = null; // 勇者之赐选卡后，继续播放的剩余台词 {rest, done}
 
+// 按完整文本估算实际显示行数；无底部 UI 时依行数固定到四行网格
+function setDialogRows(str){
+  const tb=$('text-box'), text=$('text');
+  if(!tb || !text) return 1;
+  tb.classList.remove('dialog-rows-1','dialog-rows-2','dialog-rows-3','dialog-rows-4');
+  const raw=String(str ?? '');
+  let rows=Math.max(1, raw.split('\n').length);
+  try{
+    const width=text.clientWidth;
+    if(width>0){
+      const cs=getComputedStyle(text);
+      const probe=document.createElement('div');
+      probe.style.position='absolute';
+      probe.style.visibility='hidden';
+      probe.style.pointerEvents='none';
+      probe.style.width=width+'px';
+      probe.style.fontFamily=cs.fontFamily;
+      probe.style.fontSize=cs.fontSize;
+      probe.style.fontWeight=cs.fontWeight;
+      probe.style.letterSpacing=cs.letterSpacing;
+      probe.style.lineHeight=cs.lineHeight;
+      probe.style.whiteSpace='pre-wrap';
+      probe.style.wordBreak='break-word';
+      probe.textContent=raw;
+      tb.appendChild(probe);
+      const lh=parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize)||24)*1.55;
+      rows=Math.max(rows, Math.ceil(probe.scrollHeight/lh));
+      probe.remove();
+    }
+  }catch(e){}
+  rows=clamp(rows,1,4);
+  tb.classList.add('dialog-rows-'+rows);
+  return rows;
+}
+
 function typeText(str, cb){
   const box = $('text');
   fullText = String(str ?? '');
+  setDialogRows(fullText);
   textIdx = 0;
   typing = true;
   typeDoneCB = cb || null;
@@ -1428,6 +1464,7 @@ function playLines(lines, done){
         typeDoneCB = null;
         lineCB = null;
         fullText = String(L.text || '请选择：');
+        setDialogRows(fullText);
         $('text').innerHTML = escapeText(fullText);
         showChoices(L.choices, ()=>{});
         return;
@@ -1550,10 +1587,15 @@ function bindAdvance(){
     if(S.freeRoam && !typing && !lineCB && !awaitingChoice){
       const dismiss = !!(e.target.closest && e.target.closest('#more'));
       if(!dismiss) return;
-      flag('roam_hint_seen', 1);
+      if(tb.getAttribute('data-roam-prompt')==='hint') flag('roam_hint_seen', 1);
       tb.classList.add('dialog-hidden');
       tb.removeAttribute('data-roam-prompt');
       $('text').innerHTML = '';
+      setSpeaker(null);
+      document.querySelectorAll('#portraits .p-slot').forEach(el=>{
+        if(el.classList.contains('hidden')) return;
+        el.classList.add('active'); el.classList.remove('dim');
+      });
       save();
       return;
     }
@@ -1810,7 +1852,8 @@ function enterFreeRoam(options={}){
   const dialogBox=$('text-box');
   if(tip !== null){
     dialogBox.classList.remove('dialog-hidden');
-    dialogBox.setAttribute('data-roam-prompt','1');
+    dialogBox.setAttribute('data-roam-prompt','hint');
+    setDialogRows(tip);
     $('text').innerHTML = escapeText(tip);
   } else {
     dialogBox.classList.add('dialog-hidden');
@@ -1836,9 +1879,64 @@ function enterLoc(id){
   S.loc=id; if(L.tags?.includes('rest')) S.lastSafe=id;
   updateLocBar(); clearPortraits();
   if(tryLocEgg(id)) return;
-  const amb = ambientText(id);
-  playLines([{text:amb, freeRoam:true}]);
+  // 普通进入地点不再播放环境描述；保持自由探索与底部 UI
+  enterFreeRoam({suppressPrompt:true});
+  const peeps=whoIsHere();
+  if(peeps.length){
+    const idx=Math.abs((S.season||0)+S.ageY+String(id).length)%peeps.length;
+    showRoamGreeting(peeps[idx], id);
+  }
 }
+const ROAM_PLACE_DETAIL = {
+  nursery:'窗边的光很暖。', ownroom:'房间里很安静。', hallway:'走廊今天很安静。',
+  parlor:'红茶刚泡好。', dining:'餐点还热着。', garden:'花园的风正好。',
+  study:'书页上落着一小片阳光。', kitchen:'刚出炉的点心很香。', training:'风向正适合练习。',
+  balcony:'露台的风有点凉。', chapel:'彩窗的光落在长椅上。', cellar:'这里比外面凉得多。',
+  town:'街上比平时热闹。', beach:'海风把浪声送了过来。', dorm:'宿舍里难得安静。',
+  library:'这里适合安静看书。', cafeteria:'今天的餐点闻起来不错。', water_class:'水元素正在空气里聚集。',
+  ice_class:'教室里的温度刚刚好。', flowerhouse:'花坊的湿度正合适。', training_field:'训练场的风很干净。',
+  memorial:'树影把石牌遮住了一半。', auditorium:'礼堂里的回声很清楚。', jikan:'院里的炉火还温着。',
+  northforest:'林子里的风声不太安稳。', road:'今天的路上没有太多尘土。'
+};
+function roamGreetingText(charId, locId=S.loc){
+  const a=S.ageY, n=CHARS[charId]?.short||charId;
+  const detail=ROAM_PLACE_DETAIL[locId] || (LOCS[locId]?.name ? LOCS[locId].name+'今天很安静。' : '这里今天很安静。');
+  switch(charId){
+    case 'sophia': return a<1 ? '醒了吗？妈妈在。'+detail : a<6 ? '希尔维亚，慢一点。'+detail : '希尔维亚，来得正好。'+detail;
+    case 'beatrice': return a<1 ? '妹妹！看这里！'+detail : a<10 ? '希尔维亚！我正想找你！'+detail : '希尔维亚，来得正好！'+detail;
+    case 'alice': return a<3 ? '……姐姐大人。'+detail : a<10 ? '……姐姐大人，你也来了。'+detail : '……姐姐大人。要一起待一会儿吗？'+detail;
+    case 'claude': return a<6 ? '希尔维亚。别跑太快。'+detail : '希尔维亚。既然来了，就别急着走。'+detail;
+    case 'emma': return '希尔维亚！你也在这里！'+detail;
+    case 'noelle': return '……来了？'+detail;
+    case 'aino': return '……你来了。'+detail;
+    case 'anna': return '希尔维亚同学，来得正好。'+detail;
+    case 'hol': return '……嗯，你来了。'+detail;
+    case 'charlotte': return '维斯特利亚。你来得倒巧。'+detail;
+    case 'ajun': return '希尔维亚！正好碰见你！'+detail;
+    case 'ji': return '来了？先歇口气。'+detail;
+    case 'jilan': return '你来啦。'+detail;
+    default: return a<6 ? n+'弯下身向你打了声招呼。'+detail : n+'向你点了点头。'+detail;
+  }
+}
+function showRoamGreeting(charId, locId=S.loc){
+  if(!charId || !CHARS[charId]) return false;
+  const tb=$('text-box');
+  const greeting=roamGreetingText(charId, locId);
+  setSpeaker(CHARS[charId].short, charId);
+  setDialogRows(greeting);
+  $('text').innerHTML=escapeText(greeting);
+  tb.classList.remove('dialog-hidden');
+  tb.setAttribute('data-roam-prompt','greeting');
+  document.querySelectorAll('#portraits .p-slot').forEach(el=>{
+    if(el.classList.contains('hidden')) return;
+    const active=el.getAttribute('data-char')===charId;
+    el.classList.toggle('active',active);
+    el.classList.toggle('dim',!active);
+  });
+  save();
+  return true;
+}
+
 function ambientText(id){
   const map = {
     nursery: '熟悉的育婴室。床头有纱帐，雕花的天花板。阳光从缝隙漏进来，在被子上投下晃动的光斑。门外是长廊。',

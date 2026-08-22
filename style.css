@@ -89,7 +89,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .chip:hover{background:rgba(201,162,39,.2);border-color:var(--gold)}
 
 /* ===== STAGE ===== */
-#game-screen{flex:1;display:flex;flex-direction:column;min-height:0;--dialog-stack-h:170px;--actionh:64px;--dialog-gap:12px}
+#game-screen{flex:1;display:flex;flex-direction:column;min-height:0;--dialog-stack-h:184px;--actionh:64px;--dialog-gap:12px}
 #stage{flex:1;display:flex;flex-direction:column;justify-content:flex-end;position:relative;min-height:0;padding:0;--boxh:var(--dialog-stack-h);--bustw:140px;--speaker-img-h:132px;--speaker-name-h:28px;--portrait-size:min(420px,30vw,72vh)}
 /* 对话框单独显示，或与底部 UI 同时显示时，上边缘保持在同一屏幕位置 */
 body.roam #stage{--boxh:calc(var(--dialog-stack-h) - var(--actionh))}
@@ -152,7 +152,9 @@ body.roam #text-box.dialog-hidden{opacity:0;visibility:hidden;pointer-events:non
 #tb-speaker img{width:calc(var(--bustw) - 18px);height:var(--speaker-img-h);flex:0 0 var(--speaker-img-h);object-fit:contain;object-position:bottom center;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5));transform:none}
 #tb-speaker-name{font-size:15px;line-height:20px;min-height:var(--speaker-name-h);color:#2a2038;background:rgba(255,255,255,.92);padding:2px 12px;border-radius:6px;letter-spacing:.05em;text-align:center;max-width:calc(var(--bustw) + 20px);position:relative;z-index:8;margin-top:0;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.18)}
 #speaker{display:none}
-#text{font-size:24px;line-height:1.55;white-space:pre-wrap;word-break:break-word;overflow:hidden}
+#text{font-size:24px;line-height:1.55;white-space:pre-wrap;word-break:break-word;overflow:hidden;padding-top:0}
+body:not(.roam) #text-box.dialog-rows-1 #text,
+body:not(.roam) #text-box.dialog-rows-2 #text{padding-top:1.55em}
 #text .sys{color:#4a6a9a;font-size:20px}
 #text .em{color:var(--rose);font-style:normal}
 #text .gold{color:#8a7020}

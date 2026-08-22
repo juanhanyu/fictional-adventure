@@ -59,9 +59,24 @@ tb.onclick({target:tb});
 ok('点击风物框其他位置不关闭', !tb.classList.contains('dialog-hidden'));
 win.document.dispatchEvent(new win.KeyboardEvent('keydown', {key:' '}));
 ok('按空格不关闭季度风物框', !tb.classList.contains('dialog-hidden'));
+// 模拟上一段剧情遗留的推进回调：提示框三角仍应独立关闭并执行季度回调。
+win.eval('lineCB=()=>{};');
 tb.onclick({target:more});
 ok('右下角小三角关闭季度风物框', tb.classList.contains('dialog-hidden'));
 ok('关闭季度风物框后执行后续逻辑', seasonClosed);
+ok('关闭自由探索提示时清理旧推进状态', win.eval('lineCB===null && typing===false && typeDoneCB===null'));
+
+// 回归：下个季度的风物框关闭后必须实际进入日期门控剧情。
+win.__resetS();
+const gateState=win.__getS();
+gateState.ageY=1; gateState.ageD=0; gateState.year=0; gateState.month=6; gateState.season=1;
+gateState.phase='childhood'; gateState.loc='nursery'; gateState.freeRoam=true; gateState.flags={};
+win.__setS(gateState);
+win.doNextTime();
+ok('剧情门控前先显示季度风物框', tb.getAttribute('data-roam-prompt')==='season');
+tb.onclick({target:more});
+ok('关闭风物框后触发到期剧情', win.__getCurrentScene()==='s_first_word' && !win.__getS().freeRoam);
+win.eval("storyChain=null; currentScene=null; resetDialogAdvanceState(); show('card',0);");
 
 // 婴儿期两个抱出按钮都可用，点击后进入抱出剧情并恢复对话框
 win.__resetS(); const infant=win.__getS(); infant.ageY=0; infant.loc='nursery'; infant.freeRoam=true; infant.st=5; win.__setS(infant);

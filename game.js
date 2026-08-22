@@ -3848,8 +3848,9 @@ doNextTime = function(){
   const steps = S.ageY < 1 ? 4 : 1;
   for(let i = 0; i < steps; i++) advanceSeason(1);
   enterFreeRoam({deferGreeting:true});
-  // 先记录到期队列；真正播放由季度提示的小三角直接调度。
-  checkStoryGates({defer:true});
+  // 到期剧情由日期推进立即触发，与季度提示及其小三角完全无关。
+  if(checkStoryGates()) return;
+  // 本季度没有剧情时，才显示普通风物提示。
   showSeasonFlavor(()=>{
     updateHUD();
     renderHotspots();

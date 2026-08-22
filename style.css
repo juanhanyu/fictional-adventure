@@ -89,8 +89,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .chip:hover{background:rgba(201,162,39,.2);border-color:var(--gold)}
 
 /* ===== STAGE ===== */
-#game-screen{flex:1;display:flex;flex-direction:column;min-height:0}
-#stage{flex:1;display:flex;flex-direction:column;justify-content:flex-end;position:relative;min-height:0;padding:0;--dialog-stack-h:170px;--actionh:64px;--dialog-gap:12px;--boxh:var(--dialog-stack-h);--bustw:140px;--speaker-img-h:132px;--speaker-name-h:28px;--portrait-size:min(420px,30vw,72vh)}
+#game-screen{flex:1;display:flex;flex-direction:column;min-height:0;--dialog-stack-h:170px;--actionh:64px;--dialog-gap:12px}
+#stage{flex:1;display:flex;flex-direction:column;justify-content:flex-end;position:relative;min-height:0;padding:0;--boxh:var(--dialog-stack-h);--bustw:140px;--speaker-img-h:132px;--speaker-name-h:28px;--portrait-size:min(420px,30vw,72vh)}
 /* 对话框单独显示，或与底部 UI 同时显示时，上边缘保持在同一屏幕位置 */
 body.roam #stage{--boxh:calc(var(--dialog-stack-h) - var(--actionh))}
 
@@ -275,7 +275,8 @@ body.roam #text-box.dialog-hidden{opacity:0;visibility:hidden;pointer-events:non
 @media(max-width:600px){
   .title-main{font-size:40px}
   #hud-face{width:40px;height:40px}
-  #stage{--dialog-stack-h:188px;--actionh:92px;--bustw:108px;--speaker-img-h:112px;--speaker-name-h:24px;--portrait-size:min(300px,28vw,52vh)}
+  #game-screen{--dialog-stack-h:188px;--actionh:92px}
+  #stage{--bustw:108px;--speaker-img-h:112px;--speaker-name-h:24px;--portrait-size:min(300px,28vw,52vh)}
   .css-p{width:110px;height:160px}
   #text{font-size:17px}
   .abtn{padding:6px 10px;font-size:12px}

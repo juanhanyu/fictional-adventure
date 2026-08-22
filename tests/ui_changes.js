@@ -68,6 +68,16 @@ win.__resetS(); const infant=win.__getS(); infant.ageY=0; infant.loc='nursery'; 
 win.renderHotspots();
 const babyButtons=win.document.querySelectorAll('.hotspot.locked-baby');
 ok('婴儿期显示两个出去按钮', babyButtons.length===2);
+ok('人物点击使用透明像素命中检测', win.renderHotspots.toString().includes('portraitPixelIsOpaque') && win.renderHotspots.toString().includes('forwardPortraitClick'));
+const passButton=win.document.createElement('button');
+passButton.className='hotspot';
+let transparentForwarded=false;
+passButton.onclick=()=>{ transparentForwarded=true; };
+$('hotspots').appendChild(passButton);
+const oldElementFromPoint=win.document.elementFromPoint;
+win.document.elementFromPoint=()=>passButton;
+ok('透明区域可把点击转交给下层出口', win.forwardPortraitClick(20,20) && transparentForwarded);
+win.document.elementFromPoint=oldElementFromPoint;
 let babyClickOK=true;
 try{ babyButtons[0].click(); }catch(e){ babyClickOK=false; }
 ok('婴儿出去按钮点击不报错', babyClickOK);
@@ -86,11 +96,24 @@ ok('问候内容随主角年龄变化', win.roamGreetingText('sophia','garden')!
 const child=win.__getS(); child.ageY=4; win.__setS(child);
 const childGreetings=win.roamGreetingText('sophia','garden')+win.roamGreetingText('claude','garden');
 ok('幼年问候不再暗示主角乱跑', !childGreetings.includes('跑太快') && !childGreetings.includes('慢一点'));
-win.enterFreeRoam({suppressPrompt:true});
-win.showRoamGreeting('sophia','garden');
+const auto=win.__getS();
+auto.freeRoam=true; auto.phase='childhood'; auto.ageY=4; auto.year=4; auto.season=1; auto.loc='garden';
+auto.seasonChars={1:{beatrice:'hallway',alice:'nursery',sophia:'garden'}};
+win.__setS(auto);
+win.enterFreeRoam();
+ok('无人机位空闲时自动显示本季度角色问候', tb.getAttribute('data-roam-prompt')==='greeting' && tb.getAttribute('data-greeting-char')==='sophia');
 ok('人物问候保留底部 UI', !$('action-bar').classList.contains('hidden'));
-ok('人物问候标记为 greeting', tb.getAttribute('data-roam-prompt')==='greeting');
 ok('人物问候显示角色小立绘', !$('tb-speaker').classList.contains('hidden'));
+tb.onclick({target:more});
+ok('点击问候三角后记录角色与季度', win.roamGreetingDismissed('sophia'));
+win.enterFreeRoam();
+ok('同角色同季度不再自动问候', tb.classList.contains('dialog-hidden'));
+const nextQuarter=win.__getS();
+nextQuarter.season=2;
+nextQuarter.seasonChars[2]={beatrice:'hallway',alice:'nursery',sophia:'garden'};
+win.__setS(nextQuarter);
+win.enterFreeRoam();
+ok('换季度后角色问候重新出现', tb.getAttribute('data-roam-prompt')==='greeting' && tb.getAttribute('data-greeting-char')==='sophia');
 
 // 无底部 UI 时最多使用三行，并按实际行数垂直居中
 win.document.body.classList.remove('roam');

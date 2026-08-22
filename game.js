@@ -1368,7 +1368,7 @@ function playLines(lines, done){
   show('action-bar', 0);
   show('hotspots', 0);
   const dialogBox = $('text-box');
-  if(dialogBox){ dialogBox.classList.remove('dialog-hidden'); dialogBox.removeAttribute('data-roam-prompt'); }
+  if(dialogBox){ dialogBox.classList.remove('dialog-hidden'); dialogBox.removeAttribute('data-roam-prompt'); dialogBox.removeAttribute('data-greeting-char'); }
   document.body.classList.remove('roam');   // 剧情：恢复完整高度对话框
   $('portraits')?.classList.remove('roam-npc');
   const ch = $('choices'); if(ch) ch.innerHTML = '';
@@ -1613,11 +1613,15 @@ function bindAdvance(){
     if(S.freeRoam && !typing && !lineCB && !awaitingChoice){
       const dismiss = !!(e.target.closest && e.target.closest('#more'));
       if(!dismiss) return;
+      const promptKind=tb.getAttribute('data-roam-prompt');
+      const greetingChar=tb.getAttribute('data-greeting-char');
+      if(promptKind==='greeting' && greetingChar) markRoamGreetingDismissed(greetingChar);
       const afterPrompt=roamPromptDone;
       roamPromptDone=null;
       tb.classList.add('dialog-hidden');
       tb.classList.remove('season-flavor');
       tb.removeAttribute('data-roam-prompt');
+      tb.removeAttribute('data-greeting-char');
       $('text').innerHTML = '';
       setSpeaker(null);
       document.querySelectorAll('#portraits .p-slot').forEach(el=>{
@@ -1626,6 +1630,7 @@ function bindAdvance(){
       });
       save();
       if(typeof afterPrompt==='function') afterPrompt();
+      if(S.freeRoam) maybeShowRoamGreeting();
       return;
     }
     advanceDialog();
@@ -1783,6 +1788,49 @@ function doBabyFuss(toId, stCost){
     {text:'又被稳稳抱回育婴室。纱帐、熟悉的天花板。外面的世界，只好等自己会走路。', loc:'nursery', bg:LOCS.nursery?.bg, freeRoam:true}
   ]);
 }
+const portraitAlphaCache = new WeakMap();
+function portraitPixelIsOpaque(img, clientX, clientY){
+  if(!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return true;
+  const rect=img.getBoundingClientRect();
+  if(!rect.width || !rect.height) return true;
+  if(clientX<rect.left || clientX>rect.right || clientY<rect.top || clientY>rect.bottom) return false;
+  try{
+    const src=img.currentSrc || img.src || '';
+    let hit=portraitAlphaCache.get(img);
+    if(!hit || hit.src!==src || hit.nw!==img.naturalWidth || hit.nh!==img.naturalHeight){
+      const scale=Math.min(1,512/Math.max(img.naturalWidth,img.naturalHeight));
+      const w=Math.max(1,Math.round(img.naturalWidth*scale));
+      const h=Math.max(1,Math.round(img.naturalHeight*scale));
+      const canvas=document.createElement('canvas');
+      canvas.width=w; canvas.height=h;
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});
+      if(!ctx) return true;
+      ctx.drawImage(img,0,0,w,h);
+      hit={src,nw:img.naturalWidth,nh:img.naturalHeight,w,h,ctx};
+      portraitAlphaCache.set(img,hit);
+    }
+    const x=clamp(Math.floor((clientX-rect.left)/rect.width*hit.w),0,hit.w-1);
+    const y=clamp(Math.floor((clientY-rect.top)/rect.height*hit.h),0,hit.h-1);
+    return hit.ctx.getImageData(x,y,1,1).data[3]>=24;
+  }catch(e){
+    // 同源图片正常可读；若浏览器阻止 canvas 读取，则保守地仍把它视为角色本体。
+    return true;
+  }
+}
+function forwardPortraitClick(clientX,clientY){
+  if(typeof document.elementFromPoint!=='function') return false;
+  const slots=Array.from(document.querySelectorAll('#portraits .p-slot'));
+  const previous=slots.map(el=>el.style.pointerEvents);
+  slots.forEach(el=>{ el.style.pointerEvents='none'; });
+  let under=null;
+  try{ under=document.elementFromPoint(clientX,clientY); }
+  finally{ slots.forEach((el,i)=>{ el.style.pointerEvents=previous[i]; }); }
+  const hotspot=under && under.closest ? under.closest('.hotspot') : null;
+  if(!hotspot) return false;
+  hotspot.click();
+  return true;
+}
+
 function renderHotspots(){
   const box = $('hotspots');
   if(!box) return;
@@ -1823,6 +1871,13 @@ function renderHotspots(){
       el.onclick = (e)=>{
         e.stopPropagation();
         if(!S.freeRoam) return;
+        const img=el.querySelector('img');
+        // detail===0 表示键盘/脚本触发；真实指针点击才进行透明像素命中检测。
+        const onCharacter=e.detail===0 || portraitPixelIsOpaque(img,e.clientX,e.clientY);
+        if(!onCharacter){
+          forwardPortraitClick(e.clientX,e.clientY);
+          return;
+        }
         sfx('click');
         talkTo(id);
       };
@@ -1873,8 +1928,10 @@ function enterFreeRoam(options={}){
   dialogBox.classList.add('dialog-hidden');
   dialogBox.classList.remove('season-flavor');
   dialogBox.removeAttribute('data-roam-prompt');
+  dialogBox.removeAttribute('data-greeting-char');
   $('text').innerHTML = '';
   renderHotspots();
+  if(!options.deferGreeting) maybeShowRoamGreeting();
 }
 
 const SEASON_FLAVOR = [
@@ -1896,6 +1953,7 @@ function showSeasonFlavor(done){
   tb.classList.remove('dialog-hidden');
   tb.classList.add('season-flavor');
   tb.setAttribute('data-roam-prompt','season');
+  tb.removeAttribute('data-greeting-char');
   roamPromptDone = typeof done==='function' ? done : null;
   save();
   return text;
@@ -1918,13 +1976,8 @@ function enterLoc(id){
   S.loc=id; if(L.tags?.includes('rest')) S.lastSafe=id;
   updateLocBar(); clearPortraits();
   if(tryLocEgg(id)) return;
-  // 普通进入地点不再播放环境描述；保持自由探索与底部 UI
-  enterFreeRoam({suppressPrompt:true});
-  const peeps=whoIsHere();
-  if(peeps.length){
-    const idx=Math.abs((S.season||0)+S.ageY+String(id).length)%peeps.length;
-    showRoamGreeting(peeps[idx], id);
-  }
+  // 普通进入地点不再播放环境描述；自由探索会自动显示本季度尚未关闭的角色问候。
+  enterFreeRoam();
 }
 const ROAM_PLACE_DETAIL = {
   nursery:'窗边的光很暖。', ownroom:'房间里很安静。', hallway:'走廊今天很安静。',
@@ -1957,6 +2010,40 @@ function roamGreetingText(charId, locId=S.loc){
     default: return a<6 ? n+'弯下身向你打了声招呼。'+detail : n+'向你点了点头。'+detail;
   }
 }
+function roamGreetingQuarterKey(){
+  return String(S.year||0)+':'+String(S.season||0);
+}
+function roamGreetingDismissed(charId){
+  const all=flag('roam_greeting_dismissed');
+  const quarter=all && typeof all==='object' ? all[roamGreetingQuarterKey()] : null;
+  return !!(quarter && quarter[charId]);
+}
+function markRoamGreetingDismissed(charId){
+  if(!charId) return;
+  let all=flag('roam_greeting_dismissed');
+  if(!all || typeof all!=='object' || Array.isArray(all)) all={};
+  const key=roamGreetingQuarterKey();
+  if(!all[key] || typeof all[key]!=='object') all[key]={};
+  all[key][charId]=1;
+  flag('roam_greeting_dismissed',all);
+}
+function maybeShowRoamGreeting(){
+  const tb=$('text-box'), action=$('action-bar'), choices=$('choices');
+  if(!S.freeRoam || !document.body.classList.contains('roam')) return false;
+  if(document.body.classList.contains('ui-hidden')) return false;
+  if(!action || action.classList.contains('hidden')) return false;
+  if(!tb || !tb.classList.contains('dialog-hidden')) return false;
+  if(choices && choices.children.length) return false;
+  const peeps=whoIsHere();
+  if(!peeps.length) return false;
+  const start=Math.abs((S.season||0)+S.ageY+String(S.loc||'').length)%peeps.length;
+  for(let i=0;i<peeps.length;i++){
+    const id=peeps[(start+i)%peeps.length];
+    if(!roamGreetingDismissed(id)) return showRoamGreeting(id,S.loc);
+  }
+  return false;
+}
+
 function showRoamGreeting(charId, locId=S.loc){
   if(!charId || !CHARS[charId]) return false;
   const tb=$('text-box');
@@ -1968,6 +2055,7 @@ function showRoamGreeting(charId, locId=S.loc){
   $('text').innerHTML=escapeText(greeting);
   tb.classList.remove('dialog-hidden');
   tb.setAttribute('data-roam-prompt','greeting');
+  tb.setAttribute('data-greeting-char',charId);
   document.querySelectorAll('#portraits .p-slot').forEach(el=>{
     if(el.classList.contains('hidden')) return;
     const active=el.getAttribute('data-char')===charId;
@@ -2055,6 +2143,7 @@ function uiHide(){
 function uiShow(){
   document.body.classList.remove('ui-hidden');
   if($('btn-ui')) $('btn-ui').textContent='🌙';
+  if(S.freeRoam) maybeShowRoamGreeting();
 }
 function uiToggle(){
   document.body.classList.contains('ui-hidden') ? uiShow() : uiHide();
@@ -3608,7 +3697,7 @@ $('btn-codex-close').onclick=()=>show('codex',0);
 doNextTime = function(){
   const steps = S.ageY < 1 ? 4 : 1;
   for(let i = 0; i < steps; i++) advanceSeason(1);
-  enterFreeRoam();
+  enterFreeRoam({deferGreeting:true});
   showSeasonFlavor(()=>{
     if(checkStoryGates()) return;
     updateHUD();

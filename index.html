@@ -33,10 +33,38 @@
         <button id="btn-new" class="tbtn">▶ 开始新生活</button>
         <button id="btn-continue" class="tbtn hidden">⏩ 继续存档</button>
         <button id="btn-codex" class="tbtn">📖 图鉴 <em id="codex-count">0</em></button>
+        <button id="btn-letter-test" class="tbtn letter-test">✉️ 拆信测试</button>
         <button id="btn-help" class="tbtn ghost">？ 玩法说明</button>
       </div>
       <p class="title-hint">季度回合 · 场景探索 · 全文剧情 · 勇者之赐 · 自动存档</p>
       <p class="title-foot">※ 第一人称轻小说风 · 过马路请看红绿灯</p>
+    </div>
+  </section>
+
+  <!-- ===== 爱丽丝来信 · 拆信测试演出 ===== -->
+  <section id="letter-demo" class="letter-demo hidden" aria-hidden="true" aria-label="爱丽丝来信动画">
+    <button id="letter-close" class="letter-close" aria-label="关闭拆信动画">×</button>
+    <div class="letter-frost" aria-hidden="true">
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
+    <div class="letter-scene">
+      <p class="letter-kicker">A letter from Alice</p>
+      <h2 class="letter-heading">爱丽丝的来信</h2>
+      <div class="letter-envelope" aria-live="polite">
+        <div class="letter-envelope-back"></div>
+        <article class="alice-letter">
+          <div class="letter-crest">❄</div>
+          <p class="letter-to">姐姐大人：</p>
+          <p>学院北侧的风铃草开了。<br>我把最安静的一朵夹在信里。</p>
+          <p>如果你又忘了按时吃饭，<br>就让这封信替我提醒你。</p>
+          <p>等你回来，<br>我想听你讲路上的雪。</p>
+          <p class="letter-sign">爱丽丝</p>
+        </article>
+        <div class="letter-envelope-front"></div>
+        <div class="letter-flap"></div>
+        <div class="letter-seal"><span>❄</span></div>
+      </div>
+      <p class="letter-tip"><span class="tip-playing">点击任意处展开信纸</span><span class="tip-read">点击任意处收起</span></p>
     </div>
   </section>
 

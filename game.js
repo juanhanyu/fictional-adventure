@@ -3804,6 +3804,58 @@ enterLoc = function(id){
 };
 
 // ========== TITLE / BOOT ==========
+function openLetterDemo(){
+  const demo=$('letter-demo');
+  if(!demo) return false;
+  demo.classList.remove('hidden','playing','revealed');
+  demo.setAttribute('aria-hidden','false');
+  // 强制回流，让每次从标题页打开时都能从封蜡完整重播。
+  void demo.offsetWidth;
+  demo.classList.add('playing');
+  sfx('page');
+  return true;
+}
+function revealLetterDemo(){
+  const demo=$('letter-demo');
+  if(!demo || demo.classList.contains('hidden')) return false;
+  demo.classList.remove('playing');
+  demo.classList.add('revealed');
+  return true;
+}
+function closeLetterDemo(){
+  const demo=$('letter-demo');
+  if(!demo) return false;
+  demo.classList.add('hidden');
+  demo.classList.remove('playing','revealed');
+  demo.setAttribute('aria-hidden','true');
+  const btn=$('btn-letter-test');
+  if(btn && typeof btn.focus==='function') btn.focus();
+  return true;
+}
+function bindLetterDemo(){
+  const demo=$('letter-demo');
+  const openBtn=$('btn-letter-test');
+  const closeBtn=$('letter-close');
+  if(!demo || !openBtn || !closeBtn) return;
+
+  openBtn.onclick=()=>openLetterDemo();
+  closeBtn.onclick=e=>{
+    if(e && typeof e.stopPropagation==='function') e.stopPropagation();
+    closeLetterDemo();
+  };
+  demo.onclick=e=>{
+    if(e.target.closest && e.target.closest('#letter-close')) return;
+    if(demo.classList.contains('revealed')) closeLetterDemo();
+    else revealLetterDemo();
+  };
+
+  const paper=demo.querySelector('.alice-letter');
+  if(paper) paper.addEventListener('animationend',e=>{
+    if(e.animationName==='letter-paper-rise') revealLetterDemo();
+  });
+}
+bindLetterDemo();
+
 function newGame(){
   S=baseState();
   S.season = seasonOf(S.month);
@@ -3884,6 +3936,10 @@ advanceDay = function(n){
 
 // keyboard
 document.addEventListener('keydown', e=>{
+  if(e.key==='Escape' && $('letter-demo') && !$('letter-demo').classList.contains('hidden')){
+    closeLetterDemo();
+    return;
+  }
   if(e.key==='Escape'){ show('panel',0); show('map-overlay',0); show('help-screen',0); show('codex',0); show('stats-overlay',0); uiShow(); }
   if(e.key===' ' || e.key==='Enter'){
     // CG 演出：空格/回车也能推进下一句

@@ -11,6 +11,19 @@ ok('btn-ui 初始图标为 🌙', $('btn-ui') && $('btn-ui').textContent.include
 const explore = win.document.querySelector('[data-act="explore"]');
 ok('底部按钮为「地图」', explore && explore.textContent.includes('地图'));
 
+// 标题页拆信测试：完整播放、点击跳过、关闭后仍留在标题页
+const letterBtn=$('btn-letter-test');
+const letterDemo=$('letter-demo');
+const letterClose=$('letter-close');
+ok('标题页有拆信测试按钮', !!letterBtn);
+ok('拆信测试包含爱丽丝署名与信件正文', !!letterDemo && !!letterDemo.querySelector('.alice-letter') && letterDemo.textContent.includes('爱丽丝'));
+letterBtn.click();
+ok('点击拆信测试按钮开始动画', !letterDemo.classList.contains('hidden') && letterDemo.classList.contains('playing') && letterDemo.getAttribute('aria-hidden')==='false');
+letterDemo.click();
+ok('点击演出可跳到展开信纸状态', letterDemo.classList.contains('revealed'));
+letterClose.click();
+ok('关闭拆信演出后回到标题页', letterDemo.classList.contains('hidden') && letterDemo.getAttribute('aria-hidden')==='true' && !$('title-screen').classList.contains('hidden'));
+
 win.__resetS();
 const st=win.__getS(); st.phase='academy'; win.__setS(st);
 ok('phaseName(academy)=学院篇', win.phaseName()==='学院篇');

@@ -2557,14 +2557,14 @@ function talkLines(id){
       [{ch:'beatrice',emo:'normal',speaker:'贝阿特丽丝',text:'妹妹要听姐姐的话！这是维斯特利亚家的规矩！……我刚定的。'}, {text:'理直气壮的样子意外地有说服力。大概只有她信。', love:'beatrice', loveD:1}],
       [{ch:'beatrice',emo:'normal',speaker:'贝阿特丽丝',text:a<10?'火焰兔子！再差一点就成功了！':'论文第三款……希尔维亚你记性好，帮我看看！'}, {text:a<10?'窗帘安全地活过了今天。大概。':'她的桌上铺满草稿，笔帽被咬出牙印。', love:'beatrice', loveD:1}],
       [{ch:'beatrice',emo:'normal',speaker:'贝阿特丽丝',text:'晚上想吃松饼！我去跟厨房说！贝阿特丽丝大人批准了！'}, {text:'她风风火火跑走了。厨房的人大概又要头疼。', love:'beatrice', loveD:1}],
-      [{ch:'beatrice',emo:'normal',speaker:'贝阿特丽丝',text:'……希尔维亚。你要是被谁欺负了，告诉我。我罩着你。'}, {text:'语气难得认真。我点点头。', love:'beatrice', loveD:1, know:'beatrice', knowD:2}],
+      [{ch:'beatrice',emo:'normal',speaker:'贝阿特丽丝',text:'……希尔维亚。你要是被谁欺负了，告诉我。我罩着你。'}, {text:'语气难得认真。我点点头。', love:'beatrice', loveD:1, knowElement: ['beatrice','姐姐性格']}],
     ],
     alice: a<2 ? [
       [{text:'爱丽丝还太小，只会握住我的手指，眼睛亮亮的。', love:'alice', loveD:1}],
     ] : [
       [{ch:'alice',emo:'normal',speaker:'爱丽丝',text:'……姐姐大人。'}, {ch:'alice',emo:'happy',text:a<5?'……花，开了。':'……今天的风，很软。', love:'alice', loveD:1}],
-      [{ch:'alice',emo:'shy',speaker:'爱丽丝',text:'……姐姐大人。可以……坐近一点吗。'}, {text:'她轻轻拉了拉我的袖子。动作轻得像怕惊动什么。', love:'alice', loveD:1, know:'alice', knowD:3}],
-      [{ch:'alice',emo:'normal',speaker:'爱丽丝',text:a<8?'……请教我认字。':'……姐姐大人发呆的时候，在想什么？'}, {text:a<8?'她学得很快，快得有点犯规。':'我随口说「大地为什么会拉东西」。她眼睛亮了一下。', love:'alice', loveD:1, know:'alice', knowD:4}],
+      [{ch:'alice',emo:'shy',speaker:'爱丽丝',text:'……姐姐大人。可以……坐近一点吗。'}, {text:'她轻轻拉了拉我的袖子。动作轻得像怕惊动什么。', love:'alice', loveD:1, knowElement: ['alice','出生印象']}],
+      [{ch:'alice',emo:'normal',speaker:'爱丽丝',text:a<8?'……请教我认字。':'……姐姐大人发呆的时候，在想什么？'}, {text:a<8?'她学得很快，快得有点犯规。':'我随口说「大地为什么会拉东西」。她眼睛亮了一下。', love:'alice', loveD:1, knowElement: ['alice','安静性格']}],
       [{ch:'alice',emo:'happy',speaker:'爱丽丝',text:'……贝阿特丽丝姐姐又在炫耀了。……不过，我喜欢。'}, {text:'淡淡的语气，内容却意外地有自己的想法。', love:'alice', loveD:1}],
       [{ch:'alice',emo:'shy',speaker:'爱丽丝',text:'……姐姐大人今天也……很好看。'}, {text:'说完就低头。耳尖有一点点红。', love:'alice', loveD:1}],
     ],
@@ -2573,75 +2573,75 @@ function talkLines(id){
       [{ch:'sophia',speaker:'索菲亚',text:'眼睛是蓝的呢……像你父亲。'}, {text:'她用指背碰了碰我的脸颊。'}, {text:'我还不会说话，只能看她。', love:'sophia', loveD:1}],
     ] : [
       [{ch:'sophia',emo:'normal',speaker:'索菲亚',text:a<6?'希尔维亚，有好好吃饭吗？':'希尔维亚，最近有没有太拼命练魔法？'}, {text:'母亲的手拂过我的头发。很轻，很暖。', love:'sophia', loveD:1}],
-      [{ch:'sophia',speaker:'索菲亚',text:'院子里的鸢尾开了。你父亲从前很喜欢。……别告诉他我说过。'}, {text:'她笑起来的时候，眼睛弯弯的。', love:'sophia', loveD:1, know:'sophia', knowD:3}],
+      [{ch:'sophia',speaker:'索菲亚',text:'院子里的鸢尾开了。你父亲从前很喜欢。……别告诉他我说过。'}, {text:'她笑起来的时候，眼睛弯弯的。', love:'sophia', loveD:1, knowElement: ['sophia','母亲身份']}],
       [{ch:'sophia',speaker:'索菲亚',text:'三姐妹在一起的时候，家里最吵，也最像家。'}, {text:'我点点头。这句话我想记住。', love:'sophia', loveD:1, if:()=>flag('ch_alice_born')}],
       [{ch:'sophia',speaker:'索菲亚',text:'累了就靠一会儿。母亲还在。'}, {text:'膝枕的高度刚好。我几乎要睡着。', love:'sophia', loveD:1, st:2}],
     ],
     claude: a<1 ? [
       [{ch:'claude',speaker:'克劳德',text:'……手好小。'}, {text:'他的声音放得很低，像怕惊醒整座府邸。大手覆上我的额头，又赶紧收回。', love:'claude', loveD:1}],
     ] : [
-      [{ch:'claude',speaker:'克劳德',text:a<8?'希尔维亚。别学你姐姐爬柜子。':'希尔维亚。学业为重。有困难就写信回来。'}, {text:'父亲的话总是很短。但每一句都像钉子一样稳。', love:'claude', loveD:1, know:'claude', knowD:2}],
-      [{ch:'claude',speaker:'克劳德',text:'……你的眼睛，像你母亲。'}, {text:'他说完就清了清嗓子，装作去看公文。', love:'claude', loveD:1, know:'claude', knowD:3}],
-      [{ch:'claude',speaker:'克劳德',text:'维斯特利亚的名字，不是拿来压人的。是拿来负责的。'}, {text:'我记住了。', love:'claude', loveD:1, know:'claude', knowD:2}],
+      [{ch:'claude',speaker:'克劳德',text:a<8?'希尔维亚。别学你姐姐爬柜子。':'希尔维亚。学业为重。有困难就写信回来。'}, {text:'父亲的话总是很短。但每一句都像钉子一样稳。', love:'claude', loveD:1, knowElement: ['claude','父亲身份']}],
+      [{ch:'claude',speaker:'克劳德',text:'……你的眼睛，像你母亲。'}, {text:'他说完就清了清嗓子，装作去看公文。', love:'claude', loveD:1, knowElement: ['claude','公爵职责']}],
+      [{ch:'claude',speaker:'克劳德',text:'维斯特利亚的名字，不是拿来压人的。是拿来负责的。'}, {text:'我记住了。', love:'claude', loveD:1, knowElement: ['claude','表达关心']}],
       [{ch:'claude',speaker:'克劳德',text:'贝阿特丽丝又把花瓶……算了。你帮我看着点她。'}, {text:'公爵大人的太阳穴抽了一下。', love:'claude', loveD:1}],
     ],
     emma: [
       [{ch:'emma',speaker:'艾玛',text:'希尔维亚！！食堂今天的布丁是焦糖味的！！我可以吃你那份吗！'}, {text:'门槛是一份布丁的朋友。很划算。', love:'emma', loveD:1}],
       [{ch:'emma',speaker:'艾玛',text:'你知道吗，我把笔记按颜色分类了！虽然不一定有用，但很好看！'}, {text:'她的书桌像一座甜蜜的灾难现场。', love:'emma', loveD:1}],
-      [{ch:'emma',speaker:'艾玛',text:'……其实我有点想家。但有布丁就还好！'}, {text:'她笑得很用力。我把布丁推给她。', love:'emma', loveD:1, know:'emma', knowD:3}],
+      [{ch:'emma',speaker:'艾玛',text:'……其实我有点想家。但有布丁就还好！'}, {text:'她笑得很用力。我把布丁推给她。', love:'emma', loveD:1, knowElement: ['emma','室友身份']}],
     ],
     noelle: [
-      [{ch:'noelle',speaker:'诺艾儿',text:'……早。今天的笔记我多抄了一份。给你。'}, {text:'她把笔记推过来，自己低头看书。耳尖有点红。', love:'noelle', loveD:1, know:'noelle', knowD:3}],
-      [{ch:'noelle',speaker:'诺艾儿',text:'图书馆第三排那本公式推导，第87页印错了。别信。'}, {text:'她说得像在汇报军情。', love:'noelle', loveD:1, know:'noelle', knowD:2}],
-      [{ch:'noelle',speaker:'诺艾儿',text:'……虎克来信了。他说想吃王都的糖。'}, {text:'她把信收进怀里，动作很轻。', love:'noelle', loveD:1, know:'noelle', knowD:4}],
+      [{ch:'noelle',speaker:'诺艾儿',text:'……早。今天的笔记我多抄了一份。给你。'}, {text:'她把笔记推过来，自己低头看书。耳尖有点红。', love:'noelle', loveD:1, knowElement: ['noelle','平民身份']}],
+      [{ch:'noelle',speaker:'诺艾儿',text:'图书馆第三排那本公式推导，第87页印错了。别信。'}, {text:'她说得像在汇报军情。', love:'noelle', loveD:1, knowElement: ['noelle','学习习惯']}],
+      [{ch:'noelle',speaker:'诺艾儿',text:'……虎克来信了。他说想吃王都的糖。'}, {text:'她把信收进怀里，动作很轻。', love:'noelle', loveD:1, knowElement: ['noelle','水系知识']}],
       [{ch:'noelle',speaker:'诺艾儿',text:'你的字……还是那么难认。'}, {text:'这大概是她表达关心的方式。', love:'noelle', loveD:1}],
     ],
     aino: [
-      [{ch:'aino',speaker:'艾诺',text:'你的冰，还有气泡。'}, {text:'她只说这一句。但周六训练场见——这是默认的。', love:'aino', loveD:1, know:'aino', knowD:2}],
-      [{ch:'aino',speaker:'艾诺',text:'花坊的水，下午两点换。你若路过，带一壶冷的。'}, {text:'这是在邀请吗？用艾诺语翻译，大概是。', love:'aino', loveD:1, know:'aino', knowD:3}],
-      [{ch:'aino',speaker:'艾诺',text:'……赫兰的雪，比这里像样。'}, {text:'她看着窗外，声音很轻。', love:'aino', loveD:1, know:'aino', knowD:2}],
+      [{ch:'aino',speaker:'艾诺',text:'你的冰，还有气泡。'}, {text:'她只说这一句。但周六训练场见——这是默认的。', love:'aino', loveD:1, knowElement: ['aino','冰系实力']}],
+      [{ch:'aino',speaker:'艾诺',text:'花坊的水，下午两点换。你若路过，带一壶冷的。'}, {text:'这是在邀请吗？用艾诺语翻译，大概是。', love:'aino', loveD:1, knowElement: ['aino','训练方式']}],
+      [{ch:'aino',speaker:'艾诺',text:'……赫兰的雪，比这里像样。'}, {text:'她看着窗外，声音很轻。', love:'aino', loveD:1, knowElement: ['aino','花卉知识']}],
     ],
     charlotte: [
-      [{ch:'charlotte',speaker:'夏洛特',text:'维斯特利亚。你浇水又浇多了。'}, {text:'她在照顾那棵旧树。木牌上的字被重新刻过。', know:'charlotte', knowD:3, love:'charlotte', loveD:1}],
-      [{ch:'charlotte',speaker:'夏洛特',text:'……别用那种眼神看我。我只是不想树死了碍眼。'}, {text:'嘴硬得像冰。', know:'charlotte', knowD:2, love:'charlotte', loveD:1}],
+      [{ch:'charlotte',speaker:'夏洛特',text:'维斯特利亚。你浇水又浇多了。'}, {text:'她在照顾那棵旧树。木牌上的字被重新刻过。', knowElement: ['charlotte','贵族身份'], love:'charlotte', loveD:1}],
+      [{ch:'charlotte',speaker:'夏洛特',text:'……别用那种眼神看我。我只是不想树死了碍眼。'}, {text:'嘴硬得像冰。', knowElement: ['charlotte','竞争性格'], love:'charlotte', loveD:1}],
       [{ch:'charlotte',speaker:'夏洛特',text:'你姐姐的嗓门，全校都能听见。这是噪音污染。'}, {text:'她扇子一合， indignant 得很精致。', love:'charlotte', loveD:1}],
     ],
     ajun: [
       [{ch:'ajun',speaker:'阿琼',text:'希尔维亚！！要不要吃咖喱！！不辣的版本！！'}, {text:'他的热情大概来自巴依的阳光。', love:'ajun', loveD:1}],
       [{ch:'ajun',speaker:'阿琼',text:'地图！我这次没拿反！……大概。'}, {text:'他背后的路牌指向相反方向。', love:'ajun', loveD:1}],
-      [{ch:'ajun',speaker:'阿琼',text:'沙之花给你看！——啊散了。再来一次！'}, {text:'金沙在掌心亮了一下，像短暂的夏天。', love:'ajun', loveD:1, know:'ajun', knowD:2}],
+      [{ch:'ajun',speaker:'阿琼',text:'沙之花给你看！——啊散了。再来一次！'}, {text:'金沙在掌心亮了一下，像短暂的夏天。', love:'ajun', loveD:1, knowElement: ['ajun','巴依新生']}],
     ],
     helena: [
       [{ch:'helena',speaker:'海伦娜',text:'希尔维亚！今天的云看起来像羊！你看你看！'}, {text:'她自带一盏灯。连吐槽都亮堂。', love:'helena', loveD:1}],
-      [{ch:'helena',speaker:'海伦娜',text:'要写信哦！我会画很多笑脸！'}, {text:'按这个增速，年底信纸一半都是笑脸。', love:'helena', loveD:1, know:'helena', knowD:2}],
+      [{ch:'helena',speaker:'海伦娜',text:'要写信哦！我会画很多笑脸！'}, {text:'按这个增速，年底信纸一半都是笑脸。', love:'helena', loveD:1, knowElement: ['helena','神圣国身份']}],
     ],
     hol: [
       [{ch:'hol',speaker:'霍尔',text:'……嗯。下课。……还有十分钟？那就自习。'}, {text:'他翻了一页杂志。封面是《赫兰温泉指南》。', love:'hol', loveD:1}],
-      [{ch:'hol',speaker:'霍尔',text:'你的冰球，气泡少了。继续。……别打扰我，这一章很重要。'}, {text:'他看的书和冰系教学毫无关系。', love:'hol', loveD:1, know:'hol', knowD:3}],
-      [{ch:'hol',speaker:'霍尔',text:'……窗台上的花快开了。你的冰膜刚好。'}, {text:'他嘴上说着不在意，但窗台上的花浇得比谁都勤。', love:'hol', loveD:1, know:'hol', knowD:4}],
+      [{ch:'hol',speaker:'霍尔',text:'你的冰球，气泡少了。继续。……别打扰我，这一章很重要。'}, {text:'他看的书和冰系教学毫无关系。', love:'hol', loveD:1, knowElement: ['hol','首次接触']}],
+      [{ch:'hol',speaker:'霍尔',text:'……窗台上的花快开了。你的冰膜刚好。'}, {text:'他嘴上说着不在意，但窗台上的花浇得比谁都勤。', love:'hol', loveD:1, knowElement: ['hol','性格印象']}],
     ],
     anna: [
       [{ch:'anna',speaker:'安娜',text:'希尔维亚同学，水膜的控制很稳定！不过实战中可以再大胆一些，别怕犯错。'}, {text:'她说话语速很快，但每个字都很清楚。', love:'anna', loveD:1}],
-      [{ch:'anna',speaker:'安娜',text:'有什么不懂的随时来问我。我办公室在二楼，门从来不关。'}, {text:'她笑起来的时候，眼睛会弯成月牙。', love:'anna', loveD:1, know:'anna', knowD:3}],
-      [{ch:'anna',speaker:'安娜',text:'你的水球术很有天赋。但记住，水不只是攻击——它也可以是保护。'}, {text:'她说这话的时候，语调格外认真。', love:'anna', loveD:1, know:'anna', knowD:4}],
+      [{ch:'anna',speaker:'安娜',text:'有什么不懂的随时来问我。我办公室在二楼，门从来不关。'}, {text:'她笑起来的时候，眼睛会弯成月牙。', love:'anna', loveD:1, knowElement: ['anna','首次接触']}],
+      [{ch:'anna',speaker:'安娜',text:'你的水球术很有天赋。但记住，水不只是攻击——它也可以是保护。'}, {text:'她说这话的时候，语调格外认真。', love:'anna', loveD:1, knowElement: ['anna','性格印象']}],
     ],
     fashen: [
-      [{ch:'fashen',speaker:'法神',text:'……维斯特利亚。你的成绩不错。但不要以为这样就够了。'}, {text:'她的气场压得人几乎站不直。', love:'fashen', loveD:1, know:'fashen', knowD:5}],
-      [{ch:'fashen',speaker:'法神',text:'你叔叔欠我钱。下次见面替我催他。'}, {text:'……原来这就是神级强者的日常吗。', love:'fashen', loveD:1, know:'fashen', knowD:3}],
+      [{ch:'fashen',speaker:'法神',text:'……维斯特利亚。你的成绩不错。但不要以为这样就够了。'}, {text:'她的气场压得人几乎站不直。', love:'fashen', loveD:1, knowElement: ['fashen','首次接触']}],
+      [{ch:'fashen',speaker:'法神',text:'你叔叔欠我钱。下次见面替我催他。'}, {text:'……原来这就是神级强者的日常吗。', love:'fashen', loveD:1, knowElement: ['fashen','性格印象']}],
     ],
     ji: [
       [{ch:'ji',speaker:'霁馆主',text:'来都来了——练三组步法？还是先吃饭？今天的粥没糊。大概。'}, {text:'他说「大概」的时候我选择了练剑。', love:'ji', loveD:1}],
-      [{ch:'ji',speaker:'霁馆主',text:'剑不是锤子。你在拧毛巾。再松。'}, {text:'我松了。竹剑轻了半两。', love:'ji', loveD:1, know:'ji', knowD:2}],
-      [{ch:'ji',speaker:'霁馆主',text:'……这把剑跟了我三十年。你若走远路，带着。'}, {text:'他笑纹很深。像年轮。', love:'ji', loveD:1, know:'ji', knowD:3}],
+      [{ch:'ji',speaker:'霁馆主',text:'剑不是锤子。你在拧毛巾。再松。'}, {text:'我松了。竹剑轻了半两。', love:'ji', loveD:1, knowElement: ['ji','首次接触']}],
+      [{ch:'ji',speaker:'霁馆主',text:'……这把剑跟了我三十年。你若走远路，带着。'}, {text:'他笑纹很深。像年轮。', love:'ji', loveD:1, knowElement: ['ji','性格印象']}],
     ],
     jilan: [
       [{ch:'jilan',speaker:'霁岚',text:'你回来啦！北林怎么样？——啊你胳膊又挂彩了，我帮你上药！'}, {text:'她的力道依旧工业级。', love:'jilan', loveD:1}],
       [{ch:'jilan',speaker:'霁岚',text:'紫蝴蝶！今天也在！好看吧！我自己买的！'}, {text:'和她褪色的练功服形成奇妙对比。', love:'jilan', loveD:1}],
-      [{ch:'jilan',speaker:'霁岚',text:'……其实我希望更多人来学剑。馆里太安静了。'}, {text:'她笑着说，眼神却飘向空房间的门牌钉孔。', love:'jilan', loveD:1, know:'jilan', knowD:3}],
+      [{ch:'jilan',speaker:'霁岚',text:'……其实我希望更多人来学剑。馆里太安静了。'}, {text:'她笑着说，眼神却飘向空房间的门牌钉孔。', love:'jilan', loveD:1, knowElement: ['jilan','首次接触']}],
     ],
     reno: [
       [{ch:'reno',speaker:'雷纳德',text:'哟，小怪物。魔法大学还没把你开除吧？'}, {text:'叔叔懒洋洋地靠着门框，靴子上又是泥。', love:'reno', loveD:1}],
-      [{ch:'reno',speaker:'雷纳德',text:'北方的雪狼像滚动的雪球。真的。骗你是小狗。'}, {text:'他比划的长度越来越离谱。', love:'reno', loveD:1, know:'reno', knowD:2}],
+      [{ch:'reno',speaker:'雷纳德',text:'北方的雪狼像滚动的雪球。真的。骗你是小狗。'}, {text:'他比划的长度越来越离谱。', love:'reno', loveD:1, knowElement: ['reno','叔叔身份']}],
     ],
     yaoshen: [
       [{ch:'yaoshen',speaker:'药神',text:'小公主还好吗？药瓶可别打开哦。'}, {text:'他笑起来皱纹堆在一起，像一枚温热的章。', love:'yaoshen', loveD:1}],
@@ -2943,7 +2943,7 @@ function tryLocEgg(locId){
       S.eggs.push('flowerhouse');
       playLines([
         {ch:'aino',speaker:'艾诺',text:'……它叫伊诺。冬天的孩子。'},
-        {text:'北极铃兰在冰雾里微微颤动。', love:'aino', loveD:1, know:'aino', knowD:8, freeRoam:true}
+        {text:'北极铃兰在冰雾里微微颤动。', love:'aino', loveD:1, knowElement: ['aino','战斗观点'], freeRoam:true}
       ]);
     },
     memorial:()=>{
@@ -2951,7 +2951,7 @@ function tryLocEgg(locId){
       playLines([
         {text:'旧木牌上补刻的字：——mond。'},
         {ch:'charlotte',speaker:'夏洛特',text:'别谢我。怕你把树养死了碍眼。'},
-        {text:'她把木牌转了个角度。', know:'charlotte', knowD:10, love:'charlotte', loveD:1, freeRoam:true}
+        {text:'她把木牌转了个角度。', knowElement: ['charlotte','王后家族'], love:'charlotte', loveD:1, freeRoam:true}
       ]);
     },
     market:()=>{
@@ -3655,7 +3655,7 @@ SCENES.s_reno_arrive = {
     {portraits:[{id:'reno', slot:'left', active:false},{id:'sylvia', slot:'right', active:true}], speaker:'希尔维亚', text:'报了有用吗？'},
     {portraits:[{id:'reno', slot:'left', active:true},{id:'sylvia', slot:'right', active:false}], speaker:'雷纳德', text:'大概有用吧……只要法神大人忘掉了我欠她钱的事。'},
     // —— 结尾主角心理：主角高亮 ——
-    {text:'看来以后还是尽量别报他的名字比较好。', portraits:[{id:'sylvia', slot:'center', active:true}], know:'reno', knowD:20, freeRoam:true},
+    {text:'看来以后还是尽量别报他的名字比较好。', portraits:[{id:'sylvia', slot:'center', active:true}], knowElement: ['reno','浪人经历'], freeRoam:true},
   ]
 };
 
@@ -3696,7 +3696,7 @@ SCENES.s_huke = {
     {text:'银发在阳光下很显眼。我走近。空气骤降。他们的靴底结冰。'},
     {speaker:'希尔维亚', text:'希尔维亚·维斯特利亚。东西，还给他。'},
     {text:'他们跑了。比抢东西时还快。'},
-    {ch:'huke', speaker:'虎克', text:'谢谢姐姐……我叫虎克。姐姐在魔法大学，叫诺艾儿！成绩第一名！', know:'huke', knowD:40, task:'lost_child', flag:'met_huke'},
+    {ch:'huke', speaker:'虎克', text:'谢谢姐姐……我叫虎克。姐姐在魔法大学，叫诺艾儿！成绩第一名！', knowElement: ['huke','首次接触'], task:'lost_child', flag:'met_huke'},
     {text:'琥珀色的眼睛。硬气却在抖。和某人一个模子。'},
     {text:'我送他回摊位。又去书店买了两本书——一本给诺艾儿，一本给虎克。'},
     {text:'三十银。他们家大半年的收入。\n至少书这种东西，我能给。', gold:-30, love:'noelle', loveD:1, freeRoam:true}
@@ -3916,7 +3916,7 @@ SCENES.s_star_festival = {
     {text:'该来的人没来。来的是外务管事。'},
     {speaker:'希尔维亚', text:'你母亲种的那棵树，在你的照顾下真的长得很好。'},
     {ch:'charlotte', speaker:'夏洛特', text:'别跟任何人说。下次浇水别漫到我那边。'},
-    {text:'「滚。」她说。但薄荷茶是热的。', know:'charlotte', knowD:15, love:'charlotte', loveD:1, flag:'ch_star', freeRoam:true}
+    {text:'「滚。」她说。但薄荷茶是热的。', knowElement: ['charlotte','合作态度'], love:'charlotte', loveD:1, flag:'ch_star', freeRoam:true}
   ]
 };
 

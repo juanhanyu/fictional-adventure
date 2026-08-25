@@ -360,8 +360,7 @@
         speaker: '贝阿特丽丝',
         text: '妹妹，好看。',
         portraits: CAST([['sylvia','left'], ['beatrice','center'], ['sophia','right']], 'beatrice'),
-        know: 'beatrice',
-        knowD: 30,
+        knowElement: ['beatrice','姐姐性格'],
         love: 'beatrice',
         loveD: 1,
       },
@@ -670,8 +669,7 @@
         emo: 'normal',
         speaker: '爱丽丝',
         text: '皱巴巴的，红红的，眼睛闭着，还在哇哇大哭。和我刚出生的时候应该差不多吧。',
-        know: 'alice',
-        knowD: 35,
+        knowElement: ['alice','出生印象'],
       },
       {
         ch: 'beatrice',
@@ -725,8 +723,7 @@
       say('sylvia', '……爱丽丝？'),
       N('她眨了眨眼，然后吐了一个泡泡，把视线移向了窗外的阳光。\n……好吧，果然是错觉。\n这么小的孩子，视力还没发育完全呢，大概只是在追逐光影吧。', ['alice']),
       N('但我还是下意识地多看了她两眼。\n毕竟在这个家里，我有种莫名的直觉——这孩子可能和我是一类人（指不爱哭闹）。', ['alice'], {
-        know: 'alice',
-        knowD: 5,
+        knowElement: ['alice','安静性格'],
       }),
 
       N('爱丽丝六个月大的时候，会笑了。\n第一次笑是对着姐姐。', [['beatrice', 'left', 'normal'], ['alice', 'right', 'normal']], {
@@ -771,8 +768,7 @@
       N('第二个词。\n是叫我。', [['alice','right','shy'],['sylvia','left','smile']], {
         love: 'alice',
         loveD: 1,
-        know: 'alice',
-        knowD: 10,
+        knowElement: ['alice','风系亲和'],
       }),
 
       N('我愣了一下，然后弯起嘴角。\n「嗯。」',[]),
@@ -832,8 +828,7 @@
       N('从那以后，爱丽丝就一直这么叫我。\n姐姐大人。\n每次听到，我都有一种奇妙的感觉。', ['alice'], {
         love: 'alice',
         loveD: 1,
-        know: 'alice',
-        knowD: 10,
+        knowElement: ['alice','写信习惯'],
       }),
 
       N('◇', [], { bg: 'bg-img-nursery bg-room', loc: 'nursery' }),
@@ -1073,7 +1068,7 @@
       say('sylvia', '偶尔。'),
       say('alice', '……姐姐大人发呆的内容好奇怪。'),
       say('sylvia', '谢谢。'),
-      N('她没有继续追问。', ['alice'], { know: 'alice', knowD: 12, love: 'alice', loveD: 1 }),
+      N('她没有继续追问。', ['alice'], { knowElement: ['alice','姐妹关系'], love: 'alice', loveD: 1 }),
 
       N('◇', [], { bg: 'bg-img-training bg-plain', loc: 'training' }),
       T('第三件事：我开始有意识地练习魔法了。\n冰和水是我的天赋亲和。\n水系魔法比较基础，公爵府的藏书里就有不少教材。冰系是赋亲和，资料少一些，但也不是没有。'),
@@ -1183,8 +1178,7 @@
       DUO(['sylvia','希尔维亚'], ['yaoshen','药神'], 'sylvia', '有多厉害？'),
       DUO(['yaoshen','药神'], ['sylvia','希尔维亚'], 'yaoshen', '嗯……大概是全世界最厉害的程度？'),
       N('我睁大眼睛看着他。他笑着摆摆手：「开玩笑的，开玩笑的。不过确实挺厉害的。」', [['sylvia','left','surprised'],['yaoshen','right','normal']], {
-        know: 'yaoshen',
-        knowD: 20,
+        knowElement: ['yaoshen','巴依身份'],
         ach: 'potion_god',
       }),
       N('这时，远处传来父亲的声音，在请药神过去。', [['sylvia','left','normal'],['yaoshen','right','normal']]),
@@ -1251,8 +1245,7 @@
       N('每次的问题都不会太难让我尴尬，也不会太简单感觉敷衍。\n等等，是不是有什么不对。\n算了，爱丽丝才三岁，会有什么心思呢。', [['alice', 'right', 'normal'],['sylvia', 'left', 'normal']], {
         love: 'alice',
         loveD: 1,
-        know: 'alice',
-        knowD: 8,
+        knowElement: ['alice','姐妹关系'],
       }),
       N('五岁这一年，我的魔法有了长足的进步。\n新技能「水流操控」极其好用，简直是懒人福音。它不仅能用来战斗，更重要的是——它能不用起身就帮我把红茶送到嘴边。', [['beatrice', 'center', 'normal']]),
       N('当然，偶尔也要用来处理一些突发状况。', [['beatrice','center','normal']]),
@@ -1333,7 +1326,7 @@
       { ch: 'sylvia', speaker: '希尔维亚', text: '傻瓜，魔法的基础原理是通用的。不管你是风还是火，只要你想练，我都在。' },
       T('她的眼睛瞬间亮了，嘴角弯起一个好看的弧度。'),
       { ch: 'alice', emo: 'happy', speaker: '爱丽丝', text: '……嗯！谢谢姐姐大人！' },
-      T('她笑得那么开心，让我也跟着心情变好了。', { love: 'alice', loveD: 2, know: 'alice', knowD: 5, freeRoam: true }),
+      T('她笑得那么开心，让我也跟着心情变好了。', { love: 'alice', loveD: 2, knowElement: ['alice','姐妹关系'], freeRoam: true }),
     ],
   };
 
@@ -1525,8 +1518,7 @@
       N('她的笑容稍微大了一点点，像是一朵悄悄绽放的小花。', [['alice', 'right', 'normal'],['sylvia', 'left', 'normal']], {
         love: 'alice',
         loveD: 1,
-        know: 'alice',
-        knowD: 8,
+        knowElement: ['alice','姐妹关系'],
         freeRoam: true,
       }),
     ],
@@ -1803,8 +1795,7 @@
       DUO(['sylvia', '希尔维亚'], ['noelle', '诺艾儿'], 'sylvia', '我也没打算同情你。'),
       T('她停下脚步，回过头，表情有些意外。然后她转身离开了。\n走廊里只剩下她的脚步声，渐渐远去。'),
       T('……这人还挺有意思的。', {
-        know: 'noelle',
-        knowD: 15,
+        knowElement: ['noelle','平民身份'],
         love: 'noelle',
         loveD: 1,
         flag: 'met_noelle',
@@ -1848,8 +1839,7 @@
       T('我伸出手，摸了摸她的头。\n「两年后来找我。」\n她用力点头。'),
       T('马车缓缓驶离公爵府。\n妹妹站在门口，一直看着这边。越来越远，越来越小，最后变成一个白色的点，然后消失在视野里。'),
       T('我放下窗帘，靠回座椅。\n十二年。第一次离开家这么远。', {
-        know: 'alice',
-        knowD: 5,
+        knowElement: ['alice','姐妹关系'],
       }),
       {
         do: () => {
@@ -1881,8 +1871,7 @@
         ch: 'emma',
         speaker: '艾玛·克莱尔',
         text: '新室友！！我是艾玛·克莱尔！你可以叫我艾玛！银色头发，蓝眼睛……你是维斯特利亚家的？！你姐姐也是——不对她是金色的来着？',
-        know: 'emma',
-        knowD: 20,
+        knowElement: ['emma','室友身份'],
       },
       {
         ch: 'emma',
@@ -1939,7 +1928,7 @@
       { ch: 'sylvia', speaker: '希尔维亚', text: '行吧，反正我也没指望能从你那赢到什么。' },
       T('夏洛特被我气得噎了一下，拎起裙角冷哼。'),
       { ch: 'charlotte', speaker: '夏洛特', text: '你给我等着！' },
-      T('这种拙劣的激将法，偏偏对我这种懒人挺管用——因为不答应的话，她大概会一直缠着我。', { know: 'charlotte', knowD: 11, love: 'charlotte', loveD: 1, freeRoam: true }),
+      T('这种拙劣的激将法，偏偏对我这种懒人挺管用——因为不答应的话，她大概会一直缠着我。', { knowElement: ['charlotte','贵族身份'], love: 'charlotte', loveD: 1, freeRoam: true }),
     ],
   };
 
@@ -1976,8 +1965,7 @@
       DUO(['sylvia','希尔维亚'], ['emma','艾玛'], 'sylvia', '嗯。'),
       T('欢迎仪式结束后，金发女生被分到了水系，准确无误地坐到了我旁边的空位。', { bg: 'bg-img-classroom bg-school', loc: 'water_class' }),
       DUO(['helena','海伦娜'], ['sylvia','希尔维亚'], 'helena', '大家好！我叫海伦娜·德尔菲，来自希里昂神圣国，是神官见习生！接下来一个月请多多关照！', {
-        know: 'helena',
-        knowD: 25,
+        knowElement: ['helena','神圣国身份'],
       }),
       DUO(['helena','海伦娜'], ['sylvia','希尔维亚'], 'helena', '这里可以吗？'),
       DUO(['sylvia','希尔维亚'], ['helena','海伦娜'], 'sylvia', '可以。'),
@@ -2030,8 +2018,7 @@
       T('随后她踏上车厢，从车窗里大幅挥手：「再见啦希尔维亚——！给我写信——！」马车启动，消失在视线尽头。', {
         item: { id: 'cross', name: '银十字架', icon: '✝️', desc: '海伦娜所赠。神殿信物。唯一的那枚。' },
         task: 'first_friend',
-        know: 'helena',
-        knowD: 25,
+        knowElement: ['helena','见习生经历'],
         love: 'helena',
         loveD: 2,
         flag: 'ch_helena',
@@ -2067,8 +2054,7 @@
       T('诺艾儿经过看了片刻，默默坐到对面：「给我也来一碗。」她吃完了，而且把酱汁也蘸干了。阿琼看着空碗，露出了比中奖还灿烂的笑容。'),
       T('周一的时候，他已经能在校园里跟至少二十个人打招呼了：「早啊！克里斯！昨天的咖喱辣不辣？」', {
         task: 'taste_foreign',
-        know: 'ajun',
-        knowD: 20,
+        knowElement: ['ajun','巴依新生'],
         love: 'ajun',
         loveD: 1,
         freeRoam: true,
@@ -2123,10 +2109,8 @@
       DUO(['noelle','诺艾儿'], ['sylvia','希尔维亚'], 'noelle', '占位子要付租金的。帮我把第三层那本《高阶水系构型分析》拿下来。太高了我够不到。'),
       T('我帮她取下书，递给她，看到她手上写的任务就是看这本。'),
       T('她低着头看书，表情很平常。我什么都没说，继续发呆。', {
-        know: 'aino',
-        knowD: 20,
-        know: 'noelle',
-        knowD: 10,
+        knowElement: ['aino','冰系实力'],
+        knowElement: ['noelle','学习习惯'],
         freeRoam: true,
       }),
     ],
@@ -2203,8 +2187,7 @@
       T('我低头喝汤，努力不让嘴角动。'),
       T('一周后。系统弹出了一条新的连环任务：「风与冰的学期」。', { bg: 'bg-img-ice-classroom bg-school', loc: 'ice_class' }),
       T('我没有点开。继续给北极铃兰换冰膜。左下角那一小块还是比其他地方薄一点。还需要练。', {
-        know: 'alice',
-        knowD: 10,
+        knowElement: ['alice','姐妹关系'],
         love: 'alice',
         loveD: 2,
         freeRoam: true,
@@ -2247,7 +2230,7 @@
       { ch: 'aino', speaker: '艾诺', text: '我叫艾诺·塔尔维。' },
       { ch: 'sylvia', speaker: '希尔维亚', text: '希尔维亚·维斯特利亚。' },
       { ch: 'aino', speaker: '艾诺', text: '我知道你，你姐姐在火系挺出名的。下周三见。别再弄出气泡了。' },
-      T('这赫兰的冰系魔法师，难不成嘴巴也能冻人么。', { know: 'aino', knowD: 8, love: 'aino', loveD: 1, freeRoam: true }),
+      T('这赫兰的冰系魔法师，难不成嘴巴也能冻人么。', { knowElement: ['aino','训练方式'], love: 'aino', loveD: 1, freeRoam: true }),
     ],
   };
 
@@ -2287,7 +2270,7 @@
       { ch: 'aino', speaker: '艾诺', text: '……嗯。你不许告诉别人。我在这里。' },
       T('她走了。经过我身边时，脚步停顿了一下。'),
       { ch: 'aino', speaker: '艾诺', text: '……它叫伊诺。花的名字。和我同名。在赫兰语里，伊诺是「冬天的孩子」的意思。' },
-      T('冬天的孩子。挺适合她的。', { know: 'aino', knowD: 12, love: 'aino', loveD: 1 }),
+      T('冬天的孩子。挺适合她的。', { knowElement: ['aino','花卉知识'], love: 'aino', loveD: 1 }),
       { bg: 'bg-img-training bg-plain', loc: 'training_field', text: '周六，训练场。艾诺穿着训练服等在那里，白发高高扎起，整个人像一把出鞘的剑。' },
       { ch: 'aino', speaker: '艾诺', text: '规则简单。只用冰系魔法，打中三次算赢。' },
       T('最后一个字还没说完，她已经动了。三根冰锥破土而出，快得离谱。我本能侧身闪避，右肩还是被擦过。'),
@@ -2372,8 +2355,7 @@
         ch: 'charlotte',
         speaker: '夏洛特',
         text: '维斯特利亚。你那棵树苗，水浇多了。根还没扎深，水浇多了会烂根。以后四天浇一次。',
-        know: 'charlotte',
-        knowD: 25,
+        knowElement: ['charlotte','竞争性格'],
       },
       { speaker: '希尔维亚', text: '谢谢。' },
       {
@@ -2433,8 +2415,7 @@
         ch: 'jilan',
         speaker: '霁岚',
         text: '你好！！你是来找活儿的对吧！！我看你在看任务板！你是冒险者吧！——还没注册？没关系！我们家的！练剑的话来我们这里就对了！',
-        know: 'jilan',
-        knowD: 15,
+        knowElement: ['jilan','首次接触'],
       },
       {
         ch: 'jilan',
@@ -2446,8 +2427,7 @@
         ch: 'ji',
         speaker: '霁馆主',
         text: '哟。客人？吃了没？坐！马上好！',
-        know: 'ji',
-        knowD: 12,
+        knowElement: ['ji','首次接触'],
       },
       T('铁锅里的东西看不太出原来的身份。颜色介于深褐和黑之间。有几片菜叶在里面浮浮沉沉，形态扁塌，表情像在求救。\n「怎么样！」'),
       T('有盐味。有糊味。有一种说不清是什么蔬菜的、微弱的、几乎被糊味淹没的存在感。\n「……能吃。」'),

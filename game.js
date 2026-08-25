@@ -657,7 +657,7 @@ const EXITS = {
 const ALL_PICKS = {
   // 初级
   virtual_duel:{id:'virtual_duel', name:'虚拟决斗', tier:0, tag:'赋技能·特殊',
-    desc:'可在梦中进行虚拟决斗。需对挑战对象了解度≥90%。胜利可获对方技能（赋级/简版取决于难度）。同一人不同时间段限一次。'},
+    desc:'可在梦中进行虚拟决斗。需集齐挑战对象的全部了解元素。胜利可获对方技能（赋级/简版取决于难度）。同一人不同时间段限一次。'},
   ice_sense:{id:'ice_sense', name:'寒息感知', tier:0, tag:'赋技能·被动',
     desc:'大幅提升对温度变化的感知。可感知30米内热源，对火系预判小幅提升。'},
   water_veil:{id:'water_veil', name:'水之帷幕', tier:0, tag:'赋魔法',
@@ -697,7 +697,7 @@ const ALL_PICKS = {
   sword_mana:{id:'sword_mana', name:'魔剑同化', tier:2, tag:'赋剑技',
     desc:'将魔力附着于剑身，物理攻击附带魔法伤害。'},
   memory_link:{id:'memory_link', name:'记忆连丝', tier:2, tag:'赋技能',
-    desc:'与了解度≥70%的对象短时共享一段冻结记忆。'},
+    desc:'与已集齐足够了解元素的对象短时共享一段冻结记忆。'},
   zero_field:{id:'zero_field', name:'绝对零度逼近', tier:2, tag:'赋魔法·危险',
     desc:'极致降温。威力巨大但消耗极高，有自伤风险。'},
 };
@@ -2862,7 +2862,7 @@ function doNextTime(){
 
 function maybeDreamDuel(){
   if(!hasSkill('virtual_duel')) return;
-  const candidates = Object.keys(S.know).filter(id=> (S.know[id]||0)>=90 && !S.duelWins.includes(id+'_cur'));
+  const candidates = Object.keys(S.know).filter(id=> canDuel(id) && !S.duelWins.includes(id+'_cur'));
   if(!candidates.length) return;
   // auto prompt
   flag('dream_duel_ready', candidates[0]);
@@ -3265,7 +3265,7 @@ function openDuelMenu(){
   const ready = Object.keys(S.know).filter(id=>canDuel(id));
   if(!ready.length){ toast('尚未集齐任何角色的了解元素'); return; }
   const choices = ready.map(id=>({
-    text:`挑战 ${CHARS[id]?.short||id}（了解度 ${S.know[id]}%）`,
+    text:`挑战 ${CHARS[id]?.short||id}（了解元素已集齐）`,
     do:()=>runDuel(id)
   }));
   choices.push({text:'取消', do:()=>enterFreeRoam()});
@@ -4379,7 +4379,7 @@ function renderCodex(tab='characters'){
   const knownChars=Object.keys(S.know||{}).concat(Object.keys(S.love||{})).filter((id,i,a)=>a.indexOf(id)===i);
   let body='';
   if(tab==='characters'){
-    body=knownChars.length ? knownChars.map(id=>{const c=CHARS[id]||{}, know=S.know[id]||0, rec=CODEX_RECORDS[id], detail=rec?rec.stages.filter(x=>know>=x.at).slice(-1)[0]?.text:''; return `<div class="p-prof"><div class="av">${resolvePortrait(id,'normal')?`<img src="${resolvePortrait(id,'normal')}" alt="${c.name||c.short||id}"/>`:(CSS_CHARS[id]?.[1]||'👤')}</div><div class="info"><div class="nm">${c.name||c.short||id}</div><div class="meta">${c.role||'人物'} · 了解度 ${know}%</div><div class="know-bar"><i style="width:${Math.min(100,know)}%"></i></div><div class="codex-detail">${detail||'继续接触后解锁更多记录。'}</div></div></div>`}).join('') : '<p class="codex-empty">尚未记录人物。与角色接触后会自动收录。</p>';
+    body=knownChars.length ? knownChars.map(id=>{const c=CHARS[id]||{}, know=S.know[id]||0, rec=CODEX_RECORDS[id], detail=rec?rec.stages.filter(x=>know>=x.at).slice(-1)[0]?.text:''; return `<div class="p-prof"><div class="av">${resolvePortrait(id,'normal')?`<img src="${resolvePortrait(id,'normal')}" alt="${c.name||c.short||id}"/>`:(CSS_CHARS[id]?.[1]||'👤')}</div><div class="info"><div class="nm">${c.name||c.short||id}</div><div class="meta">${c.role||'人物'} · 了解度 ${know}%</div><div class="know-bar"><i style="width:${Math.min(100,know)}%"></i></div><div class="codex-detail">${detail||'继续接触后解锁更多记录。'}<br><span class="codex-elements">了解元素：${(KNOW_ELEMENTS[id]||[]).map(el=>(S.knowElements?.[id]||[]).includes(el)?`<b>◆ ${el}</b>`:`◇ ???`).join('　')}</span></div></div></div>`}).join('') : '<p class="codex-empty">尚未记录人物。与角色接触后会自动收录。</p>';
   } else if(tab==='items'){
     body=S.inv?.length ? S.inv.map(it=>`<div class="p-task"><b>${it.icon||'📦'} ${it.name}</b><br><span>${it.desc||'尚无说明。'}</span></div>`).join('') : '<p class="codex-empty">尚未收录物品。</p>';
   } else if(tab==='skills'){

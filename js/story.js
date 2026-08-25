@@ -1847,10 +1847,6 @@
       },
       T('我伸出手，摸了摸她的头。\n「两年后来找我。」\n她用力点头。'),
       T('马车缓缓驶离公爵府。\n妹妹站在门口，一直看着这边。越来越远，越来越小，最后变成一个白色的点，然后消失在视野里。'),
-      {
-        do: () => openLetterDemo(),
-        flag: 'alice_letter_received',
-      },
       T('我放下窗帘，靠回座椅。\n十二年。第一次离开家这么远。', {
         know: 'alice',
         knowD: 5,
@@ -2145,6 +2141,8 @@
     card: { vol: '第二卷 魔法大学篇', t: '第五章', s: '七座山' },
     lines: [
       T('十二月。阿斯拉的冬天带着清冷的寒意。', { bg: 'bg-img-auditorium bg-hall', loc: 'auditorium' }),
+      T('月底，收到一封妹妹的信。', { bg: 'bg-img-dorm bg-room', loc: 'dorm', portraits: [] }),
+      { do: () => openLetterDemo(), flag: 'alice_letter_received' },
       T('魔法史的课表上出现了一节特别讲座——「当代世界格局与七大列强」。全年级在大阶梯教室合堂。'),
       N('台上的老教授神情肃穆，手掌抚过微光的魔力投影地图。', ['teacher_middle']),
       say('teacher_middle', '今天不考试，也不记出勤。在这个世界上，有七个人，他们的存在本身就是各国边境线最有力的保障。七大列强。', { speaker: '格雷教授' }),

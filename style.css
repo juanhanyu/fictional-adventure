@@ -152,7 +152,7 @@ body.roam #text-box.dialog-hidden{opacity:0;visibility:hidden;pointer-events:non
 #tb-speaker img{width:calc(var(--bustw) - 18px);height:var(--speaker-img-h);flex:0 0 var(--speaker-img-h);object-fit:cover;object-position:top center;opacity:.94;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5));transform:none}
 #tb-speaker-name{font-size:15px;line-height:20px;min-height:var(--speaker-name-h);color:#2a2038;background:rgba(255,255,255,.92);padding:2px 12px;border-radius:6px;letter-spacing:.05em;text-align:center;max-width:calc(var(--bustw) + 20px);position:relative;z-index:8;margin-top:0;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.18)}
 #speaker{display:none}
-#text{height:calc(var(--boxh) - 24px);max-height:calc(var(--boxh) - 24px);box-sizing:border-box;font-size:23px;line-height:1.45;white-space:pre-wrap;word-break:break-word;overflow:hidden;padding-top:0}
+#text{height:calc(var(--boxh) - 24px);box-sizing:border-box;font-size:23px;line-height:1.45;white-space:pre-wrap;word-break:break-word;overflow:hidden;padding-top:0}
 /* 131px 剧情框以三行文字为上限：1/2/3 行分别在可用高度内居中 */
 body:not(.roam) #text-box.dialog-rows-1 #text{padding-top:calc((var(--boxh) - 24px - 1.45em)/2)}
 body:not(.roam) #text-box.dialog-rows-2 #text{padding-top:calc((var(--boxh) - 24px - 2.9em)/2)}
@@ -160,9 +160,9 @@ body:not(.roam) #text-box.dialog-rows-3 #text{padding-top:max(0px,calc((var(--bo
 /* 自由探索框较矮，缩小字号和纵向内边距，问候文字仍尽量垂直居中 */
 body.roam #text-box{padding-top:6px;padding-bottom:6px}
 body.roam #text-box.season-flavor{padding-left:48px}
-body.roam #text{height:calc(var(--boxh) - 12px);max-height:calc(var(--boxh) - 12px);font-size:19px;line-height:1.1}
-body.roam #text-box.dialog-rows-1 #text{padding-top:max(0px,calc((var(--boxh) - 12px - 1.1em)/2))}
-body.roam #text-box.dialog-rows-2 #text{padding-top:max(0px,calc((var(--boxh) - 12px - 2.2em)/2))}
+body.roam #text{height:calc(var(--boxh) - 12px);font-size:20px;line-height:1.15}
+body.roam #text-box.dialog-rows-1 #text{padding-top:max(0px,calc((var(--boxh) - 12px - 1.15em)/2))}
+body.roam #text-box.dialog-rows-2 #text{padding-top:max(0px,calc((var(--boxh) - 12px - 2.3em)/2))}
 #text .sys{color:#4a6a9a;font-size:19px}
 #text .em{color:var(--rose);font-style:normal}
 #text .gold{color:#8a7020}
@@ -285,19 +285,9 @@ body.roam #text-box.dialog-rows-2 #text{padding-top:max(0px,calc((var(--boxh) - 
 @media(max-width:600px){
   .title-main{font-size:40px}
   #hud-face{width:40px;height:40px}
-  #stage{--ph:min(300px,52vh);--bustw:86px;--speaker-name-h:22px}
+  #stage{--ph:min(300px,52vh)}
   .css-p{width:110px;height:160px}
-  #text-box{width:calc(100% - 12px);padding-left:calc(var(--bustw) + 12px);padding-right:18px}
-  #tb-speaker{left:4px}
-  #tb-speaker img{width:calc(var(--bustw) - 10px)}
-  #tb-speaker-name{font-size:12px;line-height:16px;padding:2px 6px;max-width:calc(var(--bustw) + 8px)}
-  #text{font-size:18px;line-height:1.4}
-  body:not(.roam) #text-box.dialog-rows-1 #text{padding-top:calc((var(--boxh) - 24px - 1.4em)/2)}
-  body:not(.roam) #text-box.dialog-rows-2 #text{padding-top:calc((var(--boxh) - 24px - 2.8em)/2)}
-  body:not(.roam) #text-box.dialog-rows-3 #text{padding-top:max(0px,calc((var(--boxh) - 24px - 4.2em)/2))}
-  body.roam #text{font-size:17px;line-height:1.08}
-  body.roam #text-box.dialog-rows-1 #text{padding-top:max(0px,calc((var(--boxh) - 12px - 1.08em)/2))}
-  body.roam #text-box.dialog-rows-2 #text{padding-top:max(0px,calc((var(--boxh) - 12px - 2.16em)/2))}
+  #text{font-size:20px}
   .abtn{padding:6px 10px;font-size:12px}
   #pick-grid{grid-template-columns:1fr}
   .p-stat{grid-template-columns:1fr}
@@ -391,7 +381,6 @@ body.roam #text-box.dialog-rows-2 #text{padding-top:max(0px,calc((var(--boxh) - 
 .bg-img-auditorium{background-image:url(assets/bg/auditorium.jpg);background-size:cover;background-position:center}
 .bg-img-classroom-locust{background-image:url(assets/bg/classroom_locust.jpg);background-size:cover;background-position:center}
 .bg-img-crosswalk-accident{background-image:url(assets/bg/crosswalk_accident.jpg);background-size:cover;background-position:center}
-.bg-img-womb{background-image:radial-gradient(ellipse at center,#5a2734 0%,#25131d 45%,#09070b 100%);background-size:cover;background-position:center}
 #hud-face img[src=""], #hud-face img:not([src]){background:#1a1520}
 
 /* ===== 独立养成面板 ===== */

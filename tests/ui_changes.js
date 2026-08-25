@@ -58,7 +58,9 @@ $('btn-ui').onclick(); ok('点击隐藏UI', win.document.body.classList.contains
 $('btn-ui').onclick(); ok('再点恢复UI', !win.document.body.classList.contains('ui-hidden'));
 
 // 不再显示地点出口教学框；季度风物框只允许右下角三角关闭
-win.__resetS(); const st3=win.__getS(); st3.freeRoam=true; st3.season=2; win.__setS(st3);
+// 固定本季度随机布位（sophia/beatrice 都不在育婴室），否则 whoIsHere 的
+// Math.random 布位会随机触发角色问候，让「无教学框」的断言变成抽奖。
+win.__resetS(); const st3=win.__getS(); st3.freeRoam=true; st3.season=2; st3.seasonChars={2:{sophia:'parlor',beatrice:'garden'}}; win.__setS(st3);
 const tb=$('text-box'), more=$('more');
 win.enterFreeRoam();
 ok('自由探索不显示地点出口教学框', tb.classList.contains('dialog-hidden'));
@@ -99,11 +101,13 @@ more.onclick({stopPropagation(){}});
 win.eval("currentScene=null; S.storyPending=[]; resetDialogAdvanceState(); show('card',0);");
 
 // 没有到期剧情时直接显示风物提示，小三角只负责关闭该提示。
+// 同样固定换季后（season 0→1）的随机布位，避免关闭提示后随机弹出角色问候。
 win.__resetS();
 const flavorState=win.__getS();
 flavorState.ageY=1; flavorState.ageD=0; flavorState.year=1; flavorState.month=3; flavorState.season=0;
 flavorState.phase='childhood'; flavorState.loc='nursery'; flavorState.freeRoam=true;
 flavorState.flags={ch_first_word:1};
+flavorState.seasonChars={1:{sophia:'parlor',beatrice:'garden'}};
 win.__setS(flavorState);
 win.doNextTime();
 ok('没有到期剧情时显示季度风物框', tb.getAttribute('data-roam-prompt')==='season');
@@ -165,15 +169,17 @@ try{ babyButtons[0].click(); }catch(e){ babyClickOK=false; }
 ok('婴儿出去按钮点击不报错', babyClickOK);
 ok('点击后进入抱出剧情', !win.__getS().freeRoam);
 ok('剧情开始恢复对话框', !tb.classList.contains('dialog-hidden'));
-ok('下个季度按钮直接推进并显示风物框', !win.doNextTime.toString().includes('choices') && win.doNextTime.toString().includes('showSeasonFlavor'));
+ok('下个季度按钮直接推进并显示风物框', !win.doNextTime.toString().includes('choices') && win.doNextTime.toString().includes('showPendingSeasonFlavor'));
 
 // 进入空地点不再播放环境描述；有人时显示情境问候且保留底部 UI
 ok('普通进入地点不再调用环境描述对话', !win.eval('_enterLocRaw.toString()').includes('ambientText'));
-win.__resetS(); const greetState=win.__getS(); greetState.freeRoam=true; greetState.ageY=8; greetState.loc='garden'; win.__setS(greetState);
+win.__resetS(); const greetState=win.__getS(); greetState.freeRoam=true; greetState.ageY=4; greetState.loc='garden'; win.__setS(greetState);
 const ageGreeting=win.roamGreetingText('sophia','garden');
 const placeGreeting=win.roamGreetingText('sophia','library');
 ok('问候内容随地点变化', ageGreeting!==placeGreeting);
 const older=win.__getS(); older.ageY=15; win.__setS(older);
+// sophia 的问候分三档（<1 / <6 / 其他）：取样年龄必须跨越档位边界，
+// 否则两个年龄落在同一档、文本必然相同（旧断言取 8 与 15 同档，恒失败）。
 ok('问候内容随主角年龄变化', win.roamGreetingText('sophia','garden')!==ageGreeting);
 const child=win.__getS(); child.ageY=4; win.__setS(child);
 const childGreetings=win.roamGreetingText('sophia','garden')+win.roamGreetingText('claude','garden');

@@ -657,7 +657,7 @@ const EXITS = {
 const ALL_PICKS = {
   // 初级
   virtual_duel:{id:'virtual_duel', name:'虚拟决斗', tier:0, tag:'赋技能·特殊',
-    desc:'可在梦中进行虚拟决斗。需集齐挑战对象的全部了解元素。胜利可获对方技能（赋级/简版取决于难度）。同一人不同时间段限一次。'},
+    desc:'可在梦中进行虚拟决斗。需获得挑战对象的特定了解元素。胜利可获对方技能（赋级/简版取决于难度）。同一人不同时间段限一次。'},
   ice_sense:{id:'ice_sense', name:'寒息感知', tier:0, tag:'赋技能·被动',
     desc:'大幅提升对温度变化的感知。可感知30米内热源，对火系预判小幅提升。'},
   water_veil:{id:'water_veil', name:'水之帷幕', tier:0, tag:'赋魔法',
@@ -820,7 +820,8 @@ function knowElement(id, element){
   toast(`了解度+1：${CHARS[id]?.short||id} · ${element}`); updateHUD(); save(); return true;
 }
 function knowCount(id){return (S.knowElements?.[id]||[]).length;}
-function canDuel(id){const need=KNOW_ELEMENTS[id]?.length||5; return knowCount(id)>=need;}
+const KNOW_REQUIRED=3;
+function canDuel(id){ return knowCount(id)>=KNOW_REQUIRED; }
 
 // ========== UTILS ==========
 const $ = id => document.getElementById(id);
@@ -3265,7 +3266,7 @@ function openDuelMenu(){
   const ready = Object.keys(S.know).filter(id=>canDuel(id));
   if(!ready.length){ toast('尚未集齐任何角色的了解元素'); return; }
   const choices = ready.map(id=>({
-    text:`挑战 ${CHARS[id]?.short||id}（了解元素已集齐）`,
+    text:`挑战 ${CHARS[id]?.short||id}（特定了解元素已获得）`,
     do:()=>runDuel(id)
   }));
   choices.push({text:'取消', do:()=>enterFreeRoam()});
@@ -3281,7 +3282,7 @@ function runDuel(id){
     cfg:{}, done:()=>{}, ap:2, apMax:2, turn:0, log:[], over:false, duelId:id
   };
   show('duel-screen',1); setBG('bg-duel'); bgmPlayType('battle', {force:true});
-  $('duel-info').innerHTML=`对手：${ch.name}<br>了解度 ${n}% · 难度 ${n>=95?'★★★':n>=93?'★★':'★'}`;
+  $('duel-info').innerHTML=`对手：${ch.name}<br>特定了解元素 ${knowCount(id)}/${KNOW_REQUIRED} · 难度 ${n>=95?'★★★':n>=93?'★★':'★'}`;
   battleLog('决斗开始！');
   renderBattle();
 }

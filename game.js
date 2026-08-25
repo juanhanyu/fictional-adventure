@@ -759,7 +759,8 @@ function baseState(){
     inv:[], // {id,name,icon,desc}
     flags:{},
     love:{}, // charId -> 0-5
-    know:{}, // charId -> 0-100
+    know:{}, // charId -> 0-100（由 knowElements 计算）
+    knowElements:{}, // charId -> 去重后的了解元素
     tasks:{}, // id -> {done,prog}
     ach:{},
     loc:'nursery',
@@ -794,6 +795,32 @@ let typing = false, typeTimer = null, fullText = '', textIdx = 0;
 let currentScene = null;
 let pendingPicks = null;
 let codex = (()=>{ try { return JSON.parse(localStorage.getItem(CODEX_KEY) || '{"endings":[],"chars":[],"eggs":0}'); } catch(e){ return {endings:[],chars:[],eggs:0}; } })();
+// 了解度由可去重的“了解元素”组成；好感度 S.love 仍保持独立。
+const KNOW_ELEMENTS = {
+  sylvia:['前世性格','冰水亲和','魔法习惯','学院生活','重要选择'],
+  beatrice:['姐姐性格','保护妹妹','火焰魔法','学院生活','家庭责任'],
+  alice:['出生印象','安静性格','风系亲和','写信习惯','姐妹关系'],
+  sophia:['母亲身份','照料家人','摇篮曲','贵族礼仪','家庭态度'],
+  claude:['父亲身份','公爵职责','表达关心','家庭态度','王都局势'],
+  yaoshen:['巴依身份','药物知识','魔法观点','待人态度','赠送小瓶'],
+  noelle:['平民身份','学习习惯','水系知识','实战判断','朋友关系'],
+  aino:['冰系实力','训练方式','花卉知识','战斗观点','赫兰印象'],
+  emma:['室友身份','热情性格','食堂爱好','学院生活','朋友关系'],
+  helena:['神圣国身份','见习生经历','治愈术','神殿信物','通信习惯'],
+  ajun:['巴依新生','咖喱料理','自然魔法','迷路经历','药神关系'],
+  charlotte:['贵族身份','竞争性格','王后家族','合作态度','学院生活'],
+  reno:['叔叔身份','浪人经历','魔法造诣','法神关系','家人态度'],
+};
+function knowElement(id, element){
+  if(!id || !element) return false;
+  if(!S.knowElements) S.knowElements={};
+  const list=S.knowElements[id]||(S.knowElements[id]=[]);
+  if(list.includes(element)) return false;
+  list.push(element); S.know[id]=Math.round(list.length/(KNOW_ELEMENTS[id]?.length||5)*100);
+  toast(`了解度+1：${CHARS[id]?.short||id} · ${element}`); updateHUD(); save(); return true;
+}
+function knowCount(id){return (S.knowElements?.[id]||[]).length;}
+function canDuel(id){const need=KNOW_ELEMENTS[id]?.length||5; return knowCount(id)>=need;}
 
 // ========== UTILS ==========
 const $ = id => document.getElementById(id);
@@ -833,7 +860,12 @@ function hasSkill(id){ return S.skills.includes(id); }
 function addSkill(id){ if(!S.skills.includes(id)) S.skills.push(id); }
 function flag(k,v){ if(arguments.length<2) return S.flags[k]; S.flags[k]=v; return v; }
 function love(id, d){ S.love[id]=(S.love[id]||0)+d; S.love[id]=clamp(S.love[id],0,5); if(d>0){ sfx('heart'); toast(`${CHARS[id]?.short||id} 好感 ${d>0?'+':''}${d}`); } }
-function know(id, d){ S.know[id]=clamp((S.know[id]||0)+d,0,100); }
+function know(id, d){
+  const pool=KNOW_ELEMENTS[id]||['首次接触','性格印象','相关经历','能力特点','关系变化'];
+  const missing=pool.filter(x=>!(S.knowElements?.[id]||[]).includes(x));
+  // 兼容旧剧情中的 knowD：旧数值被解释为若干条“了解元素”，而不是百分比。
+  for(let i=0;i<Math.min(Math.max(1,Math.ceil((d||1)/2)),missing.length);i++) knowElement(id,missing[i]);
+}
 function doneTask(id){
   const t = TASKS.find(x=>x.id===id); if(!t) return;
   if(S.tasks[id]?.done) return;
@@ -3230,8 +3262,8 @@ function defeat(){
 // ========== VIRTUAL DUEL ==========
 function openDuelMenu(){
   if(!hasSkill('virtual_duel')){ toast('尚未掌握虚拟决斗'); return; }
-  const ready = Object.keys(S.know).filter(id=>(S.know[id]||0)>=90);
-  if(!ready.length){ toast('没有了解度≥90%的可挑战对象'); return; }
+  const ready = Object.keys(S.know).filter(id=>canDuel(id));
+  if(!ready.length){ toast('尚未集齐任何角色的了解元素'); return; }
   const choices = ready.map(id=>({
     text:`挑战 ${CHARS[id]?.short||id}（了解度 ${S.know[id]}%）`,
     do:()=>runDuel(id)
@@ -4047,7 +4079,7 @@ const CODEX_RECORDS = {
     { at:50, text:'她总说自己是贝阿特丽丝大人。' },
     { at:60, text:'她的火焰兔子常常差一点成功。' },
     { at:70, text:'她不擅长安静陪伴，却会在妹妹被欺负时站出来。' },
-    { at:80, text:'她去了魔法大学后，仍然每个月写信。' },
+    { at:10, text:'她去了魔法大学后，仍然每个月写信。' },
     { at:90, text:'她把家人看得比胜负和面子更重要。' },
   ]},
   alice: { category:'人物', stages:[
@@ -4059,7 +4091,7 @@ const CODEX_RECORDS = {
     { at:60, text:'她对姐姐的称呼一直是姐姐大人。' },
     { at:70, text:'她拥有风系亲和，施法时动作精准而安静。' },
     { at:80, text:'她会认真记录家里的花、父亲的近况和练习进度。' },
-    { at:90, text:'她的信简短克制，却总让希尔维亚想起家。' },
+    { at:10, text:'她的信简短克制，却总让希尔维亚想起家。' },
   ]},
   yaoshen: { category:'人物', stages:[
     { at:10, text:'巴依王国来的客人，世人称他为药神。' },
@@ -4068,9 +4100,9 @@ const CODEX_RECORDS = {
     { at:40, text:'腰间挂着许多小瓶子，里面装着不同药物。' },
     { at:50, text:'他认为药物可以直接作用于症状。' },
     { at:60, text:'他也承认治愈魔法在重伤时更有效。' },
-    { at:70, text:'他主张药物与魔法结合，而非互相排斥。' },
+    { at:10, text:'他主张药物与魔法结合，而非互相排斥。' },
     { at:80, text:'他回答希尔维亚的问题很认真，没有说你还小。' },
-    { at:90, text:'临别时，他送给希尔维亚一只淡蓝色小瓶。' },
+    { at:10, text:'临别时，他送给希尔维亚一只淡蓝色小瓶。' },
   ]},
   noelle: { category:'人物', stages:[
     { at:10, text:'希尔维亚在学院认识的平民女孩。' },

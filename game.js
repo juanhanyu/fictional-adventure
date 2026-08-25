@@ -1522,24 +1522,25 @@ function typeText(str, cb){
 }
 
 const GLOSSARY = {
-  '魔力亲和':'生来更容易感知并操纵某种属性魔力的倾向。',
-  '水系魔法':'以水属性魔力生成、操纵水的魔法。',
-  '冰系魔法':'将水属性魔力塑形成冰的魔法。',
-  '巴依王国':'位于大陆南方、擅长将药物与魔法结合的国家。',
-  '阿斯拉魔法大学':'阿斯拉王国培养魔法师的高等学院。',
-  '图鉴':'系统会根据主角亲眼见过、听过或理解过的内容整理资料。',
+  '魔力亲和':{desc:'生来更容易感知并操纵某种属性魔力的倾向。',id:'sylvia',element:'冰水亲和'},
+  '水系魔法':{desc:'以水属性魔力生成、操纵水的魔法。',id:'sylvia',element:'冰水亲和'},
+  '冰系魔法':{desc:'将水属性魔力塑形成冰的魔法。',id:'sylvia',element:'魔法习惯'},
+  '巴依王国':{desc:'位于大陆南方、擅长将药物与魔法结合的国家。',id:'yaoshen',element:'巴依身份'},
+  '阿斯拉魔法大学':{desc:'阿斯拉王国培养魔法师的高等学院。',id:'sylvia',element:'学院生活'},
+  '图鉴':{desc:'系统会根据主角亲眼见过、听过或理解过的内容整理资料。',id:'sylvia',element:'魔法习惯'},
 };
+function glossaryKnown(term){const g=GLOSSARY[term]; return !g || (S.knowElements?.[g.id]||[]).includes(g.element);}
 function escapeText(s){
   let out=String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
   Object.keys(GLOSSARY).sort((a,b)=>b.length-a.length).forEach(term=>{
     const safe=term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-    out=out.replace(new RegExp(safe,'g'),`<span class="term-word" data-term="${term}">${term}</span>`);
+    if(glossaryKnown(term)) out=out.replace(new RegExp(safe,'g'),`<span class="term-word" data-term="${term}">${term}</span>`);
   });
   return out;
 }
 function bindGlossary(){
   const box=$('text'), tip=$('term-tooltip'); if(!box||!tip) return;
-  box.addEventListener('mouseover',e=>{const w=e.target.closest('.term-word'); if(!w)return; tip.textContent=GLOSSARY[w.dataset.term]||''; tip.classList.add('show');});
+  box.addEventListener('mouseover',e=>{const w=e.target.closest('.term-word'); if(!w)return; tip.textContent=GLOSSARY[w.dataset.term]?.desc||''; tip.classList.add('show');});
   box.addEventListener('mouseout',e=>{if(!e.relatedTarget || !e.relatedTarget.closest?.('.term-word')) tip.classList.remove('show');});
 }
 bindGlossary();
@@ -1594,6 +1595,8 @@ function applyLineEffects(L){
   if(L.sfx) sfx(L.sfx);
   if(L.flag) flag(L.flag, L.flagV !== undefined ? L.flagV : true);
   if(L.love) love(L.love, L.loveD||1);
+  if(L.knowElement){ const e=Array.isArray(L.knowElement)?L.knowElement:[L.knowElement]; knowElement(e[0],e[1]); }
+  if(L.knowElements) L.knowElements.forEach(e=>knowElement(e[0],e[1]));
   if(L.know) know(L.know, L.knowD||5);
   if(L.exp) addExp(L.exp);
   if(L.task) doneTask(L.task);

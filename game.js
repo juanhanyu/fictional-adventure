@@ -4347,7 +4347,7 @@ function renderCodex(tab='characters'){
   const knownChars=Object.keys(S.know||{}).concat(Object.keys(S.love||{})).filter((id,i,a)=>a.indexOf(id)===i);
   let body='';
   if(tab==='characters'){
-    body=knownChars.length ? knownChars.map(id=>{const c=CHARS[id]||{}, know=S.know[id]||0, rec=CODEX_RECORDS[id], detail=rec?rec.stages.filter(x=>know>=x.at).slice(-1)[0]?.text:''; return `<div class="p-prof"><div class="av">${CSS_CHARS[id]?.[1]||'👤'}</div><div class="info"><div class="nm">${c.name||c.short||id}</div><div class="meta">${c.role||'人物'} · 了解度 ${know}%</div><div class="know-bar"><i style="width:${Math.min(100,know)}%"></i></div><div class="codex-detail">${detail||'继续接触后解锁更多记录。'}</div></div></div>`}).join('') : '<p class="codex-empty">尚未记录人物。与角色接触后会自动收录。</p>';
+    body=knownChars.length ? knownChars.map(id=>{const c=CHARS[id]||{}, know=S.know[id]||0, rec=CODEX_RECORDS[id], detail=rec?rec.stages.filter(x=>know>=x.at).slice(-1)[0]?.text:''; return `<div class="p-prof"><div class="av">${resolvePortrait(id,'normal')?`<img src="${resolvePortrait(id,'normal')}" alt="${c.name||c.short||id}"/>`:(CSS_CHARS[id]?.[1]||'👤')}</div><div class="info"><div class="nm">${c.name||c.short||id}</div><div class="meta">${c.role||'人物'} · 了解度 ${know}%</div><div class="know-bar"><i style="width:${Math.min(100,know)}%"></i></div><div class="codex-detail">${detail||'继续接触后解锁更多记录。'}</div></div></div>`}).join('') : '<p class="codex-empty">尚未记录人物。与角色接触后会自动收录。</p>';
   } else if(tab==='items'){
     body=S.inv?.length ? S.inv.map(it=>`<div class="p-task"><b>${it.icon||'📦'} ${it.name}</b><br><span>${it.desc||'尚无说明。'}</span></div>`).join('') : '<p class="codex-empty">尚未收录物品。</p>';
   } else if(tab==='skills'){

@@ -163,6 +163,8 @@ body.roam #text-box.season-flavor{padding-left:48px}
 body.roam #text{height:calc(var(--boxh) - 12px);font-size:20px;line-height:1.15}
 body.roam #text-box.dialog-rows-1 #text{padding-top:max(0px,calc((var(--boxh) - 12px - 1.15em)/2))}
 body.roam #text-box.dialog-rows-2 #text{padding-top:max(0px,calc((var(--boxh) - 12px - 2.3em)/2))}
+.term-word{border-bottom:2px dotted rgba(201,162,39,.85);color:#e8cf83;cursor:help;position:relative}.term-word:hover{color:#fff0ae;background:rgba(201,162,39,.12)}
+.term-tooltip{display:none;position:absolute;left:calc(var(--bustw) + 24px);bottom:calc(100% + 8px);max-width:min(360px,75vw);padding:9px 12px;border:1px solid rgba(201,162,39,.5);border-radius:8px;background:rgba(22,15,34,.96);color:#f5ead0;font-size:14px;line-height:1.55;z-index:20;box-shadow:0 6px 22px rgba(0,0,0,.35);pointer-events:none}.term-tooltip.show{display:block}
 #text .sys{color:#4a6a9a;font-size:19px}
 #text .em{color:var(--rose);font-style:normal}
 #text .gold{color:#8a7020}

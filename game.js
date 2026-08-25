@@ -1488,13 +1488,28 @@ function typeText(str, cb){
   typeDialogPage();
 }
 
+const GLOSSARY = {
+  '魔力亲和':'生来更容易感知并操纵某种属性魔力的倾向。',
+  '水系魔法':'以水属性魔力生成、操纵水的魔法。',
+  '冰系魔法':'将水属性魔力塑形成冰的魔法。',
+  '巴依王国':'位于大陆南方、擅长将药物与魔法结合的国家。',
+  '阿斯拉魔法大学':'阿斯拉王国培养魔法师的高等学院。',
+  '图鉴':'系统会根据主角亲眼见过、听过或理解过的内容整理资料。',
+};
 function escapeText(s){
-  return String(s)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/\n/g,'<br>');
+  let out=String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  Object.keys(GLOSSARY).sort((a,b)=>b.length-a.length).forEach(term=>{
+    const safe=term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    out=out.replace(new RegExp(safe,'g'),`<span class="term-word" data-term="${term}">${term}</span>`);
+  });
+  return out;
 }
+function bindGlossary(){
+  const box=$('text'), tip=$('term-tooltip'); if(!box||!tip) return;
+  box.addEventListener('mouseover',e=>{const w=e.target.closest('.term-word'); if(!w)return; tip.textContent=GLOSSARY[w.dataset.term]||''; tip.classList.add('show');});
+  box.addEventListener('mouseout',e=>{if(!e.relatedTarget || !e.relatedTarget.closest?.('.term-word')) tip.classList.remove('show');});
+}
+bindGlossary();
 
 function skipType(){
   if(!typing) return false;

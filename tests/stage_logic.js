@@ -39,5 +39,19 @@ ok('贝蒂说后 老板保留在场', st.some(s=>s.char==='merchant_bakery'));
 const boss=st.find(s=>s.char==='merchant_bakery');
 ok('老板(非说话人)被置暗', boss && boss.dim===true);
 
+// ④ 药神场景回归：DUO → 旁白/心理活动 N(数组顺序相反) → DUO，
+// 主角和药神的语义槽位必须始终是「主角左、药神右」。
+win.applyLineEffects({portraits:[{id:'sylvia',slot:'left',active:true},{id:'yaoshen',slot:'right',active:false}]});
+let yao=orderedStage();
+const yaoLeftPos=$('p-left').style.left, yaoRightPos=$('p-right').style.left;
+ok('DUO 建立后 主角在左、药神在右', yao[0]?.char==='sylvia' && yao[1]?.char==='yaoshen');
+win.applyLineEffects({portraits:[{id:'yaoshen',slot:'center',active:true},{id:'sylvia',slot:'right',active:false}]});
+yao=orderedStage();
+ok('N 数组倒序后 主角仍在左、药神仍在右', yao[0]?.char==='sylvia' && yao[1]?.char==='yaoshen');
+ok('N 不改变既有左右坐标', $('p-left').style.left===yaoLeftPos && $('p-right').style.left===yaoRightPos);
+win.applyLineEffects({portraits:[{id:'sylvia',slot:'left',active:false},{id:'yaoshen',slot:'right',active:true}]});
+yao=orderedStage();
+ok('回到 DUO 后 主角仍在左、药神仍在右', yao[0]?.char==='sylvia' && yao[1]?.char==='yaoshen');
+
 console.log(fail===0?'\n  ✓ 全部通过':'\n  ✗ '+fail+' 处失败');
 process.exit(fail?1:0);

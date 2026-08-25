@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#0c0a12"/>
 <title>转生千金～到了异世界就要悠闲地生活</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;900&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
@@ -10,12 +11,12 @@
 </head>
 <body>
 <audio id="bgm-audio" preload="auto" loop></audio>
-<div id="bg" class="bg-title"></div>
+<div id="bg" class="bg-title bg-img-title" aria-hidden="true"></div>
 <div id="bg-veil"></div>
 <div id="fx"></div>
 
 <!-- 章节卡 -->
-<div id="card" class="hidden">
+<div id="card" class="hidden" role="dialog" aria-modal="true" aria-live="polite">
   <div id="card-vol"></div>
   <div id="card-t"></div>
   <div id="card-s"></div>
@@ -23,12 +24,14 @@
 
 <div id="app">
   <!-- ===== 标题 ===== -->
-  <section id="title-screen">
+  <section id="title-screen" aria-labelledby="title-main-heading">
     <div class="title-inner">
+      <div class="title-crest" aria-hidden="true"><span>✦</span><i></i><span>❄</span><i></i><span>✦</span></div>
       <p class="title-kana">転生令嬢は異世界で悠々自適に暮らしたい</p>
-      <h1 class="title-main">转生千金</h1>
+      <h1 id="title-main-heading" class="title-main">转生千金</h1>
       <p class="title-sub">～到了异世界就要悠闲地生活～</p>
-      <p class="title-tag">第一卷　公爵篇　·　银与蓝</p>
+      <p class="title-tag"><span>第一卷</span><b>公爵篇</b><span>银与蓝</span></p>
+      <div class="title-rule" aria-hidden="true"><i></i><span>❄</span><i></i></div>
       <div class="title-menu">
         <button id="btn-new" class="tbtn">▶ 开始新生活</button>
         <button id="btn-continue" class="tbtn hidden">⏩ 继续存档</button>
@@ -70,7 +73,7 @@
 
   <!-- ===== 主界面 ===== -->
   <section id="game-screen" class="hidden">
-    <header id="hud">
+    <header id="hud" aria-label="角色状态栏">
       <div class="hud-left">
         <div id="hud-face"><img id="hud-face-img" src="assets/portraits/sylvia_young_normal.png" alt=""/></div>
         <div class="hud-cols">
@@ -90,15 +93,15 @@
         </div>
       </div>
       <div class="hud-right">
-        <button id="btn-stats" class="chip" title="养成">💠</button>
-        <button id="btn-panel" class="chip" title="面板">📖</button>
-        <button id="btn-ui" class="chip" title="沉浸模式（隐藏/显示界面）">🌙</button>
-        <button id="btn-mute" class="chip">🔊</button>
-        <button id="btn-title" class="chip">🏠</button>
+        <button id="btn-stats" class="chip" title="养成" aria-label="打开养成四维">💠</button>
+        <button id="btn-panel" class="chip" title="面板" aria-label="打开角色面板">📖</button>
+        <button id="btn-ui" class="chip" title="沉浸模式（隐藏/显示界面）" aria-label="切换沉浸模式">🌙</button>
+        <button id="btn-mute" class="chip" aria-label="切换背景音乐">🔊</button>
+        <button id="btn-title" class="chip" aria-label="返回标题页">🏠</button>
       </div>
     </header>
 
-    <main id="stage">
+    <main id="stage" aria-label="剧情舞台">
       <!-- 地点信息条 -->
       <div id="loc-bar" class="hidden">
         <span id="loc-name">──</span>
@@ -125,14 +128,14 @@
           <div id="tb-speaker-name"></div>
         </div>
         <div id="speaker" class="hidden"></div>
-        <div id="text"></div>
+        <div id="text" role="status" aria-live="polite" aria-atomic="true"></div>
         <div id="more">▼</div>
       </div>
       <div id="choices"></div>
     </main>
 
     <!-- 自由行动栏（探索模式） -->
-    <nav id="action-bar" class="hidden">
+    <nav id="action-bar" class="hidden" aria-label="自由探索行动栏">
       <button data-act="explore" class="abtn">🗺️ 地图</button>
       <button data-act="talk" class="abtn">💬 交谈 <small>⚡1</small></button>
       <button data-act="train" class="abtn">✨ 修行 <small>⚡3</small></button>
@@ -145,9 +148,9 @@
   </section>
 
   <!-- ===== 地图弹窗 ===== -->
-  <section id="map-overlay" class="overlay hidden">
+  <section id="map-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="map-title">
     <div class="end-card map-card">
-      <h2>🗺️ 地图</h2>
+      <h2 id="map-title">🗺️ 地图</h2>
       <p class="map-hint">点击地点移动（消耗体力与时间）</p>
       <div id="map-grid"></div>
       <div class="end-btns"><button id="btn-map-close" class="tbtn">关闭</button></div>
@@ -155,12 +158,12 @@
   </section>
 
   <!-- ===== 养成四维（独立精美面板） ===== -->
-  <section id="stats-overlay" class="overlay hidden">
+  <section id="stats-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="stats-title">
     <div class="end-card stats-card">
       <div class="stats-head">
         <div class="stats-seal">💠</div>
         <div>
-          <h2 class="stats-title">养成四维</h2>
+          <h2 id="stats-title" class="stats-title">养成四维</h2>
           <p class="stats-sub">以练习与课程塑形 · 非战斗面板</p>
         </div>
       </div>
@@ -171,27 +174,28 @@
   </section>
 
   <!-- ===== 面板 ===== -->
-  <section id="panel" class="overlay hidden">
+  <section id="panel" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="panel-title">
     <div class="end-card panel-card">
-      <div id="panel-tabs"></div>
+      <h2 id="panel-title" class="sr-only">角色面板</h2>
+      <div id="panel-tabs" role="tablist" aria-label="角色面板分类"></div>
       <div id="panel-body"></div>
       <div class="end-btns"><button id="btn-panel-close" class="tbtn">关闭</button></div>
     </div>
   </section>
 
   <!-- ===== 勇者之赐选卡 ===== -->
-  <section id="pick-screen" class="overlay hidden">
+  <section id="pick-screen" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pick-title">
     <div class="pick-wrap">
-      <h2 class="pick-title">✧ 勇者之赐 ✧</h2>
+      <h2 id="pick-title" class="pick-title">✧ 勇者之赐 ✧</h2>
       <p class="pick-sub">时间静止 · 请从七项中选择一项（未选将永久消失）</p>
       <div id="pick-grid"></div>
     </div>
   </section>
 
   <!-- ===== 虚拟决斗 ===== -->
-  <section id="duel-screen" class="overlay hidden">
+  <section id="duel-screen" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="duel-title">
     <div class="end-card duel-card">
-      <h2>⚔️ 虚拟决斗</h2>
+      <h2 id="duel-title">⚔️ 虚拟决斗</h2>
       <div id="duel-info"></div>
       <div id="duel-log"></div>
       <div id="duel-actions"></div>
@@ -199,13 +203,15 @@
   </section>
 
   <!-- ===== CG 演出层 ===== -->
-  <section id="cg-screen" class="hidden">
+  <section id="cg-screen" class="hidden" role="dialog" aria-modal="true" aria-label="剧情 CG 演出">
     <div id="cg-bg"></div>
     <div id="cg-text"></div>
   </section>
 
   <!-- ===== 战斗 ===== -->
-  <section id="battle-screen" class="overlay hidden">    <div id="b-enemy">
+  <section id="battle-screen" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="battle-title">
+    <h2 id="battle-title" class="sr-only">战斗</h2>
+    <div id="b-enemy">
       <div id="b-emoji">🐺</div>
       <div id="b-ename">──</div>
       <div class="bar e-hp"><i id="b-ehp"></i><em id="b-ehp-num"></em></div>
@@ -215,19 +221,19 @@
   </section>
 
   <!-- ===== 图鉴 ===== -->
-  <section id="codex" class="overlay hidden">
+  <section id="codex" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="codex-title">
     <div class="end-card">
-      <h2>📖 图鉴</h2>
-      <div id="codex-tabs" class="ptabs"></div>
+      <h2 id="codex-title">📖 图鉴</h2>
+      <div id="codex-tabs" class="ptabs" role="tablist" aria-label="图鉴分类"></div>
       <div id="codex-list"></div>
       <div class="end-btns"><button id="btn-codex-close" class="tbtn">关闭</button></div>
     </div>
   </section>
 
   <!-- ===== 帮助 ===== -->
-  <section id="help-screen" class="overlay hidden">
+  <section id="help-screen" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="help-title">
     <div class="end-card">
-      <h2>？ 玩法说明</h2>
+      <h2 id="help-title">？ 玩法说明</h2>
       <div class="help-body">
         <p><b>🍂 季度回合</b>：时间按「年 · 春/夏/秋/冬」推进。点「下个季度」过回合。</p>
         <p><b>💪 体力</b>：行动消耗体力。归零强制休息。休息/过季可恢复。</p>
@@ -243,8 +249,8 @@
     </div>
   </section>
 
-  <div id="toast" class="hidden"></div>
-  <div id="sys-popup" class="hidden"></div>
+  <div id="toast" class="hidden" role="status" aria-live="polite"></div>
+  <div id="sys-popup" class="hidden" role="alertdialog" aria-modal="true" aria-live="assertive"></div>
 </div>
 
 <script src="js/story.js"></script>

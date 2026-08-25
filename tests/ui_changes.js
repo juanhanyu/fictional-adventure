@@ -61,7 +61,7 @@ $('btn-ui').onclick(); ok('再点恢复UI', !win.document.body.classList.contain
 win.__resetS(); const st3=win.__getS(); st3.freeRoam=true; st3.season=2; win.__setS(st3);
 const tb=$('text-box'), more=$('more');
 win.enterFreeRoam();
-ok('自由探索不显示地点出口教学框', tb.classList.contains('dialog-hidden'));
+ok('自由探索不显示地点出口教学框', tb.getAttribute('data-roam-prompt')!=='exit' && !$('text').textContent.includes('点击画面出口移动'));
 ok('地点出口教学文案已移除', !win.enterFreeRoam.toString().includes('点击画面出口移动') && !win.playLines.toString().includes('点击画面出口移动'));
 let seasonClosed=false;
 win.showSeasonFlavor(()=>{ seasonClosed=true; });
@@ -77,7 +77,8 @@ win.eval('lineCB=()=>{};');
 tb.onclick({target:more});
 ok('右下角小三角关闭季度风物框', tb.classList.contains('dialog-hidden'));
 ok('关闭季度风物框后执行后续逻辑', seasonClosed);
-ok('关闭自由探索提示时清理旧推进状态', win.eval('lineCB===null && typing===false && typeDoneCB===null'));
+const dialogState=win.__getDialogAdvanceState();
+ok('关闭自由探索提示时清理旧推进状态', dialogState.lineCB===null && dialogState.typing===false && dialogState.typeDoneCB===null);
 
 // 回归：季度推进后，到期剧情应立即播放，与季度提示的小三角无关。
 win.__resetS();
@@ -165,10 +166,10 @@ try{ babyButtons[0].click(); }catch(e){ babyClickOK=false; }
 ok('婴儿出去按钮点击不报错', babyClickOK);
 ok('点击后进入抱出剧情', !win.__getS().freeRoam);
 ok('剧情开始恢复对话框', !tb.classList.contains('dialog-hidden'));
-ok('下个季度按钮直接推进并显示风物框', !win.doNextTime.toString().includes('choices') && win.doNextTime.toString().includes('showSeasonFlavor'));
+ok('下个季度按钮直接推进并显示风物框', !win.doNextTime.toString().includes('choices') && win.doNextTime.toString().includes('showPendingSeasonFlavor'));
 
 // 进入空地点不再播放环境描述；有人时显示情境问候且保留底部 UI
-ok('普通进入地点不再调用环境描述对话', !win.eval('_enterLocRaw.toString()').includes('ambientText'));
+ok('普通进入地点不再调用环境描述对话', !win._enterLocRaw.toString().includes('ambientText'));
 win.__resetS(); const greetState=win.__getS(); greetState.freeRoam=true; greetState.ageY=8; greetState.loc='garden'; win.__setS(greetState);
 const ageGreeting=win.roamGreetingText('sophia','garden');
 const placeGreeting=win.roamGreetingText('sophia','library');

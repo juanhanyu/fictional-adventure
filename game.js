@@ -792,7 +792,13 @@ let codex = (()=>{ try { return JSON.parse(localStorage.getItem(CODEX_KEY) || '{
 
 // ========== UTILS ==========
 const $ = id => document.getElementById(id);
-const show = (el,on=true) => { if(typeof el==='string') el=$(el); if(el) el.classList.toggle('hidden', !on); };
+const show = (el,on=true) => {
+  if(typeof el==='string') el=$(el);
+  if(!el) return;
+  el.classList.toggle('hidden', !on);
+  // 隐藏层同步告知读屏器；不改变 class/点击推进语义。
+  el.setAttribute('aria-hidden', on ? 'false' : 'true');
+};
 
 /* 底部 UI 高度由实际布局决定；只记录可见高度，剧情模式沿用固定 131px 对话框。 */
 function syncActionBarHeight(){
@@ -1096,6 +1102,14 @@ function hasSave(){ return !!localStorage.getItem(SAVE_KEY); }
 // ========== HUD / UI ==========
 function updateHUD(){
   const named = flag('named');
+  // 视觉层只读取这些状态标记，不改变存档/剧情语义；用于阶段色调与响应式 HUD 提示。
+  if(document.body){
+    document.body.dataset.phase = S.phase || 'prologue';
+    document.body.dataset.mode = S.freeRoam ? 'roam' : 'story';
+    document.body.dataset.age = String(S.ageY ?? 0);
+  }
+  const stageRoot=$('stage');
+  if(stageRoot) stageRoot.dataset.mode = S.freeRoam ? 'roam' : 'story';
   $('hud-name').textContent = !named ? '？？？' : (S.alias || '希尔维亚');
   $('hud-age').textContent = ageStr();
   $('hud-tier').textContent = tierName();
@@ -1115,6 +1129,7 @@ function updateHUD(){
   } else {
     face.style.opacity = '1';
     face.style.filter = 'none';
+    face.alt = S.alias || '希尔维亚';
     const src = resolvePortrait('sylvia', 'normal');
     if(src) face.src = src;
   }
@@ -1143,49 +1158,116 @@ function setBG(cls){
 
 // ========== PORTRAITS ==========
 const PORTRAIT_SLOTS = ['p-left','p-center','p-right','p-fourth'];
-let stage = [];            // 当前在场立绘 [{id,emo,active}]，顺序=左→右
+const STAGE_SLOT_NAMES = ['left','center','right','fourth'];
+const STAGE_SLOT_ELEMENTS = { left:'p-left', center:'p-center', right:'p-right', fourth:'p-fourth' };
+// 槽位是语义位置，不是「当前数组第几个」：旁白/心理活动重新给 portraits 时，
+// 只要人物仍在场，就沿用原来的槽位，避免主角与药神之类的立绘来回交换。
+const STAGE_SLOT_POSITIONS = { left:'28%', center:'50%', right:'72%', fourth:'88%' };
+let stage = [];            // 当前在场立绘 [{id,slot,emo,active}]，slot=left/center/right/fourth
 let stageSid = null;       // 当前所在场景id（用于场景切换时强制清台）
 let curSpeakerId = null;   // 当前说话人 id（对话框小胸像用）
+
+function stageSlotName(slot, fallbackIndex=0){
+  return STAGE_SLOT_NAMES.includes(slot) ? slot : (STAGE_SLOT_NAMES[fallbackIndex] || 'center');
+}
+function stageSort(entries){
+  return (entries||[]).slice().sort((a,b)=>STAGE_SLOT_NAMES.indexOf(a.slot)-STAGE_SLOT_NAMES.indexOf(b.slot));
+}
+function stageWithSlots(entries){
+  return stageSort((Array.isArray(entries)?entries:[]).map((s,i)=>({
+    id:s.id,
+    slot:stageSlotName(s.slot,i),
+    emo:s.emo||'normal',
+    active:s.active!==false,
+  })).filter(s=>s.id));
+}
+function stageIds(entries){ return (entries||[]).map(s=>s.id).sort().join('|'); }
+function freeStageSlot(taken, preferred){
+  if(preferred && !taken.has(preferred)) return preferred;
+  return STAGE_SLOT_NAMES.find(slot=>!taken.has(slot)) || null;
+}
+function defaultSpeakerSlot(chId, current){
+  const now=stageWithSlots(current);
+  const taken=new Set(now.map(s=>s.slot));
+  // 新加入的主导者优先占左侧；主角不在场时贝蒂优先占左侧。
+  if(chId==='sylvia' && !taken.has('left')) return 'left';
+  if(chId==='beatrice' && !taken.has('left') && !now.some(s=>s.id==='sylvia')) return 'left';
+  if(now.length && !taken.has('right')) return 'right';
+  return freeStageSlot(taken, null) || 'center';
+}
+function normalizeStage(next){
+  const raw=(Array.isArray(next)?next:[]).filter(x=>x&&x.id).slice(0,4);
+  const prev=stageWithSlots(stage);
+  const samePeople=raw.length===prev.length && stageIds(raw)===stageIds(prev);
+
+  // 同一批人在场时，完全忽略本行 portraits 数组的排列/slot 提示，
+  // 这是旁白和心理活动的稳定性关键：只更新表情与 active，不搬家。
+  if(samePeople){
+    const oldById=new Map(prev.map(s=>[s.id,s]));
+    return stageSort(raw.map((s,i)=>{
+      const old=oldById.get(s.id);
+      return { id:s.id, slot:old?.slot||stageSlotName(s.slot,i), emo:s.emo||old?.emo||'normal', active:s.active!==false };
+    }));
+  }
+
+  const used=new Set();
+  const out=[];
+  raw.forEach((s,i)=>{
+    const old=prev.find(p=>p.id===s.id);
+    // 人数/角色集合变化时，显式 slot 才代表一次有意的重新构图；
+    // 无 slot 的增量更新则尽量保留该角色原位。
+    const requested=s.slot && STAGE_SLOT_NAMES.includes(s.slot) ? s.slot : null;
+    let slot=requested || (old && !used.has(old.slot) ? old.slot : null);
+    slot=freeStageSlot(used,slot) || 'center';
+    used.add(slot);
+    out.push({id:s.id,slot,emo:s.emo||old?.emo||'normal',active:s.active!==false});
+  });
+  return stageSort(out);
+}
 function clearPortraits(){
   // 立即隐藏全部（用于场景/自由探索重置）
   PORTRAIT_SLOTS.forEach(id=>{
     const el=$(id); if(!el) return;
     el.classList.add('hidden'); el.classList.remove('active','dim','ps-enter','ps-leave');
+    el.removeAttribute('data-char'); el.removeAttribute('data-slot'); el.style.left=''; el.onclick=null;
   });
   $('css-portraits').innerHTML='';
   stage = [];
 }
 // 单角色旁白聚焦：保留当前在场者(主导/对话者)，只把 focus 人高亮、其余置暗；focus 人不在场则追加
 function applyStageFocus(f){
-  const next = stage.map(s=>({ id:s.id, emo:s.id===f.id?(f.emo||s.emo):s.emo, active:s.id===f.id }));
-  if(!next.some(s=>s.id===f.id)) next.push({ id:f.id, emo:f.emo||'normal', active:true });
+  const current=stageWithSlots(stage);
+  const next=current.map(s=>({ ...s, emo:s.id===f.id?(f.emo||s.emo):s.emo, active:s.id===f.id }));
+  if(!next.some(s=>s.id===f.id)) next.push({ id:f.id, slot:defaultSpeakerSlot(f.id,current), emo:f.emo||'normal', active:true });
   applyStage(next);
 }
 // 单人说：基于当前 stage，让说话人高亮、其余在场者置暗；说话人不在场则追加
 function appendSpeaker(chId, emo){
-  const next = stage.map(s=>({ id:s.id, emo:s.id===chId?(emo||s.emo):s.emo, active:s.id===chId }));
-  if(!next.some(s=>s.id===chId)) next.push({ id:chId, emo:emo||'normal', active:true });
+  const current=stageWithSlots(stage);
+  const next=current.map(s=>({ ...s, emo:s.id===chId?(emo||s.emo):s.emo, active:s.id===chId }));
+  if(!next.some(s=>s.id===chId)) next.push({ id:chId, slot:defaultSpeakerSlot(chId,current), emo:emo||'normal', active:true });
   return next;
 }
-// 应用一组立绘：diff 当前 stage → 保留在场者(仅切换高亮/置暗)，离场者淡出，入场者淡入
+// 应用一组立绘：以语义槽位 diff 当前 stage → 保留在场者(仅切换高亮/置暗)，
+// 只有真正换人/新增时才允许重新构图。
 function applyStage(next){
-  next = Array.isArray(next) ? next.slice(0,4) : [];
-  // 1) 决定每个槽放谁（顺序=left→right）
-  const n = Math.max(stage.length, next.length);
-  for(let i=0;i<n;i++){
-    const sid = PORTRAIT_SLOTS[i]; if(!sid) break;
-    const el = $(sid); if(!el) continue;
-    const want = next[i] || null;
-    const have = stage[i] || null;
+  const target=normalizeStage(next);
+  const prev=stageWithSlots(stage);
+  const prevBySlot=new Map(prev.map(s=>[s.slot,s]));
+  const nextBySlot=new Map(target.map(s=>[s.slot,s]));
+
+  STAGE_SLOT_NAMES.forEach(slot=>{
+    const el=$(STAGE_SLOT_ELEMENTS[slot]); if(!el) return;
+    const want=nextBySlot.get(slot)||null;
+    const have=prevBySlot.get(slot)||null;
     if(want && have && want.id===have.id){
       // 同人：更新 emo/active，不重排、不闪
-      setPortrait(el, want.id, want.emo, want.active!==false);
+      setPortrait(el, want.id, want.emo, want.active!==false, slot);
       if(el.classList.contains('ps-enter')) el.classList.remove('ps-enter');
     } else if(want){
       // 该槽换人/新增：淡入
-      setPortrait(el, want.id, want.emo, want.active!==false);
+      setPortrait(el, want.id, want.emo, want.active!==false, slot);
       el.classList.remove('hidden');
-      // 触发淡入（先清 hidden 下一帧去 ps-enter）
       el.classList.remove('ps-leave');
       el.classList.add('ps-enter');
       requestAnimationFrame(()=>{ el.classList.remove('ps-enter'); });
@@ -1195,45 +1277,40 @@ function applyStage(next){
       const _el=el;
       setTimeout(()=>{ if(_el.classList.contains('ps-leave')){ _el.classList.add('hidden'); _el.classList.remove('ps-leave'); } }, 240);
     }
-  }
-  // 2) 记录新 stage
-  stage = next.map(w=>({ id:w.id, emo:w.emo, active: w.active!==false }));
+  });
+  stage=target;
   layoutPortraits();
 }
-function setPortrait(el, charId, emotion, active){
+function setPortrait(el, charId, emotion, active, slot){
   const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emotion) : (PORTRAIT_FILES[charId+'_'+(emotion||'normal')]||PORTRAIT_FILES[charId+'_normal']);
   if(!file){ el.classList.add('hidden'); addCssPortrait(charId, active); return; }
   const img = el.querySelector('img'); const nm = el.querySelector('.p-name');
   if(charId==='sylvia' && !flag('named')){ el.classList.add('hidden'); return; }
   img.src = file;
+  img.alt = CHARS[charId]?.name || CSS_CHARS[charId]?.[0] || charId || '';
   el.setAttribute('data-char', charId||'');
+  if(slot) el.setAttribute('data-slot',slot);
   el.classList.remove('hidden');
   nm.textContent = (charId==='sylvia' && !flag('named')) ? '？？？' : (CHARS[charId]?.short || charId);
   el.classList.toggle('active', active); el.classList.toggle('dim', !active);
 }
-// 自适应立绘排布：按实际在场人数 N 分布（1/2/3/4 人各自居中/均匀），
-// 避免「固定槽位填空」的机械感。人数越多越向两侧展开，人数少则更居中。
+// 使用语义槽位排布，而不是根据数组下标/当前人数重新居中，
+// 保证「左边的人」不会因一次旁白或心理活动变成「右边的人」。
 function layoutPortraits(){
-  // 以 stage 为基准（在场人数决定排布），避免淡出中的立绘仍被计导致错位
-  const N = stage.length;
-  if(N === 0) return;
-  const PRESET = {
-    1: [50],
-    2: [30, 70],
-    3: [20, 50, 80],
-    4: [14, 38, 62, 86],
-  }[N] || Array.from({length:N},()=>50);
-  for(let i=0;i<N;i++){
-    const el = $(PORTRAIT_SLOTS[i]); if(!el) continue;
-    el.style.left = (PRESET[i] ?? 50) + '%';
-  }
+  stageWithSlots(stage).forEach(s=>{
+    const el=$(STAGE_SLOT_ELEMENTS[s.slot]);
+    if(!el) return;
+    el.style.left=STAGE_SLOT_POSITIONS[s.slot] || '50%';
+    el.setAttribute('data-slot',s.slot);
+  });
 }
 function showPortrait(charId, emotion='normal', slot='center', active=true){
   const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emotion) : (PORTRAIT_FILES[charId+'_'+(emotion||'normal')]||PORTRAIT_FILES[charId+'_normal']);
   const el = $(slot==='left'?'p-left':slot==='right'?'p-right':slot==='fourth'?'p-fourth':'p-center');
   if(!el) return;
-  // 记录当前角色，供 CSS 按角色微调立绘表现（如爱丽丝白色系高亮偏亮）
+  // 记录当前角色与语义槽位，供 CSS/无障碍状态识别
   el.setAttribute('data-char', charId||'');
+  el.setAttribute('data-slot', slot);
   const img = el.querySelector('img');
   const nm = el.querySelector('.p-name');
   // 未命名前不显示主角立绘
@@ -1242,7 +1319,9 @@ function showPortrait(charId, emotion='normal', slot='center', active=true){
     return;
   }
   if(file){
-    img.src = file; img.onerror = ()=>{ el.classList.add('hidden'); addCssPortrait(charId, active); };
+    img.src = file;
+    img.alt = CHARS[charId]?.name || CSS_CHARS[charId]?.[0] || charId || '';
+    img.onerror = ()=>{ el.classList.add('hidden'); addCssPortrait(charId, active); };
     el.classList.remove('hidden');
     nm.textContent = (charId==='sylvia' && !flag('named')) ? '？？？' : (CHARS[charId]?.short || charId);
     el.classList.toggle('active', active); el.classList.toggle('dim', !active);
@@ -1729,7 +1808,9 @@ function dismissRoamPrompt(){
     if(checkStoryGates()) return true;
   }
   if(typeof afterPrompt==='function') afterPrompt();
-  if(S.freeRoam) maybeShowRoamGreeting();
+  // 季度风物是一个独立的收束提示；关闭后保持探索画面干净，
+  // 只有角色问候自身被关闭时才寻找下一位未读问候。
+  if(promptKind==='greeting' && S.freeRoam) maybeShowRoamGreeting();
   return true;
 }
 
@@ -1759,6 +1840,7 @@ bindAdvance();
 
 // ========== CARD ==========
 function showCard(vol, t, s, cb){
+  $('card').setAttribute('aria-label', [vol,t,s].filter(Boolean).join(' · '));
   $('card-vol').textContent=vol||'';
   $('card-t').textContent=t||'';
   $('card-s').textContent=s||'';
@@ -2002,13 +2084,15 @@ function renderHotspots(){
       };
     }
   });
-  stage = peeps.slice(0,4).map(id=>({id, emo:'normal', active:true})); // 供 layout 排布
+  stage = peeps.slice(0,4).map((id,i)=>({id, slot:slots[i]||'center', emo:'normal', active:true})); // 供 layout 排布
   layoutPortraits();
   if(!usable.length && !peeps.length){ show(box,0); return; }
   show(box,1);
   usable.forEach((ex,i)=>{
     const b = document.createElement('button');
     b.className = 'hotspot' + (ex.egg?' egg':'') + (ex.babyFuss?' locked-baby':'');
+    b.dataset.target = ex.to || ex.fussTo || '';
+    b.setAttribute('aria-label', ex.label || LOCS[ex.to]?.name || ex.to || '互动');
     b.style.left = (ex.x|| (20+i*20)) + '%';
     b.style.top = (ex.y|| 50) + '%';
     b.innerHTML = `<span class="hs-icon">${ex.icon||'➡️'}</span>${ex.label||LOCS[ex.to]?.name||ex.to}`;
@@ -2131,7 +2215,7 @@ function roamGreetingText(charId, locId=S.loc){
   const a=S.ageY, n=CHARS[charId]?.short||charId;
   const detail=ROAM_PLACE_DETAIL[locId] || (LOCS[locId]?.name ? LOCS[locId].name+'今天很安静。' : '这里今天很安静。');
   switch(charId){
-    case 'sophia': return a<1 ? '醒了吗？妈妈在。'+detail : a<6 ? '希尔维亚，想在这里待一会儿吗？'+detail : '希尔维亚，来得正好。'+detail;
+    case 'sophia': return a<1 ? '醒了吗？妈妈在。'+detail : a<6 ? '希尔维亚，想在这里待一会儿吗？'+detail : a<12 ? '希尔维亚，来得正好。'+detail : '希尔维亚，今天也辛苦了。要陪妈妈喝杯茶吗？'+detail;
     case 'beatrice': return a<1 ? '妹妹！看这里！'+detail : a<10 ? '希尔维亚！我正想找你！'+detail : '希尔维亚，来得正好！'+detail;
     case 'alice': return a<3 ? '……姐姐大人。'+detail : a<10 ? '……姐姐大人，你也来了。'+detail : '……姐姐大人。要一起待一会儿吗？'+detail;
     case 'claude': return a<6 ? '希尔维亚。看来你很喜欢这里。'+detail : '希尔维亚。既然来了，就别急着走。'+detail;
@@ -2260,7 +2344,10 @@ function openMap(){
     if(S.ageY < 1 && L.id !== 'nursery' && L.id !== 'ownroom') return;
     const d=document.createElement('button');
     d.className='map-cell'+(S.loc===L.id?' here':'');
-    d.innerHTML=`<span class="mc-icon">${L.icon}</span>${L.name}<div class="mc-cost">${L.area}</div>${L.tags?.includes('egg')&&!S.eggs.includes(L.id)?'<div class="mc-tag">？</div>':''}`;
+    d.dataset.location=L.id;
+    d.setAttribute('aria-label', `${L.name}，${L.area}${S.loc===L.id?'，当前位置':''}`);
+    d.setAttribute('aria-current', S.loc===L.id ? 'location' : 'false');
+    d.innerHTML=`<span class="mc-icon" aria-hidden="true">${L.icon}</span>${L.name}<div class="mc-cost">${L.area}</div>${L.tags?.includes('egg')&&!S.eggs.includes(L.id)?'<div class="mc-tag">？</div>':''}`;
     d.onclick=()=>{
       if(S.loc===L.id){ toast('已经在这里了'); return; }
       if(S.ageY < 1){ toast('你还太小，不能自己走。让家人抱你出去吧。'); return; }
@@ -3192,8 +3279,23 @@ function statusPanelHTML(){
 function openPanel(tab){
   show('panel',1); sfx('open');
   const tabs=[['status','状态'],['skills','技能'],['tasks','任务'],['prof','人物'],['inv','背包'],['ach','成就'],['settings','设置']];
-  $('panel-tabs').innerHTML = tabs.map(([k,n])=>`<button class="ptab${(tab||'status')===k?' on':''}" data-t="${k}">${n}</button>`).join('');
-  $('panel-tabs').onclick=e=>{ const t=e.target.dataset.t; if(t) openPanel(t); };
+  $('panel-tabs').innerHTML = tabs.map(([k,n])=>{
+    const selected=(tab||'status')===k;
+    return `<button class="ptab${selected?' on':''}" data-t="${k}" role="tab" aria-selected="${selected}" tabindex="${selected?'0':'-1'}">${n}</button>`;
+  }).join('');
+  const panelTabs=$('panel-tabs');
+  panelTabs.onclick=e=>{ const t=e.target.dataset.t; if(t) openPanel(t); };
+  panelTabs.onkeydown=e=>{
+    if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key)) return;
+    const tabs=[...panelTabs.querySelectorAll('[role="tab"]')];
+    if(!tabs.length) return;
+    const current=Math.max(0,tabs.indexOf(document.activeElement));
+    const nextIndex=e.key==='Home' ? 0 : e.key==='End' ? tabs.length-1 : (current+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+    e.preventDefault();
+    const next=tabs[nextIndex];
+    openPanel(next.dataset.t);
+    panelTabs.querySelector(`[data-t="${next.dataset.t}"]`)?.focus();
+  };
   const body=$('panel-body');
   tab = tab||'status';
   if(tab==='status'){
@@ -4001,4 +4103,9 @@ if(typeof window !== 'undefined'){
   window.bgmPlayType = typeof bgmPlayType !== 'undefined' ? bgmPlayType : ()=>{};
   window.BGM_FILES = typeof BGM_FILES !== 'undefined' ? BGM_FILES : {};
   window.BGM_GROUPS = typeof BGM_GROUPS !== 'undefined' ? BGM_GROUPS : {};
+  // 仅暴露给离线测试与无障碍集成，不改变游戏内推进逻辑。
+  window.show = show;
+  window.resetDialogAdvanceState = resetDialogAdvanceState;
+  window._enterLocRaw = _enterLocRaw;
+  window.__getDialogAdvanceState = ()=>({lineCB, typing, typeDoneCB});
 }

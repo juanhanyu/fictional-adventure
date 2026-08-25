@@ -678,7 +678,7 @@ const ALL_PICKS = {
   frost_armor:{id:'frost_armor', name:'霜铠', tier:1, tag:'赋魔法',
     desc:'体表凝霜甲，提升物抗与法抗。'},
   deep_read:{id:'deep_read', name:'深读', tier:1, tag:'赋技能·被动',
-    desc:'阅读与学习效率提升，了解度获取加快。'},
+    desc:'阅读与学习效率提升，了解元素发现加快。'},
   mirror_ice:{id:'mirror_ice', name:'镜冰', tier:1, tag:'赋魔法',
     desc:'制造冰镜反射低阶光系/火系攻击。'},
   wind_step_s:{id:'wind_step_s', name:'残影步（简）', tier:1, tag:'赋剑技·简',
@@ -728,7 +728,7 @@ const TASKS = [
 
 const ACH = [
   {id:'born_again', name:'第二次出生', desc:'以婴儿之身睁开双眼', reward:'经验×10'},
-  {id:'three_sisters', name:'三姐妹', desc:'与姐姐、妹妹组成三姐妹', reward:'了解度获取+5%'},
+  {id:'three_sisters', name:'三姐妹', desc:'与姐姐、妹妹组成三姐妹', reward:'了解元素发现效率+5%'},
   {id:'lazy_genius', name:'怠惰的天才', desc:'在发呆中领悟魔力', reward:'静心相关'},
   {id:'potion_god', name:'药神的小瓶', desc:'收到药神赠礼', reward:'图鉴解锁·药神'},
   {id:'virtual_first', name:'梦中初胜', desc:'赢得第一场虚拟决斗', reward:'经验×50'},
@@ -3395,7 +3395,7 @@ function openPanel(tab){
       const pf = PORTRAIT_FILES[`${id}_normal`];
       return `<div class="p-prof"><div class="av">${pf?`<img src="${pf}"/>`:(CSS_CHARS[id]?.[1]||'👤')}</div>
         <div class="info"><div class="nm">${c.name||c.short}</div>
-        <div class="meta">${c.role||''} · 了解度 ${k}%</div>
+        <div class="meta">${c.role||''} · 了解元素 ${knowCount(id)}/${KNOW_ELEMENTS[id]?.length||5}</div>
         <div class="hearts">${hearts}</div>
         <div class="know-bar"><i style="width:${k}%"></i></div></div></div>`;
     }).join('');
@@ -4380,7 +4380,7 @@ function renderCodex(tab='characters'){
   const knownChars=Object.keys(S.know||{}).concat(Object.keys(S.love||{})).filter((id,i,a)=>a.indexOf(id)===i);
   let body='';
   if(tab==='characters'){
-    body=knownChars.length ? knownChars.map(id=>{const c=CHARS[id]||{}, know=S.know[id]||0, rec=CODEX_RECORDS[id], detail=rec?rec.stages.filter(x=>know>=x.at).slice(-1)[0]?.text:''; return `<div class="p-prof"><div class="av">${resolvePortrait(id,'normal')?`<img src="${resolvePortrait(id,'normal')}" alt="${c.name||c.short||id}"/>`:(CSS_CHARS[id]?.[1]||'👤')}</div><div class="info"><div class="nm">${c.name||c.short||id}</div><div class="meta">${c.role||'人物'} · 了解度 ${know}%</div><div class="know-bar"><i style="width:${Math.min(100,know)}%"></i></div><div class="codex-detail">${detail||'继续接触后解锁更多记录。'}<br><span class="codex-elements">了解元素：${(KNOW_ELEMENTS[id]||[]).map(el=>(S.knowElements?.[id]||[]).includes(el)?`<b>◆ ${el}</b>`:`◇ ???`).join('　')}</span></div></div></div>`}).join('') : '<p class="codex-empty">尚未记录人物。与角色接触后会自动收录。</p>';
+    body=knownChars.length ? knownChars.map(id=>{const c=CHARS[id]||{}, know=S.know[id]||0, rec=CODEX_RECORDS[id], detail=rec?rec.stages.filter(x=>know>=x.at).slice(-1)[0]?.text:''; return `<div class="p-prof"><div class="av">${resolvePortrait(id,'normal')?`<img src="${resolvePortrait(id,'normal')}" alt="${c.name||c.short||id}"/>`:(CSS_CHARS[id]?.[1]||'👤')}</div><div class="info"><div class="nm">${c.name||c.short||id}</div><div class="meta">${c.role||'人物'} · 特定了解元素 ${knowCount(id)}/${KNOW_REQUIRED}</div><div class="know-bar"><i style="width:${Math.min(100,knowCount(id)/(KNOW_ELEMENTS[id]?.length||5)*100)}%"></i></div><div class="codex-detail">${detail||'继续接触后解锁更多记录。'}<br><span class="codex-elements">了解元素：${(KNOW_ELEMENTS[id]||[]).map(el=>(S.knowElements?.[id]||[]).includes(el)?`<b>◆ ${el}</b>`:`◇ ???`).join('　')}</span></div></div></div>`}).join('') : '<p class="codex-empty">尚未记录人物。与角色接触后会自动收录。</p>';
   } else if(tab==='items'){
     body=S.inv?.length ? S.inv.map(it=>`<div class="p-task"><b>${it.icon||'📦'} ${it.name}</b><br><span>${it.desc||'尚无说明。'}</span></div>`).join('') : '<p class="codex-empty">尚未收录物品。</p>';
   } else if(tab==='skills'){

@@ -790,14 +790,15 @@ let S = baseState();
 let B = null; // battle
 let sceneQueue = [];
 let storyChain = null; // 剧情链：runSceneQueue 顺序播放的剩余场景
-let typing = false, typeTimer = null, fullText = '', textIdx = 0;
+var typing = false, typeTimer = null, fullText = '', textIdx = 0;
 let currentScene = null;
 let pendingPicks = null;
 let codex = (()=>{ try { return JSON.parse(localStorage.getItem(CODEX_KEY) || '{"endings":[],"chars":[],"eggs":0}'); } catch(e){ return {endings:[],chars:[],eggs:0}; } })();
 
 // ========== UTILS ==========
 const $ = id => document.getElementById(id);
-const show = (el,on=true) => { if(typeof el==='string') el=$(el); if(el) el.classList.toggle('hidden', !on); };
+function show(el, on=true){ if(typeof el==='string') el=$(el); if(el) el.classList.toggle('hidden', !on); }
+if(typeof window !== 'undefined') window.show = show;
 
 /* 底部 UI 高度由实际布局决定；只记录可见高度，剧情模式沿用固定 131px 对话框。 */
 function syncActionBarHeight(){
@@ -1175,6 +1176,8 @@ function appendSpeaker(chId, emo){
 // 应用一组立绘：diff 当前 stage → 保留在场者(仅切换高亮/置暗)，离场者淡出，入场者淡入
 function applyStage(next){
   next = Array.isArray(next) ? next.slice(0,4) : [];
+  const cp = $('css-portraits');
+  if(cp) cp.innerHTML = '';
   // 1) 决定每个槽放谁（顺序=left→right）
   const n = Math.max(stage.length, next.length);
   for(let i=0;i<n;i++){
@@ -1206,10 +1209,10 @@ function applyStage(next){
   layoutPortraits();
 }
 function setPortrait(el, charId, emotion, active){
+  if(charId==='sylvia' && !flag('named')){ el.classList.add('hidden'); return; }
   const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emotion) : (PORTRAIT_FILES[charId+'_'+(emotion||'normal')]||PORTRAIT_FILES[charId+'_normal']);
   if(!file){ el.classList.add('hidden'); addCssPortrait(charId, active); return; }
   const img = el.querySelector('img'); const nm = el.querySelector('.p-name');
-  if(charId==='sylvia' && !flag('named')){ el.classList.add('hidden'); return; }
   img.src = file;
   el.setAttribute('data-char', charId||'');
   el.classList.remove('hidden');
@@ -1234,28 +1237,29 @@ function layoutPortraits(){
   }
 }
 function showPortrait(charId, emotion='normal', slot='center', active=true){
-  const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emotion) : (PORTRAIT_FILES[charId+'_'+(emotion||'normal')]||PORTRAIT_FILES[charId+'_normal']);
   const el = $(slot==='left'?'p-left':slot==='right'?'p-right':slot==='fourth'?'p-fourth':'p-center');
   if(!el) return;
-  // 记录当前角色，供 CSS 按角色微调立绘表现（如爱丽丝白色系高亮偏亮）
-  el.setAttribute('data-char', charId||'');
-  const img = el.querySelector('img');
-  const nm = el.querySelector('.p-name');
   // 未命名前不显示主角立绘
   if(charId==='sylvia' && !flag('named')){
     el.classList.add('hidden');
     return;
   }
+  const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emotion) : (PORTRAIT_FILES[charId+'_'+(emotion||'normal')]||PORTRAIT_FILES[charId+'_normal']);
+  // 记录当前角色，供 CSS 按角色微调立绘表现（如爱丽丝白色系高亮偏亮）
+  el.setAttribute('data-char', charId||'');
+  const img = el.querySelector('img');
+  const nm = el.querySelector('.p-name');
   if(file){
     img.src = file; img.onerror = ()=>{ el.classList.add('hidden'); addCssPortrait(charId, active); };
     el.classList.remove('hidden');
-    nm.textContent = (charId==='sylvia' && !flag('named')) ? '？？？' : (CHARS[charId]?.short || charId);
+    nm.textContent = CHARS[charId]?.short || charId;
     el.classList.toggle('active', active); el.classList.toggle('dim', !active);
   } else {
     el.classList.add('hidden'); addCssPortrait(charId, active);
   }
 }
 function addCssPortrait(charId, active=true){
+  if(charId==='sylvia' && !flag('named')) return;
   const c = CSS_CHARS[charId] || CSS_CHARS.sylvia;
   const d = document.createElement('div');
   d.className = `css-p ${CHARS[charId]?.css||charId}${active?'':' dim'}`;
@@ -1292,8 +1296,8 @@ function speakerIdFromName(name){
 }
 
 // ========== TEXT ENGINE ==========
-let lineCB = null;
-let typeDoneCB = null;
+var lineCB = null;
+var typeDoneCB = null;
 let dialogPages = [''];
 let dialogPageIndex = 0;
 let lineGen = 0;
@@ -1825,7 +1829,6 @@ function dismissRoamPrompt(){
     if(checkStoryGates()) return true;
   }
   if(typeof afterPrompt==='function') afterPrompt();
-  if(S.freeRoam) maybeShowRoamGreeting();
   return true;
 }
 
@@ -2227,7 +2230,7 @@ function roamGreetingText(charId, locId=S.loc){
   const a=S.ageY, n=CHARS[charId]?.short||charId;
   const detail=ROAM_PLACE_DETAIL[locId] || (LOCS[locId]?.name ? LOCS[locId].name+'今天很安静。' : '这里今天很安静。');
   switch(charId){
-    case 'sophia': return a<1 ? '醒了吗？妈妈在。'+detail : a<6 ? '希尔维亚，想在这里待一会儿吗？'+detail : '希尔维亚，来得正好。'+detail;
+    case 'sophia': return a<1 ? '醒了吗？妈妈在。'+detail : a<6 ? '希尔维亚，想在这里待一会儿吗？'+detail : a<12 ? '希尔维亚，来得正好。'+detail : '希尔维亚，今天也很精神呢。'+detail;
     case 'beatrice': return a<1 ? '妹妹！看这里！'+detail : a<10 ? '希尔维亚！我正想找你！'+detail : '希尔维亚，来得正好！'+detail;
     case 'alice': return a<3 ? '……姐姐大人。'+detail : a<10 ? '……姐姐大人，你也来了。'+detail : '……姐姐大人。要一起待一会儿吗？'+detail;
     case 'claude': return a<6 ? '希尔维亚。看来你很喜欢这里。'+detail : '希尔维亚。既然来了，就别急着走。'+detail;
@@ -2267,6 +2270,7 @@ function maybeShowRoamGreeting(){
   if(!action || action.classList.contains('hidden')) return false;
   if(!tb || !tb.classList.contains('dialog-hidden')) return false;
   if(choices && choices.children.length) return false;
+  if(S.ageY < 1) return false;
   const peeps=whoIsHere();
   if(!peeps.length) return false;
   const start=Math.abs((S.season||0)+S.ageY+String(S.loc||'').length)%peeps.length;
@@ -3891,6 +3895,7 @@ function tryStoryAction(){
 
 // story hooks after ambient freeRoam is fine via tryStoryAction on map/actions
 const _enterLocRaw = enterLoc;
+if(typeof window !== 'undefined') window._enterLocRaw = _enterLocRaw;
 enterLoc = function(id){
   _enterLocRaw(id);
   // delay story so egg/ambient playLines can start first; only if still free
@@ -4012,7 +4017,7 @@ doNextTime = function(){
   S.seasonFlavorPending=true;
   save();
   if(checkStoryGates()) return;
-  showPendingSeasonFlavor();
+  showSeasonFlavor();
   updateHUD();
   renderHotspots();
 };

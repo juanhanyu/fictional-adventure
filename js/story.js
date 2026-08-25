@@ -91,7 +91,7 @@
     phase: 'prologue',
     card: { vol: '第一卷 公爵篇', t: '第一章', s: '银与蓝' },
     lines: [
-      T('窗外的天有些灰。'),
+      T('窗外天朗气清。'),
       T('我靠着椅背，看操场边那棵老槐树。'),
       T('五月快过完了，树梢已经挂上浅白的花，风一吹，远远看去像一层薄雾。'),
       T('“眷寒渔。”'),
@@ -157,9 +157,9 @@
       T('有人将我抱起来，怀抱柔软温暖，带着淡淡香气。'),
       T('女人的声音贴在耳边，温柔得几乎发颤。'),
       T('我听不懂她在说什么，却能感觉到她很开心。'),
-      N('难道我转生了？', ['sylvia']),
-      N('这个念头刚出现，脑海中便响起清脆提示音。', ['sylvia'], { sfx: 'open' }),
-      N('叮。', ['sylvia']),
+      N('难道我转生了？'),
+      N('这个念头刚出现，脑海中便响起清脆提示音。', [], { sfx: 'open' }),
+      N('叮。'),
       T('半透明面板浮现在视野中央。'),
       T('周围景象依旧模糊，面板上的文字却清晰得像直接落进意识。'),
       {
@@ -167,29 +167,29 @@
           S.name = '未命名';
           updateHUD();
           sysPopup(
-            '✧ SYSTEM ✧',
-            '📋 状态面板<br>🎒 背包<br>🗺️ 地图<br>📖 图鉴<br>📜 任务'
+            '✧･ﾟ: ✧ SYSTEM ✧ :･ﾟ✧',
+            '📋 <b>Status</b>　　　状态面板<br>🎒 <b>Inventory</b>　背包<br>🗺️ <b>Map</b>　　　　地图<br>📖 <b>Collection</b>　图鉴<br>📜 <b>Quest</b>　　　任务'
           );
         },
       },
-      N('我试着用意念选择状态，面板随即翻到下一页。', ['sylvia']),
+      N('我试着用意念选择状态，面板随即翻到下一页。'),
       {
         do: () =>
           sysPopup(
             '⭐ 状态面板',
-            '<b>性别：</b>女<br><b>天赋亲和：</b>❄️冰（赋亲和）· 💧水（基础亲和）<br><b>状态：</b>🍼 新生儿<br><br>' + statusPanelHTML()
+            `<b>📛 名字：</b>未命名<br><b>👤 性别：</b>女<br><b>🎂 年龄：</b>0岁0天<br><hr style="opacity:0.25;margin:6px 0"><b>⭐ 等级：</b>Lv.${S.lv}<br><b>💗 生命值：</b>${S.hp} / ${S.mhp}<br><b>💠 魔力值：</b>${S.mp} / ${S.mmp}<br><hr style="opacity:0.25;margin:6px 0"><b>⚔️ 攻击：</b>${Math.floor(S.atk)}<br><b>✨ 魔力：</b>${Math.floor(S.mag)}<br><b>🛡️ 物抗：</b>${S.pdef}<br><b>🔮 法抗：</b>${S.mdef}<br><hr style="opacity:0.25;margin:6px 0"><b>💫 天赋亲和：</b><br>　❄️ 冰（赋亲和）<br>　💧 水（基础亲和）<br><b>🎁 状态：</b>🍼 新生儿`
           ),
       },
-      N('我的注意力停在性别那一栏。', ['sylvia']),
-      N('女。', ['sylvia']),
-      N('前世作为男生活了十几年，如今重新开始，却成了女孩。', ['sylvia']),
-      N('这个事实当然足够意外，可新生儿的身体太累，连震惊都维持不了多久。', ['sylvia']),
-      N('我盯着那行字看了一会儿，心里只有一种迟来的实感：原来这一世会这样活下去。', ['sylvia']),
-      N('抗拒也改变不了身体，何况我并没有想象中那么难以接受。', ['sylvia']),
-      N('前世已经结束，这里的一切都从头开始。', ['sylvia']),
-      N('与其纠结，不如等真正长大后再说。', ['sylvia']),
-      N('冰与水的亲和更让我在意。', ['sylvia']),
-      N('看来这个世界确实存在魔法，系统也并非单纯用来显示身体状况。', ['sylvia']),
+      T('我的注意力停在性别那一栏。'),
+      T('女。'),
+      T('前世作为男生活了十几年，如今重新开始，却成了女孩。'),
+      T('这个事实当然足够意外，可新生儿的身体太累，连震惊都维持不了多久。'),
+      T('我盯着那行字看了一会儿，心里只有一种迟来的实感：原来这一世会这样活下去。'),
+      T('抗拒也改变不了身体，何况我并没有想象中那么难以接受。'),
+      T('前世已经结束，这里的一切都从头开始。'),
+      T('与其纠结，不如等真正长大后再说。'),
+      T('冰与水的亲和更让我在意。'),
+      T('看来这个世界确实存在魔法，系统也并非单纯用来显示身体状况。'),
 
       T('抱着我的女人仍在轻声说话。', {
         portraits: CAST([['sophia','left'], ['claude','right']]),
@@ -206,8 +206,8 @@
       T('女人笑起来，声音里带着泪意。', {
         portraits: CAST([['sophia','left'], ['claude','right']]),
       }),
-      N('我一句也听不懂，心里却慢慢安定下来。', ['sylvia']),
-      N('他们大概是这一世的父母。', ['sylvia'], {
+      T('我一句也听不懂，心里却慢慢安定下来。'),
+      T('他们大概是这一世的父母。', {
         ach: 'born_again',
         love: 'sophia',
         loveD: 1,
@@ -221,51 +221,51 @@
       },
       T('◇', { portraits: [] }),
 
-      N('婴儿时期的日子由睡眠分割。', ['sylvia']),
-      N('醒来，喝奶，被换衣服，再次睡着。', ['sylvia']),
-      N('时间在这种重复中流动，视力和听觉也一点点变得清楚。', ['sylvia']),
-      N('我最先看清床边纱帐，随后是雕花天花板和总在身边忙碌的女仆。', ['sylvia']),
-      N('房间宽敞，家具考究，显然来自相当富裕的家庭。', ['sylvia']),
-      N('系统每天都在，却很安静。', ['sylvia']),
-      N('我可以随意开关面板，也能在不同功能间切换。', ['sylvia']),
-      N('背包空着，任务栏同样没有内容。', ['sylvia']),
-      N('地图只亮着房间所在的一小块区域，周围全被灰雾覆盖。', ['sylvia']),
-      N('图鉴则已经记录下我反复见到的人。', ['sylvia']),
+      T('婴儿时期的日子由睡眠分割。'),
+      T('醒来，喝奶，被换衣服，再次睡着。'),
+      T('时间在这种重复中流动，视力和听觉也一点点变得清楚。'),
+      T('我最先看清床边纱帐，随后是雕花天花板和总在身边忙碌的女仆。'),
+      T('房间宽敞，家具考究，显然来自相当富裕的家庭。'),
+      T('系统每天都在，却很安静。'),
+      T('我可以随意开关面板，也能在不同功能间切换。'),
+      T('背包空着，任务栏同样没有内容。'),
+      T('地图只亮着房间所在的一小块区域，周围全被灰雾覆盖。'),
+      T('图鉴则已经记录下我反复见到的人。'),
       T('抱着我最多的女人叫索菲亚。', {
-        portraits: CAST([['sophia','left'], ['claude','right']]),
+        portraits: CAST([['sophia','center']]),
       }),
       T('那只总在傍晚出现、动作格外谨慎的大手属于克劳德。', {
-        portraits: CAST([['sophia','left'], ['claude','right']]),
+        portraits: CAST([['claude','center']]),
       }),
-      N('图鉴给出的内容并不超出我的认知。', ['sylvia']),
-      N('只有亲眼见过、听过或理解过的事情，才会被整理进去。', ['sylvia']),
-      N('系统更像在替我保存记忆，而非凭空告诉我答案。', ['sylvia']),
+      T('图鉴给出的内容并不超出我的认知。', { portraits: [] }),
+      T('只有亲眼见过、听过或理解过的事情，才会被整理进去。'),
+      T('系统更像在替我保存记忆，而非凭空告诉我答案。'),
 
       T('母亲每天陪我的时间最多。', {
-        portraits: CAST([['sylvia','left'], ['sophia','right']]),
+        portraits: CAST([['sophia','center']]),
       }),
       T('她会在窗边读书，也会把书里的句子换成婴儿能听懂的语调念给我。', {
-        portraits: CAST([['sylvia','left'], ['sophia','right']]),
+        portraits: CAST([['sophia','center']]),
       }),
       T('睡前那首摇篮曲总是同一支，旋律很简单，我却渐渐能在她开口前认出来。', {
-        portraits: CAST([['sylvia','left'], ['sophia','right']]),
+        portraits: CAST([['sophia','center']]),
       }),
       T('父亲通常来得晚。', {
-        portraits: CAST([['sylvia','left'], ['claude','right']]),
+        portraits: CAST([['claude','center']]),
       }),
       T('起初我只能听见门响，后来能看清他站在床边的轮廓。', {
-        portraits: CAST([['sylvia','left'], ['claude','right']]),
+        portraits: CAST([['claude','center']]),
       }),
       T('他很少抱我，似乎担心力气太大。', {
-        portraits: CAST([['sylvia','left'], ['claude','right']]),
+        portraits: CAST([['claude','center']]),
       }),
       T('偶尔被母亲把孩子塞进怀里，整个人都会僵住，连呼吸也放轻。', {
-        portraits: CAST([['sylvia','left'], ['claude','right']]),
+        portraits: CAST([['sophia','left'], ['claude','right']]),
       }),
       T('有一回我伸手抓住他的手指，他保持那个姿势站了很久。', {
-        portraits: CAST([['sylvia','left'], ['claude','right']]),
+        portraits: CAST([['sophia','left'], ['claude','right']]),
       }),
-      N('第二天图鉴里便多了一句：父亲看起来严肃，其实很容易因为女儿高兴。', ['sylvia']),
+      T('第二天图鉴里便多了一句：父亲看起来严肃，其实很容易因为女儿高兴。', { portraits: [] }),
 
       T('又过了些日子，母亲第一次抱我离开房间。', {
         bg: 'bg-img-hallway bg-hall',
@@ -274,11 +274,11 @@
         portraits: [],
       }),
       T('她叫我希尔维亚。', {
-        portraits: CAST([['sylvia','left'], ['sophia','right']]),
+        portraits: CAST([['sophia','center']]),
       }),
-      N('这个发音出现过很多回，我已经能够认出来。', ['sylvia']),
-      N('母亲每念一次，系统上的“未命名”便轻轻闪动。', ['sylvia']),
-      N('等她抱着我走过长廊时，姓名终于固定下来：希尔维亚·维斯特利亚。', ['sylvia']),
+      T('这个发音出现过很多回，我已经能够认出来。'),
+      T('母亲每念一次，系统上的“未命名”便轻轻闪动。'),
+      T('等她抱着我走过长廊时，姓名终于固定下来：希尔维亚·维斯特利亚。'),
       {
         do: () => {
           S.name = '希尔维亚·维斯特利亚';
@@ -286,16 +286,16 @@
           updateHUD();
         },
       },
-      N('经过走廊的立镜时，母亲稍微停了一下。', ['sylvia']),
-      N('我第一次在镜中看见这一世的自己：银灰色胎发贴在额前，眼睛则是很浅的蓝。', ['sylvia']),
-      N('脸还带着婴儿特有的圆润，实在看不出将来会长成什么样。', ['sylvia']),
-      N('我的银灰色头发像母亲，浅蓝色的眼睛则像父亲。', ['sylvia']),
-      N('银与蓝，是我从他们身上继承来的颜色。', ['sylvia']),
+      T('经过走廊的立镜时，母亲稍微停了一下。'),
+      T('我第一次在镜中看见这一世的自己：银灰色胎发贴在额前，眼睛则是很浅的蓝。'),
+      T('脸还带着婴儿特有的圆润，实在看不出将来会长成什么样。'),
+      T('我的银灰色头发像母亲，浅蓝色的眼睛则像父亲。'),
+      T('银与蓝，是我从他们身上继承来的颜色。'),
       T('走廊两侧挂着历代家族画像，窗外是修剪整齐的庭院。', {
-        portraits: CAST([['sylvia','left'], ['sophia','right']]),
+        portraits: CAST([['sophia','center']]),
       }),
       T('远处还能看见巡逻士兵。', {
-        portraits: CAST([['sylvia','left'], ['sophia','right']]),
+        portraits: CAST([['sophia','center']]),
       }),
 
       T('母亲抱着我进入起居室，里面有个金发小女孩正在矮桌边玩布偶。', {
@@ -304,75 +304,75 @@
         portraits: [],
       }),
       T('听见开门声，小女孩立刻抬头。', {
-        portraits: CAST([['sylvia','left'], ['beatrice','center'], ['sophia','right']]),
+        portraits: CAST([['beatrice','left'], ['sophia','right']]),
       }),
       {
         speaker: '贝阿特丽丝',
         text: '妈妈！妹妹！',
-        portraits: CAST([['sylvia','left'], ['beatrice','center'], ['sophia','right']], 'beatrice'),
+        portraits: CAST([['beatrice','left'], ['sophia','right']], 'beatrice'),
       },
       T('她丢下玩具，迈着不太稳的步子跑过来。', {
-        portraits: CAST([['sylvia','left'], ['beatrice','center'], ['sophia','right']]),
+        portraits: CAST([['beatrice','left'], ['sophia','right']]),
       }),
       T('母亲蹲下身，让她看得更清楚。', {
-        portraits: CAST([['sylvia','left'], ['beatrice','center'], ['sophia','right']]),
+        portraits: CAST([['beatrice','left'], ['sophia','right']]),
       }),
       {
         speaker: '索菲亚',
         text: '轻一点，贝阿特丽丝。',
-        portraits: CAST([['sylvia','left'], ['beatrice','center'], ['sophia','right']], 'sophia'),
+        portraits: CAST([['beatrice','left'], ['sophia','right']], 'sophia'),
       },
       {
         speaker: '索菲亚',
         text: '妹妹还很小呢。',
-        portraits: CAST([['sylvia','left'], ['beatrice','center'], ['sophia','right']], 'sophia'),
+        portraits: CAST([['beatrice','left'], ['sophia','right']], 'sophia'),
       },
-      N('贝阿特丽丝，我的姐姐。', ['sylvia']),
+      T('贝阿特丽丝，我的姐姐。'),
       T('她只有两岁，说话仍带着幼儿特有的含糊。', {
-        portraits: CAST([['sylvia','left'], ['beatrice','center'], ['sophia','right']]),
+        portraits: CAST([['beatrice','left'], ['sophia','right']]),
       }),
       T('可她看见我以后，整张脸都亮了起来。', {
-        portraits: CAST([['sylvia','left'], ['beatrice','center'], ['sophia','right']]),
+        portraits: CAST([['beatrice','left'], ['sophia','right']]),
       }),
       T('胖乎乎的手伸到面前，先小心碰了碰，又忍不住戳了一下脸颊。', {
-        portraits: CAST([['sylvia','left'], ['beatrice','center'], ['sophia','right']]),
+        portraits: CAST([['beatrice','left'], ['sophia','right']]),
       }),
       {
         speaker: '贝阿特丽丝',
         text: '软软的！',
-        portraits: CAST([['sylvia','left'], ['beatrice','center'], ['sophia','right']], 'beatrice'),
+        portraits: CAST([['beatrice','left'], ['sophia','right']], 'beatrice'),
       },
       T('母亲赶紧拉开她的手。', {
-        portraits: CAST([['sylvia','left'], ['beatrice','center'], ['sophia','right']]),
+        portraits: CAST([['beatrice','left'], ['sophia','right']]),
       }),
       {
         speaker: '索菲亚',
         text: '会弄疼妹妹的。',
-        portraits: CAST([['sylvia','left'], ['beatrice','center'], ['sophia','right']], 'sophia'),
+        portraits: CAST([['beatrice','left'], ['sophia','right']], 'sophia'),
       },
       T('姐姐有些舍不得，还是乖乖收回手。', {
-        portraits: CAST([['sylvia','left'], ['beatrice','center'], ['sophia','right']]),
+        portraits: CAST([['beatrice','left'], ['sophia','right']]),
       }),
       T('她凑得更近，盯着我看了好一会儿。', {
-        portraits: CAST([['sylvia','left'], ['beatrice','center'], ['sophia','right']]),
+        portraits: CAST([['beatrice','left'], ['sophia','right']]),
       }),
       {
         speaker: '贝阿特丽丝',
         text: '妹妹，好看。',
-        portraits: CAST([['sylvia','left'], ['beatrice','center'], ['sophia','right']], 'beatrice'),
+        portraits: CAST([['beatrice','left'], ['sophia','right']], 'beatrice'),
         know: 'beatrice',
         knowD: 30,
         love: 'beatrice',
         loveD: 1,
       },
-      N('我眨了眨眼。', ['sylvia']),
+      T('我眨了眨眼。'),
       {
         speaker: '贝阿特丽丝',
         text: '妈妈，她看我了！',
-        portraits: CAST([['sylvia','left'], ['beatrice','center'], ['sophia','right']], 'beatrice'),
+        portraits: CAST([['beatrice','left'], ['sophia','right']], 'beatrice'),
       },
       T('母亲笑着摸摸她的头。', {
-        portraits: CAST([['sylvia','left'], ['beatrice','center'], ['sophia','right']]),
+        portraits: CAST([['beatrice','left'], ['sophia','right']]),
       }),
 
       T('那天以后，姐姐几乎每天都来看我。', {
@@ -381,10 +381,10 @@
         portraits: [],
       }),
       T('她会把新得到的布偶举到床边，也会说起自己吃过的点心和花园里新开的花。', {
-        portraits: CAST([['sylvia','left'], ['beatrice','right']]),
+        portraits: CAST([['beatrice','center']]),
       }),
       T('很多话我听不明白，她依旧讲得很认真。', {
-        portraits: CAST([['sylvia','left'], ['beatrice','right']]),
+        portraits: CAST([['beatrice','center']]),
       }),
       T('有一次女仆准备把我抱去洗澡，姐姐立刻张开手臂挡在床边。', {
         portraits: CAST([['beatrice','left'], ['maid','right']]),
@@ -407,7 +407,7 @@
         portraits: [],
       }),
       T('姐姐比女仆更早冲到床边，一会儿摸摸被子，一会儿朝门外喊人。', {
-        portraits: CAST([['sylvia','left'], ['beatrice','right']]),
+        portraits: CAST([['beatrice','center']]),
       }),
       DUO(['sylvia','希尔维亚'], ['beatrice','贝阿特丽丝'], 'beatrice', '妹妹饿了？'),
       DUO(['sylvia','希尔维亚'], ['beatrice','贝阿特丽丝'], 'beatrice', '冷吗？'),
@@ -419,15 +419,19 @@
         portraits: CAST([['sylvia','left'], ['beatrice','right']]),
       }),
       T('她趴到床边，严肃地告诉我。', {
-        portraits: CAST([['sylvia','left'], ['beatrice','right']]),
+        portraits: CAST([['beatrice','center']]),
       }),
-      DUO(['sylvia','希尔维亚'], ['beatrice','贝阿特丽丝'], 'beatrice', '以后有事，叫姐姐。'),
-      N('我还不会说话，只能看着她。', ['sylvia']),
+      {
+        speaker: '贝阿特丽丝',
+        text: '以后有事，叫姐姐。',
+        portraits: CAST([['beatrice','center']], 'beatrice'),
+      },
+      T('我还不会说话，只能看着她。'),
       T('姐姐大概把眨眼当成答应，满意地摸了摸我的手。', {
-        portraits: CAST([['sylvia','left'], ['beatrice','right']]),
+        portraits: CAST([['beatrice','center']]),
       }),
-      N('她霸道、爱指挥人，却已经开始努力承担“姐姐”这个身份。', ['sylvia']),
-      N('即使她对责任的理解暂时只有挡住女仆和提醒我别哭，也足够让人觉得可爱。', ['sylvia']),
+      T('她霸道、爱指挥人，却已经开始努力承担“姐姐”这个身份。'),
+      T('即使她对责任的理解暂时只有挡住女仆和提醒我别哭，也足够让人觉得可爱。'),
 
       T('母亲偶尔会在晚餐时把我抱到餐厅。', {
         bg: 'bg-img-dining bg-hall',
@@ -452,13 +456,13 @@
       T('父亲端起茶杯挡住嘴角，肩膀却轻轻动了一下。', {
         portraits: CAST([['beatrice','left'], ['claude','right']]),
       }),
-      N('我发现他并没有表面上那么严肃。', ['sylvia']),
-      N('姐姐大概也知道，所以每次被拒绝后，过不了多久还会提出新的要求。', ['sylvia']),
-      N('那样的晚餐对当时的我没有实际意义。', ['sylvia']),
-      N('我只能喝奶，也听不懂父亲谈起的大部分公务。', ['sylvia']),
-      N('可被母亲抱在怀里，听姐姐说个不停，看父亲偶尔露出一点笑，已经足够让我逐渐熟悉“家”应该有的声音。', ['sylvia']),
+      T('我发现他并没有表面上那么严肃。'),
+      T('姐姐大概也知道，所以每次被拒绝后，过不了多久还会提出新的要求。'),
+      T('那样的晚餐对当时的我没有实际意义。'),
+      T('我只能喝奶，也听不懂父亲谈起的大部分公务。'),
+      T('可被母亲抱在怀里，听姐姐说个不停，看父亲偶尔露出一点笑，已经足够让我逐渐熟悉“家”应该有的声音。'),
 
-      N('晚上，我在床上重新打开图鉴。', ['sylvia'], {
+      T('晚上，我在床上重新打开图鉴。', {
         bg: 'bg-img-nursery bg-room',
         loc: 'nursery',
         bgm: 'relax',
@@ -472,29 +476,29 @@
             '<b>索菲亚·维斯特利亚</b><br>关系：母亲　身份：阿斯拉王国公爵夫人<br>银灰发，蓝眼。气质温柔，笑起来很好看。<br>唱的摇篮曲旋律简单，但很好听。'
           ),
       },
-      N('父亲与母亲的条目也逐渐完整。', ['sylvia']),
-      N('维斯特利亚公爵家，阿斯拉王国，我是这个家里的次女。', ['sylvia']),
-      N('转生、系统、魔法与贵族身份全都凑在一起，确实像前世偶尔听人谈起的异世界故事。', ['sylvia']),
-      N('按照那些故事的套路，我似乎应该尽快定下远大目标。', ['sylvia']),
-      N('拯救世界、称霸一方，或者改变某个注定发生的悲剧。', ['sylvia']),
-      N('可我想不出那样的目标。', ['sylvia']),
-      N('前世的我就缺少野心。', ['sylvia']),
-      N('成绩好，只因为学习没有太难。', ['sylvia']),
-      N('知道一些游戏和动画，也只是周围总有人谈论。', ['sylvia']),
-      N('如今系统已经出现，公爵千金的生活也摆在眼前，我依旧只想先好好活着。', ['sylvia']),
-      N('以后会发生什么，等以后再考虑。', ['sylvia']),
+      T('父亲与母亲的条目也逐渐完整。'),
+      T('维斯特利亚公爵家，阿斯拉王国，我是这个家里的次女。'),
+      T('转生、系统、魔法与贵族身份全都凑在一起，确实像前世偶尔听人谈起的异世界故事。'),
+      T('按照那些故事的套路，我似乎应该尽快定下远大目标。'),
+      T('拯救世界、称霸一方，或者改变某个注定发生的悲剧。'),
+      T('可我想不出那样的目标。'),
+      T('前世的我就缺少野心。'),
+      T('成绩好，只因为学习没有太难。'),
+      T('知道一些游戏和动画，也只是周围总有人谈论。'),
+      T('如今系统已经出现，公爵千金的生活也摆在眼前，我依旧只想先好好活着。'),
+      T('以后会发生什么，等以后再考虑。'),
       T('◇', { portraits: [] }),
 
-      N('随着我看见的地方越来越多，系统功能也逐渐清楚。', ['sylvia']),
-      N('地图记录的是我亲自到过、并且能够形成印象的区域。', ['sylvia']),
-      N('最初只有卧室亮着，后来又出现走廊、起居室与庭院一角。', ['sylvia']),
-      N('公爵府的大部分地方仍藏在灰雾里。', ['sylvia']),
-      N('对一个只能被人抱着移动的婴儿来说，这张地图暂时没有多少探索空间。', ['sylvia']),
-      N('背包更让人困惑。', ['sylvia']),
-      N('我尝试收纳奶瓶、枕头和布偶，系统都没有反应。', ['sylvia']),
-      N('或许存在物品归属、大小或使用权限。', ['sylvia']),
-      N('只是现在的我连伸手都不够利索，暂时没办法研究。', ['sylvia']),
-      N('状态数值会随着身体成长缓慢变化。', ['sylvia']),
+      T('随着我看见的地方越来越多，系统功能也逐渐清楚。'),
+      T('地图记录的是我亲自到过、并且能够形成印象的区域。'),
+      T('最初只有卧室亮着，后来又出现走廊、起居室与庭院一角。'),
+      T('公爵府的大部分地方仍藏在灰雾里。'),
+      T('对一个只能被人抱着移动的婴儿来说，这张地图暂时没有多少探索空间。'),
+      T('背包更让人困惑。'),
+      T('我尝试收纳奶瓶、枕头和布偶，系统都没有反应。'),
+      T('或许存在物品归属、大小或使用权限。'),
+      T('只是现在的我连伸手都不够利索，暂时没办法研究。'),
+      T('状态数值会随着身体成长缓慢变化。'),
       {
         do: () => {
           S.mhp = Math.max(S.mhp, 10);
@@ -503,17 +507,25 @@
           S.mp = S.mmp;
           S.mag = Math.max(S.mag, 5);
           updateHUD();
-          sysPopup('⭐ 状态面板', statusPanelHTML());
+          sysPopup(
+            '⭐ 状态面板',
+            `<b>💗 生命值：</b>${S.hp} / ${S.mhp} <span style="color:#6cf">(+2)</span><br>` +
+            `<b>💠 魔力值：</b>${S.mp} / ${S.mmp} <span style="color:#6cf">(+3)</span><br>` +
+            `<b>⚔️ 攻击：</b>${Math.floor(S.atk)}<br>` +
+            `<b>✨ 魔力：</b>${Math.floor(S.mag)} <span style="color:#6cf">(+1)</span><br>` +
+            `<b>🛡️ 物抗：</b>${S.pdef}<br>` +
+            `<b>🔮 法抗：</b>${S.mdef}`
+          );
         },
       },
-      N('生命与魔力比出生时高了一些，等级和经验却始终没有动静。', ['sylvia']),
-      N('仅仅长大似乎不会提供经验值。', ['sylvia']),
-      N('我还试过向地图询问公爵府全貌，系统没有回应。', ['sylvia']),
-      N('没有亲自见过的地方，连公爵千金的身份也无法提前解锁。', ['sylvia']),
-      N('图鉴同样如此。', ['sylvia']),
-      N('父亲在朝廷做什么、母亲年轻时经历过什么，全都只能靠以后自己了解。', ['sylvia']),
-      N('系统给了工具，却没有替我把世界说明白。', ['sylvia']),
-      N('状态面板还藏着另一页说明。', ['sylvia']),
+      T('生命与魔力比出生时高了一些，等级和经验却始终没有动静。'),
+      T('仅仅长大似乎不会提供经验值。'),
+      T('我还试过向地图询问公爵府全貌，系统没有回应。'),
+      T('没有亲自见过的地方，连公爵千金的身份也无法提前解锁。'),
+      T('图鉴同样如此。'),
+      T('父亲在朝廷做什么、母亲年轻时经历过什么，全都只能靠以后自己了解。'),
+      T('系统给了工具，却没有替我把世界说明白。'),
+      T('状态面板还藏着另一页说明。'),
       {
         do: () =>
           sysPopup(
@@ -525,21 +537,21 @@
             '世人以“等阶”衡量强弱；“等级”是系统独有的概念，每约15级对应一个等阶。'
           ),
       },
-      N('“勇者之赐”这个名字听起来很有气势。', ['sylvia']),
-      N('与躺在床上连翻身都费劲的我形成鲜明对比。', ['sylvia']),
-      N('规则倒是不难理解。', ['sylvia']),
-      N('这个世界以等阶衡量力量，系统则额外使用等级。', ['sylvia']),
-      N('每当我第一次进入新的等阶，就能从若干赐予中挑选一个能力。', ['sylvia']),
-      N('选择无法撤回，机会也有限。', ['sylvia']),
-      N('这大概就是系统给予的特殊优势。', ['sylvia']),
-      N('七项里只能挑一项，其余能力会永久消失，意味着每次选择都很重要。', ['sylvia']),
-      N('系统没有重选按钮，也没有提前查看下一阶段奖励的功能。', ['sylvia']),
-      N('换成前世的游戏，我大概会先查攻略。', ['sylvia']),
-      N('可这个世界没有论坛，也没有存档读档。', ['sylvia']),
-      N('真正触发时，只能依靠自己判断。', ['sylvia']),
-      N('至于“勇者”意味着什么，目前没有任何说明。', ['sylvia']),
-      N('我看着自己握都握不紧的小手，决定暂时把这件事放到以后。', ['sylvia']),
-      N('比起遥远的神级，先学会翻身更实际。', ['sylvia'], {
+      T('“勇者之赐”这个名字听起来很有气势。'),
+      T('与躺在床上连翻身都费劲的我形成鲜明对比。'),
+      T('规则倒是不难理解。'),
+      T('这个世界以等阶衡量力量，系统则额外使用等级。'),
+      T('每当我第一次进入新的等阶，就能从若干赐予中挑选一个能力。'),
+      T('选择无法撤回，机会也有限。'),
+      T('这大概就是系统给予的特殊优势。'),
+      T('七项里只能挑一项，其余能力会永久消失，意味着每次选择都很重要。'),
+      T('系统没有重选按钮，也没有提前查看下一阶段奖励的功能。'),
+      T('换成前世的游戏，我大概会先查攻略。'),
+      T('可这个世界没有论坛，也没有存档读档。'),
+      T('真正触发时，只能依靠自己判断。'),
+      T('至于“勇者”意味着什么，目前没有任何说明。'),
+      T('我看着自己握都握不紧的小手，决定暂时把这件事放到以后。'),
+      T('比起遥远的神级，先学会翻身更实际。', {
         phase: 'childhood',
         freeRoam: true,
       }),

@@ -43,20 +43,38 @@
   // speaker names filled at runtime via CHARS if speaker omitted and ch set
 
   /** 立绘列表：'alice' 或 ['beatrice','left','normal']；传 [] 表示清空舞台 */
-  const P = (ids) =>
-    (Array.isArray(ids) ? ids : [ids]).filter(Boolean).map((x) =>
+  const P = (ids) => {
+    let arr = (Array.isArray(ids) ? ids : [ids]).filter(Boolean).map((x) =>
       typeof x === 'string'
         ? { id: x, slot: 'center', emo: 'normal' }
-        : { id: x[0], slot: x[1] || 'center', emo: x[2] || 'normal' }
+        : { id: x[0], slot: x[1] || 'center', emo: x[2] || 'normal', active: x[3] }
     );
+    if (arr.length === 2) {
+      if (arr[1].id === 'sylvia' || arr[1].slot === 'left' || arr[0].slot === 'right') {
+        arr = [arr[1], arr[0]];
+      }
+      arr[0].slot = 'left';
+      arr[1].slot = 'right';
+    }
+    return arr;
+  };
   /** 多人稳定驻场：activeId 为当前说话者；省略时全员置暗（用于对话间旁白） */
-  const CAST = (ids, activeId) =>
-    (Array.isArray(ids) ? ids : []).filter(Boolean).map((x) => ({
+  const CAST = (ids, activeId) => {
+    let arr = (Array.isArray(ids) ? ids : []).filter(Boolean).map((x) => ({
       id: typeof x === 'string' ? x : x[0],
       slot: typeof x === 'string' ? 'center' : (x[1] || 'center'),
       emo: typeof x === 'string' ? 'normal' : (x[2] || 'normal'),
       active: (typeof x === 'string' ? x : x[0]) === activeId,
     }));
+    if (arr.length === 2) {
+      if (arr[1].id === 'sylvia' || arr[1].slot === 'left' || arr[0].slot === 'right') {
+        arr = [arr[1], arr[0]];
+      }
+      arr[0].slot = 'left';
+      arr[1].slot = 'right';
+    }
+    return arr;
+  };
   /** 旁白 + 焦点人物立绘（不显示说话人名条） */
   const N = (text, ids, extra) => Object.assign({ text, portraits: P(ids || []) }, extra || {});
 
@@ -780,7 +798,7 @@
       say('sylvia', '你会说话了。'),
       N('爱丽丝抬头看我，脸上没什么表情，但眼睛亮亮的。', ['alice']),
       say('alice', '……姐姐。', { emo: 'shy' }),
-      N('第二个词。\n是叫我。', [['alice','right','shy'],['sylvia','left','smile']], {
+      N('第二个词。\n是叫我。', [['sylvia','left','smile'],['alice','right','shy']], {
         love: 'alice',
         loveD: 1,
         know: 'alice',
@@ -1016,7 +1034,7 @@
       N('说到一半，她突然停住了。\n脸微微红了。', [['alice', 'center', 'shy']]),
       say('alice', '……抱歉，姐姐大人。', { emo: 'shy' }),
       say('sylvia', '没关系。'),
-      N('我看着她，觉得有点好笑。\n原来她也会有这种时候。', [['alice','right','shy'],['sylvia','left','smile']]),
+      N('我看着她，觉得有点好笑。\n原来她也会有这种时候。', [['sylvia','left','smile'],['alice','right','shy']]),
 
       N('平时装得淡淡的，其实对感兴趣的事情很热情。\n只是不太擅长表达。',[]),
       say('sylvia', '过来。'),
@@ -1168,19 +1186,15 @@
         text: '我是巴依王国来的客人，叫我药神就好。你父亲在那边忙着，我就四处转转，没想到看到一位小公主独自坐在这里。',
       },
       T('药神。这个称呼很奇怪。\n但比起好奇这个，我更在意另一件事——\n「您腰上挂的是什么？」我指着那些小瓶子问。'),
-      {
-        ch: 'yaoshen',
-        speaker: '药神',
-        text: '是药。各种各样的药。治病的、解毒的、强身的……很多种。比如这个，是治头疼的。喝一口，头疼立刻就好。',
-      },
+      DUO(['yaoshen','药神'], ['sylvia','希尔维亚'], 'yaoshen', '是药。各种各样的药。治病的、解毒的、强身的……很多种。比如这个，是治头疼的。喝一口，头疼立刻就好。'),
       DUO(['sylvia','希尔维亚'], ['yaoshen','药神'], 'sylvia', '真的吗？'),
       DUO(['yaoshen','药神'], ['sylvia','希尔维亚'], 'yaoshen', '真的。'),
       DUO(['sylvia','希尔维亚'], ['yaoshen','药神'], 'sylvia', '那魔法能做到同样的事吗？用治愈魔法？'),
-      N('药神挑了挑眉，似乎有些意外。', [['yaoshen','center','normal'],['sylvia','right','normal']]),
+      N('药神挑了挑眉，似乎有些意外。', [['sylvia','left','normal'],['yaoshen','right','normal']]),
       DUO(['yaoshen','药神'], ['sylvia','希尔维亚'], 'yaoshen', '治愈魔法也可以，不过效果不太一样。魔法是引导身体自愈，药物是直接作用于症状。各有优劣。'),
       DUO(['sylvia','希尔维亚'], ['yaoshen','药神'], 'sylvia', '那哪个更好？'),
       DUO(['yaoshen','药神'], ['sylvia','希尔维亚'], 'yaoshen', '看情况。如果是小伤小病，药物更方便。如果是重伤，治愈魔法更有效。但最好的办法，是两者结合。'),
-      N('我点点头，觉得这个回答很有道理。', [['yaoshen','center','normal'],['sylvia','right','normal']]),
+      N('我点点头，觉得这个回答很有道理。', [['sylvia','left','normal'],['yaoshen','right','normal']]),
       T('我看着他，忽然觉得这个人和其他大人物不太一样。\n其他来做客的大人物说话总是绕来绕去，用很多我听不懂的词。'),
       T('他们对着父亲和母亲笑，对着我也笑，但那笑容让我觉得有点假。\n但这个人不一样。'),
       T('他说话很直接，回答问题也很认真，没有敷衍我「你还小不懂」之类的。'),
@@ -1194,26 +1208,22 @@
       DUO(['yaoshen','药神'], ['sylvia','希尔维亚'], 'yaoshen', '因为我做的药比较厉害。'),
       DUO(['sylvia','希尔维亚'], ['yaoshen','药神'], 'sylvia', '有多厉害？'),
       DUO(['yaoshen','药神'], ['sylvia','希尔维亚'], 'yaoshen', '嗯……大概是全世界最厉害的程度？'),
-      N('我睁大眼睛看着他。他笑着摆摆手：「开玩笑的，开玩笑的。不过确实挺厉害的。」', [['yaoshen','center','normal'],['sylvia','right','surprised']], {
+      N('我睁大眼睛看着他。他笑着摆摆手：「开玩笑的，开玩笑的。不过确实挺厉害的。」', [['sylvia','left','surprised'],['yaoshen','right','normal']], {
         know: 'yaoshen',
         knowD: 20,
         ach: 'potion_god',
       }),
-      N('这时，远处传来父亲的声音，在请药神过去。', [['yaoshen','center','normal'],['sylvia','right','normal']]),
+      N('这时，远处传来父亲的声音，在请药神过去。', [['sylvia','left','normal'],['yaoshen','right','normal']]),
       DUO(['yaoshen','药神'], ['sylvia','希尔维亚'], 'yaoshen', '好了，我得去那边了。他站起身，和小公主聊天很开心。'),
       DUO(['sylvia','希尔维亚'], ['yaoshen','药神'], 'sylvia', '我也是。'),
-      N('他正要离开，又停下脚步，从腰间取下一个小东西。', [['yaoshen','center','normal'],['sylvia','right','normal']]),
+      N('他正要离开，又停下脚步，从腰间取下一个小东西。', [['sylvia','left','normal'],['yaoshen','right','normal']]),
       DUO(['yaoshen','药神'], ['sylvia','希尔维亚'], 'yaoshen', '对了，这个送给你。'),
-      N('他递过来一个小瓶子。\n瓶子很小，只有我拇指那么大，里面装着淡蓝色的液体。', [['yaoshen','center','normal'],['sylvia','right','normal']]),
-      {
-        ch: 'yaoshen',
-        speaker: '药神',
-        text: '小玩意，拿去玩吧。不过别打开，里面的东西有轻微刺激性。就当是个装饰品。',
-      },
+      N('他递过来一个小瓶子。\n瓶子很小，只有我拇指那么大，里面装着淡蓝色的液体。', [['sylvia','left','normal'],['yaoshen','right','normal']]),
+      DUO(['yaoshen','药神'], ['sylvia','希尔维亚'], 'yaoshen', '小玩意，拿去玩吧。不过别打开，里面的东西有轻微刺激性。就当是个装饰品。'),
       T('我接过瓶子，看了看。\n瓶身是透明的，淡蓝色的液体在里面轻轻晃动，在灯光下泛着微微星星般的光泽。\n很漂亮。'),
       DUO(['sylvia','希尔维亚'], ['yaoshen','药神'], 'sylvia', '谢谢。'),
       DUO(['yaoshen','药神'], ['sylvia','希尔维亚'], 'yaoshen', '不客气。'),
-      N('他转身离开，走向父亲那边。', [['yaoshen','center','normal'],['sylvia','right','normal']]),
+      N('他转身离开，走向父亲那边。', [['sylvia','left','normal']]),
       T('我看着他的背影，低头又看了看手里的小瓶子。\n这个人真奇怪。\n明明是那么重要的客人，却愿意花时间和一个四岁的小孩聊天，还送礼物。'),
       T('不过……\n是个好人吧。', {
         item: { id: 'blue_vial', name: '淡蓝小瓶', icon: '🧪', desc: '药神所赠。不要打开。像一小块天空。' },
@@ -1245,7 +1255,7 @@
       N('哪怕是木剑，挥舞起来带起的风声也很吓人。特别是她刚才那个转身横扫，距离旁边看上去就很贵的花瓶只有两厘米。\n我默默地向后平移了一步，把花瓶也往后拖了一点。', [['beatrice', 'center', 'normal']]),
       DUO(['sylvia','希尔维亚'], ['beatrice','贝阿特丽丝'], 'sylvia', '……姐姐，保护我们的前提是，别先把我们打晕。'),
       DUO(['beatrice','贝阿特丽丝'], ['sylvia','希尔维亚'], 'beatrice', '怎么可能！我的剑术可是为了你们练的！'),
-      N('她激动的挥剑动作再次擦过那个花瓶的边缘。\n我叹了口气，默默把花瓶又往后挪了挪。', [['beatrice','center','normal'],['sylvia','right','normal']]),
+      N('她激动的挥剑动作再次擦过那个花瓶的边缘。\n我叹了口气，默默把花瓶又往后挪了挪。', [['sylvia','left','normal'],['beatrice','right','normal']]),
       N('而相比之下，三岁的爱丽丝简直是省心模范。', [['alice','center','normal']]),
       say('lecturer', '爱丽丝大小姐简直是天才！这么小就能认这么多字！', { speaker: '家庭教师' }),
       N('面对老师的夸奖，爱丽丝的表现堪称教科书级别。', [['alice','center','normal']]),
@@ -1496,43 +1506,43 @@
     phase: 'youth',
     card: { vol: '第一卷', t: '第四章', s: '下午，花园' },
     lines: [
-      N('下午，花园。微风吹过，卷起几片落叶。爱丽丝站在我对面，手里捏着一片树叶，眉头微皱。她现在七岁，学会风魔法已经两年了。', [['alice','right','normal'],['sylvia','left','normal']]),
+      N('下午，花园。微风吹过，卷起几片落叶。爱丽丝站在我对面，手里捏着一片树叶，眉头微皱。她现在七岁，学会风魔法已经两年了。', [['sylvia','left','normal'],['alice','right','normal']]),
       T('两年前那场亲和测试后，她展现出了惊人的天赋。五岁就能搓出像样的小旋风，比当年六岁还在烧自己眉毛的大姐强多了。\n不过最近，她似乎遇到了瓶颈。'),
       { ch: 'alice', emo: 'normal', speaker: '爱丽丝', text: '风……太散了。' },
-      N('她看着手里的树叶被吹飞，却没能按照她的意愿旋转。', [['alice','right','normal'],['sylvia','left','normal']]),
+      N('她看着手里的树叶被吹飞，却没能按照她的意愿旋转。', [['sylvia','left','normal'],['alice','right','normal']]),
       { ch: 'alice', emo: 'normal', speaker: '爱丽丝', text: '想要它聚在一起，它就跑了。' },
-      N('风系魔法的难点就在这里。不像水有实体，也不像火有爆发点，风是自由的，你想抓住它，它就从指缝里溜走。', [['alice','right','normal'],['sylvia','left','normal']]),
+      N('风系魔法的难点就在这里。不像水有实体，也不像火有爆发点，风是自由的，你想抓住它，它就从指缝里溜走。', [['sylvia','left','normal'],['alice','right','normal']]),
       { ch: 'sylvia', speaker: '希尔维亚', text: '风确实抓不住。但你可以利用压强引导它。' },
       { ch: 'alice', emo: 'normal', speaker: '爱丽丝', text: '……压强，引导？' },
       { ch: 'sylvia', speaker: '希尔维亚', text: '你想想，风是怎么产生的？' },
-      N('她愣了一下，摇摇头。', [['alice','right','normal'],['sylvia','left','normal']]),
+      N('她愣了一下，摇摇头。', [['sylvia','left','normal'],['alice','right','normal']]),
       { ch: 'sylvia', speaker: '希尔维亚', text: '是因为空气在流动。而流动，是因为一边挤，一边松。' },
       N('我伸出一根手指，在空中画了个圈。', [['sylvia','left','normal'],['alice','right','normal']]),
       { ch: 'sylvia', speaker: '希尔维亚', text: '就像人群。如果这边人很挤，那边很空，人就会往空的地方跑，对吧？' },
-      N('她点点头。', [['alice','right','normal'],['sylvia','left','normal']]),
+      N('她点点头。', [['sylvia','left','normal'],['alice','right','normal']]),
       { ch: 'sylvia', speaker: '希尔维亚', text: '风也是一样。你不用强行拽着风走，你只要把一边的空气变得「挤」，把另一边变得「松」，风自然就会往你想要的方向吹。' },
-      N('爱丽丝低头看着自己的手掌，陷入了沉思。', [['alice','right','normal'],['sylvia','left','normal']]),
+      N('爱丽丝低头看着自己的手掌，陷入了沉思。', [['sylvia','left','normal'],['alice','right','normal']]),
       { ch: 'alice', emo: 'normal', speaker: '爱丽丝', text: '……所以不是去抓风，而是让风自己想往那边跑？' },
       { ch: 'sylvia', speaker: '希尔维亚', text: '对，就是这个意思。' },
-      N('她闭上眼睛。这一次，她没有像以前那样用力地去「抓」风。周围的空气开始微微震颤。不是那种狂暴的拉扯，而是一种更柔和的、仿佛在调整呼吸般的波动。', [['alice','right','normal'],['sylvia','left','normal']]),
-      N('几秒钟后。那片原本被吹落在地的树叶，突然像是被一只无形的手托住，缓缓飘了起来。它没有乱飞，而是在爱丽丝的掌心上方平稳地悬停着，甚至还在慢慢自转。', [['alice', 'right', 'normal'],['sylvia', 'left', 'normal']], { sfx: 'magic' }),
-      N('虽然只是一个小小的气流漩涡，但转得很稳，一点也不散。', [['alice','right','normal'],['sylvia','left','normal']]),
-      N('爱丽丝睁开眼睛，看着那个听话的小旋风，蓝色的眼睛里满是惊讶。', [['alice','right','normal'],['sylvia','left','normal']]),
+      N('她闭上眼睛。这一次，她没有像以前那样用力地去「抓」风。周围的空气开始微微震颤。不是那种狂暴的拉扯，而是一种更柔和的、仿佛在调整呼吸般的波动。', [['sylvia','left','normal'],['alice','right','normal']]),
+      N('几秒钟后。那片原本被吹落在地的树叶，突然像是被一只无形的手托住，缓缓飘了起来。它没有乱飞，而是在爱丽丝的掌心上方平稳地悬停着，甚至还在慢慢自转。', [['sylvia', 'left', 'normal'],['alice', 'right', 'normal']], { sfx: 'magic' }),
+      N('虽然只是一个小小的气流漩涡，但转得很稳，一点也不散。', [['sylvia','left','normal'],['alice','right','normal']]),
+      N('爱丽丝睁开眼睛，看着那个听话的小旋风，蓝色的眼睛里满是惊讶。', [['sylvia','left','normal'],['alice','right','normal']]),
       { ch: 'alice', emo: 'normal', speaker: '爱丽丝', text: '……成功了。' },
       { ch: 'sylvia', speaker: '希尔维亚', text: '看吧，风也是讲道理的。' },
-      N('她转头看我，眼睛亮亮的，比那小旋风还要灵动。', [['alice','right','normal'],['sylvia','left','normal']]),
+      N('她转头看我，眼睛亮亮的，比那小旋风还要灵动。', [['sylvia','left','normal'],['alice','right','normal']]),
       { ch: 'alice', emo: 'happy', speaker: '爱丽丝', text: '……姐姐大人，好厉害。' },
       { ch: 'sylvia', speaker: '希尔维亚', text: '只是个小窍门。' },
       { ch: 'alice', emo: 'normal', speaker: '爱丽丝', text: '……这不只是窍门。从来没有人这么教过我。老师只会让我「感受自然」、「呼唤风之精灵」什么的……' },
-      N('她看着手心里的旋风，眼神变得有些崇拜。', [['alice','right','normal'],['sylvia','left','normal']]),
+      N('她看着手心里的旋风，眼神变得有些崇拜。', [['sylvia','left','normal'],['alice','right','normal']]),
       { ch: 'alice', emo: 'normal', speaker: '爱丽丝', text: '……姐姐大人果然什么都懂，压强……。' },
       { ch: 'sylvia', speaker: '希尔维亚', text: '还行吧。' },
-      N('我没好意思说这是前世初中课本上的东西。她收起魔力，那个小旋风散去，树叶轻轻落在她手心。', [['alice','right','normal'],['sylvia','left','normal']]),
+      N('我没好意思说这是前世初中课本上的东西。她收起魔力，那个小旋风散去，树叶轻轻落在她手心。', [['sylvia','left','normal'],['alice','right','normal']]),
       { ch: 'alice', emo: 'normal', speaker: '爱丽丝', text: '……那个，姐姐大人。' },
-      N('她走到我身边，轻轻拉住了我的袖子。', [['alice','right','normal'],['sylvia','left','normal']]),
+      N('她走到我身边，轻轻拉住了我的袖子。', [['sylvia','left','normal'],['alice','right','normal']]),
       { ch: 'sylvia', speaker: '希尔维亚', text: '怎么了？' },
       { ch: 'alice', emo: 'happy', speaker: '爱丽丝', text: '……没什么。只是觉得……能和姐姐大人一起练习，很开心。' },
-      N('我看着她。', [['alice','right','normal'],['sylvia','left','normal']]),
+      N('我看着她。', [['sylvia','left','normal'],['alice','right','normal']]),
       { ch: 'sylvia', speaker: '希尔维亚', text: '……我也是。' },
       N('她的笑容稍微大了一点点，像是一朵悄悄绽放的小花。', [['alice', 'right', 'normal'],['sylvia', 'left', 'normal']], {
         love: 'alice',

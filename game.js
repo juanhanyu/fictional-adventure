@@ -1176,6 +1176,16 @@ function appendSpeaker(chId, emo){
 // 应用一组立绘：diff 当前 stage → 保留在场者(仅切换高亮/置暗)，离场者淡出，入场者淡入
 function applyStage(next){
   next = Array.isArray(next) ? next.slice(0,4) : [];
+  // 保持双人在场时的槽位绝对稳定：
+  // 1. 若 stage 已有 [A, B]，而 next 传入 [B, A]（同两人但顺序颠倒），维持原有槽位顺序 [A, B]；
+  // 2. 若主角 sylvia 在场或显式指定了 left/right，确保 left/主角固定在 index 0 (左槽)。
+  if(next.length === 2){
+    if(stage.length === 2 && stage[0].id === next[1].id && stage[1].id === next[0].id){
+      next = [next[1], next[0]];
+    } else if(next[1].id === 'sylvia' || next[1].slot === 'left' || next[0].slot === 'right'){
+      next = [next[1], next[0]];
+    }
+  }
   const cp = $('css-portraits');
   if(cp) cp.innerHTML = '';
   // 1) 决定每个槽放谁（顺序=left→right）

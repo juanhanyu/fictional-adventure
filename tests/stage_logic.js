@@ -39,5 +39,23 @@ ok('贝蒂说后 老板保留在场', st.some(s=>s.char==='merchant_bakery'));
 const boss=st.find(s=>s.char==='merchant_bakery');
 ok('老板(非说话人)被置暗', boss && boss.dim===true);
 
+// ④ 药神场景双人对话期间立绘位置绝对稳定（主角左，药神右，绝不交换）
+win.__resetS();
+win.__setS(Object.assign(win.__getS(),{ageY:4,year:4,month:12,day:1,phase:'childhood',flags:{named:1}}));
+const ysLines = win.SCENES.s_yaoshen.lines;
+let swapDetected = false;
+let duoEncountered = 0;
+for(const line of ysLines){
+  win.applyLineEffects(line);
+  const cur = orderedStage();
+  if(cur.length === 2 && cur.some(s=>s.char==='sylvia') && cur.some(s=>s.char==='yaoshen')){
+    duoEncountered++;
+    if(cur[0].char !== 'sylvia' || cur[1].char !== 'yaoshen'){
+      swapDetected = true;
+    }
+  }
+}
+ok('药神场景双人立绘全流程位置稳定（主角左、药神右）', duoEncountered >= 10 && !swapDetected);
+
 console.log(fail===0?'\n  ✓ 全部通过':'\n  ✗ '+fail+' 处失败');
 process.exit(fail?1:0);

@@ -1294,6 +1294,8 @@ function speakerIdFromName(name){
 // ========== TEXT ENGINE ==========
 let lineCB = null;
 let typeDoneCB = null;
+let dialogPages = [''];
+let dialogPageIndex = 0;
 let lineGen = 0;
 let awaitingChoice = false;
 let afterPick = null; // 勇者之赐选卡后，继续播放的剩余台词 {rest, done}
@@ -1306,17 +1308,40 @@ function resetDialogAdvanceState(){
   typing = false;
   lineCB = null;
   typeDoneCB = null;
+  dialogPages = [''];
+  dialogPageIndex = 0;
   fullText = '';
   textIdx = 0;
 }
 
-// 按完整文本估算实际显示行数；无底部 UI 时依 1—3 行垂直居中
-function setDialogRows(str){
+// 对话框硬上限：剧情 3 排，自由探索 2 排。桌面字符数只作无布局环境的保守兜底；
+// 浏览器中始终按 #text 的实际可用宽度与字体测量，因此窄屏会自动生成更多分页。
+const DIALOG_PAGE_CHAR_LIMIT = 105;
+
+function dialogMaxRows(){
+  return document.body && document.body.classList.contains('roam') ? 2 : 3;
+}
+
+function dialogFallbackColumns(){
+  const vw=Math.max(
+    Number(window.innerWidth)||0,
+    Number(document.documentElement && document.documentElement.clientWidth)||0
+  );
+  if(vw && vw<=360) return 11;
+  if(vw && vw<=480) return 15;
+  if(vw && vw<=600) return 20;
+  return 45;
+}
+
+function measureDialogRows(str, fallbackCols){
   const tb=$('text-box'), text=$('text');
-  if(!tb || !text) return 1;
-  tb.classList.remove('dialog-rows-1','dialog-rows-2','dialog-rows-3','dialog-rows-4');
   const raw=String(str ?? '');
-  let rows=Math.max(1, raw.split('\n').length);
+  const cols=Math.max(1, Number(fallbackCols)||dialogFallbackColumns());
+  let rows=raw.split('\n').reduce(
+    (sum,line)=>sum+Math.max(1,Math.ceil(Array.from(line).length/cols)),
+    0
+  );
+  if(!tb || !text) return Math.max(1,rows);
   try{
     const width=text.clientWidth;
     if(width>0){
@@ -1331,57 +1356,126 @@ function setDialogRows(str){
       probe.style.fontWeight=cs.fontWeight;
       probe.style.letterSpacing=cs.letterSpacing;
       probe.style.lineHeight=cs.lineHeight;
+      probe.style.boxSizing='border-box';
+      probe.style.height='auto';
+      probe.style.minHeight='0';
+      probe.style.padding='0';
+      probe.style.margin='0';
       probe.style.whiteSpace='pre-wrap';
       probe.style.wordBreak='break-word';
-      probe.textContent=raw;
+      probe.style.overflowWrap='anywhere';
+      probe.textContent=raw || ' ';
       tb.appendChild(probe);
       const lh=parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize)||24)*1.55;
-      rows=Math.max(rows, Math.ceil(probe.scrollHeight/lh));
+      const height=probe.getBoundingClientRect().height || probe.scrollHeight;
+      if(height>0) rows=Math.max(1,Math.ceil((height+.5)/lh));
       probe.remove();
     }
   }catch(e){}
-  rows=clamp(rows,1,3);
+  return Math.max(1,rows);
+}
+
+function setDialogRows(str){
+  const tb=$('text-box');
+  if(!tb) return 1;
+  tb.classList.remove('dialog-rows-1','dialog-rows-2','dialog-rows-3','dialog-rows-4');
+  const rows=clamp(measureDialogRows(str),1,dialogMaxRows());
   tb.classList.add('dialog-rows-'+rows);
   return rows;
 }
 
-function typeText(str, cb){
-  const box = $('text');
-  fullText = String(str ?? '');
+function paginateDialogText(str, maxRows, fallbackCols){
+  const raw=String(str ?? '').replace(/\r\n?/g,'\n');
+  const limit=Math.max(1,Number(maxRows)||dialogMaxRows());
+  const charLimit=Math.max(1,Math.floor(DIALOG_PAGE_CHAR_LIMIT*limit/3));
+  if(!raw || (Array.from(raw).length<=charLimit && measureDialogRows(raw,fallbackCols)<=limit)) return [raw];
+  const pages=[];
+  let rest=raw;
+  while(rest){
+    if(Array.from(rest).length<=charLimit && measureDialogRows(rest,fallbackCols)<=limit){
+      pages.push(rest);
+      break;
+    }
+    const chars=Array.from(rest);
+    let lo=1, hi=Math.min(chars.length,charLimit), best=1;
+    while(lo<=hi){
+      const mid=(lo+hi)>>1;
+      const candidate=chars.slice(0,mid).join('');
+      if(measureDialogRows(candidate,fallbackCols)<=limit){
+        best=mid;
+        lo=mid+1;
+      }else{
+        hi=mid-1;
+      }
+    }
+    let cut=Math.max(1,best);
+    const floor=Math.max(1,Math.floor(cut*.55));
+    for(let i=cut-1;i>=floor;i--){
+      if(/[。！？!?；;，,、：:…\n」』）)]/.test(chars[i])){
+        cut=i+1;
+        break;
+      }
+    }
+    let page=chars.slice(0,cut).join('').replace(/\n+$/,'');
+    if(!page){
+      cut=Math.max(1,best);
+      page=chars.slice(0,cut).join('');
+    }
+    pages.push(page);
+    rest=chars.slice(cut).join('').replace(/^\n+/,'');
+  }
+  return pages.length ? pages : [''];
+}
+
+function armDialogPageAdvance(){
+  lineCB=()=>{
+    lineCB=null;
+    if(dialogPageIndex+1<dialogPages.length){
+      dialogPageIndex++;
+      typeDialogPage();
+      return;
+    }
+    const c=typeDoneCB;
+    typeDoneCB=null;
+    dialogPages=[''];
+    dialogPageIndex=0;
+    if(c) c();
+  };
+}
+
+function typeDialogPage(){
+  const box=$('text');
+  fullText=String(dialogPages[dialogPageIndex] ?? '');
   setDialogRows(fullText);
-  textIdx = 0;
-  typing = true;
-  typeDoneCB = cb || null;
-  lineCB = null; // IMPORTANT: never auto-advance; only arm after click finishes type
-  box.innerHTML = '';
+  textIdx=0;
+  typing=true;
+  lineCB=null;
+  box.innerHTML='';
   clearInterval(typeTimer);
-  // show first chars immediately so something is visible
   if(!fullText){
-    typing = false;
-    // still require a click to continue empty? treat as done after click
-    lineCB = ()=>{ const c=typeDoneCB; typeDoneCB=null; if(c) c(); };
+    typing=false;
+    armDialogPageAdvance();
     return;
   }
-  // reveal gradually; when finished STAY until user clicks
   typeTimer = setInterval(()=>{
     if(textIdx >= fullText.length){
       clearInterval(typeTimer);
       typing = false;
       box.innerHTML = escapeText(fullText);
-      // Do NOT call typeDoneCB here — wait for player click
-      // Arm lineCB to mean "continue to next line"
-      lineCB = ()=>{
-        const c = typeDoneCB;
-        typeDoneCB = null;
-        lineCB = null;
-        if(c) c();
-      };
+      armDialogPageAdvance();
       return;
     }
     textIdx = Math.min(fullText.length, textIdx + 2);
     box.innerHTML = escapeText(fullText.slice(0, textIdx));
-    if(box.parentElement) box.parentElement.scrollTop = box.parentElement.scrollHeight;
   }, 16);
+}
+
+function typeText(str, cb){
+  clearInterval(typeTimer);
+  typeDoneCB=cb || null;
+  dialogPages=paginateDialogText(str,dialogMaxRows());
+  dialogPageIndex=0;
+  typeDialogPage();
 }
 
 function escapeText(s){
@@ -1397,13 +1491,8 @@ function skipType(){
   clearInterval(typeTimer);
   typing = false;
   $('text').innerHTML = escapeText(fullText);
-  // Arm continue on NEXT click — do not auto-run next line
-  lineCB = ()=>{
-    const c = typeDoneCB;
-    typeDoneCB = null;
-    lineCB = null;
-    if(c) c();
-  };
+  // 下一次点击优先进入本句的下一分页；全部分页结束后才推进剧情。
+  armDialogPageAdvance();
   return true;
 }
 
@@ -1590,6 +1679,8 @@ function playLines(lines, done){
         typeDoneCB = null;
         lineCB = null;
         fullText = String(L.text || '请选择：');
+        dialogPages = [fullText];
+        dialogPageIndex = 0;
         setDialogRows(fullText);
         $('text').innerHTML = escapeText(fullText);
         showChoices(L.choices, ()=>{});

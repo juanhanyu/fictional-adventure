@@ -10,12 +10,12 @@
 
 **所有新增素材（CG、音乐、图片、立绘等）和新增代码文件，必须在改动完成时立刻提交并推送到远程，绝不能让任何文件停留在「未跟踪」状态。** 曾发生过因未跟踪导致 CG/音乐脱离版本控制、远程缺失的问题，务必避免。
 
-- 工作流：改完一批 → `git status` 检查是否有 `??`（未跟踪）或 `M`（已修改）→ `git add -A` → `git commit` → `git push --force origin arena/019ff2a4-fictional-adventure`。
+- 工作流：改完一批 → `git status` 检查是否有 `??`（未跟踪）或 `M`（已修改）→ `git add -A` → `git commit` → 推送到本次任务明确指定的远程分支。
 - 每次 `git add -A` 前，务必确认以下目录/文件被纳入：
   `assets/cg/`（CG 图）、`Music/`（BGM）、`assets/portraits/`（立绘）、`assets/bg/`（背景）、`tests/`（测试）、`.gitignore`、`index.html`、`game.js`、`js/story.js`、`style.css`、`AGENTS.md`。
 - 若发现 git 历史被重置（`git rev-parse HEAD` 不是自己上一次提交、`git status` 出现大量 `??`），应立即 `git add -A` 并提交推送，恢复远程与本地一致。
-- 提交后自检：`git status --short` 应为空；`git ls-tree -r --name-only HEAD -- assets/cg Music tests` 能列出对应文件；`git rev-parse HEAD` 与远程 `git ls-remote origin arena/019ff2a4-fictional-adventure` 一致。
-- 远程分支固定为 `arena/019ff2a4-fictional-adventure`，只推送到它，不要切到其他分支。
+- 提交后自检：`git status --short` 应为空；`git ls-tree -r --name-only HEAD -- assets/cg Music tests` 能列出对应文件；`git rev-parse HEAD` 应与本次任务目标远程分支的 HEAD 一致。
+- 不得沿用文档或历史任务中的旧分支名。目标分支以用户本次明确指定的分支为准；未明确时先询问，不要自行切换或推送。
 
 
 
@@ -174,8 +174,9 @@
 
 ## 二点十一、对话框与立绘布局（galgame 胸像式）永久
 
-- **对话框固定高度**：剧情（底部UI隐藏）3-4 行高（`--boxh:172px`）；自由探索（底部UI显示）2 行高（`body.roam` 时 `--boxh:118px`）。
-  若一句台词超过高度，**拆成多个 `say`**，不要硬塞。
+- **对话框固定高度与硬上限**：剧情（底部 UI 隐藏）固定最多 **3 排字**；自由探索（底部 UI 显示）固定最多 **2 排字**。
+  每一屏文字必须全部落在框内，**禁止依赖上下滚动、裁切或屏幕外内容**。源码中的单个 `text` 建议不超过 105 个字符；
+  引擎仍须按设备实际可用宽度测量并自动分页，窄屏不得沿用桌面端固定字数。人工拆分时优先在句号、问号、感叹号等自然停顿处拆成多个 `say` / `T`。
 - **对话框与底部 UI 直接相连**：`#text-box` 底部圆角为 0，紧贴 `#action-bar`，无空隙；对话框为低透明度（`rgba(22,15,34,.86)`）。
 - **大型立绘**：`#portraits` 的 `bottom: var(--boxh)`，即角色立绘下沿正好落在对话框上沿。
 - **对话框左侧小胸像**（说话人）：`#tb-speaker` 显示说话人小立绘，上 1/4 超出对话框顶，名字在小立绘下方（`#tb-speaker-name`）。

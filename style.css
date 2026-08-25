@@ -381,6 +381,7 @@ body.roam #text-box.dialog-rows-2 #text{padding-top:max(0px,calc((var(--boxh) - 
 .bg-img-auditorium{background-image:url(assets/bg/auditorium.jpg);background-size:cover;background-position:center}
 .bg-img-classroom-locust{background-image:url(assets/bg/classroom_locust.jpg);background-size:cover;background-position:center}
 .bg-img-crosswalk-accident{background-image:url(assets/bg/crosswalk_accident.jpg);background-size:cover;background-position:center}
+.bg-img-womb{background-image:radial-gradient(ellipse at center,#5a2734 0%,#25131d 45%,#09070b 100%);background-size:cover;background-position:center}
 #hud-face img[src=""], #hud-face img:not([src]){background:#1a1520}
 
 /* ===== 独立养成面板 ===== */

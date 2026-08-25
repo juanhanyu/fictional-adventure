@@ -190,6 +190,7 @@ const BG_CLASS_TYPE = {
   'bg-img-uni':'academy', 'bg-img-plain':'sacred', 'bg-img-village':'cheerful',
   'bg-img-castle':'sacred', 'bg-img-crosswalk-accident':'sad',
   'bg-img-classroom-locust':'peaceful',
+  'bg-img-womb':'emotional',
 };
 // 依据 bg 类 / phase 决定情境【类型】（而非固定单曲）。兜底 peaceful，保证全覆盖。
 function bgmTypeForBg(cls, phase, loc){
@@ -463,6 +464,10 @@ const MAGIC_SKILLS = {
 
 // ========== LOCATIONS ==========
 const LOCS = {
+  // 序章专用（仅用于地点栏与剧情切场，不开放自由探索）
+  past_classroom:{id:'past_classroom', name:'前世·教室', icon:'🏫', area:'序章', desc:'五月末的教室与窗外老槐树', bg:'bg-img-classroom-locust bg-school', unlock:false, st:0},
+  past_crosswalk:{id:'past_crosswalk', name:'前世·十字路口', icon:'🚦', area:'序章', desc:'傍晚车流经过的人行横道', bg:'bg-img-crosswalk-accident bg-town', unlock:false, st:0},
+  womb:{id:'womb', name:'母体', icon:'◇', area:'序章', desc:'温暖、黑暗而狭小的所在', bg:'bg-img-womb bg-night', unlock:false, st:0},
   // 公爵府
   nursery:{id:'nursery', name:'育婴室', icon:'🛏️', area:'公爵府', desc:'柔软的床铺与纱帐', bg:'bg-img-nursery bg-room', unlock:true, st:0, tags:['rest']},
   hallway:{id:'hallway', name:'长廊', icon:'🏛️', area:'公爵府', desc:'挂满祖先画像的走廊', bg:'bg-img-hallway bg-hall', unlock:true, st:1},

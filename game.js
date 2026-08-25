@@ -3951,14 +3951,12 @@ function bindLetterDemo(){
   };
   demo.onclick=e=>{
     if(e.target.closest && e.target.closest('#letter-close')) return;
-    if(demo.classList.contains('revealed')) closeLetterDemo();
-    else revealLetterDemo();
+    if(demo.classList.contains('revealed')) return;
+    // 蜂蜡是唯一的拆信触发点，避免点到背景就提前打开。
+    if(e.target.closest && e.target.closest('.letter-seal')) revealLetterDemo();
   };
 
-  const paper=demo.querySelector('.alice-letter');
-  if(paper) paper.addEventListener('animationend',e=>{
-    if(e.animationName==='letter-paper-rise') revealLetterDemo();
-  });
+  // 动画只负责把信送到面前，不自动拆信；玩家必须点击封蜡或按空格。
 }
 bindLetterDemo();
 
@@ -4003,14 +4001,29 @@ $('btn-mute').onclick=()=>{
 };
 $('btn-help').onclick=()=>show('help-screen',1);
 $('btn-help-close').onclick=()=>show('help-screen',0);
-$('btn-codex').onclick=()=>{
-  show('codex',1);
-  const got = ACH.filter(a=>S.ach[a.id]);
-  $('codex-list').innerHTML = `
-    <p style="margin-bottom:8px">结局 ${codex.endings?.length||0} · 成就 ${got.length}/${ACH.length}</p>
-    <p style="opacity:.7;font-size:12px">未解锁内容不会显示。</p>
-    <div style="margin-top:12px">${got.map(a=>`<div class="p-ach">🏆 ${a.name}</div>`).join('') || '（空）'}</div>`;
-};
+function renderCodex(tab='characters'){
+  const tabs=[['characters','人物'],['items','物品'],['skills','技能'],['tasks','任务'],['achievements','成就']];
+  const tabsEl=$('codex-tabs');
+  if(tabsEl) tabsEl.innerHTML=tabs.map(([id,label])=>`<button class="ptab${id===tab?' on':''}" data-codex-tab="${id}">${label}</button>`).join('');
+  const list=$('codex-list'); if(!list) return;
+  const knownChars=Object.keys(S.know||{}).concat(Object.keys(S.love||{})).filter((id,i,a)=>a.indexOf(id)===i);
+  let body='';
+  if(tab==='characters'){
+    body=knownChars.length ? knownChars.map(id=>{const c=CHARS[id]||{}; return `<div class="p-prof"><div class="av">${CSS_CHARS[id]?.[1]||'👤'}</div><div class="info"><div class="nm">${c.name||c.short||id}</div><div class="meta">${c.role||'人物'} · 了解度 ${S.know[id]||0}%</div><div class="know-bar"><i style="width:${Math.min(100,S.know[id]||0)}%"></i></div></div></div>`}).join('') : '<p class="codex-empty">尚未记录人物。与角色接触后会自动收录。</p>';
+  } else if(tab==='items'){
+    body=S.inv?.length ? S.inv.map(it=>`<div class="p-task"><b>${it.icon||'📦'} ${it.name}</b><br><span>${it.desc||'尚无说明。'}</span></div>`).join('') : '<p class="codex-empty">尚未收录物品。</p>';
+  } else if(tab==='skills'){
+    body=S.skills?.length ? S.skills.map(id=>{const p=ALL_PICKS[id]||MAGIC_SKILLS[id]||{name:id}; return `<div class="p-skill"><div class="sk-name">${p.name||id}</div><div class="sk-desc">${p.desc||''}</div></div>`}).join('') : '<p class="codex-empty">尚未收录技能。</p>';
+  } else if(tab==='tasks'){
+    body=Object.values(S.tasks||{}).filter(t=>t.done||t.prog).map(t=>`<div class="p-task"><b>${t.done?'✅':'☆'} 已发现任务</b><br>进度 ${t.prog||0}</div>`).join('') || '<p class="codex-empty">尚未发现任务。</p>';
+  } else {
+    const got=ACH.filter(a=>S.ach[a.id]);
+    body=got.map(a=>`<div class="p-ach">🏆 <b>${a.name}</b><br>${a.desc}</div>`).join('') || '<p class="codex-empty">尚未解锁成就。</p>';
+  }
+  list.innerHTML=`<p class="codex-summary">已发现人物 ${knownChars.length} · 物品 ${S.inv?.length||0}</p>${body}`;
+  if(tabsEl) tabsEl.onclick=e=>{const t=e.target.closest('[data-codex-tab]'); if(t) renderCodex(t.dataset.codexTab);};
+}
+$('btn-codex').onclick=()=>{ show('codex',1); renderCodex(); };
 $('btn-codex-close').onclick=()=>show('codex',0);
 
 // 自由探索底部按钮直接推进季度，不再弹出二次选择或换季提示对话框
@@ -4048,6 +4061,12 @@ document.addEventListener('keydown', e=>{
   }
   if(e.key==='Escape'){ show('panel',0); show('map-overlay',0); show('help-screen',0); show('codex',0); show('stats-overlay',0); uiShow(); }
   if(e.key===' ' || e.key==='Enter'){
+    const letter=$('letter-demo');
+    if(letter && !letter.classList.contains('hidden')){
+      if(!letter.classList.contains('revealed')) revealLetterDemo();
+      else closeLetterDemo();
+      e.preventDefault(); return;
+    }
     // CG 演出：空格/回车也能推进下一句
     if(cgActive && !$('cg-screen').classList.contains('hidden')){
       if(typeof $('cg-screen').onclick === 'function'){ $('cg-screen').onclick(); }

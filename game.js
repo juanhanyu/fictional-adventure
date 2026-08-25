@@ -1256,11 +1256,21 @@ function showPortrait(charId, emotion='normal', slot='center', active=true){
   }
 }
 function addCssPortrait(charId, active=true){
+  // setPortrait/applyStage may be called once per dialogue click.  Do not append
+  // another fallback every time the same missing image is rendered.
+  const root = $('css-portraits');
+  if(!root) return;
+  const key = charId || 'unknown';
+  let d = Array.from(root.children).find(el => el.dataset && el.dataset.char === key);
   const c = CSS_CHARS[charId] || CSS_CHARS.sylvia;
-  const d = document.createElement('div');
-  d.className = `css-p ${CHARS[charId]?.css||charId}${active?'':' dim'}`;
-  d.innerHTML = `<div class="face"></div><div class="cn">${c[0]}</div>`;
-  $('css-portraits').appendChild(d);
+  if(!d){
+    d = document.createElement('div');
+    d.dataset.char = key;
+    d.className = `css-p ${CHARS[charId]?.css||charId}`;
+    d.innerHTML = `<div class="face"></div><div class="cn">${c[0]}</div>`;
+    root.appendChild(d);
+  }
+  d.classList.toggle('dim', !active);
 }
 function setSpeaker(name, charId){
   const sp=$('speaker');

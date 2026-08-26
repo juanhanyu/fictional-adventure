@@ -689,8 +689,6 @@ input:focus-visible,
 .pick-card:focus-visible{outline:2px solid var(--ui-blue);outline-offset:3px}
 .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
 
-/* 背景层：给已有背景加深度，不改变背景资源与场景映射 */
-
 /* 标题页：徽记、银蓝卡片与清晰的入口层级 */
 #title-screen{position:relative;isolation:isolate;overflow:hidden;padding:clamp(24px,5vh,64px) 20px}
 #title-screen::before{content:"";position:absolute;width:min(70vw,720px);height:min(70vw,720px);border:1px solid rgba(165,207,242,.16);border-radius:50%;box-shadow:0 0 0 22px rgba(165,207,242,.025),0 0 0 46px rgba(201,162,39,.025);transform:rotate(22deg);pointer-events:none}
@@ -1086,6 +1084,3 @@ kbd{display:inline-block;min-width:24px;padding:2px 5px;margin:0 2px;border:1px 
   #cg-progress span{font-size:9px;letter-spacing:.1em}
 }
 
-/* 背景层恢复原版体感：场景切换仍为原来的 0.6s，不叠加 transform/filter 过渡。 */
-#bg{transition:opacity .6s,filter .6s;transform:none;filter:none;will-change:auto}
-#bg-veil{background:linear-gradient(180deg,rgba(10,8,18,.35),rgba(10,8,18,.55) 60%,rgba(10,8,18,.8));mix-blend-mode:normal}

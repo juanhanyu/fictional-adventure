@@ -444,7 +444,7 @@ SCENES.s_turnpoint = {
       { cg:'beatrice_battle.png', text:'每当她找到脱身的机会，对面便有人接替进攻。爱丽丝的哭声已经远去，她却没有回头。' },
       { cg:'beatrice_battle.png', text:'贝阿特丽丝·维斯特利亚站在火焰最中心，金色的头发被热浪吹起，在火光中像太阳。' },
 
-      { cg:'reno_battle.jpg', text:'雷纳德·维斯特利亚向来不喜欢打架。可宅邸传来碎裂声后，他立刻脱掉碍事的外袍，将袖口卷起。', portraits:[{id:'reno',slot:'center',active:true}], pov:false },
+      { cg:'reno_battle.jpg', text:'雷纳德·维斯特利亚向来不喜欢打架。可宅邸传来碎裂声后，他立刻脱掉碍事的外袍，将袖口卷起。', portraits:[{id:'reno',slot:'center',active:true}] },
       { cg:'reno_battle.jpg', text:'看到贝阿特丽丝带着爱丽丝离开，他选择把追兵拦在侧翼之外，替孩子们争取逃亡的机会。' },
       { cg:'reno_battle.jpg', text:'连接侧翼与主楼的走廊在一处宽阔路口交会。雷纳德独自站在那里，将手按向地面。' },
       { cg:'reno_battle.jpg', text:'石板在土系魔力下翘起、断裂，沿路竖成高低不一的矮墙。平整道路很快变得难以通行。', ch:'reno', speaker:'雷纳德' },
@@ -477,7 +477,7 @@ SCENES.s_turnpoint = {
       { cg:'reno_diji.jpg', text:'清晨，他的心跳与呼吸逐渐微弱，体温也慢慢下降。发现他的人只找到一具冷透的身体。' },
       { cg:'reno_diji.jpg', text:'消息很快传出去：雷纳德·维斯特利亚伤重不治，公爵家最后一位成年的幸存者也已死亡。' },
 
-      { cg:'end', bg:'bg-img-forest bg-forest', loc:'road', text:'以上，希尔维亚·维斯特利亚无从知晓。' },
+      { cg:'end', bg:'bg-img-forest bg-forest', loc:'road', text:'以上，希尔维亚·维斯特利亚无从知晓。', pov:false },
       T('我走了整夜。父亲只说往东。离开林地后，东边是广阔农田与零散村镇，没有真正的目的地。', { bg:'bg-img-plain bg-plain', loc:'road', portraits:[] }),
       T('我在结冰的水渠旁坐下。呼出的白气很快被风吹散，手脚冷得没有知觉。冰系亲和原本让我比常人耐寒，如今那股冷却像从身体内部漫出来。'),
       T('冬日太阳从云后透出，远方村庄升起炊烟。那里的人正在做饭、烧水，昨夜发生的一切离他们很远。'),

@@ -10,6 +10,10 @@ ok('右上角有隐藏UI按钮 btn-ui', !!$('btn-ui'));
 ok('btn-ui 初始图标为 🌙', $('btn-ui') && $('btn-ui').textContent.includes('🌙'));
 const explore = win.document.querySelector('[data-act="explore"]');
 ok('底部按钮为「地图」', explore && explore.textContent.includes('地图'));
+ok('标题页有独立存档状态提示', !!$('title-status') && !!$('title-status-text'));
+ok('标题背景使用标题图与主题背景', $('bg').classList.contains('bg-title') && $('bg').classList.contains('bg-img-title'));
+ok('舞台具备可访问名称', $('stage').getAttribute('aria-label')==='剧情舞台');
+ok('HUD 资源条具备进度语义', [...win.document.querySelectorAll('#hud .bar[role="progressbar"]')].length===3);
 
 // 标题页拆信测试：完整播放、点击跳过、关闭后仍留在标题页
 const letterBtn=$('btn-letter-test');
@@ -32,6 +36,8 @@ ok('内部 S.phase 仍为 academy', win.__getS().phase==='academy');
 win.__resetS();
 const st2=win.__getS(); st2.picksDone=[0,1]; win.__setS(st2);
 win.openPanel('status');
+ok('角色面板分类使用 tab 语义', $('panel-tabs').getAttribute('role')==='tablist' && $('panel-tabs').querySelector('[role="tab"]'));
+ok('角色面板 tab 标记当前页', $('panel-tabs').querySelector('[role="tab"][aria-selected="true"]')?.dataset.t==='status');
 ok('勇者之赐显示 2/7 次', $('panel-body').innerHTML.includes('2/7'));
 ok('不含 s.picksdone 字面量', !/s\.picksdone/i.test($('panel-body').innerHTML));
 
@@ -171,11 +177,11 @@ ok('下个季度按钮直接推进并显示风物框', !win.doNextTime.toString(
 // 进入空地点不再播放环境描述；有人时显示情境问候且保留底部 UI
 ok('普通进入地点不再调用环境描述对话', !win._enterLocRaw.toString().includes('ambientText'));
 win.__resetS(); const greetState=win.__getS(); greetState.freeRoam=true; greetState.ageY=8; greetState.loc='garden'; win.__setS(greetState);
-const ageGreeting=win.roamGreetingText('sophia','garden');
-const placeGreeting=win.roamGreetingText('sophia','library');
+const ageGreeting=win.roamGreetingText('alice','garden');
+const placeGreeting=win.roamGreetingText('alice','library');
 ok('问候内容随地点变化', ageGreeting!==placeGreeting);
 const older=win.__getS(); older.ageY=15; win.__setS(older);
-ok('问候内容随主角年龄变化', win.roamGreetingText('sophia','garden')!==ageGreeting);
+ok('问候内容随主角年龄变化', win.roamGreetingText('alice','garden')!==ageGreeting);
 const child=win.__getS(); child.ageY=4; win.__setS(child);
 const childGreetings=win.roamGreetingText('sophia','garden')+win.roamGreetingText('claude','garden');
 ok('幼年问候不再暗示主角乱跑', !childGreetings.includes('跑太快') && !childGreetings.includes('慢一点'));

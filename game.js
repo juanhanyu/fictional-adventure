@@ -792,12 +792,63 @@ let codex = (()=>{ try { return JSON.parse(localStorage.getItem(CODEX_KEY) || '{
 
 // ========== UTILS ==========
 const $ = id => document.getElementById(id);
+const UI_LAYER_IDS = new Set(['card','map-overlay','stats-overlay','panel','pick-screen','duel-screen','cg-screen','battle-screen','codex','help-screen','sys-popup']);
+const UI_LAYER_TRIGGERS = {'map-overlay':'btn-map-open','stats-overlay':'btn-stats',panel:'btn-panel',codex:'btn-codex','help-screen':'btn-help'};
+let uiReturnFocus = null;
+
+function isUiLayer(el){
+  return !!el && (UI_LAYER_IDS.has(el.id) || el.classList?.contains('overlay'));
+}
+function uiFocusable(el){
+  if(!el) return [];
+  return [...el.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter(node=>node.offsetParent!==null || node.getClientRects?.().length);
+}
+function focusUiLayer(el, preferred=null){
+  const target=preferred || uiFocusable(el)[0] || (['card','cg-screen'].includes(el.id) ? el : null);
+  if(!target) return;
+  if(target===el && !target.hasAttribute('tabindex')) target.setAttribute('tabindex','-1');
+  requestAnimationFrame(()=>{ try{ target.focus({preventScroll:true}); }catch(e){ target.focus(); } });
+}
+function restoreUiFocus(){
+  const target=uiReturnFocus;
+  uiReturnFocus=null;
+  if(target && target.isConnected && !target.closest('.hidden')){
+    requestAnimationFrame(()=>{ try{ target.focus({preventScroll:true}); }catch(e){ target.focus(); } });
+  }
+}
+function trapUiFocus(e){
+  if(e.key!=='Tab') return;
+  const layers=[...document.querySelectorAll('.overlay:not(.hidden), #sys-popup:not(.hidden)')];
+  const layer=layers[layers.length-1];
+  if(!layer) return;
+  const nodes=uiFocusable(layer);
+  if(!nodes.length) return;
+  const first=nodes[0], last=nodes[nodes.length-1];
+  if(!layer.contains(document.activeElement)){ e.preventDefault(); (e.shiftKey?last:first).focus(); return; }
+  if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+}
+document.addEventListener('keydown', trapUiFocus);
+
 const show = (el,on=true) => {
   if(typeof el==='string') el=$(el);
   if(!el) return;
+  const wasHidden=el.classList.contains('hidden');
   el.classList.toggle('hidden', !on);
   // 隐藏层同步告知读屏器；不改变 class/点击推进语义。
   el.setAttribute('aria-hidden', on ? 'false' : 'true');
+  const triggerId=UI_LAYER_TRIGGERS[el.id];
+  if(triggerId) $(triggerId)?.setAttribute('aria-expanded',on?'true':'false');
+  if(isUiLayer(el)){
+    if(on && wasHidden){
+      const active=document.activeElement;
+      if(active && active!==document.body && !active.closest('.hidden')) uiReturnFocus=active;
+      focusUiLayer(el);
+    }else if(!on && !wasHidden){
+      restoreUiFocus();
+    }
+  }
 };
 
 /* 底部 UI 高度由实际布局决定；只记录可见高度，剧情模式沿用固定 131px 对话框。 */
@@ -1100,6 +1151,38 @@ function saveCodex(){ try { localStorage.setItem(CODEX_KEY, JSON.stringify(codex
 function hasSave(){ return !!localStorage.getItem(SAVE_KEY); }
 
 // ========== HUD / UI ==========
+function updateTitleStatus(){
+  const label=$('title-status-text');
+  if(!label) return;
+  const saved=hasSave();
+  label.textContent=saved ? `已保存 · ${dateStr()} · ${phaseName()}` : '自动存档已开启 · 新生活尚未开始';
+  $('title-status')?.classList.toggle('has-save', saved);
+}
+function updateProgressA11y(){
+  const bars=[['hud-hp',S.hp,S.mhp,'生命'],['hud-mp',S.mp,S.mmp,'魔力'],['hud-st',S.st,S.mst,'体力']];
+  bars.forEach(([id,value,max,label])=>{
+    const bar=$(id)?.closest('.bar');
+    if(!bar) return;
+    bar.setAttribute('aria-valuemin','0');
+    bar.setAttribute('aria-valuemax',String(max));
+    bar.setAttribute('aria-valuenow',String(value));
+    bar.setAttribute('aria-label',`${label} ${value}/${max}`);
+  });
+}
+const ACTION_COSTS={talk:1,train:3,study:2,course:2};
+function updateActionBar(){
+  const bar=$('action-bar');
+  if(!bar) return;
+  const stamina=$('action-stamina');
+  if(stamina) stamina.textContent=`体力 ${S.st}/${S.mst}`;
+  const ratio=S.mst ? S.st/S.mst : 0;
+  bar.dataset.staminaState=ratio<=.25?'critical':ratio<=.5?'low':'ready';
+  bar.querySelectorAll('[data-act]').forEach(btn=>{
+    const act=btn.dataset.act, cost=ACTION_COSTS[act];
+    if(cost==null){ btn.dataset.costState='ready'; return; }
+    btn.dataset.costState=S.st>=cost?'ready':'low';
+  });
+}
 function updateHUD(){
   const named = flag('named');
   // 视觉层只读取这些状态标记，不改变存档/剧情语义；用于阶段色调与响应式 HUD 提示。
@@ -1135,6 +1218,9 @@ function updateHUD(){
   }
   show('btn-continue', hasSave());
   $('codex-count').textContent = `${Object.keys(S.ach||{}).length || codex.eggs || 0}`;
+  updateTitleStatus();
+  updateProgressA11y();
+  updateActionBar();
 }
 
 function setBG(cls){
@@ -1195,6 +1281,19 @@ function defaultSpeakerSlot(chId, current){
   if(now.length && !taken.has('right')) return 'right';
   return freeStageSlot(taken, null) || 'center';
 }
+function updateStagePresentation(){
+  const root=$('stage');
+  if(!root) return;
+  const current=stageWithSlots(stage);
+  const count=current.length;
+  root.dataset.portraitCount=String(count);
+  root.dataset.composition=count===0?'empty':count===1?'solo':count===2?'duo':count===3?'trio':'ensemble';
+  const focus=current.find(s=>s.active!==false);
+  if(focus) root.dataset.focus=focus.id;
+  else root.removeAttribute('data-focus');
+  root.classList.toggle('stage-has-portraits',count>0);
+  root.classList.toggle('stage-empty',count===0);
+}
 function normalizeStage(next){
   const raw=(Array.isArray(next)?next:[]).filter(x=>x&&x.id).slice(0,4);
   const prev=stageWithSlots(stage);
@@ -1233,6 +1332,7 @@ function clearPortraits(){
   });
   $('css-portraits').innerHTML='';
   stage = [];
+  updateStagePresentation();
 }
 // 单角色旁白聚焦：保留当前在场者(主导/对话者)，只把 focus 人高亮、其余置暗；focus 人不在场则追加
 function applyStageFocus(f){
@@ -1279,6 +1379,7 @@ function applyStage(next){
     }
   });
   stage=target;
+  updateStagePresentation();
   layoutPortraits();
 }
 function setPortrait(el, charId, emotion, active, slot){
@@ -1506,7 +1607,7 @@ function applyLineEffects(L){
   curSpeakerId = L.ch || null;
   if(L.portraits && L.portraits.length){ const act=L.portraits.find(p=>p.active!==false); if(act) curSpeakerId = act.id; }
   if(L.portraits){
-    const arr = L.portraits.map(p=>({ id:p.id, emo:p.emo||'normal', active:p.active!==false }));
+    const arr = L.portraits.map(p=>({ id:p.id, slot:p.slot, emo:p.emo||'normal', active:p.active!==false }));
     // 单角色旁白(N)：视为「本段聚焦该人」，替换舞台为该人（vignette 段切换）；
     // 若需在多人对话中特写某动作同时保留主导者，剧情数据应写成 2 元素数组（聚焦人+主导者）。
     applyStage(arr);
@@ -1840,14 +1941,18 @@ bindAdvance();
 
 // ========== CARD ==========
 function showCard(vol, t, s, cb){
-  $('card').setAttribute('aria-label', [vol,t,s].filter(Boolean).join(' · '));
+  const card=$('card');
+  card.setAttribute('aria-label', [vol,t,s].filter(Boolean).join(' · '));
+  card.dataset.volume=vol||'';
+  card.dataset.state='open';
   $('card-vol').textContent=vol||'';
   $('card-t').textContent=t||'';
   $('card-s').textContent=s||'';
-  show('card',1); sfx('page');
+  const hint=$('card-hint');
+  if(hint) hint.textContent='点击继续 · Enter';
+  show(card,1); sfx('page');
   let done=false;
-  const finish=()=>{ if(done) return; done=true; show('card',0); if(cb) cb(); };
-  const card=$('card');
+  const finish=()=>{ if(done) return; done=true; card.dataset.state='closing'; show(card,0); if(cb) cb(); };
   card.onclick=()=>{ finish(); card.onclick=null; };
 }
 
@@ -1868,6 +1973,20 @@ function cgCharClass(ch){
   return 'c-narrator';
 }
 let cgImage = null;   // 当前 CG 图（避免连续同图时重复设 background 导致闪烁）
+function cgToneForImage(name){
+  const n=String(name||'').toLowerCase();
+  if(/parting|cool_off|reno_diji|parents_battle/.test(n)) return 'melancholy';
+  if(/battle|duel|fight/.test(n)) return 'conflict';
+  return 'quiet';
+}
+function cgSetReady(ready){
+  const cs=$('cg-screen');
+  if(!cs) return;
+  cs.classList.toggle('cg-typing',!ready);
+  cs.classList.toggle('cg-ready',!!ready);
+  const hint=$('cg-hint');
+  if(hint) hint.textContent=ready?'点击继续 · Enter':'正在显影…';
+}
 function cgShow(name){
   // 隐藏全部 UI，显示全屏 CG
   cgActive = true;
@@ -1877,6 +1996,12 @@ function cgShow(name){
   }
   $('cg-bg').classList.remove('noimg');
   const cs=$('cg-screen');
+  cs.dataset.image=String(name||'');
+  cs.dataset.tone=cgToneForImage(name);
+  const progressLabel=$('cg-progress-label');
+  if(progressLabel) progressLabel.textContent=(name?'CG · '+String(name).replace(/\.[^.]+$/,''):'CG 演出');
+  $('cg-progress')?.classList.add('is-active');
+  cgSetReady(false);
   if(cs.classList.contains('hidden')){  // 首次进入 CG：淡入
     cs.classList.add('faded');           // 从透明开始
     show(cs, 1);
@@ -1897,11 +2022,14 @@ function cgBuildHtml(speaker, text, isNarrator){
 // CG 台词逐字快速打出（与一般对话打字机速度一致）
 function cgTextType(speaker, text, isNarrator, done){
   const box = $('cg-text');
+  const cs=$('cg-screen');
+  if(cs) cs.dataset.speaker=isNarrator?'narrator':String(speaker||'');
   const { spk, line } = cgBuildHtml(speaker, text, isNarrator);
   cgSpeakerHtml = spk; cgLineHtml = line;
   const full = text || '';
-  if(!full){ box.innerHTML = spk + line; if(done) done(); return; }
+  if(!full){ box.innerHTML = spk + line; cgSetReady(true); if(done) done(); return; }
   cgTyping = true;
+  cgSetReady(false);
   let idx = 0;
   box.innerHTML = spk + `<div class="cg-line ${cgCharClass(isNarrator?null:speaker)}"></div>`;
   const timer = setInterval(()=>{
@@ -1911,6 +2039,7 @@ function cgTextType(speaker, text, isNarrator, done){
     if(idx >= full.length){
       clearInterval(timer); cgTyping = false;
       box.innerHTML = spk + line;
+      cgSetReady(true);
       if(done) done();
     }
   }, 16);
@@ -1918,8 +2047,11 @@ function cgTextType(speaker, text, isNarrator, done){
 function cgText(speaker, text, isNarrator){
   // 立即显示完整（用于测试/兜底）
   const box = $('cg-text');
+  const cs=$('cg-screen');
+  if(cs) cs.dataset.speaker=isNarrator?'narrator':String(speaker||'');
   const { spk, line } = cgBuildHtml(speaker, text, isNarrator);
   box.innerHTML = spk + line;
+  cgSetReady(true);
 }
 let cgActive = false;
 function cgHide(){
@@ -1934,6 +2066,10 @@ function cgHide(){
   document.body.classList.remove('cg-mode');
   $('cg-bg').style.backgroundImage = '';
   $('cg-text').innerHTML = '';
+  const progress=$('cg-progress');
+  if(progress) progress.classList.remove('is-active');
+  const cs2=$('cg-screen');
+  if(cs2){ cs2.removeAttribute('data-image'); cs2.removeAttribute('data-tone'); cs2.removeAttribute('data-speaker'); cs2.classList.remove('cg-typing','cg-ready'); }
 }
 
 // ========== FREE ROAM ==========
@@ -2085,6 +2221,7 @@ function renderHotspots(){
     }
   });
   stage = peeps.slice(0,4).map((id,i)=>({id, slot:slots[i]||'center', emo:'normal', active:true})); // 供 layout 排布
+  updateStagePresentation();
   layoutPortraits();
   if(!usable.length && !peeps.length){ show(box,0); return; }
   show(box,1);
@@ -2215,7 +2352,7 @@ function roamGreetingText(charId, locId=S.loc){
   const a=S.ageY, n=CHARS[charId]?.short||charId;
   const detail=ROAM_PLACE_DETAIL[locId] || (LOCS[locId]?.name ? LOCS[locId].name+'今天很安静。' : '这里今天很安静。');
   switch(charId){
-    case 'sophia': return a<1 ? '醒了吗？妈妈在。'+detail : a<6 ? '希尔维亚，想在这里待一会儿吗？'+detail : a<12 ? '希尔维亚，来得正好。'+detail : '希尔维亚，今天也辛苦了。要陪妈妈喝杯茶吗？'+detail;
+    case 'sophia': return a<1 ? '醒了吗？妈妈在。'+detail : a<6 ? '希尔维亚，想在这里待一会儿吗？'+detail : '希尔维亚，来得正好。'+detail;
     case 'beatrice': return a<1 ? '妹妹！看这里！'+detail : a<10 ? '希尔维亚！我正想找你！'+detail : '希尔维亚，来得正好！'+detail;
     case 'alice': return a<3 ? '……姐姐大人。'+detail : a<10 ? '……姐姐大人，你也来了。'+detail : '……姐姐大人。要一起待一会儿吗？'+detail;
     case 'claude': return a<6 ? '希尔维亚。看来你很喜欢这里。'+detail : '希尔维亚。既然来了，就别急着走。'+detail;
@@ -2332,6 +2469,8 @@ document.getElementById('action-bar').onclick = e=>{
 };
 
 function openMap(){
+  const overlay=$('map-overlay');
+  if(overlay) overlay.dataset.location=S.loc||'';
   const g=$('map-grid'); g.innerHTML='';
   const phaseLocs = Object.values(LOCS).filter(L=> {
     if(!L.unlock || !phaseAreaAllowed(L.area)) return false;
@@ -3236,6 +3375,7 @@ function winDuel(id){
 
 function openStatsPanel(){
   if(!S.stats) S.stats = {body:5, mind:15, mana:10, charm:8};
+  $('stats-overlay')?.setAttribute('data-updated',String(Date.now()));
   const body = $('stats-body');
   if(!body){ openPanel('status'); return; }
   // 主角立绘
@@ -3277,11 +3417,14 @@ function statusPanelHTML(){
 }
 
 function openPanel(tab){
+  tab=tab||'status';
+  const panel=$('panel');
+  if(panel) panel.dataset.tab=tab;
   show('panel',1); sfx('open');
   const tabs=[['status','状态'],['skills','技能'],['tasks','任务'],['prof','人物'],['inv','背包'],['ach','成就'],['settings','设置']];
   $('panel-tabs').innerHTML = tabs.map(([k,n])=>{
     const selected=(tab||'status')===k;
-    return `<button class="ptab${selected?' on':''}" data-t="${k}" role="tab" aria-selected="${selected}" tabindex="${selected?'0':'-1'}">${n}</button>`;
+    return `<button class="ptab${selected?' on':''}" data-t="${k}" role="tab" aria-controls="panel-body" aria-selected="${selected}" tabindex="${selected?'0':'-1'}">${n}</button>`;
   }).join('');
   const panelTabs=$('panel-tabs');
   panelTabs.onclick=e=>{ const t=e.target.dataset.t; if(t) openPanel(t); };
@@ -3297,9 +3440,8 @@ function openPanel(tab){
     panelTabs.querySelector(`[data-t="${next.dataset.t}"]`)?.focus();
   };
   const body=$('panel-body');
-  tab = tab||'status';
   if(tab==='status'){
-    body.innerHTML= statusPanelHTML() + `<p style="margin-top:12px;font-size:12px;opacity:.75">养成四维请点 HUD 的 <b>💠</b> 打开独立面板。<br>「勇者之赐」已用 ${S.picksDone.length}/7 次</p>`;
+    body.innerHTML= statusPanelHTML() + `<p class="panel-note panel-note-spaced">养成四维请点 HUD 的 <b>💠</b> 打开独立面板。<br>「勇者之赐」已用 ${S.picksDone.length}/7 次</p>`;
   } else if(tab==='skills'){
     if(!S.skills.length) body.innerHTML='<p style="opacity:.6">尚未获得特殊技能。</p>';
     else body.innerHTML = S.skills.map(id=>{
@@ -3308,7 +3450,7 @@ function openPanel(tab){
       const cnNames={ice_crystal:'冰晶术',virtual_duel:'虚拟决斗',ice_sense:'寒息感知',water_veil:'水之帷幕',quiet_mind:'静心',baby_talk:'天籁初声',mana_sip:'魔力小啜',silk_thread:'千缕银丝',ice_palace:'冰晶宫殿',multi_cast:'二重咏唱',frost_armor:'霜铠',deep_read:'深读',mirror_ice:'镜冰',wind_step_s:'残影步（简）',heal_touch:'温手',mana_cycle:'魔战循环',domain_frost:'霜域',perfect_cast:'无咏唱具现',fate_eye:'因果薄片',sword_mana:'魔剑同化',memory_link:'记忆连丝',zero_field:'绝对零度逼近',temp_sense:'温度感知',wind_afterimage:'风行残像',mana_calc:'魔力精算',root_ice:'生根之冰',noble_bearing:'公爵气度',lullaby:'摇篮曲',etiquette:'贵族仪态',water_ball:'水球术',basic_guard:'基本防御架',theory_note:'理论笔记',water_veil_s:'水膜',ice_sphere:'完美冰球',root_step:'生根步',soft_cut:'送刀'};
       const displayName = cnNames[id] || p.name || id;
       return `<div class="p-skill"><div class="sk-name">${displayName}</div><div class="sk-desc">${p.desc||''}</div></div>`;
-    }).join('') + (hasSkill('virtual_duel')?`<button class="tbtn" style="margin-top:10px" id="btn-duel">⚔️ 进入虚拟决斗</button>`:'');
+    }).join('') + (hasSkill('virtual_duel')?`<button class="tbtn panel-action" id="btn-duel">⚔️ 进入虚拟决斗</button>`:'');
     setTimeout(()=>{ const b=$('btn-duel'); if(b) b.onclick=()=>{ show('panel',0); openDuelMenu(); }; },0);
   } else if(tab==='tasks'){
     // 未接取/未完成且未解锁的任务不显示具体内容（防剧透）
@@ -3332,7 +3474,7 @@ function openPanel(tab){
     if(!known.length) body.innerHTML='<p style="opacity:.6">尚无进行中的任务。随着年龄与行程推进会解锁。</p>';
     else body.innerHTML = known.map(t=>{
       const st=S.tasks[t.id]||{};
-      return `<div class="p-task${st.done?' done':''}"><b>${st.done?'✅':'☆'} ${t.name}</b><br>${t.desc}<br><span style="opacity:.6">奖励：经验×${t.exp}${t.max?` · 进度 ${st.prog||0}/${t.max}`:''}</span></div>`;
+      return `<div class="p-task${st.done?' done':''}"><b>${st.done?'✅':'☆'} ${t.name}</b><br>${t.desc}<br><span class="panel-muted">奖励：经验×${t.exp}${t.max?` · 进度 ${st.prog||0}/${t.max}`:''}</span></div>`;
     }).join('');
   } else if(tab==='prof'){
     const ids = Object.keys(S.know).concat(Object.keys(S.love)).filter((v,i,a)=>a.indexOf(v)===i);
@@ -3349,11 +3491,11 @@ function openPanel(tab){
     }).join('');
   } else if(tab==='inv'){
     const slots = S.inv.map(it=>{
-      const use = it.id==='cookie' ? `<button class="tbtn" style="margin-top:6px;min-width:0;padding:4px 12px;font-size:12px" data-use="${it.id}">🍪 食用</button>` : '';
-      return `<div class="inv-slot filled">${it.icon||'📦'}<br>${it.name}<br><span style="opacity:.6">${it.desc||''}</span>${use}</div>`;
+      const use = it.id==='cookie' ? `<button class="tbtn panel-action panel-action-small" data-use="${it.id}">🍪 食用</button>` : '';
+      return `<div class="inv-slot filled">${it.icon||'📦'}<br>${it.name}<br><span class="panel-muted">${it.desc||''}</span>${use}</div>`;
     }).join('');
     body.innerHTML=`<div class="p-inv">${slots || '<div class="inv-slot">空</div>'}</div>
-      <p style="margin-top:8px;opacity:.6;font-size:12px">背包 ${S.inv.length}/50 · 系统收纳（单手可握之物）</p>`;
+      <p class="panel-note panel-note-spaced">背包 ${S.inv.length}/50 · 系统收纳（单手可握之物）</p>`;
     setTimeout(()=>{
       $('panel-body').querySelectorAll('[data-use]').forEach(b=>{
         b.onclick=()=>useItem(b.getAttribute('data-use'));
@@ -3362,19 +3504,19 @@ function openPanel(tab){
   } else if(tab==='ach'){
     const unlocked = ACH.filter(a=>S.ach[a.id]);
     const lockedN = ACH.length - unlocked.length;
-    body.innerHTML = (unlocked.length? unlocked.map(a=>`<div class="p-ach">🏆 <b>${a.name}</b><br>${a.desc}<br><span style="opacity:.6">奖励：${a.reward}</span></div>`).join('') : '<p style="opacity:.6">尚未解锁成就。</p>')
-      + (lockedN? `<p style="margin-top:12px;opacity:.5;font-size:12px">还有 ${lockedN} 个隐藏成就未解锁</p>` : '');
+    body.innerHTML = (unlocked.length? unlocked.map(a=>`<div class="p-ach">🏆 <b>${a.name}</b><br>${a.desc}<br><span class="panel-muted">奖励：${a.reward}</span></div>`).join('') : '<p style="opacity:.6">尚未解锁成就。</p>')
+      + (lockedN? `<p class="panel-note panel-note-faded">还有 ${lockedN} 个隐藏成就未解锁</p>` : '');
   } else if(tab==='settings'){
     const cur = getSettings();
-    body.innerHTML = `<div class="p-stat" style="grid-template-columns:1fr">
+    body.innerHTML = `<div class="p-stat panel-settings-grid">
       <div><b>🔊 BGM 音量</b></div>
-      <input type="range" id="set-bgm" min="0" max="100" value="${Math.round(cur.bgm*100)}" style="width:100%">
-      <div style="opacity:.7;font-size:12px">当前 ${Math.round(cur.bgm*100)}%</div>
-      <div style="margin-top:14px"><b>☀️ 背景亮度</b></div>
-      <input type="range" id="set-bright" min="50" max="150" value="${Math.round(cur.bright*100)}" style="width:100%">
-      <div style="opacity:.7;font-size:12px">当前 ${Math.round(cur.bright*100)}%（100=默认）</div>
+      <input type="range" id="set-bgm" min="0" max="100" value="${Math.round(cur.bgm*100)}">
+      <div class="panel-setting-value">当前 ${Math.round(cur.bgm*100)}%</div>
+      <div class="panel-setting-label"><b>☀️ 背景亮度</b></div>
+      <input type="range" id="set-bright" min="50" max="150" value="${Math.round(cur.bright*100)}">
+      <div class="panel-setting-value">当前 ${Math.round(cur.bright*100)}%（100=默认）</div>
     </div>
-    <button class="tbtn" id="set-reset" style="margin-top:18px">↺ 全部恢复默认</button>`;
+    <button class="tbtn panel-action" id="set-reset">↺ 全部恢复默认</button>`;
     // 事件绑定
     setTimeout(()=>{
       const bm=$('set-bgm'); if(bm) bm.oninput=()=>{ setSetting('bgm', bm.value/100); };
@@ -3382,6 +3524,8 @@ function openPanel(tab){
       const rs=$('set-reset'); if(rs) rs.onclick=()=>{ resetSettings(); openPanel('settings'); toast('已恢复默认设置'); };
     },0);
   }
+  // 动态面板内容已经生成后再把焦点送入当前 tab；鼠标交互路径不变。
+  focusUiLayer(panel, panel.querySelector('.ptab.on'));
 }
 
 // ========== 设置（音量/亮度等，持久化） ==========
@@ -4042,7 +4186,7 @@ document.addEventListener('keydown', e=>{
     closeLetterDemo();
     return;
   }
-  if(e.key==='Escape'){ show('panel',0); show('map-overlay',0); show('help-screen',0); show('codex',0); show('stats-overlay',0); uiShow(); }
+  if(e.key==='Escape'){ show('panel',0); show('map-overlay',0); show('help-screen',0); show('codex',0); show('stats-overlay',0); show('sys-popup',0); uiShow(); }
   if(e.key===' ' || e.key==='Enter'){
     // CG 演出：空格/回车也能推进下一句
     if(cgActive && !$('cg-screen').classList.contains('hidden')){

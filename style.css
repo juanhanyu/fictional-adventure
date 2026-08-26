@@ -662,7 +662,11 @@ body.ui-hidden #btn-ui{
   .letter-demo.playing .letter-tip{animation-duration:.01ms;animation-delay:0s}
 }
 
-/* ==========================================================================\n   视觉系统升级 · 银蓝公爵府\n   对话框本体与现有推进交互保持不变；以下只负责标题、舞台、HUD、面板、\n   情绪演出、响应式和无障碍的统一视觉语言。\n   ========================================================================== */
+/* ==========================================================================
+   视觉系统升级 · 银蓝公爵府
+   对话框本体与现有推进交互保持不变；以下只负责标题、舞台、HUD、面板、
+   情绪演出、响应式和无障碍的统一视觉语言。
+   ========================================================================== */
 :root{
   --ui-bg:#0e0b18;
   --ui-panel:rgba(21,16,35,.9);
@@ -905,3 +909,138 @@ body.cg-mode #fx{opacity:0;transition:opacity .3s}
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
   #bg,#cg-bg{transform:none}
 }
+
+/* ==========================================================================
+   第二轮收口 · 状态层、焦点层与演出状态
+   仍然不触碰 #text-box / #choices 的视觉结构。
+   ========================================================================== */
+:root{
+  --phase-accent:#c9a227;
+  --phase-cool:#87bdf0;
+  --phase-quiet:#c7b7d9;
+  --phase-danger:#e27b87;
+}
+body[data-phase="academy"]{--phase-accent:#8fc7f2;--phase-cool:#b7e1ff}
+body[data-phase="journey"]{--phase-accent:#d8b56a;--phase-cool:#9ed0c0}
+body[data-phase="finale"]{--phase-accent:#e27b87;--phase-cool:#c7a5e9}
+html,body,#app{min-height:100dvh}
+body{touch-action:manipulation}
+
+/* 标题页的存档状态与键盘提示，让入口信息不再只依赖按钮文案 */
+.title-status{position:relative;display:flex;align-items:center;justify-content:center;gap:7px;margin:12px auto 0;font-size:11px;letter-spacing:.08em;color:#b8c7d7;opacity:.74;transition:color .25s,opacity .25s}
+.title-status.has-save{color:#f0d88f;opacity:.94}
+.title-status-dot{width:6px;height:6px;border-radius:50%;background:#7d8997;box-shadow:0 0 0 3px rgba(125,137,151,.1);transition:background .25s,box-shadow .25s}
+.title-status.has-save .title-status-dot{background:#7fd0a0;box-shadow:0 0 0 3px rgba(127,208,160,.12),0 0 12px rgba(127,208,160,.42)}
+.title-keyboard-hint{margin-top:11px;font-size:10px;letter-spacing:.05em;color:#a9a0b1;opacity:.58}
+kbd{display:inline-block;min-width:24px;padding:2px 5px;margin:0 2px;border:1px solid rgba(220,232,245,.2);border-bottom-color:rgba(220,232,245,.38);border-radius:4px;background:rgba(0,0,0,.18);color:#dce8f5;font:600 10px/1.2 var(--serif);text-align:center;box-shadow:inset 0 -1px rgba(0,0,0,.2)}
+
+/* HUD 数值条：标签与读屏数值同时存在 */
+#hud .bar[data-label]{position:relative}
+#hud .bar[data-label]::before{content:attr(data-label);position:absolute;left:7px;top:50%;z-index:2;transform:translateY(-50%);font-size:8px;line-height:1;color:rgba(255,255,255,.7);letter-spacing:.08em;text-shadow:0 1px 2px #000;pointer-events:none}
+#hud .bar[data-label] em{z-index:3}
+#hud .bar[aria-valuenow="0"] i{opacity:.35}
+#hud .bar[aria-label*="体力"] i{box-shadow:0 0 8px rgba(231,196,92,.28)}
+
+/* 行动栏状态：体力不足只做明确的视觉提示，不禁用原有点击分支 */
+#action-bar .action-caption{display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:78px;padding:0 6px;color:#d7c994;white-space:nowrap;line-height:1.15}
+#action-bar .action-caption span{font-size:11px;letter-spacing:.12em}
+#action-bar .action-caption small{font-size:10px;color:#bfcada;opacity:.75}
+#action-bar[data-stamina-state="low"] .action-caption small{color:#f0ca76;opacity:1}
+#action-bar[data-stamina-state="critical"] .action-caption small{color:#f09a9e;opacity:1}
+#action-bar .abtn[data-cost-state="low"]{border-color:rgba(224,112,128,.24);color:#c8c0c8}
+#action-bar .abtn[data-cost-state="low"] small{color:#e09aa1}
+#action-bar .abtn[data-cost-state="low"]:hover{border-color:rgba(224,112,128,.66);background:linear-gradient(145deg,rgba(130,50,69,.25),rgba(48,30,66,.3))}
+
+/* 舞台状态由引擎 data-* 统一驱动，保留语义槽位而不重新分布人物 */
+#stage[data-composition="empty"]::before{background:radial-gradient(ellipse at 50% 75%,rgba(135,189,240,.035),transparent 55%)}
+#stage[data-composition="solo"] #portraits::before{content:"";position:absolute;left:50%;bottom:0;width:34%;height:22%;transform:translateX(-50%);background:radial-gradient(ellipse,rgba(135,189,240,.12),transparent 68%);filter:blur(16px);opacity:.55;pointer-events:none}
+#stage[data-composition="duo"] #portraits::before{content:"";position:absolute;left:28%;right:28%;bottom:0;height:16%;background:linear-gradient(90deg,transparent,rgba(201,162,39,.08),transparent);filter:blur(15px);pointer-events:none}
+#stage[data-focus="sylvia"]{--focus-glow:rgba(135,189,240,.12)}
+#stage[data-focus="beatrice"]{--focus-glow:rgba(232,128,90,.1)}
+#stage[data-focus="yaoshen"]{--focus-glow:rgba(201,162,39,.1)}
+#stage[data-focus] #portraits::after{content:"";position:absolute;inset:10% 16% 0;background:radial-gradient(ellipse at 50% 70%,var(--focus-glow,rgba(255,255,255,.06)),transparent 65%);mix-blend-mode:screen;pointer-events:none;z-index:-1}
+.p-slot{transition:left .28s ease,opacity .22s ease,transform .28s ease;transform:translateX(-50%);will-change:left,opacity,transform}
+.p-slot.ps-enter{transform:translateX(-50%) translateY(14px) scale(.975);filter:brightness(.85);}
+.p-slot.ps-leave{transform:translateX(-50%) translateY(8px) scale(.985)}
+.p-slot.active img{animation:portraitBreath 5s ease-in-out infinite}
+@keyframes portraitBreath{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+
+/* 章节卡 / CG 进度信息：增强临场感但不新增剧情文本 */
+#card-hint{position:absolute;bottom:28px;left:0;right:0;text-align:center;color:rgba(220,232,245,.55);font-size:11px;letter-spacing:.12em;animation:pulse 1.5s ease-in-out infinite}
+#card[data-state="closing"] #card-hint{opacity:0}
+#cg-progress{position:absolute;top:22px;left:30px;right:30px;z-index:6;display:flex;align-items:center;gap:10px;color:rgba(255,255,255,.64);font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.76}
+#cg-progress::before{content:"";height:1px;flex:1;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3))}
+#cg-progress::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,rgba(255,255,255,.3),transparent)}
+#cg-progress i{position:absolute;left:0;top:18px;width:26%;height:1px;background:linear-gradient(90deg,transparent,rgba(201,162,39,.85));transform-origin:left center;opacity:0}
+#cg-progress.is-active i{opacity:1;animation:cgProgressSweep 2.4s ease-in-out infinite alternate}
+#cg-progress span{order:2;white-space:nowrap}
+@keyframes cgProgressSweep{from{transform:scaleX(.35);opacity:.42}to{transform:scaleX(1);opacity:1}}
+#cg-hint{position:absolute;right:30px;bottom:22px;z-index:6;color:rgba(255,255,255,.62);font-size:11px;letter-spacing:.1em;opacity:0;transition:opacity .3s}
+#cg-screen.cg-ready #cg-hint{opacity:.8}
+#cg-screen[data-tone="melancholy"] #cg-bg{filter:saturate(.72) contrast(1.08) sepia(.08)}
+#cg-screen[data-tone="conflict"] #cg-bg{filter:saturate(1.12) contrast(1.12)}
+#cg-screen[data-tone="melancholy"]::before{background:linear-gradient(180deg,rgba(7,15,35,.18),transparent 34%,rgba(10,5,18,.7))}
+#cg-screen[data-tone="conflict"]::before{background:linear-gradient(180deg,rgba(48,12,18,.22),transparent 35%,rgba(0,0,0,.62))}
+
+/* Overlay 键盘焦点的可见边界与更清楚的滚动区域 */
+.end-card{scrollbar-color:rgba(135,189,240,.48) rgba(0,0,0,.18);scrollbar-width:thin}
+.end-card::-webkit-scrollbar,#pick-grid::-webkit-scrollbar,#duel-log::-webkit-scrollbar,#b-log::-webkit-scrollbar{width:7px;height:7px}
+.end-card::-webkit-scrollbar-thumb,#pick-grid::-webkit-scrollbar-thumb,#duel-log::-webkit-scrollbar-thumb,#b-log::-webkit-scrollbar-thumb{background:rgba(135,189,240,.35);border-radius:99px}
+.end-card::-webkit-scrollbar-track,#pick-grid::-webkit-scrollbar-track,#duel-log::-webkit-scrollbar-track,#b-log::-webkit-scrollbar-track{background:rgba(0,0,0,.16)}
+
+/* 小屏让行动 caption 独占一行，避免八个按钮被压缩成不可读的标签 */
+@media(max-width:760px){
+  #action-bar .action-caption{grid-column:1 / -1;flex-direction:row;align-items:center;justify-content:space-between;min-height:17px;padding:0 4px}
+  #action-bar .action-caption span{font-size:10px}
+  #action-bar .action-caption small{font-size:10px}
+  #cg-progress{top:14px;left:18px;right:18px}
+  #cg-progress i{top:15px}
+  #cg-hint{right:18px;bottom:14px;font-size:10px}
+  #card-hint{bottom:18px}
+}
+@media(pointer:coarse){
+  .chip,.abtn,.tbtn,.ptab,.map-cell,.pick-card{min-height:44px}
+  .hotspot{min-height:44px}
+  #cg-screen,#card{cursor:pointer}
+}
+@media(prefers-contrast:more){
+  :root{--ui-line:rgba(255,255,255,.36);--ui-line-strong:rgba(255,220,120,.86)}
+  .chip,.abtn,.tbtn,.ptab,.map-cell,.pick-card{border-color:rgba(255,255,255,.42)}
+  .bar{border-color:rgba(255,255,255,.3)}
+}
+
+/* 第二轮：面板组件化的语义类，逐步替代内联样式 */
+.panel-note{font-size:12px;line-height:1.7;color:rgba(220,232,245,.7)}
+.panel-note-spaced{margin-top:12px}
+.panel-note-faded{margin-top:12px;opacity:.58}
+.panel-muted{font-size:12px;color:rgba(220,232,245,.62)}
+.panel-action{margin-top:12px}
+.panel-action-small{min-width:0!important;padding:5px 12px!important;font-size:12px!important}
+.panel-settings-grid{grid-template-columns:1fr!important}
+.panel-settings-grid input[type="range"]{width:100%;accent-color:var(--phase-accent);cursor:pointer}
+.panel-setting-label{margin-top:14px}
+.panel-setting-value{font-size:12px;color:rgba(220,232,245,.7)}
+
+/* 阶段色彩只作用于装饰，不改变任何剧情状态 */
+#hud::after{background:linear-gradient(90deg,transparent,var(--phase-cool) 25%,var(--phase-accent) 50%,var(--phase-cool) 75%,transparent)}
+#loc-bar{border-left-color:var(--phase-accent)}
+#action-bar::before{background:linear-gradient(90deg,transparent,var(--phase-cool),var(--phase-accent),var(--phase-cool),transparent)}
+
+/* 触屏设备把点击热区拉到可用尺寸，同时保留桌面端紧凑布局 */
+@media(pointer:coarse){
+  .title-menu .tbtn,.end-btns .tbtn{min-height:44px}
+  .panel-action-small{min-height:38px!important}
+}
+
+/* 安全区：标题、HUD、CG 的边缘信息不贴住刘海与手势条 */
+#title-screen{
+  padding-top:max(clamp(24px,5vh,64px),env(safe-area-inset-top));
+  padding-right:max(20px,env(safe-area-inset-right));
+  padding-bottom:max(24px,env(safe-area-inset-bottom));
+  padding-left:max(20px,env(safe-area-inset-left));
+}
+#hud{padding-top:max(9px,env(safe-area-inset-top))}
+#card-hint{bottom:max(28px,calc(env(safe-area-inset-bottom) + 18px))}
+#cg-progress{top:max(22px,calc(env(safe-area-inset-top) + 12px))}
+#cg-hint{right:max(30px,calc(env(safe-area-inset-right) + 18px));bottom:max(22px,calc(env(safe-area-inset-bottom) + 14px))}
+.letter-close{top:max(12px,calc(env(safe-area-inset-top) + 8px));right:max(12px,calc(env(safe-area-inset-right) + 8px))}

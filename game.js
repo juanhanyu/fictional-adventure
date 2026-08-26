@@ -729,7 +729,6 @@ const ACH = [
   {id:'virtual_first', name:'梦中初胜', desc:'赢得第一场虚拟决斗', reward:'经验×50'},
   {id:'ice_palace_on', name:'冰中宫殿', desc:'构建冰晶宫殿', reward:'记忆格+3'},
   {id:'micro_service', name:'微服翻车', desc:'三姐妹微服出行并震惊全城', reward:'金币？？？'},
-  {id:'vampire_eclipse', name:'静止的日蚀', desc:'在日蚀下终结饮月者的追杀', reward:'传说级法杖'},
   {id:'shell_gift', name:'月虹螺之约', desc:'完成海滨的贝壳饰品', reward:'永久纪念'},
   {id:'egg_garden', name:'花园密语', desc:'在花园发现隐藏彩蛋', reward:'小礼物'},
   {id:'egg_cellar', name:'酒窖低语', desc:'在酒窖发现初代公爵的留言', reward:'剧情线索'},
@@ -1007,7 +1006,7 @@ function skipToAge(y){ toast("已关闭快进，请按季度推进"); return; }
 const STORY_GATE_VERSION = 3;
 const STORY_GATE_FLAGS = [
   'ch_first_word','ch_alice_born','ch_child_days','ch_age4','ch_yaoshen','ch_sisters_grow',
-  'ch_reno_arrive','ch_alice_affinity','ch_beatrice_day','ch_tier1_story','ch_micro','ch_alice_wind','ch_beatrice_leaves','ch_vampire',
+  'ch_reno_arrive','ch_alice_affinity','ch_beatrice_day','ch_micro','ch_alice_wind','ch_beatrice_leaves',
   'ch_academy','ch_opening_ceremony','met_noelle','met_aino','met_charlotte',
   'ch_helena','ch_aino_sparring','met_ajun','ch_ice_melt_1','ch_seven_mountains',
   'ch_ice_melt_2','ch_beach','ch_tree','ch_star','did_turnpoint','arrived_jikan','ch_black_name'
@@ -1027,11 +1026,9 @@ const STORY_GATE_BY_SCENE = {
   s_reno_arrive:['ch_reno_arrive'],
   s_alice_affinity:['ch_alice_affinity'],
   s_beatrice_day:['ch_beatrice_day'],
-  s_tier1_story:['ch_tier1_story'],
   s_micro:['ch_micro'],
   s_alice_wind_teach:['ch_alice_wind'],
   s_beatrice_leaves:['ch_beatrice_leaves'],
-  s_vampire_rumor:['ch_vampire'],
   s_academy_start:['ch_academy'],
   s_opening_ceremony:['ch_opening_ceremony'],
   s_noelle_meet:['met_noelle'],
@@ -3337,11 +3334,9 @@ function checkStoryGates(options={}){
   addGate('ch_reno_arrive', dateAtLeast(6,3), 's_reno_arrive');
   addGate('ch_alice_affinity', dateAtLeast(7,3), 's_alice_affinity');
   addGate('ch_beatrice_day', dateAtLeast(7,12), 's_beatrice_day');
-  addGate('ch_tier1_story', S.phase==='youth' && dateAtLeast(8,3), 's_tier1_story');
   addGate('ch_micro', dateAtLeast(8,6), 's_micro');
   addGate('ch_alice_wind', dateAtLeast(9,3), 's_alice_wind_teach');
   addGate('ch_beatrice_leaves', dateAtLeast(10,3), 's_beatrice_leaves');
-  addGate('ch_vampire', S.phase==='youth' && dateAtLeast(10,6), 's_vampire_rumor');
 
   // 即使玩家跨过多个年份，也在同一队列里依次补齐学院篇，不再依赖旧 phase 值。
   const academyDue=dateAtLeast(12,3);

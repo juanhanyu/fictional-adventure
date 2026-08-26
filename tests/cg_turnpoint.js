@@ -12,7 +12,8 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const seen=new Set();
   try {
     win.__runScene('s_turnpoint');
-    while(!win.__getS().freeRoam && guard<400){
+    // 转折点扩写后包含完整的父母迎战、姐妹诀别与雷纳德脱身段落，允许更长的自动推进保护回归测试。
+    while(!win.__getS().freeRoam && guard<600){
       guard++;
       if(!$('cg-screen').classList.contains('hidden')){
         cgCount++;

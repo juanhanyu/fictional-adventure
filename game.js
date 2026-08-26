@@ -1397,7 +1397,7 @@ function applyStage(next, options={}){
     const el=$(STAGE_SLOT_ELEMENTS[slot]); if(!el) return;
     const want=nextBySlot.get(slot)||null;
     const have=prevBySlot.get(slot)||null;
-    const movedResident=!!(want && prevById.has(want.id) && prevById.get(want.id).slot!==slot);
+    const movedExisting=!!(want && prevById.has(want.id) && prevById.get(want.id).slot!==slot);
     if(want && have && want.id===have.id){
       // 驻场角色：只更新表情/明暗，绝不重复播放入场动画。
       setPortrait(el, want.id, want.emo, want.active!==false, slot);
@@ -1406,7 +1406,7 @@ function applyStage(next, options={}){
       // 真正新增或换人时才淡入；已有角色只是换槽，直接落位，避免被演成插话。
       setPortrait(el, want.id, want.emo, want.active!==false, slot);
       el.classList.remove('hidden','ps-leave');
-      if(animate && !movedResident){
+      if(animate && !movedExisting){
         el.classList.add('ps-enter');
         requestAnimationFrame(()=>{
           if(el.getAttribute('data-char')===want.id && el.getAttribute('data-slot')===slot){

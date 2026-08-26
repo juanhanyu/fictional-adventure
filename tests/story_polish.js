@@ -30,6 +30,7 @@ let fail=0; const ok=(l,c)=>{console.log(`  ${c?'✓':'✗'} ${l}`); if(!c)fail+
   ok('浪人叔叔场景有 loc', !!reno.loc);
   const clearPort=reno.lines.filter(l=>l.portraits && l.portraits.length===0).length;
   ok('浪人叔叔场景有清空立绘桥段', clearPort>0);
+  ok('浪人叔叔餐桌故事使用 reno_story.png', reno.lines.some(l=>l.cg==='reno_story.png'));
 
   // 4. 浪人叔叔运行后 S.loc 应为 dining
   win.__resetS();

@@ -719,6 +719,7 @@ const TASKS = [
   {id:'lost_child', name:'迷途的旅人', desc:'帮助一位走失的孩子找到家人', exp:200},
   {id:'plant_tree', name:'并肩的树', desc:'与姐姐妹妹共同种下一棵树', exp:250},
   {id:'survive_night', name:'活下去', desc:'在逃亡的第一夜存活', exp:500},
+  {id:'vampire_trace', name:'月影下的血迹', desc:'追查领地内的失血传闻并查明真相', exp:420},
 ];
 
 const ACH = [
@@ -792,7 +793,64 @@ let codex = (()=>{ try { return JSON.parse(localStorage.getItem(CODEX_KEY) || '{
 
 // ========== UTILS ==========
 const $ = id => document.getElementById(id);
-const show = (el,on=true) => { if(typeof el==='string') el=$(el); if(el) el.classList.toggle('hidden', !on); };
+const UI_LAYER_IDS = new Set(['card','map-overlay','stats-overlay','panel','pick-screen','duel-screen','cg-screen','battle-screen','codex','help-screen','sys-popup','letter-demo']);
+const UI_LAYER_TRIGGERS = {'map-overlay':'btn-map-open','stats-overlay':'btn-stats',panel:'btn-panel',codex:'btn-codex','help-screen':'btn-help'};
+let uiReturnFocus = null;
+
+function isUiLayer(el){
+  return !!el && (UI_LAYER_IDS.has(el.id) || el.classList?.contains('overlay'));
+}
+function uiFocusable(el){
+  if(!el) return [];
+  return [...el.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter(node=>node.offsetParent!==null || node.getClientRects?.().length);
+}
+function focusUiLayer(el, preferred=null){
+  const target=preferred || uiFocusable(el)[0] || (['card','cg-screen'].includes(el.id) ? el : null);
+  if(!target) return;
+  if(target===el && !target.hasAttribute('tabindex')) target.setAttribute('tabindex','-1');
+  requestAnimationFrame(()=>{ try{ target.focus({preventScroll:true}); }catch(e){ target.focus(); } });
+}
+function restoreUiFocus(){
+  const target=uiReturnFocus;
+  uiReturnFocus=null;
+  if(target && target.isConnected && !target.closest('.hidden')){
+    requestAnimationFrame(()=>{ try{ target.focus({preventScroll:true}); }catch(e){ target.focus(); } });
+  }
+}
+function trapUiFocus(e){
+  if(e.key!=='Tab') return;
+  const layers=[...document.querySelectorAll('.overlay:not(.hidden), #sys-popup:not(.hidden), #letter-demo:not(.hidden)')];
+  const layer=layers[layers.length-1];
+  if(!layer) return;
+  const nodes=uiFocusable(layer);
+  if(!nodes.length) return;
+  const first=nodes[0], last=nodes[nodes.length-1];
+  if(!layer.contains(document.activeElement)){ e.preventDefault(); (e.shiftKey?last:first).focus(); return; }
+  if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+}
+document.addEventListener('keydown', trapUiFocus);
+
+const show = (el,on=true) => {
+  if(typeof el==='string') el=$(el);
+  if(!el) return;
+  const wasHidden=el.classList.contains('hidden');
+  el.classList.toggle('hidden', !on);
+  // 隐藏层同步告知读屏器；不改变 class/点击推进语义。
+  el.setAttribute('aria-hidden', on ? 'false' : 'true');
+  const triggerId=UI_LAYER_TRIGGERS[el.id];
+  if(triggerId) $(triggerId)?.setAttribute('aria-expanded',on?'true':'false');
+  if(isUiLayer(el)){
+    if(on && wasHidden){
+      const active=document.activeElement;
+      if(active && active!==document.body && !active.closest('.hidden')) uiReturnFocus=active;
+      focusUiLayer(el);
+    }else if(!on && !wasHidden){
+      restoreUiFocus();
+    }
+  }
+};
 
 /* 底部 UI 高度由实际布局决定；只记录可见高度，剧情模式沿用固定 131px 对话框。 */
 function syncActionBarHeight(){
@@ -1003,10 +1061,10 @@ function skipDays(n){ toast("已关闭快进"); return; }
 function skipToAge(y){ toast("已关闭快进，请按季度推进"); return; }
 
 // ========== SAVE ==========
-const STORY_GATE_VERSION = 3;
+const STORY_GATE_VERSION = 4;
 const STORY_GATE_FLAGS = [
   'ch_first_word','ch_alice_born','ch_child_days','ch_age4','ch_yaoshen','ch_sisters_grow',
-  'ch_reno_arrive','ch_alice_affinity','ch_beatrice_day','ch_micro','ch_alice_wind','ch_beatrice_leaves',
+  'ch_reno_arrive','ch_alice_affinity','ch_beatrice_day','ch_micro','ch_vampire_interlude','ch_alice_wind','ch_beatrice_leaves',
   'ch_academy','ch_opening_ceremony','met_noelle','met_aino','met_charlotte',
   'ch_helena','ch_aino_sparring','met_ajun','ch_ice_melt_1','ch_seven_mountains',
   'ch_ice_melt_2','ch_beach','ch_tree','ch_star','did_turnpoint','arrived_jikan','ch_black_name'
@@ -1027,6 +1085,7 @@ const STORY_GATE_BY_SCENE = {
   s_alice_affinity:['ch_alice_affinity'],
   s_beatrice_day:['ch_beatrice_day'],
   s_micro:['ch_micro'],
+  s_vampire_interlude:['ch_vampire_interlude'],
   s_alice_wind_teach:['ch_alice_wind'],
   s_beatrice_leaves:['ch_beatrice_leaves'],
   s_academy_start:['ch_academy'],
@@ -1077,7 +1136,10 @@ function migrateStorySave(raw){
   return raw;
 }
 
-function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
+function save(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){}
+  if(typeof updateTitleStatus==='function') updateTitleStatus();
+}
 function load(){
   try{
     const r=localStorage.getItem(SAVE_KEY);
@@ -1094,8 +1156,52 @@ function saveCodex(){ try { localStorage.setItem(CODEX_KEY, JSON.stringify(codex
 function hasSave(){ return !!localStorage.getItem(SAVE_KEY); }
 
 // ========== HUD / UI ==========
+function updateTitleStatus(){
+  const label=$('title-status-text');
+  if(!label) return;
+  const saved=hasSave();
+  label.textContent=saved ? `已保存 · ${dateStr()} · ${phaseName()}` : '自动存档已开启 · 新生活尚未开始';
+  const status=$('title-status');
+  if(status){
+    status.classList.toggle('has-save', saved);
+    status.dataset.saveState=saved?'saved':'empty';
+  }
+}
+function updateProgressA11y(){
+  const bars=[['hud-hp',S.hp,S.mhp,'生命'],['hud-mp',S.mp,S.mmp,'魔力'],['hud-st',S.st,S.mst,'体力']];
+  bars.forEach(([id,value,max,label])=>{
+    const bar=$(id)?.closest('.bar');
+    if(!bar) return;
+    bar.setAttribute('aria-valuemin','0');
+    bar.setAttribute('aria-valuemax',String(max));
+    bar.setAttribute('aria-valuenow',String(value));
+    bar.setAttribute('aria-label',`${label} ${value}/${max}`);
+  });
+}
+const ACTION_COSTS={talk:1,train:3,study:2,course:2};
+function updateActionBar(){
+  const bar=$('action-bar');
+  if(!bar) return;
+  const stamina=$('action-stamina');
+  if(stamina) stamina.textContent=`体力 ${S.st}/${S.mst}`;
+  const ratio=S.mst ? S.st/S.mst : 0;
+  bar.dataset.staminaState=ratio<=.25?'critical':ratio<=.5?'low':'ready';
+  bar.querySelectorAll('[data-act]').forEach(btn=>{
+    const act=btn.dataset.act, cost=ACTION_COSTS[act];
+    if(cost==null){ btn.dataset.costState='ready'; return; }
+    btn.dataset.costState=S.st>=cost?'ready':'low';
+  });
+}
 function updateHUD(){
   const named = flag('named');
+  // 视觉层只读取这些状态标记，不改变存档/剧情语义；用于阶段色调与响应式 HUD 提示。
+  if(document.body){
+    document.body.dataset.phase = S.phase || 'prologue';
+    document.body.dataset.mode = S.freeRoam ? 'roam' : 'story';
+    document.body.dataset.age = String(S.ageY ?? 0);
+  }
+  const stageRoot=$('stage');
+  if(stageRoot) stageRoot.dataset.mode = S.freeRoam ? 'roam' : 'story';
   $('hud-name').textContent = !named ? '？？？' : (S.alias || '希尔维亚');
   $('hud-age').textContent = ageStr();
   $('hud-tier').textContent = tierName();
@@ -1115,125 +1221,336 @@ function updateHUD(){
   } else {
     face.style.opacity = '1';
     face.style.filter = 'none';
+    face.alt = S.alias || '希尔维亚';
     const src = resolvePortrait('sylvia', 'normal');
     if(src) face.src = src;
   }
   show('btn-continue', hasSave());
   $('codex-count').textContent = `${Object.keys(S.ach||{}).length || codex.eggs || 0}`;
+  updateTitleStatus();
+  updateProgressA11y();
+  updateActionBar();
 }
 
-function setBG(cls){
-  const bg=$('bg');
-  const newCls = (cls||'bg-title').trim();
-  // 同背景不重复切（也避免多余淡出淡入）
-  if(bg.getAttribute('data-cls')===newCls) return;
-  const apply=()=>{
-    bg.className=''; bg.setAttribute('data-cls', newCls);
-    (newCls||'bg-title').split(/\s+/).forEach(c=>bg.classList.add(c));
-    bg.style.opacity='1';
-  };
-  if(bg.getAttribute('data-cls')){       // 已有背景 → 先淡出再切入（渐进渐出）
-    bg.style.opacity='0';
-    setTimeout(apply, 320);
+const BG_FADE_MS = 600;
+const BG_OVERLAP_MS = 500;
+const BG_FADE_DELAY_MS = BG_FADE_MS - BG_OVERLAP_MS;
+let bgActiveId = 'bg';
+let bgTransition = null;
+
+function setBGLayer(layer, cls){
+  if(!layer) return;
+  layer.className='';
+  layer.setAttribute('data-cls', cls);
+  (cls||'bg-title').split(/\s+/).forEach(c=>layer.classList.add(c));
+}
+function snapBGLayer(layer, opacity){
+  if(!layer) return;
+  layer.style.transition='none';
+  layer.style.opacity=String(opacity);
+  void layer.offsetWidth;
+  layer.style.transition='';
+}
+function clearBGLayer(layer){
+  if(!layer) return;
+  layer.className='';
+  layer.removeAttribute('data-cls');
+  layer.style.opacity='0';
+}
+function finishBGTransition(keepIncoming=true){
+  const t=bgTransition;
+  if(!t) return;
+  clearTimeout(t.fadeOutTimer);
+  clearTimeout(t.finishTimer);
+  const outgoing=$(t.outgoingId), incoming=$(t.incomingId);
+  if(keepIncoming){
+    snapBGLayer(outgoing,0);
+    snapBGLayer(incoming,1);
+    clearBGLayer(outgoing);
+    bgActiveId=t.incomingId;
   } else {
-    apply();
+    snapBGLayer(outgoing,1);
+    snapBGLayer(incoming,0);
+    clearBGLayer(incoming);
+    bgActiveId=t.outgoingId;
   }
-  // 不再在此自动切换音乐：场景 bgm 贯穿剧情，自由探索在进入地点时切
+  bgTransition=null;
+}
+function setBG(cls){
+  const newCls = (cls||'bg-title').trim();
+  let active=$(bgActiveId);
+  if(!active) return;
+
+  // 同背景不重复切；若切换尚未结束，先处理当前两层的最终状态。
+  if(bgTransition){
+    const pending=bgTransition;
+    const outgoing=$(pending.outgoingId), incoming=$(pending.incomingId);
+    if(incoming?.getAttribute('data-cls')===newCls) return;
+    if(outgoing?.getAttribute('data-cls')===newCls){
+      finishBGTransition(false);
+      return;
+    }
+    finishBGTransition(true);
+    active=$(bgActiveId);
+  }
+  if(active.getAttribute('data-cls')===newCls) return;
+
+  const incomingId=bgActiveId==='bg'?'bg-next':'bg';
+  const incoming=$(incomingId);
+  if(!incoming) return;
+
+  setBGLayer(incoming,newCls);
+  snapBGLayer(incoming,0);
+  snapBGLayer(active,1);
+  const t=bgTransition={outgoingId:bgActiveId,incomingId};
+
+  // 新背景先显影，旧背景延后 0.1s 淡出：两段各 0.6s，实际重叠约 0.5s。
+  requestAnimationFrame(()=>{
+    if(bgTransition===t) incoming.style.opacity='1';
+  });
+  t.fadeOutTimer=setTimeout(()=>{
+    if(bgTransition===t) active.style.opacity='0';
+  },BG_FADE_DELAY_MS);
+  t.finishTimer=setTimeout(()=>{
+    if(bgTransition!==t) return;
+    active.style.opacity='0';
+    incoming.style.opacity='1';
+    clearBGLayer(active);
+    bgActiveId=incomingId;
+    bgTransition=null;
+  },BG_FADE_DELAY_MS+BG_FADE_MS);
+  // 不在此自动切换音乐：场景 bgm 贯穿剧情，自由探索在进入地点时切。
 }
 
 // ========== PORTRAITS ==========
 const PORTRAIT_SLOTS = ['p-left','p-center','p-right','p-fourth'];
-let stage = [];            // 当前在场立绘 [{id,emo,active}]，顺序=左→右
+const STAGE_SLOT_NAMES = ['left','center','right','fourth'];
+const STAGE_SLOT_ELEMENTS = { left:'p-left', center:'p-center', right:'p-right', fourth:'p-fourth' };
+// 槽位是语义位置，不是「当前数组第几个」：旁白/心理活动重新给 portraits 时，
+// 只要人物仍在场，就沿用原来的槽位，避免主角与药神之类的立绘来回交换。
+// 不同人数使用原版协调构图；slot 只决定左右顺序，不决定固定的绝对间距。
+const STAGE_POSITION_PRESETS = {
+  1:['50%'],
+  2:['30%','70%'],
+  3:['20%','50%','80%'],
+  4:['14%','38%','62%','86%'],
+};
+let stage = [];            // 当前在场立绘 [{id,slot,emo,active}]，slot=left/center/right/fourth
 let stageSid = null;       // 当前所在场景id（用于场景切换时强制清台）
 let curSpeakerId = null;   // 当前说话人 id（对话框小胸像用）
+
+function stageSlotName(slot, fallbackIndex=0){
+  return STAGE_SLOT_NAMES.includes(slot) ? slot : (STAGE_SLOT_NAMES[fallbackIndex] || 'center');
+}
+function stageSort(entries){
+  return (entries||[]).slice().sort((a,b)=>STAGE_SLOT_NAMES.indexOf(a.slot)-STAGE_SLOT_NAMES.indexOf(b.slot));
+}
+function stageWithSlots(entries){
+  return stageSort((Array.isArray(entries)?entries:[]).map((s,i)=>({
+    id:s.id,
+    slot:stageSlotName(s.slot,i),
+    emo:s.emo||'normal',
+    active:s.active!==false,
+  })).filter(s=>s.id));
+}
+function stageIds(entries){ return (entries||[]).map(s=>s.id).sort().join('|'); }
+function freeStageSlot(taken, preferred){
+  if(preferred && !taken.has(preferred)) return preferred;
+  return STAGE_SLOT_NAMES.find(slot=>!taken.has(slot)) || null;
+}
+function defaultSpeakerSlot(chId, current, preferred=null){
+  const now=stageWithSlots(current);
+  const taken=new Set(now.map(s=>s.slot));
+  // 剧情行显式给出的 slot 是驻场对话的既定位置，优先按数据落位；
+  // 只有真正没有位置提示的新角色，才走默认的入场槽位策略。
+  if(preferred && STAGE_SLOT_NAMES.includes(preferred) && !taken.has(preferred)) return preferred;
+  // 新加入的主导者优先占左侧；主角不在场时贝蒂优先占左侧。
+  if(chId==='sylvia' && !taken.has('left')) return 'left';
+  if(chId==='beatrice' && !taken.has('left') && !now.some(s=>s.id==='sylvia')) return 'left';
+  if(now.length && !taken.has('right')) return 'right';
+  return freeStageSlot(taken, null) || 'center';
+}
+function updateStagePresentation(){
+  const root=$('stage');
+  if(!root) return;
+  const current=stageWithSlots(stage);
+  const count=current.length;
+  root.dataset.portraitCount=String(count);
+  root.dataset.composition=count===0?'empty':count===1?'solo':count===2?'duo':count===3?'trio':'ensemble';
+  const focus=current.find(s=>s.active!==false);
+  if(focus) root.dataset.focus=focus.id;
+  else root.removeAttribute('data-focus');
+  root.classList.toggle('stage-has-portraits',count>0);
+  root.classList.toggle('stage-empty',count===0);
+}
+function normalizeStage(next){
+  const raw=(Array.isArray(next)?next:[]).filter(x=>x&&x.id).slice(0,4);
+  const prev=stageWithSlots(stage);
+  const samePeople=raw.length===prev.length && stageIds(raw)===stageIds(prev);
+
+  // 同一批人在场时，完全忽略本行 portraits 数组的排列/slot 提示，
+  // 这是旁白和心理活动的稳定性关键：只更新表情与 active，不搬家。
+  if(samePeople){
+    const oldById=new Map(prev.map(s=>[s.id,s]));
+    return stageSort(raw.map((s,i)=>{
+      const old=oldById.get(s.id);
+      return { id:s.id, slot:old?.slot||stageSlotName(s.slot,i), emo:s.emo||old?.emo||'normal', active:s.active!==false };
+    }));
+  }
+
+  const used=new Set();
+  const out=[];
+  raw.forEach((s,i)=>{
+    const old=prev.find(p=>p.id===s.id);
+    // 人数/角色集合变化时，显式 slot 才代表一次有意的重新构图；
+    // 无 slot 的增量更新则尽量保留该角色原位。
+    const requested=s.slot && STAGE_SLOT_NAMES.includes(s.slot) ? s.slot : null;
+    let slot=requested || (old && !used.has(old.slot) ? old.slot : null);
+    slot=freeStageSlot(used,slot) || 'center';
+    used.add(slot);
+    out.push({id:s.id,slot,emo:s.emo||old?.emo||'normal',active:s.active!==false});
+  });
+  return stageSort(out);
+}
 function clearPortraits(){
   // 立即隐藏全部（用于场景/自由探索重置）
   PORTRAIT_SLOTS.forEach(id=>{
     const el=$(id); if(!el) return;
     el.classList.add('hidden'); el.classList.remove('active','dim','ps-enter','ps-leave');
+    el.removeAttribute('data-char'); el.removeAttribute('data-slot'); el.removeAttribute('data-emotion'); el.style.left=''; el.onclick=null;
   });
   $('css-portraits').innerHTML='';
   stage = [];
+  updateStagePresentation();
 }
 // 单角色旁白聚焦：保留当前在场者(主导/对话者)，只把 focus 人高亮、其余置暗；focus 人不在场则追加
 function applyStageFocus(f){
-  const next = stage.map(s=>({ id:s.id, emo:s.id===f.id?(f.emo||s.emo):s.emo, active:s.id===f.id }));
-  if(!next.some(s=>s.id===f.id)) next.push({ id:f.id, emo:f.emo||'normal', active:true });
+  const current=stageWithSlots(stage);
+  const next=current.map(s=>({ ...s, emo:s.id===f.id?(f.emo||s.emo):s.emo, active:s.id===f.id }));
+  if(!next.some(s=>s.id===f.id)) next.push({ id:f.id, slot:defaultSpeakerSlot(f.id,current), emo:f.emo||'normal', active:true });
   applyStage(next);
 }
 // 单人说：基于当前 stage，让说话人高亮、其余在场者置暗；说话人不在场则追加
-function appendSpeaker(chId, emo){
-  const next = stage.map(s=>({ id:s.id, emo:s.id===chId?(emo||s.emo):s.emo, active:s.id===chId }));
-  if(!next.some(s=>s.id===chId)) next.push({ id:chId, emo:emo||'normal', active:true });
+function appendSpeaker(chId, emo, requestedSlot=null){
+  const current=stageWithSlots(stage);
+  const existing=current.find(s=>s.id===chId);
+  const next=current.map(s=>({ ...s, emo:s.id===chId?(emo||s.emo):s.emo, active:s.id===chId }));
+  if(existing) return next; // 驻场角色：只切换高亮/表情，不重新入场
+
+  const slot=defaultSpeakerSlot(chId,current,requestedSlot);
+  // 显式 slot 表示作者已经为这句对话指定了位置；若该槽被旧角色
+  // 占用，则按槽位语义替换它，而不是把新角色顺延到另一个位置。
+  if(requestedSlot && STAGE_SLOT_NAMES.includes(requestedSlot)){
+    const at=next.findIndex(s=>s.slot===requestedSlot);
+    if(at>=0) next[at]={id:chId,slot:requestedSlot,emo:emo||'normal',active:true};
+    else next.push({id:chId,slot,emo:emo||'normal',active:true});
+  }else{
+    next.push({id:chId,slot,emo:emo||'normal',active:true});
+  }
   return next;
 }
-// 应用一组立绘：diff 当前 stage → 保留在场者(仅切换高亮/置暗)，离场者淡出，入场者淡入
-function applyStage(next){
-  next = Array.isArray(next) ? next.slice(0,4) : [];
-  // 1) 决定每个槽放谁（顺序=left→right）
-  const n = Math.max(stage.length, next.length);
-  for(let i=0;i<n;i++){
-    const sid = PORTRAIT_SLOTS[i]; if(!sid) break;
-    const el = $(sid); if(!el) continue;
-    const want = next[i] || null;
-    const have = stage[i] || null;
+// 应用一组立绘：以语义槽位 diff 当前 stage → 保留在场者(仅切换高亮/置暗)，
+// 只有真正换人/新增时才允许重新构图。
+function applyStage(next, options={}){
+  const target=normalizeStage(next);
+  const prev=stageWithSlots(stage);
+  const prevBySlot=new Map(prev.map(s=>[s.slot,s]));
+  const prevById=new Map(prev.map(s=>[s.id,s]));
+  const nextBySlot=new Map(target.map(s=>[s.slot,s]));
+  const animate=options.animate!==false;
+  const clearEl=el=>{
+    el.classList.add('hidden');
+    el.classList.remove('active','dim','ps-enter','ps-leave');
+    el.removeAttribute('data-char');
+    el.removeAttribute('data-slot');
+    el.removeAttribute('data-emotion');
+  };
+
+  STAGE_SLOT_NAMES.forEach(slot=>{
+    const el=$(STAGE_SLOT_ELEMENTS[slot]); if(!el) return;
+    const want=nextBySlot.get(slot)||null;
+    const have=prevBySlot.get(slot)||null;
+    const movedExisting=!!(want && prevById.has(want.id) && prevById.get(want.id).slot!==slot);
     if(want && have && want.id===have.id){
-      // 同人：更新 emo/active，不重排、不闪
-      setPortrait(el, want.id, want.emo, want.active!==false);
-      if(el.classList.contains('ps-enter')) el.classList.remove('ps-enter');
+      // 驻场角色：只更新表情/明暗，绝不重复播放入场动画。
+      setPortrait(el, want.id, want.emo, want.active!==false, slot);
+      el.classList.remove('ps-enter','ps-leave');
     } else if(want){
-      // 该槽换人/新增：淡入
-      setPortrait(el, want.id, want.emo, want.active!==false);
-      el.classList.remove('hidden');
-      // 触发淡入（先清 hidden 下一帧去 ps-enter）
-      el.classList.remove('ps-leave');
-      el.classList.add('ps-enter');
-      requestAnimationFrame(()=>{ el.classList.remove('ps-enter'); });
+      // 真正新增或换人时才淡入；已有角色只是换槽，直接落位，避免被演成插话。
+      setPortrait(el, want.id, want.emo, want.active!==false, slot);
+      el.classList.remove('hidden','ps-leave');
+      if(animate && !movedExisting){
+        el.classList.add('ps-enter');
+        requestAnimationFrame(()=>{
+          if(el.getAttribute('data-char')===want.id && el.getAttribute('data-slot')===slot){
+            el.classList.remove('ps-enter');
+          }
+        });
+      }else{
+        el.classList.remove('ps-enter');
+      }
     } else if(have){
-      // 该槽原本有人、现在空：淡出后隐藏
-      el.classList.add('ps-leave');
-      const _el=el;
-      setTimeout(()=>{ if(_el.classList.contains('ps-leave')){ _el.classList.add('hidden'); _el.classList.remove('ps-leave'); } }, 240);
+      // 角色只是从这个 DOM 槽位移到另一个仍在场的槽位：旧槽立即清掉，
+      // 否则淡出计时器会在下一句继续留下一个「幽灵」立绘。
+      if(target.some(s=>s.id===have.id)){
+        clearEl(el);
+      }else if(!animate){
+        clearEl(el);
+      }else{
+        // 真正离场时淡出；定时器被后续重新入场安全地取消。
+        el.classList.remove('ps-enter');
+        el.classList.add('ps-leave');
+        const _el=el;
+        setTimeout(()=>{
+          if(_el.classList.contains('ps-leave')) clearEl(_el);
+        }, 200);
+      }
+    } else if(!el.classList.contains('ps-leave')){
+      // 处理已由 stage 记录移除、但上一句淡出尚未结束的旧 DOM 槽位。
+      if(el.getAttribute('data-char')) clearEl(el);
+      else el.classList.remove('ps-enter');
     }
-  }
-  // 2) 记录新 stage
-  stage = next.map(w=>({ id:w.id, emo:w.emo, active: w.active!==false }));
+  });
+  stage=target;
+  updateStagePresentation();
   layoutPortraits();
 }
-function setPortrait(el, charId, emotion, active){
+
+function setPortrait(el, charId, emotion, active, slot){
   const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emotion) : (PORTRAIT_FILES[charId+'_'+(emotion||'normal')]||PORTRAIT_FILES[charId+'_normal']);
   if(!file){ el.classList.add('hidden'); addCssPortrait(charId, active); return; }
   const img = el.querySelector('img'); const nm = el.querySelector('.p-name');
   if(charId==='sylvia' && !flag('named')){ el.classList.add('hidden'); return; }
   img.src = file;
+  img.alt = CHARS[charId]?.name || CSS_CHARS[charId]?.[0] || charId || '';
   el.setAttribute('data-char', charId||'');
+  if(slot) el.setAttribute('data-slot',slot);
+  el.setAttribute('data-emotion', emotion||'normal');
   el.classList.remove('hidden');
   nm.textContent = (charId==='sylvia' && !flag('named')) ? '？？？' : (CHARS[charId]?.short || charId);
   el.classList.toggle('active', active); el.classList.toggle('dim', !active);
 }
-// 自适应立绘排布：按实际在场人数 N 分布（1/2/3/4 人各自居中/均匀），
-// 避免「固定槽位填空」的机械感。人数越多越向两侧展开，人数少则更居中。
+// 使用原版「按人数协调」的构图：角色按语义 slot 排序后，
+// 1/2/3/4 人分别使用 50 / 30-70 / 20-50-80 / 14-38-62-86。
+// 这样既保持主角、药神等人物的左右顺序，也不会让不同人数挤在同一套固定位置。
 function layoutPortraits(){
-  // 以 stage 为基准（在场人数决定排布），避免淡出中的立绘仍被计导致错位
-  const N = stage.length;
-  if(N === 0) return;
-  const PRESET = {
-    1: [50],
-    2: [30, 70],
-    3: [20, 50, 80],
-    4: [14, 38, 62, 86],
-  }[N] || Array.from({length:N},()=>50);
-  for(let i=0;i<N;i++){
-    const el = $(PORTRAIT_SLOTS[i]); if(!el) continue;
-    el.style.left = (PRESET[i] ?? 50) + '%';
-  }
+  const current=stageWithSlots(stage);
+  const positions=STAGE_POSITION_PRESETS[current.length] || current.map((_,i)=>`${((i+1)/(current.length+1))*100}%`);
+  current.forEach((s,i)=>{
+    const el=$(STAGE_SLOT_ELEMENTS[s.slot]);
+    if(!el) return;
+    el.style.left=positions[i] || '50%';
+    el.setAttribute('data-slot',s.slot);
+  });
 }
 function showPortrait(charId, emotion='normal', slot='center', active=true){
   const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emotion) : (PORTRAIT_FILES[charId+'_'+(emotion||'normal')]||PORTRAIT_FILES[charId+'_normal']);
   const el = $(slot==='left'?'p-left':slot==='right'?'p-right':slot==='fourth'?'p-fourth':'p-center');
   if(!el) return;
-  // 记录当前角色，供 CSS 按角色微调立绘表现（如爱丽丝白色系高亮偏亮）
+  // 记录当前角色与语义槽位，供 CSS/无障碍状态识别
   el.setAttribute('data-char', charId||'');
+  el.setAttribute('data-slot', slot);
+  el.setAttribute('data-emotion', emotion||'normal');
   const img = el.querySelector('img');
   const nm = el.querySelector('.p-name');
   // 未命名前不显示主角立绘
@@ -1242,7 +1559,9 @@ function showPortrait(charId, emotion='normal', slot='center', active=true){
     return;
   }
   if(file){
-    img.src = file; img.onerror = ()=>{ el.classList.add('hidden'); addCssPortrait(charId, active); };
+    img.src = file;
+    img.alt = CHARS[charId]?.name || CSS_CHARS[charId]?.[0] || charId || '';
+    img.onerror = ()=>{ el.classList.add('hidden'); addCssPortrait(charId, active); };
     el.classList.remove('hidden');
     nm.textContent = (charId==='sylvia' && !flag('named')) ? '？？？' : (CHARS[charId]?.short || charId);
     el.classList.toggle('active', active); el.classList.toggle('dim', !active);
@@ -1419,6 +1738,7 @@ function advanceDialog(){
 
 function applyLineEffects(L){
   if(!L || typeof L === 'string') return;
+  if(Object.prototype.hasOwnProperty.call(L,'pov')) setPov(!!L.pov);
   if(L.bg) setBG(L.bg);
   if(L.loc){ S.loc = L.loc; updateLocBar(); }
   // 行级 bgm：在场景内切换地点/背景时可强制指定并锁定 BGM，防止引擎误判为自由探索而切回 peaceful
@@ -1427,13 +1747,13 @@ function applyLineEffects(L){
   curSpeakerId = L.ch || null;
   if(L.portraits && L.portraits.length){ const act=L.portraits.find(p=>p.active!==false); if(act) curSpeakerId = act.id; }
   if(L.portraits){
-    const arr = L.portraits.map(p=>({ id:p.id, emo:p.emo||'normal', active:p.active!==false }));
+    const arr = L.portraits.map(p=>({ id:p.id, slot:p.slot, emo:p.emo||'normal', active:p.active!==false }));
     // 单角色旁白(N)：视为「本段聚焦该人」，替换舞台为该人（vignette 段切换）；
     // 若需在多人对话中特写某动作同时保留主导者，剧情数据应写成 2 元素数组（聚焦人+主导者）。
     applyStage(arr);
   } else if(L.ch){
-    // 单人说：保留当前在场立绘（非说话人置暗，不消除），说话人高亮；若说话人不在场则加入
-    applyStage(appendSpeaker(L.ch, L.emo||'normal'));
+    // 已在场角色只切换高亮/表情；不在场角色由普通 ch 行自然入场。
+    applyStage(appendSpeaker(L.ch, L.emo||'normal', L.slot||null));
     if(!L.speaker && CHARS[L.ch]) L.speaker = CHARS[L.ch].short;
   } else if(L.bg && stage.length){
     // 切换了背景但本行没有显式立绘指令（纯旁白/事件转换）：视为进入新场景事件，回收立绘
@@ -1587,7 +1907,20 @@ function playLines(lines, done){
         fullText = String(L.text || '请选择：');
         setDialogRows(fullText);
         $('text').innerHTML = escapeText(fullText);
-        showChoices(L.choices, ()=>{});
+        let choiceSet = L.choices;
+        // 分支结束后继续当前剧情剩余行。用于“回看/凭记忆”这类不改变主线的选择，
+        // 普通 choices 仍保持原有的独立分支语义。
+        if(L.resumeChoices){
+          let resolved = [];
+          try { resolved = typeof L.choices === 'function' ? L.choices() : (L.choices || []); }
+          catch(e){ console.error('resume choices', e); }
+          const rest = list.slice(i);
+          choiceSet = (Array.isArray(resolved) ? resolved : []).map(c=>{
+            if(!c || !c.lines || typeof c.done === 'function') return c;
+            return Object.assign({}, c, { done:()=>playLines(rest, done) });
+          });
+        }
+        showChoices(choiceSet, ()=>{});
         return;
       }
 
@@ -1729,7 +2062,9 @@ function dismissRoamPrompt(){
     if(checkStoryGates()) return true;
   }
   if(typeof afterPrompt==='function') afterPrompt();
-  if(S.freeRoam) maybeShowRoamGreeting();
+  // 季度风物是一个独立的收束提示；关闭后保持探索画面干净，
+  // 只有角色问候自身被关闭时才寻找下一位未读问候。
+  if(promptKind==='greeting' && S.freeRoam) maybeShowRoamGreeting();
   return true;
 }
 
@@ -1759,13 +2094,18 @@ bindAdvance();
 
 // ========== CARD ==========
 function showCard(vol, t, s, cb){
+  const card=$('card');
+  card.setAttribute('aria-label', [vol,t,s].filter(Boolean).join(' · '));
+  card.dataset.volume=vol||'';
+  card.dataset.state='open';
   $('card-vol').textContent=vol||'';
   $('card-t').textContent=t||'';
   $('card-s').textContent=s||'';
-  show('card',1); sfx('page');
+  const hint=$('card-hint');
+  if(hint) hint.textContent='点击继续 · Enter';
+  show(card,1); sfx('page');
   let done=false;
-  const finish=()=>{ if(done) return; done=true; show('card',0); if(cb) cb(); };
-  const card=$('card');
+  const finish=()=>{ if(done) return; done=true; card.dataset.state='closing'; show(card,0); if(cb) cb(); };
   card.onclick=()=>{ finish(); card.onclick=null; };
 }
 
@@ -1786,6 +2126,22 @@ function cgCharClass(ch){
   return 'c-narrator';
 }
 let cgImage = null;   // 当前 CG 图（避免连续同图时重复设 background 导致闪烁）
+function cgToneForImage(name){
+  const n=String(name||'').toLowerCase();
+  if(/parting|cool_off|reno_diji|parents_battle/.test(n)) return 'melancholy';
+  if(/battle|duel|fight/.test(n)) return 'conflict';
+  return 'quiet';
+}
+function cgSetReady(ready){
+  const cs=$('cg-screen');
+  if(!cs) return;
+  cs.classList.toggle('cg-typing',!ready);
+  cs.classList.toggle('cg-ready',!!ready);
+  const progress=$('cg-progress');
+  if(progress) progress.dataset.state=ready?'ready':'typing';
+  const hint=$('cg-hint');
+  if(hint) hint.textContent=ready?'点击继续 · Enter':'正在显影…';
+}
 function cgShow(name){
   // 隐藏全部 UI，显示全屏 CG
   cgActive = true;
@@ -1795,6 +2151,12 @@ function cgShow(name){
   }
   $('cg-bg').classList.remove('noimg');
   const cs=$('cg-screen');
+  cs.dataset.image=String(name||'');
+  cs.dataset.tone=cgToneForImage(name);
+  const progressLabel=$('cg-progress-label');
+  if(progressLabel) progressLabel.textContent=(name?'CG · '+String(name).replace(/\.[^.]+$/,''):'CG 演出');
+  $('cg-progress')?.classList.add('is-active');
+  cgSetReady(false);
   if(cs.classList.contains('hidden')){  // 首次进入 CG：淡入
     cs.classList.add('faded');           // 从透明开始
     show(cs, 1);
@@ -1815,11 +2177,14 @@ function cgBuildHtml(speaker, text, isNarrator){
 // CG 台词逐字快速打出（与一般对话打字机速度一致）
 function cgTextType(speaker, text, isNarrator, done){
   const box = $('cg-text');
+  const cs=$('cg-screen');
+  if(cs) cs.dataset.speaker=isNarrator?'narrator':String(speaker||'');
   const { spk, line } = cgBuildHtml(speaker, text, isNarrator);
   cgSpeakerHtml = spk; cgLineHtml = line;
   const full = text || '';
-  if(!full){ box.innerHTML = spk + line; if(done) done(); return; }
+  if(!full){ box.innerHTML = spk + line; cgSetReady(true); if(done) done(); return; }
   cgTyping = true;
+  cgSetReady(false);
   let idx = 0;
   box.innerHTML = spk + `<div class="cg-line ${cgCharClass(isNarrator?null:speaker)}"></div>`;
   const timer = setInterval(()=>{
@@ -1829,6 +2194,7 @@ function cgTextType(speaker, text, isNarrator, done){
     if(idx >= full.length){
       clearInterval(timer); cgTyping = false;
       box.innerHTML = spk + line;
+      cgSetReady(true);
       if(done) done();
     }
   }, 16);
@@ -1836,8 +2202,11 @@ function cgTextType(speaker, text, isNarrator, done){
 function cgText(speaker, text, isNarrator){
   // 立即显示完整（用于测试/兜底）
   const box = $('cg-text');
+  const cs=$('cg-screen');
+  if(cs) cs.dataset.speaker=isNarrator?'narrator':String(speaker||'');
   const { spk, line } = cgBuildHtml(speaker, text, isNarrator);
   box.innerHTML = spk + line;
+  cgSetReady(true);
 }
 let cgActive = false;
 function cgHide(){
@@ -1852,6 +2221,10 @@ function cgHide(){
   document.body.classList.remove('cg-mode');
   $('cg-bg').style.backgroundImage = '';
   $('cg-text').innerHTML = '';
+  const progress=$('cg-progress');
+  if(progress){ progress.classList.remove('is-active'); progress.removeAttribute('data-state'); }
+  const cs2=$('cg-screen');
+  if(cs2){ cs2.removeAttribute('data-image'); cs2.removeAttribute('data-tone'); cs2.removeAttribute('data-speaker'); cs2.classList.remove('cg-typing','cg-ready'); }
 }
 
 // ========== FREE ROAM ==========
@@ -2002,13 +2375,16 @@ function renderHotspots(){
       };
     }
   });
-  stage = peeps.slice(0,4).map(id=>({id, emo:'normal', active:true})); // 供 layout 排布
+  stage = peeps.slice(0,4).map((id,i)=>({id, slot:slots[i]||'center', emo:'normal', active:true})); // 供 layout 排布
+  updateStagePresentation();
   layoutPortraits();
   if(!usable.length && !peeps.length){ show(box,0); return; }
   show(box,1);
   usable.forEach((ex,i)=>{
     const b = document.createElement('button');
     b.className = 'hotspot' + (ex.egg?' egg':'') + (ex.babyFuss?' locked-baby':'');
+    b.dataset.target = ex.to || ex.fussTo || '';
+    b.setAttribute('aria-label', ex.label || LOCS[ex.to]?.name || ex.to || '互动');
     b.style.left = (ex.x|| (20+i*20)) + '%';
     b.style.top = (ex.y|| 50) + '%';
     b.innerHTML = `<span class="hs-icon">${ex.icon||'➡️'}</span>${ex.label||LOCS[ex.to]?.name||ex.to}`;
@@ -2248,6 +2624,8 @@ document.getElementById('action-bar').onclick = e=>{
 };
 
 function openMap(){
+  const overlay=$('map-overlay');
+  if(overlay) overlay.dataset.location=S.loc||'';
   const g=$('map-grid'); g.innerHTML='';
   const phaseLocs = Object.values(LOCS).filter(L=> {
     if(!L.unlock || !phaseAreaAllowed(L.area)) return false;
@@ -2260,7 +2638,10 @@ function openMap(){
     if(S.ageY < 1 && L.id !== 'nursery' && L.id !== 'ownroom') return;
     const d=document.createElement('button');
     d.className='map-cell'+(S.loc===L.id?' here':'');
-    d.innerHTML=`<span class="mc-icon">${L.icon}</span>${L.name}<div class="mc-cost">${L.area}</div>${L.tags?.includes('egg')&&!S.eggs.includes(L.id)?'<div class="mc-tag">？</div>':''}`;
+    d.dataset.location=L.id;
+    d.setAttribute('aria-label', `${L.name}，${L.area}${S.loc===L.id?'，当前位置':''}`);
+    d.setAttribute('aria-current', S.loc===L.id ? 'location' : 'false');
+    d.innerHTML=`<span class="mc-icon" aria-hidden="true">${L.icon}</span>${L.name}<div class="mc-cost">${L.area}</div>${L.tags?.includes('egg')&&!S.eggs.includes(L.id)?'<div class="mc-tag">？</div>':''}`;
     d.onclick=()=>{
       if(S.loc===L.id){ toast('已经在这里了'); return; }
       if(S.ageY < 1){ toast('你还太小，不能自己走。让家人抱你出去吧。'); return; }
@@ -2935,6 +3316,7 @@ const ENEMY_TEMPLATES = {
   slime_fire:{name:'火焰史莱姆', emoji:'🟠', elem:'fire', hp:40, atk:9, def:2, mdef:3, exp:35, gold:7, weak:'water', desc:'燃烧的史莱姆。'},
   golem:{name:'岩傀儡', emoji:'🗿', elem:'earth', hp:110, atk:10, def:10, mdef:4, exp:70, gold:15, weak:'ice', desc:'石质的魔像。'},
   wolf_king:{name:'雪狼王', emoji:'🐺', elem:'ice', hp:160, atk:14, def:6, mdef:8, exp:150, gold:40, weak:'fire', desc:'北林之主。', boss:true},
+  vampire:{name:'月蚀吸血鬼', emoji:'🦇', elem:'dark', hp:900, atk:10, def:8, mdef:12, exp:0, gold:0, weak:'light', desc:'借月之魔力施展空间魔法的吸血鬼。', boss:true},
 };
 // 由敌人 id/配置生成战斗实例
 function spawnEnemy(cfg){
@@ -2952,6 +3334,7 @@ function spawnEnemy(cfg){
 function startBattle(cfg, done){
   B = { enemy: spawnEnemy(cfg), cfg:cfg||{}, done, ap:2, apMax:2, turn:0, log:[], over:false };
   setBG('bg-battle'); bgmPlayType('battle', {force:true}); show('battle-screen',1);
+  if(B.cfg.storyBattle) battleLog('护卫队守住阵形。请撑过这段空间魔法的突袭。');
   renderBattle();
 }
 // 战斗/决斗结束：若仍在场景内则恢复场景 bgm
@@ -3018,7 +3401,9 @@ function renderBattle(){
   pass.disabled=B.over; pass.onclick=()=>endPlayerTurn(true);
   acts.appendChild(pass);
   const run=document.createElement('button'); run.className='choice'; run.textContent='逃跑';
-  run.onclick=()=>{ if(B.over) return; bgmEndBattle(); battleLog('你逃跑了。'); toast('逃跑成功'); const d=B.done; B=null; if(d) d(); else if(S.freeRoam) enterFreeRoam(); };
+  run.disabled = !!B.cfg.storyBattle;
+  if(B.cfg.storyBattle) run.title = '护卫正在保护你，当前无法脱离队形。';
+  run.onclick=()=>{ if(B.over || B.cfg.storyBattle) return; bgmEndBattle(); battleLog('你逃跑了。'); toast('逃跑成功'); const d=B.done; B=null; if(d) d(); else if(S.freeRoam) enterFreeRoam(); };
   acts.appendChild(run);
 }
 function playerAct(sk){
@@ -3077,22 +3462,45 @@ function enemyTurn(){
   const raw = base * (0.85+Math.random()*0.3);
   const defVal = playerDef();
   let dmg = Math.max(1, Math.floor(raw - defVal*0.5));
+  // 剧情战中护卫替主角挡下大部分伤害；玩家的行动只负责观察破绽、维持防线。
+  if(B.cfg.storyBattle){
+    dmg = Math.max(1, Math.floor(dmg * 0.25));
+    battleLog(`${e.name} 瞬移到侧后方，护卫挡下了大半攻击（主角受伤 ${dmg}）。`);
+  } else {
+    battleLog(`${e.name} 攻击，造成 ${dmg} 伤害！`);
+  }
   // 玩家闪避
   if(e.status && false){} 
   S.hp = clamp(S.hp-dmg,0,S.mhp);
-  battleLog(`${e.name} 攻击，造成 ${dmg} 伤害！`);
   sfx('bad');
   updateHUD();
   if(S.hp<=0){ defeat(); return; }
   endRound();
 }
+function resolveStoryBattle(){
+  if(!B || B.over) return;
+  B.over=true;
+  battleLog('远处传来地面隆起的声响。雷纳德赶到了。');
+  const done=B.done;
+  setTimeout(()=>{
+    if(!B) return;
+    bgmEndBattle();
+    B=null;
+    if(done) done(); else if(S.freeRoam) enterFreeRoam();
+  }, 500);
+}
 function endRound(){
   if(!B||B.over) return;
+  if(B.cfg.storyBattle && B.turn >= (B.cfg.maxTurns || 3)){
+    resolveStoryBattle();
+    return;
+  }
   B.ap = B.apMax;
   renderBattle();
 }
 function winBattle(){
   if(!B||B.over) return;
+  if(B.cfg.storyBattle){ resolveStoryBattle(); return; }
   B.over=true;
   battleLog(`🎉 击败了 ${B.enemy.name}！经验+${B.enemy.exp} 金币+${B.enemy.gold}`);
   addExp(B.enemy.exp); S.gold+=B.enemy.gold||0; updateHUD(); sfx('level');
@@ -3101,6 +3509,12 @@ function winBattle(){
 }
 function defeat(){
   if(!B||B.over) return;
+  if(B.cfg.storyBattle){
+    S.hp=Math.max(1,S.hp);
+    battleLog('护卫及时截住了致命一击。');
+    resolveStoryBattle();
+    return;
+  }
   B.over=true; S.deaths++; S.hp=1;
   battleLog('……意识模糊。被人救了回来。');
   setTimeout(()=>{ bgmEndBattle(); B=null; S.loc=S.lastSafe; enterFreeRoam(); toast('重伤撤回'); }, 800);
@@ -3149,6 +3563,7 @@ function winDuel(id){
 
 function openStatsPanel(){
   if(!S.stats) S.stats = {body:5, mind:15, mana:10, charm:8};
+  $('stats-overlay')?.setAttribute('data-updated',String(Date.now()));
   const body = $('stats-body');
   if(!body){ openPanel('status'); return; }
   // 主角立绘
@@ -3190,14 +3605,31 @@ function statusPanelHTML(){
 }
 
 function openPanel(tab){
+  tab=tab||'status';
+  const panel=$('panel');
+  if(panel) panel.dataset.tab=tab;
   show('panel',1); sfx('open');
   const tabs=[['status','状态'],['skills','技能'],['tasks','任务'],['prof','人物'],['inv','背包'],['ach','成就'],['settings','设置']];
-  $('panel-tabs').innerHTML = tabs.map(([k,n])=>`<button class="ptab${(tab||'status')===k?' on':''}" data-t="${k}">${n}</button>`).join('');
-  $('panel-tabs').onclick=e=>{ const t=e.target.dataset.t; if(t) openPanel(t); };
+  $('panel-tabs').innerHTML = tabs.map(([k,n])=>{
+    const selected=(tab||'status')===k;
+    return `<button class="ptab${selected?' on':''}" data-t="${k}" role="tab" aria-controls="panel-body" aria-selected="${selected}" tabindex="${selected?'0':'-1'}">${n}</button>`;
+  }).join('');
+  const panelTabs=$('panel-tabs');
+  panelTabs.onclick=e=>{ const t=e.target.dataset.t; if(t) openPanel(t); };
+  panelTabs.onkeydown=e=>{
+    if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key)) return;
+    const tabs=[...panelTabs.querySelectorAll('[role="tab"]')];
+    if(!tabs.length) return;
+    const current=Math.max(0,tabs.indexOf(document.activeElement));
+    const nextIndex=e.key==='Home' ? 0 : e.key==='End' ? tabs.length-1 : (current+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+    e.preventDefault();
+    const next=tabs[nextIndex];
+    openPanel(next.dataset.t);
+    panelTabs.querySelector(`[data-t="${next.dataset.t}"]`)?.focus();
+  };
   const body=$('panel-body');
-  tab = tab||'status';
   if(tab==='status'){
-    body.innerHTML= statusPanelHTML() + `<p style="margin-top:12px;font-size:12px;opacity:.75">养成四维请点 HUD 的 <b>💠</b> 打开独立面板。<br>「勇者之赐」已用 ${S.picksDone.length}/7 次</p>`;
+    body.innerHTML= statusPanelHTML() + `<p class="panel-note panel-note-spaced">养成四维请点 HUD 的 <b>💠</b> 打开独立面板。<br>「勇者之赐」已用 ${S.picksDone.length}/7 次</p>`;
   } else if(tab==='skills'){
     if(!S.skills.length) body.innerHTML='<p style="opacity:.6">尚未获得特殊技能。</p>';
     else body.innerHTML = S.skills.map(id=>{
@@ -3206,7 +3638,7 @@ function openPanel(tab){
       const cnNames={ice_crystal:'冰晶术',virtual_duel:'虚拟决斗',ice_sense:'寒息感知',water_veil:'水之帷幕',quiet_mind:'静心',baby_talk:'天籁初声',mana_sip:'魔力小啜',silk_thread:'千缕银丝',ice_palace:'冰晶宫殿',multi_cast:'二重咏唱',frost_armor:'霜铠',deep_read:'深读',mirror_ice:'镜冰',wind_step_s:'残影步（简）',heal_touch:'温手',mana_cycle:'魔战循环',domain_frost:'霜域',perfect_cast:'无咏唱具现',fate_eye:'因果薄片',sword_mana:'魔剑同化',memory_link:'记忆连丝',zero_field:'绝对零度逼近',temp_sense:'温度感知',wind_afterimage:'风行残像',mana_calc:'魔力精算',root_ice:'生根之冰',noble_bearing:'公爵气度',lullaby:'摇篮曲',etiquette:'贵族仪态',water_ball:'水球术',basic_guard:'基本防御架',theory_note:'理论笔记',water_veil_s:'水膜',ice_sphere:'完美冰球',root_step:'生根步',soft_cut:'送刀'};
       const displayName = cnNames[id] || p.name || id;
       return `<div class="p-skill"><div class="sk-name">${displayName}</div><div class="sk-desc">${p.desc||''}</div></div>`;
-    }).join('') + (hasSkill('virtual_duel')?`<button class="tbtn" style="margin-top:10px" id="btn-duel">⚔️ 进入虚拟决斗</button>`:'');
+    }).join('') + (hasSkill('virtual_duel')?`<button class="tbtn panel-action" id="btn-duel">⚔️ 进入虚拟决斗</button>`:'');
     setTimeout(()=>{ const b=$('btn-duel'); if(b) b.onclick=()=>{ show('panel',0); openDuelMenu(); }; },0);
   } else if(tab==='tasks'){
     // 未接取/未完成且未解锁的任务不显示具体内容（防剧透）
@@ -3225,12 +3657,13 @@ function openPanel(tab){
       if(t.id==='lost_child' && flag('met_huke')) return true;
       if(t.id==='plant_tree' && flag('ch_tree')) return true;
       if(t.id==='survive_night' && (S.phase==='journey'||S.phase==='finale')) return true;
+      if(t.id==='vampire_trace' && flag('vampire_investigating')) return true;
       return false;
     });
     if(!known.length) body.innerHTML='<p style="opacity:.6">尚无进行中的任务。随着年龄与行程推进会解锁。</p>';
     else body.innerHTML = known.map(t=>{
       const st=S.tasks[t.id]||{};
-      return `<div class="p-task${st.done?' done':''}"><b>${st.done?'✅':'☆'} ${t.name}</b><br>${t.desc}<br><span style="opacity:.6">奖励：经验×${t.exp}${t.max?` · 进度 ${st.prog||0}/${t.max}`:''}</span></div>`;
+      return `<div class="p-task${st.done?' done':''}"><b>${st.done?'✅':'☆'} ${t.name}</b><br>${t.desc}<br><span class="panel-muted">奖励：经验×${t.exp}${t.max?` · 进度 ${st.prog||0}/${t.max}`:''}</span></div>`;
     }).join('');
   } else if(tab==='prof'){
     const ids = Object.keys(S.know).concat(Object.keys(S.love)).filter((v,i,a)=>a.indexOf(v)===i);
@@ -3247,11 +3680,11 @@ function openPanel(tab){
     }).join('');
   } else if(tab==='inv'){
     const slots = S.inv.map(it=>{
-      const use = it.id==='cookie' ? `<button class="tbtn" style="margin-top:6px;min-width:0;padding:4px 12px;font-size:12px" data-use="${it.id}">🍪 食用</button>` : '';
-      return `<div class="inv-slot filled">${it.icon||'📦'}<br>${it.name}<br><span style="opacity:.6">${it.desc||''}</span>${use}</div>`;
+      const use = it.id==='cookie' ? `<button class="tbtn panel-action panel-action-small" data-use="${it.id}">🍪 食用</button>` : '';
+      return `<div class="inv-slot filled">${it.icon||'📦'}<br>${it.name}<br><span class="panel-muted">${it.desc||''}</span>${use}</div>`;
     }).join('');
     body.innerHTML=`<div class="p-inv">${slots || '<div class="inv-slot">空</div>'}</div>
-      <p style="margin-top:8px;opacity:.6;font-size:12px">背包 ${S.inv.length}/50 · 系统收纳（单手可握之物）</p>`;
+      <p class="panel-note panel-note-spaced">背包 ${S.inv.length}/50 · 系统收纳（单手可握之物）</p>`;
     setTimeout(()=>{
       $('panel-body').querySelectorAll('[data-use]').forEach(b=>{
         b.onclick=()=>useItem(b.getAttribute('data-use'));
@@ -3260,19 +3693,19 @@ function openPanel(tab){
   } else if(tab==='ach'){
     const unlocked = ACH.filter(a=>S.ach[a.id]);
     const lockedN = ACH.length - unlocked.length;
-    body.innerHTML = (unlocked.length? unlocked.map(a=>`<div class="p-ach">🏆 <b>${a.name}</b><br>${a.desc}<br><span style="opacity:.6">奖励：${a.reward}</span></div>`).join('') : '<p style="opacity:.6">尚未解锁成就。</p>')
-      + (lockedN? `<p style="margin-top:12px;opacity:.5;font-size:12px">还有 ${lockedN} 个隐藏成就未解锁</p>` : '');
+    body.innerHTML = (unlocked.length? unlocked.map(a=>`<div class="p-ach">🏆 <b>${a.name}</b><br>${a.desc}<br><span class="panel-muted">奖励：${a.reward}</span></div>`).join('') : '<p style="opacity:.6">尚未解锁成就。</p>')
+      + (lockedN? `<p class="panel-note panel-note-faded">还有 ${lockedN} 个隐藏成就未解锁</p>` : '');
   } else if(tab==='settings'){
     const cur = getSettings();
-    body.innerHTML = `<div class="p-stat" style="grid-template-columns:1fr">
+    body.innerHTML = `<div class="p-stat panel-settings-grid">
       <div><b>🔊 BGM 音量</b></div>
-      <input type="range" id="set-bgm" min="0" max="100" value="${Math.round(cur.bgm*100)}" style="width:100%">
-      <div style="opacity:.7;font-size:12px">当前 ${Math.round(cur.bgm*100)}%</div>
-      <div style="margin-top:14px"><b>☀️ 背景亮度</b></div>
-      <input type="range" id="set-bright" min="50" max="150" value="${Math.round(cur.bright*100)}" style="width:100%">
-      <div style="opacity:.7;font-size:12px">当前 ${Math.round(cur.bright*100)}%（100=默认）</div>
+      <input type="range" id="set-bgm" min="0" max="100" value="${Math.round(cur.bgm*100)}">
+      <div class="panel-setting-value">当前 ${Math.round(cur.bgm*100)}%</div>
+      <div class="panel-setting-label"><b>☀️ 背景亮度</b></div>
+      <input type="range" id="set-bright" min="50" max="150" value="${Math.round(cur.bright*100)}">
+      <div class="panel-setting-value">当前 ${Math.round(cur.bright*100)}%（100=默认）</div>
     </div>
-    <button class="tbtn" id="set-reset" style="margin-top:18px">↺ 全部恢复默认</button>`;
+    <button class="tbtn panel-action" id="set-reset">↺ 全部恢复默认</button>`;
     // 事件绑定
     setTimeout(()=>{
       const bm=$('set-bgm'); if(bm) bm.oninput=()=>{ setSetting('bgm', bm.value/100); };
@@ -3280,6 +3713,8 @@ function openPanel(tab){
       const rs=$('set-reset'); if(rs) rs.onclick=()=>{ resetSettings(); openPanel('settings'); toast('已恢复默认设置'); };
     },0);
   }
+  // 动态面板内容已经生成后再把焦点送入当前 tab；鼠标交互路径不变。
+  focusUiLayer(panel, panel.querySelector('.ptab.on'));
 }
 
 // ========== 设置（音量/亮度等，持久化） ==========
@@ -3304,7 +3739,8 @@ function applySettings(){
   bgmSetVolume(s.bgm); bgmApplyMute(); applyBrightness(s.bright);
 }
 function applyBrightness(v){
-  const bg=$('bg'); if(bg) bg.style.filter = (v && v!==1) ? `brightness(${v})` : '';
+  const filter = (v && v!==1) ? `brightness(${v})` : '';
+  ['bg','bg-next'].forEach(id=>{ const bg=$(id); if(bg) bg.style.filter=filter; });
 }
 $('btn-panel').onclick=()=>openPanel('status');
 $('btn-panel-close').onclick=()=>show('panel',0);
@@ -3335,6 +3771,7 @@ function checkStoryGates(options={}){
   addGate('ch_alice_affinity', dateAtLeast(7,3), 's_alice_affinity');
   addGate('ch_beatrice_day', dateAtLeast(7,12), 's_beatrice_day');
   addGate('ch_micro', dateAtLeast(8,6), 's_micro');
+  addGate('ch_vampire_interlude', hasGate('ch_micro') && dateAtLeast(8,9), 's_vampire_interlude');
   addGate('ch_alice_wind', dateAtLeast(9,3), 's_alice_wind_teach');
   addGate('ch_beatrice_leaves', dateAtLeast(10,3), 's_beatrice_leaves');
 
@@ -3414,7 +3851,7 @@ function stepChain(){
   if(sc.loc){ S.loc = sc.loc; updateLocBar(); }
   updateHUD();
   // 「视角」演出：pov 场景隐藏顶部 HUD（如贝阿特丽丝大人的一天，以贝蒂视角叙述）
-  if(sc.pov) setPov(true);
+  setPov(!!sc.pov);
   const go = ()=> playLines(sc.lines || [], ()=>{
     // 只有场景确实播放结束，才写入对应的“已完成”门控标记。
     markStoryGateCompleted(id);
@@ -3448,7 +3885,7 @@ function runScene(id){
   if(sc.loc){ S.loc = sc.loc; updateLocBar(); }
   updateHUD();
   // 「视角」演出：pov 场景隐藏顶部 HUD（如贝阿特丽丝大人的一天，以贝蒂视角叙述）
-  if(sc.pov) setPov(true);
+  setPov(!!sc.pov);
   const go = ()=> playLines(sc.lines || [], sc.done);
   if(sc.card) showCard(sc.card.vol, sc.card.t, sc.card.s, go);
   else go();
@@ -3507,15 +3944,23 @@ SCENES.s_reno_arrive = {
 // ※ 旧版 s_alice_affinity 已删除（与 js/story.js 中的新版重复，新版会覆盖旧版）
 
 SCENES.s_beatrice_leaves = {
-  bgm:'peaceful', bg:'bg-img-hallway bg-hall', phase:'youth',
+  bgm:'emotional', bg:'bg-img-hallway bg-hall', phase:'youth',
   lines:[
-    {text:'十岁。姐姐要去魔法大学了。'},
+    {text:'十岁。姐姐要去魔法大学了。', portraits:[
+      {id:'sylvia', slot:'left', active:false},
+      {id:'beatrice', slot:'center', active:true},
+      {id:'sophia', slot:'right', active:false},
+      {id:'claude', slot:'fourth', active:false}
+    ]},
     {ch:'beatrice', emo:'normal', speaker:'贝阿特丽丝', text:'希尔维亚！姐姐要出发了！等我到了大学，一定把所有好玩的事都写信告诉你！'},
     {ch:'sophia', speaker:'索菲亚', text:'贝阿特丽丝，路上小心。'},
     {ch:'claude', speaker:'克劳德', text:'到了学校好好学习。别光顾着玩。'},
     {ch:'beatrice', emo:'normal', speaker:'贝阿特丽丝', text:'知道啦知道啦！我可是贝阿特丽丝大人！一定会成为全校最厉害的！'},
     {text:'姐姐在门口挥了挥手，跳上了马车。金色的头发在阳光下闪闪发亮。'},
-    {text:'马车走远了。门口变得安静。'},
+    {text:'马车走远了。门口变得安静。', portraits:[
+      {id:'sylvia', slot:'left', active:false},
+      {id:'alice', slot:'right', active:true}
+    ]},
     {ch:'alice', emo:'shy', speaker:'爱丽丝', text:'……姐姐大人。贝阿特丽丝姐姐走了。'},
     {text:'嗯。两年后我们也会去。'},
     {ch:'alice', speaker:'爱丽丝', text:'……嗯。'},
@@ -3557,7 +4002,10 @@ SCENES.s_turnpoint = {
     {text:'父亲扶额，母亲笑着摇头，贝蒂冲上去给了他一拳（没打中）。'},
     {text:'六个人坐在一张桌子上。姐姐的论文改完了——「十八遍！贝阿特丽丝大人的旷世巨著！」\n一切都很好。'},
     {text:'我躺在床上。枕头很软。'},
-    {sfx:'bad', text:'碎裂声。不是玻璃——是石头。从大门方向。', portraits: []},
+    {sfx:'bad', text:'碎裂声。不是玻璃——是石头。从大门方向。', portraits:[
+      {id:'claude', slot:'left', active:true},
+      {id:'sophia', slot:'right', active:false}
+    ]},
     {ch:'claude', speaker:'克劳德', text:'穿鞋。'},
     {text:'父亲的脸上是一种我从没见过的东西。把所有情绪削掉后的骨架。'},
     {ch:'sophia', speaker:'索菲亚', text:'（白色法杖。霜杉木簪。看了我一眼。点头。）'},
@@ -3581,7 +4029,10 @@ SCENES.s_turnpoint = {
     {cg:'parents_battle.jpg', text:'克劳德踏出一步。短杖不是杖。是武器。走廊炸开了。'},
     {cg:'parents_battle.jpg', text:'战斗持续了很长时间。西翼的走廊被打得面目全非。两个人守住一条线，给女儿多争一点时间。'},
     // —— 东翼：贝蒂带爱丽丝逃入死路 ——
-    {cg:'beatrice_battle.png', text:'公爵府东翼。贝阿特丽丝冲向爱丽丝的房间。'},
+    {cg:'beatrice_battle.png', text:'公爵府东翼。贝阿特丽丝冲向爱丽丝的房间。', portraits:[
+      {id:'beatrice', slot:'left', active:true},
+      {id:'alice', slot:'right', active:false}
+    ]},
     {cg:'beatrice_battle.png', text:'前面封了。后面在追。十七岁的贝阿特丽丝·维斯特利亚站在仆人通道里，前后都是死路。'},
     {cg:'beatrice_battle.png', ch:'beatrice', speaker:'贝阿特丽丝', text:'我带你们走。仆人道尽头有排水渠口，钻过去能出城。'},
     {cg:'beatrice_battle.png', ch:'beatrice', speaker:'贝阿特丽丝', text:'我在这里挡一下。'},
@@ -3594,7 +4045,7 @@ SCENES.s_turnpoint = {
     {cg:'parting.png', ch:'beatrice', speaker:'贝阿特丽丝', text:'你不要管我。你跑。跑得越远越好。然后——找到希尔维亚。'},
     {cg:'parting.png', text:'火焰从她的右手倾泻而出。整条通道化作了一道灼热的咽喉。贝阿特丽丝站在火焰最中心，金色的头发在火光中像太阳。'},
     // —— 十字路口：雷纳德地形拖敌 ——
-    {cg:'reno_battle.jpg', text:'东翼和主走廊之间的十字路口。雷纳德·维斯特利亚站在路口正中间。一个人。没有武器。'},
+    {cg:'reno_battle.jpg', text:'东翼和主走廊之间的十字路口。雷纳德·维斯特利亚站在路口正中间。一个人。没有武器。', portraits:[{id:'reno', slot:'center', active:true}]},
     {cg:'reno_battle.jpg', text:'地面开始变形。石板翘起、碎裂、重组。四条走廊在几秒钟之内变成了一座简陋但有效的迷宫。'},
     {cg:'reno_battle.jpg', text:'他不是在杀人。是在绊脚、困人、拖延。每多撑一分钟，侄女们就多跑出一段。'},
     // —— 帝级 ——
@@ -3637,13 +4088,18 @@ SCENES.s_beach = {
   bgm:'cheerful', bg:'bg-img-beach bg-beach', loc:'beach', phase:'academy',
   card:{vol:'第一卷', t:'第七章', s:'海与贝壳'},
   lines:[
-    {text:'暑假。姐姐在马车上睡着了，嘴角还挂着果酱渍。'},
+    {text:'暑假。姐姐在马车上睡着了，嘴角还挂着果酱渍。', portraits:[{id:'sylvia', slot:'left', active:false},{id:'beatrice', slot:'right', active:true}]},
     {text:'到了。'},
     {ch:'beatrice', emo:'normal', speaker:'贝阿特丽丝', text:'大海！！'},
     {text:'马车在别墅门前停稳的瞬间，姐姐"嗖"地弹起来，像一只装了弹簧的金毛犬。'},
     {text:'别墅门口站着三个人。父亲穿着难得一见的休闲衬衫。母亲笑着朝我们挥手。'},
     {text:'然后是妹妹。'},
-    {text:'爱丽丝站在母亲身侧，白色的长发被海风轻轻吹起。浅蓝色的连衣裙，双手安静地交叠在身前，表情是一贯的淡然。'},
+    {text:'爱丽丝站在母亲身侧，白色的长发被海风轻轻吹起。浅蓝色的连衣裙，双手安静地交叠在身前，表情是一贯的淡然。', portraits:[
+      {id:'sylvia', slot:'left', active:false},
+      {id:'beatrice', slot:'center', active:false},
+      {id:'sophia', slot:'right', active:false},
+      {id:'alice', slot:'fourth', active:true}
+    ]},
     {text:'看到我们下车，她的睫毛颤了一下。然后她走过来。'},
     {ch:'alice', emo:'shy', speaker:'爱丽丝', text:'……姐姐大人，路上辛苦了。'},
     {text:'然后她张开手臂，抱住了我。'},
@@ -3654,7 +4110,11 @@ SCENES.s_beach = {
     {text:'然后——松手。退后半步。双手重新交叠在身前。表情恢复淡然。'},
     {text:'整个过程前后不超过五秒。'},
     {text:'◇'},
-    {text:'行李搬进房间后，我在客厅目睹了一场精彩的夫妻攻防战。'},
+    {text:'行李搬进房间后，我在客厅目睹了一场精彩的夫妻攻防战。', portraits:[
+      {id:'sylvia', slot:'left', active:false},
+      {id:'sophia', slot:'center', active:true},
+      {id:'claude', slot:'right', active:false}
+    ]},
     {text:'父亲坐在沙发上，眼神反复飘向书房方向——那表情，像一只被人把狗粮锁进柜子的大型犬。'},
     {ch:'sophia', speaker:'索菲亚', text:'你父亲出发前偷偷把公文塞进了行李箱夹层。我发现了，锁进了书房的柜子里。柜子上了魔力锁，只要你父亲的手碰到锁面，就会触发警报。'},
     {ch:'sophia', speaker:'索菲亚', text:'会响遍整栋别墅的那种哦。'},
@@ -3668,13 +4128,19 @@ SCENES.s_beach = {
     {text:'母亲连"大人"都省了，直接喊名字。'},
     {text:'父亲闭上了嘴。识时务者为公爵。投降速度：零点三秒。'},
     {text:'◇'},
-    {text:'下午，换泳装去海边。'},
+    {text:'下午，换泳装去海边。', portraits:[
+      {id:'sylvia', slot:'left', active:false},
+      {id:'beatrice', slot:'right', active:true}
+    ]},
     {ch:'beatrice', emo:'normal', speaker:'贝阿特丽丝', text:'怎么样！贝阿特丽丝大人的泳装秀！打分！满分十分！'},
     {speaker:'希尔维亚', text:'六分。'},
     {ch:'beatrice', emo:'normal', speaker:'贝阿特丽丝', text:'为什么只有六分！！'},
     {speaker:'希尔维亚', text:'冲浪板拿反了，扣两分。果酱渍还没擦，扣两分。'},
     {text:'姐姐在浅水区蹦蹦跳跳地踩着浪，玩得不亦乐乎。'},
-    {text:'我找了块阴凉坐下，释放一缕冰霜之息给周围降温。妹妹蹭过来，靠在我旁边翻开书。'},
+    {text:'我找了块阴凉坐下，释放一缕冰霜之息给周围降温。妹妹蹭过来，靠在我旁边翻开书。', portraits:[
+      {id:'sylvia', slot:'left', active:false},
+      {id:'alice', slot:'right', active:true}
+    ]},
     {text:'姐姐堆沙堡——成品像一坨被踩过的布丁。然后发现了一只寄居蟹，追着它满沙滩跑了三圈。'},
     {ch:'alice', speaker:'爱丽丝', text:'……贝阿特丽丝姐姐跑的路线是圆形的。寄居蟹跑的路线也是圆形的。她们在绕同一个圈。'},
     {text:'还真是。'},
@@ -3689,7 +4155,11 @@ SCENES.s_beach = {
     {ch:'alice', speaker:'爱丽丝', text:'……明天下午，我们跟去看看。'},
     {text:'◇'},
     {text:'第五天，下午。我们跟踪姐姐穿过小镇东区，绕过码头边一排废弃仓库，来到了一片偏僻的海滩。'},
-    {text:'姐姐站在礁石旁边。和她站在一起的不是什么"心上人"——是一个老奶奶。'},
+    {text:'姐姐站在礁石旁边。和她站在一起的不是什么"心上人"——是一个老奶奶。', portraits:[
+      {id:'sylvia', slot:'left', active:false},
+      {id:'alice', slot:'center', active:false},
+      {id:'beatrice', slot:'right', active:true}
+    ]},
     {text:'渔民。少说六十往上。'},
     {text:'姐姐脱掉了外面的罩衫——里面穿着泳衣——跟着老奶奶走进了水里。'},
     {text:'扑腾了两下。呛了。'},
@@ -3712,7 +4182,11 @@ SCENES.s_beach = {
     {speaker:'希尔维亚', text:'但是——'},
     {text:'我伸手，把她肩上那条海藻拿掉了。'},
     {speaker:'希尔维亚', text:'——这种笨蛋姐姐，就是全天下最让人喜欢的姐姐。'},
-    {text:'妹妹不知道什么时候也走进了水里。她走到姐姐面前，仰起头。'},
+    {text:'妹妹不知道什么时候也走进了水里。她走到姐姐面前，仰起头。', portraits:[
+      {id:'sylvia', slot:'left', active:false},
+      {id:'beatrice', slot:'center', active:false},
+      {id:'alice', slot:'right', active:true}
+    ]},
     {ch:'alice', emo:'happy', speaker:'爱丽丝', text:'……贝阿特丽丝姐姐。谢谢。……不管最后做不做得出来，谢谢你想为我做这些。……但是比起礼物——我更想和姐姐们一起待着。'},
     {ch:'alice', emo:'happy', speaker:'爱丽丝', text:'一起捞贝壳也好。一起呛水也好。一起被老奶奶骂也好。……只要是一起的，就是最好的礼物。'},
     {text:'姐姐盯着她看了三秒。然后嘴巴一瘪，眼泪终于掉下来了。'},
@@ -3741,11 +4215,16 @@ SCENES.s_beach = {
 };
 
 SCENES.s_star_festival = {
-  bgm:'relax', bg:'bg-night', phase:'academy',
+  bgm:'romantic', bg:'bg-night', phase:'academy',
   card:{vol:'第二卷', t:'第九章', s:'并肩的树 · 星辰祭'},
   lines:[
     {text:'星辰祭。六年一次。家长开放日。'},
-    {text:'广场上——深蓝色粗布外套，扣到最上一颗。霜杉木簪。'},
+    {text:'广场上——深蓝色粗布外套，扣到最上一颗。霜杉木簪。', portraits:[
+      {id:'sylvia', slot:'left', active:false},
+      {id:'beatrice', slot:'center', active:true},
+      {id:'sophia', slot:'right', active:false},
+      {id:'alice', slot:'fourth', active:false}
+    ]},
     {ch:'beatrice', emo:'normal', speaker:'贝阿特丽丝', text:'是爸妈吧？！'},
     {text:'姐姐一头撞进父亲怀里。母亲理了理爱丽丝额前的碎发。'},
     {text:'她的睫毛颤了一下。手在裙子侧面攥紧又松开。'},
@@ -3754,10 +4233,10 @@ SCENES.s_star_festival = {
     {text:'上街。套圈。歪眼兔子。烟花在钟楼露台炸开。'},
     {text:'冰系那一发碎成雪。妹妹在笑。真的在笑。'},
     {ch:'beatrice', emo:'normal', speaker:'贝阿特丽丝', text:'我打算五年级毕业。外交官换届……我想自己来。'},
-    {text:'雨。杂货铺。夏洛特独自坐在角落。'},
+    {text:'雨。杂货铺。夏洛特独自坐在角落。', portraits:[{id:'charlotte', slot:'center', active:true}]},
     {ch:'charlotte', speaker:'夏洛特', text:'你父母来了。便装。偷偷来。'},
     {text:'该来的人没来。来的是外务管事。'},
-    {speaker:'希尔维亚', text:'你母亲种的那棵树，在你的照顾下真的长得很好。'},
+    {speaker:'希尔维亚', text:'你母亲种的那棵树，在你的照顾下真的长得很好。', portraits:[{id:'sylvia', slot:'left', active:true},{id:'charlotte', slot:'right', active:false}]},
     {ch:'charlotte', speaker:'夏洛特', text:'别跟任何人说。下次浇水别漫到我那边。'},
     {text:'「滚。」她说。但薄荷茶是热的。', know:'charlotte', knowD:15, love:'charlotte', loveD:1, flag:'ch_star', freeRoam:true}
   ]
@@ -3807,8 +4286,8 @@ enterLoc = function(id){
 function openLetterDemo(){
   const demo=$('letter-demo');
   if(!demo) return false;
-  demo.classList.remove('hidden','playing','revealed');
-  demo.setAttribute('aria-hidden','false');
+  demo.classList.remove('playing','revealed');
+  show(demo,1);
   // 强制回流，让每次从标题页打开时都能从封蜡完整重播。
   void demo.offsetWidth;
   demo.classList.add('playing');
@@ -3825,9 +4304,8 @@ function revealLetterDemo(){
 function closeLetterDemo(){
   const demo=$('letter-demo');
   if(!demo) return false;
-  demo.classList.add('hidden');
+  show(demo,0);
   demo.classList.remove('playing','revealed');
-  demo.setAttribute('aria-hidden','true');
   const btn=$('btn-letter-test');
   if(btn && typeof btn.focus==='function') btn.focus();
   return true;
@@ -3940,7 +4418,7 @@ document.addEventListener('keydown', e=>{
     closeLetterDemo();
     return;
   }
-  if(e.key==='Escape'){ show('panel',0); show('map-overlay',0); show('help-screen',0); show('codex',0); show('stats-overlay',0); uiShow(); }
+  if(e.key==='Escape'){ show('panel',0); show('map-overlay',0); show('help-screen',0); show('codex',0); show('stats-overlay',0); show('sys-popup',0); uiShow(); }
   if(e.key===' ' || e.key==='Enter'){
     // CG 演出：空格/回车也能推进下一句
     if(cgActive && !$('cg-screen').classList.contains('hidden')){
@@ -4001,4 +4479,9 @@ if(typeof window !== 'undefined'){
   window.bgmPlayType = typeof bgmPlayType !== 'undefined' ? bgmPlayType : ()=>{};
   window.BGM_FILES = typeof BGM_FILES !== 'undefined' ? BGM_FILES : {};
   window.BGM_GROUPS = typeof BGM_GROUPS !== 'undefined' ? BGM_GROUPS : {};
+  // 仅暴露给离线测试与无障碍集成，不改变游戏内推进逻辑。
+  window.show = show;
+  window.resetDialogAdvanceState = resetDialogAdvanceState;
+  window._enterLocRaw = _enterLocRaw;
+  window.__getDialogAdvanceState = ()=>({lineCB, typing, typeDoneCB});
 }

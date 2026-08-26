@@ -12,7 +12,7 @@ const vis = id=>{const el=$(id); return el && !el.classList.contains('hidden');}
 const PRE_FLAGS = {
   ch_first_word:1, ch_alice_born:1, ch_child_days:1, ch_age4:1,
   ch_yaoshen:1, ch_sisters_grow:1, ch_reno_arrive:1, ch_alice_affinity:1,
-  ch_beatrice_day:1, ch_micro:1, ch_beatrice_leaves:1,
+  ch_beatrice_day:1, ch_micro:1, ch_vampire_interlude:1, ch_beatrice_leaves:1,
 };
 
 // 驱动器：逐行推进 + 点卡片，返回按序播放的场景列表

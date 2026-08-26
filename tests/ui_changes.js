@@ -10,6 +10,10 @@ ok('右上角有隐藏UI按钮 btn-ui', !!$('btn-ui'));
 ok('btn-ui 初始图标为 🌙', $('btn-ui') && $('btn-ui').textContent.includes('🌙'));
 const explore = win.document.querySelector('[data-act="explore"]');
 ok('底部按钮为「地图」', explore && explore.textContent.includes('地图'));
+ok('标题页有独立存档状态提示', !!$('title-status') && !!$('title-status-text'));
+ok('标题背景使用标题图与主题背景', $('bg').classList.contains('bg-title') && $('bg').classList.contains('bg-img-title'));
+ok('舞台具备可访问名称', $('stage').getAttribute('aria-label')==='剧情舞台');
+ok('HUD 资源条具备进度语义', [...win.document.querySelectorAll('#hud .bar[role="progressbar"]')].length===3);
 
 // 标题页拆信测试：完整播放、点击跳过、关闭后仍留在标题页
 const letterBtn=$('btn-letter-test');
@@ -31,7 +35,11 @@ ok('内部 S.phase 仍为 academy', win.__getS().phase==='academy');
 
 win.__resetS();
 const st2=win.__getS(); st2.picksDone=[0,1]; win.__setS(st2);
+win.save();
+ok('保存后标题状态同步为已保存', $('title-status').dataset.saveState==='saved' && $('title-status-text').textContent.includes('已保存'));
 win.openPanel('status');
+ok('角色面板分类使用 tab 语义', $('panel-tabs').getAttribute('role')==='tablist' && $('panel-tabs').querySelector('[role="tab"]'));
+ok('角色面板 tab 标记当前页', $('panel-tabs').querySelector('[role="tab"][aria-selected="true"]')?.dataset.t==='status');
 ok('勇者之赐显示 2/7 次', $('panel-body').innerHTML.includes('2/7'));
 ok('不含 s.picksdone 字面量', !/s\.picksdone/i.test($('panel-body').innerHTML));
 
@@ -61,7 +69,7 @@ $('btn-ui').onclick(); ok('再点恢复UI', !win.document.body.classList.contain
 win.__resetS(); const st3=win.__getS(); st3.freeRoam=true; st3.season=2; win.__setS(st3);
 const tb=$('text-box'), more=$('more');
 win.enterFreeRoam();
-ok('自由探索不显示地点出口教学框', tb.classList.contains('dialog-hidden'));
+ok('自由探索不显示地点出口教学框', tb.getAttribute('data-roam-prompt')!=='exit' && !$('text').textContent.includes('点击画面出口移动'));
 ok('地点出口教学文案已移除', !win.enterFreeRoam.toString().includes('点击画面出口移动') && !win.playLines.toString().includes('点击画面出口移动'));
 let seasonClosed=false;
 win.showSeasonFlavor(()=>{ seasonClosed=true; });
@@ -77,7 +85,8 @@ win.eval('lineCB=()=>{};');
 tb.onclick({target:more});
 ok('右下角小三角关闭季度风物框', tb.classList.contains('dialog-hidden'));
 ok('关闭季度风物框后执行后续逻辑', seasonClosed);
-ok('关闭自由探索提示时清理旧推进状态', win.eval('lineCB===null && typing===false && typeDoneCB===null'));
+const dialogState=win.__getDialogAdvanceState();
+ok('关闭自由探索提示时清理旧推进状态', dialogState.lineCB===null && dialogState.typing===false && dialogState.typeDoneCB===null);
 
 // 回归：季度推进后，到期剧情应立即播放，与季度提示的小三角无关。
 win.__resetS();
@@ -165,16 +174,16 @@ try{ babyButtons[0].click(); }catch(e){ babyClickOK=false; }
 ok('婴儿出去按钮点击不报错', babyClickOK);
 ok('点击后进入抱出剧情', !win.__getS().freeRoam);
 ok('剧情开始恢复对话框', !tb.classList.contains('dialog-hidden'));
-ok('下个季度按钮直接推进并显示风物框', !win.doNextTime.toString().includes('choices') && win.doNextTime.toString().includes('showSeasonFlavor'));
+ok('下个季度按钮直接推进并显示风物框', !win.doNextTime.toString().includes('choices') && win.doNextTime.toString().includes('showPendingSeasonFlavor'));
 
 // 进入空地点不再播放环境描述；有人时显示情境问候且保留底部 UI
-ok('普通进入地点不再调用环境描述对话', !win.eval('_enterLocRaw.toString()').includes('ambientText'));
+ok('普通进入地点不再调用环境描述对话', !win._enterLocRaw.toString().includes('ambientText'));
 win.__resetS(); const greetState=win.__getS(); greetState.freeRoam=true; greetState.ageY=8; greetState.loc='garden'; win.__setS(greetState);
-const ageGreeting=win.roamGreetingText('sophia','garden');
-const placeGreeting=win.roamGreetingText('sophia','library');
+const ageGreeting=win.roamGreetingText('alice','garden');
+const placeGreeting=win.roamGreetingText('alice','library');
 ok('问候内容随地点变化', ageGreeting!==placeGreeting);
 const older=win.__getS(); older.ageY=15; win.__setS(older);
-ok('问候内容随主角年龄变化', win.roamGreetingText('sophia','garden')!==ageGreeting);
+ok('问候内容随主角年龄变化', win.roamGreetingText('alice','garden')!==ageGreeting);
 const child=win.__getS(); child.ageY=4; win.__setS(child);
 const childGreetings=win.roamGreetingText('sophia','garden')+win.roamGreetingText('claude','garden');
 ok('幼年问候不再暗示主角乱跑', !childGreetings.includes('跑太快') && !childGreetings.includes('慢一点'));

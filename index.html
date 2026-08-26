@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#0c0a12"/>
 <title>转生千金～到了异世界就要悠闲地生活</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;900&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
@@ -10,34 +11,43 @@
 </head>
 <body>
 <audio id="bgm-audio" preload="auto" loop></audio>
-<div id="bg" class="bg-title"></div>
+<div id="bg" class="bg-title bg-img-title" data-cls="bg-title bg-img-title" aria-hidden="true"></div>
+<div id="bg-next" aria-hidden="true"></div>
 <div id="bg-veil"></div>
 <div id="fx"></div>
 
 <!-- 章节卡 -->
-<div id="card" class="hidden">
+<div id="card" class="hidden" role="dialog" aria-modal="true" aria-live="polite" aria-hidden="true">
   <div id="card-vol"></div>
   <div id="card-t"></div>
   <div id="card-s"></div>
+  <div id="card-hint" aria-hidden="true">点击继续</div>
 </div>
 
 <div id="app">
   <!-- ===== 标题 ===== -->
-  <section id="title-screen">
+  <section id="title-screen" aria-labelledby="title-main-heading">
     <div class="title-inner">
+      <div class="title-crest" aria-hidden="true"><span>✦</span><i></i><span>❄</span><i></i><span>✦</span></div>
       <p class="title-kana">転生令嬢は異世界で悠々自適に暮らしたい</p>
-      <h1 class="title-main">转生千金</h1>
+      <h1 id="title-main-heading" class="title-main">转生千金</h1>
       <p class="title-sub">～到了异世界就要悠闲地生活～</p>
-      <p class="title-tag">第一卷　公爵篇　·　银与蓝</p>
+      <p class="title-tag"><span>第一卷</span><b>公爵篇</b><span>银与蓝</span></p>
+      <div class="title-rule" aria-hidden="true"><i></i><span>❄</span><i></i></div>
       <div class="title-menu">
         <button id="btn-new" class="tbtn">▶ 开始新生活</button>
         <button id="btn-continue" class="tbtn hidden">⏩ 继续存档</button>
-        <button id="btn-codex" class="tbtn">📖 图鉴 <em id="codex-count">0</em></button>
+        <button id="btn-codex" class="tbtn" aria-controls="codex" aria-haspopup="dialog" aria-expanded="false">📖 图鉴 <em id="codex-count">0</em></button>
         <button id="btn-letter-test" class="tbtn letter-test">✉️ 拆信测试</button>
-        <button id="btn-help" class="tbtn ghost">？ 玩法说明</button>
+        <button id="btn-help" class="tbtn ghost" aria-controls="help-screen" aria-haspopup="dialog" aria-expanded="false">？ 玩法说明</button>
       </div>
       <p class="title-hint">季度回合 · 场景探索 · 全文剧情 · 勇者之赐 · 自动存档</p>
       <p class="title-foot">※ 第一人称轻小说风 · 过马路请看红绿灯</p>
+      <div id="title-status" class="title-status" data-save-state="empty" role="status" aria-live="polite">
+        <span class="title-status-dot" aria-hidden="true"></span>
+        <span id="title-status-text">自动存档已开启</span>
+      </div>
+      <div class="title-keyboard-hint" aria-label="键盘提示"><kbd>Enter</kbd> 选择 · <kbd>Esc</kbd> 关闭弹层</div>
     </div>
   </section>
 
@@ -69,8 +79,8 @@
   </section>
 
   <!-- ===== 主界面 ===== -->
-  <section id="game-screen" class="hidden">
-    <header id="hud">
+  <section id="game-screen" class="hidden" aria-hidden="true">
+    <header id="hud" aria-label="角色状态栏">
       <div class="hud-left">
         <div id="hud-face"><img id="hud-face-img" src="assets/portraits/sylvia_young_normal.png" alt=""/></div>
         <div class="hud-cols">
@@ -84,21 +94,21 @@
             <span id="hud-date">──</span>
             <span id="hud-tod">──</span>
           </div>
-          <div class="bar hp"><i id="hud-hp"></i><em id="hud-hp-num"></em></div>
-          <div class="bar mp"><i id="hud-mp"></i><em id="hud-mp-num"></em></div>
-          <div class="bar st"><i id="hud-st"></i><em id="hud-st-num"></em></div>
+          <div class="bar hp" data-label="生命" role="progressbar" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-label="生命"><i id="hud-hp"></i><em id="hud-hp-num"></em></div>
+          <div class="bar mp" data-label="魔力" role="progressbar" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-label="魔力"><i id="hud-mp"></i><em id="hud-mp-num"></em></div>
+          <div class="bar st" data-label="体力" role="progressbar" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-label="体力"><i id="hud-st"></i><em id="hud-st-num"></em></div>
         </div>
       </div>
       <div class="hud-right">
-        <button id="btn-stats" class="chip" title="养成">💠</button>
-        <button id="btn-panel" class="chip" title="面板">📖</button>
-        <button id="btn-ui" class="chip" title="沉浸模式（隐藏/显示界面）">🌙</button>
-        <button id="btn-mute" class="chip">🔊</button>
-        <button id="btn-title" class="chip">🏠</button>
+        <button id="btn-stats" class="chip" title="养成" aria-label="打开养成四维" aria-controls="stats-overlay" aria-haspopup="dialog" aria-expanded="false">💠</button>
+        <button id="btn-panel" class="chip" title="面板" aria-label="打开角色面板" aria-controls="panel" aria-haspopup="dialog" aria-expanded="false">📖</button>
+        <button id="btn-ui" class="chip" title="沉浸模式（隐藏/显示界面）" aria-label="切换沉浸模式">🌙</button>
+        <button id="btn-mute" class="chip" aria-label="切换背景音乐">🔊</button>
+        <button id="btn-title" class="chip" aria-label="返回标题页">🏠</button>
       </div>
     </header>
 
-    <main id="stage">
+    <main id="stage" aria-label="剧情舞台">
       <!-- 地点信息条 -->
       <div id="loc-bar" class="hidden">
         <span id="loc-name">──</span>
@@ -125,29 +135,30 @@
           <div id="tb-speaker-name"></div>
         </div>
         <div id="speaker" class="hidden"></div>
-        <div id="text"></div>
+        <div id="text" role="status" aria-live="polite" aria-atomic="true"></div>
         <div id="more">▼</div>
       </div>
       <div id="choices"></div>
     </main>
 
     <!-- 自由行动栏（探索模式） -->
-    <nav id="action-bar" class="hidden">
-      <button data-act="explore" class="abtn">🗺️ 地图</button>
-      <button data-act="talk" class="abtn">💬 交谈 <small>⚡1</small></button>
-      <button data-act="train" class="abtn">✨ 修行 <small>⚡3</small></button>
-      <button data-act="study" class="abtn">📚 学习 <small>⚡2</small></button>
-      <button data-act="course" class="abtn">📖 课程 <small>⚡2+</small></button>
-      <button data-act="rest" class="abtn">💤 休息 <small>恢复</small></button>
-      <button data-act="item" class="abtn">🎒 物品</button>
-      <button data-act="next" class="abtn primary">🍂 下个季度</button>
+    <nav id="action-bar" class="hidden" aria-label="自由探索行动栏" aria-hidden="true">
+      <div class="action-caption"><span aria-hidden="true">自由行动</span><small id="action-stamina" role="status" aria-live="polite">体力 ──</small></div>
+      <button id="btn-map-open" data-act="explore" data-cost="0" class="abtn" aria-label="打开地图" aria-controls="map-overlay" aria-haspopup="dialog" aria-expanded="false">🗺️ 地图</button>
+      <button data-act="talk" data-cost="1" class="abtn" aria-label="交谈，消耗一点体力">💬 交谈 <small>⚡1</small></button>
+      <button data-act="train" data-cost="3" class="abtn" aria-label="修行，消耗三点体力">✨ 修行 <small>⚡3</small></button>
+      <button data-act="study" data-cost="2" class="abtn" aria-label="学习，消耗两点体力">📚 学习 <small>⚡2</small></button>
+      <button data-act="course" data-cost="2" class="abtn" aria-label="课程，消耗至少两点体力">📖 课程 <small>⚡2+</small></button>
+      <button data-act="rest" data-cost="0" class="abtn" aria-label="休息并恢复体力">💤 休息 <small>恢复</small></button>
+      <button data-act="item" data-cost="0" class="abtn" aria-label="打开物品">🎒 物品</button>
+      <button data-act="next" data-cost="0" class="abtn primary" aria-label="推进到下个季度">🍂 下个季度</button>
     </nav>
   </section>
 
   <!-- ===== 地图弹窗 ===== -->
-  <section id="map-overlay" class="overlay hidden">
+  <section id="map-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="map-title" aria-hidden="true">
     <div class="end-card map-card">
-      <h2>🗺️ 地图</h2>
+      <h2 id="map-title">🗺️ 地图</h2>
       <p class="map-hint">点击地点移动（消耗体力与时间）</p>
       <div id="map-grid"></div>
       <div class="end-btns"><button id="btn-map-close" class="tbtn">关闭</button></div>
@@ -155,12 +166,12 @@
   </section>
 
   <!-- ===== 养成四维（独立精美面板） ===== -->
-  <section id="stats-overlay" class="overlay hidden">
+  <section id="stats-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="stats-title" aria-hidden="true">
     <div class="end-card stats-card">
       <div class="stats-head">
         <div class="stats-seal">💠</div>
         <div>
-          <h2 class="stats-title">养成四维</h2>
+          <h2 id="stats-title" class="stats-title">养成四维</h2>
           <p class="stats-sub">以练习与课程塑形 · 非战斗面板</p>
         </div>
       </div>
@@ -171,27 +182,28 @@
   </section>
 
   <!-- ===== 面板 ===== -->
-  <section id="panel" class="overlay hidden">
+  <section id="panel" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="panel-title" aria-hidden="true">
     <div class="end-card panel-card">
-      <div id="panel-tabs"></div>
+      <h2 id="panel-title" class="sr-only">角色面板</h2>
+      <div id="panel-tabs" role="tablist" aria-label="角色面板分类"></div>
       <div id="panel-body"></div>
       <div class="end-btns"><button id="btn-panel-close" class="tbtn">关闭</button></div>
     </div>
   </section>
 
   <!-- ===== 勇者之赐选卡 ===== -->
-  <section id="pick-screen" class="overlay hidden">
+  <section id="pick-screen" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pick-title" aria-hidden="true">
     <div class="pick-wrap">
-      <h2 class="pick-title">✧ 勇者之赐 ✧</h2>
+      <h2 id="pick-title" class="pick-title">✧ 勇者之赐 ✧</h2>
       <p class="pick-sub">时间静止 · 请从七项中选择一项（未选将永久消失）</p>
       <div id="pick-grid"></div>
     </div>
   </section>
 
   <!-- ===== 虚拟决斗 ===== -->
-  <section id="duel-screen" class="overlay hidden">
+  <section id="duel-screen" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="duel-title" aria-hidden="true">
     <div class="end-card duel-card">
-      <h2>⚔️ 虚拟决斗</h2>
+      <h2 id="duel-title">⚔️ 虚拟决斗</h2>
       <div id="duel-info"></div>
       <div id="duel-log"></div>
       <div id="duel-actions"></div>
@@ -199,13 +211,17 @@
   </section>
 
   <!-- ===== CG 演出层 ===== -->
-  <section id="cg-screen" class="hidden">
+  <section id="cg-screen" class="hidden" role="dialog" aria-modal="true" aria-label="剧情 CG 演出" aria-hidden="true">
     <div id="cg-bg"></div>
-    <div id="cg-text"></div>
+    <div id="cg-text" aria-live="polite" aria-atomic="true"></div>
+    <div id="cg-progress" aria-hidden="true"><i></i><span id="cg-progress-label">CG 演出</span></div>
+    <div id="cg-hint" aria-hidden="true">点击继续</div>
   </section>
 
   <!-- ===== 战斗 ===== -->
-  <section id="battle-screen" class="overlay hidden">    <div id="b-enemy">
+  <section id="battle-screen" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="battle-title" aria-hidden="true">
+    <h2 id="battle-title" class="sr-only">战斗</h2>
+    <div id="b-enemy">
       <div id="b-emoji">🐺</div>
       <div id="b-ename">──</div>
       <div class="bar e-hp"><i id="b-ehp"></i><em id="b-ehp-num"></em></div>
@@ -215,19 +231,19 @@
   </section>
 
   <!-- ===== 图鉴 ===== -->
-  <section id="codex" class="overlay hidden">
+  <section id="codex" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="codex-title" aria-hidden="true">
     <div class="end-card">
-      <h2>📖 图鉴</h2>
-      <div id="codex-tabs" class="ptabs"></div>
+      <h2 id="codex-title">📖 图鉴</h2>
+      <div id="codex-tabs" class="ptabs" aria-hidden="true"></div>
       <div id="codex-list"></div>
       <div class="end-btns"><button id="btn-codex-close" class="tbtn">关闭</button></div>
     </div>
   </section>
 
   <!-- ===== 帮助 ===== -->
-  <section id="help-screen" class="overlay hidden">
+  <section id="help-screen" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="help-title" aria-hidden="true">
     <div class="end-card">
-      <h2>？ 玩法说明</h2>
+      <h2 id="help-title">？ 玩法说明</h2>
       <div class="help-body">
         <p><b>🍂 季度回合</b>：时间按「年 · 春/夏/秋/冬」推进。点「下个季度」过回合。</p>
         <p><b>💪 体力</b>：行动消耗体力。归零强制休息。休息/过季可恢复。</p>
@@ -243,8 +259,8 @@
     </div>
   </section>
 
-  <div id="toast" class="hidden"></div>
-  <div id="sys-popup" class="hidden"></div>
+  <div id="toast" class="hidden" role="status" aria-live="polite" aria-hidden="true"></div>
+  <div id="sys-popup" class="hidden" role="alertdialog" aria-modal="true" aria-live="assertive" aria-hidden="true"></div>
 </div>
 
 <script src="js/story.js"></script>

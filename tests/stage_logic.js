@@ -38,6 +38,8 @@ st=orderedStage();
 ok('贝蒂说后 老板保留在场', st.some(s=>s.char==='merchant_bakery'));
 const boss=st.find(s=>s.char==='merchant_bakery');
 ok('老板(非说话人)被置暗', boss && boss.dim===true);
+win.applyLineEffects({portraits:[{id:'beatrice',slot:'left',emo:'shy',active:true}]});
+ok('立绘保留已有 emo 状态供高情绪样式读取', $('p-left').getAttribute('data-emotion')==='shy');
 
 // ④ 药神场景回归：DUO → 旁白/心理活动 N(数组顺序相反) → DUO，
 // 主角和药神的语义槽位必须始终是「主角左、药神右」。

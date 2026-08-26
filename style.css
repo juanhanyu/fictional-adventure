@@ -1044,3 +1044,54 @@ kbd{display:inline-block;min-width:24px;padding:2px 5px;margin:0 2px;border:1px 
 #cg-progress{top:max(22px,calc(env(safe-area-inset-top) + 12px))}
 #cg-hint{right:max(30px,calc(env(safe-area-inset-right) + 18px));bottom:max(22px,calc(env(safe-area-inset-bottom) + 14px))}
 .letter-close{top:max(12px,calc(env(safe-area-inset-top) + 8px));right:max(12px,calc(env(safe-area-inset-right) + 8px))}
+
+/* ===========================================================================
+   第三轮收口 · 真实状态反馈、情绪标记与弹层边界
+   只增强状态层；不改变对话框本体、文字内容或推进方式。
+   =========================================================================== */
+.title-status[data-save-state="saved"]::after{content:"";position:absolute;inset:-5px 18%;border:1px solid rgba(127,208,160,.14);border-radius:99px;pointer-events:none}
+.title-status[data-save-state="empty"] .title-status-dot{opacity:.8}
+.title-status[data-save-state="saved"] .title-status-dot{animation:savePulse 2.8s ease-in-out infinite}
+@keyframes savePulse{50%{box-shadow:0 0 0 4px rgba(127,208,160,.1),0 0 15px rgba(127,208,160,.5)}}
+
+/* 高情绪只通过已有 emo 字段调节光色，不替换立绘、不移动语义槽位。 */
+.p-slot.active:not(.dim)[data-emotion="happy"] img,
+.p-slot.active:not(.dim)[data-emotion="smile"] img{filter:brightness(1.07) saturate(1.1) drop-shadow(0 10px 25px rgba(241,217,143,.38))}
+.p-slot.active:not(.dim)[data-emotion="shy"] img{filter:brightness(1.03) saturate(.94) drop-shadow(0 10px 25px rgba(226,151,177,.35))}
+.p-slot.active:not(.dim)[data-emotion="sad"] img{filter:saturate(.72) brightness(.94) drop-shadow(0 9px 22px rgba(135,189,240,.2))}
+.p-slot.active:not(.dim)[data-emotion="serious"] img{filter:contrast(1.1) saturate(.86) brightness(.98) drop-shadow(0 10px 24px rgba(36,52,86,.48))}
+.p-slot.active:not(.dim)[data-emotion="surprised"] img{filter:brightness(1.08) saturate(1.04) drop-shadow(0 10px 28px rgba(135,189,240,.48))}
+.p-slot.active[data-emotion="happy"]::before,
+.p-slot.active[data-emotion="smile"]::before,
+.p-slot.active[data-emotion="shy"]::before,
+.p-slot.active[data-emotion="surprised"]::before{content:"";position:absolute;inset:14% 18% 4%;border-radius:50%;pointer-events:none;z-index:0;filter:blur(13px);opacity:.28}
+.p-slot.active[data-emotion="happy"]::before,
+.p-slot.active[data-emotion="smile"]::before{background:radial-gradient(ellipse,rgba(241,217,143,.5),transparent 68%)}
+.p-slot.active[data-emotion="shy"]::before{background:radial-gradient(ellipse,rgba(226,151,177,.46),transparent 68%)}
+.p-slot.active[data-emotion="surprised"]::before{background:radial-gradient(ellipse,rgba(135,189,240,.5),transparent 68%);animation:emotionGlow 1.35s ease-in-out infinite}
+@keyframes emotionGlow{50%{opacity:.5;transform:scale(1.04)}}
+
+/* CG 的 progress 不再只有 active class，同时表达正在显影/可继续两个状态。 */
+#cg-progress[data-state="typing"]{opacity:.68}
+#cg-progress[data-state="ready"]{opacity:.96;color:rgba(255,255,255,.78)}
+#cg-progress[data-state="ready"] i{animation-duration:3.2s}
+
+/* 弹层内部滚动到边界时不带动页面；焦点环在深色玻璃卡片上保持可见。 */
+.overlay,.letter-demo{overscroll-behavior:contain}
+.end-card{overscroll-behavior:contain}
+.letter-close:focus-visible{outline:2px solid var(--ui-blue);outline-offset:4px;box-shadow:0 0 0 5px rgba(135,189,240,.12)}
+
+@media(max-width:420px){
+  #hud{gap:3px;padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right))}
+  .hud-cols{gap:2px}
+  .hud-row1,.hud-row2{gap:3px;font-size:10px}
+  .hud-right{gap:3px}
+  .hud-right .chip{width:28px;height:28px;font-size:11px}
+  #action-bar{gap:3px}
+  .abtn{padding-left:2px;padding-right:2px;font-size:11px}
+  .abtn small{font-size:8px}
+  .end-card{padding:16px;max-height:calc(100dvh - 28px)}
+  #map-grid{gap:5px}
+  #cg-progress{gap:5px}
+  #cg-progress span{font-size:9px;letter-spacing:.1em}
+}

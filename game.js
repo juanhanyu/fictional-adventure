@@ -792,7 +792,7 @@ let codex = (()=>{ try { return JSON.parse(localStorage.getItem(CODEX_KEY) || '{
 
 // ========== UTILS ==========
 const $ = id => document.getElementById(id);
-const UI_LAYER_IDS = new Set(['card','map-overlay','stats-overlay','panel','pick-screen','duel-screen','cg-screen','battle-screen','codex','help-screen','sys-popup']);
+const UI_LAYER_IDS = new Set(['card','map-overlay','stats-overlay','panel','pick-screen','duel-screen','cg-screen','battle-screen','codex','help-screen','sys-popup','letter-demo']);
 const UI_LAYER_TRIGGERS = {'map-overlay':'btn-map-open','stats-overlay':'btn-stats',panel:'btn-panel',codex:'btn-codex','help-screen':'btn-help'};
 let uiReturnFocus = null;
 
@@ -819,7 +819,7 @@ function restoreUiFocus(){
 }
 function trapUiFocus(e){
   if(e.key!=='Tab') return;
-  const layers=[...document.querySelectorAll('.overlay:not(.hidden), #sys-popup:not(.hidden)')];
+  const layers=[...document.querySelectorAll('.overlay:not(.hidden), #sys-popup:not(.hidden), #letter-demo:not(.hidden)')];
   const layer=layers[layers.length-1];
   if(!layer) return;
   const nodes=uiFocusable(layer);
@@ -1134,7 +1134,10 @@ function migrateStorySave(raw){
   return raw;
 }
 
-function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
+function save(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){}
+  if(typeof updateTitleStatus==='function') updateTitleStatus();
+}
 function load(){
   try{
     const r=localStorage.getItem(SAVE_KEY);
@@ -1156,7 +1159,11 @@ function updateTitleStatus(){
   if(!label) return;
   const saved=hasSave();
   label.textContent=saved ? `已保存 · ${dateStr()} · ${phaseName()}` : '自动存档已开启 · 新生活尚未开始';
-  $('title-status')?.classList.toggle('has-save', saved);
+  const status=$('title-status');
+  if(status){
+    status.classList.toggle('has-save', saved);
+    status.dataset.saveState=saved?'saved':'empty';
+  }
 }
 function updateProgressA11y(){
   const bars=[['hud-hp',S.hp,S.mhp,'生命'],['hud-mp',S.mp,S.mmp,'魔力'],['hud-st',S.st,S.mst,'体力']];
@@ -1328,7 +1335,7 @@ function clearPortraits(){
   PORTRAIT_SLOTS.forEach(id=>{
     const el=$(id); if(!el) return;
     el.classList.add('hidden'); el.classList.remove('active','dim','ps-enter','ps-leave');
-    el.removeAttribute('data-char'); el.removeAttribute('data-slot'); el.style.left=''; el.onclick=null;
+    el.removeAttribute('data-char'); el.removeAttribute('data-slot'); el.removeAttribute('data-emotion'); el.style.left=''; el.onclick=null;
   });
   $('css-portraits').innerHTML='';
   stage = [];
@@ -1391,6 +1398,7 @@ function setPortrait(el, charId, emotion, active, slot){
   img.alt = CHARS[charId]?.name || CSS_CHARS[charId]?.[0] || charId || '';
   el.setAttribute('data-char', charId||'');
   if(slot) el.setAttribute('data-slot',slot);
+  el.setAttribute('data-emotion', emotion||'normal');
   el.classList.remove('hidden');
   nm.textContent = (charId==='sylvia' && !flag('named')) ? '？？？' : (CHARS[charId]?.short || charId);
   el.classList.toggle('active', active); el.classList.toggle('dim', !active);
@@ -1412,6 +1420,7 @@ function showPortrait(charId, emotion='normal', slot='center', active=true){
   // 记录当前角色与语义槽位，供 CSS/无障碍状态识别
   el.setAttribute('data-char', charId||'');
   el.setAttribute('data-slot', slot);
+  el.setAttribute('data-emotion', emotion||'normal');
   const img = el.querySelector('img');
   const nm = el.querySelector('.p-name');
   // 未命名前不显示主角立绘
@@ -1984,6 +1993,8 @@ function cgSetReady(ready){
   if(!cs) return;
   cs.classList.toggle('cg-typing',!ready);
   cs.classList.toggle('cg-ready',!!ready);
+  const progress=$('cg-progress');
+  if(progress) progress.dataset.state=ready?'ready':'typing';
   const hint=$('cg-hint');
   if(hint) hint.textContent=ready?'点击继续 · Enter':'正在显影…';
 }
@@ -2067,7 +2078,7 @@ function cgHide(){
   $('cg-bg').style.backgroundImage = '';
   $('cg-text').innerHTML = '';
   const progress=$('cg-progress');
-  if(progress) progress.classList.remove('is-active');
+  if(progress){ progress.classList.remove('is-active'); progress.removeAttribute('data-state'); }
   const cs2=$('cg-screen');
   if(cs2){ cs2.removeAttribute('data-image'); cs2.removeAttribute('data-tone'); cs2.removeAttribute('data-speaker'); cs2.classList.remove('cg-typing','cg-ready'); }
 }
@@ -4053,8 +4064,8 @@ enterLoc = function(id){
 function openLetterDemo(){
   const demo=$('letter-demo');
   if(!demo) return false;
-  demo.classList.remove('hidden','playing','revealed');
-  demo.setAttribute('aria-hidden','false');
+  demo.classList.remove('playing','revealed');
+  show(demo,1);
   // 强制回流，让每次从标题页打开时都能从封蜡完整重播。
   void demo.offsetWidth;
   demo.classList.add('playing');
@@ -4071,9 +4082,8 @@ function revealLetterDemo(){
 function closeLetterDemo(){
   const demo=$('letter-demo');
   if(!demo) return false;
-  demo.classList.add('hidden');
+  show(demo,0);
   demo.classList.remove('playing','revealed');
-  demo.setAttribute('aria-hidden','true');
   const btn=$('btn-letter-test');
   if(btn && typeof btn.focus==='function') btn.focus();
   return true;

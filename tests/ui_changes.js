@@ -35,6 +35,8 @@ ok('内部 S.phase 仍为 academy', win.__getS().phase==='academy');
 
 win.__resetS();
 const st2=win.__getS(); st2.picksDone=[0,1]; win.__setS(st2);
+win.save();
+ok('保存后标题状态同步为已保存', $('title-status').dataset.saveState==='saved' && $('title-status-text').textContent.includes('已保存'));
 win.openPanel('status');
 ok('角色面板分类使用 tab 语义', $('panel-tabs').getAttribute('role')==='tablist' && $('panel-tabs').querySelector('[role="tab"]'));
 ok('角色面板 tab 标记当前页', $('panel-tabs').querySelector('[role="tab"][aria-selected="true"]')?.dataset.t==='status');

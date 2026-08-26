@@ -378,7 +378,7 @@ SCENES.s_turnpoint = {
       T('出口藏在林地边缘。推开石门，冬夜冷风迎面吹来。远处城墙上方泛着橘红色的光，公爵府正在燃烧。', { bg:'bg-img-forest bg-forest', loc:'road', portraits:[] }),
       T('系统面板在视野边缘闪动，我没有打开。父亲让我往东，我便转过身，穿过冬夜的林地。眼下只能先活下来。'),
 
-      { cg:'parents_battle.jpg', text:'以下，希尔维亚·维斯特利亚无从知晓。', portraits:[] },
+      { cg:'parents_battle.jpg', text:'以下，希尔维亚·维斯特利亚无从知晓。', portraits:[], bgm:'battle' },
       { cg:'parents_battle.jpg', text:'暗门闭合后，克劳德仍旧望着墙壁，直到确认再也听不见女儿的脚步。' },
       { cg:'parents_battle.jpg', ch:'sophia', speaker:'索菲亚', text:'东翼也有人。' },
       { cg:'parents_battle.jpg', ch:'claude', speaker:'克劳德', text:'雷纳德能应付。' },
@@ -401,7 +401,7 @@ SCENES.s_turnpoint = {
       { cg:'parents_battle.jpg', text:'两种魔力交叠，照亮残破走廊，也照亮他们并肩的身影。这一次，他们依旧没有后退。' },
 
       // —— 贝阿特丽丝视角：从她发现袭击开始 ——
-      { text:'公爵府另一侧，碎裂声响起时，贝阿特丽丝还在修改论文。', portraits:[], pov:'beatrice' },
+      { text:'公爵府另一侧，碎裂声响起时，贝阿特丽丝还在修改论文。', portraits:[], pov:'beatrice', bgm:'upset' },
       { text:'她终于意识到家里出了大事，丢下论文推门出去。雷纳德刚从客房出来，平日的懒散已经从他身上消失。' },
       { ch:'reno', speaker:'雷纳德', text:'去找爱丽丝，带她往后院走。' },
       { ch:'beatrice', speaker:'贝阿特丽丝', text:'叔叔，发生了什么？' },
@@ -437,7 +437,7 @@ SCENES.s_turnpoint = {
       { cg:'parting.png', ch:'beatrice', speaker:'贝阿特丽丝', text:'跑出去，走得越远越好。然后去找希尔维亚。' },
       // —— 贝阿特丽丝迎战：诀别之后 ——
 
-      { cg:'beatrice_battle.png', text:'侍从开始拉爱丽丝。她挣扎着不肯走，目光牢牢盯着姐姐。' },
+      { cg:'beatrice_battle.png', text:'侍从开始拉爱丽丝。她挣扎着不肯走，目光牢牢盯着姐姐。', bgm:'battle' },
       { cg:'beatrice_battle.png', text:'贝阿特丽丝转过身，举起右手。火光在指间亮起，将通道照成温暖的橘红色。' },
       { cg:'beatrice_battle.png', text:'她不知道来者有多强，也不知道自己能撑多久。她只知道再多撑一秒，爱丽丝就能多走一段。' },
       { cg:'beatrice_battle.png', text:'火焰从掌心奔涌而出，瞬间灌满狭窄通道。' },
@@ -477,7 +477,7 @@ SCENES.s_turnpoint = {
       { cg:'reno_diji.jpg', text:'清晨，他的心跳与呼吸逐渐微弱，体温也慢慢下降。发现他的人只找到一具冷透的身体。' },
       { cg:'reno_diji.jpg', text:'消息很快传出去：雷纳德·维斯特利亚伤重不治，公爵家最后一位成年的幸存者也已死亡。' },
 
-      { cg:'end', bg:'bg-img-forest bg-forest', loc:'road', text:'以上，希尔维亚·维斯特利亚无从知晓。', pov:false },
+      { cg:'end', bg:'bg-img-forest bg-forest', loc:'road', text:'以上，希尔维亚·维斯特利亚无从知晓。', pov:false, bgm:'sad' },
       T('我走了整夜。父亲只说往东。离开林地后，东边是广阔农田与零散村镇，没有真正的目的地。', { bg:'bg-img-plain bg-plain', loc:'road', portraits:[] }),
       T('我在结冰的水渠旁坐下。呼出的白气很快被风吹散，手脚冷得没有知觉。冰系亲和原本让我比常人耐寒，如今那股冷却像从身体内部漫出来。'),
       T('冬日太阳从云后透出，远方村庄升起炊烟。那里的人正在做饭、烧水，昨夜发生的一切离他们很远。'),
@@ -2300,7 +2300,7 @@ SCENES.s_turnpoint = {
   };
 
   SCENES.s_ajun = {
-    bgm: 'cheerful',
+    bgm: 'comedy_fast',
     bg: 'bg-img-dorm bg-room',
     loc: 'dorm',
     phase: 'academy',
@@ -2520,7 +2520,7 @@ SCENES.s_turnpoint = {
 
   // 与艾诺比试（第四章 距离）
   SCENES.s_aino_sparring = {
-    bgm: 'academy',
+    bgm: 'battle',
     bg: 'bg-img-ice-classroom bg-school',
     loc: 'ice_class',
     phase: 'academy',
@@ -2599,7 +2599,7 @@ SCENES.s_turnpoint = {
   };
 
   SCENES.s_tree = {
-    bgm: 'peaceful',
+    bgm: 'relax',
     bg: 'bg-img-memorial bg-garden',
     loc: 'memorial',
     phase: 'academy',
@@ -2731,7 +2731,7 @@ SCENES.s_turnpoint = {
   };
 
   SCENES.s_jikan_arrive = {
-    bgm: 'peaceful',
+    bgm: 'relax',
     bg: 'bg-img-jikan bg-room',
     phase: 'journey',
     card: { vol: '第三卷', t: '霁馆', s: '草叶船' },

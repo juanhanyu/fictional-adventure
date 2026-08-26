@@ -3894,7 +3894,7 @@ SCENES.s_reno_arrive = {
 // ※ 旧版 s_alice_affinity 已删除（与 js/story.js 中的新版重复，新版会覆盖旧版）
 
 SCENES.s_beatrice_leaves = {
-  bgm:'peaceful', bg:'bg-img-hallway bg-hall', phase:'youth',
+  bgm:'emotional', bg:'bg-img-hallway bg-hall', phase:'youth',
   lines:[
     {text:'十岁。姐姐要去魔法大学了。', portraits:[
       {id:'sylvia', slot:'left', active:false},
@@ -4165,7 +4165,7 @@ SCENES.s_beach = {
 };
 
 SCENES.s_star_festival = {
-  bgm:'relax', bg:'bg-night', phase:'academy',
+  bgm:'romantic', bg:'bg-night', phase:'academy',
   card:{vol:'第二卷', t:'第九章', s:'并肩的树 · 星辰祭'},
   lines:[
     {text:'星辰祭。六年一次。家长开放日。'},

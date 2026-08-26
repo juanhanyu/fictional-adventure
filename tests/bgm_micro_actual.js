@@ -8,7 +8,7 @@ let srcs=[];
 win.HTMLMediaElement.prototype.play=function(){const s=decodeURIComponent(this.src||'').split('/').pop(); if(!srcs.length||srcs[srcs.length-1]!==s) srcs.push(s); return Promise.resolve();};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 (async()=>{
-  const flags=['ch_first_word','ch_alice_born','ch_child_days','ch_age4','ch_yaoshen','ch_sisters_grow','ch_reno_arrive','ch_alice_affinity','ch_beatrice_day'];
+  const flags=['ch_first_word','ch_alice_born','ch_child_days','ch_age4','ch_yaoshen','ch_sisters_grow','ch_reno_arrive','ch_alice_affinity','ch_beatrice_day','ch_tier1_story'];
   win.__resetS();
   const s=win.__getS();
   Object.assign(s,{ageY:7,year:7,month:12,day:1,phase:'youth',tod:1,flags:{named:1}});

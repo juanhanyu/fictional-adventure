@@ -745,7 +745,6 @@ body[data-mode="story"] #hud{border-bottom-color:rgba(201,162,39,.3)}
 /* 舞台：语义槽位、地点标签与立绘的边缘光 */
 #stage{isolation:isolate;background:radial-gradient(ellipse at 50% 100%,rgba(12,8,25,.06),transparent 64%)}
 #stage::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 70%,transparent 25%,rgba(4,3,10,.16) 100%);pointer-events:none;z-index:0}
-#stage::after{content:"";position:absolute;left:7%;right:7%;bottom:calc(var(--boxh) + var(--dialog-gap) - 1px);height:1px;background:linear-gradient(90deg,transparent,rgba(220,232,245,.18),rgba(201,162,39,.24),rgba(220,232,245,.18),transparent);pointer-events:none;z-index:5}
 #loc-bar{left:16px;right:16px;top:12px;padding:8px 14px;background:linear-gradient(90deg,rgba(9,8,19,.76),rgba(24,17,37,.53),rgba(9,8,19,.72));border:1px solid rgba(220,232,245,.1);border-left:3px solid var(--gold);border-radius:9px;box-shadow:0 8px 20px rgba(0,0,0,.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 #loc-name{letter-spacing:.05em;text-shadow:0 0 13px rgba(201,162,39,.2)}
 #loc-desc{color:#d4cfda}
@@ -766,7 +765,6 @@ body[data-mode="story"] #hud{border-bottom-color:rgba(201,162,39,.3)}
 .hotspot:hover{border-color:rgba(241,217,143,.8);box-shadow:0 11px 26px rgba(0,0,0,.5),0 0 18px rgba(201,162,39,.15)}
 .hotspot .hs-icon{filter:drop-shadow(0 2px 4px rgba(0,0,0,.45))}
 #action-bar{position:relative;min-height:68px;padding:9px max(14px,env(safe-area-inset-right)) max(9px,max(14px,env(safe-area-inset-left)));gap:7px;background:linear-gradient(180deg,rgba(15,10,27,.87),rgba(11,9,20,.94));border-top:1px solid rgba(220,232,245,.1);box-shadow:0 -8px 22px rgba(0,0,0,.16);backdrop-filter:blur(13px);-webkit-backdrop-filter:blur(13px)}
-#action-bar::before{content:"";position:absolute;left:10%;right:10%;top:-1px;height:1px;background:linear-gradient(90deg,transparent,rgba(135,189,240,.28),rgba(201,162,39,.3),rgba(135,189,240,.28),transparent)}
 .abtn{position:relative;min-height:40px;padding:9px 14px;border-radius:10px;background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.025));border-color:rgba(220,232,245,.14);box-shadow:inset 0 1px rgba(255,255,255,.06),0 4px 11px rgba(0,0,0,.18);color:#eee7db}
 .abtn:hover{transform:translateY(-2px);background:linear-gradient(145deg,rgba(201,162,39,.24),rgba(66,45,97,.3));border-color:rgba(241,217,143,.76);box-shadow:0 8px 18px rgba(0,0,0,.28),0 0 14px rgba(201,162,39,.1)}
 .abtn.primary{background:linear-gradient(145deg,rgba(100,68,143,.86),rgba(44,34,77,.92));border-color:rgba(201,162,39,.53);color:#fff2ce}
@@ -1012,7 +1010,6 @@ kbd{display:inline-block;min-width:24px;padding:2px 5px;margin:0 2px;border:1px 
 /* 阶段色彩只作用于装饰，不改变任何剧情状态 */
 #hud::after{background:linear-gradient(90deg,transparent,var(--phase-cool) 25%,var(--phase-accent) 50%,var(--phase-cool) 75%,transparent)}
 #loc-bar{border-left-color:var(--phase-accent)}
-#action-bar::before{background:linear-gradient(90deg,transparent,var(--phase-cool),var(--phase-accent),var(--phase-cool),transparent)}
 
 /* 触屏设备把点击热区拉到可用尺寸，同时保留桌面端紧凑布局 */
 @media(pointer:coarse){

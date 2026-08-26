@@ -11,7 +11,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .hidden{display:none!important}
 
 /* ===== BG ===== */
-#bg{position:fixed;inset:0;background-size:cover;background-position:center;transition:opacity .32s,filter .32s;z-index:0}
+#bg,#bg-next{position:fixed;inset:0;background-size:cover;background-position:center;transition:opacity .6s ease;z-index:0}
+#bg-next{opacity:0}
 #bg-veil{position:fixed;inset:0;background:linear-gradient(180deg,rgba(10,8,18,.35),rgba(10,8,18,.55) 60%,rgba(10,8,18,.8));z-index:1;pointer-events:none}
 #fx{position:fixed;inset:0;z-index:2;pointer-events:none}
 .bg-title{background:linear-gradient(160deg,#1a1030 0%,#2a1848 40%,#0e1a2e 100%)}

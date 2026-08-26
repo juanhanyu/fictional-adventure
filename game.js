@@ -1230,23 +1230,94 @@ function updateHUD(){
   updateActionBar();
 }
 
-function setBG(cls){
-  const bg=$('bg');
-  const newCls = (cls||'bg-title').trim();
-  // 同背景不重复切（也避免多余淡出淡入）
-  if(bg.getAttribute('data-cls')===newCls) return;
-  const apply=()=>{
-    bg.className=''; bg.setAttribute('data-cls', newCls);
-    (newCls||'bg-title').split(/\s+/).forEach(c=>bg.classList.add(c));
-    bg.style.opacity='1';
-  };
-  if(bg.getAttribute('data-cls')){       // 已有背景 → 先淡出再切入（渐进渐出）
-    bg.style.opacity='0';
-    setTimeout(apply, 320);
+const BG_FADE_MS = 600;
+const BG_OVERLAP_MS = 500;
+const BG_FADE_DELAY_MS = BG_FADE_MS - BG_OVERLAP_MS;
+let bgActiveId = 'bg';
+let bgTransition = null;
+
+function setBGLayer(layer, cls){
+  if(!layer) return;
+  layer.className='';
+  layer.setAttribute('data-cls', cls);
+  (cls||'bg-title').split(/\s+/).forEach(c=>layer.classList.add(c));
+}
+function snapBGLayer(layer, opacity){
+  if(!layer) return;
+  layer.style.transition='none';
+  layer.style.opacity=String(opacity);
+  void layer.offsetWidth;
+  layer.style.transition='';
+}
+function clearBGLayer(layer){
+  if(!layer) return;
+  layer.className='';
+  layer.removeAttribute('data-cls');
+  layer.style.opacity='0';
+}
+function finishBGTransition(keepIncoming=true){
+  const t=bgTransition;
+  if(!t) return;
+  clearTimeout(t.fadeOutTimer);
+  clearTimeout(t.finishTimer);
+  const outgoing=$(t.outgoingId), incoming=$(t.incomingId);
+  if(keepIncoming){
+    snapBGLayer(outgoing,0);
+    snapBGLayer(incoming,1);
+    clearBGLayer(outgoing);
+    bgActiveId=t.incomingId;
   } else {
-    apply();
+    snapBGLayer(outgoing,1);
+    snapBGLayer(incoming,0);
+    clearBGLayer(incoming);
+    bgActiveId=t.outgoingId;
   }
-  // 不再在此自动切换音乐：场景 bgm 贯穿剧情，自由探索在进入地点时切
+  bgTransition=null;
+}
+function setBG(cls){
+  const newCls = (cls||'bg-title').trim();
+  let active=$(bgActiveId);
+  if(!active) return;
+
+  // 同背景不重复切；若切换尚未结束，先处理当前两层的最终状态。
+  if(bgTransition){
+    const pending=bgTransition;
+    const outgoing=$(pending.outgoingId), incoming=$(pending.incomingId);
+    if(incoming?.getAttribute('data-cls')===newCls) return;
+    if(outgoing?.getAttribute('data-cls')===newCls){
+      finishBGTransition(false);
+      return;
+    }
+    finishBGTransition(true);
+    active=$(bgActiveId);
+  }
+  if(active.getAttribute('data-cls')===newCls) return;
+
+  const incomingId=bgActiveId==='bg'?'bg-next':'bg';
+  const incoming=$(incomingId);
+  if(!incoming) return;
+
+  setBGLayer(incoming,newCls);
+  snapBGLayer(incoming,0);
+  snapBGLayer(active,1);
+  const t=bgTransition={outgoingId:bgActiveId,incomingId};
+
+  // 新背景先显影，旧背景延后 0.1s 淡出：两段各 0.6s，实际重叠约 0.5s。
+  requestAnimationFrame(()=>{
+    if(bgTransition===t) incoming.style.opacity='1';
+  });
+  t.fadeOutTimer=setTimeout(()=>{
+    if(bgTransition===t) active.style.opacity='0';
+  },BG_FADE_DELAY_MS);
+  t.finishTimer=setTimeout(()=>{
+    if(bgTransition!==t) return;
+    active.style.opacity='0';
+    incoming.style.opacity='1';
+    clearBGLayer(active);
+    bgActiveId=incomingId;
+    bgTransition=null;
+  },BG_FADE_DELAY_MS+BG_FADE_MS);
+  // 不在此自动切换音乐：场景 bgm 贯穿剧情，自由探索在进入地点时切。
 }
 
 // ========== PORTRAITS ==========
@@ -3619,7 +3690,8 @@ function applySettings(){
   bgmSetVolume(s.bgm); bgmApplyMute(); applyBrightness(s.bright);
 }
 function applyBrightness(v){
-  const bg=$('bg'); if(bg) bg.style.filter = (v && v!==1) ? `brightness(${v})` : '';
+  const filter = (v && v!==1) ? `brightness(${v})` : '';
+  ['bg','bg-next'].forEach(id=>{ const bg=$(id); if(bg) bg.style.filter=filter; });
 }
 $('btn-panel').onclick=()=>openPanel('status');
 $('btn-panel-close').onclick=()=>show('panel',0);

@@ -952,8 +952,6 @@ kbd{display:inline-block;min-width:24px;padding:2px 5px;margin:0 2px;border:1px 
 .p-slot{transition:left .28s ease,opacity .2s ease,transform .28s ease;transform:translateX(-50%);will-change:left,opacity,transform}
 .p-slot.ps-enter{opacity:0}
 .p-slot.ps-leave{opacity:0}
-.p-slot.active img{animation:portraitBreath 5s ease-in-out infinite}
-@keyframes portraitBreath{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
 
 /* 章节卡 / CG 进度信息：增强临场感但不新增剧情文本 */
 #card-hint{position:absolute;bottom:28px;left:0;right:0;text-align:center;color:rgba(220,232,245,.55);font-size:11px;letter-spacing:.12em;animation:pulse 1.5s ease-in-out infinite}

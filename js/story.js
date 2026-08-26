@@ -39,7 +39,9 @@
   ];
 
   const T = (text, extra) => Object.assign({ text }, extra || {});
-  const say = (ch, text, extra) => Object.assign({ ch, speaker: null, text }, extra || {});
+  // say() 表示已经在当前场景里的常规对话；若需表现真正新入场，可显式传 resident:false。
+  // 这样驻场对话不会因为说话人暂时未列在当前焦点 portraits 中而被演成插话。
+  const say = (ch, text, extra) => Object.assign({ ch, speaker: null, text, resident: true }, extra || {});
   // speaker names filled at runtime via CHARS if speaker omitted and ch set
 
   /** 立绘列表：'alice' 或 ['beatrice','left','normal']；传 [] 表示清空舞台 */

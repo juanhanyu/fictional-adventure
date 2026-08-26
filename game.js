@@ -1285,9 +1285,12 @@ function freeStageSlot(taken, preferred){
   if(preferred && !taken.has(preferred)) return preferred;
   return STAGE_SLOT_NAMES.find(slot=>!taken.has(slot)) || null;
 }
-function defaultSpeakerSlot(chId, current){
+function defaultSpeakerSlot(chId, current, preferred=null){
   const now=stageWithSlots(current);
   const taken=new Set(now.map(s=>s.slot));
+  // 剧情行显式给出的 slot 是驻场对话的既定位置，优先按数据落位；
+  // 只有真正没有位置提示的新角色，才走默认的入场槽位策略。
+  if(preferred && STAGE_SLOT_NAMES.includes(preferred) && !taken.has(preferred)) return preferred;
   // 新加入的主导者优先占左侧；主角不在场时贝蒂优先占左侧。
   if(chId==='sylvia' && !taken.has('left')) return 'left';
   if(chId==='beatrice' && !taken.has('left') && !now.some(s=>s.id==='sylvia')) return 'left';
@@ -1355,42 +1358,91 @@ function applyStageFocus(f){
   applyStage(next);
 }
 // 单人说：基于当前 stage，让说话人高亮、其余在场者置暗；说话人不在场则追加
-function appendSpeaker(chId, emo){
+function appendSpeaker(chId, emo, requestedSlot=null){
   const current=stageWithSlots(stage);
+  const existing=current.find(s=>s.id===chId);
   const next=current.map(s=>({ ...s, emo:s.id===chId?(emo||s.emo):s.emo, active:s.id===chId }));
-  if(!next.some(s=>s.id===chId)) next.push({ id:chId, slot:defaultSpeakerSlot(chId,current), emo:emo||'normal', active:true });
+  if(existing) return next; // 驻场角色：只切换高亮/表情，不重新入场
+
+  const slot=defaultSpeakerSlot(chId,current,requestedSlot);
+  // 显式 slot 表示作者已经为这句对话指定了位置；若该槽被旧角色
+  // 占用，则按槽位语义替换它，而不是把新角色顺延到另一个位置。
+  if(requestedSlot && STAGE_SLOT_NAMES.includes(requestedSlot)){
+    const at=next.findIndex(s=>s.slot===requestedSlot);
+    if(at>=0) next[at]={id:chId,slot:requestedSlot,emo:emo||'normal',active:true};
+    else next.push({id:chId,slot,emo:emo||'normal',active:true});
+  }else{
+    next.push({id:chId,slot,emo:emo||'normal',active:true});
+  }
   return next;
 }
 // 应用一组立绘：以语义槽位 diff 当前 stage → 保留在场者(仅切换高亮/置暗)，
 // 只有真正换人/新增时才允许重新构图。
-function applyStage(next){
+function applyStage(next, options={}){
   const target=normalizeStage(next);
   const prev=stageWithSlots(stage);
   const prevBySlot=new Map(prev.map(s=>[s.slot,s]));
+  const prevById=new Map(prev.map(s=>[s.id,s]));
   const nextBySlot=new Map(target.map(s=>[s.slot,s]));
+  const animate=options.animate!==false;
+  const clearEl=el=>{
+    el.classList.add('hidden');
+    el.classList.remove('active','dim','ps-enter','ps-leave');
+    el.removeAttribute('data-char');
+    el.removeAttribute('data-slot');
+    el.removeAttribute('data-emotion');
+  };
 
   STAGE_SLOT_NAMES.forEach(slot=>{
     const el=$(STAGE_SLOT_ELEMENTS[slot]); if(!el) return;
     const want=nextBySlot.get(slot)||null;
     const have=prevBySlot.get(slot)||null;
-    // 对话行是同步构图：显式 portraits / 直接驻场说话都不再被包装成插话式淡入。
-    // 真正的场景切换仍由 clearPortraits() 负责清台，但不做额外延时。
-    el.classList.remove('ps-enter','ps-leave');
-    if(want){
+    const movedResident=!!(want && prevById.has(want.id) && prevById.get(want.id).slot!==slot);
+    if(want && have && want.id===have.id){
+      // 驻场角色：只更新表情/明暗，绝不重复播放入场动画。
       setPortrait(el, want.id, want.emo, want.active!==false, slot);
-      el.classList.remove('hidden');
+      el.classList.remove('ps-enter','ps-leave');
+    } else if(want){
+      // 真正新增或换人时才淡入；已有角色只是换槽，直接落位，避免被演成插话。
+      setPortrait(el, want.id, want.emo, want.active!==false, slot);
+      el.classList.remove('hidden','ps-leave');
+      if(animate && !movedResident){
+        el.classList.add('ps-enter');
+        requestAnimationFrame(()=>{
+          if(el.getAttribute('data-char')===want.id && el.getAttribute('data-slot')===slot){
+            el.classList.remove('ps-enter');
+          }
+        });
+      }else{
+        el.classList.remove('ps-enter');
+      }
     } else if(have){
-      el.classList.add('hidden');
-      el.classList.remove('active','dim');
-      el.removeAttribute('data-char');
-      el.removeAttribute('data-slot');
-      el.removeAttribute('data-emotion');
+      // 角色只是从这个 DOM 槽位移到另一个仍在场的槽位：旧槽立即清掉，
+      // 否则淡出计时器会在下一句继续留下一个「幽灵」立绘。
+      if(target.some(s=>s.id===have.id)){
+        clearEl(el);
+      }else if(!animate){
+        clearEl(el);
+      }else{
+        // 真正离场时淡出；定时器被后续重新入场安全地取消。
+        el.classList.remove('ps-enter');
+        el.classList.add('ps-leave');
+        const _el=el;
+        setTimeout(()=>{
+          if(_el.classList.contains('ps-leave')) clearEl(_el);
+        }, 200);
+      }
+    } else if(!el.classList.contains('ps-leave')){
+      // 处理已由 stage 记录移除、但上一句淡出尚未结束的旧 DOM 槽位。
+      if(el.getAttribute('data-char')) clearEl(el);
+      else el.classList.remove('ps-enter');
     }
   });
   stage=target;
   updateStagePresentation();
   layoutPortraits();
 }
+
 function setPortrait(el, charId, emotion, active, slot){
   const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emotion) : (PORTRAIT_FILES[charId+'_'+(emotion||'normal')]||PORTRAIT_FILES[charId+'_normal']);
   if(!file){ el.classList.add('hidden'); addCssPortrait(charId, active); return; }
@@ -1626,8 +1678,10 @@ function applyLineEffects(L){
     // 若需在多人对话中特写某动作同时保留主导者，剧情数据应写成 2 元素数组（聚焦人+主导者）。
     applyStage(arr);
   } else if(L.ch){
-    // 单人说：保留当前在场立绘（非说话人置暗，不消除），说话人高亮；若说话人不在场则加入
-    applyStage(appendSpeaker(L.ch, L.emo||'normal'));
+    // 单人说：已在场角色只切换高亮/表情，不重复入场；若确实不在场，
+    // 按数据给出的 slot 或默认策略入场。剧情 helper say() 可用 resident 标记表示
+    // 这是已经驻场的对话角色，此时只直接落位，不演成插话式入场。
+    applyStage(appendSpeaker(L.ch, L.emo||'normal', L.slot||null), { animate: L.resident!==true });
     if(!L.speaker && CHARS[L.ch]) L.speaker = CHARS[L.ch].short;
   } else if(L.bg && stage.length){
     // 切换了背景但本行没有显式立绘指令（纯旁白/事件转换）：视为进入新场景事件，回收立绘

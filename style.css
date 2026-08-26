@@ -11,7 +11,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .hidden{display:none!important}
 
 /* ===== BG ===== */
-#bg{position:fixed;inset:0;background-size:cover;background-position:center;transition:opacity .6s,filter .6s;z-index:0}
+#bg{position:fixed;inset:0;background-size:cover;background-position:center;transition:opacity .32s,filter .32s;z-index:0}
 #bg-veil{position:fixed;inset:0;background:linear-gradient(180deg,rgba(10,8,18,.35),rgba(10,8,18,.55) 60%,rgba(10,8,18,.8));z-index:1;pointer-events:none}
 #fx{position:fixed;inset:0;z-index:2;pointer-events:none}
 .bg-title{background:linear-gradient(160deg,#1a1030 0%,#2a1848 40%,#0e1a2e 100%)}
@@ -100,7 +100,7 @@ body.roam #stage{--boxh:max(56px,calc(131px - var(--abh)))}
 
 /* portraits */
 #portraits{position:absolute;left:0;right:0;bottom:calc(var(--boxh) + var(--dialog-gap));top:40px;pointer-events:none;z-index:6}
-.p-slot{position:absolute;bottom:0;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;transition:left .28s ease,opacity .22s ease;max-height:100%}
+.p-slot{position:absolute;bottom:0;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;transition:left .28s ease,opacity .2s ease;max-height:100%}
 .p-slot img{width:auto;height:var(--ph);max-width:none;max-height:none;flex:0 0 var(--ph);object-fit:contain;object-position:center bottom;filter:drop-shadow(0 8px 20px rgba(0,0,0,.5));transition:filter .3s,transform .3s}
 .p-slot.dim img{filter:brightness(.45) drop-shadow(0 4px 10px rgba(0,0,0,.4))}
 .p-slot.active img{filter:brightness(1.05) drop-shadow(0 8px 24px rgba(201,162,39,.3))}
@@ -949,7 +949,9 @@ kbd{display:inline-block;min-width:24px;padding:2px 5px;margin:0 2px;border:1px 
 #stage[data-focus="beatrice"]{--focus-glow:rgba(232,128,90,.1)}
 #stage[data-focus="yaoshen"]{--focus-glow:rgba(201,162,39,.1)}
 #stage[data-focus] #portraits::after{content:"";position:absolute;inset:10% 16% 0;background:radial-gradient(ellipse at 50% 70%,var(--focus-glow,rgba(255,255,255,.06)),transparent 65%);mix-blend-mode:screen;pointer-events:none;z-index:-1}
-.p-slot{transition:left .28s ease,opacity .22s ease,transform .28s ease;transform:translateX(-50%);will-change:left,opacity,transform}
+.p-slot{transition:left .28s ease,opacity .2s ease,transform .28s ease;transform:translateX(-50%);will-change:left,opacity,transform}
+.p-slot.ps-enter{opacity:0}
+.p-slot.ps-leave{opacity:0}
 .p-slot.active img{animation:portraitBreath 5s ease-in-out infinite}
 @keyframes portraitBreath{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
 

@@ -40,6 +40,10 @@ const boss=st.find(s=>s.char==='merchant_bakery');
 ok('老板(非说话人)被置暗', boss && boss.dim===true);
 win.applyLineEffects({portraits:[{id:'beatrice',slot:'left',emo:'shy',active:true}]});
 ok('立绘保留已有 emo 状态供高情绪样式读取', $('p-left').getAttribute('data-emotion')==='shy');
+ok('单人构图回到原版居中位置', (()=>{ win.applyLineEffects({portraits:[{id:'beatrice',slot:'left',active:true}]}); return $('p-left').style.left==='50%'; })());
+ok('双人构图回到原版 30/70 位置', (()=>{ win.applyLineEffects({portraits:[{id:'beatrice',slot:'left',active:true},{id:'alice',slot:'right',active:false}]}); return $('p-left').style.left==='30%' && $('p-right').style.left==='70%'; })());
+ok('四人构图回到原版 14/38/62/86 位置', (()=>{ win.applyLineEffects({portraits:[{id:'beatrice',slot:'left',active:true},{id:'alice',slot:'center',active:false},{id:'merchant_bakery',slot:'right',active:false},{id:'sylvia',slot:'fourth',active:false}]}); return $('p-left').style.left==='14%' && $('p-center').style.left==='38%' && $('p-right').style.left==='62%' && $('p-fourth').style.left==='86%'; })());
+ok('对话行不再自动添加立绘淡入淡出类', !['p-left','p-center','p-right','p-fourth'].some(id=>$(id).classList.contains('ps-enter')||$(id).classList.contains('ps-leave')));
 
 // ④ 药神场景回归：DUO → 旁白/心理活动 N(数组顺序相反) → DUO，
 // 主角和药神的语义槽位必须始终是「主角左、药神右」。

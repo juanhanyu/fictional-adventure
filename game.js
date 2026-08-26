@@ -1255,7 +1255,13 @@ const STAGE_SLOT_NAMES = ['left','center','right','fourth'];
 const STAGE_SLOT_ELEMENTS = { left:'p-left', center:'p-center', right:'p-right', fourth:'p-fourth' };
 // 槽位是语义位置，不是「当前数组第几个」：旁白/心理活动重新给 portraits 时，
 // 只要人物仍在场，就沿用原来的槽位，避免主角与药神之类的立绘来回交换。
-const STAGE_SLOT_POSITIONS = { left:'28%', center:'50%', right:'72%', fourth:'88%' };
+// 不同人数使用原版协调构图；slot 只决定左右顺序，不决定固定的绝对间距。
+const STAGE_POSITION_PRESETS = {
+  1:['50%'],
+  2:['30%','70%'],
+  3:['20%','50%','80%'],
+  4:['14%','38%','62%','86%'],
+};
 let stage = [];            // 当前在场立绘 [{id,slot,emo,active}]，slot=left/center/right/fourth
 let stageSid = null;       // 当前所在场景id（用于场景切换时强制清台）
 let curSpeakerId = null;   // 当前说话人 id（对话框小胸像用）
@@ -1367,22 +1373,18 @@ function applyStage(next){
     const el=$(STAGE_SLOT_ELEMENTS[slot]); if(!el) return;
     const want=nextBySlot.get(slot)||null;
     const have=prevBySlot.get(slot)||null;
-    if(want && have && want.id===have.id){
-      // 同人：更新 emo/active，不重排、不闪
-      setPortrait(el, want.id, want.emo, want.active!==false, slot);
-      if(el.classList.contains('ps-enter')) el.classList.remove('ps-enter');
-    } else if(want){
-      // 该槽换人/新增：淡入
+    // 对话行是同步构图：显式 portraits / 直接驻场说话都不再被包装成插话式淡入。
+    // 真正的场景切换仍由 clearPortraits() 负责清台，但不做额外延时。
+    el.classList.remove('ps-enter','ps-leave');
+    if(want){
       setPortrait(el, want.id, want.emo, want.active!==false, slot);
       el.classList.remove('hidden');
-      el.classList.remove('ps-leave');
-      el.classList.add('ps-enter');
-      requestAnimationFrame(()=>{ el.classList.remove('ps-enter'); });
     } else if(have){
-      // 该槽原本有人、现在空：淡出后隐藏
-      el.classList.add('ps-leave');
-      const _el=el;
-      setTimeout(()=>{ if(_el.classList.contains('ps-leave')){ _el.classList.add('hidden'); _el.classList.remove('ps-leave'); } }, 240);
+      el.classList.add('hidden');
+      el.classList.remove('active','dim');
+      el.removeAttribute('data-char');
+      el.removeAttribute('data-slot');
+      el.removeAttribute('data-emotion');
     }
   });
   stage=target;
@@ -1403,13 +1405,16 @@ function setPortrait(el, charId, emotion, active, slot){
   nm.textContent = (charId==='sylvia' && !flag('named')) ? '？？？' : (CHARS[charId]?.short || charId);
   el.classList.toggle('active', active); el.classList.toggle('dim', !active);
 }
-// 使用语义槽位排布，而不是根据数组下标/当前人数重新居中，
-// 保证「左边的人」不会因一次旁白或心理活动变成「右边的人」。
+// 使用原版「按人数协调」的构图：角色按语义 slot 排序后，
+// 1/2/3/4 人分别使用 50 / 30-70 / 20-50-80 / 14-38-62-86。
+// 这样既保持主角、药神等人物的左右顺序，也不会让不同人数挤在同一套固定位置。
 function layoutPortraits(){
-  stageWithSlots(stage).forEach(s=>{
+  const current=stageWithSlots(stage);
+  const positions=STAGE_POSITION_PRESETS[current.length] || current.map((_,i)=>`${((i+1)/(current.length+1))*100}%`);
+  current.forEach((s,i)=>{
     const el=$(STAGE_SLOT_ELEMENTS[s.slot]);
     if(!el) return;
-    el.style.left=STAGE_SLOT_POSITIONS[s.slot] || '50%';
+    el.style.left=positions[i] || '50%';
     el.setAttribute('data-slot',s.slot);
   });
 }

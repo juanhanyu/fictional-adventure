@@ -39,9 +39,8 @@
   ];
 
   const T = (text, extra) => Object.assign({ text }, extra || {});
-  // say() 表示已经在当前场景里的常规对话；若需表现真正新入场，可显式传 resident:false。
-  // 这样驻场对话不会因为说话人暂时未列在当前焦点 portraits 中而被演成插话。
-  const say = (ch, text, extra) => Object.assign({ ch, speaker: null, text, resident: true }, extra || {});
+  // say() 只描述说话人；同场角色由每个剧情节点的 portraits 显式构图。
+  const say = (ch, text, extra) => Object.assign({ ch, speaker: null, text }, extra || {});
   // speaker names filled at runtime via CHARS if speaker omitted and ch set
 
   /** 立绘列表：'alice' 或 ['beatrice','left','normal']；传 [] 表示清空舞台 */
@@ -150,6 +149,10 @@
         emo: 'normal',
         slot: 'left',
         speaker: '？？？',
+        portraits: [
+          { id: 'sophia', slot: 'left', active: true },
+          { id: 'claude', slot: 'right', active: false },
+        ],
         text: '（温柔的女声，听不懂内容，但语调很开心，像是在哄我。）',
       },
       {
@@ -215,7 +218,12 @@
       T('系统面板上「未命名」的标签也变成了「希尔维亚·维斯特利亚」。\n走廊很长，墙上挂着画像，有穿甲胄'),
 
       T('的男人，也有身着华服的女人。窗外能看到庭院，花圃修剪得整整齐齐，远处有士兵在巡逻。\n这里是……'),
-      T('我们来到一间宽敞的起居室。阳光从巨大的落地窗洒进来，照在柔软的地毯上。\n房间里有一个小女孩。'),
+      T('我们来到一间宽敞的起居室。阳光从巨大的落地窗洒进来，照在柔软的地毯上。\n房间里有一个小女孩。', {
+        portraits: [
+          { id: 'sophia', slot: 'left', active: false },
+          { id: 'beatrice', slot: 'right', active: true },
+        ],
+      }),
 
       T('\n大约两岁左右，金色的头发扎成两个小揪揪，正趴在矮桌边玩着什么。听到门开的声音，她转过头来，圆圆的眼睛一下子亮了。'),
       {
@@ -290,7 +298,9 @@
 
       T('「姐姐」？\n贝阿特丽丝现在两岁半了，已经能说很多话了。她每天都在教我叫「姐姐」，一遍一遍地念。'),
       T('如果我的第一个词是叫她，她肯定会高兴坏了。\n……但我不太想让她更得意。她现在已经够霸道了。\n还是算了，顺其自然吧。'),
-      T('七个月大的时候，我完成了那个任务。\n那天下午，姐姐又跑来找我。她趴在床边，叽叽喳喳地说着话。'),
+      T('七个月大的时候，我完成了那个任务。\n那天下午，姐姐又跑来找我。她趴在床边，叽叽喳喳地说着话。', {
+        portraits: [{ id: 'beatrice', slot: 'center', active: true }],
+      }),
       {
         ch: 'beatrice',
         emo: 'normal',
@@ -322,7 +332,14 @@
         love: 'beatrice',
         loveD: 1,
       }),
-      T('那天晚上，全家人都来看我了。\n父亲难得早回来，母亲抱着我，姐姐在旁边又蹦又跳。'),
+      T('那天晚上，全家人都来看我了。\n父亲难得早回来，母亲抱着我，姐姐在旁边又蹦又跳。', {
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'sophia', slot: 'center', active: false },
+          { id: 'claude', slot: 'right', active: false },
+          { id: 'beatrice', slot: 'fourth', active: true },
+        ],
+      }),
       {
         ch: 'beatrice',
         emo: 'normal',
@@ -367,14 +384,19 @@
     phase: 'childhood',
     card: { vol: '第一卷', t: '第二章', s: '三姐妹' },
     lines: [
-      T('一岁半。母亲的肚子大了起来。\n我一开始没注意，直到姐姐兴冲冲地跑来告诉我——'),
+      T('一岁半。母亲的肚子大了起来。\n我一开始没注意，直到姐姐兴冲冲地跑来告诉我——', {
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'beatrice', slot: 'right', active: true },
+        ],
+      }),
       {
         ch: 'beatrice',
         emo: 'normal',
         speaker: '贝阿特丽丝',
         text: '希尔维亚！我们要有弟弟或者妹妹了！！',
       },
-      N('我看向母亲。她坐在窗边，一只手轻轻放在隆起的腹部，对我温柔地笑了笑。', [['sylvia','center','normal']]),
+      N('我看向母亲。她坐在窗边，一只手轻轻放在隆起的腹部，对我温柔地笑了笑。', [['sylvia','left','normal'],['sophia','right','normal']]),
       {
         ch: 'sophia',
         speaker: '索菲亚',
@@ -385,9 +407,22 @@
 
       T('「怎么还没好？」\n「应该快了，贝阿特丽丝大小姐。」'),
       T('「太慢了！」'),
-      T('过了很久——久到我都有些困了——房间里传来一声婴儿的哭声。\n姐姐立刻跳了起来。\n门开了，父亲走出来，脸上带着笑容。'),
+      T('过了很久——久到我都有些困了——房间里传来一声婴儿的哭声。\n姐姐立刻跳了起来。\n门开了，父亲走出来，脸上带着笑容。', {
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'beatrice', slot: 'center', active: false },
+          { id: 'claude', slot: 'right', active: true },
+        ],
+      }),
       { ch: 'claude', speaker: '克劳德', text: '是女孩。' },
-      T('姐姐欢呼一声冲进去，我跟在后面，小短腿跑得有些吃力。\n母亲靠在床上，怀里抱着一个小小的婴儿。\n白色的胎发，软软的，像是新落的雪。'),
+      T('姐姐欢呼一声冲进去，我跟在后面，小短腿跑得有些吃力。\n母亲靠在床上，怀里抱着一个小小的婴儿。\n白色的胎发，软软的，像是新落的雪。', {
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'beatrice', slot: 'center', active: false },
+          { id: 'sophia', slot: 'right', active: true },
+          { id: 'alice', slot: 'fourth', active: false },
+        ],
+      }),
       {
         ch: 'sophia',
         speaker: '索菲亚',
@@ -410,7 +445,7 @@
       T('「都一样小，你忘了而已。」母亲笑了。\n「才没有！我记得很清楚！希尔维亚出生的时候没这么皱！」'),
 
       T('……你那时候才两岁，能记得什么？\n不过算了。'),
-      N('我的视线重新落在那个婴儿——爱丽丝身上。\n妹妹吗。', [['sylvia','center','smile']]),
+      N('我的视线重新落在那个婴儿——爱丽丝身上。\n妹妹吗。', [['sylvia','left','smile'],['sophia','right','normal']]),
 
       N('嗯。多了个妹妹。\n我伸出手，小心翼翼地碰了碰她的脸颊。软软的。',[]),
       T('爱丽丝停止了哭泣，慢慢睁开眼睛。蓝色的眼眸，和我们一样。\n她看着我，眨了眨眼。然后又闭上了。'),
@@ -442,17 +477,17 @@
     lines: [
       N('妹妹很安静。\n这是我对爱丽丝最初的印象。', ['alice']),
       N('和姐姐完全不同。姐姐小时候哭起来能把整层楼的人都惊动，据母亲说，我也差不多。但爱丽丝很少哭，大部分时间都安安静静地睡着，醒了就睁着眼睛看天花板，偶尔看看周围走动的人。', ['alice']),
-      N('姐姐不太习惯。\n她趴在婴儿床边，皱着眉头。', [['beatrice', 'center', 'normal']]),
+      N('姐姐不太习惯。\n她趴在婴儿床边，皱着眉头。', [['beatrice', 'left', 'normal'], ['sophia', 'center', 'normal'], ['alice', 'right', 'normal']]),
       say('beatrice', '她怎么不哭？是不是生病了？'),
       say('sophia', '没有生病。爱丽丝只是比较安静。'),
       say('beatrice', '可是希尔维亚小时候会哭的！'),
       say('sophia', '每个孩子都不一样。'),
       N('姐姐还是不放心，每天都要来看好几次，确认妹妹还在呼吸。\n我觉得她有点大惊小怪，但也没说什么。\n毕竟她是姐姐嘛。', [['beatrice', 'left', 'normal'], ['alice', 'right', 'normal']]),
       N('爱丽丝三个月大的时候，我偶尔会产生一种错觉。\n总觉得这孩子的视线，有时候会有意无意地落在我身上。', ['alice']),
-      N('有一次我从门口走到床边，她的眼珠似乎真的跟着转动了一下。蓝色的眼睛清澈见底，没有婴儿常见的混沌，反而显得有些……通透？\n我停下脚步，试探性地看着她。', ['alice']),
+      N('有一次我从门口走到床边，她的眼珠似乎真的跟着转动了一下。蓝色的眼睛清澈见底，没有婴儿常见的混沌，反而显得有些……通透？\n我停下脚步，试探性地看着她。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('sylvia', '……爱丽丝？'),
-      N('她眨了眨眼，然后吐了一个泡泡，把视线移向了窗外的阳光。\n……好吧，果然是错觉。\n这么小的孩子，视力还没发育完全呢，大概只是在追逐光影吧。', ['alice']),
-      N('但我还是下意识地多看了她两眼。\n毕竟在这个家里，我有种莫名的直觉——这孩子可能和我是一类人（指不爱哭闹）。', ['alice'], {
+      N('她眨了眨眼，然后吐了一个泡泡，把视线移向了窗外的阳光。\n……好吧，果然是错觉。\n这么小的孩子，视力还没发育完全呢，大概只是在追逐光影吧。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
+      N('但我还是下意识地多看了她两眼。\n毕竟在这个家里，我有种莫名的直觉——这孩子可能和我是一类人（指不爱哭闹）。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']], {
         know: 'alice',
         knowD: 5,
       }),
@@ -479,22 +514,22 @@
       say('teacher', '希尔维亚大小姐学得真快！这么小就能认这么多字了！'),
       N('我点点头，没多解释。\n总不能说我前世读过十几年书吧。', ['teacher']),
 
-      N('课程结束后，我照例去看妹妹。\n爱丽丝已经会走路了，虽然走得不太稳。她正站在窗边，踮着脚尖想看外面的花园。\n我走过去，蹲下身。', ['alice'], {
+      N('课程结束后，我照例去看妹妹。\n爱丽丝已经会走路了，虽然走得不太稳。她正站在窗边，踮着脚尖想看外面的花园。\n我走过去，蹲下身。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']], {
         bg: 'bg-img-nursery bg-room',
         loc: 'nursery',
       }),
       say('sylvia', '想出去？'),
-      N('她转过头看我，眨了眨眼睛，然后点了点头。\n动作很小，很认真。', ['alice']),
+      N('她转过头看我，眨了眨眼睛，然后点了点头。\n动作很小，很认真。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('sylvia', '走吧。'),
-      N('我牵起她的手，带她去花园。', ['alice']),
+      N('我牵起她的手，带她去花园。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
 
       N('◇', [], { bg: 'bg-img-garden bg-garden', loc: 'garden' }),
-      N('花园里的花开了。\n红的、白的、紫的，各种颜色。\n爱丽丝站在花坛边，安静地看着。她的白发在阳光下泛着银光。', ['alice']),
-      N('我在她旁边站着，也不说话。\n风吹过来，带着花香。', ['alice']),
+      N('花园里的花开了。\n红的、白的、紫的，各种颜色。\n爱丽丝站在花坛边，安静地看着。她的白发在阳光下泛着银光。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
+      N('我在她旁边站着，也不说话。\n风吹过来，带着花香。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '……漂亮。'),
-      N('很小的声音。\n我转头看她。\n那是她说的第一个词。', ['alice']),
+      N('很小的声音。\n我转头看她。\n那是她说的第一个词。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('sylvia', '你会说话了。'),
-      N('爱丽丝抬头看我，脸上没什么表情，但眼睛亮亮的。', ['alice']),
+      N('爱丽丝抬头看我，脸上没什么表情，但眼睛亮亮的。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '……姐姐。', { emo: 'shy' }),
       N('第二个词。\n是叫我。', [['alice','right','shy'],['sylvia','left','smile']], {
         love: 'alice',
@@ -525,39 +560,39 @@
         do: () => sysPopup('💫 天赋亲和', '❄️ 冰（赋亲和）<br>💧 水（基础亲和）'),
       },
       T('冰和水。\n冰是赋亲和，比较稀有。水是基础亲和，很常见。\n两者搭配起来……应该挺协调的吧。'),
-      N('正想着，门被推开了。\n爱丽丝站在门口，抱着一本绘本，安静地看着我。', ['alice']),
+      N('正想着，门被推开了。\n爱丽丝站在门口，抱着一本绘本，安静地看着我。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '……姐姐。'),
       say('sylvia', '怎么了？'),
-      N('她走过来，把绘本放在我面前。', ['alice']),
+      N('她走过来，把绘本放在我面前。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '……念。'),
-      N('我看了她一眼，又看了看绘本。\n封面是一只兔子和一只熊的图画，标题是《森林里的朋友》。', ['alice']),
+      N('我看了她一眼，又看了看绘本。\n封面是一只兔子和一只熊的图画，标题是《森林里的朋友》。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('sylvia', '你要我念给你听？'),
-      N('她点点头。', ['alice']),
+      N('她点点头。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '……请。'),
-      N('很小的声音，很认真的表情。\n我愣了一下。', ['alice']),
+      N('很小的声音，很认真的表情。\n我愣了一下。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
 
       N('她刚才说的是「请」吧？\n一岁半的小孩，会用敬语？',[]),
-      N('我看着她，她也看着我，眼睛里带着一点期待。\n「……好吧。」\n我把她抱到腿上，翻开绘本，开始念。', ['alice']),
-      N('爱丽丝靠在我怀里，安静地听着。\n偶尔我念到有趣的地方，她会轻轻「嗯」一声。\n偶尔翻页的时候，她会用小手指着画面上的东西。', ['alice']),
-      N('问：「……这是什么？」\n我一一解答。\n就这样念完了一整本。', ['alice']),
+      N('我看着她，她也看着我，眼睛里带着一点期待。\n「……好吧。」\n我把她抱到腿上，翻开绘本，开始念。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
+      N('爱丽丝靠在我怀里，安静地听着。\n偶尔我念到有趣的地方，她会轻轻「嗯」一声。\n偶尔翻页的时候，她会用小手指着画面上的东西。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
+      N('问：「……这是什么？」\n我一一解答。\n就这样念完了一整本。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('sylvia', '还要吗？'),
-      N('她抬头看我，眼睛亮亮的。', ['alice']),
+      N('她抬头看我，眼睛亮亮的。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '……还要。'),
-      N('然后又补了一句——', ['alice']),
+      N('然后又补了一句——', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '……姐姐大人。', { emo: 'shy' }),
-      N('姐姐大人。\n我愣住了。', ['alice']),
+      N('姐姐大人。\n我愣住了。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
 
       N('这个称呼……有点奇怪。\n不是「姐姐」，是「姐姐大人」。',[]),
-      N('带着敬意，又带着依赖。\n从一个一岁半的小女孩嘴里说出来，有种说不出的……可爱？', ['alice']),
+      N('带着敬意，又带着依赖。\n从一个一岁半的小女孩嘴里说出来，有种说不出的……可爱？', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('sylvia', '……你从哪学的这个叫法？'),
-      N('爱丽丝歪了歪头，认真地想了想。', ['alice']),
+      N('爱丽丝歪了歪头，认真地想了想。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '……贝阿特丽丝大人。'),
-      N('哦。\n姐姐的自称。\n所以她觉得「大人」是一种尊称？', ['alice']),
+      N('哦。\n姐姐的自称。\n所以她觉得「大人」是一种尊称？', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('sylvia', '你不用加「大人」，叫姐姐就行。'),
-      N('爱丽丝看着我，眨了眨眼睛。', ['alice']),
+      N('爱丽丝看着我，眨了眨眼睛。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '……可是姐姐大人，更好。'),
-      N('好在哪里？\n我看着她认真的小脸，突然不知道该怎么反驳。\n「……随你吧。」', ['alice']),
-      N('从那以后，爱丽丝就一直这么叫我。\n姐姐大人。\n每次听到，我都有一种奇妙的感觉。', ['alice'], {
+      N('好在哪里？\n我看着她认真的小脸，突然不知道该怎么反驳。\n「……随你吧。」', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
+      N('从那以后，爱丽丝就一直这么叫我。\n姐姐大人。\n每次听到，我都有一种奇妙的感觉。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']], {
         love: 'alice',
         loveD: 1,
         know: 'alice',
@@ -663,12 +698,12 @@
     lines: [
       T('四岁。\n姐姐六岁，妹妹两岁。\n这一年，发生了几件事。'),
 
-      N('第一件事：姐姐开始系统学习魔法了。\n她的天赋亲和是火。', [['beatrice', 'center', 'normal']]),
+      N('第一件事：姐姐开始系统学习魔法了。\n她的天赋亲和是火。', [['sylvia', 'left', 'normal'], ['beatrice', 'right', 'normal']]),
       say('beatrice', '看！', { emo: 'normal' }),
-      N('她兴奋地伸出手掌，掌心燃起一团小小的火焰。\n火焰跳动着，映得她的脸红扑扑的。', [['beatrice', 'center', 'normal']], { sfx: 'magic' }),
+      N('她兴奋地伸出手掌，掌心燃起一团小小的火焰。\n火焰跳动着，映得她的脸红扑扑的。', [['sylvia', 'left', 'normal'], ['beatrice', 'right', 'normal']], { sfx: 'magic' }),
       say('beatrice', '我会用魔法了！厉害吧？快夸我！', { emo: 'normal' }),
       say('sylvia', '厉害厉害。'),
-      N('我敷衍道。', [['beatrice', 'center', 'normal']]),
+      N('我敷衍道。', [['sylvia', 'left', 'normal'], ['beatrice', 'right', 'normal']]),
       say('beatrice', '你这态度！算了，反正爱丽丝会夸我的！爱丽丝！你觉得姐姐厉害吗？', { emo: 'normal' }),
       N('妹妹抬起头，安静地看着姐姐掌心的火焰。', [['beatrice', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '……厉害。', { slot: 'right' }),
@@ -676,8 +711,8 @@
       say('alice', '……可是，希尔维亚姐姐大人也会魔法。', { slot: 'right' }),
       N('姐姐一愣，转头看我。', [['beatrice', 'center', 'normal']]),
       say('beatrice', '你会了？'),
-      N('我点点头，掌心凝聚出一颗水球，在空中慢慢旋转。', [['sylvia', 'center', 'normal']], { sfx: 'magic' }),
-      N('姐姐盯着那颗水球看了一会儿，撇了撇嘴。', [['beatrice', 'center', 'normal']]),
+      N('我点点头，掌心凝聚出一颗水球，在空中慢慢旋转。', [['sylvia', 'left', 'normal'], ['beatrice', 'right', 'normal']], { sfx: 'magic' }),
+      N('姐姐盯着那颗水球看了一会儿，撇了撇嘴。', [['sylvia', 'left', 'normal'], ['beatrice', 'right', 'normal']]),
       say('beatrice', '可是我的是火！火比水厉害！'),
       say('sylvia', '水能灭火。'),
       N('我随口说。', [['beatrice', 'center', 'normal']]),
@@ -698,72 +733,72 @@
         loveD: 1,
       }),
 
-      N('第二件事：妹妹开始说更多的话了。\n虽然还是很少，但比起之前只说一两个词，她现在偶尔会说完整的句子。', ['alice'], {
+      N('第二件事：妹妹开始说更多的话了。\n虽然还是很少，但比起之前只说一两个词，她现在偶尔会说完整的句子。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']], {
         bg: 'bg-img-study bg-study',
         loc: 'study',
       }),
       say('alice', '姐姐大人，今天的花开了。'),
       say('alice', '姐姐大人，那本书我看完了。'),
       say('alice', '姐姐大人，贝阿特丽丝姐姐又在炫耀了。'),
-      N('最后一句让我忍不住笑了一下。\n她说话的时候表情还是淡淡的，语气也平平的，但内容意外地有自己的想法。', ['alice']),
-      N('而且我发现，她对某些事情特别感兴趣。\n比如书。\n有一次我在看一本关于魔法理论的书，她走过来，站在旁边，眼睛盯着书页。', ['alice']),
+      N('最后一句让我忍不住笑了一下。\n她说话的时候表情还是淡淡的，语气也平平的，但内容意外地有自己的想法。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
+      N('而且我发现，她对某些事情特别感兴趣。\n比如书。\n有一次我在看一本关于魔法理论的书，她走过来，站在旁边，眼睛盯着书页。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '……姐姐大人在看什么？'),
       say('sylvia', '魔法的书。'),
       say('alice', '……可以教我吗？'),
-      N('她的语气还是平平的，但眼睛忽然变得很亮。', ['alice']),
+      N('她的语气还是平平的，但眼睛忽然变得很亮。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('sylvia', '你才两岁，看不懂吧。'),
       say('alice', '……可以学。'),
-      N('我看着她。\n她也看着我，眼睛里的光芒没有消退。', ['alice']),
+      N('我看着她。\n她也看着我，眼睛里的光芒没有消退。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
 
       N('「……好吧。」\n我把书放到矮桌上，让她坐在我旁边。',[]),
-      N('从最基础的开始讲。\n什么是魔力，什么是亲和，什么是魔法阵……\n爱丽丝听得很认真。偶尔会问问题，问题还挺有想法。', ['alice']),
+      N('从最基础的开始讲。\n什么是魔力，什么是亲和，什么是魔法阵……\n爱丽丝听得很认真。偶尔会问问题，问题还挺有想法。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '……所以，赋亲和学不了，只能天生有？'),
       say('sylvia', '对。'),
       say('alice', '……那怎么知道自己有什么亲和？'),
       say('sylvia', '要等大一点，做测试。'),
       say('alice', '……我想知道。'),
       say('sylvia', '再等几年吧。'),
-      N('她有点失望地垂下眼睛。\n但只是一瞬间，很快又恢复了平时的淡然。', ['alice']),
+      N('她有点失望地垂下眼睛。\n但只是一瞬间，很快又恢复了平时的淡然。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '……好。'),
-      N('然后她的语速突然快起来——', ['alice']),
+      N('然后她的语速突然快起来——', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '那姐姐大人的水是什么颜色的？'),
       say('alice', '冰呢？可以用来做什么？能不能给我看看？'),
       say('alice', '冰和水有什么区别？是不是冰更冷？那——'),
-      N('说到一半，她突然停住了。\n脸微微红了。', [['alice', 'center', 'shy']]),
+      N('说到一半，她突然停住了。\n脸微微红了。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'shy']]),
       say('alice', '……抱歉，姐姐大人。', { emo: 'shy' }),
       say('sylvia', '没关系。'),
       N('我看着她，觉得有点好笑。\n原来她也会有这种时候。', [['alice','right','shy'],['sylvia','left','smile']]),
 
       N('平时装得淡淡的，其实对感兴趣的事情很热情。\n只是不太擅长表达。',[]),
       say('sylvia', '过来。'),
-      N('我伸出手，掌心凝聚出一颗小小的冰晶。\n冰晶在阳光下折射出淡淡的蓝色光芒，慢慢旋转着。', [['sylvia', 'center', 'normal']], { sfx: 'magic' }),
-      N('爱丽丝的眼睛又亮了起来。\n这次她没有掩饰。\n就那样亮晶晶地看着，嘴唇微微张开。', ['alice']),
-      N('带着毫不掩饰的好奇和向往。\n很可爱。\n我心想。', ['alice'], {
+      N('我伸出手，掌心凝聚出一颗小小的冰晶。\n冰晶在阳光下折射出淡淡的蓝色光芒，慢慢旋转着。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']], { sfx: 'magic' }),
+      N('爱丽丝的眼睛又亮了起来。\n这次她没有掩饰。\n就那样亮晶晶地看着，嘴唇微微张开。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
+      N('带着毫不掩饰的好奇和向往。\n很可爱。\n我心想。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']], {
         love: 'alice',
         loveD: 1,
       }),
       say('sylvia', '冰和水其实是同一种东西。温度低了就变成冰，高了就变回水，再高——就变成看不见的气。'),
-      N('我让冰晶在指尖慢慢融化，水珠顺着手指滑下来，又在指尖重新冻结。', [['sylvia', 'center', 'normal']]),
+      N('我让冰晶在指尖慢慢融化，水珠顺着手指滑下来，又在指尖重新冻结。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '看不见的气？'),
       say('sylvia', '嗯。你烧水的时候壶嘴冒出来的白雾，其实就是水。'),
       say('alice', '那白雾不是烟吗？'),
       say('sylvia', '不是。是水变成气之后又遇冷变回来的小水滴。'),
-      N('她盯着我手里那颗正在融了又冻、冻了又融的冰珠，眼睛一眨不眨。', ['alice']),
+      N('她盯着我手里那颗正在融了又冻、冻了又融的冰珠，眼睛一眨不眨。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '那姐姐大人的冰……是把温度降下来的？'),
       say('sylvia', '差不多。'),
-      N('她想了想。', ['alice']),
+      N('她想了想。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '那如果一直降呢？一直一直降？会变成什么？'),
       T('「会变成……」\n我差点说出「绝对零度」三个字。\n咽回去了。'),
       say('sylvia', '会变成非常非常冷的冰。硬到什么都砍得动。'),
-      N('她点点头。接受了这个回答。但眼神里还有一点「我觉得你省略了什么」的微妙洞察。\n这孩子直觉太好了。', ['alice']),
-      N('我又凝出一颗冰晶，比刚才那颗大一些。捏成了一个——大概是兔子的形状。耳朵有点歪。严格来说更像一只耳朵被门夹过的猫。', [['sylvia', 'center', 'normal']], { sfx: 'magic' }),
+      N('她点点头。接受了这个回答。但眼神里还有一点「我觉得你省略了什么」的微妙洞察。\n这孩子直觉太好了。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
+      N('我又凝出一颗冰晶，比刚才那颗大一些。捏成了一个——大概是兔子的形状。耳朵有点歪。严格来说更像一只耳朵被门夹过的猫。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']], { sfx: 'magic' }),
       say('sylvia', '给你。'),
-      N('她双手接过去。捧在掌心里。非常小心。', ['alice']),
+      N('她双手接过去。捧在掌心里。非常小心。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '会化的。'),
-      N('她说。语气平平的。但手捧得更紧了一点。', ['alice']),
+      N('她说。语气平平的。但手捧得更紧了一点。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('sylvia', '会。但我可以再做。'),
       say('alice', '……嗯。'),
-      N('她低头看着那只定义模糊的小动物。冰在她掌心的体温里开始变得透明。水珠沿着她的手指往下淌。', ['alice']),
+      N('她低头看着那只定义模糊的小动物。冰在她掌心的体温里开始变得透明。水珠沿着她的手指往下淌。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '姐姐大人。'),
       say('sylvia', '嗯？'),
       say('alice', '水往低处流，是因为什么？'),
@@ -774,20 +809,20 @@
       say('alice', '那为什么云不掉下来？'),
       T('「……」\n这个问题好。\n好到我需要一秒钟来组织一个不包含「密度」「浮力」「气流托举」的回答。'),
       say('sylvia', '因为云很轻。轻到大地拉不太动。就像——你往井里丢一片树叶，它会浮在水面上，沉不下去。云就是天上的树叶。'),
-      N('她安静了三秒。', ['alice']),
+      N('她安静了三秒。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '那雨呢。'),
       say('sylvia', '云攒多了就沉了。就像你在树叶上一直加沙子，加到一定程度——'),
       say('alice', '就沉了。'),
       say('sylvia', '对。'),
       say('alice', '所以下雨就是云太胖了。'),
       say('sylvia', '……可以这么理解。'),
-      N('她点了点头。表情非常认真。\n我意识到自己刚才差点把初中物理课搬到了中世纪。而且险些用了「密度」这个词。这个世界大概还没有人把密度当作一个独立的概念来讨论。', ['alice']),
+      N('她点了点头。表情非常认真。\n我意识到自己刚才差点把初中物理课搬到了中世纪。而且险些用了「密度」这个词。这个世界大概还没有人把密度当作一个独立的概念来讨论。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       T('算了。反正也不是第一次了。\n之前跟姐姐解释「为什么冬天哈气能看到白色」的时候就差点翻车。'),
       T('最后糊弄成了「因为冬天的空气喜欢把呼吸变成小云朵」。\n姐姐信了。\n还觉得很浪漫。'),
-      N('爱丽丝不太一样。她不会觉得浪漫。她会追问。追问到我的现代知识库存见底为止。', ['alice']),
-      N('掌心的冰兔子已经化了大半。只剩一个湿漉漉的轮廓。', ['alice']),
+      N('爱丽丝不太一样。她不会觉得浪漫。她会追问。追问到我的现代知识库存见底为止。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
+      N('掌心的冰兔子已经化了大半。只剩一个湿漉漉的轮廓。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('sylvia', '再做一个吗？'),
-      N('她摇头。\n把手上的水在裙子上擦了擦。抬头看我。', ['alice']),
+      N('她摇头。\n把手上的水在裙子上擦了擦。抬头看我。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '姐姐大人知道的事情好多。'),
       say('sylvia', '还好吧。'),
       say('alice', '管家说公爵家的图书馆有三千本书。姐姐大人都看过吗？'),
@@ -796,12 +831,12 @@
       say('sylvia', '……想出来的。'),
       say('alice', '想出来的？'),
       say('sylvia', '嗯。发呆的时候想的。'),
-      N('她又看了我几秒。', ['alice']),
+      N('她又看了我几秒。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       say('alice', '姐姐大人发呆的时候在想大地为什么会拉东西。'),
       say('sylvia', '偶尔。'),
       say('alice', '……姐姐大人发呆的内容好奇怪。'),
       say('sylvia', '谢谢。'),
-      N('她没有继续追问。', ['alice'], { know: 'alice', knowD: 12, love: 'alice', loveD: 1 }),
+      N('她没有继续追问。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']], { know: 'alice', knowD: 12, love: 'alice', loveD: 1 }),
 
       N('◇', [], { bg: 'bg-img-training bg-plain', loc: 'training' }),
       T('第三件事：我开始有意识地练习魔法了。\n冰和水是我的天赋亲和。\n水系魔法比较基础，公爵府的藏书里就有不少教材。冰系是赋亲和，资料少一些，但也不是没有。'),
@@ -856,7 +891,14 @@
     bg: 'bg-img-dining bg-hall',
     loc: 'dining',
     lines: [
-      T('四岁末的某一天，父亲带回来一位客人。\n那天本来是家族晚宴，庆祝什么外交事务的进展，我没怎么听清。母亲给我和姐姐换上了正式的礼服，嘱咐我们要有礼貌。'),
+      T('四岁末的某一天，父亲带回来一位客人。\n那天本来是家族晚宴，庆祝什么外交事务的进展，我没怎么听清。母亲给我和姐姐换上了正式的礼服，嘱咐我们要有礼貌。', {
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'sophia', slot: 'center', active: true },
+          { id: 'beatrice', slot: 'right', active: false },
+          { id: 'claude', slot: 'fourth', active: false },
+        ],
+      }),
       {
         ch: 'sophia',
         speaker: '索菲亚',
@@ -869,10 +911,14 @@
         text: '知道了！',
       },
       T('晚宴在大厅举行。长长的餐桌上铺着白色的桌布，摆满了精致的餐具。来宾很多，大多是我不认识的面孔。\n我坐在角落的位置，安静地吃着东西。'),
-      T('姐姐本来也坐在旁边，但她很快就被几个年龄相仿的贵族小孩叫走了。\n我独自坐着，有点无聊。大人们在谈正事。外交、商贸、联姻之类的话题，我听不太懂，也不感兴趣。', { portraits: [] }),
+      T('姐姐本来也坐在旁边，但她很快就被几个年龄相仿的贵族小孩叫走了。\n我独自坐着，有点无聊。大人们在谈正事。外交、商贸、联姻之类的话题，我听不太懂，也不感兴趣。', { portraits: [{ id: 'sylvia', slot: 'center', active: true }] }),
       {
         ch: 'yaoshen',
         speaker: '？？？',
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'yaoshen', slot: 'right', active: true },
+        ],
         text: '小姐一个人坐在这里？',
       },
       T('一个温和的声音在旁边响起。\n我抬起头。\n是一个中年男人。'),
@@ -951,7 +997,7 @@
     phase: 'youth',
     card: { vol: '第一卷', t: '成长', s: '五岁' },
     lines: [
-      N('五岁。姐姐七岁，妹妹三岁。\n日子过得非常规律，规律到让我这种心理年龄早已成年的人感到一种养老般的舒适。\n但我那姐姐显然不这么想。除了基础课程，她现在的日程表里塞满了魔法训练和剑术启蒙。', [['beatrice', 'center', 'normal']]),
+      N('五岁。姐姐七岁，妹妹三岁。\n日子过得非常规律，规律到让我这种心理年龄早已成年的人感到一种养老般的舒适。\n但我那姐姐显然不这么想。除了基础课程，她现在的日程表里塞满了魔法训练和剑术启蒙。', [['sylvia', 'left', 'normal'], ['beatrice', 'right', 'normal']]),
       {
         ch: 'beatrice',
         emo: 'normal',
@@ -962,7 +1008,7 @@
       DUO(['sylvia','希尔维亚'], ['beatrice','贝阿特丽丝'], 'sylvia', '……姐姐，保护我们的前提是，别先把我们打晕。'),
       DUO(['beatrice','贝阿特丽丝'], ['sylvia','希尔维亚'], 'beatrice', '怎么可能！我的剑术可是为了你们练的！'),
       N('她激动的挥剑动作再次擦过那个花瓶的边缘。\n我叹了口气，默默把花瓶又往后挪了挪。', [['beatrice','center','normal'],['sylvia','right','normal']]),
-      N('而相比之下，三岁的爱丽丝简直是省心模范。', [['alice','center','normal']]),
+      N('而相比之下，三岁的爱丽丝简直是省心模范。', [['alice','left','normal'],['lecturer','right','normal']]),
       say('lecturer', '爱丽丝大小姐简直是天才！这么小就能认这么多字！', { speaker: '家庭教师' }),
       N('面对老师的夸奖，爱丽丝的表现堪称教科书级别。', [['alice','center','normal']]),
       N('她低着头，双手交叠放在膝盖上，声音软软糯糯。', [['alice','center','normal']], {
@@ -991,12 +1037,12 @@
         loc: 'hallway',
       }),
       { ch: 'beatrice', emo: 'normal', speaker: '贝阿特丽丝', text: '快！用你的魔法把它停住！' },
-      N('我看了看那个正在喷涌的缺口，叹了口气。\n虽然我是公爵千金，不是水管工，但看来这活儿只能我干了。', [['sylvia', 'center', 'normal']]),
-      N('水流操控。\n漫天飞舞的水珠在我的引导下乖乖聚拢，像一条听话的水蛇，缓缓流进浴缸。', [['sylvia', 'center', 'normal']], { sfx: 'magic' }),
+      N('我看了看那个正在喷涌的缺口，叹了口气。\n虽然我是公爵千金，不是水管工，但看来这活儿只能我干了。', [['sylvia', 'left', 'normal'], ['beatrice', 'right', 'normal']]),
+      N('水流操控。\n漫天飞舞的水珠在我的引导下乖乖聚拢，像一条听话的水蛇，缓缓流进浴缸。', [['sylvia', 'left', 'normal'], ['beatrice', 'right', 'normal']], { sfx: 'magic' }),
       { ch: 'beatrice', emo: 'normal', speaker: '贝阿特丽丝', text: '得救了！' },
       { ch: 'beatrice', emo: 'normal', speaker: '贝阿特丽丝', text: '希尔维亚你太神了！' },
       { ch: 'sylvia', speaker: '希尔维亚', text: '……只是暂时的。叫人来修吧。' },
-      N('我正准备深藏功与名地退场，姐姐却因为太激动，直接扑了过来。\n一个湿漉漉的拥抱。我的干爽衣服瞬间宣告阵亡。', [['beatrice', 'center', 'normal']]),
+      N('我正准备深藏功与名地退场，姐姐却因为太激动，直接扑了过来。\n一个湿漉漉的拥抱。我的干爽衣服瞬间宣告阵亡。', [['sylvia', 'left', 'normal'], ['beatrice', 'right', 'normal']]),
       { ch: 'sylvia', speaker: '希尔维亚', text: '……姐姐，你是在报复我吗？' },
       { ch: 'beatrice', emo: 'normal', speaker: '贝阿特丽丝', text: '哎呀，反正都要换衣服嘛！' },
       N('她嘿嘿笑着，反而抱得更紧了。\n我面无表情地任由她抱着。\n算了，看在她笑得这么开心的份上。', [['beatrice','center','normal']], {
@@ -1004,15 +1050,15 @@
         loveD: 1,
       }),
       // —— 晚上：爱丽丝想学魔法 ——
-      N('晚上，爱丽丝来找我。听说了浴室的事后，她的关注点有些特别。', [['alice', 'center', 'normal']]),
+      N('晚上，爱丽丝来找我。听说了浴室的事后，她的关注点有些特别。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       { ch: 'alice', emo: 'normal', speaker: '爱丽丝', text: '……姐姐大人用魔法控制住了那么大的水流？' },
       { ch: 'sylvia', speaker: '希尔维亚', text: '勉强吧。' },
       { ch: 'alice', emo: 'normal', speaker: '爱丽丝', text: '……姐姐大人好厉害。' },
-      N('她看着我，眼神里有一种比平时更深切的期待。', [['alice', 'center', 'normal']]),
+      N('她看着我，眼神里有一种比平时更深切的期待。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       { ch: 'alice', emo: 'normal', speaker: '爱丽丝', text: '我也想学。等我测完亲和，姐姐大人可以教我吗？' },
       { ch: 'sylvia', speaker: '希尔维亚', text: '当然，如果你不嫌我教得不好的话。' },
       { ch: 'alice', emo: 'happy', speaker: '爱丽丝', text: '……只要是姐姐大人教的，就好。' },
-      N('她笑了一下。\n不知道为什么，这孩子每次说这种话的时候，都真诚得让我无法拒绝。', [['alice', 'center', 'normal']]),
+      N('她笑了一下。\n不知道为什么，这孩子每次说这种话的时候，都真诚得让我无法拒绝。', [['sylvia', 'left', 'normal'], ['alice', 'right', 'normal']]),
       // —— 夏天，树荫下乘凉：冰霜之息（CG cool_off）——
       { cg: 'cool_off.png', text: '夏天到了，阿斯拉王国的夏天热得让人怀疑人生。\n不过我有着解暑神器：「冰霜之息」。' },
       { cg: 'cool_off.png', text: '本来是个低级攻击魔法，但现在它是我最受欢迎的技能，没有之一。' },
@@ -1048,7 +1094,7 @@
     lines: [
       T('七岁。', { bg: 'bg-img-dining bg-hall', loc: 'dining' }),
       T('爱丽丝终于到了做亲和测试的年纪。', { bg: 'bg-img-dining bg-hall', loc: 'dining' }),
-      T('全家人都在礼堂围观。爱丽丝把手放在水晶球上，表情严肃得像是在进行什么神圣的仪式。', { bg: 'bg-img-dining bg-hall', loc: 'dining' }),
+      T('全家人都在礼堂围观。爱丽丝把手放在水晶球上，表情严肃得像是在进行什么神圣的仪式。', { bg: 'bg-img-dining bg-hall', loc: 'dining', portraits: [{ id: 'sylvia', slot: 'left', active: false }, { id: 'beatrice', slot: 'center', active: false }, { id: 'sophia', slot: 'right', active: false }, { id: 'alice', slot: 'fourth', active: true }] }),
       T('几秒后，青色的光芒亮起，如同流动的风，纯净而轻盈。'),
       { speaker: '魔法师', text: '风亲和！而且纯度极高！这是极为罕见的天赋啊！' },
       T('大家都在欢呼，父亲更是难得地露出笑容。'),
@@ -1056,7 +1102,16 @@
       { ch: 'alice', emo: 'normal', speaker: '爱丽丝', text: '……是风啊。和姐姐大人不一样呢。' },
       T('声音小得只有我听见了。原来是在纠结这个。'),
       { bg: 'bg-img-garden bg-garden', text: '测试结束后，她在花园找到了我。' },
-      { ch: 'alice', emo: 'shy', speaker: '爱丽丝', text: '……姐姐大人。虽然亲和不一样……但我以后还可以和你一起练习吗？' },
+      {
+        ch: 'alice',
+        emo: 'shy',
+        speaker: '爱丽丝',
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'alice', slot: 'right', active: true },
+        ],
+        text: '……姐姐大人。虽然亲和不一样……但我以后还可以和你一起练习吗？',
+      },
       T('看着那双写满忐忑的眼睛，我伸手摸了摸她柔软的头发。'),
       { ch: 'sylvia', speaker: '希尔维亚', text: '傻瓜，魔法的基础原理是通用的。不管你是风还是火，只要你想练，我都在。' },
       T('她的眼睛瞬间亮了，嘴角弯起一个好看的弧度。'),
@@ -1429,6 +1484,7 @@
       }),
       T('我提着行李，在校门前停下。银灰色的长发在风里轻轻晃动。', {
         loc: 'dorm',
+        portraits: [{ id: 'sylvia', slot: 'center', active: true }],
       }),
       {
         ch: 'sylvia',
@@ -1450,7 +1506,12 @@
       T('水系学院的第一堂课。'),
       N('我走进教室。靠窗的座位坐着一个短发女生，正低头看书。', ['noelle']),
       T('完全没有自我介绍的意思。\n……这人还挺酷的。\n我也不是喜欢主动搭话的性格，于是转头继续看窗外。'),
-      T('导师进来了。一个年轻的女教师，自我介绍叫安娜·贝尔。她看起来挺温柔的，说话语气也很和善。'),
+      T('导师进来了。一个年轻的女教师，自我介绍叫安娜·贝尔。她看起来挺温柔的，说话语气也很和善。', {
+        portraits: [
+          { id: 'noelle', slot: 'left', active: false },
+          { id: 'anna', slot: 'right', active: true },
+        ],
+      }),
       {
         ch: 'anna',
         speaker: '安娜·贝尔',
@@ -1486,6 +1547,11 @@
         text: '下一个，希尔维亚·维斯特利亚。',
       },
       T('我站起来，走上前。稍微认真了一下。\n水升起来，悬浮，旋转，分成几股细流，最后汇聚成一颗圆滚滚的水球。水球在空中静静悬浮，表面光滑得像镜子。', {
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: true },
+          { id: 'noelle', slot: 'center', active: false },
+          { id: 'anna', slot: 'right', active: false },
+        ],
         sfx: 'magic',
       }),
       T('教室里安静了。'),
@@ -1548,7 +1614,12 @@
     phase: 'academy',
     card: { vol: '第二卷 魔法大学篇', t: '第一章', s: '离巢与开学典礼' },
     lines: [
-      T('十二岁。终于到了入学的年纪。\n这两年过得很快。练习魔法，陪妹妹，偶尔和姐姐的信件往来。平静而充实。\n等级已经不低。妹妹九岁的时候就升到了中级了。'),
+      T('十二岁。终于到了入学的年纪。\n这两年过得很快。练习魔法，陪妹妹，偶尔和姐姐的信件往来。平静而充实。\n等级已经不低。妹妹九岁的时候就升到了中级了。', {
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'alice', slot: 'right', active: true },
+        ],
+      }),
       {
         ch: 'alice',
         emo: 'shy',
@@ -1556,7 +1627,14 @@
         text: '……姐姐大人。我到中级了。……三年后我也会去大学的。……到时候，姐姐大人会来接我吗？',
       },
       T('「会。」\n她笑了，弧度很浅。\n「……那我等姐姐大人。」'),
-      T('出发的日子。清晨。\n我站在窗边，最后看了一眼熟悉的房间。床铺、书桌、书架。十二年。这里是我在这个世界的第一个家。'),
+      T('出发的日子。清晨。\n我站在窗边，最后看了一眼熟悉的房间。床铺、书桌、书架。十二年。这里是我在这个世界的第一个家。', {
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'claude', slot: 'center', active: true },
+          { id: 'sophia', slot: 'right', active: false },
+          { id: 'alice', slot: 'fourth', active: false },
+        ],
+      }),
       {
         ch: 'claude',
         speaker: '克劳德',
@@ -1604,7 +1682,12 @@
           updateLocBar();
         },
       },
-      T('阿斯拉魔法大学。\n高耸的尖塔，宏伟的城墙，在阳光下闪闪发光的魔法阵纹。\n东区宿舍 312 号。室友——'),
+      T('阿斯拉魔法大学。\n高耸的尖塔，宏伟的城墙，在阳光下闪闪发光的魔法阵纹。\n东区宿舍 312 号。室友——', {
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'emma', slot: 'right', active: true },
+        ],
+      }),
       {
         ch: 'emma',
         speaker: '艾玛·克莱尔',
@@ -1624,6 +1707,11 @@
         ch: 'beatrice',
         emo: 'normal',
         speaker: '贝阿特丽丝',
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'emma', slot: 'center', active: false },
+          { id: 'beatrice', slot: 'right', active: true },
+        ],
         text: '希尔维亚！！你终于来了！！我等了好久！！两年没见了诶！！长高了嘛！但还是没我高！走！带你去吃饭！学校食堂我都摸清楚了！',
         love: 'beatrice',
         loveD: 1,
@@ -1654,7 +1742,15 @@
     card: { vol: '第二卷', t: '第二章', s: '夏洛特' },
     lines: [
       T('回宿舍的路上。夏洛特·贝尔蒙带着两个侍女，穿着那件层层叠叠的华丽礼服，挡在路中央，像是一尊金灿灿的障碍物。'),
-      { ch: 'charlotte', speaker: '夏洛特', text: '听说你在霍尔那老头的课上表现不错？' },
+      {
+        ch: 'charlotte',
+        speaker: '夏洛特',
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'charlotte', slot: 'right', active: true },
+        ],
+        text: '听说你在霍尔那老头的课上表现不错？',
+      },
       { ch: 'sylvia', speaker: '希尔维亚', text: '还行吧。' },
       { ch: 'charlotte', speaker: '夏洛特', text: '和你姐姐完全不是一个路子。贝阿特丽丝一见面就像个点着的爆竹，你倒是冷得让人想打喷嚏。那是赞美吗？你可以这么理解。' },
       T('她走近几步，压低声音。'),
@@ -1953,10 +2049,16 @@
     card: { vol: '第二卷', t: '第二章', s: '同龄人' },
     lines: [
       T('周三下午，冰系课程。这间教室小得寒碜，满打满算也就八个座位，透着一股「因为人少所以经费也不多」的凄凉感。'),
-      N('最靠窗的位置坐着一个银白色长发的少女。她单手托腮，盯着窗外的一只麻雀发呆，浅蓝色的眸子静悄悄的，皮肤白得像是从没见过太阳。', ['aino']),
+      N('最靠窗的位置坐着一个银白色长发的少女。她单手托腮，盯着窗外的一只麻雀发呆，浅蓝色的眸子静悄悄的，皮肤白得像是从没见过太阳。', [['sylvia', 'left', 'normal'], ['aino', 'right', 'normal']]),
       { ch: 'sylvia', speaker: '希尔维亚', text: '……你好。' },
       N('她转过头，那眼神淡得像白开水。她轻轻点了下头，又把脸转回去了。', ['aino']),
-      T('冰系的老师姓霍尔，是个看起来随时想下班的中年男人。'),
+      T('冰系的老师姓霍尔，是个看起来随时想下班的中年男人。', {
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'aino', slot: 'center', active: false },
+          { id: 'hol', slot: 'right', active: true },
+        ],
+      }),
       { ch: 'hol', speaker: '霍尔', text: '冰是什么？冰就是不许动。你们得让魔力听话，让它把水锁死。把水冻成冰，要球形，越圆越好。做不到的，趁早转去水系。' },
       T('金发男生第一个动手。几秒后，一块长得像仙人掌的冰疙瘩顶破了瓶口。「不合格，下一个。」'),
       T('轮到我。圆滚滚的冰球悬在瓶子正中心，透亮得像颗大珍珠。'),
@@ -1964,7 +2066,12 @@
       N('那个浅蓝色头发的女孩甚至没有看瓶子，只是伸出一根手指，朝桌面的方向随手一点。没有声音。但水已经不是水了。一颗完美的冰球悬在瓶中。表面光滑得像打过蜡，透明度几乎和玻璃一样，连一个气泡都没有。我甚至没看清她是什么时候完成的。', ['aino']),
       { ch: 'aino', speaker: '艾诺', text: '你的冰球，中心有个小气泡哦。' },
       T('我低头看了半天，才在最深处发现一个针尖大的白点。这人……眼睛是显微镜吗？'),
-      T('下课后，艾诺在门口把我拦住了。'),
+      T('下课后，艾诺在门口把我拦住了。', {
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'aino', slot: 'right', active: true },
+        ],
+      }),
       { ch: 'aino', speaker: '艾诺', text: '你是双亲和？' },
       { ch: 'sylvia', speaker: '希尔维亚', text: '嗯，水和冰。' },
       { ch: 'aino', speaker: '艾诺', text: '我是单亲和，只有冰。在赫兰，冰魔法是用来活命的。所以我不明白，你刚才为什么要慢慢结冰？那样很浪费时间。' },
@@ -1986,15 +2093,36 @@
     card: { vol: '第二卷', t: '第四章', s: '距离' },
     lines: [
       T('海伦娜走后的第三天，艾玛凑到我面前，眼睛瞪得圆圆的。'),
-      { ch: 'emma', speaker: '艾玛', text: '希尔维亚！你最近发呆的时间变长了！' },
+      {
+        ch: 'emma',
+        speaker: '艾玛',
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'emma', slot: 'right', active: true },
+        ],
+        text: '希尔维亚！你最近发呆的时间变长了！',
+      },
       { ch: 'sylvia', speaker: '希尔维亚', text: '……有吗？' },
       T('海伦娜在的时候，确实很热闹。现在她走了，日子又恢复了原来的节奏。'),
-      T('周三，冰系课程。今天学冰墙术。'),
+      T('周三，冰系课程。今天学冰墙术。', {
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'hol', slot: 'right', active: true },
+        ],
+      }),
       { ch: 'hol', speaker: '霍尔', text: '冰墙，就是大一点的冰盾。你们自己琢磨。' },
       T('然后他就坐下了，翻开一本书看起来。书名是《极地美食指南》。'),
       T('我试着凝聚冰墙。一面冰墙出现在面前。我伸手敲了敲。声音清脆单薄，跟敲窗户玻璃似的。然后它自己裂了。'),
       T('「错了。」声音不是从讲台传来的。是从旁边。'),
-      { ch: 'aino', speaker: '艾诺', text: '冰墙不是放大版的冰盾。' },
+      {
+        ch: 'aino',
+        speaker: '艾诺',
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'aino', slot: 'right', active: true },
+        ],
+        text: '冰墙不是放大版的冰盾。',
+      },
       T('她蹲下来，手掌贴在地面上。魔力从她掌心流出，但不是往上，而是往下。地面微微震动——一面冰墙从地底升起，像一棵树从土里长出来一样。'),
       { ch: 'aino', speaker: '艾诺', text: '冰墙要有根。就像树一样。没有根，就是一面立着的冰板——风一吹就倒。' },
       T('我蹲下来，试着把魔力往地下引。第二面冰墙升起来了。比第一面稳。'),
@@ -2004,7 +2132,12 @@
       { ch: 'sylvia', speaker: '希尔维亚', text: '和你？' },
       { ch: 'aino', speaker: '艾诺', text: '不然呢？冰系就这么几个人，其他人都太弱了。你……勉强能打。' },
       { bg: 'bg-img-garden bg-garden', text: '下课后，我路过校园花坊。推开门，一股暖湿的空气扑面而来。然后我看见了一个不该出现在这里的人。' },
-      T('艾诺蹲在角落，背对着门口，面前是一盆小小的蓝色的花。她正用手指小心翼翼地拨弄花瓣上的水滴，动作轻得像在碰一只蝴蝶的翅膀。'),
+      T('艾诺蹲在角落，背对着门口，面前是一盆小小的蓝色的花。她正用手指小心翼翼地拨弄花瓣上的水滴，动作轻得像在碰一只蝴蝶的翅膀。', {
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'aino', slot: 'right', active: true },
+        ],
+      }),
       { ch: 'aino', speaker: '艾诺', text: '……你来多久了？' },
       { ch: 'sylvia', speaker: '希尔维亚', text: '刚到。' },
       T('她站起身，转过来，脸上的表情已经恢复成标准的冰系同学模样。但我注意到她的耳尖有一点点红。'),
@@ -2045,6 +2178,10 @@
         ch: 'beatrice',
         emo: 'normal',
         speaker: '贝阿特丽丝',
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'beatrice', slot: 'right', active: true },
+        ],
         text: '贝阿特丽丝大人要种树！要比六年级所有人都先种！',
       },
       T('「你五年级。」「我知道。」「六年级才能领种子。」「我知道。」「那——」「贝阿特丽丝大人，」她叉着腰，下巴抬高三十五度，「要比六年级所有人都先种！」\n好吧。跟她讲逻辑是我的错。'),
@@ -2059,7 +2196,13 @@
         text: '贝阿特丽丝大人的树，必须用火系魔法来浇！希尔维亚，爱丽丝，明天下午一起来纪念林。我需要帮忙。',
       },
       T('能让贝阿特丽丝说出「我需要帮忙」，这事儿大概比让她考理论满分还难。'),
-      T('第二天下午，纪念林。\n坑已经挖好了，大小深度堪称完美。就是坑边的草地上有几块明显的焦痕。大的像脸盆，小的像指甲盖。'),
+      T('第二天下午，纪念林。\n坑已经挖好了，大小深度堪称完美。就是坑边的草地上有几块明显的焦痕。大的像脸盆，小的像指甲盖。', {
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'beatrice', slot: 'center', active: false },
+          { id: 'alice', slot: 'right', active: true },
+        ],
+      }),
       T('「你试过了？」我指着那些焦痕。\n姐姐的脸罕见地红了一下：「那叫……测试！测试懂不懂！」'),
       T('「懂，烤焦了好几次的测试。」'),
       {
@@ -2093,7 +2236,12 @@
       }),
       { do: () => love('alice', 1) },
       T('旁边那棵旧树的木牌上，有人用刀补了新痕。能认出最后几个字母。\n——mond。'),
-      T('有一次我去得比较早，刚走进纪念林就看到那棵旧树下面有个人。\n蹲着。穿了一件深色的旧外套，袖子卷到肘部。手上沾着泥。\n金色的头发。不是姐姐那种明亮的、随时像在发光的金。是更沉的、更冷的金。'),
+      T('有一次我去得比较早，刚走进纪念林就看到那棵旧树下面有个人。\n蹲着。穿了一件深色的旧外套，袖子卷到肘部。手上沾着泥。\n金色的头发。不是姐姐那种明亮的、随时像在发光的金。是更沉的、更冷的金。', {
+        portraits: [
+          { id: 'sylvia', slot: 'left', active: false },
+          { id: 'charlotte', slot: 'right', active: true },
+        ],
+      }),
       {
         ch: 'charlotte',
         speaker: '夏洛特',

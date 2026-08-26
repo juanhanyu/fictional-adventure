@@ -1,7 +1,8 @@
 'use strict';
 // 舞台逻辑通用规则测试：
 // ① 新角色替换对应槽位（主导者位置不动）② 单角色N聚焦 ③ 单人说保留在场者置暗
-// ④ 驻场角色只更新表情/明暗，不重复播放入场动画；⑤ 位置变化保留平移逻辑
+// ④ 显式 portraits 建立同场关系后，连续对白不重复播放入场动画
+// ⑤ 位置变化保留平移逻辑
 const h=require('./harness.js');
 const win=h.win;
 let fail=0; const ok=(l,c)=>{console.log(`  ${c?'✓':'✗'} ${l}`); if(!c)fail++;};
@@ -23,25 +24,34 @@ win.applyLineEffects({portraits:[{id:'beatrice',slot:'left',active:false},{id:'a
 let st=orderedStage();
 ok('插话后 贝蒂仍驻左、爱丽丝在右', st[0].char==='beatrice' && st[1].char==='alice');
 ok('真正新增角色仍保留淡入', $('p-right').classList.contains('ps-enter'));
-// 同一组驻场对话：反复切换说话人/表情不能再次淡入。
+// 同一组显式 portraits 的对白：反复切换说话人/表情不能再次淡入。
 win.applyLineEffects({ch:'beatrice',slot:'left',emo:'shy'});
 ok('驻场角色说话不重复淡入', !$('p-left').classList.contains('ps-enter') && !$('p-left').classList.contains('ps-leave'));
-// 焦点 portraits 暂时只显示一人时，say() 标记的同场角色也应直接驻场。
-win.applyLineEffects({portraits:[{id:'alice',slot:'center',active:true}]});
-win.applyLineEffects({ch:'sylvia',resident:true,emo:'normal'});
-ok('驻场 say 角色不被演成插话', $('p-left').getAttribute('data-char')==='sylvia' && !$('p-left').classList.contains('ps-enter'));
-ok('剧情 say 默认带驻场语义', win.SCENES.s_age4.lines.some(l=>l && l.ch==='sylvia' && l.resident===true));
-win.applyLineEffects({portraits:[{id:'beatrice',slot:'left',active:true},{id:'merchant_bakery',slot:'right',active:false}]});
-st=orderedStage();
-ok('换回后 老板回右槽', st[0].char==='beatrice' && st[1].char==='merchant_bakery');
 
-// ② 单角色N：替换舞台为该人（vignette 段切换）——贝蒂/老板都被老板取代
+// ② 普通 ch 行仍会让真正新加入舞台的角色淡入。
+win.applyLineEffects({portraits:[{id:'beatrice',slot:'left',active:true}]});
+win.applyLineEffects({ch:'huke',emo:'normal'});
+ok('普通 ch 新角色落到空槽并淡入', $('p-right').getAttribute('data-char')==='huke' && $('p-right').classList.contains('ps-enter'));
+
+// ③ 先用显式 portraits 构图，再让同场角色连续发言；不依赖 helper 的默认语义。
+win.applyLineEffects({portraits:[{id:'alice',slot:'center',active:true}]});
+win.applyLineEffects({portraits:[{id:'sylvia',slot:'left',active:true},{id:'alice',slot:'right',active:false}]});
+win.applyLineEffects({ch:'sylvia',emo:'normal'});
+st=orderedStage();
+ok('显式构图后 主角与爱丽丝同场', st[0].char==='sylvia' && st[1].char==='alice');
+ok('显式构图后的连续对白不重复淡入', !$('p-left').classList.contains('ps-enter') && !$('p-left').classList.contains('ps-leave'));
+const legacyField=['resi','dent'].join('');
+const allLines=Object.values(win.SCENES).flatMap(sc=>Array.isArray(sc.lines)?sc.lines:[]).filter(Boolean);
+ok('剧情节点不携带旧舞台字段', !allLines.some(l=>Object.prototype.hasOwnProperty.call(l,legacyField)));
+ok('剧情包含显式 portraits 构图', allLines.some(l=>Array.isArray(l.portraits)));
+
+// ④ 单角色N：替换舞台为该人（vignette 段切换）——贝蒂/老板都被老板取代
 win.applyLineEffects({portraits:[{id:'beatrice',slot:'left',active:true},{id:'merchant_bakery',slot:'right',active:false}]});
 win.applyLineEffects({portraits:[{id:'merchant_bakery',slot:'left',active:true}]});
 st=orderedStage();
 ok('单N聚焦老板后 舞台只剩老板', st.length===1 && st[0].char==='merchant_bakery');
 
-// ③ 单人说保留在场者置暗
+// ⑤ 单人说保留在场者置暗
 win.applyLineEffects({portraits:[{id:'beatrice',slot:'left',active:true},{id:'merchant_bakery',slot:'right',active:false}]});
 win.applyLineEffects({ch:'beatrice', emo:'normal'});
 st=orderedStage();
@@ -59,7 +69,7 @@ ok('立绘平移后保留驻场角色且不重复淡入', (()=>{
     && !$('p-left').classList.contains('ps-enter') && !$('p-right').classList.contains('ps-enter');
 })());
 
-// ④ 药神场景回归：DUO → 旁白/心理活动 N(数组顺序相反) → DUO，
+// ⑥ 药神场景回归：DUO → 旁白/心理活动 N(数组顺序相反) → DUO，
 // 主角和药神的语义槽位必须始终是「主角左、药神右」。
 win.applyLineEffects({portraits:[{id:'sylvia',slot:'left',active:true},{id:'yaoshen',slot:'right',active:false}]});
 let yao=orderedStage();

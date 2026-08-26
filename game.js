@@ -1678,10 +1678,8 @@ function applyLineEffects(L){
     // 若需在多人对话中特写某动作同时保留主导者，剧情数据应写成 2 元素数组（聚焦人+主导者）。
     applyStage(arr);
   } else if(L.ch){
-    // 单人说：已在场角色只切换高亮/表情，不重复入场；若确实不在场，
-    // 按数据给出的 slot 或默认策略入场。剧情 helper say() 可用 resident 标记表示
-    // 这是已经驻场的对话角色，此时只直接落位，不演成插话式入场。
-    applyStage(appendSpeaker(L.ch, L.emo||'normal', L.slot||null), { animate: L.resident!==true });
+    // 已在场角色只切换高亮/表情；不在场角色由普通 ch 行自然入场。
+    applyStage(appendSpeaker(L.ch, L.emo||'normal', L.slot||null));
     if(!L.speaker && CHARS[L.ch]) L.speaker = CHARS[L.ch].short;
   } else if(L.bg && stage.length){
     // 切换了背景但本行没有显式立绘指令（纯旁白/事件转换）：视为进入新场景事件，回收立绘
@@ -3825,13 +3823,21 @@ SCENES.s_reno_arrive = {
 SCENES.s_beatrice_leaves = {
   bgm:'peaceful', bg:'bg-img-hallway bg-hall', phase:'youth',
   lines:[
-    {text:'十岁。姐姐要去魔法大学了。'},
+    {text:'十岁。姐姐要去魔法大学了。', portraits:[
+      {id:'sylvia', slot:'left', active:false},
+      {id:'beatrice', slot:'center', active:true},
+      {id:'sophia', slot:'right', active:false},
+      {id:'claude', slot:'fourth', active:false}
+    ]},
     {ch:'beatrice', emo:'normal', speaker:'贝阿特丽丝', text:'希尔维亚！姐姐要出发了！等我到了大学，一定把所有好玩的事都写信告诉你！'},
     {ch:'sophia', speaker:'索菲亚', text:'贝阿特丽丝，路上小心。'},
     {ch:'claude', speaker:'克劳德', text:'到了学校好好学习。别光顾着玩。'},
     {ch:'beatrice', emo:'normal', speaker:'贝阿特丽丝', text:'知道啦知道啦！我可是贝阿特丽丝大人！一定会成为全校最厉害的！'},
     {text:'姐姐在门口挥了挥手，跳上了马车。金色的头发在阳光下闪闪发亮。'},
-    {text:'马车走远了。门口变得安静。'},
+    {text:'马车走远了。门口变得安静。', portraits:[
+      {id:'sylvia', slot:'left', active:false},
+      {id:'alice', slot:'right', active:true}
+    ]},
     {ch:'alice', emo:'shy', speaker:'爱丽丝', text:'……姐姐大人。贝阿特丽丝姐姐走了。'},
     {text:'嗯。两年后我们也会去。'},
     {ch:'alice', speaker:'爱丽丝', text:'……嗯。'},
@@ -3873,7 +3879,10 @@ SCENES.s_turnpoint = {
     {text:'父亲扶额，母亲笑着摇头，贝蒂冲上去给了他一拳（没打中）。'},
     {text:'六个人坐在一张桌子上。姐姐的论文改完了——「十八遍！贝阿特丽丝大人的旷世巨著！」\n一切都很好。'},
     {text:'我躺在床上。枕头很软。'},
-    {sfx:'bad', text:'碎裂声。不是玻璃——是石头。从大门方向。', portraits: []},
+    {sfx:'bad', text:'碎裂声。不是玻璃——是石头。从大门方向。', portraits:[
+      {id:'claude', slot:'left', active:true},
+      {id:'sophia', slot:'right', active:false}
+    ]},
     {ch:'claude', speaker:'克劳德', text:'穿鞋。'},
     {text:'父亲的脸上是一种我从没见过的东西。把所有情绪削掉后的骨架。'},
     {ch:'sophia', speaker:'索菲亚', text:'（白色法杖。霜杉木簪。看了我一眼。点头。）'},
@@ -3897,7 +3906,10 @@ SCENES.s_turnpoint = {
     {cg:'parents_battle.jpg', text:'克劳德踏出一步。短杖不是杖。是武器。走廊炸开了。'},
     {cg:'parents_battle.jpg', text:'战斗持续了很长时间。西翼的走廊被打得面目全非。两个人守住一条线，给女儿多争一点时间。'},
     // —— 东翼：贝蒂带爱丽丝逃入死路 ——
-    {cg:'beatrice_battle.png', text:'公爵府东翼。贝阿特丽丝冲向爱丽丝的房间。'},
+    {cg:'beatrice_battle.png', text:'公爵府东翼。贝阿特丽丝冲向爱丽丝的房间。', portraits:[
+      {id:'beatrice', slot:'left', active:true},
+      {id:'alice', slot:'right', active:false}
+    ]},
     {cg:'beatrice_battle.png', text:'前面封了。后面在追。十七岁的贝阿特丽丝·维斯特利亚站在仆人通道里，前后都是死路。'},
     {cg:'beatrice_battle.png', ch:'beatrice', speaker:'贝阿特丽丝', text:'我带你们走。仆人道尽头有排水渠口，钻过去能出城。'},
     {cg:'beatrice_battle.png', ch:'beatrice', speaker:'贝阿特丽丝', text:'我在这里挡一下。'},
@@ -3910,7 +3922,7 @@ SCENES.s_turnpoint = {
     {cg:'parting.png', ch:'beatrice', speaker:'贝阿特丽丝', text:'你不要管我。你跑。跑得越远越好。然后——找到希尔维亚。'},
     {cg:'parting.png', text:'火焰从她的右手倾泻而出。整条通道化作了一道灼热的咽喉。贝阿特丽丝站在火焰最中心，金色的头发在火光中像太阳。'},
     // —— 十字路口：雷纳德地形拖敌 ——
-    {cg:'reno_battle.jpg', text:'东翼和主走廊之间的十字路口。雷纳德·维斯特利亚站在路口正中间。一个人。没有武器。'},
+    {cg:'reno_battle.jpg', text:'东翼和主走廊之间的十字路口。雷纳德·维斯特利亚站在路口正中间。一个人。没有武器。', portraits:[{id:'reno', slot:'center', active:true}]},
     {cg:'reno_battle.jpg', text:'地面开始变形。石板翘起、碎裂、重组。四条走廊在几秒钟之内变成了一座简陋但有效的迷宫。'},
     {cg:'reno_battle.jpg', text:'他不是在杀人。是在绊脚、困人、拖延。每多撑一分钟，侄女们就多跑出一段。'},
     // —— 帝级 ——
@@ -3953,13 +3965,18 @@ SCENES.s_beach = {
   bgm:'cheerful', bg:'bg-img-beach bg-beach', loc:'beach', phase:'academy',
   card:{vol:'第一卷', t:'第七章', s:'海与贝壳'},
   lines:[
-    {text:'暑假。姐姐在马车上睡着了，嘴角还挂着果酱渍。'},
+    {text:'暑假。姐姐在马车上睡着了，嘴角还挂着果酱渍。', portraits:[{id:'sylvia', slot:'left', active:false},{id:'beatrice', slot:'right', active:true}]},
     {text:'到了。'},
     {ch:'beatrice', emo:'normal', speaker:'贝阿特丽丝', text:'大海！！'},
     {text:'马车在别墅门前停稳的瞬间，姐姐"嗖"地弹起来，像一只装了弹簧的金毛犬。'},
     {text:'别墅门口站着三个人。父亲穿着难得一见的休闲衬衫。母亲笑着朝我们挥手。'},
     {text:'然后是妹妹。'},
-    {text:'爱丽丝站在母亲身侧，白色的长发被海风轻轻吹起。浅蓝色的连衣裙，双手安静地交叠在身前，表情是一贯的淡然。'},
+    {text:'爱丽丝站在母亲身侧，白色的长发被海风轻轻吹起。浅蓝色的连衣裙，双手安静地交叠在身前，表情是一贯的淡然。', portraits:[
+      {id:'sylvia', slot:'left', active:false},
+      {id:'beatrice', slot:'center', active:false},
+      {id:'sophia', slot:'right', active:false},
+      {id:'alice', slot:'fourth', active:true}
+    ]},
     {text:'看到我们下车，她的睫毛颤了一下。然后她走过来。'},
     {ch:'alice', emo:'shy', speaker:'爱丽丝', text:'……姐姐大人，路上辛苦了。'},
     {text:'然后她张开手臂，抱住了我。'},
@@ -3970,7 +3987,11 @@ SCENES.s_beach = {
     {text:'然后——松手。退后半步。双手重新交叠在身前。表情恢复淡然。'},
     {text:'整个过程前后不超过五秒。'},
     {text:'◇'},
-    {text:'行李搬进房间后，我在客厅目睹了一场精彩的夫妻攻防战。'},
+    {text:'行李搬进房间后，我在客厅目睹了一场精彩的夫妻攻防战。', portraits:[
+      {id:'sylvia', slot:'left', active:false},
+      {id:'sophia', slot:'center', active:true},
+      {id:'claude', slot:'right', active:false}
+    ]},
     {text:'父亲坐在沙发上，眼神反复飘向书房方向——那表情，像一只被人把狗粮锁进柜子的大型犬。'},
     {ch:'sophia', speaker:'索菲亚', text:'你父亲出发前偷偷把公文塞进了行李箱夹层。我发现了，锁进了书房的柜子里。柜子上了魔力锁，只要你父亲的手碰到锁面，就会触发警报。'},
     {ch:'sophia', speaker:'索菲亚', text:'会响遍整栋别墅的那种哦。'},
@@ -3984,13 +4005,19 @@ SCENES.s_beach = {
     {text:'母亲连"大人"都省了，直接喊名字。'},
     {text:'父亲闭上了嘴。识时务者为公爵。投降速度：零点三秒。'},
     {text:'◇'},
-    {text:'下午，换泳装去海边。'},
+    {text:'下午，换泳装去海边。', portraits:[
+      {id:'sylvia', slot:'left', active:false},
+      {id:'beatrice', slot:'right', active:true}
+    ]},
     {ch:'beatrice', emo:'normal', speaker:'贝阿特丽丝', text:'怎么样！贝阿特丽丝大人的泳装秀！打分！满分十分！'},
     {speaker:'希尔维亚', text:'六分。'},
     {ch:'beatrice', emo:'normal', speaker:'贝阿特丽丝', text:'为什么只有六分！！'},
     {speaker:'希尔维亚', text:'冲浪板拿反了，扣两分。果酱渍还没擦，扣两分。'},
     {text:'姐姐在浅水区蹦蹦跳跳地踩着浪，玩得不亦乐乎。'},
-    {text:'我找了块阴凉坐下，释放一缕冰霜之息给周围降温。妹妹蹭过来，靠在我旁边翻开书。'},
+    {text:'我找了块阴凉坐下，释放一缕冰霜之息给周围降温。妹妹蹭过来，靠在我旁边翻开书。', portraits:[
+      {id:'sylvia', slot:'left', active:false},
+      {id:'alice', slot:'right', active:true}
+    ]},
     {text:'姐姐堆沙堡——成品像一坨被踩过的布丁。然后发现了一只寄居蟹，追着它满沙滩跑了三圈。'},
     {ch:'alice', speaker:'爱丽丝', text:'……贝阿特丽丝姐姐跑的路线是圆形的。寄居蟹跑的路线也是圆形的。她们在绕同一个圈。'},
     {text:'还真是。'},
@@ -4005,7 +4032,11 @@ SCENES.s_beach = {
     {ch:'alice', speaker:'爱丽丝', text:'……明天下午，我们跟去看看。'},
     {text:'◇'},
     {text:'第五天，下午。我们跟踪姐姐穿过小镇东区，绕过码头边一排废弃仓库，来到了一片偏僻的海滩。'},
-    {text:'姐姐站在礁石旁边。和她站在一起的不是什么"心上人"——是一个老奶奶。'},
+    {text:'姐姐站在礁石旁边。和她站在一起的不是什么"心上人"——是一个老奶奶。', portraits:[
+      {id:'sylvia', slot:'left', active:false},
+      {id:'alice', slot:'center', active:false},
+      {id:'beatrice', slot:'right', active:true}
+    ]},
     {text:'渔民。少说六十往上。'},
     {text:'姐姐脱掉了外面的罩衫——里面穿着泳衣——跟着老奶奶走进了水里。'},
     {text:'扑腾了两下。呛了。'},
@@ -4028,7 +4059,11 @@ SCENES.s_beach = {
     {speaker:'希尔维亚', text:'但是——'},
     {text:'我伸手，把她肩上那条海藻拿掉了。'},
     {speaker:'希尔维亚', text:'——这种笨蛋姐姐，就是全天下最让人喜欢的姐姐。'},
-    {text:'妹妹不知道什么时候也走进了水里。她走到姐姐面前，仰起头。'},
+    {text:'妹妹不知道什么时候也走进了水里。她走到姐姐面前，仰起头。', portraits:[
+      {id:'sylvia', slot:'left', active:false},
+      {id:'beatrice', slot:'center', active:false},
+      {id:'alice', slot:'right', active:true}
+    ]},
     {ch:'alice', emo:'happy', speaker:'爱丽丝', text:'……贝阿特丽丝姐姐。谢谢。……不管最后做不做得出来，谢谢你想为我做这些。……但是比起礼物——我更想和姐姐们一起待着。'},
     {ch:'alice', emo:'happy', speaker:'爱丽丝', text:'一起捞贝壳也好。一起呛水也好。一起被老奶奶骂也好。……只要是一起的，就是最好的礼物。'},
     {text:'姐姐盯着她看了三秒。然后嘴巴一瘪，眼泪终于掉下来了。'},
@@ -4061,7 +4096,12 @@ SCENES.s_star_festival = {
   card:{vol:'第二卷', t:'第九章', s:'并肩的树 · 星辰祭'},
   lines:[
     {text:'星辰祭。六年一次。家长开放日。'},
-    {text:'广场上——深蓝色粗布外套，扣到最上一颗。霜杉木簪。'},
+    {text:'广场上——深蓝色粗布外套，扣到最上一颗。霜杉木簪。', portraits:[
+      {id:'sylvia', slot:'left', active:false},
+      {id:'beatrice', slot:'center', active:true},
+      {id:'sophia', slot:'right', active:false},
+      {id:'alice', slot:'fourth', active:false}
+    ]},
     {ch:'beatrice', emo:'normal', speaker:'贝阿特丽丝', text:'是爸妈吧？！'},
     {text:'姐姐一头撞进父亲怀里。母亲理了理爱丽丝额前的碎发。'},
     {text:'她的睫毛颤了一下。手在裙子侧面攥紧又松开。'},
@@ -4070,10 +4110,10 @@ SCENES.s_star_festival = {
     {text:'上街。套圈。歪眼兔子。烟花在钟楼露台炸开。'},
     {text:'冰系那一发碎成雪。妹妹在笑。真的在笑。'},
     {ch:'beatrice', emo:'normal', speaker:'贝阿特丽丝', text:'我打算五年级毕业。外交官换届……我想自己来。'},
-    {text:'雨。杂货铺。夏洛特独自坐在角落。'},
+    {text:'雨。杂货铺。夏洛特独自坐在角落。', portraits:[{id:'charlotte', slot:'center', active:true}]},
     {ch:'charlotte', speaker:'夏洛特', text:'你父母来了。便装。偷偷来。'},
     {text:'该来的人没来。来的是外务管事。'},
-    {speaker:'希尔维亚', text:'你母亲种的那棵树，在你的照顾下真的长得很好。'},
+    {speaker:'希尔维亚', text:'你母亲种的那棵树，在你的照顾下真的长得很好。', portraits:[{id:'sylvia', slot:'left', active:true},{id:'charlotte', slot:'right', active:false}]},
     {ch:'charlotte', speaker:'夏洛特', text:'别跟任何人说。下次浇水别漫到我那边。'},
     {text:'「滚。」她说。但薄荷茶是热的。', know:'charlotte', knowD:15, love:'charlotte', loveD:1, flag:'ch_star', freeRoam:true}
   ]

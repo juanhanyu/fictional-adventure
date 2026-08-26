@@ -401,7 +401,7 @@ SCENES.s_turnpoint = {
       { cg:'parents_battle.jpg', text:'两种魔力交叠，照亮残破走廊，也照亮他们并肩的身影。这一次，他们依旧没有后退。' },
 
       // —— 贝阿特丽丝视角：从她发现袭击开始 ——
-      { text:'公爵府另一侧，碎裂声响起时，贝阿特丽丝还在修改论文。', portraits:[] },
+      { text:'公爵府另一侧，碎裂声响起时，贝阿特丽丝还在修改论文。', portraits:[], pov:'beatrice' },
       { text:'她终于意识到家里出了大事，丢下论文推门出去。雷纳德刚从客房出来，平日的懒散已经从他身上消失。' },
       { ch:'reno', speaker:'雷纳德', text:'去找爱丽丝，带她往后院走。' },
       { ch:'beatrice', speaker:'贝阿特丽丝', text:'叔叔，发生了什么？' },
@@ -444,7 +444,7 @@ SCENES.s_turnpoint = {
       { cg:'beatrice_battle.png', text:'每当她找到脱身的机会，对面便有人接替进攻。爱丽丝的哭声已经远去，她却没有回头。' },
       { cg:'beatrice_battle.png', text:'贝阿特丽丝·维斯特利亚站在火焰最中心，金色的头发被热浪吹起，在火光中像太阳。' },
 
-      { cg:'reno_battle.jpg', text:'雷纳德·维斯特利亚向来不喜欢打架。可宅邸传来碎裂声后，他立刻脱掉碍事的外袍，将袖口卷起。', portraits:[{id:'reno',slot:'center',active:true}] },
+      { cg:'reno_battle.jpg', text:'雷纳德·维斯特利亚向来不喜欢打架。可宅邸传来碎裂声后，他立刻脱掉碍事的外袍，将袖口卷起。', portraits:[{id:'reno',slot:'center',active:true}], pov:false },
       { cg:'reno_battle.jpg', text:'看到贝阿特丽丝带着爱丽丝离开，他选择把追兵拦在侧翼之外，替孩子们争取逃亡的机会。' },
       { cg:'reno_battle.jpg', text:'连接侧翼与主楼的走廊在一处宽阔路口交会。雷纳德独自站在那里，将手按向地面。' },
       { cg:'reno_battle.jpg', text:'石板在土系魔力下翘起、断裂，沿路竖成高低不一的矮墙。平整道路很快变得难以通行。', ch:'reno', speaker:'雷纳德' },

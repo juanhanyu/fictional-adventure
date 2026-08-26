@@ -32,6 +32,11 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
     }
   } catch(e){ err=e; }
   const st=win.__getS();
+  const turn=win.SCENES.s_turnpoint;
+  const beatriceView=turn.lines.find(l=>l.pov==='beatrice');
+  const renoStart=turn.lines.find(l=>l.cg==='reno_battle.jpg');
+  ok('贝阿特丽丝视角行显式隐藏上方 UI', !!beatriceView);
+  ok('雷纳德段显式恢复上方 UI', !!renoStart && renoStart.pov===false);
   ok('场景无崩溃', !err);
   ok('触发 CG 演出（>=6）', cgCount>=6);
   ok('帝级段使用 reno_diji', seen.has('reno_diji.jpg'));

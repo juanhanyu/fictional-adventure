@@ -83,5 +83,11 @@ win.applyLineEffects({portraits:[{id:'sylvia',slot:'left',active:false},{id:'yao
 yao=orderedStage();
 ok('回到 DUO 后 主角仍在左、药神仍在右', yao[0]?.char==='sylvia' && yao[1]?.char==='yaoshen');
 
+// ⑦ 行级 POV：同一场景中可隐藏并恢复上方 HUD/地点标。
+win.applyLineEffects({pov:'beatrice'});
+ok('行级 POV 隐藏上方 HUD 与地点标', $('hud').style.opacity==='0' && $('loc-bar').style.opacity==='0' && win.document.body.classList.contains('pov-hidden'));
+win.applyLineEffects({pov:false});
+ok('行级 POV 结束后恢复上方 HUD 与地点标', $('hud').style.opacity==='' && $('loc-bar').style.opacity==='' && !win.document.body.classList.contains('pov-hidden'));
+
 console.log(fail===0?'\n  ✓ 全部通过':'\n  ✗ '+fail+' 处失败');
 process.exit(fail?1:0);

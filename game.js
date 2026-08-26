@@ -1665,6 +1665,7 @@ function advanceDialog(){
 
 function applyLineEffects(L){
   if(!L || typeof L === 'string') return;
+  if(Object.prototype.hasOwnProperty.call(L,'pov')) setPov(!!L.pov);
   if(L.bg) setBG(L.bg);
   if(L.loc){ S.loc = L.loc; updateLocBar(); }
   // 行级 bgm：在场景内切换地点/背景时可强制指定并锁定 BGM，防止引擎误判为自由探索而切回 peaceful
@@ -3728,7 +3729,7 @@ function stepChain(){
   if(sc.loc){ S.loc = sc.loc; updateLocBar(); }
   updateHUD();
   // 「视角」演出：pov 场景隐藏顶部 HUD（如贝阿特丽丝大人的一天，以贝蒂视角叙述）
-  if(sc.pov) setPov(true);
+  setPov(!!sc.pov);
   const go = ()=> playLines(sc.lines || [], ()=>{
     // 只有场景确实播放结束，才写入对应的“已完成”门控标记。
     markStoryGateCompleted(id);
@@ -3762,7 +3763,7 @@ function runScene(id){
   if(sc.loc){ S.loc = sc.loc; updateLocBar(); }
   updateHUD();
   // 「视角」演出：pov 场景隐藏顶部 HUD（如贝阿特丽丝大人的一天，以贝蒂视角叙述）
-  if(sc.pov) setPov(true);
+  setPov(!!sc.pov);
   const go = ()=> playLines(sc.lines || [], sc.done);
   if(sc.card) showCard(sc.card.vol, sc.card.t, sc.card.s, go);
   else go();

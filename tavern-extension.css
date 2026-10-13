@@ -1,0 +1,32 @@
+#fa-launch { position:fixed; left:16px; bottom:90px; z-index:1000; padding:10px 16px; border:1px solid #c6b0dd; border-radius:24px; background:#292137; color:#f5e9ff; box-shadow:0 4px 20px #0005; cursor:pointer; }
+#fa-dialog { position:fixed; inset:0; width:100vw; max-width:100vw; height:100dvh; max-height:100dvh; margin:0; padding:0; border:0; overflow:hidden; background:#17121f; color:#f3eaf8; font:14px/1.6 sans-serif; }
+#fa-dialog::backdrop { background:#000b; }
+#fa-dialog[open] { display:flex; flex-direction:column; }
+#fa-dialog * { box-sizing:border-box; }
+#fa-dialog [hidden] { display:none !important; }
+#fa-dialog button { cursor:pointer; padding:8px 12px; border:1px solid #736280; border-radius:8px; color:#f3eaf8; background:#362b42; font:inherit; }
+#fa-dialog button:disabled { opacity:.5; cursor:wait; }
+.fa-toolbar { display:flex; align-items:center; gap:8px; padding:8px 12px; background:#221a2c; flex-wrap:wrap; flex-shrink:0; position:relative; z-index:2; }
+.fa-toolbar strong { margin-right:auto; }
+.fa-layout { display:grid; grid-template-columns:minmax(0,1fr) 340px; flex:1; min-height:0; }
+.fa-layout.fa-game-only { grid-template-columns:1fr; }
+#fa-game { width:100%; height:100%; border:0; background:#1a1422; }
+.fa-chat { display:flex; flex-direction:column; padding:16px; gap:10px; min-height:0; overflow-y:auto; border-left:1px solid #4a3b58; background:#211a2a; }
+.fa-chat > :not(#fa-transcript) { flex-shrink:0; }
+.fa-chat h2 { font-size:18px; margin:0; color:inherit; }
+.fa-chat p { margin:0; }
+.fa-note { font-size:12px; color:#c5b6cf; }
+#fa-status { font-size:12px; min-height:20px; color:#d1bfdc; }
+#fa-target, #fa-input { width:100%; padding:9px; border:1px solid #6d587f; border-radius:8px; background:#17121f; color:#f3eaf8; font:inherit; }
+#fa-input { resize:vertical; min-height:70px; max-height:180px; }
+#fa-transcript { flex:1; min-height:70px; overflow:auto; display:flex; flex-direction:column; gap:12px; }
+.fa-turn { padding:10px 12px; border-radius:10px; background:#30263c; white-space:pre-wrap; overflow-wrap:anywhere; }
+.fa-turn.fa-user { background:#3b2e49; }
+.fa-turn strong { display:block; color:#d8bce9; font-size:12px; margin-bottom:4px; }
+.fa-actions { display:flex; gap:8px; }
+#fa-send { flex:1; }
+@media(max-width:800px) {
+  .fa-layout { grid-template-columns:1fr; position:relative; }
+  .fa-chat { position:absolute; top:0; right:0; bottom:0; width:min(340px,90vw); box-shadow:-10px 0 30px #0008; }
+  #fa-launch { left:10px; bottom:82px; padding:8px 12px; }
+}

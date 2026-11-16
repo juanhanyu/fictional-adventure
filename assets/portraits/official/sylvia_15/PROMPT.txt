@@ -1,0 +1,13 @@
+底图：v3_06
+正式提示词（只改表情短语）：
+
+Anime light novel style portrait of a beautiful 15-year-old noble girl, long silver-gray hair, clear blue eyes, {EXPR}, fair skin, wearing refined blue-and-white aristocratic dress, soft lighting, bust portrait on transparent-looking plain soft gradient background, high quality Japanese light novel character art, delicate features, slim petite figure, serene intelligent look
+
+已入库（审核通过：只变表情）：
+  normal  = elegant calm expression   ← v3_06 原图
+  smile   = gentle smiling expression
+  serious = serious unsmiling expression
+  sad     = sad downcast expression
+
+未入库：
+  shy     = 与 smile 重复 / 重试失败，未放入正式目录

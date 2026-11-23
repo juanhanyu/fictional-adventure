@@ -7,7 +7,7 @@
 （js/relics-and-events.js、js/ai-personas.js、js/vn-ux.js 等，支持 glob 通配符），
 输出结构化 JSON 报告。
 - 默认无参运行时自动扫描 novel/、js/story-vol3.js、js/story-vol4.js、
-  js/relics-and-events.js、js/ai-personas.js、js/vn-ux.js（存在即纳入）。
+  js/relics-and-events.js、js/ai-personas.js、js/vn-ux.js、js/raising-hub.js（存在即纳入）。
 - 存在 error 时始终返回非零退出码 (1)；传入 --strict 时，任何 error 或 warning 均返回非零退出码 (1)。
 
 核心审校规则（西幻 / 异世界轻小说文风护栏）：
@@ -201,6 +201,7 @@ MODULAR_NON_STORY_FILENAMES = {
     "ai-chat-panel.js",
     "ambient-fx.js",
     "tavern-bridge.js",
+    "raising-hub.js",
 }
 
 # JS 词法：若前一个有效 token 为以下关键字或运算符，则 '/' 开启正则字面量而非除号
@@ -1272,6 +1273,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         repo_root / "js" / "relics-and-events.js",
         repo_root / "js" / "ai-personas.js",
         repo_root / "js" / "vn-ux.js",
+        repo_root / "js" / "raising-hub.js",
     ]
     default_targets: List[str] = [str(p) for p in candidate_targets if p.exists()]
     if not default_targets:
@@ -1282,7 +1284,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "targets",
         nargs="*",
         default=default_targets,
-        help="待扫描的 .md / .txt / .js 文件、目录或通配符（默认覆盖 novel/、story-vol3/4.js、relics-and-events.js、ai-personas.js、vn-ux.js）",
+        help="待扫描的 .md / .txt / .js 文件、目录或通配符（默认覆盖 novel/、story-vol3/4.js、relics-and-events.js、ai-personas.js、vn-ux.js、raising-hub.js）",
     )
     parser.add_argument(
         "--strict",

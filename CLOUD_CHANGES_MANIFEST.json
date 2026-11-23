@@ -1,16 +1,22 @@
 {
   "added": [
     "css/ambient-fx.css",
+    "css/raising-hub.css",
     "css/system-chronicle.css",
     "css/title-cobalt.css",
     "js/ambient-fx.js",
     "js/liquid-prism.js",
+    "js/raising-hub.js",
+    "js/sfx-suite.js",
     "js/story-vol4.js",
+    "js/title-director.js",
     "js/vendor/liquidGL.js",
     "tests/ambient_and_system_ui.js",
     "tests/proxy_and_personas_v2.js",
     "tests/ui_and_polish_guard.js",
-    "tests/vol4_and_synergy.js"
+    "tests/v2_overhaul_guard.js",
+    "tests/vol4_and_synergy.js",
+    "tools/MONSTER_ART_PROMPTS.md"
   ],
   "modified": [
     "AGENTS.md",
@@ -38,5 +44,5 @@
     "tools/novel_linter.py"
   ],
   "deleted": [],
-  "total_changed": 34
+  "total_changed": 40
 }

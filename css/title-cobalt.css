@@ -1,8 +1,8 @@
 /* =========================================================================
    《转生千金》开场视觉体系：冰白 × 电光钴蓝 (css/title-cobalt.css)
    美学定位：Persona 3 Reload × Arknights: Endfield × Blue Archive
-             × 高对比蓝白超平面日系 ACG 开场界面
-   严守范围：仅作用域限定于 #title-screen，不污染游戏内场景/弹窗/战斗样式
+             × 高对比蓝白超平面日系 ACG 开场界面 + 冰白编排章节报幕帘
+   严守范围：仅作用域限定于 #title-screen、#card 与 .card-exit-veil
    ========================================================================= */
 
 #title-screen {
@@ -25,6 +25,10 @@
   --cb-latin: 'Barlow Condensed', 'IBM Plex Sans', 'Noto Sans SC', system-ui, sans-serif;
   --cb-display: 'Barlow Condensed', 'Noto Sans SC', sans-serif;
   --cb-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --cb-ease-sharp: cubic-bezier(0.22, 1, 0.36, 1);
+  --px: 0;
+  --py: 0;
+  --slash-dx: -7.67vw;
 
   position: relative;
   flex: 1;
@@ -56,7 +60,6 @@
   overflow: hidden;
 }
 
-/* 左侧建筑细线画框（顶/底细线精准收口于右侧斜切锋线，形成完整冰白几何空间） */
 #title-screen .title-frame-rail {
   position: absolute;
   top: 18px;
@@ -86,12 +89,12 @@
   left: 11px;
 }
 
-/* 超平面低透明纵向巨幅水印：安静立于菜单右侧的冰白呼吸带，绝不触碰左侧刻尺 */
+/* 超平面低透明纵向巨幅水印：安静立于菜单右侧的冰白呼吸带，带桌面轻视差 */
 #title-screen .title-watermark-stack {
   position: absolute;
-  left: 34vw;
+  left: 36.8vw;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate3d(calc(var(--px, 0) * 10px), calc(-50% + var(--py, 0) * 8px), 0);
   writing-mode: vertical-rl;
   text-orientation: mixed;
   display: flex;
@@ -102,6 +105,7 @@
   line-height: 0.92;
   user-select: none;
   pointer-events: none;
+  will-change: transform;
 }
 
 #title-screen .title-watermark-main {
@@ -109,7 +113,7 @@
   font-size: clamp(48px, 7.4vh, 78px);
   font-weight: 800;
   letter-spacing: 0.06em;
-  color: rgba(18, 80, 230, 0.052);
+  color: rgba(18, 80, 230, 0.048);
   white-space: nowrap;
 }
 
@@ -118,7 +122,7 @@
   font-size: clamp(16px, 2.2vh, 24px);
   font-weight: 800;
   letter-spacing: 0.24em;
-  color: rgba(18, 80, 230, 0.075);
+  color: rgba(18, 80, 230, 0.072);
   white-space: nowrap;
 }
 
@@ -130,16 +134,17 @@
   transform: translateY(-50%) rotate(-90deg);
   transform-origin: left center;
   font-family: var(--cb-latin);
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.34em;
+  letter-spacing: 0.3em;
   color: rgba(18, 80, 230, 0.34);
   white-space: nowrap;
   user-select: none;
 }
 
 /* =========================================================================
-   2. 右侧 60% 斜切主视觉视窗 (.title-stage-blade) + 钴蓝双锋斜切刃
+   2. 右侧 60% 斜切主视觉视窗 (.title-stage-blade) + 摄影机景深 + 天光束
+   注意：.title-stage-blade 与 .title-stage-badge 严禁附加视差或缩放 transform（LiquidGL 宿主安全）
    ========================================================================= */
 
 #title-screen .title-stage-blade {
@@ -155,24 +160,35 @@
   pointer-events: none;
 }
 
+/* 独立镜头容器：承接开场收镜动画与桌面鼠标视差，不干扰内层缓呼吸与外层 LiquidGL */
+#title-screen .title-stage-camera {
+  position: absolute;
+  inset: -2.2%;
+  z-index: 0;
+  transform-origin: 54% 42%;
+  transform: translate3d(calc(var(--px, 0) * -14px), calc(var(--py, 0) * -9px), 0);
+  will-change: transform;
+  pointer-events: none;
+}
+
 #title-screen .title-stage-art {
   position: absolute;
-  inset: -3%;
+  inset: -1.4%;
   background-image: url(../assets/bg/clocktower.jpg);
   background-size: cover;
-  background-position: 54% 40%;
-  filter: brightness(1.03) saturate(1.13) contrast(1.04);
-  transform-origin: 58% 46%;
+  background-position: 62% 38%;
+  filter: brightness(1.03) saturate(1.12) contrast(1.04);
+  transform-origin: 54% 40%;
   animation: cobaltStageBreathe 18s ease-in-out infinite alternate;
   will-change: transform;
 }
 
 @keyframes cobaltStageBreathe {
   0% {
-    transform: scale(1.048) translate3d(0, 0, 0);
+    transform: scale(1.028) translate3d(0, 0, 0);
   }
   100% {
-    transform: scale(1) translate3d(-1.1%, 0.5%, 0);
+    transform: scale(1) translate3d(-0.6%, 0.35%, 0);
   }
 }
 
@@ -180,13 +196,86 @@
 #title-screen .title-stage-sheen {
   position: absolute;
   inset: 0;
+  z-index: 1;
   background:
     linear-gradient(112deg, rgba(18, 80, 230, 0.14) 0%, rgba(56, 189, 248, 0.04) 22%, transparent 48%),
     linear-gradient(180deg, rgba(12, 46, 128, 0.14) 0%, transparent 18%, transparent 74%, rgba(7, 20, 46, 0.34) 100%);
   pointer-events: none;
 }
 
-/* 视窗右上角极简天空坐标标尺（冰白 × 钴蓝建筑牌，与右下角徽标首尾呼应） */
+/* 左上角斜落天光束与柔和棱镜折射呼吸层 */
+#title-screen .title-stage-sunbeams {
+  position: absolute;
+  inset: -6%;
+  z-index: 2;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  overflow: hidden;
+  transform: translate3d(calc(var(--px, 0) * -22px), calc(var(--py, 0) * -12px), 0);
+  will-change: transform;
+}
+
+#title-screen .title-stage-sunbeams::before {
+  content: '';
+  position: absolute;
+  inset: -12% -8% 12% -10%;
+  background:
+    linear-gradient(
+      128deg,
+      rgba(255, 255, 255, 0.24) 0%,
+      rgba(224, 242, 254, 0.16) 13%,
+      transparent 27%,
+      rgba(186, 230, 253, 0.15) 36%,
+      transparent 48%,
+      rgba(255, 255, 255, 0.12) 56%,
+      transparent 70%
+    );
+  transform-origin: 18% 0%;
+  animation: cobaltSunbeamBreathe 9s ease-in-out infinite alternate;
+  will-change: opacity, transform;
+}
+
+#title-screen .title-stage-sunbeams::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      118deg,
+      transparent 28%,
+      rgba(255, 255, 255, 0.16) 44%,
+      rgba(125, 211, 252, 0.14) 50%,
+      rgba(255, 255, 255, 0.07) 56%,
+      transparent 72%
+    );
+  transform-origin: 42% 30%;
+  animation: cobaltPrismBreath 11s ease-in-out infinite alternate;
+  will-change: opacity, transform;
+}
+
+@keyframes cobaltSunbeamBreathe {
+  0% {
+    opacity: 0.56;
+    transform: scale(1) rotate(-0.6deg);
+  }
+  100% {
+    opacity: 0.92;
+    transform: scale(1.035) rotate(0.8deg);
+  }
+}
+
+@keyframes cobaltPrismBreath {
+  0% {
+    opacity: 0.32;
+    transform: translate3d(-2.2%, -1.2%, 0) scale(1);
+  }
+  100% {
+    opacity: 0.72;
+    transform: translate3d(2.4%, 1.4%, 0) scale(1.03);
+  }
+}
+
+/* 视窗右上角极简天空坐标标尺 */
 #title-screen .title-stage-topmark {
   position: absolute;
   top: 26px;
@@ -214,7 +303,7 @@
   background: rgba(18, 80, 230, 0.55);
 }
 
-/* 右下角冰白 × 钴蓝建筑图形徽标板 */
+/* 右下角冰白 × 钴蓝建筑图形徽标板（LiquidPrism 专属折射表面，零常驻 transform） */
 #title-screen .title-stage-badge {
   position: absolute;
   right: 32px;
@@ -222,8 +311,8 @@
   z-index: 3;
   display: flex;
   align-items: stretch;
-  background: rgba(248, 251, 255, 0.94);
-  border: 1px solid rgba(18, 80, 230, 0.28);
+  background: rgba(252, 254, 255, 0.96);
+  border: 1px solid rgba(18, 80, 230, 0.3);
   clip-path: polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px);
   box-shadow: 0 16px 34px -10px rgba(7, 20, 46, 0.36);
   color: var(--cb-ink);
@@ -255,6 +344,7 @@
   justify-content: center;
   gap: 3px;
   padding: 10px 18px 10px 15px;
+  background: rgba(252, 254, 255, 0.96);
 }
 
 #title-screen .title-badge-sector {
@@ -286,21 +376,52 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.15em;
-  color: var(--cb-ink-muted);
+  color: #1b3a70;
 }
 
 #title-screen .title-badge-vol {
-  color: var(--cb-cobalt);
+  color: #1b3a70;
   font-weight: 800;
 }
 
 #title-screen .title-badge-sep {
   width: 1px;
   height: 10px;
-  background: rgba(18, 80, 230, 0.28);
+  background: rgba(27, 58, 112, 0.34);
 }
 
-/* 精确锁定斜切多边形的双轨电光钴蓝 + 冰青动能斜线 */
+/* 守卫 LiquidPrism 渲染态下的瓷白高对比基底，避免暗石影穿透导致对比度跌落 */
+#title-screen .title-stage-badge[data-liquid-prism-role="title"][data-liquid-prism="active"],
+#title-screen .title-stage-badge[data-liquid-prism-role="title"][data-liquid-prism="css-fallback"] {
+  background: rgba(252, 254, 255, 0.96) !important;
+  border: 1px solid rgba(18, 80, 230, 0.32) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    0 16px 34px -10px rgba(7, 20, 46, 0.36) !important;
+}
+
+#title-screen .title-stage-badge[data-liquid-prism-role="title"][data-liquid-prism="active"] .title-badge-crest,
+#title-screen .title-stage-badge[data-liquid-prism-role="title"][data-liquid-prism="css-fallback"] .title-badge-crest {
+  background: #1250e6 !important;
+}
+
+#title-screen .title-stage-badge[data-liquid-prism-role="title"][data-liquid-prism="active"] .title-badge-meta,
+#title-screen .title-stage-badge[data-liquid-prism-role="title"][data-liquid-prism="css-fallback"] .title-badge-meta {
+  background: linear-gradient(135deg, rgba(252, 254, 255, 0.97) 0%, rgba(244, 249, 255, 0.95) 100%) !important;
+}
+
+#title-screen .title-stage-badge[data-liquid-prism-role="title"] .title-badge-sector {
+  color: #07142e !important;
+  text-shadow: none !important;
+}
+
+#title-screen .title-stage-badge[data-liquid-prism-role="title"] .title-badge-volrow,
+#title-screen .title-stage-badge[data-liquid-prism-role="title"] .title-badge-vol {
+  color: #1b3a70 !important;
+  text-shadow: none !important;
+}
+
+/* 精确锁定斜切多边形的双轨电光钴蓝 + 冰青动能斜线 + 锋刃闪光菱形 */
 #title-screen .title-blade-slashes {
   position: absolute;
   top: 0;
@@ -329,7 +450,24 @@
   transform: translateX(-16px);
 }
 
-/* 保留雪花粒子层，精准裁切至右侧天穹视窗，避免金色光点污染左侧雪白版面 */
+/* 沿斜切锋线疾驰的白青晶芒（仅在开场 playing 阶段显现） */
+#title-screen .title-blade-glint {
+  position: absolute;
+  left: 13%;
+  top: -16px;
+  width: 26px;
+  height: 26px;
+  margin-left: -13px;
+  background: linear-gradient(135deg, #ffffff 15%, #bae6fd 58%, #38bdf8 100%);
+  clip-path: polygon(50% 0%, 66% 36%, 100% 50%, 66% 64%, 50% 100%, 34% 64%, 0% 50%, 34% 36%);
+  filter: drop-shadow(0 4px 10px rgba(56, 189, 248, 0.72));
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* 细雪冰晶粒子层，精准裁切至右侧天穹视窗 */
 #title-screen #title-snow-canvas {
   position: absolute;
   inset: 0;
@@ -393,32 +531,21 @@
   position: relative;
   z-index: 5;
   text-align: left;
-  width: min(440px, 38.5vw);
-  animation: cobaltDeckReveal 0.62s var(--cb-ease) both;
-}
-
-@keyframes cobaltDeckReveal {
-  from {
-    opacity: 0.01;
-    transform: translate3d(-14px, 0, 0);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
+  width: min(460px, 39vw);
+  animation: none;
 }
 
 #title-screen .title-lockup {
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
 
-/* 海报级纯深蓝墨主标：零渐变、零光晕、极强字重张力 */
+/* 海报级纯深蓝墨主标：零渐变、零光晕、0.04em 典雅字距 */
 #title-screen .title-main {
   font-family: var(--cb-serif);
-  font-size: clamp(50px, 4.8vw, 72px);
+  font-size: clamp(50px, 4.75vw, 72px);
   font-weight: 900;
   line-height: 1.04;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.04em;
   color: var(--cb-ink);
   background: none;
   -webkit-background-clip: border-box;
@@ -428,7 +555,7 @@
   margin: 0;
 }
 
-/* 标志性实心电光钴蓝削角副标色带（白底 × 电蓝色块 × 纯白粗体） */
+/* 标志性实心电光钴蓝削角副标色带 */
 #title-screen .title-sub-ribbon {
   display: inline-flex;
   align-items: center;
@@ -436,7 +563,7 @@
   padding: 7px 32px 7px 15px;
   background: var(--cb-cobalt);
   clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
-  filter: drop-shadow(0 8px 16px rgba(18, 80, 230, 0.22));
+  box-shadow: 0 8px 18px -6px rgba(18, 80, 230, 0.34);
 }
 
 #title-screen .title-sub {
@@ -452,11 +579,11 @@
 #title-screen .title-kana {
   margin: 11px 0 0;
   font-family: var(--cb-sans);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.16em;
   color: var(--cb-ink-muted);
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 #title-screen .title-tag {
@@ -465,13 +592,13 @@
   gap: 8px;
   margin: 9px 0 0;
   padding: 4px 12px;
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(18, 80, 230, 0.22);
   border-radius: 2px;
   font-family: var(--cb-sans);
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   color: var(--cb-ink-sub);
   opacity: 1;
 }
@@ -482,28 +609,32 @@
 }
 
 /* =========================================================================
-   5. 动能蓝白主菜单 (nav.title-menu) — 全面覆盖旧暗金与单侧边线样式
+   5. 两列建筑风动能主菜单 (nav.title-menu) — 解决 7 键纵向堆叠拥挤
    ========================================================================= */
 
 #title-screen .title-menu {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
-  gap: 7px;
-  width: min(376px, 100%);
+  gap: 8px 9px;
+  width: min(436px, 100%);
   margin-bottom: 18px;
 }
 
-/* 彻底清除 style.css 与 system-chronicle.css 遗留的单侧边线伪元素与底部划线 */
-#title-screen .title-menu .tbtn.tbtn-editorial::before,
-#title-screen .title-menu .tbtn.tbtn-editorial::after,
-#title-screen .title-menu .tbtn.tbtn-editorial.tbtn-lead::before,
-#title-screen .title-menu .tbtn.tbtn-editorial.tbtn-lead::after {
+/* 主 CTA、继续存档与战术演武横跨整行，其余四项形成两两对称建筑网格 */
+#title-screen .title-menu #btn-new,
+#title-screen .title-menu #btn-continue,
+#title-screen .title-menu #btn-arena-title {
+  grid-column: 1 / -1;
+}
+
+/* 彻底清除次级按钮旧 ::after 伪元素 */
+#title-screen .title-menu .tbtn.tbtn-editorial::after {
   content: none;
   display: none;
 }
 
-/* 通用次级按钮：纯雪白建筑风行条（全四边细框 + 悬浮整行钴蓝瞬切反色） */
+/* 通用次级按钮：纯雪白建筑风行条 + 动能斜切钴蓝墨幕扫掠（全列图标共享同一左对齐纵轴） */
 #title-screen .title-menu .tbtn.tbtn-editorial,
 #title-screen .title-menu .tbtn.tbtn-editorial.ghost,
 #title-screen .title-menu .tbtn.tbtn-editorial.arena-btn {
@@ -511,50 +642,80 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 11px;
+  gap: 10px;
   width: 100%;
+  margin: 0;
   min-width: 0;
-  height: 43px;
+  min-height: 0;
+  height: 44px;
   padding: 0 16px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.84);
-  border: 1px solid rgba(18, 80, 230, 0.2);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(18, 80, 230, 0.22);
   box-shadow: 0 2px 8px -4px rgba(7, 20, 46, 0.08);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   color: var(--cb-ink);
   font-family: var(--cb-sans);
-  font-size: 14.5px;
-  letter-spacing: 0.08em;
+  font-size: 14px;
+  letter-spacing: 0.06em;
   overflow: hidden;
+  isolation: isolate;
   transition:
     transform 0.22s var(--cb-ease),
-    background-color 0.14s ease,
-    border-color 0.14s ease,
-    color 0.14s ease,
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
     box-shadow 0.22s var(--cb-ease);
 }
 
-#title-screen .title-menu .tbtn.tbtn-editorial:focus-visible {
-  outline: 2px solid var(--cb-cobalt);
-  outline-offset: 3px;
+#title-screen .title-menu .tbtn.tbtn-editorial.arena-btn {
+  padding: 0 16px;
+  gap: 10px;
+}
+
+/* 两列半宽功能键隐藏右侧冗余英文标签，留出舒展编排呼吸空间 */
+#title-screen .title-menu .tbtn:not(#btn-new):not(#btn-continue):not(#btn-arena-title) .tbtn-en {
+  display: none;
+}
+
+/* 斜切动能墨幕伪元素 (skewX -16deg)，显式重置 width/height 防历史样式泄漏 */
+#title-screen .title-menu .tbtn.tbtn-editorial::before,
+#title-screen .title-menu .tbtn.tbtn-editorial.tbtn-lead::before {
+  content: '';
+  display: block;
+  position: absolute;
+  inset: -3px -24px;
+  width: auto;
+  height: auto;
+  z-index: 0;
+  background: var(--cb-cobalt);
+  transform: translate3d(-114%, 0, 0) skewX(-16deg);
+  transition: transform 0.28s var(--cb-ease);
+  pointer-events: none;
+}
+
+#title-screen .title-menu .tbtn.tbtn-editorial > * {
+  position: relative;
+  z-index: 1;
 }
 
 #title-screen .title-menu .tbtn.tbtn-editorial .tbtn-ico {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 18px;
   color: var(--cb-cobalt);
   opacity: 1;
   flex-shrink: 0;
-  transition: color 0.14s ease, transform 0.22s var(--cb-ease);
+  transition: color 0.16s ease, transform 0.22s var(--cb-ease);
 }
 
 #title-screen .title-menu .tbtn.tbtn-editorial .tbtn-text {
   font-family: var(--cb-sans);
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   color: inherit;
   white-space: nowrap;
 }
@@ -563,47 +724,33 @@
   margin-left: auto;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   font-family: var(--cb-latin);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.13em;
   color: var(--cb-ink-tag);
   white-space: nowrap;
-  transition: color 0.14s ease, transform 0.22s var(--cb-ease);
+  flex-shrink: 0;
+  transition: color 0.16s ease, transform 0.22s var(--cb-ease);
 }
 
-/* 次级按钮悬浮：整行瞬间反转为实心电光钴蓝 + 纯白字 + 右移 8px */
-#title-screen .title-menu .tbtn.tbtn-editorial:hover,
-#title-screen .title-menu .tbtn.tbtn-editorial.ghost:hover,
-#title-screen .title-menu .tbtn.tbtn-editorial.arena-btn:hover {
-  background: var(--cb-cobalt);
-  border-color: var(--cb-cobalt);
-  color: var(--cb-pure);
-  transform: translateX(8px);
-  box-shadow: 0 12px 24px -10px rgba(18, 80, 230, 0.46);
+#title-screen .title-menu #btn-new .tbtn-en,
+#title-screen .title-menu #btn-continue .tbtn-en,
+#title-screen .title-menu #btn-arena-title .tbtn-en {
+  letter-spacing: 0.18em;
 }
 
-#title-screen .title-menu .tbtn.tbtn-editorial:hover .tbtn-ico {
-  color: var(--cb-pure);
-  transform: scale(1.06);
-}
-
-#title-screen .title-menu .tbtn.tbtn-editorial:hover .tbtn-en {
-  color: var(--cb-cyan-pale);
-  transform: translateX(2px);
-}
-
-/* 典藏图鉴计数徽标（零值自动隐藏，非零清晰呈现，悬浮随按钮反色） */
+/* 典藏图鉴计数徽标（零值自动隐藏，非零贴右清晰呈现） */
 #title-screen .title-menu .tbtn em,
 #title-screen #codex-count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 22px;
-  height: 19px;
+  height: 20px;
   padding: 0 6px;
-  margin-left: 2px;
+  margin-left: auto;
   border-radius: 2px;
   border: 1px solid rgba(18, 80, 230, 0.34);
   background: rgba(18, 80, 230, 0.1);
@@ -615,35 +762,74 @@
   letter-spacing: 0;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+  flex-shrink: 0;
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 }
 
 #title-screen #codex-count.is-zero {
   display: none;
 }
 
-#title-screen .title-menu .tbtn.tbtn-editorial:hover em,
-#title-screen .title-menu .tbtn.tbtn-editorial:hover #codex-count {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.52);
-  color: var(--cb-pure);
-}
-
-/* 主 CTA (#btn-new)：实心电光钴蓝削角长条，悬浮切入深蓝墨 + 右移 10px */
+/* 主 CTA (#btn-new)：实心电光钴蓝削角长条 + 轻盈待机晶辉 + 深蓝墨斜切扫掠 */
 #title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead {
   height: 50px;
-  padding: 0 20px 0 18px;
+  padding: 0 20px 0 17px;
+  gap: 10px;
   background: var(--cb-cobalt);
   border: none;
   border-radius: 0;
   clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
   color: var(--cb-pure);
   box-shadow: none;
-  filter: drop-shadow(0 10px 20px rgba(18, 80, 230, 0.28));
   transition:
     transform 0.22s var(--cb-ease),
-    background-color 0.16s ease,
-    filter 0.22s var(--cb-ease);
+    background-color 0.16s ease;
+}
+
+#title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead::before {
+  background: var(--cb-ink);
+}
+
+/* 主 CTA 柔和周期晶面光泽（显式复位 width/height/transform 防旧样式干扰） */
+#title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead::after {
+  content: '';
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  z-index: 0;
+  transform: none;
+  transition: none;
+  background-image: linear-gradient(
+    112deg,
+    transparent 34%,
+    rgba(255, 255, 255, 0.2) 48%,
+    rgba(186, 230, 253, 0.14) 53%,
+    transparent 66%
+  );
+  background-size: 260% 100%;
+  background-position: 140% 0;
+  pointer-events: none;
+  animation: cobaltLeadSheen 6.5s ease-in-out infinite;
+}
+
+@keyframes cobaltLeadSheen {
+  0%, 62% {
+    background-position: 140% 0;
+    opacity: 0;
+  }
+  70% {
+    opacity: 0.9;
+  }
+  92% {
+    background-position: -60% 0;
+    opacity: 0.85;
+  }
+  100% {
+    background-position: -60% 0;
+    opacity: 0;
+  }
 }
 
 #title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead .tbtn-ico {
@@ -659,26 +845,13 @@
 
 #title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead .tbtn-en {
   color: var(--cb-cyan-pale);
-  letter-spacing: 0.18em;
 }
 
-#title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead:hover {
-  background: var(--cb-ink);
-  color: var(--cb-pure);
-  transform: translateX(10px);
-  box-shadow: none;
-  filter: drop-shadow(0 12px 24px rgba(18, 80, 230, 0.38));
-}
-
-#title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead:hover .tbtn-en {
-  color: #7dd3fc;
-  transform: translateX(3px);
-}
-
-/* 有存档时出现的 #btn-continue：冰蓝高对比钴框主次级 CTA，悬浮整行跃迁实心电光钴蓝 */
+/* 有存档时出现的 #btn-continue：冰蓝高对比钴框次主 CTA */
 #title-screen .title-menu #btn-continue.tbtn.tbtn-editorial {
   height: 45px;
-  padding: 0 18px 0 17px;
+  padding: 0 16px;
+  gap: 10px;
   background: #e9f2ff;
   border: 1.5px solid var(--cb-cobalt);
   border-radius: 2px;
@@ -686,12 +859,6 @@
   color: #0935a8;
   box-shadow: 0 6px 16px -8px rgba(18, 80, 230, 0.24);
   filter: none;
-  transition:
-    transform 0.22s var(--cb-ease),
-    background-color 0.16s ease,
-    border-color 0.16s ease,
-    color 0.16s ease,
-    box-shadow 0.22s var(--cb-ease);
 }
 
 #title-screen .title-menu #btn-continue.tbtn.tbtn-editorial .tbtn-ico {
@@ -708,36 +875,153 @@
   color: #1d4ed8;
 }
 
-#title-screen .title-menu #btn-continue.tbtn.tbtn-editorial:hover {
-  background: var(--cb-cobalt);
+/* 键盘焦点态（统一覆盖所有按钮及 ID 级特异度） */
+#title-screen .title-menu .tbtn.tbtn-editorial:focus-visible,
+#title-screen .title-menu #btn-continue.tbtn.tbtn-editorial:focus-visible {
+  outline: 2px solid var(--cb-cobalt);
+  outline-offset: 3px;
   border-color: var(--cb-cobalt);
   color: var(--cb-pure);
-  transform: translateX(10px);
-  box-shadow: 0 12px 24px -8px rgba(18, 80, 230, 0.42);
-  filter: none;
+  box-shadow: 0 12px 24px -10px rgba(18, 80, 230, 0.44);
 }
 
-#title-screen .title-menu #btn-continue.tbtn.tbtn-editorial:hover .tbtn-ico {
+#title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead:focus-visible {
+  outline: 2px solid var(--cb-ink);
+  outline-offset: 3px;
+  color: var(--cb-pure);
+  box-shadow: none;
+}
+
+#title-screen .title-menu .tbtn.tbtn-editorial:focus-visible::before,
+#title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead:focus-visible::before,
+#title-screen .title-menu #btn-continue.tbtn.tbtn-editorial:focus-visible::before {
+  transform: translate3d(0%, 0, 0) skewX(-16deg);
+}
+
+#title-screen .title-menu .tbtn.tbtn-editorial:focus-visible .tbtn-ico,
+#title-screen .title-menu #btn-continue.tbtn.tbtn-editorial:focus-visible .tbtn-ico {
   color: var(--cb-pure);
 }
 
-#title-screen .title-menu #btn-continue.tbtn.tbtn-editorial:hover .tbtn-en {
+#title-screen .title-menu .tbtn.tbtn-editorial:focus-visible .tbtn-en,
+#title-screen .title-menu #btn-continue.tbtn.tbtn-editorial:focus-visible .tbtn-en {
   color: var(--cb-cyan-pale);
 }
 
+#title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead:focus-visible .tbtn-en {
+  color: #7dd3fc;
+}
+
+#title-screen .title-menu .tbtn.tbtn-editorial:focus-visible em,
+#title-screen .title-menu .tbtn.tbtn-editorial:focus-visible #codex-count {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.52);
+  color: var(--cb-pure);
+}
+
+/* 精准桌面悬浮态：隔离至 (hover: hover) and (pointer: fine)，触屏绝不卡死 */
+@media (hover: hover) and (pointer: fine) {
+  #title-screen .title-menu .tbtn.tbtn-editorial:hover,
+  #title-screen .title-menu .tbtn.tbtn-editorial.ghost:hover {
+    background: rgba(255, 255, 255, 0.96);
+    border-color: var(--cb-cobalt);
+    color: var(--cb-pure);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -10px rgba(18, 80, 230, 0.44);
+  }
+
+  #title-screen .title-menu .tbtn.tbtn-editorial.arena-btn:hover {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: var(--cb-cobalt);
+    color: var(--cb-pure);
+    transform: translateX(7px);
+    box-shadow: 0 12px 24px -10px rgba(18, 80, 230, 0.44);
+  }
+
+  #title-screen .title-menu #btn-continue.tbtn.tbtn-editorial:hover {
+    background: #e9f2ff;
+    border-color: var(--cb-cobalt);
+    color: var(--cb-pure);
+    transform: translateX(7px);
+    box-shadow: 0 12px 24px -10px rgba(18, 80, 230, 0.44);
+  }
+
+  #title-screen .title-menu .tbtn.tbtn-editorial:hover::before,
+  #title-screen .title-menu #btn-continue.tbtn.tbtn-editorial:hover::before {
+    inset: -3px -24px;
+    width: auto;
+    height: auto;
+    background: var(--cb-cobalt);
+    transform: translate3d(0%, 0, 0) skewX(-16deg);
+  }
+
+  #title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead:hover::before {
+    inset: -3px -24px;
+    width: auto;
+    height: auto;
+    background: var(--cb-ink);
+    transform: translate3d(0%, 0, 0) skewX(-16deg);
+  }
+
+  #title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead:hover::after {
+    transform: none;
+  }
+
+  #title-screen .title-menu .tbtn.tbtn-editorial:hover .tbtn-ico,
+  #title-screen .title-menu #btn-continue.tbtn.tbtn-editorial:hover .tbtn-ico {
+    color: var(--cb-pure);
+    transform: scale(1.06);
+  }
+
+  #title-screen .title-menu .tbtn.tbtn-editorial:hover .tbtn-en,
+  #title-screen .title-menu #btn-continue.tbtn.tbtn-editorial:hover .tbtn-en {
+    color: var(--cb-cyan-pale);
+    transform: translateX(2px);
+  }
+
+  #title-screen .title-menu .tbtn.tbtn-editorial:hover em,
+  #title-screen .title-menu .tbtn.tbtn-editorial:hover #codex-count {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.52);
+    color: var(--cb-pure);
+  }
+
+  #title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead:hover {
+    background: var(--cb-cobalt);
+    color: var(--cb-pure);
+    transform: translateX(9px);
+    box-shadow: none;
+  }
+
+  #title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead:hover .tbtn-en {
+    color: #7dd3fc;
+    transform: translateX(3px);
+  }
+}
+
+/* 按压棘轮反馈（置于 hover 之后且特异度齐平，确保点击瞬间必有回弹反馈） */
+#title-screen .title-menu .tbtn.tbtn-editorial:active,
+#title-screen .title-menu .tbtn.tbtn-editorial.ghost:active,
+#title-screen .title-menu .tbtn.tbtn-editorial.arena-btn:active,
+#title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead:active,
+#title-screen .title-menu #btn-continue.tbtn.tbtn-editorial:active {
+  transform: scale(0.985);
+  transition-duration: 0.08s;
+}
+
 /* =========================================================================
-   6. 底部极简注脚与左下角安全工具入口 (#btn-letter-test)
+   6. 底部极简注脚与左下角工具栏 (#btn-letter-test + #btn-title-mute)
    ========================================================================= */
 
 #title-screen .title-hint {
-  width: min(376px, 100%);
+  width: min(436px, 100%);
   margin: 0;
   padding-top: 12px;
   border-top: 1px solid var(--cb-line);
   font-family: var(--cb-sans);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: var(--cb-ink-muted);
   white-space: nowrap;
 }
@@ -747,23 +1031,30 @@
   left: 4.5vw;
   bottom: 24px;
   z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 #title-screen .corner-tool-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
+  min-height: 36px;
   padding: 6px 14px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.9);
   border: 1px solid var(--cb-line-strong);
   color: var(--cb-ink-sub);
   font-family: var(--cb-sans);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  cursor: pointer;
   transition:
     background-color 0.16s ease,
     border-color 0.16s ease,
@@ -774,28 +1065,301 @@
 
 #title-screen .corner-tool-btn svg {
   color: var(--cb-cobalt);
+  flex-shrink: 0;
   transition: color 0.16s ease;
 }
 
-#title-screen .corner-tool-btn:hover {
-  background: var(--cb-cobalt);
-  border-color: var(--cb-cobalt);
-  color: var(--cb-pure);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 18px -6px rgba(18, 80, 230, 0.36);
+#title-screen #btn-title-mute:not(.is-muted) {
+  background: rgba(242, 248, 255, 0.96);
+  border-color: rgba(18, 80, 230, 0.36);
+  color: #0b3ec0;
+  box-shadow: 0 2px 8px -4px rgba(18, 80, 230, 0.2);
 }
 
-#title-screen .corner-tool-btn:hover svg {
-  color: var(--cb-pure);
+#title-screen #btn-title-mute .ico-sound-off {
+  display: none;
 }
 
-#title-screen .corner-tool-btn:focus-visible {
+#title-screen #btn-title-mute.is-muted {
+  background: rgba(235, 242, 252, 0.9);
+  border-color: rgba(53, 88, 142, 0.28);
+  color: #2f4e80;
+  box-shadow: none;
+}
+
+#title-screen #btn-title-mute.is-muted .ico-sound-on {
+  display: none;
+}
+
+#title-screen #btn-title-mute.is-muted .ico-sound-off {
+  display: block;
+}
+
+#title-screen #btn-title-mute.is-muted svg {
+  color: #35588e;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  #title-screen .corner-tool-btn:hover,
+  #title-screen #btn-title-mute.is-muted:hover {
+    background: var(--cb-cobalt);
+    border-color: var(--cb-cobalt);
+    color: var(--cb-pure);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px -6px rgba(18, 80, 230, 0.36);
+  }
+
+  #title-screen .corner-tool-btn:hover svg,
+  #title-screen #btn-title-mute.is-muted:hover svg {
+    color: var(--cb-pure);
+  }
+}
+
+#title-screen .corner-tool-btn:active,
+#title-screen #btn-title-mute.is-muted:active {
+  transform: scale(0.975);
+}
+
+#title-screen .corner-tool-btn:focus-visible,
+#title-screen #btn-title-mute.is-muted:focus-visible {
   outline: 2px solid var(--cb-cobalt);
   outline-offset: 3px;
 }
 
 /* =========================================================================
-   7. 响应式精准适配：1280×720 笔记本屏零裁切 & 窄屏优雅收束
+   7. 900ms 动漫感编排开场时序 (#title-screen[data-opening="playing"])
+   ========================================================================= */
+
+/* 采用视口无关的 clip-path 沿锋线自上而下疾斩，规避 non-scaling-stroke 虚线步长失真 */
+#title-screen[data-opening="playing"] .title-blade-svg-primary {
+  animation: cobaltSlashWipe 340ms var(--cb-ease) 0ms both;
+}
+
+#title-screen[data-opening="playing"] .title-blade-svg-secondary {
+  animation: cobaltSlashWipe 320ms var(--cb-ease) 55ms both;
+}
+
+#title-screen[data-opening="playing"] .title-blade-svg-tertiary {
+  animation: cobaltSlashWipeTertiary 280ms var(--cb-ease) 110ms both;
+}
+
+#title-screen[data-opening="playing"] .title-blade-glint {
+  visibility: visible;
+  animation: cobaltBladeGlintSweep 360ms var(--cb-ease-sharp) 10ms both;
+}
+
+@keyframes cobaltSlashWipe {
+  0% {
+    clip-path: inset(-4% -28px 104% -28px);
+    opacity: 0.35;
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    clip-path: inset(-4% -28px -4% -28px);
+    opacity: 1;
+  }
+}
+
+@keyframes cobaltSlashWipeTertiary {
+  0% {
+    clip-path: inset(18% -28px 82% -28px);
+    opacity: 0.35;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    clip-path: inset(18% -28px 52% -28px);
+    opacity: 1;
+  }
+}
+
+@keyframes cobaltBladeGlintSweep {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.55) rotate(0deg);
+  }
+  18% {
+    opacity: 1;
+    transform: translate3d(calc(var(--slash-dx) * 0.18), 18vh, 0) scale(1.15) rotate(45deg);
+  }
+  82% {
+    opacity: 0.95;
+    transform: translate3d(calc(var(--slash-dx) * 0.84), 84vh, 0) scale(0.95) rotate(135deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--slash-dx), 104vh, 0) scale(0.4) rotate(180deg);
+  }
+}
+
+@media (min-width: 721px), (max-height: 540px) and (min-width: 560px) {
+  #title-screen[data-opening="playing"] .title-stage-blade {
+    animation: cobaltBladePeel 440ms var(--cb-ease) 30ms both;
+  }
+}
+
+@keyframes cobaltBladePeel {
+  from {
+    clip-path: polygon(100% 0, 100% 0, 100% 100%, 87% 100%);
+  }
+  to {
+    clip-path: polygon(13% 0, 100% 0, 100% 100%, 0% 100%);
+  }
+}
+
+#title-screen[data-opening="playing"] .title-stage-camera {
+  animation: cobaltLensSettle 570ms var(--cb-ease) 70ms both;
+}
+
+@keyframes cobaltLensSettle {
+  from {
+    transform: scale(1.12) translate3d(2.2%, 0, 0);
+  }
+  to {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+}
+
+#title-screen[data-opening="playing"] .title-stage-sunbeams {
+  animation: cobaltFadeInOnly 460ms var(--cb-ease) 200ms both;
+}
+
+#title-screen[data-opening="playing"] .title-frame-rail,
+#title-screen[data-opening="playing"] .title-reg-mark,
+#title-screen[data-opening="playing"] .title-watermark-stack,
+#title-screen[data-opening="playing"] .title-side-index {
+  animation: cobaltFadeInOnly 380ms var(--cb-ease) 160ms both;
+}
+
+#title-screen[data-opening="playing"] h1.title-main {
+  animation: cobaltTitleReveal 410ms var(--cb-ease) 210ms both;
+}
+
+@keyframes cobaltTitleReveal {
+  from {
+    opacity: 0.01;
+    clip-path: inset(0 0 100% 0);
+    transform: translate3d(0, 18px, 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0% 0);
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+#title-screen[data-opening="playing"] .title-sub-ribbon {
+  animation: cobaltRibbonSlash 340ms var(--cb-ease) 270ms both;
+}
+
+@keyframes cobaltRibbonSlash {
+  from {
+    opacity: 0.01;
+    clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
+    transform: translate3d(-12px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+#title-screen[data-opening="playing"] .title-kana {
+  animation: cobaltMetaSlide 280ms var(--cb-ease) 320ms both;
+}
+
+#title-screen[data-opening="playing"] .title-tag {
+  animation: cobaltMetaSlide 260ms var(--cb-ease) 360ms both;
+}
+
+#title-screen[data-opening="playing"] .title-masthead {
+  animation: cobaltDropSettle 320ms var(--cb-ease) 220ms both;
+}
+
+#title-screen[data-opening="playing"] .title-stage-topmark {
+  animation: cobaltRightSlide 320ms var(--cb-ease) 260ms both;
+}
+
+#title-screen[data-opening="playing"] .title-stage-badge {
+  animation: cobaltRightSlide 320ms var(--cb-ease) 300ms both;
+}
+
+@keyframes cobaltFadeInOnly {
+  from { opacity: 0.01; }
+  to { opacity: 1; }
+}
+
+@keyframes cobaltMetaSlide {
+  from {
+    opacity: 0.01;
+    transform: translate3d(-12px, 6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes cobaltDropSettle {
+  from {
+    opacity: 0.01;
+    transform: translate3d(0, -10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes cobaltRightSlide {
+  from {
+    opacity: 0.01;
+    transform: translate3d(18px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* 7 键最大落点 = 420 + 6*48 + 200 = 908ms，在 920ms 刷新与 940ms ready 之前完整收束 */
+#title-screen[data-opening="playing"] .title-menu > .tbtn {
+  animation: cobaltMenuSweep 200ms var(--cb-ease) calc(420ms + var(--i, 0) * 48ms) both;
+}
+
+@keyframes cobaltMenuSweep {
+  from {
+    opacity: 0.01;
+    transform: translate3d(-20px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+#title-screen[data-opening="playing"] .title-hint,
+#title-screen[data-opening="playing"] .title-corner-tools {
+  animation: cobaltFooterSettle 160ms var(--cb-ease) 740ms both;
+}
+
+@keyframes cobaltFooterSettle {
+  from {
+    opacity: 0.01;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* =========================================================================
+   8. 响应式精准适配：1280×720 笔记本、960px 平板、竖屏手机与横屏手机（严格互斥）
    ========================================================================= */
 
 @media (max-height: 780px), (max-width: 1320px) {
@@ -808,6 +1372,10 @@
     left: 4.2vw;
   }
 
+  #title-screen .title-watermark-stack {
+    left: 38.2vw;
+  }
+
   #title-screen .title-lockup {
     margin-bottom: 16px;
   }
@@ -818,7 +1386,7 @@
 
   #title-screen .title-sub-ribbon {
     margin-top: 8px;
-    padding: 5px 22px 5px 12px;
+    padding: 5px 24px 5px 13px;
   }
 
   #title-screen .title-sub {
@@ -827,34 +1395,39 @@
 
   #title-screen .title-kana {
     margin-top: 8px;
-    font-size: 11px;
+    font-size: 12px;
   }
 
   #title-screen .title-tag {
     margin-top: 7px;
     padding: 3px 10px;
-    font-size: 11.5px;
+    font-size: 12px;
   }
 
   #title-screen .title-menu {
-    gap: 5px;
-    width: min(352px, 100%);
-    margin-bottom: 13px;
+    gap: 7px 8px;
+    width: min(420px, 100%);
+    margin-bottom: 14px;
   }
 
   #title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead {
-    height: 44px;
+    height: 46px;
+    padding: 0 18px 0 16px;
+    gap: 10px;
   }
 
   #title-screen .title-menu #btn-continue.tbtn.tbtn-editorial {
-    height: 40px;
+    height: 42px;
+    padding: 0 15px;
+    gap: 10px;
   }
 
   #title-screen .title-menu .tbtn.tbtn-editorial,
   #title-screen .title-menu .tbtn.tbtn-editorial.ghost,
   #title-screen .title-menu .tbtn.tbtn-editorial.arena-btn {
-    height: 38px;
-    padding: 0 14px;
+    height: 42px;
+    padding: 0 15px;
+    gap: 10px;
     font-size: 13.5px;
   }
 
@@ -867,9 +1440,9 @@
   }
 
   #title-screen .title-hint {
-    width: min(352px, 100%);
+    width: min(420px, 100%);
     padding-top: 10px;
-    font-size: 11px;
+    font-size: 12px;
   }
 
   #title-screen .title-corner-tools {
@@ -889,9 +1462,17 @@
 }
 
 @media (max-width: 960px) {
+  #title-screen {
+    --slash-dx: -6.5vw;
+  }
+
   #title-screen .title-stage-blade,
   #title-screen .title-blade-slashes {
     left: 50vw;
+  }
+
+  #title-screen .title-stage-art {
+    background-position: 60% 38%;
   }
 
   #title-screen #title-snow-canvas {
@@ -899,106 +1480,34 @@
   }
 
   #title-screen .title-inner {
-    width: min(410px, 46vw);
+    width: min(420px, 46vw);
+  }
+
+  #title-screen .title-watermark-stack {
+    left: 44vw;
   }
 }
 
-@media (max-height: 540px) and (min-width: 560px) {
-  #title-screen {
-    align-items: flex-start;
-    overflow-y: auto;
-    padding: 46px 3.5vw 18px;
-  }
-
-  #title-screen .title-masthead {
-    top: 12px;
-    left: 3.5vw;
-  }
-
-  #title-screen .title-lockup {
-    margin-bottom: 10px;
-  }
-
-  #title-screen .title-main {
-    font-size: 34px;
-    line-height: 1.05;
-  }
-
-  #title-screen .title-sub-ribbon {
-    margin-top: 5px;
-    padding: 3px 16px 3px 10px;
-  }
-
-  #title-screen .title-sub {
-    font-size: 12.5px;
-  }
-
-  #title-screen .title-kana,
-  #title-screen .title-tag {
-    display: none;
-  }
-
-  #title-screen .title-menu {
-    gap: 4px;
-    margin-bottom: 8px;
-  }
-
-  #title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead,
-  #title-screen .title-menu #btn-continue.tbtn.tbtn-editorial,
-  #title-screen .title-menu .tbtn.tbtn-editorial,
-  #title-screen .title-menu .tbtn.tbtn-editorial.ghost,
-  #title-screen .title-menu .tbtn.tbtn-editorial.arena-btn {
-    height: 32px;
-    padding: 0 12px;
-    font-size: 12.5px;
-  }
-
-  #title-screen .title-menu .tbtn.tbtn-editorial .tbtn-text,
-  #title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead .tbtn-text {
-    font-size: 12.5px;
-  }
-
-  #title-screen .title-hint {
-    padding-top: 6px;
-    font-size: 10.5px;
-  }
-
-  #title-screen .title-corner-tools {
-    position: absolute;
-    left: auto;
-    right: 14px;
-    top: 44px;
-    bottom: auto;
-    margin: 0;
-  }
-
-  #title-screen .title-stage-badge {
-    right: 14px;
-    bottom: 12px;
-    transform: scale(0.86);
-    transform-origin: bottom right;
-  }
-
-  #title-screen .title-stage-topmark {
-    top: 12px;
-    right: 14px;
-    font-size: 10px;
-    padding: 4px 10px;
-  }
-}
-
-@media (max-width: 720px) {
+/* 竖屏手机 (如 390×844)：严格排除 560px+ 矮横屏，顶部大画幅钟楼头图 + 单手拇指区菜单排布 */
+@media (max-width: 720px) and (min-height: 541px), (max-width: 559px) {
   #title-screen {
     flex-direction: column;
     align-items: stretch;
-    justify-content: flex-start;
+    justify-content: space-between;
+    min-height: 100%;
+    min-height: 100dvh;
     overflow-y: auto;
-    padding: calc(clamp(185px, 26vh, 236px) + 18px) 20px 28px;
+    padding:
+      calc(clamp(218px, 31dvh, 268px) + 16px)
+      max(18px, env(safe-area-inset-right))
+      max(24px, env(safe-area-inset-bottom))
+      max(18px, env(safe-area-inset-left));
   }
 
   #title-screen .title-blade-slashes,
   #title-screen .title-side-index,
   #title-screen .title-frame-rail,
+  #title-screen .title-reg-mark,
   #title-screen .title-watermark-stack,
   #title-screen .title-stage-badge,
   #title-screen .title-stage-topmark {
@@ -1012,49 +1521,101 @@
     left: 0;
     right: 0;
     bottom: auto;
-    height: clamp(185px, 26vh, 236px);
-    clip-path: polygon(0 0, 100% 0, 100% 82%, 0 100%);
-    box-shadow: 0 6px 0 var(--cb-cobalt);
+    height: clamp(218px, 31vh, 268px);
+    height: clamp(218px, 31dvh, 268px);
+    clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
+    box-shadow: none;
+  }
+
+  #title-screen .title-stage-blade::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    background: var(--cb-cobalt);
+    clip-path: polygon(0 calc(100% - 4px), 100% calc(85% - 4px), 100% 85%, 0 100%);
+    pointer-events: none;
+  }
+
+  #title-screen[data-opening="playing"] .title-stage-blade {
+    animation: cobaltMobileBladePeel 420ms var(--cb-ease) 20ms both;
+  }
+
+  @keyframes cobaltMobileBladePeel {
+    from {
+      clip-path: polygon(0 0, 100% 0, 100% 0%, 0 0%);
+    }
+    to {
+      clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
+    }
   }
 
   #title-screen .title-stage-art {
-    background-position: 62% 38%;
+    background-position: 34% 34%;
   }
 
+  /* 保持全画幅高度匹配 canvas 像素缓冲，仅用 clip-path 裁至顶部斜切头图，避免粒子压扁 */
   #title-screen #title-snow-canvas {
-    clip-path: none;
-    height: clamp(185px, 26vh, 236px);
-    opacity: 0.55;
+    height: 100%;
+    clip-path: polygon(0 0, 100% 0, 100% calc(clamp(218px, 31dvh, 268px) * 0.85), 0 clamp(218px, 31dvh, 268px));
+    opacity: 0.58;
   }
 
   #title-screen .title-masthead {
-    left: 14px;
-    top: 12px;
+    left: max(14px, env(safe-area-inset-left));
+    top: max(12px, env(safe-area-inset-top));
     padding: 4px 10px;
-    background: rgba(248, 251, 255, 0.92);
+    background: rgba(250, 253, 255, 0.94);
     border: 1px solid rgba(18, 80, 230, 0.24);
     border-radius: 2px;
     box-shadow: 0 8px 20px -10px rgba(7, 20, 46, 0.28);
   }
 
   #title-screen .title-inner {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     width: min(420px, 100%);
     margin: 0 auto;
     text-align: left;
   }
 
   #title-screen .title-lockup {
-    margin-bottom: 14px;
+    margin-bottom: 18px;
   }
 
   #title-screen .title-main {
-    font-size: 40px;
+    font-size: 42px;
   }
 
   #title-screen .title-menu {
     width: 100%;
-    gap: 6px;
-    margin-bottom: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    margin-top: auto;
+    padding-top: 18px;
+    margin-bottom: 14px;
+  }
+
+  #title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead {
+    min-height: 52px;
+    height: auto;
+    padding: 10px 18px 10px 15px;
+  }
+
+  #title-screen .title-menu #btn-continue.tbtn.tbtn-editorial {
+    min-height: 46px;
+    height: auto;
+    padding: 8px 15px;
+  }
+
+  #title-screen .title-menu .tbtn.tbtn-editorial,
+  #title-screen .title-menu .tbtn.tbtn-editorial.ghost,
+  #title-screen .title-menu .tbtn.tbtn-editorial.arena-btn {
+    min-height: 46px;
+    height: auto;
+    padding: 8px 15px;
   }
 
   #title-screen .title-hint {
@@ -1064,16 +1625,610 @@
 
   #title-screen .title-corner-tools {
     position: static;
+    display: flex;
     width: min(420px, 100%);
-    margin: 12px auto 0;
+    margin: 14px auto 0;
+    gap: 9px;
+    flex-shrink: 0;
+  }
+
+  #title-screen .corner-tool-btn {
+    flex: 1 1 auto;
+    min-height: 44px;
+    padding: 8px 12px;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  #title-screen .title-stage-art,
-  #title-screen .title-compass-svg,
-  #title-screen .title-live-dot,
+/* 横屏手机 (含 667×375 与 844×390)：隐去边缘装饰零碰撞，40~44px 舒适触控行高，零重叠 */
+@media (max-height: 540px) and (min-width: 560px) {
+  #title-screen {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    overflow-y: auto;
+    padding: 38px max(16px, env(safe-area-inset-right)) 10px max(3.2vw, env(safe-area-inset-left));
+  }
+
+  #title-screen .title-side-index,
+  #title-screen .title-watermark-stack,
+  #title-screen .title-frame-rail,
+  #title-screen .title-reg-mark {
+    display: none;
+  }
+
+  #title-screen .title-masthead {
+    top: 8px;
+    left: max(3.2vw, env(safe-area-inset-left));
+  }
+
   #title-screen .title-inner {
-    animation: none;
+    width: min(408px, 47vw);
+    text-align: left;
+  }
+
+  #title-screen .title-lockup {
+    margin-bottom: 6px;
+  }
+
+  #title-screen .title-main {
+    font-size: 28px;
+    line-height: 1.04;
+  }
+
+  #title-screen .title-sub-ribbon {
+    margin-top: 4px;
+    padding: 3px 16px 3px 10px;
+  }
+
+  #title-screen .title-sub {
+    font-size: 12px;
+  }
+
+  #title-screen .title-kana,
+  #title-screen .title-tag,
+  #title-screen .title-stage-topmark {
+    display: none;
+  }
+
+  #title-screen .title-menu {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px 6px;
+    width: min(408px, 100%);
+    margin-bottom: 6px;
+  }
+
+  #title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead {
+    min-height: 44px;
+    height: 44px;
+    padding: 0 14px 0 13px;
+    gap: 8px;
+    font-size: 13.5px;
+  }
+
+  #title-screen .title-menu #btn-continue.tbtn.tbtn-editorial,
+  #title-screen .title-menu .tbtn.tbtn-editorial,
+  #title-screen .title-menu .tbtn.tbtn-editorial.ghost,
+  #title-screen .title-menu .tbtn.tbtn-editorial.arena-btn {
+    min-height: 40px;
+    height: 40px;
+    padding: 0 12px;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  #title-screen .title-menu .tbtn.tbtn-editorial .tbtn-text,
+  #title-screen .title-menu #btn-continue.tbtn.tbtn-editorial .tbtn-text {
+    font-size: 13px;
+    letter-spacing: 0.06em;
+  }
+
+  #title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead .tbtn-text {
+    font-size: 13.5px;
+    letter-spacing: 0.08em;
+  }
+
+  #title-screen .title-hint {
+    width: min(408px, 100%);
+    padding-top: 5px;
+    font-size: 12px;
+    white-space: normal;
+  }
+
+  #title-screen .title-corner-tools {
+    position: absolute;
+    left: auto;
+    right: max(14px, env(safe-area-inset-right));
+    top: 8px;
+    bottom: auto;
+    margin: 0;
+  }
+
+  #title-screen .corner-tool-btn {
+    min-height: 40px;
+    padding: 6px 12px;
+  }
+
+  /* 原生紧凑徽标尺寸，绝不施加 scale transform，确保 LiquidGL 坐标零漂移与 940ms 零跳变 */
+  #title-screen .title-stage-badge {
+    right: max(14px, env(safe-area-inset-right));
+    bottom: 12px;
+    transform: none;
+  }
+
+  #title-screen .title-badge-crest {
+    width: 40px;
+  }
+
+  #title-screen .title-badge-meta {
+    padding: 7px 12px;
+    gap: 2px;
+  }
+
+  #title-screen .title-badge-sector,
+  #title-screen .title-badge-volrow {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+  }
+}
+
+/* =========================================================================
+   9. 明亮冰白编排章节报幕帘 (#card) 与斜切退幕遮罩 (.card-exit-veil)
+      覆盖 style.css 暗海军报幕卡，消除黑屏闪烁，与冰白电蓝标题页无缝接续
+   ========================================================================= */
+
+#card {
+  --card-blade-w: clamp(72px, 11vw, 152px);
+  position: fixed;
+  inset: 0;
+  z-index: 84;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding:
+    max(28px, env(safe-area-inset-top))
+    var(--card-blade-w)
+    max(28px, env(safe-area-inset-bottom))
+    max(28px, env(safe-area-inset-left));
+  text-align: center;
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse 62% 54% at 45% 48%, rgba(255, 255, 255, 0.96) 0%, rgba(235, 246, 255, 0.56) 44%, rgba(212, 232, 255, 0.12) 100%),
+    linear-gradient(124deg, rgba(255, 255, 255, 0.68) 0%, transparent 32%, rgba(186, 230, 253, 0.22) 52%, transparent 72%),
+    linear-gradient(152deg, #f8fbff 0%, #edf4ff 52%, #e0ecff 100%);
+  color: #07142e;
+  animation: cardCurtainIn 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+#card.hidden {
+  display: none;
+}
+
+/* 右缘电光钴蓝斜切锋面（呼应标题页右侧斜切视窗） */
+#card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--card-blade-w);
+  background: linear-gradient(168deg, #1250e6 0%, #0b3ec0 68%, #0a2d94 100%);
+  clip-path: polygon(58% 0, 100% 0, 100% 100%, 0% 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 建筑感钴蓝细线内框 */
+#card::after {
+  content: '';
+  position: absolute;
+  inset: clamp(14px, 2.4vw, 26px);
+  border: 1px solid rgba(18, 80, 230, 0.22);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 博物馆级星盘冰晶背幕与巨幅低透明衬线水印层 */
+#card .card-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* 副轨天青斜切锋线，与右侧钴蓝斜幕形成双轨呼应 */
+#card .card-slash-accent {
+  position: absolute;
+  top: 0;
+  right: calc(var(--card-blade-w) * 0.08 + 10px);
+  bottom: 0;
+  width: var(--card-blade-w);
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.56) 0%, rgba(18, 80, 230, 0.24) 100%);
+  clip-path: polygon(58% 0, calc(58% + 2.5px) 0, 2.5px 100%, 0% 100%);
+}
+
+/* 横贯视觉中轴的霜蓝地平细线，稳固宽屏构图重心 */
+#card .card-horizon-rule {
+  position: absolute;
+  left: clamp(28px, 4vw, 56px);
+  right: calc(var(--card-blade-w) + clamp(16px, 2.6vw, 38px));
+  top: 50%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(18, 80, 230, 0.04) 0%,
+    rgba(18, 80, 230, 0.2) 18%,
+    rgba(56, 189, 248, 0.06) 44%,
+    rgba(56, 189, 248, 0.06) 56%,
+    rgba(18, 80, 230, 0.2) 82%,
+    rgba(18, 80, 230, 0.04) 100%
+  );
+  pointer-events: none;
+}
+
+/* 左侧垂直编年标尺（呼应标题页 .title-side-index） */
+#card .card-side-index {
+  position: absolute;
+  left: clamp(26px, 3vw, 40px);
+  top: 50%;
+  transform: translateY(-50%) rotate(-90deg);
+  transform-origin: left center;
+  font-family: 'Barlow Condensed', 'IBM Plex Sans', 'Noto Sans SC', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  color: rgba(18, 80, 230, 0.32);
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* 光学居中星盘与水印容器（与 padding-left/right 精确同心对齐） */
+#card .card-emblem-stage {
+  position: absolute;
+  left: calc(50% - var(--card-blade-w) * 0.5 + 14px);
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: clamp(320px, 64vmin, 620px);
+  height: clamp(320px, 64vmin, 620px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+#card .card-astrolabe-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  animation: cardAstrolabeFade 620ms cubic-bezier(0.16, 1, 0.3, 1) 40ms both;
+}
+
+#card .card-astrolabe-outer {
+  transform-origin: 300px 300px;
+  animation: cardAstrolabeSpin 96s linear infinite;
+}
+
+#card .card-astrolabe-inner {
+  transform-origin: 300px 300px;
+  animation: cardAstrolabeSpinRev 72s linear infinite;
+}
+
+@keyframes cardAstrolabeFade {
+  from {
+    opacity: 0.01;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes cardAstrolabeSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes cardAstrolabeSpinRev {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+/* 巨幅低透明衬线卷次水印：正居中沉静浮于 #card-t 之后 */
+#card .card-watermark {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  animation: cardWatermarkReveal 540ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
+}
+
+#card .card-watermark-roman {
+  font-family: 'Noto Serif SC', 'Noto Serif CJK SC', Georgia, 'Times New Roman', serif;
+  font-size: clamp(160px, 32vh, 310px);
+  font-weight: 900;
+  line-height: 0.85;
+  letter-spacing: 0.06em;
+  color: rgba(18, 80, 230, 0.055);
+}
+
+#card .card-watermark-latin {
+  position: absolute;
+  left: calc(50% - var(--card-blade-w) * 0.5 + 14px);
+  bottom: clamp(26px, 4vh, 42px);
+  transform: translateX(-50%);
+  font-family: 'Barlow Condensed', 'Noto Sans SC', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  color: rgba(18, 80, 230, 0.28);
+  white-space: nowrap;
+  user-select: none;
+}
+
+@keyframes cardWatermarkReveal {
+  from {
+    opacity: 0.01;
+    transform: scale(1.06);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+#card .card-crest {
+  position: relative;
+  z-index: 2;
+  color: #1250e6;
+  margin-bottom: 20px;
+  animation: cardElementRise 360ms cubic-bezier(0.16, 1, 0.3, 1) 60ms both;
+}
+
+#card .card-crest svg {
+  width: 82px;
+  height: 30px;
+}
+
+#card #card-vol {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 6px 28px 6px 20px;
+  margin-bottom: 20px;
+  background: #1250e6;
+  color: #ffffff;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 11px) 100%, 0 100%);
+  font-family: 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  box-shadow: 0 10px 22px -8px rgba(18, 80, 230, 0.34);
+  animation: cardElementRise 360ms cubic-bezier(0.16, 1, 0.3, 1) 110ms both;
+}
+
+#card #card-vol:empty {
+  display: none;
+}
+
+#card #card-t {
+  position: relative;
+  z-index: 2;
+  font-family: 'Noto Serif SC', 'Noto Serif CJK SC', 'Songti SC', serif;
+  font-size: clamp(40px, 5.8vw, 68px);
+  font-weight: 900;
+  line-height: 1.14;
+  letter-spacing: 0.08em;
+  color: #07142e;
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.72);
+  margin-bottom: 18px;
+  max-width: min(860px, 84vw);
+  animation: cardElementRise 400ms cubic-bezier(0.16, 1, 0.3, 1) 160ms both;
+}
+
+#card #card-s {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(14px, 2vw, 24px);
+  font-family: 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC', sans-serif;
+  font-size: clamp(15px, 1.55vw, 18.5px);
+  font-weight: 600;
+  line-height: 1.6;
+  letter-spacing: 0.2em;
+  color: #163770;
+  max-width: min(720px, 84vw);
+  animation: cardElementRise 380ms cubic-bezier(0.16, 1, 0.3, 1) 210ms both;
+}
+
+#card #card-s::before,
+#card #card-s::after {
+  content: '';
+  flex: 0 0 clamp(28px, 4.8vw, 68px);
+  height: 1px;
+  background: linear-gradient(90deg, rgba(18, 80, 230, 0.04) 0%, rgba(18, 80, 230, 0.56) 100%);
+}
+
+#card #card-s::after {
+  background: linear-gradient(90deg, rgba(18, 80, 230, 0.56) 0%, rgba(18, 80, 230, 0.04) 100%);
+}
+
+#card #card-s:empty {
+  display: none;
+}
+
+#card .card-tip {
+  position: relative;
+  z-index: 2;
+  margin-top: 40px;
+  padding: 10px 22px;
+  border-top: 1px solid rgba(18, 80, 230, 0.22);
+  font-family: 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC', sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: #1b3a70;
+  animation: cardElementRise 360ms cubic-bezier(0.16, 1, 0.3, 1) 260ms both;
+}
+
+@media (max-width: 720px) {
+  #card {
+    --card-blade-w: 36px;
+    padding:
+      max(24px, env(safe-area-inset-top))
+      max(26px, env(safe-area-inset-right))
+      max(24px, env(safe-area-inset-bottom))
+      max(22px, env(safe-area-inset-left));
+  }
+
+  #card .card-side-index {
+    display: none;
+  }
+
+  #card .card-emblem-stage {
+    left: 50%;
+    width: clamp(260px, 78vw, 380px);
+    height: clamp(260px, 78vw, 380px);
+  }
+
+  #card .card-watermark-latin {
+    left: 50%;
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    text-indent: 0.28em;
+  }
+
+  #card #card-t {
+    font-size: clamp(32px, 8.8vw, 46px);
+  }
+
+  #card #card-s::before,
+  #card #card-s::after {
+    flex-basis: 20px;
+  }
+}
+
+@media (max-height: 540px) and (min-width: 560px) {
+  #card {
+    --card-blade-w: clamp(56px, 9vw, 96px);
+  }
+
+  #card .card-side-index {
+    display: none;
+  }
+
+  #card .card-crest {
+    margin-bottom: 10px;
+  }
+
+  #card #card-vol {
+    margin-bottom: 10px;
+  }
+
+  #card #card-t {
+    font-size: clamp(32px, 5vw, 44px);
+    margin-bottom: 10px;
+  }
+
+  #card .card-tip {
+    margin-top: 20px;
+  }
+}
+
+@keyframes cardCurtainIn {
+  from {
+    opacity: 0.01;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cardElementRise {
+  from {
+    opacity: 0.01;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* 章节报幕斜切退幕遮罩 (420ms 零黑闪揭示正片画面) */
+.card-exit-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 85;
+  pointer-events: none;
+  background: linear-gradient(152deg, #f8fbff 0%, #eef5ff 52%, #e3eeff 100%);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  animation: cardExitPeel 420ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: clip-path, opacity;
+}
+
+.card-exit-veil::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: clamp(72px, 11vw, 152px);
+  background: linear-gradient(168deg, #1250e6 0%, #0b3ec0 68%, #0a2d94 100%);
+  clip-path: polygon(58% 0, 100% 0, 100% 100%, 0% 100%);
+}
+
+@keyframes cardExitPeel {
+  0% {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+    opacity: 1;
+  }
+  82% {
+    clip-path: polygon(100% 0, 100% 0, 100% 100%, 87% 100%);
+    opacity: 1;
+  }
+  100% {
+    clip-path: polygon(100% 0, 100% 0, 100% 100%, 100% 100%);
+    opacity: 0;
+  }
+}
+
+/* =========================================================================
+   10. 无障碍减弱动态模式 (prefers-reduced-motion: reduce)
+   ========================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  #title-screen,
+  #title-screen *,
+  #title-screen *::before,
+  #title-screen *::after,
+  #card,
+  #card * {
+    animation: none !important;
+  }
+
+  #title-screen .title-stage-camera,
+  #title-screen .title-stage-sunbeams {
+    transform: none;
+  }
+
+  #title-screen .title-watermark-stack {
+    transform: translateY(-50%);
+  }
+
+  #title-screen .title-blade-glint,
+  .card-exit-veil {
+    display: none;
   }
 }

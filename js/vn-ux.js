@@ -1,11 +1,12 @@
 /* =========================================================================
    转生千金 · 商业级 Galgame 基础体验组件 (js/vn-ux.js)
    包含：
-   1. 对话历史回看（Backlog，支持 L 键 / HUD / 对话框入口，至多 200 条）
-   2. 6 槽位手动存档 / 读档系统 + 自动存档镜像（完整序列化因果、铭记与奇遇状态）
+   1. 对话历史回看（Backlog，支持 L 键 / HUD / 对话框入口，至多 200 条，含破图优雅降级）
+   2. 6 槽位手动存档 / 读档系统 + 自动存档镜像（兼容旧 4 槽格式升级、防误删两段确认）
    3. 章节速览与快速重温 / 快捷试玩跳转（覆盖第一至第四卷与间章）
-   4. 阅读控制栏（Auto / Skip 未读急刹 / 独立音量与打字机速度设置）
-   5. 四合一「典藏图鉴馆」（CG 画廊 + 全屏鉴赏 / BGM 音乐室 / 成就墙 / 信物手札）
+   4. 阅读控制栏（Auto / Skip 未读急刹 / 独立音量、明度与打字机速度设置）
+   5. 五合一「典藏图鉴馆」（CG 画廊 + 全屏鉴赏 / BGM 音乐室 / 成就墙 / 信物手札 / 终幕典藏）
+   6. 全站统一顶层 Escape 分层调度与遮罩状态探测 (isAnyBlockingOverlayOpen)
    ========================================================================= */
 (function (root) {
   'use strict';
@@ -17,7 +18,11 @@
   var VN_PREFS_KEY = 'ojousama_vn_prefs_v1';
   var READ_LINES_KEY = 'ojousama_read_lines_v1';
   var CG_UNLOCKED_KEY = 'ojousama_cg_unlocked_v1';
+  var CODEX_ARCHIVE_KEY = 'ojousama_codex_archive_v1';
+  var ENDINGS_UNLOCKED_KEY = 'ojousama_endings_unlocked_v1';
+  var SETTINGS_KEY = 'ojousama_settings_v1';
 
+  var vnInitialized = false;
   var backlogList = [];
   var backlogSeq = 0;
 
@@ -26,7 +31,8 @@
     typeSpeed: 'normal',
     bgmVol: 0.5,
     sfxVol: 0.65,
-    fxEnabled: true
+    fxEnabled: true,
+    bright: 1
   };
   var vnPrefs = null;
   var readLinesSet = null;
@@ -35,9 +41,54 @@
   var autoTimer = null;
   var skipTimer = null;
   var currentLineMeta = null;
+
+  var pendingDeleteSlotId = null;
+  var pendingDeleteTimer = null;
+  var lastSfxPingAt = 0;
+
   var codexCurrentTab = 'cg';
   var codexPlayingTrack = null;
+  var codexAuditionDirty = false;
+  var preCodexBgmSnapshot = null;
   var codexExpandedMemento = null;
+  var codexExpandedEnding = null;
+
+  var lightboxUnlockedList = [];
+  var lightboxIndex = -1;
+
+  /* ---------- 精工矢量图标库（彻底取代原生 Emoji 字符） ---------- */
+  var UI_SVG = {
+    scroll: '<svg viewBox="0 0 18 18" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="2.8" width="11" height="12.4" rx="1.6"/><line x1="6.2" y1="6.4" x2="11.8" y2="6.4"/><line x1="6.2" y1="9.2" x2="11.8" y2="9.2"/><line x1="6.2" y1="12" x2="9.6" y2="12"/></svg>',
+    save: '<svg viewBox="0 0 18 18" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.8 3h8.4L14.8 5.6V15H3.8V3z"/><path d="M6 3v4h5.4V3"/><rect x="6" y="10.2" width="5.8" height="4.8"/></svg>',
+    bookmark: '<svg viewBox="0 0 18 18" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h8v12l-4-2.8L5 15V3z"/></svg>',
+    book: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.8 4C2.8 3.3 3.4 2.8 4 2.8H9v12.4H4a1.2 1.2 0 01-1.2-1.2V4z"/><path d="M15.2 4c0-.7-.6-1.2-1.2-1.2H9v12.4h5a1.2 1.2 0 001.2-1.2V4z"/></svg>',
+    bolt: '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="10.2,2 4.5,10 9,10 7.8,16 13.5,8 9,8"/></svg>',
+    folder: '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.6 5.2A1.4 1.4 0 014 3.8h3.4l1.4 1.6H14a1.4 1.4 0 011.4 1.4v6.6a1.4 1.4 0 01-1.4 1.4H4a1.4 1.4 0 01-1.4-1.4V5.2z"/></svg>',
+    lock: '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8.2" width="10" height="7" rx="1.4"/><path d="M6.2 8.2V6a2.8 2.8 0 015.6 0v2.2"/></svg>',
+    film: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.6" y="4" width="12.8" height="10" rx="1.4"/><path d="M6 4v10M12 4v10M2.6 7.4h3.4M12 7.4h3.4M2.6 10.6h3.4M12 10.6h3.4"/></svg>',
+    chat: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4.2h12v8H7.2L4 14.8v-2.6H3v-8z"/></svg>',
+    snowflake: '<svg viewBox="0 0 18 18" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="9" y1="2.2" x2="9" y2="15.8"/><line x1="3.1" y1="5.6" x2="14.9" y2="12.4"/><line x1="14.9" y1="5.6" x2="3.1" y2="12.4"/><path d="M7.3 3.9L9 5.5l1.7-1.6M7.3 14.1L9 12.5l1.7 1.6"/></svg>',
+    letter: '<svg viewBox="0 0 18 18" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.6" y="4.2" width="12.8" height="9.6" rx="1.4"/><path d="M3 5l6 4.8L15 5"/></svg>',
+    tea: '<svg viewBox="0 0 18 18" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7.4h8.2v4.1a3.2 3.2 0 01-3.2 3.2H6.7a3.2 3.2 0 01-3.2-3.2V7.4z"/><path d="M11.7 8.2h1.6a1.8 1.8 0 010 3.6h-1.6"/><path d="M6.2 4.8c0-.8.8-1 .8-1.8M9 4.8c0-.8.8-1 .8-1.8"/></svg>',
+    document: '<svg viewBox="0 0 18 18" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.2 2.8h6.6L14 6v9.2H4.2V2.8z"/><path d="M10.6 2.8V6H14"/><line x1="6.4" y1="9" x2="11.6" y2="9"/><line x1="6.4" y1="11.8" x2="10.4" y2="11.8"/></svg>',
+    sword: '<svg viewBox="0 0 18 18" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.8 3.2l1 1-7.4 7.4-2.2.6.6-2.2 8-6.8z"/><path d="M4.6 10.6l2.8 2.8M3.4 14.6l1.8-1.8"/></svg>',
+    shell: '<svg viewBox="0 0 18 18" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14.8c-3.8 0-6.2-2.6-6.2-5.8a6.2 6.2 0 0112.4 0c0 3.2-2.4 5.8-6.2 5.8z"/><path d="M9 14.8V3.2M9 14.8L5.2 4.8M9 14.8l3.8-10"/></svg>',
+    sliders: '<svg viewBox="0 0 18 18" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="5" x2="15" y2="5"/><circle cx="7" cy="5" r="1.7" fill="currentColor"/><line x1="3" y1="9" x2="15" y2="9"/><circle cx="11.5" cy="9" r="1.7" fill="currentColor"/><line x1="3" y1="13" x2="15" y2="13"/><circle cx="6.2" cy="13" r="1.7" fill="currentColor"/></svg>',
+    star: '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="9,2.2 11,7 15.8,9 11,11 9,15.8 7,11 2.2,9 7,7"/></svg>',
+    crown: '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13.6L4.2 6l3.4 3.2L9 4.5l1.4 4.7L13.8 6 15 13.6H3z"/><line x1="3.4" y1="15.4" x2="14.6" y2="15.4"/></svg>',
+    compass: '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="6.4"/><polygon points="11.8,6.2 10.2,10.2 6.2,11.8 7.8,7.8"/></svg>',
+    play: '<svg viewBox="0 0 14 14" width="11" height="11" fill="currentColor" aria-hidden="true"><polygon points="3.6,2.2 11.6,7 3.6,11.8"/></svg>',
+    stop: '<svg viewBox="0 0 14 14" width="11" height="11" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.2"/></svg>',
+    chevronLeft: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>',
+    chevronRight: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>',
+    close: '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>',
+    chevronUp: '<svg viewBox="0 0 14 14" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3.5,8.8 7,5.2 10.5,8.8"/></svg>',
+    chevronDown: '<svg viewBox="0 0 14 14" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3.5,5.2 7,8.8 10.5,5.2"/></svg>'
+  };
+
+  function getSvg(name) {
+    return UI_SVG[name] || UI_SVG.star;
+  }
 
   function escapeHtml(s) {
     return String(s == null ? '' : s)
@@ -45,6 +96,22 @@
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
+  }
+
+  function playSfx(type) {
+    var fn = (root && typeof root.sfx === 'function')
+      ? root.sfx
+      : (typeof sfx === 'function' ? sfx : null);
+    if (fn) {
+      try { fn(type); } catch (e) {}
+    }
+  }
+
+  function playSfxAuditionPing() {
+    var now = Date.now();
+    if (now - lastSfxPingAt < 160) return;
+    lastSfxPingAt = now;
+    playSfx('glass_tap');
   }
 
   function getS() {
@@ -67,7 +134,8 @@
   }
 
   function getDateLabel(st) {
-    if (typeof dateStr === 'function') {
+    var liveS = getS();
+    if ((!st || st === liveS) && typeof dateStr === 'function') {
       try { return dateStr(); } catch (e) {}
     }
     if (!st) return '';
@@ -76,27 +144,31 @@
   }
 
   function getPhaseLabel(st) {
+    var map = { prologue: '序章', childhood: '童年', youth: '少女期', academy: '学院篇', journey: '旅途篇', finale: '终章' };
+    if (st && st.phase) return map[st.phase] || String(st.phase);
     if (typeof phaseName === 'function') {
       try { return phaseName(); } catch (e) {}
     }
-    var map = { prologue: '序章', childhood: '童年', youth: '少女期', academy: '学院篇', journey: '旅途篇', finale: '终章' };
-    return (st && map[st.phase]) || '';
+    return '';
   }
 
   function getAgeLabel(st) {
+    if (st && typeof st.ageY === 'number') {
+      return st.ageY <= 0 ? (st.ageD || 0) + '天' : st.ageY + '岁';
+    }
     if (typeof ageStr === 'function') {
       try { return ageStr(); } catch (e) {}
     }
     if (!st) return '0岁';
-    return st.ageY <= 0 ? (st.ageD || 0) + '天' : st.ageY + '岁';
+    return (st.ageY || 0) <= 0 ? (st.ageD || 0) + '天' : st.ageY + '岁';
   }
 
   function getChapterTitleForState(st, scId) {
     var chaps = typeof STORY_CHAPTERS !== 'undefined' ? STORY_CHAPTERS : (root.__STORY_CHAPTERS || []);
-    var cid = scId || getCurrentSceneId();
+    var cid = scId || (st && st === getS() ? getCurrentSceneId() : null);
     if (cid) {
       var found = chaps.find(function (c) { return c && c.id === cid; });
-      if (found) return (found.vol ? found.vol + ' · ' : '') + found.title;
+      if (found) return (found.vol ? found.vol + ' · ' : '') + (found.title || found.t || cid);
       var scenes = typeof SCENES !== 'undefined' ? SCENES : (root.SCENES || {});
       if (scenes[cid] && scenes[cid].card) {
         return (scenes[cid].card.vol || '') + ' · ' + (scenes[cid].card.s || scenes[cid].card.t || cid);
@@ -121,6 +193,18 @@
     if (fn) {
       try { fn(msg); } catch (e) {}
     }
+  }
+
+  function hideElementById(id) {
+    if (typeof document === 'undefined' || !id) return false;
+    var el = document.getElementById(id);
+    if (!el) return false;
+    if (typeof show === 'function') {
+      try { show(id, 0); } catch (e) { el.classList.add('hidden'); }
+    } else {
+      el.classList.add('hidden');
+    }
+    return true;
   }
 
   /* =========================================================================
@@ -204,10 +288,26 @@
     backlogSeq = backlogList.length ? backlogList[backlogList.length - 1].seq : 0;
   }
 
+  function createBacklogFallbackSpan(speaker, kind) {
+    var span = document.createElement('span');
+    span.className = 'vb-av-ph';
+    var spk = String(speaker || '').trim();
+    if (spk && kind !== 'choice' && kind !== 'cg') {
+      span.classList.add('vb-av-mono');
+      span.textContent = spk.charAt(0);
+    } else {
+      span.innerHTML = kind === 'choice' ? getSvg('star') : kind === 'cg' ? getSvg('film') : spk ? getSvg('chat') : getSvg('snowflake');
+    }
+    return span;
+  }
+
   function closeBacklogModal() {
     if (typeof document === 'undefined') return;
     var ov = document.getElementById('vn-backlog-modal');
-    if (ov) ov.classList.add('hidden');
+    if (ov && !ov.classList.contains('hidden')) {
+      ov.classList.add('hidden');
+      playSfx('modal_close');
+    }
     resumeAutoIfActive();
   }
 
@@ -220,15 +320,31 @@
       ov.className = 'overlay hidden';
       document.body.appendChild(ov);
     }
+    var wasHidden = ov.classList.contains('hidden');
+    var failedSet = (root && root.FAILED_PORTRAIT_URLS) || (typeof FAILED_PORTRAIT_URLS !== 'undefined' ? FAILED_PORTRAIT_URLS : null);
+    var resolveFn = (root && typeof root.resolvePortrait === 'function')
+      ? root.resolvePortrait
+      : (typeof resolvePortrait === 'function' ? resolvePortrait : null);
+
     var rowsHtml = backlogList.length
       ? backlogList.map(function (item) {
           var portraitSrc = '';
-          if (item.charId && typeof resolvePortrait === 'function') {
-            try { portraitSrc = resolvePortrait(item.charId, 'normal') || ''; } catch (e) {}
+          if (item.charId && resolveFn) {
+            try { portraitSrc = resolveFn(item.charId, 'normal') || ''; } catch (e) {}
           }
+          if (portraitSrc && failedSet && typeof failedSet.has === 'function' && failedSet.has(portraitSrc)) {
+            portraitSrc = '';
+          }
+          var phIcon = item.kind === 'choice'
+            ? getSvg('star')
+            : item.kind === 'cg'
+              ? getSvg('film')
+              : item.speaker
+                ? getSvg('chat')
+                : getSvg('snowflake');
           var avatarHtml = portraitSrc
-            ? '<img class="vb-av" src="' + escapeHtml(portraitSrc) + '" alt=""/>'
-            : '<span class="vb-av-ph">' + (item.kind === 'choice' ? '✦' : item.kind === 'cg' ? '🎞️' : item.speaker ? '💬' : '❄️') + '</span>';
+            ? '<img class="vb-av" src="' + escapeHtml(portraitSrc) + '" data-char-id="' + escapeHtml(item.charId || '') + '" data-speaker="' + escapeHtml(item.speaker || '') + '" data-kind="' + escapeHtml(item.kind || 'line') + '" alt=""/>'
+            : '<span class="vb-av-ph">' + phIcon + '</span>';
           return (
             '<div class="vb-row kind-' + escapeHtml(item.kind) + '">' +
               '<div class="vb-left">' + avatarHtml + '</div>' +
@@ -247,18 +363,47 @@
     ov.innerHTML =
       '<div class="end-card vn-modal-card">' +
         '<div class="vn-modal-head">' +
-          '<div>' +
-            '<h2>📜 对话回看 · Backlog</h2>' +
+          '<div class="vn-modal-head-copy">' +
+            '<h2><span class="vn-head-ico" aria-hidden="true">' + getSvg('scroll') + '</span><span>对话回看 · Backlog</span></h2>' +
             '<p class="vn-modal-sub">共保留最近 ' + backlogList.length + ' / ' + MAX_BACKLOG + ' 条对白、心声与选项抉择（快捷键 L）</p>' +
           '</div>' +
-          '<button type="button" class="tbtn ghost" id="vb-close" style="min-width:86px;padding:6px 14px">关闭</button>' +
+          '<button type="button" class="modal-close-x" id="vb-close" aria-label="关闭对话回看">×</button>' +
         '</div>' +
         '<div class="vn-modal-scroll" id="vb-scroll">' + rowsHtml + '</div>' +
       '</div>';
 
+    var fbFn = (root && typeof root.resolvePortraitFallback === 'function')
+      ? root.resolvePortraitFallback
+      : (typeof resolvePortraitFallback === 'function' ? resolvePortraitFallback : null);
+
+    ov.querySelectorAll('.vb-av').forEach(function (img) {
+      img.onerror = function () {
+        var failedSrc = img.getAttribute('src') || '';
+        if (failedSrc && failedSet && typeof failedSet.add === 'function') {
+          failedSet.add(failedSrc);
+        }
+        var charId = img.getAttribute('data-char-id') || '';
+        if (charId && fbFn && !img.getAttribute('data-fb-tried')) {
+          img.setAttribute('data-fb-tried', '1');
+          var nextSrc = '';
+          try { nextSrc = fbFn(charId, 'normal') || ''; } catch (e) {}
+          if (nextSrc && nextSrc !== failedSrc && !(failedSet && failedSet.has && failedSet.has(nextSrc))) {
+            img.src = nextSrc;
+            return;
+          }
+        }
+        var sp = createBacklogFallbackSpan(img.getAttribute('data-speaker'), img.getAttribute('data-kind'));
+        if (img.parentNode) img.parentNode.replaceChild(sp, img);
+      };
+    });
+
     ov.classList.remove('hidden');
+    if (wasHidden) playSfx('modal_open');
     var sc = ov.querySelector('#vb-scroll');
     if (sc) sc.scrollTop = sc.scrollHeight;
+    ov.onclick = function (e) {
+      if (e.target === ov) closeBacklogModal();
+    };
     ov.querySelector('#vb-close').onclick = closeBacklogModal;
     return ov;
   }
@@ -271,36 +416,99 @@
   }
 
   /* =========================================================================
-     二、6 槽位手动存档 / 读档系统（含 1 个自动存档槽）
+     二、6 槽位手动存档 / 读档系统（含 1 个自动存档槽与旧格式无损升级）
      ========================================================================= */
+  function buildMeta(st, scId, ts) {
+    var safeSt = st && typeof st === 'object' ? st : {};
+    return {
+      name: (!safeSt.flags || !safeSt.flags.named) ? '？？？' : (safeSt.alias || safeSt.name || '希尔维亚'),
+      ageStr: getAgeLabel(safeSt),
+      phaseName: getPhaseLabel(safeSt),
+      locName: getLocName(safeSt),
+      chapterTitle: getChapterTitleForState(safeSt, scId),
+      lv: safeSt.lv || 1,
+      gold: safeSt.gold || 0,
+      savedAt: formatTimestamp(ts)
+    };
+  }
+
+  function normalizeManualSlot(raw, slotId) {
+    if (!raw || typeof raw !== 'object') return null;
+    var sid = Number(slotId || raw.slotId || 0);
+    var ts = Number(raw.ts) || Date.now();
+
+    if (raw.state && typeof raw.state === 'object') {
+      var fallbackMeta = buildMeta(raw.state, raw.currentScene || null, ts);
+      var rawMeta = (raw.meta && typeof raw.meta === 'object') ? raw.meta : {};
+      var mergedMeta = {
+        name: rawMeta.name != null ? String(rawMeta.name) : fallbackMeta.name,
+        ageStr: rawMeta.ageStr != null ? String(rawMeta.ageStr) : fallbackMeta.ageStr,
+        phaseName: rawMeta.phaseName != null ? String(rawMeta.phaseName) : fallbackMeta.phaseName,
+        locName: rawMeta.locName != null ? String(rawMeta.locName) : fallbackMeta.locName,
+        chapterTitle: rawMeta.chapterTitle != null ? String(rawMeta.chapterTitle) : fallbackMeta.chapterTitle,
+        lv: rawMeta.lv != null ? Number(rawMeta.lv) || 1 : fallbackMeta.lv,
+        gold: rawMeta.gold != null ? Number(rawMeta.gold) || 0 : fallbackMeta.gold,
+        savedAt: rawMeta.savedAt != null ? String(rawMeta.savedAt) : fallbackMeta.savedAt
+      };
+      return {
+        version: 2,
+        slotId: sid,
+        ts: ts,
+        meta: mergedMeta,
+        state: raw.state,
+        currentScene: raw.currentScene || null,
+        storyChain: raw.storyChain || null,
+        backlog: Array.isArray(raw.backlog) ? raw.backlog : []
+      };
+    }
+
+    // 兼容旧版 4 槽存档格式（.data 无 .state），在内存中平滑升级为 v2 结构
+    if (raw.data && typeof raw.data === 'object') {
+      var upgradedMeta = buildMeta(raw.data, null, ts);
+      if (raw.loc && (!upgradedMeta.locName || upgradedMeta.locName === '未知地点')) {
+        upgradedMeta.locName = String(raw.loc);
+      }
+      if (raw.phase && !upgradedMeta.phaseName) {
+        upgradedMeta.phaseName = String(raw.phase);
+      }
+      return {
+        version: 2,
+        slotId: sid,
+        ts: ts,
+        meta: upgradedMeta,
+        state: raw.data,
+        currentScene: null,
+        storyChain: null,
+        backlog: []
+      };
+    }
+
+    return null;
+  }
+
   function readManualSlots() {
+    var normalized = {};
     try {
       var raw = JSON.parse(localStorage.getItem(MANUAL_SLOTS_KEY) || '{}');
-      return raw && typeof raw === 'object' ? raw : {};
+      if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+        Object.keys(raw).forEach(function (k) {
+          var item = normalizeManualSlot(raw[k], k);
+          if (item) normalized[String(k)] = item;
+        });
+      }
     } catch (e) {
       return {};
     }
+    return normalized;
   }
 
   function writeManualSlots(slotsObj) {
     try { localStorage.setItem(MANUAL_SLOTS_KEY, JSON.stringify(slotsObj || {})); } catch (e) {}
   }
 
-  function buildMeta(st, scId, ts) {
-    return {
-      name: (!st.flags || !st.flags.named) ? '？？？' : (st.alias || st.name || '希尔维亚'),
-      ageStr: getAgeLabel(st),
-      phaseName: getPhaseLabel(st),
-      locName: getLocName(st),
-      chapterTitle: getChapterTitleForState(st, scId),
-      lv: st.lv || 1,
-      gold: st.gold || 0,
-      savedAt: formatTimestamp(ts)
-    };
-  }
-
   function onAutoSave(st) {
     if (!st) return;
+    syncCodexArchiveFromState(st);
     var meta = buildMeta(st, typeof currentScene !== 'undefined' ? currentScene : null, Date.now());
     try { localStorage.setItem(AUTO_META_KEY, JSON.stringify(meta)); } catch (e) {}
   }
@@ -316,6 +524,10 @@
     if (root.BranchingDirector && root.BranchingDirector.ensureCausalState) {
       root.BranchingDirector.ensureCausalState(st);
     }
+    if (root.RaisingHub && typeof root.RaisingHub.ensureRaisingState === 'function') {
+      try { root.RaisingHub.ensureRaisingState(st); } catch (e) {}
+    }
+    syncCodexArchiveFromState(st);
     var ts = Date.now();
     var curSc = typeof currentScene !== 'undefined' ? currentScene : null;
     var curChain = typeof storyChain !== 'undefined' && storyChain ? deepClone(storyChain) : null;
@@ -332,8 +544,62 @@
     var all = readManualSlots();
     all[String(sid)] = payload;
     writeManualSlots(all);
-    if (typeof toast === 'function') toast('💾 已覆盖保存至存档槽 ' + sid);
+    playSfx('glass_tap');
+    showToast('已覆盖保存至存档槽 ' + sid);
     return { ok: true, slot: payload };
+  }
+
+  function cleanupTransientsOnStateSwitch() {
+    if (typeof document !== 'undefined') {
+      if (typeof show === 'function') {
+        show('title-screen', 0);
+        show('game-screen', 1);
+        show('panel', 0);
+        show('map-overlay', 0);
+        show('stats-overlay', 0);
+        show('backlog-overlay', 0);
+        show('help-screen', 0);
+        show('sys-popup', 0);
+      }
+      [
+        'ending-screen', 'schedule-overlay', 'season-report-overlay',
+        'shop-overlay', 'mailbox-overlay', 'arena-loadout-modal',
+        'rumor-overlay', 'ice-deduction-modal', 'hud-drawer',
+        'battle-screen', 'arena-overlay', 'duel-screen'
+      ].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) {
+          el.classList.add('hidden');
+          el.classList.remove('open');
+        }
+      });
+      var ld = document.getElementById('letter-demo');
+      if (ld && !ld.classList.contains('hidden')) {
+        if (typeof closeLetterDemo === 'function') {
+          try { closeLetterDemo(); } catch (e) { ld.classList.add('hidden'); }
+        } else {
+          ld.classList.remove('playing', 'revealed');
+          ld.classList.add('hidden');
+        }
+      }
+      closeSaveLoadModal();
+      closeBacklogModal();
+      closeChaptersModal();
+      closePrefsModal();
+      closeCodexGallery();
+      closeCgLightbox();
+    }
+    if (root.AIChatPanel && typeof root.AIChatPanel.closeDrawer === 'function') {
+      try { root.AIChatPanel.closeDrawer({ wipePending: true }); } catch (e) {}
+    }
+    if (typeof document !== 'undefined') {
+      var aiEl = document.getElementById('ai-drawer');
+      if (aiEl) aiEl.classList.add('hidden');
+      if (document.body) document.body.classList.remove('ai-drawer-open');
+    }
+    if (root.CombatEngine && typeof root.CombatEngine.exitBattle === 'function') {
+      try { root.CombatEngine.exitBattle(false, { silent: true }); } catch (e) {}
+    }
   }
 
   function applyRestoredPayload(rawState, curSc, curChain, restoredBacklog) {
@@ -348,40 +614,29 @@
     if (root.RelicsAndEvents && root.RelicsAndEvents.ensureRelicsState) {
       root.RelicsAndEvents.ensureRelicsState(restored);
     }
+    if (root.RaisingHub && typeof root.RaisingHub.ensureRaisingState === 'function') {
+      try { root.RaisingHub.ensureRaisingState(restored); } catch (e) {}
+    }
     if (typeof root.__vnApplyLoadedState === 'function') {
       root.__vnApplyLoadedState(restored, curSc, curChain);
-    } else {
-      root.S = restored;
     }
+    root.S = restored;
+    if (typeof window !== 'undefined') window.S = restored;
+
     setAutoMode(false);
     setSkipMode(false);
     currentLineMeta = null;
     if (Array.isArray(restoredBacklog)) {
       setBacklog(restoredBacklog);
     }
-    if (typeof document !== 'undefined') {
-      if (typeof show === 'function') {
-        show('title-screen', 0);
-        show('game-screen', 1);
-        show('panel', 0);
-        show('map-overlay', 0);
-        show('stats-overlay', 0);
-      }
-      closeSaveLoadModal();
-      closeBacklogModal();
-      closeChaptersModal();
-      closePrefsModal();
-      closeCgLightbox();
-    }
-    // 清理残余弹窗/战斗/AI抽屉
-    if (root.AIChatPanel && typeof root.AIChatPanel.closeDrawer === 'function') {
-      root.AIChatPanel.closeDrawer({ wipePending: true });
-    }
-    if (root.CombatEngine && typeof root.CombatEngine.exitBattle === 'function') {
-      root.CombatEngine.exitBattle(false, { silent: true });
-    }
+    cleanupTransientsOnStateSwitch();
+    syncCodexArchiveFromState(restored);
+
     if (typeof updateHUD === 'function') updateHUD();
     if (typeof updateLocBar === 'function') updateLocBar();
+    if (root.RaisingHub && typeof root.RaisingHub.onStateLoaded === 'function') {
+      try { root.RaisingHub.onStateLoaded(restored); } catch (e) {}
+    }
 
     if (curSc && typeof SCENES !== 'undefined' && SCENES[curSc]) {
       if (curChain && Array.isArray(curChain.queue) && curChain.queue.length && typeof runSceneQueue === 'function') {
@@ -403,13 +658,13 @@
   function loadFromSlot(slotId) {
     var sid = Number(slotId);
     if (sid === 0) {
-      // 自动存档槽
       try {
         var autoRaw = localStorage.getItem(typeof SAVE_KEY !== 'undefined' ? SAVE_KEY : 'ojousama_save_v1');
         if (!autoRaw) return { ok: false, reason: 'empty' };
         var parsedAuto = JSON.parse(autoRaw);
         applyRestoredPayload(parsedAuto, null, null, null);
-        if (typeof toast === 'function') toast('⏩ 已读取自动存档');
+        playSfx('page_open');
+        showToast('已读取自动存档');
         return { ok: true };
       } catch (e) {
         return { ok: false, reason: 'corrupt' };
@@ -420,7 +675,8 @@
     var slot = all[String(sid)];
     if (!slot || !slot.state) return { ok: false, reason: 'empty' };
     applyRestoredPayload(slot.state, slot.currentScene, slot.storyChain, slot.backlog);
-    if (typeof toast === 'function') toast('📂 已读取存档槽 ' + sid);
+    playSfx('page_open');
+    showToast('已读取存档槽 ' + sid);
     return { ok: true, slot: slot };
   }
 
@@ -431,14 +687,13 @@
     if (!all[String(sid)]) return false;
     delete all[String(sid)];
     writeManualSlots(all);
-    if (typeof toast === 'function') toast('🗑️ 已删除存档槽 ' + sid);
+    showToast('已删除存档槽 ' + sid);
     return true;
   }
 
   function getSlotList() {
     var all = readManualSlots();
     var list = [];
-    // 自动存档槽 0
     var autoExists = false;
     var autoMeta = null;
     try {
@@ -448,7 +703,7 @@
         autoExists = true;
         var mRaw = localStorage.getItem(AUTO_META_KEY);
         if (mRaw) autoMeta = JSON.parse(mRaw);
-        if (!autoMeta) {
+        if (!autoMeta || !autoMeta.name) {
           var parsed = JSON.parse(rawAuto);
           autoMeta = buildMeta(parsed, null, Date.now());
         }
@@ -469,15 +724,35 @@
     return list;
   }
 
+  function clearPendingDeleteConfirm() {
+    pendingDeleteSlotId = null;
+    if (pendingDeleteTimer) {
+      clearTimeout(pendingDeleteTimer);
+      pendingDeleteTimer = null;
+    }
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('#vn-saveload-modal [data-sl-del].confirming').forEach(function (btn) {
+        btn.classList.remove('confirming');
+        btn.textContent = '删除';
+        btn.setAttribute('aria-label', '删除存档槽 ' + btn.getAttribute('data-sl-del'));
+      });
+    }
+  }
+
   function closeSaveLoadModal() {
+    clearPendingDeleteConfirm();
     if (typeof document === 'undefined') return;
     var ov = document.getElementById('vn-saveload-modal');
-    if (ov) ov.classList.add('hidden');
+    if (ov && !ov.classList.contains('hidden')) {
+      ov.classList.add('hidden');
+      playSfx('modal_close');
+    }
     resumeAutoIfActive();
   }
 
   function openSaveLoadModal(mode) {
     if (typeof document === 'undefined') return null;
+    clearPendingDeleteConfirm();
     var ov = document.getElementById('vn-saveload-modal');
     if (!ov) {
       ov = document.createElement('section');
@@ -485,19 +760,22 @@
       ov.className = 'overlay hidden';
       document.body.appendChild(ov);
     }
+    var wasHidden = ov.classList.contains('hidden');
     var gs = document.getElementById('game-screen');
     var inGame = !!(gs && !gs.classList.contains('hidden'));
     var slots = getSlotList();
 
     var cardsHtml = slots.map(function (sl) {
-      var title = sl.isAuto ? '⚡ 自动存档位' : ('📁 手动槽位 0' + sl.slotId);
+      var headIcon = sl.isAuto ? getSvg('bolt') : getSvg('folder');
+      var titleText = sl.isAuto ? '自动存档位' : ('手动槽位 0' + sl.slotId);
+      var meta = sl.meta || {};
       var body = sl.empty
         ? '<div class="sl-empty">── 空置槽位 ──</div>'
         : '<div class="sl-meta">' +
-            '<div class="sl-line1"><b>' + escapeHtml(sl.meta.name) + '</b> · ' + escapeHtml(sl.meta.ageStr) + ' · Lv.' + (sl.meta.lv || 1) + '</div>' +
-            '<div class="sl-line2">' + escapeHtml(sl.meta.phaseName) + ' · ' + escapeHtml(sl.meta.locName) + '</div>' +
-            '<div class="sl-chap">' + escapeHtml(sl.meta.chapterTitle) + '</div>' +
-            '<div class="sl-time">' + escapeHtml(sl.meta.savedAt) + '</div>' +
+            '<div class="sl-line1"><b>' + escapeHtml(meta.name || '希尔维亚') + '</b> · ' + escapeHtml(meta.ageStr || '0岁') + ' · Lv.' + (meta.lv || 1) + '</div>' +
+            '<div class="sl-line2">' + escapeHtml([meta.phaseName, meta.locName].filter(Boolean).join(' · ')) + '</div>' +
+            '<div class="sl-chap">' + escapeHtml(meta.chapterTitle || '') + '</div>' +
+            '<div class="sl-time">' + escapeHtml(meta.savedAt || '') + '</div>' +
           '</div>';
 
       var btns = [];
@@ -508,12 +786,12 @@
         btns.push('<button type="button" class="sl-btn load" data-sl-load="' + sl.slotId + '">读取</button>');
       }
       if (!sl.isAuto && !sl.empty) {
-        btns.push('<button type="button" class="sl-btn del" data-sl-del="' + sl.slotId + '">删除</button>');
+        btns.push('<button type="button" class="sl-btn del" data-sl-del="' + sl.slotId + '" aria-label="删除存档槽 ' + sl.slotId + '">删除</button>');
       }
 
       return (
         '<article class="sl-card' + (sl.isAuto ? ' auto' : '') + (sl.empty ? ' empty' : '') + '" data-slot="' + sl.slotId + '">' +
-          '<div class="sl-head"><span>' + title + '</span></div>' +
+          '<div class="sl-head"><span class="sl-head-label"><span class="vn-inline-ico" aria-hidden="true">' + headIcon + '</span><span>' + titleText + '</span></span></div>' +
           body +
           '<div class="sl-actions">' + btns.join('') + '</div>' +
         '</article>'
@@ -523,32 +801,53 @@
     ov.innerHTML =
       '<div class="end-card vn-modal-card">' +
         '<div class="vn-modal-head">' +
-          '<div>' +
-            '<h2>💾 存档与读档中心（6 槽位 + 自动存档）</h2>' +
+          '<div class="vn-modal-head-copy">' +
+            '<h2><span class="vn-head-ico" aria-hidden="true">' + getSvg('save') + '</span><span>存档与读档中心（6 槽位 + 自动存档）</span></h2>' +
             '<p class="vn-modal-sub">' + (inGame ? '完整保留属性、命运暗流、随身铭记配装与对话回看记录' : '可从标题页直接读取任意手动槽位或自动存档继续游玩') + '</p>' +
           '</div>' +
-          '<button type="button" class="tbtn ghost" id="sl-close" style="min-width:86px;padding:6px 14px">关闭</button>' +
+          '<button type="button" class="modal-close-x" id="sl-close" aria-label="关闭存档中心">×</button>' +
         '</div>' +
         '<div class="vn-modal-scroll"><div class="sl-grid">' + cardsHtml + '</div></div>' +
       '</div>';
 
     ov.classList.remove('hidden');
+    if (wasHidden) playSfx('modal_open');
+    ov.onclick = function (e) {
+      if (e.target === ov) closeSaveLoadModal();
+    };
     ov.querySelector('#sl-close').onclick = closeSaveLoadModal;
     ov.querySelectorAll('[data-sl-save]').forEach(function (b) {
       b.onclick = function () {
+        clearPendingDeleteConfirm();
         saveToSlot(Number(b.getAttribute('data-sl-save')));
         openSaveLoadModal(mode);
       };
     });
     ov.querySelectorAll('[data-sl-load]').forEach(function (b) {
       b.onclick = function () {
+        clearPendingDeleteConfirm();
         loadFromSlot(Number(b.getAttribute('data-sl-load')));
       };
     });
     ov.querySelectorAll('[data-sl-del]').forEach(function (b) {
       b.onclick = function () {
-        deleteSlot(Number(b.getAttribute('data-sl-del')));
-        openSaveLoadModal(mode);
+        var sid = Number(b.getAttribute('data-sl-del'));
+        if (pendingDeleteSlotId === sid && b.classList.contains('confirming')) {
+          clearPendingDeleteConfirm();
+          deleteSlot(sid);
+          playSfx('glass_tap');
+          openSaveLoadModal(mode);
+          return;
+        }
+        clearPendingDeleteConfirm();
+        pendingDeleteSlotId = sid;
+        b.classList.add('confirming');
+        b.textContent = '确认删除？';
+        b.setAttribute('aria-label', '再次点击确认删除存档槽 ' + sid);
+        playSfx('glass_tap');
+        pendingDeleteTimer = setTimeout(function () {
+          clearPendingDeleteConfirm();
+        }, 3500);
       };
     });
     return ov;
@@ -693,7 +992,6 @@
         if (L.area === '魔法大学' || L.area === '公爵府') L.unlock = true;
       });
     } else {
-      // 第一卷（非 s_start）
       st.flags.named = 1;
       var ageGuess = sceneId === 's_micro' ? 8 : (sceneId === 's_beatrice_day' || sceneId === 's_alice_affinity' ? 7 : (sceneId === 's_reno_arrive' ? 6 : 4));
       st.ageY = ageGuess; st.year = ageGuess; st.month = 6; st.season = 1;
@@ -737,34 +1035,22 @@
     if (root.RelicsAndEvents && root.RelicsAndEvents.ensureRelicsState) {
       root.RelicsAndEvents.ensureRelicsState(prepared);
     }
+    if (root.RaisingHub && typeof root.RaisingHub.ensureRaisingState === 'function') {
+      try { root.RaisingHub.ensureRaisingState(prepared); } catch (e) {}
+    }
 
     clearBacklog();
     if (typeof root.__vnApplyLoadedState === 'function') {
       root.__vnApplyLoadedState(prepared, null, null);
-    } else {
-      root.S = prepared;
     }
+    root.S = prepared;
+    if (typeof window !== 'undefined') window.S = prepared;
 
-    if (typeof document !== 'undefined') {
-      if (typeof show === 'function') {
-        show('title-screen', 0);
-        show('game-screen', 1);
-        show('panel', 0);
-        show('map-overlay', 0);
-        show('stats-overlay', 0);
-      }
-      closeChaptersModal();
-      closeSaveLoadModal();
-      closeBacklogModal();
-      closePrefsModal();
-      closeCgLightbox();
+    cleanupTransientsOnStateSwitch();
+    if (root.RaisingHub && typeof root.RaisingHub.onStateLoaded === 'function') {
+      try { root.RaisingHub.onStateLoaded(prepared); } catch (e) {}
     }
-    if (root.AIChatPanel && typeof root.AIChatPanel.closeDrawer === 'function') {
-      root.AIChatPanel.closeDrawer({ wipePending: true });
-    }
-    if (root.CombatEngine && typeof root.CombatEngine.exitBattle === 'function') {
-      root.CombatEngine.exitBattle(false, { silent: true });
-    }
+    playSfx('page_open');
     if (typeof runScene === 'function') runScene(sceneId);
     return true;
   }
@@ -772,7 +1058,10 @@
   function closeChaptersModal() {
     if (typeof document === 'undefined') return;
     var ov = document.getElementById('vn-chapters-modal');
-    if (ov) ov.classList.add('hidden');
+    if (ov && !ov.classList.contains('hidden')) {
+      ov.classList.add('hidden');
+      playSfx('modal_close');
+    }
     resumeAutoIfActive();
   }
 
@@ -785,6 +1074,7 @@
       ov.className = 'overlay hidden';
       document.body.appendChild(ov);
     }
+    var wasHidden = ov.classList.contains('hidden');
     var unlocked = loadUnlockedChapters();
     var chaps = (typeof STORY_CHAPTERS !== 'undefined' ? STORY_CHAPTERS : (root.__STORY_CHAPTERS || []))
       .filter(function (c) { return c && c.id && c.id !== 's_ending_menu'; });
@@ -805,7 +1095,7 @@
           (isOpen ? 'data-jump-chap="' + c.id + '"' : 'disabled') + '>' +
           '<span class="cr-vol">' + escapeHtml(c.vol || '篇章') + '</span>' +
           '<span class="cr-tit">' + escapeHtml(c.title) + '</span>' +
-          '<span class="cr-tag">' + (isOpen ? '▶ 重温' : '🔒 未阅读') + '</span>' +
+          '<span class="cr-tag">' + (isOpen ? '▸ 重温' : '<span class="vn-inline-ico" aria-hidden="true">' + getSvg('lock') + '</span>未阅读') + '</span>' +
         '</button>'
       );
     }).join('');
@@ -813,21 +1103,25 @@
     ov.innerHTML =
       '<div class="end-card vn-modal-card">' +
         '<div class="vn-modal-head">' +
-          '<div>' +
-            '<h2>🔖 章节速览与快速重温</h2>' +
+          '<div class="vn-modal-head-copy">' +
+            '<h2><span class="vn-head-ico" aria-hidden="true">' + getSvg('bookmark') + '</span><span>章节速览与快速重温</span></h2>' +
             '<p class="vn-modal-sub">随时重温已解锁章节，或通过快捷试玩直达各卷核心舞台</p>' +
           '</div>' +
-          '<button type="button" class="tbtn ghost" id="vc-close" style="min-width:86px;padding:6px 14px">关闭</button>' +
+          '<button type="button" class="modal-close-x" id="vc-close" aria-label="关闭章节速览">×</button>' +
         '</div>' +
         '<div class="vn-modal-scroll">' +
-          '<h4 class="rel-sec-title" style="margin-top:0">✦ 快捷试玩直达入口</h4>' +
+          '<h4 class="rel-sec-title is-first"><span class="vn-inline-ico" aria-hidden="true">' + getSvg('star') + '</span><span>快捷试玩直达入口</span></h4>' +
           '<div class="chap-quick-grid">' + quickHtml + '</div>' +
-          '<h4 class="rel-sec-title">📖 全卷章节记录</h4>' +
+          '<h4 class="rel-sec-title"><span class="vn-inline-ico" aria-hidden="true">' + getSvg('book') + '</span><span>全卷章节记录</span></h4>' +
           '<div class="chap-list">' + listHtml + '</div>' +
         '</div>' +
       '</div>';
 
     ov.classList.remove('hidden');
+    if (wasHidden) playSfx('modal_open');
+    ov.onclick = function (e) {
+      if (e.target === ov) closeChaptersModal();
+    };
     ov.querySelector('#vc-close').onclick = closeChaptersModal;
     ov.querySelectorAll('[data-jump-chap]').forEach(function (btn) {
       btn.onclick = function () {
@@ -838,7 +1132,7 @@
   }
 
   /* =========================================================================
-     四、商业级阅读控制栏（Auto / Skip 未读急刹 / 阅读与音效设置）
+     四、商业级阅读控制栏（Auto / Skip 未读急刹 / 阅读、明度与音效设置）
      ========================================================================= */
   function clampNum(v, lo, hi) {
     var n = Number(v);
@@ -850,9 +1144,31 @@
     return (val === 'slow' || val === 'normal' || val === 'fast' || val === 'instant') ? val : 'normal';
   }
 
+  function readExternalBrightness() {
+    var getSetFn = (root && typeof root.getSettings === 'function')
+      ? root.getSettings
+      : (typeof getSettings === 'function' ? getSettings : null);
+    if (getSetFn) {
+      try {
+        var cur = getSetFn();
+        if (cur && cur.bright != null && !isNaN(Number(cur.bright))) {
+          return clampNum(cur.bright, 0.5, 1.2);
+        }
+      } catch (e) {}
+    }
+    try {
+      var raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+      if (raw && raw.bright != null && !isNaN(Number(raw.bright))) {
+        return clampNum(raw.bright, 0.5, 1.2);
+      }
+    } catch (e) {}
+    return DEFAULT_PREFS.bright;
+  }
+
   function loadPrefs() {
     if (vnPrefs) return vnPrefs;
     var merged = Object.assign({}, DEFAULT_PREFS);
+    merged.bright = readExternalBrightness();
     try {
       var raw = JSON.parse(localStorage.getItem(VN_PREFS_KEY) || 'null');
       if (raw && typeof raw === 'object') {
@@ -861,6 +1177,7 @@
         if (raw.bgmVol != null) merged.bgmVol = clampNum(raw.bgmVol, 0, 1);
         if (raw.sfxVol != null) merged.sfxVol = clampNum(raw.sfxVol, 0, 1);
         if (raw.fxEnabled != null) merged.fxEnabled = !!raw.fxEnabled;
+        if (raw.bright != null) merged.bright = clampNum(raw.bright, 0.5, 1.2);
       }
     } catch (e) {}
     vnPrefs = merged;
@@ -871,6 +1188,15 @@
     try { localStorage.setItem(VN_PREFS_KEY, JSON.stringify(loadPrefs())); } catch (e) {}
   }
 
+  function syncSettingsKeyField(k, v) {
+    try {
+      var cur = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+      if (!cur || typeof cur !== 'object') cur = {};
+      cur[k] = v;
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(cur));
+    } catch (e) {}
+  }
+
   function applyPrefToEngine(key, val) {
     if (key === 'bgmVol') {
       var bgmFn = (root && typeof root.bgmSetVolume === 'function')
@@ -879,6 +1205,7 @@
       if (bgmFn) {
         try { bgmFn(val); } catch (e) {}
       }
+      syncSettingsKeyField('bgm', val);
     } else if (key === 'sfxVol') {
       var sfxFn = (root && typeof root.sfxSetVolume === 'function')
         ? root.sfxSetVolume
@@ -897,18 +1224,62 @@
       if (root && root.AmbientFX && typeof root.AmbientFX.setEnabled === 'function') {
         try { root.AmbientFX.setEnabled(!!val); } catch (e) {}
       }
+      if (root && root.LiquidPrism && typeof root.LiquidPrism.setEnabled === 'function') {
+        try { root.LiquidPrism.setEnabled(!!val); } catch (e) {}
+      }
+    } else if (key === 'bright') {
+      var setFn = (root && typeof root.setSetting === 'function')
+        ? root.setSetting
+        : (typeof setSetting === 'function' ? setSetting : null);
+      if (setFn) {
+        try { setFn('bright', val); } catch (e) {}
+      } else {
+        syncSettingsKeyField('bright', val);
+        if (typeof document !== 'undefined') {
+          var bgEl = document.getElementById('bg');
+          if (bgEl) bgEl.style.filter = (val && Math.abs(val - 1) > 0.005) ? ('brightness(' + val + ')') : '';
+        }
+      }
     }
+  }
+
+  function syncExternalAudioPrefs() {
+    var p = loadPrefs();
+    var bgmGet = (root && typeof root.bgmGetVolume === 'function')
+      ? root.bgmGetVolume
+      : (typeof bgmGetVolume === 'function' ? bgmGetVolume : null);
+    if (bgmGet) {
+      try {
+        var bv = Number(bgmGet());
+        if (!isNaN(bv)) p.bgmVol = clampNum(bv, 0, 1);
+      } catch (e) {}
+    }
+    var sfxGet = (root && typeof root.sfxGetVolume === 'function')
+      ? root.sfxGetVolume
+      : (typeof sfxGetVolume === 'function' ? sfxGetVolume : null);
+    if (sfxGet) {
+      try {
+        var sv = Number(sfxGet());
+        if (!isNaN(sv)) p.sfxVol = clampNum(sv, 0, 1);
+      } catch (e) {}
+    }
+    p.bright = readExternalBrightness();
+    syncPrefsModalDOM();
+    return Object.assign({}, p);
   }
 
   function syncSavedPrefsToEngine() {
     var hasStored = false;
     try { hasStored = !!localStorage.getItem(VN_PREFS_KEY); } catch (e) {}
     var p = loadPrefs();
-    applyPrefToEngine('sfxVol', p.sfxVol);
     applyPrefToEngine('typeSpeed', p.typeSpeed);
     applyPrefToEngine('fxEnabled', p.fxEnabled);
     if (hasStored) {
       applyPrefToEngine('bgmVol', p.bgmVol);
+      applyPrefToEngine('sfxVol', p.sfxVol);
+      applyPrefToEngine('bright', p.bright);
+    } else {
+      syncExternalAudioPrefs();
     }
   }
 
@@ -928,6 +1299,8 @@
       p.sfxVol = clampNum(value, 0, 1);
     } else if (key === 'fxEnabled') {
       p.fxEnabled = !!value;
+    } else if (key === 'bright') {
+      p.bright = clampNum(value, 0.5, 1.2);
     } else {
       return Object.assign({}, p);
     }
@@ -947,6 +1320,7 @@
     applyPrefToEngine('sfxVol', vnPrefs.sfxVol);
     applyPrefToEngine('typeSpeed', vnPrefs.typeSpeed);
     applyPrefToEngine('fxEnabled', vnPrefs.fxEnabled);
+    applyPrefToEngine('bright', vnPrefs.bright);
     syncPrefsModalDOM();
     return Object.assign({}, vnPrefs);
   }
@@ -1021,6 +1395,15 @@
     return true;
   }
 
+  function isHudDrawerVisible(el) {
+    if (!el) return false;
+    if (el.classList && el.classList.contains('hidden')) return false;
+    if (el.style && el.style.display === 'none') return false;
+    if (el.classList && el.classList.contains('open')) return true;
+    if (el.getAttribute && el.getAttribute('aria-hidden') === 'false') return true;
+    return false;
+  }
+
   function isAwaitingChoice() {
     if (typeof awaitingChoice !== 'undefined' && awaitingChoice) return true;
     if (typeof document === 'undefined') return false;
@@ -1037,15 +1420,19 @@
   function isAnyBlockingOverlayOpen() {
     if (typeof document === 'undefined') return false;
     var ids = [
-      'cg-lightbox', 'vn-prefs-modal', 'vn-backlog-modal', 'vn-saveload-modal',
-      'vn-chapters-modal', 'arena-loadout-modal', 'ice-deduction-modal', 'rumor-overlay',
-      'panel', 'map-overlay', 'stats-overlay', 'backlog-overlay', 'help-screen',
-      'codex', 'pick-screen', 'arena-overlay', 'duel-screen', 'battle-screen',
-      'sys-popup', 'ai-drawer', 'letter-demo', 'card'
+      'cg-lightbox', 'letter-demo', 'sys-popup', 'vn-prefs-modal',
+      'arena-loadout-modal', 'rumor-overlay', 'vn-backlog-modal',
+      'vn-saveload-modal', 'vn-chapters-modal', 'ending-screen',
+      'schedule-overlay', 'season-report-overlay', 'shop-overlay',
+      'mailbox-overlay', 'ice-deduction-modal', 'panel', 'stats-overlay',
+      'map-overlay', 'codex', 'backlog-overlay', 'help-screen',
+      'pick-screen', 'arena-overlay', 'duel-screen', 'battle-screen',
+      'ai-drawer', 'card'
     ];
     for (var i = 0; i < ids.length; i++) {
       if (isModalVisible(document.getElementById(ids[i]))) return true;
     }
+    if (isHudDrawerVisible(document.getElementById('hud-drawer'))) return true;
     return false;
   }
 
@@ -1144,7 +1531,6 @@
         return;
       }
       if (!canAdvanceReading()) {
-        // 选项、弹窗、战斗或自由探索期间静默暂停，待条件恢复后再继续
         return;
       }
       performAdvance();
@@ -1194,6 +1580,7 @@
   }
 
   function toggleAutoMode() {
+    playSfx('glass_tap');
     return setAutoMode(!autoMode);
   }
 
@@ -1230,6 +1617,7 @@
   }
 
   function toggleSkipMode() {
+    playSfx('glass_tap');
     return setSkipMode(!skipMode);
   }
 
@@ -1353,6 +1741,12 @@
     if (sfxSlider) sfxSlider.value = String(Math.round(p.sfxVol * 100));
     if (sfxVal) sfxVal.textContent = Math.round(p.sfxVol * 100) + '%';
 
+    var brightSlider = ov.querySelector('#pref-bright');
+    var brightVal = ov.querySelector('#pref-bright-val');
+    var brightPct = Math.round(clampNum(p.bright != null ? p.bright : 1, 0.5, 1.2) * 100);
+    if (brightSlider) brightSlider.value = String(brightPct);
+    if (brightVal) brightVal.textContent = brightPct + '%';
+
     var fxBtn = ov.querySelector('#pref-fx-toggle');
     if (fxBtn) {
       fxBtn.classList.toggle('on', !!p.fxEnabled);
@@ -1364,7 +1758,10 @@
   function closePrefsModal() {
     if (typeof document === 'undefined') return;
     var ov = document.getElementById('vn-prefs-modal');
-    if (ov) ov.classList.add('hidden');
+    if (ov && !ov.classList.contains('hidden')) {
+      ov.classList.add('hidden');
+      playSfx('modal_close');
+    }
     resumeAutoIfActive();
   }
 
@@ -1379,19 +1776,21 @@
       ov.className = 'overlay hidden';
       document.body.appendChild(ov);
     }
+    var wasHidden = ov.classList.contains('hidden');
+    syncExternalAudioPrefs();
     var p = loadPrefs();
     var bgmPct = Math.round(p.bgmVol * 100);
     var sfxPct = Math.round(p.sfxVol * 100);
+    var brightPct = Math.round(clampNum(p.bright != null ? p.bright : 1, 0.5, 1.2) * 100);
 
     ov.innerHTML =
       '<div class="end-card vn-modal-card vn-prefs-card">' +
         '<div class="vn-modal-head">' +
-          '<div>' +
-            '<span class="rumor-kicker">READING &amp; AUDIO PREFERENCES</span>' +
-            '<h2>阅读与音效设置</h2>' +
-            '<p class="vn-modal-sub">所有偏好自动保存至本地，实时同步打字机、独立音量与场景粒子</p>' +
+          '<div class="vn-modal-head-copy">' +
+            '<h2><span class="vn-head-ico" aria-hidden="true">' + getSvg('sliders') + '</span><span>阅读与音效设置</span></h2>' +
+            '<p class="vn-modal-sub">所有偏好自动保存至本地，实时同步打字机、独立音量、画面明度与氛围粒子</p>' +
           '</div>' +
-          '<button type="button" class="tbtn ghost" id="pref-close" style="min-width:78px;padding:6px 14px">关闭</button>' +
+          '<button type="button" class="modal-close-x" id="pref-close" aria-label="关闭阅读与音效设置">×</button>' +
         '</div>' +
         '<div class="vn-modal-scroll prefs-body">' +
           '<div class="prefs-group">' +
@@ -1428,10 +1827,17 @@
                 '<span class="prefs-val" id="pref-sfx-val">' + sfxPct + '%</span>' +
               '</div>' +
             '</div>' +
+            '<div class="prefs-row prefs-slider-row">' +
+              '<div class="prefs-label"><b>背景明度</b><span>单独调节场景底图亮度，平稳顺滑不打断配乐</span></div>' +
+              '<div class="prefs-slider-wrap">' +
+                '<input type="range" class="prefs-slider" id="pref-bright" min="50" max="120" step="1" value="' + brightPct + '"/>' +
+                '<span class="prefs-val" id="pref-bright-val">' + brightPct + '%</span>' +
+              '</div>' +
+            '</div>' +
           '</div>' +
           '<div class="prefs-group">' +
             '<div class="prefs-row">' +
-              '<div class="prefs-label"><b>场景氛围粒子</b><span>飞雪、微光与冰尘动态氛围层</span></div>' +
+              '<div class="prefs-label"><b>场景氛围粒子与棱镜</b><span>飞雪、微光、冰尘与晶透折射视觉层</span></div>' +
               '<button type="button" class="prefs-toggle' + (p.fxEnabled ? ' on' : '') + '" id="pref-fx-toggle" aria-pressed="' + (p.fxEnabled ? 'true' : 'false') + '">' +
                 (p.fxEnabled ? '已开启 · 星霜微尘' : '已关闭 · 纯净画面') +
               '</button>' +
@@ -1439,27 +1845,31 @@
           '</div>' +
         '</div>' +
         '<div class="prefs-foot">' +
-          '<button type="button" class="sl-btn" id="pref-reset" style="flex:0 0 auto;padding:6px 14px">恢复默认</button>' +
-          '<span class="prefs-hint">按 Esc 关闭设置面板</span>' +
+          '<button type="button" class="sl-btn is-compact" id="pref-reset">恢复默认</button>' +
+          '<span class="prefs-hint">按 Esc 或点击遮罩外侧关闭设置面板</span>' +
         '</div>' +
       '</div>';
 
     ov.classList.remove('hidden');
+    if (wasHidden) playSfx('modal_open');
     ov.onclick = function (e) {
       if (e.target === ov) closePrefsModal();
     };
     ov.querySelector('#pref-close').onclick = closePrefsModal;
     ov.querySelector('#pref-reset').onclick = function () {
       resetPrefs();
+      playSfx('glass_tap');
       showToast('✦ 已恢复阅读与音效默认设置');
     };
     ov.querySelectorAll('[data-pref-auto]').forEach(function (btn) {
       btn.onclick = function () {
+        playSfx('glass_tap');
         setPref('autoSpeed', Number(btn.getAttribute('data-pref-auto')));
       };
     });
     ov.querySelectorAll('[data-pref-type]').forEach(function (btn) {
       btn.onclick = function () {
+        playSfx('glass_tap');
         setPref('typeSpeed', btn.getAttribute('data-pref-type'));
       };
     });
@@ -1473,11 +1883,19 @@
     if (sfxInput) {
       sfxInput.oninput = function () {
         setPref('sfxVol', Number(sfxInput.value) / 100);
+        playSfxAuditionPing();
+      };
+    }
+    var brightInput = ov.querySelector('#pref-bright');
+    if (brightInput) {
+      brightInput.oninput = function () {
+        setPref('bright', Number(brightInput.value) / 100);
       };
     }
     var fxBtn = ov.querySelector('#pref-fx-toggle');
     if (fxBtn) {
       fxBtn.onclick = function () {
+        playSfx('glass_tap');
         setPref('fxEnabled', !loadPrefs().fxEnabled);
       };
     }
@@ -1492,7 +1910,7 @@
   }
 
   /* =========================================================================
-     五、四合一「典藏图鉴馆」（CG 画廊 / BGM 音乐室 / 成就墙 / 信物手札）
+     五、五合一「典藏图鉴馆」（CG 画廊 / BGM 音乐室 / 成就墙 / 信物手札 / 终幕典藏）
      ========================================================================= */
   var CG_GALLERY_CATALOG = [
     {
@@ -1579,6 +1997,7 @@
       id: 'vol3_jikan_parting.png',
       file: 'vol3_jikan_parting.png',
       fallbackSrc: 'assets/bg/jikan.jpg',
+      assetPending: true,
       title: '晨雾霁馆 · 糖面饼与窗影',
       vol: '第三卷 · 旅途篇',
       quote: '「门槛青石上摆着尚有余温的糖面饼，二楼紧闭的糊窗纸后，映着一道安静伫立的少女剪影。」',
@@ -1603,7 +2022,7 @@
     {
       id: 'alice_letter',
       name: '爱丽丝的风铃草信笺',
-      icon: '✉️',
+      iconKey: 'letter',
       owner: '爱丽丝 · 学院北侧',
       era: '公爵府与学院岁月',
       salutation: '姐姐大人：',
@@ -1617,7 +2036,7 @@
     {
       id: 'aino_handkerchief',
       name: '雪花纹手帕',
-      icon: '❄️',
+      iconKey: 'snowflake',
       owner: '艾诺 · 赫兰雪原',
       era: '学院切磋 / 冰封峡谷',
       salutation: '赫兰雪原 · 赠物纪要',
@@ -1632,7 +2051,7 @@
     {
       id: 'peilin_note',
       name: '沛霖的药行纸条',
-      icon: '🍵',
+      iconKey: 'tea',
       owner: '沛霖 · 商路药行',
       era: '苏秦商路与北境药线',
       salutation: '苏秦商路 · 药行便笺',
@@ -1646,7 +2065,7 @@
     {
       id: 'belmont_schedule',
       name: '无名巡防抄件',
-      icon: '📜',
+      iconKey: 'document',
       owner: '未署名 · 冷薄荷茶香',
       era: '学院末夜与暗潮前夕',
       salutation: '未署名 · 换防抄件',
@@ -1660,7 +2079,7 @@
     {
       id: 'ebony_sword',
       name: '乌木紫穗剑',
-      icon: '🗡️',
+      iconKey: 'sword',
       owner: '老霁与霁岚 · 澄岚霁馆',
       era: '第三卷 · 辞行北上',
       salutation: '澄岚霁馆 · 辞行赠剑',
@@ -1674,7 +2093,7 @@
     {
       id: 'shell_pin',
       name: '月虹螺胸针',
-      icon: '🐚',
+      iconKey: 'shell',
       owner: '三姐妹 · 夏日礁石',
       era: '学院暑假 · 海滨之约',
       salutation: '夏日海滨 · 三姐妹纪念',
@@ -1686,6 +2105,106 @@
       flags: ['shell_pin', 'ch_beach'],
       achs: ['shell_gift']
     }
+  ];
+
+  var FALLBACK_BOND_ENDINGS = [
+    {
+      id: 'dawn_reunion',
+      badge: '破晓明约',
+      accent: 'cobalt',
+      title: '凛冬破晓 · 众星同归',
+      subtitle: '洞悉暗潮并守住同盟与体面，风雪散后共迎晨光',
+      hint: '在学院与旅途中点亮王都暗线拼图，并以平等坦诚维系伙伴同盟。',
+      epilogue: '漫长霜夜终于迎来初明。往昔签下的同盟、未署名的警示与并肩之约，在雪融后的长路尽头汇成一片清朗晨空。'
+    },
+    {
+      id: 'twin_winds',
+      badge: '双风并翼',
+      accent: 'emerald',
+      title: '双风并翼 · 远行之誓',
+      subtitle: '妹妹学会独自听风，旧友奔赴山海，终在高处重逢',
+      hint: '引导爱丽丝独立听风，回应霁岚的塞北剑约，并追寻高天旧风回响。',
+      epilogue: '清风掠过澄岚老树，也拂过极北冰原。两道早已走出旧日院墙的身影，在开阔的天穹下重新并肩而立。'
+    },
+    {
+      id: 'sheltered_hearth',
+      badge: '霜檐暖灯',
+      accent: 'rose',
+      title: '霜檐暖灯 · 执手归处',
+      subtitle: '紧握碎贝壳与霁馆灯火，替漂泊之人留一处暖炉',
+      hint: '珍视咫尺身畔最深的牵挂与霁馆灯火，让远行之人始终有处可归。',
+      epilogue: '寒雪落在檐外，屋里炉火温润如初。一碗热粥、一枚碎贝壳手绳与未熄的窗灯，轻声牵引着彼此安然归航。'
+    },
+    {
+      id: 'frost_sovereign',
+      badge: '霜冕孤锋',
+      accent: 'glacier',
+      title: '孤锋霜冕 · 极北独行',
+      subtitle: '以严苛试炼与无瑕锋芒自成秩序，凭剑与冰破局',
+      hint: '在每次切磋与竞逐中以最凌厉的标准磨砺自我，凭霜锋劈开寒夜。',
+      epilogue: '无气泡之冰与乌木铁剑映出清冽星芒。无需借任何庇护，那道银蓝孤影本身便成了风雪中凛然不可撼的秩序。'
+    }
+  ];
+
+  var ENDING_ROUTE_ACCENTS = {
+    dawn_reunion: 'cobalt',
+    frost_sovereign: 'glacier',
+    twin_winds: 'emerald',
+    sheltered_hearth: 'rose',
+    unwritten_snow: 'silver'
+  };
+
+  var FALLBACK_CAREER_CATALOG = [
+    {
+      id: 'polar_archmage',
+      title: '极北冰晶大魔导师',
+      badge: '冰道绝巅',
+      seal: '魔导',
+      hint: '着重精修魔力适性与高阶冰水魔导术式即可迈向此生涯。'
+    },
+    {
+      id: 'jikan_twin_blade',
+      title: '霁馆双剑传人',
+      badge: '生根剑心',
+      seal: '剑道',
+      hint: '钻研体能并在澄岚霁馆修习步法与挥剑即可迈向此生涯。'
+    },
+    {
+      id: 'asla_visiting_scholar',
+      title: '阿斯拉魔导客座教授',
+      badge: '明晰学理',
+      seal: '学理',
+      hint: '深耕心智四维并完成多门学院或理论课程进阶即可解锁。'
+    },
+    {
+      id: 'leisurely_heiress',
+      title: '悠闲庄园千金',
+      badge: '初衷圆满',
+      seal: '本心',
+      hint: '保持丰沛悠闲度并涵养优雅气质，贯彻悠闲生活初心即可解锁。'
+    },
+    {
+      id: 'wandering_spellblade',
+      title: '自由旅途的魔剑士',
+      badge: '剑魔双修',
+      seal: '行游',
+      hint: '兼修体能与魔力适性并踏足远行旅途即可解锁。'
+    },
+    {
+      id: 'quiet_traveler',
+      title: '霜雪行旅之人',
+      badge: '静水行远',
+      seal: '霜旅',
+      hint: '随心经历四季流转，自然步入终幕即可收录。'
+    }
+  ];
+
+  var FALLBACK_COMPANION_ARCS = [
+    { charId: 'alice', name: '爱丽丝', leftLabel: '独立思考', rightLabel: '执念依恋' },
+    { charId: 'noelle', name: '诺艾儿', leftLabel: '平等同盟', rightLabel: '自尊防线' },
+    { charId: 'charlotte', name: '夏洛特', leftLabel: '卸下面具', rightLabel: '骄傲较劲' },
+    { charId: 'aino', name: '艾诺', leftLabel: '极北知己', rightLabel: '严苛试炼' },
+    { charId: 'jilan', name: '霁岚', leftLabel: '归处暖灯', rightLabel: '并肩远行' }
   ];
 
   var BGM_MOOD_LABELS = {
@@ -1724,6 +2243,69 @@
     comedy_fast: '追风小闹剧'
   };
 
+  var BGM_TRACK_SCENES = {
+    peaceful1: '日常晴朗 · 公爵府与小镇',
+    peaceful2: '庭院午后 · 闲适茶歇与漫步',
+    relax1: '雪夜灯火 · 寝室书房与暖炉',
+    relax2: '霜月静谧 · 夜色独思与回望',
+    cheerful1: '市集明快 · 街巷采买与出游',
+    cheerful2: '姐妹欢聚 · 庭园嬉闹与假日',
+    academy1: '学府晨钟 · 阿斯拉礼堂与长廊',
+    academy2: '书海研习 · 魔导课堂与书库',
+    sacred1: '神域回响 · 勇者之赐与星辉',
+    sacred2: '极北秘境 · 冰晶宫殿与秘仪',
+    emotional1: '羁绊余温 · 心声倾诉与回响',
+    romantic: '月色轻柔 · 海滨拾贝与相伴',
+    sad1: '风雪别离 · 逃亡夜路与远行',
+    upset: '暗潮压境 · 异变突生与戒备',
+    battle1: '战场紧迫 · 决斗交锋与危机',
+    battle2: '雪原对决 · 凌厉剑锋与死斗',
+    comedy_medium: '轻快逸趣 · 微服私访与日常闹剧',
+    comedy_fast: '疾步趣追 · 仓皇插曲与连环闹剧'
+  };
+
+  var BGM_MOOD_SCENE_FALLBACK = {
+    peaceful: '日常晴朗 · 悠闲生活与庭园',
+    relax: '夜色静谧 · 休憩与夜谈',
+    cheerful: '明朗欢快 · 集市与假日相伴',
+    academy: '魔法学府 · 课堂与书库',
+    sacred: '神圣秘境 · 礼堂与仪典',
+    emotional: '深情回响 · 倾诉与重逢',
+    romantic: '柔和微光 · 月下与海风',
+    sad: '风雪离歌 · 别离与远行',
+    upset: '暗潮骤起 · 戒备与迷局',
+    battle: '战场紧迫 · 决斗与危机',
+    comedy_medium: '轻快逸趣 · 微服漫游与趣事',
+    comedy_fast: '疾步趣追 · 追逐与小闹剧'
+  };
+
+  function loadCodexArchive() {
+    var empty = { cgs: {}, achs: {}, mementos: {}, endings: {}, endingMeta: {} };
+    try {
+      var raw = JSON.parse(localStorage.getItem(CODEX_ARCHIVE_KEY) || 'null');
+      if (raw && typeof raw === 'object') {
+        return {
+          cgs: (raw.cgs && typeof raw.cgs === 'object') ? raw.cgs : {},
+          achs: (raw.achs && typeof raw.achs === 'object') ? raw.achs : {},
+          mementos: (raw.mementos && typeof raw.mementos === 'object') ? raw.mementos : {},
+          endings: (raw.endings && typeof raw.endings === 'object') ? raw.endings : {},
+          endingMeta: (raw.endingMeta && typeof raw.endingMeta === 'object') ? raw.endingMeta : {}
+        };
+      }
+    } catch (e) {}
+    return empty;
+  }
+
+  function saveCodexArchive(arch) {
+    try { localStorage.setItem(CODEX_ARCHIVE_KEY, JSON.stringify(arch)); } catch (e) {}
+  }
+
+  function getGlobalCodex() {
+    if (root && root.codex && typeof root.codex === 'object') return root.codex;
+    if (typeof codex !== 'undefined' && codex && typeof codex === 'object') return codex;
+    return null;
+  }
+
   function loadUnlockedCgs() {
     try {
       var raw = JSON.parse(localStorage.getItem(CG_UNLOCKED_KEY) || '{}');
@@ -1740,49 +2322,53 @@
       map[file] = 1;
       try { localStorage.setItem(CG_UNLOCKED_KEY, JSON.stringify(map)); } catch (e) {}
     }
+    var arch = loadCodexArchive();
+    if (!arch.cgs[file]) {
+      arch.cgs[file] = 1;
+      saveCodexArchive(arch);
+    }
+    var gc = getGlobalCodex();
+    if (gc) {
+      if (!gc.cgs || typeof gc.cgs !== 'object') gc.cgs = {};
+      if (!gc.cgs[file]) {
+        gc.cgs[file] = true;
+        var saveFn = (root && typeof root.saveCodex === 'function')
+          ? root.saveCodex
+          : (typeof saveCodex === 'function' ? saveCodex : null);
+        if (saveFn) { try { saveFn(); } catch (e) {} }
+      }
+    }
     return true;
   }
 
-  function captureCurrentCgUnlock() {
-    if (typeof cgImage !== 'undefined' && cgImage) {
-      markCgUnlocked(cgImage);
-      return;
+  function markEndingUnlocked(endingId, meta) {
+    if (!endingId) return false;
+    var idStr = String(endingId);
+    var arch = loadCodexArchive();
+    arch.endings[idStr] = 1;
+    if (meta && typeof meta === 'object') {
+      arch.endingMeta[idStr] = Object.assign({ unlockedAt: Date.now() }, arch.endingMeta[idStr] || {}, meta);
+    } else if (!arch.endingMeta[idStr]) {
+      arch.endingMeta[idStr] = { unlockedAt: Date.now() };
     }
-    if (typeof document === 'undefined') return;
-    var el = document.getElementById('cg-bg');
-    if (!el || !el.style || !el.style.backgroundImage) return;
-    var m = /assets\/cg\/([^"')]+)/.exec(el.style.backgroundImage);
-    if (m && m[1]) markCgUnlocked(m[1]);
+    saveCodexArchive(arch);
+
+    try {
+      var stored = JSON.parse(localStorage.getItem(ENDINGS_UNLOCKED_KEY) || '{}');
+      if (Array.isArray(stored)) {
+        if (stored.indexOf(idStr) === -1) stored.push(idStr);
+        localStorage.setItem(ENDINGS_UNLOCKED_KEY, JSON.stringify(stored));
+      } else {
+        if (!stored || typeof stored !== 'object') stored = {};
+        stored[idStr] = arch.endingMeta[idStr] || true;
+        localStorage.setItem(ENDINGS_UNLOCKED_KEY, JSON.stringify(stored));
+      }
+    } catch (e) {}
+    return true;
   }
 
-  function isCgUnlocked(item) {
-    if (!item) return false;
-    var cgMap = loadUnlockedCgs();
-    if (cgMap[item.unlockKey] || cgMap[item.file]) return true;
-    var st = getS();
-    if (st && st.flags && Array.isArray(item.unlockFlags)) {
-      for (var i = 0; i < item.unlockFlags.length; i++) {
-        if (st.flags[item.unlockFlags[i]]) return true;
-      }
-    }
-    if (st && st.ach && Array.isArray(item.unlockAchs)) {
-      for (var j = 0; j < item.unlockAchs.length; j++) {
-        if (st.ach[item.unlockAchs[j]]) return true;
-      }
-    }
-    var chMap = loadUnlockedChapters();
-    if (Array.isArray(item.unlockChapters)) {
-      for (var k = 0; k < item.unlockChapters.length; k++) {
-        if (chMap[item.unlockChapters[k]]) return true;
-      }
-    }
-    return false;
-  }
-
-  function isMementoUnlocked(item) {
-    if (!item) return false;
-    var st = getS();
-    if (!st) return false;
+  function isMementoUnlockedInState(item, st) {
+    if (!item || !st) return false;
     if (Array.isArray(st.inv) && Array.isArray(item.invIds)) {
       for (var i = 0; i < item.invIds.length; i++) {
         var targetId = item.invIds[i];
@@ -1805,6 +2391,293 @@
       }
     }
     return false;
+  }
+
+  function syncCodexArchiveFromState(targetS) {
+    var st = targetS || getS();
+    var arch = loadCodexArchive();
+    var dirty = false;
+
+    if (st && st.ach && typeof st.ach === 'object') {
+      Object.keys(st.ach).forEach(function (aid) {
+        if (st.ach[aid] && !arch.achs[aid]) {
+          arch.achs[aid] = 1;
+          dirty = true;
+        }
+      });
+    }
+
+    if (st && st.unlockedCGs) {
+      if (Array.isArray(st.unlockedCGs)) {
+        st.unlockedCGs.forEach(function (cgId) {
+          if (cgId && !arch.cgs[cgId]) { arch.cgs[cgId] = 1; dirty = true; }
+        });
+      } else if (typeof st.unlockedCGs === 'object') {
+        Object.keys(st.unlockedCGs).forEach(function (cgId) {
+          if (st.unlockedCGs[cgId] && !arch.cgs[cgId]) { arch.cgs[cgId] = 1; dirty = true; }
+        });
+      }
+    }
+
+    var gc = getGlobalCodex();
+    if (gc && gc.cgs && typeof gc.cgs === 'object') {
+      Object.keys(gc.cgs).forEach(function (cgId) {
+        if (gc.cgs[cgId] && !arch.cgs[cgId]) { arch.cgs[cgId] = 1; dirty = true; }
+      });
+    }
+
+    if (st) {
+      MEMENTO_CATALOG.forEach(function (item) {
+        if (!arch.mementos[item.id] && isMementoUnlockedInState(item, st)) {
+          arch.mementos[item.id] = 1;
+          dirty = true;
+        }
+      });
+    }
+
+    if (dirty) saveCodexArchive(arch);
+    return arch;
+  }
+
+  function captureCurrentCgUnlock() {
+    if (typeof cgImage !== 'undefined' && cgImage) {
+      markCgUnlocked(cgImage);
+      return;
+    }
+    if (typeof document === 'undefined') return;
+    var el = document.getElementById('cg-bg');
+    if (!el || !el.style || !el.style.backgroundImage) return;
+    var m = /assets\/cg\/([^"')]+)/.exec(el.style.backgroundImage);
+    if (m && m[1]) markCgUnlocked(m[1]);
+  }
+
+  function getCgImageSrc(entry) {
+    if (!entry) return '';
+    if (entry.assetPending && entry.fallbackSrc) return entry.fallbackSrc;
+    return 'assets/cg/' + entry.file;
+  }
+
+  function isCgUnlocked(item) {
+    if (!item) return false;
+    var cgMap = loadUnlockedCgs();
+    if (cgMap[item.unlockKey] || cgMap[item.file] || cgMap[item.id]) return true;
+
+    var arch = loadCodexArchive();
+    if (arch.cgs[item.unlockKey] || arch.cgs[item.file] || arch.cgs[item.id]) return true;
+
+    var gc = getGlobalCodex();
+    if (gc && gc.cgs && (gc.cgs[item.unlockKey] || gc.cgs[item.file] || gc.cgs[item.id])) return true;
+
+    var st = getS();
+    if (st && st.unlockedCGs) {
+      if (Array.isArray(st.unlockedCGs)) {
+        if (st.unlockedCGs.indexOf(item.unlockKey) !== -1 || st.unlockedCGs.indexOf(item.file) !== -1 || st.unlockedCGs.indexOf(item.id) !== -1) {
+          return true;
+        }
+      } else if (typeof st.unlockedCGs === 'object') {
+        if (st.unlockedCGs[item.unlockKey] || st.unlockedCGs[item.file] || st.unlockedCGs[item.id]) return true;
+      }
+    }
+    if (st && st.flags && Array.isArray(item.unlockFlags)) {
+      for (var i = 0; i < item.unlockFlags.length; i++) {
+        if (st.flags[item.unlockFlags[i]]) return true;
+      }
+    }
+    if (st && st.ach && Array.isArray(item.unlockAchs)) {
+      for (var j = 0; j < item.unlockAchs.length; j++) {
+        if (st.ach[item.unlockAchs[j]]) return true;
+      }
+    }
+    var chMap = loadUnlockedChapters();
+    if (Array.isArray(item.unlockChapters)) {
+      for (var k = 0; k < item.unlockChapters.length; k++) {
+        if (chMap[item.unlockChapters[k]]) return true;
+      }
+    }
+    return false;
+  }
+
+  function isAchUnlocked(achId) {
+    if (!achId) return false;
+    var st = getS();
+    if (st && st.ach && st.ach[achId]) return true;
+    var arch = loadCodexArchive();
+    return !!arch.achs[achId];
+  }
+
+  function isMementoUnlocked(item) {
+    if (!item) return false;
+    var st = getS();
+    if (isMementoUnlockedInState(item, st)) return true;
+    var arch = loadCodexArchive();
+    return !!arch.mementos[item.id];
+  }
+
+  function normalizeCatalogEntries(source, fallbackList) {
+    if (Array.isArray(source) && source.length) {
+      return source.map(function (it, idx) {
+        return Object.assign({ id: (it && it.id) || ('item_' + idx) }, it);
+      });
+    }
+    if (source && typeof source === 'object') {
+      var keys = Object.keys(source);
+      if (keys.length) {
+        return keys.map(function (k) {
+          var v = source[k];
+          return Object.assign({ id: k }, v && typeof v === 'object' ? v : { title: String(v) });
+        });
+      }
+    }
+    return fallbackList.slice();
+  }
+
+  function readUnlockedEndingsStore() {
+    var unlockedMap = {};
+    var metaMap = {};
+    var replayIdMap = {};
+
+    function absorbEntry(id, metaVal) {
+      if (!id) return;
+      var key = String(id);
+      unlockedMap[key] = true;
+      var mObj = (metaVal && typeof metaVal === 'object') ? metaVal : null;
+      if (mObj) {
+        metaMap[key] = Object.assign({}, metaMap[key] || {}, mObj);
+      }
+      if (key.indexOf('__') > 0) {
+        var parts = key.split('__');
+        if (parts[0]) {
+          unlockedMap[parts[0]] = true;
+          if (!replayIdMap[parts[0]]) replayIdMap[parts[0]] = key;
+          if (mObj) metaMap[parts[0]] = Object.assign({}, metaMap[parts[0]] || {}, mObj);
+        }
+        if (parts[1]) {
+          unlockedMap[parts[1]] = true;
+          if (!replayIdMap[parts[1]]) replayIdMap[parts[1]] = key;
+          if (mObj) metaMap[parts[1]] = Object.assign({}, metaMap[parts[1]] || {}, mObj);
+        }
+      }
+      if (mObj) {
+        if (mObj.bondId) {
+          unlockedMap[mObj.bondId] = true;
+          if (mObj.compositeId && !replayIdMap[mObj.bondId]) replayIdMap[mObj.bondId] = mObj.compositeId;
+          metaMap[mObj.bondId] = Object.assign({}, metaMap[mObj.bondId] || {}, mObj);
+        }
+        if (mObj.careerId) {
+          unlockedMap[mObj.careerId] = true;
+          if (mObj.compositeId && !replayIdMap[mObj.careerId]) replayIdMap[mObj.careerId] = mObj.compositeId;
+          metaMap[mObj.careerId] = Object.assign({}, metaMap[mObj.careerId] || {}, mObj);
+        }
+      }
+    }
+
+    var rh = root && root.RaisingHub ? root.RaisingHub : null;
+    if (rh && typeof rh.getUnlockedEndingsArchive === 'function') {
+      try {
+        var rhArch = rh.getUnlockedEndingsArchive();
+        if (rhArch && rhArch.byId && typeof rhArch.byId === 'object') {
+          Object.keys(rhArch.byId).forEach(function (cid) {
+            absorbEntry(cid, rhArch.byId[cid]);
+          });
+        }
+        if (rhArch && rhArch.unlockedBonds) {
+          Object.keys(rhArch.unlockedBonds).forEach(function (bid) {
+            if (rhArch.unlockedBonds[bid]) unlockedMap[bid] = true;
+          });
+        }
+        if (rhArch && rhArch.unlockedCareers) {
+          Object.keys(rhArch.unlockedCareers).forEach(function (cid) {
+            if (rhArch.unlockedCareers[cid]) unlockedMap[cid] = true;
+          });
+        }
+      } catch (e) {}
+    }
+
+    var gc = getGlobalCodex();
+    if (gc) {
+      if (Array.isArray(gc.endings)) {
+        gc.endings.forEach(function (eid) { absorbEntry(eid); });
+      } else if (gc.endings && typeof gc.endings === 'object') {
+        Object.keys(gc.endings).forEach(function (eid) {
+          if (gc.endings[eid]) absorbEntry(eid, typeof gc.endings[eid] === 'object' ? gc.endings[eid] : null);
+        });
+      }
+      if (gc.endingMeta && typeof gc.endingMeta === 'object') {
+        Object.keys(gc.endingMeta).forEach(function (eid) {
+          if (gc.endingMeta[eid]) absorbEntry(eid, gc.endingMeta[eid]);
+        });
+      }
+      if (gc.careers && typeof gc.careers === 'object') {
+        if (Array.isArray(gc.careers)) {
+          gc.careers.forEach(function (cid) { absorbEntry(cid); });
+        } else {
+          Object.keys(gc.careers).forEach(function (cid) {
+            if (gc.careers[cid]) absorbEntry(cid, typeof gc.careers[cid] === 'object' ? gc.careers[cid] : null);
+          });
+        }
+      }
+    }
+
+    var arch = loadCodexArchive();
+    Object.keys(arch.endings).forEach(function (eid) {
+      if (arch.endings[eid]) absorbEntry(eid, arch.endingMeta[eid]);
+    });
+
+    try {
+      var stored = JSON.parse(localStorage.getItem(ENDINGS_UNLOCKED_KEY) || 'null');
+      if (Array.isArray(stored)) {
+        stored.forEach(function (eid) { absorbEntry(eid); });
+      } else if (stored && typeof stored === 'object') {
+        if (Array.isArray(stored.endings)) {
+          stored.endings.forEach(function (eid) { absorbEntry(eid); });
+        }
+        if (Array.isArray(stored.careers)) {
+          stored.careers.forEach(function (cid) { absorbEntry(cid); });
+        }
+        if (stored.meta && typeof stored.meta === 'object') {
+          Object.keys(stored.meta).forEach(function (eid) { absorbEntry(eid, stored.meta[eid]); });
+        }
+        Object.keys(stored).forEach(function (k) {
+          if (k === 'endings' || k === 'careers' || k === 'meta') return;
+          if (stored[k]) absorbEntry(k, typeof stored[k] === 'object' ? stored[k] : null);
+        });
+      }
+    } catch (e) {}
+
+    var st = getS();
+    if (st && st.unlockedEndings) {
+      if (Array.isArray(st.unlockedEndings)) {
+        st.unlockedEndings.forEach(function (eid) { absorbEntry(eid); });
+      } else if (typeof st.unlockedEndings === 'object') {
+        Object.keys(st.unlockedEndings).forEach(function (eid) {
+          if (st.unlockedEndings[eid]) absorbEntry(eid, typeof st.unlockedEndings[eid] === 'object' ? st.unlockedEndings[eid] : null);
+        });
+      }
+    }
+
+    return { unlockedMap: unlockedMap, metaMap: metaMap, replayIdMap: replayIdMap };
+  }
+
+  function getEndingsSummaryCounts() {
+    var rh = root && root.RaisingHub ? root.RaisingHub : null;
+    var rawBonds = normalizeCatalogEntries(rh && rh.BOND_ENDING_CATALOG, FALLBACK_BOND_ENDINGS);
+    var careerList = normalizeCatalogEntries(rh && rh.CAREER_CATALOG, FALLBACK_CAREER_CATALOG);
+    var store = readUnlockedEndingsStore();
+    var bondList = rawBonds.filter(function (b) {
+      return b.id !== 'unwritten_snow' || !!store.unlockedMap[b.id];
+    });
+    if (!bondList.length) bondList = FALLBACK_BOND_ENDINGS.slice();
+    var bondGot = bondList.filter(function (b) { return !!store.unlockedMap[b.id]; }).length;
+    var careerGot = careerList.filter(function (c) { return !!store.unlockedMap[c.id]; }).length;
+    return {
+      bondList: bondList,
+      careerList: careerList,
+      store: store,
+      bondGot: bondGot,
+      careerGot: careerGot,
+      unlockedTotal: bondGot + careerGot,
+      catalogTotal: bondList.length + careerList.length
+    };
   }
 
   function callBgmPlay(key) {
@@ -1832,13 +2705,80 @@
     }
   }
 
+  function capturePreCodexBgm() {
+    if (preCodexBgmSnapshot) return;
+    var gs = typeof document !== 'undefined' ? document.getElementById('game-screen') : null;
+    var bgEl = typeof document !== 'undefined' ? document.getElementById('bg') : null;
+    var st = getS();
+    preCodexBgmSnapshot = {
+      inGame: !!(gs && !gs.classList.contains('hidden')),
+      freeRoam: !!(st && st.freeRoam),
+      phase: st ? st.phase : null,
+      loc: st ? st.loc : null,
+      bgClass: bgEl ? bgEl.className : '',
+      sceneId: getCurrentSceneId()
+    };
+  }
+
+  function restorePreCodexBgm() {
+    var snap = preCodexBgmSnapshot;
+    preCodexBgmSnapshot = null;
+    if (!codexPlayingTrack && !codexAuditionDirty) return;
+    codexPlayingTrack = null;
+    codexAuditionDirty = false;
+    callBgmStop();
+
+    if (!snap || !snap.inGame) return;
+
+    var scenes = typeof SCENES !== 'undefined' ? SCENES : (root.SCENES || {});
+    var scObj = snap.sceneId && scenes[snap.sceneId] ? scenes[snap.sceneId] : null;
+    if (!snap.freeRoam && scObj && scObj.bgm) {
+      var playTypeFn = (root && typeof root.bgmPlayType === 'function')
+        ? root.bgmPlayType
+        : (typeof bgmPlayType === 'function' ? bgmPlayType : null);
+      if (playTypeFn) {
+        try { playTypeFn(scObj.bgm, { force: true }); return; } catch (e) {}
+      }
+    }
+    var syncFn = (root && typeof root.bgmSyncFromBG === 'function')
+      ? root.bgmSyncFromBG
+      : (typeof bgmSyncFromBG === 'function' ? bgmSyncFromBG : null);
+    if (syncFn && snap.bgClass) {
+      try { syncFn(snap.bgClass, snap.phase, snap.loc); return; } catch (e) {}
+    }
+    var typeFn = (root && typeof root.bgmTypeForBg === 'function')
+      ? root.bgmTypeForBg
+      : (typeof bgmTypeForBg === 'function' ? bgmTypeForBg : null);
+    var ptFn = (root && typeof root.bgmPlayType === 'function')
+      ? root.bgmPlayType
+      : (typeof bgmPlayType === 'function' ? bgmPlayType : null);
+    if (typeFn && ptFn && snap.bgClass) {
+      try {
+        var t = typeFn(snap.bgClass, snap.phase, snap.loc);
+        if (t) ptFn(t, { force: true });
+      } catch (e) {}
+    }
+  }
+
   function closeCgLightbox() {
     if (typeof document === 'undefined') return;
     var lb = document.getElementById('cg-lightbox');
-    if (lb) lb.classList.add('hidden');
+    if (lb && !lb.classList.contains('hidden')) {
+      lb.classList.add('hidden');
+      playSfx('modal_close');
+    }
   }
 
-  function openCgLightbox(entry) {
+  function navigateCgLightbox(delta) {
+    if (!lightboxUnlockedList.length || lightboxUnlockedList.length <= 1) return false;
+    var len = lightboxUnlockedList.length;
+    var nextIdx = (lightboxIndex + delta + len) % len;
+    playSfx('page_open');
+    openCgLightbox(lightboxUnlockedList[nextIdx], { fromNav: true });
+    return true;
+  }
+
+  function openCgLightbox(entry, opts) {
     if (typeof document === 'undefined' || !entry) return null;
     var lb = document.getElementById('cg-lightbox');
     if (!lb) {
@@ -1847,32 +2787,58 @@
       lb.className = 'hidden';
       document.body.appendChild(lb);
     }
-    var primarySrc = 'assets/cg/' + entry.file;
+    var unlocked = CG_GALLERY_CATALOG.filter(isCgUnlocked);
+    var idx = unlocked.findIndex(function (c) { return c.id === entry.id; });
+    if (idx === -1) {
+      unlocked = [entry];
+      idx = 0;
+    }
+    lightboxUnlockedList = unlocked;
+    lightboxIndex = idx;
+
+    var primarySrc = getCgImageSrc(entry);
     var fallbackSrc = entry.fallbackSrc || '';
+    var canCycle = lightboxUnlockedList.length > 1;
+    var counterText = (lightboxIndex + 1) + ' / ' + lightboxUnlockedList.length;
+    var pendingBadgeHtml = entry.assetPending
+      ? '<span class="cg-pending-badge">实景底图代映</span>'
+      : '';
 
     lb.innerHTML =
+      '<button type="button" class="cg-lb-close" id="cg-lb-close" aria-label="关闭大图鉴赏">' + getSvg('close') + '</button>' +
       '<div class="cg-lb-inner">' +
-        '<button type="button" class="cg-lb-close" id="cg-lb-close" aria-label="关闭大图鉴赏">×</button>' +
-        '<div class="cg-lb-frame">' +
-          '<img class="cg-lb-img" id="cg-lb-img" src="' + escapeHtml(primarySrc) + '" alt="' + escapeHtml(entry.title) + '"/>' +
+        '<div class="cg-lb-stage">' +
+          '<button type="button" class="cg-lb-nav prev" id="cg-lb-prev" aria-label="上一张典藏画作"' + (canCycle ? '' : ' disabled') + '>' + getSvg('chevronLeft') + '</button>' +
+          '<div class="cg-lb-frame">' +
+            '<img class="cg-lb-img" id="cg-lb-img" src="' + escapeHtml(primarySrc) + '" alt="' + escapeHtml(entry.title) + '"/>' +
+          '</div>' +
+          '<button type="button" class="cg-lb-nav next" id="cg-lb-next" aria-label="下一张典藏画作"' + (canCycle ? '' : ' disabled') + '>' + getSvg('chevronRight') + '</button>' +
         '</div>' +
         '<div class="cg-lb-caption">' +
-          '<div class="cg-lb-meta"><span class="cg-lb-vol">' + escapeHtml(entry.vol) + '</span><h3>' + escapeHtml(entry.title) + '</h3></div>' +
+          '<div class="cg-lb-meta">' +
+            '<span class="cg-lb-vol">' + escapeHtml(entry.vol) + '</span>' +
+            '<h3>' + escapeHtml(entry.title) + '</h3>' +
+            pendingBadgeHtml +
+            '<span class="cg-lb-counter" id="cg-lb-counter">' + escapeHtml(counterText) + '</span>' +
+          '</div>' +
           '<p class="cg-lb-quote">' + escapeHtml(entry.quote) + '</p>' +
-          '<span class="cg-lb-hint">点击暗幕或按 Esc 返回画廊</span>' +
+          '<span class="cg-lb-hint">' + (canCycle ? '点击暗幕或按 Esc 返回画廊 · 方向键 ← → 切换画作' : '点击暗幕或按 Esc 返回画廊') + '</span>' +
         '</div>' +
       '</div>';
 
     var img = lb.querySelector('#cg-lb-img');
     if (img) {
       img.onerror = function () {
-        if (fallbackSrc && !img.getAttribute('data-fb-applied')) {
+        if (fallbackSrc && !img.getAttribute('data-fb-applied') && img.getAttribute('src') !== fallbackSrc) {
           img.setAttribute('data-fb-applied', '1');
           img.src = fallbackSrc;
         }
       };
     }
+    var wasHidden = lb.classList.contains('hidden');
     lb.classList.remove('hidden');
+    if (wasHidden && !(opts && opts.fromNav)) playSfx('page_open');
+
     lb.onclick = function (e) {
       if (e.target === lb || (e.target && e.target.id === 'cg-lb-img')) closeCgLightbox();
     };
@@ -1880,6 +2846,20 @@
       if (e && e.stopPropagation) e.stopPropagation();
       closeCgLightbox();
     };
+    var prevBtn = lb.querySelector('#cg-lb-prev');
+    if (prevBtn) {
+      prevBtn.onclick = function (e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        navigateCgLightbox(-1);
+      };
+    }
+    var nextBtn = lb.querySelector('#cg-lb-next');
+    if (nextBtn) {
+      nextBtn.onclick = function (e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        navigateCgLightbox(1);
+      };
+    }
     return lb;
   }
 
@@ -1891,7 +2871,7 @@
         return (
           '<article class="codex-cg-card locked" data-cg-id="' + escapeHtml(item.id) + '">' +
             '<div class="cg-thumb-wrap locked-veil">' +
-              '<div class="cg-lock-sigil" aria-hidden="true">❖</div>' +
+              '<div class="cg-lock-sigil" aria-hidden="true">' + getSvg('lock') + '</div>' +
               '<div class="cg-lock-label">尚未解锁 · 推进对应章节开启</div>' +
             '</div>' +
             '<div class="cg-card-foot">' +
@@ -1901,11 +2881,15 @@
           '</article>'
         );
       }
-      var src = 'assets/cg/' + item.file;
+      var src = getCgImageSrc(item);
+      var pendingBadge = item.assetPending
+        ? '<span class="cg-pending-badge">实景底图代映</span>'
+        : '';
       return (
         '<button type="button" class="codex-cg-card unlocked" data-cg-open="' + escapeHtml(item.id) + '">' +
           '<div class="cg-thumb-wrap">' +
             '<img class="cg-thumb-img" src="' + escapeHtml(src) + '" data-fallback="' + escapeHtml(item.fallbackSrc || '') + '" alt="' + escapeHtml(item.title) + '"/>' +
+            pendingBadge +
             '<span class="cg-zoom-badge">全屏鉴赏</span>' +
           '</div>' +
           '<div class="cg-card-foot">' +
@@ -1918,7 +2902,7 @@
 
     container.innerHTML =
       '<div class="codex-section-bar">' +
-        '<span>✦ 已收录典藏 CG <b>' + unlockedCount + ' / ' + CG_GALLERY_CATALOG.length + '</b></span>' +
+        '<span class="codex-bar-title"><span class="vn-inline-ico" aria-hidden="true">' + getSvg('star') + '</span><span>已收录典藏 CG <b>' + unlockedCount + ' / ' + CG_GALLERY_CATALOG.length + '</b></span></span>' +
         '<span class="codex-sec-hint">点击已解锁画作开启高清全屏鉴赏</span>' +
       '</div>' +
       '<div class="codex-cg-grid">' + cardsHtml + '</div>';
@@ -1926,7 +2910,7 @@
     container.querySelectorAll('.cg-thumb-img').forEach(function (img) {
       var fb = img.getAttribute('data-fallback');
       img.onerror = function () {
-        if (fb && !img.getAttribute('data-fb-applied')) {
+        if (fb && !img.getAttribute('data-fb-applied') && img.getAttribute('src') !== fb) {
           img.setAttribute('data-fb-applied', '1');
           img.src = fb;
         }
@@ -1947,14 +2931,30 @@
     return f.replace(/^Music\//i, '').replace(/\.mp3$/i, '');
   }
 
+  function getTrackSceneTag(key, groupKey) {
+    if (BGM_TRACK_SCENES[key]) return BGM_TRACK_SCENES[key];
+    if (groupKey && BGM_MOOD_SCENE_FALLBACK[groupKey]) return BGM_MOOD_SCENE_FALLBACK[groupKey];
+    return '典藏乐章 · 原声配乐';
+  }
+
+  function padTrackNum(n) {
+    var v = Number(n) || 0;
+    return v < 10 ? '0' + v : String(v);
+  }
+
   function renderCodexBgmTab(container) {
     var groups = (root && root.BGM_GROUPS) || (typeof BGM_GROUPS !== 'undefined' ? BGM_GROUPS : {});
     var files = (root && root.BGM_FILES) || (typeof BGM_FILES !== 'undefined' ? BGM_FILES : {});
     var groupKeys = Object.keys(groups);
-    var totalTracks = 0;
+    var flatTracks = [];
     groupKeys.forEach(function (g) {
-      if (Array.isArray(groups[g])) totalTracks += groups[g].length;
+      if (Array.isArray(groups[g])) {
+        groups[g].forEach(function (tk) { flatTracks.push(tk); });
+      }
     });
+    var totalTracks = flatTracks.length;
+    var activeIdx = codexPlayingTrack ? flatTracks.indexOf(codexPlayingTrack) : -1;
+    var idxBadgeText = (activeIdx >= 0 ? padTrackNum(activeIdx + 1) : '--') + ' / ' + padTrackNum(totalTracks);
 
     var activeTitle = codexPlayingTrack ? getTrackTitle(codexPlayingTrack, files) : '未在试听 · 请点选曲目';
     var waveHtml =
@@ -1967,15 +2967,16 @@
       var rows = tracks.map(function (tk) {
         var playing = codexPlayingTrack === tk;
         var title = getTrackTitle(tk, files);
-        var fileLabel = files[tk] ? String(files[tk]).replace(/^Music\//i, '').replace(/\.mp3$/i, '') : tk;
+        var sceneLabel = getTrackSceneTag(tk, gk);
         return (
           '<div class="bgm-track-row' + (playing ? ' active' : '') + '" data-bgm-row="' + escapeHtml(tk) + '">' +
             '<button type="button" class="bgm-play-btn" data-bgm-key="' + escapeHtml(tk) + '">' +
-              (playing ? '■ 停止' : '▶ 播放') +
+              '<span class="bgm-play-ico" aria-hidden="true">' + (playing ? getSvg('stop') : getSvg('play')) + '</span>' +
+              '<span>' + (playing ? '停止' : '播放') + '</span>' +
             '</button>' +
             '<div class="bgm-track-meta">' +
               '<span class="bgm-track-title">' + escapeHtml(title) + '</span>' +
-              '<span class="bgm-track-sub">' + escapeHtml(fileLabel) + '</span>' +
+              '<span class="bgm-track-sub">' + escapeHtml(sceneLabel) + '</span>' +
             '</div>' +
             '<span class="bgm-wave' + (playing ? ' playing' : '') + '" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>' +
           '</div>'
@@ -1994,11 +2995,14 @@
         '<div class="bgm-now-left">' +
           waveHtml +
           '<div class="bgm-now-text">' +
-            '<span class="bgm-now-kicker">NOW AUDITIONING · 全曲目 ' + totalTracks + ' 首</span>' +
+            '<span class="bgm-now-kicker">原声音乐室 · 全曲目 ' + totalTracks + ' 首</span>' +
             '<b id="bgm-now-title">' + escapeHtml(activeTitle) + '</b>' +
           '</div>' +
         '</div>' +
-        '<button type="button" class="sl-btn" id="bgm-room-stop" style="flex:0 0 auto;padding:6px 14px"' + (codexPlayingTrack ? '' : ' disabled') + '>停止试听</button>' +
+        '<div class="bgm-now-actions">' +
+          '<span class="bgm-track-idx' + (activeIdx >= 0 ? ' is-playing' : '') + '" id="bgm-now-index" aria-label="当前曲目序号">' + escapeHtml(idxBadgeText) + '</span>' +
+          '<button type="button" class="sl-btn is-compact" id="bgm-room-stop"' + (codexPlayingTrack ? '' : ' disabled') + '>停止试听</button>' +
+        '</div>' +
       '</div>' +
       '<div class="bgm-groups-wrap">' + (groupsHtml || '<p class="vb-empty">尚未载入原声曲目目录。</p>') + '</div>';
 
@@ -2006,13 +3010,16 @@
     if (stopBtn) {
       stopBtn.onclick = function () {
         codexPlayingTrack = null;
+        codexAuditionDirty = true;
         callBgmStop();
+        playSfx('glass_tap');
         renderCodexBgmTab(container);
       };
     }
     container.querySelectorAll('[data-bgm-key]').forEach(function (btn) {
       btn.onclick = function () {
         var key = btn.getAttribute('data-bgm-key');
+        codexAuditionDirty = true;
         if (codexPlayingTrack === key) {
           codexPlayingTrack = null;
           callBgmStop();
@@ -2020,6 +3027,7 @@
           codexPlayingTrack = key;
           callBgmPlay(key);
         }
+        playSfx('glass_tap');
         renderCodexBgmTab(container);
       };
     });
@@ -2028,18 +3036,16 @@
   function renderCodexAchTab(container) {
     var achList = (root && Array.isArray(root.ACH) && root.ACH)
       || (typeof ACH !== 'undefined' && Array.isArray(ACH) ? ACH : []);
-    var st = getS();
-    var achMap = (st && st.ach) ? st.ach : {};
-    var doneCount = achList.filter(function (a) { return a && achMap[a.id]; }).length;
+    var doneCount = achList.filter(function (a) { return a && isAchUnlocked(a.id); }).length;
     var pct = achList.length ? Math.round((doneCount / achList.length) * 100) : 0;
 
     var cardsHtml = achList.map(function (a) {
-      var got = !!achMap[a.id];
+      var got = isAchUnlocked(a.id);
       var isSecret = !got && /^egg_/.test(a.id);
       return (
         '<article class="ach-card' + (got ? ' unlocked' : ' locked') + '">' +
           '<div class="ach-card-top">' +
-            '<span class="ach-badge">' + (got ? '✦' : '🔒') + '</span>' +
+            '<span class="ach-badge" aria-hidden="true">' + (got ? getSvg('star') : getSvg('lock')) + '</span>' +
             '<b>' + escapeHtml(got ? a.name : (isSecret ? '隐秘彩蛋 · ???' : a.name)) + '</b>' +
             (got && a.reward ? '<span class="ach-reward-pill">' + escapeHtml(a.reward) + '</span>' : '') +
           '</div>' +
@@ -2051,7 +3057,7 @@
     container.innerHTML =
       '<div class="ach-progress-wrap">' +
         '<div class="ach-progress-head">' +
-          '<span>✦ 成就收集进度：<b>已达成 ' + doneCount + ' / ' + achList.length + '</b></span>' +
+          '<span class="codex-bar-title"><span class="vn-inline-ico" aria-hidden="true">' + getSvg('star') + '</span><span>成就收集进度：<b>已达成 ' + doneCount + ' / ' + achList.length + '</b></span></span>' +
           '<span class="ach-progress-pct">' + pct + '%</span>' +
         '</div>' +
         '<div class="ach-progress-bar"><i class="ach-progress-fill" style="width:' + pct + '%"></i></div>' +
@@ -2068,7 +3074,7 @@
         return (
           '<article class="memento-card locked" data-memento-id="' + escapeHtml(m.id) + '">' +
             '<div class="memento-head">' +
-              '<span class="memento-ico">🔒</span>' +
+              '<span class="memento-ico" aria-hidden="true">' + getSvg('lock') + '</span>' +
               '<div class="memento-titles">' +
                 '<div class="memento-name">未启封信物</div>' +
                 '<div class="memento-owner">' + escapeHtml(m.era) + '</div>' +
@@ -2081,7 +3087,7 @@
       }
       var stationeryHtml = expanded
         ? '<div class="memento-stationery">' +
-            '<div class="ms-crest" aria-hidden="true">❄</div>' +
+            '<div class="ms-crest" aria-hidden="true">' + getSvg('snowflake') + '</div>' +
             '<div class="ms-salutation">' + escapeHtml(m.salutation) + '</div>' +
             '<div class="ms-body">' + escapeHtml(m.body).replace(/\n/g, '<br>') + '</div>' +
             '<div class="ms-sign">—— ' + escapeHtml(m.sign) + '</div>' +
@@ -2091,12 +3097,12 @@
       return (
         '<article class="memento-card unlocked' + (expanded ? ' expanded' : '') + '" data-memento-id="' + escapeHtml(m.id) + '">' +
           '<button type="button" class="memento-toggle-btn" data-memento-open="' + escapeHtml(m.id) + '">' +
-            '<span class="memento-ico">' + m.icon + '</span>' +
+            '<span class="memento-ico" aria-hidden="true">' + getSvg(m.iconKey) + '</span>' +
             '<div class="memento-titles">' +
               '<div class="memento-name">' + escapeHtml(m.name) + '</div>' +
               '<div class="memento-owner">' + escapeHtml(m.owner) + ' · ' + escapeHtml(m.era) + '</div>' +
             '</div>' +
-            '<span class="memento-pill open">' + (expanded ? '收起手札 ▲' : '展阅信笺 ▼') + '</span>' +
+            '<span class="memento-pill open"><span>' + (expanded ? '收起手札' : '展阅信笺') + '</span><span class="memento-chev" aria-hidden="true">' + (expanded ? getSvg('chevronUp') : getSvg('chevronDown')) + '</span></span>' +
           '</button>' +
           stationeryHtml +
         '</article>'
@@ -2105,7 +3111,7 @@
 
     container.innerHTML =
       '<div class="codex-section-bar">' +
-        '<span>✦ 已收录旅途信物 <b>' + openCount + ' / ' + MEMENTO_CATALOG.length + '</b></span>' +
+        '<span class="codex-bar-title"><span class="vn-inline-ico" aria-hidden="true">' + getSvg('letter') + '</span><span>已收录旅途信物 <b>' + openCount + ' / ' + MEMENTO_CATALOG.length + '</b></span></span>' +
         '<span class="codex-sec-hint">点击已获得信物，展开典藏信笺卡片细读原文</span>' +
       '</div>' +
       '<div class="memento-grid">' + cardsHtml + '</div>';
@@ -2114,16 +3120,237 @@
       btn.onclick = function () {
         var id = btn.getAttribute('data-memento-open');
         codexExpandedMemento = (codexExpandedMemento === id) ? null : id;
+        playSfx('letter_fold');
         renderCodexMementoTab(container);
       };
     });
+  }
+
+  function renderCodexEndingsTab(container) {
+    var st = getS();
+    var rh = root && root.RaisingHub ? root.RaisingHub : null;
+    var bd = root && root.BranchingDirector ? root.BranchingDirector : null;
+    var summary = getEndingsSummaryCounts();
+
+    var tendency = null;
+    if (bd && typeof bd.getEndingTendency === 'function') {
+      try { tendency = bd.getEndingTendency(st); } catch (e) {}
+    }
+    if (!tendency) {
+      tendency = {
+        id: 'unwritten_snow',
+        badge: '静水初雪',
+        title: '初雪未落 · 静水待明',
+        subtitle: '星轨尚在蓄势，因果之弦待你落笔',
+        summary: '各条关系双轴与暗线拼图仍处于初始平衡。在学院与旅途中做出的每次回应，都会拨动远方终局的指针。',
+        confidence: 18,
+        unlockedClues: 0,
+        totalAxisPoints: 0
+      };
+    }
+
+    var evalResult = null;
+    if (rh && typeof rh.evaluateEnding === 'function') {
+      try { evalResult = rh.evaluateEnding(st); } catch (e) {}
+    }
+    var projectedCareerTitle = '';
+    if (evalResult) {
+      if (evalResult.career && evalResult.career.title) projectedCareerTitle = evalResult.career.title;
+      else if (evalResult.careerTitle) projectedCareerTitle = evalResult.careerTitle;
+    }
+
+    var confPct = Math.max(8, Math.min(100, Number(tendency.confidence) || 18));
+    var bannerHtml =
+      '<section class="ending-tendency-banner" aria-label="当前星轨收束趋向">' +
+        '<div class="etb-head">' +
+          '<span class="etb-badge"><span class="vn-inline-ico" aria-hidden="true">' + getSvg('star') + '</span><span>当前星轨收束趋向 · ' + escapeHtml(tendency.badge || '静水初雪') + '</span></span>' +
+          '<div class="etb-head-right">' +
+            (projectedCareerTitle ? '<span class="etb-career-proj">预计称号 · ' + escapeHtml(projectedCareerTitle) + '</span>' : '') +
+            '<span class="etb-confidence">收束度 ' + confPct + '%</span>' +
+          '</div>' +
+        '</div>' +
+        '<h3 class="etb-title">' + escapeHtml(tendency.title || '初雪未落 · 静水待明') + '</h3>' +
+        '<p class="etb-sub">' + escapeHtml(tendency.subtitle || '') + '</p>' +
+        '<p class="etb-summary">' + escapeHtml(tendency.summary || '') + '</p>' +
+        '<div class="etb-meter-track"><i class="etb-meter-fill" style="width:' + confPct + '%"></i></div>' +
+        '<div class="etb-meta-row">' +
+          '<span class="etb-meta-pill">已点亮暗线拼图 ' + (tendency.unlockedClues || 0) + ' / 4</span>' +
+          '<span class="etb-meta-pill">已积累因果权重 ' + (tendency.totalAxisPoints || 0) + '</span>' +
+          '<span class="etb-meta-pill">已收录终幕 ' + summary.bondGot + ' / ' + summary.bondList.length + ' · 称号 ' + summary.careerGot + ' / ' + summary.careerList.length + '</span>' +
+        '</div>' +
+      '</section>';
+
+    var bondCardsHtml = summary.bondList.map(function (b) {
+      var unlocked = !!summary.store.unlockedMap[b.id];
+      var meta = summary.store.metaMap[b.id] || null;
+      var badgeText = b.badge || b.tag || '星轨终幕';
+      var hintText = b.unlockHint || b.hint || '在旅途关键抉择与伙伴羁绊中收束此条星轨。';
+      var routeAccent = b.accent || ENDING_ROUTE_ACCENTS[b.id] || 'cobalt';
+      if (!unlocked) {
+        return (
+          '<article class="ending-bond-card locked" data-ending-id="' + escapeHtml(b.id) + '" data-route-accent="' + escapeHtml(routeAccent) + '">' +
+            '<div class="ebc-top">' +
+              '<span class="ebc-ico" aria-hidden="true">' + getSvg('lock') + '<i class="ebc-seal-dot" aria-hidden="true"></i></span>' +
+              '<div class="ebc-titles">' +
+                '<span class="ebc-badge"><i class="ebc-accent-dot" aria-hidden="true"></i><span>' + escapeHtml(badgeText) + '</span></span>' +
+                '<h4 class="ebc-title">未启封终幕剪影</h4>' +
+              '</div>' +
+              '<span class="ebc-status-pill">未抵达</span>' +
+            '</div>' +
+            '<p class="ebc-hint">' + escapeHtml(hintText) + '</p>' +
+          '</article>'
+        );
+      }
+      var expanded = codexExpandedEnding === b.id;
+      var tsLabel = (meta && meta.unlockedAt) ? ('收录于 ' + formatTimestamp(meta.unlockedAt)) : '已收入星轨典藏';
+      var epilogueText = (meta && meta.epilogue) || b.epilogue || b.summary || b.subtitle || '';
+      var epilogueBox = expanded && epilogueText
+        ? '<div class="ebc-epilogue-box"><p>' + escapeHtml(epilogueText).replace(/\n/g, '<br>') + '</p></div>'
+        : '';
+      return (
+        '<article class="ending-bond-card unlocked' + (expanded ? ' expanded' : '') + '" data-ending-id="' + escapeHtml(b.id) + '" data-route-accent="' + escapeHtml(routeAccent) + '">' +
+          '<div class="ebc-top">' +
+            '<span class="ebc-ico" aria-hidden="true">' + getSvg('star') + '</span>' +
+            '<div class="ebc-titles">' +
+              '<span class="ebc-badge"><i class="ebc-accent-dot" aria-hidden="true"></i><span>' + escapeHtml(badgeText) + '</span></span>' +
+              '<h4 class="ebc-title">' + escapeHtml(b.title || b.name || b.id) + '</h4>' +
+            '</div>' +
+            '<span class="ebc-status-pill open">已达成</span>' +
+          '</div>' +
+          '<p class="ebc-sub">' + escapeHtml(b.subtitle || b.summary || '') + '</p>' +
+          epilogueBox +
+          '<div class="ebc-foot">' +
+            '<span class="ebc-time">' + escapeHtml(tsLabel) + '</span>' +
+            '<button type="button" class="ending-replay-btn" data-replay-ending="' + escapeHtml(b.id) + '">重温终幕</button>' +
+          '</div>' +
+        '</article>'
+      );
+    }).join('');
+
+    var careerStampsHtml = summary.careerList.map(function (c) {
+      var unlocked = !!summary.store.unlockedMap[c.id];
+      var sealText = c.seal || c.badge || (c.title ? String(c.title).slice(0, 2) : '印');
+      var hintText = c.unlockHint || c.hint || c.desc || '持续磨砺对应养成方向以铭刻此称号。';
+      return (
+        '<article class="ending-career-stamp' + (unlocked ? ' unlocked' : ' locked') + '" data-career-id="' + escapeHtml(c.id) + '">' +
+          '<div class="ecs-seal" aria-hidden="true">' + (unlocked ? escapeHtml(sealText) : getSvg('lock')) + '</div>' +
+          '<div class="ecs-body">' +
+            '<div class="ecs-title">' + escapeHtml(unlocked ? (c.title || c.name || c.id) : '未镌刻称号') + '</div>' +
+            '<div class="ecs-hint">' + escapeHtml(unlocked ? (c.desc || c.subtitle || hintText) : hintText) + '</div>' +
+            '<span class="ecs-status">' + (unlocked ? '<span class="vn-inline-ico" aria-hidden="true">' + getSvg('star') + '</span><span>已获印章</span>' : '待解锁') + '</span>' +
+          '</div>' +
+        '</article>'
+      );
+    }).join('');
+
+    var arcItems = [];
+    if (bd && bd.AXIS_META && typeof bd.getAxisSummary === 'function') {
+      Object.keys(bd.AXIS_META).forEach(function (cid) {
+        try {
+          var s = bd.getAxisSummary(cid, st);
+          if (s) arcItems.push(s);
+        } catch (e) {}
+      });
+    }
+    if (!arcItems.length) {
+      arcItems = FALLBACK_COMPANION_ARCS.map(function (a) {
+        return {
+          charId: a.charId,
+          name: a.name,
+          leftLabel: a.leftLabel,
+          rightLabel: a.rightLabel,
+          leftVal: 0,
+          rightVal: 0,
+          ratio: 50,
+          dominantLabel: '静水未分'
+        };
+      });
+    }
+
+    var arcsHtml = arcItems.map(function (arc) {
+      var ratio = Math.max(4, Math.min(96, Number(arc.ratio) || 50));
+      return (
+        '<div class="ending-arc-card" data-arc-char="' + escapeHtml(arc.charId) + '">' +
+          '<div class="eac-head">' +
+            '<span class="eac-name">' + escapeHtml(arc.name) + '</span>' +
+            '<span class="eac-dominant">' + escapeHtml(arc.dominantLabel || '静水未分') + '</span>' +
+          '</div>' +
+          '<div class="eac-poles">' +
+            '<span class="eac-pole-left">' + escapeHtml(arc.leftLabel) + ' <em>' + (arc.leftVal || 0) + '</em></span>' +
+            '<span class="eac-pole-right"><em>' + (arc.rightVal || 0) + '</em> ' + escapeHtml(arc.rightLabel) + '</span>' +
+          '</div>' +
+          '<div class="eac-bar">' +
+            '<span class="eac-bar-fill" style="width:' + ratio + '%"></span>' +
+            '<i class="eac-bar-marker" style="left:' + ratio + '%"></i>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+
+    container.innerHTML =
+      '<div class="endings-album">' +
+        bannerHtml +
+        '<div class="codex-sub-head">' +
+          '<span class="codex-sub-title"><span class="vn-inline-ico" aria-hidden="true">' + getSvg('star') + '</span><span>核心羁绊终幕</span></span>' +
+          '<em class="codex-sub-count">' + summary.bondGot + ' / ' + summary.bondList.length + '</em>' +
+        '</div>' +
+        '<div class="ending-bond-grid">' + bondCardsHtml + '</div>' +
+        '<div class="codex-sub-head">' +
+          '<span class="codex-sub-title"><span class="vn-inline-ico" aria-hidden="true">' + getSvg('crown') + '</span><span>旅途称号印章</span></span>' +
+          '<em class="codex-sub-count">' + summary.careerGot + ' / ' + summary.careerList.length + '</em>' +
+        '</div>' +
+        '<div class="ending-career-grid">' + careerStampsHtml + '</div>' +
+        '<div class="codex-sub-head">' +
+          '<span class="codex-sub-title"><span class="vn-inline-ico" aria-hidden="true">' + getSvg('compass') + '</span><span>五位伙伴双轴脉络</span></span>' +
+          '<em class="codex-sub-count">5 条星轨</em>' +
+        '</div>' +
+        '<div class="ending-arcs-strip"><div class="ending-arcs-grid">' + arcsHtml + '</div></div>' +
+      '</div>';
+
+    container.querySelectorAll('[data-replay-ending]').forEach(function (btn) {
+      btn.onclick = function () {
+        var eid = btn.getAttribute('data-replay-ending');
+        var replayTarget = (summary.store.replayIdMap && summary.store.replayIdMap[eid]) || eid;
+        var liveRh = root && root.RaisingHub ? root.RaisingHub : null;
+        if (liveRh && typeof liveRh.showEndingScreen === 'function') {
+          playSfx('page_open');
+          try {
+            liveRh.showEndingScreen(String(replayTarget), { previewOnly: true });
+            return;
+          } catch (e) {}
+        }
+        codexExpandedEnding = (codexExpandedEnding === eid) ? null : eid;
+        playSfx('letter_fold');
+        renderCodexEndingsTab(container);
+      };
+    });
+  }
+
+  function closeCodexGallery() {
+    if (typeof document === 'undefined') return;
+    closeCgLightbox();
+    restorePreCodexBgm();
+    var codexEl = document.getElementById('codex');
+    var wasOpen = !!(codexEl && !codexEl.classList.contains('hidden'));
+    if (codexEl) {
+      if (typeof show === 'function') show('codex', 0);
+      else codexEl.classList.add('hidden');
+    }
+    if (wasOpen) playSfx('modal_close');
+    resumeAutoIfActive();
   }
 
   function openCodexGallery(tab) {
     if (typeof document === 'undefined') return null;
     var codexEl = document.getElementById('codex');
     if (!codexEl) return null;
-    var validTabs = ['cg', 'bgm', 'ach', 'memento'];
+    var wasHidden = codexEl.classList.contains('hidden');
+    if (wasHidden) {
+      capturePreCodexBgm();
+    }
+    syncCodexArchiveFromState();
+
+    var validTabs = ['cg', 'bgm', 'ach', 'memento', 'endings'];
     codexCurrentTab = validTabs.indexOf(tab) !== -1 ? tab : 'cg';
 
     var h2 = codexEl.querySelector('.modal-head h2');
@@ -2136,17 +3363,18 @@
     var cgCount = CG_GALLERY_CATALOG.filter(isCgUnlocked).length;
     var achList = (root && Array.isArray(root.ACH) && root.ACH)
       || (typeof ACH !== 'undefined' && Array.isArray(ACH) ? ACH : []);
-    var st = getS();
-    var achCount = achList.filter(function (a) { return a && st && st.ach && st.ach[a.id]; }).length;
+    var achCount = achList.filter(function (a) { return a && isAchUnlocked(a.id); }).length;
     var memCount = MEMENTO_CATALOG.filter(isMementoUnlocked).length;
     var filesMap = (root && root.BGM_FILES) || (typeof BGM_FILES !== 'undefined' ? BGM_FILES : {});
     var bgmTotal = Object.keys(filesMap).length;
+    var endSummary = getEndingsSummaryCounts();
 
     var tabDefs = [
       { id: 'cg', label: 'CG 画廊', badge: cgCount + '/' + CG_GALLERY_CATALOG.length },
       { id: 'bgm', label: 'BGM 音乐室', badge: String(bgmTotal) },
       { id: 'ach', label: '成就墙', badge: achCount + '/' + achList.length },
-      { id: 'memento', label: '信物手札', badge: memCount + '/' + MEMENTO_CATALOG.length }
+      { id: 'memento', label: '信物手札', badge: memCount + '/' + MEMENTO_CATALOG.length },
+      { id: 'endings', label: '终幕典藏', badge: endSummary.unlockedTotal + '/' + endSummary.catalogTotal }
     ];
 
     tabsEl.innerHTML = tabDefs.map(function (t) {
@@ -2160,6 +3388,7 @@
 
     tabsEl.querySelectorAll('[data-codex-tab]').forEach(function (btn) {
       btn.onclick = function () {
+        playSfx('tab_switch');
         openCodexGallery(btn.getAttribute('data-codex-tab'));
       };
     });
@@ -2167,10 +3396,67 @@
     if (codexCurrentTab === 'cg') renderCodexCgTab(listEl);
     else if (codexCurrentTab === 'bgm') renderCodexBgmTab(listEl);
     else if (codexCurrentTab === 'ach') renderCodexAchTab(listEl);
+    else if (codexCurrentTab === 'endings') renderCodexEndingsTab(listEl);
     else renderCodexMementoTab(listEl);
+
+    var modalShell = codexEl.querySelector('.modal-shell');
+    var scrollEl = codexEl.querySelector('.modal-scroll');
+    if (scrollEl) {
+      scrollEl.classList.add('codex-scroll');
+      scrollEl.scrollTop = 0;
+    }
+    if (modalShell && scrollEl) {
+      var fadeEl = modalShell.querySelector('.codex-scroll-fade');
+      if (!fadeEl) {
+        fadeEl = document.createElement('div');
+        fadeEl.className = 'codex-scroll-fade';
+        fadeEl.setAttribute('aria-hidden', 'true');
+        modalShell.appendChild(fadeEl);
+      }
+      var syncCodexFade = function () {
+        var hasOverflow = scrollEl.scrollHeight - scrollEl.clientHeight > 10;
+        var atEnd = !hasOverflow || (scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight - 8);
+        fadeEl.classList.toggle('is-end', atEnd);
+      };
+      if (!scrollEl.__codexFadeBound) {
+        scrollEl.__codexFadeBound = true;
+        scrollEl.addEventListener('scroll', function () {
+          var liveFade = modalShell.querySelector('.codex-scroll-fade');
+          if (!liveFade) return;
+          var hasOv = scrollEl.scrollHeight - scrollEl.clientHeight > 10;
+          var endNow = !hasOv || (scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight - 8);
+          liveFade.classList.toggle('is-end', endNow);
+        }, { passive: true });
+      }
+      syncCodexFade();
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(syncCodexFade);
+      }
+    }
+
+    codexEl.onclick = function (e) {
+      if (e.target === codexEl) closeCodexGallery();
+    };
+    var closeX = codexEl.querySelector('.modal-close-x');
+    if (closeX) closeX.onclick = closeCodexGallery;
+    var closeBtn = document.getElementById('btn-codex-close');
+    if (closeBtn) closeBtn.onclick = closeCodexGallery;
 
     if (typeof show === 'function') show('codex', 1);
     else codexEl.classList.remove('hidden');
+    if (modalShell && scrollEl) {
+      var postFade = modalShell.querySelector('.codex-scroll-fade');
+      if (postFade) {
+        var syncPost = function () {
+          var hasOv = scrollEl.scrollHeight - scrollEl.clientHeight > 10;
+          var endNow = !hasOv || (scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight - 8);
+          postFade.classList.toggle('is-end', endNow);
+        };
+        syncPost();
+        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(syncPost);
+      }
+    }
+    if (wasHidden) playSfx('modal_open');
     return codexEl;
   }
 
@@ -2194,47 +3480,59 @@
         bLog.id = 'btn-backlog';
         bLog.className = 'chip chip-vn';
         bLog.title = '对话回看 (L)';
+        bLog.setAttribute('aria-label', '对话回看');
         bLog.innerHTML = SVG_LOG;
         bLog.onclick = function () { toggleBacklogModal(); };
         hudRight.insertBefore(bLog, document.getElementById('btn-ui') || hudRight.firstChild);
       } else {
-        // 统一接管主界面已有 #btn-backlog，使其直接打开 200 条增强回看弹窗且避免重复按钮
         var existingLog = document.getElementById('btn-backlog');
+        existingLog.setAttribute('aria-label', '对话回看');
+        if (existingLog.classList.contains('tb-backlog-btn')) {
+          existingLog.innerHTML = SVG_LOG + '<span>回看</span><kbd class="vn-key-hint">L</kbd>';
+        }
         existingLog.onclick = function (e) {
           if (e && e.stopPropagation) e.stopPropagation();
           toggleBacklogModal();
         };
       }
-      if (!document.getElementById('btn-saveload')) {
+      var existingSl = document.getElementById('btn-saveload');
+      if (!existingSl) {
         var bSl = document.createElement('button');
         bSl.id = 'btn-saveload';
         bSl.className = 'chip chip-vn';
         bSl.title = '存档 / 读档（6槽位）';
+        bSl.setAttribute('aria-label', '存档读档');
         bSl.innerHTML = SVG_SAVE;
         bSl.onclick = function () { openSaveLoadModal('save'); };
         hudRight.insertBefore(bSl, document.getElementById('btn-ui') || hudRight.firstChild);
+      } else {
+        existingSl.setAttribute('aria-label', '存档读档');
       }
-      if (!document.getElementById('btn-chapters')) {
+      var existingCh = document.getElementById('btn-chapters');
+      if (!existingCh) {
         var bCh = document.createElement('button');
         bCh.id = 'btn-chapters';
         bCh.className = 'chip chip-vn';
         bCh.title = '章节速览与快速试玩';
+        bCh.setAttribute('aria-label', '章节速览');
         bCh.innerHTML = SVG_CHAP;
         bCh.onclick = function () { openChaptersModal(); };
         hudRight.insertBefore(bCh, document.getElementById('btn-ui') || hudRight.firstChild);
+      } else {
+        existingCh.setAttribute('aria-label', '章节速览');
       }
     }
 
     var tb = document.getElementById('text-box');
     if (tb) {
-      // 仅在 #text-box 尚无任何回看按钮时补充入口，防止与 #btn-backlog 双重堆叠
       if (!document.getElementById('tb-backlog-btn') && !tb.querySelector('#btn-backlog')) {
         var tbBtn = document.createElement('button');
         tbBtn.type = 'button';
         tbBtn.id = 'tb-backlog-btn';
         tbBtn.className = 'tb-backlog-btn';
         tbBtn.title = '对话历史回看 (L)';
-        tbBtn.innerHTML = SVG_LOG + ' <span>回看 L</span>';
+        tbBtn.setAttribute('aria-label', '对话回看');
+        tbBtn.innerHTML = SVG_LOG + '<span>回看</span><kbd class="vn-key-hint">L</kbd>';
         tbBtn.onclick = function (e) {
           if (e && e.stopPropagation) e.stopPropagation();
           openBacklogModal();
@@ -2242,7 +3540,6 @@
         tb.appendChild(tbBtn);
       }
 
-      // M5.1：对话框右上角紧邻 #btn-backlog 的半透明阅读控制簇
       if (!document.getElementById('vn-read-controls')) {
         var ctrlWrap = document.createElement('div');
         ctrlWrap.id = 'vn-read-controls';
@@ -2293,7 +3590,6 @@
       updateReadControlUI();
     }
 
-    // M1.3：标题页按钮与 #btn-new 保持 100% 视觉规范一致
     var titleMenu = document.querySelector('#title-screen .title-menu');
     if (titleMenu) {
       var anchor = document.getElementById('btn-arena-title') || document.getElementById('btn-codex');
@@ -2326,7 +3622,6 @@
       }
     }
 
-    // M5.2：接管标题页图鉴入口，打开四合一「典藏图鉴馆」
     var codexBtn = document.getElementById('btn-codex');
     if (codexBtn) {
       codexBtn.onclick = function () {
@@ -2335,14 +3630,12 @@
     }
     var codexCloseBtn = document.getElementById('btn-codex-close');
     if (codexCloseBtn) {
-      codexCloseBtn.onclick = function () {
-        closeCgLightbox();
-        if (typeof show === 'function') show('codex', 0);
-        else {
-          var cx = document.getElementById('codex');
-          if (cx) cx.classList.add('hidden');
-        }
-      };
+      codexCloseBtn.onclick = closeCodexGallery;
+    }
+    var codexEl = document.getElementById('codex');
+    if (codexEl) {
+      var codexX = codexEl.querySelector('.modal-close-x');
+      if (codexX) codexX.onclick = closeCodexGallery;
     }
   }
 
@@ -2350,10 +3643,25 @@
     if (typeof document === 'undefined') return false;
     var order = [
       { id: 'cg-lightbox', close: closeCgLightbox },
+      {
+        id: 'letter-demo',
+        close: function (el) {
+          if (typeof closeLetterDemo === 'function') {
+            try { closeLetterDemo(); return; } catch (e) {}
+          }
+          el.classList.remove('playing', 'revealed');
+          el.classList.add('hidden');
+          playSfx('modal_close');
+        }
+      },
+      {
+        id: 'sys-popup',
+        close: function () {
+          hideElementById('sys-popup');
+          playSfx('modal_close');
+        }
+      },
       { id: 'vn-prefs-modal', close: closePrefsModal },
-      { id: 'vn-backlog-modal', close: closeBacklogModal },
-      { id: 'vn-saveload-modal', close: closeSaveLoadModal },
-      { id: 'vn-chapters-modal', close: closeChaptersModal },
       {
         id: 'arena-loadout-modal',
         close: function (el) {
@@ -2361,6 +3669,80 @@
             try { root.RelicsAndEvents.closeArenaLoadoutModal(); } catch (e) {}
           }
           el.classList.add('hidden');
+          playSfx('modal_close');
+        }
+      },
+      {
+        id: 'rumor-overlay',
+        close: function (el) {
+          if (root.RelicsAndEvents && typeof root.RelicsAndEvents.closeRumorBoard === 'function') {
+            try { root.RelicsAndEvents.closeRumorBoard(); } catch (e) {}
+          }
+          el.classList.add('hidden');
+          playSfx('modal_close');
+        }
+      },
+      { id: 'vn-backlog-modal', close: closeBacklogModal },
+      { id: 'vn-saveload-modal', close: closeSaveLoadModal },
+      { id: 'vn-chapters-modal', close: closeChaptersModal },
+      {
+        id: 'ending-screen',
+        close: function (el) {
+          if (root.RaisingHub && typeof root.RaisingHub.closeEndingScreen === 'function') {
+            try { root.RaisingHub.closeEndingScreen(); } catch (e) {}
+          }
+          hideElementById('ending-screen');
+          el.classList.add('hidden');
+          playSfx('modal_close');
+        }
+      },
+      {
+        id: 'schedule-overlay',
+        close: function (el) {
+          if (root.RaisingHub) {
+            var fn = root.RaisingHub.closeSchedulePlanner || root.RaisingHub.closeScheduleOverlay;
+            if (typeof fn === 'function') {
+              try { fn(); } catch (e) {}
+            }
+          }
+          el.classList.add('hidden');
+          playSfx('modal_close');
+        }
+      },
+      {
+        id: 'season-report-overlay',
+        close: function (el) {
+          if (root.RaisingHub && typeof root.RaisingHub.closeSeasonReport === 'function') {
+            try { root.RaisingHub.closeSeasonReport(); } catch (e) {}
+          }
+          el.classList.add('hidden');
+          playSfx('modal_close');
+        }
+      },
+      {
+        id: 'shop-overlay',
+        close: function (el) {
+          if (root.RaisingHub) {
+            var fn = root.RaisingHub.closeShopModal || root.RaisingHub.closeShopOverlay;
+            if (typeof fn === 'function') {
+              try { fn(); } catch (e) {}
+            }
+          }
+          el.classList.add('hidden');
+          playSfx('modal_close');
+        }
+      },
+      {
+        id: 'mailbox-overlay',
+        close: function (el) {
+          if (root.RaisingHub) {
+            var fn = root.RaisingHub.closeMailboxModal || root.RaisingHub.closeMailboxOverlay;
+            if (typeof fn === 'function') {
+              try { fn(); } catch (e) {}
+            }
+          }
+          el.classList.add('hidden');
+          playSfx('modal_close');
         }
       },
       {
@@ -2372,15 +3754,64 @@
             try { root.IceDeduction.close(); } catch (e) {}
           }
           el.classList.add('hidden');
+          playSfx('modal_close');
         }
       },
       {
-        id: 'rumor-overlay',
+        id: 'panel',
+        close: function () {
+          hideElementById('panel');
+          playSfx('modal_close');
+        }
+      },
+      {
+        id: 'stats-overlay',
+        close: function () {
+          hideElementById('stats-overlay');
+          playSfx('modal_close');
+        }
+      },
+      {
+        id: 'map-overlay',
+        close: function () {
+          hideElementById('map-overlay');
+          playSfx('modal_close');
+        }
+      },
+      { id: 'codex', close: closeCodexGallery },
+      {
+        id: 'backlog-overlay',
+        close: function () {
+          hideElementById('backlog-overlay');
+          playSfx('modal_close');
+        }
+      },
+      {
+        id: 'help-screen',
+        close: function () {
+          hideElementById('help-screen');
+          playSfx('modal_close');
+        }
+      },
+      {
+        id: 'hud-drawer',
+        isOpen: isHudDrawerVisible,
         close: function (el) {
-          if (root.RelicsAndEvents && typeof root.RelicsAndEvents.closeRumorBoard === 'function') {
-            try { root.RelicsAndEvents.closeRumorBoard(); } catch (e) {}
+          el.classList.remove('open');
+          el.classList.add('hidden');
+          el.setAttribute('aria-hidden', 'true');
+          playSfx('modal_close');
+        }
+      },
+      {
+        id: 'ai-drawer',
+        close: function (el) {
+          if (root.AIChatPanel && typeof root.AIChatPanel.closeDrawer === 'function') {
+            try { root.AIChatPanel.closeDrawer({ wipePending: true }); } catch (e) {}
           }
           el.classList.add('hidden');
+          if (document.body) document.body.classList.remove('ai-drawer-open');
+          playSfx('modal_close');
         }
       }
     ];
@@ -2388,7 +3819,8 @@
     for (var i = 0; i < order.length; i++) {
       var item = order[i];
       var el = document.getElementById(item.id);
-      if (isModalVisible(el)) {
+      var openNow = item.isOpen ? item.isOpen(el) : isModalVisible(el);
+      if (openNow) {
         item.close(el);
         return true;
       }
@@ -2400,12 +3832,27 @@
     if (typeof document === 'undefined' || root.__vnUxKeyBound) return;
     root.__vnUxKeyBound = true;
 
-    // M1.5：使用捕获阶段监听 Escape，确保永远优先关闭最顶层弹窗且杜绝与 game.js 冲突
+    // 捕获阶段统一拦截 Escape（严格按视觉层级逐层关闭并阻止冒泡双关）与 Lightbox 方向键
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
         if (closeTopmostVNModal()) {
           if (typeof e.preventDefault === 'function') e.preventDefault();
           if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        }
+        return;
+      }
+      var lb = document.getElementById('cg-lightbox');
+      if (isModalVisible(lb)) {
+        if (e.key === 'ArrowLeft') {
+          if (navigateCgLightbox(-1)) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+          }
+        } else if (e.key === 'ArrowRight') {
+          if (navigateCgLightbox(1)) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+          }
         }
       }
     }, true);
@@ -2431,6 +3878,8 @@
   }
 
   function init() {
+    if (vnInitialized) return;
+    vnInitialized = true;
     loadPrefs();
     syncSavedPrefsToEngine();
     ensureVNUIButtons();
@@ -2441,6 +3890,8 @@
     MAX_BACKLOG: MAX_BACKLOG,
     VN_PREFS_KEY: VN_PREFS_KEY,
     READ_LINES_KEY: READ_LINES_KEY,
+    CODEX_ARCHIVE_KEY: CODEX_ARCHIVE_KEY,
+    ENDINGS_UNLOCKED_KEY: ENDINGS_UNLOCKED_KEY,
     FEATURED_QUICK_JUMPS: FEATURED_QUICK_JUMPS,
     CG_GALLERY_CATALOG: CG_GALLERY_CATALOG,
     MEMENTO_CATALOG: MEMENTO_CATALOG,
@@ -2453,6 +3904,7 @@
     openBacklogModal: openBacklogModal,
     closeBacklogModal: closeBacklogModal,
     toggleBacklogModal: toggleBacklogModal,
+    normalizeManualSlot: normalizeManualSlot,
     onAutoSave: onAutoSave,
     saveToSlot: saveToSlot,
     loadFromSlot: loadFromSlot,
@@ -2470,6 +3922,7 @@
     getPrefs: getPrefs,
     setPref: setPref,
     resetPrefs: resetPrefs,
+    syncExternalAudioPrefs: syncExternalAudioPrefs,
     toggleAutoMode: toggleAutoMode,
     setAutoMode: setAutoMode,
     isAutoMode: isAutoMode,
@@ -2483,9 +3936,14 @@
     closePrefsModal: closePrefsModal,
     togglePrefsModal: togglePrefsModal,
     openCodexGallery: openCodexGallery,
+    closeCodexGallery: closeCodexGallery,
     openCgLightbox: openCgLightbox,
     closeCgLightbox: closeCgLightbox,
-    markCgUnlocked: markCgUnlocked
+    markCgUnlocked: markCgUnlocked,
+    markEndingUnlocked: markEndingUnlocked,
+    syncCodexArchive: syncCodexArchiveFromState,
+    isAnyBlockingOverlayOpen: isAnyBlockingOverlayOpen,
+    closeTopmostVNModal: closeTopmostVNModal
   };
 
   root.VNUx = API;

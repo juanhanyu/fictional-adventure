@@ -176,8 +176,10 @@ ok('M5 Auto / Skip 互斥运行，且 Skip 遇未读台词严格触发「已读�
   autoOn && skipBlockedOnUnread && brakeToastTxt.includes('未读台词') && readCheck && skipActiveOnRead && autoBrakeOnNextUnread,
   `autoOn=${autoOn}, blocked=${skipBlockedOnUnread}, read=${readCheck}, activeOnRead=${skipActiveOnRead}, brake=${autoBrakeOnNextUnread}`);
 
-// 6) M5 四合一「典藏图鉴馆」(CG 画廊 + BGM 音乐室 + 成就墙 + 信物手札 + #cg-lightbox)
+// 6) M5 五合一「典藏图鉴馆」(CG 画廊 + BGM 音乐室 + 成就墙 + 信物手札 + 结局图鉴 + #cg-lightbox)
+win.localStorage.removeItem('ojousama_cg_unlocked_v1');
 win.localStorage.removeItem('ojousama_unlocked_cgs_v1');
+win.localStorage.removeItem('ojousama_codex_archive_v1');
 win.localStorage.removeItem('ojousama_unlocked_chapters_v1');
 win.__resetS();
 const codexS = win.__getS();
@@ -224,14 +226,30 @@ VN.openCodexGallery('memento');
 const openMemBtn = doc.querySelector('#codex-list [data-memento-open]');
 if (openMemBtn) openMemBtn.click();
 const mementoExpanded = !!doc.querySelector('#codex-list .memento-stationery');
-pressEscape();
 
-ok('M5 四合一典藏图鉴馆完整渲染 CG 加密剪影与全屏 #cg-lightbox（含分层 Esc 关闭）',
-  tabBtns.length === 4 && hasEncryptedSilhouette && lightboxOpened && lightboxClosedCodexStayed && codexClosedSecondEsc,
+const endingsTabBtn = doc.querySelector('#codex-tabs [data-codex-tab="endings"]');
+if (endingsTabBtn) endingsTabBtn.click();
+else VN.openCodexGallery('endings');
+const endingsTabActive = !!doc.querySelector('#codex-tabs [data-codex-tab="endings"].on');
+const endingsListEl = $('codex-list');
+const endingsListText = ((endingsListEl && endingsListEl.textContent) || '').trim();
+const endingsRenderedCleanly = !!(endingsTabBtn && endingsTabActive && endingsListEl
+  && endingsListEl.children.length >= 1
+  && endingsListText.length > 0
+  && !/\bundefined\b/i.test(endingsListText)
+  && !/\bNaN\b/.test(endingsListText));
+pressEscape();
+const codexClosedAfterEndings = !vis('codex');
+
+ok('M5 五合一典藏图鉴馆完整渲染 CG 加密剪影与全屏 #cg-lightbox（含分层 Esc 关闭）',
+  tabBtns.length === 5 && hasEncryptedSilhouette && lightboxOpened && lightboxClosedCodexStayed && codexClosedSecondEsc,
   `tabs=${tabBtns.length}, silhouette=${hasEncryptedSilhouette}, lb=${lightboxOpened}, layered=${lightboxClosedCodexStayed}/${codexClosedSecondEsc}`);
 ok('M5 典藏图鉴馆 BGM 音乐室试听、成就墙进度与信物手札展阅全链路正常',
   bgmAuditionWorks && hasAchProgress && lockedMemCount >= 1 && mementoExpanded,
   `bgm=${bgmAuditionWorks}, ach=${hasAchProgress}, lockedMem=${lockedMemCount}, expanded=${mementoExpanded}`);
+ok('M5 典藏图鉴馆第 5 分栏 [data-codex-tab="endings"] 结局图鉴完整渲染且 Esc 正常收起',
+  endingsRenderedCleanly && codexClosedAfterEndings,
+  `btn=${!!endingsTabBtn}, active=${endingsTabActive}, len=${endingsListText.length}, closed=${codexClosedAfterEndings}`);
 
 // 7) M3.1 PORTRAIT_DIFF_PROTOCOL 完整性与缺失差分优雅降级至 _normal
 const proto = win.PORTRAIT_DIFF_PROTOCOL || {};

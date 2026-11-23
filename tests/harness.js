@@ -25,20 +25,73 @@ const dom = new JSDOM(html, {
 
 const win = dom.window;
 if (!win.AudioContext) {
+  const mkParam = (v = 0) => ({
+    value: v,
+    setValueAtTime(){},
+    exponentialRampToValueAtTime(){},
+    linearRampToValueAtTime(){},
+    setTargetAtTime(){},
+    cancelScheduledValues(){},
+  });
   win.AudioContext = class {
-    constructor(){ this.currentTime = 0; this.destination = null; this.state = 'running'; }
-    resume(){ return Promise.resolve(); }
+    constructor(){ this.currentTime = 0; this.sampleRate = 44100; this.destination = { connect(){} }; this.state = 'running'; }
+    resume(){ this.state = 'running'; return Promise.resolve(); }
     createOscillator(){
       return {
         type: 'sine',
-        connect(){}, start(){}, stop(){},
-        frequency: { value: 0, setValueAtTime(){}, exponentialRampToValueAtTime(){}, linearRampToValueAtTime(){} }
+        connect(){ return this; }, disconnect(){}, start(){}, stop(){},
+        frequency: mkParam(440),
+        detune: mkParam(0),
       };
     }
     createGain(){
       return {
-        connect(){},
-        gain: { value: 0, setValueAtTime(){}, exponentialRampToValueAtTime(){}, linearRampToValueAtTime(){} }
+        connect(){ return this; }, disconnect(){},
+        gain: mkParam(1),
+      };
+    }
+    createBiquadFilter(){
+      return {
+        type: 'lowpass',
+        connect(){ return this; }, disconnect(){},
+        frequency: mkParam(1000),
+        Q: mkParam(1),
+        gain: mkParam(0),
+      };
+    }
+    createDynamicsCompressor(){
+      return {
+        connect(){ return this; }, disconnect(){},
+        threshold: mkParam(-24),
+        knee: mkParam(30),
+        ratio: mkParam(12),
+        attack: mkParam(0.003),
+        release: mkParam(0.25),
+      };
+    }
+    createBuffer(channels, length, sampleRate){
+      const chCount = Math.max(1, Number(channels) || 1);
+      const len = Math.max(1, Number(length) || 1);
+      const bufs = Array.from({ length: chCount }, () => new Float32Array(len));
+      return {
+        numberOfChannels: chCount,
+        length: len,
+        sampleRate: sampleRate || this.sampleRate,
+        getChannelData(i){ return bufs[i] || bufs[0]; },
+      };
+    }
+    createBufferSource(){
+      return {
+        buffer: null,
+        loop: false,
+        playbackRate: mkParam(1),
+        connect(){ return this; }, disconnect(){}, start(){}, stop(){},
+      };
+    }
+    createStereoPanner(){
+      return {
+        pan: mkParam(0),
+        connect(){ return this; }, disconnect(){},
       };
     }
   };
@@ -87,12 +140,15 @@ const scriptFiles = [
   'js/story-vol4.js',
   'js/ai-personas.js',
   'game.js',
+  'js/sfx-suite.js',
   'js/branching-director.js',
   'js/combat-engine.js',
   'js/ai-chat-panel.js',
   'js/relics-and-events.js',
   'js/ambient-fx.js',
   'js/vn-ux.js',
+  'js/raising-hub.js',
+  'js/title-director.js',
 ];
 for (const rel of scriptFiles) {
   const abs = path.join(ROOT, rel);

@@ -14,7 +14,8 @@ cases.push(
   'ui_and_polish_guard.js',
   'vol4_and_synergy.js',
   'ambient_and_system_ui.js',
-  'proxy_and_personas_v2.js'
+  'proxy_and_personas_v2.js',
+  'v2_overhaul_guard.js'
 );
 for (const f of cases){
   const r = spawnSync('node', [path.join(__dirname, f)], { encoding:'utf8', cwd: __dirname });

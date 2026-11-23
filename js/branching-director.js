@@ -7,13 +7,43 @@
 
   var MAX_ECHOES = 8;
 
+  function bdIco(name, size) {
+    var sz = size || 14;
+    var paths = {
+      wind: '<path d="M2.5 7h8.2a2.1 2.1 0 1 0-2-2.7"/><path d="M2.5 10.5h11a2.1 2.1 0 1 1-2 2.7"/><path d="M2.5 14h5.5"/>',
+      droplet: '<path d="M9 2.5C9 2.5 4 8 4 11.4a5 5 0 0 0 10 0C14 8 9 2.5 9 2.5Z"/>',
+      crown: '<path d="M3 13.5h12l1-7.5-3.8 3L9 4.5 5.8 9 2 6l1 7.5Z"/>',
+      crystal: '<polygon points="9,2 14,6 14,12 9,16 4,12 4,6"/><path d="M9 2v14M4 6l10 6M14 6L4 12"/>',
+      butterfly: '<path d="M9 6.5C7.2 3.5 3 3.5 3 7c0 2 1.8 3.2 4 3.2-1.8.4-3 1.6-3 3.1 0 2 2.5 2.5 5 0"/><path d="M9 6.5c1.8-3 6-3 6 .5 0 2-1.8 3.2-4 3.2 1.8.4 3 1.6 3 3.1 0 2-2.5 2.5-5 0"/><path d="M9 5.5v8"/>',
+      notebook: '<rect x="4" y="2.5" width="10" height="13" rx="1.5"/><path d="M6.8 2.5v13M9.2 6h2.8M9.2 9h2.8M9.2 12h2"/>',
+      chess: '<circle cx="9" cy="5.2" r="2.2"/><path d="M6.5 8.5h5L10.8 13H7.2L6.5 8.5Z"/><path d="M4.5 15.2h9"/>',
+      snowflake: '<path d="M9 2.2v13.6M3.1 5.6l11.8 6.8M14.9 5.6L3.1 12.4M7.2 3.8L9 5.2l1.8-1.4M7.2 14.2L9 12.8l1.8 1.4M4 7.5l1.6-.2.4-1.6M14 10.5l-1.6.2-.4 1.6M14 7.5l-1.6-.2-.4-1.6M4 10.5l1.6.2.4 1.6"/>',
+      leaf: '<path d="M14.5 3.5C9 3.5 4.5 6.8 4 14c7.2-.5 10.5-5 10.5-10.5Z"/><path d="M4 14l5.5-5.5"/>',
+      candle: '<path d="M9 2.5c1.3 1.5 1.6 2.8.8 3.8a1.4 1.4 0 0 1-1.6 0c-.8-1-.5-2.3.8-3.8Z"/><rect x="6.5" y="8" width="5" height="7" rx="1"/><path d="M4.5 15h9"/>',
+      scroll: '<path d="M5 3.5h8.5a1.5 1.5 0 0 1 0 3H5.5v8a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 2.5-1.5Z"/><path d="M5.5 6.5H13v6.5a2 2 0 0 1-2 2H4"/><path d="M7.5 9.2h3.5M7.5 11.8h2.5"/>',
+      feather: '<path d="M14.5 3.5C10.5 3.8 7 6.2 5 11.5L3.5 14.5l3-1.5c4.5-1.8 7.6-5.2 8-9.5Z"/><path d="M5 13l6.5-6.5"/>',
+      compass: '<path d="M3.5 14.5h11V3.5L3.5 14.5Z"/><path d="M9.5 12h2.5V9.5"/>',
+      diamond: '<polygon points="9,2.2 15.8,9 9,15.8 2.2,9"/><circle cx="9" cy="9" r="1.8"/>',
+      flame: '<path d="M9.5 2.5c2.2 2.4 4.2 5 4.2 7.8a4.7 4.7 0 0 1-9.4 0c0-2 1-3.6 2.2-4.8-.1 1.4.6 2.3 1.5 2.5.1-2 .8-3.9 1.5-5.5Z"/>',
+      cat: '<path d="M4 7.5V3.5l3 2.2a6.4 6.4 0 0 1 4 0l3-2.2v4a5 5 0 1 1-10 0Z"/><path d="M7.2 9.5h.1M10.7 9.5h.1M8.2 11.5c.5.4 1.1.4 1.6 0"/>',
+      sparkle: '<path d="M9 2.2L10.7 7.3L15.8 9L10.7 10.7L9 15.8L7.3 10.7L2.2 9L7.3 7.3Z"/>',
+      bowl: '<path d="M3 9.5h12a5.5 5.5 0 0 1-11 0Z"/><path d="M6.5 15h5M6.5 6.5c0-1 .7-1.4.7-2.4M9 6.5c0-1 .7-1.4.7-2.4M11.5 6.5c0-1 .7-1.4.7-2.4"/>',
+      lantern: '<path d="M7 3h4M9 2v1M6.5 14.5h5M9 14.5V16"/><rect x="5" y="4.5" width="8" height="9" rx="3.5"/><path d="M5.2 9h7.6"/>',
+      sword: '<path d="M14.5 3.5l-3.8.7-4.8 4.8 2.4 2.4 4.8-4.8.7-3.8Z"/><path d="M4.8 9.2l4 4M3.5 14.5l2.5-2.5"/>',
+      pass: '<rect x="3" y="4.2" width="12" height="9.6" rx="1.8"/><circle cx="6.8" cy="9" r="1.4"/><path d="M10 7.6h3M10 10.4h2.4"/>',
+      cake: '<circle cx="9" cy="9" r="5.6"/><path d="M9 5.5v7M5.5 9h7M6.6 6.6l4.8 4.8M11.4 6.6l-4.8 4.8"/>'
+    };
+    var body = paths[name] || paths.sparkle;
+    return '<svg class="bd-svg-ico" viewBox="0 0 18 18" width="' + sz + '" height="' + sz + '" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
+  }
+
   var STAGE_EMO_BADGES = {
     shy: '✿ 微赧',
     happy: '✧ 欣喜',
     smile: '✧ 浅笑',
     serious: '❖ 凝神',
-    sad: '💧 黯然',
-    teary: '💧 含泪',
+    sad: '◇ 黯然',
+    teary: '◇ 含泪',
     surprised: '✦ 微怔',
     wink: '☆ 狡黠',
     sleepy: '☾ 困倦'
@@ -26,7 +56,7 @@
     alice: {
       charId: 'alice',
       name: '爱丽丝',
-      icon: '💨',
+      icon: bdIco('wind'),
       leftKey: 'independence',
       leftLabel: '独立思考',
       leftDesc: '引导她自己聆听风向、丈量更广阔的天地',
@@ -37,7 +67,7 @@
     noelle: {
       charId: 'noelle',
       name: '诺艾儿',
-      icon: '💧',
+      icon: bdIco('droplet'),
       leftKey: 'partnership',
       leftLabel: '平等同盟',
       leftDesc: '无需客套设防、彼此平视的学术与实战挚友',
@@ -48,7 +78,7 @@
     charlotte: {
       charId: 'charlotte',
       name: '夏洛特',
-      icon: '👑',
+      icon: bdIco('crown'),
       leftKey: 'candor',
       leftLabel: '卸下面具',
       leftDesc: '树影与薄荷茶间不言自明的体面与默契',
@@ -59,7 +89,7 @@
     aino: {
       charId: 'aino',
       name: '艾诺',
-      icon: '🧊',
+      icon: bdIco('crystal'),
       leftKey: 'kinship',
       leftLabel: '极北知己',
       leftDesc: '同守一盆北极铃兰、共懂异乡温差的同类',
@@ -70,7 +100,7 @@
     jilan: {
       charId: 'jilan',
       name: '霁岚',
-      icon: '💜',
+      icon: bdIco('butterfly'),
       leftKey: 'hearth',
       leftLabel: '归处暖灯',
       leftDesc: '小院热粥与木桩声里随时可回的安稳灯火',
@@ -92,7 +122,7 @@
   var CLUE_META = {
     bayi_banquet_leak: {
       id: 'bayi_banquet_leak',
-      icon: '📓',
+      icon: bdIco('notebook'),
       title: '宴席食谱外的暗探',
       hint: '学院公共厨房里，留意阿琼替表叔记录的公爵府宴会细节。',
       summary: '有人借单纯的阿琼打探公爵府三代纹章银杯、客房位置与夜巡换班规律，巴依使团内部藏着伸向维斯特利亚家的眼线。',
@@ -100,7 +130,7 @@
     },
     belmont_troop_shift: {
       id: 'belmont_troop_shift',
-      icon: '♟️',
+      icon: bdIco('chess'),
       title: '王都调防与封锁苗头',
       hint: '在纪念林雨后或日落长廊的闲谈中，捕捉王都外务与边境盘查的异动。',
       summary: '贝尔蒙家族外务管事近期频繁调动城郊私军，沿途驿站与边境关卡盘查骤紧，一张针对旧外交体系的网正在收拢。',
@@ -108,7 +138,7 @@
     },
     polar_lily_bond: {
       id: 'polar_lily_bond',
-      icon: '❄️',
+      icon: bdIco('snowflake'),
       title: '北极铃兰的冰膜印记',
       hint: '在校园花坊午后，与艾诺一同照料怕热的北极铃兰「伊诺」。',
       summary: '掌握了极弱而均匀的恒温冰膜控温术，也窥见了霍尔老师六年如一日在窗台下为赫兰游子铺设冻土白霜的无言守护。',
@@ -116,7 +146,7 @@
     },
     wind_god_echo: {
       id: 'wind_god_echo',
-      icon: '🍃',
+      icon: bdIco('leaf'),
       title: '院角老树与「岚」之名',
       hint: '在澄岚镇霁馆夜廊，听霁岚提起父亲每晚驻足的老树。',
       summary: '霁馆院角修剪整齐的老树下藏着霁清馆主对故人「岚」的守望，那缕自由却难以久驻的风与远方风暴眼隐隐共鸣。',
@@ -130,7 +160,7 @@
   var PAYOFF_META = {
     dark_tide: {
       id: 'dark_tide',
-      icon: '🕯️',
+      icon: bdIco('candle'),
       title: '暗潮先觉 · 书房推演',
       stage: '第十章 · 政变前夜',
       condDesc: '拼合「宴席食谱外的暗探」与「王都调防苗头」两枚暗流线索',
@@ -138,7 +168,7 @@
     },
     rival_grace: {
       id: 'rival_grace',
-      icon: '📜',
+      icon: bdIco('scroll'),
       title: '宿敌回响 · 巡防抄件与战书',
       stage: '第十章 · 离校与东逃夜',
       condDesc: '夏洛特积累「卸下面具」或「骄傲较劲」倾向（≥2）',
@@ -146,7 +176,7 @@
     },
     alice_arc: {
       id: 'alice_arc',
-      icon: '🕊️',
+      icon: bdIco('feather'),
       title: '风之弧光 · 家书与重逢',
       stage: '学院篇至旅途篇 · 家书与逃亡回响',
       condDesc: '爱丽丝积累「独立思考」或「执念依恋」倾向（≥2）',
@@ -154,7 +184,7 @@
     },
     noelle_arc: {
       id: 'noelle_arc',
-      icon: '📐',
+      icon: bdIco('compass'),
       title: '精算之盟 · 手稿与勘误册',
       stage: '第五章至第十章 · 七座山与寒假辞别',
       condDesc: '诺艾儿积累「平等同盟」或「自尊防线」倾向（≥2）',
@@ -162,7 +192,7 @@
     },
     aino_arc: {
       id: 'aino_arc',
-      icon: '❄️',
+      icon: bdIco('snowflake'),
       title: '极北赠别 · 雪纹帕与钢冰笺',
       stage: '第八章 · 冰融之际毕业交接',
       condDesc: '艾诺积累「极北知己」或「严苛试炼」倾向（≥2）',
@@ -170,7 +200,7 @@
     },
     northern_vow: {
       id: 'northern_vow',
-      icon: '🗡️',
+      icon: bdIco('diamond'),
       title: '旧风与北境之契',
       stage: '第三卷 · 霁馆辞行与北风堡',
       condDesc: '点亮「院角老树」或「北极铃兰冰膜」，或积累霁岚关系倾向（≥2）',
@@ -315,7 +345,7 @@
     if (!d) return false;
     c.axes[cid][pole] = Math.max(0, Math.min(30, c.axes[cid][pole] + d));
     if (!options.silent) {
-      showCausalRipple('🌊 命运暗流 · ' + AXIS_META[cid].name + '「' + poleLabel(pole) + '」' + (d > 0 ? '+' : '') + d, 'axis');
+      showCausalRipple('◈ 命运暗流 · ' + AXIS_META[cid].name + '「' + poleLabel(pole) + '」' + (d > 0 ? '+' : '') + d, 'axis');
       persistState();
     }
     if (root.AIChatPanel && typeof root.AIChatPanel.refreshBadge === 'function') {
@@ -334,7 +364,7 @@
     if (c.clues[clueId]) return false;
     c.clues[clueId] = true;
     if (!options.silent) {
-      showCausalRipple('🧩 暗线拼图点亮 · 《' + CLUE_META[clueId].title + '》', 'clue');
+      showCausalRipple('✦ 暗线拼图点亮 · 《' + CLUE_META[clueId].title + '》', 'clue');
       persistState();
     }
     return true;
@@ -382,7 +412,7 @@
     }
 
     if (!options.silent) {
-      showCausalRipple('🎐 往昔回声已铭刻：「' + cleanQuote.slice(0, 18) + (cleanQuote.length > 18 ? '…' : '') + '」', 'echo');
+      showCausalRipple('✦ 往昔回声已铭刻：「' + cleanQuote.slice(0, 18) + (cleanQuote.length > 18 ? '…' : '') + '」', 'echo');
       persistState();
     }
     return true;
@@ -603,7 +633,7 @@
       id: 'v_alice_shade',
       title: '夏荫陪坐与风的追问',
       charId: 'alice',
-      icon: '🍃',
+      icon: bdIco('leaf'),
       locs: ['study', 'garden'],
       x: 20, y: 28,
       canPlay: function (st) {
@@ -614,7 +644,7 @@
       id: 'v_beatrice_practice',
       title: '练武场角落的木梳与微火',
       charId: 'beatrice',
-      icon: '🔥',
+      icon: bdIco('flame'),
       locs: ['training', 'dining'],
       x: 82, y: 28,
       canPlay: function (st) {
@@ -625,7 +655,7 @@
       id: 'v_noelle_clocktower',
       title: '手背日程表与钟塔橘猫',
       charId: 'noelle',
-      icon: '🐱',
+      icon: bdIco('cat'),
       locs: ['clocktower', 'library'],
       x: 18, y: 28,
       canPlay: function (st) {
@@ -636,7 +666,7 @@
       id: 'v_aino_flowerhouse',
       title: '北极铃兰与怕烫的咖喱',
       charId: 'aino',
-      icon: '❄️',
+      icon: bdIco('snowflake'),
       locs: ['flowerhouse', 'ice_class'],
       x: 18, y: 26,
       canPlay: function (st) {
@@ -647,7 +677,7 @@
       id: 'v_charlotte_memorial',
       title: '雨后纪念林的引水浅沟',
       charId: 'charlotte',
-      icon: '🌿',
+      icon: bdIco('leaf'),
       locs: ['memorial'],
       x: 82, y: 28,
       canPlay: function (st) {
@@ -658,7 +688,7 @@
       id: 'v_helena_corridor',
       title: '日落长廊与星光信笺',
       charId: 'helena',
-      icon: '✨',
+      icon: bdIco('sparkle'),
       locs: ['auditorium', 'water_class'],
       x: 82, y: 24,
       canPlay: function (st) {
@@ -669,7 +699,7 @@
       id: 'v_ajun_kitchen',
       title: '碎花围裙与小本子上的宴席',
       charId: 'ajun',
-      icon: '🍛',
+      icon: bdIco('bowl'),
       locs: ['cafeteria'],
       x: 82, y: 28,
       canPlay: function (st) {
@@ -680,7 +710,7 @@
       id: 'v_jilan_night',
       title: '霁馆夜廊与院角老树',
       charId: 'jilan',
-      icon: '🏮',
+      icon: bdIco('lantern'),
       locs: ['jikan'],
       x: 11, y: 23,
       canPlay: function (st) {
@@ -735,7 +765,7 @@
       };
       if (typeof showChoices === 'function') {
         showChoices([{
-          text: '✨ 已聊尽兴，继续推进本段剧情 ▸',
+          text: '✦ 已聊尽兴，继续推进本段剧情 ▸',
           do: function () {
             if (root.AIChatPanel && typeof root.AIChatPanel.finishActiveVignette === 'function') {
               root.AIChatPanel.finishActiveVignette();
@@ -793,7 +823,7 @@
               ]
             },
             {
-              text: '✨【灵魂交谈】用自己的话自由回应爱丽丝（AI 推进并进入下幕）',
+              text: '✦【灵魂交谈】用自己的话自由回应爱丽丝（AI 推进并进入下幕）',
               do: function () {
                 launchVignetteFreeTalk('v_alice_shade', 'alice', '爱丽丝正坐在午后图书室光斑边问你发呆时在想什么', 'independence', [
                   duoLine(['sylvia', '希尔维亚', 'smile'], ['alice', '爱丽丝', 'happy'], 'alice', '……嗯。姐姐大人说的话，我都记在心里了。'),
@@ -844,7 +874,7 @@
               ]
             },
             {
-              text: '✨【灵魂交谈】亲自对爱丽丝许下关于风与未来的约定（AI 收束）',
+              text: '✦【灵魂交谈】亲自对爱丽丝许下关于风与未来的约定（AI 收束）',
               do: function () {
                 launchVignetteFreeTalk('v_alice_shade', 'alice', '爱丽丝按住干叶书签，轻声问长大后风会不会把姐妹吹散', 'independence', [
                   duoLine(['sylvia', '希尔维亚', 'smile'], ['alice', '爱丽丝', 'happy'], 'alice', '……好。这枚干叶书签我夹好了，一言为定。'),
@@ -897,7 +927,7 @@
               ]
             },
             {
-              text: '✨【灵魂交谈】在练武场夜风里自由询问姐姐（AI 推进并进入下幕）',
+              text: '✦【灵魂交谈】在练武场夜风里自由询问姐姐（AI 推进并进入下幕）',
               do: function () {
                 launchVignetteFreeTalk('v_beatrice_practice', 'beatrice', '晚宴后你在练武场撞见偷偷拿木梳练微火控温的贝阿特丽丝', null, [
                   duoLine(['sylvia', '希尔维亚', 'normal'], ['beatrice', '贝阿特丽丝', 'sad'], 'beatrice', '……既然被你撞见了，跟你说实话也没关系。'),
@@ -948,7 +978,7 @@
               ]
             },
             {
-              text: '✨【灵魂交谈】回应姐姐想守护全家的心事（AI 收束）',
+              text: '✦【灵魂交谈】回应姐姐想守护全家的心事（AI 收束）',
               do: function () {
                 if (typeof flag === 'function') flag('heard_duke_border_worry', 1);
                 launchVignetteFreeTalk('v_beatrice_practice', 'beatrice', '贝阿特丽丝倾诉了父亲书房提到的王都边防压力，以及想保护妹妹的心意', null, [
@@ -1002,7 +1032,7 @@
               ]
             },
             {
-              text: '✨【灵魂交谈】在钟塔顶层与诺艾儿自由对话（AI 推进并进入下幕）',
+              text: '✦【灵魂交谈】在钟塔顶层与诺艾儿自由对话（AI 推进并进入下幕）',
               do: function () {
                 launchVignetteFreeTalk('v_noelle_clocktower', 'noelle', '钟塔顶层诺艾儿正笨拙面对蹭腿的橘猫，左手背写满日程表，书还拿反了', 'partnership', [
                   duoLine(['sylvia', '希尔维亚', 'smile'], ['noelle', '诺艾儿', 'normal'], 'noelle', '……把书放平就放平吧。反正旁边的石阶空着，随便坐。'),
@@ -1054,7 +1084,7 @@
               ]
             },
             {
-              text: '✨【灵魂交谈】边陪她顺猫毛边聊聊手背上的省魔课题（AI 收束）',
+              text: '✦【灵魂交谈】边陪她顺猫毛边聊聊手背上的省魔课题（AI 收束）',
               do: function () {
                 launchVignetteFreeTalk('v_noelle_clocktower', 'noelle', '橘猫在石阶吃面包屑，诺艾儿不知怎么摸猫，手背上写着省两成魔力路径', 'partnership', [
                   duoLine(['sylvia', '希尔维亚', 'smile'], ['noelle', '诺艾儿', 'smile'], 'noelle', '……下次上来看书，带杯热水就行。这只猫大概也记住你了。'),
@@ -1108,7 +1138,7 @@
               ]
             },
             {
-              text: '✨【灵魂交谈】在花坊冰雾旁自由与艾诺聊聊（AI 推进并进入下幕）',
+              text: '✦【灵魂交谈】在花坊冰雾旁自由与艾诺聊聊（AI 推进并进入下幕）',
               do: function () {
                 launchVignetteFreeTalk('v_aino_flowerhouse', 'aino', '花坊午后艾诺刚吃完温吞咖喱打了个掉雪花的小喷嚏，身旁是北极铃兰伊诺', 'kinship', [
                   duoLine(['sylvia', '希尔维亚', 'normal'], ['aino', '艾诺', 'normal'], 'aino', '……过来。趁现在手稳，给你看一样东西。'),
@@ -1161,7 +1191,7 @@
               ]
             },
             {
-              text: '✨【灵魂交谈】一边覆上恒温冰膜一边与艾诺立下约定（AI 收束）',
+              text: '✦【灵魂交谈】一边覆上恒温冰膜一边与艾诺立下约定（AI 收束）',
               do: function () {
                 unlockClue('polar_lily_bond');
                 launchVignetteFreeTalk('v_aino_flowerhouse', 'aino', '艾诺亲手演示了北极铃兰的恒温冰膜，即将毕业回赫兰前将花交接给你', 'kinship', [
@@ -1215,7 +1245,7 @@
               ]
             },
             {
-              text: '✨【灵魂交谈】在雨后纪念林与夏洛特自由交锋（AI 推进并进入下幕）',
+              text: '✦【灵魂交谈】在雨后纪念林与夏洛特自由交锋（AI 推进并进入下幕）',
               do: function () {
                 launchVignetteFreeTalk('v_charlotte_memorial', 'charlotte', '雨后纪念林夏洛特刚给两棵树挖好排水沟，耳根泛红端着架子', 'candor', [
                   duoLine(['sylvia', '希尔维亚', 'normal'], ['charlotte', '夏洛特', 'normal'], 'charlotte', '……哼，既然没有旁人在场，站在树底下歇口气也无妨。'),
@@ -1268,7 +1298,7 @@
               ]
             },
             {
-              text: '✨【灵魂交谈】就王都风向与林中默契自由回应夏洛特（AI 收束）',
+              text: '✦【灵魂交谈】就王都风向与林中默契自由回应夏洛特（AI 收束）',
               do: function () {
                 unlockClue('belmont_troop_shift');
                 launchVignetteFreeTalk('v_charlotte_memorial', 'charlotte', '夏洛特在雨后林间无意透露了贝尔蒙外务管事调换东郊私军轮值的烦闷', 'candor', [
@@ -1322,7 +1352,7 @@
               ]
             },
             {
-              text: '✨【灵魂交谈】在日落长廊宽慰海伦娜并询问盘查（AI 推进并进入下幕）',
+              text: '✦【灵魂交谈】在日落长廊宽慰海伦娜并询问盘查（AI 推进并进入下幕）',
               do: function () {
                 unlockClue('belmont_troop_shift');
                 launchVignetteFreeTalk('v_helena_corridor', 'helena', '日落长廊上海伦娜聊起回神殿的压力与边境盘查变严的心事', null, [
@@ -1372,7 +1402,7 @@
               ]
             },
             {
-              text: '✨【灵魂交谈】收下三颗星星地址笺并与海伦娜约定书信（AI 收束）',
+              text: '✦【灵魂交谈】收下三颗星星地址笺并与海伦娜约定书信（AI 收束）',
               do: function () {
                 launchVignetteFreeTalk('v_helena_corridor', 'helena', '海伦娜把画着三颗小星星的希里昂神殿通讯地址交给你，期盼以后通信', null, [
                   duoLine(['sylvia', '希尔维亚', 'smile'], ['helena', '海伦娜', 'wink'], 'helena', '约好了哦！每封信末尾我都会画上笑脸和星星，希尔维亚一定要按时吃饭！'),
@@ -1425,7 +1455,7 @@
               ]
             },
             {
-              text: '✨【灵魂交谈】就小本子上的反常记录直接询问阿琼（AI 推进并进入下幕）',
+              text: '✦【灵魂交谈】就小本子上的反常记录直接询问阿琼（AI 推进并进入下幕）',
               do: function () {
                 launchVignetteFreeTalk('v_ajun_kitchen', 'ajun', '公共厨房里阿琼的小本子上记着使团表叔转问的公爵府银杯纹章与客房换班细节', null, [
                   duoLine(['sylvia', '希尔维亚', 'serious'], ['ajun', '阿琼', 'surprised'], 'ajun', '啊，说到这个，信纸背面好像还有一句附言呢！'),
@@ -1476,7 +1506,7 @@
               ]
             },
             {
-              text: '✨【灵魂交谈】叮嘱阿琼涂掉侧门记录并锁定使团暗探线索（AI 收束）',
+              text: '✦【灵魂交谈】叮嘱阿琼涂掉侧门记录并锁定使团暗探线索（AI 收束）',
               do: function () {
                 unlockClue('bayi_banquet_leak');
                 launchVignetteFreeTalk('v_ajun_kitchen', 'ajun', '使团礼宾官借阿琼表叔打听公爵府冬假侧门与夜巡，请温和提醒单纯的阿琼涂掉宅邸记录', null, [
@@ -1536,7 +1566,7 @@
               ]
             },
             {
-              text: '✨【灵魂交谈】以「渔」的身份在夜廊与霁岚交心（AI 推进并进入下幕）',
+              text: '✦【灵魂交谈】以「渔」的身份在夜廊与霁岚交心（AI 推进并进入下幕）',
               do: function () {
                 unlockClue('wind_god_echo');
                 launchVignetteFreeTalk('v_jilan_night', 'jilan', '澄岚冬夜二楼木廊，霁岚对着院角老树与黑发少女「渔」聊起母亲留下的名字', 'hearth', [
@@ -1588,7 +1618,7 @@
               ]
             },
             {
-              text: '✨【灵魂交谈】对着半编好的紫色剑穗与霁岚定下重逢之约（AI 收束）',
+              text: '✦【灵魂交谈】对着半编好的紫色剑穗与霁岚定下重逢之约（AI 收束）',
               do: function () {
                 launchVignetteFreeTalk('v_jilan_night', 'jilan', '霁岚攥着编了一半的紫色剑穗，问「渔」开春远行后还会不会记得霁馆', 'hearth', [
                   duoLine(['sylvia', '渔', 'smile'], ['jilan', '霁岚', 'happy'], 'jilan', '好啦夜里风硬，快回屋钻被窝吧！明早第三排第四把竹剑还等着你呢！'),
@@ -1705,10 +1735,10 @@
             }
             if (typeof addItem === 'function' && typeof S !== 'undefined') {
               if (!S.inv.some(function (x) { return x.id === 'ebony_sword'; })) {
-                addItem({ id: 'ebony_sword', name: '乌木紫穗剑', icon: '🗡️', desc: '霁馆主相赠的三十年铁剑，柄端系着霁岚亲手编的紫蝶剑穗。' });
+                addItem({ id: 'ebony_sword', name: '乌木紫穗剑', icon: bdIco('sword', 16), desc: '霁馆主相赠的三十年铁剑，柄端系着霁岚亲手编的紫蝶剑穗。' });
               }
               if (c.clues.polar_lily_bond && !S.inv.some(function (x) { return x.id === 'northwind_pass'; })) {
-                addItem({ id: 'northwind_pass', name: '北风堡通关木牌', icon: '🪪', desc: '凭恒温冰膜护住巴依军需药箱后获赠的北境边关木牌。' });
+                addItem({ id: 'northwind_pass', name: '北风堡通关木牌', icon: bdIco('pass', 16), desc: '凭恒温冰膜护住巴依军需药箱后获赠的北境边关木牌。' });
               }
             }
             if (typeof S !== 'undefined') {
@@ -1768,7 +1798,7 @@
               S.mmp = (S.mmp || 12) + 12;
               S.mp = Math.min(S.mmp, (S.mp || 12) + 12);
               if (typeof addItem === 'function' && !S.inv.some(function (x) { return x.id === 'aino_academy_handkerchief'; })) {
-                addItem({ id: 'aino_academy_handkerchief', name: '雪纹手帕', icon: '❄️', desc: '艾诺毕业前留在冰系窗台的亚麻手帕，角上绣着赫兰六瓣冰纹。' });
+                addItem({ id: 'aino_academy_handkerchief', name: '雪纹手帕', icon: bdIco('snowflake', 16), desc: '艾诺毕业前留在冰系窗台的亚麻手帕，角上绣着赫兰六瓣冰纹。' });
               }
             }
           }
@@ -1790,7 +1820,7 @@
               S.mag = (S.mag || 4) + 5;
               S.atk = (S.atk || 1) + 2;
               if (typeof addItem === 'function' && !S.inv.some(function (x) { return x.id === 'aino_frost_shard'; })) {
-                addItem({ id: 'aino_frost_shard', name: '钢冰试炼笺', icon: '🧊', desc: '艾诺凝结的零气泡薄冰铭牌，刻着赫兰枪冰三式发力轨迹。' });
+                addItem({ id: 'aino_frost_shard', name: '钢冰试炼笺', icon: bdIco('crystal', 16), desc: '艾诺凝结的零气泡薄冰铭牌，刻着赫兰枪冰三式发力轨迹。' });
               }
             }
           }
@@ -1879,7 +1909,7 @@
               S.mp = Math.min(S.mmp, (S.mp || 12) + 15);
               if (S.stats) S.stats.mind = Math.min(100, (S.stats.mind || 15) + 3);
               if (typeof addItem === 'function' && !S.inv.some(function (x) { return x.id === 'noelle_manuscript'; })) {
-                addItem({ id: 'noelle_manuscript', name: '诺艾儿的省魔手稿', icon: '📐', desc: '夹着橘猫胡须书签的手写回路册，凝结着三年并肩推演的默契。' });
+                addItem({ id: 'noelle_manuscript', name: '诺艾儿的省魔手稿', icon: bdIco('compass', 16), desc: '夹着橘猫胡须书签的手写回路册，凝结着三年并肩推演的默契。' });
               }
             }
           }
@@ -1900,7 +1930,7 @@
             if (typeof S !== 'undefined') {
               S.mdef = (S.mdef || 0) + 4;
               if (typeof addItem === 'function' && !S.inv.some(function (x) { return x.id === 'noelle_errata'; })) {
-                addItem({ id: 'noelle_errata', name: '精算勘误册', icon: '📓', desc: '字迹严整如尺的高阶防御术式勘误册，一笔一画算清所有骄傲与人情。' });
+                addItem({ id: 'noelle_errata', name: '精算勘误册', icon: bdIco('notebook', 16), desc: '字迹严整如尺的高阶防御术式勘误册，一笔一画算清所有骄傲与人情。' });
               }
             }
           }
@@ -1927,7 +1957,7 @@
             var c = ensureCausalState();
             c.payoffsTriggered.alice_arc = true;
             if (typeof addItem === 'function' && typeof S !== 'undefined' && !S.inv.some(function (x) { return x.id === 'alice_flower_cake'; })) {
-              addItem({ id: 'alice_flower_cake', name: '爱丽丝的花饼', icon: '🥮', desc: '花瓣摆成歪斜笑脸的蜂蜜烤饼，夹着独立迎风的约定。' });
+              addItem({ id: 'alice_flower_cake', name: '爱丽丝的花饼', icon: bdIco('cake', 16), desc: '花瓣摆成歪斜笑脸的蜂蜜烤饼，夹着独立迎风的约定。' });
             }
           }
         },
@@ -1943,7 +1973,7 @@
             var c = ensureCausalState();
             c.payoffsTriggered.alice_arc = true;
             if (typeof addItem === 'function' && typeof S !== 'undefined' && !S.inv.some(function (x) { return x.id === 'alice_flower_cake'; })) {
-              addItem({ id: 'alice_flower_cake', name: '爱丽丝的花饼', icon: '🥮', desc: '花瓣摆成笑脸的蜂蜜烤饼，藏着寸步难离的眷恋。' });
+              addItem({ id: 'alice_flower_cake', name: '爱丽丝的花饼', icon: bdIco('cake', 16), desc: '花瓣摆成笑脸的蜂蜜烤饼，藏着寸步难离的眷恋。' });
             }
           }
         },
@@ -1972,7 +2002,7 @@
               S.mag = (S.mag || 4) + 6;
               if (S.stats) S.stats.mind = Math.min(100, (S.stats.mind || 15) + 5);
               if (typeof addItem === 'function' && !S.inv.some(function (x) { return x.id === 'frost_cipher'; })) {
-                addItem({ id: 'frost_cipher', name: '霜封暗记', icon: '❄️', desc: '政变前夜拼出暗流后父亲交托的隐秘联络银徽。' });
+                addItem({ id: 'frost_cipher', name: '霜封暗记', icon: bdIco('snowflake', 16), desc: '政变前夜拼出暗流后父亲交托的隐秘联络银徽。' });
               }
             }
           }
@@ -2009,7 +2039,7 @@
               S.gold = (S.gold || 0) + 15;
               S.st = S.mst || S.st;
               if (typeof addItem === 'function' && !S.inv.some(function (x) { return x.id === 'belmont_schedule'; })) {
-                addItem({ id: 'belmont_schedule', name: '无名巡防抄件', icon: '📜', desc: '带着淡淡薄荷茶香的换防时间表，字迹工整如尺量。' });
+                addItem({ id: 'belmont_schedule', name: '无名巡防抄件', icon: bdIco('scroll', 16), desc: '带着淡淡薄荷茶香的换防时间表，字迹工整如尺量。' });
               }
             }
           }
@@ -2034,7 +2064,7 @@
             if (typeof S !== 'undefined') {
               S.mag = (S.mag || 4) + 4;
               if (typeof addItem === 'function' && !S.inv.some(function (x) { return x.id === 'belmont_challenge'; })) {
-                addItem({ id: 'belmont_challenge', name: '烫金战书羊皮笺', icon: '👑', desc: '夏洛特离校前塞进书袋的约战书，字里行间傲气凛然。' });
+                addItem({ id: 'belmont_challenge', name: '烫金战书羊皮笺', icon: bdIco('crown', 16), desc: '夏洛特离校前塞进书袋的约战书，字里行间傲气凛然。' });
               }
             }
           }
@@ -2123,7 +2153,7 @@
               c.payoffsTriggered.northern_vow = true;
               if (typeof flag === 'function') flag('left_jikan', 1);
               if (typeof addItem === 'function' && typeof S !== 'undefined') {
-                addItem({ id: 'northwind_pass', name: '北风堡通关木牌', icon: '🪪', desc: '凭恒温冰膜护住巴依军需药箱后获赠的北境边关木牌。' });
+                addItem({ id: 'northwind_pass', name: '北风堡通关木牌', icon: bdIco('pass', 16), desc: '凭恒温冰膜护住巴依军需药箱后获赠的北境边关木牌。' });
               }
               if (typeof S !== 'undefined') {
                 S.atk = (S.atk || 1) + 4;
@@ -2176,7 +2206,7 @@
     var echoLine = getEchoFor('alice', mode === 'obsession' ? '姐姐大人在哪里，我就在哪里。' : '风往哪边吹由我自己去听。');
     if (mode === 'obsession') {
       article.innerHTML =
-        '<div class="letter-crest">❄</div>' +
+        '<div class="letter-crest">' + bdIco('snowflake', 20) + '</div>' +
         '<p class="letter-to">姐姐大人：</p>' +
         '<p>冰系窗台的北极铃兰我每天下午两点十三分都去看过。<br>右腕上的碎贝壳手绳也一直系得很紧。</p>' +
         '<p>我一直记着——「' + escapeHtml(echoLine) + '」</p>' +
@@ -2184,7 +2214,7 @@
         '<p class="letter-sign">爱丽丝</p>';
     } else {
       article.innerHTML =
-        '<div class="letter-crest">❄</div>' +
+        '<div class="letter-crest">' + bdIco('snowflake', 20) + '</div>' +
         '<p class="letter-to">姐姐大人：</p>' +
         '<p>风系进阶课的气流偏转我已经能独立完成了。<br>最近还在图书馆借了赫兰语辞典。</p>' +
         '<p>如姐姐大人所言——「' + escapeHtml(echoLine) + '」</p>' +
@@ -2216,7 +2246,7 @@
         id: 's_jikan_north_vow',
         title: '辞行北上·乌木紫穗之契',
         charId: 'jilan',
-        icon: '🗡️',
+        icon: bdIco('diamond'),
         locs: ['jikan'],
         x: 88, y: 62,
         isPayoffScene: true
@@ -2245,7 +2275,7 @@
       var posY = Math.max(17, Math.min(64, typeof v.y === 'number' ? v.y : (26 + idx * 10)));
       btn.style.left = posX + '%';
       btn.style.top = posY + '%';
-      btn.innerHTML = '<span class="hs-icon">' + v.icon + '</span>✨ ' + v.title;
+      btn.innerHTML = '<span class="hs-icon">' + v.icon + '</span><span class="hs-title">' + v.title + '</span>';
       btn.onclick = function (e) {
         if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
         if (!st.freeRoam) return;
@@ -2482,7 +2512,7 @@
   }
 
   /**
-   * 绘制重返未来1999复古星轨风格「4枚暗线线索星轨连线 SVG」
+   * 绘制冰晶星轨天球档案风格「4枚暗线线索星轨连线 SVG」
    */
   function buildClueStarWebSVG(c) {
     var clues = (c && c.clues) || {};
@@ -2496,84 +2526,95 @@
 
     function threadLine(x1, y1, x2, y2, lit, major) {
       if (lit) {
-        return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" ' +
-          'stroke="#e8c678" stroke-width="' + (major ? '2.1' : '1.4') + '" stroke-opacity="0.92" filter="url(#sw-glow)"/>';
+        return '<line class="sw-thread is-lit' + (major ? ' is-major' : '') + '" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" ' +
+          'stroke="#1658EB" stroke-width="' + (major ? '2.6' : '2.2') + '" stroke-opacity="0.96" filter="url(#sw-glow)"/>';
       }
-      return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" ' +
-        'stroke="#7ea8d8" stroke-width="1" stroke-opacity="0.28" stroke-dasharray="4 4"/>';
+      return '<line class="sw-thread is-unlit" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" ' +
+        'stroke="rgba(22,88,235,0.34)" stroke-width="1.25" stroke-dasharray="4 4"/>';
     }
 
     function clueNode(cx, cy, lit, label, sub, align) {
       var textAnchor = align || 'middle';
-      var tx = align === 'start' ? cx + 16 : (align === 'end' ? cx - 16 : cx);
+      var tx = align === 'start' ? cx + 19 : (align === 'end' ? cx - 19 : cx);
       var ty = align === 'middle' ? cy + 24 : cy - 2;
-      var subY = ty + 13;
+      var subY = ty + 15;
       if (lit) {
         return (
           '<g class="sw-node lit">' +
-            '<circle cx="' + cx + '" cy="' + cy + '" r="13" fill="rgba(232,198,120,0.14)" stroke="#e8c678" stroke-width="1.2" filter="url(#sw-glow)"/>' +
-            '<polygon points="' + cx + ',' + (cy - 7) + ' ' + (cx + 5.5) + ',' + cy + ' ' + cx + ',' + (cy + 7) + ' ' + (cx - 5.5) + ',' + cy + '" fill="#f8e3a8" stroke="#c89b44" stroke-width="0.9"/>' +
-            '<text x="' + tx + '" y="' + ty + '" text-anchor="' + textAnchor + '" fill="#f7e8c0" font-size="11.5" font-weight="600">' + label + '</text>' +
-            '<text x="' + tx + '" y="' + subY + '" text-anchor="' + textAnchor + '" fill="#b9d8f8" font-size="9.5">' + sub + '</text>' +
+            '<circle class="sw-node-glow" cx="' + cx + '" cy="' + cy + '" r="15" fill="rgba(56,189,248,0.28)" stroke="none"/>' +
+            '<circle class="sw-node-halo" cx="' + cx + '" cy="' + cy + '" r="11.5" fill="rgba(255,255,255,0.92)" stroke="#1658EB" stroke-width="1.8"/>' +
+            '<polygon class="sw-node-diamond" points="' + cx + ',' + (cy - 6.5) + ' ' + (cx + 5.2) + ',' + cy + ' ' + cx + ',' + (cy + 6.5) + ' ' + (cx - 5.2) + ',' + cy + '" fill="#1658EB" stroke="#FFFFFF" stroke-width="1.1"/>' +
+            '<text class="sw-node-title" x="' + tx + '" y="' + ty + '" text-anchor="' + textAnchor + '" fill="#0B1C3D" font-size="12.5" font-weight="700">' + label + '</text>' +
+            '<text class="sw-node-sub" x="' + tx + '" y="' + subY + '" text-anchor="' + textAnchor + '" fill="#1E4080" font-size="11.5" font-weight="600">' + sub + '</text>' +
           '</g>'
         );
       }
       return (
-        '<g class="sw-node locked" opacity="0.68">' +
-          '<circle cx="' + cx + '" cy="' + cy + '" r="11" fill="rgba(16,28,56,0.65)" stroke="#7ea8d8" stroke-width="1" stroke-dasharray="3 3"/>' +
-          '<circle cx="' + cx + '" cy="' + cy + '" r="3" fill="#7ea8d8" opacity="0.55"/>' +
-          '<text x="' + tx + '" y="' + ty + '" text-anchor="' + textAnchor + '" fill="#9cb7d8" font-size="11">◇ 未启封</text>' +
-          '<text x="' + tx + '" y="' + subY + '" text-anchor="' + textAnchor + '" fill="#738fae" font-size="9.5">' + sub + '</text>' +
+        '<g class="sw-node locked">' +
+          '<circle class="sw-node-halo" cx="' + cx + '" cy="' + cy + '" r="11" fill="rgba(255,255,255,0.82)" stroke="rgba(22,88,235,0.44)" stroke-width="1.2" stroke-dasharray="3 3"/>' +
+          '<circle class="sw-node-dot" cx="' + cx + '" cy="' + cy + '" r="3.2" fill="#2563EB"/>' +
+          '<text class="sw-node-title" x="' + tx + '" y="' + ty + '" text-anchor="' + textAnchor + '" fill="#243E6B" font-size="12" font-weight="600">◇ 未启封</text>' +
+          '<text class="sw-node-sub" x="' + tx + '" y="' + subY + '" text-anchor="' + textAnchor + '" fill="#3A5685" font-size="11.5">' + sub + '</text>' +
         '</g>'
       );
     }
 
     var litCount = (n1 ? 1 : 0) + (n2 ? 1 : 0) + (n3 ? 1 : 0) + (n4 ? 1 : 0);
-    var coreStroke = litCount >= 2 ? '#e8c678' : '#7ec8ff';
-    var coreFill = litCount >= 2 ? 'rgba(232,198,120,0.18)' : 'rgba(126,200,255,0.12)';
 
     return (
-      '<div class="starweb-archive-box" style="position:relative;border:1px solid rgba(216,180,103,0.34);border-radius:10px;padding:8px 10px;background:radial-gradient(circle at 50% 48%, rgba(28,44,82,0.72), rgba(8,14,30,0.92));overflow:hidden;">' +
-        '<svg class="causal-starweb-svg" viewBox="0 0 520 184" width="100%" height="184" role="img" aria-label="暗线线索星轨连线图" style="display:block;max-height:190px;">' +
+      '<div class="starweb-archive-box">' +
+        '<svg class="causal-starweb-svg" viewBox="0 0 520 172" width="100%" height="172" role="img" aria-label="暗线线索星轨连线图">' +
           '<defs>' +
             '<filter id="sw-glow" x="-30%" y="-30%" width="160%" height="160%">' +
-              '<feGaussianBlur stdDeviation="2.4" result="blur"/>' +
+              '<feGaussianBlur stdDeviation="1.4" result="blur"/>' +
               '<feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>' +
             '</filter>' +
           '</defs>' +
-          '<circle cx="260" cy="92" r="76" fill="none" stroke="rgba(216,180,103,0.14)" stroke-width="1" stroke-dasharray="2 5"/>' +
-          '<circle cx="260" cy="92" r="46" fill="none" stroke="rgba(126,200,255,0.14)" stroke-width="1"/>' +
-          '<line x1="20" y1="92" x2="500" y2="92" stroke="rgba(216,180,103,0.08)" stroke-width="1"/>' +
-          '<line x1="260" y1="14" x2="260" y2="170" stroke="rgba(216,180,103,0.08)" stroke-width="1"/>' +
+          '<circle class="sw-ring-outer" cx="260" cy="86" r="70" fill="none" stroke="rgba(22,88,235,0.18)" stroke-width="1" stroke-dasharray="2 5"/>' +
+          '<circle class="sw-ring-inner" cx="260" cy="86" r="42" fill="none" stroke="rgba(56,189,248,0.34)" stroke-width="1"/>' +
+          '<line class="sw-axis" x1="20" y1="86" x2="500" y2="86" stroke="rgba(22,88,235,0.12)" stroke-width="1"/>' +
+          '<line class="sw-axis" x1="260" y1="12" x2="260" y2="160" stroke="rgba(22,88,235,0.12)" stroke-width="1"/>' +
           // 中心枢纽连线
-          threadLine(260, 92, 118, 46, n1, false) +
-          threadLine(260, 92, 118, 138, n2, false) +
-          threadLine(260, 92, 402, 46, n3, false) +
-          threadLine(260, 92, 402, 138, n4, false) +
+          threadLine(260, 86, 126, 42, n1, false) +
+          threadLine(260, 86, 126, 130, n2, false) +
+          threadLine(260, 86, 394, 42, n3, false) +
+          threadLine(260, 86, 394, 130, n4, false) +
           // 同脉强共振连线（王都暗潮脉 / 极北旧风脉）
-          threadLine(118, 46, 118, 138, darkTideLit, true) +
-          threadLine(402, 46, 402, 138, northWindLit, true) +
+          threadLine(126, 42, 126, 130, darkTideLit, true) +
+          threadLine(394, 42, 394, 130, northWindLit, true) +
           // 跨卷星轨细丝
-          threadLine(118, 46, 402, 46, crossLit && n1 && n3, false) +
-          threadLine(118, 138, 402, 138, crossLit && n2 && n4, false) +
-          // 中央黄铜星盘核心
+          threadLine(126, 42, 394, 42, crossLit && n1 && n3, false) +
+          threadLine(126, 130, 394, 130, crossLit && n2 && n4, false) +
+          // 中央冰晶星盘核心
           '<g class="sw-core">' +
-            '<circle cx="260" cy="92" r="22" fill="' + coreFill + '" stroke="' + coreStroke + '" stroke-width="1.3"/>' +
-            '<polygon points="260,76 265,87 276,92 265,97 260,108 255,97 244,92 255,87" fill="#f4dca0" opacity="' + (litCount ? '0.92' : '0.45') + '"/>' +
-            '<text x="260" y="131" text-anchor="middle" fill="#e6cfa0" font-size="9.5" letter-spacing="1.2">星轨枢纽 · ' + litCount + '/4</text>' +
+            '<circle class="sw-core-ring" cx="260" cy="86" r="21" fill="rgba(255,255,255,0.82)" stroke="#1658EB" stroke-width="1.7"/>' +
+            '<polygon class="sw-core-star" points="260,71 264.8,81.2 275,86 264.8,90.8 260,101 255.2,90.8 245,86 255.2,81.2" fill="#1658EB" stroke="#FFFFFF" stroke-width="0.9" opacity="' + (litCount ? '0.98' : '0.84') + '"/>' +
+            '<text class="sw-core-label" x="260" y="125" text-anchor="middle" fill="#0B1C3D" font-size="11.5" font-weight="700" letter-spacing="1">星轨枢纽 · ' + litCount + '/4</text>' +
           '</g>' +
           // 四枚暗线星标
-          clueNode(118, 46, n1, '宴席暗探', '巴依食单暗线', 'end') +
-          clueNode(118, 138, n2, '王都调防', '城郊封锁苗头', 'end') +
-          clueNode(402, 46, n3, '北极铃兰', '恒温冰膜印记', 'start') +
-          clueNode(402, 138, n4, '院角老树', '故人「岚」之名', 'start') +
+          clueNode(126, 42, n1, '宴席暗探', '巴依食单暗线', 'end') +
+          clueNode(126, 130, n2, '王都调防', '城郊封锁苗头', 'end') +
+          clueNode(394, 42, n3, '北极铃兰', '恒温冰膜印记', 'start') +
+          clueNode(394, 130, n4, '院角老树', '故人「岚」之名', 'start') +
         '</svg>' +
       '</div>'
     );
   }
 
+  function canOpenEndingForecast(targetS) {
+    var st = targetS || getStateObj();
+    if (!st) return false;
+    if (root.RaisingHub && typeof root.RaisingHub.canOpenEndingForecast === 'function') {
+      try { return !!root.RaisingHub.canOpenEndingForecast(st); } catch (e) {}
+    }
+    var f = st.flags || {};
+    return st.phase === 'journey'
+      || !!(f.did_turnpoint || f.arrived_jikan || f.ch_distant_wind_1 || f.ch_distant_wind_2 || f.ch_interlude_white_night || f.ch_vol4_frost_watch || f.ch_vol4_wind_echo)
+      || Number(st.ageY || 0) >= 15;
+  }
+
   /**
-   * 渲染面板专属标签页：「命运暗流 · 星轨档案」（重返未来1999 复古黄铜星轨档案风格）
+   * 渲染面板专属标签页：「命运暗流 · 星轨档案」（冰晶星轨天球档案风格）
    * 注意：文案规避“记”+“忆”连用，保持既有面板标签测试 100% 兼容！
    */
   function renderCausalPanelHTML(targetS) {
@@ -2599,9 +2640,9 @@
             '<span class="as-pole left">' + s.leftLabel + ' <em>' + s.leftVal + '</em></span>' +
             '<span class="as-pole right"><em>' + s.rightVal + '</em> ' + s.rightLabel + '</span>' +
           '</div>' +
-          '<div class="as-track" style="overflow:visible;">' +
-            '<div class="as-fill-left" style="position:absolute;left:0;top:0;bottom:0;width:' + leftGlow + '%;border-radius:999px 0 0 999px;background:linear-gradient(90deg,rgba(126,200,255,0.72),rgba(126,200,255,0.18));"></div>' +
-            '<div class="as-fill-right" style="position:absolute;right:0;top:0;bottom:0;width:' + rightGlow + '%;border-radius:0 999px 999px 0;background:linear-gradient(270deg,rgba(232,180,104,0.78),rgba(217,115,140,0.22));"></div>' +
+          '<div class="as-track">' +
+            '<div class="as-fill-left" style="width:' + leftGlow + '%"></div>' +
+            '<div class="as-fill-right" style="width:' + rightGlow + '%"></div>' +
             '<div class="as-star" style="left:' + s.ratio + '%">✦</div>' +
           '</div>' +
           '<div class="as-desc">' + (s.dominant === s.rightKey ? s.rightDesc : s.leftDesc) + '</div>' +
@@ -2648,37 +2689,45 @@
           for (var wi = 0; wi < w; wi++) stars += '★';
           return (
             '<div class="echo-chip" data-echo-weight="' + w + '">' +
-              '<span class="ec-quote"><em style="color:#e8c678;font-style:normal;margin-right:6px;font-size:10.5px;">' + stars + '</em>「' + escapeHtml(e.quote) + '」</span>' +
+              '<span class="ec-quote"><em class="ec-stars">' + stars + '</em>「' + escapeHtml(e.quote) + '」</span>' +
               '<span class="ec-meta">— ' + escapeHtml(e.speaker || '回响') + ' · ' + escapeHtml(e.context || '往昔') + '</span>' +
             '</div>'
           );
         }).join('')
       : '<p class="causal-empty">尚未留下高权重诺言。前往各地点带「✦」的小场景或开启灵魂交谈，你的话语将在重逢时回响。</p>';
 
+    var canForecast = canOpenEndingForecast(st);
     var tendencyCardHtml =
-      '<div class="cd-tendency-card" data-ending-tendency="' + tendency.id + '" style="padding:10px 13px;border-radius:10px;border:1px solid rgba(216,180,103,0.44);background:linear-gradient(135deg,rgba(42,33,18,0.46),rgba(14,24,48,0.86));display:flex;flex-direction:column;gap:5px;">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">' +
-          '<span style="font-size:12.5px;color:#f6e3b0;font-weight:700;letter-spacing:0.06em;">◈ 终局星轨预兆 · ' + escapeHtml(tendency.title) + '</span>' +
-          '<span style="font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid rgba(232,198,120,0.52);color:#fae8b8;background:rgba(216,180,103,0.14);">' + escapeHtml(tendency.badge) + ' · 收束度 ' + tendency.confidence + '%</span>' +
+      '<div class="cd-tendency-card" data-ending-tendency="' + tendency.id + '">' +
+        '<div class="cd-tendency-head">' +
+          '<span class="cd-tendency-title">◈ 终局星轨预兆 · ' + escapeHtml(tendency.title) + '</span>' +
+          '<div class="cd-tendency-actions">' +
+            '<span class="cd-tendency-badge">' + escapeHtml(tendency.badge) + ' · 收束度 ' + tendency.confidence + '%</span>' +
+            '<button type="button" id="btn-open-ending-forecast" class="cd-forecast-btn"' + (canForecast ? '' : ' disabled') +
+              ' title="' + (canForecast ? '推演当前星轨指向的终局归宿' : '推进至第三卷后启封终局推演') + '">' +
+              (canForecast ? '✦ 开启终局星轨推演 ▸' : '◇ 终局推演（第三卷启封）') +
+            '</button>' +
+          '</div>' +
         '</div>' +
-        '<div style="font-size:11.5px;color:rgba(220,232,250,0.84);line-height:1.5;">' + escapeHtml(tendency.summary) + '</div>' +
+        '<div class="cd-tendency-summary">' + escapeHtml(tendency.summary) + '</div>' +
       '</div>';
 
     return (
       '<div class="causal-dashboard">' +
         '<div class="cd-banner">' +
           '<div><b>✦ 命运暗流 · 星轨档案</b><span>五组关系双轴、暗线星轨与高权重往昔回声在此交汇，折射终局分流</span></div>' +
-          '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">' +
+          '<div class="cd-pills">' +
             '<span class="cd-pill">小场景 ' + doneCount + '/8</span>' +
             '<span class="cd-pill">星轨拼图 ' + litClues + '/4</span>' +
             '<span class="cd-pill">已变向 ' + triggeredPayoffs + '/6</span>' +
           '</div>' +
         '</div>' +
         tendencyCardHtml +
+        '<h4 class="cd-sec-title">暗线星轨连线图</h4>' +
+        starWebHtml +
         '<h4 class="cd-sec-title">关系双轴光轨（五重羁绊天平）</h4>' +
         '<div class="astral-scales-grid">' + scalesHtml + '</div>' +
-        '<h4 class="cd-sec-title">暗线星轨连线图与情报档案</h4>' +
-        starWebHtml +
+        '<h4 class="cd-sec-title">暗线情报档案</h4>' +
         '<div class="clues-grid">' + cluesHtml + '</div>' +
         '<h4 class="cd-sec-title">主线蝴蝶效应台账</h4>' +
         '<div class="payoffs-list">' + payoffsHtml + '</div>' +
@@ -2688,10 +2737,27 @@
     );
   }
 
+  function bindEndingForecastTrigger() {
+    if (typeof document !== 'undefined' && !document.__bdForecastBound) {
+      document.__bdForecastBound = true;
+      document.addEventListener('click', function (ev) {
+        var btn = ev && ev.target && ev.target.closest ? ev.target.closest('#btn-open-ending-forecast') : null;
+        if (!btn || btn.disabled) return;
+        if (typeof show === 'function') show('panel', 0);
+        if (root.RaisingHub && typeof root.RaisingHub.showEndingScreen === 'function') {
+          root.RaisingHub.showEndingScreen();
+        } else if (typeof toast === 'function') {
+          toast('✦ 终局星轨推演已就绪');
+        }
+      });
+    }
+  }
+
   /**
    * 绑定并挂载到游戏引擎
    */
   function attachToEngine() {
+    bindEndingForecastTrigger();
     if (root.__branchingDirectorAttached) return;
     if (typeof SCENES === 'undefined' && (!root || !root.SCENES)) return;
     root.__branchingDirectorAttached = true;
@@ -2711,7 +2777,7 @@
         var choices = [];
         vList.forEach(function (v) {
           choices.push({
-            text: '✨【日常暗流】' + v.title,
+            text: '✦【日常暗流】' + v.title,
             do: function () { runScene(v.id); }
           });
         });
@@ -2762,6 +2828,7 @@
     getAinoArcMode: getAinoArcMode,
     canTriggerNorthernVow: canTriggerNorthernVow,
     getEndingTendency: getEndingTendency,
+    canOpenEndingForecast: canOpenEndingForecast,
     getCausalDialogueHooks: getCausalDialogueHooks,
     applyAIOutcome: applyAIOutcome,
     getCausalSnapshot: getCausalSnapshot,
@@ -2778,6 +2845,7 @@
     module.exports = API;
   }
 
+  bindEndingForecastTrigger();
   if (typeof window !== 'undefined' && (typeof SCENES !== 'undefined' || window.SCENES)) {
     attachToEngine();
   }

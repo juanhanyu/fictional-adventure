@@ -9,8 +9,29 @@
 
   function safeSfx(type) {
     try {
+      if (global.CrystalSFX && typeof global.CrystalSFX.play === 'function') {
+        global.CrystalSFX.play(type);
+        return;
+      }
       if (typeof global.sfx === 'function') global.sfx(type);
     } catch (e) {}
+  }
+
+  let _lastCardHoverSfxTs = 0;
+  function playCardHoverSfx() {
+    const now = Date.now();
+    if (now - _lastCardHoverSfxTs < 65) return;
+    _lastCardHoverSfxTs = now;
+    safeSfx('card_hover');
+  }
+
+  function logTag(cls, txt, bold) {
+    const tag = bold ? 'b' : 'span';
+    return `<${tag} class="${cls}">${txt}</${tag}>`;
+  }
+
+  function formatShortMoveName(raw) {
+    return String(raw || '').replace(/（[^）]*）\s*$/, '').replace(/\([^)]*\)\s*$/, '').trim();
   }
 
   const ELEM_LABEL = {
@@ -42,34 +63,40 @@
   }
 
   const PATH_META = {
-    HAND: { tag: '【经手构筑】', short: '经手构筑', desc: '稳固无气泡、正面高倍率与厚重防线，但具标准施法前摇' },
-    REMOTE: { tag: '【隔空瞬凝】', short: '隔空瞬凝', desc: '零前摇于敌身侧生成！唯命中【双手控场】触发截断破招，盲丢严密防反仅30%威力且易遭反制' },
-    SWORD: { tag: '【霁馆剑步】', short: '霁馆剑步', desc: '沉身卸力专克【贴身突袭】，享体能与物攻加成，且不产生冰系外显暴露波动' },
-    INSIGHT: { tag: '【看破专武】', short: '冰宫看破', desc: '经由冰晶宫殿两步微推理锁定敌方死角后解锁的单次针对性绝杀' },
+    HAND: { tag: '【经手构筑】', short: '经手构筑', pill: '经手', desc: '稳固无气泡、正面高倍率与厚重防线，但具标准施法前摇' },
+    REMOTE: { tag: '【隔空瞬凝】', short: '隔空瞬凝', pill: '隔空', desc: '零前摇于敌身侧生成！唯命中【双手控场】触发截断破招，盲丢严密防反仅30%威力且易遭反制' },
+    SWORD: { tag: '【霁馆剑步】', short: '霁馆剑步', pill: '剑步', desc: '沉身卸力专克【贴身突袭】，享体能与物攻加成，且不产生冰系外显暴露波动' },
+    INSIGHT: { tag: '【看破专武】', short: '冰宫看破', pill: '看破', desc: '经由冰晶宫殿两步微推理锁定敌方死角后解锁的单次针对性绝杀' },
   };
 
   const STANCE_META = {
     DUAL_CAST: {
+      short: '双手控场',
       badge: '双手控场 · 侧翼真空',
       hint: '宜用「隔空瞬凝」零前摇突袭 → 触发截断破招',
     },
     CLOSE_LUNGE: {
+      short: '贴身突袭',
       badge: '贴身突袭 · 高速扑杀',
       hint: '宜用「霁馆剑步 / 残像」 → 触发卸力闪反',
     },
     HEAVY_WINDUP: {
+      short: '蓄力重击',
       badge: '蓄力重击 · 重心前压',
       hint: '宜立盾稳固防线，或以冰宫看破掀翻重心',
     },
     GUARD_COUNTER: {
+      short: '严密防反',
       badge: '严密防反 · 零留白守势',
       hint: '忌盲丢隔空瞬凝，宜用「经手构筑」正面破防',
     },
     UNDER_SEEP: {
+      short: '诡道暗流',
       badge: '诡道杀机 · 暗流越位',
       hint: '致命机制！宜开启冰晶宫殿推演破绽，切忌无防备强压',
     },
     STAGGERED: {
+      short: '架势失衡',
       badge: '架势崩解 · 破招失衡',
       hint: '敌方本回合行动已中断且防线松动，承受伤害提升',
     },
@@ -77,13 +104,20 @@
 
   const CB_SVG = {
     crystal: '<svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2v16M3 6l14 8M17 6L3 14"/><polygon points="10,4.5 14.8,7.2 14.8,12.8 10,15.5 5.2,12.8 5.2,7.2"/></svg>',
+    palaceEmblem: '<svg viewBox="0 0 28 28" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="14,2 23,8 23,20 14,26 5,20 5,8" fill="rgba(56,189,248,0.14)"/><polygon points="14,6.5 19.5,14 14,21.5 8.5,14" fill="rgba(29,99,255,0.14)"/><path d="M14 2v24M5 8l18 12M23 8L5 20"/></svg>',
     wand: '<svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16L13.5 6.5"/><circle cx="14.5" cy="5.5" r="2.6"/><path d="M10.5 3.2v1.3M16.8 9.5h-1.3"/></svg>',
+    assist: '<svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2.5l2.1 5.4 5.4 2.1-5.4 2.1L10 17.5l-2.1-5.4L2.5 10l5.4-2.1L10 2.5z"/></svg>',
     retreat: '<svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5L3.5 9.5 8 14"/><path d="M3.5 9.5H13a3.5 3.5 0 010 7H10"/></svg>',
+    close: '<svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg>',
     hourglass: '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 3h9M5.5 17h9M6.5 3c0 3.8 3.5 5.2 3.5 7s-3.5 3.2-3.5 7M13.5 3c0 3.8-3.5 5.2-3.5 7s3.5 3.2 3.5 7"/></svg>',
     swords: '<svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3.5l1.5 1.5-9 9-2.5.5.5-2.5 9.5-8.5z"/><path d="M5 3.5L3.5 5l4 4M11.5 13l3 3 1.5-1.5-3-3"/></svg>',
     shield: '<svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2.5l6 2.5v4.8c0 3.8-2.6 6.8-6 7.8-3.4-1-6-4-6-7.8V5l6-2.5z"/></svg>',
     scale: '<svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v14M6 17h8M4.5 6.5h11M4.5 6.5L2.5 12h4l-2-5.5zM15.5 6.5L13.5 12h4l-2-5.5z"/></svg>',
     chart: '<svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15.5V9.5M10 15.5V4.5M16 15.5V7.5"/></svg>',
+    warn: '<svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3L2.5 16.5h15L10 3z"/><path d="M10 8v3.8M10 14.2h.01"/></svg>',
+    target: '<svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="6"/><circle cx="10" cy="10" r="2"/><path d="M10 2v2.5M10 15.5V18M2 10h2.5M15.5 10H18"/></svg>',
+    chain: '<svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 11.5l3-3"/><path d="M6.8 13.2l-1.3 1.3a2.6 2.6 0 01-3.7-3.7l2.6-2.6a2.6 2.6 0 013.7 0"/><path d="M13.2 6.8l1.3-1.3a2.6 2.6 0 013.7 3.7l-2.6 2.6a2.6 2.6 0 01-3.7 0"/></svg>',
+    palaceFrostAccent: '<svg class="cp-head-frost-svg" viewBox="0 0 120 72" width="120" height="72" fill="none" aria-hidden="true"><g stroke="#1658EB" stroke-opacity="0.22" stroke-width="1.2"><polygon points="60,6 84,20 84,48 60,62 36,48 36,20" fill="#38BDF8" fill-opacity="0.08"/><polygon points="60,16 74,34 60,52 46,34" fill="#FFFFFF" fill-opacity="0.32"/><path d="M60 2v64M32 18l56 32M88 18L32 50"/><polygon points="104,14 112,24 104,34 96,24" fill="#38BDF8" fill-opacity="0.14"/><polygon points="18,38 25,46 18,54 11,46" fill="#1658EB" fill-opacity="0.1"/></g></svg>',
   };
 
   function resolveBattleBgUrl(stageCfg) {
@@ -98,37 +132,87 @@
   }
 
   const MONSTER_ART_FILES = {
+    rowan: 'assets/monsters/rowan_eclipse.png',
+    rowan_graveyard: 'assets/monsters/rowan_eclipse.png',
+    rowan_eclipse: 'assets/monsters/rowan_eclipse.png',
     wolf_alpha: 'assets/monsters/wolf_alpha.png',
+    wolf_king: 'assets/monsters/wolf_alpha.png',
+    north_forest_hunt: 'assets/monsters/wolf_alpha.png',
+    pack_wolf: 'assets/monsters/pack_wolf.png',
+    wolf: 'assets/monsters/pack_wolf.png',
     wolf_b: 'assets/monsters/pack_wolf.png',
     wolf_c: 'assets/monsters/pack_wolf.png',
     wolf_d: 'assets/monsters/pack_wolf.png',
-    frost_hound_a: 'assets/monsters/pack_wolf.png',
-    frost_hound_b: 'assets/monsters/pack_wolf.png',
-    pack_wolf: 'assets/monsters/pack_wolf.png',
     shadow_jackal: 'assets/monsters/shadow_jackal.png',
-    ridge_claw: 'assets/monsters/shadow_jackal.png',
     jackal: 'assets/monsters/shadow_jackal.png',
     tundra_brute: 'assets/monsters/tundra_brute.png',
     hulan_brute: 'assets/monsters/tundra_brute.png',
+    boar: 'assets/monsters/tundra_brute.png',
+    golem: 'assets/monsters/tundra_brute.png',
+    frost_hound: 'assets/monsters/frost_hound.png',
+    frost_hound_a: 'assets/monsters/frost_hound.png',
+    frost_hound_b: 'assets/monsters/frost_hound.png',
+    ice_wolf: 'assets/monsters/frost_hound.png',
     abyss_behemoth: 'assets/monsters/abyss_behemoth.png',
     hulan_lord: 'assets/monsters/abyss_behemoth.png',
-    rowan: 'assets/monsters/rowan_eclipse.png',
-    rowan_graveyard: 'assets/monsters/rowan_eclipse.png',
+    hulan_beast_tide: 'assets/monsters/abyss_behemoth.png',
+    ridge_claw: 'assets/monsters/ridge_claw.png',
+    jackal_minor: 'assets/monsters/ridge_claw.png',
+    corridor_vanguard: 'assets/monsters/corridor_vanguard.png',
+    inquisitor: 'assets/monsters/corridor_vanguard.png',
+    flame_mage: 'assets/monsters/flame_mage.png',
+    flame_mage_a: 'assets/monsters/flame_mage.png',
+    slime_fire: 'assets/monsters/flame_mage.png',
     eastwing_commander: 'assets/monsters/eastwing_commander.png',
-    corridor_vanguard: 'assets/monsters/eastwing_commander.png',
-    flame_mage_a: 'assets/monsters/eastwing_commander.png',
-    turning_point_corridor: 'assets/monsters/eastwing_commander.png',
     eastwing: 'assets/monsters/eastwing_commander.png',
+    turning_point_corridor: 'assets/monsters/eastwing_commander.png',
+    wind_god_tempest: 'assets/monsters/wind_god_tempest.png',
     wind_god_avatar: 'assets/monsters/wind_god_tempest.png',
     wind_god_eye: 'assets/monsters/wind_god_tempest.png',
+    wind_god: 'assets/monsters/wind_god_tempest.png',
+    frost_lizard: 'assets/monsters/frost_lizard.png',
   };
 
   function isJsdomEnv() {
-    return typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent || '');
+    try {
+      const ua = typeof navigator !== 'undefined' && navigator.userAgent ? navigator.userAgent : '';
+      return /jsdom/i.test(ua);
+    } catch (e) {
+      return false;
+    }
   }
 
+  function isCoarseTouchDevice() {
+    if (isJsdomEnv()) return false;
+    try {
+      return !!(
+        typeof global !== 'undefined' &&
+        typeof global.matchMedia === 'function' &&
+        global.matchMedia('(hover: none), (pointer: coarse)').matches
+      );
+    } catch (e) {
+      return false;
+    }
+  }
+
+  const DEFAULT_INSTALLED_MONSTER_ART = [
+    'assets/monsters/rowan_eclipse.png',
+    'assets/monsters/wolf_alpha.png',
+    'assets/monsters/pack_wolf.png',
+    'assets/monsters/shadow_jackal.png',
+    'assets/monsters/tundra_brute.png',
+    'assets/monsters/frost_hound.png',
+    'assets/monsters/abyss_behemoth.png',
+    'assets/monsters/ridge_claw.png',
+    'assets/monsters/corridor_vanguard.png',
+    'assets/monsters/eastwing_commander.png',
+    'assets/monsters/frost_lizard.png',
+  ];
+
   function isMonsterArtEnabled(key, url) {
-    const installed = (typeof window !== 'undefined' && window.MONSTER_ART_INSTALLED) || null;
+    const raw = typeof window !== 'undefined' ? window.MONSTER_ART_INSTALLED : undefined;
+    if (raw === false) return false;
+    const installed = raw !== undefined && raw !== null ? raw : (isJsdomEnv() ? null : DEFAULT_INSTALLED_MONSTER_ART);
     if (!installed) return false;
     if (installed === true) return true;
     if (Array.isArray(installed)) return installed.includes(key) || installed.includes(url);
@@ -146,6 +230,13 @@
     return null;
   }
 
+  const HUMANOID_MONSTER_ART = new Set([
+    'assets/monsters/rowan_eclipse.png',
+    'assets/monsters/corridor_vanguard.png',
+    'assets/monsters/eastwing_commander.png',
+    'assets/monsters/flame_mage.png',
+  ]);
+
   function renderEnemyVisualHTML(opts) {
     opts = opts || {};
     const alt = String(opts.alt || '').replace(/"/g, '&quot;');
@@ -153,18 +244,23 @@
     const monsterUrl = resolveMonsterArtUrl(opts.monsterKeys || []);
     const crestKey = opts.crestKey || '';
     const jsdom = isJsdomEnv();
+    const isCgPortrait = !!(charImg && /(?:fengshen_normal\.png|assets\/cg\/)/i.test(charImg));
+    const isHumanoidArt = !!(monsterUrl && HUMANOID_MONSTER_ART.has(monsterUrl));
+    const monsterCls = isHumanoidArt ? 'cb-monster-img is-humanoid' : 'cb-monster-img';
 
     if (charImg) {
       if (monsterUrl && !jsdom) {
         const safeChar = String(charImg).replace(/'/g, "\\'");
         return {
           isSvg: false,
-          html: `<img src="${monsterUrl}" class="cb-monster-img" alt="${alt}" onerror="this.onerror=null;this.src='${safeChar}';" />`,
+          isCgPortrait: false,
+          html: `<img src="${monsterUrl}" class="${monsterCls}" alt="${alt}" onerror="this.onerror=null;this.src='${safeChar}';${isCgPortrait ? "this.classList.add('is-cg-portrait');" : ''}" />`,
         };
       }
       return {
         isSvg: false,
-        html: `<img src="${charImg}" alt="${alt}" />`,
+        isCgPortrait,
+        html: `<img src="${charImg}"${isCgPortrait ? ' class="is-cg-portrait"' : ''} alt="${alt}" />`,
       };
     }
 
@@ -172,11 +268,13 @@
     if (monsterUrl && !jsdom) {
       return {
         isSvg: true,
-        html: `<img src="${monsterUrl}" class="cb-monster-img" alt="${alt}" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='flex';" /><span class="cb-crest-fallback" style="display:none">${svgHtml}</span>`,
+        isCgPortrait: false,
+        html: `<img src="${monsterUrl}" class="${monsterCls}" alt="${alt}" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='flex';" /><span class="cb-crest-fallback" style="display:none">${svgHtml}</span>`,
       };
     }
     return {
       isSvg: true,
+      isCgPortrait: false,
       html: svgHtml,
     };
   }
@@ -237,8 +335,8 @@
         '<path d="M48 74l6 8 6-6 6 6 6-8" stroke="#e4eefc" stroke-width="2" stroke-linecap="round"/>' +
       '</svg>';
     }
-    // 赫兰冻土重甲兽 / 霜渊裂地兽领主 — 冰岩晶核重甲徽章
-    if (k.indexOf('hulan') >= 0 || k.indexOf('lord') >= 0 || k.indexOf('behemoth') >= 0 || k.indexOf('brute') >= 0) {
+    // 赫兰冻土重甲兽 / 霜渊裂地兽领主 / 裂岩冰蜥 — 冰岩晶核重甲徽章
+    if (k.indexOf('hulan') >= 0 || k.indexOf('lord') >= 0 || k.indexOf('behemoth') >= 0 || k.indexOf('brute') >= 0 || k.indexOf('lizard') >= 0) {
       return '<svg viewBox="0 0 120 120" fill="none" aria-hidden="true">' +
         '<circle cx="60" cy="60" r="52" stroke="rgba(139,211,255,0.34)" stroke-width="1.5"/>' +
         '<path d="M22 44L36 22L50 38L60 16L70 38L84 22L98 44L88 86L60 104L32 86Z" fill="rgba(14,34,68,0.88)" stroke="#8bd3ff" stroke-width="2.2"/>' +
@@ -285,6 +383,7 @@
       power: 0.72,
       atkKind: 'atk',
       exposure: 0,
+      shortDesc: '零耗蓝平斩 · 无魔战回蓝',
       desc: '基础挥击，零耗蓝，不触发魔战循环，对高防与风步收效甚微。',
     },
 
@@ -301,6 +400,7 @@
       exposure: 0,
       clearBlind: true,
       douseFire: true,
+      shortDesc: '克火净尘 · 0冰暴露',
       desc: '经手压缩水流冲击，克制火系并冲净扬尘遮眼，零冰系暴露。',
     },
     hand_ice_crystal: {
@@ -314,6 +414,7 @@
       atkKind: 'matk',
       exposure: 66,
       chill: 1,
+      shortDesc: '破盾高伤 · 附寒颤1',
       desc: '无气泡高密度凝冰直射，正面破盾力强，但施法路径较长。',
     },
     hand_ice_wall: {
@@ -330,6 +431,7 @@
       exposure: 65,
       shieldBase: 26,
       shieldScale: 0.55,
+      shortDesc: '基础厚盾 · 冷却1回合',
       desc: '童年期习得的基础经手冰墙（冷却1回合），稳健抵御正面冲击。',
     },
     hand_frost_floor: {
@@ -345,6 +447,7 @@
       cooldown: 1,
       exposure: 60,
       layFrostFloor: 2,
+      shortDesc: '铺冰2回合 · 窄道锁腿',
       desc: '沿地表悄然铺开薄冰（持续2回合，冷却1回合），待敌穿过窄道时以冰晶锁腿！',
     },
     hand_root_shield: {
@@ -364,6 +467,7 @@
       rooted: 1,
       iceThorns: 1,
       protectCrate: 32,
+      shortDesc: '生根厚盾 · 防滑护药箱',
       desc: '魔力入地生根立盾（冷却1回合），防冰面打滑并协防药箱。',
     },
     hand_water_veil: {
@@ -381,6 +485,7 @@
       shieldBase: 20,
       shieldScale: 0.45,
       clearDebuff: true,
+      shortDesc: '柔盾净异常 · 0暴露',
       desc: '柔韧水膜护身（冷却1回合），洗净灼烧与视线受阻，零暴露。',
     },
     hand_thorn_field: {
@@ -398,6 +503,7 @@
       drainWindMp: 14,
       exposure: 72,
       chill: 1,
+      shortDesc: '全场必中 · 群怪多倍回蓝',
       desc: '双手平推铺冰刺出九向地棘（冷却1回合）！全场必中，群怪魔战100%回蓝倍增！',
     },
 
@@ -413,6 +519,7 @@
       interruptPower: 1.85,
       atkKind: 'matk',
       exposure: 65,
+      shortDesc: '侧翼瞬凝 · 截断双手控场',
       desc: '不经手于敌身侧瞬凝！命中【双手控场】直接截断破招暴击！',
     },
     remote_snap_spike: {
@@ -427,6 +534,7 @@
       atkKind: 'matk',
       pierceHalfShield: true,
       exposure: 68,
+      shortDesc: '瞬凝断咏 · 无视半数护盾',
       desc: '足下三十公分瞬凝尖锥，对【双手控场】断咏重创并无视半盾！',
     },
 
@@ -445,6 +553,7 @@
       exposure: -6,
       dodgeLunge: true,
       rooted: 1,
+      shortDesc: '卸力闪反突袭 · 蓄剑势',
       desc: '沉膝横移纯步法（零护盾，冷却1回合）！唯迎击【贴身突袭】触发卸力闪反并蓄势下一刀。',
     },
     sword_water_edge: {
@@ -460,6 +569,7 @@
       noOvercast: true,
       exposure: -10,
       counterLunge: true,
+      shortDesc: '迎锋倍增 · 化水降暴露',
       desc: '活剑送刀裹极薄冰膜，事后化水降暴露！配合生根步蓄势或迎击扑杀威力倍增。',
     },
     sword_wind_afterimage: {
@@ -476,6 +586,7 @@
       exposure: 0,
       afterimage: 1,
       nextApBonus: 1,
+      shortDesc: '闪避下击 · 下回合+1 AP',
       desc: '气流折射留残影1.5秒（冷却3回合），闪避下一次攻击并令下回合+1 AP！',
     },
 
@@ -496,6 +607,7 @@
       applyVuln: 1,
       chill: 2,
       exposure: 20,
+      shortDesc: '必中破斗气 · 截停重劈',
       desc: '算准她先抬右肩钉死重心的瞬间，地底冰柱一举掀翻全部斗气并截停重劈！',
     },
     insight_rowan_prism: {
@@ -514,6 +626,7 @@
       shieldBase: 30,
       shieldScale: 0.45,
       exposure: 15,
+      shortDesc: '凌空夹杖 · 封锁+44%',
       desc: '识破他虚刺叔叔实则脱手掷杖袭心，双面冰镜凌空合拢死死夹住晦轮杖！',
     },
     insight_alice_cage: {
@@ -530,6 +643,7 @@
       drainEnemyMp: 22,
       sealWindEvade: 3,
       exposure: 20,
+      shortDesc: '封风步3回合 · 榨敌蓝',
       desc: '锁死左侧裙摆折射的绕后风轨，必中截停并封印风步闪避、重挫其魔力池！',
     },
     insight_aino_bead: {
@@ -546,6 +660,7 @@
       guaranteedCleanHit: true,
       maxUses: 1,
       exposure: 15,
+      shortDesc: '穿镜弹手背 · 命中+1',
       desc: '越过正面无瑕镜冰，于体侧盲区瞬凝冰珠精准弹中艾诺手背（有效命中+1）！',
     },
     insight_noelle_sever: {
@@ -563,6 +678,7 @@
       applyVuln: 1,
       maxUses: 1,
       exposure: 20,
+      shortDesc: '冻绝暗流 · 碎盾附易伤',
       desc: '将暗渡至脚底冰缝的细水线彻底冻死，粉碎水幕并瓦解残血翻盘杀！',
     },
     insight_jackal_throat: {
@@ -580,6 +696,7 @@
       forceInterrupt: true,
       exposure: -15,
       maxUses: 1,
+      shortDesc: '破闪必中 · 化水降暴露',
       desc: '锁死影豺腾空无法变向的下颌死角，覆水薄刃封喉且事后化水无痕！',
     },
     insight_hulan_resonance: {
@@ -599,6 +716,7 @@
       triggerAinoSpear: true,
       maxUses: 1,
       exposure: 0,
+      shortDesc: '碎核破甲 · 引艾诺冰枪',
       desc: '锁定领主腹下微裂晶核引动共鸣，接应崖顶艾诺的无气泡极寒冰枪贯通破甲！',
     },
     insight_eastwing_draft: {
@@ -619,6 +737,7 @@
       applyVuln: 2,
       maxUses: 1,
       exposure: 0,
+      shortDesc: '回风灭火 · 碎盾破铁幕',
       desc: '借东翼仆人暗道灌入的逆向冷风，水雾裹霜直贯火幕气眼，熄灭烈焰并震碎封锁！',
     },
     insight_wind_stillness: {
@@ -639,6 +758,7 @@
       chill: 2,
       maxUses: 1,
       exposure: 0,
+      shortDesc: '贯破风眼 · 封身法碎盾',
       desc: '踏入飓风中心无风静滞的刹那，冰锋顺气眼贯破风暴护壁并封锁风神身法！',
     },
     insight_generic_flaw: {
@@ -657,6 +777,7 @@
       protectCrate: 28,
       maxUses: 1,
       exposure: 15,
+      shortDesc: '贯隙必中 · 碎盾断蓄势',
       desc: '直击时停推演锁定的发力缝隙，击碎护甲并打断当前蓄势。',
     },
   };
@@ -677,6 +798,7 @@
       tags: ['水克火1.5x', '三层烈焰斗气', '抬肩前摇看破'],
       summary: '三层烈焰斗气 + 火球重劈与剑障防反！盲目单招复读会被融冰反劈，须交替水冰破招或以冰宫地下冰柱一举掀翻斗气。',
       preset: {
+        age: 9,
         hp: 165, mhp: 165, mp: 230, mmp: 230,
         atk: 14, matk: 35, def: 9, mdef: 12,
         skills: ['basic_attack', 'hand_water_surge', 'hand_ice_crystal', 'hand_ice_wall', 'hand_water_veil'],
@@ -728,13 +850,14 @@
       title: '罗文（8岁间章·乱葬岗活捉战）',
       chapter: '第一卷 · 间章《白昼里的夜》',
       stars: '★★★★☆',
-      charId: 'reno',
+      crestKind: 'rowan',
       emoji: '🌑',
       bg: 'bg-img-night bg-night',
       tags: ['8岁童年配装', '白昼冰镜核验', '窄道铺冰+双镜夹杖', '打死算逃脱失败'],
       summary: '秋夜月升，罗文影子已恢复正常。须用8岁基础薄冰配合雷纳德切窄道锁腿，借冰晶宫殿核验白昼第四面冰镜并识破脱手旋杖，凑满100%封锁活捉！',
       sealRule: true,
       preset: {
+        age: 8,
         hp: 150, mhp: 150, mp: 255, mmp: 255,
         atk: 12, matk: 35, def: 8, mdef: 12,
         skills: ['basic_attack', 'hand_ice_crystal', 'hand_ice_wall', 'hand_frost_floor', 'hand_water_veil'],
@@ -790,6 +913,7 @@
       tags: ['扬尘必偏斜', '双层风步闪避', '封路榨蓝自断风暴'],
       summary: '扬尘遮蔽视线 + 每回合双层风步闪避 + 微风回蓝！普攻挥空无法耗其魔力，须用水弹洗尘、冰棘压走位或冰宫封锁风轨榨干她的魔力池！',
       preset: {
+        age: 11,
         hp: 155, mhp: 155, mp: 295, mmp: 295,
         atk: 15, matk: 38, def: 9, mdef: 13,
         skills: ['basic_attack', 'hand_water_surge', 'hand_ice_crystal', 'hand_ice_wall', 'hand_water_veil', 'hand_thorn_field'],
@@ -855,6 +979,7 @@
       turnLimit: 9,
       iceOnlyRule: true,
       preset: {
+        age: 12,
         hp: 175, mhp: 175, mp: 255, mmp: 255,
         atk: 18, matk: 46, def: 11, mdef: 16,
         skills: ['basic_attack', 'hand_ice_crystal', 'hand_root_shield', 'remote_blind_shot', 'remote_snap_spike', 'sword_wind_afterimage'],
@@ -913,6 +1038,7 @@
       tags: ['100%魔战循环解锁', '零留白水幕', '残血必入冰缝暗流杀'],
       summary: '极致省蓝大师 vs 魔战循环！每回合布设52点尺量水幕；压至残血必借水垫切入【冰缝暗流陷阱】，须以看破断流或残像避险后再2.0x倾注斩杀！',
       preset: {
+        age: 14,
         hp: 190, mhp: 190, mp: 260, mmp: 260,
         atk: 20, matk: 46, def: 13, mdef: 20,
         skills: ['basic_attack', 'hand_ice_crystal', 'hand_root_shield', 'hand_thorn_field', 'remote_blind_shot', 'remote_snap_spike', 'sword_wind_afterimage'],
@@ -971,6 +1097,7 @@
       tags: ['每波独立1次冰宫', 'W1四狼逼AOE满蓝', 'W2耳目禁冰+生根步闪反'],
       summary: 'W1四只灰棘狼高伤围猎，须以冰棘群刺触发魔战100%多倍回满蓝条；W2银级影豺带闪避层扑喉且极光小队迫近，须先以生根步卸力闪反再覆水封喉！',
       preset: {
+        age: 15,
         hp: 220, mhp: 220, mp: 280, mmp: 280,
         atk: 42, matk: 48, def: 15, mdef: 22,
         skills: ['hand_ice_crystal', 'hand_water_surge', 'hand_root_shield', 'hand_water_veil', 'hand_thorn_field', 'remote_snap_spike', 'sword_root_step', 'sword_water_edge', 'sword_wind_afterimage'],
@@ -1048,7 +1175,7 @@
       title: '赫兰冰封峡谷·冻土兽潮协防战',
       chapter: '第三卷 · 第四章 奔赴北境',
       stars: '★★★★★',
-      charId: 'aino',
+      crestKind: 'abyss_behemoth',
       emoji: '🏔️',
       bg: 'bg-snow',
       tags: ['每波独立1次冰宫', '守护医疗药箱', '破招协同艾诺冰枪', '晦轮杖折光破甲'],
@@ -1056,6 +1183,7 @@
       crateRule: true,
       ainoSupport: true,
       preset: {
+        age: 16,
         hp: 250, mhp: 250, mp: 300, mmp: 300,
         atk: 45, matk: 54, def: 18, mdef: 25,
         skills: ['hand_ice_crystal', 'hand_root_shield', 'hand_thorn_field', 'remote_blind_shot', 'remote_snap_spike', 'sword_root_step', 'sword_water_edge', 'sword_wind_afterimage'],
@@ -1150,6 +1278,7 @@
       tags: ['二阶段红莲铁幕', '双波火廊突围', '仆道回风看破', '封廊锁火截断'],
       summary: '政变火夜公爵府东翼长廊！前波须破宫廷突击队长与赤炎术士夹击；后波「红莲铁幕」半血步入二阶段，须借仆人暗道回风看破火眼，截断锁火并迎锋破袭！',
       preset: {
+        age: 14,
         hp: 235, mhp: 235, mp: 290, mmp: 290,
         atk: 36, matk: 52, def: 15, mdef: 22,
         skills: ['hand_water_surge', 'hand_ice_crystal', 'hand_root_shield', 'hand_water_veil', 'hand_thorn_field', 'remote_snap_spike', 'sword_root_step', 'sword_water_edge'],
@@ -1263,6 +1392,7 @@
       tags: ['七大列强试剑', '二阶段风暴眼全开', '生根步斩风瞬反', '风眼静滞看破'],
       summary: '直面七大列强「风神·岚」的高难试剑！半血后【风暴眼全开】，真空连刃与风眼静滞反制交替压迫，须借生根步斩风瞬反与冰宫看破破开风暴！',
       preset: {
+        age: 16,
         hp: 255, mhp: 255, mp: 310, mmp: 310,
         atk: 48, matk: 56, def: 18, mdef: 26,
         skills: ['hand_ice_crystal', 'hand_root_shield', 'hand_thorn_field', 'remote_blind_shot', 'remote_snap_spike', 'sword_root_step', 'sword_water_edge', 'sword_wind_afterimage'],
@@ -1322,6 +1452,7 @@
   let arenaUseSaveStats = false;
   let arenaReturnToTitle = false;
   let hoveredSkillId = null;
+  let armedSkillId = null;
 
   const FALLBACK_SYNERGY_SETS = [
     {
@@ -2687,8 +2818,8 @@
       const headline = (skill.dodgeLunge && isTempestVacuum)
         ? '✦ 生根步·斩风瞬反就绪！（反制真空连刃并获下回合 +1 AP）'
         : willParry
-          ? '⚡ 触发卸力闪反（并开启连携追击）！'
-          : '🛡️ 稳固防线 / 战术步法';
+          ? '✦ 触发卸力闪反（并开启连携追击）！'
+          : '稳固防线 / 战术步法';
       return {
         skillId: skill.id,
         apCost,
@@ -2741,25 +2872,25 @@
     let headline = `预计伤害 ${dmgMin}${dmgMax > dmgMin ? `~${dmgMax}` : ''}`;
     let kind = 'normal';
     if (est.mirrorBlocked) {
-      headline = '🛡️ 将被正面镜冰格挡（请开冰宫或打断）';
+      headline = '将被正面镜冰格挡（请开冰宫或打断）';
       kind = 'warn';
     } else if (evadeBlocked) {
-      headline = `💨 将被敌方闪避层抵消（余 ${e.evadeCharges} 层）`;
+      headline = `将被敌方闪避层抵消（余 ${e.evadeCharges} 层）`;
       kind = 'warn';
     } else if (guardPenalty) {
-      headline = '⚠️ 敌方严密防反，盲丢将衰减！';
+      headline = '敌方严密防反，盲丢将衰减！';
       kind = 'warn';
     } else if (est.rootStepParryTrigger) {
       headline = '✦ 生根步·斩风瞬反！（截断真空连刃并获 +1 AP 与连携！）';
       kind = 'riposte';
     } else if (est.willInterrupt) {
-      headline = '💥 触发截断破招！（并激活连携追击）';
+      headline = '✦ 触发截断破招！（并激活连携追击）';
       kind = 'interrupt';
     } else if (est.willRiposte) {
-      headline = '⚡ 触发卸力闪反！（并激活连携追击）';
+      headline = '✦ 触发卸力闪反！（并激活连携追击）';
       kind = 'riposte';
     } else if (est.chainApplied) {
-      headline = '🔗 连携追击生效（1.35× 伤害 + 返蓝）！';
+      headline = '✦ 连携追击生效（1.35× 伤害 + 返蓝）！';
       kind = 'chain';
     }
 
@@ -2830,7 +2961,6 @@
   /* =========================================================
      6.5 AAA Combat-Feel ("Juice") & Elemental Ice/Water VFX
      ========================================================= */
-  const JUICE_STYLE_ID = 'cb-juice-vfx-styles';
   const VFX_FLASH_STAMPS = [];
   const VFX_MAX_FLASHES_PER_SEC = 2; // WCAG 2.3.1 safe (strictly <= 2/sec)
   const _activeVfxTimers = new Set();
@@ -2862,15 +2992,6 @@
     }
   }
 
-  function isJsdomEnv() {
-    try {
-      const ua = typeof navigator !== 'undefined' && navigator.userAgent ? navigator.userAgent : '';
-      return /jsdom/i.test(ua);
-    } catch (e) {
-      return false;
-    }
-  }
-
   function trackVfxTimer(fn, ms) {
     let tid = null;
     let done = false;
@@ -2895,298 +3016,6 @@
     if (VFX_FLASH_STAMPS.length >= VFX_MAX_FLASHES_PER_SEC) return false;
     VFX_FLASH_STAMPS.push(now);
     return true;
-  }
-
-  function ensureJuiceVfxStyles() {
-    if (typeof document === 'undefined' || !document.head) return;
-    if (document.getElementById(JUICE_STYLE_ID)) return;
-    const st = document.createElement('style');
-    st.id = JUICE_STYLE_ID;
-    st.textContent = `
-      /* --- Hover Enemy HP Damage Preview Segment & Lethal/Break Micro-Tag --- */
-      #battle-screen .cb-stat-label {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        min-width: 0;
-      }
-      #battle-screen .cb-stat-track .cb-hp-preview {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        width: 0%;
-        z-index: 3;
-        pointer-events: none;
-        background: linear-gradient(
-          90deg,
-          rgba(240, 249, 255, 0.96) 0%,
-          rgba(56, 189, 248, 0.88) 32%,
-          rgba(244, 63, 94, 0.94) 76%,
-          rgba(255, 228, 236, 0.96) 100%
-        );
-        border-left: 1.5px solid rgba(255, 255, 255, 0.94);
-        box-shadow: -2px 0 6px rgba(255, 255, 255, 0.72), 0 0 8px rgba(56, 189, 248, 0.45);
-        transition: left 0.14s cubic-bezier(0.22, 1, 0.36, 1), width 0.14s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.14s ease;
-        opacity: 0;
-      }
-      #battle-screen .cb-stat-track .cb-hp-preview.is-active {
-        opacity: 1;
-        animation: cbHpPreviewPulse 1.15s ease-in-out infinite;
-      }
-      #battle-screen .cb-stat-track .cb-hp-preview.is-break {
-        background: linear-gradient(
-          90deg,
-          rgba(255, 255, 255, 0.96) 0%,
-          rgba(56, 189, 248, 0.92) 45%,
-          rgba(230, 194, 117, 0.96) 100%
-        );
-        box-shadow: -2px 0 6px rgba(255, 255, 255, 0.85), 0 0 10px rgba(230, 194, 117, 0.55);
-      }
-      #battle-screen .cb-stat-track .cb-hp-preview.is-lethal {
-        background: repeating-linear-gradient(
-          -45deg,
-          rgba(255, 241, 245, 0.96) 0px,
-          rgba(255, 241, 245, 0.96) 4px,
-          rgba(244, 63, 94, 0.96) 4px,
-          rgba(225, 29, 72, 0.96) 9px
-        );
-        box-shadow: -2px 0 8px rgba(255, 255, 255, 0.95), 0 0 12px rgba(244, 63, 94, 0.78);
-        animation: cbHpLethalPulse 0.95s ease-in-out infinite;
-      }
-      #battle-screen .cb-enemy-zone:not(.multi-enemies) .cb-enemy-card.is-lethal .cb-e-plate,
-      #battle-screen .cb-enemy-zone.multi-enemies .cb-enemy-card.is-lethal {
-        border-color: rgba(244, 63, 94, 0.88);
-        box-shadow: inset 0 0 20px rgba(244, 63, 94, 0.18), 0 0 20px rgba(244, 63, 94, 0.34);
-      }
-      #battle-screen .cb-hp-microtag {
-        display: none;
-        align-items: center;
-        padding: 0 5px;
-        height: 15px;
-        border-radius: 2px;
-        font-size: 9.5px;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        line-height: 1;
-        white-space: nowrap;
-      }
-      #battle-screen .cb-hp-microtag.show {
-        display: inline-flex;
-        animation: cbMicroTagPop 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-      }
-      #battle-screen .cb-hp-microtag.is-lethal {
-        background: linear-gradient(90deg, rgba(225, 29, 72, 0.94), rgba(244, 63, 94, 0.9));
-        color: #fff5f7;
-        border: 1px solid rgba(255, 228, 236, 0.78);
-        box-shadow: 0 0 10px rgba(244, 63, 94, 0.56);
-      }
-      #battle-screen .cb-hp-microtag.is-break {
-        background: linear-gradient(90deg, rgba(29, 99, 255, 0.92), rgba(56, 189, 248, 0.9));
-        color: #f0f9ff;
-        border: 1px solid rgba(224, 242, 254, 0.82);
-        box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
-      }
-      @keyframes cbHpPreviewPulse {
-        0%, 100% { opacity: 0.76; filter: brightness(0.98); }
-        50% { opacity: 1; filter: brightness(1.16); }
-      }
-      @keyframes cbHpLethalPulse {
-        0%, 100% { opacity: 0.84; filter: brightness(1); }
-        50% { opacity: 1; filter: brightness(1.22); }
-      }
-      @keyframes cbMicroTagPop {
-        0% { transform: scale(0.72); opacity: 0; }
-        100% { transform: scale(1); opacity: 1; }
-      }
-
-      /* --- Trauma Camera Shake & 75ms Impact Hit-Stop --- */
-      #battle-screen .cb-arena-field {
-        will-change: transform;
-      }
-      #battle-screen .cb-standee-wrap {
-        position: relative;
-      }
-      #battle-screen .cb-arena-field.cb-hitstop-75 .cb-e-avatar,
-      #battle-screen .cb-arena-field.cb-hitstop-75 .cb-p-portrait {
-        animation-play-state: paused !important;
-        filter: contrast(1.15) brightness(1.07);
-      }
-
-      /* --- Elemental Ice-Crystal / Water-Ripple / Frost-Blade / Prism Burst Layer --- */
-      #battle-screen .cb-elem-vfx-layer {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        z-index: 12;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: visible;
-      }
-      #battle-screen .cb-elem-vfx-svg {
-        width: min(256px, 118%);
-        height: min(256px, 118%);
-        max-width: 276px;
-        max-height: 276px;
-        overflow: visible;
-        filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.48));
-      }
-      #battle-screen .cb-elem-vfx-layer.vfx-dim-flash .cb-vfx-flash-core {
-        opacity: 0.28 !important;
-        animation-duration: 0.42s !important;
-      }
-
-      /* Ice Shards + Frost-Ring Shockwave */
-      #battle-screen .cb-vfx-ice-shard {
-        transform-box: view-box;
-        transform-origin: 100px 100px;
-        animation: cbIceShardBurst 0.56s cubic-bezier(0.16, 1, 0.3, 1) var(--delay, 0ms) both;
-      }
-      #battle-screen .cb-vfx-frost-ring {
-        transform-box: view-box;
-        transform-origin: 100px 100px;
-        animation: cbFrostRingExpand 0.52s cubic-bezier(0.16, 1, 0.3, 1) both;
-      }
-      #battle-screen .cb-vfx-frost-ring-inner {
-        transform-box: view-box;
-        transform-origin: 100px 100px;
-        animation: cbFrostRingExpand 0.46s cubic-bezier(0.16, 1, 0.3, 1) 45ms both;
-      }
-      #battle-screen .cb-vfx-ice-glint {
-        transform-box: view-box;
-        transform-origin: 100px 100px;
-        animation: cbIceDustFly 0.54s cubic-bezier(0.16, 1, 0.3, 1) var(--delay, 20ms) both;
-      }
-      @keyframes cbIceShardBurst {
-        0% { transform: translate(0, 0) rotate(var(--rot, 0deg)) scale(0.24); opacity: 0; }
-        18% { transform: translate(calc(var(--dx, 0px) * 0.48), calc(var(--dy, 0px) * 0.48)) rotate(var(--rot, 0deg)) scale(1.16); opacity: 1; }
-        74% { transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(var(--rot, 0deg)) scale(0.94); opacity: 0.92; }
-        100% { transform: translate(calc(var(--dx, 0px) * 1.16), calc(var(--dy, 0px) * 1.16)) rotate(var(--rot, 0deg)) scale(0.38); opacity: 0; }
-      }
-      @keyframes cbFrostRingExpand {
-        0% { transform: scale(0.22) rotate(-10deg); opacity: 0.95; }
-        65% { transform: scale(1.22) rotate(6deg); opacity: 0.65; }
-        100% { transform: scale(1.52) rotate(12deg); opacity: 0; }
-      }
-      @keyframes cbIceDustFly {
-        0% { transform: translate(0, 0) scale(0.2); opacity: 0; }
-        25% { opacity: 1; }
-        100% { transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(0.15); opacity: 0; }
-      }
-
-      /* Water Concentric Silver-Rimmed Ripples + Droplets */
-      #battle-screen .cb-vfx-water-ring {
-        transform-box: view-box;
-        transform-origin: 100px 100px;
-        animation: cbWaterRippleExpand 0.58s cubic-bezier(0.18, 0.9, 0.28, 1) var(--delay, 0ms) both;
-      }
-      #battle-screen .cb-vfx-water-drop {
-        transform-box: view-box;
-        transform-origin: 100px 100px;
-        animation: cbWaterDropFly 0.56s cubic-bezier(0.16, 0.92, 0.3, 1) var(--delay, 0ms) both;
-      }
-      @keyframes cbWaterRippleExpand {
-        0% { transform: scale(0.18, 0.14); opacity: 0; }
-        16% { opacity: 0.96; }
-        72% { transform: scale(1.16, 0.88); opacity: 0.58; }
-        100% { transform: scale(1.42, 1.08); opacity: 0; }
-      }
-      @keyframes cbWaterDropFly {
-        0% { transform: translate(0, 0) rotate(var(--rot, 0deg)) scale(0.3); opacity: 0; }
-        20% { transform: translate(calc(var(--dx, 0px) * 0.42), calc(var(--dy, 0px) * 0.42)) rotate(var(--rot, 0deg)) scale(1.12); opacity: 1; }
-        75% { transform: translate(var(--dx, 0px), calc(var(--dy, 0px) + 6px)) rotate(var(--rot, 0deg)) scale(0.92); opacity: 0.86; }
-        100% { transform: translate(calc(var(--dx, 0px) * 1.12), calc(var(--dy, 0px) + 18px)) rotate(var(--rot, 0deg)) scale(0.28); opacity: 0; }
-      }
-
-      /* Frost-Blade Diagonal Crescent Slash + Core Glint */
-      #battle-screen .cb-vfx-slash-outer {
-        transform-box: view-box;
-        transform-origin: 100px 100px;
-        animation: cbBladeCrescentSweep 0.46s cubic-bezier(0.16, 1, 0.3, 1) both;
-      }
-      #battle-screen .cb-vfx-slash-core {
-        stroke-dasharray: 240;
-        stroke-dashoffset: 240;
-        animation: cbBladeCoreCut 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
-      }
-      #battle-screen .cb-vfx-slash-trail {
-        stroke-dasharray: 210;
-        stroke-dashoffset: 210;
-        animation: cbBladeCoreCut 0.48s cubic-bezier(0.16, 1, 0.3, 1) 35ms both;
-      }
-      #battle-screen .cb-vfx-core-glint {
-        transform-box: view-box;
-        transform-origin: 102px 96px;
-        animation: cbCoreGlintPop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-      }
-      @keyframes cbBladeCrescentSweep {
-        0% { transform: scale(0.45) translate(16px, -14px); opacity: 0; }
-        22% { transform: scale(1.06) translate(0, 0); opacity: 1; }
-        68% { transform: scale(1.02) translate(-4px, 4px); opacity: 0.82; }
-        100% { transform: scale(0.96) translate(-10px, 10px); opacity: 0; }
-      }
-      @keyframes cbBladeCoreCut {
-        0% { stroke-dashoffset: 240; opacity: 0.2; }
-        32% { stroke-dashoffset: 0; opacity: 1; }
-        100% { stroke-dashoffset: -240; opacity: 0; }
-      }
-      @keyframes cbCoreGlintPop {
-        0% { transform: scale(0.15) rotate(-18deg); opacity: 0; }
-        30% { transform: scale(1.24) rotate(0deg); opacity: 1; }
-        100% { transform: scale(0.1) rotate(24deg); opacity: 0; }
-      }
-
-      /* Insight / Break / Crit Geometric Ice-Prism Shatter Star */
-      #battle-screen .cb-vfx-prism-star {
-        transform-box: view-box;
-        transform-origin: 100px 100px;
-        animation: cbPrismStarPop 0.56s cubic-bezier(0.22, 1.24, 0.36, 1) both;
-      }
-      #battle-screen .cb-vfx-prism-ring {
-        transform-box: view-box;
-        transform-origin: 100px 100px;
-        animation: cbPrismRingSnap 0.54s cubic-bezier(0.16, 1, 0.3, 1) both;
-      }
-      #battle-screen .cb-vfx-prism-splinter {
-        transform-box: view-box;
-        transform-origin: 100px 100px;
-        animation: cbPrismSplinterShear 0.58s cubic-bezier(0.16, 1, 0.3, 1) var(--delay, 0ms) both;
-      }
-      @keyframes cbPrismStarPop {
-        0% { transform: scale(0.18) rotate(-22deg); opacity: 0; }
-        22% { transform: scale(1.22) rotate(0deg); opacity: 1; }
-        62% { transform: scale(1.02) rotate(8deg); opacity: 0.9; }
-        100% { transform: scale(0.32) rotate(18deg); opacity: 0; }
-      }
-      @keyframes cbPrismRingSnap {
-        0% { transform: scale(0.25) rotate(0deg); opacity: 0.95; }
-        55% { transform: scale(1.18) rotate(15deg); opacity: 0.72; }
-        100% { transform: scale(1.48) rotate(24deg); opacity: 0; }
-      }
-      @keyframes cbPrismSplinterShear {
-        0% { transform: translate(0, 0) rotate(0deg) scale(0.35); opacity: 0; }
-        20% { transform: translate(calc(var(--dx, 0px) * 0.45), calc(var(--dy, 0px) * 0.45)) rotate(calc(var(--spin, 24deg) * 0.4)) scale(1.1); opacity: 1; }
-        100% { transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(var(--spin, 24deg)) scale(0.3); opacity: 0; }
-      }
-
-      /* Reduced-Motion Accessibility Guard */
-      @media (prefers-reduced-motion: reduce) {
-        #battle-screen .cb-stat-track .cb-hp-preview.is-active,
-        #battle-screen .cb-stat-track .cb-hp-preview.is-lethal,
-        #battle-screen .cb-hp-microtag.show {
-          animation: none !important;
-        }
-        #battle-screen .cb-elem-vfx-layer * {
-          animation-duration: 0.24s !important;
-          animation-timing-function: ease-out !important;
-        }
-        #battle-screen .cb-elem-vfx-layer .cb-vfx-flash-core {
-          opacity: 0.22 !important;
-        }
-      }
-    `;
-    document.head.appendChild(st);
   }
 
   function resetCombatTrauma() {
@@ -3256,7 +3085,6 @@
       return TRAUMA_STATE.trauma;
     }
 
-    ensureJuiceVfxStyles();
     if (!TRAUMA_STATE.rafId) {
       TRAUMA_STATE.lastTs = 0;
       TRAUMA_STATE.rafId = global.requestAnimationFrame(stepCombatTrauma);
@@ -3268,7 +3096,6 @@
     if (typeof document === 'undefined' || prefersReducedMotion() || isJsdomEnv()) return;
     const field = document.querySelector('#battle-screen .cb-arena-field');
     if (!field) return;
-    ensureJuiceVfxStyles();
     _hitStopId += 1;
     const myId = _hitStopId;
     const dur = Math.max(40, Math.min(140, Number(durationMs) || 75));
@@ -3391,8 +3218,8 @@
               <stop offset="100%" stop-color="#1d4ed8"/>
             </linearGradient>
             <linearGradient id="cbPrismGold_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#fffbeb"/>
-              <stop offset="50%" stop-color="#fde68a"/>
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="50%" stop-color="#bae6fd"/>
               <stop offset="100%" stop-color="#38bdf8"/>
             </linearGradient>
           </defs>
@@ -3529,7 +3356,6 @@
     }
     if (!host) return null;
 
-    ensureJuiceVfxStyles();
     const vfxKind = normalizeElementVfxKind(rawKind);
     const allowFlash = canTriggerVfxFlash();
 
@@ -3615,7 +3441,7 @@
 
   function triggerBreakJuice(b, soundKind) {
     if (!b || b.headless || typeof document === 'undefined') return;
-    safeSfx(soundKind || 'shatter');
+    safeSfx(soundKind || 'break_chime');
     try {
       if (global.AmbientFX && typeof global.AmbientFX.triggerFrostSlash === 'function') {
         global.AmbientFX.triggerFrostSlash();
@@ -3644,7 +3470,6 @@
     el.innerHTML = `
       <div class="cb-p2-stripe" aria-hidden="true"></div>
       <div class="cb-p2-inner">
-        <div class="cb-p2-kicker">PHASE II TRANSITION · 敌将阵势蜕变</div>
         <div class="cb-p2-title">${title || '第二阶段 · 绝境展开'}</div>
         <div class="cb-p2-boss">${boss ? boss.name : ''}</div>
         <div class="cb-p2-quote">${quote || ''}</div>
@@ -3690,7 +3515,7 @@
     enemy.shield = Math.max(enemy.shield || 0, refreshShield);
     decideEnemyIntent(enemy, b);
 
-    pushLog(b, `<span style="color:#ffd88a;font-weight:700">✦【${bannerTitle}】${enemy.name} 步入二阶段（护盾重整至 ${enemy.shield}，失衡清除）！${quote}</span>`);
+    pushLog(b, logTag('cbl-star', `✦【${bannerTitle}】${enemy.name} 步入二阶段（护盾重整至 ${enemy.shield}，失衡清除）！${quote}`, true));
     spawnPhase2Overlay(b, enemy, bannerTitle, quote, theme);
     addCombatTrauma(0.92, b);
     const bossIdx = b.enemies ? b.enemies.indexOf(enemy) : 0;
@@ -3749,18 +3574,18 @@
       const beforeS = b.player.shield;
       b.player.shield = Math.min(b.player.maxShield, b.player.shield + 12);
       if (b.player.shield > beforeS) {
-        pushLog(b, `<span style="color:#a8ecff">🪪【北风堡木牌】寒铁护盾 +${b.player.shield - beforeS}（当前 ${b.player.shield}/${b.player.maxShield}）。</span>`);
+        pushLog(b, logTag('cbl-ice', `🪪【北风堡木牌】寒铁护盾 +${b.player.shield - beforeS}（当前 ${b.player.shield}/${b.player.maxShield}）。`));
       }
     }
     if (getSynergyTier(b.player, 'north_frost') >= 2) {
       const beforeNF = b.player.shield;
       b.player.shield = Math.min(b.player.maxShield, b.player.shield + 10);
       if (b.player.shield > beforeNF) {
-        pushLog(b, `<span style="color:#9ee8ff">✦【共鸣·北境霜锋(2件)】霜锋寒甲护体 +${b.player.shield - beforeNF} 护盾（当前 ${b.player.shield}/${b.player.maxShield}）。</span>`);
+        pushLog(b, logTag('cbl-ice', `✦【共鸣·北境霜锋(2件)】霜锋寒甲护体 +${b.player.shield - beforeNF} 护盾（当前 ${b.player.shield}/${b.player.maxShield}）。`));
       }
     }
 
-    if (w.intro) pushLog(b, `<span style="color:#8cd4ff">${w.intro}</span>`);
+    if (w.intro) pushLog(b, logTag('cbl-ice', w.intro));
   }
 
   function isPalaceReady(b) {
@@ -3836,23 +3661,23 @@
     initWave(b, 0);
     if (hasRelic(b.player, 'alice_flower_cake')) {
       b.player.status.afterimage = (b.player.status.afterimage || 0) + 1;
-      pushLog(b, `<span style="color:#9ef2c8">🌼【风之花饼】袖间清香微散，开局自带 1 层「风行残像」！</span>`);
+      pushLog(b, logTag('cbl-emerald', `🌼【风之花饼】袖间清香微散，开局自带 1 层「风行残像」！`));
     }
     if (getSynergyTier(b.player, 'dukedom_memory') >= 2) {
       b.ap = Math.min(b.apMax, b.ap + 1);
       const beforeDk = b.player.shield;
       b.player.shield = Math.min(b.player.maxShield, b.player.shield + 10);
-      pushLog(b, `<span style="color:#ffe4a8">✦【共鸣·公爵府遗忆(2件)】首回合先声夺人，+1 AP、+${b.player.shield - beforeDk} 护盾！</span>`);
+      pushLog(b, logTag('cbl-star', `✦【共鸣·公爵府遗忆(2件)】首回合先声夺人，+1 AP、+${b.player.shield - beforeDk} 护盾！`));
     }
     if (b.player.relics && b.player.relics.length) {
       const api = getRelicsApi();
       const relMap = (api && (api.RELICS_CATALOG || api.RELICS)) || {};
       const names = b.player.relics.map(id => (relMap[id] ? `${relMap[id].icon}${relMap[id].name}` : id)).join(' · ');
-      pushLog(b, `<span style="color:#d6c8f5">✦ 随身铭记已生效：${names}</span>`);
+      pushLog(b, logTag('cbl-violet', `✦ 随身铭记已生效：${names}`));
     }
     if (b.player.synergies && b.player.synergies.length) {
       const synNames = b.player.synergies.map(s => `${s.name}(${s.tier || s.count}件)`).join(' · ');
-      pushLog(b, `<span style="color:#ffe4a8">✦ 套装共鸣已点亮：${synNames}</span>`);
+      pushLog(b, logTag('cbl-star', `✦ 套装共鸣已点亮：${synNames}`));
     }
     return b;
   }
@@ -3861,8 +3686,14 @@
     b = b || activeBattle;
     if (!b || b.over) return false;
     if (!b.player.hasManaCycle) return false;
-    b.player.overcastMode = Math.max(0, Math.min(2, mode | 0));
-    if (!b.headless) renderCombatUI();
+    const nextMode = Math.max(0, Math.min(2, mode | 0));
+    const changed = b.player.overcastMode !== nextMode;
+    b.player.overcastMode = nextMode;
+    armedSkillId = null;
+    if (!b.headless) {
+      if (changed) safeSfx('tab_switch');
+      renderCombatUI();
+    }
     return true;
   }
 
@@ -3872,23 +3703,25 @@
     const p = b.player;
     if (!p.hasEclipseWand) return false;
     if (p.wandCooldown > 0 && forceVal !== false) {
-      pushLog(b, `<span style="color:#b8a8d8">🪄 晦轮杖银环余震未平（冷却剩余 ${p.wandCooldown} 回合）。</span>`);
+      pushLog(b, logTag('cbl-violet', `🪄 晦轮杖银环余震未平（冷却剩余 ${p.wandCooldown} 回合）。`));
       return false;
     }
+    armedSkillId = null;
     p.wandActive = forceVal !== undefined ? !!forceVal : !p.wandActive;
+    if (!b.headless) safeSfx('tab_switch');
     if (p.wandActive) {
       if (b.witnessActive) {
         b.exposure = Math.min(100, b.exposure + 25);
         if (b.exposure >= 70) b.exposureWarningTriggered = true;
       }
-      pushLog(b, `<span style="color:#d6a8ff">🪄 催动「晦轮杖」暗银细环：下一次单点魔法附带【折光蚀穿】（穿透65%护盾与70%法抗，额外耗蓝46 MP，冷却2回合）！${b.witnessActive ? `（⚠️ 耳目附近拔杖引动异象，暴露风险升至 ${b.exposure}%！）` : ''}</span>`);
+      pushLog(b, logTag('cbl-violet', `🪄 催动「晦轮杖」暗银细环：下一次单点魔法附带【折光蚀穿】（穿透65%护盾与70%法抗，额外耗蓝46 MP，冷却2回合）！${b.witnessActive ? `（⚠️ 耳目附近拔杖引动异象，暴露风险升至 ${b.exposure}%！）` : ''}`));
       spawnBanner(b, '🪄 晦轮杖 · 银环折光', 'wand');
       if (b.witnessActive && b.exposure >= 100) {
         finishBattle(b, false, 'exposed');
         return false;
       }
     } else {
-      pushLog(b, `<span style="opacity:.8">🪄 收敛晦轮杖银环微光。</span>`);
+      pushLog(b, logTag('cbl-muted', `🪄 收敛晦轮杖银环微光。`));
     }
     if (!b.headless) renderCombatUI();
     return p.wandActive;
@@ -3946,7 +3779,7 @@
     if (!clue.correct) {
       // 选错观察点有真实战术代价：分神损耗 1 AP（若当前有 AP）
       if (b.ap > 0) b.ap -= 1;
-      pushLog(b, `<span style="color:#ffb8c0">❄️【冰晶宫殿·误判】${clue.feedback}（时停分神损耗 1 AP！）</span>`);
+      pushLog(b, logTag('cbl-danger', `❄️【冰晶宫殿·误判】${clue.feedback}（时停分神损耗 1 AP！）`));
       if (!b.headless) renderCombatUI();
       return { ok: true, correct: false, step: 1, feedback: clue.feedback };
     }
@@ -3963,7 +3796,7 @@
       if (!ded || !ded.correct) {
         if (b.ap > 0) b.ap -= 1;
         const fb = ded ? ded.feedback : '推演方向偏差，未能形成有效反制。';
-        pushLog(b, `<span style="color:#ffb8c0">❄️【冰晶宫殿·推演偏差】${fb}（损耗 1 AP！）</span>`);
+        pushLog(b, logTag('cbl-danger', `❄️【冰晶宫殿·推演偏差】${fb}（损耗 1 AP！）`));
         if (!b.headless) renderCombatUI();
         return { ok: true, correct: false, step: 2, feedback: fb };
       }
@@ -3985,13 +3818,13 @@
     }
 
     const finalFb = (ded && ded.feedback) || clue.feedback;
-    pushLog(b, `<span style="color:#9beeff">❄️【冰晶宫殿·两步看破】${finalFb} 解锁「${TACTICAL_SKILLS[skId].name}」！</span>`);
+    pushLog(b, logTag('cbl-ice', `❄️【冰晶宫殿·两步看破】${finalFb} 解锁「${TACTICAL_SKILLS[skId].name}」！`));
     if (hasRelic(b.player, 'frost_cipher')) {
       const recMp = Math.max(10, Math.round(b.player.mmp * 0.18));
       const beforeMp = b.player.mp;
       b.player.mp = Math.min(b.player.mmp, b.player.mp + recMp);
       b.ap = Math.min(b.apMax, b.ap + 1);
-      pushLog(b, `<span style="color:#9beeff">💠【霜封暗记】看破瞬间魔脉回涌 +${b.player.mp - beforeMp} MP、+1 AP！</span>`);
+      pushLog(b, logTag('cbl-ice', `💠【霜封暗记】看破瞬间魔脉回涌 +${b.player.mp - beforeMp} MP、+1 AP！`));
     }
     if (getSynergyTier(b.player, 'academy_stars') >= 2) {
       if (target) {
@@ -4003,10 +3836,10 @@
       const gainedSynMp = Math.max(0, b.player.mp - beforeSynMp);
       b.metrics.manaRecycled += gainedSynMp;
       if (gainedSynMp > 0) spawnCombatFloat(b, 'player', `+${gainedSynMp} MP`, 'mp');
-      pushLog(b, `<span style="color:#ffe4a8">✦【共鸣·学院星辉(2件)】冰宫看破附加 2 层易伤并回流 +${synMp} MP！</span>`);
+      pushLog(b, logTag('cbl-star', `✦【共鸣·学院星辉(2件)】冰宫看破附加 2 层易伤并回流 +${synMp} MP！`));
     }
     spawnBanner(b, '❄️ 冰晶宫殿 · 破绽锁定！', 'interrupt');
-    if (!b.headless) safeSfx('egg');
+    if (!b.headless) safeSfx('ice_shatter');
     if (!b.headless) renderCombatUI();
     return { ok: true, correct: true, unlockedSkill: skId, feedback: finalFb };
   }
@@ -4014,7 +3847,7 @@
   function dealDamageToEnemy(b, enemy, dmg, opts) {
     opts = opts || {};
     if (opts.shatterShield && enemy.shield > 0) {
-      pushLog(b, `<span style="color:#7ee8ff">💥 击碎了 ${enemy.name} 的 ${enemy.shield} 点护盾！</span>`);
+      pushLog(b, logTag('cbl-ice', `💥 击碎了 ${enemy.name} 的 ${enemy.shield} 点护盾！`));
       enemy.shield = 0;
     }
 
@@ -4062,7 +3895,7 @@
       };
       b.metrics.enteredUnderSeep = true;
       spawnBanner(b, '💧 冰面暗流 · 杀阵成型！', 'danger');
-      pushLog(b, `<span style="color:#7ee8ff;font-weight:700">💧【尺量应急水垫】诺艾儿借薄水垫卸开致命追击退至十五米外（稳守 165 HP + 60 水幕），冰缝下的暗水线已彻底锁死你的脚底！</span>`);
+      pushLog(b, logTag('cbl-ice', `💧【尺量应急水垫】诺艾儿借薄水垫卸开致命追击退至十五米外（稳守 165 HP + 60 水幕），冰缝下的暗水线已彻底锁死你的脚底！`, true));
       return { actualHpLoss, shieldAbsorbed };
     }
 
@@ -4115,11 +3948,12 @@
     if (!primary) return { ok: false, reason: 'no_target' };
 
     const usedWand = !!(p.wandActive && sk.power > 0 && !sk.aoe && sk.atkKind === 'matk');
+    armedSkillId = null;
 
     // 扣除资源与记录冷却
     if (apCost === 0 && sk.ap > 0 && sk.path === 'REMOTE' && b.turn === 1 && !b._handkerchiefFreeRemoteUsed && hasRelic(p, 'aino_academy_handkerchief')) {
       b._handkerchiefFreeRemoteUsed = true;
-      pushLog(b, `<span style="color:#bfefff">🧣【雪纹手帕】首回合初次【隔空瞬凝】免除 AP 消耗！</span>`);
+      pushLog(b, logTag('cbl-ice', `🧣【雪纹手帕】首回合初次【隔空瞬凝】免除 AP 消耗！`));
     }
     b.ap -= apCost;
     p.mp = Math.max(0, p.mp - mpCost);
@@ -4140,7 +3974,7 @@
       const gained = Math.max(0, p.mp - beforeMp);
       b.metrics.manaRecycled += gained;
       if (gained > 0) spawnCombatFloat(b, 'player', `+${gained} MP`, 'mp');
-      pushLog(b, `<span style="color:#ffe4a8">✦【共鸣·公爵府遗忆(3件)】水冰调和回涌 +${recMp} MP！</span>`);
+      pushLog(b, logTag('cbl-star', `✦【共鸣·公爵府遗忆(3件)】水冰调和回涌 +${recMp} MP！`));
     }
 
     // 记录 AI 记忆黑板（含同技能与跨护盾同攻击技能复读监测）
@@ -4162,13 +3996,13 @@
       }
       b.exposure = Math.max(0, Math.min(100, b.exposure + expDelta));
       if (expDelta > 0) {
-        pushLog(b, `<span style="color:#ffb37a">👁️ 魔力外显惊动林外耳目，暴露风险 +${expDelta}%（当前 ${b.exposure}%）！</span>`);
+        pushLog(b, logTag('cbl-danger', `👁️ 魔力外显惊动林外耳目，暴露风险 +${expDelta}%（当前 ${b.exposure}%）！`));
       } else if (expDelta < 0) {
-        pushLog(b, `<span style="color:#88e8b0">🍃 剑锋化水收痕，暴露风险 ${expDelta}%（当前 ${b.exposure}%）。</span>`);
+        pushLog(b, logTag('cbl-emerald', `🍃 剑锋化水收痕，暴露风险 ${expDelta}%（当前 ${b.exposure}%）。`));
       }
       if (b.exposure >= 100) {
         b.exposureWarningTriggered = true;
-        pushLog(b, `<span style="color:#ff6b7a;font-weight:700">🚨 暴露风险达 100%！「极光」小队已循着魔力波动冲入林间，行踪彻底败露！</span>`);
+        pushLog(b, logTag('cbl-danger', `🚨 暴露风险达 100%！「极光」小队已循着魔力波动冲入林间，行踪彻底败露！`, true));
         finishBattle(b, false, 'exposed');
         return { ok: true, exposedFail: true };
       }
@@ -4179,7 +4013,7 @@
     const washedBlindJustNow = !!(sk.clearBlind && p.status.blind > 0);
     if (washedBlindJustNow) {
       delete p.status.blind;
-      pushLog(b, `<span style="color:#7ec8ff">💧 水流冲净了眼前的扬尘，视野恢复清晰！</span>`);
+      pushLog(b, logTag('cbl-ice', `💧 水流冲净了眼前的扬尘，视野恢复清晰！`));
     }
     if (sk.clearDebuff) {
       delete p.status.blind;
@@ -4188,7 +4022,7 @@
     if (sk.layFrostFloor) {
       b.frostFloorTurns = Math.max(b.frostFloorTurns || 0, sk.layFrostFloor);
       b.aiMemory.turtleStreak = 0;
-      pushLog(b, `<span style="color:#9beeff">❄️ 一层极薄的冰面沿着乱葬岗松土悄然铺开（持续 ${b.frostFloorTurns} 回合）！</span>`);
+      pushLog(b, logTag('cbl-ice', `❄️ 一层极薄的冰面沿着乱葬岗松土悄然铺开（持续 ${b.frostFloorTurns} 回合）！`));
     }
     if (sk.shieldBase) {
       let gain = Math.round(sk.shieldBase + p.matk * (sk.shieldScale || 0));
@@ -4198,16 +4032,16 @@
       p.shield = Math.min(p.maxShield, p.shield + gain);
       const shieldDelta = p.shield - beforeS;
       if (shieldDelta > 0) spawnCombatFloat(b, 'player', `+${shieldDelta} 护盾`, 'shield');
-      pushLog(b, `<span style="color:#7ef2e8">🛡️ 「${sk.name}」构筑 ${shieldDelta} 点护盾（当前 ${p.shield}/${p.maxShield}）。</span>`);
+      pushLog(b, logTag('cbl-ice', `🛡️ 「${sk.name}」构筑 ${shieldDelta} 点护盾（当前 ${p.shield}/${p.maxShield}）。`));
       if (hasRelic(p, 'cross') && (p.status.burn > 0 || p.status.blind > 0)) {
         if (p.status.burn > 0) delete p.status.burn;
         else if (p.status.blind > 0) delete p.status.blind;
-        pushLog(b, `<span style="color:#d4e8ff">✝️【银十字架】微光护盾净化了 1 项负面异常！</span>`);
+        pushLog(b, logTag('cbl-ice', `✝️【银十字架】微光护盾净化了 1 项负面异常！`));
       }
       if (getSynergyTier(p, 'dukedom_memory') >= 3 && b._synDukedomShieldTurn !== b.turn) {
         b._synDukedomShieldTurn = b.turn;
         p.status.afterimage = (p.status.afterimage || 0) + 1;
-        pushLog(b, `<span style="color:#9ef2c8">✦【共鸣·公爵府遗忆(3件)】护盾余风凝形，额外获得 1 层「风行残像」！</span>`);
+        pushLog(b, logTag('cbl-emerald', `✦【共鸣·公爵府遗忆(3件)】护盾余风凝形，额外获得 1 层「风行残像」！`));
       }
     }
     if (sk.rooted) p.status.rooted = 1;
@@ -4217,13 +4051,13 @@
     if (sk.nextApBonus) p.status.nextAp = (p.status.nextAp || 0) + sk.nextApBonus;
     if (sk.protectCrate && b.crateHp != null) {
       p.status.crateGuard = (p.status.crateGuard || 0) + sk.protectCrate;
-      pushLog(b, `<span style="color:#8ce8b5">📦 冰障延伸护住医疗药箱（抵御冲击 ${p.status.crateGuard}）！</span>`);
+      pushLog(b, logTag('cbl-emerald', `📦 冰障延伸护住医疗药箱（抵御冲击 ${p.status.crateGuard}）！`));
     }
     if (sk.path === 'HAND' && hasRelic(p, 'ice_pebble') && b._pebbleTurn !== b.turn) {
       b._pebbleTurn = b.turn;
       const beforePeb = p.shield;
       p.shield = Math.min(p.maxShield, p.shield + 8);
-      pushLog(b, `<span style="color:#9beeff">💎【冰蓝石子】经手调魔额外凝结 ${Math.max(8, p.shield - beforePeb)} 护盾（当前 ${p.shield}/${p.maxShield}）。</span>`);
+      pushLog(b, logTag('cbl-ice', `💎【冰蓝石子】经手调魔额外凝结 ${Math.max(8, p.shield - beforePeb)} 护盾（当前 ${p.shield}/${p.maxShield}）。`));
     }
 
     // 攻击结算
@@ -4234,6 +4068,10 @@
     let usedFrostPierce = false;
     let activatedFrostPierce = false;
     let usedNorthFrostShatter = false;
+    let playedBreakOrParry = false;
+    let playedBladeClash = false;
+    let anyDidCrit = false;
+    let anyShieldShattered = false;
     if ((!sk.power || sk.power <= 0) && (sk.shieldBase || sk.layFrostFloor || sk.dodgeLunge || sk.afterimage || washedBlindJustNow)) {
       const defVfxKind = sk.elem === 'water' ? 'water' : (sk.path === 'SWORD' || sk.elem === 'phys') ? 'sword' : 'ice';
       queueElementVFX(b, defVfxKind, 'player', 0, { skipHitStop: true });
@@ -4248,9 +4086,12 @@
       if (p.status.blind > 0 && !sk.aoe && !sk.sureHit) {
         p.status.blind -= 1;
         if (p.status.blind <= 0) delete p.status.blind;
-        pushLog(b, `<span style="color:#e6c280">🌫️ 视线受扬尘遮蔽，你的「${sk.name}」偏斜落空！（提示：用覆潮水弹/折射水幕洗净视线，或用范围技覆盖）</span>`);
+        pushLog(b, logTag('cbl-star', `🌫️ 视线受扬尘遮蔽，你的「${sk.name}」偏斜落空！（提示：用覆潮水弹/折射水幕洗净视线，或用范围技覆盖）`));
         if (p.overcastMode === 2) p.overcastMode = 0;
-        if (!b.headless) renderCombatUI();
+        if (!b.headless) {
+          safeSfx((sk.path === 'SWORD' || sk.elem === 'phys') ? 'sword_slash' : 'ice_cast');
+          renderCombatUI();
+        }
         return { ok: true, missedByBlind: true };
       }
 
@@ -4281,14 +4122,14 @@
             p.status.afterimage--;
             e.seepSevered = true;
             e.intent.ambushTrap = false;
-            pushLog(b, `<span style="color:#8ce8b5">💨 脚底冰缝暗流骤然暴起，幸亏「风行残像」替身引爆了暗流杀阵，你真身安然避开！</span>`);
+            pushLog(b, logTag('cbl-emerald', `💨 脚底冰缝暗流骤然暴起，幸亏「风行残像」替身引爆了暗流杀阵，你真身安然避开！`));
           } else {
             const trapDmg = e.intent.trapDmg || 205;
             p.hp = Math.max(0, p.hp - trapDmg);
             addCombatTrauma(0.92, b);
             queueElementVFX(b, 'water', 'player', 0);
             spawnBanner(b, '💧 冰缝暗流 · 绕盾穿心！', 'danger');
-            pushLog(b, `<span style="color:#ff6b7a;font-weight:700">💥 致命陷阱！你前压瞬间，诺艾儿暗渡在冰面裂缝下的水线绕过正面护盾从脚底直接刺穿，造成 ${trapDmg} 点本体重创！</span>`);
+            pushLog(b, logTag('cbl-danger', `💥 致命陷阱！你前压瞬间，诺艾儿暗渡在冰面裂缝下的水线绕过正面护盾从脚底直接刺穿，造成 ${trapDmg} 点本体重创！`, true));
             e.intent.ambushTrap = false;
             if (p.hp <= 0) return;
           }
@@ -4304,7 +4145,8 @@
           p.status.burn = (p.status.burn || 0) + 1;
           e.fireAura = Math.min(3, (e.fireAura || 0) + 1);
           triggerShake(b, false);
-          pushLog(b, `<span style="color:#ff9e7a">🔥 ${e.name} 震碎正面冰晶，烈焰气浪反劈造成 ${meltDmg} 伤害并重燃1层斗气！（宜在烈焰守势时改用覆潮水弹浇灭）</span>`);
+          if (!b.headless && !playedBladeClash) { safeSfx('blade_clash'); playedBladeClash = true; }
+          pushLog(b, logTag('cbl-danger', `🔥 ${e.name} 震碎正面冰晶，烈焰气浪反劈造成 ${meltDmg} 伤害并重燃1层斗气！（宜在烈焰守势时改用覆潮水弹浇灭）`));
           if (p.hp <= 0) return;
         }
 
@@ -4316,7 +4158,8 @@
           p.hp = Math.max(0, p.hp - (stillRetal - halfBlk));
           e.shield = (e.shield || 0) + 32;
           triggerShake(b, false);
-          pushLog(b, `<span style="color:#8ff2dc">🌪️ 风神借风壁圆心顺势反切，穿盾造成 ${stillRetal - halfBlk} 伤害并补强 32 点风壁！（宜先守势避锋，或以冰宫看破、蓄势剑步破阵）</span>`);
+          if (!b.headless && !playedBladeClash) { safeSfx('blade_clash'); playedBladeClash = true; }
+          pushLog(b, logTag('cbl-emerald', `🌪️ 风神借风壁圆心顺势反切，穿盾造成 ${stillRetal - halfBlk} 伤害并补强 32 点风壁！（宜先守势避锋，或以冰宫看破、蓄势剑步破阵）`));
           if (p.hp <= 0) return;
         }
 
@@ -4326,7 +4169,7 @@
           const blk = Math.min(p.shield, refDmg);
           p.shield -= blk;
           p.hp = Math.max(0, p.hp - (refDmg - blk));
-          pushLog(b, `<span style="color:#d6a8ff">🌑 罗文轻转晦轮杖偏折了正面冰晶余波，黑芒反噬你 ${refDmg} 伤害！（宜留魔力等他钻入石碑窄道时配合薄冰出击）</span>`);
+          pushLog(b, logTag('cbl-violet', `🌑 罗文轻转晦轮杖偏折了正面冰晶余波，黑芒反噬你 ${refDmg} 伤害！（宜留魔力等他钻入石碑窄道时配合薄冰出击）`));
           if (p.hp <= 0) return;
         }
 
@@ -4337,10 +4180,11 @@
           p.shield -= blk;
           p.hp = Math.max(0, p.hp - (counterDmg - blk));
           triggerShake(b, false);
-          pushLog(b, `<span style="color:#ff8a98">⚡ ${e.name} 早料到你会隔空偷袭，防反护幕掐灭冰锥并反震造成 ${counterDmg} 伤害！</span>`);
+          if (!b.headless && !playedBladeClash) { safeSfx('blade_clash'); playedBladeClash = true; }
+          pushLog(b, logTag('cbl-danger', `⚡ ${e.name} 早料到你会隔空偷袭，防反护幕掐灭冰锥并反震造成 ${counterDmg} 伤害！`));
           if (b.crateHp != null && (e.aiType === 'hulan_brute' || e.aiType === 'hulan_lord')) {
             b.crateHp = Math.max(0, b.crateHp - 22);
-            pushLog(b, `<span style="color:#ff8a98">📦 防反余波重创补给线，医疗药箱耐久 -22（剩余 ${b.crateHp}/${b.crateMax}）！</span>`);
+            pushLog(b, logTag('cbl-danger', `📦 防反余波重创补给线，医疗药箱耐久 -22（剩余 ${b.crateHp}/${b.crateMax}）！`));
             if (b.crateHp <= 0) {
               finishBattle(b, false, 'crate_destroyed');
               return;
@@ -4348,7 +4192,7 @@
           }
           if (b.stageCfg.hitRule && counterDmg > blk) {
             b.enemyHits += 1;
-            pushLog(b, `<span style="color:#ff8090;font-weight:700">⚠️ 盲目复读遭艾诺反刺命中！比分：${b.playerHits} : ${b.enemyHits}！</span>`);
+            pushLog(b, logTag('cbl-danger', `⚠️ 盲目复读遭艾诺反刺命中！比分：${b.playerHits} : ${b.enemyHits}！`, true));
             if (b.enemyHits >= (b.stageCfg.targetHits || 3)) {
               finishBattle(b, false, 'enemy_three_hits');
               return;
@@ -4377,10 +4221,10 @@
             const blk = Math.min(p.shield, windChip);
             p.shield -= blk;
             p.hp = Math.max(0, p.hp - (windChip - blk));
-            pushLog(b, `<span style="color:#b8d0e8">💨 ${e.name} 借微风轻盈闪开「${sk.name}」，顺风回削一道气刃造成 ${windChip} 伤害！（宜用冰晶宫殿封死风轨或用范围冰棘压走位）</span>`);
+            pushLog(b, logTag('cbl-muted', `💨 ${e.name} 借微风轻盈闪开「${sk.name}」，顺风回削一道气刃造成 ${windChip} 伤害！（宜用冰晶宫殿封死风轨或用范围冰棘压走位）`));
             return;
           }
-          pushLog(b, `<span style="color:#b8d0e8">💨 ${e.name} 消耗1层闪避轻盈避开了「${sk.name}」（剩余闪避层×${e.evadeCharges}）！</span>`);
+          pushLog(b, logTag('cbl-muted', `💨 ${e.name} 消耗1层闪避轻盈避开了「${sk.name}」（剩余闪避层×${e.evadeCharges}）！`));
           return;
         }
 
@@ -4396,19 +4240,19 @@
         if (sk.shatterFireAura && e.fireAura) {
           e.fireAura = 0;
           e.fireStacks = 0;
-          pushLog(b, `<span style="color:#9beeff">❄️ 「${sk.name}」直贯火眼，${e.name} 周身的烈焰斗气轰然溃散！</span>`);
+          pushLog(b, logTag('cbl-ice', `❄️ 「${sk.name}」直贯火眼，${e.name} 周身的烈焰斗气轰然溃散！`));
         }
         if (sk.douseFire) {
           if (e.fireStacks) e.fireStacks = Math.max(0, e.fireStacks - 1);
           if (e.fireAura > 0) {
             e.fireAura = Math.max(0, e.fireAura - 1);
-            pushLog(b, `<span style="color:#7ec8ff">💧 水幕浇弱了 ${e.name} 1 层烈焰斗气（剩余斗气×${e.fireAura}）！</span>`);
+            pushLog(b, logTag('cbl-ice', `💧 水幕浇弱了 ${e.name} 1 层烈焰斗气（剩余斗气×${e.fireAura}）！`));
           }
         }
         if (e.aiType === 'beatrice' && stance === 'DUAL_CAST' && sk.elem === 'ice' && sk.path !== 'INSIGHT') {
           if (e.intent) e.intent.gainFire = 0;
           e.fireStacks = Math.max(0, (e.fireStacks || 0) - 1);
-          pushLog(b, `<span style="color:#9beeff">❄️ 凝华冰晶精准冻住暴走火蛇核心，压制了她的升温势头！</span>`);
+          pushLog(b, logTag('cbl-ice', `❄️ 凝华冰晶精准冻住暴走火蛇核心，压制了她的升温势头！`));
         }
         if (sk.severSeep) {
           e.seepSevered = true;
@@ -4418,7 +4262,7 @@
             e.status.stagger = 1;
             decideEnemyIntent(e, b);
           }
-          pushLog(b, `<span style="color:#9beeff">❄️ 潜伏在冰缝下的暗渡水线被彻底冻死斩断！</span>`);
+          pushLog(b, logTag('cbl-ice', `❄️ 潜伏在冰缝下的暗渡水线被彻底冻死斩断！`));
         }
         if (sk.shredArmor) {
           e.def = Math.floor(e.def * 0.25);
@@ -4427,21 +4271,22 @@
         }
         if (sk.drainEnemyMp && e.mp != null) {
           e.mp = Math.max(0, e.mp - sk.drainEnemyMp);
-          pushLog(b, `<span style="color:#8cd4ff">💨 十字冰栏封死风路，迫使 ${e.name} 剧烈损耗 ${sk.drainEnemyMp} MP（剩余 ${e.mp}/${e.mmp}）！</span>`);
+          pushLog(b, logTag('cbl-ice', `💨 十字冰栏封死风路，迫使 ${e.name} 剧烈损耗 ${sk.drainEnemyMp} MP（剩余 ${e.mp}/${e.mmp}）！`));
         }
         if (sk.drainWindMp && e.mp != null) {
           if (e.status && e.status.evadeSealed > 0) {
             e.mp = Math.max(0, e.mp - 18);
-            pushLog(b, `<span style="color:#8cd4ff">❄️ 冰栏封路下满地冰棘锁死走位，逼耗 ${e.name} 18 MP（剩余 ${e.mp}/${e.mmp}）！</span>`);
+            pushLog(b, logTag('cbl-ice', `❄️ 冰栏封路下满地冰棘锁死走位，逼耗 ${e.name} 18 MP（剩余 ${e.mp}/${e.mmp}）！`));
           } else if (!p.status.blind && (b.aiMemory.sameAtkSkillStreak || 0) < 2) {
             e.mp = Math.max(0, e.mp - 13);
-            pushLog(b, `<span style="color:#8cd4ff">❄️ 你看清风向交错铺开地棘，迫使 ${e.name} 催动微风腾跃耗损 13 MP（剩余 ${e.mp}/${e.mmp}）！</span>`);
+            pushLog(b, logTag('cbl-ice', `❄️ 你看清风向交错铺开地棘，迫使 ${e.name} 催动微风腾跃耗损 13 MP（剩余 ${e.mp}/${e.mmp}）！`));
           }
         }
 
         // 艾诺正面无气泡镜冰阻挡
         if (est.mirrorBlocked) {
-          pushLog(b, `<span style="color:#a8c4e0">🧊 艾诺随手凝出一面无气泡薄冰挡下「${sk.name}」：「路径太慢，这不算有效命中。」</span>`);
+          if (!b.headless && !playedBladeClash) { safeSfx('blade_clash'); playedBladeClash = true; }
+          pushLog(b, logTag('cbl-muted', `🧊 艾诺随手凝出一面无气泡薄冰挡下「${sk.name}」：「路径太慢，这不算有效命中。」`));
           return;
         }
 
@@ -4459,8 +4304,9 @@
           decideEnemyIntent(e, b);
           if (!est.rootStepParryTrigger) {
             spawnBanner(b, '💥 截断破招 INTERRUPT!', 'interrupt');
+            triggerBreakJuice(b, 'break_chime');
+            playedBreakOrParry = true;
           }
-          triggerBreakJuice(b);
           if (getSynergyTier(p, 'academy_stars') >= 2) {
             e.status.vuln = (e.status.vuln || 0) + 2;
             const synMp = Math.max(10, Math.round(p.mmp * 0.12));
@@ -4469,7 +4315,7 @@
             const gainedSynMp = Math.max(0, p.mp - beforeSynMp);
             b.metrics.manaRecycled += gainedSynMp;
             if (gainedSynMp > 0) spawnCombatFloat(b, 'player', `+${gainedSynMp} MP`, 'mp');
-            pushLog(b, `<span style="color:#ffe4a8">✦【共鸣·学院星辉(2件)】截断破招附加 2 层易伤并回流 +${synMp} MP！</span>`);
+            pushLog(b, logTag('cbl-star', `✦【共鸣·学院星辉(2件)】截断破招附加 2 层易伤并回流 +${synMp} MP！`));
           }
         }
 
@@ -4483,15 +4329,16 @@
             b.sealProgress = Math.min(100, b.sealProgress + 38);
             decideEnemyIntent(e, b);
             spawnBanner(b, '🪨❄️ 窄道滑冰 · 雷纳德按肩锁脉！', 'interrupt');
-            triggerBreakJuice(b);
-            pushLog(b, `<span style="color:#ffe599">🪨❄️ 罗文穿过石碑窄道恰好踏碎你铺开的薄冰，左腿慢了半步！雷纳德按肩灌入土系魔力——合围封锁度 +38%（${b.sealProgress}%）！</span>`);
+            triggerBreakJuice(b, 'break_chime');
+            playedBreakOrParry = true;
+            pushLog(b, logTag('cbl-star', `🪨❄️ 罗文穿过石碑窄道恰好踏碎你铺开的薄冰，左腿慢了半步！雷纳德按肩灌入土系魔力——合围封锁度 +38%（${b.sealProgress}%）！`));
           } else if (sk.sealBoost) {
             if (stance === 'CLOSE_LUNGE') {
               b.sealProgress = Math.min(100, b.sealProgress + sk.sealBoost);
-              pushLog(b, `<span style="color:#ffe599">❄️ 双面冰镜凌空合拢死死夹住脱手飞来的晦轮杖！雷纳德五指收紧收拢石棱——合围封锁度 +${sk.sealBoost}%（${b.sealProgress}%）！</span>`);
+              pushLog(b, logTag('cbl-star', `❄️ 双面冰镜凌空合拢死死夹住脱手飞来的晦轮杖！雷纳德五指收紧收拢石棱——合围封锁度 +${sk.sealBoost}%（${b.sealProgress}%）！`));
             } else {
               b.sealProgress = Math.min(100, b.sealProgress + 26);
-              pushLog(b, `<span style="color:#ffe599">❄️ 双面冰镜逼退罗文半步，合围封锁度 +26%（${b.sealProgress}%）！</span>`);
+              pushLog(b, logTag('cbl-star', `❄️ 双面冰镜逼退罗文半步，合围封锁度 +26%（${b.sealProgress}%）！`));
             }
           }
         }
@@ -4506,17 +4353,20 @@
           activatedChain = true;
           b.ap = Math.min(b.apMax, b.ap + 1);
           spawnBanner(b, '✦ 生根步·斩风瞬反！', 'riposte');
-          triggerBreakJuice(b);
-          pushLog(b, `<span style="color:#84f2c3;font-weight:700">✦ 生根步·斩风瞬反！你踏稳砂面迎锋切入真空连刃，震散风暴眼威势并斩获 +1 AP 与连携追击！</span>`);
+          triggerBreakJuice(b, 'parry');
+          playedBreakOrParry = true;
+          pushLog(b, logTag('cbl-emerald', `✦ 生根步·斩风瞬反！你踏稳砂面迎锋切入真空连刃，震散风暴眼威势并斩获 +1 AP 与连携追击！`, true));
         } else if (est.willRiposte) {
           b.metrics.ripostes += 1;
           p.status.lungeMitigate = 1;
           spawnBanner(b, '⚡ 覆水迎锋 · 卸力截斩！', 'riposte');
-          triggerBreakJuice(b);
+          triggerBreakJuice(b, 'parry');
+          playedBreakOrParry = true;
         }
 
         const critRate = getPlayerCritChance(p, sk);
         const didCrit = !!(b._forceCrit || (critRate > 0 && Math.random() < critRate));
+        if (didCrit) anyDidCrit = true;
         const critMult = getPlayerCritMult(p);
         const finalDmg = didCrit ? Math.round(est.dmg * critMult) : est.dmg;
         if (sk.elem === 'ice' && p.status.frostPierce > 0 && hasRelic(p, 'aino_frost_shard')) {
@@ -4535,17 +4385,18 @@
           severSeep: !!sk.severSeep,
         });
         const shieldBroken = shieldBeforeHit > 0 && (e.shield || 0) <= 0;
+        if (shieldBroken) anyShieldShattered = true;
         anyHitDealt = true;
 
         if (didCrit && sk.path === 'SWORD' && hasRelic(p, 'ebony_sword') && b._ebonyApRefundTurn !== b.turn) {
           b._ebonyApRefundTurn = b.turn;
           b.ap = Math.min(b.apMax, b.ap + 1);
-          pushLog(b, `<span style="color:#d6b8ff">🗡️【乌木紫穗剑】剑步暴击破风，返还 1 AP（当前 ${b.ap}/${b.apMax}）！</span>`);
+          pushLog(b, logTag('cbl-violet', `🗡️【乌木紫穗剑】剑步暴击破风，返还 1 AP（当前 ${b.ap}/${b.apMax}）！`));
         }
         if (sk.path === 'SWORD' && (didCrit || didInterrupt) && getSynergyTier(p, 'jikan_blade') >= 2 && b._synJikanApTurn !== b.turn) {
           b._synJikanApTurn = b.turn;
           b.ap = Math.min(b.apMax, b.ap + 1);
-          pushLog(b, `<span style="color:#d8b8ff">✦【共鸣·霁馆剑心(2件)】剑势贯通返还 +1 AP（当前 ${b.ap}/${b.apMax}）！</span>`);
+          pushLog(b, logTag('cbl-violet', `✦【共鸣·霁馆剑心(2件)】剑势贯通返还 +1 AP（当前 ${b.ap}/${b.apMax}）！`));
         }
 
         if ((didInterrupt && sk.path === 'REMOTE') || (est.willRiposte && hadPoise)) {
@@ -4603,15 +4454,15 @@
         }
 
         const tagStr = [
-          est.rootStepParryTrigger ? '<b style="color:#84f2c3">【斩风瞬反！】</b>' : '',
-          didInterrupt ? '<b style="color:#ffd468">【截断破招！】</b>' : '',
-          est.willRiposte && !est.rootStepParryTrigger ? '<b style="color:#7ef2c8">【迎锋截斩！】</b>' : '',
-          didCrit ? `<b style="color:#ffdf7a">【暴击${critMult.toFixed(2)}×！】</b>` : '',
-          est.northFrostShatter ? '<b style="color:#9beeff">【北境碎霜+15%】</b>' : '',
-          est.chainApplied ? '<b style="color:#ffe28c">【连携1.35×】</b>' : '',
-          est.wandRefract ? '<b style="color:#d6a8ff">【晦轮折光破甲】</b>' : '',
-          est.mult > 1 ? '<b style="color:#7ec8ff">【属性克制】</b>' : '',
-          mcMult > 1.05 ? `<span style="color:#ffe599">[魔战${mcMult.toFixed(2)}x]</span>` : '',
+          est.rootStepParryTrigger ? logTag('cbl-emerald', '【斩风瞬反！】', true) : '',
+          didInterrupt ? logTag('cbl-star', '【截断破招！】', true) : '',
+          est.willRiposte && !est.rootStepParryTrigger ? logTag('cbl-emerald', '【迎锋截斩！】', true) : '',
+          didCrit ? logTag('cbl-star', `【暴击${critMult.toFixed(2)}×！】`, true) : '',
+          est.northFrostShatter ? logTag('cbl-ice', '【北境碎霜+15%】', true) : '',
+          est.chainApplied ? logTag('cbl-star', '【连携1.35×】', true) : '',
+          est.wandRefract ? logTag('cbl-violet', '【晦轮折光破甲】', true) : '',
+          est.mult > 1 ? logTag('cbl-cobalt', '【属性克制】', true) : '',
+          mcMult > 1.05 ? logTag('cbl-star', `[魔战${mcMult.toFixed(2)}x]`) : '',
         ].filter(Boolean).join(' ');
 
         pushLog(b, `⚔️ 「${sk.name}」命中 ${e.name}，造成 <b>${finalDmg}</b> 伤害${dmgRes.shieldAbsorbed ? `（破盾${dmgRes.shieldAbsorbed}）` : ''} ${tagStr}`);
@@ -4620,7 +4471,7 @@
         if (b.stageCfg.hitRule && dmgRes.actualHpLoss > 0) {
           if (didInterrupt || sk.guaranteedCleanHit) {
             b.playerHits += 1;
-            pushLog(b, `<span style="color:#ffe599;font-weight:700">🎯 有效命中！比分：希尔维亚 ${b.playerHits} : ${b.enemyHits} 艾诺！</span>`);
+            pushLog(b, logTag('cbl-star', `🎯 有效命中！比分：希尔维亚 ${b.playerHits} : ${b.enemyHits} 艾诺！`, true));
           }
         }
 
@@ -4629,7 +4480,7 @@
           const jikanDouble = (sk.path === 'SWORD' && (est.willRiposte || didInterrupt) && getSynergyTier(p, 'jikan_blade') >= 2);
           totalManaReturned += jikanDouble ? dmgRes.actualHpLoss * 2 : dmgRes.actualHpLoss;
           if (jikanDouble) {
-            pushLog(b, `<span style="color:#d8b8ff">✦【共鸣·霁馆剑心(2件)】剑步迎锋引动魔战双倍回蓝！</span>`);
+            pushLog(b, logTag('cbl-violet', `✦【共鸣·霁馆剑心(2件)】剑步迎锋引动魔战双倍回蓝！`));
           }
         }
       });
@@ -4648,15 +4499,15 @@
         const beforeChainMp = p.mp;
         p.mp = Math.min(p.mmp, p.mp + chainBonus);
         b.metrics.manaRecycled += Math.max(0, p.mp - beforeChainMp);
-        pushLog(b, `<span style="color:#ffd468">🔗【连携追击】乘势追击引动魔脉回流 +${p.mp - beforeChainMp} MP${hasRelic(p, 'shell_pin') ? '（含月虹螺+8%）' : ''}！</span>`);
+        pushLog(b, logTag('cbl-star', `🔗【连携追击】乘势追击引动魔脉回流 +${p.mp - beforeChainMp} MP${hasRelic(p, 'shell_pin') ? '（含月虹螺+8%）' : ''}！`));
       }
       if (activatedFrostPierce) {
         p.status.frostPierce = 1;
-        pushLog(b, `<span style="color:#9beeff">❄️【钢冰试炼笺】破招余锋凝实，下一次冰系攻击无视 25% 冰抗！</span>`);
+        pushLog(b, logTag('cbl-ice', `❄️【钢冰试炼笺】破招余锋凝实，下一次冰系攻击无视 25% 冰抗！`));
       }
       if (activatedChain) {
         p.status.breakChain = 1;
-        pushLog(b, `<span style="color:#ffd468;font-weight:700">✨【破招连携窗口】本回合下一张非基础攻击牌享 1.35× 伤害并额外返还 15% 魔力！</span>`);
+        pushLog(b, logTag('cbl-star', `✨【破招连携窗口】本回合下一张非基础攻击牌享 1.35× 伤害并额外返还 15% 魔力！`, true));
       }
 
       if (hadPoise && sk.path === 'SWORD') delete p.status.poise;
@@ -4676,7 +4527,7 @@
           if (spearPos >= 0) queueElementVFX(b, 'ice', 'enemy', spearPos);
           addCombatTrauma(0.64, b);
           spawnBanner(b, '❄️ 艾诺支援 · 极寒冰枪贯落！', 'interrupt');
-          pushLog(b, `<span style="color:#a8ecff;font-weight:700">❄️【冰原共鸣】峡谷崖顶艾诺射落第 ${b.ainoSpearsFiredInWave} 道无气泡极寒冰枪，重创 ${bossTarget.name} ${spearDmg} 伤害！</span>`);
+          pushLog(b, logTag('cbl-cobalt', `❄️【冰原共鸣】峡谷崖顶艾诺射落第 ${b.ainoSpearsFiredInWave} 道无气泡极寒冰枪，重创 ${bossTarget.name} ${spearDmg} 伤害！`, true));
           // 无冰宫基本功路径：本波累计引落第 2 发艾诺冰枪命中领主时，同样震碎腹下晶核！
           if (bossTarget.aiType === 'hulan_lord' && !bossTarget.coreShattered && b.ainoSpearsFiredInWave >= 2) {
             bossTarget.coreShattered = true;
@@ -4684,7 +4535,8 @@
             bossTarget.def = Math.floor(bossTarget.def * 0.28);
             bossTarget.mdef = Math.floor(bossTarget.mdef * 0.28);
             bossTarget.status.vuln = (bossTarget.status.vuln || 0) + 2;
-            pushLog(b, `<span style="color:#9beeff;font-weight:700">❄️💥 第二道极寒冰枪顺着破招裂隙贯入领主腹下，幽蓝晶核轰然震碎（重甲瓦解，地脉寒震停止）！</span>`);
+            anyShieldShattered = true;
+            pushLog(b, logTag('cbl-ice', `❄️💥 第二道极寒冰枪顺着破招裂隙贯入领主腹下，幽蓝晶核轰然震碎（重甲瓦解，地脉寒震停止）！`, true));
           }
         }
       }
@@ -4695,7 +4547,7 @@
       const vialHeal = Math.max(15, Math.round(p.mhp * 0.25));
       p.hp = Math.min(p.mhp, p.hp + vialHeal);
       p.status.afterimage = (p.status.afterimage || 0) + 1;
-      pushLog(b, `<span style="color:#8cd4ff;font-weight:700">🧪【淡蓝小瓶】濒危安神凉雾散开，回复 ${vialHeal} 生命并幻化 1 层「风行残像」！</span>`);
+      pushLog(b, logTag('cbl-ice', `🧪【淡蓝小瓶】濒危安神凉雾散开，回复 ${vialHeal} 生命并幻化 1 层「风行残像」！`, true));
     }
 
     if (p.hp <= 0) {
@@ -4709,13 +4561,27 @@
       b.metrics.manaRecycled += totalManaReturned;
       const mpGain = p.mp - mpBefore;
       if (mpGain > 0) spawnCombatFloat(b, 'player', `+${mpGain} MP`, 'mp');
-      pushLog(b, `<span style="color:#6ecbff">⚡【魔战循环】100% 等量伤害回流 +${totalManaReturned} MP（当前 ${p.mp}/${p.mmp}）！</span>`);
+      pushLog(b, logTag('cbl-ice', `⚡【魔战循环】100% 等量伤害回流 +${totalManaReturned} MP（当前 ${p.mp}/${p.mmp}）！`));
     }
     if (p.overcastMode === 2 && sk.power > 0 && sk.atkKind === 'matk') {
       p.overcastMode = 0;
     }
 
-    if (!b.headless) safeSfx('magic');
+    if (!b.headless && !playedBreakOrParry) {
+      if (anyDidCrit) {
+        safeSfx('combat_crit');
+      } else if (anyShieldShattered) {
+        safeSfx('ice_shatter');
+      } else if (!playedBladeClash) {
+        if ((!sk.power || sk.power <= 0) && (sk.shieldBase || sk.dodgeLunge || sk.afterimage)) {
+          safeSfx('shield_block');
+        } else if (sk.path === 'SWORD' || sk.elem === 'phys') {
+          safeSfx('sword_slash');
+        } else {
+          safeSfx('ice_cast');
+        }
+      }
+    }
 
     if (checkImmediateVictoryOrNextWave(b)) {
       if (!b.headless) renderCombatUI();
@@ -4732,7 +4598,7 @@
     // 1. 艾诺三击制唯一胜机铁律：绝不允许靠 HP 归零判胜，唯抢满 3 次有效命中可胜！
     if (b.stageCfg.hitRule) {
       if (b.playerHits >= (b.stageCfg.targetHits || 3)) {
-        pushLog(b, `<span style="color:#ffe599;font-weight:700">❄️ 冰珠弹在艾诺手背上！艾诺微怔：「……这算命中。三击已满，你赢了。」</span>`);
+        pushLog(b, logTag('cbl-star', `❄️ 冰珠弹在艾诺手背上！艾诺微怔：「……这算命中。三击已满，你赢了。」`, true));
         finishBattle(b, true, 'three_hits');
         return true;
       }
@@ -4742,13 +4608,13 @@
     // 2. 罗文乱葬岗活捉铁律：凑满 100% 合围封锁判胜；若未满 100% 却把罗文打空 HP，化雾逃脱判败！
     if (b.stageCfg.sealRule) {
       if (b.sealProgress >= 100) {
-        pushLog(b, `<span style="color:#ffe599;font-weight:700">🪨❄️ 四道石棱轰然闭合将罗文压入地面，你一发冰锥钉穿他袖口定在离地半寸——成功活捉留口供！</span>`);
+        pushLog(b, logTag('cbl-star', `🪨❄️ 四道石棱轰然闭合将罗文压入地面，你一发冰锥钉穿他袖口定在离地半寸——成功活捉留口供！`, true));
         finishBattle(b, true, 'sealed_rowan');
         return true;
       }
       const rowan = b.enemies[0];
       if (rowan && rowan.hp <= 0) {
-        pushLog(b, `<span style="color:#ff6b7a;font-weight:700">❌ 合围尚未成形（${b.sealProgress}%）！重伤的罗文借晦轮杖偏折月影化作血雾遁逃，线索断绝！</span>`);
+        pushLog(b, logTag('cbl-danger', `❌ 合围尚未成形（${b.sealProgress}%）！重伤的罗文借晦轮杖偏折月影化作血雾遁逃，线索断绝！`, true));
         finishBattle(b, false, 'rowan_escaped');
         return true;
       }
@@ -4763,7 +4629,7 @@
         b.ap = Math.max(b.ap, b.apPerTurn);
         if (b.player.wandActive && b.witnessActive) {
           b.player.wandActive = false;
-          pushLog(b, `<span style="color:#ffd480">⚠️ 察觉林外极光小队靠近，已迅速收起晦轮杖！</span>`);
+          pushLog(b, logTag('cbl-star', `⚠️ 察觉林外极光小队靠近，已迅速收起晦轮杖！`));
         }
         return true;
       } else {
@@ -4777,6 +4643,7 @@
   function endTurn(b) {
     b = b || activeBattle;
     if (!b || b.over) return false;
+    armedSkillId = null;
     const p = b.player;
     delete p.status.breakChain;
     const hadNobleReflect = !!(p.status && p.status.nobleReflect > 0);
@@ -4797,13 +4664,13 @@
       if (e.hp <= 0 || b.over) continue;
 
       if (e.status.stagger > 0) {
-        pushLog(b, `<span style="color:#9ec8e8">💫 ${e.name} 架势崩解，错失本回合攻势！</span>`);
+        pushLog(b, logTag('cbl-ice', `💫 ${e.name} 架势崩解，错失本回合攻势！`));
         delete e.status.stagger;
         // 霜渊裂地兽若晶核未碎，即便眩晕亦有微弱余震（-8 药箱耐久）
         if (e.aiType === 'hulan_lord' && !e.coreShattered && e.hp > 0 && b.crateHp != null) {
           e.shield += 35;
           b.crateHp = Math.max(0, b.crateHp - 8);
-          pushLog(b, `<span style="color:#ff9aa6">❄️ 领主腹下晶核未破，再生 35 点冻甲且寒气余震损耗药箱 8 耐久（剩余 ${b.crateHp}）！</span>`);
+          pushLog(b, logTag('cbl-danger', `❄️ 领主腹下晶核未破，再生 35 点冻甲且寒气余震损耗药箱 8 耐久（剩余 ${b.crateHp}）！`));
           if (b.crateHp <= 0) {
             finishBattle(b, false, 'crate_destroyed');
             return true;
@@ -4823,7 +4690,7 @@
       // 爱丽丝魔力不足蓄力风暴原著自断！
       if (intent.selfFizzleIfLowMp && e.mp != null && e.mp < intent.mpCost) {
         b.metrics.manaFizzleWin = true;
-        pushLog(b, `<span style="color:#c8ecff;font-weight:700">💨 狂躁的气流骤然散去！爱丽丝晃了一下：「……没魔力了。……认输。」</span>`);
+        pushLog(b, logTag('cbl-ice', `💨 狂躁的气流骤然散去！爱丽丝晃了一下：「……没魔力了。……认输。」`, true));
         e.hp = 0;
         if (checkImmediateVictoryOrNextWave(b)) {
           if (!b.headless) renderCombatUI();
@@ -4856,14 +4723,14 @@
         }
         if (cDmg > 0) {
           b.crateHp = Math.max(0, b.crateHp - cDmg);
-          pushLog(b, `<span style="color:#ff8a98">📦 ${e.name} 重撞补给防线，医疗药箱耐久 -${cDmg}（剩余 ${b.crateHp}/${b.crateMax}）！</span>`);
+          pushLog(b, logTag('cbl-danger', `📦 ${e.name} 重撞补给防线，医疗药箱耐久 -${cDmg}（剩余 ${b.crateHp}/${b.crateMax}）！`));
           if (b.crateHp <= 0) {
-            pushLog(b, `<span style="color:#ff5b6c;font-weight:700">❌ 医疗药箱被毁，冰封峡谷前线补给崩溃！</span>`);
+            pushLog(b, logTag('cbl-danger', `❌ 医疗药箱被毁，冰封峡谷前线补给崩溃！`, true));
             finishBattle(b, false, 'crate_destroyed');
             return true;
           }
         } else {
-          pushLog(b, `<span style="color:#8ce8b5">📦 生根冰障稳稳护住了医疗药箱！</span>`);
+          pushLog(b, logTag('cbl-emerald', `📦 生根冰障稳稳护住了医疗药箱！`));
         }
       }
 
@@ -4874,14 +4741,14 @@
           p.status.afterimage -= 1;
           if (intent.pierceAfterimage) {
             afterimageShearMult = 0.72;
-            pushLog(b, `<span style="color:#8ff2dc">🌪️ ${e.name} 御风震散你的「风行残像」，余岚仍旧破风袭身！</span>`);
+            pushLog(b, logTag('cbl-emerald', `🌪️ ${e.name} 御风震散你的「风行残像」，余岚仍旧破风袭身！`));
           } else {
-            pushLog(b, `<span style="color:#8ce8b5">💨 「风行残像」碎裂，你真身避开了 ${e.name} 的「${intent.moveName}」！</span>`);
+            pushLog(b, logTag('cbl-emerald', `💨 「风行残像」碎裂，你真身避开了 ${e.name} 的「${intent.moveName}」！`));
             if (hasRelic(p, 'alice_flower_cake')) {
               const beforeMp = p.mp;
               p.mp = Math.min(p.mmp, p.mp + 10);
               if (p.mp > beforeMp) {
-                pushLog(b, `<span style="color:#9ef2c8">🌼【风之花饼】借风轻落回蓄 ${p.mp - beforeMp} MP！</span>`);
+                pushLog(b, logTag('cbl-emerald', `🌼【风之花饼】借风轻落回蓄 ${p.mp - beforeMp} MP！`));
               }
             }
             continue;
@@ -4908,11 +4775,11 @@
             p.status.nextAp = (p.status.nextAp || 0) + 1;
             spawnCombatFloat(b, 'enemy', `✦ -${riposteDmg} 斩风瞬反!`, 'riposte', b.enemies.indexOf(e));
             spawnBanner(b, '✦ 生根步·斩风瞬反！', 'riposte');
-            pushLog(b, `<span style="color:#84f2c3;font-weight:700">✦ 生根步·斩风瞬反！你沉腰踏稳卸开「${intent.moveName}」，顺势反切 ${riposteDmg} 伤害并赢得下回合 +1 AP 与连携追击！</span>`);
+            pushLog(b, logTag('cbl-emerald', `✦ 生根步·斩风瞬反！你沉腰踏稳卸开「${intent.moveName}」，顺势反切 ${riposteDmg} 伤害并赢得下回合 +1 AP 与连携追击！`, true));
           } else {
             spawnCombatFloat(b, 'enemy', `-${riposteDmg} 闪反!`, 'riposte', b.enemies.indexOf(e));
             spawnBanner(b, '⚡ 生根侧滑 · 卸力破闪！', 'riposte');
-            pushLog(b, `<span style="color:#8ce8b5">🗡️ 你沉膝侧滑卸开「${intent.moveName}」，震散其闪避架势并顺势削出 ${riposteDmg} 伤害（下一记送刀强化）！</span>`);
+            pushLog(b, logTag('cbl-emerald', `🗡️ 你沉膝侧滑卸开「${intent.moveName}」，震散其闪避架势并顺势削出 ${riposteDmg} 伤害（下一记送刀强化）！`));
           }
           const ripIdx = b.enemies.indexOf(e);
           queueHitPulse(b, 'enemy', ripIdx);
@@ -4926,7 +4793,7 @@
             const gainedMp = Math.max(0, p.mp - beforeMp);
             b.metrics.manaRecycled += gainedMp;
             if (gainedMp > 0) spawnCombatFloat(b, 'player', `+${gainedMp} MP`, 'mp');
-            pushLog(b, `<span style="color:#d8b8ff">✦【共鸣·霁馆剑心(2件)】卸力闪反引动魔战双倍回流 +${riposteDmg * 2} MP！</span>`);
+            pushLog(b, logTag('cbl-violet', `✦【共鸣·霁馆剑心(2件)】卸力闪反引动魔战双倍回流 +${riposteDmg * 2} MP！`));
           }
           if (checkImmediateVictoryOrNextWave(b)) {
             if (!b.headless) renderCombatUI();
@@ -4937,7 +4804,7 @@
 
         // 敌方破盾重锤判定（专治无脑叠盾龟缩！）
         if (intent.shatterPlayerShield && p.shield > 0) {
-          pushLog(b, `<span style="color:#ff6b7a">💥 ${e.name} 的「${intent.moveName}」正面轰碎了你全部 ${p.shield} 点护盾！</span>`);
+          pushLog(b, logTag('cbl-danger', `💥 ${e.name} 的「${intent.moveName}」正面轰碎了你全部 ${p.shield} 点护盾！`));
           p.shield = 0;
         }
 
@@ -4956,7 +4823,7 @@
         // 罗文首击黑光：雷纳德掀石板仅协助减伤保命，单纯挨打绝不白送合围封锁度！
         if (b.stageCfg.sealRule && intent.renoRockBlock && p.shield > 0) {
           incoming = Math.round(incoming * 0.45);
-          pushLog(b, `<span style="color:#ffe599">🪨 雷纳德勾起碎石板与你的冰墙合力拦下大半黑光！（提示：须铺设蔓地薄冰主动设伏才能推进封锁度）</span>`);
+          pushLog(b, logTag('cbl-star', `🪨 雷纳德勾起碎石板与你的冰墙合力拦下大半黑光！（提示：须铺设蔓地薄冰主动设伏才能推进封锁度）`));
         }
 
         const pDef = intent.elem === 'phys' ? p.def : p.mdef;
@@ -4980,7 +4847,7 @@
           const chip = Math.min(e.hp - 1, 10);
           if (chip > 0) {
             e.hp -= chip;
-            pushLog(b, `<span style="color:#9beeff">❄️ 生根冰盾表面霜刺刮伤 ${e.name} ${chip} 点皮毛。</span>`);
+            pushLog(b, logTag('cbl-ice', `❄️ 生根冰盾表面霜刺刮伤 ${e.name} ${chip} 点皮毛。`));
           }
         }
 
@@ -4992,23 +4859,24 @@
           const eHitVfx = intent.elem === 'water' ? 'water' : intent.elem === 'ice' ? 'ice' : 'sword';
           queueElementVFX(b, eHitVfx, 'player', 0, { skipHitStop: true });
           if (!b.headless) safeSfx('bad');
-          pushLog(b, `<span style="color:#ff9aa6">❗ ${e.name} 施展「${intent.moveName}」，造成 ${hpLoss} 伤害${hpLoss < incoming ? `（护盾抵消 ${incoming - hpLoss}）` : ''}！</span>`);
+          pushLog(b, logTag('cbl-danger', `❗ ${e.name} 施展「${intent.moveName}」，造成 ${hpLoss} 伤害${hpLoss < incoming ? `（护盾抵消 ${incoming - hpLoss}）` : ''}！`));
           if (intent.scoresHit && b.stageCfg.hitRule) {
             const hitGain = (intent.slipStrike && !p.status.rooted) ? 2 : 1;
             b.enemyHits = Math.min(b.stageCfg.targetHits || 3, b.enemyHits + hitGain);
-            pushLog(b, `<span style="color:#ff8090;font-weight:700">⚠️ ${hitGain > 1 ? '脚底未生根打滑连中两刺！' : '被艾诺有效命中！'}比分：${b.playerHits} : ${b.enemyHits}！</span>`);
+            pushLog(b, logTag('cbl-danger', `⚠️ ${hitGain > 1 ? '脚底未生根打滑连中两刺！' : '被艾诺有效命中！'}比分：${b.playerHits} : ${b.enemyHits}！`, true));
             if (b.enemyHits >= (b.stageCfg.targetHits || 3)) {
               finishBattle(b, false, 'enemy_three_hits');
               return true;
             }
           }
         } else {
-          pushLog(b, `<span style="color:#8cd4ff">🛡️ 你的护盾稳稳挡下了 ${e.name} 的「${intent.moveName}」！</span>`);
+          if (!b.headless) safeSfx('shield_block');
+          pushLog(b, logTag('cbl-ice', `🛡️ 你的护盾稳稳挡下了 ${e.name} 的「${intent.moveName}」！`));
         }
 
         if (intent.inflictBlind) {
           p.status.blind = (p.status.blind || 0) + intent.inflictBlind;
-          pushLog(b, `<span style="color:#e6c280">🌫️ 扬尘遮蔽视线（下一次非范围单点攻击必偏斜，可用覆潮水弹/折射水幕洗净）！</span>`);
+          pushLog(b, logTag('cbl-star', `🌫️ 扬尘遮蔽视线（下一次非范围单点攻击必偏斜，可用覆潮水弹/折射水幕洗净）！`));
         }
         if (intent.addBurn && hpLoss > 0) {
           p.status.burn = (p.status.burn || 0) + intent.addBurn;
@@ -5017,7 +4885,7 @@
         if (hadNobleReflect && hpLoss >= 0 && e.hp > 0) {
           const refDmg = Math.round(p.mdef * 1.4 + 28);
           dealDamageToEnemy(b, e, refDmg, {});
-          pushLog(b, `<span style="color:#ffd479">👑【贵族体面·回敬】礼仪冰霜震退 ${e.name}，反伤 ${refDmg}！</span>`);
+          pushLog(b, logTag('cbl-star', `👑【贵族体面·回敬】礼仪冰霜震退 ${e.name}，反伤 ${refDmg}！`));
           if (checkImmediateVictoryOrNextWave(b)) {
             if (!b.headless) renderCombatUI();
             return true;
@@ -5029,7 +4897,7 @@
           const vialHeal = Math.max(15, Math.round(p.mhp * 0.25));
           p.hp = Math.min(p.mhp, p.hp + vialHeal);
           p.status.afterimage = (p.status.afterimage || 0) + 1;
-          pushLog(b, `<span style="color:#8cd4ff;font-weight:700">🧪【淡蓝小瓶】濒危安神凉雾散开，回复 ${vialHeal} 生命并幻化 1 层「风行残像」！</span>`);
+          pushLog(b, logTag('cbl-ice', `🧪【淡蓝小瓶】濒危安神凉雾散开，回复 ${vialHeal} 生命并幻化 1 层「风行残像」！`, true));
         }
 
         if (p.hp <= 0) {
@@ -5058,7 +4926,7 @@
       if (e.aiType === 'hulan_lord' && !e.coreShattered && e.hp > 0 && b.crateHp != null) {
         e.shield += 55;
         b.crateHp = Math.max(0, b.crateHp - 16);
-        pushLog(b, `<span style="color:#ff9aa6">❄️ 领主腹下晶核未破，再生 55 点冻甲且寒震穿透冰障损耗药箱 16 耐久（剩余 ${b.crateHp}）！</span>`);
+        pushLog(b, logTag('cbl-danger', `❄️ 领主腹下晶核未破，再生 55 点冻甲且寒震穿透冰障损耗药箱 16 耐久（剩余 ${b.crateHp}）！`));
         if (b.crateHp <= 0) {
           finishBattle(b, false, 'crate_destroyed');
           return true;
@@ -5074,7 +4942,7 @@
       const burnDmg = 8;
       p.hp = Math.max(0, p.hp - burnDmg);
       p.status.burn--;
-      pushLog(b, `<span style="color:#ff9e7a">🔥 烈焰灼烧损耗 ${burnDmg} 生命。</span>`);
+      pushLog(b, logTag('cbl-danger', `🔥 烈焰灼烧损耗 ${burnDmg} 生命。`));
       if (p.hp <= 0) {
         finishBattle(b, false, 'burn_death');
         return true;
@@ -5086,7 +4954,7 @@
       const beforeHp = p.hp;
       p.hp = Math.min(p.mhp, p.hp + crossHeal);
       if (p.hp > beforeHp) {
-        pushLog(b, `<span style="color:#d4e8ff">✝️【银十字架】微光抚平伤势，回复 ${p.hp - beforeHp} 生命。</span>`);
+        pushLog(b, logTag('cbl-ice', `✝️【银十字架】微光抚平伤势，回复 ${p.hp - beforeHp} 生命。`));
       }
     }
 
@@ -5112,7 +4980,7 @@
 
     // 艾诺切磋回合上限判定
     if (b.stageCfg.turnLimit && b.turn >= b.stageCfg.turnLimit) {
-      pushLog(b, `<span style="color:#ff8090;font-weight:700">⏱️ ${b.stageCfg.turnLimit} 回合时限已到，未能拿满三次有效命中，切磋告负！</span>`);
+      pushLog(b, logTag('cbl-danger', `⏱️ ${b.stageCfg.turnLimit} 回合时限已到，未能拿满三次有效命中，切磋告负！`, true));
       finishBattle(b, false, 'turn_limit');
       return true;
     }
@@ -5127,14 +4995,14 @@
       const beforeS = p.shield;
       p.shield = Math.min(p.maxShield, p.shield + 12);
       if (p.shield > beforeS) {
-        pushLog(b, `<span style="color:#a8ecff">🪪【北风堡木牌】新回合寒铁护盾 +${p.shield - beforeS}（当前 ${p.shield}/${p.maxShield}）。</span>`);
+        pushLog(b, logTag('cbl-ice', `🪪【北风堡木牌】新回合寒铁护盾 +${p.shield - beforeS}（当前 ${p.shield}/${p.maxShield}）。`));
       }
     }
     if (getSynergyTier(p, 'north_frost') >= 2) {
       const beforeNF = p.shield;
       p.shield = Math.min(p.maxShield, p.shield + 10);
       if (p.shield > beforeNF) {
-        pushLog(b, `<span style="color:#9ee8ff">✦【共鸣·北境霜锋(2件)】新回合霜锋寒甲 +${p.shield - beforeNF} 护盾（当前 ${p.shield}/${p.maxShield}）。</span>`);
+        pushLog(b, logTag('cbl-ice', `✦【共鸣·北境霜锋(2件)】新回合霜锋寒甲 +${p.shield - beforeNF} 护盾（当前 ${p.shield}/${p.maxShield}）。`));
       }
     }
 
@@ -5163,6 +5031,7 @@
     const meta = (api && api.BOND_ASSISTS && api.BOND_ASSISTS[p.bondAssist]) || null;
     const cid = p.bondAssist;
     p.bondAssistUsed = true;
+    armedSkillId = null;
     const primary = getPrimaryAliveEnemy(b);
 
     if (cid === 'alice') {
@@ -5171,12 +5040,12 @@
       p.status.afterimage = (p.status.afterimage || 0) + 1;
       const recMp = Math.round(p.mmp * 0.15);
       p.mp = Math.min(p.mmp, p.mp + recMp);
-      pushLog(b, `<span style="color:#9ef2c8;font-weight:700">🍃【心念援护·爱丽丝·清风托翼】「${meta ? meta.quote : ''}」清除视野/灼烧，获 1 层「风行残像」并回复 ${recMp} MP！</span>`);
+      pushLog(b, logTag('cbl-emerald', `🍃【心念援护·爱丽丝·清风托翼】「${meta ? meta.quote : ''}」清除视野/灼烧，获 1 层「风行残像」并回复 ${recMp} MP！`, true));
     } else if (cid === 'noelle') {
       p.status.zeroMpThisTurn = 1;
       const recMp = Math.round(p.mmp * 0.2);
       p.mp = Math.min(p.mmp, p.mp + recMp);
-      pushLog(b, `<span style="color:#9beeff;font-weight:700">📐【心念援护·诺艾儿·精算校准】「${meta ? meta.quote : ''}」本回合所有技能零耗蓝，并立即回复 ${recMp} MP！</span>`);
+      pushLog(b, logTag('cbl-ice', `📐【心念援护·诺艾儿·精算校准】「${meta ? meta.quote : ''}」本回合所有技能零耗蓝，并立即回复 ${recMp} MP！`, true));
     } else if (cid === 'aino') {
       b.enemies.forEach(e => {
         if (e.hp > 0) {
@@ -5187,18 +5056,18 @@
       if (primary && primary.shield > 0) {
         primary.shield = Math.max(0, Math.floor(primary.shield * 0.7));
       }
-      pushLog(b, `<span style="color:#a8ecff;font-weight:700">❄️【心念援护·艾诺·霜域共鸣】「${meta ? meta.quote : ''}」全体附加 2 回合易伤与寒颤，当前目标削盾 30%！</span>`);
+      pushLog(b, logTag('cbl-ice', `❄️【心念援护·艾诺·霜域共鸣】「${meta ? meta.quote : ''}」全体附加 2 回合易伤与寒颤，当前目标削盾 30%！`, true));
     } else if (cid === 'jilan') {
       b.ap = Math.min(b.apMax, b.ap + 1);
       p.status.poise = 1;
       if (primary && primary.evadeCharges > 0) primary.evadeCharges -= 1;
       if (p.status.blind > 0) delete p.status.blind;
       else if (p.status.burn > 0) delete p.status.burn;
-      pushLog(b, `<span style="color:#d6b8ff;font-weight:700">💜【心念援护·霁岚·霁馆借步】「${meta ? meta.quote : ''}」+1 AP、剑势蓄力并震破目标 1 层闪避！</span>`);
+      pushLog(b, logTag('cbl-violet', `💜【心念援护·霁岚·霁馆借步】「${meta ? meta.quote : ''}」+1 AP、剑势蓄力并震破目标 1 层闪避！`, true));
     } else if (cid === 'charlotte') {
       p.shield = Math.max(p.maxShield, p.shield + 40);
       p.status.nobleReflect = 1;
-      pushLog(b, `<span style="color:#ffd479;font-weight:700">👑【心念援护·夏洛特·贵族体面】「${meta ? meta.quote : ''}」护盾补满（至少+40）并展开冰镜反震！</span>`);
+      pushLog(b, logTag('cbl-star', `👑【心念援护·夏洛特·贵族体面】「${meta ? meta.quote : ''}」护盾补满（至少+40）并展开冰镜反震！`, true));
     }
 
     spawnBanner(b, `💞 ${meta ? `${meta.icon} ${meta.name}·${meta.title}` : '心念援护'}！`, 'riposte');
@@ -5285,7 +5154,7 @@
 
     if (won) {
       saveArenaRecord(b.id, b.grade, b.turn);
-      if (!b.headless) safeSfx('level');
+      if (!b.headless) safeSfx(b.grade === 'S' ? 'grade_s' : 'level');
     } else {
       if (!b.headless) safeSfx('bad');
     }
@@ -5329,7 +5198,7 @@
     if (useStageAge && pMap) {
       const baseAge = stageAge != null
         ? stageAge
-        : ((activeBattle && activeBattle.stageCfg && activeBattle.stageCfg.presetPlayer && activeBattle.stageCfg.presetPlayer.age) || 14);
+        : ((activeBattle && activeBattle.stageCfg && activeBattle.stageCfg.preset && activeBattle.stageCfg.preset.age) || 14);
       const charAge = charId === 'beatrice' ? baseAge + 2 : charId === 'alice' ? Math.max(0, baseAge - 2) : baseAge;
       const tier = charAge <= 5 ? 'child' : charAge <= 11 ? 'young' : 'teenage';
       return pMap[`${charId}_${tier}_${emotion}`]
@@ -5361,7 +5230,6 @@
 
   function ensureBattleDOM() {
     if (typeof document === 'undefined') return null;
-    ensureJuiceVfxStyles();
     const root = document.getElementById('battle-screen');
     if (!root) return null;
     if (root.querySelector('.cb-shell')) return root;
@@ -5382,7 +5250,7 @@
           <div class="cb-top-tools">
             <button class="cb-tool-btn palace-btn" id="cb-btn-palace">${CB_SVG.crystal} 冰晶宫殿 <span class="cb-kbd">Q</span></button>
             <button class="cb-tool-btn wand-btn hidden" id="cb-btn-wand">${CB_SVG.wand} 晦轮杖 <span class="cb-kbd">R</span></button>
-            <button class="cb-tool-btn assist-btn locked-hint" id="cb-btn-assist" disabled>✦ 心念援护 <span class="cb-kbd">F</span></button>
+            <button class="cb-tool-btn assist-btn locked-hint" id="cb-btn-assist" disabled>${CB_SVG.assist} 心念援护 <span class="cb-kbd">F</span></button>
             <button class="cb-tool-btn retreat-btn" id="cb-btn-retreat">${CB_SVG.retreat} 撤出</button>
           </div>
         </header>
@@ -5424,7 +5292,7 @@
           <section class="cb-enemy-zone" id="cb-enemy-zone"></section>
         </div>
 
-        <div class="cb-forecast-bar" id="cb-forecast-bar">悬停技能卡可实时推演架势克制、破招截断、预计伤害与魔战回蓝</div>
+        <div class="cb-forecast-bar" id="cb-forecast-bar">${isCoarseTouchDevice() ? '轻点技能卡查看破招与预计伤害，再次点击施放' : '悬停任意技能卡，实时推演架势克制、破招截断、预计伤害与魔战回蓝'}</div>
 
         <div id="b-enemy" class="hidden">
           <span id="b-emoji"></span><span id="b-ename"></span>
@@ -5498,7 +5366,6 @@
     const sk = TACTICAL_SKILLS[sid];
     if (!sk) return;
 
-    ensureJuiceVfxStyles();
     const primary = getPrimaryAliveEnemy(b);
     const targets = sk.aoe ? b.enemies : (primary ? [primary] : []);
     const p = b.player;
@@ -5624,7 +5491,7 @@
         const target = getPrimaryAliveEnemy(b);
         const fc = computeTacticalForecast(b, hoverSk, target);
         if (fc) {
-          forecastBar.className = `cb-forecast-bar kind-${fc.kind}`;
+          forecastBar.className = `cb-forecast-bar active kind-${fc.kind}`;
           const counterPills = [];
           if (fc.willInterrupt && !fc.evadeBlocked && !fc.mirrorBlocked) {
             counterPills.push('<span class="cfb-counter-pill interrupt">✦ 破招可打断</span>');
@@ -5638,14 +5505,16 @@
           const multPart = fc.dmgMin > 0
             ? `克制 <b>${fc.elemMult.toFixed(2)}×</b> · 魔战 <b>${fc.mcMult.toFixed(2)}×</b> · 回蓝 <b>+${fc.manaReturn}</b>`
             : `消耗 AP ${fc.apCost}${fc.mpCost > 0 ? ` · MP ${fc.mpCost}` : ''}`;
-          forecastBar.innerHTML = `<span class="cfb-name">🎯 ${hoverSk.name}</span>${counterPills.join('')}<span class="cfb-head">${fc.headline}</span><span class="cfb-meta">${dmgPart} · ${multPart}${fc.critChance > 0 && fc.dmgMin > 0 ? ` · 暴击 ${(fc.critChance * 100).toFixed(0)}%` : ''}</span>`;
+          forecastBar.innerHTML = `<span class="cfb-name">${CB_SVG.target} ${hoverSk.name}</span>${counterPills.join('')}<span class="cfb-head">${fc.headline}</span><span class="cfb-meta">${dmgPart} · ${multPart}${fc.critChance > 0 && fc.dmgMin > 0 ? ` · 暴击 ${(fc.critChance * 100).toFixed(0)}%` : ''}</span>`;
         }
       } else if (p.status && p.status.breakChain > 0) {
-        forecastBar.className = 'cb-forecast-bar kind-chain';
-        forecastBar.innerHTML = '<span class="cfb-head">🔗【破招连携窗口已激活】本回合下一张非基础攻击牌享 1.35× 伤害并额外返还 15% 魔力！</span>';
+        forecastBar.className = 'cb-forecast-bar active kind-chain';
+        forecastBar.innerHTML = `<span class="cfb-head">${CB_SVG.chain} 【破招连携窗口已激活】本回合下一张非基础攻击牌享 1.35× 伤害并额外返还 15% 魔力！</span>`;
       } else {
         forecastBar.className = 'cb-forecast-bar';
-        forecastBar.textContent = '悬停任意技能卡，实时推演架势克制、破招截断、预计伤害与魔战回蓝';
+        forecastBar.textContent = isCoarseTouchDevice()
+          ? '轻点技能卡查看破招与预计伤害，再次点击施放'
+          : '悬停任意技能卡，实时推演架势克制、破招截断、预计伤害与魔战回蓝';
       }
     }
   }
@@ -5657,7 +5526,7 @@
     if (!root) return;
 
     const p = b.player;
-    const stageAge = (b.fromArena && b.stageCfg && b.stageCfg.presetPlayer && b.stageCfg.presetPlayer.age) || null;
+    const stageAge = (b.fromArena && b.stageCfg && b.stageCfg.preset && b.stageCfg.preset.age) || null;
     root.classList.toggle('wand-refract', !!p.wandActive);
     root.classList.toggle('palace-timestop', !!document.getElementById('cb-palace-modal'));
     const backdropEl = document.getElementById('cb-backdrop');
@@ -5679,15 +5548,15 @@
     }
     if (b.stageCfg.sealRule) {
       meters.push(`<div class="cb-meter-pill reno">合围封锁：<b>${b.sealProgress}%</b>${b.frostFloorTurns > 0 ? ' (薄冰已铺)' : ''}
-        <span class="cb-mini-bar"><i style="width:${b.sealProgress}%;background:linear-gradient(90deg,#6eb5ff,#e6be5a)"></i></span></div>`);
+        <span class="cb-mini-bar"><i class="cb-mini-fill fill-seal" style="width:${b.sealProgress}%"></i></span></div>`);
     }
     if (b.witnessActive) {
       meters.push(`<div class="cb-meter-pill exposure${b.exposure >= 60 ? ' danger' : ''}">暴露风险：<b>${b.exposure}%</b>
-        <span class="cb-mini-bar"><i style="width:${b.exposure}%;background:linear-gradient(90deg,#f59e42,#ef5b6c)"></i></span></div>`);
+        <span class="cb-mini-bar"><i class="cb-mini-fill fill-exposure" style="width:${b.exposure}%"></i></span></div>`);
     }
     if (b.crateHp != null) {
       meters.push(`<div class="cb-meter-pill crate">医疗药箱：<b>${b.crateHp}/${b.crateMax}</b>
-        <span class="cb-mini-bar"><i style="width:${b.crateHp}%;background:linear-gradient(90deg,#3da872,#7ef2b8)"></i></span></div>`);
+        <span class="cb-mini-bar"><i class="cb-mini-fill fill-crate" style="width:${b.crateHp}%"></i></span></div>`);
     }
     if (b.stageCfg.ainoSupport) {
       meters.push(`<div class="cb-meter-pill aino-aid">艾诺冰枪共鸣：<b>${b.ainoResonance}/2</b></div>`);
@@ -5696,23 +5565,23 @@
 
     const palBtn = document.getElementById('cb-btn-palace');
     if (p.palaceMax <= 0) {
-      palBtn.innerHTML = `${CB_SVG.crystal} 冰晶宫殿（未习得）`;
+      palBtn.innerHTML = `${CB_SVG.crystal} <span class="cb-btn-txt">冰晶宫殿<span class="cb-palace-detail">（未习得）</span></span>`;
       palBtn.disabled = true;
       palBtn.classList.remove('pulse-hint', 'gathering');
     } else if (p.palaceLeft > 0 && (b.waveTurn || 1) < 2) {
-      palBtn.innerHTML = `${CB_SVG.crystal} 冰晶宫殿·凝结采集中 (${p.palaceLeft}/${p.palaceMax})`;
+      palBtn.innerHTML = `${CB_SVG.crystal} <span class="cb-btn-txt">冰晶宫殿<span class="cb-palace-detail">·凝结采集中</span> (${p.palaceLeft}/${p.palaceMax})</span>`;
       palBtn.title = '须先观察敌方本波至少出手一轮，第 2 回合起可开启时停复盘';
       palBtn.disabled = true;
       palBtn.classList.remove('pulse-hint');
       palBtn.classList.add('gathering');
     } else if (p.palaceLeft > 0) {
-      palBtn.innerHTML = `${CB_SVG.crystal} 冰晶宫殿 (${p.palaceLeft}/${p.palaceMax}) <span class="cb-kbd">Q</span>`;
+      palBtn.innerHTML = `${CB_SVG.crystal} <span class="cb-btn-txt">冰晶宫殿 (${p.palaceLeft}/${p.palaceMax})</span> <span class="cb-kbd">Q</span>`;
       palBtn.title = '冻结当前交锋帧，两步推演敌方招式死角';
       palBtn.disabled = b.over;
       palBtn.classList.remove('gathering');
       palBtn.classList.toggle('pulse-hint', !b.over);
     } else {
-      palBtn.innerHTML = `${CB_SVG.crystal} 冰晶宫殿 (0/${p.palaceMax})${b.waveIdx + 1 < b.totalWaves ? ' · 下波重置' : ''}`;
+      palBtn.innerHTML = `${CB_SVG.crystal} <span class="cb-btn-txt">冰晶宫殿 (0/${p.palaceMax})${b.waveIdx + 1 < b.totalWaves ? '<span class="cb-palace-detail"> · 下波重置</span>' : ''}</span>`;
       palBtn.title = b.waveIdx + 1 < b.totalWaves ? '本波已审视，进入下一波将重新凝结 1 次机会' : '本场审视机会已用尽';
       palBtn.disabled = true;
       palBtn.classList.remove('pulse-hint', 'gathering');
@@ -5742,13 +5611,13 @@
         assistBtn.disabled = b.over || !!p.bondAssistUsed;
         assistBtn.title = `${aMeta.effectDesc} — ${aMeta.quote}`;
         assistBtn.innerHTML = p.bondAssistUsed
-          ? `${aMeta.icon} ${aMeta.title} (已援护)`
-          : `${aMeta.icon} ${aMeta.name}·${aMeta.title} <span class="cb-kbd">F</span>`;
+          ? `${CB_SVG.assist} ${aMeta.title} (已援护)`
+          : `${CB_SVG.assist} ${aMeta.name}·${aMeta.title} <span class="cb-kbd">F</span>`;
       } else {
         assistBtn.classList.add('locked-hint');
         assistBtn.disabled = true;
         assistBtn.title = '深化羁绊（好感≥2、了解度≥35 或推动命运暗流）解锁心念援护';
-        assistBtn.innerHTML = '✦ 心念援护 <span class="cb-kbd">F</span>';
+        assistBtn.innerHTML = `${CB_SVG.assist} 心念援护 <span class="cb-kbd">F</span>`;
       }
     }
 
@@ -5825,8 +5694,9 @@
     }
 
     const showNextTendency = hasRelic(p, 'belmont_schedule');
+    const isMultiEnemy = b.enemies.length > 1;
     const eZone = document.getElementById('cb-enemy-zone');
-    eZone.classList.toggle('multi-enemies', b.enemies.length > 1);
+    eZone.classList.toggle('multi-enemies', isMultiEnemy);
     eZone.innerHTML = b.enemies.map((e, idx) => {
       const intent = e.intent || { stance: 'STAGGERED', moveName: '已倒下', dmg: 0 };
       const sm = STANCE_META[intent.stance] || STANCE_META.HEAVY_WINDUP;
@@ -5862,35 +5732,56 @@
         crestKey,
       });
 
+      const shortMove = formatShortMoveName(intent.moveName);
+      const dmgPillText = intent.dmg > 0
+        ? (intent.shatterPlayerShield ? `预计 ${intent.dmg} · 破盾` : `预计 ${intent.dmg}`)
+        : '失衡';
+      const fullTipAttr = String(`${sm.badge} | 招式：${intent.moveName} | ${sm.hint}`).replace(/"/g, '&quot;');
+      const safeTrait = String(e.trait || '').replace(/"/g, '&quot;');
+      const traitHtml = e.trait
+        ? `<span class="cb-trait-wrap"><button type="button" class="cb-trait-pill" title="${safeTrait}">特性</button><span class="cb-trait-tip" role="tooltip">${e.trait}</span></span>`
+        : '';
+      const hpLabel = e.nonLethalSpar ? '切磋耐力（三击制）' : (isMultiEnemy ? 'HP' : '敌方生命');
+      const mpLabel = isMultiEnemy ? 'MP' : '敌方魔力';
+
       return `
         <article class="cb-enemy-card${idx === b.targetIdx ? ' targeted' : ''}${e.hp <= 0 ? ' dead' : ''}${intent.stance === 'STAGGERED' ? ' staggered' : ''}${isHeavyWarn ? ' intent-heavy-warn' : ''}${e.boss && (e.phase || 1) >= 2 ? ' phase2-boss' : ''}" data-eidx="${idx}">
-          <div class="cb-intent-banner stance-${intent.stance}">
-            <div class="ib-top">
-              <span>${sm.badge}</span>
-              <span class="ib-dmg-pill">${intent.dmg > 0 ? `预计 ${intent.dmg}${intent.shatterPlayerShield ? ' · 碎盾' : ''}` : '蓄势 / 失衡'}</span>
+          <div class="cb-intent-banner stance-${intent.stance}" tabindex="0">
+            <div class="ib-row">
+              <span class="ib-stance-tag">${sm.short}</span>
+              <span class="ib-move-name">${shortMove}</span>
+              <span class="ib-dmg-pill">${dmgPillText}</span>
+              <button type="button" class="ib-info-btn" aria-label="查看架势对策" title="${fullTipAttr}">i</button>
             </div>
-            <div class="ib-hint">招式：<b>${intent.moveName}</b> · ${sm.hint}</div>
             ${nextLine}
+            <div class="cb-intent-tip" role="tooltip">
+              <div class="ib-tip-head">${sm.badge}</div>
+              <div class="ib-tip-move">招式：<b>${intent.moveName}</b></div>
+              <div class="ib-tip-hint">${sm.hint}</div>
+            </div>
           </div>
 
           <div class="cb-e-stage">
             <div class="cb-magic-circle enemy" aria-hidden="true"></div>
-            <div class="cb-e-avatar${eVisual.isSvg ? ' is-svg' : ''}">${eVisual.html}</div>
+            <div class="cb-e-avatar${eVisual.isSvg ? ' is-svg' : ''}${eVisual.isCgPortrait ? ' is-cg-portrait' : ''}">${eVisual.html}</div>
           </div>
 
           <div class="cb-e-plate">
+            <span class="cb-hp-microtag" data-eidx="${idx}"></span>
             <div class="cb-e-info">
               <div class="cb-e-name">
-                <span>${e.name}</span>
-                <span class="cb-elem-tag elem-${e.elem || 'phys'}">${ELEM_LABEL[e.elem] || '剑术'}</span>
+                <span class="cb-e-title">${e.name}</span>
+                <span class="cb-e-badges">
+                  ${traitHtml}
+                  <span class="cb-elem-tag elem-${e.elem || 'phys'}">${ELEM_LABEL[e.elem] || '剑术'}</span>
+                </span>
               </div>
-              <div class="cb-e-trait">${e.trait || ''}</div>
             </div>
             <div class="cb-bars-wrap">
               <div class="cb-stat-row">
                 <div class="cb-stat-top">
-                  <span class="cb-stat-label">${e.nonLethalSpar ? '切磋耐力（三击制决胜）' : '敌方生命'}<span class="cb-hp-microtag" data-eidx="${idx}"></span></span>
-                  <span>${e.nonLethalSpar ? '点到为止' : `${e.hp}/${e.mhp}`}${e.shield ? ` (+盾${e.shield})` : ''}</span>
+                  <span class="cb-stat-label">${hpLabel}</span>
+                  <span class="cb-stat-val">${e.nonLethalSpar ? '点到为止' : `${e.hp}/${e.mhp}`}${e.shield ? ` (+盾${e.shield})` : ''}</span>
                 </div>
                 <div class="cb-stat-track">
                   <div class="cb-stat-fill ehp" style="width:${e.nonLethalSpar ? 100 : Math.max(0, e.hp / e.mhp * 100)}%"></div>
@@ -5899,7 +5790,7 @@
               </div>
               ${e.mmp != null ? `
               <div class="cb-stat-row">
-                <div class="cb-stat-top"><span>敌方魔力</span><span>${e.mp}/${e.mmp}</span></div>
+                <div class="cb-stat-top"><span class="cb-stat-label">${mpLabel}</span><span class="cb-stat-val">${e.mp}/${e.mmp}</span></div>
                 <div class="cb-stat-track"><div class="cb-stat-fill emp" style="width:${Math.max(0, e.mp / e.mmp * 100)}%"></div></div>
               </div>` : ''}
             </div>
@@ -5911,10 +5802,34 @@
 
     updateOvercastPreviewUI(b, hoveredSkillId);
 
+    eZone.querySelectorAll('.ib-info-btn').forEach(btn => {
+      btn.onclick = ev => {
+        ev.stopPropagation();
+        const banner = btn.closest('.cb-intent-banner');
+        if (!banner) return;
+        const wasOpen = banner.classList.contains('tip-open');
+        eZone.querySelectorAll('.cb-intent-banner.tip-open, .cb-trait-wrap.tip-open').forEach(el => el.classList.remove('tip-open'));
+        if (!wasOpen) banner.classList.add('tip-open');
+      };
+    });
+
+    eZone.querySelectorAll('.cb-trait-pill').forEach(btn => {
+      btn.onclick = ev => {
+        ev.stopPropagation();
+        const wrap = btn.closest('.cb-trait-wrap');
+        if (!wrap) return;
+        const wasOpen = wrap.classList.contains('tip-open');
+        eZone.querySelectorAll('.cb-intent-banner.tip-open, .cb-trait-wrap.tip-open').forEach(el => el.classList.remove('tip-open'));
+        if (!wasOpen) wrap.classList.add('tip-open');
+      };
+    });
+
     eZone.querySelectorAll('.cb-enemy-card').forEach(card => {
       card.onclick = () => {
         const idx = Number(card.getAttribute('data-eidx'));
         if (b.enemies[idx] && b.enemies[idx].hp > 0) {
+          armedSkillId = null;
+          hoveredSkillId = null;
           b.targetIdx = idx;
           renderCombatUI();
         }
@@ -5966,19 +5881,23 @@
       }
 
       const keyHint = slotIdx < 9 ? `<span class="cb-kbd">${slotIdx + 1}</span> ` : '';
-      const compactPath = p.skills.length > 6 ? pm.short.slice(0, 2) : pm.short;
+      const pillPath = pm.pill || pm.short.slice(0, 2);
       const isGuardCard = !!(sk.shieldBase || sk.dodgeLunge || sk.afterimage || sk.layFrostFloor);
+      const safeFullDesc = String(sk.desc || '').replace(/"/g, '&quot;');
 
       return `
-        <button class="cb-skill-card path-${sk.path} elem-${sk.elem || 'phys'}${isGuardCard ? ' is-guard' : ''}${oppBadge ? ' opp-glow' : ''}" data-sk="${sk.id}" ${disabled ? 'disabled' : ''}>
-          ${oppBadge}
+        <button type="button" class="cb-skill-card path-${sk.path} elem-${sk.elem || 'phys'}${isGuardCard ? ' is-guard' : ''}${oppBadge ? ' opp-glow' : ''}${armedSkillId === sk.id ? ' is-armed' : ''}" data-sk="${sk.id}" title="${safeFullDesc}" ${disabled ? 'disabled' : ''}>
           <div>
             <div class="csc-head">
-              <span class="csc-path">${keyHint}${compactPath}</span>
+              <span class="csc-path">${keyHint}${pillPath}</span>
               <span class="csc-cost">AP ${apCost}${costMp > 0 ? ` · MP ${costMp}` : ''}</span>
             </div>
-            <div class="csc-name">${sk.name}</div>
-            <div class="csc-desc">${sk.desc}</div>
+            <div class="csc-name-row">
+              <span class="csc-name">${sk.name}</span>
+              ${oppBadge}
+              <span class="cb-arm-pill">再点施放</span>
+            </div>
+            <div class="csc-desc">${sk.shortDesc || sk.desc}</div>
           </div>
           <div class="csc-foot">
             <span>${usedUp ? '已使用' : cd > 0 ? `冷却 ${cd} 回合` : est ? (est.mirrorBlocked ? '将被镜冰格挡' : `预计 ~${est.dmg}${sk.aoe ? ' (全体)' : ''}`) : '战术护卫 / 步法'}</span>
@@ -5990,12 +5909,26 @@
 
     actGrid.querySelectorAll('.cb-skill-card').forEach(btn => {
       const sid = btn.getAttribute('data-sk');
-      btn.onmouseenter = () => { hoveredSkillId = sid; updateOvercastPreviewUI(b, sid); };
+      btn.onmouseenter = () => {
+        hoveredSkillId = sid;
+        if (!btn.disabled) playCardHoverSfx();
+        updateOvercastPreviewUI(b, sid);
+      };
       btn.onfocus = () => { hoveredSkillId = sid; updateOvercastPreviewUI(b, sid); };
-      btn.onmouseleave = () => { hoveredSkillId = null; updateOvercastPreviewUI(b, null); };
-      btn.onblur = () => { hoveredSkillId = null; updateOvercastPreviewUI(b, null); };
+      btn.onmouseleave = () => { hoveredSkillId = armedSkillId; updateOvercastPreviewUI(b, armedSkillId); };
+      btn.onblur = () => { hoveredSkillId = armedSkillId; updateOvercastPreviewUI(b, armedSkillId); };
       btn.onclick = () => {
         if (btn.disabled) return;
+        if (isCoarseTouchDevice() && armedSkillId !== sid) {
+          armedSkillId = sid;
+          hoveredSkillId = sid;
+          actGrid.querySelectorAll('.cb-skill-card.is-armed').forEach(el => el.classList.remove('is-armed'));
+          btn.classList.add('is-armed');
+          safeSfx('card_hover');
+          updateOvercastPreviewUI(b, sid);
+          return;
+        }
+        armedSkillId = null;
         useSkill(sid);
       };
     });
@@ -6037,36 +5970,59 @@
     if (!b || !isPalaceReady(b) || typeof document === 'undefined') return;
     const slot = document.getElementById('cb-modal-slot');
     if (!slot) return;
+    armedSkillId = null;
     const battleRoot = document.getElementById('battle-screen');
     if (battleRoot) battleRoot.classList.add('palace-timestop');
     const pCfg = getCurrentPalaceConfig(b);
     const shuffledClues = shuffleCopy(pCfg.clues || []);
+    safeSfx('modal_open');
 
-    const closeModal = () => {
+    const closeModal = withSfx => {
       slot.innerHTML = '';
       if (battleRoot) battleRoot.classList.remove('palace-timestop');
+      if (withSfx !== false) safeSfx('modal_close');
     };
 
     const renderStep1 = () => {
       slot.innerHTML = `
         <div class="cb-palace-modal" id="cb-palace-modal">
           <div class="cb-palace-card" id="cb-palace-card">
-            <div class="cp-kicker">ICE PALACE · TIME-STOP COGNITION</div>
-            <h3 class="cp-title">冰晶宫殿 · 时停审视</h3>
-            <div class="cp-scene-desc">${pCfg.sceneText}</div>
-            <span class="cp-step-pill">第 1 / 2 步 · 锁定定格异常细节（选错将损耗 1 AP）</span>
-            <div class="cp-options">
-              ${shuffledClues.map((c, idx) => `
-                <button class="cp-opt-btn" data-clue="${c.id}"><b>观察点 ${idx + 1}：</b>${c.text}</button>
-              `).join('')}
+            <div class="cp-head">
+              ${CB_SVG.palaceFrostAccent}
+              <div class="cp-head-left">
+                <span class="cp-emblem" aria-hidden="true">${CB_SVG.palaceEmblem}</span>
+                <h3 class="cp-title">冰晶宫殿 · 时停审视</h3>
+              </div>
+              <div class="cp-head-right">
+                <div class="cp-steps" aria-label="推演进度：第 1 / 2 步">
+                  <span class="cp-step-pip is-active"></span>
+                  <span class="cp-step-pip"></span>
+                </div>
+                <button type="button" class="cp-close-x" id="cp-close-x" title="暂不消耗（返回战局）" aria-label="关闭冰晶宫殿">${CB_SVG.close}</button>
+              </div>
             </div>
-            <div class="end-btns" style="margin-top:14px">
-              <button class="tbtn ghost" id="cp-cancel">暂不消耗（返回战局）</button>
+            <div class="cp-body">
+              <div class="cp-scene-desc">${pCfg.sceneText}</div>
+              <span class="cp-step-pill">第 1 / 2 步 · 锁定定格异常细节（选错将损耗 1 AP）</span>
+              <div class="cp-options">
+                ${shuffledClues.map((c, idx) => `
+                  <button type="button" class="cp-opt-btn" data-clue="${c.id}">
+                    <span class="cp-opt-idx" aria-hidden="true">${idx + 1}</span>
+                    <span class="cp-opt-copy"><b>观察点 ${idx + 1}：</b>${c.text}</span>
+                    <span class="cp-opt-arrow" aria-hidden="true">›</span>
+                  </button>
+                `).join('')}
+              </div>
+              <div class="end-btns">
+                <button type="button" class="tbtn ghost" id="cp-cancel">暂不消耗（返回战局）</button>
+              </div>
             </div>
           </div>
         </div>
       `;
-      slot.querySelector('#cp-cancel').onclick = () => closeModal();
+      const closeXBtn = slot.querySelector('#cp-close-x');
+      if (closeXBtn) closeXBtn.onclick = () => closeModal(true);
+      slot.querySelector('#cp-cancel').onclick = () => closeModal(true);
       slot.querySelectorAll('[data-clue]').forEach(btn => {
         btn.onclick = () => {
           const cid = btn.getAttribute('data-clue');
@@ -6089,14 +6045,31 @@
       const shuffledDeds = shuffleCopy(pCfg.deductions || []);
       const card = slot.querySelector('#cb-palace-card');
       card.innerHTML = `
-        <div class="cp-kicker">ICE PALACE · TACTICAL DEDUCTION</div>
-        <h3 class="cp-title">冰晶宫殿 · 推演反制落点</h3>
-        <div class="cp-scene-desc">${step1Feedback}</div>
-        <span class="cp-step-pill">第 2 / 2 步 · 推导针对性破招手段</span>
-        <div class="cp-options">
-          ${shuffledDeds.map((d, idx) => `
-            <button class="cp-opt-btn" data-ded="${d.id}"><b>战术推演 ${idx + 1}：</b>${d.text}</button>
-          `).join('')}
+        <div class="cp-head">
+          ${CB_SVG.palaceFrostAccent}
+          <div class="cp-head-left">
+            <span class="cp-emblem" aria-hidden="true">${CB_SVG.palaceEmblem}</span>
+            <h3 class="cp-title">冰晶宫殿 · 推演反制落点</h3>
+          </div>
+          <div class="cp-head-right">
+            <div class="cp-steps" aria-label="推演进度：第 2 / 2 步">
+              <span class="cp-step-pip is-done"></span>
+              <span class="cp-step-pip is-active"></span>
+            </div>
+          </div>
+        </div>
+        <div class="cp-body">
+          <div class="cp-scene-desc">${step1Feedback}</div>
+          <span class="cp-step-pill">第 2 / 2 步 · 推导针对性破招手段</span>
+          <div class="cp-options">
+            ${shuffledDeds.map((d, idx) => `
+              <button type="button" class="cp-opt-btn" data-ded="${d.id}">
+                <span class="cp-opt-idx" aria-hidden="true">${idx + 1}</span>
+                <span class="cp-opt-copy"><b>战术推演 ${idx + 1}：</b>${d.text}</span>
+                <span class="cp-opt-arrow" aria-hidden="true">›</span>
+              </button>
+            `).join('')}
+          </div>
         </div>
       `;
       card.querySelectorAll('[data-ded]').forEach(btn => {
@@ -6116,19 +6089,34 @@
         triggerPalaceFlash();
       }
       card.innerHTML = `
-        <div class="cp-kicker">${res.correct ? 'FLAW EXPOSED · 冰镜破局' : 'OBSERVATION · 推演受挫'}</div>
-        <h3 class="cp-title">${res.correct ? '✦ 破绽推演完成' : '未能锁定真死角'}</h3>
-        <div class="cp-scene-desc">${res.feedback || ''}</div>
-        <div class="end-btns">
-          <button class="tbtn" id="cp-confirm">回到交锋</button>
+        <div class="cp-head">
+          ${CB_SVG.palaceFrostAccent}
+          <div class="cp-head-left">
+            <span class="cp-emblem" aria-hidden="true">${CB_SVG.palaceEmblem}</span>
+            <h3 class="cp-title">${res.correct ? '破绽推演完成' : '未能锁定真死角'}</h3>
+          </div>
+          <div class="cp-head-right">
+            <div class="cp-steps" aria-label="推演完成">
+              <span class="cp-step-pip is-done"></span>
+              <span class="cp-step-pip ${res.correct ? 'is-done' : 'is-fail'}"></span>
+            </div>
+          </div>
+        </div>
+        <div class="cp-body">
+          <div class="cp-scene-desc">${res.feedback || ''}</div>
+          <div class="end-btns">
+            <button type="button" class="tbtn" id="cp-confirm">回到交锋</button>
+          </div>
         </div>
       `;
       const confirmBtn = card.querySelector('#cp-confirm');
       confirmBtn.onclick = () => {
-        closeModal();
+        closeModal(true);
         renderCombatUI();
       };
-      confirmBtn.focus();
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
     };
 
     renderStep1();
@@ -6187,8 +6175,10 @@
         parts.push(`魔战循环合计回流 ${manaRecycled} MP，倾注爆发衔接极为流畅。`);
       } else if (m.insights > 0) {
         parts.push('冰晶宫殿时停推演直击死角，为破阵打开了决定性缺口。');
-      } else if (p.palaceMax > 0) {
+      } else if (p.palaceMax > 0 && tier !== 'S') {
         parts.push('全程凭借基本功力克强敌；若于第二回合起展开冰晶宫殿看破弱点，可更从容摘下 S 级。');
+      } else if (p.palaceMax > 0) {
+        parts.push('全程未启冰晶宫殿仍凭纯熟基本功摘得 S 级，临场判断无懈可击。');
       }
 
       if (isCrateStage) {
@@ -6219,7 +6209,7 @@
     const rew = b.stageCfg.reward || {};
     const tb = buildTacticalBreakdown(b);
     const warnHtml = b.exposureWarningTriggered
-      ? `<div class="cr-warn-box">⚠️ <b>行踪暴露代价触发：</b>耳目附近的外显冰系/晦轮杖波动已被「极光」小队察觉，「北林哑巴幽灵」传闻发酵，本次评级封顶为 B！</div>`
+      ? `<div class="cr-warn-box">${CB_SVG.warn} <b>行踪暴露代价触发：</b>耳目附近的外显冰系/晦轮杖波动已被「极光」小队察觉，「北林哑巴幽灵」传闻发酵，本次评级封顶为 B！</div>`
       : '';
 
     let rewardText = '';
@@ -6235,38 +6225,46 @@
         : '战术提示：紧盯敌方架势预告，切忌无脑复读单招或原地龟缩叠盾！';
     }
 
+    const gradeKey = b.won ? (b.grade || 'B') : 'F';
+    const stageAge = (b.fromArena && b.stageCfg && b.stageCfg.preset && b.stageCfg.preset.age) || null;
+    const isVol3Disguise = VOL3_DISGUISE_STAGES.has(b.id) || (b.player && b.player.name && b.player.name.includes('眷寒渔'));
+    const sylviaResImg = resolveCharImg('sylvia', b.won ? 'smile' : 'serious', stageAge, { disguise: isVol3Disguise });
+    const sylviaAlt = (b.player && b.player.name) ? b.player.name : '希尔维亚';
     slot.innerHTML = `
       <div class="cb-result-modal" id="cb-result-modal">
-        <div class="cb-result-card">
-          <div style="font-size:11.5px;letter-spacing:.2em;color:var(--cb-ice)">${b.won ? 'TACTICAL VICTORY · 战术结算' : 'DEFEAT · 战局失利'}</div>
-          <h2 style="margin:6px 0;color:#fff;font-size:21px;font-family:var(--font-serif,'Noto Serif SC',serif)">${b.stageCfg.title}</h2>
-          <div class="cr-grade">${b.won ? b.grade : '败'}</div>
-          <div class="cr-metrics">
-            <div><span>战斗回合</span><b>${b.turn} 回合</b></div>
-            <div><span>截断破招</span><b>${b.metrics.interrupts} 次</b></div>
-            <div><span>剑步闪反</span><b>${b.metrics.ripostes} 次</b></div>
-            <div><span>冰宫看破</span><b>${b.metrics.insights} 次</b></div>
-            <div><span>魔战回蓝</span><b>+${b.metrics.manaRecycled} MP</b></div>
-            <div><span>最高倾注</span><b>${b.metrics.maxOvercastMult.toFixed(2)}x</b></div>
-          </div>
-          <div class="cr-tactical-breakdown tier-${tb.tier}">
-            <div class="crtb-head">
-              <span class="crtb-kicker">TACTICAL DEBRIEF · 战术复盘拆解</span>
-              <span class="crtb-tier-pill tier-${tb.tier}">${tb.tierLabel}</span>
+        <div class="cb-result-card${b.won ? ' is-victory' : ' is-defeat'}">
+          <div class="cr-head">
+            <div class="cr-head-left">
+              ${sylviaResImg ? `<div class="cr-portrait-badge ${b.won ? 'is-win' : 'is-loss'}"><img src="${sylviaResImg}" alt="${sylviaAlt}"/></div>` : ''}
+              <div class="cr-head-copy">
+                <span class="cr-status-badge ${b.won ? 'is-win' : 'is-loss'}">${b.won ? '战术制胜' : '战局失利'}</span>
+                <h2 class="cr-title">${b.stageCfg.title}</h2>
+              </div>
             </div>
-            <div class="crtb-grid">
-              <div class="crtb-cell"><span>总回合数</span><b>${tb.turns} 回合</b></div>
-              <div class="crtb-cell"><span>破招 / 闪反</span><b>${tb.counters} 次</b></div>
-              <div class="crtb-cell"><span>魔战回蓝总量</span><b>+${tb.manaRecycled} MP</b></div>
-              <div class="crtb-cell"><span>${tb.integrityLabel}</span><b>${tb.integrityPct}%</b></div>
-            </div>
-            <div class="crtb-commentary">${tb.commentary}</div>
+            <div class="cr-grade grade-${gradeKey}">${b.won ? b.grade : '败'}</div>
           </div>
-          ${warnHtml}
-          <p style="font-size:13px;opacity:.88;margin-bottom:12px">${rewardText}</p>
-          <div class="end-btns">
-            <button class="tbtn ghost" id="cr-retry">再次演练</button>
-            <button class="tbtn" id="cr-done">确认返回</button>
+          <div class="cr-body">
+            <div class="cr-tactical-breakdown tier-${tb.tier}">
+              <div class="crtb-head">
+                <span class="crtb-title">战术复盘拆解</span>
+                <span class="crtb-tier-pill tier-${tb.tier}">${tb.tierLabel}</span>
+              </div>
+              <div class="crtb-grid">
+                <div class="crtb-cell"><span>总回合数</span><b>${tb.turns} 回合</b></div>
+                <div class="crtb-cell"><span>截断破招</span><b>${b.metrics.interrupts} 次</b></div>
+                <div class="crtb-cell"><span>剑步闪反</span><b>${b.metrics.ripostes} 次</b></div>
+                <div class="crtb-cell"><span>冰宫看破</span><b>${b.metrics.insights} 次</b></div>
+                <div class="crtb-cell"><span>魔战回蓝</span><b>+${tb.manaRecycled} MP</b></div>
+                <div class="crtb-cell"><span>${tb.integrityLabel}</span><b>${tb.integrityPct}%</b></div>
+              </div>
+              <div class="crtb-commentary">${tb.commentary}</div>
+            </div>
+            ${warnHtml}
+            <p class="cr-reward-note">${rewardText}</p>
+            <div class="end-btns">
+              <button type="button" class="tbtn ghost" id="cr-retry">再次演练</button>
+              <button type="button" class="tbtn" id="cr-done">确认返回</button>
+            </div>
           </div>
         </div>
       </div>
@@ -6274,6 +6272,7 @@
 
     slot.querySelector('#cr-retry').onclick = () => {
       slot.innerHTML = '';
+      safeSfx('modal_close');
       if (STAGE_CONFIGS[b.id]) {
         startStage(b.id, { fromArena: b.fromArena, done: b.done });
       } else {
@@ -6283,9 +6282,12 @@
     const doneBtn = slot.querySelector('#cr-done');
     doneBtn.onclick = () => {
       slot.innerHTML = '';
+      safeSfx('modal_close');
       exitBattle(b.won);
     };
-    doneBtn.focus();
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
   }
 
   function exitBattle(won, opts) {
@@ -6293,6 +6295,7 @@
     const b = activeBattle;
     activeBattle = null;
     hoveredSkillId = null;
+    armedSkillId = null;
     if (typeof global.B !== 'undefined') global.B = null;
     clearAllJuiceVfx();
     if (typeof document === 'undefined') return;
@@ -6347,6 +6350,7 @@
   function openArenaHub(opts) {
     opts = opts || {};
     if (typeof document === 'undefined') return;
+    if (typeof window !== 'undefined' && typeof window.closeHudMoreDrawer === 'function') window.closeHudMoreDrawer();
     const titleScr = document.getElementById('title-screen');
     if (opts.fromTitle !== undefined) {
       arenaReturnToTitle = !!opts.fromTitle;
@@ -6365,18 +6369,22 @@
     ov.innerHTML = `
       <div class="arena-hub-card">
         <div class="arena-hub-head">
-          <div class="arena-title-row">
-            <div class="arena-title-crest" aria-hidden="true">${CB_SVG.swords}</div>
-            <div>
-              <h2 class="arena-hub-title">战术演武场 · 九幕智斗试炼</h2>
-              <p class="arena-hub-sub">按原著时间线还原 ${list.length} 场代表性关卡 · 独立试炼沙盒（不污染主线存档等级与银币）</p>
+          <div class="arena-head-top">
+            <div class="arena-title-row">
+              <div class="arena-title-crest" aria-hidden="true">${CB_SVG.swords}</div>
+              <div class="arena-title-copy">
+                <h2 class="arena-hub-title">战术演武场 · 九幕智斗试炼</h2>
+                <p class="arena-hub-sub">按原著时间线还原 ${list.length} 场代表性关卡 · 独立试炼沙盒（不污染主线存档等级与银币）</p>
+              </div>
             </div>
+            <button type="button" class="arena-close-x" id="am-close" title="关闭演武大厅" aria-label="关闭演武大厅">${CB_SVG.close}</button>
           </div>
           <div class="arena-mode-bar">
             <span class="arena-sandbox-pill">${CB_SVG.shield} 独立沙盒 · 零存档污染</span>
-            <button class="arena-mode-chip${!arenaUseSaveStats ? ' active' : ''}" id="am-preset">${CB_SVG.scale} 原著时期标准配装</button>
-            <button class="arena-mode-chip${arenaUseSaveStats ? ' active' : ''}" id="am-save" ${arenaReturnToTitle ? 'disabled title="进入存档后可检验当前构筑"' : ''}>${CB_SVG.chart} 当前存档属性试演</button>
-            <button class="arena-close-x" id="am-close" title="关闭演武大厅" aria-label="关闭演武大厅">×</button>
+            <div class="arena-mode-group">
+              <button type="button" class="arena-mode-chip${!arenaUseSaveStats ? ' active' : ''}" id="am-preset">${CB_SVG.scale} 原著时期标准配装</button>
+              <button type="button" class="arena-mode-chip${arenaUseSaveStats ? ' active' : ''}" id="am-save" ${arenaReturnToTitle ? 'disabled title="进入存档后可检验当前构筑"' : ''}>${CB_SVG.chart} 当前存档属性试演</button>
+            </div>
           </div>
         </div>
         <div class="arena-scroll-body">
@@ -6384,7 +6392,7 @@
           <div class="arena-stage-grid" id="arena-stage-grid">
             ${list.map(st => {
               const rec = records[st.id];
-              const stageAge = (st.presetPlayer && st.presetPlayer.age) || 14;
+              const stageAge = (st.preset && st.preset.age) || 14;
               const img = st.charId ? resolveCharImg(st.charId, 'normal', stageAge) : null;
               const crestKey = st.crestKind || (st.id === 'north_forest_hunt' ? 'wolf_alpha' : st.id);
               const lastWave = st.waves && st.waves[st.waves.length - 1];
@@ -6398,7 +6406,7 @@
               const isBossTrial = !!(st.waves && st.waves.some(w => (w.enemies || []).some(en => en.boss)));
               const caseNum = String(st.order).padStart(2, '0');
               return `
-                <button class="arena-stage-card${isBossTrial ? ' is-boss-trial' : ''}" data-stage="${st.id}">
+                <button type="button" class="arena-stage-card${isBossTrial ? ' is-boss-trial' : ''}" data-stage="${st.id}">
                   <div>
                     <div class="asc-dossier-bar">
                       <span class="asc-case-no">ACT ${caseNum}</span>
@@ -6406,12 +6414,12 @@
                       ${isBossTrial ? '<span class="asc-boss-seal">BOSS · 决战</span>' : ''}
                     </div>
                     <div class="asc-top">
-                      <div class="asc-avatar${stageVisual.isSvg ? ' is-svg' : ''}">${stageVisual.html}</div>
+                      <div class="asc-avatar${stageVisual.isSvg ? ' is-svg' : ''}${stageVisual.isCgPortrait ? ' is-cg-portrait' : ''}">${stageVisual.html}</div>
                       <div class="asc-meta">
                         <div class="asc-name">${st.title}</div>
                         <div class="asc-stars">难度 ${st.stars}</div>
                       </div>
-                      <div class="asc-rank-badge ${rec ? 'rank-' + rec.grade : ''}">${rec ? rec.grade : '—'}</div>
+                      <div class="asc-rank-badge ${rec ? 'rank-' + rec.grade : 'is-unplayed'}">${rec ? rec.grade : '未挑战'}</div>
                     </div>
                     <div class="asc-tags">
                       ${st.tags.map(t => `<span class="asc-tag${t.includes('禁') || t.includes('失败') || t.includes('绕过') || t.includes('二阶段') ? ' warn' : ''}">${t}</span>`).join('')}
@@ -6431,25 +6439,31 @@
     `;
 
     ov.classList.remove('hidden');
-    safeSfx('open');
+    if (!opts._silentOpen) safeSfx('modal_open');
 
-    ov.querySelector('#am-preset').onclick = () => { arenaUseSaveStats = false; openArenaHub({ fromTitle: arenaReturnToTitle }); };
+    ov.querySelector('#am-preset').onclick = () => {
+      arenaUseSaveStats = false;
+      safeSfx('tab_switch');
+      openArenaHub({ fromTitle: arenaReturnToTitle, _silentOpen: true });
+    };
     ov.querySelector('#am-save').onclick = () => {
       if (arenaReturnToTitle) return;
       arenaUseSaveStats = true;
-      openArenaHub({ fromTitle: false });
+      safeSfx('tab_switch');
+      openArenaHub({ fromTitle: false, _silentOpen: true });
     };
     ov.querySelector('#am-close').onclick = () => closeArenaHub();
     const openLoadoutBtn = ov.querySelector('#am-open-loadout');
     if (openLoadoutBtn && api && api.openArenaLoadoutModal) {
-      openLoadoutBtn.onclick = () => api.openArenaLoadoutModal(() => openArenaHub({ fromTitle: arenaReturnToTitle }));
+      openLoadoutBtn.onclick = () => api.openArenaLoadoutModal(() => openArenaHub({ fromTitle: arenaReturnToTitle, _silentOpen: true }));
     }
     const clearLoadoutBtn = ov.querySelector('#am-clear-loadout');
     if (clearLoadoutBtn && api) {
       clearLoadoutBtn.onclick = () => {
         if (api.setArenaSandboxRelics) api.setArenaSandboxRelics([]);
         if (api.setArenaSandboxAssist) api.setArenaSandboxAssist(null);
-        openArenaHub({ fromTitle: arenaReturnToTitle });
+        safeSfx('tab_switch');
+        openArenaHub({ fromTitle: arenaReturnToTitle, _silentOpen: true });
       };
     }
     ov.querySelectorAll('[data-stage]').forEach(btn => {
@@ -6464,7 +6478,9 @@
   function closeArenaHub() {
     if (typeof document === 'undefined') return;
     const ov = document.getElementById('arena-overlay');
+    const wasVisible = !!(ov && !ov.classList.contains('hidden'));
     if (ov) ov.classList.add('hidden');
+    if (wasVisible) safeSfx('modal_close');
     if (arenaReturnToTitle) {
       if (typeof global.bgmStop === 'function') global.bgmStop(false);
       if (typeof global.setBG === 'function') global.setBG('bg-title');
@@ -6484,9 +6500,11 @@
     const b = createBattleState(sc, opts);
     activeBattle = b;
     hoveredSkillId = null;
+    armedSkillId = null;
     if (typeof global !== 'undefined') global.B = b;
 
     if (!b.headless && typeof document !== 'undefined') {
+      if (typeof window !== 'undefined' && typeof window.closeHudMoreDrawer === 'function') window.closeHudMoreDrawer();
       const ds = document.getElementById('duel-screen');
       if (ds) ds.classList.add('hidden');
       if (typeof global.setBG === 'function') global.setBG(sc.bg || 'bg-battle');
@@ -6504,6 +6522,7 @@
 
   function startCustomOrStageBattle(cfg, done) {
     cfg = cfg || {};
+    if (typeof window !== 'undefined' && typeof window.closeHudMoreDrawer === 'function') window.closeHudMoreDrawer();
     if (cfg.stageId && STAGE_CONFIGS[cfg.stageId]) {
       return startStage(cfg.stageId, {
         done,
@@ -6513,12 +6532,13 @@
       });
     }
     const tplMap = getEnemyTplMap() || {};
+    const tplKey = cfg.tpl || 'encounter';
     const t = tplMap[cfg.tpl] || cfg;
     const curS = getGameS();
     const lv = (curS && curS.lv) || 10;
     const scale = cfg.scale || 1;
     const customStage = {
-      id: 'custom_' + (cfg.tpl || 'encounter'),
+      id: 'custom_' + tplKey,
       order: 99,
       title: `${t.name || '魔物'} · 遭遇战`,
       chapter: '野外实战',
@@ -6533,7 +6553,8 @@
           intro: `${t.name || '魔物'}拦住了去路！留意其架势预告徽章。`,
           enemies: [
             {
-              id: 'enc_0',
+              id: tplKey,
+              crestKind: cfg.crestKind || tplKey,
               name: t.name || '魔物',
               emoji: t.emoji || '🐺',
               elem: t.elem || 'wind',
@@ -6543,7 +6564,7 @@
               def: t.def || 5,
               mdef: t.mdef || 5,
               trait: t.desc || '留意双手蓄势空档与贴身扑击。',
-              aiType: 'generic',
+              aiType: cfg.aiType || 'generic',
             },
           ],
         },
@@ -6552,6 +6573,8 @@
     const b = createBattleState(customStage, { done, usePreset: false, fromArena: false });
     b._customCfg = cfg;
     activeBattle = b;
+    hoveredSkillId = null;
+    armedSkillId = null;
     global.B = b;
     if (typeof global.setBG === 'function') global.setBG('bg-battle');
     if (typeof global.bgmPlayType === 'function') global.bgmPlayType('battle', { force: true });
@@ -6644,6 +6667,8 @@
     STANCE_META,
     openArenaHub,
     closeArenaHub,
+    openIcePalaceModal,
+    showResultModal,
     startStage,
     startBattle: startCustomOrStageBattle,
     setOvercast,
@@ -6758,8 +6783,21 @@
       document.addEventListener('DOMContentLoaded', bindButtons);
     }
 
+    const HIGHER_OVERLAY_IDS = [
+      'cg-lightbox', 'sys-popup', 'arena-loadout-modal', 'vn-prefs-modal',
+      'vn-backlog-modal', 'vn-saveload-modal', 'vn-chapters-modal',
+      'ice-deduction-modal', 'rumor-overlay', 'panel', 'codex',
+      'stats-overlay', 'ai-drawer', 'help-screen', 'map-overlay', 'backlog-overlay',
+    ];
+
     // 键盘系统：绝不吞掉焦点按钮原生的 Enter/Space，同时支持 1~9 / Q / W / R / E 战术热键与防穿透
     document.addEventListener('keydown', e => {
+      const hasHigherOverlay = HIGHER_OVERLAY_IDS.some(id => {
+        const el = document.getElementById(id);
+        return !!(el && !el.classList.contains('hidden') && el.style.display !== 'none');
+      });
+      if (hasHigherOverlay) return;
+
       const bs = document.getElementById('battle-screen');
       const ao = document.getElementById('arena-overlay');
       const battleVis = bs && !bs.classList.contains('hidden');
@@ -6770,27 +6808,36 @@
       const isInteractiveEl = tgt && tgt.closest && tgt.closest('button, a, input, select, textarea, [tabindex]');
 
       if (e.key === 'Escape') {
-        const alm = document.getElementById('arena-loadout-modal');
-        if (alm && !alm.classList.contains('hidden')) {
-          alm.classList.add('hidden');
-          e.stopPropagation();
-          return;
-        }
         const pm = document.getElementById('cb-palace-modal');
         if (pm && pm.parentNode) {
           if (activeBattle && activeBattle.palacePendingStep2) {
             delete activeBattle.palacePendingStep2;
-            pushLog(activeBattle, `<span style="color:#ffb8c0">❄️【冰晶宫殿·中断】你在第 2 步主动散去了冰镜推演（本波审视机会已消耗）。</span>`);
+            pushLog(activeBattle, logTag('cbl-danger', '❄️【冰晶宫殿·中断】你在第 2 步主动散去了冰镜推演（本波审视机会已消耗）。'));
             renderCombatUI();
           }
           pm.parentNode.innerHTML = '';
           if (bs) bs.classList.remove('palace-timestop');
+          safeSfx('modal_close');
           e.stopPropagation();
+          e.stopImmediatePropagation();
+          e.preventDefault();
           return;
         }
-        if (arenaVis) {
+        const rm = document.getElementById('cb-result-modal');
+        if (rm && rm.parentNode) {
+          rm.parentNode.innerHTML = '';
+          safeSfx('modal_close');
+          exitBattle(activeBattle ? activeBattle.won : false);
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          e.preventDefault();
+          return;
+        }
+        if (arenaVis && !battleVis) {
           closeArenaHub();
           e.stopPropagation();
+          e.stopImmediatePropagation();
+          e.preventDefault();
           return;
         }
       }
@@ -6801,7 +6848,7 @@
           e.stopPropagation();
           return;
         }
-        const confirmDone = document.getElementById('cr-done');
+        const confirmDone = document.getElementById('cr-done') || document.getElementById('cp-confirm');
         if (confirmDone) {
           confirmDone.click();
         }

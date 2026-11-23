@@ -1,6 +1,6 @@
 /* =========================================================================
-   转生千金 · 原生游戏内 Galgame 角色灵魂交谈抽屉 (Direct Gemini API + Proxy 双模)
-   利用 Gemini responseSchema 一次返回 { action, reply, emotion, causal_deltas, memory_echo }
+   转生千金 · 原生游戏内 Galgame 角色灵魂交谈抽屉（内置桥接 / 自定义通道）
+   一次返回 { action, reply, emotion, causal_deltas, memory_echo }
    实时驱动舞台立绘表情切换与 S.causal 命运暗流演化
    ========================================================================= */
 (function (root) {
@@ -26,6 +26,8 @@
   var vignetteSession = null;        // 抽屉开启小场景横幅期间的活跃会话
   var pendingVignetteContext = null; // 跨抽屉收起保留至舞台继续按钮消费的累积结果
   var drawerEl = null;
+  var lastEmotionByChar = Object.create(null);
+  var viewportBound = false;
 
   function mergeSessionOutcome(prev, cur) {
     if (!cur) return prev;
@@ -59,7 +61,7 @@
     var onLocalServer = (typeof location !== 'undefined' && /^https?:/i.test(location.protocol) && location.port === '8787');
     var defaultProxy = onLocalServer ? '/api/chat' : 'http://localhost:8787/api/chat';
     var base = {
-      provider: onLocalServer ? 'codex' : 'openai', // 本机 8787 默认走 chatgpt-2 订阅桥接（零 API Key）
+      provider: onLocalServer ? 'codex' : 'openai', // 本机 8787 默认走本地内置共鸣桥接（免密钥）
       mode: onLocalServer ? 'proxy' : 'direct',     // 'proxy' | 'direct'
       baseUrl: 'https://api.openai.com/v1',
       apiKey: '',
@@ -349,7 +351,7 @@
 
     var key = String(cfg.apiKey || '').trim();
     if (!key) {
-      throw new Error('请先在面板「API 连接设置」填入您的 GPT / OpenAI API Key，或切换为本地代理模式。');
+      throw new Error('请先在「共鸣通道设置」填入访问密钥，或切换为本地内置共鸣桥接。');
     }
     var model = String(cfg.model || 'gpt-4.1').trim();
     var isCustomRelay = !!(cfg.baseUrl && !/api\.openai\.com/i.test(cfg.baseUrl));
@@ -416,8 +418,8 @@
       });
       if (!gptResp.ok) {
         throw new Error(gptResp.status === 429
-          ? 'GPT API 调用频率或额度受限，请稍后再试。'
-          : '直连 GPT API 失败（HTTP ' + gptResp.status + '），请检查 API Key、Base URL 与模型名。');
+          ? '对话服务调用频率或额度受限，请稍后再试。'
+          : '直连对话服务失败（HTTP ' + gptResp.status + '），请检查访问密钥、服务地址与对话模型名。');
       }
       var gptData = await gptResp.json();
       var gptText = (((gptData.choices || [])[0] || {}).message || {}).content || '';
@@ -475,8 +477,8 @@
 
     if (!directResp.ok) {
       throw new Error(directResp.status === 429
-        ? 'API 调用频率或额度已达上限，请稍后再试。'
-        : '直连 API 失败（HTTP ' + directResp.status + '），请检查 API Key 是否有效。');
+        ? '对话服务调用频率或额度已达上限，请稍后再试。'
+        : '直连对话服务失败（HTTP ' + directResp.status + '），请检查访问密钥是否有效。');
     }
     var directData = await directResp.json();
     var rawText = (((directData.candidates || [])[0] || {}).content || {}).parts
@@ -547,16 +549,18 @@
   }
 
   /**
-   * 统一收束当前小场景自由对话（抽屉金色按钮与舞台继续按钮共用，保留已产生的因果倾向）
+   * 统一收束当前小场景自由对话（抽屉收束按钮与舞台继续按钮共用，保留已产生的因果倾向）
    */
   function finishActiveVignette() {
     var ctx = vignetteSession || pendingVignetteContext;
     clearVignetteLock(true);
+    if (typeof document !== 'undefined' && document.body) {
+      document.body.classList.toggle('ai-drawer-open', false);
+    }
     if (drawerEl) {
       drawerEl.classList.add('hidden');
-      if (typeof document !== 'undefined' && document.body) {
-        document.body.classList.remove('ai-drawer-open');
-      }
+      drawerEl.style.height = '';
+      drawerEl.style.top = '';
       refreshBadge();
     }
     if (typeof document !== 'undefined') {
@@ -571,21 +575,50 @@
     return false;
   }
 
-  function ensureProactiveStyle() {
-    if (typeof document === 'undefined' || !document.head) return;
-    if (document.getElementById('aid-proactive-style')) return;
-    var st = document.createElement('style');
-    st.id = 'aid-proactive-style';
-    st.textContent =
-      '.aid-proactive-greeting{padding:11px 13px;border-radius:11px;background:linear-gradient(155deg,rgba(24,40,76,0.72),rgba(10,18,38,0.88));border:1px solid rgba(216,180,103,0.42);border-left:3px solid #e6c474;display:flex;flex-direction:column;gap:6px;box-shadow:0 6px 18px rgba(0,0,0,0.32);}' +
-      '.aid-pg-head{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;color:#f6e3b0;}' +
-      '.aid-pg-stage{font-size:10px;padding:1px 7px;border-radius:999px;background:rgba(216,180,103,0.16);border:1px solid rgba(216,180,103,0.36);color:#f3dca2;}' +
-      '.aid-pg-echo{font-size:11px;color:#b8d7f7;padding:4px 8px;border-radius:7px;background:rgba(126,200,255,0.1);border-left:2px solid rgba(126,200,255,0.55);}' +
-      '.aid-pg-starters{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;padding-top:6px;border-top:1px dashed rgba(216,180,103,0.24);}' +
-      '.aid-starter-chip{padding:5px 10px;border-radius:999px;font-size:11.5px;line-height:1.35;text-align:left;cursor:pointer;color:#e8f2ff;background:rgba(26,48,88,0.72);border:1px solid rgba(126,200,255,0.34);transition:border-color 0.16s ease,background 0.16s ease,transform 0.14s ease;}' +
-      '.aid-starter-chip:hover{border-color:#f4dca0;background:rgba(48,78,132,0.85);color:#fff7df;transform:translateY(-1px);}' +
-      '.aid-pg-tip{font-size:10.5px;color:rgba(196,216,242,0.62);margin-top:2px;}';
-    document.head.appendChild(st);
+  function syncDrawerViewport() {
+    if (!drawerEl) return;
+    var win = typeof window !== 'undefined' ? window : null;
+    if (!win) return;
+    if (
+      !drawerEl.classList.contains('hidden') &&
+      (win.innerWidth <= 820 || win.innerHeight <= 500) &&
+      win.visualViewport
+    ) {
+      drawerEl.style.height = Math.max(240, Math.round(win.visualViewport.height)) + 'px';
+      drawerEl.style.top = Math.max(0, Math.round(win.visualViewport.offsetTop)) + 'px';
+    } else {
+      drawerEl.style.height = '';
+      drawerEl.style.top = '';
+    }
+  }
+
+  function bindViewportListeners() {
+    if (viewportBound || typeof window === 'undefined') return;
+    viewportBound = true;
+    window.addEventListener('resize', syncDrawerViewport);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', syncDrawerViewport);
+      window.visualViewport.addEventListener('scroll', syncDrawerViewport);
+    }
+  }
+
+  function updateCfgSummary() {
+    if (!drawerEl) return;
+    var summaryEl = drawerEl.querySelector('#aid-cfg-summary');
+    if (!summaryEl) return;
+    var modeEl = drawerEl.querySelector('#aid-mode');
+    var keyEl = drawerEl.querySelector('#aid-apikey');
+    var modelEl = drawerEl.querySelector('#aid-model');
+    var selMode = modeEl ? modeEl.value : 'codex';
+    var hasKey = !!(keyEl && keyEl.value.trim());
+    var modelName = (modelEl && modelEl.value.trim()) || 'gpt-4.1';
+    if (selMode === 'codex') {
+      summaryEl.textContent = '✦ 当前共鸣通道：本地内置共鸣桥接（免密钥 · 开箱即用）';
+    } else if (selMode === 'direct') {
+      summaryEl.textContent = '✦ 当前共鸣通道：直连自定义对话服务（' + (hasKey ? '已填写访问密钥' : '待填写访问密钥') + ' · ' + modelName + '）';
+    } else {
+      summaryEl.textContent = '✦ 当前共鸣通道：自定义中转代理服务（' + modelName + '）';
+    }
   }
 
   function ensureDrawerDOM() {
@@ -594,7 +627,6 @@
     var app = document.getElementById('app') || document.body;
     if (!app) return null;
 
-    ensureProactiveStyle();
     var cfg = loadConfig();
     var aside = document.createElement('aside');
     aside.id = 'ai-drawer';
@@ -607,48 +639,54 @@
           '<div><h3 class="aid-title">灵魂交谈</h3><p class="aid-sub" id="aid-gate-tag">等待角色登场</p></div>' +
         '</div>' +
         '<div class="aid-head-btns">' +
-          '<button type="button" id="aid-btn-cfg" class="aid-icon-btn" title="API 连接设置" aria-label="API 连接设置">' + SVG_GEAR_ICON + '</button>' +
+          '<button type="button" id="aid-btn-cfg" class="aid-icon-btn aid-cfg-toggle" title="接口设置" aria-label="接口设置" data-tip="接口设置">' + SVG_GEAR_ICON + '<span class="aid-icon-label">设置</span></button>' +
           '<button type="button" id="aid-btn-close" class="aid-icon-btn" title="收起抽屉" aria-label="收起抽屉">×</button>' +
         '</div>' +
       '</div>' +
       '<div id="aid-cfg-box" class="aid-cfg hidden">' +
-        '<div class="aid-cfg-row">' +
-          '<label>连接方式</label>' +
-          '<select id="aid-mode">' +
-            '<option value="codex"' + (cfg.mode === 'proxy' && cfg.provider === 'codex' ? ' selected' : '') + '>本机 chatgpt-2 订阅桥接（免 API Key · 推荐）</option>' +
-            '<option value="direct"' + (cfg.mode === 'direct' ? ' selected' : '') + '>浏览器直连 GPT / OpenAI 兼容 API</option>' +
-            '<option value="proxy"' + (cfg.mode === 'proxy' && cfg.provider !== 'codex' ? ' selected' : '') + '>连接本地/云端 OpenAI 代理</option>' +
-          '</select>' +
-        '</div>' +
-        '<div class="aid-cfg-row" id="aid-baseurl-row">' +
-          '<label>GPT API Base URL <small>（支持官方或任意 OpenAI 兼容中转站）</small></label>' +
-          '<input type="text" id="aid-baseurl" placeholder="https://api.openai.com/v1"/>' +
-        '</div>' +
-        '<div class="aid-cfg-row" id="aid-key-row">' +
-          '<label>GPT / OpenAI API Key <small>（仅存本机浏览器）</small></label>' +
-          '<input type="password" id="aid-apikey" placeholder="粘贴 sk-... 密钥" autocomplete="off"/>' +
-        '</div>' +
-        '<div class="aid-cfg-row" id="aid-proxy-row">' +
-          '<label>Proxy 端点地址</label>' +
-          '<input type="text" id="aid-proxy" placeholder="http://localhost:8787/api/chat"/>' +
-        '</div>' +
-        '<div class="aid-cfg-row">' +
-          '<label>GPT 模型名 <small>（可直接输入任意兼容模型）</small></label>' +
-          '<input type="text" id="aid-model" list="aid-model-list" placeholder="gpt-4.1"/>' +
-          '<datalist id="aid-model-list">' +
-            '<option value="gpt-5"></option>' +
-            '<option value="gpt-4.1"></option>' +
-            '<option value="gpt-4o"></option>' +
-            '<option value="gpt-5-mini"></option>' +
-          '</datalist>' +
-        '</div>' +
-        '<div class="aid-cfg-foot">' +
-          '<button type="button" id="aid-cfg-save" class="aid-btn primary">保存配置</button>' +
-        '</div>' +
+        '<div class="aid-cfg-summary" id="aid-cfg-summary"></div>' +
+        '<details class="aid-dev-disclosure" id="aid-dev-disclosure">' +
+          '<summary>高级连接配置（自定义服务 / 访问凭证）</summary>' +
+          '<div class="aid-dev-fields">' +
+            '<div class="aid-cfg-row">' +
+              '<label>共鸣通道</label>' +
+              '<select id="aid-mode">' +
+                '<option value="codex"' + (cfg.mode === 'proxy' && cfg.provider === 'codex' ? ' selected' : '') + '>本地内置共鸣桥接（免密钥 · 推荐）</option>' +
+                '<option value="direct"' + (cfg.mode === 'direct' ? ' selected' : '') + '>直连自定义对话服务（需填写访问密钥）</option>' +
+                '<option value="proxy"' + (cfg.mode === 'proxy' && cfg.provider !== 'codex' ? ' selected' : '') + '>连接自定义中转代理服务</option>' +
+              '</select>' +
+            '</div>' +
+            '<div class="aid-cfg-row" id="aid-baseurl-row">' +
+              '<label>自定义服务地址 <small>（支持官方或兼容中转地址）</small></label>' +
+              '<input type="text" id="aid-baseurl" placeholder="https://api.openai.com/v1"/>' +
+            '</div>' +
+            '<div class="aid-cfg-row" id="aid-key-row">' +
+              '<label>访问密钥 <small>（仅存本机浏览器）</small></label>' +
+              '<input type="password" id="aid-apikey" placeholder="粘贴访问密钥" autocomplete="off"/>' +
+            '</div>' +
+            '<div class="aid-cfg-row" id="aid-proxy-row">' +
+              '<label>代理服务地址</label>' +
+              '<input type="text" id="aid-proxy" placeholder="http://localhost:8787/api/chat"/>' +
+            '</div>' +
+            '<div class="aid-cfg-row">' +
+              '<label>对话模型名 <small>（可直接输入兼容模型名称）</small></label>' +
+              '<input type="text" id="aid-model" list="aid-model-list" placeholder="gpt-4.1"/>' +
+              '<datalist id="aid-model-list">' +
+                '<option value="gpt-5"></option>' +
+                '<option value="gpt-4.1"></option>' +
+                '<option value="gpt-4o"></option>' +
+                '<option value="gpt-5-mini"></option>' +
+              '</datalist>' +
+            '</div>' +
+            '<div class="aid-cfg-foot">' +
+              '<button type="button" id="aid-cfg-save" class="aid-btn primary">保存配置</button>' +
+            '</div>' +
+          '</div>' +
+        '</details>' +
       '</div>' +
       '<div class="aid-target-bar">' +
         '<div class="aid-sigil-badge" id="aid-sigil-badge" aria-hidden="true">' + SVG_SIGIL_CREST + '</div>' +
-        '<img id="aid-avatar" class="aid-avatar" alt=""/>' +
+        '<div id="aid-avatar-wrap" class="aid-avatar hidden"><img id="aid-avatar" class="hidden" alt=""/></div>' +
         '<div class="aid-target-meta">' +
           '<select id="aid-target" aria-label="选择在场对话角色"></select>' +
           '<div id="aid-axis-mini" class="aid-axis-mini"></div>' +
@@ -659,7 +697,7 @@
         '<button type="button" id="aid-vignette-finish" class="aid-btn gold">织入命运并继续剧情 ▸</button>' +
       '</div>' +
       '<div id="aid-log" class="aid-log" role="log" aria-live="polite"></div>' +
-      '<div id="aid-status" class="aid-status">就绪 · 结构化表情与命运暗流实时联动</div>' +
+      '<div id="aid-status" class="aid-status">聆听中 · 你的每句回应都将牵动心境与因果</div>' +
       '<div class="aid-compose">' +
         '<textarea id="aid-input" maxlength="2000" rows="2" placeholder="对眼前的角色说点什么……（Ctrl + Enter 发送）"></textarea>' +
         '<div class="aid-actions">' +
@@ -671,6 +709,7 @@
 
     app.appendChild(aside);
     drawerEl = aside;
+    bindViewportListeners();
 
     // 初始化表单值
     aside.querySelector('#aid-baseurl').value = cfg.baseUrl || 'https://api.openai.com/v1';
@@ -679,12 +718,31 @@
     aside.querySelector('#aid-model').value = cfg.model || 'gpt-4.1';
     syncCfgRows();
 
+    var cfgBox = aside.querySelector('#aid-cfg-box');
+    var disclosure = aside.querySelector('#aid-dev-disclosure');
+    if (cfgBox && disclosure && typeof MutationObserver === 'function') {
+      var cfgObserver = new MutationObserver(function () {
+        if (!cfgBox.classList.contains('hidden')) {
+          disclosure.open = true;
+          updateCfgSummary();
+        }
+      });
+      cfgObserver.observe(cfgBox, { attributes: true, attributeFilter: ['class'] });
+    }
+
     // 绑定事件
     aside.querySelector('#aid-btn-close').onclick = function () { closeDrawer(); };
     aside.querySelector('#aid-btn-cfg').onclick = function () {
-      aside.querySelector('#aid-cfg-box').classList.toggle('hidden');
+      var willOpen = cfgBox.classList.contains('hidden');
+      cfgBox.classList.toggle('hidden');
+      if (willOpen && disclosure) {
+        disclosure.open = true;
+        updateCfgSummary();
+      }
     };
     aside.querySelector('#aid-mode').onchange = syncCfgRows;
+    aside.querySelector('#aid-apikey').addEventListener('input', updateCfgSummary);
+    aside.querySelector('#aid-model').addEventListener('input', updateCfgSummary);
     aside.querySelector('#aid-cfg-save').onclick = function () {
       var selMode = aside.querySelector('#aid-mode').value;
       var nextCfg = {
@@ -696,10 +754,11 @@
         model: aside.querySelector('#aid-model').value.trim() || 'gpt-4.1'
       };
       saveConfig(nextCfg);
-      aside.querySelector('#aid-cfg-box').classList.add('hidden');
+      updateCfgSummary();
+      cfgBox.classList.add('hidden');
       setStatus(selMode === 'codex'
-        ? '已切换为本机 chatgpt-2 订阅桥接（免 API Key）'
-        : '已保存 GPT 连接配置（' + (nextCfg.mode === 'proxy' ? '代理模式' : '直连模式') + ' · ' + nextCfg.model + '）');
+        ? '已切换为本地内置共鸣桥接（免密钥）'
+        : '已保存共鸣通道设置（' + (nextCfg.mode === 'proxy' ? '中转代理' : '直连服务') + ' · ' + nextCfg.model + '）');
     };
     aside.querySelector('#aid-target').onchange = function () {
       refreshBadge();
@@ -741,16 +800,33 @@
       }
     });
 
-    // 开始新游戏时重置对话缓存与小场景锁定状态
+    // 开始新游戏时重置对话缓存、角色表情记忆与小场景锁定状态，并同步关闭抽屉与移除 ai-drawer-open
     var btnNew = document.getElementById('btn-new');
     if (btnNew && !btnNew.__aidBound) {
       btnNew.__aidBound = true;
       btnNew.addEventListener('click', function () {
+        lastEmotionByChar = Object.create(null);
         clearVignetteLock(true);
         saveConversations({});
+        closeDrawer({ wipePending: true });
+        if (typeof document !== 'undefined' && document.body) {
+          document.body.classList.toggle('ai-drawer-open', false);
+        }
         if (drawerEl) {
           refreshBadge();
           renderTranscript();
+        }
+      });
+    }
+
+    // 返回标题界面时收起抽屉并彻底同步清理 ai-drawer-open
+    var btnTitle = document.getElementById('btn-title');
+    if (btnTitle && !btnTitle.__aidBound) {
+      btnTitle.__aidBound = true;
+      btnTitle.addEventListener('click', function () {
+        closeDrawer({ wipePending: true });
+        if (typeof document !== 'undefined' && document.body) {
+          document.body.classList.toggle('ai-drawer-open', false);
         }
       });
     }
@@ -764,6 +840,7 @@
     drawerEl.querySelector('#aid-proxy-row').classList.toggle('hidden', mode === 'direct');
     drawerEl.querySelector('#aid-baseurl-row').classList.toggle('hidden', mode === 'codex');
     drawerEl.querySelector('#aid-key-row').classList.toggle('hidden', mode === 'codex');
+    updateCfgSummary();
   }
 
   function setStatus(msg) {
@@ -804,6 +881,52 @@
     return '？？？';
   }
 
+  function updateDrawerAvatar(avatar, sigil, cid, hiddenId, emo, altText) {
+    if (!avatar) return;
+    var wrap = (avatar.parentElement && avatar.parentElement.id === 'aid-avatar-wrap') ? avatar.parentElement : null;
+    if (cid && !hiddenId && typeof resolvePortrait === 'function') {
+      var emoKey = emo || 'normal';
+      var src = resolvePortrait(cid, emoKey) || resolvePortrait(cid, 'normal') || '';
+      if (src) {
+        avatar.onerror = null;
+        avatar.dataset.fallbackTried = '';
+        avatar.dataset.charId = cid;
+        avatar.onerror = function () {
+          var targetCid = avatar.dataset.charId || cid;
+          var failedSrc = avatar.getAttribute('src');
+          if (failedSrc && typeof FAILED_PORTRAIT_URLS !== 'undefined' && FAILED_PORTRAIT_URLS && typeof FAILED_PORTRAIT_URLS.add === 'function') {
+            FAILED_PORTRAIT_URLS.add(failedSrc);
+          }
+          if (!avatar.dataset.fallbackTried && typeof resolvePortrait === 'function') {
+            var norm = resolvePortrait(targetCid, 'normal');
+            if (norm && avatar.getAttribute('src') !== norm) {
+              avatar.dataset.fallbackTried = '1';
+              avatar.src = norm;
+              return;
+            }
+          }
+          avatar.classList.add('hidden');
+          if (wrap) wrap.classList.add('hidden');
+          if (sigil) sigil.classList.remove('hidden');
+        };
+        avatar.src = src;
+        avatar.alt = altText || cid;
+        avatar.classList.remove('hidden');
+        if (wrap) wrap.classList.remove('hidden');
+        if (sigil) sigil.classList.add('hidden');
+        return;
+      }
+    }
+    avatar.onerror = null;
+    avatar.dataset.fallbackTried = '';
+    avatar.dataset.charId = '';
+    avatar.removeAttribute('src');
+    avatar.alt = '';
+    avatar.classList.add('hidden');
+    if (wrap) wrap.classList.add('hidden');
+    if (sigil) sigil.classList.remove('hidden');
+  }
+
   function refreshBadge() {
     if (!drawerEl) return;
     var snap = collectLiveSnapshot();
@@ -833,19 +956,14 @@
 
     var cid = sel.value;
     var avatar = drawerEl.querySelector('#aid-avatar');
+    var sigil = drawerEl.querySelector('#aid-sigil-badge');
     var gateTag = drawerEl.querySelector('#aid-gate-tag');
     var axisMini = drawerEl.querySelector('#aid-axis-mini');
-    var hiddenId = cid && isIdentityHidden(cid, snap, st);
+    var hiddenId = !!(cid && isIdentityHidden(cid, snap, st));
+    var matchedPerson = cid ? (snap.people || []).find(function (p) { return p.id === cid; }) : null;
+    var avatarAlt = matchedPerson ? (matchedPerson.short || matchedPerson.name || cid) : (cid || '');
 
-    if (avatar) {
-      if (cid && !hiddenId && typeof resolvePortrait === 'function') {
-        var src = resolvePortrait(cid, 'normal');
-        avatar.src = src || '';
-      } else {
-        avatar.removeAttribute('src');
-      }
-      avatar.style.display = 'none';
-    }
+    updateDrawerAvatar(avatar, sigil, cid, hiddenId, lastEmotionByChar[cid] || 'normal', avatarAlt);
 
     if (hiddenId) {
       gateTag.textContent = '时间锁：初生盲听 · 尚未识名';
@@ -867,7 +985,7 @@
     }
 
     if (hiddenId) {
-      axisMini.innerHTML = '<span style="opacity:.72">✧ 声线尚浅 · 身份未明</span>';
+      axisMini.innerHTML = '<span class="aid-axis-hint">✧ 声线尚浅 · 身份未明</span>';
     } else if (cid && root.BranchingDirector) {
       var summary = root.BranchingDirector.getAxisSummary(cid);
       if (summary) {
@@ -875,7 +993,7 @@
           '<i class="aid-mini-bar"><b style="left:' + summary.ratio + '%"></b></i>' +
           '<span><b>' + summary.rightVal + '</b> ' + summary.rightLabel + '</span>';
       } else {
-        axisMini.innerHTML = '<span style="opacity:.72">✧ 专属灵魂卡已装载</span>';
+        axisMini.innerHTML = '<span class="aid-axis-hint">✧ 专属灵魂卡已装载</span>';
       }
     } else {
       axisMini.innerHTML = '';
@@ -1329,9 +1447,7 @@
       var pgHead = document.createElement('div');
       pgHead.className = 'aid-pg-head';
       var pgLeft = document.createElement('div');
-      pgLeft.style.display = 'flex';
-      pgLeft.style.alignItems = 'center';
-      pgLeft.style.gap = '6px';
+      pgLeft.className = 'aid-pg-left';
       var pgName = document.createElement('strong');
       pgName.textContent = opening.speaker;
       pgLeft.appendChild(pgName);
@@ -1364,7 +1480,7 @@
       if (opening.echoQuote) {
         var pgEcho = document.createElement('div');
         pgEcho.className = 'aid-pg-echo';
-        pgEcho.textContent = '🎐 往昔回声共鸣：「' + opening.echoQuote + '」';
+        pgEcho.textContent = '✦ 往昔回声共鸣：「' + opening.echoQuote + '」';
         card.appendChild(pgEcho);
       }
 
@@ -1453,8 +1569,12 @@
 
     var cfg = loadConfig();
     if (cfg.mode === 'direct' && !cfg.apiKey) {
-      drawerEl.querySelector('#aid-cfg-box').classList.remove('hidden');
-      setStatus('请先填入 GPT / OpenAI API Key，或切换为本地代理模式后再发送。');
+      var cfgBox = drawerEl.querySelector('#aid-cfg-box');
+      var disclosure = drawerEl.querySelector('#aid-dev-disclosure');
+      if (cfgBox) cfgBox.classList.remove('hidden');
+      if (disclosure) disclosure.open = true;
+      updateCfgSummary();
+      setStatus('请先填入访问密钥，或切换为本地内置共鸣桥接后再发送。');
       return;
     }
 
@@ -1488,12 +1608,14 @@
         pendingVignetteContext.lastOutcome = mergeSessionOutcome(pendingVignetteContext.lastOutcome, outcomeRes);
       }
 
-      // 更新抽屉头像为最新表情
+      var stNow = (typeof S !== 'undefined' && S) ? S : root.S;
+      var hiddenNow = !!(cid && isIdentityHidden(cid, snap, stNow));
+      lastEmotionByChar[cid] = structured.emotion || 'normal';
+
+      // 更新抽屉头像为最新表情（防剧透盲听期保持隐藏，并附带安全回退）
       var avatar = drawerEl.querySelector('#aid-avatar');
-      if (avatar && typeof resolvePortrait === 'function') {
-        var newSrc = resolvePortrait(cid, structured.emotion);
-        if (newSrc) avatar.src = newSrc;
-      }
+      var sigil = drawerEl.querySelector('#aid-sigil-badge');
+      updateDrawerAvatar(avatar, sigil, cid, hiddenNow, lastEmotionByChar[cid], person.short || person.name || cid);
 
       var notes = [];
       if (outcomeRes && outcomeRes.axisChanged && structured.causal_deltas && structured.causal_deltas.axis !== 'none') {
@@ -1506,8 +1628,7 @@
         notes.push('✦ 往昔回声已铭刻');
       }
 
-      var stNow = (typeof S !== 'undefined' && S) ? S : root.S;
-      var saveName = isIdentityHidden(cid, snap, stNow) ? maskedPersonShort(cid) : (person.short || person.name);
+      var saveName = hiddenNow ? maskedPersonShort(cid) : (person.short || person.name);
 
       convs[cKey] = prevTurns.concat([
         { role: 'user', content: text },
@@ -1528,7 +1649,7 @@
       if (err && err.name === 'AbortError') {
         setStatus('已取消发送 · 输入文字已保留');
       } else {
-        setStatus((err && err.message) ? err.message : '请求失败，请检查网络连接或 API Key。输入已保留。');
+        setStatus((err && err.message) ? err.message : '共鸣连接失败，请检查网络或访问凭证。输入已保留。');
       }
     } finally {
       busy = false;
@@ -1543,8 +1664,9 @@
     if (!el) return;
     el.classList.remove('hidden');
     if (typeof document !== 'undefined' && document.body) {
-      document.body.classList.add('ai-drawer-open');
+      document.body.classList.toggle('ai-drawer-open', true);
     }
+    syncDrawerViewport();
     refreshBadge();
     if (preferCharId) {
       var sel = el.querySelector('#aid-target');
@@ -1560,10 +1682,12 @@
     var options = opts || {};
     clearVignetteLock(!!options.wipePending);
     if (typeof document !== 'undefined' && document.body) {
-      document.body.classList.remove('ai-drawer-open');
+      document.body.classList.toggle('ai-drawer-open', false);
     }
     if (!drawerEl) return;
     drawerEl.classList.add('hidden');
+    drawerEl.style.height = '';
+    drawerEl.style.top = '';
     refreshBadge();
   }
 

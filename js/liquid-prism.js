@@ -8,7 +8,7 @@
       - 淡霜白滤色 rgba(244, 248, 255, 0.22)、锐利棱边折射与微弱色散 (aberration: 0.014)
       - 离开 #title-screen 或打开弹窗遮罩时立即同步销毁释放 GPU 资源
    2. 局内左上角角色状态棱镜（#hud .hud-left / #hud）
-      - 深蓝宝石晶透滤色 rgba(8, 20, 44, 0.26)、冷霜高光边缘、随背景切换自动刷新折射快照
+      - 冰瓷晴空晶透滤色 rgba(248, 251, 255, 0.34)、冷霜高光边缘、随背景切换自动刷新折射快照
       - 弹窗/标题页/CG/沉浸/POV 模式下立即同步暂停并释放 GPU 资源
    ========================================================================= */
 (function (root) {
@@ -29,7 +29,7 @@
   };
 
   var HUD_LENS_CONFIG = {
-    tint: 'rgba(8, 20, 44, 0.26)',
+    tint: 'rgba(248, 251, 255, 0.34)',
     refraction: 0.02,
     aberration: 0.008,
     bevelDepth: 0.09,
@@ -67,6 +67,15 @@
 
   function isJsdomEnv() {
     return typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent || '');
+  }
+
+  function isTouchOrNarrowMobile() {
+    if (!isBrowserDoc()) return false;
+    try {
+      if (typeof window.innerWidth === 'number' && window.innerWidth <= 768) return true;
+      if (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches) return true;
+    } catch (e) {}
+    return false;
   }
 
   function readSavedEnabled() {
@@ -219,18 +228,17 @@
       '  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 16px 34px -10px rgba(7, 20, 46, 0.34) !important;\n' +
       '}\n' +
       '[data-liquid-prism-role="hud"][data-liquid-prism="active"] {\n' +
-      '  border-radius: 5px !important;\n' +
-      '  border-top: 1px solid rgba(186, 230, 253, 0.42) !important;\n' +
-      '  border-left: 1px solid rgba(125, 211, 252, 0.30) !important;\n' +
-      '  border-right: 1px solid rgba(125, 211, 252, 0.18) !important;\n' +
-      '  box-shadow: inset 0 1px 0 rgba(224, 242, 254, 0.28), 0 10px 26px -12px rgba(4, 10, 26, 0.52) !important;\n' +
+      '  border-radius: 10px !important;\n' +
+      '  border: 1px solid rgba(125, 211, 252, 0.42) !important;\n' +
+      '  border-top-color: rgba(255, 255, 255, 0.72) !important;\n' +
+      '  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 10px 26px -12px rgba(13, 31, 68, 0.20) !important;\n' +
       '}\n' +
       '[data-liquid-prism-role="hud"][data-liquid-prism="active"]::before {\n' +
       '  content: "";\n' +
       '  position: absolute;\n' +
       '  inset: 0;\n' +
       '  border-radius: inherit;\n' +
-      '  background: linear-gradient(100deg, rgba(6, 16, 40, 0.38) 0%, rgba(8, 22, 52, 0.22) 76%, rgba(8, 22, 52, 0.08) 100%);\n' +
+      '  background: linear-gradient(100deg, rgba(248, 251, 255, 0.78) 0%, rgba(242, 248, 255, 0.66) 76%, rgba(238, 246, 255, 0.52) 100%);\n' +
       '  pointer-events: none;\n' +
       '  z-index: 0;\n' +
       '}\n' +
@@ -240,15 +248,15 @@
       '}\n' +
       '[data-liquid-prism-role="hud"][data-liquid-prism="active"] #hud-name,\n' +
       '[data-liquid-prism-role="hud"][data-liquid-prism="active"] .hb-val {\n' +
-      '  text-shadow: 0 1px 4px rgba(4, 10, 26, 0.78);\n' +
+      '  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);\n' +
       '}\n' +
       '[data-liquid-prism-role="hud"][data-liquid-prism="css-fallback"] {\n' +
-      '  border-radius: 5px !important;\n' +
-      '  border-top: 1px solid rgba(186, 230, 253, 0.38) !important;\n' +
-      '  border-left: 1px solid rgba(125, 211, 252, 0.28) !important;\n' +
-      '  background: linear-gradient(100deg, rgba(8, 20, 44, 0.72) 0%, rgba(8, 20, 44, 0.44) 78%, rgba(8, 20, 44, 0.22) 100%) !important;\n' +
-      '  backdrop-filter: blur(14px) saturate(1.22) !important;\n' +
-      '  -webkit-backdrop-filter: blur(14px) saturate(1.22) !important;\n' +
+      '  border-radius: 10px !important;\n' +
+      '  border: 1px solid rgba(56, 189, 248, 0.36) !important;\n' +
+      '  background: linear-gradient(100deg, rgba(248, 251, 255, 0.90) 0%, rgba(244, 249, 255, 0.84) 78%, rgba(238, 246, 255, 0.78) 100%) !important;\n' +
+      '  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 10px 24px -10px rgba(13, 31, 68, 0.16) !important;\n' +
+      '  backdrop-filter: blur(16px) saturate(1.22) !important;\n' +
+      '  -webkit-backdrop-filter: blur(16px) saturate(1.22) !important;\n' +
       '}\n';
     document.head.appendChild(style);
   }
@@ -432,6 +440,11 @@
       return;
     }
 
+    if (isTouchOrNarrowMobile()) {
+      mountCssFallback(kind, targetEl);
+      return;
+    }
+
     var snapshotSelector = 'body';
     var snapshotEl = document.body;
     var hostEl = null;
@@ -466,7 +479,7 @@
       if (!state.enabled || isReducedMotion() || document.hidden) return;
       if (!isElementVisible(targetEl) || hasBlockingOverlay()) return;
 
-      if (support !== 'gpu' || typeof window.liquidGL !== 'function') {
+      if (isTouchOrNarrowMobile() || support !== 'gpu' || typeof window.liquidGL !== 'function') {
         mountCssFallback(kind, targetEl);
         return;
       }
@@ -595,6 +608,14 @@
     }
 
     if (state.activeSurface === desired.kind && state.activeEl === desired.target.el) {
+      var wantFallbackOnly = isTouchOrNarrowMobile();
+      if (
+        (wantFallbackOnly && state.activeMode === 'gpu') ||
+        (!wantFallbackOnly && state.activeMode === 'css-fallback' && state.gpuSupport !== 'none')
+      ) {
+        teardownActiveLens();
+        mountSurface(desired);
+      }
       return;
     }
 

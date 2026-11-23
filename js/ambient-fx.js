@@ -105,6 +105,16 @@
     return min + Math.random() * (max - min);
   }
 
+  function playSfx(cue) {
+    try {
+      if (typeof window !== 'undefined' && typeof window.sfx === 'function') {
+        window.sfx(cue);
+      } else if (typeof sfx === 'function') {
+        sfx(cue);
+      }
+    } catch (e) {}
+  }
+
   function checkReducedMotion() {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
       state.reducedMotion = false;
@@ -253,12 +263,12 @@
         phase: rand(0, Math.PI * 2),
         spin: rand(0.012, 0.032),
         sway: rand(0.12, 0.36),
-        kind: isCrystal ? (idx % 12 === 0 ? 'gold' : 'crystal') : 'flake'
+        kind: isCrystal ? (idx % 12 === 0 ? 'glacier' : 'crystal') : 'flake'
       };
     }
 
     if (mode === 'firefly') {
-      var isGold = idx % 3 === 0;
+      var isSapphire = idx % 3 === 0;
       return {
         x: rand(w * 0.04, w * 0.96),
         y: rand(h * 0.14, h * 0.86),
@@ -269,12 +279,12 @@
         phase: rand(0, Math.PI * 2),
         spin: rand(0.015, 0.034),
         sway: rand(0.16, 0.42),
-        kind: isGold ? 'gold' : 'cyan'
+        kind: isSapphire ? 'sapphire' : 'sky'
       };
     }
 
     if (mode === 'ember') {
-      var warmKind = idx % 4 === 0 ? 'gold' : (idx % 3 === 0 ? 'copper' : 'amber');
+      var emberKind = idx % 4 === 0 ? 'spark' : (idx % 3 === 0 ? 'crimson' : 'coral');
       return {
         x: rand(w * 0.03, w * 0.97),
         y: scatterY ? rand(h * 0.12, h + 20) : rand(h + 4, h + 46),
@@ -285,7 +295,7 @@
         phase: rand(0, Math.PI * 2),
         spin: rand(0.025, 0.06),
         sway: rand(0.22, 0.55),
-        kind: warmKind
+        kind: emberKind
       };
     }
 
@@ -300,7 +310,7 @@
         phase: rand(0, Math.PI * 2),
         spin: rand(0.008, 0.02),
         sway: rand(0.06, 0.18),
-        kind: idx % 3 === 0 ? 'ivory' : 'mote'
+        kind: idx % 3 === 0 ? 'ice' : 'sky'
       };
     }
 
@@ -379,14 +389,14 @@
         }
         var snowShimmer = 0.78 + 0.22 * Math.sin(p.phase * 1.4);
         var aSnow = Math.min(0.58, p.alpha * snowShimmer * state.modeAlpha);
-        if (p.kind === 'gold') {
-          drawCrystalDiamond(ctx, p.x, p.y, p.r, 'rgba(240, 214, 152, ' + aSnow.toFixed(3) + ')');
+        if (p.kind === 'glacier') {
+          drawCrystalDiamond(ctx, p.x, p.y, p.r, 'rgba(125, 211, 252, ' + aSnow.toFixed(3) + ')');
         } else if (p.kind === 'crystal') {
-          drawCrystalDiamond(ctx, p.x, p.y, p.r, 'rgba(184, 228, 255, ' + aSnow.toFixed(3) + ')');
+          drawCrystalDiamond(ctx, p.x, p.y, p.r, 'rgba(255, 255, 255, ' + aSnow.toFixed(3) + ')');
         } else {
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(218, 238, 255, ' + aSnow.toFixed(3) + ')';
+          ctx.fillStyle = 'rgba(224, 242, 254, ' + aSnow.toFixed(3) + ')';
           ctx.fill();
         }
       } else if (mode === 'firefly') {
@@ -401,14 +411,14 @@
         var aFf = Math.min(0.56, p.alpha * pulse * state.modeAlpha);
         var haloR = p.r * 4.4;
         var haloGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, haloR);
-        if (p.kind === 'gold') {
-          haloGrad.addColorStop(0, 'rgba(244, 218, 146, ' + (aFf * 0.92).toFixed(3) + ')');
-          haloGrad.addColorStop(0.45, 'rgba(216, 180, 103, ' + (aFf * 0.34).toFixed(3) + ')');
-          haloGrad.addColorStop(1, 'rgba(216, 180, 103, 0)');
+        if (p.kind === 'sapphire') {
+          haloGrad.addColorStop(0, 'rgba(125, 211, 252, ' + (aFf * 0.94).toFixed(3) + ')');
+          haloGrad.addColorStop(0.45, 'rgba(22, 88, 235, ' + (aFf * 0.34).toFixed(3) + ')');
+          haloGrad.addColorStop(1, 'rgba(22, 88, 235, 0)');
         } else {
-          haloGrad.addColorStop(0, 'rgba(196, 238, 255, ' + (aFf * 0.95).toFixed(3) + ')');
-          haloGrad.addColorStop(0.45, 'rgba(126, 200, 255, ' + (aFf * 0.36).toFixed(3) + ')');
-          haloGrad.addColorStop(1, 'rgba(126, 200, 255, 0)');
+          haloGrad.addColorStop(0, 'rgba(255, 255, 255, ' + (aFf * 0.96).toFixed(3) + ')');
+          haloGrad.addColorStop(0.45, 'rgba(56, 189, 248, ' + (aFf * 0.38).toFixed(3) + ')');
+          haloGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
         }
         ctx.beginPath();
         ctx.arc(p.x, p.y, haloR, 0, Math.PI * 2);
@@ -417,9 +427,9 @@
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r * 0.75, 0, Math.PI * 2);
-        ctx.fillStyle = p.kind === 'gold'
-          ? 'rgba(255, 244, 204, ' + Math.min(0.58, aFf * 1.1).toFixed(3) + ')'
-          : 'rgba(232, 248, 255, ' + Math.min(0.58, aFf * 1.1).toFixed(3) + ')';
+        ctx.fillStyle = p.kind === 'sapphire'
+          ? 'rgba(125, 211, 252, ' + Math.min(0.6, aFf * 1.12).toFixed(3) + ')'
+          : 'rgba(255, 255, 255, ' + Math.min(0.62, aFf * 1.15).toFixed(3) + ')';
         ctx.fill();
       } else if (mode === 'ember') {
         p.x += (p.vx + Math.sin(p.phase) * p.sway * 0.48) * dt;
@@ -431,11 +441,11 @@
         var heightFade = Math.max(0, Math.min(1, p.y / (h * 0.72)));
         var flicker = 0.65 + 0.35 * Math.sin(p.phase * 1.9);
         var aEm = Math.min(0.56, p.alpha * flicker * (0.28 + 0.72 * heightFade) * state.modeAlpha);
-        var emColor = p.kind === 'gold'
-          ? 'rgba(246, 210, 134, ' + aEm.toFixed(3) + ')'
-          : p.kind === 'copper'
-            ? 'rgba(226, 118, 76, ' + aEm.toFixed(3) + ')'
-            : 'rgba(242, 166, 92, ' + aEm.toFixed(3) + ')';
+        var emColor = p.kind === 'spark'
+          ? 'rgba(224, 242, 254, ' + aEm.toFixed(3) + ')'
+          : p.kind === 'crimson'
+            ? 'rgba(225, 54, 84, ' + aEm.toFixed(3) + ')'
+            : 'rgba(244, 114, 138, ' + aEm.toFixed(3) + ')';
 
         ctx.save();
         ctx.translate(p.x, p.y);
@@ -457,9 +467,9 @@
         var aDu = Math.min(0.46, p.alpha * breath * state.modeAlpha);
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = p.kind === 'ivory'
-          ? 'rgba(244, 224, 178, ' + aDu.toFixed(3) + ')'
-          : 'rgba(226, 232, 246, ' + (aDu * 0.86).toFixed(3) + ')';
+        ctx.fillStyle = p.kind === 'ice'
+          ? 'rgba(255, 255, 255, ' + aDu.toFixed(3) + ')'
+          : 'rgba(186, 230, 253, ' + (aDu * 0.88).toFixed(3) + ')';
         ctx.fill();
       }
     }
@@ -578,25 +588,26 @@
       '<svg viewBox="0 0 1200 720" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">' +
         '<defs>' +
           '<linearGradient id="afxIceArc_' + gradSuffix + '" x1="92%" y1="14%" x2="10%" y2="86%">' +
-            '<stop offset="0%" stop-color="#e8f7ff" stop-opacity="0"/>' +
-            '<stop offset="22%" stop-color="#a8dcff" stop-opacity="0.92"/>' +
-            '<stop offset="58%" stop-color="#f4fbff" stop-opacity="1"/>' +
-            '<stop offset="100%" stop-color="#7ec8ff" stop-opacity="0"/>' +
+            '<stop offset="0%" stop-color="#E8F7FF" stop-opacity="0"/>' +
+            '<stop offset="22%" stop-color="#7DD3FC" stop-opacity="0.92"/>' +
+            '<stop offset="58%" stop-color="#FFFFFF" stop-opacity="1"/>' +
+            '<stop offset="100%" stop-color="#38BDF8" stop-opacity="0"/>' +
           '</linearGradient>' +
-          '<linearGradient id="afxGoldArc_' + gradSuffix + '" x1="90%" y1="18%" x2="14%" y2="82%">' +
-            '<stop offset="0%" stop-color="#f4dca0" stop-opacity="0"/>' +
-            '<stop offset="48%" stop-color="#f4dca0" stop-opacity="0.88"/>' +
-            '<stop offset="100%" stop-color="#d8b467" stop-opacity="0"/>' +
+          '<linearGradient id="afxCobaltArc_' + gradSuffix + '" x1="90%" y1="18%" x2="14%" y2="82%">' +
+            '<stop offset="0%" stop-color="#38BDF8" stop-opacity="0"/>' +
+            '<stop offset="42%" stop-color="#1658EB" stop-opacity="0.88"/>' +
+            '<stop offset="74%" stop-color="#FFFFFF" stop-opacity="0.92"/>' +
+            '<stop offset="100%" stop-color="#38BDF8" stop-opacity="0"/>' +
           '</linearGradient>' +
         '</defs>' +
         '<path class="afx-slash-glow" d="M 1030 126 Q 620 278 168 576" stroke="url(#afxIceArc_' + gradSuffix + ')" stroke-width="11" stroke-linecap="round"/>' +
-        '<path class="afx-slash-core" d="M 1038 122 Q 622 276 164 578" stroke="#f5fbff" stroke-width="2.6" stroke-linecap="round"/>' +
-        '<path class="afx-slash-gold" d="M 1010 156 Q 626 306 206 588" stroke="url(#afxGoldArc_' + gradSuffix + ')" stroke-width="1.35" stroke-linecap="round"/>' +
+        '<path class="afx-slash-core" d="M 1038 122 Q 622 276 164 578" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"/>' +
+        '<path class="afx-slash-cobalt" d="M 1010 156 Q 626 306 206 588" stroke="url(#afxCobaltArc_' + gradSuffix + ')" stroke-width="1.35" stroke-linecap="round"/>' +
         '<g class="afx-slash-shards">' +
-          '<polygon points="842,196 849,212 865,219 849,226 842,242 835,226 819,219 835,212" fill="#d9f0ff" opacity="0.88"/>' +
-          '<polygon points="628,286 633,298 645,303 633,308 628,320 623,308 611,303 623,298" fill="#f4dca0" opacity="0.82"/>' +
-          '<polygon points="416,408 422,422 436,428 422,434 416,448 410,434 396,428 410,422" fill="#bfe4ff" opacity="0.9"/>' +
-          '<polygon points="274,504 278,513 287,517 278,521 274,530 270,521 261,517 270,513" fill="#e6f5ff" opacity="0.84"/>' +
+          '<polygon points="842,196 849,212 865,219 849,226 842,242 835,226 819,219 835,212" fill="#E0F2FE" opacity="0.9"/>' +
+          '<polygon points="628,286 633,298 645,303 633,308 628,320 623,308 611,303 623,298" fill="#7DD3FC" opacity="0.88"/>' +
+          '<polygon points="416,408 422,422 436,428 422,434 416,448 410,434 396,428 410,422" fill="#BAE6FD" opacity="0.92"/>' +
+          '<polygon points="274,504 278,513 287,517 278,521 274,530 270,521 261,517 270,513" fill="#FFFFFF" opacity="0.88"/>' +
         '</g>' +
       '</svg>';
 
@@ -632,14 +643,22 @@
       var host = document.getElementById('app') || document.body;
       if (host) host.appendChild(modal);
     }
+    if (!modal.__idbBackdropBound) {
+      modal.__idbBackdropBound = true;
+      modal.addEventListener('click', function (e) {
+        if (e.target === modal && isDeductionOpen()) {
+          closeDeductionBoard(true);
+        }
+      });
+    }
     return modal;
   }
 
   function renderCornerSvg(posClass, dPath, diamondPoints) {
     return (
       '<svg class="idb-corner ' + posClass + '" viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true">' +
-        '<path d="' + dPath + '" stroke="#d8b467" stroke-width="1.25" opacity="0.82"/>' +
-        '<polygon points="' + diamondPoints + '" fill="#8fd2ff" opacity="0.78"/>' +
+        '<path d="' + dPath + '" stroke="#1658EB" stroke-width="1.25" opacity="0.82"/>' +
+        '<polygon points="' + diamondPoints + '" fill="#38BDF8" opacity="0.86"/>' +
       '</svg>'
     );
   }
@@ -670,6 +689,8 @@
     if (!session.hadIceLensBefore && isBrowserDoc() && document.body) {
       document.body.classList.remove('ice-palace-lens');
     }
+
+    playSfx(skipped ? 'modal_close' : 'ok');
 
     var payload = {
       resolved: !skipped,
@@ -730,10 +751,11 @@
     triggerIcePalaceFilter(true);
 
     var title = cfg.title ? String(cfg.title) : '冰晶宫殿 · 寒夜推演盘';
-    var subtitle = cfg.subtitle ? String(cfg.subtitle) : 'ICE PALACE · PRISM DEDUCTION';
+    var subtitle = cfg.subtitle ? String(cfg.subtitle) : '冰晶宫殿 · 寒夜证物映照';
     var prompt = cfg.prompt ? String(cfg.prompt) : '逐一点选证物卡片，在冰晶棱镜内凝结脉络';
     var conclusion = cfg.conclusion ? String(cfg.conclusion) : '散落的细节已在冰晶棱镜中首尾相连。';
     var skipLabel = cfg.skipLabel ? String(cfg.skipLabel) : '略过推演 · 直通下文';
+    var isMoonShadowCase = /影滞|月影|日蚀|罗文|白昼|冰镜/.test(title + subtitle + conclusion);
 
     var clueCardsHtml = clues.map(function (clue, idx) {
       var numeral = ROMAN_NUMERALS[idx] || String(idx + 1);
@@ -770,10 +792,10 @@
           '<div class="idb-head-left">' +
             '<div class="idb-emblem" aria-hidden="true">' +
               '<svg viewBox="0 0 36 36" width="28" height="28" fill="none">' +
-                '<circle cx="18" cy="18" r="15" stroke="rgba(216,180,103,0.45)" stroke-width="1" stroke-dasharray="3 4"/>' +
-                '<polygon points="18,4 30,18 18,32 6,18" stroke="#8fd2ff" stroke-width="1.25" fill="rgba(126,200,255,0.14)"/>' +
-                '<polygon points="18,9.5 25,18 18,26.5 11,18" stroke="#f4dca0" stroke-width="1.1"/>' +
-                '<circle cx="18" cy="18" r="2" fill="#f4dca0"/>' +
+                '<circle cx="18" cy="18" r="15" stroke="rgba(22,88,235,0.34)" stroke-width="1" stroke-dasharray="3 4"/>' +
+                '<polygon points="18,4 30,18 18,32 6,18" stroke="#1658EB" stroke-width="1.25" fill="rgba(56,189,248,0.16)"/>' +
+                '<polygon points="18,9.5 25,18 18,26.5 11,18" stroke="#38BDF8" stroke-width="1.15"/>' +
+                '<circle cx="18" cy="18" r="2" fill="#1658EB"/>' +
               '</svg>' +
             '</div>' +
             '<div class="idb-titles">' +
@@ -805,14 +827,14 @@
           '<section class="idb-prism-panel" id="idb-prism-panel" aria-live="polite">' +
             '<div class="idb-seal-sigil" aria-hidden="true">' +
               '<svg viewBox="0 0 64 64" width="58" height="58" fill="none">' +
-                '<circle class="idb-seal-ring" cx="32" cy="32" r="26" stroke="rgba(154,214,255,0.34)" stroke-width="1"/>' +
-                '<polygon points="32,8 54,32 32,56 10,32" stroke="rgba(154,214,255,0.52)" stroke-width="1.15" fill="rgba(126,200,255,0.08)"/>' +
-                '<path class="idb-seal-links" d="M32 10 L50 32 L32 54 L14 32 Z M14 32 L50 32 M32 10 L32 54" stroke="#f4dca0" stroke-width="1.25"/>' +
-                '<circle cx="32" cy="10" r="2.2" fill="#a8dcff"/>' +
-                '<circle cx="50" cy="32" r="2.2" fill="#f4dca0"/>' +
-                '<circle cx="32" cy="54" r="2.2" fill="#a8dcff"/>' +
-                '<circle cx="14" cy="32" r="2.2" fill="#f4dca0"/>' +
-                '<circle cx="32" cy="32" r="2.6" fill="#f4dca0"/>' +
+                '<circle class="idb-seal-ring" cx="32" cy="32" r="26" stroke="rgba(22,88,235,0.28)" stroke-width="1"/>' +
+                '<polygon points="32,8 54,32 32,56 10,32" stroke="rgba(22,88,235,0.48)" stroke-width="1.15" fill="rgba(56,189,248,0.12)"/>' +
+                '<path class="idb-seal-links" d="M32 10 L50 32 L32 54 L14 32 Z M14 32 L50 32 M32 10 L32 54" stroke="#1658EB" stroke-width="1.25"/>' +
+                '<circle cx="32" cy="10" r="2.2" fill="#7DD3FC"/>' +
+                '<circle cx="50" cy="32" r="2.2" fill="#38BDF8"/>' +
+                '<circle cx="32" cy="54" r="2.2" fill="#7DD3FC"/>' +
+                '<circle cx="14" cy="32" r="2.2" fill="#38BDF8"/>' +
+                '<circle cx="32" cy="32" r="2.6" fill="#1658EB"/>' +
               '</svg>' +
             '</div>' +
             '<div class="idb-prism-copy">' +
@@ -820,7 +842,7 @@
                 '<span class="idb-prism-tag" id="idb-prism-tag">冰晶棱镜 · 待凝结</span>' +
                 '<span class="idb-prism-name" id="idb-prism-name"></span>' +
               '</div>' +
-              '<div class="idb-prism-detail" id="idb-prism-detail">点选上方证物，在冰晶宫殿内映照细节。</div>' +
+              '<div class="idb-prism-detail" id="idb-prism-detail">点选上方证物卡片，在冰晶宫殿内交叉比对异常脉络。</div>' +
               '<div class="idb-conclusion-block hidden" id="idb-conclusion-block">' +
                 escapeHtml(conclusion).replace(/\n/g, '<br>') +
               '</div>' +
@@ -830,7 +852,13 @@
 
         '<footer class="idb-foot">' +
           '<button type="button" class="idb-skip-btn" id="idb-skip-btn">' + escapeHtml(skipLabel) + '</button>' +
-          '<button type="button" class="idb-confirm-btn" id="idb-confirm-btn" disabled>✦ 凝结推演结论</button>' +
+          '<button type="button" class="idb-confirm-btn" id="idb-confirm-btn" disabled>' +
+            '<svg class="idb-confirm-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true">' +
+              '<polygon points="8,1.2 14.2,8 8,14.8 1.8,8" stroke="currentColor" stroke-width="1.35"/>' +
+              '<polygon points="8,4.6 11,8 8,11.4 5,8" fill="currentColor"/>' +
+            '</svg>' +
+            '<span id="idb-confirm-label">凝结推演结论</span>' +
+          '</button>' +
         '</footer>' +
       '</div>';
 
@@ -848,14 +876,26 @@
     var prismDetail = modal.querySelector('#idb-prism-detail');
     var conclusionBlock = modal.querySelector('#idb-conclusion-block');
     var confirmBtn = modal.querySelector('#idb-confirm-btn');
+    var confirmLabel = modal.querySelector('#idb-confirm-label');
     var skipBtn = modal.querySelector('#idb-skip-btn');
     var closeX = modal.querySelector('#idb-close-x');
+
+    function computeUnlocked() {
+      var matchedCount = 0;
+      requiredIds.forEach(function (reqId) {
+        if (selectedIds.has(reqId)) matchedCount += 1;
+      });
+      return requiredIds.length === 0
+        ? selectedIds.size > 0
+        : matchedCount >= requiredIds.length;
+    }
 
     function updateBoardUI() {
       var matchedCount = 0;
       requiredIds.forEach(function (reqId) {
         if (selectedIds.has(reqId)) matchedCount += 1;
       });
+      var remaining = Math.max(0, requiredIds.length - matchedCount);
       var unlocked = requiredIds.length === 0
         ? selectedIds.size > 0
         : matchedCount >= requiredIds.length;
@@ -887,7 +927,7 @@
 
         var badge = btn.querySelector('.idb-clue-badge');
         if (badge) {
-          if (isSealed) badge.textContent = '银金合印';
+          if (isSealed) badge.textContent = '冰晶合印';
           else if (isSel) badge.textContent = (clue && clue.isKey) ? '棱镜共鸣' : '已冻结';
           else badge.textContent = '待检视';
         }
@@ -899,30 +939,50 @@
 
       var activeClue = inspectedId ? clueMap[inspectedId] : null;
       if (unlocked) {
-        if (prismTag) prismTag.textContent = '银金星印 · 脉络合拢';
-        if (prismName) prismName.textContent = activeClue ? activeClue.label : '';
+        if (prismTag) prismTag.textContent = '冰晶星印 · 脉络合拢';
+        if (prismName) prismName.textContent = '全部关键疑点已映照吻合';
         if (prismDetail) {
-          prismDetail.textContent = activeClue
-            ? activeClue.detail
-            : '全部关键疑点已于冰晶宫殿中完成映照。';
+          prismDetail.textContent = requiredIds.length === 0
+            ? '所选证物均已映照吻合 · 可凝结冰晶宫殿推演结论'
+            : (requiredIds.length === 2
+              ? '两处关键疑点均已映照吻合 · 可凝结冰晶宫殿推演结论'
+              : ('全部 ' + requiredIds.length + ' 处关键疑点均已映照吻合 · 可凝结冰晶宫殿推演结论'));
         }
         if (conclusionBlock) conclusionBlock.classList.remove('hidden');
-      } else if (activeClue) {
-        if (prismTag) {
-          prismTag.textContent = activeClue.isKey ? '棱镜共鸣 · 关键留影' : '留影归档 · 常规记录';
+      } else if (matchedCount > 0) {
+        if (prismTag) prismTag.textContent = '棱镜共鸣 · 进度 ' + matchedCount + '/' + requiredIds.length;
+        if (prismName) prismName.textContent = activeClue ? ('已映照：' + activeClue.label) : '';
+        if (prismDetail) {
+          prismDetail.textContent = isMoonShadowCase
+            ? ('已锁定关键异常（' + matchedCount + '/' + requiredIds.length + '）· 请继续核验其余画幕或藏书室旧典中关于「影滞」的记载')
+            : ('已锁定关键异常（' + matchedCount + '/' + requiredIds.length + '）· 请继续核验其余证物，尚缺 ' + remaining + ' 处关键映照');
         }
+        if (conclusionBlock) conclusionBlock.classList.add('hidden');
+      } else if (activeClue) {
+        if (prismTag) prismTag.textContent = '留影归档 · 常规记录';
         if (prismName) prismName.textContent = activeClue.label;
-        if (prismDetail) prismDetail.textContent = activeClue.detail;
+        if (prismDetail) {
+          prismDetail.textContent = '此条属于常规背景记述，尚未触及核心破绽 · 请继续对照其余画幕与典籍记载。';
+        }
         if (conclusionBlock) conclusionBlock.classList.add('hidden');
       } else {
         if (prismTag) prismTag.textContent = '冰晶棱镜 · 待凝结';
         if (prismName) prismName.textContent = '';
-        if (prismDetail) prismDetail.textContent = '点选上方证物，在冰晶宫殿内映照细节。';
+        if (prismDetail) prismDetail.textContent = '点选上方证物卡片，在冰晶宫殿内交叉比对异常脉络。';
         if (conclusionBlock) conclusionBlock.classList.add('hidden');
       }
 
       if (confirmBtn) {
         confirmBtn.disabled = !unlocked;
+      }
+      if (confirmLabel) {
+        if (unlocked) {
+          confirmLabel.textContent = '凝结推演结论';
+        } else if (requiredIds.length > 0) {
+          confirmLabel.textContent = '◇ 尚缺 ' + remaining + ' 处疑点 (' + matchedCount + '/' + requiredIds.length + ')';
+        } else {
+          confirmLabel.textContent = '◇ 请点选证物以凝结结论';
+        }
       }
     }
 
@@ -932,6 +992,8 @@
         btn.addEventListener('click', function () {
           var cid = btn.getAttribute('data-clue-id');
           if (!cid) return;
+          var wasUnlocked = computeUnlocked();
+          var wasSelected = selectedIds.has(cid);
           if (!selectedIds.has(cid)) {
             selectedIds.add(cid);
             inspectedId = cid;
@@ -942,6 +1004,14 @@
             inspectedId = null;
           }
           updateBoardUI();
+          var nowUnlocked = computeUnlocked();
+          if (!wasUnlocked && nowUnlocked) {
+            playSfx('break_chime');
+          } else if (!wasSelected && clueMap[cid] && clueMap[cid].isKey) {
+            playSfx('stat_gain');
+          } else {
+            playSfx('glass_tap');
+          }
         });
       })(clueBtns[i]);
     }
@@ -996,6 +1066,7 @@
 
     modal.classList.remove('hidden');
     updateBoardUI();
+    playSfx('modal_open');
     return modal;
   }
 

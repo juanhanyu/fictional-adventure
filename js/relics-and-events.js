@@ -17,6 +17,53 @@
       .replace(/"/g, '&quot;');
   }
 
+  var REL_SVG_PATHS = {
+    snowflake: '<path d="M9 2v14M2.9 5.5l12.2 7M15.1 5.5l-12.2 7M7.2 3.8L9 5.5l1.8-1.7M7.2 14.2L9 12.5l1.8 1.7"/>',
+    iceShard: '<path d="M9 2l4.5 5.5L9 16 4.5 7.5 9 2zM9 2v14M4.5 7.5h9"/>',
+    compass: '<circle cx="9" cy="9" r="6.5"/><path d="M11.8 6.2l-1.5 4.1-4.1 1.5 1.5-4.1 4.1-1.5z"/>',
+    scroll: '<path d="M4.5 4a1.5 1.5 0 0 1 1.5-1.5h8v10a2 2 0 0 1-2 2H5"/><path d="M4.5 4v9a2 2 0 0 0 2 2 1.5 1.5 0 0 0 1.5-1.5V12H4.5"/><path d="M7.5 6h4M7.5 9h3.5"/>',
+    blossom: '<circle cx="9" cy="9" r="1.8"/><path d="M9 2.5c1.6 1.2 1.6 3.3 0 4.7-1.6-1.4-1.6-3.5 0-4.7zM15.5 9c-1.2 1.6-3.3 1.6-4.7 0 1.4-1.6 3.5-1.6 4.7 0zM9 15.5c-1.6-1.2-1.6-3.3 0-4.7 1.6 1.4 1.6 3.5 0 4.7zM2.5 9c1.2-1.6 3.3-1.6 4.7 0-1.4 1.6-3.5 1.6-4.7 0z"/>',
+    sword: '<path d="M14.8 3.2L7 11M14.8 3.2H12l-5.7 5.7M14.8 3.2V6L9.1 11.7M5.2 9.4l3.4 3.4M6.5 11.5l-3 3"/>',
+    prism: '<path d="M9 2.2l5.8 5.3L9 15.8 3.2 7.5 9 2.2zM3.2 7.5h11.6M9 2.2L6.8 7.5 9 15.8l2.2-8.3L9 2.2z"/>',
+    crestPass: '<path d="M4.5 3.5h9a1.2 1.2 0 0 1 1.2 1.2v6.6c0 2.6-2.5 4.2-5.7 5-3.2-.8-5.7-2.4-5.7-5V4.7a1.2 1.2 0 0 1 1.2-1.2z"/><path d="M9 6.2l1.8 2.5L9 11.2 7.2 8.7 9 6.2z"/>',
+    cross: '<path d="M9 2.5v13M4.8 6.8h8.4M7.5 2.5h3M7.5 15.5h3"/>',
+    shell: '<path d="M3 10.5c0-3.8 2.7-6.8 6-6.8s6 3 6 6.8c0 1.9-1.5 3.5-3.8 4H6.8c-2.3-.5-3.8-2.1-3.8-4z"/><path d="M9 3.7v10.8M6.2 4.6L8 14.5M11.8 4.6L10 14.5"/>',
+    gem: '<path d="M5.5 3.5h7l3 4.2L9 15 2.5 7.7l3-4.2zM2.5 7.7h13M6.5 7.7L9 15l2.5-7.3M5.5 3.5l1 4.2M12.5 3.5l-1 4.2"/>',
+    vial: '<path d="M7.2 2.5h3.6M8 2.5v3.2L4.6 11.8a2.3 2.3 0 0 0 2 3.5h4.8a2.3 2.3 0 0 0 2-3.5L10 5.7V2.5M6.2 11h5.6"/>',
+    wind: '<path d="M2.5 6.8h8.2a1.8 1.8 0 1 0-1.4-2.9M2.5 9.8h10.8a2 2 0 1 1-1.5 3.3M2.5 12.8h5.2a1.5 1.5 0 1 1-1.1 2.5"/>',
+    butterfly: '<path d="M9 6.5v6.5M9 7.8C7.5 4.2 3.2 4 3 7.2c-.2 2 1.8 2.8 3.6 2.3-1.4.8-2 2.5-.8 3.6 1.2 1 2.7-.2 3.2-2M9 7.8c1.5-3.6 5.8-3.8 6-.6.2 2-1.8 2.8-3.6 2.3 1.4.8 2 2.5.8 3.6-1.2 1-2.7-.2-3.2-2"/>',
+    crown: '<path d="M3 13.2L4.2 6l3.3 3L9 4.8 10.5 9l3.3-3L15 13.2H3zM3.5 15h11"/>',
+    star: '<path d="M9 2l1.8 5.2L16 9l-5.2 1.8L9 16l-1.8-5.2L2 9l5.2-1.8L9 2z"/>',
+    music: '<path d="M7 13.2V5l7-1.6v8.2M7 8l7-1.6"/><circle cx="5.4" cy="13.2" r="1.8"/><circle cx="12.4" cy="11.6" r="1.8"/>',
+    rose: '<path d="M9 15.5V9.8M9 12.8c1.6-.2 2.8-1 3.2-2.2M9 13.6c-1.5-.2-2.6-.9-3-2"/><path d="M9 9.8c-2.4 0-4-1.5-4-3.7 0-1.6 1-3 2.5-3.4.5 1.1 1.1 1.6 1.5 1.6s1-.5 1.5-1.6c1.5.4 2.5 1.8 2.5 3.4 0 2.2-1.6 3.7-4 3.7z"/><path d="M7.5 6.3c.6.8 2.4.8 3 0"/>',
+    chime: '<path d="M9 2.2v2.2M5.2 9.4a3.8 3.8 0 0 1 7.6 0H5.2zM9 9.4v3.2M7.8 12.6h2.4l-.6 3H8.4l-.6-3z"/>',
+    anvil: '<path d="M3 6.2h12v1.6c0 1.4-1.2 2.4-2.8 2.4H7.2L6 13.2h7.5v1.6H4.5v-1.6h1l.7-3H4.8C3.6 10.2 3 9 3 7.8V6.2z"/>',
+    candle: '<path d="M9 2.3c1.2 1.4 1.4 2.6 0 3.7-1.4-1.1-1.2-2.3 0-3.7zM6.8 7.5h4.4v7.8H6.8zM5 15.3h8"/>',
+    teacup: '<path d="M3.5 7.2h9v3.6a3.5 3.5 0 0 1-3.5 3.5H7a3.5 3.5 0 0 1-3.5-3.5V7.2zM12.5 8h1.3a1.5 1.5 0 0 1 0 3h-1.3M3 15.5h10M6.5 4.8c0-.9.8-1 .8-1.8M9.5 4.8c0-.9.8-1 .8-1.8"/>',
+    bowl: '<path d="M3 9.2h12a6 6 0 0 1-12 0zM6 15.2h6M6.5 6.4c0-1 .8-1 .8-2M9.5 6.4c0-1 .8-1 .8-2M12 6.4c0-1 .8-1 .8-2"/>',
+    mask: '<path d="M2.5 6.2c2.2-.8 4.4-1 6.5-1s4.3.2 6.5 1v2.6c0 2.6-2 4.4-4 4.4-1.3 0-2-.8-2.5-1.6-.5.8-1.2 1.6-2.5 1.6-2 0-4-1.8-4-4.4V6.2z"/><circle cx="6.2" cy="8.8" r="1"/><circle cx="11.8" cy="8.8" r="1"/>',
+    orb: '<circle cx="9" cy="7.8" r="4.8"/><path d="M6.8 6.2a2.6 2.6 0 0 1 2.2-1.2M6 12.6l-1 2.6h8l-1-2.6"/>',
+    tower: '<path d="M9 2.2L6.2 6h5.6L9 2.2zM6.5 6v9.5h5V6M5 15.5h8M9 8.8h.01M8.2 15.5v-2.8h1.6v2.8"/>',
+    mail: '<rect x="2.8" y="4.5" width="12.4" height="9" rx="1.4"/><path d="M3.2 5.2L9 9.8l5.8-4.6"/>',
+    lens: '<circle cx="8" cy="8" r="4.6"/><path d="M11.4 11.4l3.6 3.6"/>',
+    bell: '<path d="M9 2.5v1.3M5 12.5V8.4a4 4 0 0 1 8 0v4.1l1.2 1.3H3.8L5 12.5zM7.6 14a1.5 1.5 0 0 0 2.8 0"/>',
+    fortress: '<path d="M3 15.5h12M4.5 15.5V11h9v4.5M3.2 11h11.6L13 8.2H5L3.2 11zM5.8 8.2L9 4.5l3.2 3.7M8 15.5v-2.6h2v2.6"/>',
+    tankard: '<path d="M4.2 6h7.6v8a1.4 1.4 0 0 1-1.4 1.4H5.6A1.4 1.4 0 0 1 4.2 14V6zM11.8 7.5h1.7a1.5 1.5 0 0 1 1.5 1.5v2a1.5 1.5 0 0 1-1.5 1.5h-1.7M5 6c0-1.4 1.3-2.2 3-2.2S11 4.6 11 6"/>',
+    lantern: '<path d="M7 3.2h4M9 2v1.2M6 5.2h6l.8 7.6H5.2L6 5.2zM5.2 12.8h7.6M6.5 15h5M9 7.6v2.6"/>',
+    wagon: '<path d="M2.5 5.5H12l2 5H4.2l-1.7-5zM12 5.5h2.5M4.2 10.5l-.7 2"/><circle cx="6" cy="14" r="1.5"/><circle cx="12.5" cy="14" r="1.5"/>',
+    jar: '<path d="M7 3h4M7.8 3v2.2L5.2 7.8a4.2 4.2 0 0 0 0 5l1.3 2.2h5l1.3-2.2a4.2 4.2 0 0 0 0-5L10.2 5.2V3M6 10h6"/>',
+    ledger: '<rect x="4" y="3.5" width="10" height="12" rx="1.4"/><path d="M7 2.5h4v2H7zM6.8 8h4.4M6.8 11h4.4M6.8 13.5h2.8"/>',
+    crate: '<rect x="3.2" y="3.8" width="11.6" height="10.4" rx="1.2"/><path d="M3.2 7.2h11.6M3.2 10.8h11.6M6.8 7.2v3.6M11.2 7.2v3.6"/>',
+    lock: '<rect x="4.2" y="8.2" width="9.6" height="7" rx="1.5"/><path d="M6.3 8.2V6a2.7 2.7 0 0 1 5.4 0v2.2M9 11v1.8"/>',
+    bolt: '<path d="M10.2 2.2L4.5 9.8h4.4L7.8 15.8l5.7-7.6H9.1l1.1-6z"/>'
+  };
+
+  function relIco(name, size) {
+    var sz = size || 15;
+    var body = REL_SVG_PATHS[name] || REL_SVG_PATHS.star;
+    return '<svg class="rel-svg-ico" viewBox="0 0 18 18" width="' + sz + '" height="' + sz + '" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
+  }
+
   function getS() {
     if (typeof S !== 'undefined' && S) return S;
     return root && root.S ? root.S : null;
@@ -60,7 +107,8 @@
       id: 'aino_academy_handkerchief',
       setId: 'north_frost',
       name: '雪纹手帕',
-      icon: '❄️',
+      iconKey: 'snowflake',
+      icon: relIco('snowflake', 15),
       owner: '艾诺 · 极北知己',
       tag: '瞬凝先制 · 冰锋',
       effectText: '首回合首次【隔空瞬凝】免 1 AP 消耗；所有冰系攻击伤害 +20%。',
@@ -72,7 +120,8 @@
       id: 'aino_frost_shard',
       setId: 'north_frost',
       name: '钢冰试炼笺',
-      icon: '🧊',
+      iconKey: 'iceShard',
+      icon: relIco('iceShard', 15),
       owner: '艾诺 · 严苛试炼',
       tag: '破招穿抗 · 寒颤',
       effectText: '触发截断破招或卸力闪反后，下一次冰系技能无视目标 25% 法抗并附带寒颤。',
@@ -84,7 +133,8 @@
       id: 'noelle_manuscript',
       setId: 'academy_stars',
       name: '省魔手稿',
-      icon: '📐',
+      iconKey: 'compass',
+      icon: relIco('compass', 15),
       owner: '诺艾儿 · 平等同盟',
       tag: '精算减耗 · 倾注减负',
       effectText: '所有魔法基础耗蓝降低 20%；开启【魔战倾注】时保留一半额外倾注魔力。',
@@ -96,7 +146,8 @@
       id: 'belmont_schedule',
       setId: 'academy_stars',
       name: '无名巡防抄件',
-      icon: '📜',
+      iconKey: 'scroll',
+      icon: relIco('scroll', 15),
       owner: '夏洛特 · 体面默契',
       tag: '先觉预判 · 暴击',
       effectText: '敌方意图栏额外揭示下回合架势倾向；全技能暴击率 +15%（暴击 1.5 倍伤）。',
@@ -108,7 +159,8 @@
       id: 'alice_flower_cake',
       setId: 'dukedom_memory',
       name: '风之花饼',
-      icon: '🥮',
+      iconKey: 'blossom',
+      icon: relIco('blossom', 15),
       owner: '爱丽丝 · 微风之约',
       tag: '开局残像 · 借风',
       effectText: '每场战斗开局自带 1 层「风行残像」闪避；残像触发躲避时额外回复 10 MP。',
@@ -120,7 +172,8 @@
       id: 'ebony_sword',
       setId: 'jikan_blade',
       name: '乌木紫穗剑',
-      icon: '🗡️',
+      iconKey: 'sword',
+      icon: relIco('sword', 15),
       owner: '澄岚霁馆 · 老霁与霁岚',
       tag: '剑步暴击返 AP · 零暴露',
       effectText: '【霁馆剑步】暴击率 +25%、伤害 +15%；剑步暴击返还 1 AP（每回合限 1 次）且保持零冰系暴露。',
@@ -132,7 +185,8 @@
       id: 'frost_cipher',
       setId: 'jikan_blade',
       name: '霜封暗记',
-      icon: '💠',
+      iconKey: 'prism',
+      icon: relIco('prism', 15),
       owner: '公爵书房 · 暗潮先觉',
       tag: '冰宫回蓝回 AP',
       effectText: '每次开启「冰晶宫殿」成功看破死角后，立即回复 18% 最大 MP 与 1 AP。',
@@ -144,7 +198,8 @@
       id: 'northwind_pass',
       setId: 'north_frost',
       name: '北风堡木牌',
-      icon: '🪪',
+      iconKey: 'crestPass',
+      icon: relIco('crestPass', 15),
       owner: '北境防线 · 巴依药师团',
       tag: '常驻护盾 · 护箱',
       effectText: '开局及每回合开始时获得 12 点寒铁护盾；护送药箱战额外减少药箱 4 点受击损耗。',
@@ -156,7 +211,8 @@
       id: 'cross',
       setId: 'academy_stars',
       name: '银十字架',
-      icon: '✝️',
+      iconKey: 'cross',
+      icon: relIco('cross', 15),
       owner: '海伦娜 · 神殿信物',
       tag: '每回合续航 · 净化强盾',
       effectText: '每回合结束回复 6% 最大生命；防御盾技额外 +20% 护盾并净化 1 层不良状态。',
@@ -168,7 +224,8 @@
       id: 'shell_pin',
       setId: 'academy_stars',
       name: '月虹螺胸针',
-      icon: '🐚',
+      iconKey: 'shell',
+      icon: relIco('shell', 15),
       owner: '三姐妹 · 夏日礁石',
       tag: '水风增伤 · 连携回蓝',
       effectText: '水系与风系攻击技能伤害 +18%；触发「连携追击」时额外回复 8% 最大 MP。',
@@ -180,7 +237,8 @@
       id: 'ice_pebble',
       setId: 'dukedom_memory',
       name: '冰蓝石子',
-      icon: '💎',
+      iconKey: 'gem',
+      icon: relIco('gem', 15),
       owner: '公爵府 · 花园微光',
       tag: '经手筑盾',
       effectText: '每回合首次施放【经手构筑】技能时，额外凝结 8 点寒霜护盾。',
@@ -192,7 +250,8 @@
       id: 'blue_vial',
       setId: 'dukedom_memory',
       name: '淡蓝小瓶',
-      icon: '🧪',
+      iconKey: 'vial',
+      icon: relIco('vial', 15),
       owner: '药神 · 圣域恩泽',
       tag: '濒危药雾保命',
       effectText: '每场战斗首次生命跌破 35% 时，透出安神凉雾回复 25% 最大生命并获 1 层「风行残像」。',
@@ -224,8 +283,9 @@
     dukedom_memory: {
       id: 'dukedom_memory',
       name: '公爵府遗忆',
-      icon: '🏰',
-      color: '#7ecbff',
+      iconKey: 'prism',
+      icon: relIco('prism', 14),
+      color: '#0284C7',
       relicIds: ['ice_pebble', 'blue_vial', 'alice_flower_cake'],
       thresholds: [2, 3],
       tiers: {
@@ -246,8 +306,9 @@
     academy_stars: {
       id: 'academy_stars',
       name: '学院星辉',
-      icon: '✨',
-      color: '#f4c668',
+      iconKey: 'star',
+      icon: relIco('star', 14),
+      color: '#1658EB',
       relicIds: ['noelle_manuscript', 'belmont_schedule', 'cross', 'shell_pin'],
       thresholds: [2, 3],
       tiers: {
@@ -268,8 +329,9 @@
     jikan_blade: {
       id: 'jikan_blade',
       name: '霁馆剑心',
-      icon: '🗡️',
-      color: '#c9a0ff',
+      iconKey: 'sword',
+      icon: relIco('sword', 14),
+      color: '#6366F1',
       relicIds: ['ebony_sword', 'frost_cipher'],
       thresholds: [2],
       tiers: {
@@ -284,8 +346,9 @@
     north_frost: {
       id: 'north_frost',
       name: '北境霜锋',
-      icon: '❄️',
-      color: '#82f0ff',
+      iconKey: 'snowflake',
+      icon: relIco('snowflake', 14),
+      color: '#0369A1',
       relicIds: ['aino_academy_handkerchief', 'aino_frost_shard', 'northwind_pass'],
       thresholds: [2, 3],
       tiers: {
@@ -351,6 +414,7 @@
       result.push({
         id: syn.id,
         name: syn.name,
+        iconKey: syn.iconKey,
         icon: syn.icon,
         count: cnt,
         tier: topTier,
@@ -400,6 +464,7 @@
       return {
         id: syn.id,
         name: syn.name,
+        iconKey: syn.iconKey,
         icon: syn.icon,
         color: syn.color,
         count: cnt,
@@ -422,7 +487,8 @@
       charId: 'alice',
       name: '爱丽丝',
       title: '清风托翼',
-      icon: '🍃',
+      iconKey: 'wind',
+      icon: relIco('wind', 15),
       quote: '风会托住姐姐大人的衣角。这一次，换我替你吹散前方的尘雾。',
       effectDesc: '0 AP · 清除全部视线受阻与灼烧，立即获得 1 层「风行残像」并回复 15% 最大 MP。',
       canUnlockStory: function (st) {
@@ -434,7 +500,8 @@
       charId: 'noelle',
       name: '诺艾儿',
       title: '精算校准',
-      icon: '📐',
+      iconKey: 'compass',
+      icon: relIco('compass', 15),
       quote: '所有回路阻率我已经替你核算完毕——这一回合，尽管放手去咏唱吧。',
       effectDesc: '0 AP · 本回合所有技能零耗蓝（魔战倾注仍享高额增幅），并立即回复 20% 最大 MP。',
       canUnlockStory: function (st) {
@@ -446,7 +513,8 @@
       charId: 'aino',
       name: '艾诺',
       title: '霜域共鸣',
-      icon: '❄️',
+      iconKey: 'snowflake',
+      icon: relIco('snowflake', 15),
       quote: '别只盯着正面那面盾。看准冻裂的那一寸空隙，贯进去。',
       effectDesc: '0 AP · 全体敌方附加 2 回合「易伤」与「寒颤」，并直接削减当前目标 30% 护盾。',
       canUnlockStory: function (st) {
@@ -458,7 +526,8 @@
       charId: 'jilan',
       name: '霁岚',
       title: '霁馆借步',
-      icon: '💜',
+      iconKey: 'butterfly',
+      icon: relIco('butterfly', 15),
       quote: '底盘沉住！借我这一步踏开身位，剩下的剑路你自己走！',
       effectDesc: '0 AP · 立即 +1 AP、获「剑势蓄力」、破除目标 1 层闪避并净化自身 1 层异常。',
       canUnlockStory: function (st) {
@@ -470,7 +539,8 @@
       charId: 'charlotte',
       name: '夏洛特',
       title: '贵族体面',
-      icon: '👑',
+      iconKey: 'crown',
+      icon: relIco('crown', 15),
       quote: '维斯特利亚，可别在那种家伙面前丢了同辈较量的格调！',
       effectDesc: '0 AP · 将护盾补满至上限（至少 +40），并赋予本回合「冰镜反震」反伤攻势。',
       canUnlockStory: function (st) {
@@ -884,7 +954,8 @@
       phasePool: 'duke',
       title: '纱帐边的旧呼吸曲谱',
       tag: '公爵府 · 静心冥想',
-      icon: '🎵',
+      iconKey: 'music',
+      icon: relIco('music', 18),
       locationLabel: '育婴室 / 寝居',
       eligible: function (st) {
         return st.ageY >= 1 && st.ageY <= 11;
@@ -894,7 +965,7 @@
         {
           id: 'meditate_rhythm',
           label: '照着批注的呼吸节拍静坐导引魔力',
-          costBadge: '⚡1',
+          costBadge: '体力 -1',
           rewardBadge: 'MP上限 +5 · 经验 +24',
           canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '体力不足' }; },
           apply: function (st) {
@@ -932,7 +1003,8 @@
       phasePool: 'duke',
       title: '地下冰窖里的陈年寒纹',
       tag: '公爵府 · 冰系探秘',
-      icon: '💎',
+      iconKey: 'gem',
+      icon: relIco('gem', 18),
       locationLabel: '公爵府地下储藏间',
       eligible: function (st) {
         return st.ageY >= 4 && st.ageY <= 11 && (flagSafe('mana_awakened', st) || st.ageY >= 5);
@@ -942,10 +1014,10 @@
         {
           id: 'peel_frost_pattern',
           label: '冒着寒气侵蚀强行剥离这缕寒纹',
-          costBadge: '⚡2 · HP -8',
+          costBadge: '体力 -2 · HP -8',
           rewardBadge: '魔攻 +2 · 魔力适性 +2 · 经验 +35',
           canChoose: function (st) {
-            if (st.st < 2) return { ok: false, reason: '需要 ⚡2' };
+            if (st.st < 2) return { ok: false, reason: '需要体力 2' };
             if (st.hp <= 10) return { ok: false, reason: '生命过低' };
             return { ok: true };
           },
@@ -963,13 +1035,13 @@
         },
         {
           id: 'palace_freeze_cellar',
-          label: '❄️ 动用「冰晶宫殿」定格石砖内的旧纹路',
-          costBadge: '⚡1 · 冰晶宫殿',
+          label: '动用「冰晶宫殿」定格石砖内的旧纹路',
+          costBadge: '体力 -1 · 冰晶宫殿',
           rewardBadge: '魔攻 +3 · 铭记解锁【冰蓝石子】',
           requiresIcePalace: true,
           canChoose: function (st) {
             if (!hasSkillSafe('ice_palace', st)) return { ok: false, reason: '需先习得【冰晶宫殿】' };
-            if (st.st < 1) return { ok: false, reason: '需要 ⚡1' };
+            if (st.st < 1) return { ok: false, reason: '需要体力 1' };
             return { ok: true };
           },
           apply: function (st) {
@@ -1007,7 +1079,8 @@
       phasePool: 'duke',
       title: '玫瑰花篱边冒烟的焦痕',
       tag: '公爵府 · 姐妹日常',
-      icon: '🌹',
+      iconKey: 'rose',
+      icon: relIco('rose', 18),
       locationLabel: '公爵府花园角门',
       eligible: function (st) {
         return st.ageY >= 4 && st.ageY <= 10 && !flagSafe('ch_beatrice_leaves', st);
@@ -1017,10 +1090,10 @@
         {
           id: 'mist_heal_roses',
           label: '凝聚细密水雾替玫瑰枝叶降下火气',
-          costBadge: '⚡1 · MP -10',
+          costBadge: '体力 -1 · MP -10',
           rewardBadge: '贝蒂好感 +1 · 气质 +1 · 经验 +26',
           canChoose: function (st) {
-            if (st.st < 1) return { ok: false, reason: '需要 ⚡1' };
+            if (st.st < 1) return { ok: false, reason: '需要体力 1' };
             if (st.mp < 10) return { ok: false, reason: '魔力不足' };
             return { ok: true };
           },
@@ -1040,10 +1113,10 @@
         {
           id: 'spar_fire_control',
           label: '陪她练一刻钟火冰对冲控温',
-          costBadge: '⚡2 · HP -8',
+          costBadge: '体力 -2 · HP -8',
           rewardBadge: '物攻 +1 · 体能 +2 · 经验 +36',
           canChoose: function (st) {
-            if (st.st < 2) return { ok: false, reason: '需要 ⚡2' };
+            if (st.st < 2) return { ok: false, reason: '需要体力 2' };
             if (st.hp <= 10) return { ok: false, reason: '生命过低' };
             return { ok: true };
           },
@@ -1067,7 +1140,8 @@
       phasePool: 'duke',
       title: '廊案边的北境边贸账册',
       tag: '公爵府 · 局势暗流',
-      icon: '📑',
+      iconKey: 'scroll',
+      icon: relIco('scroll', 18),
       locationLabel: '书房外偏厅',
       eligible: function (st) {
         return st.ageY >= 6 && st.ageY <= 11;
@@ -1077,9 +1151,9 @@
         {
           id: 'audit_ledger',
           label: '替父亲核对北境火油与草药核销缺口',
-          costBadge: '⚡2',
+          costBadge: '体力 -2',
           rewardBadge: '心智 +2 · 克劳德了解 +6 · 经验 +35',
-          canChoose: function (st) { return st.st >= 2 ? { ok: true } : { ok: false, reason: '需要 ⚡2' }; },
+          canChoose: function (st) { return st.st >= 2 ? { ok: true } : { ok: false, reason: '需要体力 2' }; },
           apply: function (st) {
             st.st = Math.max(0, st.st - 2);
             statAddSafe('mind', 2, st);
@@ -1094,13 +1168,13 @@
         },
         {
           id: 'palace_read_ledger',
-          label: '❄️ 动用「冰晶宫殿」记下异常调防印鉴落款',
-          costBadge: '⚡1 · 冰晶宫殿',
+          label: '动用「冰晶宫殿」记下异常调防印鉴落款',
+          costBadge: '体力 -1 · 冰晶宫殿',
           rewardBadge: '心智 +3 · 暗线拼图推进 · 金币 +6',
           requiresIcePalace: true,
           canChoose: function (st) {
             if (!hasSkillSafe('ice_palace', st)) return { ok: false, reason: '需先习得【冰晶宫殿】' };
-            if (st.st < 1) return { ok: false, reason: '需要 ⚡1' };
+            if (st.st < 1) return { ok: false, reason: '需要体力 1' };
             return { ok: true };
           },
           apply: function (st) {
@@ -1138,7 +1212,8 @@
       phasePool: 'duke',
       title: '石阶上静止的纸风车',
       tag: '公爵府 · 微风之约',
-      icon: '🎐',
+      iconKey: 'chime',
+      icon: relIco('chime', 18),
       locationLabel: '公爵府庭院石阶',
       eligible: function (st) {
         return st.ageY >= 5 && st.ageY <= 11 && flagSafe('ch_alice_born', st);
@@ -1148,9 +1223,9 @@
         {
           id: 'guide_wind_sense',
           label: '教她闭上眼，自己去寻找院墙外吹来的高处气流',
-          costBadge: '⚡1',
+          costBadge: '体力 -1',
           rewardBadge: '爱丽丝【独立思考】+2 · 心智 +2',
-          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要 ⚡1' }; },
+          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要体力 1' }; },
           apply: function (st) {
             st.st = Math.max(0, st.st - 1);
             shiftCausalSafe('alice', 'independence', 2);
@@ -1184,9 +1259,9 @@
         {
           id: 'bake_flower_biscuit',
           label: '拉她去厨房学做一盘风铃草花饼',
-          costBadge: '⚡2',
+          costBadge: '体力 -2',
           rewardBadge: '体力回复 · 解锁铭记【风之花饼】',
-          canChoose: function (st) { return st.st >= 2 ? { ok: true } : { ok: false, reason: '需要 ⚡2' }; },
+          canChoose: function (st) { return st.st >= 2 ? { ok: true } : { ok: false, reason: '需要体力 2' }; },
           apply: function (st) {
             st.st = Math.max(0, st.st - 2);
             st.hp = st.mhp;
@@ -1206,7 +1281,8 @@
       phasePool: 'duke',
       title: '利维莫尔镇的冷锻铁摊',
       tag: '领地集市 · 风险交易',
-      icon: '⚒️',
+      iconKey: 'anvil',
+      icon: relIco('anvil', 18),
       locationLabel: '利维莫尔镇广场',
       eligible: function (st) {
         return st.ageY >= 5 && st.ageY <= 11 && !!(typeof LOCS !== 'undefined' && LOCS.town && LOCS.town.unlock);
@@ -1216,7 +1292,7 @@
         {
           id: 'buy_cold_iron',
           label: '花 10 金币买下寒铁护片拆解练手',
-          costBadge: '🪙-10',
+          costBadge: '金币 -10',
           rewardBadge: '法抗 +2 · 物抗 +1 · 经验 +35',
           canChoose: function (st) { return st.gold >= 10 ? { ok: true } : { ok: false, reason: '金币不足 10' }; },
           apply: function (st) {
@@ -1234,10 +1310,10 @@
         {
           id: 'chill_quench_barrel',
           label: '动用水冰魔法替铁匠降温淬火桶换工钱',
-          costBadge: '⚡2 · MP -16',
+          costBadge: '体力 -2 · MP -16',
           rewardBadge: '金币 +12 · 体能 +1 · 经验 +28',
           canChoose: function (st) {
-            if (st.st < 2) return { ok: false, reason: '需要 ⚡2' };
+            if (st.st < 2) return { ok: false, reason: '需要体力 2' };
             if (st.mp < 16) return { ok: false, reason: '魔力不足' };
             return { ok: true };
           },
@@ -1260,7 +1336,8 @@
       phasePool: 'duke',
       title: '小礼拜堂的静止蓝光',
       tag: '公爵府 · 感知凝神',
-      icon: '🕯️',
+      iconKey: 'candle',
+      icon: relIco('candle', 18),
       locationLabel: '家庭小礼拜堂',
       eligible: function (st) {
         return st.ageY >= 4 && st.ageY <= 11;
@@ -1270,10 +1347,10 @@
         {
           id: 'sense_temperature_draft',
           label: '闭上双眼分辨堂内每一缕冷热气流走向',
-          costBadge: '⚡1 · MP -10',
+          costBadge: '体力 -1 · MP -10',
           rewardBadge: '心智 +2 · 魔力适性 +2 · 经验 +28',
           canChoose: function (st) {
-            if (st.st < 1) return { ok: false, reason: '需要 ⚡1' };
+            if (st.st < 1) return { ok: false, reason: '需要体力 1' };
             if (st.mp < 10) return { ok: false, reason: '魔力不足' };
             return { ok: true };
           },
@@ -1314,7 +1391,8 @@
       phasePool: 'academy',
       title: '图书馆禁借架边的勘误笔记',
       tag: '魔法学院 · 诺艾儿',
-      icon: '📐',
+      iconKey: 'compass',
+      icon: relIco('compass', 18),
       locationLabel: '学院图书馆靠墙双人桌',
       eligible: function (st) {
         return st.phase === 'academy' && flagSafe('met_noelle', st);
@@ -1324,9 +1402,9 @@
         {
           id: 'co_derive_formula',
           label: '和她并肩拆解三条错误推导并分担重写',
-          costBadge: '⚡2',
+          costBadge: '体力 -2',
           rewardBadge: '诺艾儿【平等同盟】+2 · MP上限 +8 · 经验 +48',
-          canChoose: function (st) { return st.st >= 2 ? { ok: true } : { ok: false, reason: '需要 ⚡2' }; },
+          canChoose: function (st) { return st.st >= 2 ? { ok: true } : { ok: false, reason: '需要体力 2' }; },
           apply: function (st) {
             st.st = Math.max(0, st.st - 2);
             st.mmp += 8;
@@ -1344,13 +1422,13 @@
         },
         {
           id: 'palace_check_blueprint',
-          label: '❄️ 动用「冰晶宫殿」逐行对照历年考题勘误',
-          costBadge: '⚡1 · 冰晶宫殿',
+          label: '动用「冰晶宫殿」逐行对照历年考题勘误',
+          costBadge: '体力 -1 · 冰晶宫殿',
           rewardBadge: '魔攻 +3 · 心智 +3 · 解锁铭记【省魔手稿】',
           requiresIcePalace: true,
           canChoose: function (st) {
             if (!hasSkillSafe('ice_palace', st)) return { ok: false, reason: '需先习得【冰晶宫殿】' };
-            if (st.st < 1) return { ok: false, reason: '需要 ⚡1' };
+            if (st.st < 1) return { ok: false, reason: '需要体力 1' };
             return { ok: true };
           },
           apply: function (st) {
@@ -1369,7 +1447,7 @@
         {
           id: 'settle_fair_debt',
           label: '工整抄清勘误单，附上一盒糖霜饼干算清人情',
-          costBadge: '🪙-6',
+          costBadge: '金币 -6',
           rewardBadge: '诺艾儿【自尊防线】+2 · 法抗 +2 · 经验 +38',
           canChoose: function (st) { return st.gold >= 6 ? { ok: true } : { ok: false, reason: '金币不足 6' }; },
           apply: function (st) {
@@ -1391,7 +1469,8 @@
       phasePool: 'academy',
       title: '黄昏训练场的铜币落点',
       tag: '魔法学院 · 艾诺',
-      icon: '🧊',
+      iconKey: 'iceShard',
+      icon: relIco('iceShard', 18),
       locationLabel: '训练场边缘沙地',
       eligible: function (st) {
         return st.phase === 'academy' && flagSafe('met_aino', st) && !flagSafe('ch_ice_melt_1', st);
@@ -1401,10 +1480,10 @@
         {
           id: 'hard_precision_drill',
           label: '顶着极寒反冲硬接十次不经手瞬凝试炼',
-          costBadge: '⚡2 · HP -16',
+          costBadge: '体力 -2 · HP -16',
           rewardBadge: '艾诺【严苛试炼】+2 · 魔攻 +3 · 经验 +54',
           canChoose: function (st) {
-            if (st.st < 2) return { ok: false, reason: '需要 ⚡2' };
+            if (st.st < 2) return { ok: false, reason: '需要体力 2' };
             if (st.hp <= 18) return { ok: false, reason: '生命过低' };
             return { ok: true };
           },
@@ -1426,10 +1505,10 @@
         {
           id: 'gentle_melt_control',
           label: '改用恒温微冰贴近铜币边沿融开冰托，不伤及旁物',
-          costBadge: '⚡1 · MP -24',
+          costBadge: '体力 -1 · MP -24',
           rewardBadge: '艾诺【极北知己】+2 · 艾诺好感 +1 · 经验 +44',
           canChoose: function (st) {
-            if (st.st < 1) return { ok: false, reason: '需要 ⚡1' };
+            if (st.st < 1) return { ok: false, reason: '需要体力 1' };
             if (st.mp < 24) return { ok: false, reason: '魔力不足' };
             return { ok: true };
           },
@@ -1453,7 +1532,8 @@
       phasePool: 'academy',
       title: '小杂货铺窗边的凉薄荷茶',
       tag: '魔法学院 · 夏洛特',
-      icon: '🍵',
+      iconKey: 'teacup',
+      icon: relIco('teacup', 18),
       locationLabel: '学院后街旧杂货铺',
       eligible: function (st) {
         return st.phase === 'academy' && flagSafe('met_charlotte', st);
@@ -1463,10 +1543,10 @@
         {
           id: 'sit_in_silence',
           label: '在斜对面安静坐下，只点一杯同样不加糖的茶',
-          costBadge: '⚡1 · 🪙-3',
+          costBadge: '体力 -1 · 金币 -3',
           rewardBadge: '夏洛特【卸下面具】+2 · 好感 +1 · 经验 +42',
           canChoose: function (st) {
-            if (st.st < 1) return { ok: false, reason: '需要 ⚡1' };
+            if (st.st < 1) return { ok: false, reason: '需要体力 1' };
             if (st.gold < 3) return { ok: false, reason: '金币不足 3' };
             return { ok: true };
           },
@@ -1487,9 +1567,9 @@
         {
           id: 'challenge_exam_rank',
           label: '递上自拟考场比试条：「下回成绩单见高下。」',
-          costBadge: '⚡1',
+          costBadge: '体力 -1',
           rewardBadge: '夏洛特【骄傲较劲】+2 · 魔攻 +2 · 经验 +45',
-          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要 ⚡1' }; },
+          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要体力 1' }; },
           apply: function (st) {
             st.st = Math.max(0, st.st - 1);
             st.mag += 2;
@@ -1504,7 +1584,7 @@
         },
         {
           id: 'palace_spot_mud',
-          label: '❄️ 动用「冰晶宫殿」留意她靴边城郊私军的黄泥印',
+          label: '动用「冰晶宫殿」留意她靴边城郊私军的黄泥印',
           costBadge: 'MP -15 · 冰晶宫殿',
           rewardBadge: '点亮线索 · 心智 +3 · 经验 +50',
           requiresIcePalace: true,
@@ -1531,7 +1611,8 @@
       phasePool: 'academy',
       title: '食堂后门被扣的巴依香料箱',
       tag: '魔法学院 · 暗线线索',
-      icon: '🍛',
+      iconKey: 'bowl',
+      icon: relIco('bowl', 18),
       locationLabel: '公共厨房后巷',
       eligible: function (st) {
         return st.phase === 'academy' && flagSafe('met_ajun', st);
@@ -1541,10 +1622,10 @@
         {
           id: 'dry_spices_water_ice',
           label: '借冰水吸湿替他救回半箱受潮香料',
-          costBadge: '⚡2 · MP -20',
+          costBadge: '体力 -2 · MP -20',
           rewardBadge: '金币 +10 · 阿琼好感 +1 · 经验 +42',
           canChoose: function (st) {
-            if (st.st < 2) return { ok: false, reason: '需要 ⚡2' };
+            if (st.st < 2) return { ok: false, reason: '需要体力 2' };
             if (st.mp < 20) return { ok: false, reason: '魔力不足' };
             return { ok: true };
           },
@@ -1564,9 +1645,9 @@
         {
           id: 'probe_banquet_inquiry',
           label: '顺着他翻出的小本子追问盘查者的来路',
-          costBadge: '⚡1',
+          costBadge: '体力 -1',
           rewardBadge: '点亮暗线【宴席食谱外的暗探】 · 心智 +2',
-          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要 ⚡1' }; },
+          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要体力 1' }; },
           apply: function (st) {
             st.st = Math.max(0, st.st - 1);
             statAddSafe('mind', 2, st);
@@ -1586,7 +1667,8 @@
       phasePool: 'academy',
       title: '东区宿舍的话剧飘雪道具',
       tag: '魔法学院 · 宿舍日常',
-      icon: '🎭',
+      iconKey: 'mask',
+      icon: relIco('mask', 18),
       locationLabel: '东区宿舍 312',
       eligible: function (st) {
         return st.phase === 'academy';
@@ -1596,10 +1678,10 @@
         {
           id: 'silky_dry_snow',
           label: '用极细冰晶化作干雪，落地前便散作轻雾',
-          costBadge: '⚡1 · MP -22',
+          costBadge: '体力 -1 · MP -22',
           rewardBadge: '气质 +3 · 金币 +12 · 艾玛好感 +1',
           canChoose: function (st) {
-            if (st.st < 1) return { ok: false, reason: '需要 ⚡1' };
+            if (st.st < 1) return { ok: false, reason: '需要体力 1' };
             if (st.mp < 22) return { ok: false, reason: '魔力不足' };
             return { ok: true };
           },
@@ -1620,13 +1702,13 @@
         {
           id: 'copy_stage_cue',
           label: '帮她誊抄场记并顺便分走两份焦糖布丁',
-          costBadge: '⚡2',
+          costBadge: '体力 -2',
           rewardBadge: '获赠【热饼干】补给 · 经验 +32',
-          canChoose: function (st) { return st.st >= 2 ? { ok: true } : { ok: false, reason: '需要 ⚡2' }; },
+          canChoose: function (st) { return st.st >= 2 ? { ok: true } : { ok: false, reason: '需要体力 2' }; },
           apply: function (st) {
             st.st = Math.max(0, st.st - 2);
             loveAddSafe('emma', 1);
-            addItemSafe({ id: 'cookie', name: '热饼干', icon: '🍪', desc: '可随时在背包食用恢复 1 点体力。' });
+            addItemSafe({ id: 'cookie', name: '热饼干', icon: relIco('blossom', 14), desc: '可随时在背包食用恢复 1 点体力。' });
             expAddSafe(32);
             return {
               epilogue: '字迹整齐的场记本换来两盒热腾腾的点心，艾玛拍着肚子感叹这就是理想中的校园生活。',
@@ -1641,7 +1723,8 @@
       phasePool: 'academy',
       title: '材料市场的崩缺魔导镜片',
       tag: '王都集市 · 风险博弈',
-      icon: '🔮',
+      iconKey: 'orb',
+      icon: relIco('orb', 18),
       locationLabel: '王都中央材料市场',
       eligible: function (st) {
         return st.phase === 'academy';
@@ -1651,7 +1734,7 @@
         {
           id: 'buy_lens',
           label: '出价 12 金币买下拆解校准自己的法抗回路',
-          costBadge: '🪙-12',
+          costBadge: '金币 -12',
           rewardBadge: '法抗 +3 · 魔攻 +2 · 经验 +50',
           canChoose: function (st) { return st.gold >= 12 ? { ok: true } : { ok: false, reason: '金币不足 12' }; },
           apply: function (st) {
@@ -1668,10 +1751,10 @@
         {
           id: 'craft_ice_lens',
           label: '当场凝出一枚完美无瑕的冰透镜抵作工费',
-          costBadge: '⚡2 · MP -28',
+          costBadge: '体力 -2 · MP -28',
           rewardBadge: '金币 +15 · 魔力适性 +2 · 经验 +42',
           canChoose: function (st) {
-            if (st.st < 2) return { ok: false, reason: '需要 ⚡2' };
+            if (st.st < 2) return { ok: false, reason: '需要体力 2' };
             if (st.mp < 28) return { ok: false, reason: '魔力不足' };
             return { ok: true };
           },
@@ -1694,7 +1777,8 @@
       phasePool: 'academy',
       title: '钟塔顶层的静风空腔',
       tag: '魔法学院 · 极限凝练',
-      icon: '🗼',
+      iconKey: 'tower',
+      icon: relIco('tower', 18),
       locationLabel: '学院钟塔顶层',
       eligible: function (st) {
         return st.phase === 'academy' && !!(typeof LOCS !== 'undefined' && LOCS.clocktower && LOCS.clocktower.unlock);
@@ -1704,10 +1788,10 @@
         {
           id: 'compress_mana_vortex',
           label: '借风压试着极限压缩体内的魔力漩涡',
-          costBadge: '⚡2 · HP -12 · MP -26',
+          costBadge: '体力 -2 · HP -12 · MP -26',
           rewardBadge: 'MP上限 +10 · 魔攻 +3 · 经验 +58',
           canChoose: function (st) {
-            if (st.st < 2) return { ok: false, reason: '需要 ⚡2' };
+            if (st.st < 2) return { ok: false, reason: '需要体力 2' };
             if (st.hp <= 15 || st.mp < 26) return { ok: false, reason: '状态不足' };
             return { ok: true };
           },
@@ -1727,7 +1811,7 @@
         {
           id: 'feed_orange_cat',
           label: '拿小鱼干喂橘猫，顺便记下风压变化曲线',
-          costBadge: '🪙-2',
+          costBadge: '金币 -2',
           rewardBadge: '诺艾儿了解 +5 · 心智 +2 · 生命全满',
           canChoose: function (st) { return st.gold >= 2 ? { ok: true } : { ok: false, reason: '金币不足 2' }; },
           apply: function (st) {
@@ -1753,7 +1837,8 @@
       chainTotal: 3,
       title: '星象塔旧书阁的折角信笺',
       tag: '魔法学院 · 星象旧信',
-      icon: '✉️',
+      iconKey: 'mail',
+      icon: relIco('mail', 18),
       locationLabel: '学院星象塔旧书阁',
       eligible: function (st) {
         return st.phase === 'academy' && flagSafe('met_noelle', st) &&
@@ -1764,9 +1849,9 @@
         {
           id: 'share_with_noelle',
           label: '拿去图书馆交给诺艾儿，一起对照纸角的水文星象记号',
-          costBadge: '⚡1',
+          costBadge: '体力 -1',
           rewardBadge: '诺艾儿【平等同盟】+2 · 心智 +2 · 经验 +42',
-          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要 ⚡1' }; },
+          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要体力 1' }; },
           apply: function (st) {
             st.st = Math.max(0, st.st - 1);
             statAddSafe('mind', 2, st);
@@ -1790,10 +1875,10 @@
         {
           id: 'probe_charlotte_seal',
           label: '记下信角王室旧纹，对照名门纹章簿并借茶铺查问贝尔蒙家旧藏',
-          costBadge: '⚡1 · 🪙-3',
+          costBadge: '体力 -1 · 金币 -3',
           rewardBadge: '夏洛特【卸下面具】+2 · 暗线线索 · 经验 +44',
           canChoose: function (st) {
-            if (st.st < 1) return { ok: false, reason: '需要 ⚡1' };
+            if (st.st < 1) return { ok: false, reason: '需要体力 1' };
             if (st.gold < 3) return { ok: false, reason: '金币不足 3' };
             return { ok: true };
           },
@@ -1832,7 +1917,8 @@
       chainTotal: 3,
       title: '图书馆古籍区的隐墨暗纹',
       tag: '魔法学院 · 暗纹查证',
-      icon: '🔎',
+      iconKey: 'lens',
+      icon: relIco('lens', 18),
       locationLabel: '学院图书馆古籍区',
       eligible: function (st) {
         var ch = st.encounterChains || {};
@@ -1855,10 +1941,10 @@
         {
           id: 'copy_circuit_noelle',
           label: '优先临摹纸背的水系节流回路，与诺艾儿分摊推导验证',
-          costBadge: '⚡2 · MP -20',
+          costBadge: '体力 -2 · MP -20',
           rewardBadge: 'MP上限 +8 · 诺艾儿【平等同盟】+2 · 经验 +54',
           canChoose: function (st) {
-            if (st.st < 2) return { ok: false, reason: '需要 ⚡2' };
+            if (st.st < 2) return { ok: false, reason: '需要体力 2' };
             if (st.mp < 20) return { ok: false, reason: '魔力不足' };
             return { ok: true };
           },
@@ -1886,9 +1972,9 @@
         {
           id: 'check_treaty_charlotte',
           label: '追查旧协约上的边贸封签缺口，与夏洛特点到为止地交换判断',
-          costBadge: '⚡1',
+          costBadge: '体力 -1',
           rewardBadge: '夏洛特双轴变动 · 点亮暗线线索 · 经验 +52',
-          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要 ⚡1' }; },
+          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要体力 1' }; },
           apply: function (st) {
             st.st = Math.max(0, st.st - 1);
             statAddSafe('mind', 2, st);
@@ -1914,7 +2000,7 @@
         },
         {
           id: 'palace_record_both',
-          label: '❄️ 动用「冰晶宫殿」一并定格隐墨回路与协约落款，不留水痕',
+          label: '动用「冰晶宫殿」一并定格隐墨回路与协约落款，不留水痕',
           costBadge: 'MP -16 · 冰晶宫殿',
           rewardBadge: '魔攻 +3 · 心智 +2 · 诺艾儿/夏洛特双轴 +1',
           requiresIcePalace: true,
@@ -1957,7 +2043,8 @@
       chainTotal: 3,
       title: '钟塔南檐的风铃回响',
       tag: '魔法学院 · 钟塔收束',
-      icon: '🔔',
+      iconKey: 'bell',
+      icon: relIco('bell', 18),
       locationLabel: '学院钟塔南檐',
       eligible: function (st) {
         var ch = st.encounterChains || {};
@@ -1980,9 +2067,9 @@
         {
           id: 'keep_manuscript_formula',
           label: '将补全的省魔算谱抄录成册，与诺艾儿立下共研水系回路之约',
-          costBadge: '⚡1',
+          costBadge: '体力 -1',
           rewardBadge: 'MP上限 +10 · 诺艾儿【平等同盟】+2 · 解锁【省魔手稿】',
-          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要 ⚡1' }; },
+          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要体力 1' }; },
           apply: function (st) {
             st.st = Math.max(0, st.st - 1);
             st.mmp += 10;
@@ -2009,9 +2096,9 @@
         {
           id: 'claim_tidal_shell_charm',
           label: '收好银匣中伴风铃微鸣的虹彩螺饰，把旧协约抄件体面盖回暗格',
-          costBadge: '⚡1',
+          costBadge: '体力 -1',
           rewardBadge: '法抗 +3 · 夏洛特【卸下面具】+2 · 解锁【月虹螺胸针】',
-          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要 ⚡1' }; },
+          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要体力 1' }; },
           apply: function (st) {
             st.st = Math.max(0, st.st - 1);
             st.mdef += 3;
@@ -2044,7 +2131,8 @@
       phasePool: 'journey',
       title: '霁馆后院深夜的木桩回响',
       tag: '澄岚霁馆 · 霁岚',
-      icon: '🏯',
+      iconKey: 'fortress',
+      icon: relIco('fortress', 18),
       locationLabel: '霁馆后院砂地',
       eligible: function (st) {
         return (st.phase === 'journey' || st.phase === 'finale') && flagSafe('arrived_jikan', st) && !flagSafe('ch_distant_wind_1', st);
@@ -2054,10 +2142,10 @@
         {
           id: 'spar_twenty_bouts',
           label: '拎起走廊角落的竹剑下楼陪她走二十合真格步法',
-          costBadge: '⚡2 · HP -14',
+          costBadge: '体力 -2 · HP -14',
           rewardBadge: '霁岚【并肩远行】+2 · 攻击 +3 · 经验 +62',
           canChoose: function (st) {
-            if (st.st < 2) return { ok: false, reason: '需要 ⚡2' };
+            if (st.st < 2) return { ok: false, reason: '需要体力 2' };
             if (st.hp <= 16) return { ok: false, reason: '生命过低' };
             return { ok: true };
           },
@@ -2079,9 +2167,9 @@
         {
           id: 'warm_porridge_corridor',
           label: '从灶台端出两碗还温着的杂粮稀饭坐在廊沿等她',
-          costBadge: '⚡1',
+          costBadge: '体力 -1',
           rewardBadge: '霁岚【归处暖灯】+2 · 生命回满 · 经验 +46',
-          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要 ⚡1' }; },
+          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要体力 1' }; },
           apply: function (st) {
             st.st = Math.max(0, st.st - 1);
             st.hp = st.mhp;
@@ -2096,7 +2184,7 @@
         },
         {
           id: 'palace_study_jilan_footwork',
-          label: '❄️ 动用「冰晶宫殿」定格她转腕收刀时的重心切换',
+          label: '动用「冰晶宫殿」定格她转腕收刀时的重心切换',
           costBadge: 'MP -16 · 冰晶宫殿',
           rewardBadge: '体能 +3 · 攻击 +2 · 经验 +66',
           requiresIcePalace: true,
@@ -2123,7 +2211,8 @@
       phasePool: 'journey',
       title: '澄岚酒馆里的冷库急活',
       tag: '澄岚镇 · 隐秘伪装',
-      icon: '🍺',
+      iconKey: 'tankard',
+      icon: relIco('tankard', 18),
       locationLabel: '澄岚公会旁老酒馆',
       eligible: function (st) {
         return (st.phase === 'journey' || st.phase === 'finale') && flagSafe('arrived_jikan', st) && !flagSafe('ch_distant_wind_1', st);
@@ -2133,10 +2222,10 @@
         {
           id: 'water_chill_discreet',
           label: '只用寻常水系冷流稳住窖温，绝不显露冰系根底',
-          costBadge: '⚡1 · MP -20',
+          costBadge: '体力 -1 · MP -20',
           rewardBadge: '金币 +18 · 气质 +2 · 经验 +48',
           canChoose: function (st) {
-            if (st.st < 1) return { ok: false, reason: '需要 ⚡1' };
+            if (st.st < 1) return { ok: false, reason: '需要体力 1' };
             if (st.mp < 20) return { ok: false, reason: '魔力不足' };
             return { ok: true };
           },
@@ -2155,7 +2244,7 @@
         {
           id: 'buy_northforest_intel',
           label: '花 6 金币请佣兵喝一壶麦酒，打听北林深处异动',
-          costBadge: '🪙-6',
+          costBadge: '金币 -6',
           rewardBadge: '攻击 +2 · 心智 +3 · 经验 +55',
           canChoose: function (st) { return st.gold >= 6 ? { ok: true } : { ok: false, reason: '金币不足 6' }; },
           apply: function (st) {
@@ -2176,7 +2265,8 @@
       phasePool: 'journey',
       title: '草坡矮篱外落单的小白羊',
       tag: '澄岚原野 · 田园奇遇',
-      icon: '🐑',
+      iconKey: 'lantern',
+      icon: relIco('lantern', 18),
       locationLabel: '镇外缓坡草场',
       eligible: function (st) {
         return (st.phase === 'journey' || st.phase === 'finale') && flagSafe('arrived_jikan', st) && !flagSafe('ch_distant_wind_1', st);
@@ -2186,9 +2276,9 @@
         {
           id: 'root_step_rescue',
           label: '踏「生根步」踩稳湿泥坡把小羊稳稳抱回篱笆',
-          costBadge: '⚡2',
+          costBadge: '体力 -2',
           rewardBadge: '阿蓿了解 +10 · 金币 +8 · 体能 +2',
-          canChoose: function (st) { return st.st >= 2 ? { ok: true } : { ok: false, reason: '需要 ⚡2' }; },
+          canChoose: function (st) { return st.st >= 2 ? { ok: true } : { ok: false, reason: '需要体力 2' }; },
           apply: function (st) {
             st.st = Math.max(0, st.st - 2);
             st.gold += 8;
@@ -2225,7 +2315,8 @@
       phasePool: 'journey',
       title: '塞北官道陷雪的药材大车',
       tag: '北行官道 · 雪原救援',
-      icon: '🛒',
+      iconKey: 'wagon',
+      icon: relIco('wagon', 18),
       locationLabel: '通往北风堡的荒原官道',
       eligible: function (st) {
         return (st.phase === 'journey' || st.phase === 'finale') && flagSafe('ch_distant_wind_1', st);
@@ -2235,10 +2326,10 @@
         {
           id: 'freeze_wheel_track',
           label: '在车辙底下铺出一条平坦坚冰垫起木轮并稳住药箱',
-          costBadge: '⚡2 · MP -32',
+          costBadge: '体力 -2 · MP -32',
           rewardBadge: '金币 +22 · HP上限 +10 · 解锁【北风堡木牌】',
           canChoose: function (st) {
-            if (st.st < 2) return { ok: false, reason: '需要 ⚡2' };
+            if (st.st < 2) return { ok: false, reason: '需要体力 2' };
             if (st.mp < 32) return { ok: false, reason: '魔力不足' };
             return { ok: true };
           },
@@ -2259,9 +2350,9 @@
         {
           id: 'cut_frozen_axle',
           label: '抽出乌木铁剑连环快斩劈开冻死车轴的坚冰',
-          costBadge: '⚡2',
+          costBadge: '体力 -2',
           rewardBadge: '攻击 +3 · 体能 +2 · 经验 +62',
-          canChoose: function (st) { return st.st >= 2 ? { ok: true } : { ok: false, reason: '需要 ⚡2' }; },
+          canChoose: function (st) { return st.st >= 2 ? { ok: true } : { ok: false, reason: '需要体力 2' }; },
           apply: function (st) {
             st.st = Math.max(0, st.st - 2);
             st.atk += 3;
@@ -2284,7 +2375,8 @@
       chainTotal: 2,
       title: '北风堡后巷的裂纹药罐',
       tag: '北风堡 · 军需急救',
-      icon: '🏺',
+      iconKey: 'jar',
+      icon: relIco('jar', 18),
       locationLabel: '北风堡内城石巷',
       eligible: function (st) {
         return (st.phase === 'journey' || st.phase === 'finale') &&
@@ -2296,10 +2388,10 @@
         {
           id: 'seal_jars_with_film',
           label: '照料北极铃兰的手法替药罐贴上恒温冰膜，先保住伤兵急用药膏',
-          costBadge: '⚡1 · MP -28',
+          costBadge: '体力 -1 · MP -28',
           rewardBadge: '金币 +16 · 生命回满 · 穆萨了解 +8 · 开启后续调查',
           canChoose: function (st) {
-            if (st.st < 1) return { ok: false, reason: '需要 ⚡1' };
+            if (st.st < 1) return { ok: false, reason: '需要体力 1' };
             if (st.mp < 28) return { ok: false, reason: '魔力不足' };
             return { ok: true };
           },
@@ -2327,7 +2419,7 @@
         },
         {
           id: 'palace_inspect_jar_residue',
-          label: '❄️ 动用「冰晶宫殿」检视封口油膜配比，并拓下罐底暗刻货号',
+          label: '动用「冰晶宫殿」检视封口油膜配比，并拓下罐底暗刻货号',
           costBadge: 'MP -16 · 冰晶宫殿',
           rewardBadge: '法抗 +3 · 心智 +3 · 艾诺【严苛试炼】+1 · 锁定暗账',
           requiresIcePalace: true,
@@ -2368,7 +2460,8 @@
       chainTotal: 2,
       title: '军需帐核验：白藓药草的去向',
       tag: '冰封峡谷 · 谜案收束',
-      icon: '📋',
+      iconKey: 'ledger',
+      icon: relIco('ledger', 18),
       locationLabel: '冰封峡谷防卫队军需帐',
       eligible: function (st) {
         var ch = st.encounterChains || {};
@@ -2389,10 +2482,10 @@
         {
           id: 'confront_supply_clerk',
           label: '携货号证物随艾诺当面封查转运车队，追回私扣的白藓膏',
-          costBadge: '⚡2 · MP -20',
+          costBadge: '体力 -2 · MP -20',
           rewardBadge: '魔攻 +3 · 金币 +14～22 · 艾诺【严苛试炼】+2 · 解锁【钢冰试炼笺】',
           canChoose: function (st) {
-            if (st.st < 2) return { ok: false, reason: '需要 ⚡2' };
+            if (st.st < 2) return { ok: false, reason: '需要体力 2' };
             if (st.mp < 20) return { ok: false, reason: '魔力不足' };
             return { ok: true };
           },
@@ -2429,9 +2522,9 @@
         {
           id: 'quiet_reroute_musa',
           label: '先稳住前线配给与穆萨的名声，暗中截断走私线并重签药房封签',
-          costBadge: '⚡1',
+          costBadge: '体力 -1',
           rewardBadge: 'HP上限 +10 · 艾诺【极北知己】+2 · 解锁【北风堡木牌】',
-          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要 ⚡1' }; },
+          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要体力 1' }; },
           apply: function (st) {
             var hasProof = st.encounterChains && st.encounterChains.white_moss_branch === 'palace_evidence';
             st.st = Math.max(0, st.st - 1);
@@ -2468,7 +2561,8 @@
       phasePool: 'journey',
       title: '冰封峡谷东墙的夜哨标尺',
       tag: '冰封峡谷 · 艾诺重逢',
-      icon: '❄️',
+      iconKey: 'snowflake',
+      icon: relIco('snowflake', 18),
       locationLabel: '冰封峡谷东侧崖垛',
       eligible: function (st) {
         return (st.phase === 'journey' || st.phase === 'finale') && flagSafe('ch_distant_wind_2', st);
@@ -2478,10 +2572,10 @@
         {
           id: 'sync_frost_markers',
           label: '默契接手左侧盲区，并肩标完一整道防线刻度',
-          costBadge: '⚡2 · MP -24',
+          costBadge: '体力 -2 · MP -24',
           rewardBadge: '艾诺【极北知己】+2 · 魔攻 +4 · 解锁【雪纹手帕】',
           canChoose: function (st) {
-            if (st.st < 2) return { ok: false, reason: '需要 ⚡2' };
+            if (st.st < 2) return { ok: false, reason: '需要体力 2' };
             if (st.mp < 24) return { ok: false, reason: '魔力不足' };
             return { ok: true };
           },
@@ -2503,9 +2597,9 @@
         {
           id: 'ask_efficient_cast',
           label: '向她请教严寒拉锯战里最省魔力的破甲落点',
-          costBadge: '⚡1',
+          costBadge: '体力 -1',
           rewardBadge: 'MP上限 +12 · 艾诺【严苛试炼】+1 · 经验 +66',
-          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要 ⚡1' }; },
+          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要体力 1' }; },
           apply: function (st) {
             st.st = Math.max(0, st.st - 1);
             st.mmp += 12;
@@ -2526,7 +2620,8 @@
       phasePool: 'journey',
       title: '峡谷岩壁深处的冻土晶髓',
       tag: '冰封峡谷 · 高危采掘',
-      icon: '💠',
+      iconKey: 'prism',
+      icon: relIco('prism', 18),
       locationLabel: '冰封峡谷深处裂隙',
       eligible: function (st) {
         return (st.phase === 'journey' || st.phase === 'finale') && flagSafe('ch_distant_wind_2', st);
@@ -2536,10 +2631,10 @@
         {
           id: 'risk_extract_crystal',
           label: '冒着碎岩砸落的风险，硬用隔空凝冰剥出晶髓',
-          costBadge: '⚡2 · HP -20 · MP -36',
+          costBadge: '体力 -2 · HP -20 · MP -36',
           rewardBadge: '魔攻 +5 · HP上限 +12 · 经验 +90',
           canChoose: function (st) {
-            if (st.st < 2) return { ok: false, reason: '需要 ⚡2' };
+            if (st.st < 2) return { ok: false, reason: '需要体力 2' };
             if (st.hp <= 22 || st.mp < 36) return { ok: false, reason: '状态不足' };
             return { ok: true };
           },
@@ -2558,13 +2653,13 @@
         },
         {
           id: 'palace_safe_extract',
-          label: '❄️ 动用「冰晶宫殿」先看清岩层受力纹路，零损伤取髓',
-          costBadge: '⚡1 · 冰晶宫殿',
+          label: '动用「冰晶宫殿」先看清岩层受力纹路，零损伤取髓',
+          costBadge: '体力 -1 · 冰晶宫殿',
           rewardBadge: '魔攻 +5 · 法抗 +3 · 经验 +96',
           requiresIcePalace: true,
           canChoose: function (st) {
             if (!hasSkillSafe('ice_palace', st)) return { ok: false, reason: '需先习得【冰晶宫殿】' };
-            if (st.st < 1) return { ok: false, reason: '需要 ⚡1' };
+            if (st.st < 1) return { ok: false, reason: '需要体力 1' };
             return { ok: true };
           },
           apply: function (st) {
@@ -2605,7 +2700,8 @@
       chainTotal: 3,
       title: '驿站茶单里的夹页暗号',
       tag: '官道商路 · 暗线商单',
-      icon: '🍵',
+      iconKey: 'teacup',
+      icon: relIco('teacup', 18),
       locationLabel: '官道驿站茶棚',
       eligible: function (st) {
         return (st.phase === 'journey' || st.phase === 'finale') &&
@@ -2617,10 +2713,10 @@
         {
           id: 'reply_tea_cipher',
           label: '照沛记暗记回写一道封蜡条，托驿差提醒莱恩核查车轴与封签',
-          costBadge: '⚡1 · 🪙-4',
+          costBadge: '体力 -1 · 金币 -4',
           rewardBadge: '心智 +2 · 霁岚【并肩远行】+1 · 经验 +48',
           canChoose: function (st) {
-            if (st.st < 1) return { ok: false, reason: '需要 ⚡1' };
+            if (st.st < 1) return { ok: false, reason: '需要体力 1' };
             if (st.gold < 4) return { ok: false, reason: '金币不足 4' };
             return { ok: true };
           },
@@ -2647,9 +2743,9 @@
         {
           id: 'ask_jilan_route',
           label: '把便笺抄给霁岚过目，请她托澄岚熟识车行先替莱恩递口信',
-          costBadge: '⚡1',
+          costBadge: '体力 -1',
           rewardBadge: '霁岚【归处暖灯】+2 · 霁岚了解 +5 · 经验 +44',
-          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要 ⚡1' }; },
+          canChoose: function (st) { return st.st >= 1 ? { ok: true } : { ok: false, reason: '需要体力 1' }; },
           apply: function (st) {
             st.st = Math.max(0, st.st - 1);
             shiftCausalSafe('jilan', 'hearth', 2, st);
@@ -2671,7 +2767,7 @@
         },
         {
           id: 'palace_read_ink',
-          label: '❄️ 动用「冰晶宫殿」细辨纸背笔痕，读出字缝里的北境急调批次',
+          label: '动用「冰晶宫殿」细辨纸背笔痕，读出字缝里的北境急调批次',
           costBadge: 'MP -16 · 冰晶宫殿',
           rewardBadge: '心智 +3 · 艾诺【极北知己】+1 · 经验 +56',
           requiresIcePalace: true,
@@ -2710,7 +2806,8 @@
       chainTotal: 3,
       title: '关镇货栈的药箱核对',
       tag: '关镇商路 · 暗线商单',
-      icon: '📦',
+      iconKey: 'crate',
+      icon: relIco('crate', 18),
       locationLabel: '关镇东门商队货栈',
       eligible: function (st) {
         var ch = st.encounterChains || {};
@@ -2737,10 +2834,10 @@
         {
           id: 'seal_crates_stealth',
           label: '用薄而匀的恒温水冰封稳受潮药箱，照沛霖的习惯重补验记',
-          costBadge: '⚡2 · MP -24',
+          costBadge: '体力 -2 · MP -24',
           rewardBadge: '魔攻 +2 · 金币 +14 · 艾诺【极北知己】+2',
           canChoose: function (st) {
-            if (st.st < 2) return { ok: false, reason: '需要 ⚡2' };
+            if (st.st < 2) return { ok: false, reason: '需要体力 2' };
             if (st.mp < 24) return { ok: false, reason: '魔力不足' };
             return { ok: true };
           },
@@ -2768,10 +2865,10 @@
         {
           id: 'guard_convoy_blade',
           label: '按住剑柄替莱恩守住货栈后门，顺手拦下想趁夜混水摸鱼的脚夫',
-          costBadge: '⚡2 · HP -12',
+          costBadge: '体力 -2 · HP -12',
           rewardBadge: '攻击 +3 · 霁岚【并肩远行】+2 · 经验 +64',
           canChoose: function (st) {
-            if (st.st < 2) return { ok: false, reason: '需要 ⚡2' };
+            if (st.st < 2) return { ok: false, reason: '需要体力 2' };
             if (st.hp <= 14) return { ok: false, reason: '生命过低' };
             return { ok: true };
           },
@@ -2807,7 +2904,8 @@
       chainTotal: 3,
       title: '北风堡商路的回礼密笺',
       tag: '北风堡 · 商路致谢',
-      icon: '🪪',
+      iconKey: 'crestPass',
+      icon: relIco('crestPass', 18),
       locationLabel: '北风堡外城商栈',
       eligible: function (st) {
         var ch = st.encounterChains || {};
@@ -3064,38 +3162,8 @@
   }
 
   /* =========================================================================
-     四、UI 渲染：综合面板「✦ 随身铭记」 / 演武沙盒配装条 / 「🎴 季度奇遇」弹窗
+     四、UI 渲染：综合面板「✦ 随身铭记」 / 演武沙盒配装条 / 「✦ 季度奇遇」弹窗
      ========================================================================= */
-  function ensureSynergyStyles() {
-    if (typeof document === 'undefined' || !document.head) return;
-    if (document.getElementById('rel-synergy-base-styles')) return;
-    var style = document.createElement('style');
-    style.id = 'rel-synergy-base-styles';
-    style.textContent =
-      '.rel-synergy-strip{padding:10px 12px;border-radius:10px;background:linear-gradient(135deg,rgba(20,30,52,.9),rgba(13,19,33,.94));border:1px solid rgba(155,216,255,.26);display:flex;flex-direction:column;gap:8px;}' +
-      '.rel-syn-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}' +
-      '.rel-syn-title{font-size:12.5px;font-weight:700;letter-spacing:.04em;color:#ffe29a;}' +
-      '.rel-syn-summary{font-size:11px;color:rgba(196,222,248,.82);}' +
-      '.rel-syn-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px;}' +
-      '.rel-syn-card{padding:8px 11px;border-radius:9px;display:flex;flex-direction:column;gap:4px;border:1px solid rgba(146,196,246,.22);background:rgba(15,23,38,.82);}' +
-      '.rel-syn-card.active{border-color:rgba(244,198,104,.74);background:linear-gradient(145deg,rgba(56,44,24,.78),rgba(20,32,54,.94));box-shadow:0 0 12px rgba(244,198,104,.16);}' +
-      '.rel-syn-card.near{border-style:dashed;border-color:rgba(150,208,255,.38);background:rgba(18,28,46,.72);}' +
-      '.rsc-top{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12px;}' +
-      '.rsc-name{font-weight:700;color:#fff4d2;}' +
-      '.rel-syn-card.near .rsc-name{color:#cde8ff;}' +
-      '.rsc-pill{font-size:10.5px;padding:1px 7px;border-radius:999px;background:rgba(244,198,104,.22);border:1px solid rgba(244,198,104,.55);color:#ffe7ad;white-space:nowrap;}' +
-      '.rel-syn-card.near .rsc-pill{background:rgba(68,104,154,.32);border-color:rgba(148,204,255,.38);color:#bfe2ff;}' +
-      '.rsc-fx{font-size:11px;line-height:1.45;color:#e4f2ff;}' +
-      '.rsc-next{font-size:10.5px;line-height:1.4;color:rgba(186,214,242,.74);border-top:1px dashed rgba(146,196,246,.18);padding-top:3px;margin-top:1px;}' +
-      '.rel-syn-dormant-row{display:flex;flex-wrap:wrap;gap:6px;}' +
-      '.rel-syn-dormant-chip{font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(18,28,46,.68);border:1px dashed rgba(144,196,246,.24);color:rgba(190,214,240,.72);}' +
-      '.rc-set-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:1px 6px;border-radius:999px;border:1px solid rgba(154,210,255,.32);background:rgba(24,38,62,.78);color:var(--syn-accent,#bce4ff);margin-left:5px;vertical-align:middle;}' +
-      '.arena-rel-pill.synergy{background:linear-gradient(135deg,rgba(78,56,22,.82),rgba(24,42,72,.88));border-color:rgba(244,198,104,.64);color:#ffebb6;font-weight:600;}' +
-      '.rumor-offer-card.chain{border-left:3px solid #f4c668;}' +
-      '.roc-chain-pill{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:999px;background:rgba(244,198,104,.2);border:1px solid rgba(244,198,104,.55);color:#ffe4a6;margin-right:6px;}';
-    document.head.insertBefore(style, document.head.firstChild);
-  }
-
   function renderSynergyStripHTML(equipped) {
     var progress = getSynergyProgress(equipped);
     var activeCards = [];
@@ -3115,7 +3183,7 @@
         activeCards.push(
           '<div class="rel-syn-card active" data-synergy-id="' + p.id + '" style="--syn-accent:' + p.color + '">' +
             '<div class="rsc-top">' +
-              '<span class="rsc-name">' + p.icon + ' ' + escapeHtml(p.name) + '</span>' +
+              '<span class="rsc-name">' + relIco(p.iconKey || 'star', 14) + '<span>' + escapeHtml(p.name) + '</span></span>' +
               '<span class="rsc-pill">✦ ' + p.count + '/' + p.maxThreshold + ' · ' + escapeHtml(p.tiers[topTier].name) + '</span>' +
             '</div>' +
             activeLines +
@@ -3126,7 +3194,7 @@
         nearCards.push(
           '<div class="rel-syn-card near" data-synergy-id="' + p.id + '" style="--syn-accent:' + p.color + '">' +
             '<div class="rsc-top">' +
-              '<span class="rsc-name">' + p.icon + ' ' + escapeHtml(p.name) + '</span>' +
+              '<span class="rsc-name">' + relIco(p.iconKey || 'star', 14) + '<span>' + escapeHtml(p.name) + '</span></span>' +
               '<span class="rsc-pill">1/' + p.nextTier + ' · 差 1 件共鸣</span>' +
             '</div>' +
             '<div class="rsc-fx">2件【' + escapeHtml(p.nextTierDef.name) + '】：' + escapeHtml(p.nextTierDef.shortDesc) + '</div>' +
@@ -3137,7 +3205,7 @@
         var tip = p.name + '（2件·' + t2.name + '：' + t2.shortDesc + '）';
         dormantChips.push(
           '<span class="rel-syn-dormant-chip" data-synergy-id="' + p.id + '" title="' + escapeHtml(tip) + '">' +
-            p.icon + ' ' + escapeHtml(p.name) + ' 0/2' +
+            relIco(p.iconKey || 'star', 13) + '<span>' + escapeHtml(p.name) + ' 0/2</span>' +
           '</span>'
         );
       }
@@ -3151,7 +3219,7 @@
     return (
       '<div class="rel-synergy-strip" id="rel-synergy-strip">' +
         '<div class="rel-syn-head">' +
-          '<span class="rel-syn-title">✦ 套装共鸣 · Synergy</span>' +
+          '<span class="rel-syn-title">' + relIco('star', 14) + '<span>套装共鸣</span></span>' +
           '<span class="rel-syn-summary">' + escapeHtml(summaryText) + '</span>' +
         '</div>' +
         (cards.length ? '<div class="rel-syn-grid">' + cards.join('') + '</div>' : '') +
@@ -3162,7 +3230,6 @@
 
   function renderRelicsAndAssistHTML(opts) {
     opts = opts || {};
-    ensureSynergyStyles();
     var isSandbox = !!opts.sandbox;
     var st = ensureRelicsState(opts.state);
     var equipped = isSandbox ? getArenaSandboxRelics() : (st ? st.equippedRelics : []);
@@ -3196,10 +3263,10 @@
       return (
         '<article class="rel-card' + (unlocked ? '' : ' locked') + (isEq ? ' equipped' : '') + '" data-relic-id="' + id + '">' +
           '<div class="rc-head">' +
-            '<span class="rc-ico">' + (unlocked ? def.icon : '🔒') + '</span>' +
+            '<span class="rc-ico">' + (unlocked ? def.icon : relIco('lock', 16)) + '</span>' +
             '<div class="rc-titles">' +
               '<div class="rc-name">' + escapeHtml(def.name) +
-                (syn ? '<span class="rc-set-badge" data-set-id="' + syn.id + '" style="--syn-accent:' + syn.color + '">' + syn.icon + ' ' + escapeHtml(syn.name) + '</span>' : '') +
+                (syn ? '<span class="rc-set-badge" data-set-id="' + syn.id + '" style="--syn-accent:' + syn.color + '">' + relIco(syn.iconKey || 'star', 12) + '<span>' + escapeHtml(syn.name) + '</span></span>' : '') +
                 (isEq ? ' <em class="rc-eq-pill">佩带中</em>' : '') +
               '</div>' +
               '<div class="rc-owner">' + escapeHtml(def.owner) + ' · ' + escapeHtml(def.tag) + '</div>' +
@@ -3222,28 +3289,37 @@
       var ba = BOND_ASSISTS[cid];
       var ok = assistUnlocked.indexOf(cid) !== -1;
       var active = activeAssist === cid;
+      var stateCls = active ? 'is-active' : (ok ? 'is-ready' : 'is-locked');
+      var stateText = active ? '出战中' : (ok ? '点选出战' : '未解锁');
+      var desc = ok ? ba.effectDesc : '与该角色积累好感或命运暗流后解锁心念援护';
       return (
         '<button type="button" class="bond-chip' + (active ? ' active' : '') + (ok ? '' : ' locked') + '" ' +
+          'title="' + escapeHtml(ba.name + ' · ' + ba.title + '：' + desc) + '" ' +
           (ok ? 'data-assist-pick="' + cid + '"' : 'disabled') + '>' +
-          '<span class="bc-top">' + ba.icon + ' <b>' + escapeHtml(ba.name) + ' · ' + escapeHtml(ba.title) + '</b></span>' +
-          '<span class="bc-desc">' + escapeHtml(ok ? ba.effectDesc : '与该角色积累好感或命运暗流后解锁心念援护') + '</span>' +
+          '<span class="bc-top">' +
+            '<span class="bc-title-wrap">' + ba.icon + '<b>' + escapeHtml(ba.name) + ' · ' + escapeHtml(ba.title) + '</b></span>' +
+            '<span class="bond-state-pill ' + stateCls + '">' + stateText + '</span>' +
+          '</span>' +
+          '<span class="bc-desc">' + escapeHtml(desc) + '</span>' +
         '</button>'
       );
     }).join('');
 
     return (
-      '<div class="relics-dashboard">' +
-        '<div class="rel-banner">' +
-          '<div>' +
-            '<b>✦ 随身铭记秘宝（' + equipped.length + ' / ' + MAX_EQUIPPED_RELICS + '）</b>' +
-            '<span>' + (isSandbox ? '演武沙盒可自由装配全部 12 件秘宝与 5 位伙伴援护进行构筑测试' : '佩带至多 3 件信物，实时改变战斗魔战节奏与破招规则') + '</span>' +
-          '</div>' +
-        '</div>' +
+      '<div class="relics-dashboard' + (isSandbox ? ' is-sandbox' : '') + '">' +
+        (!isSandbox
+          ? '<div class="rel-banner">' +
+              '<div>' +
+                '<b>✦ 随身铭记秘宝（' + equipped.length + ' / ' + MAX_EQUIPPED_RELICS + '）</b>' +
+                '<span>佩带至多 3 件信物，实时改变战斗魔战节奏与破招规则</span>' +
+              '</div>' +
+            '</div>'
+          : '') +
         renderSynergyStripHTML(equipped) +
         '<div class="rel-slots-grid">' + slotsHtml + '</div>' +
-        '<h4 class="rel-sec-title">✨ 羁绊心念援护（战斗中每场 1 次 · 0 AP）</h4>' +
+        '<h4 class="rel-sec-title">✦ 羁绊心念援护（战斗中每场 1 次 · 0 AP）</h4>' +
         '<div class="bond-grid">' + assistHtml + '</div>' +
-        '<h4 class="rel-sec-title">🗝️ 铭记典藏图录（' + unlockedList.length + ' / ' + RELIC_ORDER.length + '）</h4>' +
+        '<h4 class="rel-sec-title">◈ 铭记典藏图录（' + unlockedList.length + ' / ' + RELIC_ORDER.length + '）</h4>' +
         '<div class="rel-cards-grid">' + cardsHtml + '</div>' +
       '</div>'
     );
@@ -3276,7 +3352,6 @@
   }
 
   function renderArenaLoadoutBarHTML() {
-    ensureSynergyStyles();
     var equipped = getArenaSandboxRelics();
     var activeSyns = getActiveSynergies(equipped);
     var assist = getArenaSandboxAssist();
@@ -3284,13 +3359,13 @@
     var chips = equipped.length
       ? equipped.map(function (id) {
           var r = RELICS_CATALOG[id];
-          return '<span class="arena-rel-pill">' + r.icon + ' ' + escapeHtml(r.name) + '</span>';
+          return '<span class="arena-rel-pill">' + r.icon + '<span>' + escapeHtml(r.name) + '</span></span>';
         }).join('')
       : '<span class="arena-rel-empty">未装配铭记（标准原味难度）</span>';
     var synPills = activeSyns.map(function (syn) {
       return (
         '<span class="arena-rel-pill synergy" data-synergy-id="' + syn.id + '" title="' + escapeHtml(syn.shortDesc) + '">' +
-          '✦ ' + syn.icon + ' ' + escapeHtml(syn.name) + '·' + escapeHtml(syn.tierName) + ' (' + syn.count + '件)' +
+          relIco(syn.iconKey || 'star', 13) + '<span>' + escapeHtml(syn.name) + '·' + escapeHtml(syn.tierName) + ' (' + syn.count + '件)</span>' +
         '</span>'
       );
     }).join('');
@@ -3301,7 +3376,7 @@
           '<span class="alb-label">✦ 战前铭记整备：</span>' +
           chips +
           synPills +
-          (assistMeta ? '<span class="arena-rel-pill bond">' + assistMeta.icon + ' 援护·' + escapeHtml(assistMeta.name) + '</span>' : '') +
+          (assistMeta ? '<span class="arena-rel-pill bond">' + assistMeta.icon + '<span>援护·' + escapeHtml(assistMeta.name) + '</span></span>' : '') +
         '</div>' +
         '<div class="alb-actions">' +
           '<button type="button" class="arena-mode-chip" id="am-open-loadout">✦ 配装 12 秘宝 / 心念援护 (' + equipped.length + '/3)</button>' +
@@ -3313,7 +3388,6 @@
 
   function openArenaLoadoutModal(onUpdated) {
     if (typeof document === 'undefined') return;
-    ensureSynergyStyles();
     var ov = document.getElementById('arena-loadout-modal');
     if (!ov) {
       ov = document.createElement('section');
@@ -3321,13 +3395,22 @@
       ov.className = 'overlay';
       document.body.appendChild(ov);
     }
+    var closeLoadout = function () {
+      if (!ov.classList.contains('hidden')) {
+        ov.classList.add('hidden');
+        if (typeof window !== 'undefined' && typeof window.sfx === 'function') window.sfx('modal_close');
+      }
+    };
+    ov.onclick = function (e) { if (e && e.target === ov) closeLoadout(); };
     var redraw = function () {
       ov.classList.remove('hidden');
       ov.innerHTML =
         '<div class="end-card rumor-card">' +
           '<div class="rumor-head">' +
             '<div><h2>✦ 演武沙盒 · 战前铭记整备</h2><p class="rumor-sub">自由组合至多 3 件经典秘宝与 1 名伙伴心念援护（零存档污染）</p></div>' +
-            '<button type="button" class="tbtn ghost" id="alm-close" style="min-width:86px;padding:6px 14px">完成</button>' +
+            '<div class="rumor-head-actions">' +
+              '<button type="button" class="modal-close-x" id="alm-close-x" aria-label="关闭铭记整备">×</button>' +
+            '</div>' +
           '</div>' +
           '<div class="rumor-scroll">' + renderRelicsAndAssistHTML({ sandbox: true }) + '</div>' +
         '</div>';
@@ -3338,8 +3421,8 @@
           if (typeof onUpdated === 'function') onUpdated();
         }
       });
-      var closeBtn = ov.querySelector('#alm-close');
-      if (closeBtn) closeBtn.onclick = function () { ov.classList.add('hidden'); };
+      var closeX = ov.querySelector('#alm-close-x');
+      if (closeX) closeX.onclick = closeLoadout;
     };
     redraw();
   }
@@ -3358,7 +3441,10 @@
 
   function closeRumorBoard() {
     var el = typeof document !== 'undefined' ? document.getElementById('rumor-overlay') : null;
-    if (el) el.classList.add('hidden');
+    if (el && !el.classList.contains('hidden')) {
+      el.classList.add('hidden');
+      if (typeof window !== 'undefined' && typeof window.sfx === 'function') window.sfx('modal_close');
+    }
   }
 
   function formatChainBadgeHTML(ev) {
@@ -3367,13 +3453,52 @@
     return '<span class="roc-chain-pill" title="' + escapeHtml(tip) + '">链式奇遇 · 第' + ev.chainAct + '幕</span>';
   }
 
+  function formatEventStCost(ev) {
+    if (!ev || !Array.isArray(ev.choices) || !ev.choices.length) return '无体力消耗';
+    var costs = [];
+    var hasFree = false;
+    ev.choices.forEach(function (ch) {
+      var badge = String((ch && ch.costBadge) || '');
+      var m = badge.match(/体力\s*-?\s*(\d+)/);
+      if (m) {
+        costs.push(Number(m[1]));
+      } else if (badge.indexOf('无消耗') !== -1) {
+        hasFree = true;
+      }
+    });
+    if (!costs.length) return '无体力消耗';
+    var min = Math.min.apply(null, costs);
+    var max = Math.max.apply(null, costs);
+    if (hasFree) return '体力 0–' + max;
+    if (min === max) return '体力 ' + min;
+    return '体力 ' + min + '–' + max;
+  }
+
+  function renderEventTagsHTML(ev, st, hasPalaceOpt) {
+    var html = formatChainBadgeHTML(ev);
+    var parts = String((ev && ev.tag) || '').split(' · ').filter(Boolean);
+    if (parts.length > 0) {
+      html += '<span class="roc-tag-place">' + escapeHtml(parts[0]) + '</span>';
+    }
+    if (parts.length > 1) {
+      var seg1 = parts.slice(1).join(' · ');
+      var isRisk = /高危|风险|极限|急救/.test(seg1);
+      html += '<span class="roc-tag-pill ' + (isRisk ? 'is-risk' : 'is-normal') + '">' + escapeHtml(seg1) + '</span>';
+    }
+    if (hasPalaceOpt && hasSkillSafe('ice_palace', st)) {
+      html += '<span class="roc-tag-pill is-palace">' + relIco('star', 12) + '<span>含冰宫洞察</span></span>';
+    }
+    html += '<span class="roc-cost-pill">' + relIco('bolt', 12) + '<span>' + escapeHtml(formatEventStCost(ev)) + '</span></span>';
+    return html;
+  }
+
   function openRumorBoard(activeEventId, resolvedOutcome) {
     if (typeof document === 'undefined') return null;
-    ensureSynergyStyles();
     var st = ensureRelicsState();
     if (!st) return null;
     var el = ensureRumorModal();
     if (!el) return null;
+    el.onclick = function (e) { if (e && e.target === el) closeRumorBoard(); };
 
     var board = getSeasonalBoard(st);
     var seasonNames = ['春', '夏', '秋', '冬'];
@@ -3392,6 +3517,7 @@
               '<h2>' + evDone.icon + ' ' + escapeHtml(evDone.title) + '</h2>' +
               '<p class="rumor-sub">' + escapeHtml(evDone.locationLabel) + '</p>' +
             '</div>' +
+            '<button type="button" class="modal-close-x" id="rb-close-x" aria-label="关闭季度传闻板">×</button>' +
           '</div>' +
           '<div class="rumor-story-box">' +
             '<p class="rumor-epilogue">' + escapeHtml(resolvedOutcome.epilogue) + '</p>' +
@@ -3408,6 +3534,8 @@
       el.classList.remove('hidden');
       el.querySelector('#rb-back-board').onclick = function () { openRumorBoard(); };
       el.querySelector('#rb-close').onclick = function () { closeRumorBoard(); };
+      var closeX1 = el.querySelector('#rb-close-x');
+      if (closeX1) closeX1.onclick = function () { closeRumorBoard(); };
       return el;
     }
 
@@ -3419,7 +3547,7 @@
         return (
           '<button type="button" class="rumor-choice-btn' + (ch.requiresIcePalace ? ' palace' : '') + (gate.ok ? '' : ' disabled') + '" ' +
             (gate.ok ? 'data-enc-pick="' + idx + '"' : 'disabled') + '>' +
-            '<div class="rcb-main">' + escapeHtml(ch.label) + '</div>' +
+            '<div class="rcb-main">' + (ch.requiresIcePalace ? relIco('snowflake', 14) + ' ' : '') + escapeHtml(ch.label) + '</div>' +
             '<div class="rcb-meta">' +
               '<span class="rcb-cost">' + escapeHtml(ch.costBadge) + '</span>' +
               '<span class="rcb-reward">' + escapeHtml(gate.ok ? ch.rewardBadge : gate.reason) + '</span>' +
@@ -3435,13 +3563,18 @@
               '<span class="rumor-kicker">' + formatChainBadgeHTML(ev) + escapeHtml(ev.tag) + ' · ' + escapeHtml(ev.locationLabel) + '</span>' +
               '<h2>' + ev.icon + ' ' + escapeHtml(ev.title) + '</h2>' +
             '</div>' +
-            '<button type="button" class="tbtn ghost" id="rb-back-board" style="min-width:86px;padding:6px 14px">返回</button>' +
+            '<div class="rumor-head-actions">' +
+              '<button type="button" class="tbtn ghost rumor-head-btn" id="rb-back-board">返回</button>' +
+              '<button type="button" class="modal-close-x" id="rb-close-x" aria-label="关闭季度传闻板">×</button>' +
+            '</div>' +
           '</div>' +
           '<div class="rumor-story-box"><p class="rumor-intro">' + escapeHtml(introText) + '</p></div>' +
           '<div class="rumor-choices-col">' + choicesHtml + '</div>' +
         '</div>';
       el.classList.remove('hidden');
       el.querySelector('#rb-back-board').onclick = function () { openRumorBoard(); };
+      var closeX2 = el.querySelector('#rb-close-x');
+      if (closeX2) closeX2.onclick = function () { closeRumorBoard(); };
       el.querySelectorAll('[data-enc-pick]').forEach(function (btn) {
         btn.onclick = function () {
           var idx = Number(btn.getAttribute('data-enc-pick'));
@@ -3466,9 +3599,9 @@
       return (
         '<article class="rumor-offer-card' + (ev.chainId ? ' chain' : '') + (done ? ' done' : '') + '">' +
           '<div class="roc-top">' +
-            '<span class="roc-ico">' + ev.icon + '</span>' +
+            '<span class="roc-ico">' + relIco(ev.iconKey || 'star', 18) + '</span>' +
             '<div class="roc-info">' +
-              '<div class="roc-tag">' + formatChainBadgeHTML(ev) + escapeHtml(ev.tag) + (hasPalaceOpt && hasSkillSafe('ice_palace', st) ? ' · ❄️含冰宫洞察' : '') + '</div>' +
+              '<div class="roc-tag">' + renderEventTagsHTML(ev, st, hasPalaceOpt) + '</div>' +
               '<div class="roc-title">' + escapeHtml(ev.title) + '</div>' +
             '</div>' +
             (done ? '<span class="roc-done-pill">✓ 本季已历</span>' : '<button type="button" class="tbtn roc-go-btn" data-open-enc="' + ev.id + '">前往查探</button>') +
@@ -3483,16 +3616,17 @@
         '<div class="rumor-head">' +
           '<div>' +
             '<span class="rumor-kicker">' + (st.year || 0) + '年 ' + (seasonNames[st.season || 0] || '春') + '季 · ' + phaseTitle + '</span>' +
-            '<h2>🎴 季度奇遇与传闻板</h2>' +
+            '<h2>✦ 季度奇遇与传闻板</h2>' +
             '<p class="rumor-sub">每季随行踪刷新传闻。抉择伴随消耗与代价，冰晶宫殿有时能看穿隐秘伏笔。</p>' +
           '</div>' +
+          '<button type="button" class="modal-close-x" id="rb-close-x" aria-label="关闭季度传闻板">×</button>' +
         '</div>' +
-        '<div class="rumor-scroll">' + (offerCards || '<p style="opacity:.65">本季暂时风平浪静，推进到下个季度试试看吧。</p>') + '</div>' +
+        '<div class="rumor-scroll">' + (offerCards || '<p class="rumor-empty">本季暂时风平浪静，推进到下个季度试试看吧。</p>') + '</div>' +
         '<div class="end-btns">' +
           '<button type="button" class="tbtn ghost" id="rb-reroll" ' + (board.rerolled || st.st < 1 ? 'disabled' : '') + '>' +
-            (board.rerolled ? '本季已探听过新风声' : '🔄 另探风声（⚡1）') +
+            (board.rerolled ? '本季已探听过新风声' : '↻ 另探风声（体力 1）') +
           '</button>' +
-          '<button type="button" class="tbtn" id="rb-close">关闭</button>' +
+          '<button type="button" class="tbtn ghost" id="rb-close">关闭</button>' +
         '</div>' +
       '</div>';
     el.classList.remove('hidden');
@@ -3516,6 +3650,8 @@
       };
     }
     el.querySelector('#rb-close').onclick = function () { closeRumorBoard(); };
+    var closeX3 = el.querySelector('#rb-close-x');
+    if (closeX3) closeX3.onclick = function () { closeRumorBoard(); };
     return el;
   }
 

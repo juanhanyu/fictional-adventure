@@ -1,2 +1,8 @@
 node_modules/
 *.log
+__pycache__/
+*.py[cod]
+tools/art_pipeline/raw/
+tools/art_pipeline/prompts/
+*.tmp.png
+*.tmp

@@ -1,13 +1,13 @@
 'use strict';
-// jsdom 加载器：把 index.html + js/story.js + game.js 载入同一 window（共享同一 eval 作用域）
+// jsdom 加载器：以真实浏览器经典 <script> 方式把 index.html + js/story.js + js/story-vol3.js + game.js 载入同一 window
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 
 const ROOT = path.resolve(__dirname, '..');
-const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-const storyJs = fs.readFileSync(path.join(ROOT, 'js', 'story.js'), 'utf8');
-const gameJs = fs.readFileSync(path.join(ROOT, 'game.js'), 'utf8');
+const rawHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+// 移除外链 script 标签，改由下方按顺序注入内联经典脚本，保证顶层 const/let/function 进入全局词法环境
+const html = rawHtml.replace(/<script\b[^>]*\bsrc=[^>]*><\/script>/gi, '');
 
 const errors = [];
 const logs = [];
@@ -26,16 +26,29 @@ const dom = new JSDOM(html, {
 const win = dom.window;
 if (!win.AudioContext) {
   win.AudioContext = class {
-    constructor(){ this.currentTime = 0; this.destination = null; }
-    createOscillator(){ return { connect(){}, start(){}, stop(){}, frequency: { value: 0 } }; }
-    createGain(){ return { connect(){}, gain: { setValueAtTime(){}, exponentialRampToValueAtTime(){} } }; }
+    constructor(){ this.currentTime = 0; this.destination = null; this.state = 'running'; }
+    resume(){ return Promise.resolve(); }
+    createOscillator(){
+      return {
+        type: 'sine',
+        connect(){}, start(){}, stop(){},
+        frequency: { value: 0, setValueAtTime(){}, exponentialRampToValueAtTime(){}, linearRampToValueAtTime(){} }
+      };
+    }
+    createGain(){
+      return {
+        connect(){},
+        gain: { value: 0, setValueAtTime(){}, exponentialRampToValueAtTime(){}, linearRampToValueAtTime(){} }
+      };
+    }
   };
 }
 
-// 测试钩子（追加到合并脚本末尾，与 story.js/game.js 共享作用域）
+// 测试钩子（与 story*.js / game.js 共享全局经典脚本作用域）
 const hooks = `
 window.__CHARS=CHARS;
 window.__LOCS=LOCS;
+window.__EXITS=EXITS;
 window.__PORTRAIT_FILES=PORTRAIT_FILES;
 window.__CSS_CHARS=CSS_CHARS;
 window.__ALL_PICKS=ALL_PICKS;
@@ -58,7 +71,35 @@ window.__captureSysPopup=function(){ const orig=sysPopup; window.__capturedPopup
 window.__resetSysPopup=function(){ window.__capturedPopups=[]; };
 `;
 
-try { win.eval(storyJs + '\n' + gameJs + '\n' + hooks); }
-catch (e) { errors.push('[eval combined] ' + (e && e.stack || e)); }
+function injectClassicScript(code, label){
+  try {
+    const el = win.document.createElement('script');
+    el.textContent = code;
+    win.document.body.appendChild(el);
+  } catch (e) {
+    errors.push(`[script ${label}] ` + (e && e.stack || e));
+  }
+}
+
+const scriptFiles = [
+  'js/story.js',
+  'js/story-vol3.js',
+  'js/story-vol4.js',
+  'js/ai-personas.js',
+  'game.js',
+  'js/branching-director.js',
+  'js/combat-engine.js',
+  'js/ai-chat-panel.js',
+  'js/relics-and-events.js',
+  'js/ambient-fx.js',
+  'js/vn-ux.js',
+];
+for (const rel of scriptFiles) {
+  const abs = path.join(ROOT, rel);
+  if (fs.existsSync(abs)) {
+    injectClassicScript(fs.readFileSync(abs, 'utf8'), rel);
+  }
+}
+injectClassicScript(hooks, 'hooks');
 
 module.exports = { dom, win, errors, logs };

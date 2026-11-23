@@ -1,0 +1,4154 @@
+/* =========================================================================
+   《转生千金》Aether Prism OS · 蓝白冰晶魔导系统视觉体系
+   File: css/system-chronicle.css
+   美学坐标：Persona 3 Reload 电光钴蓝与斜切结构 × Arknights: Endfield 瓷白硬件与精密遥测
+            × Blue Archive 清透晴空层级 × Honkai: Star Rail 全息星棱雷达与塔罗殿堂
+   核心材质：
+     - 瓷白霜面 (#F8FBFF → #EFF5FD → #E4EEFA) + 深蓝宝墨 (#08142C / #1E3256)
+     - 电光钴蓝 (#1250E6 / #0A2E8A) + 冰川苍青 (#2BA3FF / #38BDF8 / #D9EEFF)
+     - 绛红警示印 (#C81E3C) + 剧场深蓝暗纱 (rgba(6,13,30,.86))
+   ========================================================================= */
+
+:root {
+  /* Porcelain Ice-White Grounds (token names preserved for test guards) */
+  --vellum-top: #F8FBFF;
+  --vellum-mid: #EFF5FD;
+  --vellum-base: #E4EEFA;
+  --vellum-edge: #D1E1F5;
+  --vellum-tint: rgba(18, 80, 230, 0.045);
+
+  /* Deep Sapphire-Ink Hierarchy */
+  --ink-deep: #08142C;
+  --ink-body: #1E3256;
+  --ink-muted: #506992;
+  --ink-rule: rgba(18, 80, 230, 0.16);
+  --ink-rule-strong: rgba(8, 20, 44, 0.24);
+
+  /* Electric Cobalt & Glacial Cyan Primaries */
+  --prussian: #1250E6;
+  --prussian-bright: #2BA3FF;
+  --prussian-wash: rgba(18, 80, 230, 0.08);
+  --cobalt-deep: #0A2E8A;
+  --cobalt-wash: rgba(18, 80, 230, 0.08);
+  --ice-cyan: #2BA3FF;
+  --ice-pale: #D9EEFF;
+  --sapphire-dark: #08142C;
+  --sapphire-mid: #0E2558;
+  --sapphire-abyss: #050D1E;
+
+  /* Crisp Accents (legacy --brass* and --star-gold aliases remapped to cobalt/ice-starlight) */
+  --vermilion: #C81E3C;
+  --vermilion-deep: #B01D38;
+  --brass: #1250E6;
+  --brass-foil: #38BDF8;
+  --brass-ink: #0D3B9E;
+  --brass-champagne: #BAE6FD;
+  --star-gold: #E0F2FE;
+
+  /* Cinema Veils & Motion */
+  --noir-veil: rgba(6, 13, 30, 0.86);
+  --noir-deep: rgba(4, 9, 22, 0.94);
+  --sc-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Browser Surface Polish: Selection & Focus Rings */
+#panel ::selection,
+#stats-overlay ::selection,
+#codex ::selection,
+#sys-popup ::selection,
+#pick-screen ::selection {
+  background: rgba(18, 80, 230, 0.22);
+  color: #08142C;
+}
+
+#panel :focus-visible,
+#stats-overlay :focus-visible,
+#codex :focus-visible,
+#sys-popup :focus-visible,
+#pick-screen :focus-visible {
+  outline: 2px solid #2BA3FF;
+  outline-offset: 2px;
+}
+
+/* =========================================================================
+   0. 关键帧动效
+   ========================================================================= */
+
+@keyframes scAstroRotate {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes scStarGlow {
+  0%, 100% {
+    box-shadow: 0 2px 10px rgba(56, 189, 248, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.82);
+  }
+  50% {
+    box-shadow: 0 2px 16px rgba(125, 211, 252, 0.88), 0 0 0 2px rgba(186, 230, 253, 0.9);
+  }
+}
+
+@keyframes scRadarUnfold {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes scDecreeReveal {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 12px)) scale(0.975);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* =========================================================================
+   1. 全局舞台去盒化改造：标题页 / HUD / 对话宽银幕 / 行动轨 / 地点签
+      （建立 Aether Prism OS 蓝白冰晶与电光钴蓝的电影感锐利建筑秩序）
+   ========================================================================= */
+
+/* ---- 1.1 标题页：无边框电影海报排印菜单 ---- */
+#title-screen .title-menu {
+  gap: 2px;
+  width: min(360px, 100%);
+}
+
+#title-screen .title-menu .tbtn.tbtn-editorial,
+#title-screen .title-menu .tbtn.tbtn-editorial.tbtn-lead,
+#title-screen .title-menu .tbtn.tbtn-editorial.ghost,
+#title-screen .title-menu .tbtn.tbtn-editorial.arena-btn {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  padding: 11px 8px 11px 18px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(56, 189, 248, 0.24);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: rgba(248, 251, 255, 0.94);
+  transition: transform 0.26s var(--sc-ease), color 0.22s ease, background 0.24s ease;
+}
+
+#title-screen .title-menu .tbtn.tbtn-editorial::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 26%;
+  bottom: 26%;
+  width: 2px;
+  background: rgba(56, 189, 248, 0.56);
+  box-shadow: none;
+  transition: top 0.24s var(--sc-ease), bottom 0.24s var(--sc-ease), width 0.24s var(--sc-ease), background 0.24s ease;
+}
+
+#title-screen .title-menu .tbtn.tbtn-editorial::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  top: auto;
+  height: 1.5px;
+  background: linear-gradient(90deg, #1250E6 0%, #38BDF8 64%, transparent 100%);
+  transform: scaleX(0);
+  transform-origin: left center;
+  opacity: 1;
+  transition: transform 0.34s var(--sc-ease);
+}
+
+#title-screen .title-menu .tbtn.tbtn-lead::before {
+  top: 14%;
+  bottom: 14%;
+  width: 3px;
+  background: linear-gradient(180deg, #7DD3FC 0%, #1250E6 100%);
+}
+
+#title-screen .title-menu .tbtn.tbtn-editorial:hover {
+  transform: translateX(10px);
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.16) 0%, rgba(18, 80, 230, 0.08) 55%, transparent 100%);
+  border-color: transparent;
+  box-shadow: none;
+  color: #F8FBFF;
+}
+
+#title-screen .title-menu .tbtn.tbtn-editorial:hover::before {
+  top: 8%;
+  bottom: 8%;
+  width: 3px;
+  background: linear-gradient(180deg, #F8FBFF 0%, #38BDF8 52%, #1250E6 100%);
+}
+
+#title-screen .title-menu .tbtn.tbtn-editorial:hover::after {
+  transform: scaleX(1);
+}
+
+#title-screen .title-menu .tbtn-ico {
+  color: #38BDF8;
+  opacity: 0.92;
+}
+
+#title-screen .title-menu .tbtn-text {
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#title-screen .title-menu .tbtn em,
+#title-screen #codex-count {
+  font-style: normal;
+  font-size: 10.5px;
+  padding: 0 6px;
+  border: 1px solid rgba(56, 189, 248, 0.48);
+  border-radius: 2px;
+  color: #7DD3FC;
+  background: rgba(8, 20, 44, 0.62);
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+#title-screen .title-menu .tbtn-en {
+  font-size: 9.5px;
+  letter-spacing: 0.26em;
+  color: rgba(125, 211, 252, 0.82);
+}
+
+#title-screen .corner-tool-btn {
+  border-radius: 0;
+  padding: 4px 2px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(56, 189, 248, 0.34);
+  color: rgba(248, 251, 255, 0.84);
+  backdrop-filter: none;
+}
+
+#title-screen .corner-tool-btn:hover {
+  background: transparent;
+  border-bottom-color: #7DD3FC;
+  color: #F8FBFF;
+}
+
+/* ---- 1.2 顶部 HUD：深蓝暗纱 × 冰川苍青结构轨 ---- */
+#hud {
+  padding: 10px 20px 6px;
+  background: linear-gradient(180deg, rgba(5, 13, 30, 0.62) 0%, transparent 100%);
+}
+
+#hud .hud-left {
+  position: relative;
+  width: 318px;
+  padding: 5px 28px 8px 6px;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1.5px solid rgba(56, 189, 248, 0.56);
+  background: linear-gradient(90deg, rgba(6, 16, 38, 0.84) 0%, rgba(8, 22, 52, 0.5) 74%, transparent 100%);
+  box-shadow: none;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+#hud .hud-left::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -3.5px;
+  width: 6px;
+  height: 6px;
+  transform: rotate(45deg);
+  background: #38BDF8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.72);
+}
+
+#hud #hud-face {
+  width: 54px;
+  height: 54px;
+  margin-bottom: -10px;
+  border: 1.5px solid #7DD3FC;
+  background: radial-gradient(circle at 38% 30%, #16336B, #061026);
+  box-shadow:
+    0 0 0 3px rgba(6, 14, 34, 0.78),
+    0 6px 18px rgba(4, 12, 32, 0.62);
+}
+
+#hud #hud-name {
+  color: #FFFFFF;
+  letter-spacing: 0.08em;
+}
+
+#hud #hud-age,
+#hud .hud-row2 {
+  color: rgba(217, 238, 255, 0.8);
+}
+
+#hud #hud-tier {
+  border-radius: 2px;
+  border: 1px solid rgba(56, 189, 248, 0.58);
+  background: rgba(18, 80, 230, 0.32);
+  color: #E0F2FE;
+  font-weight: 700;
+}
+
+#hud #hud-gold {
+  color: #DCEBFF;
+}
+
+#hud .hud-bars {
+  gap: 4px;
+}
+
+#hud .hud-bars .hb-lbl {
+  color: rgba(186, 230, 253, 0.84);
+}
+
+#hud .hud-bars .hb-val {
+  color: #F0F7FF;
+  font-variant-numeric: tabular-nums;
+}
+
+#hud .hud-bars .bar {
+  height: 4px;
+  border-radius: 0;
+  border: none;
+  background: rgba(217, 238, 255, 0.16);
+}
+
+#hud .hud-bars .bar i {
+  border-radius: 0;
+}
+
+#hud .hud-bars .bar.hp i {
+  background: linear-gradient(90deg, #B01D38, #F45B74);
+}
+
+#hud .hud-bars .bar.mp i {
+  background: linear-gradient(90deg, #1250E6, #38BDF8);
+}
+
+#hud .hud-bars .bar.st i {
+  background: linear-gradient(90deg, #0891B2, #22D3EE);
+}
+
+#hud .hud-right {
+  position: relative;
+  padding: 4px 6px 7px 20px;
+  gap: 4px;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1.5px solid rgba(56, 189, 248, 0.48);
+  background: linear-gradient(270deg, rgba(6, 16, 38, 0.82) 0%, rgba(8, 22, 52, 0.42) 76%, transparent 100%);
+  box-shadow: none;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+#hud .hud-right .chip {
+  border-radius: 2px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: rgba(232, 244, 255, 0.9);
+  box-shadow: none;
+  transition: transform 0.18s var(--sc-ease), background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+#hud .hud-right .chip:hover {
+  background: rgba(18, 80, 230, 0.34);
+  border-color: #38BDF8;
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+#hud .hud-right .chip.chip-ai {
+  background: rgba(18, 80, 230, 0.16);
+  border-color: rgba(56, 189, 248, 0.42);
+  color: #BAE6FD;
+  box-shadow: none;
+}
+
+#hud .hud-right .chip.chip-ai:hover {
+  background: #1250E6;
+  border-color: #7DD3FC;
+  color: #FFFFFF;
+}
+
+/* ---- 1.3 地点签 (#loc-bar)：蓝白冰晶建筑标牌 ---- */
+#loc-bar {
+  top: 12px;
+  left: 20px;
+  gap: 9px;
+  padding: 5px 28px 6px 12px;
+  border-radius: 0;
+  border: none;
+  border-left: 3px solid #F8FBFF;
+  border-bottom: 1.5px solid rgba(56, 189, 248, 0.52);
+  background: linear-gradient(94deg, rgba(6, 16, 38, 0.88) 0%, rgba(9, 24, 58, 0.54) 72%, transparent 100%);
+  box-shadow: none;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+#loc-bar .loc-crest {
+  color: #38BDF8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+#loc-bar #loc-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #FFFFFF;
+}
+
+#loc-bar .loc-emoji {
+  display: none;
+}
+
+#loc-bar .loc-area,
+#loc-bar .loc-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 1px 7px;
+  border-radius: 2px;
+  border: 1px solid rgba(56, 189, 248, 0.54);
+  color: #E0F2FE;
+  background: rgba(18, 80, 230, 0.34);
+}
+
+#loc-bar #loc-desc {
+  display: inline-flex;
+  align-items: center;
+  color: rgba(220, 235, 255, 0.8);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+}
+
+#loc-bar #loc-desc:not(:empty)::before {
+  content: '';
+  display: inline-block;
+  width: 1px;
+  height: 11px;
+  margin-right: 9px;
+  background: rgba(56, 189, 248, 0.52);
+  flex-shrink: 0;
+}
+
+/* ---- 1.4 宽银幕全幅开放对话带 (#text-box) + 瓷白钴蓝斜切说话人名条 ---- */
+#game-screen {
+  --dialog-gap: 0px;
+}
+
+#text-box {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: 1.5px solid rgba(56, 189, 248, 0.56);
+  border-bottom: 1px solid rgba(18, 80, 230, 0.32);
+  background: linear-gradient(180deg, rgba(6, 15, 36, 0.86) 0%, rgba(4, 10, 24, 0.95) 100%);
+  box-shadow: 0 -18px 46px rgba(3, 8, 22, 0.54);
+  backdrop-filter: blur(18px) saturate(1.1);
+  -webkit-backdrop-filter: blur(18px) saturate(1.1);
+  padding: 26px max(88px, calc((100% - 920px) / 2)) 16px max(48px, calc((100% - 920px) / 2));
+}
+
+#text-box.has-cameo {
+  padding-left: max(118px, calc((100% - 920px) / 2 + 70px));
+}
+
+body.ai-drawer-open #text-box {
+  padding-left: 42px;
+  padding-right: 84px;
+}
+
+body.ai-drawer-open #text-box.has-cameo {
+  padding-left: 112px;
+}
+
+#text-box .tb-corner {
+  display: none;
+}
+
+/* Persona 3 Reload × Blue Archive 斜切瓷白电光钴说话人铭牌 */
+#tb-speaker {
+  left: max(46px, calc((100% - 920px) / 2));
+  top: -19px;
+}
+
+body.ai-drawer-open #tb-speaker {
+  left: 40px;
+}
+
+#tb-speaker-img {
+  border-color: #38BDF8;
+  background: radial-gradient(circle at 45% 35%, #16336B, #061026);
+  box-shadow: 0 0 0 2px rgba(6, 14, 34, 0.85), 0 8px 20px rgba(4, 10, 26, 0.62);
+}
+
+#tb-speaker-name {
+  font-family: var(--serif);
+  font-size: 14.5px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: #08142C;
+  background: linear-gradient(135deg, #FFFFFF 0%, #EAF3FF 100%);
+  border: 1px solid #38BDF8;
+  border-left: 4px solid #1250E6;
+  padding: 5px 28px 5px 18px;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 100%, 0 100%);
+  box-shadow: 0 8px 24px rgba(4, 12, 32, 0.52);
+}
+
+#tb-speaker.is-mystery #tb-speaker-name {
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #0A2256 0%, #1250E6 100%);
+  border-color: #7DD3FC;
+  border-left-color: #FFFFFF;
+}
+
+#text {
+  color: #F4F8FF;
+}
+
+#text .sys { color: #7DD3FC; }
+#text .gold { color: #BAE6FD; }
+#text .ice { color: #93D5FF; }
+#text .em { color: #FB7185; }
+
+/* 对话框极简阅读控制（回看 / AUTO / SKIP / 设置） */
+#text-box .tb-backlog-btn {
+  top: 8px;
+  right: max(20px, calc((100% - 920px) / 2 - 42px));
+  padding: 2px 6px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  color: rgba(217, 238, 255, 0.72);
+  box-shadow: none;
+}
+
+#text-box .tb-backlog-btn:hover {
+  background: transparent;
+  border-bottom-color: #38BDF8;
+  color: #FFFFFF;
+}
+
+#text-box .vn-read-controls {
+  top: 7px;
+  right: max(96px, calc((100% - 920px) / 2 + 34px));
+  gap: 8px;
+}
+
+body.ai-drawer-open #text-box .tb-backlog-btn {
+  right: 16px;
+}
+
+body.ai-drawer-open #text-box .vn-read-controls {
+  right: 90px;
+}
+
+#text-box .vn-ctrl-btn {
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  color: rgba(217, 238, 255, 0.68);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  letter-spacing: 0.14em;
+}
+
+#text-box .vn-ctrl-btn:hover {
+  background: transparent;
+  border-bottom-color: #38BDF8;
+  color: #FFFFFF;
+}
+
+#text-box .vn-ctrl-btn.active {
+  background: transparent;
+  border-bottom: 1.5px solid #38BDF8;
+  color: #7DD3FC;
+  box-shadow: none;
+}
+
+/* 对话选项条：深蓝削边建筑条 → 悬停反转瓷白电光钴 */
+#choices {
+  margin-bottom: 10px;
+}
+
+#choices .choice {
+  border-radius: 2px;
+  background: linear-gradient(94deg, rgba(7, 18, 44, 0.92), rgba(5, 13, 30, 0.86));
+  border: 1px solid rgba(56, 189, 248, 0.52);
+  box-shadow: inset 0 1px 0 rgba(186, 230, 253, 0.16);
+  color: #F4F8FF;
+  transition: transform 0.2s var(--sc-ease), background 0.18s ease, color 0.16s ease, border-color 0.18s ease, box-shadow 0.2s ease;
+}
+
+#choices .choice:hover:not(:disabled) {
+  background: linear-gradient(94deg, #FFFFFF 0%, #EAF3FF 100%);
+  border-color: #1250E6;
+  color: #08142C;
+  transform: translateX(8px);
+  box-shadow: 0 10px 28px rgba(4, 12, 32, 0.56);
+}
+
+/* ---- 1.5 底部行动轨 (#action-bar)：深蓝精工窄栏 + 电光钴主推进键 ---- */
+#action-bar {
+  background: linear-gradient(180deg, rgba(6, 15, 36, 0.95), rgba(4, 9, 22, 0.98));
+  border-top: 1px solid rgba(56, 189, 248, 0.36);
+  padding: 8px 16px;
+  gap: 6px;
+}
+
+#action-bar .abtn {
+  border-radius: 2px;
+  padding: 7px 13px;
+  background: rgba(217, 238, 255, 0.05);
+  border: 1px solid rgba(125, 211, 252, 0.2);
+  color: #E8F2FF;
+  letter-spacing: 0.06em;
+  transition: transform 0.16s var(--sc-ease), background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+#action-bar .abtn:hover:not(:disabled) {
+  background: rgba(18, 80, 230, 0.32);
+  border-color: #38BDF8;
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+#action-bar .abtn.primary {
+  background: linear-gradient(135deg, #1D68FF 0%, #1250E6 100%);
+  border-color: #7DD3FC;
+  color: #FFFFFF;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(18, 80, 230, 0.42);
+}
+
+#action-bar .abtn.primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2B7BFF 0%, #165CF5 100%);
+  border-color: #FFFFFF;
+  color: #FFFFFF;
+}
+
+#action-bar .abtn small {
+  color: #7DD3FC;
+  opacity: 0.92;
+}
+
+#action-bar .abtn.primary small {
+  color: #D9EEFF;
+}
+
+/* 舞台热点同步蓝白化 */
+.hotspot {
+  border-radius: 2px;
+  background: rgba(6, 16, 38, 0.88);
+  border: 1px solid rgba(56, 189, 248, 0.62);
+  color: #F4F8FF;
+}
+
+.hotspot:hover {
+  background: #F8FBFF;
+  border-color: #1250E6;
+  color: #08142C;
+}
+
+.hotspot:hover .hs-cost {
+  color: #1250E6;
+}
+
+/* =========================================================================
+   2. Aether Prism OS 瓷白硬件与深蓝宝司令栏体系
+      (#panel / #stats-overlay / #codex / #help-screen / #map-overlay
+       / #backlog-overlay / #vn-* / .rumor-card)
+   ========================================================================= */
+
+#panel.overlay,
+#stats-overlay.overlay,
+#codex.overlay,
+#help-screen.overlay,
+#map-overlay.overlay,
+#backlog-overlay.overlay,
+#vn-backlog-modal.overlay,
+#vn-saveload-modal.overlay,
+#vn-chapters-modal.overlay,
+#vn-prefs-modal.overlay {
+  background: rgba(4, 10, 24, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* 主机箱外壳：Arknights: Endfield 瓷白霜面 (#F8FBFF) + 1px 钴蓝精工边框 */
+#panel .end-card,
+#stats-overlay .end-card,
+#codex .end-card,
+#help-screen .end-card,
+#map-overlay .end-card,
+#backlog-overlay .end-card,
+#vn-backlog-modal .end-card,
+#vn-saveload-modal .end-card,
+#vn-chapters-modal .end-card,
+#vn-prefs-modal .end-card,
+.rumor-card {
+  --ink: #08142C;
+  --paper: #08142C;
+  --gold: #1250E6;
+  --gold-bright: #0A2E8A;
+  --ice: #1250E6;
+  --ice-pale: #0D3B9E;
+  --rose: #C81E3C;
+  position: relative;
+  border-radius: 2px;
+  color: var(--ink-deep);
+  background-color: #F8FBFF;
+  background-image:
+    radial-gradient(ellipse at 92% 6%, rgba(43, 163, 255, 0.08), transparent 46%),
+    linear-gradient(176deg, #FFFFFF 0%, #F8FBFF 46%, #EFF5FD 100%);
+  border: 1px solid rgba(18, 80, 230, 0.36);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 28px 76px rgba(3, 10, 28, 0.72);
+}
+
+#panel .panel-card {
+  max-width: 920px;
+}
+
+#codex .modal-shell {
+  max-width: 940px;
+  background-color: #F5F9FF;
+  background-image: linear-gradient(176deg, #FAFCFF 0%, #F5F9FF 55%, #ECF3FC 100%);
+}
+
+#map-overlay .map-card {
+  max-width: 720px;
+}
+
+#backlog-overlay .backlog-card {
+  max-width: 760px;
+}
+
+/* 右侧极轻建筑编号水印（紧贴边缘，零干扰） */
+#panel .panel-card::after,
+#stats-overlay .stats-card::after,
+#codex .end-card::after {
+  content: 'AETHER PRISM OS · SYS-01';
+  position: absolute;
+  right: 7px;
+  top: 54%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: rgba(18, 80, 230, 0.2);
+  pointer-events: none;
+  z-index: 5;
+  white-space: nowrap;
+}
+
+#stats-overlay .stats-card::after {
+  content: 'ASTROLABE · FOUR-AXIS MATRIX';
+}
+
+#codex .end-card::after {
+  content: 'ARCHIVAL CODEX · EXHIBITION';
+}
+
+/* 定制钴蓝冰晶细滚动条 */
+#panel .modal-scroll,
+#stats-overlay .modal-scroll,
+#codex .modal-scroll,
+#help-screen .modal-scroll,
+#map-overlay .modal-scroll,
+#backlog-overlay .modal-scroll,
+#sys-popup,
+#sys-popup .sp-body,
+.vn-modal-scroll,
+.rumor-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(18, 80, 230, 0.45) rgba(8, 20, 44, 0.06);
+}
+
+#panel .modal-scroll::-webkit-scrollbar,
+#stats-overlay .modal-scroll::-webkit-scrollbar,
+#codex .modal-scroll::-webkit-scrollbar,
+#help-screen .modal-scroll::-webkit-scrollbar,
+#map-overlay .modal-scroll::-webkit-scrollbar,
+#backlog-overlay .modal-scroll::-webkit-scrollbar,
+#sys-popup::-webkit-scrollbar,
+#sys-popup .sp-body::-webkit-scrollbar,
+.vn-modal-scroll::-webkit-scrollbar,
+.rumor-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+#panel .modal-scroll::-webkit-scrollbar-track,
+#stats-overlay .modal-scroll::-webkit-scrollbar-track,
+#codex .modal-scroll::-webkit-scrollbar-track,
+#help-screen .modal-scroll::-webkit-scrollbar-track,
+#map-overlay .modal-scroll::-webkit-scrollbar-track,
+#backlog-overlay .modal-scroll::-webkit-scrollbar-track,
+#sys-popup::-webkit-scrollbar-track,
+#sys-popup .sp-body::-webkit-scrollbar-track,
+.vn-modal-scroll::-webkit-scrollbar-track,
+.rumor-scroll::-webkit-scrollbar-track {
+  background: rgba(8, 20, 44, 0.05);
+  border-radius: 2px;
+}
+
+#panel .modal-scroll::-webkit-scrollbar-thumb,
+#stats-overlay .modal-scroll::-webkit-scrollbar-thumb,
+#codex .modal-scroll::-webkit-scrollbar-thumb,
+#help-screen .modal-scroll::-webkit-scrollbar-thumb,
+#map-overlay .modal-scroll::-webkit-scrollbar-thumb,
+#backlog-overlay .modal-scroll::-webkit-scrollbar-thumb,
+#sys-popup::-webkit-scrollbar-thumb,
+#sys-popup .sp-body::-webkit-scrollbar-thumb,
+.vn-modal-scroll::-webkit-scrollbar-thumb,
+.rumor-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #2BA3FF, #1250E6);
+  border-radius: 2px;
+}
+
+#panel .modal-scroll::-webkit-scrollbar-thumb:hover,
+#stats-overlay .modal-scroll::-webkit-scrollbar-thumb:hover,
+#codex .modal-scroll::-webkit-scrollbar-thumb:hover,
+#sys-popup::-webkit-scrollbar-thumb:hover,
+.vn-modal-scroll::-webkit-scrollbar-thumb:hover,
+.rumor-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #1250E6, #0A2E8A);
+}
+
+/* 顶部司令栏 (.modal-head)：深蓝宝黑曜条 (#08142C) + 2px 电光钴蓝底边 */
+#panel .modal-head,
+#stats-overlay .modal-head,
+#codex .modal-head,
+#help-screen .modal-head,
+#map-overlay .modal-head,
+#backlog-overlay .modal-head,
+.vn-modal-head,
+.rumor-head {
+  padding: 13px 22px 12px;
+  background: linear-gradient(104deg, #061026 0%, #0A1D47 58%, #081533 100%);
+  border-bottom: 2px solid #1250E6;
+  box-shadow: inset 0 -1px 0 rgba(56, 189, 248, 0.35);
+}
+
+#panel .panel-modal-head {
+  padding: 10px 18px 0 18px;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+#panel .panel-modal-head .modal-close-x {
+  margin-bottom: 8px;
+}
+
+#panel .modal-scroll,
+#stats-overlay .modal-scroll,
+#codex .modal-scroll {
+  padding: 18px 26px 18px 22px;
+}
+
+#panel .modal-head h2,
+#stats-overlay .modal-head h2,
+#codex .modal-head h2,
+#help-screen .modal-head h2,
+#map-overlay .modal-head h2,
+#backlog-overlay .modal-head h2,
+.vn-modal-head h2,
+.rumor-head h2 {
+  color: #FFFFFF;
+  font-family: var(--serif);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+#panel .map-hint,
+#stats-overlay .stats-sub,
+#map-overlay .map-hint,
+#backlog-overlay .map-hint,
+.vn-modal-sub,
+.rumor-sub {
+  color: #A8CEFA;
+  opacity: 1;
+}
+
+#panel .modal-close-x,
+#stats-overlay .modal-close-x,
+#codex .modal-close-x,
+#help-screen .modal-close-x,
+#map-overlay .modal-close-x,
+#backlog-overlay .modal-close-x,
+.vn-modal-head .modal-close-x,
+.rumor-head .modal-close-x {
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(125, 211, 252, 0.36);
+  color: #E0F2FE;
+}
+
+#panel .modal-close-x:hover,
+#stats-overlay .modal-close-x:hover,
+#codex .modal-close-x:hover,
+#help-screen .modal-close-x:hover,
+#map-overlay .modal-close-x:hover,
+#backlog-overlay .modal-close-x:hover,
+.vn-modal-head .modal-close-x:hover,
+.rumor-head .modal-close-x:hover {
+  background: #C81E3C;
+  border-color: #C81E3C;
+  color: #FFFFFF;
+}
+
+#panel .modal-foot,
+#stats-overlay .modal-foot,
+#codex .modal-foot,
+#help-screen .modal-foot,
+#map-overlay .modal-foot,
+#backlog-overlay .modal-foot {
+  background: #EDF4FD;
+  border-top: 1px solid rgba(18, 80, 230, 0.16);
+  padding: 11px 22px 13px;
+}
+
+/* 面板内部按钮：深蓝宝实底 / 电光钴激活 / 线框副键 */
+#panel .tbtn,
+#stats-overlay .tbtn,
+#codex .tbtn,
+#help-screen .tbtn,
+#map-overlay .tbtn,
+#backlog-overlay .tbtn,
+.vn-modal-card .tbtn,
+.rumor-card .tbtn {
+  border-radius: 2px;
+  background: #08142C;
+  border: 1px solid #08142C;
+  color: #FFFFFF;
+  box-shadow: none;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+#panel .tbtn:hover:not(:disabled),
+#stats-overlay .tbtn:hover:not(:disabled),
+#codex .tbtn:hover:not(:disabled),
+#help-screen .tbtn:hover:not(:disabled),
+#map-overlay .tbtn:hover:not(:disabled),
+#backlog-overlay .tbtn:hover:not(:disabled),
+.vn-modal-card .tbtn:hover:not(:disabled),
+.rumor-card .tbtn:hover:not(:disabled) {
+  background: #1250E6;
+  border-color: #1250E6;
+  color: #FFFFFF;
+  box-shadow: 0 6px 18px rgba(18, 80, 230, 0.32);
+}
+
+#panel .tbtn.ghost,
+#stats-overlay .tbtn.ghost,
+#codex .tbtn.ghost,
+#help-screen .tbtn.ghost,
+#map-overlay .tbtn.ghost,
+#backlog-overlay .tbtn.ghost,
+.vn-modal-card .tbtn.ghost,
+.rumor-card .tbtn.ghost {
+  background: #FFFFFF;
+  border: 1px solid rgba(8, 20, 44, 0.28);
+  color: #08142C;
+}
+
+#panel .tbtn.ghost:hover:not(:disabled),
+#stats-overlay .tbtn.ghost:hover:not(:disabled),
+#codex .tbtn.ghost:hover:not(:disabled),
+#help-screen .tbtn.ghost:hover:not(:disabled),
+#map-overlay .tbtn.ghost:hover:not(:disabled),
+#backlog-overlay .tbtn.ghost:hover:not(:disabled),
+.vn-modal-card .tbtn.ghost:hover:not(:disabled),
+.rumor-card .tbtn.ghost:hover:not(:disabled) {
+  background: #E8F1FF;
+  border-color: #1250E6;
+  color: #1250E6;
+  box-shadow: none;
+}
+
+/* ---- 2.1 #panel 顶部深蓝宝导轨上的高反差切角页签 (#panel-tabs) ---- */
+#panel-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: flex-end;
+  flex: 1;
+  min-width: 0;
+}
+
+#panel-tabs .ptab {
+  position: relative;
+  padding: 7px 13px 8px;
+  border-radius: 2px 2px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: rgba(220, 235, 255, 0.78);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(125, 211, 252, 0.16);
+  border-bottom: none;
+  transition: transform 0.18s var(--sc-ease), background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+#panel-tabs .ptab:hover {
+  color: #FFFFFF;
+  background: rgba(43, 163, 255, 0.18);
+  border-color: rgba(125, 211, 252, 0.52);
+}
+
+#panel-tabs .ptab.on {
+  background: #F8FBFF;
+  border-color: #F8FBFF;
+  color: #08142C;
+  font-weight: 800;
+  padding: 8px 15px 9px;
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%);
+  box-shadow: 0 -2px 14px rgba(43, 163, 255, 0.22);
+}
+
+#panel-tabs .ptab.on::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #1250E6 0%, #38BDF8 100%);
+}
+
+/* ---- 2.2 #codex 瓷白画廊内的电光钴切角页签 (#codex-tabs) ---- */
+#codex-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(18, 80, 230, 0.16);
+}
+
+#codex-tabs .ptab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 2px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #1E3256;
+  background: #FFFFFF;
+  border: 1px solid rgba(18, 80, 230, 0.22);
+  transition: transform 0.16s var(--sc-ease), background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+#codex-tabs .ptab:hover {
+  color: #1250E6;
+  background: #EDF5FF;
+  border-color: #1250E6;
+  transform: translateY(-1px);
+}
+
+#codex-tabs .ptab.on {
+  background: linear-gradient(112deg, #0D3BB8 0%, #1250E6 65%, #1D68FF 100%);
+  border-color: #0A2E8A;
+  color: #FFFFFF;
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%);
+  box-shadow: 0 6px 16px rgba(18, 80, 230, 0.28);
+}
+
+#codex-tabs .ptab.on::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #7DD3FC;
+}
+
+#panel-body {
+  color: var(--ink-deep);
+}
+
+#panel-body > p {
+  color: #48638E;
+  opacity: 1 !important;
+  padding-top: 10px;
+  border-top: 1px solid rgba(18, 80, 230, 0.14);
+}
+
+/* =========================================================================
+   3. 主角系统面板 · Aether Prism OS (.sys-chronicle)
+      左栏：深蓝宝-电光钴立绘碑柱 (.sc-portrait-col)
+      右栏：瓷白硬件分段遥测 × 建筑级大字四维矩阵 (.sc-data-col)
+   ========================================================================= */
+
+.sys-chronicle {
+  position: relative;
+  display: grid;
+  grid-template-columns: 256px minmax(0, 1fr);
+  gap: 22px;
+  align-items: stretch;
+  font-family: var(--serif);
+  color: var(--ink-deep);
+  text-align: left;
+}
+
+/* ---- 左栏：深蓝宝-电光钴纵向身份碑柱 (.sc-portrait-col) ---- */
+.sc-portrait-col {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 11px;
+  padding: 14px 15px 15px;
+  border-radius: 2px;
+  color: #FFFFFF;
+  background:
+    radial-gradient(ellipse at 50% 16%, rgba(56, 189, 248, 0.22), transparent 58%),
+    linear-gradient(168deg, #081530 0%, #0E2558 56%, #071229 100%);
+  border: 1px solid rgba(56, 189, 248, 0.34);
+  box-shadow:
+    inset 0 1px 0 rgba(186, 230, 253, 0.24),
+    0 14px 32px rgba(8, 20, 44, 0.24);
+  overflow: hidden;
+}
+
+/* 碑柱顶部细冰蓝棱线 */
+.sc-portrait-col::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #1250E6 0%, #38BDF8 55%, #FFFFFF 100%);
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* 斜切冰蓝立绘光环视窗 (.sc-portrait-frame) */
+.sc-portrait-frame,
+.sc-portrait-stage,
+.sc-portrait-wrap {
+  position: relative;
+  width: 100%;
+  height: 228px;
+  border-radius: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='42' viewBox='0 0 48 42' fill='none'%3E%3Cpolygon points='24,1 46,11 46,31 24,41 2,31 2,11' stroke='%237DD3FC' stroke-opacity='0.09' stroke-width='0.9'/%3E%3C/svg%3E") center / 44px 38px repeat,
+    radial-gradient(circle at 50% 42%, rgba(56, 189, 248, 0.26) 0%, rgba(18, 80, 230, 0.16) 46%, rgba(5, 13, 30, 0.56) 100%);
+  border: 1px solid rgba(125, 211, 252, 0.32);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+
+.sc-portrait-frame::after {
+  content: '';
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #38BDF8 32%, #FFFFFF 50%, #38BDF8 68%, transparent);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.sc-astrolabe-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 210px;
+  height: 210px;
+  max-width: 96%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.46;
+  color: #38BDF8;
+  transform-origin: center center;
+  animation: scAstroRotate 72s linear infinite;
+}
+
+.sc-portrait-col > .sc-astrolabe-ring {
+  top: 124px;
+}
+
+.sc-portrait-img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 224px;
+  object-fit: cover;
+  object-position: top center;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 76%, rgba(0, 0, 0, 0.56) 90%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 76%, rgba(0, 0, 0, 0.56) 90%, transparent 100%);
+  filter: drop-shadow(0 8px 18px rgba(4, 12, 32, 0.55));
+  transition: transform 0.4s var(--sc-ease);
+}
+
+.sc-portrait-col:hover .sc-portrait-img {
+  transform: scale(1.025);
+}
+
+.sc-portrait-fallback,
+.sc-portrait-crest {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 170px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #7DD3FC;
+  font-size: 20px;
+  letter-spacing: 0.18em;
+}
+
+/* 身份铭牌 (.sc-name-plate) —— 深蓝宝底上 ≥10:1 纯白与苍青对比度 */
+.sc-name-plate {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 5px;
+  padding: 4px 2px 9px;
+  border-bottom: 1px solid rgba(125, 211, 252, 0.22);
+}
+
+.sc-name-plate h3,
+.sc-name-plate h4,
+.sc-name-title,
+.sc-display-name,
+.sc-name {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1.28;
+  color: #FFFFFF;
+}
+
+.sc-name-plate b {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #7DD3FC;
+}
+
+.sc-name-sub,
+.sc-alias,
+.sc-phase-sub {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #DCEBFF;
+}
+
+.sc-crest-row,
+.sc-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 2px;
+}
+
+/* 电光钴等级印章 (.sc-lv-badge) —— 精确保留 <b>等级</b> Lv.X */
+.sc-lv-badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 3px 11px;
+  border-radius: 2px;
+  background: linear-gradient(135deg, #165CF5 0%, #1250E6 100%);
+  border: 1px solid #7DD3FC;
+  color: #FFFFFF;
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  line-height: 1.45;
+  box-shadow: 0 4px 12px rgba(4, 12, 32, 0.34);
+}
+
+.sc-lv-badge b {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #BAE6FD;
+}
+
+/* 冰川苍青等阶印章 (.sc-tier-seal) */
+.sc-tier-seal,
+.sc-tier-badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 2px;
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(125, 211, 252, 0.68);
+  color: #FFFFFF;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.45;
+}
+
+.sc-tier-seal b,
+.sc-tier-badge b {
+  font-size: 10px;
+  color: #7DD3FC;
+}
+
+/* 冰蓝发光经验条 (.sc-exp-wrap) */
+.sc-exp-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 3px 0;
+}
+
+.sc-exp-head,
+.sc-exp-row,
+.sc-exp-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 11px;
+  color: #DCEBFF;
+  font-variant-numeric: tabular-nums;
+}
+
+.sc-exp-head b,
+.sc-exp-row b,
+.sc-exp-label b {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #7DD3FC;
+}
+
+.sc-exp-head > span:last-child,
+.sc-exp-frac,
+.sc-exp-val {
+  font-size: 11px;
+  font-weight: 800;
+  color: #FFFFFF;
+  font-variant-numeric: tabular-nums;
+}
+
+.sc-exp-track,
+.sc-exp-bar {
+  position: relative;
+  width: 100%;
+  height: 5px;
+  border-radius: 1px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.sc-exp-fill,
+.sc-exp-track > i,
+.sc-exp-bar > i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #1250E6 0%, #2BA3FF 58%, #BAE6FD 100%);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.55);
+  transition: width 0.45s var(--sc-ease);
+}
+
+/* 苍白星辉七星「勇者之赐」命盘 (.sc-constellation) */
+.sc-constellation {
+  margin-top: auto;
+  padding: 10px 8px 9px;
+  border-radius: 2px;
+  background: rgba(4, 12, 32, 0.42);
+  border: 1px solid rgba(125, 211, 252, 0.24);
+}
+
+.sc-const-head,
+.sc-constellation-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 9px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #DCEBFF;
+}
+
+.sc-const-head em,
+.sc-const-frac,
+.sc-const-count {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 900;
+  color: #7DD3FC;
+  font-variant-numeric: tabular-nums;
+}
+
+.sc-const-nodes,
+.sc-const-track,
+.sc-stars-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 5px;
+}
+
+.sc-const-nodes::before,
+.sc-const-track::before,
+.sc-stars-row::before {
+  content: '';
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  top: 50%;
+  height: 1px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, rgba(125, 211, 252, 0.2), rgba(186, 230, 253, 0.65) 50%, rgba(125, 211, 252, 0.2));
+  pointer-events: none;
+}
+
+.sc-star-node {
+  position: relative;
+  z-index: 1;
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  transform: rotate(45deg);
+  border-radius: 1px;
+  background: #0A1D47;
+  border: 1.25px solid rgba(125, 211, 252, 0.46);
+  transition: transform 0.24s ease, border-color 0.24s ease;
+}
+
+.sc-star-node::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: rgba(125, 211, 252, 0.14);
+}
+
+.sc-star-node.lit {
+  background: linear-gradient(135deg, #FFFFFF 0%, #7DD3FC 54%, #1250E6 100%);
+  border-color: #FFFFFF;
+  animation: scStarGlow 3.2s ease-in-out infinite;
+}
+
+.sc-star-node.lit::after {
+  background: #FFFFFF;
+}
+
+.sc-star-node.lit:nth-child(2n) { animation-delay: -1.1s; }
+.sc-star-node.lit:nth-child(3n) { animation-delay: -2.2s; }
+
+/* ---- 右栏：瓷白精密遥测面板 (.sc-data-col) ---- */
+.sc-data-col {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  min-width: 0;
+  padding: 2px 2px 0 0;
+}
+
+/* 3 条分段全幅生命/魔力/体力遥测轨 (.sc-vitals · 严格竖排，零文字撞轨) */
+.sc-vitals {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 2px 0 15px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid var(--ink-rule-strong);
+  box-shadow: none;
+}
+
+.sc-vital-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.sc-vital-head,
+.sc-vital-top,
+.sc-vital-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #08142C;
+  line-height: 1.3;
+}
+
+.sc-vital-lbl {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #08142C;
+  white-space: nowrap;
+}
+
+.sc-vital-head b,
+.sc-vital-top b,
+.sc-vital-meta b,
+.sc-vital-lbl b {
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.sc-vital-row.hp b { color: #B01D38; }
+.sc-vital-row.mp b { color: #1250E6; }
+.sc-vital-row.st b { color: #0E7490; }
+
+.sc-vital-val {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  color: #506992;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* 8px 分段刻度遥测槽 */
+.sc-vital-bar,
+.sc-vital-track {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  border-radius: 1px;
+  overflow: hidden;
+  background: #DCE8F8;
+  border: 1px solid rgba(18, 80, 230, 0.16);
+}
+
+.sc-vital-track::after,
+.sc-vital-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent calc(10% - 1.5px),
+    rgba(248, 251, 255, 0.78) calc(10% - 1.5px),
+    rgba(248, 251, 255, 0.78) 10%
+  );
+}
+
+.sc-vital-fill,
+.sc-vital-bar > i,
+.sc-vital-track > i {
+  position: relative;
+  z-index: 1;
+  display: block;
+  height: 100%;
+  border-radius: 0;
+  transition: width 0.45s var(--sc-ease);
+}
+
+.sc-vital-row.hp .sc-vital-fill,
+.sc-vital-row.hp .sc-vital-bar > i,
+.sc-vital-row.hp .sc-vital-track > i {
+  background: linear-gradient(90deg, #B01D38 0%, #C81E3C 62%, #F45B74 100%);
+}
+
+.sc-vital-row.mp .sc-vital-fill,
+.sc-vital-row.mp .sc-vital-bar > i,
+.sc-vital-row.mp .sc-vital-track > i {
+  background: linear-gradient(90deg, #0A2E8A 0%, #1250E6 52%, #38BDF8 100%);
+}
+
+.sc-vital-row.st .sc-vital-fill,
+.sc-vital-row.st .sc-vital-bar > i,
+.sc-vital-row.st .sc-vital-track > i {
+  background: linear-gradient(90deg, #0E7490 0%, #0891B2 54%, #22D3EE 100%);
+}
+
+/* 建筑十字细线 2×2 四维碑铭矩阵 (.sc-attr-matrix · 34px 巨幅深蓝宝数字，零俗套方框) */
+.sc-attr-matrix {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  background: #F8FBFF;
+  border-bottom: 1px solid var(--ink-rule);
+}
+
+.sc-attr-tile {
+  position: relative;
+  padding: 14px 16px 12px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1.04;
+  color: #08142C;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  transition: background 0.18s ease;
+}
+
+.sc-attr-tile:nth-child(odd) {
+  border-right: 1px solid var(--ink-rule);
+  padding-left: 6px;
+}
+
+.sc-attr-tile:nth-child(even) {
+  padding-left: 20px;
+}
+
+.sc-attr-tile:nth-child(-n + 2) {
+  border-bottom: 1px solid var(--ink-rule);
+}
+
+/* 分色顶部微刻度条 */
+.sc-attr-tile::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 6px;
+  width: 30px;
+  height: 2.5px;
+  background: #1250E6;
+}
+
+.sc-attr-tile:nth-child(even)::before {
+  left: 20px;
+}
+
+.sc-attr-tile.atk::before { background: #C81E3C; }
+.sc-attr-tile.mag::before { background: #1250E6; }
+.sc-attr-tile.pdef::before { background: #334E7B; }
+.sc-attr-tile.mdef::before { background: #0284C7; }
+
+/* 右上角精密直角 L 刻度角标 */
+.sc-attr-tile::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 8px;
+  height: 8px;
+  border-top: 1.5px solid rgba(18, 80, 230, 0.34);
+  border-right: 1.5px solid rgba(18, 80, 230, 0.34);
+  transition: border-color 0.2s ease, transform 0.2s var(--sc-ease);
+}
+
+.sc-attr-tile:hover {
+  background: rgba(18, 80, 230, 0.045);
+}
+
+.sc-attr-tile:hover::after {
+  border-color: #1250E6;
+  transform: translate(1px, -1px);
+}
+
+.sc-attr-tile b {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  line-height: 1.3;
+  color: #0D3B9E;
+}
+
+.sc-attr-tile.atk b { color: #B01D38; }
+.sc-attr-tile.mag b { color: #1250E6; }
+.sc-attr-tile.pdef b { color: #1E3256; }
+.sc-attr-tile.mdef b { color: #0369A1; }
+
+.sc-attr-val {
+  font-family: var(--serif);
+  font-size: 34px;
+  font-weight: 900;
+  color: #08142C;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.04;
+}
+
+.sc-attr-en,
+.sc-attr-sub {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #506992;
+}
+
+/* 2 列档案与元素亲和台账 (.sc-meta-grid) */
+.sc-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 22px;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.sc-meta-grid > div,
+.sc-meta-item,
+.sc-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 8px 4px;
+  border-bottom: 1px solid rgba(18, 80, 230, 0.12);
+  font-size: 13px;
+  font-weight: 700;
+  color: #08142C;
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.sc-meta-wide {
+  grid-column: 1 / -1;
+  border-bottom: none;
+}
+
+.sc-meta-grid > div > b,
+.sc-meta-item > b,
+.sc-meta-row > b {
+  margin-right: auto;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #506992;
+  flex-shrink: 0;
+}
+
+.sc-elem-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* 元素亲和钢印 (.sc-elem-pill · 禁止 ::before 双菱形重复) */
+.sc-elem-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.45;
+  color: #1250E6;
+  background: #E8F1FF;
+  border: 1px solid rgba(18, 80, 230, 0.42);
+  white-space: nowrap;
+}
+
+.sc-elem-pill::before {
+  content: none !important;
+  display: none !important;
+}
+
+.sc-elem-pill.ice,
+.sc-elem-pill[data-elem="ice"] {
+  color: #FFFFFF;
+  background: #1250E6;
+  border-color: #0A2E8A;
+}
+
+.sc-elem-pill.water,
+.sc-elem-pill[data-elem="water"] {
+  color: #0369A1;
+  background: #E0F2FE;
+  border-color: #38BDF8;
+}
+
+.sc-elem-pill.gold,
+.sc-elem-pill[data-elem="gold"] {
+  color: #0A2E8A;
+  background: #E8F1FF;
+  border-color: #1250E6;
+}
+
+/* 底部随身铭记与共鸣指令条 (.sc-relic-strip · 锐角冰蓝带 + 深蓝宝左脊) */
+.sc-relic-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding: 9px 12px;
+  border-radius: 0;
+  background: #EDF4FE;
+  border: 1px solid rgba(18, 80, 230, 0.2);
+  border-left: 3px solid #08142C;
+  font-size: 11.5px;
+  color: #1E3256;
+}
+
+.sc-relic-label,
+.sc-relic-head,
+.sc-relic-strip > b {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #08142C;
+  flex-shrink: 0;
+}
+
+.sc-relic-chip,
+.sc-relic-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 1px solid rgba(18, 80, 230, 0.28);
+  color: #08142C;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sc-synergy-pill,
+.sc-relic-synergy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 2px;
+  background: #1250E6;
+  border: 1px solid #0A2E8A;
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.sc-relic-empty {
+  font-size: 11.5px;
+  color: var(--ink-muted);
+}
+
+.sc-foot-note {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ink-rule);
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 14px;
+}
+
+/* 兼容旧版 .p-stat */
+#panel .p-stat,
+#sys-popup .p-stat {
+  gap: 0 20px;
+  color: var(--ink-deep);
+}
+
+#panel .p-stat > div,
+#sys-popup .p-stat > div {
+  padding: 6px 2px;
+  border-bottom: 1px solid rgba(18, 80, 230, 0.14);
+}
+
+#panel .p-stat b,
+#sys-popup .p-stat b {
+  color: #1250E6;
+  font-weight: 700;
+}
+
+/* 系统提示弹窗内单栏紧凑自适应 (#sys-popup .sys-chronicle) */
+#sys-popup .sys-chronicle {
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+#sys-popup .sc-portrait-col {
+  padding: 12px 14px;
+  gap: 8px;
+}
+
+#sys-popup .sc-portrait-frame,
+#sys-popup .sc-portrait-stage,
+#sys-popup .sc-portrait-wrap {
+  height: 124px;
+}
+
+#sys-popup .sc-portrait-img {
+  height: 120px;
+  max-width: 156px;
+  margin: 0 auto;
+}
+
+#sys-popup .sc-astrolabe-ring {
+  width: 124px;
+  height: 124px;
+}
+
+#sys-popup .sc-portrait-col > .sc-astrolabe-ring {
+  top: 66px;
+}
+
+#sys-popup .sc-name-plate h3,
+#sys-popup .sc-name-title,
+#sys-popup .sc-display-name,
+#sys-popup .sc-name {
+  font-size: 17px;
+}
+
+#sys-popup .sc-attr-tile {
+  padding: 10px 12px;
+  font-size: 24px;
+}
+
+#sys-popup .sc-attr-val {
+  font-size: 24px;
+}
+
+#sys-popup .sc-meta-grid > div,
+#sys-popup .sc-meta-item {
+  padding: 6px 2px;
+  font-size: 12px;
+}
+
+/* =========================================================================
+   4. 养成四维 · 分割式黑曜深蓝星棱雷达 × 瓷白课程遥测 (#stats-overlay)
+   ========================================================================= */
+
+#stats-overlay .stats-card {
+  max-width: 890px;
+  width: min(95vw, 890px);
+  max-height: min(88vh, 790px);
+}
+
+#stats-overlay .stats-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#stats-overlay .stats-seal {
+  border-radius: 2px;
+  background: rgba(18, 80, 230, 0.34);
+  border: 1px solid #38BDF8;
+  box-shadow: 0 4px 12px rgba(4, 12, 32, 0.35);
+}
+
+#stats-overlay .stats-title {
+  color: #FFFFFF;
+  letter-spacing: 0.14em;
+  text-shadow: none;
+}
+
+#stats-overlay .stats-hint {
+  margin-top: 12px;
+  font-size: 11.5px;
+  color: #506992;
+  opacity: 1;
+  text-align: center;
+}
+
+/* 剧烈明暗对冲双栏布局：左黑曜深蓝全息雷达舱 + 右瓷白细分与课程列 */
+.stats-split-layout {
+  display: grid;
+  grid-template-columns: 344px minmax(0, 1fr);
+  gap: 20px;
+  align-items: stretch;
+}
+
+/* 左舱：黑曜深蓝宝全息星棱雷达视口 (.stats-radar-stage) */
+.stats-radar-stage,
+.stats-radar-box {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  padding: 15px 14px 14px;
+  border-radius: 2px;
+  color: #FFFFFF;
+  background:
+    radial-gradient(circle at 50% 54%, rgba(43, 163, 255, 0.2) 0%, rgba(18, 80, 230, 0.1) 42%, transparent 72%),
+    linear-gradient(164deg, #071229 0%, #0D204A 54%, #060F24 100%);
+  border: 1px solid rgba(56, 189, 248, 0.36);
+  box-shadow:
+    inset 0 1px 0 rgba(186, 230, 253, 0.22),
+    0 14px 32px rgba(8, 20, 44, 0.26);
+  overflow: hidden;
+}
+
+.stats-radar-stage::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #1250E6 0%, #38BDF8 60%, #FFFFFF 100%);
+}
+
+/* 左舱顶部主角微像与综合潜能读数条 */
+.stats-id-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(125, 211, 252, 0.22);
+}
+
+.stats-id-avatar {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 2px;
+  border: 1.5px solid #38BDF8;
+  background: #0A1D47;
+  display: grid;
+  place-items: center;
+  color: #7DD3FC;
+  font-size: 16px;
+}
+
+.stats-id-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+}
+
+.stats-id-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.stats-id-name {
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: #FFFFFF;
+  line-height: 1.25;
+}
+
+.stats-id-sub {
+  font-size: 11px;
+  color: #BAE6FD;
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+}
+
+.stats-id-score {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 4px 9px;
+  border-radius: 2px;
+  background: rgba(18, 80, 230, 0.32);
+  border: 1px solid rgba(125, 211, 252, 0.44);
+}
+
+.stats-id-score span {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: #BAE6FD;
+}
+
+.stats-id-score b {
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.1;
+  color: #FFFFFF;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-radar-viewport {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0 4px;
+}
+
+.stats-radar-svg {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 308px);
+  height: auto;
+  max-height: 256px;
+  display: block;
+  overflow: visible;
+}
+
+.stats-radar-svg .radar-chamber-glow {
+  opacity: 0.92;
+  filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.26));
+  pointer-events: none;
+}
+
+.stats-radar-svg .radar-chamber-glow:not([fill]) {
+  fill: rgba(18, 80, 230, 0.14);
+  stroke: rgba(56, 189, 248, 0.28);
+  stroke-width: 1;
+}
+
+.stats-radar-svg .radar-orbit {
+  fill: none;
+  stroke: rgba(125, 211, 252, 0.24);
+  stroke-width: 0.9;
+  stroke-dasharray: 3 6;
+}
+
+.stats-radar-svg .radar-tick {
+  stroke: rgba(125, 211, 252, 0.58);
+  stroke-width: 1;
+  stroke-linecap: square;
+  pointer-events: none;
+}
+
+.stats-radar-svg .radar-ring,
+.stats-radar-svg .radar-grid,
+.stats-radar-svg .radar-web {
+  fill: none;
+  stroke: rgba(125, 211, 252, 0.22);
+  stroke-width: 1;
+}
+
+.stats-radar-svg .radar-outer-ring {
+  fill: rgba(18, 80, 230, 0.08);
+  stroke: rgba(56, 189, 248, 0.66);
+  stroke-width: 1.25;
+}
+
+.stats-radar-svg .radar-axis {
+  stroke: rgba(125, 211, 252, 0.36);
+  stroke-width: 1;
+}
+
+.stats-radar-svg .radar-axis-diag {
+  stroke: rgba(125, 211, 252, 0.14);
+  stroke-width: 0.85;
+  stroke-dasharray: 2 4;
+}
+
+.stats-radar-svg .radar-poly,
+.stats-radar-svg .radar-area,
+.stats-radar-svg .radar-fill {
+  fill: url(#prismRadarFill);
+  stroke: #38BDF8;
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.52));
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: scRadarUnfold 0.55s var(--sc-ease) both;
+}
+
+.stats-radar-svg .radar-node-halo {
+  fill: rgba(56, 189, 248, 0.32);
+  stroke: rgba(125, 211, 252, 0.72);
+  stroke-width: 0.9;
+}
+
+.stats-radar-svg .radar-dot,
+.stats-radar-svg .radar-node {
+  fill: #FFFFFF;
+  stroke: #38BDF8;
+  stroke-width: 1.5;
+}
+
+.stats-radar-svg .radar-node-core {
+  fill: #FFFFFF;
+  stroke: none;
+  filter: drop-shadow(0 0 5px rgba(186, 230, 253, 0.95));
+  pointer-events: none;
+}
+
+.stats-radar-svg text,
+.stats-radar-svg .radar-label,
+.stats-radar-svg .radar-lbl {
+  font-family: var(--serif);
+  fill: #FFFFFF;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.stats-radar-svg .radar-val,
+.stats-radar-svg .radar-num {
+  fill: #7DD3FC;
+  font-size: 12px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-radar-caption,
+.stats-radar-total {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(125, 211, 252, 0.2);
+  text-align: center;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  color: #93C5FD;
+  text-transform: uppercase;
+}
+
+/* 右列：瓷白四维遥测分解 + 课程进阶芯片 (.stats-detail-col) */
+.stats-detail-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+}
+
+.stats-rune-grid,
+#stats-body .stat-orb {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  background: #F8FBFF;
+  border-top: 1px solid var(--ink-rule);
+  border-bottom: 1px solid var(--ink-rule);
+}
+
+.stats-rune-card,
+#stats-body .stat-item {
+  position: relative;
+  padding: 14px 16px 13px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  transition: background 0.18s ease;
+}
+
+.stats-rune-card:nth-child(odd),
+#stats-body .stat-item:nth-child(odd) {
+  border-right: 1px solid var(--ink-rule);
+  padding-left: 6px;
+}
+
+.stats-rune-card:nth-child(even),
+#stats-body .stat-item:nth-child(even) {
+  padding-left: 18px;
+}
+
+.stats-rune-card:nth-child(-n + 2),
+#stats-body .stat-item:nth-child(-n + 2) {
+  border-bottom: 1px solid var(--ink-rule);
+}
+
+.stats-rune-card::before,
+#stats-body .stat-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 6px;
+  width: 34px;
+  height: 2.5px;
+  background: #1250E6;
+}
+
+.stats-rune-card:nth-child(even)::before,
+#stats-body .stat-item:nth-child(even)::before {
+  left: 18px;
+}
+
+.stats-rune-card.body::before,
+#stats-body .stat-item.body::before { background: #C81E3C; }
+.stats-rune-card.mind::before,
+#stats-body .stat-item.mind::before { background: #1250E6; }
+.stats-rune-card.mana::before,
+#stats-body .stat-item.mana::before { background: #0284C7; }
+.stats-rune-card.charm::before,
+#stats-body .stat-item.charm::before { background: #0A2E8A; }
+
+.stats-rune-card:hover,
+#stats-body .stat-item:hover {
+  background: rgba(18, 80, 230, 0.045);
+}
+
+.stats-rune-card .sr-head,
+.stats-rune-card .rune-head,
+.stats-rune-card .si-top,
+#stats-body .stat-item .si-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.stats-rune-card .sr-name,
+.stats-rune-card .rune-name,
+.stats-rune-card .si-name,
+#stats-body .stat-item .si-name {
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #08142C;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.stats-rune-card .si-name small,
+.stats-rune-card .sr-en,
+.stats-rune-card .rune-en {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #506992;
+}
+
+.stats-rune-card .sr-val,
+.stats-rune-card .rune-val,
+.stats-rune-card .si-val,
+#stats-body .stat-item .si-val {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+  color: #08142C;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-rune-card.body .si-val { color: #B01D38; }
+.stats-rune-card.mind .si-val { color: #1250E6; }
+.stats-rune-card.mana .si-val { color: #0369A1; }
+.stats-rune-card.charm .si-val { color: #0A2E8A; }
+
+.stats-rune-card .sr-bar,
+.stats-rune-card .rune-bar,
+.stats-rune-card .si-bar,
+#stats-body .stat-item .si-bar {
+  position: relative;
+  height: 6px;
+  border-radius: 1px;
+  background: #DCE8F8;
+  overflow: hidden;
+}
+
+.stats-rune-card .si-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent calc(20% - 1.5px),
+    rgba(248, 251, 255, 0.78) calc(20% - 1.5px),
+    rgba(248, 251, 255, 0.78) 20%
+  );
+}
+
+.stats-rune-card .sr-bar > i,
+.stats-rune-card .rune-bar > i,
+.stats-rune-card .si-bar > i,
+#stats-body .stat-item .si-bar > i {
+  position: relative;
+  z-index: 1;
+  display: block;
+  height: 100%;
+  border-radius: 0;
+  transition: width 0.5s var(--sc-ease);
+}
+
+.stats-rune-card.body .si-bar > i {
+  background: linear-gradient(90deg, #B01D38, #F45B74);
+}
+.stats-rune-card.mind .si-bar > i {
+  background: linear-gradient(90deg, #0A2E8A, #1250E6, #38BDF8);
+}
+.stats-rune-card.mana .si-bar > i {
+  background: linear-gradient(90deg, #0369A1, #2BA3FF, #7DD3FC);
+}
+.stats-rune-card.charm .si-bar > i {
+  background: linear-gradient(90deg, #08142C, #1D4ED8, #60A5FA);
+}
+
+.stats-rune-card .sr-tip,
+.stats-rune-card .rune-tip,
+.stats-rune-card .si-tip,
+#stats-body .stat-item > div:last-child {
+  margin-top: 8px;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: #48638E;
+  opacity: 1 !important;
+}
+
+/* 课程进阶带 (.stats-course-ribbon · 深蓝宝边框中文课程芯片) */
+.stats-course-ribbon,
+#stats-body .stat-courses {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px 14px;
+  border-radius: 2px;
+  background: #EEF4FD;
+  border: 1px solid rgba(18, 80, 230, 0.22);
+  border-top: 2.5px solid #08142C;
+  color: #1E3256;
+  opacity: 1;
+}
+
+.stats-course-ribbon > b,
+.stats-course-title,
+.scr-title {
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #08142C;
+  flex-shrink: 0;
+}
+
+.stats-course-list,
+.scr-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.stats-course-pill,
+.scr-pill,
+.course-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 5px 4px 10px;
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 1.25px solid #08142C;
+  font-size: 12px;
+  font-weight: 700;
+  color: #08142C;
+  box-shadow: 0 2px 6px rgba(8, 20, 44, 0.08);
+}
+
+.stats-course-pill em,
+.scr-pill em,
+.scr-lv {
+  font-style: normal;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: #1250E6;
+  color: #FFFFFF;
+  font-variant-numeric: tabular-nums;
+}
+
+.scr-empty {
+  font-size: 12px;
+  color: #506992;
+}
+
+/* =========================================================================
+   5. 星棱塔罗圣殿「勇者之赐」(#pick-screen)
+      深冰蓝星穹殿堂 × 4+3 居中对称塔罗牌阵 × 反转皇家钴蓝天命卡
+   ========================================================================= */
+
+#pick-screen,
+#pick-screen.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 62;
+  padding: 20px 24px;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse at 50% 18%, rgba(43, 163, 255, 0.2) 0%, transparent 48%),
+    radial-gradient(ellipse at 50% 34%, #0E2558 0%, #0B1E46 42%, #050D1E 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* 缓旋几何冰晶星环水印 */
+#pick-screen::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(92vw, 900px);
+  height: min(92vw, 900px);
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.24;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400' fill='none'%3E%3Ccircle cx='200' cy='200' r='190' stroke='%2338BDF8' stroke-opacity='0.65' stroke-width='1' stroke-dasharray='5 7'/%3E%3Ccircle cx='200' cy='200' r='160' stroke='%23BAE6FD' stroke-opacity='0.48' stroke-width='1.1'/%3E%3Ccircle cx='200' cy='200' r='124' stroke='%2338BDF8' stroke-opacity='0.36' stroke-width='0.9' stroke-dasharray='14 6'/%3E%3Cpolygon points='200,18 228,172 382,200 228,228 200,382 172,228 18,200 172,172' stroke='%23BAE6FD' stroke-opacity='0.44' stroke-width='1.1'/%3E%3Cpolygon points='200,52 348,200 200,348 52,200' stroke='%2338BDF8' stroke-opacity='0.36' stroke-width='1'/%3E%3Cpolygon points='200,36 342,118 342,282 200,364 58,282 58,118' stroke='%23FFFFFF' stroke-opacity='0.22' stroke-width='0.9'/%3E%3C/svg%3E") center / contain no-repeat;
+  animation: scAstroRotate 108s linear infinite;
+}
+
+.pick-wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 1160px;
+  width: 100%;
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.pick-title {
+  font-family: var(--brush);
+  font-size: clamp(38px, 4.4vw, 54px);
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  line-height: 1.16;
+  margin-bottom: 8px;
+  color: #FFFFFF;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  text-shadow: 0 4px 26px rgba(43, 163, 255, 0.52);
+  filter: none;
+}
+
+.pick-sub {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  color: #DCEBFF;
+  opacity: 1;
+  margin-bottom: 20px;
+}
+
+.pick-sub::before,
+.pick-sub::after {
+  content: '';
+  width: clamp(28px, 6vw, 82px);
+  height: 1px;
+  flex-shrink: 0;
+  background: linear-gradient(90deg, transparent, #38BDF8, transparent);
+}
+
+/* 4-上 + 3-居中下 完美对称塔罗展阵 */
+#pick-grid {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 15px;
+  max-height: calc(100vh - 168px);
+  overflow-y: auto;
+  padding: 12px 10px 18px;
+  counter-reset: tarot;
+  perspective: 1100px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.55) rgba(5, 13, 30, 0.72);
+}
+
+#pick-grid::-webkit-scrollbar { width: 6px; }
+#pick-grid::-webkit-scrollbar-track { background: rgba(5, 13, 30, 0.72); }
+#pick-grid::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.55); border-radius: 2px; }
+
+/* 标准卡：瓷白冰晶塔罗石牌 (.pick-card) */
+.pick-card {
+  position: relative;
+  counter-increment: tarot;
+  flex: 0 0 calc((100% - 45px) / 4);
+  min-width: 215px;
+  max-width: 274px;
+  min-height: 248px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 20px 17px 16px;
+  border-radius: 3px;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  color: #08142C;
+  background:
+    radial-gradient(ellipse at 50% 0%, #FFFFFF, transparent 58%),
+    linear-gradient(172deg, #FFFFFF 0%, #F8FBFF 58%, #EBF3FE 100%);
+  border: 1.5px solid #1250E6;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 18px 38px rgba(3, 10, 28, 0.66);
+  transition:
+    transform 0.28s var(--sc-ease),
+    box-shadow 0.28s ease,
+    border-color 0.22s ease;
+}
+
+/* 削角钴蓝晶框 */
+.pick-card::before {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  pointer-events: none;
+  z-index: 1;
+  border: 1px solid rgba(18, 80, 230, 0.28);
+  clip-path: polygon(
+    8px 0, calc(100% - 8px) 0,
+    100% 8px, 100% calc(100% - 8px),
+    calc(100% - 8px) 100%, 8px 100%,
+    0 calc(100% - 8px), 0 8px
+  );
+  background:
+    linear-gradient(135deg, rgba(18, 80, 230, 0.28) 0 6px, transparent 6px),
+    linear-gradient(225deg, rgba(18, 80, 230, 0.28) 0 6px, transparent 6px),
+    linear-gradient(315deg, rgba(18, 80, 230, 0.28) 0 6px, transparent 6px),
+    linear-gradient(45deg, rgba(18, 80, 230, 0.28) 0 6px, transparent 6px);
+}
+
+/* 悬停冰棱折射流光 */
+.pick-card::after {
+  content: '';
+  position: absolute;
+  inset: -34% -84%;
+  background: linear-gradient(
+    118deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.7) 49%,
+    rgba(56, 189, 248, 0.3) 52%,
+    transparent 60%
+  );
+  transform: translateX(-76%);
+  transition: transform 0.6s var(--sc-ease);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.pick-card:hover {
+  transform: translateY(-9px);
+  border-color: #38BDF8;
+  box-shadow:
+    0 26px 52px rgba(3, 10, 28, 0.78),
+    0 0 0 1px rgba(125, 211, 252, 0.8),
+    0 12px 32px rgba(43, 163, 255, 0.32);
+}
+
+.pick-card:hover::after {
+  transform: translateX(76%);
+}
+
+/* 右上角罗马序码 (II–VII) */
+.pick-card .pick-roman {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  left: auto;
+  z-index: 3;
+  font-family: var(--serif);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #1250E6;
+}
+
+/* 顶部几何冰棱纹章 (.pick-sigil) */
+.pick-sigil {
+  position: relative;
+  z-index: 3;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 12px;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #EAF2FF;
+  border: 1px solid rgba(18, 80, 230, 0.44);
+  color: #1250E6;
+  transition: transform 0.24s var(--sc-ease), background 0.2s ease, color 0.2s ease;
+}
+
+.pick-sigil svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.pick-card:hover .pick-sigil {
+  transform: scale(1.06);
+  background: #1250E6;
+  border-color: #1250E6;
+  color: #FFFFFF;
+}
+
+.pick-card .tag {
+  position: relative;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  padding: 2px 8px;
+  border-radius: 2px;
+  background: #E8F1FF;
+  border: 1px solid rgba(18, 80, 230, 0.34);
+  color: #0A2E8A;
+  margin-bottom: 9px;
+}
+
+.pick-card h3 {
+  position: relative;
+  z-index: 3;
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  line-height: 1.32;
+  color: #08142C;
+  margin-bottom: 7px;
+}
+
+.pick-card p {
+  position: relative;
+  z-index: 3;
+  font-size: 12.5px;
+  line-height: 1.64;
+  color: #1E3256;
+  opacity: 1;
+  margin: 0;
+}
+
+.pick-card .pick-foot {
+  position: relative;
+  z-index: 3;
+  margin-top: auto;
+  padding-top: 11px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(18, 80, 230, 0.16);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: #1250E6;
+}
+
+/* 天命核心赐福卡：反转皇家电光钴全息棱卡 (.pick-card.pick-star —— 如「冰晶宫殿」) */
+.pick-card.pick-star {
+  color: #FFFFFF;
+  background:
+    radial-gradient(circle at 26% 14%, rgba(56, 189, 248, 0.36), transparent 54%),
+    linear-gradient(155deg, #09205E 0%, #1250E6 55%, #071742 100%);
+  border: 2px solid #7DD3FC;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    0 22px 48px rgba(3, 12, 38, 0.78),
+    0 10px 30px rgba(18, 80, 230, 0.44);
+}
+
+.pick-card.pick-star::before {
+  border-color: rgba(125, 211, 252, 0.62);
+  background:
+    linear-gradient(135deg, rgba(186, 230, 253, 0.55) 0 7px, transparent 7px),
+    linear-gradient(225deg, rgba(186, 230, 253, 0.55) 0 7px, transparent 7px),
+    linear-gradient(315deg, rgba(186, 230, 253, 0.55) 0 7px, transparent 7px),
+    linear-gradient(45deg, rgba(186, 230, 253, 0.55) 0 7px, transparent 7px);
+}
+
+.pick-card.pick-star:hover {
+  border-color: #FFFFFF;
+  box-shadow:
+    0 28px 56px rgba(3, 12, 38, 0.84),
+    0 0 0 1px #FFFFFF,
+    0 14px 38px rgba(56, 189, 248, 0.45);
+}
+
+.pick-card.pick-star .pick-sigil {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1.5px solid #7DD3FC;
+  color: #FFFFFF;
+}
+
+.pick-card.pick-star:hover .pick-sigil {
+  background: #FFFFFF;
+  border-color: #FFFFFF;
+  color: #1250E6;
+}
+
+.pick-card.pick-star .tag {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(186, 230, 253, 0.65);
+  color: #FFFFFF;
+}
+
+.pick-card.pick-star h3 {
+  color: #FFFFFF;
+}
+
+.pick-card.pick-star p {
+  color: rgba(235, 245, 255, 0.94);
+}
+
+.pick-card.pick-star .pick-foot {
+  border-top-color: rgba(186, 230, 253, 0.34);
+  color: #BAE6FD;
+}
+
+/* 启示徽章固定右上，罗马数字 I 居其正下方，与左侧纹章零重叠 */
+.pick-star-seal,
+.pick-star-badge {
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #FFFFFF;
+  background: rgba(7, 23, 66, 0.82);
+  border: 1.25px solid #7DD3FC;
+  box-shadow: 0 4px 12px rgba(4, 12, 32, 0.46);
+}
+
+.pick-card.pick-star .pick-roman {
+  top: 44px;
+  right: 16px;
+  left: auto;
+  color: #BAE6FD;
+}
+
+/* =========================================================================
+   6. Aether Prism OS 系统提示弹窗 (#sys-popup)
+      瓷白硬件主体 + 电光钴切角顶栏 + 几何冰晶纹章（彻底移除旧棕色火漆印）
+   ========================================================================= */
+
+#sys-popup {
+  --ink: #08142C;
+  --paper: #08142C;
+  --gold: #1250E6;
+  --gold-bright: #0A2E8A;
+  --ice: #1250E6;
+  --ice-pale: #0D3B9E;
+  --rose: #C81E3C;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 90;
+  max-width: 530px;
+  width: min(92vw, 530px);
+  max-height: 86vh;
+  overflow-y: auto;
+  padding: 0 0 22px;
+  border-radius: 2px;
+  color: #08142C;
+  font-family: var(--serif);
+  font-size: 13.5px;
+  line-height: 1.75;
+  background-color: #F8FBFF;
+  background-image: linear-gradient(176deg, #FFFFFF 0%, #F8FBFF 55%, #EEF4FC 100%);
+  border: 1.5px solid #1250E6;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 28px 76px rgba(3, 10, 28, 0.76);
+  animation: scDecreeReveal 0.26s var(--sc-ease) both;
+}
+
+#sys-popup::before,
+#sys-popup::after {
+  content: none;
+  display: none;
+}
+
+#sys-popup:has(.sys-chronicle) {
+  max-width: 580px;
+  width: min(94vw, 580px);
+}
+
+#sys-popup .sp-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 22px 14px;
+  background: linear-gradient(112deg, #09205E 0%, #1250E6 62%, #1D68FF 100%);
+  color: #FFFFFF;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 14px) 100%, 0 100%);
+  margin-bottom: 0;
+}
+
+#sys-popup .sp-head-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+#sys-popup .sp-crest {
+  color: #FFFFFF;
+  flex-shrink: 0;
+  display: block;
+}
+
+#sys-popup .sp-code {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: #BAE6FD;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+#sys-popup h3 {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-align: left;
+  color: #FFFFFF;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+#sys-popup .sp-rule {
+  height: 2px;
+  margin: 0;
+  background: linear-gradient(90deg, #38BDF8 0%, #1250E6 55%, transparent 100%);
+}
+
+#sys-popup .sp-body {
+  padding: 18px 24px 4px;
+  color: #1E3256;
+  font-size: 13.5px;
+  line-height: 1.75;
+}
+
+#sys-popup b {
+  color: #1250E6;
+  font-weight: 800;
+}
+
+.sp-narrative-meta {
+  margin-bottom: 12px;
+  padding: 9px 12px;
+  background: #EDF4FE;
+  border-left: 3px solid #1250E6;
+  border-bottom: 1px solid rgba(18, 80, 230, 0.16);
+  font-size: 12.5px;
+  color: #1E3256;
+}
+
+#sys-popup .sp-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-width: 152px;
+  margin: 18px auto 0;
+  padding: 9px 34px;
+  border-radius: 2px;
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: #FFFFFF;
+  background: #1250E6;
+  border: 1px solid #0A2E8A;
+  box-shadow: 0 6px 18px rgba(18, 80, 230, 0.32);
+  transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+}
+
+#sys-popup .sp-close:hover {
+  transform: translateY(-1px);
+  background: #0A2E8A;
+  border-color: #08142C;
+  color: #FFFFFF;
+}
+
+/* =========================================================================
+   7. 全页签与子模块蓝白瓷面统一适配
+      （技能 / 任务 / 人物 / 背包 / 成就 / 档案 / 设置 / 命运暗流
+       / 随身铭记共鸣高优先级覆写 / 典藏图鉴馆 / 舆图 / 回看 / 奇遇）
+   ========================================================================= */
+
+/* ---- 7.1 综合面板：技能 / 任务 / 人物 / 背包 / 成就 / 档案 / 设置 ---- */
+#panel .p-skill {
+  padding: 10px 13px;
+  border-radius: 0;
+  background: #FFFFFF;
+  border: 1px solid rgba(18, 80, 230, 0.14);
+  border-left: 3px solid #1250E6;
+  margin-bottom: 7px;
+}
+
+#panel .p-skill .sk-name {
+  color: #08142C;
+  font-weight: 800;
+}
+
+#panel .p-skill .sk-desc {
+  color: #48638E;
+  opacity: 1;
+}
+
+#panel .p-task {
+  padding: 10px 13px;
+  border-radius: 0;
+  background: #FFFFFF;
+  border: 1px solid rgba(18, 80, 230, 0.14);
+  border-left: 3px solid #1250E6;
+  color: #1E3256;
+  margin-bottom: 7px;
+}
+
+#panel .p-task b {
+  color: #08142C;
+}
+
+#panel .p-task.done {
+  background: #F3F7FD;
+  border-left-color: #7D95B8;
+  color: #506992;
+}
+
+#panel .p-prof {
+  padding: 10px 8px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--ink-rule);
+}
+
+#panel .p-prof .av {
+  border: 1.5px solid #1250E6;
+  background: #E8F1FF;
+  color: #08142C;
+}
+
+#panel .p-prof .nm {
+  color: #08142C;
+  font-weight: 800;
+}
+
+#panel .p-prof .meta {
+  color: #506992;
+  opacity: 1;
+}
+
+#panel .hearts {
+  color: #C81E3C;
+}
+
+#panel .know-bar {
+  background: #DCE8F8;
+  border-radius: 1px;
+}
+
+#panel .know-bar i {
+  background: linear-gradient(90deg, #1250E6, #38BDF8);
+  border-radius: 0;
+}
+
+#panel .inv-slot {
+  border-radius: 2px;
+  background: #F4F8FE;
+  border: 1px dashed rgba(18, 80, 230, 0.28);
+  color: #1E3256;
+}
+
+#panel .inv-slot.filled {
+  border-style: solid;
+  border-color: rgba(18, 80, 230, 0.36);
+  background: #FFFFFF;
+  color: #08142C;
+}
+
+#panel .p-ach {
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 1.5px solid rgba(18, 80, 230, 0.34);
+  border-top: 2px solid #1250E6;
+  color: #1E3256;
+}
+
+#panel .p-ach b {
+  color: #08142C;
+}
+
+#panel .save-slot-card {
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 1px solid #C8D9F0;
+  color: #08142C;
+}
+
+#panel .save-slot-card.filled {
+  border: 1.5px solid #1250E6;
+  background: #F0F6FF;
+}
+
+#panel .ssc-head {
+  color: #08142C;
+  font-weight: 800;
+}
+
+#panel .ssc-meta {
+  color: #506992;
+}
+
+#panel .chapter-replay-row {
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--ink-rule);
+}
+
+#panel .crr-vol {
+  color: #1250E6;
+  font-weight: 800;
+}
+
+#panel .crr-title {
+  color: #08142C;
+}
+
+#panel input[type="range"],
+.vn-prefs-card .prefs-slider {
+  background: #D1E1F5;
+}
+
+#panel input[type="range"]::-webkit-slider-thumb,
+.vn-prefs-card .prefs-slider::-webkit-slider-thumb {
+  background: #1250E6;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 2px 8px rgba(18, 80, 230, 0.42);
+}
+
+/* ---- 7.2 命运暗流 (.causal-dashboard / .causal-panel) ---- */
+#panel .causal-panel,
+#panel .causal-dashboard {
+  color: #08142C;
+}
+
+#panel .cd-banner {
+  border-radius: 0;
+  background: #EEF4FD;
+  border: 1px solid rgba(18, 80, 230, 0.22);
+  border-left: 3px solid #1250E6;
+}
+
+#panel .cd-banner b { color: #08142C; }
+#panel .cd-banner span { color: #48638E; }
+
+#panel .cd-pill {
+  border-radius: 2px;
+  background: #08142C;
+  border: 1px solid #1250E6;
+  color: #BAE6FD;
+}
+
+#panel .cd-sec-title {
+  color: #08142C;
+  font-weight: 800;
+  border-left-color: #1250E6;
+}
+
+#panel .astral-scale-card,
+#panel .astral-scale-card:nth-child(1),
+#panel .astral-scale-card:nth-child(2) {
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 1px solid #D1E1F5;
+  box-shadow: none;
+}
+
+#panel .astral-scale-card:nth-child(1),
+#panel .astral-scale-card:nth-child(2) {
+  border-top: 2px solid #1250E6;
+}
+
+#panel .as-char { color: #08142C; font-weight: 800; }
+#panel .as-glyph { color: #1250E6; }
+#panel .as-badge {
+  border-radius: 2px;
+  background: #E8F1FF;
+  border: 1px solid rgba(18, 80, 230, 0.36);
+  color: #1250E6;
+  font-weight: 800;
+}
+#panel .as-poles { color: #1E3256; opacity: 1; }
+#panel .as-poles em { color: #B01D38; }
+#panel .as-track {
+  height: 5px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, rgba(18, 80, 230, 0.42), rgba(56, 189, 248, 0.36), rgba(200, 30, 60, 0.48));
+}
+#panel .as-star {
+  background: #08142C;
+  border-color: #38BDF8;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(8, 20, 44, 0.35);
+}
+#panel .as-desc { color: #506992; }
+
+#panel .clue-tile {
+  border-radius: 2px;
+  background: #F4F8FE;
+  border: 1px solid #D1E1F5;
+}
+#panel .clue-tile.lit {
+  background: #FFFFFF;
+  border-color: #1250E6;
+}
+#panel .ct-head { color: #08142C; }
+#panel .ct-body { color: #1E3256; }
+
+#panel .payoff-row {
+  border-radius: 0;
+  background: #FFFFFF;
+  border: none;
+  border-bottom: 1px solid var(--ink-rule);
+  border-left: 3px solid #9CB4D8;
+  color: #08142C;
+}
+#panel .payoff-row.ready {
+  background: #EFF5FE;
+  border-left-color: #1250E6;
+}
+#panel .payoff-row.triggered {
+  background: #FFF1F4;
+  border-left-color: #C81E3C;
+}
+#panel .pr-status { color: #1250E6; font-weight: 800; }
+#panel .payoff-row.triggered .pr-status { color: #B01D38; }
+#panel .pr-desc { color: #506992; opacity: 1; }
+
+#panel .echo-chip {
+  border-radius: 0;
+  background: #EEF4FD;
+  border-left: 3px solid #1250E6;
+}
+#panel .ec-quote { color: #08142C; }
+#panel .ec-meta,
+#panel .causal-empty { color: #506992; opacity: 1; }
+
+/* ---- 7.3 随身铭记与套装共鸣 (#panel .relics-dashboard · 高优先级覆写 #rel-synergy-base-styles) ---- */
+#panel .relics-dashboard {
+  color: #08142C;
+}
+
+#panel .rel-banner {
+  border-radius: 2px;
+  background: #EEF4FD;
+  border: 1px solid rgba(18, 80, 230, 0.22);
+  border-top: 2px solid #08142C;
+  color: #08142C;
+}
+#panel .rel-banner b { color: #08142C; font-weight: 800; }
+#panel .rel-banner span { color: #48638E; }
+
+#panel .rel-slot {
+  border-radius: 2px;
+  background: #F4F8FE;
+  border: 1px dashed rgba(18, 80, 230, 0.34);
+  color: #506992;
+}
+#panel .rel-slot.empty { color: #506992; }
+#panel .rel-slot.filled {
+  border-style: solid;
+  border-color: #1250E6;
+  background: #FFFFFF;
+  color: #08142C;
+  box-shadow: 0 4px 12px rgba(18, 80, 230, 0.08);
+}
+#panel .rel-slot-top { color: #08142C; }
+#panel .rel-slot-fx { color: #1E3256; }
+
+#panel .rel-mini-btn,
+#panel .rel-act-btn {
+  border-radius: 2px;
+  border: 1px solid rgba(8, 20, 44, 0.3);
+  background: #FFFFFF;
+  color: #08142C;
+  font-weight: 700;
+}
+#panel .rel-mini-btn:hover,
+#panel .rel-act-btn:hover {
+  border-color: #1250E6;
+  background: #1250E6;
+  color: #FFFFFF;
+}
+#panel .rel-act-btn.on {
+  border-color: #0A2E8A;
+  background: #1250E6;
+  color: #FFFFFF;
+}
+
+#panel .rel-sec-title {
+  color: #08142C;
+  font-weight: 800;
+  border-bottom: 1.5px solid rgba(18, 80, 230, 0.2);
+  padding-bottom: 5px;
+}
+
+/* 套装共鸣指令带：彻底覆盖 relics-and-events.js 注入的暗色与浅黄文字 */
+#panel .rel-synergy-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 2px;
+  background: #EEF4FD;
+  border: 1px solid rgba(18, 80, 230, 0.22);
+  border-top: 2px solid #1250E6;
+  color: #08142C;
+  box-shadow: none;
+}
+
+#panel .rel-syn-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+#panel .rel-syn-title {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #08142C;
+}
+
+#panel .rel-syn-summary {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #1250E6;
+}
+
+#panel .rel-syn-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+#panel .rel-syn-card {
+  padding: 10px 12px;
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 1px solid #C8D9F0;
+  color: #1E3256;
+  box-shadow: none;
+}
+
+#panel .rel-syn-card b,
+#panel .rel-syn-card strong {
+  color: #08142C;
+}
+
+#panel .rel-syn-card.active {
+  border: 2px solid #1250E6;
+  background: #FFFFFF;
+  color: #08142C;
+  box-shadow: 0 6px 18px rgba(18, 80, 230, 0.14);
+}
+
+#panel .rel-syn-card.active b,
+#panel .rel-syn-card.active strong {
+  color: #0A2E8A;
+}
+
+#panel .rel-syn-card.near {
+  border: 1.5px dashed #2BA3FF;
+  background: #F6FAFF;
+  color: #0D3B9E;
+  box-shadow: none;
+}
+
+#panel .rsc-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+#panel .rsc-name,
+#panel .rel-syn-card .rsc-name,
+#panel .rel-syn-card.active .rsc-name {
+  font-weight: 800;
+  color: #08142C;
+}
+
+#panel .rel-syn-card.near .rsc-name {
+  font-weight: 800;
+  color: #0D3B9E;
+}
+
+#panel .rsc-pill,
+#panel .rel-syn-card .rsc-pill,
+#panel .rel-syn-card.active .rsc-pill {
+  padding: 2px 8px;
+  border-radius: 2px;
+  background: #1250E6;
+  border: 1px solid #0A2E8A;
+  color: #FFFFFF;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+#panel .rel-syn-card.near .rsc-pill {
+  padding: 2px 8px;
+  border-radius: 2px;
+  background: #E1F0FF;
+  border: 1px solid #2BA3FF;
+  color: #0A2E8A;
+  font-weight: 700;
+}
+
+#panel .rsc-fx,
+#panel .rel-syn-card .rsc-fx,
+#panel .rel-syn-card.active .rsc-fx,
+#panel .rel-syn-card.near .rsc-fx {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: #1E3256;
+}
+
+#panel .rsc-fx b,
+#panel .rel-syn-card .rsc-fx b {
+  color: #08142C;
+  font-weight: 800;
+}
+
+#panel .rel-syn-card.active .rsc-fx b {
+  color: #0A2E8A;
+}
+
+#panel .rsc-next,
+#panel .rel-syn-card .rsc-next {
+  font-size: 11px;
+  line-height: 1.45;
+  color: #4B648E;
+  border-top: 1px dashed rgba(18, 80, 230, 0.24);
+  padding-top: 5px;
+  margin-top: 3px;
+}
+
+#panel .rel-syn-dormant-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+#panel .rel-syn-dormant-chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 1px solid rgba(8, 20, 44, 0.24);
+  color: #1E3256;
+}
+
+#panel .rc-set-badge,
+#panel .rel-slot .rc-set-badge,
+#panel .rel-card .rc-set-badge,
+#panel .rel-set-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: #E8F1FF;
+  border: 1px solid rgba(18, 80, 230, 0.42);
+  color: #0A2E8A;
+}
+
+#panel .bond-chip {
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 1px solid #D2E0F5;
+  color: #08142C;
+}
+#panel .bond-chip:hover:not(:disabled) {
+  border-color: #1250E6;
+  background: #F2F7FF;
+}
+#panel .bond-chip.active {
+  border: 2px solid #1250E6;
+  background: #F3F8FF;
+  box-shadow: 0 4px 14px rgba(18, 80, 230, 0.14);
+}
+#panel .bc-top { color: #08142C; font-weight: 800; }
+#panel .bc-desc { color: #4B648E; }
+
+#panel .rel-card {
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 1px solid #D2E0F5;
+  color: #08142C;
+}
+#panel .rel-card.equipped {
+  border: 2px solid #1250E6;
+  background: #F4F9FF;
+  box-shadow: 0 4px 14px rgba(18, 80, 230, 0.12);
+}
+#panel .rc-name { color: #08142C; font-weight: 800; }
+#panel .rc-eq-pill {
+  font-style: normal;
+  border-radius: 2px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 800;
+  background: #1250E6;
+  color: #FFFFFF;
+}
+#panel .rc-owner,
+#panel .rc-lock-tag { color: #506992; }
+#panel .rc-effect { color: #1E3256; }
+#panel .rc-lore {
+  color: #506992;
+  border-top-color: rgba(18, 80, 230, 0.14);
+}
+
+/* ---- 7.4 典藏图鉴馆 (#codex)：深蓝宝顶栏 + 瓷白展厅 + 钴蓝冰晶展卡 ---- */
+#codex .codex-tab-count {
+  font-style: normal;
+  border-radius: 2px;
+  padding: 0 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  background: #E8F1FF;
+  color: #1250E6;
+}
+#codex .codex-tab-btn.on .codex-tab-count {
+  background: rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
+}
+#codex .codex-section-bar {
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--ink-rule);
+  color: #1E3256;
+  padding: 4px 2px 10px;
+}
+#codex .codex-section-bar b { color: #1250E6; font-weight: 800; }
+#codex .codex-sec-hint { color: #506992; }
+
+/* CG 鉴赏卡：深蓝宝高质感展框，陈列于瓷白展厅之上 */
+#codex .codex-cg-card {
+  border-radius: 2px;
+  background: #08142C;
+  border: 1.5px solid rgba(18, 80, 230, 0.56);
+  color: #F4F8FF;
+  box-shadow: 0 8px 22px rgba(8, 20, 44, 0.18);
+}
+#codex .codex-cg-card.unlocked:hover {
+  border-color: #2BA3FF;
+  box-shadow: 0 14px 30px rgba(18, 80, 230, 0.28);
+}
+#codex .codex-cg-card.locked {
+  background: #0E1F42;
+  border-style: dashed;
+  border-color: rgba(56, 189, 248, 0.44);
+}
+#codex .cg-vol-pill {
+  border-radius: 2px;
+  background: rgba(18, 80, 230, 0.42);
+  border: 1px solid rgba(125, 211, 252, 0.4);
+  color: #DCEBFF;
+  font-weight: 700;
+}
+#codex .cg-zoom-badge {
+  border-radius: 2px;
+  background: #1250E6;
+  border-color: #7DD3FC;
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+/* 音乐室：深蓝宝精工播控台 + 纯白曲目卡 */
+#codex .bgm-now-bar {
+  border-radius: 2px;
+  background: linear-gradient(112deg, #071229 0%, #0E2558 64%, #091B40 100%);
+  border: 1px solid rgba(56, 189, 248, 0.46);
+  border-top: 2.5px solid #38BDF8;
+  color: #FFFFFF;
+}
+#codex .bgm-now-kicker { color: #7DD3FC; font-weight: 700; }
+#codex .bgm-now-text b { color: #FFFFFF; }
+#codex #bgm-room-stop {
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(125, 211, 252, 0.48);
+  color: #FFFFFF;
+  font-weight: 700;
+}
+#codex #bgm-room-stop:hover:not(:disabled) {
+  background: #1250E6;
+  border-color: #7DD3FC;
+}
+
+#codex .bgm-room-group {
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 1px solid #D1E1F5;
+}
+#codex .bgm-group-head {
+  color: #1250E6;
+  font-weight: 800;
+  border-bottom-color: rgba(18, 80, 230, 0.16);
+}
+#codex .bgm-track-row {
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(18, 80, 230, 0.1);
+}
+#codex .bgm-track-row:hover {
+  background: #EFF6FF;
+}
+#codex .bgm-track-row.active {
+  background: #E8F1FF;
+  border: 1px solid rgba(18, 80, 230, 0.38);
+  border-radius: 2px;
+  box-shadow: none;
+}
+#codex .bgm-play-btn {
+  border-radius: 2px;
+  border: 1px solid #1250E6;
+  background: #FFFFFF;
+  color: #1250E6;
+  font-weight: 700;
+}
+#codex .bgm-play-btn:hover,
+#codex .bgm-track-row.active .bgm-play-btn {
+  background: #1250E6;
+  border-color: #0A2E8A;
+  color: #FFFFFF;
+}
+#codex .bgm-track-title { color: #08142C; font-weight: 700; }
+#codex .bgm-track-sub { color: #506992; }
+#codex .bgm-wave i {
+  background: linear-gradient(180deg, #38BDF8, #1250E6);
+}
+
+/* 成就墙与信物手札 */
+#codex .ach-progress-wrap {
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--ink-rule);
+  padding: 6px 2px 12px;
+}
+#codex .ach-progress-head { color: #1E3256; }
+#codex .ach-progress-head b { color: #08142C; }
+#codex .ach-progress-pct { color: #1250E6; font-weight: 900; }
+#codex .ach-progress-bar {
+  height: 6px;
+  border-radius: 1px;
+  background: #DCE8F8;
+  border: none;
+}
+#codex .ach-progress-fill {
+  border-radius: 0;
+  background: linear-gradient(90deg, #1250E6, #38BDF8);
+  box-shadow: none;
+}
+#codex .ach-card {
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 1px solid #D1E1F5;
+  color: #08142C;
+}
+#codex .ach-card.unlocked {
+  border: 1.5px solid #1250E6;
+  background: #F4F9FF;
+  box-shadow: 0 4px 12px rgba(18, 80, 230, 0.1);
+}
+#codex .ach-badge { color: #1250E6; }
+#codex .ach-card-top b { color: #08142C; }
+#codex .ach-reward-pill {
+  border-radius: 2px;
+  background: #1250E6;
+  color: #FFFFFF;
+  font-weight: 700;
+}
+#codex .ach-desc { color: #4B648E; }
+
+#codex .memento-card {
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 1px solid #D1E1F5;
+  color: #08142C;
+}
+#codex .memento-card.unlocked { border-color: #1250E6; }
+#codex .memento-toggle-btn:hover { background: #F0F6FF; }
+#codex .memento-name { color: #08142C; font-weight: 800; }
+#codex .memento-owner,
+#codex .memento-lock-hint { color: #506992; }
+#codex .memento-pill {
+  border-radius: 2px;
+  background: #EEF4FD;
+  color: #1E3256;
+  font-weight: 700;
+}
+#codex .memento-pill.open {
+  background: #1250E6;
+  border-color: #0A2E8A;
+  color: #FFFFFF;
+}
+#codex .memento-stationery {
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 25px, rgba(18, 80, 230, 0.1) 26px),
+    #F8FBFF;
+  border-color: #1250E6;
+  color: #1E3256;
+  box-shadow: inset 0 0 0 1px rgba(18, 80, 230, 0.1);
+}
+#codex .ms-crest { color: #1250E6; }
+#codex .ms-salutation,
+#codex .ms-sign { color: #0A2E8A; font-weight: 700; }
+#codex .ms-body { color: #08142C; }
+#codex .ms-note { color: #506992; border-top-color: var(--ink-rule); }
+
+/* ---- 7.5 舆图 / 帮助 / 台词簿 / 存档 / 章节 / 阅读设置 / 季度传闻板 ---- */
+#map-overlay .map-cell {
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 1px solid #C8D9F0;
+  color: #08142C;
+}
+#map-overlay .map-cell:hover:not(.locked):not(.here) {
+  background: #EDF5FF;
+  border-color: #1250E6;
+}
+#map-overlay .map-cell.here {
+  background: #1250E6;
+  border-color: #0A2E8A;
+  color: #FFFFFF;
+  box-shadow: 0 6px 16px rgba(18, 80, 230, 0.3);
+}
+#map-overlay .map-cell.here .mc-tag { color: #BAE6FD; }
+#map-overlay .map-cell .mc-tag { color: #1250E6; font-weight: 800; }
+#map-overlay .map-cell .mc-cost { color: #506992; opacity: 1; }
+#map-overlay .map-cell.here .mc-cost { color: rgba(235, 245, 255, 0.88); }
+
+#help-screen .help-body p {
+  color: #1E3256;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(18, 80, 230, 0.12);
+}
+#help-screen .help-body b { color: #1250E6; }
+
+#backlog-overlay .backlog-entry,
+.vn-modal-card .vb-row {
+  border-radius: 0;
+  background: #FFFFFF;
+  border: none;
+  border-bottom: 1px solid var(--ink-rule);
+  border-left: 3px solid rgba(18, 80, 230, 0.42);
+}
+#backlog-overlay .backlog-entry.has-spk,
+.vn-modal-card .vb-row.kind-choice {
+  border-left-color: #1250E6;
+  background: #F0F6FF;
+}
+#backlog-overlay .backlog-spk,
+.vn-modal-card .vb-spk { color: #1250E6; font-weight: 800; }
+#backlog-overlay .backlog-txt,
+.vn-modal-card .vb-text { color: #08142C; }
+.vn-modal-card .vb-ctx,
+.vn-modal-card .vb-empty { color: #506992; }
+.vn-modal-card .vb-av-ph {
+  background: #E8F1FF;
+  color: #08142C;
+}
+
+.vn-modal-card .sl-card {
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 1px solid #C8D9F0;
+  color: #08142C;
+}
+.vn-modal-card .sl-card.auto {
+  border: 1.5px solid #1250E6;
+  background: #F0F6FF;
+}
+.vn-modal-card .sl-head { color: #1250E6; font-weight: 800; }
+.vn-modal-card .sl-line1 { color: #08142C; font-weight: 800; }
+.vn-modal-card .sl-line2 { color: #1E3256; }
+.vn-modal-card .sl-chap { color: #0A2E8A; font-weight: 700; }
+.vn-modal-card .sl-time,
+.vn-modal-card .sl-empty { color: #506992; }
+.vn-modal-card .sl-btn {
+  border-radius: 2px;
+  border: 1px solid rgba(8, 20, 44, 0.28);
+  background: #FFFFFF;
+  color: #08142C;
+  font-weight: 700;
+}
+.vn-modal-card .sl-btn:hover {
+  background: #1250E6;
+  border-color: #1250E6;
+  color: #FFFFFF;
+}
+.vn-modal-card .sl-btn.save {
+  border-color: #1250E6;
+  color: #1250E6;
+}
+.vn-modal-card .sl-btn.del {
+  border-color: rgba(200, 30, 60, 0.55);
+  color: #B01D38;
+}
+
+.vn-modal-card .chap-quick-card,
+.vn-modal-card .chap-row {
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 1px solid #C8D9F0;
+  color: #08142C;
+}
+.vn-modal-card .chap-quick-card:hover,
+.vn-modal-card .chap-row.unlocked:hover {
+  border-color: #1250E6;
+  background: #EFF6FF;
+}
+.vn-modal-card .cqc-title,
+.vn-modal-card .cr-tag { color: #1250E6; font-weight: 800; }
+.vn-modal-card .cqc-desc { color: #506992; }
+.vn-modal-card .cr-vol {
+  border-radius: 2px;
+  background: #E8F1FF;
+  color: #1250E6;
+  font-weight: 700;
+}
+
+.vn-prefs-card .prefs-group {
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 1px solid #D1E1F5;
+}
+.vn-prefs-card .prefs-label b { color: #08142C; }
+.vn-prefs-card .prefs-label span,
+.vn-prefs-card .prefs-hint { color: #506992; }
+.vn-prefs-card .prefs-seg {
+  border-radius: 2px;
+  background: #EEF4FD;
+  border-color: #C8D9F0;
+}
+.vn-prefs-card .prefs-seg-btn {
+  border-radius: 2px;
+  color: #1E3256;
+}
+.vn-prefs-card .prefs-seg-btn.active {
+  background: #1250E6;
+  border-color: #0A2E8A;
+  color: #FFFFFF;
+}
+.vn-prefs-card .prefs-val { color: #1250E6; font-weight: 800; }
+.vn-prefs-card .prefs-toggle {
+  border-radius: 2px;
+  border-color: rgba(8, 20, 44, 0.28);
+  background: #FFFFFF;
+  color: #1E3256;
+}
+.vn-prefs-card .prefs-toggle.on {
+  background: #1250E6;
+  border-color: #0A2E8A;
+  color: #FFFFFF;
+  box-shadow: none;
+}
+
+.rumor-card .rumor-kicker { color: #7DD3FC; font-weight: 700; }
+.rumor-card .rumor-offer-card,
+.rumor-card .rumor-story-box {
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 1px solid #C8D9F0;
+  color: #08142C;
+}
+.rumor-card .rumor-offer-card.chain {
+  border: 1.5px solid #1250E6;
+  border-top: 2px solid #2BA3FF;
+  background: #F4F9FF;
+}
+.rumor-card .roc-tag { color: #1250E6; font-weight: 800; }
+.rumor-card .roc-title { color: #08142C; }
+.rumor-card .roc-preview,
+.rumor-card .rumor-intro,
+.rumor-card .rumor-epilogue { color: #1E3256; }
+.rumor-card .rumor-choice-btn {
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 1.5px solid rgba(18, 80, 230, 0.32);
+  color: #08142C;
+}
+.rumor-card .rumor-choice-btn:hover:not(:disabled) {
+  background: #EFF6FF;
+  border-color: #1250E6;
+}
+.rumor-card .rumor-choice-btn.palace {
+  border: 1.5px solid #2BA3FF;
+  background: #EDF5FF;
+}
+.rumor-card .rcb-cost { color: #B01D38; font-weight: 700; }
+.rumor-card .rcb-reward { color: #1250E6; font-weight: 700; }
+.rumor-card .rumor-delta-chip {
+  border-radius: 2px;
+  background: #E8F1FF;
+  border-color: #1250E6;
+  color: #0A2E8A;
+  font-weight: 700;
+}
+.rumor-card .roc-done-pill {
+  border-radius: 2px;
+  background: #E8F1FF;
+  border-color: #1250E6;
+  color: #1250E6;
+}
+.rumor-card .rumor-chain-tag,
+.rumor-card .roc-chain-pill {
+  border-radius: 2px;
+  background: #1250E6;
+  border-color: #0A2E8A;
+  color: #FFFFFF;
+  box-shadow: none;
+}
+
+/* =========================================================================
+   8. 响应式护栏与降动效适配 (1440×900 / 1280×720 / 窄屏)
+   ========================================================================= */
+
+@media (max-width: 820px) {
+  .stats-split-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 760px) {
+  .sys-chronicle {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .sc-portrait-col {
+    padding: 12px 14px;
+  }
+
+  .sc-portrait-frame,
+  .sc-portrait-stage,
+  .sc-portrait-wrap {
+    height: 178px;
+  }
+
+  .sc-portrait-img {
+    height: 174px;
+    max-width: 210px;
+    margin: 0 auto;
+  }
+
+  .stats-rune-grid,
+  #stats-body .stat-orb {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-rune-card:nth-child(odd),
+  #stats-body .stat-item:nth-child(odd) {
+    border-right: none;
+    padding-left: 6px;
+  }
+
+  .stats-rune-card:nth-child(even),
+  #stats-body .stat-item:nth-child(even) {
+    padding-left: 6px;
+  }
+
+  .stats-rune-card:nth-child(even)::before,
+  #stats-body .stat-item:nth-child(even)::before {
+    left: 6px;
+  }
+
+  .stats-rune-card,
+  #stats-body .stat-item {
+    border-bottom: 1px solid var(--ink-rule);
+  }
+
+  #panel .panel-card::after,
+  #stats-overlay .stats-card::after,
+  #codex .end-card::after {
+    display: none;
+  }
+
+  #text-box {
+    padding: 24px 20px 14px;
+  }
+
+  #text-box.has-cameo {
+    padding-left: 96px;
+  }
+
+  #tb-speaker {
+    left: 16px;
+  }
+
+  #text-box .tb-backlog-btn {
+    right: 12px;
+  }
+
+  #text-box .vn-read-controls {
+    right: 84px;
+  }
+
+  #pick-screen,
+  #pick-screen.overlay {
+    padding: 14px 12px;
+  }
+
+  #pick-grid {
+    gap: 10px;
+    max-height: calc(100vh - 150px);
+  }
+
+  .pick-card {
+    flex: 1 1 200px;
+    max-width: 100%;
+    min-height: 210px;
+    padding: 18px 14px 14px;
+  }
+}
+
+@media (max-width: 520px) {
+  .sc-attr-matrix,
+  .sc-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sc-attr-tile:nth-child(odd) {
+    border-right: none;
+  }
+
+  .sc-attr-tile:nth-child(even) {
+    padding-left: 6px;
+  }
+
+  .sc-attr-tile:nth-child(even)::before {
+    left: 6px;
+  }
+
+  .sc-attr-tile {
+    border-bottom: 1px solid var(--ink-rule);
+  }
+
+  .sc-meta-grid > div:nth-last-child(2),
+  .sc-meta-item:nth-last-child(2) {
+    border-bottom: 1px solid rgba(18, 80, 230, 0.12);
+  }
+
+  .sc-meta-grid > div:last-child,
+  .sc-meta-item:last-child {
+    border-bottom: none;
+  }
+
+  .pick-card {
+    flex: 1 1 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-astrolabe-ring,
+  .sc-star-node.lit,
+  .stats-radar-svg .radar-poly,
+  .stats-radar-svg .radar-area,
+  .stats-radar-svg .radar-fill,
+  #pick-screen::before,
+  #sys-popup {
+    animation: none !important;
+  }
+
+  .pick-card::after {
+    transition: none !important;
+  }
+}

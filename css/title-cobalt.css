@@ -1,0 +1,951 @@
+/* =========================================================================
+   《转生千金》开场视觉体系：冰白 × 电光钴蓝 (css/title-cobalt.css)
+   美学定位：Persona 3 Reload × Arknights: Endfield × Blue Archive
+             × 高对比蓝白超平面日系 ACG 开场界面
+   严守范围：仅作用域限定于 #title-screen，不污染游戏内场景/弹窗/战斗样式
+   ========================================================================= */
+
+#title-screen {
+  --cb-canvas-top: #f7faff;
+  --cb-canvas-mid: #f1f6ff;
+  --cb-canvas-bot: #e6effd;
+  --cb-pure: #ffffff;
+  --cb-cobalt: #1250e6;
+  --cb-cobalt-deep: #0b3ec0;
+  --cb-cyan: #38bdf8;
+  --cb-cyan-pale: #cfe4ff;
+  --cb-ink: #07142e;
+  --cb-ink-sub: #1a3b73;
+  --cb-ink-muted: #35588e;
+  --cb-ink-tag: #395c94;
+  --cb-line: rgba(18, 80, 230, 0.16);
+  --cb-line-strong: rgba(18, 80, 230, 0.28);
+  --cb-sans: 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --cb-serif: 'Noto Serif SC', 'Noto Serif CJK SC', 'Songti SC', serif;
+  --cb-latin: 'Barlow Condensed', 'IBM Plex Sans', 'Noto Sans SC', system-ui, sans-serif;
+  --cb-display: 'Barlow Condensed', 'Noto Sans SC', sans-serif;
+  --cb-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 58px 4.5vw 54px;
+  overflow: hidden;
+  isolation: isolate;
+  background: linear-gradient(152deg, var(--cb-canvas-top) 0%, var(--cb-canvas-mid) 52%, var(--cb-canvas-bot) 100%);
+  color: var(--cb-ink);
+  font-family: var(--cb-sans);
+}
+
+#title-screen ::selection {
+  background: var(--cb-cobalt);
+  color: var(--cb-pure);
+}
+
+/* =========================================================================
+   1. 冰白左侧建筑基准层：极简十字准星、精细画框与超平面水印
+   ========================================================================= */
+
+#title-screen .title-blueprint-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* 左侧建筑细线画框（顶/底细线精准收口于右侧斜切锋线，形成完整冰白几何空间） */
+#title-screen .title-frame-rail {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  bottom: 18px;
+  width: 50vw;
+  border-top: 1px solid var(--cb-line);
+  border-bottom: 1px solid var(--cb-line);
+  border-left: 1px solid var(--cb-line);
+  pointer-events: none;
+}
+
+#title-screen .title-reg-mark {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  color: rgba(18, 80, 230, 0.44);
+}
+
+#title-screen .title-reg-tl {
+  top: 11px;
+  left: 11px;
+}
+
+#title-screen .title-reg-bl {
+  bottom: 11px;
+  left: 11px;
+}
+
+/* 超平面低透明纵向巨幅水印：安静立于菜单右侧的冰白呼吸带，绝不触碰左侧刻尺 */
+#title-screen .title-watermark-stack {
+  position: absolute;
+  left: 34vw;
+  top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  line-height: 0.92;
+  user-select: none;
+  pointer-events: none;
+}
+
+#title-screen .title-watermark-main {
+  font-family: var(--cb-display);
+  font-size: clamp(48px, 7.4vh, 78px);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: rgba(18, 80, 230, 0.052);
+  white-space: nowrap;
+}
+
+#title-screen .title-watermark-sub {
+  font-family: var(--cb-display);
+  font-size: clamp(16px, 2.2vh, 24px);
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  color: rgba(18, 80, 230, 0.075);
+  white-space: nowrap;
+}
+
+/* 左侧垂直编号刻尺（紧贴左侧建筑细框内缘，克制均衡） */
+#title-screen .title-side-index {
+  position: absolute;
+  left: 26px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-90deg);
+  transform-origin: left center;
+  font-family: var(--cb-latin);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.34em;
+  color: rgba(18, 80, 230, 0.34);
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* =========================================================================
+   2. 右侧 60% 斜切主视觉视窗 (.title-stage-blade) + 钴蓝双锋斜切刃
+   ========================================================================= */
+
+#title-screen .title-stage-blade {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 41vw;
+  z-index: 1;
+  overflow: hidden;
+  clip-path: polygon(13% 0, 100% 0, 100% 100%, 0% 100%);
+  background: #1a54c8;
+  pointer-events: none;
+}
+
+#title-screen .title-stage-art {
+  position: absolute;
+  inset: -3%;
+  background-image: url(../assets/bg/clocktower.jpg);
+  background-size: cover;
+  background-position: 54% 40%;
+  filter: brightness(1.03) saturate(1.13) contrast(1.04);
+  transform-origin: 58% 46%;
+  animation: cobaltStageBreathe 18s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes cobaltStageBreathe {
+  0% {
+    transform: scale(1.048) translate3d(0, 0, 0);
+  }
+  100% {
+    transform: scale(1) translate3d(-1.1%, 0.5%, 0);
+  }
+}
+
+/* 通透日光天穹光泽：绝不压暗蓝天，仅在极底右徽标区微增衬托对比 */
+#title-screen .title-stage-sheen {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(112deg, rgba(18, 80, 230, 0.14) 0%, rgba(56, 189, 248, 0.04) 22%, transparent 48%),
+    linear-gradient(180deg, rgba(12, 46, 128, 0.14) 0%, transparent 18%, transparent 74%, rgba(7, 20, 46, 0.34) 100%);
+  pointer-events: none;
+}
+
+/* 视窗右上角极简天空坐标标尺（冰白 × 钴蓝建筑牌，与右下角徽标首尾呼应） */
+#title-screen .title-stage-topmark {
+  position: absolute;
+  top: 26px;
+  right: 32px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  background: rgba(248, 251, 255, 0.9);
+  border: 1px solid rgba(18, 80, 230, 0.24);
+  border-radius: 2px;
+  box-shadow: 0 10px 24px -10px rgba(7, 20, 46, 0.24);
+  color: var(--cb-ink);
+  font-family: var(--cb-latin);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+#title-screen .title-stage-topmark-rule {
+  width: 20px;
+  height: 1px;
+  background: rgba(18, 80, 230, 0.55);
+}
+
+/* 右下角冰白 × 钴蓝建筑图形徽标板 */
+#title-screen .title-stage-badge {
+  position: absolute;
+  right: 32px;
+  bottom: 26px;
+  z-index: 3;
+  display: flex;
+  align-items: stretch;
+  background: rgba(248, 251, 255, 0.94);
+  border: 1px solid rgba(18, 80, 230, 0.28);
+  clip-path: polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px);
+  box-shadow: 0 16px 34px -10px rgba(7, 20, 46, 0.36);
+  color: var(--cb-ink);
+  overflow: hidden;
+}
+
+#title-screen .title-badge-crest {
+  width: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cb-cobalt);
+  color: var(--cb-pure);
+  flex-shrink: 0;
+}
+
+#title-screen .title-compass-svg {
+  animation: cobaltCompassDrift 28s linear infinite;
+}
+
+@keyframes cobaltCompassDrift {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+#title-screen .title-badge-meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 18px 10px 15px;
+}
+
+#title-screen .title-badge-sector {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--cb-latin);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--cb-ink);
+  white-space: nowrap;
+}
+
+#title-screen .title-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  transform: rotate(45deg);
+  background: var(--cb-cobalt);
+  flex-shrink: 0;
+}
+
+#title-screen .title-badge-volrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--cb-latin);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--cb-ink-muted);
+}
+
+#title-screen .title-badge-vol {
+  color: var(--cb-cobalt);
+  font-weight: 800;
+}
+
+#title-screen .title-badge-sep {
+  width: 1px;
+  height: 10px;
+  background: rgba(18, 80, 230, 0.28);
+}
+
+/* 精确锁定斜切多边形的双轨电光钴蓝 + 冰青动能斜线 */
+#title-screen .title-blade-slashes {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 41vw;
+  z-index: 4;
+  pointer-events: none;
+  overflow: visible;
+}
+
+#title-screen .title-blade-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  display: block;
+}
+
+#title-screen .title-blade-svg-secondary {
+  transform: translateX(-9px);
+}
+
+#title-screen .title-blade-svg-tertiary {
+  transform: translateX(-16px);
+}
+
+/* 保留雪花粒子层，精准裁切至右侧天穹视窗，避免金色光点污染左侧雪白版面 */
+#title-screen #title-snow-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+  clip-path: polygon(48.67% 0, 100% 0, 100% 100%, 41% 100%);
+  opacity: 0.9;
+}
+
+/* =========================================================================
+   3. 左上角独立版头标志带（独立于 h1 标题，绝非标题上方眉标）
+   ========================================================================= */
+
+#title-screen .title-masthead {
+  position: absolute;
+  top: 28px;
+  left: 4.5vw;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#title-screen .title-prism-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+#title-screen .title-brand-code {
+  font-family: var(--cb-latin);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--cb-ink);
+  text-transform: uppercase;
+}
+
+#title-screen .title-ver-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: var(--cb-cobalt);
+  color: var(--cb-pure);
+  font-family: var(--cb-latin);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  border-radius: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =========================================================================
+   4. 左侧 44% 冰白超平面主指挥区 (.title-inner)
+   ========================================================================= */
+
+#title-screen .title-inner {
+  position: relative;
+  z-index: 5;
+  text-align: left;
+  width: min(440px, 38.5vw);
+  animation: cobaltDeckReveal 0.62s var(--cb-ease) both;
+}
+
+@keyframes cobaltDeckReveal {
+  from {
+    opacity: 0.01;
+    transform: translate3d(-14px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+#title-screen .title-lockup {
+  margin-bottom: 24px;
+}
+
+/* 海报级纯深蓝墨主标：零渐变、零光晕、极强字重张力 */
+#title-screen .title-main {
+  font-family: var(--cb-serif);
+  font-size: clamp(50px, 4.8vw, 72px);
+  font-weight: 900;
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  color: var(--cb-ink);
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  filter: none;
+  text-shadow: none;
+  margin: 0;
+}
+
+/* 标志性实心电光钴蓝削角副标色带（白底 × 电蓝色块 × 纯白粗体） */
+#title-screen .title-sub-ribbon {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 11px;
+  padding: 7px 32px 7px 15px;
+  background: var(--cb-cobalt);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+  filter: drop-shadow(0 8px 16px rgba(18, 80, 230, 0.22));
+}
+
+#title-screen .title-sub {
+  margin: 0;
+  font-family: var(--cb-sans);
+  font-size: clamp(14px, 1.15vw, 16.5px);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--cb-pure);
+  line-height: 1.25;
+}
+
+#title-screen .title-kana {
+  margin: 11px 0 0;
+  font-family: var(--cb-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  color: var(--cb-ink-muted);
+  line-height: 1.4;
+}
+
+#title-screen .title-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 9px 0 0;
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(18, 80, 230, 0.22);
+  border-radius: 2px;
+  font-family: var(--cb-sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--cb-ink-sub);
+  opacity: 1;
+}
+
+#title-screen .title-tag-gem {
+  color: var(--cb-cobalt);
+  flex-shrink: 0;
+}
+
+/* =========================================================================
+   5. 动能蓝白主菜单 (nav.title-menu) — 全面覆盖旧暗金与单侧边线样式
+   ========================================================================= */
+
+#title-screen .title-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  width: min(376px, 100%);
+  margin-bottom: 18px;
+}
+
+/* 彻底清除 style.css 与 system-chronicle.css 遗留的单侧边线伪元素与底部划线 */
+#title-screen .title-menu .tbtn.tbtn-editorial::before,
+#title-screen .title-menu .tbtn.tbtn-editorial::after,
+#title-screen .title-menu .tbtn.tbtn-editorial.tbtn-lead::before,
+#title-screen .title-menu .tbtn.tbtn-editorial.tbtn-lead::after {
+  content: none;
+  display: none;
+}
+
+/* 通用次级按钮：纯雪白建筑风行条（全四边细框 + 悬浮整行钴蓝瞬切反色） */
+#title-screen .title-menu .tbtn.tbtn-editorial,
+#title-screen .title-menu .tbtn.tbtn-editorial.ghost,
+#title-screen .title-menu .tbtn.tbtn-editorial.arena-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 11px;
+  width: 100%;
+  min-width: 0;
+  height: 43px;
+  padding: 0 16px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(18, 80, 230, 0.2);
+  box-shadow: 0 2px 8px -4px rgba(7, 20, 46, 0.08);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: var(--cb-ink);
+  font-family: var(--cb-sans);
+  font-size: 14.5px;
+  letter-spacing: 0.08em;
+  overflow: hidden;
+  transition:
+    transform 0.22s var(--cb-ease),
+    background-color 0.14s ease,
+    border-color 0.14s ease,
+    color 0.14s ease,
+    box-shadow 0.22s var(--cb-ease);
+}
+
+#title-screen .title-menu .tbtn.tbtn-editorial:focus-visible {
+  outline: 2px solid var(--cb-cobalt);
+  outline-offset: 3px;
+}
+
+#title-screen .title-menu .tbtn.tbtn-editorial .tbtn-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cb-cobalt);
+  opacity: 1;
+  flex-shrink: 0;
+  transition: color 0.14s ease, transform 0.22s var(--cb-ease);
+}
+
+#title-screen .title-menu .tbtn.tbtn-editorial .tbtn-text {
+  font-family: var(--cb-sans);
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: inherit;
+  white-space: nowrap;
+}
+
+#title-screen .title-menu .tbtn.tbtn-editorial .tbtn-en {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--cb-latin);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--cb-ink-tag);
+  white-space: nowrap;
+  transition: color 0.14s ease, transform 0.22s var(--cb-ease);
+}
+
+/* 次级按钮悬浮：整行瞬间反转为实心电光钴蓝 + 纯白字 + 右移 8px */
+#title-screen .title-menu .tbtn.tbtn-editorial:hover,
+#title-screen .title-menu .tbtn.tbtn-editorial.ghost:hover,
+#title-screen .title-menu .tbtn.tbtn-editorial.arena-btn:hover {
+  background: var(--cb-cobalt);
+  border-color: var(--cb-cobalt);
+  color: var(--cb-pure);
+  transform: translateX(8px);
+  box-shadow: 0 12px 24px -10px rgba(18, 80, 230, 0.46);
+}
+
+#title-screen .title-menu .tbtn.tbtn-editorial:hover .tbtn-ico {
+  color: var(--cb-pure);
+  transform: scale(1.06);
+}
+
+#title-screen .title-menu .tbtn.tbtn-editorial:hover .tbtn-en {
+  color: var(--cb-cyan-pale);
+  transform: translateX(2px);
+}
+
+/* 典藏图鉴计数徽标（零值自动隐藏，非零清晰呈现，悬浮随按钮反色） */
+#title-screen .title-menu .tbtn em,
+#title-screen #codex-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 19px;
+  padding: 0 6px;
+  margin-left: 2px;
+  border-radius: 2px;
+  border: 1px solid rgba(18, 80, 230, 0.34);
+  background: rgba(18, 80, 230, 0.1);
+  color: var(--cb-cobalt);
+  font-family: var(--cb-latin);
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+
+#title-screen #codex-count.is-zero {
+  display: none;
+}
+
+#title-screen .title-menu .tbtn.tbtn-editorial:hover em,
+#title-screen .title-menu .tbtn.tbtn-editorial:hover #codex-count {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.52);
+  color: var(--cb-pure);
+}
+
+/* 主 CTA (#btn-new)：实心电光钴蓝削角长条，悬浮切入深蓝墨 + 右移 10px */
+#title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead {
+  height: 50px;
+  padding: 0 20px 0 18px;
+  background: var(--cb-cobalt);
+  border: none;
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+  color: var(--cb-pure);
+  box-shadow: none;
+  filter: drop-shadow(0 10px 20px rgba(18, 80, 230, 0.28));
+  transition:
+    transform 0.22s var(--cb-ease),
+    background-color 0.16s ease,
+    filter 0.22s var(--cb-ease);
+}
+
+#title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead .tbtn-ico {
+  color: var(--cb-pure);
+}
+
+#title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead .tbtn-text {
+  font-size: 15.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--cb-pure);
+}
+
+#title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead .tbtn-en {
+  color: var(--cb-cyan-pale);
+  letter-spacing: 0.18em;
+}
+
+#title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead:hover {
+  background: var(--cb-ink);
+  color: var(--cb-pure);
+  transform: translateX(10px);
+  box-shadow: none;
+  filter: drop-shadow(0 12px 24px rgba(18, 80, 230, 0.38));
+}
+
+#title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead:hover .tbtn-en {
+  color: #7dd3fc;
+  transform: translateX(3px);
+}
+
+/* 有存档时出现的 #btn-continue：冰蓝高对比钴框主次级 CTA，悬浮整行跃迁实心电光钴蓝 */
+#title-screen .title-menu #btn-continue.tbtn.tbtn-editorial {
+  height: 45px;
+  padding: 0 18px 0 17px;
+  background: #e9f2ff;
+  border: 1.5px solid var(--cb-cobalt);
+  border-radius: 2px;
+  clip-path: none;
+  color: #0935a8;
+  box-shadow: 0 6px 16px -8px rgba(18, 80, 230, 0.24);
+  filter: none;
+  transition:
+    transform 0.22s var(--cb-ease),
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
+    box-shadow 0.22s var(--cb-ease);
+}
+
+#title-screen .title-menu #btn-continue.tbtn.tbtn-editorial .tbtn-ico {
+  color: var(--cb-cobalt);
+}
+
+#title-screen .title-menu #btn-continue.tbtn.tbtn-editorial .tbtn-text {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+#title-screen .title-menu #btn-continue.tbtn.tbtn-editorial .tbtn-en {
+  color: #1d4ed8;
+}
+
+#title-screen .title-menu #btn-continue.tbtn.tbtn-editorial:hover {
+  background: var(--cb-cobalt);
+  border-color: var(--cb-cobalt);
+  color: var(--cb-pure);
+  transform: translateX(10px);
+  box-shadow: 0 12px 24px -8px rgba(18, 80, 230, 0.42);
+  filter: none;
+}
+
+#title-screen .title-menu #btn-continue.tbtn.tbtn-editorial:hover .tbtn-ico {
+  color: var(--cb-pure);
+}
+
+#title-screen .title-menu #btn-continue.tbtn.tbtn-editorial:hover .tbtn-en {
+  color: var(--cb-cyan-pale);
+}
+
+/* =========================================================================
+   6. 底部极简注脚与左下角安全工具入口 (#btn-letter-test)
+   ========================================================================= */
+
+#title-screen .title-hint {
+  width: min(376px, 100%);
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--cb-line);
+  font-family: var(--cb-sans);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--cb-ink-muted);
+  white-space: nowrap;
+}
+
+#title-screen .title-corner-tools {
+  position: absolute;
+  left: 4.5vw;
+  bottom: 24px;
+  z-index: 6;
+}
+
+#title-screen .corner-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid var(--cb-line-strong);
+  color: var(--cb-ink-sub);
+  font-family: var(--cb-sans);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
+    transform 0.2s var(--cb-ease),
+    box-shadow 0.2s var(--cb-ease);
+}
+
+#title-screen .corner-tool-btn svg {
+  color: var(--cb-cobalt);
+  transition: color 0.16s ease;
+}
+
+#title-screen .corner-tool-btn:hover {
+  background: var(--cb-cobalt);
+  border-color: var(--cb-cobalt);
+  color: var(--cb-pure);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px -6px rgba(18, 80, 230, 0.36);
+}
+
+#title-screen .corner-tool-btn:hover svg {
+  color: var(--cb-pure);
+}
+
+#title-screen .corner-tool-btn:focus-visible {
+  outline: 2px solid var(--cb-cobalt);
+  outline-offset: 3px;
+}
+
+/* =========================================================================
+   7. 响应式精准适配：1280×720 笔记本屏零裁切 & 窄屏优雅收束
+   ========================================================================= */
+
+@media (max-height: 780px), (max-width: 1320px) {
+  #title-screen {
+    padding: 50px 4.2vw 50px;
+  }
+
+  #title-screen .title-masthead {
+    top: 20px;
+    left: 4.2vw;
+  }
+
+  #title-screen .title-lockup {
+    margin-bottom: 16px;
+  }
+
+  #title-screen .title-main {
+    font-size: clamp(46px, 4.4vw, 62px);
+  }
+
+  #title-screen .title-sub-ribbon {
+    margin-top: 8px;
+    padding: 5px 22px 5px 12px;
+  }
+
+  #title-screen .title-sub {
+    font-size: 14px;
+  }
+
+  #title-screen .title-kana {
+    margin-top: 8px;
+    font-size: 11px;
+  }
+
+  #title-screen .title-tag {
+    margin-top: 7px;
+    padding: 3px 10px;
+    font-size: 11.5px;
+  }
+
+  #title-screen .title-menu {
+    gap: 5px;
+    width: min(352px, 100%);
+    margin-bottom: 13px;
+  }
+
+  #title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead {
+    height: 44px;
+  }
+
+  #title-screen .title-menu #btn-continue.tbtn.tbtn-editorial {
+    height: 40px;
+  }
+
+  #title-screen .title-menu .tbtn.tbtn-editorial,
+  #title-screen .title-menu .tbtn.tbtn-editorial.ghost,
+  #title-screen .title-menu .tbtn.tbtn-editorial.arena-btn {
+    height: 38px;
+    padding: 0 14px;
+    font-size: 13.5px;
+  }
+
+  #title-screen .title-menu .tbtn.tbtn-editorial .tbtn-text {
+    font-size: 13.5px;
+  }
+
+  #title-screen .title-menu #btn-new.tbtn.tbtn-editorial.tbtn-lead .tbtn-text {
+    font-size: 14.5px;
+  }
+
+  #title-screen .title-hint {
+    width: min(352px, 100%);
+    padding-top: 10px;
+    font-size: 11px;
+  }
+
+  #title-screen .title-corner-tools {
+    left: 4.2vw;
+    bottom: 18px;
+  }
+
+  #title-screen .title-stage-badge {
+    right: 24px;
+    bottom: 20px;
+  }
+
+  #title-screen .title-stage-topmark {
+    top: 20px;
+    right: 24px;
+  }
+}
+
+@media (max-width: 960px) {
+  #title-screen .title-stage-blade,
+  #title-screen .title-blade-slashes {
+    left: 50vw;
+  }
+
+  #title-screen #title-snow-canvas {
+    clip-path: polygon(56.5% 0, 100% 0, 100% 100%, 50% 100%);
+  }
+
+  #title-screen .title-inner {
+    width: min(410px, 46vw);
+  }
+}
+
+@media (max-width: 720px) {
+  #title-screen {
+    padding: 58px 22px 62px;
+    justify-content: center;
+  }
+
+  #title-screen .title-stage-blade,
+  #title-screen .title-blade-slashes,
+  #title-screen .title-side-index,
+  #title-screen .title-frame-rail {
+    display: none;
+  }
+
+  #title-screen #title-snow-canvas {
+    clip-path: none;
+    opacity: 0.35;
+  }
+
+  #title-screen .title-masthead {
+    left: 22px;
+    top: 18px;
+  }
+
+  #title-screen .title-inner {
+    width: min(380px, 100%);
+    text-align: left;
+  }
+
+  #title-screen .title-hint {
+    white-space: normal;
+  }
+
+  #title-screen .title-corner-tools {
+    left: 22px;
+    bottom: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #title-screen .title-stage-art,
+  #title-screen .title-compass-svg,
+  #title-screen .title-live-dot,
+  #title-screen .title-inner {
+    animation: none;
+  }
+}

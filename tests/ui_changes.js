@@ -58,7 +58,7 @@ $('btn-ui').onclick(); ok('点击隐藏UI', win.document.body.classList.contains
 $('btn-ui').onclick(); ok('再点恢复UI', !win.document.body.classList.contains('ui-hidden'));
 
 // 不再显示地点出口教学框；季度风物框只允许右下角三角关闭
-win.__resetS(); const st3=win.__getS(); st3.freeRoam=true; st3.season=2; win.__setS(st3);
+win.__resetS(); const st3=win.__getS(); st3.freeRoam=true; st3.season=2; st3.loc='town'; win.__setS(st3);
 const tb=$('text-box'), more=$('more');
 win.enterFreeRoam();
 ok('自由探索不显示地点出口教学框', tb.classList.contains('dialog-hidden'));
@@ -102,7 +102,7 @@ win.eval("currentScene=null; S.storyPending=[]; resetDialogAdvanceState(); show(
 win.__resetS();
 const flavorState=win.__getS();
 flavorState.ageY=1; flavorState.ageD=0; flavorState.year=1; flavorState.month=3; flavorState.season=0;
-flavorState.phase='childhood'; flavorState.loc='nursery'; flavorState.freeRoam=true;
+flavorState.phase='childhood'; flavorState.loc='town'; flavorState.freeRoam=true;
 flavorState.flags={ch_first_word:1};
 win.__setS(flavorState);
 win.doNextTime();
@@ -165,7 +165,7 @@ try{ babyButtons[0].click(); }catch(e){ babyClickOK=false; }
 ok('婴儿出去按钮点击不报错', babyClickOK);
 ok('点击后进入抱出剧情', !win.__getS().freeRoam);
 ok('剧情开始恢复对话框', !tb.classList.contains('dialog-hidden'));
-ok('下个季度按钮直接推进并显示风物框', !win.doNextTime.toString().includes('choices') && win.doNextTime.toString().includes('showSeasonFlavor'));
+ok('下个季度按钮直接推进并显示风物框', !win.doNextTime.toString().includes('choices') && /show(Pending)?SeasonFlavor/.test(win.doNextTime.toString()));
 
 // 进入空地点不再播放环境描述；有人时显示情境问候且保留底部 UI
 ok('普通进入地点不再调用环境描述对话', !win.eval('_enterLocRaw.toString()').includes('ambientText'));

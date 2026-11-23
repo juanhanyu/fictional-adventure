@@ -1,0 +1,1035 @@
+/* =========================================================================
+   转生千金 · 氛围影院粒子层与冰晶宫殿推演盘 (css/ambient-fx.css)
+   视觉标尺：Aether Prism OS（Glacial Ice-White #F6FAFF × Deep Sapphire #08142C
+            × Electric Cobalt #1250E6 × Luminous Ice-Cyan #38BDF8）
+   ========================================================================= */
+
+/* ---------- 1. 全视口氛围粒子画布 (#ambient-fx-canvas) ---------- */
+#ambient-fx-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+  display: block;
+  opacity: 1;
+  transition: opacity 0.45s ease;
+}
+
+#ambient-fx-canvas.afx-hidden {
+  opacity: 0;
+}
+
+/* ---------- 2. 冰晶宫殿·寒夜视界滤镜 (body.ice-palace-lens) ---------- */
+body.ice-palace-lens #bg-veil {
+  background:
+    radial-gradient(circle at 50% 34%, rgba(56, 189, 248, 0.12), transparent 58%),
+    linear-gradient(180deg, rgba(5, 13, 30, 0.36), rgba(8, 20, 44, 0.5) 56%, rgba(4, 10, 24, 0.8));
+  backdrop-filter: saturate(0.88) contrast(1.06) hue-rotate(-4deg);
+  -webkit-backdrop-filter: saturate(0.88) contrast(1.06) hue-rotate(-4deg);
+  transition: background 0.55s ease, backdrop-filter 0.55s ease;
+}
+
+body.ice-palace-lens::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  background:
+    radial-gradient(ellipse at 50% 46%, transparent 56%, rgba(18, 80, 230, 0.16) 82%, rgba(5, 13, 30, 0.52) 100%),
+    linear-gradient(135deg, rgba(125, 211, 252, 0.14) 0%, transparent 18%, transparent 82%, rgba(56, 189, 248, 0.1) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(125, 211, 252, 0.28),
+    inset 0 0 52px rgba(18, 80, 230, 0.22);
+  animation: afxIceLensIn 0.48s ease both;
+}
+
+@keyframes afxIceLensIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---------- 3. 霜刃弧斩舞台瞬态特效 (.afx-frost-slash) ---------- */
+.afx-frost-slash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 78;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: afxSlashWrap 420ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.afx-frost-slash svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.afx-frost-slash.is-reversed svg {
+  transform: scaleX(-1);
+}
+
+.afx-slash-glow {
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
+  filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.78));
+  animation: afxSlashStroke 420ms cubic-bezier(0.14, 0.92, 0.24, 1) forwards;
+}
+
+.afx-slash-core {
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
+  filter: drop-shadow(0 0 6px rgba(246, 250, 255, 0.96));
+  animation: afxSlashStroke 390ms cubic-bezier(0.16, 0.96, 0.26, 1) forwards;
+}
+
+.afx-slash-gold {
+  stroke-dasharray: 980;
+  stroke-dashoffset: 980;
+  opacity: 0;
+  animation: afxSlashGold 420ms cubic-bezier(0.18, 0.9, 0.28, 1) forwards;
+}
+
+.afx-slash-shards {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: afxSlashShards 420ms ease-out forwards;
+}
+
+@keyframes afxSlashWrap {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  74% { opacity: 0.92; }
+  100% { opacity: 0; }
+}
+
+@keyframes afxSlashStroke {
+  0% {
+    stroke-dashoffset: 1200;
+    opacity: 0.25;
+  }
+  38% {
+    stroke-dashoffset: 140;
+    opacity: 1;
+  }
+  72% {
+    stroke-dashoffset: -120;
+    opacity: 0.85;
+  }
+  100% {
+    stroke-dashoffset: -520;
+    opacity: 0;
+  }
+}
+
+@keyframes afxSlashGold {
+  0% {
+    stroke-dashoffset: 980;
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.82;
+  }
+  65% {
+    stroke-dashoffset: 0;
+    opacity: 0.65;
+  }
+  100% {
+    stroke-dashoffset: -280;
+    opacity: 0;
+  }
+}
+
+@keyframes afxSlashShards {
+  0% {
+    opacity: 0;
+    transform: scale(0.84) translate3d(12px, -8px, 0);
+  }
+  36% {
+    opacity: 0.92;
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.08) translate3d(-14px, 8px, 0);
+  }
+}
+
+/* ---------- 4. 冰晶宫殿 · 寒夜棱镜推演室 (#ice-deduction-modal) ---------- */
+#ice-deduction-modal {
+  --idb-porcelain: #F6FAFF;
+  --idb-well: #EDF3FC;
+  --idb-sapphire: #08142C;
+  --idb-sapphire-mid: #0E224A;
+  --idb-cobalt: #1250E6;
+  --idb-cobalt-hi: #1D63FF;
+  --idb-cobalt-deep: #0B38AD;
+  --idb-cyan: #38BDF8;
+  --idb-cyan-pale: #BAE6FD;
+  --idb-ink: #08142C;
+  --idb-ink-sub: #384E75;
+  --idb-border: rgba(18, 42, 86, 0.22);
+}
+
+#ice-deduction-modal.overlay {
+  z-index: 68;
+  background:
+    radial-gradient(ellipse 68% 52% at 50% 24%, rgba(18, 80, 230, 0.26), transparent 64%),
+    radial-gradient(circle at 86% 84%, rgba(56, 189, 248, 0.14), transparent 44%),
+    rgba(5, 13, 30, 0.84);
+  backdrop-filter: blur(12px) saturate(1.1);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1);
+  padding: 20px;
+}
+
+/* 主棱镜推演卡：瓷白削角建筑结构 (.idb-shell / .idb-card) */
+.idb-shell,
+.idb-card {
+  position: relative;
+  width: min(92vw, 900px);
+  max-height: min(88vh, 770px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 0;
+  clip-path: polygon(
+    0 0,
+    calc(100% - 22px) 0,
+    100% 22px,
+    100% 100%,
+    22px 100%,
+    0 calc(100% - 22px)
+  );
+  color: var(--idb-ink);
+  background:
+    linear-gradient(150deg, #FFFFFF 0%, var(--idb-porcelain) 54%, #EAF2FE 100%);
+  border: 1px solid rgba(56, 189, 248, 0.55);
+  box-shadow:
+    inset 0 0 0 1px rgba(18, 80, 230, 0.14),
+    0 30px 80px rgba(2, 8, 24, 0.78);
+  animation: afxModalRise 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* 顶部电钴-冰青能量脊线 + 削角对角棱线 */
+.idb-shell::before,
+.idb-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 22px;
+  height: 3px;
+  z-index: 6;
+  pointer-events: none;
+  background: linear-gradient(90deg, var(--idb-cobalt) 0%, var(--idb-cyan) 56%, #E0F2FE 100%);
+}
+
+.idb-shell::after,
+.idb-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      225deg,
+      rgba(56, 189, 248, 0.85) 0,
+      rgba(56, 189, 248, 0.85) 17px,
+      transparent 17.5px
+    ),
+    linear-gradient(
+      45deg,
+      rgba(18, 80, 230, 0.85) 0,
+      rgba(18, 80, 230, 0.85) 17px,
+      transparent 17.5px
+    );
+}
+
+@keyframes afxModalRise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 建筑定位角标：对齐非削角（左上深蓝头、右下瓷白底），削角处隐藏防裁切 */
+.idb-corner {
+  position: absolute;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.idb-corner.tl { top: 8px; left: 8px; }
+.idb-corner.br { bottom: 8px; right: 8px; }
+.idb-corner.tr,
+.idb-corner.bl { opacity: 0; }
+
+.idb-corner.tl path {
+  stroke: var(--idb-cyan);
+  opacity: 0.9;
+}
+
+.idb-corner.tl polygon {
+  fill: #E0F2FE;
+  opacity: 0.95;
+}
+
+.idb-corner.br path {
+  stroke: var(--idb-cobalt);
+  opacity: 0.78;
+}
+
+.idb-corner.br polygon {
+  fill: var(--idb-cyan);
+  opacity: 0.92;
+}
+
+/* ---------- 头部：深海蓝宝石架构标题栏 (#08142C) ---------- */
+.idb-head {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 28px 17px;
+  border-bottom: 2px solid var(--idb-cobalt);
+  background:
+    linear-gradient(120deg, rgba(18, 80, 230, 0.22) 0%, transparent 40%),
+    linear-gradient(112deg, transparent 62%, rgba(56, 189, 248, 0.12) 62.2%, rgba(18, 80, 230, 0.24) 100%),
+    var(--idb-sapphire);
+  color: #F6FAFF;
+}
+
+.idb-head-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.idb-emblem {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 0;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(140deg, rgba(18, 80, 230, 0.45), rgba(8, 20, 44, 0.96));
+  border: 1px solid rgba(56, 189, 248, 0.7);
+  box-shadow: inset 0 0 14px rgba(56, 189, 248, 0.24);
+}
+
+.idb-emblem svg circle[stroke] {
+  stroke: rgba(125, 211, 252, 0.55);
+}
+
+.idb-emblem svg polygon:nth-of-type(1) {
+  stroke: #38BDF8;
+  fill: rgba(56, 189, 248, 0.16);
+}
+
+.idb-emblem svg polygon:nth-of-type(2) {
+  stroke: #F6FAFF;
+}
+
+.idb-emblem svg circle[fill] {
+  fill: #7DD3FC;
+}
+
+.idb-titles {
+  min-width: 0;
+}
+
+.idb-subtitle {
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 1.45;
+  color: #93DCFF;
+  margin-bottom: 4px;
+}
+
+.idb-title {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  color: #FFFFFF;
+  line-height: 1.24;
+  text-shadow: 0 2px 14px rgba(56, 189, 248, 0.24);
+}
+
+.idb-head-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  padding-right: 6px;
+}
+
+.idb-progress-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 13px;
+  border-radius: 2px;
+  background: rgba(14, 34, 74, 0.92);
+  border: 1px solid rgba(125, 211, 252, 0.42);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  color: #E0F2FE;
+  transition: border-color 0.26s ease, background 0.26s ease, color 0.26s ease, box-shadow 0.26s ease;
+}
+
+.idb-progress-pill.is-complete {
+  border-color: #7DD3FC;
+  background: linear-gradient(135deg, var(--idb-cobalt), #0E41C2);
+  color: #FFFFFF;
+  box-shadow: 0 0 18px rgba(18, 80, 230, 0.56);
+}
+
+.idb-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.idb-pip {
+  width: 7px;
+  height: 7px;
+  transform: rotate(45deg);
+  border: 1.5px solid rgba(125, 211, 252, 0.58);
+  background: transparent;
+  transition: background 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+}
+
+.idb-pip.is-lit {
+  border-color: #FFFFFF;
+  background: #38BDF8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.92);
+}
+
+.idb-close-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  line-height: 1;
+  color: #BAE6FD;
+  background: rgba(18, 80, 230, 0.16);
+  border: 1px solid rgba(125, 211, 252, 0.34);
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+
+.idb-close-btn:hover {
+  color: #FFFFFF;
+  border-color: #7DD3FC;
+  background: var(--idb-cobalt);
+}
+
+/* ---------- 提示导语栏：冰白精密刻度条 ---------- */
+.idb-prompt-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 28px;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.03em;
+  color: var(--idb-ink);
+  background: linear-gradient(90deg, #E4EEFC 0%, var(--idb-porcelain) 68%, #EEF5FF 100%);
+  border-left: 4px solid var(--idb-cobalt);
+  border-bottom: 1px solid rgba(18, 42, 86, 0.14);
+}
+
+.idb-prompt-mark {
+  color: var(--idb-cobalt);
+  flex-shrink: 0;
+  display: inline-flex;
+}
+
+/* ---------- 主推演池（自定义冰蓝细轨道，杜绝原生亮白滚动条） ---------- */
+.idb-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 18px 28px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background:
+    radial-gradient(ellipse 90% 42% at 50% 0%, rgba(255, 255, 255, 0.75), transparent 72%),
+    var(--idb-well);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(18, 80, 230, 0.55) #DCE7F7;
+}
+
+.idb-body::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.idb-body::-webkit-scrollbar-track {
+  background: #DCE7F7;
+  border-radius: 99px;
+}
+
+.idb-body::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--idb-cobalt), var(--idb-cyan));
+  border-radius: 99px;
+}
+
+/* ---------- 证物星格：高对比纯白卡 vs 锐利电钴反色激活卡 ---------- */
+.idb-clues-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.idb-clue {
+  position: relative;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: var(--idb-ink);
+  background: #FFFFFF;
+  border: 1.5px solid rgba(18, 42, 86, 0.24);
+  box-shadow: 0 2px 8px rgba(8, 20, 44, 0.06);
+  transition:
+    border-color 0.18s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease,
+    transform 0.16s ease;
+}
+
+/* 右上角微切角装饰片 */
+.idb-clue::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  background: linear-gradient(225deg, rgba(18, 80, 230, 0.24) 50%, transparent 50%);
+  transition: background 0.2s ease;
+}
+
+.idb-clue:hover {
+  border-color: var(--idb-cobalt);
+  background: #FBFEFF;
+  box-shadow: 0 8px 20px rgba(8, 20, 44, 0.12);
+  transform: translateY(-2px);
+}
+
+.idb-clue:hover::after {
+  background: linear-gradient(225deg, var(--idb-cobalt) 50%, transparent 50%);
+}
+
+.idb-clue:focus-visible {
+  outline: none;
+  border-color: var(--idb-cobalt);
+  box-shadow: 0 0 0 2.5px rgba(18, 80, 230, 0.32);
+}
+
+/* 选中证物卡：锐利电钴反色高亮 (#1250E6) + 冰青棱镜共鸣徽印 */
+.idb-clue.is-selected {
+  color: #FFFFFF;
+  border-color: #7DD3FC;
+  background:
+    linear-gradient(128deg, rgba(56, 189, 248, 0.18) 0%, transparent 38%),
+    linear-gradient(142deg, #175CFF 0%, var(--idb-cobalt) 58%, #0E42C4 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(224, 242, 254, 0.42),
+    0 10px 24px rgba(8, 20, 44, 0.28);
+}
+
+.idb-clue.is-selected::after {
+  background: linear-gradient(225deg, #7DD3FC 50%, transparent 50%);
+}
+
+.idb-clue.is-selected:hover {
+  background:
+    linear-gradient(128deg, rgba(125, 211, 252, 0.24) 0%, transparent 40%),
+    linear-gradient(142deg, #1F67FF 0%, var(--idb-cobalt-hi) 58%, var(--idb-cobalt) 100%);
+  border-color: #BAE6FD;
+}
+
+.idb-clue.is-inspected {
+  border-color: var(--idb-cyan);
+  box-shadow: 0 12px 26px rgba(8, 20, 44, 0.32);
+}
+
+/* 全部关键疑点锁定态：深蓝宝石 × 电钴 × 冰青光锁 */
+.idb-clue.is-sealed {
+  color: #FFFFFF;
+  border-color: var(--idb-cyan);
+  background:
+    radial-gradient(circle at 90% 14%, rgba(56, 189, 248, 0.28), transparent 48%),
+    linear-gradient(142deg, var(--idb-cobalt) 0%, #0D3BB8 56%, var(--idb-sapphire) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(186, 230, 253, 0.34),
+    0 12px 28px rgba(8, 20, 44, 0.34);
+}
+
+.idb-clue.is-sealed::after {
+  background: linear-gradient(225deg, #38BDF8 50%, transparent 50%);
+}
+
+.idb-clue-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.idb-clue-index {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: #2A4985;
+}
+
+.idb-clue.is-selected .idb-clue-index,
+.idb-clue.is-sealed .idb-clue-index {
+  color: #BAE6FD;
+}
+
+.idb-clue-facet {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--idb-cobalt);
+  transition: color 0.2s ease, transform 0.24s ease;
+}
+
+.idb-clue.is-selected .idb-clue-facet {
+  color: #7DD3FC;
+  transform: rotate(45deg);
+}
+
+.idb-clue.is-sealed .idb-clue-facet {
+  color: #FFFFFF;
+  transform: rotate(45deg);
+}
+
+.idb-clue-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 9px;
+  border-radius: 2px;
+  border: 1px solid rgba(18, 42, 86, 0.2);
+  color: #365080;
+  background: var(--idb-well);
+  transition: all 0.2s ease;
+}
+
+/* 「棱镜共鸣」冰青发光徽章 */
+.idb-clue.is-selected .idb-clue-badge {
+  border-color: #BAE6FD;
+  color: #FFFFFF;
+  background: rgba(56, 189, 248, 0.24);
+  box-shadow: 0 0 14px rgba(125, 211, 252, 0.44);
+}
+
+/* 「银金合印」高对比冰青实体封印 */
+.idb-clue.is-sealed .idb-clue-badge {
+  border-color: #E0F2FE;
+  color: #061229;
+  background: linear-gradient(135deg, #BAE6FD, #38BDF8);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.52);
+}
+
+.idb-clue-label {
+  font-size: 15.5px;
+  font-weight: 700;
+  line-height: 1.42;
+  color: var(--idb-ink);
+  letter-spacing: 0.03em;
+}
+
+.idb-clue.is-selected .idb-clue-label,
+.idb-clue.is-sealed .idb-clue-label {
+  color: #FFFFFF;
+}
+
+.idb-clue-snippet {
+  font-size: 12.5px;
+  line-height: 1.58;
+  color: var(--idb-ink-sub);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.idb-clue.is-selected .idb-clue-snippet,
+.idb-clue.is-sealed .idb-clue-snippet {
+  color: rgba(224, 242, 254, 0.92);
+}
+
+/* ---------- 深海蓝宝石结论舱 (.idb-prism-panel) ---------- */
+.idb-prism-panel {
+  position: relative;
+  border-radius: 3px;
+  padding: 16px 18px;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  background:
+    radial-gradient(circle at 8% 50%, rgba(18, 80, 230, 0.24), transparent 44%),
+    linear-gradient(155deg, #0A1A3A 0%, var(--idb-sapphire) 62%, #0D2047 100%);
+  border: 1px solid rgba(56, 189, 248, 0.34);
+  border-left: 4px solid var(--idb-cobalt);
+  box-shadow:
+    inset 0 1px 0 rgba(125, 211, 252, 0.14),
+    0 8px 24px rgba(8, 20, 44, 0.18);
+  transition: border-color 0.32s ease, box-shadow 0.32s ease, background 0.32s ease;
+}
+
+.idb-prism-panel.is-unlocked {
+  border-color: var(--idb-cyan);
+  border-left-color: #7DD3FC;
+  background:
+    radial-gradient(circle at 10% 50%, rgba(56, 189, 248, 0.24), transparent 44%),
+    radial-gradient(circle at 92% 18%, rgba(18, 80, 230, 0.36), transparent 52%),
+    linear-gradient(155deg, #0C214D 0%, #071430 58%, #102B63 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(125, 211, 252, 0.34),
+    0 12px 32px rgba(18, 80, 230, 0.28);
+}
+
+.idb-seal-sigil {
+  width: 62px;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.idb-seal-ring {
+  stroke: rgba(125, 211, 252, 0.42);
+  transition: stroke 0.34s ease, opacity 0.34s ease;
+}
+
+.idb-prism-panel.is-unlocked .idb-seal-ring {
+  stroke: #38BDF8;
+}
+
+.idb-seal-sigil svg polygon {
+  stroke: rgba(125, 211, 252, 0.65);
+  fill: rgba(18, 80, 230, 0.2);
+}
+
+.idb-seal-sigil svg circle[fill] {
+  fill: #7DD3FC;
+}
+
+.idb-seal-links {
+  stroke: #7DD3FC;
+  stroke-dasharray: 180;
+  stroke-dashoffset: 180;
+  opacity: 0.22;
+  transition: stroke-dashoffset 0.56s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.36s ease;
+}
+
+.idb-prism-panel.is-unlocked .idb-seal-links {
+  stroke: #FFFFFF;
+  stroke-dashoffset: 0;
+  opacity: 1;
+  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.92));
+}
+
+.idb-prism-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.idb-prism-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.idb-prism-tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 2px 9px;
+  border-radius: 2px;
+  color: #7DD3FC;
+  background: rgba(18, 80, 230, 0.28);
+  border: 1px solid rgba(56, 189, 248, 0.44);
+}
+
+.idb-prism-panel.is-unlocked .idb-prism-tag {
+  color: #061229;
+  background: linear-gradient(135deg, #BAE6FD, #38BDF8);
+  border-color: #E0F2FE;
+}
+
+.idb-prism-name {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: 0.04em;
+}
+
+.idb-prism-detail {
+  font-size: 13.5px;
+  line-height: 1.72;
+  color: #D7E8FC;
+  white-space: pre-wrap;
+}
+
+.idb-conclusion-block {
+  margin-top: 6px;
+  padding: 10px 14px;
+  border-radius: 2px;
+  border-left: 3px solid var(--idb-cyan);
+  border-top: 1px solid rgba(125, 211, 252, 0.28);
+  background: linear-gradient(90deg, rgba(18, 80, 230, 0.34), rgba(56, 189, 248, 0.1));
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.74;
+  color: #F4FAFF;
+  animation: afxIceLensIn 0.36s ease both;
+}
+
+.idb-conclusion-block.hidden {
+  display: none;
+}
+
+/* ---------- 底部动作栏：瓷白底轨 + 实体电钴主按钮 (#1250E6) ---------- */
+.idb-foot {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 28px 18px 34px;
+  border-top: 1px solid rgba(18, 42, 86, 0.16);
+  background: var(--idb-porcelain);
+}
+
+.idb-skip-btn {
+  padding: 9px 16px;
+  border-radius: 3px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--idb-ink-sub);
+  border: 1px solid rgba(18, 42, 86, 0.26);
+  background: #FFFFFF;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.idb-skip-btn:hover {
+  color: var(--idb-ink);
+  border-color: var(--idb-cobalt);
+  background: var(--idb-well);
+}
+
+.idb-confirm-btn {
+  padding: 10px 26px;
+  border-radius: 3px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #FFFFFF;
+  background: var(--idb-cobalt);
+  border: 1.5px solid var(--idb-cobalt-deep);
+  box-shadow:
+    inset 0 1px 0 rgba(186, 230, 253, 0.42),
+    0 8px 22px rgba(18, 80, 230, 0.36);
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.2s ease,
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.idb-confirm-btn:hover:not(:disabled) {
+  background: var(--idb-cobalt-hi);
+  border-color: var(--idb-cyan);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(224, 242, 254, 0.56),
+    0 12px 28px rgba(18, 80, 230, 0.48);
+}
+
+.idb-confirm-btn:disabled {
+  cursor: not-allowed;
+  border-color: rgba(18, 42, 86, 0.2);
+  background: #DCE7F7;
+  color: #6078A2;
+  box-shadow: none;
+}
+
+/* ---------- 5. 窄屏、720p 矮屏与减弱动态适配 ---------- */
+@media (max-height: 780px) {
+  #ice-deduction-modal.overlay {
+    padding: 12px;
+  }
+
+  .idb-shell,
+  .idb-card {
+    max-height: min(94vh, 770px);
+  }
+
+  .idb-head {
+    padding: 13px 24px 11px;
+  }
+
+  .idb-title {
+    font-size: 19px;
+  }
+
+  .idb-prompt-bar {
+    padding: 8px 24px;
+    font-size: 13px;
+  }
+
+  .idb-body {
+    padding: 12px 24px 13px;
+    gap: 11px;
+  }
+
+  .idb-clues-grid {
+    gap: 9px;
+  }
+
+  .idb-clue {
+    padding: 10px 14px 10px 16px;
+    gap: 5px;
+  }
+
+  .idb-clue-label {
+    font-size: 14.5px;
+  }
+
+  .idb-clue-snippet {
+    font-size: 12px;
+    line-height: 1.48;
+  }
+
+  .idb-prism-panel {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+
+  .idb-prism-detail {
+    font-size: 13px;
+    line-height: 1.56;
+  }
+
+  .idb-conclusion-block {
+    margin-top: 4px;
+    padding: 8px 12px;
+    font-size: 13.5px;
+    line-height: 1.58;
+  }
+
+  .idb-foot {
+    padding: 10px 24px 12px 30px;
+  }
+}
+
+@media (max-width: 720px) {
+  .idb-head {
+    padding: 16px 18px 14px;
+  }
+
+  .idb-prompt-bar,
+  .idb-body,
+  .idb-foot {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .idb-clues-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .idb-prism-panel {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .idb-seal-sigil {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #ambient-fx-canvas {
+    display: none !important;
+  }
+
+  body.ice-palace-lens::after,
+  .idb-shell,
+  .idb-card,
+  .idb-conclusion-block {
+    animation: none !important;
+  }
+
+  .afx-frost-slash {
+    animation: afxReducedGlint 280ms ease forwards;
+  }
+
+  .afx-slash-glow,
+  .afx-slash-core,
+  .afx-slash-gold,
+  .afx-slash-shards {
+    animation: none !important;
+    stroke-dashoffset: 0;
+    opacity: 0.72;
+  }
+}
+
+@keyframes afxReducedGlint {
+  0% { opacity: 0; }
+  35% { opacity: 0.65; }
+  100% { opacity: 0; }
+}

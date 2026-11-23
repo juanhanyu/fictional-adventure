@@ -4,7 +4,18 @@ const { spawnSync } = require('child_process');
 const path = require('path');
 const cases = ['validate.js','smoke.js','gate_flow.js','full_playthrough.js','panel_consistency.js','npc_presence.js','bgm_mapping.js','bgm_flow.js','bgm_roam_trace.js','bgm_child.js','bgm_action.js','bgm_sametype.js','bgm_comedy.js','bgm_scene_guard.js','bgm_micro_actual.js','ui_changes.js','story_polish.js','cg_test.js','cg_turnpoint.js','cg_cooloff.js','portrait_age.js','gate_seven.js','no_long_lines.js','key_space.js','stage_logic.js'];
 let fail = 0;
-cases.push('tavern_integration.js');
+cases.push(
+  'tavern_integration.js',
+  'story_vol3_and_lint.js',
+  'combat_indie_depth.js',
+  'branching_and_personas.js',
+  'integration_e2e_smoke.js',
+  'gameplay_depth_v2.js',
+  'ui_and_polish_guard.js',
+  'vol4_and_synergy.js',
+  'ambient_and_system_ui.js',
+  'proxy_and_personas_v2.js'
+);
 for (const f of cases){
   const r = spawnSync('node', [path.join(__dirname, f)], { encoding:'utf8', cwd: __dirname });
   process.stdout.write(r.stdout || '');

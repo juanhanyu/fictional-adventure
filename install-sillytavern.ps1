@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory = $true)][string]$SillyTavernPath,
     [string]$UserHandle = 'default-user'
 )
@@ -15,7 +15,7 @@ if (Test-Path -LiteralPath $extensionRoot) {
 New-Item -Path $extensionRoot -ItemType Directory -Force | Out-Null
 $runtimeFiles = @('manifest.json', 'tavern-extension.js', 'tavern-extension.css', 'tavern-prompt.mjs', 'index.html', 'game.js', 'style.css')
 foreach ($file in $runtimeFiles) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot $file) -Destination (Join-Path $extensionRoot $file) -Force }
-foreach ($folder in @('js', 'assets', 'Music')) {
+foreach ($folder in @('js', 'css', 'assets', 'Music')) {
     $destination = Join-Path $extensionRoot $folder
     New-Item -Path $destination -ItemType Directory -Force | Out-Null
     Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot $folder) | ForEach-Object {

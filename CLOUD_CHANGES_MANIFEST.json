@@ -1,0 +1,42 @@
+{
+  "added": [
+    "css/ambient-fx.css",
+    "css/system-chronicle.css",
+    "css/title-cobalt.css",
+    "js/ambient-fx.js",
+    "js/liquid-prism.js",
+    "js/story-vol4.js",
+    "js/vendor/liquidGL.js",
+    "tests/ambient_and_system_ui.js",
+    "tests/proxy_and_personas_v2.js",
+    "tests/ui_and_polish_guard.js",
+    "tests/vol4_and_synergy.js"
+  ],
+  "modified": [
+    "AGENTS.md",
+    "css/ai-branching.css",
+    "css/combat.css",
+    "css/gameplay-v2.css",
+    "game.js",
+    "index.html",
+    "js/ai-chat-panel.js",
+    "js/ai-personas.js",
+    "js/branching-director.js",
+    "js/combat-engine.js",
+    "js/relics-and-events.js",
+    "js/story-vol3.js",
+    "js/vn-ux.js",
+    "server/gemini-proxy.mjs",
+    "style.css",
+    "tests/branching_and_personas.js",
+    "tests/combat_indie_depth.js",
+    "tests/gameplay_depth_v2.js",
+    "tests/harness.js",
+    "tests/integration_e2e_smoke.js",
+    "tests/run.js",
+    "tools/GAME_DIRECTOR_CRITIC_SPEC.md",
+    "tools/novel_linter.py"
+  ],
+  "deleted": [],
+  "total_changed": 34
+}

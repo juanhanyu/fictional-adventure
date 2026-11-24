@@ -1,288 +1,597 @@
 {
-  "spec": {
-    "logical_px_pitch": 16,
-    "humanoid": {
-      "gpt_size": "1024x1024",
-      "grid_w": 64,
-      "grid_h": 64,
-      "ground_y": 60,
-      "target_h_px": 54
+  "tiers": {
+    "tier64": {
+      "label": "Tier 1 · 64×64 人形 / 96×64 魔兽（经典日式 Q 版，3× = 192px）",
+      "pitch_desc": "16×16",
+      "display_int_scale": 3,
+      "chroma_bg": "#FF00FF",
+      "humanoid": {
+        "gpt_size": "1024x1024",
+        "prompt_grid": "64×64",
+        "grid_w": 64,
+        "grid_h": 64,
+        "ground_y": 60,
+        "target_h_px": 54,
+        "max_colors": 28
+      },
+      "humanoid_tall": {
+        "gpt_size": "1024x1024",
+        "prompt_grid": "64×64",
+        "grid_w": 64,
+        "grid_h": 64,
+        "ground_y": 60,
+        "target_h_px": 58,
+        "max_colors": 28
+      },
+      "quadruped": {
+        "gpt_size": "1536x1024",
+        "prompt_grid": "96×64",
+        "grid_w": 96,
+        "grid_h": 64,
+        "ground_y": 60,
+        "target_h_px": 54,
+        "max_colors": 28
+      },
+      "boss": {
+        "gpt_size": "1536x1024",
+        "prompt_grid": "96×64",
+        "grid_w": 96,
+        "grid_h": 64,
+        "ground_y": 60,
+        "target_h_px": 58,
+        "max_colors": 30
+      }
     },
-    "humanoid_tall": {
-      "gpt_size": "1024x1024",
-      "grid_w": 64,
-      "grid_h": 64,
-      "ground_y": 60,
-      "target_h_px": 58
-    },
-    "quadruped": {
-      "gpt_size": "1536x1024",
-      "grid_w": 96,
-      "grid_h": 64,
-      "ground_y": 60,
-      "target_h_px": 54
-    },
-    "boss": {
-      "gpt_size": "1536x1024",
-      "grid_w": 96,
-      "grid_h": 64,
-      "ground_y": 60,
-      "target_h_px": 58
-    },
-    "chroma_bg": "#FF00FF",
-    "display_int_scale": 3
+    "tier96": {
+      "label": "Tier 3 · 96×96 人形 / 128×96 魔兽（高精日系像素，2× = 192px）",
+      "pitch_desc": "约 10～11×10～11 正方形",
+      "display_int_scale": 2,
+      "chroma_bg": "#FF00FF",
+      "humanoid": {
+        "gpt_size": "1024x1024",
+        "prompt_grid": "96×96",
+        "grid_w": 96,
+        "grid_h": 96,
+        "ground_y": 90,
+        "target_h_px": 80,
+        "max_colors": 34
+      },
+      "humanoid_tall": {
+        "gpt_size": "1024x1024",
+        "prompt_grid": "96×96",
+        "grid_w": 96,
+        "grid_h": 96,
+        "ground_y": 90,
+        "target_h_px": 86,
+        "max_colors": 34
+      },
+      "quadruped": {
+        "gpt_size": "1536x1024",
+        "prompt_grid": "144×96（居中主图区 128×96）",
+        "grid_w": 128,
+        "grid_h": 96,
+        "ground_y": 90,
+        "target_h_px": 80,
+        "max_colors": 34
+      },
+      "boss": {
+        "gpt_size": "1536x1024",
+        "prompt_grid": "144×96（居中主图区 128×96）",
+        "grid_w": 128,
+        "grid_h": 96,
+        "ground_y": 90,
+        "target_h_px": 86,
+        "max_colors": 36
+      }
+    }
   },
   "prompts": {
-    "sylvia_silver": {
-      "idle": {
-        "name": "希尔维亚（银发本尊）",
-        "ref": "assets/portraits/sylvia_teenage_normal.png",
-        "kind": "humanoid",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/sylvia_silver_idle.txt"
+    "tier64": {
+      "sylvia_silver": {
+        "idle": {
+          "name": "希尔维亚（银发本尊）",
+          "ref": "assets/portraits/sylvia_teenage_normal.png",
+          "kind": "humanoid",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/sylvia_silver_idle.txt"
+        },
+        "strike": {
+          "name": "希尔维亚（银发本尊）",
+          "ref": "assets/portraits/sylvia_teenage_normal.png",
+          "kind": "humanoid",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/sylvia_silver_strike.txt"
+        }
       },
-      "strike": {
-        "name": "希尔维亚（银发本尊）",
-        "ref": "assets/portraits/sylvia_teenage_normal.png",
-        "kind": "humanoid",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/sylvia_silver_strike.txt"
+      "sylvia_disguise": {
+        "idle": {
+          "name": "希尔维亚（眷寒渔·黑发伪装）",
+          "ref": "assets/portraits/sylvia_disguise_normal.png",
+          "kind": "humanoid",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/sylvia_disguise_idle.txt"
+        },
+        "strike": {
+          "name": "希尔维亚（眷寒渔·黑发伪装）",
+          "ref": "assets/portraits/sylvia_disguise_normal.png",
+          "kind": "humanoid",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/sylvia_disguise_strike.txt"
+        }
+      },
+      "beatrice": {
+        "idle": {
+          "name": "贝阿特丽丝",
+          "ref": "assets/portraits/beatrice_teenage_normal.png",
+          "kind": "humanoid",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/beatrice_idle.txt"
+        },
+        "strike": {
+          "name": "贝阿特丽丝",
+          "ref": "assets/portraits/beatrice_teenage_normal.png",
+          "kind": "humanoid",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/beatrice_strike.txt"
+        }
+      },
+      "alice": {
+        "idle": {
+          "name": "爱丽丝",
+          "ref": "assets/portraits/alice_teenage_normal.png",
+          "kind": "humanoid",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/alice_idle.txt"
+        },
+        "strike": {
+          "name": "爱丽丝",
+          "ref": "assets/portraits/alice_teenage_normal.png",
+          "kind": "humanoid",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/alice_strike.txt"
+        }
+      },
+      "aino": {
+        "idle": {
+          "name": "艾诺",
+          "ref": "assets/portraits/aino_normal.png",
+          "kind": "humanoid",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/aino_idle.txt"
+        },
+        "strike": {
+          "name": "艾诺",
+          "ref": "assets/portraits/aino_normal.png",
+          "kind": "humanoid",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/aino_strike.txt"
+        }
+      },
+      "noelle": {
+        "idle": {
+          "name": "诺艾儿",
+          "ref": "assets/portraits/noelle_normal.png",
+          "kind": "humanoid",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/noelle_idle.txt"
+        },
+        "strike": {
+          "name": "诺艾儿",
+          "ref": "assets/portraits/noelle_normal.png",
+          "kind": "humanoid",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/noelle_strike.txt"
+        }
+      },
+      "rowan": {
+        "idle": {
+          "name": "罗文（晦轮杖）",
+          "ref": "assets/monsters/rowan_eclipse.png",
+          "kind": "humanoid_tall",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/rowan_idle.txt"
+        },
+        "strike": {
+          "name": "罗文（晦轮杖）",
+          "ref": "assets/monsters/rowan_eclipse.png",
+          "kind": "humanoid_tall",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/rowan_strike.txt"
+        }
+      },
+      "wind_god_avatar": {
+        "idle": {
+          "name": "风神·岚（化身）",
+          "ref": "assets/monsters/wind_god_tempest.png",
+          "kind": "humanoid_tall",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/wind_god_avatar_idle.txt"
+        },
+        "strike": {
+          "name": "风神·岚（化身）",
+          "ref": "assets/monsters/wind_god_tempest.png",
+          "kind": "humanoid_tall",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/wind_god_avatar_strike.txt"
+        }
+      },
+      "eastwing_commander": {
+        "idle": {
+          "name": "红莲铁幕·东翼指挥官",
+          "ref": "assets/monsters/eastwing_commander.png",
+          "kind": "humanoid_tall",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/eastwing_commander_idle.txt"
+        },
+        "strike": {
+          "name": "红莲铁幕·东翼指挥官",
+          "ref": "assets/monsters/eastwing_commander.png",
+          "kind": "humanoid_tall",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/eastwing_commander_strike.txt"
+        }
+      },
+      "corridor_vanguard": {
+        "idle": {
+          "name": "回廊炎术突击队长",
+          "ref": "assets/monsters/corridor_vanguard.png",
+          "kind": "humanoid_tall",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/corridor_vanguard_idle.txt"
+        },
+        "strike": {
+          "name": "回廊炎术突击队长",
+          "ref": "assets/monsters/corridor_vanguard.png",
+          "kind": "humanoid_tall",
+          "grid": "64x64",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/corridor_vanguard_strike.txt"
+        }
+      },
+      "wolf_alpha": {
+        "idle": {
+          "name": "灰棘头狼",
+          "ref": "assets/monsters/wolf_alpha.png",
+          "kind": "quadruped",
+          "grid": "96x64",
+          "gpt_size": "1536x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/wolf_alpha_idle.txt"
+        },
+        "strike": {
+          "name": "灰棘头狼",
+          "ref": "assets/monsters/wolf_alpha.png",
+          "kind": "quadruped",
+          "grid": "96x64",
+          "gpt_size": "1536x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/wolf_alpha_strike.txt"
+        }
+      },
+      "pack_wolf": {
+        "idle": {
+          "name": "灰棘狼",
+          "ref": "assets/monsters/pack_wolf.png",
+          "kind": "quadruped",
+          "grid": "96x64",
+          "gpt_size": "1536x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/pack_wolf_idle.txt"
+        },
+        "strike": {
+          "name": "灰棘狼",
+          "ref": "assets/monsters/pack_wolf.png",
+          "kind": "quadruped",
+          "grid": "96x64",
+          "gpt_size": "1536x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/pack_wolf_strike.txt"
+        }
+      },
+      "shadow_jackal": {
+        "idle": {
+          "name": "霜脊影豺",
+          "ref": "assets/monsters/shadow_jackal.png",
+          "kind": "quadruped",
+          "grid": "96x64",
+          "gpt_size": "1536x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/shadow_jackal_idle.txt"
+        },
+        "strike": {
+          "name": "霜脊影豺",
+          "ref": "assets/monsters/shadow_jackal.png",
+          "kind": "quadruped",
+          "grid": "96x64",
+          "gpt_size": "1536x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/shadow_jackal_strike.txt"
+        }
+      },
+      "abyss_behemoth": {
+        "idle": {
+          "name": "霜渊裂地兽",
+          "ref": "assets/monsters/abyss_behemoth.png",
+          "kind": "boss",
+          "grid": "96x64",
+          "gpt_size": "1536x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/abyss_behemoth_idle.txt"
+        },
+        "strike": {
+          "name": "霜渊裂地兽",
+          "ref": "assets/monsters/abyss_behemoth.png",
+          "kind": "boss",
+          "grid": "96x64",
+          "gpt_size": "1536x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier64/abyss_behemoth_strike.txt"
+        }
       }
     },
-    "sylvia_disguise": {
-      "idle": {
-        "name": "希尔维亚（眷寒渔·黑发伪装）",
-        "ref": "assets/portraits/sylvia_disguise_normal.png",
-        "kind": "humanoid",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/sylvia_disguise_idle.txt"
+    "tier96": {
+      "sylvia_silver": {
+        "idle": {
+          "name": "希尔维亚（银发本尊）",
+          "ref": "assets/portraits/sylvia_teenage_normal.png",
+          "kind": "humanoid",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/sylvia_silver_idle.txt"
+        },
+        "strike": {
+          "name": "希尔维亚（银发本尊）",
+          "ref": "assets/portraits/sylvia_teenage_normal.png",
+          "kind": "humanoid",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/sylvia_silver_strike.txt"
+        }
       },
-      "strike": {
-        "name": "希尔维亚（眷寒渔·黑发伪装）",
-        "ref": "assets/portraits/sylvia_disguise_normal.png",
-        "kind": "humanoid",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/sylvia_disguise_strike.txt"
-      }
-    },
-    "beatrice": {
-      "idle": {
-        "name": "贝阿特丽丝",
-        "ref": "assets/portraits/beatrice_teenage_normal.png",
-        "kind": "humanoid",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/beatrice_idle.txt"
+      "sylvia_disguise": {
+        "idle": {
+          "name": "希尔维亚（眷寒渔·黑发伪装）",
+          "ref": "assets/portraits/sylvia_disguise_normal.png",
+          "kind": "humanoid",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/sylvia_disguise_idle.txt"
+        },
+        "strike": {
+          "name": "希尔维亚（眷寒渔·黑发伪装）",
+          "ref": "assets/portraits/sylvia_disguise_normal.png",
+          "kind": "humanoid",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/sylvia_disguise_strike.txt"
+        }
       },
-      "strike": {
-        "name": "贝阿特丽丝",
-        "ref": "assets/portraits/beatrice_teenage_normal.png",
-        "kind": "humanoid",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/beatrice_strike.txt"
-      }
-    },
-    "alice": {
-      "idle": {
-        "name": "爱丽丝",
-        "ref": "assets/portraits/alice_teenage_normal.png",
-        "kind": "humanoid",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/alice_idle.txt"
+      "beatrice": {
+        "idle": {
+          "name": "贝阿特丽丝",
+          "ref": "assets/portraits/beatrice_teenage_normal.png",
+          "kind": "humanoid",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/beatrice_idle.txt"
+        },
+        "strike": {
+          "name": "贝阿特丽丝",
+          "ref": "assets/portraits/beatrice_teenage_normal.png",
+          "kind": "humanoid",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/beatrice_strike.txt"
+        }
       },
-      "strike": {
-        "name": "爱丽丝",
-        "ref": "assets/portraits/alice_teenage_normal.png",
-        "kind": "humanoid",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/alice_strike.txt"
-      }
-    },
-    "aino": {
-      "idle": {
-        "name": "艾诺",
-        "ref": "assets/portraits/aino_normal.png",
-        "kind": "humanoid",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/aino_idle.txt"
+      "alice": {
+        "idle": {
+          "name": "爱丽丝",
+          "ref": "assets/portraits/alice_teenage_normal.png",
+          "kind": "humanoid",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/alice_idle.txt"
+        },
+        "strike": {
+          "name": "爱丽丝",
+          "ref": "assets/portraits/alice_teenage_normal.png",
+          "kind": "humanoid",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/alice_strike.txt"
+        }
       },
-      "strike": {
-        "name": "艾诺",
-        "ref": "assets/portraits/aino_normal.png",
-        "kind": "humanoid",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/aino_strike.txt"
-      }
-    },
-    "noelle": {
-      "idle": {
-        "name": "诺艾儿",
-        "ref": "assets/portraits/noelle_normal.png",
-        "kind": "humanoid",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/noelle_idle.txt"
+      "aino": {
+        "idle": {
+          "name": "艾诺",
+          "ref": "assets/portraits/aino_normal.png",
+          "kind": "humanoid",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/aino_idle.txt"
+        },
+        "strike": {
+          "name": "艾诺",
+          "ref": "assets/portraits/aino_normal.png",
+          "kind": "humanoid",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/aino_strike.txt"
+        }
       },
-      "strike": {
-        "name": "诺艾儿",
-        "ref": "assets/portraits/noelle_normal.png",
-        "kind": "humanoid",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/noelle_strike.txt"
-      }
-    },
-    "rowan": {
-      "idle": {
-        "name": "罗文（晦轮杖）",
-        "ref": "assets/monsters/rowan_eclipse.png",
-        "kind": "humanoid_tall",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/rowan_idle.txt"
+      "noelle": {
+        "idle": {
+          "name": "诺艾儿",
+          "ref": "assets/portraits/noelle_normal.png",
+          "kind": "humanoid",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/noelle_idle.txt"
+        },
+        "strike": {
+          "name": "诺艾儿",
+          "ref": "assets/portraits/noelle_normal.png",
+          "kind": "humanoid",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/noelle_strike.txt"
+        }
       },
-      "strike": {
-        "name": "罗文（晦轮杖）",
-        "ref": "assets/monsters/rowan_eclipse.png",
-        "kind": "humanoid_tall",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/rowan_strike.txt"
-      }
-    },
-    "wind_god_avatar": {
-      "idle": {
-        "name": "风神·岚（化身）",
-        "ref": "assets/monsters/wind_god_tempest.png",
-        "kind": "humanoid_tall",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/wind_god_avatar_idle.txt"
+      "rowan": {
+        "idle": {
+          "name": "罗文（晦轮杖）",
+          "ref": "assets/monsters/rowan_eclipse.png",
+          "kind": "humanoid_tall",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/rowan_idle.txt"
+        },
+        "strike": {
+          "name": "罗文（晦轮杖）",
+          "ref": "assets/monsters/rowan_eclipse.png",
+          "kind": "humanoid_tall",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/rowan_strike.txt"
+        }
       },
-      "strike": {
-        "name": "风神·岚（化身）",
-        "ref": "assets/monsters/wind_god_tempest.png",
-        "kind": "humanoid_tall",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/wind_god_avatar_strike.txt"
-      }
-    },
-    "eastwing_commander": {
-      "idle": {
-        "name": "红莲铁幕·东翼指挥官",
-        "ref": "assets/monsters/eastwing_commander.png",
-        "kind": "humanoid_tall",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/eastwing_commander_idle.txt"
+      "wind_god_avatar": {
+        "idle": {
+          "name": "风神·岚（化身）",
+          "ref": "assets/monsters/wind_god_tempest.png",
+          "kind": "humanoid_tall",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/wind_god_avatar_idle.txt"
+        },
+        "strike": {
+          "name": "风神·岚（化身）",
+          "ref": "assets/monsters/wind_god_tempest.png",
+          "kind": "humanoid_tall",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/wind_god_avatar_strike.txt"
+        }
       },
-      "strike": {
-        "name": "红莲铁幕·东翼指挥官",
-        "ref": "assets/monsters/eastwing_commander.png",
-        "kind": "humanoid_tall",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/eastwing_commander_strike.txt"
-      }
-    },
-    "corridor_vanguard": {
-      "idle": {
-        "name": "回廊炎术突击队长",
-        "ref": "assets/monsters/corridor_vanguard.png",
-        "kind": "humanoid_tall",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/corridor_vanguard_idle.txt"
+      "eastwing_commander": {
+        "idle": {
+          "name": "红莲铁幕·东翼指挥官",
+          "ref": "assets/monsters/eastwing_commander.png",
+          "kind": "humanoid_tall",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/eastwing_commander_idle.txt"
+        },
+        "strike": {
+          "name": "红莲铁幕·东翼指挥官",
+          "ref": "assets/monsters/eastwing_commander.png",
+          "kind": "humanoid_tall",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/eastwing_commander_strike.txt"
+        }
       },
-      "strike": {
-        "name": "回廊炎术突击队长",
-        "ref": "assets/monsters/corridor_vanguard.png",
-        "kind": "humanoid_tall",
-        "grid": "64x64",
-        "gpt_size": "1024x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/corridor_vanguard_strike.txt"
-      }
-    },
-    "wolf_alpha": {
-      "idle": {
-        "name": "灰棘头狼",
-        "ref": "assets/monsters/wolf_alpha.png",
-        "kind": "quadruped",
-        "grid": "96x64",
-        "gpt_size": "1536x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/wolf_alpha_idle.txt"
+      "corridor_vanguard": {
+        "idle": {
+          "name": "回廊炎术突击队长",
+          "ref": "assets/monsters/corridor_vanguard.png",
+          "kind": "humanoid_tall",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/corridor_vanguard_idle.txt"
+        },
+        "strike": {
+          "name": "回廊炎术突击队长",
+          "ref": "assets/monsters/corridor_vanguard.png",
+          "kind": "humanoid_tall",
+          "grid": "96x96",
+          "gpt_size": "1024x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/corridor_vanguard_strike.txt"
+        }
       },
-      "strike": {
-        "name": "灰棘头狼",
-        "ref": "assets/monsters/wolf_alpha.png",
-        "kind": "quadruped",
-        "grid": "96x64",
-        "gpt_size": "1536x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/wolf_alpha_strike.txt"
-      }
-    },
-    "pack_wolf": {
-      "idle": {
-        "name": "灰棘狼",
-        "ref": "assets/monsters/pack_wolf.png",
-        "kind": "quadruped",
-        "grid": "96x64",
-        "gpt_size": "1536x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/pack_wolf_idle.txt"
+      "wolf_alpha": {
+        "idle": {
+          "name": "灰棘头狼",
+          "ref": "assets/monsters/wolf_alpha.png",
+          "kind": "quadruped",
+          "grid": "128x96",
+          "gpt_size": "1536x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/wolf_alpha_idle.txt"
+        },
+        "strike": {
+          "name": "灰棘头狼",
+          "ref": "assets/monsters/wolf_alpha.png",
+          "kind": "quadruped",
+          "grid": "128x96",
+          "gpt_size": "1536x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/wolf_alpha_strike.txt"
+        }
       },
-      "strike": {
-        "name": "灰棘狼",
-        "ref": "assets/monsters/pack_wolf.png",
-        "kind": "quadruped",
-        "grid": "96x64",
-        "gpt_size": "1536x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/pack_wolf_strike.txt"
-      }
-    },
-    "shadow_jackal": {
-      "idle": {
-        "name": "霜脊影豺",
-        "ref": "assets/monsters/shadow_jackal.png",
-        "kind": "quadruped",
-        "grid": "96x64",
-        "gpt_size": "1536x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/shadow_jackal_idle.txt"
+      "pack_wolf": {
+        "idle": {
+          "name": "灰棘狼",
+          "ref": "assets/monsters/pack_wolf.png",
+          "kind": "quadruped",
+          "grid": "128x96",
+          "gpt_size": "1536x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/pack_wolf_idle.txt"
+        },
+        "strike": {
+          "name": "灰棘狼",
+          "ref": "assets/monsters/pack_wolf.png",
+          "kind": "quadruped",
+          "grid": "128x96",
+          "gpt_size": "1536x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/pack_wolf_strike.txt"
+        }
       },
-      "strike": {
-        "name": "霜脊影豺",
-        "ref": "assets/monsters/shadow_jackal.png",
-        "kind": "quadruped",
-        "grid": "96x64",
-        "gpt_size": "1536x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/shadow_jackal_strike.txt"
-      }
-    },
-    "abyss_behemoth": {
-      "idle": {
-        "name": "霜渊裂地兽",
-        "ref": "assets/monsters/abyss_behemoth.png",
-        "kind": "boss",
-        "grid": "96x64",
-        "gpt_size": "1536x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/abyss_behemoth_idle.txt"
+      "shadow_jackal": {
+        "idle": {
+          "name": "霜脊影豺",
+          "ref": "assets/monsters/shadow_jackal.png",
+          "kind": "quadruped",
+          "grid": "128x96",
+          "gpt_size": "1536x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/shadow_jackal_idle.txt"
+        },
+        "strike": {
+          "name": "霜脊影豺",
+          "ref": "assets/monsters/shadow_jackal.png",
+          "kind": "quadruped",
+          "grid": "128x96",
+          "gpt_size": "1536x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/shadow_jackal_strike.txt"
+        }
       },
-      "strike": {
-        "name": "霜渊裂地兽",
-        "ref": "assets/monsters/abyss_behemoth.png",
-        "kind": "boss",
-        "grid": "96x64",
-        "gpt_size": "1536x1024",
-        "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/abyss_behemoth_strike.txt"
+      "abyss_behemoth": {
+        "idle": {
+          "name": "霜渊裂地兽",
+          "ref": "assets/monsters/abyss_behemoth.png",
+          "kind": "boss",
+          "grid": "128x96",
+          "gpt_size": "1536x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/abyss_behemoth_idle.txt"
+        },
+        "strike": {
+          "name": "霜渊裂地兽",
+          "ref": "assets/monsters/abyss_behemoth.png",
+          "kind": "boss",
+          "grid": "128x96",
+          "gpt_size": "1536x1024",
+          "prompt_file": "/home/antigravity/cloud_sandbox/tools/pixel_gpt_pipeline/prompts/tier96/abyss_behemoth_strike.txt"
+        }
       }
     }
   }

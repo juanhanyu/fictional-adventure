@@ -551,7 +551,9 @@ def convert_single(
     patch_path: Path | None,
 ) -> tuple[Image.Image, Image.Image, dict]:
     src_img = Image.open(src_path).convert("RGBA")
-    expected_pitch = src_img.size[0] / float(grid_w)
+    # Height determines exact square logical pixel pitch (1024/64=16.0, 1024/96=10.667)
+    # across both 1024x1024 (1:1) and 1536x1024 (3:2) GPT canvases.
+    expected_pitch = src_img.size[1] / float(grid_h)
     bg_rgb, use_alpha = detect_bg_color(src_img)
     pitch, ox, oy = detect_lattice(src_img, expected_pitch=expected_pitch)
     sampled = sample_grid(src_img, pitch, ox, oy)

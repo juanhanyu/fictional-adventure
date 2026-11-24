@@ -4,51 +4,48 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>方案 C · WebGL 光线步进虹彩高维奇点晶核 — 转生千金</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;600;700;900&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --serif-en: 'Cormorant Garamond', Georgia, serif;
-    --serif-zh: 'Noto Serif SC', 'Songti SC', Georgia, serif;
-    --sans-zh: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    --serif-en: 'Cormorant Garamond', 'Didot', 'Bodoni MT', Georgia, serif;
+    --serif-zh: 'Noto Serif SC', 'Noto Serif CJK SC', 'Source Han Serif SC', 'Songti SC', 'STSong', Georgia, serif;
+    --sans-zh: 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
     --ease: cubic-bezier(0.22, 1, 0.36, 1);
 
     /* Deep Sapphire Night (default) */
-    --ui-bg: rgba(8, 16, 36, 0.56);
-    --ui-bg-hover: rgba(24, 48, 96, 0.62);
-    --ui-border: rgba(138, 198, 255, 0.22);
-    --ui-border-strong: rgba(154, 220, 255, 0.45);
-    --ui-text: #eef6ff;
-    --ui-text-mid: rgba(214, 232, 255, 0.78);
-    --ui-text-muted: rgba(162, 196, 238, 0.58);
-    --ui-accent: #67d4ff;
+    --ui-bg: rgba(6, 13, 30, 0.64);
+    --ui-bg-hover: rgba(34, 72, 148, 0.34);
+    --ui-border: rgba(132, 198, 255, 0.24);
+    --ui-border-strong: rgba(132, 214, 255, 0.62);
+    --ui-text: #f0f7ff;
+    --ui-text-mid: rgba(210, 230, 255, 0.80);
+    --ui-text-muted: rgba(154, 190, 236, 0.62);
+    --ui-accent: #66d8ff;
     --ui-accent-deep: #1b56db;
-    --ui-gold: #e6cfa0;
-    --pill-active-bg: linear-gradient(135deg, rgba(44, 118, 255, 0.48), rgba(103, 212, 255, 0.32));
-    --pill-active-text: #ffffff;
-    --pill-shadow: 0 18px 46px rgba(2, 6, 18, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.14);
-    --title-shadow: 0 8px 34px rgba(4, 12, 34, 0.65);
-    --cta-bg: linear-gradient(135deg, #1b4fd1 0%, #2f7bff 52%, #66d4ff 100%);
+    --ui-gold: #e7cfa0;
+    --dock-active-bg: rgba(36, 108, 255, 0.26);
+    --dock-active-text: #ffffff;
+    --dock-shadow: 0 20px 54px rgba(1, 5, 16, 0.62), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    --title-shadow: 0 8px 34px rgba(2, 8, 26, 0.72);
+    --cta-bg: linear-gradient(135deg, #1648c4 0%, #2773fa 56%, #5ed2ff 100%);
     --cta-text: #ffffff;
   }
 
   body[data-theme="porcelain"] {
-    --ui-bg: rgba(255, 255, 255, 0.72);
-    --ui-bg-hover: rgba(236, 244, 255, 0.92);
-    --ui-border: rgba(28, 76, 184, 0.16);
-    --ui-border-strong: rgba(28, 76, 184, 0.36);
-    --ui-text: #162238;
-    --ui-text-mid: rgba(28, 44, 74, 0.76);
-    --ui-text-muted: rgba(58, 76, 110, 0.58);
+    --ui-bg: rgba(252, 253, 255, 0.82);
+    --ui-bg-hover: rgba(28, 76, 184, 0.08);
+    --ui-border: rgba(28, 76, 184, 0.18);
+    --ui-border-strong: rgba(28, 76, 184, 0.52);
+    --ui-text: #152138;
+    --ui-text-mid: rgba(28, 44, 76, 0.78);
+    --ui-text-muted: rgba(58, 78, 114, 0.60);
     --ui-accent: #1c4cb8;
     --ui-accent-deep: #0e2b78;
-    --ui-gold: #b0935c;
-    --pill-active-bg: linear-gradient(135deg, #123b9e 0%, #2463e8 100%);
-    --pill-active-text: #ffffff;
-    --pill-shadow: 0 16px 40px rgba(18, 42, 96, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.92);
-    --title-shadow: 0 4px 20px rgba(255, 255, 255, 0.75);
-    --cta-bg: linear-gradient(135deg, #0e2b78 0%, #1c4cb8 56%, #3984f7 100%);
+    --ui-gold: #a5854b;
+    --dock-active-bg: rgba(28, 76, 184, 0.10);
+    --dock-active-text: #0e2b78;
+    --dock-shadow: 0 16px 42px rgba(16, 40, 94, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    --title-shadow: 0 4px 22px rgba(255, 255, 255, 0.85);
+    --cta-bg: linear-gradient(135deg, #0e2b78 0%, #1c4cb8 56%, #347ef2 100%);
     --cta-text: #ffffff;
   }
 
@@ -62,7 +59,7 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #040814;
+    background: #030714;
     color: var(--ui-text);
     font-family: var(--sans-zh);
     -webkit-font-smoothing: antialiased;
@@ -74,7 +71,6 @@
     background: #f5f8fe;
   }
 
-  /* Fullscreen WebGL / Fallback Stage */
   #stage-wrap {
     position: fixed;
     inset: 0;
@@ -97,11 +93,11 @@
     display: none;
   }
 
-  /* Subtle top-left curator badge */
+  /* Subtle top-left curator label (sharp editorial framing) */
   .curator-hud {
     position: fixed;
     top: 26px;
-    left: 32px;
+    left: 34px;
     z-index: 20;
     pointer-events: none;
     display: flex;
@@ -142,28 +138,19 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 11px;
-    letter-spacing: 0.08em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
     color: var(--ui-text-muted);
   }
 
-  .tech-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    border: 1px solid var(--ui-border);
-    background: var(--ui-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    color: var(--ui-text-mid);
+  .curator-meta-sep {
+    width: 1px;
+    height: 10px;
+    background: var(--ui-border);
   }
 
-  /* Interactive hint (top right) */
+  /* Top-right interactive guide */
   .interaction-hint {
     position: fixed;
     top: 28px;
@@ -172,11 +159,10 @@
     pointer-events: none;
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 16px;
     font-size: 11.5px;
     letter-spacing: 0.1em;
     color: var(--ui-text-muted);
-    transition: opacity 0.4s var(--ease);
   }
 
   .hint-item {
@@ -190,7 +176,7 @@
     height: 4px;
     transform: rotate(45deg);
     background: var(--ui-accent);
-    opacity: 0.78;
+    opacity: 0.8;
   }
 
   /* ===== 《转生千金》 Editorial Title Overlay ===== */
@@ -202,7 +188,7 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    padding: 0 7.5vw 44px 7.5vw;
+    padding: 0 7vw 38px 7vw;
     opacity: 1;
     transform: translateX(0);
     transition: opacity 0.55s var(--ease), transform 0.65s var(--ease);
@@ -214,16 +200,16 @@
   }
 
   .folio-panel {
-    width: min(440px, 42vw);
+    width: min(410px, 38vw);
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    gap: 26px;
     pointer-events: none;
   }
 
   .folio-kicker {
     font-family: var(--serif-en);
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.24em;
     text-transform: uppercase;
@@ -238,14 +224,14 @@
     width: 24px;
     height: 1px;
     background: currentColor;
-    opacity: 0.7;
+    opacity: 0.72;
   }
 
   .folio-main {
     font-family: var(--serif-zh);
-    font-size: clamp(46px, 5.2vw, 68px);
-    font-weight: 900;
-    line-height: 1.06;
+    font-size: clamp(46px, 5vw, 66px);
+    font-weight: 700;
+    line-height: 1.08;
     letter-spacing: 0.16em;
     color: var(--ui-text);
     text-shadow: var(--title-shadow);
@@ -255,7 +241,7 @@
   .folio-sub {
     margin-top: 10px;
     font-family: var(--serif-zh);
-    font-size: 15.5px;
+    font-size: 15px;
     font-weight: 500;
     letter-spacing: 0.28em;
     color: var(--ui-text-mid);
@@ -281,7 +267,6 @@
     color: var(--ui-text-mid);
     font-size: 15px;
     letter-spacing: 0.14em;
-    transition: transform 0.3s var(--ease), color 0.3s var(--ease);
   }
 
   .folio-item::before {
@@ -308,14 +293,14 @@
     letter-spacing: 0.22em;
     text-transform: uppercase;
     color: var(--ui-text-muted);
-    min-width: 96px;
+    min-width: 94px;
   }
 
   .folio-cta-row {
     display: flex;
     align-items: center;
     gap: 18px;
-    margin-top: 4px;
+    margin-top: 2px;
   }
 
   .prism-cta-preview {
@@ -336,7 +321,7 @@
     font-family: var(--serif-en);
     font-size: 11px;
     letter-spacing: 0.24em;
-    opacity: 0.82;
+    opacity: 0.84;
   }
 
   .folio-chronicle {
@@ -346,7 +331,7 @@
     color: var(--ui-text-muted);
   }
 
-  /* ===== Minimal Bottom Floating Control Pill ===== */
+  /* ===== Minimal Architectural Control Dock (Zero nested rounded boxes) ===== */
   .control-dock {
     position: fixed;
     left: 50%;
@@ -354,50 +339,59 @@
     transform: translateX(-50%);
     z-index: 30;
     display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px;
-    border-radius: 999px;
+    align-items: stretch;
     background: var(--ui-bg);
     border: 1px solid var(--ui-border);
-    box-shadow: var(--pill-shadow);
-    backdrop-filter: blur(20px) saturate(140%);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border-radius: 2px;
+    box-shadow: var(--dock-shadow);
+    backdrop-filter: blur(16px) saturate(135%);
+    -webkit-backdrop-filter: blur(16px) saturate(135%);
     max-width: calc(100vw - 24px);
     overflow-x: auto;
   }
 
   .dock-group {
     display: inline-flex;
-    align-items: center;
-    gap: 4px;
+    align-items: stretch;
   }
 
   .dock-sep {
     width: 1px;
-    height: 20px;
     background: var(--ui-border);
-    margin: 0 4px;
     flex-shrink: 0;
   }
 
   .dock-btn {
+    position: relative;
     appearance: none;
-    border: 1px solid transparent;
+    border: none;
+    border-radius: 0;
     background: transparent;
     color: var(--ui-text-mid);
     font-family: var(--sans-zh);
     font-size: 12.5px;
     font-weight: 500;
-    letter-spacing: 0.06em;
-    padding: 8px 15px;
-    border-radius: 999px;
+    letter-spacing: 0.08em;
+    padding: 11px 17px;
     cursor: pointer;
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    transition: background 0.28s var(--ease), color 0.28s var(--ease), border-color 0.28s var(--ease), transform 0.2s var(--ease), box-shadow 0.28s var(--ease);
+    gap: 8px;
+    transition: background 0.25s var(--ease), color 0.25s var(--ease);
+  }
+
+  .dock-btn::after {
+    content: "";
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 0;
+    height: 2px;
+    background: var(--ui-accent);
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.28s var(--ease);
   }
 
   .dock-btn:hover {
@@ -405,40 +399,38 @@
     color: var(--ui-text);
   }
 
-  .dock-btn:active {
-    transform: scale(0.97);
-  }
-
   .dock-btn.is-active {
-    background: var(--pill-active-bg);
-    color: var(--pill-active-text);
-    border-color: var(--ui-border-strong);
-    box-shadow: 0 4px 18px rgba(30, 108, 255, 0.28);
+    background: var(--dock-active-bg);
+    color: var(--dock-active-text);
+    font-weight: 600;
   }
 
-  .btn-swatch {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.55);
+  .dock-btn.is-active::after {
+    transform: scaleX(1);
+  }
+
+  .btn-diamond {
+    width: 6px;
+    height: 6px;
+    transform: rotate(45deg);
     flex-shrink: 0;
   }
 
   .swatch-night {
-    background: radial-gradient(circle at 35% 35%, #67d4ff, #0b1b4a);
+    background: #3ea8ff;
+    box-shadow: 0 0 8px rgba(62, 168, 255, 0.7);
   }
 
   .swatch-porcelain {
-    background: radial-gradient(circle at 35% 35%, #ffffff, #c8dcfa);
-    border-color: rgba(28, 76, 184, 0.45);
+    background: #eef4ff;
+    border: 1px solid #1c4cb8;
   }
 
-  /* Ripple feedback indicator (subtle ring on click) */
   .click-ring {
     position: fixed;
-    width: 18px;
-    height: 18px;
-    margin: -9px 0 0 -9px;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
     border-radius: 50%;
     border: 1.2px solid var(--ui-accent);
     pointer-events: none;
@@ -457,7 +449,7 @@
     .title-overlay {
       align-items: flex-end;
       justify-content: center;
-      padding: 0 24px 96px 24px;
+      padding: 0 24px 92px 24px;
     }
     .folio-panel {
       width: 100%;
@@ -482,15 +474,16 @@
     </div>
     <div class="curator-title" id="mode-heading">高维折叠圣晶 · KIFS 虹彩棱镜</div>
     <div class="curator-meta">
-      <span class="tech-chip" id="renderer-badge">WEBGL · RAYMARCHING</span>
-      <span id="fps-readout">60 FPS</span>
+      <span id="renderer-badge">WEBGL2 · RAYMARCHED SDF</span>
+      <span class="curator-meta-sep"></span>
+      <span id="fps-readout">REALTIME 3D</span>
     </div>
   </aside>
 
   <!-- Top-right subtle controls guide -->
   <div class="interaction-hint" aria-hidden="true">
     <span class="hint-item"><i class="hint-diamond"></i>移动光标 · 引力折射视差</span>
-    <span class="hint-item"><i class="hint-diamond"></i>点击画布 · 触发维度涟漪</span>
+    <span class="hint-item"><i class="hint-diamond"></i>点击画布 · 维度涟漪</span>
     <span class="hint-item"><i class="hint-diamond"></i>拖拽 · 自由环视</span>
   </div>
 
@@ -519,7 +512,7 @@
     </div>
   </section>
 
-  <!-- Minimal Bottom Pill Controls -->
+  <!-- Minimal Architectural Control Dock -->
   <nav class="control-dock" aria-label="高维晶核控制栏">
     <div class="dock-group" role="group" aria-label="着色器形态">
       <button type="button" class="dock-btn is-active" data-mode="0">高维折叠圣晶</button>
@@ -529,10 +522,10 @@
     <span class="dock-sep" aria-hidden="true"></span>
     <div class="dock-group" role="group" aria-label="背景切换">
       <button type="button" class="dock-btn is-active" id="btn-theme-night" data-theme-pick="night">
-        <span class="btn-swatch swatch-night"></span>深蓝秘夜
+        <span class="btn-diamond swatch-night"></span>深蓝秘夜
       </button>
       <button type="button" class="dock-btn" id="btn-theme-porcelain" data-theme-pick="porcelain">
-        <span class="btn-swatch swatch-porcelain"></span>雪瓷画廊
+        <span class="btn-diamond swatch-porcelain"></span>雪瓷画廊
       </button>
     </div>
     <span class="dock-sep" aria-hidden="true"></span>
@@ -557,23 +550,19 @@
     '无限冰宫万花筒 · 非欧递归晶殿'
   ];
 
-  // Interactive state
   const state = {
     mode: 0,
-    modeBlend0: 1.0,
-    modeBlend1: 0.0,
-    modeBlend2: 0.0,
     themeTarget: 0.0, // 0 = Deep Sapphire Night, 1 = Light Porcelain
     themeCurrent: 0.0,
     showTitle: true,
-    centerShiftTarget: -0.23, // shift crystal cleanly left when title is visible
-    centerShiftCurrent: -0.23,
+    centerShiftTarget: -0.24,
+    centerShiftCurrent: -0.24,
     mouseX: 0.0,
     mouseY: 0.0,
     mouseTargetX: 0.0,
     mouseTargetY: 0.0,
-    orbitYaw: 0.0,
-    orbitPitch: 0.0,
+    orbitYaw: 0.25,
+    orbitPitch: 0.08,
     velYaw: 0.0,
     velPitch: 0.0,
     dragging: false,
@@ -590,37 +579,35 @@
   };
 
   // =========================================================================
-  // GLSL SHADERS (GLSL ES 1.00 — compatible with WebGL2, WebGL1 & SwiftShader)
+  // SPECIALIZED GLSL ES 1.00 SHADERS (3 High-Contrast Optical Mode Programs)
   // =========================================================================
   const VERT_SRC = `
     attribute vec2 aPos;
-    varying vec2 vUv;
     void main() {
-      vUv = aPos * 0.5 + 0.5;
       gl_Position = vec4(aPos, 0.0, 1.0);
     }
   `;
 
-  const FRAG_SRC = `
+  function buildFragmentSource(modeIdx) {
+    return `
     #ifdef GL_FRAGMENT_PRECISION_HIGH
     precision highp float;
     #else
     precision mediump float;
     #endif
 
-    varying vec2 vUv;
+    #define CRYSTAL_MODE ${modeIdx}
 
     uniform vec2 uRes;
     uniform float uTime;
-    uniform vec3 uModeW;       // smooth weights for modes 0, 1, 2
-    uniform float uTheme;      // 0.0 = Deep Sapphire Night, 1.0 = Light Porcelain
-    uniform float uCenterX;    // horizontal offset for title overlay layout
-    uniform vec2 uMouse;       // normalized pointer [-1, 1]
-    uniform vec2 uOrbit;       // drag orbit angles
+    uniform float uTheme;
+    uniform float uCenterX;
+    uniform vec2 uMouse;
+    uniform vec2 uOrbit;
     uniform float uZoom;
-    uniform float uPulseAge;   // seconds since last click ripple
-    uniform float uPulseAmp;   // decaying ripple intensity
-    uniform vec2 uPulsePos;    // normalized click position
+    uniform float uPulseAge;
+    uniform float uPulseAmp;
+    uniform vec2 uPulsePos;
 
     const float PI = 3.14159265359;
 
@@ -656,11 +643,6 @@
       return length(vec3(q.x, q.y - s + k, q.z - k));
     }
 
-    float sdTorus(vec3 p, vec2 t) {
-      vec2 q = vec2(length(p.xz) - t.x, p.y);
-      return length(q) - t.y;
-    }
-
     float sdHexPrism(vec3 p, vec2 h) {
       const vec3 k = vec3(-0.8660254, 0.5, 0.57735);
       p = abs(p);
@@ -672,338 +654,334 @@
       return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
     }
 
-    // Thin-film spectral iridescence (icy sapphire -> cyan -> pearl violet -> champagne gold)
+    // Spectral thin-film iridescence (sapphire -> ice cyan -> pearl violet -> champagne gold)
     vec3 iridescence(float cosTheta, float shift) {
-      vec3 phase = vec3(0.0, 0.31, 0.64);
-      vec3 col = 0.56 + 0.44 * cos(6.28318 * (cosTheta * 1.45 + shift + phase));
-      // Bias slightly toward aristocratic sapphire / ice / pearl champagne
-      return mix(col, vec3(0.52, 0.86, 1.0), 0.24);
+      vec3 phase = vec3(0.02, 0.34, 0.68);
+      vec3 col = 0.54 + 0.46 * cos(6.28318 * (cosTheta * 1.65 + shift + phase));
+      return mix(col, vec3(0.32, 0.80, 1.0), 0.18);
     }
 
-    // Precomputed per-frame matrices (zero trig inside raymarch loop!)
+    // Per-frame precomputed matrices (zero trig inside raymarch loop!)
     mat2 mSpinY;
     mat2 mTiltXY;
     mat2 mFold1;
     mat2 mFold2;
-    mat2 mShardSpin;
-    mat2 mShardTilt;
-    mat2 mRing1Y;
-    mat2 mRing1XY;
-    mat2 mRing2Y;
-    mat2 mRing2YZ;
-    mat2 mPalaceY;
-    mat2 mPalaceXY;
-    mat2 mGuardY;
-    mat2 mAstro1Y;
-    mat2 mAstro2Y;
+    mat2 mSub1;
+    mat2 mSub2;
 
-    // =========================================================================
-    // MODE 0: High-Dimensional Folded Sacred Crystal (KIFS Octa-Icosahedral)
-    // =========================================================================
-    float sdfFoldedCrystal(vec3 p, float t, float ripple) {
+    float mapCrystal(vec3 p, float t, float ripple) {
+    #if CRYSTAL_MODE == 0
+      // === MODE 0: KIFS Octahedral-Icosahedral High-Dimensional Folded Crystal ===
       vec3 q = p;
       q.xz *= mSpinY;
       q.xy *= mTiltXY;
 
       vec3 eq = q;
       eq.y *= 0.72;
-      float outerGem = sdOctahedron(eq, 1.24);
+      float outerGem = sdOctahedron(eq, 1.18);
 
-      // Orbiting 4D satellite prism shards (only evaluate near orbital shell)
+      // 6-fold orbiting 4D satellite prism shards (kept cleanly inside frame)
       float shards = 10.0;
       float rLen = length(p);
-      if (rLen > 0.85 && rLen < 2.25) {
+      if (rLen > 0.82 && rLen < 1.92) {
         vec3 sp = p;
-        sp.xz *= mShardSpin;
-        sp.yz *= mShardTilt;
+        sp.xz *= mSub1;
+        sp.yz *= mSub2;
         float ang = atan(sp.z, sp.x);
         float seg = PI / 3.0;
         float id = floor((ang + seg * 0.5) / seg);
         float a = mod(ang + seg * 0.5, seg) - seg * 0.5;
         float rad = length(sp.xz);
         vec3 sr = vec3(cos(a) * rad, sp.y, sin(a) * rad);
-        sr.x -= 1.44 + 0.09 * sin(t * 1.4 + id * 2.1) + ripple * 0.26;
+        sr.x -= 1.24 + 0.07 * sin(t * 1.4 + id * 2.1) + ripple * 0.18;
         sr.y -= 0.22 * sin(t * 0.9 + id * 1.7);
-        sr.xy *= rot2(t * 0.7 + id);
-        sr.y *= 0.55;
-        shards = sdOctahedron(sr, 0.19);
+        sr.xy *= mFold1;
+        sr.y *= 0.52;
+        shards = sdOctahedron(sr, 0.145);
       }
 
-      // Bounding proxy early-out: skip expensive KIFS folds in far empty space!
-      if (outerGem > 0.28) {
-        return min(outerGem - 0.10, shards);
-      }
+      if (outerGem > 0.26) return min(outerGem - 0.08, shards);
 
-      // KIFS 4D-inspired Kaleidoscopic Polyhedral Folding (zero trig inside!)
+      // Clean 3-level KIFS architectural jewel fold (crisp non-Euclidean facets, zero noise!)
       vec3 k = q;
       k.y *= 0.76;
       float scale = 1.0;
       const vec3 icoN = vec3(0.809017, 0.5, 0.309017);
 
-      for (int i = 0; i < 4; i++) {
+      for (int i = 0; i < 3; i++) {
         k = abs(k);
         if (k.x < k.y) k.xy = k.yx;
         if (k.x < k.z) k.xz = k.zx;
         if (k.y < k.z) k.yz = k.zy;
-
         k -= 2.0 * min(0.0, dot(k, icoN)) * icoN;
-
         k.xz *= mFold1;
         k.xy *= mFold2;
-
-        float s = 1.48;
-        k = k * s - vec3(0.55, 0.39, 0.27) * (s - 1.0);
+        float s = 1.44;
+        k = k * s - vec3(0.52, 0.36, 0.24) * (s - 1.0);
         scale *= s;
       }
 
-      float kifs = (sdOctahedron(k, 0.94) - 0.04) / scale;
-      float core = smax(kifs, outerGem - 0.10, 0.07);
-      core = smin(core, sdOctahedron(eq, 0.72), 0.11);
-
+      float kifs = (sdOctahedron(k, 0.96) - 0.035) / scale;
+      float core = smax(kifs, outerGem - 0.08, 0.055);
+      core = smin(core, sdOctahedron(eq, 0.68), 0.09);
       return min(core, shards);
-    }
 
-    // =========================================================================
-    // MODE 1: Liquid Prism Singularity (Gravitational Faceted Hyper-Core)
-    // =========================================================================
-    float sdfLiquidSingularity(vec3 p, float t, float ripple) {
-      float pr = length(p);
-      if (pr > 1.85) return pr - 1.55;
+    #elif CRYSTAL_MODE == 1
+      // === MODE 1: Liquid Prism Singularity & Interlocking Crystal Accretion Core ===
+      vec3 ps = p * 1.15;
+      float pr = length(ps);
+      if (pr > 2.05) return (pr - 1.72) / 1.15;
 
-      vec3 q = p;
-      q.xz *= mRing1Y;
+      vec3 q = ps;
+      q.xz *= mSpinY;
       q.yz *= mTiltXY;
 
-      vec3 dir = q / max(pr, 0.0001);
-      float harm = sin(dir.x * 7.0 + t * 1.4) * cos(dir.y * 7.0 - t * 1.1) * sin(dir.z * 7.0 + t * 0.9);
-      float facetWave = floor(harm * 5.0 + 0.5) / 5.0;
-      float liquidWave = mix(harm, facetWave, 0.52);
-
+      // Smoothly breathing liquid-diamond harmonic singularity core (exact Lipschitz!)
+      float wave = sin(q.x * 4.2 + t * 1.3) * sin(q.y * 4.2 - t * 1.1) * sin(q.z * 4.2 + t * 0.9);
       vec3 c1 = q;
       c1.xy *= mFold1;
-      float dCore = sdOctahedron(c1, 0.96 + 0.14 * liquidWave + ripple * 0.22);
+      float dOct = sdOctahedron(c1, 0.96 + ripple * 0.16);
+      float dSph = length(q) - (0.68 + 0.08 * wave + ripple * 0.10);
+      float dCore = smin(dOct, dSph, 0.22);
 
-      vec3 t1 = p;
-      t1.xz *= mRing1Y;
-      t1.xy *= mRing1XY;
-      float twist = atan(t1.z, t1.x) * 2.0 + t * 1.3;
-      vec2 ringQ = vec2(length(t1.xz) - (1.12 + 0.08 * sin(twist)), t1.y);
-      ringQ *= rot2(twist * 0.5);
-      float dRing1 = (abs(ringQ.x) + abs(ringQ.y)) * 0.7071 - (0.14 + 0.03 * cos(twist * 2.0));
+      // Two interlocking beveled crystalline accretion rings (clean exact SDFs)
+      vec3 t1 = ps;
+      t1.xz *= mSpinY;
+      t1.xy *= mSub1;
+      vec2 rq1 = vec2(length(t1.xz) - (1.16 + 0.04 * sin(t * 1.5)), t1.y);
+      float dRing1 = (abs(rq1.x) + abs(rq1.y)) * 0.7071 - 0.115;
 
-      vec3 t2 = p;
-      t2.xz *= mRing2Y;
-      t2.yz *= mRing2YZ;
-      float twist2 = atan(t2.z, t2.x) * 3.0 - t * 1.1;
-      vec2 ringQ2 = vec2(length(t2.xz) - (1.28 + 0.06 * cos(twist2)), t2.y);
-      ringQ2 *= rot2(twist2 * 0.5);
-      float dRing2 = (abs(ringQ2.x) + abs(ringQ2.y)) * 0.7071 - 0.10;
+      vec3 t2 = ps;
+      t2.xz *= mFold2;
+      t2.yz *= mSub2;
+      vec2 rq2 = vec2(length(t2.xz) - (1.30 + 0.04 * cos(t * 1.2)), t2.y);
+      float dRing2 = (abs(rq2.x) + abs(rq2.y)) * 0.7071 - 0.085;
 
-      float merged = smin(dCore, dRing1, 0.24);
-      merged = smin(merged, dRing2, 0.18);
+      // Orbiting mercury-diamond droplets merging smoothly with the accretion flow
+      vec3 dp = ps;
+      dp.xz *= mFold1;
+      dp.xz = abs(dp.xz);
+      if (dp.x < dp.z) dp.xz = dp.zx;
+      dp.x -= 1.05 + 0.08 * sin(t * 1.6);
+      float dDrops = sdOctahedron(dp, 0.22);
 
-      float gyroid = dot(sin(q * 5.2 + t * 0.8), cos(q.yzx * 5.2 - t * 0.6)) * 0.055;
-      return merged + gyroid;
-    }
+      float merged = smin(dCore, dRing1, 0.18);
+      merged = smin(merged, dRing2, 0.14);
+      merged = smin(merged, dDrops, 0.16);
+      return (merged + wave * 0.032) / 1.15;
 
-    // =========================================================================
-    // MODE 2: Infinity-Mirror Ice Palace Kaleidoscope (Monolith Portal Gem)
-    // =========================================================================
-    float sdfInfinityPalace(vec3 p, float t, float ripple) {
-      vec3 q = p;
-      q.xz *= mPalaceY;
-      q.xy *= mPalaceXY;
+    #else
+      // === MODE 2: Infinity-Mirror Ice Palace Kaleidoscope Monolith ===
+      vec3 q = p * 1.28;
+      q.xz *= mSpinY;
+      q.xy *= mTiltXY;
 
       vec3 hp = vec3(q.x, q.z, q.y);
-      float hexBody = sdHexPrism(hp, vec2(0.84 + ripple * 0.08, 1.38));
+      float hexBody = sdHexPrism(hp, vec2(0.76 + ripple * 0.06, 1.18));
 
       vec3 taperP = q;
-      taperP.y *= 0.62;
-      float crown = sdOctahedron(taperP, 1.34 + ripple * 0.12);
+      taperP.y *= 0.60;
+      float crown = sdOctahedron(taperP, 1.20 + ripple * 0.10);
 
       vec3 taper2 = q;
-      // Exact 45 deg rotation without trig
       taper2.xz = vec2(taper2.x - taper2.z, taper2.x + taper2.z) * 0.70710678;
-      taper2.y *= 0.64;
-      float crown2 = sdOctahedron(taper2, 1.36 + ripple * 0.12);
+      taper2.y *= 0.62;
+      float crown2 = sdOctahedron(taper2, 1.22 + ripple * 0.10);
 
-      float monolith = smax(hexBody, max(crown, crown2), 0.05);
+      float monolith = smax(hexBody, max(crown, crown2), 0.045);
 
+      // Symmetrical floating palace crown finials (clean vertical breathing room)
       vec3 sp = q;
-      sp.y = abs(sp.y) - (1.56 + 0.08 * sin(t * 1.4) + ripple * 0.25);
+      sp.y = abs(sp.y) - (1.42 + 0.06 * sin(t * 1.4) + ripple * 0.16);
       sp.xz *= mFold1;
       sp.y *= 0.48;
-      float finial = sdOctahedron(sp, 0.20);
+      float finial = sdOctahedron(sp, 0.16);
 
+      // 4 cardinal floating diamond prism guardians
       vec3 g = q;
-      g.xz *= mGuardY;
+      g.xz *= mSub1;
       g.xz = abs(g.xz);
       if (g.x < g.z) g.xz = g.zx;
-      g.x -= 1.34 + 0.06 * cos(t * 1.2) + ripple * 0.20;
+      g.x -= 1.22 + 0.05 * cos(t * 1.2) + ripple * 0.15;
       g.y *= 0.42;
-      float guards = sdOctahedron(g, 0.17);
+      float guards = sdOctahedron(g, 0.15);
 
-      return min(monolith, min(finial, guards));
+      return min(monolith, min(finial, guards)) / 1.28;
+    #endif
     }
 
-    // Unified crystal SDF with smooth morphing between all 3 modes
-    float mapCrystal(vec3 p, float t, float ripple) {
-      if (uModeW.x > 0.995) return sdfFoldedCrystal(p, t, ripple);
-      if (uModeW.y > 0.995) return sdfLiquidSingularity(p, t, ripple);
-      if (uModeW.z > 0.995) return sdfInfinityPalace(p, t, ripple);
-      float d0 = (uModeW.x > 0.002) ? sdfFoldedCrystal(p, t, ripple) : 0.0;
-      float d1 = (uModeW.y > 0.002) ? sdfLiquidSingularity(p, t, ripple) : 0.0;
-      float d2 = (uModeW.z > 0.002) ? sdfInfinityPalace(p, t, ripple) : 0.0;
-      return d0 * uModeW.x + d1 * uModeW.y + d2 * uModeW.z;
+    // Analytic 3D celestial astrolabe ring intersection (razor-sharp, depth-tested!)
+    vec2 intersectAstrolabeRing(vec3 ro, vec3 rd, vec3 planeN, float radius, float width) {
+      float denom = dot(rd, planeN);
+      if (abs(denom) < 0.001) return vec2(0.0, 999.0);
+      float tHit = -dot(ro, planeN) / denom;
+      if (tHit < 0.0) return vec2(0.0, 999.0);
+      vec3 p = ro + rd * tHit;
+      float r = length(p);
+      float d = abs(r - radius);
+      // Crisp hairline + soft halo
+      float coreLine = exp(-pow(d / width, 2.0));
+      float softGlow = exp(-d * 10.0) * 0.28;
+      // Subtle engraved tick marks along the ring
+      float ang = atan(p.z, p.x);
+      float ticks = 0.72 + 0.28 * pow(0.5 + 0.5 * cos(ang * 24.0), 4.0);
+      return vec2((coreLine + softGlow) * ticks, tHit);
     }
 
-    // Thin celestial astrolabe light rings (volumetric glow only, non-occluding)
-    float mapAstrolabe(vec3 p) {
-      vec3 r1 = p;
-      r1.xz *= mAstro1Y;
-      r1.xy *= mat2(0.8577, -0.5141, 0.5141, 0.8577);
-      r1.yz *= mat2(0.9492, -0.3146, 0.3146, 0.9492);
-      float d1 = sdTorus(r1, vec2(1.82, 0.0055));
-
-      vec3 r2 = p;
-      r2.xz *= mAstro2Y;
-      r2.xy *= mat2(0.7248, 0.6889, -0.6889, 0.7248);
-      r2.yz *= mat2(0.8365, -0.5480, 0.5480, 0.8365);
-      float d2 = sdTorus(r2, vec2(2.12, 0.0045));
-
-      return min(d1, d2);
-    }
-
-    // Computes normal AND free tetrahedral Laplacian ridge curvature in 4 SDF evals
+    // Non-unrolled tetrahedral normal + free Laplacian ridge curvature
     vec4 calcNormalAndRidge(vec3 p, float t, float ripple) {
-      const vec2 e = vec2(0.0045, -0.0045);
-      float d1 = mapCrystal(p + e.xyy, t, ripple);
-      float d2 = mapCrystal(p + e.yyx, t, ripple);
-      float d3 = mapCrystal(p + e.yxy, t, ripple);
-      float d4 = mapCrystal(p + e.xxx, t, ripple);
-      vec3 n = normalize(e.xyy * d1 + e.yyx * d2 + e.yxy * d3 + e.xxx * d4);
-      float lap = abs(d1 + d2 + d3 + d4) / 0.009;
-      float ridge = smoothstep(0.18, 0.95, lap);
-      return vec4(n, ridge);
+      vec3 n = vec3(0.0);
+      float dSum = 0.0;
+      int z = int(min(t, 0.0));
+      for (int i = 0; i < 4; i++) {
+        int idx = i + z;
+        vec3 e;
+        if (idx == 0) e = vec3( 0.57735, -0.57735, -0.57735);
+        else if (idx == 1) e = vec3(-0.57735, -0.57735,  0.57735);
+        else if (idx == 2) e = vec3(-0.57735,  0.57735, -0.57735);
+        else e = vec3( 0.57735,  0.57735,  0.57735);
+        float d = mapCrystal(p + e * 0.0042, t, ripple);
+        n += e * d;
+        dSum += d;
+      }
+      float ridge = smoothstep(0.14, 0.85, abs(dSum) / 0.0095);
+      return vec4(normalize(n), ridge);
     }
 
-    // =========================================================================
-    // PROCEDURAL STUDIO / CATHEDRAL HDRI ENVIRONMENT (Night + Porcelain)
-    // =========================================================================
+    // High-contrast studio / cathedral HDRI environment for true diamond reflections
     vec3 sampleEnvironment(vec3 dir, float t, float theme) {
       dir = normalize(dir);
       float y = dir.y;
+      float az = atan(dir.z, dir.x);
 
-      // --- Deep Sapphire Night Environment ---
-      vec3 nightSky = mix(vec3(0.015, 0.032, 0.095), vec3(0.045, 0.11, 0.28), smoothstep(-0.6, 0.7, y));
-      float aurWave = sin(dir.x * 4.5 + t * 0.45 + sin(dir.z * 3.0 - t * 0.3));
-      float aurBand = exp(-pow(y - 0.18 - aurWave * 0.16, 2.0) * 16.0);
-      vec3 aurCol = mix(vec3(0.18, 0.82, 1.0), vec3(0.56, 0.42, 1.0), 0.5 + 0.5 * sin(dir.x * 3.0 - t * 0.4));
-      nightSky += aurCol * aurBand * 0.95;
+      // --- Deep Sapphire Night Studio HDRI (deep obsidian shadows + razor light bands) ---
+      vec3 nightSky = mix(vec3(0.006, 0.014, 0.048), vec3(0.025, 0.075, 0.22), smoothstep(-0.5, 0.7, y));
+      // Sculpted aurora silk bands
+      float aurWave = sin(dir.x * 4.0 + t * 0.42 + sin(dir.z * 3.0 - t * 0.28));
+      float aurBand = exp(-pow(y - 0.16 - aurWave * 0.15, 2.0) * 22.0);
+      vec3 aurCol = mix(vec3(0.06, 0.68, 1.0), vec3(0.48, 0.28, 0.98), 0.5 + 0.5 * sin(az * 2.0 - t * 0.4));
+      nightSky += aurCol * aurBand * 0.72;
+      // Dark architectural shadow ribs give glass facets dramatic jewel contrast
+      float ribDark = smoothstep(0.35, 0.92, sin(az * 5.0 + y * 3.0));
+      nightSky *= mix(0.45, 1.15, ribDark);
 
-      float win1 = smoothstep(0.86, 0.98, dot(dir, normalize(vec3(0.58, 0.66, 0.48))));
-      float win2 = smoothstep(0.84, 0.97, dot(dir, normalize(vec3(-0.74, 0.34, 0.58))));
-      float win3 = smoothstep(0.88, 0.99, dot(dir, normalize(vec3(0.15, -0.78, 0.60))));
-      nightSky += vec3(1.45, 1.65, 2.10) * win1;
-      nightSky += vec3(0.55, 1.25, 1.95) * win2;
-      nightSky += vec3(0.95, 0.82, 0.58) * win3 * 0.75;
+      // Sharp studio softbox catchlights
+      float win1 = smoothstep(0.90, 0.985, dot(dir, normalize(vec3(0.56, 0.68, 0.48))));
+      float win2 = smoothstep(0.88, 0.98, dot(dir, normalize(vec3(-0.75, 0.32, 0.56))));
+      float win3 = smoothstep(0.91, 0.99, dot(dir, normalize(vec3(0.16, -0.76, 0.62))));
+      nightSky += vec3(1.10, 1.38, 1.85) * win1;
+      nightSky += vec3(0.28, 0.95, 1.65) * win2;
+      nightSky += vec3(0.95, 0.78, 0.48) * win3 * 0.70;
 
-      // --- Light Porcelain Gallery Environment (《转生千金》 Snow Porcelain) ---
-      vec3 porcSky = mix(vec3(0.86, 0.91, 0.98), vec3(0.99, 0.995, 1.0), smoothstep(-0.5, 0.6, y));
-      float rib = smoothstep(0.65, 0.95, abs(sin(atan(dir.z, dir.x) * 4.0 + y * 2.5)));
-      porcSky = mix(porcSky, vec3(0.10, 0.28, 0.72), rib * 0.34 * (1.0 - abs(y)));
-      float cobaltRim = exp(-pow(y + 0.22, 2.0) * 12.0);
-      porcSky = mix(porcSky, vec3(0.12, 0.34, 0.82), cobaltRim * 0.45);
-      porcSky += vec3(1.5, 1.65, 1.95) * win1 * 0.9;
-      porcSky += vec3(0.35, 0.72, 1.35) * win2 * 0.85;
-      porcSky += vec3(1.15, 0.96, 0.68) * win3 * 0.65;
+      // --- Light Porcelain Gallery HDRI (deep royal cobalt ribs for sapphire-jewel depth!) ---
+      vec3 porcSky = mix(vec3(0.12, 0.28, 0.68), vec3(0.88, 0.94, 1.0), smoothstep(-0.35, 0.65, y));
+      float ribP = smoothstep(0.30, 0.92, abs(sin(az * 4.0 + y * 2.4)));
+      porcSky = mix(vec3(0.04, 0.14, 0.46), porcSky, ribP);
+      porcSky += vec3(1.35, 1.50, 1.75) * win1 * 0.95;
+      porcSky += vec3(0.22, 0.72, 1.45) * win2 * 0.85;
+      porcSky += vec3(1.10, 0.88, 0.52) * win3 * 0.62;
 
       return mix(nightSky, porcSky, theme);
     }
 
-    // =========================================================================
-    // INTERNAL INFINITY-MIRROR CRYSTAL LATTICE (Single-Pass RGB Dispersed March)
-    // =========================================================================
+    // Internal Infinity-Mirror Glowing Crystal Lattice (High-Contrast Dark Void + Neon Filigree!)
     vec3 traceInfinityInterior(vec3 entryP, vec3 refrR, vec3 refrG, vec3 refrB, float t, float ripple, float theme) {
       vec3 acc = vec3(0.0);
       float dist = 0.08;
-      float modePalace = uModeW.z;
-      float modeSing = uModeW.y;
+      #if CRYSTAL_MODE == 2
+        float cellScale = 2.45;
+        float stepSize = 0.17;
+        float depthMul = 3.2;
+        float wireSharp = 32.0;
+        float decayK = 1.45;
+        float palaceBoost = 1.0;
+        float singBoost = 0.0;
+      #elif CRYSTAL_MODE == 1
+        float cellScale = 1.85;
+        float stepSize = 0.17;
+        float depthMul = 1.8;
+        float wireSharp = 26.0;
+        float decayK = 2.05;
+        float palaceBoost = 0.18;
+        float singBoost = 1.0;
+      #else
+        float cellScale = 1.95;
+        float stepSize = 0.17;
+        float depthMul = 1.85;
+        float wireSharp = 28.0;
+        float decayK = 2.00;
+        float palaceBoost = 0.35;
+        float singBoost = 0.15;
+      #endif
 
-      float cellScale = mix(1.85, 2.65, modePalace);
-      float stepSize = mix(0.17, 0.19, modePalace);
-      vec3 dispDelta = (refrB - refrR) * 0.55;
-      mat2 mTwistStep = rot2(0.08 + ripple * 0.12);
-      mat2 mBaseRot = rot2(t * 0.28);
+      vec3 dispDelta = (refrB - refrR) * 0.85;
+      mat2 mStep = rot2(0.12 + ripple * 0.16);
+      mat2 mRot = rot2(t * 0.26);
 
       for (int i = 0; i < 12; i++) {
         float fi = float(i) / 12.0;
         vec3 p = entryP + refrG * dist;
 
-        float depthZoom = 1.0 + fi * mix(1.5, 3.4, modePalace);
-        vec3 q = p * depthZoom;
-        q.xz *= mBaseRot;
-        mBaseRot = mBaseRot * mTwistStep;
+        vec3 q = p * (1.0 + fi * depthMul);
+        q.xz *= mRot;
+        mRot = mRot * mStep;
 
         vec3 cell = mod(q * cellScale + 0.5, 1.0) - 0.5;
         vec3 a = abs(cell);
 
-        vec3 cellR = mod((q - dispDelta * dist * 1.6) * cellScale + 0.5, 1.0) - 0.5;
-        vec3 cellB = mod((q + dispDelta * dist * 1.6) * cellScale + 0.5, 1.0) - 0.5;
+        // True RGB chromatic split across infinity-mirror lattice filigree
+        vec3 cellR = mod((q - dispDelta * dist * 1.9) * cellScale + 0.5, 1.0) - 0.5;
+        vec3 cellB = mod((q + dispDelta * dist * 1.9) * cellScale + 0.5, 1.0) - 0.5;
         float latG = min(length(a.yz), min(length(a.xz), length(a.xy)));
         float latR = min(length(abs(cellR).yz), min(length(abs(cellR).xz), length(abs(cellR).xy)));
         float latB = min(length(abs(cellB).yz), min(length(abs(cellB).xz), length(abs(cellB).xy)));
 
-        float wireSharp = mix(19.0, 25.0, modePalace);
-        vec3 glowWire = vec3(
-          exp(-latR * wireSharp),
-          exp(-latG * wireSharp),
-          exp(-latB * wireSharp)
-        );
+        vec3 glowWire = vec3(exp(-latR * wireSharp), exp(-latG * wireSharp), exp(-latB * wireSharp));
 
-        float node = (a.x + a.y + a.z) * 0.57735 - (0.16 + 0.03 * sin(t * 1.8 + fi * 8.0));
-        float glowNode = exp(-max(node, 0.0) * 16.0);
-        float coreStar = exp(-length(p) * mix(2.7, 4.2, modeSing));
+        float node = (a.x + a.y + a.z) * 0.57735 - (0.12 + 0.025 * sin(t * 1.8 + fi * 8.0));
+        float glowNode = exp(-max(node, 0.0) * 24.0);
+        float coreStar = exp(-length(p) * mix(3.4, 4.6, singBoost));
 
+        // Jewel-rich spectral palette: sapphire -> glacial aqua -> amethyst -> champagne gold
         vec3 depthTint = mix(
-          vec3(0.20, 0.74, 1.0),
-          vec3(0.62, 0.38, 1.0),
-          0.5 + 0.5 * sin(fi * 5.5 - t * 1.1)
+          vec3(0.08, 0.62, 1.0),
+          vec3(0.56, 0.28, 1.0),
+          0.5 + 0.5 * sin(fi * 5.2 - t * 1.0)
         );
-        vec3 goldFiligree = vec3(1.0, 0.87, 0.58);
-        vec3 sampleCol = depthTint * glowWire * 0.64
-                       + mix(vec3(0.76, 0.96, 1.0), goldFiligree, 0.44 * modePalace) * glowNode * 0.70
-                       + mix(vec3(0.45, 0.90, 1.0), vec3(1.0, 0.94, 0.80), modeSing) * coreStar * (0.36 + 0.55 * modeSing);
+        vec3 goldFiligree = vec3(1.0, 0.84, 0.48);
 
-        float atten = exp(-fi * mix(2.0, 1.38, modePalace));
-        acc += sampleCol * atten;
+        // Controlled gain so deep sapphire shadows remain dark & luminous lines pop like laser filigree!
+        vec3 sampleCol = depthTint * glowWire * 0.26
+                       + mix(vec3(0.42, 0.88, 1.0), goldFiligree, 0.48 * palaceBoost) * glowNode * 0.24
+                       + mix(vec3(0.22, 0.78, 1.0), vec3(1.0, 0.88, 0.62), singBoost) * coreStar * (0.14 + 0.34 * singBoost);
+
+        acc += sampleCol * exp(-fi * decayK);
         dist += stepSize;
       }
 
-      vec3 porcRich = mix(acc, acc * vec3(0.34, 0.64, 1.28) + vec3(0.03, 0.09, 0.28) * length(acc), 0.54);
+      // On Light Porcelain, keep interior deeply saturated royal cobalt + glowing cyan/gold lines
+      vec3 porcRich = acc * vec3(0.45, 0.72, 1.25);
       return mix(acc, porcRich, theme);
     }
 
-    // =========================================================================
-    // BACKGROUND CANVAS & VOLUMETRIC AURORA GOD-RAYS
-    // =========================================================================
-    vec3 renderBackdrop(vec2 uv, vec2 crystalUv, float t, float theme, float ripple) {
+    // Background Canvas + Volumetric Aurora God-Rays + Stardust
+    vec3 renderBackdrop(vec2 uv, vec2 crystalUv, float t, float theme) {
       vec2 rel = uv - crystalUv;
       float r = length(rel);
       float ang = atan(rel.y, rel.x);
 
-      float ray1 = pow(0.5 + 0.5 * sin(ang * 7.0 + t * 0.25 + sin(ang * 3.0 - t * 0.2)), 3.0);
-      float ray2 = pow(0.5 + 0.5 * sin(ang * 13.0 - t * 0.34), 4.0);
-      float rays = (ray1 * 0.65 + ray2 * 0.35) * exp(-r * 1.95) * smoothstep(0.04, 0.32, r);
+      float ray1 = pow(0.5 + 0.5 * sin(ang * 7.0 + t * 0.22 + sin(ang * 3.0 - t * 0.18)), 3.2);
+      float ray2 = pow(0.5 + 0.5 * sin(ang * 13.0 - t * 0.30), 4.0);
+      float rays = (ray1 * 0.65 + ray2 * 0.35) * exp(-r * 2.15) * smoothstep(0.05, 0.34, r);
 
-      // --- Deep Sapphire Night Backdrop ---
-      vec3 nightBg = mix(vec3(0.012, 0.024, 0.068), vec3(0.038, 0.088, 0.22), exp(-r * 1.15));
-      nightBg += vec3(0.10, 0.36, 0.85) * exp(-r * 2.6) * 0.58;
-      nightBg += vec3(0.28, 0.80, 1.00) * rays * 0.42;
-      float ribbon = exp(-pow(uv.y - 0.14 - 0.18 * sin(uv.x * 2.4 + t * 0.22), 2.0) * 14.0);
-      nightBg += mix(vec3(0.08, 0.45, 0.88), vec3(0.42, 0.24, 0.85), 0.5 + 0.5 * uv.x) * ribbon * 0.16;
+      // Deep Sapphire Night Backdrop
+      vec3 nightBg = mix(vec3(0.008, 0.018, 0.055), vec3(0.028, 0.072, 0.20), exp(-r * 1.25));
+      nightBg += vec3(0.07, 0.30, 0.78) * exp(-r * 2.8) * 0.55;
+      nightBg += vec3(0.22, 0.72, 1.00) * rays * 0.36;
+      float ribbon = exp(-pow(uv.y - 0.16 - 0.18 * sin(uv.x * 2.3 + t * 0.20), 2.0) * 15.0);
+      nightBg += mix(vec3(0.06, 0.38, 0.85), vec3(0.38, 0.20, 0.82), 0.5 + 0.5 * uv.x) * ribbon * 0.15;
 
-      vec2 starGrid = uv * 18.0 + vec2(t * 0.06, -t * 0.09);
+      vec2 starGrid = uv * 18.0 + vec2(t * 0.05, -t * 0.08);
       vec2 cellId = floor(starGrid);
       vec2 cellUv = fract(starGrid) - 0.5;
       float rnd = hash21(cellId);
@@ -1011,29 +989,29 @@
         vec2 off = (vec2(hash21(cellId + 7.1), hash21(cellId + 19.3)) - 0.5) * 0.55;
         float dStar = length(cellUv - off);
         float twinkle = 0.5 + 0.5 * sin(t * 2.4 + rnd * 40.0);
-        float spark = smoothstep(0.08, 0.0, dStar) * twinkle;
-        nightBg += vec3(0.68, 0.90, 1.0) * spark * 0.55;
+        nightBg += vec3(0.68, 0.90, 1.0) * smoothstep(0.08, 0.0, dStar) * twinkle * 0.52;
       }
 
-      // --- Light Porcelain Gallery Backdrop (《转生千金》 #FAFBFD -> #E8F0FC) ---
-      vec3 porcBg = mix(vec3(0.925, 0.952, 0.992), vec3(0.996, 0.998, 1.0), exp(-r * 1.05));
-      porcBg -= vec3(0.06, 0.025, 0.0) * exp(-r * 2.4) * 0.55;
-      vec3 prismRayCol = mix(vec3(0.70, 0.86, 1.0), vec3(0.98, 0.93, 0.84), 0.5 + 0.5 * sin(ang * 3.0 + t * 0.3));
-      porcBg = mix(porcBg, prismRayCol, rays * 0.28);
+      // Light Porcelain Gallery Backdrop (《转生千金》 #FAFBFD -> #E8F0FC)
+      vec3 porcBg = mix(vec3(0.922, 0.948, 0.990), vec3(0.996, 0.998, 1.0), exp(-r * 1.10));
+      // Subtle sapphire prism caustic halo on porcelain air
+      porcBg = mix(porcBg, vec3(0.84, 0.92, 1.0), exp(-r * 2.6) * 0.34);
+      vec3 prismRayCol = mix(vec3(0.76, 0.89, 1.0), vec3(0.98, 0.93, 0.84), 0.5 + 0.5 * sin(ang * 3.0 + t * 0.3));
+      porcBg = mix(porcBg, prismRayCol, rays * 0.32);
 
       if (rnd > 0.91) {
         vec2 off2 = (vec2(hash21(cellId + 7.1), hash21(cellId + 19.3)) - 0.5) * 0.55;
         float dMote = length(cellUv - off2);
         float tw = 0.45 + 0.55 * sin(t * 2.0 + rnd * 32.0);
-        porcBg = mix(porcBg, vec3(0.18, 0.45, 0.88), smoothstep(0.065, 0.0, dMote) * tw * 0.32);
+        porcBg = mix(porcBg, vec3(0.14, 0.40, 0.86), smoothstep(0.06, 0.0, dMote) * tw * 0.32);
       }
 
       vec3 bg = mix(nightBg, porcBg, theme);
 
       if (uPulseAmp > 0.005) {
         float waveR = uPulseAge * 1.15;
-        float ring = exp(-pow((length(uv - uPulsePos) - waveR) * 18.0, 2.0)) * uPulseAmp;
-        vec3 ringCol = mix(vec3(0.45, 0.88, 1.0), vec3(0.14, 0.40, 0.95), theme);
+        float ring = exp(-pow((length(uv - uPulsePos) - waveR) * 20.0, 2.0)) * uPulseAmp;
+        vec3 ringCol = mix(vec3(0.45, 0.90, 1.0), vec3(0.12, 0.38, 0.94), theme);
         bg += ringCol * ring * mix(0.65, 0.32, theme);
       }
 
@@ -1050,8 +1028,7 @@
     }
 
     void main() {
-      vec2 fragCoord = gl_FragCoord.xy;
-      vec2 uv = (fragCoord - 0.5 * uRes) / uRes.y;
+      vec2 uv = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
       float aspect = uRes.x / uRes.y;
 
       vec2 crystalAnchor = vec2(uCenterX * aspect, 0.02);
@@ -1060,104 +1037,124 @@
       float ripple = uPulseAmp * sin(uPulseAge * 9.5) * exp(-uPulseAge * 1.6);
       float rippleEnv = uPulseAmp * exp(-uPulseAge * 1.2);
 
-      // Precompute all per-frame SDF rotation matrices ONCE
-      mSpinY = rot2(uTime * 0.24);
-      mTiltXY = rot2(sin(uTime * 0.35) * 0.14);
-      mFold1 = rot2(0.42 + 0.18 * sin(uTime * 0.55) + ripple * 0.65);
-      mFold2 = rot2(0.28 + 0.14 * cos(uTime * 0.41) - ripple * 0.42);
-      mShardSpin = rot2(-uTime * 0.32);
-      mShardTilt = rot2(0.32 + sin(uTime * 0.4) * 0.12);
-      mRing1Y = rot2(uTime * 0.38);
-      mRing1XY = rot2(0.68 + sin(uTime * 0.5) * 0.2);
-      mRing2Y = rot2(-uTime * 0.36);
-      mRing2YZ = rot2(-0.82 + cos(uTime * 0.45) * 0.2);
-      mPalaceY = rot2(uTime * 0.20 + ripple * 0.4);
-      mPalaceXY = rot2(sin(uTime * 0.30) * 0.08);
-      mGuardY = rot2(-uTime * 0.28);
-      mAstro1Y = rot2(uTime * 0.18);
-      mAstro2Y = rot2(-uTime * 0.14);
+      // Precompute per-frame matrices for active mode
+      #if CRYSTAL_MODE == 0
+        mSpinY = rot2(uTime * 0.24);
+        mTiltXY = rot2(sin(uTime * 0.35) * 0.12);
+        mFold1 = rot2(0.42 + 0.16 * sin(uTime * 0.52) + ripple * 0.60);
+        mFold2 = rot2(0.28 + 0.12 * cos(uTime * 0.38) - ripple * 0.38);
+        mSub1 = rot2(-uTime * 0.30);
+        mSub2 = rot2(0.30 + sin(uTime * 0.38) * 0.10);
+      #elif CRYSTAL_MODE == 1
+        mSpinY = rot2(uTime * 0.36);
+        mTiltXY = rot2(uTime * 0.20);
+        mFold1 = rot2(uTime * 0.48 + ripple * 1.15);
+        mFold2 = rot2(-uTime * 0.34);
+        mSub1 = rot2(0.68 + sin(uTime * 0.48) * 0.18);
+        mSub2 = rot2(-0.82 + cos(uTime * 0.42) * 0.18);
+      #else
+        mSpinY = rot2(uTime * 0.20 + ripple * 0.38);
+        mTiltXY = rot2(sin(uTime * 0.28) * 0.08);
+        mFold1 = rot2(uTime * 0.55);
+        mSub1 = rot2(-uTime * 0.26);
+      #endif
 
       vec2 mouseRel = (uMouse * vec2(aspect * 0.5, 0.5)) - crystalAnchor;
       float cursorDist = length(pUv - mouseRel);
-      vec2 lensWarp = (pUv - mouseRel) * (0.018 / (cursorDist * cursorDist + 0.24));
-      vec2 rayUv = pUv - lensWarp * (0.45 + 0.75 * uModeW.y);
+      vec2 lensWarp = (pUv - mouseRel) * (0.014 / (cursorDist * cursorDist + 0.28));
+      #if CRYSTAL_MODE == 1
+        vec2 rayUv = pUv - lensWarp * 0.95;
+      #else
+        vec2 rayUv = pUv - lensWarp * 0.35;
+      #endif
 
-      float camDist = 4.35 / clamp(uZoom, 0.72, 1.45);
-      vec3 ro = vec3(0.0, 0.05, camDist);
-      vec3 rd = normalize(vec3(rayUv, -1.68));
+      // Generous gallery framing so crystal & rings NEVER clip or collide with title text
+      float camDist = 5.45 / clamp(uZoom, 0.72, 1.45);
+      vec3 ro = vec3(0.0, 0.04, camDist);
+      vec3 rd = normalize(vec3(rayUv, -1.78));
 
       float yaw = uOrbit.x + uMouse.x * 0.34;
       float pitch = clamp(uOrbit.y - uMouse.y * 0.24, -0.85, 0.85);
-
       ro.yz *= rot2(pitch);
       rd.yz *= rot2(pitch);
       ro.xz *= rot2(yaw);
       rd.xz *= rot2(yaw);
 
-      vec3 bgCol = renderBackdrop(uv, crystalAnchor, uTime, uTheme, rippleEnv);
+      vec3 bgCol = renderBackdrop(uv, crystalAnchor, uTime, uTheme);
 
-      // =====================================================================
-      // PRIMARY RAYMARCH + VOLUMETRIC ASTROLABE / GLOW ACCUMULATION
-      // =====================================================================
+      // Analytic 3D Celestial Astrolabe Rings (exact plane intersections, razor crisp!)
+      vec3 ringN1 = normalize(vec3(sin(uTime * 0.16) * 0.45, 0.78, cos(uTime * 0.16) * 0.45));
+      vec3 ringN2 = normalize(vec3(-cos(uTime * 0.12) * 0.62, 0.52, sin(uTime * 0.12) * 0.62));
+      vec2 astro1 = intersectAstrolabeRing(ro, rd, ringN1, 1.48, 0.0080);
+      vec2 astro2 = intersectAstrolabeRing(ro, rd, ringN2, 1.68, 0.0062);
+
+      // Primary Raymarch (True smooth sphere-tracing — ZERO step-banding!)
       float tMarch = 0.0;
       float hit = 0.0;
       vec3 hitPos = vec3(0.0);
-      float ringGlow = 0.0;
       float haloGlow = 0.0;
 
       float b = dot(ro, rd);
-      float c = dot(ro, ro) - 2.35 * 2.35;
+      float c = dot(ro, ro) - 2.15 * 2.15;
       float disc = b * b - c;
+      float hitDist = 999.0;
 
       if (disc > 0.0) {
         float tStart = max(0.0, -b - sqrt(disc));
-        float tEnd = min(7.8, -b + sqrt(disc));
+        float tEnd = min(9.5, -b + sqrt(disc));
         tMarch = tStart;
+        vec3 p = ro + rd * tMarch;
 
-        for (int i = 0; i < 48; i++) {
-          vec3 p = ro + rd * tMarch;
+        for (int i = 0; i < 64; i++) {
           float pr = length(p);
 
-          if (uModeW.y > 0.05) {
-            vec3 pull = -p / max(pr * pr * pr + 0.45, 0.45);
-            rd = normalize(rd + pull * 0.0085 * uModeW.y);
-          }
+          #if CRYSTAL_MODE == 1
+            // True geodesic incremental gravitational ray bending (zero teleport slicing!)
+            vec3 pull = -p / max(pr * pr * pr + 0.65, 0.65);
+            rd = normalize(rd + pull * 0.0055);
+          #endif
 
           float dCrys = mapCrystal(p, uTime, ripple);
-          if (abs(pr - 1.97) < 0.32) {
-            float dRing = mapAstrolabe(p);
-            ringGlow += 0.0018 / (abs(dRing) + 0.011);
-          }
-          haloGlow += 0.0046 / (abs(dCrys) + 0.16);
+          haloGlow += 0.0028 / (abs(dCrys) + 0.18);
 
-          if (dCrys < 0.0025) {
+          if (dCrys < 0.0014) {
+            p += rd * (dCrys * 0.5);
+            tMarch += dCrys * 0.5;
             hit = 1.0;
             hitPos = p;
+            hitDist = tMarch;
             break;
           }
 
-          tMarch += max(dCrys * 0.92, 0.018);
+          float stepD = dCrys * 0.72;
+          p += rd * stepD;
+          tMarch += stepD;
           if (tMarch > tEnd) break;
         }
       }
 
       vec3 col = bgCol;
 
-      vec3 auraColNight = mix(vec3(0.14, 0.56, 1.0), vec3(0.62, 0.90, 1.0), 0.4);
-      vec3 ringColNight = mix(vec3(0.55, 0.88, 1.0), vec3(0.95, 0.84, 0.62), 0.35);
-      vec3 ringColPorc = mix(vec3(0.14, 0.36, 0.82), vec3(0.76, 0.62, 0.34), 0.45);
-
-      float auraStrength = clamp(haloGlow * 0.16, 0.0, 0.95);
-      float ringStrength = clamp(ringGlow * 0.26, 0.0, 1.0);
-
+      // Soft sapphire crystal aura behind gem
+      float auraStrength = clamp(haloGlow * 0.12, 0.0, 0.85);
       col = mix(
-        col + auraColNight * auraStrength * 0.44 + ringColNight * ringStrength * 0.74,
-        mix(col, vec3(0.84, 0.92, 1.0), auraStrength * 0.26) - vec3(0.05, 0.02, 0.0) * auraStrength + (ringColPorc - col) * ringStrength * 0.48,
+        col + vec3(0.10, 0.48, 1.0) * auraStrength * 0.34,
+        mix(col, vec3(0.80, 0.90, 1.0), auraStrength * 0.24),
         uTheme
       );
 
+      // Draw astrolabe ring segments that lie BEHIND the crystal
+      vec3 ringCol1 = mix(vec3(0.42, 0.86, 1.0), vec3(0.12, 0.36, 0.86), uTheme);
+      vec3 ringCol2 = mix(vec3(0.95, 0.82, 0.54), vec3(0.68, 0.52, 0.24), uTheme);
+      if (astro1.y > hitDist) {
+        col = mix(col + ringCol1 * astro1.x * 0.65, mix(col, ringCol1, clamp(astro1.x * 0.62, 0.0, 1.0)), uTheme);
+      }
+      if (astro2.y > hitDist) {
+        col = mix(col + ringCol2 * astro2.x * 0.52, mix(col, ringCol2, clamp(astro2.x * 0.52, 0.0, 1.0)), uTheme);
+      }
+
       // =====================================================================
-      // PHYSICAL-FEEL OPTICAL CRYSTAL SHADING
+      // PHYSICAL-FEEL HIGH-CONTRAST OPTICAL CRYSTAL SHADING
       // =====================================================================
       if (hit > 0.5) {
         vec4 nr = calcNormalAndRidge(hitPos, uTime, ripple);
@@ -1166,17 +1163,21 @@
         vec3 v = -rd;
         float ndv = clamp(dot(n, v), 0.0, 1.0);
 
-        float fresnel = 0.08 + 0.92 * pow(1.0 - ndv, 3.6);
-        vec3 irid = iridescence(ndv, uTime * 0.08 + dot(hitPos, vec3(0.22, 0.35, 0.18)) + rippleEnv * 0.35);
+        // Schlick Fresnel (diamond-sapphire IOR ~ 1.58)
+        float fresnel = 0.06 + 0.94 * pow(1.0 - ndv, 3.4);
 
+        // Spectral thin-film iridescence along grazing angles & facet ridges
+        vec3 irid = iridescence(ndv, uTime * 0.08 + dot(hitPos, vec3(0.28, 0.42, 0.22)) + rippleEnv * 0.40);
+
+        // Reflection environment sample
         vec3 reflDir = reflect(rd, n);
         vec3 reflCol = sampleEnvironment(reflDir, uTime, uTheme);
 
-        // 3-Channel RGB Chromatic Dispersion Refraction
-        float dispBoost = 0.04 + 0.06 * rippleEnv + 0.03 * clamp(1.0 - cursorDist, 0.0, 1.0);
-        vec3 refrR = refract(rd, n, 1.0 / (1.40 - dispBoost));
+        // True 3-Channel RGB Chromatic Dispersion Refraction
+        float dispBoost = 0.055 + 0.075 * rippleEnv + 0.035 * clamp(1.0 - cursorDist, 0.0, 1.0);
+        vec3 refrR = refract(rd, n, 1.0 / (1.36 - dispBoost));
         vec3 refrG = refract(rd, n, 1.0 / 1.52);
-        vec3 refrB = refract(rd, n, 1.0 / (1.66 + dispBoost));
+        vec3 refrB = refract(rd, n, 1.0 / (1.70 + dispBoost));
         if (length(refrR) < 0.01) refrR = reflDir;
         if (length(refrG) < 0.01) refrG = reflDir;
         if (length(refrB) < 0.01) refrB = reflDir;
@@ -1186,64 +1187,83 @@
         bgRefr.g = sampleEnvironment(refrG, uTime, uTheme).g;
         bgRefr.b = sampleEnvironment(refrB, uTime, uTheme).b;
 
+        // Internal Infinity-Mirror Glowing Crystal Lattice
         vec3 innerLattice = traceInfinityInterior(hitPos - n * 0.02, refrR, refrG, refrB, uTime, ripple, uTheme);
 
-        float thickness = clamp(1.18 - ndv * 0.62 + 0.25 * length(hitPos), 0.2, 1.8);
-        vec3 absorbNight = exp(-thickness * vec3(1.15, 0.42, 0.10));
-        vec3 absorbPorc  = exp(-thickness * vec3(2.25, 1.15, 0.24));
+        // Deep Royal Sapphire Beer-Lambert Absorption (preserves rich jewel depth!)
+        float thickness = clamp(0.85 + (1.0 - ndv) * 0.95 + 0.22 * length(hitPos), 0.35, 2.2);
+        vec3 absorbNight = exp(-thickness * vec3(2.40, 1.05, 0.22));
+        vec3 absorbPorc  = exp(-thickness * vec3(3.10, 1.55, 0.32));
         vec3 absorption = mix(absorbNight, absorbPorc, uTheme);
 
-        vec3 transmitted = bgRefr * absorption * mix(0.75, 0.92, uTheme) + innerLattice * mix(0.98, 0.76, uTheme);
+        // Deep crystalline interior base (dark sapphire void so glowing lattice pops!)
+        vec3 deepCore = mix(vec3(0.015, 0.055, 0.19), vec3(0.035, 0.12, 0.42), uTheme);
+        vec3 transmitted = deepCore + bgRefr * absorption * mix(0.68, 0.82, uTheme) + innerLattice;
 
-        vec3 l1 = normalize(vec3(0.55, 0.75, 0.65));
-        vec3 l2 = normalize(vec3(-0.72, 0.28, 0.52));
-        vec3 l3 = normalize(vec3(0.18, -0.82, 0.48));
-        float spec1 = pow(max(dot(n, normalize(l1 + v)), 0.0), 96.0);
-        float spec2 = pow(max(dot(n, normalize(l2 + v)), 0.0), 48.0);
-        float spec3 = pow(max(dot(n, normalize(l3 + v)), 0.0), 36.0);
+        // Sharp multi-point studio specular highlights (diamond sparkle!)
+        vec3 l1 = normalize(vec3(0.55, 0.76, 0.64));
+        vec3 l2 = normalize(vec3(-0.74, 0.26, 0.54));
+        vec3 l3 = normalize(vec3(0.20, -0.82, 0.46));
+        float spec1 = pow(max(dot(n, normalize(l1 + v)), 0.0), 120.0);
+        float spec2 = pow(max(dot(n, normalize(l2 + v)), 0.0), 64.0);
+        float spec3 = pow(max(dot(n, normalize(l3 + v)), 0.0), 42.0);
 
-        vec3 specCol = vec3(1.5, 1.7, 2.0) * spec1
-                     + vec3(0.45, 0.92, 1.45) * spec2 * 0.85
-                     + vec3(1.15, 0.95, 0.64) * spec3 * 0.65;
+        vec3 specCol = vec3(1.55, 1.75, 2.05) * spec1
+                     + vec3(0.32, 0.88, 1.48) * spec2 * 0.82
+                     + vec3(1.12, 0.90, 0.54) * spec3 * 0.58;
 
-        vec3 edgeFire = mix(irid, vec3(0.94, 0.99, 1.0), 0.35) * ridge * mix(1.05, 0.85, uTheme);
+        // Crisp prismatic fire strictly along sharp cut facet ridges
+        vec3 edgeFire = mix(irid, vec3(0.92, 0.98, 1.0), 0.28) * ridge * mix(0.62, 0.54, uTheme);
 
-        vec3 surface = mix(transmitted, reflCol * mix(vec3(0.92, 0.98, 1.12), vec3(0.84, 0.92, 1.08), uTheme), fresnel * 0.76);
-        surface += irid * fresnel * mix(0.55, 0.38, uTheme);
+        // Balanced Fresnel reflection + sapphire-iridescent rim
+        vec3 surface = mix(transmitted, reflCol * vec3(0.86, 0.94, 1.12), fresnel * 0.72);
+        surface += irid * fresnel * mix(0.46, 0.34, uTheme);
         surface += specCol;
         surface += edgeFire;
 
-        float porcelRim = pow(1.0 - ndv, 1.8) * (1.0 - fresnel * 0.6);
-        surface = mix(surface, surface * vec3(0.42, 0.62, 1.05), uTheme * porcelRim * 0.55);
+        // Subtle deep cobalt silhouette rim on Light Porcelain for Cartier-grade contrast
+        float porcelRim = pow(1.0 - ndv, 2.2) * (1.0 - fresnel * 0.45);
+        surface = mix(surface, vec3(0.04, 0.15, 0.52), uTheme * porcelRim * 0.38);
 
-        float facetPulse = uPulseAmp * exp(-uPulseAge * 2.2) * (0.5 + 0.5 * sin(length(hitPos) * 8.0 - uPulseAge * 14.0));
-        surface += irid * facetPulse * 0.88;
+        // Dimensional click ripple iridescent wave across crystal facets
+        float facetPulse = uPulseAmp * exp(-uPulseAge * 2.2) * (0.5 + 0.5 * sin(length(hitPos) * 9.0 - uPulseAge * 15.0));
+        surface += irid * facetPulse * 0.72;
 
         col = surface;
       }
 
-      float vig = 1.0 - dot(uv * vec2(0.55, 0.72), uv * vec2(0.55, 0.72)) * mix(0.42, 0.14, uTheme);
-      col *= clamp(vig, 0.58, 1.06);
+      // Draw astrolabe ring segments that pass IN FRONT of the crystal (true 3D interweaving!)
+      if (astro1.y < hitDist) {
+        col = mix(col + ringCol1 * astro1.x * 0.82, mix(col, ringCol1, clamp(astro1.x * 0.72, 0.0, 1.0)), uTheme);
+      }
+      if (astro2.y < hitDist) {
+        col = mix(col + ringCol2 * astro2.x * 0.65, mix(col, ringCol2, clamp(astro2.x * 0.60, 0.0, 1.0)), uTheme);
+      }
 
-      vec3 mappedNight = acesToneMap(col * 1.08);
-      vec3 mappedPorc  = mix(col, acesToneMap(col * 1.18), 0.52);
+      // Subtle cinematic vignette
+      float vig = 1.0 - dot(uv * vec2(0.52, 0.70), uv * vec2(0.52, 0.70)) * mix(0.40, 0.12, uTheme);
+      col *= clamp(vig, 0.60, 1.05);
+
+      vec3 mappedNight = acesToneMap(col * 1.12);
+      vec3 mappedPorc  = mix(col, acesToneMap(col * 1.15), 0.45);
       vec3 finalCol = mix(mappedNight, mappedPorc, uTheme);
-
-      finalCol = pow(clamp(finalCol, 0.0, 1.0), vec3(mix(0.94, 0.98, uTheme)));
+      finalCol = pow(clamp(finalCol, 0.0, 1.0), vec3(mix(0.95, 0.99, uTheme)));
 
       gl_FragColor = vec4(finalCol, 1.0);
     }
-  `;
+    `;
+  }
 
   // =========================================================================
-  // WEBGL ENGINE INITIALIZATION (WebGL2 -> WebGL1 -> Canvas2D Fallback)
+  // WEBGL ENGINE (WebGL2 -> WebGL1 -> Canvas2D Fallback, Per-Mode Programs)
   // =========================================================================
   let gl = null;
   let glModeLabel = 'CANVAS2D · FALLBACK';
-  let program = null;
-  let uniforms = {};
   let useWebGL = false;
   let isSoftwareGL = false;
+  let sharedVert = null;
+  const programs = [null, null, null];
+  const uniformSets = [null, null, null];
 
   function compileShader(glCtx, type, src) {
     const sh = glCtx.createShader(type);
@@ -1255,6 +1275,34 @@
       throw new Error('Shader compile failed: ' + log);
     }
     return sh;
+  }
+
+  function ensureProgram(modeIdx) {
+    if (programs[modeIdx]) return programs[modeIdx];
+    const fs = compileShader(gl, gl.FRAGMENT_SHADER, buildFragmentSource(modeIdx));
+    const prog = gl.createProgram();
+    gl.attachShader(prog, sharedVert);
+    gl.attachShader(prog, fs);
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+      throw new Error('Program link failed: ' + gl.getProgramInfoLog(prog));
+    }
+    gl.deleteShader(fs);
+    programs[modeIdx] = prog;
+    uniformSets[modeIdx] = {
+      aPos: gl.getAttribLocation(prog, 'aPos'),
+      uRes: gl.getUniformLocation(prog, 'uRes'),
+      uTime: gl.getUniformLocation(prog, 'uTime'),
+      uTheme: gl.getUniformLocation(prog, 'uTheme'),
+      uCenterX: gl.getUniformLocation(prog, 'uCenterX'),
+      uMouse: gl.getUniformLocation(prog, 'uMouse'),
+      uOrbit: gl.getUniformLocation(prog, 'uOrbit'),
+      uZoom: gl.getUniformLocation(prog, 'uZoom'),
+      uPulseAge: gl.getUniformLocation(prog, 'uPulseAge'),
+      uPulseAmp: gl.getUniformLocation(prog, 'uPulseAmp'),
+      uPulsePos: gl.getUniformLocation(prog, 'uPulsePos')
+    };
+    return prog;
   }
 
   function initWebGL() {
@@ -1283,37 +1331,12 @@
         if (/swiftshader|llvmpipe|software/i.test(rend)) isSoftwareGL = true;
       }
 
-      const vs = compileShader(gl, gl.VERTEX_SHADER, VERT_SRC);
-      const fs = compileShader(gl, gl.FRAGMENT_SHADER, FRAG_SRC);
-      program = gl.createProgram();
-      gl.attachShader(program, vs);
-      gl.attachShader(program, fs);
-      gl.linkProgram(program);
-      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        throw new Error('Program link failed: ' + gl.getProgramInfoLog(program));
-      }
-      gl.useProgram(program);
-
+      sharedVert = compileShader(gl, gl.VERTEX_SHADER, VERT_SRC);
       const buf = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, buf);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-      const loc = gl.getAttribLocation(program, 'aPos');
-      gl.enableVertexAttribArray(loc);
-      gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
 
-      uniforms = {
-        uRes: gl.getUniformLocation(program, 'uRes'),
-        uTime: gl.getUniformLocation(program, 'uTime'),
-        uModeW: gl.getUniformLocation(program, 'uModeW'),
-        uTheme: gl.getUniformLocation(program, 'uTheme'),
-        uCenterX: gl.getUniformLocation(program, 'uCenterX'),
-        uMouse: gl.getUniformLocation(program, 'uMouse'),
-        uOrbit: gl.getUniformLocation(program, 'uOrbit'),
-        uZoom: gl.getUniformLocation(program, 'uZoom'),
-        uPulseAge: gl.getUniformLocation(program, 'uPulseAge'),
-        uPulseAmp: gl.getUniformLocation(program, 'uPulseAmp'),
-        uPulsePos: gl.getUniformLocation(program, 'uPulsePos')
-      };
+      ensureProgram(0);
       return true;
     } catch (err) {
       console.error('[Crystal Scheme C] WebGL fallback triggered:', err);
@@ -1331,8 +1354,7 @@
     fbCtx = fbCanvas.getContext('2d');
   }
 
-  // Adaptive resolution: sharp native/1.5x on GPU, balanced 0.65x on CPU SwiftShader
-  let renderScale = isSoftwareGL ? 0.65 : Math.min(window.devicePixelRatio || 1, 1.5);
+  let renderScale = isSoftwareGL ? 0.72 : Math.min(window.devicePixelRatio || 1, 1.5);
   function resize() {
     const w = window.innerWidth;
     const h = window.innerHeight;
@@ -1351,7 +1373,7 @@
   resize();
 
   // =========================================================================
-  // GRACEFUL CANVAS2D FALLBACK (If WebGL is disabled in browser)
+  // GRACEFUL CANVAS2D FALLBACK
   // =========================================================================
   function drawFallback2D(t) {
     if (!fbCtx) return;
@@ -1359,7 +1381,7 @@
     const h = fbCanvas.height;
     const cx = w * (0.5 + state.centerShiftCurrent * 0.55);
     const cy = h * 0.49;
-    const r = Math.min(w, h) * 0.25 * state.zoom;
+    const r = Math.min(w, h) * 0.24 * state.zoom;
     const isLight = state.themeCurrent > 0.5;
 
     const bgGrad = fbCtx.createRadialGradient(cx, cy, r * 0.1, cx, cy, Math.max(w, h) * 0.8);
@@ -1375,7 +1397,6 @@
     fbCtx.fillStyle = bgGrad;
     fbCtx.fillRect(0, 0, w, h);
 
-    // Layered iridescent folded polygons
     fbCtx.save();
     fbCtx.translate(cx, cy);
     for (let layer = 5; layer >= 0; layer--) {
@@ -1396,11 +1417,11 @@
       fbCtx.closePath();
       const hue = (205 + layer * 16 + Math.sin(t) * 18) % 360;
       fbCtx.fillStyle = isLight
-        ? `hsla(${hue}, 82%, ${34 + layer * 8}%, 0.28)`
-        : `hsla(${hue}, 92%, ${54 + layer * 7}%, 0.24)`;
+        ? `hsla(${hue}, 82%, ${30 + layer * 7}%, 0.34)`
+        : `hsla(${hue}, 92%, ${48 + layer * 7}%, 0.28)`;
       fbCtx.strokeStyle = isLight
-        ? `hsla(${hue}, 88%, 40%, 0.75)`
-        : `hsla(${hue + 20}, 95%, 80%, 0.82)`;
+        ? `hsla(${hue}, 88%, 36%, 0.8)`
+        : `hsla(${hue + 20}, 95%, 78%, 0.85)`;
       fbCtx.lineWidth = 1.6;
       fbCtx.fill();
       fbCtx.stroke();
@@ -1487,9 +1508,8 @@
     state.mode = idx;
     modeButtons.forEach((b) => b.classList.toggle('is-active', Number(b.dataset.mode) === idx));
     headingEl.textContent = MODE_META[idx];
-    // Fire a gentle morph ripple when switching forms
     state.pulseTime = (performance.now() - state.startTime) * 0.001;
-    state.pulseStrength = 0.72;
+    state.pulseStrength = 0.78;
     state.pulseOriginX = state.centerShiftCurrent * (window.innerWidth / Math.max(window.innerHeight, 1));
     state.pulseOriginY = 0.02;
   }
@@ -1504,7 +1524,7 @@
 
   function updateCenterShift() {
     const isNarrow = window.innerWidth <= 900;
-    state.centerShiftTarget = (state.showTitle && !isNarrow) ? -0.22 : 0.0;
+    state.centerShiftTarget = (state.showTitle && !isNarrow) ? -0.24 : 0.0;
   }
 
   function setTitleVisible(visible) {
@@ -1524,46 +1544,23 @@
   window.addEventListener('resize', updateCenterShift);
   updateCenterShift();
 
-  // Expose tiny inspection API for QA / automation
-  window.__crystalSchemeC = {
-    isWebGL: () => useWebGL,
-    renderer: () => glModeLabel,
-    setMode,
-    setTheme,
-    setTitleVisible,
-    triggerRipple
-  };
-
   // =========================================================================
   // MAIN 60FPS ANIMATION LOOP
   // =========================================================================
+  let activeProgIdx = -1;
   let frameCount = 0;
   let lastFpsTick = performance.now();
+  let paused = false;
 
-  function frame(now) {
+  function renderOnce(now) {
     const t = (now - state.startTime) * 0.001;
 
-    // Smooth interpolations
-    const lerp = 0.085;
-    state.mouseX += (state.mouseTargetX - state.mouseX) * 0.09;
-    state.mouseY += (state.mouseTargetY - state.mouseY) * 0.09;
-    state.themeCurrent += (state.themeTarget - state.themeCurrent) * 0.075;
-    state.centerShiftCurrent += (state.centerShiftTarget - state.centerShiftCurrent) * 0.075;
-    state.zoom += (state.zoomTarget - state.zoom) * 0.1;
+    state.mouseX += (state.mouseTargetX - state.mouseX) * (isSoftwareGL ? 0.5 : 0.09);
+    state.mouseY += (state.mouseTargetY - state.mouseY) * (isSoftwareGL ? 0.5 : 0.09);
+    state.themeCurrent += (state.themeTarget - state.themeCurrent) * (isSoftwareGL ? 0.5 : 0.075);
+    state.centerShiftCurrent += (state.centerShiftTarget - state.centerShiftCurrent) * (isSoftwareGL ? 0.5 : 0.075);
+    state.zoom += (state.zoomTarget - state.zoom) * (isSoftwareGL ? 0.5 : 0.1);
 
-    // Smooth mode morph weights (normalized)
-    const t0 = state.mode === 0 ? 1 : 0;
-    const t1 = state.mode === 1 ? 1 : 0;
-    const t2 = state.mode === 2 ? 1 : 0;
-    state.modeBlend0 += (t0 - state.modeBlend0) * lerp;
-    state.modeBlend1 += (t1 - state.modeBlend1) * lerp;
-    state.modeBlend2 += (t2 - state.modeBlend2) * lerp;
-    const wSum = state.modeBlend0 + state.modeBlend1 + state.modeBlend2 || 1.0;
-    const w0 = state.modeBlend0 / wSum;
-    const w1 = state.modeBlend1 / wSum;
-    const w2 = state.modeBlend2 / wSum;
-
-    // Inertia damping for orbit drag
     if (!state.dragging) {
       state.velYaw *= 0.92;
       state.velPitch *= 0.92;
@@ -1575,33 +1572,66 @@
     const pulseAmp = pulseAge < 4.5 ? state.pulseStrength * Math.exp(-pulseAge * 1.15) : 0.0;
 
     if (useWebGL) {
-      gl.uniform2f(uniforms.uRes, glCanvas.width, glCanvas.height);
-      gl.uniform1f(uniforms.uTime, t);
-      gl.uniform3f(uniforms.uModeW, w0, w1, w2);
-      gl.uniform1f(uniforms.uTheme, state.themeCurrent);
-      gl.uniform1f(uniforms.uCenterX, state.centerShiftCurrent);
-      gl.uniform2f(uniforms.uMouse, state.mouseX, state.mouseY);
-      gl.uniform2f(uniforms.uOrbit, state.orbitYaw, state.orbitPitch);
-      gl.uniform1f(uniforms.uZoom, state.zoom);
-      gl.uniform1f(uniforms.uPulseAge, pulseAge);
-      gl.uniform1f(uniforms.uPulseAmp, pulseAmp);
-      gl.uniform2f(uniforms.uPulsePos, state.pulseOriginX, state.pulseOriginY);
+      const prog = ensureProgram(state.mode);
+      const u = uniformSets[state.mode];
+      if (activeProgIdx !== state.mode) {
+        gl.useProgram(prog);
+        gl.enableVertexAttribArray(u.aPos);
+        gl.vertexAttribPointer(u.aPos, 2, gl.FLOAT, false, 0, 0);
+        activeProgIdx = state.mode;
+      }
+      gl.uniform2f(u.uRes, glCanvas.width, glCanvas.height);
+      gl.uniform1f(u.uTime, t);
+      gl.uniform1f(u.uTheme, state.themeCurrent);
+      gl.uniform1f(u.uCenterX, state.centerShiftCurrent);
+      gl.uniform2f(u.uMouse, state.mouseX, state.mouseY);
+      gl.uniform2f(u.uOrbit, state.orbitYaw, state.orbitPitch);
+      gl.uniform1f(u.uZoom, state.zoom);
+      gl.uniform1f(u.uPulseAge, pulseAge);
+      gl.uniform1f(u.uPulseAmp, pulseAmp);
+      gl.uniform2f(u.uPulsePos, state.pulseOriginX, state.pulseOriginY);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
+      if (isSoftwareGL) gl.flush();
     } else {
       drawFallback2D(t);
     }
 
-    // FPS counter update every 600ms
     frameCount++;
-    if (now - lastFpsTick >= 600) {
+    if (now - lastFpsTick >= 700) {
       const fps = Math.round((frameCount * 1000) / (now - lastFpsTick));
-      fpsEl.textContent = fps + ' FPS';
+      if (fps >= 12) fpsEl.textContent = fps + ' FPS';
       frameCount = 0;
       lastFpsTick = now;
     }
-
-    requestAnimationFrame(frame);
   }
+
+  function frame(now) {
+    if (paused) return;
+    renderOnce(now);
+    if (isSoftwareGL) {
+      setTimeout(() => { if (!paused) requestAnimationFrame(frame); }, 60);
+    } else {
+      requestAnimationFrame(frame);
+    }
+  }
+
+  window.__crystalSchemeC = {
+    isWebGL: () => useWebGL,
+    renderer: () => glModeLabel,
+    setMode,
+    setTheme,
+    setTitleVisible,
+    triggerRipple,
+    snapTransitions: () => {
+      state.themeCurrent = state.themeTarget;
+      state.centerShiftCurrent = state.centerShiftTarget;
+      renderOnce(performance.now());
+    },
+    setPaused: (v) => {
+      paused = !!v;
+      if (!paused) requestAnimationFrame(frame);
+    }
+  };
 
   requestAnimationFrame(frame);
 })();

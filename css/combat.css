@@ -6198,8 +6198,8 @@
 
 #battle-screen .cb-px-actor {
   position: relative;
-  width: calc(var(--px-fw, 72px) * var(--px-scale, 2.35) * var(--px-sm, 1));
-  height: calc(var(--px-fh, 80px) * var(--px-scale, 2.35) * var(--px-sm, 1));
+  width: calc(var(--px-fw, 142px) * var(--px-scale, 2) * var(--px-sm, 1));
+  height: calc(var(--px-fh, 124px) * var(--px-scale, 2) * var(--px-sm, 1));
   flex: 0 0 auto;
   display: block;
   pointer-events: none;
@@ -6215,9 +6215,9 @@
 #battle-screen .cb-px-shadow {
   position: absolute;
   left: var(--px-ax, 50%);
-  top: var(--px-ay, 92%);
-  width: var(--px-sw, 62%);
-  height: 14%;
+  top: var(--px-ay, 96%);
+  width: var(--px-sw, 58%);
+  height: 13%;
   transform: translate(-50%, -45%);
   border-radius: 50%;
   background: radial-gradient(
@@ -6235,19 +6235,33 @@
   width: 100%;
   height: 100%;
   z-index: 2;
-  transform-origin: var(--px-ax, 50%) var(--px-ay, 92%);
+  transform-origin: var(--px-ax, 50%) var(--px-ay, 96%);
   will-change: transform;
 }
 
 #battle-screen .cb-px-sheet {
+  display: block;
   width: 100%;
   height: 100%;
   background-repeat: no-repeat;
-  background-size: 600% 100%;
+  background-size: 700% 100%;
   background-position: 0% 0%;
-  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
+  image-rendering: pixelated;
   filter: drop-shadow(0 6px 8px rgba(13, 31, 68, 0.22));
+}
+
+#battle-screen canvas.cb-px-sheet {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  background: none;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 #battle-screen .cb-px-rig.is-hit-flash .cb-px-sheet {
@@ -6282,10 +6296,12 @@
 
 #battle-screen .cb-px-ghost {
   position: absolute;
+  display: block;
   background-repeat: no-repeat;
-  background-size: 600% 100%;
-  image-rendering: pixelated;
+  background-size: 700% 100%;
+  image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
+  image-rendering: pixelated;
   pointer-events: none;
   z-index: 6;
   animation: cbPxGhostFade 0.22s ease-out forwards;
@@ -6311,50 +6327,50 @@
   filter: drop-shadow(0 6px 8px rgba(13, 31, 68, 0.28)) contrast(1.08) brightness(1.05);
 }
 
-/* 多怪同屏自适应（4 狼列队零拥挤、头狼体量自然突出） */
+/* 多怪同屏整数 1× 缩放（4 狼列队 / 3 魔兽零裁切、零拉伸、像素锐利） */
 #battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor {
-  --px-scale: 2.05;
-  min-height: 150px;
+  --px-scale: 1;
+  min-height: 136px;
 }
 
 #battle-screen .cb-enemy-zone.multi-enemies .cb-e-avatar.has-px-actor {
-  max-height: 196px;
+  max-height: 160px;
 }
 
-/* 1280×720 桌面紧凑视口：保证 168px 清晰像素精灵且零裁切零重叠 */
+/* 1280×720 桌面紧凑视口：整数 1× 清晰像素精灵，全 15 角色零裁切零重叠 */
 @media (max-width: 1360px), (max-height: 760px) {
   #battle-screen {
-    --px-scale: 2.1;
+    --px-scale: 1;
   }
 
   #battle-screen .cb-standee-wrap.has-px-actor {
-    min-height: 158px;
-    max-height: 194px;
+    min-height: 132px;
+    max-height: 176px;
   }
 
   #battle-screen .cb-p-portrait.has-px-actor {
-    max-height: 188px;
+    max-height: 168px;
   }
 
   #battle-screen .cb-e-stage.has-px-actor {
-    min-height: 154px;
+    min-height: 132px;
   }
 
   #battle-screen .cb-e-avatar.has-px-actor {
-    max-height: 192px;
+    max-height: 168px;
   }
 
   #battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor {
-    --px-scale: 1.78;
-    min-height: 122px;
+    --px-scale: 1;
+    min-height: 124px;
   }
 
   #battle-screen .cb-enemy-zone.multi-enemies .cb-e-avatar.has-px-actor {
-    max-height: 154px;
+    max-height: 148px;
   }
 }
 
-/* 移动端竖屏 (390×844)：保留 46×46 紧凑头像与清晰敌方像素精灵 */
+/* 移动端竖屏 (390×844)：保留 46×46 紧凑头像与整数 1× 清晰敌方像素精灵 */
 @media (max-width: 720px) {
   #battle-screen .cb-standee-wrap.has-px-actor {
     overflow: hidden;
@@ -6368,7 +6384,7 @@
     overflow: hidden;
     max-height: 44px;
     align-items: center;
-    --px-scale: 0.56;
+    --px-scale: 0.35;
   }
 
   #battle-screen .cb-p-portrait.has-px-actor .cb-px-shadow {
@@ -6376,23 +6392,23 @@
   }
 
   #battle-screen .cb-e-stage.has-px-actor {
-    min-height: 92px;
-    max-height: 128px;
-    --px-scale: 1.42;
+    min-height: 118px;
+    max-height: 144px;
+    --px-scale: 1;
   }
 
   #battle-screen .cb-e-avatar.has-px-actor {
-    max-height: 124px;
+    max-height: 140px;
   }
 
   #battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor {
-    --px-scale: 0.72;
-    min-height: 54px;
-    max-height: 62px;
+    --px-scale: 0.5;
+    min-height: 64px;
+    max-height: 76px;
   }
 
   #battle-screen .cb-enemy-zone.multi-enemies .cb-e-avatar.has-px-actor {
-    max-height: 60px;
+    max-height: 72px;
   }
 }
 
@@ -6410,7 +6426,7 @@
     overflow: hidden;
     max-height: 34px;
     align-items: center;
-    --px-scale: 0.44;
+    --px-scale: 0.28;
   }
 
   #battle-screen .cb-p-portrait.has-px-actor .cb-px-shadow {
@@ -6418,14 +6434,14 @@
   }
 
   #battle-screen .cb-e-stage.has-px-actor {
-    min-height: 82px;
-    max-height: 112px;
-    --px-scale: 1.24;
+    min-height: 88px;
+    max-height: 114px;
+    --px-scale: 0.75;
   }
 
   #battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor {
-    --px-scale: 0.84;
-    min-height: 62px;
+    --px-scale: 0.5;
+    min-height: 64px;
     max-height: 76px;
   }
 }

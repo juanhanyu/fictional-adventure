@@ -2,7 +2,8 @@
    《转生千金》60fps 像素战斗精灵动画 × patch-gg/pixelfx 法术特效引擎
    (js/combat-pixel-vfx.js)
    导出：window.CombatPixelVFX
-   - 14 套 6 帧横向像素精灵注册表与状态机（呼吸/随机眨眼/浮空/蓄势/出击/受击）
+   - 15 套 Sea of Stars 风格 7 帧零 PNG 像素精灵注册表与状态机
+     [0:idle1, 1:idle2, 2:blink, 3:windup, 4:cast_step, 5:strike, 6:hurt]
    - 全舞台低分辨率像素缓冲 Canvas 2D (#cb-pixel-vfx-canvas) 实时透明合成 27 种 pixelfx
    - game-feel 质感：真时钟 Hit-Stop 计数保护、创伤震屏、冲刺残影、挤压回弹与降动效护栏
    ===================================================================== */
@@ -59,26 +60,47 @@
     },
   };
 
-  /* -------------------- 14 套像素精灵完整清单（含精确内联默认值 + 懒同步 JSON） -------------------- */
+  /* -------------------- 15 套 Sea of Stars 7 帧像素精灵完整清单（动态同步 PIXEL_SPRITE_BANK） -------------------- */
   const SPRITE_MANIFEST = {
+    sylvia_young: {
+      id: 'sylvia_young',
+      file: 'assets/sprites/sylvia_young_sheet.png',
+      metaFile: 'assets/sprites/sylvia_young_meta.json',
+      frames: 7,
+      frameW: 126,
+      frameH: 118,
+      facing: 'right',
+      anchorX: 63 / 126,
+      anchorY: 114 / 118,
+      castX: 120 / 126,
+      castY: 61 / 118,
+      hitX: 63 / 126,
+      hitY: 66 / 118,
+      headX: 63 / 126,
+      headY: 33 / 118,
+      scaleMult: 1.0,
+      shadowW: 54,
+      floatAmp: 0,
+      archetype: 'humanoid',
+    },
     sylvia_silver: {
       id: 'sylvia_silver',
       file: 'assets/sprites/sylvia_silver_sheet.png',
       metaFile: 'assets/sprites/sylvia_silver_meta.json',
-      frames: 6,
-      frameW: 72,
-      frameH: 80,
+      frames: 7,
+      frameW: 142,
+      frameH: 124,
       facing: 'right',
-      anchorX: 0.4583,
-      anchorY: 0.925,
-      castX: 0.9167,
-      castY: 0.5125,
-      hitX: 0.4722,
-      hitY: 0.5625,
-      headX: 0.4722,
-      headY: 0.2875,
+      anchorX: 71 / 142,
+      anchorY: 120 / 124,
+      castX: 136 / 142,
+      castY: 64 / 124,
+      hitX: 71 / 142,
+      hitY: 69 / 124,
+      headX: 71 / 142,
+      headY: 34 / 124,
       scaleMult: 1.0,
-      shadowW: 60,
+      shadowW: 56,
       floatAmp: 0,
       archetype: 'humanoid',
     },
@@ -86,20 +108,20 @@
       id: 'sylvia_disguise',
       file: 'assets/sprites/sylvia_disguise_sheet.png',
       metaFile: 'assets/sprites/sylvia_disguise_meta.json',
-      frames: 6,
-      frameW: 72,
-      frameH: 80,
+      frames: 7,
+      frameW: 138,
+      frameH: 124,
       facing: 'right',
-      anchorX: 0.4583,
-      anchorY: 0.925,
-      castX: 0.9167,
-      castY: 0.5125,
-      hitX: 0.4722,
-      hitY: 0.5625,
-      headX: 0.4722,
-      headY: 0.2875,
+      anchorX: 69 / 138,
+      anchorY: 120 / 124,
+      castX: 132 / 138,
+      castY: 64 / 124,
+      hitX: 69 / 138,
+      hitY: 69 / 124,
+      headX: 69 / 138,
+      headY: 34 / 124,
       scaleMult: 1.0,
-      shadowW: 60,
+      shadowW: 56,
       floatAmp: 0,
       archetype: 'humanoid',
     },
@@ -107,20 +129,20 @@
       id: 'beatrice',
       file: 'assets/sprites/beatrice_sheet.png',
       metaFile: 'assets/sprites/beatrice_meta.json',
-      frames: 6,
-      frameW: 72,
-      frameH: 80,
+      frames: 7,
+      frameW: 130,
+      frameH: 120,
       facing: 'left',
-      anchorX: 0.5278,
-      anchorY: 0.925,
-      castX: 0.0833,
-      castY: 0.4875,
-      hitX: 0.5139,
-      hitY: 0.55,
-      headX: 0.5139,
-      headY: 0.275,
+      anchorX: 65 / 130,
+      anchorY: 116 / 120,
+      castX: 6 / 130,
+      castY: 62 / 120,
+      hitX: 65 / 130,
+      hitY: 67 / 120,
+      headX: 65 / 130,
+      headY: 33 / 120,
       scaleMult: 1.0,
-      shadowW: 60,
+      shadowW: 58,
       floatAmp: 0,
       archetype: 'humanoid',
     },
@@ -128,20 +150,20 @@
       id: 'alice',
       file: 'assets/sprites/alice_sheet.png',
       metaFile: 'assets/sprites/alice_meta.json',
-      frames: 6,
-      frameW: 72,
-      frameH: 80,
+      frames: 7,
+      frameW: 126,
+      frameH: 116,
       facing: 'left',
-      anchorX: 0.5417,
-      anchorY: 0.925,
-      castX: 0.0556,
-      castY: 0.5125,
-      hitX: 0.5278,
-      hitY: 0.575,
-      headX: 0.5278,
-      headY: 0.3,
-      scaleMult: 0.98,
-      shadowW: 58,
+      anchorX: 63 / 126,
+      anchorY: 112 / 116,
+      castX: 6 / 126,
+      castY: 60 / 116,
+      hitX: 63 / 126,
+      hitY: 64 / 116,
+      headX: 63 / 126,
+      headY: 32 / 116,
+      scaleMult: 1.0,
+      shadowW: 54,
       floatAmp: 0,
       archetype: 'humanoid',
     },
@@ -149,20 +171,20 @@
       id: 'aino',
       file: 'assets/sprites/aino_sheet.png',
       metaFile: 'assets/sprites/aino_meta.json',
-      frames: 6,
-      frameW: 72,
-      frameH: 80,
+      frames: 7,
+      frameW: 138,
+      frameH: 124,
       facing: 'left',
-      anchorX: 0.5417,
-      anchorY: 0.925,
-      castX: 0.0417,
-      castY: 0.5,
-      hitX: 0.5278,
-      hitY: 0.5625,
-      headX: 0.5278,
-      headY: 0.2875,
+      anchorX: 69 / 138,
+      anchorY: 120 / 124,
+      castX: 6 / 138,
+      castY: 64 / 124,
+      hitX: 69 / 138,
+      hitY: 69 / 124,
+      headX: 69 / 138,
+      headY: 34 / 124,
       scaleMult: 1.0,
-      shadowW: 60,
+      shadowW: 56,
       floatAmp: 0,
       archetype: 'humanoid',
     },
@@ -170,20 +192,20 @@
       id: 'noelle',
       file: 'assets/sprites/noelle_sheet.png',
       metaFile: 'assets/sprites/noelle_meta.json',
-      frames: 6,
-      frameW: 72,
-      frameH: 80,
+      frames: 7,
+      frameW: 138,
+      frameH: 124,
       facing: 'left',
-      anchorX: 0.5278,
-      anchorY: 0.925,
-      castX: 0.1806,
-      castY: 0.5125,
-      hitX: 0.5139,
-      hitY: 0.5625,
-      headX: 0.5139,
-      headY: 0.2875,
+      anchorX: 69 / 138,
+      anchorY: 120 / 124,
+      castX: 6 / 138,
+      castY: 64 / 124,
+      hitX: 69 / 138,
+      hitY: 69 / 124,
+      headX: 69 / 138,
+      headY: 34 / 124,
       scaleMult: 1.0,
-      shadowW: 60,
+      shadowW: 56,
       floatAmp: 0,
       archetype: 'humanoid',
     },
@@ -191,20 +213,20 @@
       id: 'rowan',
       file: 'assets/sprites/rowan_sheet.png',
       metaFile: 'assets/sprites/rowan_meta.json',
-      frames: 6,
-      frameW: 76,
-      frameH: 84,
+      frames: 7,
+      frameW: 146,
+      frameH: 134,
       facing: 'left',
-      anchorX: 0.5789,
-      anchorY: 0.9286,
-      castX: 0.0658,
-      castY: 0.4643,
-      hitX: 0.5658,
-      hitY: 0.5357,
-      headX: 0.5658,
-      headY: 0.25,
-      scaleMult: 0.96,
-      shadowW: 62,
+      anchorX: 73 / 146,
+      anchorY: 130 / 134,
+      castX: 6 / 146,
+      castY: 69 / 134,
+      hitX: 73 / 146,
+      hitY: 75 / 134,
+      headX: 73 / 146,
+      headY: 37 / 134,
+      scaleMult: 1.0,
+      shadowW: 60,
       floatAmp: 0,
       archetype: 'humanoid',
     },
@@ -212,19 +234,19 @@
       id: 'wind_god_avatar',
       file: 'assets/sprites/wind_god_avatar_sheet.png',
       metaFile: 'assets/sprites/wind_god_avatar_meta.json',
-      frames: 6,
-      frameW: 84,
-      frameH: 88,
+      frames: 7,
+      frameW: 146,
+      frameH: 134,
       facing: 'left',
-      anchorX: 0.5476,
-      anchorY: 0.9318,
-      castX: 0.0714,
-      castY: 0.4545,
-      hitX: 0.5476,
-      hitY: 0.5227,
-      headX: 0.5357,
-      headY: 0.2841,
-      scaleMult: 0.94,
+      anchorX: 73 / 146,
+      anchorY: 130 / 134,
+      castX: 6 / 146,
+      castY: 69 / 134,
+      hitX: 73 / 146,
+      hitY: 75 / 134,
+      headX: 73 / 146,
+      headY: 37 / 134,
+      scaleMult: 1.0,
       shadowW: 54,
       floatAmp: 3.2,
       archetype: 'boss',
@@ -233,20 +255,20 @@
       id: 'eastwing_commander',
       file: 'assets/sprites/eastwing_commander_sheet.png',
       metaFile: 'assets/sprites/eastwing_commander_meta.json',
-      frames: 6,
-      frameW: 80,
-      frameH: 86,
+      frames: 7,
+      frameW: 150,
+      frameH: 136,
       facing: 'left',
-      anchorX: 0.55,
-      anchorY: 0.9302,
-      castX: 0.0375,
-      castY: 0.5349,
-      hitX: 0.5375,
-      hitY: 0.5116,
-      headX: 0.55,
-      headY: 0.2791,
-      scaleMult: 0.95,
-      shadowW: 64,
+      anchorX: 75 / 150,
+      anchorY: 132 / 136,
+      castX: 6 / 150,
+      castY: 70 / 136,
+      hitX: 75 / 150,
+      hitY: 76 / 136,
+      headX: 75 / 150,
+      headY: 38 / 136,
+      scaleMult: 1.0,
+      shadowW: 62,
       floatAmp: 0,
       archetype: 'boss',
     },
@@ -254,20 +276,20 @@
       id: 'corridor_vanguard',
       file: 'assets/sprites/corridor_vanguard_sheet.png',
       metaFile: 'assets/sprites/corridor_vanguard_meta.json',
-      frames: 6,
-      frameW: 76,
-      frameH: 82,
+      frames: 7,
+      frameW: 146,
+      frameH: 134,
       facing: 'left',
-      anchorX: 0.5658,
-      anchorY: 0.9268,
-      castX: 0.0921,
-      castY: 0.5122,
-      hitX: 0.5526,
-      hitY: 0.5122,
-      headX: 0.5395,
-      headY: 0.2561,
-      scaleMult: 0.96,
-      shadowW: 62,
+      anchorX: 73 / 146,
+      anchorY: 130 / 134,
+      castX: 6 / 146,
+      castY: 69 / 134,
+      hitX: 73 / 146,
+      hitY: 75 / 134,
+      headX: 73 / 146,
+      headY: 37 / 134,
+      scaleMult: 1.0,
+      shadowW: 60,
       floatAmp: 0,
       archetype: 'humanoid',
     },
@@ -275,19 +297,19 @@
       id: 'wolf_alpha',
       file: 'assets/sprites/wolf_alpha_sheet.png',
       metaFile: 'assets/sprites/wolf_alpha_meta.json',
-      frames: 6,
-      frameW: 88,
-      frameH: 72,
+      frames: 7,
+      frameW: 166,
+      frameH: 118,
       facing: 'left',
-      anchorX: 0.5,
-      anchorY: 0.9167,
-      castX: 0.0795,
-      castY: 0.6389,
-      hitX: 0.4773,
-      hitY: 0.5556,
-      headX: 0.2614,
-      headY: 0.5694,
-      scaleMult: 0.98,
+      anchorX: 83 / 166,
+      anchorY: 114 / 118,
+      castX: 6 / 166,
+      castY: 61 / 118,
+      hitX: 83 / 166,
+      hitY: 66 / 118,
+      headX: 83 / 166,
+      headY: 33 / 118,
+      scaleMult: 1.0,
       shadowW: 76,
       floatAmp: 0,
       archetype: 'beast',
@@ -296,19 +318,19 @@
       id: 'pack_wolf',
       file: 'assets/sprites/pack_wolf_sheet.png',
       metaFile: 'assets/sprites/pack_wolf_meta.json',
-      frames: 6,
-      frameW: 80,
-      frameH: 64,
+      frames: 7,
+      frameW: 158,
+      frameH: 114,
       facing: 'left',
-      anchorX: 0.5125,
-      anchorY: 0.9062,
-      castX: 0.0625,
-      castY: 0.5156,
-      hitX: 0.4625,
-      hitY: 0.5156,
-      headX: 0.225,
-      headY: 0.3906,
-      scaleMult: 0.96,
+      anchorX: 79 / 158,
+      anchorY: 110 / 114,
+      castX: 6 / 158,
+      castY: 59 / 114,
+      hitX: 79 / 158,
+      hitY: 63 / 114,
+      headX: 79 / 158,
+      headY: 31 / 114,
+      scaleMult: 1.0,
       shadowW: 74,
       floatAmp: 0,
       archetype: 'beast',
@@ -317,19 +339,19 @@
       id: 'shadow_jackal',
       file: 'assets/sprites/shadow_jackal_sheet.png',
       metaFile: 'assets/sprites/shadow_jackal_meta.json',
-      frames: 6,
-      frameW: 84,
-      frameH: 68,
+      frames: 7,
+      frameW: 158,
+      frameH: 118,
       facing: 'left',
-      anchorX: 0.5238,
-      anchorY: 0.9118,
-      castX: 0.0714,
-      castY: 0.5735,
-      hitX: 0.5,
-      hitY: 0.5294,
-      headX: 0.2619,
-      headY: 0.4706,
-      scaleMult: 0.98,
+      anchorX: 79 / 158,
+      anchorY: 114 / 118,
+      castX: 6 / 158,
+      castY: 61 / 118,
+      hitX: 79 / 158,
+      hitY: 66 / 118,
+      headX: 79 / 158,
+      headY: 33 / 118,
+      scaleMult: 1.0,
       shadowW: 74,
       floatAmp: 0,
       archetype: 'beast',
@@ -338,19 +360,19 @@
       id: 'abyss_behemoth',
       file: 'assets/sprites/abyss_behemoth_sheet.png',
       metaFile: 'assets/sprites/abyss_behemoth_meta.json',
-      frames: 6,
-      frameW: 96,
-      frameH: 84,
+      frames: 7,
+      frameW: 178,
+      frameH: 130,
       facing: 'left',
-      anchorX: 0.4792,
-      anchorY: 0.9286,
-      castX: 0.125,
-      castY: 0.8571,
-      hitX: 0.4167,
-      hitY: 0.5833,
-      headX: 0.2292,
-      headY: 0.5476,
-      scaleMult: 0.92,
+      anchorX: 89 / 178,
+      anchorY: 126 / 130,
+      castX: 6 / 178,
+      castY: 67 / 130,
+      hitX: 89 / 178,
+      hitY: 72 / 130,
+      headX: 89 / 178,
+      headY: 36 / 130,
+      scaleMult: 1.0,
       shadowW: 78,
       floatAmp: 0,
       archetype: 'boss',
@@ -410,15 +432,51 @@
     frost_lizard: 'abyss_behemoth',
   };
 
+  // 7-frame Sea of Stars 布局: [0:idle1, 1:idle2, 2:blink, 3:windup, 4:cast_step, 5:strike, 6:hurt]
+  // 6-frame 兼容布局: [0:idle1, 1:idle2, 2:blink, 3:windup, 4:strike, 5:hurt]
   const POSE_TO_FRAME = {
     idle: 0,
     idle1: 0,
     idle2: 1,
     blink: 2,
     windup: 3,
-    strike: 4,
-    hurt: 5,
+    charge: 3,
+    cast_step: 4,
+    strike: 5,
+    attack: 5,
+    cast: 5,
+    hurt: 6,
+    hit: 6,
   };
+
+  function resolvePoseFrame(pose, frameCount) {
+    const count = Math.max(1, frameCount || 7);
+    const is7 = count >= 7;
+    const key = String(pose || 'idle').toLowerCase();
+    switch (key) {
+      case 'idle':
+      case 'idle1':
+        return 0;
+      case 'idle2':
+        return count > 1 ? 1 : 0;
+      case 'blink':
+        return count > 2 ? 2 : 0;
+      case 'windup':
+      case 'charge':
+        return count > 3 ? 3 : count - 1;
+      case 'cast_step':
+        return is7 ? 4 : (count > 3 ? 3 : count - 1);
+      case 'strike':
+      case 'attack':
+      case 'cast':
+        return is7 ? 5 : (count > 4 ? 4 : count - 1);
+      case 'hurt':
+      case 'hit':
+        return is7 ? 6 : (count > 5 ? 5 : count - 1);
+      default:
+        return 0;
+    }
+  }
 
   /* -------------------- 冰晶故事绘本色板（贴合雪瓷蓝宝石美术基调） -------------------- */
   const PALETTES = {
@@ -493,17 +551,62 @@
     return true;
   }
 
-  function getSpriteMeta(spriteId) {
-    return SPRITE_MANIFEST[spriteId] || SPRITE_MANIFEST.sylvia_silver;
+  function hydrateMetaFromBank(meta) {
+    if (!meta) return meta;
+    const bank = getPixelBankEntry(meta.id);
+    if (!bank) return meta;
+    if (meta._bankRef === bank) return meta;
+    meta._bankRef = bank;
+    meta.frameW = bank.w;
+    meta.frameH = bank.h;
+    meta.frames = bank.frames.length;
+    if (typeof bank.facing === 'string') meta.facing = bank.facing;
+    if (typeof bank.scaleMult === 'number' && Number.isFinite(bank.scaleMult)) meta.scaleMult = bank.scaleMult;
+    if (bank.anchors) {
+      if (Array.isArray(bank.anchors.feet)) {
+        meta.anchorX = bank.anchors.feet[0] / bank.w;
+        meta.anchorY = bank.anchors.feet[1] / bank.h;
+      }
+      if (Array.isArray(bank.anchors.cast)) {
+        meta.castX = bank.anchors.cast[0] / bank.w;
+        meta.castY = bank.anchors.cast[1] / bank.h;
+      }
+      if (Array.isArray(bank.anchors.hit)) {
+        meta.hitX = bank.anchors.hit[0] / bank.w;
+        meta.hitY = bank.anchors.hit[1] / bank.h;
+      }
+      if (Array.isArray(bank.anchors.head)) {
+        meta.headX = bank.anchors.head[0] / bank.w;
+        meta.headY = bank.anchors.head[1] / bank.h;
+      }
+    }
+    return meta;
   }
+
+  function getSpriteMeta(spriteId) {
+    const meta = SPRITE_MANIFEST[spriteId] || SPRITE_MANIFEST.sylvia_silver;
+    return hydrateMetaFromBank(meta);
+  }
+
+  const YOUNG_SYLVIA_STAGES = new Set(['beatrice_11', 'rowan_graveyard', 'alice_9']);
+  const DISGUISE_SYLVIA_STAGES = new Set(['north_forest_hunt', 'hulan_beast_tide', 'wind_god_eye']);
 
   function resolvePlayerSpriteId(battleState, isVol3Disguise) {
     if (isVol3Disguise) return 'sylvia_disguise';
     if (battleState) {
       const sid = battleState.id || (battleState.stageCfg && battleState.stageCfg.id) || '';
       const pname = battleState.player && battleState.player.name ? battleState.player.name : '';
-      if (sid === 'north_forest_hunt' || sid === 'hulan_beast_tide' || sid === 'wind_god_eye' || pname.includes('眷寒渔')) {
+      if (DISGUISE_SYLVIA_STAGES.has(sid) || pname.includes('眷寒渔')) {
         return 'sylvia_disguise';
+      }
+      if (YOUNG_SYLVIA_STAGES.has(sid)) {
+        return 'sylvia_young';
+      }
+      const age = (battleState.stageCfg && battleState.stageCfg.player && typeof battleState.stageCfg.player.age === 'number')
+        ? battleState.stageCfg.player.age
+        : (battleState.player && typeof battleState.player.age === 'number' ? battleState.player.age : null);
+      if (age != null && age < 12) {
+        return 'sylvia_young';
       }
     }
     return 'sylvia_silver';
@@ -637,6 +740,16 @@
     return false;
   }
 
+  function applyActorCssVars(el, meta) {
+    if (!el || !meta) return;
+    el.style.setProperty('--px-fw', `${meta.frameW}px`);
+    el.style.setProperty('--px-fh', `${meta.frameH}px`);
+    el.style.setProperty('--px-sm', String(meta.scaleMult != null ? meta.scaleMult : 1));
+    el.style.setProperty('--px-ax', `${(meta.anchorX * 100).toFixed(2)}%`);
+    el.style.setProperty('--px-ay', `${(meta.anchorY * 100).toFixed(2)}%`);
+    el.style.setProperty('--px-sw', `${meta.shadowW}%`);
+  }
+
   /* -------------------- 精灵预加载与 JSON 元数据懒同步 -------------------- */
   function preloadSpriteSheet(spriteId) {
     if (!isEnabled()) return;
@@ -673,29 +786,10 @@
     const bank = getPixelBankEntry(meta.id);
     if (bank) {
       _metaFetched.add(meta.id);
-      meta.frameW = bank.w;
-      meta.frameH = bank.h;
-      meta.frames = bank.frames.length;
-      if (typeof bank.facing === 'string') meta.facing = bank.facing;
-      if (typeof bank.scaleMult === 'number') meta.scaleMult = bank.scaleMult;
-      if (bank.anchors) {
-        if (Array.isArray(bank.anchors.feet)) {
-          meta.anchorX = bank.anchors.feet[0] / bank.w;
-          meta.anchorY = bank.anchors.feet[1] / bank.h;
-        }
-        if (Array.isArray(bank.anchors.cast)) {
-          meta.castX = bank.anchors.cast[0] / bank.w;
-          meta.castY = bank.anchors.cast[1] / bank.h;
-        }
-        if (Array.isArray(bank.anchors.hit)) {
-          meta.hitX = bank.anchors.hit[0] / bank.w;
-          meta.hitY = bank.anchors.hit[1] / bank.h;
-        }
-        if (Array.isArray(bank.anchors.head)) {
-          meta.headX = bank.anchors.head[0] / bank.w;
-          meta.headY = bank.anchors.head[1] / bank.h;
-        }
-      }
+      hydrateMetaFromBank(meta);
+      document.querySelectorAll(`.cb-px-actor[data-sprite-id="${meta.id}"]`).forEach(el => {
+        applyActorCssVars(el, meta);
+      });
       return;
     }
     if (!meta.metaFile || !hasPngSheetInstalled(meta.id)) return;
@@ -714,10 +808,7 @@
           });
           if (typeof data.facing === 'string') meta.facing = data.facing;
           document.querySelectorAll(`.cb-px-actor[data-sprite-id="${meta.id}"]`).forEach(el => {
-            el.style.setProperty('--px-fw', `${meta.frameW}px`);
-            el.style.setProperty('--px-fh', `${meta.frameH}px`);
-            el.style.setProperty('--px-ax', `${(meta.anchorX * 100).toFixed(2)}%`);
-            el.style.setProperty('--px-ay', `${(meta.anchorY * 100).toFixed(2)}%`);
+            applyActorCssVars(el, meta);
           });
         })
         .catch(() => {});
@@ -739,6 +830,7 @@
       poseOverride: null,
       poseTimer: 0,
       poseLock: false,
+      poseQueue: [],
       breathElapsed: Math.random() * 0.5,
       breathPeriod: 0.44 + Math.random() * 0.11, // 每角色错开周期，群狼永不同步机械呼吸
       breathStep: Math.random() < 0.5 ? 0 : 1,
@@ -782,8 +874,9 @@
     const st = getOrCreateActor(actorKey, meta.id);
     st.dead = !!opts.dead;
 
+    const frameCount = (bank ? bank.frames.length : meta.frames) || 7;
     const curPose = st.poseOverride || st.pose || 'idle';
-    const curFrame = typeof st.frame === 'number' ? st.frame : 0;
+    const curFrame = clamp(typeof st.frame === 'number' ? st.frame : 0, 0, frameCount - 1);
     const missingCls = (!bank && _imgPreloaded.get(meta.id) === 'err') ? ' is-sheet-missing' : '';
     const deadCls = opts.dead ? ' is-dead' : '';
     const archCls = ` arch-${meta.archetype || 'humanoid'}`;
@@ -796,9 +889,13 @@
       fallbackMarkup = `<div class="cb-px-fallback" aria-hidden="true"><img src="${escapeAttr(opts.fallbackImg)}" alt="${safeLabel}"/></div>`;
     }
 
+    const posStep = 100 / Math.max(1, frameCount - 1);
     const sheetMarkup = bank
       ? `<canvas class="cb-px-sheet" width="${bank.w}" height="${bank.h}" role="img" aria-label="${safeLabel}"></canvas>`
-      : `<div class="cb-px-sheet" style="${missingCls ? '' : `background-image:url('${escapeAttr(meta.file)}');background-position:${curFrame * 20}% 0%;`}" role="img" aria-label="${safeLabel}"></div>`;
+      : `<div class="cb-px-sheet" style="${missingCls ? '' : `background-image:url('${escapeAttr(meta.file)}');background-size:${frameCount * 100}% 100%;background-position:${(curFrame * posStep).toFixed(4)}% 0%;`}" role="img" aria-label="${safeLabel}"></div>`;
+
+    const fw = bank ? bank.w : meta.frameW;
+    const fh = bank ? bank.h : meta.frameH;
 
     return (
       `<div class="cb-px-actor${archCls}${deadCls}${missingCls}"` +
@@ -807,7 +904,7 @@
       ` data-pose="${escapeAttr(curPose)}"` +
       ` data-frame="${curFrame}"` +
       ` data-facing="${escapeAttr(meta.facing)}"` +
-      ` style="--px-fw:${meta.frameW}px;--px-fh:${meta.frameH}px;--px-sm:${meta.scaleMult};--px-ax:${(meta.anchorX * 100).toFixed(2)}%;--px-ay:${(meta.anchorY * 100).toFixed(2)}%;--px-sw:${meta.shadowW}%;">` +
+      ` style="--px-fw:${fw}px;--px-fh:${fh}px;--px-sm:${meta.scaleMult};--px-ax:${(meta.anchorX * 100).toFixed(2)}%;--px-ay:${(meta.anchorY * 100).toFixed(2)}%;--px-sw:${meta.shadowW}%;">` +
       `<div class="cb-px-shadow" aria-hidden="true"></div>` +
       `<div class="cb-px-rig">` +
       sheetMarkup +
@@ -820,7 +917,8 @@
   function applyActorVisual(st) {
     if (!st || !st.el) return;
     const meta = getSpriteMeta(st.spriteId);
-    const frame = clamp(st.frame | 0, 0, (meta.frames || 6) - 1);
+    const frameCount = meta.frames || 7;
+    const frame = clamp(st.frame | 0, 0, frameCount - 1);
     const poseName = st.poseOverride || st.pose || 'idle';
 
     if (st.el.getAttribute('data-frame') !== String(frame)) {
@@ -837,7 +935,8 @@
           drawBankFrameOnCanvas(st.sheetEl, st.spriteId, frame);
         }
       } else {
-        const posStr = `${frame * 20}% 0%`;
+        const posStep = 100 / Math.max(1, frameCount - 1);
+        const posStr = `${(frame * posStep).toFixed(4)}% 0%`;
         if (st.sheetEl.style.backgroundPosition !== posStr) {
           st.sheetEl.style.backgroundPosition = posStr;
         }
@@ -877,20 +976,23 @@
     const parent = st.el.parentElement;
     if (!parent) return;
     const meta = getSpriteMeta(st.spriteId);
+    const frameCount = meta.frames || 7;
     const isCanvas = st.sheetEl.tagName === 'CANVAS';
     const ghost = document.createElement(isCanvas ? 'canvas' : 'div');
     ghost.className = `cb-px-ghost tone-${tone || 'ice'}`;
     ghost.setAttribute('aria-hidden', 'true');
-    ghost.style.width = `${st.el.offsetWidth || (meta.frameW * 3)}px`;
-    ghost.style.height = `${st.el.offsetHeight || (meta.frameH * 3)}px`;
+    ghost.style.width = `${st.el.offsetWidth || (meta.frameW * 2)}px`;
+    ghost.style.height = `${st.el.offsetHeight || (meta.frameH * 2)}px`;
     ghost.style.left = `${st.el.offsetLeft}px`;
     ghost.style.top = `${st.el.offsetTop}px`;
     ghost.style.transform = `translate3d(${st.dx.toFixed(1)}px, ${st.dy.toFixed(1)}px, 0)`;
     if (isCanvas) {
       drawBankFrameOnCanvas(ghost, st.spriteId, st.frame | 0);
     } else {
+      const posStep = 100 / Math.max(1, frameCount - 1);
       ghost.style.backgroundImage = st.sheetEl.style.backgroundImage;
-      ghost.style.backgroundPosition = `${(st.frame | 0) * 20}% 0%`;
+      ghost.style.backgroundSize = `${frameCount * 100}% 100%`;
+      ghost.style.backgroundPosition = `${((st.frame | 0) * posStep).toFixed(4)}% 0%`;
     }
     parent.appendChild(ghost);
     trackRealTimer(() => {
@@ -1102,16 +1204,34 @@
   function setActorPoseInternal(actorKey, pose, holdMs, locked) {
     const st = _actors.get(actorKey);
     if (!st) return;
-    if (!pose || pose === 'idle') {
+    const meta = getSpriteMeta(st.spriteId);
+    const frameCount = meta.frames || 7;
+    if (!Array.isArray(st.poseQueue)) st.poseQueue = [];
+    st.poseQueue.length = 0;
+
+    const normPose = String(pose || 'idle').toLowerCase();
+    if (!pose || normPose === 'idle') {
       st.poseOverride = null;
       st.pose = 'idle';
       st.poseTimer = 0;
       st.poseLock = false;
       st.frame = st.breathStep ? 1 : 0;
+    } else if (!locked && frameCount >= 7 && (normPose === 'attack' || normPose === 'strike' || normPose === 'cast')) {
+      // 7 帧平滑出招序列：cast_step (4, ~85ms) -> strike (5, ~260ms) -> cast_step (4, ~85ms) -> idle
+      const strikeMs = holdMs ? clamp(Number(holdMs) || 260, 220, 320) : 260;
+      st.poseOverride = 'cast_step';
+      st.pose = 'cast_step';
+      st.frame = 4;
+      st.poseLock = false;
+      st.poseTimer = 0.085;
+      st.poseQueue.push(
+        { pose: 'strike', frame: 5, duration: strikeMs / 1000 },
+        { pose: 'cast_step', frame: 4, duration: 0.085 }
+      );
     } else {
-      st.poseOverride = pose;
-      st.pose = pose;
-      st.frame = POSE_TO_FRAME[pose] != null ? POSE_TO_FRAME[pose] : 0;
+      st.poseOverride = normPose;
+      st.pose = normPose;
+      st.frame = resolvePoseFrame(normPose, frameCount);
       st.poseLock = !!locked;
       st.poseTimer = locked ? 0 : Math.max(0.05, (holdMs || 420) / 1000);
     }
@@ -1766,11 +1886,13 @@
       const spriteId = el.getAttribute('data-sprite-id') || 'sylvia_silver';
       seenKeys.add(key);
       const st = getOrCreateActor(key, spriteId);
+      const meta = getSpriteMeta(spriteId);
       st.el = el;
       st.rigEl = el.querySelector('.cb-px-rig');
       st.sheetEl = el.querySelector('.cb-px-sheet');
       st.shadowEl = el.querySelector('.cb-px-shadow');
       st.dead = el.classList.contains('is-dead');
+      applyActorCssVars(el, meta);
       applyActorVisual(st);
     });
 
@@ -1820,10 +1942,11 @@
       }
     }
 
-    // 2) 更新每个角色 6 帧状态机 + 平滑缓动位移/挤压
+    // 2) 更新每个角色 7 帧状态机（兼容 6 帧）+ 平滑缓动位移/挤压
     _actors.forEach(st => {
       if (!st.el || !st.el.isConnected) return;
       const meta = getSpriteMeta(st.spriteId);
+      const frameCount = meta.frames || 7;
 
       // 呼吸与浮空计时
       st.floatElapsed += simDt;
@@ -1870,13 +1993,22 @@
         }
       }
 
-      // 姿势帧选择
+      // 姿势帧选择（支持 7 帧队列 cast_step -> strike -> cast_step -> idle）
       if (st.poseOverride) {
         if (!st.poseLock) {
           st.poseTimer -= simDt;
+          while (st.poseTimer <= 0 && st.poseQueue && st.poseQueue.length > 0) {
+            const nextStep = st.poseQueue.shift();
+            st.poseOverride = nextStep.pose;
+            st.pose = nextStep.pose;
+            st.frame = nextStep.frame;
+            st.poseTimer += nextStep.duration;
+          }
           if (st.poseTimer <= 0) {
             st.poseOverride = null;
             st.pose = 'idle';
+            st.poseTimer = 0;
+            if (st.poseQueue) st.poseQueue.length = 0;
           }
         }
       }
@@ -1884,7 +2016,7 @@
       if (!st.poseOverride) {
         if (st.dead) {
           st.pose = 'hurt';
-          st.frame = 5;
+          st.frame = resolvePoseFrame('hurt', frameCount);
         } else if (reduced) {
           st.pose = 'idle';
           st.frame = 0;
@@ -1913,11 +2045,11 @@
           }
         }
       } else {
-        st.frame = POSE_TO_FRAME[st.poseOverride] != null ? POSE_TO_FRAME[st.poseOverride] : 0;
+        st.frame = resolvePoseFrame(st.poseOverride, frameCount);
       }
 
       // 避免帧号越界
-      if (st.frame >= (meta.frames || 6)) st.frame = 0;
+      if (st.frame >= frameCount) st.frame = 0;
       applyActorVisual(st);
     });
 
@@ -2001,6 +2133,7 @@
       st.flashLeft = 0;
       st.poseOverride = null;
       st.poseLock = false;
+      if (st.poseQueue) st.poseQueue.length = 0;
       applyActorVisual(st);
     });
     _actors.clear();
@@ -2104,6 +2237,7 @@
     getSpriteMeta,
     resolvePlayerSpriteId,
     resolveEnemySpriteId,
+    resolvePoseFrame,
     renderActorMarkup,
     syncStage,
     playSkillAction,

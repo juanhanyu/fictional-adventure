@@ -541,11 +541,115 @@
     return 'pack_wolf';
   }
 
+  /* -------------------- 真像素矩阵库（零 PNG · 逐像素索引渲染到 Canvas） -------------------- */
+  const _bankFrameCache = new Map(); // `${id}:${frame}` -> ImageData
+  const BANK_CHARS = '.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_';
+
+  function getPixelBankEntry(spriteId) {
+    const bank = global.PIXEL_SPRITE_BANK;
+    if (!bank || typeof bank !== 'object') return null;
+    const entry = bank[spriteId];
+    return entry && entry.w > 0 && entry.h > 0 && Array.isArray(entry.palette) && Array.isArray(entry.frames) && entry.frames.length > 0
+      ? entry
+      : null;
+  }
+
+  function hexToRgbTriplet(hex) {
+    if (!hex || typeof hex !== 'string') return null;
+    const clean = hex.replace('#', '').trim();
+    if (clean.length !== 6) return null;
+    const n = parseInt(clean, 16);
+    if (!Number.isFinite(n)) return null;
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+
+  function expandPixelRow(row, targetW) {
+    if (typeof row !== 'string') return '';
+    if (row.indexOf('*') === -1) return row;
+    let out = '';
+    for (let i = 0; i < row.length; i++) {
+      const ch = row[i];
+      if (i + 1 < row.length && row[i + 1] === '*') {
+        let j = i + 2;
+        let numStr = '';
+        while (j < row.length && row[j] >= '0' && row[j] <= '9') {
+          numStr += row[j++];
+        }
+        const rep = parseInt(numStr, 10) || 1;
+        out += ch.repeat(rep);
+        i = j - 1;
+      } else {
+        out += ch;
+      }
+    }
+    return out.length >= targetW ? out : out + '.'.repeat(targetW - out.length);
+  }
+
+  function decodeBankFrame(spriteId, frameIdx) {
+    const entry = getPixelBankEntry(spriteId);
+    if (!entry) return null;
+    const idx = clamp(frameIdx | 0, 0, entry.frames.length - 1);
+    const cacheKey = `${spriteId}:${idx}`;
+    if (_bankFrameCache.has(cacheKey)) return _bankFrameCache.get(cacheKey);
+    if (typeof ImageData === 'undefined') return null;
+
+    const w = entry.w | 0;
+    const h = entry.h | 0;
+    const rgba = new Uint8ClampedArray(w * h * 4);
+    const palRgb = entry.palette.map(hexToRgbTriplet);
+    const rows = entry.frames[idx] || [];
+    for (let y = 0; y < h && y < rows.length; y++) {
+      const line = expandPixelRow(rows[y], w);
+      for (let x = 0; x < w && x < line.length; x++) {
+        const sym = line[x];
+        if (sym === '.') continue;
+        const pi = BANK_CHARS.indexOf(sym);
+        const rgb = pi > 0 ? palRgb[pi] : null;
+        if (!rgb) continue;
+        const off = (y * w + x) * 4;
+        rgba[off] = rgb[0];
+        rgba[off + 1] = rgb[1];
+        rgba[off + 2] = rgb[2];
+        rgba[off + 3] = 255;
+      }
+    }
+    const imgData = new ImageData(rgba, w, h);
+    _bankFrameCache.set(cacheKey, imgData);
+    return imgData;
+  }
+
+  function drawBankFrameOnCanvas(canvasEl, spriteId, frameIdx) {
+    if (!canvasEl || canvasEl.tagName !== 'CANVAS') return;
+    const imgData = decodeBankFrame(spriteId, frameIdx);
+    if (!imgData) return;
+    if (canvasEl.width !== imgData.width) canvasEl.width = imgData.width;
+    if (canvasEl.height !== imgData.height) canvasEl.height = imgData.height;
+    const ctx = canvasEl.getContext('2d');
+    if (!ctx) return;
+    ctx.imageSmoothingEnabled = false;
+    ctx.putImageData(imgData, 0, 0);
+  }
+
+  function hasPngSheetInstalled(spriteId) {
+    const list = global.PIXEL_PNG_SHEETS_INSTALLED;
+    if (list === true) return true;
+    if (Array.isArray(list)) return list.indexOf(spriteId) !== -1;
+    return false;
+  }
+
   /* -------------------- 精灵预加载与 JSON 元数据懒同步 -------------------- */
   function preloadSpriteSheet(spriteId) {
     if (!isEnabled()) return;
     const meta = getSpriteMeta(spriteId);
     if (!meta || _imgPreloaded.has(meta.id)) return;
+    if (getPixelBankEntry(meta.id)) {
+      _imgPreloaded.set(meta.id, 'bank');
+      return;
+    }
+    if (!hasPngSheetInstalled(meta.id)) {
+      _imgPreloaded.set(meta.id, 'err');
+      return;
+    }
     _imgPreloaded.set(meta.id, 'loading');
     try {
       const img = new global.Image();
@@ -565,7 +669,36 @@
   function syncSpriteMeta(spriteId) {
     if (!isEnabled()) return;
     const meta = getSpriteMeta(spriteId);
-    if (!meta || !meta.metaFile || _metaFetched.has(meta.id)) return;
+    if (!meta || _metaFetched.has(meta.id)) return;
+    const bank = getPixelBankEntry(meta.id);
+    if (bank) {
+      _metaFetched.add(meta.id);
+      meta.frameW = bank.w;
+      meta.frameH = bank.h;
+      meta.frames = bank.frames.length;
+      if (typeof bank.facing === 'string') meta.facing = bank.facing;
+      if (typeof bank.scaleMult === 'number') meta.scaleMult = bank.scaleMult;
+      if (bank.anchors) {
+        if (Array.isArray(bank.anchors.feet)) {
+          meta.anchorX = bank.anchors.feet[0] / bank.w;
+          meta.anchorY = bank.anchors.feet[1] / bank.h;
+        }
+        if (Array.isArray(bank.anchors.cast)) {
+          meta.castX = bank.anchors.cast[0] / bank.w;
+          meta.castY = bank.anchors.cast[1] / bank.h;
+        }
+        if (Array.isArray(bank.anchors.hit)) {
+          meta.hitX = bank.anchors.hit[0] / bank.w;
+          meta.hitY = bank.anchors.hit[1] / bank.h;
+        }
+        if (Array.isArray(bank.anchors.head)) {
+          meta.headX = bank.anchors.head[0] / bank.w;
+          meta.headY = bank.anchors.head[1] / bank.h;
+        }
+      }
+      return;
+    }
+    if (!meta.metaFile || !hasPngSheetInstalled(meta.id)) return;
     _metaFetched.add(meta.id);
     if (typeof global.fetch !== 'function') return;
     try {
@@ -602,6 +735,7 @@
       shadowEl: null,
       pose: 'idle',
       frame: 0,
+      lastDrawnKey: '',
       poseOverride: null,
       poseTimer: 0,
       poseLock: false,
@@ -632,6 +766,7 @@
       _actors.set(actorKey, st);
     } else if (spriteId && st.spriteId !== spriteId) {
       st.spriteId = spriteId;
+      st.lastDrawnKey = '';
     }
     return st;
   }
@@ -642,13 +777,14 @@
     preloadSpriteSheet(meta.id);
     syncSpriteMeta(meta.id);
 
+    const bank = getPixelBankEntry(meta.id);
     const actorKey = opts.actorKey || (meta.facing === 'right' ? 'player' : 'enemy:0');
     const st = getOrCreateActor(actorKey, meta.id);
     st.dead = !!opts.dead;
 
     const curPose = st.poseOverride || st.pose || 'idle';
     const curFrame = typeof st.frame === 'number' ? st.frame : 0;
-    const missingCls = _imgPreloaded.get(meta.id) === 'err' ? ' is-sheet-missing' : '';
+    const missingCls = (!bank && _imgPreloaded.get(meta.id) === 'err') ? ' is-sheet-missing' : '';
     const deadCls = opts.dead ? ' is-dead' : '';
     const archCls = ` arch-${meta.archetype || 'humanoid'}`;
     const safeLabel = escapeAttr(opts.label || meta.id);
@@ -660,6 +796,10 @@
       fallbackMarkup = `<div class="cb-px-fallback" aria-hidden="true"><img src="${escapeAttr(opts.fallbackImg)}" alt="${safeLabel}"/></div>`;
     }
 
+    const sheetMarkup = bank
+      ? `<canvas class="cb-px-sheet" width="${bank.w}" height="${bank.h}" role="img" aria-label="${safeLabel}"></canvas>`
+      : `<div class="cb-px-sheet" style="${missingCls ? '' : `background-image:url('${escapeAttr(meta.file)}');background-position:${curFrame * 20}% 0%;`}" role="img" aria-label="${safeLabel}"></div>`;
+
     return (
       `<div class="cb-px-actor${archCls}${deadCls}${missingCls}"` +
       ` data-actor-key="${escapeAttr(actorKey)}"` +
@@ -670,7 +810,7 @@
       ` style="--px-fw:${meta.frameW}px;--px-fh:${meta.frameH}px;--px-sm:${meta.scaleMult};--px-ax:${(meta.anchorX * 100).toFixed(2)}%;--px-ay:${(meta.anchorY * 100).toFixed(2)}%;--px-sw:${meta.shadowW}%;">` +
       `<div class="cb-px-shadow" aria-hidden="true"></div>` +
       `<div class="cb-px-rig">` +
-      `<div class="cb-px-sheet" style="background-image:url('${escapeAttr(meta.file)}');background-position:${curFrame * 20}% 0%;" role="img" aria-label="${safeLabel}"></div>` +
+      sheetMarkup +
       `</div>` +
       fallbackMarkup +
       `</div>`
@@ -690,9 +830,17 @@
       st.el.setAttribute('data-pose', poseName);
     }
     if (st.sheetEl) {
-      const posStr = `${frame * 20}% 0%`;
-      if (st.sheetEl.style.backgroundPosition !== posStr) {
-        st.sheetEl.style.backgroundPosition = posStr;
+      if (st.sheetEl.tagName === 'CANVAS') {
+        const drawKey = `${st.spriteId}:${frame}`;
+        if (st.lastDrawnKey !== drawKey) {
+          st.lastDrawnKey = drawKey;
+          drawBankFrameOnCanvas(st.sheetEl, st.spriteId, frame);
+        }
+      } else {
+        const posStr = `${frame * 20}% 0%`;
+        if (st.sheetEl.style.backgroundPosition !== posStr) {
+          st.sheetEl.style.backgroundPosition = posStr;
+        }
       }
     }
 
@@ -725,19 +873,25 @@
 
   function spawnDashGhost(st, tone) {
     if (!st || !st.el || !st.sheetEl || prefersReducedMotion()) return;
+    if (st.el.classList.contains('is-sheet-missing')) return;
     const parent = st.el.parentElement;
     if (!parent) return;
     const meta = getSpriteMeta(st.spriteId);
-    const ghost = document.createElement('div');
+    const isCanvas = st.sheetEl.tagName === 'CANVAS';
+    const ghost = document.createElement(isCanvas ? 'canvas' : 'div');
     ghost.className = `cb-px-ghost tone-${tone || 'ice'}`;
     ghost.setAttribute('aria-hidden', 'true');
-    ghost.style.width = `${st.el.offsetWidth || (meta.frameW * 2)}px`;
-    ghost.style.height = `${st.el.offsetHeight || (meta.frameH * 2)}px`;
+    ghost.style.width = `${st.el.offsetWidth || (meta.frameW * 3)}px`;
+    ghost.style.height = `${st.el.offsetHeight || (meta.frameH * 3)}px`;
     ghost.style.left = `${st.el.offsetLeft}px`;
     ghost.style.top = `${st.el.offsetTop}px`;
     ghost.style.transform = `translate3d(${st.dx.toFixed(1)}px, ${st.dy.toFixed(1)}px, 0)`;
-    ghost.style.backgroundImage = st.sheetEl.style.backgroundImage;
-    ghost.style.backgroundPosition = `${(st.frame | 0) * 20}% 0%`;
+    if (isCanvas) {
+      drawBankFrameOnCanvas(ghost, st.spriteId, st.frame | 0);
+    } else {
+      ghost.style.backgroundImage = st.sheetEl.style.backgroundImage;
+      ghost.style.backgroundPosition = `${(st.frame | 0) * 20}% 0%`;
+    }
     parent.appendChild(ghost);
     trackRealTimer(() => {
       if (ghost.parentNode) ghost.remove();

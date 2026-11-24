@@ -570,43 +570,43 @@
     pointer-events: none !important;
   }
 
-  /* Inline SVG Champagne-Gold Radial Hairlines + Title-Screen Orbital Arcs */
+  /* Inline SVG Champagne-Gold Radial Hairlines + Title-Screen Orbital Arcs (1:1 exact px mapping!) */
   #prism-rig-svg {
     position: absolute;
-    left: 0;
-    top: 0;
-    width: 1px;
-    height: 1px;
+    left: -40px;
+    top: -220px;
+    width: 460px;
+    height: 440px;
     overflow: visible;
     pointer-events: none;
   }
   .rig-orbit-gold {
     fill: none;
-    stroke: rgba(218, 192, 134, 0.54);
-    stroke-width: 1;
+    stroke: rgba(232, 206, 148, 0.62);
+    stroke-width: 1.1;
   }
   .rig-orbit-blue {
     fill: none;
-    stroke: rgba(125, 211, 252, 0.42);
+    stroke: rgba(125, 211, 252, 0.48);
     stroke-width: 1;
     stroke-dasharray: 4 5;
   }
   .rig-hairline {
     fill: none;
-    stroke: rgba(224, 198, 142, 0.62);
-    stroke-width: 1.1;
+    stroke: rgba(232, 206, 148, 0.72);
+    stroke-width: 1.25;
     transition: stroke 0.16s ease, stroke-width 0.16s ease, opacity 0.16s ease;
   }
   .rig-hairline.hero-line {
-    stroke: rgba(125, 211, 252, 0.85);
-    stroke-width: 1.4;
+    stroke: rgba(125, 211, 252, 0.90);
+    stroke-width: 1.5;
   }
   .rig-hairline.lit {
     stroke: #FFF4CE;
-    stroke-width: 2;
+    stroke-width: 2.1;
   }
   .rig-node-gem {
-    fill: #EAD39C;
+    fill: #F0DA9E;
     transition: fill 0.16s ease, transform 0.16s ease;
   }
   .rig-node-gem.blue { fill: #7DD3FC; }
@@ -933,10 +933,10 @@
     filter: drop-shadow(0 8px 22px rgba(4, 12, 34, 0.54));
     transition: transform 0.17s cubic-bezier(0.22, 1, 0.36, 1), filter 0.17s ease;
   }
-  .skill-blade-wrap[data-idx="0"] { left: 56px; top: -112px; --rot: -3.2deg; transform: rotate(var(--rot)); }
-  .skill-blade-wrap[data-idx="1"] { left: 82px; top: -32px;  --rot: -1.2deg; transform: rotate(var(--rot)); }
-  .skill-blade-wrap[data-idx="2"] { left: 94px; top: 48px;   --rot: 0.8deg;  transform: rotate(var(--rot)); }
-  .skill-blade-wrap[data-idx="3"] { left: 72px; top: 128px;  --rot: 2.8deg;  transform: rotate(var(--rot)); }
+  .skill-blade-wrap[data-idx="0"] { left: 52px; top: -112px; --rot: -3.2deg; transform: rotate(var(--rot)); }
+  .skill-blade-wrap[data-idx="1"] { left: 74px; top: -32px;  --rot: -1.2deg; transform: rotate(var(--rot)); }
+  .skill-blade-wrap[data-idx="2"] { left: 84px; top: 48px;   --rot: 0.8deg;  transform: rotate(var(--rot)); }
+  .skill-blade-wrap[data-idx="3"] { left: 64px; top: 128px;  --rot: 2.8deg;  transform: rotate(var(--rot)); }
 
   .skill-blade-wrap.hovered,
   .skill-blade-wrap:hover {
@@ -947,9 +947,9 @@
 
   .skill-blade {
     position: relative;
-    width: 326px;
-    height: 66px;
-    padding: 8px 26px 8px 18px;
+    width: 308px;
+    height: 64px;
+    padding: 7px 24px 7px 17px;
     display: flex;
     align-items: center;
     gap: 11px;
@@ -2118,8 +2118,8 @@
   }
 
   function syncPrismAnchor() {
-    const pt = worldToScreen(state.sylvia.x + 56, state.sylvia.y - 122);
-    const clampedX = Math.max(260, Math.min(window.innerWidth - 440, Math.round(pt.x)));
+    const pt = worldToScreen(state.sylvia.x + 62, state.sylvia.y - 122);
+    const clampedX = Math.max(250, Math.min(window.innerWidth - 440, Math.round(pt.x)));
     const clampedY = Math.max(255, Math.min(window.innerHeight - 230, Math.round(pt.y)));
     prismRig.style.left = `${clampedX}px`;
     prismRig.style.top = `${clampedY}px`;
@@ -2137,9 +2137,9 @@
     }
     GROUND_Y = Math.round(STAGE_H * 0.545);
     const feetY = Math.round(STAGE_H * 0.728);
-    SYLVIA_HOME = { x: Math.round(STAGE_W * 0.245), y: feetY };
-    PROP_POS = { x: Math.round(STAGE_W * 0.585), y: feetY - 8 };
-    ENEMY_HOME = { x: Math.round(STAGE_W * 0.785), y: feetY };
+    SYLVIA_HOME = { x: Math.round(STAGE_W * 0.222), y: feetY };
+    PROP_POS = { x: Math.round(STAGE_W * 0.638), y: feetY - 8 };
+    ENEMY_HOME = { x: Math.round(STAGE_W * 0.812), y: feetY };
 
     state.sylvia.x = SYLVIA_HOME.x; state.sylvia.y = SYLVIA_HOME.y;
     if (state.enemy) { state.enemy.x = ENEMY_HOME.x; state.enemy.y = ENEMY_HOME.y; }
@@ -3319,14 +3319,14 @@
     const isSkills = state.menuMode === 'skills';
     const targets = isSkills
       ? [
-          { x: 60, y: -82, elbowX: 30, elbowY: -54, hero: false },
-          { x: 86, y: -1,  elbowX: 46, elbowY: -4,  hero: false },
-          { x: 98, y: 78,  elbowX: 52, elbowY: 50,  hero: false },
-          { x: 76, y: 156, elbowX: 36, elbowY: 106, hero: false }
+          { x: 56, y: -82, elbowX: 28, elbowY: -54, hero: false },
+          { x: 78, y: -1,  elbowX: 42, elbowY: -3,  hero: false },
+          { x: 88, y: 79,  elbowX: 48, elbowY: 48,  hero: false },
+          { x: 68, y: 158, elbowX: 34, elbowY: 104, hero: false }
         ]
       : [
           { x: 60, y: -96, elbowX: 30, elbowY: -62, hero: true },
-          { x: 90, y: -18, elbowX: 48, elbowY: -12, hero: false },
+          { x: 90, y: -18, elbowX: 46, elbowY: -12, hero: false },
           { x: 84, y: 60,  elbowX: 44, elbowY: 36,  hero: false },
           { x: 52, y: 132, elbowX: 28, elbowY: 86,  hero: false }
         ];
@@ -3337,12 +3337,12 @@
 
     let svgParts = [];
     // Title-Screen delicate intersecting champagne-gold & ice-blue constellation arcs around Sylvia's right flank
-    svgParts.push(`<path class="rig-orbit-gold" d="M 10 -158 A 164 164 0 0 1 78 164" />`);
-    svgParts.push(`<path class="rig-orbit-blue" d="M -8 -134 A 136 136 0 0 1 56 146" />`);
+    svgParts.push(`<path class="rig-orbit-gold" d="M 8 -164 A 170 170 0 0 1 74 170" />`);
+    svgParts.push(`<path class="rig-orbit-blue" d="M -8 -136 A 140 140 0 0 1 54 148" />`);
     // Floating Title-Screen diamond shards along the arc
-    svgParts.push(`<polygon class="rig-node-gem" points="32,-128 36,-122 32,-116 28,-122" opacity="0.82" />`);
-    svgParts.push(`<polygon class="rig-node-gem blue" points="62,22 66,27 62,32 58,27" opacity="0.72" />`);
-    svgParts.push(`<polygon class="rig-node-gem" points="42,142 46,148 42,154 38,148" opacity="0.78" />`);
+    svgParts.push(`<polygon class="rig-node-gem" points="30,-134 35,-126 30,-118 25,-126" opacity="0.88" />`);
+    svgParts.push(`<polygon class="rig-node-gem blue" points="58,20 62,26 58,32 54,26" opacity="0.82" />`);
+    svgParts.push(`<polygon class="rig-node-gem" points="40,144 45,151 40,158 35,151" opacity="0.85" />`);
 
     // Radial pointer hairlines from Sylvia's crystal anchor (0, 0) to each prism wing tip
     targets.forEach((pt, idx) => {
@@ -3350,12 +3350,13 @@
       const cls = 'rig-hairline' + (pt.hero ? ' hero-line' : '') + (lit ? ' lit' : '');
       svgParts.push(`<path class="${cls}" d="M 0 0 L ${pt.elbowX} ${pt.elbowY} L ${pt.x} ${pt.y}" />`);
       const gCls = 'rig-node-gem' + (pt.hero ? ' blue' : '') + (lit ? ' lit' : '');
-      svgParts.push(`<polygon class="${gCls}" points="${pt.x},${pt.y - 4} ${pt.x + 4},${pt.y} ${pt.x},${pt.y + 4} ${pt.x - 4},${pt.y}" />`);
+      svgParts.push(`<polygon class="${gCls}" points="${pt.x},${pt.y - 4.5} ${pt.x + 4.5},${pt.y} ${pt.x},${pt.y + 4.5} ${pt.x - 4.5},${pt.y}" />`);
     });
 
     // Anchor diamond jewel at Sylvia's right-flank origin (0, 0)
-    svgParts.push(`<polygon fill="#1658EB" points="0,-9 9,0 0,9 -9,0" />`);
-    svgParts.push(`<polygon fill="#F0DA9E" points="0,-5 5,0 0,5 -5,0" />`);
+    svgParts.push(`<polygon fill="none" stroke="rgba(240,218,158,0.65)" stroke-width="1" points="0,-14 14,0 0,14 -14,0" />`);
+    svgParts.push(`<polygon fill="#1658EB" points="0,-8 8,0 0,8 -8,0" />`);
+    svgParts.push(`<polygon fill="#F0DA9E" points="0,-4.5 4.5,0 0,4.5 -4.5,0" />`);
     svgParts.push(`<polygon fill="#FFFFFF" points="0,-2 2,0 0,2 -2,0" />`);
 
     prismSvg.innerHTML = svgParts.join('');

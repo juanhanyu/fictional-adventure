@@ -1,13 +1,13 @@
 'use strict';
-// jsdom 加载器：把 index.html + js/story.js + game.js 载入同一 window（共享同一 eval 作用域）
+// jsdom 加载器：以真实浏览器经典 <script> 方式把 index.html + js/story.js + js/story-vol3.js + game.js 载入同一 window
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 
 const ROOT = path.resolve(__dirname, '..');
-const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-const storyJs = fs.readFileSync(path.join(ROOT, 'js', 'story.js'), 'utf8');
-const gameJs = fs.readFileSync(path.join(ROOT, 'game.js'), 'utf8');
+const rawHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+// 移除外链 script 标签，改由下方按顺序注入内联经典脚本，保证顶层 const/let/function 进入全局词法环境
+const html = rawHtml.replace(/<script\b[^>]*\bsrc=[^>]*><\/script>/gi, '');
 
 const errors = [];
 const logs = [];
@@ -25,17 +25,83 @@ const dom = new JSDOM(html, {
 
 const win = dom.window;
 if (!win.AudioContext) {
+  const mkParam = (v = 0) => ({
+    value: v,
+    setValueAtTime(){},
+    exponentialRampToValueAtTime(){},
+    linearRampToValueAtTime(){},
+    setTargetAtTime(){},
+    cancelScheduledValues(){},
+  });
   win.AudioContext = class {
-    constructor(){ this.currentTime = 0; this.destination = null; }
-    createOscillator(){ return { connect(){}, start(){}, stop(){}, frequency: { value: 0 } }; }
-    createGain(){ return { connect(){}, gain: { setValueAtTime(){}, exponentialRampToValueAtTime(){} } }; }
+    constructor(){ this.currentTime = 0; this.sampleRate = 44100; this.destination = { connect(){} }; this.state = 'running'; }
+    resume(){ this.state = 'running'; return Promise.resolve(); }
+    createOscillator(){
+      return {
+        type: 'sine',
+        connect(){ return this; }, disconnect(){}, start(){}, stop(){},
+        frequency: mkParam(440),
+        detune: mkParam(0),
+      };
+    }
+    createGain(){
+      return {
+        connect(){ return this; }, disconnect(){},
+        gain: mkParam(1),
+      };
+    }
+    createBiquadFilter(){
+      return {
+        type: 'lowpass',
+        connect(){ return this; }, disconnect(){},
+        frequency: mkParam(1000),
+        Q: mkParam(1),
+        gain: mkParam(0),
+      };
+    }
+    createDynamicsCompressor(){
+      return {
+        connect(){ return this; }, disconnect(){},
+        threshold: mkParam(-24),
+        knee: mkParam(30),
+        ratio: mkParam(12),
+        attack: mkParam(0.003),
+        release: mkParam(0.25),
+      };
+    }
+    createBuffer(channels, length, sampleRate){
+      const chCount = Math.max(1, Number(channels) || 1);
+      const len = Math.max(1, Number(length) || 1);
+      const bufs = Array.from({ length: chCount }, () => new Float32Array(len));
+      return {
+        numberOfChannels: chCount,
+        length: len,
+        sampleRate: sampleRate || this.sampleRate,
+        getChannelData(i){ return bufs[i] || bufs[0]; },
+      };
+    }
+    createBufferSource(){
+      return {
+        buffer: null,
+        loop: false,
+        playbackRate: mkParam(1),
+        connect(){ return this; }, disconnect(){}, start(){}, stop(){},
+      };
+    }
+    createStereoPanner(){
+      return {
+        pan: mkParam(0),
+        connect(){ return this; }, disconnect(){},
+      };
+    }
   };
 }
 
-// 测试钩子（追加到合并脚本末尾，与 story.js/game.js 共享作用域）
+// 测试钩子（与 story*.js / game.js 共享全局经典脚本作用域）
 const hooks = `
 window.__CHARS=CHARS;
 window.__LOCS=LOCS;
+window.__EXITS=EXITS;
 window.__PORTRAIT_FILES=PORTRAIT_FILES;
 window.__CSS_CHARS=CSS_CHARS;
 window.__ALL_PICKS=ALL_PICKS;
@@ -58,7 +124,38 @@ window.__captureSysPopup=function(){ const orig=sysPopup; window.__capturedPopup
 window.__resetSysPopup=function(){ window.__capturedPopups=[]; };
 `;
 
-try { win.eval(storyJs + '\n' + gameJs + '\n' + hooks); }
-catch (e) { errors.push('[eval combined] ' + (e && e.stack || e)); }
+function injectClassicScript(code, label){
+  try {
+    const el = win.document.createElement('script');
+    el.textContent = code;
+    win.document.body.appendChild(el);
+  } catch (e) {
+    errors.push(`[script ${label}] ` + (e && e.stack || e));
+  }
+}
+
+const scriptFiles = [
+  'js/story.js',
+  'js/story-vol3.js',
+  'js/story-vol4.js',
+  'js/ai-personas.js',
+  'game.js',
+  'js/sfx-suite.js',
+  'js/branching-director.js',
+  'js/combat-engine.js',
+  'js/ai-chat-panel.js',
+  'js/relics-and-events.js',
+  'js/ambient-fx.js',
+  'js/vn-ux.js',
+  'js/raising-hub.js',
+  'js/title-director.js',
+];
+for (const rel of scriptFiles) {
+  const abs = path.join(ROOT, rel);
+  if (fs.existsSync(abs)) {
+    injectClassicScript(fs.readFileSync(abs, 'utf8'), rel);
+  }
+}
+injectClassicScript(hooks, 'hooks');
 
 module.exports = { dom, win, errors, logs };

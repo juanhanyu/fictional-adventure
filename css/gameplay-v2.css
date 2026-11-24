@@ -1,0 +1,4338 @@
+/* =========================================================================
+   转生千金 · 雪瓷刊印 · 极细线编排视觉体系（深度玩法 v2 & VN UX）
+   File: css/gameplay-v2.css
+   美学坐标：NeonCat-Calibrated Warm Snow-Porcelain × 1px Hairline Editorial
+   色彩架构：
+     - 暖雪白瓷画布 (#FAFBFD / #FFFFFF / #F4F7FC / #EEF3FA) + 静墨蓝灰排印 (#1B2333 / #37445C / #4F5E78 / #526078)
+     - 单主信号深蓝宝 (#1C4CB8 → #0E2B78 / 悬停 #153D99) + 棱镜天青点缀 (#6BC5F8 / #1A6EB5) + 绯红警示 (#C42544)
+     - 1px 建筑级细线分隔与纯中性投影 rgba(18, 24, 34, ...)，2px–3px 建筑圆角，仅 #cg-lightbox 保留剧场暗幕
+   ========================================================================= */
+
+:root {
+  --ap-canvas: #FAFBFD;
+  --ap-surface: #FFFFFF;
+  --ap-surface-tint: #F4F7FC;
+  --ap-sky-tint: #EEF3FA;
+  --ap-surface-hover: #EBF1FA;
+  --ap-surface-active: #E1EAF8;
+
+  --ap-border: rgba(27, 35, 51, 0.13);
+  --ap-border-card: rgba(27, 35, 51, 0.16);
+  --ap-border-strong: rgba(28, 76, 184, 0.36);
+  --ap-border-subtle: rgba(27, 35, 51, 0.09);
+
+  --ap-ink: #1B2333;
+  --ap-ink-body: #37445C;
+  --ap-ink-sub: #4F5E78;
+  --ap-ink-muted: #526078;
+
+  --ap-sapphire: #1C4CB8;
+  --ap-sapphire-deep: #0E2B78;
+  --ap-sapphire-hover: #153D99;
+  --ap-sapphire-soft: rgba(28, 76, 184, 0.08);
+  --ap-cobalt: #1C4CB8;
+  --ap-cobalt-hover: #153D99;
+  --ap-cobalt-soft: rgba(28, 76, 184, 0.08);
+  --ap-azure: #1A6EB5;
+  --ap-cyan: #6BC5F8;
+  --ap-cyan-ink: #1A6EB5;
+  --ap-crimson: #C42544;
+  --ap-crimson-ink: #A31B36;
+  --ap-emerald: #0B6E5C;
+  --ap-emerald-soft: #EEF8F5;
+
+  --ap-modal-veil: rgba(18, 24, 34, 0.36);
+  --ap-cinema-veil: rgba(14, 18, 26, 0.90);
+  --ap-ctrl-bg: rgba(250, 251, 253, 0.94);
+
+  --ap-radius-sm: 2px;
+  --ap-radius-md: 2px;
+  --ap-radius-lg: 3px;
+  --ap-radius: 2px;
+  --ap-shadow-modal: 0 22px 54px -14px rgba(18, 24, 34, 0.20), 0 4px 16px -4px rgba(18, 24, 34, 0.08);
+  --ap-shadow-card: 0 4px 14px -10px rgba(18, 24, 34, 0.12);
+  --ap-shadow-ctrl: 0 4px 12px -4px rgba(18, 24, 34, 0.12);
+  --ap-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---------- 0. 极细 5px 中性静墨滚动条 ---------- */
+body section#vn-backlog-modal .vn-modal-scroll,
+body section#vn-saveload-modal .vn-modal-scroll,
+body section#vn-chapters-modal .vn-modal-scroll,
+body section#vn-prefs-modal .vn-modal-scroll,
+body section#vn-prefs-modal .prefs-body,
+body section#rumor-overlay .rumor-scroll,
+body section#rumor-overlay .rumor-choices-col,
+body section#arena-loadout-modal .rumor-scroll,
+#app #panel #panel-body,
+#app #codex .modal-scroll,
+#app #codex #codex-list,
+#app #codex .memento-stationery,
+.vn-modal-scroll,
+.rumor-scroll,
+.prefs-body,
+.memento-stationery {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(27, 35, 51, 0.22) transparent;
+}
+
+body section#vn-backlog-modal .vn-modal-scroll::-webkit-scrollbar,
+body section#vn-saveload-modal .vn-modal-scroll::-webkit-scrollbar,
+body section#vn-chapters-modal .vn-modal-scroll::-webkit-scrollbar,
+body section#vn-prefs-modal .vn-modal-scroll::-webkit-scrollbar,
+body section#vn-prefs-modal .prefs-body::-webkit-scrollbar,
+body section#rumor-overlay .rumor-scroll::-webkit-scrollbar,
+body section#rumor-overlay .rumor-choices-col::-webkit-scrollbar,
+body section#arena-loadout-modal .rumor-scroll::-webkit-scrollbar,
+#app #panel #panel-body::-webkit-scrollbar,
+#app #codex .modal-scroll::-webkit-scrollbar,
+#app #codex #codex-list::-webkit-scrollbar,
+#app #codex .memento-stationery::-webkit-scrollbar,
+.vn-modal-scroll::-webkit-scrollbar,
+.rumor-scroll::-webkit-scrollbar,
+.prefs-body::-webkit-scrollbar,
+.memento-stationery::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+body section#vn-backlog-modal .vn-modal-scroll::-webkit-scrollbar-track,
+body section#vn-saveload-modal .vn-modal-scroll::-webkit-scrollbar-track,
+body section#vn-chapters-modal .vn-modal-scroll::-webkit-scrollbar-track,
+body section#vn-prefs-modal .vn-modal-scroll::-webkit-scrollbar-track,
+body section#vn-prefs-modal .prefs-body::-webkit-scrollbar-track,
+body section#rumor-overlay .rumor-scroll::-webkit-scrollbar-track,
+body section#rumor-overlay .rumor-choices-col::-webkit-scrollbar-track,
+body section#arena-loadout-modal .rumor-scroll::-webkit-scrollbar-track,
+#app #panel #panel-body::-webkit-scrollbar-track,
+#app #codex .modal-scroll::-webkit-scrollbar-track,
+#app #codex #codex-list::-webkit-scrollbar-track,
+#app #codex .memento-stationery::-webkit-scrollbar-track,
+.vn-modal-scroll::-webkit-scrollbar-track,
+.rumor-scroll::-webkit-scrollbar-track,
+.prefs-body::-webkit-scrollbar-track,
+.memento-stationery::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 0;
+}
+
+body section#vn-backlog-modal .vn-modal-scroll::-webkit-scrollbar-thumb,
+body section#vn-saveload-modal .vn-modal-scroll::-webkit-scrollbar-thumb,
+body section#vn-chapters-modal .vn-modal-scroll::-webkit-scrollbar-thumb,
+body section#vn-prefs-modal .vn-modal-scroll::-webkit-scrollbar-thumb,
+body section#vn-prefs-modal .prefs-body::-webkit-scrollbar-thumb,
+body section#rumor-overlay .rumor-scroll::-webkit-scrollbar-thumb,
+body section#rumor-overlay .rumor-choices-col::-webkit-scrollbar-thumb,
+body section#arena-loadout-modal .rumor-scroll::-webkit-scrollbar-thumb,
+#app #panel #panel-body::-webkit-scrollbar-thumb,
+#app #codex .modal-scroll::-webkit-scrollbar-thumb,
+#app #codex #codex-list::-webkit-scrollbar-thumb,
+#app #codex .memento-stationery::-webkit-scrollbar-thumb,
+.vn-modal-scroll::-webkit-scrollbar-thumb,
+.rumor-scroll::-webkit-scrollbar-thumb,
+.prefs-body::-webkit-scrollbar-thumb,
+.memento-stationery::-webkit-scrollbar-thumb {
+  background: rgba(27, 35, 51, 0.22);
+  border-radius: 2px;
+}
+
+body section#vn-backlog-modal .vn-modal-scroll::-webkit-scrollbar-thumb:hover,
+body section#vn-saveload-modal .vn-modal-scroll::-webkit-scrollbar-thumb:hover,
+body section#vn-chapters-modal .vn-modal-scroll::-webkit-scrollbar-thumb:hover,
+body section#vn-prefs-modal .vn-modal-scroll::-webkit-scrollbar-thumb:hover,
+body section#vn-prefs-modal .prefs-body::-webkit-scrollbar-thumb:hover,
+body section#rumor-overlay .rumor-scroll::-webkit-scrollbar-thumb:hover,
+body section#rumor-overlay .rumor-choices-col::-webkit-scrollbar-thumb:hover,
+body section#arena-loadout-modal .rumor-scroll::-webkit-scrollbar-thumb:hover,
+#app #panel #panel-body::-webkit-scrollbar-thumb:hover,
+#app #codex .modal-scroll::-webkit-scrollbar-thumb:hover,
+#app #codex #codex-list::-webkit-scrollbar-thumb:hover,
+#app #codex .memento-stationery::-webkit-scrollbar-thumb:hover,
+.vn-modal-scroll::-webkit-scrollbar-thumb:hover,
+.rumor-scroll::-webkit-scrollbar-thumb:hover,
+.prefs-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(28, 76, 184, 0.54);
+}
+
+/* 键盘焦点环规范 */
+body section#vn-backlog-modal button:focus-visible,
+body section#vn-saveload-modal button:focus-visible,
+body section#vn-chapters-modal button:focus-visible,
+body section#vn-prefs-modal button:focus-visible,
+body section#vn-prefs-modal input:focus-visible,
+body section#rumor-overlay button:focus-visible,
+body section#arena-loadout-modal button:focus-visible,
+#app #codex button:focus-visible,
+#app #panel .relics-dashboard button:focus-visible,
+#app section#game-screen #text-box .vn-ctrl-btn:focus-visible,
+#app section#game-screen #text-box .tb-backlog-btn:focus-visible {
+  outline: 2px solid var(--ap-sapphire);
+  outline-offset: 2px;
+}
+
+body section#cg-lightbox button:focus-visible,
+#cg-lightbox button:focus-visible {
+  outline: 2px solid var(--ap-cyan);
+  outline-offset: 2px;
+}
+
+/* ---------- 1. HUD 快捷按钮 · 对话框阅读控制簇 (.vn-read-controls) · 提示条 ---------- */
+.chip-vn,
+#hud .hud-right .chip.chip-vn {
+  border-radius: var(--ap-radius-md);
+  border: 1px solid var(--ap-border-card);
+  background: var(--ap-ctrl-bg);
+  color: var(--ap-ink);
+  box-shadow: var(--ap-shadow-ctrl);
+  transition: transform 0.16s var(--ap-ease), border-color 0.16s var(--ap-ease), background 0.16s var(--ap-ease), color 0.16s var(--ap-ease);
+}
+
+.chip-vn:hover,
+#hud .hud-right .chip.chip-vn:hover {
+  border-color: var(--ap-sapphire);
+  background: var(--ap-sapphire);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+body.ui-hidden #hud .chip-vn,
+body.pov-hidden #hud .chip-vn,
+body.ui-hidden #btn-backlog,
+body.ui-hidden #tb-backlog-btn,
+body.ui-hidden .tb-backlog-btn,
+body.ui-hidden #vn-read-controls {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+#text-box.dialog-hidden .tb-backlog-btn,
+#text-box.season-flavor .tb-backlog-btn,
+#text-box.dialog-hidden .vn-read-controls,
+#text-box.season-flavor .vn-read-controls,
+body.roam #text-box .vn-read-controls {
+  display: none !important;
+}
+
+#app section#game-screen #text-box button.tb-backlog-btn,
+#app section#game-screen #text-box .tb-backlog-btn,
+#app section#game-screen #text-box #tb-backlog-btn {
+  position: absolute;
+  top: 8px;
+  bottom: auto;
+  right: max(24px, calc((100% - 920px) / 2));
+  z-index: 9;
+  height: 26px;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: var(--ap-radius-sm);
+  border: 1px solid var(--ap-border-card);
+  background: var(--ap-ctrl-bg);
+  color: var(--ap-ink);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px -2px rgba(18, 24, 34, 0.10);
+  transition: border-color 0.16s var(--ap-ease), background 0.16s var(--ap-ease), color 0.16s var(--ap-ease);
+}
+
+#app section#game-screen #text-box button.tb-backlog-btn:hover,
+#app section#game-screen #text-box .tb-backlog-btn:hover,
+#app section#game-screen #text-box #tb-backlog-btn:hover {
+  border-color: var(--ap-sapphire);
+  background: var(--ap-sapphire);
+  color: #FFFFFF;
+}
+
+#app section#game-screen #text-box .tb-backlog-btn .vn-key-hint,
+.vn-key-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 2px;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1;
+  background: var(--ap-sky-tint);
+  border: 1px solid var(--ap-border);
+  color: var(--ap-sapphire);
+  transition: background 0.16s var(--ap-ease), border-color 0.16s var(--ap-ease), color 0.16s var(--ap-ease);
+}
+
+#app section#game-screen #text-box button.tb-backlog-btn:hover .vn-key-hint,
+#app section#game-screen #text-box .tb-backlog-btn:hover .vn-key-hint,
+#app section#game-screen #text-box #tb-backlog-btn:hover .vn-key-hint {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.45);
+  color: #FFFFFF;
+}
+
+#app section#game-screen #text-box .vn-read-controls {
+  position: absolute;
+  top: 8px;
+  bottom: auto;
+  right: max(112px, calc((100% - 920px) / 2 + 88px));
+  z-index: 9;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 3px;
+  border-radius: var(--ap-radius-sm);
+  border: 1px solid var(--ap-border-card);
+  background: var(--ap-ctrl-bg);
+  box-shadow: 0 2px 8px -2px rgba(18, 24, 34, 0.10);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  pointer-events: auto;
+}
+
+body.ai-drawer-open #app section#game-screen #text-box button.tb-backlog-btn,
+body.ai-drawer-open #app section#game-screen #text-box .tb-backlog-btn,
+body.ai-drawer-open #app section#game-screen #text-box #tb-backlog-btn {
+  right: 16px;
+}
+
+body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
+  right: 104px;
+}
+
+#app section#game-screen #text-box .vn-ctrl-btn {
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 2px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ap-ink-body);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  transition: border-color 0.16s var(--ap-ease), background 0.16s var(--ap-ease), color 0.16s var(--ap-ease);
+}
+
+#app section#game-screen #text-box .vn-ctrl-btn.vn-ctrl-icon {
+  width: 22px;
+  padding: 0;
+}
+
+#app section#game-screen #text-box .vn-ctrl-btn:hover {
+  border-color: rgba(28, 76, 184, 0.28);
+  background: var(--ap-sky-tint);
+  color: var(--ap-sapphire);
+}
+
+#app section#game-screen #text-box .vn-ctrl-btn.active {
+  border-color: var(--ap-sapphire);
+  background: var(--ap-sapphire);
+  color: #FFFFFF;
+  box-shadow: none;
+}
+
+/* VN 轻提示徽标 & 未读急刹横幅（暖雪白瓷 × 1px 顶部色线） */
+body .vn-toast-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: var(--ap-radius-md);
+  background: var(--ap-canvas);
+  border: 1px solid var(--ap-border-card);
+  border-top: 1px solid var(--ap-sapphire);
+  color: var(--ap-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 12px 28px -8px rgba(18, 24, 34, 0.18);
+}
+
+body .vn-skip-brake-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 18px;
+  border-radius: var(--ap-radius-md);
+  background: var(--ap-canvas);
+  border: 1px solid rgba(196, 37, 68, 0.34);
+  border-top: 1px solid var(--ap-crimson);
+  color: var(--ap-crimson-ink);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 14px 30px -8px rgba(18, 24, 34, 0.18);
+}
+
+/* 探索行动栏保持居中不溢出 */
+#action-bar {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 7px;
+}
+
+#action-bar .abtn {
+  white-space: nowrap;
+}
+
+/* ---------- 2. 暖雪白瓷 × 1px 极细线弹窗外壳 (典藏图鉴 / 回看 / 存档 / 章节 / 设置 / 奇遇 / 演武整备) ---------- */
+#vn-backlog-modal,
+#vn-saveload-modal,
+#vn-chapters-modal {
+  z-index: 86;
+}
+
+#rumor-overlay {
+  z-index: 88;
+}
+
+#vn-prefs-modal {
+  z-index: 95;
+}
+
+#arena-loadout-modal {
+  z-index: 96;
+}
+
+#app #codex.overlay,
+body section#vn-backlog-modal.overlay,
+body section#vn-saveload-modal.overlay,
+body section#vn-chapters-modal.overlay,
+body section#vn-prefs-modal.overlay,
+body section#rumor-overlay.overlay,
+body section#arena-loadout-modal.overlay {
+  background: var(--ap-modal-veil);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  box-sizing: border-box;
+}
+
+#app #codex .end-card.modal-shell,
+body section#vn-backlog-modal.overlay .end-card.vn-modal-card,
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card,
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card,
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card,
+body section#rumor-overlay.overlay .end-card.rumor-card,
+body section#arena-loadout-modal.overlay .end-card.rumor-card {
+  --ink: var(--ap-ink);
+  --paper: var(--ap-canvas);
+  --gold: var(--ap-sapphire);
+  --gold-bright: var(--ap-azure);
+  --ice: var(--ap-sapphire);
+  --ice-pale: var(--ap-azure);
+  --rose: var(--ap-crimson);
+
+  position: relative;
+  width: min(92vw, 840px);
+  max-width: 840px;
+  max-height: 86vh;
+  max-height: 86dvh;
+  padding: 0;
+  gap: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  text-align: left;
+  border-radius: var(--ap-radius-lg);
+  clip-path: none;
+  background: var(--ap-canvas);
+  background-image: none;
+  border: 1px solid var(--ap-border-card);
+  border-top: 1px solid var(--ap-sapphire);
+  color: var(--ap-ink-body);
+  box-shadow: var(--ap-shadow-modal);
+}
+
+#app #codex .end-card.modal-shell {
+  width: min(92vw, 940px);
+  max-width: 940px;
+}
+
+body section#arena-loadout-modal.overlay .end-card.rumor-card {
+  width: min(92vw, 880px);
+  max-width: 880px;
+}
+
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card.vn-prefs-card {
+  width: min(92vw, 580px);
+  max-width: 580px;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* 顶部纯净雪瓷通栏抬头 + 1px 中性细线底框 */
+#app #codex .modal-head,
+body section#vn-backlog-modal.overlay .vn-modal-head,
+body section#vn-saveload-modal.overlay .vn-modal-head,
+body section#vn-chapters-modal.overlay .vn-modal-head,
+body section#vn-prefs-modal.overlay .vn-modal-head,
+body section#rumor-overlay.overlay .rumor-head,
+body section#arena-loadout-modal.overlay .rumor-head,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .rumor-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 22px 14px 24px;
+  background: var(--ap-canvas);
+  background-image: none;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.12);
+  box-shadow: none;
+  color: var(--ap-ink);
+}
+
+.vn-modal-head-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.vn-head-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--ap-sapphire);
+  vertical-align: -3px;
+}
+
+.vn-head-ico svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.vn-inline-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  vertical-align: -2px;
+}
+
+.vn-inline-ico svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+#app #codex .modal-head h2,
+body section#vn-backlog-modal.overlay .vn-modal-head h2,
+body section#vn-saveload-modal.overlay .vn-modal-head h2,
+body section#vn-chapters-modal.overlay .vn-modal-head h2,
+body section#vn-prefs-modal.overlay .vn-modal-head h2,
+body section#rumor-overlay.overlay .rumor-head h2,
+body section#arena-loadout-modal.overlay .rumor-head h2,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .rumor-head h2 {
+  margin: 0 0 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ap-ink);
+  font-family: "Noto Serif SC", serif;
+}
+
+body section#vn-backlog-modal.overlay .vn-modal-sub,
+body section#vn-saveload-modal.overlay .vn-modal-sub,
+body section#vn-chapters-modal.overlay .vn-modal-sub,
+body section#vn-prefs-modal.overlay .vn-modal-sub,
+body section#rumor-overlay.overlay .rumor-sub,
+body section#arena-loadout-modal.overlay .rumor-sub,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .rumor-sub {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ap-ink-muted);
+  opacity: 1;
+}
+
+body section#vn-prefs-modal.overlay .vn-modal-head .rumor-kicker,
+body section#vn-prefs-modal.overlay .rumor-kicker,
+body section#rumor-overlay.overlay .rumor-head .rumor-kicker,
+body section#arena-loadout-modal.overlay .rumor-head .rumor-kicker {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ap-sapphire);
+  margin-bottom: 3px;
+}
+
+/* 统一右上角 2px 极细线方框关闭 × 钮 */
+#app #codex .modal-head .modal-close-x,
+body section#vn-backlog-modal.overlay .vn-modal-head .modal-close-x,
+body section#vn-saveload-modal.overlay .vn-modal-head .modal-close-x,
+body section#vn-chapters-modal.overlay .vn-modal-head .modal-close-x,
+body section#vn-prefs-modal.overlay .vn-modal-head .modal-close-x,
+body section#rumor-overlay.overlay .rumor-head .modal-close-x,
+body section#arena-loadout-modal.overlay .rumor-head .modal-close-x {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  padding: 0;
+  border-radius: var(--ap-radius-sm);
+  border: 1px solid rgba(27, 35, 51, 0.18);
+  background: transparent;
+  color: var(--ap-ink-body);
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 0.16s var(--ap-ease), border-color 0.16s var(--ap-ease), color 0.16s var(--ap-ease);
+}
+
+#app #codex .modal-head .modal-close-x:hover,
+body section#vn-backlog-modal.overlay .vn-modal-head .modal-close-x:hover,
+body section#vn-saveload-modal.overlay .vn-modal-head .modal-close-x:hover,
+body section#vn-chapters-modal.overlay .vn-modal-head .modal-close-x:hover,
+body section#vn-prefs-modal.overlay .vn-modal-head .modal-close-x:hover,
+body section#rumor-overlay.overlay .rumor-head .modal-close-x:hover,
+body section#arena-loadout-modal.overlay .rumor-head .modal-close-x:hover {
+  background: var(--ap-crimson);
+  border-color: var(--ap-crimson);
+  color: #FFFFFF;
+}
+
+/* 顶栏文本功能钮（极细线框） */
+body section#vn-backlog-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn,
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn,
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn,
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn,
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-head .tbtn,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .rumor-head .tbtn,
+body section#vn-backlog-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn.ghost,
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn.ghost,
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn.ghost,
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn.ghost,
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-head .tbtn.ghost,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .rumor-head .tbtn.ghost {
+  flex-shrink: 0;
+  border-radius: var(--ap-radius-sm);
+  border: 1px solid rgba(27, 35, 51, 0.22);
+  background: transparent;
+  color: var(--ap-ink);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  box-shadow: none;
+  cursor: pointer;
+  transition: background 0.16s var(--ap-ease), border-color 0.16s var(--ap-ease), color 0.16s var(--ap-ease);
+}
+
+body section#vn-backlog-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn:hover,
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn:hover,
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn:hover,
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn:hover,
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-head .tbtn:hover,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .rumor-head .tbtn:hover,
+body section#vn-backlog-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn.ghost:hover,
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn.ghost:hover,
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn.ghost:hover,
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn.ghost:hover,
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-head .tbtn.ghost:hover,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .rumor-head .tbtn.ghost:hover {
+  background: var(--ap-sapphire);
+  border-color: var(--ap-sapphire);
+  color: #FFFFFF;
+  transform: none;
+  box-shadow: none;
+}
+
+/* 弹窗滚动正文区 */
+body section#vn-backlog-modal.overlay .vn-modal-scroll,
+body section#vn-saveload-modal.overlay .vn-modal-scroll,
+body section#vn-chapters-modal.overlay .vn-modal-scroll,
+body section#vn-prefs-modal.overlay .vn-modal-scroll,
+body section#rumor-overlay.overlay .rumor-scroll,
+body section#arena-loadout-modal.overlay .rumor-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--ap-canvas);
+}
+
+/* 弹窗底栏与按钮体系（单主信号蓝宝实底 / 极细线框副钮） */
+body section#rumor-overlay.overlay .end-card.rumor-card .end-btns,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .end-btns {
+  flex-shrink: 0;
+  margin-top: 0;
+  padding: 13px 24px 16px;
+  background: var(--ap-canvas);
+  border-top: 1px solid rgba(27, 35, 51, 0.11);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .end-btns .tbtn:not(.ghost),
+body section#arena-loadout-modal.overlay .end-card.rumor-card .end-btns .tbtn:not(.ghost),
+body section#vn-backlog-modal.overlay .end-card.vn-modal-card .tbtn:not(.ghost),
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .tbtn:not(.ghost),
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .tbtn:not(.ghost),
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .tbtn:not(.ghost) {
+  border-radius: var(--ap-radius-sm);
+  border: 1px solid var(--ap-sapphire);
+  background: var(--ap-sapphire);
+  color: #FFFFFF;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  box-shadow: 0 3px 10px -4px rgba(18, 24, 34, 0.18);
+  cursor: pointer;
+  transition: background 0.16s var(--ap-ease), border-color 0.16s var(--ap-ease), transform 0.16s var(--ap-ease);
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .end-btns .tbtn:not(.ghost):hover:not(:disabled),
+body section#arena-loadout-modal.overlay .end-card.rumor-card .end-btns .tbtn:not(.ghost):hover:not(:disabled),
+body section#vn-backlog-modal.overlay .end-card.vn-modal-card .tbtn:not(.ghost):hover:not(:disabled),
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .tbtn:not(.ghost):hover:not(:disabled),
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .tbtn:not(.ghost):hover:not(:disabled),
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .tbtn:not(.ghost):hover:not(:disabled) {
+  background: var(--ap-sapphire-hover);
+  border-color: var(--ap-sapphire-hover);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px -6px rgba(18, 24, 34, 0.24);
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .end-btns .tbtn.ghost,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .end-btns .tbtn.ghost {
+  border-radius: var(--ap-radius-sm);
+  border: 1px solid rgba(27, 35, 51, 0.22);
+  background: transparent;
+  color: var(--ap-ink);
+  font-weight: 700;
+  box-shadow: none;
+  cursor: pointer;
+  transition: background 0.16s var(--ap-ease), border-color 0.16s var(--ap-ease), color 0.16s var(--ap-ease);
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .end-btns .tbtn.ghost:hover:not(:disabled),
+body section#arena-loadout-modal.overlay .end-card.rumor-card .end-btns .tbtn.ghost:hover:not(:disabled) {
+  background: var(--ap-sky-tint);
+  border-color: var(--ap-sapphire);
+  color: var(--ap-sapphire);
+  box-shadow: none;
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .end-btns .tbtn:disabled,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .end-btns .tbtn:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  background: var(--ap-surface-tint);
+  border-color: var(--ap-border-subtle);
+  color: var(--ap-ink-muted);
+  box-shadow: none;
+}
+
+/* ---------- 3. 对话回看 (#vn-backlog-modal · 无边框 1px 细线剧本行) ---------- */
+body section#vn-backlog-modal.overlay .vn-modal-scroll {
+  gap: 0;
+  padding: 10px 24px 18px;
+}
+
+body section#vn-backlog-modal.overlay .end-card.vn-modal-card .vb-row {
+  display: flex;
+  gap: 12px;
+  padding: 13px 6px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.10);
+  color: var(--ap-ink-body);
+  box-shadow: none;
+}
+
+body section#vn-backlog-modal.overlay .end-card.vn-modal-card .vb-row:last-child {
+  border-bottom: none;
+}
+
+body section#vn-backlog-modal.overlay .end-card.vn-modal-card .vb-row.kind-choice {
+  background: #F2F6FC;
+  border: none;
+  border-top: 1px solid var(--ap-border-strong);
+  border-bottom: 1px solid var(--ap-border-strong);
+  padding: 13px 10px;
+  margin-top: -1px;
+}
+
+body section#vn-backlog-modal.overlay .vb-left {
+  width: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+body section#vn-backlog-modal.overlay .vb-av {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ap-radius-sm);
+  object-fit: cover;
+  border: 1px solid var(--ap-border-card);
+  background: var(--ap-surface-tint);
+}
+
+body section#vn-backlog-modal.overlay .end-card.vn-modal-card .vb-av-ph {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface-tint);
+  border: 1px solid var(--ap-border-card);
+  color: var(--ap-sapphire);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.vb-av-mono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-family: "Noto Serif SC", serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: inherit;
+}
+
+body section#vn-backlog-modal.overlay .end-card.vn-modal-card .vb-row.kind-choice .vb-av-ph {
+  background: var(--ap-sapphire);
+  border-color: var(--ap-sapphire);
+  color: #FFFFFF;
+}
+
+body section#vn-backlog-modal.overlay .vb-main {
+  flex: 1;
+  min-width: 0;
+}
+
+body section#vn-backlog-modal.overlay .vb-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+body section#vn-backlog-modal.overlay .end-card.vn-modal-card .vb-spk {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ap-sapphire);
+}
+
+body section#vn-backlog-modal.overlay .end-card.vn-modal-card .vb-ctx {
+  font-size: 11.5px;
+  color: var(--ap-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+body section#vn-backlog-modal.overlay .end-card.vn-modal-card .vb-text {
+  font-size: 13.5px;
+  line-height: 1.66;
+  color: var(--ap-ink);
+}
+
+.vb-empty,
+body section#vn-backlog-modal.overlay .end-card.vn-modal-card .vb-empty {
+  text-align: center;
+  padding: 34px 16px;
+  margin-top: 8px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface-tint);
+  border: 1px dashed rgba(27, 35, 51, 0.20);
+  color: var(--ap-ink-muted);
+  font-size: 13px;
+  opacity: 1;
+}
+
+/* ---------- 4. 6 槽位存档与读档中心 (#vn-saveload-modal · 2px 建筑档案卡) ---------- */
+.sl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(236px, 1fr));
+  gap: 11px;
+}
+
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card {
+  padding: 13px 14px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface);
+  border: 1px solid rgba(27, 35, 51, 0.14);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 134px;
+  color: var(--ap-ink-body);
+  box-shadow: none;
+}
+
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.auto {
+  background: #F5F8FD;
+  border: 1px solid var(--ap-sapphire);
+}
+
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.empty {
+  background: #F5F7FB;
+  border: 1px dashed rgba(27, 35, 51, 0.20);
+  box-shadow: none;
+  opacity: 1;
+}
+
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-head {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--ap-sapphire);
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.11);
+}
+
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.auto .sl-head {
+  color: var(--ap-ink);
+  border-bottom-color: rgba(28, 76, 184, 0.22);
+}
+
+.sl-head-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-empty {
+  font-size: 12px;
+  text-align: center;
+  color: var(--ap-ink-muted);
+  padding: 16px 0;
+}
+
+.sl-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-line1 {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ap-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-line2 {
+  font-size: 12px;
+  color: var(--ap-ink-body);
+}
+
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-chap {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ap-sapphire);
+}
+
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-time {
+  font-size: 11.5px;
+  color: var(--ap-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.sl-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.sl-btn,
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-btn,
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .sl-btn {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: var(--ap-radius-sm);
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid rgba(27, 35, 51, 0.22);
+  background: transparent;
+  color: var(--ap-ink);
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 0.16s var(--ap-ease), border-color 0.16s var(--ap-ease), color 0.16s var(--ap-ease);
+}
+
+.sl-btn.is-compact,
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-btn.is-compact,
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .sl-btn.is-compact,
+#app #codex #codex-list .sl-btn.is-compact {
+  flex: 0 0 auto;
+  padding: 7px 14px;
+}
+
+.sl-btn:hover,
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-btn:hover,
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .sl-btn:hover {
+  border-color: var(--ap-sapphire);
+  background: var(--ap-sky-tint);
+  color: var(--ap-sapphire);
+}
+
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-btn.load {
+  border-color: var(--ap-sapphire);
+  background: var(--ap-sapphire);
+  color: #FFFFFF;
+}
+
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-btn.load:hover {
+  border-color: var(--ap-sapphire-hover);
+  background: var(--ap-sapphire-hover);
+  color: #FFFFFF;
+}
+
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-btn.save {
+  border-color: var(--ap-sapphire);
+  background: transparent;
+  color: var(--ap-sapphire);
+}
+
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-btn.save:hover {
+  border-color: var(--ap-sapphire);
+  background: var(--ap-sapphire);
+  color: #FFFFFF;
+}
+
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-btn.del {
+  flex: 0 0 auto;
+  border-color: rgba(196, 37, 68, 0.42);
+  background: transparent;
+  color: var(--ap-crimson);
+}
+
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-btn.del:hover {
+  border-color: var(--ap-crimson);
+  background: var(--ap-crimson);
+  color: #FFFFFF;
+}
+
+.sl-btn.del.confirming,
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-btn.del.confirming {
+  border-color: var(--ap-crimson);
+  background: var(--ap-crimson);
+  color: #FFFFFF;
+  outline: 2px solid rgba(196, 37, 68, 0.36);
+  outline-offset: 2px;
+  box-shadow: 0 4px 12px -4px rgba(18, 24, 34, 0.24);
+  animation: slConfirmPulse 1.1s var(--ap-ease) infinite alternate;
+}
+
+@keyframes slConfirmPulse {
+  from {
+    outline-color: rgba(196, 37, 68, 0.24);
+    box-shadow: 0 3px 10px -4px rgba(18, 24, 34, 0.18);
+  }
+  to {
+    outline-color: rgba(196, 37, 68, 0.64);
+    box-shadow: 0 6px 14px -4px rgba(18, 24, 34, 0.28);
+  }
+}
+
+/* ---------- 5. 章节速览与快捷跳转 (#vn-chapters-modal) ---------- */
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .rel-sec-title {
+  margin: 12px 0 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.14);
+  font-family: "Noto Serif SC", serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  color: var(--ap-ink);
+}
+
+.rel-sec-title.is-first,
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .rel-sec-title.is-first,
+#panel .relics-dashboard .rel-sec-title.is-first,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-sec-title.is-first {
+  margin-top: 0;
+}
+
+.chap-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(236px, 1fr));
+  gap: 10px;
+}
+
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .chap-quick-card {
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface);
+  border: 1px solid rgba(27, 35, 51, 0.14);
+  color: var(--ap-ink);
+  cursor: pointer;
+  box-shadow: none;
+  transition: border-color 0.16s var(--ap-ease), background 0.16s var(--ap-ease), transform 0.16s var(--ap-ease), box-shadow 0.16s var(--ap-ease);
+}
+
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .chap-quick-card:hover {
+  border-color: var(--ap-sapphire);
+  background: var(--ap-surface-tint);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px -12px rgba(18, 24, 34, 0.16);
+}
+
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .cqc-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ap-sapphire);
+  margin-bottom: 4px;
+}
+
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .cqc-desc {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ap-ink-body);
+}
+
+.chap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .chap-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 6px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.11);
+  color: var(--ap-ink);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: none;
+  transition: border-color 0.16s var(--ap-ease), background 0.16s var(--ap-ease);
+}
+
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .chap-row:last-child {
+  border-bottom: none;
+}
+
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .chap-row.unlocked:hover {
+  border: none;
+  border-bottom: 1px solid var(--ap-sapphire);
+  background: rgba(28, 76, 184, 0.04);
+}
+
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .chap-row.locked {
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed rgba(27, 35, 51, 0.15);
+  color: var(--ap-ink-muted);
+  opacity: 0.74;
+  cursor: not-allowed;
+}
+
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .cr-vol {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--ap-radius-sm);
+  background: transparent;
+  border: 1px solid rgba(27, 35, 51, 0.18);
+  color: var(--ap-sapphire);
+  white-space: nowrap;
+}
+
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .cr-tit {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ap-ink);
+}
+
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .chap-row.locked .cr-tit {
+  color: var(--ap-ink-muted);
+  font-weight: 500;
+}
+
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .cr-tag {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ap-sapphire);
+  white-space: nowrap;
+}
+
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card .chap-row.locked .cr-tag {
+  color: var(--ap-ink-muted);
+  font-weight: 500;
+}
+
+/* ---------- 6. 阅读与音效设置弹窗 (#vn-prefs-modal · NeonCat 极细线编排) ---------- */
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-body {
+  gap: 0;
+  padding: 8px 24px 12px;
+}
+
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 2px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.12);
+  box-shadow: none;
+}
+
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:last-child {
+  border-bottom: none;
+}
+
+.prefs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.prefs-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 150px;
+}
+
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-label b {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ap-ink);
+}
+
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-label span {
+  font-size: 11.5px;
+  color: var(--ap-ink-muted);
+}
+
+/* 裸文本极细线底标切换器 */
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-seg {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  gap: 4px;
+}
+
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-seg-btn {
+  padding: 5px 10px 6px;
+  border-radius: 0;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--ap-ink-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.16s var(--ap-ease), border-color 0.16s var(--ap-ease);
+}
+
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-seg-btn:hover {
+  background: transparent;
+  color: var(--ap-ink);
+  border-bottom-color: rgba(28, 76, 184, 0.30);
+}
+
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-seg-btn.active {
+  border: none;
+  border-bottom: 2px solid var(--ap-sapphire);
+  background: transparent;
+  color: var(--ap-sapphire);
+  font-weight: 700;
+}
+
+.prefs-slider-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 210px;
+  flex: 1;
+  max-width: 260px;
+}
+
+/* 1px 细线轨道 + 9px 蓝宝菱形滑块 */
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 1px;
+  margin: 10px 0;
+  border-radius: 0;
+  background: rgba(27, 35, 51, 0.28);
+  outline: none;
+  cursor: pointer;
+}
+
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-slider::-moz-range-track {
+  height: 1px;
+  border-radius: 0;
+  background: rgba(27, 35, 51, 0.28);
+  border: none;
+}
+
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 1px;
+  transform: rotate(45deg);
+  background: var(--ap-sapphire);
+  border: 1px solid #FFFFFF;
+  box-shadow: 0 2px 6px rgba(18, 24, 34, 0.22);
+  cursor: pointer;
+  transition: transform 0.14s var(--ap-ease), background 0.14s var(--ap-ease);
+}
+
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-slider:hover::-webkit-slider-thumb {
+  background: var(--ap-sapphire-hover);
+  transform: rotate(45deg) scale(1.12);
+}
+
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-slider::-moz-range-thumb {
+  width: 9px;
+  height: 9px;
+  border-radius: 1px;
+  transform: rotate(45deg);
+  background: var(--ap-sapphire);
+  border: 1px solid #FFFFFF;
+  box-shadow: 0 2px 6px rgba(18, 24, 34, 0.22);
+  cursor: pointer;
+  transition: transform 0.14s var(--ap-ease), background 0.14s var(--ap-ease);
+}
+
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-val {
+  min-width: 42px;
+  text-align: right;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ap-sapphire);
+  font-variant-numeric: tabular-nums;
+}
+
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-toggle {
+  padding: 6px 14px;
+  border-radius: var(--ap-radius-sm);
+  border: 1px solid rgba(27, 35, 51, 0.22);
+  background: transparent;
+  color: var(--ap-ink-body);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.16s var(--ap-ease), border-color 0.16s var(--ap-ease), color 0.16s var(--ap-ease);
+}
+
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-toggle:hover {
+  border-color: var(--ap-sapphire);
+  background: var(--ap-sky-tint);
+  color: var(--ap-sapphire);
+}
+
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-toggle.on {
+  border-color: var(--ap-sapphire);
+  background: var(--ap-sapphire);
+  color: #FFFFFF;
+  box-shadow: none;
+}
+
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-foot {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 24px 16px;
+  background: var(--ap-canvas);
+  border-top: 1px solid rgba(27, 35, 51, 0.11);
+}
+
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-hint {
+  font-size: 11.5px;
+  color: var(--ap-ink-muted);
+}
+
+/* ---------- 7. 季度奇遇与链式传闻板 (#rumor-overlay · 去盒子化 1px 细线编辑部行) ---------- */
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-scroll {
+  gap: 0;
+  padding: 6px 24px 20px;
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-offer-card {
+  position: relative;
+  overflow: hidden;
+  padding: 16px 2px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--ap-ink-body);
+  box-shadow: none;
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-offer-card:last-child {
+  border-bottom: none;
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-offer-card.chain {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.12);
+  box-shadow: none;
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-offer-card.done {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.10);
+  opacity: 0.72;
+}
+
+.roc-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.roc-ico {
+  font-size: 21px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.roc-info {
+  flex: 1;
+  min-width: 0;
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .roc-tag {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #526078;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  margin-bottom: 3px;
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .roc-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ap-ink);
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .roc-go-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 2px;
+  min-width: auto;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid rgba(28, 76, 184, 0.36);
+  background: transparent;
+  color: var(--ap-sapphire);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  box-shadow: none;
+  cursor: pointer;
+  transition: color 0.16s var(--ap-ease), border-color 0.16s var(--ap-ease);
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .roc-go-btn:hover:not(:disabled) {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--ap-sapphire-deep);
+  color: var(--ap-sapphire-deep);
+  box-shadow: none;
+  transform: none;
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .roc-done-pill {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  color: var(--ap-emerald);
+  white-space: nowrap;
+}
+
+.roc-chain-pill,
+.rumor-chain-tag,
+body section#rumor-overlay.overlay .end-card.rumor-card .roc-chain-pill,
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-chain-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  margin-right: 0;
+  border-radius: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: transparent;
+  border: none;
+  color: var(--ap-sapphire);
+  box-shadow: none;
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-kicker .roc-chain-pill {
+  margin-right: 6px;
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .roc-preview,
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-intro,
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-epilogue {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.68;
+  color: var(--ap-ink-body);
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-story-box {
+  margin: 18px 24px 12px;
+  padding: 16px 18px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface);
+  border: 1px solid rgba(27, 35, 51, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-choices-col {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 24px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-choice-btn {
+  text-align: left;
+  padding: 13px 16px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface);
+  border: 1px solid rgba(27, 35, 51, 0.16);
+  color: var(--ap-ink);
+  cursor: pointer;
+  box-shadow: none;
+  transition: border-color 0.16s var(--ap-ease), background 0.16s var(--ap-ease), transform 0.16s var(--ap-ease), box-shadow 0.16s var(--ap-ease);
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-choice-btn:hover:not(:disabled) {
+  border-color: var(--ap-sapphire);
+  background: var(--ap-surface-tint);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px -10px rgba(18, 24, 34, 0.16);
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-choice-btn.palace {
+  border: 1px solid var(--ap-sapphire);
+  background: var(--ap-sky-tint);
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-choice-btn.palace:hover:not(:disabled) {
+  background: var(--ap-surface-hover);
+  border-color: var(--ap-sapphire-hover);
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-choice-btn.disabled,
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-choice-btn:disabled {
+  opacity: 0.54;
+  background: #F5F7FB;
+  border-color: var(--ap-border-subtle);
+  cursor: not-allowed;
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .rcb-main {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ap-ink);
+  margin-bottom: 5px;
+}
+
+.rcb-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .rcb-cost {
+  color: var(--ap-crimson-ink);
+  font-weight: 700;
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .rcb-reward {
+  color: var(--ap-sapphire);
+  font-weight: 700;
+}
+
+.rumor-deltas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+body section#rumor-overlay.overlay .end-card.rumor-card .rumor-delta-chip {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-sky-tint);
+  border: 1px solid rgba(28, 76, 184, 0.26);
+  color: var(--ap-sapphire);
+}
+
+/* ---------- 8. 随身铭记 (.relics-dashboard) — 演武整备 (#arena-loadout-modal) 与铭记模块 ---------- */
+.relics-dashboard,
+#panel .relics-dashboard,
+body section#arena-loadout-modal.overlay .relics-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--ap-ink-body);
+}
+
+.rel-banner,
+#panel .relics-dashboard .rel-banner,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface);
+  border: 1px solid rgba(27, 35, 51, 0.14);
+  border-top: 1px solid var(--ap-sapphire);
+  color: var(--ap-ink);
+}
+
+.rel-banner b,
+#panel .relics-dashboard .rel-banner b,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-banner b {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ap-ink);
+  margin-bottom: 2px;
+}
+
+.rel-banner span,
+#panel .relics-dashboard .rel-banner span,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-banner span {
+  font-size: 12px;
+  color: var(--ap-ink-sub);
+}
+
+.rel-synergy-strip,
+#panel .relics-dashboard .rel-synergy-strip,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-synergy-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px 14px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface-tint);
+  border: 1px solid rgba(27, 35, 51, 0.13);
+  border-top: 1px solid var(--ap-sapphire);
+  color: var(--ap-ink-body);
+}
+
+.rel-syn-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rel-syn-title,
+#panel .relics-dashboard .rel-syn-title,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-syn-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--ap-ink);
+}
+
+.rel-syn-summary,
+#panel .relics-dashboard .rel-syn-summary,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-syn-summary {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ap-sapphire);
+}
+
+.rel-syn-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 8px;
+}
+
+.rel-syn-card,
+#panel .relics-dashboard .rel-syn-card,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-syn-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface);
+  border: 1px dashed rgba(27, 35, 51, 0.20);
+  color: var(--ap-ink-body);
+  font-size: 11.5px;
+  line-height: 1.5;
+  box-shadow: none;
+  transition: border-color 0.16s var(--ap-ease), background 0.16s var(--ap-ease);
+}
+
+.rel-syn-card b,
+.rel-syn-card strong,
+#panel .relics-dashboard .rel-syn-card b,
+#panel .relics-dashboard .rel-syn-card strong,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-syn-card b,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-syn-card strong {
+  color: var(--ap-ink);
+  font-size: 12px;
+}
+
+.rel-syn-card.active,
+#panel .relics-dashboard .rel-syn-card.active,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-syn-card.active {
+  border-style: solid;
+  border-color: var(--ap-sapphire);
+  background: var(--ap-sky-tint);
+  color: var(--ap-ink);
+  box-shadow: var(--ap-shadow-card);
+}
+
+.rel-syn-card.active b,
+.rel-syn-card.active strong,
+#panel .relics-dashboard .rel-syn-card.active b,
+#panel .relics-dashboard .rel-syn-card.active strong,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-syn-card.active b,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-syn-card.active strong {
+  color: var(--ap-sapphire);
+}
+
+.rel-syn-card.near,
+#panel .relics-dashboard .rel-syn-card.near,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-syn-card.near {
+  border-style: dashed;
+  border-color: rgba(26, 110, 181, 0.44);
+  background: var(--ap-surface);
+}
+
+.rsc-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.rsc-name,
+#panel .relics-dashboard .rsc-name,
+body section#arena-loadout-modal.overlay .relics-dashboard .rsc-name {
+  font-weight: 700;
+  color: var(--ap-ink);
+}
+
+.rel-syn-card.near .rsc-name,
+#panel .relics-dashboard .rel-syn-card.near .rsc-name,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-syn-card.near .rsc-name {
+  color: var(--ap-azure);
+}
+
+.rsc-pill,
+#panel .relics-dashboard .rsc-pill,
+body section#arena-loadout-modal.overlay .relics-dashboard .rsc-pill {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-sapphire);
+  border: 1px solid var(--ap-sapphire);
+  color: #FFFFFF;
+  white-space: nowrap;
+}
+
+.rel-syn-card.near .rsc-pill,
+#panel .relics-dashboard .rel-syn-card.near .rsc-pill,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-syn-card.near .rsc-pill {
+  background: var(--ap-sky-tint);
+  border-color: rgba(26, 110, 181, 0.34);
+  color: var(--ap-azure);
+}
+
+.rsc-fx,
+#panel .relics-dashboard .rsc-fx,
+body section#arena-loadout-modal.overlay .relics-dashboard .rsc-fx {
+  font-size: 12px;
+  line-height: 1.52;
+  color: var(--ap-ink-body);
+}
+
+.rsc-next,
+#panel .relics-dashboard .rsc-next,
+body section#arena-loadout-modal.overlay .relics-dashboard .rsc-next {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ap-ink-muted);
+  border-top: 1px dashed var(--ap-border);
+  padding-top: 4px;
+  margin-top: 2px;
+}
+
+.rel-syn-dormant-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rel-syn-dormant-chip,
+#panel .relics-dashboard .rel-syn-dormant-chip,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-syn-dormant-chip {
+  font-size: 11.5px;
+  padding: 2px 8px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface);
+  border: 1px dashed rgba(27, 35, 51, 0.20);
+  color: var(--ap-ink-muted);
+}
+
+.rel-set-tag,
+.rc-set-badge,
+#app #panel #panel-body .relics-dashboard .rel-set-tag,
+#app #panel #panel-body .relics-dashboard .rc-set-badge,
+#app #panel #panel-body .relics-dashboard .rel-slot .rc-set-badge,
+#app #panel #panel-body .relics-dashboard .rel-card .rc-set-badge,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-set-tag,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rc-set-badge,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-slot .rc-set-badge,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-card .rc-set-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0;
+  margin-left: 0;
+  border-radius: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: #1C4CB8;
+  background: transparent;
+  border: none;
+  vertical-align: middle;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rel-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.rel-slot,
+#panel .relics-dashboard .rel-slot,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-slot {
+  padding: 11px 12px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface-tint);
+  border: 1px dashed rgba(27, 35, 51, 0.20);
+  min-height: 78px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  color: var(--ap-ink-body);
+}
+
+.rel-slot.empty,
+#panel .relics-dashboard .rel-slot.empty,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-slot.empty {
+  text-align: center;
+  color: var(--ap-ink-muted);
+  font-size: 12px;
+}
+
+.rel-slot.empty small {
+  font-size: 12px;
+  color: var(--ap-ink-muted);
+}
+
+.rel-slot.filled,
+#panel .relics-dashboard .rel-slot.filled,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-slot.filled {
+  border-style: solid;
+  border-color: var(--ap-sapphire);
+  background: var(--ap-surface);
+  justify-content: space-between;
+  box-shadow: var(--ap-shadow-card);
+}
+
+.rel-slot-top,
+#panel .relics-dashboard .rel-slot-top,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-slot-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ap-ink);
+}
+
+.rel-slot-top b {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rel-slot-fx,
+#panel .relics-dashboard .rel-slot-fx,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-slot-fx {
+  font-size: 11.5px;
+  line-height: 1.48;
+  color: var(--ap-ink-body);
+}
+
+.rel-mini-btn,
+.rel-act-btn,
+#panel .relics-dashboard .rel-mini-btn,
+#panel .relics-dashboard .rel-act-btn,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-mini-btn,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-act-btn {
+  padding: 4px 10px;
+  border-radius: var(--ap-radius-sm);
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid rgba(27, 35, 51, 0.22);
+  background: transparent;
+  color: var(--ap-ink);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.16s var(--ap-ease), border-color 0.16s var(--ap-ease), color 0.16s var(--ap-ease);
+}
+
+.rel-mini-btn:hover,
+.rel-act-btn:hover,
+#panel .relics-dashboard .rel-mini-btn:hover,
+#panel .relics-dashboard .rel-act-btn:hover,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-mini-btn:hover,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-act-btn:hover {
+  border-color: var(--ap-sapphire);
+  background: var(--ap-sapphire);
+  color: #FFFFFF;
+}
+
+.rel-act-btn.on,
+#panel .relics-dashboard .rel-act-btn.on,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-act-btn.on {
+  border-color: var(--ap-sapphire);
+  background: var(--ap-sapphire);
+  color: #FFFFFF;
+}
+
+.rel-act-btn.on:hover,
+#panel .relics-dashboard .rel-act-btn.on:hover,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-act-btn.on:hover {
+  border-color: var(--ap-crimson);
+  background: var(--ap-crimson);
+  color: #FFFFFF;
+}
+
+.rel-sec-title,
+#panel .relics-dashboard .rel-sec-title,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-sec-title {
+  margin: 6px 0 2px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.14);
+  font-family: "Noto Serif SC", serif;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  color: var(--ap-ink);
+  font-weight: 700;
+}
+
+.bond-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.bond-chip,
+#panel .relics-dashboard .bond-chip,
+body section#arena-loadout-modal.overlay .relics-dashboard .bond-chip {
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface);
+  border: 1px solid rgba(27, 35, 51, 0.14);
+  color: var(--ap-ink-body);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color 0.16s var(--ap-ease), background 0.16s var(--ap-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .bond-chip:not(.active):hover:not(:disabled),
+  #app #panel #panel-body .relics-dashboard .bond-chip:not(.active):hover:not(:disabled),
+  body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .bond-chip:not(.active):hover:not(:disabled) {
+    border-color: rgba(27, 35, 51, 0.28);
+    background: var(--ap-surface-tint);
+  }
+}
+
+.bond-chip.active,
+#app #panel #panel-body .relics-dashboard .bond-chip.active,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .bond-chip.active {
+  border: 1.5px solid var(--ap-sapphire);
+  background: #EEF4FD;
+  box-shadow: none;
+}
+
+.bond-chip.locked,
+#panel .relics-dashboard .bond-chip.locked,
+body section#arena-loadout-modal.overlay .relics-dashboard .bond-chip.locked {
+  opacity: 0.64;
+  background: #F5F7FB;
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+.bc-top,
+#panel .relics-dashboard .bc-top,
+body section#arena-loadout-modal.overlay .relics-dashboard .bc-top {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ap-ink);
+}
+
+.bond-chip.active .bc-top,
+#panel .relics-dashboard .bond-chip.active .bc-top,
+body section#arena-loadout-modal.overlay .relics-dashboard .bond-chip.active .bc-top {
+  color: var(--ap-sapphire);
+}
+
+.bc-desc,
+#panel .relics-dashboard .bc-desc,
+body section#arena-loadout-modal.overlay .relics-dashboard .bc-desc {
+  font-size: 11.5px;
+  line-height: 1.48;
+  color: var(--ap-ink-muted);
+}
+
+.rel-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 9px;
+}
+
+.rel-card,
+#panel .relics-dashboard .rel-card,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-card {
+  padding: 11px 13px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface);
+  border: 1px solid rgba(27, 35, 51, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--ap-ink-body);
+}
+
+.rel-card.equipped,
+#panel .relics-dashboard .rel-card.equipped,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-card.equipped {
+  border: 1px solid var(--ap-sapphire);
+  background: var(--ap-surface-tint);
+  box-shadow: var(--ap-shadow-card);
+}
+
+.rel-card.locked,
+#panel .relics-dashboard .rel-card.locked,
+body section#arena-loadout-modal.overlay .relics-dashboard .rel-card.locked {
+  opacity: 0.72;
+  background: #F5F7FB;
+  border-style: dashed;
+  border-color: var(--ap-border-subtle);
+}
+
+.rc-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.rc-ico {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.rc-titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.rc-name,
+#panel .relics-dashboard .rc-name,
+body section#arena-loadout-modal.overlay .relics-dashboard .rc-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ap-ink);
+}
+
+.rc-name .rc-set-badge,
+#app #panel #panel-body .relics-dashboard .rc-name .rc-set-badge,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rc-name .rc-set-badge {
+  margin-left: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: #1C4CB8;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.rc-eq-pill,
+#app #panel #panel-body .relics-dashboard .rc-eq-pill,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rc-eq-pill {
+  display: none;
+}
+
+.rc-owner,
+.rc-lock-tag,
+#panel .relics-dashboard .rc-owner,
+#panel .relics-dashboard .rc-lock-tag,
+body section#arena-loadout-modal.overlay .relics-dashboard .rc-owner,
+body section#arena-loadout-modal.overlay .relics-dashboard .rc-lock-tag {
+  font-size: 11.5px;
+  color: var(--ap-ink-muted);
+}
+
+.rc-effect,
+#panel .relics-dashboard .rc-effect,
+body section#arena-loadout-modal.overlay .relics-dashboard .rc-effect {
+  font-size: 12px;
+  line-height: 1.52;
+  color: var(--ap-ink-body);
+}
+
+.rc-lore,
+#panel .relics-dashboard .rc-lore,
+body section#arena-loadout-modal.overlay .relics-dashboard .rc-lore {
+  font-size: 12px;
+  line-height: 1.48;
+  color: var(--ap-ink-muted);
+  border-top: 1px solid var(--ap-border);
+  padding-top: 6px;
+}
+
+/* ---------- 9. CG 全屏剧场鉴赏 (#cg-lightbox · D13c 美术馆暗幕画框 + 暖雪瓷图签) ---------- */
+#cg-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 240;
+  background: var(--ap-cinema-veil);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(22px, env(safe-area-inset-top)) max(22px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(22px, env(safe-area-inset-left));
+  box-sizing: border-box;
+}
+
+#cg-lightbox.hidden {
+  display: none !important;
+}
+
+.cg-lb-inner {
+  position: relative;
+  max-width: min(94vw, 1100px);
+  max-height: 92vh;
+  max-height: 92dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.cg-lb-close {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  z-index: 250;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: var(--ap-radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  background: rgba(14, 18, 26, 0.56);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #FFFFFF;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 22px -6px rgba(0, 0, 0, 0.38);
+  transition: background 0.16s var(--ap-ease), border-color 0.16s var(--ap-ease), color 0.16s var(--ap-ease);
+}
+
+.cg-lb-close:hover {
+  background: var(--ap-crimson);
+  border-color: var(--ap-crimson);
+  color: #FFFFFF;
+}
+
+.cg-lb-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.cg-lb-nav {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  padding: 0;
+  border-radius: var(--ap-radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  background: rgba(14, 18, 26, 0.56);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #FFFFFF;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.34);
+  transition: background 0.16s var(--ap-ease), border-color 0.16s var(--ap-ease), color 0.16s var(--ap-ease), transform 0.16s var(--ap-ease);
+}
+
+.cg-lb-nav:hover:not(:disabled) {
+  background: var(--ap-sapphire);
+  border-color: var(--ap-sapphire);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+.cg-lb-nav:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.cg-lb-close svg,
+.cg-lb-nav svg {
+  display: block;
+}
+
+.cg-lb-frame {
+  border-radius: var(--ap-radius-sm);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.54);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.cg-lb-img {
+  display: block;
+  max-width: min(82vw, 960px);
+  max-height: 66vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  cursor: zoom-out;
+}
+
+.cg-lb-caption {
+  width: min(92vw, 760px);
+  padding: 14px 22px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-canvas);
+  border: 1px solid var(--ap-border-card);
+  border-top: 1px solid var(--ap-sapphire);
+  text-align: center;
+  box-shadow: 0 18px 44px -12px rgba(18, 24, 34, 0.34);
+}
+
+.cg-lb-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin-bottom: 6px;
+}
+
+.cg-lb-vol {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--ap-radius-sm);
+  background: transparent;
+  border: 1px solid rgba(27, 35, 51, 0.18);
+  color: var(--ap-sapphire);
+  letter-spacing: 0.04em;
+}
+
+.cg-lb-meta h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ap-ink);
+  font-family: "Noto Serif SC", serif;
+}
+
+.cg-lb-counter {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-sapphire);
+  color: #FFFFFF;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.cg-lb-quote {
+  margin: 0 0 6px;
+  font-size: 13.5px;
+  line-height: 1.68;
+  color: var(--ap-ink-body);
+  font-family: "Noto Serif SC", serif;
+}
+
+.cg-lb-hint {
+  font-size: 12px;
+  color: var(--ap-ink-muted);
+}
+
+/* ---------- 10. 典藏图鉴馆 (#codex) 五合一刊印编辑体系 ---------- */
+#app #codex .end-card.modal-shell > .modal-foot {
+  display: none;
+}
+
+#app #codex .end-card.modal-shell > .modal-scroll,
+#app #codex .codex-scroll,
+#app #codex #codex-body {
+  position: relative;
+  padding: 14px 26px 40px 24px;
+  background: var(--ap-canvas);
+}
+
+#app #codex .end-card.modal-shell > .codex-scroll-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 48px;
+  border-radius: 0 0 3px 3px;
+  background: linear-gradient(to bottom, rgba(250, 251, 253, 0) 0%, rgba(250, 251, 253, 0.88) 64%, #FAFBFD 100%);
+  pointer-events: none;
+  z-index: 6;
+  opacity: 1;
+  transition: opacity 0.2s var(--ap-ease);
+}
+
+#app #codex .end-card.modal-shell > .codex-scroll-fade.is-end {
+  opacity: 0;
+}
+
+/* 10.0 裸文本 1px 细线底标页签 (#codex-tabs) */
+#app #codex #codex-tabs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-bottom: 16px;
+  padding: 0;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.14);
+}
+
+#app #codex #codex-tabs .ptab.codex-tab-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px 11px;
+  margin-bottom: -1px;
+  background: transparent;
+  background-image: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--ap-ink-muted);
+  font-family: "Noto Serif SC", serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transform: none;
+  transition: color 0.16s var(--ap-ease), border-color 0.16s var(--ap-ease);
+}
+
+#app #codex #codex-tabs .ptab.codex-tab-btn::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  background: currentColor;
+  transform: rotate(45deg) scale(0.4);
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity 0.16s var(--ap-ease), transform 0.18s var(--ap-ease), background 0.16s var(--ap-ease);
+}
+
+#app #codex #codex-tabs .ptab.codex-tab-btn:not(:last-child)::after,
+#app #codex #codex-tabs .ptab.codex-tab-btn.on:not(:last-child)::after {
+  content: '';
+  display: block;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 12px;
+  background: rgba(27, 35, 51, 0.16);
+  pointer-events: none;
+}
+
+#app #codex #codex-tabs .ptab.codex-tab-btn:last-child::after,
+#app #codex #codex-tabs .ptab.codex-tab-btn.on:last-child::after {
+  content: none;
+  display: none;
+}
+
+#app #codex #codex-tabs .ptab.codex-tab-btn:hover {
+  background: transparent;
+  background-image: none;
+  border: none;
+  border-bottom: 2px solid rgba(28, 76, 184, 0.30);
+  color: var(--ap-ink);
+  transform: none;
+  box-shadow: none;
+}
+
+#app #codex #codex-tabs .ptab.codex-tab-btn:hover::before {
+  opacity: 0.45;
+  transform: rotate(45deg) scale(0.85);
+}
+
+#app #codex #codex-tabs .ptab.codex-tab-btn.on {
+  background: transparent;
+  background-image: none;
+  border: none;
+  border-bottom: 2px solid var(--ap-sapphire);
+  color: var(--ap-sapphire);
+  font-weight: 700;
+  box-shadow: none;
+  transform: none;
+}
+
+#app #codex #codex-tabs .ptab.codex-tab-btn.on::before {
+  opacity: 1;
+  transform: rotate(45deg) scale(1);
+  background: var(--ap-sapphire);
+}
+
+#app #codex #codex-tabs .ptab.codex-tab-btn .codex-tab-count {
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ap-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+#app #codex #codex-tabs .ptab.codex-tab-btn:hover .codex-tab-count {
+  color: var(--ap-ink-body);
+}
+
+#app #codex #codex-tabs .ptab.codex-tab-btn.on .codex-tab-count {
+  background: transparent;
+  color: var(--ap-sapphire);
+  font-weight: 700;
+}
+
+.codex-bar-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.codex-bar-title .vn-inline-ico {
+  width: 14px;
+  height: 14px;
+  color: var(--ap-sapphire);
+  vertical-align: 0;
+}
+
+#app #codex #codex-list .codex-section-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 4px 2px 10px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.13);
+  font-size: 12.5px;
+  color: var(--ap-ink-body);
+}
+
+#app #codex #codex-list .codex-section-bar b {
+  color: var(--ap-sapphire);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+#app #codex #codex-list .codex-sec-hint {
+  font-size: 12px;
+  color: var(--ap-ink-muted);
+}
+
+/* 10.1 CG 画廊 (D13 · 2px 美术馆展板) */
+.codex-cg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(226px, 1fr));
+  gap: 13px;
+}
+
+#app #codex #codex-list .codex-cg-card {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border-radius: var(--ap-radius-sm);
+  overflow: hidden;
+  text-align: left;
+  background: var(--ap-surface);
+  border: 1px solid rgba(27, 35, 51, 0.14);
+  color: var(--ap-ink);
+  box-shadow: 0 4px 14px -10px rgba(18, 24, 34, 0.12);
+  transition: transform 0.18s var(--ap-ease), border-color 0.18s var(--ap-ease), box-shadow 0.18s var(--ap-ease);
+}
+
+#app #codex #codex-list .codex-cg-card.unlocked {
+  cursor: pointer;
+}
+
+#app #codex #codex-list .codex-cg-card.unlocked:hover {
+  transform: translateY(-2px);
+  border-color: var(--ap-sapphire);
+  box-shadow: 0 12px 26px -12px rgba(18, 24, 34, 0.18);
+}
+
+#app #codex #codex-list .codex-cg-card.locked {
+  border-style: solid;
+  border-color: rgba(27, 35, 51, 0.10);
+  background: rgba(244, 247, 252, 0.56);
+  color: #526078;
+  box-shadow: none;
+  cursor: default;
+}
+
+#app #codex #codex-list .cg-thumb-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--ap-surface-tint);
+}
+
+.cg-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s var(--ap-ease);
+}
+
+#app #codex #codex-list .codex-cg-card.unlocked:hover .cg-thumb-img {
+  transform: scale(1.04);
+}
+
+#app #codex #codex-list .cg-pending-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  padding: 3px 8px;
+  border-radius: var(--ap-radius-sm);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: rgba(250, 251, 253, 0.94);
+  border: 1px solid rgba(26, 110, 181, 0.36);
+  color: var(--ap-azure);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 3px 10px -4px rgba(18, 24, 34, 0.16);
+}
+
+#app #codex #codex-list .cg-zoom-badge {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 3px 8px;
+  border-radius: var(--ap-radius-sm);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: var(--ap-sapphire);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px -4px rgba(18, 24, 34, 0.26);
+  opacity: 0;
+  transition: opacity 0.18s var(--ap-ease);
+}
+
+#app #codex #codex-list .codex-cg-card.unlocked:hover .cg-zoom-badge {
+  opacity: 1;
+}
+
+#app #codex #codex-list .cg-thumb-wrap.locked-veil {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  text-align: center;
+  background: linear-gradient(155deg, rgba(248, 250, 254, 0.88) 0%, rgba(238, 243, 250, 0.72) 100%);
+}
+
+#app #codex #codex-list .cg-lock-sigil {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--ap-radius-sm);
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  color: #526078;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(27, 35, 51, 0.12);
+  box-shadow: none;
+}
+
+#app #codex #codex-list .cg-lock-label {
+  font-size: 12px;
+  line-height: 1.48;
+  color: #526078;
+  font-weight: 500;
+}
+
+.cg-card-foot {
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid rgba(27, 35, 51, 0.08);
+}
+
+#app #codex #codex-list .cg-vol-pill {
+  align-self: flex-start;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  color: #1C4CB8;
+}
+
+#app #codex #codex-list .codex-cg-card.locked .cg-vol-pill {
+  color: #526078;
+}
+
+#app #codex #codex-list .cg-card-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ap-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#app #codex #codex-list .codex-cg-card.locked .cg-card-title {
+  color: #526078;
+  font-weight: 600;
+}
+
+/* 10.2 BGM 音乐室 (D13a · 无边框 1px 细线曲目行 + GPU scaleY 均衡器) */
+#app #codex #codex-list .bgm-now-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 13px 16px;
+  margin-bottom: 16px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface);
+  background-image: none;
+  border: 1px solid rgba(27, 35, 51, 0.14);
+  border-top: 1px solid var(--ap-sapphire);
+  color: var(--ap-ink);
+  box-shadow: none;
+}
+
+.bgm-now-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.bgm-now-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+#app #codex #codex-list .bgm-now-kicker {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ap-sapphire);
+}
+
+#app #codex #codex-list .bgm-now-text b {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ap-ink);
+}
+
+.bgm-now-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+#app #codex #codex-list .bgm-track-idx {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface-tint);
+  border: 1px solid rgba(27, 35, 51, 0.14);
+  color: var(--ap-ink-sub);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+}
+
+#app #codex #codex-list .bgm-track-idx.is-playing {
+  background: var(--ap-sky-tint);
+  border-color: var(--ap-sapphire);
+  color: var(--ap-sapphire);
+}
+
+#app #codex #codex-list #bgm-room-stop {
+  flex: 0 0 auto;
+  padding: 6px 13px;
+  border-radius: var(--ap-radius-sm);
+  border: 1px solid rgba(27, 35, 51, 0.22);
+  background: transparent;
+  color: var(--ap-ink);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 0.16s var(--ap-ease), border-color 0.16s var(--ap-ease), color 0.16s var(--ap-ease);
+}
+
+#app #codex #codex-list #bgm-room-stop:hover:not(:disabled) {
+  background: var(--ap-sapphire);
+  border-color: var(--ap-sapphire);
+  color: #FFFFFF;
+}
+
+#app #codex #codex-list #bgm-room-stop:disabled {
+  opacity: 0.46;
+  background: var(--ap-surface-tint);
+  border-color: rgba(27, 35, 51, 0.12);
+  color: var(--ap-ink-muted);
+  cursor: not-allowed;
+}
+
+#app #codex #codex-list .bgm-groups-wrap {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 18px 26px;
+}
+
+#app #codex #codex-list .bgm-room-group {
+  padding: 2px 0 8px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+#app #codex #codex-list .bgm-group-head {
+  font-family: "Noto Serif SC", serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ap-ink);
+  padding-bottom: 7px;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.18);
+}
+
+#app #codex #codex-list .bgm-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+#app #codex #codex-list .bgm-track-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 6px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.10);
+  box-shadow: none;
+  transition: border-color 0.16s var(--ap-ease), background 0.16s var(--ap-ease);
+}
+
+#app #codex #codex-list .bgm-track-row:hover {
+  background: rgba(28, 76, 184, 0.04);
+  border: none;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.18);
+}
+
+#app #codex #codex-list .bgm-track-row.active {
+  background: rgba(28, 76, 184, 0.06);
+  border: none;
+  border-bottom: 1px solid var(--ap-sapphire);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+#app #codex #codex-list .bgm-play-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: var(--ap-radius-sm);
+  border: none;
+  background: transparent;
+  color: #526078;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: none;
+  transition: background 0.16s var(--ap-ease), color 0.16s var(--ap-ease);
+}
+
+.bgm-play-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+#app #codex #codex-list .bgm-play-btn:hover {
+  border: none;
+  background: rgba(28, 76, 184, 0.06);
+  color: #1C4CB8;
+}
+
+#app #codex #codex-list .bgm-track-row.active .bgm-play-btn,
+#app #codex #codex-list .bgm-track-row.active .bgm-play-btn:hover {
+  border: 1px solid var(--ap-sapphire-deep);
+  background: #1C4CB8;
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+.bgm-track-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+#app #codex #codex-list .bgm-track-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ap-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#app #codex #codex-list .bgm-track-sub {
+  font-size: 11.5px;
+  color: var(--ap-ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bgm-wave {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2.5px;
+  height: 18px;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+#app #codex #codex-list .bgm-wave i,
+.bgm-wave i {
+  display: block;
+  width: 2.5px;
+  height: 4px;
+  border-radius: 1px;
+  background: linear-gradient(180deg, var(--ap-cyan), var(--ap-sapphire));
+  opacity: 0.36;
+  transform-origin: bottom center;
+  will-change: transform;
+  transition: height 0.2s var(--ap-ease), transform 0.2s var(--ap-ease), opacity 0.2s var(--ap-ease);
+}
+
+#app #codex #codex-list .bgm-wave.playing i,
+.bgm-wave.playing i {
+  opacity: 1;
+  transform-origin: bottom center;
+  animation: bgmWaveScale 0.92s cubic-bezier(0.22, 1, 0.36, 1) infinite alternate;
+}
+
+#app #codex #codex-list .bgm-wave.playing i:nth-child(1),
+.bgm-wave.playing i:nth-child(1) { height: 9px; animation-delay: 0s; }
+#app #codex #codex-list .bgm-wave.playing i:nth-child(2),
+.bgm-wave.playing i:nth-child(2) { height: 16px; animation-delay: 0.16s; }
+#app #codex #codex-list .bgm-wave.playing i:nth-child(3),
+.bgm-wave.playing i:nth-child(3) { height: 11px; animation-delay: 0.32s; }
+#app #codex #codex-list .bgm-wave.playing i:nth-child(4),
+.bgm-wave.playing i:nth-child(4) { height: 18px; animation-delay: 0.12s; }
+#app #codex #codex-list .bgm-wave.playing i:nth-child(5),
+.bgm-wave.playing i:nth-child(5) { height: 8px; animation-delay: 0.28s; }
+
+@keyframes bgmWaveScale {
+  0% { transform: scaleY(0.42); }
+  55% { transform: scaleY(1); }
+  100% { transform: scaleY(0.62); }
+}
+
+/* 10.3 成就墙 (2px 扁平雪瓷展板 + 2px 细线进度轨) */
+#app #codex #codex-list .ach-progress-wrap {
+  padding: 4px 2px 13px;
+  margin-bottom: 14px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.13);
+}
+
+#app #codex #codex-list .ach-progress-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--ap-ink-body);
+}
+
+#app #codex #codex-list .ach-progress-head b {
+  color: var(--ap-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+#app #codex #codex-list .ach-progress-pct {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ap-sapphire);
+  font-variant-numeric: tabular-nums;
+}
+
+#app #codex #codex-list .ach-progress-bar {
+  position: relative;
+  height: 2px;
+  border-radius: 0;
+  background: rgba(27, 35, 51, 0.14);
+  border: none;
+  overflow: hidden;
+}
+
+#app #codex #codex-list .ach-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 0;
+  background: linear-gradient(90deg, var(--ap-sapphire), var(--ap-cyan));
+  box-shadow: none;
+  transition: width 0.3s var(--ap-ease);
+}
+
+.ach-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
+  gap: 10px;
+}
+
+#app #codex #codex-list .ach-card {
+  padding: 12px 14px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface);
+  border: 1px solid rgba(27, 35, 51, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--ap-ink-body);
+  box-shadow: none;
+}
+
+#app #codex #codex-list .ach-card.unlocked {
+  border: 1px solid var(--ap-sapphire);
+  background: var(--ap-surface);
+  box-shadow: var(--ap-shadow-card);
+}
+
+#app #codex #codex-list .ach-card.locked {
+  opacity: 0.78;
+  background: #F5F7FB;
+  border: 1px dashed rgba(27, 35, 51, 0.20);
+  box-shadow: none;
+}
+
+.ach-card-top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+#app #codex #codex-list .ach-badge {
+  color: var(--ap-sapphire);
+  font-size: 13px;
+}
+
+#app #codex #codex-list .ach-card-top b {
+  font-size: 13px;
+  color: var(--ap-ink);
+}
+
+#app #codex #codex-list .ach-reward-pill {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-sapphire);
+  color: #FFFFFF;
+}
+
+#app #codex #codex-list .ach-desc {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.54;
+  color: var(--ap-ink-muted);
+}
+
+/* 10.4 信物手札与暖雪瓷信笺卡片 */
+.memento-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 11px;
+}
+
+#app #codex #codex-list .memento-card {
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface);
+  border: 1px solid rgba(27, 35, 51, 0.14);
+  overflow: hidden;
+  box-shadow: none;
+  transition: border-color 0.18s var(--ap-ease), box-shadow 0.18s var(--ap-ease);
+}
+
+#app #codex #codex-list .memento-card.unlocked {
+  border-color: rgba(27, 35, 51, 0.22);
+}
+
+#app #codex #codex-list .memento-card.unlocked.expanded {
+  border-color: var(--ap-sapphire);
+  box-shadow: 0 8px 22px -12px rgba(18, 24, 34, 0.14);
+}
+
+#app #codex #codex-list .memento-card.locked {
+  padding: 12px 14px;
+  opacity: 0.78;
+  background: #F5F7FB;
+  border: 1px dashed rgba(27, 35, 51, 0.20);
+}
+
+.memento-head,
+.memento-toggle-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+
+#app #codex #codex-list .memento-toggle-btn {
+  padding: 12px 14px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.16s var(--ap-ease);
+}
+
+#app #codex #codex-list .memento-toggle-btn:hover {
+  background: var(--ap-surface-tint);
+}
+
+.memento-ico {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.memento-titles {
+  flex: 1;
+  min-width: 0;
+}
+
+#app #codex #codex-list .memento-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ap-ink);
+}
+
+#app #codex #codex-list .memento-owner {
+  font-size: 11.5px;
+  color: var(--ap-ink-muted);
+  margin-top: 2px;
+}
+
+#app #codex #codex-list .memento-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface-tint);
+  border: 1px solid rgba(27, 35, 51, 0.14);
+  color: var(--ap-ink-muted);
+  white-space: nowrap;
+}
+
+.memento-chev {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+#app #codex #codex-list .memento-pill.open {
+  background: var(--ap-sapphire);
+  border: 1px solid var(--ap-sapphire);
+  color: #FFFFFF;
+}
+
+#app #codex #codex-list .memento-lock-hint {
+  margin: 7px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ap-ink-muted);
+}
+
+#app #codex #codex-list .memento-stationery {
+  margin: 0 12px 12px;
+  padding: 15px 18px 14px;
+  border-radius: var(--ap-radius-sm);
+  border: 1px solid rgba(27, 35, 51, 0.16);
+  background: var(--ap-canvas);
+  background-image: none;
+  box-shadow: none;
+  font-family: "Noto Serif SC", serif;
+  color: var(--ap-ink-body);
+  position: relative;
+}
+
+#app #codex #codex-list .ms-crest {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 15px;
+  color: rgba(28, 76, 184, 0.34);
+}
+
+#app #codex #codex-list .ms-salutation {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ap-sapphire);
+  margin-bottom: 6px;
+}
+
+#app #codex #codex-list .ms-body {
+  font-size: 13px;
+  line-height: 1.78;
+  color: var(--ap-ink);
+}
+
+#app #codex #codex-list .ms-sign {
+  margin-top: 8px;
+  text-align: right;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ap-sapphire);
+  letter-spacing: 0.06em;
+}
+
+#app #codex #codex-list .ms-note {
+  margin-top: 9px;
+  padding-top: 7px;
+  border-top: 1px dashed rgba(27, 35, 51, 0.16);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ap-ink-muted);
+  font-family: sans-serif;
+}
+
+/* 10.5 第五页签 · 终幕典藏 (D13b Endings Album) */
+.endings-album {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#app #codex #codex-list .ending-tendency-banner {
+  position: relative;
+  overflow: hidden;
+  padding: 16px 18px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface);
+  background-image: none;
+  border: 1px solid rgba(27, 35, 51, 0.14);
+  border-top: 1px solid var(--ap-sapphire);
+  box-shadow: var(--ap-shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--ap-ink-body);
+}
+
+.etb-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.etb-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-sapphire);
+  color: #FFFFFF;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.etb-head-right {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.etb-confidence {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ap-azure);
+  padding: 2px 8px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface-tint);
+  border: 1px solid rgba(26, 110, 181, 0.28);
+  font-variant-numeric: tabular-nums;
+}
+
+.etb-career-proj {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ap-ink-sub);
+}
+
+.etb-title {
+  margin: 0;
+  font-family: "Noto Serif SC", serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ap-ink);
+  letter-spacing: 0.04em;
+}
+
+.etb-sub {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ap-sapphire);
+}
+
+.etb-summary {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.66;
+  color: var(--ap-ink-body);
+}
+
+.etb-meter-track {
+  position: relative;
+  width: 100%;
+  height: 2px;
+  border-radius: 0;
+  background: rgba(27, 35, 51, 0.14);
+  overflow: hidden;
+}
+
+.etb-meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: 0;
+  background: linear-gradient(90deg, var(--ap-sapphire) 0%, var(--ap-cyan) 100%);
+  transition: width 0.35s var(--ap-ease);
+}
+
+.etb-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding-top: 2px;
+}
+
+.etb-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-surface-tint);
+  border: 1px solid rgba(27, 35, 51, 0.13);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ap-ink-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.codex-sub-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.14);
+  font-family: "Noto Serif SC", serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ap-ink);
+  letter-spacing: 0.05em;
+}
+
+.codex-sub-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.codex-sub-title .vn-inline-ico {
+  width: 14px;
+  height: 14px;
+  color: var(--ap-sapphire);
+  vertical-align: 0;
+}
+
+.codex-sub-count {
+  font-style: normal;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--ap-radius-sm);
+  background: transparent;
+  border: 1px solid rgba(27, 35, 51, 0.16);
+  color: var(--ap-sapphire);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 羁绊终幕双列去盒子化细线编目行 */
+.ending-bond-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 24px;
+}
+
+#app #codex #codex-list .ending-bond-card {
+  --route-accent: var(--ap-sapphire);
+  --route-accent-tint: rgba(28, 76, 184, 0.16);
+  position: relative;
+  overflow: hidden;
+  padding: 13px 4px 14px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.12);
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  transition: border-color 0.18s var(--ap-ease), background 0.18s var(--ap-ease);
+}
+
+#app #codex #codex-list .ending-bond-card[data-route-accent="cobalt"] {
+  --route-accent: #1C4CB8;
+  --route-accent-tint: rgba(28, 76, 184, 0.16);
+}
+
+#app #codex #codex-list .ending-bond-card[data-route-accent="glacier"] {
+  --route-accent: #1A6EB5;
+  --route-accent-tint: rgba(26, 110, 181, 0.16);
+}
+
+#app #codex #codex-list .ending-bond-card[data-route-accent="emerald"] {
+  --route-accent: #0B6E5C;
+  --route-accent-tint: rgba(11, 110, 92, 0.16);
+}
+
+#app #codex #codex-list .ending-bond-card[data-route-accent="rose"] {
+  --route-accent: #C42544;
+  --route-accent-tint: rgba(196, 37, 68, 0.16);
+}
+
+#app #codex #codex-list .ending-bond-card[data-route-accent="silver"] {
+  --route-accent: #526078;
+  --route-accent-tint: rgba(82, 96, 120, 0.16);
+}
+
+#app #codex #codex-list .ending-bond-card.unlocked {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.12);
+  border-radius: 0;
+  color: var(--ap-ink);
+  box-shadow: none;
+}
+
+#app #codex #codex-list .ending-bond-card.unlocked:hover {
+  border-bottom-color: var(--ap-sapphire);
+  background: rgba(28, 76, 184, 0.025);
+  box-shadow: none;
+  transform: none;
+}
+
+#app #codex #codex-list .ending-bond-card.locked {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.12);
+  border-radius: 0;
+  color: #526078;
+  box-shadow: none;
+}
+
+.ebc-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+#app #codex #codex-list .ending-bond-card .ebc-ico,
+.ebc-ico {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  border-radius: 0;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  background: transparent;
+  border: none;
+  color: var(--route-accent);
+  margin-top: 2px;
+}
+
+#app #codex #codex-list .ending-bond-card.locked .ebc-ico,
+.ending-bond-card.locked .ebc-ico {
+  background: transparent;
+  border: none;
+  color: #526078;
+}
+
+.ebc-seal-dot {
+  display: none;
+}
+
+.ebc-titles {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+#app #codex #codex-list .ending-bond-card .ebc-badge,
+.ebc-badge {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  color: var(--route-accent);
+}
+
+.ebc-accent-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--route-accent);
+  flex-shrink: 0;
+}
+
+#app #codex #codex-list .ending-bond-card.locked .ebc-badge,
+.ending-bond-card.locked .ebc-badge {
+  background: transparent;
+  border: none;
+  color: #526078;
+}
+
+.ebc-title {
+  margin: 0;
+  font-family: "Noto Serif SC", serif;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ap-ink);
+  line-height: 1.35;
+}
+
+#app #codex #codex-list .ending-bond-card.locked .ebc-title,
+.ending-bond-card.locked .ebc-title {
+  color: var(--ap-ink-body);
+}
+
+#app #codex #codex-list .ending-bond-card .ebc-status-pill,
+.ebc-status-pill {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 0;
+  border-radius: 0;
+  white-space: nowrap;
+  background: transparent;
+  border: none;
+  color: var(--ap-emerald);
+}
+
+#app #codex #codex-list .ending-bond-card.locked .ebc-status-pill,
+.ending-bond-card.locked .ebc-status-pill {
+  background: transparent;
+  border: none;
+  color: #526078;
+  font-weight: 600;
+}
+
+.ebc-sub {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ap-ink-body);
+  line-height: 1.52;
+}
+
+.ebc-hint,
+.ending-bond-card.locked .ebc-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.58;
+  color: #526078;
+}
+
+.ebc-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 4px;
+  border-top: none;
+}
+
+.ebc-time {
+  font-size: 11.5px;
+  color: #526078;
+  font-variant-numeric: tabular-nums;
+}
+
+.ending-replay-btn {
+  padding: 5px 12px;
+  border-radius: var(--ap-radius-sm);
+  border: 1px solid rgba(27, 35, 51, 0.22);
+  background: transparent;
+  color: var(--ap-ink);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.16s var(--ap-ease), border-color 0.16s var(--ap-ease), color 0.16s var(--ap-ease);
+}
+
+.ending-replay-btn:hover,
+.ending-replay-btn.open,
+.ending-replay-btn[aria-expanded="true"] {
+  background: var(--ap-sapphire);
+  border-color: var(--ap-sapphire);
+  color: #FFFFFF;
+}
+
+.ebc-epilogue-box {
+  margin-top: 4px;
+  padding: 13px 15px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-canvas);
+  border: 1px solid rgba(27, 35, 51, 0.14);
+  font-family: "Noto Serif SC", serif;
+  font-size: 13px;
+  line-height: 1.76;
+  color: var(--ap-ink);
+}
+
+/* 归宿 / 事业印记三列展板 */
+.ending-career-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+#app #codex #codex-list .ending-career-stamp {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 13px;
+  border-radius: var(--ap-radius-sm);
+  transition: border-color 0.16s var(--ap-ease);
+}
+
+#app #codex #codex-list .ending-career-stamp.unlocked {
+  background: var(--ap-surface);
+  border: 1px solid rgba(27, 35, 51, 0.15);
+  color: var(--ap-ink);
+  box-shadow: none;
+}
+
+#app #codex #codex-list .ending-career-stamp.locked {
+  background: #FAFBFD;
+  border: 1px dashed rgba(27, 35, 51, 0.18);
+  color: #526078;
+}
+
+.ecs-seal {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ap-radius-sm);
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  background: var(--ap-surface-tint);
+  border: 1px solid rgba(28, 76, 184, 0.30);
+  color: var(--ap-sapphire);
+}
+
+#app #codex #codex-list .ending-career-stamp.locked .ecs-seal,
+.ending-career-stamp.locked .ecs-seal {
+  background: var(--ap-surface);
+  border: 1px solid rgba(27, 35, 51, 0.16);
+  color: #526078;
+}
+
+.ecs-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ecs-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ap-ink);
+  line-height: 1.35;
+}
+
+#app #codex #codex-list .ending-career-stamp.locked .ecs-title,
+.ending-career-stamp.locked .ecs-title {
+  color: var(--ap-ink-body);
+}
+
+.ecs-hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #526078;
+}
+
+.ecs-status {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--ap-radius-sm);
+  background: var(--ap-sky-tint);
+  color: var(--ap-sapphire);
+}
+
+#app #codex #codex-list .ending-career-stamp.locked .ecs-status,
+.ending-career-stamp.locked .ecs-status {
+  color: #4A5D7A;
+  background: transparent;
+  border: 1px solid rgba(27, 35, 51, 0.16);
+}
+
+/* 命运倾向轴带（扁平去框 + 1px 细线分隔 + 2px 细轨 + 蓝宝菱形指针） */
+#app #codex #codex-list .ending-arcs-strip {
+  padding: 4px 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ending-arcs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 6px 22px;
+}
+
+#app #codex #codex-list .ending-arc-card {
+  padding: 10px 4px 12px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.eac-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.eac-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ap-ink);
+}
+
+.eac-dominant {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: var(--ap-radius-sm);
+  background: transparent;
+  border: 1px solid rgba(28, 76, 184, 0.24);
+  color: var(--ap-sapphire);
+}
+
+.eac-poles {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--ap-ink-muted);
+}
+
+.eac-pole-left {
+  text-align: left;
+}
+
+.eac-pole-right {
+  text-align: right;
+}
+
+.eac-bar {
+  position: relative;
+  width: 100%;
+  height: 2px;
+  border-radius: 0;
+  background: rgba(27, 35, 51, 0.16);
+  overflow: visible;
+  margin: 4px 0 2px;
+}
+
+.eac-bar-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 0;
+  background: linear-gradient(90deg, var(--ap-sapphire) 0%, var(--ap-cyan) 100%);
+  transition: width 0.3s var(--ap-ease), left 0.3s var(--ap-ease);
+}
+
+.eac-bar-marker {
+  position: absolute;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  border-radius: 1px;
+  background: var(--ap-sapphire);
+  border: 1px solid #FFFFFF;
+  transform: translate(-50%, -50%) rotate(45deg);
+  box-shadow: 0 2px 6px rgba(18, 24, 34, 0.22);
+}
+
+/* ---------- 11. 响应式布局、移动端停靠、触控人体工学与降动效护栏 ---------- */
+@media (hover: none) {
+  #app #codex #codex-list .codex-cg-card.unlocked .cg-zoom-badge {
+    opacity: 1;
+  }
+
+  #app section#game-screen #text-box .tb-backlog-btn .vn-key-hint,
+  .vn-key-hint {
+    display: none !important;
+  }
+}
+
+@media (max-width: 820px) {
+  .rel-slots-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #app #codex #codex-list .bgm-groups-wrap,
+  .memento-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ending-career-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #app #codex .modal-head,
+  body section#vn-backlog-modal.overlay .vn-modal-head,
+  body section#vn-saveload-modal.overlay .vn-modal-head,
+  body section#vn-chapters-modal.overlay .vn-modal-head,
+  body section#vn-prefs-modal.overlay .vn-modal-head,
+  body section#rumor-overlay.overlay .rumor-head,
+  body section#arena-loadout-modal.overlay .rumor-head,
+  body section#arena-loadout-modal.overlay .end-card.rumor-card .rumor-head {
+    padding: 14px 16px 13px 18px;
+  }
+
+  body section#vn-backlog-modal.overlay .vn-modal-scroll,
+  body section#vn-saveload-modal.overlay .vn-modal-scroll,
+  body section#vn-chapters-modal.overlay .vn-modal-scroll,
+  body section#vn-prefs-modal.overlay .vn-modal-scroll,
+  body section#rumor-overlay.overlay .rumor-scroll {
+    padding: 14px 16px 20px;
+  }
+
+  body section#arena-loadout-modal.overlay .rumor-scroll {
+    padding: 14px 16px 32px;
+  }
+
+  body section#rumor-overlay.overlay .end-card.rumor-card .rumor-story-box {
+    margin: 14px 16px 10px;
+  }
+
+  body section#rumor-overlay.overlay .end-card.rumor-card .rumor-choices-col {
+    padding: 4px 16px 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* 移动端将阅读控制簇与回看按钮停靠至对话框右上沿之外，彻底杜绝遮挡人名牌与第一行台词 */
+  #app section#game-screen #text-box button.tb-backlog-btn,
+  #app section#game-screen #text-box .tb-backlog-btn,
+  #app section#game-screen #text-box #tb-backlog-btn {
+    top: auto;
+    bottom: calc(100% + 6px);
+    right: 10px;
+    height: auto;
+    min-height: 34px;
+    padding: 0 11px;
+    font-size: 12px;
+  }
+
+  #app section#game-screen #text-box .vn-read-controls {
+    top: auto;
+    bottom: calc(100% + 6px);
+    right: 90px;
+    padding: 2px 3px;
+    gap: 2px;
+  }
+
+  body.ai-drawer-open #app section#game-screen #text-box button.tb-backlog-btn,
+  body.ai-drawer-open #app section#game-screen #text-box .tb-backlog-btn,
+  body.ai-drawer-open #app section#game-screen #text-box #tb-backlog-btn {
+    right: 10px;
+  }
+
+  body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
+    right: 90px;
+  }
+
+  #app section#game-screen #text-box .vn-ctrl-btn {
+    height: auto;
+    min-height: 28px;
+    padding: 0 8px;
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+  }
+
+  #app section#game-screen #text-box .vn-ctrl-btn.vn-ctrl-icon {
+    width: 28px;
+    min-height: 28px;
+  }
+
+  #app #codex .end-card.modal-shell > .modal-scroll,
+  #app #codex .codex-scroll,
+  #app #codex #codex-body {
+    padding: 12px 16px 36px;
+  }
+
+  #app #codex #codex-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-right: 20px;
+    -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 24px), transparent 100%);
+    mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 24px), transparent 100%);
+  }
+
+  #app #codex #codex-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  #app #codex #codex-tabs .ptab.codex-tab-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    min-height: 42px;
+  }
+
+  /* 移动端弹窗尺寸与 44px 关闭按钮 */
+  #app #codex .end-card.modal-shell,
+  body section#vn-backlog-modal.overlay .end-card.vn-modal-card,
+  body section#vn-saveload-modal.overlay .end-card.vn-modal-card,
+  body section#vn-chapters-modal.overlay .end-card.vn-modal-card,
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card,
+  body section#rumor-overlay.overlay .end-card.rumor-card,
+  body section#arena-loadout-modal.overlay .end-card.rumor-card {
+    width: min(95vw, 840px);
+    max-height: 92vh;
+    max-height: 92dvh;
+  }
+
+  #app #codex .modal-head .modal-close-x,
+  body section#vn-backlog-modal.overlay .vn-modal-head .modal-close-x,
+  body section#vn-saveload-modal.overlay .vn-modal-head .modal-close-x,
+  body section#vn-chapters-modal.overlay .vn-modal-head .modal-close-x,
+  body section#vn-prefs-modal.overlay .vn-modal-head .modal-close-x,
+  body section#rumor-overlay.overlay .rumor-head .modal-close-x,
+  body section#arena-loadout-modal.overlay .rumor-head .modal-close-x {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+  }
+
+  body section#vn-backlog-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn,
+  body section#vn-saveload-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn,
+  body section#vn-chapters-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn,
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn,
+  body section#rumor-overlay.overlay .end-card.rumor-card .rumor-head .tbtn,
+  body section#arena-loadout-modal.overlay .end-card.rumor-card .rumor-head .tbtn,
+  .sl-btn,
+  body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-btn,
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .sl-btn,
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-seg-btn,
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-toggle,
+  #app #codex #codex-list #bgm-room-stop,
+  #app #codex #codex-list .bgm-play-btn,
+  .ending-replay-btn {
+    min-height: 42px;
+  }
+
+  .ending-bond-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 520px), (max-width: 768px) {
+  /* 移动端横竖屏 CG 灯箱允许纵向平滑滚动，避免画作与说明互相裁切 */
+  #cg-lightbox {
+    overflow-y: auto;
+    align-items: flex-start;
+    justify-content: center;
+    padding: max(64px, calc(env(safe-area-inset-top) + 48px)) max(14px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  }
+
+  .cg-lb-inner {
+    max-height: none;
+    width: 100%;
+    padding-bottom: 12px;
+  }
+
+  .cg-lb-img {
+    max-width: 100%;
+    max-height: 64vh;
+  }
+
+  .cg-lb-caption {
+    width: 100%;
+    max-width: 720px;
+    padding: 12px 16px;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-height: 520px) {
+  #app section#game-screen #text-box button.tb-backlog-btn,
+  #app section#game-screen #text-box .tb-backlog-btn,
+  #app section#game-screen #text-box #tb-backlog-btn {
+    top: auto;
+    bottom: calc(100% + 5px);
+    right: 12px;
+    height: auto;
+    min-height: 34px;
+    padding: 0 11px;
+    font-size: 12px;
+  }
+
+  #app section#game-screen #text-box .vn-read-controls {
+    top: auto;
+    bottom: calc(100% + 5px);
+    right: 92px;
+  }
+
+  #app #codex .end-card.modal-shell,
+  body section#vn-backlog-modal.overlay .end-card.vn-modal-card,
+  body section#vn-saveload-modal.overlay .end-card.vn-modal-card,
+  body section#vn-chapters-modal.overlay .end-card.vn-modal-card,
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card,
+  body section#rumor-overlay.overlay .end-card.rumor-card,
+  body section#arena-loadout-modal.overlay .end-card.rumor-card {
+    max-height: 94vh;
+    max-height: calc(100dvh - 16px);
+  }
+
+  #app #codex .modal-head,
+  body section#vn-backlog-modal.overlay .vn-modal-head,
+  body section#vn-saveload-modal.overlay .vn-modal-head,
+  body section#vn-chapters-modal.overlay .vn-modal-head,
+  body section#vn-prefs-modal.overlay .vn-modal-head,
+  body section#rumor-overlay.overlay .rumor-head,
+  body section#arena-loadout-modal.overlay .rumor-head {
+    padding: 10px 16px 10px 18px;
+  }
+
+  #app #codex .modal-head h2,
+  body section#vn-backlog-modal.overlay .vn-modal-head h2,
+  body section#vn-saveload-modal.overlay .vn-modal-head h2,
+  body section#vn-chapters-modal.overlay .vn-modal-head h2,
+  body section#vn-prefs-modal.overlay .vn-modal-head h2,
+  body section#rumor-overlay.overlay .rumor-head h2,
+  body section#arena-loadout-modal.overlay .rumor-head h2 {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .cg-lb-stage {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .cg-lb-frame {
+    order: 1;
+    flex: 1 1 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .cg-lb-nav {
+    order: 2;
+  }
+}
+
+@media (max-width: 520px) {
+  #app section#game-screen #text-box button.tb-backlog-btn,
+  #app section#game-screen #text-box .tb-backlog-btn,
+  #app section#game-screen #text-box #tb-backlog-btn {
+    right: 8px;
+    padding: 0 10px;
+    font-size: 12px;
+    gap: 5px;
+  }
+
+  #app section#game-screen #text-box .vn-read-controls {
+    right: 88px;
+    padding: 2px;
+    gap: 2px;
+  }
+
+  #app section#game-screen #text-box .vn-ctrl-btn {
+    padding: 0 7px;
+    font-size: 11.5px;
+  }
+
+  #app section#game-screen #text-box .vn-ctrl-btn.vn-ctrl-icon {
+    width: 28px;
+  }
+
+  .ending-career-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .prefs-slider-wrap {
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+  }
+
+  .sl-grid,
+  .chap-quick-grid,
+  .rel-cards-grid,
+  .bond-grid,
+  .codex-cg-grid,
+  .ach-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .etb-career-proj {
+    margin-left: 0;
+  }
+}
+
+@media (pointer: coarse) {
+  /* 触控设备增大蓝宝菱形滑块与所有弹窗交互目标，保障单手操作精度 */
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-slider {
+    height: 2px;
+    margin: 14px 0;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-slider::-moz-range-track {
+    height: 2px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-slider::-webkit-slider-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 2px;
+    border-width: 2px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 2px;
+    border-width: 2px;
+  }
+
+  #app #codex .modal-head .modal-close-x,
+  body section#vn-backlog-modal.overlay .vn-modal-head .modal-close-x,
+  body section#vn-saveload-modal.overlay .vn-modal-head .modal-close-x,
+  body section#vn-chapters-modal.overlay .vn-modal-head .modal-close-x,
+  body section#vn-prefs-modal.overlay .vn-modal-head .modal-close-x,
+  body section#rumor-overlay.overlay .rumor-head .modal-close-x,
+  body section#arena-loadout-modal.overlay .rumor-head .modal-close-x,
+  .cg-lb-close,
+  .cg-lb-nav {
+    width: 44px;
+    height: 44px;
+  }
+
+  body section#vn-backlog-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn,
+  body section#vn-saveload-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn,
+  body section#vn-chapters-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn,
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .vn-modal-head .tbtn,
+  body section#rumor-overlay.overlay .end-card.rumor-card .rumor-head .tbtn,
+  body section#arena-loadout-modal.overlay .end-card.rumor-card .rumor-head .tbtn,
+  body section#rumor-overlay.overlay .end-card.rumor-card .end-btns .tbtn,
+  body section#rumor-overlay.overlay .end-card.rumor-card .roc-go-btn,
+  body section#rumor-overlay.overlay .end-card.rumor-card .rumor-choice-btn,
+  .sl-btn,
+  body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-btn,
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .sl-btn,
+  body section#vn-chapters-modal.overlay .end-card.vn-modal-card .chap-row,
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-seg-btn,
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-toggle,
+  .rel-mini-btn,
+  .rel-act-btn,
+  #app #codex #codex-tabs .ptab.codex-tab-btn,
+  #app #codex #codex-list #bgm-room-stop,
+  #app #codex #codex-list .bgm-play-btn,
+  #app #codex #codex-list .memento-toggle-btn,
+  .ending-replay-btn {
+    min-height: 42px;
+  }
+
+  #app section#game-screen #text-box button.tb-backlog-btn,
+  #app section#game-screen #text-box .tb-backlog-btn,
+  #app section#game-screen #text-box #tb-backlog-btn {
+    height: auto;
+    min-height: 40px;
+    font-size: 12px;
+  }
+
+  #app section#game-screen #text-box .vn-ctrl-btn {
+    min-height: 34px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app #codex #codex-list .bgm-wave.playing i,
+  .bgm-wave.playing i {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .sl-btn.del.confirming,
+  body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-btn.del.confirming {
+    animation: none !important;
+  }
+
+  body section#vn-backlog-modal *,
+  body section#vn-saveload-modal *,
+  body section#vn-chapters-modal *,
+  body section#vn-prefs-modal *,
+  body section#rumor-overlay *,
+  body section#arena-loadout-modal *,
+  #cg-lightbox *,
+  #app #codex *,
+  #app section#game-screen #text-box .vn-ctrl-btn,
+  #app section#game-screen #text-box .tb-backlog-btn {
+    transition: none !important;
+  }
+}

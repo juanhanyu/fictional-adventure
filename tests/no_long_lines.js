@@ -4,7 +4,7 @@ const fs=require('fs'); const path=require('path');
 const CHARS=45, MAX=3;
 let fail=0;
 function est(t){let n=0;for(const x of String(t).split('\\n')){n+=Math.max(1,Math.ceil(x.length/CHARS));}return n;}
-const ROOT=path.join(__dirname,'..'); const files=[path.join(ROOT,'js/story.js'),path.join(ROOT,'game.js')];
+const ROOT=path.join(__dirname,'..'); const files=[path.join(ROOT,'js/story.js'),path.join(ROOT,'js/story-vol3.js'),path.join(ROOT,'game.js'),path.join(ROOT,'js/branching-director.js')];
 for(const file of files){
   const src=fs.readFileSync(file,'utf8');
   const re=/'((?:[^'\\]|\\.)*)'/g;

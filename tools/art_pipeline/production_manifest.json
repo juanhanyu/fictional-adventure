@@ -1,0 +1,581 @@
+{
+  "version": 1,
+  "project": "fictional-adventure (Vol 2.5 - Vol 3 Art Pipeline)",
+  "drive_manifest_file_id": "1LpOzcrmG5DBZaqHuH6OWribtewwuT9a2",
+  "created_at": "2026-11-23T12:23:24Z",
+  "updated_at": "2026-11-23T16:33:31Z",
+  "items": [
+    {
+      "id": "bg_ice_canyon",
+      "phase": "vol3_bg",
+      "kind": "bg",
+      "title": "冰封峡谷前线",
+      "game_relpath": "assets/bg/ice_canyon.jpg",
+      "css_class": "bg-img-ice-canyon",
+      "bgm_type": "sad",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\bg\\jikan.jpg"
+      ],
+      "prompt": "绘制异世界西幻轻小说Galgame场景背景【冰封峡谷前线】。两侧高耸覆盖厚雪与冰凌的灰蓝岩壁，前景覆雪军道与木石防雪矮墙、防风火盆微弱暖光，中景北境灰石哨塔与深蓝旗帜，远景淡雪冰原群山。严格要求：3:2横版(1536x1024)；画面绝不出现任何人物、绝不出现任何文字/招牌字/水印/边框；底部25%留出干净沉稳空间便于叠加Galgame对话框；严格继承参考图细腻日系轻小说厚涂光影与空气透视质感。",
+      "status": "qa_passed",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\bg_ice_canyon.png",
+      "drive_file_id": "1zFffJ4fNJGloLVh9v2jWuRmvIcn3fxEW",
+      "colab_job_id": "game_bg_ice_canyon_1795436711",
+      "crop_audit": null,
+      "attempts": 0,
+      "last_error": "",
+      "updated_at": "2026-11-23T12:25:07Z"
+    },
+    {
+      "id": "bg_chenglan_guild",
+      "phase": "vol3_bg",
+      "kind": "bg",
+      "title": "澄岚镇冒险者公会大厅",
+      "game_relpath": "assets/bg/chenglan_guild.jpg",
+      "css_class": "bg-img-chenglan-guild",
+      "bgm_type": "peaceful",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\bg\\jikan.jpg"
+      ],
+      "prompt": "绘制异世界西幻轻小说Galgame场景背景【澄岚镇冒险者公会大厅】（东方边镇朴实木构风，继承IMAGE 1温暖厚涂笔触）。挑高厚重原木横梁与木柱，温暖清晨阳光从高窗斜斜洒入木地板，左侧立着挂满泛黄羊皮纸委托单与徽记的巨大木质告示板（纸上只画模糊笔触线条绝不写清晰文字），右侧是沉稳实木接待柜台、铜算盘、账簿与热茶壶，空气里有细微尘埃光束，氛围温暖沉静有烟火气。严格要求：3:2横版(1536x1024)；画面绝不出现任何人物、绝不出现任何文字/招牌字/水印/边框；底部25%留出干净沉稳空间便于叠加Galgame对话框；严格继承参考图细腻日系轻小说厚涂光影与空气透视质感。",
+      "status": "qa_passed",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\bg_chenglan_guild.png",
+      "drive_file_id": "1hgXEh4qDuXGlVzXt6IU-NntJBBd1KonL",
+      "colab_job_id": "game_bg_chenglan_guild_1795438776",
+      "crop_audit": null,
+      "attempts": 0,
+      "last_error": "",
+      "updated_at": "2026-11-23T12:59:14Z"
+    },
+    {
+      "id": "bg_north_forest",
+      "phase": "vol3_bg",
+      "kind": "bg",
+      "title": "澄岚北林冬末落叶寒林",
+      "game_relpath": "assets/bg/north_forest.jpg",
+      "css_class": "bg-img-north-forest",
+      "bgm_type": "battle",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\bg\\memorial.jpg"
+      ],
+      "prompt": "绘制异世界西幻轻小说Galgame场景背景【澄岚北林冬末落叶寒林】（继承IMAGE 1细腻笔触与层次感，但整体色调改为清冷灰褐冬末）。高大光秃的落叶乔木枝干在灰白天幕下交错成网，枯黄落叶与薄霜覆满林间小径与低矮灌木，远处山雾弥漫通往幽暗冷峻的东北岩谷，几缕冷淡冬日光从枝隙斜穿而下，带出野外魔物潜伏的寂静压迫感。严格要求：3:2横版(1536x1024)；画面绝不出现任何人物、绝不出现任何文字/招牌字/水印/边框；底部25%留出干净沉稳空间便于叠加Galgame对话框；严格继承参考图细腻日系轻小说厚涂光影与空气透视质感。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\bg_north_forest.png",
+      "drive_file_id": "1Ykkwcms6IVIFDRI7Co2HZFzFTA8wf3zZ",
+      "colab_job_id": "game_bg_north_forest_1795439311",
+      "crop_audit": null,
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T13:08:26Z"
+    },
+    {
+      "id": "bg_glow_sheep_hill",
+      "phase": "vol3_bg",
+      "kind": "bg",
+      "title": "星夜萤尾羊缓坡",
+      "game_relpath": "assets/bg/glow_sheep_hill.jpg",
+      "css_class": "bg-img-glow-sheep-hill",
+      "bgm_type": "relax",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\bg\\memorial.jpg"
+      ],
+      "prompt": "绘制异世界西幻轻小说Galgame场景背景【星夜萤尾羊缓坡】（继承IMAGE 1细腻轻小说厚涂质感，改为深邃静谧夏末初春清夜）。深蓝近墨的澄澈夜空满布繁星与淡薄银河，前景是一道长满微风伏草的乡野缓坡与低矮田埂，坡下辽阔原野与远处黑黢黢树林轮廓间漂浮着十几处柔和淡青金色微小萤光光点，月色清凉宁静、充满治愈与温柔寂寥感。严格要求：3:2横版(1536x1024)；画面绝不出现任何人物、绝不出现任何文字/招牌字/水印/边框；底部25%留出干净沉稳空间便于叠加Galgame对话框；严格继承参考图细腻日系轻小说厚涂光影与空气透视质感。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\bg_glow_sheep_hill.png",
+      "drive_file_id": "1p0Y2cYHbivcha-ASxl9T-LW0N22puot1",
+      "colab_job_id": "game_bg_glow_sheep_hill_1795439600",
+      "crop_audit": null,
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T13:13:15Z"
+    },
+    {
+      "id": "bg_northwind_tavern",
+      "phase": "vol3_bg",
+      "kind": "bg",
+      "title": "北风堡内城石砌酒馆",
+      "game_relpath": "assets/bg/northwind_tavern.jpg",
+      "css_class": "bg-img-northwind-tavern",
+      "bgm_type": "relax",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\bg\\jikan.jpg"
+      ],
+      "prompt": "绘制异世界西幻轻小说Galgame场景背景【北风堡内城石砌酒馆】（继承IMAGE 1温暖光影质感）。北方严寒边防要塞内的厚重青灰石砌酒馆室内，石壁挂着旧盾牌与铁灯盏，壁炉正燃着噼啪暖橙炉火驱散寒意，前景摆放粗糙实木长桌、粗陶热汤碗与铁皮壶，角落整整齐齐码着几只带铜扣的木质行军药材箱，窗外透出深蓝飘雪夜色，室内暖光与窗外寒雪形成动人冷暖对比。严格要求：3:2横版(1536x1024)；画面绝不出现任何人物、绝不出现任何文字/招牌字/水印/边框；底部25%留出干净沉稳空间便于叠加Galgame对话框；严格继承参考图细腻日系轻小说厚涂光影与空气透视质感。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\bg_northwind_tavern.png",
+      "drive_file_id": "1436eVeLu50ZvcD8XTzqyDIaxky5uKatD",
+      "colab_job_id": "game_bg_northwind_tavern_1795439872",
+      "crop_audit": null,
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T13:17:45Z"
+    },
+    {
+      "id": "bg_border_snowroad",
+      "phase": "vol3_bg",
+      "kind": "bg",
+      "title": "苏秦—赫兰风雪界碑官道",
+      "game_relpath": "assets/bg/border_snowroad.jpg",
+      "css_class": "bg-img-border-snowroad",
+      "bgm_type": "sad",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\bg\\jikan.jpg"
+      ],
+      "prompt": "绘制异世界西幻轻小说Galgame场景背景【苏秦—赫兰风雪界碑官道】（继承IMAGE 1细腻厚涂笔触）。苍茫辽阔的北境冻土荒原，一条被车辙碾出浅痕的覆雪官道蜿蜒伸向远方灰白雪原，路旁矗立着一块风化沧桑、覆满冰霜的古老灰石国境界碑（表面只做风化凿痕绝不写文字）和几株被寒风吹弯的枯松，阴沉铅灰与淡银蓝天际飘落细碎风雪，孤寂苍凉。严格要求：3:2横版(1536x1024)；画面绝不出现任何人物、绝不出现任何文字/招牌字/水印/边框；底部25%留出干净沉稳空间便于叠加Galgame对话框；严格继承参考图细腻日系轻小说厚涂光影与空气透视质感。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\bg_border_snowroad.png",
+      "drive_file_id": "1e869q2EuWyTgnAAySDbSGNc29YUpvei-",
+      "colab_job_id": "game_bg_border_snowroad_1795440152",
+      "crop_audit": null,
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T13:22:26Z"
+    },
+    {
+      "id": "cg_vol3_jikan_parting",
+      "phase": "vol3_cg",
+      "kind": "cg",
+      "title": "CG·霁馆雪晨辞行",
+      "game_relpath": "assets/cg/vol3_jikan_parting.png",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\bg\\jikan.jpg",
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\jilan_normal.png"
+      ],
+      "prompt": "为二次元轻小说Galgame《转生千金》绘制16:9或3:2横版(1536x1024)情感名场面CG【霁馆晨雾辞行】。参考IMAGE 1东方木构剑馆晨雾院落氛围与IMAGE 2紫蝴蝶发饰黑发活泼少女霁岚的外貌。清晨微雾的霁馆院门外，身穿素雅旅装、用深绿色细布发带束起伪装黑发、墨绿色眼眸的纤细少女（化名眷寒渔，腰佩古朴乌木长剑）背着行囊站在晨光中回眸浅笑挥手；院门口紫蝴蝶发饰的霁岚一手扶着木门框用力朝她挥手，身旁沉稳微笑的中年剑馆主老霁抱臂立在屋檐阴影下，墙头一只胖灰猫蜷着尾巴看雪雾。电影级晨光丁达尔光影，情绪温暖克制带离别余韵，绝无文字水印。",
+      "status": "pending",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\cg_vol3_jikan_parting.png",
+      "drive_file_id": "",
+      "colab_job_id": "",
+      "crop_audit": null,
+      "attempts": 1,
+      "last_error": "codex_imggen exit=2",
+      "updated_at": "2026-11-23T12:23:24Z"
+    },
+    {
+      "id": "cg_vol3_ice_canyon_clash",
+      "phase": "vol3_cg",
+      "kind": "cg",
+      "title": "CG·冰封峡谷前线重逢",
+      "game_relpath": "assets/cg/vol3_ice_canyon_clash.png",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\aino_normal.png"
+      ],
+      "prompt": "为二次元轻小说Galgame《转生千金》绘制3:2横版(1536x1024)战斗重逢名场面CG【冰封峡谷前线·冰锋剑影】。严冬暴雪呼啸的北境冰封峡谷岩壁下，前景左侧是黑发深绿发带、墨绿眼眸、手持覆着薄透明冰锋的乌木长剑的灵动少女剑士（眷寒渔）正滑步闪避冰屑；右侧远几步外，参考IMAGE 1银白长发冰蓝眼眸、身披深蓝雪纹边防披风与校服的冷清少女艾诺抬手凝结剔透星芒冰晶，微怔目光落在对方冰膜剑锋的左下角。漫天飞雪与冰晶寒光交织，电影级高对比光影，细节极度精致，绝无文字水印。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\cg_vol3_ice_canyon_clash.png",
+      "drive_file_id": "1ziDqAKehz8Rx0zWiigL0rCwnGrZJuUUN",
+      "colab_job_id": "game_cg_vol3_ice_canyon_clash_1795440800",
+      "crop_audit": null,
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T13:33:15Z"
+    },
+    {
+      "id": "cg_vol3_ash_snow",
+      "phase": "vol3_cg",
+      "kind": "cg",
+      "title": "CG·维斯特利亚灰烬雪夜",
+      "game_relpath": "assets/cg/vol3_ash_snow.png",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\bg\\memorial.jpg"
+      ],
+      "prompt": "为二次元轻小说Galgame《转生千金》绘制3:2横版(1536x1024)史诗悲怆名场面CG【维斯特利亚冬夜灰烬雪】。寒冬午夜，远方巍峨的白金欧式公爵府城堡与尖顶轮廓被半边冲天暗橙火光映红，大片洁白初雪飘落时经过火光被染成残忍的暖橘与灰烬色，仿佛整座领城正下着一场灰烬做的雪；前景冷蓝暗影的雪地石渠口外，一道娇小银发少女背影（披着厚重深色斗篷，怀中紧紧按着一只带铜锁的小本子）独自站在风雪中最后回头望向火海，冷暖冲撞极具史诗张力，绝无文字水印。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\cg_vol3_ash_snow.png",
+      "drive_file_id": "1L6Ts2VXegsA72nboGW43uvo_5kylMGcr",
+      "colab_job_id": "game_cg_vol3_ash_snow_1795441168",
+      "crop_audit": null,
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T13:39:23Z"
+    },
+    {
+      "id": "portrait_lein_normal",
+      "phase": "vol2_3_portraits",
+      "kind": "portrait",
+      "title": "莱恩·药商学徒立绘（无截断）",
+      "game_relpath": "assets/portraits/lein_normal.png",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\noelle_normal.png"
+      ],
+      "prompt": "绘制二次元异世界轻小说Galgame角色立绘【莱恩】（药材商学徒旅伴，17岁爽朗朴实少年，继承IMAGE 1细腻日系线稿与厚涂上色风格）。微乱温暖亚麻棕色短发、清澈明亮茶色眼眸、阳光真诚微微笑容；身穿实用卡其灰亚麻旅行外套、浅米色立领衬衫与棕色皮质斜挎药囊皮带，双手自然微扶肩带（不背过宽突出左右边框的大包）。严格Galgame立绘防截断规范：2:3竖版(1024x1536)，纯白(#FFFFFF)无杂物背景，人物居中正面半身至大腿构图，头顶上方留白10%，人物双肩、双臂、衣袖与全部飘逸长发必须完整收束在画面内部，左右两侧距画布边缘严格保留至少12%纯白安全留白（严禁任何头发或衣袖触碰左右边缘被裁断！），日系精品轻小说厚涂立绘画风，禁止任何文字水印。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\portrait_lein_normal.png",
+      "drive_file_id": "1_XNTX5WRnUvavuN2FfgaRDoiBYoxElzs",
+      "colab_job_id": "game_portrait_lein_normal_1795441394",
+      "crop_audit": {
+        "passed": true,
+        "w": 1024,
+        "h": 1536,
+        "left_edge_px": 0,
+        "right_edge_px": 0
+      },
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T13:43:09Z"
+    },
+    {
+      "id": "portrait_peilin_normal",
+      "phase": "vol2_3_portraits",
+      "kind": "portrait",
+      "title": "沛霖·沉稳药商师父立绘（无截断）",
+      "game_relpath": "assets/portraits/peilin_normal.png",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\noelle_normal.png"
+      ],
+      "prompt": "绘制二次元异世界轻小说Galgame角色立绘【沛霖】（走南闯北、爱泡茶馆的沉稳药材商师父，38岁温润精明中年男性，继承IMAGE 1细腻日系二次元插画质感）。微带几缕银丝的深褐整齐短发、细长洞察世事的温和深褐眼眸、下颌留极淡整洁胡茬与从容淡笑；身穿深青灰东方行商立领长袍外搭暗棕皮毛滚边短褂，腰悬小药葫芦与铜算盘坠，一手自然轻垂一手微托茶盏式手势，体态收束。严格Galgame立绘防截断规范：2:3竖版(1024x1536)，纯白(#FFFFFF)无杂物背景，人物居中正面半身至大腿构图，头顶上方留白10%，人物双肩、双臂、衣袖与全部飘逸长发必须完整收束在画面内部，左右两侧距画布边缘严格保留至少12%纯白安全留白（严禁任何头发或衣袖触碰左右边缘被裁断！），日系精品轻小说厚涂立绘画风，禁止任何文字水印。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\portrait_peilin_normal.png",
+      "drive_file_id": "1uITRztBUdUSOGZzSxSsGMgbbTAi9ohqu",
+      "colab_job_id": "game_portrait_peilin_normal_1795441658",
+      "crop_audit": {
+        "passed": true,
+        "w": 1024,
+        "h": 1536,
+        "left_edge_px": 0,
+        "right_edge_px": 0
+      },
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T13:47:32Z"
+    },
+    {
+      "id": "portrait_helena_normal",
+      "phase": "vol2_3_portraits",
+      "kind": "portrait",
+      "title": "海伦娜·无截断重构立绘",
+      "game_relpath": "assets/portraits/helena_normal.png",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\helena_normal.png",
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\sylvia_teenage_normal.png"
+      ],
+      "prompt": "严格还原IMAGE 1金发金瞳圣女交换生【海伦娜】的五官、温暖明亮笑容、浅金长发、白金滚边圣洁头纱（带十字金饰）与白金刺绣高领圣女长袍（胸前金色十字吊坠、双手合十祈祷姿态），画风精度与构图留白完全对齐IMAGE 2。重要修复：拉远镜头至大腿半身构图，完整画出她两侧肩膀、飘落的头纱边缘、宽袖与金色长发末梢，让所有头纱与发丝柔和向内收束，彻底解决原图左右被画布切掉的问题！严格Galgame立绘防截断规范：2:3竖版(1024x1536)，纯白(#FFFFFF)无杂物背景，人物居中正面半身至大腿构图，头顶上方留白10%，人物双肩、双臂、衣袖与全部飘逸长发必须完整收束在画面内部，左右两侧距画布边缘严格保留至少12%纯白安全留白（严禁任何头发或衣袖触碰左右边缘被裁断！），日系精品轻小说厚涂立绘画风，禁止任何文字水印。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\portrait_helena_normal.png",
+      "drive_file_id": "1O-utLdW2CR69nyNRbcenPVJnLPBDlgxD",
+      "colab_job_id": "game_portrait_helena_normal_1795441924",
+      "crop_audit": {
+        "passed": true,
+        "w": 1024,
+        "h": 1536,
+        "left_edge_px": 0,
+        "right_edge_px": 0
+      },
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T13:51:58Z"
+    },
+    {
+      "id": "portrait_aino_normal",
+      "phase": "vol2_3_portraits",
+      "kind": "portrait",
+      "title": "艾诺·无截断重构立绘",
+      "game_relpath": "assets/portraits/aino_normal.png",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\aino_normal.png",
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\sylvia_teenage_normal.png"
+      ],
+      "prompt": "严格还原IMAGE 1清冷银发冰蓝瞳少女【艾诺】的精致冷淡五官、眼下极淡柔雾腮红、银白长发、左耳侧编发配冰晶雪花发夹与深蓝丝带、高领银蓝雪花徽记深蓝学院礼服外套，画风精度与留白对齐IMAGE 2。重要修复：拉远镜头至半身至大腿构图，完整呈现她双肩与深蓝衣袖，所有银白长发优雅垂落于身侧内收，绝不向左右飞散触碰画布边缘，彻底消除左右截断！严格Galgame立绘防截断规范：2:3竖版(1024x1536)，纯白(#FFFFFF)无杂物背景，人物居中正面半身至大腿构图，头顶上方留白10%，人物双肩、双臂、衣袖与全部飘逸长发必须完整收束在画面内部，左右两侧距画布边缘严格保留至少12%纯白安全留白（严禁任何头发或衣袖触碰左右边缘被裁断！），日系精品轻小说厚涂立绘画风，禁止任何文字水印。",
+      "status": "pending",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\portrait_aino_normal.png",
+      "drive_file_id": "",
+      "colab_job_id": "",
+      "crop_audit": {
+        "passed": false,
+        "w": 1254,
+        "h": 1254,
+        "left_edge_px": 6390,
+        "right_edge_px": 6390
+      },
+      "attempts": 2,
+      "last_error": "codex_imggen exit=2",
+      "updated_at": "2026-11-23T12:23:24Z"
+    },
+    {
+      "id": "portrait_charlotte_normal",
+      "phase": "vol2_3_portraits",
+      "kind": "portrait",
+      "title": "夏洛特·单人无截断重构立绘",
+      "game_relpath": "assets/portraits/charlotte_normal.png",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\charlotte_normal.png",
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\sylvia_teenage_normal.png"
+      ],
+      "prompt": "严格还原IMAGE 1中央傲娇贵族千金【夏洛特】的精致五官、略带骄傲微扬下巴神态、蓝宝石皇冠、波浪金长发与蓝金丝带、深蓝金绣宫廷礼服与双臂环抱姿态，画风与构图对齐IMAGE 2。重要修复：1）只画夏洛特单人，彻底移除原图背景左右两名女仆！2）拉远镜头至大腿半身，完整画出双肩、蓬松公主袖与向内柔顺垂落的金色卷发，左右留足纯白安全边距零截断！严格Galgame立绘防截断规范：2:3竖版(1024x1536)，纯白(#FFFFFF)无杂物背景，人物居中正面半身至大腿构图，头顶上方留白10%，人物双肩、双臂、衣袖与全部飘逸长发必须完整收束在画面内部，左右两侧距画布边缘严格保留至少12%纯白安全留白（严禁任何头发或衣袖触碰左右边缘被裁断！），日系精品轻小说厚涂立绘画风，禁止任何文字水印。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\portrait_charlotte_normal.png",
+      "drive_file_id": "1mIq41HcMtEXbQGPf2FohDzwf-ebgLJXF",
+      "colab_job_id": "game_portrait_charlotte_normal_1795448989",
+      "crop_audit": {
+        "passed": true,
+        "w": 1024,
+        "h": 1536,
+        "left_edge_px": 0,
+        "right_edge_px": 0
+      },
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T15:49:38Z"
+    },
+    {
+      "id": "portrait_ajun_normal",
+      "phase": "vol2_3_portraits",
+      "kind": "portrait",
+      "title": "阿琼·无截断重构立绘",
+      "game_relpath": "assets/portraits/ajun_normal.png",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\ajun_normal.png",
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\sylvia_teenage_normal.png"
+      ],
+      "prompt": "严格还原IMAGE 1角色【阿琼】的五官、发型发色、气质与服饰细节，构图比例与画风对齐IMAGE 2。重要修复：拉远镜头至半身至大腿构图，完整补全被原图切掉的左侧与右侧肩膀、袖口与衣摆，所有轮廓收束在画布安全区内零左右截断！严格Galgame立绘防截断规范：2:3竖版(1024x1536)，纯白(#FFFFFF)无杂物背景，人物居中正面半身至大腿构图，头顶上方留白10%，人物双肩、双臂、衣袖与全部飘逸长发必须完整收束在画面内部，左右两侧距画布边缘严格保留至少12%纯白安全留白（严禁任何头发或衣袖触碰左右边缘被裁断！），日系精品轻小说厚涂立绘画风，禁止任何文字水印。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\portrait_ajun_normal.png",
+      "drive_file_id": "1NnlTYsm0ZVeu1vpwc8jzzdO4IBeTAT4Z",
+      "colab_job_id": "game_portrait_ajun_normal_1795449302",
+      "crop_audit": {
+        "passed": true,
+        "w": 1024,
+        "h": 1536,
+        "left_edge_px": 0,
+        "right_edge_px": 0
+      },
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T15:54:58Z"
+    },
+    {
+      "id": "portrait_aino_serious",
+      "phase": "vol2_3_diffs",
+      "kind": "diff",
+      "title": "艾诺·凝重表情差分",
+      "game_relpath": "assets/portraits/aino_serious.png",
+      "base_item": "portrait_aino_normal",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\aino_normal.png"
+      ],
+      "prompt": "严格锁定参考图IMAGE 1角色艾诺的发型、头饰、姿势、肩膀与深蓝校服 100% 不变（零位移），仅微调面部表情为【凝重戒备】：微蹙银色眉尖、冰蓝眼眸眼神锐利冷静专注、唇线抿紧，眼下保留微淡冷感肌肤质感，其余全部严格一致。严格Galgame立绘防截断规范：2:3竖版(1024x1536)，纯白(#FFFFFF)无杂物背景，人物居中正面半身至大腿构图，头顶上方留白10%，人物双肩、双臂、衣袖与全部飘逸长发必须完整收束在画面内部，左右两侧距画布边缘严格保留至少12%纯白安全留白（严禁任何头发或衣袖触碰左右边缘被裁断！），日系精品轻小说厚涂立绘画风，禁止任何文字水印。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\portrait_aino_serious.png",
+      "drive_file_id": "1RaR5Xj36gO7tykVT0ZsHOdrMSr9JTROH",
+      "colab_job_id": "game_portrait_aino_serious_1795449543",
+      "crop_audit": {
+        "passed": true,
+        "w": 1024,
+        "h": 1536,
+        "left_edge_px": 0,
+        "right_edge_px": 0
+      },
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T15:58:56Z"
+    },
+    {
+      "id": "portrait_aino_smile",
+      "phase": "vol2_3_diffs",
+      "kind": "diff",
+      "title": "艾诺·浅笑表情差分",
+      "game_relpath": "assets/portraits/aino_smile.png",
+      "base_item": "portrait_aino_normal",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\aino_normal.png"
+      ],
+      "prompt": "严格锁定参考图IMAGE 1角色艾诺的发型、头饰、姿势、肩膀与深蓝校服 100% 不变（零位移），仅微调面部表情为【克制柔和的浅笑】：冰蓝眼眸微微放柔带一丝融雪般暖意、唇角极轻地上扬一点点弧度、脸颊带极淡自然红晕，符合高冷少女罕见卸防的温柔感。严格Galgame立绘防截断规范：2:3竖版(1024x1536)，纯白(#FFFFFF)无杂物背景，人物居中正面半身至大腿构图，头顶上方留白10%，人物双肩、双臂、衣袖与全部飘逸长发必须完整收束在画面内部，左右两侧距画布边缘严格保留至少12%纯白安全留白（严禁任何头发或衣袖触碰左右边缘被裁断！），日系精品轻小说厚涂立绘画风，禁止任何文字水印。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\portrait_aino_smile.png",
+      "drive_file_id": "11WYb4qUNtopml9XktW4EBSGrlAtlvr9k",
+      "colab_job_id": "game_portrait_aino_smile_1795449794",
+      "crop_audit": {
+        "passed": true,
+        "w": 1024,
+        "h": 1536,
+        "left_edge_px": 0,
+        "right_edge_px": 0
+      },
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T16:03:08Z"
+    },
+    {
+      "id": "portrait_aino_shy",
+      "phase": "vol2_3_diffs",
+      "kind": "diff",
+      "title": "艾诺·微赧表情差分",
+      "game_relpath": "assets/portraits/aino_shy.png",
+      "base_item": "portrait_aino_normal",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\aino_normal.png"
+      ],
+      "prompt": "严格锁定参考图IMAGE 1角色艾诺的发型、头饰、姿势、肩膀与深蓝校服 100% 不变（零位移），仅微调面部表情为【略显局促微赧】：视线微微侧移回避、双颊与耳尖浮起柔和淡粉腮红、嘴角微抿略带窘迫，保留高冷底色下的可爱反差。严格Galgame立绘防截断规范：2:3竖版(1024x1536)，纯白(#FFFFFF)无杂物背景，人物居中正面半身至大腿构图，头顶上方留白10%，人物双肩、双臂、衣袖与全部飘逸长发必须完整收束在画面内部，左右两侧距画布边缘严格保留至少12%纯白安全留白（严禁任何头发或衣袖触碰左右边缘被裁断！），日系精品轻小说厚涂立绘画风，禁止任何文字水印。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\portrait_aino_shy.png",
+      "drive_file_id": "1c4nSbZC_YMfnlLun1olPEf-Tinl6MNf0",
+      "colab_job_id": "game_portrait_aino_shy_1795450039",
+      "crop_audit": {
+        "passed": true,
+        "w": 1024,
+        "h": 1536,
+        "left_edge_px": 0,
+        "right_edge_px": 0
+      },
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T16:07:12Z"
+    },
+    {
+      "id": "portrait_jilan_serious",
+      "phase": "vol2_3_diffs",
+      "kind": "diff",
+      "title": "霁岚·认真练剑表情差分",
+      "game_relpath": "assets/portraits/jilan_serious.png",
+      "base_item": null,
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\jilan_normal.png"
+      ],
+      "prompt": "严格锁定参考图IMAGE 1紫蝴蝶发饰黑马尾少女霁岚的发型、发饰、淡灰紫练功道服与姿势，脸颊灰尘略少、表情切换为【认真专注】：睁开明亮深紫黑眼眸直视前方、眉头微敛眼神坚定干练、唇线收起不露齿笑，保持清爽无截断留白。严格Galgame立绘防截断规范：2:3竖版(1024x1536)，纯白(#FFFFFF)无杂物背景，人物居中正面半身至大腿构图，头顶上方留白10%，人物双肩、双臂、衣袖与全部飘逸长发必须完整收束在画面内部，左右两侧距画布边缘严格保留至少12%纯白安全留白（严禁任何头发或衣袖触碰左右边缘被裁断！），日系精品轻小说厚涂立绘画风，禁止任何文字水印。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\portrait_jilan_serious.png",
+      "drive_file_id": "1IMLRVBBUCI5DFAJ5TJVJhgqiGDNFNBO4",
+      "colab_job_id": "game_portrait_jilan_serious_1795450321",
+      "crop_audit": {
+        "passed": true,
+        "w": 1024,
+        "h": 1536,
+        "left_edge_px": 0,
+        "right_edge_px": 0
+      },
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T16:11:56Z"
+    },
+    {
+      "id": "portrait_jilan_shy",
+      "phase": "vol2_3_diffs",
+      "kind": "diff",
+      "title": "霁岚·害羞脸红表情差分",
+      "game_relpath": "assets/portraits/jilan_shy.png",
+      "base_item": null,
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\jilan_normal.png"
+      ],
+      "prompt": "严格锁定参考图IMAGE 1紫蝴蝶发饰黑马尾少女霁岚的发型、发饰、练功道服与姿势，将面部表情切换为【不好意思的害羞微赧】：睁开清亮眼眸微微飘向一侧、双颊明显泛起柔和红晕、嘴角微抿略带腼腆笑意，干净清爽无截断留白。严格Galgame立绘防截断规范：2:3竖版(1024x1536)，纯白(#FFFFFF)无杂物背景，人物居中正面半身至大腿构图，头顶上方留白10%，人物双肩、双臂、衣袖与全部飘逸长发必须完整收束在画面内部，左右两侧距画布边缘严格保留至少12%纯白安全留白（严禁任何头发或衣袖触碰左右边缘被裁断！），日系精品轻小说厚涂立绘画风，禁止任何文字水印。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\portrait_jilan_shy.png",
+      "drive_file_id": "1uiWc1EJkWuz7TFxQ8b7qwkBkWOz99Kil",
+      "colab_job_id": "game_portrait_jilan_shy_1795450624",
+      "crop_audit": {
+        "passed": true,
+        "w": 1024,
+        "h": 1536,
+        "left_edge_px": 0,
+        "right_edge_px": 0
+      },
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T16:16:57Z"
+    },
+    {
+      "id": "portrait_jilan_teary",
+      "phase": "vol2_3_diffs",
+      "kind": "diff",
+      "title": "霁岚·离别含泪表情差分",
+      "game_relpath": "assets/portraits/jilan_teary.png",
+      "base_item": null,
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\jilan_normal.png"
+      ],
+      "prompt": "严格锁定参考图IMAGE 1紫蝴蝶发饰黑马尾少女霁岚的发型、发饰、练功道服与姿势，将面部表情切换为【强忍不舍的含泪浅笑】：眼眶微红蓄着晶莹泪光却努力弯起嘴角逞强微笑、眉尾轻轻下垂，情绪真挚动人，干净无截断留白。严格Galgame立绘防截断规范：2:3竖版(1024x1536)，纯白(#FFFFFF)无杂物背景，人物居中正面半身至大腿构图，头顶上方留白10%，人物双肩、双臂、衣袖与全部飘逸长发必须完整收束在画面内部，左右两侧距画布边缘严格保留至少12%纯白安全留白（严禁任何头发或衣袖触碰左右边缘被裁断！），日系精品轻小说厚涂立绘画风，禁止任何文字水印。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\portrait_jilan_teary.png",
+      "drive_file_id": "1eb-BazSMuEXlsApO-aOH4dYMaj0dCCN5",
+      "colab_job_id": "game_portrait_jilan_teary_1795450899",
+      "crop_audit": {
+        "passed": true,
+        "w": 1024,
+        "h": 1536,
+        "left_edge_px": 0,
+        "right_edge_px": 0
+      },
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T16:21:33Z"
+    },
+    {
+      "id": "portrait_charlotte_shy",
+      "phase": "vol2_3_diffs",
+      "kind": "diff",
+      "title": "夏洛特·傲娇微赧表情差分",
+      "game_relpath": "assets/portraits/charlotte_shy.png",
+      "base_item": "portrait_charlotte_normal",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\charlotte_normal.png"
+      ],
+      "prompt": "严格锁定参考图IMAGE 1单人金发蓝眸贵族千金夏洛特的皇冠、卷发、蓝金礼服与环抱双臂姿态（绝无女仆），仅将面部表情切换为【傲娇耳根泛红】：蓝眸微微斜睨回避视线、双颊与耳尖浮起明晰柔雾红晕、唇瓣微噘略显嘴硬心软。严格Galgame立绘防截断规范：2:3竖版(1024x1536)，纯白(#FFFFFF)无杂物背景，人物居中正面半身至大腿构图，头顶上方留白10%，人物双肩、双臂、衣袖与全部飘逸长发必须完整收束在画面内部，左右两侧距画布边缘严格保留至少12%纯白安全留白（严禁任何头发或衣袖触碰左右边缘被裁断！），日系精品轻小说厚涂立绘画风，禁止任何文字水印。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\portrait_charlotte_shy.png",
+      "drive_file_id": "1x5aSXVcScaqCzrLKt6K9nbsi8O8WaTZg",
+      "colab_job_id": "game_portrait_charlotte_shy_1795451132",
+      "crop_audit": {
+        "passed": true,
+        "w": 1024,
+        "h": 1536,
+        "left_edge_px": 0,
+        "right_edge_px": 0
+      },
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T16:25:27Z"
+    },
+    {
+      "id": "portrait_charlotte_smile",
+      "phase": "vol2_3_diffs",
+      "kind": "diff",
+      "title": "夏洛特·坦诚浅笑表情差分",
+      "game_relpath": "assets/portraits/charlotte_smile.png",
+      "base_item": "portrait_charlotte_normal",
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\charlotte_normal.png"
+      ],
+      "prompt": "严格锁定参考图IMAGE 1单人金发蓝眸贵族千金夏洛特的皇冠、卷发、蓝金礼服与姿态（绝无女仆），仅将面部表情切换为【卸下防备的优雅浅笑】：蓝眸眉眼舒展柔和、嘴角勾起矜持而真诚的淡笑、高贵柔和。严格Galgame立绘防截断规范：2:3竖版(1024x1536)，纯白(#FFFFFF)无杂物背景，人物居中正面半身至大腿构图，头顶上方留白10%，人物双肩、双臂、衣袖与全部飘逸长发必须完整收束在画面内部，左右两侧距画布边缘严格保留至少12%纯白安全留白（严禁任何头发或衣袖触碰左右边缘被裁断！），日系精品轻小说厚涂立绘画风，禁止任何文字水印。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\portrait_charlotte_smile.png",
+      "drive_file_id": "1M5pDXJMIu2Z_reWBG_VMGM71dgI2n3oN",
+      "colab_job_id": "game_portrait_charlotte_smile_1795451404",
+      "crop_audit": {
+        "passed": true,
+        "w": 1024,
+        "h": 1536,
+        "left_edge_px": 0,
+        "right_edge_px": 0
+      },
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T16:29:59Z"
+    },
+    {
+      "id": "portrait_noelle_smile",
+      "phase": "vol2_3_diffs",
+      "kind": "diff",
+      "title": "诺艾儿·放松浅笑表情差分",
+      "game_relpath": "assets/portraits/noelle_smile.png",
+      "base_item": null,
+      "refs": [
+        "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\assets\\portraits\\noelle_normal.png"
+      ],
+      "prompt": "严格锁定参考图IMAGE 1棕色短发琥珀眼眸深蓝兜帽学院袍少女诺艾儿的发型、服饰与姿势 100% 不变，仅将原本严肃绷紧的表情切换为【罕见放松的温柔浅笑】：紧锁的眉头舒展开来、琥珀色眼眸微微弯起透出明亮神采、唇角浮现自然轻笑与微淡腮红。严格Galgame立绘防截断规范：2:3竖版(1024x1536)，纯白(#FFFFFF)无杂物背景，人物居中正面半身至大腿构图，头顶上方留白10%，人物双肩、双臂、衣袖与全部飘逸长发必须完整收束在画面内部，左右两侧距画布边缘严格保留至少12%纯白安全留白（严禁任何头发或衣袖触碰左右边缘被裁断！），日系精品轻小说厚涂立绘画风，禁止任何文字水印。",
+      "status": "drive_synced",
+      "raw_path": "C:\\Users\\abc\\.gemini\\antigravity\\scratch\\fictional-adventure\\tools\\art_pipeline\\raw\\portrait_noelle_smile.png",
+      "drive_file_id": "1wATeTfmwzcKjypf3U7sL_YAUf2oVx2gt",
+      "colab_job_id": "game_portrait_noelle_smile_1795451607",
+      "crop_audit": {
+        "passed": true,
+        "w": 1024,
+        "h": 1536,
+        "left_edge_px": 0,
+        "right_edge_px": 0
+      },
+      "attempts": 1,
+      "last_error": "",
+      "updated_at": "2026-11-23T16:33:22Z"
+    }
+  ]
+}

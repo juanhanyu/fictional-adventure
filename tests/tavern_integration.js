@@ -95,7 +95,7 @@ const read = file => fs.readFileSync(path.join(ROOT, file), 'utf8');
     createOscillator() { return { connect() {}, start() {}, stop() {}, frequency: {} }; }
     createGain() { return { connect() {}, gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} } }; }
   };
-  for (const file of ['js/story.js', 'game.js', 'js/tavern-bridge.js']) {
+  for (const file of ['js/story.js', 'js/story-vol3.js', 'js/ai-personas.js', 'game.js', 'js/branching-director.js', 'js/combat-engine.js', 'js/ai-chat-panel.js', 'js/tavern-bridge.js']) {
     const script = child.document.createElement('script'); script.textContent = read(file); child.document.body.append(script);
   }
   child.postMessage = data => child.dispatchEvent(new child.MessageEvent('message', {

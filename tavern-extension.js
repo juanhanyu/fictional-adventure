@@ -20,7 +20,7 @@ dialog.innerHTML = `
   <header class="fa-toolbar"><strong>✧ 转生千金</strong><button id="fa-toggle" aria-expanded="true">收起 AI 对话</button><button id="fa-return">返回酒馆</button></header>
   <div class="fa-layout"><iframe id="fa-game" title="转生千金游戏" allow="autoplay"></iframe>
   <aside class="fa-chat" aria-label="AI 对话面板">
-    <h2>场景里的交谈</h2><p class="fa-note">使用酒馆当前连接的模型。AI 交谈独立保存，原作剧情与游戏数值按原玩法推进。</p>
+    <h2>场景里的交谈</h2><p class="fa-note">使用酒馆当前连接的模型与角色专属灵魂卡。严守时间认知锁，舞台表情与命运暗流同步响应。</p>
     <label for="fa-target">对话对象 · 当前在场</label><select id="fa-target"></select>
     <div id="fa-transcript" role="log" aria-live="polite"></div>
     <p id="fa-status" role="status">正在加载游戏……</p>
@@ -47,6 +47,13 @@ function persist() {
   // Bound both disk storage and prompt history; retain the most recent scenes.
   conversations = Object.fromEntries(Object.entries(conversations).slice(-40));
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations)); } catch { /* Game saves remain independent. */ }
+}
+function extractReplyAndEffect(rawReply, charId) {
+  if (typeof buildPrompt.parseTavernReply === 'function') {
+    return buildPrompt.parseTavernReply(rawReply, charId);
+  }
+  const str = String(rawReply ?? '');
+  return { display: str, effect: null };
 }
 function render() {
   transcript.replaceChildren();
@@ -80,7 +87,7 @@ function receiveContext(data) {
   if (!target.options.length) target.add(new Option('等待角色登场', ''));
   if (key() !== oldKey) render();
   if (!busy) status.textContent = !snapshot.playing ? '开始新生活或继续存档后，就能与在场人物交谈。'
-    : !snapshot.people.length ? `${snapshot.location} · 等待角色登场` : `${snapshot.location} · ${snapshot.player.age}岁 · 已同步场景`;
+    : !snapshot.people.length ? `${snapshot.location} · 等待角色登场` : `${snapshot.location} · ${snapshot.player.age}岁 · 已同步灵魂卡`;
   updateControls();
 }
 window.addEventListener('message', event => {
@@ -113,16 +120,23 @@ async function generate() {
     const person = snapshot.people.find(p => p.id === characterId);
     const turns = Array.isArray(conversations[conversationKey]) ? conversations[conversationKey] : [];
     const prompt = buildPrompt(snapshot, characterId, turns, text);
+    const activeSystemPrompt = typeof buildPrompt.buildSystemPrompt === 'function'
+      ? buildPrompt.buildSystemPrompt(snapshot, characterId)
+      : SYSTEM_PROMPT;
     context = SillyTavern.getContext();
     if (!context.onlineStatus || context.onlineStatus === 'no_connection') throw new Error('请返回酒馆，在 API 连接中连接模型后再试。');
     const stopButton = document.getElementById('mes_stop');
     if (stopButton && stopButton.getClientRects().length) throw new Error('酒馆正在生成回复，请等它完成后再试。');
     context.deactivateSendButtons(); controlsLocked = true;
-    const reply = await context.generateRaw({ systemPrompt: SYSTEM_PROMPT, prompt, responseLength: 500, trimNames: false });
+    const reply = await context.generateRaw({ systemPrompt: activeSystemPrompt, prompt, responseLength: 500, trimNames: false });
     if (cancelled) { status.textContent = '已取消 · 输入已保留'; return; }
     if (session !== originalSession) { status.textContent = '已开始新游戏，本次回复已丢弃。'; return; }
-    conversations[conversationKey] = [...turns, { role: 'user', content: text }, { role: 'assistant', content: reply, name: person.name }].slice(-24);
+    const { display, effect } = extractReplyAndEffect(reply, characterId);
+    conversations[conversationKey] = [...turns, { role: 'user', content: text }, { role: 'assistant', content: display, name: person.name }].slice(-24);
     persist(); input.value = ''; render();
+    if (effect) {
+      frame.contentWindow?.postMessage({ channel: CHANNEL, type: 'ai-effect', payload: effect }, location.origin);
+    }
     status.textContent = '已回复 · AI 交谈已保存';
   } catch (error) {
     // Do not expose raw provider errors, headers, or credentials in the game UI.

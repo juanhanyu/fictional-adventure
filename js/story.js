@@ -2185,6 +2185,7 @@
           S.loc = 'jikan';
           S.lastSafe = 'jikan';
           LOCS.jikan.unlock = true;
+          LOCS.chenglan_guild.unlock = true;
           LOCS.northforest.unlock = true;
           LOCS.road.unlock = true;
           updateLocBar();

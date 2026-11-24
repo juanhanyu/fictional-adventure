@@ -8,7 +8,10 @@ const SAVE_KEY = 'ojousama_save_v1';
 const CODEX_KEY = 'ojousama_codex_v1';
 const MUTE_KEY = 'ojousama_muted';
 const MUSIC_VOL_KEY = 'ojousama_music_vol';
+const SFX_VOL_KEY = 'ojousama_sfx_vol';
 const BGM_MUTE_KEY = 'ojousama_bgm_muted';
+const SETTINGS_KEY = 'ojousama_settings_v1';
+const VN_PREFS_KEY = 'ojousama_vn_prefs_v1';
 const TIERS = ['无','初级','中级','高级','圣级','王级','帝级','神级'];
 const TODS = ['清晨','上午','下午','傍晚','夜晚'];
 const TOD_ICON = ['🌅','☀️','🌤','🌇','🌙'];
@@ -23,25 +26,139 @@ function seasonOf(month){
   if(month>=9 && month<=11) return 2;
   return 3;
 }
-function seasonName(s){ return SEASON_ICON[s]+SEASONS[s]; }
+function seasonName(s){ return SEASONS[s] || ''; }
 
 
 // ========== AUDIO ==========
-let ACTX = null, muted = (()=>{ try { return localStorage.getItem(MUTE_KEY) === '1'; } catch(e){ return false; } })();
+let ACTX = null;
+let muted = (()=>{ try { return localStorage.getItem(MUTE_KEY) === '1'; } catch(e){ return false; } })();
+let bgmMuted = (()=>{ try { return localStorage.getItem(BGM_MUTE_KEY) === '1'; } catch(e){ return false; } })();
+if(muted || bgmMuted){ muted = true; bgmMuted = true; }
+let sfxVolume = (()=>{ try { const v = parseFloat(localStorage.getItem(SFX_VOL_KEY)); return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.65; } catch(e){ return 0.65; } })();
+let _inSfxSync = false;
+let _inBgmSync = false;
+
+function sfxSetVolume(v, opts){
+  opts = opts || {};
+  const n = Number(v);
+  if(!Number.isFinite(n)) return sfxVolume;
+  sfxVolume = Math.max(0, Math.min(1, n));
+  try { localStorage.setItem(SFX_VOL_KEY, String(sfxVolume)); } catch(e){}
+  if(opts.syncSettings !== false){
+    try {
+      const cur = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+      if(cur && typeof cur === 'object'){
+        cur.sfx = sfxVolume;
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(cur));
+      }
+    } catch(e){}
+  }
+  if(opts.syncVnPrefs !== false){
+    try {
+      const raw = JSON.parse(localStorage.getItem(VN_PREFS_KEY) || '{}');
+      if(raw && typeof raw === 'object'){
+        raw.sfxVol = sfxVolume;
+        localStorage.setItem(VN_PREFS_KEY, JSON.stringify(raw));
+      }
+    } catch(e){}
+  }
+  try {
+    const pct = Math.round(sfxVolume * 100);
+    const sl = typeof document !== 'undefined' ? document.getElementById('set-sfx') : null;
+    if(sl && Number(sl.value) !== pct) sl.value = String(pct);
+    const vl = typeof document !== 'undefined' ? document.getElementById('set-sfx-val') : null;
+    if(vl) vl.textContent = pct + '%';
+  } catch(e){}
+  if(!_inSfxSync){
+    _inSfxSync = true;
+    try {
+      if(opts.notifySfx !== false && typeof window !== 'undefined' && window.CrystalSFX && typeof window.CrystalSFX.setVolume === 'function'){
+        window.CrystalSFX.setVolume(sfxVolume);
+      }
+      if(opts.notifyVnUx !== false && typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.syncExternalAudioPrefs === 'function'){
+        window.VNUx.syncExternalAudioPrefs({ sfxVol: sfxVolume });
+      }
+    } catch(e){}
+    finally { _inSfxSync = false; }
+  }
+  return sfxVolume;
+}
 function ensureAudio(){ if(!ACTX) try{ ACTX = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
-function sfx(type){
-  if(muted) return; ensureAudio(); if(!ACTX) return;
-  const o = ACTX.createOscillator(), g = ACTX.createGain();
-  o.connect(g); g.connect(ACTX.destination);
-  const t = ACTX.currentTime;
-  const map = {
-    click:[800,.05,'square'], ok:[520,.12,'sine'], level:[660,.2,'triangle'],
-    bad:[180,.2,'sawtooth'], magic:[880,.15,'sine'], open:[400,.1,'triangle'],
-    page:[600,.04,'square'], heart:[700,.18,'sine'], egg:[1000,.25,'triangle']
-  };
-  const [f,d,w] = map[type] || map.click;
-  o.type = w; o.frequency.value = f; g.gain.setValueAtTime(.06,t); g.gain.exponentialRampToValueAtTime(.001,t+d);
-  o.start(t); o.stop(t+d);
+function sfx(type, opts){
+  if(muted || bgmMuted || sfxVolume <= 0.001) return;
+  if(typeof window !== 'undefined' && window.CrystalSFX && typeof window.CrystalSFX.play === 'function'){
+    try {
+      window.CrystalSFX.play(type, opts);
+      return;
+    } catch(e){}
+  }
+  ensureAudio(); if(!ACTX) return;
+  try {
+    if(ACTX.state === 'suspended' && ACTX.resume){
+      const rp = ACTX.resume();
+      if(rp && rp.catch) rp.catch(()=>{});
+    }
+    const t = ACTX.currentTime;
+    const vol = Math.max(0.005, 0.085 * sfxVolume);
+    const playTone = (freq, dur, wave, delay=0, gainMul=1, slideTo=null)=>{
+      try {
+        const o = ACTX.createOscillator(), g = ACTX.createGain();
+        o.connect(g); g.connect(ACTX.destination);
+        const st = t + delay;
+        const peak = Math.max(0.002, vol * gainMul);
+        const atk = Math.min(0.008, dur * 0.25);
+        o.type = wave || 'sine';
+        o.frequency.setValueAtTime(freq, st);
+        if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, st + dur);
+        g.gain.setValueAtTime(0.0008, st);
+        if(typeof g.gain.linearRampToValueAtTime === 'function'){
+          g.gain.linearRampToValueAtTime(peak, st + atk);
+        } else {
+          g.gain.setValueAtTime(peak, st);
+        }
+        g.gain.exponentialRampToValueAtTime(0.0008, st + dur);
+        o.start(st); o.stop(st + dur + 0.015);
+      } catch(e){}
+    };
+    if(type === 'parry'){
+      playTone(1320, 0.11, 'triangle', 0, 1.0, 1760);
+      playTone(1980, 0.16, 'sine', 0.03, 0.75, 2240);
+      return;
+    }
+    if(type === 'shatter' || type === 'ice_shatter'){
+      playTone(1580, 0.08, 'triangle', 0, 0.95, 920);
+      playTone(2120, 0.12, 'sine', 0.04, 0.7, 1280);
+      playTone(840, 0.18, 'sawtooth', 0.06, 0.45, 320);
+      return;
+    }
+    if(type === 'phase2'){
+      playTone(150, 0.42, 'sawtooth', 0, 0.9, 82);
+      playTone(440, 0.36, 'triangle', 0.08, 0.7, 660);
+      playTone(880, 0.4, 'sine', 0.16, 0.55, 1174);
+      return;
+    }
+    if(type === 'grade_s' || type === 'egg' || type === 'season_report'){
+      playTone(659.25, 0.18, 'triangle', 0, 0.85);
+      playTone(880, 0.2, 'triangle', 0.08, 0.85);
+      playTone(1318.5, 0.34, 'sine', 0.16, 0.9);
+      return;
+    }
+    if(type === 'ice_click'){
+      playTone(1180, 0.06, 'sine', 0, 0.75, 1480);
+      return;
+    }
+    const map = {
+      click:[920,.05,'triangle',1120], ok:[587,.14,'sine',784], level:[659,.24,'triangle',987],
+      bad:[190,.22,'sawtooth',125], magic:[880,.18,'sine',1320], ice_cast:[880,.18,'sine',1320],
+      open:[460,.11,'triangle',620], modal_open:[520,.12,'sine',740], modal_close:[620,.09,'sine',440],
+      tab_switch:[980,.045,'sine',1140], stat_gain:[740,.15,'sine',1108],
+      wax_seal:[620,.16,'triangle',880], letter_fold:[540,.11,'triangle',420],
+      page:[660,.05,'triangle',520], heart:[740,.2,'sine',980], gift_loved:[740,.2,'sine',980],
+      card_hover:[1040,.035,'sine',1180]
+    };
+    const [f,d,w,sl] = map[type] || map.click;
+    playTone(f, d, w, 0, 0.85, sl);
+  } catch(e){}
 }
 
 // ========== BGM (背景音乐) ==========
@@ -74,8 +191,7 @@ let bgmCurType = null;    // 当前播放的情境类型
 let sceneBgmType = null;  // 当前场景显式配置的 bgm 类型（贯穿整个场景，剧情中不被切走）
 let bgmGroupIdx = {};     // 类型 -> 上次使用的曲目索引（轮换用）
 let bgmLoc = null;        // 当前 bgm 所属地点（用于判断是否真的切换了地点）
-let bgmVolume = (()=>{ try { const v=parseFloat(localStorage.getItem(MUSIC_VOL_KEY)); return isNaN(v)?0.5:Math.max(0,Math.min(1,v)); } catch(e){ return 0.5; } })();
-let bgmMuted = (()=>{ try { return localStorage.getItem(BGM_MUTE_KEY)==='1'; } catch(e){ return false; } })();
+let bgmVolume = (()=>{ try { const v=parseFloat(localStorage.getItem(MUSIC_VOL_KEY)); return Number.isFinite(v)?Math.max(0,Math.min(1,v)):0.5; } catch(e){ return 0.5; } })();
 
 // 同类型分组（策略 B：同情境在多首间轮换）
 const BGM_GROUPS = {
@@ -97,24 +213,50 @@ function bgmFileExists(key){
   if(!window || !window.fetch) return true; // 无法探测时乐观返回，Audio error 兜底
   return true; // 由 Audio onerror 兜底，避免每次 fetch
 }
+function bgmCancelFade(el){
+  if(!el) return;
+  if(el._fadeIv){
+    try { clearInterval(el._fadeIv); } catch(e){}
+    el._fadeIv = null;
+  }
+}
 function bgmFadeTo(el, target, ms, done){
   if(!el || typeof el.volume !== 'number'){ if(done) done(); return; }
-  const step = 50, cur = el.volume;
-  const delta = (target - cur) / (ms/step);
+  bgmCancelFade(el);
+  const dst = Math.max(0, Math.min(1, Number(target) || 0));
+  const dur = Math.max(0, Number(ms) || 0);
+  if(dur <= 0){
+    try { el.volume = dst; } catch(e){}
+    if(done) done();
+    return;
+  }
+  const step = 50;
+  const steps = Math.max(1, Math.round(dur / step));
+  const startVol = Number.isFinite(el.volume) ? el.volume : 0;
+  const delta = (dst - startVol) / steps;
   let n = 0;
-  const iv = setInterval(()=>{
+  el._fadeIv = setInterval(()=>{
     n++;
-    el.volume = Math.max(0, Math.min(1, el.volume + delta));
-    if(n*step >= ms){ clearInterval(iv); el.volume = target; if(done) done(); }
+    const nextVol = n >= steps ? dst : Math.max(0, Math.min(1, startVol + delta * n));
+    try { el.volume = nextVol; } catch(e){}
+    if(n >= steps){
+      bgmCancelFade(el);
+      if(done) done();
+    }
   }, step);
 }
 function bgmStop(fade=true){
   const el = bgmEl;
   if(!el) return;
   bgmEl = null; bgmKey = null; bgmCurType = null; sceneBgmType = null;
-  const kill = ()=>{ try{ el.pause(); el.removeAttribute('src'); }catch(e){} };
-  if(fade){ try{ el.volume = Math.min(el.volume, bgmMuted?0:bgmVolume); }catch(e){} bgmFadeTo(el, 0, 600, kill); }
-  else kill();
+  const kill = ()=>{ bgmCancelFade(el); try{ el.pause(); }catch(e){} };
+  if(fade){
+    bgmCancelFade(el);
+    try{ el.volume = Math.min(el.volume, (bgmMuted||muted)?0:bgmVolume); }catch(e){}
+    bgmFadeTo(el, 0, 600, kill);
+  } else {
+    kill();
+  }
 }
 // 创建/获取持久的 DOM <audio> 元素（标准、可靠，优于 new Audio()）
 function bgmAudio(){
@@ -123,11 +265,14 @@ function bgmAudio(){
   try { el = document.getElementById('bgm-audio') || document.createElement('audio'); }
   catch(e){ try{ el = new Audio(); }catch(e2){ return null; } }
   if(!el.loop) el.loop = true;
-  if(!el.preload) el.preload = 'auto';
-  el.volume = bgmMuted ? 0 : bgmVolume;
+  if(!el.preload) el.preload = 'metadata';
+  el.volume = (bgmMuted || muted) ? 0 : bgmVolume;
   el.onerror = ()=>{ /* 加载失败：保留元素，只是本次不响，等待下次触发重试 */ };
   bgmEl = el;
   return el;
+}
+function encodeAudioPath(file){
+  return String(file || '').split('/').map(seg => encodeURIComponent(seg)).join('/');
 }
 function bgmPlay(key, {fade=true}={}){
   if(!key) return;
@@ -139,17 +284,35 @@ function bgmPlay(key, {fade=true}={}){
   const startNew = ()=>{
     if(bgmKey !== key) return; // 期间又被切换
     const el = bgmAudio(); if(!el) return;
-    try { el.src = encodeURI(file); el.loop = true; } catch(e){ return; } // 编码空格/&，避免加载失败
+    bgmCancelFade(el);
+    const targetVol = (bgmMuted || muted) ? 0 : bgmVolume;
+    try { el.src = encodeAudioPath(file); el.loop = true; } catch(e){ return; } // 逐段 encodeURIComponent 编码空格与 &
     bgmEl = el;
+    if(fade && targetVol > 0){
+      try { el.volume = 0; } catch(e){}
+    } else {
+      try { el.volume = targetVol; } catch(e){}
+    }
     const p = el.play();
     if(p && p.catch) p.catch(()=>{ /* 自动播放被拒：等待 bgmUnlock 时重试 */ });
-    // 淡入
-    if(fade && !bgmMuted && !muted){ try{ el.volume = 0; }catch(e){} el.volume = 0; bgmFadeTo(el, bgmVolume, 650); }
+    // 淡入；非淡入或静音状态直接锁定目标音量（修复音乐室淡出后静音播放与静音泄漏）
+    if(fade && targetVol > 0){
+      bgmFadeTo(el, targetVol, 650);
+    } else {
+      bgmCancelFade(el);
+      try { el.volume = targetVol; } catch(e){}
+    }
   };
   if(prev && prev.src){
-    const kill = ()=>{ try{ prev.pause(); prev.removeAttribute('src'); }catch(e){} };
-    if(fade){ try{ prev.volume = Math.min(prev.volume, bgmMuted?0:bgmVolume); }catch(e){} bgmFadeTo(prev, 0, 600, ()=>{ if(bgmKey===key) startNew(); else kill(); }); }
-    else { kill(); startNew(); } // fade:false 也要启动新曲
+    const kill = ()=>{ bgmCancelFade(prev); try{ prev.pause(); }catch(e){} };
+    if(fade){
+      bgmCancelFade(prev);
+      try{ prev.volume = Math.min(prev.volume, (bgmMuted||muted)?0:bgmVolume); }catch(e){}
+      bgmFadeTo(prev, 0, 600, ()=>{ if(bgmKey===key) startNew(); else kill(); });
+    } else {
+      kill();
+      startNew(); // fade:false 也要启动新曲
+    }
   } else {
     startNew();
   }
@@ -157,7 +320,18 @@ function bgmPlay(key, {fade=true}={}){
 // 用户手势后解锁音频（浏览器自动播放限制）——任何用户交互都会尝试恢复
 function bgmUnlock(){
   bgmUnlocked = true;
-  if(bgmEl){
+  try {
+    if(ACTX && ACTX.state === 'suspended' && typeof ACTX.resume === 'function'){
+      const rp = ACTX.resume();
+      if(rp && rp.catch) rp.catch(()=>{});
+    }
+  } catch(e){}
+  try {
+    if(typeof window !== 'undefined' && window.CrystalSFX && typeof window.CrystalSFX.unlock === 'function'){
+      window.CrystalSFX.unlock();
+    }
+  } catch(e){}
+  if(bgmEl && bgmEl.src && bgmEl.paused){
     const p = bgmEl.play();
     if(p && p.catch) p.catch(()=>{});
   }
@@ -190,6 +364,13 @@ const BG_CLASS_TYPE = {
   'bg-img-uni':'academy', 'bg-img-plain':'sacred', 'bg-img-village':'cheerful',
   'bg-img-castle':'sacred', 'bg-img-crosswalk-accident':'sad',
   'bg-img-classroom-locust':'peaceful',
+  'bg-img-ice-canyon':'sad',
+  'bg-img-chenglan-guild':'peaceful',
+  'bg-img-north-forest':'sad',
+  'bg-img-glow-sheep-hill':'relax',
+  'bg-img-northwind-tavern':'relax',
+  'bg-img-border-snowroad':'sad',
+  'bg-img-night':'relax',
 };
 // 依据 bg 类 / phase 决定情境【类型】（而非固定单曲）。兜底 peaceful，保证全覆盖。
 function bgmTypeForBg(cls, phase, loc){
@@ -243,22 +424,79 @@ function bgmSyncFromBG(cls, phase, loc){
 }
 function bgmApplyMute(){
   if(!bgmEl) return;
-  if(bgmMuted || muted){ bgmFadeTo(bgmEl, 0, 300); }
-  else { bgmEl.volume = 0; bgmFadeTo(bgmEl, bgmVolume, 500); }
+  bgmCancelFade(bgmEl);
+  const target = (bgmMuted || muted) ? 0 : bgmVolume;
+  bgmFadeTo(bgmEl, target, target <= 0 ? 260 : 380);
 }
-function bgmSetVolume(v){
-  bgmVolume = clamp(v, 0, 1);
-  try { localStorage.setItem(MUSIC_VOL_KEY, String(v)); } catch(e){}
-  if(bgmEl && !bgmMuted && !muted){ bgmEl.volume = 0; bgmFadeTo(bgmEl, bgmVolume, 300); }
+function bgmSetVolume(v, opts){
+  opts = opts || {};
+  const n = Number(v);
+  if(!Number.isFinite(n)) return bgmVolume;
+  bgmVolume = Math.max(0, Math.min(1, n));
+  try { localStorage.setItem(MUSIC_VOL_KEY, String(bgmVolume)); } catch(e){}
+  if(opts.syncSettings !== false){
+    try {
+      const cur = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+      if(cur && typeof cur === 'object'){
+        cur.bgm = bgmVolume;
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(cur));
+      }
+    } catch(e){}
+  }
+  if(opts.syncVnPrefs !== false){
+    try {
+      const raw = JSON.parse(localStorage.getItem(VN_PREFS_KEY) || '{}');
+      if(raw && typeof raw === 'object'){
+        raw.bgmVol = bgmVolume;
+        localStorage.setItem(VN_PREFS_KEY, JSON.stringify(raw));
+      }
+    } catch(e){}
+  }
+  if(bgmEl){
+    bgmCancelFade(bgmEl);
+    try { bgmEl.volume = (bgmMuted || muted) ? 0 : bgmVolume; } catch(e){}
+  }
+  try {
+    const pct = Math.round(bgmVolume * 100);
+    const sl = typeof document !== 'undefined' ? document.getElementById('set-bgm') : null;
+    if(sl && Number(sl.value) !== pct) sl.value = String(pct);
+    const vl = typeof document !== 'undefined' ? document.getElementById('set-bgm-val') : null;
+    if(vl) vl.textContent = pct + '%';
+  } catch(e){}
+  if(!_inBgmSync && opts.notifyVnUx !== false){
+    _inBgmSync = true;
+    try {
+      if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.syncExternalAudioPrefs === 'function'){
+        window.VNUx.syncExternalAudioPrefs({ bgmVol: bgmVolume });
+      }
+    } catch(e){}
+    finally { _inBgmSync = false; }
+  }
+  return bgmVolume;
+}
+function setMuted(m){
+  const next = !!m;
+  muted = next;
+  bgmMuted = next;
+  try { localStorage.setItem(MUTE_KEY, next ? '1' : '0'); } catch(e){}
+  try { localStorage.setItem(BGM_MUTE_KEY, next ? '1' : '0'); } catch(e){}
+  try {
+    if(typeof window !== 'undefined' && window.CrystalSFX && typeof window.CrystalSFX.setMuted === 'function'){
+      window.CrystalSFX.setMuted(next);
+    }
+  } catch(e){}
+  bgmApplyMute();
+  if(typeof syncMuteBtn === 'function') syncMuteBtn();
+  return next;
+}
+function isMuted(){
+  return !!(muted || bgmMuted);
 }
 function bgmSetMuted(m){
-  bgmMuted = m;
-  try { localStorage.setItem(BGM_MUTE_KEY, m?'1':'0'); } catch(e){}
-  bgmApplyMute();
+  return setMuted(m);
 }
 function bgmToggleMute(){
-  bgmSetMuted(!bgmMuted);
-  return bgmMuted;
+  return setMuted(!isMuted());
 }
 
 // ========== PORTRAITS ==========
@@ -353,6 +591,24 @@ const PORTRAIT_FILES = {
   fengshen_normal:'assets/portraits/fengshen_normal.png',
   shengnu_normal:'assets/portraits/shengnu_normal.png',
   moshen_normal:'assets/portraits/moshen_normal.png',
+  // ==== 希尔维亚（伪装·眷寒渔：黑发墨绿眼深绿发带） ====
+  sylvia_disguise_normal:'assets/portraits/sylvia_disguise_normal.png',
+  sylvia_disguise_sad:'assets/portraits/sylvia_disguise_sad.png',
+  sylvia_disguise_serious:'assets/portraits/sylvia_disguise_serious.png',
+  sylvia_disguise_sleepy:'assets/portraits/sylvia_disguise_sleepy.png',
+  sylvia_disguise_surprised:'assets/portraits/sylvia_disguise_surprised.png',
+  sylvia_disguise_teary:'assets/portraits/sylvia_disguise_teary.png',
+  sylvia_disguise_wink:'assets/portraits/sylvia_disguise_wink.png',
+  sylvia_disguise_happy:'assets/portraits/sylvia_disguise_happy.png',
+  sylvia_disguise_smile:'assets/portraits/sylvia_disguise_smile.png',
+  // ==== 第三卷新增配角 ====
+  masha_normal:'assets/portraits/masha_normal.png',
+  kyle_normal:'assets/portraits/kyle_normal.png',
+  mage_aurora_normal:'assets/portraits/mage_aurora_normal.png',
+  axu_normal:'assets/portraits/axu_normal.png',
+  musa_normal:'assets/portraits/musa_normal.png',
+  jiqing_normal:'assets/portraits/jiqing_normal.png',
+  servant_a_normal:'assets/portraits/servant_a_normal.png',
 };
 // 各角色相对主角的年龄差：姐姐=+2，妹妹=-2，其余角色=0（父母/师长等一律用成年档）
 function charAgeDelta(charId){
@@ -370,8 +626,11 @@ function portraitTierForAge(ageY){
   if(ageY <= 11) return 2;     // youth
   return 3;                    // normal
 }
+function sylviaPortraitUnlocked(){
+  return !!(flag('named') || (S.ageY || 0) >= 1 || S.alias);
+}
 function portraitAgeTier(){
-  if(!flag('named')) return 0;
+  if(!sylviaPortraitUnlocked()) return 0;
   return portraitTierForAge(S.ageY);
 }
 function portraitAgeTierFor(charId){
@@ -383,24 +642,66 @@ function portraitAgeTierFor(charId){
 function portraitTierName(tier){
   return tier===1 ? 'child' : tier===2 ? 'young' : 'teenage';
 }
+// 即将回流的 2 位新角色 + 9 张表情差分协议（独立于磁盘已校验的 PORTRAIT_FILES，避免裂图且零配置无缝启用）
+const PORTRAIT_DIFF_PROTOCOL = {
+  lein_normal: 'assets/portraits/lein_normal.png',
+  peilin_normal: 'assets/portraits/peilin_normal.png',
+  aino_serious: 'assets/portraits/aino_serious.png',
+  aino_smile: 'assets/portraits/aino_smile.png',
+  aino_shy: 'assets/portraits/aino_shy.png',
+  jilan_serious: 'assets/portraits/jilan_serious.png',
+  jilan_shy: 'assets/portraits/jilan_shy.png',
+  jilan_teary: 'assets/portraits/jilan_teary.png',
+  charlotte_shy: 'assets/portraits/charlotte_shy.png',
+  charlotte_smile: 'assets/portraits/charlotte_smile.png',
+  noelle_smile: 'assets/portraits/noelle_smile.png',
+};
+const FAILED_PORTRAIT_URLS = new Set();
+
+function resolvePortraitFallback(charId, emotion){
+  if(charId==='sylvia'){
+    if(!sylviaPortraitUnlocked()) return null;
+    const sc = currentScene && SCENES[currentScene];
+    if(S.alias==='眷寒渔' && !(sc && sc.useOriginalSylvia)){
+      return PORTRAIT_FILES.sylvia_disguise_normal;
+    }
+  }
+  const tier = portraitAgeTierFor(charId);
+  const tn = portraitTierName(tier);
+  return PORTRAIT_FILES[`${charId}_${tn}_normal`]
+    || PORTRAIT_FILES[`${charId}_normal`]
+    || PORTRAIT_FILES[`${charId}_child`]
+    || null;
+}
+
 function resolvePortrait(charId, emotion){
   const emo = emotion || 'normal';
   if(charId==='sylvia'){
-    if(!flag('named')) return null; // hidden before naming
+    if(!sylviaPortraitUnlocked()) return null; // hidden before naming
+    const sc = currentScene && SCENES[currentScene];
+    if(S.alias==='眷寒渔' && !(sc && sc.useOriginalSylvia)){
+      return PORTRAIT_FILES[`sylvia_disguise_${emo}`] || PORTRAIT_FILES.sylvia_disguise_normal;
+    }
   }
   const tier = portraitAgeTierFor(charId);
   const tn = portraitTierName(tier);
   // 优先：<id>_<阶段>_<表情>（如 alice_child_shy、sylvia_youth_normal）
   const tiered = PORTRAIT_FILES[`${charId}_${tn}_${emo}`];
-  if(tiered) return tiered;
+  if(tiered && !FAILED_PORTRAIT_URLS.has(tiered)) return tiered;
   // 其次：<id>_<阶段>_normal
   const tieredN = PORTRAIT_FILES[`${charId}_${tn}_normal`];
-  if(tieredN) return tieredN;
-  // 再次：<id>_<表情>（普通档）
+  if(tieredN && !FAILED_PORTRAIT_URLS.has(tieredN)) return tieredN;
+  // 再次：<id>_<表情>（先查磁盘已知，再查差分协议表）
   const plain = PORTRAIT_FILES[`${charId}_${emo}`];
-  if(plain) return plain;
-  // 最后：<id>_normal 或 child 兜底
-  return PORTRAIT_FILES[`${charId}_normal`] || PORTRAIT_FILES[`${charId}_child`] || null;
+  if(plain && !FAILED_PORTRAIT_URLS.has(plain)) return plain;
+  const proto = PORTRAIT_DIFF_PROTOCOL[`${charId}_${emo}`];
+  if(proto && !FAILED_PORTRAIT_URLS.has(proto)) return proto;
+  // 最后：<id>_normal 或协议 normal 或 child 兜底
+  const norm = PORTRAIT_FILES[`${charId}_normal`];
+  if(norm && !FAILED_PORTRAIT_URLS.has(norm)) return norm;
+  const protoNorm = PORTRAIT_DIFF_PROTOCOL[`${charId}_normal`];
+  if(protoNorm && !FAILED_PORTRAIT_URLS.has(protoNorm)) return protoNorm;
+  return PORTRAIT_FILES[`${charId}_child`] || null;
 }
 
 const CSS_CHARS = {
@@ -416,6 +717,8 @@ const CSS_CHARS = {
   teacher_middle:['中年教师','📜'], merchant_bakery:['点心店老板','🍞'],
   merchant_jewel:['首饰店老板','💎'], jianshen:['剑神','⚔️'],
   wanshen:['万神','🏹'], shengnu:['圣女','✨'], moshen:['魔神','🌑'],
+  masha:['玛莎','📋'], kyle:['凯尔','🗡️'], mage_aurora:['女法师','🔮'],
+  axu:['阿蓿','🐑'], musa:['穆萨','🌿'], jiqing:['霁清','✉️'], servant_a:['侍从','🕯️'],
 };
 
 // ========== CHARACTERS META ==========
@@ -453,6 +756,13 @@ const CHARS = {
   wanshen:{name:'万神', short:'万神', css:'wanshen', role:'七大列强'},
   shengnu:{name:'圣女', short:'圣女', css:'shengnu', role:'七大列强'},
   moshen:{name:'魔神', short:'魔神', css:'moshen', role:'七大列强'},
+  masha:{name:'玛莎', short:'玛莎', css:'masha', role:'公会接待'},
+  kyle:{name:'凯尔', short:'凯尔', css:'kyle', role:'极光队长'},
+  mage_aurora:{name:'极光女法师', short:'女法师', css:'mage_aurora', role:'银级冒险者'},
+  axu:{name:'阿蓿', short:'阿蓿', css:'axu', role:'牧羊女孩'},
+  musa:{name:'穆萨', short:'穆萨', css:'musa', role:'随军老药师'},
+  jiqing:{name:'霁清', short:'霁清', css:'jiqing', role:'送信少年'},
+  servant_a:{name:'侍从', short:'侍从', css:'servant_a', role:'公爵府侍从'},
 };
 
 // 已习得魔法（非「勇者之赐」技能）的展示信息
@@ -461,41 +771,108 @@ const MAGIC_SKILLS = {
   ice_crystal:{id:'ice_crystal', name:'冰晶术 Lv.1', desc:'凝聚冰晶进行攻击或塑形。'},
 };
 
+// 1x1 transparent SVG data URI for hidden/unloaded placeholder <img> nodes
+const TRANSPARENT_IMG_SRC = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'/%3E";
+
+// ========== MONOCHROME SVG ICON HELPER ==========
+const UI_ICONS = {
+  bed: '<path d="M2.5 13V6.5"/><path d="M2.5 10.5h13v2.5"/><path d="M15.5 10.5V8.5a1.5 1.5 0 00-1.5-1.5H8.5v3.5"/><circle cx="5.5" cy="8.2" r="1.2"/>',
+  hall: '<path d="M2.5 6.5L9 3l6.5 3.5"/><line x1="3" y1="14.5" x2="15" y2="14.5"/><line x1="4.8" y1="7.5" x2="4.8" y2="14.5"/><line x1="9" y1="7.5" x2="9" y2="14.5"/><line x1="13.2" y1="7.5" x2="13.2" y2="14.5"/>',
+  parlor: '<path d="M4 9V6.5A1.5 1.5 0 015.5 5h7A1.5 1.5 0 0114 6.5V9"/><path d="M2.5 9.5A1.5 1.5 0 014 8h10a1.5 1.5 0 011.5 1.5V13h-13V9.5z"/><line x1="4.5" y1="13" x2="4.5" y2="15"/><line x1="13.5" y1="13" x2="13.5" y2="15"/>',
+  garden: '<circle cx="9" cy="7" r="2.6"/><path d="M9 9.6V15.5"/><path d="M9 12.2c-1.8 0-3-1-3-2.4 1.6 0 2.7.8 3 2.4z"/><path d="M9 13c1.8 0 3-1 3-2.4-1.6 0-2.7.8-3 2.4z"/>',
+  book: '<path d="M4 3.2h9.5a1 1 0 011 1V14a1 1 0 01-1 1H4a1.2 1.2 0 01-1.2-1.2V4.4A1.2 1.2 0 014 3.2z"/><line x1="6.2" y1="3.2" x2="6.2" y2="15"/><line x1="8.4" y1="6.6" x2="12.2" y2="6.6"/><line x1="8.4" y1="9.4" x2="11.6" y2="9.4"/>',
+  library: '<path d="M2.5 4.2C2.5 3.6 3.1 3 3.8 3H9v11.5H3.8a1.3 1.3 0 01-1.3-1.3V4.2z"/><path d="M15.5 4.2c0-.6-.6-1.2-1.3-1.2H9v11.5h5.2c.7 0 1.3-.6 1.3-1.3V4.2z"/>',
+  dining: '<line x1="5.2" y1="3" x2="5.2" y2="15"/><path d="M3.6 3v3.2a1.6 1.6 0 003.2 0V3"/><path d="M12.5 3v12"/><path d="M12.5 3c1.6.6 2.2 2.4 2.2 4.6h-2.2"/>',
+  kitchen: '<path d="M9 3.2c2 2.2 3.2 4.2 3.2 6.3a3.2 3.2 0 01-6.4 0c0-1.6.9-3.2 2.1-4.8.2 1 .8 1.6 1.4 1.8-.3-1.1-.4-2.1-.3-3.3z"/><line x1="4.5" y1="15" x2="13.5" y2="15"/>',
+  sword: '<path d="M13.8 3.2l1 1-8.2 8.2-2.2.4.4-2.2 9-7.4z"/><path d="M4.2 3.2l-1 1 3.6 3.6M10.4 11.4l2.8 2.8 1-1-2.8-2.8"/>',
+  blade: '<path d="M14.2 3.2l.6 2.6-7.6 7.6-2-2 7.6-7.6 1.4-.6z"/><line x1="4.2" y1="10.4" x2="7.6" y2="13.8"/><line x1="3.2" y1="14.8" x2="5.6" y2="12.4"/>',
+  moon: '<path d="M13.8 11.5A5.5 5.5 0 016.5 4.2a5.8 5.8 0 107.3 7.3z"/>',
+  chapel: '<path d="M9 2.5v3.2M7.4 4.1h3.2"/><path d="M4 15V9.2L9 5.7l5 3.5V15z"/><path d="M7.5 15v-3.2a1.5 1.5 0 013 0V15"/>',
+  cellar: '<path d="M5.5 3h7l-.8 4.4a2.8 2.8 0 01-5.4 0L5.5 3z"/><line x1="9" y1="9.8" x2="9" y2="15"/><line x1="6.4" y1="15" x2="11.6" y2="15"/>',
+  key: '<circle cx="6.2" cy="9" r="3"/><path d="M9.2 9H15.5"/><path d="M13.2 9v2.2M15.2 9v1.8"/>',
+  town: '<path d="M2.5 9.2L6.5 5.5l4 3.7V15h-8V9.2z"/><path d="M10.5 10.2l2.8-2.5 2.4 2.3V15h-5.2"/>',
+  market: '<path d="M4.2 6.8h9.6l-.8 7.8H5l-.8-7.8z"/><path d="M6.6 6.8V5.2a2.4 2.4 0 014.8 0v1.6"/>',
+  beach: '<path d="M2.5 12.2c1.6-1.2 3.2-1.2 4.8 0s3.2 1.2 4.8 0 3.2-1.2 3.4-1"/><path d="M2.5 15c1.6-1.1 3.2-1.1 4.8 0s3.2 1.1 4.8 0 3.2-1.1 3.4-.9"/><circle cx="12.5" cy="6.2" r="2.2"/>',
+  home: '<path d="M3 8.8L9 3.5l6 5.3"/><path d="M4.8 7.8V15h8.4V7.8"/><path d="M7.6 15v-3.6h2.8V15"/>',
+  water: '<path d="M9 2.8C9 2.8 4.2 8.2 4.2 11a4.8 4.8 0 009.6 0C13.8 8.2 9 2.8 9 2.8z"/>',
+  ice: '<line x1="9" y1="2.4" x2="9" y2="15.6"/><line x1="3.3" y1="5.7" x2="14.7" y2="12.3"/><line x1="14.7" y1="5.7" x2="3.3" y2="12.3"/><polyline points="7.2,4.1 9,5.6 10.8,4.1"/><polyline points="7.2,13.9 9,12.4 10.8,13.9"/>',
+  ice_cube: '<polygon points="9,2.4 14.8,5.7 14.8,12.3 9,15.6 3.2,12.3 3.2,5.7"/><polyline points="3.2,5.7 9,9 14.8,5.7"/><line x1="9" y1="9" x2="9" y2="15.6"/>',
+  cafe: '<path d="M3.5 7.2h8.6v3.6a3.4 3.4 0 01-3.4 3.4H6.9a3.4 3.4 0 01-3.4-3.4V7.2z"/><path d="M12.1 8.2h1.6a1.6 1.6 0 010 3.2h-1.6"/><path d="M6.2 4.6c0-.8.8-1 .8-1.8M9.2 4.6c0-.8.8-1 .8-1.8"/>',
+  tower: '<polygon points="9,2.2 12,6 6,6"/><rect x="6.2" y="6" width="5.6" height="9.2"/><circle cx="9" cy="9.2" r="1.4"/><line x1="4.8" y1="15.2" x2="13.2" y2="15.2"/>',
+  flower: '<circle cx="9" cy="9" r="2"/><circle cx="9" cy="4.8" r="1.7"/><circle cx="13" cy="7.6" r="1.7"/><circle cx="11.5" cy="12.3" r="1.7"/><circle cx="6.5" cy="12.3" r="1.7"/><circle cx="5" cy="7.6" r="1.7"/>',
+  tree: '<circle cx="9" cy="7" r="4"/><line x1="9" y1="11" x2="9" y2="15.5"/><line x1="6.4" y1="15.5" x2="11.6" y2="15.5"/>',
+  forest: '<polygon points="6.6,3.2 10.2,9.2 3,9.2"/><polygon points="6.6,7.4 10.6,13.2 2.6,13.2"/><line x1="6.6" y1="13.2" x2="6.6" y2="15.5"/><polygon points="12.2,5.2 15.2,11 9.2,11"/><line x1="12.2" y1="11" x2="12.2" y2="15.5"/>',
+  road: '<line x1="6.6" y1="3" x2="3.2" y2="15"/><line x1="11.4" y1="3" x2="14.8" y2="15"/><line x1="9" y1="4.2" x2="9" y2="6.6"/><line x1="9" y1="8.8" x2="9" y2="11.2"/><line x1="9" y1="13.2" x2="9" y2="14.8"/>',
+  dojo: '<path d="M2.5 7.4C5 6.8 7 5.2 9 3.2c2 2 4 3.6 6.5 4.2"/><line x1="4" y1="7.8" x2="14" y2="7.8"/><rect x="4.8" y="7.8" width="8.4" height="7"/><line x1="9" y1="7.8" x2="9" y2="14.8"/>',
+  shield: '<path d="M9 2.6L14.5 5v4.3c0 3.4-2.3 5.7-5.5 6.8-3.2-1.1-5.5-3.4-5.5-6.8V5L9 2.6z"/><path d="M9 5.8v6.8M6.4 8.6h5.2"/>',
+  mountain: '<polygon points="2.2,14.8 7.5,5.2 11.4,11.6 13.4,8.6 16,14.8"/><polyline points="5.6,8.6 7.5,9.6 9.2,8.2"/>',
+  door: '<path d="M5 15V4.5A1.5 1.5 0 016.5 3h5A1.5 1.5 0 0113 4.5V15"/><line x1="3.5" y1="15" x2="14.5" y2="15"/><circle cx="10.8" cy="9.2" r="0.8" fill="currentColor" stroke="none"/>',
+  baby: '<polygon points="9,2.8 10.6,7.2 15.2,9 10.6,10.8 9,15.2 7.4,10.8 2.8,9 7.4,7.2"/>',
+  cookie: '<circle cx="9" cy="9" r="5.8"/><circle cx="7.2" cy="7.2" r="0.8" fill="currentColor" stroke="none"/><circle cx="11" cy="7.8" r="0.8" fill="currentColor" stroke="none"/><circle cx="8.4" cy="11.2" r="0.8" fill="currentColor" stroke="none"/><circle cx="11.4" cy="10.8" r="0.7" fill="currentColor" stroke="none"/>',
+  gem: '<polygon points="9,2.6 14.6,7.2 9,15.4 3.4,7.2"/><line x1="3.4" y1="7.2" x2="14.6" y2="7.2"/><polyline points="6.6,7.2 9,2.6 11.4,7.2"/>',
+  shell: '<path d="M9 14.8c-3.4 0-5.8-2.4-5.8-5.6 0-3.4 2.8-6 6-6 2.8 0 5.2 2.1 5.2 4.8 0 2.3-1.8 4-4 4-1.7 0-3-1.2-3-2.8 0-1.2.9-2.1 2-2.1"/>',
+  ribbon: '<circle cx="9" cy="7.5" r="3.4"/><path d="M6.8 10.4L5.6 15.4 9 13.8l3.4 1.6-1.2-5"/>',
+  spark: '<polygon points="9,2.2 11.2,6.8 15.8,9 11.2,11.2 9,15.8 6.8,11.2 2.2,9 6.8,6.8"/>',
+};
+const UI_ICON_ALIAS = {
+  '🛏️':'bed', '🛏':'bed', '🏛️':'hall', '🏛':'hall', '🛋️':'parlor', '🛋':'parlor',
+  '🌹':'garden', '📚':'book', '📖':'library', '🍽️':'dining', '🍽':'dining',
+  '🍳':'kitchen', '⚔️':'sword', '⚔':'sword', '🗡️':'blade', '🗡':'blade',
+  '🌙':'moon', '⛪':'chapel', '🍷':'cellar', '🗝️':'key', '🗝':'key',
+  '🏘️':'town', '🏘':'town', '🛒':'market', '🏖️':'beach', '🏖':'beach',
+  '🏠':'home', '💧':'water', '❄️':'ice', '❄':'ice', '🧊':'ice_cube',
+  '🍮':'cafe', '🗼':'tower', '🌺':'flower', '🌳':'tree', '🌲':'forest',
+  '🛤️':'road', '🛤':'road', '🏯':'dojo', '🛡️':'shield', '🛡':'shield',
+  '🏔️':'mountain', '🏔':'mountain', '🚪':'door', '🍼':'baby', '👶':'baby',
+  '🍪':'cookie', '💎':'gem', '🐚':'shell', '✦':'spark', '◇':'spark',
+  cookie:'cookie', ebony_sword:'blade', aino_handkerchief:'ice', aino_academy_handkerchief:'ice',
+  shell_pin:'shell', ice_pebble:'gem', ribbon:'ribbon',
+};
+function uiIco(name, size=14){
+  const raw = String(name || '').trim();
+  const key = UI_ICONS[raw] ? raw : (UI_ICON_ALIAS[raw] || 'spark');
+  const body = UI_ICONS[key] || UI_ICONS.spark;
+  const sz = Number(size) || 14;
+  return `<svg class="ui-ico ui-ico-${key}" viewBox="0 0 18 18" width="${sz}" height="${sz}" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+}
+
 // ========== LOCATIONS ==========
 const LOCS = {
   // 公爵府
-  nursery:{id:'nursery', name:'育婴室', icon:'🛏️', area:'公爵府', desc:'柔软的床铺与纱帐', bg:'bg-img-nursery bg-room', unlock:true, st:0, tags:['rest']},
-  hallway:{id:'hallway', name:'长廊', icon:'🏛️', area:'公爵府', desc:'挂满祖先画像的走廊', bg:'bg-img-hallway bg-hall', unlock:true, st:1},
-  parlor:{id:'parlor', name:'起居室', icon:'🛋️', area:'公爵府', desc:'阳光与地毯的起居室', bg:'bg-img-parlor bg-hall', unlock:true, st:1, tags:['talk']},
-  garden:{id:'garden', name:'花园', icon:'🌹', area:'公爵府', desc:'修剪整齐的花圃', bg:'bg-img-garden bg-garden', unlock:true, st:1, tags:['train','egg']},
-  study:{id:'study', name:'图书室', icon:'📚', area:'公爵府', desc:'三千册藏书的图书馆', bg:'bg-img-study bg-study', unlock:false, st:1, tags:['study','egg']},
-  dining:{id:'dining', name:'餐厅', icon:'🍽️', area:'公爵府', desc:'长桌与银质餐具', bg:'bg-img-dining bg-hall', unlock:true, st:1, tags:['talk']},
-  kitchen:{id:'kitchen', name:'厨房', icon:'🍳', area:'公爵府', desc:'香气与忙碌', bg:'bg-img-kitchen bg-room', unlock:false, st:1, tags:['egg']},
-  training:{id:'training', name:'练武场', icon:'⚔️', area:'公爵府', desc:'木剑与沙地', bg:'bg-img-training bg-plain', unlock:false, st:1, tags:['train']},
-  balcony:{id:'balcony', name:'露台', icon:'🌙', area:'公爵府', desc:'可眺望庭院的露台', bg:'bg-img-balcony bg-night', unlock:false, st:1, tags:['egg']},
-  chapel:{id:'chapel', name:'小礼拜堂', icon:'⛪', area:'公爵府', desc:'安静的家庭礼拜堂', bg:'bg-img-chapel bg-hall', unlock:false, st:1, tags:['egg']},
-  cellar:{id:'cellar', name:'酒窖', icon:'🍷', area:'公爵府', desc:'阴凉的地下酒窖', bg:'bg-img-cellar bg-void', unlock:false, st:2, tags:['egg']},
-  secret:{id:'secret', name:'密道入口', icon:'🗝️', area:'公爵府', desc:'储藏室第三排砖', bg:'bg-void', unlock:false, st:1, tags:['egg']},
+  nursery:{id:'nursery', name:'育婴室', icon:'bed', area:'公爵府', desc:'柔软的床铺与纱帐', bg:'bg-img-nursery bg-room', unlock:true, st:0, tags:['rest']},
+  hallway:{id:'hallway', name:'长廊', icon:'hall', area:'公爵府', desc:'挂满祖先画像的走廊', bg:'bg-img-hallway bg-hall', unlock:true, st:1},
+  parlor:{id:'parlor', name:'起居室', icon:'parlor', area:'公爵府', desc:'阳光与地毯的起居室', bg:'bg-img-parlor bg-hall', unlock:true, st:1, tags:['talk']},
+  garden:{id:'garden', name:'花园', icon:'garden', area:'公爵府', desc:'修剪整齐的花圃', bg:'bg-img-garden bg-garden', unlock:true, st:1, tags:['train','egg']},
+  study:{id:'study', name:'图书室', icon:'book', area:'公爵府', desc:'三千册藏书的图书馆', bg:'bg-img-study bg-study', unlock:false, st:1, tags:['study','egg']},
+  dining:{id:'dining', name:'餐厅', icon:'dining', area:'公爵府', desc:'长桌与银质餐具', bg:'bg-img-dining bg-hall', unlock:true, st:1, tags:['talk']},
+  kitchen:{id:'kitchen', name:'厨房', icon:'kitchen', area:'公爵府', desc:'香气与忙碌', bg:'bg-img-kitchen bg-room', unlock:false, st:1, tags:['egg']},
+  training:{id:'training', name:'练武场', icon:'sword', area:'公爵府', desc:'木剑与沙地', bg:'bg-img-training bg-plain', unlock:false, st:1, tags:['train']},
+  balcony:{id:'balcony', name:'露台', icon:'moon', area:'公爵府', desc:'可眺望庭院的露台', bg:'bg-img-balcony bg-night', unlock:false, st:1, tags:['egg']},
+  chapel:{id:'chapel', name:'小礼拜堂', icon:'chapel', area:'公爵府', desc:'安静的家庭礼拜堂', bg:'bg-img-chapel bg-hall', unlock:false, st:1, tags:['egg']},
+  cellar:{id:'cellar', name:'酒窖', icon:'cellar', area:'公爵府', desc:'阴凉的地下酒窖', bg:'bg-img-cellar bg-void', unlock:false, st:2, tags:['egg']},
+  secret:{id:'secret', name:'密道入口', icon:'key', area:'公爵府', desc:'储藏室第三排砖', bg:'bg-void', unlock:false, st:1, tags:['egg']},
   // 外部
-  town:{id:'town', name:'利维莫尔镇', icon:'🏘️', area:'领地', desc:'公爵领地的小镇', bg:'bg-img-town bg-town', unlock:false, st:3},
-  market:{id:'market', name:'材料市场', icon:'🛒', area:'王都', desc:'王都中央材料市场（与公爵小镇不互通，从学院出发）', bg:'bg-img-town bg-town', unlock:false, st:4, tags:['egg']},
-  beach:{id:'beach', name:'海滨别墅', icon:'🏖️', area:'领地', desc:'家族的海滨别墅', bg:'bg-img-beach bg-beach', unlock:false, st:2, tags:['talk']},
-  ownroom:{id:'ownroom', name:'自己的房间', icon:'🛏️', area:'公爵府', desc:'属于自己的房间', bg:'bg-img-ownroom bg-room', unlock:false, st:0, tags:['rest']},
+  town:{id:'town', name:'利维莫尔镇', icon:'town', area:'领地', desc:'公爵领地的小镇', bg:'bg-img-town bg-town', unlock:false, st:3},
+  market:{id:'market', name:'材料市场', icon:'market', area:'王都', desc:'王都中央材料市场（与公爵小镇不互通，从学院出发）', bg:'bg-img-town bg-town', unlock:false, st:4, tags:['egg']},
+  beach:{id:'beach', name:'海滨别墅', icon:'beach', area:'领地', desc:'家族的海滨别墅', bg:'bg-img-beach bg-beach', unlock:false, st:2, tags:['talk']},
+  ownroom:{id:'ownroom', name:'自己的房间', icon:'bed', area:'公爵府', desc:'属于自己的房间', bg:'bg-img-ownroom bg-room', unlock:false, st:0, tags:['rest']},
   // 学院
-  dorm:{id:'dorm', name:'东区宿舍', icon:'🏠', area:'魔法大学', desc:'312号房间', bg:'bg-img-dorm bg-room', unlock:false, st:0, tags:['rest']},
-  water_class:{id:'water_class', name:'水系教室', icon:'💧', area:'魔法大学', desc:'安娜·贝尔导师的教室', bg:'bg-img-classroom bg-school', unlock:false, st:1},
-  ice_class:{id:'ice_class', name:'冰系教室', icon:'❄️', area:'魔法大学', desc:'只有八个座位的小教室', bg:'bg-img-ice-classroom bg-school', unlock:false, st:1, tags:['train','egg']},
-  library:{id:'library', name:'学院图书馆', icon:'📖', area:'魔法大学', desc:'靠墙双人桌是据点', bg:'bg-img-library bg-study', unlock:false, st:1, tags:['study']},
-  cafeteria:{id:'cafeteria', name:'食堂', icon:'🍮', area:'魔法大学', desc:'布丁圣地', bg:'bg-img-cafeteria bg-hall', unlock:false, st:1, tags:['talk']},
-  clocktower:{id:'clocktower', name:'钟塔顶层', icon:'🗼', area:'魔法大学', desc:'风很大的安静角落', bg:'bg-img-clocktower bg-school', unlock:false, st:2, tags:['egg','study']},
-  flowerhouse:{id:'flowerhouse', name:'校园花坊', icon:'🌺', area:'魔法大学', desc:'温室与北极铃兰', bg:'bg-img-flowerhouse bg-garden', unlock:false, st:1, tags:['egg']},
-  training_field:{id:'training_field', name:'训练场', icon:'🗡️', area:'魔法大学', desc:'砂地与木桩', bg:'bg-img-training bg-plain', unlock:false, st:1, tags:['train']},
-  memorial:{id:'memorial', name:'纪念林', icon:'🌳', area:'魔法大学', desc:'毕业生种下的树', bg:'bg-img-memorial bg-garden', unlock:false, st:2, tags:['egg']},
-  auditorium:{id:'auditorium', name:'礼堂', icon:'🏛️', area:'魔法大学', desc:'大礼堂，开学典礼与欢迎仪式在此举行', bg:'bg-img-auditorium bg-hall', unlock:false, st:1, tags:['talk']},
+  dorm:{id:'dorm', name:'东区宿舍', icon:'home', area:'魔法大学', desc:'312号房间', bg:'bg-img-dorm bg-room', unlock:false, st:0, tags:['rest']},
+  water_class:{id:'water_class', name:'水系教室', icon:'water', area:'魔法大学', desc:'安娜·贝尔导师的教室', bg:'bg-img-classroom bg-school', unlock:false, st:1},
+  ice_class:{id:'ice_class', name:'冰系教室', icon:'ice', area:'魔法大学', desc:'只有八个座位的小教室', bg:'bg-img-ice-classroom bg-school', unlock:false, st:1, tags:['train','egg']},
+  library:{id:'library', name:'学院图书馆', icon:'library', area:'魔法大学', desc:'靠墙双人桌是据点', bg:'bg-img-library bg-study', unlock:false, st:1, tags:['study']},
+  cafeteria:{id:'cafeteria', name:'食堂', icon:'cafe', area:'魔法大学', desc:'布丁圣地', bg:'bg-img-cafeteria bg-hall', unlock:false, st:1, tags:['talk']},
+  clocktower:{id:'clocktower', name:'钟塔顶层', icon:'tower', area:'魔法大学', desc:'风很大的安静角落', bg:'bg-img-clocktower bg-school', unlock:false, st:2, tags:['egg','study']},
+  flowerhouse:{id:'flowerhouse', name:'校园花坊', icon:'flower', area:'魔法大学', desc:'温室与北极铃兰', bg:'bg-img-flowerhouse bg-garden', unlock:false, st:1, tags:['egg']},
+  training_field:{id:'training_field', name:'训练场', icon:'blade', area:'魔法大学', desc:'砂地与木桩', bg:'bg-img-training bg-plain', unlock:false, st:1, tags:['train']},
+  memorial:{id:'memorial', name:'纪念林', icon:'tree', area:'魔法大学', desc:'毕业生种下的树', bg:'bg-img-memorial bg-garden', unlock:false, st:2, tags:['egg']},
+  auditorium:{id:'auditorium', name:'礼堂', icon:'hall', area:'魔法大学', desc:'大礼堂，开学典礼与欢迎仪式在此举行', bg:'bg-img-auditorium bg-hall', unlock:false, st:1, tags:['talk']},
   // 旅途
-  road:{id:'road', name:'官道', icon:'🛤️', area:'旅途', desc:'通往远方的路', bg:'bg-img-plain bg-plain', unlock:false, st:2},
-  jikan:{id:'jikan', name:'霁馆', icon:'🏯', area:'澄岚镇', desc:'冷清却温暖的剑馆', bg:'bg-img-jikan bg-room', unlock:false, st:0, tags:['rest','train']},
-  northforest:{id:'northforest', name:'北林', icon:'🌲', area:'澄岚镇', desc:'魔物出没的林地', bg:'bg-img-forest bg-forest', unlock:false, st:3, tags:['train']},
+  road:{id:'road', name:'官道', icon:'road', area:'旅途', desc:'通往远方的路', bg:'bg-img-plain bg-plain', unlock:false, st:2},
+  jikan:{id:'jikan', name:'霁馆', icon:'dojo', area:'澄岚镇', desc:'冷清却温暖的剑馆', bg:'bg-img-jikan bg-room', unlock:false, st:0, tags:['rest','train']},
+  chenglan_guild:{id:'chenglan_guild', name:'澄岚公会', icon:'shield', area:'澄岚镇', desc:'冒险者公会·澄岚支部', bg:'bg-img-chenglan-guild bg-town', unlock:false, st:1},
+  northforest:{id:'northforest', name:'北林', icon:'forest', area:'澄岚镇', desc:'魔物出没的林地', bg:'bg-img-north-forest bg-forest', unlock:false, st:3, tags:['train']},
+  ice_canyon:{id:'ice_canyon', name:'冰封峡谷', icon:'mountain', area:'赫兰', desc:'赫兰北境前线防线', bg:'bg-img-ice-canyon bg-snow', unlock:false, st:2, tags:['rest','train']},
 };
 
 
@@ -504,147 +881,156 @@ const LOCS = {
 const EXITS = {
   nursery:[
     // 婴儿默认只能待在育婴室；特殊出口由 renderHotspots 注入「闹着要出去」
-    {to:'hallway', label:'门 · 长廊', icon:'🚪', x:88, y:48, st:1, needAge:1},
-    {to:'parlor', label:'去起居室', icon:'🛋️', x:70, y:78, st:1, needAge:1},
+    {to:'hallway', label:'门 · 长廊', icon:'door', x:88, y:44, st:1, needAge:1},
+    {to:'parlor', label:'去起居室', icon:'parlor', x:86, y:62, st:1, needAge:1},
   ],
   ownroom:[
-    {to:'hallway', label:'长廊', icon:'🚪', x:88, y:48, st:0},
-    {to:'parlor', label:'起居室', icon:'🛋️', x:70, y:78, st:0},
+    {to:'hallway', label:'长廊', icon:'door', x:88, y:44, st:0},
+    {to:'parlor', label:'起居室', icon:'parlor', x:86, y:62, st:0},
   ],
   hallway:[
-    {to:'nursery', label:'育婴室', icon:'🛏️', x:18, y:50, st:0},
-    {to:'ownroom', label:'自己的房间', icon:'🛏️', x:18, y:50, st:0},
-    {to:'parlor', label:'起居室', icon:'🛋️', x:50, y:70, st:0},
-    {to:'dining', label:'餐厅', icon:'🍽️', x:82, y:48, st:1},
-    {to:'garden', label:'花园', icon:'🌹', x:50, y:22, st:1},
-    {to:'study', label:'图书室', icon:'📚', x:30, y:30, st:1, needAge:1},
-    {to:'kitchen', label:'厨房', icon:'🍳', x:75, y:75, st:1, needAge:2},
-    {to:'balcony', label:'露台', icon:'🌙', x:88, y:28, st:1, needAge:2},
-    {to:'training', label:'练武场', icon:'⚔️', x:12, y:75, st:1, needAge:1},
-    {to:'chapel', label:'小礼拜堂', icon:'⛪', x:40, y:80, st:1, needAge:4},
-    {to:'cellar', label:'酒窖', icon:'🍷', x:20, y:85, st:2, needAge:6},
+    {to:'nursery', label:'育婴室', icon:'bed', x:12, y:34, st:0},
+    {to:'ownroom', label:'自己的房间', icon:'bed', x:12, y:34, st:0},
+    {to:'parlor', label:'起居室', icon:'parlor', x:14, y:50, st:0},
+    {to:'dining', label:'餐厅', icon:'dining', x:88, y:44, st:1},
+    {to:'garden', label:'花园', icon:'garden', x:50, y:18, st:1},
+    {to:'study', label:'图书室', icon:'book', x:26, y:20, st:1, needAge:1},
+    {to:'kitchen', label:'厨房', icon:'kitchen', x:86, y:60, st:1, needAge:2},
+    {to:'balcony', label:'露台', icon:'moon', x:86, y:24, st:1, needAge:2},
+    {to:'training', label:'练武场', icon:'sword', x:12, y:64, st:1, needAge:1},
+    {to:'chapel', label:'小礼拜堂', icon:'chapel', x:36, y:66, st:1, needAge:4},
+    {to:'cellar', label:'酒窖', icon:'cellar', x:66, y:66, st:2, needAge:6},
   ],
   parlor:[
-    {to:'hallway', label:'长廊', icon:'🚪', x:15, y:50, st:0},
-    {to:'dining', label:'餐厅', icon:'🍽️', x:85, y:55, st:0},
-    {to:'garden', label:'花园', icon:'🌹', x:50, y:20, st:1},
-    {to:'nursery', label:'育婴室', icon:'🛏️', x:25, y:75, st:0},
-    {to:'ownroom', label:'自己的房间', icon:'🛏️', x:25, y:75, st:0, needAge:8},
+    {to:'hallway', label:'长廊', icon:'door', x:12, y:44, st:0},
+    {to:'dining', label:'餐厅', icon:'dining', x:88, y:44, st:0},
+    {to:'garden', label:'花园', icon:'garden', x:50, y:18, st:1},
+    {to:'nursery', label:'育婴室', icon:'bed', x:14, y:64, st:0},
+    {to:'ownroom', label:'自己的房间', icon:'bed', x:14, y:64, st:0, needAge:8},
   ],
   garden:[
-    {to:'hallway', label:'回府 · 长廊', icon:'🏛️', x:50, y:85, st:0},
-    {to:'parlor', label:'起居室', icon:'🛋️', x:20, y:70, st:0},
-    {to:'dining', label:'餐厅侧门', icon:'🍽️', x:75, y:80, st:0},
-    {to:'training', label:'练武场', icon:'⚔️', x:80, y:60, st:1, needAge:1},
-    {to:'town', label:'出府 · 小镇', icon:'🏘️', x:50, y:15, st:3, needAge:4},
+    {to:'hallway', label:'回府 · 长廊', icon:'hall', x:14, y:64, st:0},
+    {to:'parlor', label:'起居室', icon:'parlor', x:12, y:46, st:0},
+    {to:'dining', label:'餐厅侧门', icon:'dining', x:86, y:64, st:0},
+    {to:'training', label:'练武场', icon:'sword', x:88, y:46, st:1, needAge:1},
+    {to:'town', label:'出府 · 小镇', icon:'town', x:50, y:17, st:3, needAge:4},
   ],
   study:[
-    {to:'hallway', label:'长廊', icon:'🚪', x:15, y:50, st:0},
-    {to:'balcony', label:'露台', icon:'🌙', x:85, y:30, st:0, needAge:2},
+    {to:'hallway', label:'长廊', icon:'door', x:12, y:46, st:0},
+    {to:'balcony', label:'露台', icon:'moon', x:88, y:26, st:0, needAge:2},
   ],
   dining:[
-    {to:'hallway', label:'长廊', icon:'🚪', x:15, y:50, st:0},
-    {to:'parlor', label:'起居室', icon:'🛋️', x:50, y:80, st:0},
-    {to:'kitchen', label:'厨房', icon:'🍳', x:85, y:55, st:0, needAge:2},
+    {to:'hallway', label:'长廊', icon:'door', x:12, y:46, st:0},
+    {to:'parlor', label:'起居室', icon:'parlor', x:14, y:64, st:0},
+    {to:'kitchen', label:'厨房', icon:'kitchen', x:88, y:48, st:0, needAge:2},
   ],
   kitchen:[
-    {to:'dining', label:'餐厅', icon:'🍽️', x:20, y:50, st:0},
-    {to:'hallway', label:'长廊', icon:'🚪', x:50, y:80, st:0},
-    {to:'cellar', label:'酒窖', icon:'🍷', x:80, y:70, st:1, needAge:6},
+    {to:'dining', label:'餐厅', icon:'dining', x:12, y:46, st:0},
+    {to:'hallway', label:'长廊', icon:'door', x:14, y:64, st:0},
+    {to:'cellar', label:'酒窖', icon:'cellar', x:88, y:56, st:1, needAge:6},
   ],
   training:[
-    {to:'garden', label:'花园', icon:'🌹', x:50, y:20, st:0},
-    {to:'hallway', label:'长廊', icon:'🚪', x:20, y:70, st:0},
+    {to:'garden', label:'花园', icon:'garden', x:50, y:18, st:0},
+    {to:'hallway', label:'长廊', icon:'door', x:12, y:58, st:0},
   ],
   balcony:[
-    {to:'hallway', label:'长廊', icon:'🚪', x:20, y:60, st:0},
-    {to:'study', label:'图书室', icon:'📚', x:70, y:50, st:0, needAge:1},
+    {to:'hallway', label:'长廊', icon:'door', x:12, y:54, st:0},
+    {to:'study', label:'图书室', icon:'book', x:88, y:46, st:0, needAge:1},
   ],
   chapel:[
-    {to:'hallway', label:'长廊', icon:'🚪', x:50, y:80, st:0},
+    {to:'hallway', label:'长廊', icon:'door', x:14, y:62, st:0},
   ],
   cellar:[
-    {to:'kitchen', label:'厨房', icon:'🍳', x:50, y:25, st:0},
-    {to:'hallway', label:'长廊', icon:'🚪', x:20, y:50, st:1},
-    {to:'secret', label:'松动的砖墙…', icon:'🗝️', x:80, y:70, st:1, needFlag:'can_secret'},
+    {to:'kitchen', label:'厨房', icon:'kitchen', x:50, y:19, st:0},
+    {to:'hallway', label:'长廊', icon:'door', x:12, y:48, st:1},
+    {to:'secret', label:'松动的砖墙…', icon:'key', x:86, y:58, st:1, needFlag:'can_secret'},
   ],
   secret:[
-    {to:'cellar', label:'退回酒窖', icon:'🍷', x:50, y:30, st:0},
+    {to:'cellar', label:'退回酒窖', icon:'cellar', x:50, y:22, st:0},
   ],
   town:[
-    {to:'garden', label:'回公爵府', icon:'🌹', x:20, y:70, st:2},
+    {to:'garden', label:'回公爵府', icon:'garden', x:14, y:60, st:2},
     // 材料市场与公爵小镇不互通，需从王都单独进入
-    {to:'beach', label:'海滨方向', icon:'🏖️', x:50, y:20, st:3, needAge:8},
+    {to:'beach', label:'海滨方向', icon:'beach', x:50, y:18, st:3, needAge:8},
   ],
   market:[
     // 材料市场不与公爵小镇互通，从学院/王都进入后只能回学院
-    {to:'dorm', label:'回学院宿舍', icon:'🏠', x:20, y:60, st:1},
+    {to:'dorm', label:'回学院宿舍', icon:'home', x:14, y:54, st:1},
   ],
   beach:[
-    {to:'town', label:'回小镇', icon:'🏘️', x:50, y:80, st:2},
+    {to:'town', label:'回小镇', icon:'town', x:14, y:62, st:2},
   ],
   dorm:[
-    {to:'cafeteria', label:'食堂', icon:'🍮', x:70, y:40, st:1},
-    {to:'library', label:'图书馆', icon:'📖', x:30, y:35, st:1},
-    {to:'water_class', label:'水系教室', icon:'💧', x:80, y:65, st:1},
-    {to:'training_field', label:'训练场', icon:'🗡️', x:20, y:70, st:1},
-    {to:'auditorium', label:'礼堂', icon:'🏛️', x:50, y:25, st:1},
-    {to:'market', label:'材料市场', icon:'🛒', x:35, y:80, st:2, needPhase:'academy'},
+    {to:'cafeteria', label:'食堂', icon:'cafe', x:88, y:36, st:1},
+    {to:'library', label:'图书馆', icon:'library', x:12, y:34, st:1},
+    {to:'water_class', label:'水系教室', icon:'water', x:88, y:54, st:1},
+    {to:'training_field', label:'训练场', icon:'blade', x:12, y:54, st:1},
+    {to:'auditorium', label:'礼堂', icon:'hall', x:50, y:18, st:1},
+    {to:'market', label:'材料市场', icon:'market', x:86, y:66, st:2, needPhase:'academy'},
   ],
   water_class:[
-    {to:'dorm', label:'宿舍', icon:'🏠', x:20, y:50, st:1},
-    {to:'ice_class', label:'冰系教室', icon:'❄️', x:80, y:40, st:1},
-    {to:'cafeteria', label:'食堂', icon:'🍮', x:50, y:80, st:1},
-    {to:'library', label:'图书馆', icon:'📖', x:35, y:25, st:1},
-    {to:'training_field', label:'训练场', icon:'🗡️', x:70, y:75, st:1},
+    {to:'dorm', label:'宿舍', icon:'home', x:12, y:46, st:1},
+    {to:'ice_class', label:'冰系教室', icon:'ice', x:88, y:36, st:1},
+    {to:'cafeteria', label:'食堂', icon:'cafe', x:14, y:64, st:1},
+    {to:'library', label:'图书馆', icon:'library', x:50, y:18, st:1},
+    {to:'training_field', label:'训练场', icon:'blade', x:88, y:62, st:1},
   ],
   ice_class:[
-    {to:'water_class', label:'水系教室', icon:'💧', x:20, y:50, st:0},
-    {to:'flowerhouse', label:'花坊', icon:'🌺', x:80, y:45, st:1},
-    {to:'library', label:'图书馆', icon:'📖', x:50, y:80, st:1},
+    {to:'water_class', label:'水系教室', icon:'water', x:12, y:46, st:0},
+    {to:'flowerhouse', label:'花坊', icon:'flower', x:88, y:42, st:1},
+    {to:'library', label:'图书馆', icon:'library', x:14, y:64, st:1},
   ],
   library:[
-    {to:'dorm', label:'宿舍', icon:'🏠', x:20, y:60, st:1},
-    {to:'clocktower', label:'钟塔', icon:'🗼', x:80, y:30, st:2},
-    {to:'cafeteria', label:'食堂', icon:'🍮', x:50, y:80, st:1},
+    {to:'dorm', label:'宿舍', icon:'home', x:12, y:54, st:1},
+    {to:'clocktower', label:'钟塔', icon:'tower', x:88, y:26, st:2},
+    {to:'cafeteria', label:'食堂', icon:'cafe', x:86, y:62, st:1},
   ],
   cafeteria:[
-    {to:'dorm', label:'宿舍', icon:'🏠', x:20, y:50, st:1},
-    {to:'library', label:'图书馆', icon:'📖', x:50, y:25, st:1},
-    {to:'training_field', label:'训练场', icon:'🗡️', x:80, y:60, st:1},
+    {to:'dorm', label:'宿舍', icon:'home', x:12, y:46, st:1},
+    {to:'library', label:'图书馆', icon:'library', x:50, y:18, st:1},
+    {to:'training_field', label:'训练场', icon:'blade', x:88, y:54, st:1},
   ],
   clocktower:[
-    {to:'library', label:'下楼 · 图书馆', icon:'📖', x:50, y:80, st:1},
+    {to:'library', label:'下楼 · 图书馆', icon:'library', x:14, y:62, st:1},
   ],
   flowerhouse:[
-    {to:'ice_class', label:'冰系教室', icon:'❄️', x:20, y:50, st:0},
-    {to:'memorial', label:'纪念林', icon:'🌳', x:80, y:40, st:1},
+    {to:'ice_class', label:'冰系教室', icon:'ice', x:12, y:46, st:0},
+    {to:'memorial', label:'纪念林', icon:'tree', x:88, y:38, st:1},
   ],
   training_field:[
-    {to:'cafeteria', label:'食堂', icon:'🍮', x:30, y:80, st:1},
-    {to:'dorm', label:'宿舍', icon:'🏠', x:70, y:80, st:1},
-    {to:'memorial', label:'纪念林', icon:'🌳', x:50, y:20, st:1},
+    {to:'cafeteria', label:'食堂', icon:'cafe', x:14, y:62, st:1},
+    {to:'dorm', label:'宿舍', icon:'home', x:86, y:62, st:1},
+    {to:'memorial', label:'纪念林', icon:'tree', x:50, y:18, st:1},
   ],
   memorial:[
-    {to:'training_field', label:'训练场', icon:'🗡️', x:50, y:80, st:1},
-    {to:'flowerhouse', label:'花坊', icon:'🌺', x:20, y:40, st:1},
-    {to:'library', label:'图书馆', icon:'📖', x:80, y:55, st:1},
+    {to:'training_field', label:'训练场', icon:'blade', x:14, y:62, st:1},
+    {to:'flowerhouse', label:'花坊', icon:'flower', x:12, y:38, st:1},
+    {to:'library', label:'图书馆', icon:'library', x:88, y:52, st:1},
   ],
   auditorium:[
-    {to:'dorm', label:'宿舍', icon:'🏠', x:20, y:60, st:1},
-    {to:'cafeteria', label:'食堂', icon:'🍮', x:80, y:60, st:1},
-    {to:'water_class', label:'水系教室', icon:'💧', x:50, y:80, st:1},
+    {to:'dorm', label:'宿舍', icon:'home', x:12, y:52, st:1},
+    {to:'cafeteria', label:'食堂', icon:'cafe', x:88, y:52, st:1},
+    {to:'water_class', label:'水系教室', icon:'water', x:14, y:66, st:1},
   ],
   road:[
-    {to:'jikan', label:'澄岚 · 霁馆', icon:'🏯', x:70, y:45, st:2},
-    {to:'northforest', label:'北林', icon:'🌲', x:30, y:30, st:2},
+    {to:'jikan', label:'澄岚 · 霁馆', icon:'dojo', x:84, y:44, st:2},
+    {to:'northforest', label:'北林', icon:'forest', x:16, y:32, st:2},
+    {to:'ice_canyon', label:'赫兰 · 冰封峡谷', icon:'mountain', x:50, y:18, st:2, needFlag:'ch_distant_wind_1'},
   ],
   jikan:[
-    {to:'northforest', label:'北林', icon:'🌲', x:70, y:30, st:2},
-    {to:'road', label:'官道', icon:'🛤️', x:30, y:75, st:1},
+    {to:'chenglan_guild', label:'澄岚公会', icon:'shield', x:12, y:42, st:1},
+    {to:'northforest', label:'北林', icon:'forest', x:88, y:36, st:2},
+    {to:'road', label:'官道', icon:'road', x:13, y:62, st:1},
+  ],
+  chenglan_guild:[
+    {to:'jikan', label:'回霁馆', icon:'dojo', x:14, y:62, st:1},
+    {to:'northforest', label:'出镇 · 北林', icon:'forest', x:88, y:26, st:2},
   ],
   northforest:[
-    {to:'jikan', label:'回霁馆', icon:'🏯', x:50, y:80, st:2},
+    {to:'jikan', label:'回霁馆', icon:'dojo', x:14, y:62, st:2},
+  ],
+  ice_canyon:[
+    {to:'road', label:'南返官道', icon:'road', x:14, y:62, st:2},
   ],
 };
 
@@ -736,6 +1122,10 @@ const ACH = [
   {id:'black_hair', name:'墨色之名', desc:'以眷寒渔之名踏上旅途', reward:'身份切换'},
   {id:'sword_begin', name:'竹剑初握', desc:'在霁馆开始学剑', reward:'攻击成长开启'},
   {id:'birthday_15', name:'十五岁的饼', desc:'在异乡过生日', reward:'深绿色发带'},
+  {id:'glow_sheep_night', name:'星河牧羊', desc:'在春夜原野与萤尾羊群一同奔跑', reward:'经验×1'},
+  {id:'frost_reunion', name:'雪后松林', desc:'在冰封峡谷与故人并肩御敌', reward:'雪花手帕'},
+  {id:'mana_calc', name:'分毫不差', desc:'在虚拟决斗中战胜十四岁的诺艾儿', reward:'被动·魔力精算'},
+  {id:'hulan_vanguard', name:'风雪猎场', desc:'在赫兰冰封峡谷协防战中守住防线并击溃领主', reward:'北境战功'},
 ];
 
 // ========== STATE ==========
@@ -779,27 +1169,82 @@ function baseState(){
     restThisSeason: 0,
     sickUntil: 0,
     seasonChars: {}, // season -> {char: loc}
+    seasonCharsMeta: null,
+    leisure: 75,
+    mood: 75,
+    leisureHistory: [],
+    deskCharms: [],
+    diaryHistory: [],
+    cozyBag: {},
+    giftedSeason: {},
+    mailboxRead: {},
+    seasonLedger: null,
+    lastAction: '',
+    equippedRelics: [],
+    relicsUnlocked: {},
+    selectedBondAssist: null,
+    seasonalBoard: null,
+    encounterHistory: {},
+    causal: (typeof BranchingDirector !== 'undefined' && BranchingDirector.createDefaultCausal)
+      ? BranchingDirector.createDefaultCausal()
+      : {
+          version: 1,
+          axes: {
+            alice: { independence: 0, obsession: 0 },
+            noelle: { partnership: 0, guarded_pride: 0 },
+            charlotte: { candor: 0, rivalry: 0 },
+            aino: { kinship: 0, austere_mentor: 0 },
+            jilan: { hearth: 0, wanderlust: 0 }
+          },
+          clues: {
+            bayi_banquet_leak: false,
+            belmont_troop_shift: false,
+            polar_lily_bond: false,
+            wind_god_echo: false
+          },
+          echoes: [],
+          vignettesDone: {},
+          payoffsTriggered: {}
+        },
   };
 }
-let S = baseState();
-let B = null; // battle
-let sceneQueue = [];
-let storyChain = null; // 剧情链：runSceneQueue 顺序播放的剩余场景
-let typing = false, typeTimer = null, fullText = '', textIdx = 0;
-let currentScene = null;
-let pendingPicks = null;
+var S = baseState();
+var B = null; // battle
+var sceneQueue = [];
+var storyChain = null; // 剧情链：runSceneQueue 顺序播放的剩余场景
+var typing = false, typeTimer = null, fullText = '', textIdx = 0;
+var currentScene = null;
+var pendingPicks = null;
 let codex = (()=>{ try { return JSON.parse(localStorage.getItem(CODEX_KEY) || '{"endings":[],"chars":[],"eggs":0}'); } catch(e){ return {endings:[],chars:[],eggs:0}; } })();
 
 // ========== UTILS ==========
-const $ = id => document.getElementById(id);
-const show = (el,on=true) => { if(typeof el==='string') el=$(el); if(el) el.classList.toggle('hidden', !on); };
+var $ = id => document.getElementById(id);
+const HUD_DRAWER_CLOSING_OVERLAYS = new Set([
+  'battle-screen', 'arena-overlay', 'panel', 'map-overlay',
+  'stats-overlay', 'codex', 'pick-screen', 'ending-screen', 'help-screen',
+]);
+function show(el,on=true){
+  if(typeof el==='string') el=$(el);
+  if(!el) return;
+  if(on && el.id && HUD_DRAWER_CLOSING_OVERLAYS.has(el.id)){
+    if(typeof closeHudMoreDrawer === 'function') closeHudMoreDrawer();
+  }
+  const wasHidden = el.classList.contains('hidden');
+  el.classList.toggle('hidden', !on);
+  if(el.id === 'pick-screen' && !on && !wasHidden){
+    if(typeof restoreBgAfterPick === 'function') restoreBgAfterPick();
+  }
+}
 
 /* 底部 UI 高度由实际布局决定；只记录可见高度，剧情模式沿用固定 131px 对话框。 */
 function syncActionBarHeight(){
   const bar=$('action-bar'), screen=$('game-screen');
   if(!bar || !screen) return 0;
   const h=Math.round(bar.getBoundingClientRect().height);
-  if(h>0) screen.style.setProperty('--abh', h+'px');
+  if(h>0){
+    screen.style.setProperty('--abh', h+'px');
+    if(document.documentElement) document.documentElement.style.setProperty('--ab-h', h+'px');
+  }
   return h;
 }
 function bindActionBarHeight(){
@@ -815,13 +1260,78 @@ function bindActionBarHeight(){
 }
 bindActionBarHeight();
 
-function toast(msg, ms=2200){ const t=$('toast'); t.textContent=msg; show(t,1); clearTimeout(t._t); t._t=setTimeout(()=>show(t,0),ms); }
+const HUD_CHIP_LABELS = {
+  'btn-ai-drawer': '交谈',
+  'btn-causal-quick': '星盘',
+  'btn-arena': '演武',
+  'btn-stats': '四维',
+  'btn-panel': '面板',
+  'btn-saveload': '档案',
+  'btn-chapters': '章节',
+  'btn-ui': '沉浸',
+  'btn-mute': '音量',
+  'btn-title': '标题',
+  'btn-hud-more': '更多',
+};
+function syncHudChipLabels(){
+  if(typeof document === 'undefined') return;
+  const hr = document.querySelector('#hud .hud-right');
+  if(!hr) return;
+  Object.keys(HUD_CHIP_LABELS).forEach(id => {
+    const btn = $(id);
+    if(!btn) return;
+    const lbl = HUD_CHIP_LABELS[id];
+    btn.setAttribute('aria-label', lbl);
+    if(!btn.querySelector('.chip-lbl')){
+      const sp = document.createElement('span');
+      sp.className = 'chip-lbl';
+      sp.textContent = lbl;
+      btn.appendChild(sp);
+    }
+  });
+}
+
+function closeHudMoreDrawer(){
+  const hr = typeof document !== 'undefined' ? document.querySelector('#hud .hud-right') : null;
+  if(hr && (hr.classList.contains('more-open') || hr.classList.contains('is-open') || hr.hasAttribute('data-hud-drawer'))){
+    hr.classList.remove('more-open', 'is-open');
+    hr.removeAttribute('data-hud-drawer');
+    const bm = $('btn-hud-more');
+    if(bm){
+      bm.setAttribute('aria-expanded', 'false');
+      bm.setAttribute('aria-label', '更多');
+      const lbl = bm.querySelector('.chip-lbl');
+      if(lbl) lbl.textContent = '更多';
+    }
+    return true;
+  }
+  return false;
+}
+function stripLeadingEmojis(str){
+  const raw = String(str || '');
+  try {
+    const cleaned = raw.replace(/^(?:[\p{Extended_Pictographic}\uFE0F\u200D]+\s*)+/u, '').trim();
+    return cleaned || raw;
+  } catch(e){
+    return raw;
+  }
+}
+function toast(msg, ms=2200){ const t=$('toast'); if(!t) return; t.textContent=msg; show(t,1); clearTimeout(t._t); t._t=setTimeout(()=>show(t,0),ms); }
 function sysPopup(title, body){
   const p=$('sys-popup');
-  p.innerHTML=`<h3>${title}</h3><div>${body}</div><button class="sp-close">确认</button>`;
-  show(p,1); sfx('open');
-  // 点弹窗任意处或「确认」都关闭
-  p.onclick=()=>{ show(p,0); };
+  if(!p) return;
+  closeHudMoreDrawer();
+  const cleanTitle = stripLeadingEmojis(title);
+  const prismCrest = `<svg class="sp-crest" viewBox="0 0 28 28" width="22" height="22" fill="none" aria-hidden="true"><polygon points="14,2 25,14 14,26 3,14" stroke="currentColor" stroke-width="1.6" fill="rgba(255,255,255,0.14)"/><polygon points="14,7.5 20.5,14 14,20.5 7.5,14" stroke="#BAE6FD" stroke-width="1.15"/><circle cx="14" cy="14" r="2.2" fill="#FFFFFF"/></svg>`;
+  p.innerHTML=`<div class="sp-card"><div class="sp-head"><div class="sp-head-row">${prismCrest}<h3>${cleanTitle}</h3></div><div class="sp-head-actions"><span class="sp-code" aria-hidden="true">维斯特利亚 · 冰晶典录</span><button type="button" class="modal-close-x" aria-label="关闭弹窗">×</button></div></div><div class="sp-rule"></div><div class="sp-body">${body}</div><button type="button" class="sp-close">确认</button></div>`;
+  show(p,1); sfx('modal_open');
+  const closePop = ()=>{ show(p,0); sfx('modal_close'); };
+  // 仅点遮罩背板、右上角 × 或「确认」按钮关闭，滚动或选中正文时不误关
+  p.onclick=(e)=>{
+    if(!e || e.target === p || (e.target && e.target.closest && (e.target.closest('.modal-close-x') || e.target.closest('.sp-close')))){
+      closePop();
+    }
+  };
 }
 function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
 function hasSkill(id){ return S.skills.includes(id); }
@@ -834,7 +1344,7 @@ function doneTask(id){
   if(S.tasks[id]?.done) return;
   S.tasks[id]={done:true, prog:t.max||1};
   addExp(t.exp||0);
-  sysPopup('📜 任务完成', `✅「${t.name}」<br>奖励：经验值 ×${t.exp}`);
+  sysPopup('任务完成', `「${t.name}」<br>奖励：经验值 ×${t.exp}`);
   sfx('ok');
 }
 function ach(id){
@@ -842,7 +1352,7 @@ function ach(id){
   const a = ACH.find(x=>x.id===id); if(!a) return;
   S.ach[id]=true; codex.eggs = Object.keys(S.ach).length;
   saveCodex(); sfx('egg');
-  toast(`🏆 成就：${a.name}（${a.reward}）`);
+  toast(`成就达成：${a.name}（${a.reward}）`);
 }
 function addExp(n){
   if(n<=0) return; S.exp += n; S.exp = Math.floor(S.exp); // 经验取整，避免显示小数
@@ -854,13 +1364,28 @@ function addExp(n){
     // 体力与等级脱钩，不因升级改变
     up=true;
   }
-  if(up){ sfx('level'); toast(`⭐ 升级！Lv.${S.lv}`); checkTierUp(); }
+  if(up){ sfx('level'); toast(`升级！Lv.${S.lv}`); checkTierUp(); }
   updateHUD();
 }
 function checkTierUp(){
   // 勇者之赐完全由剧情驱动，不在此触发
 }
-function addItem(it){ S.inv.push(it); toast(`📦 获得：${it.name}`); sfx('ok'); }
+const STACKABLE_ITEM_IDS = { cookie: 1 };
+function addItem(it){
+  if(!it) return;
+  if(it.id && !STACKABLE_ITEM_IDS[it.id]){
+    const idx = S.inv.findIndex(x => x && x.id === it.id);
+    if(idx >= 0){
+      S.inv[idx] = Object.assign({}, S.inv[idx], it);
+      if(typeof RelicsAndEvents!=='undefined'&&RelicsAndEvents.onItemAdded) RelicsAndEvents.onItemAdded(it, S);
+      toast(`物品更新：${it.name}`); sfx('ok');
+      return;
+    }
+  }
+  S.inv.push(it);
+  if(typeof RelicsAndEvents!=='undefined'&&RelicsAndEvents.onItemAdded) RelicsAndEvents.onItemAdded(it, S);
+  toast(`获得物品：${it.name}`); sfx('ok');
+}
 // 使用消耗品：热饼干恢复1点体力
 function useItem(id){
   const idx = S.inv.findIndex(it=>it.id===id);
@@ -872,7 +1397,7 @@ function useItem(id){
     sfx('ok');
     updateHUD();
     openPanel('inv');
-    toast(`🍪 吃掉了热饼干，体力 +1（当前 ${S.st}/${S.mst}）`);
+    toast(`吃掉了热饼干，体力 +1（当前 ${S.st}/${S.mst}）`);
   }
 }
 function dateStr(){
@@ -952,7 +1477,21 @@ function advanceSeason(n=1){
   if(S.phase==='academy' && dateAtLeast(14,9) && !phaseAreaAllowed(LOCS[S.loc]?.area)){
     S.loc='dorm'; updateLocBar(); setBG('bg-img-dorm bg-room'); renderHotspots();
   }
+  if(S.sickUntil && S.dayCount >= S.sickUntil){
+    S.sickUntil = 0;
+  }
+  S.giftedSeason = {};
+  if(S.seasonCharsMeta){
+    S.seasonChars = {};
+  }
   syncStatsToAge();
+  if(typeof RelicsAndEvents!=='undefined'&&RelicsAndEvents.onSeasonAdvanced) RelicsAndEvents.onSeasonAdvanced(S);
+  if(typeof window!=='undefined'&&window.RaisingHub){
+    const onAdv = window.RaisingHub.onSeasonAdvance || window.RaisingHub.onSeasonAdvanced;
+    if(typeof onAdv==='function'){
+      try { onAdv(S); } catch(e){ console.error('RaisingHub.onSeasonAdvanced', e); }
+    }
+  }
   updateHUD();
   save();
   renderHotspots();
@@ -1009,13 +1548,18 @@ const STORY_GATE_FLAGS = [
   'ch_reno_arrive','ch_alice_affinity','ch_beatrice_day','ch_micro','ch_alice_wind','ch_beatrice_leaves',
   'ch_academy','ch_opening_ceremony','met_noelle','met_aino','met_charlotte',
   'ch_helena','ch_aino_sparring','met_ajun','ch_ice_melt_1','ch_seven_mountains',
-  'ch_ice_melt_2','ch_beach','ch_tree','ch_star','did_turnpoint','arrived_jikan','ch_black_name'
+  'ch_ice_melt_2','ch_beach','ch_tree','ch_star','did_turnpoint','arrived_jikan','ch_black_name',
+  'ch_north_forest','ch_glow_sheep','ch_distant_wind_1','ch_words_to_wind','ch_eye_of_storm','ch_leaky_cup'
 ];
 const STORY_GATE_ACADEMY_FLAGS = [
   'ch_helena','ch_aino_sparring','met_ajun','ch_ice_melt_1','ch_seven_mountains',
-  'ch_ice_melt_2','ch_beach','ch_tree','ch_star','did_turnpoint','arrived_jikan','ch_black_name'
+  'ch_ice_melt_2','ch_beach','ch_tree','ch_star','did_turnpoint','arrived_jikan','ch_black_name',
+  'ch_north_forest','ch_glow_sheep','ch_distant_wind_1','ch_words_to_wind','ch_eye_of_storm','ch_leaky_cup'
 ];
-const STORY_GATE_JOURNEY_FLAGS = ['arrived_jikan','ch_black_name'];
+const STORY_GATE_JOURNEY_FLAGS = [
+  'arrived_jikan','ch_black_name','ch_north_forest','ch_glow_sheep',
+  'ch_distant_wind_1','ch_words_to_wind','ch_eye_of_storm','ch_leaky_cup'
+];
 const STORY_GATE_BY_SCENE = {
   s_first_word:['ch_first_word'],
   s_alice_born:['ch_alice_born'],
@@ -1045,7 +1589,13 @@ const STORY_GATE_BY_SCENE = {
   s_star_festival:['ch_star'],
   s_turnpoint:['did_turnpoint'],
   s_jikan_arrive:['arrived_jikan'],
-  s_black_name:['ch_black_name']
+  s_black_name:['ch_black_name'],
+  s_north_forest:['ch_north_forest'],
+  s_glow_sheep:['ch_glow_sheep'],
+  s_distant_wind_1:['ch_distant_wind_1'],
+  s_words_to_wind:['ch_words_to_wind'],
+  s_eye_of_storm:['ch_eye_of_storm'],
+  s_leaky_cup:['ch_leaky_cup']
 };
 
 function markStoryGateCompleted(sceneId){
@@ -1077,13 +1627,22 @@ function migrateStorySave(raw){
   return raw;
 }
 
-function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
+function save(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){}
+  if(typeof VNUx!=='undefined'&&VNUx.onAutoSave) VNUx.onAutoSave(S);
+}
 function load(){
   try{
     const r=localStorage.getItem(SAVE_KEY);
     if(r){
       const raw=migrateStorySave(JSON.parse(r));
       S=Object.assign(baseState(), raw);
+      if(typeof window !== 'undefined') window.S = S;
+      if(typeof BranchingDirector !== 'undefined' && BranchingDirector.ensureCausalState) BranchingDirector.ensureCausalState(S);
+      if(typeof RelicsAndEvents !== 'undefined' && RelicsAndEvents.ensureRelicsState) RelicsAndEvents.ensureRelicsState(S);
+      if(typeof window !== 'undefined' && window.RaisingHub && typeof window.RaisingHub.onStateLoaded === 'function'){
+        try { window.RaisingHub.onStateLoaded(S); } catch(e){}
+      }
       save();
       return true;
     }
@@ -1092,14 +1651,25 @@ function load(){
 }
 function saveCodex(){ try { localStorage.setItem(CODEX_KEY, JSON.stringify(codex)); } catch(e){} }
 function hasSave(){ return !!localStorage.getItem(SAVE_KEY); }
+function updateContinueBtn(){
+  const saved = hasSave();
+  show('btn-continue', saved);
+  show('v3-prism-start', !saved);
+  if(typeof window !== 'undefined' && window.TitleDirector && typeof window.TitleDirector.syncArchiveMeta === 'function'){
+    try { window.TitleDirector.syncArchiveMeta(); } catch(e){}
+  }
+}
 
 // ========== HUD / UI ==========
 function updateHUD(){
+  syncHudChipLabels();
   const named = flag('named');
-  $('hud-name').textContent = !named ? '？？？' : (S.alias || '希尔维亚');
+  const showHudFace = !!(named || (S.ageY || 0) >= 1 || S.alias);
+  $('hud-name').textContent = !named ? (S.alias || '？？？') : (S.alias || '希尔维亚');
   $('hud-age').textContent = ageStr();
   $('hud-tier').textContent = tierName();
-  $('hud-gold').textContent = '🪙'+S.gold;
+  if($('hud-gold-val')) $('hud-gold-val').textContent = S.gold;
+  else $('hud-gold').textContent = S.gold;
   $('hud-date').textContent = dateStr();
   $('hud-tod').textContent = phaseName();
   const hpP=S.mhp?S.hp/S.mhp*100:0, mpP=S.mmp?S.mp/S.mmp*100:0, stP=S.mst?S.st/S.mst*100:0;
@@ -1107,34 +1677,67 @@ function updateHUD(){
   $('hud-mp').style.width=mpP+'%'; $('hud-mp-num').textContent=`${S.mp}/${S.mmp}`;
   $('hud-st').style.width=stP+'%'; $('hud-st-num').textContent=`${S.st}/${S.mst}`;
   const face = $('hud-face-img');
-  if(!named){
-    face.style.opacity = '0.15';
-    face.style.filter = 'blur(6px) grayscale(1)';
-    face.src = '';
-    face.alt = '';
+  const crest = $('hud-crest');
+  if(!showHudFace){
+    if(crest) crest.classList.remove('hidden');
+    if(face){
+      face.onerror = null;
+      face.style.opacity = '0';
+      face.style.filter = 'none';
+      face.src = TRANSPARENT_IMG_SRC;
+      face.alt = '';
+    }
   } else {
-    face.style.opacity = '1';
-    face.style.filter = 'none';
-    const src = resolvePortrait('sylvia', 'normal');
-    if(src) face.src = src;
+    if(crest) crest.classList.add('hidden');
+    if(face){
+      face.style.opacity = '1';
+      face.style.filter = 'none';
+      const src = resolvePortrait('sylvia', 'normal') || resolvePortraitFallback('sylvia', 'normal');
+      if(src){
+        face.onerror = ()=>{
+          FAILED_PORTRAIT_URLS.add(src);
+          const fb = resolvePortraitFallback('sylvia', 'normal');
+          if(fb && fb !== src){ face.onerror = null; face.src = fb; }
+          else { face.onerror = null; face.src = TRANSPARENT_IMG_SRC; face.style.opacity = '0'; if(crest) crest.classList.remove('hidden'); }
+        };
+        face.src = src;
+        face.alt = S.alias || '希尔维亚';
+      }
+    }
   }
-  show('btn-continue', hasSave());
-  $('codex-count').textContent = `${Object.keys(S.ach||{}).length || codex.eggs || 0}`;
+  updateContinueBtn();
+  const codexNum = Object.keys(S.ach||{}).length || codex.eggs || 0;
+  const ccEl = $('codex-count');
+  if(ccEl){
+    ccEl.textContent = `${codexNum}`;
+    ccEl.classList.toggle('is-zero', codexNum <= 0);
+  }
 }
 
+let _bgTimer = null;
+let _bgTarget = null;
 function setBG(cls){
   const bg=$('bg');
+  if(!bg) return;
   const newCls = (cls||'bg-title').trim();
-  // 同背景不重复切（也避免多余淡出淡入）
-  if(bg.getAttribute('data-cls')===newCls) return;
+  // 同背景不重复切（若正在切向同一目标也不重复）
+  const curTarget = _bgTarget || bg.getAttribute('data-cls');
+  if(curTarget === newCls) return;
+  if(_bgTimer){ clearTimeout(_bgTimer); _bgTimer = null; }
+  _bgTarget = newCls;
+  if(newCls && newCls !== 'bg-pick' && newCls !== 'bg-battle' && newCls !== 'bg-duel' && newCls !== 'bg-title'){
+    if(typeof S === 'object' && S) S.bg = newCls;
+  }
   const apply=()=>{
+    _bgTimer = null;
+    _bgTarget = null;
     bg.className=''; bg.setAttribute('data-cls', newCls);
     (newCls||'bg-title').split(/\s+/).forEach(c=>bg.classList.add(c));
     bg.style.opacity='1';
   };
   if(bg.getAttribute('data-cls')){       // 已有背景 → 先淡出再切入（渐进渐出）
     bg.style.opacity='0';
-    setTimeout(apply, 320);
+    _bgTimer = setTimeout(apply, 320);
   } else {
     apply();
   }
@@ -1142,10 +1745,10 @@ function setBG(cls){
 }
 
 // ========== PORTRAITS ==========
-const PORTRAIT_SLOTS = ['p-left','p-center','p-right','p-fourth'];
-let stage = [];            // 当前在场立绘 [{id,emo,active}]，顺序=左→右
-let stageSid = null;       // 当前所在场景id（用于场景切换时强制清台）
-let curSpeakerId = null;   // 当前说话人 id（对话框小胸像用）
+var PORTRAIT_SLOTS = ['p-left','p-center','p-right','p-fourth'];
+var stage = [];            // 当前在场立绘 [{id,emo,active}]，顺序=左→右
+var stageSid = null;       // 当前所在场景id（用于场景切换时强制清台）
+var curSpeakerId = null;   // 当前说话人 id（对话框小胸像用）
 function clearPortraits(){
   // 立即隐藏全部（用于场景/自由探索重置）
   PORTRAIT_SLOTS.forEach(id=>{
@@ -1170,6 +1773,7 @@ function appendSpeaker(chId, emo){
 // 应用一组立绘：diff 当前 stage → 保留在场者(仅切换高亮/置暗)，离场者淡出，入场者淡入
 function applyStage(next){
   next = Array.isArray(next) ? next.slice(0,4) : [];
+  if($('css-portraits')) $('css-portraits').innerHTML = '';
   // 1) 决定每个槽放谁（顺序=left→right）
   const n = Math.max(stage.length, next.length);
   for(let i=0;i<n;i++){
@@ -1182,13 +1786,13 @@ function applyStage(next){
       setPortrait(el, want.id, want.emo, want.active!==false);
       if(el.classList.contains('ps-enter')) el.classList.remove('ps-enter');
     } else if(want){
-      // 该槽换人/新增：淡入
+      // 该槽换人/新增：若有立绘图则淡入，否则由 setPortrait 走 CSS 占位
       setPortrait(el, want.id, want.emo, want.active!==false);
-      el.classList.remove('hidden');
-      // 触发淡入（先清 hidden 下一帧去 ps-enter）
-      el.classList.remove('ps-leave');
-      el.classList.add('ps-enter');
-      requestAnimationFrame(()=>{ el.classList.remove('ps-enter'); });
+      if(!el.classList.contains('hidden')){
+        el.classList.remove('ps-leave');
+        el.classList.add('ps-enter');
+        requestAnimationFrame(()=>{ el.classList.remove('ps-enter'); });
+      }
     } else if(have){
       // 该槽原本有人、现在空：淡出后隐藏
       el.classList.add('ps-leave');
@@ -1200,16 +1804,44 @@ function applyStage(next){
   stage = next.map(w=>({ id:w.id, emo:w.emo, active: w.active!==false }));
   layoutPortraits();
 }
+function attachPortraitFallback(img, el, charId, emotion, active, onMissingAll){
+  img.onerror = ()=>{
+    const failedSrc = img.getAttribute('src') || '';
+    if(failedSrc) FAILED_PORTRAIT_URLS.add(failedSrc);
+    const fb = resolvePortraitFallback(charId, emotion);
+    if(fb && fb !== failedSrc && !FAILED_PORTRAIT_URLS.has(fb)){
+      img.onerror = ()=>{
+        FAILED_PORTRAIT_URLS.add(fb);
+        if(typeof onMissingAll === 'function') onMissingAll();
+      };
+      img.src = fb;
+      if(el && typeof BranchingDirector !== 'undefined' && BranchingDirector.syncStageEmotionBadge){
+        BranchingDirector.syncStageEmotionBadge(el, charId, emotion || 'normal');
+      }
+      return;
+    }
+    if(typeof onMissingAll === 'function') onMissingAll();
+  };
+}
 function setPortrait(el, charId, emotion, active){
-  const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emotion) : (PORTRAIT_FILES[charId+'_'+(emotion||'normal')]||PORTRAIT_FILES[charId+'_normal']);
+  const emo = emotion || 'normal';
+  const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emo) : (PORTRAIT_FILES[charId+'_'+emo]||PORTRAIT_FILES[charId+'_normal']);
   if(!file){ el.classList.add('hidden'); addCssPortrait(charId, active); return; }
   const img = el.querySelector('img'); const nm = el.querySelector('.p-name');
-  if(charId==='sylvia' && !flag('named')){ el.classList.add('hidden'); return; }
+  if(charId==='sylvia' && !sylviaPortraitUnlocked()){ el.classList.add('hidden'); return; }
+  attachPortraitFallback(img, el, charId, emo, active, ()=>{
+    el.classList.add('hidden');
+    addCssPortrait(charId, active);
+  });
   img.src = file;
   el.setAttribute('data-char', charId||'');
+  el.setAttribute('data-emo', emo);
   el.classList.remove('hidden');
-  nm.textContent = (charId==='sylvia' && !flag('named')) ? '？？？' : (CHARS[charId]?.short || charId);
+  nm.textContent = (charId==='sylvia' && !flag('named') && !S.alias) ? '？？？' : (CHARS[charId]?.short || charId);
   el.classList.toggle('active', active); el.classList.toggle('dim', !active);
+  if(typeof BranchingDirector !== 'undefined' && BranchingDirector.syncStageEmotionBadge){
+    BranchingDirector.syncStageEmotionBadge(el, charId, emo);
+  }
 }
 // 自适应立绘排布：按实际在场人数 N 分布（1/2/3/4 人各自居中/均匀），
 // 避免「固定槽位填空」的机械感。人数越多越向两侧展开，人数少则更居中。
@@ -1229,7 +1861,8 @@ function layoutPortraits(){
   }
 }
 function showPortrait(charId, emotion='normal', slot='center', active=true){
-  const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emotion) : (PORTRAIT_FILES[charId+'_'+(emotion||'normal')]||PORTRAIT_FILES[charId+'_normal']);
+  const emo = emotion || 'normal';
+  const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emo) : (PORTRAIT_FILES[charId+'_'+emo]||PORTRAIT_FILES[charId+'_normal']);
   const el = $(slot==='left'?'p-left':slot==='right'?'p-right':slot==='fourth'?'p-fourth':'p-center');
   if(!el) return;
   // 记录当前角色，供 CSS 按角色微调立绘表现（如爱丽丝白色系高亮偏亮）
@@ -1237,15 +1870,23 @@ function showPortrait(charId, emotion='normal', slot='center', active=true){
   const img = el.querySelector('img');
   const nm = el.querySelector('.p-name');
   // 未命名前不显示主角立绘
-  if(charId==='sylvia' && !flag('named')){
+  if(charId==='sylvia' && !sylviaPortraitUnlocked()){
     el.classList.add('hidden');
     return;
   }
   if(file){
-    img.src = file; img.onerror = ()=>{ el.classList.add('hidden'); addCssPortrait(charId, active); };
+    attachPortraitFallback(img, el, charId, emo, active, ()=>{
+      el.classList.add('hidden');
+      addCssPortrait(charId, active);
+    });
+    img.src = file;
+    el.setAttribute('data-emo', emo);
     el.classList.remove('hidden');
-    nm.textContent = (charId==='sylvia' && !flag('named')) ? '？？？' : (CHARS[charId]?.short || charId);
+    nm.textContent = (charId==='sylvia' && !flag('named') && !S.alias) ? '？？？' : (CHARS[charId]?.short || charId);
     el.classList.toggle('active', active); el.classList.toggle('dim', !active);
+    if(typeof BranchingDirector !== 'undefined' && BranchingDirector.syncStageEmotionBadge){
+      BranchingDirector.syncStageEmotionBadge(el, charId, emo);
+    }
   } else {
     el.classList.add('hidden'); addCssPortrait(charId, active);
   }
@@ -1254,45 +1895,83 @@ function addCssPortrait(charId, active=true){
   const c = CSS_CHARS[charId] || CSS_CHARS.sylvia;
   const d = document.createElement('div');
   d.className = `css-p ${CHARS[charId]?.css||charId}${active?'':' dim'}`;
-  d.innerHTML = `<div class="face"></div><div class="cn">${c[0]}</div>`;
+  d.setAttribute('data-char', charId||'');
+  d.innerHTML = `<div class="face">${c[1]||''}</div><div class="cn">${c[0]}</div>`;
+  if(S.freeRoam){
+    d.style.pointerEvents = 'auto';
+    d.style.cursor = 'pointer';
+    d.onclick = (e)=>{
+      e.stopPropagation();
+      if(!S.freeRoam) return;
+      sfx('click');
+      talkTo(charId);
+    };
+  }
   $('css-portraits').appendChild(d);
 }
 function setSpeaker(name, charId){
   const sp=$('speaker');
   if(name){ sp.textContent=name; sp.classList.remove('hidden'); }
   else sp.classList.add('hidden');
-  // 对话框左侧小胸像 + 名字：有名字才显示
   const tb=$('tb-speaker'); if(!tb) return;
-  const img=$('tb-speaker-img'), nm=$('tb-speaker-name');
+  const img=$('tb-speaker-img'), nm=$('tb-speaker-name'), box=$('text-box');
   if(name){
     tb.classList.remove('hidden');
     nm.textContent = name;
-    // 尝试按说话人 id 解析立绘；若没给 id 则按名字模糊匹配
     let id = charId || speakerIdFromName(name);
     const src = id ? resolvePortrait(id, 'normal') : null;
-    img.src = src || '';
-    img.style.opacity = src ? '1' : '0.15';
+    if(src){
+      attachPortraitFallback(img, null, id, 'normal', true, ()=>{
+        img.removeAttribute('src');
+        img.style.display = 'none';
+        img.style.opacity = '0';
+        if(box) box.classList.remove('has-cameo');
+      });
+      img.src = src;
+      img.style.display = '';
+      img.style.opacity = '1';
+    } else {
+      img.onerror = null;
+      img.removeAttribute('src');
+      img.style.display = 'none';
+      img.style.opacity = '0';
+    }
+    const trimName = String(name).trim();
+    const isMystery = /^[？?]+$/.test(trimName) || trimName === '???';
+    let onStage = false;
+    try{
+      const visibleSlots = document.querySelectorAll('#portraits .p-slot:not(.hidden):not(.ps-leave)');
+      if(id){
+        visibleSlots.forEach(s => { if(s.getAttribute('data-char') === id) onStage = true; });
+      }
+      if(isMystery && visibleSlots.length > 0) onStage = true;
+    }catch(e){}
+    tb.classList.toggle('stage-dup', !!onStage);
+    tb.classList.toggle('is-mystery', isMystery);
+    if(box) box.classList.toggle('has-cameo', !!(src && !onStage && !isMystery));
   } else {
     tb.classList.add('hidden');
+    tb.classList.remove('stage-dup', 'is-mystery');
+    if(box) box.classList.remove('has-cameo');
   }
 }
 // 名字 → 角色 id（用于小胸像）
 function speakerIdFromName(name){
   if(!name) return null;
-  const map = {'希尔维亚':'sylvia','贝阿特丽丝':'beatrice','贝蒂':'beatrice','爱丽丝':'alice','索菲亚':'sophia','克劳德':'claude'};
+  const map = {'希尔维亚':'sylvia','渔':'sylvia','眷寒渔':'sylvia','贝阿特丽丝':'beatrice','贝蒂':'beatrice','爱丽丝':'alice','索菲亚':'sophia','克劳德':'claude'};
   if(map[name]) return map[name];
-  // 其余角色按 CHARS.short 反查
-  for(const id in CHARS){ if(CHARS[id].short===name) return id; }
+  // 其余角色按 CHARS.short / CHARS.name 反查
+  for(const id in CHARS){ if(CHARS[id].short===name || CHARS[id].name===name) return id; }
   return null;
 }
 
 // ========== TEXT ENGINE ==========
-let lineCB = null;
-let typeDoneCB = null;
-let lineGen = 0;
-let awaitingChoice = false;
-let afterPick = null; // 勇者之赐选卡后，继续播放的剩余台词 {rest, done}
-let roamPromptDone = null; // 自由探索提示由右下角三角关闭后执行
+var lineCB = null;
+var typeDoneCB = null;
+var lineGen = 0;
+var awaitingChoice = false;
+var afterPick = null; // 勇者之赐选卡后，继续播放的剩余台词 {rest, done}
+var roamPromptDone = null; // 自由探索提示由右下角三角关闭后执行
 
 // 自由探索提示与剧情打字机共用一个对话框；每次切换模式必须清掉旧推进状态，
 // 否则右下角三角会被残留的 lineCB 当成普通剧情点击，季度剧情门控就不会执行。
@@ -1340,9 +2019,68 @@ function setDialogRows(str){
   return rows;
 }
 
+const BACKLOG_LOG = [];
+function recordBacklog(spk, txt){
+  const t = String(txt || '').trim();
+  if(!t || t === '请选择：') return;
+  const s = spk ? String(spk).trim() : '';
+  const prev = BACKLOG_LOG[BACKLOG_LOG.length - 1];
+  if(prev && prev.spk === s && prev.txt === t) return;
+  BACKLOG_LOG.push({ spk: s, txt: t });
+  if(BACKLOG_LOG.length > 160) BACKLOG_LOG.shift();
+}
+function openBacklog(){
+  if(typeof VNUx !== 'undefined' && typeof VNUx.openBacklogModal === 'function'){
+    VNUx.openBacklogModal();
+    return;
+  }
+  const bo = $('backlog-overlay');
+  const body = $('backlog-body');
+  if(!bo || !body) return;
+  if(!BACKLOG_LOG.length){
+    body.innerHTML = '<p style="opacity:.68;padding:12px 4px">尚未记录台词。进入剧情后可在此随时回顾最近 160 条对白与旁白。</p>';
+  } else {
+    body.innerHTML = BACKLOG_LOG.map(item => `
+      <div class="backlog-entry${item.spk ? ' has-spk' : ''}">
+        ${item.spk ? `<div class="backlog-spk">${escapeText(item.spk)}</div>` : ''}
+        <div class="backlog-txt">${escapeText(item.txt)}</div>
+      </div>
+    `).join('');
+  }
+  show(bo, 1);
+  try{
+    const sc = bo.querySelector('.modal-scroll');
+    if(sc) sc.scrollTop = sc.scrollHeight;
+  }catch(e){}
+  sfx('modal_open');
+}
+
+let currentTypeSpeed = 'normal'; // 'slow' | 'normal' | 'fast' | 'instant'
+function setTypeSpeed(mode){
+  const valid = ['slow','normal','fast','instant'];
+  currentTypeSpeed = valid.includes(mode) ? mode : 'normal';
+  return currentTypeSpeed;
+}
+function getTypeSpeed(){ return currentTypeSpeed; }
+function typeSpeedParams(){
+  if(currentTypeSpeed === 'slow') return { step: 1, ms: 26 };
+  if(currentTypeSpeed === 'fast') return { step: 4, ms: 12 };
+  if(currentTypeSpeed === 'instant') return { step: 9999, ms: 0 };
+  return { step: 2, ms: 16 };
+}
+function notifyVNUxLineComplete(){
+  if(typeof VNUx !== 'undefined' && VNUx.onLineComplete){
+    try { VNUx.onLineComplete({ sceneId: currentScene || '', text: fullText || '', awaitingChoice: !!awaitingChoice, freeRoam: !!S.freeRoam }); } catch(e){}
+  }
+}
+
 function typeText(str, cb){
   const box = $('text');
   fullText = String(str ?? '');
+  const curTbSpk = ($('tb-speaker') && !$('tb-speaker').classList.contains('hidden') && $('tb-speaker-name'))
+    ? $('tb-speaker-name').textContent
+    : '';
+  recordBacklog(curTbSpk, fullText);
   setDialogRows(fullText);
   textIdx = 0;
   typing = true;
@@ -1350,33 +2088,33 @@ function typeText(str, cb){
   lineCB = null; // IMPORTANT: never auto-advance; only arm after click finishes type
   box.innerHTML = '';
   clearInterval(typeTimer);
-  // show first chars immediately so something is visible
-  if(!fullText){
+  const finishTyping = ()=>{
+    clearInterval(typeTimer);
     typing = false;
-    // still require a click to continue empty? treat as done after click
-    lineCB = ()=>{ const c=typeDoneCB; typeDoneCB=null; if(c) c(); };
+    box.innerHTML = escapeText(fullText);
+    lineCB = ()=>{
+      const c = typeDoneCB;
+      typeDoneCB = null;
+      lineCB = null;
+      if(c) c();
+    };
+    notifyVNUxLineComplete();
+  };
+  if(!fullText || currentTypeSpeed === 'instant'){
+    finishTyping();
     return;
   }
+  const sp = typeSpeedParams();
   // reveal gradually; when finished STAY until user clicks
   typeTimer = setInterval(()=>{
     if(textIdx >= fullText.length){
-      clearInterval(typeTimer);
-      typing = false;
-      box.innerHTML = escapeText(fullText);
-      // Do NOT call typeDoneCB here — wait for player click
-      // Arm lineCB to mean "continue to next line"
-      lineCB = ()=>{
-        const c = typeDoneCB;
-        typeDoneCB = null;
-        lineCB = null;
-        if(c) c();
-      };
+      finishTyping();
       return;
     }
-    textIdx = Math.min(fullText.length, textIdx + 2);
+    textIdx = Math.min(fullText.length, textIdx + sp.step);
     box.innerHTML = escapeText(fullText.slice(0, textIdx));
     if(box.parentElement) box.parentElement.scrollTop = box.parentElement.scrollHeight;
-  }, 16);
+  }, sp.ms);
 }
 
 function escapeText(s){
@@ -1399,6 +2137,7 @@ function skipType(){
     lineCB = null;
     if(c) c();
   };
+  notifyVNUxLineComplete();
   return true;
 }
 
@@ -1447,7 +2186,7 @@ function applyLineEffects(L){
   if(L.task) doneTask(L.task);
   if(L.ach) ach(L.ach);
   if(L.item) addItem(L.item);
-  if(L.gold) S.gold += L.gold;
+  if(L.gold) S.gold = Math.max(0, (S.gold || 0) + L.gold);
   if(L.st) S.st = clamp(S.st + L.st, 0, S.mst);
   if(L.hp) S.hp = clamp(S.hp + L.hp, 0, S.mhp);
   if(L.mp) S.mp = clamp(S.mp + L.mp, 0, S.mmp);
@@ -1501,6 +2240,7 @@ function playLines(lines, done){
       // plain string
       if(typeof L === 'string'){
         setSpeaker(null);
+        if(typeof VNUx!=='undefined'&&VNUx.recordLine) VNUx.recordLine(null, L);
         typeText(L, ()=>{ if(gen===lineGen) next(); });
         return;
       }
@@ -1541,6 +2281,7 @@ function playLines(lines, done){
           // 台词：ch 为说话人（彩色），否则为旁白（白色），逐字快速打出
           const isNarr = !L.ch;
           const spk = L.speaker || (L.ch ? CHARS[L.ch]?.short : null);
+          if(typeof VNUx!=='undefined'&&VNUx.recordLine) VNUx.recordLine({ speaker: spk, charId: L.ch || curSpeakerId, text: L.text || '', kind: 'cg' });
           cgTextType(spk, L.text || '', isNarr, ()=>{   // 打字完成后的回调
             if(gen!==lineGen) return;
             $('cg-screen').onclick = ()=>{ $('cg-screen').onclick=null; if(gen===lineGen) next(); };
@@ -1571,6 +2312,7 @@ function playLines(lines, done){
           if(gen !== lineGen) return;
           if(L.text){
             setSpeaker(L.speaker||null, curSpeakerId);
+            if(typeof VNUx!=='undefined'&&VNUx.recordLine) VNUx.recordLine(L.speaker||null, L.text);
             typeText(L.text, ()=>{ if(gen===lineGen) next(); });
           } else next();
         });
@@ -1580,6 +2322,7 @@ function playLines(lines, done){
       if(L.choices){
         awaitingChoice = true;
         setSpeaker(L.speaker||null, curSpeakerId);
+        if(typeof VNUx!=='undefined'&&VNUx.recordLine&&L.text) VNUx.recordLine(L.speaker||null, L.text);
         clearInterval(typeTimer);
         typing = false;
         typeDoneCB = null;
@@ -1587,7 +2330,26 @@ function playLines(lines, done){
         fullText = String(L.text || '请选择：');
         setDialogRows(fullText);
         $('text').innerHTML = escapeText(fullText);
-        showChoices(L.choices, ()=>{});
+        const rest = list.slice(i);
+        const resumeRest = (rest.length || done) ? ()=>{
+          if(rest.length) playLines(rest, done);
+          else if(done) done();
+        } : null;
+        const rawChoices = typeof L.choices === 'function' ? L.choices() : (L.choices || []);
+        const wrappedChoices = (Array.isArray(rawChoices) ? rawChoices : []).map(c=>{
+          if(!c || c.goto || c.done || !resumeRest) return c;
+          if(c.lines) return Object.assign({}, c, { done: resumeRest });
+          return Object.assign({}, c, {
+            done: ()=>{
+              if(S.freeRoam || typing || lineCB || awaitingChoice) return;
+              if($('pick-screen') && !$('pick-screen').classList.contains('hidden')) return;
+              if($('battle-screen') && !$('battle-screen').classList.contains('hidden')) return;
+              if($('duel-screen') && !$('duel-screen').classList.contains('hidden')) return;
+              resumeRest();
+            }
+          });
+        });
+        showChoices(wrappedChoices, resumeRest || (()=>{}));
         return;
       }
 
@@ -1596,6 +2358,7 @@ function playLines(lines, done){
       if(L.freeRoam){
         if(L.text){
           setSpeaker(L.speaker||null, curSpeakerId);
+          if(typeof VNUx!=='undefined'&&VNUx.recordLine) VNUx.recordLine({ speaker: L.speaker||null, charId: curSpeakerId, text: L.text });
           typeText(L.text, ()=>{
             if(gen !== lineGen) return;
             enterFreeRoam();
@@ -1629,6 +2392,7 @@ function playLines(lines, done){
       // text line
       if(L.text){
         setSpeaker(L.speaker||null, curSpeakerId);
+        if(typeof VNUx!=='undefined'&&VNUx.recordLine) VNUx.recordLine({ speaker: L.speaker||null, charId: curSpeakerId, text: L.text });
         typeText(L.text, ()=>{ if(gen===lineGen) next(); });
         return;
       }
@@ -1673,6 +2437,7 @@ function showChoices(choices, onEmpty){
     b.onclick = ()=>{
       if(b.disabled) return;
       sfx('click');
+      if(typeof VNUx!=='undefined'&&VNUx.recordChoice) VNUx.recordChoice(c.text);
       awaitingChoice = false;
       box.innerHTML = '';
       try {
@@ -1686,9 +2451,10 @@ function showChoices(choices, onEmpty){
           if(lineGen !== genAtClick) return; // 已开启新对话流
           if(S.freeRoam) return;
           if(typing || lineCB || awaitingChoice) return;
-          if(!$('pick-screen').classList.contains('hidden')) return;
-          if(!$('battle-screen').classList.contains('hidden')) return;
-          if(!$('duel-screen').classList.contains('hidden')) return;
+          if($('pick-screen') && !$('pick-screen').classList.contains('hidden')) return;
+          if($('battle-screen') && !$('battle-screen').classList.contains('hidden')) return;
+          if($('duel-screen') && !$('duel-screen').classList.contains('hidden')) return;
+          if($('ai-drawer') && !$('ai-drawer').classList.contains('hidden')) return;
           if($('choices').children.length) return;
           enterFreeRoam();
         }, 100);
@@ -1727,9 +2493,10 @@ function dismissRoamPrompt(){
   if(promptKind==='season'){
     if(resumePendingStories()) return true;
     if(checkStoryGates()) return true;
+    if(typeof afterPrompt==='function') afterPrompt();
+    return true;
   }
   if(typeof afterPrompt==='function') afterPrompt();
-  if(S.freeRoam) maybeShowRoamGreeting();
   return true;
 }
 
@@ -1746,9 +2513,12 @@ function bindAdvance(){
     };
   }
   tb.onclick=e=>{
-    if(e.target.closest('button')) return;
+    if(e && e.target && e.target.closest && e.target.closest('button')) return;
     if(S.freeRoam && tb.hasAttribute('data-roam-prompt') && !typing && !awaitingChoice){
-      const dismiss=!!(e.target.closest && e.target.closest('#more'));
+      const isCoarseTouch = !!(typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+        && window.matchMedia('(hover: none) and (pointer: coarse)').matches);
+      const touchTap = isCoarseTouch && e && e.isTrusted === true;
+      const dismiss=!!(e && e.target && e.target.closest && e.target.closest('#more')) || touchTap;
       if(dismiss) dismissRoamPrompt();
       return;
     }
@@ -1758,13 +2528,33 @@ function bindAdvance(){
 bindAdvance();
 
 // ========== CARD ==========
+function spawnCardExitVeil(){
+  if(typeof document === 'undefined' || !document.body) return;
+  if(typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent || '')) return;
+  try {
+    if(typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  } catch(e){}
+  if(typeof window !== 'undefined' && window.TitleDirector && typeof window.TitleDirector.playCardExitVeil === 'function'){
+    try { window.TitleDirector.playCardExitVeil(); return; } catch(e){}
+  }
+  const veil = document.createElement('div');
+  veil.className = 'card-exit-veil';
+  veil.style.pointerEvents = 'none';
+  veil.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(veil);
+  let removed = false;
+  const cleanup = ()=>{ if(!removed){ removed = true; if(veil.parentNode) veil.parentNode.removeChild(veil); } };
+  veil.addEventListener('animationend', cleanup, { once: true });
+  setTimeout(cleanup, 450);
+}
 function showCard(vol, t, s, cb){
   $('card-vol').textContent=vol||'';
   $('card-t').textContent=t||'';
   $('card-s').textContent=s||'';
   show('card',1); sfx('page');
   let done=false;
-  const finish=()=>{ if(done) return; done=true; show('card',0); if(cb) cb(); };
+  const finish=()=>{ if(done) return; done=true; show('card',0); spawnCardExitVeil(); if(cb) cb(); };
   const card=$('card');
   card.onclick=()=>{ finish(); card.onclick=null; };
 }
@@ -1785,13 +2575,36 @@ function cgCharClass(ch){
   if(ch==='alice'||ch==='爱丽丝') return 'c-alice';
   return 'c-narrator';
 }
+const CG_FALLBACK_BG = {
+  'vol3_jikan_parting.png': 'assets/bg/jikan.jpg',
+};
 let cgImage = null;   // 当前 CG 图（避免连续同图时重复设 background 导致闪烁）
 function cgShow(name){
   // 隐藏全部 UI，显示全屏 CG
   cgActive = true;
+  if(name){
+    if(!S.unlockedCGs) S.unlockedCGs = {};
+    S.unlockedCGs[name] = true;
+    if(!codex.cgs) codex.cgs = {};
+    if(!codex.cgs[name]){ codex.cgs[name] = true; saveCodex(); }
+    if(typeof VNUx !== 'undefined' && VNUx.markCgUnlocked){
+      try { VNUx.markCgUnlocked(name); } catch(e){}
+    }
+  }
   if(name !== cgImage){                 // 仅当图片变化时才重设背景，杜绝连续点击时的闪烁
     cgImage = name;
-    $('cg-bg').style.backgroundImage = `url(assets/cg/${name})`;
+    const targetUrl = `assets/cg/${name}`;
+    $('cg-bg').style.backgroundImage = `url(${targetUrl})`;
+    // 若新 CG 尚未回流磁盘，浏览器端静默回退到对应场景高清底图，绝无黑屏裂图
+    if(typeof Image !== 'undefined' && CG_FALLBACK_BG[name] && !(typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent || ''))){
+      const probe = new Image();
+      probe.onerror = ()=>{
+        if(cgImage === name && $('cg-bg')){
+          $('cg-bg').style.backgroundImage = `url(${CG_FALLBACK_BG[name]})`;
+        }
+      };
+      probe.src = targetUrl;
+    }
   }
   $('cg-bg').classList.remove('noimg');
   const cs=$('cg-screen');
@@ -1818,20 +2631,21 @@ function cgTextType(speaker, text, isNarrator, done){
   const { spk, line } = cgBuildHtml(speaker, text, isNarrator);
   cgSpeakerHtml = spk; cgLineHtml = line;
   const full = text || '';
-  if(!full){ box.innerHTML = spk + line; if(done) done(); return; }
+  if(!full || currentTypeSpeed === 'instant'){ box.innerHTML = spk + line; if(done) done(); return; }
   cgTyping = true;
   let idx = 0;
+  const sp = typeSpeedParams();
   box.innerHTML = spk + `<div class="cg-line ${cgCharClass(isNarrator?null:speaker)}"></div>`;
   const timer = setInterval(()=>{
     if(!cgTyping){ clearInterval(timer); return; }
-    idx = Math.min(full.length, idx + 2);
+    idx = Math.min(full.length, idx + sp.step);
     box.innerHTML = spk + `<div class="cg-line ${cgCharClass(isNarrator?null:speaker)}">${escapeText(full.slice(0,idx))}</div>`;
     if(idx >= full.length){
       clearInterval(timer); cgTyping = false;
       box.innerHTML = spk + line;
       if(done) done();
     }
-  }, 16);
+  }, sp.ms);
 }
 function cgText(speaker, text, isNarrator){
   // 立即显示完整（用于测试/兜底）
@@ -1868,7 +2682,7 @@ function phaseAreaAllowed(area){
   }
   if(ph==='journey' || ph==='finale'){
     // 旅途后不可自由回学院/公爵府
-    return area==='旅途' || area==='澄岚镇' || area==='王都';
+    return area==='旅途' || area==='澄岚镇' || area==='赫兰' || area==='王都';
   }
   return true;
 }
@@ -1912,7 +2726,10 @@ function portraitPixelIsOpaque(img, clientX, clientY){
   if(!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return true;
   const rect=img.getBoundingClientRect();
   if(!rect.width || !rect.height) return true;
-  if(clientX<rect.left || clientX>rect.right || clientY<rect.top || clientY>rect.bottom) return false;
+  const isCoarse = !!(typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    && window.matchMedia('(pointer: coarse)').matches);
+  const pad = isCoarse ? 10 : 0;
+  if(clientX<rect.left-pad || clientX>rect.right+pad || clientY<rect.top-pad || clientY>rect.bottom+pad) return false;
   try{
     const src=img.currentSrc || img.src || '';
     let hit=portraitAlphaCache.get(img);
@@ -1928,9 +2745,16 @@ function portraitPixelIsOpaque(img, clientX, clientY){
       hit={src,nw:img.naturalWidth,nh:img.naturalHeight,w,h,ctx};
       portraitAlphaCache.set(img,hit);
     }
-    const x=clamp(Math.floor((clientX-rect.left)/rect.width*hit.w),0,hit.w-1);
-    const y=clamp(Math.floor((clientY-rect.top)/rect.height*hit.h),0,hit.h-1);
-    return hit.ctx.getImageData(x,y,1,1).data[3]>=24;
+    const pts = isCoarse
+      ? [[clientX,clientY],[clientX-10,clientY],[clientX+10,clientY],[clientX,clientY-10],[clientX,clientY+10]]
+      : [[clientX,clientY]];
+    for(const [px, py] of pts){
+      if(px<rect.left || px>rect.right || py<rect.top || py>rect.bottom) continue;
+      const x=clamp(Math.floor((px-rect.left)/rect.width*hit.w),0,hit.w-1);
+      const y=clamp(Math.floor((py-rect.top)/rect.height*hit.h),0,hit.h-1);
+      if(hit.ctx.getImageData(x,y,1,1).data[3]>=24) return true;
+    }
+    return false;
   }catch(e){
     // 同源图片正常可读；若浏览器阻止 canvas 读取，则保守地仍把它视为角色本体。
     return true;
@@ -1958,13 +2782,16 @@ function renderHotspots(){
   if(!S.freeRoam){
     show(box,0);
     $('portraits')?.classList.remove('roam-npc');
+    if(typeof window !== 'undefined' && window.RaisingHub && typeof window.RaisingHub.syncSylviaHub === 'function'){
+      try { window.RaisingHub.syncSylviaHub(); } catch(e){}
+    }
     return;
   }
   let list = (EXITS[S.loc] || []).slice();
   if(S.ageY < 1 && S.loc === 'nursery'){
     list.push(
-      {babyFuss:true, fussTo:'parlor', label:'闹着要出去', icon:'🍼', x:50, y:40, st:1},
-      {babyFuss:true, fussTo:'hallway', label:'要看走廊', icon:'👶', x:82, y:52, st:1}
+      {babyFuss:true, fussTo:'parlor', label:'闹着要出去', icon:'baby', x:50, y:40, st:1},
+      {babyFuss:true, fussTo:'hallway', label:'要看走廊', icon:'door', x:82, y:52, st:1}
     );
   } else {
     // 非婴儿育婴室：绝不保留 fuss 出口
@@ -1974,6 +2801,13 @@ function renderHotspots(){
     if(ex.babyFuss) return S.ageY < 1 && S.loc === 'nursery';
     return canUseExit(ex);
   });
+  if(S.loc === 'northforest'){
+    usable.push({combatStage:'north_forest_hunt', label:'实战讨伐·群狼与影豺', icon:'sword', x:50, y:36});
+  } else if(S.loc === 'training_field' && flag('met_aino') && !flag('ch_ice_melt_1')){
+    usable.push({combatStage:'aino_sparring', label:'冰上实战·三击切磋', icon:'ice_cube', x:86, y:36});
+  } else if(S.loc === 'ice_canyon' && flag('ch_distant_wind_1')){
+    usable.push({combatStage:'hulan_beast_tide', label:'北境协防·冰封峡谷', icon:'mountain', x:86, y:30});
+  }
   const peeps = whoIsHere();
   // stage portraits for NPCs present
   clearPortraits();
@@ -2004,23 +2838,53 @@ function renderHotspots(){
   });
   stage = peeps.slice(0,4).map(id=>({id, emo:'normal', active:true})); // 供 layout 排布
   layoutPortraits();
-  if(!usable.length && !peeps.length){ show(box,0); return; }
+  if(!usable.length && !peeps.length){
+    show(box,0);
+    if(typeof BranchingDirector !== 'undefined' && BranchingDirector.renderVignetteHotspots) BranchingDirector.renderVignetteHotspots();
+    if(typeof window !== 'undefined' && window.RaisingHub && typeof window.RaisingHub.syncSylviaHub === 'function'){
+      try { window.RaisingHub.syncSylviaHub(); } catch(e){}
+    }
+    return;
+  }
   show(box,1);
+  // 计算当前在场立绘的水平中心（与 layoutPortraits 一致），用于热点避脸防遮挡
+  const pCount = Math.min(4, peeps.length);
+  const portraitXs = pCount === 1 ? [50] : pCount === 2 ? [30, 70] : pCount === 3 ? [20, 50, 80] : pCount >= 4 ? [14, 38, 62, 86] : [];
   usable.forEach((ex,i)=>{
+    let hx = ex.x || (16 + i * 18);
+    let hy = Math.max(17, Math.min(64, ex.y || 48));
+    // 若热点落入立绘头部/五官区域（y 20..58 且与任一立绘中心水平距离 < 13%），自动避让至安全边缘或高空
+    if(portraitXs.length && hy >= 20 && hy <= 58){
+      for(const px of portraitXs){
+        if(Math.abs(hx - px) < 13){
+          if(px >= 60) hx = Math.min(90, Math.max(85, px + 18));
+          else if(px <= 40) hx = Math.max(10, Math.min(15, px - 18));
+          else hx = (i % 2 === 0) ? 13 : 87;
+        }
+      }
+    }
+    if(typeof window !== 'undefined' && window.innerWidth && window.innerWidth <= 520){
+      hx = clamp(hx, 22, 78);
+    }
     const b = document.createElement('button');
     b.className = 'hotspot' + (ex.egg?' egg':'') + (ex.babyFuss?' locked-baby':'');
-    b.style.left = (ex.x|| (20+i*20)) + '%';
-    b.style.top = (ex.y|| 50) + '%';
-    b.innerHTML = `<span class="hs-icon">${ex.icon||'➡️'}</span>${ex.label||LOCS[ex.to]?.name||ex.to}`;
+    b.style.left = hx + '%';
+    b.style.top = hy + '%';
+    b.innerHTML = `<span class="hs-icon">${uiIco(ex.icon || LOCS[ex.to]?.icon || 'door', 14)}</span>${ex.label||LOCS[ex.to]?.name||ex.to}`;
     b.onclick = (e)=>{
       e.stopPropagation();
       if(!S.freeRoam) return;
       sfx('click');
+      if(ex.combatStage){ startBattle({stageId: ex.combatStage, fullRestore: true}, ()=>enterFreeRoam()); return; }
       if(ex.babyFuss){ doBabyFuss(ex.fussTo || 'parlor', ex.st || 0); return; }
       enterLoc(ex.to);
     };
     box.appendChild(b);
   });
+  if(typeof BranchingDirector !== 'undefined' && BranchingDirector.renderVignetteHotspots) BranchingDirector.renderVignetteHotspots();
+  if(typeof window !== 'undefined' && window.RaisingHub && typeof window.RaisingHub.syncSylviaHub === 'function'){
+    try { window.RaisingHub.syncSylviaHub(); } catch(e){}
+  }
 }
 
 function setPov(on){
@@ -2047,7 +2911,11 @@ function enterFreeRoam(options={}){
   const box=$('choices'); if(box) box.innerHTML='';
   setSpeaker(null);
   const nextBtn=document.querySelector('[data-act="next"]');
-  if(nextBtn) nextBtn.textContent = S.ageY < 1 ? '🍂 下一年' : '🍂 下个季度';
+  if(nextBtn){
+    const lbl=nextBtn.querySelector('.abtn-label');
+    if(lbl) lbl.textContent = S.ageY < 1 ? '下一年' : '下个季度';
+    else nextBtn.textContent = S.ageY < 1 ? '下一年' : '下个季度';
+  }
   // 不再自动显示“点击出口移动”等地点教学对话框。
   const dialogBox=$('text-box');
   dialogBox.classList.add('dialog-hidden');
@@ -2099,7 +2967,7 @@ function showPendingSeasonFlavor(){
 function updateLocBar(){
   const L=LOCS[S.loc]; if(!L) return;
   show('loc-bar',1);
-  $('loc-name').textContent = `${L.icon} ${L.name}`;
+  $('loc-name').textContent = L.name;
   $('loc-desc').textContent = L.desc||'';
   setBG(L.bg||'bg-room');
   bgmFreeRoam(L.bg||'bg-room', S.phase, S.loc); // 自由探索才按背景切音乐
@@ -2125,25 +2993,28 @@ const ROAM_PLACE_DETAIL = {
   library:'这里适合安静看书。', cafeteria:'今天的餐点闻起来不错。', water_class:'水元素正在空气里聚集。',
   ice_class:'教室里的温度刚刚好。', flowerhouse:'花坊的湿度正合适。', training_field:'训练场的风很干净。',
   memorial:'树影把石牌遮住了一半。', auditorium:'礼堂里的回声很清楚。', jikan:'院里的炉火还温着。',
-  northforest:'林子里的风声不太安稳。', road:'今天的路上没有太多尘土。'
+  chenglan_guild:'告示板前聚着交接任务的冒险者。',
+  northforest:'林子里的风声不太安稳。', road:'今天的路上没有太多尘土。',
+  ice_canyon:'风雪顺着峡谷口呼啸而过。'
 };
 function roamGreetingText(charId, locId=S.loc){
   const a=S.ageY, n=CHARS[charId]?.short||charId;
   const detail=ROAM_PLACE_DETAIL[locId] || (LOCS[locId]?.name ? LOCS[locId].name+'今天很安静。' : '这里今天很安静。');
   switch(charId){
-    case 'sophia': return a<1 ? '醒了吗？妈妈在。'+detail : a<6 ? '希尔维亚，想在这里待一会儿吗？'+detail : '希尔维亚，来得正好。'+detail;
+    case 'sophia': return a<1 ? '醒了吗？妈妈在。'+detail : a<6 ? '希尔维亚，想在这里待一会儿吗？'+detail : a<12 ? '希尔维亚，今天也来透透气吗？'+detail : '希尔维亚，难得回来，陪妈妈坐一会儿吧。'+detail;
     case 'beatrice': return a<1 ? '妹妹！看这里！'+detail : a<10 ? '希尔维亚！我正想找你！'+detail : '希尔维亚，来得正好！'+detail;
     case 'alice': return a<3 ? '……姐姐大人。'+detail : a<10 ? '……姐姐大人，你也来了。'+detail : '……姐姐大人。要一起待一会儿吗？'+detail;
     case 'claude': return a<6 ? '希尔维亚。看来你很喜欢这里。'+detail : '希尔维亚。既然来了，就别急着走。'+detail;
     case 'emma': return '希尔维亚！你也在这里！'+detail;
     case 'noelle': return '……来了？'+detail;
-    case 'aino': return '……你来了。'+detail;
+    case 'aino': return (locId==='ice_canyon' || flag('ch_distant_wind_1')) ? '……东侧风口刚巡完。'+detail : '……你来了。'+detail;
     case 'anna': return '希尔维亚同学，来得正好。'+detail;
     case 'hol': return '……嗯，你来了。'+detail;
     case 'charlotte': return '维斯特利亚。你来得倒巧。'+detail;
     case 'ajun': return '希尔维亚！正好碰见你！'+detail;
     case 'ji': return '来了？先歇口气。'+detail;
     case 'jilan': return '你来啦。'+detail;
+    case 'masha': return '哟，渔，来接委托还是交材料？'+detail;
     default: return a<6 ? n+'弯下身向你打了声招呼。'+detail : n+'向你点了点头。'+detail;
   }
 }
@@ -2165,8 +3036,9 @@ function markRoamGreetingDismissed(charId){
   flag('roam_greeting_dismissed',all);
 }
 function maybeShowRoamGreeting(){
-  const tb=$('text-box'), action=$('action-bar'), choices=$('choices');
-  if(!S.freeRoam || !document.body.classList.contains('roam')) return false;
+  const gs=$('game-screen'), tb=$('text-box'), action=$('action-bar'), choices=$('choices');
+  if(!gs || gs.classList.contains('hidden')) return false;
+  if(!S.freeRoam || S.phase==='prologue' || !document.body.classList.contains('roam')) return false;
   if(document.body.classList.contains('ui-hidden')) return false;
   if(!action || action.classList.contains('hidden')) return false;
   if(!tb || !tb.classList.contains('dialog-hidden')) return false;
@@ -2244,43 +3116,66 @@ document.getElementById('action-bar').onclick = e=>{
   else if(act==='course') doCourse();
   else if(act==='rest') doRest();
   else if(act==='item') openPanel('inv');
+  else if(act==='encounter'){ if(typeof RelicsAndEvents!=='undefined'&&RelicsAndEvents.openRumorBoard) RelicsAndEvents.openRumorBoard(); }
   else if(act==='next') doNextTime();
 };
 
 function openMap(){
-  const g=$('map-grid'); g.innerHTML='';
-  const phaseLocs = Object.values(LOCS).filter(L=> {
-    if(!L.unlock || !phaseAreaAllowed(L.area)) return false;
-    // 逃亡（旅途/终章）后：学院与王都材料市场均不可再通过地图前往
-    if((S.phase==='journey' || S.phase==='finale') && (L.area==='魔法大学' || L.id==='market')) return false;
-    return true;
-  });
-  phaseLocs.forEach(L=>{
-    // 婴儿（<1岁）：无法通过地图离开育婴室（只能点「闹着要出去」）
-    if(S.ageY < 1 && L.id !== 'nursery' && L.id !== 'ownroom') return;
-    const d=document.createElement('button');
-    d.className='map-cell'+(S.loc===L.id?' here':'');
-    d.innerHTML=`<span class="mc-icon">${L.icon}</span>${L.name}<div class="mc-cost">${L.area}</div>${L.tags?.includes('egg')&&!S.eggs.includes(L.id)?'<div class="mc-tag">？</div>':''}`;
-    d.onclick=()=>{
-      if(S.loc===L.id){ toast('已经在这里了'); return; }
-      if(S.ageY < 1){ toast('你还太小，不能自己走。让家人抱你出去吧。'); return; }
-      show('map-overlay',0);
-      enterLoc(L.id);
-    };
-    g.appendChild(d);
-  });
+  closeHudMoreDrawer();
+  const g=$('map-grid');
+  if(!g) return;
+  let renderedVisual = false;
+  if(typeof window !== 'undefined' && window.RaisingHub && typeof window.RaisingHub.renderVisualMap === 'function'){
+    try {
+      renderedVisual = window.RaisingHub.renderVisualMap(S) !== false;
+    } catch(e){
+      console.error('RaisingHub.renderVisualMap', e);
+      renderedVisual = false;
+    }
+  }
+  if(!renderedVisual){
+    g.innerHTML='';
+    const phaseLocs = Object.values(LOCS).filter(L=> {
+      if(!L.unlock || !phaseAreaAllowed(L.area)) return false;
+      // 逃亡（旅途/终章）后：学院与王都材料市场均不可再通过地图前往
+      if((S.phase==='journey' || S.phase==='finale') && (L.area==='魔法大学' || L.id==='market')) return false;
+      return true;
+    });
+    phaseLocs.forEach(L=>{
+      // 婴儿（<1岁）：无法通过地图离开育婴室（只能点「闹着要出去」）
+      if(S.ageY < 1 && L.id !== 'nursery' && L.id !== 'ownroom') return;
+      const d=document.createElement('button');
+      d.className='map-cell'+(S.loc===L.id?' here':'');
+      d.innerHTML=`<span class="mc-icon">${uiIco(L.icon, 18)}</span>${L.name}<div class="mc-cost">${L.area}</div>${L.tags?.includes('egg')&&!S.eggs.includes(L.id)?'<div class="mc-tag">？</div>':''}`;
+      d.onclick=()=>{
+        if(S.loc===L.id){ toast('已经在这里了'); return; }
+        if(S.ageY < 1){ toast('你还太小，不能自己走。让家人抱你出去吧。'); return; }
+        show('map-overlay',0);
+        enterLoc(L.id);
+      };
+      g.appendChild(d);
+    });
+  }
   show('map-overlay',1);
+  sfx('modal_open');
 }
-$('btn-map-close').onclick=()=>show('map-overlay',0);
+$('btn-map-close').onclick=()=>{ show('map-overlay',0); sfx('modal_close'); };
 
 // 隐藏/显示全部 UI（沉浸模式）：点按钮隐藏，再点或按 Esc 恢复
+function syncUiToggleBtn(hidden){
+  const b = $('btn-ui'); if(!b) return;
+  const tok = b.querySelector('.sr-icon-token');
+  if(tok) tok.textContent = hidden ? '☀️' : '🌙';
+  else b.textContent = hidden ? '☀️' : '🌙';
+  b.classList.toggle('is-immersive', !!hidden);
+}
 function uiHide(){
   document.body.classList.add('ui-hidden');
-  if($('btn-ui')) $('btn-ui').textContent='☀️';
+  syncUiToggleBtn(true);
 }
 function uiShow(){
   document.body.classList.remove('ui-hidden');
-  if($('btn-ui')) $('btn-ui').textContent='🌙';
+  syncUiToggleBtn(false);
   if(S.freeRoam) maybeShowRoamGreeting();
 }
 function uiToggle(){
@@ -2290,11 +3185,18 @@ $('btn-ui').onclick=()=>uiToggle();
 
 function whoIsHere(){
   const loc=S.loc, ph=S.phase, tod=S.tod, a=S.ageY;
+  const seasonKey = S.season;
+  const preSeeded = !!(S.seasonChars && S.seasonChars[seasonKey] && Object.keys(S.seasonChars[seasonKey]).length > 0 && !S.seasonCharsMeta);
+  if(!preSeeded && typeof window !== 'undefined' && window.RaisingHub && typeof window.RaisingHub.getNpcsAtLoc === 'function'){
+    try {
+      const hubList = window.RaisingHub.getNpcsAtLoc(loc, S);
+      if(Array.isArray(hubList)) return hubList;
+    } catch(e){}
+  }
   const list=[];
   const add=(id)=>{ if(id && !list.includes(id)) list.push(id); };
 
   // reset season chars at new season
-  const seasonKey = S.season;
   if(!S.seasonChars[seasonKey]) S.seasonChars[seasonKey] = {};
 
   function placeChar(id, possibleLocs){
@@ -2338,9 +3240,11 @@ function whoIsHere(){
     if(loc==='auditorium'){ placeChar('hol',['auditorium','ice_class']); placeChar('anna',['auditorium','water_class']); }
   }
   if(ph==='journey'||ph==='finale'){
-    if(loc==='jikan'){ placeChar('ji',['jikan']); placeChar('jilan',['jikan']); }
+    if(loc==='jikan' && !flag('ch_distant_wind_1')){ placeChar('ji',['jikan']); placeChar('jilan',['jikan']); }
+    if(loc==='chenglan_guild'){ placeChar('masha',['chenglan_guild']); }
     if(loc==='northforest'){ /* monsters */ }
     if(loc==='road'){ /* travelers */ }
+    if(loc==='ice_canyon' && flag('ch_distant_wind_1')){ placeChar('aino',['ice_canyon']); placeChar('musa',['ice_canyon']); }
   }
   return list;
 }
@@ -2351,6 +3255,7 @@ function doTalk(){
     playLines([{text:'这里暂时没有可以交谈的人。\n换个房间，或到下个时段/季度再来看看。', freeRoam:true}]);
     return;
   }
+  S.lastAction = 'talk';
   // 若只有一人，直接谈
   if(peeps.length===1){ talkTo(peeps[0]); return; }
   const choices = peeps.map(id=>({
@@ -2372,11 +3277,19 @@ function talkTo(id){
     return;
   }
   if(!spendST(1)){ return; } // 交谈消耗1体力
+  S.lastAction = 'talk';
   talked = Object.assign({}, talked, {[id]: cnt+1});
   flag('talked_today', talked);
-  know(id, 2+Math.floor(Math.random()*4));
-  // 小幅魅/社交成长
-  if(S.stats) S.stats.charm = Math.min(100, (S.stats.charm||0) + 1);
+  const mindBonus = Math.floor(((S.stats && S.stats.mind) || 0) / 25);
+  const charmVal = (S.stats && S.stats.charm) || 0;
+  const charmKnowBonus = Math.floor(charmVal / 30);
+  know(id, 2 + Math.floor(Math.random()*4) + mindBonus + charmKnowBonus);
+  if(charmVal >= 30 && (S.love[id] || 0) < 5 && Math.random() < Math.min(0.5, charmVal / 160)){
+    love(id, 1);
+  }
+  if(S.mood != null) S.mood = clamp((S.mood || 0) + 2 + Math.floor(charmVal / 40), 0, 100);
+  // 小幅气质/社交成长
+  if(S.stats) addStat('charm', 1);
   const lines = talkLines(id);
   if(!lines || !lines.length){
     playLines([{text:`（${CHARS[id].short}看了看你，什么也没说。空气有点微妙。）`, freeRoam:true}]);
@@ -2439,7 +3352,12 @@ function talkLines(id){
       [{ch:'noelle',speaker:'诺艾儿',text:'……虎克来信了。他说想吃王都的糖。'}, {text:'她把信收进怀里，动作很轻。', love:'noelle', loveD:1, know:'noelle', knowD:4}],
       [{ch:'noelle',speaker:'诺艾儿',text:'你的字……还是那么难认。'}, {text:'这大概是她表达关心的方式。', love:'noelle', loveD:1}],
     ],
-    aino: [
+    aino: (S.loc==='ice_canyon' || flag('ch_distant_wind_1')) ? [
+      [{ch:'aino',emo:'serious',speaker:'艾诺',text:'三号药箱的冰膜，今天匀了。'}, {text:'她摘下手套摸过箱沿，只点了点头，没多问一个字。', love:'aino', loveD:1, know:'aino', knowD:2}],
+      [{ch:'aino',emo:'normal',speaker:'艾诺',text:'手背的伤，别沾生雪水。医官帐里有新熬的白藓膏。'}, {text:'她说完便转身去查箭垛，银白高马尾在风雪里晃了一下。', love:'aino', loveD:1, know:'aino', knowD:3}],
+      [{ch:'aino',emo:'smile',speaker:'艾诺',text:'……伙房今晚有热麦汤。巡完东墙去领，别放凉了。'}, {text:'语气平淡得像在传达军令，却替我挡了一瞬风口吹来的碎雪。', love:'aino', loveD:1, know:'aino', knowD:2}],
+      [{if:()=>!!(S.causal && (S.causal.clues?.polar_lily_bond || (S.causal.axes?.aino?.kinship||0)>=2)), ch:'aino',emo:'smile',speaker:'艾诺',text:'……冰膜毫无气泡。这种精细度，北境防线里难得一见。'}, {text:'她没有提起那株名为伊诺的北极铃兰，指尖却在箱沿左下角停了一息。', love:'aino', loveD:1, know:'aino', knowD:3}],
+    ] : [
       [{ch:'aino',speaker:'艾诺',text:'你的冰，还有气泡。'}, {text:'她只说这一句。但周六训练场见——这是默认的。', love:'aino', loveD:1, know:'aino', knowD:2}],
       [{ch:'aino',speaker:'艾诺',text:'花坊的水，下午两点换。你若路过，带一壶冷的。'}, {text:'这是在邀请吗？用艾诺语翻译，大概是。', love:'aino', loveD:1, know:'aino', knowD:3}],
       [{ch:'aino',speaker:'艾诺',text:'……赫兰的雪，比这里像样。'}, {text:'她看着窗外，声音很轻。', love:'aino', loveD:1, know:'aino', knowD:2}],
@@ -2492,6 +3410,24 @@ function talkLines(id){
     huke: [
       [{ch:'huke',speaker:'虎克',text:'银色头发的姐姐！我记住你了！我以后也要考魔法大学！'}, {text:'他挺起小小的胸膛。像一只认真的雀。', love:'huke', loveD:1}],
     ],
+    masha: [
+      [{ch:'masha',speaker:'玛莎',text:'北林深处最近不太平，看见带霜脊的影豺脚印就赶紧撤，别硬撑。'}, {text:'她啪嗒啪嗒拨着算盘，头也不抬地叮嘱了一句。', know:'masha', knowD:3}],
+      [{ch:'masha',speaker:'玛莎',text:'你交上来的魔核切口倒是利索，一点没碎，省了我不少核验工夫。'}, {text:'她麻利地数出几枚银币推过柜台。', know:'masha', knowD:3}],
+      [{ch:'masha',speaker:'玛莎',text:'霁馆那爷俩人不错，就是霁馆主做饭的动静，隔着两条街都能闻见糊味。'}, {text:'玛莎摇着头笑了一声，在登记册上打了个勾。', know:'masha', knowD:2}],
+    ],
+    musa: [
+      [{ch:'musa',speaker:'穆萨',text:'渔姑娘来得正好！这批刚采来的北境白藓最怕冻过头，劳烦再给箱沿覆一层薄冰膜！'}, {text:'老药师搓着冻红的手，眼角笑出细密的褶子。', love:'musa', loveD:1, know:'musa', knowD:3}],
+      [{ch:'musa',speaker:'穆萨',text:'防卫队的小伙子们嘴上不说，其实都在念叨那晚尾车边稳如磐石的冰剑护卫呢。'}, {text:'他顺手往我手里塞了小半袋晒干的温脾果脯。', love:'musa', loveD:1, know:'musa', knowD:3}],
+      [{ch:'musa',speaker:'穆萨',text:'听说东崖哨卡的巡逻兵昨晚又瞧见雪狼群影，巡墙时记得护好手背旧伤呀。'}, {text:'药帐里飘出苦甘交织的草木气，让人莫名踏实。', know:'musa', knowD:2}],
+    ],
+    lein: [
+      [{ch:'lein',speaker:'莱恩',text:'哟，渔！走商这阵子我可摸熟了好几家便宜又干净的驿站——师父说我总算不至于迷路了！'}, {text:'他笑得眉眼舒展，指间不知何时又折好一只草叶小船。', love:'lein', loveD:1, know:'lein', knowD:3}],
+      [{ch:'lein',speaker:'莱恩',text:'水壶带够了吗？北边风干，喝一口冷水比什么都管用！'}, {text:'还是那个习惯先递水的爽朗学徒。', love:'lein', loveD:1, know:'lein', knowD:2}],
+    ],
+    peilin: [
+      [{ch:'peilin',speaker:'沛霖',text:'茶凉了再续。出门在外，账算明白，路走稳当，比什么豪言壮语都靠得住。'}, {text:'他端着粗瓷茶盏，眉目沉稳得仿佛四周风雪都慢了半拍。', love:'peilin', loveD:1, know:'peilin', knowD:3}],
+      [{ch:'peilin',speaker:'沛霖',text:'莱恩那小子走南闯北话多，心肠倒是实诚。若到了北风堡有难处，报沛记药行的名号便好。'}, {text:'说完他又恢复那副淡然谈价的商贾神色，像只随口提了句天气。', love:'peilin', loveD:1, know:'peilin', knowD:3}],
+    ],
   };
 
   const pool = pools[id];
@@ -2526,39 +3462,59 @@ const COURSES = {
     stat:{mana:3, body:1}, st:3, desc:'控制、塑形与防御水膜。', skillAt:2, skill:{id:'water_veil_s', name:'水膜', type:'active', desc:'短时水膜防御。'}},
   uni_ice:{id:'uni_ice', name:'冰系精修', phase:['academy'], teacher:'霍尔', needAge:12,
     stat:{mana:4}, st:3, desc:'球形凝冰、冰墙生根。', skillAt:2, skill:{id:'ice_sphere', name:'完美冰球', type:'passive', desc:'冰系塑形稳定性提升。'}},
-  // 霁馆
-  dojo_foot:{id:'dojo_foot', name:'步法', phase:['journey'], teacher:'霁馆主', needAge:13,
+  // 霁馆（离开澄岚前）
+  dojo_foot:{id:'dojo_foot', name:'步法', phase:['journey'], teacher:'霁馆主', needAge:13, forbidFlag:'ch_distant_wind_1',
     stat:{body:4}, st:3, desc:'生根、横移、走着砍。', skillAt:2, skill:{id:'root_step', name:'生根步', type:'passive', desc:'被击退距离减少。'}},
-  dojo_blade:{id:'dojo_blade', name:'挥剑', phase:['journey'], teacher:'霁馆主', needAge:13,
+  dojo_blade:{id:'dojo_blade', name:'挥剑', phase:['journey'], teacher:'霁馆主', needAge:13, forbidFlag:'ch_distant_wind_1',
     stat:{body:3, mana:1}, st:3, desc:'不用力的送刀，剑是活的。', skillAt:2, skill:{id:'soft_cut', name:'送刀', type:'active', desc:'低耗刀势，附带少量魔力。'}},
+  // 北行与赫兰前线（离开霁馆后）
+  border_blade:{id:'border_blade', name:'覆冰剑技', phase:['journey','finale'], teacher:'自修·实战', needAge:15, needFlag:'ch_distant_wind_1',
+    stat:{body:3, mana:2}, st:3, desc:'将极薄钢冰贴合乌木铁刃，锤炼拔剑与收力。', skillAt:2, skill:{id:'frost_edge', name:'覆冰锋', type:'passive', desc:'剑刃覆薄冰，近战衔接更敏锐。'}},
+  helan_tactics:{id:'helan_tactics', name:'冻土防务', phase:['journey','finale'], teacher:'艾诺', needAge:15, needFlag:'ch_distant_wind_1',
+    stat:{mana:3, mind:2}, st:3, desc:'与机动防卫队演练窄道控场与不经手凝冰。', skillAt:2, skill:{id:'instant_ice', name:'隔空凝冰', type:'active', desc:'跳过手部节点直接凝冰截击，高概率冰冻。'}},
 };
 
 function addStat(k, v){
   if(!S.stats) S.stats = {body:5, mind:15, mana:10, charm:8};
-  S.stats[k] = Math.min(100, Math.max(0, (S.stats[k]|0) + v));
+  const prev = S.stats[k] | 0;
+  const next = Math.min(100, Math.max(0, prev + (Number(v) || 0)));
+  S.stats[k] = next;
+  if(next > prev){
+    sfx('stat_gain');
+    if(typeof window !== 'undefined' && window.RaisingHub && typeof window.RaisingHub.onStatGain === 'function'){
+      try { window.RaisingHub.onStatGain(k, next - prev, next); } catch(e){}
+    }
+  }
 }
 function courseProgress(id, exp){
   if(!S.courses) S.courses = {};
   const c = COURSES[id]; if(!c) return;
-  const st = S.courses[id] || {lv:0, exp:0};
-  st.exp += exp;
+  const raw = S.courses[id];
+  const st = (raw && typeof raw === 'object') ? raw : {lv: Number(raw) || 0, exp: 0};
+  const mul = hasSkill('theory_note') ? 1.1 : 1;
+  st.exp += Math.max(1, Math.round((Number(exp) || 0) * mul));
+  let leveled = false;
   while(st.exp >= 10 + st.lv*5){
     st.exp -= 10 + st.lv*5;
     st.lv++;
-    toast(`📚 ${c.name} Lv.${st.lv}`);
+    leveled = true;
+    toast(`课程进阶：${c.name} Lv.${st.lv}`);
     if(c.skill && st.lv >= (c.skillAt||3) && !hasSkill(c.skill.id) && !(S.skillsLearned||[]).includes(c.skill.id)){
       addSkill(c.skill.id);
       S.skillsLearned = S.skillsLearned || [];
       S.skillsLearned.push(c.skill.id);
-      sysPopup('✨ 学会技能', `「${c.skill.name}」<br>${c.skill.desc}`);
+      sysPopup('学会技能', `「${c.skill.name}」<br>${c.skill.desc}`);
     }
   }
+  if(leveled) sfx('level');
   S.courses[id] = st;
 }
 function availableCourses(){
   return Object.values(COURSES).filter(c=>{
     if(c.needAge!=null && S.ageY < c.needAge) return false;
     if(c.needFlag && !flag(c.needFlag)) return false;
+    if(c.forbidFlag && flag(c.forbidFlag)) return false;
+    if(c.id.startsWith('dojo_') && (flag('ch_distant_wind_1') || S.loc==='ice_canyon')) return false;
     if(c.phase && !c.phase.includes(S.phase) && !(S.phase==='youth' && c.phase.includes('childhood'))) return false;
     // phase map
     const ph = S.phase;
@@ -2576,7 +3532,7 @@ function doCourse(){
     return;
   }
   const choices = list.map(c=>({
-    text:`${c.name}（${c.teacher}）⚡${c.st||2}`,
+    text:`${c.name}（${c.teacher}）· 体${c.st||2}`,
     do:()=>takeCourse(c.id)
   }));
   choices.push({text:'取消', do:()=>enterFreeRoam()});
@@ -2584,9 +3540,9 @@ function doCourse(){
 }
 function courseTeacherCharId(teacherName){
   const map = {
-    '家庭教师':'teacher', '自学/藏书':null, '剑术教官':null,
-    '通识教授':null, '安娜·贝尔':'anna', '霍尔':'hol',
-    '霁馆主':'ji',
+    '家庭教师':'teacher', '自学/藏书':null, '剑术教官':'instructor',
+    '通识教授':'lecturer', '安娜·贝尔':'anna', '霍尔':'hol',
+    '霁馆主':'ji', '艾诺':'aino', '自修·实战':null,
   };
   return map[teacherName] || null;
 }
@@ -2594,11 +3550,13 @@ function courseTeacherCharId(teacherName){
 function takeCourse(id){
   const c = COURSES[id]; if(!c) return;
   if(!spendST(c.st||2)) return;
+  S.lastAction = 'course';
   // apply stats
   const parts = [];
   Object.entries(c.stat||{}).forEach(([k,v])=>{ addStat(k,v); parts.push(`${STAT_LABEL[k]}+${v}`); });
   courseProgress(id, 5 + Math.floor((S.stats.mind||0)/20));
-  addExp(8 + (S.stats.mind||0)/10);
+  const theoryMul = hasSkill('theory_note') ? 1.1 : 1;
+  addExp(Math.round((8 + (S.stats.mind||0)/10) * theoryMul));
   const lv = S.courses[id]?.lv || 0;
   // map teacher name to character id for portrait
   const teacherCharId = courseTeacherCharId(c.teacher);
@@ -2619,14 +3577,15 @@ function doTrain(){
   if(!L.tags?.includes('train') && S.loc!=='garden' && S.loc!=='training' && S.loc!=='training_field' && S.loc!=='ice_class' && S.loc!=='northforest' && S.loc!=='jikan'){
     playLines([{text:'这里不适合修行。去花园、练武场或训练场吧。', freeRoam:true}]); return;
   }
-  if(!spendST(3)) return;
   if(S.sickUntil > S.dayCount){
     playLines([{text:'你还在生病状态中，是否继续修行？', choices:[
-      {text:'继续（触发生病剧情）', do:()=>{ triggerSickPlot(); }},
+      {text:'继续（触发生病剧情）', do:()=>{ if(!spendST(3)) return; S.lastAction = 'train'; triggerSickPlot(); }},
       {text:'取消', do:()=>enterFreeRoam()}
     ]}]);
     return;
   }
+  if(!spendST(3)) return;
+  S.lastAction = 'train';
   const lines = [{text:'开始修行……'}];
   if(S.affinity.includes('ice')||S.affinity.includes('water')){
     lines.push({text:'将魔力引导至掌心。冰晶缓缓凝结。', sfx:'magic', mp:-5, exp:15+S.tier*5});
@@ -2638,12 +3597,16 @@ function doTrain(){
     if(S.loc==='northforest'){
       lines.push({text:'顺便清理了附近的魔物。', exp:40, gold:5});
     }
+    if(S.loc==='ice_canyon'){
+      lines.push({text:'顶着峡谷风口演练覆冰斩击与隔空凝冰，顺手清除了逼近外哨的冻土魔物。', exp:55, gold:8});
+      S.atk += 0.15;
+    }
     if(S.loc==='jikan' || S.loc==='training'){
       lines.push({text:'竹剑的手感沉了些。身体记得住。', exp:20});
       S.atk += 0.1; // accumulates
     }
   }
-  if(S.stats){ addStat('mana', 1); addStat('body', S.loc==='training'||S.loc==='jikan'||S.loc==='training_field'?2:1); }
+  if(S.stats){ addStat('mana', 1); addStat('body', S.loc==='training'||S.loc==='jikan'||S.loc==='training_field'||S.loc==='ice_canyon'?2:1); }
   lines.push({text:`修行结束。魔力适性与体能略有提升。\n体力-3。当前 ${S.st}/${S.mst}。`, freeRoam:true});
   playLines(lines);
 }
@@ -2665,11 +3628,14 @@ function doStudy(){
     playLines([{text:'这里没有可看的书。去图书室或图书馆吧。', freeRoam:true}]); return;
   }
   if(!spendST(2)) return;
+  S.lastAction = 'study';
   const bonus = hasSkill('deep_read')||hasSkill('ice_palace') ? 10 : 0;
+  const theoryMul = hasSkill('theory_note') ? 1.1 : 1;
+  const studyExp = Math.round((20 + bonus) * theoryMul);
   if(S.stats) addStat('mind', 2);
   playLines([
     {text:'翻开书页。这个世界的魔法理论其实相当自洽。'},
-    {text:'梅林三大定律、亲和与赋亲和、魔导阻率……', exp:20+bonus, mp:5},
+    {text:'梅林三大定律、亲和与赋亲和、魔导阻率……', exp:studyExp, mp:5},
     {text: (hasSkill('ice_palace') ? '（将这一页冻结进冰晶宫殿。）' : '记下要点。') + ' 心智+2。', freeRoam:true}
   ]);
   // chance to raise know of magic topics
@@ -2686,17 +3652,32 @@ function doRest(){
   }
   const isBed = LOCS[S.loc]?.tags?.includes('rest') || S.loc==='nursery'||S.loc==='dorm'||S.loc==='jikan' || S.loc==='ownroom';
   S.restThisSeason = 1;
-  const stRecover = Math.floor(S.mst / 3);
+  S.lastAction = 'rest';
+  const quietBonusSt = hasSkill('quiet_mind') ? 1 : 0;
+  const hasLullaby = hasSkill('lullaby');
+  const stRecover = Math.floor(S.mst / 3) + quietBonusSt;
+  const extraNotes = [];
+  if(quietBonusSt) extraNotes.push('「静心」额外回复体力+1');
+  if(hasLullaby) extraNotes.push('「摇篮曲」额外回复魔力与悠闲度+10');
   playLines([
     {text: isBed ? '躺到床上。闭上眼睛。' : '找了个角落靠着。眼皮很重。'},
     {do:()=>{
       const bonus = hasSkill('quiet_mind') ? 10 : 0;
-      S.hp=S.mhp; S.mp=clamp(S.mp+Math.floor(S.mmp*0.5)+bonus,0,S.mmp);
+      const lullabyMp = hasLullaby ? Math.max(1, Math.round((S.mmp || 0) * 0.1)) : 0;
+      S.hp=S.mhp;
+      S.mp=clamp(S.mp+Math.floor(S.mmp*0.5)+bonus+lullabyMp,0,S.mmp);
       S.st = clamp(S.st + stRecover, 0, S.mst);
+      if(hasLullaby){
+        S.leisure = clamp((S.leisure == null ? 75 : S.leisure) + 10, 0, 100);
+        S.mood = clamp((S.mood == null ? 75 : S.mood) + 6, 0, 100);
+      } else {
+        S.leisure = clamp((S.leisure == null ? 75 : S.leisure) + 4, 0, 100);
+      }
+      sfx('ok');
       // dream duel opportunity
       maybeDreamDuel();
     }},
-    {text:`休息片刻。体力恢复${stRecover}点。`, freeRoam:true}
+    {text:`休息片刻。体力恢复${stRecover}点。${extraNotes.length ? '\n' + extraNotes.join('，') + '。' : ''}`, freeRoam:true}
   ]);
 }
 
@@ -2724,7 +3705,7 @@ function tryLocEgg(locId){
       S.eggs.push('garden'); ach('egg_garden');
       playLines([
         {text:'花坛角落有什么在闪光。'},
-        {text:'一枚小小的冰蓝色石子。握在手心微微发凉。', item:{id:'ice_pebble', name:'冰蓝石子', icon:'💎', desc:'花园里捡到的。会微微发凉。'}, freeRoam:true}
+        {text:'一枚小小的冰蓝色石子。握在手心微微发凉。', item:{id:'ice_pebble', name:'冰蓝石子', icon:'gem', desc:'花园里捡到的。会微微发凉。'}, freeRoam:true}
       ]);
     },
     study:()=>{
@@ -2761,7 +3742,7 @@ function tryLocEgg(locId){
       S.eggs.push('kitchen');
       playLines([
         {text:'厨师偷偷塞给我一块还热乎的小饼干。'},
-        {text:'「大小姐别告诉夫人，饭前吃点心要挨骂的。」', item:{id:'cookie', name:'热饼干', icon:'🍪', desc:'饭前偷吃专用。'}, freeRoam:true}
+        {text:'「大小姐别告诉夫人，饭前吃点心要挨骂的。」', item:{id:'cookie', name:'热饼干', icon:'cookie', desc:'饭前偷吃专用。'}, freeRoam:true}
       ]);
     },
     secret:()=>{
@@ -2819,6 +3800,48 @@ function tryLocEgg(locId){
 }
 
 // ========== BRAVE GIFT ==========
+function pickSigilSVG(id, isStar, idx){
+  if(id === 'ice_palace'){
+    return `<svg viewBox="0 0 48 48" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.45"><polygon points="24,4 39,14 39,34 24,44 9,34 9,14"/><polygon points="24,10 33,24 24,38 15,24" stroke-width="1.15" fill="currentColor" fill-opacity="0.14"/><circle cx="24" cy="24" r="2.8" fill="currentColor"/><line x1="24" y1="4" x2="24" y2="10"/><line x1="24" y1="38" x2="24" y2="44"/><line x1="9" y1="24" x2="15" y2="24"/><line x1="33" y1="24" x2="39" y2="24"/></svg>`;
+  }
+  if(id === 'mana_cycle'){
+    return `<svg viewBox="0 0 48 48" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="24" cy="24" r="17" stroke-dasharray="5 3"/><circle cx="24" cy="24" r="11"/><path d="M24 7 L28 13 L20 13 Z" fill="currentColor"/><path d="M24 41 L20 35 L28 35 Z" fill="currentColor"/><circle cx="24" cy="24" r="3" fill="currentColor"/></svg>`;
+  }
+  if(id === 'virtual_duel'){
+    return `<svg viewBox="0 0 48 48" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="24" cy="24" r="16"/><line x1="12" y1="36" x2="36" y2="12"/><line x1="12" y1="12" x2="36" y2="36"/><polygon points="24,8 27,24 24,40 21,24" fill="currentColor" opacity="0.28"/></svg>`;
+  }
+  if(isStar){
+    return `<svg viewBox="0 0 48 48" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.4"><polygon points="24,5 28.5,19.5 43,24 28.5,28.5 24,43 19.5,28.5 5,24 19.5,19.5" fill="currentColor" fill-opacity="0.14"/><circle cx="24" cy="24" r="7"/></svg>`;
+  }
+  const variants = [
+    `<svg viewBox="0 0 48 48" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.35"><polygon points="24,7 39,24 24,41 9,24"/><polygon points="24,14 32,24 24,34 16,24" opacity="0.72"/><circle cx="24" cy="24" r="2.2" fill="currentColor"/></svg>`,
+    `<svg viewBox="0 0 48 48" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.35"><polygon points="24,6 38,14 38,34 24,42 10,34 10,14"/><line x1="24" y1="6" x2="24" y2="42" opacity="0.5"/><line x1="10" y1="14" x2="38" y2="34" opacity="0.5"/><line x1="38" y1="14" x2="10" y2="34" opacity="0.5"/><circle cx="24" cy="24" r="3" fill="currentColor"/></svg>`,
+    `<svg viewBox="0 0 48 48" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.35"><circle cx="24" cy="24" r="16" stroke-dasharray="4 3"/><polygon points="24,9 36,33 12,33"/><circle cx="24" cy="25" r="3" fill="currentColor"/></svg>`,
+    `<svg viewBox="0 0 48 48" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.35"><rect x="12" y="12" width="24" height="24" transform="rotate(45 24 24)"/><rect x="13" y="13" width="22" height="22" opacity="0.6"/><circle cx="24" cy="24" r="3" fill="currentColor"/></svg>`,
+    `<svg viewBox="0 0 48 48" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.35"><circle cx="24" cy="24" r="15"/><path d="M12 24h24M24 12v24" opacity="0.55"/><polygon points="24,13 29,24 24,35 19,24" fill="currentColor" fill-opacity="0.2"/></svg>`,
+    `<svg viewBox="0 0 48 48" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.35"><polygon points="24,6 31,18 42,24 31,30 24,42 17,30 6,24 17,18"/><circle cx="24" cy="24" r="4.5"/></svg>`,
+  ];
+  return variants[(Number(idx) || 0) % variants.length];
+}
+let _pickPrevBg = null;
+function restoreBgAfterPick(){
+  const bgEl = $('bg');
+  const curCls = _bgTarget || (bgEl && bgEl.getAttribute('data-cls')) || '';
+  if(_pickPrevBg === null && curCls !== 'bg-pick') return;
+  const saved = _pickPrevBg;
+  _pickPrevBg = null;
+  const targetBg = (LOCS[S.loc] && LOCS[S.loc].bg) || saved || (S.bg && S.bg !== 'bg-pick' ? S.bg : null) || 'bg-img-hallway bg-hall';
+  setBG(targetBg);
+}
+function dismissPickScreen(){
+  const oldBar = $('pick-confirm-bar');
+  if(oldBar && oldBar.parentNode) oldBar.parentNode.removeChild(oldBar);
+  pendingPicks = null;
+  show('pick-screen', 0);
+  restoreBgAfterPick();
+  bgmRestoreScene();
+  sfx('modal_close');
+}
 function triggerBraveGift(tier){
   if(S.picksDone.includes(tier)) return;
   S.tier = Math.max(S.tier, tier);
@@ -2833,14 +3856,65 @@ function triggerBraveGift(tier){
   const star = tier===0?'virtual_duel':tier===1?'ice_palace':tier===2?'mana_cycle':null;
   if(star){ picks = picks.filter(p=>p.id!==star); const s=ALL_PICKS[star]; if(s) picks.unshift(s); }
   picks = picks.slice(0,7);
-  setBG('bg-pick'); bgmPlayType('sacred', {force:true});
+  const bgEl = $('bg');
+  const curBgCls = _bgTarget || (bgEl && bgEl.getAttribute('data-cls')) || '';
+  if(curBgCls === 'bg-pick'){
+    const prevBg = (S.bg && S.bg !== 'bg-pick') ? S.bg : ((LOCS[S.loc] && LOCS[S.loc].bg) || 'bg-img-hallway bg-hall');
+    _pickPrevBg = prevBg;
+  }
+  // #pick-screen owns its own full-viewport crystal ceremony backdrop; keep #bg intact to avoid stage background leaks
+  bgmPlayType('sacred', {force:true});
   show('pick-screen',1); show('game-screen',1);
   const g=$('pick-grid'); g.innerHTML='';
-  picks.forEach(p=>{
+  const wrap = $('pick-screen') ? $('pick-screen').querySelector('.pick-wrap') : null;
+  const oldBar = $('pick-confirm-bar');
+  if(oldBar && oldBar.parentNode) oldBar.parentNode.removeChild(oldBar);
+  const isTouchPick = !!(typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    && window.matchMedia('(hover: none), (pointer: coarse)').matches
+    && !(typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent || '')));
+  let selectedPick = null;
+  let confirmBtn = null;
+  if(isTouchPick && wrap){
+    const bar = document.createElement('div');
+    bar.id = 'pick-confirm-bar';
+    bar.className = 'pick-confirm-bar';
+    bar.innerHTML = `<button type="button" id="pick-confirm-btn" class="tbtn tbtn-editorial tbtn-lead pick-confirm-btn" disabled>请先点选一项技能</button>`;
+    wrap.appendChild(bar);
+    confirmBtn = bar.querySelector('#pick-confirm-btn');
+    if(confirmBtn){
+      confirmBtn.onclick = ()=>{
+        if(selectedPick) selectPick(selectedPick, tier);
+      };
+    }
+  }
+  const romans = ['I','II','III','IV','V','VI','VII'];
+  picks.forEach((p, idx)=>{
+    const isStar = !!(star && p.id === star);
     const d=document.createElement('div');
-    d.className='pick-card';
-    d.innerHTML=`<div class="tag">${p.tag||''}</div><h3>${p.name}</h3><p>${p.desc}</p>`;
-    d.onclick=()=>selectPick(p, tier);
+    d.className='pick-card' + (isStar ? ' pick-star' : '');
+    d.innerHTML=`
+      <div class="pick-roman">${romans[idx] || (idx+1)}</div>
+      ${isStar ? '<span class="pick-star-seal" title="天命星印">✦ 启示</span>' : ''}
+      <div class="pick-sigil" aria-hidden="true">${pickSigilSVG(p.id, isStar, idx)}</div>
+      <div class="tag">${p.tag||'赋技能'}</div>
+      <h3>${p.name}</h3>
+      <p>${p.desc}</p>
+      <div class="pick-foot">${isTouchPick ? '点选预览' : '✦ 铭刻此赐'}</div>
+    `;
+    d.onclick=()=>{
+      if(isTouchPick){
+        g.querySelectorAll('.pick-card.is-selected').forEach(c=>c.classList.remove('is-selected'));
+        d.classList.add('is-selected');
+        selectedPick = p;
+        if(confirmBtn){
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = `确认铭刻「${p.name}」`;
+        }
+        sfx('click');
+        return;
+      }
+      selectPick(p, tier);
+    };
     g.appendChild(d);
   });
   sfx('magic');
@@ -2854,14 +3928,18 @@ function selectPick(p, tier){
     if(p.id==='virtual_duel') ach('virtual_first');
     if(p.id==='ice_palace') ach('ice_palace_on');
   }
+  const oldBar = $('pick-confirm-bar');
+  if(oldBar && oldBar.parentNode) oldBar.parentNode.removeChild(oldBar);
+  pendingPicks = null;
   show('pick-screen', 0);
+  restoreBgAfterPick();
   bgmRestoreScene(); // 选卡结束恢复场景 bgm
   sfx('level');
   updateHUD(); save();
   const ap = afterPick; afterPick = null;
   if(ap && ap.rest && ap.rest.length){
     // 剧情场景中的选卡：弹出习得面板，然后接着往下演
-    sysPopup('✧ 勇者之赐 ✧', `✨ 你选择了：<b>${p.name}</b>（${p.tag||'赋技能'}）<br><br>技能已习得！<br><span style="opacity:.75">${p.desc||''}</span>`);
+    sysPopup('✧ 勇者之赐 ✧', `你选择了：<b>${p.name}</b>（${p.tag||'赋技能'}）<br><br>技能已习得！<br><span style="color:#526078">${p.desc||''}</span>`);
     playLines(ap.rest, ap.done);
     return;
   }
@@ -2897,6 +3975,7 @@ const COMBAT_SKILLS = {
   soft_cut:{name:'送刀', elem:'phys', ap:1, mp:3, power:1.3, atkKind:'atk', effect:{atkUp:1}, desc:'低耗刀势，附带魔力。'},
   wind_afterimage:{name:'风行残像', elem:'wind', ap:1, mp:5, power:1.2, atkKind:'atk', effect:{evade:1}, desc:'借风位移，闪避提升。'},
   mana_cycle:{name:'魔战循环', elem:'water', ap:1, mp:8, power:0.9, atkKind:'matk', effect:{manaGain:10}, desc:'攻击并汲取魔力。'},
+  instant_ice:{name:'隔空凝冰', elem:'ice', ap:1, mp:7, power:1.85, atkKind:'matk', effect:{freeze:45}, desc:'跳过手部节点直接凝冰截击，高概率冰冻。'},
 };
 // 玩家可用主动技（依已学技能推导）
 function playerCombatSkills(){
@@ -2913,6 +3992,7 @@ function playerCombatSkills(){
   learn('soft_cut','soft_cut');
   learn('wind_afterimage','wind_afterimage');
   learn('mana_cycle','mana_cycle');
+  learn('instant_ice','instant_ice');
   // 水/冰基础亲和始终可用
   if(S.affinity && S.affinity.includes('water') && !ids.includes('water_ball')) ids.push('water_ball');
   if(S.affinity && S.affinity.includes('ice') && !ids.includes('ice_crystal')) ids.push('ice_crystal');
@@ -2935,6 +4015,8 @@ const ENEMY_TEMPLATES = {
   slime_fire:{name:'火焰史莱姆', emoji:'🟠', elem:'fire', hp:40, atk:9, def:2, mdef:3, exp:35, gold:7, weak:'water', desc:'燃烧的史莱姆。'},
   golem:{name:'岩傀儡', emoji:'🗿', elem:'earth', hp:110, atk:10, def:10, mdef:4, exp:70, gold:15, weak:'ice', desc:'石质的魔像。'},
   wolf_king:{name:'雪狼王', emoji:'🐺', elem:'ice', hp:160, atk:14, def:6, mdef:8, exp:150, gold:40, weak:'fire', desc:'北林之主。', boss:true},
+  shadow_jackal:{name:'霜脊影豺', emoji:'🐺', elem:'wind', hp:110, atk:11, def:4, mdef:5, exp:85, gold:18, weak:'ice', desc:'潜伏在北林东北山谷暗影中的凶悍魔物。'},
+  frost_lizard:{name:'裂岩冰蜥', emoji:'🦎', elem:'ice', hp:135, atk:13, def:7, mdef:6, exp:120, gold:25, weak:'phys', desc:'身披厚重灰蓝冰甲、冲撞力惊人的赫兰冻土巨兽。', boss:true},
 };
 // 由敌人 id/配置生成战斗实例
 function spawnEnemy(cfg){
@@ -2950,6 +4032,7 @@ function spawnEnemy(cfg){
   };
 }
 function startBattle(cfg, done){
+  closeHudMoreDrawer();
   B = { enemy: spawnEnemy(cfg), cfg:cfg||{}, done, ap:2, apMax:2, turn:0, log:[], over:false };
   setBG('bg-battle'); bgmPlayType('battle', {force:true}); show('battle-screen',1);
   renderBattle();
@@ -3094,7 +4177,7 @@ function endRound(){
 function winBattle(){
   if(!B||B.over) return;
   B.over=true;
-  battleLog(`🎉 击败了 ${B.enemy.name}！经验+${B.enemy.exp} 金币+${B.enemy.gold}`);
+  battleLog(`击败了 ${B.enemy.name}！经验+${B.enemy.exp} 金币+${B.enemy.gold}`);
   addExp(B.enemy.exp); S.gold+=B.enemy.gold||0; updateHUD(); sfx('level');
   const done=B.done, enemy=B.enemy;
   setTimeout(()=>{ bgmEndBattle(); B=null; if(done) done(); else if(S.freeRoam) enterFreeRoam(); }, 800);
@@ -3119,6 +4202,15 @@ function openDuelMenu(){
   playLines([{text:'要挑战谁？', choices}]);
 }
 function runDuel(id){
+  if(!$('duel-screen')){
+    if(typeof CombatEngine !== 'undefined' && typeof CombatEngine.openArenaHub === 'function'){
+      CombatEngine.openArenaHub({ fromTitle: false });
+      return;
+    }
+    toast('请通过「战术演武」大厅进入虚拟决斗');
+    enterFreeRoam();
+    return;
+  }
   const n=S.know[id]||90;
   const ch=CHARS[id]||{name:id};
   // 对手技能：依据角色属性拟一个
@@ -3128,7 +4220,7 @@ function runDuel(id){
     cfg:{}, done:()=>{}, ap:2, apMax:2, turn:0, log:[], over:false, duelId:id
   };
   show('duel-screen',1); setBG('bg-duel'); bgmPlayType('battle', {force:true});
-  $('duel-info').innerHTML=`对手：${ch.name}<br>了解度 ${n}% · 难度 ${n>=95?'★★★':n>=93?'★★':'★'}`;
+  if($('duel-info')) $('duel-info').innerHTML=`对手：${ch.name}<br>了解度 ${n}% · 难度 ${n>=95?'★★★':n>=93?'★★':'★'}`;
   battleLog('决斗开始！');
   renderBattle();
 }
@@ -3139,75 +4231,451 @@ function winDuel(id){
   const rew = DUEL_REWARDS[id+'_11']||DUEL_REWARDS[id+'_9']||DUEL_REWARDS[id+'_14']||DUEL_REWARDS[id+'_cur']||{id:'duel_'+id,name:'战斗经验',desc:'实战感觉提升。'};
   if(rew.id && !hasSkill(rew.id)) addSkill(rew.id);
   ach('virtual_first');
-  battleLog(`🎉 胜利！获得：${rew.name}`);
-  $('duel-actions').innerHTML=`<button class="choice" onclick="document.getElementById('duel-screen').classList.add('hidden');bgmRestoreScene();B=null;enterFreeRoam()">确认</button>`;
+  battleLog(`胜利！获得：${rew.name}`);
+  if($('duel-actions')) $('duel-actions').innerHTML=`<button class="choice" onclick="document.getElementById('duel-screen')?.classList.add('hidden');bgmRestoreScene();B=null;enterFreeRoam()">确认</button>`;
   addExp(30); sfx('ok');
   updateHUD();
 }
 
 // ========== PANEL ==========
+function buildStatsRadarSVG(stats){
+  const st = stats || {};
+  const cx = 140, cy = 125, R = 74, orbitR = R + 11;
+  const norm = v => Math.max(0.14, Math.min(1, (Number(v) || 0) / 100));
+  const b = norm(st.body), m = norm(st.mind), ma = norm(st.mana), ch = norm(st.charm);
+  const fmt = n => Number(n.toFixed(1));
+  const pt = (r, ang) => [
+    fmt(cx + Math.cos(ang) * R * r),
+    fmt(cy + Math.sin(ang) * R * r),
+  ];
+  const ticks = Array.from({length: 8}, (_, i) => {
+    const ang = -Math.PI / 2 + i * (Math.PI / 4);
+    const major = i % 2 === 0;
+    const r1 = orbitR - (major ? 4.5 : 3);
+    const r2 = orbitR + (major ? 2.2 : 1.6);
+    const x1 = fmt(cx + Math.cos(ang) * r1);
+    const y1 = fmt(cy + Math.sin(ang) * r1);
+    const x2 = fmt(cx + Math.cos(ang) * r2);
+    const y2 = fmt(cy + Math.sin(ang) * r2);
+    return `<line class="radar-tick" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${major ? 'rgba(125, 211, 252, 0.72)' : 'rgba(125, 211, 252, 0.42)'}" stroke-width="${major ? '1.25' : '0.9'}" stroke-linecap="round"/>`;
+  }).join('');
+  const rings = [0.25, 0.5, 0.75, 1].map(r=>{
+    const pts = [pt(r, -Math.PI/2), pt(r, 0), pt(r, Math.PI/2), pt(r, Math.PI)].map(p=>p.join(',')).join(' ');
+    return r === 1
+      ? `<polygon class="radar-outer-ring" points="${pts}" fill="rgba(18, 80, 230, 0.08)" stroke="rgba(56, 189, 248, 0.66)" stroke-width="1.25"/>`
+      : `<polygon class="radar-ring" points="${pts}" fill="none" stroke="rgba(125, 211, 252, 0.22)" stroke-width="1"/>`;
+  }).join('');
+  const vTop = pt(b, -Math.PI/2), vRight = pt(m, 0), vBot = pt(ma, Math.PI/2), vLeft = pt(ch, Math.PI);
+  const dataPts = [vTop, vRight, vBot, vLeft].map(p=>p.join(',')).join(' ');
+  const diamondNode = ([x, y]) => {
+    const o = 8.2, s = 4.6, c = 1.8;
+    return `<polygon class="radar-node-halo" fill="rgba(56, 189, 248, 0.30)" stroke="rgba(125, 211, 252, 0.76)" stroke-width="0.9" points="${x},${fmt(y-o)} ${fmt(x+o)},${y} ${x},${fmt(y+o)} ${fmt(x-o)},${y}"/>` +
+      `<polygon class="radar-dot radar-node" fill="#FFFFFF" stroke="#38BDF8" stroke-width="1.5" points="${x},${fmt(y-s)} ${fmt(x+s)},${y} ${x},${fmt(y+s)} ${fmt(x-s)},${y}"/>` +
+      `<polygon class="radar-node-core" fill="#1250E6" points="${x},${fmt(y-c)} ${fmt(x+c)},${y} ${x},${fmt(y+c)} ${fmt(x-c)},${y}"/>`;
+  };
+  return `<svg class="stats-radar-svg" viewBox="0 0 280 250" role="img" aria-label="养成四维星象雷达">
+    <defs>
+      <radialGradient id="prismChamberGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.30"/>
+        <stop offset="52%" stop-color="#1250E6" stop-opacity="0.16"/>
+        <stop offset="100%" stop-color="#071229" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="prismRadarFill" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.56"/>
+        <stop offset="55%" stop-color="#1250E6" stop-opacity="0.36"/>
+        <stop offset="100%" stop-color="#60A5FA" stop-opacity="0.48"/>
+      </linearGradient>
+      <filter id="prismRadarGlow" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="2.6" result="prismBlur"/>
+        <feMerge>
+          <feMergeNode in="prismBlur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+    </defs>
+    <circle class="radar-chamber-glow" cx="${cx}" cy="${cy}" r="${R + 8}" fill="url(#prismChamberGlow)"/>
+    <circle class="radar-orbit" cx="${cx}" cy="${cy}" r="${orbitR}" fill="none" stroke="rgba(125, 211, 252, 0.28)" stroke-width="0.9" stroke-dasharray="3 6"/>
+    ${ticks}
+    ${rings}
+    <line class="radar-axis" x1="${cx}" y1="${cy-R}" x2="${cx}" y2="${cy+R}" stroke="rgba(125, 211, 252, 0.36)" stroke-width="1"/>
+    <line class="radar-axis" x1="${cx-R}" y1="${cy}" x2="${cx+R}" y2="${cy}" stroke="rgba(125, 211, 252, 0.36)" stroke-width="1"/>
+    <line class="radar-axis-diag" x1="${fmt(cx-R*0.52)}" y1="${fmt(cy-R*0.52)}" x2="${fmt(cx+R*0.52)}" y2="${fmt(cy+R*0.52)}" stroke="rgba(125, 211, 252, 0.16)" stroke-width="0.85" stroke-dasharray="2 4"/>
+    <line class="radar-axis-diag" x1="${fmt(cx+R*0.52)}" y1="${fmt(cy-R*0.52)}" x2="${fmt(cx-R*0.52)}" y2="${fmt(cy+R*0.52)}" stroke="rgba(125, 211, 252, 0.16)" stroke-width="0.85" stroke-dasharray="2 4"/>
+    <polygon class="radar-poly" fill="url(#prismRadarFill)" stroke="#38BDF8" stroke-width="2.2" stroke-linejoin="round" filter="url(#prismRadarGlow)" points="${dataPts}"/>
+    ${diamondNode(vTop)}
+    ${diamondNode(vRight)}
+    ${diamondNode(vBot)}
+    ${diamondNode(vLeft)}
+    <text class="radar-label" x="${cx}" y="18" text-anchor="middle" fill="#FFFFFF" font-size="12.5" font-weight="700">体能</text>
+    <text class="radar-val" x="${cx}" y="33" text-anchor="middle" fill="#7DD3FC" font-size="12" font-weight="900">${st.body|0}</text>
+    <text class="radar-label" x="${cx+R+18}" y="${cy-2}" text-anchor="start" fill="#FFFFFF" font-size="12.5" font-weight="700">心智</text>
+    <text class="radar-val" x="${cx+R+18}" y="${cy+14}" text-anchor="start" fill="#7DD3FC" font-size="12" font-weight="900">${st.mind|0}</text>
+    <text class="radar-label" x="${cx}" y="${cy+R+26}" text-anchor="middle" fill="#FFFFFF" font-size="12.5" font-weight="700">魔力适性</text>
+    <text class="radar-val" x="${cx}" y="${cy+R+41}" text-anchor="middle" fill="#7DD3FC" font-size="12" font-weight="900">${st.mana|0}</text>
+    <text class="radar-label" x="${cx-R-18}" y="${cy-2}" text-anchor="end" fill="#FFFFFF" font-size="12.5" font-weight="700">气质</text>
+    <text class="radar-val" x="${cx-R-18}" y="${cy+14}" text-anchor="end" fill="#7DD3FC" font-size="12" font-weight="900">${st.charm|0}</text>
+  </svg>`;
+}
 
+function openStatsOverlay(){
+  return openStatsPanel();
+}
 function openStatsPanel(){
+  closeHudMoreDrawer();
   if(!S.stats) S.stats = {body:5, mind:15, mana:10, charm:8};
   const body = $('stats-body');
   if(!body){ openPanel('status'); return; }
-  // 主角立绘
+  const statsOv = $('stats-overlay');
+  const wasHidden = !statsOv || statsOv.classList.contains('hidden');
   const sE = flag('named');
-  const sSrc = sE ? resolvePortrait('sylvia', 'normal') : null;
-  const portraitHTML = sSrc ? `<div class="stats-portrait"><img src="${sSrc}" style="max-width:160px;max-height:200px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.3)"/></div>` : '';
+  const showFace = !!(sE || (S.ageY || 0) >= 1 || S.alias);
+  const sSrc = showFace ? (resolvePortrait('sylvia', 'normal') || resolvePortraitFallback('sylvia', 'normal')) : null;
+  const nm = !sE ? (S.alias || '未命名') : (S.alias || S.name || '希尔维亚');
+  const totalPower = (S.stats.body|0) + (S.stats.mind|0) + (S.stats.mana|0) + (S.stats.charm|0);
+  const idBarHTML = `<div class="stats-id-bar">
+    <div class="stats-id-avatar">${sSrc ? `<img src="${sSrc}" alt="${nm}"/>` : `<span class="stats-id-fallback">✦</span>`}</div>
+    <div class="stats-id-meta">
+      <div class="stats-id-name">${nm}</div>
+      <div class="stats-id-sub">${ageStr()} · ${tierName()}</div>
+    </div>
+    <div class="stats-id-score"><span>综合潜能</span><b>${totalPower}</b></div>
+  </div>`;
   const meta = {
-    body:{name:'体能', tip:'剑术、奔跑、持剑。影响近战与负重耐性。'},
-    mind:{name:'心智', tip:'学习、记忆、理论。影响课程收益与了解度获取。'},
-    mana:{name:'魔力适性', tip:'导引与塑形。影响法术稳定与魔力成长。'},
-    charm:{name:'气质', tip:'仪态与人情。影响交谈、好感与交涉。'},
+    body:{name:'体能', en:'体魄与剑术', tip:'剑术、奔跑、持剑。影响近战与负重耐性。'},
+    mind:{name:'心智', en:'学识与思辨', tip:'学习、记忆、理论。影响课程收益与了解度获取。'},
+    mana:{name:'魔力适性', en:'冰水导引', tip:'导引与塑形。影响法术稳定与魔力成长。'},
+    charm:{name:'气质', en:'礼仪与风度', tip:'仪态与人情。影响交谈、好感与交涉。'},
   };
-  body.innerHTML = `${portraitHTML}<div class="stat-orb">${['body','mind','mana','charm'].map(k=>{
-    const v = Math.min(100, S.stats[k]|0);
-    return `<div class="stat-item ${k}"><div class="si-top"><span class="si-name">${meta[k].name}</span><span class="si-val">${v}</span></div><div class="si-bar"><i style="width:${v}%"></i></div><div style="font-size:11px;opacity:.55;margin-top:6px">${meta[k].tip}</div></div>`;
-  }).join('')}</div>
-  <div class="stat-courses"><b style="color:var(--gold)">课程进度</b><br>${
-    Object.keys(S.courses||{}).length
-      ? Object.entries(S.courses).map(([id,st])=>{ const c=COURSES[id]; return `• ${c?c.name:id}　Lv.${st.lv}`; }).join('<br>')
-      : '尚未开始系统课程。点底部「课程」开始。'
-  }</div>`;
+  const cardsHTML = ['body','mind','mana','charm'].map(k=>{
+    const v = Math.max(0, Math.min(100, S.stats[k]|0));
+    return `<div class="stats-rune-card ${k}">
+      <div class="si-top"><span class="si-name">${meta[k].name} <small>${meta[k].en}</small></span><span class="si-val">${v}</span></div>
+      <div class="si-bar"><i style="width:${v}%"></i></div>
+      <div class="si-tip">${meta[k].tip}</div>
+    </div>`;
+  }).join('');
+  const courseEntries = Object.entries(S.courses||{});
+  const courseHTML = courseEntries.length
+    ? `<div class="scr-list">${courseEntries.map(([id,st])=>{ const c=COURSES[id]; const lv = (st && typeof st === 'object') ? (st.lv || 1) : (st || 1); return `<span class="scr-pill"><span class="scr-name">${c?c.name:id}</span><em class="scr-lv">Lv.${lv}</em></span>`; }).join('')}</div>`
+    : `<div class="scr-empty">尚未开启系统课程，可于自由探索底部「课程」择师修习。</div>`;
+  body.innerHTML = `
+    <div class="stats-split-layout">
+      <div class="stats-radar-stage stats-radar-box">
+        ${idBarHTML}
+        <div class="stats-radar-viewport">
+          ${buildStatsRadarSVG(S.stats)}
+        </div>
+        <div class="stats-radar-caption">维斯特利亚 · 四维星象盘</div>
+      </div>
+      <div class="stats-detail-col">
+        <div class="stats-rune-grid">${cardsHTML}</div>
+        <div class="stats-course-ribbon">
+          <div class="scr-title">课程进阶录</div>
+          ${courseHTML}
+        </div>
+      </div>
+    </div>`;
+  const avImg = body.querySelector('.stats-id-avatar img');
+  if(avImg){
+    avImg.onerror = ()=>{
+      const fb = resolvePortraitFallback('sylvia', 'normal');
+      if(fb && fb !== avImg.getAttribute('src')){ avImg.onerror = null; avImg.src = fb; }
+      else if(avImg.parentElement){ avImg.parentElement.innerHTML = '<span class="stats-id-fallback">✦</span>'; }
+    };
+  }
   show('stats-overlay', 1);
-  sfx('open');
+  if(wasHidden) sfx('modal_open');
 }
 
 // 单一数据源：右上角「状态」面板与剧情里的系统面板共用此渲染（保证数值永远一致）
 function statusPanelHTML(){
-  const nm = !flag('named') ? '？？？（未命名）' : (S.alias || S.name);
-  return `<div class="p-stat">
-      <div><b>名字</b> ${nm}</div><div><b>年龄</b> ${ageStr()}</div>
-      <div><b>等级</b> Lv.${S.lv}</div><div><b>等阶</b> ${tierName()}</div>
-      <div><b>经验</b> ${Math.floor(S.exp)}/${S.next}</div><div><b>日期</b> ${dateStr()}</div>
-      <div><b>生命</b> ${S.hp}/${S.mhp}</div><div><b>魔力值</b> ${S.mp}/${S.mmp}</div>
-      <div><b>体力</b> ${S.st}/${S.mst}</div><div><b>金币</b> ${S.gold}</div>
-      <div><b>攻击</b> ${Math.floor(S.atk)}</div><div><b>魔力</b> ${Math.floor(S.mag)}</div>
-      <div><b>物抗</b> ${S.pdef}</div><div><b>法抗</b> ${S.mdef}</div>
-      <div><b>亲和</b> ❄️冰 · 💧水</div><div><b>阶段</b> ${phaseName()}</div>
-    </div>`;
+  const named = flag('named');
+  const nm = !named ? '？？？（未命名）' : (S.alias || S.name);
+  const ageFallback = PORTRAIT_FILES[`sylvia_${portraitTierName(portraitTierForAge(S.ageY))}_normal`] || PORTRAIT_FILES.sylvia_child_normal;
+  const src = (named || (S.ageY || 0) >= 1 || S.alias)
+    ? (resolvePortrait('sylvia', 'normal') || resolvePortraitFallback('sylvia', 'normal') || ageFallback)
+    : (resolvePortrait('sylvia', 'normal') || ageFallback);
+  const expPct = S.next ? Math.min(100, Math.round((Math.floor(S.exp) / S.next) * 100)) : 0;
+  const hpPct = S.mhp ? Math.min(100, Math.round((S.hp / S.mhp) * 100)) : 0;
+  const mpPct = S.mmp ? Math.min(100, Math.round((S.mp / S.mmp) * 100)) : 0;
+  const stPct = S.mst ? Math.min(100, Math.round((S.st / S.mst) * 100)) : 0;
+  const picksLen = Array.isArray(S.picksDone) ? S.picksDone.length : 0;
+  const starsHTML = Array.from({length:7}, (_,i)=>`<span class="sc-star-node${i < picksLen ? ' lit' : ''}" title="勇者之赐 第${i+1}星"></span>`).join('');
+  let relicStripHTML = '';
+  if(typeof RelicsAndEvents !== 'undefined' && RelicsAndEvents.getActiveRelicsForBattle){
+    const eq = (S.equippedRelics || []).filter(Boolean);
+    const cat = RelicsAndEvents.RELICS_CATALOG || RelicsAndEvents.RELICS || {};
+    const syns = RelicsAndEvents.getActiveSynergies ? RelicsAndEvents.getActiveSynergies(eq) : [];
+    if(eq.length || syns.length){
+      relicStripHTML = `<div class="sc-relic-strip">
+        <span class="sc-relic-label">随身铭记</span>
+        ${eq.map(id=>`<span class="sc-relic-chip">${cat[id]?.name || id}</span>`).join('')}
+        ${syns.map(sy=>`<span class="sc-synergy-pill">✦ ${sy.name} (${sy.count})</span>`).join('')}
+      </div>`;
+    }
+  }
+  const astrolabeSVG = `<svg class="sc-astrolabe-ring" viewBox="0 0 200 200" fill="none" aria-hidden="true">
+    <circle cx="100" cy="100" r="94" stroke="currentColor" stroke-width="0.9" stroke-dasharray="4 6" opacity="0.55"/>
+    <circle cx="100" cy="100" r="78" stroke="currentColor" stroke-width="1" opacity="0.4"/>
+    <polygon points="100,14 174,57 174,143 100,186 26,143 26,57" stroke="currentColor" stroke-width="0.85" opacity="0.34"/>
+    <polygon points="100,26 116,84 174,100 116,116 100,174 84,116 26,100 84,84" stroke="currentColor" stroke-width="0.75" opacity="0.3"/>
+    <line x1="100" y1="6" x2="100" y2="20" stroke="currentColor" stroke-width="1.2" opacity="0.65"/>
+    <line x1="100" y1="180" x2="100" y2="194" stroke="currentColor" stroke-width="1.2" opacity="0.65"/>
+    <line x1="6" y1="100" x2="20" y2="100" stroke="currentColor" stroke-width="1.2" opacity="0.65"/>
+    <line x1="180" y1="100" x2="194" y2="100" stroke="currentColor" stroke-width="1.2" opacity="0.65"/>
+  </svg>`;
+  return `<div class="sys-chronicle">
+    <div class="sc-portrait-col">
+      <div class="sc-portrait-frame">
+        ${astrolabeSVG}
+        ${src ? `<img class="sc-portrait-img" src="${src}" alt="${nm}"/>` : `<div class="sc-portrait-fallback">✦</div>`}
+      </div>
+      <div class="sc-name-plate">
+        <div class="sc-display-name"><b>名字</b> ${nm}</div>
+        <div class="sc-phase-sub"><b>阶段</b> ${phaseName()} · <b>日期</b> ${dateStr()}</div>
+      </div>
+      <div class="sc-crest-row">
+        <span class="sc-lv-badge"><b>等级</b> Lv.${S.lv}</span>
+        <span class="sc-tier-seal"><b>等阶</b> ${tierName()}</span>
+      </div>
+      <div class="sc-exp-wrap">
+        <div class="sc-exp-head"><span><b>经验</b> ${Math.floor(S.exp)}/${S.next}</span><span>${expPct}%</span></div>
+        <div class="sc-exp-track"><i class="sc-exp-fill" style="width:${expPct}%"></i></div>
+      </div>
+      <div class="sc-constellation">
+        <div class="sc-const-head"><span>勇者之赐命盘</span><em>${picksLen}/7</em></div>
+        <div class="sc-const-nodes">${starsHTML}</div>
+      </div>
+    </div>
+    <div class="sc-data-col">
+      <div class="sc-vitals">
+        <div class="sc-vital-row hp">
+          <div class="sc-vital-head"><span class="sc-vital-lbl"><b>生命</b> ${S.hp}/${S.mhp}</span><span class="sc-vital-val">${hpPct}%</span></div>
+          <div class="sc-vital-track"><i class="sc-vital-fill" style="width:${hpPct}%"></i></div>
+        </div>
+        <div class="sc-vital-row mp">
+          <div class="sc-vital-head"><span class="sc-vital-lbl"><b>魔力值</b> ${S.mp}/${S.mmp}</span><span class="sc-vital-val">${mpPct}%</span></div>
+          <div class="sc-vital-track"><i class="sc-vital-fill" style="width:${mpPct}%"></i></div>
+        </div>
+        <div class="sc-vital-row st">
+          <div class="sc-vital-head"><span class="sc-vital-lbl"><b>体力</b> ${S.st}/${S.mst}</span><span class="sc-vital-val">${stPct}%</span></div>
+          <div class="sc-vital-track"><i class="sc-vital-fill" style="width:${stPct}%"></i></div>
+        </div>
+      </div>
+      <div class="sc-attr-matrix">
+        <div class="sc-attr-tile atk"><b>攻击</b> ${Math.floor(S.atk)}<span class="sc-attr-en">物理攻击</span></div>
+        <div class="sc-attr-tile mag"><b>魔力</b> ${Math.floor(S.mag)}<span class="sc-attr-en">魔法强度</span></div>
+        <div class="sc-attr-tile pdef"><b>物抗</b> ${S.pdef}<span class="sc-attr-en">物理抗性</span></div>
+        <div class="sc-attr-tile mdef"><b>法抗</b> ${S.mdef}<span class="sc-attr-en">法术抗性</span></div>
+      </div>
+      <div class="sc-meta-grid">
+        <div class="sc-meta-item"><b>年龄</b> ${ageStr()}</div>
+        <div class="sc-meta-item"><b>金币</b> ${S.gold}</div>
+        <div class="sc-meta-item sc-meta-wide"><b>亲和</b> <span class="sc-elem-group"><span class="sc-elem-pill ice">✦ 冰</span><span class="sc-elem-pill water">◇ 水</span></span></div>
+      </div>
+      ${relicStripHTML}
+    </div>
+  </div>`;
 }
 
-function openPanel(tab){
-  show('panel',1); sfx('open');
-  const tabs=[['status','状态'],['skills','技能'],['tasks','任务'],['prof','人物'],['inv','背包'],['ach','成就'],['settings','设置']];
-  $('panel-tabs').innerHTML = tabs.map(([k,n])=>`<button class="ptab${(tab||'status')===k?' on':''}" data-t="${k}">${n}</button>`).join('');
-  $('panel-tabs').onclick=e=>{ const t=e.target.dataset.t; if(t) openPanel(t); };
+const SAVE_SLOTS_KEY = 'ojousama_manual_slots_v1';
+function loadManualSlots(){
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE_SLOTS_KEY) || '{}');
+    return (d && typeof d === 'object' && !Array.isArray(d)) ? d : {};
+  } catch(e){ return {}; }
+}
+function writeManualSlots(slots){
+  try { localStorage.setItem(SAVE_SLOTS_KEY, JSON.stringify(slots || {})); } catch(e){}
+}
+function formatSlotTime(ts){
+  if(!ts) return '';
+  try{
+    const d = new Date(ts);
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }catch(e){ return ''; }
+}
+function saveToManualSlot(slotId){
+  if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.saveToSlot === 'function'){
+    const res = window.VNUx.saveToSlot(Number(slotId));
+    if(res && res.ok) sfx('ok');
+    openPanel('saves');
+    return res;
+  }
+  const slots = loadManualSlots();
+  slots[String(slotId)] = {
+    version: 2,
+    slotId: Number(slotId),
+    ts: Date.now(),
+    meta: {
+      name: !flag('named') ? '？？？' : (S.alias || S.name || '希尔维亚'),
+      ageStr: ageStr(),
+      phaseName: phaseName(),
+      locName: LOCS[S.loc]?.name || S.loc || '',
+      chapterTitle: dateStr() + ' · ' + (LOCS[S.loc]?.name || S.loc || ''),
+      lv: S.lv || 1,
+      gold: S.gold || 0,
+      savedAt: formatSlotTime(Date.now())
+    },
+    state: JSON.parse(JSON.stringify(S))
+  };
+  writeManualSlots(slots);
+  sfx('ok');
+  toast(`已保存至档案槽位 ${slotId}`);
+  openPanel('saves');
+}
+function loadFromManualSlot(slotId){
+  if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.loadFromSlot === 'function'){
+    const res = window.VNUx.loadFromSlot(Number(slotId));
+    if(res && res.ok){
+      window.S = S;
+      sfx('ok');
+    }
+    return res;
+  }
+  const slots = loadManualSlots();
+  const entry = slots[String(slotId)] || slots[slotId];
+  const rawState = entry && (entry.state || entry.data);
+  if(!entry || !rawState){ toast('该槽位尚无记录'); return; }
+  const raw = migrateStorySave(rawState);
+  S = Object.assign(baseState(), raw);
+  if(typeof window !== 'undefined') window.S = S;
+  if(typeof BranchingDirector !== 'undefined' && BranchingDirector.ensureCausalState){
+    BranchingDirector.ensureCausalState(S);
+  }
+  if(typeof RelicsAndEvents !== 'undefined' && RelicsAndEvents.ensureRelicsState){
+    RelicsAndEvents.ensureRelicsState(S);
+  }
+  Object.values(LOCS).forEach(L=>{
+    if(L.area==='公爵府') L.unlock=true;
+    if(S.phase==='academy'||S.phase==='journey'||S.phase==='finale'){
+      if(L.area==='魔法大学') L.unlock=true;
+    }
+    if(S.phase==='journey'||S.phase==='finale'){
+      if(['road','jikan','chenglan_guild','northforest','town','market'].includes(L.id)) L.unlock=true;
+      if(flag('ch_distant_wind_1') && L.id==='ice_canyon') L.unlock=true;
+    }
+  });
+  save();
+  show('panel', 0);
+  show('title-screen', 0);
+  show('game-screen', 1);
+  updateHUD();
+  updateLocBar();
+  if(resumePendingStories()) return;
+  if(checkStoryGates()) return;
+  if(S.freeRoam) enterFreeRoam();
+  else playLines([{text:`（读取档案 ${slotId}）${dateStr()} · ${LOCS[S.loc]?.name||''}`, freeRoam:true}]);
+}
+function deleteManualSlot(slotId){
+  if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.deleteSlot === 'function'){
+    window.VNUx.deleteSlot(Number(slotId));
+    sfx('click');
+    openPanel('saves');
+    return;
+  }
+  const slots = loadManualSlots();
+  delete slots[String(slotId)];
+  delete slots[slotId];
+  writeManualSlots(slots);
+  toast(`已清理档案槽位 ${slotId}`);
+  openPanel('saves');
+}
+function getUnlockedChaptersList(){
+  const chaps = (typeof STORY_CHAPTERS !== 'undefined') ? STORY_CHAPTERS : (typeof window !== 'undefined' && Array.isArray(window.STORY_CHAPTERS) ? window.STORY_CHAPTERS : []);
+  return chaps.filter(ch => {
+    if(!ch || !ch.id || !SCENES[ch.id] || ch.id === 's_ending_menu') return false;
+    if(ch.id === 's_start') return true;
+    const gateKeys = STORY_GATE_BY_SCENE[ch.id] || [];
+    if(gateKeys.some(k => !!flag(k))) return true;
+    if(ch.flag && flag(ch.flag)) return true;
+    return false;
+  });
+}
+
+function openPanel(tab, opts){
+  closeHudMoreDrawer();
+  const panelEl = $('panel');
+  const wasHidden = !panelEl || panelEl.classList.contains('hidden');
+  show('sys-popup',0);
+  show('panel',1);
+  if(wasHidden) sfx('modal_open');
+  else if(opts && opts.fromTab) sfx('tab_switch');
+  const tabs=[['status','状态'],['causal','命运暗流'],['relics','铭记','✦ 铭记'],['skills','技能'],['tasks','任务'],['prof','人物'],['inv','背包'],['ach','成就'],['saves','档案'],['settings','设置']];
+  $('panel-tabs').innerHTML = tabs.map(([k,n,metaLabel])=>`<button class="ptab${(tab||'status')===k?' on':''}" data-t="${k}"${metaLabel?` data-tab-label="${metaLabel}"`:''}>${n}</button>`).join('');
+  $('panel-tabs').onclick=e=>{
+    const btn=e.target.closest('[data-t]');
+    const t=btn?btn.dataset.t:e.target.dataset.t;
+    if(t) openPanel(t, { fromTab: true });
+  };
   const body=$('panel-body');
   tab = tab||'status';
   if(tab==='status'){
-    body.innerHTML= statusPanelHTML() + `<p style="margin-top:12px;font-size:12px;opacity:.75">养成四维请点 HUD 的 <b>💠</b> 打开独立面板。<br>「勇者之赐」已用 ${S.picksDone.length}/7 次</p>`;
+    body.innerHTML= statusPanelHTML() + `<div class="sc-foot-note">
+      <button type="button" class="sc-jump-stats-btn" onclick="show('panel',0);openStatsOverlay();">查看养成四维星象盘 →</button>
+      <span class="sc-foot-picks">「勇者之赐」已用 ${S.picksDone.length}/7 次</span>
+    </div>`;
+    const scImg = body.querySelector('.sc-portrait-img');
+    if(scImg){
+      scImg.onerror = ()=>{
+        const failedSrc = scImg.getAttribute('src') || '';
+        if(failedSrc) FAILED_PORTRAIT_URLS.add(failedSrc);
+        const fb = resolvePortraitFallback('sylvia', 'normal');
+        if(fb && fb !== failedSrc){ scImg.onerror = null; scImg.src = fb; }
+        else if(scImg.parentElement){ scImg.remove(); }
+      };
+    }
+  } else if(tab==='causal'){
+    body.innerHTML = (typeof BranchingDirector !== 'undefined' && BranchingDirector.renderCausalPanelHTML)
+      ? BranchingDirector.renderCausalPanelHTML(S)
+      : '<p style="color:#526078">命运暗流模块尚未加载。</p>';
+  } else if(tab==='relics'){
+    if(typeof RelicsAndEvents !== 'undefined' && RelicsAndEvents.renderRelicsPanelHTML){
+      body.innerHTML = RelicsAndEvents.renderRelicsPanelHTML(S);
+      if(RelicsAndEvents.bindRelicsContainerEvents){
+        RelicsAndEvents.bindRelicsContainerEvents(body, { state: S, onChanged: ()=>openPanel('relics') });
+      }
+    } else {
+      body.innerHTML = '<p style="color:#526078">随身铭记模块尚未加载。</p>';
+    }
   } else if(tab==='skills'){
-    if(!S.skills.length) body.innerHTML='<p style="opacity:.6">尚未获得特殊技能。</p>';
-    else body.innerHTML = S.skills.map(id=>{
-      const p=ALL_PICKS[id]||MAGIC_SKILLS[id]||Object.values(DUEL_REWARDS).find(x=>x.id===id)||{name:id,desc:''};
-      // 中文名映射
-      const cnNames={ice_crystal:'冰晶术',virtual_duel:'虚拟决斗',ice_sense:'寒息感知',water_veil:'水之帷幕',quiet_mind:'静心',baby_talk:'天籁初声',mana_sip:'魔力小啜',silk_thread:'千缕银丝',ice_palace:'冰晶宫殿',multi_cast:'二重咏唱',frost_armor:'霜铠',deep_read:'深读',mirror_ice:'镜冰',wind_step_s:'残影步（简）',heal_touch:'温手',mana_cycle:'魔战循环',domain_frost:'霜域',perfect_cast:'无咏唱具现',fate_eye:'因果薄片',sword_mana:'魔剑同化',memory_link:'记忆连丝',zero_field:'绝对零度逼近',temp_sense:'温度感知',wind_afterimage:'风行残像',mana_calc:'魔力精算',root_ice:'生根之冰',noble_bearing:'公爵气度',lullaby:'摇篮曲',etiquette:'贵族仪态',water_ball:'水球术',basic_guard:'基本防御架',theory_note:'理论笔记',water_veil_s:'水膜',ice_sphere:'完美冰球',root_step:'生根步',soft_cut:'送刀'};
-      const displayName = cnNames[id] || p.name || id;
-      return `<div class="p-skill"><div class="sk-name">${displayName}</div><div class="sk-desc">${p.desc||''}</div></div>`;
-    }).join('') + (hasSkill('virtual_duel')?`<button class="tbtn" style="margin-top:10px" id="btn-duel">⚔️ 进入虚拟决斗</button>`:'');
-    setTimeout(()=>{ const b=$('btn-duel'); if(b) b.onclick=()=>{ show('panel',0); openDuelMenu(); }; },0);
+    const cnNames={ice_crystal:'冰晶术',virtual_duel:'虚拟决斗',ice_sense:'寒息感知',water_veil:'水之帷幕',quiet_mind:'静心',baby_talk:'天籁初声',mana_sip:'魔力小啜',silk_thread:'千缕银丝',ice_palace:'冰晶宫殿',multi_cast:'二重咏唱',frost_armor:'霜铠',deep_read:'深读',mirror_ice:'镜冰',wind_step_s:'残影步（简）',heal_touch:'温手',mana_cycle:'魔战循环',domain_frost:'霜域',perfect_cast:'无咏唱具现',fate_eye:'因果薄片',sword_mana:'魔剑同化',memory_link:'记忆连丝',zero_field:'绝对零度逼近',temp_sense:'温度感知',wind_afterimage:'风行残像',mana_calc:'魔力精算',root_ice:'生根之冰',noble_bearing:'公爵气度',lullaby:'摇篮曲',etiquette:'贵族仪态',water_ball:'水球术',basic_guard:'基本防御架',theory_note:'理论笔记',water_veil_s:'水膜',ice_sphere:'完美冰球',root_step:'生根步',soft_cut:'送刀',frost_edge:'覆冰锋',instant_ice:'隔空凝冰',stealth_edge:'覆水无痕'};
+    const fallbackDescs = {
+      root_step: '生根步：沉腰稳步、在滑冰与泥地也能稳住身位并蓄势反击。',
+      frost_edge: '覆冰锋：以极薄霜膜覆于剑刃之上，提升挥斩锐度与破招威力。',
+      instant_ice: '隔空凝冰：不经手直接于空中凝结冰锥，打断敌方吟唱与远距控场。',
+      soft_cut: '送刀：不用蛮力的灵巧剑势，低消耗斩击并附带少量冰水魔力。',
+      stealth_edge: '覆水无痕：以薄水膜隐去锋芒与破风声，令剑势难以预判并提升暴击威力。',
+      etiquette: '贵族礼仪与仪态修养，交涉与正式场合检定小幅提升。',
+      basic_guard: '稳固木剑与铁剑的基础防御架势，物理抗性小幅提升。',
+      theory_note: '系统梳理梅林三大定律与魔导阻率，学习与课程收益提升 10%。',
+      water_veil_s: '快速凝结薄层水膜护身，可短时抵挡低阶冲击。',
+      ice_sphere: '精准控制球形凝冰与冰墙生根，冰系塑形稳定性提升。',
+    };
+    const courseSkills = {};
+    Object.values(COURSES || {}).forEach(c => {
+      if(c && c.skill && c.skill.id) courseSkills[c.skill.id] = c.skill;
+    });
+    const skillRows = !S.skills.length
+      ? '<p style="color:#526078">尚未获得特殊技能。</p>'
+      : `<div class="p-skill-grid">${S.skills.map(id=>{
+          const p = ALL_PICKS[id]
+            || MAGIC_SKILLS[id]
+            || Object.values(DUEL_REWARDS).find(x=>x.id===id)
+            || courseSkills[id]
+            || (typeof COMBAT_SKILLS !== 'undefined' && COMBAT_SKILLS[id])
+            || {name:id, desc:''};
+          const displayName = cnNames[id] || p.name || id;
+          const desc = fallbackDescs[id] || p.desc || (courseSkills[id] && courseSkills[id].desc) || '已领悟的专属技艺，可在实战与日常中灵活施展。';
+          return `<div class="p-skill"><div class="sk-name">${escapeText(displayName)}</div><div class="sk-desc">${escapeText(desc)}</div></div>`;
+        }).join('')}</div>`;
+    body.innerHTML = skillRows
+      + `<div class="p-skill-actions">${hasSkill('virtual_duel') ? '<button type="button" class="tbtn" id="btn-duel">进入虚拟决斗（梦境）</button>' : ''}<button type="button" class="tbtn ghost" id="btn-panel-arena">战术演武沙盒</button></div>`;
+    setTimeout(()=>{
+      const b=$('btn-duel'); if(b) b.onclick=()=>{ show('panel',0); openDuelMenu(); };
+      const ba=$('btn-panel-arena'); if(ba) ba.onclick=()=>{ show('panel',0); if(typeof openArenaHub==='function') openArenaHub({fromTitle:false}); };
+    },0);
   } else if(tab==='tasks'){
     // 未接取/未完成且未解锁的任务不显示具体内容（防剧透）
     const known = TASKS.filter(t=>{
@@ -3227,89 +4695,263 @@ function openPanel(tab){
       if(t.id==='survive_night' && (S.phase==='journey'||S.phase==='finale')) return true;
       return false;
     });
-    if(!known.length) body.innerHTML='<p style="opacity:.6">尚无进行中的任务。随着年龄与行程推进会解锁。</p>';
+    if(!known.length) body.innerHTML='<p style="color:#526078">尚无进行中的任务。随着年龄与行程推进会解锁。</p>';
     else body.innerHTML = known.map(t=>{
       const st=S.tasks[t.id]||{};
-      return `<div class="p-task${st.done?' done':''}"><b>${st.done?'✅':'☆'} ${t.name}</b><br>${t.desc}<br><span style="opacity:.6">奖励：经验×${t.exp}${t.max?` · 进度 ${st.prog||0}/${t.max}`:''}</span></div>`;
+      return `<div class="p-task${st.done?' done':''}"><b>${st.done?'[已完成]':'[进行中]'} ${t.name}</b><br>${t.desc}<br><span style="color:#526078">奖励：经验×${t.exp}${t.max?` · 进度 ${st.prog||0}/${t.max}`:''}</span></div>`;
     }).join('');
   } else if(tab==='prof'){
     const ids = Object.keys(S.know).concat(Object.keys(S.love)).filter((v,i,a)=>a.indexOf(v)===i);
-    if(!ids.length) body.innerHTML='<p style="opacity:.6">图鉴尚空。多与人接触吧。</p>';
-    else body.innerHTML = ids.map(id=>{
-      const c=CHARS[id]||{short:id,name:id}; const k=S.know[id]||0; const l=S.love[id]||0;
-      const hearts='♥'.repeat(l)+'♡'.repeat(5-l);
-      const pf = PORTRAIT_FILES[`${id}_normal`];
-      return `<div class="p-prof"><div class="av">${pf?`<img src="${pf}"/>`:(CSS_CHARS[id]?.[1]||'👤')}</div>
-        <div class="info"><div class="nm">${c.name||c.short}</div>
-        <div class="meta">${c.role||''} · 了解度 ${k}%</div>
-        <div class="hearts">${hearts}</div>
-        <div class="know-bar"><i style="width:${k}%"></i></div></div></div>`;
-    }).join('');
+    if(!ids.length) body.innerHTML='<p style="color:#526078">人物名录尚空。多与身旁角色交谈吧。</p>';
+    else {
+      const profCards = ids.map(id=>{
+        const c=CHARS[id]||{short:id,name:id}; const k=clamp(Math.round(S.know[id]||0),0,100);
+        const rawL=Number(S.love[id]||0);
+        const l=clamp(rawL>5 ? Math.round(rawL/20) : Math.round(rawL), 0, 5);
+        const hearts='♥'.repeat(l)+'♡'.repeat(5-l);
+        const pf = resolvePortrait(id, 'normal') || PORTRAIT_FILES[`${id}_normal`];
+        const fbChar = (c.short || c.name || id || '◇').slice(0,1);
+        const rolePrefix = c.role ? `${escapeText(c.role)} · ` : '';
+        return `<div class="p-prof"><div class="av" data-prof-char="${id}">${pf?`<img src="${pf}" alt="${escapeText(c.short||id)}"/>`:`<span class="av-monogram">${escapeText(fbChar)}</span>`}</div>
+          <div class="info"><div class="nm">${escapeText(c.name||c.short)}</div>
+          <div class="meta">${rolePrefix}了解度 ${k}%</div>
+          <div class="hearts" aria-label="好感度 ${l} / 5"><span class="hearts-lbl">好感</span> ${hearts}</div>
+          <div class="know-bar"><i style="width:${k}%"></i></div></div></div>`;
+      }).join('');
+      body.innerHTML = `<div class="p-prof-grid">${profCards}</div>`;
+      body.querySelectorAll('.p-prof .av img').forEach(img=>{
+        const av = img.parentElement;
+        const cid = av && av.getAttribute('data-prof-char');
+        if(!cid) return;
+        const c = CHARS[cid] || {short:cid};
+        const fbChar = (c.short || c.name || cid || '◇').slice(0,1);
+        img.onerror = ()=>{
+          const failedSrc = img.getAttribute('src') || '';
+          if(failedSrc) FAILED_PORTRAIT_URLS.add(failedSrc);
+          const fb = resolvePortraitFallback(cid, 'normal');
+          if(fb && fb !== failedSrc && !FAILED_PORTRAIT_URLS.has(fb)){
+            img.onerror = ()=>{
+              FAILED_PORTRAIT_URLS.add(fb);
+              av.innerHTML = `<span class="av-monogram">${escapeText(fbChar)}</span>`;
+            };
+            img.src = fb;
+          } else {
+            av.innerHTML = `<span class="av-monogram">${escapeText(fbChar)}</span>`;
+          }
+        };
+      });
+    }
   } else if(tab==='inv'){
-    const slots = S.inv.map(it=>{
-      const use = it.id==='cookie' ? `<button class="tbtn" style="margin-top:6px;min-width:0;padding:4px 12px;font-size:12px" data-use="${it.id}">🍪 食用</button>` : '';
-      return `<div class="inv-slot filled">${it.icon||'📦'}<br>${it.name}<br><span style="opacity:.6">${it.desc||''}</span>${use}</div>`;
+    const grouped = [];
+    const byKey = Object.create(null);
+    (S.inv || []).forEach(it => {
+      if(!it) return;
+      const key = it.id || it.name || 'item';
+      const addQty = Math.max(1, Number(it.qty) || 1);
+      if(byKey[key]){
+        byKey[key].qty += addQty;
+      } else {
+        const entry = { item: it, qty: addQty };
+        byKey[key] = entry;
+        grouped.push(entry);
+      }
+    });
+    const slots = grouped.map(({item: it, qty})=>{
+      const svgIco = uiIco(it.icon || it.id, 18);
+      const useBtnOrTag = it.id === 'cookie'
+        ? `<button type="button" class="tbtn inv-use-btn" data-use="${escapeText(it.id)}">食用</button>`
+        : `<span class="inv-tag">随身典藏 · 可赠礼</span>`;
+      return `<div class="inv-slot filled"><div class="inv-head"><span class="inv-ico-box" aria-hidden="true">${svgIco}</span><div class="inv-title-wrap"><b>${escapeText(it.name||it.id||'未知物品')}</b><span class="inv-qty">×${qty}</span></div></div><div class="inv-desc">${escapeText(it.desc||'随身收纳的纪念小物。')}</div><div class="inv-foot">${useBtnOrTag}</div></div>`;
     }).join('');
     body.innerHTML=`<div class="p-inv">${slots || '<div class="inv-slot">空</div>'}</div>
-      <p style="margin-top:8px;opacity:.6;font-size:12px">背包 ${S.inv.length}/50 · 系统收纳（单手可握之物）</p>`;
+      <p style="margin-top:8px;color:#526078;font-size:12px">背包 ${S.inv.length}/50 · 系统收纳（单手可握之物）</p>`;
     setTimeout(()=>{
-      $('panel-body').querySelectorAll('[data-use]').forEach(b=>{
+      const pb = $('panel-body');
+      if(!pb) return;
+      pb.querySelectorAll('[data-use]').forEach(b=>{
         b.onclick=()=>useItem(b.getAttribute('data-use'));
       });
     },0);
   } else if(tab==='ach'){
     const unlocked = ACH.filter(a=>S.ach[a.id]);
     const lockedN = ACH.length - unlocked.length;
-    body.innerHTML = (unlocked.length? unlocked.map(a=>`<div class="p-ach">🏆 <b>${a.name}</b><br>${a.desc}<br><span style="opacity:.6">奖励：${a.reward}</span></div>`).join('') : '<p style="opacity:.6">尚未解锁成就。</p>')
-      + (lockedN? `<p style="margin-top:12px;opacity:.5;font-size:12px">还有 ${lockedN} 个隐藏成就未解锁</p>` : '');
+    body.innerHTML = (unlocked.length? unlocked.map(a=>`<div class="p-ach">✦ <b>${a.name}</b><br>${a.desc}<br><span style="color:#526078">奖励：${a.reward}</span></div>`).join('') : '<p style="color:#526078">尚未解锁成就。</p>')
+      + (lockedN? `<p style="margin-top:12px;color:#526078;font-size:12px">还有 ${lockedN} 个隐藏成就未解锁</p>` : '');
+  } else if(tab==='saves'){
+    let slotCards = '';
+    if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.getSlotList === 'function'){
+      const list = window.VNUx.getSlotList().filter(sl => sl && !sl.isAuto);
+      slotCards = list.map(sl => {
+        const filled = !sl.empty;
+        const m = sl.meta || {};
+        const line1 = filled ? `${escapeText(m.name || '希尔维亚')} · ${escapeText(m.ageStr || '')}${m.lv ? ' · Lv.' + m.lv : ''}` : '';
+        const line2 = filled ? [m.phaseName, m.locName].filter(Boolean).map(escapeText).join(' · ') : '';
+        const line3 = filled && m.chapterTitle ? `<br><span style="color:#526078">${escapeText(m.chapterTitle)}</span>` : '';
+        return `
+          <div class="save-slot-card${filled ? ' filled' : ''}">
+            <div class="ssc-head">
+              <span>手记槽位 0${sl.slotId}</span>
+              <small style="color:#526078;font-weight:400">${filled ? escapeText(m.savedAt || formatSlotTime(sl.ts)) : '空置'}</small>
+            </div>
+            <div class="ssc-meta">${filled ? `${line1}${line2 ? '<br>' + line2 : ''}${line3}` : '可将当前旅途进度保存至此槽位，随时分支重返。'}</div>
+            <div class="ssc-btns">
+              <button type="button" class="tbtn" style="min-width:0;padding:5px 12px;font-size:12px" data-slot-save="${sl.slotId}">${filled ? '覆盖' : '存档'}</button>
+              <button type="button" class="tbtn ghost" style="min-width:0;padding:5px 12px;font-size:12px" data-slot-load="${sl.slotId}" ${filled ? '' : 'disabled'}>读档</button>
+              ${filled ? `<button type="button" class="tbtn ghost" style="min-width:0;padding:5px 10px;font-size:12px" data-slot-del="${sl.slotId}">清空</button>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    } else {
+      const slots = loadManualSlots();
+      slotCards = [1, 2, 3, 4, 5, 6].map(id => {
+        const s = slots[String(id)] || slots[id];
+        const filled = !!(s && (s.state || s.data));
+        const m = (s && s.meta) || {};
+        const label = m.name ? `${m.name} · ${m.ageStr || ''}` : (s && s.label ? s.label : '希尔维亚');
+        const sub = m.locName ? [m.phaseName, m.locName].filter(Boolean).join(' · ') : [s && s.date, s && s.loc].filter(Boolean).join(' · ');
+        return `
+          <div class="save-slot-card${filled ? ' filled' : ''}">
+            <div class="ssc-head">
+              <span>手记槽位 0${id}</span>
+              <small style="color:#526078;font-weight:400">${filled ? escapeText(m.savedAt || formatSlotTime(s.ts)) : '空置'}</small>
+            </div>
+            <div class="ssc-meta">${filled ? `${escapeText(label)}${sub ? '<br>' + escapeText(sub) : ''}` : '可将当前旅途进度保存至此槽位，随时分支重返。'}</div>
+            <div class="ssc-btns">
+              <button type="button" class="tbtn" style="min-width:0;padding:5px 12px;font-size:12px" data-slot-save="${id}">存档</button>
+              <button type="button" class="tbtn ghost" style="min-width:0;padding:5px 12px;font-size:12px" data-slot-load="${id}" ${filled ? '' : 'disabled'}>读档</button>
+              ${filled ? `<button type="button" class="tbtn ghost" style="min-width:0;padding:5px 10px;font-size:12px" data-slot-del="${id}">清空</button>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    const chaps = getUnlockedChaptersList();
+    const chapRows = chaps.map(ch => `
+      <div class="chapter-replay-row">
+        <div>
+          <div class="crr-vol">${escapeText(ch.vol || '主线幕间')}</div>
+          <div class="crr-title">${escapeText(ch.t || ch.title || ch.id)}</div>
+        </div>
+        <button type="button" class="tbtn ghost" style="min-width:0;padding:5px 14px;font-size:12px" data-replay-scene="${ch.id}">重温章节</button>
+      </div>
+    `).join('');
+    body.innerHTML = `
+      <h4 style="margin:0 0 10px;color:var(--prussian, #1C4CB8);font-size:14px">手动档案槽位（6 槽位互通）</h4>
+      <div class="save-slots-grid">${slotCards}</div>
+      <h4 style="margin:18px 0 8px;color:var(--prussian, #1C4CB8);font-size:14px">已历章节重温</h4>
+      <p style="font-size:12px;color:#526078;margin-bottom:6px">仅开放已解锁经历的篇章（避免剧透未见章节）。建议重温前先存入上方手动槽位。</p>
+      <div class="chapter-replay-list">${chapRows || '<p style="color:#526078">尚无已完成的篇章。</p>'}</div>
+    `;
+    setTimeout(()=>{
+      body.querySelectorAll('[data-slot-save]').forEach(b => { b.onclick = ()=> saveToManualSlot(b.getAttribute('data-slot-save')); });
+      body.querySelectorAll('[data-slot-load]').forEach(b => { b.onclick = ()=> loadFromManualSlot(b.getAttribute('data-slot-load')); });
+      body.querySelectorAll('[data-slot-del]').forEach(b => { b.onclick = ()=> deleteManualSlot(b.getAttribute('data-slot-del')); });
+      body.querySelectorAll('[data-replay-scene]').forEach(b => {
+        b.onclick = ()=>{
+          const scId = b.getAttribute('data-replay-scene');
+          if(!scId || !SCENES[scId]) return;
+          show('panel', 0);
+          runScene(scId);
+        };
+      });
+    }, 0);
   } else if(tab==='settings'){
     const cur = getSettings();
+    const bgmPct = Math.round(bgmVolume * 100);
+    const sfxPct = Math.round(sfxVolume * 100);
+    const brightVal = Number.isFinite(Number(cur.bright)) ? Number(cur.bright) : 1;
+    const brightPct = Math.round(brightVal * 100);
     body.innerHTML = `<div class="p-stat" style="grid-template-columns:1fr">
-      <div><b>🔊 BGM 音量</b></div>
-      <input type="range" id="set-bgm" min="0" max="100" value="${Math.round(cur.bgm*100)}" style="width:100%">
-      <div style="opacity:.7;font-size:12px">当前 ${Math.round(cur.bgm*100)}%</div>
-      <div style="margin-top:14px"><b>☀️ 背景亮度</b></div>
-      <input type="range" id="set-bright" min="50" max="150" value="${Math.round(cur.bright*100)}" style="width:100%">
-      <div style="opacity:.7;font-size:12px">当前 ${Math.round(cur.bright*100)}%（100=默认）</div>
+      <div class="set-row-head"><b>BGM 音量</b><span id="set-bgm-val" class="set-val">${bgmPct}%</span></div>
+      <input type="range" id="set-bgm" min="0" max="100" value="${bgmPct}" style="width:100%">
+      <div class="set-row-head" style="margin-top:14px"><b>音效音量 (SFX)</b><span id="set-sfx-val" class="set-val">${sfxPct}%</span></div>
+      <input type="range" id="set-sfx" min="0" max="100" value="${sfxPct}" style="width:100%">
+      <div class="set-row-head" style="margin-top:14px"><b>背景明度</b><span id="set-bright-val" class="set-val">${brightPct}%</span></div>
+      <input type="range" id="set-bright" min="50" max="150" value="${brightPct}" style="width:100%">
+      <div style="color:#526078;font-size:12px">100% 为默认画面明度，调节背景明度不影响音乐播放</div>
     </div>
-    <button class="tbtn" id="set-reset" style="margin-top:18px">↺ 全部恢复默认</button>`;
+    <button class="tbtn" id="set-reset" style="margin-top:18px">全部恢复默认</button>`;
     // 事件绑定
     setTimeout(()=>{
       const bm=$('set-bgm'); if(bm) bm.oninput=()=>{ setSetting('bgm', bm.value/100); };
+      const sx=$('set-sfx'); if(sx) sx.oninput=()=>{ setSetting('sfx', sx.value/100); };
       const br=$('set-bright'); if(br) br.oninput=()=>{ setSetting('bright', br.value/100); };
       const rs=$('set-reset'); if(rs) rs.onclick=()=>{ resetSettings(); openPanel('settings'); toast('已恢复默认设置'); };
     },0);
   }
+  const scrollWrap = body && body.parentElement;
+  if(scrollWrap && scrollWrap.classList && scrollWrap.classList.contains('modal-scroll')){
+    const syncScrollFade = ()=>{
+      const more = (scrollWrap.scrollHeight - scrollWrap.scrollTop - scrollWrap.clientHeight) > 8;
+      scrollWrap.classList.toggle('has-scroll-more', more);
+    };
+    scrollWrap.scrollTop = 0;
+    scrollWrap.onscroll = syncScrollFade;
+    syncScrollFade();
+    if(typeof requestAnimationFrame === 'function') requestAnimationFrame(syncScrollFade);
+  }
 }
 
 // ========== 设置（音量/亮度等，持久化） ==========
-const SETTINGS_KEY = 'ojousama_settings_v1';
 function getSettings(){
-  try { return Object.assign({bgm:0.5, bright:1}, JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')); }
-  catch(e){ return {bgm:0.5, bright:1}; }
+  try { return Object.assign({bgm:0.5, sfx:0.65, bright:1}, JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')); }
+  catch(e){ return {bgm:0.5, sfx:0.65, bright:1}; }
 }
 function setSetting(k, v){
   const s = getSettings(); s[k]=v;
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch(e){}
   // 只应用被改动的项：改亮度绝不触碰 bgm，避免滑动亮度时 BGM 反复淡入淡出卡顿
-  if(k==='bgm'){ bgmSetVolume(v); bgmApplyMute(); }
-  else if(k==='bright'){ applyBrightness(v); }
+  if(k==='bgm'){ bgmSetVolume(v, { syncSettings: false }); }
+  else if(k==='sfx'){ sfxSetVolume(v, { syncSettings: false }); }
+  else if(k==='bright'){
+    applyBrightness(v);
+    try {
+      const pct = Math.round(Number(v) * 100);
+      const sl = $('set-bright');
+      if(sl && Number(sl.value) !== pct) sl.value = String(pct);
+      const vl = $('set-bright-val');
+      if(vl) vl.textContent = pct + '%';
+      if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.syncExternalAudioPrefs === 'function'){
+        window.VNUx.syncExternalAudioPrefs();
+      }
+    } catch(e){}
+  }
 }
 function resetSettings(){
   try { localStorage.removeItem(SETTINGS_KEY); } catch(e){}
-  applySettings();
+  bgmSetVolume(0.5, { syncSettings: false });
+  sfxSetVolume(0.65, { syncSettings: false });
+  applyBrightness(1);
+  try {
+    const raw = JSON.parse(localStorage.getItem(VN_PREFS_KEY) || '{}');
+    if(raw && typeof raw === 'object'){
+      raw.bgmVol = 0.5;
+      raw.sfxVol = 0.65;
+      localStorage.setItem(VN_PREFS_KEY, JSON.stringify(raw));
+    }
+    if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.syncExternalAudioPrefs === 'function'){
+      window.VNUx.syncExternalAudioPrefs({ bgmVol: 0.5, sfxVol: 0.65 });
+    }
+  } catch(e){}
 }
 function applySettings(){
+  let rawStored = null;
+  try { rawStored = localStorage.getItem(SETTINGS_KEY); } catch(e){}
   const s = getSettings();
-  bgmSetVolume(s.bgm); bgmApplyMute(); applyBrightness(s.bright);
+  if(rawStored){
+    if(Number.isFinite(Number(s.bgm))) bgmSetVolume(s.bgm, { syncSettings: false, syncVnPrefs: false });
+    if(Number.isFinite(Number(s.sfx))) sfxSetVolume(s.sfx, { syncSettings: false, syncVnPrefs: false });
+  }
+  applyBrightness(s.bright);
 }
 function applyBrightness(v){
   const bg=$('bg'); if(bg) bg.style.filter = (v && v!==1) ? `brightness(${v})` : '';
 }
 $('btn-panel').onclick=()=>openPanel('status');
-$('btn-panel-close').onclick=()=>show('panel',0);
+$('btn-panel-close').onclick=()=>{ show('panel',0); sfx('modal_close'); };
 if($('btn-stats')) $('btn-stats').onclick=()=>openStatsPanel();
-if($('btn-stats-close')) $('btn-stats-close').onclick=()=>show('stats-overlay',0);
+if($('btn-stats-close')) $('btn-stats-close').onclick=()=>{ show('stats-overlay',0); sfx('modal_close'); };
 
 
 // ========== STORY GATES ==========
@@ -3357,9 +4999,15 @@ function checkStoryGates(options={}){
   addGate('ch_star', academyTrack && dateAtLeast(15,9), 's_star_festival');
   addGate('did_turnpoint', academyTrack && dateAtLeast(15,12), 's_turnpoint');
 
-  const journeyTrack=S.phase==='journey'||S.phase==='finale';
-  addGate('arrived_jikan', journeyTrack && S.dayCount>0, 's_jikan_arrive');
-  addGate('ch_black_name', journeyTrack && (!S.alias||S.alias!=='眷寒渔'), 's_black_name');
+  const journeyTrack=S.phase==='journey'||S.phase==='finale'||hasGate('did_turnpoint');
+  addGate('ch_black_name', journeyTrack && (!S.alias||S.alias!=='眷寒渔'||dateAtLeast(15,12)), 's_black_name');
+  addGate('arrived_jikan', journeyTrack && hasGate('ch_black_name') && (S.dayCount>0||dateAtLeast(15,12)), 's_jikan_arrive');
+  addGate('ch_north_forest', journeyTrack && hasGate('arrived_jikan') && dateAtLeast(16,3), 's_north_forest');
+  addGate('ch_glow_sheep', journeyTrack && hasGate('ch_north_forest') && dateAtLeast(16,3), 's_glow_sheep');
+  addGate('ch_distant_wind_1', journeyTrack && hasGate('ch_glow_sheep') && dateAtLeast(16,6), 's_distant_wind_1');
+  addGate('ch_words_to_wind', journeyTrack && hasGate('ch_distant_wind_1') && dateAtLeast(16,6), 's_words_to_wind');
+  addGate('ch_eye_of_storm', journeyTrack && hasGate('ch_words_to_wind') && dateAtLeast(16,9), 's_eye_of_storm');
+  addGate('ch_leaky_cup', journeyTrack && hasGate('ch_eye_of_storm') && dateAtLeast(16,9), 's_leaky_cup');
 
   const validQueue=queue.filter((id,index)=>SCENES[id] && queue.indexOf(id)===index);
   if(!validQueue.length) return false;
@@ -3400,6 +5048,7 @@ function stepChain(){
   const sc = SCENES[id];
   if(!sc){ stepChain(); return; }
   currentScene = id;
+  if(typeof VNUx!=='undefined'&&VNUx.onSceneStart) VNUx.onSceneStart(id);
   S.storyPending=storyChain.queue.slice(currentIdx);
   resetDialogAdvanceState();
   S.freeRoam = false;
@@ -3435,6 +5084,7 @@ function runScene(id){
   const sc = SCENES[id];
   if(!sc){ console.warn('missing scene', id); toast('剧情缺失：'+id); enterFreeRoam(); return; }
   currentScene = id;
+  if(typeof VNUx!=='undefined'&&VNUx.onSceneStart) VNUx.onSceneStart(id);
   resetDialogAdvanceState();
   S.freeRoam = false;
   awaitingChoice = false;
@@ -3608,7 +5258,7 @@ SCENES.s_turnpoint = {
     {text:'我在跑。密道很长。出口是冬夜的林地。'},
     {text:'回头。公爵府方向的天空有一片不正常的橘色。\n是火光。', task:'survive_night', ach:'black_hair'},
     {text:'往东。不拐弯。不停。先活下来。'},
-    {do:()=>{ S.alias='眷寒渔'; S.phase='journey'; ['road','jikan','northforest'].forEach(id=>{if(LOCS[id])LOCS[id].unlock=true;}); S.loc='road'; }},
+    {do:()=>{ S.alias='眷寒渔'; S.phase='journey'; ['road','jikan','chenglan_guild','northforest'].forEach(id=>{if(LOCS[id])LOCS[id].unlock=true;}); S.loc='road'; }},
     {text:'（第三卷 旅途篇。以「眷寒渔」之名前行。可前往澄岚镇霁馆。）', freeRoam:true}
   ]
 };
@@ -3736,7 +5386,7 @@ SCENES.s_beach = {
     {ch:'alice', speaker:'爱丽丝', text:'……屋里没风。'},
     {text:'十三岁的暑假。大海、贝壳、笨得可爱的姐姐、和太过聪明的妹妹。真好。', ach:'shell_gift', love:'beatrice', loveD:1},
     {do:()=>love('alice',1)},
-    {item:{id:'shell_pin', name:'月虹螺胸针', icon:'🐚', desc:'三姐妹一起捞的。'}, freeRoam:true}
+    {item:{id:'shell_pin', name:'月虹螺胸针', icon:'shell', desc:'三姐妹一起捞的。'}, freeRoam:true}
   ]
 };
 
@@ -3778,8 +5428,20 @@ SCENES.s_star_festival = {
 // ※ 旧版 s_black_name 已删除（与 js/story.js 中的新版重复，新版会覆盖旧版）
 
 // endings
-// endings
-// ending system removed
+SCENES.s_ending_menu = {
+  bgm:'emotional', bg:'bg-ending',
+  lines:[
+    {text:'风雪暂歇，一路走来的点滴在冰晶宫殿中静静映照。'},
+    {
+      do:()=>{
+        if(typeof window !== 'undefined' && window.RaisingHub && typeof window.RaisingHub.showEndingScreen === 'function'){
+          try { window.RaisingHub.showEndingScreen(); } catch(e){ console.error('RaisingHub.showEndingScreen', e); }
+        }
+      },
+      freeRoam:true
+    }
+  ]
+};
 
 // ========== STORY CMD FROM ROAM ==========
 function tryStoryAction(){
@@ -3794,7 +5456,7 @@ function tryStoryAction(){
 }
 
 // story hooks after ambient freeRoam is fine via tryStoryAction on map/actions
-const _enterLocRaw = enterLoc;
+var _enterLocRaw = enterLoc;
 enterLoc = function(id){
   _enterLocRaw(id);
   // delay story so egg/ambient playLines can start first; only if still free
@@ -3804,15 +5466,34 @@ enterLoc = function(id){
 };
 
 // ========== TITLE / BOOT ==========
-function openLetterDemo(){
+let _defaultLetterSceneHTML = null;
+function captureDefaultLetterDemo(){
+  if(_defaultLetterSceneHTML !== null) return;
+  const demo = $('letter-demo');
+  const sc = demo && demo.querySelector('.letter-scene');
+  if(sc) _defaultLetterSceneHTML = sc.innerHTML;
+}
+function restoreDefaultLetterDemo(){
+  const demo = $('letter-demo');
+  const sc = demo && demo.querySelector('.letter-scene');
+  if(sc && _defaultLetterSceneHTML !== null){
+    sc.innerHTML = _defaultLetterSceneHTML;
+  }
+}
+function openLetterDemo(opts){
   const demo=$('letter-demo');
   if(!demo) return false;
+  closeHudMoreDrawer();
+  captureDefaultLetterDemo();
+  if(opts && opts.restoreDefault){
+    restoreDefaultLetterDemo();
+  }
   demo.classList.remove('hidden','playing','revealed');
   demo.setAttribute('aria-hidden','false');
   // 强制回流，让每次从标题页打开时都能从封蜡完整重播。
   void demo.offsetWidth;
   demo.classList.add('playing');
-  sfx('page');
+  sfx('wax_seal');
   return true;
 }
 function revealLetterDemo(){
@@ -3825,11 +5506,14 @@ function revealLetterDemo(){
 function closeLetterDemo(){
   const demo=$('letter-demo');
   if(!demo) return false;
+  const wasOpen = !demo.classList.contains('hidden');
   demo.classList.add('hidden');
   demo.classList.remove('playing','revealed');
   demo.setAttribute('aria-hidden','true');
+  if(wasOpen) sfx('letter_fold');
   const btn=$('btn-letter-test');
-  if(btn && typeof btn.focus==='function') btn.focus();
+  const ts=$('title-screen');
+  if(btn && ts && !ts.classList.contains('hidden') && typeof btn.focus==='function') btn.focus();
   return true;
 }
 function bindLetterDemo(){
@@ -3837,8 +5521,9 @@ function bindLetterDemo(){
   const openBtn=$('btn-letter-test');
   const closeBtn=$('letter-close');
   if(!demo || !openBtn || !closeBtn) return;
+  captureDefaultLetterDemo();
 
-  openBtn.onclick=()=>openLetterDemo();
+  openBtn.onclick=()=>openLetterDemo({ restoreDefault: true });
   closeBtn.onclick=e=>{
     if(e && typeof e.stopPropagation==='function') e.stopPropagation();
     closeLetterDemo();
@@ -3848,9 +5533,7 @@ function bindLetterDemo(){
     if(demo.classList.contains('revealed')) closeLetterDemo();
     else revealLetterDemo();
   };
-
-  const paper=demo.querySelector('.alice-letter');
-  if(paper) paper.addEventListener('animationend',e=>{
+  demo.addEventListener('animationend',e=>{
     if(e.animationName==='letter-paper-rise') revealLetterDemo();
   });
 }
@@ -3858,7 +5541,12 @@ bindLetterDemo();
 
 function newGame(){
   S=baseState();
+  if(typeof window !== 'undefined') window.S = S;
+  BACKLOG_LOG.length = 0;
+  closeHudMoreDrawer();
+  document.body.classList.remove('ai-drawer-open', 'roam');
   S.season = seasonOf(S.month);
+  if(typeof VNUx!=='undefined'&&VNUx.clearBacklog) VNUx.clearBacklog();
   Object.values(LOCS).forEach(L=>{ if(L.area==='公爵府' && ['nursery','hallway','parlor','garden','dining'].includes(L.id)) L.unlock=true; });
   bgmUnlock(); // 用户点击开始 → 解锁音频
   show('title-screen',0); show('game-screen',1);
@@ -3866,6 +5554,9 @@ function newGame(){
 }
 function continueGame(){
   if(!load()){ toast('没有存档'); return; }
+  if(typeof window !== 'undefined') window.S = S;
+  closeHudMoreDrawer();
+  document.body.classList.remove('ai-drawer-open');
   bgmUnlock(); // 用户点击继续 → 解锁音频
   // re-unlock locs by phase
   Object.values(LOCS).forEach(L=>{
@@ -3874,10 +5565,12 @@ function continueGame(){
       if(L.area==='魔法大学') L.unlock=true;
     }
     if(S.phase==='journey'||S.phase==='finale'){
-      if(['road','jikan','northforest','town','market'].includes(L.id)) L.unlock=true;
+      if(['road','jikan','chenglan_guild','northforest','town','market'].includes(L.id)) L.unlock=true;
+      if(flag('ch_distant_wind_1') && L.id==='ice_canyon') L.unlock=true;
     }
   });
   show('title-screen',0); show('game-screen',1);
+  spawnCardExitVeil();
   updateHUD(); updateLocBar();
   // 先恢复被刷新中断的剧情；旧存档则重新检查并补播已到期剧情。
   if(resumePendingStories()) return;
@@ -3886,29 +5579,153 @@ function continueGame(){
   else playLines([{text:`（读取存档）${dateStr()} · ${LOCS[S.loc]?.name||''}`, freeRoam:true}]);
 }
 
+function syncMuteBtn(){
+  const isM = isMuted();
+  const b = $('btn-mute');
+  if(b){
+    b.classList.toggle('is-muted', isM);
+    b.setAttribute('aria-pressed', isM ? 'true' : 'false');
+  }
+  const tb = $('btn-title-mute');
+  if(tb){
+    tb.classList.toggle('is-muted', isM);
+    tb.setAttribute('aria-pressed', isM ? 'true' : 'false');
+  }
+}
+
 $('btn-new').onclick=()=>{ sfx('click'); newGame(); };
 $('btn-continue').onclick=()=>{ sfx('click'); continueGame(); };
-$('btn-title').onclick=()=>{ save(); show('game-screen',0); show('battle-screen',0); show('panel',0); show('title-screen',1); updateHUD(); };
-$('btn-mute').onclick=()=>{
-  muted=!muted;
-  try { localStorage.setItem(MUTE_KEY, muted?'1':'0'); } catch(e){}
-  bgmSetMuted(muted); // 静音同时作用于音效与 BGM
-  $('btn-mute').textContent=(muted||bgmMuted)?'🔇':'🔊';
+if($('v3-prism-start')){
+  $('v3-prism-start').onclick=()=>{
+    const bn = $('btn-new');
+    if(bn && typeof bn.click === 'function') bn.click();
+    else { sfx('click'); newGame(); }
+  };
+}
+if($('btn-title-settings')){
+  $('btn-title-settings').onclick=()=>{
+    sfx('click');
+    if(typeof window !== 'undefined' && window.TitleDirector && typeof window.TitleDirector.openSettingsMode === 'function'){
+      window.TitleDirector.openSettingsMode();
+    } else if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.openPrefsModal === 'function'){
+      window.VNUx.openPrefsModal();
+    } else {
+      openPanel('settings');
+    }
+  };
+}
+$('btn-title').onclick=()=>{
+  save();
+  closeHudMoreDrawer();
+  if(typeof AIChatPanel !== 'undefined' && AIChatPanel.closeDrawer) AIChatPanel.closeDrawer({ wipePending: true });
+  if(typeof CombatEngine !== 'undefined' && CombatEngine.exitBattle) CombatEngine.exitBattle(false, { silent: true });
+  if(typeof window !== 'undefined' && window.RaisingHub){
+    try {
+      if(typeof window.RaisingHub.closeAllModals === 'function') window.RaisingHub.closeAllModals();
+      if(typeof window.RaisingHub.closeSchedulePlanner === 'function') window.RaisingHub.closeSchedulePlanner();
+      if(typeof window.RaisingHub.closeSeasonReport === 'function') window.RaisingHub.closeSeasonReport();
+      if(typeof window.RaisingHub.closeShopModal === 'function') window.RaisingHub.closeShopModal();
+      if(typeof window.RaisingHub.closeMailboxModal === 'function') window.RaisingHub.closeMailboxModal();
+      if(typeof window.RaisingHub.closeEndingScreen === 'function') window.RaisingHub.closeEndingScreen();
+    } catch(e){}
+  }
+  document.body.classList.remove('ai-drawer-open', 'roam');
+  show('pick-screen',0); show('game-screen',0); show('battle-screen',0); show('arena-overlay',0); show('panel',0); show('map-overlay',0); show('stats-overlay',0); show('sys-popup',0);
+  if($('backlog-overlay')) show('backlog-overlay',0);
+  show('title-screen',1);
+  if(typeof VNUx !== 'undefined'){
+    if(VNUx.setAutoMode) VNUx.setAutoMode(false);
+    if(VNUx.setSkipMode) VNUx.setSkipMode(false);
+    if(VNUx.closeBacklogModal) VNUx.closeBacklogModal();
+    if(VNUx.closeSaveLoadModal) VNUx.closeSaveLoadModal();
+    if(VNUx.closeChaptersModal) VNUx.closeChaptersModal();
+    if(VNUx.closePrefsModal) VNUx.closePrefsModal();
+    if(VNUx.closeCgLightbox) VNUx.closeCgLightbox();
+  }
+  if(typeof window !== 'undefined' && window.TitleDirector && typeof window.TitleDirector.returnToMain === 'function'){
+    try { window.TitleDirector.returnToMain({ silent: true }); } catch(e){}
+  }
+  updateHUD();
+  if(typeof startTitleSnowLoop === 'function') startTitleSnowLoop();
 };
-$('btn-help').onclick=()=>show('help-screen',1);
-$('btn-help-close').onclick=()=>show('help-screen',0);
+if($('btn-mute')){
+  $('btn-mute').onclick=()=>{
+    bgmToggleMute();
+  };
+}
+if($('btn-title-mute')){
+  $('btn-title-mute').onclick=()=>{
+    const bm = $('btn-mute');
+    if(bm && typeof bm.click === 'function') bm.click();
+    else bgmToggleMute();
+  };
+}
+document.addEventListener('click', e=>{
+  const moreBtn = e.target && e.target.closest ? e.target.closest('#btn-hud-more') : null;
+  if(moreBtn){
+    e.stopPropagation();
+    const hr = document.querySelector('#hud .hud-right');
+    if(hr){
+      syncHudChipLabels();
+      const opened = !hr.classList.contains('more-open');
+      if(!opened){
+        closeHudMoreDrawer();
+      } else {
+        hr.classList.add('more-open', 'is-open');
+        hr.setAttribute('data-hud-drawer', 'true');
+        moreBtn.setAttribute('aria-expanded', 'true');
+        moreBtn.setAttribute('aria-label', '收起菜单');
+        const lbl = moreBtn.querySelector('.chip-lbl');
+        if(lbl) lbl.textContent = '收起菜单';
+      }
+      sfx('click');
+    }
+    return;
+  }
+  const titleMuteBtn = e.target && e.target.closest ? e.target.closest('#btn-title-mute') : null;
+  if(titleMuteBtn && !titleMuteBtn.onclick){
+    const bm = $('btn-mute');
+    if(bm && typeof bm.click === 'function') bm.click();
+    else bgmToggleMute();
+    return;
+  }
+  const hr = document.querySelector('#hud .hud-right');
+  if(hr && (hr.classList.contains('more-open') || hr.classList.contains('is-open'))){
+    if(!e.target || !e.target.closest || !e.target.closest('#hud .hud-right')){
+      closeHudMoreDrawer();
+    } else if(e.target.closest('.chip') && !e.target.closest('#btn-hud-more')){
+      closeHudMoreDrawer();
+    }
+  }
+});
+$('btn-help').onclick=()=>{ closeHudMoreDrawer(); show('help-screen',1); sfx('modal_open'); };
+$('btn-help-close').onclick=()=>{ show('help-screen',0); sfx('modal_close'); };
+if($('btn-backlog')) $('btn-backlog').onclick=e=>{ if(e && e.stopPropagation) e.stopPropagation(); if(typeof VNUx!=='undefined'&&VNUx.toggleBacklogModal) VNUx.toggleBacklogModal(); else openBacklog(); };
+if($('btn-backlog-close')) $('btn-backlog-close').onclick=()=>show('backlog-overlay',0);
+document.querySelectorAll('.modal-close-x[data-close-overlay]').forEach(btn=>{
+  btn.onclick = ()=>{
+    const id = btn.getAttribute('data-close-overlay');
+    if(id){ show(id, 0); sfx('modal_close'); }
+  };
+});
 $('btn-codex').onclick=()=>{
-  show('codex',1);
+  closeHudMoreDrawer();
+  if(typeof VNUx !== 'undefined' && VNUx.openCodexGallery){
+    VNUx.openCodexGallery('cg');
+    return;
+  }
+  show('codex',1); sfx('modal_open');
   const got = ACH.filter(a=>S.ach[a.id]);
   $('codex-list').innerHTML = `
     <p style="margin-bottom:8px">结局 ${codex.endings?.length||0} · 成就 ${got.length}/${ACH.length}</p>
     <p style="opacity:.7;font-size:12px">未解锁内容不会显示。</p>
-    <div style="margin-top:12px">${got.map(a=>`<div class="p-ach">🏆 ${a.name}</div>`).join('') || '（空）'}</div>`;
+    <div style="margin-top:12px">${got.map(a=>`<div class="p-ach">✦ ${a.name}</div>`).join('') || '（空）'}</div>`;
 };
-$('btn-codex-close').onclick=()=>show('codex',0);
+$('btn-codex-close').onclick=()=>{ show('codex',0); sfx('modal_close'); };
 
 // 自由探索底部按钮直接推进季度，不再弹出二次选择或换季提示对话框
 doNextTime = function(){
+  /* direct season advance -> showSeasonFlavor */
   const steps = S.ageY < 1 ? 4 : 1;
   for(let i = 0; i < steps; i++) advanceSeason(1);
   enterFreeRoam({deferGreeting:true});
@@ -3916,7 +5733,11 @@ doNextTime = function(){
   S.seasonFlavorPending=true;
   save();
   if(checkStoryGates()) return;
-  showPendingSeasonFlavor();
+  S.seasonFlavorPending=false;
+  showSeasonFlavor(()=>{
+    updateHUD();
+    renderHotspots();
+  });
   updateHUD();
   renderHotspots();
 };
@@ -3934,16 +5755,92 @@ advanceDay = function(n){
   if(S.ageY>=3 && !flag('unlock_study_talk')){ flag('unlock_study_talk',1); }
 };
 
+function isOverlayVisible(id){
+  const el = $(id);
+  return !!(el && !el.classList.contains('hidden') && (!el.style || el.style.display !== 'none'));
+}
+function isBlockingOverlayForShortcut(){
+  if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.isAnyBlockingOverlayOpen === 'function'){
+    try { if(window.VNUx.isAnyBlockingOverlayOpen()) return true; } catch(e){}
+  }
+  const ids = [
+    'cg-lightbox', 'vn-prefs-modal', 'vn-backlog-modal', 'vn-saveload-modal', 'vn-chapters-modal',
+    'arena-loadout-modal', 'ice-deduction-modal', 'rumor-overlay',
+    'letter-demo', 'sys-popup', 'panel', 'stats-overlay', 'map-overlay', 'help-screen', 'codex',
+    'ending-screen', 'schedule-overlay', 'season-report-overlay', 'shop-overlay', 'mailbox-overlay',
+    'pick-screen', 'arena-overlay', 'duel-screen', 'battle-screen', 'ai-drawer', 'backlog-overlay', 'card'
+  ];
+  return ids.some(isOverlayVisible);
+}
+function isNonDialogModalBlockingSpace(){
+  const nonSpaceCloseIds = [
+    'cg-lightbox', 'vn-prefs-modal', 'vn-backlog-modal', 'vn-saveload-modal', 'vn-chapters-modal',
+    'arena-loadout-modal', 'ice-deduction-modal', 'rumor-overlay',
+    'help-screen', 'codex', 'ending-screen', 'schedule-overlay', 'season-report-overlay',
+    'shop-overlay', 'mailbox-overlay', 'letter-demo', 'pick-screen', 'arena-overlay',
+    'battle-screen', 'duel-screen', 'ai-drawer'
+  ];
+  return nonSpaceCloseIds.some(isOverlayVisible);
+}
+
 // keyboard
 document.addEventListener('keydown', e=>{
-  if(e.key==='Escape' && $('letter-demo') && !$('letter-demo').classList.contains('hidden')){
-    closeLetterDemo();
+  const tgt = e.target;
+  const tagName = tgt && tgt.tagName ? tgt.tagName.toUpperCase() : '';
+  const isEditable = !!(tgt && (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || tgt.isContentEditable));
+  if(e.key==='Escape'){
+    // 严格按层级只关闭当前最顶层的单个弹窗（#letter-demo / #sys-popup / 养成弹窗 / #panel 等优先于 #ai-drawer）
+    if(isOverlayVisible('letter-demo')){ closeLetterDemo(); return; }
+    if(isOverlayVisible('sys-popup')){ show('sys-popup',0); sfx('modal_close'); return; }
+    const raisingClosers = {
+      'schedule-overlay': 'closeSchedulePlanner',
+      'season-report-overlay': 'closeSeasonReport',
+      'shop-overlay': 'closeShopModal',
+      'mailbox-overlay': 'closeMailboxModal',
+      'ending-screen': 'closeEndingScreen',
+    };
+    for(const rid of Object.keys(raisingClosers)){
+      if(isOverlayVisible(rid)){
+        const rh = typeof window !== 'undefined' ? window.RaisingHub : null;
+        const fn = rh && (rh[raisingClosers[rid]] || rh.closeOverlay);
+        if(typeof fn === 'function'){
+          try { fn(rid); } catch(err){ show(rid,0); }
+        }
+        show(rid,0);
+        sfx('modal_close');
+        return;
+      }
+    }
+    if(isOverlayVisible('pick-screen')){ dismissPickScreen(); return; }
+    if(isOverlayVisible('panel')){ show('panel',0); sfx('modal_close'); return; }
+    if(isOverlayVisible('stats-overlay')){ show('stats-overlay',0); sfx('modal_close'); return; }
+    if(isOverlayVisible('map-overlay')){ show('map-overlay',0); sfx('modal_close'); return; }
+    if(isOverlayVisible('help-screen')){ show('help-screen',0); sfx('modal_close'); return; }
+    if(isOverlayVisible('codex')){ show('codex',0); sfx('modal_close'); return; }
+    if(isOverlayVisible('backlog-overlay')){ show('backlog-overlay',0); sfx('modal_close'); return; }
+    if(isOverlayVisible('ai-drawer') && typeof AIChatPanel !== 'undefined' && AIChatPanel.closeDrawer){
+      AIChatPanel.closeDrawer({ wipePending: true });
+      return;
+    }
+    if(closeHudMoreDrawer()) return;
+    if(isOverlayVisible('title-screen') && typeof window !== 'undefined' && window.TitleDirector
+      && typeof window.TitleDirector.getMode === 'function'
+      && typeof window.TitleDirector.returnToMain === 'function'
+      && window.TitleDirector.getMode() !== 'main'){
+      if(typeof e.preventDefault === 'function') e.preventDefault();
+      window.TitleDirector.returnToMain();
+      return;
+    }
+    if(document.body.classList.contains('ui-hidden')){ uiShow(); return; }
     return;
   }
-  if(e.key==='Escape'){ show('panel',0); show('map-overlay',0); show('help-screen',0); show('codex',0); show('stats-overlay',0); uiShow(); }
+  if(isEditable) return;
+  if(isOverlayVisible('ai-drawer')) return;
   if(e.key===' ' || e.key==='Enter'){
+    // 若非空格关闭型弹窗（帮助/图鉴/养成/信笺/VN弹窗/战斗等）正在展示，禁止穿透推进对话
+    if(isNonDialogModalBlockingSpace()) return;
     // CG 演出：空格/回车也能推进下一句
-    if(cgActive && !$('cg-screen').classList.contains('hidden')){
+    if(cgActive && isOverlayVisible('cg-screen')){
       if(typeof $('cg-screen').onclick === 'function'){ $('cg-screen').onclick(); }
       return;
     }
@@ -3954,37 +5851,280 @@ document.addEventListener('keydown', e=>{
       return;
     }
     // 系统弹窗：空格/回车关闭
-    const sp=$('sys-popup');
-    if(sp && !sp.classList.contains('hidden')){ show(sp,0); return; }
+    if(isOverlayVisible('sys-popup')){ show('sys-popup',0); sfx('modal_close'); return; }
     // 各面板：空格关闭
-    if(!$('panel').classList.contains('hidden')){ show('panel',0); return; }
-    if(!$('stats-overlay').classList.contains('hidden')){ show('stats-overlay',0); return; }
-    if(!$('map-overlay').classList.contains('hidden')){ show('map-overlay',0); return; }
-    if(!$('game-screen').classList.contains('hidden')) $('text-box').click();
+    if(isOverlayVisible('panel')){ show('panel',0); sfx('modal_close'); return; }
+    if(isOverlayVisible('stats-overlay')){ show('stats-overlay',0); sfx('modal_close'); return; }
+    if(isOverlayVisible('map-overlay')){ show('map-overlay',0); sfx('modal_close'); return; }
+    if(isOverlayVisible('backlog-overlay')){ show('backlog-overlay',0); sfx('modal_close'); return; }
+    if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.isAnyBlockingOverlayOpen === 'function' && window.VNUx.isAnyBlockingOverlayOpen()) return;
+    if(isOverlayVisible('game-screen') && !isOverlayVisible('title-screen')) $('text-box').click();
   }
-  if((e.key==='p'||e.key==='P') && !$('game-screen').classList.contains('hidden')) openPanel('status');
-  if((e.key==='m'||e.key==='M') && S.freeRoam) openMap();
+  if((e.key==='p'||e.key==='P') && isOverlayVisible('game-screen') && !cgActive && !isBlockingOverlayForShortcut()) openPanel('status');
+  if((e.key==='l'||e.key==='L') && isOverlayVisible('game-screen')){
+    if(typeof VNUx!=='undefined'&&VNUx.toggleBacklogModal) return; // 由 js/vn-ux.js 统一接管 L 键，避免双弹窗重叠
+    const bo = $('backlog-overlay');
+    if(bo && bo.classList.contains('hidden')) openBacklog();
+    else if(bo) show('backlog-overlay', 0);
+  }
+  if((e.key==='m'||e.key==='M') && S.freeRoam && isOverlayVisible('game-screen') && !cgActive && !isBlockingOverlayForShortcut()) openMap();
 });
 
 
-// ===== merge full story from story.js =====
+// ===== merge full story from story.js, story-vol3.js & story-vol4.js =====
 (function mergeStory(){
   const pack = (typeof STORY_SCENES !== 'undefined') ? STORY_SCENES : (typeof window!=='undefined' ? window.STORY_SCENES : null);
-  if(!pack){ console.warn('[story] STORY_SCENES missing'); return; }
-  Object.keys(pack).forEach(k=>{ SCENES[k] = pack[k]; });
+  const pack3 = (typeof STORY_VOL3_SCENES !== 'undefined') ? STORY_VOL3_SCENES : (typeof window!=='undefined' ? window.STORY_VOL3_SCENES : null);
+  const pack4 = (typeof STORY_VOL4_SCENES !== 'undefined') ? STORY_VOL4_SCENES : (typeof window!=='undefined' ? window.STORY_VOL4_SCENES : null);
+  if(!pack && !pack3 && !pack4){ console.warn('[story] STORY_SCENES missing'); return; }
+  if(pack) Object.keys(pack).forEach(k=>{ SCENES[k] = pack[k]; });
+  if(pack3) Object.keys(pack3).forEach(k=>{ SCENES[k] = pack3[k]; });
+  if(pack4) Object.keys(pack4).forEach(k=>{ SCENES[k] = pack4[k]; });
+  const chaps = (typeof STORY_CHAPTERS !== 'undefined') ? STORY_CHAPTERS : (typeof window!=='undefined' ? window.STORY_CHAPTERS : null);
+  const chaps3 = (typeof STORY_VOL3_CHAPTERS !== 'undefined') ? STORY_VOL3_CHAPTERS : (typeof window!=='undefined' ? window.STORY_VOL3_CHAPTERS : null);
+  const chaps4 = (typeof STORY_VOL4_CHAPTERS !== 'undefined') ? STORY_VOL4_CHAPTERS : (typeof window!=='undefined' ? window.STORY_VOL4_CHAPTERS : null);
+  const spliceBeforeEnding = (list)=>{
+    if(!Array.isArray(chaps) || !Array.isArray(list)) return;
+    const toAdd = list.filter(c => c && !chaps.some(x => x && x.id === c.id));
+    const endingIdx = chaps.findIndex(c => c && c.id === 's_ending_menu');
+    if(endingIdx >= 0) chaps.splice(endingIdx, 0, ...toAdd);
+    else chaps.push(...toAdd);
+  };
+  spliceBeforeEnding(chaps3);
+  spliceBeforeEnding(chaps4);
   console.log('[story] merged scenes', Object.keys(SCENES).length);
 })();
 
+let _snowRaf = 0;
+let _snowVisBound = false;
+function startTitleSnowLoop(){
+  if(typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent || '')) return;
+  const canvas = $('title-snow-canvas');
+  const titleScr = $('title-screen');
+  if(!canvas || !titleScr || titleScr.classList.contains('hidden')) return;
+  let ctx = null;
+  try { ctx = canvas.getContext('2d'); } catch(e){}
+  if(!ctx) return;
+  if(_snowRaf) return;
+  const reduceMotion = !!(typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  if(!reduceMotion && typeof requestAnimationFrame !== 'function') return;
+
+  let cw = 1440, ch = 900, dpr = 1;
+  const syncSize = ()=>{
+    cw = titleScr.clientWidth || window.innerWidth || 1440;
+    ch = titleScr.clientHeight || window.innerHeight || 900;
+    dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    const pw = Math.max(1, Math.round(cw * dpr));
+    const ph = Math.max(1, Math.round(ch * dpr));
+    if(canvas.width !== pw || canvas.height !== ph){
+      canvas.width = pw;
+      canvas.height = ph;
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  syncSize();
+
+  // NeonCat V3 palette: deep ink #1B2333, sapphire #1C4CB8, ice cyan #6BC5F8, whisper gold #C9B48A
+  const PALETTE = [
+    { name: 'ink',      rgb: '27, 35, 51',    weight: 0.36 },
+    { name: 'sapphire', rgb: '28, 76, 184',   weight: 0.28 },
+    { name: 'cyan',     rgb: '107, 197, 248', weight: 0.24 },
+    { name: 'gold',     rgb: '201, 180, 138', weight: 0.12 },
+  ];
+  const pickTint = (idx)=>{
+    const roll = ((idx * 0.61803398875) % 1 + Math.random() * 0.22) % 1;
+    let acc = 0;
+    for(const item of PALETTE){
+      acc += item.weight;
+      if(roll <= acc) return item;
+    }
+    return PALETTE[0];
+  };
+
+  // 3-depth floating sharp diamond crystal specks (diameter 2px–5px, zero blurry circles)
+  const motes = [];
+  const total = cw <= 720 ? 36 : 52;
+  for(let idx = 0; idx < total; idx++){
+    const depth = idx < Math.round(total * 0.44) ? 0 : (idx < Math.round(total * 0.82) ? 1 : 2);
+    const tint = pickTint(idx);
+    const halfSize = depth === 0
+      ? (1.0 + Math.random() * 0.55)      // 2.0–3.1px sharp far dust
+      : (depth === 1
+        ? (1.55 + Math.random() * 0.65)   // 3.1–4.4px mid crystal shards
+        : (2.05 + Math.random() * 0.55)); // 4.1–5.2px near accent diamonds
+    const aspect = 0.62 + Math.random() * 0.28;
+    const baseAlpha = depth === 0
+      ? (0.18 + Math.random() * 0.18)
+      : (depth === 1
+        ? (0.34 + Math.random() * 0.26)
+        : (0.48 + Math.random() * 0.30));
+    const speedScale = depth === 0 ? 0.55 : (depth === 1 ? 0.88 : 1.22);
+    const dirX = (Math.random() < 0.65 ? 1 : -1) * (0.05 + Math.random() * 0.11) * speedScale;
+    const dirY = -(0.06 + Math.random() * 0.14) * speedScale;
+    motes.push({
+      depth,
+      tint,
+      x: Math.random() * cw,
+      y: Math.random() * ch,
+      ry: halfSize,
+      rx: halfSize * aspect,
+      vx: dirX,
+      vy: dirY,
+      alpha: tint.name === 'gold' ? baseAlpha * 0.92 : baseAlpha,
+      rot: (Math.random() - 0.5) * Math.PI,
+      vrot: (Math.random() < 0.5 ? -1 : 1) * (0.002 + Math.random() * 0.0055),
+      phase: Math.random() * Math.PI * 2,
+      vphase: 0.011 + Math.random() * 0.014,
+      swayAmp: 0.04 + Math.random() * 0.07,
+      parallax: depth === 0 ? -5 : (depth === 1 ? -12 : -21),
+    });
+  }
+
+  const drawFrame = (dt)=>{
+    syncSize();
+    ctx.clearRect(0, 0, cw, ch);
+    if(typeof window !== 'undefined' && window.AmbientFX && typeof window.AmbientFX.isEnabled === 'function' && !window.AmbientFX.isEnabled()){
+      return;
+    }
+    const par = (typeof window !== 'undefined' && window.TitleDirector && typeof window.TitleDirector.getParallax === 'function')
+      ? window.TitleDirector.getParallax()
+      : { x: 0, y: 0 };
+    const pxOff = Number.isFinite(par.x) ? par.x : 0;
+    const pyOff = Number.isFinite(par.y) ? par.y : 0;
+    const pad = 18;
+
+    for(const f of motes){
+      if(dt > 0){
+        f.phase += f.vphase * dt;
+        f.rot += f.vrot * dt;
+        f.x += (f.vx + Math.sin(f.phase * 0.72 + f.y * 0.006) * f.swayAmp) * dt;
+        f.y += (f.vy + Math.cos(f.phase * 0.54 + f.x * 0.005) * (f.swayAmp * 0.45)) * dt;
+        if(f.y < -pad){
+          f.y = ch + pad * 0.6;
+          f.x = Math.random() * cw;
+        } else if(f.y > ch + pad){
+          f.y = -pad * 0.6;
+          f.x = Math.random() * cw;
+        }
+        if(f.x < -pad) f.x = cw + pad * 0.6;
+        else if(f.x > cw + pad) f.x = -pad * 0.6;
+      }
+
+      const twinkle = 0.72 + 0.28 * Math.sin(f.phase);
+      const opacity = Math.min(0.92, f.alpha * twinkle);
+      const dx = f.x + pxOff * f.parallax;
+      const dy = f.y + pyOff * (f.parallax * 0.72);
+      const rx = f.rx;
+      const ry = f.ry;
+
+      ctx.save();
+      ctx.translate(dx, dy);
+      ctx.rotate(f.rot);
+
+      ctx.beginPath();
+      ctx.moveTo(0, -ry);
+      ctx.lineTo(rx, 0);
+      ctx.lineTo(0, ry);
+      ctx.lineTo(-rx, 0);
+      ctx.closePath();
+      ctx.fillStyle = `rgba(${f.tint.rgb}, ${opacity.toFixed(3)})`;
+      ctx.fill();
+      if(f.depth === 2){
+        ctx.strokeStyle = `rgba(${f.tint.rgb}, ${(opacity * 0.55).toFixed(3)})`;
+        ctx.lineWidth = 0.65;
+        ctx.stroke();
+      }
+
+      // Subtle crystalline upper-right facet glint on mid & near sapphire/cyan specks
+      if(f.depth >= 1 && (f.tint.name === 'sapphire' || f.tint.name === 'cyan')){
+        ctx.beginPath();
+        ctx.moveTo(0, -ry);
+        ctx.lineTo(rx, 0);
+        ctx.lineTo(0, 0);
+        ctx.closePath();
+        ctx.fillStyle = `rgba(255, 255, 255, ${(opacity * 0.42).toFixed(3)})`;
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  };
+
+  if(reduceMotion){
+    drawFrame(0);
+    return;
+  }
+
+  let lastTs = 0;
+  const step = (ts)=>{
+    if(!titleScr || titleScr.classList.contains('hidden') || document.hidden){
+      _snowRaf = 0;
+      lastTs = 0;
+      return;
+    }
+    if(typeof window !== 'undefined' && window.AmbientFX && typeof window.AmbientFX.isEnabled === 'function' && !window.AmbientFX.isEnabled()){
+      syncSize();
+      ctx.clearRect(0, 0, cw, ch);
+      _snowRaf = 0;
+      lastTs = 0;
+      return;
+    }
+    const dt = lastTs ? Math.min(3, Math.max(0.25, (ts - lastTs) / 16.667)) : 1;
+    lastTs = ts;
+    drawFrame(dt);
+    _snowRaf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame(step) : 0;
+  };
+  if(!_snowVisBound && typeof document !== 'undefined'){
+    _snowVisBound = true;
+    document.addEventListener('visibilitychange', ()=>{
+      if(!document.hidden){
+        const tsEl = $('title-screen');
+        if(tsEl && !tsEl.classList.contains('hidden')) startTitleSnowLoop();
+      } else if(_snowRaf && typeof cancelAnimationFrame === 'function'){
+        cancelAnimationFrame(_snowRaf);
+        _snowRaf = 0;
+      }
+    });
+    if(typeof MutationObserver === 'function'){
+      const bindFxObs = ()=>{
+        const afxCanvas = $('ambient-fx-canvas');
+        if(!afxCanvas || afxCanvas.__titleSnowObserved) return;
+        afxCanvas.__titleSnowObserved = true;
+        const obs = new MutationObserver(()=>{
+          const tsEl = $('title-screen');
+          if(!document.hidden && tsEl && !tsEl.classList.contains('hidden')
+            && window.AmbientFX && typeof window.AmbientFX.isEnabled === 'function' && window.AmbientFX.isEnabled()){
+            startTitleSnowLoop();
+          }
+        });
+        obs.observe(afxCanvas, { attributes: true, attributeFilter: ['class'] });
+      };
+      bindFxObs();
+      setTimeout(bindFxObs, 400);
+    }
+  }
+  _snowRaf = requestAnimationFrame(step);
+}
+
 // boot
-show('btn-continue', hasSave());
+updateContinueBtn();
 updateHUD();
-if($('btn-mute')) $('btn-mute').textContent=(muted||bgmMuted)?'🔇':'🔊';
+syncMuteBtn();
+syncUiToggleBtn(false);
+syncHudChipLabels();
+if(typeof document !== 'undefined'){
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', syncHudChipLabels, { once: true });
+  setTimeout(syncHudChipLabels, 0);
+}
+startTitleSnowLoop();
 bgmBindGlobalUnlock(); // 全局用户手势解锁音频
 applySettings(); // 应用已保存的设置（bgm音量/背景亮度）
 console.log('[转生千金] ready · scenes', Object.keys(SCENES).length);
 if(typeof window !== 'undefined'){
   window.SCENES = SCENES;
   window.S = S;
+  window.show = show;
+  window.uiIco = uiIco;
   window.whoIsHere = whoIsHere;
   window.checkStoryGates = checkStoryGates;
   window.phaseAreaAllowed = phaseAreaAllowed;
@@ -3994,11 +6134,75 @@ if(typeof window !== 'undefined'){
   window.know = typeof know !== 'undefined' ? know : ()=>{};
   window.sysPopup = typeof sysPopup !== 'undefined' ? sysPopup : ()=>{};
   window.toast = typeof toast !== 'undefined' ? toast : ()=>{};
+  window.sfx = typeof sfx !== 'undefined' ? sfx : ()=>{};
+  window.sfxSetVolume = sfxSetVolume;
+  window.sfxGetVolume = ()=>sfxVolume;
+  window.setMuted = setMuted;
+  window.isMuted = isMuted;
+  window.bgmSetMuted = bgmSetMuted;
+  window.bgmToggleMute = bgmToggleMute;
+  window.closeHudMoreDrawer = closeHudMoreDrawer;
+  window.openLetterDemo = openLetterDemo;
+  window.closeLetterDemo = closeLetterDemo;
+  window.setTypeSpeed = setTypeSpeed;
+  window.getTypeSpeed = getTypeSpeed;
+  window.advanceDialog = advanceDialog;
   window.bgmKeyForBg = typeof bgmTypeForBg !== 'undefined' ? bgmTypeForBg : ()=>{};
   window.bgmTypeForBg = typeof bgmTypeForBg !== 'undefined' ? bgmTypeForBg : ()=>{};
   window.bgmPlay = typeof bgmPlay !== 'undefined' ? bgmPlay : ()=>{};
+  window.bgmStop = typeof bgmStop !== 'undefined' ? bgmStop : ()=>{};
+  window.bgmSetVolume = typeof bgmSetVolume !== 'undefined' ? bgmSetVolume : ()=>{};
+  window.bgmGetVolume = ()=>bgmVolume;
   window.bgmUnlock = typeof bgmUnlock !== 'undefined' ? bgmUnlock : ()=>{};
   window.bgmPlayType = typeof bgmPlayType !== 'undefined' ? bgmPlayType : ()=>{};
   window.BGM_FILES = typeof BGM_FILES !== 'undefined' ? BGM_FILES : {};
   window.BGM_GROUPS = typeof BGM_GROUPS !== 'undefined' ? BGM_GROUPS : {};
+  window.ACH = ACH;
+  window.codex = codex;
+  window.saveCodex = saveCodex;
+  window.PORTRAIT_DIFF_PROTOCOL = PORTRAIT_DIFF_PROTOCOL;
+  window.FAILED_PORTRAIT_URLS = FAILED_PORTRAIT_URLS;
+  window.resolvePortrait = resolvePortrait;
+  window.resolvePortraitFallback = resolvePortraitFallback;
+  window.LOCS = LOCS;
+  window.__LOCS = LOCS;
+  window.CHARS = CHARS;
+  window.save = save;
+  window.load = load;
+  window.runScene = runScene;
+  window.enterFreeRoam = enterFreeRoam;
+  window.openPanel = openPanel;
+  window.openStatsPanel = openStatsPanel;
+  window.openStatsOverlay = openStatsOverlay;
+  window.triggerBraveGift = triggerBraveGift;
+  window.dismissPickScreen = dismissPickScreen;
+  window.updateHUD = updateHUD;
+  window.updateContinueBtn = updateContinueBtn;
+  window.updateLocBar = updateLocBar;
+  window.baseState = baseState;
+  window.migrateStorySave = migrateStorySave;
+  window.runSceneQueue = runSceneQueue;
+  window.resumePendingStories = resumePendingStories;
+  window.syncStatsToAge = syncStatsToAge;
+  window.setBG = setBG;
+  window.renderHotspots = renderHotspots;
+  window.STORY_CHAPTERS = typeof STORY_CHAPTERS !== 'undefined' ? STORY_CHAPTERS : window.STORY_CHAPTERS;
+  window.__STORY_CHAPTERS = window.STORY_CHAPTERS;
+  window.STORY_GATE_BY_SCENE = STORY_GATE_BY_SCENE;
+  window.__vnApplyLoadedState = function(restored, curSc, curChain){
+    S = restored;
+    window.S = S;
+    currentScene = curSc || null;
+    storyChain = curChain || null;
+    Object.values(LOCS).forEach(L=>{
+      if(S.phase !== 'prologue' && L.area === '公爵府') L.unlock = true;
+      if(S.phase === 'academy' || S.phase === 'journey' || S.phase === 'finale'){
+        if(L.area === '魔法大学') L.unlock = true;
+      }
+      if(S.phase === 'journey' || S.phase === 'finale'){
+        if(['road','jikan','chenglan_guild','northforest','town','market'].includes(L.id)) L.unlock = true;
+        if(flag('ch_distant_wind_1') && L.id === 'ice_canyon') L.unlock = true;
+      }
+    });
+  };
 }

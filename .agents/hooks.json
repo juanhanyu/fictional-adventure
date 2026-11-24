@@ -1,0 +1,12 @@
+{
+  "ralph-quality-gate": {
+    "enabled": true,
+    "Stop": [
+      {
+        "type": "command",
+        "command": "python ./scripts/quality_gate_stop_hook.py",
+        "timeout": 180
+      }
+    ]
+  }
+}

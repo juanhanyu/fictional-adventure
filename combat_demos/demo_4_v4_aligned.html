@@ -3135,8 +3135,9 @@
 
     drawParallaxBackground(eclipseMix, scrollX);
     drawInteractiveProp(eclipseMix);
-    drawManaAmpAura();
+    drawManaAmpBack();
     drawCombatant(state.sylvia, true);
+    drawManaAmpFront();
 
     if (state.enemy) {
       if (state.transition.active) {
@@ -3385,13 +3386,266 @@
     ctx.restore();
   }
 
-  function drawManaAmpAura() {
+  function getManaAmpOrbits(amp, cx, feetY) {
+    const t = state.time;
+    const orbits = [];
+    if (amp <= 0) return orbits;
+
+    // Tier 1 (+5%..+20%): 12 particles on 1 crisp ice-cyan/light-blue tilted mid-body orbit
+    // Tier 2 (+25%..+40%): 26 particles (14 + 12) on 2 intersecting royal-blue + ice-cyan double-helix streams
+    // Tier 3 (+45%..+60%): 42 particles (16 + 14 + 12) on 3 high-energy interwoven ice/white/champagne-gold orbits
+    const tier = amp >= 45 ? 3 : amp >= 25 ? 2 : 1;
+
+    // Orbit 1: Mid-body tilted ice-cyan / sapphire stream (front sweeps across dress/waist, back rises behind shoulders)
+    orbits.push({
+      cx,
+      cy: feetY - 102,
+      rx: tier === 1 ? 94 : tier === 2 ? 100 : 106,
+      ry: 24,
+      tilt: 0.30,
+      speed: tier === 3 ? 2.55 : tier === 2 ? 1.95 : 1.55,
+      phase: t * (tier === 3 ? 2.55 : tier === 2 ? 1.95 : 1.55),
+      count: tier === 3 ? 16 : tier === 2 ? 14 : 12,
+      trailSteps: tier === 1 ? 5 : 7,
+      trailArc: tier === 3 ? 0.42 : 0.32,
+      ribbonColorFront: 'rgba(126, 232, 255, 0.52)',
+      ribbonColorBack: 'rgba(34, 108, 214, 0.24)',
+      ribbonWidth: tier === 3 ? 2.2 : 1.7,
+      paletteFront: ['#FFFFFF', '#B8F6FF', '#6BC5F8', '#3B9EFF'],
+      paletteBack: ['#4A88D8', '#2C63B8', '#5AA8E6'],
+      starEvery: 3
+    });
+
+    if (tier >= 2) {
+      // Orbit 2: Counter-tilted royal-sapphire + ice-cyan intersecting double-helix
+      orbits.push({
+        cx,
+        cy: feetY - 112,
+        rx: tier === 3 ? 114 : 108,
+        ry: 28,
+        tilt: -0.34,
+        speed: tier === 3 ? -2.30 : -1.78,
+        phase: -t * (tier === 3 ? 2.30 : 1.78) + 1.15,
+        count: tier === 3 ? 14 : 12,
+        trailSteps: 7,
+        trailArc: tier === 3 ? 0.40 : 0.30,
+        ribbonColorFront: 'rgba(56, 134, 255, 0.56)',
+        ribbonColorBack: 'rgba(22, 74, 178, 0.22)',
+        ribbonWidth: tier === 3 ? 2.1 : 1.6,
+        paletteFront: ['#E8FBFF', '#6BC5F8', '#2E7BFF', '#1658EB'],
+        paletteBack: ['#2955B8', '#1D4299', '#3F86E0'],
+        starEvery: 3
+      });
+    }
+
+    if (tier >= 3) {
+      // Orbit 3: High-dimensional outer frost-white & champagne-gold grand orbital ring
+      // Back half arches behind Sylvia's silver hair as a luminous crown; front half wraps waist/cloak without blocking her face
+      orbits.push({
+        cx,
+        cy: feetY - 126,
+        rx: 126,
+        ry: 35,
+        tilt: 0.18,
+        speed: 3.05,
+        phase: t * 3.05 + 2.3,
+        count: 12,
+        trailSteps: 8,
+        trailArc: 0.46,
+        ribbonColorFront: 'rgba(255, 224, 146, 0.56)',
+        ribbonColorBack: 'rgba(196, 164, 108, 0.26)',
+        ribbonWidth: 2.3,
+        paletteFront: ['#FFFFFF', '#FFE8A3', '#E5C06E', '#9DF5FF'],
+        paletteBack: ['#B69352', '#7E9FD4', '#D2B475'],
+        starEvery: 2
+      });
+    }
+
+    return orbits;
+  }
+
+  function evalOrbitPoint(orb, angle) {
+    const c = Math.cos(angle);
+    const s = Math.sin(angle); // -1 = farthest back, +1 = closest front
+    const lx = orb.rx * c;
+    const px = orb.cx + lx;
+    const py = orb.cy + orb.ry * s - lx * orb.tilt;
+    return { x: px, y: py, z: s };
+  }
+
+  function drawCrystalMote(px, py, size, color, isStar, alpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(Math.round(px), Math.round(py));
+    ctx.fillStyle = color;
+
+    if (isStar) {
+      // Sharp 4-point pixel crystal starburst
+      const r = size * 1.45;
+      const w = Math.max(1.2, size * 0.34);
+      ctx.beginPath();
+      ctx.moveTo(0, -r);
+      ctx.lineTo(w, -w);
+      ctx.lineTo(r, 0);
+      ctx.lineTo(w, w);
+      ctx.lineTo(0, r);
+      ctx.lineTo(-w, w);
+      ctx.lineTo(-r, 0);
+      ctx.lineTo(-w, -w);
+      ctx.closePath();
+      ctx.fill();
+      // Crisp bright pixel core
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(-1, -1, 2, 2);
+    } else {
+      // Sharp faceted pixel diamond crystal
+      const r = size;
+      ctx.beginPath();
+      ctx.moveTo(0, -r);
+      ctx.lineTo(r * 0.85, 0);
+      ctx.lineTo(0, r);
+      ctx.lineTo(-r * 0.85, 0);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawManaAmpOrbitPass(isFrontPass) {
+    const s = state.sylvia;
+    const amp = state.ampPct;
+    if (amp <= 0) return;
+
+    const cx = s.x + s.knockX;
+    const feetY = s.y;
+    const orbits = getManaAmpOrbits(amp, cx, feetY);
+    const faceSafeAlpha = (px, py) => {
+      if (!isFrontPass) return 1.0;
+      const dx = Math.abs(px - cx);
+      const dy = Math.abs(py - (feetY - 172));
+      if (dx < 30 && dy < 30) return 0.18;
+      return 1.0;
+    };
+
+    ctx.save();
+    orbits.forEach((orb, oIdx) => {
+      // 1. Subtle 3D curved orbital energy filament (split cleanly into back z<0 / front z>=0 segments)
+      const segs = 48;
+      ctx.save();
+      ctx.lineCap = 'round';
+      for (let i = 0; i < segs; i++) {
+        const a0 = (i / segs) * Math.PI * 2;
+        const a1 = ((i + 1) / segs) * Math.PI * 2;
+        const p0 = evalOrbitPoint(orb, a0);
+        const p1 = evalOrbitPoint(orb, a1);
+        const midZ = (p0.z + p1.z) * 0.5;
+        if (isFrontPass ? midZ < 0 : midZ >= 0) continue;
+
+        const depthFactor = isFrontPass ? (0.45 + 0.55 * midZ) : (0.28 + 0.32 * (1 + midZ));
+        const safe = faceSafeAlpha((p0.x + p1.x) * 0.5, (p0.y + p1.y) * 0.5);
+        ctx.strokeStyle = isFrontPass ? orb.ribbonColorFront : orb.ribbonColorBack;
+        ctx.globalAlpha = depthFactor * safe * (amp >= 40 ? 0.92 : 0.65);
+        ctx.lineWidth = isFrontPass ? orb.ribbonWidth * (0.75 + 0.45 * midZ) : orb.ribbonWidth * 0.65;
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(p1.x, p1.y);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // 2. Collect particles belonging to this depth pass & sort by Z for crisp overlap
+      const items = [];
+      const dirSign = orb.speed >= 0 ? 1 : -1;
+      for (let k = 0; k < orb.count; k++) {
+        const angle = orb.phase + (k / orb.count) * Math.PI * 2;
+        const pt = evalOrbitPoint(orb, angle);
+        if (isFrontPass ? pt.z < 0 : pt.z >= 0) continue;
+        items.push({ k, angle, pt, dirSign });
+      }
+      items.sort((a, b) => a.pt.z - b.pt.z);
+
+      // 3. Draw luminous tapered orbital trails + faceted crystal/starburst particles
+      for (const item of items) {
+        const { k, angle, pt, dirSign } = item;
+        const depthNorm = (pt.z + 1) * 0.5; // 0 = far back, 1 = close front
+        const safe = faceSafeAlpha(pt.x, pt.y);
+        const baseColor = isFrontPass
+          ? orb.paletteFront[k % orb.paletteFront.length]
+          : orb.paletteBack[k % orb.paletteBack.length];
+
+        // Tapered curved glow trail behind each particle (strongest on front pass!)
+        const trailLen = isFrontPass ? orb.trailSteps : Math.max(2, Math.floor(orb.trailSteps * 0.45));
+        let prev = pt;
+        for (let st = 1; st <= trailLen; st++) {
+          const frac = st / trailLen;
+          const tAng = angle - dirSign * frac * orb.trailArc;
+          const tp = evalOrbitPoint(orb, tAng);
+          // Don't draw trail segments across the depth boundary into the wrong pass
+          if (isFrontPass ? tp.z < -0.05 : tp.z > 0.05) break;
+          ctx.save();
+          ctx.strokeStyle = baseColor;
+          ctx.globalAlpha = (1 - frac) * (isFrontPass ? (0.48 + 0.36 * pt.z) : 0.24) * safe;
+          ctx.lineWidth = Math.max(1, (isFrontPass ? 3.2 : 1.5) * (1 - frac * 0.72));
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(prev.x, prev.y);
+          ctx.lineTo(tp.x, tp.y);
+          ctx.stroke();
+          ctx.restore();
+          prev = tp;
+        }
+
+        // Soft front halo bloom on primary crystal stars
+        const isStar = (k % orb.starEvery === 0);
+        const size = (isStar ? 4.8 : 3.4) * (0.58 + depthNorm * 0.68);
+        const alpha = (isFrontPass ? (0.82 + 0.18 * pt.z) : (0.36 + 0.34 * depthNorm)) * safe;
+
+        if (isFrontPass && (isStar || amp >= 40)) {
+          ctx.save();
+          ctx.globalAlpha = (isStar ? 0.34 : 0.20) * safe;
+          const halo = ctx.createRadialGradient(pt.x, pt.y, 0.5, pt.x, pt.y, size * 3.1);
+          halo.addColorStop(0, baseColor);
+          halo.addColorStop(1, 'rgba(107, 197, 248, 0)');
+          ctx.fillStyle = halo;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, size * 3.1, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        drawCrystalMote(pt.x, pt.y, size, baseColor, isStar, alpha);
+      }
+
+      // 4. Slow rising frost-dust star motes (Tier 2+ & Tier 3)
+      if (amp >= 25 && oIdx === 0) {
+        const dustCount = amp >= 45 ? 18 : 10;
+        for (let i = 0; i < dustCount; i++) {
+          const dustAngle = state.time * 1.15 + i * 2.13;
+          const dustZ = Math.sin(dustAngle);
+          if (isFrontPass ? dustZ < 0 : dustZ >= 0) continue;
+          const prog = (state.time * 0.38 + i / dustCount) % 1;
+          const rad = 58 + (i % 4) * 16 + Math.sin(state.time * 2 + i) * 6;
+          const mx = cx + Math.cos(dustAngle) * rad;
+          const my = feetY - 14 - prog * 208;
+          const safe = faceSafeAlpha(mx, my);
+          const fade = Math.sin(prog * Math.PI);
+          const dCol = (amp >= 45 && i % 3 === 0) ? '#FFE59A' : (isFrontPass ? '#D8FAFF' : '#66A8E8');
+          const dSz = (isFrontPass ? 2.8 : 2.0) * (0.7 + 0.3 * fade);
+          drawCrystalMote(mx, my, dSz, dCol, i % 4 === 0, fade * (isFrontPass ? 0.85 : 0.45) * safe);
+        }
+      }
+    });
+    ctx.restore();
+  }
+
+  function drawManaAmpBack() {
     const s = state.sylvia;
     const amp = state.ampPct;
     const x = s.x + s.knockX;
     const y = s.y;
 
     ctx.save();
+    // Base ground frost ring
     ctx.beginPath();
     ctx.ellipse(x, y, 78, 22, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(40, 120, 190, 0.16)';
@@ -3406,7 +3660,9 @@
     }
 
     const intensity = Math.max(amp / 60, 0.25);
-    const rings = amp >= 60 ? 3 : amp >= 40 ? 2 : 1;
+
+    // Concentric rotating frost rune rings underfoot
+    const rings = amp >= 45 ? 3 : amp >= 25 ? 2 : 1;
     for (let r = 0; r < rings; r++) {
       const rx = 68 + r * 24;
       const ry = 18 + r * 7;
@@ -3429,43 +3685,71 @@
       ctx.restore();
     }
 
-    const auraGrad = ctx.createRadialGradient(x, y - 110, 12, x, y - 110, 118 + amp * 0.8);
-    auraGrad.addColorStop(0, `rgba(130, 236, 255, ${(0.12 + intensity * 0.28).toFixed(2)})`);
-    auraGrad.addColorStop(1, 'rgba(60, 160, 255, 0)');
+    // Back-layer luminous body aura column + +60% rhythmic crystal pulse wave
+    const pulse = 0.5 + 0.5 * Math.sin(state.time * 5.2);
+    const auraR = 116 + amp * 0.85 + (amp >= 45 ? pulse * 14 : 0);
+    const auraGrad = ctx.createRadialGradient(x, y - 114, 14, x, y - 114, auraR);
+    if (amp >= 45) {
+      auraGrad.addColorStop(0, `rgba(186, 246, 255, ${(0.22 + pulse * 0.14).toFixed(2)})`);
+      auraGrad.addColorStop(0.55, `rgba(42, 122, 245, ${(0.18 + pulse * 0.08).toFixed(2)})`);
+      auraGrad.addColorStop(1, 'rgba(22, 88, 235, 0)');
+    } else {
+      auraGrad.addColorStop(0, `rgba(130, 236, 255, ${(0.12 + intensity * 0.24).toFixed(2)})`);
+      auraGrad.addColorStop(1, 'rgba(60, 160, 255, 0)');
+    }
     ctx.fillStyle = auraGrad;
-    ctx.beginPath(); ctx.arc(x, y - 110, 118 + amp * 0.8, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y - 114, auraR, 0, Math.PI * 2); ctx.fill();
 
-    const moteCount = Math.round(6 + amp * 0.45);
-    for (let i = 0; i < moteCount; i++) {
-      const prog = (state.time * (0.65 + intensity * 0.7) + i / moteCount) % 1;
-      const angle = state.time * (2.6 + intensity * 2.2) + i * 1.3;
-      const rad = (54 + (1 - prog) * 32) * (0.75 + intensity * 0.35);
-      const mx = x + Math.cos(angle) * rad;
-      const my = y - 10 - prog * (175 + amp * 1.1);
-      const sz = amp >= 40 && i % 3 === 0 ? 5 : 3;
-      ctx.fillStyle = (amp >= 60 && i % 4 === 0)
-        ? `rgba(255, 230, 146, ${(1 - prog) * 0.95})`
-        : `rgba(180, 246, 255, ${(1 - prog) * 0.9})`;
-      ctx.fillRect(Math.round(mx), Math.round(my), sz, sz);
+    // At +60%: Expanding crystalline pulse halo behind Sylvia
+    if (amp >= 45) {
+      const waveProg = (state.time * 0.85) % 1;
+      const wr = 56 + waveProg * 78;
+      ctx.save();
+      ctx.globalAlpha = (1 - waveProg) * 0.42;
+      ctx.strokeStyle = waveProg < 0.5 ? '#9BF4FF' : '#FFE39A';
+      ctx.lineWidth = 2.0 * (1 - waveProg * 0.6);
+      ctx.beginPath();
+      ctx.ellipse(x, y - 114, wr, wr * 0.72, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
     }
 
-    if (amp >= 60) {
-      ctx.strokeStyle = 'rgba(210, 250, 255, 0.72)';
-      ctx.lineWidth = 1.6;
-      for (let a = 0; a < 2; a++) {
-        const ang = state.time * 7 + a * Math.PI;
-        const bx = x + Math.cos(ang) * 62;
-        const by = y - 115 + Math.sin(ang * 1.5) * 48;
+    // Back half (z < 0) of 3D orbiting crystal particle streams
+    drawManaAmpOrbitPass(false);
+    ctx.restore();
+  }
+
+  function drawManaAmpFront() {
+    const s = state.sylvia;
+    const amp = state.ampPct;
+    const x = s.x + s.knockX;
+    const y = s.y;
+
+    ctx.save();
+    // Front half (z >= 0) of 3D orbiting crystal particle streams (sweeps brightly IN FRONT of Sylvia!)
+    drawManaAmpOrbitPass(true);
+
+    // At +60%: Crisp high-energy crystalline arc glints flanking Sylvia's lower silhouette (face-safe)
+    if (amp >= 45) {
+      const glintPulse = 0.55 + 0.45 * Math.sin(state.time * 6.5);
+      ctx.save();
+      ctx.strokeStyle = `rgba(214, 251, 255, ${(0.45 * glintPulse).toFixed(2)})`;
+      ctx.lineWidth = 1.4;
+      for (let side of [-1, 1]) {
+        const bx = x + side * (74 + Math.sin(state.time * 4.5 + side) * 10);
+        const by = y - 92 + Math.cos(state.time * 3.8 + side) * 18;
         ctx.beginPath();
-        ctx.moveTo(bx, by);
-        ctx.lineTo(bx + (Math.random() - 0.5) * 28, by - 22);
-        ctx.lineTo(bx + (Math.random() - 0.5) * 34, by - 44);
+        ctx.moveTo(bx, by + 18);
+        ctx.lineTo(bx + side * 9, by);
+        ctx.lineTo(bx - side * 4, by - 18);
         ctx.stroke();
       }
+      ctx.restore();
     }
 
+    // Active Frost Shield Arc (front layer)
     if (s.shield > 0) {
-      ctx.strokeStyle = 'rgba(140, 236, 255, 0.55)';
+      ctx.strokeStyle = 'rgba(140, 236, 255, 0.58)';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(x, y - 110, 108, -Math.PI * 0.85, Math.PI * 0.15);

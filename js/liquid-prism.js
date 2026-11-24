@@ -715,6 +715,9 @@
           syncEnabledFromAmbientCanvas();
           continue;
         }
+        if (target.id !== 'battle-screen' && target.closest && target.closest('#battle-screen')) {
+          continue;
+        }
         if (target.hasAttribute && (
           target.hasAttribute('data-liquid-ignore') ||
           target.hasAttribute('data-liquid-prism') ||

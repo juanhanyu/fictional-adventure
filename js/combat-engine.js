@@ -2947,16 +2947,36 @@
     return null;
   }
 
+  let _logBatchDepth = 0;
+  let _logScrollRaf = 0;
+
+  function flushCombatLogDOM(b) {
+    if (!b || b.headless || typeof document === 'undefined') return;
+    if (!b._logDirty) return;
+    const el = document.getElementById('b-log');
+    if (!el) return;
+    b._logDirty = false;
+    el.innerHTML = b.log.join('<br>');
+    if (!isJsdomEnv() && typeof global.requestAnimationFrame === 'function') {
+      if (!_logScrollRaf) {
+        _logScrollRaf = global.requestAnimationFrame(() => {
+          _logScrollRaf = 0;
+          const cur = document.getElementById('b-log');
+          if (cur) cur.scrollTop = 1e6;
+        });
+      }
+    } else {
+      el.scrollTop = el.scrollHeight;
+    }
+  }
+
   function pushLog(b, html) {
     if (!b) return;
     b.log.push(html);
     if (b.log.length > 70) b.log.shift();
-    if (!b.headless && typeof document !== 'undefined') {
-      const el = document.getElementById('b-log');
-      if (el) {
-        el.innerHTML = b.log.join('<br>');
-        el.scrollTop = el.scrollHeight;
-      }
+    b._logDirty = true;
+    if (_logBatchDepth === 0 && !b.headless && typeof document !== 'undefined') {
+      flushCombatLogDOM(b);
     }
   }
 
@@ -3129,6 +3149,10 @@
 
   function clearAllJuiceVfx() {
     resetCombatTrauma();
+    if (_logScrollRaf && typeof global.cancelAnimationFrame === 'function') {
+      global.cancelAnimationFrame(_logScrollRaf);
+    }
+    _logScrollRaf = 0;
     _hitStopId += 1;
     _hitStopTimer = null;
     _activeVfxTimers.forEach(tid => clearTimeout(tid));
@@ -3950,6 +3974,16 @@
   }
 
   function useSkill(skillId, targetIdx, b) {
+    _logBatchDepth += 1;
+    try {
+      return _useSkillCore(skillId, targetIdx, b);
+    } finally {
+      _logBatchDepth = Math.max(0, _logBatchDepth - 1);
+      if (_logBatchDepth === 0) flushCombatLogDOM(b || activeBattle);
+    }
+  }
+
+  function _useSkillCore(skillId, targetIdx, b) {
     b = b || activeBattle;
     if (!b || b.over) return { ok: false, reason: 'over' };
     const p = b.player;
@@ -4578,7 +4612,8 @@
       if (sk.triggerAinoSpear && b.stageCfg.ainoSupport) {
         b.ainoResonance += 2;
       }
-      while (b.stageCfg.ainoSupport && b.ainoResonance >= 2) {
+      let ainoGuard = 0;
+      while (b.stageCfg.ainoSupport && b.ainoResonance >= 2 && ainoGuard++ < 12) {
         const bossTarget = getPrimaryAliveEnemy(b);
         b.ainoResonance -= 2;
         if (bossTarget) {
@@ -4706,6 +4741,16 @@
   }
 
   function endTurn(b) {
+    _logBatchDepth += 1;
+    try {
+      return _endTurnCore(b);
+    } finally {
+      _logBatchDepth = Math.max(0, _logBatchDepth - 1);
+      if (_logBatchDepth === 0) flushCombatLogDOM(b || activeBattle);
+    }
+  }
+
+  function _endTurnCore(b) {
     b = b || activeBattle;
     if (!b || b.over) return false;
     armedSkillId = null;
@@ -5602,7 +5647,11 @@
     root.classList.toggle('palace-timestop', !!document.getElementById('cb-palace-modal'));
     const backdropEl = document.getElementById('cb-backdrop');
     if (backdropEl) {
-      backdropEl.style.backgroundImage = `url('${resolveBattleBgUrl(b.stageCfg)}')`;
+      const nextBgUrl = `url('${resolveBattleBgUrl(b.stageCfg)}')`;
+      if (backdropEl.dataset.bgUrl !== nextBgUrl) {
+        backdropEl.dataset.bgUrl = nextBgUrl;
+        backdropEl.style.backgroundImage = nextBgUrl;
+      }
     }
 
     document.getElementById('cb-wave').textContent = `WAVE ${b.waveIdx + 1}/${b.totalWaves}`;
@@ -5790,6 +5839,19 @@
     const isMultiEnemy = b.enemies.length > 1;
     const eZone = document.getElementById('cb-enemy-zone');
     eZone.classList.toggle('multi-enemies', isMultiEnemy);
+
+    // 复用既有敌方像素精灵 DOM（避免每次施法重建 <canvas> 与重申 2D 上下文）
+    const preservedEnemyActors = new Map();
+    if (pxApi) {
+      eZone.querySelectorAll('.cb-px-actor[data-actor-key]').forEach(el => {
+        const aKey = el.getAttribute('data-actor-key');
+        const spId = el.getAttribute('data-sprite-id');
+        if (aKey && spId) {
+          preservedEnemyActors.set(`${aKey}:${spId}`, el);
+        }
+      });
+    }
+
     eZone.innerHTML = b.enemies.map((e, idx) => {
       const intent = e.intent || { stance: 'STAGGERED', moveName: '已倒下', dmg: 0 };
       const sm = STANCE_META[intent.stance] || STANCE_META.HEAVY_WINDUP;
@@ -5838,9 +5900,11 @@
       const mpLabel = isMultiEnemy ? 'MP' : '敌方魔力';
 
       const eSpriteId = pxApi ? pxApi.resolveEnemySpriteId(e) : null;
+      const eActorKey = `enemy:${idx}`;
+      const canReusePx = !!(pxApi && eSpriteId && preservedEnemyActors.has(`${eActorKey}:${eSpriteId}`));
       const eStageHtml = pxApi
-        ? `<div class="cb-e-avatar has-px-actor">${pxApi.renderActorMarkup(eSpriteId, {
-            actorKey: `enemy:${idx}`,
+        ? `<div class="cb-e-avatar has-px-actor" data-px-slot="${eActorKey}:${eSpriteId}">${canReusePx ? '' : pxApi.renderActorMarkup(eSpriteId, {
+            actorKey: eActorKey,
             label: e.name,
             dead: e.hp <= 0,
             fallbackHtml: eVisual.html,
@@ -5903,6 +5967,20 @@
       `;
     }).join('');
 
+    if (pxApi && preservedEnemyActors.size > 0) {
+      b.enemies.forEach((e, idx) => {
+        const eSpriteId = pxApi.resolveEnemySpriteId(e);
+        const slotKey = `enemy:${idx}:${eSpriteId}`;
+        const reused = preservedEnemyActors.get(slotKey);
+        if (!reused) return;
+        const slotEl = eZone.querySelector(`.cb-e-avatar[data-px-slot="${slotKey}"]`);
+        if (slotEl) {
+          reused.classList.toggle('is-dead', e.hp <= 0);
+          slotEl.appendChild(reused);
+        }
+      });
+    }
+
     updateOvercastPreviewUI(b, hoveredSkillId);
 
     eZone.querySelectorAll('.ib-info-btn').forEach(btn => {
@@ -5940,15 +6018,15 @@
     });
 
     const logEl = document.getElementById('b-log');
-    logEl.innerHTML = b.log.join('<br>');
-    logEl.scrollTop = logEl.scrollHeight;
+    if (logEl && !logEl.innerHTML && b.log.length) b._logDirty = true;
+    flushCombatLogDOM(b);
 
     const actGrid = document.getElementById('b-actions');
     actGrid.classList.toggle('cards-compact', p.skills.length > 6);
     actGrid.classList.toggle('cols-5', p.skills.length >= 9);
     const targetStance = primary && primary.intent ? primary.intent.stance : '';
     const targetMoveKey = primary && primary.intent ? primary.intent.moveKey : '';
-    actGrid.innerHTML = p.skills.map((skId, slotIdx) => {
+    const nextActHtml = p.skills.map((skId, slotIdx) => {
       const sk = TACTICAL_SKILLS[skId];
       if (!sk) return '';
       const pm = PATH_META[sk.path] || PATH_META.HAND;
@@ -6009,32 +6087,35 @@
         </button>
       `;
     }).join('');
-
-    actGrid.querySelectorAll('.cb-skill-card').forEach(btn => {
-      const sid = btn.getAttribute('data-sk');
-      btn.onmouseenter = () => {
-        hoveredSkillId = sid;
-        if (!btn.disabled) playCardHoverSfx();
-        updateOvercastPreviewUI(b, sid);
-      };
-      btn.onfocus = () => { hoveredSkillId = sid; updateOvercastPreviewUI(b, sid); };
-      btn.onmouseleave = () => { hoveredSkillId = armedSkillId; updateOvercastPreviewUI(b, armedSkillId); };
-      btn.onblur = () => { hoveredSkillId = armedSkillId; updateOvercastPreviewUI(b, armedSkillId); };
-      btn.onclick = () => {
-        if (btn.disabled) return;
-        if (isCoarseTouchDevice() && armedSkillId !== sid) {
-          armedSkillId = sid;
+    if (actGrid._lastHtml !== nextActHtml) {
+      actGrid._lastHtml = nextActHtml;
+      actGrid.innerHTML = nextActHtml;
+      actGrid.querySelectorAll('.cb-skill-card').forEach(btn => {
+        const sid = btn.getAttribute('data-sk');
+        btn.onmouseenter = () => {
           hoveredSkillId = sid;
-          actGrid.querySelectorAll('.cb-skill-card.is-armed').forEach(el => el.classList.remove('is-armed'));
-          btn.classList.add('is-armed');
-          safeSfx('card_hover');
+          if (!btn.disabled) playCardHoverSfx();
           updateOvercastPreviewUI(b, sid);
-          return;
-        }
-        armedSkillId = null;
-        useSkill(sid);
-      };
-    });
+        };
+        btn.onfocus = () => { hoveredSkillId = sid; updateOvercastPreviewUI(b, sid); };
+        btn.onmouseleave = () => { hoveredSkillId = armedSkillId; updateOvercastPreviewUI(b, armedSkillId); };
+        btn.onblur = () => { hoveredSkillId = armedSkillId; updateOvercastPreviewUI(b, armedSkillId); };
+        btn.onclick = () => {
+          if (btn.disabled) return;
+          if (isCoarseTouchDevice() && armedSkillId !== sid) {
+            armedSkillId = sid;
+            hoveredSkillId = sid;
+            actGrid.querySelectorAll('.cb-skill-card.is-armed').forEach(el => el.classList.remove('is-armed'));
+            btn.classList.add('is-armed');
+            safeSfx('card_hover');
+            updateOvercastPreviewUI(b, sid);
+            return;
+          }
+          armedSkillId = null;
+          useSkill(sid);
+        };
+      });
+    }
 
     if (pxApi) {
       pxApi.syncStage(b);
@@ -6438,6 +6519,7 @@
       bs.classList.add('hidden');
       bs.classList.remove('palace-timestop', 'wand-refract', 'hit-shake', 'heavy-shake');
     }
+    if (document.body) document.body.classList.remove('cb-battle-active');
     const ds = document.getElementById('duel-screen');
     if (ds) ds.classList.add('hidden');
 
@@ -6647,6 +6729,7 @@
         if (slot) slot.innerHTML = '';
         bs.classList.remove('hidden');
       }
+      if (document.body) document.body.classList.add('cb-battle-active');
       renderCombatUI();
     }
     return b;
@@ -6713,6 +6796,7 @@
     if (typeof global.bgmPlayType === 'function') global.bgmPlayType('battle', { force: true });
     const bs = ensureBattleDOM();
     if (bs) bs.classList.remove('hidden');
+    if (typeof document !== 'undefined' && document.body) document.body.classList.add('cb-battle-active');
     renderCombatUI();
     return b;
   }

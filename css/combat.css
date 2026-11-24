@@ -101,13 +101,10 @@
 }
 
 @keyframes cbUnitRecoil {
-  0% { transform: translateX(0); filter: brightness(1); }
-  22% {
-    transform: translateX(10px) scale(0.985);
-    filter: brightness(1.32) drop-shadow(0 8px 16px rgba(18, 24, 34, 0.3));
-  }
-  60% { transform: translateX(-4px); filter: brightness(1.06); }
-  100% { transform: translateX(0); filter: brightness(1); }
+  0% { transform: translateX(0); }
+  22% { transform: translateX(10px) scale(0.985); }
+  60% { transform: translateX(-4px); }
+  100% { transform: translateX(0); }
 }
 
 @keyframes cbFloatPop {
@@ -141,10 +138,10 @@
 }
 
 @keyframes cbHitStop {
-  0% { transform: scale(1.008) translate(-3px, 1px); filter: brightness(1.08) contrast(1.06); }
-  38% { transform: scale(0.996) translate(3px, -1px); filter: brightness(1.04); }
-  72% { transform: scale(1.003) translate(-2px, 0); filter: brightness(1.01); }
-  100% { transform: scale(1) translate(0, 0); filter: none; }
+  0% { transform: scale(1.008) translate(-3px, 1px); }
+  38% { transform: scale(0.996) translate(3px, -1px); }
+  72% { transform: scale(1.003) translate(-2px, 0); }
+  100% { transform: scale(1) translate(0, 0); }
 }
 
 @keyframes cbHeavyWarnPulse {
@@ -1137,6 +1134,25 @@
   animation: cbHeavyShake 0.46s cubic-bezier(.36, .07, .19, .97);
 }
 
+/* 战斗全屏覆盖期间彻底挂起被遮挡的标题页/故事页 60fps CSS 动画与合成层，防止后台 Commit 卡顿主线程 */
+body.cb-battle-active #title-screen,
+body.cb-battle-active #title-screen *,
+body.cb-battle-active #game-screen,
+body.cb-battle-active #game-screen *,
+body.cb-battle-active #bg,
+body.cb-battle-active #bg-veil,
+body.cb-battle-active #fx {
+  animation-play-state: paused !important;
+}
+
+body.cb-battle-active #title-screen,
+body.cb-battle-active #game-screen,
+body.cb-battle-active #bg,
+body.cb-battle-active #bg-veil,
+body.cb-battle-active #fx {
+  display: none !important;
+}
+
 .cb-backdrop {
   position: absolute;
   inset: 0;
@@ -1144,7 +1160,6 @@
   background-color: #E8EEF7;
   background-size: cover;
   background-position: center;
-  filter: brightness(0.92) saturate(1.04);
   transform: scale(1.03);
   transition: filter 0.38s ease, background-image 0.3s ease;
 }
@@ -1231,9 +1246,7 @@
   gap: 8px 16px;
   padding: 7px 16px;
   border-radius: 2px;
-  background: rgba(250, 251, 253, 0.93);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(250, 251, 253, 0.96);
   border: none;
   border-top: 1px solid rgba(28, 76, 184, 0.24);
   border-bottom: 1px solid var(--cb-hairline-strong);
@@ -1757,9 +1770,7 @@
   z-index: 5;
   padding: 10px 14px;
   border-radius: 3px;
-  background: rgba(250, 251, 253, 0.93);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(250, 251, 253, 0.96);
   border: 1px solid var(--cb-hairline);
   border-top: 2px solid var(--cb-sapphire);
   box-shadow: 0 8px 22px rgba(18, 24, 34, 0.08);
@@ -2107,9 +2118,7 @@
   z-index: 12;
   padding: 6px 10px;
   border-radius: 3px;
-  background: rgba(250, 251, 253, 0.94);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(250, 251, 253, 0.96);
   border: 1px solid var(--cb-hairline);
   border-top: 2px solid var(--cb-sapphire);
   box-shadow: 0 5px 16px rgba(18, 24, 34, 0.08);
@@ -2422,9 +2431,7 @@
   flex-direction: column;
   padding: 8px 11px;
   border-radius: 3px;
-  background: rgba(250, 251, 253, 0.94);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(250, 251, 253, 0.96);
   border: 1px solid var(--cb-hairline);
   border-top: 2px solid rgba(27, 35, 51, 0.24);
   box-shadow: 0 6px 18px rgba(18, 24, 34, 0.08);
@@ -2692,9 +2699,8 @@
   margin: 0;
   padding: 6px 14px;
   border-radius: 2px;
-  background: rgba(250, 251, 253, 0.93);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(250, 251, 253, 0.96);
+  contain: layout style;
   border: none;
   border-top: 1px solid var(--cb-hairline);
   border-bottom: 1px solid var(--cb-hairline);
@@ -2781,9 +2787,8 @@
   align-items: stretch;
   padding: 10px 12px;
   border-radius: 3px;
-  background: rgba(250, 251, 253, 0.95);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(250, 251, 253, 0.97);
+  contain: layout style;
   border: 1px solid var(--cb-hairline);
   border-top: 1.5px solid var(--cb-sapphire);
   box-shadow: 0 -6px 24px rgba(18, 24, 34, 0.08);
@@ -6134,6 +6139,7 @@
 
 #battle-screen {
   --px-scale: 2.35;
+  contain: layout style;
 }
 
 #battle-screen .cb-pixel-vfx-canvas {
@@ -6144,6 +6150,7 @@
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   pointer-events: none;
+  contain: strict;
   z-index: 8;
 }
 
@@ -6259,6 +6266,7 @@
   max-width: none;
   max-height: none;
   background: none;
+  filter: none;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
   image-rendering: pixelated;
@@ -6308,23 +6316,27 @@
 }
 
 #battle-screen .cb-px-ghost.tone-ice {
-  filter: brightness(1.38) sepia(0.35) hue-rotate(165deg) saturate(2.4);
+  filter: brightness(1.32);
+  opacity: 0.48;
 }
 
 #battle-screen .cb-px-ghost.tone-wind {
-  filter: brightness(1.32) sepia(0.32) hue-rotate(122deg) saturate(2.1);
+  filter: brightness(1.26);
+  opacity: 0.45;
 }
 
 #battle-screen .cb-px-ghost.tone-fire {
-  filter: brightness(1.32) sepia(0.45) hue-rotate(-14deg) saturate(2.5);
+  filter: brightness(1.24);
+  opacity: 0.48;
 }
 
 #battle-screen .cb-px-ghost.tone-claw {
-  filter: brightness(1.24) sepia(0.38) hue-rotate(-24deg) saturate(2.2);
+  filter: brightness(1.18);
+  opacity: 0.44;
 }
 
 #battle-screen .cb-arena-field.cb-hitstop-75 .cb-px-sheet {
-  filter: drop-shadow(0 6px 8px rgba(13, 31, 68, 0.28)) contrast(1.08) brightness(1.05);
+  filter: contrast(1.08) brightness(1.05);
 }
 
 /* 多怪同屏整数 1× 缩放（4 狼列队 / 3 魔兽零裁切、零拉伸、像素锐利） */
@@ -6337,36 +6349,36 @@
   max-height: 160px;
 }
 
-/* 1280×720 桌面紧凑视口：整数 1× 清晰像素精灵，全 15 角色零裁切零重叠 */
+/* 1280×720 桌面紧凑视口：保持 1.55× 清晰像素精灵比例（避免从 2.35× 骤降至 1× 导致罗文等角色显得过小） */
 @media (max-width: 1360px), (max-height: 760px) {
   #battle-screen {
-    --px-scale: 1;
+    --px-scale: 1.55;
   }
 
   #battle-screen .cb-standee-wrap.has-px-actor {
-    min-height: 132px;
-    max-height: 176px;
+    min-height: 158px;
+    max-height: 220px;
   }
 
   #battle-screen .cb-p-portrait.has-px-actor {
-    max-height: 168px;
+    max-height: 212px;
   }
 
   #battle-screen .cb-e-stage.has-px-actor {
-    min-height: 132px;
+    min-height: 164px;
   }
 
   #battle-screen .cb-e-avatar.has-px-actor {
-    max-height: 168px;
+    max-height: 224px;
   }
 
   #battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor {
-    --px-scale: 1;
-    min-height: 124px;
+    --px-scale: 1.05;
+    min-height: 128px;
   }
 
   #battle-screen .cb-enemy-zone.multi-enemies .cb-e-avatar.has-px-actor {
-    max-height: 148px;
+    max-height: 154px;
   }
 }
 

@@ -5629,7 +5629,7 @@ $('btn-title').onclick=()=>{
       if(typeof window.RaisingHub.closeEndingScreen === 'function') window.RaisingHub.closeEndingScreen();
     } catch(e){}
   }
-  document.body.classList.remove('ai-drawer-open', 'roam');
+  document.body.classList.remove('ai-drawer-open', 'roam', 'cb-battle-active');
   show('pick-screen',0); show('game-screen',0); show('battle-screen',0); show('arena-overlay',0); show('panel',0); show('map-overlay',0); show('stats-overlay',0); show('sys-popup',0);
   if($('backlog-overlay')) show('backlog-overlay',0);
   show('title-screen',1);
@@ -6067,6 +6067,13 @@ function startTitleSnowLoop(){
       ctx.clearRect(0, 0, cw, ch);
       _snowRaf = 0;
       lastTs = 0;
+      return;
+    }
+    const bsEl = $('battle-screen');
+    const aoEl = $('arena-overlay');
+    if((bsEl && !bsEl.classList.contains('hidden')) || (aoEl && !aoEl.classList.contains('hidden'))){
+      lastTs = 0;
+      _snowRaf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame(step) : 0;
       return;
     }
     const dt = lastTs ? Math.min(3, Math.max(0.25, (ts - lastTs) / 16.667)) : 1;

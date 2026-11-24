@@ -88,7 +88,8 @@
     auditionTrackKey: null,
     auditionTrackTitle: '',
     lastSfxPingAt: 0,
-    focusedMenuId: null
+    focusedMenuId: null,
+    fusion: null
   };
 
   var hasDom = function () { return typeof window !== 'undefined' && typeof document !== 'undefined' && !!document.documentElement; };
@@ -127,7 +128,7 @@
       }
     } catch (e) {}
     if (!hasDom()) return false;
-    var checkIds = ['letter-demo', 'codex', 'help-screen', 'arena-overlay', 'vn-chapters-modal', 'vn-saveload-modal', 'vn-prefs-modal', 'card', 'sys-popup'];
+    var checkIds = ['battle-screen', 'letter-demo', 'codex', 'help-screen', 'arena-overlay', 'vn-chapters-modal', 'vn-saveload-modal', 'vn-prefs-modal', 'card', 'sys-popup'];
     for (var i = 0; i < checkIds.length; i++) {
       var el = document.getElementById(checkIds[i]);
       if (el && !el.classList.contains('hidden') && (!el.style || el.style.display !== 'none')) return true;
@@ -331,6 +332,11 @@
         st.dustRaf = 0;
         st.dustLastTs = 0;
         if (canvas && ctx && !isAmbientFxAllowed()) drawDustFrame(canvas, ctx, 0);
+        return;
+      }
+      if (isAnyModalBlocking()) {
+        st.dustLastTs = 0;
+        st.dustRaf = requestAnimationFrame(step);
         return;
       }
       var dt = st.dustLastTs ? clamp((ts - st.dustLastTs) / 16.667, 0.25, 2.6) : 1;
@@ -691,6 +697,1719 @@
   }
 
   /* =========================================================================
+     2b. 方案 B 非欧星轨天球仪 × 方案 C 缩放高维折叠圣晶 融合渲染引擎
+         三层精准景深叠合：
+         [1] Back Canvas2D  : 光学焦散丝带 + 体积光晕 + 4 组天球星环后半段 + 后景分形碎晶
+         [2] Center WebGL   : 透明画布缩放版「高维折叠圣晶」GLSL SDF 光线步进核心（带自动 2D 降级）
+         [3] Front Canvas2D : 4 组天球星环前半段（环绕晶核前方）+ 前景碎晶 + 四芒星闪 + 引力星尘 + 点击冲击波
+     ========================================================================= */
+
+  function createFusionCrystalEngine(stageEl) {
+    if (!hasDom() || isJsdom() || !stageEl) return null;
+
+    var wrap = stageEl.querySelector('.v3-fusion-stage');
+    if (wrap && st.fusion && st.fusion.wrap === wrap) return st.fusion;
+
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.className = 'v3-fusion-stage';
+      wrap.setAttribute('aria-hidden', 'true');
+      wrap.innerHTML =
+        '<canvas class="v3-fusion-2d v3-fusion-back" aria-hidden="true"></canvas>' +
+        '<canvas class="v3-fusion-gl" aria-hidden="true"></canvas>' +
+        '<canvas class="v3-fusion-2d v3-fusion-front" aria-hidden="true"></canvas>' +
+        '<button type="button" class="v3-fusion-hit" tabindex="-1" aria-label="交互星轨高维圣晶"></button>';
+      stageEl.appendChild(wrap);
+    }
+    stageEl.classList.add('has-fusion');
+
+    var backCanvas = wrap.querySelector('.v3-fusion-back');
+    var glCanvas = wrap.querySelector('.v3-fusion-gl');
+    var frontCanvas = wrap.querySelector('.v3-fusion-front');
+    var hitBtn = wrap.querySelector('.v3-fusion-hit');
+
+    var backCtx = null;
+    var frontCtx = null;
+    try {
+      backCtx = backCanvas.getContext('2d', { alpha: true });
+      frontCtx = frontCanvas.getContext('2d', { alpha: true });
+    } catch (e) {}
+    if (!backCtx || !frontCtx) {
+      stageEl.classList.remove('has-fusion');
+      return null;
+    }
+
+    /* Snow-Porcelain Daylight Palette matching V3 Title Screen & Scheme B */
+    var PAL = {
+      goldMain: [198, 158, 86],
+      goldBright: [242, 212, 148],
+      goldSoft: [212, 178, 114],
+      goldShadow: [134, 96, 40],
+      sapphireDeep: [14, 52, 148],
+      sapphireMid: [34, 98, 224],
+      sapphireBright: [82, 168, 252],
+      iceBright: [152, 220, 255],
+      iceWhite: [255, 255, 255],
+      violetAccent: [112, 122, 232],
+      causticA: [54, 142, 240],
+      causticB: [204, 164, 94],
+      rayColor: [96, 172, 250],
+      gridLine: [26, 48, 96],
+      glintCore: [255, 255, 255],
+      dustPrimary: [46, 114, 224],
+      dustGold: [198, 156, 84]
+    };
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function smoothstep(t) { return t * t * (3 - 2 * t); }
+    function rgba(rgb, a) {
+      return 'rgba(' + (rgb[0] | 0) + ',' + (rgb[1] | 0) + ',' + (rgb[2] | 0) + ',' + clamp(a, 0, 1).toFixed(4) + ')';
+    }
+
+    function rotX(v, a) {
+      var c = Math.cos(a), s = Math.sin(a);
+      return [v[0], v[1] * c - v[2] * s, v[1] * s + v[2] * c];
+    }
+    function rotY(v, a) {
+      var c = Math.cos(a), s = Math.sin(a);
+      return [v[0] * c + v[2] * s, v[1], -v[0] * s + v[2] * c];
+    }
+    function rotZ(v, a) {
+      var c = Math.cos(a), s = Math.sin(a);
+      return [v[0] * c - v[1] * s, v[0] * s + v[1] * c, v[2]];
+    }
+    function rotEuler(v, rx, ry, rz) {
+      return rotZ(rotY(rotX(v, rx), ry), rz);
+    }
+    function normalize(v) {
+      var l = Math.hypot(v[0], v[1], v[2]) || 1;
+      return [v[0] / l, v[1] / l, v[2] / l];
+    }
+    function cross(a, b) {
+      return [
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0]
+      ];
+    }
+    function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+    function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+
+    /* 4 Counter-Rotating Non-Euclidean 3D Armillary Rings (Scheme B) */
+    var ARMILLARY_RINGS = [
+      {
+        radius: 1.04, expandMult: 1.14, bandHalf: 0.036,
+        tiltX: 1.16, tiltY: 0.34, tiltZ: 0.22,
+        spinSpeed: 0.16, precessAmp: 0.14, precessFreq: 0.32,
+        style: 'gold_ecliptic', ticks: 72, majorEvery: 6, nodes: 6, comets: 2
+      },
+      {
+        radius: 0.87, expandMult: 1.17, bandHalf: 0.028,
+        tiltX: -0.96, tiltY: 0.78, tiltZ: -0.45,
+        spinSpeed: -0.27, precessAmp: 0.22, precessFreq: 0.48,
+        style: 'sapphire_arcane', ticks: 48, majorEvery: 4, nodes: 8, comets: 2
+      },
+      {
+        radius: 0.71, expandMult: 1.22, bandHalf: 0.022,
+        tiltX: 0.58, tiltY: -1.12, tiltZ: 0.68,
+        spinSpeed: 0.41, precessAmp: 0.34, precessFreq: 0.71,
+        style: 'hyper_echo', ticks: 36, majorEvery: 3, nodes: 4, comets: 1
+      },
+      {
+        radius: 0.54, expandMult: 1.28, bandHalf: 0.015,
+        tiltX: 1.34, tiltY: -0.26, tiltZ: -0.52,
+        spinSpeed: -0.62, precessAmp: 0.19, precessFreq: 0.94,
+        style: 'platinum_inner', ticks: 24, majorEvery: 3, nodes: 6, comets: 1
+      }
+    ];
+
+    function buildBipyramidMesh(rx, ry, rz, sides) {
+      var verts = [[0, -ry, 0], [0, ry, 0]];
+      for (var i = 0; i < sides; i++) {
+        var a = (i / sides) * Math.PI * 2;
+        verts.push([Math.cos(a) * rx, 0, Math.sin(a) * rz]);
+      }
+      var faces = [];
+      for (var j = 0; j < sides; j++) {
+        var curr = 2 + j;
+        var next = 2 + ((j + 1) % sides);
+        faces.push([0, next, curr]);
+        faces.push([1, curr, next]);
+      }
+      return { verts: verts, faces: faces };
+    }
+
+    function buildDiamondCrystal(radius, topH, botH, crownRatio) {
+      var sides = 6;
+      var verts = [[0, -topH, 0], [0, botH, 0]];
+      var upperR = radius * 0.78;
+      var upperY = -topH * crownRatio;
+      var lowerY = botH * 0.16;
+      var i;
+      for (i = 0; i < sides; i++) {
+        var a1 = (i / sides) * Math.PI * 2;
+        verts.push([Math.cos(a1) * upperR, upperY, Math.sin(a1) * upperR]);
+      }
+      for (i = 0; i < sides; i++) {
+        var a2 = ((i + 0.5) / sides) * Math.PI * 2;
+        verts.push([Math.cos(a2) * radius, lowerY, Math.sin(a2) * radius]);
+      }
+      var faces = [];
+      for (i = 0; i < sides; i++) {
+        var u0 = 2 + i;
+        var u1 = 2 + ((i + 1) % sides);
+        var l0 = 8 + i;
+        var lPrev = 8 + ((i + sides - 1) % sides);
+        faces.push([0, u1, u0]);
+        faces.push([u0, u1, l0]);
+        faces.push([u0, l0, lPrev]);
+        faces.push([1, lPrev, l0]);
+      }
+      return { verts: verts, faces: faces };
+    }
+
+    var SHARD_MESH = buildBipyramidMesh(0.032, 0.088, 0.028, 4);
+    var FALLBACK_OUTER_MESH = buildDiamondCrystal(0.245, 0.365, 0.395, 0.34);
+    var FALLBACK_INNER_MESH = buildBipyramidMesh(0.135, 0.21, 0.135, 4);
+
+    /* 18 Levitating 3D Micro-Crystal Shards (Mandala <-> Shattered Lissajous) */
+    var SHARDS = [];
+    for (var si = 0; si < 18; si++) {
+      var tier = Math.floor(si / 6);
+      var idx = si % 6;
+      var baseAngle = (idx / 6) * Math.PI * 2 + (tier === 1 ? Math.PI / 6 : 0) - Math.PI / 2;
+      SHARDS.push({
+        id: si,
+        tier: tier,
+        idx: idx,
+        baseAngle: baseAngle,
+        mandalaR: tier === 0 ? 0.445 : (tier === 1 ? 0.59 : 0.745),
+        mandalaZ: tier === 0 ? 0.05 : (tier === 1 ? -0.05 : 0.03),
+        scale: tier === 0 ? 1.12 : (tier === 1 ? 0.90 : 0.76),
+        lissA: 1 + (si % 3),
+        lissB: 2 + ((si + 1) % 3),
+        lissC: 1 + ((si + 2) % 2),
+        phaseX: (si / 18) * Math.PI * 2 + tier * 0.7,
+        phaseY: (si / 18) * Math.PI * 4 + 1.1,
+        phaseZ: (si / 18) * Math.PI * 3 + 0.4,
+        ampX: 0.62 + (si % 5) * 0.115,
+        ampY: 0.56 + ((si + 2) % 4) * 0.12,
+        ampZ: 0.46 + ((si + 1) % 3) * 0.15,
+        speed: 0.36 + (si % 6) * 0.075,
+        spinX: (si % 2 === 0 ? 1 : -1) * (0.7 + (si % 4) * 0.32),
+        spinY: (si % 3 === 0 ? -1 : 1) * (0.9 + (si % 5) * 0.28),
+        goldTint: tier === 1 ? 0.55 : (si % 3 === 0 ? 0.35 : 0.08)
+      });
+    }
+
+    var TRAIL_PARTICLES = [];
+    var SHOCKWAVES = [];
+    var LIGHT_KEY = normalize([-0.55, -0.68, 0.48]);
+    var LIGHT_RIM = normalize([0.72, 0.42, -0.55]);
+
+    /* =====================================================================
+       Transparent WebGL GLSL Core: Scheme C 「高维折叠圣晶」 (KIFS SDF)
+       alpha: true, premultipliedAlpha: false -> zero black box compositing
+       ===================================================================== */
+    var VERT_SRC =
+      'attribute vec2 aPos;\n' +
+      'void main() {\n' +
+      '  gl_Position = vec4(aPos, 0.0, 1.0);\n' +
+      '}\n';
+
+    var FRAG_SRC = [
+      '#ifdef GL_FRAGMENT_PRECISION_HIGH',
+      'precision highp float;',
+      '#else',
+      'precision mediump float;',
+      '#endif',
+      'uniform vec2 uRes;',
+      'uniform float uTime;',
+      'uniform vec2 uOrbit;',
+      'uniform float uPulseAge;',
+      'uniform float uPulseAmp;',
+      'uniform float uShatter;',
+      'uniform float uHover;',
+      'const float PI = 3.14159265359;',
+      'mat2 rot2(float a) {',
+      '  float c = cos(a), s = sin(a);',
+      '  return mat2(c, -s, s, c);',
+      '}',
+      'float smin(float a, float b, float k) {',
+      '  float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);',
+      '  return mix(b, a, h) - k * h * (1.0 - h);',
+      '}',
+      'float smax(float a, float b, float k) {',
+      '  return -smin(-a, -b, k);',
+      '}',
+      'float sdOctahedron(vec3 p, float s) {',
+      '  p = abs(p);',
+      '  float m = p.x + p.y + p.z - s;',
+      '  vec3 q;',
+      '  if (3.0 * p.x < m) q = p.xyz;',
+      '  else if (3.0 * p.y < m) q = p.yzx;',
+      '  else if (3.0 * p.z < m) q = p.zxy;',
+      '  else return m * 0.57735027;',
+      '  float k = clamp(0.5 * (q.z - q.y + s), 0.0, s);',
+      '  return length(vec3(q.x, q.y - s + k, q.z - k));',
+      '}',
+      'vec3 iridescence(float cosTheta, float shift) {',
+      '  vec3 phase = vec3(0.0, 0.31, 0.64);',
+      '  vec3 col = 0.56 + 0.44 * cos(6.28318 * (cosTheta * 1.48 + shift + phase));',
+      '  return mix(col, vec3(0.45, 0.84, 1.0), 0.28);',
+      '}',
+      'mat2 mSpinY;',
+      'mat2 mTiltXY;',
+      'mat2 mFold1;',
+      'mat2 mFold2;',
+      'float mapCrystal(vec3 p) {',
+      '  vec3 q = p;',
+      '  q.xz *= mSpinY;',
+      '  q.xy *= mTiltXY;',
+      '  vec3 eq = q;',
+      '  eq.y *= 0.72;',
+      '  float outerGem = sdOctahedron(eq, 1.24);',
+      '  if (outerGem > 0.28) return outerGem - 0.09;',
+      '  vec3 k = q;',
+      '  k.y *= 0.76;',
+      '  float scale = 1.0;',
+      '  const vec3 icoN = vec3(0.809017, 0.5, 0.309017);',
+      '  for (int i = 0; i < 4; i++) {',
+      '    k = abs(k);',
+      '    if (k.x < k.y) k.xy = k.yx;',
+      '    if (k.x < k.z) k.xz = k.zx;',
+      '    if (k.y < k.z) k.yz = k.zy;',
+      '    k -= 2.0 * min(0.0, dot(k, icoN)) * icoN;',
+      '    k.xz *= mFold1;',
+      '    k.xy *= mFold2;',
+      '    float s = 1.48;',
+      '    k = k * s - vec3(0.55, 0.39, 0.27) * (s - 1.0);',
+      '    scale *= s;',
+      '  }',
+      '  float kifs = (sdOctahedron(k, 0.94) - 0.04) / scale;',
+      '  float core = smax(kifs, outerGem - 0.09, 0.07);',
+      '  core = smin(core, sdOctahedron(eq, 0.74), 0.11);',
+      '  return core;',
+      '}',
+      'vec4 calcNormalAndRidge(vec3 p, float t) {',
+      '  vec3 n = vec3(0.0);',
+      '  float dSum = 0.0;',
+      '  int z = int(min(t, 0.0));',
+      '  for (int i = 0; i < 4; i++) {',
+      '    int idx = i + z;',
+      '    vec3 e;',
+      '    if (idx == 0) e = vec3( 0.57735, -0.57735, -0.57735);',
+      '    else if (idx == 1) e = vec3(-0.57735, -0.57735,  0.57735);',
+      '    else if (idx == 2) e = vec3(-0.57735,  0.57735, -0.57735);',
+      '    else e = vec3( 0.57735,  0.57735,  0.57735);',
+      '    float d = mapCrystal(p + e * 0.0055);',
+      '    n += e * d;',
+      '    dSum += d;',
+      '  }',
+      '  float ridge = smoothstep(0.15, 0.90, abs(dSum) / 0.011);',
+      '  return vec4(normalize(n), ridge);',
+      '}',
+      'vec3 sampleEnvironment(vec3 dir, float t) {',
+      '  dir = normalize(dir);',
+      '  float y = dir.y;',
+      '  /* Porcelain Cathedral + Imperial Sapphire Aurora HDRI for rich jewel contrast */',
+      '  vec3 sky = mix(vec3(0.05, 0.16, 0.56), vec3(0.80, 0.92, 1.0), smoothstep(-0.50, 0.78, y));',
+      '  float rib = smoothstep(0.52, 0.92, abs(sin(atan(dir.z, dir.x) * 4.0 + y * 2.5 + t * 0.12)));',
+      '  sky = mix(sky, vec3(0.03, 0.12, 0.48), rib * 0.64 * (1.0 - abs(y) * 0.55));',
+      '  float aurWave = sin(dir.x * 4.2 + t * 0.42 + sin(dir.z * 2.8 - t * 0.26));',
+      '  float aurBand = exp(-pow(y + 0.06 - aurWave * 0.14, 2.0) * 14.0);',
+      '  vec3 aurCol = mix(vec3(0.14, 0.72, 1.0), vec3(0.56, 0.32, 1.0), 0.5 + 0.5 * sin(dir.x * 2.8 - t * 0.35));',
+      '  sky += aurCol * aurBand * 0.48;',
+      '  float win1 = smoothstep(0.86, 0.985, dot(dir, normalize(vec3(0.56, 0.68, 0.48))));',
+      '  float win2 = smoothstep(0.84, 0.975, dot(dir, normalize(vec3(-0.74, 0.34, 0.58))));',
+      '  float win3 = smoothstep(0.87, 0.99, dot(dir, normalize(vec3(0.16, -0.78, 0.60))));',
+      '  sky += vec3(1.55, 1.72, 2.05) * win1 * 0.92;',
+      '  sky += vec3(0.28, 0.76, 1.55) * win2 * 0.85;',
+      '  sky += vec3(1.26, 0.98, 0.56) * win3 * 0.84;',
+      '  return sky;',
+      '}',
+      'vec3 traceInfinityInterior(vec3 entryP, vec3 refrR, vec3 refrG, vec3 refrB, float t, float ripple) {',
+      '  vec3 acc = vec3(0.0);',
+      '  float dist = 0.08;',
+      '  float cellScale = 2.05;',
+      '  float stepSize = 0.17;',
+      '  float depthMul = 1.75;',
+      '  float wireSharp = 22.0;',
+      '  float decayK = 1.88;',
+      '  vec3 dispDelta = (refrB - refrR) * 0.72;',
+      '  mat2 mStep = rot2(0.11 + ripple * 0.15);',
+      '  mat2 mRot = rot2(t * 0.28);',
+      '  for (int i = 0; i < 12; i++) {',
+      '    float fi = float(i) / 12.0;',
+      '    vec3 p = entryP + refrG * dist;',
+      '    vec3 q = p * (1.0 + fi * depthMul);',
+      '    q.xz *= mRot;',
+      '    mRot = mRot * mStep;',
+      '    vec3 cell = mod(q * cellScale + 0.5, 1.0) - 0.5;',
+      '    vec3 a = abs(cell);',
+      '    vec3 cellR = mod((q - dispDelta * dist * 1.85) * cellScale + 0.5, 1.0) - 0.5;',
+      '    vec3 cellB = mod((q + dispDelta * dist * 1.85) * cellScale + 0.5, 1.0) - 0.5;',
+      '    float latG = min(length(a.yz), min(length(a.xz), length(a.xy)));',
+      '    float latR = min(length(abs(cellR).yz), min(length(abs(cellR).xz), length(abs(cellR).xy)));',
+      '    float latB = min(length(abs(cellB).yz), min(length(abs(cellB).xz), length(abs(cellB).xy)));',
+      '    vec3 glowWire = vec3(exp(-latR * wireSharp), exp(-latG * wireSharp), exp(-latB * wireSharp));',
+      '    float node = (a.x + a.y + a.z) * 0.57735 - (0.145 + 0.03 * sin(t * 1.8 + fi * 8.0));',
+      '    float glowNode = exp(-max(node, 0.0) * 18.0);',
+      '    float coreStar = exp(-length(p) * 3.0);',
+      '    vec3 depthTint = mix(vec3(0.12, 0.66, 1.0), vec3(0.62, 0.30, 1.0), 0.5 + 0.5 * sin(fi * 5.5 - t * 1.1));',
+      '    vec3 goldFiligree = vec3(1.0, 0.84, 0.46);',
+      '    vec3 sampleCol = depthTint * glowWire * 0.66',
+      '                   + mix(vec3(0.60, 0.90, 1.0), goldFiligree, 0.36) * glowNode * 0.62',
+      '                   + vec3(0.32, 0.82, 1.0) * coreStar * 0.34;',
+      '    acc += sampleCol * exp(-fi * decayK);',
+      '    dist += stepSize;',
+      '  }',
+      '  /* Deep royal sapphire & amethyst internal luminescence for snow-porcelain daylight */',
+      '  return acc * vec3(0.34, 0.68, 1.28) + vec3(0.015, 0.06, 0.24) * length(acc);',
+      '}',
+      'vec3 acesToneMap(vec3 x) {',
+      '  const float a = 2.51;',
+      '  const float b = 0.03;',
+      '  const float c = 2.43;',
+      '  const float d = 0.59;',
+      '  const float e = 0.14;',
+      '  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);',
+      '}',
+      'void main() {',
+      '  vec2 pUv = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;',
+      '  float ripple = uPulseAmp * sin(uPulseAge * 9.5) * exp(-uPulseAge * 1.6);',
+      '  float rippleEnv = uPulseAmp * exp(-uPulseAge * 1.2);',
+      '  mSpinY = rot2(uTime * 0.28);',
+      '  mTiltXY = rot2(sin(uTime * 0.38) * 0.14);',
+      '  mFold1 = rot2(0.42 + 0.18 * sin(uTime * 0.55) + ripple * 0.68 + uShatter * 0.16);',
+      '  mFold2 = rot2(0.28 + 0.14 * cos(uTime * 0.41) - ripple * 0.44 - uShatter * 0.10);',
+      '  float zoom = 1.0 + 0.024 * sin(uTime * 2.2) + uPulseAmp * 0.055 + uHover * 0.035 - uShatter * 0.04;',
+      '  float camDist = 4.72 / zoom;',
+      '  float focalLen = 1.10;',
+      '  vec3 ro = vec3(0.0, 0.0, camDist);',
+      '  vec3 rd = normalize(vec3(pUv, -focalLen));',
+      '  float yaw = uOrbit.x * 0.92;',
+      '  float pitch = clamp(uOrbit.y * 0.86, -0.78, 0.78);',
+      '  ro.yz *= rot2(pitch);',
+      '  rd.yz *= rot2(pitch);',
+      '  ro.xz *= rot2(yaw);',
+      '  rd.xz *= rot2(yaw);',
+      '  float hit = 0.0;',
+      '  vec3 hitPos = vec3(0.0);',
+      '  float haloGlow = 0.0;',
+      '  float minAngle = 10.0;',
+      '  float b = dot(ro, rd);',
+      '  float c = dot(ro, ro) - 2.02 * 2.02;',
+      '  float disc = b * b - c;',
+      '  if (disc > 0.0) {',
+      '    float tStart = max(0.0, -b - sqrt(disc));',
+      '    float tEnd = min(8.2, -b + sqrt(disc));',
+      '    float tMarch = tStart;',
+      '    for (int i = 0; i < 46; i++) {',
+      '      vec3 p = ro + rd * tMarch;',
+      '      float dCrys = mapCrystal(p);',
+      '      haloGlow += 0.0042 / (abs(dCrys) + 0.17);',
+      '      float angD = dCrys / max(tMarch, 0.5);',
+      '      if (angD < minAngle) minAngle = angD;',
+      '      if (dCrys < 0.0024) {',
+      '        hit = 1.0;',
+      '        hitPos = p;',
+      '        break;',
+      '      }',
+      '      tMarch += max(dCrys * 0.90, 0.016);',
+      '      if (tMarch > tEnd) break;',
+      '    }',
+      '  }',
+      '  if (hit > 0.5) {',
+      '    vec4 nr = calcNormalAndRidge(hitPos, uTime);',
+      '    vec3 n = nr.xyz;',
+      '    float ridge = nr.w;',
+      '    vec3 v = -rd;',
+      '    float ndv = clamp(dot(n, v), 0.0, 1.0);',
+      '    float fresnel = 0.08 + 0.92 * pow(1.0 - ndv, 3.0);',
+      '    vec3 irid = iridescence(ndv, uTime * 0.09 + dot(hitPos, vec3(0.24, 0.36, 0.20)) + rippleEnv * 0.38);',
+      '    vec3 reflDir = reflect(rd, n);',
+      '    vec3 reflCol = sampleEnvironment(reflDir, uTime);',
+      '    float dispBoost = 0.058 + 0.072 * rippleEnv + 0.025 * uHover;',
+      '    vec3 refrR = refract(rd, n, 1.0 / (1.38 - dispBoost));',
+      '    vec3 refrG = refract(rd, n, 1.0 / 1.52);',
+      '    vec3 refrB = refract(rd, n, 1.0 / (1.68 + dispBoost));',
+      '    if (length(refrR) < 0.01) refrR = reflDir;',
+      '    if (length(refrG) < 0.01) refrG = reflDir;',
+      '    if (length(refrB) < 0.01) refrB = reflDir;',
+      '    vec3 envRefr;',
+      '    envRefr.r = sampleEnvironment(refrR, uTime).r;',
+      '    envRefr.g = sampleEnvironment(refrG, uTime).g;',
+      '    envRefr.b = sampleEnvironment(refrB, uTime).b;',
+      '    vec3 innerLattice = traceInfinityInterior(hitPos - n * 0.02, refrR, refrG, refrB, uTime, ripple);',
+      '    float thickness = clamp(1.18 - ndv * 0.56 + 0.30 * length(hitPos), 0.26, 1.90);',
+      '    vec3 absorption = exp(-thickness * vec3(2.95, 1.48, 0.22));',
+      '    vec3 transmitted = envRefr * absorption * 0.72 + innerLattice * 0.86;',
+      '    vec3 l1 = normalize(vec3(0.55, 0.75, 0.65));',
+      '    vec3 l2 = normalize(vec3(-0.72, 0.28, 0.52));',
+      '    vec3 l3 = normalize(vec3(0.18, -0.82, 0.48));',
+      '    float spec1 = pow(max(dot(n, normalize(l1 + v)), 0.0), 96.0);',
+      '    float spec2 = pow(max(dot(n, normalize(l2 + v)), 0.0), 48.0);',
+      '    float spec3 = pow(max(dot(n, normalize(l3 + v)), 0.0), 36.0);',
+      '    vec3 specCol = vec3(1.50, 1.72, 2.05) * spec1',
+      '                 + vec3(0.36, 0.88, 1.55) * spec2 * 0.82',
+      '                 + vec3(1.28, 0.98, 0.56) * spec3 * 0.76;',
+      '    vec3 edgeFire = mix(irid, vec3(0.88, 0.97, 1.0), 0.36) * ridge * 0.72;',
+      '    vec3 surface = mix(transmitted, reflCol * vec3(0.62, 0.80, 1.08), fresnel * 0.56);',
+      '    surface += irid * fresnel * (0.58 + uHover * 0.18);',
+      '    surface += specCol;',
+      '    surface += edgeFire;',
+      '    /* Imperial sapphire bevel rim so every folded crown/pavilion facet reads crisply on snow-porcelain */',
+      '    float porcRim = pow(1.0 - ndv, 1.45) * (1.0 - fresnel * 0.50);',
+      '    surface = mix(surface, surface * vec3(0.14, 0.32, 0.92), porcRim * 0.74);',
+      '    float facetPulse = uPulseAmp * exp(-uPulseAge * 2.1) * (0.5 + 0.5 * sin(length(hitPos) * 8.0 - uPulseAge * 14.0));',
+      '    surface += irid * facetPulse * 0.92;',
+      '    vec3 mapped = acesToneMap(surface * 1.02);',
+      '    mapped = pow(clamp(mapped, 0.0, 1.0), vec3(1.08));',
+      '    gl_FragColor = vec4(mapped, 1.0);',
+      '    return;',
+      '  }',
+      '  /* Seamless transparent exterior: delicate inner sapphire-cyan halo fading strictly to 0 before edge */',
+      '  float edgeFade = smoothstep(0.47, 0.27, length(pUv));',
+      '  float pixelRad = 1.20 / max(uRes.y * focalLen, 1.0);',
+      '  float edgeCov = smoothstep(pixelRad * 1.60, 0.0, minAngle) * edgeFade;',
+      '  float auraAlpha = clamp(haloGlow * 0.075, 0.0, 0.26) * edgeFade;',
+      '  vec3 auraCol = mix(vec3(0.18, 0.48, 0.94), vec3(0.62, 0.88, 1.0), clamp(haloGlow * 0.24, 0.0, 1.0));',
+      '  vec3 rimCol = mix(vec3(0.18, 0.48, 0.98), vec3(0.86, 0.95, 1.0), 0.44);',
+      '  vec3 missCol = mix(auraCol, rimCol, edgeCov);',
+      '  float missAlpha = clamp(max(auraAlpha, edgeCov * 0.92), 0.0, 1.0);',
+      '  if (missAlpha < 0.004) {',
+      '    gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);',
+      '  } else {',
+      '    gl_FragColor = vec4(missCol, missAlpha);',
+      '  }',
+      '}'
+    ].join('\n');
+
+    var gl = null;
+    var glProg = null;
+    var glUniforms = null;
+    var useWebGL = false;
+    var isSoftwareGL = false;
+    var shaderError = null;
+    var glBackendLabel = 'canvas2d-fallback';
+
+    function initCoreWebGL() {
+      if (root && root.__titleFusionForceFallback__ === true) return false;
+      var opts = {
+        alpha: true,
+        premultipliedAlpha: false,
+        antialias: false,
+        depth: false,
+        stencil: false,
+        powerPreference: 'high-performance',
+        preserveDrawingBuffer: true
+      };
+      try {
+        gl = glCanvas.getContext('webgl2', opts);
+        if (gl) {
+          glBackendLabel = 'webgl2';
+        } else {
+          gl = glCanvas.getContext('webgl', opts) || glCanvas.getContext('experimental-webgl', opts);
+          if (gl) glBackendLabel = 'webgl1';
+        }
+      } catch (e) {
+        gl = null;
+      }
+      if (!gl) return false;
+
+      try {
+        var dbg = gl.getExtension('WEBGL_debug_renderer_info');
+        if (dbg) {
+          var rend = String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '');
+          if (/swiftshader|llvmpipe|software/i.test(rend)) isSoftwareGL = true;
+        }
+        var vs = gl.createShader(gl.VERTEX_SHADER);
+        gl.shaderSource(vs, VERT_SRC);
+        gl.compileShader(vs);
+        if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
+          throw new Error('VS: ' + gl.getShaderInfoLog(vs));
+        }
+        var fs = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(fs, FRAG_SRC);
+        gl.compileShader(fs);
+        if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
+          throw new Error('FS: ' + gl.getShaderInfoLog(fs));
+        }
+        glProg = gl.createProgram();
+        gl.attachShader(glProg, vs);
+        gl.attachShader(glProg, fs);
+        gl.linkProgram(glProg);
+        if (!gl.getProgramParameter(glProg, gl.LINK_STATUS)) {
+          throw new Error('LINK: ' + gl.getProgramInfoLog(glProg));
+        }
+        gl.deleteShader(vs);
+        gl.deleteShader(fs);
+
+        var buf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+
+        var aPos = gl.getAttribLocation(glProg, 'aPos');
+        gl.useProgram(glProg);
+        gl.enableVertexAttribArray(aPos);
+        gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+        glUniforms = {
+          uRes: gl.getUniformLocation(glProg, 'uRes'),
+          uTime: gl.getUniformLocation(glProg, 'uTime'),
+          uOrbit: gl.getUniformLocation(glProg, 'uOrbit'),
+          uPulseAge: gl.getUniformLocation(glProg, 'uPulseAge'),
+          uPulseAmp: gl.getUniformLocation(glProg, 'uPulseAmp'),
+          uShatter: gl.getUniformLocation(glProg, 'uShatter'),
+          uHover: gl.getUniformLocation(glProg, 'uHover')
+        };
+        gl.clearColor(0.0, 0.0, 0.0, 0.0);
+        return true;
+      } catch (err) {
+        shaderError = String(err && err.message ? err.message : err);
+        gl = null;
+        glProg = null;
+        glBackendLabel = 'canvas2d-fallback';
+        return false;
+      }
+    }
+
+    useWebGL = initCoreWebGL();
+    if (!useWebGL) {
+      glCanvas.style.display = 'none';
+    }
+
+    /* Simulation & Sizing State */
+    var fState = {
+      rafId: 0,
+      running: false,
+      lastTs: 0,
+      time: 1.4,
+      stagePx: 520,
+      canvasCss: 812,
+      glCss: 250,
+      dpr: Math.min(window.devicePixelRatio || 1, 2),
+      shatterTarget: 0,
+      shatterBlend: 0,
+      shatterVel: 0,
+      burstPulse: 0,
+      pulseAt: -10,
+      pulseStrength: 0,
+      normX: 0,
+      normY: 0,
+      tiltX: 0,
+      tiltY: 0,
+      hoverCore: 0,
+      mouseActive: false,
+      localMx: 0,
+      localMy: 0,
+      dragging: false,
+      dragStartX: 0,
+      dragStartY: 0,
+      dragMoved: 0,
+      dragRotX: 0,
+      dragRotY: 0,
+      dragTargetX: 0,
+      dragTargetY: 0,
+      frameCount: 0
+    };
+
+    function syncSizes() {
+      var rect = stageEl.getBoundingClientRect();
+      var sPx = Math.max(120, Math.round(Math.min(rect.width || stageEl.clientWidth || 520, rect.height || stageEl.clientHeight || 520)));
+      var cCss = Math.round(sPx * 1.56);
+      var gCss = Math.round(sPx * 0.56);
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      fState.stagePx = sPx;
+      fState.canvasCss = cCss;
+      fState.glCss = gCss;
+      fState.dpr = dpr;
+
+      var pw = Math.max(1, Math.round(cCss * dpr));
+      if (backCanvas.width !== pw || backCanvas.height !== pw) {
+        backCanvas.width = pw;
+        backCanvas.height = pw;
+      }
+      if (frontCanvas.width !== pw || frontCanvas.height !== pw) {
+        frontCanvas.width = pw;
+        frontCanvas.height = pw;
+      }
+      if (useWebGL && gl) {
+        var glScale = isSoftwareGL ? 0.92 : Math.min(Math.max(dpr, 1.5), 2.0);
+        var gpw = Math.max(64, Math.round(gCss * glScale));
+        if (glCanvas.width !== gpw || glCanvas.height !== gpw) {
+          glCanvas.width = gpw;
+          glCanvas.height = gpw;
+          gl.viewport(0, 0, gpw, gpw);
+        }
+      }
+    }
+
+    function applyGlobalTilt(v) {
+      var p = rotX(v, fState.tiltY + fState.dragRotY);
+      return rotY(p, fState.tiltX + fState.dragRotX);
+    }
+
+    function project(v, cx, cy, unit) {
+      var fov = 4.6;
+      var persp = fov / (fov - v[2]);
+      return { x: cx + v[0] * unit * persp, y: cy + v[1] * unit * persp, z: v[2], persp: persp };
+    }
+
+    function drawStarGlint(ctx, x, y, radius, alpha, colorRgb, rot) {
+      if (alpha <= 0.01 || radius <= 0.5) return;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rot || 0);
+      var halo = ctx.createRadialGradient(0, 0, 0, 0, 0, radius * 1.45);
+      halo.addColorStop(0, rgba(PAL.glintCore, alpha * 0.9));
+      halo.addColorStop(0.28, rgba(colorRgb, alpha * 0.45));
+      halo.addColorStop(1, rgba(colorRgb, 0));
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius * 1.45, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = rgba(PAL.glintCore, alpha * 0.95);
+      ctx.beginPath();
+      var inner = radius * 0.14;
+      ctx.moveTo(0, -radius);
+      ctx.quadraticCurveTo(inner * 0.5, -inner * 0.5, radius, 0);
+      ctx.quadraticCurveTo(inner * 0.5, inner * 0.5, 0, radius);
+      ctx.quadraticCurveTo(-inner * 0.5, inner * 0.5, -radius, 0);
+      ctx.quadraticCurveTo(-inner * 0.5, -inner * 0.5, 0, -radius);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = rgba(colorRgb, alpha * 0.55);
+      ctx.lineWidth = 0.85;
+      var d = radius * 0.44;
+      ctx.beginPath();
+      ctx.moveTo(-d, -d); ctx.lineTo(d, d);
+      ctx.moveTo(d, -d); ctx.lineTo(-d, d);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawCompassArchitecture(ctx, cx, cy, unit, t) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      var rOuter = unit * 1.32;
+      var rInner = unit * 1.22;
+      ctx.strokeStyle = rgba(PAL.gridLine, 0.068);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(0, 0, rOuter, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.setLineDash([3, 7]);
+      ctx.beginPath();
+      ctx.arc(0, 0, rInner, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.save();
+      ctx.rotate(t * 0.018);
+      ctx.strokeStyle = rgba(PAL.goldMain, 0.16);
+      for (var i = 0; i < 4; i++) {
+        var a = (i / 4) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a) * (rInner - 12), Math.sin(a) * (rInner - 12));
+        ctx.lineTo(Math.cos(a) * (rOuter + 18), Math.sin(a) * (rOuter + 18));
+        ctx.stroke();
+      }
+      ctx.strokeStyle = rgba(PAL.gridLine, 0.095);
+      for (var j = 0; j < 24; j++) {
+        var a2 = (j / 24) * Math.PI * 2;
+        var len = j % 6 === 0 ? 10 : 5;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a2) * rOuter, Math.sin(a2) * rOuter);
+        ctx.lineTo(Math.cos(a2) * (rOuter + len), Math.sin(a2) * (rOuter + len));
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.restore();
+    }
+
+    function drawVolumetricCaustics(ctx, cx, cy, unit, t) {
+      var sh = fState.shatterBlend;
+      var pulse = 1 + fState.burstPulse * 0.22 + fState.hoverCore * 0.07;
+      ctx.save();
+      ctx.translate(cx, cy);
+
+      var haloR = unit * (1.28 + sh * 0.14) * pulse;
+      var bgGlow = ctx.createRadialGradient(0, 0, unit * 0.04, 0, 0, haloR);
+      bgGlow.addColorStop(0, rgba(PAL.iceBright, 0.30));
+      bgGlow.addColorStop(0.36, rgba(PAL.causticA, 0.105));
+      bgGlow.addColorStop(0.68, rgba(PAL.causticB, 0.052));
+      bgGlow.addColorStop(1, rgba(PAL.causticA, 0));
+      ctx.fillStyle = bgGlow;
+      ctx.beginPath();
+      ctx.arc(0, 0, haloR, 0, Math.PI * 2);
+      ctx.fill();
+
+      var rayCount = 10;
+      for (var i = 0; i < rayCount; i++) {
+        var baseA = (i / rayCount) * Math.PI * 2 + t * (i % 2 === 0 ? 0.08 : -0.055);
+        var halfW = (0.045 + (i % 3) * 0.020) * (1 + sh * 0.22);
+        var len = unit * (0.94 + 0.34 * Math.sin(t * 0.7 + i * 1.4)) * pulse;
+        var alpha = 0.054 * (0.65 + 0.35 * Math.sin(t * 1.1 + i * 2.1));
+        var col = i % 3 === 0 ? PAL.goldBright : PAL.rayColor;
+        var grad = ctx.createRadialGradient(0, 0, unit * 0.08, 0, 0, len);
+        grad.addColorStop(0, rgba(col, alpha * 1.3));
+        grad.addColorStop(0.55, rgba(col, alpha * 0.45));
+        grad.addColorStop(1, rgba(col, 0));
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, len, baseA - halfW, baseA + halfW);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      for (var r = 0; r < 3; r++) {
+        var baseR = unit * (0.46 + r * 0.22 + sh * 0.11);
+        var dir = r % 2 === 0 ? 1 : -1;
+        var rCol = r === 1 ? PAL.causticB : PAL.causticA;
+        var rAlpha = 0.115 * (1 - r * 0.18);
+        ctx.beginPath();
+        var steps = 84;
+        for (var s = 0; s <= steps; s++) {
+          var th = (s / steps) * Math.PI * 2;
+          var wave =
+            Math.sin(th * (3 + r) + t * 0.85 * dir) * unit * 0.040 +
+            Math.cos(th * (6 - r) - t * 0.55 * dir) * unit * 0.020;
+          var rr = baseR + wave;
+          var rx = Math.cos(th) * rr * (1.06 - r * 0.04);
+          var ry = Math.sin(th) * rr * (0.86 + r * 0.05);
+          if (s === 0) ctx.moveTo(rx, ry);
+          else ctx.lineTo(rx, ry);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = rgba(rCol, rAlpha);
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function computeArmillaryRingGeometry(ring, t, cx, cy, unit) {
+      var sh = fState.shatterBlend;
+      var rad = ring.radius * lerp(1.0, ring.expandMult, sh);
+      var spin = t * ring.spinSpeed * (1 + sh * 0.45);
+      var precessX = Math.sin(t * ring.precessFreq + ring.radius * 4) * ring.precessAmp;
+      var precessY = Math.cos(t * ring.precessFreq * 0.78) * ring.precessAmp;
+      var rx = ring.tiltX + precessX + sh * 0.24 * (ring.spinSpeed > 0 ? 1 : -1);
+      var ry = ring.tiltY + precessY + sh * 0.18;
+      var rz = ring.tiltZ + Math.sin(t * 0.25 + ring.radius) * 0.12;
+
+      var toWorld = function (localPt) {
+        return applyGlobalTilt(rotEuler(localPt, rx, ry, rz));
+      };
+
+      var segs = 90;
+      var outerPts = [];
+      var innerPts = [];
+      var midPts = [];
+      var rOut = rad + ring.bandHalf;
+      var rIn = rad - ring.bandHalf;
+      var i, a, ca, sa;
+
+      for (i = 0; i <= segs; i++) {
+        a = (i / segs) * Math.PI * 2 + spin;
+        ca = Math.cos(a); sa = Math.sin(a);
+        outerPts.push(project(toWorld([ca * rOut, sa * rOut, 0]), cx, cy, unit));
+        innerPts.push(project(toWorld([ca * rIn, sa * rIn, 0]), cx, cy, unit));
+        midPts.push(project(toWorld([ca * rad, sa * rad, 0]), cx, cy, unit));
+      }
+
+      var echoPts = null;
+      if (ring.style === 'hyper_echo') {
+        echoPts = [];
+        var echoRx = rx + 0.14 * Math.sin(t * 1.2);
+        var echoRy = ry + 0.16 * Math.cos(t * 0.9);
+        var echoR = rad * 1.045;
+        for (i = 0; i <= 72; i++) {
+          a = (i / 72) * Math.PI * 2 - spin * 0.5;
+          var ep = applyGlobalTilt(rotEuler([Math.cos(a) * echoR, Math.sin(a) * echoR, 0], echoRx, echoRy, rz));
+          echoPts.push(project(ep, cx, cy, unit));
+        }
+      }
+
+      var ticks = [];
+      for (i = 0; i < ring.ticks; i++) {
+        a = (i / ring.ticks) * Math.PI * 2 + spin;
+        var isMajor = (i % ring.majorEvery === 0);
+        ca = Math.cos(a); sa = Math.sin(a);
+        var tIn = rad - ring.bandHalf * (isMajor ? 1.45 : 0.72);
+        var tOut = rad + ring.bandHalf * (isMajor ? 1.45 : 0.72);
+        var p0 = project(toWorld([ca * tIn, sa * tIn, 0]), cx, cy, unit);
+        var p1 = project(toWorld([ca * tOut, sa * tOut, 0]), cx, cy, unit);
+        ticks.push({ p0: p0, p1: p1, z: (p0.z + p1.z) * 0.5, isMajor: isMajor });
+      }
+
+      var nodes = [];
+      for (i = 0; i < ring.nodes; i++) {
+        a = (i / ring.nodes) * Math.PI * 2 + spin + 0.25;
+        var np = project(toWorld([Math.cos(a) * rad, Math.sin(a) * rad, 0]), cx, cy, unit);
+        nodes.push({ p: np, z: np.z, idx: i });
+      }
+
+      var comets = [];
+      for (var c = 0; c < ring.comets; c++) {
+        var headA = t * (ring.spinSpeed * 2.6 + (c % 2 === 0 ? 0.5 : -0.4)) + c * Math.PI;
+        var trail = [];
+        var dirSign = ring.spinSpeed >= 0 ? 1 : -1;
+        for (var k = 0; k < 14; k++) {
+          a = headA - k * 0.045 * dirSign;
+          trail.push(project(toWorld([Math.cos(a) * rad, Math.sin(a) * rad, 0]), cx, cy, unit));
+        }
+        comets.push(trail);
+      }
+
+      return { ring: ring, outerPts: outerPts, innerPts: innerPts, midPts: midPts, echoPts: echoPts, ticks: ticks, nodes: nodes, comets: comets, segs: segs };
+    }
+
+    function drawArmillaryRingPass(ctx, geom, isFrontPass) {
+      var ring = geom.ring;
+      var outerPts = geom.outerPts;
+      var innerPts = geom.innerPts;
+      var midPts = geom.midPts;
+      var echoPts = geom.echoPts;
+      var ticks = geom.ticks;
+      var nodes = geom.nodes;
+      var comets = geom.comets;
+      var segs = geom.segs;
+
+      var isGold = ring.style === 'gold_ecliptic';
+      var isSapphire = ring.style === 'sapphire_arcane';
+      var isHyper = ring.style === 'hyper_echo';
+      var isInner = ring.style === 'platinum_inner';
+
+      var primaryCol = isGold ? PAL.goldMain : (isSapphire ? PAL.sapphireMid : (isHyper ? PAL.violetAccent : PAL.sapphireBright));
+      var highlightCol = isGold ? PAL.goldBright : PAL.iceBright;
+      var scaleLW = clamp(fState.stagePx / 520, 0.58, 1.08);
+      var i, zMid, depthFactor;
+
+      for (i = 0; i < segs; i++) {
+        zMid = (midPts[i].z + midPts[i + 1].z) * 0.5;
+        if (isFrontPass ? zMid < 0 : zMid >= 0) continue;
+        depthFactor = clamp((zMid + 1.3) / 2.6, 0.22, 1.0);
+        var spec = 0.5 + 0.5 * Math.sin((i / segs) * Math.PI * 4 + fState.time * 0.9);
+        var bandAlpha = (isGold ? 0.16 : (isSapphire ? 0.18 : 0.12)) * depthFactor * 0.9;
+
+        ctx.fillStyle = rgba(primaryCol, bandAlpha * (0.7 + 0.45 * spec));
+        ctx.beginPath();
+        ctx.moveTo(outerPts[i].x, outerPts[i].y);
+        ctx.lineTo(outerPts[i + 1].x, outerPts[i + 1].y);
+        ctx.lineTo(innerPts[i + 1].x, innerPts[i + 1].y);
+        ctx.lineTo(innerPts[i].x, innerPts[i].y);
+        ctx.closePath();
+        ctx.fill();
+
+        var edgeAlpha = (isFrontPass ? 0.80 : 0.35) * depthFactor * (0.68 + 0.32 * spec);
+        ctx.strokeStyle = rgba(spec > 0.72 ? highlightCol : primaryCol, edgeAlpha);
+        ctx.lineWidth = (isGold ? 1.55 : (isSapphire ? 1.45 : 1.15)) * midPts[i].persp * scaleLW;
+        ctx.beginPath();
+        ctx.moveTo(outerPts[i].x, outerPts[i].y);
+        ctx.lineTo(outerPts[i + 1].x, outerPts[i + 1].y);
+        ctx.stroke();
+
+        ctx.strokeStyle = rgba(primaryCol, edgeAlpha * 0.62);
+        ctx.lineWidth = 0.85 * midPts[i].persp * scaleLW;
+        ctx.beginPath();
+        ctx.moveTo(innerPts[i].x, innerPts[i].y);
+        ctx.lineTo(innerPts[i + 1].x, innerPts[i + 1].y);
+        ctx.stroke();
+
+        if ((i % 16) < 7 && (isSapphire || isGold || isInner)) {
+          ctx.strokeStyle = rgba(highlightCol, (isFrontPass ? 0.64 : 0.22) * depthFactor);
+          ctx.lineWidth = (isInner ? 1.3 : 1.0) * midPts[i].persp * scaleLW;
+          ctx.beginPath();
+          ctx.moveTo(midPts[i].x, midPts[i].y);
+          ctx.lineTo(midPts[i + 1].x, midPts[i + 1].y);
+          ctx.stroke();
+        }
+      }
+
+      if (echoPts) {
+        for (i = 0; i < echoPts.length - 1; i++) {
+          zMid = (echoPts[i].z + echoPts[i + 1].z) * 0.5;
+          if (isFrontPass ? zMid < 0 : zMid >= 0) continue;
+          if (i % 3 === 2) continue;
+          depthFactor = clamp((zMid + 1.2) / 2.4, 0.18, 1.0);
+          ctx.strokeStyle = rgba(PAL.goldBright, (isFrontPass ? 0.44 : 0.16) * depthFactor);
+          ctx.lineWidth = 1.0 * scaleLW;
+          ctx.beginPath();
+          ctx.moveTo(echoPts[i].x, echoPts[i].y);
+          ctx.lineTo(echoPts[i + 1].x, echoPts[i + 1].y);
+          ctx.stroke();
+        }
+      }
+
+      for (i = 0; i < ticks.length; i++) {
+        var tk = ticks[i];
+        if (isFrontPass ? tk.z < 0 : tk.z >= 0) continue;
+        depthFactor = clamp((tk.z + 1.2) / 2.4, 0.2, 1.0);
+        ctx.strokeStyle = rgba(tk.isMajor ? highlightCol : primaryCol, (isFrontPass ? (tk.isMajor ? 0.85 : 0.44) : 0.22) * depthFactor);
+        ctx.lineWidth = (tk.isMajor ? 1.35 : 0.75) * scaleLW;
+        ctx.beginPath();
+        ctx.moveTo(tk.p0.x, tk.p0.y);
+        ctx.lineTo(tk.p1.x, tk.p1.y);
+        ctx.stroke();
+      }
+
+      if (isGold) {
+        for (i = 0; i < nodes.length; i++) {
+          var aN = nodes[i];
+          var bN = nodes[(i + 1) % nodes.length];
+          var avgZ = (aN.z + bN.z) * 0.5;
+          if (isFrontPass ? avgZ < 0 : avgZ >= 0) continue;
+          depthFactor = clamp((avgZ + 1.2) / 2.4, 0.2, 1.0);
+          ctx.strokeStyle = rgba(PAL.goldMain, (isFrontPass ? 0.24 : 0.10) * depthFactor);
+          ctx.lineWidth = 0.75 * scaleLW;
+          ctx.beginPath();
+          ctx.moveTo(aN.p.x, aN.p.y);
+          ctx.lineTo(bN.p.x, bN.p.y);
+          ctx.stroke();
+        }
+      }
+
+      for (i = 0; i < nodes.length; i++) {
+        var nd = nodes[i];
+        if (isFrontPass ? nd.z < 0 : nd.z >= 0) continue;
+        depthFactor = clamp((nd.z + 1.2) / 2.4, 0.25, 1.0);
+        var nr = (isGold ? 4.4 : 3.6) * nd.p.persp * scaleLW;
+        var nAlpha = (isFrontPass ? 0.92 : 0.36) * depthFactor;
+
+        ctx.save();
+        ctx.translate(nd.p.x, nd.p.y);
+        ctx.rotate(Math.PI / 4);
+        ctx.fillStyle = rgba(PAL.iceWhite, nAlpha * 0.92);
+        ctx.strokeStyle = rgba(isGold ? PAL.goldMain : PAL.sapphireBright, nAlpha);
+        ctx.lineWidth = 1.2 * scaleLW;
+        ctx.beginPath();
+        ctx.rect(-nr * 0.65, -nr * 0.65, nr * 1.3, nr * 1.3);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        if (isFrontPass && (nd.idx % 2 === 0)) {
+          drawStarGlint(ctx, nd.p.x, nd.p.y, nr * 2.5, nAlpha * 0.74, highlightCol, fState.time * 0.4 + nd.idx);
+        }
+      }
+
+      for (var c = 0; c < comets.length; c++) {
+        var trail = comets[c];
+        var head = trail[0];
+        if (isFrontPass ? head.z < 0 : head.z >= 0) continue;
+        for (var k = 0; k < trail.length - 1; k++) {
+          var frac = 1 - k / trail.length;
+          ctx.strokeStyle = rgba(highlightCol, frac * frac * (isFrontPass ? 0.85 : 0.35));
+          ctx.lineWidth = (2.2 * frac + 0.4) * trail[k].persp * scaleLW;
+          ctx.beginPath();
+          ctx.moveTo(trail[k].x, trail[k].y);
+          ctx.lineTo(trail[k + 1].x, trail[k + 1].y);
+          ctx.stroke();
+        }
+        if (isFrontPass) {
+          drawStarGlint(ctx, head.x, head.y, 8.2 * head.persp * scaleLW, 0.95, highlightCol, fState.time * 1.2);
+        }
+      }
+    }
+
+    function renderCrystalMesh(ctx, mesh, transformFn, cx, cy, unit, opts) {
+      var worldVerts = [];
+      var projVerts = [];
+      var i;
+      for (i = 0; i < mesh.verts.length; i++) {
+        var wv = transformFn(mesh.verts[i]);
+        worldVerts.push(wv);
+        projVerts.push(project(wv, cx, cy, unit));
+      }
+
+      var faceList = [];
+      for (i = 0; i < mesh.faces.length; i++) {
+        var fIdx = mesh.faces[i];
+        var a = worldVerts[fIdx[0]], b = worldVerts[fIdx[1]], c = worldVerts[fIdx[2]];
+        var n = normalize(cross(sub(b, a), sub(c, a)));
+        var avgZ = (a[2] + b[2] + c[2]) / 3;
+        faceList.push({ ia: fIdx[0], ib: fIdx[1], ic: fIdx[2], n: n, avgZ: avgZ, facing: n[2] });
+      }
+      faceList.sort(function (u, v) { return u.avgZ - v.avgZ; });
+
+      var goldMix = opts.goldMix || 0;
+      var passFilter = opts.pass || 'all';
+      var baseOpacity = opts.opacity != null ? opts.opacity : 0.86;
+      var isInner = !!opts.isInner;
+      var scaleLW = clamp(fState.stagePx / 520, 0.58, 1.08);
+
+      for (i = 0; i < faceList.length; i++) {
+        var f = faceList[i];
+        if (passFilter === 'back' && f.facing >= 0) continue;
+        if (passFilter === 'front' && f.facing < 0) continue;
+
+        var pa = projVerts[f.ia], pb = projVerts[f.ib], pc = projVerts[f.ic];
+        var nEff = f.facing >= 0 ? f.n : [-f.n[0], -f.n[1], -f.n[2]];
+        var diffKey = Math.max(0, dot(nEff, LIGHT_KEY));
+        var diffRim = Math.max(0, dot(nEff, LIGHT_RIM));
+        var fresnel = Math.pow(1 - Math.abs(f.facing), 1.9);
+
+        var isGoldShard = goldMix > 0.3;
+        var cShadow = isGoldShard ? PAL.goldShadow : (isInner ? PAL.sapphireMid : PAL.sapphireDeep);
+        var cMid = isGoldShard ? PAL.goldMain : PAL.sapphireMid;
+        var cHi = isGoldShard ? PAL.goldBright : PAL.iceBright;
+
+        var keyMix = clamp(diffKey * 0.86 + 0.18, 0, 1);
+        var r = lerp(cShadow[0], cMid[0], keyMix);
+        var g = lerp(cShadow[1], cMid[1], keyMix);
+        var bl = lerp(cShadow[2], cMid[2], keyMix);
+
+        var specBoost = clamp(Math.pow(diffKey, 2.9) * 0.88 + fresnel * 0.48 + diffRim * 0.25, 0, 1);
+        var whiteW = isInner ? 0.80 : 0.68;
+        r = lerp(r, PAL.iceWhite[0], specBoost * whiteW);
+        g = lerp(g, PAL.iceWhite[1], specBoost * whiteW);
+        bl = lerp(bl, PAL.iceWhite[2], specBoost * whiteW);
+
+        if (diffRim > 0.32 || goldMix > 0.2) {
+          var gAmt = clamp(diffRim * 0.34 + (isGoldShard ? 0.34 : goldMix * 0.30), 0, 0.68);
+          r = lerp(r, cHi[0], gAmt);
+          g = lerp(g, cHi[1], gAmt);
+          bl = lerp(bl, cHi[2], gAmt);
+        }
+
+        var faceAlpha = f.facing < 0 ? baseOpacity * 0.42 : baseOpacity * (0.60 + 0.36 * diffKey + 0.18 * fresnel);
+        var grad = ctx.createLinearGradient(pa.x, pa.y, (pb.x + pc.x) * 0.5, (pb.y + pc.y) * 0.5);
+        grad.addColorStop(0, rgba([lerp(r, 255, 0.28), lerp(g, 255, 0.28), lerp(bl, 255, 0.28)], faceAlpha));
+        grad.addColorStop(1, rgba([r, g, bl], faceAlpha * 0.88));
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(pa.x, pa.y);
+        ctx.lineTo(pb.x, pb.y);
+        ctx.lineTo(pc.x, pc.y);
+        ctx.closePath();
+        ctx.fill();
+
+        if (f.facing >= 0 || isInner) {
+          var edgeCol = specBoost > 0.52 ? PAL.iceWhite : (isGoldShard ? PAL.goldBright : PAL.iceBright);
+          ctx.strokeStyle = rgba(edgeCol, clamp((0.40 + specBoost * 0.60) * 0.92, 0, 0.96));
+          ctx.lineWidth = (opts.edgeWidth || 1.1) * scaleLW;
+          ctx.stroke();
+        }
+      }
+      return projVerts;
+    }
+
+    function computeShards(t, cx, cy, unit) {
+      var sh = smoothstep(clamp(fState.shatterBlend, 0, 1));
+      var list = [];
+      for (var i = 0; i < SHARDS.length; i++) {
+        var s = SHARDS[i];
+        var mandalaRot = t * (s.tier === 1 ? -0.14 : 0.11);
+        var ang = s.baseAngle + mandalaRot;
+        var breathe = 1 + Math.sin(t * 1.9 + s.tier * 1.15 + s.idx * 0.4) * 0.035 + fState.hoverCore * 0.05;
+        var mx = Math.cos(ang) * s.mandalaR * breathe;
+        var my = Math.sin(ang) * s.mandalaR * breathe;
+        var mz = s.mandalaZ + Math.sin(t * 1.6 + s.idx) * 0.035;
+
+        var lt = t * s.speed;
+        var lx = Math.sin(lt * s.lissA + s.phaseX) * s.ampX;
+        var ly = Math.cos(lt * s.lissB + s.phaseY) * s.ampY;
+        var lz = Math.sin(lt * s.lissC + s.phaseZ) * s.ampZ;
+
+        var arcBoost = Math.sin(sh * Math.PI) * 0.22;
+        var rawPos = [
+          lerp(mx, lx, sh) * (1 + arcBoost),
+          lerp(my, ly, sh) * (1 + arcBoost),
+          lerp(mz, lz, sh)
+        ];
+        var worldPos = applyGlobalTilt(rawPos);
+        var projCenter = project(worldPos, cx, cy, unit);
+        var mandalaOrientZ = ang + Math.PI / 2;
+
+        list.push({
+          shard: s,
+          rawPos: rawPos,
+          worldPos: worldPos,
+          projCenter: projCenter,
+          rx: lerp(0.18 * Math.sin(t * 1.4 + s.idx), t * s.spinX + s.phaseX, sh),
+          ry: lerp(0.32 * Math.cos(t * 1.1 + s.idx), t * s.spinY + s.phaseY, sh),
+          rz: lerp(mandalaOrientZ, t * (s.spinX * 0.5) + s.phaseZ, sh),
+          z: worldPos[2]
+        });
+      }
+      list.sort(function (a, b) { return a.z - b.z; });
+      return list;
+    }
+
+    function drawMandalaFilaments(ctx, shardItems, cx, cy) {
+      var mandalaWeight = clamp(1 - fState.shatterBlend * 1.35, 0, 1);
+      if (mandalaWeight <= 0.01) return;
+      var byId = new Array(18);
+      var i;
+      for (i = 0; i < shardItems.length; i++) byId[shardItems[i].shard.id] = shardItems[i];
+      var scaleLW = clamp(fState.stagePx / 520, 0.62, 1.05);
+
+      ctx.save();
+      for (var tier = 0; tier < 3; tier++) {
+        var base = tier * 6;
+        var col = tier === 1 ? PAL.goldMain : PAL.sapphireMid;
+        ctx.strokeStyle = rgba(col, mandalaWeight * 0.28 * (1 - tier * 0.14));
+        ctx.lineWidth = (tier === 0 ? 1.15 : 0.88) * scaleLW;
+        ctx.beginPath();
+        for (i = 0; i < 6; i++) {
+          var p = byId[base + i].projCenter;
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+
+        if (tier === 0) {
+          for (i = 0; i < 6; i++) {
+            var p0 = byId[i].projCenter;
+            var p1L = byId[6 + i].projCenter;
+            var p1R = byId[6 + ((i + 5) % 6)].projCenter;
+            var p2 = byId[12 + i].projCenter;
+            ctx.strokeStyle = rgba(PAL.sapphireBright, mandalaWeight * 0.30);
+            ctx.lineWidth = 1.0 * scaleLW;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(p0.x, p0.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+
+            ctx.strokeStyle = rgba(PAL.goldMain, mandalaWeight * 0.20);
+            ctx.lineWidth = 0.72 * scaleLW;
+            ctx.beginPath();
+            ctx.moveTo(p0.x, p0.y);
+            ctx.lineTo(p1L.x, p1L.y);
+            ctx.moveTo(p0.x, p0.y);
+            ctx.lineTo(p1R.x, p1R.y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      ctx.strokeStyle = rgba(PAL.goldMain, mandalaWeight * 0.26);
+      ctx.lineWidth = 0.92 * scaleLW;
+      for (var offset = 0; offset < 2; offset++) {
+        ctx.beginPath();
+        for (var k = 0; k < 3; k++) {
+          var pk = byId[6 + ((k * 2 + offset) % 6)].projCenter;
+          if (k === 0) ctx.moveTo(pk.x, pk.y);
+          else ctx.lineTo(pk.x, pk.y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawShardItem(ctx, item, cx, cy, unit, t) {
+      var s = item.shard;
+      var sh = fState.shatterBlend;
+      var sc = s.scale * (1 + fState.hoverCore * 0.06);
+      var scaleLW = clamp(fState.stagePx / 520, 0.62, 1.05);
+
+      if (sh > 0.08) {
+        var tetherAlpha = sh * clamp((item.z + 1.2) / 2.4, 0.15, 0.75) * 0.14;
+        var grad = ctx.createLinearGradient(cx, cy, item.projCenter.x, item.projCenter.y);
+        grad.addColorStop(0, rgba(PAL.iceBright, 0));
+        grad.addColorStop(0.55, rgba(s.goldTint > 0.4 ? PAL.goldMain : PAL.sapphireBright, tetherAlpha));
+        grad.addColorStop(1, rgba(PAL.iceWhite, tetherAlpha * 1.4));
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 0.75 * scaleLW;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(item.projCenter.x, item.projCenter.y);
+        ctx.stroke();
+      }
+
+      var transformFn = function (v) {
+        var oriented = rotEuler([v[0] * sc, v[1] * sc, v[2] * sc], item.rx, item.ry, item.rz);
+        return applyGlobalTilt([
+          oriented[0] + item.rawPos[0],
+          oriented[1] + item.rawPos[1],
+          oriented[2] + item.rawPos[2]
+        ]);
+      };
+
+      var projVerts = renderCrystalMesh(ctx, SHARD_MESH, transformFn, cx, cy, unit, {
+        opacity: 0.88,
+        edgeWidth: 0.92,
+        goldMix: s.goldTint
+      });
+
+      var glintWave = Math.sin(t * 2.1 + s.id * 1.7);
+      if (glintWave > 0.78 && item.z > -0.2) {
+        var tip = projVerts[0];
+        var gAlpha = ((glintWave - 0.78) / 0.22) * 0.85;
+        drawStarGlint(
+          ctx, tip.x, tip.y,
+          6.2 * tip.persp * s.scale * scaleLW,
+          gAlpha,
+          s.goldTint > 0.4 ? PAL.goldBright : PAL.iceBright,
+          t * 0.8 + s.id
+        );
+      }
+    }
+
+    function drawFallbackCore2D(ctx, cx, cy, unit, t) {
+      var sh = fState.shatterBlend;
+      var pulse = 1 + Math.sin(t * 2.2) * 0.025 + fState.burstPulse * 0.14 + fState.hoverCore * 0.05;
+      var coreScale = pulse * lerp(1.0, 0.92, sh);
+      var outerTransform = function (v) {
+        return applyGlobalTilt(rotEuler([v[0] * coreScale, v[1] * coreScale, v[2] * coreScale], 0.14 * Math.sin(t * 0.65), t * 0.36, 0.09 * Math.cos(t * 0.52)));
+      };
+      var innerScale = coreScale * (1.0 + Math.sin(t * 3.1) * 0.05 + sh * 0.12);
+      var innerTransform = function (v) {
+        return applyGlobalTilt(rotEuler([v[0] * innerScale, v[1] * innerScale, v[2] * innerScale], -t * 0.68, -t * 0.92, t * 0.44));
+      };
+      renderCrystalMesh(ctx, FALLBACK_OUTER_MESH, outerTransform, cx, cy, unit, { pass: 'back', opacity: 0.58, edgeWidth: 0.9, goldMix: 0.06 });
+      var heartR = unit * 0.24 * pulse;
+      var heartGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, heartR);
+      heartGrad.addColorStop(0, rgba(PAL.iceWhite, 0.95));
+      heartGrad.addColorStop(0.32, rgba(PAL.iceBright, 0.65));
+      heartGrad.addColorStop(0.65, rgba(PAL.goldBright, 0.25));
+      heartGrad.addColorStop(1, rgba(PAL.sapphireMid, 0));
+      ctx.fillStyle = heartGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, heartR, 0, Math.PI * 2);
+      ctx.fill();
+      renderCrystalMesh(ctx, FALLBACK_INNER_MESH, innerTransform, cx, cy, unit, { pass: 'all', isInner: true, opacity: 0.92, edgeWidth: 1.2, goldMix: 0.60 });
+      drawStarGlint(ctx, cx, cy, unit * 0.13, 0.94, PAL.goldBright, t * 0.35);
+      renderCrystalMesh(ctx, FALLBACK_OUTER_MESH, outerTransform, cx, cy, unit, { pass: 'front', opacity: 0.66, edgeWidth: 1.4, goldMix: 0.10 });
+    }
+
+    function spawnShockwave(x, y, toShatter) {
+      var unit = fState.stagePx * 0.40;
+      SHOCKWAVES.push({
+        x: x, y: y,
+        r: unit * 0.16,
+        maxR: unit * (toShatter ? 1.52 : 1.24),
+        life: 0,
+        dur: 0.85,
+        gold: toShatter
+      });
+      for (var i = 0; i < 22; i++) {
+        var ang = (i / 22) * Math.PI * 2 + (Math.random() - 0.5) * 0.22;
+        var spd = (72 + Math.random() * 185) * clamp(fState.stagePx / 520, 0.48, 1.0);
+        TRAIL_PARTICLES.push({
+          x: x, y: y,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          life: 0,
+          maxLife: 0.62 + Math.random() * 0.52,
+          size: (2.0 + Math.random() * 3.0) * clamp(fState.stagePx / 520, 0.6, 1.0),
+          star: i % 3 === 0,
+          gold: i % 4 === 0,
+          attracted: false
+        });
+      }
+    }
+
+    function spawnCursorDust(x, y, dx, dy) {
+      var count = Math.min(3, 1 + Math.floor(Math.hypot(dx, dy) / 14));
+      var sc = clamp(fState.stagePx / 520, 0.58, 1.0);
+      for (var i = 0; i < count; i++) {
+        if (TRAIL_PARTICLES.length > 110) TRAIL_PARTICLES.shift();
+        TRAIL_PARTICLES.push({
+          x: x + (Math.random() - 0.5) * 10,
+          y: y + (Math.random() - 0.5) * 10,
+          vx: dx * 0.13 + (Math.random() - 0.5) * 24,
+          vy: dy * 0.13 + (Math.random() - 0.5) * 24 - 7,
+          life: 0,
+          maxLife: 0.78 + Math.random() * 0.62,
+          size: (1.5 + Math.random() * 2.4) * sc,
+          star: Math.random() < 0.30,
+          gold: Math.random() < 0.34,
+          attracted: true
+        });
+      }
+    }
+
+    function updateAndDrawFrontFx(ctx, dt, cx, cy, unit, t) {
+      var scaleLW = clamp(fState.stagePx / 520, 0.58, 1.08);
+      /* Subtle top & bottom apex star-glints synchronized with the WebGL crystal tips */
+      var apexTop = project(applyGlobalTilt([0, -0.43, 0.04]), cx, cy, unit);
+      var apexBot = project(applyGlobalTilt([0, 0.43, 0.04]), cx, cy, unit);
+      var apexPulse = 0.72 + 0.24 * Math.sin(t * 2.4);
+      drawStarGlint(ctx, apexTop.x, apexTop.y, 12.5 * apexTop.persp * scaleLW, apexPulse, PAL.iceBright, -t * 0.45);
+      drawStarGlint(ctx, apexBot.x, apexBot.y, 9.2 * apexBot.persp * scaleLW, apexPulse * 0.78, PAL.goldBright, t * 0.38);
+
+      var i;
+      for (i = TRAIL_PARTICLES.length - 1; i >= 0; i--) {
+        var p = TRAIL_PARTICLES[i];
+        p.life += dt;
+        if (p.life >= p.maxLife) {
+          TRAIL_PARTICLES.splice(i, 1);
+          continue;
+        }
+        if (p.attracted) {
+          var dx = cx - p.x;
+          var dy = cy - p.y;
+          var d = Math.hypot(dx, dy) || 1;
+          var g = clamp(92 / (d * 0.014 + 1), 12, 86);
+          p.vx += ((dx / d) * g - (dy / d) * g * 0.38) * dt;
+          p.vy += ((dy / d) * g + (dx / d) * g * 0.38) * dt;
+        }
+        var damp = Math.pow(0.96, dt * 60);
+        p.vx *= damp;
+        p.vy *= damp;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+
+        var frac = 1 - p.life / p.maxLife;
+        var alpha = Math.sin(frac * Math.PI) * 0.88;
+        var col = p.gold ? PAL.goldMain : PAL.sapphireBright;
+        if (p.star) {
+          drawStarGlint(ctx, p.x, p.y, p.size * 2.3 * frac, alpha, col, p.life * 2.4);
+        } else {
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(Math.PI / 4 + p.life * 2);
+          ctx.fillStyle = rgba(col, alpha);
+          var sz = p.size * frac;
+          ctx.fillRect(-sz * 0.5, -sz * 0.5, sz, sz);
+          ctx.restore();
+        }
+      }
+
+      for (i = SHOCKWAVES.length - 1; i >= 0; i--) {
+        var sw = SHOCKWAVES[i];
+        sw.life += dt;
+        if (sw.life >= sw.dur) {
+          SHOCKWAVES.splice(i, 1);
+          continue;
+        }
+        var prog = sw.life / sw.dur;
+        var eased = 1 - Math.pow(1 - prog, 3);
+        var rad = lerp(sw.r, sw.maxR, eased);
+        var sAlpha = (1 - prog) * (1 - prog) * 0.58;
+        var sCol = sw.gold ? PAL.goldMain : PAL.sapphireBright;
+        ctx.strokeStyle = rgba(sCol, sAlpha);
+        ctx.lineWidth = ((1 - prog) * 2.6 + 0.5) * scaleLW;
+        ctx.beginPath();
+        ctx.arc(sw.x, sw.y, rad, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = rgba(PAL.iceBright, sAlpha * 0.72);
+        ctx.lineWidth = 1.0 * scaleLW;
+        ctx.beginPath();
+        ctx.arc(sw.x, sw.y, rad * 0.86, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    function renderFrame(dt) {
+      syncSizes();
+      fState.time += dt;
+      fState.frameCount++;
+
+      /* Critically damped spring for mandala <-> shatter morph */
+      var springK = 26;
+      var springD = 8.4;
+      var force = (fState.shatterTarget - fState.shatterBlend) * springK - fState.shatterVel * springD;
+      fState.shatterVel += force * dt;
+      fState.shatterBlend = clamp(fState.shatterBlend + fState.shatterVel * dt, -0.08, 1.08);
+
+      var targetTiltX = fState.normX * 0.26;
+      var targetTiltY = -fState.normY * 0.20;
+      var tiltEase = 1 - Math.exp(-dt * 5.0);
+      fState.tiltX = lerp(fState.tiltX, targetTiltX, tiltEase);
+      fState.tiltY = lerp(fState.tiltY, targetTiltY, tiltEase);
+
+      if (!fState.dragging) {
+        var dragDecay = Math.pow(0.974, dt * 60);
+        fState.dragTargetX *= dragDecay;
+        fState.dragTargetY *= dragDecay;
+      }
+      var dragEase = 1 - Math.exp(-dt * 8.0);
+      fState.dragRotX = lerp(fState.dragRotX, fState.dragTargetX, dragEase);
+      fState.dragRotY = lerp(fState.dragRotY, fState.dragTargetY, dragEase);
+      fState.burstPulse *= Math.pow(0.92, dt * 60);
+
+      var cCss = fState.canvasCss;
+      var cx = cCss * 0.5;
+      var cy = cCss * 0.5;
+      var unit = fState.stagePx * 0.40;
+      var dpr = fState.dpr;
+
+      var cursorDist = fState.mouseActive ? Math.hypot(fState.localMx - cx, fState.localMy - cy) : 9999;
+      var hoverTarget = fState.mouseActive && cursorDist < unit * 1.05 ? 1 : 0;
+      fState.hoverCore = lerp(fState.hoverCore, hoverTarget, 1 - Math.exp(-dt * 6.0));
+
+      /* Precompute 4 armillary rings & 18 shards */
+      var ringGeoms = [];
+      var i;
+      for (i = 0; i < ARMILLARY_RINGS.length; i++) {
+        ringGeoms.push(computeArmillaryRingGeometry(ARMILLARY_RINGS[i], fState.time, cx, cy, unit));
+      }
+      var shardItems = computeShards(fState.time, cx, cy, unit);
+
+      /* === PASS A: BACK CANVAS 2D (behind WebGL core) === */
+      backCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      backCtx.clearRect(0, 0, cCss, cCss);
+      drawCompassArchitecture(backCtx, cx, cy, unit, fState.time);
+      drawVolumetricCaustics(backCtx, cx, cy, unit, fState.time);
+      for (i = 0; i < ringGeoms.length; i++) {
+        drawArmillaryRingPass(backCtx, ringGeoms[i], false);
+      }
+      drawMandalaFilaments(backCtx, shardItems, cx, cy);
+      for (i = 0; i < shardItems.length; i++) {
+        if (shardItems[i].z < 0) drawShardItem(backCtx, shardItems[i], cx, cy, unit, fState.time);
+      }
+
+      /* === PASS B: CENTER TRANSPARENT WEBGL CORE (Scaled Scheme C KIFS Crystal) === */
+      if (useWebGL && gl && glProg && glUniforms) {
+        var pulseAge = Math.max(0.0, fState.time - fState.pulseAt);
+        var pulseAmp = pulseAge < 4.2 ? fState.pulseStrength * Math.exp(-pulseAge * 1.15) : 0.0;
+        gl.clearColor(0.0, 0.0, 0.0, 0.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.useProgram(glProg);
+        gl.uniform2f(glUniforms.uRes, glCanvas.width, glCanvas.height);
+        gl.uniform1f(glUniforms.uTime, fState.time);
+        gl.uniform2f(glUniforms.uOrbit, fState.tiltX + fState.dragRotX, fState.tiltY + fState.dragRotY);
+        gl.uniform1f(glUniforms.uPulseAge, pulseAge);
+        gl.uniform1f(glUniforms.uPulseAmp, pulseAmp);
+        gl.uniform1f(glUniforms.uShatter, clamp(fState.shatterBlend, 0, 1));
+        gl.uniform1f(glUniforms.uHover, fState.hoverCore);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+      } else {
+        drawFallbackCore2D(backCtx, cx, cy, unit, fState.time);
+      }
+
+      /* === PASS C: FRONT CANVAS 2D (wrapping in front of WebGL core!) === */
+      frontCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      frontCtx.clearRect(0, 0, cCss, cCss);
+      for (i = 0; i < shardItems.length; i++) {
+        if (shardItems[i].z >= 0) drawShardItem(frontCtx, shardItems[i], cx, cy, unit, fState.time);
+      }
+      for (i = 0; i < ringGeoms.length; i++) {
+        drawArmillaryRingPass(frontCtx, ringGeoms[i], true);
+      }
+      updateAndDrawFrontFx(frontCtx, dt, cx, cy, unit, fState.time);
+    }
+
+    function toggleMorph() {
+      fState.shatterTarget = fState.shatterTarget === 0 ? 1 : 0;
+      fState.burstPulse = 1.0;
+      fState.pulseAt = fState.time;
+      fState.pulseStrength = 1.0;
+      var half = fState.canvasCss * 0.5;
+      spawnShockwave(half, half, fState.shatterTarget === 1);
+      playSfxSafe('glass_tap');
+    }
+
+    function pulseSoft() {
+      fState.burstPulse = Math.max(fState.burstPulse, 0.34);
+      fState.pulseAt = fState.time;
+      fState.pulseStrength = Math.max(fState.pulseStrength * 0.5, 0.42);
+    }
+
+    function scheduleNextFrame() {
+      if (!fState.running) return;
+      if (isSoftwareGL) {
+        fState.softTimer = setTimeout(function () {
+          fState.softTimer = 0;
+          if (fState.running) fState.rafId = requestAnimationFrame(stepLoop);
+        }, 45);
+      } else {
+        fState.rafId = requestAnimationFrame(stepLoop);
+      }
+    }
+
+    function stepLoop(ts) {
+      fState.rafId = 0;
+      if (!fState.running) return;
+      if (!isTitleVis() || document.hidden || st.mode === 'archive' || st.reduced) {
+        stop();
+        return;
+      }
+      if (isAnyModalBlocking()) {
+        fState.lastTs = 0;
+        scheduleNextFrame();
+        return;
+      }
+      var dt = fState.lastTs ? clamp((ts - fState.lastTs) / 1000, 0.004, 0.05) : 0.0166;
+      fState.lastTs = ts;
+      renderFrame(dt);
+      if (isSoftwareGL && gl) gl.flush();
+      scheduleNextFrame();
+    }
+
+    function start() {
+      if (!isTitleVis() || document.hidden || st.mode === 'archive') {
+        stop();
+        return;
+      }
+      if (st.reduced) {
+        stop();
+        renderFrame(0.016);
+        return;
+      }
+      if (fState.running) return;
+      if (typeof requestAnimationFrame !== 'function') return;
+      fState.running = true;
+      fState.lastTs = 0;
+      fState.rafId = requestAnimationFrame(stepLoop);
+    }
+
+    function stop() {
+      fState.running = false;
+      fState.lastTs = 0;
+      if (fState.softTimer) {
+        clearTimeout(fState.softTimer);
+        fState.softTimer = 0;
+      }
+      if (fState.rafId && typeof cancelAnimationFrame === 'function') {
+        cancelAnimationFrame(fState.rafId);
+      }
+      fState.rafId = 0;
+    }
+
+    /* Interactive pointer handlers (click morph, drag tilt, gravity stardust) */
+    var cleanups = [];
+    var onHitDown = function (ev) {
+      if (st.mode === 'archive' || !isTitleVis()) return;
+      fState.dragging = true;
+      fState.dragStartX = ev.clientX;
+      fState.dragStartY = ev.clientY;
+      fState.dragMoved = 0;
+    };
+    var onWinMove = function (ev) {
+      if (!fState.running || !isTitleVis() || st.mode === 'archive') return;
+      var rect = backCanvas.getBoundingClientRect();
+      if (!rect || rect.width <= 0) return;
+      var lx = ev.clientX - rect.left;
+      var ly = ev.clientY - rect.top;
+      var dx = fState.mouseActive ? (lx - fState.localMx) : 0;
+      var dy = fState.mouseActive ? (ly - fState.localMy) : 0;
+      fState.localMx = lx;
+      fState.localMy = ly;
+      fState.mouseActive = true;
+
+      var titleEl = getTitle();
+      var tr = titleEl ? titleEl.getBoundingClientRect() : null;
+      if (tr && tr.width > 0 && tr.height > 0) {
+        fState.normX = clamp(((ev.clientX - tr.left) / tr.width) * 2 - 1, -1, 1);
+        fState.normY = clamp(((ev.clientY - tr.top) / tr.height) * 2 - 1, -1, 1);
+      }
+
+      var distToCenter = Math.hypot(lx - rect.width * 0.5, ly - rect.height * 0.5);
+      if (distToCenter < rect.width * 0.46 && Math.hypot(dx, dy) > 2.4 && isAmbientFxAllowed()) {
+        spawnCursorDust(lx, ly, dx, dy);
+      }
+
+      if (fState.dragging) {
+        var ddx = ev.clientX - fState.dragStartX;
+        var ddy = ev.clientY - fState.dragStartY;
+        fState.dragMoved += Math.hypot(ddx, ddy);
+        fState.dragTargetX = clamp(fState.dragTargetX + ddx * 0.006, -0.75, 0.75);
+        fState.dragTargetY = clamp(fState.dragTargetY + ddy * 0.006, -0.55, 0.55);
+        fState.dragStartX = ev.clientX;
+        fState.dragStartY = ev.clientY;
+      }
+    };
+    var onWinUp = function () {
+      if (!fState.dragging) return;
+      fState.dragging = false;
+      if (fState.dragMoved < 9 && st.mode !== 'archive' && isTitleVis()) {
+        toggleMorph();
+      }
+    };
+    var onResize = function () {
+      if (!isTitleVis() || isAnyModalBlocking()) return;
+      syncSizes();
+      if (!fState.running && st.mode !== 'archive') {
+        renderFrame(0.001);
+      }
+    };
+
+    hitBtn.addEventListener('pointerdown', onHitDown);
+    window.addEventListener('pointermove', onWinMove, { passive: true });
+    window.addEventListener('pointerup', onWinUp);
+    window.addEventListener('pointercancel', onWinUp);
+    window.addEventListener('resize', onResize, { passive: true });
+    cleanups.push(function () {
+      hitBtn.removeEventListener('pointerdown', onHitDown);
+      window.removeEventListener('pointermove', onWinMove);
+      window.removeEventListener('pointerup', onWinUp);
+      window.removeEventListener('pointercancel', onWinUp);
+      window.removeEventListener('resize', onResize);
+    });
+
+    var resizeObs = null;
+    if (typeof ResizeObserver === 'function') {
+      try {
+        resizeObs = new ResizeObserver(onResize);
+        resizeObs.observe(stageEl);
+      } catch (e) { resizeObs = null; }
+    }
+
+    function destroyEngine() {
+      stop();
+      if (resizeObs) { try { resizeObs.disconnect(); } catch (e) {} resizeObs = null; }
+      for (var c = 0; c < cleanups.length; c++) { try { cleanups[c](); } catch (e) {} }
+      cleanups = [];
+      if (gl) {
+        try {
+          var lose = gl.getExtension('WEBGL_lose_context');
+          if (lose && typeof lose.loseContext === 'function') lose.loseContext();
+        } catch (e) {}
+        gl = null;
+      }
+    }
+
+    var engineApi = {
+      wrap: wrap,
+      start: start,
+      stop: stop,
+      toggleMorph: toggleMorph,
+      pulseSoft: pulseSoft,
+      renderOnce: function () { renderFrame(0.016); },
+      destroy: destroyEngine,
+      getState: function () {
+        return {
+          running: fState.running,
+          rafId: fState.rafId,
+          useWebGL: useWebGL,
+          backend: glBackendLabel,
+          shaderError: shaderError,
+          shattered: fState.shatterTarget === 1,
+          frameCount: fState.frameCount,
+          stagePx: fState.stagePx,
+          glWidth: glCanvas.width,
+          glHeight: glCanvas.height
+        };
+      }
+    };
+
+    syncSizes();
+    renderFrame(0.016);
+    if (root) root.__TITLE_FUSION_CRYSTAL__ = engineApi;
+    return engineApi;
+  }
+
+  function startFusionLoop() {
+    if (st.fusion) st.fusion.start();
+  }
+
+  function stopFusionLoop() {
+    if (st.fusion) st.fusion.stop();
+  }
+
+  function destroyFusionCrystal() {
+    if (st.fusion) {
+      st.fusion.destroy();
+      st.fusion = null;
+    }
+  }
+
+  /* =========================================================================
      3. 挂载至 V3 index.html DOM 宿主（全幂等，绝不重复建节点）
      ========================================================================= */
 
@@ -729,8 +2448,9 @@
       stageHost.insertBefore(anchor, stageHost.firstChild);
     }
 
-    if (!anchor.querySelector('.v3-sculpture-stage')) {
-      var stage = document.createElement('div');
+    var stage = anchor.querySelector('.v3-sculpture-stage');
+    if (!stage) {
+      stage = document.createElement('div');
       stage.className = 'v3-sculpture-stage';
       stage.innerHTML = buildAstrolabeLayerMarkup() + buildOrbitRingsMarkup();
 
@@ -780,6 +2500,10 @@
 
       anchor.appendChild(stage);
       layoutShardsForCluster();
+    }
+
+    if (!st.fusion && !isJsdom()) {
+      st.fusion = createFusionCrystalEngine(stage);
     }
   }
 
@@ -1510,6 +3234,7 @@
     updateFooterHintsForMode(mode);
 
     if (mode === 'archive') {
+      stopFusionLoop();
       clearPendingDelete();
       var slots = readSaveSlots();
       var latest = findLatestSlot(slots);
@@ -1527,11 +3252,13 @@
       clearPendingDelete();
       layoutShardsForCluster();
       syncSettingsDOM();
+      startFusionLoop();
       if (!opts || !opts.silent) playSfxSafe('page_open');
     } else {
       clearPendingDelete();
       layoutShardsForCluster();
       syncArchiveMeta();
+      startFusionLoop();
     }
     return st.mode;
   }
@@ -1815,6 +3542,8 @@
       st.opening = 'ready';
       titleEl.setAttribute('data-opening', 'ready');
       startDustLoop();
+      if (isTitleVis()) startFusionLoop();
+      else stopFusionLoop();
       return api;
     }
 
@@ -1823,6 +3552,7 @@
     void titleEl.offsetWidth;
     titleEl.setAttribute('data-opening', 'playing');
     startDustLoop();
+    startFusionLoop();
 
     st.readyT = setTimeout(function () {
       st.readyT = 0;
@@ -1876,6 +3606,7 @@
           clearTimers();
           resetParallax(true);
           stopDustLoop();
+          stopFusionLoop();
           if (st.opening === 'playing') {
             st.opening = 'ready';
             titleEl.setAttribute('data-opening', 'ready');
@@ -1888,9 +3619,10 @@
           syncArchiveMeta();
           syncTitleAudioButton(false);
           startDustLoop();
+          startFusionLoop();
         }
       });
-      st.titleObs.observe(titleEl, { attributes: true, attributeFilter: ['class'] });
+      st.titleObs.observe(titleEl, { attributes: true, attributeFilter: ['class', 'style'] });
 
       var btnCont = document.getElementById('btn-continue');
       if (btnCont) {
@@ -1917,7 +3649,10 @@
     if (menuElForFocus) {
       var onMenuPointerOver = function (ev) {
         var btn = ev && ev.target && ev.target.closest ? ev.target.closest('.tbtn.tbtn-editorial') : null;
-        if (btn && menuElForFocus.contains(btn)) setFocusedMenuItem(btn);
+        if (btn && menuElForFocus.contains(btn)) {
+          setFocusedMenuItem(btn);
+          if (st.fusion) st.fusion.pulseSoft();
+        }
       };
       var onMenuFocusIn = function (ev) {
         var btn = ev && ev.target && ev.target.closest ? ev.target.closest('.tbtn.tbtn-editorial') : null;
@@ -2021,11 +3756,13 @@
     bindMql(st.mqlMotion, function (ev) {
       st.reduced = !!(ev ? ev.matches : st.mqlMotion.matches);
       if (st.reduced) {
-        clearTimers(); resetParallax(true); stopDustLoop();
+        clearTimers(); resetParallax(true); stopDustLoop(); stopFusionLoop();
+        if (st.fusion && isTitleVis() && st.mode !== 'archive') st.fusion.renderOnce();
         st.opening = 'ready';
         var el = getTitle(); if (el) el.setAttribute('data-opening', 'ready');
       } else {
         startDustLoop();
+        startFusionLoop();
       }
     });
     bindMql(st.mqlPointer, function (ev) {
@@ -2045,8 +3782,8 @@
     };
     var onCenter = function () { if (st.fine && !st.reduced) { st.tx = 0; st.ty = 0; kickParallax(); } };
     var onVis = function () {
-      if (document.hidden) { stopRaf(); stopDustLoop(); }
-      else if (isTitleVis()) { startDustLoop(); }
+      if (document.hidden) { stopRaf(); stopDustLoop(); stopFusionLoop(); }
+      else if (isTitleVis()) { startDustLoop(); startFusionLoop(); }
     };
 
     window.addEventListener('pointermove', onMove, { passive: true });
@@ -2098,6 +3835,7 @@
     clearPendingDelete();
     resetParallax(true);
     stopDustLoop();
+    destroyFusionCrystal();
     if (st.menuObs) { try { st.menuObs.disconnect(); } catch (e) {} st.menuObs = null; }
     if (st.titleObs) { try { st.titleObs.disconnect(); } catch (e) {} st.titleObs = null; }
     if (st.continueObs) { try { st.continueObs.disconnect(); } catch (e) {} st.continueObs = null; }
@@ -2109,6 +3847,10 @@
     st.mqlPointer = null;
     st.inited = false;
     return api;
+  }
+
+  function getFusionState() {
+    return st.fusion ? st.fusion.getState() : null;
   }
 
   var api = {
@@ -2124,6 +3866,7 @@
     getParallax: getParallax,
     playCardExitVeil: playCardExitVeil,
     syncCardBackdrop: ensureCardBackdrop,
+    getFusionState: getFusionState,
     destroy: destroy
   };
 

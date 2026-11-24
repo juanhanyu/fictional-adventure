@@ -360,9 +360,21 @@
     ctx.fill();
   }
 
+  function isBattleScreenActive() {
+    if (typeof document === 'undefined') return false;
+    var bs = document.getElementById('battle-screen');
+    return !!(bs && !bs.classList.contains('hidden'));
+  }
+
   function renderFrame(ts) {
     state.rafId = 0;
     if (!shouldAnimate()) return;
+
+    if (isBattleScreenActive()) {
+      state.lastTs = 0;
+      state.rafId = requestAnimationFrame(renderFrame);
+      return;
+    }
 
     var dt = state.lastTs ? Math.min((ts - state.lastTs) / 16.667, 2.4) : 1;
     state.lastTs = ts;

@@ -255,6 +255,97 @@
   margin: 0 auto;
 }
 
+/* =========================================================================
+   3a. 方案 B 非欧星轨天球仪 × 方案 C 缩放高维折叠圣晶融合舞台 (.v3-fusion-stage)
+       仅替换左侧主视觉核心，右侧标题与菜单排版零改动；存档模式自动切回交互晶簇星轨
+   ========================================================================= */
+
+#title-screen:not([data-title-mode="archive"]) .v3-sculpture-stage.has-fusion .v3-astrolabe-layer,
+#title-screen:not([data-title-mode="archive"]) .v3-sculpture-stage.has-fusion #v3-core-gem,
+#title-screen:not([data-title-mode="archive"]) .v3-sculpture-stage.has-fusion .v3-shard {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+#title-screen .v3-fusion-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 16;
+  pointer-events: none;
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.48s var(--v3-ease), transform 0.6s var(--v3-ease);
+}
+
+#title-screen[data-opening="playing"] .v3-fusion-stage {
+  animation: v3FadeScaleIn 0.78s var(--v3-ease) 0.14s both;
+}
+
+#title-screen[data-title-mode="archive"] .v3-fusion-stage,
+#title-screen #v3-title-stage[data-title-mode="archive"] .v3-fusion-stage {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.84);
+  pointer-events: none;
+}
+
+#title-screen .v3-fusion-2d {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 156%;
+  height: 156%;
+  transform: translate3d(-50%, -50%, 0);
+  display: block;
+  pointer-events: none;
+  background: transparent;
+}
+
+#title-screen .v3-fusion-back {
+  z-index: 1;
+}
+
+#title-screen .v3-fusion-gl {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 56%;
+  height: 56%;
+  transform: translate3d(-50%, -50%, 0);
+  z-index: 2;
+  display: block;
+  pointer-events: none;
+  background: transparent;
+}
+
+#title-screen .v3-fusion-front {
+  z-index: 3;
+}
+
+#title-screen .v3-fusion-hit {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 96%;
+  height: 96%;
+  transform: translate3d(-50%, -50%, 0);
+  z-index: 4;
+  border: none;
+  padding: 0;
+  margin: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+  outline: none;
+}
+
+#title-screen[data-title-mode="archive"] .v3-fusion-hit,
+#title-screen #v3-title-stage[data-title-mode="archive"] .v3-fusion-hit {
+  pointer-events: none;
+}
+
 /* 断裂星轨环 + 45°/90° 精密炼金折线层 */
 #title-screen .v3-astrolabe-layer {
   position: absolute;

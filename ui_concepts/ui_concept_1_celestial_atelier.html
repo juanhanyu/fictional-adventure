@@ -1,0 +1,4345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>转生千金 · UI 概念方案一 — 雪瓷星仪画廊 (Celestial Porcelain Atelier)</title>
+<style>
+  /* ==========================================================================
+     SCHEME 1 · 雪瓷星仪画廊 (CELESTIAL PORCELAIN ATELIER)
+     Visual North Star: Title Screen V3 Snow-Porcelain × Celestial Astrolabe
+     Hard Rule: 0px border-radius everywhere — ZERO rounded nested boxes.
+     Geometry: 1px hairlines, 45° diamonds (◆), chamfered facets, 6-sided prism CTA.
+     ========================================================================== */
+  :root {
+    --bg-center: #ffffff;
+    --bg-base: #fafbfd;
+    --bg-mist: #f5f8fd;
+    --bg-edge: #ebf1fa;
+    --ink: #1b2333;
+    --ink-mid: #3a4862;
+    --ink-muted: #5a6882;
+    --ink-faint: #8b98ae;
+
+    --sapphire: #1658eb;
+    --sapphire-mid: #1c4cb8;
+    --sapphire-deep: #0e2b78;
+    --ice: #6bc5f8;
+    --ice-soft: rgba(107, 197, 248, 0.22);
+
+    --gold: #c4a46c;
+    --gold-deep: #9c7c46;
+    --gold-soft: rgba(196, 164, 108, 0.28);
+    --gold-faint: rgba(196, 164, 108, 0.14);
+
+    --line: rgba(27, 35, 51, 0.13);
+    --line-soft: rgba(27, 35, 51, 0.08);
+    --line-strong: rgba(27, 35, 51, 0.24);
+    --sapphire-line: rgba(22, 88, 235, 0.34);
+
+    --rose: #b8324f;
+    --jade: #158063;
+
+    --serif-zh: "Noto Serif SC", "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", "STSong", Georgia, serif;
+    --serif-en: "Cormorant Garamond", "Didot", "Times New Roman", "Liberation Serif", Georgia, serif;
+    --sans-zh: "Noto Sans SC", "Noto Sans CJK SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border-radius: 0 !important;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: radial-gradient(ellipse 68% 64% at 38% 48%, var(--bg-center) 0%, var(--bg-base) 56%, var(--bg-edge) 100%);
+    color: var(--ink);
+    font-family: var(--sans-zh);
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+  }
+
+  button {
+    font-family: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+    outline: none;
+  }
+
+  button:focus-visible {
+    outline: 1px solid var(--sapphire);
+    outline-offset: 3px;
+  }
+
+  .num {
+    font-variant-numeric: lining-nums tabular-nums;
+    font-feature-settings: "lnum" 1, "tnum" 1;
+  }
+
+  /* ==========================================================================
+     WHISPER-THIN TOP PREVIEW SWITCHER (36px)
+     ========================================================================== */
+  #atelier-switcher {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 36px;
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    background: rgba(250, 251, 253, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+
+  #atelier-switcher::after {
+    content: "";
+    position: absolute;
+    left: 28px;
+    right: 28px;
+    bottom: -1px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--gold) 0%, transparent 18%, transparent 82%, var(--gold) 100%);
+    pointer-events: none;
+  }
+
+  .sw-brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--serif-en);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    color: var(--ink-muted);
+    white-space: nowrap;
+  }
+
+  .sw-brand i {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    background: var(--gold);
+    transform: rotate(45deg);
+  }
+
+  .sw-brand strong {
+    font-family: var(--serif-zh);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--ink);
+    font-size: 11.5px;
+  }
+
+  .sw-tabs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 100%;
+  }
+
+  .sw-tab {
+    position: relative;
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 13px;
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+    transition: color 0.22s ease;
+    white-space: nowrap;
+  }
+
+  .sw-tab .sw-idx {
+    font-family: var(--serif-en);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gold-deep);
+    letter-spacing: 0.06em;
+  }
+
+  .sw-tab::after {
+    content: "";
+    position: absolute;
+    left: 13px;
+    right: 13px;
+    bottom: 0;
+    height: 2px;
+    background: var(--sapphire);
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.28s var(--ease);
+  }
+
+  .sw-tab:hover {
+    color: var(--ink);
+  }
+
+  .sw-tab.active {
+    color: var(--sapphire);
+    font-weight: 600;
+  }
+
+  .sw-tab.active::after {
+    transform: scaleX(1);
+  }
+
+  .sw-meta {
+    font-family: var(--serif-en);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+
+  /* ==========================================================================
+     STAGE VIEWPORT (Below 36px Switcher)
+     ========================================================================== */
+  #stage-viewport {
+    position: fixed;
+    top: 36px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+  }
+
+  .screen {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.36s var(--ease), visibility 0.36s;
+    overflow: hidden;
+  }
+
+  .screen.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  /* ==========================================================================
+     SHARED SIGNATURE MOTIFS (TITLE SCREEN DNA)
+     ========================================================================== */
+  /* 1. Diamond-Hairline Vertical Rail Item (◆ ── EN 中文) */
+  .rail-item {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 11px;
+    padding: 7px 8px 7px 2px;
+    color: var(--ink);
+    transition: transform 0.28s var(--ease), color 0.22s ease;
+    text-align: left;
+  }
+
+  .rail-item::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    flex-shrink: 0;
+    background: var(--ink-muted);
+    transform: rotate(45deg);
+    order: -2;
+    transition: background-color 0.22s ease, transform 0.28s var(--ease);
+  }
+
+  .rail-item::after {
+    content: "";
+    width: 18px;
+    height: 1px;
+    flex-shrink: 0;
+    background: var(--line-strong);
+    order: -1;
+    transition: width 0.3s var(--ease), background-color 0.22s ease;
+  }
+
+  .rail-item .ri-en {
+    order: 1;
+    font-family: var(--serif-en);
+    font-size: 14.5px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    color: var(--ink);
+    transition: color 0.22s ease;
+  }
+
+  .rail-item .ri-zh {
+    order: 2;
+    font-size: 12px;
+    color: var(--ink-muted);
+    letter-spacing: 0.05em;
+    transition: color 0.22s ease;
+  }
+
+  .rail-item:hover,
+  .rail-item.active {
+    transform: translateX(5px);
+  }
+
+  .rail-item:hover::before,
+  .rail-item.active::before {
+    background: var(--sapphire);
+    transform: rotate(45deg) scale(1.25);
+  }
+
+  .rail-item:hover::after,
+  .rail-item.active::after {
+    width: 30px;
+    background: var(--sapphire);
+  }
+
+  .rail-item:hover .ri-en,
+  .rail-item:hover .ri-zh,
+  .rail-item.active .ri-en,
+  .rail-item.active .ri-zh {
+    color: var(--sapphire);
+  }
+
+  /* 2. Signature Six-Sided Faceted Sapphire Prism CTA */
+  .prism-wrap {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0;
+  }
+
+  .prism-wing {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 12px;
+    pointer-events: none;
+    color: rgba(196, 164, 108, 0.72);
+    transition: color 0.28s ease, transform 0.32s var(--ease);
+  }
+
+  .prism-wing.top { top: 0; }
+  .prism-wing.bot { bottom: 0; }
+
+  .prism-wrap:hover .prism-wing.top {
+    color: var(--sapphire);
+    transform: translateY(-2px);
+  }
+
+  .prism-wrap:hover .prism-wing.bot {
+    color: var(--sapphire);
+    transform: translateY(2px);
+  }
+
+  .prism-drop {
+    width: 100%;
+    filter: drop-shadow(0 10px 18px rgba(14, 43, 120, 0.20));
+    transition: filter 0.28s var(--ease), transform 0.28s var(--ease);
+  }
+
+  .prism-wrap:hover .prism-drop {
+    filter: drop-shadow(0 14px 24px rgba(22, 88, 235, 0.28));
+    transform: translateY(-1px);
+  }
+
+  .prism-cta {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    width: 100%;
+    min-height: 54px;
+    padding: 9px 36px;
+    clip-path: polygon(12% 0%, 88% 0%, 100% 50%, 88% 100%, 12% 100%, 0% 50%);
+    background: linear-gradient(180deg, #2b66e6 0%, #1658eb 48%, #113b9c 52%, #0e2b78 100%);
+    color: #ffffff;
+    overflow: hidden;
+    isolation: isolate;
+    transition: filter 0.24s ease;
+  }
+
+  .prism-cta.compact {
+    min-height: 40px;
+    padding: 6px 26px;
+    clip-path: polygon(10% 0%, 90% 0%, 100% 50%, 90% 100%, 10% 100%, 0% 50%);
+  }
+
+  .prism-cta::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(125deg, rgba(255, 255, 255, 0.28) 0%, transparent 38%, rgba(107, 197, 248, 0.14) 68%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .prism-cta::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 6%;
+    right: 6%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.26), transparent);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .prism-cta .p-en {
+    position: relative;
+    z-index: 1;
+    font-family: var(--serif-en);
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: 0.24em;
+    color: #ffffff;
+    text-indent: 0.24em;
+  }
+
+  .prism-cta.compact .p-en {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-indent: 0.18em;
+  }
+
+  .prism-cta .p-zh {
+    position: relative;
+    z-index: 1;
+    font-family: var(--serif-zh);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    color: rgba(235, 244, 255, 0.92);
+  }
+
+  .prism-cta.compact .p-zh {
+    font-size: 11.5px;
+  }
+
+  /* Slow Celestial Astrolabe Rotation */
+  @keyframes astrolabeCW {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @keyframes astrolabeCCW {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+  }
+  .spin-cw {
+    transform-origin: center;
+    animation: astrolabeCW 120s linear infinite;
+  }
+  .spin-ccw {
+    transform-origin: center;
+    animation: astrolabeCCW 92s linear infinite;
+  }
+
+  /* ==========================================================================
+     SCREEN 1 · 局内自由探索 & GALGAME 对话 HUD
+     ========================================================================== */
+  #screen-hud {
+    background: #dce8f8;
+  }
+
+  .hud-scene-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 1;
+  }
+
+  /* Subtle top luminous porcelain veil so floating astrolabe ruler reads effortlessly */
+  .hud-top-mist {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 132px;
+    z-index: 4;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(250, 252, 255, 0.84) 0%, rgba(250, 252, 255, 0.44) 55%, rgba(250, 252, 255, 0) 100%);
+  }
+
+  /* Top-Left Floating Champagne-Gold Astrolabe Ruler (ZERO heavy box!) */
+  .hud-ruler {
+    position: absolute;
+    top: 22px;
+    left: 36px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    max-width: 560px;
+  }
+
+  .hud-ruler-top {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+
+  .hud-date-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--serif-zh);
+    font-size: 14.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--ink);
+  }
+
+  .hud-date-chip .dia {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--gold);
+    transform: rotate(45deg);
+  }
+
+  .hud-loc-name {
+    font-family: var(--serif-zh);
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--sapphire-deep);
+  }
+
+  .hud-loc-en {
+    font-family: var(--serif-en);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+  }
+
+  /* Calibrated Gold Tick Scale */
+  .hud-gold-scale {
+    position: relative;
+    width: 470px;
+    height: 10px;
+    display: flex;
+    align-items: center;
+  }
+
+  .hud-gold-scale svg {
+    width: 100%;
+    height: 10px;
+    display: block;
+  }
+
+  /* Ultra-clean inline vitals below gold ruler */
+  .hud-vitals-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding-top: 1px;
+  }
+
+  .hv-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .hv-lbl {
+    font-family: var(--serif-en);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--ink-muted);
+  }
+
+  .hv-bar {
+    width: 58px;
+    height: 2px;
+    background: rgba(27, 35, 51, 0.14);
+    position: relative;
+  }
+
+  .hv-bar i {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    display: block;
+  }
+
+  .hv-bar.hp i { width: 92%; background: var(--rose); }
+  .hv-bar.mp i { width: 100%; background: var(--sapphire); }
+  .hv-bar.st i { width: 80%; background: var(--gold-deep); }
+
+  .hv-val {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .hv-gold {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--gold-deep);
+    padding-left: 12px;
+    border-left: 1px solid var(--gold-soft);
+  }
+
+  /* Top-Right Horizontal Diamond-Hairline Quick Links */
+  .hud-quick-nav {
+    position: absolute;
+    top: 26px;
+    right: 36px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+
+  .hq-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 2px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--ink);
+    transition: color 0.22s ease, transform 0.24s var(--ease);
+  }
+
+  .hq-btn::before {
+    content: "";
+    width: 4.5px;
+    height: 4.5px;
+    background: var(--gold);
+    transform: rotate(45deg);
+    transition: background-color 0.22s ease, transform 0.24s var(--ease);
+  }
+
+  .hq-btn::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -3px;
+    height: 1px;
+    background: var(--sapphire);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.26s var(--ease);
+  }
+
+  .hq-btn:hover {
+    color: var(--sapphire);
+    transform: translateY(-1px);
+  }
+
+  .hq-btn:hover::before {
+    background: var(--sapphire);
+    transform: rotate(45deg) scale(1.25);
+  }
+
+  .hq-btn:hover::after {
+    transform: scaleX(1);
+  }
+
+  .hq-badge {
+    font-family: var(--serif-en);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--sapphire);
+    margin-left: -2px;
+  }
+
+  /* Scene Interactive Diamond Hotspots */
+  .scene-hotspot {
+    position: absolute;
+    z-index: 6;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px 5px 6px;
+    background: rgba(250, 252, 255, 0.78);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--gold);
+    color: var(--ink);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    transition: transform 0.26s var(--ease), background-color 0.22s ease, border-color 0.22s ease;
+  }
+
+  .scene-hotspot .hs-pin {
+    width: 7px;
+    height: 7px;
+    background: var(--sapphire);
+    transform: rotate(45deg);
+    box-shadow: 0 0 0 3px rgba(22, 88, 235, 0.16);
+  }
+
+  .scene-hotspot:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.94);
+    border-color: var(--sapphire);
+    color: var(--sapphire);
+  }
+
+  /* Character Portrait Stage (Standing seamlessly behind rising dialogue mist) */
+  .hud-portraits {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 120px;
+    height: 600px;
+    z-index: 5;
+    pointer-events: none;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 150px;
+  }
+
+  .char-stand {
+    width: 360px;
+    height: 560px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 72%, rgba(0, 0, 0, 0.35) 88%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 0%, #000 72%, rgba(0, 0, 0, 0.35) 88%, transparent 100%);
+    transition: opacity 0.36s var(--ease), transform 0.42s var(--ease), filter 0.36s var(--ease);
+  }
+
+  .char-stand.active {
+    opacity: 1;
+    filter: saturate(1.04) contrast(1.02);
+    transform: translateY(0) scale(1);
+  }
+
+  .char-stand.dim {
+    opacity: 0.64;
+    filter: brightness(0.92) saturate(0.68);
+    transform: translateY(10px) scale(0.965);
+  }
+
+  /* Bottom Feather-Soft Snow-Porcelain Mist Dialogue Veil */
+  .hud-dialogue-veil {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 236px;
+    z-index: 12;
+    background: linear-gradient(
+      180deg,
+      rgba(247, 250, 255, 0) 0%,
+      rgba(247, 250, 255, 0.72) 24%,
+      rgba(249, 251, 255, 0.94) 46%,
+      rgba(246, 249, 254, 0.98) 100%
+    );
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0 42px 24px;
+  }
+
+  /* Single 1px Sapphire-Gold Horizon Line with Central Diamond Vertex */
+  .hud-horizon {
+    position: relative;
+    width: 100%;
+    height: 1px;
+    margin-bottom: 18px;
+    background: linear-gradient(
+      90deg,
+      rgba(196, 164, 108, 0.12) 0%,
+      rgba(196, 164, 108, 0.72) 14%,
+      rgba(22, 88, 235, 0.56) 50%,
+      rgba(196, 164, 108, 0.72) 86%,
+      rgba(196, 164, 108, 0.12) 100%
+    );
+  }
+
+  .hud-horizon::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    background: var(--sapphire);
+    transform: translate(-50%, -50%) rotate(45deg);
+    box-shadow: 0 0 0 4px rgba(247, 250, 255, 0.92);
+  }
+
+  .hud-dialogue-grid {
+    display: grid;
+    grid-template-columns: 224px 1fr 220px;
+    align-items: center;
+    gap: 28px;
+    min-height: 128px;
+  }
+
+  /* Left Faceted Speaker Crest + Bust Medallion */
+  .speaker-block {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding-right: 18px;
+    border-right: 1px solid var(--line);
+  }
+
+  .speaker-crest {
+    position: relative;
+    width: 78px;
+    height: 92px;
+    flex-shrink: 0;
+    clip-path: polygon(50% 0%, 100% 18%, 100% 82%, 50% 100%, 0% 82%, 0% 18%);
+    background: linear-gradient(180deg, #ffffff 0%, #e7f0fd 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .speaker-crest-frame {
+    position: relative;
+    padding: 2px;
+    clip-path: polygon(50% 0%, 100% 18%, 100% 82%, 50% 100%, 0% 82%, 0% 18%);
+    background: linear-gradient(180deg, var(--gold) 0%, var(--sapphire) 100%);
+    flex-shrink: 0;
+  }
+
+  .speaker-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .speaker-eyebrow {
+    font-family: var(--serif-en);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    color: var(--gold-deep);
+    text-transform: uppercase;
+  }
+
+  .speaker-name {
+    font-family: var(--serif-zh);
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    color: var(--ink);
+  }
+
+  .speaker-role {
+    font-size: 11px;
+    color: var(--ink-muted);
+    letter-spacing: 0.04em;
+  }
+
+  /* Center Literary Dialogue Area */
+  .dialogue-body {
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    padding: 4px 6px;
+  }
+
+  .dialogue-text {
+    font-family: var(--serif-zh);
+    font-size: 19px;
+    line-height: 1.78;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    min-height: 68px;
+  }
+
+  .dialogue-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .dialogue-pips {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .dpip {
+    width: 5px;
+    height: 5px;
+    background: var(--line-strong);
+    transform: rotate(45deg);
+    transition: background-color 0.24s ease, transform 0.24s ease;
+  }
+
+  .dpip.active {
+    background: var(--sapphire);
+    transform: rotate(45deg) scale(1.3);
+  }
+
+  .dialogue-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--serif-en);
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    color: var(--ink-muted);
+  }
+
+  .dialogue-hint b {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-right: 1.5px solid var(--sapphire);
+    border-bottom: 1.5px solid var(--sapphire);
+    transform: rotate(45deg);
+    animation: caretFloat 1.5s ease-in-out infinite;
+  }
+
+  @keyframes caretFloat {
+    0%, 100% { transform: translateY(-2px) rotate(45deg); opacity: 0.5; }
+    50% { transform: translateY(2px) rotate(45deg); opacity: 1; }
+  }
+
+  /* Right Faceted Action Triggers */
+  .hud-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-left: 20px;
+    border-left: 1px solid var(--line);
+  }
+
+  .hud-act-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .facet-btn {
+    position: relative;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 10px;
+    background: rgba(255, 255, 255, 0.78);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--ink);
+    transition: background-color 0.22s ease, border-color 0.22s ease, color 0.22s ease;
+  }
+
+  .facet-btn::before {
+    content: "";
+    width: 4px;
+    height: 4px;
+    background: var(--gold);
+    transform: rotate(45deg);
+    transition: background-color 0.22s ease;
+  }
+
+  .facet-btn:hover {
+    background: rgba(22, 88, 235, 0.06);
+    border-color: var(--sapphire);
+    color: var(--sapphire);
+  }
+
+  .facet-btn:hover::before {
+    background: var(--sapphire);
+  }
+
+  .hud-toast {
+    position: absolute;
+    top: 76px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    z-index: 30;
+    padding: 8px 22px;
+    background: rgba(255, 255, 255, 0.95);
+    border-top: 1px solid var(--gold);
+    border-bottom: 1px solid var(--sapphire);
+    font-size: 12.5px;
+    letter-spacing: 0.06em;
+    color: var(--ink);
+    box-shadow: 0 12px 28px rgba(14, 43, 120, 0.10);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s ease, transform 0.28s var(--ease);
+  }
+
+  .hud-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ==========================================================================
+     SCREEN 2 · 魔导书状态 & 因果星轨 (FULL GALLERY EXPANSION)
+     ========================================================================== */
+  #screen-panel {
+    background: radial-gradient(ellipse 68% 66% at 28% 46%, #ffffff 0%, #fafbfd 56%, #ecf2fb 100%);
+  }
+
+  .atelier-astrolabe-bg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .atelier-shell {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 44px 26px;
+  }
+
+  .atelier-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+
+  .ah-left {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .ah-eyebrow {
+    font-family: var(--serif-en);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    color: var(--gold-deep);
+    text-transform: uppercase;
+  }
+
+  .ah-title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+
+  .ah-title {
+    font-family: var(--serif-zh);
+    font-size: 27px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    color: var(--ink);
+  }
+
+  .ah-subtitle {
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    letter-spacing: 0.05em;
+  }
+
+  .ah-right {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+
+  .ah-stat-pill {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--ink-mid);
+    letter-spacing: 0.04em;
+  }
+
+  .ah-stat-pill span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ah-stat-pill b {
+    color: var(--sapphire-deep);
+    font-weight: 600;
+  }
+
+  .ah-close {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0 6px 18px;
+    border-left: 1px solid var(--line);
+    font-size: 12px;
+    letter-spacing: 0.10em;
+    color: var(--ink-muted);
+    transition: color 0.2s ease;
+  }
+
+  .ah-close:hover {
+    color: var(--sapphire);
+  }
+
+  /* Two-column Gallery Body */
+  .panel-grid {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 248px 1fr;
+    gap: 36px;
+    padding-top: 22px;
+  }
+
+  .panel-rail {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding-right: 24px;
+    border-right: 1px solid var(--line);
+  }
+
+  .panel-rail-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .rail-divider {
+    height: 1px;
+    background: linear-gradient(90deg, var(--gold-soft), transparent);
+    margin: 14px 0;
+  }
+
+  /* Miniature Sylvia Profile Card on Bottom-Left Rail (Zero Boxes!) */
+  .rail-profile {
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .rp-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .rp-diamond {
+    width: 48px;
+    height: 56px;
+    flex-shrink: 0;
+    padding: 1.5px;
+    clip-path: polygon(50% 0%, 100% 18%, 100% 82%, 50% 100%, 0% 82%, 0% 18%);
+    background: linear-gradient(180deg, var(--gold), var(--sapphire));
+  }
+
+  .rp-diamond-in {
+    width: 100%;
+    height: 100%;
+    clip-path: polygon(50% 0%, 100% 18%, 100% 82%, 50% 100%, 0% 82%, 0% 18%);
+    background: #f5f9ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .rp-name {
+    font-family: var(--serif-zh);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--ink);
+  }
+
+  .rp-title {
+    font-size: 11px;
+    color: var(--ink-muted);
+    margin-top: 2px;
+  }
+
+  .rp-meta-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+    font-size: 11px;
+    color: var(--ink-muted);
+  }
+
+  .rp-meta-list div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .rp-meta-list b {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  /* Right Workspace */
+  .panel-workspace {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ptab-pane {
+    display: none;
+    height: 100%;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .ptab-pane.active {
+    display: flex;
+  }
+
+  /* STATUS OVERVIEW SPREAD: Top 2-column (Stats+Radar | Causal Beams) + Bottom Relic Strip */
+  .status-spread-top {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1.08fr 1fr;
+    gap: 36px;
+  }
+
+  .ledger-section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
+  }
+
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .sec-head-l {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .sec-en {
+    font-family: var(--serif-en);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    color: var(--gold-deep);
+    text-transform: uppercase;
+  }
+
+  .sec-zh {
+    font-family: var(--serif-zh);
+    font-size: 15.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--ink);
+  }
+
+  .sec-note {
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.04em;
+  }
+
+  /* Stats + Radar inner grid */
+  .stats-radar-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 222px 1fr;
+    gap: 24px;
+    align-items: center;
+  }
+
+  .stat-ledger {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .vital-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .vital-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11.5px;
+  }
+
+  .vital-top span {
+    color: var(--ink-muted);
+    letter-spacing: 0.06em;
+  }
+
+  .vital-top b {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .vital-track {
+    height: 3px;
+    background: rgba(27, 35, 51, 0.10);
+    position: relative;
+  }
+
+  .vital-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+  }
+
+  .attr-table {
+    margin-top: 6px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line-soft);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 18px;
+  }
+
+  .attr-cell {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .attr-cell span {
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+
+  .attr-cell b {
+    font-family: var(--serif-en);
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .attr-cell b.hi {
+    color: var(--sapphire);
+  }
+
+  .radar-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .radar-caption {
+    margin-top: 2px;
+    font-family: var(--serif-en);
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    color: var(--ink-faint);
+  }
+
+  /* CAUSAL ORBIT DUAL-AXIS BALANCE BEAMS (5 Characters) */
+  .causal-beam-list {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    padding-top: 4px;
+  }
+
+  .cbeam-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 6px 0 8px;
+    border-bottom: 1px solid var(--line-soft);
+    cursor: pointer;
+    transition: background-color 0.2s ease, padding-left 0.24s var(--ease);
+  }
+
+  .cbeam-item:hover {
+    background: rgba(22, 88, 235, 0.03);
+    padding-left: 6px;
+  }
+
+  .cbeam-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .cbeam-char {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--serif-zh);
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .cbeam-char i {
+    width: 5px;
+    height: 5px;
+    background: var(--gold);
+    transform: rotate(45deg);
+    display: inline-block;
+  }
+
+  .cbeam-char em {
+    font-style: normal;
+    font-family: var(--serif-en);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+
+  .cbeam-state {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--sapphire);
+  }
+
+  .cbeam-scale-row {
+    display: grid;
+    grid-template-columns: 68px 1fr 68px;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .cbeam-pole {
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+  }
+
+  .cbeam-pole.left { text-align: right; }
+  .cbeam-pole.right { text-align: left; }
+  .cbeam-pole.dominant {
+    color: var(--sapphire-deep);
+    font-weight: 600;
+  }
+
+  .cbeam-rail {
+    position: relative;
+    height: 16px;
+    display: flex;
+    align-items: center;
+  }
+
+  .cbeam-line {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(22, 88, 235, 0.45), rgba(196, 164, 108, 0.55), rgba(184, 50, 79, 0.42));
+  }
+
+  .cbeam-fulcrum {
+    position: absolute;
+    left: 50%;
+    top: 3px;
+    bottom: 3px;
+    width: 1px;
+    background: var(--gold);
+  }
+
+  .cbeam-fill {
+    position: absolute;
+    top: 50%;
+    height: 2px;
+    transform: translateY(-50%);
+    background: var(--sapphire);
+    transition: left 0.35s var(--ease), width 0.35s var(--ease);
+  }
+
+  .cbeam-node {
+    position: absolute;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    background: #ffffff;
+    border: 1.5px solid var(--sapphire);
+    transform: translate(-50%, -50%) rotate(45deg);
+    transition: left 0.35s var(--ease);
+    box-shadow: 0 0 0 3px rgba(22, 88, 235, 0.12);
+  }
+
+  /* Bottom Equipped Relics Strip (ZERO rounded nesting!) */
+  .relic-strip-wrap {
+    flex-shrink: 0;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .relic-strip-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .relic-resonance {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    color: var(--sapphire);
+    letter-spacing: 0.05em;
+  }
+
+  .relic-resonance i {
+    width: 5px;
+    height: 5px;
+    background: var(--sapphire);
+    transform: rotate(45deg);
+    display: inline-block;
+  }
+
+  .relic-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border-top: 1px solid var(--line-soft);
+    border-bottom: 1px solid var(--line-soft);
+    background: rgba(255, 255, 255, 0.56);
+  }
+
+  .relic-plate {
+    position: relative;
+    padding: 13px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    border-right: 1px solid var(--line-soft);
+    transition: background-color 0.22s ease;
+  }
+
+  .relic-plate:last-child {
+    border-right: none;
+  }
+
+  .relic-plate::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 24px;
+    height: 2px;
+    background: var(--gold);
+    transition: width 0.28s var(--ease), background-color 0.22s ease;
+  }
+
+  .relic-plate:hover {
+    background: rgba(22, 88, 235, 0.035);
+  }
+
+  .relic-plate:hover::before {
+    width: 56px;
+    background: var(--sapphire);
+  }
+
+  .relic-glyph {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--sapphire-deep);
+    background: rgba(22, 88, 235, 0.06);
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+
+  .relic-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .relic-name {
+    font-family: var(--serif-zh);
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: 0.04em;
+  }
+
+  .relic-tag {
+    font-family: var(--serif-en);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--gold-deep);
+  }
+
+  .relic-desc {
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--ink-muted);
+    margin-top: 2px;
+  }
+
+  /* Secondary Sub-Tabs inside Screen 2 (Causal Deep / Relics / Skills / Items) */
+  .subpane-grid-2 {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 32px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .ledger-list {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--line);
+  }
+
+  .ledger-row {
+    display: grid;
+    grid-template-columns: 44px 1.2fr 1.8fr auto;
+    align-items: center;
+    gap: 16px;
+    padding: 13px 12px;
+    border-bottom: 1px solid var(--line-soft);
+    transition: background-color 0.2s ease;
+  }
+
+  .ledger-row:hover {
+    background: rgba(22, 88, 235, 0.035);
+  }
+
+  .lr-idx {
+    font-family: var(--serif-en);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gold-deep);
+    letter-spacing: 0.12em;
+  }
+
+  .lr-title {
+    font-family: var(--serif-zh);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .lr-sub {
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+
+  .lr-tag {
+    font-size: 11px;
+    color: var(--sapphire);
+    letter-spacing: 0.06em;
+    padding-left: 12px;
+    border-left: 1px solid var(--gold-soft);
+    white-space: nowrap;
+  }
+
+  /* ==========================================================================
+     SCREEN 3 · 王国星仪地图 (CELESTIAL CARTOGRAPHY)
+     ========================================================================== */
+  #screen-map {
+    background: radial-gradient(ellipse 72% 70% at 38% 50%, #fbfdff 0%, #f1f6fd 62%, #e4edf9 100%);
+  }
+
+  .map-layout {
+    position: relative;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 1fr 412px;
+  }
+
+  .map-canvas-zone {
+    position: relative;
+    overflow: hidden;
+    border-right: 1px solid var(--line);
+  }
+
+  .map-overlay-head {
+    position: absolute;
+    top: 24px;
+    left: 38px;
+    z-index: 6;
+    pointer-events: none;
+  }
+
+  .map-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* Interactive Diamond Location Pins */
+  .map-pin {
+    position: absolute;
+    z-index: 8;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+
+  .pin-reticle {
+    position: relative;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pin-outer {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border: 1px solid rgba(196, 164, 108, 0.72);
+    transform: rotate(45deg);
+    transition: transform 0.32s var(--ease), border-color 0.24s ease, width 0.28s var(--ease), height 0.28s var(--ease);
+  }
+
+  .pin-core {
+    width: 9px;
+    height: 9px;
+    background: #ffffff;
+    border: 1.8px solid var(--sapphire-deep);
+    transform: rotate(45deg);
+    transition: background-color 0.22s ease, border-color 0.22s ease, transform 0.28s var(--ease);
+  }
+
+  .map-pin:hover .pin-outer,
+  .map-pin.selected .pin-outer {
+    width: 30px;
+    height: 30px;
+    border-color: var(--sapphire);
+    transform: rotate(135deg);
+  }
+
+  .map-pin.selected .pin-core {
+    background: var(--sapphire);
+    border-color: var(--sapphire);
+    transform: rotate(45deg) scale(1.25);
+  }
+
+  .map-pin.current .pin-core {
+    background: var(--gold);
+    border-color: var(--gold-deep);
+  }
+
+  .pin-label {
+    padding: 3px 10px;
+    background: rgba(255, 255, 255, 0.88);
+    border-bottom: 1px solid var(--line-strong);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    white-space: nowrap;
+    transition: border-color 0.22s ease, background-color 0.22s ease;
+  }
+
+  .map-pin.selected .pin-label {
+    border-color: var(--sapphire);
+    background: #ffffff;
+  }
+
+  .pin-zh {
+    font-family: var(--serif-zh);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: 0.06em;
+  }
+
+  .pin-en {
+    font-family: var(--serif-en);
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+    color: var(--ink-muted);
+  }
+
+  .map-pin.selected .pin-zh {
+    color: var(--sapphire);
+  }
+
+  .map-scale-foot {
+    position: absolute;
+    left: 38px;
+    bottom: 22px;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-family: var(--serif-en);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--ink-muted);
+  }
+
+  /* Right-Side Architectural Region Dossier */
+  .map-dossier {
+    background: rgba(252, 253, 255, 0.92);
+    backdrop-filter: blur(12px);
+    padding: 30px 34px 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .md-top {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .md-kicker {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--serif-en);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    color: var(--gold-deep);
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .md-title {
+    font-family: var(--serif-zh);
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    color: var(--ink);
+  }
+
+  .md-en-sub {
+    font-family: var(--serif-en);
+    font-size: 12.5px;
+    letter-spacing: 0.18em;
+    color: var(--ink-muted);
+    margin-top: -10px;
+  }
+
+  .md-emblem-bar {
+    height: 112px;
+    border-top: 1px solid var(--line-soft);
+    border-bottom: 1px solid var(--line-soft);
+    background: linear-gradient(135deg, rgba(22, 88, 235, 0.04) 0%, rgba(196, 164, 108, 0.06) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .md-desc {
+    font-family: var(--serif-zh);
+    font-size: 14px;
+    line-height: 1.82;
+    color: var(--ink-mid);
+  }
+
+  .md-specs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 18px;
+    padding: 14px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .md-spec-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .md-spec-item span {
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+  }
+
+  .md-spec-item b {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .md-present {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .md-present-lbl {
+    font-family: var(--serif-en);
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    color: var(--gold-deep);
+  }
+
+  .md-people {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 12.5px;
+    color: var(--ink);
+  }
+
+  .md-people span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .md-people span::before {
+    content: "";
+    width: 4.5px;
+    height: 4.5px;
+    background: var(--sapphire);
+    transform: rotate(45deg);
+  }
+
+  .md-foot {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .md-travel-msg {
+    font-size: 12px;
+    color: var(--sapphire);
+    min-height: 18px;
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+
+  /* ==========================================================================
+     SCREEN 4 · 季度日程 / 火漆信箱 / 街市商铺
+     ========================================================================== */
+  #screen-life {
+    background: radial-gradient(ellipse 68% 66% at 72% 48%, #ffffff 0%, #fafbfd 58%, #ecf2fb 100%);
+  }
+
+  .life-subnav {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    margin-top: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line-soft);
+    flex-shrink: 0;
+  }
+
+  .life-subbtn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 4px 2px;
+    color: var(--ink-muted);
+    transition: color 0.22s ease;
+  }
+
+  .life-subbtn::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    background: var(--line-strong);
+    transform: rotate(45deg);
+    transition: background-color 0.22s ease, transform 0.24s ease;
+  }
+
+  .life-subbtn .ls-en {
+    font-family: var(--serif-en);
+    font-size: 13px;
+    letter-spacing: 0.16em;
+  }
+
+  .life-subbtn .ls-zh {
+    font-family: var(--serif-zh);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+  }
+
+  .life-subbtn.active,
+  .life-subbtn:hover {
+    color: var(--sapphire);
+  }
+
+  .life-subbtn.active::before,
+  .life-subbtn:hover::before {
+    background: var(--sapphire);
+    transform: rotate(45deg) scale(1.25);
+  }
+
+  .life-subbtn.active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -13px;
+    height: 2px;
+    background: var(--sapphire);
+  }
+
+  .life-pane {
+    display: none;
+    flex: 1;
+    min-height: 0;
+    padding-top: 20px;
+  }
+
+  .life-pane.active {
+    display: grid;
+  }
+
+  /* Sub-view 4A: 3-Slot Celestial Calendar Planner */
+  #life-calendar {
+    grid-template-columns: 340px 1fr;
+    gap: 36px;
+  }
+
+  .cal-catalog {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-right: 26px;
+    border-right: 1px solid var(--line);
+  }
+
+  .cal-act-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    border-top: 1px solid var(--line-soft);
+    border-bottom: 1px solid var(--line-soft);
+    border-left: 2px solid transparent;
+    background: rgba(255, 255, 255, 0.62);
+    text-align: left;
+    transition: border-left-color 0.22s ease, background-color 0.22s ease, transform 0.22s var(--ease);
+  }
+
+  .cal-act-item:hover,
+  .cal-act-item.picked {
+    border-left-color: var(--sapphire);
+    background: rgba(22, 88, 235, 0.045);
+    transform: translateX(3px);
+  }
+
+  .cal-act-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .cal-act-name {
+    font-family: var(--serif-zh);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .cal-act-cost {
+    font-size: 11px;
+    color: var(--gold-deep);
+    font-weight: 600;
+  }
+
+  .cal-act-gain {
+    font-size: 11.5px;
+    color: var(--sapphire);
+  }
+
+  .cal-board {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 22px;
+  }
+
+  .cal-slots {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .cal-slot {
+    position: relative;
+    min-height: 270px;
+    padding: 20px 20px 18px;
+    background: rgba(255, 255, 255, 0.78);
+    border-top: 2px solid var(--gold);
+    border-bottom: 1px solid var(--line);
+    border-left: 1px solid var(--line-soft);
+    border-right: 1px solid var(--line-soft);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: border-top-color 0.24s ease, background-color 0.24s ease;
+  }
+
+  .cal-slot.active-slot {
+    border-top-color: var(--sapphire);
+    background: #ffffff;
+  }
+
+  .cs-period {
+    font-family: var(--serif-en);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--gold-deep);
+  }
+
+  .cs-period-zh {
+    font-family: var(--serif-zh);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-top: 3px;
+  }
+
+  .cs-chosen {
+    padding: 16px 0;
+    border-top: 1px solid var(--line-soft);
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .cs-chosen-name {
+    font-family: var(--serif-zh);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--sapphire-deep);
+  }
+
+  .cs-chosen-desc {
+    font-size: 12px;
+    line-height: 1.65;
+    color: var(--ink-muted);
+    margin-top: 6px;
+  }
+
+  .cs-foot {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11.5px;
+    color: var(--ink-muted);
+  }
+
+  .cal-summary-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 22px;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.72);
+  }
+
+  .cal-proj-list {
+    display: flex;
+    align-items: center;
+    gap: 26px;
+  }
+
+  .cal-proj {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .cal-proj span {
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    letter-spacing: 0.08em;
+  }
+
+  .cal-proj b {
+    font-family: var(--serif-en);
+    font-size: 16px;
+    color: var(--sapphire);
+  }
+
+  /* Sub-view 4B: Wax-Sealed Porcelain Mailbox */
+  #life-mailbox {
+    grid-template-columns: 330px 1fr;
+    gap: 36px;
+  }
+
+  .mail-list {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--line);
+    padding-right: 24px;
+    border-right: 1px solid var(--line);
+  }
+
+  .mail-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 15px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    border-left: 2px solid transparent;
+    text-align: left;
+    transition: background-color 0.2s ease, border-left-color 0.2s ease;
+  }
+
+  .mail-row:hover,
+  .mail-row.active {
+    background: rgba(22, 88, 235, 0.04);
+    border-left-color: var(--sapphire);
+  }
+
+  .mr-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .mr-sender {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--serif-zh);
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .mr-unread {
+    width: 5px;
+    height: 5px;
+    background: var(--sapphire);
+    transform: rotate(45deg);
+    display: inline-block;
+  }
+
+  .mr-date {
+    font-family: var(--serif-en);
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+
+  .mr-subject {
+    font-size: 12.5px;
+    color: var(--ink-mid);
+  }
+
+  .mail-sheet-stage {
+    position: relative;
+    background: #ffffff;
+    border-top: 2px solid var(--gold);
+    border-bottom: 2px solid var(--gold);
+    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    padding: 32px 46px 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 18px 40px rgba(14, 43, 120, 0.06);
+  }
+
+  .ms-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .ms-eyebrow {
+    font-family: var(--serif-en);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--gold-deep);
+    text-transform: uppercase;
+  }
+
+  .ms-subject {
+    font-family: var(--serif-zh);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--ink);
+    margin-top: 4px;
+  }
+
+  .ms-seal {
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    clip-path: polygon(50% 0%, 88% 15%, 100% 50%, 88% 85%, 50% 100%, 12% 85%, 0% 50%, 12% 15%);
+    background: linear-gradient(145deg, #275fd6, #0e2b78);
+    color: #ffffff;
+    flex-shrink: 0;
+  }
+
+  .ms-seal.crimson {
+    background: linear-gradient(145deg, #c94460, #7d1931);
+  }
+
+  .ms-body {
+    flex: 1;
+    padding: 24px 0;
+    font-family: var(--serif-zh);
+    font-size: 15.5px;
+    line-height: 2.05;
+    letter-spacing: 0.04em;
+    color: var(--ink-mid);
+  }
+
+  .ms-salute {
+    color: var(--ink);
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+
+  .ms-sign {
+    text-align: right;
+    color: var(--ink);
+    font-weight: 600;
+    margin-top: 18px;
+  }
+
+  .ms-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 16px;
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .ms-enclosure {
+    font-size: 12px;
+    color: var(--sapphire);
+    letter-spacing: 0.04em;
+  }
+
+  /* Sub-view 4C: Minimalist Gallery Curio Shop */
+  #life-shop {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .shop-top-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .shop-vitrine {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--line);
+    border-left: 1px solid var(--line-soft);
+  }
+
+  .shop-cell {
+    padding: 20px 22px;
+    border-right: 1px solid var(--line-soft);
+    border-bottom: 1px solid var(--line-soft);
+    background: rgba(255, 255, 255, 0.72);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+    transition: background-color 0.22s ease;
+  }
+
+  .shop-cell:hover {
+    background: #ffffff;
+  }
+
+  .sc-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .sc-name {
+    font-family: var(--serif-zh);
+    font-size: 15.5px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .sc-price {
+    font-family: var(--serif-en);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gold-deep);
+  }
+
+  .sc-desc {
+    font-size: 12px;
+    line-height: 1.65;
+    color: var(--ink-muted);
+  }
+
+  .sc-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .sc-tag {
+    font-size: 11px;
+    color: var(--sapphire);
+    letter-spacing: 0.05em;
+  }
+
+  .sc-buy {
+    padding: 5px 14px;
+    border-top: 1px solid var(--sapphire);
+    border-bottom: 1px solid var(--sapphire);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.10em;
+    color: var(--sapphire);
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .sc-buy:hover {
+    background: var(--sapphire);
+    color: #ffffff;
+  }
+
+  /* ==========================================================================
+     SCREEN 5 · 系统确认弹窗 (sysPopup)
+     ========================================================================== */
+  #screen-popup {
+    background: #e3edf9;
+  }
+
+  .popup-backdrop-scene {
+    position: absolute;
+    inset: 0;
+    filter: blur(7px) brightness(1.06);
+    transform: scale(1.04);
+    opacity: 0.72;
+    pointer-events: none;
+  }
+
+  .popup-frost-veil {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 48%, rgba(255, 255, 255, 0.78) 0%, rgba(236, 243, 252, 0.84) 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 24px;
+  }
+
+  .sys-prism-card {
+    position: relative;
+    width: min(580px, 92vw);
+    background: rgba(253, 254, 255, 0.96);
+    padding: 36px 46px 30px;
+    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    box-shadow: 0 28px 64px rgba(14, 43, 120, 0.13);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+  }
+
+  /* Top & Bottom Champagne-Gold Architectural Brackets */
+  .sys-bracket {
+    position: absolute;
+    left: -1px;
+    right: -1px;
+    height: 14px;
+    pointer-events: none;
+  }
+
+  .sys-bracket.top { top: 0; }
+  .sys-bracket.bot { bottom: 0; }
+
+  .sys-crest-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--serif-en);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.20em;
+    color: var(--gold-deep);
+    text-transform: uppercase;
+  }
+
+  .sys-crest-top i {
+    width: 6px;
+    height: 6px;
+    background: var(--sapphire);
+    transform: rotate(45deg);
+    display: inline-block;
+  }
+
+  .sys-title {
+    font-family: var(--serif-zh);
+    font-size: 25px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    color: var(--ink);
+    text-align: center;
+  }
+
+  .sys-rule {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold) 22%, var(--sapphire) 50%, var(--gold) 78%, transparent);
+  }
+
+  .sys-desc {
+    font-family: var(--serif-zh);
+    font-size: 14.5px;
+    line-height: 1.85;
+    color: var(--ink-mid);
+    text-align: center;
+    max-width: 460px;
+  }
+
+  .sys-gains {
+    width: 100%;
+    border-top: 1px solid var(--line-soft);
+    border-bottom: 1px solid var(--line-soft);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sys-gain-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 6px;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 13px;
+  }
+
+  .sys-gain-row:last-child {
+    border-bottom: none;
+  }
+
+  .sg-lbl {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ink-muted);
+  }
+
+  .sg-lbl::before {
+    content: "";
+    width: 4px;
+    height: 4px;
+    background: var(--gold);
+    transform: rotate(45deg);
+  }
+
+  .sg-val {
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .sg-delta {
+    color: var(--sapphire);
+    font-weight: 700;
+    margin-left: 8px;
+  }
+
+  .popup-variant-bar {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .pv-btn {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    padding: 4px 2px;
+    border-bottom: 1px solid transparent;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .pv-btn.active,
+  .pv-btn:hover {
+    color: var(--sapphire);
+    border-bottom-color: var(--sapphire);
+  }
+</style>
+</head>
+<body>
+
+  <!-- ======================================================================
+       WHISPER-THIN TOP PREVIEW SWITCHER
+       ====================================================================== -->
+  <nav id="atelier-switcher" aria-label="界面方案预览切换">
+    <div class="sw-brand">
+      <i></i>
+      <span>CELESTIAL PORCELAIN ATELIER</span>
+      <strong>雪瓷星仪画廊</strong>
+    </div>
+    <div class="sw-tabs" role="tablist">
+      <button class="sw-tab active" data-screen="screen-hud" role="tab" aria-selected="true">
+        <span class="sw-idx">[1]</span><span>局内探索 &amp; 对话 HUD</span>
+      </button>
+      <button class="sw-tab" data-screen="screen-panel" role="tab" aria-selected="false">
+        <span class="sw-idx">[2]</span><span>魔导书状态 &amp; 因果星轨</span>
+      </button>
+      <button class="sw-tab" data-screen="screen-map" role="tab" aria-selected="false">
+        <span class="sw-idx">[3]</span><span>王国星仪地图</span>
+      </button>
+      <button class="sw-tab" data-screen="screen-life" role="tab" aria-selected="false">
+        <span class="sw-idx">[4]</span><span>日程 &amp; 信箱 &amp; 商店</span>
+      </button>
+      <button class="sw-tab" data-screen="screen-popup" role="tab" aria-selected="false">
+        <span class="sw-idx">[5]</span><span>系统确认弹窗</span>
+      </button>
+    </div>
+    <div class="sw-meta">HOUSE OF VESTERIA // 1440×900</div>
+  </nav>
+
+  <main id="stage-viewport">
+
+    <!-- ====================================================================
+         SCREEN 1 · 局内自由探索 & GALGAME 对话 HUD
+         ==================================================================== -->
+    <section id="screen-hud" class="screen active" aria-label="局内探索与对话界面">
+      <!-- Painterly Procedural SVG Conservatory Scene: 阿斯拉魔导学院 · 水属性教室 -->
+      <svg class="hud-scene-canvas" viewBox="0 0 1440 864" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#c9ddf7"/>
+            <stop offset="52%" stop-color="#e7f1fc"/>
+            <stop offset="100%" stop-color="#f7fafe"/>
+          </linearGradient>
+          <linearGradient id="wallGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#edf2fa"/>
+            <stop offset="65%" stop-color="#e3ebf7"/>
+            <stop offset="100%" stop-color="#d4e0f2"/>
+          </linearGradient>
+          <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#dae5f5"/>
+            <stop offset="100%" stop-color="#eef4fc"/>
+          </linearGradient>
+          <linearGradient id="sunBeam" x1="0" y1="0" x2="0.6" y2="1">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.58"/>
+            <stop offset="55%" stop-color="#d7ecff" stop-opacity="0.22"/>
+            <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+          </linearGradient>
+          <radialGradient id="waterOrbGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#9be0ff" stop-opacity="0.78"/>
+            <stop offset="45%" stop-color="#1658eb" stop-opacity="0.22"/>
+            <stop offset="100%" stop-color="#1658eb" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+
+        <!-- Interior porcelain hall wall -->
+        <rect width="1440" height="864" fill="url(#wallGrad)"/>
+
+        <!-- Tall Gothic Lancet Windows looking out onto snowy Asra spires -->
+        <g id="lancet-windows">
+          <!-- Window 1 -->
+          <path d="M160,590 L160,180 Q245,70 330,180 L330,590 Z" fill="url(#skyGrad)" stroke="#c4a46c" stroke-width="1.5" stroke-opacity="0.65"/>
+          <path d="M245,112 L245,590 M160,310 L330,310 M160,445 L330,445" stroke="#ffffff" stroke-width="2" stroke-opacity="0.8"/>
+          <!-- Distant snowy tower silhouette inside window 1 -->
+          <polygon points="195,590 212,350 230,590" fill="#b7cde9" opacity="0.55"/>
+          <polygon points="265,590 288,390 314,590" fill="#c7daf2" opacity="0.55"/>
+
+          <!-- Center Grand Window -->
+          <path d="M510,590 L510,155 Q720,25 930,155 L930,590 Z" fill="url(#skyGrad)" stroke="#c4a46c" stroke-width="1.8" stroke-opacity="0.7"/>
+          <path d="M650,95 L650,590 M790,95 L790,590 M510,275 L930,275 M510,435 L930,435" stroke="#ffffff" stroke-width="2.2" stroke-opacity="0.82"/>
+          <!-- Delicate astrolabe rose tracery in upper window arch -->
+          <circle cx="720" cy="186" r="56" fill="none" stroke="#c4a46c" stroke-width="1.1" stroke-opacity="0.55"/>
+          <circle cx="720" cy="186" r="34" fill="none" stroke="#1658eb" stroke-width="0.9" stroke-opacity="0.35"/>
+          <polygon points="720,136 734,186 720,236 706,186" fill="none" stroke="#c4a46c" stroke-width="0.9" stroke-opacity="0.55"/>
+          <polygon points="670,186 720,172 770,186 720,200" fill="none" stroke="#c4a46c" stroke-width="0.9" stroke-opacity="0.55"/>
+          <!-- Distant snowy mountain ridge -->
+          <path d="M512,515 L585,432 L662,486 L748,402 L845,478 L928,430 L928,590 L512,590 Z" fill="#bcd2ee" opacity="0.48"/>
+
+          <!-- Window 3 -->
+          <path d="M1110,590 L1110,180 Q1195,70 1280,180 L1280,590 Z" fill="url(#skyGrad)" stroke="#c4a46c" stroke-width="1.5" stroke-opacity="0.65"/>
+          <path d="M1195,112 L1195,590 M1110,310 L1280,310 M1110,445 L1280,445" stroke="#ffffff" stroke-width="2" stroke-opacity="0.8"/>
+          <polygon points="1135,590 1164,378 1192,590" fill="#b7cde9" opacity="0.52"/>
+        </g>
+
+        <!-- Architectural Fluted Columns & Gold Capital Lines -->
+        <g opacity="0.85">
+          <rect x="405" y="40" width="44" height="555" fill="#f2f6fc" stroke="#cfdbee" stroke-width="1"/>
+          <line x1="418" y1="50" x2="418" y2="590" stroke="#dce6f5" stroke-width="1"/>
+          <line x1="436" y1="50" x2="436" y2="590" stroke="#dce6f5" stroke-width="1"/>
+          <line x1="398" y1="88" x2="456" y2="88" stroke="#c4a46c" stroke-width="1.4" stroke-opacity="0.6"/>
+
+          <rect x="991" y="40" width="44" height="555" fill="#f2f6fc" stroke="#cfdbee" stroke-width="1"/>
+          <line x1="1004" y1="50" x2="1004" y2="590" stroke="#dce6f5" stroke-width="1"/>
+          <line x1="1022" y1="50" x2="1022" y2="590" stroke="#dce6f5" stroke-width="1"/>
+          <line x1="984" y1="88" x2="1042" y2="88" stroke="#c4a46c" stroke-width="1.4" stroke-opacity="0.6"/>
+        </g>
+
+        <!-- Marble Floor with Perspective Grid & Caustic Reflections -->
+        <polygon points="0,590 1440,590 1440,864 0,864" fill="url(#floorGrad)"/>
+        <g stroke="#b8cbe5" stroke-width="0.8" opacity="0.5">
+          <line x1="0" y1="635" x2="1440" y2="635"/>
+          <line x1="0" y1="700" x2="1440" y2="700"/>
+          <line x1="720" y1="590" x2="720" y2="864"/>
+          <line x1="560" y1="590" x2="310" y2="864"/>
+          <line x1="880" y1="590" x2="1130" y2="864"/>
+          <line x1="380" y1="590" x2="-40" y2="864"/>
+          <line x1="1060" y1="590" x2="1480" y2="864"/>
+        </g>
+
+        <!-- Water-Element Classroom Floating Crystal Basin & Levitating Water Astrolabe -->
+        <g transform="translate(720, 448)">
+          <circle cx="0" cy="-34" r="92" fill="url(#waterOrbGlow)"/>
+          <ellipse cx="0" cy="-34" rx="74" ry="22" fill="none" stroke="#c4a46c" stroke-width="1" stroke-opacity="0.62" transform="rotate(-14 0 -34)"/>
+          <ellipse cx="0" cy="-34" rx="56" ry="18" fill="none" stroke="#1658eb" stroke-width="0.9" stroke-opacity="0.48" transform="rotate(18 0 -34)"/>
+          <polygon points="0,-78 24,-34 0,10 -24,-34" fill="rgba(125,211,252,0.42)" stroke="#1658eb" stroke-width="1.2"/>
+          <polygon points="0,-64 13,-34 0,-4 -13,-34" fill="rgba(255,255,255,0.68)"/>
+          <!-- Porcelain Pedestal -->
+          <polygon points="-58,125 58,125 42,68 -42,68" fill="#f5f8fd" stroke="#c4a46c" stroke-width="1.1"/>
+          <line x1="-48" y1="68" x2="48" y2="68" stroke="#1658eb" stroke-width="1.4" stroke-opacity="0.45"/>
+        </g>
+
+        <!-- Slanted Sunbeams & Floating Snow-Crystal Motes -->
+        <polygon points="180,0 440,0 820,864 460,864" fill="url(#sunBeam)"/>
+        <polygon points="610,0 880,0 1280,864 940,864" fill="url(#sunBeam)" opacity="0.72"/>
+        <g fill="#ffffff" opacity="0.78">
+          <polygon points="340,210 344,214 340,218 336,214"/>
+          <polygon points="620,295 625,300 620,305 615,300"/>
+          <polygon points="815,245 819,249 815,253 811,249"/>
+          <polygon points="945,355 949,359 945,363 941,359"/>
+          <polygon points="520,390 523,393 520,396 517,393"/>
+        </g>
+        <g fill="#6bc5f8" opacity="0.58">
+          <polygon points="695,212 699,216 695,220 691,216"/>
+          <polygon points="758,318 762,322 758,326 754,322"/>
+          <polygon points="468,266 472,270 468,274 464,270"/>
+        </g>
+      </svg>
+
+      <div class="hud-top-mist" aria-hidden="true"></div>
+
+      <!-- Top-Left Floating Champagne-Gold Astrolabe Ruler -->
+      <header class="hud-ruler">
+        <div class="hud-ruler-top">
+          <div class="hud-date-chip num"><i class="dia"></i>第12年 · 3月 · 午后</div>
+          <div class="hud-loc-name" id="hud-loc-label">阿斯拉魔导学院 · 水属性教室</div>
+          <div class="hud-loc-en">ASRA // AQUA HALL</div>
+        </div>
+        <div class="hud-gold-scale" aria-hidden="true">
+          <svg viewBox="0 0 470 10" fill="none">
+            <line x1="0" y1="5" x2="470" y2="5" stroke="#c4a46c" stroke-width="0.9" stroke-opacity="0.78"/>
+            <polygon points="0,5 4,1 8,5 4,9" fill="#c4a46c"/>
+            <polygon points="212,5 215,2 218,5 215,8" fill="#1658eb"/>
+            <line x1="40" y1="2" x2="40" y2="8" stroke="#c4a46c" stroke-width="0.8"/>
+            <line x1="80" y1="3" x2="80" y2="7" stroke="#c4a46c" stroke-width="0.7"/>
+            <line x1="120" y1="2" x2="120" y2="8" stroke="#c4a46c" stroke-width="0.8"/>
+            <line x1="160" y1="3" x2="160" y2="7" stroke="#c4a46c" stroke-width="0.7"/>
+            <line x1="260" y1="3" x2="260" y2="7" stroke="#c4a46c" stroke-width="0.7"/>
+            <line x1="310" y1="2" x2="310" y2="8" stroke="#c4a46c" stroke-width="0.8"/>
+            <line x1="360" y1="3" x2="360" y2="7" stroke="#c4a46c" stroke-width="0.7"/>
+            <line x1="410" y1="2" x2="410" y2="8" stroke="#c4a46c" stroke-width="0.8"/>
+            <line x1="469" y1="1" x2="469" y2="9" stroke="#c4a46c" stroke-width="0.9"/>
+          </svg>
+        </div>
+        <div class="hud-vitals-row num">
+          <div class="hv-item">
+            <span class="hv-lbl">HP</span>
+            <div class="hv-bar hp"><i></i></div>
+            <span class="hv-val">148/160</span>
+          </div>
+          <div class="hv-item">
+            <span class="hv-lbl">MP</span>
+            <div class="hv-bar mp"><i></i></div>
+            <span class="hv-val">240/240</span>
+          </div>
+          <div class="hv-item">
+            <span class="hv-lbl">ST</span>
+            <div class="hv-bar st"><i></i></div>
+            <span class="hv-val">4/5</span>
+          </div>
+          <div class="hv-gold">⚜ <span id="hud-gold-num">680</span> G</div>
+        </div>
+      </header>
+
+      <!-- Top-Right Title-Screen Style Diamond-Hairline Quick Links -->
+      <nav class="hud-quick-nav" aria-label="局内快捷菜单">
+        <button class="hq-btn" data-jump="screen-panel">面板</button>
+        <button class="hq-btn" data-jump="screen-map">地图</button>
+        <button class="hq-btn" data-jump="screen-life" data-sub="life-calendar">日程</button>
+        <button class="hq-btn" data-jump="screen-life" data-sub="life-mailbox">信箱 <span class="hq-badge num">2</span></button>
+        <button class="hq-btn" data-jump="screen-popup">设置</button>
+      </nav>
+
+      <!-- Subtle Interactive Scene Hotspots -->
+      <button class="scene-hotspot" style="left: 50%; top: 34%; transform: translateX(-50%);" data-inspect="水镜棱晶微微震颤，正折射着午后窗外的寒雪光晕。">
+        <i class="hs-pin"></i><span>水元素折射讲台</span>
+      </button>
+      <button class="scene-hotspot" style="left: 17%; top: 28%;" data-inspect="高窗之外，阿斯拉北侧的细雪正沿着钟楼石檐静静滑落。">
+        <i class="hs-pin"></i><span>北窗雪景</span>
+      </button>
+
+      <!-- Toast Feedback -->
+      <div id="hud-toast" class="hud-toast" role="status" aria-live="polite"></div>
+
+      <!-- Two Celestial Porcelain Fine-Art Editorial Bust Silhouettes (Left: Sylvia, Right: Aino) -->
+      <div class="hud-portraits" aria-hidden="true">
+        <!-- Left: 希尔维亚 · 维斯特利亚 (Silver-mist long hair, 3/4 aristocratic porcelain silhouette, sapphire diamond brooch & celestial halo) -->
+        <div id="stand-sylvia" class="char-stand active">
+          <svg viewBox="0 0 360 560" width="360" height="560" fill="none">
+            <defs>
+              <linearGradient id="sylPorcelain" x1="0.2" y1="0" x2="0.8" y2="1">
+                <stop offset="0%" stop-color="#ffffff"/>
+                <stop offset="52%" stop-color="#e8f0fc"/>
+                <stop offset="100%" stop-color="#c6d9f4"/>
+              </linearGradient>
+              <linearGradient id="sylHairFlow" x1="0" y1="0" x2="0.6" y2="1">
+                <stop offset="0%" stop-color="#fafdff"/>
+                <stop offset="48%" stop-color="#d4e3f7"/>
+                <stop offset="100%" stop-color="#9fb8df"/>
+              </linearGradient>
+              <linearGradient id="sylMantle" x1="0" y1="0" x2="0.2" y2="1">
+                <stop offset="0%" stop-color="#1c3b82"/>
+                <stop offset="55%" stop-color="#11275d"/>
+                <stop offset="100%" stop-color="#0b1a42"/>
+              </linearGradient>
+              <linearGradient id="sylCapeRim" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#c4a46c"/>
+                <stop offset="50%" stop-color="#f2e2be"/>
+                <stop offset="100%" stop-color="#c4a46c"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Celestial Porcelain Halo & Fine Astrolabe Behind Active Speaker -->
+            <g opacity="0.68">
+              <circle cx="182" cy="184" r="118" stroke="#c4a46c" stroke-width="0.9" stroke-dasharray="4 7"/>
+              <circle cx="182" cy="184" r="96" stroke="#1658eb" stroke-width="0.7" stroke-opacity="0.45"/>
+              <polygon points="182,58 187,66 182,74 177,66" fill="#c4a46c"/>
+              <polygon points="298,184 290,189 282,184 290,179" fill="#1658eb" opacity="0.65"/>
+              <polygon points="66,184 74,189 82,184 74,179" fill="#c4a46c" opacity="0.65"/>
+            </g>
+
+            <!-- Flowing Layered Silver Hair Silhouette (Wind-Swept Elegance) -->
+            <path d="M138,104 C98,136 74,212 68,314 C64,390 78,464 96,548 L272,548 C286,466 292,382 280,298 C268,214 252,140 218,104 C194,82 160,82 138,104 Z" fill="url(#sylHairFlow)" stroke="#8faad4" stroke-width="1.1"/>
+            <!-- Fine Sweeping Hair Strand Filigree -->
+            <path d="M126,128 C96,196 90,294 102,430" stroke="#ffffff" stroke-width="1.6" stroke-opacity="0.72"/>
+            <path d="M234,132 C262,202 268,302 254,436" stroke="#ffffff" stroke-width="1.4" stroke-opacity="0.65"/>
+            <path d="M112,178 C86,256 84,352 94,470" stroke="#7d9bc9" stroke-width="0.9" stroke-opacity="0.5"/>
+            <path d="M248,184 C272,262 272,358 260,470" stroke="#7d9bc9" stroke-width="0.9" stroke-opacity="0.5"/>
+
+            <!-- Aristocratic Vesteria Academy Mantle & High Pleated Capelet -->
+            <path d="M62,558 L84,352 C98,306 132,286 180,286 C228,286 262,306 276,352 L298,558 Z" fill="url(#sylMantle)"/>
+            <!-- Layered Shoulder Capelet with Champagne-Gold Piping -->
+            <path d="M84,356 C106,396 144,414 180,418 C216,414 254,396 276,356 L264,318 C240,294 212,286 180,286 C148,286 120,294 96,318 Z" fill="#173270" stroke="url(#sylCapeRim)" stroke-width="1.6"/>
+            <!-- Crisp Alabaster Cravat & Jabot -->
+            <polygon points="154,286 180,382 206,286" fill="#fafdff"/>
+            <path d="M164,294 L180,362 L196,294" stroke="#c4a46c" stroke-width="1.1" fill="none"/>
+            <!-- Gold Collar Embroidery & Lapel Lines -->
+            <path d="M126,298 L164,398 L180,378 L196,398 L234,298" stroke="url(#sylCapeRim)" stroke-width="1.8" fill="none"/>
+            <path d="M114,424 L180,444 L246,424" stroke="#c4a46c" stroke-width="0.9" stroke-opacity="0.55" fill="none"/>
+
+            <!-- Faceted Sapphire Crest Brooch (Echoing Title Screen Core Gem) -->
+            <polygon points="180,304 195,326 180,348 165,326" fill="#1658eb" stroke="#c4a46c" stroke-width="1.5"/>
+            <polygon points="180,310 189,326 180,342 171,326" fill="#6bc5f8" opacity="0.72"/>
+            <polygon points="180,316 185,326 180,336 175,326" fill="#ffffff" opacity="0.88"/>
+
+            <!-- Graceful Slender Neck & Sculpted Alabaster Porcelain Silhouette (Zero Uncanny Features — Pure Gallery Sculpture) -->
+            <path d="M167,246 L167,292 Q180,302 193,292 L193,246 Z" fill="url(#sylPorcelain)"/>
+            <path d="M142,164 C140,206 154,244 182,256 C206,246 218,214 220,174 C222,134 202,108 178,108 C154,108 143,130 142,164 Z" fill="url(#sylPorcelain)" stroke="#b3c7e3" stroke-width="1"/>
+            <!-- Soft Chiaroscuro Porcelain Shadow Arc (Sculpted Fine-Art Contour) -->
+            <path d="M145,168 C146,208 160,238 182,252 C168,236 160,206 162,166 Z" fill="#d8e6f8" opacity="0.52"/>
+            <!-- Delicate Floating Frost Sparkle at Temple -->
+            <polygon points="204,174 208,180 204,186 200,180" fill="#1658eb" opacity="0.28"/>
+
+            <!-- Sculpted Silver Bangs, Framing Side-Locks & Gold Star Hairpin -->
+            <path d="M128,176 C126,118 148,94 180,94 C212,94 234,118 232,176 C224,148 210,134 198,168 C190,142 180,132 172,170 C162,138 150,136 142,168 C136,146 132,154 128,176 Z" fill="url(#sylHairFlow)" stroke="#9ab4da" stroke-width="1"/>
+            <path d="M128,162 C118,226 120,318 134,404 C142,348 142,260 144,194 Z" fill="url(#sylHairFlow)"/>
+            <path d="M232,162 C242,226 240,318 226,404 C218,348 218,260 216,194 Z" fill="url(#sylHairFlow)"/>
+            <!-- Delicate Champagne-Gold Diamond Hairpin -->
+            <line x1="208" y1="132" x2="232" y2="124" stroke="#c4a46c" stroke-width="1.6"/>
+            <polygon points="214,126 220,130 214,134 208,130" fill="#c4a46c"/>
+
+            <!-- Floating Ice Shards & Fine Architectural Caption Tag -->
+            <polygon points="88,246 94,256 88,266 82,256" fill="#6bc5f8" opacity="0.72"/>
+            <polygon points="274,220 278,227 274,234 270,227" fill="#c4a46c" opacity="0.78"/>
+          </svg>
+        </div>
+
+        <!-- Right: 艾诺 · 塔尔维 (Glacial ash-blue layered bob, northern high-collar coat, alabaster silhouette) -->
+        <div id="stand-aino" class="char-stand dim">
+          <svg viewBox="0 0 360 560" width="360" height="560" fill="none">
+            <defs>
+              <linearGradient id="ainoHairFlow" x1="0.2" y1="0" x2="0.8" y2="1">
+                <stop offset="0%" stop-color="#cfdef0"/>
+                <stop offset="55%" stop-color="#8fa9cc"/>
+                <stop offset="100%" stop-color="#5d799f"/>
+              </linearGradient>
+              <linearGradient id="ainoMantle" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#2c4161"/>
+                <stop offset="100%" stop-color="#17243a"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Subtle Geometric Frost Halo Behind Aino -->
+            <g opacity="0.48">
+              <circle cx="178" cy="184" r="106" stroke="#8fa9cc" stroke-width="0.85" stroke-dasharray="3 8"/>
+              <polygon points="178,72 183,79 178,86 173,79" fill="#8fa9cc"/>
+            </g>
+
+            <!-- Short Layered Northern Bob Silhouette -->
+            <path d="M116,136 C96,184 96,252 118,298 L238,298 C260,252 260,184 240,136 C220,92 136,92 116,136 Z" fill="url(#ainoHairFlow)" stroke="#6d88ae" stroke-width="1.1"/>
+
+            <!-- High-Collar Northern Academy Coat & Silver Scarf -->
+            <path d="M72,558 L92,348 C106,304 138,286 180,286 C222,286 254,304 268,348 L288,558 Z" fill="url(#ainoMantle)"/>
+            <path d="M126,282 L180,310 L234,282 L222,364 L180,392 L138,364 Z" fill="#e9f1fb" stroke="#c4a46c" stroke-width="1.3"/>
+            <path d="M138,364 L180,392 L222,364" stroke="#6bc5f8" stroke-width="1.2" fill="none"/>
+            <polygon points="180,318 190,334 180,350 170,334" fill="#6bc5f8" stroke="#1b2333" stroke-width="1.1"/>
+            <path d="M114,418 L180,434 L246,418" stroke="#8fa9cc" stroke-width="0.9" stroke-opacity="0.5" fill="none"/>
+
+            <!-- Neck & Cool Sculpted Alabaster Silhouette -->
+            <path d="M167,246 L167,290 Q180,300 193,290 L193,246 Z" fill="url(#sylPorcelain)"/>
+            <path d="M140,174 C142,214 154,246 178,256 C206,244 220,206 218,164 C217,130 206,108 182,108 C158,108 138,134 140,174 Z" fill="url(#sylPorcelain)" stroke="#a8bedb" stroke-width="1"/>
+            <path d="M214,168 C213,208 200,238 178,252 C192,236 200,206 198,166 Z" fill="#c7d8ee" opacity="0.55"/>
+
+            <!-- Side-Swept Glacial Bangs -->
+            <path d="M126,176 C126,118 148,96 180,96 C212,96 234,118 234,176 C224,152 210,136 194,174 C184,142 166,134 152,172 C142,144 132,148 126,176 Z" fill="url(#ainoHairFlow)" stroke="#6d88ae" stroke-width="1"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Bottom Feather-Soft Snow-Porcelain Mist Dialogue Veil -->
+      <div class="hud-dialogue-veil">
+        <div class="hud-horizon" aria-hidden="true"></div>
+        <div class="hud-dialogue-grid">
+          <!-- Left: Faceted Diamond Speaker Crest + Bust -->
+          <div class="speaker-block">
+            <div class="speaker-crest-frame">
+              <div class="speaker-crest" id="speaker-bust-box">
+                <!-- Dynamically swapped mini bust SVG -->
+              </div>
+            </div>
+            <div class="speaker-meta">
+              <span class="speaker-eyebrow" id="speaker-en">SYLVIA</span>
+              <span class="speaker-name" id="speaker-zh">希尔维亚</span>
+              <span class="speaker-role" id="speaker-role">维斯特利亚次女</span>
+            </div>
+          </div>
+
+          <!-- Center: Literary Dialogue -->
+          <div class="dialogue-body" id="dialogue-click-zone" role="button" tabindex="0" aria-label="点击推进下一句对话">
+            <p class="dialogue-text" id="dialogue-text">
+              水元素在指尖凝结成薄霜的那一瞬，教室窗外的雪光恰好斜落进水镜里。
+            </p>
+            <div class="dialogue-footer">
+              <div class="dialogue-pips" id="dialogue-pips">
+                <i class="dpip active"></i><i class="dpip"></i><i class="dpip"></i><i class="dpip"></i>
+              </div>
+              <span class="dialogue-hint">CLICK TO CONTINUE <b></b></span>
+            </div>
+          </div>
+
+          <!-- Right: Faceted Action Triggers -->
+          <div class="hud-actions">
+            <div class="hud-act-row">
+              <button class="facet-btn" id="btn-hud-talk">交谈</button>
+              <button class="facet-btn" id="btn-hud-explore">探索</button>
+            </div>
+            <div class="prism-wrap" style="padding: 6px 0;">
+              <svg class="prism-wing top" viewBox="0 0 200 10" fill="none">
+                <path d="M18,9 L42,2 L158,2 L182,9" stroke="currentColor" stroke-width="0.9"/>
+              </svg>
+              <div class="prism-drop">
+                <button class="prism-cta compact" id="btn-hud-advance">
+                  <span class="p-en">ADVANCE</span>
+                  <span class="p-zh">推进季度</span>
+                </button>
+              </div>
+              <svg class="prism-wing bot" viewBox="0 0 200 10" fill="none">
+                <path d="M18,1 L42,8 L158,8 L182,1" stroke="currentColor" stroke-width="0.9"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SCREEN 2 · 魔导书状态 & 因果星轨 (FULL GALLERY EXPANSION)
+         ==================================================================== -->
+    <section id="screen-panel" class="screen" aria-label="魔导书状态与因果星轨">
+      <!-- Subtle Slowly Rotating Celestial Astrolabe Rings in Porcelain Backdrop -->
+      <div class="atelier-astrolabe-bg" aria-hidden="true">
+        <svg viewBox="0 0 1440 864" width="100%" height="100%" fill="none">
+          <g transform="translate(260, 440)">
+            <g class="spin-cw">
+              <circle cx="0" cy="0" r="355" stroke="#c4a46c" stroke-width="0.85" stroke-opacity="0.28" stroke-dasharray="6 10"/>
+              <circle cx="0" cy="0" r="310" stroke="#1658eb" stroke-width="0.7" stroke-opacity="0.16"/>
+              <polygon points="0,-355 5,-347 0,-339 -5,-347" fill="#c4a46c" opacity="0.45"/>
+              <polygon points="355,0 347,5 339,0 347,-5" fill="#c4a46c" opacity="0.45"/>
+            </g>
+            <g class="spin-ccw">
+              <ellipse cx="0" cy="0" rx="260" ry="155" stroke="#c4a46c" stroke-width="0.8" stroke-opacity="0.24" transform="rotate(-24)"/>
+              <ellipse cx="0" cy="0" rx="232" ry="138" stroke="#1658eb" stroke-width="0.75" stroke-opacity="0.18" transform="rotate(32)"/>
+            </g>
+          </g>
+          <g transform="translate(1240, 140)" opacity="0.32">
+            <g class="spin-ccw">
+              <circle cx="0" cy="0" r="195" stroke="#c4a46c" stroke-width="0.8" stroke-dasharray="3 9"/>
+              <circle cx="0" cy="0" r="142" stroke="#1658eb" stroke-width="0.65"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+
+      <div class="atelier-shell">
+        <header class="atelier-header">
+          <div class="ah-left">
+            <span class="ah-eyebrow">HOUSE OF VESTERIA // GRIMOIRE &amp; CAUSAL ORBIT</span>
+            <div class="ah-title-row">
+              <h1 class="ah-title">魔导书典录</h1>
+              <span class="ah-subtitle">雪瓷星仪 · 角色状态、六维共鸣与五人因果双轴推演</span>
+            </div>
+          </div>
+          <div class="ah-right">
+            <div class="ah-stat-pill num">
+              <span>纪年 <b>第12年 · 3月</b></span>
+              <span>阶位 <b>冰水双系 · Lv.14</b></span>
+              <span>行囊 <b>680 G</b></span>
+            </div>
+            <button class="ah-close" data-jump="screen-hud">✕ 返回舞台</button>
+          </div>
+        </header>
+
+        <div class="panel-grid">
+          <!-- Left Title-Screen ◆ ── Vertical Tab Rail -->
+          <aside class="panel-rail">
+            <nav class="panel-rail-nav" aria-label="典录分页">
+              <button class="rail-item active" data-ptab="ptab-status">
+                <span class="ri-en">STATUS</span>
+                <span class="ri-zh">角色状态</span>
+              </button>
+              <button class="rail-item" data-ptab="ptab-causal">
+                <span class="ri-en">CAUSAL</span>
+                <span class="ri-zh">因果星轨</span>
+              </button>
+              <button class="rail-item" data-ptab="ptab-relics">
+                <span class="ri-en">RELICS</span>
+                <span class="ri-zh">遗物圣器</span>
+              </button>
+              <button class="rail-item" data-ptab="ptab-skills">
+                <span class="ri-en">SKILLS</span>
+                <span class="ri-zh">冰水术式</span>
+              </button>
+              <button class="rail-item" data-ptab="ptab-items">
+                <span class="ri-en">ITEMS</span>
+                <span class="ri-zh">行囊杂物</span>
+              </button>
+            </nav>
+
+            <!-- Bottom-Left Identity Summary (No boxed borders) -->
+            <div class="rail-profile">
+              <div class="rp-head">
+                <div class="rp-diamond">
+                  <div class="rp-diamond-in">
+                    <svg viewBox="0 0 64 64" width="44" height="44" fill="none">
+                      <circle cx="32" cy="32" r="22" stroke="#c4a46c" stroke-width="0.9" stroke-dasharray="2 3"/>
+                      <polygon points="32,8 46,32 32,56 18,32" fill="rgba(22,88,235,0.12)" stroke="#1658eb" stroke-width="1.3"/>
+                      <polygon points="32,16 40,32 32,48 24,32" fill="#1658eb" opacity="0.78"/>
+                      <polygon points="32,22 36,32 32,42 28,32" fill="#ffffff"/>
+                      <line x1="12" y1="32" x2="52" y2="32" stroke="#c4a46c" stroke-width="0.9"/>
+                    </svg>
+                  </div>
+                </div>
+                <div>
+                  <div class="rp-name">希尔维亚·维斯特利亚</div>
+                  <div class="rp-title">阿斯拉学院 · 水系特待生</div>
+                </div>
+              </div>
+              <div class="rp-meta-list num">
+                <div><span>主修属性</span><b>冰 / 水双亲和</b></div>
+                <div><span>心境特质</span><b>冰晶宫殿 · 静水</b></div>
+                <div><span>当前位置</span><b>水属性教室</b></div>
+                <div><span>暗线枢纽</span><b>星轨 3/4 映照</b></div>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Right Architectural Workspace -->
+          <div class="panel-workspace">
+
+            <!-- PANE 1: STATUS (Live Stats + 6-Axis Radar + 5-Character Causal Beams + Equipped Relics) -->
+            <div id="ptab-status" class="ptab-pane active">
+              <div class="status-spread-top">
+                <!-- Left: Live Stats Ledger & SVG Crystalline 6-Axis Radar -->
+                <div class="ledger-section">
+                  <div class="sec-head">
+                    <div class="sec-head-l">
+                      <span class="sec-en">TELEMETRY</span>
+                      <h2 class="sec-zh">能力刻度与六维晶阵</h2>
+                    </div>
+                    <span class="sec-note num">SYNC // LIVE</span>
+                  </div>
+
+                  <div class="stats-radar-grid">
+                    <div class="stat-ledger num">
+                      <div class="vital-row">
+                        <div class="vital-top"><span>生命 VITALITY</span><b>148 / 160</b></div>
+                        <div class="vital-track"><div class="vital-fill" style="width:92%; background:#b8324f;"></div></div>
+                      </div>
+                      <div class="vital-row">
+                        <div class="vital-top"><span>魔力 MANA POOL</span><b>240 / 240</b></div>
+                        <div class="vital-track"><div class="vital-fill" style="width:100%; background:#1658eb;"></div></div>
+                      </div>
+                      <div class="vital-row">
+                        <div class="vital-top"><span>冰晶宫殿 · 静心度</span><b>86%</b></div>
+                        <div class="vital-track"><div class="vital-fill" style="width:86%; background:#c4a46c;"></div></div>
+                      </div>
+
+                      <div class="attr-table">
+                        <div class="attr-cell"><span>魔导</span><b class="hi">94</b></div>
+                        <div class="attr-cell"><span>知性</span><b class="hi">91</b></div>
+                        <div class="attr-cell"><span>灵巧</span><b>78</b></div>
+                        <div class="attr-cell"><span>剑意</span><b>74</b></div>
+                        <div class="attr-cell"><span>仪态</span><b>82</b></div>
+                        <div class="attr-cell"><span>洞察</span><b class="hi">89</b></div>
+                      </div>
+
+                      <div style="margin-top:6px; padding-top:10px; border-top:1px solid var(--line-soft); display:flex; flex-direction:column; gap:6px;">
+                        <span style="font-family:var(--serif-en); font-size:10px; letter-spacing:0.16em; color:var(--gold-deep);">RESONANT TRAITS // 固有特质</span>
+                        <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:11.5px; color:var(--ink-mid);">
+                          <span>◆ 无咏唱凝冰</span>
+                          <span>◆ 冰晶宫殿</span>
+                          <span>◆ 魔战循环</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- SVG Crystalline 6-Axis Radar Chart -->
+                    <div class="radar-stage">
+                      <svg viewBox="0 0 290 264" width="276" height="252" role="img" aria-label="六维魔导雷达图">
+                        <defs>
+                          <linearGradient id="radarFill" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#1658eb" stop-opacity="0.30"/>
+                            <stop offset="100%" stop-color="#6bc5f8" stop-opacity="0.14"/>
+                          </linearGradient>
+                        </defs>
+                        <!-- Outer fine astrolabe compass circle -->
+                        <circle cx="145" cy="132" r="98" fill="none" stroke="#c4a46c" stroke-width="0.7" stroke-opacity="0.45" stroke-dasharray="3 6"/>
+                        <!-- Concentric Hex Webs (100%, 66%, 33%) -->
+                        <polygon points="145,42 223,87 223,177 145,222 67,177 67,87" fill="rgba(255,255,255,0.52)" stroke="rgba(27,35,51,0.16)" stroke-width="1"/>
+                        <polygon points="145,72 197,102 197,162 145,192 93,162 93,102" fill="none" stroke="rgba(27,35,51,0.11)" stroke-width="0.8"/>
+                        <polygon points="145,102 171,117 171,147 145,162 119,147 119,117" fill="none" stroke="rgba(27,35,51,0.09)" stroke-width="0.8"/>
+                        <!-- 6 Axis Hairlines -->
+                        <g stroke="rgba(27,35,51,0.13)" stroke-width="0.8">
+                          <line x1="145" y1="42" x2="145" y2="222"/>
+                          <line x1="223" y1="87" x2="67" y2="177"/>
+                          <line x1="223" y1="177" x2="67" y2="87"/>
+                        </g>
+                        <!-- Sylvia's 6-Axis Polygon (魔导94, 知性91, 洞察89, 仪态82, 剑意74, 灵巧78) -->
+                        <polygon points="145,47 216,91 214,172 145,206 87,165 84,97" fill="url(#radarFill)" stroke="#1658eb" stroke-width="1.6"/>
+                        <!-- Gold Diamond Vertices -->
+                        <g fill="#c4a46c" stroke="#ffffff" stroke-width="1">
+                          <polygon points="145,42 150,47 145,52 140,47"/>
+                          <polygon points="216,86 221,91 216,96 211,91"/>
+                          <polygon points="214,167 219,172 214,177 209,172"/>
+                          <polygon points="145,201 150,206 145,211 140,206"/>
+                          <polygon points="87,160 92,165 87,170 82,165"/>
+                          <polygon points="84,92 89,97 84,102 79,97"/>
+                        </g>
+                        <!-- Center Sapphire Core -->
+                        <polygon points="145,128 149,132 145,136 141,132" fill="#1658eb"/>
+                        <!-- Labels -->
+                        <g font-family="Noto Serif CJK SC, serif" font-size="11.5" fill="#1b2333" font-weight="600">
+                          <text x="145" y="26" text-anchor="middle">魔导 94</text>
+                          <text x="234" y="88" text-anchor="start">知性 91</text>
+                          <text x="234" y="182" text-anchor="start">洞察 89</text>
+                          <text x="145" y="246" text-anchor="middle">仪态 82</text>
+                          <text x="56" y="182" text-anchor="end">剑意 74</text>
+                          <text x="56" y="88" text-anchor="end">灵巧 78</text>
+                        </g>
+                      </svg>
+                      <span class="radar-caption">HEX-CRYSTAL RESONANCE CHART</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right: Interactive 5-Character 因果星轨双轴推演图 -->
+                <div class="ledger-section">
+                  <div class="sec-head">
+                    <div class="sec-head-l">
+                      <span class="sec-en">CAUSAL ORBIT</span>
+                      <h2 class="sec-zh">因果星轨 · 双轴天平推演</h2>
+                    </div>
+                    <span class="sec-note">点击条目微调倾向</span>
+                  </div>
+                  <div class="causal-beam-list" id="causal-beams-overview">
+                    <!-- Rendered dynamically by JS for live interactive tipping -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bottom Strip: Equipped Relics (3/3, ZERO rounded boxes) -->
+              <div class="relic-strip-wrap">
+                <div class="relic-strip-head">
+                  <div class="sec-head-l">
+                    <span class="sec-en">EQUIPPED RELICS</span>
+                    <h3 class="sec-zh" style="font-size:14px;">圣器遗物槽位 (3 / 3)</h3>
+                  </div>
+                  <span class="relic-resonance"><i></i>已激活共鸣 · 极北霜息 (2/3)：冰水术式首回合耗蓝 -15%</span>
+                </div>
+
+                <div class="relic-grid">
+                  <article class="relic-plate">
+                    <div class="relic-glyph">
+                      <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4">
+                        <line x1="10" y1="2" x2="10" y2="18"/><line x1="3" y1="6" x2="17" y2="14"/><line x1="17" y1="6" x2="3" y2="14"/>
+                      </svg>
+                    </div>
+                    <div class="relic-info">
+                      <span class="relic-tag">RELIC 01 · NORTHWIND</span>
+                      <span class="relic-name">艾诺的雪松手帕</span>
+                      <span class="relic-desc">冰晶术暴击率 +8%，战斗开场附带 1 层「寒息感知」。</span>
+                    </div>
+                  </article>
+
+                  <article class="relic-plate">
+                    <div class="relic-glyph">
+                      <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4">
+                        <polygon points="10,2 16,10 10,18 4,10"/><circle cx="10" cy="10" r="2"/>
+                      </svg>
+                    </div>
+                    <div class="relic-info">
+                      <span class="relic-tag">RELIC 02 · FROST SHARD</span>
+                      <span class="relic-name">赫兰极寒薄片</span>
+                      <span class="relic-desc">对护盾目标伤害 +14%，并使冰镜折射效率提升。</span>
+                    </div>
+                  </article>
+
+                  <article class="relic-plate">
+                    <div class="relic-glyph">
+                      <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4">
+                        <rect x="4" y="3" width="12" height="14"/><line x1="7" y1="7" x2="13" y2="7"/><line x1="7" y1="11" x2="13" y2="11"/>
+                      </svg>
+                    </div>
+                    <div class="relic-info">
+                      <span class="relic-tag">RELIC 03 · ACADEMY ARCHIVE</span>
+                      <span class="relic-name">诺艾儿的回路勘误稿</span>
+                      <span class="relic-desc">魔导精算 +6，二重咏唱时魔力回复 +12。</span>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </div>
+
+            <!-- PANE 2: CAUSAL DEEP VIEW -->
+            <div id="ptab-causal" class="ptab-pane">
+              <div class="sec-head">
+                <div class="sec-head-l">
+                  <span class="sec-en">CAUSAL STARWEB</span>
+                  <h2 class="sec-zh">命运暗流与羁绊星轨全览</h2>
+                </div>
+                <span class="sec-note">点击任意人物天平可预览因果偏移</span>
+              </div>
+              <div class="subpane-grid-2">
+                <div class="causal-beam-list" id="causal-beams-full"></div>
+                <div style="border-left:1px solid var(--line); padding-left:28px; display:flex; flex-direction:column; gap:16px;">
+                  <span class="sec-en">CLUE CONSTELLATION // 暗线星图</span>
+                  <svg viewBox="0 0 360 220" width="100%" height="220" fill="none">
+                    <circle cx="180" cy="110" r="88" stroke="#c4a46c" stroke-width="0.8" stroke-dasharray="4 6" opacity="0.6"/>
+                    <line x1="40" y1="110" x2="320" y2="110" stroke="rgba(22,88,235,0.16)" stroke-width="1"/>
+                    <line x1="180" y1="20" x2="180" y2="200" stroke="rgba(22,88,235,0.16)" stroke-width="1"/>
+                    <polyline points="86,66 180,110 274,64" stroke="#1658eb" stroke-width="1.2"/>
+                    <polyline points="180,110 96,164" stroke="#1658eb" stroke-width="1.2"/>
+                    <line x1="180" y1="110" x2="268" y2="164" stroke="#c4a46c" stroke-width="1" stroke-dasharray="3 4"/>
+                    <!-- Core -->
+                    <polygon points="180,98 192,110 180,122 168,110" fill="#1658eb" stroke="#ffffff" stroke-width="1.5"/>
+                    <!-- Clue Nodes -->
+                    <polygon points="86,60 92,66 86,72 80,66" fill="#c4a46c"/>
+                    <text x="86" y="48" text-anchor="middle" font-size="11" fill="#1b2333" font-family="Noto Serif CJK SC, serif">冰晶宫殿残页</text>
+                    <polygon points="274,58 280,64 274,70 268,64" fill="#c4a46c"/>
+                    <text x="274" y="48" text-anchor="middle" font-size="11" fill="#1b2333" font-family="Noto Serif CJK SC, serif">北境寒潮密报</text>
+                    <polygon points="96,158 102,164 96,170 90,164" fill="#c4a46c"/>
+                    <text x="96" y="188" text-anchor="middle" font-size="11" fill="#1b2333" font-family="Noto Serif CJK SC, serif">水镜回路失谐</text>
+                    <polygon points="268,158 274,164 268,170 262,164" fill="#ffffff" stroke="#8b98ae" stroke-width="1.2"/>
+                    <text x="268" y="188" text-anchor="middle" font-size="11" fill="#8b98ae" font-family="Noto Serif CJK SC, serif">未映照星点</text>
+                  </svg>
+                  <p style="font-size:12.5px; line-height:1.8; color:var(--ink-muted);">
+                    当前已映照 3 枚暗线星点。五位同行者的双轴倾角将在学院季末触发专属支线回响，并改变战斗中的「羁绊心念援护」台词与补正。
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- PANE 3: RELICS CATALOG -->
+            <div id="ptab-relics" class="ptab-pane">
+              <div class="sec-head">
+                <div class="sec-head-l">
+                  <span class="sec-en">RELIC ARCHIVE</span>
+                  <h2 class="sec-zh">典藏遗物与共鸣套装</h2>
+                </div>
+                <span class="sec-note">已收录 5 / 9 件</span>
+              </div>
+              <div class="ledger-list">
+                <div class="ledger-row"><span class="lr-idx">01</span><span class="lr-title">艾诺的雪松手帕</span><span class="lr-sub">冰晶术暴击 +8%，开场获「寒息感知」</span><span class="lr-tag">已装备 · 极北套</span></div>
+                <div class="ledger-row"><span class="lr-idx">02</span><span class="lr-title">赫兰极寒薄片</span><span class="lr-sub">对护盾目标伤害 +14%，冰镜反震增幅</span><span class="lr-tag">已装备 · 极北套</span></div>
+                <div class="ledger-row"><span class="lr-idx">03</span><span class="lr-title">诺艾儿的回路勘误稿</span><span class="lr-sub">魔导精算 +6，二重咏唱回复 12 MP</span><span class="lr-tag">已装备 · 学院套</span></div>
+                <div class="ledger-row"><span class="lr-idx">04</span><span class="lr-title">爱丽丝的风铃草花饼</span><span class="lr-sub">每回合末回复 6 HP，清除 1 层寒冷迟滞</span><span class="lr-tag">未装备 · 庭院套</span></div>
+                <div class="ledger-row"><span class="lr-idx">05</span><span class="lr-title">北风堡通行银徽</span><span class="lr-sub">北境地区行军体力消耗 -1，遇袭先手 +12%</span><span class="lr-tag">未装备 · 极北套</span></div>
+              </div>
+            </div>
+
+            <!-- PANE 4: SKILLS -->
+            <div id="ptab-skills" class="ptab-pane">
+              <div class="sec-head">
+                <div class="sec-head-l">
+                  <span class="sec-en">FROST &amp; AQUA ARTS</span>
+                  <h2 class="sec-zh">冰水魔导术式与剑步录</h2>
+                </div>
+                <span class="sec-note">支持冰晶宫殿两步推演</span>
+              </div>
+              <div class="ledger-list">
+                <div class="ledger-row"><span class="lr-idx">ICE</span><span class="lr-title">凝华冰晶术 · Lv.4</span><span class="lr-sub">无咏唱凝结多面棱冰，可衔接魔战循环倾注</span><span class="lr-tag num">22 MP</span></div>
+                <div class="ledger-row"><span class="lr-idx">ICE</span><span class="lr-title">双面镜冰 · Lv.3</span><span class="lr-sub">构筑折射冰镜并反弹远程术式，预判合拢可夹制法器</span><span class="lr-tag num">30 MP</span></div>
+                <div class="ledger-row"><span class="lr-idx">AQU</span><span class="lr-title">水之帷幕 · Lv.3</span><span class="lr-sub">展开清澈水膜吸收冲击，并缓和魔力波动</span><span class="lr-tag num">18 MP</span></div>
+                <div class="ledger-row"><span class="lr-idx">SWD</span><span class="lr-title">霁馆生根步 · Lv.2</span><span class="lr-sub">沉降重心借力卸锋，创造反击与覆水斩杀空档</span><span class="lr-tag num">12 MP</span></div>
+                <div class="ledger-row"><span class="lr-idx">ARC</span><span class="lr-title">冰晶宫殿 · 静心推演</span><span class="lr-sub">在思维殿堂中预演对手两步动向，看破破绽</span><span class="lr-tag">专属固有</span></div>
+              </div>
+            </div>
+
+            <!-- PANE 5: ITEMS -->
+            <div id="ptab-items" class="ptab-pane">
+              <div class="sec-head">
+                <div class="sec-head-l">
+                  <span class="sec-en">INVENTORY LEDGER</span>
+                  <h2 class="sec-zh">行囊清册</h2>
+                </div>
+                <span class="sec-note num">承载 5 / 24 格 · 680 G</span>
+              </div>
+              <div class="ledger-list">
+                <div class="ledger-row"><span class="lr-idx">×3</span><span class="lr-title">星辉魔力露</span><span class="lr-sub">瞬间回复 65 MP，回味带着淡淡雪松香气</span><span class="lr-tag">消耗品</span></div>
+                <div class="ledger-row"><span class="lr-idx">×2</span><span class="lr-title">温润蜂蜜红茶</span><span class="lr-sub">自由探索时饮用，恢复 1 点体力与少许生命</span><span class="lr-tag">茶点</span></div>
+                <div class="ledger-row"><span class="lr-idx">×1</span><span class="lr-title">水系魔导理论笔记</span><span class="lr-sub">希尔维亚亲笔整理的魔力精算批注，研读时知性 +2</span><span class="lr-tag">典籍</span></div>
+                <div class="ledger-row"><span class="lr-idx">×1</span><span class="lr-title">干压风铃草书签</span><span class="lr-sub">爱丽丝夹在来信里的学院北侧风铃草</span><span class="lr-tag">珍藏</span></div>
+                <div class="ledger-row"><span class="lr-idx">×1</span><span class="lr-title">薄霜剑油</span><span class="lr-sub">擦拭佩剑后使下场演武的覆冰锋伤害提升</span><span class="lr-tag">备战</span></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SCREEN 3 · 王国星仪地图 (CELESTIAL CARTOGRAPHY)
+         ==================================================================== -->
+    <section id="screen-map" class="screen" aria-label="王国星仪地图">
+      <div class="map-layout">
+        <!-- Left Architectural Cartography Canvas -->
+        <div class="map-canvas-zone">
+          <div class="map-overlay-head">
+            <span class="ah-eyebrow">CELESTIAL CARTOGRAPHY // KINGDOM &amp; NORTHERN FRONTIER</span>
+            <h1 class="ah-title" style="font-size:25px; margin-top:2px;">王国星仪航图</h1>
+          </div>
+
+          <!-- Porcelain-Blue Vector Map with Concentric Astrolabe Arcs & Contours -->
+          <svg class="map-svg" viewBox="0 0 1028 864" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <defs>
+              <linearGradient id="seaTint" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#e3eefc" stop-opacity="0.72"/>
+                <stop offset="100%" stop-color="#f7fafe" stop-opacity="0.25"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Subtle Coastline & Northern Landmass Polygons -->
+            <path d="M0,180 Q180,140 340,115 T740,85 L1028,60 L1028,864 L0,864 Z" fill="#f7faff"/>
+            <path d="M0,0 L1028,0 L1028,65 Q760,95 540,110 Q270,130 0,192 Z" fill="url(#seaTint)"/>
+            <!-- Southern Sea Bay -->
+            <path d="M0,690 Q240,670 390,740 T790,864 L0,864 Z" fill="url(#seaTint)"/>
+
+            <!-- Mountain & Canyon Contour Hairlines -->
+            <g stroke="#b7cae4" stroke-width="1" fill="none" opacity="0.72">
+              <path d="M360,150 L410,118 L458,154 L512,110 L568,156"/>
+              <path d="M610,180 L654,142 L700,178 L748,136 L798,176"/>
+              <path d="M740,425 L784,392 L826,422 L872,386 L915,420"/>
+              <path d="M120,440 Q280,405 445,442 T820,490" stroke-dasharray="4 6" opacity="0.5"/>
+            </g>
+
+            <!-- Concentric Astrolabe Calibration Arcs Centered on Asra Academy (440, 445) -->
+            <g transform="translate(440, 445)" fill="none">
+              <circle cx="0" cy="0" r="115" stroke="#c4a46c" stroke-width="0.9" stroke-opacity="0.45"/>
+              <circle cx="0" cy="0" r="235" stroke="#c4a46c" stroke-width="0.85" stroke-opacity="0.36" stroke-dasharray="5 7"/>
+              <circle cx="0" cy="0" r="365" stroke="#1658eb" stroke-width="0.75" stroke-opacity="0.22"/>
+              <circle cx="0" cy="0" r="480" stroke="#c4a46c" stroke-width="0.7" stroke-opacity="0.22" stroke-dasharray="2 8"/>
+              <!-- Rhumb Lines -->
+              <line x1="-520" y1="0" x2="560" y2="0" stroke="#1b2333" stroke-width="0.6" stroke-opacity="0.09"/>
+              <line x1="0" y1="-440" x2="0" y2="440" stroke="#1b2333" stroke-width="0.6" stroke-opacity="0.09"/>
+              <line x1="-380" y1="-380" x2="380" y2="380" stroke="#c4a46c" stroke-width="0.6" stroke-opacity="0.18"/>
+              <line x1="380" y1="-380" x2="-380" y2="380" stroke="#c4a46c" stroke-width="0.6" stroke-opacity="0.18"/>
+            </g>
+
+            <!-- Trade & Travel Routes between the 5 Destinations -->
+            <g fill="none" stroke="#1658eb" stroke-width="1.35" stroke-opacity="0.38" stroke-dasharray="5 5">
+              <!-- Vesteria (226, 622) -> Asra (440, 445) -->
+              <path d="M226,622 Q325,522 440,445"/>
+              <!-- Asra (440, 445) -> Chenglan Jikan (782, 488) -->
+              <path d="M440,445 Q615,440 782,488"/>
+              <!-- Asra (440, 445) -> Northwind Keep (542, 268) -->
+              <path d="M440,445 Q495,355 542,268"/>
+              <!-- Northwind Keep (542, 268) -> Hulan Ice Canyon (696, 152) -->
+              <path d="M542,268 Q620,205 696,152"/>
+            </g>
+
+            <!-- Dynamic Active Route Highlight -->
+            <path id="map-active-route" d="M440,445 Q495,355 542,268" fill="none" stroke="#1658eb" stroke-width="2.2" stroke-opacity="0.88"/>
+
+            <!-- Compass Rose Bottom-Left -->
+            <g transform="translate(88, 760)" opacity="0.72">
+              <circle cx="0" cy="0" r="30" fill="none" stroke="#c4a46c" stroke-width="0.9"/>
+              <polygon points="0,-34 5,-6 0,0 -5,-6" fill="#1658eb"/>
+              <polygon points="0,34 5,6 0,0 -5,6" fill="#c4a46c"/>
+              <polygon points="-34,0 -6,-5 0,0 -6,5" fill="#c4a46c"/>
+              <polygon points="34,0 6,-5 0,0 6,5" fill="#c4a46c"/>
+              <text x="0" y="-40" text-anchor="middle" font-size="10" fill="#1b2333" font-family="Georgia, serif">N</text>
+            </g>
+          </svg>
+
+          <!-- 5 Interactive Clickable Diamond Location Pins -->
+          <button class="map-pin" data-loc="vesteria" style="left: 22%; top: 72%;">
+            <div class="pin-reticle"><i class="pin-outer"></i><i class="pin-core"></i></div>
+            <div class="pin-label"><span class="pin-zh">维斯特利亚公爵府</span><span class="pin-en">DUCHY OF VESTERIA</span></div>
+          </button>
+
+          <button class="map-pin current" data-loc="asra" style="left: 42.8%; top: 51.5%;">
+            <div class="pin-reticle"><i class="pin-outer"></i><i class="pin-core"></i></div>
+            <div class="pin-label"><span class="pin-zh">阿斯拉学院 ◆</span><span class="pin-en">ASRA ACADEMY</span></div>
+          </button>
+
+          <button class="map-pin" data-loc="jikan" style="left: 76%; top: 56.5%;">
+            <div class="pin-reticle"><i class="pin-outer"></i><i class="pin-core"></i></div>
+            <div class="pin-label"><span class="pin-zh">澄岚霁馆</span><span class="pin-en">CHENGLAN JIKAN</span></div>
+          </button>
+
+          <button class="map-pin selected" data-loc="northwind" style="left: 52.7%; top: 31%;">
+            <div class="pin-reticle"><i class="pin-outer"></i><i class="pin-core"></i></div>
+            <div class="pin-label"><span class="pin-zh">北风堡</span><span class="pin-en">NORTHWIND KEEP</span></div>
+          </button>
+
+          <button class="map-pin" data-loc="hulan" style="left: 67.7%; top: 17.6%;">
+            <div class="pin-reticle"><i class="pin-outer"></i><i class="pin-core"></i></div>
+            <div class="pin-label"><span class="pin-zh">赫兰冰封峡谷</span><span class="pin-en">HULAN ICE CANYON</span></div>
+          </button>
+
+          <div class="map-scale-foot num">
+            <span>SCALE 1 : 420,000</span>
+            <span>ORIGIN // ASRA 48°12′N</span>
+            <span>CLICK ANY DIAMOND PIN TO INSPECT</span>
+          </div>
+        </div>
+
+        <!-- Right-Side Architectural Region Dossier -->
+        <aside class="map-dossier">
+          <div class="md-top">
+            <div class="md-kicker">
+              <span id="md-region-code">SECTOR 04 // NORTHERN FRONTIER</span>
+              <span id="md-status-tag">可前往</span>
+            </div>
+            <h2 class="md-title" id="md-title">北风堡</h2>
+            <p class="md-en-sub" id="md-en">NORTHWIND KEEP</p>
+
+            <div class="md-emblem-bar" aria-hidden="true">
+              <svg viewBox="0 0 320 96" width="320" height="96" fill="none">
+                <line x1="16" y1="48" x2="304" y2="48" stroke="#c4a46c" stroke-width="0.8" stroke-opacity="0.5"/>
+                <circle cx="160" cy="48" r="34" stroke="#1658eb" stroke-width="0.9" stroke-opacity="0.35"/>
+                <polygon points="160,12 196,48 160,84 124,48" fill="rgba(22,88,235,0.08)" stroke="#1658eb" stroke-width="1.2"/>
+                <polygon points="160,26 182,48 160,70 138,48" fill="none" stroke="#c4a46c" stroke-width="1"/>
+                <polygon points="160,42 166,48 160,54 154,48" fill="#1658eb"/>
+              </svg>
+            </div>
+
+            <p class="md-desc" id="md-desc">
+              矗立在北境雪原咽喉处的灰石要塞，常年驻扎着巡境骑士团与医疗补给队。城垛上的测风铜仪日夜旋转，记录着通往赫兰峡谷的每一次寒潮异动。
+            </p>
+
+            <div class="md-specs num">
+              <div class="md-spec-item"><span>气候与魔力</span><b id="md-weather">凛风微雪 · 冰系丰沛</b></div>
+              <div class="md-spec-item"><span>行程体力消耗</span><b id="md-cost">体力 -2 · 马车一日</b></div>
+              <div class="md-spec-item"><span>当前治安度</span><b id="md-danger">边防戒备</b></div>
+              <div class="md-spec-item"><span>可触发事件</span><b id="md-event">北境传信 · 巡防演练</b></div>
+            </div>
+
+            <div class="md-present">
+              <span class="md-present-lbl">NOTABLE FIGURES // 当前停驻人物</span>
+              <div class="md-people" id="md-people">
+                <span>艾诺·塔尔维</span>
+                <span>北境巡防队长</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="md-foot">
+            <div class="md-travel-msg" id="md-travel-msg"></div>
+            <div class="prism-wrap">
+              <svg class="prism-wing top" viewBox="0 0 320 12" fill="none">
+                <path d="M24,11 L56,2 L264,2 L296,11" stroke="currentColor" stroke-width="1"/>
+              </svg>
+              <div class="prism-drop">
+                <button class="prism-cta" id="btn-map-travel">
+                  <span class="p-en">TRAVEL</span>
+                  <span class="p-zh">前往此地</span>
+                </button>
+              </div>
+              <svg class="prism-wing bot" viewBox="0 0 320 12" fill="none">
+                <path d="M24,1 L56,10 L264,10 L296,1" stroke="currentColor" stroke-width="1"/>
+              </svg>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SCREEN 4 · 季度日程 / 火漆信箱 / 街市商铺
+         ==================================================================== -->
+    <section id="screen-life" class="screen" aria-label="日程信箱与商铺">
+      <div class="atelier-shell">
+        <header class="atelier-header">
+          <div class="ah-left">
+            <span class="ah-eyebrow">SEASONAL CHRONICLE // PLANNER · DISPATCH · CURIO</span>
+            <div class="ah-title-row">
+              <h1 class="ah-title">日常行记画廊</h1>
+              <span class="ah-subtitle">第12年 · 3月 · 季度排程、往来火漆信笺与王都奇物阁</span>
+            </div>
+          </div>
+          <div class="ah-right">
+            <div class="ah-stat-pill num">
+              <span>剩余体力 <b>4 / 5</b></span>
+              <span>持有金币 <b id="life-gold-val">680 G</b></span>
+            </div>
+            <button class="ah-close" data-jump="screen-hud">✕ 返回舞台</button>
+          </div>
+        </header>
+
+        <!-- Horizontal ◆ Sub-View Selector -->
+        <div class="life-subnav" role="tablist">
+          <button class="life-subbtn active" data-life="life-calendar">
+            <span class="ls-en">PLANNER</span><span class="ls-zh">季度日程</span>
+          </button>
+          <button class="life-subbtn" data-life="life-mailbox">
+            <span class="ls-en">DISPATCH</span><span class="ls-zh">火漆信箱 (4)</span>
+          </button>
+          <button class="life-subbtn" data-life="life-shop">
+            <span class="ls-en">ATELIER SHOP</span><span class="ls-zh">街市商铺</span>
+          </button>
+        </div>
+
+        <!-- 4A: 3-Slot Celestial Calendar Planner -->
+        <div id="life-calendar" class="life-pane active">
+          <div class="cal-catalog">
+            <span class="sec-en" style="margin-bottom:4px;">ACTIVITIES // 点击填入选中旬期</span>
+            <button class="cal-act-item picked" data-act="meditate">
+              <div class="cal-act-top"><span class="cal-act-name">水系魔导冥想</span><span class="cal-act-cost num">体力 -1</span></div>
+              <span class="cal-act-gain">魔导 +4 · 魔力上限 +12</span>
+            </button>
+            <button class="cal-act-item" data-act="sword">
+              <div class="cal-act-top"><span class="cal-act-name">霁馆生根步演练</span><span class="cal-act-cost num">体力 -2</span></div>
+              <span class="cal-act-gain">剑意 +5 · 灵巧 +3</span>
+            </button>
+            <button class="cal-act-item" data-act="palace">
+              <div class="cal-act-top"><span class="cal-act-name">冰晶宫殿静心推演</span><span class="cal-act-cost num">体力 -1</span></div>
+              <span class="cal-act-gain">知性 +4 · 洞察 +4</span>
+            </button>
+            <button class="cal-act-item" data-act="tea">
+              <div class="cal-act-top"><span class="cal-act-name">学院庭院午后茶会</span><span class="cal-act-cost num">体力 -1</span></div>
+              <span class="cal-act-gain">仪态 +4 · 羁绊好感微升</span>
+            </button>
+            <button class="cal-act-item" data-act="rest">
+              <div class="cal-act-top"><span class="cal-act-name">宿舍小憩与读信</span><span class="cal-act-cost num">体力 +2</span></div>
+              <span class="cal-act-gain">恢复生命与精神 · 悠闲度提升</span>
+            </button>
+          </div>
+
+          <div class="cal-board">
+            <div class="cal-slots" id="cal-slots">
+              <div class="cal-slot active-slot" data-slot="0">
+                <div>
+                  <div class="cs-period">SLOT 01 // EARLY</div>
+                  <div class="cs-period-zh">三月 · 上旬</div>
+                </div>
+                <div class="cs-chosen">
+                  <div class="cs-chosen-name">水系魔导冥想</div>
+                  <div class="cs-chosen-desc">在水属性教室静候午后斜阳，梳理经脉里的水元素回流。</div>
+                </div>
+                <div class="cs-foot num"><span>体力 -1</span><span style="color:var(--sapphire);">魔导 +4</span></div>
+              </div>
+
+              <div class="cal-slot" data-slot="1">
+                <div>
+                  <div class="cs-period">SLOT 02 // MID</div>
+                  <div class="cs-period-zh">三月 · 中旬</div>
+                </div>
+                <div class="cs-chosen">
+                  <div class="cs-chosen-name">冰晶宫殿静心推演</div>
+                  <div class="cs-chosen-desc">于静室复盘术式折射角度，令思维殿堂的轮廓愈发澄明。</div>
+                </div>
+                <div class="cs-foot num"><span>体力 -1</span><span style="color:var(--sapphire);">洞察 +4</span></div>
+              </div>
+
+              <div class="cal-slot" data-slot="2">
+                <div>
+                  <div class="cs-period">SLOT 03 // LATE</div>
+                  <div class="cs-period-zh">三月 · 下旬</div>
+                </div>
+                <div class="cs-chosen">
+                  <div class="cs-chosen-name">学院庭院午后茶会</div>
+                  <div class="cs-chosen-desc">和妹妹与同窗共饮蜂蜜红茶，顺便打听王都近来的风声。</div>
+                </div>
+                <div class="cs-foot num"><span>体力 -1</span><span style="color:var(--sapphire);">仪态 +4</span></div>
+              </div>
+            </div>
+
+            <div class="cal-summary-bar">
+              <div class="cal-proj-list num">
+                <div class="cal-proj"><span>预计总消耗</span><b id="cal-total-st">体力 3 / 4</b></div>
+                <div class="cal-proj"><span>主属性预计增长</span><b id="cal-total-gain">魔导 +4 · 洞察 +4 · 仪态 +4</b></div>
+              </div>
+              <div class="prism-wrap" style="width: 240px; padding: 6px 0;">
+                <svg class="prism-wing top" viewBox="0 0 240 10" fill="none">
+                  <path d="M18,9 L44,2 L196,2 L222,9" stroke="currentColor" stroke-width="0.9"/>
+                </svg>
+                <div class="prism-drop">
+                  <button class="prism-cta compact" id="btn-cal-execute">
+                    <span class="p-en">EXECUTE</span>
+                    <span class="p-zh">确认本季日程</span>
+                  </button>
+                </div>
+                <svg class="prism-wing bot" viewBox="0 0 240 10" fill="none">
+                  <path d="M18,1 L44,8 L196,8 L222,1" stroke="currentColor" stroke-width="0.9"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4B: Wax-Sealed Porcelain Mailbox -->
+        <div id="life-mailbox" class="life-pane">
+          <div class="mail-list" id="mail-list">
+            <button class="mail-row active" data-mail="alice">
+              <div class="mr-top"><span class="mr-sender"><i class="mr-unread"></i>爱丽丝·维斯特利亚</span><span class="mr-date num">12.03.14</span></div>
+              <span class="mr-subject">学院北侧的风铃草开了</span>
+            </button>
+            <button class="mail-row" data-mail="beatrice">
+              <div class="mr-top"><span class="mr-sender"><i class="mr-unread"></i>贝阿特丽丝·维斯特利亚</span><span class="mr-date num">12.03.11</span></div>
+              <span class="mr-subject">别又一个人躲在教室里发呆啦！</span>
+            </button>
+            <button class="mail-row" data-mail="noelle">
+              <div class="mr-top"><span class="mr-sender">诺艾儿·贝尔蒙特</span><span class="mr-date num">12.03.08</span></div>
+              <span class="mr-subject">关于水镜折射阻率的补充勘误</span>
+            </button>
+            <button class="mail-row" data-mail="aino">
+              <div class="mr-top"><span class="mr-sender">艾诺·塔尔维</span><span class="mr-date num">12.03.04</span></div>
+              <span class="mr-subject">北风堡近况与寒息练习</span>
+            </button>
+          </div>
+
+          <article class="mail-sheet-stage">
+            <div class="ms-head">
+              <div>
+                <div class="ms-eyebrow" id="ms-eyebrow">WAX-SEALED DISPATCH // FROM ALICE</div>
+                <h2 class="ms-subject" id="ms-subject">学院北侧的风铃草开了</h2>
+              </div>
+              <div class="ms-seal" id="ms-seal" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <line x1="12" y1="3" x2="12" y2="21"/><line x1="4" y1="7.5" x2="20" y2="16.5"/><line x1="20" y1="7.5" x2="4" y2="16.5"/>
+                </svg>
+              </div>
+            </div>
+
+            <div class="ms-body" id="ms-body">
+              <p class="ms-salute">姐姐大人：</p>
+              <p>学院北侧的风铃草前些天悄悄开了。花瓣上还带着早春的薄露，我挑了最安静的一朵压干，夹在这封信里寄给你。</p>
+              <p style="margin-top:10px;">贝蒂姐姐昨天还在念叨，说你一钻进水属性教室就容易忘了午饭时辰。如果你今天又只喝了两口清水，就让这封信替我提醒你一次吧。</p>
+              <p style="margin-top:10px;">等这阵忙完，我想在回廊晒着太阳，听你讲讲最近新琢磨出来的冰晶术式。</p>
+              <p class="ms-sign">—— 爱丽丝</p>
+            </div>
+
+            <div class="ms-foot">
+              <span class="ms-enclosure" id="ms-enclosure">◆ 随信附赠：干压风铃草书签（已收入行囊）</span>
+              <div style="display:flex; gap:12px;">
+                <button class="facet-btn" id="btn-mail-reply">回信致意</button>
+                <button class="facet-btn" id="btn-mail-keep">珍藏入册</button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- 4C: Minimalist Gallery Curio Shop -->
+        <div id="life-shop" class="life-pane">
+          <div class="shop-top-strip">
+            <span class="sec-en">ROYAL CAPITAL CURIO GALLERY // 王都雪瓷奇物阁</span>
+            <span class="sec-note" id="shop-feedback">点击任意藏品即可购入，无边框画廊陈列</span>
+          </div>
+          <div class="shop-vitrine">
+            <div class="shop-cell">
+              <div>
+                <div class="sc-head"><span class="sc-name">星辉魔力露</span><span class="sc-price num">85 G</span></div>
+                <p class="sc-desc" style="margin-top:8px;">澄澈如冬夜星河的浓缩魔药，战斗中可迅速回复 65 点魔力。</p>
+              </div>
+              <div class="sc-foot"><span class="sc-tag">魔力回复</span><button class="sc-buy" data-buy="星辉魔力露" data-price="85">购入</button></div>
+            </div>
+            <div class="shop-cell">
+              <div>
+                <div class="sc-head"><span class="sc-name">北境雪松墨水</span><span class="sc-price num">120 G</span></div>
+                <p class="sc-desc" style="margin-top:8px;">以冷杉树脂调制的深海蓝墨水，抄录术式笔记时可额外提升知性。</p>
+              </div>
+              <div class="sc-foot"><span class="sc-tag">研习增益</span><button class="sc-buy" data-buy="北境雪松墨水" data-price="120">购入</button></div>
+            </div>
+            <div class="shop-cell">
+              <div>
+                <div class="sc-head"><span class="sc-name">薄霜剑油</span><span class="sc-price num">95 G</span></div>
+                <p class="sc-desc" style="margin-top:8px;">轻拭剑锋即可在表层凝结微薄寒膜，使下一场演武的冰系剑技更锋利。</p>
+              </div>
+              <div class="sc-foot"><span class="sc-tag">演武备战</span><button class="sc-buy" data-buy="薄霜剑油" data-price="95">购入</button></div>
+            </div>
+            <div class="shop-cell">
+              <div>
+                <div class="sc-head"><span class="sc-name">风铃草蜜茶罐</span><span class="sc-price num">65 G</span></div>
+                <p class="sc-desc" style="margin-top:8px;">王都老字号茶铺的早春限供，与同窗共饮时可柔和拉近心距。</p>
+              </div>
+              <div class="sc-foot"><span class="sc-tag">羁绊赠礼</span><button class="sc-buy" data-buy="风铃草蜜茶罐" data-price="65">购入</button></div>
+            </div>
+            <div class="shop-cell">
+              <div>
+                <div class="sc-head"><span class="sc-name">折光冰镜棱片</span><span class="sc-price num">210 G</span></div>
+                <p class="sc-desc" style="margin-top:8px;">高纯度透明石英棱片，可用于校准冰镜偏折角度并稳固护盾。</p>
+              </div>
+              <div class="sc-foot"><span class="sc-tag">圣器素材</span><button class="sc-buy" data-buy="折光冰镜棱片" data-price="210">购入</button></div>
+            </div>
+            <div class="shop-cell">
+              <div>
+                <div class="sc-head"><span class="sc-name">银丝流苏书签</span><span class="sc-price num">140 G</span></div>
+                <p class="sc-desc" style="margin-top:8px;">维斯特利亚领匠人手织的细银流苏，夹于典籍中可静心凝神。</p>
+              </div>
+              <div class="sc-foot"><span class="sc-tag">典藏雅物</span><button class="sc-buy" data-buy="银丝流苏书签" data-price="140">购入</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SCREEN 5 · 系统确认弹窗 (sysPopup)
+         ==================================================================== -->
+    <section id="screen-popup" class="screen" aria-label="系统确认弹窗">
+      <!-- Frosted Porcelain Backdrop echoing the In-Game Stage -->
+      <svg class="popup-backdrop-scene" viewBox="0 0 1440 864" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <rect width="1440" height="864" fill="#dce8f8"/>
+        <path d="M510,590 L510,155 Q720,25 930,155 L930,590 Z" fill="#f5f9ff"/>
+        <circle cx="720" cy="410" r="240" fill="none" stroke="#c4a46c" stroke-width="1.2" stroke-opacity="0.45"/>
+        <circle cx="720" cy="410" r="165" fill="none" stroke="#1658eb" stroke-width="1" stroke-opacity="0.32"/>
+      </svg>
+
+      <div class="popup-frost-veil">
+        <div class="sys-prism-card" role="dialog" aria-modal="true" aria-labelledby="sys-popup-title">
+          <!-- Top Champagne-Gold Architectural Hairline Bracket -->
+          <svg class="sys-bracket top" viewBox="0 0 580 14" preserveAspectRatio="none" fill="none" aria-hidden="true">
+            <line x1="0" y1="1" x2="255" y2="1" stroke="#c4a46c" stroke-width="1.6"/>
+            <line x1="325" y1="1" x2="580" y2="1" stroke="#c4a46c" stroke-width="1.6"/>
+            <polyline points="255,1 268,12 312,12 325,1" stroke="#1658eb" stroke-width="1.2"/>
+            <polygon points="290,5 294,9 290,13 286,9" fill="#1658eb"/>
+          </svg>
+
+          <div class="sys-crest-top">
+            <i></i>
+            <span id="sys-eyebrow">CHRONICLE RECORD // 维斯特利亚 · 冰晶典录</span>
+            <i></i>
+          </div>
+
+          <h2 class="sys-title" id="sys-popup-title">魔力回路共鸣 · 冰水亲和突破</h2>
+          <div class="sys-rule"></div>
+
+          <p class="sys-desc" id="sys-desc">
+            午后的水元素冥想令细微魔力回路自然合拢。指尖凝出的薄冰不再需要刻意咏唱，寒息与流水在冰晶宫殿中达成了清澈的平衡。
+          </p>
+
+          <div class="sys-gains num" id="sys-gains">
+            <div class="sys-gain-row"><span class="sg-lbl">魔力上限</span><span class="sg-val">210 → 240 <em class="sg-delta">+30</em></span></div>
+            <div class="sys-gain-row"><span class="sg-lbl">凝华冰晶术熟练</span><span class="sg-val">Lv.3 → Lv.4 <em class="sg-delta">突破</em></span></div>
+            <div class="sys-gain-row"><span class="sg-lbl">因果星轨 · 艾诺</span><span class="sg-val">极北知己 <em class="sg-delta">+2</em></span></div>
+            <div class="sys-gain-row"><span class="sg-lbl">习得新术式</span><span class="sg-val">隔空凝冰 <em class="sg-delta">NEW</em></span></div>
+          </div>
+
+          <!-- Iconic Six-Sided Faceted Sapphire Prism CONFIRM CTA -->
+          <div class="prism-wrap" style="width: 276px; margin-top: 6px;">
+            <svg class="prism-wing top" viewBox="0 0 276 12" fill="none">
+              <path d="M22,11 L52,2 L224,2 L254,11" stroke="currentColor" stroke-width="1"/>
+            </svg>
+            <div class="prism-drop">
+              <button class="prism-cta" id="btn-sys-confirm">
+                <span class="p-en">CONFIRM</span>
+                <span class="p-zh">确认</span>
+              </button>
+            </div>
+            <svg class="prism-wing bot" viewBox="0 0 276 12" fill="none">
+              <path d="M22,1 L52,10 L224,10 L254,1" stroke="currentColor" stroke-width="1"/>
+            </svg>
+          </div>
+
+          <!-- Bottom Champagne-Gold Architectural Hairline Bracket -->
+          <svg class="sys-bracket bot" viewBox="0 0 580 14" preserveAspectRatio="none" fill="none" aria-hidden="true">
+            <line x1="0" y1="13" x2="255" y2="13" stroke="#c4a46c" stroke-width="1.6"/>
+            <line x1="325" y1="13" x2="580" y2="13" stroke="#c4a46c" stroke-width="1.6"/>
+            <polyline points="255,13 268,2 312,2 325,13" stroke="#c4a46c" stroke-width="1"/>
+          </svg>
+        </div>
+
+        <!-- Switchable Popup Variants -->
+        <div class="popup-variant-bar">
+          <button class="pv-btn active" data-pv="breakthrough">示例 A · 突破结算</button>
+          <button class="pv-btn" data-pv="causal">示例 B · 因果微澜</button>
+          <button class="pv-btn" data-pv="relic">示例 C · 圣器入手</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+<script>
+(() => {
+  /* ==========================================================================
+     1. TOP SWITCHER & CROSS-SCREEN NAVIGATION
+     ========================================================================== */
+  const swTabs = [...document.querySelectorAll('.sw-tab')];
+  const screens = [...document.querySelectorAll('.screen')];
+
+  function showScreen(id) {
+    screens.forEach(s => s.classList.toggle('active', s.id === id));
+    swTabs.forEach(t => {
+      const on = t.dataset.screen === id;
+      t.classList.toggle('active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+  }
+
+  swTabs.forEach(t => t.addEventListener('click', () => showScreen(t.dataset.screen)));
+
+  document.querySelectorAll('[data-jump]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      showScreen(btn.dataset.jump);
+      if (btn.dataset.sub) activateLifeTab(btn.dataset.sub);
+    });
+  });
+
+  window.addEventListener('keydown', e => {
+    if (e.key >= '1' && e.key <= '5') {
+      const idx = Number(e.key) - 1;
+      if (swTabs[idx]) showScreen(swTabs[idx].dataset.screen);
+    }
+  });
+
+  /* ==========================================================================
+     2. SCREEN 1 · INTERACTIVE DIALOGUE, SPEAKER BUSTS & HOTSPOTS
+     ========================================================================== */
+  const MINI_BUSTS = {
+    sylvia: `<svg viewBox="0 0 76 88" width="74" height="86" fill="none">
+      <circle cx="38" cy="36" r="26" stroke="#c4a46c" stroke-width="0.7" stroke-dasharray="2 3" opacity="0.65"/>
+      <path d="M16,32 C14,14 26,8 38,8 C50,8 62,14 60,32 L62,86 L14,86 Z" fill="#dce8f8" stroke="#9ab4da" stroke-width="0.8"/>
+      <path d="M26,38 C26,52 31,61 39,63 C47,61 51,52 51,38 C51,26 45,19 38,19 C31,19 26,26 26,38 Z" fill="#fafdff" stroke="#b6cae6" stroke-width="0.8"/>
+      <path d="M27,39 C28,50 32,58 38,61 C34,56 32,48 32,38 Z" fill="#d8e6f8" opacity="0.6"/>
+      <path d="M21,36 C22,20 29,14 38,14 C47,14 54,20 55,36 C50,27 44,25 38,33 C32,25 26,27 21,36 Z" fill="#eef4fc"/>
+      <path d="M14,88 L20,66 L56,66 L62,88 Z" fill="#152e69"/>
+      <path d="M25,67 L38,84 L51,67" stroke="#c4a46c" stroke-width="1.1"/>
+      <polygon points="38,70 42,76 38,82 34,76" fill="#1658eb" stroke="#c4a46c" stroke-width="0.9"/>
+    </svg>`,
+    aino: `<svg viewBox="0 0 76 88" width="74" height="86" fill="none">
+      <circle cx="38" cy="36" r="24" stroke="#8fa9cc" stroke-width="0.7" stroke-dasharray="2 4" opacity="0.6"/>
+      <path d="M18,32 C16,16 26,10 38,10 C50,10 60,16 58,32 L56,64 L20,64 Z" fill="#8ca7c9"/>
+      <path d="M26,38 C26,52 31,61 38,63 C45,61 50,52 50,38 C50,26 45,19 38,19 C31,19 26,26 26,38 Z" fill="#fafdff" stroke="#b6cae6" stroke-width="0.8"/>
+      <path d="M49,39 C48,50 44,58 38,61 C42,56 44,48 44,38 Z" fill="#c7d8ee" opacity="0.6"/>
+      <path d="M21,36 C22,20 29,14 38,14 C47,14 54,20 55,36 C49,27 42,24 36,34 C31,26 25,27 21,36 Z" fill="#aec5e2"/>
+      <path d="M14,88 L20,66 L56,66 L62,88 Z" fill="#233652"/>
+      <polygon points="27,66 38,76 49,66 46,82 38,87 30,82" fill="#e8f0fa" stroke="#c4a46c" stroke-width="0.8"/>
+      <polygon points="38,72 41,77 38,82 35,77" fill="#6bc5f8"/>
+    </svg>`
+  };
+
+  const LINES = [
+    {
+      speaker: 'sylvia', en: 'SYLVIA', zh: '希尔维亚', role: '维斯特利亚次女',
+      text: '水元素在指尖凝结成薄霜的那一瞬，教室窗外的雪光恰好斜落进水镜里。'
+    },
+    {
+      speaker: 'aino', en: 'AINO', zh: '艾诺', role: '极北冰系同窗',
+      text: '你的魔力收束比上周安静多了。凝冰时几乎听不见多余的回响。'
+    },
+    {
+      speaker: 'sylvia', en: 'SYLVIA', zh: '希尔维亚', role: '维斯特利亚次女',
+      text: '嗯，照着你提过的呼吸节拍试了一阵，魔力流转顺畅了许多。'
+    },
+    {
+      speaker: 'aino', en: 'AINO', zh: '艾诺', role: '极北冰系同窗',
+      text: '那正好。等午后课间结束，去训练场试一试双面冰镜的折射角度吧。'
+    }
+  ];
+
+  let lineIdx = 0;
+  const bustBox = document.getElementById('speaker-bust-box');
+  const spEn = document.getElementById('speaker-en');
+  const spZh = document.getElementById('speaker-zh');
+  const spRole = document.getElementById('speaker-role');
+  const dlgText = document.getElementById('dialogue-text');
+  const dlgPips = [...document.querySelectorAll('#dialogue-pips .dpip')];
+  const standSylvia = document.getElementById('stand-sylvia');
+  const standAino = document.getElementById('stand-aino');
+
+  function renderDialogue() {
+    const L = LINES[lineIdx];
+    bustBox.innerHTML = MINI_BUSTS[L.speaker];
+    spEn.textContent = L.en;
+    spZh.textContent = L.zh;
+    spRole.textContent = L.role;
+    dlgText.textContent = L.text;
+    dlgPips.forEach((p, i) => p.classList.toggle('active', i === lineIdx));
+    standSylvia.classList.toggle('active', L.speaker === 'sylvia');
+    standSylvia.classList.toggle('dim', L.speaker !== 'sylvia');
+    standAino.classList.toggle('active', L.speaker === 'aino');
+    standAino.classList.toggle('dim', L.speaker !== 'aino');
+  }
+  renderDialogue();
+
+  document.getElementById('dialogue-click-zone').addEventListener('click', () => {
+    lineIdx = (lineIdx + 1) % LINES.length;
+    renderDialogue();
+  });
+
+  const hudToast = document.getElementById('hud-toast');
+  let toastTimer = null;
+  function showToast(msg) {
+    hudToast.textContent = msg;
+    hudToast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => hudToast.classList.remove('show'), 2600);
+  }
+
+  document.querySelectorAll('.scene-hotspot').forEach(hs => {
+    hs.addEventListener('click', () => showToast('◆ 观察 · ' + hs.dataset.inspect));
+  });
+  document.getElementById('btn-hud-talk').addEventListener('click', () => {
+    lineIdx = (lineIdx + 1) % LINES.length;
+    renderDialogue();
+    showToast('◆ 正在与艾诺交谈');
+  });
+  document.getElementById('btn-hud-explore').addEventListener('click', () => {
+    showToast('◆ 探索水属性教室 · 发现《魔力精算批注》残页线索');
+  });
+  document.getElementById('btn-hud-advance').addEventListener('click', () => {
+    showScreen('screen-life');
+    activateLifeTab('life-calendar');
+  });
+
+  /* ==========================================================================
+     3. SCREEN 2 · STATUS PANEL TABS & INTERACTIVE 5-CHARACTER CAUSAL BEAMS
+     ========================================================================== */
+  const ptabBtns = [...document.querySelectorAll('[data-ptab]')];
+  const ptabPanes = [...document.querySelectorAll('.ptab-pane')];
+
+  ptabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      ptabBtns.forEach(b => b.classList.toggle('active', b === btn));
+      ptabPanes.forEach(p => p.classList.toggle('active', p.id === btn.dataset.ptab));
+    });
+  });
+
+  const CAUSAL_DATA = [
+    { id: 'alice', name: '爱丽丝', en: 'ALICE', left: '独立思考', right: '执念依恋', val: -32 },
+    { id: 'noelle', name: '诺艾儿', en: 'NOELLE', left: '平等同盟', right: '自尊防线', val: -46 },
+    { id: 'charlotte', name: '夏洛特', en: 'CHARLOTTE', left: '卸下面具', right: '骄傲较劲', val: 24 },
+    { id: 'aino', name: '艾诺', en: 'AINO', left: '极北知己', right: '严苛试炼', val: -58 },
+    { id: 'jilan', name: '霁岚', en: 'JILAN', left: '归处暖灯', right: '并肩远行', val: 18 }
+  ];
+
+  function buildCausalBeams(containerId) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML = CAUSAL_DATA.map((c, idx) => {
+      const pct = Math.max(8, Math.min(92, 50 + c.val * 0.42));
+      const fillLeft = Math.min(50, pct);
+      const fillWidth = Math.abs(pct - 50);
+      const stateText = Math.abs(c.val) < 10 ? '静水未分' : (c.val < 0 ? `${c.left} 倾向` : `${c.right} 倾向`);
+      return `
+        <div class="cbeam-item" data-cidx="${idx}">
+          <div class="cbeam-head">
+            <span class="cbeam-char"><i></i>${c.name} <em>${c.en}</em></span>
+            <span class="cbeam-state">${stateText}</span>
+          </div>
+          <div class="cbeam-scale-row">
+            <span class="cbeam-pole left ${c.val < -8 ? 'dominant' : ''}">${c.left}</span>
+            <div class="cbeam-rail">
+              <div class="cbeam-line"></div>
+              <div class="cbeam-fulcrum"></div>
+              <div class="cbeam-fill" style="left:${fillLeft}%; width:${fillWidth}%;"></div>
+              <div class="cbeam-node" style="left:${pct}%;"></div>
+            </div>
+            <span class="cbeam-pole right ${c.val > 8 ? 'dominant' : ''}">${c.right}</span>
+          </div>
+        </div>`;
+    }).join('');
+
+    el.querySelectorAll('.cbeam-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const i = Number(item.dataset.cidx);
+        CAUSAL_DATA[i].val = CAUSAL_DATA[i].val <= -60 ? 40 : CAUSAL_DATA[i].val - 22;
+        buildCausalBeams('causal-beams-overview');
+        buildCausalBeams('causal-beams-full');
+      });
+    });
+  }
+  buildCausalBeams('causal-beams-overview');
+  buildCausalBeams('causal-beams-full');
+
+  /* ==========================================================================
+     4. SCREEN 3 · CELESTIAL MAP INTERACTION
+     ========================================================================== */
+  const MAP_LOCS = {
+    vesteria: {
+      code: 'SECTOR 01 // SOUTHERN DUCHY', status: '家族领地',
+      title: '维斯特利亚公爵府', en: 'DUCHY OF VESTERIA',
+      desc: '雪白大理石回廊与蔷薇花圃环绕的南部公爵领。书房中藏有历代魔导手札，午后庭院总飘着红茶与阳光的气息，是三姐妹共同成长的安宁归处。',
+      weather: '晴朗微风 · 魔力平和', cost: '体力 -1 · 马车半日',
+      danger: '领地安宁', event: '家书往来 · 庭院小憩',
+      people: ['克劳德公爵', '索菲亚夫人', '贝阿特丽丝'],
+      route: 'M440,445 Q325,522 226,622'
+    },
+    asra: {
+      code: 'SECTOR 02 // ROYAL CAPITAL', status: '当前所在',
+      title: '阿斯拉学院', en: 'ASRA MAGIC ACADEMY',
+      desc: '王国最高魔导学府，以哥特尖顶与水镜温室闻名。各属性高塔围绕中心星仪广场排布，清晨钟声响起时，银蓝制服的学员们穿行在积雪回廊之间。',
+      weather: '早春细雪 · 水冰丰沛', cost: '当前位置 · 无需耗力',
+      danger: '学园秩序', event: '水系研习 · 虚拟决斗',
+      people: ['希尔维亚', '爱丽丝', '诺艾儿', '夏洛特'],
+      route: 'M440,445 L440,445'
+    },
+    jikan: {
+      code: 'SECTOR 03 // EASTERN HILLS', status: '可前往',
+      title: '澄岚霁馆', en: 'CHENGLAN JIKAN',
+      desc: '坐落于东境澄岚镇一隅的古朴剑馆。木檐清冷、庭石干净，虽不似王都道场那般喧闹，却藏着最扎实的步法与贴身卸力剑理。',
+      weather: '山岚薄雾 · 清冽', cost: '体力 -2 · 驿车一日',
+      danger: '山林偶有魔物', event: '霁馆对练 · 澄岚公会委托',
+      people: ['霁岚馆主', '澄岚公会书记'],
+      route: 'M440,445 Q615,440 782,488'
+    },
+    northwind: {
+      code: 'SECTOR 04 // NORTHERN FRONTIER', status: '可前往',
+      title: '北风堡', en: 'NORTHWIND KEEP',
+      desc: '矗立在北境雪原咽喉处的灰石要塞，常年驻扎着巡境骑士团与医疗补给队。城垛上的测风铜仪日夜旋转，记录着通往赫兰峡谷的每一次寒潮异动。',
+      weather: '凛风微雪 · 冰系丰沛', cost: '体力 -2 · 马车一日',
+      danger: '边防戒备', event: '北境传信 · 巡防演练',
+      people: ['艾诺·塔尔维', '北境巡防队长'],
+      route: 'M440,445 Q495,355 542,268'
+    },
+    hulan: {
+      code: 'SECTOR 05 // EXTREME NORTH', status: '前线战区',
+      title: '赫兰冰封峡谷', en: 'HULAN ICE CANYON',
+      desc: '终年被冰川与苍白风雪覆盖的极北裂谷。岩壁冻结着如棱镜般的冰柱，深处潜伏着高阶寒地魔物，也是检验冰水魔导与协同战阵的终极防线。',
+      weather: '极寒暴雪 · 魔力激荡', cost: '体力 -3 · 极北行军',
+      danger: '高危前线', event: '风雪猎场 · 峡谷协防战',
+      people: ['前线医疗队', '极光侦察小队'],
+      route: 'M440,445 Q495,355 542,268 Q620,205 696,152'
+    }
+  };
+
+  let selectedLoc = 'northwind';
+  const mapPins = [...document.querySelectorAll('.map-pin')];
+  const activeRoute = document.getElementById('map-active-route');
+
+  function renderDossier(key) {
+    selectedLoc = key;
+    const d = MAP_LOCS[key];
+    document.getElementById('md-region-code').textContent = d.code;
+    document.getElementById('md-status-tag').textContent = d.status;
+    document.getElementById('md-title').textContent = d.title;
+    document.getElementById('md-en').textContent = d.en;
+    document.getElementById('md-desc').textContent = d.desc;
+    document.getElementById('md-weather').textContent = d.weather;
+    document.getElementById('md-cost').textContent = d.cost;
+    document.getElementById('md-danger').textContent = d.danger;
+    document.getElementById('md-event').textContent = d.event;
+    document.getElementById('md-people').innerHTML = d.people.map(p => `<span>${p}</span>`).join('');
+    document.getElementById('md-travel-msg').textContent = '';
+    activeRoute.setAttribute('d', d.route);
+    mapPins.forEach(p => p.classList.toggle('selected', p.dataset.loc === key));
+  }
+
+  mapPins.forEach(pin => pin.addEventListener('click', () => renderDossier(pin.dataset.loc)));
+
+  document.getElementById('btn-map-travel').addEventListener('click', () => {
+    const d = MAP_LOCS[selectedLoc];
+    document.getElementById('md-travel-msg').textContent = `◆ 航线已锁定 · 即将启程前往「${d.title}」`;
+    document.getElementById('hud-loc-label').textContent = d.title;
+    mapPins.forEach(p => p.classList.toggle('current', p.dataset.loc === selectedLoc));
+  });
+
+  /* ==========================================================================
+     5. SCREEN 4 · PLANNER / MAILBOX / CURIO SHOP
+     ========================================================================== */
+  const lifeBtns = [...document.querySelectorAll('.life-subbtn')];
+  const lifePanes = [...document.querySelectorAll('.life-pane')];
+
+  function activateLifeTab(id) {
+    lifeBtns.forEach(b => b.classList.toggle('active', b.dataset.life === id));
+    lifePanes.forEach(p => p.classList.toggle('active', p.id === id));
+  }
+  lifeBtns.forEach(b => b.addEventListener('click', () => activateLifeTab(b.dataset.life)));
+
+  // Calendar Planner Interaction
+  const ACTIVITIES = {
+    meditate: { name: '水系魔导冥想', desc: '在水属性教室静候午后斜阳，梳理经脉里的水元素回流。', st: 1, tag: '魔导 +4' },
+    sword:    { name: '霁馆生根步演练', desc: '沉腰落胯反复拆解步法，让身体记住每一次借力卸锋。', st: 2, tag: '剑意 +5' },
+    palace:   { name: '冰晶宫殿静心推演', desc: '于静室复盘术式折射角度，令思维殿堂的轮廓愈发澄明。', st: 1, tag: '洞察 +4' },
+    tea:      { name: '学院庭院午后茶会', desc: '和妹妹与同窗共饮蜂蜜红茶，顺便打听王都近来的风声。', st: 1, tag: '仪态 +4' },
+    rest:     { name: '宿舍小憩与读信', desc: '泡一壶温茶拆阅家书，将连日紧绷的心弦缓缓松开。', st: -2, tag: '体力 +2' }
+  };
+
+  let activeSlotIdx = 0;
+  const slotPlan = ['meditate', 'palace', 'tea'];
+  const slotEls = [...document.querySelectorAll('.cal-slot')];
+
+  function updateCalendarSummary() {
+    let stSum = 0;
+    const gains = [];
+    slotPlan.forEach((k, idx) => {
+      const a = ACTIVITIES[k];
+      stSum += a.st;
+      gains.push(a.tag);
+      const el = slotEls[idx];
+      el.querySelector('.cs-chosen-name').textContent = a.name;
+      el.querySelector('.cs-chosen-desc').textContent = a.desc;
+      el.querySelector('.cs-foot').innerHTML = `<span>${a.st >= 0 ? '体力 -' + a.st : '体力 +' + (-a.st)}</span><span style="color:var(--sapphire);">${a.tag}</span>`;
+    });
+    document.getElementById('cal-total-st').textContent = `净耗体力 ${Math.max(0, stSum)} / 4`;
+    document.getElementById('cal-total-gain').textContent = gains.join(' · ');
+  }
+
+  slotEls.forEach((el, idx) => {
+    el.addEventListener('click', () => {
+      activeSlotIdx = idx;
+      slotEls.forEach((s, i) => s.classList.toggle('active-slot', i === idx));
+    });
+  });
+
+  document.querySelectorAll('.cal-act-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.cal-act-item').forEach(b => b.classList.remove('picked'));
+      btn.classList.add('picked');
+      slotPlan[activeSlotIdx] = btn.dataset.act;
+      updateCalendarSummary();
+    });
+  });
+
+  document.getElementById('btn-cal-execute').addEventListener('click', () => {
+    showScreen('screen-popup');
+  });
+
+  // Wax-Sealed Mailbox Interaction
+  const MAILS = {
+    alice: {
+      eyebrow: 'WAX-SEALED DISPATCH // FROM ALICE',
+      subject: '学院北侧的风铃草开了',
+      sealClass: '',
+      enclosure: '◆ 随信附赠：干压风铃草书签（已收入行囊）',
+      html: `<p class="ms-salute">姐姐大人：</p>
+        <p>学院北侧的风铃草前些天悄悄开了。花瓣上还带着早春的薄露，我挑了最安静的一朵压干，夹在这封信里寄给你。</p>
+        <p style="margin-top:10px;">贝蒂姐姐昨天还在念叨，说你一钻进水属性教室就容易忘了午饭时辰。如果你今天又只喝了两口清水，就让这封信替我提醒你一次吧。</p>
+        <p style="margin-top:10px;">等这阵忙完，我想在回廊晒着太阳，听你讲讲最近新琢磨出来的冰晶术式。</p>
+        <p class="ms-sign">—— 爱丽丝</p>`
+    },
+    beatrice: {
+      eyebrow: 'WAX-SEALED DISPATCH // FROM BEATRICE',
+      subject: '别又一个人躲在教室里发呆啦！',
+      sealClass: 'crimson',
+      enclosure: '◆ 随信附赠：王都甜点铺焦糖布丁券 ×1',
+      html: `<p class="ms-salute">亲爱的希尔维亚：</p>
+        <p>我这周的炎系实战课终于把火焰兔子的耳朵稳定住了！虽然后半段还是冒了一缕黑烟，但助教老师都夸我比上回进步了好多呢。</p>
+        <p style="margin-top:10px;">听爱丽丝说你最近又在琢磨什么高深的折射回路，周末可不许推辞，一定要陪我去街角吃新出炉的焦糖布丁！</p>
+        <p class="ms-sign">—— 你最可靠的姐姐 · 贝蒂</p>`
+    },
+    noelle: {
+      eyebrow: 'ACADEMIC MEMO // FROM NOELLE',
+      subject: '关于水镜折射阻率的补充勘误',
+      sealClass: '',
+      enclosure: '◆ 随信附赠：精算手稿附页（知性 +1）',
+      html: `<p class="ms-salute">希尔维亚同学：</p>
+        <p>前日讨论的双层水膜折射公式，我在演算第三段衰减系数时发现一处细微偏差，已将修订后的推导过程附在背面。</p>
+        <p style="margin-top:10px;">你的无咏唱凝冰结构很克制，若能将收束时间再提前半拍，实战中的魔力耗损还能压低一成。下次自习室见。</p>
+        <p class="ms-sign">—— 诺艾儿·贝尔蒙特</p>`
+    },
+    aino: {
+      eyebrow: 'NORTHERN POST // FROM AINO',
+      subject: '北风堡近况与寒息练习',
+      sealClass: '',
+      enclosure: '◆ 随信附赠：北境雪松干叶（寒息共鸣）',
+      html: `<p class="ms-salute">希尔维亚：</p>
+        <p>北风堡近几日的寒潮比往年略早。巡境队在峡谷外围拾到了异常冻裂的晶石碎片，回头我会带样本回学院。</p>
+        <p style="margin-top:10px;">你的冰晶术已经很稳了，记住不要急着去追高阶魔力出力，先守住自己的呼吸节奏。</p>
+        <p class="ms-sign">—— 艾诺</p>`
+    }
+  };
+
+  document.querySelectorAll('.mail-row').forEach(row => {
+    row.addEventListener('click', () => {
+      document.querySelectorAll('.mail-row').forEach(r => r.classList.remove('active'));
+      row.classList.add('active');
+      const m = MAILS[row.dataset.mail];
+      document.getElementById('ms-eyebrow').textContent = m.eyebrow;
+      document.getElementById('ms-subject').textContent = m.subject;
+      document.getElementById('ms-body').innerHTML = m.html;
+      document.getElementById('ms-enclosure').textContent = m.enclosure;
+      const seal = document.getElementById('ms-seal');
+      seal.className = 'ms-seal ' + m.sealClass;
+    });
+  });
+
+  document.getElementById('btn-mail-reply').addEventListener('click', () => {
+    document.getElementById('ms-enclosure').textContent = '◆ 已写就雪瓷回笺，交由学院信使寄出。';
+  });
+  document.getElementById('btn-mail-keep').addEventListener('click', () => {
+    document.getElementById('ms-enclosure').textContent = '◆ 此信已盖章收录至「冰晶典录 · 书信集」。';
+  });
+
+  // Curio Shop Interaction
+  let gold = 680;
+  document.querySelectorAll('.sc-buy').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const price = Number(btn.dataset.price);
+      const name = btn.dataset.buy;
+      const fb = document.getElementById('shop-feedback');
+      if (gold < price) {
+        fb.textContent = `◆ 金币不足，无法购入「${name}」`;
+        return;
+      }
+      gold -= price;
+      document.getElementById('life-gold-val').textContent = gold + ' G';
+      document.getElementById('hud-gold-num').textContent = gold;
+      fb.textContent = `◆ 已购入「${name}」（-${price} G），物品已收入行囊`;
+    });
+  });
+
+  /* ==========================================================================
+     6. SCREEN 5 · SYSTEM POPUP VARIANTS
+     ========================================================================== */
+  const POPUP_VARIANTS = {
+    breakthrough: {
+      eyebrow: 'CHRONICLE RECORD // 维斯特利亚 · 冰晶典录',
+      title: '魔力回路共鸣 · 冰水亲和突破',
+      desc: '午后的水元素冥想令细微魔力回路自然合拢。指尖凝出的薄冰不再需要刻意咏唱，寒息与流水在冰晶宫殿中达成了清澈的平衡。',
+      rows: [
+        ['魔力上限', '210 → 240', '+30'],
+        ['凝华冰晶术熟练', 'Lv.3 → Lv.4', '突破'],
+        ['因果星轨 · 艾诺', '极北知己', '+2'],
+        ['习得新术式', '隔空凝冰', 'NEW']
+      ]
+    },
+    causal: {
+      eyebrow: 'CAUSAL RIPPLE // 命运星轨微澜',
+      title: '因果偏转 · 诺艾儿的信任',
+      desc: '你在水镜推导会上放慢步调，与她一同核验了每一步阻率。她合上笔记时，眉梢那层紧绷的防备悄然散去。',
+      rows: [
+        ['诺艾儿 · 双轴天平', '平等同盟', '+6'],
+        ['羁绊心念援护', '精算校准', '强化'],
+        ['暗线星点', '水镜回路失谐', '已映照']
+      ]
+    },
+    relic: {
+      eyebrow: 'RELIC ACQUIRED // 圣器典藏登录',
+      title: '获得遗物 · 艾诺的雪松手帕',
+      desc: '带着淡淡北境雪松气息的素白方巾，角落以深蓝细线绣着一枚极简六瓣霜纹。贴身携带时，指尖凝冰的寒意格外温顺。',
+      rows: [
+        ['遗物归属套装', '极北霜息', '2 / 3'],
+        ['被动效用', '冰晶术暴击率', '+8%'],
+        ['开场共鸣', '寒息感知', '1 层']
+      ]
+    }
+  };
+
+  document.querySelectorAll('.pv-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.pv-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const v = POPUP_VARIANTS[btn.dataset.pv];
+      document.getElementById('sys-eyebrow').textContent = v.eyebrow;
+      document.getElementById('sys-popup-title').textContent = v.title;
+      document.getElementById('sys-desc').textContent = v.desc;
+      document.getElementById('sys-gains').innerHTML = v.rows.map(r =>
+        `<div class="sys-gain-row"><span class="sg-lbl">${r[0]}</span><span class="sg-val">${r[1]} <em class="sg-delta">${r[2]}</em></span></div>`
+      ).join('');
+    });
+  });
+
+  document.getElementById('btn-sys-confirm').addEventListener('click', () => {
+    showScreen('screen-hud');
+    showToast('◆ 典录已记录 · 返回阿斯拉学院水属性教室');
+  });
+})();
+</script>
+</body>
+</html>

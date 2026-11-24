@@ -1,0 +1,1715 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>《转生千金》高维晶核方案 A · 4D 超晶投影 (24-Cell / Tesseract)</title>
+  <style>
+    :root {
+      --bg-center: #ffffff;
+      --bg-base: #f8fafd;
+      --bg-edge: #e5eefb;
+      --ink: #1b2333;
+      --ink-mid: #3a4862;
+      --ink-muted: #5b6a82;
+      --line: rgba(27, 35, 51, 0.14);
+      --line-soft: rgba(27, 35, 51, 0.08);
+      --sapphire: #1658eb;
+      --sapphire-deep: #0e2b78;
+      --cyan: #38bdf8;
+      --gold: #c4a46c;
+      --panel-bg: rgba(255, 255, 255, 0.72);
+      --panel-border: rgba(22, 88, 235, 0.16);
+      --panel-shadow: 0 12px 36px rgba(14, 43, 120, 0.09);
+      --serif-en: 'Cormorant Garamond', 'Baskerville', 'Times New Roman', Georgia, serif;
+      --serif-zh: 'Noto Serif SC', 'Noto Serif CJK SC', 'Songti SC', 'STSong', Georgia, serif;
+      --sans: 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      --mono: 'JetBrains Mono', 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    body[data-theme="dark"] {
+      --bg-center: #0c1b3b;
+      --bg-base: #060f24;
+      --bg-edge: #030712;
+      --ink: #eef4ff;
+      --ink-mid: #b6c8e8;
+      --ink-muted: #7b93be;
+      --line: rgba(160, 198, 255, 0.18);
+      --line-soft: rgba(160, 198, 255, 0.09);
+      --sapphire: #3b82f6;
+      --sapphire-deep: #1d4ed8;
+      --cyan: #38bdf8;
+      --gold: #e4c890;
+      --panel-bg: rgba(8, 18, 42, 0.74);
+      --panel-border: rgba(110, 185, 255, 0.24);
+      --panel-shadow: 0 16px 44px rgba(0, 0, 0, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: var(--sans);
+      color: var(--ink);
+      background: radial-gradient(ellipse 68% 64% at 38% 48%, var(--bg-center) 0%, var(--bg-base) 54%, var(--bg-edge) 100%);
+      transition: background 0.55s var(--ease), color 0.45s var(--ease);
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Subtle gallery paper/porcelain grain & fine architectural hairlines */
+    .stage-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 68% 66% at 37% 49%, var(--bg-center) 0%, var(--bg-base) 52%, var(--bg-edge) 100%);
+      transition: background 0.6s var(--ease);
+    }
+
+    .stage-backdrop::before {
+      content: '';
+      position: absolute;
+      inset: 22px;
+      border: 1px solid var(--line-soft);
+      pointer-events: none;
+    }
+
+    .stage-backdrop::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 18%, rgba(56, 189, 248, 0.07) 0%, transparent 42%),
+        radial-gradient(circle at 82% 80%, rgba(196, 164, 108, 0.07) 0%, transparent 38%);
+      pointer-events: none;
+    }
+
+    body[data-theme="dark"] .stage-backdrop::after {
+      background-image:
+        radial-gradient(circle at 36% 48%, rgba(22, 88, 235, 0.18) 0%, transparent 48%),
+        radial-gradient(circle at 75% 22%, rgba(56, 189, 248, 0.11) 0%, transparent 40%),
+        radial-gradient(circle at 80% 84%, rgba(228, 200, 144, 0.07) 0%, transparent 36%);
+    }
+
+    #crystal-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 2;
+      cursor: crosshair;
+    }
+
+    /* Top-left gallery telemetry plaque */
+    .hud-plaque {
+      position: fixed;
+      top: 34px;
+      left: 38px;
+      z-index: 12;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: opacity 0.4s var(--ease);
+    }
+
+    .hud-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--sapphire);
+    }
+
+    .hud-badge::before {
+      content: '◆';
+      font-size: 9px;
+      color: var(--gold);
+    }
+
+    .hud-title {
+      font-family: var(--serif-zh);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--ink);
+    }
+
+    .hud-telemetry {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      color: var(--ink-muted);
+      letter-spacing: 0.05em;
+    }
+
+    .hud-telemetry span strong {
+      color: var(--sapphire);
+      font-weight: 600;
+    }
+
+    .hud-hint {
+      margin-top: 2px;
+      font-size: 11.5px;
+      color: var(--ink-muted);
+      letter-spacing: 0.04em;
+      opacity: 0.85;
+    }
+
+    /* Authentic 《转生千金》 V3 Right-Side Editorial Title Overlay */
+    .title-folio {
+      position: fixed;
+      top: 50%;
+      right: clamp(48px, 8.5vw, 150px);
+      transform: translateY(-50%);
+      width: min(410px, 38vw);
+      z-index: 10;
+      pointer-events: none;
+      transition: opacity 0.55s var(--ease), transform 0.55s var(--ease);
+    }
+
+    body[data-overlay="off"] .title-folio {
+      opacity: 0;
+      transform: translateY(-50%) translateX(28px);
+      pointer-events: none;
+    }
+
+    .v3-title-lockup {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-bottom: 22px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .v3-title-lockup .title-main {
+      order: 1;
+      font-family: var(--serif-zh);
+      font-size: clamp(38px, 3.8vw, 52px);
+      font-weight: 700;
+      line-height: 1.12;
+      letter-spacing: 0.1em;
+      color: var(--ink);
+      text-shadow: 0 2px 18px rgba(22, 88, 235, 0.08);
+    }
+
+    body[data-theme="dark"] .v3-title-lockup .title-main {
+      text-shadow: 0 0 28px rgba(56, 189, 248, 0.25);
+    }
+
+    .v3-title-lockup .title-sub {
+      order: 2;
+      margin-top: 8px;
+      font-family: var(--serif-zh);
+      font-size: clamp(14px, 1.15vw, 16px);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--ink-mid);
+    }
+
+    .v3-title-lockup .v3-kicker {
+      order: 3;
+      margin-top: 8px;
+      font-family: var(--serif-en);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--ink-muted);
+    }
+
+    .title-menu {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      margin-bottom: 24px;
+    }
+
+    .tbtn-editorial {
+      pointer-events: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 14px 6px 2px;
+      background: transparent;
+      border: none;
+      color: var(--ink);
+      cursor: pointer;
+      transition: transform 0.25s var(--ease), color 0.25s var(--ease);
+    }
+
+    .tbtn-editorial::before {
+      content: '◇';
+      font-size: 10px;
+      color: var(--gold);
+      transition: transform 0.25s var(--ease), color 0.25s var(--ease);
+    }
+
+    .tbtn-editorial:hover {
+      transform: translateX(6px);
+      color: var(--sapphire);
+    }
+
+    .tbtn-editorial:hover::before {
+      content: '◆';
+      color: var(--sapphire);
+      transform: scale(1.15);
+    }
+
+    .tbtn-en {
+      font-family: var(--serif-en);
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      color: var(--ink-muted);
+      min-width: 82px;
+      text-align: left;
+    }
+
+    .tbtn-text {
+      font-family: var(--serif-zh);
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+    }
+
+    .v3-cta-zone {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .v3-prism-cta {
+      pointer-events: auto;
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 28px 12px 24px;
+      background: linear-gradient(135deg, #2563eb 0%, #1658eb 48%, #0e2b78 100%);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+      color: #ffffff;
+      cursor: pointer;
+      box-shadow: 0 12px 28px rgba(22, 88, 235, 0.26);
+      transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), filter 0.25s var(--ease);
+    }
+
+    .v3-prism-cta:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.08);
+      box-shadow: 0 16px 34px rgba(22, 88, 235, 0.36);
+    }
+
+    .v3-prism-en {
+      font-family: var(--serif-en);
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      color: rgba(215, 238, 255, 0.92);
+    }
+
+    .v3-prism-cn {
+      font-family: var(--serif-zh);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+    }
+
+    .v3-archive-meta {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: 0.08em;
+      color: var(--ink-muted);
+      opacity: 0.84;
+    }
+
+    /* Bottom-right minimal floating showcase controls */
+    .control-dock {
+      position: fixed;
+      right: 32px;
+      bottom: 28px;
+      z-index: 20;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 8px 10px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: var(--panel-shadow);
+      transition: background 0.4s var(--ease), border-color 0.4s var(--ease);
+    }
+
+    .dock-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .dock-sep {
+      width: 1px;
+      height: 18px;
+      background: var(--line);
+      margin: 0 3px;
+    }
+
+    .dock-btn {
+      appearance: none;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--ink-mid);
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      padding: 6px 11px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s var(--ease);
+      white-space: nowrap;
+    }
+
+    .dock-btn:hover {
+      color: var(--sapphire);
+      background: rgba(22, 88, 235, 0.08);
+    }
+
+    body[data-theme="dark"] .dock-btn:hover {
+      color: #7dd3fc;
+      background: rgba(56, 189, 248, 0.14);
+    }
+
+    .dock-btn.active {
+      background: linear-gradient(135deg, #2563eb 0%, #1658eb 100%);
+      color: #ffffff;
+      border-color: rgba(56, 189, 248, 0.42);
+      box-shadow: 0 4px 14px rgba(22, 88, 235, 0.28);
+    }
+
+    .dock-btn.pulse-btn {
+      border-color: rgba(196, 164, 108, 0.48);
+      color: var(--sapphire);
+    }
+
+    body[data-theme="dark"] .dock-btn.pulse-btn {
+      color: #f3dcab;
+      border-color: rgba(228, 200, 144, 0.42);
+    }
+
+    .dock-btn.pulse-btn:hover {
+      background: rgba(196, 164, 108, 0.16);
+    }
+
+    /* Dimension pulse toast */
+    .pulse-banner {
+      position: fixed;
+      left: 38px;
+      bottom: 34px;
+      z-index: 15;
+      pointer-events: none;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      color: var(--sapphire);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.35s var(--ease), transform 0.35s var(--ease);
+    }
+
+    .pulse-banner.show {
+      opacity: 0.92;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 960px) {
+      .title-folio {
+        right: 28px;
+        width: 300px;
+      }
+      .control-dock {
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body data-theme="light" data-overlay="on">
+  <div class="stage-backdrop" aria-hidden="true"></div>
+  <canvas id="crystal-canvas" aria-label="4D Hyper-Crystal Interactive Projection"></canvas>
+
+  <aside class="hud-plaque" aria-live="polite">
+    <div class="hud-badge">SCHEME A // 4D HYPER-CRYSTAL PROJECTION</div>
+    <div id="hud-poly-name" class="hud-title">双嵌套 4D 圣晶 · 24-Cell × Tesseract</div>
+    <div class="hud-telemetry">
+      <span>XW <strong id="ang-xw">0.00</strong></span>
+      <span>YW <strong id="ang-yw">0.00</strong></span>
+      <span>ZW <strong id="ang-zw">0.00</strong></span>
+      <span id="hud-topo">V:40 · E:128 · F:120</span>
+    </div>
+    <div class="hud-hint">移动指针进行四维超角旋转（内外翻转）· 点击画布触发「维度折叠脉冲」</div>
+  </aside>
+
+  <section class="title-folio" aria-label="《转生千金》标题排版预览">
+    <header class="v3-title-lockup">
+      <p class="v3-kicker">· HOUSE OF VESTERIA // 银与蓝的冬日诗篇</p>
+      <h1 class="title-main">转生千金</h1>
+      <p class="title-sub">到了异世界就要悠闲地生活</p>
+    </header>
+
+    <nav class="title-menu" aria-label="主菜单预览">
+      <button type="button" class="tbtn-editorial" data-pulse-trigger>
+        <span class="tbtn-en">NEW STORY</span>
+        <span class="tbtn-text">开始新生活</span>
+      </button>
+      <button type="button" class="tbtn-editorial" data-pulse-trigger>
+        <span class="tbtn-en">ARENA</span>
+        <span class="tbtn-text">战术演武</span>
+      </button>
+      <button type="button" class="tbtn-editorial" data-pulse-trigger>
+        <span class="tbtn-en">CODEX</span>
+        <span class="tbtn-text">典藏图鉴</span>
+      </button>
+      <button type="button" class="tbtn-editorial" data-pulse-trigger>
+        <span class="tbtn-en">SETTINGS</span>
+        <span class="tbtn-text">系统设置</span>
+      </button>
+      <button type="button" class="tbtn-editorial" data-pulse-trigger>
+        <span class="tbtn-en">GUIDE</span>
+        <span class="tbtn-text">玩法说明</span>
+      </button>
+    </nav>
+
+    <div class="v3-cta-zone">
+      <button type="button" class="v3-prism-cta" data-pulse-trigger>
+        <span class="v3-prism-en">BEGIN</span>
+        <span class="v3-prism-cn">启程新生活</span>
+      </button>
+      <div class="v3-archive-meta">CHRONICLE // 维斯特利亚公爵领 · 卷一至卷四</div>
+    </div>
+  </section>
+
+  <div id="pulse-banner" class="pulse-banner">◆ DIMENSIONAL FOLD PULSE // 四维相位翻转脉冲</div>
+
+  <div class="control-dock" role="toolbar" aria-label="高维晶核控制面板">
+    <div class="dock-group" role="group" aria-label="多胞体模式">
+      <button type="button" class="dock-btn active" data-mode="dual">双嵌套 4D 圣晶</button>
+      <button type="button" class="dock-btn" data-mode="cell24">24-Cell 正二十四胞体</button>
+      <button type="button" class="dock-btn" data-mode="tesseract">Tesseract 超立方体</button>
+    </div>
+    <div class="dock-sep" aria-hidden="true"></div>
+    <div class="dock-group" role="group" aria-label="背景与预览">
+      <button type="button" class="dock-btn" id="btn-theme">极夜深冰背景</button>
+      <button type="button" class="dock-btn active" id="btn-overlay">标题排版预览</button>
+      <button type="button" class="dock-btn pulse-btn" id="btn-pulse">✦ 维度折叠</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* =========================================================================
+         1. TRUE 4D POLYTOPE GENERATORS (EXACT EUCLIDEAN 4D VERTICES, EDGES, FACES)
+         ========================================================================= */
+
+      function create24Cell(scale) {
+        var verts = [];
+        var invS2 = (scale || 1) / Math.SQRT2;
+        for (var i = 0; i < 4; i++) {
+          for (var j = i + 1; j < 4; j++) {
+            for (var s1 = -1; s1 <= 1; s1 += 2) {
+              for (var s2 = -1; s2 <= 1; s2 += 2) {
+                var v = [0, 0, 0, 0];
+                v[i] = s1 * invS2;
+                v[j] = s2 * invS2;
+                verts.push(v);
+              }
+            }
+          }
+        }
+
+        var targetD2 = (scale || 1) * (scale || 1);
+        var eps = targetD2 * 0.02;
+        var edges = [];
+        var adj = [];
+        for (var a = 0; a < verts.length; a++) adj.push(new Set());
+
+        for (var u = 0; u < verts.length; u++) {
+          for (var w = u + 1; w < verts.length; w++) {
+            var d2 = 0;
+            for (var k = 0; k < 4; k++) {
+              var diff = verts[u][k] - verts[w][k];
+              d2 += diff * diff;
+            }
+            if (Math.abs(d2 - targetD2) < eps) {
+              edges.push([u, w]);
+              adj[u].add(w);
+              adj[w].add(u);
+            }
+          }
+        }
+
+        var faces = [];
+        for (var p = 0; p < verts.length; p++) {
+          for (var q = p + 1; q < verts.length; q++) {
+            if (!adj[p].has(q)) continue;
+            for (var r = q + 1; r < verts.length; r++) {
+              if (adj[p].has(r) && adj[q].has(r)) {
+                faces.push([p, q, r]);
+              }
+            }
+          }
+        }
+
+        return { verts: verts, edges: edges, faces: faces };
+      }
+
+      function createTesseract(scale) {
+        var s = (scale || 1) * 0.5;
+        var verts = [];
+        for (var m = 0; m < 16; m++) {
+          verts.push([
+            (m & 1) ? s : -s,
+            (m & 2) ? s : -s,
+            (m & 4) ? s : -s,
+            (m & 8) ? s : -s
+          ]);
+        }
+
+        var edges = [];
+        for (var i = 0; i < 16; i++) {
+          for (var bit = 0; bit < 4; bit++) {
+            var j = i ^ (1 << bit);
+            if (j > i) edges.push([i, j]);
+          }
+        }
+
+        var faces = [];
+        for (var a = 0; a < 4; a++) {
+          for (var b = a + 1; b < 4; b++) {
+            var fixed = [];
+            for (var c = 0; c < 4; c++) {
+              if (c !== a && c !== b) fixed.push(c);
+            }
+            for (var f0 = 0; f0 < 2; f0++) {
+              for (var f1 = 0; f1 < 2; f1++) {
+                var base = (f0 << fixed[0]) | (f1 << fixed[1]);
+                var v0 = base;
+                var v1 = base | (1 << a);
+                var v2 = base | (1 << a) | (1 << b);
+                var v3 = base | (1 << b);
+                faces.push([v0, v1, v2, v3]);
+              }
+            }
+          }
+        }
+
+        return { verts: verts, edges: edges, faces: faces };
+      }
+
+      /* 16-Cell orthoplex (8 axial vertices) for subtle harmonic tether filaments in Dual mode */
+      function create16CellAxes(scale) {
+        var s = scale || 1;
+        var verts = [];
+        for (var i = 0; i < 4; i++) {
+          var vp = [0, 0, 0, 0]; vp[i] = s; verts.push(vp);
+          var vm = [0, 0, 0, 0]; vm[i] = -s; verts.push(vm);
+        }
+        return verts;
+      }
+
+      var CELL24 = create24Cell(1.16);
+      var TESSERACT_SOLO = createTesseract(1.22);
+      var TESSERACT_INNER = createTesseract(0.64);
+      var AXES_16 = create16CellAxes(0.76);
+
+      /* =========================================================================
+         2. 4D ROTATION & STEREOGRAPHIC 4D -> 3D -> 2D PROJECTION MATH
+         ========================================================================= */
+
+      function rotate4D(v, aXY, aXZ, aYZ, aXW, aYW, aZW) {
+        var x = v[0], y = v[1], z = v[2], w = v[3];
+        var c, s, nx, ny, nz, nw;
+
+        // XW plane (4th-dimensional inversion)
+        c = Math.cos(aXW); s = Math.sin(aXW);
+        nx = x * c - w * s; nw = x * s + w * c;
+        x = nx; w = nw;
+
+        // YW plane (4th-dimensional inversion)
+        c = Math.cos(aYW); s = Math.sin(aYW);
+        ny = y * c - w * s; nw = y * s + w * c;
+        y = ny; w = nw;
+
+        // ZW plane (Clifford double-rotation component)
+        c = Math.cos(aZW); s = Math.sin(aZW);
+        nz = z * c - w * s; nw = z * s + w * c;
+        z = nz; w = nw;
+
+        // XY plane
+        c = Math.cos(aXY); s = Math.sin(aXY);
+        nx = x * c - y * s; ny = x * s + y * c;
+        x = nx; y = ny;
+
+        // XZ plane
+        c = Math.cos(aXZ); s = Math.sin(aXZ);
+        nx = x * c - z * s; nz = x * s + z * c;
+        x = nx; z = nz;
+
+        // YZ plane
+        c = Math.cos(aYZ); s = Math.sin(aYZ);
+        ny = y * c - z * s; nz = y * s + z * c;
+        y = ny; z = nz;
+
+        return [x, y, z, w];
+      }
+
+      function project4Dto2D(v4, cx, cy, unitRadius, d4, d3) {
+        var w = v4[3];
+        var wDen = Math.max(0.55, d4 - w);
+        var wScale = d4 / wDen;
+        var x3 = v4[0] * wScale;
+        var y3 = v4[1] * wScale;
+        var z3 = v4[2] * wScale;
+
+        var zDen = Math.max(0.85, d3 - z3);
+        var pScale = d3 / zDen;
+
+        return {
+          sx: cx + x3 * pScale * unitRadius,
+          sy: cy + y3 * pScale * unitRadius,
+          x3: x3,
+          y3: y3,
+          z3: z3,
+          w: w,
+          wScale: wScale,
+          pScale: pScale,
+          depth: z3 * 0.72 + w * 0.55
+        };
+      }
+
+      /* =========================================================================
+         3. CANVAS ENGINE, STATE, SHOCKWAVES & DIMENSIONAL DUST
+         ========================================================================= */
+
+      var canvas = document.getElementById('crystal-canvas');
+      var ctx = canvas.getContext('2d', { alpha: true });
+
+      var W = 1440;
+      var H = 900;
+      var DPR = 1;
+
+      var state = {
+        mode: 'dual',          // 'dual' | 'cell24' | 'tesseract'
+        theme: 'light',        // 'light' | 'dark'
+        overlay: true,         // true = 《转生千金》 title lockup active
+        time: 0,
+        lastTs: 0,
+
+        // Smooth pointer state (-1..1)
+        ptrTargetX: 0.12,
+        ptrTargetY: -0.08,
+        ptrX: 0.12,
+        ptrY: -0.08,
+        ptrActive: false,
+
+        // Smooth center interpolation (shifts left when title overlay is shown)
+        cxFrac: 0.35,
+        scaleFactor: 1.0,
+
+        // 4D Angles (coupled isoclinic drift + pointer hyper-rotation + pulse surge)
+        baseXW: 0.52,
+        baseYW: 0.36,
+        baseZW: 0.74,
+        baseXY: 0.28,
+        baseXZ: 0.42,
+        baseYZ: -0.24,
+
+        // Dimensional fold pulse state
+        pulse: 0,              // 0..1 visual intensity
+        pulsePhase: 0,         // cumulative 4D rotation kick
+        pulseTargetPhase: 0,
+        shockwaves: [],
+        burstParticles: []
+      };
+
+      /* Floating multi-depth diamond dust motes */
+      var dustMotes = [];
+      function initDust(count) {
+        dustMotes = [];
+        for (var i = 0; i < count; i++) {
+          dustMotes.push({
+            x: Math.random(),
+            y: Math.random(),
+            z: 0.25 + Math.random() * 0.95,
+            size: 1.2 + Math.random() * 3.1,
+            vy: -(0.006 + Math.random() * 0.015),
+            vx: (Math.random() - 0.5) * 0.008,
+            phase: Math.random() * Math.PI * 2,
+            spin: (Math.random() - 0.5) * 1.6,
+            hueType: Math.random() < 0.26 ? 'gold' : (Math.random() < 0.6 ? 'cyan' : 'sapphire')
+          });
+        }
+      }
+      initDust(78);
+
+      function resize() {
+        DPR = Math.min(window.devicePixelRatio || 1, 2);
+        W = window.innerWidth;
+        H = window.innerHeight;
+        canvas.width = Math.round(W * DPR);
+        canvas.height = Math.round(H * DPR);
+        canvas.style.width = W + 'px';
+        canvas.style.height = H + 'px';
+        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      /* =========================================================================
+         4. SHOCKWAVE & INTERACTION TRIGGERS
+         ========================================================================= */
+
+      var pulseBanner = document.getElementById('pulse-banner');
+      var pulseBannerTimer = 0;
+
+      function triggerDimensionalPulse(originX, originY) {
+        var cx = typeof originX === 'number' ? originX : W * state.cxFrac;
+        var cy = typeof originY === 'number' ? originY : H * 0.5;
+
+        state.pulse = 1.0;
+        state.pulseTargetPhase += Math.PI * 0.58;
+
+        state.shockwaves.push({
+          x: cx,
+          y: cy,
+          age: 0,
+          duration: 1.35,
+          maxR: Math.min(W, H) * 0.52
+        });
+
+        // Spawn crystalline light shards bursting radially
+        for (var i = 0; i < 34; i++) {
+          var ang = (Math.PI * 2 * i) / 34 + (Math.random() - 0.5) * 0.18;
+          var spd = 120 + Math.random() * 290;
+          state.burstParticles.push({
+            x: cx + Math.cos(ang) * (18 + Math.random() * 44),
+            y: cy + Math.sin(ang) * (18 + Math.random() * 44),
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd,
+            life: 1.0,
+            decay: 0.72 + Math.random() * 0.55,
+            size: 2.0 + Math.random() * 3.8,
+            rot: ang,
+            kind: i % 4 === 0 ? 'gold' : (i % 3 === 0 ? 'violet' : 'cyan')
+          });
+        }
+
+        if (pulseBanner) {
+          pulseBanner.classList.add('show');
+          clearTimeout(pulseBannerTimer);
+          pulseBannerTimer = setTimeout(function () {
+            pulseBanner.classList.remove('show');
+          }, 1450);
+        }
+      }
+
+      /* =========================================================================
+         5. LIGHTING & OPTICAL SHADING HELPERS
+         ========================================================================= */
+
+      // Studio light vectors (normalized)
+      var KEY_LIGHT = normalize3([-0.54, -0.70, 0.47]);
+      var RIM_LIGHT = normalize3([0.62, 0.44, 0.65]);
+
+      function normalize3(v) {
+        var len = Math.hypot(v[0], v[1], v[2]) || 1;
+        return [v[0] / len, v[1] / len, v[2] / len];
+      }
+
+      function computeFacetShading(p0, p1, p2) {
+        var ux = p1.x3 - p0.x3, uy = p1.y3 - p0.y3, uz = p1.z3 - p0.z3;
+        var vx = p2.x3 - p0.x3, vy = p2.y3 - p0.y3, vz = p2.z3 - p0.z3;
+        var nx = uy * vz - uz * vy;
+        var ny = uz * vx - ux * vz;
+        var nz = ux * vy - uy * vx;
+        var len = Math.hypot(nx, ny, nz) || 1;
+        nx /= len; ny /= len; nz /= len;
+        if (nz < 0) { nx = -nx; ny = -ny; nz = -nz; }
+
+        var keyDot = Math.max(0, nx * KEY_LIGHT[0] + ny * KEY_LIGHT[1] + nz * KEY_LIGHT[2]);
+        var rimDot = Math.max(0, nx * RIM_LIGHT[0] + ny * RIM_LIGHT[1] + nz * RIM_LIGHT[2]);
+        var fresnel = Math.pow(1 - Math.min(1, Math.abs(nz)), 1.65);
+
+        return { keyDot: keyDot, rimDot: rimDot, fresnel: fresnel, nz: nz };
+      }
+
+      function drawDiamondStar(x, y, radius, alpha, color, crossRatio) {
+        if (alpha <= 0.01 || radius <= 0.4) return;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.fillStyle = color;
+        ctx.globalAlpha = alpha;
+        var r = radius;
+        var m = r * (crossRatio || 0.24);
+        ctx.beginPath();
+        ctx.moveTo(0, -r);
+        ctx.lineTo(m, -m);
+        ctx.lineTo(r, 0);
+        ctx.lineTo(m, m);
+        ctx.lineTo(0, r);
+        ctx.lineTo(-m, m);
+        ctx.lineTo(-r, 0);
+        ctx.lineTo(-m, -m);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      /* =========================================================================
+         6. ORBITAL ASTROLABE RINGS & CAUSTIC STAGE LIGHTING
+         ========================================================================= */
+
+      function drawStageAuraAndCaustics(cx, cy, R, dark, pulse) {
+        ctx.save();
+
+        // 1) Volumetric background luminescence behind hyper-crystal
+        var auraR = R * (1.88 + pulse * 0.24);
+        var aura = ctx.createRadialGradient(cx, cy, R * 0.08, cx, cy, auraR);
+        if (dark) {
+          aura.addColorStop(0, 'rgba(56, 189, 248, ' + (0.28 + pulse * 0.18).toFixed(3) + ')');
+          aura.addColorStop(0.32, 'rgba(22, 88, 235, ' + (0.20 + pulse * 0.12).toFixed(3) + ')');
+          aura.addColorStop(0.65, 'rgba(14, 43, 120, 0.07)');
+          aura.addColorStop(1, 'rgba(6, 15, 36, 0)');
+        } else {
+          aura.addColorStop(0, 'rgba(56, 189, 248, ' + (0.16 + pulse * 0.12).toFixed(3) + ')');
+          aura.addColorStop(0.36, 'rgba(22, 88, 235, ' + (0.09 + pulse * 0.06).toFixed(3) + ')');
+          aura.addColorStop(0.68, 'rgba(196, 164, 108, 0.04)');
+          aura.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        }
+        ctx.fillStyle = aura;
+        ctx.beginPath();
+        ctx.arc(cx, cy, auraR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2) Gallery floor caustic reflection ellipse beneath crystal
+        var floorY = cy + R * 1.18;
+        var rx = R * (0.96 + pulse * 0.14);
+        var ry = R * 0.18;
+        ctx.save();
+        ctx.translate(cx, floorY);
+        ctx.scale(1, ry / rx);
+        var caustic = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+        if (dark) {
+          caustic.addColorStop(0, 'rgba(56, 189, 248, ' + (0.24 + pulse * 0.14).toFixed(3) + ')');
+          caustic.addColorStop(0.42, 'rgba(22, 88, 235, 0.10)');
+          caustic.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        } else {
+          caustic.addColorStop(0, 'rgba(22, 88, 235, ' + (0.13 + pulse * 0.07).toFixed(3) + ')');
+          caustic.addColorStop(0.42, 'rgba(56, 189, 248, 0.07)');
+          caustic.addColorStop(0.76, 'rgba(196, 164, 108, 0.035)');
+          caustic.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        }
+        ctx.fillStyle = caustic;
+        ctx.beginPath();
+        ctx.arc(0, 0, rx, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.restore();
+      }
+
+      function drawAstrolabeRings(cx, cy, R, dark, t, px, py, pulse) {
+        ctx.save();
+        ctx.translate(cx, cy);
+
+        var rings = [
+          {
+            rx: R * 1.38,
+            ry: R * 0.44,
+            tilt: -0.31 + py * 0.07,
+            rot: t * 0.14,
+            color: dark ? 'rgba(228, 200, 144, 0.28)' : 'rgba(184, 148, 82, 0.34)',
+            dash: [],
+            ticks: 36,
+            nodes: 4
+          },
+          {
+            rx: R * 1.54,
+            ry: R * 0.56,
+            tilt: 0.44 - px * 0.08,
+            rot: -t * 0.09,
+            color: dark ? 'rgba(96, 165, 250, 0.24)' : 'rgba(22, 88, 235, 0.19)',
+            dash: [5, 7],
+            ticks: 0,
+            nodes: 2
+          },
+          {
+            rx: R * 1.16,
+            ry: R * 1.16,
+            tilt: 0,
+            rot: t * 0.05,
+            color: dark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(22, 88, 235, 0.09)',
+            dash: [2, 10],
+            ticks: 24,
+            nodes: 0
+          }
+        ];
+
+        for (var i = 0; i < rings.length; i++) {
+          var rg = rings[i];
+          ctx.save();
+          ctx.rotate(rg.tilt);
+          ctx.strokeStyle = rg.color;
+          ctx.lineWidth = i === 0 ? (1.05 + pulse * 0.5) : 0.85;
+          ctx.setLineDash(rg.dash);
+          ctx.beginPath();
+          ctx.ellipse(0, 0, rg.rx, rg.ry, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Fine graduation ticks along primary astrolabe ring
+          if (rg.ticks > 0) {
+            ctx.beginPath();
+            for (var k = 0; k < rg.ticks; k++) {
+              var a = (k / rg.ticks) * Math.PI * 2 + rg.rot;
+              var ca = Math.cos(a), sa = Math.sin(a);
+              var len = (k % 6 === 0) ? 7.5 : 3.2;
+              var x1 = ca * rg.rx;
+              var y1 = sa * rg.ry;
+              var x2 = ca * (rg.rx + len);
+              var y2 = sa * (rg.ry + len * (rg.ry / rg.rx));
+              ctx.moveTo(x1, y1);
+              ctx.lineTo(x2, y2);
+            }
+            ctx.stroke();
+          }
+
+          // Orbiting cardinal jewel nodes
+          for (var n = 0; n < rg.nodes; n++) {
+            var na = rg.rot * 1.6 + (n / rg.nodes) * Math.PI * 2;
+            var nx = Math.cos(na) * rg.rx;
+            var ny = Math.sin(na) * rg.ry;
+            drawDiamondStar(
+              nx, ny,
+              i === 0 ? 4.4 : 3.4,
+              dark ? 0.82 : 0.72,
+              i === 0 ? (dark ? '#f3dcab' : '#b89452') : (dark ? '#7dd3fc' : '#1658eb'),
+              0.32
+            );
+          }
+
+          ctx.restore();
+        }
+
+        ctx.restore();
+      }
+
+      /* =========================================================================
+         7. CORE 4D POLYTOPE OPTICAL RENDERER (FACETS + DISPERSION EDGES + NODES)
+         ========================================================================= */
+
+      function collectPolytopeDrawables(poly, angles, cx, cy, unitR, d4, d3, styleTag, facetsOut, edgesOut, nodesOut) {
+        var proj = new Array(poly.verts.length);
+        for (var i = 0; i < poly.verts.length; i++) {
+          var v4 = rotate4D(
+            poly.verts[i],
+            angles.xy, angles.xz, angles.yz,
+            angles.xw, angles.yw, angles.zw
+          );
+          proj[i] = project4Dto2D(v4, cx, cy, unitR, d4, d3);
+          nodesOut.push({
+            p: proj[i],
+            tag: styleTag
+          });
+        }
+
+        // Collect faces
+        for (var f = 0; f < poly.faces.length; f++) {
+          var idxs = poly.faces[f];
+          var pts = [];
+          var depthSum = 0;
+          var wSum = 0;
+          for (var k = 0; k < idxs.length; k++) {
+            var pt = proj[idxs[k]];
+            pts.push(pt);
+            depthSum += pt.depth;
+            wSum += pt.w;
+          }
+          var avgDepth = depthSum / idxs.length;
+          var avgW = wSum / idxs.length;
+
+          // Screen-space area check to skip edge-on slivers
+          var area2 = Math.abs(
+            (pts[1].sx - pts[0].sx) * (pts[2].sy - pts[0].sy) -
+            (pts[2].sx - pts[0].sx) * (pts[1].sy - pts[0].sy)
+          );
+          if (area2 < 8) continue;
+
+          facetsOut.push({
+            pts: pts,
+            depth: avgDepth,
+            avgW: avgW,
+            tag: styleTag,
+            shade: computeFacetShading(pts[0], pts[1], pts[2])
+          });
+        }
+
+        // Collect edges
+        for (var e = 0; e < poly.edges.length; e++) {
+          var ePair = poly.edges[e];
+          var pa = proj[ePair[0]];
+          var pb = proj[ePair[1]];
+          edgesOut.push({
+            a: pa,
+            b: pb,
+            depth: (pa.depth + pb.depth) * 0.5,
+            avgW: (pa.w + pb.w) * 0.5,
+            tag: styleTag
+          });
+        }
+
+        return proj;
+      }
+
+      function renderFacet(item, dark, pulse) {
+        var pts = item.pts;
+        var sh = item.shade;
+        var wNorm = Math.max(0, Math.min(1, (item.avgW + 1.05) / 2.1));
+        var isInner = item.tag === 'inner';
+
+        // Bounding extremes for optical gradient across facet
+        var minX = pts[0].sx, minY = pts[0].sy, maxX = pts[0].sx, maxY = pts[0].sy;
+        for (var i = 1; i < pts.length; i++) {
+          if (pts[i].sx < minX) minX = pts[i].sx;
+          if (pts[i].sy < minY) minY = pts[i].sy;
+          if (pts[i].sx > maxX) maxX = pts[i].sx;
+          if (pts[i].sy > maxY) maxY = pts[i].sy;
+        }
+
+        var grad = ctx.createLinearGradient(minX, minY, maxX, maxY);
+        var baseAlpha;
+
+        if (isInner) {
+          baseAlpha = (dark ? 0.11 : 0.105) + sh.fresnel * 0.14 + sh.keyDot * 0.11 + pulse * 0.08;
+          if (dark) {
+            grad.addColorStop(0, 'rgba(244, 224, 178, ' + (baseAlpha * 0.92).toFixed(3) + ')');
+            grad.addColorStop(0.45, 'rgba(56, 189, 248, ' + (baseAlpha * 0.72).toFixed(3) + ')');
+            grad.addColorStop(1, 'rgba(22, 88, 235, ' + (baseAlpha * 0.45).toFixed(3) + ')');
+          } else {
+            grad.addColorStop(0, 'rgba(240, 214, 156, ' + (baseAlpha * 0.92).toFixed(3) + ')');
+            grad.addColorStop(0.48, 'rgba(186, 230, 253, ' + (baseAlpha * 0.56).toFixed(3) + ')');
+            grad.addColorStop(1, 'rgba(22, 88, 235, ' + (baseAlpha * 0.48).toFixed(3) + ')');
+          }
+        } else {
+          // Outer 24-cell or solo tesseract crystalline optical glass facets
+          var modeBoost = state.mode === 'tesseract' ? 1.42 : 1.0;
+          if (dark) {
+            baseAlpha = (0.036 + sh.fresnel * 0.082 + sh.keyDot * 0.068 + wNorm * 0.038 + pulse * 0.045) * modeBoost;
+            baseAlpha = Math.min(0.28, baseAlpha);
+            var hiR = Math.round(140 + sh.keyDot * 115);
+            var hiG = Math.round(212 + sh.keyDot * 43);
+            grad.addColorStop(0, 'rgba(' + hiR + ',' + hiG + ',255,' + (baseAlpha * 1.18).toFixed(3) + ')');
+            grad.addColorStop(0.52, 'rgba(28, 108, 242,' + (baseAlpha * 0.78).toFixed(3) + ')');
+            grad.addColorStop(1, 'rgba(112, 72, 232,' + (baseAlpha * (0.48 + sh.rimDot * 0.45)).toFixed(3) + ')');
+          } else {
+            // High-index cut crystal on snow porcelain: crystal-clear centers, jewel sapphire shadows & bright frost Fresnel rims
+            baseAlpha = (0.018 + sh.fresnel * 0.074 + Math.pow(sh.keyDot, 1.4) * 0.062 + wNorm * 0.024 + pulse * 0.035) * modeBoost;
+            baseAlpha = Math.min(0.22, baseAlpha);
+            grad.addColorStop(0, 'rgba(255, 255, 255,' + (baseAlpha * (0.95 + sh.keyDot * 0.9)).toFixed(3) + ')');
+            grad.addColorStop(0.44, 'rgba(56, 189, 248,' + (baseAlpha * 0.68).toFixed(3) + ')');
+            grad.addColorStop(0.82, 'rgba(22, 88, 235,' + (baseAlpha * (0.72 + sh.fresnel * 0.55)).toFixed(3) + ')');
+            grad.addColorStop(1, 'rgba(14, 43, 120,' + (baseAlpha * (0.58 + sh.rimDot * 0.52)).toFixed(3) + ')');
+          }
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(pts[0].sx, pts[0].sy);
+        for (var j = 1; j < pts.length; j++) {
+          ctx.lineTo(pts[j].sx, pts[j].sy);
+        }
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Specular crystalline sheen slash on high-key facets
+        if (sh.keyDot > 0.72 && wNorm > 0.46) {
+          var sheenAlpha = (sh.keyDot - 0.72) * (dark ? 0.52 : 0.44) * (0.7 + pulse * 0.7);
+          ctx.strokeStyle = dark
+            ? 'rgba(235, 248, 255,' + sheenAlpha.toFixed(3) + ')'
+            : 'rgba(255, 255, 255,' + Math.min(0.68, sheenAlpha * 1.35).toFixed(3) + ')';
+          ctx.lineWidth = 0.85;
+          ctx.stroke();
+        }
+      }
+
+      function renderEdge(edge, dark, pulse) {
+        var a = edge.a, b = edge.b;
+        var dx = b.sx - a.sx;
+        var dy = b.sy - a.sy;
+        var len = Math.hypot(dx, dy);
+        if (len < 0.8) return;
+
+        var nx = -dy / len;
+        var ny = dx / len;
+
+        var wNorm = Math.max(0, Math.min(1, (edge.avgW + 1.05) / 2.1));
+        var dNorm = Math.max(0, Math.min(1, (edge.depth + 1.6) / 3.2));
+        var isInner = edge.tag === 'inner';
+
+        // Base optical thickness modulated by 4D w-proximity & depth
+        var baseW = (isInner ? 1.05 : 0.88) + wNorm * (isInner ? 1.2 : 1.55) + dNorm * 0.45;
+        var alpha = (dark ? 0.22 : 0.20) + wNorm * 0.56 + dNorm * 0.18 + pulse * 0.16;
+        alpha = Math.min(0.96, alpha);
+
+        // Pass 1: Chromatic Dispersion RGB / Cyan-Violet Prismatic Split on foreground edges
+        var dispStrength = Math.max(0, wNorm - 0.36) * 2.45 + pulse * 2.25;
+        if (dispStrength > 0.16) {
+          var dispAlpha = Math.min(0.55, dispStrength * (dark ? 0.20 : 0.16));
+          ctx.lineCap = 'round';
+
+          // Glacier Cyan shift (+normal)
+          ctx.beginPath();
+          ctx.moveTo(a.sx + nx * dispStrength, a.sy + ny * dispStrength);
+          ctx.lineTo(b.sx + nx * dispStrength, b.sy + ny * dispStrength);
+          ctx.strokeStyle = dark
+            ? 'rgba(56, 189, 248, ' + dispAlpha.toFixed(3) + ')'
+            : 'rgba(14, 165, 233, ' + (dispAlpha * 1.05).toFixed(3) + ')';
+          ctx.lineWidth = baseW * 0.92;
+          ctx.stroke();
+
+          // Prismatic Sapphire-Violet shift (-normal)
+          ctx.beginPath();
+          ctx.moveTo(a.sx - nx * dispStrength, a.sy - ny * dispStrength);
+          ctx.lineTo(b.sx - nx * dispStrength, b.sy - ny * dispStrength);
+          ctx.strokeStyle = dark
+            ? 'rgba(167, 139, 250, ' + (dispAlpha * 0.92).toFixed(3) + ')'
+            : 'rgba(124, 58, 237, ' + (dispAlpha * 0.78).toFixed(3) + ')';
+          ctx.lineWidth = baseW * 0.85;
+          ctx.stroke();
+        }
+
+        // Pass 2: Main Optical Sapphire / Frost-Gold Ridge Gradient
+        var grad = ctx.createLinearGradient(a.sx, a.sy, b.sx, b.sy);
+        var wa = Math.max(0, Math.min(1, (a.w + 1.0) / 2.0));
+        var wb = Math.max(0, Math.min(1, (b.w + 1.0) / 2.0));
+
+        if (isInner) {
+          if (dark) {
+            grad.addColorStop(0, 'rgba(244, 220, 166, ' + (alpha * (0.65 + wa * 0.35)).toFixed(3) + ')');
+            grad.addColorStop(0.5, 'rgba(125, 211, 252, ' + (alpha * 0.88).toFixed(3) + ')');
+            grad.addColorStop(1, 'rgba(244, 220, 166, ' + (alpha * (0.65 + wb * 0.35)).toFixed(3) + ')');
+          } else {
+            grad.addColorStop(0, 'rgba(184, 142, 72, ' + (alpha * (0.72 + wa * 0.28)).toFixed(3) + ')');
+            grad.addColorStop(0.5, 'rgba(22, 88, 235, ' + (alpha * 0.84).toFixed(3) + ')');
+            grad.addColorStop(1, 'rgba(184, 142, 72, ' + (alpha * (0.72 + wb * 0.28)).toFixed(3) + ')');
+          }
+        } else {
+          if (dark) {
+            grad.addColorStop(0, wa > 0.55
+              ? 'rgba(186, 230, 253, ' + alpha.toFixed(3) + ')'
+              : 'rgba(59, 130, 246, ' + (alpha * 0.82).toFixed(3) + ')');
+            grad.addColorStop(0.5, 'rgba(56, 189, 248, ' + (alpha * 0.92).toFixed(3) + ')');
+            grad.addColorStop(1, wb > 0.55
+              ? 'rgba(224, 242, 254, ' + alpha.toFixed(3) + ')'
+              : 'rgba(37, 99, 235, ' + (alpha * 0.82).toFixed(3) + ')');
+          } else {
+            // Deep sapphire structural spine with luminous glacier-cyan foreground ridges
+            grad.addColorStop(0, wa > 0.58
+              ? 'rgba(22, 88, 235, ' + Math.min(0.95, alpha * 1.05).toFixed(3) + ')'
+              : 'rgba(14, 43, 120, ' + (alpha * 0.78).toFixed(3) + ')');
+            grad.addColorStop(0.5, wNorm > 0.52
+              ? 'rgba(14, 165, 233, ' + (alpha * 0.94).toFixed(3) + ')'
+              : 'rgba(28, 76, 184, ' + (alpha * 0.82).toFixed(3) + ')');
+            grad.addColorStop(1, wb > 0.58
+              ? 'rgba(22, 88, 235, ' + Math.min(0.95, alpha * 1.05).toFixed(3) + ')'
+              : 'rgba(14, 43, 120, ' + (alpha * 0.78).toFixed(3) + ')');
+          }
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(a.sx, a.sy);
+        ctx.lineTo(b.sx, b.sy);
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = baseW;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        // Pass 3: Razor-sharp Ice-White Specular Filament on bright foreground ridges
+        if (wNorm > 0.48 || pulse > 0.25) {
+          var specAlpha = Math.min(0.92, (Math.max(0, wNorm - 0.42) * 1.15 + pulse * 0.45) * (dark ? 0.95 : 0.82));
+          ctx.beginPath();
+          ctx.moveTo(a.sx, a.sy);
+          ctx.lineTo(b.sx, b.sy);
+          ctx.strokeStyle = isInner
+            ? 'rgba(255, 248, 230, ' + specAlpha.toFixed(3) + ')'
+            : 'rgba(255, 255, 255, ' + specAlpha.toFixed(3) + ')';
+          ctx.lineWidth = Math.max(0.55, baseW * 0.34);
+          ctx.stroke();
+        }
+      }
+
+      function renderVertexNode(node, dark, pulse) {
+        var p = node.p;
+        var wNorm = Math.max(0, Math.min(1, (p.w + 1.05) / 2.1));
+        var isInner = node.tag === 'inner';
+        var r = (isInner ? 2.1 : 1.7) + wNorm * (isInner ? 2.6 : 3.2) + pulse * 1.6;
+
+        // Soft glowing vertex halo
+        var haloR = r * (dark ? 4.4 : 3.6);
+        var grad = ctx.createRadialGradient(p.sx, p.sy, 0, p.sx, p.sy, haloR);
+        if (isInner) {
+          grad.addColorStop(0, dark ? 'rgba(255, 245, 215, 0.92)' : 'rgba(212, 174, 102, 0.72)');
+          grad.addColorStop(0.38, dark ? 'rgba(228, 200, 144, 0.34)' : 'rgba(228, 200, 144, 0.24)');
+          grad.addColorStop(1, 'rgba(228, 200, 144, 0)');
+        } else {
+          grad.addColorStop(0, dark ? 'rgba(224, 246, 255, 0.92)' : 'rgba(56, 189, 248, 0.65)');
+          grad.addColorStop(0.38, dark ? 'rgba(56, 189, 248, 0.32)' : 'rgba(22, 88, 235, 0.22)');
+          grad.addColorStop(1, 'rgba(22, 88, 235, 0)');
+        }
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(p.sx, p.sy, haloR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Crisp crystalline core dot
+        ctx.fillStyle = isInner
+          ? (dark ? '#fff7e0' : '#b88e44')
+          : (dark ? '#ffffff' : (wNorm > 0.55 ? '#1658eb' : '#0e2b78'));
+        ctx.beginPath();
+        ctx.arc(p.sx, p.sy, Math.max(1.1, r * 0.44), 0, Math.PI * 2);
+        ctx.fill();
+
+        // 4-point star flare on foreground 4D vertices
+        if (wNorm > 0.62 || pulse > 0.38) {
+          var starR = r * (2.6 + pulse * 1.9);
+          var starA = Math.min(0.95, (wNorm - 0.5) * 1.5 + pulse * 0.55);
+          drawDiamondStar(
+            p.sx, p.sy, starR, starA,
+            isInner ? (dark ? '#fef0c7' : '#d4af68') : (dark ? '#e0f4ff' : '#ffffff'),
+            0.16
+          );
+          if (!dark) {
+            drawDiamondStar(p.sx, p.sy, starR * 0.62, starA * 0.65, '#38bdf8', 0.22);
+          }
+        }
+      }
+
+      /* Luminous 4D Singularity Heart at Crystal Origin */
+      function renderSingularityHeart(cx, cy, R, dark, t, pulse) {
+        var breathe = 1 + Math.sin(t * 2.1) * 0.08 + pulse * 0.42;
+        var coreR = R * 0.16 * breathe;
+
+        ctx.save();
+        var g = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR * 2.6);
+        if (dark) {
+          g.addColorStop(0, 'rgba(255, 255, 255, 0.92)');
+          g.addColorStop(0.24, 'rgba(125, 211, 252, 0.65)');
+          g.addColorStop(0.55, 'rgba(22, 88, 235, 0.26)');
+          g.addColorStop(1, 'rgba(22, 88, 235, 0)');
+        } else {
+          g.addColorStop(0, 'rgba(255, 255, 255, 0.96)');
+          g.addColorStop(0.26, 'rgba(56, 189, 248, 0.54)');
+          g.addColorStop(0.58, 'rgba(22, 88, 235, 0.20)');
+          g.addColorStop(1, 'rgba(22, 88, 235, 0)');
+        }
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(cx, cy, coreR * 2.6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Faceted inner sapphire-gold star diamond
+        drawDiamondStar(
+          cx, cy,
+          coreR * 1.35,
+          dark ? 0.85 : 0.72,
+          dark ? '#7dd3fc' : '#1658eb',
+          0.22
+        );
+        drawDiamondStar(
+          cx, cy,
+          coreR * 0.88,
+          0.95,
+          '#ffffff',
+          0.18
+        );
+        ctx.restore();
+      }
+
+      /* =========================================================================
+         8. SHOCKWAVES & FLOATING DIMENSIONAL DUST
+         ========================================================================= */
+
+      function updateAndDrawDust(dt, dark, px, py) {
+        ctx.save();
+        for (var i = 0; i < dustMotes.length; i++) {
+          var m = dustMotes[i];
+          m.y += m.vy * dt;
+          m.x += (m.vx + Math.sin(state.time * 0.7 + m.phase) * 0.004) * dt;
+          if (m.y < -0.04) { m.y = 1.04; m.x = Math.random(); }
+          if (m.x < -0.04) m.x = 1.04;
+          if (m.x > 1.04) m.x = -0.04;
+
+          var sx = m.x * W - px * 26 * m.z;
+          var sy = m.y * H - py * 18 * m.z;
+          var twinkle = 0.45 + 0.55 * Math.sin(state.time * 1.9 + m.phase);
+          var alpha = (dark ? 0.58 : 0.44) * m.z * twinkle;
+
+          var col;
+          if (m.hueType === 'gold') col = dark ? '#f3dcab' : '#c4a05e';
+          else if (m.hueType === 'cyan') col = dark ? '#7dd3fc' : '#38bdf8';
+          else col = dark ? '#60a5fa' : '#1658eb';
+
+          ctx.save();
+          ctx.translate(sx, sy);
+          ctx.rotate(m.phase + state.time * m.spin * 0.4);
+          ctx.fillStyle = col;
+          ctx.globalAlpha = alpha;
+          var s = m.size * m.z;
+          ctx.beginPath();
+          ctx.moveTo(0, -s);
+          ctx.lineTo(s * 0.62, 0);
+          ctx.lineTo(0, s);
+          ctx.lineTo(-s * 0.62, 0);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.restore();
+      }
+
+      function updateAndDrawShockwaves(dt, dark) {
+        for (var i = state.shockwaves.length - 1; i >= 0; i--) {
+          var sw = state.shockwaves[i];
+          sw.age += dt;
+          var p = sw.age / sw.duration;
+          if (p >= 1) {
+            state.shockwaves.splice(i, 1);
+            continue;
+          }
+          var ease = 1 - Math.pow(1 - p, 3);
+          var r = 24 + sw.maxR * ease;
+          var fade = Math.pow(1 - p, 1.55);
+
+          ctx.save();
+          // Triple prismatic chromatic shockwave rings (cyan / violet / gold)
+          var rings = [
+            { dr: 0, w: 2.8 * fade + 0.6, col: dark ? 'rgba(56, 189, 248,' : 'rgba(22, 88, 235,' },
+            { dr: -7 * ease, w: 1.6 * fade + 0.4, col: dark ? 'rgba(167, 139, 250,' : 'rgba(124, 58, 237,' },
+            { dr: 6 * ease, w: 1.2 * fade + 0.3, col: dark ? 'rgba(243, 220, 171,' : 'rgba(196, 164, 108,' }
+          ];
+          for (var k = 0; k < rings.length; k++) {
+            var rr = Math.max(4, r + rings[k].dr);
+            ctx.beginPath();
+            ctx.arc(sw.x, sw.y, rr, 0, Math.PI * 2);
+            ctx.strokeStyle = rings[k].col + (fade * (k === 0 ? 0.72 : 0.48)).toFixed(3) + ')';
+            ctx.lineWidth = rings[k].w;
+            ctx.stroke();
+          }
+
+          // Inner faceted octagon expansion pulse
+          ctx.beginPath();
+          var octR = r * 0.72;
+          for (var s = 0; s < 8; s++) {
+            var a = (s / 8) * Math.PI * 2 + p * 0.65;
+            var vx = sw.x + Math.cos(a) * octR;
+            var vy = sw.y + Math.sin(a) * octR;
+            if (s === 0) ctx.moveTo(vx, vy);
+            else ctx.lineTo(vx, vy);
+          }
+          ctx.closePath();
+          ctx.strokeStyle = (dark ? 'rgba(224, 242, 254,' : 'rgba(56, 189, 248,') + (fade * 0.42).toFixed(3) + ')';
+          ctx.lineWidth = 1.0;
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Burst crystalline light shards
+        for (var b = state.burstParticles.length - 1; b >= 0; b--) {
+          var pt = state.burstParticles[b];
+          pt.x += pt.vx * dt;
+          pt.y += pt.vy * dt;
+          pt.vx *= Math.pow(0.18, dt);
+          pt.vy *= Math.pow(0.18, dt);
+          pt.life -= pt.decay * dt;
+          if (pt.life <= 0) {
+            state.burstParticles.splice(b, 1);
+            continue;
+          }
+          var col = pt.kind === 'gold'
+            ? (dark ? '#f5dfa9' : '#c49b52')
+            : (pt.kind === 'violet'
+              ? (dark ? '#c4b5fd' : '#7c3aed')
+              : (dark ? '#7dd3fc' : '#0ea5e9'));
+          drawDiamondStar(pt.x, pt.y, pt.size * (0.5 + pt.life), pt.life * 0.88, col, 0.26);
+        }
+      }
+
+      /* =========================================================================
+         9. MAIN 60FPS ANIMATION LOOP
+         ========================================================================= */
+
+      var elXW = document.getElementById('ang-xw');
+      var elYW = document.getElementById('ang-yw');
+      var elZW = document.getElementById('ang-zw');
+      var elPolyName = document.getElementById('hud-poly-name');
+      var elTopo = document.getElementById('hud-topo');
+
+      function updateHudLabels() {
+        if (state.mode === 'dual') {
+          elPolyName.textContent = '双嵌套 4D 圣晶 · 24-Cell × Tesseract';
+          elTopo.textContent = 'V:40 · E:128 · F:120';
+        } else if (state.mode === 'cell24') {
+          elPolyName.textContent = '24-Cell 正二十四胞体 · Icositetrachoron';
+          elTopo.textContent = 'V:24 · E:96 · F:96';
+        } else {
+          elPolyName.textContent = '8-Cell 超立方体 · Hypercube Tesseract';
+          elTopo.textContent = 'V:16 · E:32 · F:24';
+        }
+      }
+
+      function frame(ts) {
+        if (!state.lastTs) state.lastTs = ts;
+        var dt = Math.min(0.05, (ts - state.lastTs) / 1000);
+        state.lastTs = ts;
+        state.time += dt;
+
+        // Smooth pointer interpolation
+        var lerpK = 1 - Math.exp(-dt * 5.2);
+        state.ptrX += (state.ptrTargetX - state.ptrX) * lerpK;
+        state.ptrY += (state.ptrTargetY - state.ptrY) * lerpK;
+
+        // Smooth stage center shift based on Title Overlay visibility
+        var targetCxFrac = (state.overlay && W > 920) ? 0.345 : 0.5;
+        var targetScale = (state.overlay && W > 920) ? 0.96 : 1.12;
+        var posK = 1 - Math.exp(-dt * 6.5);
+        state.cxFrac += (targetCxFrac - state.cxFrac) * posK;
+        state.scaleFactor += (targetScale - state.scaleFactor) * posK;
+
+        // Smooth 4D dimensional fold pulse decay
+        state.pulse *= Math.exp(-dt * 2.55);
+        if (state.pulse < 0.002) state.pulse = 0;
+        state.pulsePhase += (state.pulseTargetPhase - state.pulsePhase) * (1 - Math.exp(-dt * 5.5));
+
+        // Coupled 4D double-rotation angles
+        var t = state.time;
+        var aXW = state.baseXW + t * 0.34 + state.ptrX * 1.48 + state.pulsePhase * 0.85;
+        var aYW = state.baseYW + t * 0.23 + state.ptrY * 1.38 + state.pulsePhase * 0.45;
+        var aZW = state.baseZW + t * 0.27 + (state.ptrX * state.ptrY) * 0.55 - state.pulsePhase * 0.6;
+        var aXY = state.baseXY + t * 0.16;
+        var aXZ = state.baseXZ + t * 0.12 + state.ptrX * 0.36;
+        var aYZ = state.baseYZ + t * 0.09 + state.ptrY * 0.32;
+
+        // Update live telemetry readouts
+        elXW.textContent = (((aXW % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)).toFixed(2);
+        elYW.textContent = (((aYW % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)).toFixed(2);
+        elZW.textContent = (((aZW % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)).toFixed(2);
+
+        // Clear frame
+        ctx.clearRect(0, 0, W, H);
+
+        var dark = state.theme === 'dark';
+        var cx = W * state.cxFrac;
+        var cy = H * 0.495 + Math.sin(t * 1.05) * 6;
+        var unitR = Math.min(W, H) * 0.232 * state.scaleFactor;
+
+        // Dynamic 4D stereographic distance (breathes dramatically during fold pulse!)
+        var d4 = 2.68 - state.pulse * 0.42;
+        var d3 = 4.65;
+
+        // Layer 1: Floating background dimensional dust
+        updateAndDrawDust(dt, dark, state.ptrX, state.ptrY);
+
+        // Layer 2: Volumetric aura + gallery caustic floor glow
+        drawStageAuraAndCaustics(cx, cy, unitR, dark, state.pulse);
+
+        // Layer 3: Delicate tilted orbital astrolabe rings
+        drawAstrolabeRings(cx, cy, unitR, dark, t, state.ptrX, state.ptrY, state.pulse);
+
+        // Layer 4: Collect & Depth-Sort 4D Geometry
+        var facets = [];
+        var edges = [];
+        var nodes = [];
+
+        var outerAngles = { xy: aXY, xz: aXZ, yz: aYZ, xw: aXW, yw: aYW, zw: aZW };
+        var innerAngles = {
+          xy: -aXY * 1.25 + 0.4,
+          xz: aXZ * 0.9,
+          yz: -aYZ * 1.1,
+          xw: -aXW * 1.18 + 0.72,
+          yw: aYW * 1.12 - 0.38,
+          zw: aZW * 1.35 + 0.55
+        };
+
+        if (state.mode === 'dual') {
+          collectPolytopeDrawables(CELL24, outerAngles, cx, cy, unitR, d4, d3, 'outer', facets, edges, nodes);
+          collectPolytopeDrawables(TESSERACT_INNER, innerAngles, cx, cy, unitR, d4, d3, 'inner', facets, edges, nodes);
+        } else if (state.mode === 'cell24') {
+          collectPolytopeDrawables(CELL24, outerAngles, cx, cy, unitR * 1.06, d4, d3, 'outer', facets, edges, nodes);
+        } else {
+          collectPolytopeDrawables(TESSERACT_SOLO, outerAngles, cx, cy, unitR * 1.02, d4, d3, 'outer', facets, edges, nodes);
+        }
+
+        // Back-to-front painter's algorithm depth sort
+        facets.sort(function (u, v) { return u.depth - v.depth; });
+        edges.sort(function (u, v) { return u.depth - v.depth; });
+        nodes.sort(function (u, v) { return u.p.depth - v.p.depth; });
+
+        // Split facets into back-half and front-half so the inner Singularity Heart nests physically inside!
+        var splitIdx = Math.floor(facets.length * 0.52);
+        for (var f1 = 0; f1 < splitIdx; f1++) {
+          renderFacet(facets[f1], dark, state.pulse);
+        }
+
+        // Subtle 4D axial filaments in Dual mode connecting to the singularity heart
+        if (state.mode === 'dual') {
+          ctx.save();
+          for (var ax = 0; ax < AXES_16.length; ax++) {
+            var av4 = rotate4D(AXES_16[ax], innerAngles.xy, innerAngles.xz, innerAngles.yz, innerAngles.xw, innerAngles.yw, innerAngles.zw);
+            var ap = project4Dto2D(av4, cx, cy, unitR, d4, d3);
+            var gAx = ctx.createLinearGradient(cx, cy, ap.sx, ap.sy);
+            gAx.addColorStop(0, dark ? 'rgba(243, 220, 171, 0.36)' : 'rgba(184, 142, 72, 0.28)');
+            gAx.addColorStop(1, 'rgba(56, 189, 248, 0)');
+            ctx.strokeStyle = gAx;
+            ctx.lineWidth = 0.9;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(ap.sx, ap.sy);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+
+        // Luminous 4D Singularity Core
+        renderSingularityHeart(cx, cy, unitR, dark, t, state.pulse);
+
+        // Render front-half translucent glass facets
+        for (var f2 = splitIdx; f2 < facets.length; f2++) {
+          renderFacet(facets[f2], dark, state.pulse);
+        }
+
+        // Render depth-sorted chromatic optical edges
+        for (var e = 0; e < edges.length; e++) {
+          renderEdge(edges[e], dark, state.pulse);
+        }
+
+        // Render glowing crystalline 4D vertex nodes
+        for (var n = 0; n < nodes.length; n++) {
+          renderVertexNode(nodes[n], dark, state.pulse);
+        }
+
+        // Layer 5: Dimensional Fold Shockwaves & Light Shards
+        updateAndDrawShockwaves(dt, dark);
+
+        requestAnimationFrame(frame);
+      }
+
+      /* =========================================================================
+         10. POINTER, CLICK & CONTROL DOCK EVENTS
+         ========================================================================= */
+
+      window.addEventListener('pointermove', function (ev) {
+        state.ptrActive = true;
+        state.ptrTargetX = (ev.clientX / Math.max(1, W)) * 2 - 1;
+        state.ptrTargetY = (ev.clientY / Math.max(1, H)) * 2 - 1;
+      }, { passive: true });
+
+      canvas.addEventListener('pointerdown', function (ev) {
+        triggerDimensionalPulse(ev.clientX, ev.clientY);
+      });
+
+      var modeButtons = document.querySelectorAll('.dock-btn[data-mode]');
+      modeButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var m = btn.getAttribute('data-mode');
+          if (!m) return;
+          state.mode = m;
+          modeButtons.forEach(function (b) { b.classList.toggle('active', b === btn); });
+          updateHudLabels();
+          triggerDimensionalPulse(W * state.cxFrac, H * 0.495);
+        });
+      });
+
+      var btnTheme = document.getElementById('btn-theme');
+      btnTheme.addEventListener('click', function () {
+        state.theme = state.theme === 'light' ? 'dark' : 'light';
+        document.body.setAttribute('data-theme', state.theme);
+        btnTheme.classList.toggle('active', state.theme === 'dark');
+        btnTheme.textContent = state.theme === 'dark' ? '雪瓷浅景背景' : '极夜深冰背景';
+      });
+
+      var btnOverlay = document.getElementById('btn-overlay');
+      btnOverlay.addEventListener('click', function () {
+        state.overlay = !state.overlay;
+        document.body.setAttribute('data-overlay', state.overlay ? 'on' : 'off');
+        btnOverlay.classList.toggle('active', state.overlay);
+      });
+
+      var btnPulse = document.getElementById('btn-pulse');
+      btnPulse.addEventListener('click', function () {
+        triggerDimensionalPulse(W * state.cxFrac, H * 0.495);
+      });
+
+      document.querySelectorAll('[data-pulse-trigger]').forEach(function (el) {
+        el.addEventListener('click', function () {
+          triggerDimensionalPulse(W * state.cxFrac, H * 0.495);
+        });
+      });
+
+      // Expose quick debug hook for automated QA verification
+      window.__CRYSTAL_4D__ = {
+        setMode: function (m) {
+          var btn = document.querySelector('.dock-btn[data-mode="' + m + '"]');
+          if (btn) btn.click();
+        },
+        setTheme: function (th) {
+          if (state.theme !== th) btnTheme.click();
+        },
+        setOverlay: function (on) {
+          if (state.overlay !== !!on) btnOverlay.click();
+        },
+        triggerPulse: function () {
+          triggerDimensionalPulse(W * state.cxFrac, H * 0.495);
+        },
+        getStats: function () {
+          return {
+            mode: state.mode,
+            theme: state.theme,
+            overlay: state.overlay,
+            cell24: { v: CELL24.verts.length, e: CELL24.edges.length, f: CELL24.faces.length },
+            tesseract: { v: TESSERACT_SOLO.verts.length, e: TESSERACT_SOLO.edges.length, f: TESSERACT_SOLO.faces.length }
+          };
+        }
+      };
+
+      updateHudLabels();
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>

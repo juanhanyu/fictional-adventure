@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>转生千金 · 互动原型中枢 Demo Hub</title>
+<style>
+  :root {
+    --bg-snow: #f4f8ff;
+    --bg-porcelain: #ffffff;
+    --bg-ice: #eaf2ff;
+    --ink-deep: #0f2544;
+    --ink-mid: #3a5273;
+    --ink-soft: #6b82a3;
+    --cobalt: #2563eb;
+    --cobalt-deep: #1d4ed8;
+    --cyan-ice: #0284c7;
+    --frost-line: rgba(37, 99, 235, 0.14);
+    --frost-line-strong: rgba(37, 99, 235, 0.28);
+    --shadow-soft: 0 10px 30px rgba(15, 37, 68, 0.06), 0 2px 8px rgba(37, 99, 235, 0.05);
+    --shadow-hover: 0 18px 40px rgba(37, 99, 235, 0.13), 0 4px 12px rgba(15, 37, 68, 0.06);
+    --ok-bg: #ecfdf5;
+    --ok-ink: #047857;
+    --ok-border: #a7f3d0;
+    --wait-bg: #fffbeb;
+    --wait-ink: #b45309;
+    --wait-border: #fde68a;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--ink-deep);
+    background:
+      radial-gradient(900px 460px at 12% -5%, rgba(147, 197, 253, 0.34), transparent 65%),
+      radial-gradient(760px 420px at 88% 0%, rgba(186, 230, 253, 0.42), transparent 60%),
+      linear-gradient(180deg, #f8fbff 0%, #eff5ff 55%, #f6faff 100%);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .crystal-bg {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      linear-gradient(rgba(37, 99, 235, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37, 99, 235, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(circle at 50% 20%, black 25%, transparent 85%);
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 28px 22px 64px;
+  }
+
+  /* Hero Header */
+  .hero {
+    background: linear-gradient(135deg, rgba(255,255,255,0.92), rgba(240,247,255,0.88));
+    border: 1px solid var(--frost-line-strong);
+    border-radius: 22px;
+    padding: 26px 28px;
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(12px);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+  }
+
+  .hero-left { max-width: 720px; }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--cobalt);
+    background: rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(37, 99, 235, 0.18);
+    padding: 5px 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+  .eyebrow-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--cyan-ice);
+    box-shadow: 0 0 8px rgba(2, 132, 199, 0.7);
+  }
+  h1 {
+    margin: 0 0 8px;
+    font-size: clamp(22px, 3vw, 30px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink-deep);
+  }
+  .subtitle {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--ink-mid);
+  }
+
+  .hero-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 13px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 600;
+    background: var(--bg-porcelain);
+    border: 1px solid var(--frost-line-strong);
+    color: var(--ink-mid);
+  }
+  .status-pill.live {
+    background: var(--ok-bg);
+    border-color: var(--ok-border);
+    color: var(--ok-ink);
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .btn-ghost {
+    appearance: none;
+    border: 1px solid var(--frost-line-strong);
+    background: rgba(255,255,255,0.88);
+    color: var(--ink-deep);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+  .btn-ghost:hover {
+    border-color: var(--cobalt);
+    color: var(--cobalt);
+    background: #fff;
+  }
+
+  /* Filter Tabs */
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 22px 0 18px;
+  }
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tab {
+    appearance: none;
+    border: 1px solid var(--frost-line);
+    background: rgba(255,255,255,0.78);
+    color: var(--ink-mid);
+    padding: 8px 15px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+  .tab:hover {
+    border-color: var(--frost-line-strong);
+    color: var(--cobalt);
+  }
+  .tab.active {
+    background: linear-gradient(135deg, #2563eb, #0284c7);
+    border-color: transparent;
+    color: #ffffff;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
+  }
+  .count-meta {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+
+  /* Section Headers */
+  .section-block { margin-bottom: 28px; }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 13px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--frost-line);
+  }
+  .section-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-sub {
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  /* Cards Grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    position: relative;
+    background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(246,250,255,0.92));
+    border: 1px solid var(--frost-line);
+    border-radius: 18px;
+    padding: 18px 19px 16px;
+    box-shadow: var(--shadow-soft);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--frost-line-strong);
+  }
+  .card.featured {
+    border-color: rgba(37, 99, 235, 0.30);
+    background: linear-gradient(145deg, #ffffff 0%, #f0f7ff 100%);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .badge-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .tag {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--bg-ice);
+    color: var(--cobalt-deep);
+    border: 1px solid rgba(37, 99, 235, 0.14);
+  }
+  .tag.accent {
+    background: linear-gradient(135deg, rgba(37,99,235,0.12), rgba(2,132,199,0.16));
+    color: #0369a1;
+  }
+  .state-chip {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .state-chip.ready {
+    background: var(--ok-bg);
+    color: var(--ok-ink);
+    border-color: var(--ok-border);
+  }
+  .state-chip.pending {
+    background: var(--wait-bg);
+    color: var(--wait-ink);
+    border-color: var(--wait-border);
+  }
+  .state-chip.static {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+  }
+
+  .card h3 {
+    margin: 2px 0 0;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    line-height: 1.35;
+  }
+  .card p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.58;
+    color: var(--ink-mid);
+    flex: 1;
+  }
+  .card-path {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    background: rgba(15, 37, 68, 0.04);
+    padding: 4px 8px;
+    border-radius: 7px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .btn-primary {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-decoration: none;
+    border: none;
+    background: linear-gradient(135deg, #2563eb, #0284c7);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 9px 13px;
+    border-radius: 11px;
+    cursor: pointer;
+    transition: filter 0.16s ease, transform 0.16s ease;
+  }
+  .btn-primary:hover { filter: brightness(1.06); }
+  .btn-primary:active { transform: scale(0.985); }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border: 1px solid var(--frost-line-strong);
+    background: #ffffff;
+    color: var(--ink-deep);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 9px 12px;
+    border-radius: 11px;
+    cursor: pointer;
+    transition: all 0.16s ease;
+  }
+  .btn-secondary:hover {
+    border-color: var(--cobalt);
+    color: var(--cobalt);
+    background: #f8fbff;
+  }
+
+  /* Fullscreen Stage Modal */
+  .stage-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(10, 22, 42, 0.72);
+    backdrop-filter: blur(8px);
+    display: none;
+    flex-direction: column;
+  }
+  .stage-modal.open { display: flex; }
+
+  .stage-bar {
+    height: 52px;
+    background: rgba(255, 255, 255, 0.96);
+    border-bottom: 1px solid var(--frost-line-strong);
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .stage-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .stage-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stage-url {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    display: none;
+  }
+  @media (min-width: 820px) { .stage-url { display: inline; } }
+
+  .stage-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .stage-body {
+    flex: 1;
+    position: relative;
+    background: #0b1324;
+  }
+  .stage-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+    background: #ffffff;
+  }
+  .doc-viewer {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background: #f8fbff;
+    padding: 28px 20px 60px;
+    display: none;
+  }
+  .doc-viewer-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 1px solid var(--frost-line);
+    border-radius: 16px;
+    padding: 24px 28px;
+    box-shadow: var(--shadow-soft);
+    white-space: pre-wrap;
+    font-size: 13.5px;
+    line-height: 1.75;
+    color: var(--ink-deep);
+    font-family: "PingFang SC", "Microsoft YaHei", ui-monospace, monospace;
+  }
+
+  .footer-note {
+    margin-top: 26px;
+    padding: 16px 20px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid var(--frost-line);
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: var(--ink-mid);
+  }
+  .footer-note strong { color: var(--ink-deep); }
+</style>
+</head>
+<body>
+  <div class="crystal-bg"></div>
+
+  <div class="wrap">
+    <header class="hero">
+      <div class="hero-left">
+        <div class="eyebrow"><span class="eyebrow-dot"></span> 转生千金 · ICE PALACE DEMO HUB</div>
+        <h1>互动原型统一启动中枢</h1>
+        <p class="subtitle">
+          集中收录全部 15 角色 Sea of Stars 像素展演、战斗旗舰 V2 / V3 极简版、高维冰晶实验室（方案 A / B / C）、蓝白冰晶 UI 总览与主线剧情审计报告。所有入口采用相对路径，兼容本地 HTTP 预览服务与任意静态站点托管。
+        </p>
+      </div>
+      <div class="hero-right">
+        <div id="env-status" class="status-pill">
+          <span class="status-dot"></span>
+          <span id="env-status-text">检测运行环境中…</span>
+        </div>
+        <div class="hero-actions">
+          <button class="btn-ghost" id="btn-rescan" type="button">↻ 重新检测可用状态</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <div class="tabs" id="filter-tabs">
+        <button class="tab active" data-cat="all" type="button">全部原型</button>
+        <button class="tab" data-cat="flagship" type="button">核心旗舰</button>
+        <button class="tab" data-cat="crystal" type="button">高维水晶实验</button>
+        <button class="tab" data-cat="combat" type="button">战斗原型库</button>
+        <button class="tab" data-cat="visual" type="button">像素与 UI 展示</button>
+        <button class="tab" data-cat="docs" type="button">审计文档</button>
+      </div>
+      <div class="count-meta" id="count-meta">共加载 0 个项目</div>
+    </div>
+
+    <main id="catalog-root"></main>
+
+    <footer class="footer-note">
+      <strong>打开方式说明：</strong> 点击卡片主按钮「<strong>立即预览</strong>」会在当前页面内直接展开全屏交互舞台（无需拦截弹窗）；点击「<strong>新窗打开</strong>」可在独立浏览器标签页全屏运行。若某项显示「构建中」，待对应工程完成后点击右上角「重新检测可用状态」即可直接点开。
+    </footer>
+  </div>
+
+  <!-- Fullscreen Embedded Preview Stage -->
+  <div class="stage-modal" id="stage-modal" role="dialog" aria-modal="true" aria-label="Demo 预览舞台">
+    <div class="stage-bar">
+      <div class="stage-title-wrap">
+        <button class="btn-secondary" id="stage-close" type="button">← 返回导航大厅</button>
+        <span class="stage-title" id="stage-title">Demo</span>
+        <span class="stage-url" id="stage-url"></span>
+      </div>
+      <div class="stage-controls">
+        <button class="btn-secondary" id="stage-reload" type="button">↻ 刷新</button>
+        <a class="btn-secondary" id="stage-open-ext" href="#" target="_blank" rel="noopener">↗ 新标签全屏</a>
+      </div>
+    </div>
+    <div class="stage-body">
+      <iframe class="stage-frame" id="stage-frame" title="Interactive Demo Stage"></iframe>
+      <div class="doc-viewer" id="doc-viewer">
+        <div class="doc-viewer-inner" id="doc-viewer-inner">加载中…</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  const SECTIONS = [
+    {
+      id: "flagship",
+      title: "核心旗舰与全阵容展示",
+      sub: "推荐优先试玩 — 最新旗舰战斗引擎 & 15 角色 Sea of Stars 实机像素展台",
+      items: [
+        {
+          title: "15 角色 Sea of Stars 全阵容实机像素展台",
+          desc: "零 PNG 纯 Canvas ImageData 实时解码，覆盖 15 位核心角色站姿、呼吸、攻击与法术演出，支持缩放与背景切换。",
+          tags: ["15 角色", "Sea of Stars", "实机展台"],
+          paths: ["seaofstars_all15_live_showcase.html"],
+          featured: true
+        },
+        {
+          title: "战斗旗舰 Demo 4 · V2 冰晶宫殿融合版",
+          desc: "融合破锁节拍、3 阶冰晶蓄力魔力回流与冰晶宫殿全屏时停直点破绽反杀，双 Boss 车轮战（贝阿特丽丝 & 罗文）。",
+          tags: ["旗舰战斗", "V2", "时停破绽"],
+          paths: ["combat_demos/demo_4_v2_flagship.html", "demo_4_v2_flagship.html"],
+          featured: true
+        },
+        {
+          title: "战斗旗舰 Demo 4 · V3 极简清爽版",
+          desc: "聚焦纯净雪瓷视觉与零干扰战场阅读性，精简 HUD 信息密度，突出像素精灵动作节奏与即时反馈。",
+          tags: ["旗舰战斗", "V3 Minimal", "极简 HUD"],
+          paths: ["combat_demos/demo_4_v3_minimal.html", "demo_4_v3_minimal.html"],
+          featured: true
+        }
+      ]
+    },
+    {
+      id: "crystal",
+      title: "高维水晶实验室（方案 A / B / C）",
+      sub: "探索《转生千金》标志性蓝白冰晶视觉与数学渲染极限",
+      items: [
+        {
+          title: "高维水晶 · 方案 A：4D 超立方体投影 (Hypercube)",
+          desc: "实时四维超立方体（Tesseract）双平面旋转投影，搭配雪瓷折射棱边与冰晶节点辉光。",
+          tags: ["方案 A", "4D 几何", "Canvas"],
+          paths: ["crystal_demos/crystal_opt1_4d_hypercube.html", "crystal_opt1_4d_hypercube.html"]
+        },
+        {
+          title: "高维水晶 · 方案 B：星穹分形结晶 (Celestial Fractal)",
+          desc: "递归对称雪花分形与星轨折射层叠，呈现冰晶宫殿的仪式感与层次深度。",
+          tags: ["方案 B", "分形几何", "星穹"],
+          paths: ["crystal_demos/crystal_opt2_celestial_fractal.html", "crystal_opt2_celestial_fractal.html"]
+        },
+        {
+          title: "高维水晶 · 方案 C：GLSL 奇点折射场 (GLSL Singularity)",
+          desc: "WebGL 片元着色器实时光线步进（Raymarching）与色散折射奇点，高帧率冰晶质感。",
+          tags: ["方案 C", "WebGL", "GLSL"],
+          paths: ["crystal_demos/crystal_opt3_glsl_singularity.html", "crystal_opt3_glsl_singularity.html"]
+        }
+      ]
+    },
+    {
+      id: "combat",
+      title: "战斗机制方案对比库（Demo 1 ~ 4 原版）",
+      sub: "四套独立战斗核心玩法原型，便于横向对照手感与机制取舍",
+      items: [
+        {
+          title: "方案 1 ·《星之海》即时节拍 × 破锁崩解",
+          desc: "施法节拍共鸣、3 锁破盾崩解、冰镜即时格挡与 Web Audio 合成打击音效。",
+          tags: ["方案 1", "节拍破锁"],
+          paths: ["combat_demos/demo_1_seaofstars_timing.html"]
+        },
+        {
+          title: "方案 2 · 八方旅人 × P5 弱点再动连爆",
+          desc: "3 阶 CP 魔力倾注、破防冰牢眩晕、ONE MORE +1 AP 追击与冰晶宫殿全员总攻。",
+          tags: ["方案 2", "弱点再动"],
+          paths: ["combat_demos/demo_2_octopath_p5_cascade.html"]
+        },
+        {
+          title: "方案 3 · 冰晶宫殿时停直点破绽反杀",
+          desc: "乱葬岗罗文与决斗场贝阿特丽丝双剧本切换，洞察蓄力触发全屏冻结直点弱点反杀。",
+          tags: ["方案 3", "时停直点"],
+          paths: ["combat_demos/demo_3_ice_palace_timestop.html"]
+        },
+        {
+          title: "方案 4 · 初代旗舰融合原型",
+          desc: "综合方案 1~3 的初代融合验证版，用于与 V2 / V3 迭代版本做演进对比。",
+          tags: ["方案 4", "初代融合"],
+          paths: ["combat_demos/demo_4_flagship_fusion.html"]
+        }
+      ]
+    },
+    {
+      id: "visual",
+      title: "像素风格调研与蓝白 UI 总览",
+      sub: "角色像素画风横向评测、精度对比与冰晶宫殿 UI 革新展示",
+      items: [
+        {
+          title: "V3 蓝白冰晶 UI 革新 & 27 法术特效总览",
+          desc: "桌面版冰晶宫殿 UI 视觉系统、14 角色代码像素战斗与 27 项 pixelfx 法术展示。",
+          tags: ["UI 总览", "27 法术", "蓝白冰晶"],
+          paths: ["ui_overhaul_showcase.html"]
+        },
+        {
+          title: "希尔维亚 · 6 大像素画风实时同屏对比",
+          desc: "零 PNG 实时 Canvas 解码对比 Big-Head HD、弹射世界、八方旅人、星之海、坎公骑冠剑等 6 种风格。",
+          tags: ["6 风格对比", "希尔维亚"],
+          paths: ["gpt_sylvia_6styles_live.html"]
+        },
+        {
+          title: "True Pixel 精度先导实验（64px vs 128px）",
+          desc: "希尔维亚、贝阿特丽丝、狼王三角色 Tier 1 (64×64 @3x) 与 Tier 3 (128×128 @2x) 实时呼吸/攻击对比。",
+          tags: ["像素精度", "对比实验"],
+          paths: ["gpt_true_pixel_pilot.html"]
+        }
+      ]
+    },
+    {
+      id: "docs",
+      title: "工程与剧情审计文档",
+      sub: "内置 UTF-8 渲染阅读器，直接查阅无需下载",
+      items: [
+        {
+          title: "主线合并与剧情完整性审计报告",
+          desc: "全面核查 main 分支剧情数据、场景映射、人名设定与合并风险清单。",
+          tags: ["剧情审计", "Markdown"],
+          paths: ["main_merge_story_audit.md"],
+          isDoc: true
+        },
+        {
+          title: "UI 基线视觉审计报告",
+          desc: "蓝白冰晶改版前的基线截图审查、布局诊断与改进优先级记录。",
+          tags: ["UI 审计", "Markdown"],
+          paths: ["ui_baseline_audit.md"],
+          isDoc: true
+        }
+      ]
+    }
+  ];
+
+  const isHttp = location.protocol === "http:" || location.protocol === "https:";
+  const rootEl = document.getElementById("catalog-root");
+  const countMeta = document.getElementById("count-meta");
+  const envStatus = document.getElementById("env-status");
+  const envStatusText = document.getElementById("env-status-text");
+
+  const modal = document.getElementById("stage-modal");
+  const stageTitle = document.getElementById("stage-title");
+  const stageUrl = document.getElementById("stage-url");
+  const stageFrame = document.getElementById("stage-frame");
+  const stageOpenExt = document.getElementById("stage-open-ext");
+  const docViewer = document.getElementById("doc-viewer");
+  const docViewerInner = document.getElementById("doc-viewer-inner");
+
+  let activeCat = "all";
+  let currentStageItem = null;
+
+  // Map item key -> resolved state
+  const resolvedMap = new Map();
+
+  function itemKey(secId, idx) {
+    return secId + "::" + idx;
+  }
+
+  function updateEnvBanner(readyCount, totalCount) {
+    if (isHttp) {
+      envStatus.classList.add("live");
+      envStatusText.textContent = `HTTP 预览在线 (${location.host}) · ${readyCount}/${totalCount} 就绪`;
+    } else {
+      envStatus.classList.remove("live");
+      envStatusText.textContent = "静态/Artifact 视图 · 请通过预览链接或卡片打开";
+    }
+  }
+
+  async function probeAll() {
+    let total = 0;
+    let ready = 0;
+    const tasks = [];
+
+    for (const sec of SECTIONS) {
+      sec.items.forEach((item, idx) => {
+        total++;
+        const key = itemKey(sec.id, idx);
+        if (!isHttp) {
+          resolvedMap.set(key, { url: item.paths[0], state: "static" });
+          return;
+        }
+        tasks.push((async () => {
+          for (const candidate of item.paths) {
+            try {
+              const res = await fetch(candidate, { method: "HEAD", cache: "no-store" });
+              if (res.ok) {
+                resolvedMap.set(key, { url: candidate, state: "ready" });
+                ready++;
+                return;
+              }
+            } catch (_) {
+              // continue trying fallback candidate
+            }
+          }
+          resolvedMap.set(key, { url: item.paths[0], state: "pending" });
+        })());
+      });
+    }
+
+    await Promise.all(tasks);
+    updateEnvBanner(isHttp ? ready : total, total);
+    render();
+  }
+
+  function render() {
+    rootEl.innerHTML = "";
+    let visibleCount = 0;
+
+    for (const sec of SECTIONS) {
+      if (activeCat !== "all" && activeCat !== sec.id) continue;
+
+      const secEl = document.createElement("section");
+      secEl.className = "section-block";
+
+      const head = document.createElement("div");
+      head.className = "section-head";
+      head.innerHTML = `<h2 class="section-title">${sec.title}</h2><span class="section-sub">${sec.sub}</span>`;
+      secEl.appendChild(head);
+
+      const grid = document.createElement("div");
+      grid.className = "grid";
+
+      sec.items.forEach((item, idx) => {
+        visibleCount++;
+        const key = itemKey(sec.id, idx);
+        const info = resolvedMap.get(key) || { url: item.paths[0], state: isHttp ? "pending" : "static" };
+
+        const card = document.createElement("article");
+        card.className = "card" + (item.featured ? " featured" : "");
+
+        const stateLabel =
+          info.state === "ready" ? "● 可直接游玩" :
+          info.state === "pending" ? "◔ 构建中 / 待生成" :
+          "◆ 相对路径直达";
+
+        const tagsHtml = item.tags
+          .map((t, i) => `<span class="tag${i === 0 && item.featured ? " accent" : ""}">${t}</span>`)
+          .join("");
+
+        card.innerHTML = `
+          <div class="card-top">
+            <div class="badge-row">${tagsHtml}</div>
+            <span class="state-chip ${info.state}">${stateLabel}</span>
+          </div>
+          <h3>${item.title}</h3>
+          <p>${item.desc}</p>
+          <div class="card-path" title="${info.url}">${info.url}</div>
+          <div class="card-actions">
+            <button class="btn-primary" type="button" data-action="preview">${item.isDoc ? "阅读文档" : "立即预览"}</button>
+            <a class="btn-secondary" href="${info.url}" target="_blank" rel="noopener">新窗打开 ↗</a>
+          </div>
+        `;
+
+        card.querySelector('[data-action="preview"]').addEventListener("click", () => {
+          openStage(item, info.url);
+        });
+
+        grid.appendChild(card);
+      });
+
+      secEl.appendChild(grid);
+      rootEl.appendChild(secEl);
+    }
+
+    countMeta.textContent = `当前显示 ${visibleCount} 个原型 / 文档`;
+  }
+
+  async function openStage(item, url) {
+    currentStageItem = { item, url };
+    stageTitle.textContent = item.title;
+    stageUrl.textContent = url;
+    stageOpenExt.href = url;
+    modal.classList.add("open");
+    document.body.style.overflow = "hidden";
+
+    if (item.isDoc && isHttp) {
+      stageFrame.style.display = "none";
+      stageFrame.src = "about:blank";
+      docViewer.style.display = "block";
+      docViewerInner.textContent = "正在加载文档内容…";
+      try {
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        docViewerInner.textContent = await res.text();
+      } catch (err) {
+        docViewerInner.textContent = `未能加载 ${url}（${err.message}）。请点击右上角「新窗打开」或确认文件已生成。`;
+      }
+    } else {
+      docViewer.style.display = "none";
+      stageFrame.style.display = "block";
+      stageFrame.src = url;
+    }
+  }
+
+  function closeStage() {
+    modal.classList.remove("open");
+    stageFrame.src = "about:blank";
+    document.body.style.overflow = "";
+    currentStageItem = null;
+  }
+
+  document.getElementById("stage-close").addEventListener("click", closeStage);
+  document.getElementById("stage-reload").addEventListener("click", () => {
+    if (!currentStageItem) return;
+    openStage(currentStageItem.item, currentStageItem.url);
+  });
+  document.getElementById("btn-rescan").addEventListener("click", probeAll);
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal.classList.contains("open")) {
+      closeStage();
+    }
+  });
+
+  document.getElementById("filter-tabs").addEventListener("click", (e) => {
+    const btn = e.target.closest(".tab");
+    if (!btn) return;
+    activeCat = btn.dataset.cat;
+    document.querySelectorAll(".tab").forEach((el) => el.classList.toggle("active", el === btn));
+    render();
+  });
+
+  render();
+  probeAll();
+})();
+</script>
+</body>
+</html>

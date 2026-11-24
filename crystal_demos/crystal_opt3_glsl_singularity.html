@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>方案 C · WebGL 光线步进虹彩高维奇点晶核 — 转生千金</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;600;700;900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --serif-en: 'Cormorant Garamond', Georgia, serif;
+    --serif-zh: 'Noto Serif SC', 'Songti SC', Georgia, serif;
+    --sans-zh: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+    /* Deep Sapphire Night (default) */
+    --ui-bg: rgba(8, 16, 36, 0.56);
+    --ui-bg-hover: rgba(24, 48, 96, 0.62);
+    --ui-border: rgba(138, 198, 255, 0.22);
+    --ui-border-strong: rgba(154, 220, 255, 0.45);
+    --ui-text: #eef6ff;
+    --ui-text-mid: rgba(214, 232, 255, 0.78);
+    --ui-text-muted: rgba(162, 196, 238, 0.58);
+    --ui-accent: #67d4ff;
+    --ui-accent-deep: #1b56db;
+    --ui-gold: #e6cfa0;
+    --pill-active-bg: linear-gradient(135deg, rgba(44, 118, 255, 0.48), rgba(103, 212, 255, 0.32));
+    --pill-active-text: #ffffff;
+    --pill-shadow: 0 18px 46px rgba(2, 6, 18, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    --title-shadow: 0 8px 34px rgba(4, 12, 34, 0.65);
+    --cta-bg: linear-gradient(135deg, #1b4fd1 0%, #2f7bff 52%, #66d4ff 100%);
+    --cta-text: #ffffff;
+  }
+
+  body[data-theme="porcelain"] {
+    --ui-bg: rgba(255, 255, 255, 0.72);
+    --ui-bg-hover: rgba(236, 244, 255, 0.92);
+    --ui-border: rgba(28, 76, 184, 0.16);
+    --ui-border-strong: rgba(28, 76, 184, 0.36);
+    --ui-text: #162238;
+    --ui-text-mid: rgba(28, 44, 74, 0.76);
+    --ui-text-muted: rgba(58, 76, 110, 0.58);
+    --ui-accent: #1c4cb8;
+    --ui-accent-deep: #0e2b78;
+    --ui-gold: #b0935c;
+    --pill-active-bg: linear-gradient(135deg, #123b9e 0%, #2463e8 100%);
+    --pill-active-text: #ffffff;
+    --pill-shadow: 0 16px 40px rgba(18, 42, 96, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    --title-shadow: 0 4px 20px rgba(255, 255, 255, 0.75);
+    --cta-bg: linear-gradient(135deg, #0e2b78 0%, #1c4cb8 56%, #3984f7 100%);
+    --cta-text: #ffffff;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #040814;
+    color: var(--ui-text);
+    font-family: var(--sans-zh);
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+    transition: background-color 0.55s var(--ease), color 0.45s var(--ease);
+  }
+
+  body[data-theme="porcelain"] {
+    background: #f5f8fe;
+  }
+
+  /* Fullscreen WebGL / Fallback Stage */
+  #stage-wrap {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    cursor: grab;
+  }
+  #stage-wrap:active {
+    cursor: grabbing;
+  }
+
+  #gl-canvas, #fallback-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  #fallback-canvas {
+    display: none;
+  }
+
+  /* Subtle top-left curator badge */
+  .curator-hud {
+    position: fixed;
+    top: 26px;
+    left: 32px;
+    z-index: 20;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .curator-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--serif-en);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--ui-accent);
+  }
+
+  .curator-dot {
+    width: 6px;
+    height: 6px;
+    transform: rotate(45deg);
+    background: currentColor;
+    box-shadow: 0 0 10px currentColor;
+  }
+
+  .curator-title {
+    font-family: var(--serif-zh);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--ui-text);
+    text-shadow: var(--title-shadow);
+  }
+
+  .curator-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--ui-text-muted);
+  }
+
+  .tech-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--ui-border);
+    background: var(--ui-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--ui-text-mid);
+  }
+
+  /* Interactive hint (top right) */
+  .interaction-hint {
+    position: fixed;
+    top: 28px;
+    right: 34px;
+    z-index: 20;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 11.5px;
+    letter-spacing: 0.1em;
+    color: var(--ui-text-muted);
+    transition: opacity 0.4s var(--ease);
+  }
+
+  .hint-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .hint-diamond {
+    width: 4px;
+    height: 4px;
+    transform: rotate(45deg);
+    background: var(--ui-accent);
+    opacity: 0.78;
+  }
+
+  /* ===== 《转生千金》 Editorial Title Overlay ===== */
+  .title-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 12;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 7.5vw 44px 7.5vw;
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 0.55s var(--ease), transform 0.65s var(--ease);
+  }
+
+  .title-overlay.is-hidden {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+
+  .folio-panel {
+    width: min(440px, 42vw);
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    pointer-events: none;
+  }
+
+  .folio-kicker {
+    font-family: var(--serif-en);
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--ui-gold);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .folio-kicker::before {
+    content: "";
+    width: 24px;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.7;
+  }
+
+  .folio-main {
+    font-family: var(--serif-zh);
+    font-size: clamp(46px, 5.2vw, 68px);
+    font-weight: 900;
+    line-height: 1.06;
+    letter-spacing: 0.16em;
+    color: var(--ui-text);
+    text-shadow: var(--title-shadow);
+    margin-top: 8px;
+  }
+
+  .folio-sub {
+    margin-top: 10px;
+    font-family: var(--serif-zh);
+    font-size: 15.5px;
+    font-weight: 500;
+    letter-spacing: 0.28em;
+    color: var(--ui-text-mid);
+  }
+
+  .folio-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, var(--ui-border-strong), transparent 88%);
+  }
+
+  .folio-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    padding-left: 2px;
+  }
+
+  .folio-item {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    color: var(--ui-text-mid);
+    font-size: 15px;
+    letter-spacing: 0.14em;
+    transition: transform 0.3s var(--ease), color 0.3s var(--ease);
+  }
+
+  .folio-item::before {
+    content: "◆";
+    font-size: 8px;
+    color: var(--ui-accent);
+    opacity: 0.65;
+    transform: translateY(-2px);
+  }
+
+  .folio-item.is-primary {
+    color: var(--ui-text);
+    font-weight: 600;
+  }
+
+  .folio-item.is-primary::before {
+    opacity: 1;
+    text-shadow: 0 0 10px var(--ui-accent);
+  }
+
+  .folio-en {
+    font-family: var(--serif-en);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ui-text-muted);
+    min-width: 96px;
+  }
+
+  .folio-cta-row {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-top: 4px;
+  }
+
+  .prism-cta-preview {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 28px;
+    background: var(--cta-bg);
+    color: var(--cta-text);
+    clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+    box-shadow: 0 14px 36px rgba(24, 92, 232, 0.36);
+    letter-spacing: 0.18em;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .prism-cta-preview .cta-en {
+    font-family: var(--serif-en);
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    opacity: 0.82;
+  }
+
+  .folio-chronicle {
+    font-family: var(--serif-en);
+    font-size: 11.5px;
+    letter-spacing: 0.16em;
+    color: var(--ui-text-muted);
+  }
+
+  /* ===== Minimal Bottom Floating Control Pill ===== */
+  .control-dock {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    z-index: 30;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 999px;
+    background: var(--ui-bg);
+    border: 1px solid var(--ui-border);
+    box-shadow: var(--pill-shadow);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    max-width: calc(100vw - 24px);
+    overflow-x: auto;
+  }
+
+  .dock-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .dock-sep {
+    width: 1px;
+    height: 20px;
+    background: var(--ui-border);
+    margin: 0 4px;
+    flex-shrink: 0;
+  }
+
+  .dock-btn {
+    appearance: none;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--ui-text-mid);
+    font-family: var(--sans-zh);
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    padding: 8px 15px;
+    border-radius: 999px;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    transition: background 0.28s var(--ease), color 0.28s var(--ease), border-color 0.28s var(--ease), transform 0.2s var(--ease), box-shadow 0.28s var(--ease);
+  }
+
+  .dock-btn:hover {
+    background: var(--ui-bg-hover);
+    color: var(--ui-text);
+  }
+
+  .dock-btn:active {
+    transform: scale(0.97);
+  }
+
+  .dock-btn.is-active {
+    background: var(--pill-active-bg);
+    color: var(--pill-active-text);
+    border-color: var(--ui-border-strong);
+    box-shadow: 0 4px 18px rgba(30, 108, 255, 0.28);
+  }
+
+  .btn-swatch {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    flex-shrink: 0;
+  }
+
+  .swatch-night {
+    background: radial-gradient(circle at 35% 35%, #67d4ff, #0b1b4a);
+  }
+
+  .swatch-porcelain {
+    background: radial-gradient(circle at 35% 35%, #ffffff, #c8dcfa);
+    border-color: rgba(28, 76, 184, 0.45);
+  }
+
+  /* Ripple feedback indicator (subtle ring on click) */
+  .click-ring {
+    position: fixed;
+    width: 18px;
+    height: 18px;
+    margin: -9px 0 0 -9px;
+    border-radius: 50%;
+    border: 1.2px solid var(--ui-accent);
+    pointer-events: none;
+    z-index: 15;
+    opacity: 0.85;
+    animation: ringExpand 0.78s var(--ease) forwards;
+  }
+
+  @keyframes ringExpand {
+    0% { transform: scale(0.4); opacity: 0.9; }
+    100% { transform: scale(6.8); opacity: 0; }
+  }
+
+  @media (max-width: 900px) {
+    .interaction-hint { display: none; }
+    .title-overlay {
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0 24px 96px 24px;
+    }
+    .folio-panel {
+      width: 100%;
+      max-width: 380px;
+      gap: 14px;
+    }
+    .folio-menu { display: none; }
+  }
+</style>
+</head>
+<body data-theme="night">
+  <div id="stage-wrap">
+    <canvas id="gl-canvas"></canvas>
+    <canvas id="fallback-canvas"></canvas>
+  </div>
+
+  <!-- Top-left curator HUD -->
+  <aside class="curator-hud" aria-label="方案标识">
+    <div class="curator-kicker">
+      <span class="curator-dot"></span>
+      <span>SCHEME C // HYPER-DIMENSIONAL OPTICS</span>
+    </div>
+    <div class="curator-title" id="mode-heading">高维折叠圣晶 · KIFS 虹彩棱镜</div>
+    <div class="curator-meta">
+      <span class="tech-chip" id="renderer-badge">WEBGL · RAYMARCHING</span>
+      <span id="fps-readout">60 FPS</span>
+    </div>
+  </aside>
+
+  <!-- Top-right subtle controls guide -->
+  <div class="interaction-hint" aria-hidden="true">
+    <span class="hint-item"><i class="hint-diamond"></i>移动光标 · 引力折射视差</span>
+    <span class="hint-item"><i class="hint-diamond"></i>点击画布 · 触发维度涟漪</span>
+    <span class="hint-item"><i class="hint-diamond"></i>拖拽 · 自由环视</span>
+  </div>
+
+  <!-- Optional 《转生千金》 Editorial Title Overlay -->
+  <section class="title-overlay" id="title-overlay" aria-label="转生千金标题叠层">
+    <div class="folio-panel">
+      <header>
+        <p class="folio-kicker">HOUSE OF VESTERIA // 银与蓝的冬日诗篇</p>
+        <h1 class="folio-main">转生千金</h1>
+        <p class="folio-sub">到了异世界就要悠闲地生活</p>
+      </header>
+      <div class="folio-divider"></div>
+      <div class="folio-menu">
+        <div class="folio-item is-primary"><span class="folio-en">NEW STORY</span><span>开始新生活</span></div>
+        <div class="folio-item"><span class="folio-en">ARENA</span><span>战术演武</span></div>
+        <div class="folio-item"><span class="folio-en">CODEX</span><span>典藏图鉴</span></div>
+        <div class="folio-item"><span class="folio-en">SETTINGS</span><span>系统设置</span></div>
+      </div>
+      <div class="folio-cta-row">
+        <div class="prism-cta-preview">
+          <span class="cta-en">BEGIN</span>
+          <span>启程新生活</span>
+        </div>
+        <span class="folio-chronicle">VOL. I – IV // 冰晶宫殿</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Minimal Bottom Pill Controls -->
+  <nav class="control-dock" aria-label="高维晶核控制栏">
+    <div class="dock-group" role="group" aria-label="着色器形态">
+      <button type="button" class="dock-btn is-active" data-mode="0">高维折叠圣晶</button>
+      <button type="button" class="dock-btn" data-mode="1">液态棱镜奇点</button>
+      <button type="button" class="dock-btn" data-mode="2">无限冰宫万花筒</button>
+    </div>
+    <span class="dock-sep" aria-hidden="true"></span>
+    <div class="dock-group" role="group" aria-label="背景切换">
+      <button type="button" class="dock-btn is-active" id="btn-theme-night" data-theme-pick="night">
+        <span class="btn-swatch swatch-night"></span>深蓝秘夜
+      </button>
+      <button type="button" class="dock-btn" id="btn-theme-porcelain" data-theme-pick="porcelain">
+        <span class="btn-swatch swatch-porcelain"></span>雪瓷画廊
+      </button>
+    </div>
+    <span class="dock-sep" aria-hidden="true"></span>
+    <button type="button" class="dock-btn is-active" id="btn-toggle-title" aria-pressed="true">标题预览</button>
+  </nav>
+
+<script>
+(() => {
+  'use strict';
+
+  const glCanvas = document.getElementById('gl-canvas');
+  const fbCanvas = document.getElementById('fallback-canvas');
+  const stageWrap = document.getElementById('stage-wrap');
+  const badgeEl = document.getElementById('renderer-badge');
+  const fpsEl = document.getElementById('fps-readout');
+  const headingEl = document.getElementById('mode-heading');
+  const titleOverlay = document.getElementById('title-overlay');
+
+  const MODE_META = [
+    '高维折叠圣晶 · KIFS 虹彩棱镜',
+    '液态棱镜奇点 · 引力折射视界',
+    '无限冰宫万花筒 · 非欧递归晶殿'
+  ];
+
+  // Interactive state
+  const state = {
+    mode: 0,
+    modeBlend0: 1.0,
+    modeBlend1: 0.0,
+    modeBlend2: 0.0,
+    themeTarget: 0.0, // 0 = Deep Sapphire Night, 1 = Light Porcelain
+    themeCurrent: 0.0,
+    showTitle: true,
+    centerShiftTarget: -0.23, // shift crystal cleanly left when title is visible
+    centerShiftCurrent: -0.23,
+    mouseX: 0.0,
+    mouseY: 0.0,
+    mouseTargetX: 0.0,
+    mouseTargetY: 0.0,
+    orbitYaw: 0.0,
+    orbitPitch: 0.0,
+    velYaw: 0.0,
+    velPitch: 0.0,
+    dragging: false,
+    dragMoved: false,
+    lastPointerX: 0,
+    lastPointerY: 0,
+    zoom: 1.0,
+    zoomTarget: 1.0,
+    pulseTime: -10.0,
+    pulseStrength: 0.0,
+    pulseOriginX: 0.0,
+    pulseOriginY: 0.0,
+    startTime: performance.now()
+  };
+
+  // =========================================================================
+  // GLSL SHADERS (GLSL ES 1.00 — compatible with WebGL2, WebGL1 & SwiftShader)
+  // =========================================================================
+  const VERT_SRC = `
+    attribute vec2 aPos;
+    varying vec2 vUv;
+    void main() {
+      vUv = aPos * 0.5 + 0.5;
+      gl_Position = vec4(aPos, 0.0, 1.0);
+    }
+  `;
+
+  const FRAG_SRC = `
+    #ifdef GL_FRAGMENT_PRECISION_HIGH
+    precision highp float;
+    #else
+    precision mediump float;
+    #endif
+
+    varying vec2 vUv;
+
+    uniform vec2 uRes;
+    uniform float uTime;
+    uniform vec3 uModeW;       // smooth weights for modes 0, 1, 2
+    uniform float uTheme;      // 0.0 = Deep Sapphire Night, 1.0 = Light Porcelain
+    uniform float uCenterX;    // horizontal offset for title overlay layout
+    uniform vec2 uMouse;       // normalized pointer [-1, 1]
+    uniform vec2 uOrbit;       // drag orbit angles
+    uniform float uZoom;
+    uniform float uPulseAge;   // seconds since last click ripple
+    uniform float uPulseAmp;   // decaying ripple intensity
+    uniform vec2 uPulsePos;    // normalized click position
+
+    const float PI = 3.14159265359;
+
+    mat2 rot2(float a) {
+      float c = cos(a), s = sin(a);
+      return mat2(c, -s, s, c);
+    }
+
+    float hash21(vec2 p) {
+      p = fract(p * vec2(123.34, 456.21));
+      p += dot(p, p + 45.32);
+      return fract(p.x * p.y);
+    }
+
+    float smin(float a, float b, float k) {
+      float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+      return mix(b, a, h) - k * h * (1.0 - h);
+    }
+
+    float smax(float a, float b, float k) {
+      return -smin(-a, -b, k);
+    }
+
+    float sdOctahedron(vec3 p, float s) {
+      p = abs(p);
+      float m = p.x + p.y + p.z - s;
+      vec3 q;
+      if (3.0 * p.x < m) q = p.xyz;
+      else if (3.0 * p.y < m) q = p.yzx;
+      else if (3.0 * p.z < m) q = p.zxy;
+      else return m * 0.57735027;
+      float k = clamp(0.5 * (q.z - q.y + s), 0.0, s);
+      return length(vec3(q.x, q.y - s + k, q.z - k));
+    }
+
+    float sdTorus(vec3 p, vec2 t) {
+      vec2 q = vec2(length(p.xz) - t.x, p.y);
+      return length(q) - t.y;
+    }
+
+    float sdHexPrism(vec3 p, vec2 h) {
+      const vec3 k = vec3(-0.8660254, 0.5, 0.57735);
+      p = abs(p);
+      p.xy -= 2.0 * min(dot(k.xy, p.xy), 0.0) * k.xy;
+      vec2 d = vec2(
+        length(p.xy - vec2(clamp(p.x, -k.z * h.x, k.z * h.x), h.x)) * sign(p.y - h.x),
+        p.z - h.y
+      );
+      return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
+    }
+
+    // Thin-film spectral iridescence (icy sapphire -> cyan -> pearl violet -> champagne gold)
+    vec3 iridescence(float cosTheta, float shift) {
+      vec3 phase = vec3(0.0, 0.31, 0.64);
+      vec3 col = 0.56 + 0.44 * cos(6.28318 * (cosTheta * 1.45 + shift + phase));
+      // Bias slightly toward aristocratic sapphire / ice / pearl champagne
+      return mix(col, vec3(0.52, 0.86, 1.0), 0.24);
+    }
+
+    // =========================================================================
+    // MODE 0: High-Dimensional Folded Sacred Crystal (KIFS Octa-Icosahedral)
+    // =========================================================================
+    float sdfFoldedCrystal(vec3 p, float t, float ripple) {
+      // Gentle noble levitation & sacred elongated proportions
+      vec3 q = p;
+      q.xz *= rot2(t * 0.24);
+      q.xy *= rot2(sin(t * 0.35) * 0.14);
+
+      // Primary diamond reliquary silhouette
+      vec3 eq = q;
+      eq.y *= 0.72;
+      float outerGem = sdOctahedron(eq, 1.24);
+
+      // KIFS 4D-inspired Kaleidoscopic Polyhedral Folding
+      vec3 k = q;
+      k.y *= 0.76;
+      float scale = 1.0;
+      float foldAng = 0.42 + 0.18 * sin(t * 0.55) + ripple * 0.65;
+      float foldAng2 = 0.28 + 0.14 * cos(t * 0.41) - ripple * 0.42;
+      vec3 icoN = normalize(vec3(0.809017, 0.5, 0.309017));
+
+      for (int i = 0; i < 4; i++) {
+        k = abs(k);
+        // Octahedral sorting mirrors (48-fold symmetry)
+        if (k.x < k.y) k.xy = k.yx;
+        if (k.x < k.z) k.xz = k.zx;
+        if (k.y < k.z) k.yz = k.zy;
+
+        // Icosahedral mirror fold
+        k -= 2.0 * min(0.0, dot(k, icoN)) * icoN;
+
+        // Non-Euclidean 4D-slice rotation between fold scales
+        k.xz *= rot2(foldAng);
+        k.xy *= rot2(foldAng2);
+
+        float s = 1.48;
+        k = k * s - vec3(0.55, 0.39, 0.27) * (s - 1.0);
+        scale *= s;
+      }
+
+      float kifs = (sdOctahedron(k, 0.94) - 0.04) / scale;
+      // Carve crisp faceted high-dimensional core inside an elegant cut-crystal bound
+      float core = smax(kifs, outerGem - 0.10, 0.07);
+      core = smin(core, sdOctahedron(eq, 0.72), 0.11);
+
+      // Orbiting 4D satellite prism shards (6-fold symmetry)
+      vec3 sp = p;
+      sp.xz *= rot2(-t * 0.32);
+      sp.yz *= rot2(0.32 + sin(t * 0.4) * 0.12);
+      float ang = atan(sp.z, sp.x);
+      float seg = PI / 3.0;
+      float id = floor((ang + seg * 0.5) / seg);
+      float a = mod(ang + seg * 0.5, seg) - seg * 0.5;
+      float rad = length(sp.xz);
+      vec3 sr = vec3(cos(a) * rad, sp.y, sin(a) * rad);
+      sr.x -= 1.44 + 0.10 * sin(t * 1.4 + id * 2.1) + ripple * 0.28;
+      sr.y -= 0.24 * sin(t * 0.9 + id * 1.7);
+      sr.xy *= rot2(t * 0.7 + id);
+      sr.xz *= rot2(t * 0.5 - id);
+      sr.y *= 0.55;
+      float shards = sdOctahedron(sr, 0.19);
+
+      return min(core, shards);
+    }
+
+    // =========================================================================
+    // MODE 1: Liquid Prism Singularity (Gravitational Faceted Hyper-Core)
+    // =========================================================================
+    float sdfLiquidSingularity(vec3 p, float t, float ripple) {
+      vec3 q = p;
+      q.xz *= rot2(t * 0.34);
+      q.yz *= rot2(t * 0.21);
+
+      // Twisted harmonic liquid-crystal displacement
+      float r = length(q);
+      vec3 dir = q / max(r, 0.0001);
+      // Faceted crystalline quantization on sphere harmonics
+      float harm = sin(dir.x * 7.0 + t * 1.4) * cos(dir.y * 7.0 - t * 1.1) * sin(dir.z * 7.0 + t * 0.9);
+      float facetWave = floor(harm * 5.0 + 0.5) / 5.0;
+      float liquidWave = mix(harm, facetWave, 0.52);
+
+      // Central hyper-diamond singularity core
+      vec3 c1 = q;
+      c1.xy *= rot2(t * 0.5 + ripple * 1.2);
+      float dCore = sdOctahedron(c1, 0.96 + 0.14 * liquidWave + ripple * 0.22);
+
+      // Interlocking Möbius / twisted crystal toroids
+      vec3 t1 = p;
+      t1.xz *= rot2(t * 0.42);
+      t1.xy *= rot2(0.68 + sin(t * 0.5) * 0.2);
+      float twist = atan(t1.z, t1.x) * 2.0 + t * 1.3;
+      vec2 ringQ = vec2(length(t1.xz) - (1.12 + 0.08 * sin(twist)), t1.y);
+      ringQ *= rot2(twist * 0.5);
+      // Diamond cross-section torus
+      float dRing1 = (abs(ringQ.x) + abs(ringQ.y)) * 0.7071 - (0.14 + 0.03 * cos(twist * 2.0));
+
+      vec3 t2 = p;
+      t2.xz *= rot2(-t * 0.36);
+      t2.yz *= rot2(-0.82 + cos(t * 0.45) * 0.2);
+      float twist2 = atan(t2.z, t2.x) * 3.0 - t * 1.1;
+      vec2 ringQ2 = vec2(length(t2.xz) - (1.28 + 0.06 * cos(twist2)), t2.y);
+      ringQ2 *= rot2(twist2 * 0.5);
+      float dRing2 = (abs(ringQ2.x) + abs(ringQ2.y)) * 0.7071 - 0.10;
+
+      float merged = smin(dCore, dRing1, 0.24);
+      merged = smin(merged, dRing2, 0.18);
+
+      // Carve subtle singularity facets into the merged body
+      float gyroid = dot(sin(q * 5.2 + t * 0.8), cos(q.yzx * 5.2 - t * 0.6)) * 0.055;
+      return merged + gyroid;
+    }
+
+    // =========================================================================
+    // MODE 2: Infinity-Mirror Ice Palace Kaleidoscope (Monolith Portal Gem)
+    // =========================================================================
+    float sdfInfinityPalace(vec3 p, float t, float ripple) {
+      vec3 q = p;
+      q.xz *= rot2(t * 0.20 + ripple * 0.4);
+      q.xy *= rot2(sin(t * 0.30) * 0.08);
+
+      // Regal 12-faceted elongated Ice Palace monolith crystal
+      vec3 m = q;
+      // Rotate into vertical hex-prism + bipyramid bevel cut
+      vec3 hp = vec3(m.x, m.z, m.y);
+      float hexBody = sdHexPrism(hp, vec2(0.84 + ripple * 0.08, 1.38));
+
+      // Sharp diamond crown taper at top & bottom
+      vec3 taperP = m;
+      taperP.y *= 0.62;
+      float crown = sdOctahedron(taperP, 1.34 + ripple * 0.12);
+      // Secondary rotated octahedron for 16-facet luxury emerald-diamond cut
+      vec3 taper2 = m;
+      taper2.xz *= rot2(PI * 0.25);
+      taper2.y *= 0.64;
+      float crown2 = sdOctahedron(taper2, 1.36 + ripple * 0.12);
+
+      float monolith = smax(hexBody, max(crown, crown2), 0.05);
+
+      // Floating crown spires (top & bottom symmetrical palace finials)
+      vec3 sp = q;
+      sp.y = abs(sp.y) - (1.56 + 0.08 * sin(t * 1.4) + ripple * 0.25);
+      sp.xz *= rot2(t * 0.6);
+      sp.y *= 0.48;
+      float finial = sdOctahedron(sp, 0.20);
+
+      // Delicate halo diamond prisms (4 cardinal palace guardians)
+      vec3 g = q;
+      g.xz *= rot2(-t * 0.28);
+      g.xz = abs(g.xz);
+      if (g.x < g.z) g.xz = g.zx;
+      g.x -= 1.34 + 0.06 * cos(t * 1.2) + ripple * 0.20;
+      g.y *= 0.42;
+      float guards = sdOctahedron(g, 0.17);
+
+      return min(monolith, min(finial, guards));
+    }
+
+    // Unified crystal SDF with smooth morphing between all 3 modes
+    float mapCrystal(vec3 p, float t, float ripple) {
+      if (uModeW.x > 0.995) return sdfFoldedCrystal(p, t, ripple);
+      if (uModeW.y > 0.995) return sdfLiquidSingularity(p, t, ripple);
+      if (uModeW.z > 0.995) return sdfInfinityPalace(p, t, ripple);
+      float d0 = (uModeW.x > 0.002) ? sdfFoldedCrystal(p, t, ripple) : 0.0;
+      float d1 = (uModeW.y > 0.002) ? sdfLiquidSingularity(p, t, ripple) : 0.0;
+      float d2 = (uModeW.z > 0.002) ? sdfInfinityPalace(p, t, ripple) : 0.0;
+      return d0 * uModeW.x + d1 * uModeW.y + d2 * uModeW.z;
+    }
+
+    // Thin celestial astrolabe light rings (volumetric glow only, non-occluding)
+    float mapAstrolabe(vec3 p, float t) {
+      vec3 r1 = p;
+      r1.xz *= rot2(t * 0.18);
+      r1.xy *= rot2(0.54);
+      r1.yz *= rot2(0.32);
+      float d1 = sdTorus(r1, vec2(1.82, 0.0055));
+
+      vec3 r2 = p;
+      r2.xz *= rot2(-t * 0.14);
+      r2.xy *= rot2(-0.76);
+      r2.yz *= rot2(0.58);
+      float d2 = sdTorus(r2, vec2(2.12, 0.0045));
+
+      return min(d1, d2);
+    }
+
+    // Computes normal AND free tetrahedral Laplacian ridge curvature in 4 SDF evals
+    vec4 calcNormalAndRidge(vec3 p, float t, float ripple) {
+      const vec2 e = vec2(0.0045, -0.0045);
+      float d1 = mapCrystal(p + e.xyy, t, ripple);
+      float d2 = mapCrystal(p + e.yyx, t, ripple);
+      float d3 = mapCrystal(p + e.yxy, t, ripple);
+      float d4 = mapCrystal(p + e.xxx, t, ripple);
+      vec3 n = normalize(e.xyy * d1 + e.yyx * d2 + e.yxy * d3 + e.xxx * d4);
+      // Sharp convex/concave crystal edge creates strong tetrahedral Laplacian
+      float lap = abs(d1 + d2 + d3 + d4) / 0.009;
+      float ridge = smoothstep(0.18, 0.95, lap);
+      return vec4(n, ridge);
+    }
+
+    // =========================================================================
+    // PROCEDURAL STUDIO / CATHEDRAL HDRI ENVIRONMENT (Night + Porcelain)
+    // =========================================================================
+    vec3 sampleEnvironment(vec3 dir, float t, float theme) {
+      dir = normalize(dir);
+      float y = dir.y;
+
+      // --- Deep Sapphire Night Environment ---
+      vec3 nightSky = mix(vec3(0.015, 0.032, 0.095), vec3(0.045, 0.11, 0.28), smoothstep(-0.6, 0.7, y));
+      // Flowing icy-cyan / violet aurora curtain in reflections
+      float aurWave = sin(dir.x * 4.5 + t * 0.45 + sin(dir.z * 3.0 - t * 0.3));
+      float aurBand = exp(-pow(y - 0.18 - aurWave * 0.16, 2.0) * 16.0);
+      vec3 aurCol = mix(vec3(0.18, 0.82, 1.0), vec3(0.56, 0.42, 1.0), 0.5 + 0.5 * sin(dir.x * 3.0 - t * 0.4));
+      nightSky += aurCol * aurBand * 0.95;
+
+      // Crisp studio softbox windows for realistic diamond facet catches
+      float win1 = smoothstep(0.86, 0.98, dot(dir, normalize(vec3(0.58, 0.66, 0.48))));
+      float win2 = smoothstep(0.84, 0.97, dot(dir, normalize(vec3(-0.74, 0.34, 0.58))));
+      float win3 = smoothstep(0.88, 0.99, dot(dir, normalize(vec3(0.15, -0.78, 0.60))));
+      nightSky += vec3(1.45, 1.65, 2.10) * win1;
+      nightSky += vec3(0.55, 1.25, 1.95) * win2;
+      nightSky += vec3(0.95, 0.82, 0.58) * win3 * 0.75; // champagne gold bounce
+
+      // --- Light Porcelain Gallery Environment (《转生千金》 Snow Porcelain) ---
+      vec3 porcSky = mix(vec3(0.86, 0.91, 0.98), vec3(0.99, 0.995, 1.0), smoothstep(-0.5, 0.6, y));
+      // Deep cobalt architectural ribs so glass reflections show rich jewel contrast on white!
+      float rib = smoothstep(0.65, 0.95, abs(sin(atan(dir.z, dir.x) * 4.0 + y * 2.5)));
+      porcSky = mix(porcSky, vec3(0.10, 0.28, 0.72), rib * 0.34 * (1.0 - abs(y)));
+      float cobaltRim = exp(-pow(y + 0.22, 2.0) * 12.0);
+      porcSky = mix(porcSky, vec3(0.12, 0.34, 0.82), cobaltRim * 0.45);
+      // Bright sunlit gallery windows + champagne gold accent
+      porcSky += vec3(1.5, 1.65, 1.95) * win1 * 0.9;
+      porcSky += vec3(0.35, 0.72, 1.35) * win2 * 0.85;
+      porcSky += vec3(1.15, 0.96, 0.68) * win3 * 0.65;
+
+      return mix(nightSky, porcSky, theme);
+    }
+
+    // =========================================================================
+    // INTERNAL INFINITY-MIRROR CRYSTAL LATTICE (Single-Pass RGB Dispersed March)
+    // =========================================================================
+    vec3 traceInfinityInterior(vec3 entryP, vec3 refrR, vec3 refrG, vec3 refrB, float t, float ripple, float theme) {
+      vec3 acc = vec3(0.0);
+      float dist = 0.08;
+      float modePalace = uModeW.z;
+      float modeSing = uModeW.y;
+
+      float cellScale = mix(1.85, 2.65, modePalace);
+      float stepSize = mix(0.15, 0.17, modePalace);
+      vec3 dispDelta = (refrB - refrR) * 0.55;
+
+      for (int i = 0; i < 14; i++) {
+        float fi = float(i) / 14.0;
+        vec3 p = entryP + refrG * dist;
+
+        // Perspective dive deeper into non-Euclidean infinite hall
+        float depthZoom = 1.0 + fi * mix(1.5, 3.4, modePalace);
+        vec3 q = p * depthZoom;
+        q.xz *= rot2(t * 0.28 + fi * (0.95 + ripple * 1.4));
+        q.xy *= rot2(t * 0.19 - fi * 0.55);
+
+        // Domain-repeated infinite crystalline lattice (mirrors extending to infinity)
+        vec3 cell = mod(q * cellScale + 0.5, 1.0) - 0.5;
+        vec3 a = abs(cell);
+
+        // RGB chromatic split across interior lattice beams
+        vec3 cellR = mod((q - dispDelta * dist * 1.6) * cellScale + 0.5, 1.0) - 0.5;
+        vec3 cellB = mod((q + dispDelta * dist * 1.6) * cellScale + 0.5, 1.0) - 0.5;
+        float latG = min(length(a.yz), min(length(a.xz), length(a.xy)));
+        float latR = min(length(abs(cellR).yz), min(length(abs(cellR).xz), length(abs(cellR).xy)));
+        float latB = min(length(abs(cellB).yz), min(length(abs(cellB).xz), length(abs(cellB).xy)));
+
+        float wireSharp = mix(20.0, 26.0, modePalace);
+        vec3 glowWire = vec3(
+          exp(-latR * wireSharp),
+          exp(-latG * wireSharp),
+          exp(-latB * wireSharp)
+        );
+
+        float node = sdOctahedron(cell, 0.17 + 0.04 * sin(t * 1.8 + fi * 8.0));
+        float glowNode = exp(-max(node, 0.0) * 16.0);
+
+        // Central singularity star core (especially radiant in Mode 1)
+        float coreStar = exp(-length(p) * mix(2.7, 4.2, modeSing));
+
+        // Spectral color shifts with infinity-mirror depth
+        vec3 depthTint = mix(
+          vec3(0.20, 0.72, 1.0),
+          vec3(0.62, 0.38, 1.0),
+          0.5 + 0.5 * sin(fi * 5.5 - t * 1.1)
+        );
+        vec3 goldFiligree = vec3(1.0, 0.87, 0.58);
+        vec3 sampleCol = depthTint * glowWire * 0.58
+                       + mix(vec3(0.76, 0.96, 1.0), goldFiligree, 0.42 * modePalace) * glowNode * 0.64
+                       + mix(vec3(0.45, 0.90, 1.0), vec3(1.0, 0.94, 0.80), modeSing) * coreStar * (0.34 + 0.52 * modeSing);
+
+        float atten = exp(-fi * mix(2.1, 1.45, modePalace));
+        acc += sampleCol * atten;
+        dist += stepSize;
+      }
+
+      // In Light Porcelain mode, tint internal glow toward jewel-rich cobalt & cyan-gold
+      vec3 porcRich = mix(acc, acc * vec3(0.34, 0.64, 1.28) + vec3(0.03, 0.09, 0.28) * length(acc), 0.54);
+      return mix(acc, porcRich, theme);
+    }
+
+    // =========================================================================
+    // BACKGROUND CANVAS & VOLUMETRIC AURORA GOD-RAYS
+    // =========================================================================
+    vec3 renderBackdrop(vec2 uv, vec2 crystalUv, float t, float theme, float ripple) {
+      vec2 rel = uv - crystalUv;
+      float r = length(rel);
+      float ang = atan(rel.y, rel.x);
+
+      // Volumetric aurora god-rays radiating subtly from behind the crystal
+      float ray1 = pow(0.5 + 0.5 * sin(ang * 7.0 + t * 0.25 + sin(ang * 3.0 - t * 0.2)), 3.0);
+      float ray2 = pow(0.5 + 0.5 * sin(ang * 13.0 - t * 0.34), 4.0);
+      float rays = (ray1 * 0.65 + ray2 * 0.35) * exp(-r * 1.95) * smoothstep(0.04, 0.32, r);
+
+      // --- Deep Sapphire Night Backdrop ---
+      vec3 nightBg = mix(vec3(0.012, 0.024, 0.068), vec3(0.038, 0.088, 0.22), exp(-r * 1.15));
+      nightBg += vec3(0.10, 0.36, 0.85) * exp(-r * 2.6) * 0.58;
+      nightBg += vec3(0.28, 0.80, 1.00) * rays * 0.42;
+      float ribbon = exp(-pow(uv.y - 0.14 - 0.18 * sin(uv.x * 2.4 + t * 0.22), 2.0) * 14.0);
+      nightBg += mix(vec3(0.08, 0.45, 0.88), vec3(0.42, 0.24, 0.85), 0.5 + 0.5 * uv.x) * ribbon * 0.16;
+
+      // Subtle floating crystal stardust
+      vec2 starGrid = uv * 18.0 + vec2(t * 0.06, -t * 0.09);
+      vec2 cellId = floor(starGrid);
+      vec2 cellUv = fract(starGrid) - 0.5;
+      float rnd = hash21(cellId);
+      if (rnd > 0.88) {
+        vec2 off = (vec2(hash21(cellId + 7.1), hash21(cellId + 19.3)) - 0.5) * 0.55;
+        float dStar = length(cellUv - off);
+        float twinkle = 0.5 + 0.5 * sin(t * 2.4 + rnd * 40.0);
+        float spark = smoothstep(0.08, 0.0, dStar) * twinkle;
+        nightBg += vec3(0.68, 0.90, 1.0) * spark * 0.55;
+      }
+
+      // --- Light Porcelain Gallery Backdrop (《转生千金》 #FAFBFD -> #E8F0FC) ---
+      vec3 porcBg = mix(vec3(0.925, 0.952, 0.992), vec3(0.996, 0.998, 1.0), exp(-r * 1.05));
+      porcBg -= vec3(0.06, 0.025, 0.0) * exp(-r * 2.4) * 0.55;
+      vec3 prismRayCol = mix(vec3(0.70, 0.86, 1.0), vec3(0.98, 0.93, 0.84), 0.5 + 0.5 * sin(ang * 3.0 + t * 0.3));
+      porcBg = mix(porcBg, prismRayCol, rays * 0.28);
+
+      if (rnd > 0.91) {
+        vec2 off2 = (vec2(hash21(cellId + 7.1), hash21(cellId + 19.3)) - 0.5) * 0.55;
+        float dMote = length(cellUv - off2);
+        float tw = 0.45 + 0.55 * sin(t * 2.0 + rnd * 32.0);
+        porcBg = mix(porcBg, vec3(0.18, 0.45, 0.88), smoothstep(0.065, 0.0, dMote) * tw * 0.32);
+      }
+
+      vec3 bg = mix(nightBg, porcBg, theme);
+
+      // Dimensional click shockwave ring across background air
+      if (uPulseAmp > 0.005) {
+        float waveR = uPulseAge * 1.15;
+        float ring = exp(-pow((length(uv - uPulsePos) - waveR) * 18.0, 2.0)) * uPulseAmp;
+        vec3 ringCol = mix(vec3(0.45, 0.88, 1.0), vec3(0.14, 0.40, 0.95), theme);
+        bg += ringCol * ring * mix(0.65, 0.32, theme);
+      }
+
+      return bg;
+    }
+
+    vec3 acesToneMap(vec3 x) {
+      const float a = 2.51;
+      const float b = 0.03;
+      const float c = 2.43;
+      const float d = 0.59;
+      const float e = 0.14;
+      return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+    }
+
+    void main() {
+      vec2 fragCoord = gl_FragCoord.xy;
+      vec2 uv = (fragCoord - 0.5 * uRes) / uRes.y;
+      float aspect = uRes.x / uRes.y;
+
+      vec2 crystalAnchor = vec2(uCenterX * aspect, 0.02);
+      vec2 pUv = uv - crystalAnchor;
+
+      float ripple = uPulseAmp * sin(uPulseAge * 9.5) * exp(-uPulseAge * 1.6);
+      float rippleEnv = uPulseAmp * exp(-uPulseAge * 1.2);
+
+      // Subtle gravitational lens warp toward cursor
+      vec2 mouseRel = (uMouse * vec2(aspect * 0.5, 0.5)) - crystalAnchor;
+      float cursorDist = length(pUv - mouseRel);
+      vec2 lensWarp = (pUv - mouseRel) * (0.018 / (cursorDist * cursorDist + 0.24));
+      vec2 rayUv = pUv - lensWarp * (0.45 + 0.75 * uModeW.y);
+
+      float camDist = 4.35 / clamp(uZoom, 0.72, 1.45);
+      vec3 ro = vec3(0.0, 0.05, camDist);
+      vec3 rd = normalize(vec3(rayUv, -1.68));
+
+      float yaw = uOrbit.x + uMouse.x * 0.34;
+      float pitch = clamp(uOrbit.y - uMouse.y * 0.24, -0.85, 0.85);
+
+      ro.yz *= rot2(pitch);
+      rd.yz *= rot2(pitch);
+      ro.xz *= rot2(yaw);
+      rd.xz *= rot2(yaw);
+
+      vec3 bgCol = renderBackdrop(uv, crystalAnchor, uTime, uTheme, rippleEnv);
+
+      // =====================================================================
+      // PRIMARY RAYMARCH + VOLUMETRIC ASTROLABE / GLOW ACCUMULATION
+      // =====================================================================
+      float tMarch = 0.0;
+      float hit = 0.0;
+      vec3 hitPos = vec3(0.0);
+      float ringGlow = 0.0;
+      float haloGlow = 0.0;
+
+      // Bounding sphere fast-forward (r = 2.40)
+      float b = dot(ro, rd);
+      float c = dot(ro, ro) - 2.40 * 2.40;
+      float disc = b * b - c;
+
+      if (disc > 0.0) {
+        float tStart = max(0.0, -b - sqrt(disc));
+        float tEnd = min(8.0, -b + sqrt(disc));
+        tMarch = tStart;
+
+        for (int i = 0; i < 52; i++) {
+          vec3 p = ro + rd * tMarch;
+          float pr = length(p);
+
+          if (uModeW.y > 0.05) {
+            vec3 pull = -p / max(pr * pr * pr + 0.45, 0.45);
+            rd = normalize(rd + pull * 0.0085 * uModeW.y);
+          }
+
+          float dCrys = mapCrystal(p, uTime, ripple);
+          if (abs(pr - 1.97) < 0.36) {
+            float dRing = mapAstrolabe(p, uTime);
+            ringGlow += 0.0017 / (abs(dRing) + 0.011);
+          }
+          haloGlow += 0.0044 / (abs(dCrys) + 0.16);
+
+          if (dCrys < 0.0022) {
+            hit = 1.0;
+            hitPos = p;
+            break;
+          }
+
+          tMarch += max(dCrys * 0.90, 0.016);
+          if (tMarch > tEnd) break;
+        }
+      }
+
+      vec3 col = bgCol;
+
+      vec3 auraColNight = mix(vec3(0.14, 0.56, 1.0), vec3(0.62, 0.90, 1.0), 0.4);
+      vec3 ringColNight = mix(vec3(0.55, 0.88, 1.0), vec3(0.95, 0.84, 0.62), 0.35);
+      vec3 ringColPorc = mix(vec3(0.14, 0.36, 0.82), vec3(0.76, 0.62, 0.34), 0.45);
+
+      float auraStrength = clamp(haloGlow * 0.16, 0.0, 0.95);
+      float ringStrength = clamp(ringGlow * 0.26, 0.0, 1.0);
+
+      col = mix(
+        col + auraColNight * auraStrength * 0.44 + ringColNight * ringStrength * 0.74,
+        mix(col, vec3(0.84, 0.92, 1.0), auraStrength * 0.26) - vec3(0.05, 0.02, 0.0) * auraStrength + (ringColPorc - col) * ringStrength * 0.48,
+        uTheme
+      );
+
+      // =====================================================================
+      // PHYSICAL-FEEL OPTICAL CRYSTAL SHADING
+      // =====================================================================
+      if (hit > 0.5) {
+        vec4 nr = calcNormalAndRidge(hitPos, uTime, ripple);
+        vec3 n = nr.xyz;
+        float ridge = nr.w;
+        vec3 v = -rd;
+        float ndv = clamp(dot(n, v), 0.0, 1.0);
+
+        // Schlick Fresnel (diamond-sapphire IOR ~ 1.55)
+        float fresnel = 0.08 + 0.92 * pow(1.0 - ndv, 3.6);
+
+        // Thin-film iridescence along grazing angles & facet ridges
+        vec3 irid = iridescence(ndv, uTime * 0.08 + dot(hitPos, vec3(0.22, 0.35, 0.18)) + rippleEnv * 0.35);
+
+        // Reflection environment sample
+        vec3 reflDir = reflect(rd, n);
+        vec3 reflCol = sampleEnvironment(reflDir, uTime, uTheme);
+
+        // 3-Channel RGB Chromatic Dispersion Refraction
+        float dispBoost = 0.04 + 0.06 * rippleEnv + 0.03 * clamp(1.0 - cursorDist, 0.0, 1.0);
+        vec3 refrR = refract(rd, n, 1.0 / (1.40 - dispBoost));
+        vec3 refrG = refract(rd, n, 1.0 / 1.52);
+        vec3 refrB = refract(rd, n, 1.0 / (1.66 + dispBoost));
+        if (length(refrR) < 0.01) refrR = reflDir;
+        if (length(refrG) < 0.01) refrG = reflDir;
+        if (length(refrB) < 0.01) refrB = reflDir;
+
+        // Sample refracted environment per RGB channel for true chromatic prism edge split
+        vec3 bgRefr;
+        bgRefr.r = sampleEnvironment(refrR, uTime, uTheme).r;
+        bgRefr.g = sampleEnvironment(refrG, uTime, uTheme).g;
+        bgRefr.b = sampleEnvironment(refrB, uTime, uTheme).b;
+
+        // Single-pass RGB-dispersed Internal Infinity-Mirror Crystal Lattice
+        vec3 innerLattice = traceInfinityInterior(hitPos - n * 0.02, refrR, refrG, refrB, uTime, ripple, uTheme);
+
+        // Optical thickness approximation & Beer-Lambert sapphire absorption
+        float thickness = clamp(1.18 - ndv * 0.62 + 0.25 * length(hitPos), 0.2, 1.8);
+        vec3 absorbNight = exp(-thickness * vec3(1.15, 0.42, 0.10));
+        vec3 absorbPorc  = exp(-thickness * vec3(2.25, 1.15, 0.24));
+        vec3 absorption = mix(absorbNight, absorbPorc, uTheme);
+
+        vec3 transmitted = bgRefr * absorption * mix(0.75, 0.92, uTheme) + innerLattice * mix(0.98, 0.76, uTheme);
+
+        // Crisp multi-point studio specular highlights
+        vec3 l1 = normalize(vec3(0.55, 0.75, 0.65));
+        vec3 l2 = normalize(vec3(-0.72, 0.28, 0.52));
+        vec3 l3 = normalize(vec3(0.18, -0.82, 0.48));
+        float spec1 = pow(max(dot(n, normalize(l1 + v)), 0.0), 96.0);
+        float spec2 = pow(max(dot(n, normalize(l2 + v)), 0.0), 48.0);
+        float spec3 = pow(max(dot(n, normalize(l3 + v)), 0.0), 36.0);
+
+        vec3 specCol = vec3(1.5, 1.7, 2.0) * spec1
+                     + vec3(0.45, 0.92, 1.45) * spec2 * 0.85
+                     + vec3(1.15, 0.95, 0.64) * spec3 * 0.65;
+
+        // Diamond facet ridge fire (spectral dispersion along sharp cut edges)
+        vec3 edgeFire = mix(irid, vec3(0.94, 0.99, 1.0), 0.35) * ridge * mix(1.05, 0.85, uTheme);
+
+        vec3 surface = mix(transmitted, reflCol * mix(vec3(0.92, 0.98, 1.12), vec3(0.84, 0.92, 1.08), uTheme), fresnel * 0.76);
+        surface += irid * fresnel * mix(0.55, 0.38, uTheme);
+        surface += specCol;
+        surface += edgeFire;
+
+        // Subtle dark-sapphire contact rim on Light Porcelain so silhouette reads razor-crisp
+        float porcelRim = pow(1.0 - ndv, 1.8) * (1.0 - fresnel * 0.6);
+        surface = mix(surface, surface * vec3(0.42, 0.62, 1.05), uTheme * porcelRim * 0.55);
+
+        // Click dimensional ripple luminance surge across facets
+        float facetPulse = uPulseAmp * exp(-uPulseAge * 2.2) * (0.5 + 0.5 * sin(length(hitPos) * 8.0 - uPulseAge * 14.0));
+        surface += irid * facetPulse * 0.88;
+
+        col = surface;
+      }
+
+      // Subtle vignette & filmic finish
+      float vig = 1.0 - dot(uv * vec2(0.55, 0.72), uv * vec2(0.55, 0.72)) * mix(0.42, 0.14, uTheme);
+      col *= clamp(vig, 0.58, 1.06);
+
+      vec3 mappedNight = acesToneMap(col * 1.08);
+      vec3 mappedPorc  = mix(col, acesToneMap(col * 1.18), 0.52);
+      vec3 finalCol = mix(mappedNight, mappedPorc, uTheme);
+
+      finalCol = pow(clamp(finalCol, 0.0, 1.0), vec3(mix(0.94, 0.98, uTheme)));
+
+      gl_FragColor = vec4(finalCol, 1.0);
+    }
+  `;
+
+  // =========================================================================
+  // WEBGL ENGINE INITIALIZATION (WebGL2 -> WebGL1 -> Canvas2D Fallback)
+  // =========================================================================
+  let gl = null;
+  let glModeLabel = 'CANVAS2D · FALLBACK';
+  let program = null;
+  let uniforms = {};
+  let useWebGL = false;
+  let isSoftwareGL = false;
+
+  function compileShader(glCtx, type, src) {
+    const sh = glCtx.createShader(type);
+    glCtx.shaderSource(sh, src);
+    glCtx.compileShader(sh);
+    if (!glCtx.getShaderParameter(sh, glCtx.COMPILE_STATUS)) {
+      const log = glCtx.getShaderInfoLog(sh);
+      glCtx.deleteShader(sh);
+      throw new Error('Shader compile failed: ' + log);
+    }
+    return sh;
+  }
+
+  function initWebGL() {
+    const opts = {
+      alpha: false,
+      antialias: false,
+      depth: false,
+      stencil: false,
+      powerPreference: 'high-performance',
+      preserveDrawingBuffer: false
+    };
+
+    gl = glCanvas.getContext('webgl2', opts);
+    if (gl) {
+      glModeLabel = 'WEBGL2 · RAYMARCHED SDF';
+    } else {
+      gl = glCanvas.getContext('webgl', opts) || glCanvas.getContext('experimental-webgl', opts);
+      if (gl) glModeLabel = 'WEBGL1 · RAYMARCHED SDF';
+    }
+    if (!gl) return false;
+
+    try {
+      const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+      if (dbg) {
+        const rend = String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '');
+        if (/swiftshader|llvmpipe|software/i.test(rend)) isSoftwareGL = true;
+      }
+
+      const vs = compileShader(gl, gl.VERTEX_SHADER, VERT_SRC);
+      const fs = compileShader(gl, gl.FRAGMENT_SHADER, FRAG_SRC);
+      program = gl.createProgram();
+      gl.attachShader(program, vs);
+      gl.attachShader(program, fs);
+      gl.linkProgram(program);
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        throw new Error('Program link failed: ' + gl.getProgramInfoLog(program));
+      }
+      gl.useProgram(program);
+
+      const buf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+      const loc = gl.getAttribLocation(program, 'aPos');
+      gl.enableVertexAttribArray(loc);
+      gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+      uniforms = {
+        uRes: gl.getUniformLocation(program, 'uRes'),
+        uTime: gl.getUniformLocation(program, 'uTime'),
+        uModeW: gl.getUniformLocation(program, 'uModeW'),
+        uTheme: gl.getUniformLocation(program, 'uTheme'),
+        uCenterX: gl.getUniformLocation(program, 'uCenterX'),
+        uMouse: gl.getUniformLocation(program, 'uMouse'),
+        uOrbit: gl.getUniformLocation(program, 'uOrbit'),
+        uZoom: gl.getUniformLocation(program, 'uZoom'),
+        uPulseAge: gl.getUniformLocation(program, 'uPulseAge'),
+        uPulseAmp: gl.getUniformLocation(program, 'uPulseAmp'),
+        uPulsePos: gl.getUniformLocation(program, 'uPulsePos')
+      };
+      return true;
+    } catch (err) {
+      console.error('[Crystal Scheme C] WebGL fallback triggered:', err);
+      return false;
+    }
+  }
+
+  useWebGL = initWebGL();
+  badgeEl.textContent = glModeLabel;
+
+  let fbCtx = null;
+  if (!useWebGL) {
+    glCanvas.style.display = 'none';
+    fbCanvas.style.display = 'block';
+    fbCtx = fbCanvas.getContext('2d');
+  }
+
+  // Adaptive resolution: sharp native/1.5x on GPU, balanced 0.65x on CPU SwiftShader
+  let renderScale = isSoftwareGL ? 0.65 : Math.min(window.devicePixelRatio || 1, 1.5);
+  function resize() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const rw = Math.max(1, Math.floor(w * renderScale));
+    const rh = Math.max(1, Math.floor(h * renderScale));
+    if (useWebGL) {
+      glCanvas.width = rw;
+      glCanvas.height = rh;
+      gl.viewport(0, 0, rw, rh);
+    } else {
+      fbCanvas.width = rw;
+      fbCanvas.height = rh;
+    }
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // =========================================================================
+  // GRACEFUL CANVAS2D FALLBACK (If WebGL is disabled in browser)
+  // =========================================================================
+  function drawFallback2D(t) {
+    if (!fbCtx) return;
+    const w = fbCanvas.width;
+    const h = fbCanvas.height;
+    const cx = w * (0.5 + state.centerShiftCurrent * 0.55);
+    const cy = h * 0.49;
+    const r = Math.min(w, h) * 0.25 * state.zoom;
+    const isLight = state.themeCurrent > 0.5;
+
+    const bgGrad = fbCtx.createRadialGradient(cx, cy, r * 0.1, cx, cy, Math.max(w, h) * 0.8);
+    if (isLight) {
+      bgGrad.addColorStop(0, '#ffffff');
+      bgGrad.addColorStop(0.55, '#f4f8ff');
+      bgGrad.addColorStop(1, '#e4eefc');
+    } else {
+      bgGrad.addColorStop(0, '#10265c');
+      bgGrad.addColorStop(0.45, '#07112b');
+      bgGrad.addColorStop(1, '#030612');
+    }
+    fbCtx.fillStyle = bgGrad;
+    fbCtx.fillRect(0, 0, w, h);
+
+    // Layered iridescent folded polygons
+    fbCtx.save();
+    fbCtx.translate(cx, cy);
+    for (let layer = 5; layer >= 0; layer--) {
+      const k = 1 - layer * 0.14;
+      const rot = t * (0.28 + layer * 0.08) * (layer % 2 === 0 ? 1 : -1) + state.orbitYaw;
+      const sides = state.mode === 2 ? 6 : (state.mode === 1 ? 8 : 4);
+      fbCtx.save();
+      fbCtx.rotate(rot);
+      fbCtx.beginPath();
+      for (let i = 0; i <= sides; i++) {
+        const a = (i / sides) * Math.PI * 2;
+        const rad = r * k * (i % 2 === 0 ? 1.18 : 0.78);
+        const px = Math.cos(a) * rad;
+        const py = Math.sin(a) * rad * 1.24;
+        if (i === 0) fbCtx.moveTo(px, py);
+        else fbCtx.lineTo(px, py);
+      }
+      fbCtx.closePath();
+      const hue = (205 + layer * 16 + Math.sin(t) * 18) % 360;
+      fbCtx.fillStyle = isLight
+        ? `hsla(${hue}, 82%, ${34 + layer * 8}%, 0.28)`
+        : `hsla(${hue}, 92%, ${54 + layer * 7}%, 0.24)`;
+      fbCtx.strokeStyle = isLight
+        ? `hsla(${hue}, 88%, 40%, 0.75)`
+        : `hsla(${hue + 20}, 95%, 80%, 0.82)`;
+      fbCtx.lineWidth = 1.6;
+      fbCtx.fill();
+      fbCtx.stroke();
+      fbCtx.restore();
+    }
+    fbCtx.restore();
+  }
+
+  // =========================================================================
+  // INTERACTIONS (Cursor Parallax, Orbit Drag, Click Ripple, Wheel Zoom)
+  // =========================================================================
+  function spawnClickRing(clientX, clientY) {
+    const el = document.createElement('div');
+    el.className = 'click-ring';
+    el.style.left = clientX + 'px';
+    el.style.top = clientY + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 820);
+  }
+
+  function triggerRipple(clientX, clientY) {
+    const aspect = window.innerWidth / Math.max(window.innerHeight, 1);
+    const nx = (clientX / window.innerWidth - 0.5) * aspect;
+    const ny = 0.5 - clientY / window.innerHeight;
+    state.pulseTime = (performance.now() - state.startTime) * 0.001;
+    state.pulseStrength = 1.0;
+    state.pulseOriginX = nx;
+    state.pulseOriginY = ny;
+    spawnClickRing(clientX, clientY);
+  }
+
+  stageWrap.addEventListener('pointerdown', (e) => {
+    state.dragging = true;
+    state.dragMoved = false;
+    state.lastPointerX = e.clientX;
+    state.lastPointerY = e.clientY;
+    stageWrap.setPointerCapture(e.pointerId);
+  });
+
+  stageWrap.addEventListener('pointermove', (e) => {
+    const nx = (e.clientX / window.innerWidth) * 2 - 1;
+    const ny = -((e.clientY / window.innerHeight) * 2 - 1);
+    state.mouseTargetX = nx;
+    state.mouseTargetY = ny;
+
+    if (state.dragging) {
+      const dx = e.clientX - state.lastPointerX;
+      const dy = e.clientY - state.lastPointerY;
+      if (Math.abs(dx) + Math.abs(dy) > 3) state.dragMoved = true;
+      state.velYaw = dx * 0.0065;
+      state.velPitch = dy * 0.0055;
+      state.orbitYaw += state.velYaw;
+      state.orbitPitch = Math.max(-0.8, Math.min(0.8, state.orbitPitch + state.velPitch));
+      state.lastPointerX = e.clientX;
+      state.lastPointerY = e.clientY;
+    }
+  });
+
+  stageWrap.addEventListener('pointerup', (e) => {
+    if (state.dragging && !state.dragMoved) {
+      triggerRipple(e.clientX, e.clientY);
+    }
+    state.dragging = false;
+  });
+
+  stageWrap.addEventListener('pointercancel', () => {
+    state.dragging = false;
+  });
+
+  stageWrap.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    state.zoomTarget = Math.max(0.76, Math.min(1.36, state.zoomTarget - e.deltaY * 0.0007));
+  }, { passive: false });
+
+  // =========================================================================
+  // CONTROLS WIRING
+  // =========================================================================
+  const modeButtons = Array.from(document.querySelectorAll('[data-mode]'));
+  const themeNightBtn = document.getElementById('btn-theme-night');
+  const themePorcBtn = document.getElementById('btn-theme-porcelain');
+  const titleToggleBtn = document.getElementById('btn-toggle-title');
+
+  function setMode(idx) {
+    state.mode = idx;
+    modeButtons.forEach((b) => b.classList.toggle('is-active', Number(b.dataset.mode) === idx));
+    headingEl.textContent = MODE_META[idx];
+    // Fire a gentle morph ripple when switching forms
+    state.pulseTime = (performance.now() - state.startTime) * 0.001;
+    state.pulseStrength = 0.72;
+    state.pulseOriginX = state.centerShiftCurrent * (window.innerWidth / Math.max(window.innerHeight, 1));
+    state.pulseOriginY = 0.02;
+  }
+
+  function setTheme(name) {
+    const isPorc = name === 'porcelain';
+    state.themeTarget = isPorc ? 1.0 : 0.0;
+    document.body.dataset.theme = isPorc ? 'porcelain' : 'night';
+    themeNightBtn.classList.toggle('is-active', !isPorc);
+    themePorcBtn.classList.toggle('is-active', isPorc);
+  }
+
+  function updateCenterShift() {
+    const isNarrow = window.innerWidth <= 900;
+    state.centerShiftTarget = (state.showTitle && !isNarrow) ? -0.22 : 0.0;
+  }
+
+  function setTitleVisible(visible) {
+    state.showTitle = visible;
+    titleOverlay.classList.toggle('is-hidden', !visible);
+    titleToggleBtn.classList.toggle('is-active', visible);
+    titleToggleBtn.setAttribute('aria-pressed', String(visible));
+    updateCenterShift();
+  }
+
+  modeButtons.forEach((btn) => {
+    btn.addEventListener('click', () => setMode(Number(btn.dataset.mode)));
+  });
+  themeNightBtn.addEventListener('click', () => setTheme('night'));
+  themePorcBtn.addEventListener('click', () => setTheme('porcelain'));
+  titleToggleBtn.addEventListener('click', () => setTitleVisible(!state.showTitle));
+  window.addEventListener('resize', updateCenterShift);
+  updateCenterShift();
+
+  // Expose tiny inspection API for QA / automation
+  window.__crystalSchemeC = {
+    isWebGL: () => useWebGL,
+    renderer: () => glModeLabel,
+    setMode,
+    setTheme,
+    setTitleVisible,
+    triggerRipple
+  };
+
+  // =========================================================================
+  // MAIN 60FPS ANIMATION LOOP
+  // =========================================================================
+  let frameCount = 0;
+  let lastFpsTick = performance.now();
+
+  function frame(now) {
+    const t = (now - state.startTime) * 0.001;
+
+    // Smooth interpolations
+    const lerp = 0.085;
+    state.mouseX += (state.mouseTargetX - state.mouseX) * 0.09;
+    state.mouseY += (state.mouseTargetY - state.mouseY) * 0.09;
+    state.themeCurrent += (state.themeTarget - state.themeCurrent) * 0.075;
+    state.centerShiftCurrent += (state.centerShiftTarget - state.centerShiftCurrent) * 0.075;
+    state.zoom += (state.zoomTarget - state.zoom) * 0.1;
+
+    // Smooth mode morph weights (normalized)
+    const t0 = state.mode === 0 ? 1 : 0;
+    const t1 = state.mode === 1 ? 1 : 0;
+    const t2 = state.mode === 2 ? 1 : 0;
+    state.modeBlend0 += (t0 - state.modeBlend0) * lerp;
+    state.modeBlend1 += (t1 - state.modeBlend1) * lerp;
+    state.modeBlend2 += (t2 - state.modeBlend2) * lerp;
+    const wSum = state.modeBlend0 + state.modeBlend1 + state.modeBlend2 || 1.0;
+    const w0 = state.modeBlend0 / wSum;
+    const w1 = state.modeBlend1 / wSum;
+    const w2 = state.modeBlend2 / wSum;
+
+    // Inertia damping for orbit drag
+    if (!state.dragging) {
+      state.velYaw *= 0.92;
+      state.velPitch *= 0.92;
+      state.orbitYaw += state.velYaw;
+      state.orbitPitch = Math.max(-0.8, Math.min(0.8, state.orbitPitch + state.velPitch));
+    }
+
+    const pulseAge = Math.max(0.0, t - state.pulseTime);
+    const pulseAmp = pulseAge < 4.5 ? state.pulseStrength * Math.exp(-pulseAge * 1.15) : 0.0;
+
+    if (useWebGL) {
+      gl.uniform2f(uniforms.uRes, glCanvas.width, glCanvas.height);
+      gl.uniform1f(uniforms.uTime, t);
+      gl.uniform3f(uniforms.uModeW, w0, w1, w2);
+      gl.uniform1f(uniforms.uTheme, state.themeCurrent);
+      gl.uniform1f(uniforms.uCenterX, state.centerShiftCurrent);
+      gl.uniform2f(uniforms.uMouse, state.mouseX, state.mouseY);
+      gl.uniform2f(uniforms.uOrbit, state.orbitYaw, state.orbitPitch);
+      gl.uniform1f(uniforms.uZoom, state.zoom);
+      gl.uniform1f(uniforms.uPulseAge, pulseAge);
+      gl.uniform1f(uniforms.uPulseAmp, pulseAmp);
+      gl.uniform2f(uniforms.uPulsePos, state.pulseOriginX, state.pulseOriginY);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    } else {
+      drawFallback2D(t);
+    }
+
+    // FPS counter update every 600ms
+    frameCount++;
+    if (now - lastFpsTick >= 600) {
+      const fps = Math.round((frameCount * 1000) / (now - lastFpsTick));
+      fpsEl.textContent = fps + ' FPS';
+      frameCount = 0;
+      lastFpsTick = now;
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>转生千金 V3 冰晶宫殿极简 UI × 纯代码像素战斗视觉验收展厅</title>
+<style>
+  :root {
+    --paper: #FAFBFD;
+    --ink: #1B2333;
+    --stone: #526078;
+    --sapphire: #1C4CB8;
+    --sapphire-deep: #0E2B78;
+    --hair: rgba(27, 35, 51, 0.14);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: radial-gradient(circle at 50% 0%, #FFFFFF 0%, #FAFBFD 55%, #EFF4FB 100%);
+    color: var(--ink);
+    font-family: "Noto Serif SC", "PingFang SC", "Microsoft YaHei", serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 40px 28px 72px; }
+  header {
+    border-bottom: 1px solid var(--hair);
+    padding-bottom: 24px;
+    margin-bottom: 36px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+  }
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.22em;
+    color: var(--sapphire);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  h1 { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: 0.04em; }
+  .sub { margin: 8px 0 0; color: var(--stone); font-size: 14px; }
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 28px;
+    background: linear-gradient(155deg, #255BE0 0%, #1C4CB8 52%, #0E2B78 100%);
+    color: #fff;
+    text-decoration: none;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    clip-path: polygon(10% 0%, 90% 0%, 100% 50%, 90% 100%, 10% 100%, 0% 50%);
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid var(--hair);
+    border-bottom: 1px solid var(--hair);
+    margin-bottom: 40px;
+  }
+  .stat { padding: 16px 18px; border-right: 1px solid var(--hair); }
+  .stat:last-child { border-right: none; }
+  .stat b { display: block; font-size: 22px; color: var(--sapphire); font-weight: 700; }
+  .stat span { font-size: 12.5px; color: var(--stone); }
+  section { margin-bottom: 48px; }
+  h2 {
+    font-size: 18px;
+    letter-spacing: 0.08em;
+    margin: 0 0 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--hair);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    background: var(--sapphire);
+    transform: rotate(45deg);
+    display: inline-block;
+  }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  figure {
+    margin: 0;
+    background: #fff;
+    border: 1px solid var(--hair);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    cursor: zoom-in;
+  }
+  figcaption {
+    padding: 10px 14px;
+    font-size: 12.5px;
+    color: var(--stone);
+    border-top: 1px solid var(--hair);
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  figcaption strong { color: var(--ink); font-weight: 600; }
+  .roster img { image-rendering: pixelated; }
+  #lb {
+    position: fixed; inset: 0; background: rgba(16, 22, 36, 0.88);
+    display: none; align-items: center; justify-content: center;
+    padding: 24px; z-index: 99; cursor: zoom-out;
+  }
+  #lb.on { display: flex; }
+  #lb img { max-width: 96vw; max-height: 92vh; border: 1px solid rgba(255,255,255,0.22); }
+  @media (max-width: 900px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">HOUSE OF VESTERIA · V3 DESKTOP EDITION</div>
+      <h1>冰晶宫殿极简 UI × 纯代码像素战斗体系</h1>
+      <p class="sub">零生图模型（100% Python 逐像素代码手绘）· 14 位 6 帧全动作角色 · 27 技 patch-gg/pixelfx 像素法术 · 氖猫同舞台空间连续性</p>
+    </div>
+    <a class="cta" href="https://juanhanyu.github.io/fictional-adventure/" target="_blank" rel="noopener">◆ 打开线上可玩预览</a>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><b>14 位 × 6 帧</b><span>100% 代码逐像素绘制（共 84 帧 / 228KB / 0 噪点）</span></div>
+    <div class="stat"><b>27 套 pixelfx</b><span>冰枪/冰棘/水柱/剑弧/火球/日蚀/时停实时弹道</span></div>
+    <div class="stat"><b>36 / 36 通过</b><span>自动化测试全绿 · 严格文风 0 违规</span></div>
+    <div class="stat"><b>0 反模式</b><span>LIVE &amp; STATIC impeccable detect 全零告警</span></div>
+  </div>
+
+  <section>
+    <h2>一、14 位参战角色纯代码像素全员总览（待机 × 攻击释放 2× 整数倍）</h2>
+    <figure class="roster">
+      <img src="qa_pixel_combat/pixel_roster_14_showcase.png" alt="14位纯代码像素角色全员表" />
+      <figcaption><strong>希尔维亚双形态 + 9 幕全部对手与北境魔物</strong><span>每角色均经 3–4 轮代码绘制→放大目检→精修（含脚底/施法/受击精确锚点）</span></figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>二、9 幕实机像素战斗与 27 技 pixelfx 连招特效（1440×900 实拍）</h2>
+    <div class="grid-3">
+      <figure><img src="qa_pixel_combat/act6_wolves_ice_spikes_1440.png" alt="第六幕北林四狼冰棘群刺阵" /><figcaption><strong>第六幕 · 眷寒渔 × 冰棘群刺阵</strong><span>魔法阵 + 四道天降像素冰锥</span></figcaption></figure>
+      <figure><img src="qa_pixel_combat/act5_noelle_water_jet_1440.png" alt="第五幕诺艾儿覆潮水弹" /><figcaption><strong>第五幕 · 希尔维亚 × 覆潮水弹</strong><span>剑尖锚点直贯敌躯</span></figcaption></figure>
+      <figure><img src="qa_pixel_combat/act2_rowan_enemy_eclipse_1440.png" alt="第二幕罗文晦轮杖日蚀" /><figcaption><strong>第二幕 · 罗文 × 晦轮日蚀</strong><span>紫黑日蚀光轮压境</span></figcaption></figure>
+      <figure><img src="qa_pixel_combat/act3_alice_sword_slash_1440.png" alt="第三幕爱丽丝冲刺剑斩" /><figcaption><strong>第三幕 · 冲刺覆水剑斩</strong><span>突进残影 + 像素剑弧闪白</span></figcaption></figure>
+      <figure><img src="qa_pixel_combat/act1_beatrice_ice_lance_1440.png" alt="第一幕贝阿特丽丝凝华冰晶" /><figcaption><strong>第一幕 · 贝阿特丽丝 × 冰枪冻裂</strong><span>冰枪贯穿 + 霜晶封冻</span></figcaption></figure>
+      <figure><img src="qa_pixel_combat/act1_beatrice_enemy_fire_1440.png" alt="贝阿特丽丝烈焰反击希尔维亚受击" /><figcaption><strong>第一幕 · 受击表情帧（&gt; &lt;）</strong><span>烈焰火星飞溅 + 弹性退步</span></figcaption></figure>
+      <figure><img src="qa_pixel_combat/act7_behemoth_frost_nova_1440.png" alt="第七幕霜渊裂地兽群攻" /><figcaption><strong>第七幕 · 赫兰冰封峡谷兽潮</strong><span>96×84 领主像素巨兽</span></figcaption></figure>
+      <figure><img src="qa_pixel_combat/act8_redlotus_boss_1440.png" alt="第八幕东翼火廊突围" /><figcaption><strong>第八幕 · 东翼火廊突围战</strong><span>宫廷突击队长 × 对角剑斩</span></figcaption></figure>
+      <figure><img src="qa_pixel_combat/act9_windgod_tempest_1440.png" alt="第九幕风神岚终极试剑" /><figcaption><strong>第九幕 · 风神·岚 终极试剑</strong><span>悬浮白纱花冠风神像素 Boss</span></figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>三、氖猫标杆 · 冰晶宫殿三大空间连续门面（无主角雕塑构图）</h2>
+    <div class="grid-3">
+      <figure><img src="qa_matrix_v3_desktop_r2/V3R2_title_main_1440.png" alt="V3 标题主界面" /><figcaption><strong>标题主界面</strong><span>无框衬线排印 + 蓝宝晶簇雕塑</span></figcaption></figure>
+      <figure><img src="qa_matrix_v3_desktop_r2/V3R2_title_archive_orbit_1440.png" alt="V3 3D 椭圆星轨存档" /><figcaption><strong>3D 椭圆星轨存档</strong><span>晶簇炸散成轨 + 脉冲星光牵引线</span></figcaption></figure>
+      <figure><img src="qa_matrix_v3_desktop_r2/V3R2_title_settings_1440.png" alt="V3 无框空间平移设置" /><figcaption><strong>同舞台无框设置</strong><span>1px 菱形滑块 + 100% 满格校准</span></figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>四、去盒子化雪瓷桌面端局内系统精选（1440×900 盲审精修终版）</h2>
+    <div class="grid-3">
+      <figure><img src="qa_matrix_v3_desktop_r2/D03_freeroam_hub_1440.png" alt="自由探索主舞台" /><figcaption><strong>自由探索主舞台</strong><span>半透冰雾对话框 · 零重复头像</span></figcaption></figure>
+      <figure><img src="qa_matrix_v3_desktop_r2/D09_status_panel_1440.png" alt="综合状态书志面板" /><figcaption><strong>综合面板</strong><span>去胶囊化细线页签 + 断裂星盘框</span></figcaption></figure>
+      <figure><img src="qa_matrix_v3_desktop_r2/D17_arena_hub_1440.png" alt="九幕战术演武厅" /><figcaption><strong>战术演武厅</strong><span>九幕一屏全显 · 极简圆点标签</span></figcaption></figure>
+      <figure><img src="qa_matrix_v3_desktop_r2/D08_mailbox_1440.png" alt="火漆信匣" /><figcaption><strong>火漆信匣</strong><span>双列像素齐平底线 + 8 枚彩绘火漆</span></figcaption></figure>
+      <figure><img src="qa_matrix_v3_desktop_r2/D14_ai_chat_1440.png" alt="AI 灵魂交谈抽屉" /><figcaption><strong>AI 灵魂交谈</strong><span>雪瓷书志流 · 清晰右栏留白</span></figcaption></figure>
+      <figure><img src="qa_matrix_v3_desktop_r2/D16_ice_deduction_1440.png" alt="冰晶宫殿推演板" /><figcaption><strong>冰晶宫殿推演板</strong><span>纯净中性线框 · 零答案泄露</span></figcaption></figure>
+    </div>
+  </section>
+</div>
+<div id="lb" onclick="this.classList.remove('on')"><img id="lb-img" alt="" /></div>
+<script>
+document.querySelectorAll('figure img').forEach(img => {
+  img.addEventListener('click', () => {
+    document.getElementById('lb-img').src = img.src;
+    document.getElementById('lb').classList.add('on');
+  });
+});
+</script>
+</body>
+</html>

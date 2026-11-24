@@ -1,0 +1,2196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>方案 B · 非欧星轨天球仪 × 分形碎晶核心 — 《转生千金》主界面概念</title>
+<style>
+  :root {
+    --serif-zh: 'Noto Serif SC', 'Noto Serif CJK SC', 'Songti SC', 'STSong', 'Source Han Serif SC', Georgia, serif;
+    --serif-en: 'Cormorant Garamond', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+    --sans-zh: 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+    /* Snow-Porcelain Light Stage (Default) */
+    --bg-stage: radial-gradient(ellipse 68% 66% at 44% 48%, #ffffff 0%, #f8fafd 52%, #e9f0fa 100%);
+    --ink: #192235;
+    --ink-mid: #3a4966;
+    --ink-muted: #5a6a85;
+    --sapphire: #1c4cb8;
+    --sapphire-deep: #0e2b78;
+    --cyan: #57baf6;
+    --gold: #b8965c;
+    --hairline: rgba(25, 34, 53, 0.14);
+    --hairline-strong: rgba(25, 34, 53, 0.24);
+    --pill-bg: rgba(252, 253, 255, 0.78);
+    --pill-border: rgba(28, 76, 184, 0.18);
+    --pill-shadow: 0 10px 34px rgba(18, 32, 66, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    --pill-active-bg: linear-gradient(135deg, #1c4cb8 0%, #0e2b78 100%);
+    --pill-active-ink: #ffffff;
+    --badge-bg: rgba(255, 255, 255, 0.68);
+  }
+
+  body.theme-night {
+    --bg-stage: radial-gradient(ellipse 72% 70% at 44% 48%, #102042 0%, #091227 52%, #040812 100%);
+    --ink: #eef4ff;
+    --ink-mid: #bfd0ee;
+    --ink-muted: #8297bd;
+    --sapphire: #63b5ff;
+    --sapphire-deep: #2563eb;
+    --cyan: #8ce0ff;
+    --gold: #e5c687;
+    --hairline: rgba(164, 198, 255, 0.16);
+    --hairline-strong: rgba(164, 198, 255, 0.30);
+    --pill-bg: rgba(10, 18, 38, 0.72);
+    --pill-border: rgba(125, 185, 255, 0.24);
+    --pill-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(190, 224, 255, 0.14);
+    --pill-active-bg: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    --pill-active-ink: #ffffff;
+    --badge-bg: rgba(10, 18, 38, 0.52);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #f8fafd;
+    color: var(--ink);
+    font-family: var(--sans-zh);
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #stage-bg {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-stage);
+    transition: opacity 0.65s var(--ease);
+    z-index: 0;
+  }
+
+  #celestial-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 1;
+    cursor: pointer;
+  }
+
+  /* Subtle top-left curator label (fades gently in Title Preview mode) */
+  .curator-badge {
+    position: fixed;
+    top: 28px;
+    left: 34px;
+    z-index: 10;
+    pointer-events: none;
+    transition: opacity 0.55s var(--ease), transform 0.55s var(--ease);
+  }
+
+  .curator-kicker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--serif-en);
+    font-size: 11px;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 600;
+  }
+
+  .curator-kicker::before {
+    content: '✦';
+    font-size: 10px;
+    color: var(--sapphire);
+  }
+
+  .curator-title {
+    margin-top: 6px;
+    font-family: var(--serif-zh);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--ink);
+    transition: color 0.5s var(--ease);
+  }
+
+  .curator-sub {
+    margin-top: 4px;
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.5s var(--ease);
+  }
+
+  .state-dot {
+    width: 6px;
+    height: 6px;
+    transform: rotate(45deg);
+    background: var(--sapphire);
+    box-shadow: 0 0 8px var(--cyan);
+    display: inline-block;
+    transition: background 0.4s ease, transform 0.5s var(--ease);
+  }
+
+  body.is-shattered .state-dot {
+    background: var(--gold);
+    transform: rotate(135deg) scale(1.15);
+  }
+
+  body.preview-title .curator-badge {
+    opacity: 0.45;
+    transform: translateY(-4px) scale(0.94);
+  }
+
+  /* Subtle bottom-left interaction whisper */
+  .stage-whisper {
+    position: fixed;
+    left: 34px;
+    bottom: 28px;
+    z-index: 10;
+    font-size: 11.5px;
+    letter-spacing: 0.14em;
+    color: var(--ink-muted);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    pointer-events: none;
+    transition: opacity 0.45s var(--ease), color 0.45s var(--ease);
+  }
+
+  .stage-whisper span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .whisper-sep {
+    width: 1px;
+    height: 11px;
+    background: var(--hairline-strong);
+  }
+
+  body.preview-title .stage-whisper {
+    opacity: 0;
+  }
+
+  /* ===== Real 《转生千金》 Title Layout Preview Overlay ===== */
+  .title-folio-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 8;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.6s var(--ease);
+  }
+
+  body.preview-title .title-folio-layer {
+    opacity: 1;
+  }
+
+  .v3-right-folio {
+    position: absolute;
+    right: clamp(56px, 8.5vw, 138px);
+    top: 50%;
+    width: clamp(320px, 31vw, 430px);
+    transform: translate3d(26px, -50%, 0);
+    transition: transform 0.72s var(--ease);
+    pointer-events: none;
+  }
+
+  body.preview-title .v3-right-folio {
+    transform: translate3d(0, -50%, 0);
+    pointer-events: auto;
+  }
+
+  .v3-kicker {
+    font-family: var(--serif-en);
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    font-weight: 600;
+  }
+
+  .title-main {
+    font-family: var(--serif-zh);
+    font-size: clamp(44px, 4.4vw, 62px);
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    line-height: 1.12;
+    color: var(--ink);
+    text-shadow: 0 2px 18px rgba(28, 76, 184, 0.08);
+    transition: color 0.5s var(--ease);
+  }
+
+  body.theme-night .title-main {
+    text-shadow: 0 0 28px rgba(107, 197, 248, 0.26);
+  }
+
+  .title-sub {
+    margin-top: 12px;
+    font-family: var(--serif-zh);
+    font-size: 14.5px;
+    letter-spacing: 0.30em;
+    color: var(--ink-muted);
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--hairline);
+    position: relative;
+    transition: color 0.5s var(--ease), border-color 0.5s var(--ease);
+  }
+
+  .title-sub::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    width: 68px;
+    height: 1.5px;
+    background: linear-gradient(90deg, var(--sapphire), var(--gold));
+  }
+
+  .title-menu {
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .tbtn-editorial {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding: 10px 0 10px 22px;
+    background: none;
+    border: none;
+    color: var(--ink);
+    cursor: pointer;
+    text-align: left;
+    transition: transform 0.32s var(--ease), color 0.32s var(--ease);
+  }
+
+  .tbtn-editorial::before {
+    content: '◇';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: var(--ink-muted);
+    transition: color 0.3s ease, transform 0.35s var(--ease);
+  }
+
+  .tbtn-editorial::after {
+    content: '';
+    position: absolute;
+    left: 22px;
+    right: 36%;
+    bottom: 2px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--sapphire), transparent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.38s var(--ease);
+  }
+
+  .tbtn-editorial:hover {
+    transform: translateX(6px);
+    color: var(--sapphire);
+  }
+
+  .tbtn-editorial:hover::before {
+    content: '◆';
+    color: var(--sapphire);
+    transform: translateY(-50%) rotate(45deg);
+  }
+
+  .tbtn-editorial:hover::after {
+    transform: scaleX(1);
+  }
+
+  .tbtn-en {
+    font-family: var(--serif-en);
+    font-size: 10.5px;
+    letter-spacing: 0.24em;
+    color: var(--ink-muted);
+    width: 96px;
+    flex-shrink: 0;
+    font-weight: 600;
+    transition: color 0.3s ease;
+  }
+
+  .tbtn-editorial:hover .tbtn-en {
+    color: var(--gold);
+  }
+
+  .tbtn-text {
+    font-family: var(--serif-zh);
+    font-size: 15.5px;
+    letter-spacing: 0.16em;
+    font-weight: 500;
+  }
+
+  .v3-cta-zone {
+    margin-top: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .v3-prism-cta {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 34px 13px 28px;
+    border: none;
+    cursor: pointer;
+    color: #ffffff;
+    background: linear-gradient(125deg, #2259d4 0%, #13358e 56%, #0b205e 100%);
+    clip-path: polygon(12px 0%, calc(100% - 12px) 0%, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0% 50%);
+    box-shadow: 0 12px 30px rgba(18, 52, 146, 0.26);
+    transition: transform 0.35s var(--ease), filter 0.35s var(--ease);
+  }
+
+  body.theme-night .v3-prism-cta {
+    background: linear-gradient(125deg, #3b82f6 0%, #1d4ed8 55%, #1e3a8a 100%);
+    box-shadow: 0 0 32px rgba(96, 179, 255, 0.35);
+  }
+
+  .v3-prism-cta:hover {
+    transform: translateY(-2px) scale(1.02);
+    filter: brightness(1.12);
+  }
+
+  .v3-prism-en {
+    font-family: var(--serif-en);
+    font-size: 11px;
+    letter-spacing: 0.26em;
+    opacity: 0.85;
+  }
+
+  .v3-prism-cn {
+    font-family: var(--serif-zh);
+    font-size: 15px;
+    letter-spacing: 0.22em;
+    font-weight: 600;
+  }
+
+  .v3-archive-meta {
+    font-family: var(--serif-en);
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    color: var(--ink-muted);
+  }
+
+  .v3-edge-footer {
+    position: absolute;
+    left: 34px;
+    right: 34px;
+    bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--ink-muted);
+    pointer-events: none;
+  }
+
+  .v3-edge-left {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  /* ===== Minimal Bottom-Right Control Pill ===== */
+  .control-pill {
+    position: fixed;
+    right: 26px;
+    bottom: 22px;
+    z-index: 20;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px;
+    border-radius: 999px;
+    background: var(--pill-bg);
+    border: 1px solid var(--pill-border);
+    box-shadow: var(--pill-shadow);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: background 0.5s var(--ease), border-color 0.5s var(--ease), box-shadow 0.5s var(--ease);
+  }
+
+  .pill-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--ink-mid);
+    font-family: var(--sans-zh);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      background 0.32s var(--ease),
+      color 0.32s var(--ease),
+      border-color 0.32s var(--ease),
+      transform 0.22s var(--ease),
+      box-shadow 0.32s var(--ease);
+  }
+
+  .pill-btn:hover {
+    color: var(--ink);
+    background: rgba(28, 76, 184, 0.08);
+  }
+
+  body.theme-night .pill-btn:hover {
+    background: rgba(125, 195, 255, 0.14);
+  }
+
+  .pill-btn:active {
+    transform: scale(0.96);
+  }
+
+  .pill-btn.active {
+    background: var(--pill-active-bg);
+    color: var(--pill-active-ink);
+    box-shadow: 0 4px 14px rgba(28, 76, 184, 0.28);
+  }
+
+  .pill-btn .ico {
+    font-size: 12.5px;
+    line-height: 1;
+  }
+
+  .pill-divider {
+    width: 1px;
+    height: 16px;
+    background: var(--hairline);
+    margin: 0 2px;
+  }
+
+  @media (max-width: 960px) {
+    .v3-right-folio {
+      right: 28px;
+      width: 300px;
+    }
+    .control-pill {
+      right: 14px;
+      bottom: 14px;
+      padding: 4px;
+    }
+    .pill-btn {
+      padding: 6px 10px;
+      font-size: 11px;
+    }
+  }
+</style>
+</head>
+<body>
+  <div id="stage-bg" aria-hidden="true"></div>
+  <canvas id="celestial-canvas" aria-label="非欧星轨天球仪与分形碎晶核心交互画布"></canvas>
+
+  <!-- Minimal top-left scheme title -->
+  <aside class="curator-badge" aria-hidden="true">
+    <div class="curator-kicker">SCHEME B // NON-EUCLIDEAN CELESTIAL ARTIFACT</div>
+    <div class="curator-title">非欧星轨天球仪 × 分形碎晶核心</div>
+    <div class="curator-sub">
+      <i class="state-dot"></i>
+      <span id="state-caption">神圣雪花曼陀罗 · 共振锁定</span>
+    </div>
+  </aside>
+
+  <!-- Minimal bottom-left hint -->
+  <div class="stage-whisper" aria-hidden="true">
+    <span>✦ 点击核心：碎晶重组 / 星环展开</span>
+    <i class="whisper-sep"></i>
+    <span>移动指针：引力星尘与天球倾角</span>
+  </div>
+
+  <!-- Real 《转生千金》 Title Layout Preview Overlay -->
+  <section class="title-folio-layer" aria-label="转生千金标题排版预览">
+    <div class="v3-right-folio">
+      <header>
+        <p class="v3-kicker">· HOUSE OF VESTERIA // 银与蓝的冬日诗篇</p>
+        <h1 class="title-main">转生千金</h1>
+        <p class="title-sub">到了异世界就要悠闲地生活</p>
+      </header>
+
+      <nav class="title-menu" aria-label="主菜单预览">
+        <button type="button" class="tbtn-editorial" data-preview-btn>
+          <span class="tbtn-en">NEW STORY</span>
+          <span class="tbtn-text">开始新生活</span>
+        </button>
+        <button type="button" class="tbtn-editorial" data-preview-btn>
+          <span class="tbtn-en">ARENA</span>
+          <span class="tbtn-text">战术演武</span>
+        </button>
+        <button type="button" class="tbtn-editorial" data-preview-btn>
+          <span class="tbtn-en">CODEX</span>
+          <span class="tbtn-text">典藏图鉴</span>
+        </button>
+        <button type="button" class="tbtn-editorial" data-preview-btn>
+          <span class="tbtn-en">SETTINGS</span>
+          <span class="tbtn-text">系统设置</span>
+        </button>
+        <button type="button" class="tbtn-editorial" data-preview-btn>
+          <span class="tbtn-en">GUIDE</span>
+          <span class="tbtn-text">玩法说明</span>
+        </button>
+      </nav>
+
+      <div class="v3-cta-zone">
+        <button type="button" class="v3-prism-cta" id="btn-preview-begin">
+          <span class="v3-prism-en">BEGIN</span>
+          <span class="v3-prism-cn">启程新生活</span>
+        </button>
+        <div class="v3-archive-meta">CHRONICLE // 维斯特利亚公爵领 · 卷一至卷四</div>
+      </div>
+    </div>
+
+    <footer class="v3-edge-footer">
+      <div class="v3-edge-left">
+        <span>↑↓ 选择 &nbsp;&nbsp; Enter 确认 &nbsp;&nbsp; Esc 返回</span>
+        <span>·</span>
+        <span>BGM // 冰晶协奏</span>
+      </div>
+    </footer>
+  </section>
+
+  <!-- Minimal bottom-right control pill -->
+  <div class="control-pill" role="toolbar" aria-label="视觉舞台控制">
+    <button type="button" class="pill-btn" id="btn-theme" title="切换雪瓷白昼与星宫永夜舞台">
+      <span class="ico" id="ico-theme">☀</span>
+      <span id="lbl-theme">雪瓷白昼</span>
+    </button>
+    <span class="pill-divider" aria-hidden="true"></span>
+    <button type="button" class="pill-btn active" id="btn-morph" title="在神圣雪花曼陀罗与星环碎晶展开之间切换">
+      <span class="ico">✦</span>
+      <span id="lbl-morph">碎晶重组 / 星环展开</span>
+    </button>
+    <span class="pill-divider" aria-hidden="true"></span>
+    <button type="button" class="pill-btn" id="btn-layout" title="预览《转生千金》真实主界面排版">
+      <span class="ico">❖</span>
+      <span>标题排版预览</span>
+    </button>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  const canvas = document.getElementById('celestial-canvas');
+  const ctx = canvas.getContext('2d', { alpha: true });
+
+  const btnTheme = document.getElementById('btn-theme');
+  const icoTheme = document.getElementById('ico-theme');
+  const lblTheme = document.getElementById('lbl-theme');
+  const btnMorph = document.getElementById('btn-morph');
+  const btnLayout = document.getElementById('btn-layout');
+  const stateCaption = document.getElementById('state-caption');
+
+  // =========================================================================
+  // 1. Theme Palettes & Smooth Color Interpolation
+  // =========================================================================
+  const PALETTE_LIGHT = {
+    // Snow-Porcelain Daylight: Crisp sapphire jewel tones + burnished porcelain gold
+    isNight: 0,
+    goldMain: [198, 158, 86],
+    goldBright: [242, 212, 148],
+    goldSoft: [212, 178, 114],
+    goldShadow: [134, 96, 40],
+    sapphireDeep: [14, 52, 148],
+    sapphireMid: [34, 98, 224],
+    sapphireBright: [82, 168, 252],
+    iceBright: [152, 220, 255],
+    iceWhite: [255, 255, 255],
+    violetAccent: [112, 122, 232],
+    causticA: [54, 142, 240],
+    causticB: [204, 164, 94],
+    rayColor: [96, 172, 250],
+    gridLine: [26, 48, 96],
+    glintCore: [255, 255, 255],
+    glintHalo: [44, 118, 236],
+    coreShadow: [12, 38, 112],
+    dustPrimary: [46, 114, 224],
+    dustGold: [198, 156, 84]
+  };
+
+  const PALETTE_NIGHT = {
+    // Starlit Palace Night: Radiant Celestia gold + luminous plasma-sapphire
+    isNight: 1,
+    goldMain: [236, 202, 134],
+    goldBright: [255, 240, 194],
+    goldSoft: [208, 172, 108],
+    goldShadow: [148, 112, 52],
+    sapphireDeep: [24, 78, 204],
+    sapphireMid: [68, 148, 255],
+    sapphireBright: [136, 218, 255],
+    iceBright: [214, 246, 255],
+    iceWhite: [255, 255, 255],
+    violetAccent: [162, 148, 255],
+    causticA: [96, 198, 255],
+    causticB: [244, 208, 138],
+    rayColor: [112, 194, 255],
+    gridLine: [140, 188, 255],
+    glintCore: [255, 255, 255],
+    glintHalo: [128, 218, 255],
+    coreShadow: [10, 28, 84],
+    dustPrimary: [150, 224, 255],
+    dustGold: [248, 216, 148]
+  };
+
+  const curPal = {};
+  for (const k of Object.keys(PALETTE_LIGHT)) {
+    curPal[k] = Array.isArray(PALETTE_LIGHT[k]) ? PALETTE_LIGHT[k].slice() : PALETTE_LIGHT[k];
+  }
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+  function smoothstep(t) { return t * t * (3 - 2 * t); }
+
+  function rgba(rgb, a) {
+    return `rgba(${rgb[0] | 0},${rgb[1] | 0},${rgb[2] | 0},${clamp(a, 0, 1).toFixed(4)})`;
+  }
+
+  function updatePalette(t) {
+    for (const k of Object.keys(PALETTE_LIGHT)) {
+      const a = PALETTE_LIGHT[k];
+      const b = PALETTE_NIGHT[k];
+      if (Array.isArray(a)) {
+        curPal[k][0] = lerp(a[0], b[0], t);
+        curPal[k][1] = lerp(a[1], b[1], t);
+        curPal[k][2] = lerp(a[2], b[2], t);
+      } else {
+        curPal[k] = lerp(a, b, t);
+      }
+    }
+  }
+
+  // =========================================================================
+  // 2. Interactive & Simulation State
+  // =========================================================================
+  let W = window.innerWidth;
+  let H = window.innerHeight;
+  let DPR = Math.min(window.devicePixelRatio || 1, 2);
+  let baseUnit = Math.min(W, H) * 0.36;
+
+  const state = {
+    themeTarget: 0,       // 0 = Snow-Porcelain Light, 1 = Starlit Palace Night
+    themeBlend: 0,
+    shatterTarget: 0,     // 0 = Sacred Snowflake Mandala, 1 = Shattered Lissajous Field
+    shatterBlend: 0,
+    shatterVel: 0,
+    previewTitle: false,
+    centerXRatio: 0.50,
+    centerXTarget: 0.50,
+    scaleTarget: 1.0,
+    scaleCur: 1.0,
+    // Mouse & hover
+    mx: W * 0.5,
+    my: H * 0.5,
+    mouseActive: false,
+    normX: 0,
+    normY: 0,
+    tiltX: 0,
+    tiltY: 0,
+    hoverCore: 0,
+    // Drag offset
+    dragging: false,
+    dragStartX: 0,
+    dragStartY: 0,
+    dragRotX: 0,
+    dragRotY: 0,
+    dragTargetX: 0,
+    dragTargetY: 0,
+    // Pulse burst on click/morph
+    burstPulse: 0,
+    time: 0
+  };
+
+  function resize() {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    baseUnit = Math.min(W, H) * 0.375;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // =========================================================================
+  // 3. 3D Math Helpers
+  // =========================================================================
+  function rotX(v, a) {
+    const c = Math.cos(a), s = Math.sin(a);
+    return [v[0], v[1] * c - v[2] * s, v[1] * s + v[2] * c];
+  }
+  function rotY(v, a) {
+    const c = Math.cos(a), s = Math.sin(a);
+    return [v[0] * c + v[2] * s, v[1], -v[0] * s + v[2] * c];
+  }
+  function rotZ(v, a) {
+    const c = Math.cos(a), s = Math.sin(a);
+    return [v[0] * c - v[1] * s, v[0] * s + v[1] * c, v[2]];
+  }
+  function rotEuler(v, rx, ry, rz) {
+    let p = rotX(v, rx);
+    p = rotY(p, ry);
+    p = rotZ(p, rz);
+    return p;
+  }
+  function normalize(v) {
+    const l = Math.hypot(v[0], v[1], v[2]) || 1;
+    return [v[0] / l, v[1] / l, v[2] / l];
+  }
+  function cross(a, b) {
+    return [
+      a[1] * b[2] - a[2] * b[1],
+      a[2] * b[0] - a[0] * b[2],
+      a[0] * b[1] - a[1] * b[0]
+    ];
+  }
+  function dot(a, b) {
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  }
+  function sub(a, b) {
+    return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  }
+
+  function applyGlobalTilt(v) {
+    let p = rotX(v, state.tiltY + state.dragRotY);
+    p = rotY(p, state.tiltX + state.dragRotX);
+    return p;
+  }
+
+  function project(v, cx, cy, unit) {
+    const fov = 4.6;
+    const persp = fov / (fov - v[2]);
+    return {
+      x: cx + v[0] * unit * persp,
+      y: cy + v[1] * unit * persp,
+      z: v[2],
+      persp
+    };
+  }
+
+  // =========================================================================
+  // 4. Non-Euclidean Celestial Armillary Rings (4 Counter-Rotating 3D Rings)
+  // =========================================================================
+  const ARMILLARY_RINGS = [
+    {
+      name: 'Outer Ecliptic',
+      radius: 1.04,
+      expandMult: 1.15,
+      bandHalf: 0.036,
+      tiltX: 1.16,
+      tiltY: 0.34,
+      tiltZ: 0.22,
+      spinSpeed: 0.16,
+      precessAmp: 0.14,
+      precessFreq: 0.32,
+      style: 'gold_ecliptic',
+      ticks: 72,
+      majorEvery: 6,
+      nodes: 6,
+      comets: 2
+    },
+    {
+      name: 'Sapphire Meridian',
+      radius: 0.87,
+      expandMult: 1.18,
+      bandHalf: 0.028,
+      tiltX: -0.96,
+      tiltY: 0.78,
+      tiltZ: -0.45,
+      spinSpeed: -0.27,
+      precessAmp: 0.22,
+      precessFreq: 0.48,
+      style: 'sapphire_arcane',
+      ticks: 48,
+      majorEvery: 4,
+      nodes: 8,
+      comets: 2
+    },
+    {
+      name: 'Non-Euclidean Hyper-Ring',
+      radius: 0.71,
+      expandMult: 1.24,
+      bandHalf: 0.022,
+      tiltX: 0.58,
+      tiltY: -1.12,
+      tiltZ: 0.68,
+      spinSpeed: 0.41,
+      precessAmp: 0.34,
+      precessFreq: 0.71,
+      style: 'hyper_echo',
+      ticks: 36,
+      majorEvery: 3,
+      nodes: 4,
+      comets: 1
+    },
+    {
+      name: 'Inner Equatorial Stabilizer',
+      radius: 0.53,
+      expandMult: 1.32,
+      bandHalf: 0.014,
+      tiltX: 1.34,
+      tiltY: -0.26,
+      tiltZ: -0.52,
+      spinSpeed: -0.62,
+      precessAmp: 0.19,
+      precessFreq: 0.94,
+      style: 'platinum_inner',
+      ticks: 24,
+      majorEvery: 3,
+      nodes: 6,
+      comets: 1
+    }
+  ];
+
+  // =========================================================================
+  // 5. Central Multi-Layered Crystal Geometry (Outer Bipyramid + Inner Recursive Star Core)
+  // =========================================================================
+  function buildBipyramidMesh(rx, ry, rz, sides) {
+    // Vertices: 0 = top, 1 = bottom, 2..2+sides-1 = equator
+    const verts = [[0, -ry, 0], [0, ry, 0]];
+    for (let i = 0; i < sides; i++) {
+      const a = (i / sides) * Math.PI * 2;
+      verts.push([Math.cos(a) * rx, 0, Math.sin(a) * rz]);
+    }
+    const faces = [];
+    for (let i = 0; i < sides; i++) {
+      const curr = 2 + i;
+      const next = 2 + ((i + 1) % sides);
+      // Upper crown face
+      faces.push([0, next, curr]);
+      // Lower pavilion face
+      faces.push([1, curr, next]);
+    }
+    return { verts, faces };
+  }
+
+  // Outer sleek 6-sided faceted diamond crystal with beveled crown/girdle proportions
+  function buildDiamondCrystal(radius, topH, botH, crownRatio) {
+    // 0: apex top, 1: apex bottom, 2..7: upper crown ring, 8..13: lower girdle ring
+    const sides = 6;
+    const verts = [[0, -topH, 0], [0, botH, 0]];
+    const upperR = radius * 0.78;
+    const upperY = -topH * crownRatio;
+    const lowerY = botH * 0.16;
+    for (let i = 0; i < sides; i++) {
+      const a = (i / sides) * Math.PI * 2;
+      verts.push([Math.cos(a) * upperR, upperY, Math.sin(a) * upperR]);
+    }
+    for (let i = 0; i < sides; i++) {
+      const a = ((i + 0.5) / sides) * Math.PI * 2;
+      verts.push([Math.cos(a) * radius, lowerY, Math.sin(a) * radius]);
+    }
+    const faces = [];
+    for (let i = 0; i < sides; i++) {
+      const u0 = 2 + i;
+      const u1 = 2 + ((i + 1) % sides);
+      const l0 = 8 + i;
+      const lPrev = 8 + ((i + sides - 1) % sides);
+      faces.push([0, u1, u0]);         // upper star facets
+      faces.push([u0, u1, l0]);        // bezel kites A
+      faces.push([u0, l0, lPrev]);     // bezel kites B
+      faces.push([1, lPrev, l0]);      // lower pavilion
+    }
+    return { verts, faces };
+  }
+
+  const OUTER_CORE_MESH = buildDiamondCrystal(0.245, 0.37, 0.42, 0.34);
+  const INNER_CORE_MESH = buildBipyramidMesh(0.135, 0.215, 0.135, 4);
+  const SHARD_MESH = buildBipyramidMesh(0.032, 0.088, 0.028, 4);
+
+  // =========================================================================
+  // 6. 18 Levitating Micro-Crystal Shards (Mandala Layout <-> Lissajous Shatter)
+  // =========================================================================
+  const SHARDS = [];
+  for (let i = 0; i < 18; i++) {
+    // 3 rings of 6-fold sacred snowflake mandala symmetry
+    const tier = Math.floor(i / 6); // 0 = inner spear, 1 = mid chevron, 2 = outer crown
+    const idx = i % 6;
+    const baseAngle = (idx / 6) * Math.PI * 2 + (tier === 1 ? Math.PI / 6 : 0) - Math.PI / 2;
+
+    const mandalaR = tier === 0 ? 0.41 : tier === 1 ? 0.56 : 0.72;
+    const mandalaZ = tier === 0 ? 0.04 : tier === 1 ? -0.05 : 0.02;
+    const scale = tier === 0 ? 1.18 : tier === 1 ? 0.92 : 0.78;
+
+    // Harmonic Lissajous orbital parameters for Shattered state
+    const lissA = 1 + (i % 3);
+    const lissB = 2 + ((i + 1) % 3);
+    const lissC = 1 + ((i + 2) % 2);
+    const phaseX = (i / 18) * Math.PI * 2 + tier * 0.7;
+    const phaseY = (i / 18) * Math.PI * 4 + 1.1;
+    const phaseZ = (i / 18) * Math.PI * 3 + 0.4;
+    const ampX = 0.62 + (i % 5) * 0.125;
+    const ampY = 0.56 + ((i + 2) % 4) * 0.13;
+    const ampZ = 0.46 + ((i + 1) % 3) * 0.16;
+
+    SHARDS.push({
+      id: i,
+      tier,
+      idx,
+      baseAngle,
+      mandalaR,
+      mandalaZ,
+      scale,
+      lissA,
+      lissB,
+      lissC,
+      phaseX,
+      phaseY,
+      phaseZ,
+      ampX,
+      ampY,
+      ampZ,
+      speed: 0.36 + (i % 6) * 0.075,
+      spinX: (i % 2 === 0 ? 1 : -1) * (0.7 + (i % 4) * 0.32),
+      spinY: (i % 3 === 0 ? -1 : 1) * (0.9 + (i % 5) * 0.28),
+      goldTint: tier === 1 ? 0.55 : (i % 3 === 0 ? 0.35 : 0.08)
+    });
+  }
+
+  // =========================================================================
+  // 7. Ambient Stars, Dust Motes, Cursor Gravity Trail & Click Shockwaves
+  // =========================================================================
+  const BG_STARS = Array.from({ length: 110 }, (_, i) => ({
+    x: ((i * 7919) % 1000) / 1000,
+    y: ((i * 6271) % 1000) / 1000,
+    r: 0.55 + ((i * 31) % 100) / 70,
+    phase: (i * 1.37) % (Math.PI * 2),
+    speed: 0.7 + (i % 7) * 0.25,
+    depth: 0.25 + (i % 5) * 0.18,
+    gold: i % 5 === 0
+  }));
+
+  const AMBIENT_MOTES = Array.from({ length: 44 }, (_, i) => ({
+    x: Math.random() * W,
+    y: Math.random() * H,
+    vx: (Math.random() - 0.5) * 14,
+    vy: -8 - Math.random() * 14,
+    size: 1.4 + Math.random() * 2.8,
+    rot: Math.random() * Math.PI,
+    vrot: (Math.random() - 0.5) * 1.4,
+    alpha: 0.24 + Math.random() * 0.5,
+    gold: i % 4 === 0
+  }));
+
+  const TRAIL_PARTICLES = [];
+  const SHOCKWAVES = [];
+
+  function spawnShockwave(x, y, toShatter) {
+    SHOCKWAVES.push({
+      x, y,
+      r: baseUnit * 0.16,
+      maxR: baseUnit * (toShatter ? 1.55 : 1.25),
+      life: 0,
+      dur: 0.85,
+      gold: toShatter
+    });
+    // Burst frost glints
+    for (let i = 0; i < 22; i++) {
+      const ang = (i / 22) * Math.PI * 2 + (Math.random() - 0.5) * 0.22;
+      const spd = 85 + Math.random() * 210;
+      TRAIL_PARTICLES.push({
+        x, y,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd,
+        life: 0,
+        maxLife: 0.65 + Math.random() * 0.55,
+        size: 2.2 + Math.random() * 3.4,
+        star: i % 3 === 0,
+        gold: i % 4 === 0,
+        attracted: false
+      });
+    }
+  }
+
+  function spawnCursorDust(x, y, dx, dy) {
+    const count = Math.min(3, 1 + Math.floor(Math.hypot(dx, dy) / 14));
+    for (let i = 0; i < count; i++) {
+      if (TRAIL_PARTICLES.length > 140) TRAIL_PARTICLES.shift();
+      TRAIL_PARTICLES.push({
+        x: x + (Math.random() - 0.5) * 10,
+        y: y + (Math.random() - 0.5) * 10,
+        vx: dx * 0.14 + (Math.random() - 0.5) * 28,
+        vy: dy * 0.14 + (Math.random() - 0.5) * 28 - 8,
+        life: 0,
+        maxLife: 0.8 + Math.random() * 0.7,
+        size: 1.5 + Math.random() * 2.6,
+        star: Math.random() < 0.28,
+        gold: Math.random() < 0.34,
+        attracted: true
+      });
+    }
+  }
+
+  // =========================================================================
+  // 8. Drawing Primitives: Crisp Star-Glints (✦), Diamonds, Optical Caustics
+  // =========================================================================
+  function drawStarGlint(x, y, radius, alpha, colorRgb, rot = 0) {
+    if (alpha <= 0.01 || radius <= 0.5) return;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+
+    // Soft radial halo
+    const halo = ctx.createRadialGradient(0, 0, 0, 0, 0, radius * 1.45);
+    halo.addColorStop(0, rgba(curPal.glintCore, alpha * 0.9));
+    halo.addColorStop(0.28, rgba(colorRgb, alpha * 0.45));
+    halo.addColorStop(1, rgba(colorRgb, 0));
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius * 1.45, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Sharp 4-point celestial cross star ✦
+    ctx.fillStyle = rgba(curPal.glintCore, alpha * 0.95);
+    ctx.beginPath();
+    const inner = radius * 0.14;
+    ctx.moveTo(0, -radius);
+    ctx.quadraticCurveTo(inner * 0.5, -inner * 0.5, radius, 0);
+    ctx.quadraticCurveTo(inner * 0.5, inner * 0.5, 0, radius);
+    ctx.quadraticCurveTo(-inner * 0.5, inner * 0.5, -radius, 0);
+    ctx.quadraticCurveTo(-inner * 0.5, -inner * 0.5, 0, -radius);
+    ctx.closePath();
+    ctx.fill();
+
+    // Secondary diagonal micro rays
+    ctx.strokeStyle = rgba(colorRgb, alpha * 0.55);
+    ctx.lineWidth = 0.85;
+    const d = radius * 0.44;
+    ctx.beginPath();
+    ctx.moveTo(-d, -d); ctx.lineTo(d, d);
+    ctx.moveTo(d, -d); ctx.lineTo(-d, d);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawBackgroundArchitecture(cx, cy, unit, t) {
+    const night = curPal.isNight;
+
+    // 1. Starlit Palace Constellation Field (visible in night, subtle micro-shimmer in light)
+    if (night > 0.02) {
+      for (let i = 0; i < BG_STARS.length; i++) {
+        const s = BG_STARS[i];
+        const sx = s.x * W + state.normX * -18 * s.depth;
+        const sy = s.y * H + state.normY * -14 * s.depth;
+        const twinkle = 0.45 + 0.55 * Math.sin(t * s.speed + s.phase);
+        const col = s.gold ? curPal.goldBright : curPal.iceBright;
+        ctx.fillStyle = rgba(col, night * twinkle * 0.72);
+        ctx.beginPath();
+        ctx.arc(sx, sy, s.r, 0, Math.PI * 2);
+        ctx.fill();
+        if (s.r > 1.55 && twinkle > 0.82) {
+          drawStarGlint(sx, sy, s.r * 3.8, night * (twinkle - 0.5) * 0.8, col, t * 0.2);
+        }
+      }
+    }
+
+    // 2. Architectural Hairline Celestial Compass Grid behind the artifact
+    ctx.save();
+    ctx.translate(cx, cy);
+    const gridAlpha = lerp(0.065, 0.11, night);
+    ctx.strokeStyle = rgba(curPal.gridLine, gridAlpha);
+    ctx.lineWidth = 1;
+
+    // Outer drafting compass circles
+    const rOuter = unit * 1.34;
+    const rInner = unit * 1.24;
+    ctx.beginPath();
+    ctx.arc(0, 0, rOuter, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.setLineDash([3, 7]);
+    ctx.beginPath();
+    ctx.arc(0, 0, rInner, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Rotating subtle cardinal crosshairs
+    ctx.save();
+    ctx.rotate(t * 0.018);
+    ctx.strokeStyle = rgba(curPal.goldMain, lerp(0.14, 0.20, night));
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * (rInner - 14), Math.sin(a) * (rInner - 14));
+      ctx.lineTo(Math.cos(a) * (rOuter + 24), Math.sin(a) * (rOuter + 24));
+      ctx.stroke();
+    }
+    // 24 tiny astrolabe horizon notches
+    ctx.strokeStyle = rgba(curPal.gridLine, gridAlpha * 1.4);
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2;
+      const len = i % 6 === 0 ? 11 : 5;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * rOuter, Math.sin(a) * rOuter);
+      ctx.lineTo(Math.cos(a) * (rOuter + len), Math.sin(a) * (rOuter + len));
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.restore();
+  }
+
+  function drawVolumetricCaustics(cx, cy, unit, t) {
+    const night = curPal.isNight;
+    const sh = state.shatterBlend;
+    const pulse = 1 + state.burstPulse * 0.25 + state.hoverCore * 0.08;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    // 1. Deep Atmospheric Halo behind the core
+    const haloR = unit * (1.28 + sh * 0.16) * pulse;
+    const bgGlow = ctx.createRadialGradient(0, 0, unit * 0.04, 0, 0, haloR);
+    if (night < 0.5) {
+      bgGlow.addColorStop(0, rgba(curPal.iceBright, lerp(0.32, 0.55, night)));
+      bgGlow.addColorStop(0.34, rgba(curPal.causticA, lerp(0.11, 0.28, night)));
+      bgGlow.addColorStop(0.66, rgba(curPal.causticB, lerp(0.055, 0.12, night)));
+      bgGlow.addColorStop(1, rgba(curPal.causticA, 0));
+    } else {
+      bgGlow.addColorStop(0, rgba(curPal.iceBright, 0.42));
+      bgGlow.addColorStop(0.28, rgba(curPal.sapphireMid, 0.26));
+      bgGlow.addColorStop(0.62, rgba(curPal.violetAccent, 0.10));
+      bgGlow.addColorStop(1, rgba(curPal.sapphireDeep, 0));
+    }
+    ctx.fillStyle = bgGlow;
+    ctx.beginPath();
+    ctx.arc(0, 0, haloR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 2. Volumetric Rotating Light Rays
+    ctx.save();
+    if (night > 0.3) ctx.globalCompositeOperation = 'screen';
+    const rayCount = 10;
+    for (let i = 0; i < rayCount; i++) {
+      const baseA = (i / rayCount) * Math.PI * 2 + t * (i % 2 === 0 ? 0.08 : -0.055);
+      const halfW = (0.045 + (i % 3) * 0.022) * (1 + sh * 0.25);
+      const len = unit * (0.95 + 0.38 * Math.sin(t * 0.7 + i * 1.4)) * pulse;
+      const alpha = lerp(0.052, 0.135, night) * (0.65 + 0.35 * Math.sin(t * 1.1 + i * 2.1));
+      const col = i % 3 === 0 ? curPal.goldBright : curPal.rayColor;
+
+      const grad = ctx.createRadialGradient(0, 0, unit * 0.08, 0, 0, len);
+      grad.addColorStop(0, rgba(col, alpha * 1.3));
+      grad.addColorStop(0.55, rgba(col, alpha * 0.45));
+      grad.addColorStop(1, rgba(col, 0));
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, len, baseA - halfW, baseA + halfW);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // 3. Optical Caustic Light Ribbons (Harmonic Interference Waves)
+    const ribbonCount = 3;
+    for (let r = 0; r < ribbonCount; r++) {
+      const baseR = unit * (0.44 + r * 0.23 + sh * 0.12);
+      const dir = r % 2 === 0 ? 1 : -1;
+      const col = r === 1 ? curPal.causticB : curPal.causticA;
+      const alpha = lerp(0.11, 0.24, night) * (1 - r * 0.18);
+
+      ctx.beginPath();
+      const steps = 96;
+      for (let s = 0; s <= steps; s++) {
+        const th = (s / steps) * Math.PI * 2;
+        const wave =
+          Math.sin(th * (3 + r) + t * 0.85 * dir) * unit * 0.042 +
+          Math.cos(th * (6 - r) - t * 0.55 * dir) * unit * 0.022;
+        const rr = baseR + wave;
+        const x = Math.cos(th) * rr * (1.06 - r * 0.04);
+        const y = Math.sin(th) * rr * (0.86 + r * 0.05);
+        if (s === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = rgba(col, alpha);
+      ctx.lineWidth = lerp(1.2, 2.0, night);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+    ctx.restore();
+  }
+
+  // =========================================================================
+  // 9. Armillary Ring Precomputation & Depth-Split Rendering (Back / Front)
+  // =========================================================================
+  function computeArmillaryRingGeometry(ring, t, cx, cy, unit) {
+    const sh = state.shatterBlend;
+    const rad = ring.radius * lerp(1.0, ring.expandMult, sh);
+    const spin = t * ring.spinSpeed * (1 + sh * 0.45);
+
+    // Non-Euclidean harmonic precession + expansion angle unlock
+    const precessX = Math.sin(t * ring.precessFreq + ring.radius * 4) * ring.precessAmp;
+    const precessY = Math.cos(t * ring.precessFreq * 0.78) * ring.precessAmp;
+    const rx = ring.tiltX + precessX + sh * 0.24 * (ring.spinSpeed > 0 ? 1 : -1);
+    const ry = ring.tiltY + precessY + sh * 0.18;
+    const rz = ring.tiltZ + Math.sin(t * 0.25 + ring.radius) * 0.12;
+
+    const toWorld = (localPt) => {
+      const p = rotEuler(localPt, rx, ry, rz);
+      return applyGlobalTilt(p);
+    };
+
+    const segs = 96;
+    const outerPts = [];
+    const innerPts = [];
+    const midPts = [];
+    const rOut = rad + ring.bandHalf;
+    const rIn = rad - ring.bandHalf;
+
+    for (let i = 0; i <= segs; i++) {
+      const a = (i / segs) * Math.PI * 2 + spin;
+      const ca = Math.cos(a), sa = Math.sin(a);
+      const pOut = project(toWorld([ca * rOut, sa * rOut, 0]), cx, cy, unit);
+      const pIn = project(toWorld([ca * rIn, sa * rIn, 0]), cx, cy, unit);
+      const pMid = project(toWorld([ca * rad, sa * rad, 0]), cx, cy, unit);
+      outerPts.push(pOut);
+      innerPts.push(pIn);
+      midPts.push(pMid);
+    }
+
+    // Echo ghost points for Non-Euclidean Hyper-Ring
+    let echoPts = null;
+    if (ring.style === 'hyper_echo') {
+      echoPts = [];
+      const echoRx = rx + 0.14 * Math.sin(t * 1.2);
+      const echoRy = ry + 0.16 * Math.cos(t * 0.9);
+      const echoR = rad * 1.045;
+      for (let i = 0; i <= 72; i++) {
+        const a = (i / 72) * Math.PI * 2 - spin * 0.5;
+        const p = applyGlobalTilt(rotEuler([Math.cos(a) * echoR, Math.sin(a) * echoR, 0], echoRx, echoRy, rz));
+        echoPts.push(project(p, cx, cy, unit));
+      }
+    }
+
+    // Tick marks
+    const ticks = [];
+    for (let i = 0; i < ring.ticks; i++) {
+      const a = (i / ring.ticks) * Math.PI * 2 + spin;
+      const isMajor = (i % ring.majorEvery === 0);
+      const ca = Math.cos(a), sa = Math.sin(a);
+      const tIn = rad - ring.bandHalf * (isMajor ? 1.45 : 0.72);
+      const tOut = rad + ring.bandHalf * (isMajor ? 1.45 : 0.72);
+      const p0 = project(toWorld([ca * tIn, sa * tIn, 0]), cx, cy, unit);
+      const p1 = project(toWorld([ca * tOut, sa * tOut, 0]), cx, cy, unit);
+      ticks.push({ p0, p1, z: (p0.z + p1.z) * 0.5, isMajor });
+    }
+
+    // Constellation nodes
+    const nodes = [];
+    for (let i = 0; i < ring.nodes; i++) {
+      const a = (i / ring.nodes) * Math.PI * 2 + spin + 0.25;
+      const p = project(toWorld([Math.cos(a) * rad, Math.sin(a) * rad, 0]), cx, cy, unit);
+      nodes.push({ p, z: p.z, idx: i });
+    }
+
+    // Orbiting luminous comets
+    const comets = [];
+    for (let c = 0; c < ring.comets; c++) {
+      const headA = t * (ring.spinSpeed * 2.6 + (c % 2 === 0 ? 0.5 : -0.4)) + c * Math.PI;
+      const trail = [];
+      const tailLen = 14;
+      for (let k = 0; k < tailLen; k++) {
+        const a = headA - k * 0.045 * Math.sign(ring.spinSpeed);
+        const p = project(toWorld([Math.cos(a) * rad, Math.sin(a) * rad, 0]), cx, cy, unit);
+        trail.push(p);
+      }
+      comets.push(trail);
+    }
+
+    return { ring, outerPts, innerPts, midPts, echoPts, ticks, nodes, comets, segs };
+  }
+
+  function drawArmillaryRingPass(geom, isFrontPass) {
+    const { ring, outerPts, innerPts, midPts, echoPts, ticks, nodes, comets, segs } = geom;
+    const night = curPal.isNight;
+
+    const isGold = ring.style === 'gold_ecliptic';
+    const isSapphire = ring.style === 'sapphire_arcane';
+    const isHyper = ring.style === 'hyper_echo';
+    const isInner = ring.style === 'platinum_inner';
+
+    const primaryCol = isGold
+      ? curPal.goldMain
+      : isSapphire
+        ? curPal.sapphireMid
+        : isHyper
+          ? curPal.violetAccent
+          : curPal.sapphireBright;
+    const highlightCol = isGold
+      ? curPal.goldBright
+      : isHyper
+        ? curPal.iceBright
+        : curPal.iceBright;
+
+    // 1. Subtle filled metallic/glass bezel ribbon segments
+    for (let i = 0; i < segs; i++) {
+      const zMid = (midPts[i].z + midPts[i + 1].z) * 0.5;
+      if (isFrontPass ? zMid < 0 : zMid >= 0) continue;
+
+      const depthFactor = clamp((zMid + 1.3) / 2.6, 0.22, 1.0);
+      // Specular gleam varies smoothly around ring
+      const spec = 0.5 + 0.5 * Math.sin((i / segs) * Math.PI * 4 + state.time * 0.9);
+      const bandAlpha = (isGold ? 0.16 : isSapphire ? 0.18 : 0.12) * depthFactor * lerp(0.85, 1.35, night);
+
+      // Ribbon fill
+      ctx.fillStyle = rgba(primaryCol, bandAlpha * (0.7 + 0.45 * spec));
+      ctx.beginPath();
+      ctx.moveTo(outerPts[i].x, outerPts[i].y);
+      ctx.lineTo(outerPts[i + 1].x, outerPts[i + 1].y);
+      ctx.lineTo(innerPts[i + 1].x, innerPts[i + 1].y);
+      ctx.lineTo(innerPts[i].x, innerPts[i].y);
+      ctx.closePath();
+      ctx.fill();
+
+      // Outer crisp rim stroke
+      const edgeAlpha = (isFrontPass ? 0.78 : 0.34) * depthFactor * (0.68 + 0.32 * spec);
+      ctx.strokeStyle = rgba(spec > 0.72 ? highlightCol : primaryCol, edgeAlpha);
+      ctx.lineWidth = (isGold ? 1.55 : isSapphire ? 1.45 : 1.15) * midPts[i].persp;
+      ctx.beginPath();
+      ctx.moveTo(outerPts[i].x, outerPts[i].y);
+      ctx.lineTo(outerPts[i + 1].x, outerPts[i + 1].y);
+      ctx.stroke();
+
+      // Inner delicate hairline rim
+      ctx.strokeStyle = rgba(primaryCol, edgeAlpha * 0.62);
+      ctx.lineWidth = 0.85 * midPts[i].persp;
+      ctx.beginPath();
+      ctx.moveTo(innerPts[i].x, innerPts[i].y);
+      ctx.lineTo(innerPts[i + 1].x, innerPts[i + 1].y);
+      ctx.stroke();
+
+      // Luminous broken arcane orbital arcs along middle track
+      if ((i % 16) < 7 && (isSapphire || isGold || isInner)) {
+        ctx.strokeStyle = rgba(highlightCol, (isFrontPass ? 0.62 : 0.22) * depthFactor);
+        ctx.lineWidth = (isInner ? 1.3 : 1.0) * midPts[i].persp;
+        ctx.beginPath();
+        ctx.moveTo(midPts[i].x, midPts[i].y);
+        ctx.lineTo(midPts[i + 1].x, midPts[i + 1].y);
+        ctx.stroke();
+      }
+    }
+
+    // 2. Non-Euclidean 4D Temporal Phase Echo (Ring 3)
+    if (echoPts) {
+      for (let i = 0; i < echoPts.length - 1; i++) {
+        const zMid = (echoPts[i].z + echoPts[i + 1].z) * 0.5;
+        if (isFrontPass ? zMid < 0 : zMid >= 0) continue;
+        if (i % 3 === 2) continue;
+        const depthFactor = clamp((zMid + 1.2) / 2.4, 0.18, 1.0);
+        ctx.strokeStyle = rgba(curPal.goldBright, (isFrontPass ? 0.42 : 0.16) * depthFactor);
+        ctx.lineWidth = 1.0;
+        ctx.beginPath();
+        ctx.moveTo(echoPts[i].x, echoPts[i].y);
+        ctx.lineTo(echoPts[i + 1].x, echoPts[i + 1].y);
+        ctx.stroke();
+      }
+    }
+
+    // 3. Delicate Arcane Degree Ticks
+    for (let i = 0; i < ticks.length; i++) {
+      const tk = ticks[i];
+      if (isFrontPass ? tk.z < 0 : tk.z >= 0) continue;
+      const depthFactor = clamp((tk.z + 1.2) / 2.4, 0.2, 1.0);
+      ctx.strokeStyle = rgba(tk.isMajor ? highlightCol : primaryCol, (isFrontPass ? (tk.isMajor ? 0.85 : 0.44) : 0.22) * depthFactor);
+      ctx.lineWidth = tk.isMajor ? 1.35 : 0.75;
+      ctx.beginPath();
+      ctx.moveTo(tk.p0.x, tk.p0.y);
+      ctx.lineTo(tk.p1.x, tk.p1.y);
+      ctx.stroke();
+    }
+
+    // 4. Constellation Nodes & Hairline Chords
+    if (isGold) {
+      for (let i = 0; i < nodes.length; i++) {
+        const a = nodes[i];
+        const b = nodes[(i + 1) % nodes.length];
+        const avgZ = (a.z + b.z) * 0.5;
+        if (isFrontPass ? avgZ < 0 : avgZ >= 0) continue;
+        const depthFactor = clamp((avgZ + 1.2) / 2.4, 0.2, 1.0);
+        ctx.strokeStyle = rgba(curPal.goldMain, (isFrontPass ? 0.24 : 0.10) * depthFactor);
+        ctx.lineWidth = 0.75;
+        ctx.beginPath();
+        ctx.moveTo(a.p.x, a.p.y);
+        ctx.lineTo(b.p.x, b.p.y);
+        ctx.stroke();
+      }
+    }
+
+    for (let i = 0; i < nodes.length; i++) {
+      const nd = nodes[i];
+      if (isFrontPass ? nd.z < 0 : nd.z >= 0) continue;
+      const depthFactor = clamp((nd.z + 1.2) / 2.4, 0.25, 1.0);
+      const r = (isGold ? 4.4 : 3.6) * nd.p.persp;
+      const alpha = (isFrontPass ? 0.92 : 0.36) * depthFactor;
+
+      // Diamond clasp ◇
+      ctx.save();
+      ctx.translate(nd.p.x, nd.p.y);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = rgba(curPal.iceWhite, alpha * 0.92);
+      ctx.strokeStyle = rgba(isGold ? curPal.goldMain : curPal.sapphireBright, alpha);
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.rect(-r * 0.65, -r * 0.65, r * 1.3, r * 1.3);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      if (isFrontPass && (nd.idx % 2 === 0)) {
+        drawStarGlint(nd.p.x, nd.p.y, r * 2.5, alpha * 0.72, highlightCol, state.time * 0.4 + nd.idx);
+      }
+    }
+
+    // 5. Luminous Orbital Comets gliding along ring paths
+    for (let c = 0; c < comets.length; c++) {
+      const trail = comets[c];
+      const head = trail[0];
+      if (isFrontPass ? head.z < 0 : head.z >= 0) continue;
+      for (let k = 0; k < trail.length - 1; k++) {
+        const frac = 1 - k / trail.length;
+        ctx.strokeStyle = rgba(highlightCol, frac * frac * (isFrontPass ? 0.85 : 0.35));
+        ctx.lineWidth = (2.2 * frac + 0.4) * trail[k].persp;
+        ctx.beginPath();
+        ctx.moveTo(trail[k].x, trail[k].y);
+        ctx.lineTo(trail[k + 1].x, trail[k + 1].y);
+        ctx.stroke();
+      }
+      if (isFrontPass) {
+        drawStarGlint(head.x, head.y, 8.5 * head.persp, 0.95, highlightCol, state.time * 1.2);
+      }
+    }
+  }
+
+  // =========================================================================
+  // 10. 3D Faceted Crystal Mesh Renderer (Translucent Refractive Prism Shading)
+  // =========================================================================
+  const LIGHT_KEY = normalize([-0.55, -0.68, 0.48]);
+  const LIGHT_RIM = normalize([0.72, 0.42, -0.55]);
+
+  function renderCrystalMesh(mesh, transformFn, cx, cy, unit, opts) {
+    const worldVerts = mesh.verts.map(v => transformFn(v));
+    const projVerts = worldVerts.map(v => project(v, cx, cy, unit));
+
+    const faceList = [];
+    for (let i = 0; i < mesh.faces.length; i++) {
+      const [ia, ib, ic] = mesh.faces[i];
+      const a = worldVerts[ia], b = worldVerts[ib], c = worldVerts[ic];
+      const ab = sub(b, a), ac = sub(c, a);
+      const n = normalize(cross(ab, ac));
+      const avgZ = (a[2] + b[2] + c[2]) / 3;
+      const facing = n[2]; // > 0 faces viewer
+      faceList.push({ ia, ib, ic, n, avgZ, facing });
+    }
+
+    // Painter's algorithm: back to front
+    faceList.sort((u, v) => u.avgZ - v.avgZ);
+
+    const night = curPal.isNight;
+    const goldMix = opts.goldMix || 0;
+    const passFilter = opts.pass || 'all'; // 'back' | 'front' | 'all'
+    const baseOpacity = opts.opacity ?? 0.82;
+    const isInner = !!opts.isInner;
+
+    for (let i = 0; i < faceList.length; i++) {
+      const f = faceList[i];
+      if (passFilter === 'back' && f.facing >= 0) continue;
+      if (passFilter === 'front' && f.facing < 0) continue;
+
+      const pa = projVerts[f.ia];
+      const pb = projVerts[f.ib];
+      const pc = projVerts[f.ic];
+
+      const nEff = f.facing >= 0 ? f.n : [-f.n[0], -f.n[1], -f.n[2]];
+      const diffKey = Math.max(0, dot(nEff, LIGHT_KEY));
+      const diffRim = Math.max(0, dot(nEff, LIGHT_RIM));
+      const fresnel = Math.pow(1 - Math.abs(f.facing), 1.9);
+
+      // Compute crystalline color blend (dedicated champagne-gold vs deep sapphire shading)
+      const isGoldShard = goldMix > 0.3;
+      const cShadow = isGoldShard
+        ? curPal.goldShadow
+        : (isInner ? curPal.sapphireMid : curPal.sapphireDeep);
+      const cMid = isGoldShard ? curPal.goldMain : curPal.sapphireMid;
+      const cHi = isGoldShard ? curPal.goldBright : curPal.iceBright;
+
+      const keyMix = clamp(diffKey * 0.86 + 0.18, 0, 1);
+      let r = lerp(cShadow[0], cMid[0], keyMix);
+      let g = lerp(cShadow[1], cMid[1], keyMix);
+      let b = lerp(cShadow[2], cMid[2], keyMix);
+
+      // Specular & Fresnel ice-white brilliance
+      const specBoost = clamp(Math.pow(diffKey, 2.9) * 0.88 + fresnel * 0.48 + diffRim * 0.25, 0, 1);
+      r = lerp(r, curPal.iceWhite[0], specBoost * (isInner ? 0.80 : 0.68));
+      g = lerp(g, curPal.iceWhite[1], specBoost * (isInner ? 0.80 : 0.68));
+      b = lerp(b, curPal.iceWhite[2], specBoost * (isInner ? 0.80 : 0.68));
+
+      // Subtle champagne-gold / glacial-cyan chromatic dispersion on rim faces
+      if (diffRim > 0.32 || goldMix > 0.2) {
+        const gAmt = clamp(diffRim * 0.34 + (isGoldShard ? 0.34 : goldMix * 0.30), 0, 0.68);
+        r = lerp(r, cHi[0], gAmt);
+        g = lerp(g, cHi[1], gAmt);
+        b = lerp(b, cHi[2], gAmt);
+      }
+
+      const faceAlpha = (f.facing < 0 ? baseOpacity * 0.42 : baseOpacity * (0.60 + 0.36 * diffKey + 0.18 * fresnel));
+
+      // Gradient fill across triangle for glassy depth
+      const grad = ctx.createLinearGradient(pa.x, pa.y, (pb.x + pc.x) * 0.5, (pb.y + pc.y) * 0.5);
+      grad.addColorStop(0, rgba([lerp(r, 255, 0.28), lerp(g, 255, 0.28), lerp(b, 255, 0.28)], faceAlpha));
+      grad.addColorStop(1, rgba([r, g, b], faceAlpha * 0.88));
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(pa.x, pa.y);
+      ctx.lineTo(pb.x, pb.y);
+      ctx.lineTo(pc.x, pc.y);
+      ctx.closePath();
+      ctx.fill();
+
+      // Razor-sharp faceted crystal edge highlights
+      if (f.facing >= 0 || isInner) {
+        const edgeCol = specBoost > 0.52 ? curPal.iceWhite : (isGoldShard ? curPal.goldBright : curPal.iceBright);
+        const edgeAlpha = clamp((0.40 + specBoost * 0.60) * (night > 0.5 ? 1.0 : 0.92), 0, 0.96);
+        ctx.strokeStyle = rgba(edgeCol, edgeAlpha);
+        ctx.lineWidth = opts.edgeWidth || 1.15;
+        ctx.stroke();
+      }
+    }
+
+    return projVerts;
+  }
+
+  // =========================================================================
+  // 11. Compute 18 Shards (Smooth Morph: Snowflake Mandala <-> Lissajous Shatter)
+  // =========================================================================
+  function computeShards(t, cx, cy, unit) {
+    const sh = smoothstep(clamp(state.shatterBlend, 0, 1));
+    const list = [];
+
+    for (let i = 0; i < SHARDS.length; i++) {
+      const s = SHARDS[i];
+
+      // --- Position A: Sacred 6-Fold Snowflake Mandala ---
+      const mandalaRot = t * (s.tier === 1 ? -0.14 : 0.11);
+      const ang = s.baseAngle + mandalaRot;
+      const breathe = 1 + Math.sin(t * 1.9 + s.tier * 1.15 + s.idx * 0.4) * 0.035 + state.hoverCore * 0.05;
+      const mx = Math.cos(ang) * s.mandalaR * breathe;
+      const my = Math.sin(ang) * s.mandalaR * breathe;
+      const mz = s.mandalaZ + Math.sin(t * 1.6 + s.idx) * 0.035;
+
+      // --- Position B: 3D Harmonic Lissajous Shattered Field ---
+      const lt = t * s.speed;
+      const lx = Math.sin(lt * s.lissA + s.phaseX) * s.ampX;
+      const ly = Math.cos(lt * s.lissB + s.phaseY) * s.ampY;
+      const lz = Math.sin(lt * s.lissC + s.phaseZ) * s.ampZ;
+
+      // Smooth arc-outward interpolation with mid-transition radial flourish
+      const arcBoost = Math.sin(sh * Math.PI) * 0.22;
+      const rawPos = [
+        lerp(mx, lx, sh) * (1 + arcBoost),
+        lerp(my, ly, sh) * (1 + arcBoost),
+        lerp(mz, lz, sh)
+      ];
+
+      const worldPos = applyGlobalTilt(rawPos);
+      const projCenter = project(worldPos, cx, cy, unit);
+
+      // Orientation: radially aligned outward in Mandala -> tumbling gracefully in Shattered state
+      const mandalaOrientZ = ang + Math.PI / 2;
+      const rx = lerp(0.18 * Math.sin(t * 1.4 + s.idx), t * s.spinX + s.phaseX, sh);
+      const ry = lerp(0.32 * Math.cos(t * 1.1 + s.idx), t * s.spinY + s.phaseY, sh);
+      const rz = lerp(mandalaOrientZ, t * (s.spinX * 0.5) + s.phaseZ, sh);
+
+      list.push({
+        shard: s,
+        rawPos,
+        worldPos,
+        projCenter,
+        rx, ry, rz,
+        z: worldPos[2]
+      });
+    }
+
+    list.sort((a, b) => a.z - b.z);
+    return list;
+  }
+
+  function drawMandalaGeometryFilaments(shardItems, cx, cy, unit, t) {
+    // Delicate sacred snowflake filaments linking mandala shards (fades smoothly as shards shatter)
+    const mandalaWeight = clamp(1 - state.shatterBlend * 1.35, 0, 1);
+    if (mandalaWeight <= 0.01) return;
+
+    const night = curPal.isNight;
+    // Map back by shard id for exact symmetry rings
+    const byId = new Array(18);
+    for (const item of shardItems) byId[item.shard.id] = item;
+
+    ctx.save();
+    // 1. Six-pointed hexagram & radial snowflake spokes
+    for (let tier = 0; tier < 3; tier++) {
+      const base = tier * 6;
+      const col = tier === 1 ? curPal.goldMain : curPal.sapphireMid;
+      const alpha = mandalaWeight * lerp(0.28, 0.42, night) * (1 - tier * 0.14);
+      ctx.strokeStyle = rgba(col, alpha);
+      ctx.lineWidth = tier === 0 ? 1.2 : 0.9;
+
+      // Connect hexagon perimeter
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const p = byId[base + i].projCenter;
+        if (i === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+
+      // Connect inner-to-outer snowflake branches + chevron barbs
+      if (tier === 0) {
+        ctx.strokeStyle = rgba(curPal.sapphireBright, mandalaWeight * lerp(0.32, 0.48, night));
+        ctx.lineWidth = 1.05;
+        for (let i = 0; i < 6; i++) {
+          const p0 = byId[i].projCenter;
+          const p1L = byId[6 + i].projCenter;
+          const p1R = byId[6 + ((i + 5) % 6)].projCenter;
+          const p2 = byId[12 + i].projCenter;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(p0.x, p0.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+
+          // Delicate snowflake diamond webbing from inner spear to flanking gold chevrons
+          ctx.strokeStyle = rgba(curPal.goldMain, mandalaWeight * lerp(0.20, 0.34, night));
+          ctx.lineWidth = 0.75;
+          ctx.beginPath();
+          ctx.moveTo(p0.x, p0.y);
+          ctx.lineTo(p1L.x, p1L.y);
+          ctx.moveTo(p0.x, p0.y);
+          ctx.lineTo(p1R.x, p1R.y);
+          ctx.stroke();
+          ctx.strokeStyle = rgba(curPal.sapphireBright, mandalaWeight * lerp(0.32, 0.48, night));
+          ctx.lineWidth = 1.05;
+        }
+      }
+    }
+
+    // 2. Sacred gold hexagram star connecting alternate mid-ring shards
+    ctx.strokeStyle = rgba(curPal.goldMain, mandalaWeight * lerp(0.26, 0.40, night));
+    ctx.lineWidth = 0.95;
+    for (let offset = 0; offset < 2; offset++) {
+      ctx.beginPath();
+      for (let k = 0; k < 3; k++) {
+        const p = byId[6 + ((k * 2 + offset) % 6)].projCenter;
+        if (k === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  function drawShardItem(item, cx, cy, unit, t) {
+    const s = item.shard;
+    const sh = state.shatterBlend;
+    const sc = s.scale * (1 + state.hoverCore * 0.06);
+
+    // Subtle luminous tether filament in Shattered state
+    if (sh > 0.08) {
+      const tetherAlpha = sh * clamp((item.z + 1.2) / 2.4, 0.15, 0.75) * lerp(0.12, 0.22, curPal.isNight);
+      const grad = ctx.createLinearGradient(cx, cy, item.projCenter.x, item.projCenter.y);
+      grad.addColorStop(0, rgba(curPal.iceBright, 0));
+      grad.addColorStop(0.55, rgba(s.goldTint > 0.4 ? curPal.goldMain : curPal.sapphireBright, tetherAlpha));
+      grad.addColorStop(1, rgba(curPal.iceWhite, tetherAlpha * 1.4));
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 0.75;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(item.projCenter.x, item.projCenter.y);
+      ctx.stroke();
+    }
+
+    const transformFn = (v) => {
+      const scaled = [v[0] * sc, v[1] * sc, v[2] * sc];
+      const oriented = rotEuler(scaled, item.rx, item.ry, item.rz);
+      const placed = [
+        oriented[0] + item.rawPos[0],
+        oriented[1] + item.rawPos[1],
+        oriented[2] + item.rawPos[2]
+      ];
+      return applyGlobalTilt(placed);
+    };
+
+    const projVerts = renderCrystalMesh(SHARD_MESH, transformFn, cx, cy, unit, {
+      opacity: 0.88,
+      edgeWidth: 0.95,
+      goldMix: s.goldTint
+    });
+
+    // Occasional crisp glint on shard tip
+    const glintWave = Math.sin(t * 2.1 + s.id * 1.7);
+    if (glintWave > 0.78 && item.z > -0.2) {
+      const tip = projVerts[0];
+      const gAlpha = ((glintWave - 0.78) / 0.22) * 0.85;
+      drawStarGlint(
+        tip.x, tip.y,
+        6.5 * tip.persp * s.scale,
+        gAlpha,
+        s.goldTint > 0.4 ? curPal.goldBright : curPal.iceBright,
+        t * 0.8 + s.id
+      );
+    }
+  }
+
+  // =========================================================================
+  // 12. Central Multi-Layered Fractal Crystal Core
+  // =========================================================================
+  function drawCentralCore(cx, cy, unit, t) {
+    const night = curPal.isNight;
+    const sh = state.shatterBlend;
+    const pulse = 1 + Math.sin(t * 2.2) * 0.025 + state.burstPulse * 0.14 + state.hoverCore * 0.05;
+    const coreScale = pulse * lerp(1.0, 0.92, sh);
+
+    const outerSpinY = t * 0.36;
+    const outerTiltX = 0.14 * Math.sin(t * 0.65);
+    const outerTiltZ = 0.09 * Math.cos(t * 0.52);
+
+    const outerTransform = (v) => {
+      let p = [v[0] * coreScale, v[1] * coreScale, v[2] * coreScale];
+      p = rotEuler(p, outerTiltX, outerSpinY, outerTiltZ);
+      return applyGlobalTilt(p);
+    };
+
+    // Counter-rotating recursive inner core (4D nested heart)
+    const innerScale = coreScale * (1.0 + Math.sin(t * 3.1) * 0.05 + sh * 0.12);
+    const innerTransform = (v) => {
+      let p = [v[0] * innerScale, v[1] * innerScale, v[2] * innerScale];
+      p = rotEuler(p, -t * 0.68, -t * 0.92, t * 0.44);
+      return applyGlobalTilt(p);
+    };
+
+    // 1. Outer Crystal Back Faces (deep refractive shell behind inner core)
+    renderCrystalMesh(OUTER_CORE_MESH, outerTransform, cx, cy, unit, {
+      pass: 'back',
+      opacity: lerp(0.55, 0.68, night),
+      edgeWidth: 0.9,
+      goldMix: 0.06
+    });
+
+    // 2. Inner Radiance Heart Glow
+    const heartR = unit * (0.24 + sh * 0.05) * pulse;
+    const heartGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, heartR);
+    heartGrad.addColorStop(0, rgba(curPal.iceWhite, 0.95));
+    heartGrad.addColorStop(0.28, rgba(curPal.iceBright, lerp(0.62, 0.84, night)));
+    heartGrad.addColorStop(0.60, rgba(curPal.goldBright, lerp(0.24, 0.38, night)));
+    heartGrad.addColorStop(1, rgba(curPal.sapphireMid, 0));
+    ctx.fillStyle = heartGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, heartR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 3. Inner Recursive Counter-Rotating Gold-Sapphire Octahedron
+    renderCrystalMesh(INNER_CORE_MESH, innerTransform, cx, cy, unit, {
+      pass: 'all',
+      isInner: true,
+      opacity: 0.92,
+      edgeWidth: 1.25,
+      goldMix: 0.62
+    });
+
+    // 4. Blazing Celestial Star Heart (✦) inside the diamond
+    drawStarGlint(
+      cx, cy,
+      unit * (0.135 + Math.sin(t * 2.8) * 0.018 + state.burstPulse * 0.06),
+      0.96,
+      curPal.goldBright,
+      t * 0.35
+    );
+
+    // 5. Outer Crystal Front Translucent Glass Facets
+    const projOuter = renderCrystalMesh(OUTER_CORE_MESH, outerTransform, cx, cy, unit, {
+      pass: 'front',
+      opacity: lerp(0.64, 0.56, night),
+      edgeWidth: 1.45,
+      goldMix: 0.10
+    });
+
+    // 6. Specular Vertex Glints at Top & Bottom Diamond Apexes
+    const apexTop = projOuter[0];
+    const apexBot = projOuter[1];
+    drawStarGlint(apexTop.x, apexTop.y, 14 * apexTop.persp, 0.92, curPal.iceBright, -t * 0.5);
+    drawStarGlint(apexBot.x, apexBot.y, 10 * apexBot.persp, 0.72, curPal.goldBright, t * 0.4);
+  }
+
+  // =========================================================================
+  // 13. Ambient Frost Dust, Interactive Cursor Gravity Trails & Shockwaves
+  // =========================================================================
+  function updateAndDrawParticles(dt, cx, cy) {
+    const night = curPal.isNight;
+
+    // 1. Ambient drifting diamond motes
+    for (let i = 0; i < AMBIENT_MOTES.length; i++) {
+      const m = AMBIENT_MOTES[i];
+      // Subtle gravitational curve toward cursor if nearby
+      if (state.mouseActive) {
+        const dx = state.mx - m.x;
+        const dy = state.my - m.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 14 && dist < 210) {
+          const force = (1 - dist / 210) * 58 * dt;
+          m.vx += (dx / dist) * force;
+          m.vy += (dy / dist) * force;
+        }
+      }
+      m.vx *= Math.pow(0.985, dt * 60);
+      m.vy = lerp(m.vy, -12, dt * 0.6);
+
+      m.x += m.vx * dt;
+      m.y += m.vy * dt;
+      m.rot += m.vrot * dt;
+
+      if (m.y < -20) { m.y = H + 20; m.x = Math.random() * W; }
+      if (m.x < -20) m.x = W + 20;
+      if (m.x > W + 20) m.x = -20;
+
+      const col = m.gold ? curPal.dustGold : curPal.dustPrimary;
+      ctx.save();
+      ctx.translate(m.x, m.y);
+      ctx.rotate(m.rot);
+      ctx.fillStyle = rgba(col, m.alpha * lerp(0.52, 0.75, night));
+      ctx.beginPath();
+      ctx.moveTo(0, -m.size);
+      ctx.lineTo(m.size * 0.65, 0);
+      ctx.lineTo(0, m.size);
+      ctx.lineTo(-m.size * 0.65, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // 2. Interactive Gravity-Attracted Cursor Ice Dust & Burst Motes
+    for (let i = TRAIL_PARTICLES.length - 1; i >= 0; i--) {
+      const p = TRAIL_PARTICLES[i];
+      p.life += dt;
+      if (p.life >= p.maxLife) {
+        TRAIL_PARTICLES.splice(i, 1);
+        continue;
+      }
+
+      if (p.attracted) {
+        // Soft orbital gravity toward crystal core
+        const dx = cx - p.x;
+        const dy = cy - p.y;
+        const d = Math.hypot(dx, dy) || 1;
+        const g = clamp(95 / (d * 0.012 + 1), 12, 90);
+        // Add slight tangential swirl
+        p.vx += ((dx / d) * g - (dy / d) * g * 0.38) * dt;
+        p.vy += ((dy / d) * g + (dx / d) * g * 0.38) * dt;
+      }
+
+      p.vx *= Math.pow(0.96, dt * 60);
+      p.vy *= Math.pow(0.96, dt * 60);
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+
+      const frac = 1 - p.life / p.maxLife;
+      const alpha = Math.sin(frac * Math.PI) * 0.9;
+      const col = p.gold ? curPal.goldBright : curPal.iceBright;
+
+      if (p.star) {
+        drawStarGlint(p.x, p.y, p.size * 2.4 * frac, alpha, col, p.life * 2.5);
+      } else {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(Math.PI / 4 + p.life * 2);
+        ctx.fillStyle = rgba(col, alpha);
+        const sz = p.size * frac;
+        ctx.fillRect(-sz * 0.5, -sz * 0.5, sz, sz);
+        ctx.restore();
+      }
+    }
+
+    // 3. Expanding Frost Shockwaves
+    for (let i = SHOCKWAVES.length - 1; i >= 0; i--) {
+      const sw = SHOCKWAVES[i];
+      sw.life += dt;
+      if (sw.life >= sw.dur) {
+        SHOCKWAVES.splice(i, 1);
+        continue;
+      }
+      const p = sw.life / sw.dur;
+      const eased = 1 - Math.pow(1 - p, 3);
+      const r = lerp(sw.r, sw.maxR, eased);
+      const alpha = (1 - p) * (1 - p) * lerp(0.55, 0.85, night);
+      const col = sw.gold ? curPal.goldBright : curPal.iceBright;
+
+      ctx.strokeStyle = rgba(col, alpha);
+      ctx.lineWidth = (1 - p) * 2.8 + 0.5;
+      ctx.beginPath();
+      ctx.arc(sw.x, sw.y, r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Secondary crisp hairline echo ring
+      ctx.strokeStyle = rgba(curPal.sapphireBright, alpha * 0.65);
+      ctx.lineWidth = 1.0;
+      ctx.beginPath();
+      ctx.arc(sw.x, sw.y, r * 0.86, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  // =========================================================================
+  // 14. Controls & Event Listeners
+  // =========================================================================
+  function toggleTheme() {
+    state.themeTarget = state.themeTarget === 0 ? 1 : 0;
+    const isNight = state.themeTarget === 1;
+    document.body.classList.toggle('theme-night', isNight);
+    icoTheme.textContent = isNight ? '☾' : '☀';
+    lblTheme.textContent = isNight ? '星宫永夜' : '雪瓷白昼';
+    btnTheme.classList.toggle('active', isNight);
+  }
+
+  function toggleMorph(triggerX, triggerY) {
+    state.shatterTarget = state.shatterTarget === 0 ? 1 : 0;
+    const shattered = state.shatterTarget === 1;
+    document.body.classList.toggle('is-shattered', shattered);
+    btnMorph.classList.toggle('active', !shattered);
+    stateCaption.textContent = shattered
+      ? '非欧星环展开 · 18 枚利萨如碎晶游离'
+      : '神圣雪花曼陀罗 · 共振锁定';
+    state.burstPulse = 1.0;
+    const cx = triggerX ?? (W * state.centerXRatio);
+    const cy = triggerY ?? (H * 0.50);
+    spawnShockwave(cx, cy, shattered);
+  }
+
+  function toggleLayoutPreview() {
+    state.previewTitle = !state.previewTitle;
+    document.body.classList.toggle('preview-title', state.previewTitle);
+    btnLayout.classList.toggle('active', state.previewTitle);
+    state.centerXTarget = state.previewTitle ? 0.325 : 0.50;
+    state.scaleTarget = state.previewTitle ? 0.84 : 1.0;
+  }
+
+  btnTheme.addEventListener('click', (e) => { e.stopPropagation(); toggleTheme(); });
+  btnMorph.addEventListener('click', (e) => { e.stopPropagation(); toggleMorph(); });
+  btnLayout.addEventListener('click', (e) => { e.stopPropagation(); toggleLayoutPreview(); });
+
+  // Preview menu buttons gently pulse the crystal for tactile delight
+  document.querySelectorAll('[data-preview-btn], #btn-preview-begin').forEach((btn) => {
+    btn.addEventListener('mouseenter', () => {
+      state.burstPulse = Math.max(state.burstPulse, 0.35);
+    });
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleMorph();
+    });
+  });
+
+  // Pointer parallax, cursor dust trails, drag orbit & click-to-morph
+  let downX = 0, downY = 0, movedDist = 0;
+
+  canvas.addEventListener('pointerdown', (e) => {
+    state.dragging = true;
+    downX = e.clientX;
+    downY = e.clientY;
+    state.dragStartX = e.clientX;
+    state.dragStartY = e.clientY;
+    movedDist = 0;
+  });
+
+  window.addEventListener('pointermove', (e) => {
+    const dx = e.clientX - state.mx;
+    const dy = e.clientY - state.my;
+    state.mx = e.clientX;
+    state.my = e.clientY;
+    state.mouseActive = true;
+    state.normX = (e.clientX / W - 0.5) * 2;
+    state.normY = (e.clientY / H - 0.5) * 2;
+
+    if (Math.hypot(dx, dy) > 2.2) {
+      spawnCursorDust(e.clientX, e.clientY, dx, dy);
+    }
+
+    if (state.dragging) {
+      const ddx = e.clientX - state.dragStartX;
+      const ddy = e.clientY - state.dragStartY;
+      movedDist += Math.hypot(ddx, ddy);
+      state.dragTargetX = clamp(state.dragTargetX + ddx * 0.006, -0.75, 0.75);
+      state.dragTargetY = clamp(state.dragTargetY + ddy * 0.006, -0.55, 0.55);
+      state.dragStartX = e.clientX;
+      state.dragStartY = e.clientY;
+    }
+  });
+
+  window.addEventListener('pointerup', (e) => {
+    if (!state.dragging) return;
+    state.dragging = false;
+    if (movedDist < 8 && e.target === canvas) {
+      toggleMorph(W * state.centerXRatio, H * 0.50);
+    }
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      toggleMorph();
+    } else if (e.key === 'n' || e.key === 'N') {
+      toggleTheme();
+    } else if (e.key === 't' || e.key === 'T') {
+      toggleLayoutPreview();
+    }
+  });
+
+  // Expose minimal clean API for automated QA inspection
+  window.__CELESTIAL_DEMO__ = {
+    toggleTheme,
+    toggleMorph,
+    toggleLayoutPreview,
+    getState: () => ({
+      theme: state.themeTarget === 1 ? 'night' : 'light',
+      mode: state.shatterTarget === 1 ? 'shattered' : 'mandala',
+      previewTitle: state.previewTitle
+    })
+  };
+
+  // =========================================================================
+  // 15. Main 60fps Animation Loop
+  // =========================================================================
+  let lastTs = performance.now();
+
+  function frame(ts) {
+    const dt = Math.min((ts - lastTs) / 1000, 0.05);
+    lastTs = ts;
+    state.time += dt;
+
+    // Smooth interpolations
+    state.themeBlend = lerp(state.themeBlend, state.themeTarget, 1 - Math.exp(-dt * 5.2));
+    updatePalette(state.themeBlend);
+
+    // Critically damped spring for shattering/assembly morph
+    const springK = 26;
+    const springD = 8.4;
+    const force = (state.shatterTarget - state.shatterBlend) * springK - state.shatterVel * springD;
+    state.shatterVel += force * dt;
+    state.shatterBlend = clamp(state.shatterBlend + state.shatterVel * dt, -0.08, 1.08);
+
+    state.centerXRatio = lerp(state.centerXRatio, state.centerXTarget, 1 - Math.exp(-dt * 5.5));
+    state.scaleCur = lerp(state.scaleCur, state.scaleTarget, 1 - Math.exp(-dt * 5.5));
+
+    // Parallax tilt smoothly follows cursor
+    const targetTiltX = state.normX * 0.28;
+    const targetTiltY = -state.normY * 0.22;
+    state.tiltX = lerp(state.tiltX, targetTiltX, 1 - Math.exp(-dt * 5.0));
+    state.tiltY = lerp(state.tiltY, targetTiltY, 1 - Math.exp(-dt * 5.0));
+
+    // Slowly spring drag rotation back when not dragging
+    if (!state.dragging) {
+      state.dragTargetX *= Math.pow(0.975, dt * 60);
+      state.dragTargetY *= Math.pow(0.975, dt * 60);
+    }
+    state.dragRotX = lerp(state.dragRotX, state.dragTargetX, 1 - Math.exp(-dt * 8.0));
+    state.dragRotY = lerp(state.dragRotY, state.dragTargetY, 1 - Math.exp(-dt * 8.0));
+
+    state.burstPulse *= Math.pow(0.92, dt * 60);
+
+    const cx = W * state.centerXRatio;
+    const cy = H * 0.495;
+    const unit = baseUnit * state.scaleCur;
+
+    // Core hover proximity
+    const cursorDist = Math.hypot(state.mx - cx, state.my - cy);
+    const hoverTarget = state.mouseActive && cursorDist < unit * 0.95 ? 1 : 0;
+    state.hoverCore = lerp(state.hoverCore, hoverTarget, 1 - Math.exp(-dt * 6.0));
+
+    // Begin crisp High-DPI frame
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    // PASS 1: Architectural compass grid & starfield
+    drawBackgroundArchitecture(cx, cy, unit, state.time);
+
+    // PASS 2: Volumetric light rays & optical caustic interference ribbons
+    drawVolumetricCaustics(cx, cy, unit, state.time);
+
+    // Precompute 4 armillary rings & 18 fractal shards
+    const ringGeoms = ARMILLARY_RINGS.map(r => computeArmillaryRingGeometry(r, state.time, cx, cy, unit));
+    const shardItems = computeShards(state.time, cx, cy, unit);
+
+    // PASS 3: Back half of all 4 armillary rings (z < 0)
+    for (let i = 0; i < ringGeoms.length; i++) {
+      drawArmillaryRingPass(ringGeoms[i], false);
+    }
+
+    // PASS 4: Sacred snowflake mandala resonance filaments (behind core/front shards)
+    drawMandalaGeometryFilaments(shardItems, cx, cy, unit, state.time);
+
+    // PASS 5: Back micro-crystal shards (z < 0)
+    for (let i = 0; i < shardItems.length; i++) {
+      if (shardItems[i].z < 0) {
+        drawShardItem(shardItems[i], cx, cy, unit, state.time);
+      }
+    }
+
+    // PASS 6: Central Multi-Layered Fractal Ice-Diamond Core
+    drawCentralCore(cx, cy, unit, state.time);
+
+    // PASS 7: Front micro-crystal shards (z >= 0)
+    for (let i = 0; i < shardItems.length; i++) {
+      if (shardItems[i].z >= 0) {
+        drawShardItem(shardItems[i], cx, cy, unit, state.time);
+      }
+    }
+
+    // PASS 8: Front half of all 4 armillary rings (z >= 0) wrapping over the core!
+    for (let i = 0; i < ringGeoms.length; i++) {
+      drawArmillaryRingPass(ringGeoms[i], true);
+    }
+
+    // PASS 9: Ambient dust, interactive cursor gravity trails & frost shockwaves
+    updateAndDrawParticles(dt, cx, cy);
+
+    requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

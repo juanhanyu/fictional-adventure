@@ -1,0 +1,20 @@
+{
+  "id": "sylvia_disguise",
+  "file": "assets/sprites/sylvia_disguise_sheet.png",
+  "frames": 6,
+  "frameW": 72,
+  "frameH": 80,
+  "sheetW": 432,
+  "sheetH": 80,
+  "facing": "right",
+  "anchorX": 0.4583,
+  "anchorY": 0.925,
+  "castX": 0.9167,
+  "castY": 0.5125,
+  "hitX": 0.4722,
+  "hitY": 0.5625,
+  "headX": 0.4722,
+  "headY": 0.2875,
+  "colorsUsed": 27,
+  "buildScript": "tools/pixel_art/sylvia_disguise/build.py"
+}

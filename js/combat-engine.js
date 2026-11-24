@@ -182,6 +182,19 @@
     }
   }
 
+  function getPixelVfxApi() {
+    if (isJsdomEnv()) return null;
+    const api = global.CombatPixelVFX;
+    if (!api || typeof api.isEnabled !== 'function' || !api.isEnabled()) return null;
+    return api;
+  }
+
+  function queuePixelAction(b, action) {
+    if (!b || b.headless || !action || !getPixelVfxApi()) return;
+    b._pendingPixelActions = b._pendingPixelActions || [];
+    b._pendingPixelActions.push(Object.assign({ waveIdx: b.waveIdx || 0 }, action));
+  }
+
   function isCoarseTouchDevice() {
     if (isJsdomEnv()) return false;
     try {
@@ -3120,6 +3133,9 @@
     _hitStopTimer = null;
     _activeVfxTimers.forEach(tid => clearTimeout(tid));
     _activeVfxTimers.clear();
+    if (global.CombatPixelVFX && typeof global.CombatPixelVFX.cleanup === 'function') {
+      global.CombatPixelVFX.cleanup();
+    }
     if (typeof document !== 'undefined') {
       const field = document.querySelector('#battle-screen .cb-arena-field');
       if (field) field.classList.remove('cb-hitstop', 'cb-hitstop-75');
@@ -3430,6 +3446,10 @@
 
   function triggerPalaceFlash() {
     if (typeof document === 'undefined') return;
+    const pxApi = getPixelVfxApi();
+    if (pxApi && typeof pxApi.playPalaceTimeStop === 'function') {
+      pxApi.playPalaceTimeStop();
+    }
     if (!canTriggerVfxFlash()) return;
     const fl = document.getElementById('cb-vfx-flash');
     if (!fl) return;
@@ -3531,6 +3551,11 @@
     b.waveTurn = 1;
     b.ainoSpearsFiredInWave = 0;
     b._pendingElementVFX = [];
+    b._pendingPixelActions = [];
+    if (waveIdx > 0 && !b.headless) {
+      const pxWaveApi = getPixelVfxApi();
+      if (pxWaveApi && typeof pxWaveApi.clearEffects === 'function') pxWaveApi.clearEffects();
+    }
     delete b.palacePendingStep2;
     b.witnessActive = !!w.witnessActive;
     b.frostFloorTurns = 0;
@@ -3716,6 +3741,7 @@
       }
       pushLog(b, logTag('cbl-violet', `🪄 催动「晦轮杖」暗银细环：下一次单点魔法附带【折光蚀穿】（穿透65%护盾与70%法抗，额外耗蓝46 MP，冷却2回合）！${b.witnessActive ? `（⚠️ 耳目附近拔杖引动异象，暴露风险升至 ${b.exposure}%！）` : ''}`));
       spawnBanner(b, '🪄 晦轮杖 · 银环折光', 'wand');
+      queuePixelAction(b, { type: 'wand_toggle' });
       if (b.witnessActive && b.exposure >= 100) {
         finishBattle(b, false, 'exposed');
         return false;
@@ -4071,10 +4097,21 @@
     let playedBreakOrParry = false;
     let playedBladeClash = false;
     let anyDidCrit = false;
+    let anyDidBreak = false;
+    let anyDidRiposte = false;
     let anyShieldShattered = false;
+    const hitTargetIndices = [];
     if ((!sk.power || sk.power <= 0) && (sk.shieldBase || sk.layFrostFloor || sk.dodgeLunge || sk.afterimage || washedBlindJustNow)) {
       const defVfxKind = sk.elem === 'water' ? 'water' : (sk.path === 'SWORD' || sk.elem === 'phys') ? 'sword' : 'ice';
       queueElementVFX(b, defVfxKind, 'player', 0, { skipHitStop: true });
+      queuePixelAction(b, {
+        type: 'skill',
+        skillId,
+        targetIdx: Math.max(0, b.enemies.indexOf(primary)),
+        targetIndices: [Math.max(0, b.enemies.indexOf(primary))],
+        usedWand,
+        missed: false,
+      });
     }
     if (sk.power && sk.power > 0) {
       const targets = sk.aoe ? b.enemies.filter(e => e.hp > 0) : [primary];
@@ -4088,6 +4125,15 @@
         if (p.status.blind <= 0) delete p.status.blind;
         pushLog(b, logTag('cbl-star', `🌫️ 视线受扬尘遮蔽，你的「${sk.name}」偏斜落空！（提示：用覆潮水弹/折射水幕洗净视线，或用范围技覆盖）`));
         if (p.overcastMode === 2) p.overcastMode = 0;
+        const missIdx = Math.max(0, b.enemies.indexOf(primary));
+        queuePixelAction(b, {
+          type: 'skill',
+          skillId,
+          targetIdx: missIdx,
+          targetIndices: [missIdx],
+          usedWand,
+          missed: true,
+        });
         if (!b.headless) {
           safeSfx((sk.path === 'SWORD' || sk.elem === 'phys') ? 'sword_slash' : 'ice_cast');
           renderCombatUI();
@@ -4407,6 +4453,9 @@
         }
 
         const ePos = b.enemies.indexOf(e);
+        if (ePos >= 0) hitTargetIndices.push(ePos);
+        if (didInterrupt) anyDidBreak = true;
+        if (est.willRiposte || est.rootStepParryTrigger) anyDidRiposte = true;
         if (dmgRes.actualHpLoss > 0 || dmgRes.shieldAbsorbed > 0 || finalDmg > 0) {
           let floatLabel;
           if (didCrit && didInterrupt) floatLabel = `✦ -${finalDmg} 破招暴击!`;
@@ -4485,9 +4534,22 @@
         }
       });
 
-      if (peakCastTrauma > 0) {
+      if (peakCastTrauma > 0 && !getPixelVfxApi()) {
         addCombatTrauma(peakCastTrauma, b);
       }
+      const primaryPos = Math.max(0, b.enemies.indexOf(primary));
+      queuePixelAction(b, {
+        type: 'skill',
+        skillId,
+        targetIdx: primaryPos,
+        targetIndices: hitTargetIndices.length ? hitTargetIndices : targets.map(t => Math.max(0, b.enemies.indexOf(t))),
+        didCrit: anyDidCrit,
+        didBreak: anyDidBreak,
+        didRiposte: anyDidRiposte,
+        shieldBroken: anyShieldShattered,
+        usedWand,
+        missed: !anyHitDealt,
+      });
 
       if (usedFrostPierce) delete p.status.frostPierce;
       if (usedNorthFrostShatter) {
@@ -4524,8 +4586,11 @@
           const spearDmg = 100;
           dealDamageToEnemy(b, bossTarget, spearDmg, { pierceHalfShield: true });
           const spearPos = b.enemies.indexOf(bossTarget);
-          if (spearPos >= 0) queueElementVFX(b, 'ice', 'enemy', spearPos);
-          addCombatTrauma(0.64, b);
+          if (spearPos >= 0) {
+            queueElementVFX(b, 'ice', 'enemy', spearPos);
+            queuePixelAction(b, { type: 'aino_spear', enemyIdx: spearPos });
+          }
+          if (!getPixelVfxApi()) addCombatTrauma(0.64, b);
           spawnBanner(b, '❄️ 艾诺支援 · 极寒冰枪贯落！', 'interrupt');
           pushLog(b, logTag('cbl-cobalt', `❄️【冰原共鸣】峡谷崖顶艾诺射落第 ${b.ainoSpearsFiredInWave} 道无气泡极寒冰枪，重创 ${bossTarget.name} ${spearDmg} 伤害！`, true));
           // 无冰宫基本功路径：本波累计引落第 2 发艾诺冰枪命中领主时，同样震碎腹下晶核！
@@ -4744,6 +4809,7 @@
             pushLog(b, logTag('cbl-emerald', `🌪️ ${e.name} 御风震散你的「风行残像」，余岚仍旧破风袭身！`));
           } else {
             pushLog(b, logTag('cbl-emerald', `💨 「风行残像」碎裂，你真身避开了 ${e.name} 的「${intent.moveName}」！`));
+            queuePixelAction(b, { type: 'enemy_attack', enemyIdx: b.enemies.indexOf(e), enemy: e, intent, hpLoss: 0, evaded: true });
             if (hasRelic(p, 'alice_flower_cake')) {
               const beforeMp = p.mp;
               p.mp = Math.min(p.mmp, p.mp + 10);
@@ -4785,7 +4851,8 @@
           queueHitPulse(b, 'enemy', ripIdx);
           queueElementVFX(b, 'sword', 'enemy', ripIdx);
           queueElementVFX(b, 'break', 'enemy', ripIdx);
-          addCombatTrauma(0.64, b);
+          queuePixelAction(b, { type: 'enemy_attack', enemyIdx: ripIdx, enemy: e, intent, hpLoss: 0, parried: true });
+          if (!getPixelVfxApi()) addCombatTrauma(0.64, b);
           triggerBreakJuice(b, 'parry');
           if (getSynergyTier(p, 'jikan_blade') >= 2 && p.hasManaCycle && riposteDmg > 0) {
             const beforeMp = p.mp;
@@ -4853,11 +4920,12 @@
 
         p.hp = Math.max(0, p.hp - hpLoss);
         if (hpLoss > 0) {
-          triggerShake(b, hpLoss >= 45);
+          if (!getPixelVfxApi()) triggerShake(b, hpLoss >= 45);
           spawnCombatFloat(b, 'player', `-${hpLoss}`, 'enemy-dmg');
           queueHitPulse(b, 'player', 0);
           const eHitVfx = intent.elem === 'water' ? 'water' : intent.elem === 'ice' ? 'ice' : 'sword';
           queueElementVFX(b, eHitVfx, 'player', 0, { skipHitStop: true });
+          queuePixelAction(b, { type: 'enemy_attack', enemyIdx: b.enemies.indexOf(e), enemy: e, intent, hpLoss, blocked: false });
           if (!b.headless) safeSfx('bad');
           pushLog(b, logTag('cbl-danger', `❗ ${e.name} 施展「${intent.moveName}」，造成 ${hpLoss} 伤害${hpLoss < incoming ? `（护盾抵消 ${incoming - hpLoss}）` : ''}！`));
           if (intent.scoresHit && b.stageCfg.hitRule) {
@@ -4870,6 +4938,7 @@
             }
           }
         } else {
+          queuePixelAction(b, { type: 'enemy_attack', enemyIdx: b.enemies.indexOf(e), enemy: e, intent, hpLoss: 0, blocked: true });
           if (!b.headless) safeSfx('shield_block');
           pushLog(b, logTag('cbl-ice', `🛡️ 你的护盾稳稳挡下了 ${e.name} 的「${intent.moveName}」！`));
         }
@@ -5071,6 +5140,7 @@
     }
 
     spawnBanner(b, `💞 ${meta ? `${meta.icon} ${meta.name}·${meta.title}` : '心念援护'}！`, 'riposte');
+    queuePixelAction(b, { type: 'bond_assist', charId: cid });
     if (!b.headless) safeSfx('egg');
     if (!b.headless) renderCombatUI();
     return { ok: true, charId: cid };
@@ -5256,6 +5326,7 @@
         </header>
 
         <div class="cb-arena-field">
+          <canvas id="cb-pixel-vfx-canvas" class="cb-pixel-vfx-canvas" aria-hidden="true"></canvas>
           <div class="cb-callout-layer" id="cb-callout-layer"></div>
 
           <div class="cb-player-stage" id="cb-player-stage">
@@ -5625,11 +5696,33 @@
     pane.classList.toggle('rooted-aura', !!(p.status.rooted || p.shield > 0));
     pane.classList.toggle('wand-aura', !!p.wandActive);
 
+    const pxApi = getPixelVfxApi();
     const isVol3Disguise = VOL3_DISGUISE_STAGES.has(b.id) || (p.name && p.name.includes('眷寒渔'));
     const pImg = resolveCharImg('sylvia', p.hp < p.mhp * 0.4 ? 'serious' : 'normal', stageAge, { disguise: isVol3Disguise });
     const pPortEl = document.getElementById('cb-p-portrait');
-    pPortEl.classList.toggle('is-svg', !pImg);
-    pPortEl.innerHTML = pImg ? `<img src="${pImg}" alt="${p.name}"/>` : renderBeastCrestSVG('wolf');
+    const pStandeeWrap = pPortEl ? pPortEl.closest('.cb-standee-wrap') : null;
+    if (pxApi && pPortEl) {
+      const pSpriteId = pxApi.resolvePlayerSpriteId(b, isVol3Disguise);
+      pPortEl.classList.remove('is-svg');
+      pPortEl.classList.add('has-px-actor');
+      if (pStandeeWrap) pStandeeWrap.classList.add('has-px-actor');
+      const existingPx = pPortEl.querySelector(`.cb-px-actor[data-sprite-id="${pSpriteId}"]`);
+      if (!existingPx) {
+        pPortEl.innerHTML = pxApi.renderActorMarkup(pSpriteId, {
+          actorKey: 'player',
+          label: p.name,
+          dead: p.hp <= 0,
+          fallbackImg: pImg,
+        });
+      } else {
+        existingPx.classList.toggle('is-dead', p.hp <= 0);
+      }
+    } else if (pPortEl) {
+      pPortEl.classList.remove('has-px-actor');
+      if (pStandeeWrap) pStandeeWrap.classList.remove('has-px-actor');
+      pPortEl.classList.toggle('is-svg', !pImg);
+      pPortEl.innerHTML = pImg ? `<img src="${pImg}" alt="${p.name}"/>` : renderBeastCrestSVG('wolf');
+    }
     document.getElementById('cb-p-name').textContent = p.name;
     document.getElementById('cb-p-sub').textContent = `物攻 ${p.atk} · 魔攻 ${p.matk} · 双抗 ${p.def}/${p.mdef}`;
 
@@ -5744,6 +5837,16 @@
       const hpLabel = e.nonLethalSpar ? '切磋耐力（三击制）' : (isMultiEnemy ? 'HP' : '敌方生命');
       const mpLabel = isMultiEnemy ? 'MP' : '敌方魔力';
 
+      const eSpriteId = pxApi ? pxApi.resolveEnemySpriteId(e) : null;
+      const eStageHtml = pxApi
+        ? `<div class="cb-e-avatar has-px-actor">${pxApi.renderActorMarkup(eSpriteId, {
+            actorKey: `enemy:${idx}`,
+            label: e.name,
+            dead: e.hp <= 0,
+            fallbackHtml: eVisual.html,
+          })}</div>`
+        : `<div class="cb-e-avatar${eVisual.isSvg ? ' is-svg' : ''}${eVisual.isCgPortrait ? ' is-cg-portrait' : ''}">${eVisual.html}</div>`;
+
       return `
         <article class="cb-enemy-card${idx === b.targetIdx ? ' targeted' : ''}${e.hp <= 0 ? ' dead' : ''}${intent.stance === 'STAGGERED' ? ' staggered' : ''}${isHeavyWarn ? ' intent-heavy-warn' : ''}${e.boss && (e.phase || 1) >= 2 ? ' phase2-boss' : ''}" data-eidx="${idx}">
           <div class="cb-intent-banner stance-${intent.stance}" tabindex="0">
@@ -5761,9 +5864,9 @@
             </div>
           </div>
 
-          <div class="cb-e-stage">
+          <div class="cb-e-stage${pxApi ? ' has-px-actor' : ''}">
             <div class="cb-magic-circle enemy" aria-hidden="true"></div>
-            <div class="cb-e-avatar${eVisual.isSvg ? ' is-svg' : ''}${eVisual.isCgPortrait ? ' is-cg-portrait' : ''}">${eVisual.html}</div>
+            ${eStageHtml}
           </div>
 
           <div class="cb-e-plate">
@@ -5933,33 +6036,61 @@
       };
     });
 
-    if (b._pendingHitPulses && b._pendingHitPulses.length) {
-      const pulses = b._pendingHitPulses.slice();
-      b._pendingHitPulses.length = 0;
-      pulses.forEach(pt => {
-        const el = pt.side === 'player'
-          ? document.getElementById('cb-p-portrait')
-          : eZone.querySelector(`.cb-enemy-card[data-eidx="${pt.enemyIdx}"] .cb-e-avatar`);
-        if (el) {
-          el.classList.remove('cb-unit-hit');
-          void el.offsetWidth;
-          el.classList.add('cb-unit-hit');
-          trackVfxTimer(() => el.classList.remove('cb-unit-hit'), 380);
-        }
-      });
-    }
-
-    if (b._pendingElementVFX && b._pendingElementVFX.length) {
-      const vfxList = b._pendingElementVFX.slice();
-      b._pendingElementVFX.length = 0;
-      vfxList.forEach(item => {
-        if (item.waveIdx !== (b.waveIdx || 0)) return;
-        spawnCombatElementVFX(b, item.kind, {
-          side: item.side,
-          enemyIdx: item.enemyIdx,
-          skipHitStop: item.skipHitStop,
+    if (pxApi) {
+      pxApi.syncStage(b);
+      if (b._pendingHitPulses) b._pendingHitPulses.length = 0;
+      if (b._pendingElementVFX) b._pendingElementVFX.length = 0;
+      if (b._pendingPixelActions && b._pendingPixelActions.length) {
+        const pxQueue = b._pendingPixelActions.slice();
+        b._pendingPixelActions.length = 0;
+        const enemyBatch = [];
+        pxQueue.forEach(act => {
+          if (act.waveIdx !== (b.waveIdx || 0)) return;
+          if (act.type === 'enemy_attack') {
+            enemyBatch.push(act);
+          } else if (act.type === 'skill') {
+            pxApi.playSkillAction(b, act);
+          } else if (act.type === 'wand_toggle') {
+            pxApi.playWandToggle();
+          } else if (act.type === 'aino_spear') {
+            pxApi.playAinoSpearSupport(act.enemyIdx);
+          } else if (act.type === 'bond_assist') {
+            pxApi.playBondAssist(act.charId);
+          }
         });
-      });
+        if (enemyBatch.length) {
+          pxApi.playEnemySequence(b, enemyBatch);
+        }
+      }
+    } else {
+      if (b._pendingHitPulses && b._pendingHitPulses.length) {
+        const pulses = b._pendingHitPulses.slice();
+        b._pendingHitPulses.length = 0;
+        pulses.forEach(pt => {
+          const el = pt.side === 'player'
+            ? document.getElementById('cb-p-portrait')
+            : eZone.querySelector(`.cb-enemy-card[data-eidx="${pt.enemyIdx}"] .cb-e-avatar`);
+          if (el) {
+            el.classList.remove('cb-unit-hit');
+            void el.offsetWidth;
+            el.classList.add('cb-unit-hit');
+            trackVfxTimer(() => el.classList.remove('cb-unit-hit'), 380);
+          }
+        });
+      }
+
+      if (b._pendingElementVFX && b._pendingElementVFX.length) {
+        const vfxList = b._pendingElementVFX.slice();
+        b._pendingElementVFX.length = 0;
+        vfxList.forEach(item => {
+          if (item.waveIdx !== (b.waveIdx || 0)) return;
+          spawnCombatElementVFX(b, item.kind, {
+            side: item.side,
+            enemyIdx: item.enemyIdx,
+            skipHitStop: item.skipHitStop,
+          });
+        });
+      }
     }
 
     document.getElementById('cb-btn-endturn').disabled = b.over;
@@ -6504,6 +6635,7 @@
     if (typeof global !== 'undefined') global.B = b;
 
     if (!b.headless && typeof document !== 'undefined') {
+      clearAllJuiceVfx();
       if (typeof window !== 'undefined' && typeof window.closeHudMoreDrawer === 'function') window.closeHudMoreDrawer();
       const ds = document.getElementById('duel-screen');
       if (ds) ds.classList.add('hidden');
@@ -6576,6 +6708,7 @@
     hoveredSkillId = null;
     armedSkillId = null;
     global.B = b;
+    clearAllJuiceVfx();
     if (typeof global.setBG === 'function') global.setBG('bg-battle');
     if (typeof global.bgmPlayType === 'function') global.bgmPlayType('battle', { force: true });
     const bs = ensureBattleDOM();

@@ -1,0 +1,20 @@
+{
+  "id": "aino",
+  "file": "assets/sprites/aino_sheet.png",
+  "frames": 6,
+  "frameW": 72,
+  "frameH": 80,
+  "sheetW": 432,
+  "sheetH": 80,
+  "facing": "left",
+  "anchorX": 0.5417,
+  "anchorY": 0.925,
+  "castX": 0.0417,
+  "castY": 0.5,
+  "hitX": 0.5278,
+  "hitY": 0.5625,
+  "headX": 0.5278,
+  "headY": 0.2875,
+  "colorsUsed": 22,
+  "buildScript": "tools/pixel_art/aino/build.py"
+}

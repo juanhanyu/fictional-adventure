@@ -1652,6 +1652,14 @@ function load(){
 }
 function saveCodex(){ try { localStorage.setItem(CODEX_KEY, JSON.stringify(codex)); } catch(e){} }
 function hasSave(){ return !!localStorage.getItem(SAVE_KEY); }
+function updateContinueBtn(){
+  const saved = hasSave();
+  show('btn-continue', saved);
+  show('v3-prism-start', !saved);
+  if(typeof window !== 'undefined' && window.TitleDirector && typeof window.TitleDirector.syncArchiveMeta === 'function'){
+    try { window.TitleDirector.syncArchiveMeta(); } catch(e){}
+  }
+}
 
 // ========== HUD / UI ==========
 function updateHUD(){
@@ -1698,7 +1706,7 @@ function updateHUD(){
       }
     }
   }
-  show('btn-continue', hasSave());
+  updateContinueBtn();
   const codexNum = Object.keys(S.ach||{}).length || codex.eggs || 0;
   const ccEl = $('codex-count');
   if(ccEl){
@@ -3932,7 +3940,7 @@ function selectPick(p, tier){
   const ap = afterPick; afterPick = null;
   if(ap && ap.rest && ap.rest.length){
     // 剧情场景中的选卡：弹出习得面板，然后接着往下演
-    sysPopup('✧ 勇者之赐 ✧', `你选择了：<b>${p.name}</b>（${p.tag||'赋技能'}）<br><br>技能已习得！<br><span style="opacity:.75">${p.desc||''}</span>`);
+    sysPopup('✧ 勇者之赐 ✧', `你选择了：<b>${p.name}</b>（${p.tag||'赋技能'}）<br><br>技能已习得！<br><span style="color:#526078">${p.desc||''}</span>`);
     playLines(ap.rest, ap.done);
     return;
   }
@@ -4443,15 +4451,15 @@ function statusPanelHTML(){
     <div class="sc-data-col">
       <div class="sc-vitals">
         <div class="sc-vital-row hp">
-          <div class="sc-vital-head"><span class="sc-vital-lbl"><b>生命</b> ${S.hp}/${S.mhp}</span><span class="sc-vital-val">生命储备</span></div>
+          <div class="sc-vital-head"><span class="sc-vital-lbl"><b>生命</b> ${S.hp}/${S.mhp}</span><span class="sc-vital-val">${hpPct}%</span></div>
           <div class="sc-vital-track"><i class="sc-vital-fill" style="width:${hpPct}%"></i></div>
         </div>
         <div class="sc-vital-row mp">
-          <div class="sc-vital-head"><span class="sc-vital-lbl"><b>魔力值</b> ${S.mp}/${S.mmp}</span><span class="sc-vital-val">魔力储备</span></div>
+          <div class="sc-vital-head"><span class="sc-vital-lbl"><b>魔力值</b> ${S.mp}/${S.mmp}</span><span class="sc-vital-val">${mpPct}%</span></div>
           <div class="sc-vital-track"><i class="sc-vital-fill" style="width:${mpPct}%"></i></div>
         </div>
         <div class="sc-vital-row st">
-          <div class="sc-vital-head"><span class="sc-vital-lbl"><b>体力</b> ${S.st}/${S.mst}</span><span class="sc-vital-val">体力储备</span></div>
+          <div class="sc-vital-head"><span class="sc-vital-lbl"><b>体力</b> ${S.st}/${S.mst}</span><span class="sc-vital-val">${stPct}%</span></div>
           <div class="sc-vital-track"><i class="sc-vital-fill" style="width:${stPct}%"></i></div>
         </div>
       </div>
@@ -4595,8 +4603,8 @@ function openPanel(tab, opts){
   show('panel',1);
   if(wasHidden) sfx('modal_open');
   else if(opts && opts.fromTab) sfx('tab_switch');
-  const tabs=[['status','状态'],['causal','✦ 命运暗流'],['relics','✦ 铭记'],['skills','技能'],['tasks','任务'],['prof','人物'],['inv','背包'],['ach','成就'],['saves','档案'],['settings','设置']];
-  $('panel-tabs').innerHTML = tabs.map(([k,n])=>`<button class="ptab${(tab||'status')===k?' on':''}" data-t="${k}">${n}</button>`).join('');
+  const tabs=[['status','状态'],['causal','命运暗流'],['relics','铭记','✦ 铭记'],['skills','技能'],['tasks','任务'],['prof','人物'],['inv','背包'],['ach','成就'],['saves','档案'],['settings','设置']];
+  $('panel-tabs').innerHTML = tabs.map(([k,n,metaLabel])=>`<button class="ptab${(tab||'status')===k?' on':''}" data-t="${k}"${metaLabel?` data-tab-label="${metaLabel}"`:''}>${n}</button>`).join('');
   $('panel-tabs').onclick=e=>{
     const btn=e.target.closest('[data-t]');
     const t=btn?btn.dataset.t:e.target.dataset.t;
@@ -4622,7 +4630,7 @@ function openPanel(tab, opts){
   } else if(tab==='causal'){
     body.innerHTML = (typeof BranchingDirector !== 'undefined' && BranchingDirector.renderCausalPanelHTML)
       ? BranchingDirector.renderCausalPanelHTML(S)
-      : '<p style="opacity:.6">命运暗流模块尚未加载。</p>';
+      : '<p style="color:#526078">命运暗流模块尚未加载。</p>';
   } else if(tab==='relics'){
     if(typeof RelicsAndEvents !== 'undefined' && RelicsAndEvents.renderRelicsPanelHTML){
       body.innerHTML = RelicsAndEvents.renderRelicsPanelHTML(S);
@@ -4630,7 +4638,7 @@ function openPanel(tab, opts){
         RelicsAndEvents.bindRelicsContainerEvents(body, { state: S, onChanged: ()=>openPanel('relics') });
       }
     } else {
-      body.innerHTML = '<p style="opacity:.6">随身铭记模块尚未加载。</p>';
+      body.innerHTML = '<p style="color:#526078">随身铭记模块尚未加载。</p>';
     }
   } else if(tab==='skills'){
     const cnNames={ice_crystal:'冰晶术',virtual_duel:'虚拟决斗',ice_sense:'寒息感知',water_veil:'水之帷幕',quiet_mind:'静心',baby_talk:'天籁初声',mana_sip:'魔力小啜',silk_thread:'千缕银丝',ice_palace:'冰晶宫殿',multi_cast:'二重咏唱',frost_armor:'霜铠',deep_read:'深读',mirror_ice:'镜冰',wind_step_s:'残影步（简）',heal_touch:'温手',mana_cycle:'魔战循环',domain_frost:'霜域',perfect_cast:'无咏唱具现',fate_eye:'因果薄片',sword_mana:'魔剑同化',memory_link:'记忆连丝',zero_field:'绝对零度逼近',temp_sense:'温度感知',wind_afterimage:'风行残像',mana_calc:'魔力精算',root_ice:'生根之冰',noble_bearing:'公爵气度',lullaby:'摇篮曲',etiquette:'贵族仪态',water_ball:'水球术',basic_guard:'基本防御架',theory_note:'理论笔记',water_veil_s:'水膜',ice_sphere:'完美冰球',root_step:'生根步',soft_cut:'送刀',frost_edge:'覆冰锋',instant_ice:'隔空凝冰',stealth_edge:'覆水无痕'};
@@ -4651,7 +4659,7 @@ function openPanel(tab, opts){
       if(c && c.skill && c.skill.id) courseSkills[c.skill.id] = c.skill;
     });
     const skillRows = !S.skills.length
-      ? '<p style="opacity:.6">尚未获得特殊技能。</p>'
+      ? '<p style="color:#526078">尚未获得特殊技能。</p>'
       : `<div class="p-skill-grid">${S.skills.map(id=>{
           const p = ALL_PICKS[id]
             || MAGIC_SKILLS[id]
@@ -4688,14 +4696,14 @@ function openPanel(tab, opts){
       if(t.id==='survive_night' && (S.phase==='journey'||S.phase==='finale')) return true;
       return false;
     });
-    if(!known.length) body.innerHTML='<p style="opacity:.6">尚无进行中的任务。随着年龄与行程推进会解锁。</p>';
+    if(!known.length) body.innerHTML='<p style="color:#526078">尚无进行中的任务。随着年龄与行程推进会解锁。</p>';
     else body.innerHTML = known.map(t=>{
       const st=S.tasks[t.id]||{};
-      return `<div class="p-task${st.done?' done':''}"><b>${st.done?'[已完成]':'[进行中]'} ${t.name}</b><br>${t.desc}<br><span style="opacity:.6">奖励：经验×${t.exp}${t.max?` · 进度 ${st.prog||0}/${t.max}`:''}</span></div>`;
+      return `<div class="p-task${st.done?' done':''}"><b>${st.done?'[已完成]':'[进行中]'} ${t.name}</b><br>${t.desc}<br><span style="color:#526078">奖励：经验×${t.exp}${t.max?` · 进度 ${st.prog||0}/${t.max}`:''}</span></div>`;
     }).join('');
   } else if(tab==='prof'){
     const ids = Object.keys(S.know).concat(Object.keys(S.love)).filter((v,i,a)=>a.indexOf(v)===i);
-    if(!ids.length) body.innerHTML='<p style="opacity:.6">人物名录尚空。多与身旁角色交谈吧。</p>';
+    if(!ids.length) body.innerHTML='<p style="color:#526078">人物名录尚空。多与身旁角色交谈吧。</p>';
     else {
       const profCards = ids.map(id=>{
         const c=CHARS[id]||{short:id,name:id}; const k=clamp(Math.round(S.know[id]||0),0,100);
@@ -4757,7 +4765,7 @@ function openPanel(tab, opts){
       return `<div class="inv-slot filled"><div class="inv-head"><span class="inv-ico-box" aria-hidden="true">${svgIco}</span><div class="inv-title-wrap"><b>${escapeText(it.name||it.id||'未知物品')}</b><span class="inv-qty">×${qty}</span></div></div><div class="inv-desc">${escapeText(it.desc||'随身收纳的纪念小物。')}</div><div class="inv-foot">${useBtnOrTag}</div></div>`;
     }).join('');
     body.innerHTML=`<div class="p-inv">${slots || '<div class="inv-slot">空</div>'}</div>
-      <p style="margin-top:8px;opacity:.6;font-size:12px">背包 ${S.inv.length}/50 · 系统收纳（单手可握之物）</p>`;
+      <p style="margin-top:8px;color:#526078;font-size:12px">背包 ${S.inv.length}/50 · 系统收纳（单手可握之物）</p>`;
     setTimeout(()=>{
       const pb = $('panel-body');
       if(!pb) return;
@@ -4768,8 +4776,8 @@ function openPanel(tab, opts){
   } else if(tab==='ach'){
     const unlocked = ACH.filter(a=>S.ach[a.id]);
     const lockedN = ACH.length - unlocked.length;
-    body.innerHTML = (unlocked.length? unlocked.map(a=>`<div class="p-ach">✦ <b>${a.name}</b><br>${a.desc}<br><span style="opacity:.6">奖励：${a.reward}</span></div>`).join('') : '<p style="opacity:.6">尚未解锁成就。</p>')
-      + (lockedN? `<p style="margin-top:12px;opacity:.5;font-size:12px">还有 ${lockedN} 个隐藏成就未解锁</p>` : '');
+    body.innerHTML = (unlocked.length? unlocked.map(a=>`<div class="p-ach">✦ <b>${a.name}</b><br>${a.desc}<br><span style="color:#526078">奖励：${a.reward}</span></div>`).join('') : '<p style="color:#526078">尚未解锁成就。</p>')
+      + (lockedN? `<p style="margin-top:12px;color:#526078;font-size:12px">还有 ${lockedN} 个隐藏成就未解锁</p>` : '');
   } else if(tab==='saves'){
     let slotCards = '';
     if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.getSlotList === 'function'){
@@ -4779,12 +4787,12 @@ function openPanel(tab, opts){
         const m = sl.meta || {};
         const line1 = filled ? `${escapeText(m.name || '希尔维亚')} · ${escapeText(m.ageStr || '')}${m.lv ? ' · Lv.' + m.lv : ''}` : '';
         const line2 = filled ? [m.phaseName, m.locName].filter(Boolean).map(escapeText).join(' · ') : '';
-        const line3 = filled && m.chapterTitle ? `<br><span style="opacity:.78">${escapeText(m.chapterTitle)}</span>` : '';
+        const line3 = filled && m.chapterTitle ? `<br><span style="color:#526078">${escapeText(m.chapterTitle)}</span>` : '';
         return `
           <div class="save-slot-card${filled ? ' filled' : ''}">
             <div class="ssc-head">
               <span>手记槽位 0${sl.slotId}</span>
-              <small style="opacity:.7;font-weight:400">${filled ? escapeText(m.savedAt || formatSlotTime(sl.ts)) : '空置'}</small>
+              <small style="color:#526078;font-weight:400">${filled ? escapeText(m.savedAt || formatSlotTime(sl.ts)) : '空置'}</small>
             </div>
             <div class="ssc-meta">${filled ? `${line1}${line2 ? '<br>' + line2 : ''}${line3}` : '可将当前旅途进度保存至此槽位，随时分支重返。'}</div>
             <div class="ssc-btns">
@@ -4807,7 +4815,7 @@ function openPanel(tab, opts){
           <div class="save-slot-card${filled ? ' filled' : ''}">
             <div class="ssc-head">
               <span>手记槽位 0${id}</span>
-              <small style="opacity:.7;font-weight:400">${filled ? escapeText(m.savedAt || formatSlotTime(s.ts)) : '空置'}</small>
+              <small style="color:#526078;font-weight:400">${filled ? escapeText(m.savedAt || formatSlotTime(s.ts)) : '空置'}</small>
             </div>
             <div class="ssc-meta">${filled ? `${escapeText(label)}${sub ? '<br>' + escapeText(sub) : ''}` : '可将当前旅途进度保存至此槽位，随时分支重返。'}</div>
             <div class="ssc-btns">
@@ -4830,11 +4838,11 @@ function openPanel(tab, opts){
       </div>
     `).join('');
     body.innerHTML = `
-      <h4 style="margin:0 0 10px;color:var(--cobalt-ink, #1250E6);font-size:14px">手动档案槽位（6 槽位互通）</h4>
+      <h4 style="margin:0 0 10px;color:var(--prussian, #1C4CB8);font-size:14px">手动档案槽位（6 槽位互通）</h4>
       <div class="save-slots-grid">${slotCards}</div>
-      <h4 style="margin:18px 0 8px;color:var(--cobalt-ink, #1250E6);font-size:14px">已历章节重温</h4>
-      <p style="font-size:12px;opacity:.7;margin-bottom:6px">仅开放已解锁经历的篇章（避免剧透未见章节）。建议重温前先存入上方手动槽位。</p>
-      <div class="chapter-replay-list">${chapRows || '<p style="opacity:.6">尚无已完成的篇章。</p>'}</div>
+      <h4 style="margin:18px 0 8px;color:var(--prussian, #1C4CB8);font-size:14px">已历章节重温</h4>
+      <p style="font-size:12px;color:#526078;margin-bottom:6px">仅开放已解锁经历的篇章（避免剧透未见章节）。建议重温前先存入上方手动槽位。</p>
+      <div class="chapter-replay-list">${chapRows || '<p style="color:#526078">尚无已完成的篇章。</p>'}</div>
     `;
     setTimeout(()=>{
       body.querySelectorAll('[data-slot-save]').forEach(b => { b.onclick = ()=> saveToManualSlot(b.getAttribute('data-slot-save')); });
@@ -4862,7 +4870,7 @@ function openPanel(tab, opts){
       <input type="range" id="set-sfx" min="0" max="100" value="${sfxPct}" style="width:100%">
       <div class="set-row-head" style="margin-top:14px"><b>背景明度</b><span id="set-bright-val" class="set-val">${brightPct}%</span></div>
       <input type="range" id="set-bright" min="50" max="150" value="${brightPct}" style="width:100%">
-      <div style="opacity:.7;font-size:12px">100% 为默认画面明度，调节背景明度不影响音乐播放</div>
+      <div style="color:#526078;font-size:12px">100% 为默认画面明度，调节背景明度不影响音乐播放</div>
     </div>
     <button class="tbtn" id="set-reset" style="margin-top:18px">全部恢复默认</button>`;
     // 事件绑定
@@ -4872,6 +4880,17 @@ function openPanel(tab, opts){
       const br=$('set-bright'); if(br) br.oninput=()=>{ setSetting('bright', br.value/100); };
       const rs=$('set-reset'); if(rs) rs.onclick=()=>{ resetSettings(); openPanel('settings'); toast('已恢复默认设置'); };
     },0);
+  }
+  const scrollWrap = body && body.parentElement;
+  if(scrollWrap && scrollWrap.classList && scrollWrap.classList.contains('modal-scroll')){
+    const syncScrollFade = ()=>{
+      const more = (scrollWrap.scrollHeight - scrollWrap.scrollTop - scrollWrap.clientHeight) > 8;
+      scrollWrap.classList.toggle('has-scroll-more', more);
+    };
+    scrollWrap.scrollTop = 0;
+    scrollWrap.onscroll = syncScrollFade;
+    syncScrollFade();
+    if(typeof requestAnimationFrame === 'function') requestAnimationFrame(syncScrollFade);
   }
 }
 
@@ -5578,6 +5597,25 @@ function syncMuteBtn(){
 
 $('btn-new').onclick=()=>{ sfx('click'); newGame(); };
 $('btn-continue').onclick=()=>{ sfx('click'); continueGame(); };
+if($('v3-prism-start')){
+  $('v3-prism-start').onclick=()=>{
+    const bn = $('btn-new');
+    if(bn && typeof bn.click === 'function') bn.click();
+    else { sfx('click'); newGame(); }
+  };
+}
+if($('btn-title-settings')){
+  $('btn-title-settings').onclick=()=>{
+    sfx('click');
+    if(typeof window !== 'undefined' && window.TitleDirector && typeof window.TitleDirector.openSettingsMode === 'function'){
+      window.TitleDirector.openSettingsMode();
+    } else if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.openPrefsModal === 'function'){
+      window.VNUx.openPrefsModal();
+    } else {
+      openPanel('settings');
+    }
+  };
+}
 $('btn-title').onclick=()=>{
   save();
   closeHudMoreDrawer();
@@ -5605,6 +5643,9 @@ $('btn-title').onclick=()=>{
     if(VNUx.closeChaptersModal) VNUx.closeChaptersModal();
     if(VNUx.closePrefsModal) VNUx.closePrefsModal();
     if(VNUx.closeCgLightbox) VNUx.closeCgLightbox();
+  }
+  if(typeof window !== 'undefined' && window.TitleDirector && typeof window.TitleDirector.returnToMain === 'function'){
+    try { window.TitleDirector.returnToMain({ silent: true }); } catch(e){}
   }
   updateHUD();
   if(typeof startTitleSnowLoop === 'function') startTitleSnowLoop();
@@ -5784,6 +5825,14 @@ document.addEventListener('keydown', e=>{
       return;
     }
     if(closeHudMoreDrawer()) return;
+    if(isOverlayVisible('title-screen') && typeof window !== 'undefined' && window.TitleDirector
+      && typeof window.TitleDirector.getMode === 'function'
+      && typeof window.TitleDirector.returnToMain === 'function'
+      && window.TitleDirector.getMode() !== 'main'){
+      if(typeof e.preventDefault === 'function') e.preventDefault();
+      window.TitleDirector.returnToMain();
+      return;
+    }
     if(document.body.classList.contains('ui-hidden')){ uiShow(); return; }
     return;
   }
@@ -5867,7 +5916,7 @@ function startTitleSnowLoop(){
   const syncSize = ()=>{
     cw = titleScr.clientWidth || window.innerWidth || 1440;
     ch = titleScr.clientHeight || window.innerHeight || 900;
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     const pw = Math.max(1, Math.round(cw * dpr));
     const ph = Math.max(1, Math.round(ch * dpr));
     if(canvas.width !== pw || canvas.height !== ph){
@@ -5878,68 +5927,60 @@ function startTitleSnowLoop(){
   };
   syncSize();
 
-  const isMobilePortrait = ()=> cw <= 820;
-  const spawnPos = (initial)=>{
-    if(isMobilePortrait()){
-      return {
-        x: Math.random() * cw,
-        y: initial ? Math.random() * (ch * 0.52) : -12 - Math.random() * 20,
-      };
+  // NeonCat V3 palette: deep ink #1B2333, sapphire #1C4CB8, ice cyan #6BC5F8, whisper gold #C9B48A
+  const PALETTE = [
+    { name: 'ink',      rgb: '27, 35, 51',    weight: 0.36 },
+    { name: 'sapphire', rgb: '28, 76, 184',   weight: 0.28 },
+    { name: 'cyan',     rgb: '107, 197, 248', weight: 0.24 },
+    { name: 'gold',     rgb: '201, 180, 138', weight: 0.12 },
+  ];
+  const pickTint = (idx)=>{
+    const roll = ((idx * 0.61803398875) % 1 + Math.random() * 0.22) % 1;
+    let acc = 0;
+    for(const item of PALETTE){
+      acc += item.weight;
+      if(roll <= acc) return item;
     }
-    const minX = cw * 0.39, maxX = cw * 1.04;
-    return {
-      x: minX + Math.random() * (maxX - minX),
-      y: initial ? Math.random() * ch : -12 - Math.random() * 24,
-    };
+    return PALETTE[0];
   };
 
-  // 3-tier ice particles: diamond dust (26), midground crystal facets (20), foreground bokeh orbs (10)
+  // 3-depth floating sharp diamond crystal specks (diameter 2px–5px, zero blurry circles)
   const motes = [];
-  const total = 56;
+  const total = cw <= 720 ? 36 : 52;
   for(let idx = 0; idx < total; idx++){
-    const kind = idx < 26 ? 'dust' : (idx < 46 ? 'facet' : 'bokeh');
-    const pos = spawnPos(true);
-    const tintMod = idx % 5;
-    const tint = tintMod === 0 ? 'cobalt' : (tintMod === 1 || tintMod === 3 ? 'cyan' : 'white');
-    if(kind === 'dust'){
-      motes.push({
-        kind, tint, x: pos.x, y: pos.y,
-        r: 1.0 + Math.random() * 1.0,
-        vx: 0.22 + Math.random() * 0.28,
-        vy: 0.20 + Math.random() * 0.28,
-        alpha: 0.42 + Math.random() * 0.36,
-        rot: Math.random() * Math.PI * 2,
-        vrot: (Math.random() < 0.5 ? -1 : 1) * (0.005 + Math.random() * 0.01),
-        phase: Math.random() * Math.PI * 2,
-        vphase: 0.022 + Math.random() * 0.025,
-        parallax: -5,
-      });
-    } else if(kind === 'facet'){
-      motes.push({
-        kind, tint, x: pos.x, y: pos.y,
-        r: 2.3 + Math.random() * 2.1,
-        vx: 0.34 + Math.random() * 0.38,
-        vy: 0.32 + Math.random() * 0.42,
-        alpha: 0.56 + Math.random() * 0.36,
-        rot: Math.random() * Math.PI * 2,
-        vrot: (Math.random() < 0.5 ? -1 : 1) * (0.006 + Math.random() * 0.012),
-        phase: Math.random() * Math.PI * 2,
-        vphase: 0.016 + Math.random() * 0.02,
-        parallax: -13,
-      });
-    } else {
-      motes.push({
-        kind, tint: idx % 2 === 0 ? 'white' : 'cyan', x: pos.x, y: pos.y,
-        r: 5.8 + Math.random() * 5.2,
-        vx: 0.48 + Math.random() * 0.42,
-        vy: 0.38 + Math.random() * 0.38,
-        alpha: 0.14 + Math.random() * 0.15,
-        rot: 0, vrot: 0,
-        phase: Math.random() * Math.PI * 2,
-        vphase: 0.011 + Math.random() * 0.014,
-        parallax: -24,
-      });
-    }
+    const depth = idx < Math.round(total * 0.44) ? 0 : (idx < Math.round(total * 0.82) ? 1 : 2);
+    const tint = pickTint(idx);
+    const halfSize = depth === 0
+      ? (1.0 + Math.random() * 0.55)      // 2.0–3.1px sharp far dust
+      : (depth === 1
+        ? (1.55 + Math.random() * 0.65)   // 3.1–4.4px mid crystal shards
+        : (2.05 + Math.random() * 0.55)); // 4.1–5.2px near accent diamonds
+    const aspect = 0.62 + Math.random() * 0.28;
+    const baseAlpha = depth === 0
+      ? (0.18 + Math.random() * 0.18)
+      : (depth === 1
+        ? (0.34 + Math.random() * 0.26)
+        : (0.48 + Math.random() * 0.30));
+    const speedScale = depth === 0 ? 0.55 : (depth === 1 ? 0.88 : 1.22);
+    const dirX = (Math.random() < 0.65 ? 1 : -1) * (0.05 + Math.random() * 0.11) * speedScale;
+    const dirY = -(0.06 + Math.random() * 0.14) * speedScale;
+    motes.push({
+      depth,
+      tint,
+      x: Math.random() * cw,
+      y: Math.random() * ch,
+      ry: halfSize,
+      rx: halfSize * aspect,
+      vx: dirX,
+      vy: dirY,
+      alpha: tint.name === 'gold' ? baseAlpha * 0.92 : baseAlpha,
+      rot: (Math.random() - 0.5) * Math.PI,
+      vrot: (Math.random() < 0.5 ? -1 : 1) * (0.002 + Math.random() * 0.0055),
+      phase: Math.random() * Math.PI * 2,
+      vphase: 0.011 + Math.random() * 0.014,
+      swayAmp: 0.04 + Math.random() * 0.07,
+      parallax: depth === 0 ? -5 : (depth === 1 ? -12 : -21),
+    });
   }
 
   const drawFrame = (dt)=>{
@@ -5953,76 +5994,59 @@ function startTitleSnowLoop(){
       : { x: 0, y: 0 };
     const pxOff = Number.isFinite(par.x) ? par.x : 0;
     const pyOff = Number.isFinite(par.y) ? par.y : 0;
-    const mobile = isMobilePortrait();
-    const minX = mobile ? -16 : cw * 0.39;
-    const maxX = mobile ? cw + 16 : cw * 1.04;
-    const maxY = mobile ? ch * 0.54 : ch;
+    const pad = 18;
 
     for(const f of motes){
       if(dt > 0){
         f.phase += f.vphase * dt;
         f.rot += f.vrot * dt;
-        f.x += (f.vx + Math.sin(f.y * 0.011 + f.phase * 0.4) * 0.14) * dt;
-        f.y += f.vy * dt;
-        const pad = f.r + 12;
-        if(f.y > maxY + pad || f.x > maxX + pad){
-          if(Math.random() < 0.68){
-            const np = spawnPos(false);
-            f.x = np.x;
-            f.y = np.y;
-          } else {
-            f.x = minX - pad * 0.5;
-            f.y = Math.random() * maxY;
-          }
-        } else if(f.x < minX - pad){
-          f.x = maxX;
+        f.x += (f.vx + Math.sin(f.phase * 0.72 + f.y * 0.006) * f.swayAmp) * dt;
+        f.y += (f.vy + Math.cos(f.phase * 0.54 + f.x * 0.005) * (f.swayAmp * 0.45)) * dt;
+        if(f.y < -pad){
+          f.y = ch + pad * 0.6;
+          f.x = Math.random() * cw;
+        } else if(f.y > ch + pad){
+          f.y = -pad * 0.6;
+          f.x = Math.random() * cw;
         }
+        if(f.x < -pad) f.x = cw + pad * 0.6;
+        else if(f.x > cw + pad) f.x = -pad * 0.6;
       }
-      const shimmer = 0.7 + 0.3 * Math.sin(f.phase);
-      const scale = f.alpha * shimmer;
+
+      const twinkle = 0.72 + 0.28 * Math.sin(f.phase);
+      const opacity = Math.min(0.92, f.alpha * twinkle);
       const dx = f.x + pxOff * f.parallax;
       const dy = f.y + pyOff * (f.parallax * 0.72);
-      const r = f.r;
-
-      if(f.kind === 'bokeh'){
-        const grad = ctx.createRadialGradient(dx, dy, 0, dx, dy, r);
-        if(f.tint === 'cyan'){
-          grad.addColorStop(0, `rgba(186, 230, 253, ${(0.9 * scale).toFixed(3)})`);
-          grad.addColorStop(0.55, `rgba(56, 189, 248, ${(0.42 * scale).toFixed(3)})`);
-          grad.addColorStop(1, 'rgba(56, 189, 248, 0)');
-        } else {
-          grad.addColorStop(0, `rgba(255, 255, 255, ${(0.95 * scale).toFixed(3)})`);
-          grad.addColorStop(0.55, `rgba(224, 242, 254, ${(0.42 * scale).toFixed(3)})`);
-          grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-        }
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(dx, dy, r, 0, Math.PI * 2);
-        ctx.fill();
-        continue;
-      }
+      const rx = f.rx;
+      const ry = f.ry;
 
       ctx.save();
       ctx.translate(dx, dy);
       ctx.rotate(f.rot);
+
       ctx.beginPath();
-      ctx.moveTo(0, -r);
-      ctx.lineTo(r * (f.kind === 'dust' ? 0.55 : 0.68), 0);
-      ctx.lineTo(0, r);
-      ctx.lineTo(-r * (f.kind === 'dust' ? 0.55 : 0.68), 0);
+      ctx.moveTo(0, -ry);
+      ctx.lineTo(rx, 0);
+      ctx.lineTo(0, ry);
+      ctx.lineTo(-rx, 0);
       ctx.closePath();
-      if(f.tint === 'cyan'){
-        ctx.fillStyle = `rgba(56, 189, 248, ${(0.62 * scale).toFixed(3)})`;
-      } else if(f.tint === 'cobalt'){
-        ctx.fillStyle = `rgba(22, 82, 230, ${(0.36 * scale).toFixed(3)})`;
-      } else {
-        ctx.fillStyle = `rgba(255, 255, 255, ${(0.9 * scale).toFixed(3)})`;
-      }
+      ctx.fillStyle = `rgba(${f.tint.rgb}, ${opacity.toFixed(3)})`;
       ctx.fill();
-      if(f.kind === 'facet' && r >= 2.8){
-        ctx.strokeStyle = `rgba(125, 211, 252, ${(0.42 * scale).toFixed(3)})`;
-        ctx.lineWidth = 0.75;
+      if(f.depth === 2){
+        ctx.strokeStyle = `rgba(${f.tint.rgb}, ${(opacity * 0.55).toFixed(3)})`;
+        ctx.lineWidth = 0.65;
         ctx.stroke();
+      }
+
+      // Subtle crystalline upper-right facet glint on mid & near sapphire/cyan specks
+      if(f.depth >= 1 && (f.tint.name === 'sapphire' || f.tint.name === 'cyan')){
+        ctx.beginPath();
+        ctx.moveTo(0, -ry);
+        ctx.lineTo(rx, 0);
+        ctx.lineTo(0, 0);
+        ctx.closePath();
+        ctx.fillStyle = `rgba(255, 255, 255, ${(opacity * 0.42).toFixed(3)})`;
+        ctx.fill();
       }
       ctx.restore();
     }
@@ -6085,7 +6109,7 @@ function startTitleSnowLoop(){
 }
 
 // boot
-show('btn-continue', hasSave());
+updateContinueBtn();
 updateHUD();
 syncMuteBtn();
 syncUiToggleBtn(false);
@@ -6155,6 +6179,7 @@ if(typeof window !== 'undefined'){
   window.triggerBraveGift = triggerBraveGift;
   window.dismissPickScreen = dismissPickScreen;
   window.updateHUD = updateHUD;
+  window.updateContinueBtn = updateContinueBtn;
   window.updateLocBar = updateLocBar;
   window.baseState = baseState;
   window.migrateStorySave = migrateStorySave;

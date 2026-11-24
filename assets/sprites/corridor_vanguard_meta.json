@@ -1,0 +1,20 @@
+{
+  "id": "corridor_vanguard",
+  "file": "assets/sprites/corridor_vanguard_sheet.png",
+  "frames": 6,
+  "frameW": 76,
+  "frameH": 82,
+  "sheetW": 456,
+  "sheetH": 82,
+  "facing": "left",
+  "anchorX": 0.5658,
+  "anchorY": 0.9268,
+  "castX": 0.0658,
+  "castY": 0.5122,
+  "hitX": 0.5526,
+  "hitY": 0.5122,
+  "headX": 0.5395,
+  "headY": 0.2561,
+  "colorsUsed": 21,
+  "buildScript": "tools/pixel_art/corridor_vanguard/build.py"
+}

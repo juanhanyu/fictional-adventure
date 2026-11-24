@@ -1,0 +1,20 @@
+{
+  "id": "wind_god_avatar",
+  "file": "assets/sprites/wind_god_avatar_sheet.png",
+  "frames": 6,
+  "frameW": 84,
+  "frameH": 88,
+  "sheetW": 504,
+  "sheetH": 88,
+  "facing": "left",
+  "anchorX": 0.5476,
+  "anchorY": 0.9318,
+  "castX": 0.0714,
+  "castY": 0.4432,
+  "hitX": 0.5476,
+  "hitY": 0.5227,
+  "headX": 0.5357,
+  "headY": 0.2841,
+  "colorsUsed": 25,
+  "buildScript": "tools/pixel_art/wind_god_avatar/build.py"
+}

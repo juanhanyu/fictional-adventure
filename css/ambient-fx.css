@@ -1,7 +1,10 @@
 /* =========================================================================
    转生千金 · 氛围粒子层与冰晶宫殿推演盘 (css/ambient-fx.css)
-   视觉语言：冰晶瓷白 (#F8FBFF / #F2F7FF / #EAF3FF) × 澄澈蓝宝石 (#1658EB)
-            × 冰川天蓝 (#38BDF8 / #7DD3FC) × 深蓝宝石墨 (#0B1C3D)
+   美学体系：Warm Snow-Porcelain × 1px Hairline Editorial
+   色板坐标：
+     - 雪瓷白画布 (#FAFBFD / #FFFFFF / #F4F7FC) × 深靛温墨 (#1B2333 / #37445C / #526078)
+     - 唯一高饱和蓝宝石主色 (#1C4CB8 → #0E2B78) × 棱镜高光 (#6BC5F8)
+     - 极细 1px 建筑发丝线 + 纯中性阴影 rgba(18, 24, 34, ...)
    ========================================================================= */
 
 /* ---------- 1. 全视口氛围粒子画布 (#ambient-fx-canvas) ---------- */
@@ -24,10 +27,10 @@
 /* ---------- 2. 冰晶宫殿·寒夜视界滤镜 (body.ice-palace-lens) ---------- */
 body.ice-palace-lens #bg-veil {
   background:
-    radial-gradient(circle at 50% 28%, rgba(125, 211, 252, 0.18), transparent 58%),
-    linear-gradient(180deg, rgba(13, 31, 68, 0.22), rgba(13, 31, 68, 0.34) 58%, rgba(11, 28, 61, 0.54));
-  backdrop-filter: saturate(0.94) contrast(1.04) hue-rotate(-3deg);
-  -webkit-backdrop-filter: saturate(0.94) contrast(1.04) hue-rotate(-3deg);
+    radial-gradient(circle at 50% 28%, rgba(107, 197, 248, 0.16), transparent 58%),
+    linear-gradient(180deg, rgba(18, 24, 34, 0.20), rgba(18, 24, 34, 0.30) 58%, rgba(14, 24, 46, 0.48));
+  backdrop-filter: saturate(0.92) contrast(1.04) hue-rotate(-3deg);
+  -webkit-backdrop-filter: saturate(0.92) contrast(1.04) hue-rotate(-3deg);
   transition: background 0.55s ease, backdrop-filter 0.55s ease;
 }
 
@@ -38,11 +41,11 @@ body.ice-palace-lens::after {
   pointer-events: none;
   z-index: 4;
   background:
-    radial-gradient(ellipse at 50% 46%, transparent 56%, rgba(22, 88, 235, 0.14) 84%, rgba(13, 31, 68, 0.34) 100%),
-    linear-gradient(135deg, rgba(125, 211, 252, 0.18) 0%, transparent 20%, transparent 80%, rgba(56, 189, 248, 0.14) 100%);
+    radial-gradient(ellipse at 50% 46%, transparent 56%, rgba(28, 76, 184, 0.12) 84%, rgba(18, 24, 34, 0.28) 100%),
+    linear-gradient(135deg, rgba(107, 197, 248, 0.14) 0%, transparent 20%, transparent 80%, rgba(107, 197, 248, 0.10) 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    inset 0 12px 44px rgba(22, 88, 235, 0.14);
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    inset 0 12px 44px rgba(18, 24, 34, 0.14);
   animation: afxIceLensIn 0.48s ease both;
 }
 
@@ -82,14 +85,14 @@ body.ice-palace-lens::after {
 .afx-slash-glow {
   stroke-dasharray: 1200;
   stroke-dashoffset: 1200;
-  filter: drop-shadow(0 2px 10px rgba(56, 189, 248, 0.64));
+  filter: drop-shadow(0 2px 10px rgba(107, 197, 248, 0.62));
   animation: afxSlashStroke 420ms cubic-bezier(0.14, 0.92, 0.24, 1) forwards;
 }
 
 .afx-slash-core {
   stroke-dasharray: 1200;
   stroke-dashoffset: 1200;
-  filter: drop-shadow(0 1px 5px rgba(248, 251, 255, 0.92));
+  filter: drop-shadow(0 1px 5px rgba(250, 251, 253, 0.94));
   animation: afxSlashStroke 390ms cubic-bezier(0.16, 0.96, 0.26, 1) forwards;
 }
 
@@ -166,34 +169,34 @@ body.ice-palace-lens::after {
   }
 }
 
-/* ---------- 4. 冰晶宫殿 · 寒夜棱镜推演室 (#ice-deduction-modal) ---------- */
+/* ---------- 4. 冰晶宫殿 · 画廊级雪瓷推演盘 (#ice-deduction-modal · D16) ---------- */
 #ice-deduction-modal {
-  --idb-porcelain: #F8FBFF;
-  --idb-frost: #F2F7FF;
-  --idb-well: #EAF3FF;
-  --idb-cobalt: #1658EB;
-  --idb-cobalt-hi: #1D63FF;
-  --idb-cobalt-deep: #1146C4;
-  --idb-cyan: #38BDF8;
-  --idb-cyan-pale: #7DD3FC;
-  --idb-ink: #0B1C3D;
-  --idb-ink-deep: #0D1F44;
-  --idb-ink-sub: #263F6B;
-  --idb-ink-muted: #2A5298;
-  --idb-border: rgba(22, 88, 235, 0.22);
+  --idb-porcelain: #FAFBFD;
+  --idb-plate: #FFFFFF;
+  --idb-frost: #F4F7FC;
+  --idb-well: #EEF3FA;
+  --idb-cobalt: #1C4CB8;
+  --idb-cobalt-hi: #2457CC;
+  --idb-cobalt-deep: #0E2B78;
+  --idb-cyan: #6BC5F8;
+  --idb-cyan-pale: #B5E1FC;
+  --idb-ink: #1B2333;
+  --idb-ink-sub: #37445C;
+  --idb-ink-muted: #526078;
+  --idb-hairline: rgba(27, 35, 51, 0.14);
+  --idb-hairline-soft: rgba(27, 35, 51, 0.10);
+  --idb-hairline-strong: rgba(28, 76, 184, 0.36);
 }
 
 #ice-deduction-modal.overlay {
   z-index: 68;
-  background:
-    radial-gradient(ellipse 68% 52% at 50% 24%, rgba(56, 189, 248, 0.22), transparent 64%),
-    rgba(13, 31, 68, 0.42);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(18, 24, 34, 0.38);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   padding: 20px;
 }
 
-/* 主棱镜推演卡：冰晶瓷白削角建筑结构 (.idb-shell / .idb-card) */
+/* 主推演画板：雪瓷白 2px 建筑边角 + 顶部 1px 蓝宝石发丝线 + 四角 1px 星图折角 */
 .idb-shell,
 .idb-card {
   position: relative;
@@ -202,60 +205,25 @@ body.ice-palace-lens::after {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 0;
-  clip-path: polygon(
-    0 0,
-    calc(100% - 22px) 0,
-    100% 22px,
-    100% 100%,
-    22px 100%,
-    0 calc(100% - 22px)
-  );
+  border-radius: 2px;
+  clip-path: none;
   color: var(--idb-ink);
-  background:
-    linear-gradient(150deg, #FFFFFF 0%, var(--idb-porcelain) 54%, var(--idb-well) 100%);
-  border: 1px solid rgba(56, 189, 248, 0.52);
+  background: radial-gradient(ellipse 80% 50% at 50% 0%, #FFFFFF 0%, var(--idb-porcelain) 68%, #F3F7FC 100%);
+  border: 1px solid rgba(27, 35, 51, 0.16);
+  border-top: 1px solid var(--idb-cobalt);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    0 24px 64px -14px rgba(18, 24, 34, 0.32),
-    0 8px 22px -6px rgba(22, 88, 235, 0.14);
-  animation: afxModalRise 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+    0 24px 60px -14px rgba(18, 24, 34, 0.24),
+    0 4px 16px -4px rgba(18, 24, 34, 0.08);
+  font-family: "Noto Serif SC", serif;
+  animation: afxModalRise 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* 顶部蓝宝石-冰川天蓝棱脊线 + 削角对角棱线 */
 .idb-shell::before,
-.idb-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 22px;
-  height: 3px;
-  z-index: 6;
-  pointer-events: none;
-  background: linear-gradient(90deg, var(--idb-cobalt) 0%, var(--idb-cyan) 56%, #E0F2FE 100%);
-}
-
+.idb-card::before,
 .idb-shell::after,
 .idb-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  pointer-events: none;
-  background:
-    linear-gradient(
-      225deg,
-      rgba(56, 189, 248, 0.78) 0,
-      rgba(56, 189, 248, 0.78) 17px,
-      transparent 17.5px
-    ),
-    linear-gradient(
-      45deg,
-      rgba(22, 88, 235, 0.76) 0,
-      rgba(22, 88, 235, 0.76) 17px,
-      transparent 17.5px
-    );
+  content: none;
+  display: none;
 }
 
 @keyframes afxModalRise {
@@ -269,39 +237,31 @@ body.ice-palace-lens::after {
   }
 }
 
-/* 定位角标：对齐非削角（左上冰晶头、右下瓷白底），削角处隐藏防裁切 */
+/* 四角 1px 发丝线星图折角框 */
 .idb-corner {
   position: absolute;
   pointer-events: none;
   z-index: 6;
+  opacity: 0.72;
 }
 
 .idb-corner.tl { top: 8px; left: 8px; }
+.idb-corner.tr { top: 8px; right: 8px; }
+.idb-corner.bl { bottom: 8px; left: 8px; }
 .idb-corner.br { bottom: 8px; right: 8px; }
-.idb-corner.tr,
-.idb-corner.bl { opacity: 0; }
 
-.idb-corner.tl path {
+.idb-corner path {
   stroke: var(--idb-cobalt);
-  opacity: 0.76;
+  stroke-width: 1;
+  opacity: 0.62;
 }
 
-.idb-corner.tl polygon {
-  fill: var(--idb-cyan);
-  opacity: 0.9;
+.idb-corner polygon {
+  fill: var(--idb-cobalt);
+  opacity: 0.54;
 }
 
-.idb-corner.br path {
-  stroke: var(--idb-cobalt);
-  opacity: 0.78;
-}
-
-.idb-corner.br polygon {
-  fill: var(--idb-cyan);
-  opacity: 0.92;
-}
-
-/* ---------- 头部：澄明霜蓝冰晶标题栏 ---------- */
+/* ---------- 头部：极简雪瓷书志顶栏 ---------- */
 .idb-head {
   position: relative;
   flex-shrink: 0;
@@ -309,10 +269,10 @@ body.ice-palace-lens::after {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 20px 28px 17px;
-  border-bottom: 2px solid #1658EB;
-  background: linear-gradient(125deg, #EAF3FF 0%, #F7FBFF 58%, #E4F1FF 100%);
-  color: #0B1C3D;
+  padding: 20px 28px 16px;
+  border-bottom: 1px solid var(--idb-hairline);
+  background: var(--idb-porcelain);
+  color: var(--idb-ink);
 }
 
 .idb-head-left {
@@ -323,34 +283,34 @@ body.ice-palace-lens::after {
 }
 
 .idb-emblem {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   flex-shrink: 0;
-  border-radius: 0;
-  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  border-radius: 2px;
+  clip-path: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(140deg, #FFFFFF, #E6F2FF);
-  border: 1px solid rgba(22, 88, 235, 0.34);
-  box-shadow: 0 3px 10px -3px rgba(22, 88, 235, 0.18);
+  background: var(--idb-plate);
+  border: 1px solid var(--idb-hairline);
+  box-shadow: none;
 }
 
 .idb-emblem svg circle[stroke] {
-  stroke: rgba(22, 88, 235, 0.34);
+  stroke: rgba(27, 35, 51, 0.22);
 }
 
 .idb-emblem svg polygon:nth-of-type(1) {
-  stroke: #1658EB;
-  fill: rgba(56, 189, 248, 0.16);
+  stroke: var(--idb-cobalt);
+  fill: rgba(28, 76, 184, 0.08);
 }
 
 .idb-emblem svg polygon:nth-of-type(2) {
-  stroke: #38BDF8;
+  stroke: var(--idb-cyan);
 }
 
 .idb-emblem svg circle[fill] {
-  fill: #1658EB;
+  fill: var(--idb-cobalt);
 }
 
 .idb-titles {
@@ -360,19 +320,19 @@ body.ice-palace-lens::after {
 .idb-subtitle {
   font-size: 11.5px;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   line-height: 1.45;
-  color: #2A5298;
-  margin-bottom: 4px;
+  color: var(--idb-ink-muted);
+  margin-bottom: 3px;
 }
 
 .idb-title {
   margin: 0;
-  font-size: 21px;
-  font-weight: 800;
+  font-size: 20px;
+  font-weight: 700;
   letter-spacing: 0.08em;
-  color: #0B1C3D;
-  line-height: 1.24;
+  color: var(--idb-ink);
+  line-height: 1.26;
 }
 
 .idb-head-right {
@@ -380,31 +340,31 @@ body.ice-palace-lens::after {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
-  padding-right: 6px;
+  padding-right: 4px;
 }
 
 .idb-progress-pill {
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  padding: 6px 13px;
-  border-radius: 6px;
-  background: #FFFFFF;
-  border: 1px solid rgba(22, 88, 235, 0.28);
+  padding: 6px 12px;
+  border-radius: 2px;
+  background: var(--idb-plate);
+  border: 1px solid var(--idb-hairline);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.05em;
   font-variant-numeric: tabular-nums;
-  color: #0B1C3D;
-  box-shadow: 0 2px 8px -3px rgba(18, 24, 34, 0.12);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  color: var(--idb-ink);
+  box-shadow: none;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
 .idb-progress-pill.is-complete {
-  border-color: #1658EB;
-  background: linear-gradient(135deg, #1D63FF 0%, #1658EB 100%);
+  border-color: var(--idb-cobalt-deep);
+  background: linear-gradient(135deg, var(--idb-cobalt) 0%, var(--idb-cobalt-deep) 100%);
   color: #FFFFFF;
-  box-shadow: 0 6px 16px -4px rgba(22, 88, 235, 0.34);
+  box-shadow: 0 6px 16px -6px rgba(18, 24, 34, 0.28);
 }
 
 .idb-pips {
@@ -414,67 +374,67 @@ body.ice-palace-lens::after {
 }
 
 .idb-pip {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   transform: rotate(45deg);
-  border: 1.5px solid #1658EB;
+  border: 1px solid var(--idb-cobalt);
   background: transparent;
-  transition: background 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+  transition: background 0.22s ease, border-color 0.22s ease;
 }
 
 .idb-pip.is-lit {
-  border-color: #1658EB;
-  background: #38BDF8;
-  box-shadow: 0 1px 4px rgba(22, 88, 235, 0.28);
+  border-color: var(--idb-cobalt);
+  background: var(--idb-cobalt);
+  box-shadow: none;
 }
 
 .idb-progress-pill.is-complete .idb-pip {
-  border-color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(255, 255, 255, 0.80);
 }
 
 .idb-progress-pill.is-complete .idb-pip.is-lit {
   border-color: #FFFFFF;
-  background: #7DD3FC;
+  background: var(--idb-cyan);
   box-shadow: none;
 }
 
 .idb-close-btn {
   width: 34px;
   height: 34px;
-  border-radius: 6px;
+  border-radius: 2px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
   line-height: 1;
-  color: #0B1C3D;
-  background: #FFFFFF;
-  border: 1px solid rgba(22, 88, 235, 0.26);
+  color: var(--idb-ink);
+  background: transparent;
+  border: 1px solid var(--idb-hairline);
   cursor: pointer;
-  box-shadow: 0 2px 6px -2px rgba(18, 24, 34, 0.1);
+  box-shadow: none;
   transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
 }
 
 .idb-close-btn:hover {
   color: #FFFFFF;
-  border-color: #1658EB;
-  background: #1658EB;
+  border-color: #C42544;
+  background: #C42544;
 }
 
-/* ---------- 提示导语栏：冰白霜蓝导语条 ---------- */
+/* ---------- 提示导语栏：纯净发丝线导语条 ---------- */
 .idb-prompt-bar {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 11px 28px;
-  font-size: 13.5px;
-  font-weight: 600;
+  padding: 10px 28px;
+  font-size: 13px;
+  font-weight: 500;
   line-height: 1.5;
   letter-spacing: 0.03em;
-  color: var(--idb-ink);
-  background: linear-gradient(90deg, #EFF6FF 0%, #F8FBFF 100%);
-  border-bottom: 1px solid rgba(22, 88, 235, 0.16);
+  color: var(--idb-ink-sub);
+  background: var(--idb-plate);
+  border-bottom: 1px solid var(--idb-hairline-soft);
 }
 
 .idb-prompt-mark {
@@ -483,7 +443,7 @@ body.ice-palace-lens::after {
   display: inline-flex;
 }
 
-/* ---------- 主推演池（自定义冰蓝细轨道） ---------- */
+/* ---------- 主推演池（纯净雪瓷画廊池） ---------- */
 .idb-body {
   flex: 1;
   min-height: 0;
@@ -493,29 +453,30 @@ body.ice-palace-lens::after {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  background:
-    radial-gradient(ellipse 90% 42% at 50% 0%, rgba(255, 255, 255, 0.85), transparent 72%),
-    var(--idb-frost);
+  background: var(--idb-porcelain);
   scrollbar-width: thin;
-  scrollbar-color: rgba(22, 88, 235, 0.5) #DCE9FC;
+  scrollbar-color: rgba(27, 35, 51, 0.24) transparent;
 }
 
 .idb-body::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 .idb-body::-webkit-scrollbar-track {
-  background: #DCE9FC;
-  border-radius: 99px;
+  background: transparent;
 }
 
 .idb-body::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, var(--idb-cobalt), var(--idb-cyan));
-  border-radius: 99px;
+  background: rgba(27, 35, 51, 0.24);
+  border-radius: 2px;
 }
 
-/* ---------- 证物星格：高对比纯白卡 vs 澄澈蓝宝石激活卡 ---------- */
+.idb-body::-webkit-scrollbar-thumb:hover {
+  background: var(--idb-cobalt);
+}
+
+/* ---------- 证物展板：1px 发丝线雪瓷板 vs 深海蓝宝石激活板 ---------- */
 .idb-clues-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -526,15 +487,15 @@ body.ice-palace-lens::after {
   position: relative;
   text-align: left;
   padding: 14px 16px;
-  border-radius: 6px;
+  border-radius: 2px;
   display: flex;
   flex-direction: column;
   gap: 7px;
   cursor: pointer;
   color: var(--idb-ink);
-  background: #FFFFFF;
-  border: 1.5px solid rgba(22, 88, 235, 0.22);
-  box-shadow: 0 3px 10px -3px rgba(18, 24, 34, 0.08);
+  background: var(--idb-plate);
+  border: 1px solid rgba(27, 35, 51, 0.14);
+  box-shadow: none;
   transition:
     border-color 0.18s ease,
     background 0.2s ease,
@@ -543,82 +504,90 @@ body.ice-palace-lens::after {
     transform 0.16s ease;
 }
 
-/* 右上角微切角装饰片 */
+.idb-clue:not(.is-selected):not(.is-sealed) {
+  border-color: rgba(27, 35, 51, 0.14);
+  background: var(--idb-plate);
+  box-shadow: none;
+}
+
+/* 右上角 1px 建筑微角线 */
 .idb-clue::after {
   content: '';
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 10px;
-  height: 10px;
+  top: 5px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
   pointer-events: none;
-  border-top-right-radius: 4px;
-  background: linear-gradient(225deg, rgba(22, 88, 235, 0.22) 50%, transparent 50%);
-  transition: background 0.2s ease;
+  border-top: 1px solid rgba(27, 35, 51, 0.20);
+  border-right: 1px solid rgba(27, 35, 51, 0.20);
+  transition: border-color 0.2s ease;
 }
 
-.idb-clue:hover {
-  border-color: var(--idb-cobalt);
-  background: #FBFEFF;
-  box-shadow: 0 8px 20px -6px rgba(22, 88, 235, 0.18);
-  transform: translateY(-2px);
-}
+@media (hover: hover) and (pointer: fine) {
+  .idb-clue:not(.is-selected):not(.is-sealed):hover {
+    border-color: rgba(27, 35, 51, 0.28);
+    background: #F4F7FC;
+    box-shadow: 0 6px 16px -12px rgba(18, 24, 34, 0.14);
+    transform: translateY(-1px);
+  }
 
-.idb-clue:hover::after {
-  background: linear-gradient(225deg, var(--idb-cobalt) 50%, transparent 50%);
+  .idb-clue:not(.is-selected):not(.is-sealed):hover::after {
+    border-top-color: rgba(27, 35, 51, 0.36);
+    border-right-color: rgba(27, 35, 51, 0.36);
+  }
 }
 
 .idb-clue:focus-visible {
   outline: 2px solid var(--idb-cobalt);
   outline-offset: 2px;
-  border-color: var(--idb-cobalt);
 }
 
-/* 选中证物卡：深邃蓝宝石晶面 (#1E4FBD -> #153E9E) + 冰川天蓝共鸣徽印 */
+/* 选中证物板：深海蓝宝石 (#1C4CB8 → #0E2B78) + 纯白书志字色 */
 .idb-clue.is-selected {
   color: #FFFFFF;
-  border-color: #7DD3FC;
-  background: linear-gradient(135deg, #1E4FBD 0%, #153E9E 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, 0.48),
-    0 10px 24px -6px rgba(15, 44, 122, 0.36);
+  border-color: var(--idb-cobalt-deep);
+  background: linear-gradient(135deg, #1C4CB8 0%, #0E2B78 100%);
+  box-shadow: 0 12px 26px -10px rgba(18, 24, 34, 0.30);
 }
 
 .idb-clue.is-selected::after {
-  background: linear-gradient(225deg, #7DD3FC 50%, transparent 50%);
+  border-top-color: rgba(181, 225, 252, 0.78);
+  border-right-color: rgba(181, 225, 252, 0.78);
 }
 
-.idb-clue.is-selected:hover {
-  background: linear-gradient(135deg, #245AD1 0%, #1847B2 100%);
-  border-color: #BAE6FD;
+@media (hover: hover) and (pointer: fine) {
+  .idb-clue.is-selected:hover {
+    background: linear-gradient(135deg, #2154C4 0%, #113288 100%);
+    border-color: var(--idb-cyan);
+  }
 }
 
-.idb-clue.is-inspected {
-  border-color: var(--idb-cyan);
-  box-shadow: 0 12px 26px -6px rgba(15, 44, 122, 0.38);
+.idb-clue.is-selected.is-inspected {
+  border-color: var(--idb-cobalt-deep);
+  box-shadow: 0 12px 26px -10px rgba(18, 24, 34, 0.28);
 }
 
-/* 全部关键疑点锁定态：深邃蓝宝石冰晶光锁 */
+/* 全部关键疑点锁定态：深海蓝宝石棱镜封缄 */
 .idb-clue.is-sealed {
   color: #FFFFFF;
-  border-color: #7DD3FC;
+  border-color: var(--idb-cobalt-deep);
   background:
-    radial-gradient(circle at 90% 14%, rgba(125, 211, 252, 0.24), transparent 46%),
-    linear-gradient(135deg, #1E4FBD 0%, #153E9E 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, 0.5),
-    0 12px 26px -6px rgba(15, 44, 122, 0.4);
+    radial-gradient(circle at 92% 14%, rgba(107, 197, 248, 0.20), transparent 46%),
+    linear-gradient(135deg, #1C4CB8 0%, #0E2B78 100%);
+  box-shadow: 0 12px 28px -10px rgba(18, 24, 34, 0.34);
 }
 
 .idb-clue.is-sealed:hover {
-  border-color: #BAE6FD;
+  border-color: var(--idb-cyan-pale);
   background:
-    radial-gradient(circle at 90% 14%, rgba(186, 230, 253, 0.28), transparent 46%),
-    linear-gradient(135deg, #245AD1 0%, #1847B2 100%);
+    radial-gradient(circle at 92% 14%, rgba(181, 225, 252, 0.24), transparent 46%),
+    linear-gradient(135deg, #2154C4 0%, #113288 100%);
 }
 
 .idb-clue.is-sealed::after {
-  background: linear-gradient(225deg, #38BDF8 50%, transparent 50%);
+  border-top-color: var(--idb-cyan);
+  border-right-color: var(--idb-cyan);
 }
 
 .idb-clue-top {
@@ -640,7 +609,7 @@ body.ice-palace-lens::after {
 
 .idb-clue.is-selected .idb-clue-index,
 .idb-clue.is-sealed .idb-clue-index {
-  color: #BAE6FD;
+  color: #C9E7FD;
 }
 
 .idb-clue-facet {
@@ -652,7 +621,7 @@ body.ice-palace-lens::after {
 }
 
 .idb-clue.is-selected .idb-clue-facet {
-  color: #7DD3FC;
+  color: var(--idb-cyan-pale);
   transform: rotate(45deg);
 }
 
@@ -663,36 +632,36 @@ body.ice-palace-lens::after {
 
 .idb-clue-badge {
   font-size: 11.5px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.08em;
-  padding: 2px 9px;
-  border-radius: 4px;
-  border: 1px solid rgba(22, 88, 235, 0.2);
-  color: var(--idb-ink-sub);
-  background: var(--idb-well);
-  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  padding: 2px 8px;
+  border-radius: 2px;
+  border: 1px solid var(--idb-hairline);
+  color: var(--idb-ink-muted);
+  background: var(--idb-porcelain);
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
 }
 
-/* 「棱镜共鸣」冰川天蓝徽章 */
+/* 「棱镜共鸣」发丝线透明印记 */
 .idb-clue.is-selected .idb-clue-badge {
-  border-color: #BAE6FD;
+  border-color: rgba(181, 225, 252, 0.72);
   color: #FFFFFF;
-  background: rgba(56, 189, 248, 0.26);
-  box-shadow: 0 2px 6px -2px rgba(11, 28, 61, 0.22);
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
 }
 
-/* 「冰晶合印」高对比亮蓝冰晶封印 */
+/* 「冰晶合印」高对比雪瓷印章 */
 .idb-clue.is-sealed .idb-clue-badge {
   border-color: #FFFFFF;
-  color: #0B1C3D;
-  background: linear-gradient(135deg, #E0F2FE, #7DD3FC);
-  box-shadow: 0 2px 8px -2px rgba(11, 28, 61, 0.22);
+  color: var(--idb-cobalt-deep);
+  background: #FAFBFD;
+  box-shadow: none;
 }
 
 .idb-clue-label {
-  font-size: 15.5px;
+  font-size: 15px;
   font-weight: 700;
-  line-height: 1.42;
+  line-height: 1.44;
   color: var(--idb-ink);
   letter-spacing: 0.03em;
 }
@@ -704,7 +673,7 @@ body.ice-palace-lens::after {
 
 .idb-clue-snippet {
   font-size: 12.5px;
-  line-height: 1.58;
+  line-height: 1.6;
   color: var(--idb-ink-sub);
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -714,66 +683,63 @@ body.ice-palace-lens::after {
 
 .idb-clue.is-selected .idb-clue-snippet,
 .idb-clue.is-sealed .idb-clue-snippet {
-  color: rgba(240, 248, 255, 0.94);
+  color: #F0F6FF;
 }
 
-/* ---------- 澄明霜蓝冰晶结论舱 (.idb-prism-panel) ---------- */
+/* ---------- 冰晶棱镜结论展板 (.idb-prism-panel) ---------- */
 .idb-prism-panel {
   position: relative;
-  border-radius: 10px;
+  border-radius: 2px;
   padding: 16px 18px;
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-columns: 60px minmax(0, 1fr);
   gap: 16px;
   align-items: center;
-  background: linear-gradient(148deg, #EAF3FF 0%, #F7FBFF 62%, #EBF5FF 100%);
-  border: 1.5px solid rgba(22, 88, 235, 0.26);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    0 8px 22px -8px rgba(18, 24, 34, 0.14);
-  transition: border-color 0.32s ease, box-shadow 0.32s ease, background 0.32s ease;
+  background: var(--idb-plate);
+  border: 1px solid var(--idb-hairline);
+  border-top: 1px solid var(--idb-cobalt);
+  box-shadow: none;
+  transition: border-color 0.28s ease, background 0.28s ease;
 }
 
 .idb-prism-panel.is-unlocked {
-  border-color: #1658EB;
-  background: linear-gradient(148deg, #E2F0FF 0%, #F5FAFF 58%, #E6F4FF 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.96),
-    0 10px 26px -8px rgba(22, 88, 235, 0.22);
+  border-color: var(--idb-cobalt);
+  background: var(--idb-frost);
+  box-shadow: 0 10px 24px -14px rgba(18, 24, 34, 0.16);
 }
 
 .idb-seal-sigil {
-  width: 62px;
-  height: 62px;
+  width: 58px;
+  height: 58px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .idb-seal-ring {
-  stroke: rgba(22, 88, 235, 0.28);
+  stroke: rgba(27, 35, 51, 0.22);
   transition: stroke 0.34s ease, opacity 0.34s ease;
 }
 
 .idb-prism-panel.is-unlocked .idb-seal-ring {
-  stroke: #1658EB;
+  stroke: var(--idb-cobalt);
 }
 
 .idb-seal-sigil svg polygon {
-  stroke: rgba(22, 88, 235, 0.5);
-  fill: rgba(56, 189, 248, 0.14);
+  stroke: rgba(28, 76, 184, 0.44);
+  fill: rgba(28, 76, 184, 0.06);
 }
 
 .idb-seal-sigil svg circle[fill] {
-  fill: #38BDF8;
+  fill: var(--idb-cyan);
 }
 
 .idb-seal-sigil svg circle[fill]:last-of-type {
-  fill: #1658EB;
+  fill: var(--idb-cobalt);
 }
 
 .idb-seal-links {
-  stroke: #38BDF8;
+  stroke: var(--idb-cyan);
   stroke-dasharray: 180;
   stroke-dashoffset: 180;
   opacity: 0.34;
@@ -781,10 +747,10 @@ body.ice-palace-lens::after {
 }
 
 .idb-prism-panel.is-unlocked .idb-seal-links {
-  stroke: #1658EB;
+  stroke: var(--idb-cobalt);
   stroke-dashoffset: 0;
   opacity: 1;
-  filter: drop-shadow(0 1px 3px rgba(22, 88, 235, 0.24));
+  filter: none;
 }
 
 .idb-prism-copy {
@@ -804,45 +770,45 @@ body.ice-palace-lens::after {
 .idb-prism-tag {
   font-size: 11.5px;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  padding: 3px 10px;
-  border-radius: 999px;
-  color: #1658EB;
-  background: rgba(22, 88, 235, 0.10);
-  border: 1px solid rgba(22, 88, 235, 0.28);
+  letter-spacing: 0.10em;
+  padding: 2px 8px;
+  border-radius: 2px;
+  color: var(--idb-cobalt);
+  background: transparent;
+  border: 1px solid var(--idb-hairline-strong);
 }
 
 .idb-prism-panel.is-unlocked .idb-prism-tag {
   color: #FFFFFF;
-  background: #1658EB;
-  border-color: #1658EB;
+  background: var(--idb-cobalt);
+  border-color: var(--idb-cobalt);
 }
 
 .idb-prism-name {
   font-size: 14.5px;
   font-weight: 700;
-  color: #0B1C3D;
+  color: var(--idb-ink);
   letter-spacing: 0.04em;
 }
 
 .idb-prism-detail {
-  font-size: 13.5px;
+  font-size: 13px;
   line-height: 1.72;
-  color: #263F6B;
+  color: var(--idb-ink-sub);
   white-space: pre-wrap;
 }
 
 .idb-conclusion-block {
   margin-top: 6px;
   padding: 12px 14px;
-  border-radius: 8px;
-  border: 1.5px solid rgba(22, 88, 235, 0.34);
-  background: #FFFFFF;
-  box-shadow: 0 4px 14px -4px rgba(22, 88, 235, 0.14);
-  font-size: 14px;
+  border-radius: 2px;
+  border: 1px solid var(--idb-hairline-strong);
+  background: var(--idb-plate);
+  box-shadow: none;
+  font-size: 13.5px;
   font-weight: 600;
   line-height: 1.74;
-  color: #0B1C3D;
+  color: var(--idb-ink);
   opacity: 1;
 }
 
@@ -850,7 +816,7 @@ body.ice-palace-lens::after {
   display: none;
 }
 
-/* ---------- 底部动作栏：冰晶瓷白底轨 + 澄澈蓝宝石主按钮 (#1658EB) ---------- */
+/* ---------- 底部动作栏：1px 发丝线底栏 + 单一蓝宝石主按钮 ---------- */
 .idb-foot {
   flex-shrink: 0;
   display: flex;
@@ -858,28 +824,29 @@ body.ice-palace-lens::after {
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  padding: 14px 28px 18px 34px;
-  border-top: 1px solid rgba(22, 88, 235, 0.16);
+  padding: 14px 28px 18px;
+  border-top: 1px solid var(--idb-hairline);
   background: var(--idb-porcelain);
 }
 
 .idb-skip-btn {
-  padding: 9px 16px;
-  border-radius: 8px;
+  padding: 8px 16px;
+  border-radius: 2px;
+  font-family: "Noto Serif SC", serif;
   font-size: 12.5px;
   font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--idb-ink-sub);
-  border: 1px solid rgba(22, 88, 235, 0.26);
-  background: #FFFFFF;
+  border: 1px solid rgba(27, 35, 51, 0.20);
+  background: transparent;
   cursor: pointer;
   transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 
 .idb-skip-btn:hover {
-  color: var(--idb-ink);
+  color: var(--idb-cobalt);
   border-color: var(--idb-cobalt);
-  background: var(--idb-well);
+  background: rgba(28, 76, 184, 0.04);
 }
 
 .idb-confirm-btn {
@@ -887,22 +854,22 @@ body.ice-palace-lens::after {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  padding: 10px 24px;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: 9px 24px;
+  border-radius: 2px;
+  font-family: "Noto Serif SC", serif;
+  font-size: 13.5px;
   font-weight: 700;
   letter-spacing: 0.08em;
   color: #FFFFFF;
-  background: linear-gradient(135deg, #1D63FF 0%, var(--idb-cobalt) 100%);
-  border: 1.5px solid var(--idb-cobalt-deep);
+  background: linear-gradient(135deg, #1C4CB8 0%, #0E2B78 100%);
+  border: 1px solid var(--idb-cobalt-deep);
   cursor: pointer;
-  box-shadow:
-    inset 0 1px 0 rgba(186, 230, 253, 0.42),
-    0 8px 20px -4px rgba(22, 88, 235, 0.34);
+  box-shadow: 0 8px 20px -8px rgba(18, 24, 34, 0.30);
   transition:
     transform 0.16s ease,
     box-shadow 0.2s ease,
-    border-color 0.18s ease;
+    border-color 0.18s ease,
+    background 0.18s ease;
 }
 
 .idb-confirm-icon {
@@ -910,19 +877,17 @@ body.ice-palace-lens::after {
 }
 
 .idb-confirm-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #2B6EFF 0%, var(--idb-cobalt-hi) 100%);
-  border-color: var(--idb-cyan);
+  background: linear-gradient(135deg, #2457CC 0%, #12348A 100%);
+  border-color: var(--idb-cobalt);
   transform: translateY(-1px);
-  box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, 0.56),
-    0 12px 24px -4px rgba(22, 88, 235, 0.42);
+  box-shadow: 0 12px 24px -8px rgba(18, 24, 34, 0.36);
 }
 
 .idb-confirm-btn:disabled {
   cursor: not-allowed;
-  border-color: rgba(22, 88, 235, 0.28);
-  background: #E2EEFC;
-  color: #365280;
+  border-color: var(--idb-hairline);
+  background: var(--idb-well);
+  color: var(--idb-ink-muted);
   box-shadow: none;
 }
 
@@ -946,12 +911,12 @@ body.ice-palace-lens::after {
   }
 
   .idb-title {
-    font-size: 19px;
+    font-size: 18.5px;
   }
 
   .idb-prompt-bar {
     padding: 8px 24px;
-    font-size: 13px;
+    font-size: 12.5px;
   }
 
   .idb-body {
@@ -964,7 +929,7 @@ body.ice-palace-lens::after {
   }
 
   .idb-clue {
-    padding: 10px 14px 10px 16px;
+    padding: 11px 14px;
     gap: 5px;
   }
 
@@ -974,7 +939,7 @@ body.ice-palace-lens::after {
 
   .idb-clue-snippet {
     font-size: 12px;
-    line-height: 1.48;
+    line-height: 1.5;
   }
 
   .idb-prism-panel {
@@ -983,19 +948,19 @@ body.ice-palace-lens::after {
   }
 
   .idb-prism-detail {
-    font-size: 13px;
-    line-height: 1.56;
+    font-size: 12.5px;
+    line-height: 1.58;
   }
 
   .idb-conclusion-block {
     margin-top: 4px;
-    padding: 8px 12px;
-    font-size: 13.5px;
-    line-height: 1.58;
+    padding: 9px 12px;
+    font-size: 13px;
+    line-height: 1.6;
   }
 
   .idb-foot {
-    padding: 10px 24px 12px 30px;
+    padding: 10px 24px 12px;
   }
 }
 
@@ -1033,15 +998,11 @@ body.ice-palace-lens::after {
   .idb-shell,
   .idb-card {
     clip-path: none;
-    border-radius: 14px;
+    border-radius: 3px;
     width: calc(100vw - 16px);
     max-height: calc(100dvh - 16px);
   }
 
-  .idb-shell::before,
-  .idb-shell::after,
-  .idb-card::before,
-  .idb-card::after,
   .idb-corner {
     display: none;
   }
@@ -1064,7 +1025,7 @@ body.ice-palace-lens::after {
     right: 12px;
     width: 44px;
     height: 44px;
-    border-radius: 10px;
+    border-radius: 2px;
   }
 
   .idb-head-right {

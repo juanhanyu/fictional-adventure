@@ -3267,7 +3267,6 @@
             '<div class="rc-titles">' +
               '<div class="rc-name">' + escapeHtml(def.name) +
                 (syn ? '<span class="rc-set-badge" data-set-id="' + syn.id + '" style="--syn-accent:' + syn.color + '">' + relIco(syn.iconKey || 'star', 12) + '<span>' + escapeHtml(syn.name) + '</span></span>' : '') +
-                (isEq ? ' <em class="rc-eq-pill">佩带中</em>' : '') +
               '</div>' +
               '<div class="rc-owner">' + escapeHtml(def.owner) + ' · ' + escapeHtml(def.tag) + '</div>' +
             '</div>' +
@@ -3288,12 +3287,13 @@
     var assistHtml = BOND_ORDER.map(function (cid) {
       var ba = BOND_ASSISTS[cid];
       var ok = assistUnlocked.indexOf(cid) !== -1;
-      var active = activeAssist === cid;
+      var active = !!(ok && activeAssist && activeAssist === cid);
       var stateCls = active ? 'is-active' : (ok ? 'is-ready' : 'is-locked');
       var stateText = active ? '出战中' : (ok ? '点选出战' : '未解锁');
       var desc = ok ? ba.effectDesc : '与该角色积累好感或命运暗流后解锁心念援护';
       return (
         '<button type="button" class="bond-chip' + (active ? ' active' : '') + (ok ? '' : ' locked') + '" ' +
+          'aria-pressed="' + (active ? 'true' : 'false') + '" data-bond-state="' + stateCls + '" ' +
           'title="' + escapeHtml(ba.name + ' · ' + ba.title + '：' + desc) + '" ' +
           (ok ? 'data-assist-pick="' + cid + '"' : 'disabled') + '>' +
           '<span class="bc-top">' +
@@ -3413,7 +3413,22 @@
             '</div>' +
           '</div>' +
           '<div class="rumor-scroll">' + renderRelicsAndAssistHTML({ sandbox: true }) + '</div>' +
+          '<div class="alm-scroll-fade" aria-hidden="true"></div>' +
         '</div>';
+      var scrollBox = ov.querySelector('.rumor-scroll');
+      var fadeEl = ov.querySelector('.alm-scroll-fade');
+      if (scrollBox && fadeEl) {
+        var syncAlmFade = function () {
+          var hasOverflow = scrollBox.scrollHeight - scrollBox.clientHeight > 10;
+          var atEnd = !hasOverflow || (scrollBox.scrollTop + scrollBox.clientHeight >= scrollBox.scrollHeight - 8);
+          fadeEl.classList.toggle('is-end', atEnd);
+        };
+        scrollBox.addEventListener('scroll', syncAlmFade, { passive: true });
+        syncAlmFade();
+        if (typeof requestAnimationFrame === 'function') {
+          requestAnimationFrame(syncAlmFade);
+        }
+      }
       bindRelicsContainerEvents(ov, {
         sandbox: true,
         onChanged: function () {

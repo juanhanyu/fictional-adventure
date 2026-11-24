@@ -1,0 +1,20 @@
+{
+  "id": "alice",
+  "file": "assets/sprites/alice_sheet.png",
+  "frames": 6,
+  "frameW": 72,
+  "frameH": 80,
+  "sheetW": 432,
+  "sheetH": 80,
+  "facing": "left",
+  "anchorX": 0.5417,
+  "anchorY": 0.925,
+  "castX": 0.0556,
+  "castY": 0.5375,
+  "hitX": 0.5278,
+  "hitY": 0.575,
+  "headX": 0.5278,
+  "headY": 0.3,
+  "colorsUsed": 24,
+  "buildScript": "tools/pixel_art/alice/build.py"
+}

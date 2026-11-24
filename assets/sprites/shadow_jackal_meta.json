@@ -1,0 +1,20 @@
+{
+  "id": "shadow_jackal",
+  "file": "assets/sprites/shadow_jackal_sheet.png",
+  "frames": 6,
+  "frameW": 84,
+  "frameH": 68,
+  "sheetW": 504,
+  "sheetH": 68,
+  "facing": "left",
+  "anchorX": 0.5238,
+  "anchorY": 0.9118,
+  "castX": 0.0357,
+  "castY": 0.5882,
+  "hitX": 0.5,
+  "hitY": 0.5294,
+  "headX": 0.2381,
+  "headY": 0.4706,
+  "colorsUsed": 20,
+  "buildScript": "tools/pixel_art/shadow_jackal/build.py"
+}

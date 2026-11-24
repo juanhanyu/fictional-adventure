@@ -1,0 +1,20 @@
+{
+  "id": "pack_wolf",
+  "file": "assets/sprites/pack_wolf_sheet.png",
+  "frames": 6,
+  "frameW": 80,
+  "frameH": 64,
+  "sheetW": 480,
+  "sheetH": 64,
+  "facing": "left",
+  "anchorX": 0.5125,
+  "anchorY": 0.9062,
+  "castX": 0.05,
+  "castY": 0.6094,
+  "hitX": 0.45,
+  "hitY": 0.5,
+  "headX": 0.2125,
+  "headY": 0.4062,
+  "colorsUsed": 20,
+  "buildScript": "tools/pixel_art/pack_wolf/build.py"
+}

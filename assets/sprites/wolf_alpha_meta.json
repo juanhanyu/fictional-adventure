@@ -1,0 +1,20 @@
+{
+  "id": "wolf_alpha",
+  "file": "assets/sprites/wolf_alpha_sheet.png",
+  "frames": 6,
+  "frameW": 88,
+  "frameH": 72,
+  "sheetW": 528,
+  "sheetH": 72,
+  "facing": "left",
+  "anchorX": 0.5,
+  "anchorY": 0.9167,
+  "castX": 0.0568,
+  "castY": 0.7361,
+  "hitX": 0.4773,
+  "hitY": 0.5139,
+  "headX": 0.2727,
+  "headY": 0.5278,
+  "colorsUsed": 18,
+  "buildScript": "tools/pixel_art/wolf_alpha/build.py"
+}

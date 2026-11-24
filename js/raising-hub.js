@@ -1125,13 +1125,13 @@
           '<div class="rh-map-thumb">' +
             '<img src="' + escapeHtml(thumb) + '" alt="' + escapeHtml(L.name) + '" loading="lazy"/>' +
             '<div class="rh-map-thumb-scrim"></div>' +
-            (isHere ? '<span class="rh-map-here-pill">' + ico('compass') + '<span>当前所在</span></span>' : '') +
-            (badges.length ? '<div class="rh-map-badges">' + badges.join('') + '</div>' : '') +
+            (isHere ? '<span class="rh-map-here-pill"><span class="rh-dia" aria-hidden="true"></span><span>当前所在</span></span>' : '') +
             (npcHtml ? '<div class="rh-map-npcs">' + npcHtml + '</div>' : '') +
           '</div>' +
           '<div class="rh-map-card-body">' +
             '<div class="rh-map-card-row">' +
               '<strong class="rh-map-name">' + escapeHtml(L.name) + '</strong>' +
+              (badges.length ? '<div class="rh-map-badges">' + badges.join('') + '</div>' : '') +
             '</div>' +
             '<p class="rh-map-desc">' + escapeHtml(L.desc || '') + '</p>' +
           '</div>';
@@ -2085,7 +2085,7 @@
             '<span class="rh-rs-name"><i class="rh-rs-dot" aria-hidden="true"></i>' + sm.name + '</span>' +
             '<span class="rh-rs-val"><b>' + val + '</b>' + deltaChip + '</span>' +
           '</div>' +
-          '<div class="rh-rs-track"><i style="width:' + clampNum(val, 0, 100) + '%"></i></div>' +
+          '<div class="rh-rs-track' + (val <= 0 ? ' is-zero' : '') + '"><i style="width:' + clampNum(val, 0, 100) + '%"></i></div>' +
         '</div>'
       );
     }).join('');
@@ -2136,7 +2136,7 @@
                 (data.lvDelta > 0 ? '<span class="rh-meta-stamp pos">等级 +' + data.lvDelta + '</span>' : '') +
               '</div>' +
               stepsHtml +
-              '<div class="rh-rep-diary">' +
+              '<div class="rh-rep-diary rh-note-quote">' +
                 '<div class="rh-diary-cap">' + ico('quill') + '<span>希尔维亚的季度随笔</span></div>' +
                 '<p>' + escapeHtml(data.diaryText || pickSeasonalDiaryEntry(st).text) + '</p>' +
               '</div>' +
@@ -2708,8 +2708,8 @@
               var cnt = st.cozyBag[it.id] || 0;
               return (
                 '<div class="rh-gift-item">' +
-                  '<div class="rgi-main">' + ico(it.icon) + '<div><strong>' + escapeHtml(it.name) + '</strong><small>持有 ' + cnt + ' · ' + escapeHtml(it.tag) + '</small></div></div>' +
-                  '<button type="button" class="rh-btn primary sm" data-send-gift="' + escapeHtml(it.id) + '"' + (selDone || !_shopUiState.selectedChar ? ' disabled' : '') + '>' + (selDone ? '本季已赠' : '致赠此物') + '</button>' +
+                  '<div class="rgi-main"><span class="rh-sc-ico" data-ico="' + escapeHtml(it.icon) + '">' + ico(it.icon) + '</span><div><strong>' + escapeHtml(it.name) + '</strong><small>持有 ' + cnt + ' · ' + escapeHtml(it.tag) + '</small></div></div>' +
+                  '<button type="button" class="rh-btn rh-btn-buy sm" data-send-gift="' + escapeHtml(it.id) + '"' + (selDone || !_shopUiState.selectedChar ? ' disabled' : '') + '>' + (selDone ? '本季已赠' : '致赠此物') + '</button>' +
                 '</div>'
               );
             }).join('')
@@ -3156,10 +3156,14 @@
       if (!open) {
         return (
           '<article class="rh-mail-card is-locked" data-mail-id="' + escapeHtml(m.id) + '">' +
-            '<div class="rmc-av locked">' + ico('lock') + '</div>' +
-            '<div class="rmc-body">' +
-              '<div class="rmc-top"><strong>未启封信函</strong><span class="rmc-era">' + escapeHtml(m.era) + '</span></div>' +
-              '<p class="rmc-hint">随着旅程推进与结识对应人物，驿使便会送来这封火漆信笺。</p>' +
+            '<div class="rmc-inner">' +
+              '<div class="rmc-av locked">' + ico('lock') + '</div>' +
+              '<div class="rmc-body">' +
+                '<div class="rmc-head-group">' +
+                  '<div class="rmc-top"><strong>未启封信函</strong><span class="rmc-era">' + escapeHtml(m.era) + '</span></div>' +
+                '</div>' +
+                '<p class="rmc-hint">随着旅程推进与结识对应人物，驿使便会送来这封火漆信笺。</p>' +
+              '</div>' +
             '</div>' +
           '</article>'
         );
@@ -3173,17 +3177,21 @@
       }).join('<span class="rmc-bonus-dot" aria-hidden="true">·</span>');
       return (
         '<button type="button" class="rh-mail-card is-open' + (read ? ' is-read' : ' is-unread') + '" data-open-mail="' + escapeHtml(m.id) + '">' +
-          '<span class="rmc-av">' + (av ? '<img src="' + escapeHtml(av) + '" alt="' + escapeHtml(m.senderName) + '"/>' : ico('envelope')) + '</span>' +
-          '<span class="rmc-body">' +
-            '<span class="rmc-top">' +
-              '<strong>' + escapeHtml(m.title) + '</strong>' +
-              '<span class="rmc-seal-cluster">' +
-                '<span class="rmc-wax tone-' + escapeHtml(tone) + '" title="' + escapeHtml(m.sealLabel) + '" aria-hidden="true">' + ico(sealIco) + '</span>' +
-                '<em class="rmc-state ' + (read ? 'is-read' : 'is-unread') + '">' + (read ? '已阅' : '<i class="rmc-dot" aria-hidden="true"></i>未拆') + '</em>' +
+          '<span class="rmc-inner">' +
+            '<span class="rmc-av">' + (av ? '<img src="' + escapeHtml(av) + '" alt="' + escapeHtml(m.senderName) + '"/>' : ico('envelope')) + '</span>' +
+            '<span class="rmc-body">' +
+              '<span class="rmc-head-group">' +
+                '<span class="rmc-top">' +
+                  '<strong>' + escapeHtml(m.title) + '</strong>' +
+                  '<span class="rmc-seal-cluster">' +
+                    '<span class="rmc-wax tone-' + escapeHtml(tone) + '" title="' + escapeHtml(m.sealLabel) + '" aria-hidden="true">' + ico(sealIco) + '</span>' +
+                    '<em class="rmc-state ' + (read ? 'is-read' : 'is-unread rh-mail-unread') + '">' + (read ? '已阅' : '<i class="rmc-dot" aria-hidden="true"></i>未拆') + '</em>' +
+                  '</span>' +
+                '</span>' +
+                '<span class="rmc-meta">' + escapeHtml(m.senderName) + ' · ' + escapeHtml(m.sealLabel) + ' · ' + escapeHtml(m.era) + '</span>' +
               '</span>' +
+              '<span class="rmc-bonus">' + bonusHtml + '</span>' +
             '</span>' +
-            '<span class="rmc-meta">' + escapeHtml(m.senderName) + ' · ' + escapeHtml(m.sealLabel) + ' · ' + escapeHtml(m.era) + '</span>' +
-            '<span class="rmc-bonus">' + bonusHtml + '</span>' +
           '</span>' +
         '</button>'
       );

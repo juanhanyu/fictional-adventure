@@ -921,7 +921,7 @@
         var isSel = selectedIds.has(cid);
         var isSealed = unlocked && isSel && requiredSet.has(cid);
         btn.classList.toggle('is-selected', isSel);
-        btn.classList.toggle('is-inspected', cid === inspectedId);
+        btn.classList.toggle('is-inspected', isSel && cid === inspectedId);
         btn.classList.toggle('is-sealed', isSealed);
         btn.setAttribute('aria-pressed', isSel ? 'true' : 'false');
 
@@ -1065,6 +1065,9 @@
     };
 
     modal.classList.remove('hidden');
+    if (document.activeElement && document.activeElement !== document.body && typeof document.activeElement.blur === 'function') {
+      try { document.activeElement.blur(); } catch (e) {}
+    }
     updateBoardUI();
     playSfx('modal_open');
     return modal;

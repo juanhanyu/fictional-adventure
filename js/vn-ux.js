@@ -3593,18 +3593,30 @@
     var titleMenu = document.querySelector('#title-screen .title-menu');
     if (titleMenu) {
       var anchor = document.getElementById('btn-arena-title') || document.getElementById('btn-codex');
+      var onTitleLoadsClick = function () {
+        var titleEl = document.getElementById('title-screen');
+        var isTitleVisible = !!(titleEl && !titleEl.classList.contains('hidden') && (!titleEl.style || titleEl.style.display !== 'none'));
+        var td = (typeof window !== 'undefined' && window.TitleDirector) ? window.TitleDirector : (root && root.TitleDirector);
+        if (isTitleVisible && td && typeof td.openArchiveMode === 'function') {
+          td.openArchiveMode();
+          return;
+        }
+        openSaveLoadModal('load');
+      };
+
       var existingLoad = document.getElementById('btn-title-loads');
       if (!existingLoad) {
         var tLoad = document.createElement('button');
         tLoad.type = 'button';
         tLoad.id = 'btn-title-loads';
         tLoad.className = 'tbtn tbtn-editorial';
-        tLoad.innerHTML = '<span class="tbtn-ico" aria-hidden="true">' + SVG_SAVE_TITLE + '</span><span class="tbtn-text">存档档案</span><span class="tbtn-en">ARCHIVE</span>';
-        tLoad.onclick = function () { openSaveLoadModal('load'); };
+        tLoad.innerHTML = '<span class="tbtn-ico" aria-hidden="true">' + SVG_SAVE_TITLE + '</span><span class="tbtn-text">记忆晶体</span><span class="tbtn-en">ARCHIVE</span>';
+        tLoad.onclick = onTitleLoadsClick;
         titleMenu.insertBefore(tLoad, anchor);
       } else {
         existingLoad.className = 'tbtn tbtn-editorial';
-        existingLoad.innerHTML = '<span class="tbtn-ico" aria-hidden="true">' + SVG_SAVE_TITLE + '</span><span class="tbtn-text">存档档案</span><span class="tbtn-en">ARCHIVE</span>';
+        existingLoad.innerHTML = '<span class="tbtn-ico" aria-hidden="true">' + SVG_SAVE_TITLE + '</span><span class="tbtn-text">记忆晶体</span><span class="tbtn-en">ARCHIVE</span>';
+        existingLoad.onclick = onTitleLoadsClick;
       }
 
       var existingChap = document.getElementById('btn-title-chapters');
@@ -3619,6 +3631,7 @@
       } else {
         existingChap.className = 'tbtn tbtn-editorial';
         existingChap.innerHTML = '<span class="tbtn-ico" aria-hidden="true">' + SVG_CHAP_TITLE + '</span><span class="tbtn-text">章节速览</span><span class="tbtn-en">CHAPTERS</span>';
+        existingChap.onclick = function () { openChaptersModal(); };
       }
     }
 

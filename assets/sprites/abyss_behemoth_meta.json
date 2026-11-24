@@ -1,0 +1,20 @@
+{
+  "id": "abyss_behemoth",
+  "file": "assets/sprites/abyss_behemoth_sheet.png",
+  "frames": 6,
+  "frameW": 96,
+  "frameH": 84,
+  "sheetW": 576,
+  "sheetH": 84,
+  "facing": "left",
+  "anchorX": 0.4792,
+  "anchorY": 0.9286,
+  "castX": 0.1771,
+  "castY": 0.8571,
+  "hitX": 0.4167,
+  "hitY": 0.5833,
+  "headX": 0.2292,
+  "headY": 0.5476,
+  "colorsUsed": 20,
+  "buildScript": "tools/pixel_art/abyss_behemoth/build.py"
+}

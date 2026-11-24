@@ -27,7 +27,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-BANK_CHARS = ".0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_"
+BANK_CHARS = ".abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&()_+-=<>?[]{}|~"
 
 
 def rgb_to_lab(r: int, g: int, b: int) -> tuple[float, float, float]:
@@ -81,15 +81,19 @@ def detect_bg_color(im: Image.Image) -> tuple[tuple[float, float, float], bool]:
 
 
 def detect_lattice(im: Image.Image, expected_pitch: float = 16.0) -> tuple[float, float, float]:
-    """Find best logical pixel pitch & phase offset (ox, oy) via 1D edge-energy peaks."""
+    """Find true logical pixel pitch & phase offset (ox, oy) via boundary-minus-midpoint contrast.
+
+    A genuine pixel grid has strong edge energy on cell boundaries (k*p + o) and near-zero edge
+    energy at cell midpoints ((k+0.5)*p + o). Scoring (mean_boundary - 1.5 * mean_midpoint) avoids
+    both large-pitch sparsity bias and small-pitch window-overlap bias.
+    """
     w, h = im.size
     gray = im.convert("L")
     gpx = gray.load()
 
-    # Subsample rows/cols every 2px for fast accurate edge energy profiles
-    gx = [0.0] * (w - 1)
     rows = range(0, h, 2)
     n_rows = float(len(rows))
+    gx = [0.0] * (w - 1)
     for y in rows:
         prev = gpx[0, y]
         for x in range(w - 1):
@@ -98,9 +102,9 @@ def detect_lattice(im: Image.Image, expected_pitch: float = 16.0) -> tuple[float
             prev = cur
     gx = [v / n_rows for v in gx]
 
-    gy = [0.0] * (h - 1)
     cols = range(0, w, 2)
     n_cols = float(len(cols))
+    gy = [0.0] * (h - 1)
     for x in cols:
         prev = gpx[x, 0]
         for y in range(h - 1):
@@ -109,67 +113,49 @@ def detect_lattice(im: Image.Image, expected_pitch: float = 16.0) -> tuple[float
             prev = cur
     gy = [v / n_cols for v in gy]
 
-    p_min = max(4.0, expected_pitch * 0.65)
-    p_max = expected_pitch * 1.45
-    n_p = int((p_max - p_min) * 4) + 1
+    p_min = max(5.0, expected_pitch * 0.55)
+    p_max = min(32.0, expected_pitch * 1.55)
+    steps_p = max(20, int((p_max - p_min) * 8) + 1)
 
-    tot_x = sum(gx) + 1e-6
-    tot_y = sum(gy) + 1e-6
-    mean_x = tot_x / max(1, len(gx))
-    mean_y = tot_y / max(1, len(gy))
+    def search_axis(prof: list[float]) -> tuple[float, float, float]:
+        n = len(prof)
+        best_score = -1e18
+        best_p, best_off = expected_pitch, 0.0
+        for k in range(steps_p):
+            p = p_min + (p_max - p_min) * k / max(1, steps_p - 1)
+            ph_steps = max(12, int(round(p * 2)))
+            axis_best = -1e18
+            axis_off = 0.0
+            for s in range(ph_steps):
+                off = s * (p / ph_steps)
+                b_sum = m_sum = 0.0
+                b_cnt = m_cnt = 0
+                pos = off
+                while pos < n:
+                    bi = int(round(pos))
+                    if bi < n:
+                        b_sum += prof[bi]
+                        b_cnt += 1
+                    mi = int(round(pos + p * 0.5))
+                    if mi < n:
+                        m_sum += prof[mi]
+                        m_cnt += 1
+                    pos += p
+                if b_cnt and m_cnt:
+                    val = (b_sum / b_cnt) - 1.5 * (m_sum / m_cnt)
+                    if val > axis_best:
+                        axis_best, axis_off = val, off
+            # Very gentle preference for expected_pitch only to break near-ties
+            score = axis_best * (1.0 - 0.01 * abs(p - expected_pitch) / expected_pitch)
+            if score > best_score:
+                best_score, best_p, best_off = score, p, axis_off
+        return best_score, best_p, best_off
 
-    best_score = -1e18
-    best_p, best_ox, best_oy = expected_pitch, 0.0, 0.0
-
-    for k in range(n_p):
-        p = p_min + (p_max - p_min) * k / max(1, n_p - 1)
-        steps = max(8, int(round(p)))
-
-        bx_val, bx_ph = -1e18, 0.0
-        for s in range(steps):
-            ox = s * (p / steps)
-            cap, cnt = 0.0, 0
-            pos = ox
-            while pos < w - 1:
-                idx = int(round(pos))
-                if idx < len(gx):
-                    # Sum ±1px window around lattice line to handle 1-2px GPT blur
-                    lo = max(0, idx - 1)
-                    hi = min(len(gx) - 1, idx + 1)
-                    cap += sum(gx[lo:hi + 1])
-                    cnt += 1
-                pos += p
-            capture = min(1.0, cap / tot_x)
-            purity = (cap / max(1, cnt)) / (mean_x * 3.0)
-            val = capture * capture * purity
-            if val > bx_val:
-                bx_val, bx_ph = val, ox
-
-        by_val, by_ph = -1e18, 0.0
-        for s in range(steps):
-            oy = s * (p / steps)
-            cap, cnt = 0.0, 0
-            pos = oy
-            while pos < h - 1:
-                idx = int(round(pos))
-                if idx < len(gy):
-                    lo = max(0, idx - 1)
-                    hi = min(len(gy) - 1, idx + 1)
-                    cap += sum(gy[lo:hi + 1])
-                    cnt += 1
-                pos += p
-            capture = min(1.0, cap / tot_y)
-            purity = (cap / max(1, cnt)) / (mean_y * 3.0)
-            val = capture * capture * purity
-            if val > by_val:
-                by_val, by_ph = val, oy
-
-        score = (bx_val + by_val) * (1.0 - 0.015 * abs(p - expected_pitch) / expected_pitch)
-        if score > best_score:
-            best_score = score
-            best_p, best_ox, best_oy = p, bx_ph, by_ph
-
-    return best_p, (best_ox + 1.0) % best_p, (best_oy + 1.0) % best_p
+    _, px_p, ox = search_axis(gx)
+    _, py_p, oy = search_axis(gy)
+    # Use shared square pitch if X and Y agree closely; otherwise average
+    pitch = 0.5 * (px_p + py_p) if abs(px_p - py_p) / max(px_p, py_p) < 0.08 else (px_p if abs(px_p - expected_pitch) < abs(py_p - expected_pitch) else py_p)
+    return pitch, (ox + 1.0) % pitch, (oy + 1.0) % pitch
 
 
 def sample_grid(im: Image.Image, pitch: float, ox: float, oy: float) -> Image.Image:
@@ -201,7 +187,7 @@ def sample_grid(im: Image.Image, pitch: float, ox: float, oy: float) -> Image.Im
     return out
 
 
-def chroma_cutout(grid: Image.Image, bg_rgb: tuple[float, float, float], use_alpha: bool, tol: float = 52.0) -> Image.Image:
+def chroma_cutout(grid: Image.Image, bg_rgb: tuple[float, float, float], use_alpha: bool, tol: float = 76.0) -> Image.Image:
     """Flood-fill exterior background -> strict binary alpha (0 or 255) + magenta despill."""
     gw, gh = grid.size
     out = grid.copy()
@@ -542,6 +528,44 @@ def export_js_bank(char_id: str, w: int, h: int, facing: str, palette: list[str]
     out_js.write_text(js, encoding="utf-8")
 
 
+def find_phase_for_pitch(im: Image.Image, pitch: float) -> tuple[float, float]:
+    """Find optimal sub-pixel phase offset (ox, oy) for a fixed logical pitch."""
+    w, h = im.size
+    gray = im.convert("L")
+    gpx = gray.load()
+    rows = range(0, h, 2)
+    gx = [sum(abs(gpx[x + 1, y] - gpx[x, y]) for y in rows) / len(rows) for x in range(w - 1)]
+    cols = range(0, w, 2)
+    gy = [sum(abs(gpx[x, y + 1] - gpx[x, y]) for x in cols) / len(cols) for y in range(h - 1)]
+
+    def best_off(prof: list[float]) -> float:
+        n = len(prof)
+        steps = max(16, int(round(pitch * 3)))
+        best_v, best_o = -1e18, 0.0
+        for s in range(steps):
+            o = s * (pitch / steps)
+            bs = ms = 0.0
+            bc = mc = 0
+            pos = o
+            while pos < n:
+                bi = int(round(pos))
+                if bi < n:
+                    bs += prof[bi]
+                    bc += 1
+                mi = int(round(pos + pitch * 0.5))
+                if mi < n:
+                    ms += prof[mi]
+                    mc += 1
+                pos += pitch
+            if bc and mc:
+                v = (bs / bc) - 1.5 * (ms / mc)
+                if v > best_v:
+                    best_v, best_o = v, o
+        return (best_o + 1.0) % pitch
+
+    return best_off(gx), best_off(gy)
+
+
 def convert_single(
     src_path: Path,
     grid_w: int,
@@ -549,13 +573,16 @@ def convert_single(
     ground_y: int,
     target_char_h: int | None,
     patch_path: Path | None,
+    lock_pitch: float = 0.0,
 ) -> tuple[Image.Image, Image.Image, dict]:
     src_img = Image.open(src_path).convert("RGBA")
-    # Height determines exact square logical pixel pitch (1024/64=16.0, 1024/96=10.667)
-    # across both 1024x1024 (1:1) and 1536x1024 (3:2) GPT canvases.
-    expected_pitch = src_img.size[1] / float(grid_h)
     bg_rgb, use_alpha = detect_bg_color(src_img)
-    pitch, ox, oy = detect_lattice(src_img, expected_pitch=expected_pitch)
+    if lock_pitch > 0.0:
+        pitch = lock_pitch
+        ox, oy = find_phase_for_pitch(src_img, pitch)
+    else:
+        expected_pitch = src_img.size[1] / float(grid_h)
+        pitch, ox, oy = detect_lattice(src_img, expected_pitch=expected_pitch)
     sampled = sample_grid(src_img, pitch, ox, oy)
     cut = chroma_cutout(sampled, bg_rgb, use_alpha)
     clean = remove_orphans(cut)
@@ -580,16 +607,20 @@ def main() -> None:
     ap.add_argument("--w", type=int, default=64, help="目标真像素宽 (人形 64 / 兽类 96)")
     ap.add_argument("--h", type=int, default=64, help="目标真像素高 (默认 64)")
     ap.add_argument("--ground-y", type=int, default=60, help="脚底对齐行号 (默认 60)")
-    ap.add_argument("--char-h", type=int, default=54, help="角色站立目标高度 (人形 54 / 高个 58)")
+    ap.add_argument("--char-h", type=int, default=54, help="角色站立目标高度 (0=保持1:1原生缩放)")
     ap.add_argument("--colors", type=int, default=28, help="最大色板数 (默认 28)")
     ap.add_argument("--facing", choices=["right", "left"], default="right")
+    ap.add_argument("--lock-pitch", type=float, default=0.0, help="锁定全部帧使用同一逻辑像素格距 (0=按idle自动锁)")
     ap.add_argument("--patch-dir", type=Path, default=None, help="手动逐像素修补 JSON 目录")
     ap.add_argument("--audit-dir", type=Path, default=Path("./audit"), help="输出坐标核对图目录")
     ap.add_argument("--out-js", type=Path, required=True, help="输出真像素 JS 模块路径 (js/sprites/<id>.js)")
     args = ap.parse_args()
 
+    char_h = args.char_h if args.char_h > 0 else None
     idle_patch = (args.patch_dir / f"{args.id}_idle.json") if args.patch_dir else None
-    src_idle, idle_grid, info_idle = convert_single(args.idle, args.w, args.h, args.ground_y, args.char_h, idle_patch)
+    src_idle, idle_grid, info_idle = convert_single(args.idle, args.w, args.h, args.ground_y, char_h, idle_patch, lock_pitch=args.lock_pitch)
+    # Lock strike/windup/hurt to the exact same pitch as idle so character head/body never shrinks mid-animation!
+    frame_pitch = args.lock_pitch if args.lock_pitch > 0 else float(info_idle["detected_pitch"])
 
     # Derive subtle 1px breathing frame (upper body shifts down 1px while feet stay locked!)
     idle2_grid = idle_grid.copy()
@@ -605,18 +636,18 @@ def main() -> None:
     strike_grid = idle_grid.copy()
     if args.strike and args.strike.exists():
         sp = (args.patch_dir / f"{args.id}_strike.json") if args.patch_dir else None
-        src_strike, strike_grid, info_strike = convert_single(args.strike, args.w, args.h, args.ground_y, args.char_h, sp)
+        src_strike, strike_grid, info_strike = convert_single(args.strike, args.w, args.h, args.ground_y, char_h, sp, lock_pitch=frame_pitch)
         print("Strike:", json.dumps(info_strike, ensure_ascii=False))
 
     windup_grid = idle_grid.copy()
     if args.windup and args.windup.exists():
         wp = (args.patch_dir / f"{args.id}_windup.json") if args.patch_dir else None
-        _, windup_grid, _ = convert_single(args.windup, args.w, args.h, args.ground_y, args.char_h, wp)
+        _, windup_grid, _ = convert_single(args.windup, args.w, args.h, args.ground_y, char_h, wp, lock_pitch=frame_pitch)
 
     hurt_grid = idle_grid.copy()
     if args.hurt and args.hurt.exists():
         hp = (args.patch_dir / f"{args.id}_hurt.json") if args.patch_dir else None
-        _, hurt_grid, _ = convert_single(args.hurt, args.w, args.h, args.ground_y, args.char_h, hp)
+        _, hurt_grid, _ = convert_single(args.hurt, args.w, args.h, args.ground_y, char_h, hp, lock_pitch=frame_pitch)
 
     all_frames = [idle_grid, idle2_grid, blink_grid, windup_grid, strike_grid, hurt_grid]
     q_frames, shared_pal = quantize_palette(all_frames, max_colors=min(48, args.colors + 6))

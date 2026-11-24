@@ -543,7 +543,7 @@
 
   /* -------------------- 真像素矩阵库（零 PNG · 逐像素索引渲染到 Canvas） -------------------- */
   const _bankFrameCache = new Map(); // `${id}:${frame}` -> ImageData
-  const BANK_CHARS = '.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_';
+  const BANK_CHARS = '.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&()_+-=<>?[]{}|~';
 
   function getPixelBankEntry(spriteId) {
     const bank = global.PIXEL_SPRITE_BANK;

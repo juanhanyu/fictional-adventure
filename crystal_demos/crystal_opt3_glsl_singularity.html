@@ -680,41 +680,76 @@
       return mix(col, vec3(0.52, 0.86, 1.0), 0.24);
     }
 
+    // Precomputed per-frame matrices (zero trig inside raymarch loop!)
+    mat2 mSpinY;
+    mat2 mTiltXY;
+    mat2 mFold1;
+    mat2 mFold2;
+    mat2 mShardSpin;
+    mat2 mShardTilt;
+    mat2 mRing1Y;
+    mat2 mRing1XY;
+    mat2 mRing2Y;
+    mat2 mRing2YZ;
+    mat2 mPalaceY;
+    mat2 mPalaceXY;
+    mat2 mGuardY;
+    mat2 mAstro1Y;
+    mat2 mAstro2Y;
+
     // =========================================================================
     // MODE 0: High-Dimensional Folded Sacred Crystal (KIFS Octa-Icosahedral)
     // =========================================================================
     float sdfFoldedCrystal(vec3 p, float t, float ripple) {
-      // Gentle noble levitation & sacred elongated proportions
       vec3 q = p;
-      q.xz *= rot2(t * 0.24);
-      q.xy *= rot2(sin(t * 0.35) * 0.14);
+      q.xz *= mSpinY;
+      q.xy *= mTiltXY;
 
-      // Primary diamond reliquary silhouette
       vec3 eq = q;
       eq.y *= 0.72;
       float outerGem = sdOctahedron(eq, 1.24);
 
-      // KIFS 4D-inspired Kaleidoscopic Polyhedral Folding
+      // Orbiting 4D satellite prism shards (only evaluate near orbital shell)
+      float shards = 10.0;
+      float rLen = length(p);
+      if (rLen > 0.85 && rLen < 2.25) {
+        vec3 sp = p;
+        sp.xz *= mShardSpin;
+        sp.yz *= mShardTilt;
+        float ang = atan(sp.z, sp.x);
+        float seg = PI / 3.0;
+        float id = floor((ang + seg * 0.5) / seg);
+        float a = mod(ang + seg * 0.5, seg) - seg * 0.5;
+        float rad = length(sp.xz);
+        vec3 sr = vec3(cos(a) * rad, sp.y, sin(a) * rad);
+        sr.x -= 1.44 + 0.09 * sin(t * 1.4 + id * 2.1) + ripple * 0.26;
+        sr.y -= 0.22 * sin(t * 0.9 + id * 1.7);
+        sr.xy *= rot2(t * 0.7 + id);
+        sr.y *= 0.55;
+        shards = sdOctahedron(sr, 0.19);
+      }
+
+      // Bounding proxy early-out: skip expensive KIFS folds in far empty space!
+      if (outerGem > 0.28) {
+        return min(outerGem - 0.10, shards);
+      }
+
+      // KIFS 4D-inspired Kaleidoscopic Polyhedral Folding (zero trig inside!)
       vec3 k = q;
       k.y *= 0.76;
       float scale = 1.0;
-      float foldAng = 0.42 + 0.18 * sin(t * 0.55) + ripple * 0.65;
-      float foldAng2 = 0.28 + 0.14 * cos(t * 0.41) - ripple * 0.42;
-      vec3 icoN = normalize(vec3(0.809017, 0.5, 0.309017));
+      const vec3 icoN = vec3(0.809017, 0.5, 0.309017);
 
       for (int i = 0; i < 4; i++) {
         k = abs(k);
-        // Octahedral sorting mirrors (48-fold symmetry)
         if (k.x < k.y) k.xy = k.yx;
         if (k.x < k.z) k.xz = k.zx;
         if (k.y < k.z) k.yz = k.zy;
 
-        // Icosahedral mirror fold
         k -= 2.0 * min(0.0, dot(k, icoN)) * icoN;
 
-        // Non-Euclidean 4D-slice rotation between fold scales
-        k.xz *= rot2(foldAng);
-        k.xy *= rot2(foldAng2);
+        k.xz *= mFold1;
+        k.xy *= mFold2;
 
         float s = 1.48;
         k = k * s - vec3(0.55, 0.39, 0.27) * (s - 1.0);
@@ -722,26 +757,8 @@
       }
 
       float kifs = (sdOctahedron(k, 0.94) - 0.04) / scale;
-      // Carve crisp faceted high-dimensional core inside an elegant cut-crystal bound
       float core = smax(kifs, outerGem - 0.10, 0.07);
       core = smin(core, sdOctahedron(eq, 0.72), 0.11);
-
-      // Orbiting 4D satellite prism shards (6-fold symmetry)
-      vec3 sp = p;
-      sp.xz *= rot2(-t * 0.32);
-      sp.yz *= rot2(0.32 + sin(t * 0.4) * 0.12);
-      float ang = atan(sp.z, sp.x);
-      float seg = PI / 3.0;
-      float id = floor((ang + seg * 0.5) / seg);
-      float a = mod(ang + seg * 0.5, seg) - seg * 0.5;
-      float rad = length(sp.xz);
-      vec3 sr = vec3(cos(a) * rad, sp.y, sin(a) * rad);
-      sr.x -= 1.44 + 0.10 * sin(t * 1.4 + id * 2.1) + ripple * 0.28;
-      sr.y -= 0.24 * sin(t * 0.9 + id * 1.7);
-      sr.xy *= rot2(t * 0.7 + id);
-      sr.xz *= rot2(t * 0.5 - id);
-      sr.y *= 0.55;
-      float shards = sdOctahedron(sr, 0.19);
 
       return min(core, shards);
     }
@@ -750,36 +767,33 @@
     // MODE 1: Liquid Prism Singularity (Gravitational Faceted Hyper-Core)
     // =========================================================================
     float sdfLiquidSingularity(vec3 p, float t, float ripple) {
-      vec3 q = p;
-      q.xz *= rot2(t * 0.34);
-      q.yz *= rot2(t * 0.21);
+      float pr = length(p);
+      if (pr > 1.85) return pr - 1.55;
 
-      // Twisted harmonic liquid-crystal displacement
-      float r = length(q);
-      vec3 dir = q / max(r, 0.0001);
-      // Faceted crystalline quantization on sphere harmonics
+      vec3 q = p;
+      q.xz *= mRing1Y;
+      q.yz *= mTiltXY;
+
+      vec3 dir = q / max(pr, 0.0001);
       float harm = sin(dir.x * 7.0 + t * 1.4) * cos(dir.y * 7.0 - t * 1.1) * sin(dir.z * 7.0 + t * 0.9);
       float facetWave = floor(harm * 5.0 + 0.5) / 5.0;
       float liquidWave = mix(harm, facetWave, 0.52);
 
-      // Central hyper-diamond singularity core
       vec3 c1 = q;
-      c1.xy *= rot2(t * 0.5 + ripple * 1.2);
+      c1.xy *= mFold1;
       float dCore = sdOctahedron(c1, 0.96 + 0.14 * liquidWave + ripple * 0.22);
 
-      // Interlocking Möbius / twisted crystal toroids
       vec3 t1 = p;
-      t1.xz *= rot2(t * 0.42);
-      t1.xy *= rot2(0.68 + sin(t * 0.5) * 0.2);
+      t1.xz *= mRing1Y;
+      t1.xy *= mRing1XY;
       float twist = atan(t1.z, t1.x) * 2.0 + t * 1.3;
       vec2 ringQ = vec2(length(t1.xz) - (1.12 + 0.08 * sin(twist)), t1.y);
       ringQ *= rot2(twist * 0.5);
-      // Diamond cross-section torus
       float dRing1 = (abs(ringQ.x) + abs(ringQ.y)) * 0.7071 - (0.14 + 0.03 * cos(twist * 2.0));
 
       vec3 t2 = p;
-      t2.xz *= rot2(-t * 0.36);
-      t2.yz *= rot2(-0.82 + cos(t * 0.45) * 0.2);
+      t2.xz *= mRing2Y;
+      t2.yz *= mRing2YZ;
       float twist2 = atan(t2.z, t2.x) * 3.0 - t * 1.1;
       vec2 ringQ2 = vec2(length(t2.xz) - (1.28 + 0.06 * cos(twist2)), t2.y);
       ringQ2 *= rot2(twist2 * 0.5);
@@ -788,7 +802,6 @@
       float merged = smin(dCore, dRing1, 0.24);
       merged = smin(merged, dRing2, 0.18);
 
-      // Carve subtle singularity facets into the merged body
       float gyroid = dot(sin(q * 5.2 + t * 0.8), cos(q.yzx * 5.2 - t * 0.6)) * 0.055;
       return merged + gyroid;
     }
@@ -798,37 +811,32 @@
     // =========================================================================
     float sdfInfinityPalace(vec3 p, float t, float ripple) {
       vec3 q = p;
-      q.xz *= rot2(t * 0.20 + ripple * 0.4);
-      q.xy *= rot2(sin(t * 0.30) * 0.08);
+      q.xz *= mPalaceY;
+      q.xy *= mPalaceXY;
 
-      // Regal 12-faceted elongated Ice Palace monolith crystal
-      vec3 m = q;
-      // Rotate into vertical hex-prism + bipyramid bevel cut
-      vec3 hp = vec3(m.x, m.z, m.y);
+      vec3 hp = vec3(q.x, q.z, q.y);
       float hexBody = sdHexPrism(hp, vec2(0.84 + ripple * 0.08, 1.38));
 
-      // Sharp diamond crown taper at top & bottom
-      vec3 taperP = m;
+      vec3 taperP = q;
       taperP.y *= 0.62;
       float crown = sdOctahedron(taperP, 1.34 + ripple * 0.12);
-      // Secondary rotated octahedron for 16-facet luxury emerald-diamond cut
-      vec3 taper2 = m;
-      taper2.xz *= rot2(PI * 0.25);
+
+      vec3 taper2 = q;
+      // Exact 45 deg rotation without trig
+      taper2.xz = vec2(taper2.x - taper2.z, taper2.x + taper2.z) * 0.70710678;
       taper2.y *= 0.64;
       float crown2 = sdOctahedron(taper2, 1.36 + ripple * 0.12);
 
       float monolith = smax(hexBody, max(crown, crown2), 0.05);
 
-      // Floating crown spires (top & bottom symmetrical palace finials)
       vec3 sp = q;
       sp.y = abs(sp.y) - (1.56 + 0.08 * sin(t * 1.4) + ripple * 0.25);
-      sp.xz *= rot2(t * 0.6);
+      sp.xz *= mFold1;
       sp.y *= 0.48;
       float finial = sdOctahedron(sp, 0.20);
 
-      // Delicate halo diamond prisms (4 cardinal palace guardians)
       vec3 g = q;
-      g.xz *= rot2(-t * 0.28);
+      g.xz *= mGuardY;
       g.xz = abs(g.xz);
       if (g.x < g.z) g.xz = g.zx;
       g.x -= 1.34 + 0.06 * cos(t * 1.2) + ripple * 0.20;
@@ -850,17 +858,17 @@
     }
 
     // Thin celestial astrolabe light rings (volumetric glow only, non-occluding)
-    float mapAstrolabe(vec3 p, float t) {
+    float mapAstrolabe(vec3 p) {
       vec3 r1 = p;
-      r1.xz *= rot2(t * 0.18);
-      r1.xy *= rot2(0.54);
-      r1.yz *= rot2(0.32);
+      r1.xz *= mAstro1Y;
+      r1.xy *= mat2(0.8577, -0.5141, 0.5141, 0.8577);
+      r1.yz *= mat2(0.9492, -0.3146, 0.3146, 0.9492);
       float d1 = sdTorus(r1, vec2(1.82, 0.0055));
 
       vec3 r2 = p;
-      r2.xz *= rot2(-t * 0.14);
-      r2.xy *= rot2(-0.76);
-      r2.yz *= rot2(0.58);
+      r2.xz *= mAstro2Y;
+      r2.xy *= mat2(0.7248, 0.6889, -0.6889, 0.7248);
+      r2.yz *= mat2(0.8365, -0.5480, 0.5480, 0.8365);
       float d2 = sdTorus(r2, vec2(2.12, 0.0045));
 
       return min(d1, d2);
@@ -874,7 +882,6 @@
       float d3 = mapCrystal(p + e.yxy, t, ripple);
       float d4 = mapCrystal(p + e.xxx, t, ripple);
       vec3 n = normalize(e.xyy * d1 + e.yyx * d2 + e.yxy * d3 + e.xxx * d4);
-      // Sharp convex/concave crystal edge creates strong tetrahedral Laplacian
       float lap = abs(d1 + d2 + d3 + d4) / 0.009;
       float ridge = smoothstep(0.18, 0.95, lap);
       return vec4(n, ridge);
@@ -889,28 +896,24 @@
 
       // --- Deep Sapphire Night Environment ---
       vec3 nightSky = mix(vec3(0.015, 0.032, 0.095), vec3(0.045, 0.11, 0.28), smoothstep(-0.6, 0.7, y));
-      // Flowing icy-cyan / violet aurora curtain in reflections
       float aurWave = sin(dir.x * 4.5 + t * 0.45 + sin(dir.z * 3.0 - t * 0.3));
       float aurBand = exp(-pow(y - 0.18 - aurWave * 0.16, 2.0) * 16.0);
       vec3 aurCol = mix(vec3(0.18, 0.82, 1.0), vec3(0.56, 0.42, 1.0), 0.5 + 0.5 * sin(dir.x * 3.0 - t * 0.4));
       nightSky += aurCol * aurBand * 0.95;
 
-      // Crisp studio softbox windows for realistic diamond facet catches
       float win1 = smoothstep(0.86, 0.98, dot(dir, normalize(vec3(0.58, 0.66, 0.48))));
       float win2 = smoothstep(0.84, 0.97, dot(dir, normalize(vec3(-0.74, 0.34, 0.58))));
       float win3 = smoothstep(0.88, 0.99, dot(dir, normalize(vec3(0.15, -0.78, 0.60))));
       nightSky += vec3(1.45, 1.65, 2.10) * win1;
       nightSky += vec3(0.55, 1.25, 1.95) * win2;
-      nightSky += vec3(0.95, 0.82, 0.58) * win3 * 0.75; // champagne gold bounce
+      nightSky += vec3(0.95, 0.82, 0.58) * win3 * 0.75;
 
       // --- Light Porcelain Gallery Environment (《转生千金》 Snow Porcelain) ---
       vec3 porcSky = mix(vec3(0.86, 0.91, 0.98), vec3(0.99, 0.995, 1.0), smoothstep(-0.5, 0.6, y));
-      // Deep cobalt architectural ribs so glass reflections show rich jewel contrast on white!
       float rib = smoothstep(0.65, 0.95, abs(sin(atan(dir.z, dir.x) * 4.0 + y * 2.5)));
       porcSky = mix(porcSky, vec3(0.10, 0.28, 0.72), rib * 0.34 * (1.0 - abs(y)));
       float cobaltRim = exp(-pow(y + 0.22, 2.0) * 12.0);
       porcSky = mix(porcSky, vec3(0.12, 0.34, 0.82), cobaltRim * 0.45);
-      // Bright sunlit gallery windows + champagne gold accent
       porcSky += vec3(1.5, 1.65, 1.95) * win1 * 0.9;
       porcSky += vec3(0.35, 0.72, 1.35) * win2 * 0.85;
       porcSky += vec3(1.15, 0.96, 0.68) * win3 * 0.65;
@@ -928,60 +931,55 @@
       float modeSing = uModeW.y;
 
       float cellScale = mix(1.85, 2.65, modePalace);
-      float stepSize = mix(0.15, 0.17, modePalace);
+      float stepSize = mix(0.17, 0.19, modePalace);
       vec3 dispDelta = (refrB - refrR) * 0.55;
+      mat2 mTwistStep = rot2(0.08 + ripple * 0.12);
+      mat2 mBaseRot = rot2(t * 0.28);
 
-      for (int i = 0; i < 14; i++) {
-        float fi = float(i) / 14.0;
+      for (int i = 0; i < 12; i++) {
+        float fi = float(i) / 12.0;
         vec3 p = entryP + refrG * dist;
 
-        // Perspective dive deeper into non-Euclidean infinite hall
         float depthZoom = 1.0 + fi * mix(1.5, 3.4, modePalace);
         vec3 q = p * depthZoom;
-        q.xz *= rot2(t * 0.28 + fi * (0.95 + ripple * 1.4));
-        q.xy *= rot2(t * 0.19 - fi * 0.55);
+        q.xz *= mBaseRot;
+        mBaseRot = mBaseRot * mTwistStep;
 
-        // Domain-repeated infinite crystalline lattice (mirrors extending to infinity)
         vec3 cell = mod(q * cellScale + 0.5, 1.0) - 0.5;
         vec3 a = abs(cell);
 
-        // RGB chromatic split across interior lattice beams
         vec3 cellR = mod((q - dispDelta * dist * 1.6) * cellScale + 0.5, 1.0) - 0.5;
         vec3 cellB = mod((q + dispDelta * dist * 1.6) * cellScale + 0.5, 1.0) - 0.5;
         float latG = min(length(a.yz), min(length(a.xz), length(a.xy)));
         float latR = min(length(abs(cellR).yz), min(length(abs(cellR).xz), length(abs(cellR).xy)));
         float latB = min(length(abs(cellB).yz), min(length(abs(cellB).xz), length(abs(cellB).xy)));
 
-        float wireSharp = mix(20.0, 26.0, modePalace);
+        float wireSharp = mix(19.0, 25.0, modePalace);
         vec3 glowWire = vec3(
           exp(-latR * wireSharp),
           exp(-latG * wireSharp),
           exp(-latB * wireSharp)
         );
 
-        float node = sdOctahedron(cell, 0.17 + 0.04 * sin(t * 1.8 + fi * 8.0));
+        float node = (a.x + a.y + a.z) * 0.57735 - (0.16 + 0.03 * sin(t * 1.8 + fi * 8.0));
         float glowNode = exp(-max(node, 0.0) * 16.0);
-
-        // Central singularity star core (especially radiant in Mode 1)
         float coreStar = exp(-length(p) * mix(2.7, 4.2, modeSing));
 
-        // Spectral color shifts with infinity-mirror depth
         vec3 depthTint = mix(
-          vec3(0.20, 0.72, 1.0),
+          vec3(0.20, 0.74, 1.0),
           vec3(0.62, 0.38, 1.0),
           0.5 + 0.5 * sin(fi * 5.5 - t * 1.1)
         );
         vec3 goldFiligree = vec3(1.0, 0.87, 0.58);
-        vec3 sampleCol = depthTint * glowWire * 0.58
-                       + mix(vec3(0.76, 0.96, 1.0), goldFiligree, 0.42 * modePalace) * glowNode * 0.64
-                       + mix(vec3(0.45, 0.90, 1.0), vec3(1.0, 0.94, 0.80), modeSing) * coreStar * (0.34 + 0.52 * modeSing);
+        vec3 sampleCol = depthTint * glowWire * 0.64
+                       + mix(vec3(0.76, 0.96, 1.0), goldFiligree, 0.44 * modePalace) * glowNode * 0.70
+                       + mix(vec3(0.45, 0.90, 1.0), vec3(1.0, 0.94, 0.80), modeSing) * coreStar * (0.36 + 0.55 * modeSing);
 
-        float atten = exp(-fi * mix(2.1, 1.45, modePalace));
+        float atten = exp(-fi * mix(2.0, 1.38, modePalace));
         acc += sampleCol * atten;
         dist += stepSize;
       }
 
-      // In Light Porcelain mode, tint internal glow toward jewel-rich cobalt & cyan-gold
       vec3 porcRich = mix(acc, acc * vec3(0.34, 0.64, 1.28) + vec3(0.03, 0.09, 0.28) * length(acc), 0.54);
       return mix(acc, porcRich, theme);
     }
@@ -994,7 +992,6 @@
       float r = length(rel);
       float ang = atan(rel.y, rel.x);
 
-      // Volumetric aurora god-rays radiating subtly from behind the crystal
       float ray1 = pow(0.5 + 0.5 * sin(ang * 7.0 + t * 0.25 + sin(ang * 3.0 - t * 0.2)), 3.0);
       float ray2 = pow(0.5 + 0.5 * sin(ang * 13.0 - t * 0.34), 4.0);
       float rays = (ray1 * 0.65 + ray2 * 0.35) * exp(-r * 1.95) * smoothstep(0.04, 0.32, r);
@@ -1006,7 +1003,6 @@
       float ribbon = exp(-pow(uv.y - 0.14 - 0.18 * sin(uv.x * 2.4 + t * 0.22), 2.0) * 14.0);
       nightBg += mix(vec3(0.08, 0.45, 0.88), vec3(0.42, 0.24, 0.85), 0.5 + 0.5 * uv.x) * ribbon * 0.16;
 
-      // Subtle floating crystal stardust
       vec2 starGrid = uv * 18.0 + vec2(t * 0.06, -t * 0.09);
       vec2 cellId = floor(starGrid);
       vec2 cellUv = fract(starGrid) - 0.5;
@@ -1034,7 +1030,6 @@
 
       vec3 bg = mix(nightBg, porcBg, theme);
 
-      // Dimensional click shockwave ring across background air
       if (uPulseAmp > 0.005) {
         float waveR = uPulseAge * 1.15;
         float ring = exp(-pow((length(uv - uPulsePos) - waveR) * 18.0, 2.0)) * uPulseAmp;
@@ -1065,7 +1060,23 @@
       float ripple = uPulseAmp * sin(uPulseAge * 9.5) * exp(-uPulseAge * 1.6);
       float rippleEnv = uPulseAmp * exp(-uPulseAge * 1.2);
 
-      // Subtle gravitational lens warp toward cursor
+      // Precompute all per-frame SDF rotation matrices ONCE
+      mSpinY = rot2(uTime * 0.24);
+      mTiltXY = rot2(sin(uTime * 0.35) * 0.14);
+      mFold1 = rot2(0.42 + 0.18 * sin(uTime * 0.55) + ripple * 0.65);
+      mFold2 = rot2(0.28 + 0.14 * cos(uTime * 0.41) - ripple * 0.42);
+      mShardSpin = rot2(-uTime * 0.32);
+      mShardTilt = rot2(0.32 + sin(uTime * 0.4) * 0.12);
+      mRing1Y = rot2(uTime * 0.38);
+      mRing1XY = rot2(0.68 + sin(uTime * 0.5) * 0.2);
+      mRing2Y = rot2(-uTime * 0.36);
+      mRing2YZ = rot2(-0.82 + cos(uTime * 0.45) * 0.2);
+      mPalaceY = rot2(uTime * 0.20 + ripple * 0.4);
+      mPalaceXY = rot2(sin(uTime * 0.30) * 0.08);
+      mGuardY = rot2(-uTime * 0.28);
+      mAstro1Y = rot2(uTime * 0.18);
+      mAstro2Y = rot2(-uTime * 0.14);
+
       vec2 mouseRel = (uMouse * vec2(aspect * 0.5, 0.5)) - crystalAnchor;
       float cursorDist = length(pUv - mouseRel);
       vec2 lensWarp = (pUv - mouseRel) * (0.018 / (cursorDist * cursorDist + 0.24));
@@ -1094,17 +1105,16 @@
       float ringGlow = 0.0;
       float haloGlow = 0.0;
 
-      // Bounding sphere fast-forward (r = 2.40)
       float b = dot(ro, rd);
-      float c = dot(ro, ro) - 2.40 * 2.40;
+      float c = dot(ro, ro) - 2.35 * 2.35;
       float disc = b * b - c;
 
       if (disc > 0.0) {
         float tStart = max(0.0, -b - sqrt(disc));
-        float tEnd = min(8.0, -b + sqrt(disc));
+        float tEnd = min(7.8, -b + sqrt(disc));
         tMarch = tStart;
 
-        for (int i = 0; i < 52; i++) {
+        for (int i = 0; i < 48; i++) {
           vec3 p = ro + rd * tMarch;
           float pr = length(p);
 
@@ -1114,19 +1124,19 @@
           }
 
           float dCrys = mapCrystal(p, uTime, ripple);
-          if (abs(pr - 1.97) < 0.36) {
-            float dRing = mapAstrolabe(p, uTime);
-            ringGlow += 0.0017 / (abs(dRing) + 0.011);
+          if (abs(pr - 1.97) < 0.32) {
+            float dRing = mapAstrolabe(p);
+            ringGlow += 0.0018 / (abs(dRing) + 0.011);
           }
-          haloGlow += 0.0044 / (abs(dCrys) + 0.16);
+          haloGlow += 0.0046 / (abs(dCrys) + 0.16);
 
-          if (dCrys < 0.0022) {
+          if (dCrys < 0.0025) {
             hit = 1.0;
             hitPos = p;
             break;
           }
 
-          tMarch += max(dCrys * 0.90, 0.016);
+          tMarch += max(dCrys * 0.92, 0.018);
           if (tMarch > tEnd) break;
         }
       }
@@ -1156,13 +1166,9 @@
         vec3 v = -rd;
         float ndv = clamp(dot(n, v), 0.0, 1.0);
 
-        // Schlick Fresnel (diamond-sapphire IOR ~ 1.55)
         float fresnel = 0.08 + 0.92 * pow(1.0 - ndv, 3.6);
-
-        // Thin-film iridescence along grazing angles & facet ridges
         vec3 irid = iridescence(ndv, uTime * 0.08 + dot(hitPos, vec3(0.22, 0.35, 0.18)) + rippleEnv * 0.35);
 
-        // Reflection environment sample
         vec3 reflDir = reflect(rd, n);
         vec3 reflCol = sampleEnvironment(reflDir, uTime, uTheme);
 
@@ -1175,16 +1181,13 @@
         if (length(refrG) < 0.01) refrG = reflDir;
         if (length(refrB) < 0.01) refrB = reflDir;
 
-        // Sample refracted environment per RGB channel for true chromatic prism edge split
         vec3 bgRefr;
         bgRefr.r = sampleEnvironment(refrR, uTime, uTheme).r;
         bgRefr.g = sampleEnvironment(refrG, uTime, uTheme).g;
         bgRefr.b = sampleEnvironment(refrB, uTime, uTheme).b;
 
-        // Single-pass RGB-dispersed Internal Infinity-Mirror Crystal Lattice
         vec3 innerLattice = traceInfinityInterior(hitPos - n * 0.02, refrR, refrG, refrB, uTime, ripple, uTheme);
 
-        // Optical thickness approximation & Beer-Lambert sapphire absorption
         float thickness = clamp(1.18 - ndv * 0.62 + 0.25 * length(hitPos), 0.2, 1.8);
         vec3 absorbNight = exp(-thickness * vec3(1.15, 0.42, 0.10));
         vec3 absorbPorc  = exp(-thickness * vec3(2.25, 1.15, 0.24));
@@ -1192,7 +1195,6 @@
 
         vec3 transmitted = bgRefr * absorption * mix(0.75, 0.92, uTheme) + innerLattice * mix(0.98, 0.76, uTheme);
 
-        // Crisp multi-point studio specular highlights
         vec3 l1 = normalize(vec3(0.55, 0.75, 0.65));
         vec3 l2 = normalize(vec3(-0.72, 0.28, 0.52));
         vec3 l3 = normalize(vec3(0.18, -0.82, 0.48));
@@ -1204,7 +1206,6 @@
                      + vec3(0.45, 0.92, 1.45) * spec2 * 0.85
                      + vec3(1.15, 0.95, 0.64) * spec3 * 0.65;
 
-        // Diamond facet ridge fire (spectral dispersion along sharp cut edges)
         vec3 edgeFire = mix(irid, vec3(0.94, 0.99, 1.0), 0.35) * ridge * mix(1.05, 0.85, uTheme);
 
         vec3 surface = mix(transmitted, reflCol * mix(vec3(0.92, 0.98, 1.12), vec3(0.84, 0.92, 1.08), uTheme), fresnel * 0.76);
@@ -1212,18 +1213,15 @@
         surface += specCol;
         surface += edgeFire;
 
-        // Subtle dark-sapphire contact rim on Light Porcelain so silhouette reads razor-crisp
         float porcelRim = pow(1.0 - ndv, 1.8) * (1.0 - fresnel * 0.6);
         surface = mix(surface, surface * vec3(0.42, 0.62, 1.05), uTheme * porcelRim * 0.55);
 
-        // Click dimensional ripple luminance surge across facets
         float facetPulse = uPulseAmp * exp(-uPulseAge * 2.2) * (0.5 + 0.5 * sin(length(hitPos) * 8.0 - uPulseAge * 14.0));
         surface += irid * facetPulse * 0.88;
 
         col = surface;
       }
 
-      // Subtle vignette & filmic finish
       float vig = 1.0 - dot(uv * vec2(0.55, 0.72), uv * vec2(0.55, 0.72)) * mix(0.42, 0.14, uTheme);
       col *= clamp(vig, 0.58, 1.06);
 
@@ -1266,7 +1264,7 @@
       depth: false,
       stencil: false,
       powerPreference: 'high-performance',
-      preserveDrawingBuffer: false
+      preserveDrawingBuffer: true
     };
 
     gl = glCanvas.getContext('webgl2', opts);

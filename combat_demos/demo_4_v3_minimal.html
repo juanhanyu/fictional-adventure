@@ -313,7 +313,19 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 2px;
     transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .cap-btn svg {
+    width: 13px;
+    height: 13px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    display: block;
   }
 
   .cap-btn:hover {
@@ -321,13 +333,23 @@
     color: var(--sapphire);
   }
 
-  .cap-btn.active {
-    background: var(--sapphire);
-    color: #FFFFFF;
+  .cap-btn.mode-pill {
+    background: var(--ice-tint);
+    border-color: var(--ice-border);
+    padding: 0 8px;
+    gap: 2px;
+    color: var(--ink-silver);
+  }
+  .cap-btn.mode-pill:hover {
+    border-color: var(--sapphire);
+  }
+  .cap-btn.mode-pill .m-hi {
+    color: var(--sapphire);
+    font-weight: 900;
   }
 
   .cap-btn.muted {
-    opacity: 0.48;
+    opacity: 0.45;
   }
 
   /* ==================== TOP-RIGHT MINIMAL ENEMY STRIP ==================== */
@@ -907,10 +929,10 @@
     </div>
     <span class="cap-divider"></span>
     <div class="cap-actions">
-      <button class="cap-btn" id="btn-sfx" title="音效开关">🔊</button>
-      <button class="cap-btn active" id="btn-mode" title="增幅模式 A（双段曲线+质变） / B（线性对照）">A/B</button>
+      <button class="cap-btn" id="btn-sfx" title="音效开关" aria-label="音效开关"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg></button>
+      <button class="cap-btn mode-pill" id="btn-mode" title="增幅模式 A（双段曲线+质变） / B（线性对照）"><span class="m-hi">A</span>/<span>B</span></button>
       <button class="cap-btn" id="btn-wave" title="无缝疾跑转场至下一波">→W2</button>
-      <button class="cap-btn" id="btn-reset" title="重开战斗">↻</button>
+      <button class="cap-btn" id="btn-reset" title="重开战斗" aria-label="重开"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg></button>
     </div>
   </header>
 
@@ -947,7 +969,7 @@
         <div class="hero-pills">
           <span class="buff-dot" id="buff-fountain" style="display:none" title="寒泉共鸣：增幅耗蓝减半">💧</span>
           <span class="buff-dot" id="buff-mirror" style="display:none" title="霜刺反镜：受击自动反击">❄</span>
-          <span class="shield-pill" id="hero-shield">🛡 0</span>
+          <span class="shield-pill" id="hero-shield"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg><span id="hero-shield-val">0</span></span>
         </div>
       </div>
 
@@ -2098,6 +2120,7 @@
   function dealEnemyDamage(dmg, isCrit, tag = '') {
     const e = state.enemy;
     e.hp = Math.max(0, e.hp - dmg);
+    renderEnemyStrip();
     const col = isCrit ? '#fde68a' : '#f0f9ff';
     const label = isCrit ? `${dmg}!` : `${dmg}`;
     spawnPopup(e.x, e.y - 185, label, col, isCrit ? 30 : 25, tag);
@@ -3198,7 +3221,7 @@
   function renderHeroAndSkills() {
     const s = state.sylvia;
     const shieldEl = document.getElementById('hero-shield');
-    shieldEl.textContent = `🛡 ${s.shield}`;
+    document.getElementById('hero-shield-val').textContent = String(s.shield);
     shieldEl.classList.toggle('active', s.shield > 0);
 
     document.getElementById('buff-fountain').style.display = s.fountainTurns > 0 ? 'inline-flex' : 'none';
@@ -3261,8 +3284,9 @@
     dot.className = 'turn-dot' + (state.phase === 'enemy' ? ' enemy' : state.sylvia.oneMoreChain ? ' onemore' : '');
 
     const modeBtn = document.getElementById('btn-mode');
-    modeBtn.textContent = state.formulaMode === 'A' ? 'A' : 'B';
-    modeBtn.classList.toggle('active', state.formulaMode === 'A');
+    modeBtn.innerHTML = state.formulaMode === 'A'
+      ? '<span class="m-hi">A</span>/<span>B</span>'
+      : '<span>A</span>/<span class="m-hi">B</span>';
 
     document.getElementById('btn-wave').textContent = state.waveIdx === 0 ? '→W2' : '→W1';
 
@@ -3309,10 +3333,14 @@
     btn.addEventListener('click', () => setAmpPct(Number(btn.dataset.amp)));
   });
 
+  const SVG_SFX_ON = '<svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>';
+  const SVG_SFX_OFF = '<svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>';
+
   document.getElementById('btn-sfx').addEventListener('click', (ev) => {
+    const btn = ev.currentTarget;
     audio.enabled = !audio.enabled;
-    ev.target.textContent = audio.enabled ? '🔊' : '🔇';
-    ev.target.classList.toggle('muted', !audio.enabled);
+    btn.innerHTML = audio.enabled ? SVG_SFX_ON : SVG_SFX_OFF;
+    btn.classList.toggle('muted', !audio.enabled);
   });
 
   document.getElementById('btn-mode').addEventListener('click', () => {

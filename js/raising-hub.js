@@ -187,10 +187,25 @@
     return String(s.year || 0) + ':' + String(s.season || 0) + ':' + String(s.phase || 'prologue');
   }
 
+  function seasonIndexOf(val) {
+    if (typeof val === 'number' && isFinite(val)) {
+      var n = Math.floor(val);
+      return n < 0 ? 0 : (n > 3 ? n % 4 : n);
+    }
+    var map = { '春': 0, '夏': 1, '秋': 2, '冬': 3 };
+    if (typeof val === 'string') {
+      var s = val.trim();
+      if (Object.prototype.hasOwnProperty.call(map, s)) return map[s];
+      var parsed = parseInt(s, 10);
+      if (isFinite(parsed)) return parsed < 0 ? 0 : (parsed > 3 ? parsed % 4 : parsed);
+    }
+    return 0;
+  }
+
   function formatDateSafe(st) {
     var s = st || getS() || {};
     var sns = ['春', '夏', '秋', '冬'];
-    return String(s.year || 0) + '年 · ' + (sns[s.season || 0] || '春');
+    return String(s.year || 0) + '年 · ' + (sns[seasonIndexOf(s.season)] || '春');
   }
 
   function formatPhaseSafe(st) {
@@ -326,7 +341,7 @@
     teenage: {
       cozy: [
         '钟塔顶层的风掠过尖顶，偶尔抛开榜单与课业俯瞰校园，心情也跟着敞亮起来。',
-        '食堂今日供应焦糖布丁，若是艾玛没抢先下手，下午茶便有着落了。',
+        '食堂今日供应提拉米苏，若是艾玛没抢先下手，下午茶便有着落了。',
         '靠墙双人桌总留着一格明亮天光，和诺艾儿各自看书互不打扰，最是自在。'
       ],
       focused: [
@@ -1190,7 +1205,7 @@
     youth_3: '冬夜长廊灯火温润，把这一季攒下的读书笔记整齐归档，心中分外安宁。',
     academy_0: '阿斯拉钟塔下的新绿映着晴空，宿舍窗台摆好冰水笔记，新学期步调稳当。',
     academy_1: '炎夏的学院图书馆最是凉爽，靠墙双人桌伴着笔尖沙沙声，时光悄然滑过。',
-    academy_2: '银杏金叶铺满纪念林小径，结束冰系实操后再去食堂点份布丁，劳逸相宜。',
+    academy_2: '银杏金叶铺满纪念林小径，结束冰系实操后再去食堂点份提拉米苏，劳逸相宜。',
     academy_3: '冬雪降临魔导学院尖顶，冰晶教室窗边结着清霜，控温手艺愈发称心顺手。',
     journey_0: '澄岚镇的春风带着草木清气，晨练步法后喝一碗热粥，远行岁月也能安稳度日。',
     journey_1: '官道沿途云影高远，握稳乌木剑鞘顺着山风赶路，心中那份笃定愈发清晰。',
@@ -1464,7 +1479,8 @@
     slots: [],
     activeSlotIdx: 0,
     activeCat: 'all',
-    running: false
+    running: false,
+    stepTimer: null
   };
 
   function getSlotLabels(st) {
@@ -1551,7 +1567,17 @@
 
   function closeSchedulePlanner() {
     if (typeof document === 'undefined') return;
-    _plannerState.running = false;
+    if (_plannerState.stepTimer) {
+      clearTimeout(_plannerState.stepTimer);
+      _plannerState.stepTimer = null;
+    }
+    if (_plannerState.running) {
+      _plannerState.running = false;
+      _plannerState.slots = _plannerState.slots.map(function () { return null; });
+      saveSafe();
+      updateHudSafe();
+      syncSylviaHub();
+    }
     var ov = document.getElementById('schedule-overlay');
     if (ov) ov.classList.add('hidden');
   }
@@ -1854,7 +1880,7 @@
   function pickSeasonalDiaryEntry(st) {
     var ph = st.phase || 'prologue';
     var loc = st.loc || '';
-    var sn = clampNum(st.season || 0, 0, 3);
+    var sn = seasonIndexOf(st.season);
     var seen = (st.diaryHistory || []).map(function (d) { return d.entryId; });
 
     // 优先按当前所在地点匹配随笔语境，再回退到阶段逻辑
@@ -1961,6 +1987,10 @@
       if (st.leisureHistory.length > MAX_LEISURE_HISTORY) st.leisureHistory.shift();
 
       _plannerState.slots = slotLabels.map(function () { return null; });
+      if (_plannerState.stepTimer) {
+        clearTimeout(_plannerState.stepTimer);
+        _plannerState.stepTimer = null;
+      }
       _plannerState.running = false;
       saveSafe();
       updateHudSafe();
@@ -1980,9 +2010,41 @@
     var runBtn = ov.querySelector('#rh-sched-run');
     if (runBtn) runBtn.disabled = true;
     var stepIdx = 0;
-    var stepTimer = null;
+    if (_plannerState.stepTimer) {
+      clearTimeout(_plannerState.stepTimer);
+      _plannerState.stepTimer = null;
+    }
+
+    var tickerStepEl = null;
+    var tickerNameEl = null;
+    var tickerSubEl = null;
+    if (ticker) {
+      ticker.classList.remove('hidden');
+      ticker.innerHTML =
+        '<div class="rh-ticker-main">' +
+          '<span class="rh-ticker-step"></span>' +
+          '<strong></strong>' +
+          '<span class="rh-ticker-sub"></span>' +
+        '</div>' +
+        '<button type="button" class="rh-btn ghost rh-ticker-skip" id="rh-ticker-skip">跳过动画</button>';
+      tickerStepEl = ticker.querySelector('.rh-ticker-step');
+      tickerNameEl = ticker.querySelector('strong');
+      tickerSubEl = ticker.querySelector('.rh-ticker-sub');
+      var skipBtn = ticker.querySelector('#rh-ticker-skip');
+      if (skipBtn) {
+        skipBtn.onclick = function () {
+          if (!_plannerState.running) return;
+          if (_plannerState.stepTimer) {
+            clearTimeout(_plannerState.stepTimer);
+            _plannerState.stepTimer = null;
+          }
+          finalizeAll(stepIdx);
+        };
+      }
+    }
 
     function runStep() {
+      _plannerState.stepTimer = null;
       if (!_plannerState.running) return;
       if (stepIdx >= chosen.length) {
         finalizeAll(chosen.length);
@@ -1990,27 +2052,15 @@
       }
       var cur = chosen[stepIdx];
       executeSingleScheduledActivity(st, cur.act, report);
+      stepIdx++;
       updateHudSafe();
       sfxSafe('click');
       if (ticker) {
-        ticker.classList.remove('hidden');
-        ticker.innerHTML =
-          '<div class="rh-ticker-main">' +
-            '<span class="rh-ticker-step">' + escapeHtml(cur.label) + '（' + (stepIdx + 1) + '/' + chosen.length + '）</span>' +
-            '<strong>' + escapeHtml(cur.act.name) + '</strong>' +
-            '<span class="rh-ticker-sub">' + escapeHtml(cur.act.sub) + '</span>' +
-          '</div>' +
-          '<button type="button" class="rh-btn ghost rh-ticker-skip" id="rh-ticker-skip">跳过动画</button>';
-        var skipBtn = ticker.querySelector('#rh-ticker-skip');
-        if (skipBtn) {
-          skipBtn.onclick = function () {
-            clearTimeout(stepTimer);
-            finalizeAll(stepIdx + 1);
-          };
-        }
+        if (tickerStepEl) tickerStepEl.textContent = cur.label + '（' + stepIdx + '/' + chosen.length + '）';
+        if (tickerNameEl) tickerNameEl.textContent = cur.act.name;
+        if (tickerSubEl) tickerSubEl.textContent = cur.act.sub;
       }
-      stepIdx++;
-      stepTimer = setTimeout(runStep, 460);
+      _plannerState.stepTimer = setTimeout(runStep, 460);
     }
 
     runStep();
@@ -2978,6 +3028,7 @@
   ];
 
   var _defaultLetterSnapshot = null;
+  var _customLetterActive = false;
 
   function captureDefaultLetterSnapshot() {
     if (_defaultLetterSnapshot || typeof document === 'undefined') return _defaultLetterSnapshot;
@@ -3000,6 +3051,7 @@
   }
 
   function restoreDefaultAliceLetter() {
+    _customLetterActive = false;
     if (typeof document === 'undefined') return false;
     var demo = document.getElementById('letter-demo');
     if (!demo || !_defaultLetterSnapshot) return false;
@@ -3079,6 +3131,7 @@
             try { root.BranchingDirector.syncAliceLetterDOM(); } catch (e) {}
           }
         } else {
+          _customLetterActive = true;
           if (kicker) kicker.textContent = mail.kicker || 'A letter for you';
           if (heading) heading.textContent = mail.heading || mail.title;
           if (seal) seal.innerHTML = ico('crystal');
@@ -3841,6 +3894,19 @@
     return false;
   }
 
+  function closeAllModals() {
+    if (typeof document === 'undefined') return;
+    closeEndingScreen();
+    closeSeasonReport();
+    closeSchedulePlanner();
+    closeShopModal();
+    closeMailboxModal();
+    hideCharmPopover();
+    if (_tapResetTimer) { clearTimeout(_tapResetTimer); _tapResetTimer = null; }
+    if (_bubbleHideTimer) { clearTimeout(_bubbleHideTimer); _bubbleHideTimer = null; }
+    if (_customLetterActive) restoreDefaultAliceLetter();
+  }
+
   function onSeasonAdvanced(targetS) {
     var st = ensureRaisingState(targetS);
     if (!st) return;
@@ -3882,6 +3948,19 @@
       titleLetterBtn.addEventListener('click', function () {
         restoreDefaultAliceLetter();
       }, true);
+    }
+
+    // 信笺遮罩收起后自动还原默认爱丽丝信笺，防止其他角色信件抬头残留
+    var letterDemoEl = document.getElementById('letter-demo');
+    if (letterDemoEl && typeof MutationObserver === 'function') {
+      try {
+        var letterObs = new MutationObserver(function () {
+          if (_customLetterActive && letterDemoEl.classList.contains('hidden')) {
+            restoreDefaultAliceLetter();
+          }
+        });
+        letterObs.observe(letterDemoEl, { attributes: true, attributeFilter: ['class'] });
+      } catch (e) {}
     }
 
     // 点击舞台空白处收起挂件说明气泡
@@ -3947,6 +4026,7 @@
     closeEndingScreen: closeEndingScreen,
     getUnlockedEndingsArchive: getUnlockedEndingsArchive,
     closeTopmostModal: closeTopmostModal,
+    closeAllModals: closeAllModals,
     onSeasonAdvanced: onSeasonAdvanced,
     onStateLoaded: onStateLoaded,
     init: init

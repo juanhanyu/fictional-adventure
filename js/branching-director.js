@@ -1054,7 +1054,7 @@
         duoLine(['sylvia', '希尔维亚', 'normal'], ['noelle', '诺艾儿', 'normal'], 'noelle', '……它盯着我的手看，眼神像考官在判卷一样，根本不知道该从哪儿下手摸。'),
         {
           speaker: '希尔维亚',
-          text: '（她手指悬在猫耳朵上方几寸处，认真得像在拆解高阶术式。）',
+          text: '（她手指悬在猫耳朵上方不远处，认真得像在拆解高阶术式。）',
           choices: [
             {
               text: '自然地把猫抱上她膝头示范顺毛，约她用省魔公式交换家里孤本',
@@ -1078,7 +1078,7 @@
                 markVignetteDone('v_noelle_clocktower');
               },
               lines: [
-                duoLine(['sylvia', '希尔维亚', 'normal'], ['noelle', '诺艾儿', 'serious'], 'sylvia', '这盒点心留给你和猫当下午茶吧，每天只睡两个时辰迟早会垮的。'),
+                duoLine(['sylvia', '希尔维亚', 'normal'], ['noelle', '诺艾儿', 'serious'], 'sylvia', '这盒点心留给你和猫当下午茶吧，每天只睡四个小时迟早会垮的。'),
                 duoLine(['sylvia', '希尔维亚', 'normal'], ['noelle', '诺艾儿', 'serious'], 'noelle', '……维斯特利亚，说过别同情我。这盒点心我折算成下周期末重点勘误还你，一码归一码。'),
                 { text: '她拿钢笔在左手背角落郑重添上一笔账目，才低头把点心碎屑分给了橘猫。', love: 'noelle', loveD: 1, know: 'noelle', knowD: 6, freeRoam: true }
               ]
@@ -1186,7 +1186,7 @@
               },
               lines: [
                 duoLine(['sylvia', '希尔维亚', 'serious'], ['aino', '艾诺', 'serious'], 'sylvia', '冰膜我会每天换。作为交换，这个周六训练场别留手，我要堂堂正正打到三比三。'),
-                duoLine(['sylvia', '希尔维亚', 'serious'], ['aino', '艾诺', 'smile'], 'aino', '口气不小。周六下午两点，迟到一息就加练十组。'),
+                duoLine(['sylvia', '希尔维亚', 'serious'], ['aino', '艾诺', 'smile'], 'aino', '口气不小。周六下午两点，迟到一秒就加练十组。'),
                 { text: '冰蓝花瓣在薄雾中微闪，那份极寒控温的手感已彻底刻进指尖。', love: 'aino', loveD: 1, know: 'aino', knowD: 10, freeRoam: true }
               ]
             },
@@ -1278,7 +1278,7 @@
                 markVignetteDone('v_charlotte_memorial');
               },
               lines: [
-                duoLine(['sylvia', '希尔维亚', 'normal'], ['charlotte', '夏洛特', 'normal'], 'sylvia', '朝堂上的风向归大人们去吵。至少在这片林子里，这棵树活得很好，这就够了。'),
+                duoLine(['sylvia', '希尔维亚', 'normal'], ['charlotte', '夏洛特', 'normal'], 'sylvia', '王庭里的风向归大人们去吵。至少在这片林子里，这棵树活得很好，这就够了。'),
                 duoLine(['sylvia', '希尔维亚', 'normal'], ['charlotte', '夏洛特', 'shy'], 'charlotte', '……少多管闲事，维斯特利亚。贝尔蒙家从不欠人情，今天的话出了林子谁也别提。'),
                 { text: '她别过脸快步走上碎石小径，那道引水浅沟在微光里清清楚楚地护住了两边的根系。', love: 'charlotte', loveD: 1, know: 'charlotte', knowD: 12, freeRoam: true }
               ]
@@ -1700,7 +1700,7 @@
           if: function () { return !!ensureCausalState().clues.polar_lily_bond; },
           portraits: [{ id: 'sylvia', slot: 'center', emo: 'normal', active: true }],
           speaker: '渔',
-          text: '若信得过我，让我试试箱壁控温。照看北方寒地花草的法子，可以把箱内锁在零度边缘。'
+          text: '若信得过我，让我试试箱壁控温。照看北方寒地花草的手法，可以把箱内锁在零度边缘。'
         },
         {
           if: function () { return !!ensureCausalState().clues.polar_lily_bond; },
@@ -1777,14 +1777,17 @@
     if (im1 && Array.isArray(im1.lines) && !im1._causalPatched) {
       im1._causalPatched = true;
       var ainoLeaveIdx = im1.lines.findIndex(function (L) {
-        return L && typeof L.text === 'string' && L.text.indexOf('她走了，脚步没有回头') !== -1;
+        return L && typeof L.text === 'string' && L.text.indexOf('她走了') !== -1 && L.text.indexOf('没有回头') !== -1;
       });
+      if (ainoLeaveIdx < 0) {
+        ainoLeaveIdx = im1.lines.findIndex(function (L) { return L && L.freeRoam; });
+      }
       var ainoPayoffBlock = [
         {
           if: function () { return getAinoArcMode() === 'kinship'; },
           bg: 'bg-img-ice-classroom bg-school',
           loc: 'ice_class',
-          portraits: [{ id: 'aino', slot: 'left', emo: 'smile', active: true }, { id: 'sylvia', slot: 'right', emo: 'normal', active: false }],
+          portraits: [{ id: 'sylvia', slot: 'left', emo: 'normal', active: false }, { id: 'aino', slot: 'right', emo: 'smile', active: true }],
           speaker: '艾诺',
           text: function () {
             var q = getEchoFor('aino', '冬天的孩子终会回到冬天。');
@@ -1807,7 +1810,7 @@
           if: function () { return getAinoArcMode() === 'austere_mentor'; },
           bg: 'bg-img-ice-classroom bg-school',
           loc: 'ice_class',
-          portraits: [{ id: 'aino', slot: 'left', emo: 'serious', active: true }, { id: 'sylvia', slot: 'right', emo: 'serious', active: false }],
+          portraits: [{ id: 'sylvia', slot: 'left', emo: 'serious', active: false }, { id: 'aino', slot: 'right', emo: 'serious', active: true }],
           speaker: '艾诺',
           text: function () {
             var q = getEchoFor('aino', '别让手里的冰生出气泡。');
@@ -1857,7 +1860,7 @@
         sm.lines.splice(smEnd, 0,
           {
             if: function () { return getNoelleArcMode() === 'partnership'; },
-            portraits: [{ id: 'noelle', slot: 'left', emo: 'smile', active: true }, { id: 'sylvia', slot: 'right', emo: 'normal', active: false }],
+            portraits: [{ id: 'sylvia', slot: 'left', emo: 'normal', active: false }, { id: 'noelle', slot: 'right', emo: 'smile', active: true }],
             speaker: '诺艾儿',
             text: function () {
               var q = getEchoFor('noelle', '用一杯水打赢一桶水的仗。');
@@ -1866,7 +1869,7 @@
           },
           {
             if: function () { return getNoelleArcMode() === 'guarded_pride'; },
-            portraits: [{ id: 'noelle', slot: 'left', emo: 'serious', active: true }, { id: 'sylvia', slot: 'right', emo: 'normal', active: false }],
+            portraits: [{ id: 'sylvia', slot: 'left', emo: 'normal', active: false }, { id: 'noelle', slot: 'right', emo: 'serious', active: true }],
             speaker: '诺艾儿',
             text: function () {
               var q = getEchoFor('noelle', '记在左手背上的每一份人情，我都会凭本事还清。');
@@ -2048,7 +2051,7 @@
           if: function () { return getCharlotteArcMode() === 'candor'; },
           bg: 'bg-img-forest bg-forest',
           portraits: [{ id: 'sylvia', slot: 'center', emo: 'normal', active: true }],
-          text: '借着那份时间表标出的两刻钟换岗空窗，我贴着枯草水渠悄然穿过封锁线，随身盘缠分毫未损。'
+          text: '借着那份时间表标出的半小时换岗空窗，我贴着枯草水渠悄然穿过封锁线，随身盘缠分毫未损。'
         },
         {
           if: function () { return getCharlotteArcMode() === 'rivalry'; },
@@ -2081,6 +2084,7 @@
     if (jk && Array.isArray(jk.lines) && !jk._causalPatched) {
       jk._causalPatched = true;
       var endIdx = jk.lines.findIndex(function (L) { return L && L.freeRoam; });
+      if (endIdx < 0) endIdx = Math.max(0, jk.lines.length - 1);
       if (endIdx >= 0) {
         jk.lines.splice(endIdx, 0, {
           if: function () { return getAliceArcMode() !== 'default'; },
@@ -2420,7 +2424,8 @@
   function getCausalDialogueHooks(sceneId, targetS) {
     var st = targetS || getStateObj();
     var c = ensureCausalState(st);
-    var sc = String(sceneId || (st && st.scene) || 'free-roam');
+    var activeSc = (typeof currentScene !== 'undefined' && currentScene) ? currentScene : (st && st.scene);
+    var sc = String(sceneId || activeSc || 'free-roam');
     var dominantAxes = {};
     Object.keys(AXIS_META).forEach(function (cid) {
       var s = getAxisSummary(cid, st);
@@ -2465,7 +2470,7 @@
     }
 
     // 根据场景定制高优先级钩子
-    if (sc === 's_turnpoint' || sc === 's_star' || sc === 's_tree') {
+    if (sc === 's_turnpoint' || sc === 's_star_festival' || sc === 's_star' || sc === 's_tree') {
       if (canTriggerDarkTide(st)) {
         pushClueHook('bayi_banquet_leak', 'claude', '阿琼小本子里的宴席细节与城郊私军调防已拼合成局，书房深夜提前示警。');
       }
@@ -2609,6 +2614,7 @@
     }
     var f = st.flags || {};
     return st.phase === 'journey'
+      || st.phase === 'finale'
       || !!(f.did_turnpoint || f.arrived_jikan || f.ch_distant_wind_1 || f.ch_leaky_cup || f.ch_interlude_white_night)
       || Number(st.ageY || 0) >= 15;
   }

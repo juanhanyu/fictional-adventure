@@ -248,7 +248,7 @@ function bgmFadeTo(el, target, ms, done){
 function bgmStop(fade=true){
   const el = bgmEl;
   if(!el) return;
-  bgmEl = null; bgmKey = null; bgmCurType = null; sceneBgmType = null;
+  bgmEl = null; bgmKey = null; bgmCurType = null; sceneBgmType = null; bgmLoc = null;
   const kill = ()=>{ bgmCancelFade(el); try{ el.pause(); }catch(e){} };
   if(fade){
     bgmCancelFade(el);
@@ -1749,25 +1749,44 @@ var PORTRAIT_SLOTS = ['p-left','p-center','p-right','p-fourth'];
 var stage = [];            // 当前在场立绘 [{id,emo,active}]，顺序=左→右
 var stageSid = null;       // 当前所在场景id（用于场景切换时强制清台）
 var curSpeakerId = null;   // 当前说话人 id（对话框小胸像用）
+function clearPortraitLeaveTimer(el){
+  if(!el) return;
+  if(el._leaveTimer){ clearTimeout(el._leaveTimer); el._leaveTimer = null; }
+  el.classList.remove('ps-leave');
+}
 function clearPortraits(){
   // 立即隐藏全部（用于场景/自由探索重置）
   PORTRAIT_SLOTS.forEach(id=>{
     const el=$(id); if(!el) return;
+    clearPortraitLeaveTimer(el);
     el.classList.add('hidden'); el.classList.remove('active','dim','ps-enter','ps-leave');
+    el.style.pointerEvents = '';
+    el.style.cursor = '';
+    el.onclick = null;
+    el.removeAttribute('data-char');
+    el.removeAttribute('data-emo');
   });
   $('css-portraits').innerHTML='';
   stage = [];
 }
-// 单角色旁白聚焦：保留当前在场者(主导/对话者)，只把 focus 人高亮、其余置暗；focus 人不在场则追加
+// 单角色旁白聚焦：保留当前在场者(主导/对话者)，只把 focus 人高亮、其余置暗；focus 人不在场则追加（主角固定左）
 function applyStageFocus(f){
   const next = stage.map(s=>({ id:s.id, emo:s.id===f.id?(f.emo||s.emo):s.emo, active:s.id===f.id }));
-  if(!next.some(s=>s.id===f.id)) next.push({ id:f.id, emo:f.emo||'normal', active:true });
+  if(!next.some(s=>s.id===f.id)){
+    const entry = { id:f.id, emo:f.emo||'normal', active:true };
+    if(f.id === 'sylvia') next.unshift(entry);
+    else next.push(entry);
+  }
   applyStage(next);
 }
-// 单人说：基于当前 stage，让说话人高亮、其余在场者置暗；说话人不在场则追加
+// 单人说：基于当前 stage，让说话人高亮、其余在场者置暗；说话人不在场则追加（主角固定左）
 function appendSpeaker(chId, emo){
   const next = stage.map(s=>({ id:s.id, emo:s.id===chId?(emo||s.emo):s.emo, active:s.id===chId }));
-  if(!next.some(s=>s.id===chId)) next.push({ id:chId, emo:emo||'normal', active:true });
+  if(!next.some(s=>s.id===chId)){
+    const entry = { id:chId, emo:emo||'normal', active:true };
+    if(chId === 'sylvia') next.unshift(entry);
+    else next.push(entry);
+  }
   return next;
 }
 // 应用一组立绘：diff 当前 stage → 保留在场者(仅切换高亮/置暗)，离场者淡出，入场者淡入
@@ -1783,10 +1802,12 @@ function applyStage(next){
     const have = stage[i] || null;
     if(want && have && want.id===have.id){
       // 同人：更新 emo/active，不重排、不闪
+      clearPortraitLeaveTimer(el);
       setPortrait(el, want.id, want.emo, want.active!==false);
       if(el.classList.contains('ps-enter')) el.classList.remove('ps-enter');
     } else if(want){
       // 该槽换人/新增：若有立绘图则淡入，否则由 setPortrait 走 CSS 占位
+      clearPortraitLeaveTimer(el);
       setPortrait(el, want.id, want.emo, want.active!==false);
       if(!el.classList.contains('hidden')){
         el.classList.remove('ps-leave');
@@ -1794,10 +1815,17 @@ function applyStage(next){
         requestAnimationFrame(()=>{ el.classList.remove('ps-enter'); });
       }
     } else if(have){
-      // 该槽原本有人、现在空：淡出后隐藏
+      // 该槽原本有人、现在空：淡出后隐藏（记录定时器句柄避免竞态误隐）
+      clearPortraitLeaveTimer(el);
       el.classList.add('ps-leave');
       const _el=el;
-      setTimeout(()=>{ if(_el.classList.contains('ps-leave')){ _el.classList.add('hidden'); _el.classList.remove('ps-leave'); } }, 240);
+      _el._leaveTimer = setTimeout(()=>{
+        _el._leaveTimer = null;
+        if(_el.classList.contains('ps-leave')){
+          _el.classList.add('hidden');
+          _el.classList.remove('ps-leave');
+        }
+      }, 240);
     }
   }
   // 2) 记录新 stage
@@ -1824,11 +1852,16 @@ function attachPortraitFallback(img, el, charId, emotion, active, onMissingAll){
   };
 }
 function setPortrait(el, charId, emotion, active){
+  clearPortraitLeaveTimer(el);
+  if(charId==='sylvia' && !sylviaPortraitUnlocked()){
+    el.classList.add('hidden');
+    el.classList.remove('active','dim','ps-enter','ps-leave');
+    return;
+  }
   const emo = emotion || 'normal';
   const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emo) : (PORTRAIT_FILES[charId+'_'+emo]||PORTRAIT_FILES[charId+'_normal']);
   if(!file){ el.classList.add('hidden'); addCssPortrait(charId, active); return; }
   const img = el.querySelector('img'); const nm = el.querySelector('.p-name');
-  if(charId==='sylvia' && !sylviaPortraitUnlocked()){ el.classList.add('hidden'); return; }
   attachPortraitFallback(img, el, charId, emo, active, ()=>{
     el.classList.add('hidden');
     addCssPortrait(charId, active);
@@ -1865,6 +1898,7 @@ function showPortrait(charId, emotion='normal', slot='center', active=true){
   const file = (typeof resolvePortrait==='function') ? resolvePortrait(charId, emo) : (PORTRAIT_FILES[charId+'_'+emo]||PORTRAIT_FILES[charId+'_normal']);
   const el = $(slot==='left'?'p-left':slot==='right'?'p-right':slot==='fourth'?'p-fourth':'p-center');
   if(!el) return;
+  clearPortraitLeaveTimer(el);
   // 记录当前角色，供 CSS 按角色微调立绘表现（如爱丽丝白色系高亮偏亮）
   el.setAttribute('data-char', charId||'');
   const img = el.querySelector('img');
@@ -2579,9 +2613,11 @@ const CG_FALLBACK_BG = {
   'vol3_jikan_parting.png': 'assets/bg/jikan.jpg',
 };
 let cgImage = null;   // 当前 CG 图（避免连续同图时重复设 background 导致闪烁）
+let _cgHideTimer = null;
 function cgShow(name){
   // 隐藏全部 UI，显示全屏 CG
   cgActive = true;
+  if(_cgHideTimer){ clearTimeout(_cgHideTimer); _cgHideTimer = null; }
   if(name){
     if(!S.unlockedCGs) S.unlockedCGs = {};
     S.unlockedCGs[name] = true;
@@ -2593,25 +2629,21 @@ function cgShow(name){
   }
   if(name !== cgImage){                 // 仅当图片变化时才重设背景，杜绝连续点击时的闪烁
     cgImage = name;
-    const targetUrl = `assets/cg/${name}`;
+    // 若新 CG 尚未回流磁盘（标记在 CG_FALLBACK_BG 中），直接使用对应高清场景底图，避免浏览器 404 报错与黑屏裂图
+    const targetUrl = CG_FALLBACK_BG[name] || `assets/cg/${name}`;
     $('cg-bg').style.backgroundImage = `url(${targetUrl})`;
-    // 若新 CG 尚未回流磁盘，浏览器端静默回退到对应场景高清底图，绝无黑屏裂图
-    if(typeof Image !== 'undefined' && CG_FALLBACK_BG[name] && !(typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent || ''))){
-      const probe = new Image();
-      probe.onerror = ()=>{
-        if(cgImage === name && $('cg-bg')){
-          $('cg-bg').style.backgroundImage = `url(${CG_FALLBACK_BG[name]})`;
-        }
-      };
-      probe.src = targetUrl;
-    }
   }
   $('cg-bg').classList.remove('noimg');
   const cs=$('cg-screen');
-  if(cs.classList.contains('hidden')){  // 首次进入 CG：淡入
-    cs.classList.add('faded');           // 从透明开始
-    show(cs, 1);
-    requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ cs.classList.remove('faded'); }); });
+  if(cs){
+    cs.style.pointerEvents = '';
+    if(cs.classList.contains('hidden')){  // 首次进入 CG：淡入
+      cs.classList.add('faded');           // 从透明开始
+      show(cs, 1);
+      requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ cs.classList.remove('faded'); }); });
+    } else {
+      cs.classList.remove('faded');
+    }
   }
   if(!document.body.classList.contains('cg-mode')) document.body.classList.add('cg-mode');
 }
@@ -2654,18 +2686,30 @@ function cgText(speaker, text, isNarrator){
   box.innerHTML = spk + line;
 }
 let cgActive = false;
-function cgHide(){
+function cgHide(immediate){
   cgActive = false;
   cgImage = null;
   cgTyping = false;
+  if(_cgHideTimer){ clearTimeout(_cgHideTimer); _cgHideTimer = null; }
   const cs=$('cg-screen');
-  if(cs && !cs.classList.contains('hidden')){
-    cs.classList.add('faded');           // 淡出再隐藏
-    setTimeout(()=>{ show(cs, 0); cs.classList.remove('faded'); }, 400);
+  if(cs){
+    cs.onclick = null;
+    cs.style.pointerEvents = 'none';
+    if(immediate){
+      show(cs, 0);
+      cs.classList.remove('faded');
+      cs.style.pointerEvents = '';
+    } else if(!cs.classList.contains('hidden')){
+      cs.classList.add('faded');           // 淡出再隐藏
+      _cgHideTimer = setTimeout(()=>{
+        _cgHideTimer = null;
+        if(!cgActive){ show(cs, 0); cs.classList.remove('faded'); cs.style.pointerEvents = ''; }
+      }, 400);
+    }
   }
   document.body.classList.remove('cg-mode');
-  $('cg-bg').style.backgroundImage = '';
-  $('cg-text').innerHTML = '';
+  if($('cg-bg')) $('cg-bg').style.backgroundImage = '';
+  if($('cg-text')) $('cg-text').innerHTML = '';
 }
 
 // ========== FREE ROAM ==========
@@ -2902,11 +2946,19 @@ function enterFreeRoam(options={}){
   S.storyPending=[];
   currentScene=null;
   resetDialogAdvanceState();
-  // 「视角」场景结束：恢复顶部 HUD
+  // 「视角」与瞬态覆盖层结束：恢复顶部 HUD，清理未退出 CG/报幕卡
   setPov(false);
+  if(cgActive || isOverlayVisible('cg-screen')) cgHide(true);
+  const cardEl=$('card');
+  if(cardEl && !cardEl.classList.contains('hidden')){ cardEl.onclick=null; show(cardEl,0); }
   sceneBgmType = null;             // 场景结束，进入自由探索：允许按背景推断切回日常音乐
   roamPromptDone = null;
   S.freeRoam=true; awaitingChoice=false; show('action-bar',1); updateHUD(); updateLocBar(); save();
+  if(options.restoreLoc){
+    const targetBg = (LOCS[S.loc] && LOCS[S.loc].bg) || S.bg;
+    if(targetBg) setBG(targetBg);
+    bgmFreeRoam(targetBg || '', S.phase, S.loc);
+  }
   document.body.classList.add('roam');
   const box=$('choices'); if(box) box.innerHTML='';
   setSpeaker(null);
@@ -3356,7 +3408,7 @@ function talkLines(id){
       [{ch:'aino',emo:'serious',speaker:'艾诺',text:'三号药箱的冰膜，今天匀了。'}, {text:'她摘下手套摸过箱沿，只点了点头，没多问一个字。', love:'aino', loveD:1, know:'aino', knowD:2}],
       [{ch:'aino',emo:'normal',speaker:'艾诺',text:'手背的伤，别沾生雪水。医官帐里有新熬的白藓膏。'}, {text:'她说完便转身去查箭垛，银白高马尾在风雪里晃了一下。', love:'aino', loveD:1, know:'aino', knowD:3}],
       [{ch:'aino',emo:'smile',speaker:'艾诺',text:'……伙房今晚有热麦汤。巡完东墙去领，别放凉了。'}, {text:'语气平淡得像在传达军令，却替我挡了一瞬风口吹来的碎雪。', love:'aino', loveD:1, know:'aino', knowD:2}],
-      [{if:()=>!!(S.causal && (S.causal.clues?.polar_lily_bond || (S.causal.axes?.aino?.kinship||0)>=2)), ch:'aino',emo:'smile',speaker:'艾诺',text:'……冰膜毫无气泡。这种精细度，北境防线里难得一见。'}, {text:'她没有提起那株名为伊诺的北极铃兰，指尖却在箱沿左下角停了一息。', love:'aino', loveD:1, know:'aino', knowD:3}],
+      [{if:()=>!!(S.causal && (S.causal.clues?.polar_lily_bond || (S.causal.axes?.aino?.kinship||0)>=2)), ch:'aino',emo:'smile',speaker:'艾诺',text:'……冰膜毫无气泡。这种精细度，北境防线里难得一见。'}, {text:'她没有提起那株名为伊诺的北极铃兰，指尖却在箱沿左下角停了一瞬。', love:'aino', loveD:1, know:'aino', knowD:3}],
     ] : [
       [{ch:'aino',speaker:'艾诺',text:'你的冰，还有气泡。'}, {text:'她只说这一句。但周六训练场见——这是默认的。', love:'aino', loveD:1, know:'aino', knowD:2}],
       [{ch:'aino',speaker:'艾诺',text:'花坊的水，下午两点换。你若路过，带一壶冷的。'}, {text:'这是在邀请吗？用艾诺语翻译，大概是。', love:'aino', loveD:1, know:'aino', knowD:3}],
@@ -3841,6 +3893,14 @@ function dismissPickScreen(){
   restoreBgAfterPick();
   bgmRestoreScene();
   sfx('modal_close');
+  const ap = afterPick; afterPick = null;
+  if(ap && ap.rest && ap.rest.length){
+    playLines(ap.rest, ap.done);
+  } else if(ap && typeof ap.done === 'function'){
+    ap.done();
+  } else if(!S.freeRoam && !typing && !lineCB && !awaitingChoice){
+    enterFreeRoam();
+  }
 }
 function triggerBraveGift(tier){
   if(S.picksDone.includes(tier)) return;
@@ -4525,6 +4585,30 @@ function saveToManualSlot(slotId){
   toast(`已保存至档案槽位 ${slotId}`);
   openPanel('saves');
 }
+function syncLocUnlocksForState(){
+  Object.values(LOCS).forEach(L=>{ L.unlock = false; });
+  ['nursery','hallway','parlor','garden','dining'].forEach(id=>{ if(LOCS[id]) LOCS[id].unlock = true; });
+  if(S.ageY >= 1){ if(LOCS.study) LOCS.study.unlock = true; if(LOCS.training) LOCS.training.unlock = true; }
+  if(S.ageY >= 2){ if(LOCS.kitchen) LOCS.kitchen.unlock = true; if(LOCS.balcony) LOCS.balcony.unlock = true; }
+  if(S.ageY >= 4){ if(LOCS.chapel) LOCS.chapel.unlock = true; if(LOCS.town) LOCS.town.unlock = true; }
+  if(S.ageY >= 6){ if(LOCS.cellar) LOCS.cellar.unlock = true; }
+  if(S.ageY >= 8){ if(LOCS.ownroom) LOCS.ownroom.unlock = true; }
+  if(flag('ch_beach') && LOCS.beach) LOCS.beach.unlock = true;
+  if((S.phase === 'finale' || flag('can_secret')) && LOCS.secret) LOCS.secret.unlock = true;
+  if(S.phase === 'academy' || S.phase === 'journey' || S.phase === 'finale'){
+    Object.values(LOCS).forEach(L=>{
+      if(L.area === '魔法大学') L.unlock = true;
+    });
+    if(LOCS.market) LOCS.market.unlock = true;
+  }
+  if(S.phase === 'journey' || S.phase === 'finale'){
+    ['road','jikan','chenglan_guild','northforest','town','market'].forEach(id=>{
+      if(LOCS[id]) LOCS[id].unlock = true;
+    });
+    if(flag('ch_distant_wind_1') && LOCS.ice_canyon) LOCS.ice_canyon.unlock = true;
+  }
+  if(S.loc && LOCS[S.loc]) LOCS[S.loc].unlock = true;
+}
 function loadFromManualSlot(slotId){
   if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.loadFromSlot === 'function'){
     const res = window.VNUx.loadFromSlot(Number(slotId));
@@ -4547,16 +4631,8 @@ function loadFromManualSlot(slotId){
   if(typeof RelicsAndEvents !== 'undefined' && RelicsAndEvents.ensureRelicsState){
     RelicsAndEvents.ensureRelicsState(S);
   }
-  Object.values(LOCS).forEach(L=>{
-    if(L.area==='公爵府') L.unlock=true;
-    if(S.phase==='academy'||S.phase==='journey'||S.phase==='finale'){
-      if(L.area==='魔法大学') L.unlock=true;
-    }
-    if(S.phase==='journey'||S.phase==='finale'){
-      if(['road','jikan','chenglan_guild','northforest','town','market'].includes(L.id)) L.unlock=true;
-      if(flag('ch_distant_wind_1') && L.id==='ice_canyon') L.unlock=true;
-    }
-  });
+  bgmLoc = null;
+  syncLocUnlocksForState();
   save();
   show('panel', 0);
   show('title-screen', 0);
@@ -4565,7 +4641,7 @@ function loadFromManualSlot(slotId){
   updateLocBar();
   if(resumePendingStories()) return;
   if(checkStoryGates()) return;
-  if(S.freeRoam) enterFreeRoam();
+  if(S.freeRoam) enterFreeRoam({ restoreLoc: true });
   else playLines([{text:`（读取档案 ${slotId}）${dateStr()} · ${LOCS[S.loc]?.name||''}`, freeRoam:true}]);
 }
 function deleteManualSlot(slotId){
@@ -4672,10 +4748,8 @@ function openPanel(tab, opts){
         }).join('')}</div>`;
     body.innerHTML = skillRows
       + `<div class="p-skill-actions">${hasSkill('virtual_duel') ? '<button type="button" class="tbtn" id="btn-duel">进入虚拟决斗（梦境）</button>' : ''}<button type="button" class="tbtn ghost" id="btn-panel-arena">战术演武沙盒</button></div>`;
-    setTimeout(()=>{
-      const b=$('btn-duel'); if(b) b.onclick=()=>{ show('panel',0); openDuelMenu(); };
-      const ba=$('btn-panel-arena'); if(ba) ba.onclick=()=>{ show('panel',0); if(typeof openArenaHub==='function') openArenaHub({fromTitle:false}); };
-    },0);
+    const b=$('btn-duel'); if(b) b.onclick=()=>{ show('panel',0); openDuelMenu(); };
+    const ba=$('btn-panel-arena'); if(ba) ba.onclick=()=>{ show('panel',0); if(typeof openArenaHub==='function') openArenaHub({fromTitle:false}); };
   } else if(tab==='tasks'){
     // 未接取/未完成且未解锁的任务不显示具体内容（防剧透）
     const known = TASKS.filter(t=>{
@@ -4765,13 +4839,9 @@ function openPanel(tab, opts){
     }).join('');
     body.innerHTML=`<div class="p-inv">${slots || '<div class="inv-slot">空</div>'}</div>
       <p style="margin-top:8px;color:#526078;font-size:12px">背包 ${S.inv.length}/50 · 系统收纳（单手可握之物）</p>`;
-    setTimeout(()=>{
-      const pb = $('panel-body');
-      if(!pb) return;
-      pb.querySelectorAll('[data-use]').forEach(b=>{
-        b.onclick=()=>useItem(b.getAttribute('data-use'));
-      });
-    },0);
+    body.querySelectorAll('[data-use]').forEach(b=>{
+      b.onclick=()=>useItem(b.getAttribute('data-use'));
+    });
   } else if(tab==='ach'){
     const unlocked = ACH.filter(a=>S.ach[a.id]);
     const lockedN = ACH.length - unlocked.length;
@@ -4843,19 +4913,17 @@ function openPanel(tab, opts){
       <p style="font-size:12px;color:#526078;margin-bottom:6px">仅开放已解锁经历的篇章（避免剧透未见章节）。建议重温前先存入上方手动槽位。</p>
       <div class="chapter-replay-list">${chapRows || '<p style="color:#526078">尚无已完成的篇章。</p>'}</div>
     `;
-    setTimeout(()=>{
-      body.querySelectorAll('[data-slot-save]').forEach(b => { b.onclick = ()=> saveToManualSlot(b.getAttribute('data-slot-save')); });
-      body.querySelectorAll('[data-slot-load]').forEach(b => { b.onclick = ()=> loadFromManualSlot(b.getAttribute('data-slot-load')); });
-      body.querySelectorAll('[data-slot-del]').forEach(b => { b.onclick = ()=> deleteManualSlot(b.getAttribute('data-slot-del')); });
-      body.querySelectorAll('[data-replay-scene]').forEach(b => {
-        b.onclick = ()=>{
-          const scId = b.getAttribute('data-replay-scene');
-          if(!scId || !SCENES[scId]) return;
-          show('panel', 0);
-          runScene(scId);
-        };
-      });
-    }, 0);
+    body.querySelectorAll('[data-slot-save]').forEach(b => { b.onclick = ()=> saveToManualSlot(b.getAttribute('data-slot-save')); });
+    body.querySelectorAll('[data-slot-load]').forEach(b => { b.onclick = ()=> loadFromManualSlot(b.getAttribute('data-slot-load')); });
+    body.querySelectorAll('[data-slot-del]').forEach(b => { b.onclick = ()=> deleteManualSlot(b.getAttribute('data-slot-del')); });
+    body.querySelectorAll('[data-replay-scene]').forEach(b => {
+      b.onclick = ()=>{
+        const scId = b.getAttribute('data-replay-scene');
+        if(!scId || !SCENES[scId]) return;
+        show('panel', 0);
+        runScene(scId);
+      };
+    });
   } else if(tab==='settings'){
     const cur = getSettings();
     const bgmPct = Math.round(bgmVolume * 100);
@@ -4872,13 +4940,11 @@ function openPanel(tab, opts){
       <div style="color:#526078;font-size:12px">100% 为默认画面明度，调节背景明度不影响音乐播放</div>
     </div>
     <button class="tbtn" id="set-reset" style="margin-top:18px">全部恢复默认</button>`;
-    // 事件绑定
-    setTimeout(()=>{
-      const bm=$('set-bgm'); if(bm) bm.oninput=()=>{ setSetting('bgm', bm.value/100); };
-      const sx=$('set-sfx'); if(sx) sx.oninput=()=>{ setSetting('sfx', sx.value/100); };
-      const br=$('set-bright'); if(br) br.oninput=()=>{ setSetting('bright', br.value/100); };
-      const rs=$('set-reset'); if(rs) rs.onclick=()=>{ resetSettings(); openPanel('settings'); toast('已恢复默认设置'); };
-    },0);
+    // 同步绑定事件，杜绝刚打开弹窗时立即交互漏绑
+    const bm=$('set-bgm'); if(bm) bm.oninput=()=>{ setSetting('bgm', bm.value/100); };
+    const sx=$('set-sfx'); if(sx) sx.oninput=()=>{ setSetting('sfx', sx.value/100); };
+    const br=$('set-bright'); if(br) br.oninput=()=>{ setSetting('bright', br.value/100); };
+    const rs=$('set-reset'); if(rs) rs.onclick=()=>{ resetSettings(); openPanel('settings'); toast('已恢复默认设置'); };
   }
   const scrollWrap = body && body.parentElement;
   if(scrollWrap && scrollWrap.classList && scrollWrap.classList.contains('modal-scroll')){
@@ -4907,11 +4973,17 @@ function setSetting(k, v){
   else if(k==='bright'){
     applyBrightness(v);
     try {
-      const pct = Math.round(Number(v) * 100);
+      const nBright = Number.isFinite(Number(v)) ? Number(v) : 1;
+      const pct = Math.round(nBright * 100);
       const sl = $('set-bright');
       if(sl && Number(sl.value) !== pct) sl.value = String(pct);
       const vl = $('set-bright-val');
       if(vl) vl.textContent = pct + '%';
+      const raw = JSON.parse(localStorage.getItem(VN_PREFS_KEY) || '{}');
+      if(raw && typeof raw === 'object'){
+        raw.bright = nBright;
+        localStorage.setItem(VN_PREFS_KEY, JSON.stringify(raw));
+      }
       if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.syncExternalAudioPrefs === 'function'){
         window.VNUx.syncExternalAudioPrefs();
       }
@@ -4928,6 +5000,7 @@ function resetSettings(){
     if(raw && typeof raw === 'object'){
       raw.bgmVol = 0.5;
       raw.sfxVol = 0.65;
+      raw.bright = 1;
       localStorage.setItem(VN_PREFS_KEY, JSON.stringify(raw));
     }
     if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.syncExternalAudioPrefs === 'function'){
@@ -5054,6 +5127,12 @@ function stepChain(){
   S.freeRoam = false;
   awaitingChoice = false;
   show('action-bar', 0);
+  show('hotspots', 0);
+  document.body.classList.remove('roam');
+  $('portraits')?.classList.remove('roam-npc');
+  if(cgActive || isOverlayVisible('cg-screen')) cgHide(true);
+  const prevCard = $('card');
+  if(prevCard && !prevCard.classList.contains('hidden')){ prevCard.onclick = null; show(prevCard, 0); }
   const box = $('choices'); if(box) box.innerHTML = '';
   show('game-screen', 1);
   clearPortraits();          // 场景切换：重置立绘舞台
@@ -5062,8 +5141,8 @@ function stepChain(){
   if(sc.phase) S.phase = sc.phase;
   if(sc.loc){ S.loc = sc.loc; updateLocBar(); }
   updateHUD();
-  // 「视角」演出：pov 场景隐藏顶部 HUD（如贝阿特丽丝大人的一天，以贝蒂视角叙述）
-  if(sc.pov) setPov(true);
+  // 「视角」演出：pov 场景隐藏顶部 HUD，非 pov 场景务必恢复
+  setPov(!!sc.pov);
   const go = ()=> playLines(sc.lines || [], ()=>{
     // 只有场景确实播放结束，才写入对应的“已完成”门控标记。
     markStoryGateCompleted(id);
@@ -5089,6 +5168,12 @@ function runScene(id){
   S.freeRoam = false;
   awaitingChoice = false;
   show('action-bar', 0);
+  show('hotspots', 0);
+  document.body.classList.remove('roam');
+  $('portraits')?.classList.remove('roam-npc');
+  if(cgActive || isOverlayVisible('cg-screen')) cgHide(true);
+  const prevCard = $('card');
+  if(prevCard && !prevCard.classList.contains('hidden')){ prevCard.onclick = null; show(prevCard, 0); }
   const box = $('choices'); if(box) box.innerHTML = '';
   show('game-screen', 1);
   clearPortraits();          // 场景切换：重置立绘舞台
@@ -5097,8 +5182,8 @@ function runScene(id){
   if(sc.phase) S.phase = sc.phase;
   if(sc.loc){ S.loc = sc.loc; updateLocBar(); }
   updateHUD();
-  // 「视角」演出：pov 场景隐藏顶部 HUD（如贝阿特丽丝大人的一天，以贝蒂视角叙述）
-  if(sc.pov) setPov(true);
+  // 「视角」演出：pov 场景隐藏顶部 HUD，非 pov 场景务必恢复
+  setPov(!!sc.pov);
   const go = ()=> playLines(sc.lines || [], sc.done);
   if(sc.card) showCard(sc.card.vol, sc.card.t, sc.card.s, go);
   else go();
@@ -5142,11 +5227,11 @@ SCENES.s_reno_arrive = {
     {text:'问题虽然有点偏，但叔叔很高兴有人对细节感兴趣，讲得更起劲了。', portraits:[{id:'reno', slot:'left', active:false},{id:'alice', slot:'right', active:false}]},
     // —— 转夜晚房间：剧情事件转换，回收立绘 ——
     {bg:'bg-img-nursery bg-room', loc:'nursery', portraits:[], text:'某天晚上，叔叔溜进我房间，检查了我的魔法进度。'},
-    // —— 主角与雷纳德单独交谈：双人立绘，说话者高亮 ——
+    // —— 主角与雷纳德单独交谈：双人立绘，主角固定左、雷纳德固定右，说话者高亮 ——
     {text:'看完我的冰晶术后，他收起了那副嬉皮笑脸的表情。'},
-    {portraits:[{id:'reno', slot:'left', active:true},{id:'sylvia', slot:'right', active:false}], speaker:'雷纳德', text:'六岁能控制到这个程度，咱们家这是出了个小怪物啊。等你以后去了魔法大学，要是有人欺负你，就报我名字。'},
-    {portraits:[{id:'reno', slot:'left', active:false},{id:'sylvia', slot:'right', active:true}], speaker:'希尔维亚', text:'报了有用吗？'},
-    {portraits:[{id:'reno', slot:'left', active:true},{id:'sylvia', slot:'right', active:false}], speaker:'雷纳德', text:'大概有用吧……只要法神大人忘掉了我欠她钱的事。'},
+    {portraits:[{id:'sylvia', slot:'left', active:false},{id:'reno', slot:'right', active:true}], speaker:'雷纳德', text:'六岁能控制到这个程度，咱们家这是出了个小怪物啊。等你以后去了魔法大学，要是有人欺负你，就报我名字。'},
+    {portraits:[{id:'sylvia', slot:'left', active:true},{id:'reno', slot:'right', active:false}], speaker:'希尔维亚', text:'报了有用吗？'},
+    {portraits:[{id:'sylvia', slot:'left', active:false},{id:'reno', slot:'right', active:true}], speaker:'雷纳德', text:'大概有用吧……只要法神大人忘掉了我欠她钱的事。'},
     // —— 结尾主角心理：主角高亮 ——
     {text:'看来以后还是尽量别报他的名字比较好。', portraits:[{id:'sylvia', slot:'center', active:true}], know:'reno', knowD:20, freeRoam:true},
   ]
@@ -5544,10 +5629,14 @@ function newGame(){
   if(typeof window !== 'undefined') window.S = S;
   BACKLOG_LOG.length = 0;
   closeHudMoreDrawer();
+  setPov(false);
+  if(cgActive || isOverlayVisible('cg-screen')) cgHide(true);
+  const cd=$('card'); if(cd){ cd.onclick=null; show(cd,0); }
   document.body.classList.remove('ai-drawer-open', 'roam');
   S.season = seasonOf(S.month);
   if(typeof VNUx!=='undefined'&&VNUx.clearBacklog) VNUx.clearBacklog();
-  Object.values(LOCS).forEach(L=>{ if(L.area==='公爵府' && ['nursery','hallway','parlor','garden','dining'].includes(L.id)) L.unlock=true; });
+  bgmLoc = null;
+  syncLocUnlocksForState();
   bgmUnlock(); // 用户点击开始 → 解锁音频
   show('title-screen',0); show('game-screen',1);
   runScene('s_start');
@@ -5556,26 +5645,20 @@ function continueGame(){
   if(!load()){ toast('没有存档'); return; }
   if(typeof window !== 'undefined') window.S = S;
   closeHudMoreDrawer();
+  setPov(false);
+  if(cgActive || isOverlayVisible('cg-screen')) cgHide(true);
+  const cd=$('card'); if(cd){ cd.onclick=null; show(cd,0); }
   document.body.classList.remove('ai-drawer-open');
   bgmUnlock(); // 用户点击继续 → 解锁音频
-  // re-unlock locs by phase
-  Object.values(LOCS).forEach(L=>{
-    if(L.area==='公爵府') L.unlock=true;
-    if(S.phase==='academy'||S.phase==='journey'||S.phase==='finale'){
-      if(L.area==='魔法大学') L.unlock=true;
-    }
-    if(S.phase==='journey'||S.phase==='finale'){
-      if(['road','jikan','chenglan_guild','northforest','town','market'].includes(L.id)) L.unlock=true;
-      if(flag('ch_distant_wind_1') && L.id==='ice_canyon') L.unlock=true;
-    }
-  });
+  bgmLoc = null;
+  syncLocUnlocksForState();
   show('title-screen',0); show('game-screen',1);
   spawnCardExitVeil();
   updateHUD(); updateLocBar();
   // 先恢复被刷新中断的剧情；旧存档则重新检查并补播已到期剧情。
   if(resumePendingStories()) return;
   if(checkStoryGates()) return;
-  if(S.freeRoam) enterFreeRoam();
+  if(S.freeRoam) enterFreeRoam({ restoreLoc: true });
   else playLines([{text:`（读取存档）${dateStr()} · ${LOCS[S.loc]?.name||''}`, freeRoam:true}]);
 }
 
@@ -5617,6 +5700,9 @@ if($('btn-title-settings')){
 $('btn-title').onclick=()=>{
   save();
   closeHudMoreDrawer();
+  setPov(false);
+  if(cgActive || isOverlayVisible('cg-screen')) cgHide(true);
+  const cd=$('card'); if(cd){ cd.onclick=null; show(cd,0); }
   if(typeof AIChatPanel !== 'undefined' && AIChatPanel.closeDrawer) AIChatPanel.closeDrawer({ wipePending: true });
   if(typeof CombatEngine !== 'undefined' && CombatEngine.exitBattle) CombatEngine.exitBattle(false, { silent: true });
   if(typeof window !== 'undefined' && window.RaisingHub){
@@ -5839,26 +5925,48 @@ document.addEventListener('keydown', e=>{
   if(e.key===' ' || e.key==='Enter'){
     // 若非空格关闭型弹窗（帮助/图鉴/养成/信笺/VN弹窗/战斗等）正在展示，禁止穿透推进对话
     if(isNonDialogModalBlockingSpace()) return;
+    // 系统弹窗优先级最高（可能叠在 CG/报幕卡之上）：空格/回车关闭
+    if(isOverlayVisible('sys-popup')){
+      if(typeof e.preventDefault === 'function') e.preventDefault();
+      show('sys-popup',0); sfx('modal_close'); return;
+    }
     // CG 演出：空格/回车也能推进下一句
     if(cgActive && isOverlayVisible('cg-screen')){
+      if(typeof e.preventDefault === 'function') e.preventDefault();
       if(typeof $('cg-screen').onclick === 'function'){ $('cg-screen').onclick(); }
       return;
     }
     // 章节报幕 card：空格/回车翻页
     const cd=$('card');
     if(cd && !cd.classList.contains('hidden')){
+      if(typeof e.preventDefault === 'function') e.preventDefault();
       if(typeof cd.onclick === 'function'){ cd.onclick(); }
       return;
     }
-    // 系统弹窗：空格/回车关闭
-    if(isOverlayVisible('sys-popup')){ show('sys-popup',0); sfx('modal_close'); return; }
-    // 各面板：空格关闭
-    if(isOverlayVisible('panel')){ show('panel',0); sfx('modal_close'); return; }
-    if(isOverlayVisible('stats-overlay')){ show('stats-overlay',0); sfx('modal_close'); return; }
-    if(isOverlayVisible('map-overlay')){ show('map-overlay',0); sfx('modal_close'); return; }
-    if(isOverlayVisible('backlog-overlay')){ show('backlog-overlay',0); sfx('modal_close'); return; }
+    // 各面板：空格/回车关闭（preventDefault 防止聚焦的 HUD/标签按钮在 keyup 再次打开面板）
+    if(isOverlayVisible('panel')){
+      if(typeof e.preventDefault === 'function') e.preventDefault();
+      show('panel',0); sfx('modal_close'); return;
+    }
+    if(isOverlayVisible('stats-overlay')){
+      if(typeof e.preventDefault === 'function') e.preventDefault();
+      show('stats-overlay',0); sfx('modal_close'); return;
+    }
+    if(isOverlayVisible('map-overlay')){
+      if(typeof e.preventDefault === 'function') e.preventDefault();
+      show('map-overlay',0); sfx('modal_close'); return;
+    }
+    if(isOverlayVisible('backlog-overlay')){
+      if(typeof e.preventDefault === 'function') e.preventDefault();
+      show('backlog-overlay',0); sfx('modal_close'); return;
+    }
     if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.isAnyBlockingOverlayOpen === 'function' && window.VNUx.isAnyBlockingOverlayOpen()) return;
-    if(isOverlayVisible('game-screen') && !isOverlayVisible('title-screen')) $('text-box').click();
+    if(isOverlayVisible('game-screen') && !isOverlayVisible('title-screen')){
+      const focusedBtn = tgt && tgt.closest ? tgt.closest('button') : null;
+      if(focusedBtn && (focusedBtn.closest('#choices') || focusedBtn.closest('#action-bar') || focusedBtn.closest('#hotspots'))) return;
+      if(typeof e.preventDefault === 'function') e.preventDefault();
+      $('text-box').click();
+    }
   }
   if((e.key==='p'||e.key==='P') && isOverlayVisible('game-screen') && !cgActive && !isBlockingOverlayForShortcut()) openPanel('status');
   if((e.key==='l'||e.key==='L') && isOverlayVisible('game-screen')){
@@ -6192,6 +6300,11 @@ if(typeof window !== 'undefined'){
   window.resumePendingStories = resumePendingStories;
   window.syncStatsToAge = syncStatsToAge;
   window.setBG = setBG;
+  window.setPov = setPov;
+  window.cgHide = cgHide;
+  window.clearPortraits = clearPortraits;
+  window.applyStage = applyStage;
+  window.syncLocUnlocksForState = syncLocUnlocksForState;
   window.renderHotspots = renderHotspots;
   window.STORY_CHAPTERS = typeof STORY_CHAPTERS !== 'undefined' ? STORY_CHAPTERS : window.STORY_CHAPTERS;
   window.__STORY_CHAPTERS = window.STORY_CHAPTERS;
@@ -6201,15 +6314,7 @@ if(typeof window !== 'undefined'){
     window.S = S;
     currentScene = curSc || null;
     storyChain = curChain || null;
-    Object.values(LOCS).forEach(L=>{
-      if(S.phase !== 'prologue' && L.area === '公爵府') L.unlock = true;
-      if(S.phase === 'academy' || S.phase === 'journey' || S.phase === 'finale'){
-        if(L.area === '魔法大学') L.unlock = true;
-      }
-      if(S.phase === 'journey' || S.phase === 'finale'){
-        if(['road','jikan','chenglan_guild','northforest','town','market'].includes(L.id)) L.unlock = true;
-        if(flag('ch_distant_wind_1') && L.id === 'ice_canyon') L.unlock = true;
-      }
-    });
+    bgmLoc = null;
+    syncLocUnlocksForState();
   };
 }

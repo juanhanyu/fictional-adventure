@@ -128,7 +128,7 @@
       }
     } catch (e) {}
     if (!hasDom()) return false;
-    var checkIds = ['battle-screen', 'letter-demo', 'codex', 'help-screen', 'arena-overlay', 'vn-chapters-modal', 'vn-saveload-modal', 'vn-prefs-modal', 'card', 'sys-popup'];
+    var checkIds = ['battle-screen', 'letter-demo', 'codex', 'cg-lightbox', 'help-screen', 'arena-overlay', 'arena-loadout-modal', 'ending-screen', 'rumor-overlay', 'ice-deduction-modal', 'schedule-overlay', 'shop-overlay', 'mailbox-overlay', 'vn-chapters-modal', 'vn-saveload-modal', 'vn-prefs-modal', 'card', 'sys-popup'];
     for (var i = 0; i < checkIds.length; i++) {
       var el = document.getElementById(checkIds[i]);
       if (el && !el.classList.contains('hidden') && (!el.style || el.style.display !== 'none')) return true;
@@ -1230,8 +1230,17 @@
         if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
           throw new Error('VS: ' + gl.getShaderInfoLog(vs));
         }
+        var fsSrc = FRAG_SRC;
+        if (isSoftwareGL) {
+          fsSrc = fsSrc
+            .replace('for (int i = 0; i < 12; i++) {', 'for (int i = 0; i < 6; i++) {')
+            .replace('float fi = float(i) / 12.0;', 'float fi = float(i) / 6.0;')
+            .replace('float stepSize = 0.17;', 'float stepSize = 0.32;')
+            .replace('for (int i = 0; i < 46; i++) {', 'for (int i = 0; i < 26; i++) {')
+            .replace('tMarch += max(dCrys * 0.90, 0.016);', 'tMarch += max(dCrys * 0.96, 0.024);');
+        }
         var fs = gl.createShader(gl.FRAGMENT_SHADER);
-        gl.shaderSource(fs, FRAG_SRC);
+        gl.shaderSource(fs, fsSrc);
         gl.compileShader(fs);
         if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
           throw new Error('FS: ' + gl.getShaderInfoLog(fs));
@@ -1312,33 +1321,52 @@
       dragRotY: 0,
       dragTargetX: 0,
       dragTargetY: 0,
-      frameCount: 0
+      frameCount: 0,
+      lastMeasuredStagePx: 0,
+      stableMeasureCount: 0
     };
 
-    function syncSizes() {
-      var rect = stageEl.getBoundingClientRect();
-      var sPx = Math.max(120, Math.round(Math.min(rect.width || stageEl.clientWidth || 520, rect.height || stageEl.clientHeight || 520)));
+    function syncSizes(forceResize) {
+      var cw = stageEl.clientWidth || 0;
+      var ch = stageEl.clientHeight || 0;
+      if (!cw || !ch) {
+        var rect = stageEl.getBoundingClientRect();
+        cw = rect.width || 520;
+        ch = rect.height || 520;
+      }
+      var sPx = Math.max(120, Math.round(Math.min(cw, ch)));
       var cCss = Math.round(sPx * 1.56);
       var gCss = Math.round(sPx * 0.56);
       var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var sizeSettled = !!forceResize || (glCanvas.width === 0) || (backCanvas.width === 0);
+      if (Math.abs(sPx - fState.lastMeasuredStagePx) <= 1) {
+        fState.stableMeasureCount++;
+      } else {
+        fState.lastMeasuredStagePx = sPx;
+        fState.stableMeasureCount = 0;
+      }
+      if (!sizeSettled && fState.stableMeasureCount < 2) {
+        return;
+      }
+
       fState.stagePx = sPx;
       fState.canvasCss = cCss;
       fState.glCss = gCss;
       fState.dpr = dpr;
 
       var pw = Math.max(1, Math.round(cCss * dpr));
-      if (backCanvas.width !== pw || backCanvas.height !== pw) {
+      if (Math.abs(backCanvas.width - pw) >= 2 || Math.abs(backCanvas.height - pw) >= 2) {
         backCanvas.width = pw;
         backCanvas.height = pw;
       }
-      if (frontCanvas.width !== pw || frontCanvas.height !== pw) {
+      if (Math.abs(frontCanvas.width - pw) >= 2 || Math.abs(frontCanvas.height - pw) >= 2) {
         frontCanvas.width = pw;
         frontCanvas.height = pw;
       }
       if (useWebGL && gl) {
-        var glScale = isSoftwareGL ? 0.92 : Math.min(Math.max(dpr, 1.5), 2.0);
+        var glScale = isSoftwareGL ? 0.44 : Math.min(Math.max(dpr, 1.5), 2.0);
         var gpw = Math.max(64, Math.round(gCss * glScale));
-        if (glCanvas.width !== gpw || glCanvas.height !== gpw) {
+        if (Math.abs(glCanvas.width - gpw) >= 2 || Math.abs(glCanvas.height - gpw) >= 2) {
           glCanvas.width = gpw;
           glCanvas.height = gpw;
           gl.viewport(0, 0, gpw, gpw);
@@ -2178,6 +2206,18 @@
         gl.uniform1f(glUniforms.uShatter, clamp(fState.shatterBlend, 0, 1));
         gl.uniform1f(glUniforms.uHover, fState.hoverCore);
         gl.drawArrays(gl.TRIANGLES, 0, 3);
+        if (isSoftwareGL && typeof gl.fenceSync === 'function') {
+          if (fState.glSync) {
+            try { gl.deleteSync(fState.glSync); } catch (e) {}
+            fState.glSync = null;
+          }
+          try {
+            fState.glSync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+            gl.flush();
+          } catch (e) {
+            fState.glSync = null;
+          }
+        }
       } else {
         drawFallbackCore2D(backCtx, cx, cy, unit, fState.time);
       }
@@ -2210,13 +2250,32 @@
       fState.pulseStrength = Math.max(fState.pulseStrength * 0.5, 0.42);
     }
 
+    function isSoftwareGpuBusy() {
+      if (!isSoftwareGL || !gl || !fState.glSync || typeof gl.getSyncParameter !== 'function') return false;
+      try {
+        var status = gl.getSyncParameter(fState.glSync, gl.SYNC_STATUS);
+        if (status === gl.UNSIGNALED) return true;
+        gl.deleteSync(fState.glSync);
+        fState.glSync = null;
+        return false;
+      } catch (e) {
+        fState.glSync = null;
+        return false;
+      }
+    }
+
     function scheduleNextFrame() {
       if (!fState.running) return;
       if (isSoftwareGL) {
         fState.softTimer = setTimeout(function () {
           fState.softTimer = 0;
-          if (fState.running) fState.rafId = requestAnimationFrame(stepLoop);
-        }, 45);
+          if (!fState.running) return;
+          if (isSoftwareGpuBusy()) {
+            scheduleNextFrame();
+            return;
+          }
+          fState.rafId = requestAnimationFrame(stepLoop);
+        }, 220);
       } else {
         fState.rafId = requestAnimationFrame(stepLoop);
       }
@@ -2234,10 +2293,14 @@
         scheduleNextFrame();
         return;
       }
+      if (isSoftwareGpuBusy()) {
+        scheduleNextFrame();
+        return;
+      }
       var dt = fState.lastTs ? clamp((ts - fState.lastTs) / 1000, 0.004, 0.05) : 0.0166;
       fState.lastTs = ts;
       renderFrame(dt);
-      if (isSoftwareGL && gl) gl.flush();
+      if (isSoftwareGL && gl && !fState.glSync) gl.flush();
       scheduleNextFrame();
     }
 
@@ -2255,7 +2318,11 @@
       if (typeof requestAnimationFrame !== 'function') return;
       fState.running = true;
       fState.lastTs = 0;
-      fState.rafId = requestAnimationFrame(stepLoop);
+      if (isSoftwareGL) {
+        scheduleNextFrame();
+      } else {
+        fState.rafId = requestAnimationFrame(stepLoop);
+      }
     }
 
     function stop() {
@@ -2269,6 +2336,10 @@
         cancelAnimationFrame(fState.rafId);
       }
       fState.rafId = 0;
+      if (fState.glSync && gl && typeof gl.deleteSync === 'function') {
+        try { gl.deleteSync(fState.glSync); } catch (e) {}
+      }
+      fState.glSync = null;
     }
 
     /* Interactive pointer handlers (click morph, drag tilt, gravity stardust) */
@@ -2388,7 +2459,7 @@
       }
     };
 
-    syncSizes();
+    syncSizes(true);
     renderFrame(0.016);
     if (root) root.__TITLE_FUSION_CRYSTAL__ = engineApi;
     return engineApi;
@@ -2406,6 +2477,19 @@
     if (st.fusion) {
       st.fusion.destroy();
       st.fusion = null;
+    }
+  }
+
+  function syncCrystalFocusability(mode) {
+    if (!hasDom()) return;
+    var anchor = document.getElementById('v3-crystal-anchor');
+    if (!anchor) return;
+    var allowFocus = (mode === 'archive');
+    var coreBtn = document.getElementById('v3-core-gem');
+    if (coreBtn) coreBtn.tabIndex = allowFocus ? 0 : -1;
+    var slotShards = anchor.querySelectorAll('.v3-shard[data-slot]');
+    for (var i = 0; i < slotShards.length; i++) {
+      slotShards[i].tabIndex = allowFocus ? 0 : -1;
     }
   }
 
@@ -2501,6 +2585,8 @@
       anchor.appendChild(stage);
       layoutShardsForCluster();
     }
+
+    syncCrystalFocusability(st.mode);
 
     if (!st.fusion && !isJsdom()) {
       st.fusion = createFusionCrystalEngine(stage);
@@ -3223,6 +3309,7 @@
 
     var anchor = document.getElementById('v3-crystal-anchor');
     if (anchor) anchor.setAttribute('aria-hidden', mode === 'archive' ? 'false' : 'true');
+    syncCrystalFocusability(mode);
 
     var mainView = titleEl.querySelector('.v3-view-main');
     var arcView = document.getElementById('v3-view-archive');
@@ -3607,6 +3694,10 @@
           resetParallax(true);
           stopDustLoop();
           stopFusionLoop();
+          if (st.auditionTrackKey) {
+            st.auditionTrackKey = null;
+            renderSoundtrackRows();
+          }
           if (st.opening === 'playing') {
             st.opening = 'ready';
             titleEl.setAttribute('data-opening', 'ready');

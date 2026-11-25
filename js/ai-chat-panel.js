@@ -1579,7 +1579,8 @@
     }
 
     busy = true;
-    activeAbort = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var reqAbort = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    activeAbort = reqAbort;
     refreshBadge();
     setStatus('角色正在思索与回应……');
 
@@ -1593,8 +1594,13 @@
         history: prevTurns,
         text: text,
         config: cfg,
-        signal: activeAbort ? activeAbort.signal : undefined
+        signal: reqAbort ? reqAbort.signal : undefined
       });
+      if (reqAbort && reqAbort.signal && reqAbort.signal.aborted) {
+        var abortErr = new Error('aborted');
+        abortErr.name = 'AbortError';
+        throw abortErr;
+      }
 
       var person = (snap.people || []).find(function (p) { return p.id === cid; }) || { name: cid };
       var outcomeRes = root.BranchingDirector
@@ -1652,8 +1658,10 @@
         setStatus((err && err.message) ? err.message : '共鸣连接失败，请检查网络或访问凭证。输入已保留。');
       }
     } finally {
-      busy = false;
-      activeAbort = null;
+      if (activeAbort === reqAbort) {
+        busy = false;
+        activeAbort = null;
+      }
       refreshBadge();
     }
   }
@@ -1680,6 +1688,9 @@
 
   function closeDrawer(opts) {
     var options = opts || {};
+    if (options.wipePending && activeAbort) {
+      try { activeAbort.abort(); } catch (e) {}
+    }
     clearVignetteLock(!!options.wipePending);
     if (typeof document !== 'undefined' && document.body) {
       document.body.classList.toggle('ai-drawer-open', false);

@@ -1,0 +1,1873 @@
+/* =========================================================================
+   《转生千金》棱镜冰晶折射全站视觉体系 (css/prism-refraction-ui.css)
+   美学母版：Designer 2「棱镜冰晶折射 · Prism Refraction Sanctuary」
+             × Combat UI Option 2「P5 式希尔维亚周身斜切棱晶放射翼」
+   核心材质：
+     - 雪瓷冰霜玻璃：rgba(248, 251, 255, 0.92) ~ rgba(232, 242, 255, 0.88)
+     - 皇家蓝宝石棱晶：#2E77F8 → #1658EB 49.5% / #0E2B78 50.5% → #081A54
+     - 虹彩冰棱边线：冰青 #7DD3FC → 皇家蓝 #1658EB → 纯白 → 香槟金 #C4A46C
+     - 严格遵循 AGENTS.md §二点十二：全非标题界零圆框套圆框 (border-radius: 0px)
+     - 严格隔离 #title-screen 与 #app 堆叠层，严守 body.ui-hidden 沉浸规则
+   ========================================================================= */
+
+/* ==================== 0. 非标题界棱镜折射设计令牌 ==================== */
+#game-screen,
+#panel,
+#panel-overlay,
+#stats-overlay,
+#map-overlay,
+#sys-popup,
+#sys-overlay,
+#pick-screen,
+#pick-overlay,
+#arena-overlay,
+#battle-screen,
+#sylvia-hub,
+#raising-hub,
+#schedule-overlay,
+#schedule-modal,
+#season-report-overlay,
+#shop-overlay,
+#shop-modal,
+#mailbox-overlay,
+#mailbox-modal,
+#ending-screen,
+#codex,
+#codex-overlay,
+#help-screen,
+#backlog-overlay,
+#vn-backlog-modal,
+#vn-saveload-modal,
+#vn-chapters-modal,
+#vn-prefs-modal,
+#ai-drawer,
+#ai-chat-panel,
+.ai-drawer,
+.rh-overlay {
+  --pr-alabaster: rgba(248, 251, 255, 0.92);
+  --pr-alabaster-hi: rgba(255, 255, 255, 0.95);
+  --pr-alabaster-mid: rgba(241, 248, 255, 0.89);
+  --pr-alabaster-lo: rgba(226, 239, 255, 0.88);
+  --pr-ink: #1A2436;
+  --pr-ink-mid: #3A4B66;
+  --pr-ink-muted: #5F728F;
+  --pr-sapphire-hi: #2E77F8;
+  --pr-sapphire: #1658EB;
+  --pr-sapphire-mid: #103FA8;
+  --pr-sapphire-deep: #0E2B78;
+  --pr-sapphire-abyss: #081A54;
+  --pr-cyan: #7DD3FC;
+  --pr-cyan-gleam: #D9F3FF;
+  --pr-gold: #C4A46C;
+  --pr-gold-deep: #8C6928;
+  --pr-gold-pale: #EFE0BE;
+  --pr-crimson: #D13456;
+  --pr-crimson-deep: #9E1B3A;
+  --pr-emerald: #0E8A64;
+  --pr-line-soft: rgba(96, 128, 180, 0.22);
+  --pr-line-mid: rgba(22, 88, 235, 0.34);
+  --pr-rim: linear-gradient(
+    132deg,
+    rgba(125, 211, 252, 0.95) 0%,
+    rgba(22, 88, 235, 0.62) 28%,
+    rgba(255, 255, 255, 0.98) 50%,
+    rgba(196, 164, 108, 0.78) 74%,
+    rgba(46, 119, 248, 0.88) 100%
+  );
+  --pr-rim-gold: linear-gradient(
+    135deg,
+    rgba(239, 224, 190, 0.98) 0%,
+    rgba(196, 164, 108, 0.72) 36%,
+    rgba(255, 255, 255, 0.98) 54%,
+    rgba(125, 211, 252, 0.86) 100%
+  );
+  --pr-rim-enemy: linear-gradient(
+    132deg,
+    rgba(255, 143, 164, 0.94) 0%,
+    rgba(209, 52, 86, 0.68) 28%,
+    rgba(255, 255, 255, 0.98) 50%,
+    rgba(196, 164, 108, 0.80) 74%,
+    rgba(22, 88, 235, 0.76) 100%
+  );
+  --pr-sapphire-prism: linear-gradient(
+    180deg,
+    #2E77F8 0%,
+    #1658EB 49.4%,
+    #0E2B78 50.6%,
+    #081A54 100%
+  );
+  --pr-glass-plate: linear-gradient(
+    154deg,
+    rgba(255, 255, 255, 0.94) 0%,
+    rgba(243, 249, 255, 0.90) 56%,
+    rgba(228, 240, 255, 0.91) 100%
+  );
+  --pr-caustic: linear-gradient(
+    112deg,
+    transparent 12%,
+    rgba(255, 255, 255, 0.65) 26%,
+    rgba(125, 211, 252, 0.16) 33%,
+    transparent 47%,
+    rgba(239, 224, 190, 0.14) 76%,
+    transparent 92%
+  );
+  --pr-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --pr-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong', Georgia, serif;
+  --pr-sans: 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --pr-mono: ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Consolas, monospace;
+}
+
+/* 全非标题界零圆角几何裁切（严禁圆框套圆框） */
+#game-screen *,
+#panel *,
+#panel-overlay *,
+#stats-overlay *,
+#map-overlay *,
+#sys-popup *,
+#sys-overlay *,
+#pick-screen *,
+#pick-overlay *,
+#arena-overlay *,
+#battle-screen *,
+#sylvia-hub *,
+#raising-hub *,
+#schedule-overlay *,
+#schedule-modal *,
+#season-report-overlay *,
+#shop-overlay *,
+#shop-modal *,
+#mailbox-overlay *,
+#mailbox-modal *,
+#ending-screen *,
+#codex *,
+#codex-overlay *,
+#help-screen *,
+#backlog-overlay *,
+#vn-backlog-modal *,
+#vn-saveload-modal *,
+#vn-chapters-modal *,
+#vn-prefs-modal *,
+#ai-drawer *,
+#ai-chat-panel *,
+.ai-drawer *,
+.rh-overlay * {
+  border-radius: 0px !important;
+}
+
+/* ==================== 1. 局内探索与对话舞台 (#game-screen / #hud / #loc-bar / #text-box / #action-bar) ==================== */
+
+/* 1.1 左上角切面雪瓷冰晶状态棱镜 (#hud .hud-left) */
+#hud {
+  padding: calc(12px + env(safe-area-inset-top)) 20px 4px;
+}
+
+#hud .hud-left,
+#hud .hud-left[data-liquid-prism-role="hud"][data-liquid-prism="active"],
+#hud .hud-left[data-liquid-prism-role="hud"][data-liquid-prism="css-fallback"] {
+  position: relative;
+  width: 326px;
+  padding: 10px 18px 10px 14px;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: drop-shadow(0 12px 26px rgba(14, 43, 120, 0.16));
+  overflow: visible;
+}
+
+#hud .hud-left::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--pr-rim) !important;
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  pointer-events: none;
+}
+
+#hud .hud-left::after {
+  content: '' !important;
+  display: block !important;
+  position: absolute;
+  inset: 1.5px;
+  z-index: 0;
+  background: var(--pr-glass-plate);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  clip-path: polygon(0 0, calc(100% - 19px) 0, 100% 19px, 100% 100%, 13px 100%, 0 calc(100% - 13px));
+  pointer-events: none;
+}
+
+#hud .hud-left > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* 六角冰晶头像槽 */
+#hud #hud-face {
+  width: 50px;
+  height: 54px;
+  padding: 1.5px;
+  border: none;
+  outline: none;
+  background: var(--pr-rim-gold);
+  clip-path: polygon(50% 0%, 100% 22%, 100% 78%, 50% 100%, 0% 78%, 0% 22%);
+  box-shadow: none;
+  filter: drop-shadow(0 6px 14px rgba(14, 43, 120, 0.18));
+}
+
+#hud #hud-face img {
+  clip-path: polygon(50% 0%, 100% 22%, 100% 78%, 50% 100%, 0% 78%, 0% 22%);
+  background: radial-gradient(circle at 50% 34%, #F4F9FF 0%, #D4E5FB 70%, #B8D2F6 100%);
+}
+
+#hud #hud-name {
+  font-family: var(--pr-serif);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--pr-ink);
+  letter-spacing: 0.08em;
+}
+
+#hud #hud-tier {
+  border: none;
+  padding: 1px 8px;
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+  font-family: var(--pr-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+}
+
+#hud #hud-date {
+  color: var(--pr-sapphire);
+  font-family: var(--pr-mono);
+  letter-spacing: 0.08em;
+}
+
+#hud #hud-gold {
+  color: var(--pr-gold-deep);
+  font-family: var(--pr-mono);
+}
+
+/* 顶部 HUD 六角斜切结晶进度轨 */
+#hud .hud-bars .bar {
+  height: 6px;
+  background: rgba(14, 34, 84, 0.12);
+  clip-path: polygon(3px 0%, calc(100% - 3px) 0%, 100% 50%, calc(100% - 3px) 100%, 3px 100%, 0% 50%);
+}
+
+#hud .hud-bars .bar i {
+  clip-path: polygon(3px 0%, calc(100% - 3px) 0%, 100% 50%, calc(100% - 3px) 100%, 3px 100%, 0% 50%);
+}
+
+#hud .hud-bars .bar.hp i {
+  background: linear-gradient(180deg, #FF8FA4 0%, #D93A5C 49%, #A61C3C 51%, #85122D 100%);
+}
+
+#hud .hud-bars .bar.mp i {
+  background: linear-gradient(180deg, #9BE7FF 0%, #3288FF 49%, #1658EB 51%, #0E2B78 100%);
+}
+
+#hud .hud-bars .bar.st i {
+  background: linear-gradient(180deg, #6CE6C0 0%, #16A67B 49%, #0B7A58 51%, #07593F 100%);
+}
+
+/* 1.2 右上角切面晶簇导航条 (#hud .hud-right) */
+#hud .hud-right {
+  position: relative;
+  padding: 5px 10px 5px 14px;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  filter: drop-shadow(0 10px 24px rgba(14, 43, 120, 0.14));
+}
+
+#hud .hud-right::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--pr-rim);
+  clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 16px);
+  pointer-events: none;
+}
+
+#hud .hud-right::after {
+  content: '';
+  position: absolute;
+  inset: 1.5px;
+  z-index: 0;
+  background: var(--pr-glass-plate);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 11px), calc(100% - 11px) 100%, 0 100%, 0 15px);
+  pointer-events: none;
+}
+
+#hud .hud-right > * {
+  position: relative;
+  z-index: 2;
+}
+
+#hud .hud-right .chip,
+#hud .hud-right .chip.chip-vn,
+#hud .hud-right #btn-ai-drawer.chip-ai,
+#hud .hud-right #btn-causal-quick.chip-causal {
+  height: 34px;
+  border: none;
+  background: transparent;
+  color: var(--pr-ink);
+  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s var(--pr-ease);
+}
+
+#hud .hud-right .chip:hover,
+#hud .hud-right .chip.chip-vn:hover,
+#hud .hud-right #btn-ai-drawer.chip-ai:hover,
+#hud .hud-right #btn-causal-quick.chip-causal:hover {
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+  border-color: transparent;
+  transform: translateY(-1px);
+}
+
+#hud .hud-right .chip.active {
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+}
+
+/* 严格守护 body.ui-hidden 沉浸模式（绝不破坏 #btn-arena 隐藏与 #btn-ui 恢复按钮） */
+body.ui-hidden #btn-arena {
+  display: none !important;
+}
+
+body.ui-hidden #hud .hud-left,
+body.ui-hidden #hud .hud-right > :not(#btn-ui),
+body.ui-hidden #hud-drawer,
+body.ui-hidden #sylvia-hub,
+body.ui-hidden #raising-hub {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+body.ui-hidden #hud .hud-right::before,
+body.ui-hidden #hud .hud-right::after {
+  display: none !important;
+}
+
+body.ui-hidden #btn-ui {
+  background: var(--pr-alabaster-hi) !important;
+  border: 1.5px solid var(--pr-sapphire) !important;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  color: var(--pr-sapphire) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* 1.3 地点切面冰晶牌 (#loc-bar) */
+#loc-bar {
+  position: absolute;
+  top: 12px;
+  left: 20px;
+  padding: 8px 22px 8px 14px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  filter: drop-shadow(0 10px 22px rgba(14, 43, 120, 0.14));
+}
+
+#loc-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--pr-rim);
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  pointer-events: none;
+}
+
+#loc-bar::after {
+  content: '';
+  position: absolute;
+  inset: 1.5px;
+  z-index: 0;
+  background: var(--pr-glass-plate);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 11px 100%, 0 calc(100% - 11px));
+  pointer-events: none;
+}
+
+#loc-bar > * {
+  position: relative;
+  z-index: 2;
+}
+
+#loc-bar .loc-crest {
+  width: 24px;
+  height: 24px;
+  background: var(--pr-sapphire-prism);
+  color: #E0F4FF;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+#loc-bar #loc-name {
+  font-family: var(--pr-serif);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--pr-ink);
+}
+
+#loc-bar .loc-area,
+#loc-bar .loc-tag {
+  border: none;
+  padding: 1px 9px;
+  background: rgba(22, 88, 235, 0.10);
+  color: var(--pr-sapphire);
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+}
+
+/* 1.4 标志性不对称切面雪瓷棱镜对话框 (#text-box)
+       背景与斜切放于 ::before/::after，确保 #tb-speaker 胸像向上探出 1/4 永不被 clip-path 裁切 */
+#text-box {
+  position: relative;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: visible;
+  filter: drop-shadow(0 -12px 32px rgba(13, 38, 104, 0.16));
+}
+
+#text-box::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--pr-rim);
+  clip-path: polygon(0 18px, 18px 0, calc(100% - 34px) 0, 100% 34px, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+
+#text-box::after {
+  content: '';
+  position: absolute;
+  top: 1.5px;
+  left: 1.5px;
+  right: 1.5px;
+  bottom: 0;
+  z-index: 0;
+  background:
+    linear-gradient(90deg, rgba(125, 211, 252, 0.90) 140px, rgba(22, 88, 235, 0.65) 45%, rgba(196, 164, 108, 0.78) 76%, transparent 96%) top / 100% 2px no-repeat,
+    var(--pr-caustic),
+    var(--pr-glass-plate);
+  backdrop-filter: blur(22px) saturate(145%);
+  -webkit-backdrop-filter: blur(22px) saturate(145%);
+  clip-path: polygon(0 17px, 17px 0, calc(100% - 33px) 0, 100% 33px, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+
+#text-box > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* 左侧探出六角金棱说话人小胸像 + 皇家蓝宝石斜切名牌 */
+#tb-speaker {
+  z-index: 5;
+}
+
+#tb-speaker-img {
+  border: none;
+  padding: 2px;
+  background: var(--pr-rim-gold);
+  clip-path: polygon(50% 0%, 100% 24%, 100% 82%, 50% 100%, 0% 82%, 0% 24%);
+  box-shadow: none;
+  filter: drop-shadow(0 10px 20px rgba(12, 34, 96, 0.22));
+}
+
+#tb-speaker-name {
+  position: relative;
+  font-family: var(--pr-serif);
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #FFFFFF;
+  background: var(--pr-sapphire-prism);
+  padding: 6px 28px 6px 20px;
+  clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+  box-shadow: none;
+  filter: drop-shadow(0 6px 14px rgba(13, 43, 132, 0.28));
+}
+
+#text {
+  font-family: var(--pr-serif);
+  color: var(--pr-ink);
+  font-size: 17.5px;
+  line-height: 1.82;
+  letter-spacing: 0.035em;
+}
+
+#text .sys { color: var(--pr-sapphire); font-weight: 700; }
+#text .gold { color: var(--pr-gold-deep); font-weight: 700; }
+#text .ice { color: #0B6AA8; font-weight: 700; }
+#text .em { color: var(--pr-crimson-deep); font-weight: 700; }
+
+#app section#game-screen #text-box .tb-backlog-btn,
+#app section#game-screen #text-box .vn-read-controls {
+  z-index: 4;
+}
+
+#app section#game-screen #text-box .tb-backlog-btn,
+#app section#game-screen #text-box .vn-ctrl-btn {
+  color: var(--pr-ink-muted);
+  border-bottom-color: var(--pr-line-soft);
+}
+
+#app section#game-screen #text-box .tb-backlog-btn:hover,
+#app section#game-screen #text-box .vn-ctrl-btn:hover,
+#app section#game-screen #text-box .vn-ctrl-btn.active {
+  color: var(--pr-sapphire);
+  border-bottom-color: var(--pr-sapphire);
+}
+
+/* 1.5 对话分支斜切冰棱选项 (#choices .choice) */
+#choices .choice {
+  position: relative;
+  border: none;
+  padding: 11px 26px;
+  background: var(--pr-glass-plate);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  color: var(--pr-ink);
+  font-family: var(--pr-serif);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  clip-path: polygon(14px 0%, 100% 0%, calc(100% - 14px) 100%, 0% 100%);
+  box-shadow: inset 0 0 0 1px rgba(45, 92, 186, 0.34);
+  filter: drop-shadow(0 8px 18px rgba(14, 43, 120, 0.14));
+  transition: transform 0.2s var(--pr-ease), background 0.18s ease, color 0.18s ease;
+}
+
+#choices .choice:hover:not(:disabled) {
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+  box-shadow: none;
+  transform: translateX(8px);
+}
+
+/* 1.6 底部探索行动栏 (#action-bar) */
+#action-bar {
+  position: relative;
+  background: linear-gradient(180deg, rgba(250, 253, 255, 0.94) 0%, rgba(235, 244, 254, 0.96) 100%);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-top: 1px solid rgba(96, 128, 180, 0.26);
+  box-shadow: 0 -6px 20px rgba(14, 43, 120, 0.08);
+}
+
+#action-bar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent 0%, rgba(125, 211, 252, 0.85) 26%, rgba(196, 164, 108, 0.65) 54%, rgba(22, 88, 235, 0.82) 82%, transparent 100%);
+  pointer-events: none;
+}
+
+#action-bar .ab-scroll .abtn {
+  color: var(--pr-ink);
+  font-family: var(--pr-serif);
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+
+#action-bar .ab-scroll .abtn:hover:not(:disabled) {
+  background: rgba(22, 88, 235, 0.08);
+  color: var(--pr-sapphire);
+}
+
+#action-bar .abtn.primary,
+#action-bar .abtn[data-act="next"],
+#action-bar .ab-next-pinned {
+  position: relative;
+  padding: 9px 28px;
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+  font-family: var(--pr-serif);
+  letter-spacing: 0.14em;
+  clip-path: polygon(14px 0%, calc(100% - 14px) 0%, 100% 50%, calc(100% - 14px) 100%, 14px 100%, 0% 50%);
+  box-shadow: none;
+  filter: drop-shadow(0 6px 16px rgba(14, 43, 120, 0.28));
+}
+
+#action-bar .abtn.primary:hover:not(:disabled),
+#action-bar .abtn[data-act="next"]:hover:not(:disabled),
+#action-bar .ab-next-pinned:hover:not(:disabled) {
+  filter: brightness(1.12) drop-shadow(0 8px 20px rgba(22, 88, 235, 0.36));
+}
+
+/* 1.7 场景切面冰棱热点 (#hotspots .hotspot) */
+#hotspots .hotspot,
+#hotspots .hotspot.vignette-spot {
+  border: none !important;
+  padding: 7px 18px 7px 14px !important;
+  background: var(--pr-glass-plate) !important;
+  color: var(--pr-ink) !important;
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%) !important;
+  box-shadow: inset 0 0 0 1px rgba(45, 92, 186, 0.34) !important;
+  filter: drop-shadow(0 8px 18px rgba(14, 43, 120, 0.16));
+}
+
+#hotspots .hotspot:hover,
+#hotspots .hotspot.vignette-spot:hover {
+  background: var(--pr-sapphire-prism) !important;
+  color: #FFFFFF !important;
+  box-shadow: none !important;
+}
+
+#hotspots .hotspot:hover .hs-icon,
+#hotspots .hotspot.vignette-spot:hover .hs-icon {
+  color: var(--pr-cyan-gleam) !important;
+}
+
+/* ==================== 2. 养成中枢 (#sylvia-hub / #raising-hub) ==================== */
+#sylvia-hub .hud-mood-pill,
+#raising-hub .hud-mood-pill,
+#sylvia-hub .sylvia-ritual-dock,
+#raising-hub .sylvia-ritual-dock {
+  border: none;
+  background: var(--pr-glass-plate);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  box-shadow: inset 0 0 0 1px rgba(45, 92, 186, 0.28);
+  filter: drop-shadow(0 8px 18px rgba(14, 43, 120, 0.14));
+}
+
+#sylvia-hub .rh-dock-chip:hover,
+#raising-hub .rh-dock-chip:hover {
+  background: rgba(22, 88, 235, 0.08);
+  color: var(--pr-sapphire);
+}
+
+#sylvia-hub .sh-charm-btn,
+#raising-hub .sh-charm-btn {
+  border: none;
+  background: var(--pr-glass-plate);
+  clip-path: polygon(50% 0%, 100% 34%, 82% 100%, 18% 100%, 0% 34%);
+  filter: drop-shadow(0 6px 14px rgba(14, 43, 120, 0.16));
+}
+
+#sylvia-hub .sh-charm-btn:hover,
+#raising-hub .sh-charm-btn:hover {
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+}
+
+#sylvia-hub .sylvia-bubble,
+#raising-hub .sylvia-bubble,
+#sylvia-hub .sh-charm-popover,
+#raising-hub .sh-charm-popover {
+  border: none;
+  border-top: 2px solid var(--pr-sapphire);
+  background: var(--pr-glass-plate);
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  filter: drop-shadow(0 12px 26px rgba(14, 43, 120, 0.18));
+}
+
+/* ==================== 3. 切面雪瓷棱镜全站弹窗外壳 ====================
+   覆盖：#panel / #panel-overlay / #stats-overlay / #map-overlay / #codex / #codex-overlay
+         #help-screen / #backlog-overlay / #vn-* / #schedule-overlay / #schedule-modal
+         #season-report-overlay / #shop-overlay / #shop-modal / #mailbox-overlay / #mailbox-modal
+         #ending-screen / .rh-overlay
+   ========================================================================= */
+#panel.overlay,
+#panel-overlay.overlay,
+#stats-overlay.overlay,
+#map-overlay.overlay,
+#codex.overlay,
+#codex-overlay.overlay,
+#help-screen.overlay,
+#backlog-overlay.overlay,
+#vn-backlog-modal.overlay,
+#vn-saveload-modal.overlay,
+#vn-chapters-modal.overlay,
+#vn-prefs-modal.overlay,
+#schedule-overlay.overlay,
+#schedule-modal.overlay,
+#season-report-overlay.overlay,
+#shop-overlay.overlay,
+#shop-modal.overlay,
+#mailbox-overlay.overlay,
+#mailbox-modal.overlay,
+#ending-screen.overlay,
+.rh-overlay {
+  background: rgba(14, 30, 72, 0.34);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+#panel .end-card,
+#panel-overlay .end-card,
+#stats-overlay .end-card,
+#map-overlay .end-card,
+#codex .end-card,
+#codex-overlay .end-card,
+#help-screen .end-card,
+#backlog-overlay .end-card,
+#vn-backlog-modal .end-card,
+#vn-saveload-modal .end-card,
+#vn-chapters-modal .end-card,
+#vn-prefs-modal .end-card,
+#schedule-overlay .rh-modal-shell,
+#schedule-modal .rh-modal-shell,
+#season-report-overlay .rh-modal-shell,
+#shop-overlay .rh-modal-shell,
+#shop-modal .rh-modal-shell,
+#mailbox-overlay .rh-modal-shell,
+#mailbox-modal .rh-modal-shell,
+#ending-screen .rh-modal-shell,
+.rh-overlay .rh-modal-shell {
+  position: relative;
+  border: 1.5px solid rgba(96, 146, 224, 0.45);
+  border-top: 2px solid var(--pr-sapphire);
+  background: var(--pr-caustic), var(--pr-glass-plate);
+  backdrop-filter: blur(22px) saturate(145%);
+  -webkit-backdrop-filter: blur(22px) saturate(145%);
+  clip-path: polygon(22px 0%, 100% 0%, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0% 100%, 0% 22px);
+  box-shadow: none;
+  filter: drop-shadow(0 24px 48px rgba(10, 30, 92, 0.24));
+  color: var(--pr-ink);
+}
+
+#panel .modal-head,
+#panel-overlay .modal-head,
+#stats-overlay .modal-head,
+#map-overlay .modal-head,
+#codex .modal-head,
+#codex-overlay .modal-head,
+#help-screen .modal-head,
+#backlog-overlay .modal-head,
+.rh-modal-head {
+  position: relative;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(238, 246, 255, 0.44) 100%);
+  border-bottom: 1px solid var(--pr-line-soft);
+}
+
+#panel .modal-head::after,
+#stats-overlay .modal-head::after,
+#map-overlay .modal-head::after,
+#codex .modal-head::after,
+.rh-modal-head::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1.5px;
+  width: auto;
+  background: linear-gradient(90deg, var(--pr-sapphire) 0%, var(--pr-cyan) 36%, var(--pr-gold) 68%, transparent 100%);
+}
+
+/* 弹窗页签：极简细线 + 激活菱形蓝宝石棱镜 */
+#panel-tabs .ptab,
+#codex-tabs .ptab {
+  font-family: var(--pr-serif);
+  color: var(--pr-ink-muted);
+  border-bottom: 2px solid transparent;
+}
+
+#panel-tabs .ptab.on,
+#codex-tabs .ptab.on {
+  color: var(--pr-sapphire);
+  border-bottom-color: var(--pr-sapphire);
+}
+
+#panel-tabs .ptab.on::before,
+#codex-tabs .ptab.on::before {
+  background: var(--pr-sapphire);
+}
+
+/* 主角状态页左栏：Designer 2 深海皇家蓝宝石晶柱 (.sc-portrait-col) */
+#panel .sys-chronicle .sc-portrait-col,
+#panel-overlay .sys-chronicle .sc-portrait-col {
+  position: relative;
+  padding: 18px 20px;
+  background:
+    linear-gradient(128deg, rgba(125, 211, 252, 0.16) 0%, transparent 40%),
+    linear-gradient(315deg, rgba(239, 224, 190, 0.12) 0%, transparent 44%),
+    linear-gradient(160deg, rgba(22, 64, 172, 0.95) 0%, rgba(13, 38, 112, 0.97) 54%, rgba(8, 22, 68, 0.99) 100%);
+  border-right: none;
+  color: #F4F8FF;
+  clip-path: polygon(18px 0%, 100% 0%, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0% 100%, 0% 18px);
+  filter: drop-shadow(0 16px 32px rgba(10, 32, 98, 0.22));
+}
+
+#panel .sys-chronicle .sc-portrait-col h3,
+#panel .sys-chronicle .sc-portrait-col .sc-name,
+#panel .sys-chronicle .sc-portrait-col .sc-display-name,
+#panel .sys-chronicle .sc-portrait-col .sc-name-title,
+#panel-overlay .sys-chronicle .sc-portrait-col .sc-display-name {
+  color: #FFFFFF !important;
+}
+
+#panel .sys-chronicle .sc-portrait-col .sc-display-name b,
+#panel-overlay .sys-chronicle .sc-portrait-col .sc-display-name b {
+  color: rgba(186, 226, 255, 0.85) !important;
+}
+
+#panel .sys-chronicle .sc-portrait-col .sc-sub,
+#panel .sys-chronicle .sc-portrait-col .sc-meta,
+#panel .sys-chronicle .sc-portrait-col .sc-phase-sub,
+#panel .sys-chronicle .sc-portrait-col small,
+#panel-overlay .sys-chronicle .sc-portrait-col .sc-phase-sub {
+  color: rgba(218, 236, 255, 0.90) !important;
+}
+
+#panel .sys-chronicle .sc-portrait-col .sc-phase-sub b,
+#panel-overlay .sys-chronicle .sc-portrait-col .sc-phase-sub b {
+  color: var(--pr-cyan) !important;
+}
+
+#panel .sys-chronicle .sc-portrait-col .sc-astrolabe-ring,
+#panel-overlay .sys-chronicle .sc-portrait-col .sc-astrolabe-ring {
+  color: rgba(186, 230, 255, 0.72) !important;
+}
+
+#panel .sys-chronicle .sc-portrait-col .sc-lv-badge,
+#panel .sys-chronicle .sc-portrait-col .sc-tier-seal,
+#panel-overlay .sys-chronicle .sc-portrait-col .sc-lv-badge,
+#panel-overlay .sys-chronicle .sc-portrait-col .sc-tier-seal {
+  color: #FFFFFF !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(125, 211, 252, 0.38) !important;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  padding: 3px 10px;
+}
+
+#panel .sys-chronicle .sc-portrait-col .sc-lv-badge b,
+#panel .sys-chronicle .sc-portrait-col .sc-tier-seal b,
+#panel-overlay .sys-chronicle .sc-portrait-col .sc-lv-badge b,
+#panel-overlay .sys-chronicle .sc-portrait-col .sc-tier-seal b {
+  color: var(--pr-gold-pale) !important;
+}
+
+#panel .sys-chronicle .sc-portrait-col .sc-exp-head,
+#panel .sys-chronicle .sc-portrait-col .sc-exp-head span,
+#panel .sys-chronicle .sc-portrait-col .sc-const-head,
+#panel .sys-chronicle .sc-portrait-col .sc-const-head span,
+#panel-overlay .sys-chronicle .sc-portrait-col .sc-exp-head,
+#panel-overlay .sys-chronicle .sc-portrait-col .sc-const-head {
+  color: rgba(232, 244, 255, 0.94) !important;
+}
+
+#panel .sys-chronicle .sc-portrait-col .sc-exp-head b,
+#panel .sys-chronicle .sc-portrait-col .sc-const-head em,
+#panel-overlay .sys-chronicle .sc-portrait-col .sc-exp-head b,
+#panel-overlay .sys-chronicle .sc-portrait-col .sc-const-head em {
+  color: var(--pr-gold-pale) !important;
+}
+
+#panel .sys-chronicle .sc-portrait-col .sc-exp-track,
+#panel-overlay .sys-chronicle .sc-portrait-col .sc-exp-track {
+  background: rgba(255, 255, 255, 0.16) !important;
+}
+
+#panel .sys-chronicle .sc-portrait-col .sc-exp-fill,
+#panel-overlay .sys-chronicle .sc-portrait-col .sc-exp-fill {
+  background: linear-gradient(90deg, var(--pr-cyan), var(--pr-gold-pale)) !important;
+}
+
+#panel .sys-chronicle .sc-portrait-frame {
+  background: radial-gradient(circle at 50% 42%, rgba(217, 243, 255, 0.24) 0%, rgba(16, 48, 134, 0.16) 62%, transparent 80%);
+}
+
+/* 主操作按钮：皇家蓝宝石斜切六角棱镜 */
+#panel .tbtn:not(.ghost),
+#stats-overlay .tbtn:not(.ghost),
+#map-overlay .tbtn:not(.ghost),
+#codex .tbtn:not(.ghost),
+#help-screen .tbtn:not(.ghost),
+.rh-overlay .rh-btn.primary {
+  border: none;
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+  font-family: var(--pr-serif);
+  letter-spacing: 0.12em;
+  clip-path: polygon(12px 0%, calc(100% - 12px) 0%, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0% 50%);
+  box-shadow: none;
+  filter: drop-shadow(0 6px 14px rgba(14, 43, 120, 0.24));
+}
+
+#panel .tbtn:not(.ghost):hover:not(:disabled),
+#stats-overlay .tbtn:not(.ghost):hover:not(:disabled),
+#map-overlay .tbtn:not(.ghost):hover:not(:disabled),
+#codex .tbtn:not(.ghost):hover:not(:disabled),
+.rh-overlay .rh-btn.primary:hover:not(:disabled) {
+  filter: brightness(1.12) drop-shadow(0 8px 20px rgba(22, 88, 235, 0.34));
+}
+
+#panel .tbtn.ghost,
+#stats-overlay .tbtn.ghost,
+#map-overlay .tbtn.ghost,
+#codex .tbtn.ghost,
+#help-screen .tbtn.ghost,
+.rh-overlay .rh-btn.ghost {
+  border: none;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(232, 242, 255, 0.76));
+  color: var(--pr-ink);
+  clip-path: polygon(9px 0%, 100% 0%, calc(100% - 9px) 100%, 0% 100%);
+  box-shadow: inset 0 0 0 1px rgba(45, 92, 186, 0.32);
+}
+
+#panel .tbtn.ghost:hover:not(:disabled),
+#stats-overlay .tbtn.ghost:hover:not(:disabled),
+#map-overlay .tbtn.ghost:hover:not(:disabled),
+#codex .tbtn.ghost:hover:not(:disabled),
+.rh-overlay .rh-btn.ghost:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(226, 241, 255, 0.96), rgba(196, 224, 255, 0.88));
+  color: var(--pr-sapphire);
+  box-shadow: inset 0 0 0 1px var(--pr-sapphire);
+}
+
+/* ==================== 4. 系统诏令弹窗 (#sys-popup / #sys-overlay) ==================== */
+#sys-popup,
+#sys-overlay {
+  border: 1.5px solid rgba(96, 146, 224, 0.48);
+  border-top: 2px solid var(--pr-sapphire);
+  border-bottom: 2px solid var(--pr-gold);
+  background: var(--pr-caustic), var(--pr-glass-plate);
+  clip-path: polygon(22px 0%, calc(100% - 22px) 0%, 100% 22px, 100% calc(100% - 22px), calc(100% - 22px) 100%, 22px 100%, 0% calc(100% - 22px), 0% 22px);
+  box-shadow: none;
+  filter: drop-shadow(0 26px 54px rgba(8, 22, 68, 0.34));
+}
+
+#sys-popup.sys-popup-overlay,
+#sys-popup:has(> .sp-card),
+#sys-overlay.sys-popup-overlay {
+  border: none;
+  background: rgba(14, 30, 72, 0.36);
+  clip-path: none;
+  filter: none;
+}
+
+#sys-popup .sp-card,
+#sys-popup .modal-card,
+#sys-overlay .sp-card {
+  border: 1.5px solid rgba(96, 146, 224, 0.52);
+  background: var(--pr-glass-plate);
+  clip-path: polygon(24px 0%, calc(100% - 24px) 0%, 100% 24px, 100% calc(100% - 24px), calc(100% - 24px) 100%, 24px 100%, 0% calc(100% - 24px), 0% 24px);
+  box-shadow: none;
+  filter: drop-shadow(0 28px 56px rgba(8, 22, 68, 0.36));
+}
+
+#sys-popup .sp-head,
+#sys-overlay .sp-head {
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+  border-bottom: 1.5px solid var(--pr-gold);
+}
+
+#sys-popup .sp-head h3,
+#sys-popup .sp-head .sp-title,
+#sys-popup .sp-head button {
+  color: #FFFFFF;
+}
+
+#sys-popup .sp-ok,
+#sys-popup .sp-confirm,
+#sys-overlay .sp-ok {
+  border: none;
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+  font-family: var(--pr-serif);
+  letter-spacing: 0.14em;
+  clip-path: polygon(14px 0%, calc(100% - 14px) 0%, 100% 50%, calc(100% - 14px) 100%, 14px 100%, 0% 50%);
+}
+
+/* ==================== 5. 勇者之赐切面冰晶抽卡圣殿 (#pick-screen / #pick-overlay) ==================== */
+#pick-screen,
+#pick-screen.overlay,
+#pick-overlay,
+#pick-overlay.overlay {
+  background: radial-gradient(circle at 50% 34%, #FFFFFF 0%, #F1F6FE 54%, #DCE8F9 100%);
+}
+
+#pick-screen .pick-card,
+#pick-overlay .pick-card {
+  border: 1.5px solid rgba(96, 146, 224, 0.42);
+  background: var(--pr-glass-plate);
+  clip-path: polygon(18px 0%, calc(100% - 18px) 0%, 100% 18px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0% calc(100% - 18px), 0% 18px);
+  box-shadow: none;
+  filter: drop-shadow(0 14px 28px rgba(13, 38, 108, 0.14));
+}
+
+#pick-screen .pick-card:hover,
+#pick-overlay .pick-card:hover {
+  border-color: var(--pr-sapphire);
+  transform: translateY(-10px) scale(1.02);
+  filter: drop-shadow(0 24px 40px rgba(22, 88, 235, 0.26));
+}
+
+#pick-screen .pick-card.pick-star,
+#pick-overlay .pick-card.pick-star {
+  border: 1.5px solid rgba(125, 211, 252, 0.72);
+  background:
+    linear-gradient(126deg, rgba(125, 211, 252, 0.22) 0%, transparent 45%),
+    linear-gradient(164deg, #2E77F8 0%, #1658EB 48%, #0E2B78 82%, #081A54 100%);
+  filter: drop-shadow(0 22px 44px rgba(14, 43, 120, 0.30));
+}
+
+/* ==================== 6. 九幕演武大厅 (#arena-overlay) ==================== */
+#arena-overlay .arena-hub-card {
+  border: 1.5px solid rgba(96, 146, 224, 0.44);
+  border-top: 2px solid var(--pr-sapphire);
+  background: var(--pr-caustic), var(--pr-glass-plate);
+  clip-path: polygon(22px 0%, 100% 0%, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0% 100%, 0% 22px);
+  box-shadow: none;
+  filter: drop-shadow(0 24px 52px rgba(10, 30, 92, 0.22));
+}
+
+#arena-overlay .arena-hub-head {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.90) 0%, rgba(238, 245, 254, 0.80) 100%);
+  border-bottom: 1px solid var(--pr-line-soft);
+}
+
+#arena-overlay .arena-stage-card {
+  border: 1px solid rgba(96, 134, 198, 0.28);
+  border-top: 2px solid var(--pr-sapphire);
+  background: linear-gradient(156deg, rgba(255, 255, 255, 0.96) 0%, rgba(240, 247, 255, 0.90) 100%);
+  clip-path: polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px);
+  box-shadow: none;
+  filter: drop-shadow(0 6px 14px rgba(14, 43, 120, 0.08));
+}
+
+#arena-overlay .arena-stage-card:hover {
+  border-color: var(--pr-sapphire);
+  transform: translateY(-3px);
+  filter: drop-shadow(0 12px 24px rgba(22, 88, 235, 0.18));
+}
+
+#arena-overlay .arena-stage-card.is-boss-trial {
+  border-top-color: var(--pr-crimson);
+}
+
+/* ==================== 7. 灵魂交谈边卷 (#ai-drawer / #ai-chat-panel / .ai-drawer) ==================== */
+#ai-drawer,
+#ai-chat-panel,
+.ai-drawer {
+  border-left: 2px solid var(--pr-sapphire);
+  background: var(--pr-glass-plate);
+  backdrop-filter: blur(22px) saturate(145%);
+  -webkit-backdrop-filter: blur(22px) saturate(145%);
+  box-shadow: -14px 0 36px rgba(10, 30, 92, 0.16);
+}
+
+#ai-drawer::before,
+#ai-chat-panel::before,
+.ai-drawer::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, var(--pr-cyan) 0%, var(--pr-sapphire) 42%, var(--pr-gold) 76%, var(--pr-sapphire-deep) 100%);
+  pointer-events: none;
+}
+
+/* ==================== 8. 实机战斗界面 (#battle-screen · Designer 2 棱镜冰晶顶栏 / 敌方档案 + Option 2 P5 放射指令翼) ==================== */
+
+/* 8.1 顶部棱镜冰晶战术条 (.cb-topbar) */
+#battle-screen .cb-topbar {
+  position: relative;
+  border: none;
+  border-bottom: 1px solid rgba(84, 122, 188, 0.26);
+  background: linear-gradient(180deg, rgba(252, 254, 255, 0.94) 0%, rgba(238, 245, 254, 0.88) 100%);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  box-shadow: 0 10px 26px rgba(10, 28, 82, 0.16);
+  padding: 7px 18px;
+}
+
+#battle-screen .cb-topbar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1.5px;
+  background: linear-gradient(
+    90deg,
+    rgba(22, 88, 235, 0.84) 0%,
+    rgba(125, 211, 252, 0.94) 26%,
+    rgba(196, 164, 108, 0.72) 54%,
+    rgba(22, 88, 235, 0.82) 82%,
+    rgba(125, 211, 252, 0.45) 100%
+  );
+  pointer-events: none;
+}
+
+#battle-screen .cb-wave-pill {
+  position: relative;
+  padding: 5px 18px 5px 15px;
+  border-right: none;
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+  clip-path: polygon(9px 0%, 100% 0%, calc(100% - 9px) 100%, 0% 100%);
+  filter: drop-shadow(0 4px 10px rgba(14, 43, 120, 0.26));
+}
+
+#battle-screen .cb-stage-title {
+  color: var(--pr-ink);
+  font-family: var(--pr-serif);
+  letter-spacing: 0.08em;
+}
+
+#battle-screen .cb-turn-badge {
+  padding: 3px 12px 3px 10px;
+  color: var(--pr-sapphire-deep);
+  background: linear-gradient(90deg, rgba(22, 88, 235, 0.10), rgba(125, 211, 252, 0.12));
+  border-left: 2px solid var(--pr-sapphire);
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 100%, 0 100%);
+}
+
+#battle-screen .cb-turn-badge::before {
+  display: none;
+}
+
+#battle-screen .cb-tool-btn {
+  clip-path: polygon(7px 0%, 100% 0%, calc(100% - 7px) 100%, 0% 100%);
+  border-bottom: none;
+  padding: 6px 13px;
+}
+
+#battle-screen .cb-tool-btn + .cb-tool-btn::before {
+  display: none;
+}
+
+#battle-screen .cb-tool-btn.palace-btn:not(:disabled),
+#battle-screen .cb-tool-btn.wand-btn.active {
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+}
+
+#battle-screen .cb-tool-btn.palace-btn:not(:disabled) .cb-kbd,
+#battle-screen .cb-tool-btn.wand-btn.active .cb-kbd {
+  border-color: rgba(217, 243, 255, 0.45);
+  color: var(--pr-cyan-gleam);
+}
+
+#battle-screen .cb-tool-btn.prism-toggle-btn {
+  color: var(--pr-sapphire-deep);
+  background: rgba(22, 88, 235, 0.08);
+  font-weight: 700;
+}
+
+#battle-screen .cb-tool-btn.prism-toggle-btn.active {
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+}
+
+/* 8.2 敌方战术切面雪瓷棱镜牌 (.cb-enemy-card / .cb-e-plate / .cb-intent-banner)
+       .cb-intent-banner 保留 overflow: visible，用 ::before 实现斜切冰晶底板以保证 popover 零裁切 */
+#battle-screen .cb-intent-banner {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  padding: 8px 14px;
+  filter: drop-shadow(0 8px 18px rgba(10, 28, 82, 0.16));
+}
+
+#battle-screen .cb-intent-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--pr-glass-plate);
+  border-top: 2px solid var(--pr-sapphire);
+  clip-path: polygon(12px 0%, 100% 0%, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0% 100%, 0% 12px);
+  box-shadow: inset 0 0 0 1px rgba(96, 134, 198, 0.34);
+  pointer-events: none;
+}
+
+#battle-screen .cb-intent-banner.stance-DUAL_CAST::before,
+#battle-screen .cb-intent-banner.stance-HEAVY_WINDUP::before,
+#battle-screen .cb-intent-banner.stance-UNDER_SEEP::before {
+  border-top-color: var(--pr-crimson);
+  box-shadow: inset 0 0 0 1px rgba(209, 52, 86, 0.36);
+}
+
+#battle-screen .ib-stance-tag {
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+  padding: 2px 9px;
+}
+
+#battle-screen .cb-e-plate {
+  position: relative;
+  border: 1.5px solid rgba(209, 52, 86, 0.36);
+  border-top: 2px solid var(--pr-crimson);
+  background: var(--pr-caustic), var(--pr-glass-plate);
+  backdrop-filter: blur(20px) saturate(145%);
+  -webkit-backdrop-filter: blur(20px) saturate(145%);
+  clip-path: polygon(16px 0%, 100% 0%, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0% 100%, 0% 16px);
+  box-shadow: none;
+  filter: drop-shadow(0 14px 28px rgba(10, 28, 82, 0.22));
+  padding: 12px 16px;
+}
+
+#battle-screen .cb-enemy-card.targeted .cb-e-plate {
+  border-color: rgba(22, 88, 235, 0.56);
+  border-top-color: var(--pr-sapphire);
+  filter: drop-shadow(0 16px 32px rgba(22, 88, 235, 0.28));
+}
+
+#battle-screen .cb-enemy-card.staggered .cb-e-plate {
+  border-color: rgba(125, 211, 252, 0.85);
+  border-top-color: var(--pr-cyan);
+}
+
+/* 8.3 我方左下雪瓷棱镜读数面板 (.cb-player-pane) */
+#battle-screen .cb-player-pane {
+  position: relative;
+  border: 1.5px solid rgba(96, 146, 224, 0.44);
+  border-left: 3.5px solid var(--pr-sapphire);
+  border-top: 2px solid var(--pr-gold);
+  background: var(--pr-caustic), var(--pr-glass-plate);
+  backdrop-filter: blur(20px) saturate(145%);
+  -webkit-backdrop-filter: blur(20px) saturate(145%);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  box-shadow: none;
+  filter: drop-shadow(0 14px 28px rgba(10, 28, 82, 0.22));
+  padding: 12px 16px;
+}
+
+/* 战位脚下六角切面冰晶/炽焰地纹（零圆框且避免矩形硬边框） */
+#battle-screen .cb-magic-circle {
+  border: none !important;
+  clip-path: polygon(16% 0%, 84% 0%, 100% 50%, 84% 100%, 16% 100%, 0% 50%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(125, 211, 252, 0.28) 0%,
+    rgba(22, 88, 235, 0.14) 52%,
+    transparent 82%
+  ) !important;
+  box-shadow: none !important;
+}
+
+#battle-screen .cb-magic-circle::after {
+  inset: 6px 24px;
+  border: none !important;
+  clip-path: polygon(16% 0%, 84% 0%, 100% 50%, 84% 100%, 16% 100%, 0% 50%);
+  background: linear-gradient(90deg, transparent, rgba(125, 211, 252, 0.28), transparent);
+}
+
+#battle-screen .cb-magic-circle.enemy {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(209, 52, 86, 0.26) 0%,
+    rgba(209, 52, 86, 0.10) 52%,
+    transparent 82%
+  ) !important;
+}
+
+#battle-screen .cb-magic-circle.enemy::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 143, 164, 0.26), transparent);
+}
+
+/* 战斗六角切面结晶 HP / MP 轨 */
+#battle-screen .cb-stat-track {
+  height: 8px;
+  background: rgba(14, 34, 84, 0.14);
+  clip-path: polygon(4px 0%, calc(100% - 4px) 0%, 100% 50%, calc(100% - 4px) 100%, 4px 100%, 0% 50%);
+}
+
+#battle-screen .cb-stat-fill {
+  clip-path: polygon(4px 0%, calc(100% - 4px) 0%, 100% 50%, calc(100% - 4px) 100%, 4px 100%, 0% 50%);
+}
+
+#battle-screen .cb-stat-fill.hp,
+#battle-screen .cb-stat-fill.ehp {
+  background: linear-gradient(180deg, #FF8FA4 0%, #E03A59 49%, #B51E3E 51%, #8E1430 100%);
+}
+
+#battle-screen .cb-stat-fill.mp,
+#battle-screen .cb-stat-fill.emp {
+  background: linear-gradient(180deg, #9BE7FF 0%, #3288FF 49%, #1658EB 51%, #0E2B78 100%);
+}
+
+/* 8.4 冰晶宫殿 & 战果弹窗切面统一 */
+#cb-palace-modal .cb-palace-card,
+#cb-result-modal .cb-result-card {
+  border: 1.5px solid rgba(96, 146, 224, 0.48);
+  border-top: 2px solid var(--pr-sapphire);
+  background: var(--pr-glass-plate);
+  clip-path: polygon(22px 0%, 100% 0%, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0% 100%, 0% 22px);
+  box-shadow: none;
+  filter: drop-shadow(0 26px 56px rgba(10, 28, 82, 0.28));
+}
+
+/* ==================== 9. OPTION 2: P5 式希尔维亚周身斜切棱晶放射指令翼 (#cb-prism-rig) ==================== */
+
+/* 桌面端激活 P5 棱晶翼时：释放全画幅战场空间，保留原 #b-actions 于无障碍/测试可读隐态 */
+@media (min-width: 1024px) {
+  #battle-screen.prism-radial-active .cb-shell {
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  #battle-screen.prism-radial-active .cb-deck {
+    position: absolute;
+    left: -9999px;
+    bottom: 0;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #battle-screen.prism-radial-active .cb-forecast-bar {
+    position: relative;
+    z-index: 20;
+    margin: 0 0 2px;
+    padding: 7px 20px;
+    border: none;
+    border-top: 1px solid rgba(125, 211, 252, 0.65);
+    border-left: 3px solid var(--pr-sapphire);
+    background: var(--pr-glass-plate);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 100%, 0 100%);
+    color: var(--pr-ink);
+    filter: drop-shadow(0 8px 18px rgba(10, 28, 82, 0.16));
+  }
+}
+
+.cb-prism-rig {
+  position: absolute;
+  left: 324px;
+  top: 46%;
+  width: 0;
+  height: 0;
+  z-index: 28;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.22s var(--pr-ease);
+}
+
+.cb-prism-rig.dissolved {
+  opacity: 0;
+  transform: translateX(20px) scale(1.04);
+  pointer-events: none;
+}
+
+.cb-prism-rig.dissolved * {
+  pointer-events: none !important;
+}
+
+/* 动态香槟金 & 冰蓝星轨放射引线 SVG */
+.cb-prism-svg {
+  position: absolute;
+  left: -42px;
+  top: -230px;
+  width: 470px;
+  height: 460px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.cb-prism-svg .rig-orbit-gold {
+  fill: none;
+  stroke: rgba(196, 164, 108, 0.68);
+  stroke-width: 1.15;
+}
+
+.cb-prism-svg .rig-orbit-blue {
+  fill: none;
+  stroke: rgba(125, 211, 252, 0.54);
+  stroke-width: 1;
+  stroke-dasharray: 4 5;
+}
+
+.cb-prism-svg .rig-hairline {
+  fill: none;
+  stroke: rgba(196, 164, 108, 0.78);
+  stroke-width: 1.25;
+  transition: stroke 0.16s ease, stroke-width 0.16s ease;
+}
+
+.cb-prism-svg .rig-hairline.hero-line {
+  stroke: rgba(125, 211, 252, 0.92);
+  stroke-width: 1.55;
+}
+
+.cb-prism-svg .rig-hairline.lit {
+  stroke: #FFF4CE;
+  stroke-width: 2.2;
+}
+
+.cb-prism-svg .rig-node-gem {
+  fill: #EFE0BE;
+}
+
+.cb-prism-svg .rig-node-gem.blue {
+  fill: #7DD3FC;
+}
+
+.cb-prism-svg .rig-node-gem.lit {
+  fill: #FFFFFF;
+}
+
+/* STATE A: 四片主命令棱晶放射翼 */
+.cb-prism-root {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease, transform 0.2s var(--pr-ease);
+}
+
+.cb-prism-rig:not(.mode-root) .cb-prism-root {
+  opacity: 0;
+  transform: translateX(-18px) scale(0.94);
+  pointer-events: none;
+}
+
+.cb-prism-rig:not(.mode-root) .cb-prism-root .cb-pwing {
+  pointer-events: none;
+}
+
+.cb-pwing-wrap {
+  position: absolute;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 22px rgba(8, 22, 68, 0.36));
+  transition: transform 0.18s var(--pr-ease), filter 0.18s ease;
+}
+
+.cb-pwing-wrap[data-wing="0"] { left: 52px; top: -124px; --rot: -4.0deg; transform: rotate(var(--rot)); }
+.cb-pwing-wrap[data-wing="1"] { left: 82px; top: -44px;  --rot: -1.3deg; transform: rotate(var(--rot)); }
+.cb-pwing-wrap[data-wing="2"] { left: 76px; top: 34px;   --rot: 1.7deg;  transform: rotate(var(--rot)); }
+.cb-pwing-wrap[data-wing="3"] { left: 46px; top: 108px;  --rot: 4.4deg;  transform: rotate(var(--rot)); }
+
+.cb-pwing-wrap:hover,
+.cb-pwing-wrap.hovered {
+  transform: translateX(14px) rotate(var(--rot)) scale(1.03);
+  filter: drop-shadow(0 12px 28px rgba(22, 88, 235, 0.46));
+  z-index: 5;
+}
+
+.cb-pwing {
+  position: relative;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 24px 0 18px;
+  min-width: 248px;
+  height: 52px;
+  background: var(--pr-glass-plate);
+  color: var(--pr-ink);
+  clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%, 7px 50%);
+  overflow: hidden;
+  text-align: left;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.cb-pwing::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--pr-caustic);
+  pointer-events: none;
+}
+
+.cb-pwing::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 11px;
+  background: var(--pr-sapphire-prism);
+  clip-path: polygon(8px 0, 100% 0, 4px 50%, 100% 100%, 0 100%, 7px 50%);
+  pointer-events: none;
+}
+
+/* [W] 冰水术式：主皇家蓝宝石棱晶翼 */
+.cb-pwing.hero-prism {
+  min-width: 268px;
+  height: 58px;
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 22px) 100%, 0 100%, 8px 50%);
+}
+
+.cb-pwing.hero-prism::after {
+  background: linear-gradient(180deg, #EFE0BE 0%, #C4A46C 56%, #8C6928 100%);
+}
+
+.cb-pwing:not(.hero-prism):not(:disabled):hover {
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+}
+
+.cb-pwing:not(.hero-prism):not(:disabled):hover::after {
+  background: linear-gradient(180deg, #EFE0BE, #C4A46C);
+}
+
+.cb-pwing:not(.hero-prism):not(:disabled):hover .cb-pw-en,
+.cb-pwing:not(.hero-prism):not(:disabled):hover .cb-pw-sub {
+  color: rgba(217, 243, 255, 0.90);
+}
+
+.cb-pwing:not(.hero-prism):not(:disabled):hover .cb-pw-key {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--pr-gold-pale);
+}
+
+.cb-pwing.amp-charged::after {
+  background: linear-gradient(180deg, #EFE0BE 0%, #C4A46C 55%, #8C6928 100%);
+}
+
+.cb-pwing:disabled {
+  opacity: 0.84;
+  background: linear-gradient(154deg, rgba(240, 245, 252, 0.92) 0%, rgba(224, 234, 248, 0.90) 100%);
+  color: var(--pr-ink-muted);
+  cursor: not-allowed;
+}
+
+.cb-pwing:disabled::after {
+  background: linear-gradient(180deg, rgba(138, 158, 188, 0.78), rgba(92, 114, 146, 0.85));
+}
+
+.cb-pw-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  background: rgba(22, 88, 235, 0.12);
+  color: var(--pr-sapphire);
+  font-family: var(--pr-mono);
+  font-size: 12px;
+  font-weight: 800;
+  clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+  position: relative;
+  z-index: 2;
+}
+
+.cb-pwing.hero-prism .cb-pw-key {
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--pr-gold-pale);
+}
+
+.cb-pw-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+  z-index: 2;
+}
+
+.cb-pw-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.cb-pw-title {
+  font-family: var(--pr-serif);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.cb-pw-en {
+  font-family: var(--pr-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--pr-sapphire);
+}
+
+.cb-pwing.hero-prism .cb-pw-en {
+  color: var(--pr-cyan-gleam);
+}
+
+.cb-pw-sub {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--pr-ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cb-pwing.hero-prism .cb-pw-sub {
+  color: rgba(224, 242, 255, 0.90);
+}
+
+.cb-pw-arrow {
+  position: relative;
+  z-index: 2;
+  color: var(--pr-gold-pale);
+  font-size: 14px;
+}
+
+.cb-amp-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 6px;
+}
+
+.cb-amp-pip {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: rgba(22, 88, 235, 0.18);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.cb-amp-pip.on {
+  background: var(--pr-sapphire);
+}
+
+.cb-amp-pip.gold {
+  background: linear-gradient(135deg, #EFE0BE, #C4A46C);
+}
+
+/* STATE B: 展开斜切术式/守势/辅助级联翼 */
+.cb-prism-cascade {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-16px) scale(0.95);
+  transition: opacity 0.18s ease, transform 0.22s var(--pr-ease);
+}
+
+.cb-prism-rig.mode-skills .cb-prism-cascade,
+.cb-prism-rig.mode-guard .cb-prism-cascade,
+.cb-prism-rig.mode-assist .cb-prism-cascade {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+.cb-cascade-spine {
+  position: absolute;
+  left: 44px;
+  top: -196px;
+  transform: rotate(-3.0deg);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 14px rgba(8, 22, 68, 0.34));
+}
+
+.cb-prism-rig:not(.mode-root) .cb-cascade-spine button {
+  pointer-events: auto;
+}
+
+.cb-spine-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 16px 0 12px;
+  background: var(--pr-glass-plate);
+  color: var(--pr-ink);
+  font-family: var(--pr-serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  clip-path: polygon(9px 0, calc(100% - 9px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 5px 50%);
+  white-space: nowrap;
+}
+
+.cb-spine-btn:hover {
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+}
+
+.cb-spine-btn.amp-mini {
+  background: var(--pr-sapphire-prism);
+  color: var(--pr-cyan-gleam);
+}
+
+.cb-spine-btn.amp-mini.charged {
+  background: linear-gradient(180deg, #D5B267 0%, #A9823C 52%, #866120 100%);
+  color: #FFFFFF;
+}
+
+.cb-blade-wrap {
+  position: absolute;
+  pointer-events: none;
+  filter: drop-shadow(0 8px 20px rgba(8, 22, 68, 0.38));
+  transition: transform 0.17s var(--pr-ease), filter 0.17s ease;
+}
+
+.cb-blade-wrap:hover,
+.cb-blade-wrap.hovered {
+  filter: drop-shadow(0 12px 26px rgba(22, 88, 235, 0.50));
+  z-index: 6;
+}
+
+.cb-blade {
+  position: relative;
+  width: 326px;
+  min-height: 49px;
+  padding: 5px 22px 5px 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--pr-glass-plate);
+  color: var(--pr-ink);
+  clip-path: polygon(13px 0, calc(100% - 13px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%, 6px 50%);
+  overflow: hidden;
+  text-align: left;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.cb-prism-rig:not(.mode-root) .cb-blade {
+  pointer-events: auto;
+}
+
+.cb-blade::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  background: var(--pr-sapphire-prism);
+  clip-path: polygon(7px 0, 100% 0, 3px 50%, 100% 100%, 0 100%, 6px 50%);
+  pointer-events: none;
+}
+
+.cb-blade.opp-ready::after {
+  background: linear-gradient(180deg, #EFE0BE 0%, #C4A46C 56%, #8C6928 100%);
+}
+
+.cb-blade:not(:disabled):hover,
+.cb-blade-wrap.hovered .cb-blade:not(:disabled) {
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+}
+
+.cb-blade:not(:disabled):hover::after,
+.cb-blade-wrap.hovered .cb-blade:not(:disabled)::after {
+  background: linear-gradient(180deg, #EFE0BE, #C4A46C);
+}
+
+.cb-blade:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cb-bl-key {
+  width: 22px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(22, 88, 235, 0.12);
+  color: var(--pr-sapphire);
+  font-family: var(--pr-mono);
+  font-size: 12px;
+  font-weight: 800;
+  clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+}
+
+.cb-blade:not(:disabled):hover .cb-bl-key,
+.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-key {
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--pr-gold-pale);
+}
+
+.cb-bl-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cb-bl-top,
+.cb-bl-bot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cb-bl-name {
+  font-family: var(--pr-serif);
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cb-bl-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--pr-sapphire);
+  white-space: nowrap;
+}
+
+.cb-bl-tag.opp {
+  color: var(--pr-gold-deep);
+}
+
+.cb-bl-meta {
+  font-size: 10.5px;
+  color: var(--pr-ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cb-bl-cost {
+  font-family: var(--pr-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--pr-sapphire-mid);
+  white-space: nowrap;
+}
+
+.cb-blade:not(:disabled):hover .cb-bl-tag,
+.cb-blade:not(:disabled):hover .cb-bl-cost,
+.cb-blade:not(:disabled):hover .cb-bl-meta,
+.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-tag,
+.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-cost,
+.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-meta {
+  color: var(--pr-cyan-gleam);
+}
+
+.cb-blade:not(:disabled):hover .cb-bl-tag.opp,
+.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-tag.opp {
+  color: var(--pr-gold-pale);
+}

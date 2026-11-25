@@ -1559,7 +1559,7 @@
             expAddSafe(42);
             if (st.year >= 14) unlockRelic('belmont_schedule', st);
             return {
-              epilogue: '雨点敲在油布棚上噼啪作响，谁也没有拿朝堂或榜单说事。离开前她把折扇一收，将一张带着淡淡薄荷茶香的巡防抄件留在了桌角。',
+              epilogue: '雨点敲在油布棚上噼啪作响，谁也没有拿王庭或榜单说事。离开前她把折扇一收，将一张带着淡淡薄荷茶香的巡防抄件留在了桌角。',
               deltas: ['体力 -1', '金币 -3', '夏洛特·卸下面具 +2', '好感 +1', '经验 +42']
             };
           }
@@ -1669,7 +1669,7 @@
       tag: '魔法学院 · 宿舍日常',
       iconKey: 'mask',
       icon: relIco('mask', 18),
-      locationLabel: '东区宿舍 312',
+      locationLabel: '东区宿舍三一二室',
       eligible: function (st) {
         return st.phase === 'academy';
       },
@@ -1701,7 +1701,7 @@
         },
         {
           id: 'copy_stage_cue',
-          label: '帮她誊抄场记并顺便分走两份焦糖布丁',
+          label: '帮她誊抄场记并顺便分走两份提拉米苏',
           costBadge: '体力 -2',
           rewardBadge: '获赠【热饼干】补给 · 经验 +32',
           canChoose: function (st) { return st.st >= 2 ? { ok: true } : { ok: false, reason: '需要体力 2' }; },
@@ -2646,7 +2646,7 @@
             st.mhp += 12;
             expAddSafe(90);
             return {
-              epilogue: '落石擦着护肩掠下，你稳稳攥住了那簇散发极寒纯光的晶髓，经脉间的凝冰威力大涨。',
+              epilogue: '落石擦着护肩掠下，你稳稳攥住了那簇散发极寒纯光的晶髓，魔力通路间的凝冰威力大涨。',
               deltas: ['体力 -2', '生命 -20', '魔攻 +5', '生命上限 +12', '经验 +90']
             };
           }
@@ -2993,10 +2993,26 @@
     });
   }
 
+  function seasonIndexOf(val) {
+    if (typeof val === 'number' && isFinite(val)) {
+      var n = Math.floor(val);
+      return n < 0 ? 0 : (n > 3 ? n % 4 : n);
+    }
+    var map = { '春': 0, '夏': 1, '秋': 2, '冬': 3 };
+    if (typeof val === 'string') {
+      var s = val.trim();
+      if (Object.prototype.hasOwnProperty.call(map, s)) return map[s];
+      var parsed = parseInt(s, 10);
+      if (isFinite(parsed)) return parsed < 0 ? 0 : (parsed > 3 ? parsed % 4 : parsed);
+    }
+    return 0;
+  }
+
   function shuffleEventList(arr, seedNum) {
     var out = arr.slice();
+    var safeSeed = (typeof seedNum === 'number' && isFinite(seedNum)) ? Math.floor(seedNum) : 0;
     for (var i = out.length - 1; i > 0; i--) {
-      var r = Math.abs((seedNum * 37 + i * 19 + Math.floor(Math.random() * 97))) % (i + 1);
+      var r = Math.abs((safeSeed * 37 + i * 19 + Math.floor(Math.random() * 97))) % (i + 1);
       var tmp = out[i];
       out[i] = out[r];
       out[r] = tmp;
@@ -3081,7 +3097,7 @@
     if (!st) return { key: '0:0', offers: [], done: {}, rerolled: false };
     var qk = getQuarterKey(st);
     var eligible = getEligibleEvents(st);
-    var seed = (st.year || 0) * 13 + (st.season || 0) * 7 + (st.dayCount || 0);
+    var seed = (st.year || 0) * 13 + seasonIndexOf(st.season) * 7 + (st.dayCount || 0);
     var wantCount = Math.min(3, Math.max(2, eligible.length));
     var offers = pickBoardOffers(eligible, wantCount, st.encounterHistory || {}, seed);
     st.seasonalBoard = {
@@ -3386,6 +3402,15 @@
     );
   }
 
+  function closeArenaLoadoutModal() {
+    if (typeof document === 'undefined') return;
+    var ov = document.getElementById('arena-loadout-modal');
+    if (ov && !ov.classList.contains('hidden')) {
+      ov.classList.add('hidden');
+      if (typeof window !== 'undefined' && typeof window.sfx === 'function') window.sfx('modal_close');
+    }
+  }
+
   function openArenaLoadoutModal(onUpdated) {
     if (typeof document === 'undefined') return;
     var ov = document.getElementById('arena-loadout-modal');
@@ -3395,13 +3420,7 @@
       ov.className = 'overlay';
       document.body.appendChild(ov);
     }
-    var closeLoadout = function () {
-      if (!ov.classList.contains('hidden')) {
-        ov.classList.add('hidden');
-        if (typeof window !== 'undefined' && typeof window.sfx === 'function') window.sfx('modal_close');
-      }
-    };
-    ov.onclick = function (e) { if (e && e.target === ov) closeLoadout(); };
+    ov.onclick = function (e) { if (e && e.target === ov) closeArenaLoadoutModal(); };
     var redraw = function () {
       ov.classList.remove('hidden');
       ov.innerHTML =
@@ -3437,7 +3456,7 @@
         }
       });
       var closeX = ov.querySelector('#alm-close-x');
-      if (closeX) closeX.onclick = closeLoadout;
+      if (closeX) closeX.onclick = closeArenaLoadoutModal;
     };
     redraw();
   }
@@ -3630,7 +3649,7 @@
       '<div class="end-card rumor-card">' +
         '<div class="rumor-head">' +
           '<div>' +
-            '<span class="rumor-kicker">' + (st.year || 0) + '年 ' + (seasonNames[st.season || 0] || '春') + '季 · ' + phaseTitle + '</span>' +
+            '<span class="rumor-kicker">' + (st.year || 0) + '年 ' + (seasonNames[seasonIndexOf(st.season)] || '春') + '季 · ' + phaseTitle + '</span>' +
             '<h2>✦ 季度奇遇与传闻板</h2>' +
             '<p class="rumor-sub">每季随行踪刷新传闻。抉择伴随消耗与代价，冰晶宫殿有时能看穿隐秘伏笔。</p>' +
           '</div>' +
@@ -3720,6 +3739,7 @@
     bindRelicsContainerEvents: bindRelicsContainerEvents,
     renderArenaLoadoutBarHTML: renderArenaLoadoutBarHTML,
     openArenaLoadoutModal: openArenaLoadoutModal,
+    closeArenaLoadoutModal: closeArenaLoadoutModal,
     openRumorBoard: openRumorBoard,
     closeRumorBoard: closeRumorBoard
   };

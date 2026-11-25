@@ -565,14 +565,46 @@
         'ending-screen', 'schedule-overlay', 'season-report-overlay',
         'shop-overlay', 'mailbox-overlay', 'arena-loadout-modal',
         'rumor-overlay', 'ice-deduction-modal', 'hud-drawer',
-        'battle-screen', 'arena-overlay', 'duel-screen'
+        'battle-screen', 'arena-overlay', 'duel-screen',
+        'card', 'pick-screen'
       ].forEach(function (id) {
         var el = document.getElementById(id);
         if (el) {
           el.classList.add('hidden');
           el.classList.remove('open');
+          if (id === 'card') el.onclick = null;
         }
       });
+      var pickBar = document.getElementById('pick-confirm-bar');
+      if (pickBar && pickBar.parentNode) pickBar.parentNode.removeChild(pickBar);
+      if (typeof cgHide === 'function') {
+        try { cgHide(true); } catch (e) {}
+      } else if (root && typeof root.cgHide === 'function') {
+        try { root.cgHide(true); } catch (e) {}
+      }
+      var cgScr = document.getElementById('cg-screen');
+      if (cgScr) {
+        cgScr.classList.add('hidden');
+        cgScr.classList.remove('faded');
+        cgScr.onclick = null;
+      }
+      var cgBg = document.getElementById('cg-bg');
+      if (cgBg) cgBg.style.backgroundImage = '';
+      var cgTxt = document.getElementById('cg-text');
+      if (cgTxt) cgTxt.innerHTML = '';
+      if (document.body) document.body.classList.remove('cg-mode');
+
+      if (typeof setPov === 'function') {
+        try { setPov(false); } catch (e) {}
+      } else if (root && typeof root.setPov === 'function') {
+        try { root.setPov(false); } catch (e) {}
+      } else {
+        if (document.body) document.body.classList.remove('pov-hidden');
+        var hudEl = document.getElementById('hud');
+        if (hudEl) { hudEl.style.opacity = ''; hudEl.style.pointerEvents = ''; }
+        var locEl = document.getElementById('loc-bar');
+        if (locEl) { locEl.style.opacity = ''; locEl.style.pointerEvents = ''; }
+      }
       var ld = document.getElementById('letter-demo');
       if (ld && !ld.classList.contains('hidden')) {
         if (typeof closeLetterDemo === 'function') {
@@ -650,7 +682,7 @@
     } else if (typeof checkStoryGates === 'function' && checkStoryGates()) {
       // triggered due gates
     } else if (typeof enterFreeRoam === 'function') {
-      enterFreeRoam();
+      enterFreeRoam({ restoreLoc: true });
     }
     return true;
   }
@@ -895,7 +927,11 @@
     var idx = chaps.findIndex(function (c) { return c && c.id === sceneId; });
     st.storyGateVersion = 3;
     var gateMap = typeof STORY_GATE_BY_SCENE !== 'undefined' ? STORY_GATE_BY_SCENE : (root.STORY_GATE_BY_SCENE || {});
-    if (idx > 0) {
+    var isVol3 = /^s_(black_name|jikan_arrive|north_forest|glow_sheep|distant_wind_1|words_to_wind|eye_of_storm|leaky_cup)$/.test(sceneId);
+    var isInterlude = sceneId === 's_interlude_white_night';
+    var isVol2 = !isVol3 && !isInterlude && (sceneId === 's_academy_start' || (idx >= chaps.findIndex(function (c) { return c && c.id === 's_opening_ceremony'; }) && idx >= 0));
+
+    if (!isInterlude && idx > 0) {
       for (var gi = 0; gi < idx; gi++) {
         var cidPrev = chaps[gi] && chaps[gi].id;
         var gKeys = (cidPrev && gateMap[cidPrev]) || [];
@@ -903,17 +939,19 @@
       }
     }
 
-    var isVol3 = /^s_(black_name|jikan_arrive|north_forest|glow_sheep|distant_wind_1|words_to_wind|eye_of_storm|leaky_cup)$/.test(sceneId);
-    var isInterlude = sceneId === 's_interlude_white_night';
-    var isVol2 = !isVol3 && !isInterlude && (sceneId === 's_academy_start' || (idx >= chaps.findIndex(function (c) { return c && c.id === 's_opening_ceremony'; }) && idx >= 0));
-
     if (sceneId === 's_start') {
       st.ageY = 0; st.year = 0; st.month = 3; st.day = 1; st.phase = 'prologue'; st.loc = 'nursery';
-      if (locs.nursery) locs.nursery.unlock = true;
+      ['nursery', 'hallway', 'parlor', 'garden', 'dining'].forEach(function (k) {
+        if (locs[k]) locs[k].unlock = true;
+      });
     } else if (isInterlude) {
       st.flags.named = 1;
       st.flags.ch_first_word = 1;
       st.flags.ch_alice_born = 1;
+      st.flags.ch_child_days = 1;
+      st.flags.ch_age4 = 1;
+      st.flags.ch_yaoshen = 1;
+      st.flags.ch_sisters_grow = 1;
       st.flags.ch_reno_arrive = 1;
       st.ageY = 7; st.year = 7; st.month = 12; st.season = 3;
       st.phase = 'youth';
@@ -989,8 +1027,10 @@
     }
 
     if (typeof syncStatsToAge === 'function') {
+      var prevS = root.S;
       root.S = st;
       try { syncStatsToAge(); } catch (e) {}
+      root.S = prevS;
     }
     return st;
   }
@@ -1130,14 +1170,14 @@
       try {
         var cur = getSetFn();
         if (cur && cur.bright != null && !isNaN(Number(cur.bright))) {
-          return clampNum(cur.bright, 0.5, 1.2);
+          return clampNum(cur.bright, 0.5, 1.5);
         }
       } catch (e) {}
     }
     try {
       var raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
       if (raw && raw.bright != null && !isNaN(Number(raw.bright))) {
-        return clampNum(raw.bright, 0.5, 1.2);
+        return clampNum(raw.bright, 0.5, 1.5);
       }
     } catch (e) {}
     return DEFAULT_PREFS.bright;
@@ -1155,7 +1195,7 @@
         if (raw.bgmVol != null) merged.bgmVol = clampNum(raw.bgmVol, 0, 1);
         if (raw.sfxVol != null) merged.sfxVol = clampNum(raw.sfxVol, 0, 1);
         if (raw.fxEnabled != null) merged.fxEnabled = !!raw.fxEnabled;
-        if (raw.bright != null) merged.bright = clampNum(raw.bright, 0.5, 1.2);
+        if (raw.bright != null) merged.bright = clampNum(raw.bright, 0.5, 1.5);
       }
     } catch (e) {}
     vnPrefs = merged;
@@ -1278,7 +1318,7 @@
     } else if (key === 'fxEnabled') {
       p.fxEnabled = !!value;
     } else if (key === 'bright') {
-      p.bright = clampNum(value, 0.5, 1.2);
+      p.bright = clampNum(value, 0.5, 1.5);
     } else {
       return Object.assign({}, p);
     }
@@ -1423,7 +1463,7 @@
     if (isAwaitingChoice()) return false;
     if (isAnyBlockingOverlayOpen()) return false;
     var cs = document.getElementById('cg-screen');
-    if (cs && !cs.classList.contains('hidden')) return true;
+    if (cs && !cs.classList.contains('hidden') && typeof cs.onclick === 'function') return true;
     var tb = document.getElementById('text-box');
     if (!tb || tb.classList.contains('dialog-hidden') || tb.classList.contains('season-flavor')) return false;
     return true;
@@ -1460,10 +1500,8 @@
   function performAdvance() {
     if (!canAdvanceReading()) return false;
     var cs = typeof document !== 'undefined' ? document.getElementById('cg-screen') : null;
-    if (cs && !cs.classList.contains('hidden')) {
-      if (typeof cs.onclick === 'function') {
-        try { cs.onclick(); return true; } catch (e) {}
-      }
+    if (cs && !cs.classList.contains('hidden') && typeof cs.onclick === 'function') {
+      try { cs.onclick(); return true; } catch (e) {}
       return false;
     }
     var advFn = (root && typeof root.advanceDialog === 'function')
@@ -1721,7 +1759,7 @@
 
     var brightSlider = ov.querySelector('#pref-bright');
     var brightVal = ov.querySelector('#pref-bright-val');
-    var brightPct = Math.round(clampNum(p.bright != null ? p.bright : 1, 0.5, 1.2) * 100);
+    var brightPct = Math.round(clampNum(p.bright != null ? p.bright : 1, 0.5, 1.5) * 100);
     if (brightSlider) brightSlider.value = String(brightPct);
     if (brightVal) brightVal.textContent = brightPct + '%';
 
@@ -1759,7 +1797,7 @@
     var p = loadPrefs();
     var bgmPct = Math.round(p.bgmVol * 100);
     var sfxPct = Math.round(p.sfxVol * 100);
-    var brightPct = Math.round(clampNum(p.bright != null ? p.bright : 1, 0.5, 1.2) * 100);
+    var brightPct = Math.round(clampNum(p.bright != null ? p.bright : 1, 0.5, 1.5) * 100);
 
     ov.innerHTML =
       '<div class="end-card vn-modal-card vn-prefs-card">' +
@@ -1808,7 +1846,7 @@
             '<div class="prefs-row prefs-slider-row">' +
               '<div class="prefs-label"><b>背景明度</b><span>单独调节场景底图亮度，平稳顺滑不打断配乐</span></div>' +
               '<div class="prefs-slider-wrap">' +
-                '<input type="range" class="prefs-slider" id="pref-bright" min="50" max="120" step="1" value="' + brightPct + '"/>' +
+                '<input type="range" class="prefs-slider" id="pref-bright" min="50" max="150" step="1" value="' + brightPct + '"/>' +
                 '<span class="prefs-val" id="pref-bright-val">' + brightPct + '%</span>' +
               '</div>' +
             '</div>' +
@@ -1988,7 +2026,7 @@
       file: 'vol3_ice_canyon_clash.png',
       title: '风雪重逢 · 隔空钢冰',
       vol: '第三卷 · 旅途篇',
-      quote: '「菱形钢冰短锥在艾诺肩后半尺凭空成形，飞雪掠过衣领，浅蓝眼眸穿过漫天雪沫笔直落来。」',
+      quote: '「菱形钢冰短锥在艾诺肩后半步凭空成形，飞雪掠过衣领，浅蓝眼眸穿过漫天雪沫笔直落来。」',
       unlockKey: 'vol3_ice_canyon_clash.png',
       unlockFlags: ['ch_distant_wind_1', 'ch_leaky_cup'],
       unlockAchs: ['frost_reunion'],
@@ -2047,7 +2085,7 @@
       owner: '未署名 · 冷薄荷茶香',
       era: '学院末夜与暗潮前夕',
       salutation: '未署名 · 换防抄件',
-      body: '东门换岗在子时二刻，水渠南闸唯独寅初少一轮巡哨。\n字迹工整如尺量，收笔干脆，通篇未落任何家徽与名姓。',
+      body: '东门换岗在午夜过半，水渠南闸唯独凌晨三点少一轮巡哨。\n字迹工整如尺量，收笔干脆，通篇未落任何家徽与名姓。',
       sign: '留香：冷薄荷茶',
       note: '抄件叠成方正的四角，连递出警示都带着一贯的体面与傲气。',
       invIds: ['belmont_schedule', 'belmont_challenge'],

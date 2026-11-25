@@ -291,7 +291,9 @@
       '#sys-popup:not(.hidden)',
       '#letter-demo:not(.hidden)',
       '#ice-deduction-modal:not(.hidden)',
-      '#cg-lightbox:not(.hidden)'
+      '#cg-lightbox:not(.hidden)',
+      '#ai-drawer:not(.hidden)',
+      '#hud-drawer.open:not(.hidden)'
     ];
     for (var i = 0; i < selectors.length; i++) {
       var nodes = document.querySelectorAll(selectors[i]);
@@ -706,7 +708,37 @@
       } catch (e) {}
     };
 
+    var observedOverlays = typeof WeakSet === 'function' ? new WeakSet() : null;
+    var observedOverlayList = [];
+
+    var isTrackedOverlayNode = function (n) {
+      if (!n || n.nodeType !== 1) return false;
+      var nId = n.id || '';
+      var nCls = typeof n.className === 'string' ? n.className : '';
+      return (
+        nId === 'ice-deduction-modal' ||
+        nId === 'cg-lightbox' ||
+        nId === 'ai-drawer' ||
+        nId === 'ending-screen' ||
+        nId === 'hud-drawer' ||
+        /\boverlay\b/.test(nCls)
+      );
+    };
+
+    var watchOverlayAttrs = function (n) {
+      if (!isTrackedOverlayNode(n)) return;
+      if (observedOverlays) {
+        if (observedOverlays.has(n)) return;
+        observedOverlays.add(n);
+      } else {
+        if (observedOverlayList.indexOf(n) !== -1) return;
+        observedOverlayList.push(n);
+      }
+      observeNode(n, { attributes: true, attributeFilter: ['class', 'style'] }, onLayoutMutation);
+    };
+
     var onLayoutMutation = function (records) {
+      var needSync = false;
       for (var i = 0; i < records.length; i++) {
         var rec = records[i];
         var target = rec.target;
@@ -732,16 +764,19 @@
             target === document.body ||
             id === 'title-screen' ||
             id === 'game-screen' ||
+            id === 'battle-screen' ||
             id === 'card' ||
             id === 'cg-screen' ||
             id === 'sys-popup' ||
             id === 'letter-demo' ||
             id === 'ice-deduction-modal' ||
             id === 'cg-lightbox' ||
+            id === 'ai-drawer' ||
+            id === 'ending-screen' ||
+            id === 'hud-drawer' ||
             /\boverlay\b/.test(cls)
           ) {
-            scheduleSync(40);
-            return;
+            needSync = true;
           }
         }
         if (rec.type === 'childList') {
@@ -749,23 +784,25 @@
           for (var j = 0; j < added.length; j++) {
             var n = added[j];
             if (n && n.nodeType === 1) {
-              var nCls = typeof n.className === 'string' ? n.className : '';
-              if (
-                n.id === 'ambient-fx-canvas' ||
-                n.id === 'ice-deduction-modal' ||
-                n.id === 'cg-lightbox' ||
-                /\boverlay\b/.test(nCls)
-              ) {
-                if (n.id === 'ambient-fx-canvas') {
-                  observeNode(n, { attributes: true, attributeFilter: ['data-enabled'] }, syncEnabledFromAmbientCanvas);
-                  syncEnabledFromAmbientCanvas();
-                } else {
-                  scheduleSync(40);
-                }
+              if (n.id === 'ambient-fx-canvas') {
+                observeNode(n, { attributes: true, attributeFilter: ['data-enabled'] }, syncEnabledFromAmbientCanvas);
+                syncEnabledFromAmbientCanvas();
+              } else if (isTrackedOverlayNode(n)) {
+                watchOverlayAttrs(n);
+                needSync = true;
               }
             }
           }
+          var removed = rec.removedNodes;
+          for (var k = 0; k < removed.length; k++) {
+            if (isTrackedOverlayNode(removed[k])) {
+              needSync = true;
+            }
+          }
         }
+      }
+      if (needSync) {
+        scheduleSync(40);
       }
     };
 
@@ -784,6 +821,12 @@
       attributeFilter: ['class'],
       childList: true
     }, onLayoutMutation);
+
+    if (document.body && document.body.children) {
+      for (var cIdx = 0; cIdx < document.body.children.length; cIdx++) {
+        watchOverlayAttrs(document.body.children[cIdx]);
+      }
+    }
 
     var bgEl = document.getElementById('bg');
     if (bgEl) {

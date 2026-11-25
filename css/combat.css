@@ -398,7 +398,7 @@
 .arena-title-crest {
   width: 34px;
   height: 34px;
-  border-radius: 2px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -436,7 +436,7 @@
   flex-shrink: 0;
   width: 34px;
   height: 34px;
-  border-radius: 2px;
+  border-radius: 0;
   border: 1px solid var(--cb-hairline);
   background: transparent;
   color: var(--cb-ink-muted);
@@ -653,15 +653,16 @@
   font-size: 11.5px;
   font-weight: 600;
   padding: 2px 8px;
-  border-radius: 2px;
-  background: #FFFFFF;
-  border: 1px solid var(--cb-hairline);
+  border-radius: 0;
+  background: rgba(27, 35, 51, 0.04);
+  border: none;
+  border-left: 2px solid var(--cb-hairline-strong);
   color: var(--cb-ink);
 }
 
 #arena-overlay .arena-rel-pill.synergy {
   background: var(--cb-sapphire-soft);
-  border-color: var(--cb-sapphire-rule);
+  border-left-color: var(--cb-sapphire);
   color: var(--cb-sapphire-mid);
   font-weight: 700;
   box-shadow: none;
@@ -669,7 +670,7 @@
 
 #arena-overlay .arena-rel-pill.bond {
   background: var(--cb-ice-pale);
-  border-color: rgba(18, 103, 168, 0.28);
+  border-left-color: var(--cb-ice-deep);
   color: var(--cb-ice-deep);
   font-weight: 700;
 }
@@ -684,7 +685,7 @@
 #arena-overlay .arena-loadout-bar .arena-mode-chip {
   padding: 4px 10px;
   border: 1px solid var(--cb-hairline);
-  border-radius: 2px;
+  border-radius: 0;
   background: #FFFFFF;
   color: var(--cb-ink-body);
 }
@@ -714,7 +715,7 @@
   text-align: left;
   min-height: 162px;
   padding: 8px 11px 7px;
-  border-radius: 3px;
+  border-radius: 0;
   background: #FFFFFF;
   border: 1px solid var(--cb-hairline);
   border-top: 1.5px solid rgba(27, 35, 51, 0.26);
@@ -772,9 +773,10 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   padding: 0 6px;
-  border-radius: 2px;
-  border: 1px solid rgba(196, 37, 68, 0.34);
-  background: rgba(196, 37, 68, 0.05);
+  border-radius: 0;
+  border: none;
+  border-left: 2px solid var(--cb-crimson);
+  background: rgba(196, 37, 68, 0.06);
   color: var(--cb-crimson-deep);
   flex-shrink: 0;
 }
@@ -789,7 +791,7 @@
 .asc-avatar {
   width: 48px;
   height: 48px;
-  border-radius: 3px;
+  border-radius: 0;
   overflow: hidden;
   border: 1px solid var(--cb-hairline);
   background: #F4F6FA;
@@ -830,7 +832,7 @@
 .asc-avatar img[src*="assets/cg/"] {
   width: 100%;
   height: 100%;
-  border-radius: 2px;
+  border-radius: 0;
   object-fit: cover;
   object-position: center 22%;
 }
@@ -892,7 +894,7 @@
 .asc-rank-badge {
   min-width: 30px;
   height: 26px;
-  border-radius: 2px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1245,7 +1247,7 @@ body.cb-battle-active #fx {
   justify-content: space-between;
   gap: 8px 16px;
   padding: 7px 16px;
-  border-radius: 2px;
+  border-radius: 0;
   background: rgba(250, 251, 253, 0.96);
   border: none;
   border-top: 1px solid rgba(28, 76, 184, 0.24);
@@ -1315,7 +1317,7 @@ body.cb-battle-active #fx {
   align-items: center;
   gap: 6px;
   padding: 2px 4px;
-  border-radius: 2px;
+  border-radius: 0;
   background: transparent;
   border: none;
   border-bottom: 1px solid var(--cb-hairline);
@@ -1341,7 +1343,7 @@ body.cb-battle-active #fx {
 .cb-mini-bar {
   width: 64px;
   height: 3px;
-  border-radius: 1px;
+  border-radius: 0;
   background: rgba(27, 35, 51, 0.12);
   overflow: hidden;
   display: inline-block;
@@ -1352,7 +1354,7 @@ body.cb-battle-active #fx {
 .cb-mini-fill {
   display: block;
   height: 100%;
-  border-radius: 1px;
+  border-radius: 0;
   transition: width 0.25s ease;
 }
 
@@ -1383,7 +1385,7 @@ body.cb-battle-active #fx {
   justify-content: center;
   gap: 5px;
   padding: 5px 11px;
-  border-radius: 2px;
+  border-radius: 0;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.03em;
@@ -1483,7 +1485,7 @@ body.cb-battle-active #fx {
 
 /* 心念援护按钮：克制细线态，绝不与右下角唯一宝石主按钮争抢视觉锚点 */
 #battle-screen .cb-tool-btn.assist-btn {
-  border-radius: 2px;
+  border-radius: 0;
   background: rgba(28, 76, 184, 0.06);
   border: none;
   border-bottom: 1.5px solid var(--cb-sapphire);
@@ -1538,12 +1540,13 @@ body.cb-battle-active #fx {
 .cb-kbd {
   display: inline-block;
   padding: 0 4px;
-  border-radius: 2px;
+  border-radius: 0;
   font-size: 11px;
   font-family: var(--font-mono);
   font-weight: 600;
-  background: transparent;
-  border: 1px solid rgba(27, 35, 51, 0.22);
+  background: rgba(27, 35, 51, 0.04);
+  border: none;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.28);
   color: var(--cb-ink-muted);
   line-height: 1.3;
 }
@@ -1576,7 +1579,7 @@ body.cb-battle-active #fx {
   left: 50%;
   transform: translateX(-50%);
   padding: 8px 26px;
-  border-radius: 3px;
+  border-radius: 0;
   font-family: var(--font-serif);
   font-size: 16px;
   font-weight: 800;
@@ -1624,7 +1627,7 @@ body.cb-battle-active #fx {
   letter-spacing: 0.03em;
   white-space: nowrap;
   padding: 2px 13px;
-  border-radius: 3px;
+  border-radius: 0;
   background: rgba(250, 251, 253, 0.96);
   border: 1px solid var(--cb-hairline-strong);
   box-shadow: 0 8px 20px rgba(18, 24, 34, 0.16);
@@ -1769,7 +1772,7 @@ body.cb-battle-active #fx {
   position: relative;
   z-index: 5;
   padding: 10px 14px;
-  border-radius: 3px;
+  border-radius: 0;
   background: rgba(250, 251, 253, 0.96);
   border: 1px solid var(--cb-hairline);
   border-top: 2px solid var(--cb-sapphire);
@@ -1831,7 +1834,7 @@ body.cb-battle-active #fx {
 .cb-ap-gem {
   width: 8px;
   height: 8px;
-  border-radius: 1px;
+  border-radius: 0;
   transform: rotate(45deg);
   border: 1px solid rgba(27, 35, 51, 0.28);
   background: #FFFFFF;
@@ -1889,7 +1892,7 @@ body.cb-battle-active #fx {
 #battle-screen .cb-stat-track {
   position: relative;
   height: 4px;
-  border-radius: 1px;
+  border-radius: 0;
   background: rgba(27, 35, 51, 0.11);
   overflow: hidden;
   border: none;
@@ -1897,7 +1900,7 @@ body.cb-battle-active #fx {
 
 .cb-stat-fill {
   height: 100%;
-  border-radius: 1px;
+  border-radius: 0;
   transition: width 0.28s ease;
 }
 
@@ -1958,51 +1961,52 @@ body.cb-battle-active #fx {
 
 .cb-player-pane .cb-buff-list::-webkit-scrollbar-thumb {
   background: rgba(27, 35, 51, 0.2);
-  border-radius: 2px;
+  border-radius: 0;
 }
 
-/* 状态标签：锐利 2px 扁平细线微标（覆盖 gameplay-v2） */
+/* 状态标签：无外框直角浅色底块 + 2px 左侧语义刻度（严格零圆框套圆框） */
 #battle-screen .cb-buff-chip {
   font-size: 11px;
   font-weight: 600;
   line-height: 1.24;
   padding: 2px 6px;
-  border-radius: 2px;
-  background: rgba(27, 35, 51, 0.03);
-  border: 1px solid var(--cb-hairline-soft);
+  border-radius: 0;
+  background: rgba(27, 35, 51, 0.045);
+  border: none;
+  border-left: 2px solid rgba(27, 35, 51, 0.22);
   color: var(--cb-ink-body);
   box-shadow: none;
 }
 
 #battle-screen .cb-buff-chip.shield {
   background: var(--cb-ice-pale);
-  border-color: rgba(18, 103, 168, 0.34);
+  border-left-color: var(--cb-ice-deep);
   color: var(--cb-ice-deep);
 }
 
 #battle-screen .cb-buff-chip.gold {
   background: var(--cb-sapphire-soft);
-  border-color: var(--cb-sapphire-rule);
+  border-left-color: var(--cb-sapphire);
   color: var(--cb-sapphire);
   font-weight: 700;
 }
 
 #battle-screen .cb-buff-chip.debuff {
   background: var(--cb-crimson-soft);
-  border-color: rgba(196, 37, 68, 0.34);
+  border-left-color: var(--cb-crimson);
   color: var(--cb-crimson-deep);
 }
 
 #battle-screen .cb-buff-chip.relic {
-  border-radius: 2px;
-  background: rgba(28, 76, 184, 0.05);
-  border-color: rgba(28, 76, 184, 0.22);
+  border-radius: 0;
+  background: rgba(28, 76, 184, 0.06);
+  border-left-color: rgba(28, 76, 184, 0.45);
   color: var(--cb-sapphire-mid);
 }
 
 #battle-screen .cb-buff-chip.synergy {
   background: var(--cb-sapphire);
-  border-color: var(--cb-sapphire);
+  border-left-color: var(--cb-ice);
   color: #FFFFFF;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -2011,7 +2015,7 @@ body.cb-battle-active #fx {
 
 #battle-screen .cb-buff-chip.chain-active {
   background: var(--cb-sapphire);
-  border-color: var(--cb-ice);
+  border-left-color: var(--cb-ice);
   color: #FFFFFF;
   font-weight: 700;
   animation: cbChainPulse 1.3s ease-in-out infinite alternate;
@@ -2039,11 +2043,11 @@ body.cb-battle-active #fx {
   flex-direction: column;
   justify-content: space-between;
   padding: 0 6px 2px;
-  border-radius: 3px;
+  border-radius: 0;
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  border: 1px solid transparent;
+  border: none;
   box-shadow: none;
   cursor: pointer;
   transition: transform 0.2s ease;
@@ -2059,7 +2063,7 @@ body.cb-battle-active #fx {
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  border-color: transparent;
+  border: none;
   box-shadow: none;
 }
 
@@ -2117,7 +2121,7 @@ body.cb-battle-active #fx {
   position: relative;
   z-index: 12;
   padding: 6px 10px;
-  border-radius: 3px;
+  border-radius: 0;
   background: rgba(250, 251, 253, 0.96);
   border: 1px solid var(--cb-hairline);
   border-top: 2px solid var(--cb-sapphire);
@@ -2163,7 +2167,7 @@ body.cb-battle-active #fx {
 .ib-stance-tag {
   flex-shrink: 0;
   padding: 1px 6px;
-  border-radius: 2px;
+  border-radius: 0;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -2241,9 +2245,10 @@ body.cb-battle-active #fx {
   flex-shrink: 0;
   width: 20px;
   height: 20px;
-  border-radius: 2px;
-  border: 1px solid var(--cb-hairline);
-  background: transparent;
+  border-radius: 0;
+  border: none;
+  border-left: 1px solid var(--cb-hairline);
+  background: rgba(27, 35, 51, 0.04);
   color: var(--cb-ink-muted);
   font-size: 11px;
   font-weight: 700;
@@ -2266,9 +2271,10 @@ body.cb-battle-active #fx {
 #battle-screen .ib-next-tendency {
   margin-top: 5px;
   padding: 2px 6px;
-  border-radius: 2px;
+  border-radius: 0;
   background: rgba(28, 76, 184, 0.05);
-  border: 1px solid rgba(28, 76, 184, 0.2);
+  border: none;
+  border-left: 2px solid var(--cb-sapphire);
   color: var(--cb-sapphire-mid);
   font-size: 11px;
   font-weight: 600;
@@ -2282,7 +2288,7 @@ body.cb-battle-active #fx {
   right: 0;
   z-index: 45;
   padding: 10px 12px;
-  border-radius: 3px;
+  border-radius: 0;
   background: #FAFBFD;
   border: 1px solid var(--cb-hairline-strong);
   border-top: 2px solid var(--cb-sapphire);
@@ -2430,7 +2436,7 @@ body.cb-battle-active #fx {
   display: flex;
   flex-direction: column;
   padding: 8px 11px;
-  border-radius: 3px;
+  border-radius: 0;
   background: rgba(250, 251, 253, 0.96);
   border: 1px solid var(--cb-hairline);
   border-top: 2px solid rgba(27, 35, 51, 0.24);
@@ -2440,7 +2446,7 @@ body.cb-battle-active #fx {
 
 #battle-screen .cb-e-plate .cb-stat-track {
   height: 3px;
-  border-radius: 1px;
+  border-radius: 0;
 }
 
 .cb-e-plate:hover,
@@ -2479,7 +2485,7 @@ body.cb-battle-active #fx {
 
 .cb-elem-tag {
   padding: 1px 4px;
-  border-radius: 2px;
+  border-radius: 0;
   font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 600;
@@ -2525,7 +2531,7 @@ body.cb-battle-active #fx {
   align-items: center;
   gap: 2px;
   padding: 1px 4px;
-  border-radius: 2px;
+  border-radius: 0;
   font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 700;
@@ -2550,7 +2556,7 @@ body.cb-battle-active #fx {
   width: min(290px, 72vw);
   z-index: 46;
   padding: 10px 12px;
-  border-radius: 3px;
+  border-radius: 0;
   background: #FAFBFD;
   border: 1px solid var(--cb-hairline-strong);
   border-top: 2px solid var(--cb-sapphire);
@@ -2698,7 +2704,7 @@ body.cb-battle-active #fx {
 #battle-screen .cb-forecast-bar {
   margin: 0;
   padding: 6px 14px;
-  border-radius: 2px;
+  border-radius: 0;
   background: rgba(250, 251, 253, 0.96);
   contain: layout style;
   border: none;
@@ -2762,7 +2768,7 @@ body.cb-battle-active #fx {
   display: inline-flex;
   align-items: center;
   padding: 1px 7px;
-  border-radius: 2px;
+  border-radius: 0;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -2786,7 +2792,7 @@ body.cb-battle-active #fx {
   gap: 12px;
   align-items: stretch;
   padding: 10px 12px;
-  border-radius: 3px;
+  border-radius: 0;
   background: rgba(250, 251, 253, 0.97);
   contain: layout style;
   border: 1px solid var(--cb-hairline);
@@ -2845,7 +2851,7 @@ body.cb-battle-active #fx {
   grid-template-columns: repeat(3, 1fr);
   gap: 0;
   border: 1px solid var(--cb-hairline);
-  border-radius: 2px;
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -2889,16 +2895,17 @@ body.cb-battle-active #fx {
   cursor: not-allowed;
 }
 
-/* 战报手账窗（高优先级覆盖 gameplay-v2）+ 7 套 WCAG-AA 语义墨色 */
+/* 战报手账窗（无外框浅底块 + 1px 顶细线，严格去嵌套圆框）+ 7 套 WCAG-AA 语义墨色 */
 #battle-screen .cb-log-box {
   flex: 1;
   min-height: 82px;
   max-height: 114px;
   overflow-y: auto;
   padding: 6px 9px;
-  border-radius: 2px;
+  border-radius: 0;
   background: rgba(243, 246, 251, 0.72);
-  border: 1px solid var(--cb-hairline-soft);
+  border: none;
+  border-left: 2px solid var(--cb-hairline);
   font-size: 11.5px;
   line-height: 1.54;
   color: #26344B;
@@ -2974,7 +2981,7 @@ body.cb-battle-active #fx {
   justify-content: space-between;
   text-align: left;
   padding: 9px 10px 8px;
-  border-radius: 3px;
+  border-radius: 0;
   background: linear-gradient(180deg, #FFFFFF 0%, #FAFBFD 100%);
   border: 1px solid var(--cb-hairline);
   border-top: 1.5px solid rgba(27, 35, 51, 0.24);
@@ -3145,7 +3152,7 @@ body.cb-battle-active #fx {
   align-items: center;
   margin-left: auto;
   padding: 1px 5px;
-  border-radius: 2px;
+  border-radius: 0;
   font-size: 11px;
   line-height: 1.24;
   font-weight: 700;
@@ -3158,7 +3165,7 @@ body.cb-battle-active #fx {
 }
 
 #battle-screen .cb-opp-pill.chain {
-  border-radius: 2px;
+  border-radius: 0;
   background: var(--cb-sapphire-mid);
   color: #FFFFFF;
   font-weight: 700;
@@ -3168,7 +3175,7 @@ body.cb-battle-active #fx {
   display: none;
   align-items: center;
   padding: 1px 6px;
-  border-radius: 2px;
+  border-radius: 0;
   font-size: 11px;
   line-height: 1.3;
   font-weight: 700;
@@ -3234,7 +3241,7 @@ body.cb-battle-active #fx {
   cursor: pointer;
   color: #FFFFFF;
   border: 1px solid #0C2566;
-  border-radius: 3px;
+  border-radius: 0;
   background:
     linear-gradient(135deg, rgba(107, 197, 248, 0.28) 0%, rgba(107, 197, 248, 0.04) 45%, transparent 46%),
     linear-gradient(315deg, rgba(255, 255, 255, 0.14) 0%, transparent 40%),
@@ -3251,7 +3258,7 @@ body.cb-battle-active #fx {
   content: "";
   position: absolute;
   inset: 4px;
-  border-radius: 1.5px;
+  border-radius: 0;
   border: 1px solid rgba(255, 255, 255, 0.2);
   pointer-events: none;
 }
@@ -3297,7 +3304,7 @@ body.cb-battle-active #fx {
   z-index: 1;
   width: 30px;
   height: 30px;
-  border-radius: 2px;
+  border-radius: 0;
   transform: rotate(45deg);
   border: 1px solid rgba(255, 255, 255, 0.54);
   background: rgba(255, 255, 255, 0.12);
@@ -3322,7 +3329,7 @@ body.cb-battle-active #fx {
 
 .cb-endturn-btn .cb-kbd {
   background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.46);
+  border-bottom-color: rgba(255, 255, 255, 0.56);
   color: #FFFFFF;
 }
 
@@ -3416,7 +3423,7 @@ body.cb-battle-active #fx {
   margin: 0 0 4px;
   padding: 2px 6px;
   height: 18px;
-  border-radius: 2px;
+  border-radius: 0;
   border: none;
   font-size: 11px;
   font-weight: 800;
@@ -3451,8 +3458,8 @@ body.cb-battle-active #fx {
   position: relative;
 }
 
-#battle-screen .cb-arena-field.cb-hitstop-75 .cb-e-avatar,
-#battle-screen .cb-arena-field.cb-hitstop-75 .cb-p-portrait {
+#battle-screen .cb-arena-field.cb-hitstop-75 .cb-e-avatar:not(.has-px-actor),
+#battle-screen .cb-arena-field.cb-hitstop-75 .cb-p-portrait:not(.has-px-actor) {
   animation-play-state: paused !important;
   filter: contrast(1.12) brightness(1.06);
 }
@@ -3658,7 +3665,7 @@ body.cb-battle-active #fx {
 .cp-emblem {
   width: 34px;
   height: 34px;
-  border-radius: 2px;
+  border-radius: 0;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -3698,7 +3705,7 @@ body.cb-battle-active #fx {
 .cp-step-pip {
   width: 24px;
   height: 2px;
-  border-radius: 1px;
+  border-radius: 0;
   background: rgba(27, 35, 51, 0.16);
   transition: background 0.2s ease;
 }
@@ -3744,7 +3751,7 @@ body.cb-battle-active #fx {
   flex-shrink: 0;
   width: 34px;
   height: 34px;
-  border-radius: 2px;
+  border-radius: 0;
   border: 1px solid var(--cb-hairline);
   background: transparent;
   color: var(--cb-ink-muted);
@@ -3917,7 +3924,7 @@ body.cb-battle-active #fx {
   width: 56px;
   height: 56px;
   padding: 2px;
-  border-radius: 2px;
+  border-radius: 0;
   overflow: hidden;
   border: 1px solid #B5C2D6;
   background: #FFFFFF;
@@ -3955,12 +3962,13 @@ body.cb-battle-active #fx {
   display: inline-flex;
   align-items: center;
   padding: 1px 8px;
-  border-radius: 2px;
+  border-radius: 0;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
   background: var(--cb-sapphire-soft);
-  border: 1px solid var(--cb-sapphire-rule);
+  border: none;
+  border-left: 2px solid var(--cb-sapphire);
   color: var(--cb-sapphire);
   margin-bottom: 0;
 }
@@ -3968,7 +3976,7 @@ body.cb-battle-active #fx {
 .cr-status-badge.is-defeat,
 .cr-status-badge.is-loss {
   background: var(--cb-crimson-soft);
-  border-color: rgba(196, 37, 68, 0.34);
+  border-left-color: var(--cb-crimson);
   color: var(--cb-crimson-deep);
 }
 
@@ -4007,7 +4015,7 @@ body.cb-battle-active #fx {
   position: absolute;
   inset: 7px;
   transform: rotate(45deg);
-  border-radius: 2px;
+  border-radius: 0;
   background:
     linear-gradient(135deg, rgba(107, 197, 248, 0.34) 0%, transparent 48%),
     linear-gradient(155deg, #1E54CC 0%, #143B96 52%, #0C2566 100%);
@@ -4024,7 +4032,7 @@ body.cb-battle-active #fx {
   position: absolute;
   inset: 2px;
   transform: rotate(45deg);
-  border-radius: 2px;
+  border-radius: 0;
   border: 1px solid rgba(28, 76, 184, 0.34);
   pointer-events: none;
   z-index: -2;
@@ -4139,35 +4147,36 @@ body.cb-battle-active #fx {
 
 .crtb-tier-pill {
   padding: 2px 8px;
-  border-radius: 2px;
+  border-radius: 0;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  border: 1px solid var(--cb-sapphire-rule);
+  border: none;
+  border-left: 2px solid var(--cb-sapphire);
   background: var(--cb-sapphire-soft);
   color: var(--cb-sapphire);
 }
 
 .crtb-tier-pill.tier-S {
   background: var(--cb-sapphire);
-  border-color: var(--cb-sapphire);
+  border-left-color: var(--cb-ice);
   color: #FFFFFF;
 }
 
 .crtb-tier-pill.tier-A {
-  border-color: rgba(18, 103, 168, 0.36);
+  border-left-color: var(--cb-ice-deep);
   background: var(--cb-ice-pale);
   color: var(--cb-ice-deep);
 }
 
 .crtb-tier-pill.tier-B {
-  border-color: rgba(14, 124, 91, 0.34);
+  border-left-color: var(--cb-emerald);
   background: var(--cb-emerald-soft);
   color: var(--cb-emerald);
 }
 
 .crtb-tier-pill.tier-F {
-  border-color: rgba(196, 37, 68, 0.36);
+  border-left-color: var(--cb-crimson);
   background: var(--cb-crimson-soft);
   color: var(--cb-crimson-deep);
 }
@@ -4216,10 +4225,11 @@ body.cb-battle-active #fx {
 
 .cr-warn-box {
   padding: 10px 12px;
-  border-radius: 2px;
+  border-radius: 0;
   margin-bottom: 12px;
   background: var(--cb-crimson-soft);
-  border: 1px solid rgba(196, 37, 68, 0.34);
+  border: none;
+  border-left: 2px solid var(--cb-crimson);
   color: var(--cb-crimson-deep);
   font-size: 12.5px;
   line-height: 1.55;
@@ -4261,7 +4271,7 @@ body.cb-battle-active #fx {
 
 .cr-log-details {
   margin-top: 10px;
-  border-radius: 2px;
+  border-radius: 0;
   border: none;
   border-top: 1px solid var(--cb-hairline);
   border-bottom: 1px solid var(--cb-hairline);
@@ -4306,7 +4316,7 @@ body.cb-battle-active #fx {
   gap: 6px;
   min-width: 132px;
   padding: 10px 22px;
-  border-radius: 3px;
+  border-radius: 0;
   background:
     linear-gradient(135deg, rgba(107, 197, 248, 0.26) 0%, rgba(107, 197, 248, 0.04) 45%, transparent 46%),
     linear-gradient(155deg, #1E54CC 0%, #143B96 52%, #0C2566 100%);
@@ -4328,7 +4338,7 @@ body.cb-battle-active #fx {
   content: "";
   position: absolute;
   inset: 3px;
-  border-radius: 1.5px;
+  border-radius: 0;
   border: 1px solid rgba(255, 255, 255, 0.22);
   pointer-events: none;
 }
@@ -6219,6 +6229,10 @@ body.cb-battle-active #fx {
   z-index: 7;
 }
 
+#battle-screen .cb-px-actor.is-flipped .cb-px-sheet {
+  transform: scaleX(-1);
+}
+
 #battle-screen .cb-px-shadow {
   position: absolute;
   left: var(--px-ax, 50%);
@@ -6235,6 +6249,29 @@ body.cb-battle-active #fx {
   );
   pointer-events: none;
   z-index: 1;
+}
+
+/* 3D 前后环绕魔力增幅冰晶光环双层画布（后层 z:1 穿行于希尔维亚背后，前层 z:4 掠过身前） */
+#battle-screen .cb-px-aura-back,
+#battle-screen .cb-px-aura-front {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 126%;
+  height: 118%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+#battle-screen .cb-px-aura-back {
+  z-index: 1;
+}
+
+#battle-screen .cb-px-aura-front {
+  z-index: 4;
 }
 
 #battle-screen .cb-px-rig {
@@ -6315,6 +6352,10 @@ body.cb-battle-active #fx {
   animation: cbPxGhostFade 0.22s ease-out forwards;
 }
 
+#battle-screen canvas.cb-px-ghost {
+  background: none;
+}
+
 #battle-screen .cb-px-ghost.tone-ice {
   filter: brightness(1.32);
   opacity: 0.48;
@@ -6339,20 +6380,79 @@ body.cb-battle-active #fx {
   filter: contrast(1.08) brightness(1.05);
 }
 
-/* 多怪同屏整数 1× 缩放（4 狼列队 / 3 魔兽零裁切、零拉伸、像素锐利） */
+/* 左翼援护出场像素角色容器（雷纳德 / 夏洛特 / 霁岚 / 心念援护） */
+#battle-screen .cb-ally-cameo {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  z-index: 5;
+  --px-scale: 1.95;
+  opacity: 1;
+  transition: opacity 0.18s ease;
+}
+
+#battle-screen .cb-ally-cameo.is-leaving {
+  opacity: 0;
+}
+
+#battle-screen .cb-ally-cameo-tag {
+  margin-top: -4px;
+  padding: 2px 9px;
+  border-radius: 0;
+  background: rgba(250, 251, 253, 0.94);
+  border: none;
+  border-left: 2px solid var(--cb-sapphire);
+  border-bottom: 1px solid var(--cb-hairline);
+  font-family: var(--font-serif);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--cb-ink);
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(18, 24, 34, 0.12);
+}
+
+#battle-screen .cb-ally-cameo.ally-reno .cb-ally-cameo-tag {
+  border-left-color: #A9825C;
+}
+
+#battle-screen .cb-ally-cameo.ally-alice .cb-ally-cameo-tag {
+  border-left-color: var(--cb-emerald);
+}
+
+#battle-screen .cb-ally-cameo.ally-beatrice .cb-ally-cameo-tag {
+  border-left-color: var(--cb-crimson);
+}
+
+/* 桌面多怪同屏自适应清晰缩放（2怪 1.72× / 3怪 1.50× / 4怪 1.35×，比例协调且零裁切、零重叠） */
 #battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor {
-  --px-scale: 1;
-  min-height: 136px;
+  --px-scale: 1.35;
+  min-height: 158px;
+}
+
+#battle-screen .cb-enemy-zone.multi-enemies:has(.cb-enemy-card:nth-child(3):last-child) .cb-e-stage.has-px-actor {
+  --px-scale: 1.5;
+}
+
+#battle-screen .cb-enemy-zone.multi-enemies:has(.cb-enemy-card:nth-child(2):last-child) .cb-e-stage.has-px-actor {
+  --px-scale: 1.72;
 }
 
 #battle-screen .cb-enemy-zone.multi-enemies .cb-e-avatar.has-px-actor {
-  max-height: 160px;
+  max-height: 244px;
 }
 
 /* 1280×720 桌面紧凑视口：保持 1.55× 清晰像素精灵比例（避免从 2.35× 骤降至 1× 导致罗文等角色显得过小） */
 @media (max-width: 1360px), (max-height: 760px) {
   #battle-screen {
     --px-scale: 1.55;
+  }
+
+  #battle-screen .cb-ally-cameo {
+    --px-scale: 1.38;
   }
 
   #battle-screen .cb-standee-wrap.has-px-actor {
@@ -6373,12 +6473,20 @@ body.cb-battle-active #fx {
   }
 
   #battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor {
-    --px-scale: 1.05;
-    min-height: 128px;
+    --px-scale: 1.15;
+    min-height: 136px;
+  }
+
+  #battle-screen .cb-enemy-zone.multi-enemies:has(.cb-enemy-card:nth-child(3):last-child) .cb-e-stage.has-px-actor {
+    --px-scale: 1.24;
+  }
+
+  #battle-screen .cb-enemy-zone.multi-enemies:has(.cb-enemy-card:nth-child(2):last-child) .cb-e-stage.has-px-actor {
+    --px-scale: 1.38;
   }
 
   #battle-screen .cb-enemy-zone.multi-enemies .cb-e-avatar.has-px-actor {
-    max-height: 154px;
+    max-height: 186px;
   }
 }
 
@@ -6482,6 +6590,10 @@ body.cb-battle-active #fx {
 
   #battle-screen .cb-px-ghost {
     display: none !important;
+  }
+
+  #battle-screen .cb-ally-cameo {
+    transition: none !important;
   }
 
   #battle-screen .cb-px-rig.is-hit-flash .cb-px-sheet {

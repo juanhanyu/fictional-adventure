@@ -1,11 +1,81 @@
 /* =========================================================
    转生千金 · 原著向策略智斗引擎 (js/combat-engine.js)
-   核心闭环：双轨施法路径 × 动态反应架势AI × 100%原著魔战循环 × 冰晶宫殿两步推演 × 晦轮杖折光与暴露风险
+   V2.2 核心：双轨施法 × HSR行动值/弱点锁/ONE MORE × 双段质变魔力增幅 × 比值防御(K=80) × 冰晶宫殿并行推演 × 晦轮杖真伤
    ========================================================= */
 (function (global) {
   'use strict';
 
   const ARENA_SAVE_KEY = 'ojousama_arena_records_v1';
+
+  const COMBAT_BALANCE_V22 = {
+    DEF_K: 80,
+    MAX_DEF_PIERCE: 0.75,
+    SAVE_MATK_SOFT_CAP: { gain: 18, scale: 32 },
+    SHIELD_RETAIN_RATE: { default: 0.20, rootIce: 0.45 },
+    OVERCAST: {
+      seg1End: 0.25,
+      seg1Slope: 1.60,
+      seg2Slope: 0.50,
+      tier1: { at: 0.25, mult: 1.08, extraLocks: 1, defPierce: 0.12, label: '魔力盈溢' },
+      tier2: { at: 0.50, mult: 1.20, extraLocks: 2, defPierce: 0.25, label: '极寒过载' },
+      skillCaps: {
+        HAND_HEAVY: 0.50,
+        REMOTE: 0.25,
+        SHIELD: 0.25,
+        SWORD: 0.00,
+        INSIGHT: 0.00,
+      },
+    },
+    MANA_CYCLE: {
+      returnRatio: 1.00,
+      specAltRatio: 0.55,
+      aoeMaxReturnPct: 1.00,
+    },
+    STAVES: {
+      none: {
+        id: 'none', name: '徒手导魔', trueMagic: false,
+        canTriggerEclipse: false,
+        matkMult: 1.00, critDmgBonus: 0.00, extraMpPct: 0.00, overcastMpDiscount: 0.00,
+      },
+      eclipse_wand: {
+        id: 'eclipse_wand', name: '晦轮杖',
+        trueMagic: true,
+        canTriggerEclipse: false,
+        matkMult: 1.00, critDmgBonus: 0.00,
+        extraMpPct: 0.24,
+        overcastMpDiscount: 0.00,
+        cooldown: 0, blocksManaCycle: false, selfShieldVuln: 0,
+      },
+      north_saint_staff: {
+        id: 'north_saint_staff', name: '极北圣晶杖',
+        trueMagic: false,
+        canTriggerEclipse: false,
+        matkMult: 1.28, critDmgBonus: 0.20,
+        extraMpPct: 0.00, overcastMpDiscount: 0.25,
+      },
+    },
+    HSR_AV: {
+      baseNumerator: 10000,
+      breakVulnMult: 1.35,
+      breakBurstMatkRatio: 0.55,
+      breakRecoveryAtkMult: 0.75,
+      pushPct: { mob: 0.50, elite: 0.45, boss: 0.35 },
+      maxOneMorePerNaturalTurn: 1,
+      oneMoreMpRefundPct: 0.12,
+      overflowBreakBonus: { mpPct: 0.10, selfAdvancePct: 0.10 },
+    },
+    ACTS_PLAYER_PRESET: {
+      beatrice_11:            { hp: 185, mp: 220, atk: 16, matk: 38, def: 12, mdef: 16, spd: 100 },
+      rowan_graveyard:        { hp: 180, mp: 240, atk: 14, matk: 36, def: 12, mdef: 18, spd: 96  },
+      alice_9:                { hp: 200, mp: 260, atk: 18, matk: 42, def: 13, mdef: 18, spd: 102 },
+      aino_sparring:          { hp: 220, mp: 270, atk: 22, matk: 48, def: 15, mdef: 20, spd: 105 },
+      noelle_14:              { hp: 245, mp: 290, atk: 26, matk: 54, def: 18, mdef: 24, spd: 106 },
+      north_forest_hunt:      { hp: 270, mp: 310, atk: 46, matk: 58, def: 20, mdef: 26, spd: 110 },
+      hulan_beast_tide:       { hp: 295, mp: 330, atk: 50, matk: 64, def: 24, mdef: 30, spd: 110 },
+      turning_point_corridor: { hp: 290, mp: 320, atk: 44, matk: 62, def: 22, mdef: 28, spd: 110 },
+      wind_god_eye:           { hp: 320, mp: 350, atk: 54, matk: 68, def: 26, mdef: 32, spd: 112 },
+    },
+  };
 
   function safeSfx(type) {
     try {
@@ -395,6 +465,8 @@
       mp: 0,
       power: 0.72,
       atkKind: 'atk',
+      overcastCap: 0,
+      lockDamage: 0,
       exposure: 0,
       shortDesc: '零耗蓝平斩 · 无魔战回蓝',
       desc: '基础挥击，零耗蓝，不触发魔战循环，对高防与风步收效甚微。',
@@ -410,6 +482,8 @@
       mp: 30,
       power: 1.52,
       atkKind: 'matk',
+      overcastCap: 0.50,
+      lockDamage: 1,
       exposure: 0,
       clearBlind: true,
       douseFire: true,
@@ -425,6 +499,8 @@
       mp: 38,
       power: 1.76,
       atkKind: 'matk',
+      overcastCap: 0.50,
+      lockDamage: 1,
       exposure: 66,
       chill: 1,
       shortDesc: '破盾高伤 · 附寒颤1',
@@ -440,12 +516,15 @@
       power: 0,
       atkKind: 'matk',
       noOvercast: true,
+      overcastCap: 0.25,
+      lockDamage: 0,
+      shieldKind: 'solid',
       cooldown: 1,
       exposure: 65,
       shieldBase: 26,
       shieldScale: 0.55,
-      shortDesc: '基础厚盾 · 冷却1回合',
-      desc: '童年期习得的基础经手冰墙（冷却1回合），稳健抵御正面冲击。',
+      shortDesc: '实体厚冰盾 · 冷却1回合',
+      desc: '童年期习得的基础经手实体厚冰墙（冷却1回合），稳健抵御正面冲击并阻尼晦轮穿透。',
     },
     hand_frost_floor: {
       id: 'hand_frost_floor',
@@ -457,6 +536,8 @@
       power: 0,
       atkKind: 'matk',
       noOvercast: true,
+      overcastCap: 0,
+      lockDamage: 0,
       cooldown: 1,
       exposure: 60,
       layFrostFloor: 2,
@@ -473,6 +554,9 @@
       power: 0,
       atkKind: 'matk',
       noOvercast: true,
+      overcastCap: 0.25,
+      lockDamage: 0,
+      shieldKind: 'solid',
       cooldown: 1,
       exposure: 65,
       shieldBase: 31,
@@ -480,8 +564,8 @@
       rooted: 1,
       iceThorns: 1,
       protectCrate: 32,
-      shortDesc: '生根厚盾 · 防滑护药箱',
-      desc: '魔力入地生根立盾（冷却1回合），防冰面打滑并协防药箱。',
+      shortDesc: '实体生根盾 · 防滑护药箱',
+      desc: '魔力入地生根立起实体钢冰盾（冷却1回合），防冰面打滑并协防药箱。',
     },
     hand_water_veil: {
       id: 'hand_water_veil',
@@ -493,6 +577,9 @@
       power: 0,
       atkKind: 'matk',
       noOvercast: true,
+      overcastCap: 0,
+      lockDamage: 0,
+      shieldKind: 'magic',
       cooldown: 1,
       exposure: 0,
       shieldBase: 20,
@@ -510,6 +597,8 @@
       mp: 62,
       power: 1.56,
       atkKind: 'matk',
+      overcastCap: 0.50,
+      lockDamage: 1,
       cooldown: 1,
       aoe: true,
       sureHit: true,
@@ -517,7 +606,7 @@
       exposure: 72,
       chill: 1,
       shortDesc: '全场必中 · 群怪多倍回蓝',
-      desc: '双手平推铺冰刺出九向地棘（冷却1回合）！全场必中，群怪魔战100%回蓝倍增！',
+      desc: '双手平推铺冰刺出九向地棘（冷却1回合）！全场必中，群怪魔战回蓝倍增！',
     },
 
     // —— 【隔空瞬凝（不经手 · 12岁学院艾诺点拨后习得）】 ——
@@ -531,6 +620,8 @@
       power: 0.92,
       interruptPower: 1.85,
       atkKind: 'matk',
+      overcastCap: 0.25,
+      lockDamage: 1,
       exposure: 65,
       shortDesc: '侧翼瞬凝 · 截断双手控场',
       desc: '不经手于敌身侧瞬凝！命中【双手控场】直接截断破招暴击！',
@@ -545,6 +636,8 @@
       power: 1.08,
       interruptPower: 2.12,
       atkKind: 'matk',
+      overcastCap: 0.25,
+      lockDamage: 1,
       pierceHalfShield: true,
       exposure: 68,
       shortDesc: '瞬凝断咏 · 无视半数护盾',
@@ -562,6 +655,8 @@
       power: 0,
       atkKind: 'atk',
       noOvercast: true,
+      overcastCap: 0,
+      lockDamage: 0,
       cooldown: 1,
       exposure: -6,
       dodgeLunge: true,
@@ -580,6 +675,8 @@
       lungeRipostePower: 2.05,
       atkKind: 'hybrid',
       noOvercast: true,
+      overcastCap: 0,
+      lockDamage: 1,
       exposure: -10,
       counterLunge: true,
       shortDesc: '迎锋倍增 · 化水降暴露',
@@ -595,12 +692,15 @@
       power: 0,
       atkKind: 'atk',
       noOvercast: true,
+      overcastCap: 0,
+      lockDamage: 0,
+      selfAdvancePct: 0.25,
       cooldown: 3,
       exposure: 0,
       afterimage: 1,
       nextApBonus: 1,
-      shortDesc: '闪避下击 · 下回合+1 AP',
-      desc: '气流折射留残影1.5秒（冷却3回合），闪避下一次攻击并令下回合+1 AP！',
+      shortDesc: '闪避下击 · 拉条且下回合+1 AP',
+      desc: '气流折射留残影（冷却3回合），闪避下一次攻击、自拉行动值并令下回合+1 AP！',
     },
 
     // —— 【❄️ 冰晶宫殿·专属看破反制技（每波审视解锁后限1次）】 ——
@@ -613,6 +713,8 @@
       mp: 18,
       power: 2.05,
       atkKind: 'matk',
+      overcastCap: 0,
+      lockDamage: 2,
       sureHit: true,
       maxUses: 1,
       interruptWindupOnly: true,
@@ -632,6 +734,9 @@
       mp: 20,
       power: 1.65,
       atkKind: 'matk',
+      overcastCap: 0,
+      lockDamage: 2,
+      shieldKind: 'solid',
       sureHit: true,
       maxUses: 1,
       forceInterrupt: true,
@@ -651,6 +756,8 @@
       mp: 20,
       power: 1.65,
       atkKind: 'matk',
+      overcastCap: 0,
+      lockDamage: 2,
       sureHit: true,
       maxUses: 1,
       drainEnemyMp: 22,
@@ -668,6 +775,8 @@
       mp: 18,
       power: 1.7,
       atkKind: 'matk',
+      overcastCap: 0,
+      lockDamage: 2,
       sureHit: true,
       bypassMirror: true,
       guaranteedCleanHit: true,
@@ -685,6 +794,8 @@
       mp: 16,
       power: 1.62,
       atkKind: 'matk',
+      overcastCap: 0,
+      lockDamage: 2,
       sureHit: true,
       severSeep: true,
       shatterShield: true,
@@ -704,6 +815,8 @@
       power: 2.15,
       atkKind: 'hybrid',
       noOvercast: true,
+      overcastCap: 0,
+      lockDamage: 2,
       sureHit: true,
       stripEvadeCharges: true,
       forceInterrupt: true,
@@ -721,6 +834,8 @@
       mp: 36,
       power: 2.25,
       atkKind: 'matk',
+      overcastCap: 0.25,
+      lockDamage: 2,
       sureHit: true,
       shatterShield: true,
       shredArmor: true,
@@ -741,6 +856,8 @@
       mp: 22,
       power: 2.2,
       atkKind: 'matk',
+      overcastCap: 0,
+      lockDamage: 2,
       sureHit: true,
       shatterShield: true,
       shatterFireAura: true,
@@ -762,6 +879,8 @@
       mp: 24,
       power: 2.35,
       atkKind: 'hybrid',
+      overcastCap: 0,
+      lockDamage: 2,
       sureHit: true,
       shatterShield: true,
       stripEvadeCharges: true,
@@ -783,6 +902,8 @@
       mp: 20,
       power: 1.9,
       atkKind: 'matk',
+      overcastCap: 0,
+      lockDamage: 2,
       sureHit: true,
       shatterShield: true,
       forceInterrupt: true,
@@ -791,7 +912,7 @@
       maxUses: 1,
       exposure: 15,
       shortDesc: '贯隙必中 · 碎盾断蓄势',
-      desc: '直击时停推演锁定的发力缝隙，击碎护甲并打断当前蓄势。',
+      desc: '直击冰晶宫殿并行推演锁定的发力缝隙，击碎护甲并打断当前蓄势。',
     },
   };
 
@@ -813,7 +934,7 @@
       preset: {
         age: 9,
         hp: 165, mhp: 165, mp: 230, mmp: 230,
-        atk: 14, matk: 35, def: 9, mdef: 12,
+        atk: 14, matk: 35, def: 9, mdef: 12, spd: 100,
         skills: ['basic_attack', 'hand_water_surge', 'hand_ice_crystal', 'hand_ice_wall', 'hand_water_veil'],
         passives: [],
         manaCycle: false,
@@ -822,7 +943,7 @@
       },
       reward: { duelKey: 'beatrice_11', skillId: 'temp_sense', skillName: '温度感知', exp: 50, gold: 0 },
       palace: {
-        sceneText: '淡蓝色虚拟斗兽场凝固。贝阿特丽丝周身环绕燥热气浪，掌心火球膨胀，正准备踏步重劈。',
+        sceneText: '意识沉入冰晶宫殿，淡蓝色虚拟斗兽场的交锋画面在冰镜间并行映现。贝阿特丽丝周身环绕燥热气浪，掌心火球膨胀，正准备踏步重劈。',
         clues: [
           { id: 'ponytail', text: '高高扬起的金色马尾正随热浪向右后方飘摆', correct: false, feedback: '马尾只是随热浪自然摆动，并未暴露发力落点。' },
           { id: 'shoulder_lift', text: '甩出重型火球前，她的右肩习惯性先抬半寸', correct: true, feedback: '观察准确！她发力前必先抬右肩，重心已提前钉死。' },
@@ -847,7 +968,10 @@
               mhp: 278,
               atk: 36,
               def: 10,
-              mdef: 12,
+              mdef: 18,
+              spd: 96,
+              maxLocks: 5,
+              shieldKind: 'magic',
               fireAura: 3,
               trait: '三层烈焰斗气：每层减免10%伤害并逐回合升温；受覆潮水弹逐层浇弱，或以看破冰柱一击掀翻。剑障防反时忌盲丢冰晶！',
               aiType: 'beatrice',
@@ -872,7 +996,7 @@
       preset: {
         age: 8,
         hp: 150, mhp: 150, mp: 255, mmp: 255,
-        atk: 12, matk: 35, def: 8, mdef: 12,
+        atk: 12, matk: 35, def: 8, mdef: 12, spd: 96,
         skills: ['basic_attack', 'hand_ice_crystal', 'hand_ice_wall', 'hand_frost_floor', 'hand_water_veil'],
         passives: [],
         manaCycle: false,
@@ -881,7 +1005,7 @@
       },
       reward: { exp: 140, gold: 0 },
       palace: {
-        sceneText: '秋夜月升，罗文脚下影子已恢复如常。你边退边沉入冰晶宫殿核对白昼冻结的四面冰镜，同时定格眼前他刺向雷纳德肋下的右手。',
+        sceneText: '秋夜月升，罗文脚下影子已恢复如常。你边退边沉入冰晶宫殿核对白昼存档的四面冰镜，同时以并行记忆拆解眼前他刺向雷纳德肋下的右手。',
         clues: [
           { id: 'moon_grass', text: '月光下坟头荒草倒伏，罗文靴底沾着新翻的腐殖泥', correct: false, feedback: '乱葬岗新土本就松软，泥渍无法解释他的真正杀招。' },
           { id: 'mirror_thumb', text: '第四面冰镜日影慢半拍，且眼前他握杖拇指已半松', correct: true, feedback: '核验吻合！白昼日蚀止息时的迟滞日影证实他便是施术者，而此刻松指正是脱手掷杖前兆！' },
@@ -906,7 +1030,10 @@
               atk: 48,
               def: 15,
               mdef: 18,
-              trait: '活捉铁律：纯挨打不涨封锁度，非窄道盲丢冰晶遭晦轮折射且HP归零将化雾逃脱判败！须铺【蔓地薄冰】抓窄道(+38%)配【双镜夹杖】满100%活捉！',
+              spd: 114,
+              maxLocks: 4,
+              shieldKind: 'magic',
+              trait: '活捉铁律：纯挨打不涨封锁度，非窄道盲丢冰晶遭晦轮折射且HP归零将化雾逃脱判败！晦轮黑光无视纯魔盾，唯实体厚冰墙与石板可阻尼；须铺【蔓地薄冰】抓窄道(+38%)配【双镜夹杖】满100%活捉！',
               aiType: 'rowan',
             },
           ],
@@ -928,7 +1055,7 @@
       preset: {
         age: 11,
         hp: 155, mhp: 155, mp: 295, mmp: 295,
-        atk: 15, matk: 38, def: 9, mdef: 13,
+        atk: 15, matk: 38, def: 9, mdef: 13, spd: 102,
         skills: ['basic_attack', 'hand_water_surge', 'hand_ice_crystal', 'hand_ice_wall', 'hand_water_veil', 'hand_thorn_field'],
         passives: ['temp_sense'],
         manaCycle: false,
@@ -937,7 +1064,7 @@
       },
       reward: { duelKey: 'alice_9', skillId: 'wind_afterimage', skillName: '风行残像', exp: 75, gold: 0 },
       palace: {
-        sceneText: '地面灰尘刚刚扬起，微风在爱丽丝身畔轻巧盘旋，她的身影正借风向侧方滑开。',
+        sceneText: '意识沉入冰晶宫殿，地面灰尘扬起的瞬间在脑海冰镜中并列回放。微风在爱丽丝身畔轻巧盘旋，她的身影正借风向侧方滑开。',
         clues: [
           { id: 'calm_eyes', text: '白发垂落耳际，半敛的蓝眸平静注视着正前方', correct: false, feedback: '妹妹神色始终安静淡然，眼神并未指向落脚位置。' },
           { id: 'skirt_wind', text: '扬尘漫起瞬间，她左侧裙摆逆着微风轻轻内贴', correct: true, feedback: '观察准确！「是因为风在帮我」——裙摆内贴暴露了她借风绕左的气流轨！' },
@@ -968,6 +1095,9 @@
               atk: 36,
               def: 9,
               mdef: 15,
+              spd: 122,
+              maxLocks: 3,
+              shieldKind: 'magic',
               trait: '微风护体：每回合维持2层风步闪避并自然回流7 MP；第4/7回合合拢蓄力狂岚（若MP不足22将当场溃散认输）！',
               aiType: 'alice',
             },
@@ -994,7 +1124,7 @@
       preset: {
         age: 12,
         hp: 175, mhp: 175, mp: 255, mmp: 255,
-        atk: 18, matk: 46, def: 11, mdef: 16,
+        atk: 18, matk: 46, def: 11, mdef: 16, spd: 105,
         skills: ['basic_attack', 'hand_ice_crystal', 'hand_root_shield', 'remote_blind_shot', 'remote_snap_spike', 'sword_wind_afterimage'],
         passives: ['temp_sense'],
         manaCycle: false,
@@ -1003,7 +1133,7 @@
       },
       reward: { duelKey: 'aino_cur', skillId: 'root_ice', skillName: '生根之冰', taskId: 'ice_hits', exp: 120, gold: 0 },
       palace: {
-        sceneText: '训练场砂地覆霜。艾诺白发高束如出鞘利剑，双掌正同时按向地面引导双翼冰刺。',
+        sceneText: '训练场砂地覆霜，冰晶宫殿在意识深处并行展开两幅镜面。艾诺白发高束如出鞘利剑，双掌正同时按向地面引导双翼冰刺。',
         clues: [
           { id: 'front_mirror', text: '身前薄冰光滑如打蜡玻璃，内部找不到半点气泡', correct: false, feedback: '正面薄冰毫无瑕疵，强攻正面只会撞碎自己的冰晶。' },
           { id: 'left_shoulder_gap', text: '双掌同时贴地控冰时，左肩与右手背外侧空出半秒', correct: true, feedback: '观察准确！双手控场瞬间，体侧三十公分处于防御真空！' },
@@ -1030,6 +1160,9 @@
               atk: 54,
               def: 16,
               mdef: 20,
+              spd: 116,
+              maxLocks: 3,
+              shieldKind: 'solid',
               mirrorGuard: true,
               trait: '显微镜视力：正面【经手】全被薄冰挡下；非【双手控场】回合盲丢【隔空瞬凝】不仅无效，连丢更会触发反制冰刺丢分！',
               aiType: 'aino',
@@ -1049,11 +1182,11 @@
       emoji: '💧',
       bg: 'bg-duel',
       tags: ['100%魔战循环解锁', '零留白水幕', '残血必入冰缝暗流杀'],
-      summary: '极致省蓝大师 vs 魔战循环！每回合布设52点尺量水幕；压至残血必借水垫切入【冰缝暗流陷阱】，须以看破断流或残像避险后再2.0x倾注斩杀！',
+      summary: '极致省蓝大师 vs 魔战循环！每回合布设52点尺量水幕；压至残血必借水垫切入【冰缝暗流陷阱】，须以看破断流或残像避险后再以极寒过载魔力增幅斩杀！',
       preset: {
         age: 14,
         hp: 190, mhp: 190, mp: 260, mmp: 260,
-        atk: 20, matk: 46, def: 13, mdef: 20,
+        atk: 20, matk: 46, def: 13, mdef: 20, spd: 106,
         skills: ['basic_attack', 'hand_ice_crystal', 'hand_root_shield', 'hand_thorn_field', 'remote_blind_shot', 'remote_snap_spike', 'sword_wind_afterimage'],
         passives: ['temp_sense', 'root_ice'],
         manaCycle: true,
@@ -1062,7 +1195,7 @@
       },
       reward: { duelKey: 'noelle_14', skillId: 'mana_calc', skillName: '魔力精算', achId: 'mana_calc', exp: 150, gold: 0 },
       palace: {
-        sceneText: '灰色石板广场定格。诺艾儿每一步后撤间距分毫不差，琥珀色眸子冷静得如同正在解算方程。',
+        sceneText: '意识沉入冰晶宫殿，灰色石板广场上刚才数步交锋被并列映出。诺艾儿每一步后撤间距分毫不差，琥珀色眸子冷静得如同正在解算方程。',
         clues: [
           { id: 'left_hand_blank', text: '左手习惯性半握在腰侧，梦境中的手背空空如也', correct: false, feedback: '梦境未同步她手背的日程字迹，这并非她的反击后手。' },
           { id: 'thin_curtain', text: '正面水幕薄如纸页，边缘尺寸恰好卡死冰晶落点', correct: false, feedback: '正面水幕只是她省蓝防守的常态，真正杀招藏在地面！' },
@@ -1089,7 +1222,10 @@
               mmp: 175,
               atk: 44,
               def: 14,
-              mdef: 24,
+              mdef: 20,
+              spd: 104,
+              maxLocks: 5,
+              shieldKind: 'magic',
               seepStacks: 0,
               trait: '尺量水幕 & 脚底暗流：每回合维持52点精准水幕；生命降至165时必借水垫退入【冰缝暗流陷阱】，无视正面护盾直刺脚底造成205点重创！',
               aiType: 'noelle',
@@ -1108,11 +1244,11 @@
       emoji: '🐺',
       bg: 'bg-img-forest bg-forest',
       tags: ['每波独立1次冰宫', 'W1四狼逼AOE满蓝', 'W2耳目禁冰+生根步闪反'],
-      summary: 'W1四只灰棘狼高伤围猎，须以冰棘群刺触发魔战100%多倍回满蓝条；W2银级影豺带闪避层扑喉且极光小队迫近，须先以生根步卸力闪反再覆水封喉！',
+      summary: 'W1四只灰棘狼高伤围猎，须以冰棘群刺触发魔战多倍回满蓝条；W2银级影豺带闪避层扑喉且极光小队迫近，须先以生根步卸力闪反再覆水封喉！',
       preset: {
         age: 15,
         hp: 220, mhp: 220, mp: 280, mmp: 280,
-        atk: 42, matk: 48, def: 15, mdef: 22,
+        atk: 42, matk: 48, def: 15, mdef: 22, spd: 110,
         skills: ['hand_ice_crystal', 'hand_water_surge', 'hand_root_shield', 'hand_water_veil', 'hand_thorn_field', 'remote_snap_spike', 'sword_root_step', 'sword_water_edge', 'sword_wind_afterimage'],
         passives: ['temp_sense', 'root_ice', 'mana_calc'],
         manaCycle: true,
@@ -1122,7 +1258,7 @@
       reward: { skillId: 'stealth_edge', skillName: '覆水无痕', exp: 180, gold: 35 },
       palaceByWave: {
         0: {
-          sceneText: '冬日落叶林深处，四只灰棘狼踏在潮湿腐叶层上呈扇形合围扑近。',
+          sceneText: '冬日落叶林深处，意识在冰晶宫殿并行复现狼群步距。四只灰棘狼踏在潮湿腐叶层上呈扇形合围扑近。',
           clues: [
             { id: 'wolf_fur', text: '头狼脊背硬刺根根倒竖，前爪刨开林间枯黄腐叶', correct: false, feedback: '脊背硬刺只是交付任务的素材，并非合围破绽。' },
             { id: 'wet_leaves', text: '四狼呈密集扇形争抢扑近，脚下湿腐叶极易覆冰', correct: true, feedback: '观察准确！群居魔物站位密集且地面潮湿，正是群攻良机！' },
@@ -1134,7 +1270,7 @@
           ],
         },
         1: {
-          sceneText: '林外百步传来「极光」小队凯尔的交谈声！眼前银影骤掠，银级「霜脊影豺」已四爪离地扑向咽喉！',
+          sceneText: '林外百步传来「极光」小队凯尔的交谈声！冰晶宫殿内并行映出扑击轨迹，银级「霜脊影豺」已四爪离地扑向咽喉！',
           clues: [
             { id: 'camo_coat', text: '银灰皮毛与枯枝色调相融，落地时足垫悄无声息', correct: false, feedback: '它已经腾空起跳，保护色不再影响交手。' },
             { id: 'midair_jaw', text: '四爪腾空扑咬离地，半空中的下颌与咽喉无法变向', correct: true, feedback: '观察准确！全力腾空后它无法在半空二次借力变向！' },
@@ -1151,10 +1287,10 @@
           witnessActive: false,
           intro: '【第 1/2 波 · 无人深林】四只灰棘狼合围扑来（总场攻极高）！四周无人，立即用【冰棘群刺阵】触发魔战循环多倍回满蓝条！',
           enemies: [
-            { id: 'wolf_alpha', name: '灰棘头狼', emoji: '🐺', elem: 'wind', hp: 195, mhp: 195, shield: 20, atk: 34, def: 8, mdef: 8, trait: '群狼头领：仰首群嚎令全群攻击暴涨。', aiType: 'pack_wolf' },
-            { id: 'wolf_b', name: '灰棘狼·甲', emoji: '🐺', elem: 'wind', hp: 118, mhp: 118, atk: 27, def: 5, mdef: 5, trait: '凶猛合围：单点清理过慢将被群狼撕碎。', aiType: 'pack_wolf' },
-            { id: 'wolf_c', name: '灰棘狼·乙', emoji: '🐺', elem: 'wind', hp: 118, mhp: 118, atk: 27, def: 5, mdef: 5, trait: '凶猛合围：单点清理过慢将被群狼撕碎。', aiType: 'pack_wolf' },
-            { id: 'wolf_d', name: '灰棘狼·丙', emoji: '🐺', elem: 'wind', hp: 118, mhp: 118, atk: 27, def: 5, mdef: 5, trait: '凶猛合围：单点清理过慢将被群狼撕碎。', aiType: 'pack_wolf' },
+            { id: 'wolf_alpha', name: '灰棘头狼', emoji: '🐺', elem: 'wind', hp: 195, mhp: 195, shield: 20, shieldKind: 'solid', atk: 34, def: 8, mdef: 8, spd: 108, maxLocks: 3, trait: '群狼头领：仰首群嚎令全群攻击暴涨。', aiType: 'pack_wolf' },
+            { id: 'wolf_b', name: '灰棘狼·甲', emoji: '🐺', elem: 'wind', hp: 118, mhp: 118, shieldKind: 'solid', atk: 27, def: 5, mdef: 5, spd: 102, maxLocks: 2, trait: '凶猛合围：单点清理过慢将被群狼撕碎。', aiType: 'pack_wolf' },
+            { id: 'wolf_c', name: '灰棘狼·乙', emoji: '🐺', elem: 'wind', hp: 118, mhp: 118, shieldKind: 'solid', atk: 27, def: 5, mdef: 5, spd: 102, maxLocks: 2, trait: '凶猛合围：单点清理过慢将被群狼撕碎。', aiType: 'pack_wolf' },
+            { id: 'wolf_d', name: '灰棘狼·丙', emoji: '🐺', elem: 'wind', hp: 118, mhp: 118, shieldKind: 'solid', atk: 27, def: 5, mdef: 5, spd: 102, maxLocks: 2, trait: '凶猛合围：单点清理过慢将被群狼撕碎。', aiType: 'pack_wolf' },
           ],
         },
         {
@@ -1167,13 +1303,16 @@
               name: '霜脊影豺（银级）',
               emoji: '🦊',
               elem: 'ice',
-              hp: 465,
-              mhp: 465,
+              hp: 495,
+              mhp: 495,
               evadeCharges: 1,
               maxEvadeCharges: 1,
-              atk: 62,
-              def: 14,
-              mdef: 26,
+              atk: 66,
+              def: 20,
+              mdef: 40,
+              spd: 124,
+              maxLocks: 5,
+              shieldKind: 'magic',
               trait: '疾影锁喉：常备【💨疾影闪避×1】躲避鲁莽直击；须先以【生根步】卸掉锁喉扑杀破其闪避，再以覆水剑锋斩杀！',
               aiType: 'jackal',
             },
@@ -1191,14 +1330,14 @@
       crestKind: 'abyss_behemoth',
       emoji: '🏔️',
       bg: 'bg-snow',
-      tags: ['每波独立1次冰宫', '守护医疗药箱', '破招协同艾诺冰枪', '晦轮杖折光破甲'],
-      summary: '5星终极战！守护药箱免遭冲撞，借每波冰宫看破或连续截断破招引动崖顶艾诺极寒冰枪震碎领主晶核，辅以晦轮杖折光与2.0x倾注轰杀领主！',
+      tags: ['每波独立1次冰宫', '守护医疗药箱', '破招协同艾诺冰枪', '晦轮杖真伤破甲'],
+      summary: '5星终极战！守护药箱免遭冲撞，借每波冰宫看破或连续截断破招引动崖顶艾诺极寒冰枪震碎领主实体晶核，辅以晦轮杖真伤与极寒过载魔力增幅轰杀领主！',
       crateRule: true,
       ainoSupport: true,
       preset: {
         age: 16,
         hp: 250, mhp: 250, mp: 300, mmp: 300,
-        atk: 45, matk: 54, def: 18, mdef: 25,
+        atk: 45, matk: 54, def: 18, mdef: 25, spd: 110,
         skills: ['hand_ice_crystal', 'hand_root_shield', 'hand_thorn_field', 'remote_blind_shot', 'remote_snap_spike', 'sword_root_step', 'sword_water_edge', 'sword_wind_afterimage'],
         passives: ['temp_sense', 'root_ice', 'mana_calc'],
         manaCycle: true,
@@ -1208,7 +1347,7 @@
       reward: { achId: 'hulan_vanguard', exp: 260, gold: 80 },
       palaceByWave: {
         0: {
-          sceneText: '赫兰暴雪如铁锤砸落。冻土重甲兽低头瞄准医疗药箱蓄力，两侧霜原狂狼同时扑近。',
+          sceneText: '赫兰暴雪如铁锤砸落，冰晶宫殿在意识中并行对照风雪与冲锋轴线。冻土重甲兽低头瞄准医疗药箱蓄力，两侧霜原狂狼同时扑近。',
           clues: [
             { id: 'snow_gust', text: '北境狂风裹挟六角暴雪，顺着狭窄冰谷呼啸灌入', correct: false, feedback: '风雪虽急，眼下最紧迫的是重甲兽撞向药箱的冲势。' },
             { id: 'armor_joint', text: '重甲兽低头冲向药箱，前膝甲片交叠缝隙正微张', correct: true, feedback: '观察准确！前膝甲缝正是截停它冲撞药箱的唯一支点！' },
@@ -1220,7 +1359,7 @@
           ],
         },
         1: {
-          sceneText: '冰封峡谷剧震！领主级「霜渊裂地兽」披三寸灰岩冻甲破土而出，崖顶闪过一抹熟悉的浅蓝发丝与无气泡寒光。',
+          sceneText: '冰封峡谷剧震！冰晶宫殿将崖顶微光与地脉震波并列核对，领主级「霜渊裂地兽」披三寸灰岩冻甲破土而出，崖顶闪过一抹熟悉的浅蓝发丝与无气泡寒光。',
           clues: [
             { id: 'thick_carapace', text: '背部覆盖三寸厚灰岩冻甲，寻常冰刃难留半点痕', correct: false, feedback: '正面冻甲双抗极高，强砸背部如同挠痒。' },
             { id: 'blizzard_sky', text: '铅灰云层压得极低，漫天风雪遮蔽峡谷远端视野', correct: false, feedback: '云层并无异常，支援来自侧上方崖顶！' },
@@ -1235,30 +1374,34 @@
       waves: [
         {
           witnessActive: false,
-          intro: '【第 1/2 波 · 峡谷防线】冻土重甲兽携狂狼扑向医疗药箱！用群刺打狂狼回蓝，抓蓄力空档截断护箱，并用【晦轮杖·折光】凿穿重甲！',
+          intro: '【第 1/2 波 · 峡谷防线】冻土重甲兽携狂狼扑向医疗药箱！用群刺打狂狼回蓝，抓蓄力空档截断护箱，注意实体厚甲会阻尼晦轮穿透！',
           enemies: [
-            { id: 'tundra_brute', name: '冻土重甲兽', emoji: '🐗', elem: 'earth', hp: 265, mhp: 265, shield: 55, atk: 46, def: 42, mdef: 38, trait: '攻城重甲：极高双抗且猛撞药箱；惧怕【隔空截断】与【晦轮杖折光破甲】！', aiType: 'hulan_brute' },
-            { id: 'frost_hound_a', name: '霜原狂狼·甲', emoji: '🐺', elem: 'ice', hp: 132, mhp: 132, atk: 34, def: 8, mdef: 10, trait: '成群撕咬：绝佳的魔战循环回蓝踏板。', aiType: 'pack_wolf' },
-            { id: 'frost_hound_b', name: '霜原狂狼·乙', emoji: '🐺', elem: 'ice', hp: 132, mhp: 132, atk: 34, def: 8, mdef: 10, trait: '成群撕咬：绝佳的魔战循环回蓝踏板。', aiType: 'pack_wolf' },
+            { id: 'tundra_brute', name: '冻土重甲兽', emoji: '🐗', elem: 'earth', hp: 265, mhp: 265, shield: 55, shieldKind: 'solid', solidArmor: 0.35, atk: 46, def: 42, mdef: 38, spd: 82, maxLocks: 5, trait: '攻城实体重甲：具35%实体甲阻尼与高双抗且猛撞药箱；惧怕【隔空截断】与【魔力增幅】破锁！', aiType: 'hulan_brute' },
+            { id: 'frost_hound_a', name: '霜原狂狼·甲', emoji: '🐺', elem: 'ice', hp: 132, mhp: 132, shieldKind: 'solid', atk: 34, def: 8, mdef: 10, spd: 106, maxLocks: 3, trait: '成群撕咬：绝佳的魔战循环回蓝踏板。', aiType: 'pack_wolf' },
+            { id: 'frost_hound_b', name: '霜原狂狼·乙', emoji: '🐺', elem: 'ice', hp: 132, mhp: 132, shieldKind: 'solid', atk: 34, def: 8, mdef: 10, spd: 106, maxLocks: 3, trait: '成群撕咬：绝佳的魔战循环回蓝踏板。', aiType: 'pack_wolf' },
           ],
         },
         {
           witnessActive: false,
-          intro: '❄️【第 2/2 波 · 领主降临 & 故人冰枪】领主「霜渊裂地兽」破冰而出！可用冰宫引动【伊诺共鸣】，或连续抓准【双手聚寒】破招引落两记艾诺冰枪震碎晶核！',
+          intro: '❄️【第 2/2 波 · 领主降临 & 故人冰枪】领主「霜渊裂地兽」破冰而出！可用冰宫引动【伊诺共鸣】，或连续抓准【双手聚寒】破招引落两记艾诺冰枪震碎实体晶核！',
           enemies: [
             {
               id: 'abyss_behemoth',
               name: '霜渊裂地兽（领主）',
               emoji: '🗿',
               elem: 'earth',
-              hp: 580,
-              mhp: 580,
+              hp: 650,
+              mhp: 650,
               shield: 115,
+              shieldKind: 'solid',
+              solidArmor: 0.35,
               atk: 66,
               def: 46,
               mdef: 44,
+              spd: 88,
+              maxLocks: 6,
               boss: true,
-              trait: '冻土领主：晶核未碎前每回合再生冻甲并寒震药箱；可借冰宫【伊诺共鸣】或连续【截断破招】引落第二发艾诺冰枪击碎晶核！',
+              trait: '冻土领主：晶核未碎前具35%实体厚甲、每回合再生冻甲并寒震药箱；可借冰宫【伊诺共鸣】或连续【截断破招】引落第二发艾诺冰枪击碎晶核清零实体甲！',
               aiType: 'hulan_lord',
             },
             {
@@ -1268,9 +1411,12 @@
               elem: 'wind',
               hp: 165,
               mhp: 165,
+              shieldKind: 'solid',
               atk: 42,
               def: 12,
               mdef: 12,
+              spd: 118,
+              maxLocks: 3,
               trait: '侧翼袭扰：高速突袭补给线。',
               aiType: 'jackal_minor',
             },
@@ -1293,7 +1439,7 @@
       preset: {
         age: 14,
         hp: 235, mhp: 235, mp: 290, mmp: 290,
-        atk: 36, matk: 52, def: 15, mdef: 22,
+        atk: 36, matk: 52, def: 15, mdef: 22, spd: 110,
         skills: ['hand_water_surge', 'hand_ice_crystal', 'hand_root_shield', 'hand_water_veil', 'hand_thorn_field', 'remote_snap_spike', 'sword_root_step', 'sword_water_edge'],
         passives: ['temp_sense', 'root_ice', 'mana_calc'],
         manaCycle: true,
@@ -1303,7 +1449,7 @@
       reward: { exp: 280, gold: 90 },
       palaceByWave: {
         0: {
-          sceneText: '东翼长廊浓烟翻涌，火把接连熄灭。宫廷突击队长持戟前压，身后的赤炎术士正低吟蓄火封锁走廊。',
+          sceneText: '东翼长廊浓烟翻涌，火把接连熄灭。冰晶宫殿在脑海并行回溯走廊站位，宫廷突击队长持戟前压，身后的赤炎术士正低吟蓄火封锁走廊。',
           clues: [
             { id: 'hall_halberd', text: '突击队长精钢长戟映着暗红火光，戟尖正对准长廊中轴', correct: false, feedback: '正面长戟只是压迫防线，真正封死退路的火势来自后排术士。' },
             { id: 'mage_channel', text: '赤炎术士双掌平举催动火墙，侧翼门框恰露出一线空档', correct: true, feedback: '观察准确！后排术士双手控火之际，侧翼门框正处于防御真空。' },
@@ -1315,7 +1461,7 @@
           ],
         },
         1: {
-          sceneText: '长廊尽头铁门落锁，东翼封锁官披着红莲纹绯红披风拦在火墙中央，烈焰正沿吊灯铁链向整条走廊合拢。',
+          sceneText: '长廊尽头铁门落锁，冰晶宫殿迅速调出公爵府东翼结构图并行比对。东翼封锁官披着红莲纹绯红披风拦在火墙中央，烈焰正沿吊灯铁链向整条走廊合拢。',
           clues: [
             { id: 'crimson_cloak', text: '封锁官绯红披风绣着王都火徽，甲胄表面流转灼热魔纹', correct: false, feedback: '甲胄火纹属正面护焰，硬砸正面极易反遭烈焰灼伤。' },
             { id: 'servant_draft', text: '左侧仆人暗道门缝透出冷风，火幕唯独在该处微微内凹', correct: true, feedback: '观察准确！无人把守的仆人暗道正不断灌入逆向回风，撕开了红莲火幕的气眼！' },
@@ -1341,9 +1487,12 @@
               hp: 245,
               mhp: 245,
               shield: 40,
+              shieldKind: 'solid',
               atk: 44,
               def: 20,
               mdef: 16,
+              spd: 94,
+              maxLocks: 3,
               trait: '宫廷重戟：交替发动长戟突刺与铁壁防反，专克盲目隔空偷袭。',
               aiType: 'corridor_vanguard',
             },
@@ -1356,9 +1505,12 @@
               hp: 185,
               mhp: 185,
               shield: 20,
+              shieldKind: 'magic',
               atk: 46,
               def: 10,
               mdef: 18,
+              spd: 102,
+              maxLocks: 2,
               trait: '走廊纵火：双手结印蓄起高伤火墙，宜用隔空瞬凝断咏或覆潮水弹克制。',
               aiType: 'flame_mage',
             },
@@ -1377,14 +1529,17 @@
               hp: 620,
               mhp: 620,
               shield: 75,
+              shieldKind: 'magic',
               atk: 58,
               def: 24,
               mdef: 24,
+              spd: 108,
+              maxLocks: 6,
               fireAura: 2,
               boss: true,
               phase: 1,
               phase2HpPct: 0.5,
-              trait: '红莲铁幕：半血触发二阶段刷新重盾！二阶段交替施放必断高危【封廊锁火】与穿盾【岔口冲锋】，须抓准隔空截断、霁馆剑步与仆道回风看破破局！',
+              trait: '红莲铁幕：半血触发二阶段刷新魔法火盾！二阶段交替施放必断高危【封廊锁火】与穿盾【岔口冲锋】，须抓准隔空截断、霁馆剑步与仆道回风看破破局！',
               aiType: 'eastwing_boss',
             },
           ],
@@ -1407,7 +1562,7 @@
       preset: {
         age: 16,
         hp: 255, mhp: 255, mp: 310, mmp: 310,
-        atk: 48, matk: 56, def: 18, mdef: 26,
+        atk: 48, matk: 56, def: 18, mdef: 26, spd: 112,
         skills: ['hand_ice_crystal', 'hand_root_shield', 'hand_thorn_field', 'remote_blind_shot', 'remote_snap_spike', 'sword_root_step', 'sword_water_edge', 'sword_wind_afterimage'],
         passives: ['temp_sense', 'root_ice', 'mana_calc', 'frost_edge', 'instant_ice'],
         manaCycle: true,
@@ -1416,7 +1571,7 @@
       },
       reward: { exp: 340, gold: 120 },
       palace: {
-        sceneText: '试剑场砂石悬浮半空。风神岚单手负后立于飓风气眼中央，翠发在无风的圆心纹丝不动，外圈风刃已蓄成真空漩涡。',
+        sceneText: '试剑场砂石翻卷，冰晶宫殿在意识间并行分解气流流速。风神岚单手负后立于飓风气眼中央，翠发在无风圆心纹丝不动，外圈风刃已蓄成真空漩涡。',
         clues: [
           { id: 'emerald_cloak', text: '风神翠色长发垂在肩侧，外圈狂风把斗篷下摆吹得猎猎作响', correct: false, feedback: '外圈狂风只是遮蔽视线的气幕，尚未触及她真正的发力轴心。' },
           { id: 'eye_stillness', text: '旋转风壁最内侧半步毫无气流，她的换气反制恰起于静滞点', correct: true, feedback: '观察准确！飓风圆心那半步静滞正是她收风反制的唯一枢纽。' },
@@ -1442,15 +1597,18 @@
               hp: 940,
               mhp: 940,
               shield: 105,
+              shieldKind: 'magic',
               evadeCharges: 1,
               maxEvadeCharges: 1,
               atk: 68,
               def: 28,
               mdef: 32,
+              spd: 132,
+              maxLocks: 6,
               boss: true,
               phase: 1,
               phase2HpPct: 0.5,
-              trait: '风暴眼试剑：风暴外壁偏折盲攻，半血全开【风暴眼】！破招失衡后趁势倾泻魔力；面对【真空连刃】踏生根步可触发「生根步·斩风瞬反」；面对【风眼静滞】须以冰宫看破或蓄势剑步破阵！',
+              trait: '风暴眼试剑：风暴外壁偏折盲攻，半血全开【风暴眼】！破招失衡后趁势魔力增幅爆发；面对【真空连刃】踏生根步可触发「生根步·斩风瞬反」；面对【风眼静滞】须以冰宫看破或蓄势剑步破阵！',
               aiType: 'wind_god_boss',
             },
           ],
@@ -1565,8 +1723,15 @@
     return (player && player.synergyMap && player.synergyMap[setId]) || 0;
   }
 
+  function getEquippedStaffDef(player) {
+    const id = (player && player.equippedStaff) || (player && player.wandActive ? 'eclipse_wand' : 'none');
+    return COMBAT_BALANCE_V22.STAVES[id] || COMBAT_BALANCE_V22.STAVES.none;
+  }
+
   function getPlayerCritMult(player) {
-    return getSynergyTier(player, 'academy_stars') >= 3 ? 1.65 : 1.5;
+    const base = getSynergyTier(player, 'academy_stars') >= 3 ? 1.65 : 1.5;
+    const staff = getEquippedStaffDef(player);
+    return base + (staff && staff.critDmgBonus ? staff.critDmgBonus : 0);
   }
 
   function getGameS() {
@@ -1618,6 +1783,11 @@
     return !!(player && Array.isArray(player.relics) && player.relics.indexOf(relicId) !== -1);
   }
 
+  function computeBaseAv(spd) {
+    const safeSpd = Math.max(40, Number(spd) || 100);
+    return Math.round(COMBAT_BALANCE_V22.HSR_AV.baseNumerator / safeSpd);
+  }
+
   function buildPlayerCombatant(stageCfg, opts) {
     opts = opts || {};
     const curS = getGameS() || {};
@@ -1628,8 +1798,11 @@
     const activeAssist = relApi ? relApi.getActiveBondAssistForBattle(Object.assign({}, opts, { state: curS })) : null;
     const baseCrit = activeRelics.indexOf('belmont_schedule') !== -1 ? 0.15 : 0;
     const synInfo = resolveActiveSynergies(activeRelics);
+    const actPreset = stageCfg && COMBAT_BALANCE_V22.ACTS_PLAYER_PRESET[stageCfg.id];
 
     if (usePreset && p) {
+      const pSpd = p.spd || (actPreset && actPreset.spd) || 100;
+      const pBaseAv = computeBaseAv(pSpd);
       return {
         name: (stageCfg.id === 'turning_point_corridor') ? '希尔维亚' : ((stageCfg.order >= 6) ? '眷寒渔（希尔维亚）' : '希尔维亚'),
         hp: p.hp,
@@ -1640,7 +1813,11 @@
         matk: p.matk,
         def: p.def,
         mdef: p.mdef,
+        spd: pSpd,
+        baseAv: pBaseAv,
+        av: pBaseAv,
         shield: 0,
+        shieldKind: 'solid',
         maxShield: Math.round(p.mhp * 0.65),
         skills: p.skills.slice(),
         unlockedInsights: [],
@@ -1655,21 +1832,25 @@
         bondAssistUsed: false,
         hasManaCycle: !!p.manaCycle,
         hasEclipseWand: !!p.eclipseWand,
+        equippedStaff: 'none',
+        wandPersistent: false,
         wandActive: false,
         wandCooldown: 0,
         overcastMode: 0,
+        _lastOvercastMode: 0,
+        ampPct: 0,
         palaceLeft: p.palaceCharges != null ? p.palaceCharges : 1,
         palaceMax: p.palaceCharges != null ? p.palaceCharges : 1,
         status: {},
       };
     }
 
-    // 故事模式存档出战：严格遵循玩家已习得的勇者之赐与阶段技能（修复假三元）
+    // 故事模式存档出战：严格遵循玩家已习得的勇者之赐与阶段技能，采用 V2.2 tanh 软递减魔攻映射
     const body = (curS.stats && curS.stats.body) || 10;
     const mind = (curS.stats && curS.stats.mind) || 15;
     const mana = (curS.stats && curS.stats.mana) || 15;
     const charm = (curS.stats && curS.stats.charm) || 10;
-    const floorP = p || { hp: 120, mhp: 120, mp: 160, mmp: 160, atk: 14, matk: 34, def: 8, mdef: 10, skills: ['basic_attack', 'hand_water_surge', 'hand_ice_crystal', 'hand_ice_wall'] };
+    const floorP = p || { hp: 120, mhp: 120, mp: 160, mmp: 160, atk: 14, matk: 34, def: 8, mdef: 10, spd: 100, skills: ['basic_attack', 'hand_water_surge', 'hand_ice_crystal', 'hand_ice_wall'] };
 
     const mhp = Math.max(Math.round(floorP.mhp * 0.85), curS.mhp || 80);
     const mmp = Math.max(Math.round(floorP.mmp * 0.85), curS.mmp || 120);
@@ -1709,6 +1890,13 @@
     if (learned.has('instant_ice')) passives.push('instant_ice');
 
     const hasPalace = learned.has('ice_palace');
+    const rawMatk = (curS.mag || 28) * 0.45 + mana * 0.35;
+    const softCap = COMBAT_BALANCE_V22.SAVE_MATK_SOFT_CAP;
+    const mappedMatk = rawMatk <= floorP.matk
+      ? Math.max(floorP.matk * 0.85, rawMatk)
+      : floorP.matk + softCap.gain * Math.tanh(Math.max(0, rawMatk - floorP.matk) / softCap.scale);
+    const saveSpd = Math.max(96, Math.min(116, (floorP.spd || (actPreset && actPreset.spd) || (age >= 15 ? 110 : age >= 12 ? 105 : 100)) + Math.floor(Math.max(0, body - 20) * 0.12)));
+    const saveBaseAv = computeBaseAv(saveSpd);
 
     return {
       name: curS.alias || '希尔维亚',
@@ -1717,10 +1905,14 @@
       mp,
       mmp,
       atk: Math.round(Math.max(floorP.atk * 0.85, (curS.atk || 8) + body * 0.35)),
-      matk: Math.round(Math.max(floorP.matk * 0.85, Math.min(62, (curS.mag || 28) * 0.45 + mana * 0.35))),
+      matk: Math.round(mappedMatk),
       def: Math.round(Math.max(floorP.def * 0.85, (curS.pdef || 4) + charm * 0.15)),
       mdef: Math.round(Math.max(floorP.mdef * 0.85, (curS.mdef || 6) + mind * 0.18)),
+      spd: saveSpd,
+      baseAv: saveBaseAv,
+      av: saveBaseAv,
       shield: 0,
+      shieldKind: 'solid',
       maxShield: Math.round(mhp * 0.65),
       skills: Array.from(skillSet),
       unlockedInsights: [],
@@ -1735,9 +1927,13 @@
       bondAssistUsed: false,
       hasManaCycle: learned.has('mana_cycle'),
       hasEclipseWand: hasEclipseInSave(),
+      equippedStaff: 'none',
+      wandPersistent: false,
       wandActive: false,
       wandCooldown: 0,
       overcastMode: 0,
+      _lastOvercastMode: 0,
+      ampPct: 0,
       palaceLeft: hasPalace ? 1 : 0,
       palaceMax: hasPalace ? 1 : 0,
       status: {},
@@ -1868,6 +2064,7 @@
           moveName: '晦轮银环·越位蚀心黑光',
           dmg: 60,
           bypassHalfShield: true,
+          eclipseTrueMagic: true,
           elem: 'dark',
           renoRockBlock: true,
           refractIceCrystal: true,
@@ -1886,6 +2083,7 @@
           moveName: '虚刺雷纳德·脱手旋杖袭心',
           dmg: 60,
           bypassHalfShield: true,
+          eclipseTrueMagic: true,
           elem: 'dark',
           thrownStaff: true,
           refractIceCrystal: true,
@@ -2137,7 +2335,7 @@
         enemy.intent = {
           stance: 'CLOSE_LUNGE',
           moveName: '银影腾空·锁喉扑杀',
-          dmg: ai === 'jackal' ? 62 : 42,
+          dmg: ai === 'jackal' ? Math.max(62, enemy.atk) : 42,
           elem: 'phys',
         };
       }
@@ -2573,7 +2771,7 @@
   }
 
   /* =========================================================
-     5. 魔战循环耗蓝与伤害精算核心（严格实装原著双公式）
+     5. V2.2 魔战循环 · 双段魔力增幅 · 晦轮杖真伤 · 比值防御(K=80) 精算核心
      ========================================================= */
   function computeSkillApCost(bState, skill) {
     if (!skill) return 0;
@@ -2583,6 +2781,61 @@
       return 0;
     }
     return baseAp;
+  }
+
+  function getSkillOvercastCap(skill) {
+    if (!skill) return 0;
+    if (typeof skill.overcastCap === 'number') return Math.max(0, Math.min(0.5, skill.overcastCap));
+    if (skill.noOvercast || skill.atkKind !== 'matk' || !(skill.power > 0)) return 0;
+    const caps = COMBAT_BALANCE_V22.OVERCAST.skillCaps;
+    if (skill.path === 'REMOTE') return caps.REMOTE;
+    if (skill.path === 'SWORD') return caps.SWORD;
+    if (skill.path === 'INSIGHT') return caps.INSIGHT;
+    return caps.HAND_HEAVY;
+  }
+
+  function getSkillBaseLockDamage(skill) {
+    if (!skill || !(skill.power > 0)) return 0;
+    if (typeof skill.lockDamage === 'number') return skill.lockDamage;
+    if (skill.path === 'INSIGHT') return 2;
+    if (skill.id === 'basic_attack') return 0;
+    return 1;
+  }
+
+  function isEclipseStaffForSkill(player, skill) {
+    if (!player || !skill || !(skill.power > 0) || skill.atkKind !== 'matk') return false;
+    const staff = getEquippedStaffDef(player);
+    return !!(player.wandActive || (staff && staff.trueMagic));
+  }
+
+  function getAmpTierInfo(ampPct) {
+    const dm = Math.max(0, Number(ampPct) || 0);
+    const oc = COMBAT_BALANCE_V22.OVERCAST;
+    if (dm >= oc.tier2.at - 1e-6) {
+      return { tier: 2, mult: oc.tier2.mult, extraLocks: oc.tier2.extraLocks, defPierce: oc.tier2.defPierce, label: oc.tier2.label };
+    }
+    if (dm >= oc.tier1.at - 1e-6) {
+      return { tier: 1, mult: oc.tier1.mult, extraLocks: oc.tier1.extraLocks, defPierce: oc.tier1.defPierce, label: oc.tier1.label };
+    }
+    return { tier: 0, mult: 1.0, extraLocks: 0, defPierce: 0, label: '' };
+  }
+
+  function syncPlayerAmpFromMode(player) {
+    if (!player) return 0;
+    const mode = Math.max(0, Math.min(2, player.overcastMode | 0));
+    if (player._lastOvercastMode !== mode) {
+      player._lastOvercastMode = mode;
+      player.ampPct = mode === 2 ? 0.50 : mode === 1 ? 0.25 : 0;
+    }
+    return Math.max(0, Math.min(0.50, Number(player.ampPct) || 0));
+  }
+
+  function getEffectiveAmpPct(player, skill) {
+    if (!player || !player.hasManaCycle) return 0;
+    const rawPct = syncPlayerAmpFromMode(player);
+    if (!skill) return rawPct;
+    if (skill.noOvercast || skill.atkKind !== 'matk' || !(skill.power > 0)) return 0;
+    return Math.min(rawPct, getSkillOvercastCap(skill));
   }
 
   function computeBaseMpCost(player, skill) {
@@ -2599,43 +2852,89 @@
     return base;
   }
 
+  function computeWandExtraMp(player, skill) {
+    if (!isEclipseStaffForSkill(player, skill)) return 0;
+    const extraPct = COMBAT_BALANCE_V22.STAVES.eclipse_wand.extraMpPct;
+    let cost = Math.round(Math.max(1, player.mmp || 100) * extraPct);
+    if (player.passives && player.passives.includes('mana_calc')) {
+      cost = Math.max(1, Math.floor(cost * 0.85));
+    }
+    return cost;
+  }
+
+  function computeAmpProfile(player, skill, opts) {
+    opts = opts || {};
+    const mmp = Math.max(1, (player && player.mmp) || 100);
+    const mpNow = Math.max(0, (player && player.mp) || 0);
+    if (!player || !player.hasManaCycle || !skill || !(skill.power > 0) || skill.atkKind !== 'matk' || skill.elem === 'phys') {
+      return { ampPct: 0, requestedAmpPct: 0, mult: 1.0, tier: 0, extraLocks: 0, defPierce: 0, label: '', extraMp: 0, discountedExtraMp: 0 };
+    }
+    const requestedAmpPct = getEffectiveAmpPct(player, skill);
+    const base = computeBaseMpCost(player, skill);
+    const wandExtra = computeWandExtraMp(player, skill);
+    const staff = getEquippedStaffDef(player);
+    let discountFactor = 1.0;
+    if (player.passives && player.passives.includes('mana_calc')) discountFactor *= 0.85;
+    if (hasRelic(player, 'noelle_manuscript')) discountFactor *= 0.5;
+    if (staff && staff.overcastMpDiscount > 0) discountFactor *= (1 - staff.overcastMpDiscount);
+
+    const desiredExtraMp = Math.round(mmp * requestedAmpPct);
+    const desiredDiscounted = desiredExtraMp > 0 ? Math.max(1, Math.ceil(desiredExtraMp * discountFactor)) : 0;
+
+    let actualAmpPct = requestedAmpPct;
+    let actualDiscounted = desiredDiscounted;
+    if (opts.clampToMp !== false && !(player.status && player.status.zeroMpThisTurn)) {
+      const reqFixed = base + wandExtra;
+      if (mpNow >= reqFixed && mpNow < reqFixed + desiredDiscounted && desiredDiscounted > 0) {
+        actualDiscounted = Math.max(0, mpNow - reqFixed);
+        actualAmpPct = Math.min(requestedAmpPct, (actualDiscounted / Math.max(0.05, discountFactor)) / mmp);
+      }
+    }
+
+    const oc = COMBAT_BALANCE_V22.OVERCAST;
+    const seg1 = Math.min(actualAmpPct, oc.seg1End);
+    const seg2 = Math.max(0, actualAmpPct - oc.seg1End);
+    const tierInfo = getAmpTierInfo(actualAmpPct);
+    const tier2BaseBonus = tierInfo.tier >= 2 ? Math.min(0.10, (((skill && skill.mp) || 0) / mmp) * 0.65) : 0;
+    const segMult = 1.0 + seg1 * oc.seg1Slope + seg2 * oc.seg2Slope + tier2BaseBonus;
+    const mult = segMult * tierInfo.mult;
+
+    return {
+      ampPct: actualAmpPct,
+      requestedAmpPct,
+      mult,
+      tier: tierInfo.tier,
+      extraLocks: tierInfo.extraLocks,
+      defPierce: tierInfo.defPierce,
+      label: tierInfo.label,
+      extraMp: Math.round(mmp * actualAmpPct),
+      discountedExtraMp: actualDiscounted,
+    };
+  }
+
   function computeOvercastPowerMp(player, skill) {
     if (!skill) return 0;
     const base = computeBaseMpCost(player, skill);
-    let commit = base;
-    if (player.hasManaCycle && !skill.noOvercast && skill.atkKind === 'matk' && skill.power > 0) {
-      if (player.overcastMode === 1) {
-        commit = Math.max(base, Math.floor(player.mp * 0.5));
-      } else if (player.overcastMode === 2) {
-        commit = Math.max(base, player.mp);
-      }
-    }
-    if (player.wandActive && skill.power > 0 && !skill.aoe && skill.atkKind === 'matk') {
-      if (player.overcastMode !== 2) {
-        commit += 46;
-      }
-    }
-    return commit;
+    const wandExtra = computeWandExtraMp(player, skill);
+    const prof = computeAmpProfile(player, skill);
+    return base + wandExtra + prof.extraMp;
   }
 
   function computeSkillMpCost(player, skill) {
     if (!skill) return 0;
     if (player.status && player.status.zeroMpThisTurn) return 0;
     const base = computeBaseMpCost(player, skill);
-    let commit = computeOvercastPowerMp(player, skill);
-    // 【省魔手稿】：魔战倾注过载额外消耗减半，保留一半过载缓冲
-    if (hasRelic(player, 'noelle_manuscript') && commit > base) {
-      commit = base + Math.ceil((commit - base) * 0.5);
-    }
-    return commit;
+    const wandExtra = computeWandExtraMp(player, skill);
+    const prof = computeAmpProfile(player, skill);
+    return base + wandExtra + prof.discountedExtraMp;
   }
 
-  // 原著魔战循环公式②：严格仅限魔法伤害额外增加 原伤害 × (该魔法消耗 ÷ 总魔力值)
+  // V2.2 魔战循环 × 双段质变魔力增幅倍率（纯物理技恒定 1.0x）
   function computeManaCycleMultiplier(player, mpSpent, skill) {
-    if (!player.hasManaCycle || !skill || skill.power <= 0 || skill.atkKind !== 'matk' || skill.elem === 'phys' || mpSpent <= 0) {
+    if (!player || !player.hasManaCycle || !skill || skill.power <= 0 || skill.atkKind !== 'matk' || skill.elem === 'phys' || mpSpent <= 0) {
       return 1.0;
     }
-    return 1.0 + mpSpent / Math.max(1, player.mmp);
+    return computeAmpProfile(player, skill).mult;
   }
 
   function getPlayerCritChance(player, skill) {
@@ -2657,15 +2956,19 @@
 
     const mpCost = opts.mpCost != null ? opts.mpCost : computeSkillMpCost(p, skill);
     const powerMp = opts.powerMp != null ? opts.powerMp : computeOvercastPowerMp(p, skill);
-    const mcMult = computeManaCycleMultiplier(p, powerMp, skill);
+    const ampProfile = opts.ampProfile || computeAmpProfile(p, skill);
+    const mcMult = (p.hasManaCycle && skill.atkKind === 'matk' && skill.elem !== 'phys' && powerMp > 0) ? ampProfile.mult : 1.0;
     const stance = e.intent ? e.intent.stance : 'HEAVY_WINDUP';
-    const wandOn = !!(p.wandActive && !skill.aoe && skill.atkKind === 'matk');
+    const wandOn = isEclipseStaffForSkill(p, skill);
+    const staff = getEquippedStaffDef(p);
+    const staffMatkMult = (staff && staff.matkMult) ? staff.matkMult : 1.0;
     const isTempestVacuum = !!(e.aiType === 'wind_god_boss' && (e.phase || 1) >= 2 && e.intent && e.intent.moveKey === 'TEMPEST_VACUUM');
     const isEyeStillness = !!(e.aiType === 'wind_god_boss' && (e.phase || 1) >= 2 && e.intent && e.intent.moveKey === 'EYE_STILLNESS');
 
-    let atkStat = p.matk;
+    const effMatk = p.matk * staffMatkMult;
+    let atkStat = effMatk;
     if (skill.atkKind === 'atk') atkStat = p.atk;
-    else if (skill.atkKind === 'hybrid') atkStat = p.atk * 0.92 + p.matk * 0.58;
+    else if (skill.atkKind === 'hybrid') atkStat = p.atk * 0.92 + effMatk * 0.58;
 
     let pwr = skill.power;
     let willInterrupt = false;
@@ -2747,7 +3050,11 @@
       stanceMod *= 1.2;
     }
 
-    if (stance === 'STAGGERED') stanceMod *= 1.25;
+    if (e.broken) {
+      stanceMod *= COMBAT_BALANCE_V22.HSR_AV.breakVulnMult;
+    } else if (stance === 'STAGGERED') {
+      stanceMod *= 1.25;
+    }
     if (e.status && e.status.vuln > 0) stanceMod *= 1.32;
 
     // 贝阿特丽丝 / 东翼封锁官：烈焰斗气与架势相克（双火蛇需冰晶冻核，融冰剑障/红莲守势需水弹浇灭）
@@ -2783,25 +3090,33 @@
 
     // 艾诺正面无气泡镜冰阻挡非破招攻击
     if (e.mirrorGuard && !skill.bypassMirror && !willInterrupt) {
-      return { dmg: 0, mult: elemMult, mcMult, mpCost, willInterrupt: false, willRiposte: false, mirrorBlocked: true, chainApplied };
+      return {
+        dmg: 0, mult: elemMult, mcMult, mpCost,
+        willInterrupt: false, willRiposte: false, mirrorBlocked: true, chainApplied,
+        trueMagic: wandOn, ampTier: ampProfile.tier, ampPct: ampProfile.ampPct, extraLocks: 0,
+      };
     }
 
-    let defVal = skill.atkKind === 'atk' ? e.def : skill.atkKind === 'hybrid' ? Math.min(e.def, e.mdef) * 0.7 : e.mdef;
+    // V2.2 晦轮杖 100% 魔法真伤 vs K=80 双曲线比值防御
+    let defMit = 1.0;
+    let defPierce = 0;
     if (wandOn) {
-      // 晦轮杖折光蚀穿：穿透 70% 防御并附带 1.22x 折光伤害加成
-      defVal *= 0.3;
-      stanceMod *= 1.22;
-    }
-    if (skill.elem === 'ice' && getSynergyTier(p, 'north_frost') >= 2) {
-      defVal *= 0.85;
-    }
-    if (skill.elem === 'ice' && p.status && p.status.frostPierce > 0 && hasRelic(p, 'aino_frost_shard')) {
-      defVal *= 0.75;
+      // 100% 无视敌方 MDEF 与 magic 护盾；唯物理实体厚甲/石壁按 (1 - solidArmor) 阻尼
+      const solidArmor = Math.max(0, Math.min(0.85, Number(e.solidArmor) || 0));
+      defMit = 1.0 - solidArmor;
+    } else {
+      const defVal = skill.atkKind === 'atk' ? e.def : skill.atkKind === 'hybrid' ? Math.min(e.def, e.mdef) * 0.7 : e.mdef;
+      if (ampProfile.defPierce > 0) defPierce += ampProfile.defPierce;
+      if (skill.elem === 'ice' && getSynergyTier(p, 'north_frost') >= 2) defPierce += 0.15;
+      if (skill.elem === 'ice' && p.status && p.status.frostPierce > 0 && hasRelic(p, 'aino_frost_shard')) defPierce += 0.25;
+      const clampedPierce = Math.min(COMBAT_BALANCE_V22.MAX_DEF_PIERCE, defPierce);
+      const effDef = Math.max(0, defVal * (1 - clampedPierce));
+      defMit = COMBAT_BALANCE_V22.DEF_K / (COMBAT_BALANCE_V22.DEF_K + effDef);
     }
 
-    const raw = atkStat * pwr * mcMult * stanceMod * elemMult - defVal * 0.75;
+    const raw = atkStat * pwr * mcMult * stanceMod * elemMult * defMit;
     return {
-      dmg: Math.max(2, Math.round(raw)),
+      dmg: Math.max(4, Math.round(raw)),
       mult: elemMult,
       mcMult,
       mpCost,
@@ -2810,6 +3125,12 @@
       rootStepParryTrigger,
       northFrostShatter,
       wandRefract: wandOn,
+      trueMagic: wandOn,
+      ampTier: ampProfile.tier,
+      ampPct: ampProfile.ampPct,
+      extraLocks: ampProfile.extraLocks,
+      defPierce,
+      defMit,
       chainApplied,
     };
   }
@@ -2822,7 +3143,7 @@
     const apCost = computeSkillApCost(bState, skill);
     const mpCost = computeSkillMpCost(p, skill);
     const stance = e.intent ? e.intent.stance : 'HEAVY_WINDUP';
-    const wandOn = !!(p.wandActive && !skill.aoe && skill.atkKind === 'matk');
+    const wandOn = isEclipseStaffForSkill(p, skill);
     const isTempestVacuum = !!(e.aiType === 'wind_god_boss' && (e.phase || 1) >= 2 && e.intent && e.intent.moveKey === 'TEMPEST_VACUUM');
     const isEyeStillness = !!(e.aiType === 'wind_god_boss' && (e.phase || 1) >= 2 && e.intent && e.intent.moveKey === 'EYE_STILLNESS');
 
@@ -2841,8 +3162,12 @@
         dmgMax: 0,
         elemMult: 1,
         mcMult: 1,
+        ampTier: 0,
+        ampPct: 0,
+        lockDamage: 0,
         manaReturn: 0,
         critChance: 0,
+        trueMagic: false,
         willInterrupt: false,
         willRiposte: willParry,
         guardPenalty: false,
@@ -2868,18 +3193,31 @@
 
     let effShield = e.shield || 0;
     if (skill.shatterShield) effShield = 0;
+    else if (wandOn && (e.shieldKind || 'magic') === 'magic') effShield = 0;
     else if (skill.pierceHalfShield) effShield = Math.floor(effShield * 0.5);
-    const estHpLoss = wandOn
-      ? Math.min(e.hp, Math.round(dmgMin * 0.65) + Math.max(0, dmgMin - Math.round(dmgMin * 0.65) - effShield))
-      : Math.min(e.hp, Math.max(0, dmgMin - effShield));
+    const estHpLoss = Math.min(e.hp, Math.max(0, dmgMin - effShield));
 
     let manaReturn = 0;
     if (p.hasManaCycle && skill.elem !== 'phys' && estHpLoss > 0) {
       const jikanDouble = (skill.path === 'SWORD' && (est.willRiposte || est.willInterrupt) && getSynergyTier(p, 'jikan_blade') >= 2);
-      manaReturn += jikanDouble ? estHpLoss * 2 : estHpLoss;
+      manaReturn += jikanDouble ? estHpLoss * 2 : Math.round(estHpLoss * COMBAT_BALANCE_V22.MANA_CYCLE.returnRatio);
     }
     if (est.chainApplied) {
       manaReturn += Math.round(p.mmp * 0.15) + (hasRelic(p, 'shell_pin') ? Math.round(p.mmp * 0.08) : 0);
+    }
+
+    const fcCounterOrInsight = !!(est.willInterrupt || est.willRiposte || est.rootStepParryTrigger || skill.path === 'INSIGHT');
+    const fcFresh = !bState.aiMemory || bState.aiMemory.lastAtkSkillId !== skill.id || (bState.aiMemory.sameAtkSkillStreak || 0) < 1;
+    let lockDamage = 0;
+    if (!(est.mirrorBlocked || evadeBlocked || guardPenalty)) {
+      if (fcCounterOrInsight) {
+        lockDamage = getSkillBaseLockDamage(skill) + 1 + (est.extraLocks || 0);
+      } else if (fcFresh && est.mult > 1.0) {
+        lockDamage = getSkillBaseLockDamage(skill) + (est.extraLocks || 0);
+      } else if (fcFresh && est.mult >= 1.0 && (est.extraLocks || 0) > 0) {
+        lockDamage = est.extraLocks;
+      }
+      if (skill.aoe && !fcCounterOrInsight && lockDamage > 1) lockDamage = 1;
     }
 
     let headline = `预计伤害 ${dmgMin}${dmgMax > dmgMin ? `~${dmgMax}` : ''}`;
@@ -2902,6 +3240,11 @@
     } else if (est.willRiposte) {
       headline = '✦ 触发卸力闪反！（并激活连携追击）';
       kind = 'riposte';
+    } else if (wandOn) {
+      headline = (e.solidArmor > 0)
+        ? `✦ 晦轮杖真伤（实体甲阻尼 ${Math.round(e.solidArmor * 100)}%）`
+        : '✦ 晦轮杖 100% 魔法真伤（无视法抗与魔法盾）！';
+      kind = 'chain';
     } else if (est.chainApplied) {
       headline = '✦ 连携追击生效（1.35× 伤害 + 返蓝）！';
       kind = 'chain';
@@ -2916,6 +3259,10 @@
       estHpLoss,
       elemMult: est.mult,
       mcMult: est.mcMult,
+      ampTier: est.ampTier || 0,
+      ampPct: est.ampPct || 0,
+      lockDamage,
+      trueMagic: wandOn,
       manaReturn,
       critChance,
       willInterrupt: est.willInterrupt,
@@ -2934,17 +3281,34 @@
      6. 战场状态与交互结算核心
      ========================================================= */
   let activeBattle = null;
+  let _battleInstanceSeq = 0;
 
-  function getPrimaryAliveEnemy(b) {
-    if (!b || !b.enemies) return null;
+  function ensureValidTarget(b) {
+    if (!b || !Array.isArray(b.enemies) || !b.enemies.length) return -1;
     const locked = b.enemies[b.targetIdx];
-    if (locked && locked.hp > 0) return locked;
-    const idx = b.enemies.findIndex(e => e.hp > 0);
+    if (locked && locked.hp > 0) return b.targetIdx;
+    const idx = b.enemies.findIndex(e => e && e.hp > 0);
     if (idx >= 0) {
       b.targetIdx = idx;
-      return b.enemies[idx];
+      return idx;
     }
-    return null;
+    return -1;
+  }
+
+  function getPrimaryAliveEnemy(b) {
+    const idx = ensureValidTarget(b);
+    return idx >= 0 ? b.enemies[idx] : null;
+  }
+
+  function selectTarget(idx, b) {
+    b = b || activeBattle;
+    if (!b || b.over || !Array.isArray(b.enemies)) return false;
+    const target = b.enemies[idx];
+    if (!target || target.hp <= 0) return false;
+    b.targetIdx = idx;
+    armedSkillId = null;
+    if (!b.headless) renderCombatUI();
+    return true;
   }
 
   let _logBatchDepth = 0;
@@ -2988,7 +3352,7 @@
     div.className = 'cb-banner-fx ' + (kind || 'interrupt');
     div.textContent = text;
     layer.appendChild(div);
-    setTimeout(() => { if (div.parentNode) div.remove(); }, 920);
+    trackVfxTimer(() => { if (div.parentNode) div.remove(); }, 920);
   }
 
   /* =========================================================
@@ -3528,6 +3892,8 @@
     if (!b || !enemy || (enemy.phase || 1) >= 2) return false;
     enemy.phase = 2;
     enemy.phase2Step = 0;
+    enemy.broken = false;
+    if (enemy.maxLocks) enemy.locks = enemy.maxLocks;
     if (b.metrics) b.metrics.phase2Triggered = true;
     if (enemy.status) delete enemy.status.stagger;
 
@@ -3542,11 +3908,17 @@
       theme = 'ember';
       refreshShield = 72;
       enemy.fireAura = Math.max(enemy.fireAura || 0, 2);
+      enemy.spd = Math.max(enemy.spd || 108, 116);
+      enemy.baseAv = computeBaseAv(enemy.spd);
+      enemy.av = Math.min(enemy.av || enemy.baseAv, enemy.baseAv);
     } else if (enemy.aiType === 'wind_god_boss') {
       bannerTitle = '第二阶段 · 风暴眼全开';
       quote = '「热身到此为止。飓风最中心其实是静止的——接得住这一剑，才算摸到风暴眼的门槛。」';
       theme = 'storm';
       refreshShield = 68;
+      enemy.spd = Math.max(enemy.spd || 132, 142);
+      enemy.baseAv = computeBaseAv(enemy.spd);
+      enemy.av = Math.min(enemy.av || enemy.baseAv, enemy.baseAv);
       if (!(enemy.status && enemy.status.evadeSealed > 0)) {
         enemy.evadeCharges = Math.max(enemy.evadeCharges || 0, 1);
       }
@@ -3574,11 +3946,25 @@
     b.waveIdx = waveIdx;
     b.waveTurn = 1;
     b.ainoSpearsFiredInWave = 0;
+    b.oneMoreUsedThisTurn = false;
+    b.oneMoreActive = false;
+    if (b.player) b.player.av = 0;
+    if (b.aiMemory) b.aiMemory.turtleStreak = 0;
     b._pendingElementVFX = [];
     b._pendingPixelActions = [];
+    b._pendingHitPulses = [];
     if (waveIdx > 0 && !b.headless) {
-      const pxWaveApi = getPixelVfxApi();
-      if (pxWaveApi && typeof pxWaveApi.clearEffects === 'function') pxWaveApi.clearEffects();
+      clearAllJuiceVfx();
+      if (typeof document !== 'undefined') {
+        const callout = document.getElementById('cb-callout-layer');
+        if (callout) callout.innerHTML = '';
+        const pm = document.getElementById('cb-palace-modal');
+        if (pm && pm.parentNode) pm.parentNode.innerHTML = '';
+        const bs = document.getElementById('battle-screen');
+        if (bs) bs.classList.remove('palace-timestop');
+        const actGrid = document.getElementById('b-actions');
+        if (actGrid) actGrid._lastHtml = '';
+      }
     }
     delete b.palacePendingStep2;
     b.witnessActive = !!w.witnessActive;
@@ -3597,25 +3983,42 @@
     if (w.witnessActive && b.exposure < (w.initialExposure || 25)) {
       b.exposure = w.initialExposure || 25;
     }
-    b.enemies = w.enemies.map(tpl => Object.assign({}, tpl, {
-      status: {},
-      shield: tpl.shield || 0,
-      mp: tpl.mp != null ? tpl.mp : null,
-      mmp: tpl.mmp != null ? tpl.mmp : null,
-      evadeCharges: tpl.evadeCharges || 0,
-      maxEvadeCharges: tpl.maxEvadeCharges || 0,
-      phase: tpl.phase || 1,
-      phase2Step: 0,
-      flawToken: 0,
-      seepSevered: false,
-      seepTriggeredOnce: false,
-      wasInterruptedLastTurn: false,
-      intent: null,
-    }));
+    b.enemies = w.enemies.map((tpl, idx) => {
+      const eSpd = tpl.spd || (tpl.boss ? 112 : 95);
+      const eBaseAv = computeBaseAv(eSpd);
+      const eMaxLocks = tpl.maxLocks != null ? tpl.maxLocks : (tpl.boss ? 4 : 3);
+      return Object.assign({}, tpl, {
+        status: {},
+        shield: Math.max(0, tpl.shield || 0),
+        shieldKind: tpl.shieldKind || 'magic',
+        solidArmor: Math.max(0, Math.min(0.85, Number(tpl.solidArmor) || 0)),
+        spd: eSpd,
+        baseAv: eBaseAv,
+        av: Math.round(eBaseAv * (0.45 + idx * 0.14)),
+        maxLocks: eMaxLocks,
+        locks: eMaxLocks,
+        broken: false,
+        mp: tpl.mp != null ? tpl.mp : null,
+        mmp: tpl.mmp != null ? tpl.mmp : null,
+        evadeCharges: tpl.evadeCharges || 0,
+        maxEvadeCharges: tpl.maxEvadeCharges || 0,
+        phase: tpl.phase || 1,
+        phase2Step: 0,
+        flawToken: 0,
+        seepSevered: false,
+        seepTriggeredOnce: false,
+        wasInterruptedLastTurn: false,
+        intent: null,
+      });
+    });
     b.targetIdx = 0;
+    ensureValidTarget(b);
 
     b.enemies.forEach(e => {
-      if (e.aiType === 'noelle') e.shield = 52;
+      if (e.aiType === 'noelle') {
+        e.shield = 52;
+        e.shieldKind = 'magic';
+      }
       decideEnemyIntent(e, b);
     });
 
@@ -3640,7 +4043,7 @@
   function isPalaceReady(b) {
     if (!b || b.over) return false;
     if (b.player.palaceMax <= 0 || b.player.palaceLeft <= 0) return false;
-    // 原著法则：须先亲眼见识敌方本波至少出手一轮（本波第 2 回合起）方可开启冰晶宫殿冻结复盘！
+    // 原著法则：须先亲眼见识敌方本波至少出手一轮（本波第 2 回合起）方可展开冰晶宫殿并行推演！
     return (b.waveTurn || 1) >= 2;
   }
 
@@ -3649,6 +4052,7 @@
     const player = buildPlayerCombatant(stageCfg, opts);
     const b = {
       id: stageCfg.id,
+      battleInstanceId: ++_battleInstanceSeq,
       stageCfg,
       player,
       enemies: [],
@@ -3657,9 +4061,12 @@
       waveTurn: 1,
       totalWaves: stageCfg.waves.length,
       turn: 1,
+      naturalTurnCount: 1,
       ap: 2,
       apMax: 3,
       apPerTurn: 2,
+      oneMoreUsedThisTurn: false,
+      oneMoreActive: false,
       over: false,
       won: false,
       grade: null,
@@ -3703,6 +4110,9 @@
         enteredUnderSeep: false,
         manaFizzleWin: false,
         phase2Triggered: false,
+        weaknessBreaks: 0,
+        oneMoreCount: 0,
+        overflowBreaksIntercepted: 0,
       },
       palaceInspectedWaves: {},
       log: [],
@@ -3736,11 +4146,70 @@
     if (!b || b.over) return false;
     if (!b.player.hasManaCycle) return false;
     const nextMode = Math.max(0, Math.min(2, mode | 0));
-    const changed = b.player.overcastMode !== nextMode;
+    const nextAmp = nextMode === 2 ? 0.50 : nextMode === 1 ? 0.25 : 0;
+    const changed = b.player.overcastMode !== nextMode || Math.abs((b.player.ampPct || 0) - nextAmp) > 1e-4;
     b.player.overcastMode = nextMode;
+    b.player._lastOvercastMode = nextMode;
+    b.player.ampPct = nextAmp;
     armedSkillId = null;
     if (!b.headless) {
       if (changed) safeSfx('tab_switch');
+      renderCombatUI();
+    }
+    return true;
+  }
+
+  function setAmpPct(pct, b, opts) {
+    if (b && typeof b === 'object' && !('player' in b) && !('enemies' in b)) {
+      opts = b;
+      b = activeBattle;
+    }
+    b = b || activeBattle;
+    if (!b || b.over || !b.player.hasManaCycle) return { ok: false, ampPct: 0, overcastMode: 0, tier: getAmpTierInfo(0) };
+    let val = Number(pct);
+    if (!isFinite(val)) val = 0;
+    if (val > 1) val = val / 100;
+    val = Math.max(0, Math.min(0.50, val));
+    if (opts && opts.snap) {
+      const snaps = [0, 0.25, 0.50];
+      for (const s of snaps) {
+        if (Math.abs(val - s) <= 0.02) { val = s; break; }
+      }
+    }
+    val = Math.round(val * 10000) / 10000;
+    const nextMode = val >= 0.48 ? 2 : val >= 0.20 ? 1 : 0;
+    const changed = Math.abs((b.player.ampPct || 0) - val) > 1e-4 || b.player.overcastMode !== nextMode;
+    b.player.ampPct = val;
+    b.player.overcastMode = nextMode;
+    b.player._lastOvercastMode = nextMode;
+    armedSkillId = null;
+    if (!b.headless) {
+      if (changed && !(opts && opts.silent)) safeSfx('tab_switch');
+      renderCombatUI();
+    }
+    return { ok: true, ampPct: val, overcastMode: nextMode, tier: getAmpTierInfo(val) };
+  }
+
+  function setEquippedStaff(staffId, b) {
+    b = b || activeBattle;
+    if (!b || b.over) return false;
+    const def = COMBAT_BALANCE_V22.STAVES[staffId];
+    if (!def) return false;
+    const p = b.player;
+    p.equippedStaff = staffId;
+    if (staffId === 'eclipse_wand') {
+      p.hasEclipseWand = true;
+      p.wandActive = true;
+      p.wandPersistent = true;
+      p.wandCooldown = 0;
+    } else {
+      p.wandActive = false;
+      p.wandPersistent = false;
+      p.wandCooldown = 0;
+    }
+    armedSkillId = null;
+    if (!b.headless) {
+      safeSfx('tab_switch');
       renderCombatUI();
     }
     return true;
@@ -3751,20 +4220,23 @@
     if (!b || b.over) return false;
     const p = b.player;
     if (!p.hasEclipseWand) return false;
-    if (p.wandCooldown > 0 && forceVal !== false) {
-      pushLog(b, logTag('cbl-violet', `🪄 晦轮杖银环余震未平（冷却剩余 ${p.wandCooldown} 回合）。`));
-      return false;
-    }
+    // V2.2：晦轮杖零冷却、无四不享受、无魔战锁，核心制约在于 +24% MaxMP 额外耗蓝与耳目暴露风险；希尔维亚无法发动日蚀
+    p.wandCooldown = 0;
     armedSkillId = null;
     p.wandActive = forceVal !== undefined ? !!forceVal : !p.wandActive;
+    if (!p.wandActive) {
+      p.wandPersistent = false;
+      if (p.equippedStaff === 'eclipse_wand') p.equippedStaff = 'none';
+    }
     if (!b.headless) safeSfx('tab_switch');
     if (p.wandActive) {
       if (b.witnessActive) {
         b.exposure = Math.min(100, b.exposure + 25);
         if (b.exposure >= 70) b.exposureWarningTriggered = true;
       }
-      pushLog(b, logTag('cbl-violet', `🪄 催动「晦轮杖」暗银细环：下一次单点魔法附带【折光蚀穿】（穿透65%护盾与70%法抗，额外耗蓝46 MP，冷却2回合）！${b.witnessActive ? `（⚠️ 耳目附近拔杖引动异象，暴露风险升至 ${b.exposure}%！）` : ''}`));
-      spawnBanner(b, '🪄 晦轮杖 · 银环折光', 'wand');
+      const extraMpNow = Math.round(Math.max(1, p.mmp || 100) * COMBAT_BALANCE_V22.STAVES.eclipse_wand.extraMpPct);
+      pushLog(b, logTag('cbl-violet', `🪄 催动「晦轮杖」暗银细环：下一次魔法附带【100% 魔法真伤】（无视法抗与魔法盾，仅物理实体甲阻尼；额外耗蓝 +${extraMpNow} MP，保留暴击与魔战循环，无冷却）！${b.witnessActive ? `（⚠️ 耳目附近拔杖引动异象，暴露风险升至 ${b.exposure}%！）` : ''}`));
+      spawnBanner(b, '🪄 晦轮杖 · 魔法真伤', 'wand');
       queuePixelAction(b, { type: 'wand_toggle' });
       if (b.witnessActive && b.exposure >= 100) {
         finishBattle(b, false, 'exposed');
@@ -3784,7 +4256,7 @@
     const e = getPrimaryAliveEnemy(b);
     const nm = e ? e.name : '敌方';
     return {
-      sceneText: `意识沉入冰晶宫殿，飞溅尘屑与风声凝固，${nm}的发力姿态被完整冻结。`,
+      sceneText: `意识沉入冰晶宫殿，多条回忆与交锋脉络在冰镜中并行展开，${nm}的发力姿态被完整拆解。`,
       clues: [
         { id: 'decoy_a', text: `表面流转的寻常魔力余波正随呼吸轻轻起伏`, correct: false, feedback: '表面余波并无异常。' },
         { id: 'true_flaw', text: `前踏发力瞬间，支撑脚踝外侧重心明显悬空`, correct: true, feedback: '观察准确！支撑脚重心已锁死！' },
@@ -3827,9 +4299,9 @@
     }
 
     if (!clue.correct) {
-      // 选错观察点有真实战术代价：分神损耗 1 AP（若当前有 AP）
-      if (b.ap > 0) b.ap -= 1;
-      pushLog(b, logTag('cbl-danger', `❄️【冰晶宫殿·误判】${clue.feedback}（时停分神损耗 1 AP！）`));
+      // 选错观察点有真实战术代价：并行推演失焦损耗 1 AP（若当前有 AP）
+      if (b.ap > 0) b.ap = Math.max(0, b.ap - 1);
+      pushLog(b, logTag('cbl-danger', `❄️【冰晶宫殿·误判】${clue.feedback}（并行推演失焦损耗 1 AP！）`));
       if (!b.headless) renderCombatUI();
       return { ok: true, correct: false, step: 1, feedback: clue.feedback };
     }
@@ -3896,33 +4368,39 @@
 
   function dealDamageToEnemy(b, enemy, dmg, opts) {
     opts = opts || {};
+    const safeDmg = Math.max(0, Math.round(Number(dmg) || 0));
+    enemy.shield = Math.max(0, enemy.shield || 0);
+
     if (opts.shatterShield && enemy.shield > 0) {
       pushLog(b, logTag('cbl-ice', `💥 击碎了 ${enemy.name} 的 ${enemy.shield} 点护盾！`));
       enemy.shield = 0;
     }
 
-    let rem = dmg;
+    let rem = safeDmg;
     let shieldAbsorbed = 0;
+    let magicShieldBypassed = false;
     if (enemy.shield > 0) {
-      if (opts.wandRefract) {
-        // 晦轮杖折光蚀穿：65% 伤害直接穿透护盾打本体，35% 削减护盾
-        const bypassDmg = Math.round(rem * 0.65);
-        const onShield = rem - bypassDmg;
-        const blk = Math.min(enemy.shield, onShield);
-        enemy.shield -= blk;
-        shieldAbsorbed = blk;
-        rem = bypassDmg + (onShield - blk);
+      if (opts.trueMagic || opts.wandRefract) {
+        // V2.2 晦轮杖 100% 魔法真伤：完全无视 magic 护盾；物理实体盾（solid）仍可正常承伤
+        if ((enemy.shieldKind || 'magic') === 'magic') {
+          magicShieldBypassed = true;
+        } else {
+          const blk = Math.min(enemy.shield, rem);
+          enemy.shield = Math.max(0, enemy.shield - blk);
+          shieldAbsorbed = blk;
+          rem = Math.max(0, rem - blk);
+        }
       } else if (opts.pierceHalfShield) {
         const effShield = Math.floor(enemy.shield * 0.5);
         const blk = Math.min(effShield, rem);
-        enemy.shield -= blk;
+        enemy.shield = Math.max(0, enemy.shield - blk);
         shieldAbsorbed = blk;
-        rem -= blk;
+        rem = Math.max(0, rem - blk);
       } else {
         const blk = Math.min(enemy.shield, rem);
-        enemy.shield -= blk;
+        enemy.shield = Math.max(0, enemy.shield - blk);
         shieldAbsorbed = blk;
-        rem -= blk;
+        rem = Math.max(0, rem - blk);
       }
     }
 
@@ -3933,6 +4411,7 @@
       enemy.seepTriggeredOnce = true;
       if (enemy.mp != null) enemy.mp = Math.max(0, enemy.mp - 18);
       enemy.shield = Math.max(enemy.shield, 60);
+      enemy.shieldKind = 'magic';
       delete enemy.status.stagger;
       enemy.intent = {
         stance: 'UNDER_SEEP',
@@ -3946,7 +4425,7 @@
       b.metrics.enteredUnderSeep = true;
       spawnBanner(b, '💧 冰面暗流 · 杀阵成型！', 'danger');
       pushLog(b, logTag('cbl-ice', `💧【尺量应急水垫】诺艾儿借薄水垫卸开致命追击退至十五米外（稳守 165 HP + 60 水幕），冰缝下的暗水线已彻底锁死你的脚底！`, true));
-      return { actualHpLoss, shieldAbsorbed };
+      return { actualHpLoss, shieldAbsorbed, magicShieldBypassed, enteredUnderSeep: true };
     }
 
     // 高难 Boss 半血二阶段锁血转场门控：确保转阶段演出与招式池切换完整触发
@@ -3956,21 +4435,25 @@
         const actualHpLoss = enemy.hp - threshold;
         enemy.hp = threshold;
         triggerBossPhase2(b, enemy);
-        return { actualHpLoss, shieldAbsorbed, phase2Triggered: true };
+        return { actualHpLoss, shieldAbsorbed, magicShieldBypassed, phase2Triggered: true };
       }
     }
 
-    const minHp = enemy.nonLethalSpar ? 1 : 0;
+    const minHp = (enemy.nonLethalSpar || opts.nonLethalCap) ? 1 : 0;
     const maxCanLose = Math.max(0, enemy.hp - minHp);
     const actualHpLoss = Math.min(maxCanLose, rem);
     enemy.hp = Math.max(minHp, enemy.hp - rem);
 
-    if (enemy.boss && enemy.phase2HpPct && (enemy.phase || 1) < 2 && enemy.hp > 0 && enemy.hp <= Math.ceil(enemy.mhp * enemy.phase2HpPct)) {
-      triggerBossPhase2(b, enemy);
-      return { actualHpLoss, shieldAbsorbed, phase2Triggered: true };
+    if (enemy.hp <= 0) {
+      ensureValidTarget(b);
     }
 
-    return { actualHpLoss, shieldAbsorbed };
+    if (enemy.boss && enemy.phase2HpPct && (enemy.phase || 1) < 2 && enemy.hp > 0 && enemy.hp <= Math.ceil(enemy.mhp * enemy.phase2HpPct)) {
+      triggerBossPhase2(b, enemy);
+      return { actualHpLoss, shieldAbsorbed, magicShieldBypassed, phase2Triggered: true };
+    }
+
+    return { actualHpLoss, shieldAbsorbed, magicShieldBypassed };
   }
 
   function useSkill(skillId, targetIdx, b) {
@@ -3998,6 +4481,7 @@
     if (p.mp < mpCost) return { ok: false, reason: 'no_mp' };
 
     const powerMp = computeOvercastPowerMp(p, sk);
+    const ampProfile = computeAmpProfile(p, sk);
     const mcMult = computeManaCycleMultiplier(p, powerMp, sk);
     if (mcMult > b.metrics.maxOvercastMult) b.metrics.maxOvercastMult = mcMult;
 
@@ -4007,7 +4491,7 @@
     const primary = getPrimaryAliveEnemy(b);
     if (!primary) return { ok: false, reason: 'no_target' };
 
-    const usedWand = !!(p.wandActive && sk.power > 0 && !sk.aoe && sk.atkKind === 'matk');
+    const usedWand = isEclipseStaffForSkill(p, sk);
     armedSkillId = null;
 
     // 扣除资源与记录冷却
@@ -4015,13 +4499,14 @@
       b._handkerchiefFreeRemoteUsed = true;
       pushLog(b, logTag('cbl-ice', `🧣【雪纹手帕】首回合初次【隔空瞬凝】免除 AP 消耗！`));
     }
-    b.ap -= apCost;
+    b.ap = Math.max(0, b.ap - apCost);
     p.mp = Math.max(0, p.mp - mpCost);
     if (sk.maxUses) p.usedMaxSkills[skillId] = (p.usedMaxSkills[skillId] || 0) + 1;
     if (sk.cooldown) p.cooldowns[skillId] = sk.cooldown;
     if (usedWand) {
-      p.wandActive = false;
-      p.wandCooldown = 2;
+      // V2.2：晦轮杖零冷却；单发开关模式施放后自动收敛，常驻持杖模式保持激活
+      p.wandCooldown = 0;
+      if (!p.wandPersistent) p.wandActive = false;
       b.metrics.wandHits += 1;
     }
 
@@ -4089,10 +4574,15 @@
       if (sk.elem === 'ice' && p.passives.includes('root_ice')) gain = Math.round(gain * 1.2);
       if (hasRelic(p, 'cross')) gain = Math.round(gain * 1.2);
       const beforeS = p.shield;
-      p.shield = Math.min(p.maxShield, p.shield + gain);
+      p.shield = Math.min(p.maxShield, Math.max(0, p.shield) + gain);
+      // 物理实体冰盾优先保留 solid 标记，避免水幕覆盖已成型的实体冰壁
+      const skShieldKind = sk.shieldKind || 'solid';
+      if (beforeS <= 0 || skShieldKind === 'solid') {
+        p.shieldKind = skShieldKind;
+      }
       const shieldDelta = p.shield - beforeS;
       if (shieldDelta > 0) spawnCombatFloat(b, 'player', `+${shieldDelta} 护盾`, 'shield');
-      pushLog(b, logTag('cbl-ice', `🛡️ 「${sk.name}」构筑 ${shieldDelta} 点护盾（当前 ${p.shield}/${p.maxShield}）。`));
+      pushLog(b, logTag('cbl-ice', `🛡️ 「${sk.name}」构筑 ${shieldDelta} 点${p.shieldKind === 'solid' ? '实体' : '魔法'}护盾（当前 ${p.shield}/${p.maxShield}）。`));
       if (hasRelic(p, 'cross') && (p.status.burn > 0 || p.status.blind > 0)) {
         if (p.status.burn > 0) delete p.status.burn;
         else if (p.status.blind > 0) delete p.status.blind;
@@ -4108,6 +4598,9 @@
     if (sk.iceThorns) p.status.iceThorns = 1; // 仅钢冰生根盾带微弱反刺，物理生根步绝不串味！
     if (sk.dodgeLunge) p.status.lungeParry = 1;
     if (sk.afterimage) p.status.afterimage = (p.status.afterimage || 0) + sk.afterimage;
+    if (sk.selfAdvancePct) {
+      p.av = Math.max(0, Math.round((p.av || 0) - (p.baseAv || 100) * sk.selfAdvancePct));
+    }
     if (sk.nextApBonus) p.status.nextAp = (p.status.nextAp || 0) + sk.nextApBonus;
     if (sk.protectCrate && b.crateHp != null) {
       p.status.crateGuard = (p.status.crateGuard || 0) + sk.protectCrate;
@@ -4116,7 +4609,8 @@
     if (sk.path === 'HAND' && hasRelic(p, 'ice_pebble') && b._pebbleTurn !== b.turn) {
       b._pebbleTurn = b.turn;
       const beforePeb = p.shield;
-      p.shield = Math.min(p.maxShield, p.shield + 8);
+      p.shield = Math.min(p.maxShield, Math.max(0, p.shield) + 8);
+      if (beforePeb <= 0) p.shieldKind = 'solid';
       pushLog(b, logTag('cbl-ice', `💎【冰蓝石子】经手调魔额外凝结 ${Math.max(8, p.shield - beforePeb)} 护盾（当前 ${p.shield}/${p.maxShield}）。`));
     }
 
@@ -4158,7 +4652,11 @@
         p.status.blind -= 1;
         if (p.status.blind <= 0) delete p.status.blind;
         pushLog(b, logTag('cbl-star', `🌫️ 视线受扬尘遮蔽，你的「${sk.name}」偏斜落空！（提示：用覆潮水弹/折射水幕洗净视线，或用范围技覆盖）`));
-        if (p.overcastMode === 2) p.overcastMode = 0;
+        if (p.overcastMode === 2) {
+          p.overcastMode = 0;
+          p._lastOvercastMode = 0;
+          p.ampPct = 0;
+        }
         const missIdx = Math.max(0, b.enemies.indexOf(primary));
         queuePixelAction(b, {
           type: 'skill',
@@ -4169,13 +4667,14 @@
           missed: true,
         });
         if (!b.headless) {
-          safeSfx((sk.path === 'SWORD' || sk.elem === 'phys') ? 'sword_slash' : 'ice_cast');
+          safeSfx((sk.path === 'SWORD' || sk.elem === 'phys') ? 'sword_slash' : sk.elem === 'water' ? 'water_surge' : 'ice_cast');
           renderCombatUI();
         }
         return { ok: true, missedByBlind: true };
       }
 
       targets.forEach(e => {
+        if (!e || e.hp <= 0 || p.hp <= 0 || b.over) return;
         const stance = e.intent ? e.intent.stance : 'HEAVY_WINDUP';
         const isTempestRootParry = !!(
           e.aiType === 'wind_god_boss' &&
@@ -4199,7 +4698,7 @@
         // 诺艾儿残血脚底冰缝暗流翻盘陷阱（100% 绕过正面护盾直刺本体！）
         if (e.intent && e.intent.ambushTrap && !e.seepSevered && !sk.severSeep) {
           if (p.status.afterimage > 0) {
-            p.status.afterimage--;
+            p.status.afterimage = Math.max(0, p.status.afterimage - 1);
             e.seepSevered = true;
             e.intent.ambushTrap = false;
             pushLog(b, logTag('cbl-emerald', `💨 脚底冰缝暗流骤然暴起，幸亏「风行残像」替身引爆了暗流杀阵，你真身安然避开！`));
@@ -4217,10 +4716,12 @@
         if (p.hp <= 0) return;
 
         // 贝阿特丽丝 / 东翼封锁官：烈焰防反下盲丢普通冰晶触发融冰爆炎反劈
+        let hitCounterPenalty = false;
         if ((e.aiType === 'beatrice' || e.aiType === 'eastwing_boss') && stance === 'GUARD_COUNTER' && e.intent && e.intent.meltIceCounter && sk.elem === 'ice' && sk.path !== 'INSIGHT') {
+          hitCounterPenalty = true;
           const meltDmg = e.aiType === 'eastwing_boss' ? 40 : 34;
-          const blk = Math.min(p.shield, meltDmg);
-          p.shield -= blk;
+          const blk = Math.min(Math.max(0, p.shield), meltDmg);
+          p.shield = Math.max(0, p.shield - blk);
           p.hp = Math.max(0, p.hp - (meltDmg - blk));
           p.status.burn = (p.status.burn || 0) + 1;
           e.fireAura = Math.min(3, (e.fireAura || 0) + 1);
@@ -4232,11 +4733,12 @@
 
         // 风神·听劲风壁 / 风眼静滞反制阵：未以冰宫看破或蓄势剑步破静而盲攻，反遭借岚反切
         if (e.aiType === 'wind_god_boss' && e.intent && (e.intent.windGuardCounter || e.intent.eyeStillnessStance) && !isEyeStillnessBreak && sk.path !== 'INSIGHT' && !(sk.path === 'REMOTE' && !usedWand)) {
+          hitCounterPenalty = true;
           const stillRetal = e.intent.eyeStillnessStance ? 56 : 46;
-          const halfBlk = Math.min(Math.floor(p.shield * 0.5), stillRetal);
-          p.shield -= halfBlk;
+          const halfBlk = Math.min(Math.floor(Math.max(0, p.shield) * 0.5), stillRetal);
+          p.shield = Math.max(0, p.shield - halfBlk);
           p.hp = Math.max(0, p.hp - (stillRetal - halfBlk));
-          e.shield = (e.shield || 0) + 32;
+          e.shield = Math.max(0, e.shield || 0) + 32;
           triggerShake(b, false);
           if (!b.headless && !playedBladeClash) { safeSfx('blade_clash'); playedBladeClash = true; }
           pushLog(b, logTag('cbl-emerald', `🌪️ 风神借风壁圆心顺势反切，穿盾造成 ${stillRetal - halfBlk} 伤害并补强 32 点风壁！（宜先守势避锋，或以冰宫看破、蓄势剑步破阵）`));
@@ -4245,9 +4747,10 @@
 
         // 罗文非窄道窗口盲丢凝华冰晶：遭晦轮银环折射反噬
         if (e.aiType === 'rowan' && e.intent && e.intent.refractIceCrystal && sk.id === 'hand_ice_crystal') {
+          hitCounterPenalty = true;
           const refDmg = 24;
-          const blk = Math.min(p.shield, refDmg);
-          p.shield -= blk;
+          const blk = Math.min(Math.max(0, p.shield), refDmg);
+          p.shield = Math.max(0, p.shield - blk);
           p.hp = Math.max(0, p.hp - (refDmg - blk));
           pushLog(b, logTag('cbl-violet', `🌑 罗文轻转晦轮杖偏折了正面冰晶余波，黑芒反噬你 ${refDmg} 伤害！（宜留魔力等他钻入石碑窄道时配合薄冰出击）`));
           if (p.hp <= 0) return;
@@ -4255,9 +4758,10 @@
 
         // 敌方预判反制盲目隔空瞬凝（艾诺 / 诺艾儿 / 赫兰重甲 / 东翼 / 风神 GUARD_COUNTER + counterRemoteHit）
         if (sk.path === 'REMOTE' && stance === 'GUARD_COUNTER' && e.intent && e.intent.counterRemoteHit && !usedWand) {
+          hitCounterPenalty = true;
           const counterDmg = 42;
-          const blk = Math.min(p.shield, counterDmg);
-          p.shield -= blk;
+          const blk = Math.min(Math.max(0, p.shield), counterDmg);
+          p.shield = Math.max(0, p.shield - blk);
           p.hp = Math.max(0, p.hp - (counterDmg - blk));
           triggerShake(b, false);
           if (!b.headless && !playedBladeClash) { safeSfx('blade_clash'); playedBladeClash = true; }
@@ -4298,8 +4802,8 @@
           // 爱丽丝风路未被封印时，若非刚用水弹冲净扬尘，借风闪开单点攻击会顺势回削一道微风气刃
           if (e.aiType === 'alice' && !(e.status.evadeSealed > 0) && sk.mp > 0 && !washedBlindJustNow) {
             const windChip = 18;
-            const blk = Math.min(p.shield, windChip);
-            p.shield -= blk;
+            const blk = Math.min(Math.max(0, p.shield), windChip);
+            p.shield = Math.max(0, p.shield - blk);
             p.hp = Math.max(0, p.hp - (windChip - blk));
             pushLog(b, logTag('cbl-muted', `💨 ${e.name} 借微风轻盈闪开「${sk.name}」，顺风回削一道气刃造成 ${windChip} 伤害！（宜用冰晶宫殿封死风轨或用范围冰棘压走位）`));
             return;
@@ -4311,7 +4815,7 @@
         // 临时恢复 wandActive 标志供伤害精算读取
         const prevWand = p.wandActive;
         if (usedWand) p.wandActive = true;
-        const est = estimateSkillDamage(b, sk, e, { mpCost, powerMp });
+        const est = estimateSkillDamage(b, sk, e, { mpCost, powerMp, ampProfile });
         p.wandActive = prevWand;
 
         // 消耗单次破绽印记 flawToken（打一发立刻清除，绝不永久残留！）
@@ -4347,6 +4851,7 @@
         if (sk.shredArmor) {
           e.def = Math.floor(e.def * 0.25);
           e.mdef = Math.floor(e.mdef * 0.25);
+          e.solidArmor = 0;
           e.coreShattered = true;
         }
         if (sk.drainEnemyMp && e.mp != null) {
@@ -4460,6 +4965,7 @@
         const shieldBeforeHit = e.shield || 0;
         const dmgRes = dealDamageToEnemy(b, e, finalDmg, {
           wandRefract: est.wandRefract,
+          trueMagic: !!est.trueMagic,
           shatterShield: !!sk.shatterShield,
           pierceHalfShield: !!sk.pierceHalfShield,
           severSeep: !!sk.severSeep,
@@ -4501,7 +5007,7 @@
           else floatLabel = `-${finalDmg}`;
           const floatKind = didCrit
             ? 'gold-crit'
-            : (didInterrupt || est.mult > 1 || est.wandRefract) ? 'crit' : 'dmg';
+            : (didInterrupt || est.mult > 1 || est.trueMagic) ? 'crit' : 'dmg';
           spawnCombatFloat(b, 'enemy', floatLabel, floatKind, ePos);
           queueHitPulse(b, 'enemy', ePos);
 
@@ -4543,9 +5049,9 @@
           didCrit ? logTag('cbl-star', `【暴击${critMult.toFixed(2)}×！】`, true) : '',
           est.northFrostShatter ? logTag('cbl-ice', '【北境碎霜+15%】', true) : '',
           est.chainApplied ? logTag('cbl-star', '【连携1.35×】', true) : '',
-          est.wandRefract ? logTag('cbl-violet', '【晦轮折光破甲】', true) : '',
+          est.trueMagic ? logTag('cbl-violet', dmgRes.magicShieldBypassed ? '【晦轮真伤·穿盾】' : '【晦轮真伤】', true) : '',
           est.mult > 1 ? logTag('cbl-cobalt', '【属性克制】', true) : '',
-          mcMult > 1.05 ? logTag('cbl-star', `[魔战${mcMult.toFixed(2)}x]`) : '',
+          mcMult > 1.05 ? logTag('cbl-star', `[增幅${mcMult.toFixed(2)}x]`) : '',
         ].filter(Boolean).join(' ');
 
         pushLog(b, `⚔️ 「${sk.name}」命中 ${e.name}，造成 <b>${finalDmg}</b> 伤害${dmgRes.shieldAbsorbed ? `（破盾${dmgRes.shieldAbsorbed}）` : ''} ${tagStr}`);
@@ -4558,12 +5064,81 @@
           }
         }
 
-        // ⚡ 魔战循环公式①：100% 等量有效生命伤害回流魔力（霁馆剑心2件令剑技迎锋/破招回蓝翻倍！）
+        // ⚡ 魔战循环公式①：等量有效生命伤害回流魔力（霁馆剑心2件令剑技迎锋/破招回蓝翻倍！）
         if (p.hasManaCycle && sk.elem !== 'phys' && dmgRes.actualHpLoss > 0) {
           const jikanDouble = (sk.path === 'SWORD' && (est.willRiposte || didInterrupt) && getSynergyTier(p, 'jikan_blade') >= 2);
-          totalManaReturned += jikanDouble ? dmgRes.actualHpLoss * 2 : dmgRes.actualHpLoss;
+          const baseRet = Math.round(dmgRes.actualHpLoss * COMBAT_BALANCE_V22.MANA_CYCLE.returnRatio);
+          totalManaReturned += jikanDouble ? dmgRes.actualHpLoss * 2 : baseRet;
           if (jikanDouble) {
             pushLog(b, logTag('cbl-violet', `✦【共鸣·霁馆剑心(2件)】剑步迎锋引动魔战双倍回蓝！`));
+          }
+        }
+
+        // V2.2 弱点锁削减 / 弱点击破推条 / ONE MORE（唯破招/闪反/看破、非复读属性克制或非复读魔力增幅过载方可破锁，盲目复读削锁为 0）
+        const repeatPunished = !!(e.intent && e.intent.punishRepeatAtk && e.intent.punishRepeatAtk === sk.id);
+        const lockBlocked = hitCounterPenalty || repeatPunished || (sk.path === 'REMOTE' && stance === 'GUARD_COUNTER' && !usedWand);
+        const isFreshPattern = (b.aiMemory.sameAtkSkillStreak || 0) < 2;
+        const isCounterOrInsight = !!(didInterrupt || est.rootStepParryTrigger || sk.path === 'INSIGHT' || (est.willRiposte && (hadPoise || isFreshPattern)));
+        let lockDmg = 0;
+        if (!lockBlocked) {
+          if (isCounterOrInsight) {
+            lockDmg = getSkillBaseLockDamage(sk) + 1 + (est.extraLocks || 0);
+          } else if (isFreshPattern && est.mult > 1.0) {
+            lockDmg = getSkillBaseLockDamage(sk) + (est.extraLocks || 0);
+          } else if (isFreshPattern && est.mult >= 1.0 && (est.extraLocks || 0) > 0) {
+            lockDmg = est.extraLocks;
+          }
+          if (sk.aoe && !isCounterOrInsight && lockDmg > 1) lockDmg = 1;
+        }
+        if (lockDmg > 0 && e.hp > 0 && !e.broken && (e.maxLocks || 0) > 0 && !dmgRes.phase2Triggered && !dmgRes.enteredUnderSeep) {
+          e.locks = Math.max(0, (e.locks != null ? e.locks : e.maxLocks) - lockDmg);
+          if (e.locks <= 0) {
+            e.broken = true;
+            anyDidBreak = true;
+            b.metrics.weaknessBreaks = (b.metrics.weaknessBreaks || 0) + 1;
+            const pushKey = e.boss ? 'boss' : (e.mhp >= 220 ? 'elite' : 'mob');
+            const pushPct = COMBAT_BALANCE_V22.HSR_AV.pushPct[pushKey] || 0.45;
+            e.av = Math.round((e.av || e.baseAv || 100) + (e.baseAv || 100) * pushPct);
+
+            if (!e.nonLethalSpar && e.hp > 0) {
+              const burstDmg = Math.max(8, Math.round(p.matk * COMBAT_BALANCE_V22.HSR_AV.breakBurstMatkRatio));
+              const burstRes = dealDamageToEnemy(b, e, burstDmg, {
+                trueMagic: usedWand,
+                nonLethalCap: !!b.stageCfg.sealRule,
+              });
+              if (burstRes.actualHpLoss > 0) {
+                spawnCombatFloat(b, 'enemy', `✦ 击破 -${burstRes.actualHpLoss}`, 'gold-crit', ePos);
+              }
+            }
+
+            if (!b.oneMoreUsedThisTurn && COMBAT_BALANCE_V22.HSR_AV.maxOneMorePerNaturalTurn > 0) {
+              b.oneMoreUsedThisTurn = true;
+              b.oneMoreActive = true;
+              b.metrics.oneMoreCount = (b.metrics.oneMoreCount || 0) + 1;
+              b.ap = Math.min(b.apMax, b.ap + 1);
+              const omMp = Math.round(p.mmp * COMBAT_BALANCE_V22.HSR_AV.oneMoreMpRefundPct);
+              const mpBeforeOm = p.mp;
+              p.mp = Math.min(p.mmp, p.mp + omMp);
+              const omGain = Math.max(0, p.mp - mpBeforeOm);
+              b.metrics.manaRecycled += omGain;
+              p.av = 0;
+              if (omGain > 0) spawnCombatFloat(b, 'player', `+${omGain} MP`, 'mp');
+              spawnBanner(b, '✦ ONE MORE · 乘胜追击!', 'riposte');
+              pushLog(b, logTag('cbl-star', `✦【弱点击破 · ONE MORE】击碎 ${e.name} 全部弱点锁（行动推条 +${Math.round(pushPct * 100)}%），赢得额外追击 +1 AP、+${omGain} MP！`, true));
+              if (!b.headless) safeSfx('one_more');
+              playedBreakOrParry = true;
+            } else {
+              b.metrics.overflowBreaksIntercepted = (b.metrics.overflowBreaksIntercepted || 0) + 1;
+              const ov = COMBAT_BALANCE_V22.HSR_AV.overflowBreakBonus;
+              const ovMp = Math.round(p.mmp * ov.mpPct);
+              const mpBeforeOv = p.mp;
+              p.mp = Math.min(p.mmp, p.mp + ovMp);
+              const ovGain = Math.max(0, p.mp - mpBeforeOv);
+              b.metrics.manaRecycled += ovGain;
+              p.av = Math.max(0, Math.round((p.av || 0) - (p.baseAv || 100) * ov.selfAdvancePct));
+              if (ovGain > 0) spawnCombatFloat(b, 'player', `+${ovGain} MP`, 'mp');
+              pushLog(b, logTag('cbl-ice', `✦【溢出击破补偿】击破 ${e.name} 弱点锁（行动推条 +${Math.round(pushPct * 100)}%），转化回蓝 +${ovGain} MP、拉条 -${Math.round(ov.selfAdvancePct * 100)}% AV！`));
+            }
           }
         }
       });
@@ -4632,6 +5207,7 @@
           if (bossTarget.aiType === 'hulan_lord' && !bossTarget.coreShattered && b.ainoSpearsFiredInWave >= 2) {
             bossTarget.coreShattered = true;
             bossTarget.shield = 0;
+            bossTarget.solidArmor = 0;
             bossTarget.def = Math.floor(bossTarget.def * 0.28);
             bossTarget.mdef = Math.floor(bossTarget.mdef * 0.28);
             bossTarget.status.vuln = (bossTarget.status.vuln || 0) + 2;
@@ -4661,10 +5237,12 @@
       b.metrics.manaRecycled += totalManaReturned;
       const mpGain = p.mp - mpBefore;
       if (mpGain > 0) spawnCombatFloat(b, 'player', `+${mpGain} MP`, 'mp');
-      pushLog(b, logTag('cbl-ice', `⚡【魔战循环】100% 等量伤害回流 +${totalManaReturned} MP（当前 ${p.mp}/${p.mmp}）！`));
+      pushLog(b, logTag('cbl-ice', `⚡【魔战循环】等量伤害回流 +${totalManaReturned} MP（当前 ${p.mp}/${p.mmp}）！`));
     }
     if (p.overcastMode === 2 && sk.power > 0 && sk.atkKind === 'matk') {
       p.overcastMode = 0;
+      p._lastOvercastMode = 0;
+      p.ampPct = 0;
     }
 
     if (!b.headless && !playedBreakOrParry) {
@@ -4675,8 +5253,12 @@
       } else if (!playedBladeClash) {
         if ((!sk.power || sk.power <= 0) && (sk.shieldBase || sk.dodgeLunge || sk.afterimage)) {
           safeSfx('shield_block');
+        } else if (usedWand) {
+          safeSfx('eclipse_cast');
         } else if (sk.path === 'SWORD' || sk.elem === 'phys') {
           safeSfx('sword_slash');
+        } else if (sk.elem === 'water') {
+          safeSfx('water_surge');
         } else {
           safeSfx('ice_cast');
         }
@@ -4692,7 +5274,45 @@
     return { ok: true };
   }
 
-  function checkImmediateVictoryOrNextWave(b) {
+  function applyTurnBoundaryCleanup(b, bankedAp) {
+    const p = b.player;
+    delete p.status.rooted;
+    delete p.status.iceThorns;
+    delete p.status.lungeParry;
+    delete p.status.lungeMitigate;
+    delete p.status.crateGuard;
+    delete p.status.zeroMpThisTurn;
+    delete p.status.nobleReflect;
+    if (p.status.burn <= 0) delete p.status.burn;
+    if (p.status.blind <= 0) delete p.status.blind;
+    if (p.status.afterimage < 0) p.status.afterimage = 0;
+
+    if (b.frostFloorTurns > 0) b.frostFloorTurns = Math.max(0, b.frostFloorTurns - 1);
+
+    const retainRate = p.passives.includes('root_ice')
+      ? COMBAT_BALANCE_V22.SHIELD_RETAIN_RATE.rootIce
+      : COMBAT_BALANCE_V22.SHIELD_RETAIN_RATE.default;
+    p.shield = Math.max(0, Math.floor(Math.max(0, p.shield) * retainRate));
+    if (p.shield <= 0) p.shieldKind = 'solid';
+
+    p.wandCooldown = 0;
+    Object.keys(p.cooldowns).forEach(k => {
+      if (p.cooldowns[k] > 0) p.cooldowns[k]--;
+      if (p.cooldowns[k] <= 0) delete p.cooldowns[k];
+    });
+
+    b.turn += 1;
+    b.naturalTurnCount = (b.naturalTurnCount || 1) + 1;
+    b.oneMoreUsedThisTurn = false;
+    b.oneMoreActive = false;
+    p.av = 0;
+    const bonusAp = p.status.nextAp || 0;
+    delete p.status.nextAp;
+    b.ap = Math.min(b.apMax, Math.max(0, b.apPerTurn + (bankedAp || 0) + bonusAp));
+  }
+
+  function checkImmediateVictoryOrNextWave(b, opts) {
+    opts = opts || {};
     if (b.over) return true;
 
     // 1. 艾诺三击制唯一胜机铁律：绝不允许靠 HP 归零判胜，唯抢满 3 次有效命中可胜！
@@ -4702,6 +5322,7 @@
         finishBattle(b, true, 'three_hits');
         return true;
       }
+      ensureValidTarget(b);
       return false;
     }
 
@@ -4718,6 +5339,7 @@
         finishBattle(b, false, 'rowan_escaped');
         return true;
       }
+      ensureValidTarget(b);
       return false;
     }
 
@@ -4725,10 +5347,14 @@
     const alive = b.enemies.some(e => e.hp > 0);
     if (!alive) {
       if (b.waveIdx + 1 < b.totalWaves) {
+        if (opts.fromEndTurn) {
+          applyTurnBoundaryCleanup(b, opts.bankedAp || 0);
+        }
         initWave(b, b.waveIdx + 1);
         b.ap = Math.max(b.ap, b.apPerTurn);
         if (b.player.wandActive && b.witnessActive) {
           b.player.wandActive = false;
+          b.player.wandPersistent = false;
           pushLog(b, logTag('cbl-star', `⚠️ 察觉林外极光小队靠近，已迅速收起晦轮杖！`));
         }
         return true;
@@ -4737,6 +5363,7 @@
         return true;
       }
     }
+    ensureValidTarget(b);
     return false;
   }
 
@@ -4748,6 +5375,54 @@
       _logBatchDepth = Math.max(0, _logBatchDepth - 1);
       if (_logBatchDepth === 0) flushCombatLogDOM(b || activeBattle);
     }
+  }
+
+  function tickEnemyEndTurn(b, e, opts) {
+    opts = opts || {};
+    if (!e || e.hp <= 0 || b.over) return false;
+    if (e.aiType === 'alice') {
+      if (e.mp != null) e.mp = Math.min(e.mmp, e.mp + 7);
+      if (e.status.evadeSealed > 0) {
+        e.status.evadeSealed -= 1;
+        if (e.status.evadeSealed <= 0) delete e.status.evadeSealed;
+        e.evadeCharges = 0;
+      } else if (!opts.parried) {
+        e.evadeCharges = e.maxEvadeCharges || 2;
+      }
+    }
+    if (e.aiType === 'wind_god_boss' && e.status.evadeSealed > 0) {
+      e.status.evadeSealed -= 1;
+      if (e.status.evadeSealed <= 0) delete e.status.evadeSealed;
+    }
+    if (e.aiType === 'noelle' && !e.seepSevered && !opts.staggered) {
+      e.seepStacks = (e.seepStacks || 0) + 1;
+    }
+    // 霜渊裂地兽领主腹下晶核未破时，每回合释放地脉寒震损耗药箱并再生重甲
+    if (!opts.staggered && e.aiType === 'hulan_lord' && !e.coreShattered && e.hp > 0 && b.crateHp != null) {
+      e.shield = Math.max(0, e.shield || 0) + 55;
+      b.crateHp = Math.max(0, b.crateHp - 16);
+      pushLog(b, logTag('cbl-danger', `❄️ 领主腹下晶核未破，再生 55 点冻甲且寒震穿透冰障损耗药箱 16 耐久（剩余 ${b.crateHp}）！`));
+      if (b.crateHp <= 0) {
+        finishBattle(b, false, 'crate_destroyed');
+        return true;
+      }
+    }
+    if (e.broken) {
+      e.broken = false;
+      e.locks = e.maxLocks || 3;
+      e.av = e.baseAv || 100;
+    } else {
+      e.av = Math.max(10, Math.round((e.baseAv || 100) * 0.55));
+    }
+    if (e.status.vuln > 0) {
+      e.status.vuln -= 1;
+      if (e.status.vuln <= 0) delete e.status.vuln;
+    }
+    if (e.status.chill > 0) {
+      e.status.chill -= 1;
+      if (e.status.chill <= 0) delete e.status.chill;
+    }
+    return false;
   }
 
   function _endTurnCore(b) {
@@ -4778,7 +5453,7 @@
         delete e.status.stagger;
         // 霜渊裂地兽若晶核未碎，即便眩晕亦有微弱余震（-8 药箱耐久）
         if (e.aiType === 'hulan_lord' && !e.coreShattered && e.hp > 0 && b.crateHp != null) {
-          e.shield += 35;
+          e.shield = Math.max(0, e.shield || 0) + 35;
           b.crateHp = Math.max(0, b.crateHp - 8);
           pushLog(b, logTag('cbl-danger', `❄️ 领主腹下晶核未破，再生 35 点冻甲且寒气余震损耗药箱 8 耐久（剩余 ${b.crateHp}）！`));
           if (b.crateHp <= 0) {
@@ -4786,14 +5461,15 @@
             return true;
           }
         }
-        if (e.status.vuln > 0) e.status.vuln--;
-        if (e.status.chill > 0) e.status.chill--;
-        if (e.aiType === 'wind_god_boss' && e.status.evadeSealed > 0) e.status.evadeSealed--;
+        tickEnemyEndTurn(b, e, { staggered: true });
         continue;
       }
 
       const intent = e.intent;
-      if (!intent) continue;
+      if (!intent) {
+        tickEnemyEndTurn(b, e);
+        continue;
+      }
 
       b.metrics.enemyActions = (b.metrics.enemyActions || 0) + 1;
 
@@ -4802,7 +5478,7 @@
         b.metrics.manaFizzleWin = true;
         pushLog(b, logTag('cbl-ice', `💨 狂躁的气流骤然散去！爱丽丝晃了一下：「……没魔力了。……认输。」`, true));
         e.hp = 0;
-        if (checkImmediateVictoryOrNextWave(b)) {
+        if (checkImmediateVictoryOrNextWave(b, { fromEndTurn: true, bankedAp: banked })) {
           if (!b.headless) renderCombatUI();
           return true;
         }
@@ -4814,9 +5490,10 @@
       }
 
       if (intent.refreshCurtain && !e.seepSevered) {
-        e.shield = Math.max(e.shield, intent.refreshCurtain);
+        e.shield = Math.max(e.shield || 0, intent.refreshCurtain);
+        e.shieldKind = 'magic';
       }
-      if (intent.gainShield) e.shield += intent.gainShield;
+      if (intent.gainShield) e.shield = Math.max(0, e.shield || 0) + intent.gainShield;
       if (intent.gainFire) e.fireStacks = (e.fireStacks || 0) + intent.gainFire;
       if (intent.buffPack) {
         b.enemies.forEach(ally => { if (ally.hp > 0) ally.atk += intent.buffPack; });
@@ -4828,8 +5505,8 @@
         if (hasRelic(p, 'northwind_pass')) cDmg = Math.max(0, cDmg - 4);
         if (p.status.crateGuard > 0) {
           const blk = Math.min(p.status.crateGuard, cDmg);
-          p.status.crateGuard -= blk;
-          cDmg -= blk;
+          p.status.crateGuard = Math.max(0, p.status.crateGuard - blk);
+          cDmg = Math.max(0, cDmg - blk);
         }
         if (cDmg > 0) {
           b.crateHp = Math.max(0, b.crateHp - cDmg);
@@ -4848,7 +5525,7 @@
         let afterimageShearMult = 1.0;
         // 1) 风行残像闪避（风神多段御风招式可震散单层残像，仅减免部分余岚）
         if (p.status.afterimage > 0) {
-          p.status.afterimage -= 1;
+          p.status.afterimage = Math.max(0, p.status.afterimage - 1);
           if (intent.pierceAfterimage) {
             afterimageShearMult = 0.72;
             pushLog(b, logTag('cbl-emerald', `🌪️ ${e.name} 御风震散你的「风行残像」，余岚仍旧破风袭身！`));
@@ -4862,6 +5539,7 @@
                 pushLog(b, logTag('cbl-emerald', `🌼【风之花饼】借风轻落回蓄 ${p.mp - beforeMp} MP！`));
               }
             }
+            if (tickEnemyEndTurn(b, e, { evaded: true })) return true;
             continue;
           }
         }
@@ -4907,10 +5585,11 @@
             if (gainedMp > 0) spawnCombatFloat(b, 'player', `+${gainedMp} MP`, 'mp');
             pushLog(b, logTag('cbl-violet', `✦【共鸣·霁馆剑心(2件)】卸力闪反引动魔战双倍回流 +${riposteDmg * 2} MP！`));
           }
-          if (checkImmediateVictoryOrNextWave(b)) {
+          if (checkImmediateVictoryOrNextWave(b, { fromEndTurn: true, bankedAp: banked })) {
             if (!b.headless) renderCombatUI();
             return true;
           }
+          if (tickEnemyEndTurn(b, e, { parried: true })) return true;
           continue;
         }
 
@@ -4921,6 +5600,7 @@
         }
 
         let incoming = Math.round(intent.dmg * afterimageShearMult);
+        if (e.broken) incoming = Math.round(incoming * COMBAT_BALANCE_V22.HSR_AV.breakRecoveryAtkMult);
         if (e.status.chill > 0) incoming = Math.round(incoming * 0.86);
         if (intent.elem === 'fire' && p.passives.includes('temp_sense')) {
           incoming = Math.round(incoming * 0.8);
@@ -4932,26 +5612,49 @@
           incoming = Math.round(incoming * 0.4);
         }
 
-        // 罗文首击黑光：雷纳德掀石板仅协助减伤保命，单纯挨打绝不白送合围封锁度！
-        if (b.stageCfg.sealRule && intent.renoRockBlock && p.shield > 0) {
-          incoming = Math.round(incoming * 0.45);
-          pushLog(b, logTag('cbl-star', `🪨 雷纳德勾起碎石板与你的冰墙合力拦下大半黑光！（提示：须铺设蔓地薄冰主动设伏才能推进封锁度）`));
+        const isRowanEclipseTrue = !!intent.eclipseTrueMagic;
+        const playerShieldKind = p.shieldKind || 'solid';
+        const bypassMagicPlayerShield = !!(isRowanEclipseTrue && p.shield > 0 && playerShieldKind === 'magic');
+
+        if (isRowanEclipseTrue) {
+          // V2.2 敌我同规：罗文晦轮杖魔法真伤无视 MDEF 与魔法水幕；实体厚冰墙阻尼 50%，叠加雷纳德岩板阻尼 75%
+          if (p.shield > 0 && playerShieldKind === 'solid') {
+            if (b.stageCfg.sealRule && intent.renoRockBlock) {
+              incoming = Math.round(incoming * 0.25);
+              pushLog(b, logTag('cbl-star', `🪨 雷纳德勾起碎石板与你的实体冰墙合力阻尼 75% 晦轮真伤！（须铺设蔓地薄冰主动设伏才能推进封锁度）`));
+            } else {
+              incoming = Math.round(incoming * 0.50);
+              pushLog(b, logTag('cbl-ice', `🧊 实体冰墙硬抗阻尼了 50% 晦轮黑芒真伤！`));
+            }
+          } else if (bypassMagicPlayerShield) {
+            pushLog(b, logTag('cbl-violet', `🌑 罗文晦轮杖引动 100% 魔法真伤，直接洞穿法抗与魔法水幕！（宜改用凝结冰墙等实体盾抵挡）`));
+          } else if (b.stageCfg.sealRule && intent.renoRockBlock) {
+            incoming = Math.round(incoming * 0.65);
+          }
+          incoming = Math.max(4, Math.round(incoming));
+        } else {
+          // 罗文首击黑光等常规雷纳德岩板协助减伤
+          if (b.stageCfg.sealRule && intent.renoRockBlock && p.shield > 0) {
+            incoming = Math.round(incoming * 0.45);
+            pushLog(b, logTag('cbl-star', `🪨 雷纳德勾起碎石板与你的冰墙合力拦下大半黑光！（提示：须铺设蔓地薄冰主动设伏才能推进封锁度）`));
+          }
+          // V2.2 K=80 双曲线比值防御
+          const pDef = Math.max(0, intent.elem === 'phys' ? p.def : p.mdef);
+          incoming = Math.max(4, Math.round(incoming * (COMBAT_BALANCE_V22.DEF_K / (COMBAT_BALANCE_V22.DEF_K + pDef))));
         }
 
-        const pDef = intent.elem === 'phys' ? p.def : p.mdef;
-        incoming = Math.max(5, Math.round(incoming - pDef * 0.55));
-
         let hpLoss = incoming;
-        if (intent.bypassAllShield) {
-          // 脚底穿刺完全绕过正面护盾
+        p.shield = Math.max(0, p.shield || 0);
+        if (intent.bypassAllShield || bypassMagicPlayerShield) {
+          // 脚底穿刺或晦轮杖真伤对魔法盾完全穿透
         } else if (intent.bypassHalfShield) {
           const blk = Math.min(Math.floor(p.shield * 0.5), hpLoss);
-          p.shield -= blk;
-          hpLoss -= blk;
+          p.shield = Math.max(0, p.shield - blk);
+          hpLoss = Math.max(0, hpLoss - blk);
         } else {
           const blk = Math.min(p.shield, hpLoss);
-          p.shield -= blk;
-          hpLoss -= blk;
+          p.shield = Math.max(0, p.shield - blk);
+          hpLoss = Math.max(0, hpLoss - blk);
         }
 
         // 仅钢冰生根盾（iceThorns）产生微弱10点冰晶刮擦，且最低保留敌方1HP，绝不回蓝、绝不磨死Boss！
@@ -5000,7 +5703,7 @@
           const refDmg = Math.round(p.mdef * 1.4 + 28);
           dealDamageToEnemy(b, e, refDmg, {});
           pushLog(b, logTag('cbl-star', `👑【贵族体面·回敬】礼仪冰霜震退 ${e.name}，反伤 ${refDmg}！`));
-          if (checkImmediateVictoryOrNextWave(b)) {
+          if (checkImmediateVictoryOrNextWave(b, { fromEndTurn: true, bankedAp: banked })) {
             if (!b.headless) renderCombatUI();
             return true;
           }
@@ -5020,43 +5723,23 @@
         }
       }
 
-      // 爱丽丝每回合微风回流 7 MP 并补充风步闪避层（除非被十字冰栏封印）
-      if (e.aiType === 'alice') {
-        if (e.mp != null) e.mp = Math.min(e.mmp, e.mp + 7);
-        if (e.status.evadeSealed > 0) {
-          e.status.evadeSealed -= 1;
-          e.evadeCharges = 0;
-        } else {
-          e.evadeCharges = e.maxEvadeCharges || 2;
-        }
-      }
-      if (e.aiType === 'wind_god_boss' && e.status.evadeSealed > 0) {
-        e.status.evadeSealed -= 1;
-      }
-      if (e.aiType === 'noelle' && !e.seepSevered) {
-        e.seepStacks = (e.seepStacks || 0) + 1;
-      }
-      // 霜渊裂地兽领主腹下晶核未破时，每回合释放地脉寒震损耗药箱并再生重甲
-      if (e.aiType === 'hulan_lord' && !e.coreShattered && e.hp > 0 && b.crateHp != null) {
-        e.shield += 55;
-        b.crateHp = Math.max(0, b.crateHp - 16);
-        pushLog(b, logTag('cbl-danger', `❄️ 领主腹下晶核未破，再生 55 点冻甲且寒震穿透冰障损耗药箱 16 耐久（剩余 ${b.crateHp}）！`));
-        if (b.crateHp <= 0) {
-          finishBattle(b, false, 'crate_destroyed');
-          return true;
-        }
-      }
-
-      if (e.status.vuln > 0) e.status.vuln--;
-      if (e.status.chill > 0) e.status.chill--;
+      if (tickEnemyEndTurn(b, e)) return true;
     }
 
     // 玩家回合末结算
     if (p.status.burn > 0) {
       const burnDmg = 8;
       p.hp = Math.max(0, p.hp - burnDmg);
-      p.status.burn--;
+      p.status.burn -= 1;
+      if (p.status.burn <= 0) delete p.status.burn;
       pushLog(b, logTag('cbl-danger', `🔥 烈焰灼烧损耗 ${burnDmg} 生命。`));
+      if (p.hp > 0 && p.hp < p.mhp * 0.35 && !b._blueVialTriggered && hasRelic(p, 'blue_vial')) {
+        b._blueVialTriggered = true;
+        const vialHeal = Math.max(15, Math.round(p.mhp * 0.25));
+        p.hp = Math.min(p.mhp, p.hp + vialHeal);
+        p.status.afterimage = (p.status.afterimage || 0) + 1;
+        pushLog(b, logTag('cbl-ice', `🧪【淡蓝小瓶】濒危安神凉雾散开，回复 ${vialHeal} 生命并幻化 1 层「风行残像」！`, true));
+      }
       if (p.hp <= 0) {
         finishBattle(b, false, 'burn_death');
         return true;
@@ -5072,49 +5755,28 @@
       }
     }
 
-    delete p.status.rooted;
-    delete p.status.iceThorns;
-    delete p.status.lungeParry;
-    delete p.status.lungeMitigate;
-    delete p.status.crateGuard;
-    delete p.status.zeroMpThisTurn;
-    delete p.status.nobleReflect;
-
-    if (b.frostFloorTurns > 0) b.frostFloorTurns--;
-
-    // 护盾跨回合大幅衰减（普通留 20%，生根之冰留 45%）
-    const retainRate = p.passives.includes('root_ice') ? 0.45 : 0.2;
-    p.shield = Math.floor(p.shield * retainRate);
-
-    if (p.wandCooldown > 0) p.wandCooldown--;
-    Object.keys(p.cooldowns).forEach(k => {
-      if (p.cooldowns[k] > 0) p.cooldowns[k]--;
-      if (p.cooldowns[k] <= 0) delete p.cooldowns[k];
-    });
-
-    // 艾诺切磋回合上限判定
+    // 艾诺切磋回合上限判定（在递增 b.turn 之前检查）
     if (b.stageCfg.turnLimit && b.turn >= b.stageCfg.turnLimit) {
       pushLog(b, logTag('cbl-danger', `⏱️ ${b.stageCfg.turnLimit} 回合时限已到，未能拿满三次有效命中，切磋告负！`, true));
       finishBattle(b, false, 'turn_limit');
       return true;
     }
 
-    b.turn += 1;
+    applyTurnBoundaryCleanup(b, banked);
     b.waveTurn = (b.waveTurn || 1) + 1;
-    const bonusAp = p.status.nextAp || 0;
-    delete p.status.nextAp;
-    b.ap = Math.min(b.apMax, b.apPerTurn + banked + bonusAp);
 
     if (hasRelic(p, 'northwind_pass')) {
       const beforeS = p.shield;
-      p.shield = Math.min(p.maxShield, p.shield + 12);
+      p.shield = Math.min(p.maxShield, Math.max(0, p.shield) + 12);
+      if (beforeS <= 0) p.shieldKind = 'solid';
       if (p.shield > beforeS) {
         pushLog(b, logTag('cbl-ice', `🪪【北风堡木牌】新回合寒铁护盾 +${p.shield - beforeS}（当前 ${p.shield}/${p.maxShield}）。`));
       }
     }
     if (getSynergyTier(p, 'north_frost') >= 2) {
       const beforeNF = p.shield;
-      p.shield = Math.min(p.maxShield, p.shield + 10);
+      p.shield = Math.min(p.maxShield, Math.max(0, p.shield) + 10);
+      if (beforeNF <= 0) p.shieldKind = 'solid';
       if (p.shield > beforeNF) {
         pushLog(b, logTag('cbl-ice', `✦【共鸣·北境霜锋(2件)】新回合霜锋寒甲 +${p.shield - beforeNF} 护盾（当前 ${p.shield}/${p.maxShield}）。`));
       }
@@ -5129,6 +5791,7 @@
       }
       decideEnemyIntent(e, b);
     });
+    ensureValidTarget(b);
 
     if (!b.headless) renderCombatUI();
     return true;
@@ -5282,7 +5945,7 @@
   }
 
   /* =========================================================
-     8. UI 渲染层（实时悬停倾注预览 + 两步随机洗牌冰晶宫殿 + 演武大厅）
+     8. UI 渲染层（实时悬停魔力增幅预览 + 两步随机洗牌冰晶宫殿 + 演武大厅）
      ========================================================= */
   const VOL3_DISGUISE_STAGES = new Set(['north_forest_hunt', 'hulan_beast_tide', 'wind_god_eye']);
 
@@ -5419,13 +6082,13 @@
           <div class="cb-left-console">
             <div class="cb-overcast-box" id="cb-overcast-box">
               <div class="cb-oc-head">
-                <span>魔战循环 · 倾注 <span class="cb-kbd">W</span></span>
+                <span>魔战循环 · 魔力增幅 <span class="cb-kbd">W</span></span>
                 <span class="cb-oc-mult" id="cb-oc-mult">1.00x</span>
               </div>
               <div class="cb-oc-seg" id="cb-oc-seg">
-                <button class="cb-oc-btn" data-oc="0">常规</button>
-                <button class="cb-oc-btn" data-oc="1">半蓝强击</button>
-                <button class="cb-oc-btn all-in" data-oc="2">孤注一掷</button>
+                <button class="cb-oc-btn" data-oc="0">常规 0%</button>
+                <button class="cb-oc-btn" data-oc="1">魔力盈溢 25%</button>
+                <button class="cb-oc-btn all-in" data-oc="2">极寒过载 50%</button>
               </div>
             </div>
             <div id="b-log" class="cb-log-box"></div>
@@ -5498,7 +6161,7 @@
 
       const est = sk.power > 0 ? estimateSkillDamage(b, sk, en) : null;
       const stance = en.intent ? en.intent.stance : 'HEAVY_WINDUP';
-      const wandOn = !!(p && p.wandActive && !sk.aoe && sk.atkKind === 'matk');
+      const wandOn = isEclipseStaffForSkill(p, sk);
       const isEyeStillness = !!(
         en.aiType === 'wind_god_boss' &&
         (en.phase || 1) >= 2 &&
@@ -5518,11 +6181,10 @@
 
       let effShield = en.shield || 0;
       if (sk.shatterShield) effShield = 0;
+      else if (wandOn && (en.shieldKind || 'magic') === 'magic') effShield = 0;
       else if (sk.pierceHalfShield) effShield = Math.floor(effShield * 0.5);
 
-      const rawHpDmg = wandOn
-        ? (Math.round(effDmg * 0.65) + Math.max(0, effDmg - Math.round(effDmg * 0.65) - effShield))
-        : Math.max(0, effDmg - effShield);
+      const rawHpDmg = Math.max(0, effDmg - effShield);
       const hpDmg = en.nonLethalSpar ? 0 : Math.min(en.hp, Math.max(0, rawHpDmg));
       const maxHp = Math.max(1, en.mhp || en.maxHp || 1);
 
@@ -5690,13 +6352,13 @@
       palBtn.classList.remove('pulse-hint', 'gathering');
     } else if (p.palaceLeft > 0 && (b.waveTurn || 1) < 2) {
       palBtn.innerHTML = `${CB_SVG.crystal} <span class="cb-btn-txt">冰晶宫殿<span class="cb-palace-detail">·凝结采集中</span> (${p.palaceLeft}/${p.palaceMax})</span>`;
-      palBtn.title = '须先观察敌方本波至少出手一轮，第 2 回合起可开启时停复盘';
+      palBtn.title = '须先观察敌方本波至少出手一轮，第 2 回合起可开启冰晶宫殿并行推演';
       palBtn.disabled = true;
       palBtn.classList.remove('pulse-hint');
       palBtn.classList.add('gathering');
     } else if (p.palaceLeft > 0) {
       palBtn.innerHTML = `${CB_SVG.crystal} <span class="cb-btn-txt">冰晶宫殿 (${p.palaceLeft}/${p.palaceMax})</span> <span class="cb-kbd">Q</span>`;
-      palBtn.title = '冻结当前交锋帧，两步推演敌方招式死角';
+      palBtn.title = '展开冰晶宫殿记忆冰镜，两步并行推演敌方招式死角';
       palBtn.disabled = b.over;
       palBtn.classList.remove('gathering');
       palBtn.classList.toggle('pulse-hint', !b.over);
@@ -5711,12 +6373,12 @@
     if (p.hasEclipseWand) {
       wBtn.classList.remove('hidden');
       wBtn.classList.toggle('active', !!p.wandActive);
-      wBtn.innerHTML = p.wandCooldown > 0
-        ? `${CB_SVG.wand} 晦轮杖（冷却${p.wandCooldown}）`
-        : p.wandActive
-          ? `${CB_SVG.wand} 晦轮杖：折光 ON <span class="cb-kbd">R</span>`
-          : `${CB_SVG.wand} 晦轮杖：收鞘 <span class="cb-kbd">R</span>`;
-      wBtn.disabled = b.over || p.wandCooldown > 0;
+      const extraMpTip = Math.round(Math.max(1, p.mmp || 100) * COMBAT_BALANCE_V22.STAVES.eclipse_wand.extraMpPct);
+      wBtn.title = `晦轮杖（V2.2）：100% 魔法真伤，无视法抗与魔法盾，仅物理实体甲阻尼；额外耗蓝 +${extraMpTip} MP，无冷却`;
+      wBtn.innerHTML = p.wandActive
+        ? `${CB_SVG.wand} 晦轮杖：真伤 ON <span class="cb-kbd">R</span>`
+        : `${CB_SVG.wand} 晦轮杖：收鞘 <span class="cb-kbd">R</span>`;
+      wBtn.disabled = b.over;
     } else {
       wBtn.classList.add('hidden');
     }
@@ -5788,7 +6450,8 @@
     document.getElementById('cb-pmp-bar').style.width = `${Math.max(0, Math.min(100, p.mp / p.mmp * 100))}%`;
 
     const buffs = [];
-    if (p.shield > 0) buffs.push(`<span class="cb-buff-chip shield">护盾 ${p.shield}/${p.maxShield}</span>`);
+    if (b.oneMoreActive) buffs.push(`<span class="cb-buff-chip gold">✦ ONE MORE</span>`);
+    if (p.shield > 0) buffs.push(`<span class="cb-buff-chip shield">${p.shieldKind === 'magic' ? '魔法盾' : '实体盾'} ${p.shield}/${p.maxShield}</span>`);
     if (p.status.breakChain > 0) buffs.push(`<span class="cb-buff-chip gold chain-active">✦ 连携追击 1.35×</span>`);
     if (p.status.frostPierce > 0) buffs.push(`<span class="cb-buff-chip">透冰破抗 25%</span>`);
     if (p.status.zeroMpThisTurn > 0) buffs.push(`<span class="cb-buff-chip gold">本回合零耗蓝</span>`);
@@ -5840,9 +6503,10 @@
     const eZone = document.getElementById('cb-enemy-zone');
     eZone.classList.toggle('multi-enemies', isMultiEnemy);
 
-    // 复用既有敌方像素精灵 DOM（避免每次施法重建 <canvas> 与重申 2D 上下文）
+    // 复用既有敌方像素精灵 DOM：严格核对 battleInstanceId 与 waveIdx，杜绝跨波次/重开串用残态精灵！
+    const waveSig = `${b.battleInstanceId || 0}:${b.waveIdx || 0}`;
     const preservedEnemyActors = new Map();
-    if (pxApi) {
+    if (pxApi && eZone.dataset.waveSig === waveSig) {
       eZone.querySelectorAll('.cb-px-actor[data-actor-key]').forEach(el => {
         const aKey = el.getAttribute('data-actor-key');
         const spId = el.getAttribute('data-sprite-id');
@@ -5851,6 +6515,7 @@
         }
       });
     }
+    eZone.dataset.waveSig = waveSig;
 
     eZone.innerHTML = b.enemies.map((e, idx) => {
       const intent = e.intent || { stance: 'STAGGERED', moveName: '已倒下', dmg: 0 };
@@ -5866,7 +6531,10 @@
       ));
       const eBuffs = [];
       if (e.boss && (e.phase || 1) >= 2) eBuffs.push(`<span class="cb-buff-chip synergy">✦ 二阶段</span>`);
-      if (e.shield > 0) eBuffs.push(`<span class="cb-buff-chip shield">护盾 ${e.shield}</span>`);
+      if (e.broken) eBuffs.push(`<span class="cb-buff-chip gold">✦ 弱点击破 1.35×</span>`);
+      else if (e.maxLocks > 0 && e.hp > 0) eBuffs.push(`<span class="cb-buff-chip">锁 ${e.locks}/${e.maxLocks}</span>`);
+      if (e.shield > 0) eBuffs.push(`<span class="cb-buff-chip shield">${e.shieldKind === 'solid' ? '实体盾' : '魔法盾'} ${e.shield}</span>`);
+      if (e.solidArmor > 0) eBuffs.push(`<span class="cb-buff-chip">实体甲 ${Math.round(e.solidArmor * 100)}%</span>`);
       if (e.fireAura > 0) eBuffs.push(`<span class="cb-buff-chip gold">烈焰斗气×${e.fireAura}</span>`);
       if (e.evadeCharges > 0) eBuffs.push(`<span class="cb-buff-chip">闪避层×${e.evadeCharges}</span>`);
       if (e.status.evadeSealed > 0) eBuffs.push(`<span class="cb-buff-chip debuff">风步已封(${e.status.evadeSealed})</span>`);
@@ -6054,7 +6722,7 @@
 
       let expHint = '';
       if (b.witnessActive) {
-        let expVal = (sk.exposure || 0) + (p.wandActive && sk.power > 0 && !sk.aoe && sk.atkKind === 'matk' ? 55 : 0);
+        let expVal = (sk.exposure || 0) + (isEclipseStaffForSkill(p, sk) ? 55 : 0);
         if (hasRelic(p, 'ebony_sword') && sk.path === 'SWORD') expVal = Math.min(0, expVal);
         expHint = expVal > 0
           ? `<span class="csc-exp-warn">暴露+${expVal}%</span>`
@@ -6087,28 +6755,38 @@
         </button>
       `;
     }).join('');
-    if (actGrid._lastHtml !== nextActHtml) {
+    if (actGrid._lastHtml !== nextActHtml || actGrid._lastBattleId !== (b.battleInstanceId || 0)) {
       actGrid._lastHtml = nextActHtml;
+      actGrid._lastBattleId = b.battleInstanceId || 0;
       actGrid.innerHTML = nextActHtml;
       actGrid.querySelectorAll('.cb-skill-card').forEach(btn => {
         const sid = btn.getAttribute('data-sk');
         btn.onmouseenter = () => {
           hoveredSkillId = sid;
           if (!btn.disabled) playCardHoverSfx();
-          updateOvercastPreviewUI(b, sid);
+          if (activeBattle) updateOvercastPreviewUI(activeBattle, sid);
         };
-        btn.onfocus = () => { hoveredSkillId = sid; updateOvercastPreviewUI(b, sid); };
-        btn.onmouseleave = () => { hoveredSkillId = armedSkillId; updateOvercastPreviewUI(b, armedSkillId); };
-        btn.onblur = () => { hoveredSkillId = armedSkillId; updateOvercastPreviewUI(b, armedSkillId); };
+        btn.onfocus = () => {
+          hoveredSkillId = sid;
+          if (activeBattle) updateOvercastPreviewUI(activeBattle, sid);
+        };
+        btn.onmouseleave = () => {
+          hoveredSkillId = armedSkillId;
+          if (activeBattle) updateOvercastPreviewUI(activeBattle, armedSkillId);
+        };
+        btn.onblur = () => {
+          hoveredSkillId = armedSkillId;
+          if (activeBattle) updateOvercastPreviewUI(activeBattle, armedSkillId);
+        };
         btn.onclick = () => {
-          if (btn.disabled) return;
+          if (btn.disabled || !activeBattle) return;
           if (isCoarseTouchDevice() && armedSkillId !== sid) {
             armedSkillId = sid;
             hoveredSkillId = sid;
             actGrid.querySelectorAll('.cb-skill-card.is-armed').forEach(el => el.classList.remove('is-armed'));
             btn.classList.add('is-armed');
             safeSfx('card_hover');
-            updateOvercastPreviewUI(b, sid);
+            updateOvercastPreviewUI(activeBattle, sid);
             return;
           }
           armedSkillId = null;
@@ -6175,6 +6853,12 @@
     }
 
     document.getElementById('cb-btn-endturn').disabled = b.over;
+
+    try {
+      if (typeof global.dispatchEvent === 'function' && typeof global.CustomEvent === 'function') {
+        global.dispatchEvent(new global.CustomEvent('combat:statechange', { detail: getBattleState(b) }));
+      }
+    } catch (e) {}
   }
 
   function openIcePalaceModal() {
@@ -6203,7 +6887,7 @@
               ${CB_SVG.palaceFrostAccent}
               <div class="cp-head-left">
                 <span class="cp-emblem" aria-hidden="true">${CB_SVG.palaceEmblem}</span>
-                <h3 class="cp-title">冰晶宫殿 · 时停审视</h3>
+                <h3 class="cp-title">冰晶宫殿 · 并行推演</h3>
               </div>
               <div class="cp-head-right">
                 <div class="cp-steps" aria-label="推演进度：第 1 / 2 步">
@@ -6215,7 +6899,7 @@
             </div>
             <div class="cp-body">
               <div class="cp-scene-desc">${pCfg.sceneText}</div>
-              <span class="cp-step-pill">第 1 / 2 步 · 锁定定格异常细节（选错将损耗 1 AP）</span>
+              <span class="cp-step-pill">第 1 / 2 步 · 锁定冰镜回放中的异常细节（选错将损耗 1 AP）</span>
               <div class="cp-options">
                 ${shuffledClues.map((c, idx) => `
                   <button type="button" class="cp-opt-btn" data-clue="${c.id}">
@@ -6384,9 +7068,9 @@
       }
 
       if (p.hasManaCycle && manaRecycled >= 120) {
-        parts.push(`魔战循环合计回流 ${manaRecycled} MP，倾注爆发衔接极为流畅。`);
+        parts.push(`魔战循环合计回流 ${manaRecycled} MP，魔力增幅爆发衔接极为流畅。`);
       } else if (m.insights > 0) {
-        parts.push('冰晶宫殿时停推演直击死角，为破阵打开了决定性缺口。');
+        parts.push('冰晶宫殿并行推演直击死角，为破阵打开了决定性缺口。');
       } else if (p.palaceMax > 0 && tier !== 'S') {
         parts.push('全程凭借基本功力克强敌；若于第二回合起展开冰晶宫殿看破弱点，可更从容摘下 S 级。');
       } else if (p.palaceMax > 0) {
@@ -6514,6 +7198,13 @@
 
     const slot = document.getElementById('cb-modal-slot');
     if (slot) slot.innerHTML = '';
+    const callout = document.getElementById('cb-callout-layer');
+    if (callout) callout.innerHTML = '';
+    const actGrid = document.getElementById('b-actions');
+    if (actGrid) {
+      actGrid._lastHtml = '';
+      actGrid._lastBattleId = 0;
+    }
     const bs = document.getElementById('battle-screen');
     if (bs) {
       bs.classList.add('hidden');
@@ -6705,6 +7396,22 @@
   /* =========================================================
      10. 启动入口、主线虚拟决斗原著门控与无头仿真器
      ========================================================= */
+  function resetBattleDomForStart(bs) {
+    if (!bs) return;
+    const slot = bs.querySelector('#cb-modal-slot');
+    if (slot) slot.innerHTML = '';
+    const callout = bs.querySelector('#cb-callout-layer');
+    if (callout) callout.innerHTML = '';
+    const actGrid = bs.querySelector('#b-actions');
+    if (actGrid) {
+      actGrid._lastHtml = '';
+      actGrid._lastBattleId = 0;
+    }
+    const eZone = bs.querySelector('#cb-enemy-zone');
+    if (eZone) delete eZone.dataset.waveSig;
+    bs.classList.remove('palace-timestop', 'wand-refract', 'hit-shake', 'heavy-shake', 'hidden');
+  }
+
   function startStage(stageId, opts) {
     opts = opts || {};
     const sc = STAGE_CONFIGS[stageId];
@@ -6724,11 +7431,7 @@
       if (typeof global.setBG === 'function') global.setBG(sc.bg || 'bg-battle');
       if (typeof global.bgmPlayType === 'function') global.bgmPlayType('battle', { force: true });
       const bs = ensureBattleDOM();
-      if (bs) {
-        const slot = bs.querySelector('#cb-modal-slot');
-        if (slot) slot.innerHTML = '';
-        bs.classList.remove('hidden');
-      }
+      resetBattleDomForStart(bs);
       if (document.body) document.body.classList.add('cb-battle-active');
       renderCombatUI();
     }
@@ -6778,6 +7481,8 @@
               atk: Math.max(20, Math.round(((t.atk || 14) + lv * 0.6) * scale)),
               def: t.def || 5,
               mdef: t.mdef || 5,
+              spd: t.spd || 96,
+              maxLocks: t.maxLocks || 3,
               trait: t.desc || '留意双手蓄势空档与贴身扑击。',
               aiType: cfg.aiType || 'generic',
             },
@@ -6792,13 +7497,235 @@
     armedSkillId = null;
     global.B = b;
     clearAllJuiceVfx();
+    const ds = typeof document !== 'undefined' ? document.getElementById('duel-screen') : null;
+    if (ds) ds.classList.add('hidden');
     if (typeof global.setBG === 'function') global.setBG('bg-battle');
     if (typeof global.bgmPlayType === 'function') global.bgmPlayType('battle', { force: true });
     const bs = ensureBattleDOM();
-    if (bs) bs.classList.remove('hidden');
+    resetBattleDomForStart(bs);
     if (typeof document !== 'undefined' && document.body) document.body.classList.add('cb-battle-active');
     renderCombatUI();
     return b;
+  }
+
+  function getActionQueue(b, count) {
+    if (typeof b === 'number') {
+      count = b;
+      b = activeBattle;
+    }
+    b = b || activeBattle;
+    if (!b || !b.player) return [];
+    const total = Math.max(1, Math.min(16, Number(count) || 8));
+    const p = b.player;
+    const pBaseAv = p.baseAv || computeBaseAv(p.spd || 100);
+    const units = [
+      {
+        id: 'player',
+        side: 'player',
+        enemyIdx: -1,
+        name: p.name || '希尔维亚',
+        charId: 'sylvia',
+        spd: p.spd || 100,
+        baseAv: pBaseAv,
+        simAv: b.oneMoreActive ? 0 : Math.max(0, Number(p.av) || 0),
+        isOneMore: !!b.oneMoreActive,
+        broken: false,
+      },
+    ];
+    (b.enemies || []).forEach((e, idx) => {
+      if (!e || e.hp <= 0) return;
+      const eBaseAv = e.baseAv || computeBaseAv(e.spd || 95);
+      units.push({
+        id: e.id || `enemy_${idx}`,
+        side: 'enemy',
+        enemyIdx: idx,
+        name: e.name,
+        charId: e.charId || null,
+        spd: e.spd || 95,
+        baseAv: eBaseAv,
+        simAv: Math.max(1, Number(e.av) || eBaseAv),
+        isOneMore: false,
+        broken: !!e.broken,
+        locks: e.locks != null ? e.locks : (e.maxLocks || 0),
+        maxLocks: e.maxLocks || 0,
+        intentStance: e.intent ? e.intent.stance : 'HEAVY_WINDUP',
+      });
+    });
+
+    const queue = [];
+    let cumAv = 0;
+    for (let step = 0; step < total && units.length > 0; step++) {
+      let best = units[0];
+      for (let i = 1; i < units.length; i++) {
+        const u = units[i];
+        if (u.simAv < best.simAv || (u.simAv === best.simAv && u.side === 'player' && best.side !== 'player')) {
+          best = u;
+        }
+      }
+      const delta = Math.max(0, best.simAv);
+      cumAv += delta;
+      units.forEach(u => { u.simAv = Math.max(0, u.simAv - delta); });
+      queue.push({
+        order: step,
+        id: best.id,
+        side: best.side,
+        enemyIdx: best.enemyIdx,
+        name: best.name,
+        charId: best.charId,
+        av: Math.round(cumAv),
+        deltaAv: Math.round(delta),
+        spd: best.spd,
+        baseAv: best.baseAv,
+        isOneMore: step === 0 && best.side === 'player' && best.isOneMore,
+        broken: best.broken,
+        locks: best.locks,
+        maxLocks: best.maxLocks,
+        intentStance: best.intentStance || null,
+      });
+      best.simAv = best.baseAv;
+      best.isOneMore = false;
+    }
+    return queue;
+  }
+
+  function getBattleState(b) {
+    b = b || activeBattle;
+    if (!b || !b.player) return null;
+    ensureValidTarget(b);
+    const p = b.player;
+    const ampPct = syncPlayerAmpFromMode(p);
+    const ampTier = getAmpTierInfo(ampPct);
+    const staffDef = getEquippedStaffDef(p);
+    const primary = getPrimaryAliveEnemy(b);
+    return {
+      id: b.id,
+      battleInstanceId: b.battleInstanceId || 0,
+      title: b.stageCfg ? b.stageCfg.title : '',
+      chapter: b.stageCfg ? b.stageCfg.chapter : '',
+      turn: b.turn,
+      naturalTurnCount: b.naturalTurnCount || b.turn,
+      waveIdx: b.waveIdx,
+      waveTurn: b.waveTurn,
+      totalWaves: b.totalWaves,
+      ap: b.ap,
+      apMax: b.apMax,
+      over: b.over,
+      won: b.won,
+      grade: b.grade,
+      endReason: b.endReason || '',
+      targetIdx: b.targetIdx,
+      oneMoreActive: !!b.oneMoreActive,
+      oneMoreUsedThisTurn: !!b.oneMoreUsedThisTurn,
+      player: {
+        name: p.name,
+        hp: p.hp,
+        mhp: p.mhp,
+        mp: p.mp,
+        mmp: p.mmp,
+        shield: p.shield,
+        maxShield: p.maxShield,
+        shieldKind: p.shieldKind || 'solid',
+        atk: p.atk,
+        matk: p.matk,
+        def: p.def,
+        mdef: p.mdef,
+        spd: p.spd || 100,
+        av: p.av || 0,
+        baseAv: p.baseAv || computeBaseAv(p.spd || 100),
+        hasManaCycle: !!p.hasManaCycle,
+        overcastMode: p.overcastMode || 0,
+        ampPct,
+        ampTier,
+        hasEclipseWand: !!p.hasEclipseWand,
+        wandActive: !!p.wandActive,
+        wandPersistent: !!p.wandPersistent,
+        wandCooldown: p.wandCooldown || 0,
+        equippedStaff: p.equippedStaff || (p.wandActive ? 'eclipse_wand' : 'none'),
+        staffName: staffDef.name,
+        canTriggerEclipse: false,
+        palaceLeft: p.palaceLeft || 0,
+        palaceMax: p.palaceMax || 0,
+        palaceReady: isPalaceReady(b),
+        bondAssist: p.bondAssist || null,
+        bondAssistUsed: !!p.bondAssistUsed,
+        status: Object.assign({}, p.status),
+        cooldowns: Object.assign({}, p.cooldowns),
+        skills: (p.skills || []).map(skId => {
+          const sk = TACTICAL_SKILLS[skId];
+          if (!sk) return null;
+          const apCost = computeSkillApCost(b, sk);
+          const mpCost = computeSkillMpCost(p, sk);
+          const cd = p.cooldowns[skId] || 0;
+          const usedUp = !!(sk.maxUses && (p.usedMaxSkills[skId] || 0) >= sk.maxUses);
+          const canUse = !b.over && !usedUp && cd === 0 && b.ap >= apCost && p.mp >= mpCost;
+          const forecast = primary ? computeTacticalForecast(b, sk, primary) : null;
+          return {
+            id: sk.id,
+            name: sk.name,
+            path: sk.path,
+            elem: sk.elem,
+            apCost,
+            mpCost,
+            cooldown: cd,
+            usedUp,
+            canUse,
+            overcastCap: getSkillOvercastCap(sk),
+            lockDamage: forecast ? forecast.lockDamage : getSkillBaseLockDamage(sk),
+            forecast,
+          };
+        }).filter(Boolean),
+      },
+      enemies: (b.enemies || []).map((e, idx) => ({
+        idx,
+        id: e.id || `enemy_${idx}`,
+        name: e.name,
+        charId: e.charId || null,
+        hp: e.hp,
+        mhp: e.mhp,
+        mp: e.mp,
+        mmp: e.mmp,
+        shield: e.shield || 0,
+        shieldKind: e.shieldKind || 'magic',
+        solidArmor: e.solidArmor || 0,
+        elem: e.elem,
+        atk: e.atk,
+        def: e.def,
+        mdef: e.mdef,
+        spd: e.spd || 95,
+        av: e.av || 0,
+        baseAv: e.baseAv || computeBaseAv(e.spd || 95),
+        locks: e.locks != null ? e.locks : (e.maxLocks || 0),
+        maxLocks: e.maxLocks || 0,
+        broken: !!e.broken,
+        boss: !!e.boss,
+        phase: e.phase || 1,
+        evadeCharges: e.evadeCharges || 0,
+        fireAura: e.fireAura || 0,
+        flawToken: e.flawToken || 0,
+        targeted: idx === b.targetIdx,
+        alive: e.hp > 0,
+        status: Object.assign({}, e.status),
+        intent: e.intent ? Object.assign({}, e.intent) : null,
+      })),
+      actionQueue: getActionQueue(b, 8),
+      meters: {
+        playerHits: b.playerHits || 0,
+        enemyHits: b.enemyHits || 0,
+        sealProgress: b.sealProgress || 0,
+        frostFloorTurns: b.frostFloorTurns || 0,
+        exposure: b.exposure || 0,
+        witnessActive: !!b.witnessActive,
+        crateHp: b.crateHp,
+        crateMax: b.crateMax,
+        ainoResonance: b.ainoResonance || 0,
+      },
+      metrics: Object.assign({}, b.metrics),
+      balance: COMBAT_BALANCE_V22,
+    };
+  }
+
+  function useSkillById(skillId, targetIdx, b) {
+    return useSkill(skillId, targetIdx, b);
   }
 
   function mapCharToStageId(charId) {
@@ -6836,6 +7763,8 @@
         }
       } else if (action.type === 'overcast') {
         setOvercast(action.mode, b);
+      } else if (action.type === 'amp') {
+        setAmpPct(action.pct, b);
       } else if (action.type === 'wand' || action.type === 'eclipse') {
         const okWand = toggleEclipseWand(action.on, b);
         if (action.on && !okWand) {
@@ -6878,6 +7807,7 @@
   }
 
   const CombatEngine = {
+    COMBAT_BALANCE_V22,
     STAGES: STAGE_CONFIGS,
     SKILLS: TACTICAL_SKILLS,
     PATH_META,
@@ -6889,11 +7819,15 @@
     startStage,
     startBattle: startCustomOrStageBattle,
     setOvercast,
+    setAmpPct,
+    setEquippedStaff,
+    selectTarget,
     toggleEclipseWand,
     useBondAssist,
     isPalaceReady,
     inspectClue,
     useSkill,
+    useSkillById,
     endTurn,
     exitBattle,
     simulateBattle,
@@ -6907,6 +7841,7 @@
     computeSkillApCost,
     computeSkillMpCost,
     computeManaCycleMultiplier,
+    computeAmpProfile,
     estimateSkillDamage,
     computeTacticalForecast,
     predictNextIntentTendency,
@@ -6915,6 +7850,8 @@
     spawnCombatElementVFX,
     triggerScreenShake,
     syncHoverEnemyGlow,
+    getActionQueue,
+    getBattleState,
     getState: () => activeBattle,
     loadArenaRecords,
   };

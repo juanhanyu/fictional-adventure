@@ -1,12 +1,12 @@
 /* =========================================================================
-   转生千金 · 冰晶与绘本微音效引擎 (js/sfx-suite.js)
-   零外部音频、零网络请求、全纯 WebAudio D 大调霜晶钢片琴音色体系
+   转生千金 · 冰晶与绘本微音效 + 影院四层拟音引擎 (js/sfx-suite.js)
+   零外部音频、零网络请求、全纯 WebAudio D 大调霜晶钢片琴与四层战斗拟音体系
    导出：window.CrystalSFX
    ========================================================================= */
 (function (root) {
   'use strict';
 
-  var MAX_ACTIVE_VOICES = 14;
+  var MAX_ACTIVE_VOICES = 26;
   var SUPPRESSION_MS = 45;
   var LOCAL_VOL_KEY = 'ojousama_sfx_vol';
   var LOCAL_MUTE_KEY = 'ojousama_muted';
@@ -14,6 +14,7 @@
   var MIN_ATTACK = 0.002;
   var MAX_ATTACK = 0.014;
   var TITLE_BTN_SELECTOR = '.title-menu button, .corner-tool-btn';
+  var CRYSTAL_FM_RATIOS = [1.0, 2.756, 5.404];
 
   // D 大调 + B 大调冰铃标准十二平均律音高表 (A4 = 440Hz)
   var NOTE = {
@@ -58,6 +59,10 @@
     ctx: null,
     masterBus: null,
     compressor: null,
+    shaper: null,
+    reverbBus: null,
+    reverbNode: null,
+    punchBus: null,
     noiseBuffers: null,
     localVol: readSavedVol(),
     localMuted: readSavedMuted(),
@@ -69,6 +74,7 @@
     titleHoverCursor: 0,
     cardHoverCursor: 0,
     clickNonce: 0,
+    stepNonce: 0,
     boundTitleEl: null,
     titlePointerHandler: null,
     titleClickHandler: null,
@@ -130,7 +136,7 @@
 
   function computeMasterVol(rawVol) {
     var clamped = clamp(Number(rawVol) || 0, 0, 1);
-    return Math.pow(clamped, 1.65) * 0.26;
+    return Math.pow(clamped, 1.65) * 0.28;
   }
 
   function getAudioCtor() {
@@ -142,26 +148,107 @@
     }
   }
 
+  function createSoftClipCurve(drive) {
+    var samples = 1024;
+    var curve = new Float32Array(samples);
+    var k = Math.max(0.8, Number(drive) || 2.0);
+    var norm = Math.tanh ? Math.tanh(k) : (Math.exp(2 * k) - 1) / (Math.exp(2 * k) + 1);
+    for (var i = 0; i < samples; i++) {
+      var x = (i * 2) / (samples - 1) - 1;
+      var y = Math.tanh ? Math.tanh(x * k) : (Math.exp(2 * x * k) - 1) / (Math.exp(2 * x * k) + 1);
+      curve[i] = clamp(y / (norm || 1), -1, 1);
+    }
+    return curve;
+  }
+
+  // 算法冰晶宫殿立体声混响脉冲：6 道镜面早反射 + 霜气丝绒高频微阻尼尾音
+  function createIceHallImpulse(c, seconds) {
+    try {
+      if (!c || typeof c.createBuffer !== 'function') return null;
+      var sr = typeof c.sampleRate === 'number' && c.sampleRate >= 8000 ? c.sampleRate : 44100;
+      var dur = clamp(Number(seconds) || 1.35, 0.4, 2.2);
+      var len = Math.floor(sr * dur);
+      var ir = c.createBuffer(2, len, sr);
+      if (!ir || typeof ir.getChannelData !== 'function') return null;
+      var left = ir.getChannelData(0);
+      var right = ir.getChannelData(1);
+      var randL = createSeededRand(0x1CECA571);
+      var randR = createSeededRand(0x7A2B9C3D);
+
+      var taps = [
+        { ms: 14, gL: 0.42, gR: 0.18 },
+        { ms: 27, gL: 0.16, gR: 0.38 },
+        { ms: 43, gL: 0.31, gR: 0.22 },
+        { ms: 62, gL: 0.18, gR: 0.28 },
+        { ms: 88, gL: 0.22, gR: 0.15 },
+        { ms: 118, gL: 0.14, gR: 0.19 }
+      ];
+      for (var ti = 0; ti < taps.length; ti++) {
+        var idx = Math.floor((taps[ti].ms / 1000) * sr);
+        if (idx >= 0 && idx < len) {
+          left[idx] += taps[ti].gL;
+          right[idx] += taps[ti].gR;
+        }
+      }
+
+      var lpL = 0;
+      var lpR = 0;
+      for (var i = 0; i < len; i++) {
+        var sec = i / sr;
+        var env = Math.exp(-sec / 0.34) * (1 - Math.exp(-sec / 0.012));
+        var damp = clamp(0.42 - sec * 0.18, 0.12, 0.42);
+        lpL = lpL + damp * (randL() - lpL);
+        lpR = lpR + damp * (randR() - lpR);
+        left[i] = clamp(left[i] + lpL * env * 0.56, -1, 1);
+        right[i] = clamp(right[i] + lpR * env * 0.56, -1, 1);
+      }
+      return ir;
+    } catch (e) {
+      return null;
+    }
+  }
+
   function buildMasterChain(c) {
     try {
       if (!c) return null;
       var bus = typeof c.createGain === 'function' ? c.createGain() : null;
       if (!bus) return null;
-      safeSetParam(bus.gain, 1.0, safeTime(c));
+      var t = safeTime(c);
+      safeSetParam(bus.gain, 1.0, t);
 
       var dest = c.destination;
+      var chainHead = bus;
+
+      // 1. 柔和软限幅饱和级（WaveShaperNode，特性检测并优雅回落）
+      state.shaper = null;
+      if (typeof c.createWaveShaper === 'function') {
+        try {
+          var masterShaper = c.createWaveShaper();
+          masterShaper.curve = createSoftClipCurve(1.85);
+          try { masterShaper.oversample = '2x'; } catch (e) {}
+          if (typeof chainHead.connect === 'function') {
+            chainHead.connect(masterShaper);
+            chainHead = masterShaper;
+            state.shaper = masterShaper;
+          }
+        } catch (e) {
+          state.shaper = null;
+        }
+      }
+
+      // 2. 动态压缩级（DynamicsCompressorNode）
       var connected = false;
+      state.compressor = null;
       if (typeof c.createDynamicsCompressor === 'function') {
         try {
           var comp = c.createDynamicsCompressor();
-          var t = safeTime(c);
-          safeSetParam(comp.threshold, -10, t);
-          safeSetParam(comp.knee, 12, t);
-          safeSetParam(comp.ratio, 6, t);
-          safeSetParam(comp.attack, 0.004, t);
+          safeSetParam(comp.threshold, -12, t);
+          safeSetParam(comp.knee, 14, t);
+          safeSetParam(comp.ratio, 5, t);
+          safeSetParam(comp.attack, 0.003, t);
           safeSetParam(comp.release, 0.14, t);
-          if (typeof bus.connect === 'function' && typeof comp.connect === 'function') {
-            bus.connect(comp);
+          if (typeof chainHead.connect === 'function' && typeof comp.connect === 'function') {
+            chainHead.connect(comp);
             comp.connect(dest);
             state.compressor = comp;
             connected = true;
@@ -170,11 +257,74 @@
           state.compressor = null;
         }
       }
-      if (!connected && typeof bus.connect === 'function') {
+      if (!connected && typeof chainHead.connect === 'function') {
         try {
-          bus.connect(dest);
+          chainHead.connect(dest);
         } catch (e) {}
       }
+
+      // 3. 并联算法冰晶宫殿混响总线（ConvolverNode，无支持时静默旁路）
+      state.reverbBus = null;
+      state.reverbNode = null;
+      if (typeof c.createConvolver === 'function' && typeof c.createGain === 'function') {
+        try {
+          var irBuf = createIceHallImpulse(c, 1.35);
+          if (irBuf) {
+            var revIn = c.createGain();
+            var conv = c.createConvolver();
+            var revRet = c.createGain();
+            conv.buffer = irBuf;
+            safeSetParam(revIn.gain, 1.0, t);
+            safeSetParam(revRet.gain, 0.36, t);
+            revIn.connect(conv);
+            if (typeof c.createBiquadFilter === 'function') {
+              var revHp = c.createBiquadFilter();
+              revHp.type = 'highpass';
+              safeSetParam(revHp.frequency, 280, t);
+              conv.connect(revHp);
+              revHp.connect(revRet);
+            } else {
+              conv.connect(revRet);
+            }
+            revRet.connect(bus);
+            state.reverbBus = revIn;
+            state.reverbNode = conv;
+          }
+        } catch (e) {
+          state.reverbBus = null;
+          state.reverbNode = null;
+        }
+      }
+
+      // 4. 并联次低音饱和冲击总线（WaveShaperNode + 260Hz 低通，强化打击胸腔重量）
+      state.punchBus = null;
+      if (typeof c.createWaveShaper === 'function' && typeof c.createGain === 'function') {
+        try {
+          var pIn = c.createGain();
+          var pShaper = c.createWaveShaper();
+          var pRet = c.createGain();
+          pShaper.curve = createSoftClipCurve(3.15);
+          try { pShaper.oversample = '2x'; } catch (e) {}
+          safeSetParam(pIn.gain, 1.0, t);
+          safeSetParam(pRet.gain, 0.9, t);
+          pIn.connect(pShaper);
+          if (typeof c.createBiquadFilter === 'function') {
+            var pLp = c.createBiquadFilter();
+            pLp.type = 'lowpass';
+            safeSetParam(pLp.frequency, 260, t);
+            safeSetParam(pLp.Q, 0.85, t);
+            pShaper.connect(pLp);
+            pLp.connect(pRet);
+          } else {
+            pShaper.connect(pRet);
+          }
+          pRet.connect(bus);
+          state.punchBus = pIn;
+        } catch (e) {
+          state.punchBus = null;
+        }
+      }
+
       return bus;
     } catch (e) {
       return null;
@@ -382,23 +532,32 @@
     };
   }
 
-  function connectOut(c, node, pan) {
+  function connectOut(c, node, pan, sendOpts) {
     if (!node) return;
-    var target = state.masterBus || (c ? c.destination : null);
+    var target = (sendOpts && sendOpts.targetBus) || state.masterBus || (c ? c.destination : null);
+    var outNode = node;
     try {
       if (pan && Math.abs(pan) > 0.01 && c && typeof c.createStereoPanner === 'function') {
         var panner = c.createStereoPanner();
         safeSetParam(panner.pan, clamp(pan, -0.85, 0.85), safeTime(c));
         node.connect(panner);
-        panner.connect(target);
-        return;
+        outNode = panner;
       }
     } catch (e) {}
     try {
-      if (typeof node.connect === 'function') {
-        node.connect(target);
+      if (typeof outNode.connect === 'function' && target) {
+        outNode.connect(target);
       }
     } catch (e) {}
+    // 并联冰晶宫殿混响发送（ConvolverNode 存在时自动生效，精简环境静默跳过）
+    if (sendOpts && sendOpts.reverbSend > 0.01 && state.reverbBus && c && typeof c.createGain === 'function') {
+      try {
+        var sendGain = c.createGain();
+        safeSetParam(sendGain.gain, clamp(sendOpts.reverbSend, 0.02, 1.0), safeTime(c));
+        outNode.connect(sendGain);
+        sendGain.connect(state.reverbBus);
+      } catch (e) {}
+    }
   }
 
   function createFilterNode(c, filterCfg, st, dur) {
@@ -408,6 +567,9 @@
       if (filterCfg.type) f.type = filterCfg.type;
       var fStart = Math.max(40, filterCfg.freq || 2400);
       safeSetParam(f.frequency, fStart, st);
+      if (filterCfg.midFreq && filterCfg.midTime) {
+        safeExpRamp(f.frequency, Math.max(40, filterCfg.midFreq), st + filterCfg.midTime);
+      }
       if (filterCfg.endFreq) {
         safeExpRamp(f.frequency, Math.max(40, filterCfg.endFreq), st + dur);
       }
@@ -468,7 +630,10 @@
       } else {
         osc.connect(g);
       }
-      connectOut(c, g, cfg.pan);
+      connectOut(c, g, cfg.pan, {
+        reverbSend: cfg.reverbSend || 0,
+        targetBus: cfg.targetBus || null
+      });
       bindVoiceEvict(slot, c, osc, g);
 
       try {
@@ -501,7 +666,8 @@
       gain: gain,
       detune: cfg.detune || 0,
       filter: cfg.filter || (cfg.wave === 'triangle' ? { type: 'lowpass', freq: 4600, q: 0.7 } : null),
-      pan: cfg.pan
+      pan: cfg.pan,
+      reverbSend: cfg.reverbSend || 0
     });
     if (cfg.overtone !== false) {
       var ratio = cfg.overtoneRatio || 2.0;
@@ -514,6 +680,7 @@
         gain: gain * (cfg.overtoneGain || 0.24),
         detune: (cfg.detune || 0) + 5.5,
         pan: cfg.pan ? -cfg.pan * 0.45 : 0,
+        reverbSend: (cfg.reverbSend || 0) * 0.85,
         ornament: true
       });
     }
@@ -553,7 +720,10 @@
       } else {
         src.connect(g);
       }
-      connectOut(c, g, cfg.pan);
+      connectOut(c, g, cfg.pan, {
+        reverbSend: cfg.reverbSend || 0,
+        targetBus: cfg.targetBus || null
+      });
       bindVoiceEvict(slot, c, src, g);
 
       try {
@@ -569,6 +739,202 @@
       slot.release();
       return false;
     }
+  }
+
+  // =========================================================================
+  // 影院四层战斗拟音合成原语（Layer 1 扫频气流 / Layer 2 饱和次低音冲击 /
+  // Layer 3 交错碎冰爆裂 / Layer 4 非谐波 1.0:2.756:5.404 冰晶 FM 共振）
+  // =========================================================================
+  function playWhoosh(c, baseT, now, masterVol, prio, cfg) {
+    return playNoise(c, baseT, now, masterVol, prio, {
+      kind: cfg.kind || 'pink',
+      delay: cfg.delay || 0,
+      dur: cfg.dur || 0.16,
+      attack: cfg.attack !== undefined ? cfg.attack : 0.012,
+      gain: cfg.gain !== undefined ? cfg.gain : 0.36,
+      pan: cfg.pan || 0,
+      reverbSend: cfg.reverbSend !== undefined ? cfg.reverbSend : 0.24,
+      filter: {
+        type: 'bandpass',
+        freq: cfg.startFreq || 680,
+        midFreq: cfg.midFreq || 0,
+        midTime: cfg.midTime || 0,
+        endFreq: cfg.endFreq || 2900,
+        q: cfg.q !== undefined ? cfg.q : 2.1
+      },
+      ornament: !!cfg.ornament
+    });
+  }
+
+  function playSubPunch(c, baseT, now, masterVol, prio, cfg) {
+    var delay = cfg.delay || 0;
+    var dur = cfg.dur || 0.135;
+    var gain = cfg.gain !== undefined ? cfg.gain : 0.72;
+    var ok = playTone(c, baseT, now, masterVol, prio, {
+      freq: cfg.startFreq || 162,
+      slideTo: cfg.endFreq || 40,
+      wave: cfg.wave || 'sine',
+      delay: delay,
+      dur: dur,
+      attack: cfg.attack !== undefined ? cfg.attack : 0.002,
+      gain: gain,
+      filter: { type: 'lowpass', freq: cfg.cutoff || 320, q: 0.9 },
+      targetBus: state.punchBus || state.masterBus,
+      reverbSend: cfg.reverbSend || 0.06
+    });
+    if (cfg.click !== false) {
+      playTone(c, baseT, now, masterVol, prio, {
+        freq: cfg.clickFreq || 1180,
+        slideTo: 220,
+        wave: 'triangle',
+        delay: delay,
+        dur: 0.026,
+        attack: 0.002,
+        gain: gain * 0.32,
+        filter: { type: 'bandpass', freq: 1450, q: 1.6 },
+        pan: cfg.pan || 0,
+        ornament: true
+      });
+    }
+    return ok;
+  }
+
+  function playShatterPops(c, baseT, now, masterVol, prio, cfg) {
+    var count = clamp(cfg.count || 5, 2, 7);
+    var baseDelay = cfg.delay || 0.003;
+    var spread = cfg.spread || 0.095;
+    var baseGain = cfg.gain !== undefined ? cfg.gain : 0.42;
+    var baseHp = cfg.baseFreq || 2350;
+    var rev = cfg.reverbSend !== undefined ? cfg.reverbSend : 0.34;
+    var panPattern = [-0.42, 0.36, -0.22, 0.46, -0.14, 0.28, 0.0];
+    var freqOffsets = [1.0, 1.38, 1.82, 1.18, 2.12, 1.56, 2.35];
+
+    for (var i = 0; i < count; i++) {
+      var frac = count > 1 ? i / (count - 1) : 0;
+      var dt = baseDelay + frac * spread + (i % 2 === 1 ? 0.005 : 0);
+      var popDur = clamp(0.032 + (1 - frac) * 0.036, 0.026, 0.078);
+      var popGain = baseGain * (1.0 - frac * 0.42);
+      var cutoff = clamp(baseHp * freqOffsets[i % freqOffsets.length], 1600, 6800);
+      playNoise(c, baseT, now, masterVol, prio, {
+        kind: i % 3 === 2 ? 'white' : 'crackle',
+        delay: dt,
+        dur: popDur,
+        attack: 0.002,
+        gain: popGain,
+        pan: panPattern[i % panPattern.length],
+        reverbSend: rev,
+        filter: {
+          type: i % 2 === 0 ? 'highpass' : 'bandpass',
+          freq: cutoff,
+          endFreq: cutoff * 0.72,
+          q: i % 2 === 0 ? 1.25 : 2.6
+        },
+        ornament: i >= 3
+      });
+    }
+    return true;
+  }
+
+  // 非谐波冰晶 FM 合成器：严格采用 1.0 : 2.756 : 5.404 晶柱模态比，并送入冰晶宫殿混响总线
+  function playCrystalFM(c, baseT, now, masterVol, prio, cfg) {
+    if (!c || typeof c.createOscillator !== 'function' || typeof c.createGain !== 'function') return false;
+    var delay = Math.max(0, cfg.delay || 0);
+    var dur = Math.max(0.05, cfg.dur || 0.28);
+    var freq = Math.max(80, cfg.freq || NOTE.D6);
+    var gain = cfg.gain !== undefined ? cfg.gain : 0.44;
+    var atk = clamp(cfg.attack !== undefined ? cfg.attack : 0.003, MIN_ATTACK, Math.min(MAX_ATTACK, dur * 0.35));
+    var modIndex = cfg.modIndex !== undefined ? cfg.modIndex : 1.45;
+    var revSend = cfg.reverbSend !== undefined ? cfg.reverbSend : 0.44;
+    var pan = cfg.pan || 0;
+
+    var slot = reserveVoice(now, delay, dur, prio, !!cfg.ornament);
+    if (!slot) return false;
+
+    try {
+      var st = baseT + delay;
+      var carrier = c.createOscillator();
+      var mod = c.createOscillator();
+      var modGain = c.createGain();
+      var outGain = c.createGain();
+      var peak = Math.max(0.00025, masterVol * gain);
+
+      try {
+        carrier.type = 'sine';
+        mod.type = 'sine';
+      } catch (e) {}
+
+      // 基频 1.0 × f，调制器 2.756 × f（冰晶/金属棒第 2 弯曲模态）
+      safeSetParam(carrier.frequency, freq * CRYSTAL_FM_RATIOS[0], st);
+      if (cfg.slideTo) {
+        safeExpRamp(carrier.frequency, Math.max(80, cfg.slideTo), st + dur);
+      }
+      if (cfg.detune && carrier.detune) {
+        safeSetParam(carrier.detune, cfg.detune, st);
+      }
+
+      var modFreq = Math.min(12500, freq * CRYSTAL_FM_RATIOS[1]);
+      safeSetParam(mod.frequency, modFreq, st);
+      var modDepth = Math.min(4800, freq * modIndex);
+      safeSetParam(modGain.gain, Math.max(1, modDepth), st);
+      safeExpRamp(modGain.gain, Math.max(0.5, modDepth * 0.06), st + Math.max(0.04, dur * 0.45));
+
+      safeSetParam(outGain.gain, 0.0001, st);
+      safeLinearRamp(outGain.gain, peak, st + atk);
+      safeExpRamp(outGain.gain, MIN_EXP_GAIN, st + dur);
+      safeLinearRamp(outGain.gain, 0.00001, st + dur + 0.008);
+
+      mod.connect(modGain);
+      if (carrier.frequency && typeof modGain.connect === 'function') {
+        try {
+          modGain.connect(carrier.frequency);
+        } catch (e) {}
+      }
+
+      var filter = createFilterNode(c, cfg.filter, st, dur);
+      if (filter) {
+        carrier.connect(filter);
+        filter.connect(outGain);
+      } else {
+        carrier.connect(outGain);
+      }
+      connectOut(c, outGain, pan, { reverbSend: revSend });
+      bindVoiceEvict(slot, c, carrier, outGain);
+
+      try {
+        carrier.onended = function () {
+          slot.release();
+        };
+      } catch (e) {}
+
+      if (typeof mod.start === 'function') mod.start(st);
+      if (typeof carrier.start === 'function') carrier.start(st);
+      if (typeof mod.stop === 'function') mod.stop(st + dur + 0.015);
+      if (typeof carrier.stop === 'function') carrier.stop(st + dur + 0.015);
+    } catch (e) {
+      slot.release();
+      return false;
+    }
+
+    // 第 3 非谐波模态 5.404 × f 冰晶星芒泛音（自动防 Nyquist 混叠）
+    if (cfg.thirdPartial !== false) {
+      var thirdFreq = freq * CRYSTAL_FM_RATIOS[2];
+      if (thirdFreq < 14500) {
+        playTone(c, baseT, now, masterVol, prio, {
+          freq: thirdFreq,
+          slideTo: cfg.slideTo ? Math.min(14500, cfg.slideTo * CRYSTAL_FM_RATIOS[2]) : 0,
+          wave: 'sine',
+          delay: delay + 0.002,
+          dur: Math.max(0.04, dur * 0.36),
+          attack: 0.002,
+          gain: gain * (cfg.thirdGain !== undefined ? cfg.thirdGain : 0.2),
+          detune: (cfg.detune || 0) + 4,
+          pan: -pan * 0.65,
+          reverbSend: revSend * 1.15,
+          ornament: true
+        });
+      }
+    }
+    return true;
   }
 
   // =========================================================================
@@ -1324,48 +1690,54 @@
       }
     },
 
-    // --- 战斗与冰晶魔法 ---
+    // --- 战斗与冰晶魔法（影院四层拟音：扫频气流 + 饱和次低音冲击 + 交错碎冰 + 1.0:2.756:5.404 非谐波晶振入殿堂混响） ---
     ice_shatter: {
       prio: 3,
       cooldown: 55,
       fn: function (c, t, now, vol, prio) {
-        // 沉实冲击 + 高频碎冰 + 四片散落冰晶
-        playTone(c, t, now, vol, prio, {
-          freq: 155,
-          slideTo: 48,
-          wave: 'sine',
-          delay: 0,
-          dur: 0.125,
-          attack: 0.003,
-          gain: 0.62,
-          filter: { type: 'lowpass', freq: 360, q: 0.8 }
+        // Layer 1: 极寒爆裂冲击气流
+        playWhoosh(c, t, now, vol, prio, {
+          startFreq: 1850,
+          endFreq: 420,
+          dur: 0.14,
+          attack: 0.004,
+          gain: 0.34,
+          reverbSend: 0.32
         });
-        playNoise(c, t, now, vol, prio, {
-          kind: 'crackle',
-          delay: 0.004,
-          dur: 0.088,
-          attack: 0.002,
+        // Layer 2: 饱和次低音重击胸腔感
+        playSubPunch(c, t, now, vol, prio, {
+          startFreq: 168,
+          endFreq: 40,
+          dur: 0.145,
+          gain: 0.74,
+          clickFreq: 1380
+        });
+        // Layer 3: 六段交错高频碎冰爆裂
+        playShatterPops(c, t, now, vol, prio, {
+          count: 6,
+          delay: 0.003,
+          spread: 0.115,
           gain: 0.48,
-          filter: { type: 'highpass', freq: 2200, q: 1.1 }
+          baseFreq: 2250,
+          reverbSend: 0.42
         });
+        // Layer 4: 非谐波冰晶 FM 飞溅余韵（1.0 : 2.756 : 5.404）
         var shards = [
-          { f: NOTE.E7, to: 1860, d: 0.014, dur: 0.11, g: 0.36, p: -0.35, w: 'sine' },
-          { f: 3135.96, to: NOTE.D7, d: 0.042, dur: 0.13, g: 0.30, p: 0.32, w: 'sine' },
-          { f: 2093.00, to: NOTE.Fs6, d: 0.070, dur: 0.14, g: 0.28, p: -0.18, w: 'triangle' },
-          { f: NOTE.A7, to: NOTE.Fs7, d: 0.102, dur: 0.15, g: 0.22, p: 0.22, w: 'sine' }
+          { f: NOTE.E6, to: NOTE.B5, d: 0.012, dur: 0.24, g: 0.36, p: -0.36, mi: 1.6 },
+          { f: NOTE.A6, to: NOTE.Fs6, d: 0.042, dur: 0.26, g: 0.32, p: 0.34, mi: 1.35 },
+          { f: NOTE.D7, to: NOTE.A6, d: 0.074, dur: 0.28, g: 0.26, p: -0.20, mi: 1.15 }
         ];
         for (var i = 0; i < shards.length; i++) {
           var s = shards[i];
-          playTone(c, t, now, vol, prio, {
+          playCrystalFM(c, t, now, vol, prio, {
             freq: s.f,
             slideTo: s.to,
-            wave: s.w,
             delay: s.d,
             dur: s.dur,
-            attack: 0.002,
             gain: s.g,
-            filter: s.w === 'triangle' ? { type: 'lowpass', freq: 5200, q: 0.7 } : null,
+            modIndex: s.mi,
             pan: s.p,
+            reverbSend: 0.56,
             ornament: i >= 2
           });
         }
@@ -1376,43 +1748,54 @@
       prio: 3,
       cooldown: 55,
       fn: function (c, t, now, vol, prio) {
-        // 寒钢交击泛音 + 带通火星爆发
-        playNoise(c, t, now, vol, prio, {
+        // Layer 1: 寒锋高速削风 + 火星带通扫频
+        playWhoosh(c, t, now, vol, prio, {
           kind: 'white',
-          delay: 0,
-          dur: 0.075,
+          startFreq: 3800,
+          endFreq: 1350,
+          dur: 0.095,
           attack: 0.002,
           gain: 0.44,
-          filter: { type: 'bandpass', freq: 3300, endFreq: 1750, q: 2.6 }
+          q: 2.8,
+          reverbSend: 0.3
         });
-        playTone(c, t, now, vol, prio, {
+        // Layer 2: 紧实交锋冲击体
+        playSubPunch(c, t, now, vol, prio, {
+          startFreq: 195,
+          endFreq: 68,
+          dur: 0.082,
+          gain: 0.56,
+          clickFreq: 1850
+        });
+        // Layer 3: 寒钢火星微爆
+        playShatterPops(c, t, now, vol, prio, {
+          count: 3,
+          delay: 0.002,
+          spread: 0.042,
+          gain: 0.34,
+          baseFreq: 3100,
+          reverbSend: 0.28
+        });
+        // Layer 4: 双组冷钢非谐波 FM 共鸣
+        playCrystalFM(c, t, now, vol, prio, {
           freq: 1140,
           slideTo: 1085,
-          wave: 'triangle',
           delay: 0,
-          dur: 0.24,
-          attack: 0.002,
-          gain: 0.46,
-          filter: { type: 'bandpass', freq: 2300, q: 2.0 },
-          pan: -0.12
+          dur: 0.30,
+          gain: 0.44,
+          modIndex: 2.1,
+          pan: -0.16,
+          reverbSend: 0.46
         });
-        playTone(c, t, now, vol, prio, {
+        playCrystalFM(c, t, now, vol, prio, {
           freq: 1698,
-          slideTo: 1660,
-          wave: 'sine',
-          delay: 0.002,
-          dur: 0.20,
-          attack: 0.002,
+          slideTo: 1645,
+          delay: 0.004,
+          dur: 0.25,
           gain: 0.34,
-          pan: 0.14
-        });
-        playTone(c, t, now, vol, prio, {
-          freq: 2690,
-          wave: 'sine',
-          delay: 0.003,
-          dur: 0.14,
-          attack: 0.002,
-          gain: 0.24,
+          modIndex: 1.75,
+          pan: 0.18,
+          reverbSend: 0.46,
           ornament: true
         });
       }
@@ -1422,45 +1805,53 @@
       prio: 3,
       cooldown: 55,
       fn: function (c, t, now, vol, prio) {
-        // 格挡寒钢鸣响 + 上扬反击冰铃
-        playNoise(c, t, now, vol, prio, {
-          kind: 'white',
-          delay: 0,
-          dur: 0.056,
-          attack: 0.002,
+        // Layer 1: 上扬卸力寒风扫频
+        playWhoosh(c, t, now, vol, prio, {
+          startFreq: 1150,
+          endFreq: 3900,
+          dur: 0.125,
+          attack: 0.004,
           gain: 0.38,
-          filter: { type: 'bandpass', freq: 3450, endFreq: 2100, q: 2.8 }
+          q: 2.4,
+          reverbSend: 0.34
         });
-        playTone(c, t, now, vol, prio, {
-          freq: NOTE.E6,
-          slideTo: 1265,
-          wave: 'triangle',
-          delay: 0,
-          dur: 0.14,
-          attack: 0.002,
-          gain: 0.46,
-          filter: { type: 'lowpass', freq: 5000, q: 0.8 },
-          pan: -0.14
+        // Layer 2: 精准格挡次低音锁点
+        playSubPunch(c, t, now, vol, prio, {
+          startFreq: 210,
+          endFreq: 62,
+          dur: 0.088,
+          gain: 0.60,
+          clickFreq: 1960
         });
-        playTone(c, t, now, vol, prio, {
+        // Layer 3: 霜刃火花碎响
+        playShatterPops(c, t, now, vol, prio, {
+          count: 4,
+          delay: 0.004,
+          spread: 0.064,
+          gain: 0.34,
+          baseFreq: 2950,
+          reverbSend: 0.38
+        });
+        // Layer 4: 上扬闪反三连非谐波冰铃 FM（E6 -> A6 -> D7）
+        playCrystalFM(c, t, now, vol, prio, {
           freq: NOTE.E6,
           slideTo: NOTE.A6,
-          wave: 'sine',
-          delay: 0.032,
-          dur: 0.17,
-          attack: 0.003,
-          gain: 0.50,
-          pan: 0.12
+          delay: 0.006,
+          dur: 0.22,
+          gain: 0.48,
+          modIndex: 1.85,
+          pan: -0.16,
+          reverbSend: 0.54
         });
-        playTone(c, t, now, vol, prio, {
+        playCrystalFM(c, t, now, vol, prio, {
           freq: NOTE.D7,
-          wave: 'sine',
-          delay: 0.075,
-          dur: 0.26,
-          attack: 0.003,
-          gain: 0.36,
+          delay: 0.056,
+          dur: 0.34,
+          gain: 0.42,
+          modIndex: 1.2,
           detune: 5,
-          pan: 0.2
+          pan: 0.22,
+          reverbSend: 0.64
         });
       }
     },
@@ -1469,69 +1860,82 @@
       prio: 4,
       cooldown: 55,
       fn: function (c, t, now, vol, prio) {
-        // 破韧碎晶 + 共鸣 B 大调霜铃三和弦 (B4 / B5 / D#6 / F#6)
-        playTone(c, t, now, vol, prio, {
-          freq: 162,
-          slideTo: 54,
-          wave: 'sine',
-          delay: 0,
-          dur: 0.11,
-          attack: 0.003,
-          gain: 0.52,
-          filter: { type: 'lowpass', freq: 360, q: 0.8 }
+        // Layer 1: 破招震荡气浪
+        playWhoosh(c, t, now, vol, prio, {
+          startFreq: 620,
+          midFreq: 3400,
+          midTime: 0.05,
+          endFreq: 980,
+          dur: 0.21,
+          attack: 0.005,
+          gain: 0.40,
+          q: 2.0,
+          reverbSend: 0.42
         });
-        playNoise(c, t, now, vol, prio, {
-          kind: 'crackle',
+        // Layer 2: 影院级重破韧次低音落锤
+        playSubPunch(c, t, now, vol, prio, {
+          startFreq: 152,
+          endFreq: 36,
+          dur: 0.17,
+          gain: 0.78,
+          clickFreq: 1480
+        });
+        // Layer 3: 护盾与弱点锁崩解五连脆裂
+        playShatterPops(c, t, now, vol, prio, {
+          count: 5,
           delay: 0.003,
-          dur: 0.082,
-          attack: 0.002,
-          gain: 0.44,
-          filter: { type: 'highpass', freq: 2150, q: 1.1 }
+          spread: 0.105,
+          gain: 0.46,
+          baseFreq: 2200,
+          reverbSend: 0.48
         });
+        // Layer 4: B 大调霜晶殿堂 FM 三和弦（B4 / B5 / D#6 / F#6 / B6）
         playTone(c, t, now, vol, prio, {
           freq: NOTE.B4,
           wave: 'triangle',
-          delay: 0.024,
-          dur: 0.50,
+          delay: 0.022,
+          dur: 0.52,
           attack: 0.005,
-          gain: 0.42,
-          filter: { type: 'lowpass', freq: 2800, q: 0.7 }
+          gain: 0.40,
+          filter: { type: 'lowpass', freq: 2600, q: 0.7 },
+          reverbSend: 0.48
         });
-        playTone(c, t, now, vol, prio, {
+        playCrystalFM(c, t, now, vol, prio, {
           freq: NOTE.B5,
-          wave: 'sine',
-          delay: 0.030,
-          dur: 0.44,
-          attack: 0.003,
-          gain: 0.50,
-          pan: -0.18
-        });
-        playTone(c, t, now, vol, prio, {
-          freq: NOTE.Ds6,
-          wave: 'sine',
-          delay: 0.068,
-          dur: 0.45,
-          attack: 0.003,
-          gain: 0.46,
-          pan: 0.04
-        });
-        playTone(c, t, now, vol, prio, {
-          freq: NOTE.Fs6,
-          wave: 'sine',
-          delay: 0.108,
+          delay: 0.028,
           dur: 0.48,
-          attack: 0.004,
+          gain: 0.48,
+          modIndex: 1.45,
+          pan: -0.22,
+          reverbSend: 0.62
+        });
+        playCrystalFM(c, t, now, vol, prio, {
+          freq: NOTE.Ds6,
+          delay: 0.064,
+          dur: 0.48,
           gain: 0.44,
-          pan: 0.22
+          modIndex: 1.25,
+          pan: 0.04,
+          reverbSend: 0.64
+        });
+        playCrystalFM(c, t, now, vol, prio, {
+          freq: NOTE.Fs6,
+          delay: 0.102,
+          dur: 0.52,
+          gain: 0.42,
+          modIndex: 1.1,
+          pan: 0.24,
+          reverbSend: 0.68
         });
         playTone(c, t, now, vol, prio, {
           freq: NOTE.B6,
           wave: 'sine',
-          delay: 0.130,
-          dur: 0.36,
-          attack: 0.005,
-          gain: 0.22,
+          delay: 0.132,
+          dur: 0.40,
+          attack: 0.004,
+          gain: 0.24,
           detune: 6,
+          reverbSend: 0.72,
           ornament: true
         });
       }
@@ -1541,52 +1945,63 @@
       prio: 3,
       cooldown: 55,
       fn: function (c, t, now, vol, prio) {
-        playTone(c, t, now, vol, prio, {
-          freq: 185,
-          slideTo: 58,
-          wave: 'sine',
-          delay: 0,
-          dur: 0.115,
-          attack: 0.003,
-          gain: 0.58,
-          filter: { type: 'lowpass', freq: 420, q: 0.9 }
-        });
-        playNoise(c, t, now, vol, prio, {
+        // Layer 1: 高压裂空扫频
+        playWhoosh(c, t, now, vol, prio, {
           kind: 'white',
-          delay: 0,
-          dur: 0.068,
-          attack: 0.002,
-          gain: 0.36,
-          filter: { type: 'bandpass', freq: 2700, endFreq: 4200, q: 2.2 }
+          startFreq: 1950,
+          endFreq: 4600,
+          dur: 0.11,
+          attack: 0.003,
+          gain: 0.40,
+          q: 2.4,
+          reverbSend: 0.36
         });
-        playTone(c, t, now, vol, prio, {
+        // Layer 2: 暴击重拳次低音
+        playSubPunch(c, t, now, vol, prio, {
+          startFreq: 192,
+          endFreq: 42,
+          dur: 0.14,
+          gain: 0.76,
+          clickFreq: 1620
+        });
+        // Layer 3: 晶簇迸裂火花
+        playShatterPops(c, t, now, vol, prio, {
+          count: 4,
+          delay: 0.004,
+          spread: 0.072,
+          gain: 0.40,
+          baseFreq: 2650,
+          reverbSend: 0.44
+        });
+        // Layer 4: A5->D6->A6->D7 璀璨非谐波冰晶 FM 暴击绽放
+        playCrystalFM(c, t, now, vol, prio, {
           freq: NOTE.A5,
           slideTo: NOTE.D6,
-          wave: 'triangle',
-          delay: 0.015,
-          dur: 0.21,
-          attack: 0.003,
-          gain: 0.48,
-          filter: { type: 'lowpass', freq: 5000, q: 0.7 },
-          pan: -0.14
+          delay: 0.012,
+          dur: 0.24,
+          gain: 0.46,
+          modIndex: 1.7,
+          pan: -0.18,
+          reverbSend: 0.56
         });
-        playTone(c, t, now, vol, prio, {
+        playCrystalFM(c, t, now, vol, prio, {
           freq: NOTE.A6,
-          wave: 'sine',
           delay: 0.044,
-          dur: 0.28,
-          attack: 0.003,
+          dur: 0.32,
           gain: 0.42,
-          pan: 0.14
+          modIndex: 1.35,
+          pan: 0.18,
+          reverbSend: 0.62
         });
         playTone(c, t, now, vol, prio, {
           freq: NOTE.D7,
           wave: 'sine',
-          delay: 0.072,
-          dur: 0.24,
+          delay: 0.076,
+          dur: 0.28,
           attack: 0.003,
-          gain: 0.24,
+          gain: 0.26,
           detune: 5,
+          reverbSend: 0.68,
           ornament: true
         });
       }
@@ -1596,44 +2011,53 @@
       prio: 2,
       cooldown: 55,
       fn: function (c, t, now, vol, prio) {
-        // 霜晶结界弹反
-        playTone(c, t, now, vol, prio, {
-          freq: 295,
-          slideTo: 162,
-          wave: 'sine',
-          delay: 0,
-          dur: 0.115,
-          attack: 0.003,
-          gain: 0.52,
-          filter: { type: 'lowpass', freq: 720, q: 1.0 }
-        });
-        playTone(c, t, now, vol, prio, {
-          freq: NOTE.Fs5,
-          wave: 'sine',
-          delay: 0.008,
-          dur: 0.19,
-          attack: 0.003,
-          gain: 0.34,
-          pan: -0.12
-        });
-        playTone(c, t, now, vol, prio, {
-          freq: NOTE.Cs6,
-          wave: 'sine',
-          delay: 0.014,
-          dur: 0.17,
-          attack: 0.003,
-          gain: 0.24,
-          detune: 8,
-          pan: 0.12,
-          ornament: true
-        });
-        playNoise(c, t, now, vol, prio, {
-          kind: 'pink',
-          delay: 0,
-          dur: 0.072,
+        // Layer 1: 结界凝霜气流扫掠
+        playWhoosh(c, t, now, vol, prio, {
+          startFreq: 1350,
+          endFreq: 2950,
+          dur: 0.11,
           attack: 0.004,
+          gain: 0.28,
+          q: 2.3,
+          reverbSend: 0.34
+        });
+        // Layer 2: 厚实冰壁沉顿落座
+        playSubPunch(c, t, now, vol, prio, {
+          startFreq: 260,
+          endFreq: 96,
+          dur: 0.115,
+          gain: 0.58,
+          cutoff: 440,
+          clickFreq: 980
+        });
+        // Layer 3: 冰壳受冲微裂
+        playShatterPops(c, t, now, vol, prio, {
+          count: 3,
+          delay: 0.005,
+          spread: 0.048,
           gain: 0.26,
-          filter: { type: 'bandpass', freq: 1550, endFreq: 2750, q: 2.4 },
+          baseFreq: 2450,
+          reverbSend: 0.32
+        });
+        // Layer 4: 霜晶护幕 FM 谐振（F#5 / C#6）
+        playCrystalFM(c, t, now, vol, prio, {
+          freq: NOTE.Fs5,
+          delay: 0.008,
+          dur: 0.24,
+          gain: 0.36,
+          modIndex: 1.25,
+          pan: -0.14,
+          reverbSend: 0.48
+        });
+        playCrystalFM(c, t, now, vol, prio, {
+          freq: NOTE.Cs6,
+          delay: 0.018,
+          dur: 0.22,
+          gain: 0.26,
+          modIndex: 1.0,
+          detune: 7,
+          pan: 0.14,
+          reverbSend: 0.52,
           ornament: true
         });
       }
@@ -1643,33 +2067,46 @@
       prio: 2,
       cooldown: 55,
       fn: function (c, t, now, vol, prio) {
-        playNoise(c, t, now, vol, prio, {
-          kind: 'pink',
-          delay: 0,
-          dur: 0.13,
-          attack: 0.006,
+        // Layer 1: 凌厉剑锋三段弧形破空扫频
+        playWhoosh(c, t, now, vol, prio, {
+          startFreq: 520,
+          midFreq: 3450,
+          midTime: 0.055,
+          endFreq: 920,
+          dur: 0.155,
+          attack: 0.005,
+          gain: 0.48,
+          q: 2.2,
+          pan: -0.12,
+          reverbSend: 0.26
+        });
+        // Layer 2: 挥剑发力短促底劲
+        playSubPunch(c, t, now, vol, prio, {
+          startFreq: 175,
+          endFreq: 56,
+          dur: 0.078,
           gain: 0.44,
-          filter: { type: 'bandpass', freq: 760, endFreq: 2950, q: 1.9 }
+          clickFreq: 1420
         });
-        playTone(c, t, now, vol, prio, {
-          freq: 1460,
-          slideTo: 610,
-          wave: 'sine',
-          delay: 0.004,
-          dur: 0.105,
-          attack: 0.004,
-          gain: 0.32
+        // Layer 3: 寒锋霜粒擦空
+        playShatterPops(c, t, now, vol, prio, {
+          count: 3,
+          delay: 0.018,
+          spread: 0.052,
+          gain: 0.24,
+          baseFreq: 3200,
+          reverbSend: 0.24
         });
-        playTone(c, t, now, vol, prio, {
-          freq: 2480,
-          slideTo: 1940,
-          wave: 'triangle',
-          delay: 0.014,
-          dur: 0.065,
-          attack: 0.003,
-          gain: 0.18,
-          filter: { type: 'lowpass', freq: 4400, q: 0.8 },
-          ornament: true
+        // Layer 4: 剑脊细微非谐波寒鸣
+        playCrystalFM(c, t, now, vol, prio, {
+          freq: 1480,
+          slideTo: 640,
+          delay: 0.006,
+          dur: 0.13,
+          gain: 0.30,
+          modIndex: 1.5,
+          pan: 0.14,
+          reverbSend: 0.32
         });
       }
     },
@@ -1678,43 +2115,268 @@
       prio: 2,
       cooldown: 55,
       fn: function (c, t, now, vol, prio) {
-        // 冰系魔导咏唱凝结
-        playNoise(c, t, now, vol, prio, {
-          kind: 'pink',
-          delay: 0,
-          dur: 0.22,
+        // Layer 1: 凝结寒潮上行气流
+        playWhoosh(c, t, now, vol, prio, {
+          startFreq: 920,
+          endFreq: 4200,
+          dur: 0.23,
           attack: 0.012,
-          gain: 0.22,
-          filter: { type: 'bandpass', freq: 1450, endFreq: 3750, q: 2.4 },
-          ornament: true
+          gain: 0.28,
+          q: 2.5,
+          reverbSend: 0.44
         });
-        playTone(c, t, now, vol, prio, {
+        // Layer 2: 魔力引动温润低频基座
+        playSubPunch(c, t, now, vol, prio, {
+          startFreq: 138,
+          endFreq: 58,
+          dur: 0.11,
+          gain: 0.36,
+          click: false
+        });
+        // Layer 3: 水汽凝结细碎冰晶爆音
+        playShatterPops(c, t, now, vol, prio, {
+          count: 4,
+          delay: 0.02,
+          spread: 0.12,
+          gain: 0.24,
+          baseFreq: 2800,
+          reverbSend: 0.46
+        });
+        // Layer 4: 上行 D 大调非谐波冰晶 FM（A5 -> D6 -> F#6）
+        playCrystalFM(c, t, now, vol, prio, {
           freq: NOTE.A5,
-          wave: 'sine',
           delay: 0,
-          dur: 0.18,
-          attack: 0.004,
-          gain: 0.40,
-          pan: -0.18
-        });
-        playTone(c, t, now, vol, prio, {
-          freq: NOTE.D6,
-          wave: 'sine',
-          delay: 0.044,
           dur: 0.22,
-          attack: 0.004,
-          gain: 0.44,
-          pan: 0
+          gain: 0.38,
+          modIndex: 1.2,
+          pan: -0.20,
+          reverbSend: 0.54
         });
-        playCelesta(c, t, now, vol, prio, {
+        playCrystalFM(c, t, now, vol, prio, {
+          freq: NOTE.D6,
+          delay: 0.044,
+          dur: 0.26,
+          gain: 0.42,
+          modIndex: 1.15,
+          pan: 0,
+          reverbSend: 0.58
+        });
+        playCrystalFM(c, t, now, vol, prio, {
           freq: NOTE.Fs6,
           delay: 0.092,
-          dur: 0.28,
-          attack: 0.004,
+          dur: 0.34,
           gain: 0.42,
-          overtoneRatio: 1.5,
-          overtoneGain: 0.24,
-          pan: 0.18
+          modIndex: 1.05,
+          pan: 0.20,
+          reverbSend: 0.64
+        });
+      }
+    },
+
+    water_surge: {
+      prio: 2,
+      cooldown: 55,
+      fn: function (c, t, now, vol, prio) {
+        // Layer 1: 覆潮水弹流动扫频
+        playWhoosh(c, t, now, vol, prio, {
+          startFreq: 420,
+          midFreq: 2350,
+          midTime: 0.075,
+          endFreq: 760,
+          dur: 0.20,
+          attack: 0.010,
+          gain: 0.40,
+          q: 1.85,
+          reverbSend: 0.38
+        });
+        // Layer 2: 水体撞击闷弹冲量
+        playSubPunch(c, t, now, vol, prio, {
+          startFreq: 185,
+          endFreq: 54,
+          dur: 0.125,
+          gain: 0.56,
+          cutoff: 380,
+          clickFreq: 780
+        });
+        // Layer 3: 水花飞溅高频水珠声
+        playShatterPops(c, t, now, vol, prio, {
+          count: 4,
+          delay: 0.012,
+          spread: 0.088,
+          gain: 0.26,
+          baseFreq: 1850,
+          reverbSend: 0.42
+        });
+        // Layer 4: 水滴折射清澈音色（先升后落液态滑音）
+        playTone(c, t, now, vol, prio, {
+          freq: 340,
+          midFreq: 680,
+          midTime: 0.045,
+          slideTo: 240,
+          wave: 'sine',
+          delay: 0.010,
+          dur: 0.15,
+          attack: 0.004,
+          gain: 0.38,
+          pan: -0.14,
+          reverbSend: 0.42
+        });
+        playCrystalFM(c, t, now, vol, prio, {
+          freq: NOTE.G6,
+          slideTo: NOTE.D6,
+          delay: 0.048,
+          dur: 0.22,
+          gain: 0.26,
+          modIndex: 0.85,
+          pan: 0.18,
+          reverbSend: 0.54,
+          ornament: true
+        });
+      }
+    },
+
+    eclipse_cast: {
+      prio: 3,
+      cooldown: 60,
+      fn: function (c, t, now, vol, prio) {
+        // 晦轮杖暗银真伤导魔：幽邃低频吸气扫频 + 虚空沉响 + 暗银非谐波双音拍振
+        playWhoosh(c, t, now, vol, prio, {
+          startFreq: 380,
+          midFreq: 2150,
+          midTime: 0.12,
+          endFreq: 640,
+          dur: 0.26,
+          attack: 0.014,
+          gain: 0.36,
+          q: 2.6,
+          reverbSend: 0.52
+        });
+        playSubPunch(c, t, now, vol, prio, {
+          startFreq: 128,
+          endFreq: 38,
+          dur: 0.19,
+          gain: 0.72,
+          cutoff: 260,
+          clickFreq: 960
+        });
+        playShatterPops(c, t, now, vol, prio, {
+          count: 4,
+          delay: 0.018,
+          spread: 0.092,
+          gain: 0.34,
+          baseFreq: 2600,
+          reverbSend: 0.54
+        });
+        playCrystalFM(c, t, now, vol, prio, {
+          freq: NOTE.B5,
+          slideTo: NOTE.As5 || 932.33,
+          delay: 0.014,
+          dur: 0.38,
+          gain: 0.42,
+          modIndex: 2.0,
+          pan: -0.24,
+          reverbSend: 0.68
+        });
+        playCrystalFM(c, t, now, vol, prio, {
+          freq: NOTE.Fs6,
+          slideTo: NOTE.E6,
+          delay: 0.046,
+          dur: 0.42,
+          gain: 0.36,
+          modIndex: 1.65,
+          detune: -9,
+          pan: 0.24,
+          reverbSend: 0.72
+        });
+      }
+    },
+
+    one_more: {
+      prio: 4,
+      cooldown: 80,
+      fn: function (c, t, now, vol, prio) {
+        // ONE MORE 乘胜追击：凌厉霜切 + 饱满次低音踏步 + 疾速上行 D 大调冰晶号角
+        playWhoosh(c, t, now, vol, prio, {
+          startFreq: 1100,
+          endFreq: 4800,
+          dur: 0.15,
+          attack: 0.004,
+          gain: 0.36,
+          q: 2.3,
+          reverbSend: 0.46
+        });
+        playSubPunch(c, t, now, vol, prio, {
+          startFreq: 172,
+          endFreq: 44,
+          dur: 0.145,
+          gain: 0.70,
+          clickFreq: 1580
+        });
+        playShatterPops(c, t, now, vol, prio, {
+          count: 4,
+          delay: 0.004,
+          spread: 0.068,
+          gain: 0.38,
+          baseFreq: 2700,
+          reverbSend: 0.48
+        });
+        var chord = [
+          { f: NOTE.D6, d: 0.010, dur: 0.24, p: -0.24, g: 0.44 },
+          { f: NOTE.Fs6, d: 0.048, dur: 0.26, p: -0.06, g: 0.44 },
+          { f: NOTE.A6, d: 0.086, dur: 0.30, p: 0.12, g: 0.46 },
+          { f: NOTE.D7, d: 0.128, dur: 0.42, p: 0.26, g: 0.44 }
+        ];
+        for (var i = 0; i < chord.length; i++) {
+          var n = chord[i];
+          playCrystalFM(c, t, now, vol, prio, {
+            freq: n.f,
+            delay: n.d,
+            dur: n.dur,
+            gain: n.g,
+            modIndex: 1.2,
+            pan: n.p,
+            reverbSend: 0.66,
+            ornament: i >= 3
+          });
+        }
+      }
+    },
+
+    footstep: {
+      prio: 1,
+      cooldown: 65,
+      fn: function (c, t, now, vol, prio) {
+        // 霜雪与石砖战术踏步拟音：微幅左右声像与音高交替，自然无机械重复感
+        var alt = (state.stepNonce++ % 2 === 0) ? 1 : -1;
+        var pitchMul = alt > 0 ? 1.04 : 0.96;
+        playSubPunch(c, t, now, vol, prio, {
+          startFreq: 118 * pitchMul,
+          endFreq: 44,
+          dur: 0.056,
+          gain: 0.38,
+          cutoff: 220,
+          click: false
+        });
+        playNoise(c, t, now, vol, prio, {
+          kind: 'pink',
+          delay: 0.003,
+          dur: 0.064,
+          attack: 0.004,
+          gain: 0.26,
+          pan: alt * 0.12,
+          reverbSend: 0.16,
+          filter: { type: 'bandpass', freq: 1680 * pitchMul, endFreq: 960, q: 1.9 }
+        });
+        playNoise(c, t, now, vol, prio, {
+          kind: 'crackle',
+          delay: 0.006,
+          dur: 0.044,
+          attack: 0.002,
+          gain: 0.20,
+          pan: alt * 0.16,
+          reverbSend: 0.18,
+          filter: { type: 'highpass', freq: 2750 * pitchMul, q: 1.2 },
+          ornament: true
         });
       }
     },
@@ -1723,54 +2385,64 @@
       prio: 4,
       cooldown: 220,
       fn: function (c, t, now, vol, prio) {
-        // 强敌二阶段觉醒（温暖低通共鸣，零刺耳未滤波毛刺）
-        playTone(c, t, now, vol, prio, {
-          freq: NOTE.D3,
-          slideTo: NOTE.A2,
-          wave: 'triangle',
-          delay: 0,
-          dur: 0.56,
+        // 强敌二阶段觉醒（影院四层：风暴气浪 + 深沉次低音坠击 + 冰裂预警 + 霜殿钟鸣）
+        playWhoosh(c, t, now, vol, prio, {
+          startFreq: 680,
+          midFreq: 3250,
+          midTime: 0.14,
+          endFreq: 1120,
+          dur: 0.42,
           attack: 0.014,
-          gain: 0.60,
-          filter: { type: 'lowpass', freq: 620, endFreq: 240, q: 1.8 }
+          gain: 0.34,
+          q: 1.8,
+          reverbSend: 0.52
         });
-        playNoise(c, t, now, vol, prio, {
-          kind: 'pink',
-          delay: 0.03,
-          dur: 0.36,
-          attack: 0.014,
-          gain: 0.24,
-          filter: { type: 'bandpass', freq: 900, endFreq: 2950, q: 1.8 },
-          ornament: true
+        playSubPunch(c, t, now, vol, prio, {
+          startFreq: NOTE.D3,
+          endFreq: 36,
+          dur: 0.54,
+          attack: 0.012,
+          gain: 0.78,
+          cutoff: 280,
+          clickFreq: 920
+        });
+        playShatterPops(c, t, now, vol, prio, {
+          count: 5,
+          delay: 0.025,
+          spread: 0.14,
+          gain: 0.36,
+          baseFreq: 2100,
+          reverbSend: 0.54
         });
         playTone(c, t, now, vol, prio, {
           freq: NOTE.D4,
           slideTo: NOTE.A4,
           wave: 'triangle',
           delay: 0.07,
-          dur: 0.44,
+          dur: 0.46,
           attack: 0.010,
           gain: 0.46,
-          filter: { type: 'lowpass', freq: 1900, q: 0.9 }
+          filter: { type: 'lowpass', freq: 1950, q: 0.9 },
+          reverbSend: 0.52
         });
-        playTone(c, t, now, vol, prio, {
+        playCrystalFM(c, t, now, vol, prio, {
           freq: NOTE.A5,
-          wave: 'sine',
           delay: 0.14,
-          dur: 0.42,
-          attack: 0.006,
-          gain: 0.42,
-          pan: -0.15
+          dur: 0.48,
+          gain: 0.44,
+          modIndex: 1.55,
+          pan: -0.18,
+          reverbSend: 0.66
         });
-        playTone(c, t, now, vol, prio, {
+        playCrystalFM(c, t, now, vol, prio, {
           freq: NOTE.Cs6,
-          wave: 'sine',
           delay: 0.22,
-          dur: 0.46,
-          attack: 0.006,
-          gain: 0.38,
+          dur: 0.54,
+          gain: 0.42,
+          modIndex: 1.4,
           detune: 5,
-          pan: 0.15
+          pan: 0.18,
+          reverbSend: 0.72
         });
       }
     }
@@ -1788,7 +2460,12 @@
     egg: 'season_report',
     letter_open: 'wax_seal',
     shatter: 'ice_shatter',
-    magic: 'ice_cast'
+    magic: 'ice_cast',
+    ice_footstep: 'footstep',
+    step: 'footstep',
+    eclipse: 'eclipse_cast',
+    onemore: 'one_more',
+    water: 'water_surge'
   };
 
   function resolveCanonical(type) {
@@ -2025,6 +2702,19 @@
     }
   } catch (e) {}
 
+  function getEngineInfo() {
+    return {
+      cinemaFoley: true,
+      maxVoices: MAX_ACTIVE_VOICES,
+      hasContext: !!state.ctx,
+      hasReverb: !!state.reverbBus,
+      hasShaper: !!state.shaper,
+      hasPunchBus: !!state.punchBus,
+      hasCompressor: !!state.compressor,
+      crystalFmRatios: CRYSTAL_FM_RATIOS.slice()
+    };
+  }
+
   var api = {
     play: play,
     unlock: unlock,
@@ -2033,7 +2723,8 @@
     setMuted: setMuted,
     isMuted: isMuted,
     listCues: listCues,
-    bindTitleDelegation: bindTitleDelegation
+    bindTitleDelegation: bindTitleDelegation,
+    getEngineInfo: getEngineInfo
   };
 
   if (root) {

@@ -331,7 +331,7 @@ ok('演武新增第 8 幕 (turning_point_corridor) 与第 9 幕 (wind_god_eye) �
     && eastwingSvg.includes('<svg') && windGodSvg.includes('<svg') && eastwingSvg !== windGodSvg);
 }
 
-// 3.4) 未解锁心念援护时显示禁用锁态提示 #cb-btn-assist
+// 3.4) 未配置羁绊心念援护时隐藏 #cb-btn-assist，装备援护时清晰显示
 {
   win.__resetS();
   const sNoBond = win.__getS();
@@ -342,12 +342,19 @@ ok('演武新增第 8 幕 (turning_point_corridor) 与第 9 幕 (wind_god_eye) �
   win.S = sNoBond;
   CE.startStage('beatrice_11', { headless: false, usePreset: true, bondAssist: null });
   const assistBtn = $('cb-btn-assist');
-  const lockedOk = !!(assistBtn && !assistBtn.classList.contains('hidden')
+  const hiddenOk = !!(assistBtn && assistBtn.classList.contains('hidden')
     && assistBtn.disabled === true
-    && assistBtn.classList.contains('locked-hint')
-    && assistBtn.title.includes('解锁心念援护'));
+    && assistBtn.classList.contains('locked-hint'));
   CE.exitBattle(false, { silent: true });
-  ok('未解锁任何羁绊心念援护时，战斗工具栏展示禁用锁态提示按钮 #cb-btn-assist.locked-hint', lockedOk);
+
+  CE.startStage('beatrice_11', { headless: false, usePreset: true, bondAssist: 'alice' });
+  const assistBtnShown = $('cb-btn-assist');
+  const shownOk = !!(assistBtnShown && !assistBtnShown.classList.contains('hidden')
+    && assistBtnShown.disabled === false
+    && !assistBtnShown.classList.contains('locked-hint')
+    && assistBtnShown.textContent.includes('爱丽丝'));
+  CE.exitBattle(false, { silent: true });
+  ok('未配置羁绊心念援护时隐藏 #cb-btn-assist，装备援护时正常显示且可用', hiddenOk && shownOk);
 }
 
 console.log('\n===== 4. 间章《白昼里的夜》剧本 (js/story-vol4.js) 合并、目录顺序、静态合规与通关 =====');

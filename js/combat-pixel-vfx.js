@@ -843,7 +843,14 @@
   const MAX_EFFECT_AGE_MS = 1250;
   const FX_BASE_INTERVAL_MS = 33; // PixelFX 原生 30fps，无需 60fps 重复软光栅
   const FX_MAX_INTERVAL_MS = 66;
-  const FX_FRAME_BUDGET_MS = 7;
+  const FX_FRAME_BUDGET_MS = 10;
+
+  // 对原生尺寸极大或带垂直偏移（如 snowflake_burst 的 Tt=-48、eclipse 的 r=72 晕环）的特效，
+  // 改用紧凑离屏帧按真实视觉中心精准锚定并按 scale 缩放合成，彻底告别左上偏飞与巨无霸糊屏
+  const SCALED_FX_PROFILES = {
+    snowflake_burst: { w: 144, h: 128, localX: 72, localY: 104, pivotX: 72, pivotY: 56, defaultScale: 0.54 },
+    eclipse: { w: 152, h: 144, localX: 76, localY: 72, pivotX: 76, pivotY: 72, defaultScale: 0.48 },
+  };
 
   const _metaFetched = new Set();
   const _imgPreloaded = new Map(); // id -> 'loading' | 'ok' | 'err'
@@ -872,6 +879,12 @@
   let _imgData = null;
   let _bufW = 0;
   let _bufH = 0;
+  let _subFxFrame = null;
+  let _subFxCanvas = null;
+  let _subFxCtx = null;
+  let _subFxImgData = null;
+  let _subFxW = 0;
+  let _subFxH = 0;
   let _canvasDirty = false;
   let _lastBattleRef = null;
   let _lastBattleId = '';
@@ -1615,10 +1628,13 @@
       count: tier === 3 ? 14 : tier === 2 ? 12 : 10,
       trailSteps: tier === 1 ? 4 : 6,
       trailArc: tier === 3 ? 0.42 : 0.32,
-      ribbonColorFront: 'rgba(126, 232, 255, 0.52)',
-      ribbonColorBack: 'rgba(34, 108, 214, 0.24)',
-      ribbonWidth: tier === 3 ? 1.9 : 1.5,
-      paletteFront: ['#FFFFFF', '#B8F6FF', '#6BC5F8', '#3B9EFF'],
+      ribbonColorFront: tier >= 3 ? 'rgba(98, 224, 255, 0.86)' : 'rgba(110, 226, 255, 0.62)',
+      ribbonColorBack: 'rgba(28, 96, 206, 0.34)',
+      shadowColorFront: tier >= 2 ? 'rgba(14, 48, 128, 0.44)' : '',
+      shadowColorBack: tier >= 2 ? 'rgba(12, 40, 108, 0.24)' : '',
+      moteStroke: tier >= 2 ? 'rgba(16, 56, 146, 0.62)' : '',
+      ribbonWidth: tier === 3 ? 2.1 : 1.6,
+      paletteFront: ['#FFFFFF', '#B8F6FF', '#6BC5F8', '#2C8CF2'],
       paletteBack: ['#4A88D8', '#2C63B8', '#5AA8E6'],
       starEvery: 3,
     });
@@ -1636,16 +1652,19 @@
         count: tier === 3 ? 12 : 10,
         trailSteps: 6,
         trailArc: tier === 3 ? 0.40 : 0.30,
-        ribbonColorFront: 'rgba(56, 134, 255, 0.56)',
-        ribbonColorBack: 'rgba(22, 74, 178, 0.22)',
-        ribbonWidth: tier === 3 ? 1.85 : 1.45,
+        ribbonColorFront: tier >= 3 ? 'rgba(28, 104, 245, 0.86)' : 'rgba(46, 124, 252, 0.68)',
+        ribbonColorBack: 'rgba(20, 68, 174, 0.32)',
+        shadowColorFront: 'rgba(10, 32, 104, 0.46)',
+        shadowColorBack: 'rgba(10, 30, 96, 0.24)',
+        moteStroke: 'rgba(12, 38, 118, 0.65)',
+        ribbonWidth: tier === 3 ? 2.05 : 1.6,
         paletteFront: ['#E8FBFF', '#6BC5F8', '#2E7BFF', '#1658EB'],
         paletteBack: ['#2955B8', '#1D4299', '#3F86E0'],
         starEvery: 3,
       });
     }
 
-    // Tier 3 (60%): 香槟金第三轨道环
+    // Tier 3 (60%): 香槟金第三轨道环（配深琥珀 1px 衬影，亮色雪瓷背景高对比度清晰可辨）
     if (tier >= 3) {
       orbits.push({
         cx,
@@ -1655,14 +1674,17 @@
         tilt: 0.18,
         speed: 3.05,
         phase: t * 3.05 + 2.3,
-        count: 12,
+        count: 14,
         trailSteps: 7,
-        trailArc: 0.46,
-        ribbonColorFront: 'rgba(255, 224, 146, 0.56)',
-        ribbonColorBack: 'rgba(196, 164, 108, 0.26)',
-        ribbonWidth: 2.0,
-        paletteFront: ['#FFFFFF', '#FFE8A3', '#E5C06E', '#9DF5FF'],
-        paletteBack: ['#B69352', '#7E9FD4', '#D2B475'],
+        trailArc: 0.48,
+        ribbonColorFront: 'rgba(255, 218, 110, 0.96)',
+        ribbonColorBack: 'rgba(186, 134, 42, 0.56)',
+        shadowColorFront: 'rgba(116, 70, 12, 0.68)',
+        shadowColorBack: 'rgba(84, 50, 10, 0.42)',
+        moteStroke: 'rgba(112, 66, 10, 0.78)',
+        ribbonWidth: 2.35,
+        paletteFront: ['#FFF8D6', '#FFD970', '#E5B44C', '#9DF5FF'],
+        paletteBack: ['#B07D28', '#6B8FD0', '#C99B3E'],
         starEvery: 2,
       });
     }
@@ -1677,7 +1699,7 @@
     return { x: orb.cx + lx, y: orb.cy + orb.ry * s - lx * orb.tilt, z: s };
   }
 
-  function drawAuraCrystalMote(ctx, px, py, size, color, isStar, alpha) {
+  function drawAuraCrystalMote(ctx, px, py, size, color, isStar, alpha, strokeColor) {
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.translate(Math.round(px), Math.round(py));
@@ -1695,6 +1717,11 @@
       ctx.lineTo(-r, 0);
       ctx.lineTo(-w, -w);
       ctx.closePath();
+      if (strokeColor) {
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 1.15;
+        ctx.stroke();
+      }
       ctx.fill();
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(-0.75, -0.75, 1.5, 1.5);
@@ -1706,6 +1733,11 @@
       ctx.lineTo(0, r);
       ctx.lineTo(-r * 0.85, 0);
       ctx.closePath();
+      if (strokeColor) {
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 1.0;
+        ctx.stroke();
+      }
       ctx.fill();
     }
     ctx.restore();
@@ -1713,14 +1745,15 @@
 
   function drawAuraOrbitPass(ctx, orbits, tier, intensity, t, cx, feetY, faceY, isFrontPass) {
     const faceSafeAlpha = (px, py) => (
-      !isFrontPass ? 1.0 : (Math.abs(px - cx) < 19 && Math.abs(py - faceY) < 19 ? 0.18 : 1.0)
+      !isFrontPass ? 1.0 : (Math.abs(px - cx) < 19 && Math.abs(py - faceY) < 19 ? 0.22 : 1.0)
     );
-    const ribbonAlphaMul = tier >= 2 ? 0.92 : (0.58 + intensity * 0.28);
+    const ribbonAlphaMul = tier >= 3 ? 1.0 : tier >= 2 ? 0.94 : (0.62 + intensity * 0.28);
 
     ctx.save();
     for (let oIdx = 0; oIdx < orbits.length; oIdx++) {
       const orb = orbits[oIdx];
       const segs = 40;
+      const shadowCol = isFrontPass ? orb.shadowColorFront : orb.shadowColorBack;
       ctx.save();
       ctx.lineCap = 'round';
       for (let i = 0; i < segs; i++) {
@@ -1728,11 +1761,21 @@
         const p1 = evalAuraOrbitPoint(orb, ((i + 1) / segs) * Math.PI * 2);
         const midZ = (p0.z + p1.z) * 0.5;
         if (isFrontPass ? midZ < 0 : midZ >= 0) continue;
-        const depthFactor = isFrontPass ? (0.45 + 0.55 * midZ) : (0.28 + 0.32 * (1 + midZ));
+        const depthFactor = isFrontPass ? (0.50 + 0.50 * midZ) : (0.34 + 0.36 * (1 + midZ));
         const safe = faceSafeAlpha((p0.x + p1.x) * 0.5, (p0.y + p1.y) * 0.5);
+        const mainW = isFrontPass ? orb.ribbonWidth * (0.78 + 0.44 * midZ) : orb.ribbonWidth * 0.70;
+        if (shadowCol) {
+          ctx.strokeStyle = shadowCol;
+          ctx.globalAlpha = depthFactor * safe * ribbonAlphaMul;
+          ctx.lineWidth = mainW + 1.8;
+          ctx.beginPath();
+          ctx.moveTo(p0.x, p0.y);
+          ctx.lineTo(p1.x, p1.y);
+          ctx.stroke();
+        }
         ctx.strokeStyle = isFrontPass ? orb.ribbonColorFront : orb.ribbonColorBack;
         ctx.globalAlpha = depthFactor * safe * ribbonAlphaMul;
-        ctx.lineWidth = isFrontPass ? orb.ribbonWidth * (0.75 + 0.45 * midZ) : orb.ribbonWidth * 0.65;
+        ctx.lineWidth = mainW;
         ctx.beginPath();
         ctx.moveTo(p0.x, p0.y);
         ctx.lineTo(p1.x, p1.y);
@@ -1764,10 +1807,19 @@
           const tp = evalAuraOrbitPoint(orb, angle - dirSign * frac * orb.trailArc);
           if (isFrontPass ? tp.z < -0.05 : tp.z > 0.05) break;
           ctx.save();
-          ctx.strokeStyle = baseColor;
-          ctx.globalAlpha = (1 - frac) * (isFrontPass ? (0.48 + 0.36 * pt.z) : 0.24) * safe;
-          ctx.lineWidth = Math.max(0.8, (isFrontPass ? 2.5 : 1.2) * (1 - frac * 0.72));
           ctx.lineCap = 'round';
+          if (shadowCol && isFrontPass && stIdx <= 3) {
+            ctx.strokeStyle = shadowCol;
+            ctx.globalAlpha = (1 - frac) * 0.42 * safe;
+            ctx.lineWidth = Math.max(1.4, 3.6 * (1 - frac * 0.65));
+            ctx.beginPath();
+            ctx.moveTo(prev.x, prev.y);
+            ctx.lineTo(tp.x, tp.y);
+            ctx.stroke();
+          }
+          ctx.strokeStyle = baseColor;
+          ctx.globalAlpha = (1 - frac) * (isFrontPass ? (0.56 + 0.38 * pt.z) : 0.28) * safe;
+          ctx.lineWidth = Math.max(0.9, (isFrontPass ? 2.6 : 1.3) * (1 - frac * 0.70));
           ctx.beginPath();
           ctx.moveTo(prev.x, prev.y);
           ctx.lineTo(tp.x, tp.y);
@@ -1776,11 +1828,11 @@
           prev = tp;
         }
         const isStar = (k % orb.starEvery === 0);
-        const size = (isStar ? 3.4 : 2.4) * (0.58 + depthNorm * 0.68);
-        const alpha = (isFrontPass ? (0.82 + 0.18 * pt.z) : (0.36 + 0.34 * depthNorm)) * safe;
+        const size = (isStar ? 3.6 : 2.5) * (0.60 + depthNorm * 0.66);
+        const alpha = (isFrontPass ? (0.86 + 0.14 * pt.z) : (0.42 + 0.34 * depthNorm)) * safe;
         if (isFrontPass && (isStar || tier >= 2)) {
           ctx.save();
-          ctx.globalAlpha = (isStar ? 0.34 : 0.20) * safe;
+          ctx.globalAlpha = (isStar ? 0.36 : 0.22) * safe;
           const haloR = size * 3.0;
           const halo = ctx.createRadialGradient(pt.x, pt.y, 0.4, pt.x, pt.y, haloR);
           halo.addColorStop(0, baseColor);
@@ -1791,7 +1843,7 @@
           ctx.fill();
           ctx.restore();
         }
-        drawAuraCrystalMote(ctx, pt.x, pt.y, size, baseColor, isStar, alpha);
+        drawAuraCrystalMote(ctx, pt.x, pt.y, size, baseColor, isStar, alpha, isFrontPass ? orb.moteStroke : '');
       }
 
       // 上升霜晶与香槟金星尘（Tier 2 起 10 粒，Tier 3 增至 18 粒并混入 #FFE59A 香槟金星尘）
@@ -1807,15 +1859,18 @@
           const my = feetY - 8 - prog * 136;
           const safe = faceSafeAlpha(mx, my);
           const fade = Math.sin(prog * Math.PI);
-          const dCol = (tier >= 3 && i % 3 === 0) ? '#FFE59A' : (isFrontPass ? '#D8FAFF' : '#66A8E8');
+          const isGoldDust = tier >= 3 && i % 3 === 0;
+          const dCol = isGoldDust ? '#FFE28A' : (isFrontPass ? '#D8FAFF' : '#589BE4');
+          const dStroke = isFrontPass ? (isGoldDust ? 'rgba(116, 70, 12, 0.65)' : 'rgba(18, 62, 154, 0.48)') : '';
           drawAuraCrystalMote(
             ctx,
             mx,
             my,
-            (isFrontPass ? 2.1 : 1.5) * (0.7 + 0.3 * fade),
+            (isFrontPass ? 2.2 : 1.5) * (0.72 + 0.3 * fade),
             dCol,
             i % 4 === 0,
-            fade * (isFrontPass ? 0.85 : 0.45) * safe
+            fade * (isFrontPass ? 0.90 : 0.48) * safe,
+            dStroke
           );
         }
       }
@@ -1836,6 +1891,8 @@
         _auraDirty = false;
         _auraLastTier = 0;
         _auraLastIntensity = 0;
+        _auraBurstTs = 0;
+        _auraBurstTier = 0;
       }
       return;
     }
@@ -1883,14 +1940,14 @@
     const tier = amp.tier;
     const intensity = Math.max(amp.intensity, 0.25);
 
-    // 1) 脚底魔阵基底与三层旋转虚线环（Tier 3 新增第 3 圈香槟金外环与 6 枚金晶节点）
+    // 1) 脚底魔阵基底与三层旋转虚线环（Tier 3 香槟金外环加 1px 深琥珀衬影 + 6 枚描边金晶节点，亮底清晰锐利）
     bCtx.save();
     bCtx.beginPath();
-    bCtx.ellipse(cx, feetY, 54, 15, 0, 0, Math.PI * 2);
-    bCtx.fillStyle = 'rgba(40, 120, 190, 0.16)';
+    bCtx.ellipse(cx, feetY, tier >= 3 ? 62 : 54, tier >= 3 ? 17 : 15, 0, 0, Math.PI * 2);
+    bCtx.fillStyle = tier >= 3 ? 'rgba(22, 82, 196, 0.22)' : 'rgba(40, 120, 190, 0.18)';
     bCtx.fill();
-    bCtx.strokeStyle = 'rgba(116, 232, 255, 0.72)';
-    bCtx.lineWidth = tier >= 2 ? 1.8 : 1.2;
+    bCtx.strokeStyle = tier >= 3 ? 'rgba(18, 72, 188, 0.78)' : 'rgba(72, 196, 245, 0.78)';
+    bCtx.lineWidth = tier >= 2 ? 2.0 : 1.3;
     bCtx.stroke();
 
     const groundRings = tier >= 3 ? 3 : tier >= 2 ? 2 : 1;
@@ -1902,11 +1959,20 @@
       bCtx.translate(cx, feetY);
       bCtx.scale(1, ry / rx);
       bCtx.rotate(rot);
-      bCtx.strokeStyle = r === 2
-        ? 'rgba(255, 224, 128, 0.78)'
-        : `rgba(115, 232, 255, ${(0.42 + intensity * 0.45).toFixed(2)})`;
-      bCtx.lineWidth = 1.8;
       bCtx.setLineDash([9, 6]);
+      // 先描深琥珀/深靛 1px 衬影，解决浅雪瓷背景亮金与亮青对比度不足问题
+      bCtx.strokeStyle = r === 2
+        ? 'rgba(116, 72, 12, 0.70)'
+        : 'rgba(14, 52, 140, 0.48)';
+      bCtx.lineWidth = r === 2 ? 4.0 : 3.2;
+      bCtx.beginPath();
+      bCtx.arc(0, 0, rx, 0, Math.PI * 2);
+      bCtx.stroke();
+
+      bCtx.strokeStyle = r === 2
+        ? 'rgba(255, 218, 102, 0.98)'
+        : `rgba(115, 232, 255, ${(0.56 + intensity * 0.40).toFixed(2)})`;
+      bCtx.lineWidth = r === 2 ? 2.1 : 1.8;
       bCtx.beginPath();
       bCtx.arc(0, 0, rx, 0, Math.PI * 2);
       bCtx.stroke();
@@ -1915,22 +1981,24 @@
         const a = (k / 6) * Math.PI * 2;
         const nx = Math.cos(a) * rx;
         const ny = Math.sin(a) * rx;
-        bCtx.fillStyle = r === 2 ? '#ffe599' : '#c6f8ff';
-        bCtx.fillRect(nx - 2.4, ny - 2.4, 4.8, 4.8);
+        bCtx.fillStyle = r === 2 ? '#78480c' : '#123d9c';
+        bCtx.fillRect(nx - 3.4, ny - 3.4, 6.8, 6.8);
+        bCtx.fillStyle = r === 2 ? '#ffe99e' : '#ccf8ff';
+        bCtx.fillRect(nx - 2.3, ny - 2.3, 4.6, 4.6);
       }
       bCtx.restore();
     }
 
-    // 2) 角色背后呼吸脉冲背光 + Tier 3 扩散椭圆波纹 (#9BF4FF -> #FFE39A)
+    // 2) 角色背后呼吸脉冲背光 + Tier 3 扩散椭圆波纹 (#1658EB / #FFE39A 带衬影高对比)
     const pulse = 0.5 + 0.5 * Math.sin(t * 5.2);
-    const auraR = 64 + intensity * 24 + (tier >= 3 ? pulse * 8 : 0);
+    const auraR = 66 + intensity * 26 + (tier >= 3 ? pulse * 8 : 0);
     const auraGrad = bCtx.createRadialGradient(cx, torsoY, 8, cx, torsoY, auraR);
     if (tier >= 3) {
-      auraGrad.addColorStop(0, `rgba(186, 246, 255, ${(0.22 + pulse * 0.14).toFixed(2)})`);
-      auraGrad.addColorStop(0.55, `rgba(42, 122, 245, ${(0.18 + pulse * 0.08).toFixed(2)})`);
+      auraGrad.addColorStop(0, `rgba(255, 224, 130, ${(0.24 + pulse * 0.14).toFixed(2)})`);
+      auraGrad.addColorStop(0.45, `rgba(42, 122, 245, ${(0.24 + pulse * 0.10).toFixed(2)})`);
       auraGrad.addColorStop(1, 'rgba(22, 88, 235, 0)');
     } else {
-      auraGrad.addColorStop(0, `rgba(130, 236, 255, ${(0.12 + intensity * 0.24).toFixed(2)})`);
+      auraGrad.addColorStop(0, `rgba(130, 236, 255, ${(0.14 + intensity * 0.24).toFixed(2)})`);
       auraGrad.addColorStop(1, 'rgba(60, 160, 255, 0)');
     }
     bCtx.fillStyle = auraGrad;
@@ -1940,11 +2008,16 @@
 
     if (tier >= 3) {
       const waveProg = (t * 0.85) % 1;
-      const wr = 36 + waveProg * 54;
+      const wr = 38 + waveProg * 54;
       bCtx.save();
-      bCtx.globalAlpha = (1 - waveProg) * 0.42;
-      bCtx.strokeStyle = waveProg < 0.5 ? '#9BF4FF' : '#FFE39A';
-      bCtx.lineWidth = 1.8 * (1 - waveProg * 0.6);
+      bCtx.globalAlpha = (1 - waveProg) * 0.58;
+      bCtx.strokeStyle = waveProg < 0.5 ? 'rgba(18, 68, 186, 0.72)' : 'rgba(128, 82, 16, 0.70)';
+      bCtx.lineWidth = 3.2 * (1 - waveProg * 0.55);
+      bCtx.beginPath();
+      bCtx.ellipse(cx, torsoY, wr, wr * 0.72, 0, 0, Math.PI * 2);
+      bCtx.stroke();
+      bCtx.strokeStyle = waveProg < 0.5 ? '#8BF2FF' : '#FFE084';
+      bCtx.lineWidth = 1.7 * (1 - waveProg * 0.55);
       bCtx.beginPath();
       bCtx.ellipse(cx, torsoY, wr, wr * 0.72, 0, 0, Math.PI * 2);
       bCtx.stroke();
@@ -1957,26 +2030,57 @@
     drawAuraOrbitPass(bCtx, orbits, tier, intensity, t, cx, feetY, faceY, false);
     drawAuraOrbitPass(fCtx, orbits, tier, intensity, t, cx, feetY, faceY, true);
 
-    // 4) Tier 3 前景双侧冰雷电弧（左右两段锯齿电弧 + 峰值白金电核火花）
+    // 4) Tier 3 前景双侧冰雷电弧（三层锐利跃动电弧：深靛衬光 + 冰青主弧 + 白金电芯 + 常驻脉冲金星火花）
     if (tier >= 3) {
-      const glintPulse = 0.55 + 0.45 * Math.sin(t * 6.5);
+      const glintPulse = 0.72 + 0.28 * Math.sin(t * 7.2);
+      const jitterPhase = Math.floor(t * 14);
       fCtx.save();
-      fCtx.strokeStyle = `rgba(214, 251, 255, ${(0.45 * glintPulse).toFixed(2)})`;
-      fCtx.lineWidth = 1.35;
       fCtx.lineJoin = 'miter';
+      fCtx.lineCap = 'round';
       for (let sIdx = 0; sIdx < 2; sIdx++) {
         const side = sIdx === 0 ? -1 : 1;
-        const bx = cx + side * (50 + Math.sin(t * 4.5 + side) * 7);
-        const by = feetY - 60 + Math.cos(t * 3.8 + side) * 12;
-        const midX = bx + side * 6.5;
+        const jA = Math.sin(jitterPhase * 1.9 + side * 2.1) * 4.5;
+        const jB = Math.cos(jitterPhase * 2.3 + side * 1.4) * 5.0;
+        const bx = cx + side * (52 + Math.sin(t * 4.5 + side) * 6);
+        const by = feetY - 64 + Math.cos(t * 3.8 + side) * 9;
+        const pts = [
+          [bx - side * 2, by + 22],
+          [bx + side * (7 + jA * 0.5), by + 8],
+          [bx - side * (3 - jB * 0.4), by - 2],
+          [bx + side * (8 + jB * 0.5), by - 14],
+          [bx - side * 2, by - 26],
+        ];
+        const strokeBolt = (col, lw) => {
+          fCtx.strokeStyle = col;
+          fCtx.lineWidth = lw;
+          fCtx.beginPath();
+          fCtx.moveTo(pts[0][0], pts[0][1]);
+          for (let p = 1; p < pts.length; p++) fCtx.lineTo(pts[p][0], pts[p][1]);
+          fCtx.stroke();
+        };
+        strokeBolt(`rgba(16, 62, 198, ${(0.76 * glintPulse).toFixed(2)})`, 3.8);
+        strokeBolt(`rgba(92, 228, 255, ${(0.96 * glintPulse).toFixed(2)})`, 2.0);
+        strokeBolt(`rgba(255, 248, 214, ${(0.98 * glintPulse).toFixed(2)})`, 0.95);
+
+        // 短分支冰雷叉弧
+        const forkX = pts[2][0] + side * (11 + jA * 0.4);
+        const forkY = pts[2][1] - 7;
+        fCtx.strokeStyle = `rgba(18, 66, 196, ${(0.64 * glintPulse).toFixed(2)})`;
+        fCtx.lineWidth = 2.6;
         fCtx.beginPath();
-        fCtx.moveTo(bx, by + 13);
-        fCtx.lineTo(midX, by);
-        fCtx.lineTo(bx - side * 3, by - 13);
+        fCtx.moveTo(pts[2][0], pts[2][1]);
+        fCtx.lineTo(forkX, forkY);
         fCtx.stroke();
-        if (glintPulse > 0.72) {
-          drawAuraCrystalMote(fCtx, midX, by, 2.2 * glintPulse, '#FFE8A3', true, 0.88 * glintPulse);
-        }
+        fCtx.strokeStyle = `rgba(255, 226, 134, ${(0.94 * glintPulse).toFixed(2)})`;
+        fCtx.lineWidth = 1.25;
+        fCtx.beginPath();
+        fCtx.moveTo(pts[2][0], pts[2][1]);
+        fCtx.lineTo(forkX, forkY);
+        fCtx.stroke();
+
+        // 电核白金香槟十字星芒
+        drawAuraCrystalMote(fCtx, pts[1][0], pts[1][1], 2.7 * glintPulse, '#FFE28A', true, 0.95 * glintPulse, 'rgba(116, 70, 12, 0.78)');
+        drawAuraCrystalMote(fCtx, pts[3][0], pts[3][1], 2.4 * glintPulse, '#C8FAFF', true, 0.92 * glintPulse, 'rgba(16, 58, 168, 0.72)');
       }
       fCtx.restore();
     }
@@ -1988,9 +2092,14 @@
       const ringRx = 26 + easeOut * 74;
       const ringRy = ringRx * 0.68;
       fCtx.save();
-      fCtx.globalAlpha = (1 - bp) * 0.78;
-      fCtx.strokeStyle = bp < 0.45 ? '#FFE8A3' : '#9DF5FF';
-      fCtx.lineWidth = 2.4 * (1 - bp * 0.65);
+      fCtx.globalAlpha = (1 - bp) * 0.88;
+      fCtx.strokeStyle = bp < 0.45 ? 'rgba(120, 74, 14, 0.72)' : 'rgba(18, 68, 186, 0.70)';
+      fCtx.lineWidth = 4.2 * (1 - bp * 0.55);
+      fCtx.beginPath();
+      fCtx.ellipse(cx, torsoY, ringRx, ringRy, 0, 0, Math.PI * 2);
+      fCtx.stroke();
+      fCtx.strokeStyle = bp < 0.45 ? '#FFE084' : '#9DF5FF';
+      fCtx.lineWidth = 2.4 * (1 - bp * 0.60);
       fCtx.beginPath();
       fCtx.ellipse(cx, torsoY, ringRx, ringRy, 0, 0, Math.PI * 2);
       fCtx.stroke();
@@ -2002,10 +2111,11 @@
           fCtx,
           sx,
           sy,
-          2.6 * (1 - bp * 0.45),
-          sp % 2 === 0 ? '#FFE8A3' : '#FFFFFF',
+          2.8 * (1 - bp * 0.42),
+          sp % 2 === 0 ? '#FFE28A' : '#FFFFFF',
           true,
-          (1 - bp) * 0.92
+          (1 - bp) * 0.95,
+          sp % 2 === 0 ? 'rgba(116, 70, 12, 0.76)' : 'rgba(18, 66, 188, 0.65)'
         );
       }
       fCtx.restore();
@@ -2100,9 +2210,9 @@
     const rect = getFieldRect(field, !!forceMeasure) || { width: 960, height: 440 };
     const w = Math.max(1, rect.width || 960);
     const h = Math.max(1, rect.height || 440);
-    // 软光栅像素缓冲封顶 ≤ 168×102（较 480×206 像素量降 7.5×，确保软光栅+合成单帧 <8ms 且复古像素锐利）
-    const targetW = w < 520 ? 144 : 168;
-    const targetH = clamp(Math.round(targetW * (h / w)), 74, 102);
+    // 软光栅像素缓冲提升至 320×176 档（桌面端单像素映射 ~4px，兼顾像素锐利与帧预算，彻底告别 8.5× 马赛克巨块）
+    const targetW = w < 520 ? 224 : 320;
+    const targetH = clamp(Math.round(targetW * (h / w)), 128, 192);
 
     if (_canvas !== canvas || Math.abs(_bufW - targetW) >= 4 || Math.abs(_bufH - targetH) >= 4) {
       _canvas = canvas;
@@ -2123,19 +2233,40 @@
     return _canvas;
   }
 
+  function ensureSubFxBuffer(w, h) {
+    if (_subFxFrame && _subFxCanvas && _subFxCtx && _subFxImgData && _subFxW === w && _subFxH === h) {
+      return true;
+    }
+    const PFX = global.PixelFX;
+    if (!PFX || typeof PFX.createFrame !== 'function' || typeof document === 'undefined') return false;
+    if (!_subFxCanvas) {
+      _subFxCanvas = document.createElement('canvas');
+    }
+    _subFxW = w;
+    _subFxH = h;
+    _subFxCanvas.width = w;
+    _subFxCanvas.height = h;
+    _subFxCtx = _subFxCanvas.getContext('2d', { alpha: true });
+    if (!_subFxCtx) return false;
+    _subFxCtx.imageSmoothingEnabled = false;
+    _subFxImgData = _subFxCtx.createImageData(w, h);
+    _subFxFrame = PFX.createFrame(w, h);
+    return true;
+  }
+
   function clampCanvasPt(pt) {
-    const maxX = Math.max(12, (_bufW || 168) - 4);
-    const maxY = Math.max(12, (_bufH || 88) - 4);
+    const maxX = Math.max(12, (_bufW || 320) - 4);
+    const maxY = Math.max(12, (_bufH || 160) - 4);
     return {
       x: clamp(Number.isFinite(pt.x) ? pt.x : maxX * 0.5, 4, maxX),
       y: clamp(Number.isFinite(pt.y) ? pt.y : maxY * 0.65, 4, maxY),
     };
   }
 
-  function getActorCanvasPoints(actorKey, includeDash) {
-    ensureVfxCanvas(false);
+  function getActorCanvasPoints(actorKey, includeDash, forceFresh) {
+    ensureVfxCanvas(!!forceFresh);
     const st = _actors.get(actorKey);
-    const cached = _actorPointsCache.get(actorKey);
+    const cached = !forceFresh ? _actorPointsCache.get(actorKey) : null;
     if (cached && cached.bufW === _bufW && cached.bufH === _bufH) {
       if (!includeDash || !st || (Math.abs(st.dx) < 0.1 && Math.abs(st.dy) < 0.1)) {
         return cached.pts;
@@ -2159,13 +2290,15 @@
     const field = document.querySelector('#battle-screen .cb-arena-field');
     if (!field || !_bufW || !_bufH) {
       const isLeft = actorKey === 'player' || String(actorKey).startsWith('ally:');
-      const fallbackX = isLeft ? 42 : 126;
-      const fallbackY = 66;
+      const bw = _bufW || 320;
+      const bh = _bufH || 160;
+      const fallbackX = Math.round(bw * (isLeft ? 0.2 : 0.72));
+      const fallbackY = Math.round(bh * 0.74);
       return {
         anchor: { x: fallbackX, y: fallbackY },
-        cast: { x: fallbackX + (isLeft ? 15 : -15), y: fallbackY - 14 },
-        hit: { x: fallbackX, y: fallbackY - 13 },
-        head: { x: fallbackX, y: fallbackY - 26 },
+        cast: { x: fallbackX + (isLeft ? 24 : -24), y: Math.round(bh * 0.54) },
+        hit: { x: fallbackX, y: Math.round(bh * 0.56) },
+        head: { x: fallbackX, y: Math.round(bh * 0.36) },
         screenX: isLeft ? 180 : 780,
         screenY: 260,
         fieldW: 960,
@@ -2173,7 +2306,7 @@
       };
     }
 
-    const fRect = getFieldRect(field, false) || field.getBoundingClientRect();
+    const fRect = getFieldRect(field, !!forceFresh) || field.getBoundingClientRect();
     const fW = Math.max(1, fRect.width);
     const fH = Math.max(1, fRect.height);
     const scaleX = _bufW / fW;
@@ -2318,7 +2451,7 @@
     if ('sparks' in mergedOpts && (!Array.isArray(mergedOpts.sparks) || !mergedOpts.sparks.length)) {
       delete mergedOpts.sparks;
     }
-    const spatialRatio = _bufW > 0 && _bufW < 380 ? clamp(_bufW / 440, 0.52, 0.72) : 1;
+    const spatialRatio = _bufW > 0 && _bufW < 380 ? clamp(_bufW / 440, 0.50, 0.80) : 1;
     if (spatialRatio < 1) {
       if (typeof mergedOpts.reach === 'number') mergedOpts.reach = Math.max(20, Math.round(mergedOpts.reach * spatialRatio));
       if (typeof mergedOpts.height === 'number') mergedOpts.height = Math.max(18, Math.round(mergedOpts.height * spatialRatio));
@@ -2337,8 +2470,8 @@
         ex.name === fxName &&
         !control.onUpdate &&
         (now - ex.bornAt) < 55 &&
-        Math.abs((ex.x || 0) - mergedOpts.x) < 14 &&
-        Math.abs((ex.y || 0) - mergedOpts.y) < 14
+        Math.abs((ex.x || 0) - mergedOpts.x) < 16 &&
+        Math.abs((ex.y || 0) - mergedOpts.y) < 16
       ) {
         _activeEffects.splice(i, 1);
         if (ex.onDone) {
@@ -2353,10 +2486,19 @@
       evictOldestEffect();
     }
 
+    const scaleProf = SCALED_FX_PROFILES[fxName] || null;
+    const resScaleMul = clamp((_bufW || 320) / 320, 0.65, 1.0);
+    const fxScale = scaleProf
+      ? clamp((typeof control.scale === 'number' ? control.scale : scaleProf.defaultScale) * resScaleMul, 0.28, 1.0)
+      : 1;
+    const createOpts = scaleProf
+      ? Object.assign({}, mergedOpts, { x: scaleProf.localX, y: scaleProf.localY })
+      : mergedOpts;
+
     _burstCreateCount += 1;
     let inst = null;
     try {
-      inst = PFX.createFx(def, mergedOpts);
+      inst = PFX.createFx(def, createOpts);
     } catch (e) {
       if (typeof control.onDone === 'function') {
         try { control.onDone(); } catch (_) {}
@@ -2379,6 +2521,8 @@
       inst,
       x: mergedOpts.x,
       y: mergedOpts.y,
+      scaleProf,
+      scale: fxScale,
       bornAt: now,
       maxAgeMs,
       elapsed: 0,
@@ -2764,7 +2908,7 @@
       squashActor('player', 0.94, 1.07, 150);
       spawnFx('magic_circle_cast', { x: pPts.anchor.x, y: pPts.anchor.y, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.ice }, { stopAt: 0.52 + ampRatio * 0.14 });
       if (info.usedWand) {
-        spawnFx('eclipse', { x: pPts.cast.x, y: pPts.cast.y, palette: PALETTES.eclipse }, { stopAt: 0.55 });
+        spawnFx('eclipse', { x: pPts.cast.x, y: pPts.cast.y, palette: PALETTES.eclipse }, { stopAt: 0.55, scale: 0.40 });
       }
 
       scheduleAction(140, () => {
@@ -2781,7 +2925,7 @@
 
         spawnProjectile('ice_lance', launchFrom, tPts.hit, { palette: ampTier >= 2 ? PALETTES.crit : PALETTES.ice, length: Math.round(46 + ampRatio * 12) }, travelMs, () => {
           if (info.missed) {
-            spawnFx('snowflake_burst', { x: tPts.hit.x, y: tPts.anchor.y, count: 5, palette: PALETTES.ice }, { stopAt: 0.55 });
+            spawnFx('snowflake_burst', { x: tPts.hit.x, y: tPts.hit.y, count: 5, palette: PALETTES.ice }, { stopAt: 0.55, scale: 0.46 });
             return;
           }
           triggerHitReaction(targetKey, isHeavy ? 16 : 10, isHeavy);
@@ -2789,7 +2933,7 @@
           spawnFx('hit_spark', { x: tPts.anchor.x, y: tPts.anchor.y, palette: PALETTES.ice }, { stopAt: 0.48 });
           if (isHeavy || ampTier >= 1) {
             if (isHeavy) spawnFx('crit_hit', { x: tPts.anchor.x, y: tPts.anchor.y, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.ice }, { stopAt: 0.75 });
-            spawnFx('snowflake_burst', { x: tPts.anchor.x, y: tPts.anchor.y, count: ampTier >= 2 ? 10 : 7, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.ice }, { stopAt: 0.8 });
+            spawnFx('snowflake_burst', { x: tPts.hit.x, y: tPts.hit.y, count: ampTier >= 2 ? 10 : 7, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.ice }, { stopAt: 0.8, scale: ampTier >= 2 ? 0.58 : 0.50 });
             triggerHitStop(isHeavy ? 85 : 68);
             triggerTrauma(isHeavy ? Math.min(0.85, 0.72 + ampRatio * 0.12) : 0.48 + ampRatio * 0.14);
           } else {
@@ -2837,7 +2981,7 @@
               height: isSetupOnly ? 30 : Math.round(54 + ampRatio * 12),
               palette: ampTier >= 2 ? PALETTES.crit : PALETTES.ice,
             }, { stopAt: 0.85 });
-            spawnFx('snowflake_burst', { x: ePts.anchor.x, y: ePts.anchor.y, count: ampTier >= 2 ? 9 : 6, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.ice }, { stopAt: 0.78 });
+            spawnFx('snowflake_burst', { x: ePts.hit.x, y: ePts.hit.y, count: ampTier >= 2 ? 9 : 6, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.ice }, { stopAt: 0.78, scale: 0.52 });
 
             if (!isSetupOnly) {
               if (skillId === 'hand_thorn_field' || skillId === 'insight_hulan_resonance' || skillId === 'insight_alice_cage') {
@@ -2888,7 +3032,7 @@
           spawnFx('splash', { x: tPts.anchor.x, y: tPts.anchor.y, stone: false, palette: PALETTES.water }, { stopAt: 0.72 });
           if (isHeavy || ampTier >= 1) {
             if (isHeavy) spawnFx('crit_hit', { x: tPts.anchor.x, y: tPts.anchor.y, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.water }, { stopAt: 0.7 });
-            if (ampTier >= 1) spawnFx('snowflake_burst', { x: tPts.anchor.x, y: tPts.anchor.y, count: ampTier >= 2 ? 9 : 6, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.water }, { stopAt: 0.76 });
+            if (ampTier >= 1) spawnFx('snowflake_burst', { x: tPts.hit.x, y: tPts.hit.y, count: ampTier >= 2 ? 9 : 6, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.water }, { stopAt: 0.76, scale: 0.52 });
           }
           triggerHitStop(isHeavy ? 80 : 60);
           triggerTrauma(isHeavy ? Math.min(0.84, 0.68 + ampRatio * 0.12) : 0.38 + ampRatio * 0.14);
@@ -2910,7 +3054,7 @@
       return;
     }
 
-    // 5) 护盾与立障（钢冰生根盾 / 凝水厚冰墙，支持最高 +25% 魔力增幅强化护盾光环）
+    // 5) 护盾与立障（钢冰生根盾 / 凝水厚冰墙，支持最高 +40% 魔力增幅强化护盾光环）
     if (SHIELD_GUARD_SKILLS.has(skillId)) {
       setActorPoseInternal('player', magicWindupPose, 120, false);
       squashActor('player', 1.06, 0.94, 130);
@@ -2919,7 +3063,7 @@
           setActorPoseInternal('player', magicCastPose, 320, false);
           squashActor('player', 0.94, 1.08, 220);
         }
-        const shBoost = clamp(ampPct / 0.25, 0, 1);
+        const shBoost = clamp(ampPct / 0.40, 0, 1);
         spawnFx('divine_shield', { x: pPts.anchor.x, y: pPts.anchor.y, radius: Math.round(32 + shBoost * 6), palette: ampTier >= 1 ? PALETTES.crit : PALETTES.ice }, { stopAt: 1.02 });
         spawnFx('ice_crystal', { x: pPts.anchor.x, y: pPts.anchor.y, height: Math.round(38 + shBoost * 8), palette: PALETTES.ice }, { stopAt: 0.96 });
         if (ampPct > 0.001) {
@@ -3512,9 +3656,8 @@
   /* -------------------- 特殊演出：晦轮杖 / 冰晶宫殿时停 / 艾诺崖顶冰枪 / 心念援护 -------------------- */
   function playWandToggle() {
     if (!isEnabled()) return;
-    ensureVfxCanvas();
+    ensureVfxCanvas(true);
     const myGen = ++_playerActionGen;
-    const pPts = getActorCanvasPoints('player', false);
     const playerSt = _actors.get('player');
     const pSpriteId = (playerSt && playerSt.spriteId) || resolvePlayerSpriteId(_lastBattleRef, false);
     const useDualMagic = hasMagicCastFrames(pSpriteId);
@@ -3523,8 +3666,10 @@
       if (myGen === _playerActionGen) {
         setActorPoseInternal('player', useDualMagic ? 'magic_cast' : 'strike', 300, false);
       }
-      spawnFx('eclipse', { x: pPts.hit.x, y: pPts.hit.y, palette: PALETTES.eclipse }, { stopAt: 0.88 });
-      spawnFx('time_stop', { x: pPts.anchor.x, y: pPts.anchor.y, palette: PALETTES.eclipse }, { stopAt: 0.72 });
+      const pPts = getActorCanvasPoints('player', true, true);
+      if (!pPts) return;
+      spawnFx('eclipse', { x: pPts.hit.x, y: pPts.hit.y, palette: PALETTES.eclipse }, { stopAt: 0.85, scale: 0.46 });
+      spawnFx('time_stop', { x: pPts.anchor.x, y: pPts.anchor.y, palette: PALETTES.eclipse }, { stopAt: 0.68 });
       triggerTrauma(0.28);
     });
   }
@@ -3534,7 +3679,7 @@
     ensureVfxCanvas();
     ensureLoopRunning();
     spawnFx('time_stop', { x: _bufW * 0.5, y: _bufH * 0.76, palette: PALETTES.ice }, { stopAt: 1.12 });
-    spawnFx('snowflake_burst', { x: _bufW * 0.5, y: _bufH * 0.76, count: 11, palette: PALETTES.ice }, { stopAt: 1.05 });
+    spawnFx('snowflake_burst', { x: _bufW * 0.5, y: _bufH * 0.52, count: 11, palette: PALETTES.ice }, { stopAt: 1.05, scale: 0.64 });
   }
 
   function playAinoSpearSupport(enemyIdx) {
@@ -3594,7 +3739,7 @@
               spawnFx('blizzard_vortex', { x: pPts.anchor.x, y: pPts.anchor.y, height: 68, palette: PALETTES.wind }, { stopAt: 0.9 });
             } else if (cid === 'charlotte') {
               spawnFx('divine_shield', { x: pPts.anchor.x, y: pPts.anchor.y, radius: 34, palette: PALETTES.ice }, { stopAt: 1.05 });
-              spawnFx('snowflake_burst', { x: pPts.anchor.x, y: pPts.anchor.y, count: 8, palette: PALETTES.ice }, { stopAt: 0.82 });
+              spawnFx('snowflake_burst', { x: pPts.hit.x, y: pPts.hit.y, count: 8, palette: PALETTES.ice }, { stopAt: 0.82, scale: 0.52 });
             } else if (cid === 'jilan') {
               dashActor(actorKey, 28, 0, 100, 'outQuad', true, 'ice');
               spawnFx('double_slash', { x: clamp(cPts.anchor.x + 20, 12, Math.max(20, _bufW - 12)), y: cPts.anchor.y, palette: PALETTES.swordIce, sparks: PALETTES.swordSparks }, { stopAt: 0.78 });
@@ -3605,13 +3750,13 @@
             } else if (cid === 'aino') {
               spawnProjectile('ice_lance', cPts.cast, tPts.hit, { palette: PALETTES.ice, length: 46 }, 165, () => {
                 spawnFx('frost_nova', { x: tPts.anchor.x, y: tPts.anchor.y, reach: 82, palette: PALETTES.ice }, { stopAt: 0.85 });
-                spawnFx('snowflake_burst', { x: tPts.anchor.x, y: tPts.anchor.y, count: 8, palette: PALETTES.ice }, { stopAt: 0.82 });
+                spawnFx('snowflake_burst', { x: tPts.hit.x, y: tPts.hit.y, count: 8, palette: PALETTES.ice }, { stopAt: 0.82, scale: 0.54 });
               });
             } else if (cid === 'beatrice') {
               spawnFx('fire_ring', { x: tPts.anchor.x, y: tPts.anchor.y, reach: 78, palette: PALETTES.fire }, { stopAt: 0.85 });
             } else {
               spawnFx('magic_circle_cast', { x: pPts.anchor.x, y: pPts.anchor.y, palette: PALETTES.ice }, { stopAt: 0.8 });
-              spawnFx('snowflake_burst', { x: pPts.anchor.x, y: pPts.anchor.y, count: 8, palette: PALETTES.ice }, { stopAt: 0.85 });
+              spawnFx('snowflake_burst', { x: pPts.hit.x, y: pPts.hit.y, count: 8, palette: PALETTES.ice }, { stopAt: 0.85, scale: 0.52 });
             }
           });
         },
@@ -3621,7 +3766,7 @@
 
     setActorPoseInternal('player', playerDualMagic ? 'magic_cast' : 'strike', 300, false);
     spawnFx('magic_circle_cast', { x: pPts.anchor.x, y: pPts.anchor.y, palette: PALETTES.ice }, { stopAt: 0.8 });
-    spawnFx('snowflake_burst', { x: pPts.anchor.x, y: pPts.anchor.y, count: 8, palette: PALETTES.ice }, { stopAt: 0.85 });
+    spawnFx('snowflake_burst', { x: pPts.hit.x, y: pPts.hit.y, count: 8, palette: PALETTES.ice }, { stopAt: 0.85, scale: 0.52 });
   }
 
   /* -------------------- 舞台 DOM 同步与统一单 RAF 主循环 -------------------- */
@@ -3968,30 +4113,65 @@
         }
 
         if (_activeEffects.length > 0) {
-          PFX.clearFrame(_frame);
           let budgetHit = false;
-          // 优先完整绘制最新特效（back+front），仅当剩余帧预算充足时绘制次级叠加特效
+          let drewMainFrame = false;
+          const scaledQueue = [];
           const primaryIdx = _activeEffects.length - 1;
-          _activeEffects[primaryIdx].inst.draw(_frame, 'back');
-          _activeEffects[primaryIdx].inst.draw(_frame, 'front');
-          if ((nowPerf() - fxStart) > FX_FRAME_BUDGET_MS) {
-            budgetHit = true;
-          } else {
-            for (let i = primaryIdx - 1; i >= 0; i--) {
-              if ((nowPerf() - fxStart) > FX_FRAME_BUDGET_MS) {
-                budgetHit = true;
-                break;
-              }
-              _activeEffects[i].inst.draw(_frame, 'back');
-              if ((nowPerf() - fxStart) > FX_FRAME_BUDGET_MS) {
-                budgetHit = true;
-                break;
-              }
-              _activeEffects[i].inst.draw(_frame, 'front');
+          const ordered = [_activeEffects[primaryIdx]];
+          for (let i = primaryIdx - 1; i >= 0; i--) ordered.push(_activeEffects[i]);
+
+          // 先绘制标准全画布特效至 _frame，收集缩放离屏特效队列（保持最新特效最优先）
+          for (let oi = 0; oi < ordered.length; oi++) {
+            const ent = ordered[oi];
+            if (oi > 0 && (nowPerf() - fxStart) > FX_FRAME_BUDGET_MS) {
+              budgetHit = true;
+              break;
             }
+            if (ent.scaleProf) {
+              scaledQueue.push(ent);
+              continue;
+            }
+            if (!drewMainFrame) {
+              PFX.clearFrame(_frame);
+              drewMainFrame = true;
+            }
+            ent.inst.draw(_frame, 'back');
+            if (oi > 0 && (nowPerf() - fxStart) > FX_FRAME_BUDGET_MS) {
+              budgetHit = true;
+              break;
+            }
+            ent.inst.draw(_frame, 'front');
           }
-          PFX.composite(_frame, _imgData.data, null, 1.0);
-          _ctx.putImageData(_imgData, 0, 0);
+
+          if (drewMainFrame) {
+            PFX.composite(_frame, _imgData.data, null, 1.0);
+            _ctx.putImageData(_imgData, 0, 0);
+          } else {
+            _ctx.clearRect(0, 0, _canvas.width, _canvas.height);
+          }
+
+          // 将 snowflake_burst / eclipse 等离屏特效按真实视觉中心精准缩放贴绘至主画布
+          for (let si = scaledQueue.length - 1; si >= 0; si--) {
+            if (si < scaledQueue.length - 1 && (nowPerf() - fxStart) > FX_FRAME_BUDGET_MS) {
+              budgetHit = true;
+              break;
+            }
+            const ent = scaledQueue[si];
+            const prof = ent.scaleProf;
+            if (!ensureSubFxBuffer(prof.w, prof.h)) continue;
+            PFX.clearFrame(_subFxFrame);
+            ent.inst.draw(_subFxFrame, 'back');
+            ent.inst.draw(_subFxFrame, 'front');
+            PFX.composite(_subFxFrame, _subFxImgData.data, null, 1.0);
+            _subFxCtx.putImageData(_subFxImgData, 0, 0);
+            const sc = ent.scale || prof.defaultScale || 0.5;
+            const dstW = Math.max(8, Math.round(prof.w * sc));
+            const dstH = Math.max(8, Math.round(prof.h * sc));
+            const dstX = Math.round(ent.x - prof.pivotX * sc);
+            const dstY = Math.round(ent.y - prof.pivotY * sc);
+            _ctx.imageSmoothingEnabled = false;
+            _ctx.drawImage(_subFxCanvas, 0, 0, prof.w, prof.h, dstX, dstY, dstW, dstH);
+          }
           _canvasDirty = true;
 
           const fxCostMs = nowPerf() - fxStart;
@@ -4073,6 +4253,9 @@
     if (_ctx && _canvas) {
       _ctx.clearRect(0, 0, _canvas.width, _canvas.height);
     }
+    if (_subFxCtx && _subFxCanvas) {
+      _subFxCtx.clearRect(0, 0, _subFxCanvas.width, _subFxCanvas.height);
+    }
     _canvasDirty = false;
     if (typeof document !== 'undefined') {
       const field = document.querySelector('#battle-screen .cb-arena-field');
@@ -4095,6 +4278,8 @@
     _auraDirty = false;
     _auraLastTier = 0;
     _auraLastIntensity = 0;
+    _auraBurstTs = 0;
+    _auraBurstTier = 0;
     _auraElapsed = 0;
     _lastAuraDrawTs = 0;
     invalidateFieldRect();
@@ -4112,7 +4297,9 @@
   /* -------------------- QA 实时触发与单帧检查 API -------------------- */
   function demoSkill(skillId, enemyIdx) {
     if (!isEnabled()) return false;
-    const b = _lastBattleRef || (global.CombatEngine && global.CombatEngine.getState ? global.CombatEngine.getState() : null);
+    const b = _lastBattleRef
+      || (global.CombatEngine && typeof global.CombatEngine.getBattleState === 'function' ? global.CombatEngine.getBattleState() : null)
+      || (global.CombatEngine && typeof global.CombatEngine.getState === 'function' ? global.CombatEngine.getState() : null);
     syncStage(b);
     const idx = enemyIdx != null ? enemyIdx : (b && b.targetIdx ? b.targetIdx : 0);
     const sid = skillId || 'hand_ice_crystal';
@@ -4134,7 +4321,9 @@
 
   function demoEnemyAttack(enemyIdx) {
     if (!isEnabled()) return false;
-    const b = _lastBattleRef || (global.CombatEngine && global.CombatEngine.getState ? global.CombatEngine.getState() : null);
+    const b = _lastBattleRef
+      || (global.CombatEngine && typeof global.CombatEngine.getBattleState === 'function' ? global.CombatEngine.getBattleState() : null)
+      || (global.CombatEngine && typeof global.CombatEngine.getState === 'function' ? global.CombatEngine.getState() : null);
     syncStage(b);
     const idx = enemyIdx != null ? enemyIdx : 0;
     const enemy = b && b.enemies && b.enemies[idx] ? b.enemies[idx] : null;
@@ -4214,31 +4403,34 @@
       renderManaAmpAura(pSt, nowPerf(), 0.016, prefersReducedMotion());
     }
     if (pct <= 0.001 || prefersReducedMotion()) return;
-    ensureVfxCanvas(false);
-    const pPts = getActorCanvasPoints('player', true);
+    ensureVfxCanvas(true);
+    const pPts = getActorCanvasPoints('player', true, true);
     if (!pPts) return;
     const ratio = clamp(pct / 0.60, 0.1, 1.0);
     if (tier >= 3) {
-      // 60% 三阶：叠加金霜冲击波环 + 香槟金晶尘星爆
+      // 60% 三阶：精准锚定希尔维亚脚底与胸口中心，叠加紧凑香槟金霜环 + 晶尘星爆
       spawnFx('frost_nova', {
         x: pPts.anchor.x,
         y: pPts.anchor.y,
-        reach: 74,
+        reach: 62,
         palette: PALETTES.crit,
-      }, { stopAt: 0.72 });
+      }, { stopAt: 0.68 });
       spawnFx('snowflake_burst', {
         x: pPts.hit.x,
         y: pPts.hit.y,
-        count: 14,
+        count: 11,
         palette: PALETTES.crit,
-      }, { stopAt: 0.92 });
+      }, { stopAt: 0.86, scale: 0.56 });
     } else {
       spawnFx('snowflake_burst', {
         x: pPts.hit.x,
         y: pPts.hit.y,
-        count: tier >= 2 ? 9 : Math.max(4, Math.round(4 + ratio * 4)),
+        count: tier >= 2 ? 8 : Math.max(4, Math.round(4 + ratio * 3)),
         palette: tier >= 2 ? PALETTES.crit : PALETTES.ice,
-      }, { stopAt: tier >= 2 ? 0.80 : 0.56 + ratio * 0.20 });
+      }, {
+        stopAt: tier >= 2 ? 0.76 : 0.56 + ratio * 0.18,
+        scale: tier >= 2 ? 0.48 : 0.42,
+      });
     }
     ensureLoopRunning();
   }

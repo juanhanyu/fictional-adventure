@@ -502,7 +502,7 @@ body.ui-hidden #hud .hud-right #btn-ui::before {
   box-shadow: 0 -8px 28px rgba(18, 24, 34, 0.08);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  padding: 34px max(88px, calc((100% - 920px) / 2)) 16px max(48px, calc((100% - 920px) / 2));
+  padding: 26px max(88px, calc((100% - 920px) / 2)) 14px max(48px, calc((100% - 920px) / 2));
 }
 
 #text-box.has-cameo {
@@ -556,12 +556,24 @@ body.ai-drawer-open #tb-speaker {
 }
 
 #text {
-  height: calc(var(--boxh) - 50px);
+  height: calc(var(--boxh) - 40px);
   color: #1B2333;
   font-size: 17px;
   line-height: 1.80;
   letter-spacing: 0.03em;
   text-shadow: none;
+}
+
+body:not(.roam) #text-box.dialog-rows-1 #text {
+  padding-top: max(0px, calc((var(--tb-inner-h, calc(var(--boxh) - 48px)) - var(--tb-row, 31px)) / 2));
+}
+
+body:not(.roam) #text-box.dialog-rows-2 #text {
+  padding-top: max(0px, calc((var(--tb-inner-h, calc(var(--boxh) - 48px)) - 2 * var(--tb-row, 31px)) / 2));
+}
+
+body:not(.roam) #text-box.dialog-rows-3 #text {
+  padding-top: max(0px, calc((var(--tb-inner-h, calc(var(--boxh) - 48px)) - 3 * var(--tb-row, 31px)) / 2));
 }
 
 #text .sys { color: #1C4CB8; font-weight: 600; }
@@ -572,6 +584,7 @@ body.ai-drawer-open #tb-speaker {
 #more,
 #tb-next {
   right: max(24px, calc((100% - 920px) / 2));
+  bottom: 16px;
 }
 
 body.ai-drawer-open #more,
@@ -1210,9 +1223,9 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
 #backlog-overlay .modal-close-x,
 .vn-modal-head .modal-close-x,
 .rumor-head .modal-close-x {
-  border-radius: 2px;
+  border-radius: 0;
   background: transparent;
-  border: 1px solid rgba(27, 35, 51, 0.16);
+  border: none;
   color: #526078;
   box-shadow: none;
 }
@@ -1226,8 +1239,8 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
   #backlog-overlay .modal-close-x:hover,
   .vn-modal-head .modal-close-x:hover,
   .rumor-head .modal-close-x:hover {
-    background: rgba(201, 56, 85, 0.06);
-    border-color: #C93855;
+    background: rgba(201, 56, 85, 0.08);
+    border: none;
     color: #C93855;
   }
 }
@@ -1484,8 +1497,8 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
 .sys-chronicle {
   position: relative;
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
-  gap: 28px;
+  grid-template-columns: 272px minmax(0, 1fr);
+  gap: 24px;
   align-items: stretch;
   font-family: var(--serif);
   color: var(--ink-deep);
@@ -1626,17 +1639,18 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
 .sc-name {
   margin: 0;
   font-family: var(--serif);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  line-height: 1.28;
+  letter-spacing: 0.04em;
+  line-height: 1.32;
+  white-space: nowrap;
   color: #1B2333;
 }
 
 .sc-name-plate b {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   color: #526078;
 }
 
@@ -3699,17 +3713,17 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
 #sys-popup .modal-close-x {
   width: 34px;
   height: 34px;
-  border-radius: 2px;
+  border-radius: 0;
   background: transparent;
-  border: 1px solid rgba(27, 35, 51, 0.16);
+  border: none;
   color: #526078;
   flex-shrink: 0;
 }
 
 @media (hover: hover) and (pointer: fine) {
   #sys-popup .modal-close-x:hover {
-    background: rgba(201, 56, 85, 0.06);
-    border-color: #C93855;
+    background: rgba(201, 56, 85, 0.08);
+    border: none;
     color: #C93855;
   }
 }
@@ -3792,6 +3806,181 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
     transform: translateY(-1px);
     background: linear-gradient(172deg, #3A72EB 0%, #1945B0 48%, #0B2366 100%);
     color: #FFFFFF;
+  }
+}
+
+/* 1280×720 等矮视口下 #sys-popup 状态诏令一屏紧凑呈现（保证最底行「亲和」零裁切无滚动） */
+@media (max-height: 780px) {
+  #sys-popup.sys-popup-overlay,
+  #sys-popup:has(> .sp-card) {
+    padding: max(10px, env(safe-area-inset-top)) 16px max(10px, env(safe-area-inset-bottom));
+  }
+
+  #sys-popup .sp-card,
+  #sys-popup .modal-card,
+  #sys-popup .sp-card:has(.sys-chronicle),
+  #sys-popup .modal-card:has(.sys-chronicle),
+  #sys-popup:has(> .sp-card) .sp-card:has(.sys-chronicle) {
+    max-height: min(92dvh, 740px);
+  }
+
+  #sys-popup .sp-card .sp-head,
+  #sys-popup .modal-card .modal-head {
+    padding: 10px 20px 9px;
+    gap: 10px;
+  }
+
+  #sys-popup .sp-card .sp-crest {
+    width: 24px;
+    height: 24px;
+    padding: 3px;
+  }
+
+  #sys-popup .sp-card h3 {
+    font-size: 16px;
+  }
+
+  #sys-popup .sp-card .modal-close-x {
+    width: 30px;
+    height: 30px;
+  }
+
+  #sys-popup .sp-card .sp-body {
+    padding: 10px 20px 6px;
+    line-height: 1.56;
+  }
+
+  #sys-popup .sp-card .sp-narrative-meta {
+    margin-bottom: 6px;
+    padding: 4px 2px 6px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  #sys-popup .sp-card .sys-chronicle {
+    gap: 7px;
+  }
+
+  #sys-popup .sp-card .sc-portrait-col {
+    grid-template-columns: 68px minmax(0, 1fr);
+    column-gap: 12px;
+    row-gap: 3px;
+    padding: 0 0 7px;
+  }
+
+  #sys-popup .sp-card .sc-portrait-frame,
+  #sys-popup .sp-card .sc-portrait-stage,
+  #sys-popup .sp-card .sc-portrait-wrap {
+    width: 68px;
+    height: 70px;
+  }
+
+  #sys-popup .sp-card .sc-portrait-frame::before,
+  #sys-popup .sp-card .sc-astrolabe-ring {
+    width: 70px;
+    height: 70px;
+  }
+
+  #sys-popup .sp-card .sc-portrait-img {
+    height: 68px;
+  }
+
+  #sys-popup .sp-card .sc-portrait-crest svg {
+    width: 34px;
+    height: 34px;
+  }
+
+  #sys-popup .sp-card .sc-name-plate {
+    gap: 1px;
+  }
+
+  #sys-popup .sp-card .sc-name-plate h3,
+  #sys-popup .sp-card .sc-name-title,
+  #sys-popup .sp-card .sc-display-name,
+  #sys-popup .sp-card .sc-name {
+    font-size: 15.5px;
+    line-height: 1.25;
+  }
+
+  #sys-popup .sp-card .sc-phase-sub {
+    font-size: 11.5px;
+    line-height: 1.28;
+  }
+
+  #sys-popup .sp-card .sc-lv-badge,
+  #sys-popup .sp-card .sc-tier-seal {
+    padding: 2px 7px;
+    font-size: 11px;
+  }
+
+  #sys-popup .sp-card .sc-exp-head {
+    margin-bottom: 3px;
+    font-size: 11px;
+  }
+
+  #sys-popup .sp-card .sc-constellation {
+    padding: 6px 0 2px;
+  }
+
+  #sys-popup .sp-card .sc-const-head {
+    margin-bottom: 4px;
+  }
+
+  #sys-popup .sp-card .sc-data-col {
+    gap: 9px;
+    padding-top: 0;
+  }
+
+  #sys-popup .sp-card .sc-vitals {
+    gap: 7px;
+    padding: 0 0 9px;
+  }
+
+  #sys-popup .sp-card .sc-vital-row {
+    gap: 4px;
+  }
+
+  #sys-popup .sp-card .sc-vital-head,
+  #sys-popup .sp-card .sc-vital-lbl {
+    font-size: 13px;
+    line-height: 1.22;
+  }
+
+  #sys-popup .sp-card .sc-attr-tile {
+    padding: 6px 10px 7px;
+    gap: 2px;
+    font-size: 20px;
+  }
+
+  #sys-popup .sp-card .sc-attr-tile b {
+    font-size: 11.5px;
+  }
+
+  #sys-popup .sp-card .sc-attr-en,
+  #sys-popup .sp-card .sc-attr-sub {
+    font-size: 10.5px;
+  }
+
+  #sys-popup .sp-card .sc-meta-grid > div,
+  #sys-popup .sp-card .sc-meta-item {
+    padding: 4px 2px;
+    font-size: 12px;
+    line-height: 1.32;
+  }
+
+  #sys-popup .sp-card .sc-elem-pill {
+    padding: 1px 8px;
+    line-height: 1.35;
+  }
+
+  #sys-popup .sp-card .sc-relic-strip {
+    padding: 6px 2px 0;
+  }
+
+  #sys-popup .sp-card .sp-close {
+    margin: 7px auto 10px;
+    min-height: 34px;
+    padding: 6px 34px;
   }
 }
 
@@ -4205,10 +4394,11 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
 #panel #panel-body .cd-banner span { color: #526078; }
 
 #panel #panel-body .cd-pill {
-  border-radius: 2px;
-  background: rgba(28, 76, 184, 0.08);
-  border: 1px solid #1C4CB8;
-  color: #1C4CB8;
+  border-radius: 0;
+  background: rgba(22, 88, 235, 0.08);
+  border: none;
+  border-left: 2px solid #1658EB;
+  color: #1658EB;
 }
 
 #panel #panel-body .cd-sec-title {
@@ -4223,19 +4413,21 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
 #panel #panel-body .astral-scale-card,
 #panel #panel-body .astral-scale-card:nth-child(1),
 #panel #panel-body .astral-scale-card:nth-child(2) {
-  border-radius: 2px;
-  background: transparent;
-  border: 1px solid rgba(27, 35, 51, 0.13);
+  border-radius: 0;
+  background: rgba(244, 248, 255, 0.56);
+  border: none;
+  border-top: 1px solid rgba(22, 88, 235, 0.22);
+  border-bottom: 1px solid rgba(27, 35, 51, 0.11);
   box-shadow: none;
 }
 
 #panel #panel-body .as-char { color: #1B2333; font-weight: 800; }
-#panel #panel-body .as-glyph { color: #1C4CB8; }
+#panel #panel-body .as-glyph { color: #1658EB; }
 #panel #panel-body .as-badge {
-  border-radius: 2px;
-  background: transparent;
-  border: 1px solid rgba(28, 76, 184, 0.34);
-  color: #1C4CB8;
+  border-radius: 0;
+  background: rgba(22, 88, 235, 0.08);
+  border: none;
+  color: #1658EB;
   font-weight: 700;
 }
 #panel #panel-body .as-poles { color: #323D52; opacity: 1; }
@@ -4243,10 +4435,10 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
 #panel #panel-body .as-track {
   height: 2px;
   border-radius: 0;
-  background: linear-gradient(90deg, rgba(28, 76, 184, 0.44), rgba(27, 35, 51, 0.14), rgba(201, 56, 85, 0.48));
+  background: linear-gradient(90deg, rgba(22, 88, 235, 0.44), rgba(27, 35, 51, 0.14), rgba(201, 56, 85, 0.48));
 }
 #panel #panel-body .as-star {
-  background: #1C4CB8;
+  background: #1658EB;
   border-color: #FAFBFD;
   color: #FAFBFD;
   box-shadow: 0 2px 8px rgba(18, 24, 34, 0.18);
@@ -4254,13 +4446,14 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
 #panel #panel-body .as-desc { color: #526078; }
 
 #panel #panel-body .clue-tile {
-  border-radius: 2px;
-  background: transparent;
-  border: 1px solid rgba(27, 35, 51, 0.12);
+  border-radius: 0;
+  background: rgba(244, 248, 255, 0.45);
+  border: none;
+  border-left: 2px solid rgba(27, 35, 51, 0.16);
 }
 #panel #panel-body .clue-tile.lit {
-  background: rgba(28, 76, 184, 0.03);
-  border-color: rgba(28, 76, 184, 0.38);
+  background: rgba(22, 88, 235, 0.05);
+  border-left-color: #1658EB;
 }
 #panel #panel-body .ct-head { color: #1B2333; }
 #panel #panel-body .ct-body { color: #323D52; }
@@ -4273,21 +4466,22 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
   color: #1B2333;
 }
 #panel #panel-body .payoff-row.ready {
-  background: rgba(28, 76, 184, 0.04);
-  border-bottom-color: rgba(28, 76, 184, 0.32);
+  background: rgba(22, 88, 235, 0.04);
+  border-bottom-color: rgba(22, 88, 235, 0.32);
 }
 #panel #panel-body .payoff-row.triggered {
   background: rgba(201, 56, 85, 0.04);
   border-bottom-color: rgba(201, 56, 85, 0.32);
 }
-#panel #panel-body .pr-status { color: #1C4CB8; font-weight: 700; }
+#panel #panel-body .pr-status { color: #1658EB; font-weight: 700; }
 #panel #panel-body .payoff-row.triggered .pr-status { color: #C93855; }
 #panel #panel-body .pr-desc { color: #526078; opacity: 1; }
 
 #panel #panel-body .echo-chip {
-  border-radius: 2px;
-  background: transparent;
-  border: 1px solid rgba(27, 35, 51, 0.13);
+  border-radius: 0;
+  background: rgba(244, 248, 255, 0.48);
+  border: none;
+  border-left: 2px solid rgba(22, 88, 235, 0.28);
 }
 #panel #panel-body .ec-quote { color: #1B2333; }
 #panel #panel-body .ec-meta,
@@ -4310,17 +4504,19 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
 #panel #panel-body .relics-dashboard .rel-banner span { color: #526078; }
 
 #panel #panel-body .relics-dashboard .rel-slot {
-  border-radius: 2px;
-  background: transparent;
-  border: 1px dashed rgba(27, 35, 51, 0.24);
+  border-radius: 0;
+  background: rgba(244, 248, 255, 0.45);
+  border: none;
+  border-left: 2px dashed rgba(27, 35, 51, 0.24);
+  border-bottom: 1px solid rgba(27, 35, 51, 0.10);
   color: #526078;
 }
 #panel #panel-body .relics-dashboard .rel-slot.empty { color: #526078; }
 #panel #panel-body .relics-dashboard .rel-slot.filled {
-  border-style: solid;
-  border-color: rgba(28, 76, 184, 0.36);
-  border-top: 1.5px solid #1C4CB8;
-  background: rgba(28, 76, 184, 0.03);
+  border: none;
+  border-left: 2.5px solid #1658EB;
+  border-bottom: 1px solid rgba(22, 88, 235, 0.24);
+  background: rgba(22, 88, 235, 0.045);
   color: #1B2333;
   box-shadow: none;
 }
@@ -4329,23 +4525,24 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
 
 #panel #panel-body .relics-dashboard .rel-mini-btn,
 #panel #panel-body .relics-dashboard .rel-act-btn {
-  border-radius: 2px;
-  border: 1px solid rgba(27, 35, 51, 0.18);
-  background: transparent;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid rgba(22, 88, 235, 0.30);
+  background: rgba(22, 88, 235, 0.06);
   color: #1B2333;
   font-weight: 600;
 }
 @media (hover: hover) and (pointer: fine) {
   #panel #panel-body .relics-dashboard .rel-mini-btn:hover,
   #panel #panel-body .relics-dashboard .rel-act-btn:hover {
-    border-color: #1C4CB8;
-    background: rgba(28, 76, 184, 0.06);
-    color: #1C4CB8;
+    border-bottom-color: #1658EB;
+    background: rgba(22, 88, 235, 0.12);
+    color: #1658EB;
   }
 }
 #panel #panel-body .relics-dashboard .rel-act-btn.on {
-  border-color: #0E2B78;
-  background: #1C4CB8;
+  border-bottom-color: #0E2B78;
+  background: #1658EB;
   color: #FAFBFD;
 }
 
@@ -4388,7 +4585,7 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
 #panel #panel-body .relics-dashboard .rel-syn-summary {
   font-size: 12px;
   font-weight: 700;
-  color: #1C4CB8;
+  color: #1658EB;
 }
 
 #panel #panel-body .relics-dashboard .rel-syn-grid {
@@ -4399,9 +4596,10 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
 
 #panel #panel-body .relics-dashboard .rel-syn-card {
   padding: 10px 12px;
-  border-radius: 2px;
-  background: transparent;
-  border: 1px solid rgba(27, 35, 51, 0.13);
+  border-radius: 0;
+  background: rgba(244, 248, 255, 0.52);
+  border: none;
+  border-left: 2px solid rgba(27, 35, 51, 0.18);
   color: #323D52;
   box-shadow: none;
 }
@@ -4412,9 +4610,9 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
 }
 
 #panel #panel-body .relics-dashboard .rel-syn-card.active {
-  border: 1px solid #1C4CB8;
-  border-top: 1.5px solid #1C4CB8;
-  background: rgba(28, 76, 184, 0.035);
+  border: none;
+  border-left: 2.5px solid #1658EB;
+  background: rgba(22, 88, 235, 0.05);
   color: #1B2333;
   box-shadow: none;
 }
@@ -4425,9 +4623,10 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
 }
 
 #panel #panel-body .relics-dashboard .rel-syn-card.near {
-  border: 1px dashed rgba(28, 76, 184, 0.42);
-  background: transparent;
-  color: #1C4CB8;
+  border: none;
+  border-left: 2px dashed rgba(22, 88, 235, 0.45);
+  background: rgba(244, 248, 255, 0.36);
+  color: #1658EB;
   box-shadow: none;
 }
 
@@ -4447,16 +4646,16 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
 
 #panel #panel-body .relics-dashboard .rel-syn-card.near .rsc-name {
   font-weight: 700;
-  color: #1C4CB8;
+  color: #1658EB;
 }
 
 #panel #panel-body .relics-dashboard .rsc-pill,
 #panel #panel-body .relics-dashboard .rel-syn-card .rsc-pill,
 #panel #panel-body .relics-dashboard .rel-syn-card.active .rsc-pill {
   padding: 2px 7px;
-  border-radius: 2px;
-  background: #1C4CB8;
-  border: 1px solid #0E2B78;
+  border-radius: 0;
+  background: #1658EB;
+  border: none;
   color: #FAFBFD;
   font-size: 11.5px;
   font-weight: 700;
@@ -4464,10 +4663,10 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
 
 #panel #panel-body .relics-dashboard .rel-syn-card.near .rsc-pill {
   padding: 2px 7px;
-  border-radius: 2px;
-  background: transparent;
-  border: 1px solid rgba(28, 76, 184, 0.36);
-  color: #1C4CB8;
+  border-radius: 0;
+  background: rgba(22, 88, 235, 0.09);
+  border: none;
+  color: #1658EB;
   font-weight: 700;
 }
 
@@ -4510,9 +4709,9 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
   font-size: 11.5px;
   font-weight: 600;
   padding: 2px 8px;
-  border-radius: 2px;
-  background: transparent;
-  border: 1px solid rgba(27, 35, 51, 0.15);
+  border-radius: 0;
+  background: rgba(27, 35, 51, 0.045);
+  border: none;
   color: #526078;
 }
 
@@ -4526,53 +4725,58 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
   font-size: 11.5px;
   font-weight: 700;
   padding: 1px 6px;
-  border-radius: 2px;
-  background: transparent;
-  border: 1px solid rgba(28, 76, 184, 0.34);
-  color: #1C4CB8;
+  border-radius: 0;
+  background: rgba(22, 88, 235, 0.08);
+  border: none;
+  color: #1658EB;
 }
 
 #panel #panel-body .relics-dashboard .bond-chip {
-  border-radius: 2px;
-  background: transparent;
-  border: 1px solid rgba(27, 35, 51, 0.14);
+  border-radius: 0;
+  background: rgba(244, 248, 255, 0.48);
+  border: none;
+  border-left: 2px solid rgba(27, 35, 51, 0.16);
   color: #1B2333;
 }
 @media (hover: hover) and (pointer: fine) {
   #panel #panel-body .relics-dashboard .bond-chip:hover:not(:disabled) {
-    border-color: #1C4CB8;
-    background: rgba(28, 76, 184, 0.04);
+    border-left-color: #1658EB;
+    background: rgba(22, 88, 235, 0.06);
   }
 }
 #panel #panel-body .relics-dashboard .bond-chip.active {
-  border: 1px solid #1C4CB8;
-  border-top: 1.5px solid #1C4CB8;
-  background: rgba(28, 76, 184, 0.04);
+  border: none;
+  border-left: 2.5px solid #1658EB;
+  background: rgba(22, 88, 235, 0.07);
   box-shadow: none;
 }
 #panel #panel-body .relics-dashboard .bc-top { color: #1B2333; font-weight: 800; }
 #panel #panel-body .relics-dashboard .bc-desc { color: #526078; }
 
 #panel #panel-body .relics-dashboard .rel-card {
-  border-radius: 2px;
-  background: transparent;
-  border: 1px solid rgba(27, 35, 51, 0.13);
+  border-radius: 0;
+  background: rgba(248, 251, 255, 0.56);
+  border: none;
+  border-top: 1px solid rgba(27, 35, 51, 0.11);
+  border-left: 2px solid rgba(27, 35, 51, 0.14);
   color: #1B2333;
 }
 #panel #panel-body .relics-dashboard .rel-card.equipped {
-  border: 1px solid #1C4CB8;
-  border-top: 1.5px solid #1C4CB8;
-  background: rgba(28, 76, 184, 0.035);
+  border: none;
+  border-top: 1px solid rgba(22, 88, 235, 0.24);
+  border-left: 2.5px solid #1658EB;
+  background: rgba(22, 88, 235, 0.045);
   box-shadow: none;
 }
 #panel #panel-body .relics-dashboard .rc-name { color: #1B2333; font-weight: 800; }
 #panel #panel-body .relics-dashboard .rc-eq-pill {
   font-style: normal;
-  border-radius: 2px;
+  border-radius: 0;
+  border: none;
   padding: 1px 6px;
   font-size: 11.5px;
   font-weight: 700;
-  background: #1C4CB8;
+  background: #1658EB;
   color: #FAFBFD;
 }
 #panel #panel-body .relics-dashboard .rc-owner,

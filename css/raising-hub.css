@@ -68,7 +68,7 @@
 #sylvia-hub {
   position: absolute;
   inset: 0;
-  z-index: 8;
+  z-index: 10;
   pointer-events: none;
   overflow: visible;
   font-family: var(--rh-sans);
@@ -76,6 +76,10 @@
 }
 
 #sylvia-hub.hidden,
+body:not(.roam) #sylvia-hub,
+body.stage-pre-system #sylvia-hub,
+body.stage-story #sylvia-hub,
+body.stage-infant #sylvia-hub,
 body.ui-hidden #sylvia-hub,
 body.pov-hidden #sylvia-hub,
 body.cg-mode #sylvia-hub {
@@ -88,30 +92,46 @@ body.cg-mode #sylvia-hub {
   vertical-align: middle;
 }
 
-/* 右上角雪瓷细线控制带：心境条 + 纪念挂件 + 细线分隔养成坞 */
+/* 底栏右侧一体化雪瓷书志浮条：贴靠 #action-bar 正上方右侧，高 ~32px，零圆框套圆框与异形斜切 */
+#game-screen #sylvia-hub .sh-corner-controls,
 .sh-corner-controls {
   position: absolute;
-  top: 10px;
+  top: auto;
+  bottom: 10px;
   right: 16px;
   z-index: 10;
-  pointer-events: none;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
+  pointer-events: auto;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 4px;
   max-width: calc(100% - 32px);
-  transition: right 0.28s var(--rh-ease), opacity 0.2s var(--rh-ease);
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(252, 254, 255, 0.90) 0%, rgba(238, 245, 254, 0.92) 100%);
+  border: 1px solid rgba(96, 128, 180, 0.28);
+  border-top: 1.5px solid rgba(22, 88, 235, 0.72);
+  box-shadow: 0 6px 18px rgba(14, 43, 120, 0.11);
+  backdrop-filter: blur(16px) saturate(135%);
+  -webkit-backdrop-filter: blur(16px) saturate(135%);
+  transition: bottom 0.24s var(--rh-ease), right 0.24s var(--rh-ease), opacity 0.2s var(--rh-ease);
 }
 
-@media (min-width: 1180px) {
-  .sh-corner-controls {
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-  }
+/* 自由探索中对话框展开时平滑上避至 #text-box 上沿 */
+#stage:has(#text-box:not(.dialog-hidden)) #sylvia-hub .sh-corner-controls {
+  bottom: calc(var(--boxh, 112px) + 10px);
 }
 
-/* 灵魂交谈边卷展开时，右上角养成坞与心境条优雅退隐，零遮挡冲突 */
+/* 选项卡片展开时临时退让，杜绝遮挡分支选项 */
+#stage:has(#choices:not(:empty)) #sylvia-hub .sh-corner-controls,
+#stage:has(#choices:not(:empty)) #sylvia-hub .sh-charm-popover {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 灵魂交谈边卷展开时，养成书志浮条优雅退隐，零遮挡冲突 */
 body.ai-drawer-open #sylvia-hub .sh-corner-controls,
 body.ai-drawer-open #sylvia-hub .sh-top-strip,
 body.ai-drawer-open #sylvia-hub .sylvia-ritual-dock,
@@ -120,40 +140,49 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
   pointer-events: none !important;
 }
 
+#game-screen #sylvia-hub .sh-top-strip,
 .sh-top-strip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  pointer-events: none;
+  gap: 0;
+  height: 100%;
+  pointer-events: auto;
   transition: opacity 0.2s var(--rh-ease);
 }
 
+/* 细巧无框心境微段（覆写下游斜切贴纸与独立投影，严格零框套框） */
+#game-screen #sylvia-hub .sh-corner-controls .hud-mood-pill,
 .hud-mood-pill {
   pointer-events: auto;
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  min-height: 34px;
-  padding: 4px 12px;
-  border-radius: 2px;
-  background: rgba(250, 251, 253, 0.92);
-  border: 1px solid var(--rh-hairline);
-  border-top: 1.5px solid var(--rh-sapphire);
+  gap: 5px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 9px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  filter: none;
+  clip-path: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   color: var(--rh-ink);
-  font-size: 12.5px;
+  font-family: var(--rh-serif);
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   white-space: nowrap;
-  box-shadow: var(--rh-shadow-sm);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+  transition: background 0.16s ease, color 0.16s ease;
 }
 
+#game-screen #sylvia-hub .sh-corner-controls .hud-mood-pill:hover,
 .hud-mood-pill:hover {
-  border-color: var(--rh-sapphire);
-  background: var(--rh-paper-pure);
+  background: rgba(22, 88, 235, 0.08);
+  color: var(--rh-sapphire);
 }
 
 .hud-mood-pill .hm-ico {
@@ -161,13 +190,18 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
   color: var(--rh-sapphire);
 }
 
+.hud-mood-pill .hm-ico .rh-ico {
+  width: 13px;
+  height: 13px;
+}
+
 .hud-mood-pill .hm-val {
   position: relative;
   font-style: normal;
-  font-size: 12.5px;
+  font-size: 11.5px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  padding-left: 8px;
+  padding-left: 6px;
   color: var(--rh-sapphire);
 }
 
@@ -177,27 +211,40 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
   left: 0;
   top: 50%;
   width: 1px;
-  height: 11px;
+  height: 10px;
   transform: translateY(-50%);
-  background: var(--rh-hairline-strong);
+  background: rgba(22, 88, 235, 0.22);
 }
 
-.hud-mood-pill[data-mood="cozy"] { border-top-color: var(--rh-emerald); }
 .hud-mood-pill[data-mood="cozy"] .hm-ico,
 .hud-mood-pill[data-mood="cozy"] .hm-val { color: var(--rh-emerald-ink); }
 
-.hud-mood-pill[data-mood="focused"] { border-top-color: var(--rh-sapphire); }
 .hud-mood-pill[data-mood="focused"] .hm-ico,
 .hud-mood-pill[data-mood="focused"] .hm-val { color: var(--rh-sapphire); }
 
-.hud-mood-pill[data-mood="tired"] { border-top-color: var(--rh-crimson); }
 .hud-mood-pill[data-mood="tired"] .hm-ico,
 .hud-mood-pill[data-mood="tired"] .hm-val { color: var(--rh-crimson); }
 
+/* 随身纪念挂件：彻底移除五边形异形块，收束为 1px 冰蓝竖线分隔的极简线稿小徽 */
 .sh-charms {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 1px;
+  height: 100%;
+  padding: 0 3px 0 4px;
+  pointer-events: auto;
+}
+
+.sh-charms::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 1px;
+  height: 13px;
+  transform: translateY(-50%);
+  background: rgba(22, 88, 235, 0.22);
   pointer-events: none;
 }
 
@@ -205,100 +252,104 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
   display: none;
 }
 
+#game-screen #sylvia-hub .sh-corner-controls .sh-charm-btn,
 .sh-charm-btn {
   pointer-events: auto;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  border-radius: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(250, 251, 253, 0.92);
-  border: 1px solid var(--rh-hairline-strong);
-  color: var(--rh-ink-body);
-  box-shadow: var(--rh-shadow-sm);
-  backdrop-filter: blur(8px);
+  background: transparent;
+  border: none;
+  color: var(--rh-stone-ink);
+  box-shadow: none;
+  filter: none;
+  clip-path: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   cursor: pointer;
-  transition: transform 0.2s var(--rh-ease), background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition: background 0.16s ease, color 0.16s ease;
 }
 
+.sh-charm-btn .rh-ico {
+  width: 13px;
+  height: 13px;
+}
+
+#game-screen #sylvia-hub .sh-corner-controls .sh-charm-btn:hover,
 .sh-charm-btn:hover {
-  transform: translateY(-1px);
-  background: var(--rh-paper-pure);
-  border-color: var(--rh-sapphire);
+  transform: none;
+  background: rgba(22, 88, 235, 0.10);
   color: var(--rh-sapphire);
 }
 
+/* 心境与挂件小记卡：从底条上方轻盈浮起，贴合右侧绝不挡画心 */
+#game-screen #sylvia-hub .sh-charm-popover,
 .sh-charm-popover {
   position: absolute;
-  top: 54px;
+  top: auto;
+  bottom: 48px;
   right: 16px;
   z-index: 12;
   pointer-events: auto;
   max-width: min(300px, calc(100vw - 32px));
-  padding: 13px 16px;
-  border-radius: 3px;
-  background: rgba(250, 251, 253, 0.97);
-  border: 1px solid var(--rh-hairline);
-  border-top: 1.5px solid var(--rh-sapphire);
+  padding: 12px 15px;
+  border-radius: 2px;
+  background: rgba(250, 252, 255, 0.96);
+  border: 1px solid rgba(96, 128, 180, 0.30);
+  border-top: 1.5px solid #1658eb;
   box-shadow: var(--rh-shadow-md);
+  filter: none;
+  clip-path: none;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   display: flex;
   flex-direction: column;
   gap: 5px;
-  animation: rhFadeRise 0.22s var(--rh-ease);
+  animation: rhFadeRise 0.2s var(--rh-ease);
+}
+
+#stage:has(#text-box:not(.dialog-hidden)) #sylvia-hub .sh-charm-popover {
+  bottom: calc(var(--boxh, 112px) + 48px);
 }
 
 .sh-charm-popover strong {
   font-family: var(--rh-serif);
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--rh-ink);
 }
 
 .sh-charm-popover span {
-  font-size: 12.5px;
-  line-height: 1.58;
+  font-size: 12px;
+  line-height: 1.56;
   color: var(--rh-ink-body);
 }
 
-/* 顶部半透雪瓷细线仪轨带：日程排班 | 集市小铺 | 火漆信匣 | 终幕回响 */
+/* 养成入口段：与心境段同处单行薄条内，以 1px 冰蓝竖线区隔（零外框、零平行四边形） */
+#game-screen #sylvia-hub .sh-corner-controls .sylvia-ritual-dock,
 .sylvia-ritual-dock {
+  position: relative;
   pointer-events: auto;
   display: inline-flex;
   align-items: center;
   gap: 0;
-  padding: 0 4px;
-  border-radius: 2px;
-  background: rgba(250, 251, 253, 0.92);
-  border: 1px solid var(--rh-hairline);
-  border-top: 1.5px solid var(--rh-sapphire);
-  box-shadow: var(--rh-shadow-sm);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: opacity 0.2s var(--rh-ease);
-}
-
-.rh-dock-chip {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  min-height: 33px;
-  padding: 4px 12px;
+  height: 100%;
+  padding: 0 0 0 2px;
   border-radius: 0;
   background: transparent;
   border: none;
-  color: var(--rh-ink);
-  font-size: 12.5px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: color 0.18s ease, background 0.18s ease;
+  box-shadow: none;
+  filter: none;
+  clip-path: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition: opacity 0.2s var(--rh-ease);
 }
 
-/* 1px 极细竖线分隔各入口，零圆角胶囊堆砌 */
-.rh-dock-chip + .rh-dock-chip:not(.hidden)::before {
+#game-screen #sylvia-hub .sh-corner-controls .sylvia-ritual-dock::before {
   content: '';
   position: absolute;
   left: 0;
@@ -306,36 +357,77 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
   width: 1px;
   height: 14px;
   transform: translateY(-50%);
-  background: var(--rh-hairline-strong);
+  background: rgba(22, 88, 235, 0.26);
+  pointer-events: none;
+}
+
+#game-screen #sylvia-hub .sh-corner-controls .rh-dock-chip,
+.rh-dock-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  color: var(--rh-ink);
+  font-family: var(--rh-serif);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.16s ease, background 0.16s ease;
+}
+
+/* 1px 冰蓝极细竖线分隔各可见入口 */
+.rh-dock-chip:not(.hidden) ~ .rh-dock-chip:not(.hidden)::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 1px;
+  height: 12px;
+  transform: translateY(-50%);
+  background: rgba(22, 88, 235, 0.20);
   pointer-events: none;
 }
 
 .rh-dock-chip::after {
   content: '';
   position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 0;
+  left: 8px;
+  right: 8px;
+  bottom: 1px;
   height: 1.5px;
-  background: var(--rh-sapphire);
+  background: #1658eb;
   transform: scaleX(0);
   transform-origin: center;
-  transition: transform 0.22s var(--rh-ease);
+  transition: transform 0.2s var(--rh-ease);
 }
 
 .rh-dock-chip .rh-dc-ico {
   display: inline-flex;
   color: var(--rh-stone-ink);
-  transition: color 0.18s ease;
+  transition: color 0.16s ease;
 }
 
+.rh-dock-chip .rh-dc-ico .rh-ico {
+  width: 13px;
+  height: 13px;
+}
+
+#game-screen #sylvia-hub .sh-corner-controls .rh-dock-chip:hover,
 .rh-dock-chip:hover {
-  background: var(--rh-sapphire-wash);
-  color: var(--rh-sapphire);
+  background: rgba(22, 88, 235, 0.08);
+  color: #1658eb;
 }
 
 .rh-dock-chip:hover .rh-dc-ico {
-  color: var(--rh-sapphire);
+  color: #1658eb;
 }
 
 .rh-dock-chip:hover::after {
@@ -348,12 +440,12 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
 }
 
 .rh-dock-chip.rh-dock-ending .rh-dc-ico {
-  color: var(--rh-sapphire);
+  color: #1658eb;
 }
 
 .rh-dock-chip.rh-dock-ending:hover {
-  background: var(--rh-sapphire-wash);
-  color: var(--rh-sapphire);
+  background: rgba(22, 88, 235, 0.10);
+  color: #1658eb;
 }
 
 .rh-dock-chip .rh-dc-short {
@@ -362,14 +454,15 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
 
 .rh-badge-count {
   font-style: normal;
-  min-width: 17px;
-  height: 17px;
-  padding: 0 5px;
-  border-radius: 2px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 1px;
+  border: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 11.5px;
+  font-size: 10.5px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   background: var(--rh-crimson);
@@ -865,15 +958,18 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
   transform: translateY(0);
 }
 
+.rh-overlay .rh-modal-foot .rh-btn.primary:disabled,
+.rh-overlay #rh-sched-run:disabled,
 .rh-btn.primary:disabled,
 #rh-sched-run:disabled {
-  background: #e7eef7;
+  background: linear-gradient(135deg, rgba(224, 235, 249, 0.94) 0%, rgba(206, 222, 244, 0.92) 100%);
   color: #4a5d7a;
-  border: 1px solid rgba(28, 76, 184, 0.22);
-  border-radius: 2px;
-  clip-path: none;
+  border: none;
+  border-radius: 0;
+  clip-path: polygon(12px 0%, calc(100% - 12px) 0%, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0% 50%);
   opacity: 1;
   filter: none;
+  box-shadow: inset 0 0 0 1px rgba(28, 76, 184, 0.20);
   cursor: not-allowed;
 }
 
@@ -969,6 +1065,8 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
 }
 
 .rh-empty-tip {
+  grid-column: 1 / -1;
+  width: 100%;
   padding: 24px 14px;
   text-align: center;
   font-size: 13.5px;
@@ -1297,20 +1395,22 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
   margin-right: 2px;
 }
 
-/* 细线预设快捷丸：清晰传达可点击交互态 */
+/* 顶部「一键排程」轻盈细线排印键：零硬框割裂，与底部棱镜提交键风格统一 */
 .rh-preset-btn {
   position: relative;
-  min-height: 30px;
-  padding: 3px 10px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(27, 35, 51, 0.16);
+  min-height: 28px;
+  padding: 3px 9px 4px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(28, 76, 184, 0.24);
   color: var(--rh-ink-body);
+  font-family: var(--rh-serif);
   font-size: 12.5px;
   font-weight: 600;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   cursor: pointer;
-  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease, transform 0.16s var(--rh-ease);
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 
 .rh-preset-btn + .rh-preset-btn::before {
@@ -1318,13 +1418,13 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
 }
 
 .rh-preset-btn:hover {
-  background: var(--rh-sapphire-wash);
-  border-color: var(--rh-sapphire);
-  color: var(--rh-sapphire);
+  background: rgba(22, 88, 235, 0.07);
+  border-bottom-color: #1658eb;
+  color: #1658eb;
 }
 
 .rh-preset-btn:active {
-  transform: translateY(1px);
+  background: rgba(22, 88, 235, 0.12);
 }
 
 /* 体力与增益细线摘要条（去盒子化） */
@@ -3319,26 +3419,22 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
 
 /* 安卓 Chrome 桌面版竖屏专属舒适触控与阅读比例 (980×2120 等 portrait 681px–1120px) */
 @media (orientation: portrait) and (min-width: 681px) and (max-width: 1120px) {
-  .sh-corner-controls {
-    top: 12px;
-    right: 14px;
-    gap: 7px;
+  #game-screen #sylvia-hub .sh-corner-controls {
+    top: auto;
+    bottom: 10px;
+    right: 12px;
+    min-height: 36px;
   }
 
-  .hud-mood-pill,
-  .rh-dock-chip {
-    min-height: 40px;
-    font-size: 13.5px;
+  #game-screen #sylvia-hub .hud-mood-pill,
+  #game-screen #sylvia-hub .rh-dock-chip {
+    min-height: 36px;
+    font-size: 13px;
   }
 
-  .sh-charm-btn {
-    width: 38px;
-    height: 38px;
-  }
-
-  #stage:has(#sylvia-hub:not(.hidden)) #hotspots {
-    top: 126px;
-    max-height: calc(100% - var(--boxh) - 136px);
+  #game-screen #sylvia-hub .sh-charm-btn {
+    width: 30px;
+    height: 30px;
   }
 
   .rh-modal-shell,
@@ -3375,78 +3471,62 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
 
 /* 手机竖屏精裁 (390×844, max-width: 680px) */
 @media (max-width: 680px) {
-  .sh-corner-controls {
-    position: static;
-    display: contents;
-  }
-
-  .sh-top-strip {
-    position: absolute;
-    top: 4px;
-    right: 8px;
-    z-index: 10;
-    gap: 4px;
-  }
-
-  .sh-charms {
-    gap: 4px;
-  }
-
-  .hud-mood-pill {
-    min-height: 36px;
-    padding: 4px 9px;
-    font-size: 12px;
-  }
-
-  .sh-charm-btn {
-    width: 36px;
-    height: 36px;
-  }
-
-  .sh-charm-btn:nth-child(n+2) {
-    display: none;
-  }
-
-  .sh-charm-popover {
-    top: 98px;
-    left: 10px;
-    right: 10px;
-    max-width: none;
-  }
-
-  .sylvia-ritual-dock {
-    position: absolute;
-    top: 46px;
-    right: 8px;
+  #game-screen #sylvia-hub .sh-corner-controls {
+    top: auto;
+    bottom: 8px;
     left: 8px;
-    z-index: 10;
+    right: 8px;
+    max-width: calc(100% - 16px);
+    min-height: 34px;
     padding: 0 2px;
-    gap: 0;
-    border-radius: 2px;
-    flex-wrap: nowrap;
     justify-content: space-between;
     overflow-x: auto;
     scrollbar-width: none;
   }
 
-  .sylvia-ritual-dock::-webkit-scrollbar {
+  #game-screen #sylvia-hub .sh-corner-controls::-webkit-scrollbar {
     display: none;
   }
 
-  .rh-dock-chip {
-    min-height: 42px;
-    padding: 4px 8px;
-    font-size: 12px;
+  #game-screen #sylvia-hub .hud-mood-pill {
+    min-height: 32px;
+    height: 32px;
+    padding: 0 8px;
+    font-size: 11.5px;
+  }
+
+  #game-screen #sylvia-hub .sh-charm-btn {
+    width: 26px;
+    height: 26px;
+  }
+
+  #game-screen #sylvia-hub .sh-charm-btn:nth-child(n+2) {
+    display: none;
+  }
+
+  #game-screen #sylvia-hub .sh-charm-popover {
+    top: auto;
+    bottom: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    max-width: none;
+  }
+
+  #game-screen #sylvia-hub .rh-dock-chip {
+    min-height: 32px;
+    height: 32px;
+    padding: 0 8px;
+    font-size: 11.5px;
     gap: 4px;
-    flex: 1 1 0;
+    flex: 0 0 auto;
     justify-content: center;
   }
 
-  .rh-dock-chip .rh-dc-full {
+  #game-screen #sylvia-hub .rh-dock-chip .rh-dc-full {
     display: none;
   }
 
-  .rh-dock-chip .rh-dc-short {
+  #game-screen #sylvia-hub .rh-dock-chip .rh-dc-short {
     display: inline;
   }
 
@@ -3459,15 +3539,6 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
   #sylvia-hub .sh-avatar-stage,
   #sylvia-hub[data-density="with-npc"] .sh-avatar-stage {
     display: none !important;
-  }
-
-  #stage:has(#sylvia-hub:not(.hidden)) #loc-bar {
-    max-width: calc(100% - 148px);
-  }
-
-  #stage:has(#sylvia-hub:not(.hidden)) #hotspots {
-    top: 96px;
-    max-height: calc(100% - var(--boxh) - 106px);
   }
 
   .rh-overlay,
@@ -3528,7 +3599,7 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
     min-height: 44px;
   }
 
-  /* 移动端小铺顶栏：标题独占整行，银币/优待另起一行，关闭符固定右上角 */
+  /* 移动端小铺顶栏：标题独占整行，金币/优待另起一行，关闭符固定右上角 */
   .rh-shop-shell .rh-modal-head {
     flex-wrap: wrap;
     align-items: flex-start;
@@ -3842,102 +3913,63 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
   }
 }
 
-/* 横屏手机精裁 (844×390 等 max-height: 520px 且横屏)：极简纤细顶带贴合 HUD 右栏之下，绝不跨越右侧立绘额头 */
+/* 横屏手机精裁 (844×390 等 max-height: 520px 且横屏)：统一底置紧凑条，不遮挡画心与立绘额头 */
 @media (max-height: 520px) and (orientation: landscape) {
   #sylvia-hub .sh-avatar-stage,
   #sylvia-hub[data-density="with-npc"] .sh-avatar-stage {
     display: none !important;
   }
 
-  .sh-corner-controls {
-    position: absolute;
-    display: flex;
-    top: 2px;
-    right: 10px;
-    flex-direction: row;
-    align-items: center;
-    gap: 5px;
-    max-width: calc(100% - 140px);
-  }
-
-  .sh-top-strip {
-    position: static;
+  #game-screen #sylvia-hub .sh-corner-controls {
     top: auto;
-    right: auto;
-    gap: 4px;
+    bottom: 6px;
+    right: 10px;
+    min-height: 28px;
+    max-width: calc(100% - 20px);
   }
 
-  .sh-charms {
-    gap: 3px;
-  }
-
-  .sh-charm-btn:nth-child(n+2) {
+  #game-screen #sylvia-hub .sh-charm-btn:nth-child(n+2) {
     display: none;
   }
 
-  .hud-mood-pill {
+  #game-screen #sylvia-hub .hud-mood-pill,
+  #game-screen #sylvia-hub .rh-dock-chip {
     min-height: 28px;
     height: 28px;
-    padding: 2px 8px;
-    font-size: 12px;
-    gap: 5px;
-  }
-
-  .hud-mood-pill .hm-val {
-    padding-left: 6px;
-    font-size: 12px;
-  }
-
-  .sh-charm-btn {
-    width: 28px;
-    height: 28px;
-    min-height: 28px;
-  }
-
-  .sh-charm-popover {
-    top: 36px;
-    right: 10px;
-    left: auto;
-    max-width: min(300px, calc(100vw - 24px));
-  }
-
-  .sylvia-ritual-dock {
-    position: static;
-    left: auto;
-    right: auto;
-    top: auto;
-    padding: 0 2px;
-    gap: 0;
-    border-radius: 2px;
-    flex-wrap: nowrap;
-  }
-
-  .rh-dock-chip {
-    min-height: 28px;
-    height: 28px;
-    padding: 2px 8px;
-    font-size: 12px;
+    padding: 0 8px;
+    font-size: 11.5px;
     gap: 4px;
-    flex: 0 0 auto;
   }
 
-  .rh-dock-chip .rh-dc-full {
+  #game-screen #sylvia-hub .sh-charm-btn {
+    width: 24px;
+    height: 24px;
+    min-height: 24px;
+  }
+
+  #game-screen #sylvia-hub .rh-dock-chip .rh-dc-full {
     display: none;
   }
 
-  .rh-dock-chip .rh-dc-short {
+  #game-screen #sylvia-hub .rh-dock-chip .rh-dc-short {
     display: inline;
   }
+}
 
-  /* 留出 10px 清爽顶距，确保横屏立绘头部与顶栏零交叠 */
-  #stage:has(#sylvia-hub:not(.hidden)) #portraits {
-    top: 40px;
-  }
+/* 火漆信匣 #letter-demo 专属火漆色补全（霜杉银印 wax-silver + 紫蝶竹印 wax-violet） */
+.letter-seal.wax-silver,
+.letter-demo.wax-silver .letter-seal {
+  background: radial-gradient(circle at 34% 28%, #F8FAFC 0 14%, #94A3B8 48%, #475569 100%);
+  color: #1E293B;
+}
 
-  #stage:has(#sylvia-hub:not(.hidden)) #hotspots {
-    top: 38px;
-    max-height: calc(100% - var(--boxh) - 44px);
-  }
+.letter-demo.wax-silver .letter-seal span {
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.55);
+}
+
+.letter-seal.wax-violet,
+.letter-demo.wax-violet .letter-seal {
+  background: radial-gradient(circle at 34% 28%, #C4B5FD 0 14%, #6D28D9 46%, #3B0764 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {

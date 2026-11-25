@@ -2519,7 +2519,10 @@
   /**
    * 绘制冰晶星轨天球档案风格「4枚暗线线索星轨连线 SVG」
    */
-  function buildClueStarWebSVG(c) {
+  function buildClueStarWebSVG(c, targetS) {
+    var st = targetS || getStateObj();
+    var ph = (st && st.phase) || 'prologue';
+    var isPreAcademy = (ph === 'prologue' || ph === 'childhood' || ph === 'youth');
     var clues = (c && c.clues) || {};
     var n1 = !!clues.bayi_banquet_leak;
     var n2 = !!clues.belmont_troop_shift;
@@ -2528,6 +2531,16 @@
     var darkTideLit = n1 && n2;
     var northWindLit = n3 && n4;
     var crossLit = (n1 || n2) && (n3 || n4);
+    var litCount = (n1 ? 1 : 0) + (n2 ? 1 : 0) + (n3 ? 1 : 0) + (n4 ? 1 : 0);
+    var isEarlyAcademyFog = (ph === 'academy' && litCount < 1);
+
+    function isNodeFogged(clueKey, lit) {
+      if (lit) return false;
+      if (isPreAcademy || isEarlyAcademyFog) return true;
+      var meta = CLUE_META[clueKey];
+      if (meta && Array.isArray(meta.allowedPhases) && meta.allowedPhases.indexOf(ph) === -1) return true;
+      return false;
+    }
 
     function threadLine(x1, y1, x2, y2, lit, major) {
       if (lit) {
@@ -2538,7 +2551,7 @@
         'stroke="rgba(22,88,235,0.34)" stroke-width="1.25" stroke-dasharray="4 4"/>';
     }
 
-    function clueNode(cx, cy, lit, label, sub, align) {
+    function clueNode(cx, cy, lit, label, sub, align, fogged) {
       var textAnchor = align || 'middle';
       var tx = align === 'start' ? cx + 19 : (align === 'end' ? cx - 19 : cx);
       var ty = align === 'middle' ? cy + 24 : cy - 2;
@@ -2555,16 +2568,14 @@
         );
       }
       return (
-        '<g class="sw-node locked">' +
+        '<g class="sw-node locked' + (fogged ? ' is-fogged' : '') + '">' +
           '<circle class="sw-node-halo" cx="' + cx + '" cy="' + cy + '" r="11" fill="rgba(255,255,255,0.82)" stroke="rgba(22,88,235,0.44)" stroke-width="1.2" stroke-dasharray="3 3"/>' +
           '<circle class="sw-node-dot" cx="' + cx + '" cy="' + cy + '" r="3.2" fill="#2563EB"/>' +
-          '<text class="sw-node-title" x="' + tx + '" y="' + ty + '" text-anchor="' + textAnchor + '" fill="#243E6B" font-size="12" font-weight="600">◇ 未启封</text>' +
-          '<text class="sw-node-sub" x="' + tx + '" y="' + subY + '" text-anchor="' + textAnchor + '" fill="#3A5685" font-size="11.5">' + sub + '</text>' +
+          '<text class="sw-node-title" x="' + tx + '" y="' + ty + '" text-anchor="' + textAnchor + '" fill="#243E6B" font-size="12" font-weight="600">' + (fogged ? '◇ ？？？' : '◇ 未启封') + '</text>' +
+          '<text class="sw-node-sub" x="' + tx + '" y="' + subY + '" text-anchor="' + textAnchor + '" fill="#3A5685" font-size="11.5">' + (fogged ? '推进主线启封' : sub) + '</text>' +
         '</g>'
       );
     }
-
-    var litCount = (n1 ? 1 : 0) + (n2 ? 1 : 0) + (n3 ? 1 : 0) + (n4 ? 1 : 0);
 
     return (
       '<div class="starweb-archive-box">' +
@@ -2596,11 +2607,11 @@
             '<polygon class="sw-core-star" points="260,71 264.8,81.2 275,86 264.8,90.8 260,101 255.2,90.8 245,86 255.2,81.2" fill="#1658EB" stroke="#FFFFFF" stroke-width="0.9" opacity="' + (litCount ? '0.98' : '0.84') + '"/>' +
             '<text class="sw-core-label" x="260" y="125" text-anchor="middle" fill="#0B1C3D" font-size="11.5" font-weight="700" letter-spacing="1">星轨枢纽 · ' + litCount + '/4</text>' +
           '</g>' +
-          // 四枚暗线星标
-          clueNode(126, 42, n1, '宴席暗探', '巴依食单暗线', 'end') +
-          clueNode(126, 130, n2, '王都调防', '城郊封锁苗头', 'end') +
-          clueNode(394, 42, n3, '北极铃兰', '恒温冰膜印记', 'start') +
-          clueNode(394, 130, n4, '院角老树', '故人「岚」之名', 'start') +
+          // 四枚暗线星标（未启封高剧透节点在前期以迷雾遮罩）
+          clueNode(126, 42, n1, '宴席暗探', '巴依食单暗线', 'end', isNodeFogged('bayi_banquet_leak', n1)) +
+          clueNode(126, 130, n2, '王都调防', '城郊封锁苗头', 'end', isNodeFogged('belmont_troop_shift', n2)) +
+          clueNode(394, 42, n3, '北极铃兰', '恒温冰膜印记', 'start', isNodeFogged('polar_lily_bond', n3)) +
+          clueNode(394, 130, n4, '院角老树', '故人「岚」之名', 'start', isNodeFogged('wind_god_echo', n4)) +
         '</svg>' +
       '</div>'
     );
@@ -2630,10 +2641,34 @@
     var doneCount = Object.keys(c.vignettesDone || {}).length;
     var litClues = tendency.unlockedClues;
     var triggeredPayoffs = tendency.triggeredPayoffs;
+    var ph = (st && st.phase) || 'prologue';
+    var stFlags = (st && st.flags) || {};
+    var isPreAcademy = (ph === 'prologue' || ph === 'childhood' || ph === 'youth');
+    var isEarlyAcademyFog = (ph === 'academy' && litClues < 1 && triggeredPayoffs < 1 && tendency.totalAxisPoints < 2);
+    var canForecast = canOpenEndingForecast(st);
+    var maskTendency = !canForecast && (isPreAcademy || isEarlyAcademyFog);
+    var HIGH_SPOILER_PAYOFFS = { dark_tide: true, rival_grace: true, northern_vow: true };
 
     var scalesHtml = Object.keys(AXIS_META).map(function (cid, idx) {
       var s = getAxisSummary(cid, st);
       var glyph = idx < 2 ? '✦' : '◈';
+      var axisTotal = (s.leftVal || 0) + (s.rightVal || 0);
+      var knownVal = (st && st.know && Number(st.know[cid] || 0)) || 0;
+      var charFogged = axisTotal === 0 && knownVal <= 0 && (
+        (isPreAcademy && cid !== 'alice') ||
+        (cid === 'jilan' && ph !== 'journey' && ph !== 'finale' && !stFlags.arrived_jikan)
+      );
+      if (charFogged) {
+        return (
+          '<div class="astral-scale-card is-fogged" data-axis-char="' + cid + '">' +
+            '<div class="as-header">' +
+              '<span class="as-char"><i class="as-glyph">◇</i> <b>？？？ · 推进主线启封</b></span>' +
+              '<span class="as-badge">未结识</span>' +
+            '</div>' +
+            '<div class="as-desc">此道羁绊星轨尚未启封，随主线推进结识对应人物后显现。</div>' +
+          '</div>'
+        );
+      }
       var leftGlow = Math.max(8, 100 - s.ratio);
       var rightGlow = Math.max(8, s.ratio);
       return (
@@ -2656,15 +2691,20 @@
       );
     }).join('');
 
-    var starWebHtml = buildClueStarWebSVG(c);
+    var starWebHtml = buildClueStarWebSVG(c, st);
 
     var cluesHtml = Object.keys(CLUE_META).map(function (ck) {
       var cm = CLUE_META[ck];
       var unlocked = !!c.clues[ck];
+      var clueFogged = !unlocked && (
+        isPreAcademy ||
+        isEarlyAcademyFog ||
+        (Array.isArray(cm.allowedPhases) && cm.allowedPhases.indexOf(ph) === -1)
+      );
       return (
-        '<div class="clue-tile ' + (unlocked ? 'lit' : 'dimmed') + '" data-clue="' + ck + '">' +
-          '<div class="ct-head">' + (unlocked ? '<i class="as-glyph">✦</i> ' + cm.title : '<i class="as-glyph">◇</i> 尚未启封的暗流档案') + '</div>' +
-          '<div class="ct-body">' + (unlocked ? cm.summary : cm.hint) + '</div>' +
+        '<div class="clue-tile ' + (unlocked ? 'lit' : 'dimmed') + (clueFogged ? ' is-fogged' : '') + '" data-clue="' + ck + '">' +
+          '<div class="ct-head">' + (unlocked ? '<i class="as-glyph">✦</i> ' + cm.title : (clueFogged ? '<i class="as-glyph">◇</i> ？？？ · 推进主线启封' : '<i class="as-glyph">◇</i> 尚未启封的暗流档案')) + '</div>' +
+          '<div class="ct-body">' + (unlocked ? cm.summary : (clueFogged ? '当前篇章尚无相关端倪，随主线推进至对应章节后启封线索提示。' : cm.hint)) + '</div>' +
         '</div>'
       );
     }).join('');
@@ -2678,6 +2718,22 @@
         || (pk === 'noelle_arc' && getNoelleArcMode(st) !== 'default')
         || (pk === 'aino_arc' && getAinoArcMode(st) !== 'default')
         || (pk === 'northern_vow' && canTriggerNorthernVow(st));
+      var payoffFogged = !triggered && !ready && (
+        isPreAcademy ||
+        isEarlyAcademyFog ||
+        (ph === 'academy' && (
+          HIGH_SPOILER_PAYOFFS[pk] ||
+          (pk === 'aino_arc' && !(stFlags.met_aino || ((st && st.know && st.know.aino) || 0) > 0))
+        ))
+      );
+      if (payoffFogged) {
+        return (
+          '<div class="payoff-row pending is-fogged" data-payoff="' + pk + '">' +
+            '<div class="pr-top"><span><i class="as-glyph">◇</i> <b>？？？ · 推进主线启封</b></span><em class="pr-status">◇ 迷雾未散</em></div>' +
+            '<div class="pr-desc">未启封的后章命运节点，随主线推进与暗流积累逐步揭晓。</div>' +
+          '</div>'
+        );
+      }
       var badge = triggered ? '✦ 已引爆主线变向' : (ready ? '◈ 暗流已蓄满（待主线触发）' : '◇ 潜流积蓄中');
       var cls = triggered ? 'triggered' : (ready ? 'ready' : 'pending');
       return (
@@ -2702,21 +2758,36 @@
         }).join('')
       : '<p class="causal-empty">尚未留下高权重诺言。前往各地点带「✦」的小场景或开启灵魂交谈，你的话语将在重逢时回响。</p>';
 
-    var canForecast = canOpenEndingForecast(st);
-    var tendencyCardHtml =
-      '<div class="cd-tendency-card" data-ending-tendency="' + tendency.id + '">' +
-        '<div class="cd-tendency-head">' +
-          '<span class="cd-tendency-title">◈ 终局星轨预兆 · ' + escapeHtml(tendency.title) + '</span>' +
-          '<div class="cd-tendency-actions">' +
-            '<span class="cd-tendency-badge">' + escapeHtml(tendency.badge) + ' · 收束度 ' + tendency.confidence + '%</span>' +
-            '<button type="button" id="btn-open-ending-forecast" class="cd-forecast-btn"' + (canForecast ? '' : ' disabled') +
-              ' title="' + (canForecast ? '推演当前星轨指向的终局归宿' : '推进至第三卷后启封终局推演') + '">' +
-              (canForecast ? '✦ 开启终局星轨推演 ▸' : '◇ 终局推演（第三卷启封）') +
-            '</button>' +
+    var tendencyCardHtml = maskTendency
+      ? (
+        '<div class="cd-tendency-card is-fogged" data-ending-tendency="fogged">' +
+          '<div class="cd-tendency-head">' +
+            '<span class="cd-tendency-title">◈ 终局星轨预兆 · ？？？ · 推进主线启封</span>' +
+            '<div class="cd-tendency-actions">' +
+              '<span class="cd-tendency-badge">星轨未明</span>' +
+              '<button type="button" id="btn-open-ending-forecast" class="cd-forecast-btn" disabled title="推进主线启封终局星轨推演">' +
+                '◇ ？？？ · 推进主线启封' +
+              '</button>' +
+            '</div>' +
           '</div>' +
-        '</div>' +
-        '<div class="cd-tendency-summary">' + escapeHtml(tendency.summary) + '</div>' +
-      '</div>';
+          '<div class="cd-tendency-summary">命运暗流尚处于初起阶段，推进主线剧情并点亮暗线拼图后，终局星轨的轮廓才会浮现。</div>' +
+        '</div>'
+      )
+      : (
+        '<div class="cd-tendency-card" data-ending-tendency="' + tendency.id + '">' +
+          '<div class="cd-tendency-head">' +
+            '<span class="cd-tendency-title">◈ 终局星轨预兆 · ' + escapeHtml(tendency.title) + '</span>' +
+            '<div class="cd-tendency-actions">' +
+              '<span class="cd-tendency-badge">' + escapeHtml(tendency.badge) + ' · 收束度 ' + tendency.confidence + '%</span>' +
+              '<button type="button" id="btn-open-ending-forecast" class="cd-forecast-btn"' + (canForecast ? '' : ' disabled') +
+                ' title="' + (canForecast ? '推演当前星轨指向的终局归宿' : '推进至第三卷后启封终局推演') + '">' +
+                (canForecast ? '✦ 开启终局星轨推演 ▸' : '◇ 终局推演（第三卷启封）') +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="cd-tendency-summary">' + escapeHtml(tendency.summary) + '</div>' +
+        '</div>'
+      );
 
     return (
       '<div class="causal-dashboard">' +

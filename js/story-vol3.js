@@ -632,7 +632,7 @@
   // 第4.2章 间章《风暴眼》（视角演出 pov: 'fengshen'）
   // =========================================================================
   SCENES.s_eye_of_storm = {
-    bgm: 'peaceful',
+    bgm: 'sad',
     bg: 'bg-img-study bg-study',
     loc: 'road',
     phase: 'journey',

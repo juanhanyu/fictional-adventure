@@ -826,7 +826,7 @@
       }
 
       return (
-        '<article class="sl-card' + (sl.isAuto ? ' auto' : '') + (sl.empty ? ' empty' : '') + '" data-slot="' + sl.slotId + '">' +
+        '<article class="sl-card' + (sl.isAuto ? ' auto sl-auto-wide' : '') + (sl.empty ? ' empty' : '') + '" data-slot="' + sl.slotId + '">' +
           '<div class="sl-head"><span class="sl-head-label"><span class="vn-inline-ico" aria-hidden="true">' + headIcon + '</span><span>' + titleText + '</span></span></div>' +
           body +
           '<div class="sl-actions">' + btns.join('') + '</div>' +
@@ -948,7 +948,22 @@
       ['nursery', 'hallway', 'parlor', 'garden', 'dining'].forEach(function (k) {
         if (locs[k]) locs[k].unlock = true;
       });
+    } else if (sceneId === 's_first_word') {
+      st.flags.system_awakened = 1;
+      st.flags.named = 1;
+      st.flags.brave_gift_known = 1;
+      st.ageY = 0; st.year = 0; st.month = 7; st.day = 1;
+      st.season = Math.floor(((st.month - 3 + 12) % 12) / 3);
+      st.phase = 'childhood';
+      st.tier = 0;
+      st.lv = 1;
+      st.loc = 'nursery';
+      ['nursery', 'hallway', 'parlor', 'garden', 'dining'].forEach(function (k) {
+        if (locs[k]) locs[k].unlock = true;
+      });
     } else if (isInterlude) {
+      st.flags.system_awakened = 1;
+      st.flags.brave_gift_known = 1;
       st.flags.named = 1;
       st.flags.ch_first_word = 1;
       st.flags.ch_alice_born = 1;
@@ -969,6 +984,8 @@
       });
       if (locs.garden) locs.garden.unlock = true;
     } else if (isVol3) {
+      st.flags.system_awakened = 1;
+      st.flags.brave_gift_known = 1;
       st.flags.named = 1;
       st.flags.ch_first_word = 1; st.flags.ch_alice_born = 1; st.flags.ch_beatrice_leaves = 1;
       st.flags.ch_academy = 1; st.flags.did_turnpoint = 1; st.flags.arrived_jikan = 1; st.flags.ch_black_name = 1;
@@ -989,6 +1006,8 @@
         if (locs.ice_canyon) locs.ice_canyon.unlock = true;
       }
     } else if (isVol2) {
+      st.flags.system_awakened = 1;
+      st.flags.brave_gift_known = 1;
       st.flags.named = 1;
       st.flags.ch_first_word = 1; st.flags.ch_alice_born = 1; st.flags.ch_beatrice_leaves = 1;
       st.flags.ch_academy = 1;
@@ -1012,6 +1031,8 @@
         if (L.area === '魔法大学' || L.area === '公爵府') L.unlock = true;
       });
     } else {
+      st.flags.system_awakened = 1;
+      st.flags.brave_gift_known = 1;
       st.flags.named = 1;
       var ageGuess = sceneId === 's_micro' ? 8 : (sceneId === 's_beatrice_day' || sceneId === 's_alice_affinity' ? 7 : (sceneId === 's_reno_arrive' ? 6 : 4));
       st.ageY = ageGuess; st.year = ageGuess; st.month = 6; st.season = 1;

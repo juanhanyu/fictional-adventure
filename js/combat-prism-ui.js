@@ -60,7 +60,7 @@
       name: '★★★三阶 · 星霜极限 60%',
       title: '★★★三阶 · 星霜极限 60%',
       short: '★★★60% 星霜极限',
-      multLabel: '2.05×',
+      multLabel: '1.98×',
       effect: '+3破锁 · 30%穿抗 · 限手持重术',
     },
   ];
@@ -70,6 +70,10 @@
     'ice-deduction-modal', 'rumor-overlay', 'panel', 'codex',
     'stats-overlay', 'ai-drawer', 'help-screen', 'map-overlay', 'backlog-overlay',
   ];
+  const PRISM_COMBAT_HOTKEYS = new Set([
+    'w', 'e', 'a', 'd', 'x', 'l', 'q', 'r', 'f', 'escape',
+    '1', '2', '3', '4', '5', '6', '7', '8', '9',
+  ]);
 
   function isJsdomEnv() {
     try {
@@ -117,6 +121,9 @@
     syncing: false,
     compactMulti: false,
     narrowDesktop: false,
+    shortViewport: false,
+    viewportW: 1440,
+    viewportH: 900,
     menuMode: 'root', // 'root' | 'skills' | 'amp' | 'guard' | 'assist'
     logExpanded: false,
     hoveredWingIdx: null,
@@ -148,6 +155,8 @@
     skyTopY: 0,
     skyBotY: 540,
     portraitRight: 210,
+    enemyLeftX: 0,
+    obstacles: [],
     twoColBlades: false,
     animDissolveUntil: 0,
   };
@@ -210,6 +219,12 @@
       const descEl = btn.querySelector('.csc-desc');
       const footEl = btn.querySelector('.csc-foot > span');
       const oppEl = btn.querySelector('.cb-opp-pill');
+      const expWarnEl = btn.querySelector('.csc-exp-warn');
+      const expSafeEl = btn.querySelector('.csc-exp-safe');
+      const expWarnText = expWarnEl ? expWarnEl.textContent.trim() : '';
+      const expSafeText = expSafeEl ? expSafeEl.textContent.trim() : '';
+      const expText = expWarnText || expSafeText;
+      const expKind = expWarnText ? 'warn' : (expSafeText ? 'safe' : '');
       const pathText = pathEl ? pathEl.textContent.replace(/^\d+\s*/, '').trim() : '';
       return {
         kind: 'skill',
@@ -222,6 +237,8 @@
         desc: descEl ? descEl.textContent.trim() : '',
         foot: footEl ? footEl.textContent.trim() : '',
         oppLabel: oppEl ? oppEl.textContent.trim() : '',
+        expText,
+        expKind,
         isGuard: btn.classList.contains('is-guard'),
         disabled: !!btn.disabled,
         sourceBtn: btn,
@@ -234,9 +251,9 @@
     const seg1 = Math.min(dm, 0.20);
     const seg2 = Math.max(0, Math.min(dm, 0.40) - 0.20);
     const seg3 = Math.max(0, dm - 0.40);
-    const base = 1.0 + seg1 * 1.60 + seg2 * 0.80 + seg3 * 0.50;
+    const base = 1.0 + seg1 * 1.60 + seg2 * 0.60 + seg3 * 0.40;
     if (dm >= 0.60 - 1e-4) return base * 1.30;
-    if (dm >= 0.40 - 1e-4) return base * 1.15;
+    if (dm >= 0.40 - 1e-4) return base * 1.18;
     if (dm >= 0.20 - 1e-4) return base * 1.08;
     return base;
   }
@@ -325,9 +342,29 @@
     if (b && typeof b.ampMult === 'number' && isFinite(b.ampMult)) ampMult = b.ampMult;
     else if (p && typeof p.ampMult === 'number' && isFinite(p.ampMult)) ampMult = p.ampMult;
 
+    const rawDiscount = (b && typeof b.ampDiscountFactor === 'number' && isFinite(b.ampDiscountFactor))
+      ? b.ampDiscountFactor
+      : (p && typeof p.ampDiscountFactor === 'number' && isFinite(p.ampDiscountFactor) ? p.ampDiscountFactor : 1);
+    const ampDiscountFactor = Math.max(0, rawDiscount);
+    const calcFallbackExtraMp = pct => Math.max(0, Math.round(maxMp * pct * ampDiscountFactor));
+
     const pctInt = Math.round(overcastPct * 100);
     const maxPctInt = Math.round(maxAmpCap * 100);
-    const extraMp = Math.round(maxMp * overcastPct);
+    const extraMp = (b && typeof b.ampExtraMp === 'number' && isFinite(b.ampExtraMp))
+      ? Math.max(0, Math.round(b.ampExtraMp))
+      : (p && typeof p.ampExtraMp === 'number' && isFinite(p.ampExtraMp))
+        ? Math.max(0, Math.round(p.ampExtraMp))
+        : calcFallbackExtraMp(overcastPct);
+
+    const rawTierExtraMps = (b && Array.isArray(b.ampTierExtraMps) && b.ampTierExtraMps.length > 0)
+      ? b.ampTierExtraMps
+      : (p && Array.isArray(p.ampTierExtraMps) && p.ampTierExtraMps.length > 0 ? p.ampTierExtraMps : null);
+    const ampTierExtraMps = V22_AMP_TIERS.map(t => (
+      rawTierExtraMps && typeof rawTierExtraMps[t.tier] === 'number' && isFinite(rawTierExtraMps[t.tier])
+        ? Math.max(0, Math.round(rawTierExtraMps[t.tier]))
+        : calcFallbackExtraMp(t.pct)
+    ));
+
     const lockHint = tier >= 3 ? ' · +3锁' : tier >= 2 ? ' · +2锁' : tier >= 1 ? ' · +1锁' : '';
     const multBadge = !canAmp ? 'LOCK' : `${ampMult.toFixed(2)}×`;
     const badge = !canAmp ? '不可增幅' : formatAmpBadge(overcastPct, tier);
@@ -349,6 +386,9 @@
       ampTierName,
       ampMult,
       ampTierMults,
+      ampDiscountFactor,
+      ampExtraMp: extraMp,
+      ampTierExtraMps,
       multVal: ampMult,
       enabled: canAmp,
       canAmp,
@@ -364,19 +404,49 @@
     };
   }
 
-  function readAssistItems() {
+  function readAssistItems(battleOverride) {
     const items = [];
+    const b = battleOverride || getEngineBattle();
+    const p = b && b.player ? b.player : null;
+
     const palBtn = document.getElementById('cb-btn-palace');
     if (palBtn && isVisible(palBtn)) {
-      const txt = palBtn.textContent.replace(/\s+/g, ' ').replace(/\bQ\b/g, '').trim();
+      let palFoot = '审视敌方招式死角';
+      let palCost = palBtn.disabled ? '暂不可用' : '就绪';
+      if (p) {
+        const palMax = Number(p.palaceMax) || 0;
+        const palLeft = Number(p.palaceLeft) || 0;
+        const waveTurn = Number(b.waveTurn) || 1;
+        if (palMax <= 0) {
+          palFoot = '尚未习得并行推演';
+          palCost = '未习得';
+        } else if (palLeft > 0 && waveTurn < 2) {
+          palFoot = `收集线索 ${Math.min(1, waveTurn)}/2 · 第2回合就绪`;
+          palCost = '采集中';
+        } else if (palLeft > 0 && !palBtn.disabled) {
+          palFoot = '推演就绪 · 锁定敌方招式死角';
+          palCost = `${palLeft}/${palMax} 就绪`;
+        } else if (palLeft <= 0) {
+          const hasNextWave = typeof b.waveIdx === 'number' && typeof b.totalWaves === 'number' && (b.waveIdx + 1 < b.totalWaves);
+          palFoot = hasNextWave ? '本波已推演 · 下波重置' : '本场推演机会已用尽';
+          palCost = '已使用';
+        }
+      } else {
+        const cleaned = palBtn.textContent
+          .replace(/\s+/g, ' ')
+          .replace(/\bQ\b/g, '')
+          .replace(/^冰晶宫殿[·・:\s]*/u, '')
+          .trim();
+        if (cleaned) palFoot = cleaned;
+      }
       items.push({
         kind: 'tool',
         key: 'Q',
         skillId: 'tool_palace',
         name: '冰晶宫殿',
         pathLabel: '冰镜并行',
-        foot: txt || '审视敌方招式死角',
-        cost: palBtn.disabled ? '暂不可用' : '就绪',
+        foot: palFoot,
+        cost: palCost,
         oppLabel: !palBtn.disabled && palBtn.classList.contains('pulse-hint') ? '✦ 可审视' : '',
         disabled: !!palBtn.disabled,
         sourceBtn: palBtn,
@@ -384,16 +454,22 @@
     }
 
     const assistBtn = document.getElementById('cb-btn-assist');
-    if (assistBtn && isVisible(assistBtn)) {
-      const txt = assistBtn.textContent.replace(/\s+/g, ' ').replace(/\bF\b/g, '').trim();
+    const hasConfiguredAssist = p ? !!p.bondAssist : !!(assistBtn && !assistBtn.classList.contains('locked-hint'));
+    if (hasConfiguredAssist && assistBtn && isVisible(assistBtn)) {
+      const cleanedAssist = assistBtn.textContent
+        .replace(/\s+/g, ' ')
+        .replace(/\bF\b/g, '')
+        .replace(/^心念援护[·・:\s]*/u, '')
+        .trim();
+      const used = !!(p && p.bondAssistUsed);
       items.push({
         kind: 'tool',
         key: 'F',
         skillId: 'tool_assist',
         name: '心念援护',
         pathLabel: '羁绊连携',
-        foot: txt || '羁绊支援',
-        cost: assistBtn.disabled ? '未就绪' : '可用',
+        foot: cleanedAssist || (used ? '本场已发动羁绊支援' : '呼唤羁绊角色协同援护'),
+        cost: used ? '已使用' : (assistBtn.disabled ? '未就绪' : '可用'),
         oppLabel: !assistBtn.disabled ? '✦ 可援护' : '',
         disabled: !!assistBtn.disabled,
         sourceBtn: assistBtn,
@@ -453,7 +529,6 @@
       const nextMode = val >= 0.58 ? 3 : val >= 0.38 ? 2 : val >= 0.18 ? 1 : 0;
       global.CombatEngine.setOvercast(nextMode);
     }
-    sync();
     return true;
   }
 
@@ -488,6 +563,28 @@
     return applyAmpPct(nextVal);
   }
 
+  function resolveLiveSourceBtn(item) {
+    if (!item) return null;
+    if (item.sourceBtn && item.sourceBtn.isConnected) return item.sourceBtn;
+    if (typeof document !== 'undefined') {
+      if (item.kind === 'skill' && item.skillId) {
+        const box = getSkillSourceContainer();
+        if (box) {
+          const cards = box.querySelectorAll('.cb-skill-card');
+          for (let i = 0; i < cards.length; i++) {
+            if (cards[i].getAttribute('data-sk') === item.skillId) return cards[i];
+          }
+        }
+      } else if (item.kind === 'tool') {
+        if (item.skillId === 'tool_palace') return document.getElementById('cb-btn-palace');
+        if (item.skillId === 'tool_assist') return document.getElementById('cb-btn-assist');
+        if (item.skillId === 'tool_wand') return document.getElementById('cb-btn-wand');
+        if (item.skillId === 'tool_endturn') return document.getElementById('cb-btn-endturn');
+      }
+    }
+    return item.sourceBtn || null;
+  }
+
   function dispatchRealHover(btn, isEnter) {
     if (!btn) return;
     try {
@@ -515,7 +612,8 @@
   }
 
   function triggerSourceButton(item) {
-    if (!item || !item.sourceBtn || item.sourceBtn.disabled) return false;
+    const liveBtn = resolveLiveSourceBtn(item);
+    if (!item || !liveBtn || liveBtn.disabled) return false;
     uiState.hoveredBladeIdx = null;
     uiState.hoveredWingIdx = null;
     uiState.hoveredAmpIdx = null;
@@ -533,7 +631,7 @@
       }, 280);
     }
     clearRealHover();
-    item.sourceBtn.click();
+    liveBtn.click();
     sync();
     return true;
   }
@@ -589,51 +687,110 @@
     syncLogBar();
   }
 
+  function resolveBladeVerticalBounds(absLeft, absRight, fieldH) {
+    let safeTop = 8;
+    let safeBot = Math.max(140, fieldH - 12);
+    if (uiState.compactMulti) {
+      safeTop = Math.max(safeTop, (uiState.skyTopY || 0) + 8);
+      if (uiState.skyBotY > safeTop + 120) {
+        safeBot = Math.min(safeBot, uiState.skyBotY - 8);
+      }
+    }
+    const obs = Array.isArray(uiState.obstacles) ? uiState.obstacles : [];
+    for (let i = 0; i < obs.length; i++) {
+      const ob = obs[i];
+      if (!ob) continue;
+      if (ob.right <= absLeft - 6 || ob.left >= absRight + 6) continue;
+      if (ob.kind === 'intent') {
+        safeTop = Math.max(safeTop, ob.bottom + 8);
+      } else if (ob.kind === 'lower') {
+        safeBot = Math.min(safeBot, ob.top - 8);
+      }
+    }
+    // 兜底防极矮窗口上下包络反转：优先保障叶片落于可视场内
+    if (safeBot - safeTop < 156) {
+      const relaxedBot = Math.min(fieldH - 10, Math.max(safeBot, safeTop + 156));
+      safeBot = relaxedBot;
+      if (safeBot - safeTop < 156) {
+        safeTop = Math.max(6, safeBot - 156);
+      }
+    }
+    return {
+      safeTop: Math.max(6, Math.round(safeTop)),
+      safeBot: Math.min(fieldH - 8, Math.round(safeBot)),
+    };
+  }
+
   function computeBladeGeometry(count) {
     const safeCount = Math.max(1, count);
     const fieldW = Math.max(640, uiState.lastFieldW || 1200);
     const fieldH = Math.max(360, uiState.lastFieldH || 560);
     const anchorX = Math.max(120, uiState.lastAnchorX || 260);
     const anchorY = Math.max(120, uiState.lastAnchorY || Math.round(fieldH * 0.44));
-    const compact = safeCount >= 8;
-    const isNarrowMulti = !!(uiState.compactMulti && uiState.narrowDesktop);
-    const spineH = isNarrowMulti ? 26 : 30;
-    const spineGap = isNarrowMulti ? 6 : 10;
-    const topPad = uiState.compactMulti ? Math.max(8, uiState.skyTopY + 8) : 8;
-    const botSafe = uiState.compactMulti ? Math.min(fieldH - 12, uiState.skyBotY - 8) : (fieldH - 14);
-    const minLeftFromPortrait = Math.max(24, (uiState.portraitRight - anchorX) + 12);
+    const viewportW = uiState.viewportW || (typeof window !== 'undefined' ? window.innerWidth : 1440);
+    const viewportH = uiState.viewportH || (typeof window !== 'undefined' ? window.innerHeight : 900);
+    const isTightDesktop = viewportH <= 760 || viewportW <= 1320 || !!uiState.narrowDesktop || !!uiState.shortViewport;
+    const compact = safeCount >= 8 || isTightDesktop;
+    const isCompactSpine = !!(isTightDesktop || (uiState.compactMulti && uiState.narrowDesktop));
+    const spineH = isCompactSpine ? 26 : 30;
+    const spineGap = isCompactSpine ? 6 : 10;
+    const minLeftFromPortrait = Math.max(20, (uiState.portraitRight - anchorX) + 12);
 
-    // 多敌（3~4 狼等）且技能 >= 6 时，在敌人意图栏下方与狼群立绘上方的开阔天区展开双列棱晶折翼，杜绝与立绘或信息卡重叠
-    const twoCol = !!(uiState.compactMulti && safeCount >= 6);
+    // 凡技能 >= 7（或在矮/窄桌面 <=760h / <=1320w 或多敌时 >= 6），无论单敌还是多敌一律切双列天区紧凑排版，按真实障碍物夹紧上下包络
+    const twoCol = safeCount >= 7 || (isTightDesktop && safeCount >= 6) || (!!uiState.compactMulti && safeCount >= 6);
     if (twoCol) {
       const col1Count = Math.ceil(safeCount / 2);
       const col2Count = safeCount - col1Count;
-      const minTopOffset = (topPad + spineH + spineGap) - anchorY;
-      const maxBotOffset = botSafe - anchorY;
-      const availSpan = Math.max(168, maxBotOffset - minTopOffset);
-      const bladeH = isNarrowMulti || availSpan < 220 ? 36 : 40;
-      const idealStep = bladeH + 5;
+      const bladeW = isTightDesktop ? 266 : 292;
+      let colGap = isTightDesktop ? 14 : 20;
+      let col1Left = minLeftFromPortrait;
+      let col2Left = col1Left + bladeW + colGap;
+
+      // 单敌/双敌若双列右侧逼近敌卡，优先温和收拢列距并左贴希尔维亚立绘右沿，避免与敌卡水平撞车
+      if (!uiState.compactMulti && uiState.enemyLeftX > 0) {
+        const enemyLimitInRig = (uiState.enemyLeftX - 10) - anchorX;
+        if (col2Left + bladeW > enemyLimitInRig) {
+          colGap = isTightDesktop ? 10 : 12;
+          const tightLeft = Math.max(12, (uiState.portraitRight - anchorX) + 6);
+          const neededShift = (col1Left + bladeW * 2 + colGap) - enemyLimitInRig;
+          col1Left = Math.max(tightLeft, col1Left - Math.max(0, neededShift));
+          col2Left = col1Left + bladeW + colGap;
+        }
+      }
+
+      const maxRightInRig = fieldW - anchorX - 14;
+      if (col2Left + bladeW > maxRightInRig) {
+        const overflow = (col2Left + bladeW) - maxRightInRig;
+        const shiftedLeft = Math.max(14, col1Left - overflow);
+        const remOverflow = Math.max(0, overflow - (col1Left - shiftedLeft));
+        col1Left = shiftedLeft;
+        colGap = Math.max(8, colGap - remOverflow);
+        col2Left = col1Left + bladeW + colGap;
+      }
+
+      const absLeft = anchorX + col1Left;
+      const absRight = anchorX + col2Left + bladeW + 10;
+      const { safeTop, safeBot } = resolveBladeVerticalBounds(absLeft, absRight, fieldH);
+      const minTopOffset = (safeTop + spineH + spineGap) - anchorY;
+      const maxBotOffset = safeBot - anchorY;
+      const availSpan = Math.max(116, maxBotOffset - minTopOffset);
+
+      const defaultBladeH = isTightDesktop || availSpan < 220 ? 36 : 40;
+      const fitBladeH = col1Count > 0 ? Math.floor((availSpan - Math.max(0, col1Count - 1) * 2) / col1Count) : defaultBladeH;
+      const bladeH = Math.max(30, Math.min(defaultBladeH, fitBladeH));
+      const forceHeight = bladeH < defaultBladeH;
+      const idealStep = bladeH + (isTightDesktop ? 4 : 5);
       const maxAllowedStep = col1Count > 1 ? Math.floor((availSpan - bladeH) / (col1Count - 1)) : idealStep;
-      const stepY = Math.max(bladeH + 2, Math.min(idealStep, maxAllowedStep));
+      const stepY = col1Count > 1 ? Math.max(bladeH + 1, Math.min(idealStep, maxAllowedStep)) : idealStep;
 
       const col1TotalH = (col1Count - 1) * stepY + bladeH;
-      const col2TotalH = Math.max(0, col2Count - 1) * stepY + bladeH;
+      const col2TotalH = col2Count > 0 ? ((col2Count - 1) * stepY + bladeH) : 0;
       let startY = Math.round(minTopOffset + Math.max(0, (availSpan - col1TotalH) * 0.35));
       if (startY + col1TotalH > maxBotOffset) {
         startY = Math.max(minTopOffset, maxBotOffset - col1TotalH);
       }
+      if (startY < minTopOffset) startY = minTopOffset;
       const col2StartY = startY + Math.round((col1TotalH - col2TotalH) * 0.5);
-
-      const bladeW = uiState.narrowDesktop ? 266 : 292;
-      const colGap = uiState.narrowDesktop ? 14 : 20;
-      let col1Left = minLeftFromPortrait;
-      let col2Left = col1Left + bladeW + colGap;
-      const maxRightInRig = fieldW - anchorX - 14;
-      if (col2Left + bladeW > maxRightInRig) {
-        const overflow = (col2Left + bladeW) - maxRightInRig;
-        col1Left = Math.max(18, col1Left - overflow);
-        col2Left = col1Left + bladeW + Math.max(10, colGap - Math.max(0, overflow - (minLeftFromPortrait - col1Left)));
-      }
 
       const coords = [];
       for (let i = 0; i < safeCount; i++) {
@@ -656,6 +813,7 @@
           colIdx: inCol2 ? 1 : 0,
           showHairline: !inCol2,
           bladeH,
+          forceHeight,
           tipX: curveX + 4,
           tipY: topY + Math.round(bladeH * 0.5),
           elbowX: Math.round(curveX * 0.52),
@@ -664,28 +822,33 @@
       }
       return {
         coords,
-        spineTop: Math.max(-(anchorY - 8), startY - (spineH + spineGap)),
+        spineTop: Math.max(safeTop - anchorY, startY - (spineH + spineGap)),
         spineLeft: col1Left,
         bladeH,
         twoCol: true,
       };
     }
 
-    // 单敌/首领与少技能场景：延续经典弧形单列棱晶翼
-    const minTopOffset = -(anchorY - (topPad + spineH + spineGap));
-    const maxBotOffset = botSafe - anchorY;
-    const availSpan = Math.max(220, maxBotOffset - minTopOffset);
-    const bladeH = compact ? (availSpan < 415 ? 38 : 42) : 48;
-    const idealStep = safeCount <= 4 ? 66 : safeCount === 5 ? 58 : safeCount === 6 ? 52 : safeCount === 7 ? 48 : (bladeH + 5);
+    // 少技能场景（<=5 式或宽大屏 <=6 式单敌）：延续经典弧形单列棱晶翼并动态夹紧可视边界
+    const baseX = uiState.compactMulti ? Math.max(30, minLeftFromPortrait) : Math.max(52, minLeftFromPortrait);
+    const singleW = isTightDesktop ? 320 : 352;
+    const { safeTop, safeBot } = resolveBladeVerticalBounds(anchorX + baseX, anchorX + baseX + singleW, fieldH);
+    const minTopOffset = (safeTop + spineH + spineGap) - anchorY;
+    const maxBotOffset = safeBot - anchorY;
+    const availSpan = Math.max(160, maxBotOffset - minTopOffset);
+    const defaultBladeH = compact ? (availSpan < 340 ? 38 : 42) : 48;
+    const fitBladeH = safeCount > 0 ? Math.floor((availSpan - Math.max(0, safeCount - 1) * 2) / safeCount) : defaultBladeH;
+    const bladeH = Math.max(32, Math.min(defaultBladeH, fitBladeH));
+    const forceHeight = bladeH < defaultBladeH;
+    const idealStep = safeCount <= 4 ? 64 : safeCount === 5 ? 56 : 50;
     const maxAllowedStep = safeCount > 1 ? Math.floor((availSpan - bladeH) / (safeCount - 1)) : idealStep;
-    const stepY = Math.max(bladeH + 2, Math.min(idealStep, maxAllowedStep));
+    const stepY = safeCount > 1 ? Math.max(bladeH + 2, Math.min(idealStep, maxAllowedStep)) : idealStep;
 
     const totalH = (safeCount - 1) * stepY + bladeH;
     let startY = -Math.round(totalH * 0.50);
     if (startY < minTopOffset) startY = minTopOffset;
     if (startY + totalH > maxBotOffset) startY = Math.max(minTopOffset, maxBotOffset - totalH);
 
-    const baseX = uiState.compactMulti ? Math.max(30, minLeftFromPortrait) : Math.max(52, minLeftFromPortrait);
     const arcX = uiState.compactMulti ? 16 : 28;
     const maxRot = compact ? 1.4 : 2.4;
 
@@ -704,6 +867,7 @@
         colIdx: 0,
         showHairline: true,
         bladeH,
+        forceHeight,
         tipX: curveX + 4,
         tipY: topY + Math.round(bladeH * 0.5),
         elbowX: Math.round(curveX * 0.54),
@@ -712,7 +876,7 @@
     }
     return {
       coords,
-      spineTop: Math.max(-(anchorY - topPad), startY - (spineH + spineGap)),
+      spineTop: Math.max(safeTop - anchorY, startY - (spineH + spineGap)),
       spineLeft: baseX - 8,
       bladeH,
       twoCol: false,
@@ -723,12 +887,10 @@
     const fieldH = Math.max(360, uiState.lastFieldH || 560);
     const anchorX = Math.max(120, uiState.lastAnchorX || 260);
     const anchorY = Math.max(120, uiState.lastAnchorY || Math.round(fieldH * 0.44));
-    const compact = !!(uiState.compactMulti || uiState.narrowDesktop);
+    const compact = !!(uiState.compactMulti || uiState.narrowDesktop || uiState.shortViewport);
     const isNarrowMulti = !!(uiState.compactMulti && uiState.narrowDesktop);
-    const spineH = isNarrowMulti ? 26 : 30;
-    const spineGap = isNarrowMulti ? 6 : 10;
-    const topPad = uiState.compactMulti ? Math.max(8, uiState.skyTopY + 8) : 8;
-    const botSafe = uiState.compactMulti ? Math.min(fieldH - 12, uiState.skyBotY - 8) : (fieldH - 14);
+    const spineH = (isNarrowMulti || uiState.shortViewport) ? 26 : 30;
+    const spineGap = (isNarrowMulti || uiState.shortViewport) ? 6 : 10;
 
     const tierCount = V22_AMP_TIERS.length;
     const tierH = isNarrowMulti ? 34 : (compact ? 38 : 44);
@@ -736,10 +898,12 @@
     const panelH = tierH * tierCount + fineH;
     const minLeftFromPortrait = Math.max(28, (uiState.portraitRight - anchorX) + 12);
     const panelLeft = uiState.compactMulti ? minLeftFromPortrait : Math.max(56, minLeftFromPortrait);
+    const panelW = compact ? 336 : 368;
+    const { safeTop, safeBot } = resolveBladeVerticalBounds(anchorX + panelLeft, anchorX + panelLeft + panelW, fieldH);
 
-    const minTopOffset = (topPad + spineH + spineGap) - anchorY;
-    const maxBotOffset = botSafe - anchorY;
-    let panelTop = uiState.compactMulti
+    const minTopOffset = (safeTop + spineH + spineGap) - anchorY;
+    const maxBotOffset = safeBot - anchorY;
+    let panelTop = (uiState.compactMulti || uiState.shortViewport)
       ? Math.round(minTopOffset + Math.max(0, (maxBotOffset - minTopOffset - panelH) * 0.35))
       : -Math.round(panelH * 0.48);
     if (panelTop < minTopOffset) panelTop = minTopOffset;
@@ -769,7 +933,7 @@
       panelLeft,
       panelTop,
       panelH,
-      spineTop: Math.max(-(anchorY - 8), panelTop - (spineH + spineGap)),
+      spineTop: Math.max(safeTop - anchorY, panelTop - (spineH + spineGap)),
       spineLeft: panelLeft,
       targets,
     };
@@ -812,29 +976,74 @@
     const eZone = document.getElementById('cb-enemy-zone');
     const enemyCount = eZone ? eZone.querySelectorAll('.cb-enemy-card').length : 0;
     const isMulti = enemyCount >= 3;
-    const isNarrowDesktop = typeof window !== 'undefined' && window.innerWidth <= 1320;
+    const viewportW = typeof window !== 'undefined' ? window.innerWidth : 1440;
+    const viewportH = typeof window !== 'undefined' ? window.innerHeight : 900;
+    const isShortViewport = viewportH <= 760;
+    const isNarrowDesktop = viewportW <= 1320 || isShortViewport;
+    uiState.viewportW = viewportW;
+    uiState.viewportH = viewportH;
+    uiState.shortViewport = isShortViewport;
     uiState.compactMulti = isMulti;
     uiState.narrowDesktop = isNarrowDesktop;
     uiState.rigEl.classList.toggle('compact-multi', isMulti);
     uiState.rigEl.classList.toggle('narrow-desktop', isNarrowDesktop);
 
-    // 实时测算战场中真实遮挡边界（上方敌人意图栏底沿、下方狼群立绘与我方面板顶沿、左侧立绘右沿）
+    // 实时测算战场中真实遮挡边界（上方敌人意图栏底沿、下方敌方立绘/信息卡与我方面板顶沿、左侧立绘右沿）
     let intentMaxBottom = 0;
     let enemyMinTop = fRect.height;
+    let enemyMinLeft = fRect.width;
+    const obstacles = [];
     if (eZone) {
+      eZone.querySelectorAll('.cb-enemy-card').forEach(card => {
+        const cr = card.getBoundingClientRect();
+        if (cr.width > 12 && cr.height > 12) {
+          enemyMinLeft = Math.min(enemyMinLeft, cr.left - fRect.left);
+        }
+      });
       eZone.querySelectorAll('.cb-intent-banner').forEach(el => {
         const r = el.getBoundingClientRect();
-        if (r.height > 4) intentMaxBottom = Math.max(intentMaxBottom, r.bottom - fRect.top);
+        if (r.height > 4) {
+          const bottom = r.bottom - fRect.top;
+          intentMaxBottom = Math.max(intentMaxBottom, bottom);
+          obstacles.push({
+            kind: 'intent',
+            left: r.left - fRect.left,
+            top: r.top - fRect.top,
+            right: r.right - fRect.left,
+            bottom,
+          });
+        }
       });
       eZone.querySelectorAll('.cb-px-actor, .cb-e-plate').forEach(el => {
         const r = el.getBoundingClientRect();
-        if (r.height > 12) enemyMinTop = Math.min(enemyMinTop, r.top - fRect.top);
+        if (r.height > 12) {
+          const top = r.top - fRect.top;
+          enemyMinTop = Math.min(enemyMinTop, top);
+          obstacles.push({
+            kind: 'lower',
+            left: r.left - fRect.left,
+            top,
+            right: r.right - fRect.left,
+            bottom: r.bottom - fRect.top,
+          });
+        }
       });
     }
     const playerPane = document.getElementById('cb-player-pane');
-    const paneTop = playerPane && playerPane.getBoundingClientRect().height > 12
-      ? (playerPane.getBoundingClientRect().top - fRect.top)
-      : fRect.height;
+    let paneTop = fRect.height;
+    if (playerPane) {
+      const pr = playerPane.getBoundingClientRect();
+      if (pr.height > 12) {
+        paneTop = pr.top - fRect.top;
+        obstacles.push({
+          kind: 'lower',
+          left: pr.left - fRect.left,
+          top: paneTop,
+          right: pr.right - fRect.left,
+          bottom: pr.bottom - fRect.top,
+        });
+      }
+    }
     const pActor = document.querySelector('#cb-p-portrait .cb-px-actor') || document.getElementById('cb-p-portrait');
     const portraitRight = pActor && pActor.getBoundingClientRect().width > 12
       ? Math.round(pActor.getBoundingClientRect().right - fRect.left)
@@ -843,8 +1052,10 @@
     uiState.lastFieldW = Math.round(fRect.width);
     uiState.lastFieldH = Math.round(fRect.height);
     uiState.skyTopY = Math.max(0, Math.round(intentMaxBottom));
-    uiState.skyBotY = Math.max(uiState.skyTopY + 180, Math.round(Math.min(enemyMinTop, paneTop)));
+    uiState.skyBotY = Math.max(uiState.skyTopY + 140, Math.round(Math.min(enemyMinTop, paneTop)));
     uiState.portraitRight = Math.max(120, portraitRight);
+    uiState.enemyLeftX = enemyMinLeft < fRect.width ? Math.round(enemyMinLeft) : 0;
+    uiState.obstacles = obstacles;
 
     const stageRight = pRect.right - fRect.left;
     let anchorX;
@@ -978,8 +1189,25 @@
     }
   }
 
+  function ensurePrismExposureStyle() {
+    if (typeof document === 'undefined' || document.getElementById('cb-prism-exp-inline-style')) return;
+    const style = document.createElement('style');
+    style.id = 'cb-prism-exp-inline-style';
+    style.textContent = [
+      '.cb-bl-tags-right{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;}',
+      '.cb-bl-exp{font-size:10px;font-weight:700;line-height:1.22;padding:1px 5px;white-space:nowrap;flex-shrink:0;letter-spacing:0.02em;}',
+      '.cb-bl-exp.is-warn{color:#b41f35;background:rgba(201,42,62,0.13);border-left:2px solid #c92a3e;}',
+      '.cb-bl-exp.is-safe{color:#0b6e76;background:rgba(15,139,146,0.11);border-left:2px solid #0f8b92;}',
+      '.cb-blade:not(:disabled):hover .cb-bl-exp.is-warn,.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-exp.is-warn{color:#ffe082;background:rgba(255,209,128,0.22);border-left-color:#ffd180;}',
+      '.cb-blade:not(:disabled):hover .cb-bl-exp.is-safe,.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-exp.is-safe{color:#c4f9ff;background:rgba(155,244,255,0.18);border-left-color:#9bf4ff;}',
+    ].join('');
+    (document.head || document.documentElement).appendChild(style);
+  }
+
   function buildRigDOM(field) {
     if (uiState.rigEl && uiState.rigEl.isConnected) return uiState.rigEl;
+
+    ensurePrismExposureStyle();
 
     const existing = document.getElementById('cb-prism-rig');
     if (existing) existing.remove();
@@ -1060,7 +1288,7 @@
                 <span class="cb-pw-title">演武辅助</span>
                 <span class="cb-pw-en">ASSIST</span>
               </div>
-              <span class="cb-pw-sub" id="cb-pw-assist-sub">冰晶宫殿 · 援护 · 结束回合</span>
+              <span class="cb-pw-sub" id="cb-pw-assist-sub">推演 / 回合 [X]</span>
             </div>
             <span class="cb-pw-arrow">▸</span>
           </button>
@@ -1242,7 +1470,9 @@
         if (isLocked) {
           costEl.textContent = '已锁定';
         } else {
-          const mpDelta = Math.round(ampInfo.maxMp * t.pct);
+          const mpDelta = (Array.isArray(ampInfo.ampTierExtraMps) && typeof ampInfo.ampTierExtraMps[t.tier] === 'number' && isFinite(ampInfo.ampTierExtraMps[t.tier]))
+            ? ampInfo.ampTierExtraMps[t.tier]
+            : Math.round(ampInfo.maxMp * t.pct * (ampInfo.ampDiscountFactor != null ? ampInfo.ampDiscountFactor : 1));
           costEl.textContent = `+${mpDelta} MP`;
         }
       }
@@ -1389,8 +1619,8 @@
   }
 
   function buildItemsSignature(mode, items) {
-    return `${mode}|${uiState.lastFieldW}x${uiState.lastFieldH}|${uiState.skyTopY}:${uiState.skyBotY}|${uiState.compactMulti ? 1 : 0}|` + items.map(it =>
-      `${it.key}:${it.skillId || it.name}:${it.cost}:${it.foot}:${it.oppLabel}:${it.disabled ? 1 : 0}`
+    return `${mode}|${uiState.lastFieldW}x${uiState.lastFieldH}|${uiState.skyTopY}:${uiState.skyBotY}:${uiState.enemyLeftX}|${uiState.compactMulti ? 1 : 0}|${uiState.narrowDesktop ? 1 : 0}|${uiState.shortViewport ? 1 : 0}|` + items.map((it, idx) =>
+      `${idx}:${it.key}:${it.slotIdx != null ? it.slotIdx : ''}:${it.skillId || ''}:${it.name || ''}:${it.pathLabel || ''}:${it.cost}:${it.foot || it.desc || ''}:${it.oppLabel || ''}:${it.expKind || ''}:${it.expText || ''}:${it.disabled ? 1 : 0}`
     ).join('||');
   }
 
@@ -1448,7 +1678,7 @@
       const oppSkills = enabledSkills.filter(s => !!s.oppLabel);
       const guardSkills = allSkills.filter(s => s.isGuard && !s.disabled);
       const ampInfo = readOvercastInfo(b);
-      const assistItems = readAssistItems();
+      const assistItems = readAssistItems(b);
 
       if (uiState.menuMode === 'amp' && !ampInfo.enabled) {
         uiState.menuMode = 'root';
@@ -1535,9 +1765,21 @@
       const assistSub = document.getElementById('cb-pw-assist-sub');
       if (assistSub) {
         const readyHighlights = assistItems.filter(it => !it.disabled && it.key !== 'X').map(it => it.name);
-        assistSub.textContent = readyHighlights.length
-          ? `✦ ${readyHighlights.join(' / ')} 就绪`
-          : '冰晶宫殿 · 援护 · 结束回合 [X]';
+        if (readyHighlights.length) {
+          assistSub.textContent = `✦ ${readyHighlights.join(' / ')} 就绪`;
+        } else {
+          const hasAssistItem = assistItems.some(it => it.skillId === 'tool_assist');
+          const hasWandItem = assistItems.some(it => it.skillId === 'tool_wand');
+          if (hasAssistItem && hasWandItem) {
+            assistSub.textContent = '推演 · 援护 · 晦轮杖';
+          } else if (hasAssistItem) {
+            assistSub.textContent = '推演 · 援护 · 回合 [X]';
+          } else if (hasWandItem) {
+            assistSub.textContent = '推演 · 晦轮杖 · 回合 [X]';
+          } else {
+            assistSub.textContent = '推演 / 回合 [X]';
+          }
+        }
       }
 
       // Sync Spine Mini Amp Button
@@ -1561,14 +1803,19 @@
         uiState.currentItems = [];
         syncAmpPanel(ampInfo);
       } else {
-        let listItems = [];
+        let rawItems = [];
         if (uiState.menuMode === 'skills') {
-          listItems = allSkills;
+          rawItems = allSkills;
         } else if (uiState.menuMode === 'guard') {
-          listItems = allSkills.filter(s => s.isGuard);
+          rawItems = allSkills.filter(s => s.isGuard);
         } else if (uiState.menuMode === 'assist') {
-          listItems = assistItems;
+          rawItems = assistItems;
         }
+        const listItems = rawItems.map((it, idx) => (
+          it.kind === 'skill'
+            ? Object.assign({}, it, { key: idx < 9 ? String(idx + 1) : '·', displayIdx: idx })
+            : Object.assign({}, it, { displayIdx: idx })
+        ));
         uiState.currentItems = listItems;
 
         if (uiState.cascadeListEl && uiState.menuMode !== 'root') {
@@ -1597,21 +1844,34 @@
 
               const btn = document.createElement('button');
               btn.type = 'button';
-              btn.className = 'cb-blade' + (g.compact ? ' compact' : '') + (item.oppLabel ? ' opp-ready' : '');
+              const expCls = item.expKind === 'warn' ? ' is-exp-warn' : (item.expKind === 'safe' ? ' is-exp-safe' : '');
+              btn.className = 'cb-blade' + (g.compact ? ' compact' : '') + (item.oppLabel ? ' opp-ready' : '') + expCls;
               btn.disabled = !!item.disabled;
               btn.setAttribute('data-prism-idx', String(idx));
               if (item.skillId) btn.setAttribute('data-sk', item.skillId);
+              if (g.forceHeight && g.bladeH) {
+                btn.style.height = `${g.bladeH}px`;
+                btn.style.minHeight = `${g.bladeH}px`;
+              }
 
+              const expHtml = item.expKind === 'warn'
+                ? `<span class="cb-bl-exp is-warn" title="耳目近在咫尺，施放将增加暴露度">${escapeHtml(item.expText)}</span>`
+                : (item.expKind === 'safe'
+                  ? `<span class="cb-bl-exp is-safe" title="${escapeHtml(item.expText || '隐蔽安全')}">隐蔽</span>`
+                  : '');
               const badgeHtml = item.oppLabel
                 ? `<span class="cb-bl-tag opp">${escapeHtml(item.oppLabel)}</span>`
-                : (item.pathLabel ? `<span class="cb-bl-tag">◆${escapeHtml(item.pathLabel)}</span>` : '');
+                : (!expHtml && item.pathLabel ? `<span class="cb-bl-tag">◆${escapeHtml(item.pathLabel)}</span>` : '');
+              const rightTagsHtml = (expHtml || badgeHtml)
+                ? `<span class="cb-bl-tags-right">${expHtml}${badgeHtml}</span>`
+                : '';
 
               btn.innerHTML = `
                 <span class="cb-bl-key">${escapeHtml(item.key)}</span>
                 <div class="cb-bl-content">
                   <div class="cb-bl-top">
                     <span class="cb-bl-name">${escapeHtml(item.name)}</span>
-                    ${badgeHtml}
+                    ${rightTagsHtml}
                   </div>
                   <div class="cb-bl-bot">
                     <span class="cb-bl-meta">${escapeHtml(item.foot || item.desc)}</span>
@@ -1621,21 +1881,28 @@
               `;
 
               btn.addEventListener('mouseenter', () => {
+                const liveItem = uiState.currentItems[idx];
                 uiState.hoveredBladeIdx = idx;
                 wrap.classList.add('hovered');
                 wrap.style.transform = `translateX(14px) rotate(${g.rot}deg) scale(1.025)`;
-                if (item.kind === 'skill') dispatchRealHover(item.sourceBtn, true);
+                if (liveItem && liveItem.kind === 'skill') {
+                  dispatchRealHover(resolveLiveSourceBtn(liveItem), true);
+                }
                 renderCurrentSvg();
               });
               btn.addEventListener('mouseleave', () => {
+                const liveItem = uiState.currentItems[idx];
                 if (uiState.hoveredBladeIdx === idx) uiState.hoveredBladeIdx = null;
                 wrap.classList.remove('hovered');
                 wrap.style.transform = `rotate(${g.rot}deg)`;
-                if (item.kind === 'skill') dispatchRealHover(item.sourceBtn, false);
+                if (liveItem && liveItem.kind === 'skill') {
+                  dispatchRealHover(resolveLiveSourceBtn(liveItem), false);
+                }
                 renderCurrentSvg();
               });
               btn.addEventListener('click', () => {
-                triggerSourceButton(item);
+                const liveItem = uiState.currentItems[idx];
+                if (liveItem) triggerSourceButton(liveItem);
               });
 
               wrap.appendChild(btn);
@@ -1665,11 +1932,18 @@
 
   function onKeyDown(ev) {
     if (!isActive() || shouldDissolve()) return;
-    if (ev.repeat) return;
+    if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
     const tgt = ev.target;
     if (tgt && tgt.closest && tgt.id !== 'cb-amp-slider' && tgt.closest('input, textarea, select')) return;
 
     const k = String(ev.key || '').toLowerCase();
+    if (ev.repeat) {
+      if (PRISM_COMBAT_HOTKEYS.has(k)) {
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+      }
+      return;
+    }
 
     if (k === 'escape') {
       if (uiState.logExpanded) {

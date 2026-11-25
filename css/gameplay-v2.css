@@ -412,13 +412,13 @@ body .vn-skip-brake-banner {
   z-index: 96;
 }
 
-#app #codex.overlay,
-body section#vn-backlog-modal.overlay,
-body section#vn-saveload-modal.overlay,
-body section#vn-chapters-modal.overlay,
-body section#vn-prefs-modal.overlay,
-body section#rumor-overlay.overlay,
-body section#arena-loadout-modal.overlay {
+#codex.overlay,
+#vn-backlog-modal.overlay,
+#vn-saveload-modal.overlay,
+#vn-chapters-modal.overlay,
+#vn-prefs-modal.overlay,
+#rumor-overlay.overlay,
+#arena-loadout-modal.overlay {
   background: var(--ap-modal-veil);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -426,13 +426,14 @@ body section#arena-loadout-modal.overlay {
   box-sizing: border-box;
 }
 
-#app #codex .end-card.modal-shell,
-body section#vn-backlog-modal.overlay .end-card.vn-modal-card,
-body section#vn-saveload-modal.overlay .end-card.vn-modal-card,
-body section#vn-chapters-modal.overlay .end-card.vn-modal-card,
-body section#vn-prefs-modal.overlay .end-card.vn-modal-card,
-body section#rumor-overlay.overlay .end-card.rumor-card,
-body section#arena-loadout-modal.overlay .end-card.rumor-card {
+/* 仅保留布局与变量骨架，边框/阴影/切角/折射交由后载入的 css/prism-refraction-ui.css 统一接管 */
+#codex .end-card,
+#vn-backlog-modal .end-card,
+#vn-saveload-modal .end-card,
+#vn-chapters-modal .end-card,
+#vn-prefs-modal .end-card,
+#rumor-overlay .end-card,
+#arena-loadout-modal .end-card {
   --ink: var(--ap-ink);
   --paper: var(--ap-canvas);
   --gold: var(--ap-sapphire);
@@ -452,50 +453,46 @@ body section#arena-loadout-modal.overlay .end-card.rumor-card {
   flex-direction: column;
   overflow: hidden;
   text-align: left;
-  border-radius: var(--ap-radius-lg);
-  clip-path: none;
-  background: var(--ap-canvas);
-  background-image: none;
-  border: 1px solid var(--ap-border-card);
-  border-top: 1px solid var(--ap-sapphire);
+  background: var(--pr-caustic, none), var(--pr-glass-plate, var(--ap-canvas));
+  border: 1.5px solid rgba(96, 146, 224, 0.45);
+  border-top: 2px solid var(--pr-sapphire, var(--ap-sapphire));
+  clip-path: polygon(22px 0%, 100% 0%, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0% 100%, 0% 22px);
   color: var(--ap-ink-body);
-  box-shadow: var(--ap-shadow-modal);
+  box-shadow: none;
+  filter: drop-shadow(0 24px 48px rgba(10, 30, 92, 0.22));
 }
 
-#app #codex .end-card.modal-shell {
+#codex .end-card.modal-shell {
   width: min(92vw, 940px);
   max-width: 940px;
 }
 
-body section#arena-loadout-modal.overlay .end-card.rumor-card {
-  width: min(92vw, 880px);
-  max-width: 880px;
+#arena-loadout-modal .end-card.rumor-card {
+  width: min(92vw, 900px);
+  max-width: 900px;
+  max-height: min(88dvh, 780px);
 }
 
-body section#vn-prefs-modal.overlay .end-card.vn-modal-card.vn-prefs-card {
+#vn-prefs-modal .end-card.vn-prefs-card {
   width: min(92vw, 580px);
   max-width: 580px;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
 }
 
-/* 顶部纯净雪瓷通栏抬头 + 1px 中性细线底框 */
-#app #codex .modal-head,
-body section#vn-backlog-modal.overlay .vn-modal-head,
-body section#vn-saveload-modal.overlay .vn-modal-head,
-body section#vn-chapters-modal.overlay .vn-modal-head,
-body section#vn-prefs-modal.overlay .vn-modal-head,
-body section#rumor-overlay.overlay .rumor-head,
-body section#arena-loadout-modal.overlay .rumor-head,
-body section#arena-loadout-modal.overlay .end-card.rumor-card .rumor-head {
+/* 顶部纯净雪瓷通栏抬头 + 1px 中性细线底框（低权重以配合 prism-refraction-ui.css） */
+#codex .modal-head,
+#vn-backlog-modal .vn-modal-head,
+#vn-saveload-modal .vn-modal-head,
+#vn-chapters-modal .vn-modal-head,
+#vn-prefs-modal .vn-modal-head,
+#rumor-overlay .rumor-head,
+#arena-loadout-modal .rumor-head {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   padding: 16px 22px 14px 24px;
-  background: var(--ap-canvas);
-  background-image: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(238, 246, 255, 0.44) 100%);
   border-bottom: 1px solid rgba(27, 35, 51, 0.12);
   box-shadow: none;
   color: var(--ap-ink);
@@ -691,9 +688,9 @@ body section#arena-loadout-modal.overlay .rumor-scroll {
   background: var(--ap-canvas);
 }
 
-/* 弹窗底栏与按钮体系（单主信号蓝宝实底 / 极细线框副钮） */
-body section#rumor-overlay.overlay .end-card.rumor-card .end-btns,
-body section#arena-loadout-modal.overlay .end-card.rumor-card .end-btns {
+/* 弹窗底栏与按钮体系（降低权重，交由 prism-refraction-ui.css 统一雪瓷冰晶折射样式，并保障 #arena-loadout-modal .alm-foot 对齐） */
+#rumor-overlay .end-btns,
+#arena-loadout-modal .end-btns {
   flex-shrink: 0;
   margin-top: 0;
   padding: 13px 24px 16px;
@@ -705,12 +702,12 @@ body section#arena-loadout-modal.overlay .end-card.rumor-card .end-btns {
   gap: 10px;
 }
 
-body section#rumor-overlay.overlay .end-card.rumor-card .end-btns .tbtn:not(.ghost),
-body section#arena-loadout-modal.overlay .end-card.rumor-card .end-btns .tbtn:not(.ghost),
-body section#vn-backlog-modal.overlay .end-card.vn-modal-card .tbtn:not(.ghost),
-body section#vn-saveload-modal.overlay .end-card.vn-modal-card .tbtn:not(.ghost),
-body section#vn-chapters-modal.overlay .end-card.vn-modal-card .tbtn:not(.ghost),
-body section#vn-prefs-modal.overlay .end-card.vn-modal-card .tbtn:not(.ghost) {
+#rumor-overlay .end-btns .tbtn:not(.ghost),
+#arena-loadout-modal .end-btns .tbtn:not(.ghost),
+#vn-backlog-modal .tbtn:not(.ghost),
+#vn-saveload-modal .tbtn:not(.ghost),
+#vn-chapters-modal .tbtn:not(.ghost),
+#vn-prefs-modal .tbtn:not(.ghost) {
   border-radius: var(--ap-radius-sm);
   border: 1px solid var(--ap-sapphire);
   background: var(--ap-sapphire);
@@ -722,12 +719,12 @@ body section#vn-prefs-modal.overlay .end-card.vn-modal-card .tbtn:not(.ghost) {
   transition: background 0.16s var(--ap-ease), border-color 0.16s var(--ap-ease), transform 0.16s var(--ap-ease);
 }
 
-body section#rumor-overlay.overlay .end-card.rumor-card .end-btns .tbtn:not(.ghost):hover:not(:disabled),
-body section#arena-loadout-modal.overlay .end-card.rumor-card .end-btns .tbtn:not(.ghost):hover:not(:disabled),
-body section#vn-backlog-modal.overlay .end-card.vn-modal-card .tbtn:not(.ghost):hover:not(:disabled),
-body section#vn-saveload-modal.overlay .end-card.vn-modal-card .tbtn:not(.ghost):hover:not(:disabled),
-body section#vn-chapters-modal.overlay .end-card.vn-modal-card .tbtn:not(.ghost):hover:not(:disabled),
-body section#vn-prefs-modal.overlay .end-card.vn-modal-card .tbtn:not(.ghost):hover:not(:disabled) {
+#rumor-overlay .end-btns .tbtn:not(.ghost):hover:not(:disabled),
+#arena-loadout-modal .end-btns .tbtn:not(.ghost):hover:not(:disabled),
+#vn-backlog-modal .tbtn:not(.ghost):hover:not(:disabled),
+#vn-saveload-modal .tbtn:not(.ghost):hover:not(:disabled),
+#vn-chapters-modal .tbtn:not(.ghost):hover:not(:disabled),
+#vn-prefs-modal .tbtn:not(.ghost):hover:not(:disabled) {
   background: var(--ap-sapphire-hover);
   border-color: var(--ap-sapphire-hover);
   color: #FFFFFF;
@@ -735,8 +732,8 @@ body section#vn-prefs-modal.overlay .end-card.vn-modal-card .tbtn:not(.ghost):ho
   box-shadow: 0 6px 14px -6px rgba(18, 24, 34, 0.24);
 }
 
-body section#rumor-overlay.overlay .end-card.rumor-card .end-btns .tbtn.ghost,
-body section#arena-loadout-modal.overlay .end-card.rumor-card .end-btns .tbtn.ghost {
+#rumor-overlay .end-btns .tbtn.ghost,
+#arena-loadout-modal .end-btns .tbtn.ghost {
   border-radius: var(--ap-radius-sm);
   border: 1px solid rgba(27, 35, 51, 0.22);
   background: transparent;
@@ -747,16 +744,16 @@ body section#arena-loadout-modal.overlay .end-card.rumor-card .end-btns .tbtn.gh
   transition: background 0.16s var(--ap-ease), border-color 0.16s var(--ap-ease), color 0.16s var(--ap-ease);
 }
 
-body section#rumor-overlay.overlay .end-card.rumor-card .end-btns .tbtn.ghost:hover:not(:disabled),
-body section#arena-loadout-modal.overlay .end-card.rumor-card .end-btns .tbtn.ghost:hover:not(:disabled) {
+#rumor-overlay .end-btns .tbtn.ghost:hover:not(:disabled),
+#arena-loadout-modal .end-btns .tbtn.ghost:hover:not(:disabled) {
   background: var(--ap-sky-tint);
   border-color: var(--ap-sapphire);
   color: var(--ap-sapphire);
   box-shadow: none;
 }
 
-body section#rumor-overlay.overlay .end-card.rumor-card .end-btns .tbtn:disabled,
-body section#arena-loadout-modal.overlay .end-card.rumor-card .end-btns .tbtn:disabled {
+#rumor-overlay .end-btns .tbtn:disabled,
+#arena-loadout-modal .end-btns .tbtn:disabled {
   opacity: 0.48;
   cursor: not-allowed;
   background: var(--ap-surface-tint);
@@ -891,10 +888,10 @@ body section#vn-backlog-modal.overlay .end-card.vn-modal-card .vb-empty {
   opacity: 1;
 }
 
-/* ---------- 4. 6 槽位存档与读档中心 (#vn-saveload-modal · 2px 建筑档案卡) ---------- */
+/* ---------- 4. 6 槽位存档与读档中心 (#vn-saveload-modal · 首行自动档通栏 + 3×2 手动槽) ---------- */
 .sl-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(236px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 11px;
 }
 
@@ -912,9 +909,19 @@ body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card {
   box-shadow: none;
 }
 
-body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.auto {
-  background: #F5F8FD;
-  border: 1px solid var(--ap-sapphire);
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.auto,
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.sl-auto-wide,
+.sl-grid .sl-auto-wide {
+  grid-column: 1 / -1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 18px;
+  padding: 12px 16px;
+  background: rgba(242, 247, 255, 0.92);
+  border: 1px solid rgba(22, 88, 235, 0.36);
+  border-left: 3px solid var(--ap-sapphire);
 }
 
 body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.empty {
@@ -933,9 +940,56 @@ body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-head {
   border-bottom: 1px solid rgba(27, 35, 51, 0.11);
 }
 
-body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.auto .sl-head {
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.auto .sl-head,
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.sl-auto-wide .sl-head {
   color: var(--ap-ink);
-  border-bottom-color: rgba(28, 76, 184, 0.22);
+  padding-bottom: 0;
+  padding-right: 16px;
+  border-bottom: none;
+  border-right: 1px solid rgba(28, 76, 184, 0.20);
+  white-space: nowrap;
+}
+
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.auto .sl-empty,
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.sl-auto-wide .sl-empty {
+  padding: 2px 0;
+  text-align: left;
+}
+
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.auto .sl-actions,
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.sl-auto-wide .sl-actions {
+  justify-content: flex-end;
+}
+
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.auto .sl-btn,
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.sl-auto-wide .sl-btn {
+  flex: 0 0 auto;
+  min-width: 88px;
+}
+
+@media (max-width: 720px) {
+  .sl-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.auto,
+  body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.sl-auto-wide,
+  .sl-grid .sl-auto-wide {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.auto .sl-head,
+  body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-card.sl-auto-wide .sl-head {
+    padding-right: 0;
+    padding-bottom: 6px;
+    border-right: none;
+    border-bottom: 1px solid rgba(28, 76, 184, 0.20);
+  }
 }
 
 .sl-head-label {
@@ -1816,10 +1870,10 @@ body section#arena-loadout-modal.overlay .relics-dashboard .rel-syn-card.near .r
 body section#arena-loadout-modal.overlay .relics-dashboard .rsc-pill {
   font-size: 11.5px;
   font-weight: 700;
-  padding: 2px 7px;
-  border-radius: var(--ap-radius-sm);
+  padding: 2px 8px;
+  border-radius: 0;
   background: var(--ap-sapphire);
-  border: 1px solid var(--ap-sapphire);
+  border: none;
   color: #FFFFFF;
   white-space: nowrap;
 }
@@ -1827,8 +1881,8 @@ body section#arena-loadout-modal.overlay .relics-dashboard .rsc-pill {
 .rel-syn-card.near .rsc-pill,
 #panel .relics-dashboard .rel-syn-card.near .rsc-pill,
 body section#arena-loadout-modal.overlay .relics-dashboard .rel-syn-card.near .rsc-pill {
-  background: var(--ap-sky-tint);
-  border-color: rgba(26, 110, 181, 0.34);
+  background: rgba(22, 88, 235, 0.09);
+  border: none;
   color: var(--ap-azure);
 }
 
@@ -1862,9 +1916,9 @@ body section#arena-loadout-modal.overlay .relics-dashboard .rsc-next {
 body section#arena-loadout-modal.overlay .relics-dashboard .rel-syn-dormant-chip {
   font-size: 11.5px;
   padding: 2px 8px;
-  border-radius: var(--ap-radius-sm);
-  background: var(--ap-surface);
-  border: 1px dashed rgba(27, 35, 51, 0.20);
+  border-radius: 0;
+  background: rgba(27, 35, 51, 0.045);
+  border: none;
   color: var(--ap-ink-muted);
 }
 
@@ -1964,19 +2018,21 @@ body section#arena-loadout-modal.overlay .relics-dashboard .rel-slot-fx {
   color: var(--ap-ink-body);
 }
 
+/* 卡片内部「佩带 / 卸下」操作项改为无框浅色徽条 + 1px 底线，消除三层框套框 */
 .rel-mini-btn,
 .rel-act-btn,
 #panel .relics-dashboard .rel-mini-btn,
 #panel .relics-dashboard .rel-act-btn,
 body section#arena-loadout-modal.overlay .relics-dashboard .rel-mini-btn,
 body section#arena-loadout-modal.overlay .relics-dashboard .rel-act-btn {
-  padding: 4px 10px;
-  border-radius: var(--ap-radius-sm);
+  padding: 3px 10px;
+  border-radius: 0;
   font-size: 12px;
   font-weight: 700;
-  border: 1px solid rgba(27, 35, 51, 0.22);
-  background: transparent;
-  color: var(--ap-ink);
+  border: none;
+  border-bottom: 1px solid rgba(22, 88, 235, 0.34);
+  background: rgba(22, 88, 235, 0.08);
+  color: var(--ap-sapphire);
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
@@ -1989,7 +2045,7 @@ body section#arena-loadout-modal.overlay .relics-dashboard .rel-act-btn {
 #panel .relics-dashboard .rel-act-btn:hover,
 body section#arena-loadout-modal.overlay .relics-dashboard .rel-mini-btn:hover,
 body section#arena-loadout-modal.overlay .relics-dashboard .rel-act-btn:hover {
-  border-color: var(--ap-sapphire);
+  border-bottom-color: var(--ap-sapphire);
   background: var(--ap-sapphire);
   color: #FFFFFF;
 }
@@ -1997,17 +2053,63 @@ body section#arena-loadout-modal.overlay .relics-dashboard .rel-act-btn:hover {
 .rel-act-btn.on,
 #panel .relics-dashboard .rel-act-btn.on,
 body section#arena-loadout-modal.overlay .relics-dashboard .rel-act-btn.on {
-  border-color: var(--ap-sapphire);
-  background: var(--ap-sapphire);
-  color: #FFFFFF;
+  border: none;
+  border-bottom: 1.5px solid var(--ap-sapphire);
+  background: rgba(22, 88, 235, 0.15);
+  color: var(--ap-sapphire-deep);
 }
 
 .rel-act-btn.on:hover,
 #panel .relics-dashboard .rel-act-btn.on:hover,
 body section#arena-loadout-modal.overlay .relics-dashboard .rel-act-btn.on:hover {
-  border-color: var(--ap-crimson);
+  border-bottom-color: var(--ap-crimson);
   background: var(--ap-crimson);
   color: #FFFFFF;
+}
+
+/* 演武沙盒独立滚动主区 + 固定底部关闭栏 */
+#arena-loadout-modal .alm-body-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#arena-loadout-modal .alm-body-wrap > .rumor-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  background: transparent;
+}
+
+#arena-loadout-modal .alm-foot {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 11px 22px 13px;
+  border-top: 1px solid rgba(27, 35, 51, 0.12);
+  background: rgba(250, 252, 255, 0.90);
+}
+
+#arena-loadout-modal .alm-foot-meta {
+  font-size: 12px;
+  color: var(--ap-ink-muted);
+}
+
+#arena-loadout-modal .alm-foot-meta b {
+  color: var(--ap-sapphire);
+  font-weight: 700;
+}
+
+#arena-loadout-modal .alm-foot-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .rel-sec-title,
@@ -2393,26 +2495,33 @@ body section#arena-loadout-modal.overlay .relics-dashboard .rc-lore {
 }
 
 /* ---------- 10. 典藏图鉴馆 (#codex) 五合一刊印编辑体系 ---------- */
-#app #codex .end-card.modal-shell > .modal-foot {
-  display: none;
+#codex .end-card.modal-shell > .modal-foot {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 11px 24px 13px;
+  border-top: 1px solid rgba(27, 35, 51, 0.12);
+  background: rgba(250, 252, 255, 0.88);
 }
 
 #app #codex .end-card.modal-shell > .modal-scroll,
 #app #codex .codex-scroll,
 #app #codex #codex-body {
   position: relative;
-  padding: 14px 26px 40px 24px;
-  background: var(--ap-canvas);
+  padding: 14px 26px 32px 24px;
+  background: transparent;
 }
 
 #app #codex .end-card.modal-shell > .codex-scroll-fade {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
-  height: 48px;
-  border-radius: 0 0 3px 3px;
-  background: linear-gradient(to bottom, rgba(250, 251, 253, 0) 0%, rgba(250, 251, 253, 0.88) 64%, #FAFBFD 100%);
+  bottom: 58px;
+  height: 36px;
+  border-radius: 0;
+  background: linear-gradient(to bottom, rgba(250, 251, 253, 0) 0%, rgba(250, 251, 253, 0.86) 66%, #FAFBFD 100%);
   pointer-events: none;
   z-index: 6;
   opacity: 1;

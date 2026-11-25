@@ -437,24 +437,24 @@
   width: 34px;
   height: 34px;
   border-radius: 0;
-  border: 1px solid var(--cb-hairline);
+  border: none;
   background: transparent;
   color: var(--cb-ink-muted);
-  font-size: 19px;
-  font-weight: 600;
+  font-size: 21px;
+  font-weight: 400;
   line-height: 1;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-shadow: none;
-  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+  transition: background 0.16s ease, color 0.16s ease;
 }
 
 #am-close.arena-close-x:hover,
 #arena-overlay .arena-close-x:hover {
   background: var(--cb-crimson-soft);
-  border-color: var(--cb-crimson);
+  border: none;
   color: var(--cb-crimson-deep);
 }
 
@@ -682,18 +682,23 @@
   flex-wrap: wrap;
 }
 
-#arena-overlay .arena-loadout-bar .arena-mode-chip {
-  padding: 4px 10px;
-  border: 1px solid var(--cb-hairline);
+#arena-overlay .arena-loadout-bar .arena-mode-chip,
+#arena-overlay #am-open-loadout {
+  padding: 4px 12px;
+  border: none;
+  border-bottom: 1.5px solid rgba(22, 88, 235, 0.42);
   border-radius: 0;
-  background: #FFFFFF;
-  color: var(--cb-ink-body);
+  background: rgba(22, 88, 235, 0.06);
+  color: #1658EB;
+  font-weight: 700;
+  box-shadow: none;
 }
 
-#arena-overlay .arena-loadout-bar .arena-mode-chip:hover:not(:disabled) {
-  border-color: var(--cb-sapphire);
-  color: var(--cb-sapphire);
-  background: var(--cb-sapphire-soft);
+#arena-overlay .arena-loadout-bar .arena-mode-chip:hover:not(:disabled),
+#arena-overlay #am-open-loadout:hover:not(:disabled) {
+  border-bottom-color: #1658EB;
+  color: #0E2B78;
+  background: rgba(22, 88, 235, 0.13);
 }
 
 /* 九幕试炼 3×3 建筑细线图版（1440×900 与 1280×720 全九幕零裁切） */
@@ -1891,9 +1896,9 @@ body.cb-battle-active #fx {
 
 #battle-screen .cb-stat-track {
   position: relative;
-  height: 4px;
+  height: 7px;
   border-radius: 0;
-  background: rgba(27, 35, 51, 0.11);
+  background: rgba(27, 35, 51, 0.12);
   overflow: hidden;
   border: none;
 }
@@ -1918,14 +1923,20 @@ body.cb-battle-active #fx {
   position: absolute;
   top: 0;
   bottom: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.94) 0%,
-    rgba(107, 197, 248, 0.9) 46%,
-    rgba(28, 76, 184, 0.86) 100%
-  );
-  box-shadow: inset 1.5px 0 0 rgba(255, 255, 255, 0.94);
-  transition: left 0.2s ease, width 0.2s ease;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255, 255, 255, 0.90) 0px,
+      rgba(255, 255, 255, 0.90) 3px,
+      rgba(56, 189, 248, 0.72) 3px,
+      rgba(56, 189, 248, 0.72) 6px
+    );
+  outline: 1px dashed rgba(125, 211, 252, 0.96);
+  outline-offset: -1px;
+  box-shadow: inset 1.5px 0 0 rgba(255, 255, 255, 0.96);
+  transition: left 0.18s ease, width 0.18s ease;
 }
 
 .cb-buff-list {
@@ -2283,16 +2294,16 @@ body.cb-battle-active #fx {
 /* 悬停/点击意图详情浮层 */
 .cb-intent-tip {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 4px);
   left: 0;
   right: 0;
   z-index: 45;
-  padding: 10px 12px;
+  padding: 7px 10px;
   border-radius: 0;
   background: #FAFBFD;
   border: 1px solid var(--cb-hairline-strong);
   border-top: 2px solid var(--cb-sapphire);
-  box-shadow: 0 14px 30px rgba(18, 24, 34, 0.16);
+  box-shadow: 0 12px 24px rgba(18, 24, 34, 0.14);
   color: var(--cb-ink-body);
   text-align: left;
   opacity: 0;
@@ -2316,19 +2327,19 @@ body.cb-battle-active #fx {
   font-weight: 800;
   color: var(--cb-sapphire);
   letter-spacing: 0.05em;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
 }
 
 .ib-tip-move {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 800;
   color: var(--cb-ink);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .ib-tip-hint {
-  font-size: 11.5px;
-  line-height: 1.54;
+  font-size: 11px;
+  line-height: 1.44;
   color: var(--cb-ink-body);
 }
 
@@ -2429,7 +2440,7 @@ body.cb-battle-active #fx {
   filter: drop-shadow(0 12px 18px rgba(18, 24, 34, 0.34));
 }
 
-/* 敌方雪瓷建筑底座名牌（3px 锐利 HP 条 + overflow: visible 确保特性浮层零裁切） */
+/* 敌方雪瓷建筑底座名牌（7px 清晰 HP/MP 条 + overflow: visible 确保特性浮层零裁切） */
 .cb-e-plate {
   position: relative;
   z-index: 6;
@@ -2445,7 +2456,7 @@ body.cb-battle-active #fx {
 }
 
 #battle-screen .cb-e-plate .cb-stat-track {
-  height: 3px;
+  height: 7px;
   border-radius: 0;
 }
 
@@ -2788,10 +2799,10 @@ body.cb-battle-active #fx {
 /* ---------- 底部雪瓷书志指令坞 (.cb-deck) ---------- */
 .cb-deck {
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr) 128px;
+  grid-template-columns: 274px minmax(0, 1fr) 124px;
   gap: 12px;
   align-items: stretch;
-  padding: 10px 12px;
+  padding: 9px 12px;
   border-radius: 0;
   background: rgba(250, 251, 253, 0.97);
   contain: layout style;
@@ -2803,13 +2814,13 @@ body.cb-battle-active #fx {
 .cb-left-console {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
   min-width: 0;
 }
 
 /* 魔战倾注：去方框套娃，改以 1px 底线轻隔 */
 .cb-overcast-box {
-  padding: 2px 2px 7px;
+  padding: 0 2px 6px;
   border-radius: 0;
   background: transparent;
   border: none;
@@ -2818,13 +2829,14 @@ body.cb-battle-active #fx {
 
 .cb-oc-head {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
   font-size: 11px;
   font-weight: 600;
   color: var(--cb-ink-muted);
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .cb-oc-head > span:first-child {
@@ -2832,13 +2844,16 @@ body.cb-battle-active #fx {
   align-items: center;
   gap: 5px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .cb-oc-mult {
   display: block;
-  width: 100%;
+  min-width: 0;
+  flex: 1;
+  text-align: right;
   color: var(--cb-sapphire);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -2848,7 +2863,7 @@ body.cb-battle-active #fx {
 
 .cb-oc-seg {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0;
   border: 1px solid var(--cb-hairline);
   border-radius: 0;
@@ -2856,20 +2871,32 @@ body.cb-battle-active #fx {
 }
 
 .cb-oc-btn {
-  padding: 5px 4px;
+  padding: 4px 5px;
   border-radius: 0;
   border: none;
   border-right: 1px solid var(--cb-hairline);
+  border-bottom: 1px solid var(--cb-hairline);
   background: #FFFFFF;
   color: var(--cb-ink-body);
   font-size: 11px;
   font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
   cursor: pointer;
   transition: background 0.16s ease, color 0.16s ease;
 }
 
+.cb-oc-btn:nth-child(2n),
 .cb-oc-btn:last-child {
   border-right: none;
+}
+
+.cb-oc-btn:nth-last-child(-n+2) {
+  border-bottom: none;
+}
+
+.cb-oc-btn:nth-child(odd):last-child {
+  grid-column: 1 / -1;
 }
 
 .cb-oc-btn:hover:not(:disabled) {
@@ -2885,7 +2912,7 @@ body.cb-battle-active #fx {
 }
 
 .cb-oc-btn.all-in.active {
-  background: var(--cb-crimson);
+  background: linear-gradient(108deg, #103FA8 0%, #1658EB 64%, #C4A46C 100%);
   color: #FFFFFF;
   box-shadow: none;
 }
@@ -2898,16 +2925,18 @@ body.cb-battle-active #fx {
 /* 战报手账窗（无外框浅底块 + 1px 顶细线，严格去嵌套圆框）+ 7 套 WCAG-AA 语义墨色 */
 #battle-screen .cb-log-box {
   flex: 1;
-  min-height: 82px;
+  min-height: 74px;
   max-height: 114px;
   overflow-y: auto;
-  padding: 6px 9px;
+  padding: 8px 9px 7px;
+  scroll-padding-top: 8px;
+  box-sizing: border-box;
   border-radius: 0;
   background: rgba(243, 246, 251, 0.72);
   border: none;
   border-left: 2px solid var(--cb-hairline);
   font-size: 11.5px;
-  line-height: 1.54;
+  line-height: 1.48;
   color: #26344B;
 }
 
@@ -3219,7 +3248,7 @@ body.cb-battle-active #fx {
   font-weight: 600;
 }
 
-/* ==================== 全屏唯一雕刻宝石主 CTA：「结束回合」 (#cb-btn-endturn) ==================== */
+/* ==================== 清透雪瓷皇家蓝主 CTA：「结束回合」 (#cb-btn-endturn) ==================== */
 .cb-turn-col {
   display: flex;
   align-items: center;
@@ -3240,27 +3269,22 @@ body.cb-battle-active #fx {
   gap: 7px;
   cursor: pointer;
   color: #FFFFFF;
-  border: 1px solid #0C2566;
+  border: none;
+  border-top: 1.5px solid rgba(186, 230, 253, 0.90);
+  border-bottom: 1.5px solid rgba(22, 88, 235, 0.72);
   border-radius: 0;
   background:
-    linear-gradient(135deg, rgba(107, 197, 248, 0.28) 0%, rgba(107, 197, 248, 0.04) 45%, transparent 46%),
-    linear-gradient(315deg, rgba(255, 255, 255, 0.14) 0%, transparent 40%),
-    linear-gradient(155deg, #1E54CC 0%, #143B96 52%, #0C2566 100%);
+    linear-gradient(132deg, rgba(186, 230, 253, 0.28) 0%, rgba(125, 211, 252, 0.06) 44%, transparent 46%),
+    linear-gradient(162deg, #3B82F6 0%, #1658EB 54%, #1244BA 100%);
   box-shadow:
-    0 10px 24px rgba(18, 24, 34, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.34),
-    inset 0 -1px 0 rgba(18, 24, 34, 0.42);
+    0 8px 20px rgba(22, 88, 235, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
   transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
 
-/* 内部建筑细线晶框 */
 .cb-endturn-btn::before {
-  content: "";
-  position: absolute;
-  inset: 4px;
-  border-radius: 0;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  pointer-events: none;
+  content: none;
+  display: none;
 }
 
 /* 内部对角棱镜切面折射光 */
@@ -3271,7 +3295,7 @@ body.cb-battle-active #fx {
   left: -75%;
   width: 55%;
   height: 160%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.26), transparent);
   transform: rotate(22deg);
   pointer-events: none;
   transition: left 0.45s cubic-bezier(0.22, 1, 0.36, 1);
@@ -3279,14 +3303,12 @@ body.cb-battle-active #fx {
 
 .cb-endturn-btn:hover:not(:disabled) {
   background:
-    linear-gradient(135deg, rgba(107, 197, 248, 0.34) 0%, rgba(107, 197, 248, 0.06) 46%, transparent 47%),
-    linear-gradient(315deg, rgba(255, 255, 255, 0.18) 0%, transparent 42%),
-    linear-gradient(155deg, #245FD9 0%, #1844AD 52%, #0E2B75 100%);
+    linear-gradient(132deg, rgba(217, 243, 255, 0.36) 0%, rgba(125, 211, 252, 0.08) 46%, transparent 48%),
+    linear-gradient(162deg, #4B8FF8 0%, #1E64F2 54%, #154EC9 100%);
   transform: translateY(-2px);
   box-shadow:
-    0 14px 28px rgba(18, 24, 34, 0.26),
-    inset 0 1px 0 rgba(255, 255, 255, 0.42),
-    inset 0 -1px 0 rgba(18, 24, 34, 0.45);
+    0 12px 26px rgba(22, 88, 235, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.52);
 }
 
 .cb-endturn-btn:hover:not(:disabled)::after {
@@ -3302,12 +3324,12 @@ body.cb-battle-active #fx {
 .cb-endturn-seal {
   position: relative;
   z-index: 1;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 0;
   transform: rotate(45deg);
-  border: 1px solid rgba(255, 255, 255, 0.54);
-  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  background: rgba(255, 255, 255, 0.18);
   color: #FFFFFF;
   display: flex;
   align-items: center;
@@ -3328,8 +3350,8 @@ body.cb-battle-active #fx {
 }
 
 .cb-endturn-btn .cb-kbd {
-  background: rgba(255, 255, 255, 0.16);
-  border-bottom-color: rgba(255, 255, 255, 0.56);
+  background: rgba(255, 255, 255, 0.20);
+  border-bottom-color: rgba(255, 255, 255, 0.62);
   color: #FFFFFF;
 }
 
@@ -3338,7 +3360,7 @@ body.cb-battle-active #fx {
   z-index: 1;
   font-size: 11px;
   line-height: 1.35;
-  color: rgba(236, 244, 255, 0.92);
+  color: rgba(238, 246, 255, 0.94);
   text-align: center;
 }
 
@@ -3752,23 +3774,23 @@ body.cb-battle-active #fx {
   width: 34px;
   height: 34px;
   border-radius: 0;
-  border: 1px solid var(--cb-hairline);
+  border: none;
   background: transparent;
   color: var(--cb-ink-muted);
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 21px;
+  font-weight: 400;
   line-height: 1;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-shadow: none;
-  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+  transition: background 0.16s ease, color 0.16s ease;
 }
 
 #cp-close-x:hover {
   background: var(--cb-crimson-soft);
-  border-color: var(--cb-crimson);
+  border: none;
   color: var(--cb-crimson-deep);
 }
 
@@ -3918,23 +3940,26 @@ body.cb-battle-active #fx {
   gap: 6px 10px;
 }
 
-/* 细银画框中的希尔维亚立绘 */
+/* 无套框六角冰晶希尔维亚立绘 */
 .cr-portrait-badge {
   flex-shrink: 0;
   width: 56px;
-  height: 56px;
-  padding: 2px;
+  height: 58px;
+  padding: 0;
   border-radius: 0;
   overflow: hidden;
-  border: 1px solid #B5C2D6;
-  background: #FFFFFF;
-  box-shadow: 0 3px 10px rgba(18, 24, 34, 0.08);
+  border: none;
+  background: transparent;
+  clip-path: polygon(50% 0%, 100% 22%, 100% 78%, 50% 100%, 0% 78%, 0% 22%);
+  box-shadow: none;
+  filter: drop-shadow(0 5px 12px rgba(14, 43, 120, 0.16));
 }
 
 .cr-portrait-badge.is-loss {
-  border-color: rgba(196, 37, 68, 0.48);
-  background: #FFF9FA;
-  box-shadow: 0 3px 10px rgba(18, 24, 34, 0.08);
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  filter: drop-shadow(0 5px 12px rgba(196, 37, 68, 0.20));
 }
 
 .cr-portrait-badge img {
@@ -3987,7 +4012,7 @@ body.cb-battle-active #fx {
   margin-bottom: 14px;
 }
 
-/* 雕刻蓝宝石 S 菱形纹章 */
+/* 单层清透皇家蓝宝石 S 菱形纹章（无双层套框） */
 .cr-grade,
 .cr-grade-badge {
   position: relative;
@@ -3996,8 +4021,8 @@ body.cb-battle-active #fx {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 56px;
-  height: 56px;
+  width: 54px;
+  height: 54px;
   margin-right: 4px;
   border-radius: 0;
   border: none;
@@ -4013,29 +4038,23 @@ body.cb-battle-active #fx {
 .cr-grade-badge::before {
   content: "";
   position: absolute;
-  inset: 7px;
+  inset: 6px;
   transform: rotate(45deg);
   border-radius: 0;
   background:
-    linear-gradient(135deg, rgba(107, 197, 248, 0.34) 0%, transparent 48%),
-    linear-gradient(155deg, #1E54CC 0%, #143B96 52%, #0C2566 100%);
-  border: 1px solid #0C2566;
+    linear-gradient(135deg, rgba(186, 230, 253, 0.36) 0%, transparent 48%),
+    linear-gradient(155deg, #3B82F6 0%, #1658EB 55%, #1244BA 100%);
+  border: none;
   box-shadow:
-    0 6px 16px rgba(18, 24, 34, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.38);
+    0 6px 16px rgba(22, 88, 235, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.44);
   z-index: -1;
 }
 
 .cr-grade::after,
 .cr-grade-badge::after {
-  content: "";
-  position: absolute;
-  inset: 2px;
-  transform: rotate(45deg);
-  border-radius: 0;
-  border: 1px solid rgba(28, 76, 184, 0.34);
-  pointer-events: none;
-  z-index: -2;
+  content: none;
+  display: none;
 }
 
 .cr-grade.grade-S {
@@ -4047,13 +4066,9 @@ body.cb-battle-active #fx {
 }
 
 .cr-grade.grade-A::before {
-  background: linear-gradient(155deg, #FFFFFF 0%, #EDF7FD 100%);
-  border-color: var(--cb-ice-deep);
-  box-shadow: 0 5px 14px rgba(18, 24, 34, 0.12);
-}
-
-.cr-grade.grade-A::after {
-  border-color: rgba(18, 103, 168, 0.3);
+  background: linear-gradient(155deg, #FFFFFF 0%, #E6F4FE 100%);
+  border: 1px solid rgba(18, 103, 168, 0.42);
+  box-shadow: 0 5px 14px rgba(18, 24, 34, 0.10);
 }
 
 .cr-grade.grade-B {
@@ -4061,13 +4076,9 @@ body.cb-battle-active #fx {
 }
 
 .cr-grade.grade-B::before {
-  background: linear-gradient(155deg, #FFFFFF 0%, #F1FAF6 100%);
-  border-color: var(--cb-emerald);
-  box-shadow: 0 5px 14px rgba(18, 24, 34, 0.12);
-}
-
-.cr-grade.grade-B::after {
-  border-color: rgba(14, 124, 91, 0.3);
+  background: linear-gradient(155deg, #FFFFFF 0%, #ECF9F3 100%);
+  border: 1px solid rgba(14, 124, 91, 0.40);
+  box-shadow: 0 5px 14px rgba(18, 24, 34, 0.10);
 }
 
 .cr-grade.grade-F {
@@ -4075,13 +4086,9 @@ body.cb-battle-active #fx {
 }
 
 .cr-grade.grade-F::before {
-  background: linear-gradient(155deg, #FFFFFF 0%, #FDF3F5 100%);
-  border-color: var(--cb-crimson);
-  box-shadow: 0 5px 14px rgba(18, 24, 34, 0.12);
-}
-
-.cr-grade.grade-F::after {
-  border-color: rgba(196, 37, 68, 0.3);
+  background: linear-gradient(155deg, #FFFFFF 0%, #FDF2F5 100%);
+  border: 1px solid rgba(196, 37, 68, 0.42);
+  box-shadow: 0 5px 14px rgba(18, 24, 34, 0.10);
 }
 
 .cr-metrics {
@@ -4314,56 +4321,52 @@ body.cb-battle-active #fx {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-width: 132px;
-  padding: 10px 22px;
+  min-width: 136px;
+  padding: 10px 26px;
   border-radius: 0;
   background:
-    linear-gradient(135deg, rgba(107, 197, 248, 0.26) 0%, rgba(107, 197, 248, 0.04) 45%, transparent 46%),
-    linear-gradient(155deg, #1E54CC 0%, #143B96 52%, #0C2566 100%);
-  border: 1px solid #0C2566;
+    linear-gradient(132deg, rgba(186, 230, 253, 0.28) 0%, rgba(125, 211, 252, 0.06) 44%, transparent 46%),
+    linear-gradient(162deg, #3B82F6 0%, #1658EB 54%, #1244BA 100%);
+  border: none;
+  border-top: 1.5px solid rgba(186, 230, 253, 0.90);
   color: #FFFFFF;
   font-family: var(--font-serif);
   font-size: 13.5px;
   font-weight: 700;
   letter-spacing: 0.08em;
-  box-shadow:
-    0 8px 20px rgba(18, 24, 34, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.34);
+  clip-path: polygon(12px 0%, calc(100% - 12px) 0%, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0% 50%);
+  box-shadow: none;
+  filter: drop-shadow(0 8px 18px rgba(22, 88, 235, 0.24));
   cursor: pointer;
-  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease, filter 0.18s ease;
 }
 
 #cb-palace-modal .tbtn:not(.ghost)::before,
 #cb-result-modal .tbtn:not(.ghost)::before {
-  content: "";
-  position: absolute;
-  inset: 3px;
-  border-radius: 0;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  pointer-events: none;
+  content: none;
+  display: none;
 }
 
 #cb-palace-modal .tbtn:hover,
 #cb-result-modal .tbtn:hover {
   background:
-    linear-gradient(135deg, rgba(107, 197, 248, 0.34) 0%, rgba(107, 197, 248, 0.06) 46%, transparent 47%),
-    linear-gradient(155deg, #245FD9 0%, #1844AD 52%, #0E2B75 100%);
-  border-color: #0C2566;
+    linear-gradient(132deg, rgba(217, 243, 255, 0.34) 0%, rgba(125, 211, 252, 0.08) 46%, transparent 48%),
+    linear-gradient(162deg, #4B8FF8 0%, #1E64F2 54%, #154EC9 100%);
   color: #FFFFFF;
   transform: translateY(-1px);
-  box-shadow:
-    0 12px 24px rgba(18, 24, 34, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  filter: drop-shadow(0 10px 22px rgba(22, 88, 235, 0.32));
 }
 
 #cb-palace-modal .tbtn.ghost,
 #cb-result-modal .tbtn.ghost {
   min-width: auto;
-  padding: 8px 6px;
+  padding: 8px 14px;
   border-radius: 0;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--cb-hairline-strong);
+  clip-path: none;
+  filter: none;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(45, 92, 186, 0.28);
+  border-left: 2.5px solid rgba(22, 88, 235, 0.56);
   color: var(--cb-ink-body);
   font-family: var(--font-sans);
   font-size: 12.5px;
@@ -4374,11 +4377,12 @@ body.cb-battle-active #fx {
 
 #cb-palace-modal .tbtn.ghost:hover,
 #cb-result-modal .tbtn.ghost:hover {
-  background: transparent;
-  border-bottom-color: var(--cb-sapphire);
+  background: rgba(226, 241, 255, 0.92);
+  border-color: var(--cb-sapphire);
   color: var(--cb-sapphire);
   transform: none;
   box-shadow: none;
+  filter: none;
 }
 
 /* Boss 50% 二阶段雪瓷切入转场 (.cb-phase2-banner) */
@@ -4530,15 +4534,26 @@ body.cb-battle-active #fx {
   }
 }
 
-/* 1280×720 指令坞、战报手账与技能牌精修（置于基础规则之后确保优先级生效） */
+/* 1280×720 指令坞、战报手账、意图浮框与技能牌精修（置于基础规则之后确保优先级生效） */
 @media (max-width: 1360px), (max-height: 760px) {
+  .cb-intent-tip {
+    top: calc(100% + 3px);
+    left: auto;
+    right: 0;
+    width: min(100%, 260px);
+    max-height: 108px;
+    overflow-y: auto;
+    padding: 6px 9px;
+  }
+
   .cb-deck {
+    grid-template-columns: 260px minmax(0, 1fr) 114px;
     padding: 7px 10px;
-    gap: 10px;
+    gap: 9px;
   }
 
   .cb-overcast-box {
-    padding: 1px 2px 5px;
+    padding: 0 2px 5px;
   }
 
   .cb-oc-head {
@@ -4546,16 +4561,17 @@ body.cb-battle-active #fx {
   }
 
   .cb-oc-btn {
-    padding: 4px 4px;
+    padding: 3px 4px;
   }
 
   #battle-screen .cb-log-box {
-    min-height: 66px;
-    max-height: 92px;
+    min-height: 68px;
+    max-height: 88px;
     overflow-y: auto;
     font-size: 11.5px;
-    line-height: 1.42;
-    padding: 6px 8px;
+    line-height: 1.44;
+    padding: 8px 8px 6px;
+    scroll-padding-top: 8px;
   }
 
   #b-actions .cb-skill-card {
@@ -5958,7 +5974,7 @@ body.cb-battle-active #fx {
   }
 
   #battle-screen .cb-e-plate .cb-stat-track {
-    height: 3px;
+    height: 6px;
   }
 
   .cb-e-info {

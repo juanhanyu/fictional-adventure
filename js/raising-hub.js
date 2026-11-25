@@ -478,9 +478,17 @@
     var st = targetS || getS();
     if (!st || typeof document === 'undefined') return false;
     if (!st.freeRoam) return false;
+    if (Number(st.ageY || 0) < 1) return false;
     var body = document.body;
     if (!body) return false;
-    if (body.classList.contains('ui-hidden') || body.classList.contains('pov-hidden') || body.classList.contains('cg-mode')) {
+    if (
+      body.classList.contains('ui-hidden') ||
+      body.classList.contains('pov-hidden') ||
+      body.classList.contains('cg-mode') ||
+      body.classList.contains('stage-pre-system') ||
+      body.classList.contains('stage-story') ||
+      body.classList.contains('stage-infant')
+    ) {
       return false;
     }
     var gs = document.getElementById('game-screen');
@@ -749,12 +757,26 @@
       });
     }
 
-    // 未读火漆来信角标
+    // 未读火漆来信角标与子入口渐进解锁（严格保留原有 DOM ID）
+    var ageY = Number(st.ageY || 0);
     var unread = getUnreadMailCount(st);
     var badgeEl = hub.querySelector('#rh-mail-badge');
     if (badgeEl) {
       badgeEl.textContent = String(unread);
       badgeEl.classList.toggle('hidden', unread <= 0);
+    }
+
+    var schedBtn = hub.querySelector('#btn-raising-schedule');
+    if (schedBtn) {
+      schedBtn.classList.toggle('hidden', ageY < 1);
+    }
+    var shopBtn = hub.querySelector('#btn-raising-shop');
+    if (shopBtn) {
+      shopBtn.classList.toggle('hidden', ageY < 4);
+    }
+    var mailBtn = hub.querySelector('#btn-raising-mailbox');
+    if (mailBtn) {
+      mailBtn.classList.toggle('hidden', !(ageY >= 10 || unread > 0));
     }
 
     // 第三/四卷开启「终幕回响」入口
@@ -1352,7 +1374,7 @@
       icon: 'cup'
     });
 
-    // 3. 阶段差事（赚取 10-26 银币）
+    // 3. 阶段差事（赚取 10-26 金币）
     var ph = st.phase || 'prologue';
     if (ph === 'prologue' || ph === 'childhood' || ph === 'youth') {
       items.push({
@@ -1360,7 +1382,7 @@
         cat: 'errand',
         name: '整理书房藏册',
         sub: '公爵府零花差事',
-        desc: '替管家清点藏书编号与书签，领一份工整的零花银币。',
+        desc: '替管家清点藏书编号与书签，领一份工整的零花金币。',
         stCost: 2,
         stGain: 0,
         goldDelta: 10,
@@ -1374,7 +1396,7 @@
         cat: 'errand',
         name: '花房采撷香草',
         sub: '园艺协助零花',
-        desc: '协助花匠拣选晒干薄荷与霜杉嫩叶，收获银币与清香。',
+        desc: '协助花匠拣选晒干薄荷与霜杉嫩叶，收获金币与清香。',
         stCost: 2,
         stGain: 0,
         goldDelta: 12,
@@ -1419,7 +1441,7 @@
           cat: 'errand',
           name: '公会魔核核验',
           sub: '澄岚支部委托',
-          desc: '协助玛莎核验北林上交的魔核切口与品相，结算悬赏银币。',
+          desc: '协助玛莎核验北林上交的魔核切口与品相，结算悬赏金币。',
           stCost: 2,
           stGain: 0,
           goldDelta: 22,
@@ -1637,7 +1659,7 @@
                   '<div class="rh-slot-name">' + ico(act.icon) + '<span>' + escapeHtml(act.name) + '</span></div>' +
                   '<div class="rh-slot-meta">' +
                     (act.stCost > 0 ? '<span class="rh-tag-st">体力 -' + act.stCost + '</span>' : (act.stGain > 0 ? '<span class="rh-tag-ok">体力 +' + act.stGain + '</span>' : '')) +
-                    (act.goldDelta > 0 ? '<span class="rh-tag-coin">银币 +' + act.goldDelta + '</span>' : '') +
+                    (act.goldDelta > 0 ? '<span class="rh-tag-coin">金币 +' + act.goldDelta + '</span>' : '') +
                     '<span class="rh-tag-mood">悠闲 ' + (act.leisureDelta >= 0 ? '+' : '') + act.leisureDelta + '</span>' +
                   '</div>' +
                 '</div>'
@@ -1681,7 +1703,7 @@
             courseBar +
             '<div class="rh-act-tags">' +
               statTags +
-              (a.goldDelta > 0 ? '<span class="rh-mini-tag coin">银币 +' + a.goldDelta + '</span>' : '') +
+              (a.goldDelta > 0 ? '<span class="rh-mini-tag coin">金币 +' + a.goldDelta + '</span>' : '') +
               '<span class="rh-mini-tag ' + (a.leisureDelta >= 0 ? 'pos' : 'neg') + '">悠闲 ' + (a.leisureDelta >= 0 ? '+' : '') + a.leisureDelta + '</span>' +
             '</div>' +
           '</button>'
@@ -1694,11 +1716,12 @@
         if (prev.stats[k]) statPreviewParts.push(statNames[k] + ' +' + prev.stats[k]);
       });
 
+      var slotNumWord = ({ 1: '一', 2: '二', 3: '三', 4: '四', 5: '五' })[slotLabels.length] || String(slotLabels.length);
       var runBtnHtml = prev.feasible
         ? (ico('check') + '<span>执行本季排程</span>')
         : (prev.stShortfall > 0
             ? '<span>体力不足 · 请调入茶歇</span>'
-            : '<span>请先排满三旬</span>');
+            : '<span>请先排满' + slotNumWord + '旬</span>');
 
       ov.innerHTML =
         '<div class="end-card modal-shell rh-modal-shell rh-schedule-shell">' +
@@ -1724,7 +1747,7 @@
               '<div class="rh-plan-preview' + (prev.stShortfall > 0 ? ' is-warn' : '') + '">' +
                 '<div class="rh-prev-item">' + ico('stamina') + '<span>可用体力 <b>' + st.st + '/' + st.mst + '</b>' + (prev.stShortfall > 0 ? ('（尚缺 ' + prev.stShortfall + ' 点，请调入茶歇闲憩）') : (' · 净耗 ' + prev.netSt)) + '</span></div>' +
                 '<div class="rh-prev-item">' + ico('spark') + '<span>悠闲度 <b>' + st.leisure + ' → ' + prev.nextLeisure + '</b></span></div>' +
-                (prev.gold > 0 ? '<div class="rh-prev-item">' + ico('coin') + '<span>预计银币 <b>+' + prev.gold + '</b></span></div>' : '') +
+                (prev.gold > 0 ? '<div class="rh-prev-item">' + ico('coin') + '<span>预计金币 <b>+' + prev.gold + '</b></span></div>' : '') +
                 (statPreviewParts.length ? '<div class="rh-prev-item">' + ico('crystal') + '<span>四维增益 <b>' + escapeHtml(statPreviewParts.join(' · ')) + '</b></span></div>' : '') +
               '</div>' +
             '</div>' +
@@ -2182,7 +2205,7 @@
             '<div class="rh-rep-summary">' +
               '<div class="rh-rep-stamps">' +
                 '<span class="rh-mood-stamp mood-' + mood.key + '">' + ico('spark') + '<span>心境 · ' + mood.label + '（' + mood.score + '）</span></span>' +
-                '<span class="rh-meta-stamp">' + ico('coin') + '<span>银币 ' + (data.goldAfter != null ? data.goldAfter : (st.gold || 0)) + (data.goldDelta ? (' (' + (data.goldDelta > 0 ? '+' : '') + data.goldDelta + ')') : '') + '</span></span>' +
+                '<span class="rh-meta-stamp">' + ico('coin') + '<span>金币 ' + (data.goldAfter != null ? data.goldAfter : (st.gold || 0)) + (data.goldDelta ? (' (' + (data.goldDelta > 0 ? '+' : '') + data.goldDelta + ')') : '') + '</span></span>' +
                 (data.lvDelta > 0 ? '<span class="rh-meta-stamp pos">等级 +' + data.lvDelta + '</span>' : '') +
               '</div>' +
               stepsHtml +
@@ -2533,13 +2556,13 @@
     var price = getShopPrice(item, st);
     if ((st.gold || 0) < price) {
       sfxSafe('bad');
-      toastSafe('银币不足，需要 ' + price + ' 枚银币');
+      toastSafe('金币不足，需要 ' + price + ' 枚金币');
       return { ok: false, reason: 'no_gold', price: price };
     }
     st.gold -= price;
     st.cozyBag[item.id] = (st.cozyBag[item.id] || 0) + 1;
     syncDeskCharms(st);
-    recordSeasonAction('购入「' + item.name + '」', '花费 ' + price + ' 银币', st);
+    recordSeasonAction('购入「' + item.name + '」', '花费 ' + price + ' 金币', st);
     saveSafe();
     updateHudSafe();
     syncSylviaHub(st);
@@ -2784,7 +2807,7 @@
               '</div>' +
             '</div>' +
             '<div class="rh-head-right">' +
-              '<span class="rh-gold-pill">' + ico('coin') + '<b>' + (st.gold || 0) + '</b> 银币</span>' +
+              '<span class="rh-gold-pill">' + ico('coin') + '<b>' + (st.gold || 0) + '</b> 金币</span>' +
               (discountOn ? '<span class="rh-discount-pill">气质优待 · 九折</span>' : '') +
               '<button type="button" class="modal-close-x rh-close-x" id="rh-shop-close" aria-label="关闭集市小铺">×</button>' +
             '</div>' +
@@ -3016,19 +3039,76 @@
       heading: '澄岚公会回执函',
       salutation: '眷寒渔 阁下：',
       paragraphs: [
-        '此前你交付的那批北林魔核已经过商行复验，切口工整毫无碎裂，特补发尾款补贴银币十二枚。',
+        '此前你交付的那批北林魔核已经过商行复验，切口工整毫无碎裂，特补发尾款补贴金币十二枚。',
         '近日北林深处偶有影豺群迁徙的回报，若途经荒林哨道请务必结伴同行，切莫孤身久留。',
         '日后折返澄岚镇，凭铜级名册随时可来柜台优先挑选清净护卫差事。'
       ],
       sign: '澄岚公会接待 玛莎',
-      bonusText: '首读奖励：银币 +12 · 玛莎了解度 +6',
+      bonusText: '首读奖励：金币 +12 · 玛莎了解度 +6',
       bonus: { gold: 12, know: ['masha', 6] },
       canUnlock: function (st) { return flagSafe('arrived_jikan', st) || st.phase === 'journey' || st.phase === 'finale'; }
     }
   ];
 
+  var WAX_CLASS_BY_TONE = {
+    crimson: 'wax-flame',
+    silver: 'wax-silver',
+    sapphire: 'wax-royal',
+    cerulean: 'wax-ice',
+    snow: 'wax-frost',
+    glacier: 'wax-ice',
+    indigo: 'wax-violet',
+    slate: 'wax-slate'
+  };
+
+  var ALL_WAX_CLASSES = [
+    'wax-flame', 'wax-ice', 'wax-slate', 'wax-royal',
+    'wax-frost', 'wax-wind', 'wax-violet', 'wax-amber', 'wax-silver'
+  ];
+
   var _defaultLetterSnapshot = null;
   var _customLetterActive = false;
+  var _pendingMailBonusToast = null;
+  var _mutatingLetterWax = false;
+
+  function hasAnyLetterWaxClass(demo) {
+    if (!demo || !demo.classList) return false;
+    for (var i = 0; i < ALL_WAX_CLASSES.length; i++) {
+      if (demo.classList.contains(ALL_WAX_CLASSES[i])) return true;
+    }
+    return false;
+  }
+
+  function applyLetterWaxClass(demo, waxCls) {
+    if (!demo || !demo.classList) return false;
+    var toRemove = [];
+    for (var i = 0; i < ALL_WAX_CLASSES.length; i++) {
+      var cls = ALL_WAX_CLASSES[i];
+      if (cls !== waxCls && demo.classList.contains(cls)) {
+        toRemove.push(cls);
+      }
+    }
+    var needAdd = !!(waxCls && !demo.classList.contains(waxCls));
+    if (toRemove.length === 0 && !needAdd) return false;
+    var prevMutating = _mutatingLetterWax;
+    _mutatingLetterWax = true;
+    try {
+      for (var j = 0; j < toRemove.length; j++) {
+        demo.classList.remove(toRemove[j]);
+      }
+      if (needAdd) demo.classList.add(waxCls);
+    } finally {
+      _mutatingLetterWax = prevMutating;
+    }
+    return true;
+  }
+
+  function flushPendingMailToast() {
+    if (!_pendingMailBonusToast) return;
+    var msg = _pendingMailBonusToast;
+    _pendingMailBonusToast = null;
+    toastSafe(msg);
+  }
 
   function captureDefaultLetterSnapshot() {
     if (_defaultLetterSnapshot || typeof document === 'undefined') return _defaultLetterSnapshot;
@@ -3054,7 +3134,9 @@
     _customLetterActive = false;
     if (typeof document === 'undefined') return false;
     var demo = document.getElementById('letter-demo');
-    if (!demo || !_defaultLetterSnapshot) return false;
+    if (!demo) return false;
+    applyLetterWaxClass(demo, null);
+    if (!_defaultLetterSnapshot) return false;
     var kicker = demo.querySelector('.letter-kicker');
     var heading = demo.querySelector('.letter-heading');
     var seal = demo.querySelector('.letter-seal span');
@@ -3106,12 +3188,13 @@
     captureDefaultLetterSnapshot();
 
     var wasRead = !!(st.mailboxRead && st.mailboxRead[mail.id]);
+    var pendingBonusMsg = null;
     st.mailboxRead[mail.id] = true;
     if (!wasRead && !st.mailboxClaimed[mail.id]) {
       st.mailboxClaimed[mail.id] = true;
       applyMailBonus(mail, st);
       recordSeasonAction('展阅「' + mail.title + '」', mail.senderName + '来信', st);
-      toastSafe('已拆阅来信 · ' + mail.bonusText);
+      pendingBonusMsg = '已拆阅来信 · ' + mail.bonusText;
     }
     saveSafe();
     updateHudSafe();
@@ -3124,17 +3207,25 @@
         var heading = demo.querySelector('.letter-heading');
         var seal = demo.querySelector('.letter-seal span');
         var article = demo.querySelector('.alice-letter');
+        var waxCls = WAX_CLASS_BY_TONE[mail.sealTone] || 'wax-ice';
+
+        // 拆信瞬间收起活跃提示条，首读奖励提示延后至信笺收起后再播报，避免压住信头
+        var activeToast = document.getElementById('toast');
+        if (activeToast && activeToast.classList) activeToast.classList.remove('show');
+        if (pendingBonusMsg) _pendingMailBonusToast = pendingBonusMsg;
 
         if (mail.useAliceDynamic) {
           restoreDefaultAliceLetter();
           if (root.BranchingDirector && typeof root.BranchingDirector.syncAliceLetterDOM === 'function') {
             try { root.BranchingDirector.syncAliceLetterDOM(); } catch (e) {}
           }
+          applyLetterWaxClass(demo, waxCls);
         } else {
           _customLetterActive = true;
+          applyLetterWaxClass(demo, waxCls);
           if (kicker) kicker.textContent = mail.kicker || 'A letter for you';
           if (heading) heading.textContent = mail.heading || mail.title;
-          if (seal) seal.innerHTML = ico('crystal');
+          if (seal) seal.innerHTML = ico(mail.sealIcon || 'crystal');
           if (article) {
             article.innerHTML =
               '<div class="letter-crest">' + ico('seal') + '</div>' +
@@ -3162,8 +3253,10 @@
           demo.classList.add('revealed');
           demo.setAttribute('aria-hidden', 'false');
         }
+        return true;
       }
     }
+    if (pendingBonusMsg) toastSafe(pendingBonusMsg);
     return true;
   }
 
@@ -3950,13 +4043,31 @@
       }, true);
     }
 
-    // 信笺遮罩收起后自动还原默认爱丽丝信笺，防止其他角色信件抬头残留
+    // 信笺遮罩收起后自动还原默认爱丽丝信笺并播报延后的首读奖励提示，防止信头被遮挡或抬头残留
     var letterDemoEl = document.getElementById('letter-demo');
     if (letterDemoEl && typeof MutationObserver === 'function') {
       try {
         var letterObs = new MutationObserver(function () {
-          if (_customLetterActive && letterDemoEl.classList.contains('hidden')) {
-            restoreDefaultAliceLetter();
+          if (_mutatingLetterWax) return;
+          if (letterDemoEl.classList.contains('hidden')) {
+            var hasAnyWaxClass = hasAnyLetterWaxClass(letterDemoEl);
+            if (_customLetterActive || hasAnyWaxClass) {
+              var prevMutating = _mutatingLetterWax;
+              _mutatingLetterWax = true;
+              try {
+                if (_customLetterActive) {
+                  restoreDefaultAliceLetter();
+                } else if (hasAnyWaxClass) {
+                  applyLetterWaxClass(letterDemoEl, null);
+                }
+                if (typeof letterObs.takeRecords === 'function') {
+                  letterObs.takeRecords();
+                }
+              } finally {
+                _mutatingLetterWax = prevMutating;
+              }
+            }
+            flushPendingMailToast();
           }
         });
         letterObs.observe(letterDemoEl, { attributes: true, attributeFilter: ['class'] });

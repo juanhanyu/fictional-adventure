@@ -108,9 +108,14 @@ console.log('\n[2] 冰宫首回合凝结门控、第2步Esc防白嫖、双波次
   win.document.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'w', bubbles: true }));
   ok('战斗热键 W 循环归位至常规档', CE.getState().player.overcastMode === 0);
 
-  // 按 E 结束第 1 回合，经历 1 次敌方行动进入第 2 回合后冰晶宫殿解锁！
+  // 传统列按 E 仅切魔力增幅（与棱镜模式统一），绝不误触跳过回合；统一由 X 键结束回合进入第 2 回合！
+  const turnBeforeE = CE.getState().waveTurn;
   win.document.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'e', bubbles: true }));
-  ok('经历敌方首轮出手进入第 2 回合后冰晶宫殿解锁就绪并亮起提示',
+  ok('传统列按 E 仅切魔力增幅档位且绝不误触结束回合',
+    CE.getState().waveTurn === turnBeforeE && CE.getState().player.overcastMode === 1);
+  CE.setOvercast(0, CE.getState());
+  win.document.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'x', bubbles: true }));
+  ok('按 X 结束第 1 回合经历敌方首轮出手进入第 2 回合后冰晶宫殿解锁就绪并亮起提示',
     CE.getState().waveTurn === 2 && palBtn.disabled === false && palBtn.classList.contains('pulse-hint'));
 
   // 验证第 2 步按 Escape 逃课漏洞已被彻底封堵！
@@ -780,7 +785,7 @@ console.log('\n[6] 无冰晶宫殿纯基本功智斗路径（noPalace: true）�
       if (b.player.overcastMode !== 0) return { type: 'overcast', mode: 0 };
       return { type: 'skill', skillId: 'remote_snap_spike' };
     }
-    if (b.player.hp < 95 && !b.player.cooldowns.hand_root_shield && b.player.shield < 25 && b.ap >= 1 && b.player.mp >= 34) {
+    if (b.player.hp < 95 && e.hp > 60 && !b.player.cooldowns.hand_root_shield && b.player.shield < 25 && b.ap >= 1 && b.player.mp >= 34) {
       return { type: 'skill', skillId: 'hand_root_shield' };
     }
     if (b.ap >= 1 && b.player.mp >= 38) {
@@ -934,6 +939,177 @@ console.log('\n[6] 无冰晶宫殿纯基本功智斗路径（noPalace: true）�
   }, { usePreset: false });
   ok(`主线存档校验（usePreset:false 未学冰晶宫殿）：9岁存档挑战贝蒂 ${storyDuelRes.grade} 级顺畅通关 (${storyDuelRes.turns}T)`,
     storyDuelRes.won && storyDuelRes.metrics.insights === 0);
+}
+
+// ===== 7. V2.2 数值对齐、折扣透出、按键防连发、滑条微调与音效阈值防回归 =====
+console.log('\n[7] V2.2 数值对齐、折扣透出、按键防连发、滑条微调与三阶音效阈值防回归');
+{
+  // 7.1 派生耗蓝折扣字段与 computeSkillMpCost 100% 同源
+  const bNoDisc = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: [] });
+  CE.setOvercastPct(0.40, bNoDisc);
+  const stNoDisc = CE.getBattleState(bNoDisc);
+  ok('无折扣场景 ampDiscountFactor===1 且 ampExtraMp/ampTierExtraMps 与 MaxMP 对齐',
+    stNoDisc.ampDiscountFactor === 1 &&
+    stNoDisc.ampExtraMp === Math.round(bNoDisc.player.mmp * 0.40) &&
+    JSON.stringify(stNoDisc.ampTierExtraMps) === JSON.stringify([0, Math.round(bNoDisc.player.mmp * 0.20), Math.round(bNoDisc.player.mmp * 0.40), Math.round(bNoDisc.player.mmp * 0.60)]),
+    JSON.stringify({ df: stNoDisc.ampDiscountFactor, ex: stNoDisc.ampExtraMp, tiers: stNoDisc.ampTierExtraMps }));
+
+  const bAct6 = CE.startStage('north_forest_hunt', { headless: true, usePreset: true, relics: ['noelle_manuscript'] });
+  CE.setEquippedStaff('north_saint_staff', bAct6);
+  CE.setOvercastPct(0.40, bAct6);
+  const stAct6 = CE.getBattleState(bAct6);
+  const expectedDf = Number((0.85 * 0.5 * 0.75).toFixed(6));
+  const baseIceMp = CE.computeSkillMpCost(Object.assign({}, bAct6.player, { ampPct: 0, overcastPct: 0, overcastMode: 0, _lastOvercastMode: 0 }), CE.SKILLS.hand_ice_crystal);
+  const ampIceMp = CE.computeSkillMpCost(bAct6.player, CE.SKILLS.hand_ice_crystal);
+  ok('mana_calc × 手稿 × 极北圣晶杖叠加时 ampDiscountFactor/ampExtraMp/ampTierExtraMps 与 computeSkillMpCost 完全一致',
+    stAct6.ampDiscountFactor === expectedDf &&
+    stAct6.player.ampDiscountFactor === expectedDf &&
+    stAct6.ampExtraMp === (ampIceMp - baseIceMp) &&
+    stAct6.ampTierExtraMps.length === stAct6.ampTiers.length &&
+    stAct6.ampTierExtraMps[2] === stAct6.ampExtraMp,
+    JSON.stringify({ df: stAct6.ampDiscountFactor, expectedDf, ampExtraMp: stAct6.ampExtraMp, delta: ampIceMp - baseIceMp, tiers: stAct6.ampTierExtraMps }));
+
+  // 7.2 技能增幅上限（hand_water_veil 40% / insight_hulan_resonance 0% / 全 INSIGHT 0%）与兜底分支
+  const bCap = CE.startStage('hulan_beast_tide', { headless: true, usePreset: true });
+  bCap.player.skills.push('hand_water_veil', 'insight_hulan_resonance');
+  CE.setOvercastPct(0.60, bCap);
+  const veilProf = CE.computeAmpProfile(bCap.player, CE.SKILLS.hand_water_veil, { clampToMp: false });
+  const hulanProf = CE.computeAmpProfile(bCap.player, CE.SKILLS.insight_hulan_resonance, { clampToMp: false });
+  const allInsightZero = Object.values(CE.SKILLS)
+    .filter(sk => sk.path === 'INSIGHT')
+    .every(sk => {
+      const pr = CE.computeAmpProfile(bCap.player, sk, { clampToMp: false });
+      return sk.overcastCap === 0 && pr.ampPct === 0 && pr.mult === 1.0 && pr.discountedExtraMp === 0;
+    });
+  const syntheticShieldA = { id: '_syn_sh_a', path: 'HAND', elem: 'water', ap: 1, mp: 20, power: 0, atkKind: 'matk', shieldBase: 20 };
+  const syntheticShieldB = { id: '_syn_sh_b', path: 'HAND', elem: 'water', ap: 1, mp: 20, power: 0.6, atkKind: 'matk', shieldBase: 20 };
+  const syntheticInsight = { id: '_syn_ins', path: 'INSIGHT', elem: 'ice', ap: 1, mp: 20, power: 2.0, atkKind: 'matk', shieldBase: 20 };
+  const synAProf = CE.computeAmpProfile(bCap.player, syntheticShieldA, { clampToMp: false });
+  const synBProf = CE.computeAmpProfile(bCap.player, syntheticShieldB, { clampToMp: false });
+  const synIProf = CE.computeAmpProfile(bCap.player, syntheticInsight, { clampToMp: false });
+  ok('hand_water_veil 开放 40% 护盾增幅，insight_hulan_resonance 与全 INSIGHT 严格锁 0%，护盾兜底不被 power 误拦',
+    !CE.SKILLS.hand_water_veil.noOvercast &&
+    CE.SKILLS.hand_water_veil.overcastCap === 0.40 &&
+    veilProf.ampPct === 0.40 && Math.abs(veilProf.shieldMult - 1.45) < 1e-4 &&
+    CE.SKILLS.insight_hulan_resonance.overcastCap === 0 &&
+    hulanProf.ampPct === 0 && hulanProf.mult === 1.0 &&
+    allInsightZero &&
+    synAProf.ampPct === 0.40 && synBProf.ampPct === 0.40 && synIProf.ampPct === 0,
+    JSON.stringify({ veil: veilProf, hulan: hulanProf, synA: synAProf.ampPct, synB: synBProf.ampPct, synI: synIProf.ampPct }));
+
+  // 7.3 纯曲线+阶梯乘区 100% 自洽（无技能相关 tier2BaseBonus 漂移）
+  const bPure = CE.startStage('north_forest_hunt', { headless: true, usePreset: true });
+  bPure.player.mp = bPure.player.mmp;
+  CE.setOvercastPct(0.60, bPure);
+  const stPure = CE.getBattleState(bPure);
+  const mSurge = CE.computeAmpProfile(bPure.player, CE.SKILLS.hand_water_surge, { clampToMp: false }).mult;
+  const mCrystal = CE.computeAmpProfile(bPure.player, CE.SKILLS.hand_ice_crystal, { clampToMp: false }).mult;
+  const mThorn = CE.computeAmpProfile(bPure.player, CE.SKILLS.hand_thorn_field, { clampToMp: false }).mult;
+  const estCrystal = CE.estimateSkillDamage(bPure, CE.SKILLS.hand_ice_crystal, bPure.enemies[0]);
+  ok('纯三段曲线+阶梯乘区在 ampTierMults / computeAmpProfile / estimateSkillDamage 间 100% 自洽',
+    Math.abs(stPure.ampTierMults[1] - 1.4256) < 1e-4 &&
+    Math.abs(stPure.ampTierMults[2] - 1.6992) < 1e-4 &&
+    Math.abs(stPure.ampTierMults[3] - 1.9760) < 1e-4 &&
+    Math.abs(mSurge - 1.9760) < 1e-4 &&
+    Math.abs(mCrystal - 1.9760) < 1e-4 &&
+    Math.abs(mThorn - 1.9760) < 1e-4 &&
+    Math.abs(stPure.ampMult - 1.9760) < 1e-4 &&
+    Math.abs(estCrystal.mcMult - 1.9760) < 1e-4,
+    JSON.stringify({ tierMults: stPure.ampTierMults, ampMult: stPure.ampMult, mSurge, mCrystal, mThorn, estMc: estCrystal.mcMult }));
+
+  // 7.4 MANA_CYCLE 死字段清理 + ACTS_PLAYER_PRESET 与 STAGE_CONFIGS 100% 同步
+  const mcCfg = CE.COMBAT_BALANCE_V22.MANA_CYCLE;
+  const presetMismatch = Object.entries(CE.STAGES).filter(([sid, sc]) => {
+    const a = CE.COMBAT_BALANCE_V22.ACTS_PLAYER_PRESET[sid];
+    const p = sc.preset;
+    return !a || a.hp !== p.hp || a.mp !== p.mp || a.atk !== p.atk || a.matk !== p.matk || a.def !== p.def || a.mdef !== p.mdef || a.spd !== p.spd;
+  }).map(([sid]) => sid);
+  ok('MANA_CYCLE 清理死字段并严守 returnRatio=1.00，且 ACTS_PLAYER_PRESET 与 9 关 STAGE_CONFIGS.preset 完全一致',
+    mcCfg.returnRatio === 1.00 && mcCfg.specAltRatio === undefined && mcCfg.aoeMaxReturnPct === undefined && presetMismatch.length === 0,
+    JSON.stringify({ mcCfg, presetMismatch }));
+
+  // 7.5 第 1–4 幕文案不含「魔战」、#cb-oc-seg 无内联列宽、滑条方向键步进不吸回、键盘 repeat/修饰键防误触
+  CE.startStage('beatrice_11', { fromArena: true });
+  const fcIdle1 = $('cb-forecast-bar').textContent;
+  $('battle-screen').querySelector('[data-sk="hand_water_surge"]').onmouseenter();
+  const fcHover1 = $('cb-forecast-bar').textContent;
+  const ocSegEl = $('cb-oc-seg');
+  const ocSliderEl = $('cb-oc-slider');
+  const snap1 = CE.setOvercastPct(0.01, CE.getState(), { snap: true });
+  const snap19 = CE.setOvercastPct(0.19, CE.getState(), { snap: true });
+  ocSliderEl.value = '1';
+  ocSliderEl.onkeydown({ key: 'ArrowRight' });
+  ocSliderEl.oninput();
+  const keyStep1 = CE.getState().player.ampPct;
+  ocSliderEl.value = '19';
+  ocSliderEl.onkeydown({ key: 'ArrowRight' });
+  ocSliderEl.oninput();
+  const keyStep19 = CE.getState().player.ampPct;
+  ocSliderEl.value = '21';
+  ocSliderEl.onkeydown({ key: 'ArrowRight' });
+  ocSliderEl.oninput();
+  const keyStep21 = CE.getState().player.ampPct;
+  ocSliderEl.onpointerdown();
+  ocSliderEl.value = '19';
+  ocSliderEl.oninput();
+  const dragSnap19 = CE.getState().player.ampPct;
+  const turnBeforeGuard = CE.getState().turn;
+  win.document.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'x', repeat: true, bubbles: true }));
+  win.document.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'e', repeat: true, bubbles: true }));
+  win.document.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'x', ctrlKey: true, bubbles: true }));
+  win.document.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'x', metaKey: true, bubbles: true }));
+  win.document.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'e', altKey: true, bubbles: true }));
+  const turnAfterGuard = CE.getState().turn;
+  win.document.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'x', bubbles: true }));
+  const turnAfterRealX = CE.getState().turn;
+  CE.exitBattle(false);
+  ok('第 1–4 幕预估栏改称「增幅」无「魔战」，#cb-oc-seg 无内联 gridTemplateColumns，滑条键步不磁吸且 0% 不吸附',
+    !fcIdle1.includes('魔战') && fcHover1.includes('增幅') && !fcHover1.includes('魔战') &&
+    ocSegEl.style.gridTemplateColumns === '' &&
+    snap1.overcastPct === 0.01 && snap19.overcastPct === 0.20 &&
+    keyStep1 === 0.01 && keyStep19 === 0.19 && keyStep21 === 0.21 && dragSnap19 === 0.20,
+    JSON.stringify({ fcIdle1, fcHover1, inlineGrid: ocSegEl.style.gridTemplateColumns, snap1: snap1.overcastPct, snap19: snap19.overcastPct, keyStep1, keyStep19, keyStep21, dragSnap19 }));
+  ok('全局 keydown 严格拦截 repeat 与 Ctrl/Meta/Alt 组合修饰键，普通 X 键正常结束回合',
+    turnAfterGuard === turnBeforeGuard && turnAfterRealX === turnBeforeGuard + 1,
+    JSON.stringify({ turnBeforeGuard, turnAfterGuard, turnAfterRealX }));
+
+  // 7.6 js/sfx-suite.js amp_charge 三阶泛音阈值严格对齐 20%/40%/60%
+  if (win.CrystalSFX && typeof win.CrystalSFX.play === 'function' && win.AudioContext && win.AudioContext.prototype) {
+    const origCreateOsc = win.AudioContext.prototype.createOscillator;
+    const origCreateBuf = win.AudioContext.prototype.createBufferSource;
+    const measureVoices = pct => {
+      const spawned = [];
+      let oscCount = 0;
+      win.AudioContext.prototype.createOscillator = function () {
+        const node = origCreateOsc.apply(this, arguments);
+        oscCount += 1;
+        spawned.push(node);
+        return node;
+      };
+      win.AudioContext.prototype.createBufferSource = function () {
+        const node = origCreateBuf.apply(this, arguments);
+        spawned.push(node);
+        return node;
+      };
+      try {
+        win.CrystalSFX.play('amp_charge', { ampPct: pct, force: true });
+      } finally {
+        win.AudioContext.prototype.createOscillator = origCreateOsc;
+        win.AudioContext.prototype.createBufferSource = origCreateBuf;
+        spawned.forEach(n => { if (typeof n.onended === 'function') n.onended(); });
+      }
+      return oscCount;
+    };
+    const v19 = measureVoices(0.19);
+    const v20 = measureVoices(0.20);
+    const v39 = measureVoices(0.39);
+    const v40 = measureVoices(0.40);
+    const v59 = measureVoices(0.59);
+    const v60 = measureVoices(0.60);
+    ok('CrystalSFX amp_charge 三阶泛音严格在 20%/40%/60% 触发（19%/39%/59% 绝不提前响起质变和弦）',
+      v19 < v20 && v20 === v39 && v39 < v40 && v40 === v59 && v59 < v60,
+      JSON.stringify({ v19, v20, v39, v40, v59, v60 }));
+  }
 }
 
 console.log(fail === 0 ? '\n  ✅ 第 3 轮全排列反无脑穷举、4~8回合交锋节奏与双路径可解性深度校验 100% 通过！' : `\n  ❌ ${fail} 项断言失败`);

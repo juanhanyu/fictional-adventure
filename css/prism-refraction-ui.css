@@ -34,6 +34,8 @@
 #ending-screen,
 #codex,
 #codex-overlay,
+#rumor-overlay,
+#arena-loadout-modal,
 #help-screen,
 #backlog-overlay,
 #vn-backlog-modal,
@@ -141,6 +143,8 @@
 #ending-screen *,
 #codex *,
 #codex-overlay *,
+#rumor-overlay *,
+#arena-loadout-modal *,
 #help-screen *,
 #backlog-overlay *,
 #vn-backlog-modal *,
@@ -236,7 +240,7 @@
   background: var(--pr-sapphire-prism);
   color: #FFFFFF;
   font-family: var(--pr-mono);
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: 0.08em;
   clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
 }
@@ -278,6 +282,7 @@
 /* 1.2 右上角切面晶簇导航条 (#hud .hud-right) */
 #hud .hud-right {
   position: relative;
+  margin-left: auto;
   padding: 5px 10px 5px 14px;
   gap: 4px;
   border: none;
@@ -340,6 +345,82 @@
 #hud .hud-right .chip.active {
   background: var(--pr-sapphire-prism);
   color: #FFFFFF;
+}
+
+/* 1.2b 阶段性 HUD 渐进显隐规则（对接 body.stage-* 与 body.pov-hidden） */
+body.stage-pre-system #hud .hud-left,
+body.stage-pre-system #loc-bar,
+body.stage-pre-system #sylvia-hub,
+body.stage-pre-system #raising-hub,
+body.stage-pre-system #hud .hud-right #btn-ai-drawer,
+body.stage-pre-system #hud .hud-right #btn-causal-quick,
+body.stage-pre-system #hud .hud-right #btn-arena,
+body.stage-pre-system #hud .hud-right #btn-stats,
+body.stage-pre-system #hud .hud-right #btn-panel,
+body.stage-pre-system #hud .hud-right #btn-chapters {
+  display: none !important;
+}
+
+body.stage-story #hud .hud-left,
+body.stage-story #loc-bar,
+body.stage-story #sylvia-hub,
+body.stage-story #raising-hub,
+body.stage-story #hud .hud-right #btn-arena,
+body.stage-story #hud .hud-right #btn-stats,
+body.stage-story #hud .hud-right #btn-ai-drawer,
+body.stage-story #hud .hud-right #btn-causal-quick {
+  display: none !important;
+}
+
+body.stage-infant #sylvia-hub,
+body.stage-infant #raising-hub,
+body.stage-infant #action-bar [data-act="map"],
+body.stage-infant #action-bar [data-act="explore"],
+body.stage-infant #action-bar [data-act="train"],
+body.stage-infant #action-bar [data-act="study"],
+body.stage-infant #action-bar [data-act="course"],
+body.stage-infant #action-bar [data-act="rumor"],
+body.stage-infant #action-bar [data-act="encounter"],
+body.stage-infant #action-bar #btn-rumor {
+  display: none !important;
+}
+
+body.stage-no-arena #btn-arena {
+  display: none !important;
+}
+
+body.stage-no-causal #btn-causal-quick {
+  display: none !important;
+}
+
+body.pov-hidden:not(.ui-hidden) #hud {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: none !important;
+}
+
+body.pov-hidden:not(.ui-hidden) #hud .hud-right {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  margin-left: auto;
+}
+
+body.pov-hidden #hud .hud-left,
+body.pov-hidden #loc-bar,
+body.pov-hidden #sylvia-hub,
+body.pov-hidden #raising-hub,
+body.pov-hidden #hud .hud-right > :not(#btn-saveload):not(#btn-ui):not(#btn-mute):not(#btn-title) {
+  display: none !important;
+}
+
+body.pov-hidden:not(.ui-hidden) #hud .hud-right #btn-saveload,
+body.pov-hidden:not(.ui-hidden) #hud .hud-right #btn-ui,
+body.pov-hidden:not(.ui-hidden) #hud .hud-right #btn-mute,
+body.pov-hidden:not(.ui-hidden) #hud .hud-right #btn-title {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
 }
 
 /* 严格守护 body.ui-hidden 沉浸模式（绝不破坏 #btn-arena 隐藏与 #btn-ui 恢复按钮） */
@@ -438,10 +519,56 @@ body.ui-hidden #btn-ui {
   clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
 }
 
-/* 1.4 标志性不对称切面雪瓷棱镜对话框 (#text-box)
-       背景与斜切放于 ::before/::after，确保 #tb-speaker 胸像向上探出 1/4 永不被 clip-path 裁切 */
+/* 1.4 标志性不对称切面雪瓷棱镜对话框 (#stage / #text-box / #text)
+       终层唯一事实源：1440×900 矮化大字 142px/20px、1280×720 134px/19px（立绘自动 +36px）
+       1/2/3 行精准对称垂直居中，背景与斜切放于 ::before/::after，确保 #tb-speaker 与顶沿控件永不被裁切 */
+#stage {
+  --boxh: 142px;
+  --tb-pad-top: 24px;
+  --tb-pad-bot: 24px;
+  --tb-fs: 20px;
+  --tb-lh: 1.55;
+  --tb-row: 31px;
+  --tb-inner-h: calc(var(--boxh) - var(--tb-pad-top) - var(--tb-pad-bot));
+}
+
+body.roam #stage {
+  --boxh: max(100px, calc(142px - var(--abh)));
+  --tb-pad-top: 16px;
+  --tb-pad-bot: 14px;
+  --tb-fs: 17px;
+  --tb-lh: 1.60;
+  --tb-row: 27px;
+  --tb-inner-h: calc(var(--boxh) - var(--tb-pad-top) - var(--tb-pad-bot));
+}
+
+@media (max-height: 760px) {
+  #stage {
+    --boxh: 134px;
+    --tb-pad-top: 22px;
+    --tb-pad-bot: 22px;
+    --tb-fs: 19px;
+    --tb-lh: 1.58;
+    --tb-row: 30px;
+    --tb-inner-h: calc(var(--boxh) - var(--tb-pad-top) - var(--tb-pad-bot));
+  }
+
+  body.roam #stage {
+    --boxh: max(92px, calc(134px - var(--abh)));
+    --tb-pad-top: 14px;
+    --tb-pad-bot: 12px;
+    --tb-fs: 16.5px;
+    --tb-lh: 1.56;
+    --tb-row: 26px;
+    --tb-inner-h: calc(var(--boxh) - var(--tb-pad-top) - var(--tb-pad-bot));
+  }
+}
+
 #text-box {
   position: relative;
+  height: var(--boxh);
+  min-height: var(--boxh);
+  padding: var(--tb-pad-top) max(72px, calc((100% - 960px) / 2)) var(--tb-pad-bot) max(72px, calc((100% - 960px) / 2));
   border: none;
   background: transparent;
   box-shadow: none;
@@ -449,6 +576,28 @@ body.ui-hidden #btn-ui {
   -webkit-backdrop-filter: none;
   overflow: visible;
   filter: drop-shadow(0 -12px 32px rgba(13, 38, 104, 0.16));
+}
+
+#text-box.has-cameo {
+  padding-left: max(132px, calc((100% - 960px) / 2 + 64px));
+}
+
+body.ai-drawer-open #text-box {
+  padding-left: 36px;
+  padding-right: 52px;
+}
+
+body.ai-drawer-open #text-box.has-cameo {
+  padding-left: 96px;
+}
+
+body.roam #text-box {
+  padding-top: var(--tb-pad-top);
+  padding-bottom: var(--tb-pad-bot);
+}
+
+body.roam #text-box.season-flavor {
+  padding-left: max(72px, calc((100% - 960px) / 2));
 }
 
 #text-box::before {
@@ -479,23 +628,53 @@ body.ui-hidden #btn-ui {
   pointer-events: none;
 }
 
-#text-box > * {
+#text-box > :not(#tb-speaker):not(#more):not(#tb-next):not(.tb-backlog-btn):not(.vn-read-controls) {
   position: relative;
   z-index: 2;
 }
 
-/* 左侧探出六角金棱说话人小胸像 + 皇家蓝宝石斜切名牌 */
+#text-box > #more,
+#text-box > #tb-next {
+  position: absolute;
+  right: max(36px, calc((100% - 960px) / 2));
+  bottom: 10px;
+  z-index: 4;
+}
+
+body.ai-drawer-open #text-box > #more,
+body.ai-drawer-open #text-box > #tb-next {
+  right: 18px;
+}
+
+#text-box.awaiting-choice #more,
+#text-box.awaiting-choice #tb-next {
+  display: none !important;
+}
+
+/* 左侧探出六角金棱说话人小胸像 (50×50) + 皇家蓝宝石斜切名牌 */
+#text-box > #tb-speaker,
 #tb-speaker {
+  position: absolute;
+  left: max(46px, calc((100% - 960px) / 2));
+  top: -18px;
   z-index: 5;
 }
 
+body.ai-drawer-open #text-box > #tb-speaker,
+body.ai-drawer-open #tb-speaker {
+  left: 32px;
+}
+
 #tb-speaker-img {
+  width: 50px;
+  height: 50px;
   border: none;
   padding: 2px;
   background: var(--pr-rim-gold);
   clip-path: polygon(50% 0%, 100% 24%, 100% 82%, 50% 100%, 0% 82%, 0% 24%);
   box-shadow: none;
-  filter: drop-shadow(0 10px 20px rgba(12, 34, 96, 0.22));
+  transform: translateY(8px);
+  filter: drop-shadow(0 8px 16px rgba(12, 34, 96, 0.22));
 }
 
 #tb-speaker-name {
@@ -506,37 +685,132 @@ body.ui-hidden #btn-ui {
   letter-spacing: 0.14em;
   color: #FFFFFF;
   background: var(--pr-sapphire-prism);
-  padding: 6px 28px 6px 20px;
+  padding: 5px 26px 5px 18px;
   clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
   box-shadow: none;
   filter: drop-shadow(0 6px 14px rgba(13, 43, 132, 0.28));
 }
 
 #text {
+  height: var(--tb-inner-h);
   font-family: var(--pr-serif);
   color: var(--pr-ink);
-  font-size: 17.5px;
-  line-height: 1.82;
-  letter-spacing: 0.035em;
+  font-size: var(--tb-fs);
+  line-height: var(--tb-lh);
+  letter-spacing: 0.025em;
+  box-sizing: border-box;
 }
 
-#text .sys { color: var(--pr-sapphire); font-weight: 700; }
+body:not(.roam) #text-box.dialog-rows-1 #text {
+  padding-top: max(0px, calc((var(--tb-inner-h) - var(--tb-row)) / 2));
+}
+
+body:not(.roam) #text-box.dialog-rows-2 #text {
+  padding-top: max(0px, calc((var(--tb-inner-h) - 2 * var(--tb-row)) / 2));
+}
+
+body:not(.roam) #text-box.dialog-rows-3 #text {
+  padding-top: max(0px, calc((var(--tb-inner-h) - 3 * var(--tb-row)) / 2));
+}
+
+body.roam #text {
+  height: var(--tb-inner-h);
+  font-size: var(--tb-fs);
+  line-height: var(--tb-lh);
+}
+
+body.roam #text-box.dialog-rows-1 #text {
+  padding-top: max(0px, calc((var(--tb-inner-h) - var(--tb-row)) / 2));
+}
+
+body.roam #text-box.dialog-rows-2 #text {
+  padding-top: max(0px, calc((var(--tb-inner-h) - 2 * var(--tb-row)) / 2));
+}
+
+#text .sys { color: var(--pr-sapphire); font-weight: 700; font-size: inherit; }
 #text .gold { color: var(--pr-gold-deep); font-weight: 700; }
 #text .ice { color: #0B6AA8; font-weight: 700; }
 #text .em { color: var(--pr-crimson-deep); font-weight: 700; }
 
+/* 阅读控制簇与回看键轻盈停靠于 #text-box 顶沿外侧右上（绝不挤压正文首行） */
+#app section#game-screen #text-box #btn-backlog,
+#app section#game-screen #text-box button.tb-backlog-btn,
 #app section#game-screen #text-box .tb-backlog-btn,
+#app section#game-screen #text-box #tb-backlog-btn {
+  top: -26px;
+  bottom: auto;
+  right: max(48px, calc((100% - 960px) / 2));
+  z-index: 6;
+  height: 22px;
+  min-height: 22px;
+  padding: 0 9px;
+  border: none;
+  border-top: 1.5px solid rgba(22, 88, 235, 0.42);
+  border-bottom: 1px solid rgba(96, 128, 180, 0.24);
+  background: rgba(248, 251, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--pr-ink-mid);
+  font-size: 11px;
+  box-shadow: 0 -4px 12px rgba(14, 43, 120, 0.08);
+}
+
+#app section#game-screen #text-box #vn-read-controls,
 #app section#game-screen #text-box .vn-read-controls {
-  z-index: 4;
+  top: -26px;
+  bottom: auto;
+  right: max(136px, calc((100% - 960px) / 2 + 88px));
+  z-index: 6;
+  height: 22px;
+  min-height: 22px;
+  padding: 0 4px;
+  gap: 2px;
+  border: none;
+  border-top: 1.5px solid rgba(22, 88, 235, 0.34);
+  border-bottom: 1px solid rgba(96, 128, 180, 0.24);
+  background: rgba(248, 251, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 -4px 12px rgba(14, 43, 120, 0.08);
 }
 
-#app section#game-screen #text-box .tb-backlog-btn,
+body.ai-drawer-open #app section#game-screen #text-box #btn-backlog,
+body.ai-drawer-open #app section#game-screen #text-box button.tb-backlog-btn,
+body.ai-drawer-open #app section#game-screen #text-box .tb-backlog-btn,
+body.ai-drawer-open #app section#game-screen #text-box #tb-backlog-btn {
+  right: 28px;
+}
+
+body.ai-drawer-open #app section#game-screen #text-box #vn-read-controls,
+body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
+  right: 116px;
+}
+
+body.roam #app section#game-screen #text-box #btn-backlog,
+body.roam #app section#game-screen #text-box button.tb-backlog-btn,
+body.roam #app section#game-screen #text-box .tb-backlog-btn,
+body.roam #app section#game-screen #text-box #tb-backlog-btn {
+  top: 8px;
+  right: 38px;
+  border-top: none;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
 #app section#game-screen #text-box .vn-ctrl-btn {
-  color: var(--pr-ink-muted);
-  border-bottom-color: var(--pr-line-soft);
+  height: 20px;
+  padding: 0 7px;
+  font-size: 11px;
+  color: var(--pr-ink-mid);
+  border-bottom-color: transparent;
 }
 
+#app section#game-screen #text-box #btn-backlog:hover,
+#app section#game-screen #text-box button.tb-backlog-btn:hover,
 #app section#game-screen #text-box .tb-backlog-btn:hover,
+#app section#game-screen #text-box #tb-backlog-btn:hover,
 #app section#game-screen #text-box .vn-ctrl-btn:hover,
 #app section#game-screen #text-box .vn-ctrl-btn.active {
   color: var(--pr-sapphire);
@@ -645,17 +919,32 @@ body.ui-hidden #btn-ui {
 }
 
 /* ==================== 2. 养成中枢 (#sylvia-hub / #raising-hub) ==================== */
+/* 外层 .sh-corner-controls 统一承接雪瓷冰晶细线轻条；内部项彻底透明无框零 clip-path（与底部落位无缝配合） */
+#sylvia-hub .sh-corner-controls,
+#raising-hub .sh-corner-controls {
+  border: 1px solid rgba(96, 128, 180, 0.28);
+  border-top: none;
+  background:
+    linear-gradient(90deg, var(--pr-sapphire) 0%, var(--pr-cyan) 42%, var(--pr-gold) 78%, rgba(22, 88, 235, 0.52) 100%) top / 100% 1.5px no-repeat,
+    linear-gradient(180deg, rgba(252, 254, 255, 0.92) 0%, rgba(238, 246, 255, 0.90) 100%);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  clip-path: none;
+  box-shadow: 0 6px 18px rgba(14, 43, 120, 0.11);
+  filter: none;
+}
+
 #sylvia-hub .hud-mood-pill,
 #raising-hub .hud-mood-pill,
 #sylvia-hub .sylvia-ritual-dock,
 #raising-hub .sylvia-ritual-dock {
   border: none;
-  background: var(--pr-glass-plate);
-  backdrop-filter: blur(18px) saturate(145%);
-  -webkit-backdrop-filter: blur(18px) saturate(145%);
-  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
-  box-shadow: inset 0 0 0 1px rgba(45, 92, 186, 0.28);
-  filter: drop-shadow(0 8px 18px rgba(14, 43, 120, 0.14));
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  clip-path: none;
+  box-shadow: none;
+  filter: none;
 }
 
 #sylvia-hub .rh-dock-chip:hover,
@@ -667,15 +956,18 @@ body.ui-hidden #btn-ui {
 #sylvia-hub .sh-charm-btn,
 #raising-hub .sh-charm-btn {
   border: none;
-  background: var(--pr-glass-plate);
-  clip-path: polygon(50% 0%, 100% 34%, 82% 100%, 18% 100%, 0% 34%);
-  filter: drop-shadow(0 6px 14px rgba(14, 43, 120, 0.16));
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  clip-path: none;
+  box-shadow: none;
+  filter: none;
 }
 
 #sylvia-hub .sh-charm-btn:hover,
 #raising-hub .sh-charm-btn:hover {
-  background: var(--pr-sapphire-prism);
-  color: #FFFFFF;
+  background: rgba(22, 88, 235, 0.10);
+  color: var(--pr-sapphire);
 }
 
 #sylvia-hub .sylvia-bubble,
@@ -690,17 +982,17 @@ body.ui-hidden #btn-ui {
 }
 
 /* ==================== 3. 切面雪瓷棱镜全站弹窗外壳 ====================
-   覆盖：#panel / #panel-overlay / #stats-overlay / #map-overlay / #codex / #codex-overlay
-         #help-screen / #backlog-overlay / #vn-* / #schedule-overlay / #schedule-modal
-         #season-report-overlay / #shop-overlay / #shop-modal / #mailbox-overlay / #mailbox-modal
-         #ending-screen / .rh-overlay
+   高特异性覆盖全部系统/养成/VN/奇遇/图鉴/演武整备弹窗，统一雪瓷折射切角卡片、冰蓝→淡金渐彩顶线与无外框关闭 ×
    ========================================================================= */
 #panel.overlay,
 #panel-overlay.overlay,
 #stats-overlay.overlay,
 #map-overlay.overlay,
+#map-overlay.rh-visual-map-active.overlay,
 #codex.overlay,
 #codex-overlay.overlay,
+#rumor-overlay.overlay,
+#arena-loadout-modal.overlay,
 #help-screen.overlay,
 #backlog-overlay.overlay,
 #vn-backlog-modal.overlay,
@@ -725,14 +1017,32 @@ body.ui-hidden #btn-ui {
 #panel-overlay .end-card,
 #stats-overlay .end-card,
 #map-overlay .end-card,
+#map-overlay.rh-visual-map-active .end-card.map-card,
 #codex .end-card,
+#app #codex .end-card,
+#app #codex .end-card.modal-shell,
 #codex-overlay .end-card,
+#rumor-overlay .end-card,
+body section#rumor-overlay.overlay .end-card,
+body section#rumor-overlay.overlay .end-card.rumor-card,
+#arena-loadout-modal .end-card,
+body section#arena-loadout-modal.overlay .end-card,
+body section#arena-loadout-modal.overlay .end-card.rumor-card,
 #help-screen .end-card,
 #backlog-overlay .end-card,
 #vn-backlog-modal .end-card,
+body section#vn-backlog-modal.overlay .end-card,
+body section#vn-backlog-modal.overlay .end-card.vn-modal-card,
 #vn-saveload-modal .end-card,
+body section#vn-saveload-modal.overlay .end-card,
+body section#vn-saveload-modal.overlay .end-card.vn-modal-card,
 #vn-chapters-modal .end-card,
+body section#vn-chapters-modal.overlay .end-card,
+body section#vn-chapters-modal.overlay .end-card.vn-modal-card,
 #vn-prefs-modal .end-card,
+body section#vn-prefs-modal.overlay .end-card,
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card,
+body section#vn-prefs-modal.overlay .end-card.vn-modal-card.vn-prefs-card,
 #schedule-overlay .rh-modal-shell,
 #schedule-modal .rh-modal-shell,
 #season-report-overlay .rh-modal-shell,
@@ -741,11 +1051,15 @@ body.ui-hidden #btn-ui {
 #mailbox-overlay .rh-modal-shell,
 #mailbox-modal .rh-modal-shell,
 #ending-screen .rh-modal-shell,
+#ending-screen .end-card.rh-ending-shell,
 .rh-overlay .rh-modal-shell {
   position: relative;
   border: 1.5px solid rgba(96, 146, 224, 0.45);
-  border-top: 2px solid var(--pr-sapphire);
-  background: var(--pr-caustic), var(--pr-glass-plate);
+  border-top: none;
+  background:
+    linear-gradient(90deg, var(--pr-sapphire) 0%, var(--pr-cyan) 36%, var(--pr-gold) 72%, rgba(22, 88, 235, 0.62) 100%) top / 100% 2.5px no-repeat,
+    var(--pr-caustic),
+    var(--pr-glass-plate);
   backdrop-filter: blur(22px) saturate(145%);
   -webkit-backdrop-filter: blur(22px) saturate(145%);
   clip-path: polygon(22px 0%, 100% 0%, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0% 100%, 0% 22px);
@@ -758,20 +1072,39 @@ body.ui-hidden #btn-ui {
 #panel-overlay .modal-head,
 #stats-overlay .modal-head,
 #map-overlay .modal-head,
+#map-overlay.rh-visual-map-active .modal-head,
 #codex .modal-head,
+#app #codex .modal-head,
 #codex-overlay .modal-head,
 #help-screen .modal-head,
 #backlog-overlay .modal-head,
+body section#rumor-overlay.overlay .rumor-head,
+body section#arena-loadout-modal.overlay .rumor-head,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .rumor-head,
+body section#vn-backlog-modal.overlay .vn-modal-head,
+body section#vn-saveload-modal.overlay .vn-modal-head,
+body section#vn-chapters-modal.overlay .vn-modal-head,
+body section#vn-prefs-modal.overlay .vn-modal-head,
 .rh-modal-head {
   position: relative;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(238, 246, 255, 0.44) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(238, 246, 255, 0.46) 100%);
   border-bottom: 1px solid var(--pr-line-soft);
 }
 
 #panel .modal-head::after,
 #stats-overlay .modal-head::after,
 #map-overlay .modal-head::after,
+#map-overlay.rh-visual-map-active .modal-head::after,
 #codex .modal-head::after,
+#app #codex .modal-head::after,
+#help-screen .modal-head::after,
+#backlog-overlay .modal-head::after,
+body section#rumor-overlay.overlay .rumor-head::after,
+body section#arena-loadout-modal.overlay .rumor-head::after,
+body section#vn-backlog-modal.overlay .vn-modal-head::after,
+body section#vn-saveload-modal.overlay .vn-modal-head::after,
+body section#vn-chapters-modal.overlay .vn-modal-head::after,
+body section#vn-prefs-modal.overlay .vn-modal-head::after,
 .rh-modal-head::after {
   content: '';
   position: absolute;
@@ -780,7 +1113,64 @@ body.ui-hidden #btn-ui {
   bottom: -1px;
   height: 1.5px;
   width: auto;
-  background: linear-gradient(90deg, var(--pr-sapphire) 0%, var(--pr-cyan) 36%, var(--pr-gold) 68%, transparent 100%);
+  background: linear-gradient(90deg, var(--pr-sapphire) 0%, var(--pr-cyan) 36%, var(--pr-gold) 70%, transparent 100%);
+  pointer-events: none;
+}
+
+/* 全站弹窗统一无外框优雅关闭 ×（彻底消除方框/圆角框） */
+#panel .modal-close-x,
+#panel-overlay .modal-close-x,
+#stats-overlay .modal-close-x,
+#map-overlay .modal-close-x,
+#map-overlay.rh-visual-map-active .modal-close-x,
+#codex .modal-close-x,
+#app #codex .modal-head .modal-close-x,
+#help-screen .modal-close-x,
+#backlog-overlay .modal-close-x,
+body section#rumor-overlay.overlay .rumor-head .modal-close-x,
+body section#arena-loadout-modal.overlay .rumor-head .modal-close-x,
+body section#vn-backlog-modal.overlay .vn-modal-head .modal-close-x,
+body section#vn-saveload-modal.overlay .vn-modal-head .modal-close-x,
+body section#vn-chapters-modal.overlay .vn-modal-head .modal-close-x,
+body section#vn-prefs-modal.overlay .vn-modal-head .modal-close-x,
+.rh-overlay .rh-close-x,
+.rh-overlay .modal-close-x {
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--pr-ink-muted);
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+#panel .modal-close-x:hover,
+#panel-overlay .modal-close-x:hover,
+#stats-overlay .modal-close-x:hover,
+#map-overlay .modal-close-x:hover,
+#map-overlay.rh-visual-map-active .modal-close-x:hover,
+#codex .modal-close-x:hover,
+#app #codex .modal-head .modal-close-x:hover,
+#help-screen .modal-close-x:hover,
+#backlog-overlay .modal-close-x:hover,
+body section#rumor-overlay.overlay .rumor-head .modal-close-x:hover,
+body section#arena-loadout-modal.overlay .rumor-head .modal-close-x:hover,
+body section#vn-backlog-modal.overlay .vn-modal-head .modal-close-x:hover,
+body section#vn-saveload-modal.overlay .vn-modal-head .modal-close-x:hover,
+body section#vn-chapters-modal.overlay .vn-modal-head .modal-close-x:hover,
+body section#vn-prefs-modal.overlay .vn-modal-head .modal-close-x:hover,
+.rh-overlay .rh-close-x:hover,
+.rh-overlay .modal-close-x:hover {
+  border: none;
+  background: rgba(209, 52, 86, 0.08);
+  color: var(--pr-crimson);
+  box-shadow: none;
 }
 
 /* 弹窗页签：极简细线 + 激活菱形蓝宝石棱镜 */
@@ -896,8 +1286,8 @@ body.ui-hidden #btn-ui {
   background: radial-gradient(circle at 50% 42%, rgba(217, 243, 255, 0.24) 0%, rgba(16, 48, 134, 0.16) 62%, transparent 80%);
 }
 
-/* 主操作按钮：皇家蓝宝石斜切六角棱镜 */
-#panel .tbtn:not(.ghost),
+/* 主操作按钮：皇家蓝宝石斜切六角棱镜（排除危险/重置幽灵键） */
+#panel .tbtn:not(.ghost):not(#set-reset):not(#btn-reset-settings):not(.danger-btn),
 #stats-overlay .tbtn:not(.ghost),
 #map-overlay .tbtn:not(.ghost),
 #codex .tbtn:not(.ghost),
@@ -913,7 +1303,7 @@ body.ui-hidden #btn-ui {
   filter: drop-shadow(0 6px 14px rgba(14, 43, 120, 0.24));
 }
 
-#panel .tbtn:not(.ghost):hover:not(:disabled),
+#panel .tbtn:not(.ghost):not(#set-reset):not(#btn-reset-settings):not(.danger-btn):hover:not(:disabled),
 #stats-overlay .tbtn:not(.ghost):hover:not(:disabled),
 #map-overlay .tbtn:not(.ghost):hover:not(:disabled),
 #codex .tbtn:not(.ghost):hover:not(:disabled),
@@ -921,27 +1311,81 @@ body.ui-hidden #btn-ui {
   filter: brightness(1.12) drop-shadow(0 8px 20px rgba(22, 88, 235, 0.34));
 }
 
+/* 设置页「全部恢复默认」与危险操作：克制淡红/灰线幽灵按钮，绝不误套皇家蓝主 CTA */
+#panel #set-reset,
+#panel #btn-reset-settings,
+#panel .danger-btn,
+#panel .tbtn.danger-btn,
+#vn-prefs-modal #pref-reset {
+  border: 1px solid rgba(209, 52, 86, 0.34);
+  border-left: 2.5px solid rgba(209, 52, 86, 0.68);
+  background: rgba(255, 248, 250, 0.78);
+  color: var(--pr-crimson-deep);
+  font-family: var(--pr-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 8px 18px;
+  clip-path: none;
+  box-shadow: none;
+  filter: none;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+#panel #set-reset:hover:not(:disabled),
+#panel #btn-reset-settings:hover:not(:disabled),
+#panel .danger-btn:hover:not(:disabled),
+#panel .tbtn.danger-btn:hover:not(:disabled),
+#vn-prefs-modal #pref-reset:hover:not(:disabled) {
+  background: rgba(209, 52, 86, 0.10);
+  border-color: var(--pr-crimson);
+  color: var(--pr-crimson-deep);
+  filter: none;
+}
+
+/* 次级幽灵按钮：干净直角 1px 闭合细边框 + 左侧冰蓝饰条（彻底修复左右斜边描边截断） */
 #panel .tbtn.ghost,
 #stats-overlay .tbtn.ghost,
 #map-overlay .tbtn.ghost,
+#map-overlay.rh-visual-map-active .modal-foot .tbtn,
 #codex .tbtn.ghost,
 #help-screen .tbtn.ghost,
+#backlog-overlay .tbtn.ghost,
+body section#rumor-overlay.overlay .tbtn.ghost,
+body section#arena-loadout-modal.overlay .tbtn.ghost,
+body section#vn-backlog-modal.overlay .tbtn.ghost,
+body section#vn-saveload-modal.overlay .tbtn.ghost,
+body section#vn-chapters-modal.overlay .tbtn.ghost,
+body section#vn-prefs-modal.overlay .tbtn.ghost,
 .rh-overlay .rh-btn.ghost {
-  border: none;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(232, 242, 255, 0.76));
+  border: 1px solid rgba(45, 92, 186, 0.30);
+  border-left: 2.5px solid rgba(22, 88, 235, 0.62);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.90), rgba(236, 244, 255, 0.78));
   color: var(--pr-ink);
-  clip-path: polygon(9px 0%, 100% 0%, calc(100% - 9px) 100%, 0% 100%);
-  box-shadow: inset 0 0 0 1px rgba(45, 92, 186, 0.32);
+  clip-path: none;
+  box-shadow: none;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 }
 
 #panel .tbtn.ghost:hover:not(:disabled),
 #stats-overlay .tbtn.ghost:hover:not(:disabled),
 #map-overlay .tbtn.ghost:hover:not(:disabled),
+#map-overlay.rh-visual-map-active .modal-foot .tbtn:hover:not(:disabled),
 #codex .tbtn.ghost:hover:not(:disabled),
+#help-screen .tbtn.ghost:hover:not(:disabled),
+#backlog-overlay .tbtn.ghost:hover:not(:disabled),
+body section#rumor-overlay.overlay .tbtn.ghost:hover:not(:disabled),
+body section#arena-loadout-modal.overlay .tbtn.ghost:hover:not(:disabled),
+body section#vn-backlog-modal.overlay .tbtn.ghost:hover:not(:disabled),
+body section#vn-saveload-modal.overlay .tbtn.ghost:hover:not(:disabled),
+body section#vn-chapters-modal.overlay .tbtn.ghost:hover:not(:disabled),
+body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
 .rh-overlay .rh-btn.ghost:hover:not(:disabled) {
   background: linear-gradient(135deg, rgba(226, 241, 255, 0.96), rgba(196, 224, 255, 0.88));
+  border-color: var(--pr-sapphire);
+  border-left-color: var(--pr-sapphire);
   color: var(--pr-sapphire);
-  box-shadow: inset 0 0 0 1px var(--pr-sapphire);
+  box-shadow: none;
 }
 
 /* ==================== 4. 系统诏令弹窗 (#sys-popup / #sys-overlay) ==================== */
@@ -985,6 +1429,43 @@ body.ui-hidden #btn-ui {
 #sys-popup .sp-head h3,
 #sys-popup .sp-head .sp-title,
 #sys-popup .sp-head button {
+  color: #FFFFFF;
+}
+
+#sys-popup .sp-head .sp-code,
+#sys-overlay .sp-head .sp-code {
+  color: #E8F3FF !important;
+  opacity: 0.94;
+}
+
+#sys-popup .sp-head .sp-crest,
+#sys-overlay .sp-head .sp-crest {
+  color: #FFFFFF !important;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#sys-popup .sp-head .sp-crest polygon:nth-child(2),
+#sys-overlay .sp-head .sp-crest polygon:nth-child(2) {
+  stroke: #7DD3FC;
+}
+
+#sys-popup .sp-head .sp-crest circle,
+#sys-overlay .sp-head .sp-crest circle {
+  fill: #FFFFFF;
+}
+
+#sys-popup .sp-head .modal-close-x,
+#sys-overlay .sp-head .modal-close-x {
+  border: none;
+  background: transparent;
+  color: #E8F3FF;
+}
+
+#sys-popup .sp-head .modal-close-x:hover,
+#sys-overlay .sp-head .modal-close-x:hover {
+  border: none;
+  background: rgba(255, 255, 255, 0.18);
   color: #FFFFFF;
 }
 
@@ -1092,7 +1573,7 @@ body.ui-hidden #btn-ui {
 
 /* ==================== 8. 实机战斗界面 (#battle-screen · Designer 2 棱镜冰晶顶栏 / 敌方档案 + Option 2 P5 放射指令翼) ==================== */
 
-/* 8.1 顶部棱镜冰晶战术条 (.cb-topbar) */
+/* 8.1 顶部棱镜冰晶战术条 (.cb-topbar · 桌面单行不折行 + 模式开关降权) */
 #battle-screen .cb-topbar {
   position: relative;
   border: none;
@@ -1101,7 +1582,78 @@ body.ui-hidden #btn-ui {
   backdrop-filter: blur(18px) saturate(145%);
   -webkit-backdrop-filter: blur(18px) saturate(145%);
   box-shadow: 0 10px 26px rgba(10, 28, 82, 0.16);
-  padding: 7px 18px;
+  padding: 5px 14px;
+  gap: 6px 10px;
+}
+
+@media (min-width: 1024px) {
+  #battle-screen .cb-topbar {
+    flex-wrap: nowrap;
+    min-height: 40px;
+  }
+
+  #battle-screen .cb-stage-info {
+    flex-wrap: nowrap;
+    gap: 7px;
+    min-width: 0;
+    flex: 0 1 auto;
+  }
+
+  #battle-screen .cb-stage-title {
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 210px;
+  }
+
+  #battle-screen .cb-meters {
+    flex-wrap: nowrap;
+    gap: 7px;
+    min-width: 0;
+    flex: 0 1 auto;
+  }
+
+  #battle-screen .cb-meter-pill {
+    font-size: 11px;
+    gap: 4px;
+    padding: 2px 3px;
+    white-space: nowrap;
+  }
+
+  #battle-screen .cb-mini-bar {
+    width: 44px;
+  }
+
+  #battle-screen .cb-top-tools {
+    flex-wrap: nowrap;
+    gap: 3px;
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1360px) {
+  #battle-screen .cb-topbar {
+    padding: 5px 10px;
+    gap: 5px 8px;
+  }
+
+  #battle-screen .cb-stage-title {
+    font-size: 13.5px;
+    max-width: 155px;
+  }
+
+  #battle-screen .cb-tool-btn {
+    padding: 4px 7px;
+    font-size: 11px;
+    gap: 3px;
+  }
+
+  #battle-screen .cb-mini-bar {
+    width: 36px;
+  }
 }
 
 #battle-screen .cb-topbar::after {
@@ -1124,26 +1676,30 @@ body.ui-hidden #btn-ui {
 
 #battle-screen .cb-wave-pill {
   position: relative;
-  padding: 5px 18px 5px 15px;
+  padding: 3px 12px 3px 10px;
   border-right: none;
   background: var(--pr-sapphire-prism);
   color: #FFFFFF;
-  clip-path: polygon(9px 0%, 100% 0%, calc(100% - 9px) 100%, 0% 100%);
-  filter: drop-shadow(0 4px 10px rgba(14, 43, 120, 0.26));
+  white-space: nowrap;
+  flex-shrink: 0;
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  filter: drop-shadow(0 4px 10px rgba(14, 43, 120, 0.24));
 }
 
 #battle-screen .cb-stage-title {
   color: var(--pr-ink);
   font-family: var(--pr-serif);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
 }
 
 #battle-screen .cb-turn-badge {
-  padding: 3px 12px 3px 10px;
+  padding: 2px 9px 2px 8px;
   color: var(--pr-sapphire-deep);
   background: linear-gradient(90deg, rgba(22, 88, 235, 0.10), rgba(125, 211, 252, 0.12));
   border-left: 2px solid var(--pr-sapphire);
-  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 100%, 0 100%);
+  white-space: nowrap;
+  flex-shrink: 0;
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 100%, 0 100%);
 }
 
 #battle-screen .cb-turn-badge::before {
@@ -1153,34 +1709,79 @@ body.ui-hidden #btn-ui {
 #battle-screen .cb-tool-btn {
   clip-path: polygon(7px 0%, 100% 0%, calc(100% - 7px) 100%, 0% 100%);
   border-bottom: none;
-  padding: 6px 13px;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  gap: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: transform 0.14s var(--pr-ease), box-shadow 0.14s ease, opacity 0.14s ease;
+}
+
+#battle-screen .cb-tool-btn .cb-kbd {
+  transition: none;
 }
 
 #battle-screen .cb-tool-btn + .cb-tool-btn::before {
   display: none;
 }
 
+#battle-screen .cb-tool-btn.palace-btn,
+#battle-screen .cb-tool-btn.wand-btn,
+#battle-screen .cb-tool-btn.prism-toggle-btn,
+#battle-screen .cb-tool-btn.assist-btn {
+  transition: none;
+}
+
 #battle-screen .cb-tool-btn.palace-btn:not(:disabled),
-#battle-screen .cb-tool-btn.wand-btn.active {
+#battle-screen .cb-tool-btn.palace-btn:hover:not(:disabled),
+#battle-screen .cb-tool-btn.wand-btn.active,
+#battle-screen .cb-tool-btn.wand-btn.active:hover:not(:disabled) {
   background: var(--pr-sapphire-prism);
   color: #FFFFFF;
+}
+
+#battle-screen .cb-tool-btn.palace-btn:hover:not(:disabled),
+#battle-screen .cb-tool-btn.wand-btn.active:hover:not(:disabled) {
+  filter: brightness(1.1);
 }
 
 #battle-screen .cb-tool-btn.palace-btn:not(:disabled) .cb-kbd,
-#battle-screen .cb-tool-btn.wand-btn.active .cb-kbd {
-  border-color: rgba(217, 243, 255, 0.45);
-  color: var(--pr-cyan-gleam);
-}
-
-#battle-screen .cb-tool-btn.prism-toggle-btn {
-  color: var(--pr-sapphire-deep);
-  background: rgba(22, 88, 235, 0.08);
-  font-weight: 700;
-}
-
-#battle-screen .cb-tool-btn.prism-toggle-btn.active {
-  background: var(--pr-sapphire-prism);
+#battle-screen .cb-tool-btn.palace-btn:hover:not(:disabled) .cb-kbd,
+#battle-screen .cb-tool-btn.wand-btn.active .cb-kbd,
+#battle-screen .cb-tool-btn.wand-btn.active:hover:not(:disabled) .cb-kbd {
+  border-color: rgba(255, 255, 255, 0.52);
+  background: rgba(255, 255, 255, 0.16);
   color: #FFFFFF;
+}
+
+/* 视图模式切换降权为次级清淡描边键，绝不抢过「结束回合 X」与「冰晶宫殿 Q」视觉重心 */
+#battle-screen .cb-tool-btn.prism-toggle-btn,
+#battle-screen #cb-btn-prism-toggle {
+  clip-path: none;
+  border: 1px solid rgba(45, 92, 186, 0.26);
+  background: rgba(250, 252, 255, 0.72);
+  color: var(--pr-ink-mid);
+  font-weight: 600;
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+#battle-screen .cb-tool-btn.prism-toggle-btn.active,
+#battle-screen #cb-btn-prism-toggle.active {
+  background: rgba(22, 88, 235, 0.06);
+  border-color: rgba(22, 88, 235, 0.36);
+  color: var(--pr-sapphire);
+  font-weight: 600;
+}
+
+#battle-screen .cb-tool-btn.prism-toggle-btn:hover:not(:disabled),
+#battle-screen .cb-tool-btn.prism-toggle-btn.active:hover:not(:disabled),
+#battle-screen #cb-btn-prism-toggle:hover:not(:disabled),
+#battle-screen #cb-btn-prism-toggle.active:hover:not(:disabled) {
+  background: rgba(22, 88, 235, 0.12);
+  border-color: var(--pr-sapphire);
+  color: var(--pr-sapphire-deep);
+  filter: none;
 }
 
 /* 8.2 敌方战术切面雪瓷棱镜牌 (.cb-enemy-card / .cb-e-plate / .cb-intent-banner)
@@ -1256,6 +1857,66 @@ body.ui-hidden #btn-ui {
   padding: 12px 16px;
 }
 
+#battle-screen .cb-player-pane .cb-p-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 3px;
+}
+
+#battle-screen .cb-player-pane .cb-p-title {
+  display: contents;
+}
+
+#battle-screen .cb-player-pane .cb-p-name {
+  grid-column: 1;
+  grid-row: 1;
+  white-space: nowrap;
+}
+
+#battle-screen .cb-player-pane .cb-ap-row {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+}
+
+#battle-screen .cb-player-pane .cb-p-sub {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin-top: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1360px), (max-height: 760px) {
+  #battle-screen .cb-player-pane {
+    padding: 9px 12px;
+  }
+
+  #battle-screen .cb-player-pane .cb-p-header {
+    margin-bottom: 6px;
+    padding-bottom: 5px;
+    row-gap: 2px;
+  }
+
+  #battle-screen .cb-player-pane .cb-p-name {
+    font-size: 15px;
+  }
+
+  #battle-screen .cb-player-pane .cb-p-sub {
+    font-size: 11px;
+    letter-spacing: 0.01em;
+    line-height: 1.3;
+  }
+
+  #battle-screen .cb-player-pane .cb-ap-row {
+    gap: 5px;
+  }
+}
+
 /* 战位脚下六角切面冰晶/炽焰地纹（零圆框且避免矩形硬边框） */
 #battle-screen .cb-magic-circle {
   border: none !important;
@@ -1289,11 +1950,17 @@ body.ui-hidden #btn-ui {
   background: linear-gradient(90deg, transparent, rgba(255, 143, 164, 0.26), transparent);
 }
 
-/* 战斗六角切面结晶 HP / MP 轨 */
+/* 战斗六角切面结晶 HP / MP 轨（敌我清晰度统一：我方 8px / 敌方锁定 7px） */
 #battle-screen .cb-stat-track {
   height: 8px;
   background: rgba(14, 34, 84, 0.14);
   clip-path: polygon(4px 0%, calc(100% - 4px) 0%, 100% 50%, calc(100% - 4px) 100%, 4px 100%, 0% 50%);
+}
+
+#battle-screen .cb-e-plate .cb-stat-track {
+  height: 7px;
+  background: rgba(14, 34, 84, 0.14);
+  clip-path: polygon(3px 0%, calc(100% - 3px) 0%, 100% 50%, calc(100% - 3px) 100%, 3px 100%, 0% 50%);
 }
 
 #battle-screen .cb-stat-fill {
@@ -1308,6 +1975,26 @@ body.ui-hidden #btn-ui {
 #battle-screen .cb-stat-fill.mp,
 #battle-screen .cb-stat-fill.emp {
   background: linear-gradient(180deg, #9BE7FF 0%, #3288FF 49%, #1658EB 51%, #0E2B78 100%);
+}
+
+/* 玩家 MP 预扣段：清透斜纹 + 亮青虚框，明确区分「将消耗」而非「已空槽」 */
+#battle-screen .cb-stat-track .cb-mp-commit {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255, 255, 255, 0.92) 0px,
+      rgba(255, 255, 255, 0.92) 3px,
+      rgba(56, 189, 248, 0.78) 3px,
+      rgba(56, 189, 248, 0.78) 6px
+    );
+  outline: 1px dashed rgba(125, 211, 252, 0.98);
+  outline-offset: -1px;
+  box-shadow: inset 1.5px 0 0 #FFFFFF;
 }
 
 /* 8.4 冰晶宫殿 & 战果弹窗切面统一 */
@@ -1396,13 +2083,13 @@ body.ui-hidden #btn-ui {
   pointer-events: none !important;
 }
 
-/* 动态香槟金 & 冰蓝星轨放射引线 SVG */
+/* 动态香槟金 & 冰蓝星轨放射引线 SVG（与 viewBox="-42 -250 470 500" 严格 1:1 对齐） */
 .cb-prism-svg {
   position: absolute;
   left: -42px;
-  top: -230px;
+  top: -250px;
   width: 470px;
-  height: 460px;
+  height: 500px;
   overflow: visible;
   pointer-events: none;
 }
@@ -1629,9 +2316,18 @@ body.ui-hidden #btn-ui {
   color: #FFF1B8;
 }
 
-.cb-pwing:not(.hero-prism):not(:disabled):hover .cb-pw-key {
-  background: rgba(255, 255, 255, 0.16);
-  color: var(--pr-gold-pale);
+.cb-pwing:not(.hero-prism):not(:disabled):hover .cb-pw-key,
+.cb-pwing-wrap.hovered .cb-pwing:not(.hero-prism):not(:disabled) .cb-pw-key {
+  background: rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
+  text-shadow: 0 1px 2px rgba(8, 22, 68, 0.48);
+}
+
+.cb-pwing.amp-tier-3:not(.hero-prism):not(:disabled):hover .cb-pw-key,
+.cb-prism-wing.amp-tier-3:not(.hero-prism):not(:disabled):hover .cb-pw-key {
+  background: rgba(255, 243, 209, 0.24);
+  color: #FFF3D1;
+  text-shadow: 0 1px 2px rgba(8, 22, 68, 0.48);
 }
 
 .cb-pwing.amp-charged::after {
@@ -1695,8 +2391,9 @@ body.ui-hidden #btn-ui {
 }
 
 .cb-pwing.hero-prism .cb-pw-key {
-  background: rgba(255, 255, 255, 0.18);
-  color: var(--pr-gold-pale);
+  background: rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
+  text-shadow: 0 1px 2px rgba(8, 22, 68, 0.48);
 }
 
 .cb-pw-body {
@@ -1731,9 +2428,9 @@ body.ui-hidden #btn-ui {
 
 .cb-pw-en {
   font-family: var(--pr-mono);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   color: var(--pr-sapphire);
   white-space: nowrap;
 }
@@ -1743,7 +2440,7 @@ body.ui-hidden #btn-ui {
 }
 
 .cb-pw-sub {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--pr-ink-muted);
   white-space: nowrap;
@@ -1752,7 +2449,7 @@ body.ui-hidden #btn-ui {
 }
 
 .cb-prism-rig.compact-multi .cb-pw-sub {
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .cb-pwing.hero-prism .cb-pw-sub {
@@ -1823,7 +2520,7 @@ body.ui-hidden #btn-ui {
 
 .cb-amp-mp {
   font-family: var(--pr-mono);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--pr-ink-muted);
 }
 
@@ -1916,6 +2613,7 @@ body.ui-hidden #btn-ui {
   letter-spacing: 0.06em;
   clip-path: polygon(9px 0, calc(100% - 9px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 5px 50%);
   white-space: nowrap;
+  transition: none;
 }
 
 .cb-spine-btn:hover {
@@ -1923,14 +2621,22 @@ body.ui-hidden #btn-ui {
   color: #FFFFFF;
 }
 
+/* 顶刺增幅快切键按档位分色：常规雪瓷蓝 / 1阶冰蓝宝 / 2阶深湛蓝 / 3阶香槟金 */
 .cb-spine-btn.amp-mini {
-  background: var(--pr-sapphire-prism);
-  color: var(--pr-cyan-gleam);
+  background: linear-gradient(154deg, rgba(255, 255, 255, 0.96) 0%, rgba(232, 243, 255, 0.92) 100%);
+  color: var(--pr-sapphire-deep);
 }
 
-.cb-spine-btn.amp-mini.charged {
-  background: linear-gradient(180deg, #C4A46C 0%, #9E7830 52%, #8C6928 100%);
+.cb-spine-btn.amp-mini.charged,
+.cb-spine-btn.amp-mini.tier-1 {
+  background: linear-gradient(108deg, #38BDF8 0%, #1E75F5 52%, #1658EB 100%);
   color: #FFFFFF;
+}
+
+.cb-spine-btn.amp-mini.tier-2,
+.cb-prism-rig:has(#cb-pw-amp.amp-tier-2) .cb-spine-btn.amp-mini.charged {
+  background: linear-gradient(108deg, #2E77F8 0%, #1446C2 50%, #0B256E 100%);
+  color: #E8F6FF;
 }
 
 /* V2.2 魔力增幅统一建筑脊柱面板（单层雪瓷切面外壳 + 1px 细线分隔，零圆框套圆框） */
@@ -1939,7 +2645,7 @@ body.ui-hidden #btn-ui {
   position: absolute;
   left: 56px;
   top: -120px;
-  width: 356px;
+  width: 372px;
   background: var(--pr-caustic), var(--pr-glass-plate);
   backdrop-filter: blur(20px) saturate(145%);
   -webkit-backdrop-filter: blur(20px) saturate(145%);
@@ -1968,7 +2674,7 @@ body.ui-hidden #btn-ui {
 
 .cb-prism-rig.compact-multi .cb-prism-amp-panel,
 .cb-prism-rig.narrow-desktop .cb-prism-amp-panel {
-  width: 342px;
+  width: 352px;
 }
 
 .cb-amp-tiers {
@@ -2038,8 +2744,15 @@ body.ui-hidden #btn-ui {
   color: #FFFFFF;
 }
 
+/* 三阶 60% 选中行：深皇家蓝→冰青折射→冰金高对比渐变（彻底消除脏褐过渡）配清晰亮白/奶油金字 */
 .cb-amp-tier-blade.is-tier-3.active {
-  background: linear-gradient(108deg, #103FA8 0%, #0E2B78 36%, #B38A3E 80%, #E5C06E 100%);
+  background:
+    linear-gradient(96deg, transparent 56%, rgba(125, 211, 252, 0.24) 76%, rgba(247, 229, 174, 0.44) 100%),
+    linear-gradient(108deg, #0B2163 0%, #1444B8 54%, #1D64DC 100%);
+  box-shadow:
+    inset 3px 0 0 #F5DC9B,
+    inset 0 1px 0 rgba(255, 243, 209, 0.52),
+    inset 0 -1px 0 rgba(255, 243, 209, 0.36);
   color: #FFFFFF;
 }
 
@@ -2065,19 +2778,21 @@ body.ui-hidden #btn-ui {
   clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
 }
 
-.cb-amp-tier-blade.is-tier-3:not(.is-locked) .cb-atb-key {
+.cb-amp-tier-blade.is-tier-3:not(.is-locked):not(.active) .cb-atb-key {
   background: rgba(229, 192, 110, 0.22);
   color: #B38A3E;
 }
 
 .cb-amp-tier-blade.active .cb-atb-key {
-  background: rgba(255, 255, 255, 0.18);
-  color: var(--pr-gold-pale);
+  background: rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
+  text-shadow: 0 1px 2px rgba(8, 22, 68, 0.48);
 }
 
 .cb-amp-tier-blade.is-tier-3.active .cb-atb-key {
-  background: rgba(255, 241, 184, 0.22);
-  color: #FFF1B8;
+  background: rgba(255, 243, 209, 0.24);
+  color: #FFF4CE;
+  text-shadow: 0 1px 2px rgba(8, 22, 68, 0.48);
 }
 
 .cb-atb-body {
@@ -2124,24 +2839,26 @@ body.ui-hidden #btn-ui {
   white-space: nowrap;
 }
 
-.cb-amp-tier-blade.is-tier-2:not(.is-locked) .cb-atb-mult {
+.cb-amp-tier-blade.is-tier-2:not(.is-locked):not(.active) .cb-atb-mult {
   color: #0B6AA8;
 }
 
-.cb-amp-tier-blade.is-tier-3:not(.is-locked) .cb-atb-mult {
+.cb-amp-tier-blade.is-tier-3:not(.is-locked):not(.active) .cb-atb-mult {
   color: #B38A3E;
 }
 
-.cb-amp-tier-blade.active .cb-atb-mult {
+.cb-amp-tier-blade.active .cb-atb-mult,
+.cb-amp-tier-blade.is-tier-1.active .cb-atb-mult,
+.cb-amp-tier-blade.is-tier-2.active .cb-atb-mult {
   color: var(--pr-gold-pale);
 }
 
 .cb-amp-tier-blade.is-tier-3.active .cb-atb-mult {
-  color: #FFF1B8;
+  color: #FFF4CE;
 }
 
 .cb-atb-meta {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--pr-ink-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -2150,7 +2867,7 @@ body.ui-hidden #btn-ui {
 
 .cb-atb-cost {
   font-family: var(--pr-mono);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--pr-sapphire-mid);
   white-space: nowrap;
@@ -2195,7 +2912,8 @@ body.ui-hidden #btn-ui {
 
 .cb-prism-rig.compact-multi.narrow-desktop .cb-amp-ft-note {
   margin-top: 2px;
-  font-size: 9.5px;
+  font-size: 10px;
+  line-height: 1.28;
 }
 
 .cb-amp-ft-head {
@@ -2430,23 +3148,50 @@ body.ui-hidden #btn-ui {
   background: linear-gradient(135deg, #FFF1B8 0%, #E5C06E 50%, #B38A3E 100%);
 }
 
+/* 4 个刻度绝对百分比精确锚定（0% / 33.33% / 66.67% / 100%），与滑轨节点严格对齐 */
 .cb-amp-ticks {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 2px;
+  position: relative;
+  height: 18px;
+  margin: 3px 7px 0;
 }
 
 .cb-amp-tick {
+  position: absolute;
+  top: 0;
   border: none;
   background: transparent;
-  padding: 1px 2px;
+  padding: 1px 0;
   font-family: var(--pr-mono);
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
+  line-height: 1.3;
   color: var(--pr-ink-muted);
+  white-space: nowrap;
   cursor: pointer;
   transition: none;
+}
+
+.cb-amp-tick[data-amp-snap="0"] {
+  left: 0%;
+  transform: translateX(0);
+}
+
+.cb-amp-tick[data-amp-snap="20"],
+.cb-amp-tick.t1 {
+  left: 33.33%;
+  transform: translateX(-50%);
+}
+
+.cb-amp-tick[data-amp-snap="40"],
+.cb-amp-tick.t2 {
+  left: 66.67%;
+  transform: translateX(-50%);
+}
+
+.cb-amp-tick[data-amp-snap="60"],
+.cb-amp-tick.t3 {
+  left: 100%;
+  transform: translateX(-100%);
 }
 
 .cb-amp-tick:hover:not(:disabled),
@@ -2472,12 +3217,14 @@ body.ui-hidden #btn-ui {
 
 .cb-amp-ft-note {
   margin-top: 3px;
-  font-size: 10px;
-  line-height: 1.35;
+  font-size: 10.5px;
+  line-height: 1.32;
+  letter-spacing: -0.01em;
   color: var(--pr-ink-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
 }
 
 .cb-blade-wrap {
@@ -2574,8 +3321,9 @@ body.ui-hidden #btn-ui {
 
 .cb-blade:not(:disabled):hover .cb-bl-key,
 .cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-key {
-  background: rgba(255, 255, 255, 0.18);
-  color: var(--pr-gold-pale);
+  background: rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
+  text-shadow: 0 1px 2px rgba(8, 22, 68, 0.48);
 }
 
 .cb-bl-content {
@@ -2605,7 +3353,7 @@ body.ui-hidden #btn-ui {
 }
 
 .cb-bl-tag {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--pr-sapphire);
   white-space: nowrap;
@@ -2616,7 +3364,7 @@ body.ui-hidden #btn-ui {
 }
 
 .cb-bl-meta {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--pr-ink-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -2625,7 +3373,7 @@ body.ui-hidden #btn-ui {
 
 .cb-bl-cost {
   font-family: var(--pr-mono);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--pr-sapphire-mid);
   white-space: nowrap;
@@ -2645,16 +3393,18 @@ body.ui-hidden #btn-ui {
   color: var(--pr-gold-pale);
 }
 
-/* 顶阶三阶星霜极限香槟金辉光 */
+/* 顶阶三阶星霜极限香槟金辉光（高对比深靛字，零脏褐） */
 .cb-pwing.amp-max::after,
 .cb-prism-wing.amp-tier-3::after {
   background: linear-gradient(180deg, #FFF1B8 0%, #E5C06E 50%, #B38A3E 100%);
 }
 
 .cb-spine-btn.amp-mini.tier-3,
-.cb-spine-btn.amp-mini.max-tier {
-  background: linear-gradient(180deg, #E5C06E 0%, #B38A3E 56%, #8C6928 100%);
-  color: #FFFFFF;
+.cb-spine-btn.amp-mini.max-tier,
+.cb-prism-rig:has(#cb-pw-amp.amp-tier-3) .cb-spine-btn.amp-mini.charged {
+  background: linear-gradient(112deg, #FFF3CE 0%, #E7C675 46%, #C9A04A 100%);
+  color: #102044;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.42);
 }
 
 /* 8~9 技能高密度级联叶片紧凑版 */
@@ -2674,58 +3424,90 @@ body.ui-hidden #btn-ui {
 
 .cb-blade.compact .cb-bl-meta,
 .cb-blade.compact .cb-bl-cost {
-  font-size: 10px;
+  font-size: 11px;
 }
 
-/* 多敌（3~4 敌）6~9 术式双列棱晶折翼（悬浮于敌人意图栏与立绘之间开阔天区，零重叠） */
+/* 多敌（3~4 敌）或高技能数（>=7/10 式）双列棱晶折翼（悬浮于敌人意图栏与立绘之间开阔天区，零重叠零裁底） */
 .cb-prism-rig.two-col-blades .cb-blade {
   width: 292px;
   min-height: 39px;
   height: 40px;
-  padding: 2px 16px 2px 12px;
+  padding: 1px 16px 1px 12px;
   gap: 8px;
+}
+
+.cb-prism-rig.two-col-blades .cb-bl-content {
+  gap: 1px;
+  line-height: 1.15;
+}
+
+.cb-prism-rig.two-col-blades .cb-bl-top,
+.cb-prism-rig.two-col-blades .cb-bl-bot {
+  line-height: 1.15;
 }
 
 .cb-prism-rig.two-col-blades.narrow-desktop .cb-blade {
   width: 266px;
-  min-height: 36px;
+  min-height: 34px;
   height: 36px;
-  padding: 1px 14px 1px 11px;
+  padding: 0 14px 0 11px;
   gap: 7px;
 }
 
 .cb-prism-rig.two-col-blades.narrow-desktop .cb-bl-key {
   width: 20px;
-  height: 24px;
+  height: 22px;
   font-size: 11px;
-}
-
-.cb-prism-rig.two-col-blades.narrow-desktop .cb-bl-name {
-  font-size: 12.5px;
 }
 
 .cb-prism-rig.two-col-blades.narrow-desktop .cb-bl-content {
   gap: 0;
+  line-height: 1.08;
 }
 
-/* 传统模式三阶魔力增幅档位自适应排布（自动等分 0/20/40/60% 4 按钮或其他按钮数） */
+.cb-prism-rig.two-col-blades.narrow-desktop .cb-bl-top {
+  line-height: 1.12;
+}
+
+.cb-prism-rig.two-col-blades.narrow-desktop .cb-bl-bot {
+  line-height: 1.08;
+}
+
+.cb-prism-rig.two-col-blades.narrow-desktop .cb-bl-name {
+  font-size: 12px;
+  line-height: 1.14;
+}
+
+.cb-prism-rig.two-col-blades.narrow-desktop .cb-bl-tag {
+  font-size: 10px;
+  line-height: 1.1;
+}
+
+.cb-prism-rig.two-col-blades.narrow-desktop .cb-bl-meta,
+.cb-prism-rig.two-col-blades.narrow-desktop .cb-bl-cost {
+  font-size: 10.5px;
+  line-height: 1.08;
+}
+
+/* 传统模式三阶魔力增幅 2×2 清晰排布（4 档绝不截断溢出） */
 #battle-screen #cb-oc-seg {
   display: grid;
-  grid-template-columns: none;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: row;
   gap: 0;
 }
 
 #battle-screen #cb-oc-seg .cb-oc-btn {
-  padding: 5px 3px;
-  font-size: 10px;
+  padding: 4px 5px;
+  font-size: 11px;
+  line-height: 1.25;
   white-space: nowrap;
 }
 
-/* 棱晶模式顶栏常驻「结束回合 [X]」按钮（非棱晶模式隐藏） */
-.cb-tool-btn.prism-endturn-top {
-  display: none;
+/* 棱晶模式顶栏常驻「结束回合 [X]」按钮（高特异性根治传统列双结束回合） */
+#battle-screen:not(.prism-radial-active) .cb-tool-btn.prism-endturn-top,
+#battle-screen:not(.prism-radial-active) #cb-btn-endturn-top {
+  display: none !important;
 }
 
 #battle-screen.prism-radial-active .cb-tool-btn.prism-endturn-top {
@@ -2733,8 +3515,9 @@ body.ui-hidden #btn-ui {
   align-items: center;
   gap: 5px;
   border-radius: 0;
-  font-weight: 700;
-  background: rgba(22, 88, 235, 0.08);
+  border-bottom: 1.5px solid var(--pr-sapphire);
+  font-weight: 800;
+  background: rgba(22, 88, 235, 0.13);
   color: var(--pr-sapphire-deep);
   transition: none;
 }
@@ -2745,9 +3528,9 @@ body.ui-hidden #btn-ui {
 }
 
 #battle-screen.prism-radial-active .cb-tool-btn.prism-endturn-top:hover:not(:disabled) .cb-kbd {
-  color: var(--pr-gold-pale);
-  background: rgba(255, 255, 255, 0.14);
-  border-bottom-color: rgba(239, 224, 190, 0.65);
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.18);
+  border-bottom-color: rgba(255, 255, 255, 0.65);
 }
 
 #battle-screen.prism-radial-active .cb-tool-btn.prism-endturn-top.needs-endturn,
@@ -2763,9 +3546,9 @@ body.ui-hidden #btn-ui {
 
 #battle-screen.prism-radial-active .cb-tool-btn.prism-endturn-top.needs-endturn .cb-kbd,
 #battle-screen.prism-radial-active .cb-tool-btn.prism-endturn-top.needs-endturn:hover:not(:disabled) .cb-kbd {
-  color: var(--pr-gold-pale) !important;
-  background: rgba(255, 255, 255, 0.16) !important;
-  border-bottom-color: rgba(239, 224, 190, 0.72) !important;
+  color: #FFF3D1 !important;
+  background: rgba(255, 255, 255, 0.20) !important;
+  border-bottom-color: rgba(255, 243, 209, 0.78) !important;
 }
 
 @keyframes prEndTurnPulse {
@@ -2773,7 +3556,7 @@ body.ui-hidden #btn-ui {
   50% { filter: brightness(1.16); }
 }
 
-/* 棱晶模式紧凑实况战报条与可展开历史抽屉（零圆角、无圆框套圆框） */
+/* 棱晶模式紧凑实况战报条与贴底展开历史抽屉（避开右侧敌怪、零裁底） */
 .cb-prism-log-bar {
   display: none;
 }
@@ -2817,6 +3600,7 @@ body.ui-hidden #btn-ui {
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
+  transition: none;
 }
 
 .cb-plog-toggle:hover,
@@ -2827,24 +3611,35 @@ body.ui-hidden #btn-ui {
 
 .cb-plog-drawer {
   position: absolute;
-  left: 0;
+  left: auto;
   right: 0;
-  bottom: calc(100% + 2px);
-  max-height: 220px;
+  width: min(520px, 48vw);
+  bottom: calc(100% + 8px);
+  max-height: 150px;
   overflow-y: auto;
   background: rgba(248, 251, 255, 0.96);
   border-top: 2px solid var(--pr-sapphire);
-  border-bottom: 1px solid rgba(22, 88, 235, 0.22);
+  border-left: 2px solid var(--pr-gold);
+  border-bottom: 1px solid rgba(22, 88, 235, 0.24);
   box-shadow: 0 -10px 26px rgba(10, 28, 82, 0.18);
-  padding: 8px 16px;
+  padding: 8px 14px 14px;
   z-index: 40;
+}
+
+@media (max-width: 1360px), (max-height: 760px) {
+  .cb-plog-drawer {
+    width: min(480px, 46vw);
+    bottom: calc(100% + 6px);
+    max-height: 138px;
+    padding: 7px 12px 12px;
+  }
 }
 
 .cb-plog-row {
   padding: 4px 0;
   border-bottom: 1px solid rgba(22, 88, 235, 0.10);
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 1.48;
   color: var(--pr-ink);
 }
 

@@ -19,6 +19,8 @@
     { id: 's_beatrice_day', vol: '第一卷', title: '第4.2章 贝阿特丽丝大人的一天', minAge: 7 },
     { id: 's_micro', vol: '第一卷', title: '第4.1章 微服出行', minAge: 8 },
     { id: 's_alice_wind_teach', vol: '第一卷', title: '第四章 下午，花园（教爱丽丝风魔法）', minAge: 9 },
+    { id: 's_beatrice_leaves', vol: '第一卷', title: '贝阿特丽丝离巢（10岁春）', minAge: 10 },
+    { id: 's_academy_start', vol: '第二卷 魔法大学篇', title: '第一章 离巢启程（12岁春）', minAge: 12 },
     { id: 's_opening_ceremony', vol: '第二卷 魔法大学篇', title: '第一章 离巢 & 开学典礼（12岁）', minAge: 12 },
     { id: 's_noelle_meet', vol: '第二卷', title: '第二章 同龄人', phase: 'academy' },
     { id: 's_aino_meet', vol: '第二卷', title: '第二章 初遇艾诺', phase: 'academy' },
@@ -120,11 +122,14 @@
 
       T('一声清脆的提示音在脑海中响起。\n眼前浮现出一块半透明的面板。'),
       {
-        do: () =>
+        do: () => {
+          flag('system_awakened', 1);
+          if (typeof syncStageChromeMode === 'function') syncStageChromeMode();
           sysPopup(
             '✧ SYSTEM ✧',
-            '📋 状态面板　🎒 背包　🗺️ 地图<br>📖 图鉴　📜 任务<br><br><b>只有你能看见。</b><br>世人没有「面板」「熟练度」「任务」这些概念。'
-          ),
+            '◇ 状态面板　◇ 背包　◇ 地图<br>◇ 图鉴　◇ 任务<br><br><b>只有你能看见。</b><br>世人没有「面板」「熟练度」「任务」这些概念。'
+          );
+        },
       },
       T('这是……游戏系统？\n面板悬浮在视野中央，半透明的边框泛着微微的光泽。'),
 
@@ -132,8 +137,8 @@
       {
         do: () =>
           sysPopup(
-            '⭐ 状态面板',
-            '<b>性别：</b>女　<b>天赋亲和：</b>❄️冰（赋亲和）· 💧水（基础亲和）<br><b>状态：</b>🍼 新生儿<br><br>' + statusPanelHTML()
+            '✦ 状态面板',
+            '<div class="sp-narrative-meta"><b>性别：</b>女　<b>天赋亲和：</b>✦ 冰（赋亲和）· ◇ 水（基础亲和）<br><b>状态：</b>◇ 新生儿</div>' + statusPanelHTML()
           ),
       },
       T('我盯着面板上的某一行，陷入了短暂的沉默。\n性别：女。'),
@@ -246,7 +251,7 @@
       T('转生成女孩，就当女孩。\n公爵家的千金？听起来生活条件不错，挺好的。'),
 
       T('至于以后……\n以后再说吧。'),
-      T('不过，系统里最特殊的应该就是状态面板下一页的这个——\n「勇者之赐」'),
+      T('不过，系统里最特殊的应该就是状态面板下一页的这个——\n「勇者之赐」', { flag: 'brave_gift_known', flagV: 1 }),
 
       T('当你的最高阶段首次提升时，将触发「勇者之赐」。触发时，时间将暂停，从七个选项中选择一项，获得一个赋魔法或赋剑技。此生至多七次。\n本世界的人们以「等阶」衡量强弱，「等级」是系统独有的概念，每约15级对应一个等阶。'),
       T('名字挺中二的。\n我看了看自己胖乎乎的小手。\n……算了，不深究了。系统爱叫什么就叫什么吧。'),
@@ -1837,8 +1842,9 @@
       T('我看了看她，她低着头看书，表情很平常。我什么都没说，继续发呆。', {
         know: 'aino',
         knowD: 20,
-        know: 'noelle',
-        knowD: 10,
+        do: () => {
+          know('noelle', 10);
+        },
         freeRoam: true,
       }),
     ],
@@ -1880,7 +1886,7 @@
   };
 
   SCENES.s_ice_melt_2 = {
-    bgm: 'sad',
+    bgm: 'cheerful',
     bg: 'bg-img-dorm bg-room',
     loc: 'dorm',
     phase: 'academy',
@@ -2125,6 +2131,10 @@
           S.alias = '眷寒渔';
           ach('black_hair');
           S.gold = Math.max(0, (S.gold || 0) - 5);
+          if (typeof applyStage === 'function') {
+            applyStage([{ id: 'sylvia', emo: 'serious', active: true }]);
+          }
+          if (typeof updateHUD === 'function') updateHUD();
         },
       },
       T('很轻。几乎没出声。嘴唇动了，气流从齿缝间带出来三个音节，就散了。\n这个名字不属于这个世界。不属于阿斯拉，不属于公爵府，不属于学院，不属于任何一张告示栏上的任何一行字。'),

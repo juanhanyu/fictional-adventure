@@ -2595,7 +2595,7 @@
           reverbSend: 0.34 + ratio * 0.24
         });
         // Tier 1 (20%+): 叠加清冽纯五度泛音 (*1.498)
-        if (pct >= 0.18) {
+        if (pct >= 0.20 - 1e-4) {
           playCelesta(c, t, now, vol, prio, {
             freq: baseFreq * 1.498,
             delay: 0.032,
@@ -2607,7 +2607,7 @@
           });
         }
         // Tier 2 (40%+): 追加明亮八度泛音 (*2.0)
-        if (pct >= 0.38) {
+        if (pct >= 0.40 - 1e-4) {
           playCelesta(c, t, now, vol, prio, {
             freq: baseFreq * 2.0,
             delay: 0.064,
@@ -2619,7 +2619,7 @@
           });
         }
         // Tier 3 (60%): 香槟金高阶天穹星辉 (*2.498 & *3.0 钟鸣泛音 + 冰雷电弧脆裂 + 悠长晶振余韵)
-        if (pct >= 0.55) {
+        if (pct >= 0.60 - 1e-4) {
           playCelesta(c, t, now, vol, prio, {
             freq: baseFreq * 2.498,
             delay: 0.094,

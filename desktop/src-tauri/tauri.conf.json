@@ -23,7 +23,7 @@
         "resizable": true,
         "fullscreen": false,
         "decorations": true,
-        "backgroundColor": "#0e172a",
+        "backgroundColor": "#FAFBFD",
         "additionalBrowserArgs": "--autoplay-policy=no-user-gesture-required"
       }
     ],

@@ -853,6 +853,7 @@ const PORTRAIT_FILES = {
   beatrice_young_teary:'assets/portraits/beatrice_young_teary.png',
   beatrice_young_wink:'assets/portraits/beatrice_young_wink.png',
   beatrice_teenage_normal:'assets/portraits/beatrice_teenage_normal.png',
+  beatrice_teenage_calm:'assets/portraits/beatrice_teenage_calm.png',
   beatrice_teenage_sad:'assets/portraits/beatrice_teenage_sad.png',
   beatrice_teenage_teary:'assets/portraits/beatrice_teenage_teary.png',
   // 兜底：缺表情落到该档 normal
@@ -895,9 +896,13 @@ const PORTRAIT_FILES = {
   instructor_normal:'assets/portraits/sword_instructor.png',
   huke_normal:'assets/portraits/huke_normal.png',
   maid_normal:'assets/portraits/maid_normal.png',
+  maid_noble:'assets/portraits/maid_noble.png',
+  maid_strict:'assets/portraits/maid_strict.png',
   teacher_middle_normal:'assets/portraits/teacher_middle.png',
   merchant_bakery_normal:'assets/portraits/merchant_bakery.png',
   merchant_jewel_normal:'assets/portraits/merchant_jewel.png',
+  blackmarket_merchant_normal:'assets/portraits/blackmarket_merchant_normal.png',
+  jewel_merchant_normal:'assets/portraits/jewel_merchant_normal.png',
   jianshen_normal:'assets/portraits/jianshen_normal.png',
   wanshen_normal:'assets/portraits/wanshen_normal.jpg',
   fengshen_normal:'assets/portraits/fengshen_normal.png',
@@ -1647,7 +1652,8 @@ function sysPopup(title, body){
   closeHudMoreDrawer();
   const cleanTitle = stripLeadingEmojis(title);
   const prismCrest = `<svg class="sp-crest" viewBox="0 0 28 28" width="22" height="22" fill="none" aria-hidden="true"><polygon points="14,2 25,14 14,26 3,14" stroke="currentColor" stroke-width="1.6" fill="rgba(255,255,255,0.14)"/><polygon points="14,7.5 20.5,14 14,20.5 7.5,14" stroke="#BAE6FD" stroke-width="1.15"/><circle cx="14" cy="14" r="2.2" fill="#FFFFFF"/></svg>`;
-  p.innerHTML=`<div class="sp-card"><div class="sp-head"><div class="sp-head-row">${prismCrest}<h3>${cleanTitle}</h3></div><div class="sp-head-actions"><span class="sp-code" aria-hidden="true">维斯特利亚 · 冰晶典录</span><button type="button" class="modal-close-x" aria-label="关闭弹窗">×</button></div></div><div class="sp-rule"></div><div class="sp-body">${body}</div><button type="button" class="sp-close">确认</button></div>`;
+  const spCodeText = flag('named') ? '维斯特利亚 · 冰晶典录' : '系统提示 · 初始登记';
+  p.innerHTML=`<div class="sp-card"><div class="sp-head"><div class="sp-head-row">${prismCrest}<h3>${cleanTitle}</h3></div><div class="sp-head-actions"><span class="sp-code" aria-hidden="true">${spCodeText}</span><button type="button" class="modal-close-x" aria-label="关闭弹窗">×</button></div></div><div class="sp-rule"></div><div class="sp-body">${body}</div><button type="button" class="sp-close">确认</button></div>`;
   show(p,1); sfx('modal_open');
   const closePop = ()=>{ show(p,0); sfx('modal_close'); };
   // 仅点遮罩背板、右上角 × 或「确认」按钮关闭，滚动或选中正文时不误关
@@ -1869,7 +1875,7 @@ function skipToAge(y){ toast("已关闭快进，请按季度推进"); return; }
 const STORY_GATE_VERSION = 3;
 const STORY_GATE_FLAGS = [
   'ch_first_word','ch_alice_born','ch_child_days','ch_age4','ch_yaoshen','ch_sisters_grow',
-  'ch_reno_arrive','ch_alice_affinity','ch_beatrice_day','ch_micro','ch_alice_wind','ch_beatrice_leaves',
+  'ch_reno_arrive','ch_alice_affinity','ch_beatrice_day','ch_micro','ch_interlude_white_night','ch_alice_wind','ch_beatrice_leaves',
   'ch_academy','ch_opening_ceremony','met_noelle','met_aino','met_charlotte',
   'ch_helena','ch_aino_sparring','met_ajun','ch_ice_melt_1','ch_seven_mountains',
   'ch_ice_melt_2','ch_beach','ch_tree','ch_star','did_turnpoint','arrived_jikan','ch_black_name',
@@ -1895,6 +1901,7 @@ const STORY_GATE_BY_SCENE = {
   s_alice_affinity:['ch_alice_affinity'],
   s_beatrice_day:['ch_beatrice_day'],
   s_micro:['ch_micro'],
+  s_interlude_white_night:['ch_interlude_white_night'],
   s_alice_wind_teach:['ch_alice_wind'],
   s_beatrice_leaves:['ch_beatrice_leaves'],
   s_academy_start:['ch_academy'],
@@ -1985,8 +1992,41 @@ function updateContinueBtn(){
 }
 
 // ========== HUD / UI ==========
+function isSystemAwakened(){
+  return !!(flag('system_awakened') || S.phase !== 'prologue' || flag('named') || (S.ageY || 0) > 0 || S.freeRoam);
+}
+function syncStageChromeMode(){
+  if(typeof document === 'undefined' || !document.body) return;
+  const cl = document.body.classList;
+  const age = Number(S.ageY) || 0;
+  const awakened = isSystemAwakened();
+  cl.toggle('stage-pre-system', !awakened);
+  cl.toggle('stage-story', !S.freeRoam);
+  cl.toggle('stage-infant', age < 1);
+  cl.toggle('stage-early-child', age >= 1 && age < 4);
+  cl.toggle('stage-no-arena', !hasSkill('virtual_duel') && S.phase !== 'academy' && S.phase !== 'journey' && S.phase !== 'finale');
+  cl.toggle('stage-no-causal', age < 4);
+}
+function syncRaisingHubSafe(){
+  if(typeof window !== 'undefined' && window.RaisingHub && typeof window.RaisingHub.syncSylviaHub === 'function'){
+    try { window.RaisingHub.syncSylviaHub(); } catch(e){}
+  }
+}
+function setDialogHidden(hidden){
+  const on = !!hidden;
+  const tb = $('text-box');
+  if(tb) tb.classList.toggle('dialog-hidden', on);
+  if(typeof document !== 'undefined' && document.body){
+    document.body.classList.toggle('dialog-hidden', on);
+  }
+}
+function setAwaitingChoiceUI(on){
+  const tb = $('text-box');
+  if(tb) tb.classList.toggle('awaiting-choice', !!on);
+}
 function updateHUD(){
   syncHudChipLabels();
+  syncStageChromeMode();
   const named = flag('named');
   const showHudFace = !!(named || (S.ageY || 0) >= 1 || S.alias);
   $('hud-name').textContent = !named ? (S.alias || '？？？') : (S.alias || '希尔维亚');
@@ -2040,6 +2080,7 @@ function updateHUD(){
 
 let _bgTimer = null;
 let _bgTarget = null;
+let _bgLastSwitchAt = 0;
 function setBG(cls){
   const bg=$('bg');
   if(!bg) return;
@@ -2047,6 +2088,7 @@ function setBG(cls){
   // 同背景不重复切（若正在切向同一目标也不重复）
   const curTarget = _bgTarget || bg.getAttribute('data-cls');
   if(curTarget === newCls) return;
+  const hadPendingFade = !!_bgTimer;
   if(_bgTimer){ clearTimeout(_bgTimer); _bgTimer = null; }
   _bgTarget = newCls;
   if(newCls && newCls !== 'bg-pick' && newCls !== 'bg-battle' && newCls !== 'bg-duel' && newCls !== 'bg-title'){
@@ -2059,7 +2101,11 @@ function setBG(cls){
     (newCls||'bg-title').split(/\s+/).forEach(c=>bg.classList.add(c));
     bg.style.opacity='1';
   };
-  if(bg.getAttribute('data-cls')){       // 已有背景 → 先淡出再切入（渐进渐出）
+  const now = Date.now();
+  const rapidSwitch = _bgLastSwitchAt > 0 && (now - _bgLastSwitchAt) < 650;
+  _bgLastSwitchAt = now;
+  const isSkip = !!(typeof VNUx !== 'undefined' && typeof VNUx.isSkipMode === 'function' && VNUx.isSkipMode());
+  if(bg.getAttribute('data-cls') && !hadPendingFade && !rapidSwitch && !isSkip){       // 已有背景 → 先淡出再切入（渐进渐出）
     bg.style.opacity='0';
     _bgTimer = setTimeout(apply, 320);
   } else {
@@ -2350,15 +2396,21 @@ function setDialogRows(str){
   if(!tb || !text) return 1;
   tb.classList.remove('dialog-rows-1','dialog-rows-2','dialog-rows-3','dialog-rows-4');
   const raw=String(str ?? '');
+  tb._lastDialogStr = raw;
   let rows=Math.max(1, raw.split('\n').length);
   try{
-    const width=text.clientWidth;
+    const cs=getComputedStyle(text);
+    const padL=parseFloat(cs.paddingLeft)||0;
+    const padR=parseFloat(cs.paddingRight)||0;
+    const width=Math.max(0, text.clientWidth - padL - padR);
     if(width>0){
-      const cs=getComputedStyle(text);
       const probe=document.createElement('div');
       probe.style.position='absolute';
       probe.style.visibility='hidden';
       probe.style.pointerEvents='none';
+      probe.style.margin='0';
+      probe.style.padding='0';
+      probe.style.border='0';
       probe.style.width=width+'px';
       probe.style.fontFamily=cs.fontFamily;
       probe.style.fontSize=cs.fontSize;
@@ -2370,13 +2422,31 @@ function setDialogRows(str){
       probe.textContent=raw;
       tb.appendChild(probe);
       const lh=parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize)||24)*1.55;
-      rows=Math.max(rows, Math.ceil(probe.scrollHeight/lh));
+      const rectH = probe.getBoundingClientRect ? probe.getBoundingClientRect().height : 0;
+      const h = rectH > 0 ? rectH : probe.scrollHeight;
+      if(h > 0 && lh > 0){
+        rows = Math.max(rows, Math.max(1, Math.min(3, Math.ceil((h - 2) / lh))));
+      }
       probe.remove();
     }
   }catch(e){}
   rows=clamp(rows,1,3);
   tb.classList.add('dialog-rows-'+rows);
   return rows;
+}
+let _dialogRowsResizeTimer = null;
+if(typeof window !== 'undefined' && typeof window.addEventListener === 'function'){
+  window.addEventListener('resize', ()=>{
+    if(_dialogRowsResizeTimer) clearTimeout(_dialogRowsResizeTimer);
+    _dialogRowsResizeTimer = setTimeout(()=>{
+      _dialogRowsResizeTimer = null;
+      const tb = $('text-box'), tx = $('text');
+      if(!tb || !tx || tb.classList.contains('dialog-hidden')) return;
+      if(!tx.textContent || !tx.textContent.trim()) return;
+      const src = typeof tb._lastDialogStr === 'string' && tb._lastDialogStr ? tb._lastDialogStr : (fullText || tx.textContent);
+      if(src) setDialogRows(src);
+    }, 120);
+  });
 }
 
 const BACKLOG_LOG = [];
@@ -2561,6 +2631,7 @@ function applyLineEffects(L){
   }
   if(L.phase) S.phase = L.phase;
   updateHUD();
+  syncStageChromeMode();
 }
 
 function playLines(lines, done){
@@ -2569,19 +2640,26 @@ function playLines(lines, done){
   const list = Array.isArray(lines) ? lines : [];
   S.freeRoam = false;
   awaitingChoice = false;
+  setAwaitingChoiceUI(false);
   show('action-bar', 0);
   show('hotspots', 0);
+  const _curSc = currentScene ? SCENES[currentScene] : null;
+  if(!(_curSc && _curSc.loc)) show('loc-bar', 0);
   const dialogBox = $('text-box');
-  if(dialogBox){ dialogBox.classList.remove('dialog-hidden'); dialogBox.removeAttribute('data-roam-prompt'); dialogBox.removeAttribute('data-greeting-char'); }
+  setDialogHidden(false);
+  if(dialogBox){ dialogBox.removeAttribute('data-roam-prompt'); dialogBox.removeAttribute('data-greeting-char'); }
   document.body.classList.remove('roam');   // 剧情：恢复完整高度对话框
   $('portraits')?.classList.remove('roam-npc');
   const ch = $('choices'); if(ch) ch.innerHTML = '';
+  syncStageChromeMode();
+  syncRaisingHubSafe();
   lineCB = null;
 
   function finish(){
     if(gen !== lineGen) return;
     lineCB = null;
     awaitingChoice = false;
+    setAwaitingChoiceUI(false);
     if(typeof done === 'function'){
       try { done(); } catch(e){ console.error(e); enterFreeRoam(); }
     } else if(!S.freeRoam){
@@ -2594,6 +2672,7 @@ function playLines(lines, done){
     if(gen !== lineGen) return;
     lineCB = null;
     awaitingChoice = false;
+    setAwaitingChoiceUI(false);
 
     while(i < list.length){
       let L = list[i++];
@@ -2687,6 +2766,7 @@ function playLines(lines, done){
 
       if(L.choices){
         awaitingChoice = true;
+        setAwaitingChoiceUI(true);
         setSpeaker(L.speaker||null, curSpeakerId);
         if(typeof VNUx!=='undefined'&&VNUx.recordLine&&L.text) VNUx.recordLine(L.speaker||null, L.text);
         clearInterval(typeTimer);
@@ -2777,6 +2857,7 @@ function showChoices(choices, onEmpty){
   const box = $('choices');
   box.innerHTML = '';
   awaitingChoice = true;
+  setAwaitingChoiceUI(true);
   let list = [];
   try { list = typeof choices === 'function' ? choices() : (choices || []); }
   catch(e){ console.error(e); list = []; }
@@ -2785,6 +2866,7 @@ function showChoices(choices, onEmpty){
   const visible = list.filter(c=> c && (!c.if || c.if()));
   if(!visible.length){
     awaitingChoice = false;
+    setAwaitingChoiceUI(false);
     if(onEmpty) onEmpty();
     else enterFreeRoam();
     return;
@@ -2805,6 +2887,7 @@ function showChoices(choices, onEmpty){
       sfx('click');
       if(typeof VNUx!=='undefined'&&VNUx.recordChoice) VNUx.recordChoice(c.text);
       awaitingChoice = false;
+      setAwaitingChoiceUI(false);
       box.innerHTML = '';
       try {
         if(c.lines){ if(c.do) c.do(); playLines(c.lines, c.done); return; }
@@ -2844,7 +2927,7 @@ function dismissRoamPrompt(){
   const afterPrompt=roamPromptDone;
   roamPromptDone=null;
   resetDialogAdvanceState();
-  tb.classList.add('dialog-hidden');
+  setDialogHidden(true);
   tb.classList.remove('season-flavor');
   tb.removeAttribute('data-roam-prompt');
   tb.removeAttribute('data-greeting-char');
@@ -3264,8 +3347,8 @@ function renderHotspots(){
 
 function setPov(on){
   document.body.classList.toggle('pov-hidden', !!on);
-  // 直接内联隐藏/恢复 HUD 与地点标，确保「视角」一定生效（不依赖 CSS 特异性/缓存）
-  const hud=$('hud'); if(hud){ hud.style.opacity = on ? '0' : ''; hud.style.pointerEvents = on ? 'none' : ''; }
+  // 由 body.pov-hidden CSS 精确隐藏 .hud-left、玩法按钮与 #loc-bar，保留右上极简 4 键（档案/沉浸/音量/标题）
+  const hud=$('hud'); if(hud){ hud.style.opacity = ''; hud.style.pointerEvents = ''; }
   const lb=$('loc-bar'); if(lb){ lb.style.opacity = on ? '0' : ''; lb.style.pointerEvents = on ? 'none' : ''; }
 }
 function enterFreeRoam(options={}){
@@ -3286,7 +3369,7 @@ function enterFreeRoam(options={}){
   bgmOverlayStack = [];
   if(options.restoreLoc) bgmLoc = null;
   roamPromptDone = null;
-  S.freeRoam=true; awaitingChoice=false; show('action-bar',1); updateHUD(); updateLocBar(); save();
+  S.freeRoam=true; awaitingChoice=false; setAwaitingChoiceUI(false); show('action-bar',1); updateHUD(); syncStageChromeMode(); updateLocBar(); save();
   if(options.restoreLoc){
     const targetBg = (LOCS[S.loc] && LOCS[S.loc].bg) || S.bg;
     if(targetBg) setBG(targetBg);
@@ -3303,7 +3386,7 @@ function enterFreeRoam(options={}){
   }
   // 不再自动显示“点击出口移动”等地点教学对话框。
   const dialogBox=$('text-box');
-  dialogBox.classList.add('dialog-hidden');
+  setDialogHidden(true);
   dialogBox.classList.remove('season-flavor');
   dialogBox.removeAttribute('data-roam-prompt');
   dialogBox.removeAttribute('data-greeting-char');
@@ -3331,7 +3414,7 @@ function showSeasonFlavor(done){
   setSpeaker(null);
   setDialogRows(text);
   $('text').innerHTML=escapeText(text);
-  tb.classList.remove('dialog-hidden');
+  setDialogHidden(false);
   tb.classList.add('season-flavor');
   tb.setAttribute('data-roam-prompt','season');
   tb.removeAttribute('data-greeting-char');
@@ -3450,7 +3533,7 @@ function showRoamGreeting(charId, locId=S.loc){
   setSpeaker(CHARS[charId].short, charId);
   setDialogRows(greeting);
   $('text').innerHTML=escapeText(greeting);
-  tb.classList.remove('dialog-hidden');
+  setDialogHidden(false);
   tb.setAttribute('data-roam-prompt','greeting');
   tb.setAttribute('data-greeting-char',charId);
   document.querySelectorAll('#portraits .p-slot').forEach(el=>{
@@ -4787,15 +4870,24 @@ function statusPanelHTML(){
   const named = flag('named');
   const nm = !named ? '？？？（未命名）' : (S.alias || S.name);
   const ageFallback = PORTRAIT_FILES[`sylvia_${portraitTierName(portraitTierForAge(S.ageY))}_normal`] || PORTRAIT_FILES.sylvia_child_normal;
-  const src = (named || (S.ageY || 0) >= 1 || S.alias)
+  const showPortrait = !!(named || (S.ageY || 0) >= 1 || S.alias);
+  const src = showPortrait
     ? (resolvePortrait('sylvia', 'normal') || resolvePortraitFallback('sylvia', 'normal') || ageFallback)
-    : (resolvePortrait('sylvia', 'normal') || ageFallback);
+    : null;
   const expPct = S.next ? Math.min(100, Math.round((Math.floor(S.exp) / S.next) * 100)) : 0;
   const hpPct = S.mhp ? Math.min(100, Math.round((S.hp / S.mhp) * 100)) : 0;
   const mpPct = S.mmp ? Math.min(100, Math.round((S.mp / S.mmp) * 100)) : 0;
   const stPct = S.mst ? Math.min(100, Math.round((S.st / S.mst) * 100)) : 0;
-  const picksLen = Array.isArray(S.picksDone) ? S.picksDone.length : 0;
+  const picksLen = Array.isArray(S.picksDone) ? S.picksDone.length : (Number(S.picksDone) || 0);
+  const braveGiftKnown = !!(flag('brave_gift_known') || (S.ageY || 0) > 0 || picksLen > 0 || S.phase !== 'prologue');
   const starsHTML = Array.from({length:7}, (_,i)=>`<span class="sc-star-node${i < picksLen ? ' lit' : ''}" title="勇者之赐 第${i+1}星"></span>`).join('');
+  const constellationHTML = braveGiftKnown
+    ? `<div class="sc-constellation">
+        <div class="sc-const-head"><span>勇者之赐命盘</span><em>${picksLen}/7</em></div>
+        <div class="sc-const-nodes">${starsHTML}</div>
+      </div>`
+    : '';
+  const initialCrestHTML = `<div class="sc-portrait-fallback sc-portrait-crest" aria-label="初始纹章"><svg viewBox="0 0 48 48" width="42" height="42" fill="none" aria-hidden="true"><path d="M24 5L38 13V25.5C38 33.8 32 39.8 24 43C16 39.8 10 33.8 10 25.5V13L24 5Z" stroke="#1658EB" stroke-width="1.35" fill="rgba(56,189,248,0.14)"/><polygon points="24,13 27.2,20.8 35,24 27.2,27.2 24,35 20.8,27.2 13,24 20.8,20.8" stroke="#38BDF8" stroke-width="1.15" fill="rgba(255,255,255,0.45)"/><circle cx="24" cy="24" r="2.4" fill="#1658EB"/></svg></div>`;
   let relicStripHTML = '';
   if(typeof RelicsAndEvents !== 'undefined' && RelicsAndEvents.getActiveRelicsForBattle){
     const eq = (Array.isArray(S.equippedRelics) ? S.equippedRelics : []).filter(Boolean);
@@ -4824,7 +4916,7 @@ function statusPanelHTML(){
     <div class="sc-portrait-col">
       <div class="sc-portrait-frame">
         ${astrolabeSVG}
-        ${src ? `<img class="sc-portrait-img" src="${src}" alt="${nm}"/>` : `<div class="sc-portrait-fallback">✦</div>`}
+        ${src ? `<img class="sc-portrait-img" src="${src}" alt="${nm}"/>` : initialCrestHTML}
       </div>
       <div class="sc-name-plate">
         <div class="sc-display-name"><b>名字</b> ${nm}</div>
@@ -4838,10 +4930,7 @@ function statusPanelHTML(){
         <div class="sc-exp-head"><span><b>经验</b> ${Math.floor(S.exp)}/${S.next}</span><span>${expPct}%</span></div>
         <div class="sc-exp-track"><i class="sc-exp-fill" style="width:${expPct}%"></i></div>
       </div>
-      <div class="sc-constellation">
-        <div class="sc-const-head"><span>勇者之赐命盘</span><em>${picksLen}/7</em></div>
-        <div class="sc-const-nodes">${starsHTML}</div>
-      </div>
+      ${constellationHTML}
     </div>
     <div class="sc-data-col">
       <div class="sc-vitals">
@@ -5387,6 +5476,7 @@ function checkStoryGates(options={}){
   addGate('ch_alice_affinity', dateAtLeast(7,3), 's_alice_affinity');
   addGate('ch_beatrice_day', dateAtLeast(7,12), 's_beatrice_day');
   addGate('ch_micro', dateAtLeast(8,6), 's_micro');
+  addGate('ch_interlude_white_night', hasGate('ch_reno_arrive') && dateAtLeast(8,9) && !dateAtLeast(12,3) && S.phase!=='academy' && S.phase!=='journey' && S.phase!=='finale', 's_interlude_white_night');
   addGate('ch_alice_wind', dateAtLeast(9,3), 's_alice_wind_teach');
   addGate('ch_beatrice_leaves', dateAtLeast(10,3), 's_beatrice_leaves');
 
@@ -5463,6 +5553,8 @@ function stepChain(){
   resetDialogAdvanceState();
   S.freeRoam = false;
   awaitingChoice = false;
+  setAwaitingChoiceUI(false);
+  setDialogHidden(false);
   show('action-bar', 0);
   show('hotspots', 0);
   document.body.classList.remove('roam');
@@ -5478,7 +5570,10 @@ function stepChain(){
   bgmSceneStart(sc.bgm); // 记录并播放场景 bgm，贯穿整个场景
   if(sc.phase) S.phase = sc.phase;
   if(sc.loc){ S.loc = sc.loc; updateLocBar(); }
+  else { show('loc-bar', 0); }
   updateHUD();
+  syncStageChromeMode();
+  syncRaisingHubSafe();
   // 「视角」演出：pov 场景隐藏顶部 HUD，非 pov 场景务必恢复
   setPov(!!sc.pov);
   const go = ()=> playLines(sc.lines || [], ()=>{
@@ -5505,6 +5600,8 @@ function runScene(id){
   resetDialogAdvanceState();
   S.freeRoam = false;
   awaitingChoice = false;
+  setAwaitingChoiceUI(false);
+  setDialogHidden(false);
   show('action-bar', 0);
   show('hotspots', 0);
   document.body.classList.remove('roam');
@@ -5520,7 +5617,10 @@ function runScene(id){
   bgmSceneStart(sc.bgm); // 记录并播放场景 bgm，贯穿整个场景
   if(sc.phase) S.phase = sc.phase;
   if(sc.loc){ S.loc = sc.loc; updateLocBar(); }
+  else { show('loc-bar', 0); }
   updateHUD();
+  syncStageChromeMode();
+  syncRaisingHubSafe();
   // 「视角」演出：pov 场景隐藏顶部 HUD，非 pov 场景务必恢复
   setPov(!!sc.pov);
   const go = ()=> playLines(sc.lines || [], sc.done);
@@ -5626,12 +5726,12 @@ SCENES.s_turnpoint = {
   card:{vol:'第一卷', t:'转折点（一）', s:'——'},
   lines:[
     {do:()=>{ S.ageY=Math.max(S.ageY,15); syncStatsToAge(); }},
-    {text:'十五岁的冬天。寒假。公爵府。\n雷纳德叔叔背着大包风尘仆仆出现在餐厅门口，靴子上全是泥，笑得像没心没肺的大孩子。'},
+    {bgm:'peaceful', text:'十五岁的冬天。寒假。公爵府。\n雷纳德叔叔背着大包风尘仆仆出现在餐厅门口，靴子上全是泥，笑得像没心没肺的大孩子。'},
     {ch:'reno', speaker:'雷纳德', text:'惊喜！我回来啦！'},
     {text:'父亲扶额，母亲笑着摇头，贝蒂冲上去给了他一拳（没打中）。'},
     {text:'六个人坐在一张桌子上。姐姐的论文改完了——「十八遍！贝阿特丽丝大人的旷世巨著！」\n一切都很好。'},
     {text:'我躺在床上。枕头很软。'},
-    {sfx:'bad', text:'碎裂声。不是玻璃——是石头。从大门方向。', portraits: []},
+    {bgm:'battle', sfx:'bad', text:'碎裂声。不是玻璃——是石头。从大门方向。', portraits: []},
     {ch:'claude', speaker:'克劳德', text:'穿鞋。'},
     {text:'父亲的脸上是一种我从没见过的东西。把所有情绪削掉后的骨架。'},
     {ch:'sophia', speaker:'索菲亚', text:'（白色法杖。霜杉木簪。看了我一眼。点头。）'},
@@ -5660,7 +5760,7 @@ SCENES.s_turnpoint = {
     {cg:'beatrice_battle.png', ch:'beatrice', speaker:'贝阿特丽丝', text:'我带你们走。仆人道尽头有排水渠口，钻过去能出城。'},
     {cg:'beatrice_battle.png', ch:'beatrice', speaker:'贝阿特丽丝', text:'我在这里挡一下。'},
     // —— 贝蒂与爱丽丝死别 ——
-    {cg:'parting.png', ch:'alice', speaker:'爱丽丝', text:'不要。'},
+    {cg:'parting.png', bgm:'sad', ch:'alice', speaker:'爱丽丝', text:'不要。'},
     {cg:'parting.png', ch:'beatrice', speaker:'贝阿特丽丝', text:'没事。上个月突破高级了。挡一会儿还是能挡的。'},
     {cg:'parting.png', ch:'alice', speaker:'爱丽丝', text:'你骗人——'},
     {cg:'parting.png', ch:'beatrice', speaker:'贝阿特丽丝', text:'我的妹妹才是真正的天才，爱丽丝。你比我聪明。你更值得——'},
@@ -5969,6 +6069,9 @@ function newGame(){
   BACKLOG_LOG.length = 0;
   closeHudMoreDrawer();
   setPov(false);
+  setAwaitingChoiceUI(false);
+  setDialogHidden(false);
+  show('loc-bar', 0);
   if(cgActive || isOverlayVisible('cg-screen')) cgHide(true);
   const cd=$('card'); if(cd){ cd.onclick=null; show(cd,0); }
   document.body.classList.remove('ai-drawer-open', 'roam');
@@ -5979,6 +6082,8 @@ function newGame(){
   sceneBgmType = null;
   bgmGroupIdx = {};
   syncLocUnlocksForState();
+  syncStageChromeMode();
+  syncRaisingHubSafe();
   bgmUnlock(); // 用户点击开始 → 解锁音频
   show('title-screen',0); show('game-screen',1);
   runScene('s_start');
@@ -5988,6 +6093,7 @@ function continueGame(){
   if(typeof window !== 'undefined') window.S = S;
   closeHudMoreDrawer();
   setPov(false);
+  setAwaitingChoiceUI(false);
   if(cgActive || isOverlayVisible('cg-screen')) cgHide(true);
   const cd=$('card'); if(cd){ cd.onclick=null; show(cd,0); }
   document.body.classList.remove('ai-drawer-open');
@@ -5998,7 +6104,11 @@ function continueGame(){
   syncLocUnlocksForState();
   show('title-screen',0); show('game-screen',1);
   spawnCardExitVeil();
-  updateHUD(); updateLocBar();
+  updateHUD();
+  syncStageChromeMode();
+  if(S.freeRoam) updateLocBar();
+  else show('loc-bar', 0);
+  syncRaisingHubSafe();
   // 先恢复被刷新中断的剧情；旧存档则重新检查并补播已到期剧情。
   if(resumePendingStories()) return;
   if(checkStoryGates()) return;
@@ -6079,6 +6189,9 @@ function returnToTitle(opts){
   save();
   closeHudMoreDrawer();
   setPov(false);
+  setAwaitingChoiceUI(false);
+  setDialogHidden(false);
+  show('loc-bar', 0);
   if(cgActive || isOverlayVisible('cg-screen')) cgHide(true);
   const cd=$('card'); if(cd){ cd.onclick=null; show(cd,0); }
   if(typeof AIChatPanel !== 'undefined' && AIChatPanel.closeDrawer) AIChatPanel.closeDrawer({ wipePending: true });
@@ -6113,6 +6226,8 @@ function returnToTitle(opts){
   if(!opts.silent) sfx('modal_close');
   bgmPlayTitle({ fade: true });
   updateHUD();
+  syncStageChromeMode();
+  syncRaisingHubSafe();
   if(typeof startTitleSnowLoop === 'function') startTitleSnowLoop();
 }
 $('btn-title').onclick=()=>{ returnToTitle(); };
@@ -6347,7 +6462,7 @@ document.addEventListener('keydown', e=>{
       $('text-box').click();
     }
   }
-  if((e.key==='p'||e.key==='P') && isOverlayVisible('game-screen') && !cgActive && !isBlockingOverlayForShortcut()) openPanel('status');
+  if((e.key==='p'||e.key==='P') && isOverlayVisible('game-screen') && !cgActive && !isBlockingOverlayForShortcut() && isSystemAwakened()) openPanel('status');
   if((e.key==='l'||e.key==='L') && isOverlayVisible('game-screen')){
     if(typeof VNUx!=='undefined'&&VNUx.toggleBacklogModal) return; // 由 js/vn-ux.js 统一接管 L 键，避免双弹窗重叠
     const bo = $('backlog-overlay');
@@ -6697,6 +6812,7 @@ if(typeof window !== 'undefined'){
   window.triggerBraveGift = triggerBraveGift;
   window.dismissPickScreen = dismissPickScreen;
   window.updateHUD = updateHUD;
+  window.syncStageChromeMode = syncStageChromeMode;
   window.updateContinueBtn = updateContinueBtn;
   window.updateLocBar = updateLocBar;
   window.baseState = baseState;
@@ -6723,5 +6839,7 @@ if(typeof window !== 'undefined'){
     bgmOverlayStack = [];
     sceneBgmType = null;
     syncLocUnlocksForState();
+    syncStageChromeMode();
+    syncRaisingHubSafe();
   };
 }

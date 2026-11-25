@@ -534,17 +534,28 @@
       hudRight.insertBefore(btnCausal, hudRight.firstChild);
     }
 
-    if (!document.getElementById('btn-ai-drawer')) {
-      var btnAi = document.createElement('button');
+    var btnAi = document.getElementById('btn-ai-drawer');
+    if (!btnAi) {
+      btnAi = document.createElement('button');
       btnAi.id = 'btn-ai-drawer';
       btnAi.className = 'chip chip-ai';
-      btnAi.title = '灵魂交谈 · 自由对话';
-      btnAi.setAttribute('aria-label', '灵魂交谈');
-      btnAi.innerHTML = SVG_SPARK_ICON;
+      btnAi.title = '灵语 · 角色灵魂交谈';
+      btnAi.setAttribute('aria-label', '灵语');
+      btnAi.innerHTML = SVG_SPARK_ICON + '<span class="chip-lbl">灵语</span>';
       btnAi.onclick = function () {
         toggleDrawer();
       };
       hudRight.insertBefore(btnAi, hudRight.firstChild);
+    } else {
+      btnAi.title = '灵语 · 角色灵魂交谈';
+      btnAi.setAttribute('aria-label', '灵语');
+      var aiLbl = btnAi.querySelector('.chip-lbl');
+      if (!aiLbl) {
+        aiLbl = document.createElement('span');
+        aiLbl.className = 'chip-lbl';
+        btnAi.appendChild(aiLbl);
+      }
+      aiLbl.textContent = '灵语';
     }
   }
 
@@ -928,6 +939,14 @@
   }
 
   function refreshBadge() {
+    if (typeof document !== 'undefined') {
+      var btnAiNow = document.getElementById('btn-ai-drawer');
+      if (btnAiNow) {
+        btnAiNow.setAttribute('aria-label', '灵语');
+        var lblNow = btnAiNow.querySelector('.chip-lbl');
+        if (lblNow && lblNow.textContent !== '灵语') lblNow.textContent = '灵语';
+      }
+    }
     if (!drawerEl) return;
     var snap = collectLiveSnapshot();
     var st = (typeof S !== 'undefined' && S) ? S : root.S;

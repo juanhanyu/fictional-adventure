@@ -136,8 +136,8 @@
       iconKey: 'compass',
       icon: relIco('compass', 15),
       owner: '诺艾儿 · 平等同盟',
-      tag: '精算减耗 · 倾注减负',
-      effectText: '所有魔法基础耗蓝降低 20%；开启【魔战倾注】时保留一半额外倾注魔力。',
+      tag: '精算减耗 · 增幅减负',
+      effectText: '所有魔法基础耗蓝降低 20%；开启【魔力增幅】时保留一半额外增幅魔力。',
       lore: '夹着橘猫胡须书签的推导手稿，每道水幕回路都算清了最省力的路径。',
       unlockHint: '在诺艾儿同盟线赠礼、自尊勘误线或学院图书馆奇遇中解锁。',
       unlockAliases: ['noelle_errata']
@@ -503,7 +503,7 @@
       iconKey: 'compass',
       icon: relIco('compass', 15),
       quote: '所有回路阻率我已经替你核算完毕——这一回合，尽管放手去咏唱吧。',
-      effectDesc: '0 AP · 本回合所有技能零耗蓝（魔战倾注仍享高额增幅），并立即回复 20% 最大 MP。',
+      effectDesc: '0 AP · 本回合所有技能零耗蓝（魔力增幅仍享满额加成），并立即回复 20% 最大 MP。',
       canUnlockStory: function (st) {
         return !!(st && ((st.flags && st.flags.met_noelle) || (st.know && (st.know.noelle || 0) >= 20)));
       }
@@ -3422,30 +3422,47 @@
     }
     ov.onclick = function (e) { if (e && e.target === ov) closeArenaLoadoutModal(); };
     var redraw = function () {
+      var prevScroll = ov.querySelector('.rumor-scroll');
+      var savedTop = prevScroll ? prevScroll.scrollTop : 0;
+      var equipped = getArenaSandboxRelics();
+      var assistId = getArenaSandboxAssist();
+      var assistMeta = assistId ? BOND_ASSISTS[assistId] : null;
       ov.classList.remove('hidden');
       ov.innerHTML =
-        '<div class="end-card rumor-card">' +
+        '<div class="end-card rumor-card alm-loadout-shell">' +
           '<div class="rumor-head">' +
             '<div><h2>✦ 演武沙盒 · 战前铭记整备</h2><p class="rumor-sub">自由组合至多 3 件经典秘宝与 1 名伙伴心念援护（零存档污染）</p></div>' +
             '<div class="rumor-head-actions">' +
               '<button type="button" class="modal-close-x" id="alm-close-x" aria-label="关闭铭记整备">×</button>' +
             '</div>' +
           '</div>' +
-          '<div class="rumor-scroll">' + renderRelicsAndAssistHTML({ sandbox: true }) + '</div>' +
-          '<div class="alm-scroll-fade" aria-hidden="true"></div>' +
+          '<div class="alm-body-wrap">' +
+            '<div class="rumor-scroll">' + renderRelicsAndAssistHTML({ sandbox: true }) + '</div>' +
+            '<div class="alm-scroll-fade" aria-hidden="true"></div>' +
+          '</div>' +
+          '<div class="modal-foot end-btns alm-foot">' +
+            '<span class="alm-foot-meta">已佩带 <b>' + equipped.length + ' / ' + MAX_EQUIPPED_RELICS + '</b> 件秘宝 · 心念援护：<b>' + (assistMeta ? escapeHtml(assistMeta.name) : '未选定') + '</b></span>' +
+            '<div class="alm-foot-actions">' +
+              ((equipped.length || assistId) ? '<button type="button" class="tbtn ghost" id="alm-clear-all">清空配装</button>' : '') +
+              '<button type="button" class="tbtn primary" id="alm-close-done">完成整备</button>' +
+            '</div>' +
+          '</div>' +
         '</div>';
       var scrollBox = ov.querySelector('.rumor-scroll');
       var fadeEl = ov.querySelector('.alm-scroll-fade');
-      if (scrollBox && fadeEl) {
-        var syncAlmFade = function () {
-          var hasOverflow = scrollBox.scrollHeight - scrollBox.clientHeight > 10;
-          var atEnd = !hasOverflow || (scrollBox.scrollTop + scrollBox.clientHeight >= scrollBox.scrollHeight - 8);
-          fadeEl.classList.toggle('is-end', atEnd);
-        };
-        scrollBox.addEventListener('scroll', syncAlmFade, { passive: true });
-        syncAlmFade();
-        if (typeof requestAnimationFrame === 'function') {
-          requestAnimationFrame(syncAlmFade);
+      if (scrollBox) {
+        if (savedTop > 0) scrollBox.scrollTop = savedTop;
+        if (fadeEl) {
+          var syncAlmFade = function () {
+            var hasOverflow = scrollBox.scrollHeight - scrollBox.clientHeight > 10;
+            var atEnd = !hasOverflow || (scrollBox.scrollTop + scrollBox.clientHeight >= scrollBox.scrollHeight - 8);
+            fadeEl.classList.toggle('is-end', atEnd);
+          };
+          scrollBox.addEventListener('scroll', syncAlmFade, { passive: true });
+          syncAlmFade();
+          if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(syncAlmFade);
+          }
         }
       }
       bindRelicsContainerEvents(ov, {
@@ -3455,8 +3472,19 @@
           if (typeof onUpdated === 'function') onUpdated();
         }
       });
+      var clearBtn = ov.querySelector('#alm-clear-all');
+      if (clearBtn) {
+        clearBtn.onclick = function () {
+          setArenaSandboxRelics([]);
+          setArenaSandboxAssist(null);
+          redraw();
+          if (typeof onUpdated === 'function') onUpdated();
+        };
+      }
       var closeX = ov.querySelector('#alm-close-x');
       if (closeX) closeX.onclick = closeArenaLoadoutModal;
+      var closeDone = ov.querySelector('#alm-close-done');
+      if (closeDone) closeDone.onclick = closeArenaLoadoutModal;
     };
     redraw();
   }

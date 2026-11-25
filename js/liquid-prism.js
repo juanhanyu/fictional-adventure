@@ -349,7 +349,9 @@
       if (body && (
         body.classList.contains('ui-hidden') ||
         body.classList.contains('pov-hidden') ||
-        body.classList.contains('cg-mode')
+        body.classList.contains('cg-mode') ||
+        body.classList.contains('stage-pre-system') ||
+        body.classList.contains('stage-story')
       )) {
         return null;
       }

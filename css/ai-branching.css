@@ -150,63 +150,13 @@ body.cg-mode .causal-ripple-stack {
   color: #FFFFFF;
 }
 
-/* 舞台单图角色 Galgame 暖雪瓷神态角标 */
+/* 舞台立绘神态角标收束隐藏：保留立绘本身精细表情表达，彻底消除 1280 压额头与 1440 悬空漂移 */
 .p-emo-badge {
-  position: absolute;
-  top: 10%;
-  right: 11%;
-  z-index: 9;
-  padding: 3px 10px;
-  border-radius: 2px;
-  font-family: var(--serif);
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  white-space: nowrap;
+  display: none !important;
   pointer-events: none;
-  background: rgba(250, 251, 253, 0.96);
-  border: 1px solid rgba(27, 35, 51, 0.18);
-  color: #1B2333;
-  box-shadow: 0 6px 16px -6px rgba(18, 24, 34, 0.18);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  animation: emoBadgePop 0.26s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .p-emo-badge.hidden {
   display: none !important;
-}
-.p-emo-badge.emo-shy {
-  background: #FFFFFF;
-  border-color: rgba(196, 37, 68, 0.42);
-  color: #9E1B36;
-}
-.p-emo-badge.emo-happy,
-.p-emo-badge.emo-smile,
-.p-emo-badge.emo-wink {
-  background: #FFFFFF;
-  border-color: rgba(28, 76, 184, 0.42);
-  color: #1C4CB8;
-}
-.p-emo-badge.emo-serious {
-  background: #F4F7FC;
-  border-color: rgba(27, 35, 51, 0.28);
-  color: #1B2333;
-}
-.p-emo-badge.emo-sad,
-.p-emo-badge.emo-teary,
-.p-emo-badge.emo-sleepy {
-  background: #F4F7FC;
-  border-color: rgba(28, 76, 184, 0.28);
-  color: #37445C;
-}
-.p-emo-badge.emo-surprised {
-  background: #FFFFFF;
-  border-color: rgba(196, 37, 68, 0.44);
-  color: #1B2333;
-}
-@keyframes emoBadgePop {
-  from { opacity: 0; transform: translateY(6px) scale(0.94); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* 舞台立绘情绪微位移（克制中性定向影，无彩色晕光） */
@@ -236,11 +186,11 @@ body.cg-mode .causal-ripple-stack {
   transform: translateY(-4px);
 }
 
-/* 命运暗流实时涟漪浮动签（暖雪瓷细线书签，抽屉展开时自动左移避让） */
+/* 命运暗流实时涟漪浮动签（暖雪瓷细线书签，贴靠右上 HUD 之下，与底栏养成条零冲突，抽屉展开时自动左移避让） */
 .causal-ripple-stack {
   position: fixed;
-  top: 76px;
-  right: 16px;
+  top: 66px;
+  right: 20px;
   z-index: 46;
   display: flex;
   flex-direction: column;
@@ -250,7 +200,7 @@ body.cg-mode .causal-ripple-stack {
   transition: right 0.22s ease;
 }
 body.ai-drawer-open .causal-ripple-stack {
-  right: min(418px, calc(100vw - 24px));
+  right: min(404px, calc(100vw - 24px));
 }
 .causal-ripple {
   padding: 10px 14px;
@@ -1060,11 +1010,34 @@ body.ai-drawer-open .causal-ripple-stack {
   background: #FAFBFD;
 }
 
+/* 暗流迷雾遮罩条目（未启封后章与终局星轨） */
+.cd-tendency-card.is-fogged,
+#app #panel #panel-body .cd-tendency-card.is-fogged {
+  border-top-color: rgba(82, 96, 120, 0.36);
+  background: #F4F7FC;
+}
+.astral-scale-card.is-fogged,
+.clue-tile.is-fogged,
+.payoff-row.is-fogged,
+#app #panel #panel-body .astral-scale-card.is-fogged,
+#app #panel #panel-body .clue-tile.is-fogged,
+#app #panel #panel-body .payoff-row.is-fogged {
+  opacity: 0.84;
+}
+.payoff-row.is-fogged .pr-top b,
+.clue-tile.is-fogged .ct-head,
+.astral-scale-card.is-fogged .as-char b,
+#app #panel #panel-body .payoff-row.is-fogged .pr-top b,
+#app #panel #panel-body .clue-tile.is-fogged .ct-head,
+#app #panel #panel-body .astral-scale-card.is-fogged .as-char b {
+  color: #526078;
+}
+
 /* ==================== 3. 原生游戏内灵魂交谈 · 暖雪瓷编辑部右翼边卷 ====================
    z-index: 42 —— 高于舞台/对话框/选项(20~35)，严格低于全屏模态(.overlay:50)、章节卡(#card:80)、CG/系统弹窗(90) */
 .ai-drawer {
   position: fixed;
-  top: 68px;
+  top: calc(56px + env(safe-area-inset-top, 0px));
   right: 12px;
   bottom: 12px;
   width: min(378px, calc(100vw - 24px));
@@ -1465,15 +1438,16 @@ body.ai-drawer-open .causal-ripple-stack {
   background: #FFFFFF;
 }
 
-/* 主动搭话书笺：雪瓷书志手记 + 1px 细线分隔 */
+/* 主动搭话书笺：平铺雪瓷手记 + 1px 冰蓝顶线（严禁框套框） */
 .aid-proactive-greeting {
   position: relative;
-  padding: 14px 15px 13px;
-  border-radius: 3px;
-  background: #FAFBFD;
+  padding: 13px 14px 12px;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.72);
   color: #1B2333;
-  border: 1px solid rgba(27, 35, 51, 0.11);
-  border-top: 1px solid rgba(28, 76, 184, 0.44);
+  border: none;
+  border-top: 1.5px solid rgba(22, 88, 235, 0.50);
+  border-bottom: 1px solid rgba(27, 35, 51, 0.10);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1489,7 +1463,7 @@ body.ai-drawer-open .causal-ripple-stack {
   gap: 6px;
   flex-wrap: wrap;
   padding-bottom: 7px;
-  border-bottom: 1px solid rgba(27, 35, 51, 0.11);
+  border-bottom: 1px solid rgba(27, 35, 51, 0.10);
   font-size: 12.5px;
   color: #1B2333;
 }
@@ -1544,50 +1518,53 @@ body.ai-drawer-open .causal-ripple-stack {
   line-height: 1.52;
   color: #1C4CB8;
   padding: 6px 10px;
-  border-radius: 3px;
-  background: #F4F7FC;
-  border: 1px solid rgba(28, 76, 184, 0.18);
+  border-radius: 0;
+  background: rgba(22, 88, 235, 0.06);
+  border: none;
+  border-left: 2px solid #1658EB;
 }
 .aid-pg-starters {
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   margin-top: 3px;
   padding-top: 10px;
-  border-top: 1px solid rgba(27, 35, 51, 0.11);
+  border-top: 1px solid rgba(27, 35, 51, 0.10);
 }
+/* 话题芯片：无边框淡冰蓝底块，彻底消除问候卡内的框套框 */
 .aid-starter-chip {
   width: 100%;
   display: flex;
   align-items: baseline;
   gap: 7px;
   padding: 8px 11px;
-  border-radius: 3px;
+  border-radius: 0;
   font-family: var(--serif);
   font-size: 12px;
   line-height: 1.48;
   text-align: left;
   cursor: pointer;
   color: #1B2333;
-  background: #FFFFFF;
-  border: 1px solid rgba(27, 35, 51, 0.13);
+  background: rgba(22, 88, 235, 0.06);
+  border: none;
+  border-left: 2px solid rgba(22, 88, 235, 0.34);
   box-shadow: none;
-  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease, transform 0.14s ease;
+  transition: background 0.16s ease, color 0.16s ease, border-left-color 0.16s ease, transform 0.14s ease;
 }
 .aid-starter-chip::before {
   content: '◇';
-  color: #1C4CB8;
+  color: #1658EB;
   font-size: 11px;
   line-height: 1;
   flex-shrink: 0;
   transition: transform 0.16s ease, color 0.16s ease;
 }
 .aid-starter-chip:hover {
-  border-color: rgba(28, 76, 184, 0.44);
-  background: #F2F6FC;
-  color: #1C4CB8;
+  background: rgba(22, 88, 235, 0.13);
+  border-left-color: #1658EB;
+  color: #0E2B78;
   transform: translateX(2px);
 }
 .aid-starter-chip:hover::before {
@@ -1653,12 +1630,12 @@ body.ai-drawer-open .causal-ripple-stack {
   font-weight: 700;
 }
 .aid-emo-tag {
-  padding: 1px 7px;
-  border-radius: 2px;
+  padding: 2px 7px;
+  border-radius: 0;
   font-size: 11.5px;
   font-weight: 600;
-  background: transparent;
-  border: 1px solid rgba(196, 37, 68, 0.30);
+  background: rgba(196, 37, 68, 0.08);
+  border: none;
   color: #9E1B36;
 }
 .aid-turn-action {
@@ -1781,11 +1758,11 @@ body.ai-drawer-open .causal-ripple-stack {
 /* ==================== 4. 桌面端抽屉避让 + 移动端、横屏与触控适配 ==================== */
 @media (min-width: 821px) {
   body.ai-drawer-open #game-screen #stage {
-    padding-right: 418px;
+    padding-right: 402px;
     box-sizing: border-box;
   }
   body.ai-drawer-open #game-screen #portraits {
-    right: 418px;
+    right: 402px;
   }
   body.ai-drawer-open #game-screen #text-box {
     width: 100%;
@@ -1805,37 +1782,57 @@ body.ai-drawer-open .causal-ripple-stack {
     left: 30px;
   }
   body.ai-drawer-open #game-screen #action-bar {
-    width: calc(100% - 418px);
-    max-width: calc(100% - 418px);
-    margin-right: 418px;
+    width: calc(100% - 402px);
+    max-width: calc(100% - 402px);
+    margin-right: 402px;
     border-right: 1px solid rgba(27, 35, 51, 0.12);
     box-sizing: border-box;
-    justify-content: flex-start;
+    justify-content: space-between;
     flex-wrap: nowrap;
-    overflow-x: auto;
-    gap: 5px;
-    padding-left: 12px;
-    padding-right: 14px;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(27, 35, 51, 0.24) transparent;
+    overflow: hidden;
+    gap: 8px;
+    padding-left: 10px;
+    padding-right: 12px;
   }
   body.ai-drawer-open #game-screen #action-bar .ab-scroll {
-    flex: 1 1 auto;
+    flex: 1 1 0%;
     min-width: 0;
+    max-width: calc(100% - 134px);
     flex-wrap: nowrap;
     justify-content: flex-start;
     overflow-x: auto;
-    gap: 5px;
+    overflow-y: hidden;
+    gap: 0;
+    padding-right: 4px;
     scrollbar-width: none;
   }
   body.ai-drawer-open #game-screen #action-bar .ab-scroll::-webkit-scrollbar {
     display: none;
   }
-  body.ai-drawer-open #game-screen #action-bar .abtn {
-    padding: 6px 9px;
-    font-size: 12.5px;
-    gap: 4px;
+  body.ai-drawer-open #game-screen #action-bar .ab-scroll .abtn {
+    padding: 6px 7px;
+    font-size: 12px;
+    letter-spacing: 0.01em;
+    gap: 3px;
     flex-shrink: 0;
+    clip-path: none;
+  }
+  body.ai-drawer-open #game-screen #action-bar .ab-scroll .abtn::before {
+    display: none;
+  }
+  body.ai-drawer-open #game-screen #action-bar .ab-scroll .abtn .ab-cost {
+    font-size: 10.5px;
+  }
+  body.ai-drawer-open #game-screen #action-bar .ab-next-pinned,
+  body.ai-drawer-open #game-screen #action-bar .abtn.primary.ab-next-pinned {
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 2;
+    padding: 7px 18px;
+    font-size: 12.5px;
+    letter-spacing: 0.06em;
+    gap: 4px;
+    white-space: nowrap;
   }
   body.ai-drawer-open #game-screen #choices {
     width: min(calc(100% - 32px), 840px);
@@ -1921,16 +1918,17 @@ body section#arena-loadout-modal.overlay .end-card.rumor-card .rumor-head {
 }
 
 body section#arena-loadout-modal.overlay .end-card.rumor-card .rumor-scroll {
-  padding: 10px 20px 36px;
+  padding: 10px 20px 26px;
 }
 
-body section#arena-loadout-modal.overlay .end-card.rumor-card > .alm-scroll-fade {
+body section#arena-loadout-modal.overlay .end-card.rumor-card > .alm-scroll-fade,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .alm-body-wrap > .alm-scroll-fade {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 44px;
-  border-radius: 0 0 3px 3px;
+  height: 36px;
+  border-radius: 0;
   background: linear-gradient(to bottom, rgba(250, 251, 253, 0) 0%, rgba(250, 251, 253, 0.88) 64%, #FAFBFD 100%);
   pointer-events: none;
   z-index: 6;
@@ -1938,7 +1936,8 @@ body section#arena-loadout-modal.overlay .end-card.rumor-card > .alm-scroll-fade
   transition: opacity 0.2s ease;
 }
 
-body section#arena-loadout-modal.overlay .end-card.rumor-card > .alm-scroll-fade.is-end {
+body section#arena-loadout-modal.overlay .end-card.rumor-card > .alm-scroll-fade.is-end,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .alm-body-wrap > .alm-scroll-fade.is-end {
   opacity: 0;
 }
 
@@ -2071,10 +2070,10 @@ body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard 
 body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rsc-pill,
 body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-syn-card .rsc-pill,
 body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-syn-card.active .rsc-pill {
-  padding: 2px 8px;
-  border-radius: 2px;
+  padding: 2px 7px;
+  border-radius: 0;
   background: #1C4CB8;
-  border: 1px solid #0E2B78;
+  border: none;
   color: #FFFFFF;
   font-size: 11.5px;
   font-weight: 700;
@@ -2082,10 +2081,10 @@ body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard 
 
 #app #panel #panel-body .relics-dashboard .rel-syn-card.near .rsc-pill,
 body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-syn-card.near .rsc-pill {
-  padding: 2px 8px;
-  border-radius: 2px;
-  background: #F4F7FC;
-  border: 1px solid rgba(28, 76, 184, 0.36);
+  padding: 2px 7px;
+  border-radius: 0;
+  background: rgba(28, 76, 184, 0.09);
+  border: none;
   color: #1C4CB8;
   font-size: 11.5px;
   font-weight: 700;
@@ -2133,9 +2132,9 @@ body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard 
   align-items: center;
   gap: 5px;
   padding: 2px 8px;
-  border-radius: 2px;
-  background: #FAFBFD;
-  border: 1px solid rgba(27, 35, 51, 0.14);
+  border-radius: 0;
+  background: rgba(28, 76, 184, 0.055);
+  border: none;
   font-size: 11.5px;
   font-weight: 600;
   color: #526078;
@@ -2150,7 +2149,7 @@ body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard 
   padding-bottom: 5px;
 }
 
-/* 铭记槽位与单色线绘图标托座 */
+/* 铭记槽位与无边框单色线绘图标托座（消除三层嵌套框） */
 #app #panel #panel-body .relics-dashboard .rel-slot,
 body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-slot {
   min-height: 52px;
@@ -2201,42 +2200,44 @@ body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard.
 #app #panel #panel-body .relics-dashboard .rc-ico,
 body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-ico,
 body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rc-ico {
-  width: 30px;
-  height: 30px;
-  border-radius: 2px;
+  width: 28px;
+  height: 28px;
+  border-radius: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: #FAFBFD;
-  border: 1px solid rgba(27, 35, 51, 0.16);
+  background: rgba(28, 76, 184, 0.065);
+  border: none;
   color: #1C4CB8;
 }
 
 #app #panel #panel-body .relics-dashboard .rel-slot .rel-ico,
 body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-slot .rel-ico {
-  width: 24px;
-  height: 24px;
-  border-radius: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 0;
 }
 
 #app #panel #panel-body .relics-dashboard .rel-card.locked .rc-ico,
 body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-card.locked .rc-ico {
-  background: #F4F7FC;
-  border-color: rgba(27, 35, 51, 0.14);
+  background: rgba(82, 96, 120, 0.08);
+  border: none;
   color: #526078;
 }
 
-/* 佩带 / 卸下细线按钮 */
+/* 佩带 / 卸下无框浅冰蓝徽条 + 1px 底线（零第三层框套框） */
 #app #panel #panel-body .relics-dashboard .rel-mini-btn,
 #app #panel #panel-body .relics-dashboard .rel-act-btn,
 body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-mini-btn,
 body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-act-btn {
-  border-radius: 2px;
-  border: 1px solid rgba(27, 35, 51, 0.20);
-  background: #FFFFFF;
-  color: #1B2333;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1.5px solid rgba(28, 76, 184, 0.34);
+  background: rgba(28, 76, 184, 0.075);
+  color: #1C4CB8;
   font-weight: 700;
+  padding: 2px 9px;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -2244,7 +2245,7 @@ body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard 
   #app #panel #panel-body .relics-dashboard .rel-act-btn:hover,
   body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-mini-btn:hover,
   body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-act-btn:hover {
-    border-color: #1C4CB8;
+    border-bottom-color: #1C4CB8;
     background: #1C4CB8;
     color: #FFFFFF;
   }
@@ -2252,7 +2253,8 @@ body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard 
 
 #app #panel #panel-body .relics-dashboard .rel-act-btn.on,
 body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-act-btn.on {
-  border-color: #0E2B78;
+  border: none;
+  border-bottom: 1.5px solid #0E2B78;
   background: #1C4CB8;
   color: #FFFFFF;
 }
@@ -2260,7 +2262,7 @@ body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard 
 @media (hover: hover) and (pointer: fine) {
   #app #panel #panel-body .relics-dashboard .rel-act-btn.on:hover,
   body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-act-btn.on:hover {
-    border-color: #9E1B36;
+    border-bottom-color: #9E1B36;
     background: #C42544;
     color: #FFFFFF;
   }
@@ -2341,10 +2343,11 @@ body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard 
 .bond-state-pill {
   flex-shrink: 0;
   padding: 1px 7px;
-  border-radius: 2px;
-  font-size: 11.5px;
+  border-radius: 0;
+  border: none;
+  font-size: 11px;
   font-weight: 700;
-  line-height: 1.35;
+  line-height: 1.38;
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
@@ -2352,19 +2355,20 @@ body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard 
 .bond-state-pill.is-active {
   background: #1C4CB8;
   color: #FFFFFF;
-  border: 1px solid #0E2B78;
+  border: none;
 }
 
 .bond-state-pill.is-ready {
-  background: transparent;
-  color: #526078;
-  border: 1px solid rgba(27, 35, 51, 0.16);
+  background: rgba(28, 76, 184, 0.08);
+  color: #1C4CB8;
+  border: none;
+  border-bottom: 1px solid rgba(28, 76, 184, 0.30);
 }
 
 .bond-state-pill.is-locked {
-  background: #FAFBFD;
+  background: rgba(82, 96, 120, 0.08);
   color: #526078;
-  border: 1px solid rgba(27, 35, 51, 0.16);
+  border: none;
 }
 
 #app #panel #panel-body .relics-dashboard .bond-chip .bc-desc,

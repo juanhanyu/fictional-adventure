@@ -14,30 +14,56 @@
        - 严格遵守 AGENTS.md §二点十二：全站 border-radius: 0px，零圆框套圆框
      ========================================================================= */
   :root {
-    --ink: #172133;
-    --ink-mid: #303F5A;
-    --ink-muted: #536480;
+    --ink: #1A2436;
+    --ink-mid: #3A4B66;
+    --ink-muted: #5F728F;
 
-    --porcelain-hi: rgba(250, 252, 255, 0.93);
-    --porcelain-mid: rgba(235, 243, 254, 0.86);
-    --porcelain-lo: rgba(215, 230, 252, 0.78);
+    --porcelain-hi: rgba(252, 254, 255, 0.94);
+    --porcelain-mid: rgba(240, 247, 255, 0.88);
+    --porcelain-lo: rgba(224, 237, 254, 0.84);
 
     --sapphire-hi: #2D75F8;
     --sapphire: #1658EB;
     --sapphire-mid: #103FA8;
-    --sapphire-deep: #081F5E;
+    --sapphire-deep: #0E2B78;
+    --sapphire-abyss: #081A54;
 
     --ice: #7DD3FC;
-    --ice-bright: #D8F5FF;
+    --ice-bright: #D9F3FF;
     --ice-deep: #0B6AA8;
 
-    --gold: #C8AA6E;
-    --gold-bright: #F0DA9E;
-    --gold-deep: #8A6824;
+    --gold: #C4A46C;
+    --gold-bright: #EFE0BE;
+    --gold-deep: #8C6928;
 
-    --crimson: #D94662;
+    --crimson: #D13456;
+    --crimson-deep: #9E1B3A;
     --crimson-light: #FF8FA4;
-    --emerald: #0E936D;
+    --emerald: #0E8A64;
+
+    /* Designer 2 Iridescent Prism Hairline Rims */
+    --prism-rim: linear-gradient(132deg,
+      rgba(125, 211, 252, 0.96) 0%,
+      rgba(22, 88, 235, 0.62) 28%,
+      rgba(255, 255, 255, 0.98) 50%,
+      rgba(196, 164, 108, 0.78) 74%,
+      rgba(50, 120, 255, 0.88) 100%);
+    --prism-rim-gold: linear-gradient(135deg,
+      rgba(239, 224, 190, 0.98) 0%,
+      rgba(196, 164, 108, 0.72) 36%,
+      rgba(255, 255, 255, 0.98) 54%,
+      rgba(125, 211, 252, 0.86) 100%);
+    --prism-rim-enemy: linear-gradient(132deg,
+      rgba(255, 143, 164, 0.94) 0%,
+      rgba(209, 52, 86, 0.68) 28%,
+      rgba(255, 255, 255, 0.98) 50%,
+      rgba(196, 164, 108, 0.80) 74%,
+      rgba(22, 88, 235, 0.76) 100%);
+    --prism-rim-broken: linear-gradient(132deg,
+      rgba(156, 228, 255, 0.98) 0%,
+      rgba(22, 88, 235, 0.76) 34%,
+      rgba(255, 255, 255, 0.98) 54%,
+      rgba(125, 211, 252, 0.94) 100%);
 
     --font-serif: 'Noto Serif SC', 'Noto Serif CJK SC', 'Source Han Serif SC', 'Songti SC', 'STSong', Georgia, serif;
     --font-en: 'Cormorant Garamond', 'Noto Serif SC', 'Noto Serif CJK SC', Georgia, serif;
@@ -73,7 +99,7 @@
   }
 
   button:focus-visible {
-    outline: 1.5px solid var(--gold-bright);
+    outline: 1.5px solid var(--sapphire);
     outline-offset: 2px;
   }
 
@@ -100,46 +126,74 @@
     image-rendering: crisp-edges;
   }
 
-  /* ==================== 1. TOP GALLERY HEADER (FEATHERED VEIL) ==================== */
+  /* ==================== 1. TOP PRISM REFRACTION HEADER STRIP (DESIGNER 2 SNOW-GLASS) ==================== */
   .top-strip {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    height: 52px;
+    height: 50px;
     padding: 0 22px 0 0;
-    background: linear-gradient(180deg, rgba(7, 15, 34, 0.78) 0%, rgba(10, 22, 48, 0.40) 68%, rgba(10, 22, 48, 0.0) 100%);
+    background: linear-gradient(180deg, rgba(252, 254, 255, 0.94) 0%, rgba(238, 245, 254, 0.88) 100%);
+    backdrop-filter: blur(18px) saturate(145%);
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
+    border-bottom: 1px solid rgba(84, 122, 188, 0.24);
+    box-shadow: 0 10px 28px rgba(10, 28, 82, 0.18);
     display: flex;
     align-items: center;
     justify-content: space-between;
     z-index: 24;
   }
 
+  /* Diagonal frosted ice caustic highlight across top bar */
+  .top-strip::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(108deg,
+      transparent 10%,
+      rgba(255, 255, 255, 0.65) 26%,
+      rgba(125, 211, 252, 0.16) 34%,
+      transparent 48%,
+      rgba(239, 224, 190, 0.18) 76%,
+      transparent 92%);
+    pointer-events: none;
+  }
+
+  /* Luminous Iridescent Cyan -> Champagne-Gold -> Sapphire Bottom Rim */
   .top-strip::after {
     content: '';
     position: absolute;
     left: 0;
-    right: 22px;
-    bottom: 5px;
-    height: 1px;
-    background: linear-gradient(90deg, rgba(125, 211, 252, 0.56) 0%, rgba(200, 170, 110, 0.48) 36%, rgba(168, 214, 255, 0.14) 76%, transparent 100%);
+    right: 0;
+    bottom: -1px;
+    height: 1.5px;
+    background: linear-gradient(90deg,
+      rgba(22, 88, 235, 0.82) 0%,
+      rgba(125, 211, 252, 0.94) 24%,
+      rgba(196, 164, 108, 0.72) 52%,
+      rgba(22, 88, 235, 0.82) 80%,
+      rgba(125, 211, 252, 0.48) 100%);
     pointer-events: none;
   }
 
   .top-left {
+    position: relative;
+    z-index: 2;
     display: flex;
     align-items: center;
     height: 100%;
-    padding-bottom: 5px;
     min-width: 0;
   }
 
+  /* Signature Faceted Royal Sapphire Wave Prism */
   .wave-prism {
-    height: 34px;
+    position: relative;
+    height: 32px;
     margin-left: 16px;
     padding: 0 22px 0 18px;
-    background: linear-gradient(135deg, var(--sapphire-hi) 0%, var(--sapphire) 46%, var(--sapphire-deep) 100%);
-    color: #F6FAFF;
+    background: linear-gradient(180deg, #2E77F8 0%, #1658EB 49.5%, #0E2B78 50.5%, #081A54 100%);
+    color: #FFFFFF;
     display: inline-flex;
     align-items: center;
     gap: 7px;
@@ -147,9 +201,19 @@
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.18em;
-    clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
-    box-shadow: inset 0 1px 0 rgba(210, 240, 255, 0.45);
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+    filter: drop-shadow(0 4px 10px rgba(14, 43, 120, 0.28));
     flex-shrink: 0;
+  }
+  .wave-prism::after {
+    content: '';
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    top: 50%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(186, 230, 253, 0.56), transparent);
+    pointer-events: none;
   }
   .wave-prism .gem {
     color: var(--gold-bright);
@@ -160,32 +224,33 @@
     display: flex;
     align-items: baseline;
     gap: 11px;
-    padding: 0 16px 0 14px;
+    padding: 0 14px 0 15px;
     min-width: 0;
   }
   .stage-title {
     font-family: var(--font-serif);
-    font-size: 16px;
+    font-size: 15.5px;
     font-weight: 700;
-    color: #F6FAFF;
+    color: var(--ink);
     letter-spacing: 0.08em;
-    text-shadow: 0 1px 10px rgba(8, 16, 36, 0.72);
     white-space: nowrap;
   }
   .stage-en-sub {
-    font-family: var(--font-en);
-    font-size: 10.5px;
-    font-weight: 500;
-    color: rgba(196, 218, 245, 0.72);
-    letter-spacing: 0.16em;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    letter-spacing: 0.14em;
     text-transform: uppercase;
+    border-left: 1px solid rgba(96, 122, 166, 0.28);
+    padding-left: 10px;
     white-space: nowrap;
   }
 
   .top-lead-line {
-    width: 22px;
+    width: 18px;
     height: 1px;
-    background: linear-gradient(90deg, var(--gold), rgba(125, 211, 252, 0.4));
+    background: linear-gradient(90deg, var(--gold), rgba(22, 88, 235, 0.35));
     flex-shrink: 0;
   }
 
@@ -193,149 +258,188 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 0 14px;
+    height: 28px;
+    margin-left: 8px;
+    padding: 0 14px 0 12px;
     font-family: var(--font-serif);
-    font-size: 12.5px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 700;
     letter-spacing: 0.08em;
-    color: var(--ice-bright);
+    color: var(--sapphire-deep);
+    background: linear-gradient(90deg, rgba(22, 88, 235, 0.10) 0%, rgba(125, 211, 252, 0.12) 100%);
+    border-left: 2px solid var(--sapphire);
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 100%, 0 100%);
     white-space: nowrap;
   }
-  .turn-indicator .turn-gem { color: var(--ice); font-size: 9px; }
-  .turn-indicator.onemore { color: var(--gold-bright); }
-  .turn-indicator.onemore .turn-gem { color: var(--gold-bright); }
-  .turn-indicator.enemy { color: var(--crimson-light); }
-  .turn-indicator.enemy .turn-gem { color: var(--crimson-light); }
+  .turn-indicator .turn-gem { color: var(--sapphire); font-size: 9px; }
+  .turn-indicator.onemore {
+    color: var(--gold-deep);
+    background: linear-gradient(90deg, rgba(196, 164, 108, 0.22) 0%, rgba(239, 224, 190, 0.16) 100%);
+    border-left-color: var(--gold);
+  }
+  .turn-indicator.onemore .turn-gem { color: var(--gold-deep); }
+  .turn-indicator.enemy {
+    color: var(--crimson-deep);
+    background: linear-gradient(90deg, rgba(209, 52, 86, 0.14) 0%, rgba(255, 143, 164, 0.12) 100%);
+    border-left-color: var(--crimson);
+  }
+  .turn-indicator.enemy .turn-gem { color: var(--crimson); }
 
   .top-right {
+    position: relative;
+    z-index: 2;
     display: flex;
     align-items: center;
-    padding-bottom: 5px;
     gap: 4px;
     flex-shrink: 0;
   }
 
+  /* Designer 2 Faceted Parallelogram Mode Controls */
   .top-ctrl {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 11px;
-    font-size: 12px;
-    font-weight: 500;
+    gap: 5px;
+    padding: 6px 13px;
+    font-size: 11.5px;
+    font-weight: 600;
     letter-spacing: 0.04em;
-    color: rgba(214, 230, 250, 0.78);
-    position: relative;
+    color: var(--ink-mid);
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
     transition: color 0.16s ease, background 0.16s ease;
     white-space: nowrap;
   }
-  .top-ctrl + .top-ctrl::before {
-    content: '';
-    position: absolute;
-    left: -2px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 1px;
-    height: 11px;
-    background: rgba(168, 214, 255, 0.24);
+  .top-ctrl:hover {
+    color: var(--sapphire);
+    background: rgba(22, 88, 235, 0.08);
   }
-  .top-ctrl:hover { color: #FFFFFF; background: rgba(125, 211, 252, 0.10); }
-  .top-ctrl.active { color: #FFFFFF; font-weight: 700; }
+  .top-ctrl.active,
+  .top-ctrl.active:hover {
+    color: #FFFFFF;
+    font-weight: 700;
+    background: linear-gradient(180deg, #2E77F8 0%, #1658EB 49.5%, #0E2B78 50.5%, #081A54 100%);
+  }
   .top-ctrl.active::after {
     content: '';
     position: absolute;
-    left: 10px;
-    right: 10px;
-    bottom: 1px;
-    height: 1.5px;
-    background: linear-gradient(90deg, var(--ice), var(--gold-bright));
+    left: 12%;
+    right: 12%;
+    top: 50%;
+    height: 1px;
+    background: rgba(186, 230, 253, 0.48);
+    pointer-events: none;
   }
-  .top-ctrl.gold-accent { color: var(--gold-bright); }
-  .top-ctrl.gold-accent:hover { background: rgba(200, 170, 110, 0.14); }
+  .top-ctrl.gold-accent {
+    color: var(--gold-deep);
+    background: rgba(196, 164, 108, 0.14);
+  }
+  .top-ctrl.gold-accent:hover {
+    color: #FFFFFF;
+    background: linear-gradient(180deg, #CFA962 0%, #A9823C 50%, #866120 100%);
+  }
 
-  /* ==================== 2. TOP-LEFT FLOATING AV RAIL (AVATAR + NAME + PURE NUMBER ONLY) ==================== */
+  /* ==================== 2. TOP-LEFT FLOATING AV RAIL (DESIGNER 2 CRYSTAL-CHAMFERED SNOW-GLASS) ==================== */
   .av-rail {
     position: absolute;
     top: 64px;
     left: 20px;
-    width: 174px;
+    width: 192px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
     z-index: 18;
   }
 
   .av-list {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
   }
 
+  /* Outer 1.5px Iridescent Prism Rim Shell */
   .av-row {
+    position: relative;
+    padding: 1.5px;
+    background: var(--prism-rim);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    filter: drop-shadow(0 8px 18px rgba(10, 28, 82, 0.22));
+    transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), filter 0.2s ease;
+  }
+  .av-row-in {
     position: relative;
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 5px 12px 5px 10px;
-    background: linear-gradient(90deg, rgba(11, 23, 50, 0.64) 0%, rgba(11, 23, 50, 0.28) 74%, rgba(11, 23, 50, 0.0) 100%);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    border-bottom: 1px solid rgba(168, 214, 255, 0.15);
-    transition: transform 0.22s ease, background 0.2s ease;
+    padding: 5px 14px 5px 11px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(235, 244, 255, 0.88) 100%);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    clip-path: polygon(0 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+    overflow: hidden;
   }
-  .av-row::before {
+  .av-row-in::before {
     content: '';
     position: absolute;
     left: 0;
     top: 0;
     bottom: 0;
-    width: 2px;
-    background: rgba(168, 214, 255, 0.36);
-  }
-  .av-row.acting {
-    transform: translateX(4px);
-    padding-left: 13px;
-    background: linear-gradient(90deg, rgba(22, 88, 235, 0.46) 0%, rgba(125, 211, 252, 0.16) 70%, rgba(125, 211, 252, 0.0) 100%);
-    border-bottom-color: rgba(125, 211, 252, 0.50);
-  }
-  .av-row.acting::before {
-    width: 5px;
-    background: linear-gradient(180deg, var(--ice) 0%, var(--sapphire) 56%, var(--sapphire-deep) 100%);
-    clip-path: polygon(0 0, 100% 4px, 100% calc(100% - 4px), 0 100%);
-  }
-  .av-row.enemy-row::before { background: rgba(217, 70, 98, 0.56); }
-  .av-row.enemy-row.acting {
-    background: linear-gradient(90deg, rgba(196, 37, 68, 0.44) 0%, rgba(255, 138, 160, 0.14) 72%, transparent 100%);
-    border-bottom-color: rgba(255, 138, 160, 0.52);
-  }
-  .av-row.enemy-row.acting::before {
-    background: linear-gradient(180deg, var(--crimson-light) 0%, var(--crimson) 100%);
-  }
-  .av-row.ghost {
-    opacity: 0.48;
-    background: linear-gradient(90deg, rgba(11, 23, 50, 0.32) 0%, rgba(11, 23, 50, 0.0) 90%);
-  }
-  .av-row.flash-onemore {
-    background: linear-gradient(90deg, rgba(200, 170, 110, 0.46) 0%, rgba(240, 218, 158, 0.12) 76%, transparent 100%);
-  }
-  .av-row.flash-delay {
-    background: linear-gradient(90deg, rgba(125, 211, 252, 0.38) 0%, rgba(125, 211, 252, 0.08) 76%, transparent 100%);
+    width: 3.5px;
+    background: linear-gradient(180deg, var(--sapphire-hi) 0%, var(--sapphire) 56%, var(--sapphire-deep) 100%);
   }
 
-  /* Zero nested CSS border on avatar — clean faceted translucent tile */
+  /* Active Acting Unit Transforms into Faceted Royal Sapphire Prism */
+  .av-row.acting {
+    transform: translateX(6px);
+    filter: drop-shadow(0 10px 24px rgba(22, 88, 235, 0.36));
+  }
+  .av-row.acting .av-row-in {
+    background: linear-gradient(180deg, #2E77F8 0%, #1658EB 49.5%, #0E2B78 50.5%, #081A54 100%);
+  }
+  .av-row.acting .av-row-in::before {
+    width: 4.5px;
+    background: linear-gradient(180deg, #FFF2C6 0%, var(--gold) 58%, var(--gold-deep) 100%);
+  }
+
+  .av-row.enemy-row {
+    background: var(--prism-rim-enemy);
+  }
+  .av-row.enemy-row .av-row-in::before {
+    background: linear-gradient(180deg, #FF7C94 0%, var(--crimson) 56%, var(--crimson-deep) 100%);
+  }
+  .av-row.enemy-row.acting {
+    filter: drop-shadow(0 10px 24px rgba(209, 52, 86, 0.38));
+  }
+  .av-row.enemy-row.acting .av-row-in {
+    background: linear-gradient(180deg, #E24464 0%, #C22346 49.5%, #8D1530 50.5%, #650D22 100%);
+  }
+
+  .av-row.ghost {
+    opacity: 0.62;
+  }
+  .av-row.ghost .av-row-in {
+    background: linear-gradient(135deg, rgba(246, 250, 255, 0.80) 0%, rgba(226, 238, 254, 0.72) 100%);
+  }
+  .av-row.flash-onemore {
+    background: var(--prism-rim-gold);
+  }
+  .av-row.flash-delay {
+    background: var(--prism-rim-broken);
+  }
+
+  /* Crystal-Cut Faceted Portrait Tile (Zero Rounded Border) */
   .av-portrait {
     width: 34px;
     height: 34px;
     flex-shrink: 0;
-    background: linear-gradient(145deg, rgba(44, 92, 178, 0.52), rgba(9, 18, 40, 0.86));
-    box-shadow: inset 0 0 0 1px rgba(186, 226, 255, 0.34);
+    background: radial-gradient(circle at 50% 34%, #FFFFFF 0%, #D9E9FC 75%, #B8D3F8 100%);
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
   }
   .av-row.enemy-row .av-portrait {
-    background: linear-gradient(145deg, rgba(145, 38, 62, 0.52), rgba(22, 10, 20, 0.86));
-    box-shadow: inset 0 0 0 1px rgba(255, 148, 168, 0.38);
+    background: radial-gradient(circle at 50% 34%, #FFF6F8 0%, #FAD6DE 78%, #EFAEC0 100%);
   }
   .av-portrait canvas {
     width: 34px;
@@ -347,208 +451,275 @@
     flex: 1;
     min-width: 0;
     font-family: var(--font-serif);
-    font-size: 12.5px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
     letter-spacing: 0.04em;
-    color: #EEF6FF;
+    color: var(--ink);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    text-shadow: 0 1px 6px rgba(6, 12, 28, 0.72);
+  }
+  .av-row.acting .av-name {
+    color: #FFFFFF;
+    text-shadow: 0 1px 6px rgba(6, 18, 56, 0.45);
   }
 
   .av-val {
     font-family: var(--font-mono);
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 800;
     font-variant-numeric: tabular-nums;
-    color: rgba(204, 228, 255, 0.88);
+    color: var(--sapphire);
     white-space: nowrap;
   }
+  .av-row.enemy-row .av-val { color: var(--crimson-deep); }
   .av-row.acting .av-val {
     color: var(--ice-bright);
-    text-shadow: 0 0 10px rgba(125, 211, 252, 0.65);
+    text-shadow: 0 0 10px rgba(125, 211, 252, 0.55);
   }
-  .av-row.enemy-row.acting .av-val { color: var(--crimson-light); }
+  .av-row.enemy-row.acting .av-val { color: #FFD9E1; }
 
   .av-event-strip {
-    padding: 3px 10px;
+    padding: 4px 12px;
     font-size: 10.5px;
     font-weight: 700;
     letter-spacing: 0.04em;
-    background: linear-gradient(90deg, rgba(200, 170, 110, 0.34), transparent);
-    color: var(--gold-bright);
-    border-left: 2px solid var(--gold-bright);
+    background: linear-gradient(90deg, rgba(255, 252, 242, 0.94), rgba(244, 234, 206, 0.86));
+    color: var(--gold-deep);
+    border-left: 2.5px solid var(--gold);
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%);
+    filter: drop-shadow(0 4px 10px rgba(10, 28, 82, 0.16));
   }
   .av-event-strip.delay {
-    background: linear-gradient(90deg, rgba(125, 211, 252, 0.28), transparent);
-    color: var(--ice-bright);
-    border-left-color: var(--ice);
+    background: linear-gradient(90deg, rgba(240, 249, 255, 0.94), rgba(214, 238, 255, 0.88));
+    color: var(--sapphire-deep);
+    border-left-color: var(--sapphire);
   }
 
   .av-forecast {
     display: none;
-    margin-top: 3px;
-    padding: 5px 11px;
-    background: linear-gradient(90deg, rgba(14, 38, 88, 0.82) 0%, rgba(14, 38, 88, 0.22) 86%, transparent 100%);
-    border-left: 2px solid var(--ice);
+    margin-top: 2px;
+    padding: 6px 12px;
+    background: linear-gradient(90deg, rgba(252, 254, 255, 0.95) 0%, rgba(230, 242, 255, 0.90) 100%);
+    border-left: 2.5px solid var(--sapphire);
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
     font-size: 11px;
     font-weight: 700;
-    color: var(--ice-bright);
+    color: var(--sapphire-deep);
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.03em;
+    filter: drop-shadow(0 6px 14px rgba(10, 28, 82, 0.22));
     white-space: nowrap;
   }
   .av-forecast.show { display: block; }
   .av-forecast.gold {
-    background: linear-gradient(90deg, rgba(84, 62, 20, 0.84) 0%, rgba(84, 62, 20, 0.20) 86%, transparent 100%);
-    border-left-color: var(--gold-bright);
-    color: var(--gold-bright);
+    background: linear-gradient(90deg, rgba(255, 252, 242, 0.96) 0%, rgba(245, 235, 206, 0.92) 100%);
+    border-left-color: var(--gold);
+    color: var(--gold-deep);
   }
 
-  /* ==================== 3. TOP-RIGHT ENEMY TACTICAL DOSSIER ==================== */
+  /* ==================== 3. TOP-RIGHT ENEMY TACTICAL DOSSIER (DESIGNER 2 PRISM CRYSTAL PLATE) ==================== */
   .enemy-dossier {
     position: absolute;
     top: 64px;
     right: 22px;
-    width: 332px;
-    padding: 10px 14px 9px 18px;
-    background: linear-gradient(270deg, rgba(9, 19, 42, 0.78) 0%, rgba(9, 19, 42, 0.44) 74%, rgba(9, 19, 42, 0.0) 100%);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-top: 1px solid rgba(200, 170, 110, 0.58);
-    border-right: 2px solid var(--crimson);
+    width: 356px;
+    padding: 1.5px;
+    background: var(--prism-rim-enemy);
+    clip-path: polygon(18px 0%, 100% 0%, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0% 100%, 0% 18px);
+    filter: drop-shadow(0 14px 32px rgba(10, 28, 82, 0.28))
+            drop-shadow(0 2px 6px rgba(10, 28, 82, 0.14));
     z-index: 18;
-  }
-  .enemy-dossier::before {
-    content: '';
-    position: absolute;
-    top: -3px;
-    left: -3px;
-    width: 5px;
-    height: 5px;
-    background: var(--gold-bright);
-    transform: rotate(45deg);
-    pointer-events: none;
+    transition: filter 0.22s ease, background 0.22s ease;
   }
   .enemy-dossier.broken {
-    border-right-color: var(--ice);
-    border-top-color: rgba(125, 211, 252, 0.76);
+    background: var(--prism-rim-broken);
+    filter: drop-shadow(0 14px 34px rgba(22, 88, 235, 0.34))
+            drop-shadow(0 2px 8px rgba(125, 211, 252, 0.24));
+  }
+
+  .enemy-dossier-body {
+    position: relative;
+    width: 100%;
+    padding: 13px 18px 12px 20px;
+    background: linear-gradient(154deg,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(244, 249, 255, 0.90) 54%,
+      rgba(230, 241, 255, 0.92) 100%);
+    backdrop-filter: blur(20px) saturate(145%);
+    -webkit-backdrop-filter: blur(20px) saturate(145%);
+    clip-path: polygon(17px 0%, 100% 0%, 100% calc(100% - 17px), calc(100% - 17px) 100%, 0% 100%, 0% 17px);
+    overflow: hidden;
+  }
+
+  /* Diagonal Prismatic Caustic Sheen */
+  .enemy-dossier-body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(114deg,
+      transparent 10%,
+      rgba(255, 255, 255, 0.72) 25%,
+      rgba(125, 211, 252, 0.16) 33%,
+      transparent 48%,
+      rgba(239, 224, 190, 0.16) 76%,
+      transparent 92%);
+    pointer-events: none;
+  }
+  /* Top Luminous Refraction Hairline + Right Crimson/Sapphire Prism Edge */
+  .enemy-dossier-body::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 20px;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(196, 164, 108, 0.82) 0%, rgba(209, 52, 86, 0.88) 65%, rgba(22, 88, 235, 0.65) 100%);
+    pointer-events: none;
+  }
+  .enemy-dossier.broken .enemy-dossier-body {
+    background: linear-gradient(154deg,
+      rgba(248, 253, 255, 0.96) 0%,
+      rgba(232, 245, 255, 0.92) 56%,
+      rgba(212, 236, 255, 0.94) 100%);
+  }
+  .enemy-dossier.broken .enemy-dossier-body::after {
+    background: linear-gradient(90deg, rgba(125, 211, 252, 0.96) 0%, rgba(22, 88, 235, 0.90) 60%, rgba(196, 164, 108, 0.80) 100%);
   }
 
   .enemy-head {
+    position: relative;
+    z-index: 2;
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: 8px;
-    margin-bottom: 7px;
+    margin-bottom: 9px;
   }
   .enemy-title-group { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
   .enemy-name {
     font-family: var(--font-serif);
-    font-size: 15.5px;
+    font-size: 16.5px;
     font-weight: 700;
-    letter-spacing: 0.06em;
-    color: #F6FAFF;
+    letter-spacing: 0.08em;
+    color: var(--ink);
     white-space: nowrap;
   }
   .enemy-epithet {
     font-size: 11px;
-    color: rgba(196, 218, 245, 0.74);
+    font-weight: 500;
+    color: var(--ink-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   .enemy-hp-num {
     font-family: var(--font-mono);
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 13.5px;
+    font-weight: 800;
     font-variant-numeric: tabular-nums;
-    color: var(--crimson-light);
+    color: var(--crimson-deep);
     white-space: nowrap;
   }
-  .enemy-dossier.broken .enemy-hp-num { color: var(--ice-bright); }
+  .enemy-dossier.broken .enemy-hp-num { color: var(--sapphire); }
 
+  /* Designer 2 Hex-Cut Faceted Crystal Bar */
   .hp-meter {
     position: relative;
+    z-index: 2;
     width: 100%;
-    height: 5px;
-    background: rgba(255, 255, 255, 0.13);
+    height: 10px;
+    background: rgba(14, 34, 84, 0.14);
+    clip-path: polygon(5px 0%, calc(100% - 5px) 0%, 100% 50%, calc(100% - 5px) 100%, 5px 100%, 0% 50%);
     overflow: hidden;
   }
   .hp-meter-lag {
     position: absolute;
     top: 0; left: 0; height: 100%;
-    background: rgba(240, 218, 158, 0.78);
+    background: linear-gradient(180deg, #F5E6BF 0%, #CFA962 50%, #A47E38 100%);
     transition: width 0.55s ease;
   }
   .hp-meter-fill {
     position: relative;
     height: 100%;
-    background: linear-gradient(90deg, #B52442 0%, #E84F6B 72%, #FF93A6 100%);
+    background: linear-gradient(180deg, #FF8FA4 0%, #E03A59 49%, #B51E3E 51%, #8E1430 100%);
+    clip-path: polygon(5px 0%, calc(100% - 5px) 0%, 100% 50%, calc(100% - 5px) 100%, 5px 100%, 0% 50%);
     transition: width 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .enemy-dossier.broken .hp-meter-fill {
+    background: linear-gradient(180deg, #9BE7FF 0%, #3288FF 49%, #1658EB 51%, #0E2B78 100%);
   }
   .hp-meter-ticks {
     position: absolute;
     inset: 0;
-    background: repeating-linear-gradient(90deg, transparent 0, transparent calc(20% - 1px), rgba(9, 19, 42, 0.72) calc(20% - 1px), rgba(9, 19, 42, 0.72) 20%);
+    background: repeating-linear-gradient(90deg, transparent 0, transparent calc(20% - 1px), rgba(255, 255, 255, 0.48) calc(20% - 1px), rgba(255, 255, 255, 0.48) 20%);
     pointer-events: none;
   }
 
   .enemy-foot {
+    position: relative;
+    z-index: 2;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    margin-top: 8px;
-    padding-top: 7px;
-    border-top: 1px solid rgba(168, 214, 255, 0.14);
+    margin-top: 9px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(96, 128, 180, 0.22);
   }
   .enemy-intent {
     font-size: 11.5px;
-    font-weight: 600;
-    color: var(--gold-bright);
-    letter-spacing: 0.03em;
+    font-weight: 700;
+    color: var(--crimson-deep);
+    letter-spacing: 0.04em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .enemy-dossier.broken .enemy-intent { color: var(--ice-bright); }
-  .enemy-locks { display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0; }
+  .enemy-dossier.broken .enemy-intent { color: var(--sapphire); }
+  .enemy-locks { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
   .lock-rune {
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 700;
-    letter-spacing: 0.04em;
-    padding: 1px 7px;
-    clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+    letter-spacing: 0.05em;
+    padding: 2px 9px;
+    clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
     transition: opacity 0.22s ease, transform 0.22s ease;
   }
-  .lock-rune.water { color: #93C5FD; background: rgba(37, 99, 235, 0.32); }
-  .lock-rune.ice { color: #BAE6FD; background: rgba(14, 165, 233, 0.28); }
+  .lock-rune.water {
+    color: #FFFFFF;
+    background: linear-gradient(180deg, #2E77F8 0%, #1658EB 52%, #0E2B78 100%);
+  }
+  .lock-rune.ice {
+    color: #FFFFFF;
+    background: linear-gradient(180deg, #2CB4E8 0%, #117DC0 52%, #0A5388 100%);
+  }
   .lock-rune.shattered {
-    opacity: 0.24;
+    opacity: 0.36;
     text-decoration: line-through;
     transform: scale(0.92);
-    background: transparent;
-    color: rgba(180, 200, 224, 0.5);
+    background: rgba(118, 138, 172, 0.14);
+    color: var(--ink-muted);
   }
 
   .enemy-status-strip {
+    position: relative;
+    z-index: 2;
     display: none;
     align-items: center;
-    gap: 10px;
-    margin-top: 6px;
-    padding-top: 5px;
-    border-top: 1px solid rgba(168, 214, 255, 0.14);
+    gap: 12px;
+    margin-top: 7px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(96, 128, 180, 0.20);
     font-size: 10.5px;
-    font-weight: 600;
-    color: var(--gold-bright);
+    font-weight: 700;
+    color: var(--gold-deep);
   }
   .enemy-status-strip.show { display: flex; }
-  .enemy-status-strip .wet { color: var(--ice-bright); }
+  .enemy-status-strip .wet { color: var(--ice-deep); }
 
   /* ==================== 4. SIGNATURE P5 CHARACTER-ANCHORED FACETED PRISM RADIAL WING ==================== */
   .prism-rig {
@@ -1139,39 +1310,62 @@
     color: #8CF5CE;
   }
 
-  /* ==================== 5. BOTTOM-LEFT COMPACT FLOATING PORCELAIN-ICE CORNER READOUT ==================== */
+  /* ==================== 5. BOTTOM-LEFT COMPACT FLOATING PRISM CRYSTAL READOUT ==================== */
   .corner-status {
     position: absolute;
     left: 20px;
     bottom: 18px;
-    width: 296px;
-    padding: 12px 18px 11px 16px;
-    background: linear-gradient(125deg, rgba(248, 251, 255, 0.90) 0%, rgba(232, 241, 254, 0.82) 70%, rgba(214, 229, 252, 0.72) 100%);
-    backdrop-filter: blur(14px) saturate(1.15);
-    -webkit-backdrop-filter: blur(14px) saturate(1.15);
-    border-left: 3px solid var(--sapphire);
-    clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%);
-    box-shadow: 0 10px 28px rgba(4, 12, 34, 0.44);
+    width: 306px;
+    padding: 1.5px;
+    background: var(--prism-rim);
+    clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+    filter: drop-shadow(0 14px 32px rgba(10, 28, 82, 0.28))
+            drop-shadow(0 2px 6px rgba(10, 28, 82, 0.14));
     z-index: 20;
   }
-  /* Delicate champagne-gold top refraction line (zero nested box!) */
-  .corner-status::before {
+  .corner-status-body {
+    position: relative;
+    width: 100%;
+    padding: 12px 18px 11px 18px;
+    background: linear-gradient(148deg,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(242, 248, 255, 0.90) 56%,
+      rgba(226, 239, 255, 0.92) 100%);
+    backdrop-filter: blur(18px) saturate(145%);
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
+    clip-path: polygon(0 0, calc(100% - 17px) 0, 100% 17px, 100% 100%, 13px 100%, 0 calc(100% - 13px));
+    overflow: hidden;
+  }
+  /* Diagonal crystal refraction sheen + left sapphire crystal edge */
+  .corner-status-body::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3.5px;
+    background: linear-gradient(180deg, var(--sapphire-hi) 0%, var(--sapphire) 56%, var(--sapphire-deep) 100%);
+    pointer-events: none;
+  }
+  .corner-status-body::after {
     content: '';
     position: absolute;
     top: 0;
-    left: 0;
-    right: 16px;
-    height: 1px;
-    background: linear-gradient(90deg, var(--sapphire) 0%, var(--gold) 52%, rgba(200, 170, 110, 0.12) 100%);
+    left: 3.5px;
+    right: 18px;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(125, 211, 252, 0.92) 0%, rgba(22, 88, 235, 0.72) 48%, rgba(196, 164, 108, 0.78) 100%);
     pointer-events: none;
   }
 
   .cs-head {
+    position: relative;
+    z-index: 2;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 9px;
   }
   .cs-identity {
     display: flex;
@@ -1198,9 +1392,9 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 2px 10px;
+    padding: 3px 11px;
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.04em;
@@ -1210,18 +1404,20 @@
     transition: background 0.18s ease, color 0.18s ease;
   }
   .cs-amp-badge.active {
-    background: linear-gradient(125deg, var(--sapphire-hi), var(--sapphire-deep));
+    background: linear-gradient(180deg, #2E77F8 0%, #1658EB 50%, #0E2B78 100%);
     color: #FFFFFF;
   }
   .cs-amp-badge.high {
-    background: linear-gradient(125deg, #D9AF52, #9A7120);
+    background: linear-gradient(180deg, #D5B267 0%, #B38A3E 50%, #8A6520 100%);
     color: #FFFFFF;
   }
 
   .cs-bars {
+    position: relative;
+    z-index: 2;
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: 8px;
   }
   .cs-stat-row {
     display: flex;
@@ -1265,31 +1461,36 @@
     font-weight: 500;
   }
 
+  /* Designer 2 Hex-Cut Faceted Crystal Bar */
   .cs-rail {
     position: relative;
     width: 100%;
-    height: 4px;
-    background: rgba(23, 33, 51, 0.12);
+    height: 8px;
+    background: rgba(14, 34, 84, 0.13);
+    clip-path: polygon(4px 0%, calc(100% - 4px) 0%, 100% 50%, calc(100% - 4px) 100%, 4px 100%, 0% 50%);
     overflow: hidden;
   }
   .cs-fill {
     height: 100%;
+    clip-path: polygon(4px 0%, calc(100% - 4px) 0%, 100% 50%, calc(100% - 4px) 100%, 4px 100%, 0% 50%);
     transition: width 0.24s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .cs-fill.hp { background: linear-gradient(90deg, #0D8C68 0%, #24B88B 100%); }
-  .cs-fill.mp { background: linear-gradient(90deg, var(--sapphire-deep) 0%, var(--sapphire) 58%, #47A7FF 100%); }
+  .cs-fill.hp { background: linear-gradient(180deg, #5CE0B8 0%, #16A67B 49%, #0B7A58 51%, #07593F 100%); }
+  .cs-fill.mp { background: linear-gradient(180deg, #9BE7FF 0%, #3288FF 49%, #1658EB 51%, #0E2B78 100%); }
   .cs-mp-preview {
     position: absolute;
     top: 0;
     height: 100%;
-    background: repeating-linear-gradient(135deg, rgba(240, 218, 158, 0.92) 0 4px, rgba(22, 88, 235, 0.45) 4px 8px);
+    background: repeating-linear-gradient(135deg, rgba(239, 224, 190, 0.96) 0 4px, rgba(22, 88, 235, 0.55) 4px 8px);
     transition: left 0.18s ease, width 0.18s ease;
   }
 
   .cs-foot {
+    position: relative;
+    z-index: 2;
     margin-top: 8px;
     padding-top: 6px;
-    border-top: 1px solid rgba(23, 33, 51, 0.10);
+    border-top: 1px solid rgba(96, 128, 180, 0.20);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1314,17 +1515,21 @@
     white-space: nowrap;
   }
 
-  /* ==================== 6. FLOATING STAGE OVERLAYS (BOXLESS GALLERY CAPTIONS) ==================== */
+  /* ==================== 6. FLOATING STAGE OVERLAYS (DESIGNER 2 SNOW-GLASS CRYSTAL RIBBONS) ==================== */
   .center-banner {
     position: absolute;
-    top: 68px;
+    top: 64px;
     left: 50%;
     transform: translateX(-50%) translateY(-8px);
-    min-width: 300px;
-    padding: 9px 32px;
-    background: linear-gradient(90deg, transparent 0%, rgba(10, 22, 48, 0.86) 18%, rgba(10, 22, 48, 0.86) 82%, transparent 100%);
-    border-top: 1px solid rgba(125, 211, 252, 0.52);
-    border-bottom: 1px solid rgba(200, 170, 110, 0.48);
+    min-width: 316px;
+    padding: 9px 36px;
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.96) 0%, rgba(235, 244, 255, 0.92) 100%);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-top: 2px solid var(--sapphire);
+    border-bottom: 1.5px solid var(--gold);
+    clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%);
+    filter: drop-shadow(0 12px 26px rgba(10, 28, 82, 0.28));
     text-align: center;
     opacity: 0;
     pointer-events: none;
@@ -1332,35 +1537,42 @@
     z-index: 26;
   }
   .center-banner.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  .center-banner.gold { border-top-color: var(--gold-bright); }
+  .center-banner.gold { border-top-color: var(--gold); }
   .center-banner .cb-main {
     font-family: var(--font-serif);
-    font-size: 16px;
+    font-size: 15.5px;
     font-weight: 700;
     letter-spacing: 0.14em;
-    color: #F6FAFF;
+    color: var(--ink);
   }
-  .center-banner.gold .cb-main { color: var(--gold-bright); }
+  .center-banner.gold .cb-main { color: var(--gold-deep); }
   .center-banner .cb-sub {
     font-size: 11px;
+    font-weight: 600;
     letter-spacing: 0.06em;
-    color: rgba(196, 222, 248, 0.84);
+    color: var(--sapphire-mid);
     margin-top: 3px;
   }
 
-  /* Floating Dialogue Caption — Bottom-Right Feathered Veil */
+  /* Floating Dialogue Caption — Bottom-Right Crystal-Chamfered Snow-Porcelain Ribbon */
   .stage-quip {
     position: absolute;
     bottom: 20px;
     right: 22px;
-    max-width: 470px;
-    padding: 6px 14px 6px 24px;
-    background: linear-gradient(270deg, rgba(10, 22, 48, 0.78) 0%, rgba(10, 22, 48, 0.36) 78%, transparent 100%);
-    border-right: 2px solid var(--gold);
+    max-width: 480px;
+    padding: 8px 18px 8px 24px;
+    background: linear-gradient(140deg, rgba(255, 255, 255, 0.94) 0%, rgba(236, 245, 255, 0.88) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-right: 3px solid var(--sapphire);
+    border-top: 1px solid rgba(125, 211, 252, 0.72);
+    clip-path: polygon(14px 0, 100% 0, 100% 100%, 0 100%);
+    filter: drop-shadow(0 10px 24px rgba(10, 28, 82, 0.24));
     font-family: var(--font-serif);
     font-size: 12.5px;
+    font-weight: 600;
     letter-spacing: 0.04em;
-    color: rgba(240, 248, 255, 0.94);
+    color: var(--ink);
     pointer-events: none;
     z-index: 18;
   }
@@ -1372,14 +1584,14 @@
     left: 50%;
     transform: translateX(-50%);
     padding: 11px 40px;
-    background: linear-gradient(135deg, #2D75F8 0%, #1658EB 48%, #081F5E 100%);
+    background: linear-gradient(180deg, #2E77F8 0%, #1658EB 49.5%, #0E2B78 50.5%, #081A54 100%);
     color: #FFFFFF;
     font-family: var(--font-serif);
     font-size: 14px;
     font-weight: 700;
     letter-spacing: 0.10em;
     clip-path: polygon(18px 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 18px 100%, 0 50%);
-    box-shadow: 0 10px 30px rgba(22, 88, 235, 0.56);
+    filter: drop-shadow(0 10px 26px rgba(22, 88, 235, 0.56));
     display: none;
     z-index: 28;
   }
@@ -1388,11 +1600,11 @@
     animation: parryBeat 0.42s ease infinite alternate;
   }
   @keyframes parryBeat {
-    from { transform: translateX(-50%) scale(0.98); filter: brightness(1); }
-    to { transform: translateX(-50%) scale(1.04); filter: brightness(1.16); }
+    from { transform: translateX(-50%) scale(0.98); filter: brightness(1) drop-shadow(0 10px 24px rgba(22, 88, 235, 0.48)); }
+    to { transform: translateX(-50%) scale(1.04); filter: brightness(1.14) drop-shadow(0 14px 32px rgba(22, 88, 235, 0.65)); }
   }
 
-  /* Victory Overlay — Pure Title-Screen Gallery Veil */
+  /* Victory Overlay — Pure Designer 2 Prism Refraction Gallery Veil */
   .victory-overlay {
     position: absolute;
     inset: 0;
@@ -1400,17 +1612,20 @@
     display: none;
     align-items: center;
     justify-content: center;
-    background: radial-gradient(ellipse at 50% 48%, rgba(248, 251, 255, 0.94) 0%, rgba(232, 240, 252, 0.88) 56%, rgba(16, 30, 62, 0.74) 100%);
-    backdrop-filter: blur(12px);
+    background: radial-gradient(ellipse at 50% 48%, rgba(249, 252, 255, 0.95) 0%, rgba(232, 241, 253, 0.90) 56%, rgba(14, 34, 84, 0.72) 100%);
+    backdrop-filter: blur(14px);
   }
   .victory-overlay.open { display: flex; }
   .victory-sheet {
-    width: 460px;
-    padding: 32px 34px;
+    width: 480px;
+    padding: 34px 38px;
     text-align: center;
     position: relative;
-    border-top: 1px solid rgba(22, 88, 235, 0.34);
-    border-bottom: 1px solid rgba(23, 33, 51, 0.14);
+    background: linear-gradient(155deg, rgba(255, 255, 255, 0.96), rgba(236, 245, 255, 0.92));
+    clip-path: polygon(22px 0, 100% 0, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0 100%, 0 22px);
+    border-top: 2px solid var(--sapphire);
+    border-bottom: 1.5px solid var(--gold);
+    filter: drop-shadow(0 22px 44px rgba(10, 28, 82, 0.24));
   }
   .victory-sheet h2 {
     font-family: var(--font-serif);
@@ -1428,7 +1643,7 @@
   }
   .victory-btn {
     padding: 11px 44px;
-    background: linear-gradient(135deg, var(--sapphire-hi) 0%, var(--sapphire) 50%, var(--sapphire-deep) 100%);
+    background: linear-gradient(180deg, #2E77F8 0%, #1658EB 49.5%, #0E2B78 50.5%, #081A54 100%);
     color: #FFFFFF;
     font-family: var(--font-serif);
     font-size: 14px;
@@ -1446,7 +1661,7 @@
     <canvas id="battle-canvas" width="1440" height="900"></canvas>
   </main>
 
-  <!-- 1. TOP GALLERY HEADER -->
+  <!-- 1. TOP PRISM REFRACTION HEADER -->
   <header class="top-strip">
     <div class="top-left">
       <div class="wave-prism" id="wave-prism">
@@ -1455,7 +1670,7 @@
       </div>
       <div class="stage-heading-wrap">
         <span class="stage-title" id="stage-title">庭院夜战 · 贝阿特丽丝</span>
-        <span class="stage-en-sub">· HOUSE OF VESTERIA // PRISM COMMAND</span>
+        <span class="stage-en-sub">HOUSE OF VESTERIA // PRISM COMMAND</span>
       </div>
       <div class="top-lead-line"></div>
       <div class="turn-indicator" id="turn-indicator">
@@ -1479,25 +1694,27 @@
     <div class="av-forecast" id="av-forecast"></div>
   </aside>
 
-  <!-- 3. TOP-RIGHT FLOATING ENEMY TACTICAL DOSSIER -->
+  <!-- 3. TOP-RIGHT FLOATING ENEMY TACTICAL DOSSIER (PRISM CRYSTAL PLATE) -->
   <aside class="enemy-dossier" id="enemy-dossier">
-    <div class="enemy-head">
-      <div class="enemy-title-group">
-        <span class="enemy-name" id="enemy-name">贝阿特丽丝</span>
-        <span class="enemy-epithet" id="enemy-epithet">· 11岁烈焰剑士</span>
+    <div class="enemy-dossier-body">
+      <div class="enemy-head">
+        <div class="enemy-title-group">
+          <span class="enemy-name" id="enemy-name">贝阿特丽丝</span>
+          <span class="enemy-epithet" id="enemy-epithet">· 11岁烈焰剑士</span>
+        </div>
+        <span class="enemy-hp-num" id="enemy-hp-text">460 / 460</span>
       </div>
-      <span class="enemy-hp-num" id="enemy-hp-text">460 / 460</span>
+      <div class="hp-meter">
+        <div class="hp-meter-lag" id="enemy-hp-lag" style="width:100%"></div>
+        <div class="hp-meter-fill" id="enemy-hp-bar" style="width:100%"></div>
+        <div class="hp-meter-ticks"></div>
+      </div>
+      <div class="enemy-foot">
+        <span class="enemy-intent" id="enemy-intent-text">◆ 下回预兆 · 焰莲突刺</span>
+        <div class="enemy-locks" id="enemy-locks"></div>
+      </div>
+      <div class="enemy-status-strip" id="enemy-statuses"></div>
     </div>
-    <div class="hp-meter">
-      <div class="hp-meter-lag" id="enemy-hp-lag" style="width:100%"></div>
-      <div class="hp-meter-fill" id="enemy-hp-bar" style="width:100%"></div>
-      <div class="hp-meter-ticks"></div>
-    </div>
-    <div class="enemy-foot">
-      <span class="enemy-intent" id="enemy-intent-text">◆ 下回预兆 · 焰莲突刺</span>
-      <div class="enemy-locks" id="enemy-locks"></div>
-    </div>
-    <div class="enemy-status-strip" id="enemy-statuses"></div>
   </aside>
 
   <!-- 4. CHARACTER-ANCHORED P5 FACETED PRISM RADIAL COMMAND RIG -->
@@ -1580,49 +1797,51 @@
     </div>
   </nav>
 
-  <!-- 5. BOTTOM-LEFT COMPACT FLOATING PORCELAIN-ICE CORNER READOUT -->
+  <!-- 5. BOTTOM-LEFT COMPACT FLOATING PRISM CRYSTAL READOUT -->
   <section class="corner-status" id="corner-status" aria-label="希尔维亚状态">
-    <div class="cs-head">
-      <div class="cs-identity">
-        <span class="cs-name">希尔维亚</span>
-        <span class="cs-en">SYLVIA</span>
-      </div>
-      <span class="cs-amp-badge" id="cs-amp-badge">◇ 常态蓄魔</span>
-    </div>
-
-    <div class="cs-bars">
-      <div class="cs-stat-row">
-        <div class="cs-stat-meta">
-          <span class="cs-lbl hp">HP</span>
-          <span class="cs-right-nums">
-            <span class="cs-shield-inline zero" id="hero-shield">霜盾 0</span>
-            <span id="hero-hp-text">340 / 340</span>
-          </span>
+    <div class="corner-status-body">
+      <div class="cs-head">
+        <div class="cs-identity">
+          <span class="cs-name">希尔维亚</span>
+          <span class="cs-en">SYLVIA</span>
         </div>
-        <div class="cs-rail">
-          <div class="cs-fill hp" id="hero-hp-bar" style="width:100%"></div>
-        </div>
+        <span class="cs-amp-badge" id="cs-amp-badge">◇ 常态蓄魔</span>
       </div>
 
-      <div class="cs-stat-row">
-        <div class="cs-stat-meta">
-          <span class="cs-lbl mp">MP</span>
-          <span class="cs-right-nums">
-            <span id="hero-mp-text">200 / 200</span>
-          </span>
+      <div class="cs-bars">
+        <div class="cs-stat-row">
+          <div class="cs-stat-meta">
+            <span class="cs-lbl hp">HP</span>
+            <span class="cs-right-nums">
+              <span class="cs-shield-inline zero" id="hero-shield">霜盾 0</span>
+              <span id="hero-hp-text">340 / 340</span>
+            </span>
+          </div>
+          <div class="cs-rail">
+            <div class="cs-fill hp" id="hero-hp-bar" style="width:100%"></div>
+          </div>
         </div>
-        <div class="cs-rail">
-          <div class="cs-fill mp" id="hero-mp-bar" style="width:100%"></div>
-          <div class="cs-mp-preview" id="hero-mp-preview" style="left:100%;width:0%"></div>
-        </div>
-      </div>
-    </div>
 
-    <div class="cs-foot">
-      <div class="cs-buffs" id="hero-buffs">
-        <span>◇ 场中可共鸣</span>
+        <div class="cs-stat-row">
+          <div class="cs-stat-meta">
+            <span class="cs-lbl mp">MP</span>
+            <span class="cs-right-nums">
+              <span id="hero-mp-text">200 / 200</span>
+            </span>
+          </div>
+          <div class="cs-rail">
+            <div class="cs-fill mp" id="hero-mp-bar" style="width:100%"></div>
+            <div class="cs-mp-preview" id="hero-mp-preview" style="left:100%;width:0%"></div>
+          </div>
+        </div>
       </div>
-      <span class="cs-keys">[W/E/A/D] · [SPACE]</span>
+
+      <div class="cs-foot">
+        <div class="cs-buffs" id="hero-buffs">
+          <span>◇ 场中可共鸣</span>
+        </div>
+        <span class="cs-keys">[W/E/A/D] · [SPACE]</span>
+      </div>
     </div>
   </section>
 
@@ -1649,7 +1868,7 @@
 /* Auto-generated TRUE pixel-matrix sprite for sylvia_silver (142x124, 46 colors, ZERO PNG). */
 (function(g){
   g.PIXEL_SPRITE_BANK = g.PIXEL_SPRITE_BANK || {};
-  g.PIXEL_SPRITE_BANK["sylvia_silver"] = {"id":"sylvia_silver","w":142,"h":124,"facing":"right","scaleMult":1.0,"anchors":{"feet":[71,120],"cast":[136,64],"hit":[71,69],"head":[71,34]},"palette":["","#1d0761","#241479","#3b0979","#5f0792","#3f2474","#1335a3","#0f2aec","#8305aa","#392cac","#3728c7","#613261","#084af9","#5f34a2","#7721f9","#cc0adf","#5742f3","#7644b7","#096ffb","#8a4a69","#8d53c9","#825bc1","#79689f","#0697fc","#b46171","#996dd1","#5f84f6","#a58284","#3fb1fc","#ce8860","#16ccfd","#b48add","#e5828b","#e6a35c","#3bdffd","#cba2e7","#afb7df","#eca7a0","#eabd78","#d0b4ec","#6de6fd","#a0e7fc","#f9db83","#e1d5f2","#fcd7bc","#daf8fc","#faf5fb"],"frames":[[".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*67a*7.*68",".*65aaM*4SSSaaa.*65",".*63cvM*8S*4a.*64",".*60daEM*4yyyEIM*4SSa.*63",".*59auM*4yuyMSSSIIMQSSSa.*62",".*59yM*4EuMMEyyMSSMMMSSSaa.*60",".*58aM*4uuMMuEM*4SSTMMS*4a.*59",".*57auMMyuuMMuM*4IMMSTTMTMSSa.*59",".*57aEMuuM*4yM*4yMMMSTMQSMSSb.*58",".*54aaayEqEM*4qSMMQM*6STMTQSSSa.*57",".*53aTTmqyQMuySMqSSSyIMMSMMMSMTTTMSa.*57",".*52aTTImQTuyQSyqMSSMEMMMSMSSSMQTTMSSa.*56",".*52aITmMMuIMmmqqMMQyMMMyMMSSSTMQTTISa.*56",".*52ayImEymmmMMMqMMMyMMSmMMSSMTqMTTISTa.*55",".*53aPRmmIM*4uuMMyMQSyeM*4TQmMSTIMSa.*55",".*52aGgmTuuMMqmqMMMyMMMFxMMMTEMmMMTIuSa.*55",".*52aCHBGqMmmMImMMyMMyuRFMMTMyMqMMSMuSSd.*54",".*50aTICggGkmMMMImMMyMMvuuFMMMyEMmM*4yuTa.*54",".*49aTTIaPLaqumuuqmMMMuuRRRFMMMxMFKM*4yqTa.*54",".*49aTQajaabuyym*4MMuFeaakxMMxMtRaMMmMMaSa.*54",".*50aMjjuajayMumRmMMya*4bIMFtIaaaMMmMMaMa.*54",".*51ajaMajjyMycFeqMMFeubEyFxKaEaMMmMMIaMa.*6S.*47",".*51ajaTajjaMMcRFuEMyRzBR*4TgTsmmuMMaSa.*6BTTH.*45",".*50ajiaTaijaMMmRRMqMMFR*9emmyMMaTa.*5lHTTTw.*44",".*49aiijbTa*4MMmkkMumMER*9eqmMTaSa.*6NOT*4.*44",".*49ajibiTbbayMMmmeMEykxR*8euqMSuav.*7lSTTNr.*44",".*48aTTTbiTiiaySEymmIMyaxFR*6emyMyuua.*8grTNNg.*44",".*48aaaIMT*4aySyymmeMyaFFssRRkkqmyyMyySa.*8gTNg.*45",".*50haMTaaQaySyymqqMMcKRKkebaqyymMSyySSh.*8N.*47",".*52aaayuyJEEymyymMmqRmvTTaqyymMSySmSah.*10aa.*43",".*54aMMEJuIymyyuMuTqTTMIaeyymMqMSaySa.*7aa.aRh.*42",".*54aMMESuEuyyeaaEMmIbabeiaaMTmISadSJh.*5aRRaaRa.*42",".*54aMEQSuIqaipaafvaajpaGiiQMaaISSceSh.*6aRReRa.*42",".*53aSQMSuEuabijbGllGbijjaiMquTaESSheIh.*4ARRkRRFa.*42",".*51caSSISyyIaLaiibafAabbjjaiaMMQTaESceMh...kR*6c.*43",".*50aSSSISuuyuaiabbabsaiabbabPaMTMTTbESSa...aR*5Ka.*44",".*48aaSSSIQuuuEaAieaijimbjjbabviRaTTMTTaSSa..aMRRRFaa.*45",".*47aSSSIqMuuIuEaAAipjjaEbbjjaiAiRbT*6aMSd.aTbRFa.*47",".*46aSSSmqMIuuIuEIaLbjjibTbbjjpbiRaT*4MMTaySmabMTeba.*47",".*45aSSMaauMyuMIuqTababjiETbijiaiPbaTTMMEMebybaGbiiTMa.*47",".*45aSma.auMuMIMuvTaLbQajTEJiaEiLbbaM*4ajpyaTTGiiibbd.*47",".*44aMMa..aSyEMMuuJTMabTMITMTITTebbbaMMEAviiaTTTIPmbbsd.*47",".*44aIEa..aSyIMIqMTTTbGbTTTITTTbLbbbaaaxrGaaTMTTTmPLGa.*48",".*44auEa.aeQQMIuaTMTTEsbmqIqyqbCbbbayybieabbTQTTQTIEaa.*48",".*45cEymaSMMMuuaMIMQMbCQELEMmLb*4ayyabMimTITTTMTTMaSa.*47",".*45amEJSSSMIuueeyyIMbCTMTMTvGbibayyyumIiiTMTTMTTMQaSJh.*46",".*46aSSSMMuuuavOeiibbCMMCETyLiibayyymMMbIMT*5MMTaISSh.*45",".*45aSSSuMMquuafgxbibbCEITyQuRiibauyymMMmyMMTTTQMQTeySSv.*45",".*44cSSMuEMMuuuaaAaexabCab*4aPibbjbyymMMImM*7IeyyISSa.*44",".*43aSSSqyMMquuaiIibIaaCaab*4aRiijjayyumMMuaeM*4aquuIISSa.*44",".*42aSSStuyMMquaibTijMIaCaPbiaGkaPiijauyymMMyuuabaeuquIuIMSSa.*43",".*42vSStaEyMMquyaTTiiIMbCaAbbbkaaPijbbauymMMIuuuMIyuuuIaMMSSa.*43",".*42SSIyaEEuMquaTTTIMMebLasLeLbbbaPbbbjayymMMyuuuMSEuyIadMMSa.*43",".*41cSSyyaEEuMaaT*5MMabLaGbbbGbbaPbiipaqyumMMuuuMSSEEIa.aMMa.*43",".*41mSIyyaEEyaT*5MTMMaiLbbLPGbiabauiiijauyuqMyuIqSSSIac.aMMa.*43",".*41mIQyy.aEyaT*4MTTMabKab*5iibiaAi*5auymMIuEEuSSQa..aMe.*44",".*41eMMya.bEyaMTITMTTMaiCaibi*7bAiPiiiPayyqMuqEIuSSScaMMc.*44",".*41cMQMa..ayyaMEMMTQIaeLaiai*8bivAiPAaaymIuqEIEMMSSIMa.*45",".*42IMMa...aqCPPyIMIaeAAaiai*6aibPviiLabbemMuqEMMuIMSJa.*46",".*42daMId...aeiiLqIaaLkabiai*6aibPiiPabbiimuuqMMIuMMSSa.*46",".*43cyMEc.haiiibGacaaLaiiai*6abiaPPabiabiauuqMMIuMMMSSa.*45",".*45uud.aTTTibba.abLaibbi*7aiaPaabiiaiiauqMMyuuMMSSa.*45",".*49aavTTea.dbbaaibi*4biiiaiaabaaiiibiiaIMMuumMMMSa.*45",".*48aRRRFaeh.dbiabibi*4aiiiaibbiaaiiibiiivMyuumcMMIa.*45",".*47cR*5a...aiiaiibi*4aiiiabiiiaaiiibaiLAu*4haMMIa.*45",".*47R*6a...bibaiibi*4ai*9aaiiiaPLiayuu.aMMa.*46",".*46aRRaaRa...abibbiibi*4ai*4bi*4abiiixbiibua..aMMa.*46",".*46aRxaaRa...eGGbbiiai*4ai*4ai*4bbPRRLbeTTa..aIMa.*47",".*46aRFxad.*4abeCiiibi*4ai*4ai*4kGeiiiaMQTa.aIaa.*48",".*47aKa.*5akbbaCPRGi*4ai*4aP*4LabbbTEMMa...a.*50",".*48a.*6aTIvaeiiaP*4ei*4kbi*4aTTETTaua.*54",".*56vMTyabiai*4kPRPReabbbaEMTaaauIIa.*53",".*57yTyMTTEa*5i*4ayTTITTaa.auuIMMa.*52",".*58aaMTTeT*4QyTTMTyTTeeea...ayqIIM.*52",".*60aeeFeeaTQyTTTaaeeFFFa.*4hmdhh.*52",".*60aF*5a*7.aFFFRRa.*61",".*60aRRRKFa.*7aFKR*4a.*60",".*60aR*4Ka.*7aFR*5a.*60",".*60aR*5.*9aR*5a.*60",".*60aR*5.*9aFR*5a.*59",".*60aFR*4.*10aKR*4k.*59",".*59aFFR*4c.*9hKR*5a.*58",".*59aKR*5a.*10eR*6h.*57",".*59ayR*5a.*10aR*4EEh.*57",".*59aQE*4Ta.*10aE*4TTQ.*57",".*59aQT*5a.*10dMT*5I.*57",".*59aMQQTQMa.*10dMTTQMMT.*57",".*59aTMTMTQ.*12cQTQTQQ.*57",".*59aTQTMTQ.*12aQTMTQQ.*57",".*59aTQTMTM.*13aTQTTTa.*56",".*59aTQTMTd.*13aT*5a.*56",".*59aT*5d.*14aTQTMa.*56",".*59cTTTQc.*15aTMTMa.*56",".*59T*5a.*16aMTQTc.*55",".*58aT*5a.*16aQTTTa.*55",".*57aaIMTMea.*16aT*4aa.*54",".*57aCaeAACa.*15aaaTMaaa.*54",".*57abLAbbaa.*15aCCakPCa.*54",".*57aACbiia.*17absLiea.*54",".*57asCiiia.*17abbCLCa.*54",".*57abCiiia.*18abCea.*55",".*57aGCiibba.*17abCba.*55",".*56abbsbiiia.*17abCGGa.*54",".*56abLbi*5d.*15aaeLiia.*54",".*55aksei*5bc.*15abbeLiia.*53",".*53aabipiiibaaac.*15abiibPba.*53",".*52cipppiiibesssc.*14aabiiibGa.*53",".*52aippiiibxasssc.*14aiipppibea.*52",".*52ab*6Caaksec.*14abi*5baa.*52",".*52aCRRRLCa.aaac.*15akksvvkkCa.*52",".*53a*6.*22aaaeeeaa.*53",".*142",".*142",".*142"],[".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*67a*7.*68",".*65aaM*4SSSaaa.*65",".*63cvM*8S*4a.*64",".*60daEM*4yyyEIM*4SSa.*63",".*59auM*4yuyMSSSIIMQSSSa.*62",".*59yM*4EuMMEyyMSSMMMSSSaa.*60",".*58aM*4uuMMuEM*4SSTMMS*4a.*59",".*57auMMyuuMMuM*4IMMSTTMTMSSa.*59",".*57aEMuuM*4yM*4yMMMSTMQSMSSb.*58",".*54aaayEqEM*4qSMMQM*6STMTQSSSa.*57",".*53aTTmqyQMuySMqSSSyIMMSMMMSMTTTMSa.*57",".*52aTTImQTuyQSyqMSSMEMMMSMSSSMQTTMSSa.*56",".*52aITmMMuIMmmqqMMQyMMMyMMSSSTMQTTISa.*56",".*52ayImEymmmMMMqMMMyMMSmMMSSMTqMTTISTa.*55",".*53aPRmmIM*4uuMMyMQSyeM*4TQmMSTIMSa.*55",".*52aGgmTuuMMqmqMMMyMMMFxMMMTEMmMMTIuSa.*55",".*52aCHBGqMmmMImMMyMMyuRFMMTMyMqMMSMuSSd.*54",".*50aTICggGkmMMMImMMyMMvuuFMMMyEMmM*4yuTa.*54",".*49aTTIaPLaqumuuqmMMMuuRRRFMMMxMFKM*4yqTa.*54",".*49aTQajaabuyym*4MMuFeaakxMMxMtRaMMmMMaSa.*54",".*50aMjjuajayMumRmMMya*4bIMFtIaaaMMmMMaMa.*54",".*51ajaMajjyMycFeqMMFeubEyFxKaEaMMmMMIaMa.*6S.*47",".*51ajaTajjaMMcRFuEMyRzBR*4TgTsmmuMMaSa.*6BTTH.*45",".*50ajiaTaijaMMmRRMqMMFR*9emmyMMaTa.*5lHTTTw.*44",".*49aiijbTa*4MMmkkMumMER*9eqmMTaSa.*6NOT*4.*44",".*49ajibiTbbayMMmmeMEykxR*8euqMSuav.*7lSTTNr.*44",".*48aTTTbiTiiaySEymmIMyaxFR*6emyMyuua.*8grTNNg.*44",".*48aaaIMT*4aySyymmeMyaFFssRRkkqmyyMyySa.*8gTNg.*45",".*50haMTaaQaySyymqqMMcKRKkebaqyymMSyySSh.*8N.*47",".*52aaayuyJEEymyymMmqRmvTTaqyymMSySmSah.*10aa.*43",".*54aMMEJuIymyyuMuTqTTMIaeyymMqMSaySa.*7aa.aRh.*42",".*54aMMESuEuyyeaaEMmIbabeiaaMTmISadSJh.*5aRRaaRa.*42",".*54aMEQSuIqaipaafvaajpaGiiQMaaISSceSh.*6aRReRa.*42",".*53aSQMSuEuabijbGllGbijjaiMquTaESSheIh.*4ARRkRRFa.*42",".*51caSSISyyIaLaiibafAabbjjaiaMMQTaESceMh...kR*6c.*43",".*50aSSSISuuyuaiabbabsaiabbabPaMTMTTbESSa...aR*5Ka.*44",".*48aaSSSIQuuuEaAieaijimbjjbabviRaTTMTTaSSa..aMRRRFaa.*45",".*47aSSSIqMuuIuEaAAipjjaEbbjjaiAiRbT*6aMSd.aTbRFa.*47",".*46aSSSmqMIuuIuEIaLbjjibTbbjjpbiRaT*4MMTaySmabMTeba.*47",".*45aSSMaauMyuMIuqTababjiETbijiaiPbaTTMMEMebybaGbiiTMa.*47",".*45aSma.auMuMIMuvTaLbQajTEJiaEiLbbaM*4ajpyaTTGiiibbd.*47",".*44aMMa..aSyEMMuuJTMabTMITMTITTebbbaMMEAviiaTTTIPmbbsd.*47",".*44aIEa..aSyIMIqMTTTbGbTTTITTTbLbbbaaaxrGaaTMTTTmPLGa.*48",".*44auEa.aeQQMIuaTMTTEsbmqIqyqbCbbbayybieabbTQTTQTIEaa.*48",".*45cEymaSMMMuuaMIMQMbCQELEMmLb*4ayyabMimTITTTMTTMaSa.*47",".*45amEJSSSMIuueeyyIMbCTMTMTvGbibayyyumIiiTMTTMTTMQaSJh.*46",".*46aSSSMMuuuavOeiibbCMMCETyLiibayyymMMbIMT*5MMTaISSh.*45",".*45aSSSuMMquuafgxbibbCEITyQuRiibauyymMMmyMMTTTQMQTeySSv.*45",".*44cSSMuEMMuuuaaAaexabCab*4aPibbjbyymMMImM*7IeyyISSa.*44",".*43aSSSqyMMquuaiIibIaaCaab*4aRiijjayyumMMuaeM*4aquuIISSa.*44",".*42aSSStuyMMquaibTijMIaCaPbiaGkaPiijauyymMMyuuabaeuquIuIMSSa.*43",".*42vSStaEyMMquyaTTiiIMbCaAbbbkaaPijbbauymMMIuuuMIyuuuIaMMSSa.*43",".*42SSIyaEEuMquaTTTIMMebLasLeLbbbaPbbbjayymMMyuuuMSEuyIadMMSa.*43",".*41cSSyyaEEuMaaT*5MMabLaGbbbGbbaPbiipaqyumMMuuuMSSEEIa.aMMa.*43",".*41mSIyyaEEyaT*5MTMMaiLbbLPGbiabauiiijauyuqMyuIqSSSIac.aMMa.*43",".*41mIQyy.aEyaT*4MTTMabKab*5iibiaAi*5auymMIuEEuSSQa..aMe.*44",".*41eMMya.bEyaMTITMTTMaiCaibi*7bAiPiiiPayyqMuqEIuSSScaMMc.*44",".*41cMQMa..ayyaMEMMTQIaeLaiai*8bivAiPAaaymIuqEIEMMSSIMa.*45",".*42IMMa...aqCPPyIMIaeAAaiai*6aibPviiLabbemMuqEMMuIMSJa.*46",".*42daMId...aeiiLqIaaLkabiai*6aibPiiPabbiimuuqMMIuMMSSa.*46",".*43cyMEc.haiiibGacaaLaiiai*6abiaPPabiabiauuqMMIuMMMSSa.*45",".*45uud.aTTTibba.abLaibbi*7aiaPaabiiaiiauqMMyuuMMSSa.*45",".*49aavTTea.dbbaaibi*4biiiaiaabaaiiibiiaIMMuumMMMSa.*45",".*48aRRRFaeh.dbiabibi*4aiiiaibbiaaiiibiiivMyuumcMMIa.*45",".*47cR*5a...aiiaiibi*4aiiiabiiiaaiiibaiLAu*4haMMIa.*45",".*47R*6a...bibaiibi*4ai*9aaiiiaPLiayuu.aMMa.*46",".*46aRRaaRa...abibbiibi*4ai*4bi*4abiiixbiibua..aMMa.*46",".*46aRxaaRa...eGGbbiiai*4ai*4ai*4bbPRRLbeTTa..aIMa.*47",".*46aRFxad.*4abeCiiibi*4ai*4ai*4kGeiiiaMQTa.aIaa.*48",".*47aKa.*5akbbaCPRGi*4ai*4aP*4LabbbTEMMa...a.*50",".*48a.*6aTIvaeiiaP*4ei*4kbi*4aTTETTaua.*54",".*56vMTyabiai*4kPRPReabbbaEMTaaauIIa.*53",".*57yTyMTTEa*5i*4ayTTITTaa.auuIMMa.*52",".*58aaMTTeT*4QyTTMTyTTeeea...ayqIIM.*52",".*60aeeFeeaTQyTTTaaeeFFFa.*4hmdhh.*52",".*60aF*5a*7.aFFFRRa.*61",".*60aRRRKFa.*7aFKR*4a.*60",".*60aR*4Ka.*7aFR*5a.*60",".*60aR*5.*9aR*5a.*60",".*60aR*5.*9aFR*5a.*59",".*60aFR*4.*10aKR*4k.*59",".*59aFFR*4c.*9hKR*5a.*58",".*59aKR*5a.*10eR*6h.*57",".*59ayR*5a.*10aR*4EEh.*57",".*59aQE*4Ta.*10aE*4TTQ.*57",".*59aQT*5a.*10dMT*5I.*57",".*59aMQQTQMa.*10dMTTQMMT.*57",".*59aTMTMTQ.*12cQTQTQQ.*57",".*59aTQTMTQ.*12aQTMTQQ.*57",".*59aTQTMTM.*13aTQTTTa.*56",".*59aTQTMTd.*13aT*5a.*56",".*59aT*5d.*14aTQTMa.*56",".*59cTTTQc.*15aTMTMa.*56",".*59T*5a.*16aMTQTc.*55",".*58aT*5a.*16aQTTTa.*55",".*57aaIMTMea.*16aT*4aa.*54",".*57aCaeAACa.*15aaaTMaaa.*54",".*57abLAbbaa.*15aCCakPCa.*54",".*57aACbiia.*17absLiea.*54",".*57abCiiia.*18abCea.*55",".*57aGCiibba.*17abCba.*55",".*56abbsbiiia.*17abCGGa.*54",".*56abLbi*5d.*15aaeLiia.*54",".*55aksei*5bc.*15abbeLiia.*53",".*53aabipiiibaaac.*15abiibPba.*53",".*52cipppiiibesssc.*14aabiiibGa.*53",".*52aippiiibxasssc.*14aiipppibea.*52",".*52ab*6Caaksec.*14abi*5baa.*52",".*52aCRRRLCa.aaac.*15akksvvkkCa.*52",".*53a*6.*22aaaeeeaa.*53",".*142",".*142",".*142"],[".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*67a*7.*68",".*65aaM*4SSSaaa.*65",".*63cvM*8S*4a.*64",".*60daEM*4yyyEIM*4SSa.*63",".*59auM*4yuyMSSSIIMQSSSa.*62",".*59yM*4EuMMEyyMSSMMMSSSaa.*60",".*58aM*4uuMMuEM*4SSTMMS*4a.*59",".*57auMMyuuMMuM*4IMMSTTMTMSSa.*59",".*57aEMuuM*4yM*4yMMMSTMQSMSSb.*58",".*54aaayEqEM*4qSMMQM*6STMTQSSSa.*57",".*53aTTmqyQMuySMqSSSyIMMSMMMSMTTTMSa.*57",".*52aTTImQTuyQSyqMSSMEMMMSMSSSMQTTMSSa.*56",".*52aITmMMuIMmmqqMMQyMMMyMMSSSTMQTTISa.*56",".*52ayImEymmmMMMqMMMyMMSmMMSSMTqMTTISTa.*55",".*53aPRmmIM*4uuMMyMQSyeM*4TQmMSTIMSa.*55",".*52aGgmTuuMMqmqMMMyMMMFxMMMTEMmMMTIuSa.*55",".*52aCHBGqMmmMImMMyMMyuRFMMTMyMqMMSMuSSd.*54",".*50aTICggGkmMMMImMMyMMvuuFMMMyEMmM*4yuTa.*54",".*49aTTIaPLaqumuuqmMMMuuRRRFMMMxMFKM*4yqTa.*54",".*49aTQajaabuyym*4MMuFeaakxMMxMtRaMMmMMaSa.*54",".*50aMjjuajayMumRmMMya*4bIMFtIaaaMMmMMaMa.*54",".*51ajaMajjyMycFeqMMFeubEyFxKaEaMMmMMIaMa.*6S.*47",".*51ajaTajjaMMcRFuEMyRzBR*4TgTsmmuMMaSa.*6BTTH.*45",".*50ajiaTaijaMMmRRMqMMFR*9emmyMMaTa.*5lHTTTw.*44",".*49aiijbTa*4MMmkkMumMER*9eqmMTaSa.*6NOT*4.*44",".*49ajibiTbbayMMmmeMEykxR*8euqMSuav.*7lSTTNr.*44",".*48aTTTbiTiiaySEymmIMyaxFR*6emyMyuua.*8grTNNg.*44",".*48aaaIMT*4aySyymmeMyaFFssRRkkqmyyMyySa.*8gTNg.*45",".*50haMTaaQaySyymqqMMcKRKkebaqyymMSyySSh.*8N.*47",".*52aaayuyJEEymyymMmqRmvTTaqyymMSySmSah.*10aa.*43",".*54aMMEJuIymyyuMuTqTTMIaeyymMqMSaySa.*7aa.aRh.*42",".*54aMMESuEuyyeaaEMmIbabeiaaMTmISadSJh.*5aRRaaRa.*42",".*54aMEQSuIqaipaafvaajpaGiiQMaaISSceSh.*6aRReRa.*42",".*53aSQMSuEuabijbGllGbijjaiMquTaESSheIh.*4ARRkRRFa.*42",".*51caSSISyyIaLaiibafAabbjjaiaMMQTaESceMh...kR*6c.*43",".*50aSSSISuuyuaiabbabsaiabbabPaMTMTTbESSa...aR*5Ka.*44",".*48aaSSSIQuuuEaAieaijimbjjbabviRaTTMTTaSSa..aMRRRFaa.*45",".*47aSSSIqMuuIuEaAAipjjaEbbjjaiAiRbT*6aMSd.aTbRFa.*47",".*46aSSSmqMIuuIuEIaLbjjibTbbjjpbiRaT*4MMTaySmabMTeba.*47",".*45aSSMaauMyuMIuqTababjiETbijiaiPbaTTMMEMebybaGbiiTMa.*47",".*45aSma.auMuMIMuvTaLbQajTEJiaEiLbbaM*4ajpyaTTGiiibbd.*47",".*44aMMa..aSyEMMuuJTMabTMITMTITTebbbaMMEAviiaTTTIPmbbsd.*47",".*44aIEa..aSyIMIqMTTTbGbTTTITTTbLbbbaaaxrGaaTMTTTmPLGa.*48",".*44auEa.aeQQMIuaTMTTEsbmqIqyqbCbbbayybieabbTQTTQTIEaa.*48",".*45cEymaSMMMuuaMIMQMbCQELEMmLb*4ayyabMimTITTTMTTMaSa.*47",".*45amEJSSSMIuueeyyIMbCTMTMTvGbibayyyumIiiTMTTMTTMQaSJh.*46",".*46aSSSMMuuuavOeiibbCMMCETyLiibayyymMMbIMT*5MMTaISSh.*45",".*45aSSSuMMquuafgxbibbCEITyQuRiibauyymMMmyMMTTTQMQTeySSv.*45",".*44cSSMuEMMuuuaaAaexabCab*4aPibbjbyymMMImM*7IeyyISSa.*44",".*43aSSSqyMMquuaiIibIaaCaab*4aRiijjayyumMMuaeM*4aquuIISSa.*44",".*42aSSStuyMMquaibTijMIaCaPbiaGkaPiijauyymMMyuuabaeuquIuIMSSa.*43",".*42vSStaEyMMquyaTTiiIMbCaAbbbkaaPijbbauymMMIuuuMIyuuuIaMMSSa.*43",".*42SSIyaEEuMquaTTTIMMebLasLeLbbbaPbbbjayymMMyuuuMSEuyIadMMSa.*43",".*41cSSyyaEEuMaaT*5MMabLaGbbbGbbaPbiipaqyumMMuuuMSSEEIa.aMMa.*43",".*41mSIyyaEEyaT*5MTMMaiLbbLPGbiabauiiijauyuqMyuIqSSSIac.aMMa.*43",".*41mIQyy.aEyaT*4MTTMabKab*5iibiaAi*5auymMIuEEuSSQa..aMe.*44",".*41eMMya.bEyaMTITMTTMaiCaibi*7bAiPiiiPayyqMuqEIuSSScaMMc.*44",".*41cMQMa..ayyaMEMMTQIaeLaiai*8bivAiPAaaymIuqEIEMMSSIMa.*45",".*42IMMa...aqCPPyIMIaeAAaiai*6aibPviiLabbemMuqEMMuIMSJa.*46",".*42daMId...aeiiLqIaaLkabiai*6aibPiiPabbiimuuqMMIuMMSSa.*46",".*43cyMEc.haiiibGacaaLaiiai*6abiaPPabiabiauuqMMIuMMMSSa.*45",".*45uud.aTTTibba.abLaibbi*7aiaPaabiiaiiauqMMyuuMMSSa.*45",".*49aavTTea.dbbaaibi*4biiiaiaabaaiiibiiaIMMuumMMMSa.*45",".*48aRRRFaeh.dbiabibi*4aiiiaibbiaaiiibiiivMyuumcMMIa.*45",".*47cR*5a...aiiaiibi*4aiiiabiiiaaiiibaiLAu*4haMMIa.*45",".*47R*6a...bibaiibi*4ai*9aaiiiaPLiayuu.aMMa.*46",".*46aRRaaRa...abibbiibi*4ai*4bi*4abiiixbiibua..aMMa.*46",".*46aRxaaRa...eGGbbiiai*4ai*4ai*4bbPRRLbeTTa..aIMa.*47",".*46aRFxad.*4abeCiiibi*4ai*4ai*4kGeiiiaMQTa.aIaa.*48",".*47aKa.*5akbbaCPRGi*4ai*4aP*4LabbbTEMMa...a.*50",".*48a.*6aTIvaeiiaP*4ei*4kbi*4aTTETTaua.*54",".*56vMTyabiai*4kPRPReabbbaEMTaaauIIa.*53",".*57yTyMTTEa*5i*4ayTTITTaa.auuIMMa.*52",".*58aaMTTeT*4QyTTMTyTTeeea...ayqIIM.*52",".*60aeeFeeaTQyTTTaaeeFFFa.*4hmdhh.*52",".*60aF*5a*7.aFFFRRa.*61",".*60aRRRKFa.*7aFKR*4a.*60",".*60aR*4Ka.*7aFR*5a.*60",".*60aR*5.*9aR*5a.*60",".*60aR*5.*9aFR*5a.*59",".*60aFR*4.*10aKR*4k.*59",".*59aFFR*4c.*9hKR*5a.*58",".*59aKR*5a.*10eR*6h.*57",".*59ayR*5a.*10aR*4EEh.*57",".*59aQE*4Ta.*10aE*4TTQ.*57",".*59aQT*5a.*10dMT*5I.*57",".*59aMQQTQMa.*10dMTTQMMT.*57",".*59aTMTMTQ.*12cQTQTQQ.*57",".*59aTQTMTQ.*12aQTMTQQ.*57",".*59aTQTMTM.*13aTQTTTa.*56",".*59aTQTMTd.*13aT*5a.*56",".*59aT*5d.*14aTQTMa.*56",".*59cTTTQc.*15aTMTMa.*56",".*59T*5a.*16aMTQTc.*55",".*58aT*5a.*16aQTTTa.*55",".*57aaIMTMea.*16aT*4aa.*54",".*57aCaeAACa.*15aaaTMaaa.*54",".*57abLAbbaa.*15aCCakPCa.*54",".*57aACbiia.*17absLiea.*54",".*57asCiiia.*17abbCLCa.*54",".*57abCiiia.*18abCea.*55",".*57aGCiibba.*17abCba.*55",".*56abbsbiiia.*17abCGGa.*54",".*56abLbi*5d.*15aaeLiia.*54",".*55aksei*5bc.*15abbeLiia.*53",".*53aabipiiibaaac.*15abiibPba.*53",".*52cipppiiibesssc.*14aabiiibGa.*53",".*52aippiiibxasssc.*14aiipppibea.*52",".*52ab*6Caaksec.*14abi*5baa.*52",".*52aCRRRLCa.aaac.*15akksvvkkCa.*52",".*53a*6.*22aaaeeeaa.*53",".*142",".*142",".*142"],[".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*77ca*6.*58",".*74haaI*5SSaa.*56",".*72haI*9SSSvv.*54",".*43huuq.mvSSh.*17hEI*5tqqyyI*5Sv.*53",".*41dI*4MS*6c.*16uI*4yqyIISSSIIISSSa.*52",".*41IEaaeI*4S*4a.*13aeI*4qqIIEqttISI*4SSvbd.*49",".*41Ia...caIIISySS.*12hayIIIqIIIqqI*5SSSIISSSJ.*49",".*41a.*6aIISStSv.*11aqEItmIIIqqI*7SSSISQSSa.*48",".*49aIISmyJ.*8haamIIqqI*4mI*5tIIISSIISESSd.*47",".*37a*4.*8ayIMaaSa.*6aTTayIqtI*4mSIISItMI*4SSISSESe.*47",".*35aaS*4mac.*6aIIa.Ea.*5aTTImtqQMttSIISSSMtIIISIISSISSSESc.*46",".*33ceS*5QI*4a.*4aIIactd.*5aETmqISytMSymISSMqIIIySISSSIISSySa.*46",".*32aSSSQIIISSSIISa...aII.mm.*6aaImIItIIm*4IISttIIIyIIS*4IS*5a.*45",".*31aSSJJEI*4SSSISS...aMa..d.*7aPPqm*4IIImIIItIIISmIISSISuISSISa.*45",".*30aSJtmadddI*4S*4v.ayIa.*7aaaGgfTtI*5qIIItISSSqsIIIMISmISSySa.*8B.*36",".*29cQttqd.*4aI*4QSSSaatIy.*6aTTaCHBGytIIqmmIIItIIMqFxIIITyMmISStSa.*7JT.*36",".*29aItt.*7aI*4SSSaaytSa.*4aTTTICllGqImmmImIIEIIItFRFIITMtIsIISuESa.*6zt.*36",".*29atta.*8aI*4SSSayySSa...aaIIaaPGammI*4mIItIIq*4FIIIqyMmIIIEySa..Sl.*9B.*30",".*29attd...caaa..aI*4SSSayySSa*5IajiaajttmtttmIIqItFRRRFIIItIqFIIIEtSa..pT.*4B...TT.*30",".*30ata..aSSIEeaatI*4SSScyQSSQIEuajjbEajauym*4IIqtFFRRRxIIqIyKmIIqIIEa...n...rTy..yn.*30",".*31a..bSQaaIIIEcyIIIESSSEtyIIaajjjbaTajaqtyqkAqIIxa*5qIxEIaaaMImIIya..aa..rHTNl.*33",".*33hSEa..caIIymyIIIytSSI*4ajjjbbQaajjattkRKqIIyFEIbbyFFFaEaIImmIu...dKR.DHOTTB.*33",".*33IEa*8EyqtIIIqtyIIaETTjbbbTbajjatIkRFtmIIKTTBzRRRTfTsImtIId..aRRa.lNTTTOt.*32",".*32aS*4IEEyyaaaqquIIItttqaaTTIbaTTja*4IImkRKEyIER*8JRkqmtIS..aRRMRa.rwTDl.aa.*30",".*31aSSIIEaaaytyttmtqqIIIt*4yaITMyTbjjattIImukkItIIER*9kqmISa..aRkRa...wTl..RRd.*29",".*30bSSEEaa...S*5MEtqqI*4tqqqaTyTTijiautIIqqmaIImsxR*8kqqIQa..aRRRs.*4gT..aaRa.*29",".*29JSSyaa...S*4I*7yq*8aaMT*5atIIIqmmIIEcFsxR*6kmqMaa...aRRRa.pTl...haRKa.*29",".*28dSSQa.*4S*4IIIMMMI*4q*6uSaaaQTTTatIImqmaIIyxFFFkkRRkkqqEu.*5aRRRa.rr...aRRRFa.*29",".*28dSSa.*4mS*4MIMMaammmI*4QS*4Eyma*5MIItmcIIyaeiRRseeaqqqII.*7aRRR.*4aaReRRF.*30",".*28SyIa...aSSMSQEQMcq*4tqIMSSSQMEMq*4yqqISqmEIIaaIITTsTTEkeqEaa.*6aaRRR...aR*5Ka.*30",".*28ItEa..hSSMSMEMMqqqtyIIyymISSQQJq*4yyqSQyqMMaaCiiayIqExkjappaMa.*4aTARRK..aR*5Ka.*31",".*28Ita..cSSIQIEMbuyIIMI*6q*9yymSSJtImaIIIkPjaaaCrBLjjjaMTa..aiTTkFa.haRRRKa.*33",".*28IEa..SSSIIyImmq*6I*7q*5tyymSSStMqmIT*4bCjjiClrGj*4IQMcdiipTTa..eTRRa.*35",".*28dEa.aSSIIIyIah..aq*5tI*4SSyqy*4SSIESuqMT*4EIIbjjaLPb*5yIaaGPpiiba.aiTTaa..rT.*31",".*29a*4SIIIEaa.*5daqttqqI*4SSSmmS*6mmaITTIMT*4ibajaajjaayaTTbPPiba.aaijTTM...Jz.*30",".*32aSEIIya.*6cEymqyyymIIIQS*7ymmqaEIT*8bjjjyajjpaTTIETACa.aaGiiiba.*35",".*32aI*4a.*5dmIEqqqmytyqIIIS*4IImmtmqaMIT*5IapapjjuyajaTTIIITEaaITMPPibba.*35",".*32aI*4a.*4dIIIyJSSyqm*6IIMImmttyqqqEMITTxTejjbbijaMaaTITTITTEIEIIITbPCa.*36",".*33eIII.*4aIIISSSyqomyIMyttmmmq*4EytqqyMIEefHLaaETTbaQEaQTTIT*5IIITTyEa.*37",".*33eIII.*4IIISSSta.aMQt*4IEIq*4EEqqqtaMIEaCACaMIITQeaeTTTITTTIMIIQTTIITa.*37",".*33auII...aSISSEta..SMqtqqqtEI*4EEqqttteaajibayjpET*4ETTTMITTIIMEETTIITTa.*37",".*35IIya.aSMSSta..aItqc...aatyEIEtqqtqmttajjabIajbTTTEITTIITTIIIaITTIITTh.*38",".*36aa.aIIJSEa...aIa.*6aaIyttqtqqayyttaajjIMbTTQIETTIITTIMaaIITEETMa.*39",".*39aIyQMq.*4aIa.*6SIyteaammtyyyttaajjEMIMIIITTIITMIIayIIEyEMMa.*40",".*39aIyIIq.*5EIad...aStyad..ayyymah..a*6IIITQIITIIaayyyIyyIIa.*41",".*39heIIIc.*5aIIa..aSMya.*5aaa.*8cbbaaI*4TIeaaCayy.ydcc.*42",".*40aIIIa.*10dSIIa.*18bibbbCaaaQTTeP.*50",".*41aIIa..d.*7aSIya.*18aiiibGaETTEMas.*50",".*42eIEaEm.*7aIIIa.*18abiiiPammueeAa.*50",".*43yIIy.*8aI*4a.*17ijbbiLaTbbaRaPh.*49",".*44aa.*10aIIIc.E.*14abijiPaxGaiaGaGh.*49",".*56aI*6a.*9aaabbibbKabaebbaCCba.*49",".*58aaa.*11aibbbi*4LabaCeLeCeib.*49",".*71LPbbiiPijikaibxbiAbaPia.*48",".*70abAPiALijjPaiiibkGaiaPija.*47",".*69aEaakPiiqjPabiibiiaiiaLiKa.*47",".*69aaibaPvjLiPaiiiaiiaiibPiAPa.*46",".*68aaiiaaaPiiPaji*6aiibaPAia.*46",".*64aaaiiibaiibaPiPi*4ai*6baPmiA.*46",".*63diiPiiaiiibabaPai*4ai*5biaPiPa.*46",".*62aeaiPibiiiaaiibai*4bbiiai*4aPPaia.*45",".*62aTaikeiiiai*4abi*4abiiai*4a*4iia.*44",".*62aEabaPiiai*4bai*4baiibbiiibiiiai*4.*43",".*61aTTIaiiLki*5ai*5aaiiai*5aiiiaiRPPa.*41",".*62mIaMiiaCPPiiabi*5aiiiai*6GPPPCPija.*41",".*63aQTTaiiiPPkai*6biiiaiiiPPPeiiiebaTe.*41",".*63cTTIyQyiiiCPPviiiai*4aiAPPiiiaaaiaTTTa.*40",".*64aaaTTTybibiiPPLmai*4CPPiiiabuTTTaITac.*40",".*66caTIMTai*4vPCCP*4xiiiaTTTEITTm.a.*42",".*68aaTTyTQaaiibi*5abaTITTamyyEa.*44",".*69amIT*4Qa*5bbaITETTaaayEaa.*45",".*70aaT*4ETTyTETTIITEaaFFFaa.*47",".*71FFFxaaTMTTMTTTaaaFFFRRa.*48",".*71RRKFFFa*4ITTTaaFKR*4a.*48",".*71R*5Fa.*4aaa.hKR*6a.*47",".*71R*6a.*9aR*6a.*47",".*70aR*5a.*11aR*5a.*47",".*69eR*6a.*11aR*5a.*47",".*67dqR*6a.*12R*5a.*48",".*67aR*5FF.*12aR*4Fa.*48",".*66dQTIRRRFd.*12ER*4Fd.*48",".*66aQTTTuya.*12aTy*4E.*49",".*65aTTIT*4a.*12bT*5I.*49",".*65aT*4IIa.*13eTI*4d.*49",".*65aTMTTITa.*13eTTTIT.*50",".*64aTTITTTa.*13aTQTTTQ.*50",".*64aT*4IM.*14aTITQTa.*50",".*64aTMTTTe.*14aTTTMTa.*50",".*64hTQTMq.*15aT*4a.*51",".*64T*4Qh.*14cT*5a.*51",".*62caTMTQa.*15aTTTMa.*52",".*61aaaETTa.*16aaaTEaa.*51",".*61aCPkaaba.*15CCPaeGa.*51",".*61abiPPCa.*16abbLLba.*51",".*61aGGPbad.*16aiibePa.*51",".*61abbCba.*17aiieeba.*51",".*61aAiCba.*16abiibiRa.*51",".*60aiCiPa.*17abiiiKkia.*50",".*60aiiLba.*17bbiiiePia.*50",".*59dbiPbiba.*15abi*5bPGc.*49",".*59abAbiiia.*15abi*6bbba.*48",".*59bi*4ppiaa.*13a*4biiipijiad.*46",".*59abip*5ia.*13as*4aiiipppjc.*46",".*59esab*5aa.*13asseaxbabbabad.*46",".*59esxCPPPCCa.*13asscaeCCPPPCCc.*46",".*59a*10.*13a*4.a*8d.*46",".*142",".*142",".*142"],[".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*43aaJSSSaa.*91",".*40aaaS*8a.*90",".*39eI*9SSSa.*24a*5.*60",".*29aaa.*6aEa*4I*5S*4a.*20caaIISSSaaa.*57",".*26dS*6v.*4aEc...aI*5StSSh.*17daI*6S*5a.*56",".*25qI*5SSS.*11cEI*4EMSv.*14aI*6ytEEIIIS*4a.*24nNN.*27",".*25IqaaayIISS.*11ctIIISaSSa.*12aI*6qtIIQI*4SSSba.*22NN.*29",".*24aI.*5cIISa.*10dqIIIz.aIa.*11aI*5tyIIQJJSMIIIMSSb.*19pNNN.*4QQ.*24",".*25a.*5cqIISaSSQdh.*5aIISe.aIa.*11aI*4tIIItqI*4SSSIISSSv.*16llNN.*4T*4.*23",".*32ayISJSQQIIa.*4aISSh.Ed.*11atIIEqIIIqtI*6SSSISMSSa.*14lwNN.*8TT.*22",".*33aIQSESI*4a..dIISS..y.*9aaaqIItqI*4qI*8SSSISISSa.*13lNN.*9NT.*22",".*22hdS*4dd...hIISSySQIIIa.cIISS.*11cTTatIqEIEIImI*6EIIISSSISSMSc.*12NNN.*5g.*4OT.*21",".*20aS*9aa..IIQSJaaI*4.cIISS.*10aTTEmqySIySSEISISSEyIISIISSISStSJ.*12N.*7wB.*4T.*21",".*18aaS*9IIIc.qIISJ..dIIIdhIISSe.*9aITmtIStySSttISSSMtIIISIQSSIS*5d.*9T.*8nTT.*4T.N.*19",".*17hS*7IIISSMISaqIIIS...aIIadEIISSa.*9aymtEtEImmImSSSItI*4MIS*4ISSISh.*8TT.*9TT.*6N.*19",".*17vSMyqqqI*6SSMSqyIISa..ayIeaqIIISSec..aaTaaGATm*5IIImIISttIISuIISSQSIISSSb.*8TT...Sr.*4pg.*6NN.*18",".*16bSyteaddcdI*5S*5IIISa..ayIaqqIIQSSSaaTTTQafSBPtyI*4qIIIytMSSQqI*4TSmISSEe.*8T.*4NTT.*12N.*18",".*15aSIta.*7eI*4S*5qISSSa.cttattI*4SSvTQMEaelgGIIIqmqqIIIytISyFxIIITtSmESStSa.*6NN.*4lTTl...p.*7N.*18",".*15aIIma.*5aaaeI*4SQISStyEQMmaaqqaqttIIeaaabjjbxPLemmmqEImIIItIItFRRIITItIqEISqSa.*6NJ.*5lOB...z.*4lT.N.*18",".*15huIa.*4cqMIIEmI*4SMEESSSttI*4EEEyaaaj*4baaEabaqtmI*4mIIEEIItKRRIITItIxEIStya.*6N.*7gO..lTl..ONH.*20",".*16aIEa...IIyaaaIEtIISSMttS*4IyyESSIaTTMjjbijaQaajjmttmtttmIIyIyFRRqqIIIsIImIIIyca.*5NN.*10gwTl..TNl.*20",".*18a...dEaa...aaEEIISSStqqqS*4I*4aTTIijjiaTbbjjjamEtm*4IIttFFR*4IIqxIFxIImIba.*5NN..a.*7lNTwl.Tl.*21",".*21aaSSS.a...atyIIS*4tq*4EIItttaTTTjamTejajjjaqqEEmRRmIIta*6IExIaacIIqIa.*6N..aRaa.*4lwTTHr.T.*5J.*16",".*20aS*4QMMad..ctyIIMS*4tq*5t*4aTTayTTbjajjjaqqttxFxqIIyFaIaaIyFEaEaIImIIa.*6N..cRaR...lrTTTHHl.*6N.*16",".*19aS*4I*7aaayyI*4E*6q*4mmaQbITTbjja*5mIItkRFtIIIRRTglRRKRgTxImtIa.*10RKRv...rHSTTHHT.*6N.*16",".*18hSSSQIEEty*6tqttIIq*4E*5q*4aabTTMjjjamtqmIItmqRREqIIERRJJR*4BRdqmIQ.*10aRKRa..lrHHTTNSTDl.*4N.*16",".*17cSSEqd.*4accQSSMI*4mq*6E*4q*4aTTTbyjjattqEIImqqmkIEqIIER*9kqESa.*10aRRa..grBTHNT*5Bl...NN.*15",".*16dSSIc.*5cbSSSI*8Emmq*5yEEtEImamT*4attmIIImttmmEIItksFR*8KqESb.*10aRRRa.grOTTTNT*7lg.NN.*15",".*16aSEah...dcSSSI*4yqqqEI*4mmq*4tSSSIIIaaTTTamqIIqqtqmmIIIakFFxR*7kqqIa.*11aRRR.zT*16.NN.*15",".*16aSya.*4S*4ISIquIIIqqqIIIS*9I*5ma*4yIIqaameI*4aaFRRFskARRKkqqEa...ahTcaLjjaR*4..glwHHBwTTNHHHwl..NN.*15",".*16aIa.*4vS*5qqI*6ytqIIIS*7I*5q*5IItqMQTIaIuaaIMTqRRFa*5mmaTTvaaT*4ePjiTRRRF.*4lHHwHTTTHHrl...TN.*15",".*16hEa...aS*4qqEIIIEyyyqtqqyIIISSSQQQMIq*5IEqaIT*6aGijiITTATIIaITTamTTIET*4IyPRjTQRRRKsa...lwDTTHTSll.*4TT.*15",".*17aEa.aS*4qqtEtda*4t*6mIIIQSSSQq*5yEsLaITTTMQTTTaPjjjbIMEabjqTMyT*8ITERKjTTKR*4a...lwTTTHHTl.*4TTT.*15",".*18ch.aSSSqqtaa.*6at*6mmmItq*7mmelTPITIIT*5aPbppjaPRcjaaIMTMITTTMT*4mLjjyMaFFa.*6lHTTHHl.*5TT.*16",".*20cSSSIttc.*9aacqtttqqmmqt*5bpjafrGjaMT*4ITaPajjbCwSPjjjpTIITTTIIT*4qLibbIac.*8grTTHr.zw...TT.*16",".*20aSMIttc.*6caEI*8EEEqqqtttmjjjbaCbjjjTTIITTajajjjefgsjjjaEyTTMITTTIIMQaCaacN.*6lHp.lHTwl.jTJ..T.*17",".*20aIIIta.*5haSSSIeaeMQE*9qqajbaIujajjaTIIMTaPibjbabssbabjaQTIIITTTIIQTIya...N.*5QTT...lTl...lS..S.*17",".*20aEIIa.*5cSIIma.*4aaESSSIIEq*4aaTTIajbybMIIITIaPijajjjyajjjaI*10TTII.*5NN...nTTr...gTl.*25",".*21aIIa.*5dQIm.*8daatttmqmamTTTITjjjMIIIMTMabbPj*4aTyajjpa*5I*8h.*6N...lHl.*5z.*26",".*22mIIa.*4SIa.*13a*4TTTIMTTEjjjyEIIMEbbjbPajjjvTTbpjjj.*6cea.*10NT.*10n.*4N.*21",".*22dyIIa...IIa.*12ET*10I*4aEIIqabbjjbPaaiaEtIjajaa.*19OOT.*7B.*6N.*21",".*24aa.*4aIyda.*9aTTIT*6QIQTII.aa.hbbjjjbPQTeqTIIbaa.*22NTT.*5gSn.*4SNp.*20",".*31mye.*9aTTIT*6QITQIa.*6bbjjjbAmMT*4Iba.*23NOTT.*4rTg...TTNl.*20",".*43aIQIT*6IQMaa.*7bbjjbPaqyqtmEava.*32O.*4TNl.*21",".*35aRa.*4cGPPeTyETTIaaa.*8abijjbPaTTLEcaPa.*27NNN...p...TTll.*21",".*33sdaRRc..cbjjvPaTTTII.*9caaj*4PayT*4aLa.*28rNN.*5TTll.*23",".*33RRRaRRaaaTTjjmPyEIIa.*6aaabbj*4iaaMICMbPa.*29lNN.*5TS.*25",".*34asRRFRRRaTTjbGIIIa.*4acjjbbjjjbjjPaaiiiacka.*30pNNN.*30",".*32cR*9KeTbea*4.*4aCGibj*7PaGPabaTaa.*33pNNO.*28",".*33aFFckFR*4aIaa.*8aaaPjjjqjjjmsaaxbbaGaa.*34NNN.*28",".*38aRRRaa.*4a*6.aaaAujLvjjjPajcaLbGsPb.*65",".*37aRRaa.*5ajjLjja*6PjjiPjvabjbAbaaaPja.*64",".*36aRKa.*5aTTjjPj*6bbaPjPjmPajjbaAKaajPjja.*62",".*36aac.*5aQTQjjLj*4bbabacPjjPajjbjjaabejqLjKa*4.*58",".*43avmMMabcacj*6baPiPajjjbjjbjaaPAjPajbjjLa.*56",".*43aTTTajPPj*6bajjaPaajjbjjjajaaPjPaabjPPsjja.*54",".*43aMMtajjPPjjjbaj*4baajjjaj*6bvPajjjsCjjaaa.*54",".*44aMTTajjPvbbbj*4bbj*4bjjjbj*4aajjEPijbaTTca.*53",".*45yeTTajCCaj*5bbj*5bjjjaj*5ajjPjjaMTITIT.*53",".*45aTTTajbGPj*4bbj*5ajjjajjjbjjjaLjjaETTaaIu.*53",".*45aTMtEbjjPPPjbbj*5bbjjjbjjjajjjkCjbTTQeFKRa.*53",".*46auTTIajjjPCaj*6bj*4bjjjajjPPabIQakFR*4aa.*51",".*46aaTTITMajbsAj*5bajjjbjjjPsPPjjjITaFFR*7a.*50",".*48aIaTTMabmPPj*4bj*4ajiPvj*4aTQMaFR*9e.*49",".*49aaTTEyajjLPPPxaP*4kPPjjjaIMETakFKR*10a.*48",".*49aFFQTTIajjjEPCxR*4xjjjaEETTTIaFFKR*10a.*48",".*49aKFeMTITmmjjibij*4ajbaTTMTTaa.a*4FFR*7a.*48",".*48aRRRFFcT*4yMMMua*5ITtTaaebc.*6caaFR*4Fa.*48",".*48AR*4FFaaaIT*4MTTyIITTTEa.*12cR*5x.*49",".*45aaR*7Fa...a*4bTTQTIeTTa.*13R*6a.*49",".*43aaR*8Kh.*8aaaTTc.aa.*13aIR*4F.*50",".*41dTTR*8e.*31aMT*6.*50",".*40aITTIR*6s.*32aIT*5Q.*50",".*39hMTTTQRRFFsa.*33aT*4ITa.*50",".*39ETTITTtFFk.*35aT*4QTa.*50",".*38aT*7Ma.*37vQT*4a.*50",".*37aTTQTTMTIa.*38aQTTTa.*51",".*37dTMTTMTQa.*39aT*4a.*51",".*36aT*4MTMh.*40aQTTTa.*51",".*35aT*4MTah.*41aT*4.*52",".*33aaQTTTITch.*42aT*4.*52",".*32aCaTTTMQd.*43bbTTMaa.*51",".*32abPaaIaa.*43aCPaaaba.*51",".*32bbvPPaa.*44abbPPPGa.*51",".*31aiPbLba.*46bjjqiTa.*51",".*30aiRiLba.*47bjjsiCa.*51",".*29ajiGiia.*48bjjkiia.*51",".*28cbjjiPba.*47abjjmiGac.*50",".*28bAPveba.*47cbbjjcPija.*50",".*27aLbjjjb.*48abj*4bPmc.*50",".*26abj*5b.*48bj*7bbaaa.*47",".*26abjjppjja.*47ababbj*4pppja.*46",".*26abjp*4ja.*47s*5kbjjjpppj.*46",".*26axb*5aa.*47sssbasCababbba.*46",".*26asGRRRLLa.*47ssscaaaGLRPPLG.*46",".*26a*9.*47a*4..a*8.*46",".*142",".*142",".*142"],[".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*26ccIISSJcc.*107",".*25yI*6SSSa.*74H.*31",".*13hhv*4hh...aecddqI*4SSm.*73O.*31",".*12aS*8a.*8mIIIMSSa.*21a*6.*45T.*31",".*11cQyEEIIISSSv.*8qIIIJSSa.*18hyIIS*4JJ.*41SSTTSO.*28",".*11Ia.*4aaIISSS.*7atIIIuSO.*14aaI*9SSSaa.*28lr.*11T.*31",".*11h.*7dIIISv.*7bIIImES.*13aI*6ytEIIIMSSSa.*26gSw.*11T.*31",".*20ayIISS.*6aIISaqIb.*11aI*5qqIISSSIIIQSSa.*24lHTD.*11N.*31",".*21aIIQSbee...bIISaaIa.*11yI*4tIIIytySSSIISSve.*22gHTTDn.*10D.*11g.*19",".*8aJS*4daa...cytIISEISSa.aIISa.Ea.*10aIIIqI*4tI*5SSSISESJ.*21STTTNl.*19nlTn.*19",".*6bS*10a..ccbtIISyIISeyISSaaI.*9bamIEqI*4tI*7MSSISySa.*19lDTTTr.*19lOTl.*20",".*5aSSqtqMSSIMSJIu..atIISaayIQtIISEta.*8TTaqttIIEMqI*9SSISStSa.*18lHTNwn.*18jOTD.*21",".*4bSItdaaatIQIISSIbcamEIQS.ayIuIISSa.*8bTTmmMSyySEISISSEI*5SSISSSa.*19DTDg.*19HSr.*22",".*4aIe.*7aI*4SESbaqIISc.ctEtIMSSa.*7aIEtIItIStqISSStIIIMSMIStSStSa.*18wTg.*8pTl.*9rj.*23",".*4aI.*9dI*4SSSaqtIQa..ayaIISSSbb.aaa.heayttymmImSISEI*4EMS*4ISJSa.*18ll.*8TTl.*35",".*5q.*7abaaEIIIS*4EyISJ..qqtIIISSSOTTTeallsmyI*4yIIItISSIEISSMSIQSMS.*26TTTlg.*35",".*11abSSSIqI*4ESSSJtIQSaaqmttIIIEyTMEyLDDLqqIIEqIIIqISSQqqIIIMSEISyS.*24TTTrwr.*36",".*10dMIIEIIItIIIMQS*4QqESIyqbQQj*7ikgfxtIEqEqIIItIIMERqIITySmISuQa.*14B.*7TTTrrl.*6gg.*7nQOTTrg.*15",".*10Eya...atItIIIMtS*6ttyyaTTj*5bbaqaammtIIImI*6tRRtITMqIqIMyta.*13DS.*4glTTTwwwg...glDl.*4gDT*5lln.*16",".*8cJ*5dc.hbttIIIQSuES*6IuvTEbj*4aQbjjatqmytmIIyIIFKuytIIEIumIItma.*12nHH..ngBTTTwwrldjlwDrlglwQST*4Brll.*18",".*7aS*8bd.cttI*4SqqquyytttaTTjjjbmTbajjatItmqmIIEtsR*4yIIxIFmIIyba.*12lTS.jgwTTTwwrlggrDDllgBT*6Bwwwg.*19",".*6JS*4QMI*5.cctEI*4QIq*7mTTjjaETmjajjaqtItxRtIIseaaakIIEIekyIIMad.*10dgHTDggwTNOwwwlgrwDDrBST*6Nw*4l.*20",".*5aSSSIIIyyI*5taatI*8qqmmqaTQbaETTj*6qqqcRFmMIxkIbbFIxIayaIIqMd.*10akbDHDrwDDDwwwDrrrwHHNH*4NSNw*5g*4n.*17",".*4aSMtaa.*4baq*6mtIytyI*7taemmQTTjjba*4mIImRFqIIERTzgKRKRlTqImEJ.*10aksbDDDwwwTwwwHDwH*8OTTH*6Or*4l*4.*14","...dSQmc.*6aaJSSSMIImqtttqtyI*5tbmTTQjjjamttmIIqqeRqqIIFRRHR*4wxmmtIa.*10RRRaDDwwNTHwH*10T*4OH*6T*5Sl*6.*12","...dSu.*5avS*4I*9mtttqqqtqttqaTTITTjattmIItttmcIIqtIER*8qqIa.*11RRRbHDHTTH*9T*7H*14NTTTNl*4.*9","...bEb.*4aS*4I*4tqtqI*4Emmq*6mmEbbMTTQttmIIttqmmIIIcxFR*8cqIb.*12KRRfNNTTNH*5ST*17OHNH*12llg.*7","...bE...aS*4QSMqyI*5tqqIIQSSJvEESSIIIqaaTamEa*4qmcIIIbxKxsR*6cqya...a*4..a*4RRRNOTTNHHST*38NNp.*5","...hy...S*5EtI*4Et*4ytqIIIS*5EEt*5qbcavQTTTIaaabyTTAKxekKRxaqmbeaaT*5vkLjTbRRRST*4ST*42Hz.*4",".*4ac.bSSSItyIqaaacmqt*6qIIIS*4EEeiattqmT*4IITICijjtTQQyIaybTtTTTIT*4MIEyPjjTsRRFHHNTTOH*4T*25OH*8rll.*7",".*6aS*4qtqaa..haaamqt*5mmqIISSSujjjbAvITMEMT*4aPbbabuyuijaTETTQETTTIITTTbTpjTsRRRzNDNSTOwH*6ST*9SSOH*13Dl*4.*9",".*6SQSSqqd..haSSSMI*5qmt*4mmqtttpjbbDOxaQT*4QTIPj*4ANAbppaTTETTTIIT*5bLjiMaKRRReHwDDDHDHOSH*7T*8HNTNNTTHHl*6.*12",".*6SISyd...cSIIMyyyI*5EtmmqttqmmmpjibefajpbTTTITbjajjbfDAbjjaEITTIEQTTTMIIICibbEaagffH*4DrrHHNTTH*11OT*6l*7g.*14",".*5aIIIq...aSIuab.*4aESSQIyttqqmeaajjibmajjpaTQITILAajaasFebjjmIIIEEI*6TIybCaa.*4gDTHHHSHHrwwwOTSOH*10w*4l*4g.*18",".*5aIIt.*4eMqa.*8amIEya*5EQaabIMajaijTIIIMaPiaajjabjjabqtEqIEI*7ym.*9gHTrHHTHwlwwwrHDDDrrwDDDwl*4rlgp.*20",".*6IIa...aSq.*12caT*6MITTTIEjjbEmIIEQubPepjjjmyajjpaaa...a*7.*12lTrwTTTDDllwwrDTTDDl*4DDlg.*25",".*6IIa...aQa.*12aTMTTIIT*5IIMpjpIEITIybjbbajjiTMapjjj.*25wlgrSTTDwggwwlrDTHDggglllg.*25",".*6aIIa...am.*11camTEIT*5IITQEbyayIIIbbjjjPyajmEMbajb.*27l..rDTTDg.glwggrDTDg.*12Or.*16",".*7cIIah..b.*4c.*6ePPcT*5IIIQIEEaa.a*4bj*4PTIbTEEbaib.*25n.*5gDTHD...gg..grSD.*11DTr.*16",".*9aa.*5b.aRKa..amijjPbtyTIIEbaa.*8abjjjAaTTMTMTbeh.*24nNl.*7wHDl.*9jl.*9lTTH.*16",".*16RRaaRRAaaeTjjLPTI*4a.*11bbjjiPetqtyEaLb.*25DTl.*8gDDn.*19gSDg.*16",".*16aaFR*7TTjbCyIIa.*11aabjjjLaETKEEaC.*26DTTl.*10lw.*10H.*8nTl.*17",".*14hR*11aTbba*4.*9aaabaj*4PqTMTTbLb.*25lTTTB.*22O.*9z.*18",".*15haaaR*7eEb.*10abjjjbbj*5PaEMQIyCa.*26lNOD.*23T.*28",".*16aRRReacRRkah.*10aeGbbbj*4ijieabbyyaA.*27gTDn.*22OTO.*27",".*16aaa...RRa.*13bbGej*8PaPebbRsa.*27gO.*24OTN.*27",".*21ARa.*6a*4baa.aaaPjLjPjjjPabxabaGba.*28g.*16r.*8T.*28",".*21R.*4bababseb*8PjmjjijPaibGGCkaib.*42nDTl.*8S.*28",".*26TTbjjPAj*4bbbaaPjmiivebjbCbbCajja.*40nBTDn.*8H.*28",".*25aTTajjPPj*6ibbaPjjjAbj*4xPaPjqsja.*38rTTB.*38",".*25aIIEjjPPb*5j*4bPijPbjjbjjbjbPjAAjsaab.*34gDNr.*39",".*24ETTmabasj*9bjbPPbj*6bjbaiPiPbjjiLGb.*31gNl.*40",".*24TTTajjjPPj*5bbj*4aajjjbj*6bmjPbbjCPiibaa.*29l.*42",".*24TTIubjjjPPjjbbj*5bj*4bjjjbjjjbPPbjjPLaiiTTTE.*71",".*24aIyTTyjjiPbbj*6bj*9ijbjjLajiPijbbyITbE.*71",".*25bmTTTbjbePPPjjjibj*5bjjjijjbjjjbbPijiETTteFaacd.*68",".*27aTMabajjjPPjbbj*5bj*4bj*7sxjbTTQaeR*6aa.*66",".*26aTQEyTTIbjjPxbj*6bj*11PLbbTITaFR*10c.*64",".*27aTTmTTTmbjbsPj*5bj*9xPPPjjtTTaFR*12.*64",".*28cebaTETTabjPPAjjbbj*4bjAPPxEjjbTTEMFR*13e.*63",".*32ITETeajjP*4sP*5aPPvjjjbaMTTmxFR*13e.*63",".*32aamTETej*4CxvjjjAxmjjiamQTMyadxxFKR*11a.*63",".*31aRFFbTTIIuijbiaaajjbjaMmITITba.*4ba*6FR*5.*64",".*30aRRRKxTIITTEEyaTIQQbbtTTTITbMd.*11FR*5F.*64",".*26aaFR*6KFaaTTyT*4ITTITETTTtacb.*11aIER*4a.*64",".*24hmyR*9Fa..aaTTabEaaTTMabea.*14qT*5Ma.*64",".*23aETTR*9a.*12cda.*17bIET*4e.*65",".*22dT*4IR*6vd.*33aITTTITa.*65",".*21aTTTETTRRFFsa.*35aMQT*4.*66",".*21TTMTTQTTuxa.*38TITTTm.*66",".*20TTMTTTMITEh.*38hTQTITa.*66",".*19JTQTTQTTMa.*40aT*4uh.*66",".*18TTMTTITTa.*42mT*4a.*67",".*15baMTQTTTma.*44IT*4d.*67",".*14asaTQTQTac.*44aEMTMQ.*68",".*13abGPbJIva.*45axkaabaa.*67",".*13ciiPPeab.*46abGPPPCa.*67",".*13bGPiexed.*46abjjLbKa.*67",".*12aibbLba.*48dbjjPbGa.*67",".*11abGGPib.*49abjjCib.*68",".*10abjibbbc.*48dbjjjPePa.*67",".*9bbiPvAba.*49abjjjbAba.*67",".*8abPbjjib.*50bj*5bPia.*66",".*8bkijiiia.*49abj*6iPkbb.*64",".*8bjipppjb.*49aabbbj*6ppic.*62",".*8bjjpppjia.*48as*4xbijjpppjb.*62",".*7axbaabbbaa.*48asssaaxxb*5aa.*62",".*7asGPRRRPCa.*48akssa.aCCPTPPCC.*62",".*7a*10.*48a*5.da*8.*62",".*142",".*142",".*142"],[".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*57a*4.*81",".*52a*4cS*4aa.*79",".*50aaMIMMS*7aa.*22aQSSSad.*48",".*48aaM*11S*4a.*20aSSSy*4a.*47",".*47hIMIMIEyEIEIMMMS*4e.*18aSSEa.hcyE.*47",".*46dyIMIyuES*4EEMIMMS*4.*16cSSa.*6au.*46",".*45ayMMMytMMIyyISSIMQSMMSSJa.*9aa...cSIa.*7yc.*45",".*45aIIIyqMMEtM*4SSQIMQTMS*4a.*6dTa...aSa.*8a.*46",".*44aMMMymMMIqM*4EIMSTTIQTTQESSva*4TTa.*4SIa.*55",".*44cMMMqIMMyM*4IM*4STMMSTTQmqIISSTTa.*5Sa.*7a*7.*42",".*44yMMyIMMIqM*4EM*5STEMMSTTemMMMya.*5JMa.*5avS*7a.*41",".*44EMyEMEEuIM*7SMMSSTqMMSSTemymad...aQSa.*4eSSSJy*4IQSSvh.*38",".*41deaEEuEyuSqSMQSEIM*4QSMTEIMMISSeya.*4aSSSa..hESSQy*4IM*5ST.*38",".*40hTTIyuTMESIuSSSMuMMSmMSSMSTqMSTISSa...aaSSSE..aSSSty*5ma*4IMSv.*37",".*40hTTqETIIMqmuSMStMMSMmMSMMMSqmMSTESScMS*5yd.aSSy*6ma.*5aaEI.*37",".*40ETTmMytQmIEuMMMqISIMFmMMMIMIqyMTIESSMSSSyyqaSmmyEyqa*4.*8aMa.*36",".*40myEmMmmmMMIyMMMyMQEMFmMMMEIyqmMSMmESJMy*4cSmqIIqaaS*4aaa.*5aIa.*36",".*41aPRmmM*4EMMMyyMMEMFmMMMEMFImM*4mSSy*4cSSMMIccS*9aa...aMa.*36",".*40aGllRyMMMymMMMyyMEMyRsM*4IKmqMqMQmmSy*4SSMIqmS*4EEEIS*5a.aua.*37",".*38EQumDBLmqqmyyMMMuMMEIKRAMMxIRAaqMmMMmmSyyMSSyymSSSQMIE*7SSSc.*40",".*37ETTIGggGqqqM*6tMuMFRRFMIxmmRaqymMMSEeIMMMytmSSSEyEEEMS*9a.*39",".*37TTyEaLPbayMMMEIMMuEqARRREMFERRaaImyMISMIMMMttmmSttyyytQSSmmemS*4Jh.*38",".*37aTMEjaeajbuymmmMMMqxRmmKMFRRvaReyqyMmSeIMqqEIMEQS*7mmmqqqeeSSSc.*38",".*38ayjjayapjeqmqmyMMyR*4KR*4AAAamuMEmSeqqyyEmmSSMIIEuJSSvmemuuyeeSS.*38",".*39ajjbMbpjiIEeRKMMMRa*4R*7auuMmmSmmIyyqSSSMMIIEIImSSa...ayuyqS.*38",".*38ajjbbQbajiaIkFFyMMKRaaR*8quMmmSmEIEyqSSSIMIEIEIEEmSSa...ayyyS.*38",".*37cjjjbTbbaiaqMcRFtqMMR*10auyeuEJEyuuMSSSIMEEM*5IymSa...dyIMc.*38",".*36aTjjbiTbjimmIMIccEymIMR*4KTRRceaTTTmQMQQSSSMIIM*9IEMMc...eMMc.*38",".*36aTTMiiTijjqmMEMmmEMucaR*7aaQMTMTTayEEyuqIIMmquummmIIMIyMd..aIIa.*39",".*37aQTMTTMTTayIEMmumMMmaFxsxceabeaaTMTMQmqqqtIIm*4u*4mmEMMMa.*4aa.*40",".*38aaETQMTTEtmMyMmmmMMussFqTEaaaRKaQMQTatEMMMqmy*5mquqmEMMa.*46",".*40ITMTMTvyymmQTMcacIEMTqIepaFxRRaMTTTeq*5yycay*4acayEMIc.*45",".*40TTaaoaIyyeMQEaRRkbayEKfRjaFR*4aTEMMyyytma...dIMySv.ayMMc.*45",".*40aa..aMMMyaMTMxFkRRppjLwlaaKsRkRaTMMaqqmmmc..aIM*4Sd.aMMc.*45",".*44aSEMuaMQTRRRkRajiCgAaaFFsRRaMIMappquyytyIMIM*4Sa.MMc.*45",".*43aSSMMeTTMaRRKsRajbakabiaFKRRayEsPbjbyyyEIIEcccdIMa.Mu.*46",".*43aSqMIaTTTaRksRRabajiubibaKReTcbAObbaI*5d.*6MayMa.*46",".*42aSSaMyaTyTTR*4FaapjjEajbTkFTTbjsFbayI*4a.*7Iuya.*47",".*42aSQaMyMQIEMEsRReIapjjTTjjbITTjiLbbmiipeed.*6hqIa.*49",".*42aSaayyaMMEMuEFFsTbjjpyQbjabiijiLTeyuiip.*9aa.*50",".*42aSa.ayybEMquT*4MEmajyMTaEkbiiPkQTayaia.*61",".*42aMa..aapjLzbaMTybaTETMTTQTGGPPLMQTTeta..aI.*58",".*42aIa...ajbflGabijbCbbTTqyqmaeabqTTMTaa..aMI.*58",".*43qMa..daaaGaGeiieLxbbEyIEMaMETETTMQqyyyIMa.*58",".*43dMMIca.abaTbsPRLbMCbQTITTaMETIMTMamuyIma..daPPpa.*51",".*44ayMIahbbaTMMbeeIMbLbTITEMaMMTMTMa*6..aiiiPEp.*51",".*45cc..jjiaTTTMTMTMbibTIMEEaaEM*4.*6dai*5Pia.aaa.*46",".*49jjjTTMTITITMabPyMqiibakaMMa.*5hai*5bGbbaaMTa.*45",".*48apjaMQETTTIMMabLab*4PGaCbbbpppeabiiabp*4ERppaTTa.*44",".*49aia.aMMTTEMabbPaPGibeCaLeij*5Paabi*4jpjPmpaIMa.*44",".*51a..aEMMMaabiPasxbbPAbaPPijiiivLbi*5bbbLCbaMaa.*44",".*55aMMMcbbiPaaaxCbPbabaPiiAviPiib*7LsbaTT.*45",".*56dd.aiijPbbxbbKaiibbaaPiLikb*9GbbaQTa.*44",".*59iijRPb*4xaibiiibbaPvPabiiippPPjiaaTTa.*45",".*58bijjPabiiiaiiiaiiibbaPPbi*5APibQTTIMa.*45",".*58iijiPabi*4aiiibiibabaai*6PiiETTqut.*46",".*57aCiAjPaiiaiibi*4aiiiab*4iiiPPiiTTquaa.*46",".*57aiiLiPbiibiiiai*4ai*4ab*4CPiiIMEaa.*48",".*56aGjjAiPbi*6bi*5ai*6LbGsbaTTTa.*49",".*56aaePLiPbiiiaiiiai*5aiiivPPiebbeMTTa.*49",".*58aaLPkbiiiaiiibi*6kiiPPiiabmTTTv.*50",".*57db*6iiibaiiibiiKPPRiGiieTTaIMTTc.*50",".*57aib*5i*4biiibbPPi*4ebeITTQMMaa.*51",".*56abiaibiiai*4biiiCPiiaQQvaMTqyEyTa.*52",".*56aiiai*4bi*4bbiPCbimT*5MImEETTa.*52",".*56aiiai*4bi*5CPPibyTMTyyQTmyacaa.*53",".*55abiibi*5biiRPbbiiMQTTkamcyEm.*57",".*55aGPAki*5bGPPiibbTTaasFauuEE.*58",".*55aiPPeiiP*4biiiaTMTaeFFFauEEc.*58",".*54caiibaPPLviibibQITTeFKRRRa.*62",".*54aTEQaai*6aETTQTaFR*5a.*62",".*55aTTyQaaQETTTMTTTceR*5a.*63",".*56vTETETTIETTea...kR*5a.*63",".*57hQTbaaaF*4a...eR*6a.*62",".*59aaaFRRRFFa...dR*7K.*61",".*61aR*5Fa.*4KR*7a.*60",".*61aR*6a.*4hFFFRRRETa.*59",".*61dR*6a.*6kFFRETTMd.*58",".*61aR*5a.*7dEyTTTMTa.*58",".*60aR*6.*8dMTTTQTTT.*58",".*60aR*5k.*9aIQTTTMT.*58",".*59aR*6a.*10cMTMTQT.*58",".*59aTERRRIa.*11cQTTTQe.*57",".*58aQTTTMIMa.*12aTQTQTae.*55",".*58aTMT*4Ma.*13aT*4aCh.*54",".*58aTMTMIMa.*15TITIaLa.*54",".*58aTMTQTMa.*14aEMTaPib.*54",".*58aTTTMTa.*15saaaPbia.*54",".*58T*4MMa.*16kGPiCPi.*54",".*58TMTTTa.*17abiLieia.*53",".*58TITMTa.*18abAiGPi.*53",".*58TMTQT.*19dbbGesibd.*51",".*57hT*4v.*20abPi*4a.*51",".*57aTTQTa.*20abibPiibc.*50",".*57aMTMTa.*19hbi*5bxa.*50",".*56aba*5.*19aipppibxxc.*50",".*56aGPPRLs.*19bipijiexa.*51",".*56aeLbiba.*18cjpppibxa.*52",".*56aGGiiba.*18ipppibee.*53",".*56abGiia.*19b*5GCh.*53",".*56aLGiia.*19CLPPCac.*54",".*56aiPbiba.*18a*5.*56",".*55aiPbiiia.*79",".*55eCbi*4b.*79",".*53ai*6bbb.*79",".*52cipppiibese.*79",".*52aippiibCass.*79",".*52ab*5ssass.*79",".*52aGRRRGCa*4.*79",".*53a*6.*83",".*142",".*142",".*142"]]};
+  g.PIXEL_SPRITE_BANK["sylvia_silver"] = {"id":"sylvia_silver","w":142,"h":124,"facing":"right","scaleMult":1.0,"anchors":{"feet":[71,120],"cast":[136,64],"hit":[71,69],"head":[71,34]},"animMap":{"run":[7,8,9]},"palette":["","#190762","#25147d","#450781","#1330a4","#452466","#0f28e9","#7a06a5","#3528c2","#382bab","#572d9a","#422de5","#0849f9","#7721f9","#804367","#7140b3","#cc0adf","#0b6efa","#675299","#5d48f5","#8754c5","#b15d66","#0797fc","#9b7880","#986bd0","#c172ab","#43a6f8","#cf845c","#8e93c5","#14c7fd","#b287dd","#e58086","#c9a48d","#46d2fd","#e7a25b","#36e2fd","#caa1e7","#f0a79c","#d2b3ec","#6fe7fd","#f3c270","#a2e1fa","#f9db82","#e1d3f2","#fcd8bb","#daf8fc","#fbf5fb"],"frames":[[".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*67a*7.*68",".*65aaL*4SSSaaa.*65",".*63brL*8S*4a.*64",".*60gaJL*4xxxDJL*4SSa.*63",".*59arL*4xtxLSSSJJLQSSSa.*62",".*59xL*4JtLLDxxLSSLLLSSSaa.*60",".*58aL*4ttLLxDL*4SSTLLS*4a.*59",".*57atLLxttLLtL*4JLLSTTLTLSSa.*59",".*57aDLttL*4xL*4xLLLSTLQSLSSb.*58",".*54aaaxDoDL*4oSLLQL*6STLTQSSSa.*57",".*53aTTjoxQLtDSLoSSSxJLLSLLLSLTTTLSa.*57",".*52aTTJoQTtxQSxoLSSLDLLLSLSSSLQTTLSSa.*56",".*52aJTjLLxJLo*4LLSxLLLxLLSSSTLQTTJSa.*56",".*52axJjDxjjjLLLoLLLxLLSjLLSSLToLTTJSTa.*55",".*53aPRjjJL*4ttLLxLQSxjL*4TTjLSTJLSa.*55",".*52aHfrTxxLLoooLLLxLLLyuLLLTDLjLLTJxSa.*55",".*52aAGzHoLjjLJoLLxLLxtRELLTLxLoLLSLtSSc.*54",".*50aTJAlfHnjLLLJjLLxLLrrrELLLxDLoL*4xtTa.*54",".*49aTTJaPHaotoxxojLLLttRRRELLLuLEKL*4xoTa.*54",".*49aTQahaabtxxjojjLLxEeaaeuLLuLtRaLLoLLaSa.*54",".*50aLhhtahaxLtoRjLLxa*4bJLEtJaaaLLjLLaLa.*54",".*51ahaLahhxLxeEjoLLEerbDDEyKaDaLLjLLJaLa.*6S.*47",".*51ahaTahhaLLcRExJLxRBzR*4TfTnojtLLaSa.*6zTTG.*45",".*50ahhaTahhaLLjRRLoLLyR*9eojxLLaTa.*5qGTTTv.*44",".*49aihhbTa*4LLoeeLxoLDR*9eojLTaSa.*6MOT*4.*44",".*49ahibiTbbaxLLjjjLDxnuR*8etoLStar.*7lSTTMq.*44",".*48aTTTbiTiiaxSDxjjJLxauER*6ejxLxtta.*8fqTMMf.*44",".*48aaaJLT*4axSxxjjjLxaEEnnRRneojxxLxxSa.*8lTMf.*45",".*50gaLTaaQaxSxxoooLLeKRKeebaoxxjLSxxSSg.*8M.*47",".*52aaaxxDLDDxjxxjLooRorTTaoxxjLSxSjSag.*10aa.*43",".*54aLLDLxJxoxxtLxToTTQJaexxjQoLSaxSa.*7aa.aRg.*42",".*54aLLDStJtxxjaaDLoJaaabiaaLTjJSacSQg.*5aRRaaRa.*42",".*54aLDQSxJoaikaadraahsaHiiQLaaJSSbjSg.*6aRReRa.*42",".*53aSQLStDtabhhbNllHbhhhaiLotTaDSSgbJg.*4FRRnRREa.*42",".*51caSSJSxxJaNaiibadwabbhhaiaLLQTaDScjLg...nR*6c.*43",".*50aSSSJSttxtaiabaabnaiaababPaLTLTTbJSSa...aR*5Ka.*44",".*48aaSSSJQtttDawibaihhobhhbabriRaTTLTTaSSa..aLRRREaa.*45",".*47aSSSJoLttJtDawFikhhaDbbhhaiwiRbT*6aLSg.aTbREa.*47",".*46aSSSjoLLttJxDJaNbhhhbTbbkhsbiRaT*4LLTaxSrabLTeba.*47",".*45aSSLaatLxtLJtoTabaahhJTbikiaiPbaTTLLDLbbxbaHbiiTLa.*47",".*45aSoa.atLtLJLxBTaNbTahTDJiaDbNbbaL*4ahkxaTTHiiibbg.*47",".*44aLLa..aSxDLLxtJTLabTLJTLTJTTb*4aLLDBwihaTTTJPjbbug.*47",".*44aJDa..aSxLLJoLTTTbHbTTTJTTTbNbbbaaayqHaaTLTTTjPNHa.*48",".*44axDa.abQQLLxaTLTTDnbjoJoxrbFbbbaxxbieabbTQTTQTJDaa.*48",".*45cDxjaSLLLttaLJLQLbAQJNDLjNb*4axxabLijTJTTTLTTLaSa.*47",".*45ajDLSSSLJtteexxJLbATLTLTrHbibaxxxrrJihTLTTLTTLQaSLg.*46",".*46aSSSLLtttarObiibbALLAJTxNiibaxxxjLLbJLT*5LLTaLSSg.*45",".*45aSSSxLLotxadfubibbADJTxQrRiibaxxxjLLoxLLTTTQLQTbxSSB.*45",".*44bSSLtDLLtttaawaeuabAab*4aPibbhbxxjLLJjL*7JjxxJSSa.*44",".*43aSSSoxLLotxaiJiaJaaAaab*4aRiihhaxxtoLLtaeL*4aotxJJSSa.*44",".*42aSSSttxLLoxaibTihLJaAaPbiaHeaPiihaxxxoLLxttabaetotLtJLSSa.*43",".*42xSStaDxLLoxxaTTiiJLbAawbbbeaaPihbbatxjLLJtttLJxttxJaLLSSa.*43",".*42SSJxaDDtLotaTTTJLLebNanNeNbbaaPbbbkaxxoLLxtttLSDtxJajLLSa.*43",".*41bSSxxbDDtLaaT*5LLabNaHbbbNbbaPbiikaoxxoLLtttQSSDDJa.aLLa.*43",".*41jSJxxaDDxaT*5LTLLaiNabNPHbiabariiikatxtoLxtJoSSSJac.aLLa.*43",".*41rLQxx.aDxaT*4LTTLabKabaabbiiaiawi*5axxoLJtDDtSSQa..aLe.*44",".*41jLLxb.bJxaLTJTLTTLaiAaibi*7bwiPiiiPaxxoLtoJJtSSScaLLc.*44",".*41cLQLa..axxaLDLLTQJaeNaiai*8biwwiPwaaxoJtoDLDLLSSJLa.*45",".*42JLLb...aoAPPxJLJajwwaiai*6aiaPriiFabaeoLtoJLLtJLSLa.*46",".*42gaLJc...aeiiNoJaaNraaiai*6aibPiiPaaaiijttoLLLtLLSSa.*46",".*43axLDc.gaiiibHacaaNaiiai*6abiaPRaaiaaiattoLLJtLLLSSa.*45",".*45rrg.aTTTibba.aaNaibai*7aiaPaabiiaiiatoLLxttLLSSa.*45",".*49aaBTTba.cbbaaibi*4biiiaia*5iiiaiiaJLLttoLLLSa.*45",".*48aRRREajg.cbiabibi*4aiiiaibaiaaiiiaiiirLxxtjjLLJa.*45",".*47aR*5a...aiiaiibi*4aiiiabiiiaaiiibaiNFttxtgaLLJa.*45",".*47R*6a...bibaiiai*4ai*9aaiiiaPFiaxxt.aLLa.*46",".*46aRRaaRa...abiaaiiai*4ai*4ai*4aaiiiubiibxa..aLLa.*46",".*46aRuaaRa...eHHbbiiai*4ai*4ai*4aaPRRRaeTTa..aJLa.*47",".*46aREuag.*4abeAiiiai*4ai*4ai*4nHi*4aLQTa.aJaa.*48",".*47aKa.*5arbbaAPRHi*4ai*4aP*4NaabbTDLLa...a.*50",".*48a.*6aTJraeiiaP*4ei*4nbi*4aTTDTTaxa.*54",".*56rJTDabiai*4nPRRRbabbbaDLTaaaxLJa.*53",".*57xTxLTTDa*5i*4axTTJTTaa.atxJLLa.*52",".*58aaLTTeT*4QxTTLTxTTjeea...axoJJL.*52",".*60aeeEeeaTQxTTTaaeeEEEa.*4goggg.*52",".*60aE*5a*7.aEEERRa.*61",".*60aRRRKEa.*7aEKR*4a.*60",".*60aR*4Ka.*7aKR*5a.*60",".*60aR*5.*9aR*5a.*60",".*60aR*5.*9aER*5a.*59",".*60aER*4.*10aKR*4e.*59",".*59aEER*4c.*9gKR*5a.*58",".*59aKR*5a.*10eR*6g.*57",".*59axR*5a.*10aR*4DDg.*57",".*59aQD*4Ta.*10eD*4TTQ.*57",".*59aQT*5a.*10gLT*5J.*57",".*59aLQQTQLa.*10gLTTQLLT.*57",".*59aTLTLTQ.*12cQTQTQQ.*57",".*59aTQTLTQ.*12aQTLTQQ.*57",".*59aTQTLTL.*13aTQTTTa.*56",".*59aTQTLTc.*13aT*5a.*56",".*59aT*5c.*14aTTTLa.*56",".*59cTTTQc.*15aTLTLa.*56",".*59T*5a.*16aLTQTa.*55",".*58aT*5a.*16aQTTTa.*55",".*57aaJLTLea.*16aT*4aa.*54",".*57aAaewwHa.*15aaaTLaaa.*54",".*57abNwbbaa.*15aAAaePAa.*54",".*57awAbiia.*17abnNiea.*54",".*57awAiiia.*17abbANAa.*54",".*57abAiiia.*18abAea.*55",".*57aHAiibba.*17abAba.*55",".*56abbnbiiia.*17abAHHa.*54",".*56abFbi*5g.*15aaeFiia.*54",".*55anni*6bc.*15abbeFiia.*53",".*53aabisiiibaaac.*15abiibPba.*53",".*52cisssiiiaennnc.*14aabiiibHa.*53",".*52aissiiibuannnc.*14aiisssibea.*52",".*52aab*5Aaaenec.*14abi*5baa.*52",".*52aARRRNAa.aaac.*15anenwrenAa.*52",".*53a*6.*22aaaeeeaa.*53",".*142",".*142",".*142"],[".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*67a*7.*68",".*65aaL*4SSSaaa.*65",".*63brL*8S*4a.*64",".*60gaJL*4xxxDJL*4SSa.*63",".*59arL*4xtxLSSSJJLQSSSa.*62",".*59xL*4JtLLDxxLSSLLLSSSaa.*60",".*58aL*4ttLLxDL*4SSTLLS*4a.*59",".*57atLLxttLLtL*4JLLSTTLTLSSa.*59",".*57aDLttL*4xL*4xLLLSTLQSLSSb.*58",".*54aaaxDoDL*4oSLLQL*6STLTQSSSa.*57",".*53aTTjoxQLtDSLoSSSxJLLSLLLSLTTTLSa.*57",".*52aTTJoQTtxQSxoLSSLDLLLSLSSSLQTTLSSa.*56",".*52aJTjLLxJLo*4LLSxLLLxLLSSSTLQTTJSa.*56",".*52axJjDxjjjLLLoLLLxLLSjLLSSLToLTTJSTa.*55",".*53aPRjjJL*4ttLLxLQSxjL*4TTjLSTJLSa.*55",".*52aHfrTxxLLoooLLLxLLLyuLLLTDLjLLTJxSa.*55",".*52aAGzHoLjjLJoLLxLLxtRELLTLxLoLLSLtSSc.*54",".*50aTJAlfHnjLLLJjLLxLLrrrELLLxDLoL*4xtTa.*54",".*49aTTJaPHaotoxxojLLLttRRRELLLuLEKL*4xoTa.*54",".*49aTQahaabtxxjojjLLxEeaaeuLLuLtRaLLoLLaSa.*54",".*50aLhhtahaxLtoRjLLxa*4bJLEtJaaaLLjLLaLa.*54",".*51ahaLahhxLxeEjoLLEerbDDEyKaDaLLjLLJaLa.*6S.*47",".*51ahaTahhaLLcRExJLxRBzR*4TfTnojtLLaSa.*6zTTG.*45",".*50ahhaTahhaLLjRRLoLLyR*9eojxLLaTa.*5qGTTTv.*44",".*49aihhbTa*4LLoeeLxoLDR*9eojLTaSa.*6MOT*4.*44",".*49ahibiTbbaxLLjjjLDxnuR*8etoLStar.*7lSTTMq.*44",".*48aTTTbiTiiaxSDxjjJLxauER*6ejxLxtta.*8fqTMMf.*44",".*48aaaJLT*4axSxxjjjLxaEEnnRRneojxxLxxSa.*8lTMf.*45",".*50gaLTaaQaxSxxoooLLeKRKeebaoxxjLSxxSSg.*8M.*47",".*52aaaxxDLDDxjxxjLooRorTTaoxxjLSxSjSag.*10aa.*43",".*54aLLDLxJxoxxtLxToTTQJaexxjQoLSaxSa.*7aa.aRg.*42",".*54aLLDStJtxxjaaDLoJaaabiaaLTjJSacSQg.*5aRRaaRa.*42",".*54aLDQSxJoaikaadraahsaHiiQLaaJSSbjSg.*6aRReRa.*42",".*53aSQLStDtabhhbNllHbhhhaiLotTaDSSgbJg.*4FRRnRREa.*42",".*51caSSJSxxJaNaiibadwabbhhaiaLLQTaDScjLg...nR*6c.*43",".*50aSSSJSttxtaiabaabnaiaababPaLTLTTbJSSa...aR*5Ka.*44",".*48aaSSSJQtttDawibaihhobhhbabriRaTTLTTaSSa..aLRRREaa.*45",".*47aSSSJoLttJtDawFikhhaDbbhhaiwiRbT*6aLSg.aTbREa.*47",".*46aSSSjoLLttJxDJaNbhhhbTbbkhsbiRaT*4LLTaxSrabLTeba.*47",".*45aSSLaatLxtLJtoTabaahhJTbikiaiPbaTTLLDLbbxbaHbiiTLa.*47",".*45aSoa.atLtLJLxBTaNbTahTDJiaDbNbbaL*4ahkxaTTHiiibbg.*47",".*44aLLa..aSxDLLxtJTLabTLJTLTJTTb*4aLLDBwihaTTTJPjbbug.*47",".*44aJDa..aSxLLJoLTTTbHbTTTJTTTbNbbbaaayqHaaTLTTTjPNHa.*48",".*44axDa.abQQLLxaTLTTDnbjoJoxrbFbbbaxxbieabbTQTTQTJDaa.*48",".*45cDxjaSLLLttaLJLQLbAQJNDLjNb*4axxabLijTJTTTLTTLaSa.*47",".*45ajDLSSSLJtteexxJLbATLTLTrHbibaxxxrrJihTLTTLTTLQaSLg.*46",".*46aSSSLLtttarObiibbALLAJTxNiibaxxxjLLbJLT*5LLTaLSSg.*45",".*45aSSSxLLotxadfubibbADJTxQrRiibaxxxjLLoxLLTTTQLQTbxSSB.*45",".*44bSSLtDLLtttaawaeuabAab*4aPibbhbxxjLLJjL*7JjxxJSSa.*44",".*43aSSSoxLLotxaiJiaJaaAaab*4aRiihhaxxtoLLtaeL*4aotxJJSSa.*44",".*42aSSSttxLLoxaibTihLJaAaPbiaHeaPiihaxxxoLLxttabaetotLtJLSSa.*43",".*42xSStaDxLLoxxaTTiiJLbAawbbbeaaPihbbatxjLLJtttLJxttxJaLLSSa.*43",".*42SSJxaDDtLotaTTTJLLebNanNeNbbaaPbbbkaxxoLLxtttLSDtxJajLLSa.*43",".*41bSSxxbDDtLaaT*5LLabNaHbbbNbbaPbiikaoxxoLLtttQSSDDJa.aLLa.*43",".*41jSJxxaDDxaT*5LTLLaiNabNPHbiabariiikatxtoLxtJoSSSJac.aLLa.*43",".*41rLQxx.aDxaT*4LTTLabKabaabbiiaiawi*5axxoLJtDDtSSQa..aLe.*44",".*41jLLxb.bJxaLTJTLTTLaiAaibi*7bwiPiiiPaxxoLtoJJtSSScaLLc.*44",".*41cLQLa..axxaLDLLTQJaeNaiai*8biwwiPwaaxoJtoDLDLLSSJLa.*45",".*42JLLb...aoAPPxJLJajwwaiai*6aiaPriiFabaeoLtoJLLtJLSLa.*46",".*42gaLJc...aeiiNoJaaNraaiai*6aibPiiPaaaiijttoLLLtLLSSa.*46",".*43axLDc.gaiiibHacaaNaiiai*6abiaPRaaiaaiattoLLJtLLLSSa.*45",".*45rrg.aTTTibba.aaNaibai*7aiaPaabiiaiiatoLLxttLLSSa.*45",".*49aaBTTba.cbbaaibi*4biiiaia*5iiiaiiaJLLttoLLLSa.*45",".*48aRRREajg.cbiabibi*4aiiiaibaiaaiiiaiiirLxxtjjLLJa.*45",".*47aR*5a...aiiaiibi*4aiiiabiiiaaiiibaiNFttxtgaLLJa.*45",".*47R*6a...bibaiiai*4ai*9aaiiiaPFiaxxt.aLLa.*46",".*46aRRaaRa...abiaaiiai*4ai*4ai*4aaiiiubiibxa..aLLa.*46",".*46aRuaaRa...eHHbbiiai*4ai*4ai*4aaPRRRaeTTa..aJLa.*47",".*46aREuag.*4abeAiiiai*4ai*4ai*4nHi*4aLQTa.aJaa.*48",".*47aKa.*5arbbaAPRHi*4ai*4aP*4NaabbTDLLa...a.*50",".*48a.*6aTJraeiiaP*4ei*4nbi*4aTTDTTaxa.*54",".*56rJTDabiai*4nPRRRbabbbaDLTaaaxLJa.*53",".*57xTxLTTDa*5i*4axTTJTTaa.atxJLLa.*52",".*58aaLTTeT*4QxTTLTxTTjeea...axoJJL.*52",".*60aeeEeeaTQxTTTaaeeEEEa.*4goggg.*52",".*60aE*5a*7.aEEERRa.*61",".*60aRRRKEa.*7aEKR*4a.*60",".*60aR*4Ka.*7aKR*5a.*60",".*60aR*5.*9aR*5a.*60",".*60aR*5.*9aER*5a.*59",".*60aER*4.*10aKR*4e.*59",".*59aEER*4c.*9gKR*5a.*58",".*59aKR*5a.*10eR*6g.*57",".*59axR*5a.*10aR*4DDg.*57",".*59aQD*4Ta.*10eD*4TTQ.*57",".*59aQT*5a.*10gLT*5J.*57",".*59aLQQTQLa.*10gLTTQLLT.*57",".*59aTLTLTQ.*12cQTQTQQ.*57",".*59aTQTLTQ.*12aQTLTQQ.*57",".*59aTQTLTL.*13aTQTTTa.*56",".*59aTQTLTc.*13aT*5a.*56",".*59aT*5c.*14aTTTLa.*56",".*59cTTTQc.*15aTLTLa.*56",".*59T*5a.*16aLTQTa.*55",".*58aT*5a.*16aQTTTa.*55",".*57aaJLTLea.*16aT*4aa.*54",".*57aAaewwHa.*15aaaTLaaa.*54",".*57abNwbbaa.*15aAAaePAa.*54",".*57awAbiia.*17abnNiea.*54",".*57abAiiia.*18abAea.*55",".*57aHAiibba.*17abAba.*55",".*56abbnbiiia.*17abAHHa.*54",".*56abFbi*5g.*15aaeFiia.*54",".*55anni*6bc.*15abbeFiia.*53",".*53aabisiiibaaac.*15abiibPba.*53",".*52cisssiiiaennnc.*14aabiiibHa.*53",".*52aissiiibuannnc.*14aiisssibea.*52",".*52aab*5Aaaenec.*14abi*5baa.*52",".*52aARRRNAa.aaac.*15anenwrenAa.*52",".*53a*6.*22aaaeeeaa.*53",".*142",".*142",".*142"],[".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*67a*7.*68",".*65aaL*4SSSaaa.*65",".*63brL*8S*4a.*64",".*60gaJL*4xxxDJL*4SSa.*63",".*59arL*4xtxLSSSJJLQSSSa.*62",".*59xL*4JtLLDxxLSSLLLSSSaa.*60",".*58aL*4ttLLxDL*4SSTLLS*4a.*59",".*57atLLxttLLtL*4JLLSTTLTLSSa.*59",".*57aDLttL*4xL*4xLLLSTLQSLSSb.*58",".*54aaaxDoDL*4oSLLQL*6STLTQSSSa.*57",".*53aTTjoxQLtDSLoSSSxJLLSLLLSLTTTLSa.*57",".*52aTTJoQTtxQSxoLSSLDLLLSLSSSLQTTLSSa.*56",".*52aJTjLLxJLo*4LLSxLLLxLLSSSTLQTTJSa.*56",".*52axJjDxjjjLLLoLLLxLLSjLLSSLToLTTJSTa.*55",".*53aPRjjJL*4ttLLxLQSxjL*4TTjLSTJLSa.*55",".*52aHfrTxxLLoooLLLxLLLyuLLLTDLjLLTJxSa.*55",".*52aAGzHoLjjLJoLLxLLxtRELLTLxLoLLSLtSSc.*54",".*50aTJAlfHnjLLLJjLLxLLrrrELLLxDLoL*4xtTa.*54",".*49aTTJaPHaotoxxojLLLttRRRELLLuLEKL*4xoTa.*54",".*49aTQahaabtxxjojjLLxEeaaeuLLuLtRaLLoLLaSa.*54",".*50aLhhtahaxLtoRjLLxa*4bJLEtJaaaLLjLLaLa.*54",".*51ahaLahhxLxeEjoLLEerbDDEyKaDaLLjLLJaLa.*6S.*47",".*51ahaTahhaLLcRExJLxRBzR*4TfTnojtLLaSa.*6zTTG.*45",".*50ahhaTahhaLLjRRLoLLyR*9eojxLLaTa.*5qGTTTv.*44",".*49aihhbTa*4LLoeeLxoLDR*9eojLTaSa.*6MOT*4.*44",".*49ahibiTbbaxLLjjjLDxnuR*8etoLStar.*7lSTTMq.*44",".*48aTTTbiTiiaxSDxjjJLxauER*6ejxLxtta.*8fqTMMf.*44",".*48aaaJLT*4axSxxjjjLxaEEnnRRneojxxLxxSa.*8lTMf.*45",".*50gaLTaaQaxSxxoooLLeKRKeebaoxxjLSxxSSg.*8M.*47",".*52aaaxxDLDDxjxxjLooRorTTaoxxjLSxSjSag.*10aa.*43",".*54aLLDLxJxoxxtLxToTTQJaexxjQoLSaxSa.*7aa.aRg.*42",".*54aLLDStJtxxjaaDLoJaaabiaaLTjJSacSQg.*5aRRaaRa.*42",".*54aLDQSxJoaikaadraahsaHiiQLaaJSSbjSg.*6aRReRa.*42",".*53aSQLStDtabhhbNllHbhhhaiLotTaDSSgbJg.*4FRRnRREa.*42",".*51caSSJSxxJaNaiibadwabbhhaiaLLQTaDScjLg...nR*6c.*43",".*50aSSSJSttxtaiabaabnaiaababPaLTLTTbJSSa...aR*5Ka.*44",".*48aaSSSJQtttDawibaihhobhhbabriRaTTLTTaSSa..aLRRREaa.*45",".*47aSSSJoLttJtDawFikhhaDbbhhaiwiRbT*6aLSg.aTbREa.*47",".*46aSSSjoLLttJxDJaNbhhhbTbbkhsbiRaT*4LLTaxSrabLTeba.*47",".*45aSSLaatLxtLJtoTabaahhJTbikiaiPbaTTLLDLbbxbaHbiiTLa.*47",".*45aSoa.atLtLJLxBTaNbTahTDJiaDbNbbaL*4ahkxaTTHiiibbg.*47",".*44aLLa..aSxDLLxtJTLabTLJTLTJTTb*4aLLDBwihaTTTJPjbbug.*47",".*44aJDa..aSxLLJoLTTTbHbTTTJTTTbNbbbaaayqHaaTLTTTjPNHa.*48",".*44axDa.abQQLLxaTLTTDnbjoJoxrbFbbbaxxbieabbTQTTQTJDaa.*48",".*45cDxjaSLLLttaLJLQLbAQJNDLjNb*4axxabLijTJTTTLTTLaSa.*47",".*45ajDLSSSLJtteexxJLbATLTLTrHbibaxxxrrJihTLTTLTTLQaSLg.*46",".*46aSSSLLtttarObiibbALLAJTxNiibaxxxjLLbJLT*5LLTaLSSg.*45",".*45aSSSxLLotxadfubibbADJTxQrRiibaxxxjLLoxLLTTTQLQTbxSSB.*45",".*44bSSLtDLLtttaawaeuabAab*4aPibbhbxxjLLJjL*7JjxxJSSa.*44",".*43aSSSoxLLotxaiJiaJaaAaab*4aRiihhaxxtoLLtaeL*4aotxJJSSa.*44",".*42aSSSttxLLoxaibTihLJaAaPbiaHeaPiihaxxxoLLxttabaetotLtJLSSa.*43",".*42xSStaDxLLoxxaTTiiJLbAawbbbeaaPihbbatxjLLJtttLJxttxJaLLSSa.*43",".*42SSJxaDDtLotaTTTJLLebNanNeNbbaaPbbbkaxxoLLxtttLSDtxJajLLSa.*43",".*41bSSxxbDDtLaaT*5LLabNaHbbbNbbaPbiikaoxxoLLtttQSSDDJa.aLLa.*43",".*41jSJxxaDDxaT*5LTLLaiNabNPHbiabariiikatxtoLxtJoSSSJac.aLLa.*43",".*41rLQxx.aDxaT*4LTTLabKabaabbiiaiawi*5axxoLJtDDtSSQa..aLe.*44",".*41jLLxb.bJxaLTJTLTTLaiAaibi*7bwiPiiiPaxxoLtoJJtSSScaLLc.*44",".*41cLQLa..axxaLDLLTQJaeNaiai*8biwwiPwaaxoJtoDLDLLSSJLa.*45",".*42JLLb...aoAPPxJLJajwwaiai*6aiaPriiFabaeoLtoJLLtJLSLa.*46",".*42gaLJc...aeiiNoJaaNraaiai*6aibPiiPaaaiijttoLLLtLLSSa.*46",".*43axLDc.gaiiibHacaaNaiiai*6abiaPRaaiaaiattoLLJtLLLSSa.*45",".*45rrg.aTTTibba.aaNaibai*7aiaPaabiiaiiatoLLxttLLSSa.*45",".*49aaBTTba.cbbaaibi*4biiiaia*5iiiaiiaJLLttoLLLSa.*45",".*48aRRREajg.cbiabibi*4aiiiaibaiaaiiiaiiirLxxtjjLLJa.*45",".*47aR*5a...aiiaiibi*4aiiiabiiiaaiiibaiNFttxtgaLLJa.*45",".*47R*6a...bibaiiai*4ai*9aaiiiaPFiaxxt.aLLa.*46",".*46aRRaaRa...abiaaiiai*4ai*4ai*4aaiiiubiibxa..aLLa.*46",".*46aRuaaRa...eHHbbiiai*4ai*4ai*4aaPRRRaeTTa..aJLa.*47",".*46aREuag.*4abeAiiiai*4ai*4ai*4nHi*4aLQTa.aJaa.*48",".*47aKa.*5arbbaAPRHi*4ai*4aP*4NaabbTDLLa...a.*50",".*48a.*6aTJraeiiaP*4ei*4nbi*4aTTDTTaxa.*54",".*56rJTDabiai*4nPRRRbabbbaDLTaaaxLJa.*53",".*57xTxLTTDa*5i*4axTTJTTaa.atxJLLa.*52",".*58aaLTTeT*4QxTTLTxTTjeea...axoJJL.*52",".*60aeeEeeaTQxTTTaaeeEEEa.*4goggg.*52",".*60aE*5a*7.aEEERRa.*61",".*60aRRRKEa.*7aEKR*4a.*60",".*60aR*4Ka.*7aKR*5a.*60",".*60aR*5.*9aR*5a.*60",".*60aR*5.*9aER*5a.*59",".*60aER*4.*10aKR*4e.*59",".*59aEER*4c.*9gKR*5a.*58",".*59aKR*5a.*10eR*6g.*57",".*59axR*5a.*10aR*4DDg.*57",".*59aQD*4Ta.*10eD*4TTQ.*57",".*59aQT*5a.*10gLT*5J.*57",".*59aLQQTQLa.*10gLTTQLLT.*57",".*59aTLTLTQ.*12cQTQTQQ.*57",".*59aTQTLTQ.*12aQTLTQQ.*57",".*59aTQTLTL.*13aTQTTTa.*56",".*59aTQTLTc.*13aT*5a.*56",".*59aT*5c.*14aTTTLa.*56",".*59cTTTQc.*15aTLTLa.*56",".*59T*5a.*16aLTQTa.*55",".*58aT*5a.*16aQTTTa.*55",".*57aaJLTLea.*16aT*4aa.*54",".*57aAaewwHa.*15aaaTLaaa.*54",".*57abNwbbaa.*15aAAaePAa.*54",".*57awAbiia.*17abnNiea.*54",".*57awAiiia.*17abbANAa.*54",".*57abAiiia.*18abAea.*55",".*57aHAiibba.*17abAba.*55",".*56abbnbiiia.*17abAHHa.*54",".*56abFbi*5g.*15aaeFiia.*54",".*55anni*6bc.*15abbeFiia.*53",".*53aabisiiibaaac.*15abiibPba.*53",".*52cisssiiiaennnc.*14aabiiibHa.*53",".*52aissiiibuannnc.*14aiisssibea.*52",".*52aab*5Aaaenec.*14abi*5baa.*52",".*52aARRRNAa.aaac.*15anenwrenAa.*52",".*53a*6.*22aaaeeeaa.*53",".*142",".*142",".*142"],[".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*77ca*6.*58",".*74gaaJ*4LSSaa.*56",".*72gaJ*9SSSBr.*54",".*43gtro.jrSSg.*17gDJ*5totxxJ*5SB.*53",".*41gJ*4LS*6a.*16tJ*4xoxLJSSSJJJSSSa.*52",".*41JJaajJ*4S*4a.*13acJ*4ooJJDtttJSJ*4SSrbc.*49",".*41Ja...caJJJSxSS.*12gaxJJJoJJJooLJ*4SSSJJSSSB.*49",".*41a.*6aJJSSxSr.*11aoDJtoJJJooJ*7SSSJSQSSa.*48",".*49aJJSjxL.*8gaajJJooJ*4jJ*5xJJJSSJJSDSSc.*47",".*37a*4.*8axJLaaSa.*6aTTaxJotJ*4oSLJSJtLJ*4SSJSSDSr.*47",".*35aaS*4rac.*6aJJa.Ja.*5aTTJjtoQLttSLJSSSLtJJLSJJSSJSSSDSa.*46",".*33crS*5QJ*4a.*4aJJactc.*5aDTjoJSxtLSxoJSSLtJJJxSLSSSJLSSxSa.*46",".*32aSSSQJJJSSSJJSa...aJJ.oj.*6aaJjJJxJJj*4JJSttJJJxJJS*4JS*5a.*45",".*31aSSQBDJ*4SSSJSS...aLa..c.*7aNPoj*4JJJoJJLtJJJSoJJSSJStJSSJSa.*45",".*30aSLtoacgcJ*4S*4r.axJa.*7aaaHfdTtJ*5oJJJtLSSSonJJJLJSjJSSxSa.*8v.*36",".*29cQttoc.*4aJ*4QSSSaaxLD.*6aTTaAGzHxtJJojjJJJtJJLoEuJJLTxLjJSStSa.*7BT.*36",".*29aJtt.*7aJ*4SSSaaxxSa.*4aTTTJAllHoJojoJjJJDJJJtEREJJTLxJnJJStDSa.*6st.*36",".*29axta.*8aJ*4SSSaxxSSa...aaJJaaPHajjLJJJjJJtJJo*4EJJJoxLoJJJDxSa..Sl.*9C.*30",".*29attc...caaa..aJ*4SSSaxxSSa*5JahiaahttjtttjJJoJtERRREJJJtJoEJJJDtSa..sT.*4z...TT.*30",".*30ata..aSSJDjaatJ*4SSSbxQSSQJDtahhbDahatxj*4JJttEERRRyJJoJyKjJJoJJDa...m...qTx..xm.*30",".*31a..bSQaaJJJDbxJJJDSSSDtxJJaahhhbaTahaotxoewoJJya*5rJuDJaaaLJjJJxa..aa..qITGl.*33",".*33gSDa..caJJxoxJJJxxSSLJJJahhhbbQaahhatteRKoJJyEDJbbxEyEaDaJJjjJr...cFR.CGOTTz.*33",".*33JDa*8DDttJJJotxJJaBTThbbbTbahhaxJeREtoJJKTTzqRRRTdTnJjtJJg..aRRa.lMTTTOt.*32",".*32aS*4JDDxxaaatotJJJt*4aaTTJbaTTha*4JJjeRKDxJyR*8LReojtJS..aRRFRa.qvTCl.aa.*30",".*31aSSJJDaaaxxxttjttoJJJt*4xaJTLxTbhhattJJjtenJtJJyR*9eojJSa..aReRa...vTl..RRg.*29",".*30bSSDDaa...S*5LDtotJ*4t*4aTxTTihiattJJttjaJJjnuR*8eooJQa..aRRRn.*4fT..aaRa.*29",".*29LSSxaa...S*4J*6Lxootot*4baLT*5atJJJtjjJJDeEnuR*6eooLaa...aRRRa.kTl...gaRKa.*29",".*28gSSQa.*4S*4JJJLLLJ*4t*7SaaaQTTTatJJotjaJJxuEEEnnRReeotDt.*5aRRRa.qq...aRRREa.*29",".*28gSSa.*4rS*4LJLLaajjjJJJLQS*4Dxja*5LJJtjcJJxajjRRnjjaoooJJ.*7aRRR.*4aaReRRE.*30",".*28SxJa...aSSLSQDQLboototoJLSSSQLDLoootxooJSojDJJaaJJTTnTTDjeoDaa.*6aaRRR...aR*5Ka.*30",".*28JxDa..gSSLSLDLLtootxJJxxjJSSQQLo*4xxoSQDtLLaaAiiaxJoDunhakkaLa.*4aTFRRK..aR*5Ka.*31",".*28Jta..cSSJQJDLbtxJLLLJ*5o*8txxoSSLxJjaJJJnPkaaaAqzNkkkaLTa..aiTTnEa.gaRRRFa.*33",".*28JDa..SSSJJxJjjtto*4LJ*6ooototxxoSSStQtjJT*4bAkhiAlqHk*4JQLcciisTTa..bTRRa.*35",".*28gDa.aSSJJJxJag..ao*5tJ*4SSxoxxxDSSJDStoLT*4DJJbkkaNPb*5xJaaHPsiiba.aiTTaa..qT.*31",".*29a*4SJJJDaa.*5gaottooJ*4SSSjoS*6jjaJTTJLT*4ibahaahkaaxaTTbPPiba.aaikTTL...Os.*30",".*32aSDJJxa.*6cJxjoxxxjJJJQS*7xojoaDJT*8bhkhxahksaTTJDTwAa.aaHiiiba.*35",".*32aJ*4a.*5goJDootjxxxoJJJS*4JJjjtjoaLJT*5JakakkktxahaTTJJJTDaaJTLPPibba.*35",".*32aJ*4a.*4gJJJxLSSxtj*5oJJLJjjttxotoDLJTTuTehhbbhkaLaaTLTTLTTDJDJJJTbPAa.*36",".*33eJJJ.*4aJJJSSSxopjxJLxttjjootttDxttoxLJDjdGNaaDTTbaQDaQTTJT*5JJJTTxJa.*37",".*33jJJJ.*4JJJSSSta.aLQt*4JJJtottJDotttbLLDaAwAaLJLTQjaeTTTLTTTJLJJQTTJJTa.*37",".*33atJJ...aSJSSDta..SLttoootDJ*6ot*4baakibaxhkDT*4DTTTLJTTJJLDDTTJJTTa.*37",".*35JJxa.aSLSSta..aJtoc...aatxDJJt*5jttahhabJahbTTTDJTTJJTTJJJaJTTJJTTg.*38",".*36aa.aJJQSDa...aJa.*6aaJxt*6axxttaahhJLbTTQJDTTJJTTJLaaJJTDDTLa.*39",".*39aJxQLo.*4aJa.*6SJxtjaaootxxxttaahhDLJLJJJTTJJTLJLaxJJDxDLLa.*40",".*39aJxJJr.*5DJac...aStxac..axxxjag..a*6JLJTQJJTJJaaxxxJxxLJa.*41",".*39gjJJJc.*5aJJa..aSLxa.*5aaa.*8cbbaaJ*4TJjaaAaxx.xccc.*42",".*40aJJJa.*10cSJJa.*18bhbbbAaaaQTTeP.*50",".*41aJJa..c.*7aSJxa.*18aiiibHaDTTDLan.*50",".*42jJJaDr.*7aJJJa.*18abiiiPajjrjjwa.*50",".*43xJJx.*8aJ*4a.*17ihbbiFaTabaRaPg.*49",".*44aa.*10aJJJc.J.*14abihiPauHaiaHaHg.*49",".*56aJ*6a.*9aaabbibbFabaebbaAAba.*49",".*58aaa.*11aibbbihhiFabaFbNeFeib.*49",".*71NNbbiiPhhinaibubiFbaPia.*48",".*70aawPiFRihhPaiiibeHaiaPhha.*47",".*69aDaaePiirhPabiiaiiaiiaNhFa.*47",".*69aaibaPxhNiPaiiiaiiaiibPiwPa.*46",".*68aaiiaaaPihPahi*6aiibaPwia.*46",".*64aaaiiibaiibaPiPi*4ai*6baPriw.*46",".*63ciiPiiaiiibabaPai*4ai*5biaPiPa.*46",".*62aeahPiaiiiaaiibai*4abiiai*4aPPaia.*45",".*62aTaineiiiai*4abi*4abiiai*4a*4iia.*44",".*62aJabaPiiai*4aai*4baiibbiiibiiiai*4.*43",".*61aTTJaiiNei*5ai*5aaiiai*5aiiiaiRPPa.*41",".*62jJaLiiaAPPiiabi*5aiiiai*6HPPPAPiha.*41",".*63aQTTaihiPPeai*6biiiaiiiPPPeiiiebaTe.*41",".*63cTTLxQxhiiAPPriiiai*4aiwPPiiiaaaiaTTTa.*40",".*64aaaTTTxbibiiPPFoai*4APPiiiabtTTTaJTac.*40",".*66caTJLTai*4xPAAP*4uiiiaTTTDJTTj.a.*42",".*68aaTTxTQaaiibi*5abaTJTTajxxJa.*44",".*69arJT*4Qa*5bbaJTDTTaaaxDaa.*45",".*70aaT*4DTTxTDTTJJTDaaEEEaa.*47",".*71EEEyaaTLTTLTTTaaaEEERRa.*48",".*71RRKEEEa*4JTTTaaEKR*4a.*48",".*71R*5Ea.*4aaa.gKR*6a.*47",".*71R*6a.*9aR*6a.*47",".*70aR*5a.*11aR*5a.*47",".*69eR*6a.*11aR*5a.*47",".*67coR*6a.*12R*5a.*48",".*67aR*5EE.*12aR*4Ea.*48",".*66cQTJRRREg.*12yR*4Ec.*48",".*66aQTTTxxa.*12bTx*4D.*49",".*65aTTJT*4a.*12bT*5J.*49",".*65aT*4JJa.*13eTJ*4c.*49",".*65aTLTTJTa.*13eTTTJT.*50",".*64aTTJTTTa.*13aTQTTTQ.*50",".*64aT*4JL.*14aTJTQTa.*50",".*64aTLTTTj.*14aTTTLTa.*50",".*64gTQTLo.*15aT*4a.*51",".*64T*4Qg.*14cT*5a.*51",".*62caTLTQa.*15aTTTLa.*52",".*61abaDTTa.*16aaaTDaa.*51",".*61aAPeaaba.*15AAPaeHa.*51",".*61abiPPAa.*16abaFFba.*51",".*61aHHPbac.*16aiibePa.*51",".*61abbAba.*17aiibbba.*51",".*61aFiAba.*16abiibiRa.*51",".*60aiAiPa.*17abiiiFnia.*50",".*60aiiNba.*17bbiiiePia.*50",".*59cbiPbiba.*15abi*5bPHc.*49",".*59abwbiiia.*15abi*6bbba.*48",".*59bi*4ssiaa.*13a*4biiisihiac.*46",".*59abiks*4ia.*13an*4aiiissshc.*46",".*59enababbbaa.*13anneaubabbabac.*46",".*59enuARPPAAa.*13anneaeAAPPPAAc.*46",".*59a*10.*13a*4.a*8c.*46",".*142",".*142",".*142"],[".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*43aaQSSSaa.*91",".*40aaaS*8a.*90",".*39jJ*9SSSa.*24a*5.*60",".*29aaa.*6aJa*4J*5S*4a.*20caaJJSSSaaa.*57",".*26gS*6B.*4aDc...aJ*5StSSg.*17gaJ*6S*5a.*56",".*25oJ*5SSS.*11cDJ*4DLSr.*14aJ*6xxDDJJJS*4a.*24mMM.*27",".*25JtaaaxJJSS.*11ctJJJSaSSa.*12aJ*6otJJQJJJLSSSba.*22MM.*29",".*24aJ.*5jJJSa.*10goJJJB.aJa.*11aJ*5txJJQQLSLJJJLSSb.*19sMMM.*4QQ.*24",".*25b.*5aoJJSaSSQgg.*5aJJSe.aJa.*11aJ*4tJJJttJ*4SSSJJSSSr.*16llMM.*4T*4.*23",".*32axJSQSQQJJa.*4aJSSg.Dc.*11axJJJoJJJotJ*6SSSJSLSSa.*14lvMM.*8TT.*22",".*33aJQSDSJ*4a..gJJSS..x.*9aaaoJJtoJ*4oJ*8SSSJSJSSa.*13lMM.*9MT.*22",".*22gcS*4cc...gJJSSxSQJJJa.aJJSS.*11cTTatJoDJDJJoJ*6DJJJSSSJSSLSa.*12MMM.*5f.*4OT.*21",".*20aS*9aa..JJQSBaaJ*4.cJJSS.*10aTTDjoxSJxSSDJSJSSDDJJSJJSSJSSxSL.*12M.*7vG.*4T.*21",".*18aaS*9JJJc.oJJSQ..cJJJcgJJSSr.*9aJTjtJStxSSttJSSSLxJJJSJQSSJS*5g.*9T.*8mTT.*4T.M.*19",".*17gS*7JJJSSLJSaoJJJS...aJJacDJJSSa.*9axjtDtDJjjJjSSSJtJ*4LJS*4JSSJSg.*8TT.*9TT.*6M.*19",".*17BSLxoooJ*6SSLSoxJJSa..axJeaoJJJSSjc..aaTaaHwTj*5JJJoJJSttJJStJJSSQSJJSSSa.*8TT...Sq.*4kf.*6MM.*18",".*16bSxtjac*4J*5S*5JJJSa..axJaotJJQSSSaaTTTQadSGPtDJ*4oJJJxtLSSQoJ*4TSjJSSDb.*8T.*4MTT.*12M.*18",".*15aSJta.*7eJ*4S*5oJSSSa.bttattJ*4SSrTQLDailfHJJJo*4JJJxtJSxEuJJJTtSjDSStSa.*6MM.*4lTTl...s.*7M.*18",".*15aJJja.*5aaajJ*4SQJSStxJQLjaaotaottJJeaaabhhbuPNejoooDJjJJJtJJxERRJJTJtJoDJSoSa.*6MB.*5lOz...B.*4lT.M.*18",".*15gtJa.*4coLJJDoJ*4SLDDSSSxtJ*4DDDxaaakkkhbaaDabaotoJ*4jJJDDJJtKRRJJTJtJuDJStxa.*6M.*7fO..lTl..OMG.*20",".*16aJDa...JJxaaaJDtJJSSLttS*4JxxDSSJaTTLkkbihaQaahhjttjtttjJJxJxERRttJJJnJJoJJJxja.*5MM.*10fvTl..TMl.*20",".*18a...gDaa...aaDDJJSSStootS*4J*4aTTJihhhaTbbhhkajDtj*4JJttEER*4JJoyJEyJJoJba.*5MM..a.*7lMTvl.Tl.*21",".*21aaSSS.a...atxJJS*4to*4DJJtttaTTThajTehakkhatoDDjRRjJJta*6JDyLaacJJoJa.*6M..aRaa.*4lvTTGq.T.*5B.*16",".*20aS*4QLLag..ctxJJLS*4to*5t*4aTTaxTTbkakhhaoottyEuoJJDEaJaayyEDaDaLJoJJa.*6M..cRaR...lqTTTGGl.*6M.*16",".*19aS*4J*7aaaxxJ*4D*6o*4jjaQbJTTbhka*5oJJteREtJJJRRTflRRKRfTyJotJa.*10RFRn...qGSTTGGT.*6M.*16",".*18gSSSQJDDtx*7ottJJo*4D*5o*4aabTTLkkkajtojJJxjoRRDoJJyRRQBR*4zRjojJQ.*10aRKRa..lqGGTTGSTCl.*4M.*16",".*17cSSDrc.*4abjQSSLJ*4jo*6D*4o*4aTTTbxhkattoDJJootoeJDoJJyR*9eoDSa.*10aRRa..fqGTGGT*5Gl...MM.*15",".*16cSSJc.*5cbSSSJ*8Djjo*5DDDtDJjarT*4attjJJJjttjjDJJtnnER*8FoDSb.*10aRRRa.fqOTTTGT*7lf.MM.*15",".*16aSDag...gcSSSJ*4xoooDJ*4jjo*4tSSSJJJaaTTTaooJJootojjJJJaeEEuR*7nooJa.*11aRRR.qT*16.MM.*15",".*16aSxa.*4S*4JSJotJJJoooJJJS*9J*5ja*4xJJoaajjJ*4aaERREnnwRRKeooDa...agTcaNhhaR*4..flvGGGvTTG*4vl..MM.*15",".*16aJa.*4BS*5ooJ*6xtoJJJS*7J*5o*5JJtoLQTJaJraaJLToRREa*5ojaTTxaaT*4ePhiTRRRE.*4lGGvGTTTGGql...TM.*15",".*16gDa...aS*4ooDJJJDxxxottoxJJJSSSQQQLJo*5JJtaJT*6aHihiJTTyTJJaJTTarTTJDT*4JxPRkTQRRRKwa...lvCTTGTSll.*4TT.*15",".*17aDa.aS*4ootDtca*4t*6oJJJS*4Qo*5DDnFaJTTTLQTTTaPhhhbJLDabhrTLxT*8JTDRFhTTKR*4a...lvTTTGGTl.*4TTT.*15",".*18cg.aSSSooxaa.*6at*6oooJto*7joelTPJTJJT*5aPbkkhbNRbhaaJLTLJTTTLT*4rNhhxLaEEa.*6lGTTGGl.*5TT.*16",".*20aSSSJttc.*9aacotttoojootttxxbkkadqHkaLT*4JTaPakkbAvSPk*4TJJTTTJJT*4rNibbJaa.*8fqTTGq.Bv...TT.*16",".*20aSLJttc.*6aaDLJ*7DDDooottxjkkkbaAbkkkTTJJTTahakkhedfnkkkaDxTTLJTTTJJLQaAaacM.*6lGk.lGTvl.kTO..T.*17",".*20aLJJta.*5gaSSSJbaeLQD*9ooakbaJthakkaTJJLTaPibhbabnnbabkaQTJJJTTTJJQTJxa...M.*5QTT...lTl...lS..S.*17",".*20aDJJa.*5cSJJja.*4aaDSSSJJDo*4aaTTJakbxbLLJJTJaPihakkhxahhhaJ*10TTJJ.*5MM...mTTq...fTl.*25",".*21aJJa.*5cQJj.*8caatxtoojarTTTJTkkkLJJJLTLabbPkkkhaTxbkksa*5J*8g.*6M...lGl.*5B.*26",".*22jJJa.*4SJa.*13a*4TTTJLTTDhkkxJJJLDbbhbPahkkrTTbkkkh.*6cea.*10MT.*10m.*4M.*21",".*22gxJJa...JJa.*12DT*10LJJJaDJJoabbhhbPaaiaDtLhakaa.*19OOT.*7z.*6M.*21",".*24aa.*4aJxca.*9aTTJT*6QJQTJJ.aa.gbbhhhbPQTboTJJbaa.*22MTT.*5fSm.*4SMs.*20",".*31jDe.*9aTTJT*6QJTQJa.*6bbhhhbwjLT*4Jba.*23MMTT.*4qTf...TTMl.*20",".*43aJQJT*6JQLaa.*7bbhhbPatxttoDawa.*32O.*4TMl.*21",".*35aRa.*4cHPPeTxJTTJaaa.*8abihhbPaTTNDbaPa.*27MMM...k...TTll.*21",".*33ngaRRc..cbhkxPaTTTLJ.*9caah*4PaxT*4aNa.*28qMM.*5TTll.*23",".*33RRRaRRaaaTThhjPxDJLa.*6aaabbh*4iaaLJALbPa.*29lMM.*5TS.*25",".*34auRRERRRaTThbHJJJa.*4aahhbbhhhbhhPaaiiiabra.*30kMMM.*30",".*32aR*9KeTbea*4.*4aAHbbh*7PaHPabaTaa.*33sMMO.*28",".*33aEEceER*4aJaa.*8abbPhhhrhhhrnaaubbaHaa.*34MMM.*28",".*38aRRRaa.*4a*6.aaawthPwhhhPahaaKbHnPb.*65",".*37aRRaa.*5ahhNhha*6PhhiPhxabhbwbaaaPha.*64",".*36aRKa.*5aTThhPh*6bbaPhPhiPahhbaFKaahPhha.*62",".*36aac.*5aQTQhhNh*4bbababPhhPahhbhhaabehrNhFa*4.*58",".*43arjLLabcabh*6baPiPahhhbhhbhaaPwhPahbhhNa.*56",".*43aTTTahPPh*6bbhhaPaahhbhhhbhaaPhPaabhPPnhha.*54",".*43aLLxahhPPhhhbbh*4bbahhhah*6brPahhhnAhhaaa.*54",".*44aLTTahhPrbbbh*4bbh*4bhhhbh*4aahhDPihbaTTca.*53",".*45xeTTahAAah*5bbh*5bhhhbh*5ahhPhhaLTJTJT.*53",".*45aTTTahbHPh*4bbh*5ahhhbhhhbhhhaNhhaDTTaaJt.*53",".*45aTLxDbhhPPPhbbh*5bbhhhbhhhahhheAhbTTQeEKRa.*53",".*46atTTJahhhPAah*6bh*4bhhhahhPPabJQanER*4aa.*51",".*46aaTTJTLahbuwh*5bahhhbhhhPnPPhhhJTaEER*7a.*50",".*48aJaTTLaboPPh*4bh*4bhiPwh*4aTQLaER*9j.*49",".*49aaTTDxahhFPPPuaP*4ePPhhhaJLDTaeEKR*10a.*48",".*49aEEQTTJahhhBPAuR*4uhhhaDDTTTJaEEKR*10a.*48",".*49aKEeQTJTojhhibbh*4ahbaTTLTTaa.a*4EER*7a.*48",".*48aRRREEaT*4xLLLra*5JTtTbaebc.*6caaER*4Ka.*48",".*48wR*4EEaaaLT*4LTTxLJTTTDa.*12aR*5u.*49",".*45aaR*7Ea...a*5TTQTJrTTa.*13R*6a.*49",".*43aaR*8Kg.*8aaaTTc.aa.*13aJR*4E.*50",".*41gTTR*8e.*31aLT*6.*50",".*40aJTTLR*6w.*32aJT*5Q.*50",".*39gQTTTQRREEna.*33aT*4JTa.*50",".*39BTTJTTtEEe.*35aT*4QTa.*50",".*38aT*7La.*37xQT*4a.*50",".*37aTTQTTLTJa.*38aQTTTa.*51",".*37cTLTTLTQa.*39aT*4a.*51",".*36aT*4LTLg.*40aQTTTa.*51",".*35aT*4LTag.*41aT*4.*52",".*33aaQTTTLTcg.*42aT*4.*52",".*32aAaTTTLQc.*43bbTTLaa.*51",".*32abPaaJaa.*43aAPaaaba.*51",".*32bbrPPaa.*44abbPPPHa.*51",".*31aiNbNba.*46bhhriTa.*51",".*30aiRiNba.*47bhhniAa.*51",".*29ahiHiia.*48bhhniia.*51",".*28cbhhiPba.*47abhhjiNac.*50",".*28bFPnjba.*47abbhhbPiha.*50",".*27aNbhhhb.*48abh*4bPje.*50",".*26abh*5b.*48bh*7bbaaa.*47",".*26abhhsshha.*47ab*4h*4kskka.*46",".*26abhs*4ha.*47n*6bhhksssh.*46",".*26aub*5aa.*47nnnbanAab*5a.*46",".*26anNRRRNNa.*47nnnbaaaHNRPPNH.*46",".*26a*9.*47a*4..a*8.*46",".*142",".*142",".*142"],[".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*26ccJJSSBcc.*107",".*25xJ*6SSSa.*74I.*31",".*13ggr*4gg...abcccrJ*4SSr.*73O.*31",".*12aS*8a.*8jJJJLSSa.*21a*6.*45T.*31",".*11cQDDDJJJSSSB.*8oJJJLSSa.*18gxJJS*4BB.*41SSTTSO.*28",".*11Ja.*4aaJJSSS.*7atJJJxSO.*14aaJ*9SSSaa.*28lz.*11T.*31",".*11g.*7cJJLSB.*7bJJJjDS.*13aJ*6xtDJJJLSSSa.*26kSv.*11T.*31",".*20axJJSS.*6aJJSaoJa.*11aJ*5otJJSSSJJJQSSa.*24lITI.*11M.*31",".*21aJJSSbeb...aJJSaaJa.*11xJ*4tJJJxtxSSSJJSSBe.*22fITTCm.*10I.*11f.*19",".*8aLS*4caa...cxtJJSDJSSa.aJJSa.Da.*10aJJJoJ*4tJ*5SSSJSDSQ.*21STTTMl.*19mlTm.*19",".*6aS*10a..ccatJJSxJJSbxJSSaaJ.*9aajJJtJ*4tJ*7LSSJSxSa.*19lITTTq.*19lOTl.*20",".*5aSStttLSSJQSQJr..atJJSabxJQtJJSyta.*8TTaottJJDLoJ*9SSJSSxSa.*18lITMvm.*18kOTC.*21",".*4aSJtcaaatJQJJSSJbcajJJQS.aDJxJJSSa.*8bTTjoQSxxSDJSJSSDJ*5SSJSSSa.*19ITIf.*19ISq.*22",".*4aJj.*7aJ*4SDSaaoJJSc.atDtJLSSa.*7aJJtJJtJStoJSSStJJJLSLJStSStSa.*18vTf.*8sTl.*9qk.*23",".*4aJ.*9cJ*4SSSaotJQa..axaJJSSSbb.aaa.geaxttxojJoSJSDJ*4DLS*4JSLSa.*18ll.*8TTl.*35",".*5r.*7abaaDJJJS*4DxJSB..ootJJJSSSOTTTeallnoxJ*4xJJJtJSSJDJSSLSJQSLS.*26TTTlf.*35",".*11abSSSJoJ*4DSSSBtJQSaaojttJJJDxTLDxNCCFotJJJoJJJoJSSQooJJJLSDJSxS.*24STTqvq.*36",".*10gLJ*6tJJJLQS*4QtDSJxobQQh*7iefdutJDoDoJJJtJJLDKoJLTxSoJSxQa.*14z.*7TTTqql.*6ff.*7mQOTTqf.*15",".*10Dxa...atJtJJJLtS*6ttxxaTTh*5bbaoaajjtJJJoJ*6tRRtJTLtJoJQxta.*13CS.*4fqTTTvvvf...flCl.*4fCT*5llm.*16",".*8cBBOBBcc.gbttJJJQSxDS*6JrBTDbh*4aQbhhatooxtjJJDJJyKtDtJJDJtoJLtoa.*12mIG..mfGTTTvvqlgklvCqlflvQST*4zqql.*18",".*7aS*8bc.attJ*4SoootBxtttaTTkhhajTbahhatJtjojJJDxnR*4xJJuJEjJJxba.*12lTS.kfvTTTvvqlffqCCllfzT*6zvvvf.*19",".*6OS*4QQJ*5.cjtDJ*4SJo*8TTkhaDTjhahhaotJtwRtJJneaaaeJJyJeexJJLag.*10gfITIffvTMMvvvlfqvCCqzST*6Mv*4l.*20",".*5aSSSJJJxxJ*5taatJ*8o*5aTQbaDTTh*6ooocREjLLyrJbbEJyJaxaJJoLc.*10anbCIIqvICCvvvCqqqvIIMI*4MSMv*5f*4m.*17",".*4aSLtaa.*4aaoootoojtJDtxJ*7tajojQTThhba*4oJJjREoJJDRTzfKRKRlToJjDO.*10aenaCCCvvvTvvvICvI*8OTTI*6Oq*4l*4.*14","...cSQjc.*6aaBSSSLJJjt*4otxJ*5tbjTTThhhaottoJJooeRtoJJyRQGR*4vyjotJa.*10RRRaICvvGTIvI*10T*4OI*5GT*5Sl*6.*12","...cSx.*5arS*4J*9jt*5ot*4oaTTJTThattoJJtttjeJJotJyR*8ooJa.*11RRRaICITTI*9T*7I*14MTTTGl*4.*9","...bDb.*4aS*4J*4tottJ*5jjototoojjDbbLTTQttoJJttojjJJJcuER*8coJb.*12KRRdMMTTMI*5ST*17OIMI*12llf.*7","...bD...aS*4QSLtDJ*5ttoJJQSSBxBBSSJJJoaaTaoDa*4ojcJJJbuKunR*6coxa...a*4..a*4RRRMOTTMIIST*38MMs.*5","...gx...S*5DtJ*4Dt*4xtoJJJS*5JDt*5obbarQTTTJaaabDTTyKuenKRuaojbeaaT*5reNhTbRRRST*4ST*42Gs.*4",".*4ac.aSSSJtxJoaaabot*7oJJJS*4DDbiattojT*4JJTJAihhtTQQyJaxbTtTTTJT*4LJDxPhhTnRREIIMTTOI*4T*25OI*8qll.*7",".*6aS*4otoaa..gaaajot*5ootJJSSSthkkbwrJTLDLT*4aPaaabxxthhaTDTTQDTTTJJTTTbTkhTnRRRzMCMSTOvI*6ST*9SSOI*13Cl*4.*9",".*6SQSSoog..gaSSSLJ*5oot*4ojotttshbbCOuaQT*4QTJPkhhhBMFbssaTTDTTTJJT*5bNhiLaKRRRiIvCCCICIOSI*7T*8GMTMMTTIIl*6.*12",".*6SJSxg...cSLJLxxxJ*5DtjjottojjjkkibedaksbTTTJTbhahhbdCwbhhaJJTTJDQTTTLJJJAibbDaafddI*4CqqIIMTTGI*10MT*6l*7f.*14",".*5aJJJo...aSJtaa.*4aDSSQJxttooojaakkibjahkkaTQJTJPwahaanEebhhjJJJDJLJ*5TLxaAaa.*4fCTIIISIIqvvvOTSOI*10v*4l*4f.*18",".*5aJJt.*4eLoa.*8aoJDxa*5DQaabJLahaihTJJJLaPiaahhabhhabttJoJDJ*7xj.*9fITqIITIClvvvqICCCqqvCCCvl*4qlfk.*20",".*6JJa...aSo.*12caT*6LJTTTJDhhbDjJJDQxbPeshhhoxahhkaaa...a*7.*12lTqvTTTCCllvvqCTTCCl*4CClf.*25",".*6JJa...aQa.*12aTLTTJJT*5JJLshkJDJTJxbhbaahhiTLashhk.*25vlfqSTTCvffvvlqITICffflllf.*25",".*6aJJa...aj.*11cajTDJT*5JJTQJbxaxJJJabhhhPxahoDLbahb.*27l..qITTCf.flvffqCTCf.*12Oq.*16",".*7cJJag..a.*4c.*6ePPcT*5JJJQJDDaa.a*4bh*4PTJbTJDaabb.*25m.*5lITIC...ff..fqSC.*11CTq.*16",".*9aa.*5a.aRFa..ajhhhPbxxTJJDbaa.*8abhhhwaTTLTLTaig.*24mMl.*7vICl.*9kl.*9lTTG.*16",".*16RRaaRRFaaeThhPPTJ*4a.*11bbhhiNbtotxJaFa.*25ITl.*8lCCm.*19fSIf.*16",".*16aaER*7TThbAxJJa.*11aabhhhNaDTKJDaA.*26CTTl.*10lv.*10I.*8mTl.*17",".*14gR*11aTbba*4.*9aaabah*4PtTLTTbNa.*25lTTTz.*22O.*9z.*18",".*15gaaaR*7eDa.*10abhhhbbh*5PaDLQJxFa.*26lMOC.*23T.*28",".*16aRRReaeRReag.*10aeHbbbh*4ihieabbxxaw.*27lTCm.*22OTO.*27",".*16aaa...RRa.*13bbHeh*8PaNebbRna.*27fO.*24OTM.*27",".*21wRa.*6a*7.aaaPhHhPhhhPaauabaHba.*28k.*16q.*8T.*28",".*21R.*4babaaneb*7aPhohhihPaibHHAnaib.*42mCTl.*8S.*28",".*26TTahhPwh*4bbbaaPhjdirbbhbAabAahha.*40mzTCm.*8I.*28",".*25aTTahhPPh*6ibbaPhhhwbh*4uNaPhowha.*38qTTG.*38",".*25aJJDhhPNb*5h*4bPihPbhhbhhbhbPhwFhnaab.*34kIGq.*39",".*24BTTjaaanh*9bhbPPbh*6bhbaiPiPbhhiNHb.*31fMl.*40",".*24TTTahhhPPh*5bah*4aahhhbh*6ajhPbbhAPihbaa.*29l.*42",".*24TTJtahhhPPhhbbh*5bh*4bhhhbhhhaPPbhhPNaiiTTTJ.*71",".*24aJxTTxhhiNbbh*6bh*9ihbhhPahiPihbaxJTbD.*71",".*25boTTTahbePPPhhhibh*5bhhhihhbhhhbbPihiDTTteEaacc.*68",".*27aTLabahhhPPhbbh*5bh*4bh*7nuhbTTQaeR*6aa.*66",".*26aTQDxTTJahhPubh*6bh*11PNabTJTaER*10b.*64",".*27aTTrTTTjbhbnPh*5bh*9uPPPhhtTTaER*12.*64",".*28bbbaTDTTabhPPFhhbbh*4bhFPPuDhhbTTDLER*13e.*63",".*32JTDTeahhP*4nP*5aPPxhhhbaLTTouER*13e.*63",".*32aajTDTjh*4AuxhhhFurhhiajQTLDajuEEKR*11a.*63",".*31aREEaTTJJxihbiaaahhbhaLjJTJTba.*4ba*6ER*5.*64",".*30aRRRKETJJTTDDxaTLQQbbtTTTJTbLc.*11ER*5E.*64",".*26aaER*6KEaaTTxT*4JTTLTDTTTtacb.*11aJDR*4a.*64",".*24gjxR*9Ea..aaTTaaDaaTTLabea.*14oT*5La.*64",".*23aDTTR*9a.*12cca.*17aJDT*4e.*65",".*22cT*4JR*6rc.*33aJTTTJTa.*65",".*21aTTTDTTRREEna.*35aLQT*4.*66",".*21TTLTTQTTtua.*38TJTTTj.*66",".*20TTLTTTLJTDg.*38gTQTJTa.*66",".*19BTQTTQTTLa.*40aT*4xg.*66",".*18TTLTTJTTa.*42jT*4a.*67",".*15aaLTQTTTra.*44JT*4c.*67",".*14auaTQTQTac.*44aDLTLQ.*68",".*13abHPaLJra.*45auna*5.*67",".*13aiiPPeaa.*46abHPPPAa.*67",".*13bHPibueg.*46abhhNbFa.*67",".*12aibbNba.*48gbhhPbHa.*67",".*11abHHPia.*49abhhAib.*68",".*10abhibbbc.*48gbhhhPbPa.*67",".*9abiPrwba.*49abhhhbwba.*67",".*8abPbhhia.*50bh*5bPia.*66",".*8bnihiiia.*49abh*7Pnbb.*64",".*8bhhssshb.*49aabbbh*4khskib.*62",".*8bhhssshia.*48an*4ubihhssshb.*62",".*7aubaabbbaa.*48annnaauubbabaaa.*62",".*7anHPRRRNAa.*48aenna.aAAPTPPAA.*62",".*7a*10.*48a*5.ca*8.*62",".*142",".*142",".*142"],[".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*57a*4.*81",".*52a*4cS*4aa.*79",".*50aaL*4S*7aa.*22aQSSSac.*48",".*48aaL*11S*4a.*20aSSSxxDxa.*47",".*47gJL*4DxJJDJLLLS*4e.*18aSSDa.gcxD.*47",".*46cxJLJDtDS*4JDL*4S*4.*16cSSa.*6at.*46",".*45axLLLDtLLJxxJSSJLQSLLSSQa.*9aa...aSJa.*7xc.*45",".*45aJLLxoLLDtL*4SSQJLQTLS*4a.*6cTa...aSa.*8a.*46",".*44aLLLxoLLLtL*4DLLSTTJQTTQDSSra*4TTa.*4SLa.*55",".*44cLLLoLLLxL*4JL*4STLLSTTQjoJJSSTTa.*5Sa.*7a*7.*42",".*44xLLxJLLJoL*4DL*5STDLLSTTjjLLLxa.*5BLa.*5arS*7a.*41",".*44DLxDLDDtJLLQL*4SLLSSToLLSSTeoxjag...aQSa.*4rSSSLxxxDJQSSBg.*38",".*41geaDDtDxxSoSLQSDL*5QSLTBJLLJSSexa.*4aSSSa..gBSSQx*4JL*5SS.*38",".*40gTTJxtTLDSJxSSSLtLLSjLSSLSToLSTJSSa...aaSSSD..aSSStx*5ja*4LLSr.*37",".*40gTToDTJJLojtSLStLLSLjLSLLLSooLSTDSScLS*5Dg.aSSx*6ja.*5aaJJ.*37",".*40DTTjLDtQjJDxLLLoJSJLEoLLLJLJoxQTJDSSLSSSxxoaSjjxJxoa*4.*8aLa.*36",".*40oxJjLjjjLLLxLLLxLQDLEjLLLDJyojLSLoDSLLx*4bSroJJoaaS*4aaa.*5aJa.*36",".*41bPRjjL*4DLLLxxLLDLEoLLLDLEJjL*4jSSx*4jSSLLJbbS*9aa...aLa.*36",".*40aHllRDLLLxoLLLxxLDLxRnL*4JKooLoLQjjSx*4SSLJojS*4DDDJS*5a.ata.*37",".*38DQtjCGNjtojDxLLLtLLDJKRwLLuJRwatLjLLjoSxxLSSxxjSSSQLJD*7SSSc.*40",".*37BTTLHffHtooL*6tLtLERRyLJyjjRaoxoLLSDjJLLLxtoSSSD*5LS*9a.*39",".*37TTDDaNPbaxLLLDJLLtDoyRRRyLEDRRaaJjxLJSLJLLLttjjSxtxxxtQSSj*4S*4Lg.*38",".*37bTLDhabahbtxjjjLLLoyRjjKLERRwaRbxoxLjSjJLotDJLJS*8jjjooojeSSSc.*38",".*38axhkaxasheojojxLLxR*4KR*4FFFajtLDjSjooxxDojSSLJJDrBSSrjejttxjjSS.*38",".*39akkaLbkkiJDeRKLLLRa*4R*7atxLjjSjjJxxoSSSLLJJDJJjSSa...axxxoS.*38",".*38ahkbbQbakiaJjEExLLKRaaR*8otLjjSjDJDxoSSSLLJDJ*4DjSSa...axxxS.*38",".*37chhhbTbbaiarLeRKyoLLR*10atxetDLDxttLSSSLLDDL*5JxjSa...cxJLc.*38",".*36aThhbbTbhijjJLJacDxjJLR*4KTRRjjaTTTrQLQQSSSQL*11JDLLc...eLLa.*38",".*36aTTLiiTbhhooLJLooJLtjaR*7aaQLTLTTaxDDDtoJJLjottjjjJJLJxLc..aJJa.*39",".*37aQTLTTLTTaxJDLotjLLjaEunuaeabeaaTLTLQjototLJo*4t*4jjDLLLa.*4aa.*40",".*38aaDTQLTTDtjLxLjojLLtnyEoTDaaaRKaQLQTatDLLLoox*5ootooJLLa.*46",".*40JTLTLTxxxooQTLbabJDLToJjkaEuRRaLTTTjo*5xxbaxDxxacaxDLJc.*45",".*40TTaapaLxxjLQDaRRrbaxDKdRhaER*4aTDLLxxxtoa...gJLxSB.axLLc.*45",".*40aa..aLLLxaLTLuEnRRkshKvlaaKnReRaTLLaooj*4..aJL*4Sg.aLLc.*45",".*44aSDLtaLTTRRRnRahiAfwaaEKnRRaLJLaskotx*4JL*6Sa.LLc.*45",".*43aSSLLbTTLaRRKnRahbanabiaKKRRaxJnPbkbxxxDJJDc*4JLa.Lx.*46",".*43aSoLJaTTTaReuRRabakitbibaKReTcbFObbaJ*5g.*6LaxLa.*46",".*42aSSaLxaTxTTR*4EaakhhDakbTeETTbhnEbaxJ*4a.*7Jtxa.*47",".*42aSQaLxLQJDLDnRReJakhhTThhbLTThiPbbjhikejg.*6gtJa.*49",".*42aSaaxxaLLJLtDEEnTbhhsxQbhabiihiNTeDxiik.*9aa.*50",".*42aSa.axxbDLttT*4LDjahxLTaDnbiiPnQTaxbia.*61",".*42aLa..aakkFsbaLTxbaTJTLTTQTHHPPNLQTTjga..aJ.*58",".*42aJa...ahbdlHabikbAbbTToxojababoTTLTaa..aLJ.*58",".*43rLa..gaaaHaHeiijNubbDxJDLaLDTDTTLQoxxxJLa.*58",".*43gLLJaa.abaTbwPRNbLAbQTLTTaLDTJLTLaotxJoa..caPPsa.*51",".*44axLJagbbaTLLbbbJLbNbTJTDLaLLTLTLa*6..aiiiPDs.*51",".*45cc..hhiaTTTLTLTLbibTJLDDaaDL*4.*6gai*5Pia.aaa.*46",".*49khhTTLTJTLTLabPxLriibaeaLLa.*5gai*5bHbbaaLTa.*45",".*48akhaLQDTTTJLLabNab*4NHaFbbbskkjabiiabs*4DRssaTTa.*44",".*49aia.aLLTTDLabbNaNHibeAaNeih*5PaabhiiihshPosaJLa.*44",".*51a..aDLLLaabiPanubbNwbaPPihiiixFbi*5bbbNAbaLaa.*44",".*55aLLLabbiPaaauAbPbabaPihwriPiib*7NwbaTT.*45",".*56gg.aiihPbbubbFaiibbaaPiNieb*9HbbaQTa.*44",".*59bbhRPb*4uaibiiibbaPrPabiiissPPkiaaTTa.*45",".*58bihhPabiiiaiiiaiiibbaPPbi*5FPibQTTJLa.*45",".*58hhhiPabi*4aiiibiibabaai*6PiiDTTttt.*46",".*57aAiwhPaiiaiibi*4aiiiab*4iiiPPiiTToxaa.*46",".*57aiiNiPbiibiiiai*4ai*4ab*4APiiJLDaa.*48",".*56aHhhwiPbi*6bi*5ai*6NbHnbaTTTa.*49",".*56aaeNNiPbiiiaiiiai*5aiiirPPiebbeLTTa.*49",".*58aaNPnbiiiaiiibi*6riiPPiiabrTTTx.*50",".*57gb*6iiibaiiibiiFPPRiHiibTTaJLTTc.*50",".*57aib*5i*4biiibbPPi*4bbbJTTQLLaa.*51",".*56abiaibiiai*4biiiANiiaQQraQToDDxTa.*52",".*56aiiai*4ahiiibbiPAbijT*5LJjDDTTa.*52",".*56aiiai*4bi*5APPibxTLTxDQTjxacaa.*53",".*55abiiai*5biiRPbbiiLQTTnajbDDr.*57",".*55aHPwni*5bHPPiibbTTaanEattDD.*58",".*55aiPNeiiP*4biiiaTLTaeEEEatDDc.*58",".*54caiibaPPPrribibQJTTeEKRRRa.*62",".*54aTDQaai*6aDTTQTaER*5a.*62",".*55aTTxQaaQJTTTLTTTceR*5a.*63",".*56BTDTDTTJDTTea...eR*5a.*63",".*57gQTbaaaE*4a...eR*6a.*62",".*59aaaERRREEa...cR*7F.*61",".*61aR*5Ea.*4KR*7a.*60",".*61aR*6a.*4gEEERRRDTa.*59",".*61gR*6a.*6nEERDTTLg.*58",".*61aR*5a.*7cDxTTTLTa.*58",".*60aR*6.*8cLTTTQTTT.*58",".*60aR*5j.*9aJQTTTLT.*58",".*59aR*6a.*10cLTLTQT.*58",".*59aTDRRRya.*11cQTTTQe.*57",".*58aQTTTLJLa.*12aTQTQTae.*55",".*58aTLT*4La.*13aT*4aAg.*54",".*58aTLTLJLa.*15TJTJaNa.*54",".*58aTLTQTLa.*14aDLTaPia.*54",".*58aTTTLTa.*15naaaPbia.*54",".*58T*4LLa.*16eHPiAPi.*54",".*58TLTTTa.*17abbNibia.*53",".*58TJTLTa.*18abwiHPi.*53",".*58TQTQT.*19cbbHenibg.*51",".*57gT*4r.*20abPi*4a.*51",".*57aTTQTa.*20abibPiiba.*50",".*57aLTLTa.*19gbi*5bua.*50",".*56aba*5.*19aisssibuuc.*50",".*56aHPPRNn.*19bisihieua.*51",".*56aeKbiba.*18chsssibua.*52",".*56aHHiiba.*18isssibee.*53",".*56abHiia.*19b*5HAg.*53",".*56aNHiia.*19ANPPAac.*54",".*56aiPbiba.*18a*5.*56",".*55aiPbiiia.*79",".*55eFbi*4b.*79",".*53ai*6bba.*79",".*52cisssiibene.*79",".*52aissiibAann.*79",".*52ab*5nnann.*79",".*52aHRRRHAa*4.*79",".*53a*6.*83",".*142",".*142",".*142"],[".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*82a*9.*51",".*79gxL*7SSSLQ.*49",".*77aJJL*10S*4Qc.*46",".*75cJL*7Dt*4L*4QSSa.*45",".*74atL*6xttLJSSSJJJTSSQa.*44",".*73aoL*6toL*4xDQSSLJQSSSa.*43",".*72ajxL*4xoL*4ttJLLQSSJJS*4ac.*41",".*69aa.aoxLLLttL*4txL*5SSTLJTSSSa.*41",".*67gcTTaexLLxtoL*4oDL*4xLLSSTLTQSSB.*41",".*67LTTJJoxDtoJL*4toL*5tJLLSSTLTLSSa.*40",".*67LLTxtoojoxDLLJDoSLLSQxL*5STLTTSSSa.*39",".*67oLTjoQJDSTDtSSoJS*4xJLLSLLLSTJTTLSa.*39",".*67ctJjQLLStxxSDtoLS*4xLLLSLLLSTLTTDSSa.*38",".*68aAHDLxxxLLtojLLLSStL*4SLSSSTxTTDQSa.*38",".*63a*5PbhPjxjjjotxjLLLSJtLLLtLLSSSToLTTxSSa.*37",".*61aQTTTLnfGTTejJLDLLLoL*4tJLLTjLLSSJTjLTTxSSa.*37",".*61aTTLJJefzzNoJxDLLLooLLLxLLSTojL*4TTjoSTLJSa.*37",".*61axToaaaPffHexLtLojoL*4xLLLtEuLLLTDLnjLTToSaa.*36",".*58a*5LxkhaaAAaotjjoxLtLLLtLLLoERELLTLtLujLSQoSSa.*36",".*58hkkkhhbahataajbtLtLLLoLLLtLLoEyooLLLtxLjjLLLttSa.*36",".*58ahhibahhbbJhhoobxLDtojLLLJLtERRRELLLuLyEjLLLjoSa.*36",".*42a*4.*13bbabhhbaQahhbtojtxxjjLLLttEaaaRELLoyLKebLoLejSa.*36",".*40aaLSSSba.*7a*5kkkhbbbTahhaxtxjjjnKJLLtaaxbaayLtELaaajLoLaaSa.*36",".*39jL*4S*4Qa.*5aT*4shhbbaTQahhaxLLttbRutLLDEaLbbELtExeaaeLDoLaaLa.*36",".*38L*4JxxxS*4aa.*4aTTThibbaTTbhhhatLLtDbKEtJLLERTfhyEEEKhsejLjLLaTa.*37",".*37bLJta*4boJS*4aa..aatTTbbDTTLbaabaJLttLbRELoLLtRTzGR*5zTcojxLJ.Oa.*37",".*36aLJjaa.*4aaoJS*4rrrtbrTLxTTTihbaoxLLjJLtaRLtjLLER*10aojJSa.*40",".*36aLao.*5aLSLQS*6QJxjTLojTTThhotLLojLLojaJLtjLLR*10atoLa.*41",".*37jgc.*4aQL*6SSQLJLLxjbejbTTTatDLooLLxjojjLLtnER*9attLSa.*41",".*37gc.*4aL*5ojjjtLLJLxtojjoocbTjxxojLLLjoojjLLtuuER*7aoLQba.*42",".*35a*5b.gJLLLjjo*4jjjo*4ttJLJJxoxxooLLLjjojjajLxEEEuKR*4aoxb.*45",".*32aaaS*5JajLLJjo*5xJS*5L*5JLJtooLLLDea*6JLLyKEEa*4eoDSa.*45",".*30aaS*9QLLLo*4xL*4SSSL*5xxttaoLLLtaaDTTjNiboLLTxRaj*4tDjSa.*45",".*29aSLLS*4Jxt*5LtLSL*7to*8aaQTaaaDTTLTTQaPFbDQTTTtDjjotSja...aa.*41",".*28aLLLSSxxxJLJJDtttSL*5toojoooa*6kkTThTTJT*6aPFiaoLTTtQjjtJSa...aRRa.*40",".*27aLLLJa*6tx*4JSL*4tx*5tajTTTQohhhiLhQT*5LJTaPPissaJDJantDSa...gRRuRa.*39",".*27aLLoa...ajbbeQSJSLLLtDxDxDxxaT*6QDaaarRJTTLLTTTQaPiahhhaPxaabQSa...anRRKRa.*38",".*26aJLoj...ajjjS*5LLLtxxxjjjoaJTTTJTTriiaAqqjLT*6JnaNahhbHlONhkaa...aRRERRRe.*38",".*26aLLoa..aojS*5JSLLttj*4ooaT*6DTDhhiaHnjQTTTLJJabPjakhhuffukha.*4aEeeR*4a.*37",".*26aLLoa.cojSJSSSJL*4jjt*5bLTTLT*4DJhbLaaakLLLJxtaaPhiabbaauuabka.*5aEcnRERa.*37",".*26aLLaa.axSJSLDtoLLLojt*6LTTTLT*4xJLTJhbhkaDa*4iaPirjakhhjaiaaQa.*4aKEnERRa.*37",".*27aLa..aQLLLJotjLLtjt*4otaT*4LTTTDLJoQbhaha*5bbiaPiiashhixahhbTL...aTnERRRa.*38",".*28aa.aL*5ttojLLjotooxDDaTJTTLQTTJa*5haaoxoabbiijPibskhhaQakhsaLaaaiToERRa.*39",".*31aL*4tttxoLLjxD*5xaJDDTJTTTJctttojjtxtoabbiiAaPjaahktTbkhhbDaaHhhTQaaa.*39",".*30aL*4ttx*4JLoxD*4toaHNRTJTTTxotttooxxtotabiiiNaPibJakDDrkabiaTaPhiiTLrc.*39",".*29aL*4toaabxxoLLtDDootxabhhiNDQTbttootDxoottabhibinNaTQJDTDJaAbjTTjPiiibba.*40",".*29aL*4a.ag.gaootLootDDDaihhibAJbottDDDxt*4abbhhiiunaxQTJTTTeaJJTTJaPHbba.*41",".*28aL*4a..axaaoxxoxLLLDDaTTTrbbaaotD*4t*5aahbi*4HaDDDoQTTJbJtTTLTDaHAna.*41",".*28aLLJo.*4cD*4L*5DtoauueTKaaoDDDt*5aaihhbihiiNaaTDKDaeaaDLDT*5LJa.*43",".*28aJLLa.*5abQQLLLtootoKRREbLatxDt*4aabANihhbhiiiNaTTTJLanaaxLLT*4LLLa.*43",".*29aJJa.*5gSLLLxooxxxaR*4EatDDt*4oAwiijiiihiiiNaJTQJTaAa..aLLLTTJLJa.*44",".*29aJLc.*5L*4DooxxxaR*6aDDt*4jaaNiiNi*5PPabbxQxaua.*4bL*4Jba.*45",".*30aJD.*4gLLLooa*6R*6axxxta*5NiFAPriPPaaAPbibaea.*6aLLDa.*47",".*37aLLJog.*5aKRRREEatobg..aaanriNirPaabbeAiiNHa.*59",".*37aLLaog.*6aEKRnnaj...aaibaaPhiFwaabiiNHbbAaa.*59",".*37bLLaa.*4aDxxwaua.*4caiiiabaPiPnabaaiiuauaAaa.*59",".*37cLJa.*6cajb.a*6bhhbbhhawPaaibihabanawaaac.*58",".*38JLa.*8a*4hkkkhhhbahhha*4ihahbbbaaAa*7.*56",".*38cJJg.*4gaaahkPRkh*4bakhhiaibahhahhaiiaahksTTkba.*55",".*39aa.*5aTTLahhPLhhbbakhhhahhihhhahhbihkkhhRTkkaaa.*54",".*46aTLJtahRPbabakkhhibhhahhhahhsahhksTAhkjTTTa.*53",".*47atTTJhhnbbakkhhhahhibhhhahhkkaiiPRkitTTbna*4.*50",".*47aaaTJabHubrsh*4ahhhihhhahhhkkaHFhioTTjER*5aa.*48",".*49aJJaiwAnPPRhhibhhih*4ah*4keAihaJTTER*8a.*47",".*48rTTTxiibhhoPPiahhiah*5ahhiRPaiDTLJER*10a.*46",".*48aTTTJabaahhhNNbiihbh*5aihPPxhaQTTuER*11a.*45",".*49aLJDTaaxaihhnihhhaihhihaHNNhhhJTTuER*12a.*45",".*50aeTTTLxjaahnNiiiaPPPRPuuohhbxLTxEER*12a.*45",".*51aTTTxDTJjaeN*4uNPRRPuehhaJTJTuEEKKKeaER*6a.*45",".*51aDTJTTTQabihhFHuh*5bbaoTQTjeE*4aaacR*4LDDTa.*44",".*53aaT*4xaahiiib*4ibaaaxTTa*7.*4RRRDQTTTa.*44",".*53aEaLTLJTTJa*4DJJxxQTLxQTa.*10uxDTTTQJo.*44",".*53EEEuaaLTTJTLJLQQTDLTTTLJa.*11aT*4JTQT.*44",".*52aE*6aaaJTTJT*4LJTacaa.*12aLTJT*5a.*43",".*51aRRE*7a*5T*4a*6.*13aDJTTLTTTe.*43",".*48gaeR*4E*5a.*4a*5.*20aTLT*6a.*42",".*46caDR*7EEEa.*30aJTTTLTTTa.*42",".*45aaTDR*8Ea.*32aTLTTQTQLa.*41",".*44aLLTDR*7Ka.*34aT*7a.*41",".*43aTTJTTDR*5aa.*36aTTTLTQa.*41",".*42aTTTLTTTDEKaa.*39aQT*5a.*40",".*41aT*5JTTTJa.*42aQTLTQTaa.*38",".*40aT*5LTJJLa.*44bT*4rara.*37",".*39gaTQTTQTTTaa.*45aDTtaaPxaa.*36",".*39cTQTTQTTra.*48aaaPPiNNa.*36",".*38cT*7a.*49aaANwbPiia.*36",".*37cLTQTQTTa.*51aAbhhjiNHc.*35",".*37bTQTLTQc.*53abhhhPiia.*35",".*33caaaTTTQTTc.*55abhhbPHHaa.*33",".*33aHaaTQTTxc.*56aaihiwwihjwaaaxhc.*26",".*33aeNaDTQra.*58abbiiFwbiihsxthb.*26",".*32aiibNa*4.*59abbhhihhkhkkhibNa.*25",".*32ahhiKNaaa.*59ahkh*9bRPNa.*25",".*30gbihhbebea.*60ahhhiiibiibNPTaa.*26",".*28aaabhhhbNag.*61abhhbauAuHHNaa.*28",".*27abkbhhhbNac.*63abbuuaacaaa.*30",".*26gakhiiibba.*65gu*4na.*34",".*25aabh*4iHHa.*66eunaa.*35",".*25auuihhiiba.*67aaa.*37",".*25auubihheHa.*107",".*25aunbhhiHag.*107",".*26aauhkkba.*108",".*27aHikbaa.*108",".*27aHbhkkha.*107",".*27cAwihskha.*106",".*28gnHPPHAa.*106",".*29ca*5.*107",".*142",".*142",".*142"],[".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*88a*8.*46",".*85caBL*4QSSSBa.*44",".*83axL*9S*5B.*42",".*81aJL*7xxxL*4S*4a.*40",".*80jL*7Jtxt*4L*4SSSa.*39",".*79aL*7ttLLQSSSLxJQTSSQa.*38",".*78axL*5ttLLLDttJLSSSLLSSSbc.*37",".*77aoxLLLxttLLLttL*5SSTLLQSSSa.*36",".*73aLLabxLLxtoJLLLtJL*4DLLSSTJTLSSe.*36",".*72bTTJLoxDtoJL*4ooL*5xLLLSTTLTJSSa.*35",".*72JLTxjotjjxL*4xjSLLSLtL*4JSTLTTQSSa.*34",".*72tJTooTtDSQttSSoLS*4xLLLSLLLTLJTQSSa.*34",".*72aDJjQJQSttLSJtjLSSSDDLLLSLLLSTJTTDSa.*34",".*72cnHHxLxxLLtDjjLLLSLtL*4SLSSSTDTTJSSa.*33",".*68a*4uNdFNotjjoxDLjLLLSxJLLLxLLSSSTtJTTDSa.*33",".*66aaTTTJHqSGPjoLJL*4jLLLJtLLLSjLLSSLTjLTTtSSa.*32",".*66aTTLJxAlvlNtLtDLLLotLLLxLLSTtjLLLJTTjtSTJLSa.*32",".*66aDTbbauHdwAjLLxLojjLLLJxLLJJEELLLTJQnoLTLtSa.*32",".*62a*6xshaanHubtj*4LJoLLLtLLLtERELLTJtLEjLSStSSa.*31",".*45caaa.*13akskhhhbahabbbjbxLDLLJjLLLxLJtjooELLLDxLjbLLLoDSa.*31",".*44arSSSaab.*10ah*4bahhbJahhoojDLJoojL*5tERRRELLLELEEjLLLjtSa.*31",".*42aaL*4SSSBa.*10abbahhhbaLahhoxjjDxtjjLLLtEEbbbKELLtyJRbcLoLbjSa.*31",".*41aL*6JQSSSac.*5a*4kkkhhbaTBahhbtttjjjEELLLta*6DLtELaaajLoLabSa.*31",".*41DLLojaaotJS*4a.*4aTTTQhhbbaTTbhhhaxLLooauuoLLoEbLbbKLtEJabajLDoLabSa.*31",".*40aLLcba..aaoJS*4aa...aTTThbbbTTTahhhaDLLDxaKuoLLLERTqlyEEERdoejLoLLaSa.*32",".*40aLJoa.*5caoJS*4a*5TTTbaTTTbbaahaLLtLLaRuLjLLyRTGGR*5CTejjxLa.Sa.*32",".*41ar.*7aS*9QLoaTTJT*4hhboooLLjLLjnRJtoLJR*11aojJTa.a.*33",".*41cJa.*4gbL*4QQSSSLLLDoaTJjaTTThbttLLooLJjjaLLojLJR*10jooQb.*36",".*40arrrg...jL*5jjjOSL*4DtjbjjjTTTaxLLtoLLojojbLLtnER*9aoxLBa.*36",".*36gcS*7JaaLLLJjo*4j*4ooj*4ttxojTtJLtjLLJjoojaLLtEuKR*7aoLQaa.*37",".*35aS*10LtLLjo*6LJS*4LLLJL*4xtDtjJLLJjbabjxoLtEEunR*5aota.a.*38",".*33bSSLLSSSQJxxJLLLJoooDL*5QSQL*7JDxtttLLjabLDaNbaJDLxREajaaajoxSa.*40",".*33SSLJSSJJJLJLttxDJxSSL*7JJL*5JtxtjjrataQTTJJDPiiaJtTTFxbjjjoxDSb.*40",".*32bL*4ja*4jtLLJttSSJL*4Dj*13akhTTLTLT*5biobjQ*4tTjjjxJSa.*41",".*32aLLoac.*4aabttDSSJLLJooxDDt*5oj*5ahhiLJT*5JTaFrhaaDJnJaajtJSa.*42",".*31aLLooc...aajoDSSQSLLLJxD*10t*4aaabhaNnQTTLTTLawwahhsaPAbaaJSa.*43",".*31aLLoa...aooS*6JLLtttootD*8xarTTLoaACzDJTTTQxeNiahhbPGzhhkaa.*44",".*31aLboa..aojS*4LJLLLtjjottjjjoD*4aeTTTbkhbndAJTTTDJabPNakhhHlfbhha.*45",".*31aLaaa..btSLSSLDJLLDjot*7j*4aT*6hhDtaakJJJxawPhiabbaaHubhk.*46",".*31cDr...aDQLSLxojLLLjt*5ooot*4aT*4QDJaTQbbhhhaaaiaihFbahhhabhaa.*5aFr.*38",".*32aLa..aQLLLotttLLjtttoj*8bT*7tDTJhbhaabbbhaPNhbkhhaohbka...aaRERe.*37",".*33aa.aL*4ttjjjLLjtjjt*5DDDxaT*8jaahhajabbhrbPhbkkhhaJahhs...eRuRRRg.*36",".*36eLLLJoxxxoLLjot*5LJLx*4TTJTTJQTajjjajjabbhhjFdbabhkJTakhka..FERERRe.*36",".*35aL*4objxxxtLLt*4LLLt*5xLTJDNRPwajjtojjabhhhNaPjoxakJTakaa..aFEaRKRe.*36",".*34aL*4oagaaaxtoLottLLLxttjjjaJJtNPhhiajtj*4abhhbraNaTJDaJJaaaTbaLnRuERRe.*36",".*34rLLLa..aaggajtoooLLLtjotxtoaJDAih*4aoojjaabbhhhinHaJTTJTTTbaauiQuERenKa.*36",".*33aLLLja..aDDDxxxJLLLDootx*4ttaanbhT*4aaabbahbh*4NaJxojT*4bLaNhTaERRKa.*37",".*33aLLLa.*4abDxSL*4tjotx*5tttabiTaaeaabibhhih*4FNaTDJxoaabaTjNhLTaaac.*38",".*33aLLLa.*6aSLLLtjjx*4obt*6aJaER*4bnHh*7PaLTTLLanjaxTLFFhxDDa.*39",".*34aLLa.*5aSLLJtjoxxxbaacaabxtaaDnR*5wiNihhFhhPaDTLKTaAaxtLTQtPAbba.*40",".*34aJLa.*5aLLLtaaxxoaa.*5gaa.ganR*6hhwiKiFPabbtLxaAaaJJJTTTxana.*41",".*35cLJa...aLLLooc..g.*13aaR*5eihiNhPbabPAiiaaa.aJJJTTJJJg.*42",".*42aLLLoa.*15aabaR*5aNhhrPabbaAeFANa...aJ*5ra.*43",".*42aLLaaa.*7aabHb*4iibbaEaeaaPiwPabhhbuebnea.*4a*5.*45",".*42aLLa.*9ahhAHh*6baabbaaPwPaabhhhHbHaaa.*54",".*43aLa.*9cahkPPh*4bahhhbibaPahbhbhbabbHaag.*53",".*44aLa.*7aaaokhPPhbbah*4bhbaahhhbhhibaebhhbaa.*51",".*45aa.*6aTTJtakPNbbakh*7bh*4bhhhkihkRRRxka.*50",".*53jTJTLDhbAbakh*4ahhbbhhhkkbhhhkhAPkshaaa.*49",".*53aJxTTJabuePPPhhhbhhbah*4kihhhPRyhhaLTTja.*48",".*54aaaLJaibhhhPPhbhhhbahhhyPRbwHHhkbDTTTbxb.*48",".*55arTTTaaahhhPPbhhhbbhhHHhkkAhhiJTDTnEEKaa.*47",".*55aTTTJQJDjahhAihhhbbiHHhhkaahaDTTJLER*5ag.*45",".*56aTJTTQDTJahnHPFinuHNhhaDLaaLLTuEER*8a.*44",".*57aaaTLTTTDahFPPPNAbhhaDTTTLTTyER*11a.*43",".*59arxaTTtah*6ibhaDDTTTxTtEER*12.*43",".*60aa.aLLJaah*4iaoTTJTyEoEEER*13.*43",".*63aJTTLJJaarLTDTTLDE*8unER*8.*43",".*64aTTJT*4LTTJTTja*4EEuaJxR*9F.*43",".*65baaT*4aLTbaE*7aaDTTR*9a.*43",".*69aaaca*4E*7aTJTTJR*6Fc.*44",".*70aajJLEEuE*5aTTQJTTJR*4a.*46",".*68gaJJDTLRRERRREaQTLT*5DRaa.*47",".*58a*4...a.aoTTTDTJR*6KbT*5JTTTa.*49",".*56aannbbaaaeaTTQQTJTTR*6aT*5LTTJb.*50",".*56auubhhbbAaLQT*7DR*4nTTQTTLTTTa.*51",".*56euubh*4NaLT*4LTDTQRRKEaTLTTLTTaa.*52",".*56aanh*5PaLTJT*4LLJa*4T*4LTTac.*53",".*56aubh*4NHPaLQQxaaagg.aaQTTTQTTa.*55",".*55aAahhhFbKiNeaagg.*5aubTLTQTQa.*56",".*54aHehhhiHHuaana.*7aaHaDTQTLa.*57",".*54aNbhhbPbaa.*11ahHPaLTra.*58",".*53cHFhhibaa.*12abhhPPaaa.*59",".*53aNbkhbba.*11aah*4ihPHa.*59",".*53aNbkhba.*10cah*5jHHba.*60",".*53aNbhhb.*11akh*4Nbbba.*61",".*54eNhha.*10abh*5bNba.*62",".*54aAaba.*9auubhhhAbba.*63",".*55aac.*10auunhhhnHba.*63",".*69aunbhhPba.*64",".*69aanbhhhHa.*64",".*71nbhhhba.*64",".*71eNbkkhb.*64",".*71aNPbhkha.*63",".*72aNPbhha.*63",".*73aaNAa.*64",".*74a*4.*64",".*142",".*142",".*142",".*142",".*142",".*142"],[".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*142",".*82a*9.*51",".*78ggrJL*6SSSBBgg.*47",".*76caJL*11S*4Qa.*46",".*75cxL*7Dt*4LLLQQSSa.*45",".*74ctL*6tttLLSSSLLLTSSSa.*44",".*73atL*6ttLLLQBQSSSLLLSSSa.*43",".*72cjDL*4JoJLLLttL*4SSLLLSSSaa.*41",".*72aoxLLLttJLLLtxL*5QSTLLTSSSa.*41",".*68aTTaexLLxotL*4oDL*4xLLSSTJTQSSD.*41",".*67bTTJLoxDooL*5toL*5tLLLSTTLTJSSa.*40",".*67iLTDtoojjxJLLLxoSLLSQtL*5STLTTSSSa.*39",".*67bJTooQJJSTJtSSoLS*4DLLLSLLLSTLTTJSa.*39",".*67atLjSLLStxxSJDoLS*4xLLLSLLLSTLTTDSSa.*38",".*68aAAxLxxJQJtjjLLLSQtL*4SLSSSTxTTJLSa.*38",".*63a*5PbdRjxjjjooxjLLLSJxLLLtLLSSSToLTTxSSa.*37",".*61arTTTJwfGSRjjLJJLLLoL*4tLLLTjLLSSLTjLTTtSSa.*37",".*61aTTLJJefzqNoLtDLLLooLLLtLLSTojL*4TTjoSTJJSa.*37",".*61axTbaaaPffNexLxLtjoL*4tLLLtEuLLLTDLnjLTLoSxa.*36",".*58a*5LxkhaaAAaxtjjoDLtLLLtLLLtERELLTLoLujLSQoSSa.*36",".*58askkhhbahbDbbjetLtLLLjLLLtLLoEtooLLLtDLnjLLLotSa.*36",".*39a*6.*13ahhhbahhbJLkhjojtLJtojL*5tERRRELLLuLyEjLLLjoSa.*36",".*38aJLQSSJaa.*12hbaakhbbTakhbxoetxxjjLLLtnEaaaFELLtyLRebLoLbjSa.*36",".*37aL*5SSSba.*7a*5kkhhbbTTahhaxxxjjjEKJLLtaaDbbayLtELaaabLoLaaSa.*36",".*36aLLDttxLLSSSaa.*5aT*4khhbbJTikhhbxLLotbRutLLDEaThaKJtExaabjLDoLaaJa.*36",".*35aLLa*5oJLSSSba.*5aTTThbbbTTTakhhktLLoDbEEtLLLERTffJEEERfkejQjLLaTa.*37",".*35aLac.*4aaxJQSSSaa.*4aDTTbbTTTbbaahbLLttLbRuLoLLtRTGGR*5zTeooxLB.ra.*37",".*35cta.*7atxxLSSSja*4bTTLxTTThkhaooLLjJLxaRLtjLLER*10atjJTa.*40",".*36a.*8abSLQS*6QJtaTLoaTTTJkotLLtjLLojaLLtjLLR*10atoLa.*41",".*44aJL*5QSSQL*4xbjjjbT*4tDLtjLLDjojjLLtnER*9attJSa.*41",".*33a*5.*5aL*5ojjtL*5xtojjttobTjxDojLLLjjojjLLtunER*7atLSba.*42",".*31aaLS*4aaa..aLLLjottoj*4tooottL*4tajxjoLLLojojjbjLxEEEnKRRRKaoxbg.*44",".*29aaS*9QabjLLotttxLLS*5QL*6DDttoL*4tjoojjeJLLtREEa*4joxSa.*45",".*28aSQLS*4LJJL*4tLottL*6SSQL*4DxtttjoL*4xja*5iatLLTLRaj*4tDoSa.*45",".*27aSLLQtaaabxLJxxxtLoSQL*6Doot*4oojjtL*5oaxLxbhhrrbaQTTTtDbjotSba..aaa.*41",".*27JLLoja...aajJJJtttSL*4tj*8bQSL*7oaoLLJhhPaaaPbaJTTtLjjtJSa..aRKRa.*40",".*27JLDoa..caxxxtoxJLSLLLDoxDDDxttaSSL*5JxaaaxrJLahwDTTTxashtDDantDSa...aReRRa.*39",".*26aLJoa..axxxtS*4LSLLLtD*6xoaSLLLoarLxaarsDToakPxTQTQTTbkhFsahkaSa..aR*6c.*38",".*26aLjoa.axttS*4QJSLLJtDxtojjojaSLLrbJL*5bnehbtahaTLLTTQTTbalMNhhaa...aR*6r.*38",".*26aLaoa.atS*6JQLLLttjjjttoooaLLbaL*8hakbxjFaT*9affekha.*4guR*5r.*38",".*26cLa.gatSQLSSLDDLLLtjjt*7bSLajL*6xLLraxjohraLTTLT*6aAabka.*4aaaR*4c.*38",".*27Ja..aSLLQLjjojLLDjot*6bJLLboaxL*5xJJaQxDahbaLLT*5osiaahba.*4aiTTaRRe.*39",".*27ataaL*4tjtttoLLjottoxDDxojottaARL*5orabTJaahbAxxTTTJLhhkaakhbQc.aihhTTaa.*40",".*30aL*4jttoojLLjjotD*4oDxxtahhTFLLLaajaaQJaahhuajQjhiwBahbakhkaaaNPkhhQa.*41",".*30aLLLjooxDxtLLjtxxDxtxDDxxtbThhHAaaao*4raoahhbAaLhhannbhbTahaTTQaFRhiba.*41",".*29aJLLLotxxDxDLLoxxDttDDxttoaaTQhbnao*4ttoooahhbbaLbhbboxaaTTaTTLTTbNNba.*42",".*29aLLLotcaaxxxoLLtttJJDxottaKEaTLbaoooxxt*4oathhbbaJabhxJQTToJT*4JQaHe.*43",".*28aL*4c..aacaajttDtLLJxjtxaRRREaaattDDDt*5ahihhibuaabhxLTTTDQTTTQTJJa.*44",".*28aLLLob..aJabxxxtLLLJxjtxaKR*4EatDDDxt*4oaahihhhbAaxaDJLTTJTLTQTTQLLa.*44",".*28aLLLa.*4aJDDtDLLLDtjxxxaRKKRRRaxDt*5aaithbh*4NaaQtoLLTTJT*5LLLa.*45",".*28aLLLa.*5aatTLLLxjox*4aRRRuERaxtttbaaeFhhhbh*4PaQQTtLLLT*6LLLa.*46",".*29aLLa.*6aQLLLooxxxtotjaKREKaatttaNKiHih*7PaDTQJTaJLLLTTL*4a.*47",".*30rLxa.*4aLLLtoa*5.abxxa*5xxtaaPiNNih*6PaaioJxauaxL*7a.*48",".*31aLJa...rLLtac.*5aoDDx*7a*4NhhwFh*4iPanRbhbaaa.caLLLxaa.*49",".*32aa...aLLDo.*5aD*4xoDxxxaa.cabnPhiiihiPPabaAihNAua...a*4.*51",".*37aLLaa.*6ajbag.a*4..abibaPhiiNiPeahhNnbbuaa.*59",".*37aLLa.*17aahibabeFiwhPaaahhbbnaeauaaa.*56",".*38aLa.*7a*9bhhhibhbaNhhPabhhaaaNbNabsTkka*4.*52",".*38aLJ.*6aTTxkkRTkkhhhiahhhaNNPabihbbbaaakkQTkkaTTTx.*52",".*39aa.*6aLLJakhPh*4bakhhhbaPabhahhahhhkhRNkkxTTjnja*4.*48",".*47caTTthhPPhhbbkhhhahbaahhahhhbhhkRThhjJQnKR*6wa.*46",".*48aDTLahwPibbkh*4bhhhihhbhhkiihNPhkaTTnKR*8b.*46",".*49aLJahhnbbkkhhhbhhhbh*4bhhkabNhhaLTTER*10a.*45",".*48aDTQaabHbakh*4ahhhbh*4ahhhkeAhbJLDuR*11a.*45",".*48aTTTaihHuPih*4bhhhah*4bhhhJPahxTTEER*11a.*45",".*48aTTTLahbiPPPhhah*4bh*4bbhNPPhbJTjEKRRRKKR*6a.*45",".*49aaJDxbbhhhPPPbh*4bh*5bNNhhhjTTnEEREaaaR*4LDJa.*44",".*51aQTaaahhhNNbh*4bhFPPPuihhhjDJQEEEaa..aRRRDLTTa.*44",".*51aTTQDaabhhbNihhbAP*4QbahaJTTouuaa.*4aKDDTTTJoc.*43",".*51aTTTQDjDaibPPPNAeh*5ibabTTTaaa.*6aLTTTJJTTa.*43",".*52atQJxTJJbbhhhFuihhha*4DxQTJa.*8aLTTDLTQTa.*43",".*53aaaTTTJbah*5aaaJJJLTTQtja.*10aDJT*6a.*42",".*52gaEEaTTLTTDa*5DLJTTxQQagg.*11aQTTTQTQTb.*42",".*52eREEEaJTTQDTTQDTTTLaaa.*17aTQT*5r.*42",".*51aRRREEEa*4LTTJJTTTa.*21aTTTLTQTa.*41",".*50aER*4E*4aga*8.*23aQT*5a.*41",".*48aaR*7EEng.*33aLTLTQLc.*40",".*46aeR*9Ea.*36rT*5aa.*39",".*44aaER*10a.*37cQTQTaaRa.*38",".*43aQTR*10a.*39aLaaRRhbc.*37",".*42axTTDR*7ea.*40aaNPFiAHa.*37",".*41aTTJTQR*5ra.*42eANbhPiibc.*36",".*40aTTQJTTDRRRa.*44aabhhbPuHa.*36",".*40aTLTTJTTJDa.*46aahhhPiiTac.*5aaa.*26",".*39aT*6JTTj.*48abhhhNiAiha*4hDsh.*26",".*39aTQT*5oa.*50abhhiPrPRihksxkib.*26",".*38aTLT*5j.*52gbbhhiihhkhkhhbRN.*26",".*38QT*6ag.*53bh*10bNRRa.*26",".*37aTQTQTQa.*55bhhhib*5NNNaa.*27",".*34aaaTQTLTLa.*56bhbbuna*7.*29",".*33caHaQTTTD.*58abuuuea.*35",".*33abNaDTTBc.*58anuuna.*36",".*32aahbParLa.*60aaa.*38",".*31bahhhNNeag.*101",".*30gaihhibbHa.*102",".*28aahahhibNa.*104",".*27ahkh*4bRaa.*104",".*26auh*5bbaa.*105",".*26aubhhhruHa.*106",".*26auuihhbea.*107",".*26cenbhibAg.*107",".*28abhiHa.*108",".*27guihkba.*108",".*27aHihbba.*108",".*27aNbhksha.*107",".*27aNebkkha.*107",".*28awNFwna.*107",".*30a*4.*108",".*142",".*142",".*142"]]};
 })(typeof window !== 'undefined' ? window : globalThis);
 /* Auto-generated TRUE pixel-matrix sprite for beatrice (130x120, 46 colors, ZERO PNG). */
 (function(g){
@@ -1746,6 +1965,7 @@
       id: bank.id, w, h,
       facing: bank.facing || 'right',
       anchors: bank.anchors || { feet: [w / 2, h - 4], cast: [w * 0.9, h * 0.5], hit: [w / 2, h * 0.52], head: [w / 2, h * 0.28] },
+      animMap: bank.animMap || null,
       frames, flashFrames, frostFrames, headCanvas,
       pose: {
         idle1: 0, idle2: 1, blink: 2, windup: 3, cast_step: 4, strike: 5, hurt: 6,
@@ -3184,7 +3404,16 @@
   function pickFrameIndex(actor, isHero) {
     const sp = SPRITES[actor.spriteKey];
     if (!sp) return 0;
-    if (isHero && state.transition.active) return Math.floor(state.time * 9) % 2 === 0 ? sp.pose.cast_step : sp.pose.idle2;
+    if (isHero && state.transition.active) {
+      const bankRun = sp.animMap && Array.isArray(sp.animMap.run)
+        ? sp.animMap.run.filter(idx => Number.isInteger(idx) && idx >= 0 && idx < sp.frames.length && idx !== 3 && idx !== 4 && idx !== 5)
+        : null;
+      if (bankRun && bankRun.length > 0) {
+        return bankRun[Math.floor(state.time * 10) % bankRun.length];
+      }
+      // Athletic forward-lean bobbed idle cycle (frames 0/1 ONLY — NEVER magic cast frames 3/4/5)
+      return Math.floor(state.time * 9) % 2 === 0 ? sp.pose.idle1 : sp.pose.idle2;
+    }
     if (actor.pose === 'hurt') return sp.pose.hurt;
     if (actor.pose === 'magic_windup') return sp.pose.magic_windup;
     if (actor.pose === 'magic_cast') return sp.pose.magic_cast;
@@ -3198,22 +3427,31 @@
   function drawCombatant(actor, isHero) {
     const sp = SPRITES[actor.spriteKey]; if (!sp) return;
     const frameIdx = pickFrameIndex(actor, isHero);
+    if (isHero) state.lastHeroFrameIdx = frameIdx;
     const img = actor.flashTimer > 0 ? sp.flashFrames[frameIdx] : ((!isHero && actor.broken) ? sp.frostFrames[frameIdx] : sp.frames[frameIdx]);
-    const scale = 2, runBob = (isHero && state.transition.active) ? -Math.abs(Math.sin(state.time * 14)) * 9 : 0;
+    const scale = 2;
+    const isRunning = isHero && state.transition.active;
+    const strideSin = isRunning ? Math.abs(Math.sin(state.time * 13.5)) : 0;
+    const runBob = isRunning ? -strideSin * 10.5 : 0;
     const cx = Math.round(actor.x + actor.knockX), cy = Math.round(actor.y + runBob);
 
     ctx.save();
-    ctx.beginPath(); ctx.ellipse(cx, actor.y + 2, 60, 14, 0, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.ellipse(cx, actor.y + 2, isRunning ? 56 - strideSin * 6 : 60, 14, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.42)'; ctx.fill();
     if (isHero && state.runDust.length > 0) {
       state.runDust.forEach(d => {
-        ctx.fillStyle = `rgba(170, 236, 255, ${(d.life / d.maxLife) * 0.75})`;
+        ctx.fillStyle = `rgba(170, 236, 255, ${(d.life / d.maxLife) * 0.78})`;
         ctx.fillRect(Math.round(d.x), Math.round(d.y), Math.round(d.size), Math.round(d.size));
       });
     }
     ctx.translate(cx, cy);
-    if (isHero && state.transition.active) ctx.rotate(0.06);
-    ctx.scale(actor.scaleX, actor.scaleY); ctx.imageSmoothingEnabled = false;
+    if (isRunning) {
+      ctx.rotate(0.11 + Math.sin(state.time * 13.5) * 0.025);
+      ctx.scale(actor.scaleX * (1 + strideSin * 0.035), actor.scaleY * (1 - strideSin * 0.025));
+    } else {
+      ctx.scale(actor.scaleX, actor.scaleY);
+    }
+    ctx.imageSmoothingEnabled = false;
     ctx.drawImage(img, Math.round(-sp.anchors.feet[0] * scale), Math.round(-sp.anchors.feet[1] * scale), sp.w * scale, sp.h * scale);
     ctx.restore();
   }
@@ -3512,7 +3750,10 @@
       avVal.className = 'av-val';
       avVal.textContent = String(ent.av);
 
-      row.appendChild(portrait); row.appendChild(nameEl); row.appendChild(avVal);
+      const inner = document.createElement('div');
+      inner.className = 'av-row-in';
+      inner.appendChild(portrait); inner.appendChild(nameEl); inner.appendChild(avVal);
+      row.appendChild(inner);
       listEl.appendChild(row);
 
       if (!ent.isEnemy && !ent.ghost && state.avFlash.sylviaEvent === 'onemore') {
@@ -3786,7 +4027,21 @@
     openSkills: () => openSkillCascade(),
     closeSkills: () => closeSkillCascade(),
     hoverSkill: (id) => { state.hoveredSkillId = id; updateAllUI(); },
-    getState: () => ({ waveIdx: state.waveIdx, ampPct: state.ampPct, menuMode: state.menuMode, phase: state.phase, beatriceFrames: SPRITES.beatrice ? SPRITES.beatrice.frames.length : 0 })
+    triggerTransition: () => {
+      state.busy = false; state.parry.active = false;
+      document.getElementById('parry-prompt').classList.remove('show');
+      return runWave1ToWave2Transition();
+    },
+    getState: () => ({
+      waveIdx: state.waveIdx,
+      ampPct: state.ampPct,
+      menuMode: state.menuMode,
+      phase: state.phase,
+      transitionActive: state.transition.active,
+      transitionProgress: state.transition.progress,
+      lastHeroFrameIdx: state.lastHeroFrameIdx,
+      beatriceFrames: SPRITES.beatrice ? SPRITES.beatrice.frames.length : 0
+    })
   };
 
   // =========================================================================

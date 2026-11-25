@@ -6,7 +6,7 @@
   'use strict';
 
   const ARENA_SAVE_KEY = 'ojousama_arena_records_v1';
-  const AMP_TIERS = [0, 0.25, 0.50];
+  const AMP_TIERS = [0, 0.20, 0.40, 0.60];
 
   const COMBAT_BALANCE_V22 = {
     DEF_K: 80,
@@ -14,15 +14,18 @@
     SAVE_MATK_SOFT_CAP: { gain: 18, scale: 32 },
     SHIELD_RETAIN_RATE: { default: 0.20, rootIce: 0.45 },
     OVERCAST: {
-      seg1End: 0.25,
+      seg1End: 0.20,
       seg1Slope: 1.60,
-      seg2Slope: 0.50,
-      tier1: { at: 0.25, mult: 1.08, extraLocks: 1, defPierce: 0.12, label: '魔力盈溢' },
-      tier2: { at: 0.50, mult: 1.20, extraLocks: 2, defPierce: 0.25, label: '极寒过载' },
+      seg2End: 0.40,
+      seg2Slope: 0.60,
+      seg3Slope: 0.40,
+      tier1: { at: 0.20, mult: 1.08, extraLocks: 1, defPierce: 0.10, shieldMult: 1.35, label: '魔力盈溢' },
+      tier2: { at: 0.40, mult: 1.18, extraLocks: 2, defPierce: 0.20, shieldMult: 1.45, label: '极寒过载' },
+      tier3: { at: 0.60, mult: 1.30, extraLocks: 3, defPierce: 0.30, shieldMult: 1.45, label: '星霜极限' },
       skillCaps: {
-        HAND_HEAVY: 0.50,
-        REMOTE: 0.25,
-        SHIELD: 0.25,
+        HAND_HEAVY: 0.60,
+        REMOTE: 0.40,
+        SHIELD: 0.40,
         SWORD: 0.00,
         INSIGHT: 0.00,
       },
@@ -486,7 +489,7 @@
       mp: 30,
       power: 1.52,
       atkKind: 'matk',
-      overcastCap: 0.50,
+      overcastCap: 0.60,
       lockDamage: 1,
       exposure: 0,
       clearBlind: true,
@@ -503,7 +506,7 @@
       mp: 38,
       power: 1.76,
       atkKind: 'matk',
-      overcastCap: 0.50,
+      overcastCap: 0.60,
       lockDamage: 1,
       exposure: 66,
       chill: 1,
@@ -519,7 +522,7 @@
       mp: 28,
       power: 0,
       atkKind: 'matk',
-      overcastCap: 0.25,
+      overcastCap: 0.40,
       lockDamage: 0,
       shieldKind: 'solid',
       cooldown: 1,
@@ -527,7 +530,7 @@
       shieldBase: 26,
       shieldScale: 0.55,
       shortDesc: '实体厚冰盾 · 冷却1回合',
-      desc: '童年期习得的基础经手实体厚冰墙（冷却1回合），支持最高+25%魔力增幅加厚护盾，阻尼晦轮穿透。',
+      desc: '童年期习得的基础经手实体厚冰墙（冷却1回合），支持最高+40%魔力增幅加厚护盾，阻尼晦轮穿透。',
     },
     hand_frost_floor: {
       id: 'hand_frost_floor',
@@ -556,7 +559,7 @@
       mp: 34,
       power: 0,
       atkKind: 'matk',
-      overcastCap: 0.25,
+      overcastCap: 0.40,
       lockDamage: 0,
       shieldKind: 'solid',
       cooldown: 1,
@@ -567,7 +570,7 @@
       iceThorns: 1,
       protectCrate: 32,
       shortDesc: '实体生根盾 · 防滑护药箱',
-      desc: '魔力入地生根立起实体钢冰盾（冷却1回合），支持最高+25%魔力增幅加厚护盾并令护箱翻倍。',
+      desc: '魔力入地生根立起实体钢冰盾（冷却1回合），支持最高+40%魔力增幅加厚护盾并令护箱翻倍。',
     },
     hand_water_veil: {
       id: 'hand_water_veil',
@@ -599,7 +602,7 @@
       mp: 62,
       power: 1.56,
       atkKind: 'matk',
-      overcastCap: 0.50,
+      overcastCap: 0.60,
       lockDamage: 1,
       cooldown: 1,
       aoe: true,
@@ -622,7 +625,7 @@
       power: 0.92,
       interruptPower: 1.85,
       atkKind: 'matk',
-      overcastCap: 0.25,
+      overcastCap: 0.40,
       lockDamage: 1,
       exposure: 65,
       shortDesc: '侧翼瞬凝 · 截断双手控场',
@@ -638,7 +641,7 @@
       power: 1.08,
       interruptPower: 2.12,
       atkKind: 'matk',
-      overcastCap: 0.25,
+      overcastCap: 0.40,
       lockDamage: 1,
       pierceHalfShield: true,
       exposure: 68,
@@ -836,7 +839,7 @@
       mp: 36,
       power: 2.25,
       atkKind: 'matk',
-      overcastCap: 0.25,
+      overcastCap: 0.40,
       lockDamage: 2,
       sureHit: true,
       shatterShield: true,
@@ -1852,7 +1855,7 @@
         ampExtraLocks: 0,
         ampShieldMult: 1.0,
         ampTiers: AMP_TIERS.slice(),
-        maxAmpCap: 0.50,
+        maxAmpCap: 0.60,
         palaceLeft: p.palaceCharges != null ? p.palaceCharges : 1,
         palaceMax: p.palaceCharges != null ? p.palaceCharges : 1,
         status: {},
@@ -1959,7 +1962,7 @@
       ampExtraLocks: 0,
       ampShieldMult: 1.0,
       ampTiers: AMP_TIERS.slice(),
-      maxAmpCap: 0.50,
+      maxAmpCap: 0.60,
       palaceLeft: hasPalace ? 1 : 0,
       palaceMax: hasPalace ? 1 : 0,
       status: {},
@@ -2811,9 +2814,11 @@
 
   function getSkillOvercastCap(skill) {
     if (!skill) return 0;
-    if (typeof skill.overcastCap === 'number') return Math.max(0, Math.min(0.5, skill.overcastCap));
-    if (skill.noOvercast || skill.atkKind !== 'matk' || !(skill.power > 0)) return 0;
+    if (typeof skill.overcastCap === 'number') return Math.max(0, Math.min(0.60, skill.overcastCap));
+    if (skill.noOvercast) return 0;
     const caps = COMBAT_BALANCE_V22.OVERCAST.skillCaps;
+    if (skill.shieldBase > 0 && !(skill.power > 0)) return caps.SHIELD;
+    if (skill.atkKind !== 'matk' || !(skill.power > 0)) return 0;
     if (skill.path === 'REMOTE') return caps.REMOTE;
     if (skill.path === 'SWORD') return caps.SWORD;
     if (skill.path === 'INSIGHT') return caps.INSIGHT;
@@ -2837,13 +2842,28 @@
   function getAmpTierInfo(ampPct) {
     const dm = Math.max(0, Number(ampPct) || 0);
     const oc = COMBAT_BALANCE_V22.OVERCAST;
-    if (dm >= oc.tier2.at - 1e-6) {
-      return { tier: 2, mult: oc.tier2.mult, extraLocks: oc.tier2.extraLocks, defPierce: oc.tier2.defPierce, label: oc.tier2.label, name: oc.tier2.label };
+    if (dm >= oc.tier3.at - 0.005) {
+      return { tier: 3, mult: oc.tier3.mult, extraLocks: oc.tier3.extraLocks, defPierce: oc.tier3.defPierce, shieldMult: oc.tier3.shieldMult, label: oc.tier3.label, name: oc.tier3.label };
     }
-    if (dm >= oc.tier1.at - 1e-6) {
-      return { tier: 1, mult: oc.tier1.mult, extraLocks: oc.tier1.extraLocks, defPierce: oc.tier1.defPierce, label: oc.tier1.label, name: oc.tier1.label };
+    if (dm >= oc.tier2.at - 0.005) {
+      return { tier: 2, mult: oc.tier2.mult, extraLocks: oc.tier2.extraLocks, defPierce: oc.tier2.defPierce, shieldMult: oc.tier2.shieldMult, label: oc.tier2.label, name: oc.tier2.label };
     }
-    return { tier: 0, mult: 1.0, extraLocks: 0, defPierce: 0, label: '', name: '常规' };
+    if (dm >= oc.tier1.at - 0.005) {
+      return { tier: 1, mult: oc.tier1.mult, extraLocks: oc.tier1.extraLocks, defPierce: oc.tier1.defPierce, shieldMult: oc.tier1.shieldMult, label: oc.tier1.label, name: oc.tier1.label };
+    }
+    return { tier: 0, mult: 1.0, extraLocks: 0, defPierce: 0, shieldMult: 1.0, label: '', name: '常规' };
+  }
+
+  function computeShieldAmpMult(ampPct) {
+    const oc = COMBAT_BALANCE_V22.OVERCAST;
+    const p = Math.max(0, Math.min(oc.skillCaps.SHIELD, Number(ampPct) || 0));
+    if (p <= 0) return 1.0;
+    if (p <= oc.tier1.at) {
+      return 1.0 + (p / oc.tier1.at) * (oc.tier1.shieldMult - 1.0);
+    }
+    const span = Math.max(0.01, oc.tier2.at - oc.tier1.at);
+    const t = Math.min(1.0, (p - oc.tier1.at) / span);
+    return oc.tier1.shieldMult + t * (oc.tier2.shieldMult - oc.tier1.shieldMult);
   }
 
   function isAmpableSkill(skill) {
@@ -2863,7 +2883,7 @@
       const cap = getSkillOvercastCap(sk);
       if (cap > maxCap) maxCap = cap;
     }
-    return Math.max(0, Math.min(0.50, maxCap));
+    return Math.max(0, Math.min(0.60, maxCap));
   }
 
   function canPlayerAmp(player) {
@@ -2872,19 +2892,18 @@
 
   function getAmpTiers(b) {
     const live = b || activeBattle;
-    const maxCap = live && live.player ? getPlayerMaxAmpCap(live.player) : 0.50;
+    const maxCap = live && live.player ? getPlayerMaxAmpCap(live.player) : 0.60;
     if (maxCap <= 0) return [0];
-    if (maxCap <= 0.25 + 1e-6) return [0, 0.25];
-    return AMP_TIERS.slice();
+    return AMP_TIERS.filter(t => t <= maxCap + 1e-6);
   }
 
   function syncPlayerAmpFromMode(player) {
     if (!player) return 0;
     const maxCap = getPlayerMaxAmpCap(player);
-    const mode = Math.max(0, Math.min(2, player.overcastMode | 0));
+    const mode = Math.max(0, Math.min(3, player.overcastMode | 0));
     if (player._lastOvercastMode !== mode) {
       player._lastOvercastMode = mode;
-      const mapped = mode === 2 ? 0.50 : mode === 1 ? 0.25 : 0;
+      const mapped = AMP_TIERS[mode] != null ? AMP_TIERS[mode] : 0;
       player.ampPct = Math.min(maxCap, mapped);
     }
     const raw = Number(player.ampPct != null ? player.ampPct : player.overcastPct) || 0;
@@ -2957,12 +2976,13 @@
 
     const oc = COMBAT_BALANCE_V22.OVERCAST;
     const seg1 = Math.min(actualAmpPct, oc.seg1End);
-    const seg2 = Math.max(0, actualAmpPct - oc.seg1End);
+    const seg2 = Math.max(0, Math.min(actualAmpPct, oc.seg2End) - oc.seg1End);
+    const seg3 = Math.max(0, actualAmpPct - oc.seg2End);
     const tierInfo = getAmpTierInfo(actualAmpPct);
     const tier2BaseBonus = tierInfo.tier >= 2 ? Math.min(0.10, (((skill && skill.mp) || 0) / mmp) * 0.65) : 0;
-    const segMult = 1.0 + seg1 * oc.seg1Slope + seg2 * oc.seg2Slope + tier2BaseBonus;
+    const segMult = 1.0 + seg1 * oc.seg1Slope + seg2 * oc.seg2Slope + seg3 * oc.seg3Slope + tier2BaseBonus;
     const mult = segMult * tierInfo.mult;
-    const shieldMult = skill.shieldBase > 0 ? (1.0 + Math.min(1.0, actualAmpPct / 0.25) * 0.45) : 1.0;
+    const shieldMult = skill.shieldBase > 0 ? computeShieldAmpMult(actualAmpPct) : 1.0;
 
     return {
       ampPct: actualAmpPct,
@@ -2995,7 +3015,7 @@
     return base + wandExtra + prof.discountedExtraMp;
   }
 
-  // V2.2 双段质变魔力增幅倍率（纯物理技恒定 1.0x）
+  // V2.2 三段质变魔力增幅倍率（纯物理技恒定 1.0x）
   function computeManaCycleMultiplier(player, mpSpent, skill) {
     if (!canPlayerAmp(player) || !isAmpableSkill(skill) || mpSpent <= 0) {
       return 1.0;
@@ -3047,7 +3067,7 @@
   function computeDerivedAmpState(player) {
     const maxAmpCap = getPlayerMaxAmpCap(player);
     const canAmp = !!(player && (player.mmp || 0) > 0 && maxAmpCap > 0);
-    const ampTiers = maxAmpCap <= 0 ? [0] : (maxAmpCap <= 0.25 + 1e-6 ? [0, 0.25] : AMP_TIERS.slice());
+    const ampTiers = maxAmpCap <= 0 ? [0] : AMP_TIERS.filter(t => t <= maxAmpCap + 1e-6);
     const overcastPct = canAmp ? Math.min(maxAmpCap, syncPlayerAmpFromMode(player)) : 0;
     const tierInfo = getAmpTierInfo(overcastPct);
     const ampTier = tierInfo.tier;
@@ -3057,7 +3077,7 @@
     const refProf = computeAmpProfile(player, refSk, { clampToMp: false });
     const shieldCap = COMBAT_BALANCE_V22.OVERCAST.skillCaps.SHIELD;
     const shieldPct = Math.min(overcastPct, shieldCap);
-    const ampShieldMult = Number((1.0 + Math.min(1.0, shieldPct / 0.25) * 0.45).toFixed(4));
+    const ampShieldMult = Number(computeShieldAmpMult(shieldPct).toFixed(4));
     const ampMult = Number(((refSk && refSk.shieldBase > 0 && !(refSk.power > 0)) ? refProf.shieldMult : refProf.mult).toFixed(4));
     const tierMultAt = pct => {
       const mmp = Math.max(1, (player && player.mmp) || 100);
@@ -3065,16 +3085,17 @@
       const clamped = Math.min(maxAmpCap, Math.max(0, pct));
       const ti = getAmpTierInfo(clamped);
       const seg1 = Math.min(clamped, oc.seg1End);
-      const seg2 = Math.max(0, clamped - oc.seg1End);
+      const seg2 = Math.max(0, Math.min(clamped, oc.seg2End) - oc.seg1End);
+      const seg3 = Math.max(0, clamped - oc.seg2End);
       const t2Bonus = ti.tier >= 2 ? Math.min(0.10, (((refSk && refSk.mp) || 0) / mmp) * 0.65) : 0;
-      const dmgMult = (1.0 + seg1 * oc.seg1Slope + seg2 * oc.seg2Slope + t2Bonus) * ti.mult;
+      const dmgMult = (1.0 + seg1 * oc.seg1Slope + seg2 * oc.seg2Slope + seg3 * oc.seg3Slope + t2Bonus) * ti.mult;
       if (refSk && refSk.shieldBase > 0 && !(refSk.power > 0)) {
         const sPct = Math.min(clamped, shieldCap);
-        return Number((1.0 + Math.min(1.0, sPct / 0.25) * 0.45).toFixed(4));
+        return Number(computeShieldAmpMult(sPct).toFixed(4));
       }
       return Number(dmgMult.toFixed(4));
     };
-    const ampTierMults = [1.0, tierMultAt(0.25), tierMultAt(0.50)];
+    const ampTierMults = [1.0, tierMultAt(0.20), tierMultAt(0.40), tierMultAt(0.60)];
     return {
       overcastPct,
       ampPct: overcastPct,
@@ -4401,7 +4422,8 @@
     val = Math.round(val * 100) / 100;
     val = Math.max(0, Math.min(maxCap, val));
     const prevAmp = Number(b.player.ampPct) || 0;
-    const nextMode = val >= 0.50 - 1e-6 ? 2 : val >= 0.25 - 1e-6 ? 1 : 0;
+    const tierInfo = getAmpTierInfo(val);
+    const nextMode = tierInfo.tier;
     const changed = Math.abs(prevAmp - val) > 1e-4 || b.player.overcastMode !== nextMode;
     b.player.ampPct = val;
     b.player.overcastPct = val;
@@ -4422,8 +4444,9 @@
         } catch (e) {}
       }
       renderCombatUI();
+    } else if (changed) {
+      emitCombatStateChange(b);
     }
-    const tierInfo = getAmpTierInfo(val);
     return {
       ok: true,
       overcastPct: val,
@@ -4438,8 +4461,8 @@
   function setOvercast(mode, b) {
     b = b || activeBattle;
     if (!b || b.over || !canPlayerAmp(b.player)) return false;
-    const nextMode = Math.max(0, Math.min(2, mode | 0));
-    const nextAmp = nextMode === 2 ? 0.50 : nextMode === 1 ? 0.25 : 0;
+    const nextMode = Math.max(0, Math.min(3, mode | 0));
+    const nextAmp = AMP_TIERS[nextMode] != null ? AMP_TIERS[nextMode] : 0;
     const res = setOvercastPct(nextAmp, b);
     return !!(res && res.ok);
   }
@@ -4964,7 +4987,7 @@
         p.status.blind -= 1;
         if (p.status.blind <= 0) delete p.status.blind;
         pushLog(b, logTag('cbl-star', `🌫️ 视线受扬尘遮蔽，你的「${sk.name}」偏斜落空！（提示：用覆潮水弹/折射水幕洗净视线，或用范围技覆盖）`));
-        if (p.overcastMode === 2 && isAmpableSkill(sk) && getSkillOvercastCap(sk) >= 0.50 - 1e-6) {
+        if (p.overcastMode >= 3 && isAmpableSkill(sk) && getSkillOvercastCap(sk) >= 0.60 - 1e-6) {
           p.overcastMode = 0;
           p._lastOvercastMode = 0;
           p.ampPct = 0;
@@ -5079,6 +5102,10 @@
           const blk = Math.min(Math.max(0, p.shield), counterDmg);
           p.shield = Math.max(0, p.shield - blk);
           p.hp = Math.max(0, p.hp - (counterDmg - blk));
+          if (e.aiType === 'noelle') {
+            e.shield = (e.shield || 0) + 45;
+            p.mp = Math.max(0, p.mp - 45);
+          }
           triggerShake(b, false);
           if (!b.headless && !playedBladeClash) { safeSfx('blade_clash'); playedBladeClash = true; }
           pushLog(b, logTag('cbl-danger', `⚡ ${e.name} 早料到你会隔空偷袭，防反护幕掐灭冰锥并反震造成 ${counterDmg} 伤害！`));
@@ -5559,7 +5586,7 @@
       if (mpGain > 0) spawnCombatFloat(b, 'player', `+${mpGain} MP`, 'mp');
       pushLog(b, logTag('cbl-ice', `⚡【魔战循环】等量伤害回流 +${totalManaReturned} MP（当前 ${p.mp}/${p.mmp}）！`));
     }
-    if (p.overcastMode === 2 && isAmpableSkill(sk) && getSkillOvercastCap(sk) >= 0.50 - 1e-6) {
+    if (p.overcastMode >= 3 && isAmpableSkill(sk) && getSkillOvercastCap(sk) >= 0.60 - 1e-6) {
       p.overcastMode = 0;
       p._lastOvercastMode = 0;
       p.ampPct = 0;
@@ -6419,13 +6446,14 @@
                 <span><span id="cb-oc-title">魔力增幅</span> <span class="cb-kbd">W</span></span>
                 <span class="cb-oc-mult" id="cb-oc-mult">1.00x</span>
               </div>
-              <div class="cb-oc-seg" id="cb-oc-seg" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:0;">
+              <div class="cb-oc-seg" id="cb-oc-seg" style="grid-template-columns:repeat(4,minmax(0,1fr));gap:0;">
                 <button type="button" class="cb-oc-btn" data-oc="0" data-amp="0">常规 0%</button>
-                <button type="button" class="cb-oc-btn" data-oc="1" data-amp="0.25">★魔力盈溢 25%</button>
-                <button type="button" class="cb-oc-btn all-in" data-oc="2" data-amp="0.50">★★极寒过载 50%</button>
+                <button type="button" class="cb-oc-btn" data-oc="1" data-amp="0.20">★20% 盈溢</button>
+                <button type="button" class="cb-oc-btn" data-oc="2" data-amp="0.40">★★40% 过载</button>
+                <button type="button" class="cb-oc-btn all-in" data-oc="3" data-amp="0.60">★★★60% 星霜极限</button>
               </div>
               <div class="cb-oc-slider-row" id="cb-oc-slider-row" style="display:flex;align-items:center;gap:8px;margin-top:5px;padding:0;">
-                <input type="range" class="cb-oc-slider" id="cb-oc-slider" min="0" max="50" step="1" value="0" aria-label="魔力增幅百分比微调" style="flex:1;min-width:0;height:4px;margin:0;accent-color:#1658eb;cursor:pointer;" />
+                <input type="range" class="cb-oc-slider" id="cb-oc-slider" min="0" max="60" step="1" value="0" aria-label="魔力增幅百分比微调" style="flex:1;min-width:0;height:4px;margin:0;accent-color:#1658eb;cursor:pointer;" />
                 <span class="cb-oc-pct" id="cb-oc-pct" style="font-size:11px;font-weight:700;color:#1658eb;font-variant-numeric:tabular-nums;min-width:38px;text-align:right;white-space:nowrap;">0%</span>
               </div>
             </div>
@@ -6873,13 +6901,13 @@
     const ocPctEl = document.getElementById('cb-oc-pct');
     const pctInt = Math.round(curAmpPct * 100);
     if (ocSliderEl) {
-      ocSliderEl.max = String(Math.max(25, Math.round(maxAmpCap * 100)));
+      ocSliderEl.max = String(Math.max(20, Math.round(maxAmpCap * 100)));
       ocSliderEl.value = String(pctInt);
       ocSliderEl.disabled = !ampAllowed || b.over;
     }
     if (ocPctEl) {
       const tInfo = getAmpTierInfo(curAmpPct);
-      const starPrefix = tInfo.tier >= 2 ? '★★' : tInfo.tier >= 1 ? '★' : '';
+      const starPrefix = tInfo.tier >= 3 ? '★★★' : tInfo.tier >= 2 ? '★★' : tInfo.tier >= 1 ? '★' : '';
       ocPctEl.textContent = `${starPrefix}${pctInt}%`;
     }
 

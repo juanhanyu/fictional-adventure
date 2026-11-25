@@ -883,15 +883,17 @@
   let _lastLayoutSig = '';
   const _actorPointsCache = new Map(); // actorKey -> base canvas points (invalidated on resize / wave change)
 
-  // 3D 前后环绕魔力增幅水晶光环状态（零每帧分配，30fps 轻量绘制）
-  const AURA_BUF_W = 96;
-  const AURA_BUF_H = 96;
+  // 3D 前后环绕魔力增幅水晶光环状态（240×208 充裕画幅防裁切，30fps 轻量绘制）
+  const AURA_BUF_W = 240;
+  const AURA_BUF_H = 208;
   const AURA_INTERVAL_MS = 33;
   let _auraElapsed = 0;
   let _lastAuraDrawTs = 0;
   let _auraLastTier = 0;
   let _auraLastIntensity = 0;
   let _auraDirty = false;
+  let _auraBurstTs = 0;
+  let _auraBurstTier = 0;
 
   const _flashStamps = [];
   const MAX_FLASHES_PER_SEC = 2;
@@ -1485,7 +1487,7 @@
     }
   }
 
-  /* -------------------- 3D 前后环绕魔力增幅冰晶光环（Canvas 双层真前后景深 · V2.2 连续 0..50% + 25%/50% 质变阈值） -------------------- */
+  /* -------------------- 3D 前后环绕魔力增幅冰晶光环（Canvas 双层真前后景深 · 20%/40%/60% 三档与香槟金三阶全特效） -------------------- */
   function getManaAmpState(battleState) {
     const b = battleState
       || _lastBattleRef
@@ -1503,11 +1505,13 @@
         : (b.ampPct != null ? b.ampPct : (p.overcastPct != null ? p.overcastPct : p.ampPct));
 
       if (typeof ampRaw === 'number' && Number.isFinite(ampRaw) && ampRaw > 0) {
-        ampDec = clamp(ampRaw > 1 ? (ampRaw / 100) : ampRaw, 0, 0.50);
+        ampDec = clamp(ampRaw > 1 ? (ampRaw / 100) : ampRaw, 0, 0.60);
+      } else if (rawMode === 3 || rawMode === 'tier3' || rawMode === 'max' || rawMode === 'overdrive') {
+        ampDec = 0.60;
       } else if (rawMode === 2 || rawMode === 'full' || rawMode === 'all_in') {
-        ampDec = 0.50;
+        ampDec = 0.40;
       } else if (rawMode === 1 || rawMode === 'half') {
-        ampDec = 0.25;
+        ampDec = 0.20;
       }
     }
 
@@ -1516,7 +1520,7 @@
       const sliderEl = document.getElementById('cb-oc-slider');
       if (sliderEl && !sliderEl.disabled) {
         const sVal = Number(sliderEl.value) || 0;
-        if (sVal > 0) ampDec = clamp(sVal / 100, 0, 0.50);
+        if (sVal > 0) ampDec = clamp(sVal / 100, 0, 0.60);
       }
       if (ampDec <= 0.001) {
         const activeBtn = document.querySelector('#cb-oc-seg .cb-oc-btn.active');
@@ -1524,27 +1528,21 @@
           const ampAttr = Number(activeBtn.getAttribute('data-amp'));
           const ocVal = Number(activeBtn.getAttribute('data-oc')) || 0;
           if (Number.isFinite(ampAttr) && ampAttr > 0) {
-            ampDec = clamp(ampAttr > 1 ? ampAttr / 100 : ampAttr, 0, 0.50);
+            ampDec = clamp(ampAttr > 1 ? ampAttr / 100 : ampAttr, 0, 0.60);
+          } else if (ocVal === 3) {
+            ampDec = 0.60;
           } else if (ocVal === 2) {
-            ampDec = 0.50;
+            ampDec = 0.40;
           } else if (ocVal === 1) {
-            ampDec = 0.25;
+            ampDec = 0.20;
           }
         }
       }
     }
 
     if (ampDec > 0.001) {
-      if (ampDec >= 0.50 - 1e-6) {
-        tier = 2;
-        intensity = 1.0;
-      } else if (ampDec >= 0.25 - 1e-6) {
-        tier = 1;
-        intensity = clamp(0.58 + ((ampDec - 0.25) / 0.25) * 0.30, 0.58, 0.88);
-      } else {
-        tier = 0;
-        intensity = clamp(0.20 + (ampDec / 0.25) * 0.32, 0.20, 0.52);
-      }
+      tier = ampDec >= 0.55 ? 3 : ampDec >= 0.35 ? 2 : 1;
+      intensity = clamp(ampDec / 0.60, 0, 1);
     }
 
     return { active: ampDec > 0.001, ampPct: ampDec, tier, intensity };
@@ -1566,6 +1564,9 @@
       } else {
         st.el.appendChild(backEl);
       }
+    } else if (backEl.width !== AURA_BUF_W || backEl.height !== AURA_BUF_H) {
+      backEl.width = AURA_BUF_W;
+      backEl.height = AURA_BUF_H;
     }
     if (!frontEl) {
       frontEl = document.createElement('canvas');
@@ -1574,7 +1575,16 @@
       frontEl.height = AURA_BUF_H;
       frontEl.setAttribute('aria-hidden', 'true');
       st.el.appendChild(frontEl);
+    } else if (frontEl.width !== AURA_BUF_W || frontEl.height !== AURA_BUF_H) {
+      frontEl.width = AURA_BUF_W;
+      frontEl.height = AURA_BUF_H;
     }
+
+    // 扩展双层光环容器边距，确保 60% 三阶外环、脚底金环、扩散波纹与双侧电弧永不裁切
+    if (backEl.style.width !== '168%') backEl.style.width = '168%';
+    if (backEl.style.height !== '146%') backEl.style.height = '146%';
+    if (frontEl.style.width !== '168%') frontEl.style.width = '168%';
+    if (frontEl.style.height !== '146%') frontEl.style.height = '146%';
 
     if (st.auraBackEl !== backEl) {
       st.auraBackEl = backEl;
@@ -1589,41 +1599,228 @@
     return !!(st.auraBackCtx && st.auraFrontCtx);
   }
 
-  function drawPixelCrystal(ctx, x, y, size, isFront, tier, twinkle) {
-    const px = Math.round(x);
-    const py = Math.round(y);
-    const r = Math.max(1, Math.round(size));
-    // 外缘深海蓝宝石阴影 + 冰青折射主面 + 纯白晶心高光（严格像素网格无虚边）
-    const rimColor = isFront
-      ? (tier >= 2 ? '#143B96' : '#1C4CB8')
-      : '#16357A';
-    const bodyColor = isFront
-      ? (tier >= 2 ? '#86DCFA' : '#6BC5F8')
-      : '#3898F0';
-    const coreColor = isFront ? '#FFFFFF' : '#B8E8FF';
+  function getManaAmpOrbits(tier, t, cx, feetY) {
+    const orbits = [];
+    if (tier <= 0) return orbits;
 
-    ctx.globalAlpha = isFront ? (0.86 + twinkle * 0.14) : (0.52 + twinkle * 0.12);
-    // 竖菱晶外框
-    ctx.fillStyle = rimColor;
-    ctx.fillRect(px, py - r - 1, 1, 1);
-    ctx.fillRect(px, py + r + 1, 1, 1);
-    ctx.fillRect(px - r, py, 1, 1);
-    ctx.fillRect(px + r, py, 1, 1);
+    // Tier 1+: 霜青第一轨道环
+    orbits.push({
+      cx,
+      cy: feetY - 62,
+      rx: tier === 1 ? 64 : tier === 2 ? 68 : 72,
+      ry: 16,
+      tilt: 0.28,
+      speed: tier === 3 ? 2.55 : tier === 2 ? 1.95 : 1.55,
+      phase: t * (tier === 3 ? 2.55 : tier === 2 ? 1.95 : 1.55),
+      count: tier === 3 ? 14 : tier === 2 ? 12 : 10,
+      trailSteps: tier === 1 ? 4 : 6,
+      trailArc: tier === 3 ? 0.42 : 0.32,
+      ribbonColorFront: 'rgba(126, 232, 255, 0.52)',
+      ribbonColorBack: 'rgba(34, 108, 214, 0.24)',
+      ribbonWidth: tier === 3 ? 1.9 : 1.5,
+      paletteFront: ['#FFFFFF', '#B8F6FF', '#6BC5F8', '#3B9EFF'],
+      paletteBack: ['#4A88D8', '#2C63B8', '#5AA8E6'],
+      starEvery: 3,
+    });
 
-    // 冰晶主面
-    ctx.fillStyle = bodyColor;
-    ctx.fillRect(px, py - r, 1, r * 2 + 1);
-    if (r >= 2) {
-      ctx.fillRect(px - 1, py - (r - 1), 3, (r - 1) * 2 + 1);
+    // Tier 2+: 皇家蓝反向倾斜第二轨道环
+    if (tier >= 2) {
+      orbits.push({
+        cx,
+        cy: feetY - 69,
+        rx: tier === 3 ? 78 : 74,
+        ry: 19,
+        tilt: -0.32,
+        speed: tier === 3 ? -2.30 : -1.78,
+        phase: -t * (tier === 3 ? 2.30 : 1.78) + 1.15,
+        count: tier === 3 ? 12 : 10,
+        trailSteps: 6,
+        trailArc: tier === 3 ? 0.40 : 0.30,
+        ribbonColorFront: 'rgba(56, 134, 255, 0.56)',
+        ribbonColorBack: 'rgba(22, 74, 178, 0.22)',
+        ribbonWidth: tier === 3 ? 1.85 : 1.45,
+        paletteFront: ['#E8FBFF', '#6BC5F8', '#2E7BFF', '#1658EB'],
+        paletteBack: ['#2955B8', '#1D4299', '#3F86E0'],
+        starEvery: 3,
+      });
     }
 
-    // 中心高光十字
-    ctx.fillStyle = coreColor;
-    ctx.fillRect(px, py, 1, 1);
-    if (isFront && r >= 2 && twinkle > 0.45) {
-      ctx.fillRect(px, py - 1, 1, 3);
-      ctx.fillRect(px - 1, py, 3, 1);
+    // Tier 3 (60%): 香槟金第三轨道环
+    if (tier >= 3) {
+      orbits.push({
+        cx,
+        cy: feetY - 78,
+        rx: 86,
+        ry: 24,
+        tilt: 0.18,
+        speed: 3.05,
+        phase: t * 3.05 + 2.3,
+        count: 12,
+        trailSteps: 7,
+        trailArc: 0.46,
+        ribbonColorFront: 'rgba(255, 224, 146, 0.56)',
+        ribbonColorBack: 'rgba(196, 164, 108, 0.26)',
+        ribbonWidth: 2.0,
+        paletteFront: ['#FFFFFF', '#FFE8A3', '#E5C06E', '#9DF5FF'],
+        paletteBack: ['#B69352', '#7E9FD4', '#D2B475'],
+        starEvery: 2,
+      });
     }
+
+    return orbits;
+  }
+
+  function evalAuraOrbitPoint(orb, angle) {
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    const lx = orb.rx * c;
+    return { x: orb.cx + lx, y: orb.cy + orb.ry * s - lx * orb.tilt, z: s };
+  }
+
+  function drawAuraCrystalMote(ctx, px, py, size, color, isStar, alpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(Math.round(px), Math.round(py));
+    ctx.fillStyle = color;
+    if (isStar) {
+      const r = size * 1.45;
+      const w = Math.max(1.0, size * 0.34);
+      ctx.beginPath();
+      ctx.moveTo(0, -r);
+      ctx.lineTo(w, -w);
+      ctx.lineTo(r, 0);
+      ctx.lineTo(w, w);
+      ctx.lineTo(0, r);
+      ctx.lineTo(-w, w);
+      ctx.lineTo(-r, 0);
+      ctx.lineTo(-w, -w);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(-0.75, -0.75, 1.5, 1.5);
+    } else {
+      const r = size;
+      ctx.beginPath();
+      ctx.moveTo(0, -r);
+      ctx.lineTo(r * 0.85, 0);
+      ctx.lineTo(0, r);
+      ctx.lineTo(-r * 0.85, 0);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawAuraOrbitPass(ctx, orbits, tier, intensity, t, cx, feetY, faceY, isFrontPass) {
+    const faceSafeAlpha = (px, py) => (
+      !isFrontPass ? 1.0 : (Math.abs(px - cx) < 19 && Math.abs(py - faceY) < 19 ? 0.18 : 1.0)
+    );
+    const ribbonAlphaMul = tier >= 2 ? 0.92 : (0.58 + intensity * 0.28);
+
+    ctx.save();
+    for (let oIdx = 0; oIdx < orbits.length; oIdx++) {
+      const orb = orbits[oIdx];
+      const segs = 40;
+      ctx.save();
+      ctx.lineCap = 'round';
+      for (let i = 0; i < segs; i++) {
+        const p0 = evalAuraOrbitPoint(orb, (i / segs) * Math.PI * 2);
+        const p1 = evalAuraOrbitPoint(orb, ((i + 1) / segs) * Math.PI * 2);
+        const midZ = (p0.z + p1.z) * 0.5;
+        if (isFrontPass ? midZ < 0 : midZ >= 0) continue;
+        const depthFactor = isFrontPass ? (0.45 + 0.55 * midZ) : (0.28 + 0.32 * (1 + midZ));
+        const safe = faceSafeAlpha((p0.x + p1.x) * 0.5, (p0.y + p1.y) * 0.5);
+        ctx.strokeStyle = isFrontPass ? orb.ribbonColorFront : orb.ribbonColorBack;
+        ctx.globalAlpha = depthFactor * safe * ribbonAlphaMul;
+        ctx.lineWidth = isFrontPass ? orb.ribbonWidth * (0.75 + 0.45 * midZ) : orb.ribbonWidth * 0.65;
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(p1.x, p1.y);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      const items = [];
+      const dirSign = orb.speed >= 0 ? 1 : -1;
+      for (let k = 0; k < orb.count; k++) {
+        const angle = orb.phase + (k / orb.count) * Math.PI * 2;
+        const pt = evalAuraOrbitPoint(orb, angle);
+        if (isFrontPass ? pt.z < 0 : pt.z >= 0) continue;
+        items.push({ k, angle, pt, dirSign });
+      }
+      items.sort((a, b) => a.pt.z - b.pt.z);
+
+      for (let j = 0; j < items.length; j++) {
+        const { k, angle, pt } = items[j];
+        const depthNorm = (pt.z + 1) * 0.5;
+        const safe = faceSafeAlpha(pt.x, pt.y);
+        const baseColor = isFrontPass
+          ? orb.paletteFront[k % orb.paletteFront.length]
+          : orb.paletteBack[k % orb.paletteBack.length];
+        const trailLen = isFrontPass ? orb.trailSteps : Math.max(2, Math.floor(orb.trailSteps * 0.45));
+        let prev = pt;
+        for (let stIdx = 1; stIdx <= trailLen; stIdx++) {
+          const frac = stIdx / trailLen;
+          const tp = evalAuraOrbitPoint(orb, angle - dirSign * frac * orb.trailArc);
+          if (isFrontPass ? tp.z < -0.05 : tp.z > 0.05) break;
+          ctx.save();
+          ctx.strokeStyle = baseColor;
+          ctx.globalAlpha = (1 - frac) * (isFrontPass ? (0.48 + 0.36 * pt.z) : 0.24) * safe;
+          ctx.lineWidth = Math.max(0.8, (isFrontPass ? 2.5 : 1.2) * (1 - frac * 0.72));
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(prev.x, prev.y);
+          ctx.lineTo(tp.x, tp.y);
+          ctx.stroke();
+          ctx.restore();
+          prev = tp;
+        }
+        const isStar = (k % orb.starEvery === 0);
+        const size = (isStar ? 3.4 : 2.4) * (0.58 + depthNorm * 0.68);
+        const alpha = (isFrontPass ? (0.82 + 0.18 * pt.z) : (0.36 + 0.34 * depthNorm)) * safe;
+        if (isFrontPass && (isStar || tier >= 2)) {
+          ctx.save();
+          ctx.globalAlpha = (isStar ? 0.34 : 0.20) * safe;
+          const haloR = size * 3.0;
+          const halo = ctx.createRadialGradient(pt.x, pt.y, 0.4, pt.x, pt.y, haloR);
+          halo.addColorStop(0, baseColor);
+          halo.addColorStop(1, 'rgba(107, 197, 248, 0)');
+          ctx.fillStyle = halo;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, haloR, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+        drawAuraCrystalMote(ctx, pt.x, pt.y, size, baseColor, isStar, alpha);
+      }
+
+      // 上升霜晶与香槟金星尘（Tier 2 起 10 粒，Tier 3 增至 18 粒并混入 #FFE59A 香槟金星尘）
+      if (tier >= 2 && oIdx === 0) {
+        const dustCount = tier >= 3 ? 18 : 10;
+        for (let i = 0; i < dustCount; i++) {
+          const dustAngle = t * 1.15 + i * 2.13;
+          const dustZ = Math.sin(dustAngle);
+          if (isFrontPass ? dustZ < 0 : dustZ >= 0) continue;
+          const prog = (t * 0.38 + i / dustCount) % 1;
+          const rad = 38 + (i % 4) * 11 + Math.sin(t * 2 + i) * 4;
+          const mx = cx + Math.cos(dustAngle) * rad;
+          const my = feetY - 8 - prog * 136;
+          const safe = faceSafeAlpha(mx, my);
+          const fade = Math.sin(prog * Math.PI);
+          const dCol = (tier >= 3 && i % 3 === 0) ? '#FFE59A' : (isFrontPass ? '#D8FAFF' : '#66A8E8');
+          drawAuraCrystalMote(
+            ctx,
+            mx,
+            my,
+            (isFrontPass ? 2.1 : 1.5) * (0.7 + 0.3 * fade),
+            dCol,
+            i % 4 === 0,
+            fade * (isFrontPass ? 0.85 : 0.45) * safe
+          );
+        }
+      }
+    }
+    ctx.restore();
   }
 
   function renderManaAmpAura(st, now, simDt, reduced) {
@@ -1644,8 +1841,10 @@
     }
 
     if (!ensurePlayerAuraCanvases(st)) return;
-    const tierTag = amp.tier >= 2 ? 'full' : (amp.tier >= 1 ? 'half' : 'charge');
+    const tierTag = amp.tier >= 3 ? 'tier3' : (amp.tier >= 2 ? 'full' : (amp.tier >= 1 ? 'half' : 'charge'));
     const intensityChanged = Math.abs(_auraLastIntensity - amp.intensity) > 0.03;
+    const burstAgeMs = _auraBurstTs > 0 ? (now - _auraBurstTs) : 9999;
+    const hasActiveBurst = !reduced && burstAgeMs >= 0 && burstAgeMs < 420;
     if (st.el.getAttribute('data-mana-amp') !== tierTag || intensityChanged) {
       st.el.setAttribute('data-mana-amp', tierTag);
       _lastAuraDrawTs = 0; // 切换档位或滑条显著变化时立即重绘
@@ -1653,7 +1852,13 @@
 
     // 降动效模式下仅绘制一次静态 3D 水晶阵列，零连续重绘
     if (reduced && _auraDirty && _auraLastTier === amp.tier && !intensityChanged) return;
-    if (_lastAuraDrawTs > 0 && (now - _lastAuraDrawTs) < AURA_INTERVAL_MS && _auraLastTier === amp.tier && !intensityChanged) {
+    if (
+      !hasActiveBurst &&
+      _lastAuraDrawTs > 0 &&
+      (now - _lastAuraDrawTs) < AURA_INTERVAL_MS &&
+      _auraLastTier === amp.tier &&
+      !intensityChanged
+    ) {
       return;
     }
 
@@ -1662,7 +1867,7 @@
     _auraLastIntensity = amp.intensity;
     _auraDirty = true;
     if (!reduced) {
-      _auraElapsed += simDt * (amp.tier >= 2 ? 2.65 : (1.15 + amp.intensity * 1.10));
+      _auraElapsed += clamp(simDt || 0.016, 0.004, 0.06);
     }
 
     const bCtx = st.auraBackCtx;
@@ -1670,80 +1875,142 @@
     bCtx.clearRect(0, 0, AURA_BUF_W, AURA_BUF_H);
     fCtx.clearRect(0, 0, AURA_BUF_W, AURA_BUF_H);
 
+    const t = _auraElapsed;
     const cx = AURA_BUF_W * 0.5;
-    const cy = AURA_BUF_H * 0.56;
-    const rings = amp.tier >= 2 ? 2 : 1;
-    const baseRingCount = amp.tier >= 2
-      ? 6
-      : (amp.intensity >= 0.72 ? 6 : amp.intensity >= 0.56 ? 5 : amp.intensity >= 0.36 ? 4 : 3);
+    const feetY = AURA_BUF_H * 0.80;
+    const torsoY = feetY - 70;
+    const faceY = feetY - 98;
+    const tier = amp.tier;
+    const intensity = Math.max(amp.intensity, 0.25);
 
-    for (let ringIdx = 0; ringIdx < rings; ringIdx++) {
-      const count = ringIdx === 0 ? baseRingCount : 4;
-      const rx = ringIdx === 0 ? 33 : 27;
-      const ry = ringIdx === 0 ? 11 : 13;
-      const tilt = ringIdx === 0 ? -0.22 : 0.34;
-      const cosT = Math.cos(tilt);
-      const sinT = Math.sin(tilt);
-      const dir = ringIdx === 0 ? 1 : -1.28;
-      const yOff = ringIdx === 0 ? 2 : -9;
+    // 1) 脚底魔阵基底与三层旋转虚线环（Tier 3 新增第 3 圈香槟金外环与 6 枚金晶节点）
+    bCtx.save();
+    bCtx.beginPath();
+    bCtx.ellipse(cx, feetY, 54, 15, 0, 0, Math.PI * 2);
+    bCtx.fillStyle = 'rgba(40, 120, 190, 0.16)';
+    bCtx.fill();
+    bCtx.strokeStyle = 'rgba(116, 232, 255, 0.72)';
+    bCtx.lineWidth = tier >= 2 ? 1.8 : 1.2;
+    bCtx.stroke();
 
-      // 淡雅像素轨道点弧（区分前后层景深，透明度随连续 intensity 平滑增强）
-      const arcSteps = 20;
-      for (let s = 0; s < arcSteps; s++) {
-        const a = (s / arcSteps) * Math.PI * 2 + _auraElapsed * 0.35 * dir;
-        const ux = Math.cos(a) * rx;
-        const uz = Math.sin(a);
-        const uy = uz * ry;
-        const px = Math.round(cx + ux * cosT - uy * sinT);
-        const py = Math.round(cy + yOff + ux * sinT + uy * cosT);
-        const isFront = uz >= 0;
-        const ctx = isFront ? fCtx : bCtx;
-        ctx.globalAlpha = isFront ? (0.14 + amp.intensity * 0.20) : (0.09 + amp.intensity * 0.08);
-        ctx.fillStyle = isFront ? '#6BC5F8' : '#1C4CB8';
-        ctx.fillRect(px, py, 1, 1);
+    const groundRings = tier >= 3 ? 3 : tier >= 2 ? 2 : 1;
+    for (let r = 0; r < groundRings; r++) {
+      const rx = 48 + r * 16;
+      const ry = 12 + r * 5;
+      const rot = t * (1.4 + r * 0.6) * (r % 2 === 0 ? 1 : -1);
+      bCtx.save();
+      bCtx.translate(cx, feetY);
+      bCtx.scale(1, ry / rx);
+      bCtx.rotate(rot);
+      bCtx.strokeStyle = r === 2
+        ? 'rgba(255, 224, 128, 0.78)'
+        : `rgba(115, 232, 255, ${(0.42 + intensity * 0.45).toFixed(2)})`;
+      bCtx.lineWidth = 1.8;
+      bCtx.setLineDash([9, 6]);
+      bCtx.beginPath();
+      bCtx.arc(0, 0, rx, 0, Math.PI * 2);
+      bCtx.stroke();
+      bCtx.setLineDash([]);
+      for (let k = 0; k < 6; k++) {
+        const a = (k / 6) * Math.PI * 2;
+        const nx = Math.cos(a) * rx;
+        const ny = Math.sin(a) * rx;
+        bCtx.fillStyle = r === 2 ? '#ffe599' : '#c6f8ff';
+        bCtx.fillRect(nx - 2.4, ny - 2.4, 4.8, 4.8);
       }
-
-      // 3D 环绕冰晶棱锥：z < 0 绘入后层画布（角色背后），z >= 0 绘入前层画布（角色身前）
-      for (let i = 0; i < count; i++) {
-        const theta = (i / count) * Math.PI * 2 + _auraElapsed * dir + ringIdx * 0.85;
-        const ux = Math.cos(theta) * rx;
-        const uz = Math.sin(theta); // -1 (最远背后) .. +1 (最近身前)
-        const uy = uz * ry + Math.sin(theta * 2 + _auraElapsed) * 1.4;
-        const px = cx + ux * cosT - uy * sinT;
-        const py = cy + yOff + ux * sinT + uy * cosT;
-        const isFront = uz >= 0;
-        const depthScale = 0.72 + 0.28 * ((uz + 1) * 0.5);
-        const crystalSize = (1.55 + amp.intensity * 0.85) * depthScale;
-        const twinkle = 0.5 + 0.5 * Math.sin(_auraElapsed * 3.1 + i * 1.7 + ringIdx * 2.1);
-
-        // 尾迹微尘（1~2 像素滞后）
-        const tailTheta = theta - 0.18 * dir;
-        const tux = Math.cos(tailTheta) * rx;
-        const tuy = Math.sin(tailTheta) * ry;
-        const tpx = Math.round(cx + tux * cosT - tuy * sinT);
-        const tpy = Math.round(cy + yOff + tux * sinT + tuy * cosT);
-        const targetCtx = isFront ? fCtx : bCtx;
-        targetCtx.globalAlpha = isFront ? (0.28 + amp.intensity * 0.22) : (0.16 + amp.intensity * 0.12);
-        targetCtx.fillStyle = '#B8E8FF';
-        targetCtx.fillRect(tpx, tpy, 1, 1);
-
-        drawPixelCrystal(targetCtx, px, py, crystalSize, isFront, amp.tier, twinkle);
-      }
+      bCtx.restore();
     }
 
-    // 二阶质变（极寒过载 >=50%）追加 4 颗上升冷霜微粒（前后分置）
-    if (amp.tier >= 2) {
-      for (let m = 0; m < 4; m++) {
-        const life = ((_auraElapsed * 0.45 + m * 0.25) % 1);
-        const mx = Math.round(cx + Math.sin(m * 2.3 + _auraElapsed * 1.4) * 24);
-        const my = Math.round(cy + 22 - life * 58);
-        const isFront = (m & 1) === 0;
-        const ctx = isFront ? fCtx : bCtx;
-        ctx.globalAlpha = (1 - life) * (isFront ? 0.78 : 0.46);
-        ctx.fillStyle = life < 0.35 ? '#FFFFFF' : '#6BC5F8';
-        ctx.fillRect(mx, my, 1, 2);
-      }
+    // 2) 角色背后呼吸脉冲背光 + Tier 3 扩散椭圆波纹 (#9BF4FF -> #FFE39A)
+    const pulse = 0.5 + 0.5 * Math.sin(t * 5.2);
+    const auraR = 64 + intensity * 24 + (tier >= 3 ? pulse * 8 : 0);
+    const auraGrad = bCtx.createRadialGradient(cx, torsoY, 8, cx, torsoY, auraR);
+    if (tier >= 3) {
+      auraGrad.addColorStop(0, `rgba(186, 246, 255, ${(0.22 + pulse * 0.14).toFixed(2)})`);
+      auraGrad.addColorStop(0.55, `rgba(42, 122, 245, ${(0.18 + pulse * 0.08).toFixed(2)})`);
+      auraGrad.addColorStop(1, 'rgba(22, 88, 235, 0)');
+    } else {
+      auraGrad.addColorStop(0, `rgba(130, 236, 255, ${(0.12 + intensity * 0.24).toFixed(2)})`);
+      auraGrad.addColorStop(1, 'rgba(60, 160, 255, 0)');
     }
+    bCtx.fillStyle = auraGrad;
+    bCtx.beginPath();
+    bCtx.arc(cx, torsoY, auraR, 0, Math.PI * 2);
+    bCtx.fill();
+
+    if (tier >= 3) {
+      const waveProg = (t * 0.85) % 1;
+      const wr = 36 + waveProg * 54;
+      bCtx.save();
+      bCtx.globalAlpha = (1 - waveProg) * 0.42;
+      bCtx.strokeStyle = waveProg < 0.5 ? '#9BF4FF' : '#FFE39A';
+      bCtx.lineWidth = 1.8 * (1 - waveProg * 0.6);
+      bCtx.beginPath();
+      bCtx.ellipse(cx, torsoY, wr, wr * 0.72, 0, 0, Math.PI * 2);
+      bCtx.stroke();
+      bCtx.restore();
+    }
+    bCtx.restore();
+
+    // 3) 真 3D 前后景深轨道环（含 Tier 3 香槟金第三圈 + 上升霜晶/香槟金星尘）
+    const orbits = getManaAmpOrbits(tier, t, cx, feetY);
+    drawAuraOrbitPass(bCtx, orbits, tier, intensity, t, cx, feetY, faceY, false);
+    drawAuraOrbitPass(fCtx, orbits, tier, intensity, t, cx, feetY, faceY, true);
+
+    // 4) Tier 3 前景双侧冰雷电弧（左右两段锯齿电弧 + 峰值白金电核火花）
+    if (tier >= 3) {
+      const glintPulse = 0.55 + 0.45 * Math.sin(t * 6.5);
+      fCtx.save();
+      fCtx.strokeStyle = `rgba(214, 251, 255, ${(0.45 * glintPulse).toFixed(2)})`;
+      fCtx.lineWidth = 1.35;
+      fCtx.lineJoin = 'miter';
+      for (let sIdx = 0; sIdx < 2; sIdx++) {
+        const side = sIdx === 0 ? -1 : 1;
+        const bx = cx + side * (50 + Math.sin(t * 4.5 + side) * 7);
+        const by = feetY - 60 + Math.cos(t * 3.8 + side) * 12;
+        const midX = bx + side * 6.5;
+        fCtx.beginPath();
+        fCtx.moveTo(bx, by + 13);
+        fCtx.lineTo(midX, by);
+        fCtx.lineTo(bx - side * 3, by - 13);
+        fCtx.stroke();
+        if (glintPulse > 0.72) {
+          drawAuraCrystalMote(fCtx, midX, by, 2.2 * glintPulse, '#FFE8A3', true, 0.88 * glintPulse);
+        }
+      }
+      fCtx.restore();
+    }
+
+    // 5) 蓄能爆发瞬间（Tier 3 叠加香槟金-霜蓝冲击波环与星芒迸射）
+    if (hasActiveBurst && _auraBurstTier >= 3) {
+      const bp = clamp(burstAgeMs / 420, 0, 1);
+      const easeOut = 1 - Math.pow(1 - bp, 3);
+      const ringRx = 26 + easeOut * 74;
+      const ringRy = ringRx * 0.68;
+      fCtx.save();
+      fCtx.globalAlpha = (1 - bp) * 0.78;
+      fCtx.strokeStyle = bp < 0.45 ? '#FFE8A3' : '#9DF5FF';
+      fCtx.lineWidth = 2.4 * (1 - bp * 0.65);
+      fCtx.beginPath();
+      fCtx.ellipse(cx, torsoY, ringRx, ringRy, 0, 0, Math.PI * 2);
+      fCtx.stroke();
+      for (let sp = 0; sp < 8; sp++) {
+        const sa = (sp / 8) * Math.PI * 2 + easeOut * 0.45;
+        const sx = cx + Math.cos(sa) * ringRx;
+        const sy = torsoY + Math.sin(sa) * ringRy;
+        drawAuraCrystalMote(
+          fCtx,
+          sx,
+          sy,
+          2.6 * (1 - bp * 0.45),
+          sp % 2 === 0 ? '#FFE8A3' : '#FFFFFF',
+          true,
+          (1 - bp) * 0.92
+        );
+      }
+      fCtx.restore();
+    }
+
     bCtx.globalAlpha = 1;
     fCtx.globalAlpha = 1;
   }
@@ -2450,11 +2717,11 @@
     const rawAmpPct = typeof info.ampPct === 'number' && Number.isFinite(info.ampPct)
       ? (info.ampPct > 1 ? info.ampPct / 100 : info.ampPct)
       : 0;
-    const ampPct = clamp(rawAmpPct, 0, 0.50);
+    const ampPct = clamp(rawAmpPct, 0, 0.60);
     const ampTier = typeof info.ampTier === 'number'
       ? info.ampTier
-      : (ampPct >= 0.50 - 1e-6 ? 2 : ampPct >= 0.25 - 1e-6 ? 1 : 0);
-    const ampRatio = clamp(ampPct / 0.50, 0, 1);
+      : (ampPct >= 0.55 ? 3 : ampPct >= 0.35 ? 2 : ampPct > 0.001 ? 1 : 0);
+    const ampRatio = clamp(ampPct / 0.60, 0, 1);
     const isHeavy = !!(info.didCrit || info.didBreak || info.didRiposte || info.shieldBroken || ampTier >= 2 || skillId.startsWith('insight_'));
 
     const playerSt = _actors.get('player');
@@ -3935,7 +4202,12 @@
   function playAmpChargeBurst(ampPct) {
     if (!isEnabled()) return;
     const rawPct = typeof ampPct === 'number' && Number.isFinite(ampPct) ? (ampPct > 1 ? ampPct / 100 : ampPct) : 0;
-    const pct = clamp(rawPct, 0, 0.50);
+    const pct = clamp(rawPct, 0, 0.60);
+    const tier = pct >= 0.55 ? 3 : pct >= 0.35 ? 2 : pct > 0.001 ? 1 : 0;
+    if (tier >= 3 && !prefersReducedMotion()) {
+      _auraBurstTs = nowPerf();
+      _auraBurstTier = tier;
+    }
     const pSt = _actors.get('player');
     if (pSt && pSt.el && pSt.el.isConnected) {
       _lastAuraDrawTs = 0;
@@ -3945,15 +4217,29 @@
     ensureVfxCanvas(false);
     const pPts = getActorCanvasPoints('player', true);
     if (!pPts) return;
-    const isTier2 = pct >= 0.50 - 1e-6;
-    const isTier1 = pct >= 0.25 - 1e-6;
-    const ratio = clamp(pct / 0.50, 0.1, 1.0);
-    spawnFx('snowflake_burst', {
-      x: pPts.hit.x,
-      y: pPts.hit.y,
-      count: isTier2 ? 10 : isTier1 ? Math.round(6 + ratio * 3) : Math.max(3, Math.round(3 + ratio * 4)),
-      palette: isTier2 ? PALETTES.crit : PALETTES.ice,
-    }, { stopAt: isTier2 ? 0.85 : 0.56 + ratio * 0.20 });
+    const ratio = clamp(pct / 0.60, 0.1, 1.0);
+    if (tier >= 3) {
+      // 60% 三阶：叠加金霜冲击波环 + 香槟金晶尘星爆
+      spawnFx('frost_nova', {
+        x: pPts.anchor.x,
+        y: pPts.anchor.y,
+        reach: 74,
+        palette: PALETTES.crit,
+      }, { stopAt: 0.72 });
+      spawnFx('snowflake_burst', {
+        x: pPts.hit.x,
+        y: pPts.hit.y,
+        count: 14,
+        palette: PALETTES.crit,
+      }, { stopAt: 0.92 });
+    } else {
+      spawnFx('snowflake_burst', {
+        x: pPts.hit.x,
+        y: pPts.hit.y,
+        count: tier >= 2 ? 9 : Math.max(4, Math.round(4 + ratio * 4)),
+        palette: tier >= 2 ? PALETTES.crit : PALETTES.ice,
+      }, { stopAt: tier >= 2 ? 0.80 : 0.56 + ratio * 0.20 });
+    }
     ensureLoopRunning();
   }
 
@@ -3978,6 +4264,7 @@
     ENEMY_SPRITE_ALIAS,
     PALETTES,
     isEnabled,
+    getManaAmpState,
     getSpriteMeta,
     getRunFramesInfo,
     hasMagicCastFrames,

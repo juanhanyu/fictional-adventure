@@ -4,7 +4,7 @@
      - 挂载于 #battle-screen .cb-arena-field，在桌面端（>=1024px）将技能选择转化为
        Persona 5 式角色锚定多面体蓝宝棱晶放射翼：
          [W] 冰水术式  → 展开实时同步自 #b-actions 的斜切术式级联翼（支持 [1..9] 直施）
-         [E] 魔力增幅  → 展开 V2.2 方案 B 三阶魔力增幅级联（0%常规 / ★25%魔力盈溢 / ★★50%极寒过载）+ 0%–50% 磁吸微调滑条（展开后再按 E 快速切档，1/2/3 直选）
+         [E] 魔力增幅  → 展开三阶魔力增幅级联（0%常规 / ★20%魔力盈溢 / ★★40%极寒过载 / ★★★60%星霜极限）+ 0%–60% 磁吸微调滑条（展开后再按 E 快速切档，1/2/3/4 直选）
          [A] 守势/护盾 → 优先瞬发当前可用守势护盾技，多项时展开守势翼，无可用时稳守回合
          [D] 演武辅助  → 展开冰晶宫殿 / 心念援护 / 晦轮杖 / 结束回合四项战术翼
          [X] 结束回合  → 顶栏常驻一键结束回合（AP 归零时流光提示，绝与 [E] 增幅互不冲突）
@@ -16,33 +16,52 @@
   'use strict';
 
   const DESKTOP_MIN_W = 1024;
+  const MAX_AMP_PCT = 0.60;
+  const MAX_AMP_INT = 60;
   const V22_AMP_TIERS = [
     {
       idx: 0,
       key: '1',
       pct: 0,
       tier: 0,
+      name: '常规 · 0%',
       title: '常规 · 0%',
+      short: '常规',
       multLabel: '1.00×',
       effect: '常规施法 · 1.00×',
     },
     {
       idx: 1,
       key: '2',
-      pct: 0.25,
+      pct: 0.20,
       tier: 1,
-      title: '★一阶 · 魔力盈溢 25%',
-      multLabel: '1.51×',
-      effect: '+1破锁 · 12%穿抗 · 护盾+45% / 货箱×2',
+      name: '★一阶 · 魔力盈溢 20%',
+      title: '★一阶 · 魔力盈溢 20%',
+      short: '★20% 盈溢',
+      multLabel: '1.43×',
+      effect: '+1破锁 · 10%穿抗 · 护盾+35%',
     },
     {
       idx: 2,
       key: '3',
-      pct: 0.50,
+      pct: 0.40,
       tier: 2,
-      title: '★★二阶 · 极寒过载 50%',
-      multLabel: '1.83×',
-      effect: '+2破锁 · 25%穿抗 · 限手持重术',
+      name: '★★二阶 · 极寒过载 40%',
+      title: '★★二阶 · 极寒过载 40%',
+      short: '★★40% 过载',
+      multLabel: '1.70×',
+      effect: '+2破锁 · 20%穿抗 · 护盾+45%',
+    },
+    {
+      idx: 3,
+      key: '4',
+      pct: 0.60,
+      tier: 3,
+      name: '★★★三阶 · 星霜极限 60%',
+      title: '★★★三阶 · 星霜极限 60%',
+      short: '★★★60% 星霜极限',
+      multLabel: '2.05×',
+      effect: '+3破锁 · 30%穿抗 · 限手持重术',
     },
   ];
   const HIGHER_OVERLAY_IDS = [
@@ -211,36 +230,41 @@
   }
 
   function computeV22FallbackMult(pct) {
-    const dm = Math.max(0, Math.min(0.50, Number(pct) || 0));
-    const seg1 = Math.min(dm, 0.25);
-    const seg2 = Math.max(0, dm - 0.25);
-    const base = 1.0 + seg1 * 1.60 + seg2 * 0.50;
-    if (dm >= 0.50 - 1e-4) return base * 1.20;
-    if (dm >= 0.25 - 1e-4) return base * 1.08;
+    const dm = Math.max(0, Math.min(MAX_AMP_PCT, Number(pct) || 0));
+    const seg1 = Math.min(dm, 0.20);
+    const seg2 = Math.max(0, Math.min(dm, 0.40) - 0.20);
+    const seg3 = Math.max(0, dm - 0.40);
+    const base = 1.0 + seg1 * 1.60 + seg2 * 0.80 + seg3 * 0.50;
+    if (dm >= 0.60 - 1e-4) return base * 1.30;
+    if (dm >= 0.40 - 1e-4) return base * 1.15;
+    if (dm >= 0.20 - 1e-4) return base * 1.08;
     return base;
   }
 
   function snapAmpPctInt(rawInt, maxPctInt) {
-    const cap = Math.max(0, Math.min(50, Math.round(Number(maxPctInt) || 0)));
+    const cap = Math.max(0, Math.min(MAX_AMP_INT, Math.round(Number(maxPctInt) || 0)));
     const clamped = Math.max(0, Math.min(cap, Math.round(Number(rawInt) || 0)));
-    if (cap >= 50 && Math.abs(clamped - 50) <= 2) return 50;
-    if (cap >= 25 && Math.abs(clamped - 25) <= 2) return 25;
+    if (cap >= 60 && Math.abs(clamped - 60) <= 2) return 60;
+    if (cap >= 40 && Math.abs(clamped - 40) <= 2) return 40;
+    if (cap >= 20 && Math.abs(clamped - 20) <= 2) return 20;
     return clamped;
   }
 
   function formatAmpBadge(overcastPct, tier) {
     const pctInt = Math.round((Number(overcastPct) || 0) * 100);
     if (pctInt <= 0) return '常规';
-    if (tier >= 2 || pctInt >= 50) return `★★${pctInt}% 过载`;
-    if (tier >= 1 || pctInt >= 25) return `★${pctInt}% 盈溢`;
+    if (tier >= 3 || pctInt >= 60) return `★★★${pctInt}% 星霜极限`;
+    if (tier >= 2 || pctInt >= 40) return `★★${pctInt}% 过载`;
+    if (tier >= 1 || pctInt >= 20) return `★${pctInt}% 盈溢`;
     return `+${pctInt}%`;
   }
 
   function formatAmpShort(overcastPct, tier) {
     const pctInt = Math.round((Number(overcastPct) || 0) * 100);
     if (pctInt <= 0) return '常规';
-    if (tier >= 2 || pctInt >= 50) return `★★${pctInt}%`;
-    if (tier >= 1 || pctInt >= 25) return `★${pctInt}%`;
+    if (tier >= 3 || pctInt >= 60) return `★★★${pctInt}%`;
+    if (tier >= 2 || pctInt >= 40) return `★★${pctInt}%`;
+    if (tier >= 1 || pctInt >= 20) return `★${pctInt}%`;
     return `+${pctInt}%`;
   }
 
@@ -254,10 +278,10 @@
     else if (p && typeof p.ampPct === 'number') rawPct = p.ampPct;
     else if (b && typeof b.ampPct === 'number') rawPct = b.ampPct;
     else if (p && typeof p.overcastMode === 'number') {
-      rawPct = p.overcastMode >= 2 ? 0.50 : p.overcastMode === 1 ? 0.25 : 0;
+      rawPct = p.overcastMode >= 3 ? 0.60 : p.overcastMode === 2 ? 0.40 : p.overcastMode === 1 ? 0.20 : 0;
     }
 
-    let maxAmpCap = 0.50;
+    let maxAmpCap = MAX_AMP_PCT;
     if (b && typeof b.maxAmpCap === 'number') {
       maxAmpCap = b.maxAmpCap;
     } else if (p && typeof p.maxAmpCap === 'number') {
@@ -270,9 +294,9 @@
       }
       maxAmpCap = bestCap;
     }
-    maxAmpCap = Math.max(0, Math.min(0.50, Number(maxAmpCap) || 0));
+    maxAmpCap = Math.max(0, Math.min(MAX_AMP_PCT, Number(maxAmpCap) || 0));
 
-    const overcastPct = Math.max(0, Math.min(maxAmpCap > 0 ? maxAmpCap : 0.50, Number(rawPct) || 0));
+    const overcastPct = Math.max(0, Math.min(maxAmpCap > 0 ? maxAmpCap : MAX_AMP_PCT, Number(rawPct) || 0));
     const maxMp = p ? Math.max(0, Number(p.mmp) || 0) : 0;
     const curMp = p ? Math.max(0, Number(p.mp) || 0) : 0;
 
@@ -289,13 +313,13 @@
       ? rawTier
       : (rawTier && typeof rawTier.tier === 'number'
         ? rawTier.tier
-        : (overcastPct >= 0.50 - 1e-4 ? 2 : overcastPct >= 0.25 - 1e-4 ? 1 : 0));
+        : (overcastPct >= 0.60 - 1e-4 ? 3 : overcastPct >= 0.40 - 1e-4 ? 2 : overcastPct >= 0.20 - 1e-4 ? 1 : 0));
 
     let ampTierName = '';
     if (b && typeof b.ampTierName === 'string' && b.ampTierName) ampTierName = b.ampTierName;
     else if (p && typeof p.ampTierName === 'string' && p.ampTierName) ampTierName = p.ampTierName;
     else if (rawTier && typeof rawTier.label === 'string' && rawTier.label) ampTierName = rawTier.label;
-    else ampTierName = tier >= 2 ? '极寒过载' : tier >= 1 ? '魔力盈溢' : '常规';
+    else ampTierName = tier >= 3 ? '星霜极限' : tier >= 2 ? '极寒过载' : tier >= 1 ? '魔力盈溢' : '常规';
 
     let ampMult = computeV22FallbackMult(overcastPct);
     if (b && typeof b.ampMult === 'number' && isFinite(b.ampMult)) ampMult = b.ampMult;
@@ -304,13 +328,13 @@
     const pctInt = Math.round(overcastPct * 100);
     const maxPctInt = Math.round(maxAmpCap * 100);
     const extraMp = Math.round(maxMp * overcastPct);
-    const lockHint = tier >= 2 ? ' · +2锁' : tier >= 1 ? ' · +1锁' : '';
+    const lockHint = tier >= 3 ? ' · +3锁' : tier >= 2 ? ' · +2锁' : tier >= 1 ? ' · +1锁' : '';
     const multBadge = !canAmp ? 'LOCK' : `${ampMult.toFixed(2)}×`;
     const badge = !canAmp ? '不可增幅' : formatAmpBadge(overcastPct, tier);
     const shortLabel = !canAmp ? '锁定' : formatAmpShort(overcastPct, tier);
     const allowedTiers = V22_AMP_TIERS.filter(t => t.pct <= maxAmpCap + 1e-4);
 
-    const ampTierMults = (b && Array.isArray(b.ampTierMults) && b.ampTierMults.length >= 3)
+    const ampTierMults = (b && Array.isArray(b.ampTierMults) && b.ampTierMults.length >= 4)
       ? b.ampTierMults
       : null;
 
@@ -426,7 +450,7 @@
     } else if (global.CombatEngine && typeof global.CombatEngine.setAmpPct === 'function') {
       global.CombatEngine.setAmpPct(val);
     } else if (global.CombatEngine && typeof global.CombatEngine.setOvercast === 'function') {
-      const nextMode = val >= 0.48 ? 2 : val >= 0.24 ? 1 : 0;
+      const nextMode = val >= 0.58 ? 3 : val >= 0.38 ? 2 : val >= 0.18 ? 1 : 0;
       global.CombatEngine.setOvercast(nextMode);
     }
     sync();
@@ -706,9 +730,10 @@
     const topPad = uiState.compactMulti ? Math.max(8, uiState.skyTopY + 8) : 8;
     const botSafe = uiState.compactMulti ? Math.min(fieldH - 12, uiState.skyBotY - 8) : (fieldH - 14);
 
-    const tierH = isNarrowMulti ? 41 : (compact ? 45 : 54);
-    const fineH = isNarrowMulti ? 82 : (compact ? 92 : 104);
-    const panelH = tierH * 3 + fineH;
+    const tierCount = V22_AMP_TIERS.length;
+    const tierH = isNarrowMulti ? 34 : (compact ? 38 : 44);
+    const fineH = isNarrowMulti ? 74 : (compact ? 82 : 92);
+    const panelH = tierH * tierCount + fineH;
     const minLeftFromPortrait = Math.max(28, (uiState.portraitRight - anchorX) + 12);
     const panelLeft = uiState.compactMulti ? minLeftFromPortrait : Math.max(56, minLeftFromPortrait);
 
@@ -721,17 +746,17 @@
     if (panelTop + panelH > maxBotOffset) panelTop = Math.max(minTopOffset, maxBotOffset - panelH);
 
     const targets = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < tierCount; i++) {
       const midY = Math.round(panelTop + tierH * (i + 0.5));
       targets.push({
         tipX: panelLeft + 3,
         tipY: midY,
         elbowX: Math.round(panelLeft * 0.54),
         elbowY: Math.round(midY * 0.66),
-        hero: i === 1,
+        hero: i === 1 || i === 3,
       });
     }
-    const fineMidY = Math.round(panelTop + tierH * 3 + fineH * 0.46);
+    const fineMidY = Math.round(panelTop + tierH * tierCount + fineH * 0.46);
     targets.push({
       tipX: panelLeft + 3,
       tipY: fineMidY,
@@ -964,12 +989,14 @@
     nav.className = 'cb-prism-rig mode-root';
     nav.setAttribute('aria-label', '希尔维亚棱晶放射指令翼');
 
-    const tierBladesHtml = V22_AMP_TIERS.map(t => `
-      <button type="button" class="cb-amp-tier-blade${t.tier === 2 ? ' is-tier-2' : ''}" data-amp-tier="${t.tier}" data-amp-pct="${t.pct}">
+    const tierBladesHtml = V22_AMP_TIERS.map(t => {
+      const tierCls = t.tier === 3 ? ' is-tier-3' : (t.tier === 2 ? ' is-tier-2' : '');
+      return `
+      <button type="button" class="cb-amp-tier-blade${tierCls}" data-amp-tier="${t.tier}" data-amp-pct="${t.pct}">
         <span class="cb-atb-key">${t.key}</span>
         <div class="cb-atb-body">
           <div class="cb-atb-top">
-            <span class="cb-atb-title">${escapeHtml(t.title)}</span>
+            <span class="cb-atb-title">${escapeHtml(t.name)}</span>
             <span class="cb-atb-mult">${escapeHtml(t.multLabel)}</span>
           </div>
           <div class="cb-atb-bot">
@@ -978,13 +1005,14 @@
           </div>
         </div>
       </button>
-    `).join('');
+    `;
+    }).join('');
 
     nav.innerHTML = `
       <svg class="cb-prism-svg" id="cb-prism-svg" viewBox="-42 -250 470 500" aria-hidden="true"></svg>
       <div class="cb-prism-root" id="cb-prism-root">
         <div class="cb-pwing-wrap" data-wing="0">
-          <button type="button" class="cb-pwing hero-prism" id="cb-pw-magic">
+          <button type="button" class="cb-pwing cb-prism-wing hero-prism" id="cb-pw-magic">
             <span class="cb-pw-key">W</span>
             <div class="cb-pw-body">
               <div class="cb-pw-top">
@@ -998,21 +1026,21 @@
         </div>
 
         <div class="cb-pwing-wrap" data-wing="1">
-          <button type="button" class="cb-pwing" id="cb-pw-amp" title="展开 V2.2 魔力增幅面板（快捷键 E；展开后再按 E 快速切档或 1/2/3 直选）">
+          <button type="button" class="cb-pwing cb-prism-wing" id="cb-pw-amp" title="展开三阶魔力增幅面板（快捷键 E；展开后再按 E 快速切档或 1/2/3/4 直选）">
             <span class="cb-pw-key">E</span>
             <div class="cb-pw-body">
               <div class="cb-pw-top">
                 <span class="cb-pw-title">魔力增幅</span>
                 <span class="cb-pw-en" id="cb-pw-amp-en">1.00×</span>
               </div>
-              <span class="cb-pw-sub" id="cb-pw-amp-sub"><span class="cb-amp-crystals"><span class="cb-amp-crys">○</span><span class="cb-amp-crys">○</span></span><span class="cb-amp-badge">常规</span></span>
+              <span class="cb-pw-sub" id="cb-pw-amp-sub"><span class="cb-amp-crystals"><span class="cb-amp-crys"></span><span class="cb-amp-crys"></span><span class="cb-amp-crys"></span></span><span class="cb-amp-badge">常规</span></span>
             </div>
             <span class="cb-pw-arrow">▸</span>
           </button>
         </div>
 
         <div class="cb-pwing-wrap" data-wing="2">
-          <button type="button" class="cb-pwing" id="cb-pw-guard">
+          <button type="button" class="cb-pwing cb-prism-wing" id="cb-pw-guard">
             <span class="cb-pw-key">A</span>
             <div class="cb-pw-body">
               <div class="cb-pw-top">
@@ -1025,7 +1053,7 @@
         </div>
 
         <div class="cb-pwing-wrap" data-wing="3">
-          <button type="button" class="cb-pwing" id="cb-pw-assist">
+          <button type="button" class="cb-pwing cb-prism-wing" id="cb-pw-assist">
             <span class="cb-pw-key">D</span>
             <div class="cb-pw-body">
               <div class="cb-pw-top">
@@ -1042,10 +1070,10 @@
       <div class="cb-prism-cascade" id="cb-prism-cascade">
         <div class="cb-cascade-spine" id="cb-cascade-spine">
           <button type="button" class="cb-spine-btn" id="cb-pw-back">← 返回 [ESC]</button>
-          <button type="button" class="cb-spine-btn amp-mini" id="cb-pw-amp-mini" title="展开 V2.2 魔力增幅或快速切档（快捷键 E）">✦ [E] 增幅 常规</button>
+          <button type="button" class="cb-spine-btn amp-mini" id="cb-pw-amp-mini" title="展开三阶魔力增幅或快速切档（快捷键 E）">✦ [E] 增幅 常规</button>
         </div>
         <div id="cb-prism-blade-list" class="cb-prism-blade-list"></div>
-        <div id="cb-prism-amp-panel" class="cb-prism-amp-panel" role="region" aria-label="V2.2 魔力增幅面板">
+        <div id="cb-prism-amp-panel" class="cb-prism-amp-panel" role="region" aria-label="三阶魔力增幅面板">
           <div class="cb-amp-tiers" id="cb-amp-tiers">${tierBladesHtml}</div>
           <div class="cb-amp-finetune" id="cb-amp-finetune">
             <div class="cb-amp-ft-head">
@@ -1062,15 +1090,17 @@
               <div class="cb-amp-rail-marks" aria-hidden="true">
                 <span class="cb-amp-notch t1" id="cb-amp-notch-t1"></span>
                 <span class="cb-amp-notch t2" id="cb-amp-notch-t2"></span>
+                <span class="cb-amp-notch t3" id="cb-amp-notch-t3"></span>
               </div>
-              <input type="range" id="cb-amp-slider" class="cb-amp-slider" min="0" max="50" step="1" value="0" aria-label="精细控魔增幅百分比" />
+              <input type="range" id="cb-amp-slider" class="cb-amp-slider" min="0" max="60" step="1" value="0" aria-label="精细控魔增幅百分比" />
               <div class="cb-amp-ticks" id="cb-amp-ticks">
                 <button type="button" class="cb-amp-tick" data-amp-snap="0">0%</button>
-                <button type="button" class="cb-amp-tick t1" data-amp-snap="25">25% ★</button>
-                <button type="button" class="cb-amp-tick t2" data-amp-snap="50">50% ★★</button>
+                <button type="button" class="cb-amp-tick t1" data-amp-snap="20">20% ★</button>
+                <button type="button" class="cb-amp-tick t2" data-amp-snap="40">40% ★★</button>
+                <button type="button" class="cb-amp-tick t3" data-amp-snap="60">60% ★★★</button>
               </div>
             </div>
-            <div class="cb-amp-ft-note" id="cb-amp-ft-note">1% 步进 · 25%★ 与 50%★★ 处 ±2% 磁吸吸附</div>
+            <div class="cb-amp-ft-note" id="cb-amp-ft-note">1% 步进 · 20%★ / 40%★★ / 60%★★★ 处 ±2% 磁吸吸附</div>
           </div>
         </div>
       </div>
@@ -1158,7 +1188,7 @@
         if (String(finalInt) !== slider.value) {
           slider.value = String(finalInt);
         }
-        const fillPct = Math.max(0, Math.min(100, (finalInt / 50) * 100));
+        const fillPct = Math.max(0, Math.min(100, (finalInt / MAX_AMP_INT) * 100));
         slider.style.setProperty('--amp-fill', `${fillPct.toFixed(1)}%`);
         if (finalInt !== uiState.lastSliderAppliedPct) {
           uiState.lastSliderAppliedPct = finalInt;
@@ -1186,7 +1216,7 @@
       uiState.spineEl.style.left = `${geom.spineLeft}px`;
     }
 
-    // Update 3 canonical V2.2 tier blades in-place
+    // Update 4 canonical 3-tier amp blades in-place
     uiState.ampTierBtns.forEach((btn, i) => {
       const t = V22_AMP_TIERS[i];
       if (!t) return;
@@ -1219,7 +1249,7 @@
     });
 
     // Update fine-tune slider and live readouts in-place (zero DOM destruction!)
-    // Range stays on fixed 0..50 scale so 0% / 25%★ / 50%★★ notches always align;
+    // Range stays on fixed 0..60 scale so 20%★ (33.33%) / 40%★★ (66.67%) / 60%★★★ (100%) notches always align;
     // values above maxAmpCap are visually locked and clamped cleanly.
     const slider = uiState.ampSliderEl;
     const sliderMax = Math.max(0, ampInfo.maxPctInt);
@@ -1232,25 +1262,32 @@
       const curInt = uiState.sliderDragging
         ? Math.min(sliderMax, Number(slider.value) || 0)
         : ampInfo.pctInt;
-      const fillPct = Math.max(0, Math.min(100, (curInt / 50) * 100));
-      const capPct = Math.max(0, Math.min(100, (sliderMax / 50) * 100));
+      const fillPct = Math.max(0, Math.min(100, (curInt / MAX_AMP_INT) * 100));
+      const capPct = Math.max(0, Math.min(100, (sliderMax / MAX_AMP_INT) * 100));
       slider.style.setProperty('--amp-fill', `${fillPct.toFixed(1)}%`);
       slider.style.setProperty('--amp-cap', `${capPct.toFixed(1)}%`);
       slider.classList.toggle('tier-1', ampInfo.tier === 1);
-      slider.classList.toggle('tier-2', ampInfo.tier >= 2);
+      slider.classList.toggle('tier-2', ampInfo.tier === 2);
+      slider.classList.toggle('tier-3', ampInfo.tier >= 3);
     }
 
     const notchT1 = uiState.ampPanelEl.querySelector('#cb-amp-notch-t1');
     const notchT2 = uiState.ampPanelEl.querySelector('#cb-amp-notch-t2');
+    const notchT3 = uiState.ampPanelEl.querySelector('#cb-amp-notch-t3');
     if (notchT1) {
-      notchT1.style.left = '50%';
-      notchT1.classList.toggle('is-locked', sliderMax < 25);
-      notchT1.classList.toggle('lit', ampInfo.tier >= 1 && sliderMax >= 25);
+      notchT1.style.left = '33.33%';
+      notchT1.classList.toggle('is-locked', sliderMax < 20);
+      notchT1.classList.toggle('lit', ampInfo.tier >= 1 && sliderMax >= 20);
     }
     if (notchT2) {
-      notchT2.style.left = '100%';
-      notchT2.classList.toggle('is-locked', sliderMax < 50);
-      notchT2.classList.toggle('lit', ampInfo.tier >= 2 && sliderMax >= 50);
+      notchT2.style.left = '66.67%';
+      notchT2.classList.toggle('is-locked', sliderMax < 40);
+      notchT2.classList.toggle('lit', ampInfo.tier >= 2 && sliderMax >= 40);
+    }
+    if (notchT3) {
+      notchT3.style.left = '100%';
+      notchT3.classList.toggle('is-locked', sliderMax < 60);
+      notchT3.classList.toggle('lit', ampInfo.tier >= 3 && sliderMax >= 60);
     }
 
     const ticks = uiState.ampPanelEl.querySelectorAll('.cb-amp-tick');
@@ -1260,8 +1297,10 @@
       tb.disabled = locked;
       tb.classList.toggle('is-locked', locked);
       tb.classList.toggle('active', !locked && Math.abs(ampInfo.pctInt - snapInt) <= 0);
-      if (snapInt === 50) {
-        tb.textContent = locked ? '50% 锁定' : '50% ★★';
+      if (snapInt === 40) {
+        tb.textContent = locked ? '40% 锁定' : '40% ★★';
+      } else if (snapInt === 60) {
+        tb.textContent = locked ? '60% 锁定' : '60% ★★★';
       }
     });
 
@@ -1273,7 +1312,8 @@
     if (pctEl) {
       pctEl.textContent = `${ampInfo.pctInt}%`;
       pctEl.classList.toggle('tier-1', ampInfo.tier === 1);
-      pctEl.classList.toggle('tier-2', ampInfo.tier >= 2);
+      pctEl.classList.toggle('tier-2', ampInfo.tier === 2);
+      pctEl.classList.toggle('tier-3', ampInfo.tier >= 3);
     }
     if (mpEl) {
       mpEl.textContent = `+${ampInfo.extraMp} MP`;
@@ -1281,23 +1321,28 @@
     if (multEl) {
       multEl.textContent = `${ampInfo.ampMult.toFixed(2)}×`;
       multEl.classList.toggle('tier-1', ampInfo.tier === 1);
-      multEl.classList.toggle('tier-2', ampInfo.tier >= 2);
+      multEl.classList.toggle('tier-2', ampInfo.tier === 2);
+      multEl.classList.toggle('tier-3', ampInfo.tier >= 3);
     }
     if (noteEl) {
       if (!ampInfo.enabled) {
         noteEl.textContent = '当前战局不可启用魔力增幅';
       } else if (ampInfo.pctInt <= 0) {
-        noteEl.textContent = sliderMax < 50
-          ? `常规施法 · 本战上限 ${sliderMax}%，拖动 1% 步进并在 25%★ 磁吸`
-          : '常规施法 · 拖动 1% 步进，25%★ / 50%★★ 处 ±2% 磁吸';
+        noteEl.textContent = sliderMax < 60
+          ? `常规施法 · 本战上限 ${sliderMax}%，拖动 1% 步进并在档位处 ±2% 磁吸`
+          : '常规施法 · 拖动 1% 步进，20%★ / 40%★★ / 60%★★★ 处 ±2% 磁吸';
+      } else if (ampInfo.tier >= 3) {
+        noteEl.textContent = '★★★星霜极限已激活 · +3破锁 · 30%穿抗 · 限手持重术';
       } else if (ampInfo.tier >= 2) {
-        noteEl.textContent = '★★极寒过载已激活 · +2破锁 · 25%穿抗 · 限手持重术';
+        noteEl.textContent = sliderMax >= 60
+          ? `★★极寒过载已激活（+2破锁 · 20%穿抗）· 距 ★★★极限 差 ${Math.max(0, 60 - ampInfo.pctInt)}%`
+          : '★★极寒过载已激活 · +2破锁 · 20%穿抗 · 护盾+45%';
       } else if (ampInfo.tier >= 1) {
-        noteEl.textContent = sliderMax >= 50
-          ? `★魔力盈溢已激活（+1破锁 · 12%穿抗）· 距 ★★过载 差 ${Math.max(0, 50 - ampInfo.pctInt)}%`
-          : '★魔力盈溢已激活 · +1破锁 · 12%穿抗 · 护盾+45% / 货箱×2';
+        noteEl.textContent = sliderMax >= 40
+          ? `★魔力盈溢已激活（+1破锁 · 10%穿抗）· 距 ★★过载 差 ${Math.max(0, 40 - ampInfo.pctInt)}%`
+          : '★魔力盈溢已激活 · +1破锁 · 10%穿抗 · 护盾+35%';
       } else {
-        noteEl.textContent = `甜点增幅段（斜率 1.60）· 距 ★魔力盈溢 差 ${Math.max(0, 25 - ampInfo.pctInt)}%`;
+        noteEl.textContent = `魔力蓄势段 · 距 ★魔力盈溢 差 ${Math.max(0, 20 - ampInfo.pctInt)}%`;
       }
     }
   }
@@ -1440,28 +1485,33 @@
         }
       }
 
-      // Sync Root Wing [E] — V2.2 2 tier crystals (○ ○ / ★ ○ / ★ ★) + crisp live badge
+      // Sync Root Wing [E] — 3 diamond crystal pips (tier 1 sapphire, tier 2 frost-sapphire, tier 3 champagne-gold) + crisp live badge
       const ampBtn = document.getElementById('cb-pw-amp');
       const ampEn = document.getElementById('cb-pw-amp-en');
       const ampSub = document.getElementById('cb-pw-amp-sub');
       if (ampBtn && ampSub) {
         ampBtn.disabled = !ampInfo.enabled;
         ampBtn.classList.toggle('amp-charged', ampInfo.enabled && ampInfo.overcastPct > 0.001);
-        ampBtn.classList.toggle('amp-max', ampInfo.enabled && ampInfo.tier >= 2);
+        ampBtn.classList.toggle('amp-tier-2', ampInfo.enabled && ampInfo.tier === 2);
+        ampBtn.classList.toggle('amp-tier-3', ampInfo.enabled && ampInfo.tier >= 3);
+        ampBtn.classList.toggle('amp-max', ampInfo.enabled && ampInfo.tier >= 3);
         ampBtn.title = ampInfo.enabled
-          ? `展开 V2.2 魔力增幅级联（当前：${ampInfo.badge} · +${ampInfo.extraMp}MP · ${ampInfo.multBadge}）`
+          ? `展开三阶魔力增幅级联（当前：${ampInfo.badge} · +${ampInfo.extraMp}MP · ${ampInfo.multBadge}）`
           : '当前不可增幅';
         if (ampEn) {
           ampEn.textContent = (!uiState.compactMulti && ampInfo.enabled && ampInfo.lockHint)
             ? `${ampInfo.multBadge}${ampInfo.lockHint}`
             : ampInfo.multBadge;
         }
-        const c1Lit = ampInfo.enabled && ampInfo.tier >= 1;
-        const c2Lit = ampInfo.enabled && ampInfo.tier >= 2;
+        const t = ampInfo.enabled ? ampInfo.tier : 0;
+        const pip1Cls = t >= 3 ? ' lit-t3' : t === 2 ? ' lit-t2' : t === 1 ? ' lit-t1' : '';
+        const pip2Cls = t >= 3 ? ' lit-t3' : t === 2 ? ' lit-t2' : '';
+        const pip3Cls = t >= 3 ? ' lit-t3' : '';
         const crysHtml =
           `<span class="cb-amp-crystals" aria-hidden="true">` +
-            `<span class="cb-amp-crys${c1Lit ? (c2Lit ? ' lit-t2' : ' lit-t1') : ''}">${c1Lit ? '★' : '○'}</span>` +
-            `<span class="cb-amp-crys${c2Lit ? ' lit-t2' : ''}">${c2Lit ? '★' : '○'}</span>` +
+            `<span class="cb-amp-crys${pip1Cls}"></span>` +
+            `<span class="cb-amp-crys${pip2Cls}"></span>` +
+            `<span class="cb-amp-crys${pip3Cls}"></span>` +
           `</span>`;
         const mpSuffix = (!uiState.compactMulti && ampInfo.enabled && ampInfo.extraMp > 0)
           ? `<span class="cb-amp-mp"> · +${ampInfo.extraMp}MP</span>`
@@ -1495,7 +1545,8 @@
       if (miniAmp) {
         miniAmp.disabled = !ampInfo.enabled;
         miniAmp.classList.toggle('charged', ampInfo.enabled && ampInfo.overcastPct > 0.001);
-        miniAmp.classList.toggle('max-tier', ampInfo.enabled && ampInfo.tier >= 2);
+        miniAmp.classList.toggle('tier-3', ampInfo.enabled && ampInfo.tier >= 3);
+        miniAmp.classList.toggle('max-tier', ampInfo.enabled && ampInfo.tier >= 3);
         if (!ampInfo.enabled) {
           miniAmp.textContent = '◇ 不可增幅';
         } else if (uiState.menuMode === 'amp') {
@@ -1692,7 +1743,7 @@
       return;
     }
 
-    if (ev.key >= '1' && ev.key <= '3' && uiState.menuMode === 'amp') {
+    if (ev.key >= '1' && ev.key <= '4' && uiState.menuMode === 'amp') {
       const tierDef = V22_AMP_TIERS[Number(ev.key) - 1];
       const info = readOvercastInfo();
       if (tierDef && info.enabled && tierDef.pct <= info.maxAmpCap + 1e-4) {

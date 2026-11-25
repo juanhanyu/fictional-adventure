@@ -1624,8 +1624,9 @@ body.ui-hidden #btn-ui {
   color: rgba(217, 243, 255, 0.92);
 }
 
-.cb-pwing.amp-max:not(.hero-prism):not(:disabled):hover .cb-pw-en {
-  color: var(--pr-gold-pale);
+.cb-pwing.amp-max:not(.hero-prism):not(:disabled):hover .cb-pw-en,
+.cb-prism-wing.amp-tier-3:not(.hero-prism):not(:disabled):hover .cb-pw-en {
+  color: #FFF1B8;
 }
 
 .cb-pwing:not(.hero-prism):not(:disabled):hover .cb-pw-key {
@@ -1634,7 +1635,21 @@ body.ui-hidden #btn-ui {
 }
 
 .cb-pwing.amp-charged::after {
-  background: linear-gradient(180deg, #EFE0BE 0%, #C4A46C 55%, #8C6928 100%);
+  background: linear-gradient(180deg, #9BE7FF 0%, #1658EB 55%, #0E2B78 100%);
+}
+
+.cb-pwing.amp-tier-2::after {
+  background: linear-gradient(180deg, #9BE7FF 0%, #38BDF8 45%, #1658EB 100%);
+}
+
+.cb-pwing.amp-tier-3,
+.cb-prism-wing.amp-tier-3 {
+  box-shadow: inset 0 0 0 1px rgba(229, 192, 110, 0.72);
+}
+
+.cb-pwing.amp-tier-3::after,
+.cb-prism-wing.amp-tier-3::after {
+  background: linear-gradient(180deg, #FFF1B8 0%, #E5C06E 48%, #B38A3E 100%);
 }
 
 .cb-pwing.amp-charged .cb-pw-en {
@@ -1643,8 +1658,9 @@ body.ui-hidden #btn-ui {
   letter-spacing: 0.08em;
 }
 
-.cb-pwing.amp-max .cb-pw-en {
-  color: var(--pr-gold-deep);
+.cb-pwing.amp-max .cb-pw-en,
+.cb-prism-wing.amp-tier-3 .cb-pw-en {
+  color: #B38A3E;
   font-size: 11.5px;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -1755,30 +1771,40 @@ body.ui-hidden #btn-ui {
   color: var(--pr-gold-pale);
 }
 
-/* V2.2 魔力增幅二阶晶星（○ ○ / ★ ○ / ★ ★）与实时徽记 */
+/* 三阶魔力增幅棱晶菱钻（3 Diamond Crystal Pips：蓝宝 / 冰蓝 / 香槟金星霜极限）与实时徽记 */
 .cb-amp-crystals {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  margin-right: 6px;
-  vertical-align: -0.5px;
-  font-size: 11px;
+  gap: 4px;
+  margin-right: 7px;
+  vertical-align: middle;
   line-height: 1;
 }
 
 .cb-amp-crys {
   display: inline-block;
-  color: rgba(22, 88, 235, 0.36);
-  font-weight: 700;
+  width: 8px;
+  height: 8px;
+  background: rgba(22, 88, 235, 0.20);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  transition: background 0.18s ease, transform 0.18s ease, filter 0.18s ease;
 }
 
 .cb-amp-crys.lit-t1 {
-  color: var(--pr-sapphire);
+  background: var(--pr-sapphire);
+  transform: scale(1.14);
 }
 
 .cb-amp-crys.lit-t2 {
-  color: var(--pr-gold-deep);
-  text-shadow: 0 0 6px rgba(196, 164, 108, 0.55);
+  background: linear-gradient(135deg, #9BE7FF, #1658EB);
+  transform: scale(1.18);
+  filter: drop-shadow(0 0 3px rgba(56, 189, 248, 0.65));
+}
+
+.cb-amp-crys.lit-t3 {
+  background: linear-gradient(135deg, #FFF1B8, #D4A94A);
+  transform: scale(1.24);
+  filter: drop-shadow(0 0 5px rgba(212, 169, 74, 0.82));
 }
 
 .cb-amp-badge {
@@ -1790,8 +1816,9 @@ body.ui-hidden #btn-ui {
   color: var(--pr-sapphire);
 }
 
-.cb-pwing.amp-max .cb-amp-badge {
-  color: var(--pr-gold-deep);
+.cb-pwing.amp-max .cb-amp-badge,
+.cb-prism-wing.amp-tier-3 .cb-amp-badge {
+  color: #B38A3E;
 }
 
 .cb-amp-mp {
@@ -1801,15 +1828,20 @@ body.ui-hidden #btn-ui {
 }
 
 .cb-pwing:not(.hero-prism):not(:disabled):hover .cb-amp-crys {
-  color: rgba(217, 243, 255, 0.55);
+  background: rgba(217, 243, 255, 0.34);
 }
 
 .cb-pwing:not(.hero-prism):not(:disabled):hover .cb-amp-crys.lit-t1 {
-  color: var(--pr-cyan);
+  background: var(--pr-cyan);
 }
 
 .cb-pwing:not(.hero-prism):not(:disabled):hover .cb-amp-crys.lit-t2 {
-  color: #FFF4CE;
+  background: linear-gradient(135deg, #E0F7FF, #7DD3FC);
+}
+
+.cb-pwing:not(.hero-prism):not(:disabled):hover .cb-amp-crys.lit-t3 {
+  background: linear-gradient(135deg, #FFF7D6, #E5C06E);
+  filter: drop-shadow(0 0 6px rgba(255, 241, 184, 0.90));
 }
 
 .cb-pwing:not(.hero-prism):not(:disabled):hover .cb-amp-badge,
@@ -1947,11 +1979,11 @@ body.ui-hidden #btn-ui {
 .cb-amp-tier-blade {
   position: relative;
   width: 100%;
-  min-height: 54px;
-  padding: 8px 16px 8px 15px;
+  min-height: 44px;
+  padding: 6px 14px 6px 14px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   border: none;
   border-bottom: 1px solid rgba(22, 88, 235, 0.14);
   background: transparent;
@@ -1967,14 +1999,15 @@ body.ui-hidden #btn-ui {
 
 .cb-prism-rig.compact-multi .cb-amp-tier-blade,
 .cb-prism-rig.narrow-desktop .cb-amp-tier-blade {
-  min-height: 44px;
-  padding: 5px 12px 5px 13px;
+  min-height: 38px;
+  padding: 4px 12px 4px 12px;
   gap: 8px;
 }
 
 .cb-prism-rig.compact-multi.narrow-desktop .cb-amp-tier-blade {
-  min-height: 40px;
-  padding: 4px 12px 4px 13px;
+  min-height: 34px;
+  padding: 3px 10px 3px 11px;
+  gap: 7px;
 }
 
 .cb-prism-rig.compact-multi.narrow-desktop .cb-spine-btn {
@@ -1987,13 +2020,26 @@ body.ui-hidden #btn-ui {
   background: rgba(22, 88, 235, 0.09);
 }
 
+.cb-amp-tier-blade.is-tier-3:not(:disabled):not(.active) {
+  box-shadow: inset 3px 0 0 rgba(229, 192, 110, 0.72);
+}
+
+.cb-amp-tier-blade.is-tier-3:not(:disabled):not(.active):hover {
+  background: rgba(229, 192, 110, 0.14);
+}
+
 .cb-amp-tier-blade.active {
   background: var(--pr-sapphire-prism);
   color: #FFFFFF;
 }
 
 .cb-amp-tier-blade.is-tier-2.active {
-  background: linear-gradient(108deg, #2E77F8 0%, #1658EB 44%, #0E2B78 72%, #8C6928 100%);
+  background: linear-gradient(108deg, #2E77F8 0%, #1658EB 52%, #0B6AA8 100%);
+  color: #FFFFFF;
+}
+
+.cb-amp-tier-blade.is-tier-3.active {
+  background: linear-gradient(108deg, #103FA8 0%, #0E2B78 36%, #B38A3E 80%, #E5C06E 100%);
   color: #FFFFFF;
 }
 
@@ -2006,7 +2052,7 @@ body.ui-hidden #btn-ui {
 
 .cb-atb-key {
   width: 22px;
-  height: 28px;
+  height: 26px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -2019,9 +2065,19 @@ body.ui-hidden #btn-ui {
   clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
 }
 
+.cb-amp-tier-blade.is-tier-3:not(.is-locked) .cb-atb-key {
+  background: rgba(229, 192, 110, 0.22);
+  color: #B38A3E;
+}
+
 .cb-amp-tier-blade.active .cb-atb-key {
   background: rgba(255, 255, 255, 0.18);
   color: var(--pr-gold-pale);
+}
+
+.cb-amp-tier-blade.is-tier-3.active .cb-atb-key {
+  background: rgba(255, 241, 184, 0.22);
+  color: #FFF1B8;
 }
 
 .cb-atb-body {
@@ -2029,7 +2085,7 @@ body.ui-hidden #btn-ui {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .cb-atb-top,
@@ -2042,7 +2098,7 @@ body.ui-hidden #btn-ui {
 
 .cb-atb-title {
   font-family: var(--pr-serif);
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--pr-ink);
@@ -2053,7 +2109,7 @@ body.ui-hidden #btn-ui {
 
 .cb-prism-rig.compact-multi .cb-atb-title,
 .cb-prism-rig.narrow-desktop .cb-atb-title {
-  font-size: 13px;
+  font-size: 12.5px;
 }
 
 .cb-amp-tier-blade.active .cb-atb-title {
@@ -2069,19 +2125,23 @@ body.ui-hidden #btn-ui {
 }
 
 .cb-amp-tier-blade.is-tier-2:not(.is-locked) .cb-atb-mult {
-  color: var(--pr-gold-deep);
+  color: #0B6AA8;
+}
+
+.cb-amp-tier-blade.is-tier-3:not(.is-locked) .cb-atb-mult {
+  color: #B38A3E;
 }
 
 .cb-amp-tier-blade.active .cb-atb-mult {
   color: var(--pr-gold-pale);
 }
 
-.cb-amp-tier-blade.is-tier-2.active .cb-atb-mult {
-  color: #FFF4CE;
+.cb-amp-tier-blade.is-tier-3.active .cb-atb-mult {
+  color: #FFF1B8;
 }
 
 .cb-atb-meta {
-  font-size: 10.5px;
+  font-size: 10px;
   color: var(--pr-ink-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -2090,7 +2150,7 @@ body.ui-hidden #btn-ui {
 
 .cb-atb-cost {
   font-family: var(--pr-mono);
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--pr-sapphire-mid);
   white-space: nowrap;
@@ -2101,27 +2161,32 @@ body.ui-hidden #btn-ui {
   color: var(--pr-cyan-gleam);
 }
 
+.cb-amp-tier-blade.is-tier-3.active .cb-atb-meta,
+.cb-amp-tier-blade.is-tier-3.active .cb-atb-cost {
+  color: #FFF4CE;
+}
+
 .cb-amp-tier-blade.is-locked .cb-atb-mult,
 .cb-amp-tier-blade.is-locked .cb-atb-cost {
   color: var(--pr-ink-muted);
 }
 
-/* V2.2 §3.3 精细控魔微调区（仅以 1px 细线与三阶档位分隔，零嵌套边框盒） */
+/* 精细控魔微调区（仅以 1px 细线与档位分隔，零嵌套边框盒） */
 .cb-amp-finetune {
   position: relative;
   border: none;
   border-top: 1px solid rgba(22, 88, 235, 0.28);
-  padding: 10px 16px 11px 16px;
+  padding: 8px 14px 9px 14px;
   background: linear-gradient(180deg, rgba(235, 245, 255, 0.62) 0%, rgba(248, 251, 255, 0.28) 100%);
 }
 
 .cb-prism-rig.compact-multi .cb-amp-finetune,
 .cb-prism-rig.narrow-desktop .cb-amp-finetune {
-  padding: 7px 12px 8px 13px;
+  padding: 6px 12px 7px 12px;
 }
 
 .cb-prism-rig.compact-multi.narrow-desktop .cb-amp-finetune {
-  padding: 6px 12px 6px 13px;
+  padding: 5px 10px 5px 11px;
 }
 
 .cb-prism-rig.compact-multi.narrow-desktop .cb-amp-slider-wrap {
@@ -2129,8 +2194,8 @@ body.ui-hidden #btn-ui {
 }
 
 .cb-prism-rig.compact-multi.narrow-desktop .cb-amp-ft-note {
-  margin-top: 3px;
-  font-size: 10px;
+  margin-top: 2px;
+  font-size: 9.5px;
 }
 
 .cb-amp-ft-head {
@@ -2167,12 +2232,17 @@ body.ui-hidden #btn-ui {
 
 .cb-amp-ft-pct.tier-1,
 .cb-amp-ft-mult.tier-1 {
-  color: #0B6AA8;
+  color: var(--pr-sapphire);
 }
 
 .cb-amp-ft-pct.tier-2,
 .cb-amp-ft-mult.tier-2 {
-  color: var(--pr-gold-deep);
+  color: #0B6AA8;
+}
+
+.cb-amp-ft-pct.tier-3,
+.cb-amp-ft-mult.tier-3 {
+  color: #B38A3E;
 }
 
 .cb-amp-ft-mp {
@@ -2187,7 +2257,7 @@ body.ui-hidden #btn-ui {
 
 .cb-amp-slider-wrap {
   position: relative;
-  margin: 8px 0 3px;
+  margin: 7px 0 3px;
 }
 
 .cb-amp-rail-marks {
@@ -2214,7 +2284,11 @@ body.ui-hidden #btn-ui {
 }
 
 .cb-amp-notch.t2.lit {
-  background: var(--pr-gold-deep);
+  background: #0B6AA8;
+}
+
+.cb-amp-notch.t3.lit {
+  background: #B38A3E;
 }
 
 .cb-amp-notch.is-locked {
@@ -2260,8 +2334,21 @@ body.ui-hidden #btn-ui {
   background: linear-gradient(
     90deg,
     var(--pr-sapphire) 0%,
+    #38BDF8 var(--amp-fill, 66.7%),
+    rgba(22, 88, 235, 0.16) var(--amp-fill, 66.7%),
+    rgba(22, 88, 235, 0.16) var(--amp-cap, 100%),
+    rgba(95, 114, 143, 0.12) var(--amp-cap, 100%),
+    rgba(95, 114, 143, 0.12) 100%
+  );
+}
+
+.cb-amp-slider.tier-3::-webkit-slider-runnable-track {
+  background: linear-gradient(
+    90deg,
+    var(--pr-sapphire) 0%,
     #38BDF8 50%,
-    #C4A46C var(--amp-fill, 100%),
+    #E5C06E 82%,
+    #B38A3E var(--amp-fill, 100%),
     rgba(22, 88, 235, 0.16) var(--amp-fill, 100%),
     rgba(22, 88, 235, 0.16) 100%
   );
@@ -2280,7 +2367,11 @@ body.ui-hidden #btn-ui {
 }
 
 .cb-amp-slider.tier-2::-webkit-slider-thumb {
-  background: linear-gradient(135deg, #FFF4CE 0%, #C4A46C 52%, #8C6928 100%);
+  background: linear-gradient(135deg, #D9F3FF 0%, #38BDF8 48%, #1658EB 100%);
+}
+
+.cb-amp-slider.tier-3::-webkit-slider-thumb {
+  background: linear-gradient(135deg, #FFF1B8 0%, #E5C06E 50%, #B38A3E 100%);
 }
 
 .cb-amp-slider::-moz-range-track {
@@ -2302,8 +2393,21 @@ body.ui-hidden #btn-ui {
   background: linear-gradient(
     90deg,
     var(--pr-sapphire) 0%,
+    #38BDF8 var(--amp-fill, 66.7%),
+    rgba(22, 88, 235, 0.16) var(--amp-fill, 66.7%),
+    rgba(22, 88, 235, 0.16) var(--amp-cap, 100%),
+    rgba(95, 114, 143, 0.12) var(--amp-cap, 100%),
+    rgba(95, 114, 143, 0.12) 100%
+  );
+}
+
+.cb-amp-slider.tier-3::-moz-range-track {
+  background: linear-gradient(
+    90deg,
+    var(--pr-sapphire) 0%,
     #38BDF8 50%,
-    #C4A46C var(--amp-fill, 100%),
+    #E5C06E 82%,
+    #B38A3E var(--amp-fill, 100%),
     rgba(22, 88, 235, 0.16) var(--amp-fill, 100%),
     rgba(22, 88, 235, 0.16) 100%
   );
@@ -2319,7 +2423,11 @@ body.ui-hidden #btn-ui {
 }
 
 .cb-amp-slider.tier-2::-moz-range-thumb {
-  background: linear-gradient(135deg, #FFF4CE 0%, #C4A46C 52%, #8C6928 100%);
+  background: linear-gradient(135deg, #D9F3FF 0%, #38BDF8 48%, #1658EB 100%);
+}
+
+.cb-amp-slider.tier-3::-moz-range-thumb {
+  background: linear-gradient(135deg, #FFF1B8 0%, #E5C06E 50%, #B38A3E 100%);
 }
 
 .cb-amp-ticks {
@@ -2334,7 +2442,7 @@ body.ui-hidden #btn-ui {
   background: transparent;
   padding: 1px 2px;
   font-family: var(--pr-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   color: var(--pr-ink-muted);
   cursor: pointer;
@@ -2348,7 +2456,12 @@ body.ui-hidden #btn-ui {
 
 .cb-amp-tick.t2.active,
 .cb-amp-tick.t2:hover:not(:disabled) {
-  color: var(--pr-gold-deep);
+  color: #0B6AA8;
+}
+
+.cb-amp-tick.t3.active,
+.cb-amp-tick.t3:hover:not(:disabled) {
+  color: #B38A3E;
 }
 
 .cb-amp-tick.is-locked,
@@ -2358,9 +2471,9 @@ body.ui-hidden #btn-ui {
 }
 
 .cb-amp-ft-note {
-  margin-top: 4px;
+  margin-top: 3px;
   font-size: 10px;
-  line-height: 1.38;
+  line-height: 1.35;
   color: var(--pr-ink-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -2532,13 +2645,15 @@ body.ui-hidden #btn-ui {
   color: var(--pr-gold-pale);
 }
 
-/* 顶阶二阶魔力增幅金色辉光 */
-.cb-pwing.amp-max::after {
-  background: linear-gradient(180deg, #FFF4CE 0%, #C4A46C 52%, #8C6928 100%);
+/* 顶阶三阶星霜极限香槟金辉光 */
+.cb-pwing.amp-max::after,
+.cb-prism-wing.amp-tier-3::after {
+  background: linear-gradient(180deg, #FFF1B8 0%, #E5C06E 50%, #B38A3E 100%);
 }
 
+.cb-spine-btn.amp-mini.tier-3,
 .cb-spine-btn.amp-mini.max-tier {
-  background: linear-gradient(180deg, #C4A46C 0%, #8C6928 100%);
+  background: linear-gradient(180deg, #E5C06E 0%, #B38A3E 56%, #8C6928 100%);
   color: #FFFFFF;
 }
 
@@ -2593,7 +2708,7 @@ body.ui-hidden #btn-ui {
   gap: 0;
 }
 
-/* 传统模式 V2.2 魔力增幅档位自适应排布（自动等分 3 档或其他按钮数） */
+/* 传统模式三阶魔力增幅档位自适应排布（自动等分 0/20/40/60% 4 按钮或其他按钮数） */
 #battle-screen #cb-oc-seg {
   display: grid;
   grid-template-columns: none;
@@ -2603,8 +2718,8 @@ body.ui-hidden #btn-ui {
 }
 
 #battle-screen #cb-oc-seg .cb-oc-btn {
-  padding: 5px 4px;
-  font-size: 10.5px;
+  padding: 5px 3px;
+  font-size: 10px;
   white-space: nowrap;
 }
 

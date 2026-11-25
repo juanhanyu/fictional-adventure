@@ -104,6 +104,8 @@ console.log('\n[2] 冰宫首回合凝结门控、第2步Esc防白嫖、双波次
   ok('战斗热键 W 正常切换魔战倾注档位', CE.getState().player.overcastMode === 1);
   win.document.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'w', bubbles: true }));
   win.document.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'w', bubbles: true }));
+  ok('战斗热键 W 可切至三阶星霜极限档', CE.getState().player.overcastMode === 3);
+  win.document.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'w', bubbles: true }));
   ok('战斗热键 W 循环归位至常规档', CE.getState().player.overcastMode === 0);
 
   // 按 E 结束第 1 回合，经历 1 次敌方行动进入第 2 回合后冰晶宫殿解锁！
@@ -518,7 +520,7 @@ console.log('\n[5] 原著智斗 AI（开启冰晶宫殿）：验证 4~8 回合�
       return { type: 'skill', skillId: 'insight_noelle_sever' };
     }
     if (e.seepSevered && e.hp <= 150 && b.ap >= 1 && b.player.mp >= 220) {
-      if (b.player.overcastMode !== 2) return { type: 'overcast', mode: 2 };
+      if (b.player.overcastMode !== 3) return { type: 'overcast', mode: 3 };
       return { type: 'skill', skillId: 'hand_ice_crystal' };
     }
     if (st === 'DUAL_CAST' && b.ap >= 1 && b.player.mp >= 40) {
@@ -647,7 +649,7 @@ console.log('\n[5] 原著智斗 AI（开启冰晶宫殿）：验证 4~8 回合�
     }
     if (boss && boss.hp > 0 && boss.coreShattered && boss.hp <= 250 && b.ap >= 1 && b.player.mp >= 160) {
       if (!b.player.wandActive && b.player.wandCooldown === 0) return { type: 'wand', on: true };
-      if (b.player.overcastMode !== 2) return { type: 'overcast', mode: 2 };
+      if (b.player.overcastMode !== 3) return { type: 'overcast', mode: 3 };
       return { type: 'skill', skillId: 'hand_ice_crystal', targetIdx: 0 };
     }
     if (!b.player.status.crateGuard && !b.player.cooldowns.hand_root_shield && b.ap >= 1 && b.player.mp >= 30) {
@@ -771,7 +773,7 @@ console.log('\n[6] 无冰晶宫殿纯基本功智斗路径（noPalace: true）�
       }
     }
     if (st === 'UNDER_SEEP' && (!e.intent.ambushTrap || b.player.status.afterimage > 0) && b.ap >= 1 && b.player.mp >= 180) {
-      if (b.player.overcastMode !== 2) return { type: 'overcast', mode: 2 };
+      if (b.player.overcastMode !== 3) return { type: 'overcast', mode: 3 };
       return { type: 'skill', skillId: 'hand_ice_crystal' };
     }
     if (st === 'DUAL_CAST' && b.ap >= 1 && b.player.mp >= 40) {
@@ -871,7 +873,7 @@ console.log('\n[6] 无冰晶宫殿纯基本功智斗路径（noPalace: true）�
     }
     if (boss && boss.hp > 0 && boss.coreShattered && boss.hp <= 230 && b.ap >= 1 && b.player.mp >= 150) {
       if (!b.player.wandActive && b.player.wandCooldown === 0) return { type: 'wand', on: true };
-      if (b.player.overcastMode !== 2) return { type: 'overcast', mode: 2 };
+      if (b.player.overcastMode !== 3) return { type: 'overcast', mode: 3 };
       return { type: 'skill', skillId: 'hand_ice_crystal', targetIdx: 0 };
     }
     if (b.ap >= 1 && b.player.mp >= 40) {

@@ -2570,9 +2570,9 @@
       prio: 2,
       cooldown: 45,
       fn: function (c, t, now, vol, prio, options) {
-        // 魔力增幅多档蓄能晶鸣：随增幅百分比逐级升高音高，25%/50% 质变档叠加清冽泛音
+        // 魔力增幅三档蓄能晶鸣：随增幅百分比逐级升高音高（20% / 40% / 60% 逐级叠加泛音与天穹星辉）
         var pctRaw = options && typeof options.ampPct === 'number' ? options.ampPct : 0;
-        var pct = pctRaw > 1 ? pctRaw / 100 : pctRaw;
+        var pct = clamp(pctRaw > 1 ? pctRaw / 100 : pctRaw, 0, 0.60);
         if (pct <= 0.001) {
           playCelesta(c, t, now, vol, prio, {
             freq: NOTE.D5,
@@ -2584,35 +2584,89 @@
           });
           return;
         }
-        var ratio = clamp(pct / 0.50, 0.15, 1.0);
-        var baseFreq = 440 * Math.pow(2, ratio * 0.92);
+        var ratio = clamp(pct / 0.60, 0.15, 1.0);
+        var baseFreq = 440 * Math.pow(2, ratio * 1.05);
         playCelesta(c, t, now, vol, prio, {
           freq: baseFreq,
           delay: 0,
-          dur: 0.18 + ratio * 0.12,
-          gain: 0.40 + ratio * 0.14,
+          dur: 0.18 + ratio * 0.16,
+          gain: 0.40 + ratio * 0.16,
           pan: -0.10,
-          reverbSend: 0.34 + ratio * 0.20
+          reverbSend: 0.34 + ratio * 0.24
         });
-        if (pct >= 0.24) {
+        // Tier 1 (20%+): 叠加清冽纯五度泛音 (*1.498)
+        if (pct >= 0.18) {
           playCelesta(c, t, now, vol, prio, {
             freq: baseFreq * 1.498,
-            delay: 0.036,
-            dur: 0.24,
+            delay: 0.032,
+            dur: 0.24 + ratio * 0.08,
             gain: 0.38,
             pan: 0.12,
             reverbSend: 0.48,
             ornament: true
           });
         }
-        if (pct >= 0.48) {
+        // Tier 2 (40%+): 追加明亮八度泛音 (*2.0)
+        if (pct >= 0.38) {
           playCelesta(c, t, now, vol, prio, {
             freq: baseFreq * 2.0,
-            delay: 0.072,
-            dur: 0.34,
-            gain: 0.44,
+            delay: 0.064,
+            dur: 0.32 + ratio * 0.08,
+            gain: 0.42,
+            pan: -0.06,
+            reverbSend: 0.58,
+            ornament: true
+          });
+        }
+        // Tier 3 (60%): 香槟金高阶天穹星辉 (*2.498 & *3.0 钟鸣泛音 + 冰雷电弧脆裂 + 悠长晶振余韵)
+        if (pct >= 0.55) {
+          playCelesta(c, t, now, vol, prio, {
+            freq: baseFreq * 2.498,
+            delay: 0.094,
+            dur: 0.42,
+            gain: 0.40,
+            pan: 0.16,
+            reverbSend: 0.70,
+            ornament: true
+          });
+          playCelesta(c, t, now, vol, prio, {
+            freq: baseFreq * 3.0,
+            delay: 0.124,
+            dur: 0.52,
+            gain: 0.38,
             pan: 0,
-            reverbSend: 0.62,
+            reverbSend: 0.78,
+            overtone: true,
+            overtoneRatio: 1.5,
+            overtoneGain: 0.28,
+            ornament: true
+          });
+          playNoise(c, t, now, vol, prio, {
+            kind: 'crackle',
+            delay: 0.078,
+            dur: 0.11,
+            attack: 0.003,
+            gain: 0.24,
+            pan: 0.04,
+            reverbSend: 0.42,
+            filter: {
+              type: 'bandpass',
+              freq: 3600,
+              endFreq: 6800,
+              q: 2.6
+            },
+            ornament: true
+          });
+          playTone(c, t, now, vol, prio, {
+            freq: baseFreq * 1.996,
+            slideTo: baseFreq * 2.008,
+            wave: 'sine',
+            delay: 0.105,
+            dur: 0.62,
+            attack: 0.012,
+            gain: 0.22,
+            pan: 0,
+            reverbSend: 0.82,
             ornament: true
           });
         }

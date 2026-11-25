@@ -211,6 +211,29 @@
   - 改动任何战斗界面、面板或独立 Demo 前，**必须先通读主界面的实际设计**（`index.html`、`style.css`、`css/combat.css`、`js/title-director.js` 及实机截图）：雪瓷冰白基底、皇家蓝 `#1658eb` 与淡金/冰青点缀、衬线/宋体标题配清晰数字等宽刻度、克制建筑线框与恰当信息密度。
   - 严禁另起一套与主界面割裂的黑底/重胶囊风格；也严禁为求“极简”把必要战术信息删空导致界面简陋空洞。
 
+## 二点十三、正统独立游戏桌面规格与封装规范（永久·硬性）
+
+自本版本起，本项目所有新功能、界面与素材一律按**正统独立游戏桌面版（Tauri v2 `.exe` + 原生级交互）**的标准规格开发与维护：
+
+1. **输入与选区卫生（零误选复制浮条 / 零幽灵拖拽）**：
+   - 全站由 `css/indie-desktop.css` 与 `js/desktop-shell.js` 全局禁用非编辑区文字选中（`user-select: none` + `selectstart` 捕获拦截）、立绘/CG/画布/链接幽灵拖拽（`-webkit-user-drag: none` + `dragstart` 拦截）与鼠标点击默认蓝框（`:focus:not(:focus-visible) { outline: none; }`），同时保留清晰的皇家蓝键盘 `:focus-visible` 焦点环。
+   - **仅**在可编辑表单控件（文本类 `<input>`、`<textarea>`、`[contenteditable="true"]`）与显式标注 `.allow-select` 的只读拷贝区内开放文字选中与右键粘贴，确保 AI 对话框与 API 设置可自由编辑。后续新增任何对话框、剧情、图鉴、面板组件时，严禁破坏全局禁选规则。
+2. **自定义棱镜极细滚动条（消灭浏览器默认上下滑轮）**：
+   - 根容器 `html, body` 永久保持 `overflow: hidden; overscroll-behavior: none;`，严禁外层视口出现滚动条或橡皮筋回弹。
+   - 所有内部滚动容器统一沿用 `css/indie-desktop.css` 的 5px 零圆角蓝宝石棱镜细线滚动条（透明轨道、悬停辉光）；对话正文区 `#text` 保持静默无滑轮。
+3. **浏览器行为抑制与桌面快捷键规范**：
+   - 非可编辑区默认屏蔽浏览器右键菜单（`contextmenu`），杜绝弹出“检查 / 查看源代码 / 另存为”。
+   - 在 Tauri v2 `.exe` 或 `?kiosk=1` 环境下，默认拦截 `F5`、`Ctrl+R`、`Ctrl+P`、`Ctrl+S`、`Ctrl+U`、`Ctrl+±/0` 与 `Ctrl+滚轮` 缩放，防止误触刷新丢失进度；`F11` 与 `Alt+Enter` 统一绑定真全屏切换。开发排错可在 URL 追加 `?dev=1` 临时豁免。
+4. **本地文件存档抽象（`DesktopShell.storage`）**：
+   - 凡需持久化的存档、图鉴、设置、战斗战绩与配置键，一律使用受管前缀：`ojousama_*`、`vn_*`、`ves_*`、`combat_*`、`codex_*` 写入 `localStorage`（或经 `window.DesktopShell.storage` 访问）。
+   - 在 Tauri `.exe` 运行时，`js/desktop-shell.js` 会自动将受管键透明异步落盘至系统应用数据目录 `Vesteria/saves/*.json` 并在启动时回灌，保障清缓存不丢档且兼容 Steam Cloud / 手动备份；严禁新增脱离受管前缀的孤立持久键。
+5. **完全离线自包含（零外部 CDN 强依赖）**：
+   - 游戏所有核心脚本、样式、立绘、CG、音效、BGM 与图标必须随仓本地存放，确保离线桌面端 100% 正常启动、发声与通关；字体栈必须提供完整的本地宋体/黑体回退，严禁引入断网即失效的外部 CDN 脚本或资源。
+6. **Tauri v2 桌面封装与装填白名单同步**：
+   - 桌面打包工程位于 `desktop/`（`desktop/package.json`、`desktop/scripts/prepare-dist.mjs`、`desktop/src-tauri/`），云端一键构建工作流位于 `.github/workflows/build-desktop.yml`；WebView2 必须保留 `additionalBrowserArgs: "--autoplay-policy=no-user-gesture-required"` 以保障标题页 BGM 启动即播。
+   - **每次在仓库根目录新增运行期目录或静态入口文件时，必须同步更新 `desktop/scripts/prepare-dist.mjs` 的 `RUNTIME_FILES` / `RUNTIME_DIRS`**，并运行 `node desktop/scripts/prepare-dist.mjs --dry-run` 核验仅打包运行时资源（严禁将 `tests/`、`tools/`、小说原文 `.txt` 等开发文件混入 `.exe`）。
+   - 构建中间产物（`desktop/dist/`、`desktop/node_modules/`、`desktop/src-tauri/target/`）由 `desktop/.gitignore` 隔离，绝不入库。
+
 ## 三、常见坑
 
 - 「背景不显示」多半是 `bg` 缺 `bg-img-*` 类，或 `loc` 写错 key。

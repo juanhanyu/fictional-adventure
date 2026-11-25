@@ -1,0 +1,393 @@
+/* =========================================================================
+   《转生千金～到了异世界就要悠闲地生活》
+   正统独立游戏桌面交互硬化与棱镜滚动条体系 (css/indie-desktop.css)
+   规范遵循：
+     - AGENTS.md §二点十二：严禁圆框套圆框（全组件 border-radius: 0px）
+     - AGENTS.md §二点十三：零误选复制弹窗、零默认浏览器滑轮、零拖拽虚影
+     - 视觉语言：雪瓷冰白 (#FAFBFD) × 皇家蓝宝石 (#1658EB) × 冰青 (#7DD3FC)
+     - 严格隔离 #app 堆叠上下文，不声明任何旧暗黑/暗金色值
+   ========================================================================= */
+
+/* ==================== 1. 根视口防回弹与零外层滚动条 ==================== */
+html,
+body {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  overscroll-behavior-x: none !important;
+  overscroll-behavior-y: none !important;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  cursor: default;
+}
+
+/* ==================== 2. 全局禁误选 / 禁复制全选弹窗 ==================== */
+html,
+body,
+#app,
+#title-screen,
+#game-screen,
+#stage,
+#hud,
+#loc-bar,
+#portraits,
+#css-portraits,
+#hotspots,
+#text-box,
+#text,
+#speaker,
+#tb-speaker,
+#tb-speaker-name,
+#more,
+#choices,
+#action-bar,
+#cg-screen,
+#cg-bg,
+#cg-text,
+#card,
+#battle-screen,
+#arena-overlay,
+#panel,
+#stats-overlay,
+#map-overlay,
+#pick-screen,
+#codex,
+#help-screen,
+#ending-screen,
+#sys-popup,
+#toast,
+#sylvia-hub,
+#ai-drawer,
+#ai-chat-panel,
+.overlay,
+.modal-shell,
+.rh-overlay,
+body * {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* 仅对可编辑表单与显式授权区域重新开放文字选中与光标 */
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+textarea,
+[contenteditable="true"],
+[contenteditable=""],
+.allow-select,
+.allow-select * {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  -webkit-touch-callout: default !important;
+  cursor: text;
+}
+
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"])::selection,
+textarea::selection,
+[contenteditable="true"]::selection,
+.allow-select::selection,
+.allow-select *::selection {
+  background: rgba(22, 88, 235, 0.22);
+  color: #1a2436;
+}
+
+/* 禁止立绘、CG、画布、图标、链接出现浏览器幽灵拖拽 */
+img,
+canvas,
+svg,
+picture,
+a,
+button {
+  -webkit-user-drag: none;
+  user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+/* ==================== 3. 焦点轮廓卫生（鼠标点击零蓝框 · 键盘清晰焦点） ==================== */
+:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none;
+}
+
+:focus-visible {
+  outline: 1.5px solid #1658eb;
+  outline-offset: 2px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[contenteditable="true"]:focus-visible {
+  outline: 1.5px solid #1658eb;
+  outline-offset: 0;
+}
+
+/* ==================== 4. 棱镜冰晶细线滚动条（全面替代浏览器默认滑轮） ==================== */
+*,
+*::before,
+*::after {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 88, 235, 0.36) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+  background: transparent;
+}
+
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track-piece {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    rgba(125, 211, 252, 0.58) 0%,
+    rgba(22, 88, 235, 0.40) 50%,
+    rgba(14, 43, 120, 0.46) 100%
+  );
+  border-radius: 0px !important;
+  border: none;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(125, 211, 252, 0.90) 0%,
+    rgba(22, 88, 235, 0.76) 50%,
+    rgba(14, 43, 120, 0.86) 100%
+  );
+  box-shadow: 0 0 8px rgba(22, 88, 235, 0.34);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background: #1658eb;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* 对话框正文区域维持静默无滑轮，避免字幕区出现任何滚动条闪烁 */
+#text {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+#text::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* 弹窗内部滚动容器阻止滚动链穿透至底层舞台 */
+.modal-scroll,
+#panel-body,
+#codex-list,
+#b-log,
+#duel-log,
+.v3-set-body,
+.v3-ost-list {
+  overscroll-behavior: contain;
+}
+
+/* ==================== 5. 标题页桌面工具控制组 (.indie-win-controls) ==================== */
+.indie-win-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding-right: 14px;
+  border-right: 1px solid rgba(27, 35, 51, 0.14);
+  border-radius: 0px;
+}
+
+.indie-win-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 4px 2px;
+  border: none;
+  border-bottom: 1px solid transparent;
+  border-radius: 0px;
+  background: transparent;
+  color: #526078;
+  font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.indie-win-btn:hover {
+  color: #1658eb;
+  border-bottom-color: rgba(22, 88, 235, 0.45);
+}
+
+.indie-win-btn[aria-pressed="true"],
+body.indie-fullscreen .indie-win-btn[data-indie-act="fullscreen"] {
+  color: #1658eb;
+  border-bottom-color: rgba(22, 88, 235, 0.62);
+}
+
+.indie-win-btn-danger:hover {
+  color: #b82946;
+  border-bottom-color: rgba(184, 41, 70, 0.52);
+}
+
+.indie-win-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  color: currentColor;
+  flex-shrink: 0;
+}
+
+.indie-win-kbd {
+  font-family: ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Consolas, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: rgba(22, 88, 235, 0.78);
+  padding-left: 2px;
+}
+
+.indie-win-sep {
+  width: 1px;
+  height: 12px;
+  background: rgba(27, 35, 51, 0.14);
+  flex-shrink: 0;
+}
+
+/* ==================== 6. 设置页桌面显示与本地存档区块 (.indie-settings-section) ==================== */
+.indie-settings-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(27, 35, 51, 0.12);
+  border-radius: 0px;
+}
+
+.indie-settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.indie-settings-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: #526078;
+}
+
+.indie-runtime-tag {
+  font-family: ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #1658eb;
+  padding: 1px 6px;
+  border-left: 2px solid #1658eb;
+  background: rgba(22, 88, 235, 0.06);
+  border-radius: 0px;
+}
+
+.indie-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+  padding: 4px 0;
+}
+
+.indie-settings-name {
+  font-size: 13px;
+  color: #1b2333;
+  letter-spacing: 0.03em;
+}
+
+.indie-settings-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.indie-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid rgba(22, 88, 235, 0.28);
+  border-radius: 0px;
+  background: rgba(248, 251, 255, 0.78);
+  color: #1b2333;
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.indie-action-btn:hover {
+  border-color: #1658eb;
+  background: rgba(22, 88, 235, 0.09);
+  color: #1658eb;
+}
+
+.indie-action-btn.is-active {
+  border-color: #1658eb;
+  background: #1658eb;
+  color: #ffffff;
+}
+
+.indie-action-btn-danger {
+  border-color: rgba(184, 41, 70, 0.34);
+  color: #9e1b3a;
+}
+
+.indie-action-btn-danger:hover {
+  border-color: #b82946;
+  background: rgba(184, 41, 70, 0.08);
+  color: #b82946;
+}
+
+/* 响应式窄屏精简 */
+@media (max-width: 768px) {
+  .indie-win-controls {
+    gap: 10px;
+    padding-right: 10px;
+  }
+
+  .indie-win-kbd {
+    display: none;
+  }
+
+  .indie-win-btn {
+    min-height: 40px;
+    font-size: 12.5px;
+  }
+}

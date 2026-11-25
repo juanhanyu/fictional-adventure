@@ -37,6 +37,7 @@
   ];
 
   var SOUNDTRACK_CATALOG = [
+    { key: 'sacred1', title: '冰晶协奏 · 序曲', mood: '标题主旋律 · 冰晶霜华' },
     { key: 'peaceful1', title: '银蓝晨光 I', mood: '公爵府 · 悠然日常' },
     { key: 'sacred2', title: '冰晶宫殿 II', mood: '极北秘境 · 星霜回响' },
     { key: 'academy1', title: '阿斯拉钟塔 I', mood: '魔法学府 · 晨钟长廊' },
@@ -87,6 +88,8 @@
     settingsTab: 'general',
     auditionTrackKey: null,
     auditionTrackTitle: '',
+    titleBgmPausedByUser: false,
+    wasTitleVis: false,
     lastSfxPingAt: 0,
     focusedMenuId: null,
     fusion: null
@@ -3168,9 +3171,12 @@
 
   function toggleSoundtrackAudition(trackKey) {
     if (!trackKey) return;
+    playSfxSafe('glass_tap');
     if (st.auditionTrackKey === trackKey) {
       st.auditionTrackKey = null;
       st.auditionTrackTitle = '';
+      st.titleBgmPausedByUser = true;
+      try { if (root && typeof root.bgmSetTitleUserPaused === 'function') root.bgmSetTitleUserPaused(true); } catch (e) {}
       try { if (root && typeof root.bgmStop === 'function') root.bgmStop(true); } catch (e) {}
       renderSoundtrackRows();
       syncTitleAudioButton(false);
@@ -3182,7 +3188,9 @@
     }
     st.auditionTrackKey = trackKey;
     st.auditionTrackTitle = meta ? meta.title : trackKey;
+    st.titleBgmPausedByUser = false;
     try {
+      if (root && typeof root.bgmSetTitleUserPaused === 'function') root.bgmSetTitleUserPaused(false);
       if (root && typeof root.bgmUnlock === 'function') root.bgmUnlock();
       if (root && typeof root.bgmPlay === 'function') root.bgmPlay(trackKey, { fade: false });
     } catch (e) {}
@@ -3301,6 +3309,7 @@
   function setMode(nextMode, opts) {
     var titleEl = getTitle();
     if (!titleEl) return st.mode;
+    var prevMode = st.mode;
     var mode = (nextMode === 'archive' || nextMode === 'settings') ? nextMode : 'main';
     st.mode = mode;
     titleEl.setAttribute('data-title-mode', mode);
@@ -3319,6 +3328,23 @@
     if (setView) setView.classList.toggle('hidden', mode !== 'settings');
 
     updateFooterHintsForMode(mode);
+
+    if (prevMode === 'settings' && mode !== 'settings') {
+      var curBgmKey = (root && typeof root.bgmGetState === 'function' && root.bgmGetState()) ? root.bgmGetState().key : null;
+      var titleKey = (root && root.TITLE_BGM_KEY) || 'sacred1';
+      var needsTitleRestore = !!st.auditionTrackKey || (curBgmKey && curBgmKey !== titleKey);
+      if (needsTitleRestore) {
+        st.auditionTrackKey = null;
+        st.auditionTrackTitle = '';
+        renderSoundtrackRows();
+        if (isTitleVis() && !st.titleBgmPausedByUser && !(root && typeof root.isMuted === 'function' && root.isMuted())) {
+          try {
+            if (root && typeof root.bgmPlayTitle === 'function') root.bgmPlayTitle({ fade: true });
+          } catch (e) {}
+        }
+        syncTitleAudioButton(false);
+      }
+    }
 
     if (mode === 'archive') {
       stopFusionLoop();
@@ -3458,18 +3484,53 @@
     return false;
   }
 
+  function resolveTrackLabelFromState() {
+    if (st.auditionTrackTitle) return st.auditionTrackTitle;
+    try {
+      if (root && typeof root.bgmGetState === 'function') {
+        var bs = root.bgmGetState();
+        if (bs && bs.key) {
+          if (root.TITLE_BGM_KEY && bs.key === root.TITLE_BGM_KEY) {
+            return root.TITLE_BGM_TITLE || '冰晶协奏';
+          }
+          for (var k = 0; k < SOUNDTRACK_CATALOG.length; k++) {
+            if (SOUNDTRACK_CATALOG[k].key === bs.key) return SOUNDTRACK_CATALOG[k].title;
+          }
+        }
+      }
+    } catch (e) {}
+    return (root && root.TITLE_BGM_TITLE) || '冰晶协奏';
+  }
+
   function syncTitleAudioButton(preferDom) {
     if (!hasDom()) return false;
     var btn = document.getElementById('btn-title-mute');
     if (!btn) return false;
     var isM = resolveMuteState(btn, preferDom);
+    var isPlaying = false;
+    try {
+      if (!isM && root && typeof root.bgmIsActuallyPlaying === 'function') {
+        isPlaying = !!root.bgmIsActuallyPlaying();
+      }
+    } catch (e) {}
+    var isPaused = !isM && !isPlaying;
     var wantPressed = isM ? 'true' : 'false';
-    var trackLabel = st.auditionTrackTitle || '冰晶协奏';
+    var trackLabel = resolveTrackLabelFromState();
     var wantText = isM ? 'BGM // 已静音' : ('BGM // ' + trackLabel);
-    var wantTitle = isM ? '当前已静音（点击开启声音）' : ('正在播放：' + trackLabel + '（点击静音）');
+    var wantTitle = isM
+      ? '当前已静音（点击开启标题配乐）'
+      : (isPlaying
+        ? ('正在播放：' + trackLabel + '（点击静音）')
+        : ('等待交互起播：' + trackLabel + '（点击立即播放）'));
 
     if (btn.classList.contains('is-muted') !== isM) {
       btn.classList.toggle('is-muted', isM);
+    }
+    if (btn.classList.contains('is-playing') !== isPlaying) {
+      btn.classList.toggle('is-playing', isPlaying);
+    }
+    if (btn.classList.contains('is-paused') !== isPaused) {
+      btn.classList.toggle('is-paused', isPaused);
     }
     if (btn.getAttribute('aria-pressed') !== wantPressed) {
       btn.setAttribute('aria-pressed', wantPressed);
@@ -3479,6 +3540,25 @@
     }
     if (btn.title !== wantTitle) {
       btn.title = wantTitle;
+    }
+
+    var eqBars = btn.querySelectorAll('.v3-bgm-eq i');
+    for (var bIdx = 0; bIdx < eqBars.length; bIdx++) {
+      var bar = eqBars[bIdx];
+      if (!bar || !bar.style) continue;
+      if (isPlaying) {
+        bar.style.animationPlayState = 'running';
+        bar.style.opacity = '';
+        bar.style.transform = '';
+      } else if (!isM) {
+        bar.style.animationPlayState = 'paused';
+        bar.style.opacity = '0.52';
+        bar.style.transform = 'scaleY(0.35)';
+      } else {
+        bar.style.animationPlayState = '';
+        bar.style.opacity = '';
+        bar.style.transform = '';
+      }
     }
 
     var labelEl = btn.querySelector('.v3-bgm-label');
@@ -3688,14 +3768,19 @@
         st.menuObs.observe(menuEl, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
       }
 
+      st.wasTitleVis = isTitleVis();
       st.titleObs = new MutationObserver(function () {
-        if (!isTitleVis()) {
+        var nowVis = isTitleVis();
+        if (nowVis === st.wasTitleVis) return;
+        st.wasTitleVis = nowVis;
+        if (!nowVis) {
           clearTimers();
           resetParallax(true);
           stopDustLoop();
           stopFusionLoop();
           if (st.auditionTrackKey) {
             st.auditionTrackKey = null;
+            st.auditionTrackTitle = '';
             renderSoundtrackRows();
           }
           if (st.opening === 'playing') {
@@ -3706,6 +3791,9 @@
             setMode('main', { silent: true });
           }
         } else {
+          st.auditionTrackKey = null;
+          st.auditionTrackTitle = '';
+          st.titleBgmPausedByUser = false;
           indexMenuItems();
           syncArchiveMeta();
           syncTitleAudioButton(false);
@@ -3724,7 +3812,9 @@
       var muteBtn = document.getElementById('btn-title-mute');
       if (muteBtn) {
         st.muteObs = new MutationObserver(function () {
-          syncTitleAudioButton(true);
+          if (st._syncingAudioBtn) return;
+          st._syncingAudioBtn = true;
+          try { syncTitleAudioButton(false); } finally { st._syncingAudioBtn = false; }
         });
         st.muteObs.observe(muteBtn, { attributes: true, attributeFilter: ['class', 'aria-pressed'] });
       }

@@ -151,7 +151,12 @@ function sfx(type, opts){
       click:[920,.05,'triangle',1120], ok:[587,.14,'sine',784], level:[659,.24,'triangle',987],
       bad:[190,.22,'sawtooth',125], magic:[880,.18,'sine',1320], ice_cast:[880,.18,'sine',1320],
       open:[460,.11,'triangle',620], modal_open:[520,.12,'sine',740], modal_close:[620,.09,'sine',440],
-      tab_switch:[980,.045,'sine',1140], stat_gain:[740,.15,'sine',1108],
+      tab_switch:[980,.045,'sine',1140], glass_tap:[980,.045,'sine',1140], ui_tick:[1060,.04,'sine',1280],
+      stat_gain:[740,.15,'sine',1108], buff:[660,.16,'sine',987], shield_up:[587,.16,'triangle',880],
+      shield_block:[420,.11,'triangle',260], sword_slash:[520,.09,'sawtooth',180], water_surge:[540,.15,'sine',820],
+      eclipse_cast:[340,.22,'triangle',680], combat_crit:[1240,.14,'triangle',1760], blade_clash:[1420,.09,'triangle',840],
+      break_chime:[1040,.2,'sine',1560], one_more:[880,.18,'triangle',1320], footstep:[220,.05,'triangle',120],
+      title_click:[1174,.12,'triangle',1760], title_start:[587,.28,'triangle',1174],
       wax_seal:[620,.16,'triangle',880], letter_fold:[540,.11,'triangle',420],
       page:[660,.05,'triangle',520], heart:[740,.2,'sine',980], gift_loved:[740,.2,'sine',980],
       card_hover:[1040,.035,'sine',1180]
@@ -164,6 +169,8 @@ function sfx(type, opts){
 // ========== BGM (背景音乐) ==========
 // 情境 → 音乐文件（放在 Music/，相对路径 file:// 也能播）。缺文件则静默降级。
 const BGM_BASE = 'Music/';
+const TITLE_BGM_KEY = 'sacred1';
+const TITLE_BGM_TITLE = '冰晶协奏';
 const BGM_FILES = {
   battle1:'Music/Battle & Tension 1.mp3',
   battle2:'Music/Battle & Tension 2.mp3',
@@ -191,7 +198,30 @@ let bgmCurType = null;    // 当前播放的情境类型
 let sceneBgmType = null;  // 当前场景显式配置的 bgm 类型（贯穿整个场景，剧情中不被切走）
 let bgmGroupIdx = {};     // 类型 -> 上次使用的曲目索引（轮换用）
 let bgmLoc = null;        // 当前 bgm 所属地点（用于判断是否真的切换了地点）
+let bgmPendingPlay = false; // 自动播放被浏览器策略挂起，等待首次手势解锁即刻起播
+let bgmUserPausedTitle = false; // 用户在标题曲库试听中主动暂停标题音乐
+let _bgmSeq = 0;          // 单调递增操作序号，彻底杜绝旧淡出回调反向打断/压零新曲
+let bgmOverlayStack = []; // 瞬态全屏氛围界面栈（arena / deduction / ending）
 let bgmVolume = (()=>{ try { const v=parseFloat(localStorage.getItem(MUSIC_VOL_KEY)); return Number.isFinite(v)?Math.max(0,Math.min(1,v)):0.5; } catch(e){ return 0.5; } })();
+
+function isJsdomEnv(){
+  try { return typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent || ''); }
+  catch(e){ return false; }
+}
+function bgmIsTitleScreenVisible(){
+  try {
+    if(typeof document === 'undefined') return false;
+    const ts = document.getElementById('title-screen');
+    return !!(ts && !ts.classList.contains('hidden') && (!ts.style || ts.style.display !== 'none'));
+  } catch(e){ return false; }
+}
+function notifyBgmStateChange(){
+  try {
+    if(typeof window !== 'undefined' && window.TitleDirector && typeof window.TitleDirector.syncAudioButton === 'function'){
+      window.TitleDirector.syncAudioButton(false);
+    }
+  } catch(e){}
+}
 
 // 同类型分组（策略 B：同情境在多首间轮换）
 const BGM_GROUPS = {
@@ -230,30 +260,34 @@ function bgmFadeTo(el, target, ms, done){
     if(done) done();
     return;
   }
-  const step = 50;
-  const steps = Math.max(1, Math.round(dur / step));
   const startVol = Number.isFinite(el.volume) ? el.volume : 0;
-  const delta = (dst - startVol) / steps;
-  let n = 0;
+  const t0 = Date.now();
   el._fadeIv = setInterval(()=>{
-    n++;
-    const nextVol = n >= steps ? dst : Math.max(0, Math.min(1, startVol + delta * n));
+    const p = Math.min(1, Math.max(0, (Date.now() - t0) / dur));
+    const nextVol = p >= 1 ? dst : Math.max(0, Math.min(1, startVol + (dst - startVol) * p));
     try { el.volume = nextVol; } catch(e){}
-    if(n >= steps){
+    if(p >= 1){
       bgmCancelFade(el);
       if(done) done();
     }
-  }, step);
+  }, 40);
 }
 function bgmStop(fade=true){
-  const el = bgmEl;
-  if(!el) return;
+  const seq = ++_bgmSeq;
+  const el = bgmEl || (typeof document !== 'undefined' ? document.getElementById('bgm-audio') : null);
   bgmEl = null; bgmKey = null; bgmCurType = null; sceneBgmType = null; bgmLoc = null;
-  const kill = ()=>{ bgmCancelFade(el); try{ el.pause(); }catch(e){} };
-  if(fade){
+  bgmPendingPlay = false; bgmOverlayStack = [];
+  if(!el){ notifyBgmStateChange(); return; }
+  const kill = ()=>{
+    if(_bgmSeq !== seq && bgmKey) return;
+    bgmCancelFade(el);
+    try{ el.pause(); }catch(e){}
+    notifyBgmStateChange();
+  };
+  if(fade && !el.paused && el.volume > 0.005){
     bgmCancelFade(el);
     try{ el.volume = Math.min(el.volume, (bgmMuted||muted)?0:bgmVolume); }catch(e){}
-    bgmFadeTo(el, 0, 600, kill);
+    bgmFadeTo(el, 0, 500, kill);
   } else {
     kill();
   }
@@ -265,24 +299,75 @@ function bgmAudio(){
   try { el = document.getElementById('bgm-audio') || document.createElement('audio'); }
   catch(e){ try{ el = new Audio(); }catch(e2){ return null; } }
   if(!el.loop) el.loop = true;
-  if(!el.preload) el.preload = 'metadata';
+  if(!el.preload) el.preload = 'auto';
   el.volume = (bgmMuted || muted) ? 0 : bgmVolume;
-  el.onerror = ()=>{ /* 加载失败：保留元素，只是本次不响，等待下次触发重试 */ };
+  if(!el._bgmEventsBound){
+    el._bgmEventsBound = true;
+    el.onerror = ()=>{
+      bgmPendingPlay = false;
+      notifyBgmStateChange();
+    };
+    if(typeof el.addEventListener === 'function'){
+      el.addEventListener('play', ()=>{
+        bgmPendingPlay = false;
+        notifyBgmStateChange();
+      });
+      el.addEventListener('playing', ()=>{
+        bgmPendingPlay = false;
+        notifyBgmStateChange();
+      });
+      el.addEventListener('pause', ()=>{ notifyBgmStateChange(); });
+      el.addEventListener('ended', ()=>{ notifyBgmStateChange(); });
+    }
+  }
   bgmEl = el;
   return el;
 }
 function encodeAudioPath(file){
   return String(file || '').split('/').map(seg => encodeURIComponent(seg)).join('/');
 }
+function bgmIsActuallyPlaying(){
+  const el = bgmEl || (typeof document !== 'undefined' ? document.getElementById('bgm-audio') : null);
+  if(!el || !bgmKey || !el.src) return false;
+  if(bgmMuted || muted || bgmVolume <= 0.001) return false;
+  if(el.paused) return false;
+  return true;
+}
+function bgmGetState(){
+  const el = bgmEl || (typeof document !== 'undefined' ? document.getElementById('bgm-audio') : null);
+  return {
+    key: bgmKey,
+    type: bgmCurType,
+    sceneType: sceneBgmType,
+    loc: bgmLoc,
+    volume: bgmVolume,
+    muted: isMuted(),
+    unlocked: bgmUnlocked,
+    pendingPlay: bgmPendingPlay,
+    playing: bgmIsActuallyPlaying(),
+    paused: el ? !!el.paused : true,
+    src: el ? (el.getAttribute('src') || el.src || '') : '',
+    overlays: bgmOverlayStack.map(o => o.tag)
+  };
+}
 function bgmPlay(key, {fade=true}={}){
   if(!key) return;
-  if(bgmKey === key && bgmEl && !bgmEl.paused) return; // 已播放同曲
   const file = BGM_FILES[key]; if(!file) return;
+  if(bgmKey === key && bgmEl && !bgmEl.paused && !bgmPendingPlay){
+    const wantVol = (bgmMuted || muted) ? 0 : bgmVolume;
+    if(!bgmEl._fadeIv && Math.abs((bgmEl.volume || 0) - wantVol) > 0.01){
+      try { bgmEl.volume = wantVol; } catch(e){}
+    }
+    notifyBgmStateChange();
+    return;
+  }
+  const seq = ++_bgmSeq;
   const prev = bgmEl;
+  const wasBlocked = bgmPendingPlay;
   bgmKey = key;
   // 淡出旧曲后换新
   const startNew = ()=>{
-    if(bgmKey !== key) return; // 期间又被切换
+    if(_bgmSeq !== seq || bgmKey !== key) return; // 期间又被切换
     const el = bgmAudio(); if(!el) return;
     bgmCancelFade(el);
     const targetVol = (bgmMuted || muted) ? 0 : bgmVolume;
@@ -293,29 +378,60 @@ function bgmPlay(key, {fade=true}={}){
     } else {
       try { el.volume = targetVol; } catch(e){}
     }
-    const p = el.play();
-    if(p && p.catch) p.catch(()=>{ /* 自动播放被拒：等待 bgmUnlock 时重试 */ });
+    let p;
+    try { p = el.play(); } catch(e){ p = null; }
+    if(p && typeof p.then === 'function'){
+      p.then(()=>{
+        if(_bgmSeq !== seq) return;
+        bgmPendingPlay = false;
+        notifyBgmStateChange();
+      }).catch(()=>{
+        if(_bgmSeq !== seq) return;
+        bgmPendingPlay = true;
+        bgmCancelFade(el);
+        try { el.volume = (bgmMuted || muted) ? 0 : bgmVolume; } catch(e){}
+        notifyBgmStateChange();
+      });
+    } else {
+      bgmPendingPlay = false;
+      notifyBgmStateChange();
+    }
     // 淡入；非淡入或静音状态直接锁定目标音量（修复音乐室淡出后静音播放与静音泄漏）
     if(fade && targetVol > 0){
-      bgmFadeTo(el, targetVol, 650);
+      bgmFadeTo(el, targetVol, 600);
     } else {
       bgmCancelFade(el);
       try { el.volume = targetVol; } catch(e){}
     }
+    notifyBgmStateChange();
   };
-  if(prev && prev.src){
-    const kill = ()=>{ bgmCancelFade(prev); try{ prev.pause(); }catch(e){} };
-    if(fade){
-      bgmCancelFade(prev);
-      try{ prev.volume = Math.min(prev.volume, (bgmMuted||muted)?0:bgmVolume); }catch(e){}
-      bgmFadeTo(prev, 0, 600, ()=>{ if(bgmKey===key) startNew(); else kill(); });
-    } else {
-      kill();
-      startNew(); // fade:false 也要启动新曲
-    }
+  if(prev && prev.src && fade && !wasBlocked){
+    bgmCancelFade(prev);
+    try{ prev.volume = Math.min(prev.volume, (bgmMuted||muted)?0:bgmVolume); }catch(e){}
+    bgmFadeTo(prev, 0, 550, ()=>{
+      if(_bgmSeq === seq && bgmKey === key){
+        startNew();
+      } else if(!bgmKey){
+        bgmCancelFade(prev);
+        try{ prev.pause(); }catch(e){}
+      }
+    });
   } else {
+    if(prev){
+      bgmCancelFade(prev);
+      try{ prev.pause(); }catch(e){}
+    }
     startNew();
   }
+}
+function bgmPlayTitle(opts){
+  opts = opts || {};
+  bgmUserPausedTitle = false;
+  sceneBgmType = null;
+  bgmLoc = null;
+  bgmOverlayStack = [];
+  bgmCurType = 'title';
+  bgmPlay(TITLE_BGM_KEY, { fade: opts.fade !== undefined ? !!opts.fade : true });
 }
 // 用户手势后解锁音频（浏览器自动播放限制）——任何用户交互都会尝试恢复
 function bgmUnlock(){
@@ -331,18 +447,45 @@ function bgmUnlock(){
       window.CrystalSFX.unlock();
     }
   } catch(e){}
-  if(bgmEl && bgmEl.src && bgmEl.paused){
-    const p = bgmEl.play();
-    if(p && p.catch) p.catch(()=>{});
+  if(bgmKey && bgmEl && bgmEl.src && (bgmEl.paused || bgmPendingPlay)){
+    const targetVol = (bgmMuted || muted) ? 0 : bgmVolume;
+    if(!bgmEl._fadeIv){
+      try { bgmEl.volume = targetVol; } catch(e){}
+    }
+    let p;
+    try { p = bgmEl.play(); } catch(e){ p = null; }
+    if(p && typeof p.then === 'function'){
+      notifyBgmStateChange();
+      p.then(()=>{
+        bgmPendingPlay = false;
+        notifyBgmStateChange();
+      }).catch(()=>{
+        notifyBgmStateChange();
+      });
+    } else {
+      bgmPendingPlay = false;
+      notifyBgmStateChange();
+    }
+  } else if(!bgmKey && !isMuted() && !bgmUserPausedTitle && bgmIsTitleScreenVisible() && !isJsdomEnv()){
+    bgmPlayTitle({ fade: false });
   }
 }
-// 全局解锁：绑定 document 首次用户交互，确保任何进入路径都能发声
+// 全局解锁：捕获阶段监听首次用户交互，确保任何进入路径都能立刻唤醒标题曲与音效
 let _bgmGlobalBound = false;
 function bgmBindGlobalUnlock(){
-  if(_bgmGlobalBound) return; _bgmGlobalBound = true;
-  const handler = ()=>{ bgmUnlock(); };
-  document.addEventListener('pointerdown', handler, {once:false});
-  document.addEventListener('keydown', handler);
+  if(_bgmGlobalBound || typeof document === 'undefined') return;
+  _bgmGlobalBound = true;
+  const handler = (ev)=>{
+    const tgt = ev && ev.target;
+    // 若用户直接点击标题声音开关按钮，交由按钮自身的点击逻辑判断是“唤醒”还是“静音”，避免双翻转
+    if(ev && ev.type === 'pointerdown' && tgt && typeof tgt.closest === 'function' && tgt.closest('#btn-title-mute, #btn-mute')){
+      return;
+    }
+    bgmUnlock();
+  };
+  document.addEventListener('pointerdown', handler, { capture: true, passive: true });
+  document.addEventListener('keydown', handler, { capture: true, passive: true });
+  document.addEventListener('touchstart', handler, { capture: true, passive: true });
 }
 // 背景类 → 情境类型的映射表（自由探索全覆盖：每个背景类都有确定类型）
 const BG_CLASS_TYPE = {
@@ -351,21 +494,22 @@ const BG_CLASS_TYPE = {
   'bg-void':'sad', 'bg-night':'relax', 'bg-snow':'relax', 'bg-forest':'sad',
   'bg-beach':'cheerful', 'bg-plain':'peaceful', 'bg-room':'peaceful', 'bg-hall':'peaceful',
   'bg-school':'academy', 'bg-garden':'cheerful', 'bg-study':'peaceful', 'bg-town':'cheerful',
-  'bg-ending':'sacred',
+  'bg-ending':'emotional',
   // 背景图类（地点/场景）
+  'bg-img-title':'peaceful',
   'bg-img-nursery':'peaceful', 'bg-img-ownroom':'peaceful', 'bg-img-hallway':'peaceful', 'bg-img-parlor':'peaceful',
   'bg-img-garden':'cheerful', 'bg-img-study':'peaceful', 'bg-img-dining':'cheerful',
-  'bg-img-kitchen':'cheerful', 'bg-img-training':'cheerful', 'bg-img-balcony':'relax',
-  'bg-img-chapel':'sacred', 'bg-img-cellar':'peaceful', 'bg-img-town':'cheerful',
-  'bg-img-beach':'cheerful', 'bg-img-dorm':'peaceful', 'bg-img-classroom':'academy',
+  'bg-img-kitchen':'cheerful', 'bg-img-training':'academy', 'bg-img-balcony':'relax',
+  'bg-img-chapel':'sacred', 'bg-img-cellar':'relax', 'bg-img-town':'cheerful',
+  'bg-img-beach':'cheerful', 'bg-img-dorm':'relax', 'bg-img-classroom':'academy',
   'bg-img-ice-classroom':'academy', 'bg-img-library':'academy', 'bg-img-cafeteria':'academy',
-  'bg-img-clocktower':'academy', 'bg-img-flowerhouse':'peaceful', 'bg-img-memorial':'peaceful',
+  'bg-img-clocktower':'academy', 'bg-img-flowerhouse':'relax', 'bg-img-memorial':'emotional',
   'bg-img-auditorium':'sacred', 'bg-img-forest':'sad', 'bg-img-jikan':'peaceful',
-  'bg-img-uni':'academy', 'bg-img-plain':'sacred', 'bg-img-village':'cheerful',
-  'bg-img-castle':'sacred', 'bg-img-crosswalk-accident':'sad',
-  'bg-img-classroom-locust':'peaceful',
-  'bg-img-ice-canyon':'sad',
-  'bg-img-chenglan-guild':'peaceful',
+  'bg-img-uni':'academy', 'bg-img-plain':'emotional',
+  'bg-img-crosswalk-accident':'sad',
+  'bg-img-classroom-locust':'upset',
+  'bg-img-ice-canyon':'upset',
+  'bg-img-chenglan-guild':'cheerful',
   'bg-img-north-forest':'sad',
   'bg-img-glow-sheep-hill':'relax',
   'bg-img-northwind-tavern':'relax',
@@ -386,14 +530,14 @@ function bgmTypeForBg(cls, phase, loc){
   return 'peaceful';
 }
 // 按类型播放：同类型不打断；切换类型时在同组曲目间顺序轮换
-function bgmPlayType(type, {force=false}={}){
+function bgmPlayType(type, {force=false, fade=true}={}){
   const group = BGM_GROUPS[type];
   if(!group || !group.length) return;
   if(!force && bgmCurType === type && bgmEl) return; // 同类型继续，不打断（不看 paused，避免同类型地点误切换曲）
   const idx = ((bgmGroupIdx[type] ?? -1) + 1) % group.length;
   bgmGroupIdx[type] = idx;
   bgmCurType = type;
-  bgmPlay(group[idx]);
+  bgmPlay(group[idx], { fade });
 }
 // 场景开始：记录场景 bgm 并强制播放，贯穿整个场景
 function bgmSceneStart(type){
@@ -401,18 +545,168 @@ function bgmSceneStart(type){
   bgmLoc = null; // 场景开始时重置地点跟踪，场景结束后自由探索会按当前地点切回音乐
   if(type) bgmPlayType(type, {force:true});
 }
-// 特殊状态结束后恢复到场景 bgm
+// 场景续播：恢复当前剧情场景配乐，若已处自由探索/标题页则交由上下文恢复
+function bgmSceneResume(){
+  if(sceneBgmType){
+    bgmPlayType(sceneBgmType, {force:true});
+    return;
+  }
+  bgmRestoreContext();
+}
+// 特殊状态结束后恢复到场景 bgm（自由探索或标题态亦自动回正，避免战乐/仪式乐残留）
 function bgmRestoreScene(){
-  if(sceneBgmType) bgmPlayType(sceneBgmType, {force:true});
+  if(sceneBgmType){
+    bgmPlayType(sceneBgmType, {force:true});
+    return;
+  }
+  bgmRestoreContext();
+}
+// 全屏氛围覆盖层 BGM 栈（演武大厅 / 冰晶宫殿推演盘 / 双轨终幕）
+function bgmEnterOverlay(tag, type, opts){
+  opts = opts || {};
+  if(!tag || !type) return;
+  bgmOverlayStack = bgmOverlayStack.filter(item => item.tag !== tag);
+  bgmOverlayStack.push({ tag, type });
+  bgmPlayType(type, { force: !!opts.force, fade: opts.fade !== undefined ? !!opts.fade : true });
+}
+function bgmLeaveOverlay(tag){
+  if(tag){
+    const had = bgmOverlayStack.some(item => item.tag === tag);
+    bgmOverlayStack = bgmOverlayStack.filter(item => item.tag !== tag);
+    if(!had && bgmOverlayStack.length === 0) return;
+  } else {
+    bgmOverlayStack = [];
+  }
+  bgmRestoreContext();
+}
+function bgmEnterArenaHub(){
+  bgmEnterOverlay('arena', 'academy', { force: false, fade: true });
+}
+function bgmLeaveArenaHub(returnToTitle){
+  bgmOverlayStack = bgmOverlayStack.filter(item => item.tag !== 'arena');
+  if(returnToTitle || bgmIsTitleScreenVisible()){
+    bgmPlayTitle({ fade: true });
+    return;
+  }
+  bgmRestoreContext();
+}
+// 强敌二阶段切曲强化：在两首战斗曲之间平滑切换增强张力
+function bgmShiftBattlePhase2(){
+  const targetKey = (bgmKey === 'battle2') ? 'battle1' : 'battle2';
+  bgmCurType = 'battle';
+  bgmGroupIdx.battle = targetKey === 'battle2' ? 1 : 0;
+  bgmPlay(targetKey, { fade: true });
+}
+// 依据当前真实舞台上下文精准恢复最合理的 BGM
+function bgmRestoreContext(){
+  if(bgmOverlayStack.length > 0){
+    const top = bgmOverlayStack[bgmOverlayStack.length - 1];
+    if(top && top.type){
+      bgmPlayType(top.type, { force: false, fade: true });
+      return;
+    }
+  }
+  if(typeof document !== 'undefined'){
+    const bs = document.getElementById('battle-screen');
+    if(bs && !bs.classList.contains('hidden')){
+      bgmPlayType('battle', { force: false, fade: true });
+      return;
+    }
+    const ao = document.getElementById('arena-overlay');
+    if(ao && !ao.classList.contains('hidden')){
+      bgmPlayType('academy', { force: false, fade: true });
+      return;
+    }
+    const endEl = document.getElementById('ending-screen');
+    if(endEl && !endEl.classList.contains('hidden')){
+      bgmPlayType('emotional', { force: false, fade: true });
+      return;
+    }
+    const dedEl = document.getElementById('ice-deduction-modal');
+    if(dedEl && !dedEl.classList.contains('hidden')){
+      bgmPlayType('sacred', { force: false, fade: true });
+      return;
+    }
+  }
+  if(bgmIsTitleScreenVisible()){
+    if(!bgmUserPausedTitle){
+      bgmPlayTitle({ fade: true });
+    }
+    return;
+  }
+  if(sceneBgmType && !(typeof S === 'object' && S && S.freeRoam)){
+    bgmPlayType(sceneBgmType, { force: true });
+    return;
+  }
+  if(typeof S === 'object' && S && S.freeRoam){
+    bgmLoc = null;
+    const locObj = (typeof LOCS === 'object' && LOCS && S.loc) ? LOCS[S.loc] : null;
+    const targetBg = (locObj && locObj.bg) || S.bg || 'bg-room';
+    bgmFreeRoam(targetBg, S.phase, S.loc);
+    return;
+  }
+  if(typeof document !== 'undefined'){
+    const bgEl = document.getElementById('bg');
+    const cls = bgEl ? (bgEl.getAttribute('data-cls') || bgEl.className || '') : '';
+    if(cls) bgmSyncFromBG(cls, typeof S === 'object' && S ? S.phase : null, typeof S === 'object' && S ? S.loc : null);
+  }
+}
+// 自动为冰晶宫殿推演盘与双轨终幕挂载氛围切曲钩子（无侵入式、幂等）
+function bgmAttachOverlayHooks(){
+  if(typeof window === 'undefined') return;
+  try {
+    const afx = window.AmbientFX;
+    if(afx && typeof afx.openDeductionBoard === 'function' && !afx.__bgmDeductionWrapped){
+      afx.__bgmDeductionWrapped = true;
+      const origOpen = afx.openDeductionBoard;
+      const origClose = afx.closeDeductionBoard;
+      afx.openDeductionBoard = function(config, onDone){
+        const res = origOpen.call(this, config, onDone);
+        if(res && !isJsdomEnv()){
+          bgmEnterOverlay('deduction', 'sacred', { force: false, fade: true });
+        }
+        return res;
+      };
+      if(typeof origClose === 'function'){
+        afx.closeDeductionBoard = function(skipped){
+          const res = origClose.call(this, skipped);
+          if(!isJsdomEnv()) bgmLeaveOverlay('deduction');
+          return res;
+        };
+      }
+    }
+  } catch(e){}
+  try {
+    const rh = window.RaisingHub;
+    if(rh && typeof rh.showEndingScreen === 'function' && !rh.__bgmEndingWrapped){
+      rh.__bgmEndingWrapped = true;
+      const origShow = rh.showEndingScreen;
+      const origClose = rh.closeEndingScreen;
+      rh.showEndingScreen = function(optionalId, opts){
+        const res = origShow.call(this, optionalId, opts);
+        if(res && !isJsdomEnv()){
+          bgmEnterOverlay('ending', 'emotional', { force: false, fade: true });
+        }
+        return res;
+      };
+      if(typeof origClose === 'function'){
+        rh.closeEndingScreen = function(){
+          const res = origClose.call(this);
+          if(!isJsdomEnv()) bgmLeaveOverlay('ending');
+          return res;
+        };
+      }
+    }
+  } catch(e){}
 }
 // 自由探索：进入地点时按背景推断（仅 freeRoam 状态生效，剧情中不覆盖场景 bgm）
 function bgmFreeRoam(cls, phase, loc){
   if(!S.freeRoam) return;          // 剧情中保持场景 bgm
-  // 只有在「确实切换到了新地点」时才处理 bgm（避免同一地点内点修行/学习/休息等行动结束后重置/换曲）
-  if(bgmLoc === loc) return;
-  bgmLoc = loc;
   const type = bgmTypeForBg(cls, phase, loc);
   if(!type) return;
+  // 只有在「确实切换到了新地点」或「当前乐曲类型已偏离本房间氛围（例如刚退出战斗/演武）」时才切曲
+  if(bgmLoc === loc && bgmCurType === type && bgmEl) return;
+  bgmLoc = loc;
   // 不带 force：同类型地点之间（如育婴室→起居室，都是 peaceful）不换曲、继续播；
   // 切换到不同类型地点时才切曲（由 bgmPlayType 内部「同类型不打断」逻辑决定）
   bgmPlayType(type);
@@ -423,10 +717,25 @@ function bgmSyncFromBG(cls, phase, loc){
   bgmPlayType(type);
 }
 function bgmApplyMute(){
-  if(!bgmEl) return;
-  bgmCancelFade(bgmEl);
   const target = (bgmMuted || muted) ? 0 : bgmVolume;
-  bgmFadeTo(bgmEl, target, target <= 0 ? 260 : 380);
+  if(!bgmEl){
+    if(target > 0 && bgmIsTitleScreenVisible() && !isJsdomEnv()){
+      bgmPlayTitle({ fade: true });
+    }
+    notifyBgmStateChange();
+    return;
+  }
+  bgmCancelFade(bgmEl);
+  if(target > 0 && bgmKey && bgmEl.src && (bgmEl.paused || bgmPendingPlay)){
+    try {
+      const p = bgmEl.play();
+      if(p && typeof p.then === 'function'){
+        p.then(()=>{ bgmPendingPlay = false; notifyBgmStateChange(); }).catch(()=>{ notifyBgmStateChange(); });
+      }
+    } catch(e){}
+  }
+  bgmFadeTo(bgmEl, target, target <= 0 ? 260 : 380, ()=>{ notifyBgmStateChange(); });
+  notifyBgmStateChange();
 }
 function bgmSetVolume(v, opts){
   opts = opts || {};
@@ -472,12 +781,14 @@ function bgmSetVolume(v, opts){
     } catch(e){}
     finally { _inBgmSync = false; }
   }
+  notifyBgmStateChange();
   return bgmVolume;
 }
 function setMuted(m){
   const next = !!m;
   muted = next;
   bgmMuted = next;
+  if(!next) bgmUserPausedTitle = false;
   try { localStorage.setItem(MUTE_KEY, next ? '1' : '0'); } catch(e){}
   try { localStorage.setItem(BGM_MUTE_KEY, next ? '1' : '0'); } catch(e){}
   try {
@@ -485,6 +796,7 @@ function setMuted(m){
       window.CrystalSFX.setMuted(next);
     }
   } catch(e){}
+  if(!next) bgmUnlock();
   bgmApplyMute();
   if(typeof syncMuteBtn === 'function') syncMuteBtn();
   return next;
@@ -609,6 +921,18 @@ const PORTRAIT_FILES = {
   musa_normal:'assets/portraits/musa_normal.png',
   jiqing_normal:'assets/portraits/jiqing_normal.png',
   servant_a_normal:'assets/portraits/servant_a_normal.png',
+  lein_normal:'assets/portraits/lein_normal.png',
+  peilin_normal:'assets/portraits/peilin_normal.png',
+  // ==== 关键配角表情差分（全部已落盘验图） ====
+  aino_serious:'assets/portraits/aino_serious.png',
+  aino_smile:'assets/portraits/aino_smile.png',
+  aino_shy:'assets/portraits/aino_shy.png',
+  jilan_serious:'assets/portraits/jilan_serious.png',
+  jilan_shy:'assets/portraits/jilan_shy.png',
+  jilan_teary:'assets/portraits/jilan_teary.png',
+  charlotte_shy:'assets/portraits/charlotte_shy.png',
+  charlotte_smile:'assets/portraits/charlotte_smile.png',
+  noelle_smile:'assets/portraits/noelle_smile.png',
 };
 // 各角色相对主角的年龄差：姐姐=+2，妹妹=-2，其余角色=0（父母/师长等一律用成年档）
 function charAgeDelta(charId){
@@ -2177,13 +2501,19 @@ function skipType(){
 
 function advanceDialog(){
   if(awaitingChoice) return;
+  const isAutoOrSkip = !!(typeof window !== 'undefined' && window.VNUx && (
+    (typeof window.VNUx.isAutoMode === 'function' && window.VNUx.isAutoMode()) ||
+    (typeof window.VNUx.isSkipMode === 'function' && window.VNUx.isSkipMode())
+  ));
   // If still typing: complete the line only (stay on this message)
   if(typing){
+    if(!isAutoOrSkip) sfx('ui_tick', { gain: 0.42 });
     skipType();
     return;
   }
   // Message fully shown: go next
   if(lineCB){
+    if(!isAutoOrSkip) sfx('ui_tick', { gain: 0.46 });
     const fn = lineCB;
     lineCB = null;
     try { fn(); } catch(err){ console.error('lineCB error', err); enterFreeRoam(); }
@@ -2505,6 +2835,7 @@ function showChoices(choices, onEmpty){
 function dismissRoamPrompt(){
   const tb=$('text-box');
   if(!tb || !S.freeRoam || !tb.hasAttribute('data-roam-prompt') || typing || awaitingChoice) return false;
+  sfx('ui_tick', { gain: 0.45 });
   const promptKind=tb.getAttribute('data-roam-prompt');
   const greetingChar=tb.getAttribute('data-greeting-char');
   if(promptKind==='greeting' && greetingChar) markRoamGreetingDismissed(greetingChar);
@@ -2588,7 +2919,7 @@ function showCard(vol, t, s, cb){
   $('card-s').textContent=s||'';
   show('card',1); sfx('page');
   let done=false;
-  const finish=()=>{ if(done) return; done=true; show('card',0); spawnCardExitVeil(); if(cb) cb(); };
+  const finish=()=>{ if(done) return; done=true; sfx('glass_tap', { gain: 0.58 }); show('card',0); spawnCardExitVeil(); if(cb) cb(); };
   const card=$('card');
   card.onclick=()=>{ finish(); card.onclick=null; };
 }
@@ -2609,9 +2940,7 @@ function cgCharClass(ch){
   if(ch==='alice'||ch==='爱丽丝') return 'c-alice';
   return 'c-narrator';
 }
-const CG_FALLBACK_BG = {
-  'vol3_jikan_parting.png': 'assets/bg/jikan.jpg',
-};
+const CG_FALLBACK_BG = {};
 let cgImage = null;   // 当前 CG 图（避免连续同图时重复设 background 导致闪烁）
 let _cgHideTimer = null;
 function cgShow(name){
@@ -2952,6 +3281,8 @@ function enterFreeRoam(options={}){
   const cardEl=$('card');
   if(cardEl && !cardEl.classList.contains('hidden')){ cardEl.onclick=null; show(cardEl,0); }
   sceneBgmType = null;             // 场景结束，进入自由探索：允许按背景推断切回日常音乐
+  bgmOverlayStack = [];
+  if(options.restoreLoc) bgmLoc = null;
   roamPromptDone = null;
   S.freeRoam=true; awaitingChoice=false; show('action-bar',1); updateHUD(); updateLocBar(); save();
   if(options.restoreLoc){
@@ -3026,11 +3357,13 @@ function updateLocBar(){
 }
 function enterLoc(id){
   const L=LOCS[id];
-  if(!L||!L.unlock){ toast('还不能去那里'); return; }
-  if(!phaseAreaAllowed(L.area)){ toast('这个阶段不能去那里'); return; }
+  if(!L||!L.unlock){ toast('还不能去那里'); sfx('bad'); return; }
+  if(!phaseAreaAllowed(L.area)){ toast('这个阶段不能去那里'); sfx('bad'); return; }
   // 婴儿（<1岁）：不能自由移动（只能经 doBabyFuss 短暂被抱出）
-  if(S.ageY < 1 && id !== 'nursery' && id !== 'ownroom'){ toast('你还太小，自己走不了。让家人抱你出去吧。'); return; }
+  if(S.ageY < 1 && id !== 'nursery' && id !== 'ownroom'){ toast('你还太小，自己走不了。让家人抱你出去吧。'); sfx('bad'); return; }
+  const moved = S.loc !== id;
   S.loc=id; if(L.tags?.includes('rest')) S.lastSafe=id;
+  if(moved) sfx('footstep');
   updateLocBar(); clearPortraits();
   if(tryLocEgg(id)) return;
   // 普通进入地点不再播放环境描述；自由探索会自动显示本季度尚未关闭的角色问候。
@@ -3233,7 +3566,7 @@ function uiShow(){
 function uiToggle(){
   document.body.classList.contains('ui-hidden') ? uiShow() : uiHide();
 }
-$('btn-ui').onclick=()=>uiToggle();
+$('btn-ui').onclick=()=>{ sfx('ui_tick', { gain: 0.65 }); uiToggle(); };
 
 function whoIsHere(){
   const loc=S.loc, ph=S.phase, tod=S.tod, a=S.ageY;
@@ -5636,13 +5969,15 @@ function newGame(){
   S.season = seasonOf(S.month);
   if(typeof VNUx!=='undefined'&&VNUx.clearBacklog) VNUx.clearBacklog();
   bgmLoc = null;
+  bgmOverlayStack = [];
+  sceneBgmType = null;
   syncLocUnlocksForState();
   bgmUnlock(); // 用户点击开始 → 解锁音频
   show('title-screen',0); show('game-screen',1);
   runScene('s_start');
 }
 function continueGame(){
-  if(!load()){ toast('没有存档'); return; }
+  if(!load()){ toast('没有存档'); sfx('bad'); return; }
   if(typeof window !== 'undefined') window.S = S;
   closeHudMoreDrawer();
   setPov(false);
@@ -5651,6 +5986,8 @@ function continueGame(){
   document.body.classList.remove('ai-drawer-open');
   bgmUnlock(); // 用户点击继续 → 解锁音频
   bgmLoc = null;
+  bgmOverlayStack = [];
+  sceneBgmType = null;
   syncLocUnlocksForState();
   show('title-screen',0); show('game-screen',1);
   spawnCardExitVeil();
@@ -5674,30 +6011,64 @@ function syncMuteBtn(){
     tb.classList.toggle('is-muted', isM);
     tb.setAttribute('aria-pressed', isM ? 'true' : 'false');
   }
+  notifyBgmStateChange();
 }
 
-$('btn-new').onclick=()=>{ sfx('click'); newGame(); };
-$('btn-continue').onclick=()=>{ sfx('click'); continueGame(); };
+function handleTitleMuteClick(){
+  // 若当前已静音：解除静音并即刻唤醒标题主旋律
+  if(isMuted()){
+    setMuted(false);
+    bgmUserPausedTitle = false;
+    bgmUnlock();
+    if(!bgmKey && bgmIsTitleScreenVisible()) bgmPlayTitle({ fade: true });
+    sfx('glass_tap');
+    syncMuteBtn();
+    return;
+  }
+  // 若未静音但标题音乐因自动播放策略或用户曲库停止而处于暂停态：首次点击先唤醒起播，避免误静音
+  if(bgmIsTitleScreenVisible() && !bgmIsActuallyPlaying()){
+    bgmUserPausedTitle = false;
+    bgmUnlock();
+    if(!bgmKey){
+      bgmPlayTitle({ fade: false });
+    } else if(bgmEl && bgmEl.paused){
+      const targetVol = bgmVolume;
+      try { bgmEl.volume = targetVol; } catch(e){}
+      const p = bgmEl.play();
+      if(p && typeof p.then === 'function'){
+        p.then(()=>{ bgmPendingPlay = false; notifyBgmStateChange(); }).catch(()=>{ notifyBgmStateChange(); });
+      }
+    }
+    sfx('glass_tap');
+    syncMuteBtn();
+    return;
+  }
+  setMuted(true);
+}
+
+$('btn-new').onclick=()=>{ sfx('title_start'); newGame(); };
+$('btn-continue').onclick=()=>{ sfx('title_start'); continueGame(); };
 if($('v3-prism-start')){
   $('v3-prism-start').onclick=()=>{
     const bn = $('btn-new');
     if(bn && typeof bn.click === 'function') bn.click();
-    else { sfx('click'); newGame(); }
+    else { sfx('title_start'); newGame(); }
   };
 }
 if($('btn-title-settings')){
   $('btn-title-settings').onclick=()=>{
-    sfx('click');
     if(typeof window !== 'undefined' && window.TitleDirector && typeof window.TitleDirector.openSettingsMode === 'function'){
       window.TitleDirector.openSettingsMode();
     } else if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.openPrefsModal === 'function'){
       window.VNUx.openPrefsModal();
     } else {
+      sfx('modal_open');
       openPanel('settings');
     }
   };
 }
-$('btn-title').onclick=()=>{
+function returnToTitle(opts){
+  opts = opts || {};
   save();
   closeHudMoreDrawer();
   setPov(false);
@@ -5719,6 +6090,7 @@ $('btn-title').onclick=()=>{
   show('pick-screen',0); show('game-screen',0); show('battle-screen',0); show('arena-overlay',0); show('panel',0); show('map-overlay',0); show('stats-overlay',0); show('sys-popup',0);
   if($('backlog-overlay')) show('backlog-overlay',0);
   show('title-screen',1);
+  setBG('bg-title');
   if(typeof VNUx !== 'undefined'){
     if(VNUx.setAutoMode) VNUx.setAutoMode(false);
     if(VNUx.setSkipMode) VNUx.setSkipMode(false);
@@ -5731,19 +6103,21 @@ $('btn-title').onclick=()=>{
   if(typeof window !== 'undefined' && window.TitleDirector && typeof window.TitleDirector.returnToMain === 'function'){
     try { window.TitleDirector.returnToMain({ silent: true }); } catch(e){}
   }
+  if(!opts.silent) sfx('modal_close');
+  bgmPlayTitle({ fade: true });
   updateHUD();
   if(typeof startTitleSnowLoop === 'function') startTitleSnowLoop();
-};
+}
+$('btn-title').onclick=()=>{ returnToTitle(); };
 if($('btn-mute')){
   $('btn-mute').onclick=()=>{
-    bgmToggleMute();
+    const nowMuted = bgmToggleMute();
+    if(!nowMuted) sfx('glass_tap');
   };
 }
 if($('btn-title-mute')){
   $('btn-title-mute').onclick=()=>{
-    const bm = $('btn-mute');
-    if(bm && typeof bm.click === 'function') bm.click();
-    else bgmToggleMute();
+    handleTitleMuteClick();
   };
 }
 document.addEventListener('click', e=>{
@@ -5770,9 +6144,7 @@ document.addEventListener('click', e=>{
   }
   const titleMuteBtn = e.target && e.target.closest ? e.target.closest('#btn-title-mute') : null;
   if(titleMuteBtn && !titleMuteBtn.onclick){
-    const bm = $('btn-mute');
-    if(bm && typeof bm.click === 'function') bm.click();
-    else bgmToggleMute();
+    handleTitleMuteClick();
     return;
   }
   const hr = document.querySelector('#hud .hud-right');
@@ -5787,7 +6159,7 @@ document.addEventListener('click', e=>{
 $('btn-help').onclick=()=>{ closeHudMoreDrawer(); show('help-screen',1); sfx('modal_open'); };
 $('btn-help-close').onclick=()=>{ show('help-screen',0); sfx('modal_close'); };
 if($('btn-backlog')) $('btn-backlog').onclick=e=>{ if(e && e.stopPropagation) e.stopPropagation(); if(typeof VNUx!=='undefined'&&VNUx.toggleBacklogModal) VNUx.toggleBacklogModal(); else openBacklog(); };
-if($('btn-backlog-close')) $('btn-backlog-close').onclick=()=>show('backlog-overlay',0);
+if($('btn-backlog-close')) $('btn-backlog-close').onclick=()=>{ show('backlog-overlay',0); sfx('modal_close'); };
 document.querySelectorAll('.modal-close-x[data-close-overlay]').forEach(btn=>{
   btn.onclick = ()=>{
     const id = btn.getAttribute('data-close-overlay');
@@ -6228,12 +6600,22 @@ syncMuteBtn();
 syncUiToggleBtn(false);
 syncHudChipLabels();
 if(typeof document !== 'undefined'){
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', syncHudChipLabels, { once: true });
-  setTimeout(syncHudChipLabels, 0);
+  const onDomBoot = ()=>{
+    syncHudChipLabels();
+    bgmAttachOverlayHooks();
+    if(!isJsdomEnv() && bgmIsTitleScreenVisible() && !bgmKey && !bgmUserPausedTitle){
+      bgmPlayTitle({ fade: false });
+    }
+  };
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', onDomBoot, { once: true });
+  setTimeout(onDomBoot, 0);
 }
 startTitleSnowLoop();
 bgmBindGlobalUnlock(); // 全局用户手势解锁音频
 applySettings(); // 应用已保存的设置（bgm音量/背景亮度）
+if(!isJsdomEnv() && bgmIsTitleScreenVisible()){
+  bgmPlayTitle({ fade: false });
+}
 console.log('[转生千金] ready · scenes', Object.keys(SCENES).length);
 if(typeof window !== 'undefined'){
   window.SCENES = SCENES;
@@ -6262,14 +6644,30 @@ if(typeof window !== 'undefined'){
   window.setTypeSpeed = setTypeSpeed;
   window.getTypeSpeed = getTypeSpeed;
   window.advanceDialog = advanceDialog;
+  window.returnToTitle = returnToTitle;
+  window.TITLE_BGM_KEY = TITLE_BGM_KEY;
+  window.TITLE_BGM_TITLE = TITLE_BGM_TITLE;
   window.bgmKeyForBg = typeof bgmTypeForBg !== 'undefined' ? bgmTypeForBg : ()=>{};
   window.bgmTypeForBg = typeof bgmTypeForBg !== 'undefined' ? bgmTypeForBg : ()=>{};
   window.bgmPlay = typeof bgmPlay !== 'undefined' ? bgmPlay : ()=>{};
+  window.bgmPlayTitle = typeof bgmPlayTitle !== 'undefined' ? bgmPlayTitle : ()=>{};
   window.bgmStop = typeof bgmStop !== 'undefined' ? bgmStop : ()=>{};
   window.bgmSetVolume = typeof bgmSetVolume !== 'undefined' ? bgmSetVolume : ()=>{};
   window.bgmGetVolume = ()=>bgmVolume;
   window.bgmUnlock = typeof bgmUnlock !== 'undefined' ? bgmUnlock : ()=>{};
   window.bgmPlayType = typeof bgmPlayType !== 'undefined' ? bgmPlayType : ()=>{};
+  window.bgmRestoreScene = typeof bgmRestoreScene !== 'undefined' ? bgmRestoreScene : ()=>{};
+  window.bgmSceneResume = typeof bgmSceneResume !== 'undefined' ? bgmSceneResume : ()=>{};
+  window.bgmRestoreContext = typeof bgmRestoreContext !== 'undefined' ? bgmRestoreContext : ()=>{};
+  window.bgmEnterOverlay = typeof bgmEnterOverlay !== 'undefined' ? bgmEnterOverlay : ()=>{};
+  window.bgmLeaveOverlay = typeof bgmLeaveOverlay !== 'undefined' ? bgmLeaveOverlay : ()=>{};
+  window.bgmEnterArenaHub = typeof bgmEnterArenaHub !== 'undefined' ? bgmEnterArenaHub : ()=>{};
+  window.bgmLeaveArenaHub = typeof bgmLeaveArenaHub !== 'undefined' ? bgmLeaveArenaHub : ()=>{};
+  window.bgmShiftBattlePhase2 = typeof bgmShiftBattlePhase2 !== 'undefined' ? bgmShiftBattlePhase2 : ()=>{};
+  window.bgmEndBattle = typeof bgmEndBattle !== 'undefined' ? bgmEndBattle : ()=>{};
+  window.bgmIsActuallyPlaying = typeof bgmIsActuallyPlaying !== 'undefined' ? bgmIsActuallyPlaying : ()=>false;
+  window.bgmGetState = typeof bgmGetState !== 'undefined' ? bgmGetState : ()=>({});
+  window.bgmSetTitleUserPaused = function(v){ bgmUserPausedTitle = !!v; notifyBgmStateChange(); };
   window.BGM_FILES = typeof BGM_FILES !== 'undefined' ? BGM_FILES : {};
   window.BGM_GROUPS = typeof BGM_GROUPS !== 'undefined' ? BGM_GROUPS : {};
   window.ACH = ACH;
@@ -6315,6 +6713,8 @@ if(typeof window !== 'undefined'){
     currentScene = curSc || null;
     storyChain = curChain || null;
     bgmLoc = null;
+    bgmOverlayStack = [];
+    sceneBgmType = null;
     syncLocUnlocksForState();
   };
 }

@@ -1,0 +1,82 @@
+name: Build Windows Desktop (.exe)
+
+on:
+  workflow_dispatch:
+    inputs:
+      bundle_targets:
+        description: "Tauri bundle targets (comma-separated, e.g. nsis,msi or nsis)"
+        required: false
+        default: "nsis,msi"
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    name: Build Tauri v2 Windows (.exe / .msi / portable)
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Rust stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build dependencies
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+
+      - name: Install desktop packaging CLI
+        working-directory: desktop
+        run: npm install
+
+      - name: Stage clean runtime game assets into desktop/dist
+        run: node desktop/scripts/prepare-dist.mjs
+
+      - name: Build Tauri v2 Windows installers and executable
+        working-directory: desktop
+        shell: pwsh
+        run: |
+          $targets = "${{ github.event.inputs.bundle_targets }}"
+          if ([string]::IsNullOrWhiteSpace($targets)) {
+            $targets = "nsis,msi"
+          }
+          npx tauri build --bundles $targets
+
+      - name: Prepare portable Windows zip
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path desktop/portable_stage | Out-Null
+          Copy-Item "desktop/src-tauri/target/release/vesteria-desktop.exe" "desktop/portable_stage/转生千金-桌面绿色版.exe"
+          Compress-Archive -Path "desktop/portable_stage/*" -DestinationPath "desktop/vesteria-windows-portable.zip" -Force
+
+      - name: Upload Windows NSIS & MSI Installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: vesteria-windows-installers
+          path: |
+            desktop/src-tauri/target/release/bundle/nsis/*.exe
+            desktop/src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Windows Portable Executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: vesteria-windows-portable
+          path: |
+            desktop/src-tauri/target/release/vesteria-desktop.exe
+            desktop/vesteria-windows-portable.zip
+          if-no-files-found: error
+          retention-days: 30

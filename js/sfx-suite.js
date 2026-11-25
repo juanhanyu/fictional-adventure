@@ -13,7 +13,20 @@
   var MIN_EXP_GAIN = 0.00015;
   var MIN_ATTACK = 0.002;
   var MAX_ATTACK = 0.014;
-  var TITLE_BTN_SELECTOR = '.title-menu button, .corner-tool-btn';
+  var TITLE_BTN_SELECTOR = '.title-menu button, .v3-prism-cta, .v3-edge-link, .corner-tool-btn';
+  var TITLE_OWN_SFX_IDS = {
+    'btn-new': 1,
+    'btn-continue': 1,
+    'v3-prism-start': 1,
+    'btn-title-settings': 1,
+    'btn-title-loads': 1,
+    'btn-title-chapters': 1,
+    'btn-arena-title': 1,
+    'btn-codex': 1,
+    'btn-help': 1,
+    'btn-letter-test': 1,
+    'btn-title-mute': 1
+  };
   var CRYSTAL_FM_RATIOS = [1.0, 2.756, 5.404];
 
   // D 大调 + B 大调冰铃标准十二平均律音高表 (A4 = 440Hz)
@@ -136,7 +149,7 @@
 
   function computeMasterVol(rawVol) {
     var clamped = clamp(Number(rawVol) || 0, 0, 1);
-    return Math.pow(clamped, 1.65) * 0.28;
+    return Math.pow(clamped, 1.35) * 0.48;
   }
 
   function getAudioCtor() {
@@ -2445,6 +2458,112 @@
           reverbSend: 0.72
         });
       }
+    },
+
+    ui_tick: {
+      prio: 1,
+      cooldown: 28,
+      fn: function (c, t, now, vol, prio) {
+        // 棱晶折光微声（P5 棱晶指令翼切换 / 轻触翻行）
+        var micro = ((state.clickNonce++ % 4) - 1.5) * 3.5;
+        playTone(c, t, now, vol, prio, {
+          freq: NOTE.A6,
+          slideTo: NOTE.D7,
+          wave: 'sine',
+          delay: 0,
+          dur: 0.044,
+          attack: 0.002,
+          gain: 0.34,
+          detune: micro,
+          reverbSend: 0.14
+        });
+        playTone(c, t, now, vol, prio, {
+          freq: NOTE.D6,
+          wave: 'triangle',
+          delay: 0,
+          dur: 0.028,
+          attack: 0.002,
+          gain: 0.18,
+          filter: { type: 'lowpass', freq: 3400, q: 0.8 },
+          ornament: true
+        });
+      }
+    },
+
+    shield_up: {
+      prio: 2,
+      cooldown: 75,
+      fn: function (c, t, now, vol, prio) {
+        // 冰壁构筑护盾（清透升阶霜晶展开，区别于受击格挡的 shield_block）
+        playWhoosh(c, t, now, vol, prio, {
+          startFreq: 900,
+          endFreq: 3400,
+          dur: 0.14,
+          attack: 0.008,
+          gain: 0.24,
+          q: 2.2,
+          reverbSend: 0.36
+        });
+        playCelesta(c, t, now, vol, prio, {
+          freq: NOTE.D5,
+          delay: 0.01,
+          dur: 0.24,
+          gain: 0.44,
+          pan: -0.14,
+          reverbSend: 0.42
+        });
+        playCelesta(c, t, now, vol, prio, {
+          freq: NOTE.A5,
+          delay: 0.052,
+          dur: 0.28,
+          gain: 0.48,
+          pan: 0.08,
+          reverbSend: 0.48
+        });
+        playCrystalFM(c, t, now, vol, prio, {
+          freq: NOTE.D6,
+          delay: 0.095,
+          dur: 0.32,
+          gain: 0.40,
+          modIndex: 1.05,
+          pan: 0.18,
+          reverbSend: 0.56,
+          ornament: true
+        });
+      }
+    },
+
+    buff: {
+      prio: 2,
+      cooldown: 75,
+      fn: function (c, t, now, vol, prio) {
+        // 霜息增益 / 残像 / 疗愈轻铃
+        playCelesta(c, t, now, vol, prio, {
+          freq: NOTE.E5,
+          delay: 0,
+          dur: 0.20,
+          gain: 0.42,
+          pan: -0.16,
+          reverbSend: 0.38
+        });
+        playCelesta(c, t, now, vol, prio, {
+          freq: NOTE.B5,
+          delay: 0.048,
+          dur: 0.24,
+          gain: 0.46,
+          pan: 0.04,
+          reverbSend: 0.44
+        });
+        playCelesta(c, t, now, vol, prio, {
+          freq: NOTE.E6,
+          delay: 0.096,
+          dur: 0.32,
+          gain: 0.42,
+          pan: 0.18,
+          reverbSend: 0.54,
+          ornament: true
+        });
+      }
     }
   };
 
@@ -2452,6 +2571,8 @@
   var ALIASES = {
     page_open: 'modal_open',
     glass_tap: 'tab_switch',
+    prism_tick: 'ui_tick',
+    dialog_advance: 'ui_tick',
     ice_click: 'click',
     heart: 'gift_loved',
     gift_liked: 'stat_gain',
@@ -2462,10 +2583,15 @@
     shatter: 'ice_shatter',
     magic: 'ice_cast',
     ice_footstep: 'footstep',
+    map_travel: 'footstep',
     step: 'footstep',
     eclipse: 'eclipse_cast',
     onemore: 'one_more',
-    water: 'water_surge'
+    water: 'water_surge',
+    heal: 'buff',
+    shop_buy: 'ok',
+    victory: 'level',
+    defeat: 'bad'
   };
 
   function resolveCanonical(type) {
@@ -2525,15 +2651,6 @@
       var c = ensureContext(!recipe.hoverOnly);
       if (!c) return false;
 
-      if (!recipe.hoverOnly && c.state === 'suspended' && typeof c.resume === 'function') {
-        try {
-          var rp = c.resume();
-          if (rp && typeof rp.catch === 'function') {
-            rp.catch(function () {});
-          }
-        } catch (e) {}
-      }
-
       var masterVol = computeMasterVol(rawVol);
       if (options && typeof options.gain === 'number' && isFinite(options.gain)) {
         masterVol *= clamp(options.gain, 0.1, 1.6);
@@ -2544,8 +2661,30 @@
       state.lastAnyTime = now;
       state.lastAnyPrio = recipe.prio;
 
-      var baseT = safeTime(c);
-      recipe.fn(c, baseT, now, masterVol, recipe.prio, options);
+      var fireRecipe = function () {
+        if (getLiveMuted()) return;
+        var liveVol = computeMasterVol(getLiveVolume());
+        if (options && typeof options.gain === 'number' && isFinite(options.gain)) {
+          liveVol *= clamp(options.gain, 0.1, 1.6);
+        }
+        if (liveVol <= 0.0001) return;
+        var baseT = safeTime(c);
+        recipe.fn(c, baseT, nowMs(), liveVol, recipe.prio, options);
+      };
+
+      if (!recipe.hoverOnly && c.state === 'suspended' && typeof c.resume === 'function') {
+        try {
+          var rp = c.resume();
+          if (rp && typeof rp.then === 'function') {
+            rp.then(function () {
+              try { fireRecipe(); } catch (err) {}
+            }).catch(function () {});
+            return true;
+          }
+        } catch (e) {}
+      }
+
+      fireRecipe();
       return true;
     } catch (e) {
       return false;
@@ -2652,7 +2791,7 @@
           unlock();
           var btn = typeof e.target.closest === 'function' ? e.target.closest(TITLE_BTN_SELECTOR) : null;
           if (!btn || !titleEl.contains(btn) || btn.disabled) return;
-          if (btn.id === 'btn-new' || btn.id === 'btn-continue') return;
+          if (btn.id && TITLE_OWN_SFX_IDS[btn.id]) return;
           play('title_click');
         } catch (err) {}
       };
@@ -2673,17 +2812,25 @@
     try {
       if (state.gestureBound || typeof document === 'undefined' || !document.addEventListener) return;
       state.gestureBound = true;
-      var onceUnlock = function () {
-        unlock();
+      var detachUnlock = function () {
         try {
-          document.removeEventListener('pointerdown', onceUnlock, true);
-          document.removeEventListener('keydown', onceUnlock, true);
-          document.removeEventListener('touchstart', onceUnlock, true);
+          document.removeEventListener('pointerdown', onGesture, true);
+          document.removeEventListener('keydown', onGesture, true);
+          document.removeEventListener('touchstart', onGesture, true);
         } catch (e) {}
       };
-      document.addEventListener('pointerdown', onceUnlock, { capture: true, passive: true });
-      document.addEventListener('keydown', onceUnlock, { capture: true, passive: true });
-      document.addEventListener('touchstart', onceUnlock, { capture: true, passive: true });
+      var onGesture = function () {
+        unlock();
+        try {
+          if (root && typeof root.bgmUnlock === 'function') root.bgmUnlock();
+        } catch (e) {}
+        if (state.ctx && state.ctx.state === 'running') {
+          detachUnlock();
+        }
+      };
+      document.addEventListener('pointerdown', onGesture, { capture: true, passive: true });
+      document.addEventListener('keydown', onGesture, { capture: true, passive: true });
+      document.addEventListener('touchstart', onGesture, { capture: true, passive: true });
     } catch (e) {}
   }
 

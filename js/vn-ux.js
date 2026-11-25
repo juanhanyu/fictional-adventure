@@ -663,14 +663,18 @@
     }
     cleanupTransientsOnStateSwitch();
     syncCodexArchiveFromState(restored);
+    if (root && typeof root.bgmUnlock === 'function') {
+      try { root.bgmUnlock(); } catch (e) {}
+    }
 
     if (typeof updateHUD === 'function') updateHUD();
-    if (typeof updateLocBar === 'function') updateLocBar();
+    var willResumeScene = !!(curSc && typeof SCENES !== 'undefined' && SCENES[curSc]);
+    if (!willResumeScene && typeof updateLocBar === 'function') updateLocBar();
     if (root.RaisingHub && typeof root.RaisingHub.onStateLoaded === 'function') {
       try { root.RaisingHub.onStateLoaded(restored); } catch (e) {}
     }
 
-    if (curSc && typeof SCENES !== 'undefined' && SCENES[curSc]) {
+    if (willResumeScene) {
       if (curChain && Array.isArray(curChain.queue) && curChain.queue.length && typeof runSceneQueue === 'function') {
         var resumeIdx = Math.max(0, (curChain.idx || 1) - 1);
         runSceneQueue(curChain.queue, resumeIdx);
@@ -1065,6 +1069,9 @@
     if (typeof window !== 'undefined') window.S = prepared;
 
     cleanupTransientsOnStateSwitch();
+    if (root && typeof root.bgmUnlock === 'function') {
+      try { root.bgmUnlock(); } catch (e) {}
+    }
     if (root.RaisingHub && typeof root.RaisingHub.onStateLoaded === 'function') {
       try { root.RaisingHub.onStateLoaded(prepared); } catch (e) {}
     }
@@ -2013,7 +2020,6 @@
       id: 'vol3_jikan_parting.png',
       file: 'vol3_jikan_parting.png',
       fallbackSrc: 'assets/bg/jikan.jpg',
-      assetPending: true,
       title: '晨雾霁馆 · 糖面饼与窗影',
       vol: '第三卷 · 旅途篇',
       quote: '「门槛青石上摆着尚有余温的糖面饼，二楼紧闭的糊窗纸后，映着一道安静伫立的少女剪影。」',
@@ -2724,10 +2730,12 @@
   function capturePreCodexBgm() {
     if (preCodexBgmSnapshot) return;
     var gs = typeof document !== 'undefined' ? document.getElementById('game-screen') : null;
+    var ts = typeof document !== 'undefined' ? document.getElementById('title-screen') : null;
     var bgEl = typeof document !== 'undefined' ? document.getElementById('bg') : null;
     var st = getS();
     preCodexBgmSnapshot = {
       inGame: !!(gs && !gs.classList.contains('hidden')),
+      onTitle: !!(ts && !ts.classList.contains('hidden')),
       freeRoam: !!(st && st.freeRoam),
       phase: st ? st.phase : null,
       loc: st ? st.loc : null,
@@ -2742,10 +2750,26 @@
     if (!codexPlayingTrack && !codexAuditionDirty) return;
     codexPlayingTrack = null;
     codexAuditionDirty = false;
+
+    if (!snap || (!snap.inGame && snap.onTitle)) {
+      var mutedNow = !!(root && typeof root.isMuted === 'function' && root.isMuted());
+      if (!mutedNow && root && typeof root.bgmPlayTitle === 'function') {
+        try { root.bgmPlayTitle({ fade: true }); return; } catch (e) {}
+      }
+      callBgmStop();
+      return;
+    }
+
+    if (!snap.inGame) {
+      callBgmStop();
+      return;
+    }
+
+    if (root && typeof root.bgmRestoreContext === 'function') {
+      try { root.bgmRestoreContext(); return; } catch (e) {}
+    }
+
     callBgmStop();
-
-    if (!snap || !snap.inGame) return;
-
     var scenes = typeof SCENES !== 'undefined' ? SCENES : (root.SCENES || {});
     var scObj = snap.sceneId && scenes[snap.sceneId] ? scenes[snap.sceneId] : null;
     if (!snap.freeRoam && scObj && scObj.bgm) {
@@ -3722,6 +3746,9 @@
           }
           hideElementById('ending-screen');
           el.classList.add('hidden');
+          if (root && typeof root.bgmLeaveOverlay === 'function') {
+            try { root.bgmLeaveOverlay('ending'); } catch (e) {}
+          }
           playSfx('modal_close');
         }
       },
@@ -3783,6 +3810,9 @@
             try { root.IceDeduction.close(); } catch (e) {}
           }
           el.classList.add('hidden');
+          if (root && typeof root.bgmLeaveOverlay === 'function') {
+            try { root.bgmLeaveOverlay('deduction'); } catch (e) {}
+          }
           playSfx('modal_close');
         }
       },

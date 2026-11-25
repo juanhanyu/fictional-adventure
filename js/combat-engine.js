@@ -77,13 +77,13 @@
     },
   };
 
-  function safeSfx(type) {
+  function safeSfx(type, opts) {
     try {
       if (global.CrystalSFX && typeof global.CrystalSFX.play === 'function') {
-        global.CrystalSFX.play(type);
+        global.CrystalSFX.play(type, opts);
         return;
       }
-      if (typeof global.sfx === 'function') global.sfx(type);
+      if (typeof global.sfx === 'function') global.sfx(type, opts);
     } catch (e) {}
   }
 
@@ -288,7 +288,9 @@
     'assets/monsters/abyss_behemoth.png',
     'assets/monsters/ridge_claw.png',
     'assets/monsters/corridor_vanguard.png',
+    'assets/monsters/flame_mage.png',
     'assets/monsters/eastwing_commander.png',
+    'assets/monsters/wind_god_tempest.png',
     'assets/monsters/frost_lizard.png',
   ];
 
@@ -318,6 +320,7 @@
     'assets/monsters/corridor_vanguard.png',
     'assets/monsters/eastwing_commander.png',
     'assets/monsters/flame_mage.png',
+    'assets/monsters/wind_god_tempest.png',
   ]);
 
   function renderEnemyVisualHTML(opts) {
@@ -3936,7 +3939,10 @@
     addCombatTrauma(0.92, b);
     const bossIdx = b.enemies ? b.enemies.indexOf(enemy) : 0;
     if (bossIdx >= 0) queueElementVFX(b, 'break', 'enemy', bossIdx);
-    if (!b.headless) safeSfx('phase2');
+    if (!b.headless) {
+      safeSfx('phase2');
+      if (typeof global.bgmShiftBattlePhase2 === 'function') global.bgmShiftBattlePhase2();
+    }
     return true;
   }
 
@@ -4228,7 +4234,7 @@
       p.wandPersistent = false;
       if (p.equippedStaff === 'eclipse_wand') p.equippedStaff = 'none';
     }
-    if (!b.headless) safeSfx('tab_switch');
+    if (!b.headless) safeSfx(p.wandActive ? 'eclipse_cast' : 'tab_switch', p.wandActive ? { gain: 0.72 } : undefined);
     if (p.wandActive) {
       if (b.witnessActive) {
         b.exposure = Math.min(100, b.exposure + 25);
@@ -5201,6 +5207,7 @@
             queuePixelAction(b, { type: 'aino_spear', enemyIdx: spearPos });
           }
           if (!getPixelVfxApi()) addCombatTrauma(0.64, b);
+          if (!b.headless) safeSfx('ice_shatter');
           spawnBanner(b, '❄️ 艾诺支援 · 极寒冰枪贯落！', 'interrupt');
           pushLog(b, logTag('cbl-cobalt', `❄️【冰原共鸣】峡谷崖顶艾诺射落第 ${b.ainoSpearsFiredInWave} 道无气泡极寒冰枪，重创 ${bossTarget.name} ${spearDmg} 伤害！`, true));
           // 无冰宫基本功路径：本波累计引落第 2 发艾诺冰枪命中领主时，同样震碎腹下晶核！
@@ -5223,6 +5230,7 @@
       const vialHeal = Math.max(15, Math.round(p.mhp * 0.25));
       p.hp = Math.min(p.mhp, p.hp + vialHeal);
       p.status.afterimage = (p.status.afterimage || 0) + 1;
+      if (!b.headless) safeSfx('buff');
       pushLog(b, logTag('cbl-ice', `🧪【淡蓝小瓶】濒危安神凉雾散开，回复 ${vialHeal} 生命并幻化 1 层「风行残像」！`, true));
     }
 
@@ -5251,8 +5259,10 @@
       } else if (anyShieldShattered) {
         safeSfx('ice_shatter');
       } else if (!playedBladeClash) {
-        if ((!sk.power || sk.power <= 0) && (sk.shieldBase || sk.dodgeLunge || sk.afterimage)) {
-          safeSfx('shield_block');
+        if ((!sk.power || sk.power <= 0) && (sk.shieldBase || sk.protectCrate)) {
+          safeSfx('shield_up');
+        } else if ((!sk.power || sk.power <= 0) && (sk.dodgeLunge || sk.afterimage || sk.rooted || sk.selfAdvancePct || sk.nextApBonus || sk.clearDebuff || washedBlindJustNow)) {
+          safeSfx('buff');
         } else if (usedWand) {
           safeSfx('eclipse_cast');
         } else if (sk.path === 'SWORD' || sk.elem === 'phys') {
@@ -5368,6 +5378,8 @@
   }
 
   function endTurn(b) {
+    const liveB = b || activeBattle;
+    if (liveB && !liveB.headless && !liveB.over) safeSfx('ui_tick', { gain: 0.72 });
     _logBatchDepth += 1;
     try {
       return _endTurnCore(b);
@@ -5714,6 +5726,7 @@
           const vialHeal = Math.max(15, Math.round(p.mhp * 0.25));
           p.hp = Math.min(p.mhp, p.hp + vialHeal);
           p.status.afterimage = (p.status.afterimage || 0) + 1;
+          if (!b.headless) safeSfx('buff');
           pushLog(b, logTag('cbl-ice', `🧪【淡蓝小瓶】濒危安神凉雾散开，回复 ${vialHeal} 生命并幻化 1 层「风行残像」！`, true));
         }
 
@@ -6117,7 +6130,10 @@
     root.querySelector('#cb-btn-wand').onclick = () => toggleEclipseWand();
     root.querySelector('#cb-btn-assist').onclick = () => useBondAssist();
     root.querySelector('#cb-btn-endturn').onclick = () => endTurn();
-    root.querySelector('#cb-btn-retreat').onclick = () => exitBattle(false);
+    root.querySelector('#cb-btn-retreat').onclick = () => {
+      safeSfx('modal_close');
+      exitBattle(false);
+    };
 
     return root;
   }
@@ -7222,14 +7238,18 @@
 
     if (b && b.fromArena) {
       if (arenaReturnToTitle) {
-        if (typeof global.bgmStop === 'function') global.bgmStop(false);
         if (typeof global.setBG === 'function') global.setBG('bg-title');
       } else {
-        if (typeof global.bgmRestoreScene === 'function') global.bgmRestoreScene();
         const curS = getGameS();
         if (curS && curS.freeRoam && typeof global.updateLocBar === 'function') global.updateLocBar();
       }
       openArenaHub({ fromTitle: arenaReturnToTitle });
+      return;
+    }
+
+    const titleElNow = document.getElementById('title-screen');
+    if (arenaReturnToTitle && titleElNow && !titleElNow.classList.contains('hidden')) {
+      if (typeof global.bgmPlayTitle === 'function') global.bgmPlayTitle({ fade: true });
       return;
     }
 
@@ -7343,7 +7363,12 @@
     `;
 
     ov.classList.remove('hidden');
-    if (!opts._silentOpen) safeSfx('modal_open');
+    if (!opts._silentOpen) {
+      safeSfx('modal_open');
+      if (typeof global.bgmUnlock === 'function') global.bgmUnlock();
+      if (typeof global.bgmEnterArenaHub === 'function') global.bgmEnterArenaHub();
+      else if (typeof global.bgmPlayType === 'function') global.bgmPlayType('academy', { force: false });
+    }
 
     ov.querySelector('#am-preset').onclick = () => {
       arenaUseSaveStats = false;
@@ -7373,6 +7398,7 @@
     ov.querySelectorAll('[data-stage]').forEach(btn => {
       btn.onclick = () => {
         const sid = btn.getAttribute('data-stage');
+        safeSfx('open');
         ov.classList.add('hidden');
         startStage(sid, { fromArena: true });
       };
@@ -7386,10 +7412,14 @@
     if (ov) ov.classList.add('hidden');
     if (wasVisible) safeSfx('modal_close');
     if (arenaReturnToTitle) {
-      if (typeof global.bgmStop === 'function') global.bgmStop(false);
       if (typeof global.setBG === 'function') global.setBG('bg-title');
       const ts = document.getElementById('title-screen');
       if (ts) ts.classList.remove('hidden');
+      if (typeof global.bgmLeaveArenaHub === 'function') global.bgmLeaveArenaHub(true);
+      else if (typeof global.bgmPlayTitle === 'function') global.bgmPlayTitle({ fade: true });
+    } else if (wasVisible) {
+      if (typeof global.bgmLeaveArenaHub === 'function') global.bgmLeaveArenaHub(false);
+      else if (typeof global.bgmRestoreContext === 'function') global.bgmRestoreContext();
     }
   }
 
@@ -7429,6 +7459,7 @@
       const ds = document.getElementById('duel-screen');
       if (ds) ds.classList.add('hidden');
       if (typeof global.setBG === 'function') global.setBG(sc.bg || 'bg-battle');
+      if (typeof global.bgmUnlock === 'function') global.bgmUnlock();
       if (typeof global.bgmPlayType === 'function') global.bgmPlayType('battle', { force: true });
       const bs = ensureBattleDOM();
       resetBattleDomForStart(bs);
@@ -7500,6 +7531,7 @@
     const ds = typeof document !== 'undefined' ? document.getElementById('duel-screen') : null;
     if (ds) ds.classList.add('hidden');
     if (typeof global.setBG === 'function') global.setBG('bg-battle');
+    if (typeof global.bgmUnlock === 'function') global.bgmUnlock();
     if (typeof global.bgmPlayType === 'function') global.bgmPlayType('battle', { force: true });
     const bs = ensureBattleDOM();
     resetBattleDomForStart(bs);

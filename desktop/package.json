@@ -1,0 +1,19 @@
+{
+  "name": "vesteria-fictional-adventure-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "《转生千金～到了异世界就要悠闲地生活》Tauri v2 独立游戏桌面打包工程",
+  "scripts": {
+    "prepare:dist": "node scripts/prepare-dist.mjs",
+    "prepare:dry": "node scripts/prepare-dist.mjs --dry-run",
+    "tauri": "tauri",
+    "dev": "node scripts/prepare-dist.mjs && tauri dev",
+    "build": "node scripts/prepare-dist.mjs && tauri build",
+    "build:nsis": "node scripts/prepare-dist.mjs && tauri build --bundles nsis",
+    "build:msi": "node scripts/prepare-dist.mjs && tauri build --bundles msi",
+    "info": "tauri info"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.2.0"
+  }
+}

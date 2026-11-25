@@ -590,7 +590,7 @@
 
   // 7-frame Sea of Stars 布局: [0:idle1, 1:idle2, 2:blink, 3:windup, 4:cast_step, 5:strike, 6:hurt]
   // 9-frame 双态剑+法布局 (beatrice / sylvia_disguise / eastwing_commander): [..., 7:magic_windup, 8:magic_cast]
-  // 11-frame 三系元素布局 (reno): [..., 3..5:earth, 7:fire_windup, 8:fire_cast, 9:water_windup, 10:water_cast]
+  // 11-frame 三系元素布局 (reno): [..., 3..5:earth, 7:fire_windup, 8:fire_cast, 9:wind/water_windup, 10:wind/water_cast]
   // 扩展 run 帧：由 bank.animMap.run (或 run1/run2/run3) 提供；无专用 run 帧时优雅回退至 [0,1] 疾步弹跳，绝不使用 3/4/5！
   const DUAL_MAGIC_SPRITES = new Set(['beatrice', 'sylvia_disguise', 'eastwing_commander']);
   const TRI_ELEM_SPRITES = new Set(['reno']);
@@ -619,6 +619,8 @@
     earth_cast: 5,
     fire_windup: 7,
     fire_cast: 8,
+    wind_windup: 9,
+    wind_cast: 10,
     water_windup: 9,
     water_cast: 10,
   };
@@ -712,10 +714,10 @@
     if (Array.isArray(am[key]) && am[key].length) {
       return clamp(Number(am[key][0]) | 0, 0, count - 1);
     }
-    // 支持元素分组：{ fire: [7, 8], water: [9, 10], earth: [3, 4, 5], magic: [7, 8] } 或对象 { windup, step, cast }
-    const m = key.match(/^(earth|fire|water|magic)_(windup|step|cast|strike)$/);
+    // 支持元素分组：{ fire: [7, 8], wind/water: [9, 10], earth: [3, 4, 5], magic: [7, 8] } 或对象 { windup, step, cast }
+    const m = key.match(/^(earth|fire|wind|water|magic)_(windup|step|cast|strike)$/);
     if (m) {
-      const grp = am[m[1]];
+      const grp = am[m[1]] || (m[1] === 'wind' ? am.water : null);
       const sub = m[2];
       if (Array.isArray(grp) && grp.length) {
         if (sub === 'windup') return clamp(Number(grp[0]) | 0, 0, count - 1);
@@ -782,24 +784,39 @@
         return (is9 && (spriteIdOrBank ? hasMagicCastFrames(spriteIdOrBank) : true))
           ? 8
           : (is7 ? 5 : (count > 4 ? 4 : count - 1));
-      case 'fire_windup':
-        return (is11 || (is9 && (spriteIdOrBank ? hasMagicCastFrames(spriteIdOrBank) : true)))
+      case 'fire_windup': {
+        const sid = typeof spriteIdOrBank === 'string' ? spriteIdOrBank : (spriteIdOrBank && spriteIdOrBank.id) || '';
+        const isTriElem = TRI_ELEM_SPRITES.has(sid);
+        return ((is11 && isTriElem) || (is9 && (spriteIdOrBank ? hasMagicCastFrames(spriteIdOrBank) : true)))
           ? 7
           : (count > 3 ? 3 : count - 1);
+      }
       case 'fire_cast':
-      case 'fire_strike':
-        return (is11 || (is9 && (spriteIdOrBank ? hasMagicCastFrames(spriteIdOrBank) : true)))
+      case 'fire_strike': {
+        const sid = typeof spriteIdOrBank === 'string' ? spriteIdOrBank : (spriteIdOrBank && spriteIdOrBank.id) || '';
+        const isTriElem = TRI_ELEM_SPRITES.has(sid);
+        return ((is11 && isTriElem) || (is9 && (spriteIdOrBank ? hasMagicCastFrames(spriteIdOrBank) : true)))
           ? 8
           : (is7 ? 5 : (count > 4 ? 4 : count - 1));
-      case 'water_windup':
-        return is11
+      }
+      case 'wind_windup':
+      case 'water_windup': {
+        const sid = typeof spriteIdOrBank === 'string' ? spriteIdOrBank : (spriteIdOrBank && spriteIdOrBank.id) || '';
+        const isTriElem = TRI_ELEM_SPRITES.has(sid);
+        return (is11 && isTriElem)
           ? 9
           : ((is9 && (spriteIdOrBank ? hasMagicCastFrames(spriteIdOrBank) : true)) ? 7 : (count > 3 ? 3 : count - 1));
+      }
+      case 'wind_cast':
+      case 'wind_strike':
       case 'water_cast':
-      case 'water_strike':
-        return is11
+      case 'water_strike': {
+        const sid = typeof spriteIdOrBank === 'string' ? spriteIdOrBank : (spriteIdOrBank && spriteIdOrBank.id) || '';
+        const isTriElem = TRI_ELEM_SPRITES.has(sid);
+        return (is11 && isTriElem)
           ? 10
           : ((is9 && (spriteIdOrBank ? hasMagicCastFrames(spriteIdOrBank) : true)) ? 8 : (is7 ? 5 : (count > 4 ? 4 : count - 1)));
+      }
       default:
         return 0;
     }
@@ -808,6 +825,7 @@
   /* -------------------- 冰晶故事绘本色板（贴合雪瓷蓝宝石美术基调） -------------------- */
   const PALETTES = {
     ice: ['#0c1a3d', '#16357a', '#1c56c8', '#3898f0', '#6bc5f8', '#b8e8ff', '#e4f7ff', '#ffffff'],
+    crit: ['#16357a', '#1c56c8', '#3898f0', '#7dd3fc', '#fde68a', '#facc15', '#fffbeb', '#ffffff'],
     water: ['#081b38', '#0e366d', '#165aa6', '#2183d2', '#3eb4ef', '#86dcfa', '#d0f4ff', '#ffffff'],
     wind: ['#0a2422', '#124640', '#1c7266', '#2ca490', '#58d4bc', '#9cf2df', '#d8fff4', '#ffffff'],
     swordIce: ['#16357a', '#1c56c8', '#3898f0', '#6bc5f8', '#c0e8ff', '#eef9ff', '#ffffff'],
@@ -846,6 +864,7 @@
   let _hitStopId = 0;
   let _hitStopScale = 1.0;
   let _hitStopTimer = null;
+  let _playerActionGen = 0;
 
   let _canvas = null;
   let _ctx = null;
@@ -871,6 +890,7 @@
   let _auraElapsed = 0;
   let _lastAuraDrawTs = 0;
   let _auraLastTier = 0;
+  let _auraLastIntensity = 0;
   let _auraDirty = false;
 
   const _flashStamps = [];
@@ -987,15 +1007,28 @@
     if (battleState) {
       const sid = battleState.id || (battleState.stageCfg && battleState.stageCfg.id) || '';
       const pname = battleState.player && battleState.player.name ? battleState.player.name : '';
-      if (DISGUISE_SYLVIA_STAGES.has(sid) || pname.includes('眷寒渔')) {
+      const curS = (!battleState.fromArena && typeof global !== 'undefined') ? global.S : null;
+      if (
+        DISGUISE_SYLVIA_STAGES.has(sid) ||
+        pname.includes('眷寒渔') ||
+        (curS && (curS.disguised || (curS.alias && curS.alias.includes('眷寒渔'))))
+      ) {
         return 'sylvia_disguise';
       }
       if (YOUNG_SYLVIA_STAGES.has(sid)) {
         return 'sylvia_young';
       }
-      const age = (battleState.stageCfg && battleState.stageCfg.player && typeof battleState.stageCfg.player.age === 'number')
+      const presetAge = battleState.stageCfg && battleState.stageCfg.preset && typeof battleState.stageCfg.preset.age === 'number'
+        ? battleState.stageCfg.preset.age
+        : null;
+      const legacyCfgAge = battleState.stageCfg && battleState.stageCfg.player && typeof battleState.stageCfg.player.age === 'number'
         ? battleState.stageCfg.player.age
-        : (battleState.player && typeof battleState.player.age === 'number' ? battleState.player.age : null);
+        : null;
+      const playerAge = battleState.player && typeof battleState.player.age === 'number'
+        ? battleState.player.age
+        : null;
+      const saveAge = curS && typeof curS.ageY === 'number' ? curS.ageY : null;
+      const age = playerAge != null ? playerAge : (presetAge != null ? presetAge : (legacyCfgAge != null ? legacyCfgAge : saveAge));
       if (age != null && age < 12) {
         return 'sylvia_young';
       }
@@ -1023,14 +1056,18 @@
     const joined = candidates.filter(Boolean).join(':').toLowerCase();
     if (joined.includes('wind_god') || joined.includes('tempest') || joined.includes('fengshen')) return 'wind_god_avatar';
     if (joined.includes('eastwing')) return 'eastwing_commander';
-    if (joined.includes('corridor') || joined.includes('inquisitor') || joined.includes('flame_mage')) return 'corridor_vanguard';
+    if (joined.includes('flame_mage') || joined.includes('slime_fire')) return 'flame_mage';
+    if (joined.includes('corridor') || joined.includes('inquisitor')) return 'corridor_vanguard';
     if (joined.includes('rowan')) return 'rowan';
     if (joined.includes('beatrice')) return 'beatrice';
     if (joined.includes('alice')) return 'alice';
     if (joined.includes('aino')) return 'aino';
     if (joined.includes('noelle')) return 'noelle';
     if (joined.includes('alpha')) return 'wolf_alpha';
-    if (joined.includes('jackal') || joined.includes('ridge_claw')) return 'shadow_jackal';
+    if (joined.includes('ridge_claw') || joined.includes('jackal_minor')) return 'ridge_claw';
+    if (joined.includes('jackal')) return 'shadow_jackal';
+    if (joined.includes('tundra_brute') || joined.includes('hulan_brute')) return 'tundra_brute';
+    if (joined.includes('frost_hound') || joined.includes('ice_wolf')) return 'frost_hound';
     if (joined.includes('behemoth') || joined.includes('hulan') || joined.includes('brute') || joined.includes('lord') || joined.includes('lizard')) return 'abyss_behemoth';
     return 'pack_wolf';
   }
@@ -1442,54 +1479,75 @@
         st._lastShadowTransform = shTransform;
         st.shadowEl.style.transform = shTransform;
       }
+    } else if (st.shadowEl && st._lastShadowTransform !== '') {
+      st._lastShadowTransform = '';
+      st.shadowEl.style.transform = '';
     }
   }
 
-  /* -------------------- 3D 前后环绕魔力增幅冰晶光环（Canvas 双层真前后景深） -------------------- */
+  /* -------------------- 3D 前后环绕魔力增幅冰晶光环（Canvas 双层真前后景深 · V2.2 连续 0..50% + 25%/50% 质变阈值） -------------------- */
   function getManaAmpState(battleState) {
-    const b = battleState || _lastBattleRef || (global.CombatEngine && typeof global.CombatEngine.getState === 'function' ? global.CombatEngine.getState() : null);
+    const b = battleState
+      || _lastBattleRef
+      || (global.CombatEngine && typeof global.CombatEngine.getBattleState === 'function' ? global.CombatEngine.getBattleState() : null)
+      || (global.CombatEngine && typeof global.CombatEngine.getState === 'function' ? global.CombatEngine.getState() : null);
+    let ampDec = 0;
     let tier = 0;
     let intensity = 0;
 
     if (b) {
       const p = b.player || {};
       const rawMode = b.overcastMode != null ? b.overcastMode : p.overcastMode;
-      const hasCycle = p.hasManaCycle !== false;
-      const ampRaw = b.ampPct != null ? b.ampPct : p.ampPct;
-
-      if (rawMode === 2 || rawMode === 'full' || rawMode === 'all_in') {
-        if (hasCycle || b.overcastMode != null) {
-          tier = 2;
-          intensity = 1.0;
-        }
-      } else if (rawMode === 1 || rawMode === 'half') {
-        if (hasCycle || b.overcastMode != null) {
-          tier = 1;
-          intensity = 0.62;
-        }
-      }
+      const ampRaw = b.overcastPct != null
+        ? b.overcastPct
+        : (b.ampPct != null ? b.ampPct : (p.overcastPct != null ? p.overcastPct : p.ampPct));
 
       if (typeof ampRaw === 'number' && Number.isFinite(ampRaw) && ampRaw > 0) {
-        // 兼容 V2.2 小数制（0~0.50：0.25 一阶、0.50 二阶）与百分比制（>1，如 25/50/75/100）
-        const ampDec = ampRaw > 1 ? (ampRaw / 100) : ampRaw;
-        const normAmp = clamp(ampDec / 0.50, 0.35, 1.0);
-        const ampTier = ampDec >= 0.48 ? 2 : 1;
-        if (ampTier > tier) tier = ampTier;
-        if (normAmp > intensity) intensity = normAmp;
+        ampDec = clamp(ampRaw > 1 ? (ampRaw / 100) : ampRaw, 0, 0.50);
+      } else if (rawMode === 2 || rawMode === 'full' || rawMode === 'all_in') {
+        ampDec = 0.50;
+      } else if (rawMode === 1 || rawMode === 'half') {
+        ampDec = 0.25;
       }
     }
 
-    // 兜底：若 DOM 倾注按钮处于激活态但外部未传最新 battleState，自动同步
-    if (tier === 0 && typeof document !== 'undefined') {
-      const activeBtn = document.querySelector('#cb-oc-seg .cb-oc-btn.active');
-      if (activeBtn && !activeBtn.disabled) {
-        const ocVal = Number(activeBtn.getAttribute('data-oc')) || 0;
-        if (ocVal === 1) { tier = 1; intensity = 0.62; }
-        else if (ocVal === 2) { tier = 2; intensity = 1.0; }
+    // 兜底：若 DOM 滑条/倾注按钮处于激活态但外部未传最新 battleState，自动同步
+    if (ampDec <= 0.001 && typeof document !== 'undefined') {
+      const sliderEl = document.getElementById('cb-oc-slider');
+      if (sliderEl && !sliderEl.disabled) {
+        const sVal = Number(sliderEl.value) || 0;
+        if (sVal > 0) ampDec = clamp(sVal / 100, 0, 0.50);
+      }
+      if (ampDec <= 0.001) {
+        const activeBtn = document.querySelector('#cb-oc-seg .cb-oc-btn.active');
+        if (activeBtn && !activeBtn.disabled) {
+          const ampAttr = Number(activeBtn.getAttribute('data-amp'));
+          const ocVal = Number(activeBtn.getAttribute('data-oc')) || 0;
+          if (Number.isFinite(ampAttr) && ampAttr > 0) {
+            ampDec = clamp(ampAttr > 1 ? ampAttr / 100 : ampAttr, 0, 0.50);
+          } else if (ocVal === 2) {
+            ampDec = 0.50;
+          } else if (ocVal === 1) {
+            ampDec = 0.25;
+          }
+        }
       }
     }
 
-    return { active: tier > 0, tier, intensity };
+    if (ampDec > 0.001) {
+      if (ampDec >= 0.50 - 1e-6) {
+        tier = 2;
+        intensity = 1.0;
+      } else if (ampDec >= 0.25 - 1e-6) {
+        tier = 1;
+        intensity = clamp(0.58 + ((ampDec - 0.25) / 0.25) * 0.30, 0.58, 0.88);
+      } else {
+        tier = 0;
+        intensity = clamp(0.20 + (ampDec / 0.25) * 0.32, 0.20, 0.52);
+      }
+    }
+
+    return { active: ampDec > 0.001, ampPct: ampDec, tier, intensity };
   }
 
   function ensurePlayerAuraCanvases(st) {
@@ -1580,28 +1638,31 @@
         if (st.el) st.el.removeAttribute('data-mana-amp');
         _auraDirty = false;
         _auraLastTier = 0;
+        _auraLastIntensity = 0;
       }
       return;
     }
 
     if (!ensurePlayerAuraCanvases(st)) return;
-    const tierTag = amp.tier >= 2 ? 'full' : 'half';
-    if (st.el.getAttribute('data-mana-amp') !== tierTag) {
+    const tierTag = amp.tier >= 2 ? 'full' : (amp.tier >= 1 ? 'half' : 'charge');
+    const intensityChanged = Math.abs(_auraLastIntensity - amp.intensity) > 0.03;
+    if (st.el.getAttribute('data-mana-amp') !== tierTag || intensityChanged) {
       st.el.setAttribute('data-mana-amp', tierTag);
-      _lastAuraDrawTs = 0; // 切换档位立即重绘
+      _lastAuraDrawTs = 0; // 切换档位或滑条显著变化时立即重绘
     }
 
     // 降动效模式下仅绘制一次静态 3D 水晶阵列，零连续重绘
-    if (reduced && _auraDirty && _auraLastTier === amp.tier) return;
-    if (_lastAuraDrawTs > 0 && (now - _lastAuraDrawTs) < AURA_INTERVAL_MS && _auraLastTier === amp.tier) {
+    if (reduced && _auraDirty && _auraLastTier === amp.tier && !intensityChanged) return;
+    if (_lastAuraDrawTs > 0 && (now - _lastAuraDrawTs) < AURA_INTERVAL_MS && _auraLastTier === amp.tier && !intensityChanged) {
       return;
     }
 
     _lastAuraDrawTs = now;
     _auraLastTier = amp.tier;
+    _auraLastIntensity = amp.intensity;
     _auraDirty = true;
     if (!reduced) {
-      _auraElapsed += simDt * (amp.tier >= 2 ? 2.65 : 1.75);
+      _auraElapsed += simDt * (amp.tier >= 2 ? 2.65 : (1.15 + amp.intensity * 1.10));
     }
 
     const bCtx = st.auraBackCtx;
@@ -1612,9 +1673,12 @@
     const cx = AURA_BUF_W * 0.5;
     const cy = AURA_BUF_H * 0.56;
     const rings = amp.tier >= 2 ? 2 : 1;
+    const baseRingCount = amp.tier >= 2
+      ? 6
+      : (amp.intensity >= 0.72 ? 6 : amp.intensity >= 0.56 ? 5 : amp.intensity >= 0.36 ? 4 : 3);
 
     for (let ringIdx = 0; ringIdx < rings; ringIdx++) {
-      const count = ringIdx === 0 ? 6 : 4;
+      const count = ringIdx === 0 ? baseRingCount : 4;
       const rx = ringIdx === 0 ? 33 : 27;
       const ry = ringIdx === 0 ? 11 : 13;
       const tilt = ringIdx === 0 ? -0.22 : 0.34;
@@ -1623,7 +1687,7 @@
       const dir = ringIdx === 0 ? 1 : -1.28;
       const yOff = ringIdx === 0 ? 2 : -9;
 
-      // 淡雅像素轨道点弧（区分前后层景深）
+      // 淡雅像素轨道点弧（区分前后层景深，透明度随连续 intensity 平滑增强）
       const arcSteps = 20;
       for (let s = 0; s < arcSteps; s++) {
         const a = (s / arcSteps) * Math.PI * 2 + _auraElapsed * 0.35 * dir;
@@ -1634,7 +1698,7 @@
         const py = Math.round(cy + yOff + ux * sinT + uy * cosT);
         const isFront = uz >= 0;
         const ctx = isFront ? fCtx : bCtx;
-        ctx.globalAlpha = isFront ? (amp.tier >= 2 ? 0.32 : 0.22) : 0.14;
+        ctx.globalAlpha = isFront ? (0.14 + amp.intensity * 0.20) : (0.09 + amp.intensity * 0.08);
         ctx.fillStyle = isFront ? '#6BC5F8' : '#1C4CB8';
         ctx.fillRect(px, py, 1, 1);
       }
@@ -1649,7 +1713,7 @@
         const py = cy + yOff + ux * sinT + uy * cosT;
         const isFront = uz >= 0;
         const depthScale = 0.72 + 0.28 * ((uz + 1) * 0.5);
-        const crystalSize = (amp.tier >= 2 ? 2.4 : 2.0) * depthScale;
+        const crystalSize = (1.55 + amp.intensity * 0.85) * depthScale;
         const twinkle = 0.5 + 0.5 * Math.sin(_auraElapsed * 3.1 + i * 1.7 + ringIdx * 2.1);
 
         // 尾迹微尘（1~2 像素滞后）
@@ -1659,7 +1723,7 @@
         const tpx = Math.round(cx + tux * cosT - tuy * sinT);
         const tpy = Math.round(cy + yOff + tux * sinT + tuy * cosT);
         const targetCtx = isFront ? fCtx : bCtx;
-        targetCtx.globalAlpha = isFront ? 0.45 : 0.24;
+        targetCtx.globalAlpha = isFront ? (0.28 + amp.intensity * 0.22) : (0.16 + amp.intensity * 0.12);
         targetCtx.fillStyle = '#B8E8FF';
         targetCtx.fillRect(tpx, tpy, 1, 1);
 
@@ -1667,7 +1731,7 @@
       }
     }
 
-    // 满载档（孤注一掷）追加 4 颗上升冷霜微粒（前后分置）
+    // 二阶质变（极寒过载 >=50%）追加 4 颗上升冷霜微粒（前后分置）
     if (amp.tier >= 2) {
       for (let m = 0; m < 4; m++) {
         const life = ((_auraElapsed * 0.45 + m * 0.25) % 1);
@@ -1981,6 +2045,12 @@
 
     // 按当前软缓冲分辨率比例自适应缩放显式几何尺寸（preserveLength 时保留实测画布射程，避免水柱半途截断）
     const mergedOpts = Object.assign({ seed: nextSeed() }, opts || {});
+    if ('palette' in mergedOpts && (!Array.isArray(mergedOpts.palette) || !mergedOpts.palette.length)) {
+      delete mergedOpts.palette;
+    }
+    if ('sparks' in mergedOpts && (!Array.isArray(mergedOpts.sparks) || !mergedOpts.sparks.length)) {
+      delete mergedOpts.sparks;
+    }
     const spatialRatio = _bufW > 0 && _bufW < 380 ? clamp(_bufW / 440, 0.52, 0.72) : 1;
     if (spatialRatio < 1) {
       if (typeof mergedOpts.reach === 'number') mergedOpts.reach = Math.max(20, Math.round(mergedOpts.reach * spatialRatio));
@@ -2017,7 +2087,16 @@
     }
 
     _burstCreateCount += 1;
-    const inst = PFX.createFx(def, mergedOpts);
+    let inst = null;
+    try {
+      inst = PFX.createFx(def, mergedOpts);
+    } catch (e) {
+      if (typeof control.onDone === 'function') {
+        try { control.onDone(); } catch (_) {}
+      }
+      return null;
+    }
+    if (!inst) return null;
 
     // 限制超长循环或持久特效的停留时间，并强制绑定真实墙钟 maxAgeMs 兜底（循环 FX 永不永驻）
     const defaultStop = def.meta && def.meta.loop ? 0.6 : Math.min(1.0, (def.meta && def.meta.duration) || 0.9);
@@ -2162,9 +2241,9 @@
       );
     } else if (
       !locked &&
-      (normPose === 'magic_cast' || normPose === 'fire_cast' || normPose === 'water_cast')
+      (normPose === 'magic_cast' || normPose === 'fire_cast' || normPose === 'wind_cast' || normPose === 'water_cast')
     ) {
-      // 双态 9 帧法术 (magic_cast=8) 或 11 帧三系元素 (fire_cast=8 / water_cast=10)：精确直出对应法术帧，绝不串播剑斩帧
+      // 双态 9 帧法术 (magic_cast=8) 或 11 帧三系元素 (fire_cast=8 / wind_cast=10 / water_cast=10)：精确直出对应法术帧，绝不串播剑斩帧
       const targetFrame = resolvePoseFrame(normPose, frameCount, st.spriteId);
       const castMs = holdMs ? clamp(Number(holdMs) || 280, 180, 360) : 280;
       // 若无专属法术/元素帧（仍落回常规 7 帧 strike=5），则沿用平滑 4->5->4 序列
@@ -2361,13 +2440,22 @@
     ensureVfxCanvas();
     ensureLoopRunning();
 
+    const myGen = ++_playerActionGen;
     const skillId = info.skillId || 'hand_ice_crystal';
     const primaryIdx = info.targetIdx != null ? info.targetIdx : 0;
     const targets = (Array.isArray(info.targetIndices) && info.targetIndices.length)
       ? info.targetIndices
       : [primaryIdx];
     const targetKey = `enemy:${primaryIdx}`;
-    const isHeavy = !!(info.didCrit || info.didBreak || info.didRiposte || info.shieldBroken || skillId.startsWith('insight_'));
+    const rawAmpPct = typeof info.ampPct === 'number' && Number.isFinite(info.ampPct)
+      ? (info.ampPct > 1 ? info.ampPct / 100 : info.ampPct)
+      : 0;
+    const ampPct = clamp(rawAmpPct, 0, 0.50);
+    const ampTier = typeof info.ampTier === 'number'
+      ? info.ampTier
+      : (ampPct >= 0.50 - 1e-6 ? 2 : ampPct >= 0.25 - 1e-6 ? 1 : 0);
+    const ampRatio = clamp(ampPct / 0.50, 0, 1);
+    const isHeavy = !!(info.didCrit || info.didBreak || info.didRiposte || info.shieldBroken || ampTier >= 2 || skillId.startsWith('insight_'));
 
     const playerSt = _actors.get('player');
     const pSpriteId = (playerSt && playerSt.spriteId) || resolvePlayerSpriteId(battleState, false);
@@ -2385,8 +2473,10 @@
       spawnFx('time_stop', { x: _bufW * 0.5, y: _bufH * 0.78, palette: PALETTES.ice }, { stopAt: 0.78 });
 
       scheduleAction(140, () => {
-        setActorPoseInternal('player', magicCastPose, 320, false);
-        dashActor('player', 16, 0, 110, 'outQuad', true, 'ice');
+        if (myGen === _playerActionGen) {
+          setActorPoseInternal('player', magicCastPose, 320, false);
+          dashActor('player', 16, 0, 110, 'outQuad', true, 'ice');
+        }
         spawnFx('eclipse', { x: tPts.hit.x, y: tPts.hit.y, palette: PALETTES.eclipse }, { stopAt: 0.85 });
         spawnFx('parry', { x: tPts.anchor.x, y: tPts.anchor.y, palette: PALETTES.ice }, { stopAt: 0.72 });
         spawnFx('ice_shatter', { x: tPts.anchor.x, y: tPts.anchor.y, palette: PALETTES.ice }, { stopAt: 0.85 });
@@ -2394,7 +2484,9 @@
         triggerHitStop(90);
         triggerTrauma(0.76);
       });
-      scheduleAction(420, () => dashActor('player', 0, 0, 210, 'outCubic', false));
+      scheduleAction(420, () => {
+        if (myGen === _playerActionGen) dashActor('player', 0, 0, 210, 'outCubic', false);
+      });
       return;
     }
 
@@ -2403,61 +2495,69 @@
       const isRemote = skillId.startsWith('remote_') || skillId === 'insight_aino_bead';
       setActorPoseInternal('player', magicWindupPose, 150, false);
       squashActor('player', 0.94, 1.07, 150);
-      spawnFx('magic_circle_cast', { x: pPts.anchor.x, y: pPts.anchor.y, palette: PALETTES.ice }, { stopAt: 0.52 });
+      spawnFx('magic_circle_cast', { x: pPts.anchor.x, y: pPts.anchor.y, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.ice }, { stopAt: 0.52 + ampRatio * 0.14 });
       if (info.usedWand) {
         spawnFx('eclipse', { x: pPts.cast.x, y: pPts.cast.y, palette: PALETTES.eclipse }, { stopAt: 0.55 });
       }
 
       scheduleAction(140, () => {
-        setActorPoseInternal('player', magicCastPose, 300, false);
-        squashActor('player', 1.08, 0.94, 170);
-        dashActor('player', 12, 0, 95, 'outQuad', false);
+        if (myGen === _playerActionGen) {
+          setActorPoseInternal('player', magicCastPose, 300, false);
+          squashActor('player', 1.08, 0.94, 170);
+          dashActor('player', 12, 0, 95, 'outQuad', false);
+        }
 
         const launchFrom = isRemote
           ? { x: lerp(pPts.cast.x, tPts.hit.x, 0.45), y: tPts.hit.y - 16 }
           : pPts.cast;
         const travelMs = isRemote ? 145 : 190;
 
-        spawnProjectile('ice_lance', launchFrom, tPts.hit, { palette: PALETTES.ice, length: 46 }, travelMs, () => {
+        spawnProjectile('ice_lance', launchFrom, tPts.hit, { palette: ampTier >= 2 ? PALETTES.crit : PALETTES.ice, length: Math.round(46 + ampRatio * 12) }, travelMs, () => {
           if (info.missed) {
             spawnFx('snowflake_burst', { x: tPts.hit.x, y: tPts.anchor.y, count: 5, palette: PALETTES.ice }, { stopAt: 0.55 });
             return;
           }
           triggerHitReaction(targetKey, isHeavy ? 16 : 10, isHeavy);
-          spawnFx('ice_shatter', { x: tPts.anchor.x, y: tPts.anchor.y, palette: PALETTES.ice }, { stopAt: 0.78 });
+          spawnFx('ice_shatter', { x: tPts.anchor.x, y: tPts.anchor.y, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.ice }, { stopAt: 0.78 });
           spawnFx('hit_spark', { x: tPts.anchor.x, y: tPts.anchor.y, palette: PALETTES.ice }, { stopAt: 0.48 });
-          if (isHeavy) {
-            spawnFx('crit_hit', { x: tPts.anchor.x, y: tPts.anchor.y, palette: PALETTES.ice }, { stopAt: 0.75 });
-            spawnFx('snowflake_burst', { x: tPts.anchor.x, y: tPts.anchor.y, count: 7, palette: PALETTES.ice }, { stopAt: 0.8 });
-            triggerHitStop(85);
-            triggerTrauma(0.72);
+          if (isHeavy || ampTier >= 1) {
+            if (isHeavy) spawnFx('crit_hit', { x: tPts.anchor.x, y: tPts.anchor.y, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.ice }, { stopAt: 0.75 });
+            spawnFx('snowflake_burst', { x: tPts.anchor.x, y: tPts.anchor.y, count: ampTier >= 2 ? 10 : 7, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.ice }, { stopAt: 0.8 });
+            triggerHitStop(isHeavy ? 85 : 68);
+            triggerTrauma(isHeavy ? Math.min(0.85, 0.72 + ampRatio * 0.12) : 0.48 + ampRatio * 0.14);
           } else {
             triggerHitStop(55);
-            triggerTrauma(0.36);
+            triggerTrauma(0.36 + ampRatio * 0.12);
           }
         });
       });
-      scheduleAction(360, () => dashActor('player', 0, 0, 180, 'outCubic', false));
+      scheduleAction(360, () => {
+        if (myGen === _playerActionGen) dashActor('player', 0, 0, 180, 'outCubic', false);
+      });
       return;
     }
 
     // 3) 冰系群体 / 地脉控场（冰棘群刺阵、蔓地薄冰、封肩地下冰柱、十字冰栏、冻彻断流、伊诺共鸣）
     if (ICE_AOE_GROUND_SKILLS.has(skillId)) {
       const isSetupOnly = skillId === 'hand_frost_floor';
-      const hitList = skillId === 'hand_thorn_field' || isSetupOnly
+      const hitList = isSetupOnly
         ? getLivingEnemyIndices(battleState, primaryIdx)
-        : targets;
+        : (skillId === 'hand_thorn_field'
+          ? ((Array.isArray(info.targetIndices) && info.targetIndices.length) ? info.targetIndices : getLivingEnemyIndices(battleState, primaryIdx))
+          : targets);
 
       setActorPoseInternal('player', magicWindupPose, 160, false);
       squashActor('player', 0.93, 1.08, 150);
-      spawnFx('magic_circle_cast', { x: pPts.anchor.x, y: pPts.anchor.y, palette: PALETTES.ice }, { stopAt: 0.62 });
+      spawnFx('magic_circle_cast', { x: pPts.anchor.x, y: pPts.anchor.y, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.ice }, { stopAt: 0.62 + ampRatio * 0.12 });
 
       scheduleAction(145, () => {
-        setActorPoseInternal('player', magicCastPose, 340, false);
-        squashActor('player', 1.1, 0.92, 180);
+        if (myGen === _playerActionGen) {
+          setActorPoseInternal('player', magicCastPose, 340, false);
+          squashActor('player', 1.1, 0.92, 180);
+        }
 
         const firstPts = getActorCanvasPoints(`enemy:${hitList[0] || 0}`, false);
-        spawnFx('frost_nova', { x: firstPts.anchor.x, y: firstPts.anchor.y, reach: isSetupOnly ? 68 : 96, palette: PALETTES.ice }, { stopAt: 0.85 });
+        spawnFx('frost_nova', { x: firstPts.anchor.x, y: firstPts.anchor.y, reach: isSetupOnly ? 68 : Math.round(96 + ampRatio * 18), palette: ampTier >= 2 ? PALETTES.crit : PALETTES.ice }, { stopAt: 0.85 });
 
         hitList.forEach((eIdx, order) => {
           scheduleAction(order * 48, () => {
@@ -2467,10 +2567,10 @@
               x: clamp(ePts.anchor.x - 18, 6, Math.max(12, _bufW - 12)),
               y: ePts.anchor.y,
               reach: 62,
-              height: isSetupOnly ? 30 : 54,
-              palette: PALETTES.ice,
+              height: isSetupOnly ? 30 : Math.round(54 + ampRatio * 12),
+              palette: ampTier >= 2 ? PALETTES.crit : PALETTES.ice,
             }, { stopAt: 0.85 });
-            spawnFx('snowflake_burst', { x: ePts.anchor.x, y: ePts.anchor.y, count: 6, palette: PALETTES.ice }, { stopAt: 0.78 });
+            spawnFx('snowflake_burst', { x: ePts.anchor.x, y: ePts.anchor.y, count: ampTier >= 2 ? 9 : 6, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.ice }, { stopAt: 0.78 });
 
             if (!isSetupOnly) {
               if (skillId === 'hand_thorn_field' || skillId === 'insight_hulan_resonance' || skillId === 'insight_alice_cage') {
@@ -2479,10 +2579,10 @@
               triggerHitReaction(eKey, isHeavy ? 15 : 10, isHeavy);
               if (order === 0) {
                 if (isHeavy) {
-                  spawnFx('crit_hit', { x: ePts.anchor.x, y: ePts.anchor.y, palette: PALETTES.ice }, { stopAt: 0.72 });
+                  spawnFx('crit_hit', { x: ePts.anchor.x, y: ePts.anchor.y, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.ice }, { stopAt: 0.72 });
                 }
                 triggerHitStop(isHeavy ? 88 : 65);
-                triggerTrauma(isHeavy ? 0.78 : 0.48);
+                triggerTrauma(isHeavy ? Math.min(0.88, 0.78 + ampRatio * 0.10) : 0.48 + ampRatio * 0.14);
               }
             }
           });
@@ -2494,10 +2594,12 @@
     // 4) 水系魔法（覆潮水弹 / 折射水幕）
     if (skillId === 'hand_water_surge') {
       setActorPoseInternal('player', magicWindupPose, 145, false);
-      spawnFx('magic_circle_cast', { x: pPts.anchor.x, y: pPts.anchor.y, palette: PALETTES.water }, { stopAt: 0.5 });
+      spawnFx('magic_circle_cast', { x: pPts.anchor.x, y: pPts.anchor.y, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.water }, { stopAt: 0.5 + ampRatio * 0.12 });
 
       scheduleAction(130, () => {
-        setActorPoseInternal('player', magicCastPose, 320, false);
+        if (myGen === _playerActionGen) {
+          setActorPoseInternal('player', magicCastPose, 320, false);
+        }
         const dist = clamp(Math.hypot(tPts.hit.x - pPts.cast.x, tPts.hit.y - pPts.cast.y), 36, Math.max(60, _bufW - 12));
         const aim = aimOpts(pPts.cast, tPts.hit);
         spawnFx('water_jet', {
@@ -2510,14 +2612,19 @@
         }, { stopAt: 0.34, preserveLength: true });
 
         scheduleAction(125, () => {
+          if (info.missed) {
+            spawnFx('splash', { x: tPts.anchor.x, y: tPts.anchor.y, stone: false, palette: PALETTES.water }, { stopAt: 0.62 });
+            return;
+          }
           triggerHitReaction(targetKey, isHeavy ? 15 : 11, isHeavy);
           spawnFx('wave_crash', { x: tPts.anchor.x, y: tPts.anchor.y, palette: PALETTES.water }, { stopAt: 0.82 });
           spawnFx('splash', { x: tPts.anchor.x, y: tPts.anchor.y, stone: false, palette: PALETTES.water }, { stopAt: 0.72 });
-          if (isHeavy) {
-            spawnFx('crit_hit', { x: tPts.anchor.x, y: tPts.anchor.y, palette: PALETTES.water }, { stopAt: 0.7 });
+          if (isHeavy || ampTier >= 1) {
+            if (isHeavy) spawnFx('crit_hit', { x: tPts.anchor.x, y: tPts.anchor.y, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.water }, { stopAt: 0.7 });
+            if (ampTier >= 1) spawnFx('snowflake_burst', { x: tPts.anchor.x, y: tPts.anchor.y, count: ampTier >= 2 ? 9 : 6, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.water }, { stopAt: 0.76 });
           }
           triggerHitStop(isHeavy ? 80 : 60);
-          triggerTrauma(isHeavy ? 0.68 : 0.38);
+          triggerTrauma(isHeavy ? Math.min(0.84, 0.68 + ampRatio * 0.12) : 0.38 + ampRatio * 0.14);
         });
       });
       return;
@@ -2526,23 +2633,31 @@
     if (skillId === 'hand_water_veil') {
       setActorPoseInternal('player', magicWindupPose, 120, false);
       scheduleAction(110, () => {
-        setActorPoseInternal('player', magicCastPose, 300, false);
-        squashActor('player', 1.08, 0.94, 200);
+        if (myGen === _playerActionGen) {
+          setActorPoseInternal('player', magicCastPose, 300, false);
+          squashActor('player', 1.08, 0.94, 200);
+        }
         spawnFx('splash', { x: pPts.anchor.x, y: pPts.anchor.y, stone: false, palette: PALETTES.water }, { stopAt: 0.75 });
         spawnFx('divine_shield', { x: pPts.anchor.x, y: pPts.anchor.y, radius: 30, palette: PALETTES.water }, { stopAt: 0.92 });
       });
       return;
     }
 
-    // 5) 护盾与立障（钢冰生根盾 / 凝水厚冰墙）
+    // 5) 护盾与立障（钢冰生根盾 / 凝水厚冰墙，支持最高 +25% 魔力增幅强化护盾光环）
     if (SHIELD_GUARD_SKILLS.has(skillId)) {
       setActorPoseInternal('player', magicWindupPose, 120, false);
       squashActor('player', 1.06, 0.94, 130);
       scheduleAction(110, () => {
-        setActorPoseInternal('player', magicCastPose, 320, false);
-        squashActor('player', 0.94, 1.08, 220);
-        spawnFx('divine_shield', { x: pPts.anchor.x, y: pPts.anchor.y, radius: 32, palette: PALETTES.ice }, { stopAt: 1.02 });
-        spawnFx('ice_crystal', { x: pPts.anchor.x, y: pPts.anchor.y, height: 38, palette: PALETTES.ice }, { stopAt: 0.96 });
+        if (myGen === _playerActionGen) {
+          setActorPoseInternal('player', magicCastPose, 320, false);
+          squashActor('player', 0.94, 1.08, 220);
+        }
+        const shBoost = clamp(ampPct / 0.25, 0, 1);
+        spawnFx('divine_shield', { x: pPts.anchor.x, y: pPts.anchor.y, radius: Math.round(32 + shBoost * 6), palette: ampTier >= 1 ? PALETTES.crit : PALETTES.ice }, { stopAt: 1.02 });
+        spawnFx('ice_crystal', { x: pPts.anchor.x, y: pPts.anchor.y, height: Math.round(38 + shBoost * 8), palette: PALETTES.ice }, { stopAt: 0.96 });
+        if (ampPct > 0.001) {
+          spawnFx('snowflake_burst', { x: pPts.hit.x, y: pPts.hit.y, count: ampTier >= 1 ? 8 : 5, palette: ampTier >= 1 ? PALETTES.crit : PALETTES.ice }, { stopAt: 0.76 });
+        }
       });
       return;
     }
@@ -2553,6 +2668,7 @@
       setActorPoseInternal('player', 'windup', 95, false);
       dashActor('player', -12, 0, 80, 'inQuad', false);
       scheduleAction(85, () => {
+        if (myGen !== _playerActionGen) return;
         dashActor('player', 34, 0, 115, 'outCubic', true, isWind ? 'wind' : 'ice', { pose: 'run' });
         if (isWind) {
           spawnFx('blizzard_vortex', { x: pPts.anchor.x, y: pPts.anchor.y, height: 56, palette: PALETTES.wind }, { stopAt: 0.72 });
@@ -2562,10 +2678,10 @@
         }
       });
       scheduleAction(205, () => {
-        setActorPoseInternal('player', 'windup', 120, false);
+        if (myGen === _playerActionGen) setActorPoseInternal('player', 'windup', 120, false);
       });
       scheduleAction(325, () => {
-        dashActor('player', 0, 0, 175, 'outCubic', true, isWind ? 'wind' : 'ice', { pose: 'run', returnIdle: true });
+        if (myGen === _playerActionGen) dashActor('player', 0, 0, 175, 'outCubic', true, isWind ? 'wind' : 'ice', { pose: 'run', returnIdle: true });
       });
       return;
     }
@@ -2584,13 +2700,16 @@
 
       // 85ms: 爆发前冲（切换 run 步态，绝不在奔跑中途播 cast_step/strike！）
       scheduleAction(85, () => {
+        if (myGen !== _playerActionGen) return;
         dashActor('player', dashDist, 0, 110, 'outQuart', true, 'ice', { pose: 'run' });
       });
 
       // 195ms: 到位后挥剑斩击 (cast_step(4) -> strike(5) -> cast_step(4)) + 顿帧 + 击退
       scheduleAction(195, () => {
-        setActorPoseInternal('player', 'strike', 210, false);
-        squashActor('player', 1.12, 0.9, 170);
+        if (myGen === _playerActionGen) {
+          setActorPoseInternal('player', 'strike', 210, false);
+          squashActor('player', 1.12, 0.9, 170);
+        }
 
         const slashX = clamp(tPts.anchor.x - 32, 8, Math.max(16, _bufW - 8));
         const slashY = tPts.anchor.y;
@@ -2632,7 +2751,9 @@
 
       // 445ms: 轻盈奔回归位（切换 run 步态，回位自动落回 idle）
       scheduleAction(445, () => {
-        dashActor('player', 0, 0, 200, 'outCubic', false, 'ice', { pose: 'run', returnIdle: true });
+        if (myGen === _playerActionGen) {
+          dashActor('player', 0, 0, 200, 'outCubic', false, 'ice', { pose: 'run', returnIdle: true });
+        }
       });
     }
   }
@@ -2695,11 +2816,13 @@
       }
     };
 
-    // A) 烈焰系：贝阿特丽丝 (9帧双态) / 东翼统领 (9帧双态) / 宫廷封锁官
-    if (spriteId === 'beatrice' || spriteId === 'eastwing_commander' || spriteId === 'corridor_vanguard') {
+    // A) 烈焰系：贝阿特丽丝 (9帧双态) / 东翼统领 (9帧双态) / 宫廷封锁官 / 赤炎术士 (7帧远程烈焰)
+    if (spriteId === 'beatrice' || spriteId === 'eastwing_commander' || spriteId === 'corridor_vanguard' || spriteId === 'flame_mage') {
       const moveText = String(intent.moveName || '');
       let isMelee;
-      if (spriteId === 'eastwing_commander') {
+      if (spriteId === 'flame_mage') {
+        isMelee = false;
+      } else if (spriteId === 'eastwing_commander') {
         const isEastwingMagic = intent.stance === 'DUAL_CAST'
           || (intent.gainShield > 0 && intent.stance !== 'CLOSE_LUNGE' && !/戟/.test(moveText))
           || (intent.elem === 'fire' && intent.stance !== 'CLOSE_LUNGE' && !/劈|斩|刺/.test(moveText));
@@ -2833,23 +2956,24 @@
       return;
     }
 
-    // F) 魔兽系：灰棘头狼 / 灰棘狼 / 霜脊影豺 / 霜渊裂地兽领主（疾扑 run -> 利爪/裂地重震 strike -> 奔回 run）
-    const isSlam = spriteId === 'abyss_behemoth' || intent.shatterPlayerShield || intent.stance === 'HEAVY_WINDUP';
+    // F) 魔兽系：灰棘头狼 / 灰棘狼 / 霜脊影豺 / 冻土重甲兽 / 霜原狂狼 / 寒脊爪兽 / 霜渊裂地兽领主
+    const isSlam = spriteId === 'abyss_behemoth' || spriteId === 'tundra_brute' || intent.shatterPlayerShield || intent.stance === 'HEAVY_WINDUP';
+    const isIceBeast = spriteId === 'abyss_behemoth' || spriteId === 'tundra_brute' || spriteId === 'frost_hound';
     scheduleAction(95, () => {
       const dashLeft = -clamp(ePts.screenX - pPts.screenX - 102, 52, 330);
-      dashActor(eKey, dashLeft, 0, 105, 'outQuart', true, 'claw', { pose: 'run' });
+      dashActor(eKey, dashLeft, 0, 105, 'outQuart', true, isIceBeast ? 'ice' : 'claw', { pose: 'run' });
     });
     scheduleAction(200, () => {
       setActorPoseInternal(eKey, 'strike', 240, false);
       squashActor(eKey, 1.14, 0.88, 170);
       if (isSlam) {
-        spawnFx('ground_slam', { x: pPts.anchor.x, y: pPts.anchor.y, reach: 88, palette: spriteId === 'abyss_behemoth' ? PALETTES.ice : undefined }, { stopAt: 0.86 });
+        spawnFx('ground_slam', { x: pPts.anchor.x, y: pPts.anchor.y, reach: 88, palette: isIceBeast ? PALETTES.ice : PALETTES.earth }, { stopAt: 0.86 });
       }
       spawnFx('claw_swipe', { x: clamp(pPts.anchor.x + 28, 8, Math.max(16, _bufW - 8)), y: pPts.anchor.y, flip: true, palette: PALETTES.claw }, { stopAt: 0.68 });
       applyPlayerImpact();
     });
     scheduleAction(455, () => {
-      dashActor(eKey, 0, 0, 200, 'outCubic', false, 'claw', { pose: 'run', returnIdle: true });
+      dashActor(eKey, 0, 0, 200, 'outCubic', false, isIceBeast ? 'ice' : 'claw', { pose: 'run', returnIdle: true });
     });
   }
 
@@ -2995,21 +3119,23 @@
     return { actorKey, wrap, st };
   }
 
-  /* -------------------- 雷纳德三系元素援护（自动适配 11 帧 [earth:3,4,5; fire:7,8; water:9,10] + animMap） -------------------- */
+  /* -------------------- 雷纳德三系元素援护（土/火/风三系完整施法 + 兼容水系，自动适配 11 帧 animMap） -------------------- */
   function playRenoSupport(elem, opts) {
     if (!isEnabled()) return null;
     opts = opts || {};
     ensureVfxCanvas();
     const mode = String(elem || 'earth').toLowerCase();
-    const normElem = (mode === 'fire' || mode === 'water') ? mode : 'earth';
+    const normElem = (mode === 'fire' || mode === 'wind' || mode === 'water') ? mode : 'earth';
     const tagMap = {
       earth: '雷纳德 · 岩壁协防',
       fire: '雷纳德 · 赤焰支援',
+      wind: '雷纳德 · 疾风驰援',
       water: '雷纳德 · 净潮驰援',
     };
     const windupPose = `${normElem}_windup`;
     const castPose = `${normElem}_cast`;
-    const primaryEnemyKey = `enemy:${opts.enemyIdx != null ? opts.enemyIdx : 0}`;
+    const fallbackEnemyIdx = (_lastBattleRef && _lastBattleRef.targetIdx != null) ? _lastBattleRef.targetIdx : 0;
+    const primaryEnemyKey = `enemy:${opts.enemyIdx != null ? opts.enemyIdx : fallbackEnemyIdx}`;
 
     return summonAllyCameo('reno', {
       tagText: opts.tagText || tagMap[normElem],
@@ -3054,6 +3180,19 @@
               triggerHitReaction(primaryEnemyKey, 14, true);
               triggerTrauma(0.5);
             });
+          } else if (normElem === 'wind') {
+            spawnFx('magic_circle_cast', { x: rPts.anchor.x, y: rPts.anchor.y, palette: PALETTES.wind }, { stopAt: 0.55 });
+            spawnFx('blizzard_vortex', { x: tPts.anchor.x, y: tPts.anchor.y, height: 74, palette: PALETTES.wind }, { stopAt: 0.84 });
+            scheduleAction(105, () => {
+              spawnFx('double_slash', {
+                x: clamp(tPts.anchor.x - 24, 8, Math.max(16, _bufW - 8)),
+                y: tPts.anchor.y,
+                palette: PALETTES.wind,
+                sparks: PALETTES.swordSparks,
+              }, { stopAt: 0.72 });
+              triggerHitReaction(primaryEnemyKey, 13, false);
+              triggerTrauma(0.42);
+            });
           } else {
             spawnFx('magic_circle_cast', { x: rPts.anchor.x, y: rPts.anchor.y, palette: PALETTES.water }, { stopAt: 0.55 });
             const dist = clamp(Math.hypot(tPts.hit.x - rPts.cast.x, tPts.hit.y - rPts.cast.y), 36, Math.max(60, _bufW - 12));
@@ -3074,6 +3213,7 @@
   function playWaveTransition(battleState, opts) {
     if (!isEnabled()) return false;
     opts = opts || {};
+    _playerActionGen += 1;
     ensureVfxCanvas(false);
     ensureLoopRunning();
 
@@ -3106,13 +3246,16 @@
   function playWandToggle() {
     if (!isEnabled()) return;
     ensureVfxCanvas();
+    const myGen = ++_playerActionGen;
     const pPts = getActorCanvasPoints('player', false);
     const playerSt = _actors.get('player');
     const pSpriteId = (playerSt && playerSt.spriteId) || resolvePlayerSpriteId(_lastBattleRef, false);
     const useDualMagic = hasMagicCastFrames(pSpriteId);
     setActorPoseInternal('player', useDualMagic ? 'magic_windup' : 'windup', 140, false);
     scheduleAction(120, () => {
-      setActorPoseInternal('player', useDualMagic ? 'magic_cast' : 'strike', 300, false);
+      if (myGen === _playerActionGen) {
+        setActorPoseInternal('player', useDualMagic ? 'magic_cast' : 'strike', 300, false);
+      }
       spawnFx('eclipse', { x: pPts.hit.x, y: pPts.hit.y, palette: PALETTES.eclipse }, { stopAt: 0.88 });
       spawnFx('time_stop', { x: pPts.anchor.x, y: pPts.anchor.y, palette: PALETTES.eclipse }, { stopAt: 0.72 });
       triggerTrauma(0.28);
@@ -3152,6 +3295,8 @@
       playRenoSupport('earth');
       return;
     }
+
+    _playerActionGen += 1;
 
     const pPts = getActorCanvasPoints('player', false);
     const playerSt = _actors.get('player');
@@ -3618,10 +3763,14 @@
 
   /* -------------------- 清理重置 -------------------- */
   function clearEffects() {
+    _playerActionGen += 1;
     _scheduled.length = 0;
     _activeEffects.length = 0;
     _lastFxDrawTs = 0;
+    _deferFxDrawUntil = 0;
     _fxIntervalMs = FX_BASE_INTERVAL_MS;
+    _burstCreateCount = 0;
+    _burstWindowStart = 0;
     _hitStopId += 1;
     _hitStopScale = 1.0;
     if (_hitStopTimer) {
@@ -3633,6 +3782,8 @@
     clearAllCameos();
     // 清除全部角色残留位移、闪白与临时姿态，防止波次切换时卡在冲刺位或受击过曝
     _actors.forEach(st => {
+      const meta = getSpriteMeta(st.spriteId);
+      const frameCount = meta.frames || 7;
       st.dx = 0;
       st.dy = 0;
       st.sx = 1;
@@ -3648,6 +3799,7 @@
       st.poseOverride = null;
       st.poseLock = false;
       st.pose = st.dead ? 'hurt' : 'idle';
+      st.frame = st.dead ? resolvePoseFrame('hurt', frameCount, st.spriteId) : 0;
       if (st.poseQueue) st.poseQueue.length = 0;
       applyActorVisual(st);
     });
@@ -3669,10 +3821,14 @@
     _rafId = 0;
     _lastRafTs = 0;
     _lastLayoutSig = '';
+    _lastBattleRef = null;
     _lastBattleId = '';
     _lastWaveIdx = -1;
+    _fxDrawBudgetTrips = 0;
     _auraDirty = false;
     _auraLastTier = 0;
+    _auraLastIntensity = 0;
+    _auraElapsed = 0;
     _lastAuraDrawTs = 0;
     invalidateFieldRect();
     clearEffects();
@@ -3776,6 +3932,31 @@
     };
   }
 
+  function playAmpChargeBurst(ampPct) {
+    if (!isEnabled()) return;
+    const rawPct = typeof ampPct === 'number' && Number.isFinite(ampPct) ? (ampPct > 1 ? ampPct / 100 : ampPct) : 0;
+    const pct = clamp(rawPct, 0, 0.50);
+    const pSt = _actors.get('player');
+    if (pSt && pSt.el && pSt.el.isConnected) {
+      _lastAuraDrawTs = 0;
+      renderManaAmpAura(pSt, nowPerf(), 0.016, prefersReducedMotion());
+    }
+    if (pct <= 0.001 || prefersReducedMotion()) return;
+    ensureVfxCanvas(false);
+    const pPts = getActorCanvasPoints('player', true);
+    if (!pPts) return;
+    const isTier2 = pct >= 0.50 - 1e-6;
+    const isTier1 = pct >= 0.25 - 1e-6;
+    const ratio = clamp(pct / 0.50, 0.1, 1.0);
+    spawnFx('snowflake_burst', {
+      x: pPts.hit.x,
+      y: pPts.hit.y,
+      count: isTier2 ? 10 : isTier1 ? Math.round(6 + ratio * 3) : Math.max(3, Math.round(3 + ratio * 4)),
+      palette: isTier2 ? PALETTES.crit : PALETTES.ice,
+    }, { stopAt: isTier2 ? 0.85 : 0.56 + ratio * 0.20 });
+    ensureLoopRunning();
+  }
+
   /* -------------------- 监听窗口尺寸变化与页签切换 -------------------- */
   if (typeof window !== 'undefined' && !isJsdomEnv()) {
     window.addEventListener('resize', () => {
@@ -3810,6 +3991,7 @@
     playEnemySequence,
     playWaveTransition,
     playWandToggle,
+    playAmpChargeBurst,
     playPalaceTimeStop,
     playAinoSpearSupport,
     playRenoSupport,

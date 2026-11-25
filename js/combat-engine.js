@@ -6,6 +6,7 @@
   'use strict';
 
   const ARENA_SAVE_KEY = 'ojousama_arena_records_v1';
+  const AMP_TIERS = [0, 0.25, 0.50];
 
   const COMBAT_BALANCE_V22 = {
     DEF_K: 80,
@@ -518,7 +519,6 @@
       mp: 28,
       power: 0,
       atkKind: 'matk',
-      noOvercast: true,
       overcastCap: 0.25,
       lockDamage: 0,
       shieldKind: 'solid',
@@ -527,7 +527,7 @@
       shieldBase: 26,
       shieldScale: 0.55,
       shortDesc: '实体厚冰盾 · 冷却1回合',
-      desc: '童年期习得的基础经手实体厚冰墙（冷却1回合），稳健抵御正面冲击并阻尼晦轮穿透。',
+      desc: '童年期习得的基础经手实体厚冰墙（冷却1回合），支持最高+25%魔力增幅加厚护盾，阻尼晦轮穿透。',
     },
     hand_frost_floor: {
       id: 'hand_frost_floor',
@@ -556,7 +556,6 @@
       mp: 34,
       power: 0,
       atkKind: 'matk',
-      noOvercast: true,
       overcastCap: 0.25,
       lockDamage: 0,
       shieldKind: 'solid',
@@ -568,7 +567,7 @@
       iceThorns: 1,
       protectCrate: 32,
       shortDesc: '实体生根盾 · 防滑护药箱',
-      desc: '魔力入地生根立起实体钢冰盾（冷却1回合），防冰面打滑并协防药箱。',
+      desc: '魔力入地生根立起实体钢冰盾（冷却1回合），支持最高+25%魔力增幅加厚护盾并令护箱翻倍。',
     },
     hand_water_veil: {
       id: 'hand_water_veil',
@@ -1808,6 +1807,7 @@
       const pBaseAv = computeBaseAv(pSpd);
       return {
         name: (stageCfg.id === 'turning_point_corridor') ? '希尔维亚' : ((stageCfg.order >= 6) ? '眷寒渔（希尔维亚）' : '希尔维亚'),
+        age: typeof p.age === 'number' ? p.age : 14,
         hp: p.hp,
         mhp: p.mhp,
         mp: p.mp,
@@ -1834,6 +1834,8 @@
         bondAssist: activeAssist,
         bondAssistUsed: false,
         hasManaCycle: !!p.manaCycle,
+        canAmp: (p.mmp || 0) > 0,
+        canManaAmp: (p.mmp || 0) > 0,
         hasEclipseWand: !!p.eclipseWand,
         equippedStaff: 'none',
         wandPersistent: false,
@@ -1841,7 +1843,16 @@
         wandCooldown: 0,
         overcastMode: 0,
         _lastOvercastMode: 0,
+        overcastPct: 0,
         ampPct: 0,
+        ampTier: 0,
+        ampTierName: '常规',
+        ampMult: 1.0,
+        ampDefPierce: 0,
+        ampExtraLocks: 0,
+        ampShieldMult: 1.0,
+        ampTiers: AMP_TIERS.slice(),
+        maxAmpCap: 0.50,
         palaceLeft: p.palaceCharges != null ? p.palaceCharges : 1,
         palaceMax: p.palaceCharges != null ? p.palaceCharges : 1,
         status: {},
@@ -1903,6 +1914,7 @@
 
     return {
       name: curS.alias || '希尔维亚',
+      age,
       hp,
       mhp,
       mp,
@@ -1929,6 +1941,8 @@
       bondAssist: activeAssist,
       bondAssistUsed: false,
       hasManaCycle: learned.has('mana_cycle'),
+      canAmp: mmp > 0,
+      canManaAmp: mmp > 0,
       hasEclipseWand: hasEclipseInSave(),
       equippedStaff: 'none',
       wandPersistent: false,
@@ -1936,7 +1950,16 @@
       wandCooldown: 0,
       overcastMode: 0,
       _lastOvercastMode: 0,
+      overcastPct: 0,
       ampPct: 0,
+      ampTier: 0,
+      ampTierName: '常规',
+      ampMult: 1.0,
+      ampDefPierce: 0,
+      ampExtraLocks: 0,
+      ampShieldMult: 1.0,
+      ampTiers: AMP_TIERS.slice(),
+      maxAmpCap: 0.50,
       palaceLeft: hasPalace ? 1 : 0,
       palaceMax: hasPalace ? 1 : 0,
       status: {},
@@ -2815,29 +2838,67 @@
     const dm = Math.max(0, Number(ampPct) || 0);
     const oc = COMBAT_BALANCE_V22.OVERCAST;
     if (dm >= oc.tier2.at - 1e-6) {
-      return { tier: 2, mult: oc.tier2.mult, extraLocks: oc.tier2.extraLocks, defPierce: oc.tier2.defPierce, label: oc.tier2.label };
+      return { tier: 2, mult: oc.tier2.mult, extraLocks: oc.tier2.extraLocks, defPierce: oc.tier2.defPierce, label: oc.tier2.label, name: oc.tier2.label };
     }
     if (dm >= oc.tier1.at - 1e-6) {
-      return { tier: 1, mult: oc.tier1.mult, extraLocks: oc.tier1.extraLocks, defPierce: oc.tier1.defPierce, label: oc.tier1.label };
+      return { tier: 1, mult: oc.tier1.mult, extraLocks: oc.tier1.extraLocks, defPierce: oc.tier1.defPierce, label: oc.tier1.label, name: oc.tier1.label };
     }
-    return { tier: 0, mult: 1.0, extraLocks: 0, defPierce: 0, label: '' };
+    return { tier: 0, mult: 1.0, extraLocks: 0, defPierce: 0, label: '', name: '常规' };
+  }
+
+  function isAmpableSkill(skill) {
+    if (!skill || skill.noOvercast) return false;
+    if (skill.power > 0 && skill.atkKind === 'matk' && skill.elem !== 'phys') return true;
+    if (skill.shieldBase > 0 && getSkillOvercastCap(skill) > 0) return true;
+    return false;
+  }
+
+  function getPlayerMaxAmpCap(player) {
+    if (!player || !(player.mmp > 0)) return 0;
+    const list = Array.isArray(player.skills) ? player.skills : [];
+    let maxCap = 0;
+    for (let i = 0; i < list.length; i++) {
+      const sk = TACTICAL_SKILLS[list[i]];
+      if (!sk || !isAmpableSkill(sk)) continue;
+      const cap = getSkillOvercastCap(sk);
+      if (cap > maxCap) maxCap = cap;
+    }
+    return Math.max(0, Math.min(0.50, maxCap));
+  }
+
+  function canPlayerAmp(player) {
+    return !!(player && (player.mmp || 0) > 0 && getPlayerMaxAmpCap(player) > 0);
+  }
+
+  function getAmpTiers(b) {
+    const live = b || activeBattle;
+    const maxCap = live && live.player ? getPlayerMaxAmpCap(live.player) : 0.50;
+    if (maxCap <= 0) return [0];
+    if (maxCap <= 0.25 + 1e-6) return [0, 0.25];
+    return AMP_TIERS.slice();
   }
 
   function syncPlayerAmpFromMode(player) {
     if (!player) return 0;
+    const maxCap = getPlayerMaxAmpCap(player);
     const mode = Math.max(0, Math.min(2, player.overcastMode | 0));
     if (player._lastOvercastMode !== mode) {
       player._lastOvercastMode = mode;
-      player.ampPct = mode === 2 ? 0.50 : mode === 1 ? 0.25 : 0;
+      const mapped = mode === 2 ? 0.50 : mode === 1 ? 0.25 : 0;
+      player.ampPct = Math.min(maxCap, mapped);
     }
-    return Math.max(0, Math.min(0.50, Number(player.ampPct) || 0));
+    const raw = Number(player.ampPct != null ? player.ampPct : player.overcastPct) || 0;
+    const clamped = Math.round(Math.max(0, Math.min(maxCap, raw)) * 100) / 100;
+    player.ampPct = clamped;
+    player.overcastPct = clamped;
+    return clamped;
   }
 
   function getEffectiveAmpPct(player, skill) {
-    if (!player || !player.hasManaCycle) return 0;
+    if (!canPlayerAmp(player)) return 0;
     const rawPct = syncPlayerAmpFromMode(player);
     if (!skill) return rawPct;
-    if (skill.noOvercast || skill.atkKind !== 'matk' || !(skill.power > 0)) return 0;
+    if (!isAmpableSkill(skill)) return 0;
     return Math.min(rawPct, getSkillOvercastCap(skill));
   }
 
@@ -2869,8 +2930,8 @@
     opts = opts || {};
     const mmp = Math.max(1, (player && player.mmp) || 100);
     const mpNow = Math.max(0, (player && player.mp) || 0);
-    if (!player || !player.hasManaCycle || !skill || !(skill.power > 0) || skill.atkKind !== 'matk' || skill.elem === 'phys') {
-      return { ampPct: 0, requestedAmpPct: 0, mult: 1.0, tier: 0, extraLocks: 0, defPierce: 0, label: '', extraMp: 0, discountedExtraMp: 0 };
+    if (!canPlayerAmp(player) || !isAmpableSkill(skill)) {
+      return { ampPct: 0, requestedAmpPct: 0, mult: 1.0, shieldMult: 1.0, tier: 0, extraLocks: 0, defPierce: 0, label: '', extraMp: 0, discountedExtraMp: 0 };
     }
     const requestedAmpPct = getEffectiveAmpPct(player, skill);
     const base = computeBaseMpCost(player, skill);
@@ -2901,11 +2962,13 @@
     const tier2BaseBonus = tierInfo.tier >= 2 ? Math.min(0.10, (((skill && skill.mp) || 0) / mmp) * 0.65) : 0;
     const segMult = 1.0 + seg1 * oc.seg1Slope + seg2 * oc.seg2Slope + tier2BaseBonus;
     const mult = segMult * tierInfo.mult;
+    const shieldMult = skill.shieldBase > 0 ? (1.0 + Math.min(1.0, actualAmpPct / 0.25) * 0.45) : 1.0;
 
     return {
       ampPct: actualAmpPct,
       requestedAmpPct,
       mult,
+      shieldMult,
       tier: tierInfo.tier,
       extraLocks: tierInfo.extraLocks,
       defPierce: tierInfo.defPierce,
@@ -2932,12 +2995,142 @@
     return base + wandExtra + prof.discountedExtraMp;
   }
 
-  // V2.2 魔战循环 × 双段质变魔力增幅倍率（纯物理技恒定 1.0x）
+  // V2.2 双段质变魔力增幅倍率（纯物理技恒定 1.0x）
   function computeManaCycleMultiplier(player, mpSpent, skill) {
-    if (!player || !player.hasManaCycle || !skill || skill.power <= 0 || skill.atkKind !== 'matk' || skill.elem === 'phys' || mpSpent <= 0) {
+    if (!canPlayerAmp(player) || !isAmpableSkill(skill) || mpSpent <= 0) {
       return 1.0;
     }
     return computeAmpProfile(player, skill).mult;
+  }
+
+  function pickPrimaryAmpSkill(player, preferredId) {
+    if (preferredId && TACTICAL_SKILLS[preferredId]) {
+      const pref = TACTICAL_SKILLS[preferredId];
+      if ((!player || !Array.isArray(player.skills) || player.skills.includes(preferredId)) && isAmpableSkill(pref)) {
+        return pref;
+      }
+    }
+    const list = (player && Array.isArray(player.skills)) ? player.skills : [];
+    let bestAtk = null;
+    let bestAtkCap = -1;
+    let bestAny = null;
+    let bestAnyCap = -1;
+    for (let i = 0; i < list.length; i++) {
+      const sk = TACTICAL_SKILLS[list[i]];
+      if (!sk || !isAmpableSkill(sk)) continue;
+      const cap = getSkillOvercastCap(sk);
+      if (sk.power > 0 && cap > bestAtkCap) {
+        bestAtk = sk;
+        bestAtkCap = cap;
+      }
+      if (cap > bestAnyCap) {
+        bestAny = sk;
+        bestAnyCap = cap;
+      }
+    }
+    return bestAtk || bestAny || TACTICAL_SKILLS.hand_ice_crystal;
+  }
+
+  function computeSkillShieldGain(player, skill, ampProfile) {
+    if (!player || !skill || !(skill.shieldBase > 0)) return 0;
+    let gain = Math.round(skill.shieldBase + (player.matk || 0) * (skill.shieldScale || 0));
+    if (skill.elem === 'ice' && player.passives && player.passives.includes('root_ice')) {
+      gain = Math.round(gain * 1.2);
+    }
+    if (hasRelic(player, 'cross')) gain = Math.round(gain * 1.2);
+    const prof = ampProfile || computeAmpProfile(player, skill);
+    const shieldAmpMult = prof && prof.shieldMult > 1.001 ? prof.shieldMult : 1.0;
+    if (shieldAmpMult > 1.001) gain = Math.round(gain * shieldAmpMult);
+    return Math.max(0, gain);
+  }
+
+  function computeDerivedAmpState(player) {
+    const maxAmpCap = getPlayerMaxAmpCap(player);
+    const canAmp = !!(player && (player.mmp || 0) > 0 && maxAmpCap > 0);
+    const ampTiers = maxAmpCap <= 0 ? [0] : (maxAmpCap <= 0.25 + 1e-6 ? [0, 0.25] : AMP_TIERS.slice());
+    const overcastPct = canAmp ? Math.min(maxAmpCap, syncPlayerAmpFromMode(player)) : 0;
+    const tierInfo = getAmpTierInfo(overcastPct);
+    const ampTier = tierInfo.tier;
+    const ampTierName = tierInfo.name;
+    const overcastMode = ampTier;
+    const refSk = pickPrimaryAmpSkill(player, null);
+    const refProf = computeAmpProfile(player, refSk, { clampToMp: false });
+    const shieldCap = COMBAT_BALANCE_V22.OVERCAST.skillCaps.SHIELD;
+    const shieldPct = Math.min(overcastPct, shieldCap);
+    const ampShieldMult = Number((1.0 + Math.min(1.0, shieldPct / 0.25) * 0.45).toFixed(4));
+    const ampMult = Number(((refSk && refSk.shieldBase > 0 && !(refSk.power > 0)) ? refProf.shieldMult : refProf.mult).toFixed(4));
+    const tierMultAt = pct => {
+      const mmp = Math.max(1, (player && player.mmp) || 100);
+      const oc = COMBAT_BALANCE_V22.OVERCAST;
+      const clamped = Math.min(maxAmpCap, Math.max(0, pct));
+      const ti = getAmpTierInfo(clamped);
+      const seg1 = Math.min(clamped, oc.seg1End);
+      const seg2 = Math.max(0, clamped - oc.seg1End);
+      const t2Bonus = ti.tier >= 2 ? Math.min(0.10, (((refSk && refSk.mp) || 0) / mmp) * 0.65) : 0;
+      const dmgMult = (1.0 + seg1 * oc.seg1Slope + seg2 * oc.seg2Slope + t2Bonus) * ti.mult;
+      if (refSk && refSk.shieldBase > 0 && !(refSk.power > 0)) {
+        const sPct = Math.min(clamped, shieldCap);
+        return Number((1.0 + Math.min(1.0, sPct / 0.25) * 0.45).toFixed(4));
+      }
+      return Number(dmgMult.toFixed(4));
+    };
+    const ampTierMults = [1.0, tierMultAt(0.25), tierMultAt(0.50)];
+    return {
+      overcastPct,
+      ampPct: overcastPct,
+      overcastMode,
+      ampTier,
+      ampTierName,
+      ampMult,
+      ampTierMults,
+      ampDefPierce: tierInfo.defPierce,
+      ampExtraLocks: tierInfo.extraLocks,
+      ampShieldMult,
+      ampTiers,
+      maxAmpCap,
+      canAmp,
+    };
+  }
+
+  function syncDerivedBattleState(b) {
+    if (!b || !b.player) return;
+    const p = b.player;
+    const d = computeDerivedAmpState(p);
+    p.canAmp = d.canAmp;
+    p.canManaAmp = d.canAmp;
+    p.maxAmpCap = d.maxAmpCap;
+    p.ampTiers = d.ampTiers.slice();
+    p.overcastPct = d.overcastPct;
+    p.ampPct = d.ampPct;
+    p.overcastMode = d.overcastMode;
+    p._lastOvercastMode = d.overcastMode;
+    p.ampTier = d.ampTier;
+    p.ampTierName = d.ampTierName;
+    p.ampMult = d.ampMult;
+    p.ampDefPierce = d.ampDefPierce;
+    p.ampExtraLocks = d.ampExtraLocks;
+    p.ampShieldMult = d.ampShieldMult;
+    b.overcastPct = d.overcastPct;
+    b.ampPct = d.ampPct;
+    b.overcastMode = d.overcastMode;
+    b.ampTier = d.ampTier;
+    b.ampTierName = d.ampTierName;
+    b.ampMult = d.ampMult;
+    b.ampDefPierce = d.ampDefPierce;
+    b.ampExtraLocks = d.ampExtraLocks;
+    b.ampShieldMult = d.ampShieldMult;
+    b.ampTiers = d.ampTiers.slice();
+    b.maxAmpCap = d.maxAmpCap;
+    b.canAmp = d.canAmp;
+    b.recentLogs = (b.log || []).slice(-14);
+  }
+
+  function emitCombatStateChange(b) {
+    try {
+      if (typeof global.dispatchEvent === 'function' && typeof global.CustomEvent === 'function') {
+        global.dispatchEvent(new global.CustomEvent('combat:statechange', { detail: b ? getBattleState(b) : null }));
+      }
+    } catch (e) {}
   }
 
   function getPlayerCritChance(player, skill) {
@@ -2960,7 +3153,7 @@
     const mpCost = opts.mpCost != null ? opts.mpCost : computeSkillMpCost(p, skill);
     const powerMp = opts.powerMp != null ? opts.powerMp : computeOvercastPowerMp(p, skill);
     const ampProfile = opts.ampProfile || computeAmpProfile(p, skill);
-    const mcMult = (p.hasManaCycle && skill.atkKind === 'matk' && skill.elem !== 'phys' && powerMp > 0) ? ampProfile.mult : 1.0;
+    const mcMult = (canPlayerAmp(p) && isAmpableSkill(skill) && powerMp > 0) ? ampProfile.mult : 1.0;
     const stance = e.intent ? e.intent.stance : 'HEAVY_WINDUP';
     const wandOn = isEclipseStaffForSkill(p, skill);
     const staff = getEquippedStaffDef(p);
@@ -3152,21 +3345,40 @@
 
     if (!skill.power || skill.power <= 0) {
       const willParry = !!(skill.dodgeLunge && stance === 'CLOSE_LUNGE');
-      const headline = (skill.dodgeLunge && isTempestVacuum)
-        ? '✦ 生根步·斩风瞬反就绪！（反制真空连刃并获下回合 +1 AP）'
-        : willParry
-          ? '✦ 触发卸力闪反（并开启连携追击）！'
-          : '稳固防线 / 战术步法';
+      const ampProf = computeAmpProfile(p, skill);
+      const estShield = skill.shieldBase > 0 ? computeSkillShieldGain(p, skill, ampProf) : 0;
+      const shieldMult = estShield > 0 && ampProf.shieldMult > 1.001 ? ampProf.shieldMult : 1.0;
+      const estCrateGuard = (skill.protectCrate && bState.crateHp != null)
+        ? (ampProf.tier >= 1 ? skill.protectCrate * 2 : skill.protectCrate)
+        : 0;
+      let headline = '稳固防线 / 战术步法';
+      if (skill.dodgeLunge && isTempestVacuum) {
+        headline = '✦ 生根步·斩风瞬反就绪！（反制真空连刃并获下回合 +1 AP）';
+      } else if (willParry) {
+        headline = '✦ 触发卸力闪反（并开启连携追击）！';
+      } else if (estShield > 0) {
+        const shieldTypeTxt = (skill.shieldKind || 'solid') === 'magic' ? '魔法护盾' : '实体护盾';
+        const ampTxt = shieldMult > 1.001 ? `（增幅 ${shieldMult.toFixed(2)}×）` : '';
+        const crateTxt = estCrateGuard > 0 ? ` · 护药箱 +${estCrateGuard}` : '';
+        headline = `预计${shieldTypeTxt} +${estShield}${ampTxt}${crateTxt}`;
+      } else if (skill.layFrostFloor) {
+        headline = `铺设蔓地薄冰（持续 ${skill.layFrostFloor} 回合 · 窄道锁腿）`;
+      } else if (skill.afterimage) {
+        headline = '风行残像（闪避下击 · 拉条 · 下回合 +1 AP）';
+      }
       return {
         skillId: skill.id,
         apCost,
         mpCost,
         dmgMin: 0,
         dmgMax: 0,
+        estShield,
+        shieldMult,
+        estCrateGuard,
         elemMult: 1,
-        mcMult: 1,
-        ampTier: 0,
-        ampPct: 0,
+        mcMult: shieldMult,
+        ampTier: ampProf.tier || 0,
+        ampPct: ampProf.ampPct || 0,
         lockDamage: 0,
         manaReturn: 0,
         critChance: 0,
@@ -3341,6 +3553,7 @@
     if (!b) return;
     b.log.push(html);
     if (b.log.length > 70) b.log.shift();
+    b.recentLogs = b.log.slice(-14);
     b._logDirty = true;
     if (_logBatchDepth === 0 && !b.headless && typeof document !== 'undefined') {
       flushCombatLogDOM(b);
@@ -3514,7 +3727,8 @@
     }, dur);
   }
 
-  function clearAllJuiceVfx() {
+  function clearAllJuiceVfx(opts) {
+    const preserveWaveContext = !!(opts && opts.preserveWaveContext);
     resetCombatTrauma();
     if (_logScrollRaf && typeof global.cancelAnimationFrame === 'function') {
       global.cancelAnimationFrame(_logScrollRaf);
@@ -3524,13 +3738,19 @@
     _hitStopTimer = null;
     _activeVfxTimers.forEach(tid => clearTimeout(tid));
     _activeVfxTimers.clear();
-    if (global.CombatPixelVFX && typeof global.CombatPixelVFX.cleanup === 'function') {
-      global.CombatPixelVFX.cleanup();
+    if (global.CombatPixelVFX) {
+      if (preserveWaveContext && typeof global.CombatPixelVFX.clearEffects === 'function') {
+        global.CombatPixelVFX.clearEffects();
+      } else if (typeof global.CombatPixelVFX.cleanup === 'function') {
+        global.CombatPixelVFX.cleanup();
+      }
     }
     if (typeof document !== 'undefined') {
       const field = document.querySelector('#battle-screen .cb-arena-field');
       if (field) field.classList.remove('cb-hitstop', 'cb-hitstop-75');
-      document.querySelectorAll('#battle-screen .cb-elem-vfx-layer').forEach(el => el.remove());
+      const fl = document.getElementById('cb-vfx-flash');
+      if (fl) fl.classList.remove('active');
+      document.querySelectorAll('#battle-screen .cb-elem-vfx-layer, #battle-screen .cb-phase2-banner').forEach(el => el.remove());
     }
   }
 
@@ -3960,7 +4180,7 @@
     b._pendingPixelActions = [];
     b._pendingHitPulses = [];
     if (waveIdx > 0 && !b.headless) {
-      clearAllJuiceVfx();
+      clearAllJuiceVfx({ preserveWaveContext: true });
       if (typeof document !== 'undefined') {
         const callout = document.getElementById('cb-callout-layer');
         if (callout) callout.innerHTML = '';
@@ -3971,6 +4191,10 @@
         const actGrid = document.getElementById('b-actions');
         if (actGrid) actGrid._lastHtml = '';
       }
+    }
+    if (b === activeBattle) {
+      hoveredSkillId = null;
+      armedSkillId = null;
     }
     delete b.palacePendingStep2;
     b.witnessActive = !!w.witnessActive;
@@ -4044,6 +4268,7 @@
     }
 
     if (w.intro) pushLog(b, logTag('cbl-ice', w.intro));
+    syncDerivedBattleState(b);
   }
 
   function isPalaceReady(b) {
@@ -4122,6 +4347,7 @@
       },
       palaceInspectedWaves: {},
       log: [],
+      recentLogs: [],
     };
     initWave(b, 0);
     if (hasRelic(b.player, 'alice_flower_cake')) {
@@ -4144,57 +4370,121 @@
       const synNames = b.player.synergies.map(s => `${s.name}(${s.tier || s.count}件)`).join(' · ');
       pushLog(b, logTag('cbl-star', `✦ 套装共鸣已点亮：${synNames}`));
     }
+    syncDerivedBattleState(b);
     return b;
   }
 
-  function setOvercast(mode, b) {
-    b = b || activeBattle;
-    if (!b || b.over) return false;
-    if (!b.player.hasManaCycle) return false;
-    const nextMode = Math.max(0, Math.min(2, mode | 0));
-    const nextAmp = nextMode === 2 ? 0.50 : nextMode === 1 ? 0.25 : 0;
-    const changed = b.player.overcastMode !== nextMode || Math.abs((b.player.ampPct || 0) - nextAmp) > 1e-4;
-    b.player.overcastMode = nextMode;
-    b.player._lastOvercastMode = nextMode;
-    b.player.ampPct = nextAmp;
-    armedSkillId = null;
-    if (!b.headless) {
-      if (changed) safeSfx('tab_switch');
-      renderCombatUI();
-    }
-    return true;
-  }
-
-  function setAmpPct(pct, b, opts) {
+  function setOvercastPct(pct, b, opts) {
     if (b && typeof b === 'object' && !('player' in b) && !('enemies' in b)) {
       opts = b;
       b = activeBattle;
     }
     b = b || activeBattle;
-    if (!b || b.over || !b.player.hasManaCycle) return { ok: false, ampPct: 0, overcastMode: 0, tier: getAmpTierInfo(0) };
+    if (!b || b.over || !canPlayerAmp(b.player)) {
+      const zeroTier = getAmpTierInfo(0);
+      return { ok: false, overcastPct: 0, ampPct: 0, overcastMode: 0, ampTier: 0, ampTierName: zeroTier.name, tier: zeroTier };
+    }
+    const maxCap = getPlayerMaxAmpCap(b.player);
     let val = Number(pct);
     if (!isFinite(val)) val = 0;
     if (val > 1) val = val / 100;
-    val = Math.max(0, Math.min(0.50, val));
+    val = Math.max(0, Math.min(maxCap, val));
     if (opts && opts.snap) {
-      const snaps = [0, 0.25, 0.50];
-      for (const s of snaps) {
-        if (Math.abs(val - s) <= 0.02) { val = s; break; }
+      const snaps = getAmpTiers(b);
+      for (let i = 0; i < snaps.length; i++) {
+        if (Math.abs(val - snaps[i]) <= 0.02 + 1e-6) {
+          val = snaps[i];
+          break;
+        }
       }
     }
-    val = Math.round(val * 10000) / 10000;
-    const nextMode = val >= 0.48 ? 2 : val >= 0.20 ? 1 : 0;
-    const changed = Math.abs((b.player.ampPct || 0) - val) > 1e-4 || b.player.overcastMode !== nextMode;
+    val = Math.round(val * 100) / 100;
+    val = Math.max(0, Math.min(maxCap, val));
+    const prevAmp = Number(b.player.ampPct) || 0;
+    const nextMode = val >= 0.50 - 1e-6 ? 2 : val >= 0.25 - 1e-6 ? 1 : 0;
+    const changed = Math.abs(prevAmp - val) > 1e-4 || b.player.overcastMode !== nextMode;
     b.player.ampPct = val;
+    b.player.overcastPct = val;
     b.player.overcastMode = nextMode;
     b.player._lastOvercastMode = nextMode;
+    b.overcastPct = val;
+    b.overcastMode = nextMode;
     armedSkillId = null;
+    syncDerivedBattleState(b);
     if (!b.headless) {
-      if (changed && !(opts && opts.silent)) safeSfx('tab_switch');
+      if (changed && !(opts && opts.silent)) {
+        safeSfx('amp_charge', { ampPct: val });
+        try {
+          const pxApi = getPixelVfxApi();
+          if (pxApi && typeof pxApi.playAmpChargeBurst === 'function') {
+            pxApi.playAmpChargeBurst(val);
+          }
+        } catch (e) {}
+      }
       renderCombatUI();
     }
-    return { ok: true, ampPct: val, overcastMode: nextMode, tier: getAmpTierInfo(val) };
+    const tierInfo = getAmpTierInfo(val);
+    return {
+      ok: true,
+      overcastPct: val,
+      ampPct: val,
+      overcastMode: nextMode,
+      ampTier: tierInfo.tier,
+      ampTierName: tierInfo.name,
+      tier: tierInfo,
+    };
   }
+
+  function setOvercast(mode, b) {
+    b = b || activeBattle;
+    if (!b || b.over || !canPlayerAmp(b.player)) return false;
+    const nextMode = Math.max(0, Math.min(2, mode | 0));
+    const nextAmp = nextMode === 2 ? 0.50 : nextMode === 1 ? 0.25 : 0;
+    const res = setOvercastPct(nextAmp, b);
+    return !!(res && res.ok);
+  }
+
+  function cycleOvercast(delta, b, opts) {
+    if (delta && typeof delta === 'object' && ('player' in delta || 'enemies' in delta)) {
+      opts = b;
+      b = delta;
+      delta = 1;
+    }
+    b = b || activeBattle;
+    if (!b || b.over || !canPlayerAmp(b.player)) {
+      const zeroTier = getAmpTierInfo(0);
+      return { ok: false, overcastPct: 0, ampPct: 0, overcastMode: 0, ampTier: 0, ampTierName: zeroTier.name, tier: zeroTier };
+    }
+    const tiers = getAmpTiers(b);
+    const step = (typeof delta === 'number' && delta < 0) ? -1 : 1;
+    const cur = syncPlayerAmpFromMode(b.player);
+    let nextVal = tiers[0];
+    if (step > 0) {
+      let found = false;
+      for (let i = 0; i < tiers.length; i++) {
+        if (tiers[i] > cur + 1e-4) {
+          nextVal = tiers[i];
+          found = true;
+          break;
+        }
+      }
+      if (!found) nextVal = tiers[0];
+    } else {
+      let found = false;
+      for (let i = tiers.length - 1; i >= 0; i--) {
+        if (tiers[i] < cur - 1e-4) {
+          nextVal = tiers[i];
+          found = true;
+          break;
+        }
+      }
+      if (!found) nextVal = tiers[tiers.length - 1];
+    }
+    return setOvercastPct(nextVal, b, opts);
+  }
+
+  const setAmpPct = setOvercastPct;
+  const cycleAmpStep = cycleOvercast;
 
   function setEquippedStaff(staffId, b) {
     b = b || activeBattle;
@@ -4214,6 +4504,7 @@
       p.wandCooldown = 0;
     }
     armedSkillId = null;
+    syncDerivedBattleState(b);
     if (!b.headless) {
       safeSfx('tab_switch');
       renderCombatUI();
@@ -4234,6 +4525,7 @@
       p.wandPersistent = false;
       if (p.equippedStaff === 'eclipse_wand') p.equippedStaff = 'none';
     }
+    syncDerivedBattleState(b);
     if (!b.headless) safeSfx(p.wandActive ? 'eclipse_cast' : 'tab_switch', p.wandActive ? { gain: 0.72 } : undefined);
     if (p.wandActive) {
       if (b.witnessActive) {
@@ -4308,6 +4600,7 @@
       // 选错观察点有真实战术代价：并行推演失焦损耗 1 AP（若当前有 AP）
       if (b.ap > 0) b.ap = Math.max(0, b.ap - 1);
       pushLog(b, logTag('cbl-danger', `❄️【冰晶宫殿·误判】${clue.feedback}（并行推演失焦损耗 1 AP！）`));
+      syncDerivedBattleState(b);
       if (!b.headless) renderCombatUI();
       return { ok: true, correct: false, step: 1, feedback: clue.feedback };
     }
@@ -4325,6 +4618,7 @@
         if (b.ap > 0) b.ap -= 1;
         const fb = ded ? ded.feedback : '推演方向偏差，未能形成有效反制。';
         pushLog(b, logTag('cbl-danger', `❄️【冰晶宫殿·推演偏差】${fb}（损耗 1 AP！）`));
+        syncDerivedBattleState(b);
         if (!b.headless) renderCombatUI();
         return { ok: true, correct: false, step: 2, feedback: fb };
       }
@@ -4366,6 +4660,7 @@
       if (gainedSynMp > 0) spawnCombatFloat(b, 'player', `+${gainedSynMp} MP`, 'mp');
       pushLog(b, logTag('cbl-star', `✦【共鸣·学院星辉(2件)】冰宫看破附加 2 层易伤并回流 +${synMp} MP！`));
     }
+    syncDerivedBattleState(b);
     spawnBanner(b, '❄️ 冰晶宫殿 · 破绽锁定！', 'interrupt');
     if (!b.headless) safeSfx('ice_shatter');
     if (!b.headless) renderCombatUI();
@@ -4462,11 +4757,18 @@
     return { actualHpLoss, shieldAbsorbed, magicShieldBypassed };
   }
 
+  let _actionInProgress = false;
+  let _lastEndTurnUiTs = 0;
+  let _lastSkillUiClick = { id: '', ts: 0 };
+
   function useSkill(skillId, targetIdx, b) {
+    if (_actionInProgress) return { ok: false, reason: 'busy' };
+    _actionInProgress = true;
     _logBatchDepth += 1;
     try {
       return _useSkillCore(skillId, targetIdx, b);
     } finally {
+      _actionInProgress = false;
       _logBatchDepth = Math.max(0, _logBatchDepth - 1);
       if (_logBatchDepth === 0) flushCombatLogDOM(b || activeBattle);
     }
@@ -4499,6 +4801,7 @@
 
     const usedWand = isEclipseStaffForSkill(p, sk);
     armedSkillId = null;
+    if (b === activeBattle) hoveredSkillId = null;
 
     // 扣除资源与记录冷却
     if (apCost === 0 && sk.ap > 0 && sk.path === 'REMOTE' && b.turn === 1 && !b._handkerchiefFreeRemoteUsed && hasRelic(p, 'aino_academy_handkerchief')) {
@@ -4576,9 +4879,8 @@
       pushLog(b, logTag('cbl-ice', `❄️ 一层极薄的冰面沿着乱葬岗松土悄然铺开（持续 ${b.frostFloorTurns} 回合）！`));
     }
     if (sk.shieldBase) {
-      let gain = Math.round(sk.shieldBase + p.matk * (sk.shieldScale || 0));
-      if (sk.elem === 'ice' && p.passives.includes('root_ice')) gain = Math.round(gain * 1.2);
-      if (hasRelic(p, 'cross')) gain = Math.round(gain * 1.2);
+      const shieldAmpMult = ampProfile && ampProfile.shieldMult > 1.001 ? ampProfile.shieldMult : 1.0;
+      const gain = computeSkillShieldGain(p, sk, ampProfile);
       const beforeS = p.shield;
       p.shield = Math.min(p.maxShield, Math.max(0, p.shield) + gain);
       // 物理实体冰盾优先保留 solid 标记，避免水幕覆盖已成型的实体冰壁
@@ -4588,7 +4890,8 @@
       }
       const shieldDelta = p.shield - beforeS;
       if (shieldDelta > 0) spawnCombatFloat(b, 'player', `+${shieldDelta} 护盾`, 'shield');
-      pushLog(b, logTag('cbl-ice', `🛡️ 「${sk.name}」构筑 ${shieldDelta} 点${p.shieldKind === 'solid' ? '实体' : '魔法'}护盾（当前 ${p.shield}/${p.maxShield}）。`));
+      const ampTag = shieldAmpMult > 1.001 ? ` [增幅${shieldAmpMult.toFixed(2)}×]` : '';
+      pushLog(b, logTag('cbl-ice', `🛡️ 「${sk.name}」构筑 ${shieldDelta} 点${p.shieldKind === 'solid' ? '实体' : '魔法'}护盾${ampTag}（当前 ${p.shield}/${p.maxShield}）。`));
       if (hasRelic(p, 'cross') && (p.status.burn > 0 || p.status.blind > 0)) {
         if (p.status.burn > 0) delete p.status.burn;
         else if (p.status.blind > 0) delete p.status.blind;
@@ -4609,8 +4912,9 @@
     }
     if (sk.nextApBonus) p.status.nextAp = (p.status.nextAp || 0) + sk.nextApBonus;
     if (sk.protectCrate && b.crateHp != null) {
-      p.status.crateGuard = (p.status.crateGuard || 0) + sk.protectCrate;
-      pushLog(b, logTag('cbl-emerald', `📦 冰障延伸护住医疗药箱（抵御冲击 ${p.status.crateGuard}）！`));
+      const crateAmt = ampProfile && ampProfile.tier >= 1 ? sk.protectCrate * 2 : sk.protectCrate;
+      p.status.crateGuard = (p.status.crateGuard || 0) + crateAmt;
+      pushLog(b, logTag('cbl-emerald', `📦 冰障延伸护住医疗药箱（抵御冲击 ${p.status.crateGuard}${ampProfile && ampProfile.tier >= 1 ? ' · 增幅翻倍' : ''}）！`));
     }
     if (sk.path === 'HAND' && hasRelic(p, 'ice_pebble') && b._pebbleTurn !== b.turn) {
       b._pebbleTurn = b.turn;
@@ -4644,6 +4948,8 @@
         targetIdx: Math.max(0, b.enemies.indexOf(primary)),
         targetIndices: [Math.max(0, b.enemies.indexOf(primary))],
         usedWand,
+        ampPct: ampProfile ? ampProfile.ampPct : 0,
+        ampTier: ampProfile ? ampProfile.tier : 0,
         missed: false,
       });
     }
@@ -4658,11 +4964,13 @@
         p.status.blind -= 1;
         if (p.status.blind <= 0) delete p.status.blind;
         pushLog(b, logTag('cbl-star', `🌫️ 视线受扬尘遮蔽，你的「${sk.name}」偏斜落空！（提示：用覆潮水弹/折射水幕洗净视线，或用范围技覆盖）`));
-        if (p.overcastMode === 2) {
+        if (p.overcastMode === 2 && isAmpableSkill(sk) && getSkillOvercastCap(sk) >= 0.50 - 1e-6) {
           p.overcastMode = 0;
           p._lastOvercastMode = 0;
           p.ampPct = 0;
+          p.overcastPct = 0;
         }
+        syncDerivedBattleState(b);
         const missIdx = Math.max(0, b.enemies.indexOf(primary));
         queuePixelAction(b, {
           type: 'skill',
@@ -4670,6 +4978,8 @@
           targetIdx: missIdx,
           targetIndices: [missIdx],
           usedWand,
+          ampPct: ampProfile ? ampProfile.ampPct : 0,
+          ampTier: ampProfile ? ampProfile.tier : 0,
           missed: true,
         });
         if (!b.headless) {
@@ -5163,6 +5473,8 @@
         didRiposte: anyDidRiposte,
         shieldBroken: anyShieldShattered,
         usedWand,
+        ampPct: ampProfile ? ampProfile.ampPct : 0,
+        ampTier: ampProfile ? ampProfile.tier : 0,
         missed: !anyHitDealt,
       });
 
@@ -5247,11 +5559,13 @@
       if (mpGain > 0) spawnCombatFloat(b, 'player', `+${mpGain} MP`, 'mp');
       pushLog(b, logTag('cbl-ice', `⚡【魔战循环】等量伤害回流 +${totalManaReturned} MP（当前 ${p.mp}/${p.mmp}）！`));
     }
-    if (p.overcastMode === 2 && sk.power > 0 && sk.atkKind === 'matk') {
+    if (p.overcastMode === 2 && isAmpableSkill(sk) && getSkillOvercastCap(sk) >= 0.50 - 1e-6) {
       p.overcastMode = 0;
       p._lastOvercastMode = 0;
       p.ampPct = 0;
+      p.overcastPct = 0;
     }
+    syncDerivedBattleState(b);
 
     if (!b.headless && !playedBreakOrParry) {
       if (anyDidCrit) {
@@ -5378,12 +5692,15 @@
   }
 
   function endTurn(b) {
+    if (_actionInProgress) return false;
+    _actionInProgress = true;
     const liveB = b || activeBattle;
     if (liveB && !liveB.headless && !liveB.over) safeSfx('ui_tick', { gain: 0.72 });
     _logBatchDepth += 1;
     try {
       return _endTurnCore(b);
     } finally {
+      _actionInProgress = false;
       _logBatchDepth = Math.max(0, _logBatchDepth - 1);
       if (_logBatchDepth === 0) flushCombatLogDOM(b || activeBattle);
     }
@@ -5441,6 +5758,7 @@
     b = b || activeBattle;
     if (!b || b.over) return false;
     armedSkillId = null;
+    if (b === activeBattle) hoveredSkillId = null;
     const p = b.player;
     delete p.status.breakChain;
     const hadNobleReflect = !!(p.status && p.status.nobleReflect > 0);
@@ -5711,7 +6029,7 @@
           p.status.burn = (p.status.burn || 0) + intent.addBurn;
         }
 
-        if (hadNobleReflect && hpLoss >= 0 && e.hp > 0) {
+        if (p.hp > 0 && hadNobleReflect && hpLoss >= 0 && e.hp > 0) {
           const refDmg = Math.round(p.mdef * 1.4 + 28);
           dealDamageToEnemy(b, e, refDmg, {});
           pushLog(b, logTag('cbl-star', `👑【贵族体面·回敬】礼仪冰霜震退 ${e.name}，反伤 ${refDmg}！`));
@@ -5805,6 +6123,7 @@
       decideEnemyIntent(e, b);
     });
     ensureValidTarget(b);
+    syncDerivedBattleState(b);
 
     if (!b.headless) renderCombatUI();
     return true;
@@ -5822,6 +6141,7 @@
     const cid = p.bondAssist;
     p.bondAssistUsed = true;
     armedSkillId = null;
+    if (b === activeBattle) hoveredSkillId = null;
     const primary = getPrimaryAliveEnemy(b);
 
     if (cid === 'alice') {
@@ -5860,6 +6180,7 @@
       pushLog(b, logTag('cbl-star', `👑【心念援护·夏洛特·贵族体面】「${meta ? meta.quote : ''}」护盾补满（至少+40）并展开冰镜反震！`, true));
     }
 
+    syncDerivedBattleState(b);
     spawnBanner(b, `💞 ${meta ? `${meta.icon} ${meta.name}·${meta.title}` : '心念援护'}！`, 'riposte');
     queuePixelAction(b, { type: 'bond_assist', charId: cid });
     if (!b.headless) safeSfx('egg');
@@ -6095,13 +6416,17 @@
           <div class="cb-left-console">
             <div class="cb-overcast-box" id="cb-overcast-box">
               <div class="cb-oc-head">
-                <span>魔战循环 · 魔力增幅 <span class="cb-kbd">W</span></span>
+                <span><span id="cb-oc-title">魔力增幅</span> <span class="cb-kbd">W</span></span>
                 <span class="cb-oc-mult" id="cb-oc-mult">1.00x</span>
               </div>
-              <div class="cb-oc-seg" id="cb-oc-seg">
-                <button class="cb-oc-btn" data-oc="0">常规 0%</button>
-                <button class="cb-oc-btn" data-oc="1">魔力盈溢 25%</button>
-                <button class="cb-oc-btn all-in" data-oc="2">极寒过载 50%</button>
+              <div class="cb-oc-seg" id="cb-oc-seg" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:0;">
+                <button type="button" class="cb-oc-btn" data-oc="0" data-amp="0">常规 0%</button>
+                <button type="button" class="cb-oc-btn" data-oc="1" data-amp="0.25">★魔力盈溢 25%</button>
+                <button type="button" class="cb-oc-btn all-in" data-oc="2" data-amp="0.50">★★极寒过载 50%</button>
+              </div>
+              <div class="cb-oc-slider-row" id="cb-oc-slider-row" style="display:flex;align-items:center;gap:8px;margin-top:5px;padding:0;">
+                <input type="range" class="cb-oc-slider" id="cb-oc-slider" min="0" max="50" step="1" value="0" aria-label="魔力增幅百分比微调" style="flex:1;min-width:0;height:4px;margin:0;accent-color:#1658eb;cursor:pointer;" />
+                <span class="cb-oc-pct" id="cb-oc-pct" style="font-size:11px;font-weight:700;color:#1658eb;font-variant-numeric:tabular-nums;min-width:38px;text-align:right;white-space:nowrap;">0%</span>
               </div>
             </div>
             <div id="b-log" class="cb-log-box"></div>
@@ -6112,7 +6437,7 @@
           <div class="cb-turn-col">
             <button class="cb-endturn-btn" id="cb-btn-endturn">
               <span class="cb-endturn-seal" aria-hidden="true">${CB_SVG.hourglass}</span>
-              <span class="cb-endturn-main">结束回合 <span class="cb-kbd">E</span></span>
+              <span class="cb-endturn-main">结束回合 <span class="cb-kbd">X</span></span>
               <small>可留存 1 点 AP</small>
             </button>
           </div>
@@ -6122,14 +6447,37 @@
     `;
 
     root.querySelector('#cb-oc-seg').onclick = e => {
-      const btn = e.target.closest('[data-oc]');
+      const btn = e.target.closest('.cb-oc-btn');
       if (!btn || btn.disabled) return;
-      setOvercast(Number(btn.getAttribute('data-oc')));
+      const ampAttr = btn.getAttribute('data-amp');
+      if (ampAttr != null) {
+        setOvercastPct(Number(ampAttr));
+      } else if (btn.hasAttribute('data-oc')) {
+        setOvercast(Number(btn.getAttribute('data-oc')));
+      }
     };
+    const ocSlider = root.querySelector('#cb-oc-slider');
+    if (ocSlider) {
+      ocSlider.oninput = () => {
+        if (ocSlider.disabled) return;
+        const pct = Number(ocSlider.value) / 100;
+        const res = setOvercastPct(pct, activeBattle, { snap: true });
+        if (res && res.ok) {
+          ocSlider.value = String(Math.round(res.overcastPct * 100));
+        }
+      };
+    }
     root.querySelector('#cb-btn-palace').onclick = () => openIcePalaceModal();
     root.querySelector('#cb-btn-wand').onclick = () => toggleEclipseWand();
     root.querySelector('#cb-btn-assist').onclick = () => useBondAssist();
-    root.querySelector('#cb-btn-endturn').onclick = () => endTurn();
+    root.querySelector('#cb-btn-endturn').onclick = () => {
+      if (!isJsdomEnv()) {
+        const now = Date.now();
+        if (now - _lastEndTurnUiTs < 250) return;
+        _lastEndTurnUiTs = now;
+      }
+      endTurn();
+    };
     root.querySelector('#cb-btn-retreat').onclick = () => {
       safeSfx('modal_close');
       exitBattle(false);
@@ -6255,23 +6603,26 @@
     if (!ocMultEl || !commitBar) return;
 
     const mpPct = Math.max(0, Math.min(100, p.mp / Math.max(1, p.mmp) * 100));
-    const pickId = refSkillId || p.skills.find(id => {
-      const s = TACTICAL_SKILLS[id];
-      return s && s.atkKind === 'matk' && s.power > 0 && !s.noOvercast;
-    }) || 'hand_ice_crystal';
-    const refSkill = TACTICAL_SKILLS[pickId] || TACTICAL_SKILLS.hand_ice_crystal;
+    const refSkill = (refSkillId && TACTICAL_SKILLS[refSkillId])
+      ? TACTICAL_SKILLS[refSkillId]
+      : pickPrimaryAmpSkill(p, null);
 
-    if (!p.hasManaCycle) {
-      ocMultEl.textContent = '未习得';
+    if (!canPlayerAmp(p)) {
+      ocMultEl.textContent = '不可增幅';
       commitBar.style.width = '0%';
     } else {
-      // 精确联动悬停技能或当前首个可用魔法技能的真实蓝耗（含 mana_calc -15% / 省魔手稿 与晦轮杖附加耗蓝）
-      const realSpend = Math.min(p.mp, computeSkillMpCost(p, refSkill));
-      const powerMp = Math.min(p.mp, computeOvercastPowerMp(p, refSkill));
-      const realMult = computeManaCycleMultiplier(p, powerMp, refSkill);
-
-      ocMultEl.textContent = `${refSkill.name} ${realMult.toFixed(2)}x (耗${realSpend})`;
-      const spendPct = Math.min(mpPct, realSpend / Math.max(1, p.mmp) * 100);
+      // 精确联动悬停技能或当前主力增幅技能的真实蓝耗（含零耗蓝/魔力精算/省魔手稿与晦轮杖附加耗蓝）
+      const realSpend = computeSkillMpCost(p, refSkill);
+      const refProf = computeAmpProfile(p, refSkill);
+      const isShieldRef = !!(refSkill.shieldBase > 0 && !(refSkill.power > 0));
+      if (isShieldRef) {
+        ocMultEl.textContent = `${refSkill.name} 护盾${refProf.shieldMult.toFixed(2)}x (耗${realSpend})`;
+      } else {
+        const powerMp = computeOvercastPowerMp(p, refSkill);
+        const realMult = computeManaCycleMultiplier(p, powerMp, refSkill);
+        ocMultEl.textContent = `${refSkill.name} ${realMult.toFixed(2)}x (耗${realSpend})`;
+      }
+      const spendPct = Math.min(mpPct, Math.min(p.mp, realSpend) / Math.max(1, p.mmp) * 100);
       commitBar.style.left = `${Math.max(0, mpPct - spendPct)}%`;
       commitBar.style.width = `${spendPct}%`;
     }
@@ -6295,7 +6646,9 @@
           }
           const dmgPart = fc.dmgMin > 0
             ? `伤害 <b>${fc.dmgMin}${fc.dmgMax > fc.dmgMin ? `~${fc.dmgMax}` : ''}</b>`
-            : '战术增益/防反';
+            : (fc.estShield > 0
+              ? `护盾 <b>+${fc.estShield}</b>${fc.shieldMult > 1.001 ? ` · 增幅 <b>${fc.shieldMult.toFixed(2)}×</b>` : ''}`
+              : '战术增益/防反');
           const multPart = fc.dmgMin > 0
             ? `克制 <b>${fc.elemMult.toFixed(2)}×</b> · 魔战 <b>${fc.mcMult.toFixed(2)}×</b> · 回蓝 <b>+${fc.manaReturn}</b>`
             : `消耗 AP ${fc.apCost}${fc.mpCost > 0 ? ` · MP ${fc.mpCost}` : ''}`;
@@ -6318,6 +6671,7 @@
     if (!b || b.headless || typeof document === 'undefined') return;
     const root = ensureBattleDOM();
     if (!root) return;
+    syncDerivedBattleState(b);
 
     const p = b.player;
     const stageAge = (b.fromArena && b.stageCfg && b.stageCfg.preset && b.stageCfg.preset.age) || null;
@@ -6500,11 +6854,34 @@
     if (p.status.burn > 0) buffs.push(`<span class="cb-buff-chip debuff">灼烧(${p.status.burn})</span>`);
     document.getElementById('cb-p-buffs').innerHTML = buffs.join('');
 
+    const curAmpPct = syncPlayerAmpFromMode(p);
+    const ampAllowed = canPlayerAmp(p);
+    const maxAmpCap = getPlayerMaxAmpCap(p);
+    const ocTitleEl = document.getElementById('cb-oc-title');
+    if (ocTitleEl) {
+      ocTitleEl.textContent = p.hasManaCycle ? '魔战循环 · 魔力增幅' : '魔力增幅';
+    }
     root.querySelectorAll('#cb-oc-seg .cb-oc-btn').forEach(btn => {
-      const m = Number(btn.getAttribute('data-oc'));
-      btn.disabled = !p.hasManaCycle || b.over;
-      btn.classList.toggle('active', p.hasManaCycle && p.overcastMode === m);
+      const ampVal = Number(btn.getAttribute('data-amp'));
+      const m = btn.hasAttribute('data-oc') ? Number(btn.getAttribute('data-oc')) : -1;
+      const exceedsCap = Number.isFinite(ampVal) && ampVal > maxAmpCap + 1e-6;
+      btn.disabled = !ampAllowed || b.over || exceedsCap;
+      const isAct = ampAllowed && !exceedsCap && (Number.isFinite(ampVal) ? Math.abs(curAmpPct - ampVal) < 0.005 : p.overcastMode === m);
+      btn.classList.toggle('active', isAct);
     });
+    const ocSliderEl = document.getElementById('cb-oc-slider');
+    const ocPctEl = document.getElementById('cb-oc-pct');
+    const pctInt = Math.round(curAmpPct * 100);
+    if (ocSliderEl) {
+      ocSliderEl.max = String(Math.max(25, Math.round(maxAmpCap * 100)));
+      ocSliderEl.value = String(pctInt);
+      ocSliderEl.disabled = !ampAllowed || b.over;
+    }
+    if (ocPctEl) {
+      const tInfo = getAmpTierInfo(curAmpPct);
+      const starPrefix = tInfo.tier >= 2 ? '★★' : tInfo.tier >= 1 ? '★' : '';
+      ocPctEl.textContent = `${starPrefix}${pctInt}%`;
+    }
 
     const primary = getPrimaryAliveEnemy(b);
     if (primary) {
@@ -6749,6 +7126,12 @@
       const pillPath = pm.pill || pm.short.slice(0, 2);
       const isGuardCard = !!(sk.shieldBase || sk.dodgeLunge || sk.afterimage || sk.layFrostFloor);
       const safeFullDesc = String(sk.desc || '').replace(/"/g, '&quot;');
+      let shieldFoot = '';
+      if (!est && sk.shieldBase > 0) {
+        const sProf = computeAmpProfile(p, sk);
+        const estSh = computeSkillShieldGain(p, sk, sProf);
+        shieldFoot = `预计护盾 +${estSh}${sProf.shieldMult > 1.001 ? ` (${sProf.shieldMult.toFixed(2)}×)` : ''}`;
+      }
 
       return `
         <button type="button" class="cb-skill-card path-${sk.path} elem-${sk.elem || 'phys'}${isGuardCard ? ' is-guard' : ''}${oppBadge ? ' opp-glow' : ''}${armedSkillId === sk.id ? ' is-armed' : ''}" data-sk="${sk.id}" title="${safeFullDesc}" ${disabled ? 'disabled' : ''}>
@@ -6765,7 +7148,7 @@
             <div class="csc-desc">${sk.shortDesc || sk.desc}</div>
           </div>
           <div class="csc-foot">
-            <span>${usedUp ? '已使用' : cd > 0 ? `冷却 ${cd} 回合` : est ? (est.mirrorBlocked ? '将被镜冰格挡' : `预计 ~${est.dmg}${sk.aoe ? ' (全体)' : ''}`) : '战术护卫 / 步法'}</span>
+            <span>${usedUp ? '已使用' : cd > 0 ? `冷却 ${cd} 回合` : est ? (est.mirrorBlocked ? '将被镜冰格挡' : `预计 ~${est.dmg}${sk.aoe ? ' (全体)' : ''}`) : (shieldFoot || '战术护卫 / 步法')}</span>
             ${expHint}
           </div>
         </button>
@@ -6804,6 +7187,11 @@
             safeSfx('card_hover');
             updateOvercastPreviewUI(activeBattle, sid);
             return;
+          }
+          if (!isJsdomEnv()) {
+            const now = Date.now();
+            if (_lastSkillUiClick.id === sid && now - _lastSkillUiClick.ts < 140) return;
+            _lastSkillUiClick = { id: sid, ts: now };
           }
           armedSkillId = null;
           useSkill(sid);
@@ -6870,11 +7258,7 @@
 
     document.getElementById('cb-btn-endturn').disabled = b.over;
 
-    try {
-      if (typeof global.dispatchEvent === 'function' && typeof global.CustomEvent === 'function') {
-        global.dispatchEvent(new global.CustomEvent('combat:statechange', { detail: getBattleState(b) }));
-      }
-    } catch (e) {}
+    emitCombatStateChange(b);
   }
 
   function openIcePalaceModal() {
@@ -6889,13 +7273,15 @@
     const shuffledClues = shuffleCopy(pCfg.clues || []);
     safeSfx('modal_open');
 
-    const closeModal = withSfx => {
+    const closeModal = (withSfx, skipEmit) => {
       slot.innerHTML = '';
       if (battleRoot) battleRoot.classList.remove('palace-timestop');
       if (withSfx !== false) safeSfx('modal_close');
+      if (!skipEmit && activeBattle === b) emitCombatStateChange(b);
     };
 
     const renderStep1 = () => {
+      let step1Locked = false;
       slot.innerHTML = `
         <div class="cb-palace-modal" id="cb-palace-modal">
           <div class="cb-palace-card" id="cb-palace-card">
@@ -6937,6 +7323,8 @@
       slot.querySelector('#cp-cancel').onclick = () => closeModal(true);
       slot.querySelectorAll('[data-clue]').forEach(btn => {
         btn.onclick = () => {
+          if (step1Locked) return;
+          step1Locked = true;
           const cid = btn.getAttribute('data-clue');
           const picked = (pCfg.clues || []).find(x => x.id === cid);
           if (!picked || !picked.correct) {
@@ -6954,8 +7342,10 @@
     };
 
     const renderStep2 = (clueId, step1Feedback) => {
+      let step2Locked = false;
       const shuffledDeds = shuffleCopy(pCfg.deductions || []);
       const card = slot.querySelector('#cb-palace-card');
+      if (!card) return;
       card.innerHTML = `
         <div class="cp-head">
           ${CB_SVG.palaceFrostAccent}
@@ -6986,6 +7376,8 @@
       `;
       card.querySelectorAll('[data-ded]').forEach(btn => {
         btn.onclick = () => {
+          if (step2Locked) return;
+          step2Locked = true;
           const did = btn.getAttribute('data-ded');
           const res = inspectClue(clueId, did, b);
           renderFinalFeedback(res);
@@ -7023,7 +7415,7 @@
       `;
       const confirmBtn = card.querySelector('#cp-confirm');
       confirmBtn.onclick = () => {
-        closeModal(true);
+        closeModal(true, true);
         renderCombatUI();
       };
       if (document.activeElement && typeof document.activeElement.blur === 'function') {
@@ -7032,6 +7424,7 @@
     };
 
     renderStep1();
+    emitCombatStateChange(b);
   }
 
   function buildTacticalBreakdown(b) {
@@ -7208,6 +7601,8 @@
     activeBattle = null;
     hoveredSkillId = null;
     armedSkillId = null;
+    _lastEndTurnUiTs = 0;
+    _lastSkillUiClick = { id: '', ts: 0 };
     if (typeof global.B !== 'undefined') global.B = null;
     clearAllJuiceVfx();
     if (typeof document === 'undefined') return;
@@ -7221,6 +7616,10 @@
       actGrid._lastHtml = '';
       actGrid._lastBattleId = 0;
     }
+    const eZone = document.getElementById('cb-enemy-zone');
+    if (eZone) delete eZone.dataset.waveSig;
+    const pPort = document.getElementById('cb-p-portrait');
+    if (pPort) pPort.innerHTML = '';
     const bs = document.getElementById('battle-screen');
     if (bs) {
       bs.classList.add('hidden');
@@ -7229,6 +7628,7 @@
     if (document.body) document.body.classList.remove('cb-battle-active');
     const ds = document.getElementById('duel-screen');
     if (ds) ds.classList.add('hidden');
+    emitCombatStateChange(null);
 
     if (opts.silent) {
       const ao = document.getElementById('arena-overlay');
@@ -7427,6 +7827,8 @@
      10. 启动入口、主线虚拟决斗原著门控与无头仿真器
      ========================================================= */
   function resetBattleDomForStart(bs) {
+    _lastEndTurnUiTs = 0;
+    _lastSkillUiClick = { id: '', ts: 0 };
     if (!bs) return;
     const slot = bs.querySelector('#cb-modal-slot');
     if (slot) slot.innerHTML = '';
@@ -7439,6 +7841,10 @@
     }
     const eZone = bs.querySelector('#cb-enemy-zone');
     if (eZone) delete eZone.dataset.waveSig;
+    const pPort = bs.querySelector('#cb-p-portrait');
+    if (pPort) pPort.innerHTML = '';
+    const ao = document.getElementById('arena-overlay');
+    if (ao) ao.classList.add('hidden');
     bs.classList.remove('palace-timestop', 'wand-refract', 'hit-shake', 'heavy-shake', 'hidden');
   }
 
@@ -7625,8 +8031,7 @@
     if (!b || !b.player) return null;
     ensureValidTarget(b);
     const p = b.player;
-    const ampPct = syncPlayerAmpFromMode(p);
-    const ampTier = getAmpTierInfo(ampPct);
+    const derived = computeDerivedAmpState(p);
     const staffDef = getEquippedStaffDef(p);
     const primary = getPrimaryAliveEnemy(b);
     return {
@@ -7648,6 +8053,20 @@
       targetIdx: b.targetIdx,
       oneMoreActive: !!b.oneMoreActive,
       oneMoreUsedThisTurn: !!b.oneMoreUsedThisTurn,
+      overcastPct: derived.overcastPct,
+      overcastMode: derived.overcastMode,
+      ampPct: derived.ampPct,
+      ampTier: derived.ampTier,
+      ampTierName: derived.ampTierName,
+      ampMult: derived.ampMult,
+      ampTierMults: derived.ampTierMults.slice(),
+      ampDefPierce: derived.ampDefPierce,
+      ampExtraLocks: derived.ampExtraLocks,
+      ampShieldMult: derived.ampShieldMult,
+      ampTiers: derived.ampTiers.slice(),
+      maxAmpCap: derived.maxAmpCap,
+      canAmp: derived.canAmp,
+      recentLogs: (b.log || []).slice(-14),
       player: {
         name: p.name,
         hp: p.hp,
@@ -7665,9 +8084,19 @@
         av: p.av || 0,
         baseAv: p.baseAv || computeBaseAv(p.spd || 100),
         hasManaCycle: !!p.hasManaCycle,
-        overcastMode: p.overcastMode || 0,
-        ampPct,
-        ampTier,
+        canAmp: derived.canAmp,
+        canManaAmp: derived.canAmp,
+        overcastPct: derived.overcastPct,
+        overcastMode: derived.overcastMode,
+        ampPct: derived.ampPct,
+        ampTier: derived.ampTier,
+        ampTierName: derived.ampTierName,
+        ampMult: derived.ampMult,
+        ampDefPierce: derived.ampDefPierce,
+        ampExtraLocks: derived.ampExtraLocks,
+        ampShieldMult: derived.ampShieldMult,
+        ampTiers: derived.ampTiers.slice(),
+        maxAmpCap: derived.maxAmpCap,
         hasEclipseWand: !!p.hasEclipseWand,
         wandActive: !!p.wandActive,
         wandPersistent: !!p.wandPersistent,
@@ -7796,7 +8225,7 @@
       } else if (action.type === 'overcast') {
         setOvercast(action.mode, b);
       } else if (action.type === 'amp') {
-        setAmpPct(action.pct, b);
+        setOvercastPct(action.pct, b);
       } else if (action.type === 'wand' || action.type === 'eclipse') {
         const okWand = toggleEclipseWand(action.on, b);
         if (action.on && !okWand) {
@@ -7840,6 +8269,7 @@
 
   const CombatEngine = {
     COMBAT_BALANCE_V22,
+    AMP_TIERS: AMP_TIERS.slice(),
     STAGES: STAGE_CONFIGS,
     SKILLS: TACTICAL_SKILLS,
     PATH_META,
@@ -7850,8 +8280,12 @@
     showResultModal,
     startStage,
     startBattle: startCustomOrStageBattle,
+    getAmpTiers,
+    setOvercastPct,
     setOvercast,
+    cycleOvercast,
     setAmpPct,
+    cycleAmpStep,
     setEquippedStaff,
     selectTarget,
     toggleEclipseWand,
@@ -7976,7 +8410,7 @@
       'stats-overlay', 'ai-drawer', 'help-screen', 'map-overlay', 'backlog-overlay',
     ];
 
-    // 键盘系统：绝不吞掉焦点按钮原生的 Enter/Space，同时支持 1~9 / Q / W / R / E 战术热键与防穿透
+    // 键盘系统：绝不吞掉焦点按钮原生的 Enter/Space，同时支持 1~9 / Q / W / R / E / X 战术热键与防穿透
     document.addEventListener('keydown', e => {
       const hasHigherOverlay = HIGHER_OVERLAY_IDS.some(id => {
         const el = document.getElementById(id);
@@ -7996,13 +8430,16 @@
       if (e.key === 'Escape') {
         const pm = document.getElementById('cb-palace-modal');
         if (pm && pm.parentNode) {
-          if (activeBattle && activeBattle.palacePendingStep2) {
+          const hadPendingStep2 = !!(activeBattle && activeBattle.palacePendingStep2);
+          pm.parentNode.innerHTML = '';
+          if (bs) bs.classList.remove('palace-timestop');
+          if (hadPendingStep2) {
             delete activeBattle.palacePendingStep2;
             pushLog(activeBattle, logTag('cbl-danger', '❄️【冰晶宫殿·中断】你在第 2 步主动散去了冰镜推演（本波审视机会已消耗）。'));
             renderCombatUI();
+          } else if (activeBattle) {
+            emitCombatStateChange(activeBattle);
           }
-          pm.parentNode.innerHTML = '';
-          if (bs) bs.classList.remove('palace-timestop');
           safeSfx('modal_close');
           e.stopPropagation();
           e.stopImmediatePropagation();
@@ -8043,32 +8480,39 @@
         return;
       }
 
-      // 战斗进行中且无模态弹窗时的战术快捷键
+      // 战斗进行中且无模态弹窗时的战术快捷键（与 P5 棱晶翼严格协同，绝不抢键冲突）
       if (battleVis && activeBattle && !activeBattle.over && !document.getElementById('cb-palace-modal')) {
-        if (e.key >= '1' && e.key <= '9') {
-          const cards = bs.querySelectorAll('#b-actions .cb-skill-card');
-          const pick = cards[Number(e.key) - 1];
-          if (pick && !pick.disabled) {
-            pick.click();
-            e.stopPropagation();
-          }
-        } else if (e.key === 'q' || e.key === 'Q') {
+        const prismActive = !!(global.CombatPrismUI && typeof global.CombatPrismUI.isActive === 'function' && global.CombatPrismUI.isActive());
+        const k = String(e.key || '').toLowerCase();
+        if (k === 'q') {
           const pb = document.getElementById('cb-btn-palace');
           if (pb && !pb.disabled) { pb.click(); e.stopPropagation(); }
-        } else if (e.key === 'w' || e.key === 'W') {
-          if (activeBattle.player.hasManaCycle) {
-            setOvercast((activeBattle.player.overcastMode + 1) % 3);
-            e.stopPropagation();
-          }
-        } else if (e.key === 'r' || e.key === 'R') {
+        } else if (k === 'r') {
           const wb = document.getElementById('cb-btn-wand');
           if (wb && !wb.classList.contains('hidden') && !wb.disabled) { wb.click(); e.stopPropagation(); }
-        } else if (e.key === 'f' || e.key === 'F') {
+        } else if (k === 'f') {
           const ab = document.getElementById('cb-btn-assist');
           if (ab && !ab.classList.contains('hidden') && !ab.disabled) { ab.click(); e.stopPropagation(); }
-        } else if (e.key === 'e' || e.key === 'E') {
+        } else if (k === 'x') {
           endTurn();
           e.stopPropagation();
+        } else if (!prismActive) {
+          if (e.key >= '1' && e.key <= '9') {
+            const cards = bs.querySelectorAll('#b-actions .cb-skill-card');
+            const pick = cards[Number(e.key) - 1];
+            if (pick && !pick.disabled) {
+              pick.click();
+              e.stopPropagation();
+            }
+          } else if (k === 'w') {
+            if (canPlayerAmp(activeBattle.player)) {
+              cycleOvercast(1, activeBattle);
+              e.stopPropagation();
+            }
+          } else if (k === 'e') {
+            endTurn();
+            e.stopPropagation();
+          }
         }
       }
     }, true);

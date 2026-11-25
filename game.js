@@ -2095,7 +2095,8 @@ function clearPortraits(){
 }
 // 单角色旁白聚焦：保留当前在场者(主导/对话者)，只把 focus 人高亮、其余置暗；focus 人不在场则追加（主角固定左）
 function applyStageFocus(f){
-  const next = stage.map(s=>({ id:s.id, emo:s.id===f.id?(f.emo||s.emo):s.emo, active:s.id===f.id }));
+  const cur = Array.isArray(stage) ? stage : [];
+  const next = cur.map(s=>({ id:s.id, emo:s.id===f.id?(f.emo||s.emo):s.emo, active:s.id===f.id }));
   if(!next.some(s=>s.id===f.id)){
     const entry = { id:f.id, emo:f.emo||'normal', active:true };
     if(f.id === 'sylvia') next.unshift(entry);
@@ -2105,7 +2106,8 @@ function applyStageFocus(f){
 }
 // 单人说：基于当前 stage，让说话人高亮、其余在场者置暗；说话人不在场则追加（主角固定左）
 function appendSpeaker(chId, emo){
-  const next = stage.map(s=>({ id:s.id, emo:s.id===chId?(emo||s.emo):s.emo, active:s.id===chId }));
+  const cur = Array.isArray(stage) ? stage : [];
+  const next = cur.map(s=>({ id:s.id, emo:s.id===chId?(emo||s.emo):s.emo, active:s.id===chId }));
   if(!next.some(s=>s.id===chId)){
     const entry = { id:chId, emo:emo||'normal', active:true };
     if(chId === 'sylvia') next.unshift(entry);
@@ -2528,9 +2530,9 @@ function applyLineEffects(L){
   if(L.bgm){ bgmSceneStart(L.bgm); }
   // 记录当前说话人 id（用于对话框左侧小胸像）：单人说=L.ch；DUO/portraits=active 者
   curSpeakerId = L.ch || null;
-  if(L.portraits && L.portraits.length){ const act=L.portraits.find(p=>p.active!==false); if(act) curSpeakerId = act.id; }
-  if(L.portraits){
-    const arr = L.portraits.map(p=>({ id:p.id, emo:p.emo||'normal', active:p.active!==false }));
+  if(Array.isArray(L.portraits) && L.portraits.length){ const act=L.portraits.find(p=>p && p.active!==false); if(act) curSpeakerId = act.id; }
+  if(Array.isArray(L.portraits)){
+    const arr = L.portraits.filter(Boolean).map(p=>({ id:p.id, emo:p.emo||'normal', active:p.active!==false }));
     // 单角色旁白(N)：视为「本段聚焦该人」，替换舞台为该人（vignette 段切换）；
     // 若需在多人对话中特写某动作同时保留主导者，剧情数据应写成 2 元素数组（聚焦人+主导者）。
     applyStage(arr);
@@ -4796,9 +4798,10 @@ function statusPanelHTML(){
   const starsHTML = Array.from({length:7}, (_,i)=>`<span class="sc-star-node${i < picksLen ? ' lit' : ''}" title="勇者之赐 第${i+1}星"></span>`).join('');
   let relicStripHTML = '';
   if(typeof RelicsAndEvents !== 'undefined' && RelicsAndEvents.getActiveRelicsForBattle){
-    const eq = (S.equippedRelics || []).filter(Boolean);
+    const eq = (Array.isArray(S.equippedRelics) ? S.equippedRelics : []).filter(Boolean);
     const cat = RelicsAndEvents.RELICS_CATALOG || RelicsAndEvents.RELICS || {};
-    const syns = RelicsAndEvents.getActiveSynergies ? RelicsAndEvents.getActiveSynergies(eq) : [];
+    const rawSyns = RelicsAndEvents.getActiveSynergies ? RelicsAndEvents.getActiveSynergies(eq) : [];
+    const syns = Array.isArray(rawSyns) ? rawSyns : [];
     if(eq.length || syns.length){
       relicStripHTML = `<div class="sc-relic-strip">
         <span class="sc-relic-label">随身铭记</span>
@@ -5066,9 +5069,10 @@ function openPanel(tab, opts){
     Object.values(COURSES || {}).forEach(c => {
       if(c && c.skill && c.skill.id) courseSkills[c.skill.id] = c.skill;
     });
-    const skillRows = !S.skills.length
+    const skillsArr = Array.isArray(S.skills) ? S.skills : [];
+    const skillRows = !skillsArr.length
       ? '<p style="color:#526078">尚未获得特殊技能。</p>'
-      : `<div class="p-skill-grid">${S.skills.map(id=>{
+      : `<div class="p-skill-grid">${skillsArr.map(id=>{
           const p = ALL_PICKS[id]
             || MAGIC_SKILLS[id]
             || Object.values(DUEL_REWARDS).find(x=>x.id===id)
@@ -5470,6 +5474,7 @@ function stepChain(){
   show('game-screen', 1);
   clearPortraits();          // 场景切换：重置立绘舞台
   if(sc.bg) setBG(sc.bg);
+  if(id === 's_start') delete bgmGroupIdx.peaceful;
   bgmSceneStart(sc.bgm); // 记录并播放场景 bgm，贯穿整个场景
   if(sc.phase) S.phase = sc.phase;
   if(sc.loc){ S.loc = sc.loc; updateLocBar(); }
@@ -5511,6 +5516,7 @@ function runScene(id){
   show('game-screen', 1);
   clearPortraits();          // 场景切换：重置立绘舞台
   if(sc.bg) setBG(sc.bg);
+  if(id === 's_start') delete bgmGroupIdx.peaceful;
   bgmSceneStart(sc.bgm); // 记录并播放场景 bgm，贯穿整个场景
   if(sc.phase) S.phase = sc.phase;
   if(sc.loc){ S.loc = sc.loc; updateLocBar(); }
@@ -5552,14 +5558,14 @@ SCENES.s_reno_arrive = {
     {text:'他风尘仆仆地出现在餐厅门口，背着个巨大的包裹，靴子上全是泥巴，笑得像个没心没肺的大孩子。', portraits:[{id:'reno', slot:'left', active:false}]},
     {text:'父亲扶额叹气，母亲笑着摇头，只有贝阿特丽丝姐姐冲上去给了他一拳——当然没打中。', portraits:[{id:'reno', slot:'left', active:false}]},
     {text:'叔叔在家里住了半个月，我也终于明白了为什么法神大人会是他的同学——这人虽然看着不正经，但魔法造诣很高。', portraits:[{id:'reno', slot:'left', active:false}]},
-    // —— 讲故事桥段：爱丽丝出现并提问（高亮爱丽丝） ——
-    {text:'当然，他主要的作用还是讲故事。'},
-    {ch:'reno', speaker:'雷纳德', text:'驰弩帝国北边的森林里，有一种雪狼，大概有这么大——全身雪白，跑起来像一团滚动的雪球！'},
-    {text:'贝阿特丽丝姐姐听得两眼放光，恨不得立刻提剑去北边。爱丽丝则安静地坐在我旁边，偶尔问几个问题。', portraits:[{id:'reno', slot:'left', active:false},{id:'alice', slot:'right', active:false}]},
-    {ch:'alice', emo:'normal', speaker:'爱丽丝', text:'……那里的风大吗？暴风雪会持续多久？'},
-    {text:'问题虽然有点偏，但叔叔很高兴有人对细节感兴趣，讲得更起劲了。', portraits:[{id:'reno', slot:'left', active:false},{id:'alice', slot:'right', active:false}]},
-    // —— 转夜晚房间：剧情事件转换，回收立绘 ——
-    {bg:'bg-img-nursery bg-room', loc:'nursery', portraits:[], text:'某天晚上，叔叔溜进我房间，检查了我的魔法进度。'},
+    // —— 讲故事桥段：接入 reno_story.png CG 演出 ——
+    {cg:'reno_story.png', text:'当然，他主要的作用还是讲故事。'},
+    {cg:'reno_story.png', ch:'reno', speaker:'雷纳德', text:'驰弩帝国北边的森林里，有一种雪狼，大概有这么大——全身雪白，跑起来像一团滚动的雪球！'},
+    {cg:'reno_story.png', text:'贝阿特丽丝姐姐听得两眼放光，恨不得立刻提剑去北边。爱丽丝则安静地坐在我旁边，偶尔问几个问题。', portraits:[{id:'reno', slot:'left', active:false},{id:'alice', slot:'right', active:false}]},
+    {cg:'reno_story.png', ch:'alice', emo:'normal', speaker:'爱丽丝', text:'……那里的风大吗？暴风雪会持续多久？'},
+    {cg:'reno_story.png', text:'问题虽然有点偏，但叔叔很高兴有人对细节感兴趣，讲得更起劲了。', portraits:[{id:'reno', slot:'left', active:false},{id:'alice', slot:'right', active:false}]},
+    // —— 转夜晚房间：剧情事件转换，退出 CG、回收立绘 ——
+    {cg:'end', bg:'bg-img-nursery bg-room', loc:'nursery', portraits:[], text:'某天晚上，叔叔溜进我房间，检查了我的魔法进度。'},
     // —— 主角与雷纳德单独交谈：双人立绘，主角固定左、雷纳德固定右，说话者高亮 ——
     {text:'看完我的冰晶术后，他收起了那副嬉皮笑脸的表情。'},
     {portraits:[{id:'sylvia', slot:'left', active:false},{id:'reno', slot:'right', active:true}], speaker:'雷纳德', text:'六岁能控制到这个程度，咱们家这是出了个小怪物啊。等你以后去了魔法大学，要是有人欺负你，就报我名字。'},
@@ -5971,6 +5977,7 @@ function newGame(){
   bgmLoc = null;
   bgmOverlayStack = [];
   sceneBgmType = null;
+  bgmGroupIdx = {};
   syncLocUnlocksForState();
   bgmUnlock(); // 用户点击开始 → 解锁音频
   show('title-screen',0); show('game-screen',1);

@@ -2564,6 +2564,59 @@
           ornament: true
         });
       }
+    },
+
+    amp_charge: {
+      prio: 2,
+      cooldown: 45,
+      fn: function (c, t, now, vol, prio, options) {
+        // 魔力增幅多档蓄能晶鸣：随增幅百分比逐级升高音高，25%/50% 质变档叠加清冽泛音
+        var pctRaw = options && typeof options.ampPct === 'number' ? options.ampPct : 0;
+        var pct = pctRaw > 1 ? pctRaw / 100 : pctRaw;
+        if (pct <= 0.001) {
+          playCelesta(c, t, now, vol, prio, {
+            freq: NOTE.D5,
+            delay: 0,
+            dur: 0.14,
+            gain: 0.30,
+            pan: -0.06,
+            reverbSend: 0.25
+          });
+          return;
+        }
+        var ratio = clamp(pct / 0.50, 0.15, 1.0);
+        var baseFreq = 440 * Math.pow(2, ratio * 0.92);
+        playCelesta(c, t, now, vol, prio, {
+          freq: baseFreq,
+          delay: 0,
+          dur: 0.18 + ratio * 0.12,
+          gain: 0.40 + ratio * 0.14,
+          pan: -0.10,
+          reverbSend: 0.34 + ratio * 0.20
+        });
+        if (pct >= 0.24) {
+          playCelesta(c, t, now, vol, prio, {
+            freq: baseFreq * 1.498,
+            delay: 0.036,
+            dur: 0.24,
+            gain: 0.38,
+            pan: 0.12,
+            reverbSend: 0.48,
+            ornament: true
+          });
+        }
+        if (pct >= 0.48) {
+          playCelesta(c, t, now, vol, prio, {
+            freq: baseFreq * 2.0,
+            delay: 0.072,
+            dur: 0.34,
+            gain: 0.44,
+            pan: 0,
+            reverbSend: 0.62,
+            ornament: true
+          });
+        }
+      }
     }
   };
 

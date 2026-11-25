@@ -72,3 +72,10 @@
    2. `python3 tools/novel_linter.py --strict`：0 错 0 警；
    3. `node tests/run.js`：`36/36` 全通过；
    4. Playwright 实机跑通 `1440×900` 与 `1280×720`（0 `pageerror` / 0 控制台报错 / 0 资源 404），并由子代理逐张视觉检查截图后汇报总控。
+
+## 七、防卡死与 waiting_for_dependents 避坑规则（永久）
+
+1. **临时静态服务禁止裸放后台**：严禁裸跑 `python3 -m http.server &` 或后台长驻测试服（子进程/端口泄露会拖死子代理进入 `waiting_for_dependents`）。统一使用 `python3 tools/run_safe.py --serve . --timeout 180 -- <命令>`（自动分配空闲端口并替换 `{URL}` / `{PORT}`），或在 Python 脚本内 `from run_safe import temp_http_server` 单进程起停。
+2. **非交互长命令统一套 `run_safe.py`**：执行 `codex-chatgpt2 exec`、Playwright 实机验收、批量生成或回归测试等非交互长命令时，一律套 `python3 tools/run_safe.py --timeout <秒> -- <命令>`，确保自动关闭 `stdin`（防死等输入）并在结束/超时/中断时按进程组清剿整棵后代进程树（`SIGTERM` → `--grace` → `SIGKILL`，超时返回 `124`）。
+3. **长耗时有限命令必设通知超时**：调用 `run_command` 运行预计超过 10 秒的有限命令时，必须显式设置 `NotificationTimeoutSeconds`（如 `60`–`120`），禁止不设提醒的无限盲等。
+4. **总管对 `waiting_for_dependents` 的处置与收尾**：发现子代理长期处于 `waiting_for_dependents` 时，先查 `manage_subagents(list)` 并核查其 `transcript` 定位挂起任务 → 通知其终止卡死后台任务，或在确认已有产物落盘后直接 `kill` 并干净重派；阶段交付验收完成后，及时 `kill` 已完工的空闲子代理，防止残留僵尸唤醒。

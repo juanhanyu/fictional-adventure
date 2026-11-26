@@ -1476,6 +1476,7 @@
         { text: '锅里的甜汤咕嘟冒泡。阿琼握着短铅笔眨了眨眼，脸上全是毫无城府的坦率。', portraits: [{ id: 'sylvia', slot: 'left', emo: 'normal', active: false }, { id: 'ajun', slot: 'right', emo: 'normal', active: false }] },
         duoLine(['sylvia', '希尔维亚', 'normal'], ['ajun', '阿琼', 'normal'], 'ajun', '那位礼宾官还问冬假使团去公爵府做客时走哪道侧门方便呢……希尔维亚，这里头该不会有什么忌讳吧？'),
         {
+          bgm: 'suspense',
           speaker: '希尔维亚',
           text: '（巴依使团冬假访府、旧纹章银杯、侧门与换班……有人正借使团之手拼凑公爵府的布防图！）',
           choices: [
@@ -1985,6 +1986,7 @@
           if: function () { return canTriggerDarkTide(); },
           bg: 'bg-img-study bg-study',
           loc: 'study',
+          bgm: 'suspense',
           portraits: [{ id: 'sylvia', slot: 'center', emo: 'serious', active: true }],
           text: '【蝴蝶效应 · 暗潮先觉】管事来报巴依使团被卡在城外临时盘查时，我端着红叶茶的手猛然停在书房廊外。'
         },
@@ -1995,6 +1997,7 @@
         },
         {
           if: function () { return canTriggerDarkTide(); },
+          bgm: 'upset',
           portraits: [{ id: 'sylvia', slot: 'left', emo: 'serious', active: false }, { id: 'claude', slot: 'right', emo: 'serious', active: true }],
           speaker: '克劳德',
           text: '……连使团礼宾官也在摸府里的侧门？好敏锐的判断，希尔维亚。我这就让雷纳德守住东翼岔口，收好这枚暗记。',

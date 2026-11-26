@@ -171,26 +171,30 @@ function sfx(type, opts){
 const BGM_BASE = 'Music/';
 const TITLE_BGM_KEY = 'title_overture';
 const TITLE_BGM_TITLE = '雪晶序曲';
+// 双层命名映射：磁盘英文功能名（开发者/总管直读） ↔ 游戏内中文文艺曲名（玩家展示）
 const BGM_FILES = {
-  title_overture:'Music/Luminous Snow-Crystal.mp3',
-  sacred1:'Music/Sacred 1.mp3',
-  sacred2:'Music/Sacred 2.mp3',
-  battle1:'Music/Battle & Tension 1.mp3',
-  battle2:'Music/Battle & Tension 2.mp3',
-  cheerful1:'Music/Cheerful 1.mp3',
-  cheerful2:'Music/Cheerful 2.mp3',
-  emotional1:'Music/Emotional 1.mp3',
-  academy1:'Music/Magical Academy 1.mp3',
-  academy2:'Music/Magical Academy 2.mp3',
-  sad1:'Music/Melancholic & Sad 1.mp3',
-  relax1:'Music/Peaceful & Relaxing 1.mp3',
-  relax2:'Music/Peaceful & Relaxing 2.mp3',
-  peaceful1:'Music/Peaceful 1.mp3',
-  peaceful2:'Music/Peaceful 2.mp3',
-  comedy_fast:'Music/Comical_fast-speed.mp3',
-  comedy_medium:'Music/Comical_medium-speed.mp3',
-  romantic:'Music/Romantic.mp3',
-  upset:'Music/Upset.mp3',
+  title_overture:'Music/Title - Main Theme.mp3',          // 雪晶序曲 · 主界面奇幻开篇
+  sacred1:'Music/Sacred 1.mp3',                           // 贵族纹章 I · 大礼堂/勇者之赐/仪典
+  sacred2:'Music/Sacred 2.mp3',                           // 冰晶宫殿 II · 礼拜堂/觉醒/七座山
+  battle1:'Music/Battle & Tension 1.mp3',                 // 锋刃交错 I · 魔兽遭遇/血案死斗/突围战
+  battle2:'Music/Battle & Tension 2.mp3',                 // 霜原决意 II · 强敌二阶段/Boss压轴
+  duel1:'Music/Battle - Sparring Duel.mp3',               // 学院剑舞 I · 姐妹切磋/学院比试战
+  duel2:'Music/Battle - Arena Lobby.mp3',                 // 演武晴锋 II · 演武大厅/贵族试手
+  cheerful1:'Music/Cheerful 1.mp3',                       // 阳光集市 I · 集市小镇/花园/海滨
+  cheerful2:'Music/Cheerful 2.mp3',                       // 庭院嬉游 II · 三姐妹午后/澄岚公会
+  emotional1:'Music/Emotional 1.mp3',                     // 霜月挽歌 · 离巢告别/冰融/双轨终幕
+  academy1:'Music/Magical Academy 1.mp3',                 // 阿斯拉钟塔 I · 魔法学院/教室/图书馆
+  academy2:'Music/Magical Academy 2.mp3',                 // 星穹书库 II · 学院走廊/课间日常
+  sad1:'Music/Melancholic & Sad 1.mp3',                   // 寒夜哀歌 · 政变火夜/悲剧哀悼
+  relax1:'Music/Peaceful & Relaxing 1.mp3',               // 雪夜壁炉 I · 宿舍夜谈/篝火休憩
+  relax2:'Music/Peaceful & Relaxing 2.mp3',               // 霜月静思 II · 雪夜露台/星祭/花坊
+  peaceful1:'Music/Peaceful 1.mp3',                       // 晨光圆舞 I · 第一章/宅邸清晨日常
+  peaceful2:'Music/Peaceful 2.mp3',                       // 公爵午后 II · 宅邸午后/霁馆烟火
+  comedy_fast:'Music/Comical_fast-speed.mp3',             // 追风闹剧 · 高速搞笑/追逐彩蛋
+  comedy_medium:'Music/Comical_medium-speed.mp3',         // 微服谐趣 · 微服私访/轻快诙谐
+  romantic:'Music/Romantic.mp3',                          // 炉火余韵 · 海与贝壳/黄昏谈心/求婚
+  suspense1:'Music/Suspense - Investigation.mp3',         // 冰晶复调 · 血案推理/寒夜推演盘
+  upset:'Music/Upset.mp3',                                // 上锁书房 · 暗潮对峙/地下酒窖/冰封峡谷
 };
 // 每曲响度无损平衡表（目标听感约 -14.5 LUFS，仅作用于输出增益，不改写用户 bgmVolume）
 const BGM_TRACK_GAIN = {
@@ -202,15 +206,18 @@ const BGM_TRACK_GAIN = {
   emotional1: 1.0,
   romantic: 1.0,
   sad1: 0.94,
-  upset: 0.94,
+  suspense1: 0.98,
+  upset: 1.0,
   academy1: 0.72,
   academy2: 0.72,
-  peaceful1: 0.85,
-  peaceful2: 0.78,
-  cheerful1: 0.74,
-  cheerful2: 0.76,
+  peaceful1: 1.0,
+  peaceful2: 1.0,
+  cheerful1: 0.96,
+  cheerful2: 1.0,
   comedy_medium: 0.98,
   comedy_fast: 0.98,
+  duel1: 0.98,
+  duel2: 0.98,
   battle1: 0.58,
   battle2: 0.54,
 };
@@ -268,6 +275,7 @@ function notifyBgmStateChange(){
 const BGM_GROUPS = {
   title:    ['title_overture'],
   battle:   ['battle1','battle2'],
+  duel:     ['duel1','duel2'],
   cheerful: ['cheerful1','cheerful2'],
   academy:  ['academy1','academy2'],
   peaceful: ['peaceful1','peaceful2'],
@@ -278,6 +286,7 @@ const BGM_GROUPS = {
   comedy_fast:['comedy_fast'],
   comedy_medium:['comedy_medium'],
   romantic:['romantic'],
+  suspense:['suspense1'],
   upset:['upset'],
 };
 
@@ -558,7 +567,7 @@ function bgmBindGlobalUnlock(){
 // 背景类 → 情境类型的映射表（自由探索全覆盖：每个背景类都有确定类型）
 const BG_CLASS_TYPE = {
   // 特殊/氛围类
-  'bg-battle':'battle', 'bg-pick':'sacred', 'bg-duel':'battle', 'bg-title':'peaceful',
+  'bg-battle':'battle', 'bg-pick':'sacred', 'bg-duel':'duel', 'bg-title':'peaceful',
   'bg-void':'sad', 'bg-night':'relax', 'bg-snow':'relax', 'bg-forest':'sad',
   'bg-beach':'cheerful', 'bg-plain':'peaceful', 'bg-room':'peaceful', 'bg-hall':'peaceful',
   'bg-school':'academy', 'bg-garden':'cheerful', 'bg-study':'peaceful', 'bg-town':'cheerful',
@@ -568,7 +577,7 @@ const BG_CLASS_TYPE = {
   'bg-img-nursery':'peaceful', 'bg-img-ownroom':'peaceful', 'bg-img-hallway':'peaceful', 'bg-img-parlor':'peaceful',
   'bg-img-garden':'cheerful', 'bg-img-study':'peaceful', 'bg-img-dining':'cheerful',
   'bg-img-kitchen':'cheerful', 'bg-img-training':'academy', 'bg-img-balcony':'relax',
-  'bg-img-chapel':'sacred', 'bg-img-cellar':'relax', 'bg-img-town':'cheerful',
+  'bg-img-chapel':'sacred', 'bg-img-cellar':'upset', 'bg-img-town':'cheerful',
   'bg-img-beach':'cheerful', 'bg-img-dorm':'relax', 'bg-img-classroom':'academy',
   'bg-img-ice-classroom':'academy', 'bg-img-library':'academy', 'bg-img-cafeteria':'academy',
   'bg-img-clocktower':'academy', 'bg-img-flowerhouse':'relax', 'bg-img-memorial':'emotional',
@@ -597,10 +606,25 @@ function bgmTypeForBg(cls, phase, loc){
   if(phase==='journey' || phase==='finale') return 'sacred';
   return 'peaceful';
 }
-// 按类型播放：同类型不打断；切换类型时在同组曲目间顺序轮换
-function bgmPlayType(type, {force=false, fade=true}={}){
+// 按类型播放：同类型不打断；支持可选 opts.key 锁定首播曲；切换类型时在同组曲目间顺序轮换
+function bgmPlayType(type, opts){
+  opts = opts || {};
+  const force = !!opts.force;
+  const fade = opts.fade !== undefined ? !!opts.fade : true;
+  const preferKey = (opts.key && BGM_FILES[opts.key]) ? opts.key : null;
   const group = BGM_GROUPS[type];
   if(!group || !group.length) return;
+  if(preferKey){
+    if(!force && bgmKey === preferKey && bgmEl){
+      bgmCurType = type;
+      return;
+    }
+    const ki = group.indexOf(preferKey);
+    if(ki >= 0) bgmGroupIdx[type] = ki;
+    bgmCurType = type;
+    bgmPlay(preferKey, { fade, type });
+    return;
+  }
   if(!force && bgmCurType === type && bgmEl) return; // 同类型继续，不打断（不看 paused，避免同类型地点误切换曲）
   const idx = ((bgmGroupIdx[type] ?? -1) + 1) % group.length;
   bgmGroupIdx[type] = idx;
@@ -633,9 +657,14 @@ function bgmRestoreScene(){
 function bgmEnterOverlay(tag, type, opts){
   opts = opts || {};
   if(!tag || !type) return;
+  const preferKey = (opts.key && BGM_FILES[opts.key]) ? opts.key : null;
   bgmOverlayStack = bgmOverlayStack.filter(item => item.tag !== tag);
-  bgmOverlayStack.push({ tag, type });
-  bgmPlayType(type, { force: !!opts.force, fade: opts.fade !== undefined ? !!opts.fade : true });
+  bgmOverlayStack.push({ tag, type, key: preferKey });
+  bgmPlayType(type, {
+    force: !!opts.force,
+    fade: opts.fade !== undefined ? !!opts.fade : true,
+    key: preferKey
+  });
 }
 function bgmLeaveOverlay(tag){
   if(tag){
@@ -648,7 +677,7 @@ function bgmLeaveOverlay(tag){
   bgmRestoreContext();
 }
 function bgmEnterArenaHub(){
-  bgmEnterOverlay('arena', 'academy', { force: false, fade: true });
+  bgmEnterOverlay('arena', 'duel', { force: false, fade: true, key: 'duel2' });
 }
 function bgmLeaveArenaHub(returnToTitle){
   bgmOverlayStack = bgmOverlayStack.filter(item => item.tag !== 'arena');
@@ -667,22 +696,36 @@ function bgmShiftBattlePhase2(){
 }
 // 依据当前真实舞台上下文精准恢复最合理的 BGM
 function bgmRestoreContext(){
+  if(typeof document !== 'undefined'){
+    const bs = document.getElementById('battle-screen');
+    const dedEl = document.getElementById('ice-deduction-modal');
+    const endEl = document.getElementById('ending-screen');
+    if(bs && !bs.classList.contains('hidden')
+      && (!dedEl || dedEl.classList.contains('hidden'))
+      && (!endEl || endEl.classList.contains('hidden'))){
+      const curB = (typeof window !== 'undefined' && window.CombatEngine && typeof window.CombatEngine.getState === 'function')
+        ? window.CombatEngine.getState()
+        : null;
+      const bType = (curB && curB.bgmType) || 'battle';
+      if(bType === 'duel'){
+        bgmPlayType('duel', { force: false, fade: true, key: 'duel1' });
+      } else {
+        bgmPlayType('battle', { force: false, fade: true });
+      }
+      return;
+    }
+  }
   if(bgmOverlayStack.length > 0){
     const top = bgmOverlayStack[bgmOverlayStack.length - 1];
     if(top && top.type){
-      bgmPlayType(top.type, { force: false, fade: true });
+      bgmPlayType(top.type, { force: false, fade: true, key: top.key || null });
       return;
     }
   }
   if(typeof document !== 'undefined'){
-    const bs = document.getElementById('battle-screen');
-    if(bs && !bs.classList.contains('hidden')){
-      bgmPlayType('battle', { force: false, fade: true });
-      return;
-    }
     const ao = document.getElementById('arena-overlay');
     if(ao && !ao.classList.contains('hidden')){
-      bgmPlayType('academy', { force: false, fade: true });
+      bgmPlayType('duel', { force: false, fade: true, key: 'duel2' });
       return;
     }
     const endEl = document.getElementById('ending-screen');
@@ -692,7 +735,7 @@ function bgmRestoreContext(){
     }
     const dedEl = document.getElementById('ice-deduction-modal');
     if(dedEl && !dedEl.classList.contains('hidden')){
-      bgmPlayType('sacred', { force: false, fade: true });
+      bgmPlayType('suspense', { force: false, fade: true });
       return;
     }
   }
@@ -731,7 +774,7 @@ function bgmAttachOverlayHooks(){
       afx.openDeductionBoard = function(config, onDone){
         const res = origOpen.call(this, config, onDone);
         if(res && !isJsdomEnv()){
-          bgmEnterOverlay('deduction', 'sacred', { force: false, fade: true });
+          bgmEnterOverlay('deduction', 'suspense', { force: false, fade: true });
         }
         return res;
       };
@@ -5035,7 +5078,7 @@ function runDuel(id){
     enemy: { name: ch.name, emoji:'⚔️', elem:'water', hp:Math.round(60+n*0.6), mhp:Math.round(60+n*0.6), atk:Math.round(6+n*0.12), def:Math.round(3+n*0.05), mdef:3, weak:'fire', exp:30, gold:0, boss:false, status:{}, shield:0, duel:true },
     cfg:{}, done:()=>{}, ap:2, apMax:2, turn:0, log:[], over:false, duelId:id
   };
-  show('duel-screen',1); setBG('bg-duel'); bgmPlayType('battle', {force:true});
+  show('duel-screen',1); setBG('bg-duel'); bgmPlayType('duel', {force:true, key:'duel1'});
   if($('duel-info')) $('duel-info').innerHTML=`对手：${ch.name}<br>了解度 ${n}% · 难度 ${n>=95?'★★★':n>=93?'★★':'★'}`;
   battleLog('决斗开始！');
   renderBattle();

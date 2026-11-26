@@ -2454,72 +2454,84 @@
     academy: '魔法学府 · Academy',
     sacred: '星霜圣域 · Sacred',
     emotional: '深情余韵 · Emotional',
-    romantic: '炉火月虹 · Romantic',
+    romantic: '炉火余韵 · Romantic',
     sad: '寒夜离歌 · Melancholic',
+    suspense: '冰晶推演 · Suspense',
     upset: '暗潮骤起 · Upset',
+    duel: '学院切磋 · Sparring Duel',
     battle: '交锋决意 · Battle & Tension',
     comedy_medium: '轻快趣景 · Comical (中速)',
     comedy_fast: '喧闹追逐 · Comical (疾速)'
   };
 
+  // 游戏内玩家展示：优雅西幻文艺曲名（对应 Music/ 直白英文功能文件名）
   var BGM_TRACK_TITLES = {
-    title_overture: '雪晶序曲',
-    peaceful1: '银蓝晨光 I',
-    peaceful2: '公爵庭院 II',
-    relax1: '雪夜壁炉 I',
-    relax2: '霜月静思 II',
-    cheerful1: '集市晴日 I',
-    cheerful2: '三姐妹午后 II',
-    academy1: '阿斯拉钟塔 I',
-    academy2: '星穹书库 II',
-    sacred1: '贵族纹章 · 圣殿 I',
-    sacred2: '冰晶宫殿 II',
-    emotional1: '霜月挽歌',
-    romantic: '炉火余韵 · 月虹',
-    sad1: '寒夜哀歌',
-    upset: '黑夜暗涌',
-    battle1: '锋刃交错 I',
-    battle2: '霜原决意 II',
-    comedy_medium: '微服出游曲',
-    comedy_fast: '追风小闹剧'
+    title_overture: '雪晶序曲',     // Music/Title - Main Theme.mp3
+    peaceful1: '晨光圆舞 I',        // Music/Peaceful 1.mp3
+    peaceful2: '公爵午后 II',       // Music/Peaceful 2.mp3
+    cheerful1: '阳光集市 I',        // Music/Cheerful 1.mp3
+    cheerful2: '庭院嬉游 II',       // Music/Cheerful 2.mp3
+    academy1: '阿斯拉钟塔 I',       // Music/Magical Academy 1.mp3
+    academy2: '星穹书库 II',        // Music/Magical Academy 2.mp3
+    relax1: '雪夜壁炉 I',           // Music/Peaceful & Relaxing 1.mp3
+    relax2: '霜月静思 II',          // Music/Peaceful & Relaxing 2.mp3
+    sacred1: '贵族纹章 I',          // Music/Sacred 1.mp3
+    sacred2: '冰晶宫殿 II',         // Music/Sacred 2.mp3
+    emotional1: '霜月挽歌',         // Music/Emotional 1.mp3
+    romantic: '炉火余韵',           // Music/Romantic.mp3
+    sad1: '寒夜哀歌',               // Music/Melancholic & Sad 1.mp3
+    suspense1: '冰晶复调',          // Music/Suspense - Investigation.mp3
+    upset: '上锁书房',              // Music/Upset.mp3
+    comedy_medium: '微服谐趣',      // Music/Comical_medium-speed.mp3
+    comedy_fast: '追风闹剧',        // Music/Comical_fast-speed.mp3
+    duel1: '学院剑舞 I',            // Music/Battle - Sparring Duel.mp3
+    duel2: '演武晴锋 II',           // Music/Battle - Arena Lobby.mp3
+    battle1: '锋刃交错 I',          // Music/Battle & Tension 1.mp3
+    battle2: '霜原决意 II'          // Music/Battle & Tension 2.mp3
   };
 
+  // 音乐室副标题：直白标注适用场景与情绪用途
   var BGM_TRACK_SCENES = {
-    title_overture: '主界面 · 雪瓷启幕',
-    peaceful1: '日常晴朗 · 公爵府与小镇',
-    peaceful2: '庭院午后 · 闲适茶歇与漫步',
-    relax1: '雪夜壁炉 · 寝室书房与暖灯',
-    relax2: '霜月静谧 · 夜色独思与安眠',
-    cheerful1: '市集明快 · 街巷采买与出游',
-    cheerful2: '姐妹欢聚 · 庭园嬉闹与假日',
-    academy1: '学府晨钟 · 阿斯拉礼堂与长廊',
-    academy2: '书海研习 · 魔导课堂与书库',
-    sacred1: '贵族纹章 · 圣殿仪典与星辉',
-    sacred2: '极北秘境 · 冰晶宫殿与秘仪',
-    emotional1: '霜月挽歌 · 羁绊倾诉与深情回响',
-    romantic: '炉火月虹 · 海滨拾贝与相伴暖意',
-    sad1: '寒夜哀歌 · 逃亡夜路与风雪别离',
-    upset: '暗潮压境 · 异变突生与戒备',
-    battle1: '战场紧迫 · 决斗交锋与危机',
-    battle2: '雪原对决 · 凌厉剑锋与死斗',
-    comedy_medium: '轻快逸趣 · 微服私访与日常闹剧',
-    comedy_fast: '疾步趣追 · 仓皇插曲与连环闹剧'
+    title_overture: '主界面 · 奇幻开篇',
+    peaceful1: '第一章 · 宅邸清晨日常',
+    peaceful2: '宅邸午后 · 霁馆烟火',
+    cheerful1: '集市小镇 · 花园 · 海滨',
+    cheerful2: '三姐妹午后 · 澄岚公会',
+    academy1: '魔法学院 · 教室 · 图书馆',
+    academy2: '学院走廊 · 课间日常',
+    relax1: '宿舍夜谈 · 篝火休憩',
+    relax2: '雪夜露台 · 星祭 · 花坊',
+    sacred1: '大礼堂 · 勇者之赐 · 仪典',
+    sacred2: '礼拜堂 · 觉醒 · 七座山',
+    emotional1: '离巢告别 · 冰融 · 双轨终幕',
+    romantic: '海与贝壳 · 黄昏谈心 · 求婚',
+    sad1: '政变火夜 · 悲剧哀悼',
+    suspense1: '血案推理 · 寒夜推演盘',
+    upset: '暗潮对峙 · 地下酒窖 · 冰封峡谷',
+    comedy_medium: '微服私访 · 轻快诙谐',
+    comedy_fast: '高速搞笑 · 追逐彩蛋',
+    duel1: '姐妹切磋 · 学院比试战',
+    duel2: '演武大厅 · 贵族试手',
+    battle1: '魔兽遭遇 · 血案死斗 · 突围战',
+    battle2: '强敌二阶段 · Boss 压轴'
   };
 
   var BGM_MOOD_SCENE_FALLBACK = {
-    title: '主界面 · 雪瓷启幕',
-    peaceful: '日常晴朗 · 悠闲生活与庭园',
-    relax: '夜色静谧 · 休憩与夜谈',
-    cheerful: '明朗欢快 · 集市与假日相伴',
-    academy: '魔法学府 · 课堂与书库',
-    sacred: '神圣秘境 · 礼堂与仪典',
-    emotional: '深情回响 · 倾诉与重逢',
-    romantic: '炉火月虹 · 月下与海风暖意',
-    sad: '寒夜离歌 · 别离与远行',
-    upset: '暗潮骤起 · 戒备与迷局',
-    battle: '战场紧迫 · 决斗与危机',
-    comedy_medium: '轻快逸趣 · 微服漫游与趣事',
-    comedy_fast: '疾步趣追 · 追逐与小闹剧'
+    title: '主界面 · 奇幻开篇',
+    peaceful: '宅邸日常 · 晨光与午后',
+    relax: '夜色休憩 · 宿舍夜谈与雪夜',
+    cheerful: '集市花园 · 明朗欢快出游',
+    academy: '魔法学院 · 教室与图书馆',
+    sacred: '大礼堂与礼拜堂 · 庄严仪典',
+    emotional: '离巢告别 · 冰融与深情终幕',
+    romantic: '海与贝壳 · 黄昏谈心与告白',
+    sad: '政变火夜 · 寒夜悲剧哀悼',
+    suspense: '血案推理 · 寒夜推演盘',
+    upset: '暗潮对峙 · 地下酒窖与峡谷危机',
+    duel: '学院比试 · 演武大厅轻快切磋',
+    battle: '生死实战 · 突围与强敌死斗',
+    comedy_medium: '微服私访 · 轻快诙谐日常',
+    comedy_fast: '高速搞笑 · 追逐彩蛋'
   };
 
   function loadCodexArchive() {

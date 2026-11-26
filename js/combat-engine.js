@@ -979,6 +979,7 @@
       charId: 'beatrice',
       emoji: '🔥',
       bg: 'bg-duel',
+      bgmType: 'duel',
       tags: ['水克火1.5x', '三层烈焰斗气', '抬肩前摇看破'],
       summary: '三层烈焰斗气 + 火球重劈与剑障防反！盲目单招复读会被融冰反劈，须交替水冰破招或以冰宫地下冰柱一举掀翻斗气。',
       preset: {
@@ -1040,6 +1041,7 @@
       crestKind: 'rowan',
       emoji: '🌑',
       bg: 'bg-img-night bg-night',
+      bgmType: 'battle',
       tags: ['8岁童年配装', '雷纳德前排主力', '白昼冰镜核验', '窄道铺冰+双镜夹杖'],
       summary: '秋夜月升，罗文影子已恢复正常。雷纳德立于前排以土/火/风三系压制强敌，你须在后排立厚冰墙挡下偷袭黑光与脱手旋杖，配合蔓地薄冰与冰晶宫殿双镜夹杖加速活捉！',
       sealRule: true,
@@ -1123,6 +1125,7 @@
       charId: 'alice',
       emoji: '💨',
       bg: 'bg-duel',
+      bgmType: 'duel',
       tags: ['扬尘必偏斜', '双层风步闪避', '封路榨蓝自断风暴'],
       summary: '扬尘遮蔽视线 + 每回合双层风步闪避 + 微风回蓝！普攻挥空无法耗其魔力，须用水弹洗尘、冰棘压走位或冰宫封锁风轨榨干她的魔力池！',
       preset: {
@@ -1188,6 +1191,7 @@
       charId: 'aino',
       emoji: '🧊',
       bg: 'bg-img-training bg-plain',
+      bgmType: 'duel',
       tags: ['唯3次有效命中可胜', '正面镜冰免伤', '盲丢瞬凝触发反刺'],
       summary: '纯冰系切磋，唯抢满3次有效命中可获胜（9回合限时）！正面经手全被无气泡镜冰格挡，非空档期乱丢隔空瞬凝将遭反刺丢分！',
       hitRule: true,
@@ -1254,6 +1258,7 @@
       charId: 'noelle',
       emoji: '💧',
       bg: 'bg-duel',
+      bgmType: 'duel',
       tags: ['100%魔战循环解锁', '零留白水幕', '残血必入冰缝暗流杀'],
       summary: '极致省蓝大师对阵魔战循环！每回合布设52点尺量水幕，残血必入【冰缝暗流陷阱】，须看破断流或残像避险再借极寒过载斩杀！',
       preset: {
@@ -1316,6 +1321,7 @@
       stars: '★★★★☆',
       emoji: '🐺',
       bg: 'bg-img-forest bg-forest',
+      bgmType: 'battle',
       tags: ['每波独立1次冰宫', 'W1四狼逼AOE满蓝', 'W2耳目禁冰+生根步闪反'],
       summary: 'W1四只灰棘狼高伤围猎，须以冰棘群刺触发魔战多倍回满蓝条；W2银级影豺带闪避层扑喉且极光小队迫近，须先以生根步卸力闪反再覆水封喉！',
       preset: {
@@ -1403,6 +1409,7 @@
       crestKind: 'abyss_behemoth',
       emoji: '🏔️',
       bg: 'bg-snow',
+      bgmType: 'battle',
       tags: ['每波独立1次冰宫', '守护医疗药箱', '破招协同艾诺冰枪', '晦轮杖真伤破甲'],
       summary: '五星终极战！护住药箱防冲撞，借冰宫看破或连续破招引落崖顶艾诺极寒冰枪震碎晶核，再以晦轮杖真伤配极寒过载轰杀领主！',
       crateRule: true,
@@ -1507,6 +1514,7 @@
       crestKind: 'eastwing',
       emoji: '🔥',
       bg: 'bg-img-hallway bg-battle',
+      bgmType: 'battle',
       tags: ['二阶段红莲铁幕', '双波火廊突围', '仆道回风看破', '封廊锁火截断'],
       summary: '政变火夜东翼长廊！前波破突击队长与赤炎术士夹击；后波「红莲铁幕」半血变阵，须借仆道回风看破火眼，截断锁火迎锋破袭！',
       preset: {
@@ -1630,6 +1638,7 @@
       crestKind: 'wind_god',
       emoji: '🌪️',
       bg: 'bg-img-training bg-battle',
+      bgmType: 'battle',
       tags: ['七大列强试剑', '二阶段风暴眼全开', '生根步斩风瞬反', '风眼静滞看破'],
       summary: '直面七大列强「风神·岚」的高难试剑！半血后【风暴眼全开】，真空连刃与风眼静滞反制交替压迫，须借生根步斩风瞬反与冰宫看破破开风暴！',
       preset: {
@@ -4801,6 +4810,7 @@
       id: stageCfg.id,
       battleInstanceId: ++_battleInstanceSeq,
       stageCfg,
+      bgmType: opts.bgmType || stageCfg.bgmType || 'battle',
       player,
       allies,
       enemies: [],
@@ -8912,7 +8922,7 @@
       safeSfx('modal_open');
       if (typeof global.bgmUnlock === 'function') global.bgmUnlock();
       if (typeof global.bgmEnterArenaHub === 'function') global.bgmEnterArenaHub();
-      else if (typeof global.bgmPlayType === 'function') global.bgmPlayType('academy', { force: false });
+      else if (typeof global.bgmPlayType === 'function') global.bgmPlayType('duel', { force: false, key: 'duel2' });
     }
 
     ov.querySelector('#am-preset').onclick = () => {
@@ -9016,15 +9026,30 @@
     bs.classList.remove('palace-timestop', 'wand-refract', 'hit-shake', 'heavy-shake', 'hidden');
   }
 
-  function ensureBattleBgmOnStart() {
+  function ensureBattleBgmOnStart(bgmType, preferKey) {
     if (typeof global.bgmUnlock === 'function') global.bgmUnlock();
-    if (typeof global.bgmPlayType !== 'function') return;
+    const targetType = bgmType || 'battle';
+    const targetKey = preferKey || (targetType === 'duel' ? 'duel1' : null);
     const st = (typeof global.bgmGetState === 'function') ? global.bgmGetState() : null;
-    const alreadyBattlePlaying = !!(st && st.type === 'battle' && st.key && !st.paused);
+
+    if (targetType === 'duel') {
+      const alreadyTargetDuel = !!(st && st.type === 'duel' && (!targetKey || st.key === targetKey) && !st.paused);
+      if (alreadyTargetDuel) return;
+      if (typeof global.bgmPlayType === 'function') {
+        // 演武大厅播 duel2 时进切磋关可流畅切至 duel1；若已在播 duel1 且未暂停则上方已提前返回
+        global.bgmPlayType('duel', { force: true, fade: true, key: targetKey });
+      } else if (typeof global.bgmPlay === 'function' && targetKey) {
+        global.bgmPlay(targetKey, { fade: true, type: 'duel' });
+      }
+      return;
+    }
+
+    if (typeof global.bgmPlayType !== 'function') return;
+    const alreadyBattlePlaying = !!(st && st.type === targetType && st.key && !st.paused);
     if (alreadyBattlePlaying) {
-      global.bgmPlayType('battle', { force: false });
+      global.bgmPlayType(targetType, { force: false });
     } else {
-      global.bgmPlayType('battle', { force: true });
+      global.bgmPlayType(targetType, { force: true, key: targetKey || undefined });
     }
   }
 
@@ -9045,7 +9070,8 @@
       const ds = document.getElementById('duel-screen');
       if (ds) ds.classList.add('hidden');
       if (typeof global.setBG === 'function') global.setBG(sc.bg || 'bg-battle');
-      ensureBattleBgmOnStart();
+      const stageBgmType = b.bgmType || sc.bgmType || 'battle';
+      ensureBattleBgmOnStart(stageBgmType, stageBgmType === 'duel' ? 'duel1' : null);
       const bs = ensureBattleDOM();
       resetBattleDomForStart(bs);
       if (document.body) document.body.classList.add('cb-battle-active');
@@ -9076,6 +9102,7 @@
         fromArena: !!cfg.fromArena,
         usePreset: !!cfg.usePreset,
         fullRestore: !!cfg.fullRestore,
+        bgmType: cfg.bgmType,
       });
     }
     const tplMap = getEnemyTplMap() || {};
@@ -9091,7 +9118,8 @@
       chapter: '野外实战',
       stars: '★★☆☆☆',
       emoji: t.emoji || '🐺',
-      bg: 'bg-battle',
+      bg: cfg.bg || 'bg-battle',
+      bgmType: cfg.bgmType || 'battle',
       tags: ['架势博弈'],
       summary: t.desc || '野外魔物遭遇。',
       reward: { exp: t.exp || 30, gold: t.gold || 6 },
@@ -9128,8 +9156,9 @@
     clearAllJuiceVfx();
     const ds = typeof document !== 'undefined' ? document.getElementById('duel-screen') : null;
     if (ds) ds.classList.add('hidden');
-    if (typeof global.setBG === 'function') global.setBG('bg-battle');
-    ensureBattleBgmOnStart();
+    if (typeof global.setBG === 'function') global.setBG(customStage.bg || 'bg-battle');
+    const customBgmType = b.bgmType || customStage.bgmType || 'battle';
+    ensureBattleBgmOnStart(customBgmType, customBgmType === 'duel' ? 'duel1' : null);
     const bs = ensureBattleDOM();
     resetBattleDomForStart(bs);
     if (typeof document !== 'undefined' && document.body) document.body.classList.add('cb-battle-active');
@@ -9614,6 +9643,7 @@
         fromArena: false,
         usePreset: false,
         fullRestore: true,
+        bgmType: 'duel',
         done: () => {
           const curS = getGameS();
           if (curS && curS.freeRoam && typeof global.enterFreeRoam === 'function') {
@@ -9629,6 +9659,8 @@
       name: ch.name,
       emoji: '⚔️',
       elem: 'water',
+      bg: 'bg-duel',
+      bgmType: 'duel',
       hp: 210,
       atk: 34,
       def: 10,

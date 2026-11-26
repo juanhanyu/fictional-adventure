@@ -36,21 +36,30 @@
     { x: 188, y: 186, rot: -26, sc: 0.56, z: 19, variant: 3, slotId: null }
   ];
 
+  // 标题页曲库试听目录（全 22 首：优雅西幻文艺曲名 + 清晰场景副标；注释标注磁盘英文功能文件名）
   var SOUNDTRACK_CATALOG = [
-    { key: 'title_overture', title: '雪晶序曲 · 标题主题', mood: '主界面 · 雪瓷冰晶' },
-    { key: 'sacred1', title: '贵族纹章 · 圣殿 I', mood: '星霜圣域 · 圣洁庄严' },
-    { key: 'sacred2', title: '冰晶宫殿 II', mood: '极北秘境 · 星霜回响' },
-    { key: 'peaceful1', title: '银蓝晨光 I', mood: '公爵府 · 悠然日常' },
-    { key: 'academy1', title: '阿斯拉钟塔 I', mood: '魔法学府 · 晨钟长廊' },
-    { key: 'relax1', title: '雪夜壁炉 I', mood: '静谧夜色 · 暖灯微光' },
-    { key: 'relax2', title: '霜月静思 II', mood: '静谧夜色 · 霜月清辉' },
-    { key: 'cheerful1', title: '集市晴日 I', mood: '领地街巷 · 明朗欢歌' },
-    { key: 'comedy_medium', title: '微服出游曲', mood: '微服私访 · 轻快明朗' },
-    { key: 'romantic', title: '炉火余韵 · 月虹', mood: '盛夏海湾 · 月下轻语' },
-    { key: 'emotional1', title: '霜月挽歌', mood: '北行旅途 · 深情余韵' },
-    { key: 'sad1', title: '寒夜哀歌', mood: '黑夜变故 · 风雪离歌' },
-    { key: 'battle1', title: '锋刃交错 I', mood: '战术演武 · 交锋决意' },
-    { key: 'battle2', title: '霜原决意 II', mood: '冰封峡谷 · 雪原死斗' }
+    { key: 'title_overture', title: '雪晶序曲', mood: '主界面 · 奇幻开篇' },           // Title - Main Theme.mp3
+    { key: 'peaceful1', title: '晨光圆舞 I', mood: '第一章 · 宅邸清晨日常' },         // Peaceful 1.mp3
+    { key: 'peaceful2', title: '公爵午后 II', mood: '宅邸午后 · 霁馆烟火' },          // Peaceful 2.mp3
+    { key: 'cheerful1', title: '阳光集市 I', mood: '集市小镇 · 花园 · 海滨' },        // Cheerful 1.mp3
+    { key: 'cheerful2', title: '庭院嬉游 II', mood: '三姐妹午后 · 澄岚公会' },        // Cheerful 2.mp3
+    { key: 'academy1', title: '阿斯拉钟塔 I', mood: '魔法学院 · 教室 · 图书馆' },     // Magical Academy 1.mp3
+    { key: 'academy2', title: '星穹书库 II', mood: '学院走廊 · 课间日常' },           // Magical Academy 2.mp3
+    { key: 'relax1', title: '雪夜壁炉 I', mood: '宿舍夜谈 · 篝火休憩' },              // Peaceful & Relaxing 1.mp3
+    { key: 'relax2', title: '霜月静思 II', mood: '雪夜露台 · 星祭 · 花坊' },          // Peaceful & Relaxing 2.mp3
+    { key: 'sacred1', title: '贵族纹章 I', mood: '大礼堂 · 勇者之赐 · 仪典' },        // Sacred 1.mp3
+    { key: 'sacred2', title: '冰晶宫殿 II', mood: '礼拜堂 · 觉醒 · 七座山' },         // Sacred 2.mp3
+    { key: 'emotional1', title: '霜月挽歌', mood: '离巢告别 · 冰融 · 双轨终幕' },     // Emotional 1.mp3
+    { key: 'romantic', title: '炉火余韵', mood: '海与贝壳 · 黄昏谈心 · 求婚' },       // Romantic.mp3
+    { key: 'sad1', title: '寒夜哀歌', mood: '政变火夜 · 悲剧哀悼' },                  // Melancholic & Sad 1.mp3
+    { key: 'suspense1', title: '冰晶复调', mood: '血案推理 · 寒夜推演盘' },           // Suspense - Investigation.mp3
+    { key: 'upset', title: '上锁书房', mood: '暗潮对峙 · 地下酒窖 · 冰封峡谷' },      // Upset.mp3
+    { key: 'comedy_medium', title: '微服谐趣', mood: '微服私访 · 轻快诙谐' },         // Comical_medium-speed.mp3
+    { key: 'comedy_fast', title: '追风闹剧', mood: '高速搞笑 · 追逐彩蛋' },           // Comical_fast-speed.mp3
+    { key: 'duel1', title: '学院剑舞 I', mood: '姐妹切磋 · 学院比试战' },             // Battle - Sparring Duel.mp3
+    { key: 'duel2', title: '演武晴锋 II', mood: '演武大厅 · 贵族试手' },              // Battle - Arena Lobby.mp3
+    { key: 'battle1', title: '锋刃交错 I', mood: '魔兽遭遇 · 血案死斗 · 突围战' },    // Battle & Tension 1.mp3
+    { key: 'battle2', title: '霜原决意 II', mood: '强敌二阶段 · Boss 压轴' }          // Battle & Tension 2.mp3
   ];
 
   var TYPE_SPEED_OPTS = [

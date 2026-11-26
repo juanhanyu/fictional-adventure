@@ -169,9 +169,12 @@ function sfx(type, opts){
 // ========== BGM (背景音乐) ==========
 // 情境 → 音乐文件（放在 Music/，相对路径 file:// 也能播）。缺文件则静默降级。
 const BGM_BASE = 'Music/';
-const TITLE_BGM_KEY = 'comedy_medium';
-const TITLE_BGM_TITLE = '微服出游曲';
+const TITLE_BGM_KEY = 'title_overture';
+const TITLE_BGM_TITLE = '雪晶序曲';
 const BGM_FILES = {
+  title_overture:'Music/Luminous Snow-Crystal.mp3',
+  sacred1:'Music/Sacred 1.mp3',
+  sacred2:'Music/Sacred 2.mp3',
   battle1:'Music/Battle & Tension 1.mp3',
   battle2:'Music/Battle & Tension 2.mp3',
   cheerful1:'Music/Cheerful 1.mp3',
@@ -184,12 +187,32 @@ const BGM_FILES = {
   relax2:'Music/Peaceful & Relaxing 2.mp3',
   peaceful1:'Music/Peaceful 1.mp3',
   peaceful2:'Music/Peaceful 2.mp3',
-  sacred1:'Music/Sacred 1.mp3',
-  sacred2:'Music/Sacred 2.mp3',
   comedy_fast:'Music/Comical_fast-speed.mp3',
   comedy_medium:'Music/Comical_medium-speed.mp3',
   romantic:'Music/Romantic.mp3',
   upset:'Music/Upset.mp3',
+};
+// 每曲响度无损平衡表（目标听感约 -14.5 LUFS，仅作用于输出增益，不改写用户 bgmVolume）
+const BGM_TRACK_GAIN = {
+  title_overture: 0.98,
+  sacred1: 1.0,
+  sacred2: 1.0,
+  relax1: 1.0,
+  relax2: 0.88,
+  emotional1: 1.0,
+  romantic: 1.0,
+  sad1: 0.94,
+  upset: 0.94,
+  academy1: 0.72,
+  academy2: 0.72,
+  peaceful1: 0.85,
+  peaceful2: 0.78,
+  cheerful1: 0.74,
+  cheerful2: 0.76,
+  comedy_medium: 0.98,
+  comedy_fast: 0.98,
+  battle1: 0.58,
+  battle2: 0.54,
 };
 let bgmEl = null;         // 当前 Audio 元素
 let bgmKey = null;        // 当前播放的曲目 key
@@ -205,8 +228,11 @@ let bgmOverlayStack = []; // 瞬态全屏氛围界面栈（arena / deduction / e
 let bgmVolume = (()=>{ try { const v=parseFloat(localStorage.getItem(MUSIC_VOL_KEY)); return Number.isFinite(v)?Math.max(0,Math.min(1,v)):0.5; } catch(e){ return 0.5; } })();
 let bgmDuckGain = 1.0;
 
-function bgmEffectiveVolume(){
-  return (bgmMuted || muted) ? 0 : Math.max(0, Math.min(1, bgmVolume * bgmDuckGain));
+function bgmEffectiveVolume(key){
+  if(bgmMuted || muted) return 0;
+  const k = key || bgmKey;
+  const trackGain = (k && Object.prototype.hasOwnProperty.call(BGM_TRACK_GAIN, k)) ? BGM_TRACK_GAIN[k] : 1.0;
+  return Math.max(0, Math.min(1, bgmVolume * bgmDuckGain * trackGain));
 }
 function bgmSetDuck(ratio, ms){
   const n = Number(ratio);
@@ -240,6 +266,7 @@ function notifyBgmStateChange(){
 
 // 同类型分组（策略 B：同情境在多首间轮换）
 const BGM_GROUPS = {
+  title:    ['title_overture'],
   battle:   ['battle1','battle2'],
   cheerful: ['cheerful1','cheerful2'],
   academy:  ['academy1','academy2'],
@@ -287,11 +314,25 @@ function bgmFadeTo(el, target, ms, done){
     }
   }, 40);
 }
-function bgmStop(fade=true){
+function bgmResolveTypeForKey(key){
+  if(!key) return null;
+  for(const type of Object.keys(BGM_GROUPS)){
+    const group = BGM_GROUPS[type];
+    if(Array.isArray(group) && group.includes(key)) return type;
+  }
+  return null;
+}
+function bgmStop(fade=true, opts){
+  opts = opts || {};
+  const preserveContext = !!opts.preserveContext;
   const seq = ++_bgmSeq;
   const el = bgmEl || (typeof document !== 'undefined' ? document.getElementById('bgm-audio') : null);
-  bgmEl = null; bgmKey = null; bgmCurType = null; sceneBgmType = null; bgmLoc = null;
-  bgmPendingPlay = false; bgmOverlayStack = [];
+  const prevKey = bgmKey;
+  bgmEl = null; bgmKey = null; bgmCurType = null;
+  bgmPendingPlay = false;
+  if(!preserveContext){
+    sceneBgmType = null; bgmLoc = null; bgmOverlayStack = [];
+  }
   if(!el){ notifyBgmStateChange(); return; }
   const kill = ()=>{
     if(_bgmSeq !== seq && bgmKey) return;
@@ -301,7 +342,7 @@ function bgmStop(fade=true){
   };
   if(fade && !el.paused && el.volume > 0.005){
     bgmCancelFade(el);
-    try{ el.volume = Math.min(el.volume, bgmEffectiveVolume()); }catch(e){}
+    try{ el.volume = Math.min(el.volume, bgmEffectiveVolume(prevKey)); }catch(e){}
     bgmFadeTo(el, 0, 500, kill);
   } else {
     kill();
@@ -366,11 +407,15 @@ function bgmGetState(){
     overlays: bgmOverlayStack.map(o => o.tag)
   };
 }
-function bgmPlay(key, {fade=true}={}){
+function bgmPlay(key, opts){
+  opts = opts || {};
+  const fade = opts.fade !== undefined ? !!opts.fade : true;
   if(!key) return;
   const file = BGM_FILES[key]; if(!file) return;
+  const resolvedType = opts.type !== undefined ? opts.type : bgmResolveTypeForKey(key);
   if(bgmKey === key && bgmEl && !bgmEl.paused && !bgmPendingPlay){
-    const wantVol = bgmEffectiveVolume();
+    bgmCurType = resolvedType;
+    const wantVol = bgmEffectiveVolume(key);
     if(!bgmEl._fadeIv && Math.abs((bgmEl.volume || 0) - wantVol) > 0.01){
       try { bgmEl.volume = wantVol; } catch(e){}
     }
@@ -379,14 +424,16 @@ function bgmPlay(key, {fade=true}={}){
   }
   const seq = ++_bgmSeq;
   const prev = bgmEl;
+  const prevKey = bgmKey;
   const wasBlocked = bgmPendingPlay;
   bgmKey = key;
+  bgmCurType = resolvedType;
   // 淡出旧曲后换新
   const startNew = ()=>{
     if(_bgmSeq !== seq || bgmKey !== key) return; // 期间又被切换
     const el = bgmAudio(); if(!el) return;
     bgmCancelFade(el);
-    const targetVol = bgmEffectiveVolume();
+    const targetVol = bgmEffectiveVolume(key);
     try { el.src = encodeAudioPath(file); el.loop = true; } catch(e){ return; } // 逐段 encodeURIComponent 编码空格与 &
     bgmEl = el;
     if(fade && targetVol > 0){
@@ -405,7 +452,7 @@ function bgmPlay(key, {fade=true}={}){
         if(_bgmSeq !== seq) return;
         bgmPendingPlay = true;
         bgmCancelFade(el);
-        try { el.volume = bgmEffectiveVolume(); } catch(e){}
+        try { el.volume = bgmEffectiveVolume(key); } catch(e){}
         notifyBgmStateChange();
       });
     } else {
@@ -423,7 +470,7 @@ function bgmPlay(key, {fade=true}={}){
   };
   if(prev && prev.src && fade && !wasBlocked){
     bgmCancelFade(prev);
-    try{ prev.volume = Math.min(prev.volume, bgmEffectiveVolume()); }catch(e){}
+    try{ prev.volume = Math.min(prev.volume, bgmEffectiveVolume(prevKey)); }catch(e){}
     bgmFadeTo(prev, 0, 550, ()=>{
       if(_bgmSeq === seq && bgmKey === key){
         startNew();
@@ -447,7 +494,7 @@ function bgmPlayTitle(opts){
   bgmLoc = null;
   bgmOverlayStack = [];
   bgmCurType = 'title';
-  bgmPlay(TITLE_BGM_KEY, { fade: opts.fade !== undefined ? !!opts.fade : true });
+  bgmPlay(TITLE_BGM_KEY, { fade: opts.fade !== undefined ? !!opts.fade : true, type: 'title' });
 }
 // 用户手势后解锁音频（浏览器自动播放限制）——任何用户交互都会尝试恢复
 function bgmUnlock(){
@@ -558,7 +605,7 @@ function bgmPlayType(type, {force=false, fade=true}={}){
   const idx = ((bgmGroupIdx[type] ?? -1) + 1) % group.length;
   bgmGroupIdx[type] = idx;
   bgmCurType = type;
-  bgmPlay(group[idx], { fade });
+  bgmPlay(group[idx], { fade, type });
 }
 // 场景开始：记录场景 bgm 并强制播放，贯穿整个场景
 function bgmSceneStart(type){
@@ -616,7 +663,7 @@ function bgmShiftBattlePhase2(){
   const targetKey = (bgmKey === 'battle2') ? 'battle1' : 'battle2';
   bgmCurType = 'battle';
   bgmGroupIdx.battle = targetKey === 'battle2' ? 1 : 0;
-  bgmPlay(targetKey, { fade: true });
+  bgmPlay(targetKey, { fade: true, type: 'battle' });
 }
 // 依据当前真实舞台上下文精准恢复最合理的 BGM
 function bgmRestoreContext(){
@@ -6237,7 +6284,7 @@ SCENES.s_beach = {
     {ch:'beatrice', emo:'normal', speaker:'贝阿特丽丝', text:'我想亲手捞上来给爱丽丝做入学礼物！！买的谁不会买啊我就是想亲手——'},
     {text:'话说到一半。她愣住了。嘴还张着，但声音没了。'},
     {text:'月虹螺。深水区。亲手捞。给妹妹。做入学礼物。她全说了。'},
-    {ch:'beatrice', emo:'sad', speaker:'贝阿特丽丝', text:'……本来想在你入学那天给你惊喜的。……结果我连游泳都不会。练了快一个星期，连深水区的边都摸不到。……'},
+    {bgm:'romantic', ch:'beatrice', emo:'sad', speaker:'贝阿特丽丝', text:'……本来想在你入学那天给你惊喜的。……结果我连游泳都不会。练了快一个星期，连深水区的边都摸不到。……'},
     {ch:'beatrice', emo:'sad', speaker:'贝阿特丽丝', text:'……我是不是很笨？连给妹妹准备个入学礼物都做不好……明明是姐姐……什么都做不好。'},
     {text:'她眼眶红红的。嘴唇在发抖。'},
     {text:'我走进水里。海水凉凉的，没过膝盖。'},
@@ -7161,6 +7208,7 @@ if(typeof window !== 'undefined'){
   window.bgmSetTitleUserPaused = function(v){ bgmUserPausedTitle = !!v; notifyBgmStateChange(); };
   window.BGM_FILES = typeof BGM_FILES !== 'undefined' ? BGM_FILES : {};
   window.BGM_GROUPS = typeof BGM_GROUPS !== 'undefined' ? BGM_GROUPS : {};
+  window.BGM_TRACK_GAIN = typeof BGM_TRACK_GAIN !== 'undefined' ? BGM_TRACK_GAIN : {};
   window.ACH = ACH;
   window.codex = codex;
   window.saveCodex = saveCodex;

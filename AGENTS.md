@@ -36,7 +36,8 @@
 
 ## 五、音频与 BGM 规范
 
-- **全覆盖配置**：主界面固定 `Music/Comical_medium-speed.mp3`（轻快冷门曲）；每个 `SCENES` 须显式配置 `bgm` 贴合剧情情绪，新增背景类同步 `BG_CLASS_TYPE`，所引用 `.mp3` 须真实存在于 `Music/`。
+- **全覆盖配置**：主界面现已由音乐总管升级并永久固定为 `Music/Luminous Snow-Crystal.mp3`（`title_overture` · 雪晶序曲）；每个 `SCENES` 须显式配置 `bgm` 贴合剧情情绪，新增背景类同步 `BG_CLASS_TYPE`，所引用 `.mp3` 须真实存在于 `Music/`；每曲响度通过 `game.js` 中 `BGM_TRACK_GAIN` 平衡表无损补偿（兼容 `VoiceEngine` Ducking 且不改写 `bgmGetVolume()`）。
+- **【音乐资产保护说明】**：批次 1 已验收的新版 Suno 纯西幻曲目资产包含 `Music/Luminous Snow-Crystal.mp3`（主界面 `title_overture`）、`Music/Sacred 1.mp3`、`Music/Sacred 2.mp3`、`Music/Peaceful & Relaxing 1.mp3`、`Music/Peaceful & Relaxing 2.mp3`、`Music/Emotional 1.mp3`、`Music/Romantic.mp3`、`Music/Melancholic & Sad 1.mp3`；其他总管**严禁擅自将主界面曲回退为 `Comical_medium-speed.mp3` 或旧版曲目、严禁覆盖或删改 `Music/` 下已验收曲目**。
 - **章节连贯性**：普通日常/成长对话保持单一连贯 BGM（第一章 `s_start` 永久锁单一 `peaceful` → `Music/Peaceful 1.mp3`，零中途切曲），仅重大幕间转折或突袭战斗高潮处切曲。
 
 ## 六、原著基准与叙事 / 舞台 / 面板规范

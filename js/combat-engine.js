@@ -8680,6 +8680,18 @@
     bs.classList.remove('palace-timestop', 'wand-refract', 'hit-shake', 'heavy-shake', 'hidden');
   }
 
+  function ensureBattleBgmOnStart() {
+    if (typeof global.bgmUnlock === 'function') global.bgmUnlock();
+    if (typeof global.bgmPlayType !== 'function') return;
+    const st = (typeof global.bgmGetState === 'function') ? global.bgmGetState() : null;
+    const alreadyBattlePlaying = !!(st && st.type === 'battle' && st.key && !st.paused);
+    if (alreadyBattlePlaying) {
+      global.bgmPlayType('battle', { force: false });
+    } else {
+      global.bgmPlayType('battle', { force: true });
+    }
+  }
+
   function startStage(stageId, opts) {
     opts = opts || {};
     const sc = STAGE_CONFIGS[stageId];
@@ -8697,8 +8709,7 @@
       const ds = document.getElementById('duel-screen');
       if (ds) ds.classList.add('hidden');
       if (typeof global.setBG === 'function') global.setBG(sc.bg || 'bg-battle');
-      if (typeof global.bgmUnlock === 'function') global.bgmUnlock();
-      if (typeof global.bgmPlayType === 'function') global.bgmPlayType('battle', { force: true });
+      ensureBattleBgmOnStart();
       const bs = ensureBattleDOM();
       resetBattleDomForStart(bs);
       if (document.body) document.body.classList.add('cb-battle-active');
@@ -8782,8 +8793,7 @@
     const ds = typeof document !== 'undefined' ? document.getElementById('duel-screen') : null;
     if (ds) ds.classList.add('hidden');
     if (typeof global.setBG === 'function') global.setBG('bg-battle');
-    if (typeof global.bgmUnlock === 'function') global.bgmUnlock();
-    if (typeof global.bgmPlayType === 'function') global.bgmPlayType('battle', { force: true });
+    ensureBattleBgmOnStart();
     const bs = ensureBattleDOM();
     resetBattleDomForStart(bs);
     if (typeof document !== 'undefined' && document.body) document.body.classList.add('cb-battle-active');

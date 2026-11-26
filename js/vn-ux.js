@@ -2447,14 +2447,15 @@
   ];
 
   var BGM_MOOD_LABELS = {
+    title: '雪瓷启幕 · Title Theme',
     peaceful: '悠然日常 · Peaceful',
     relax: '静谧夜色 · Relaxing',
     cheerful: '明朗欢歌 · Cheerful',
     academy: '魔法学府 · Academy',
     sacred: '星霜圣域 · Sacred',
     emotional: '深情余韵 · Emotional',
-    romantic: '月下轻语 · Romantic',
-    sad: '风雪离歌 · Melancholic',
+    romantic: '炉火月虹 · Romantic',
+    sad: '寒夜离歌 · Melancholic',
     upset: '暗潮骤起 · Upset',
     battle: '交锋决意 · Battle & Tension',
     comedy_medium: '轻快趣景 · Comical (中速)',
@@ -2462,6 +2463,7 @@
   };
 
   var BGM_TRACK_TITLES = {
+    title_overture: '雪晶序曲',
     peaceful1: '银蓝晨光 I',
     peaceful2: '公爵庭院 II',
     relax1: '雪夜壁炉 I',
@@ -2470,11 +2472,11 @@
     cheerful2: '三姐妹午后 II',
     academy1: '阿斯拉钟塔 I',
     academy2: '星穹书库 II',
-    sacred1: '勇者之赐 I',
+    sacred1: '贵族纹章 · 圣殿 I',
     sacred2: '冰晶宫殿 II',
-    emotional1: '远行余温',
-    romantic: '月虹潮声',
-    sad1: '灰烬初雪',
+    emotional1: '霜月挽歌',
+    romantic: '炉火余韵 · 月虹',
+    sad1: '寒夜哀歌',
     upset: '黑夜暗涌',
     battle1: '锋刃交错 I',
     battle2: '霜原决意 II',
@@ -2483,19 +2485,20 @@
   };
 
   var BGM_TRACK_SCENES = {
+    title_overture: '主界面 · 雪瓷启幕',
     peaceful1: '日常晴朗 · 公爵府与小镇',
     peaceful2: '庭院午后 · 闲适茶歇与漫步',
-    relax1: '雪夜灯火 · 寝室书房与暖炉',
-    relax2: '霜月静谧 · 夜色独思与回望',
+    relax1: '雪夜壁炉 · 寝室书房与暖灯',
+    relax2: '霜月静谧 · 夜色独思与安眠',
     cheerful1: '市集明快 · 街巷采买与出游',
     cheerful2: '姐妹欢聚 · 庭园嬉闹与假日',
     academy1: '学府晨钟 · 阿斯拉礼堂与长廊',
     academy2: '书海研习 · 魔导课堂与书库',
-    sacred1: '神域回响 · 勇者之赐与星辉',
+    sacred1: '贵族纹章 · 圣殿仪典与星辉',
     sacred2: '极北秘境 · 冰晶宫殿与秘仪',
-    emotional1: '羁绊余温 · 心声倾诉与回响',
-    romantic: '月色轻柔 · 海滨拾贝与相伴',
-    sad1: '风雪别离 · 逃亡夜路与远行',
+    emotional1: '霜月挽歌 · 羁绊倾诉与深情回响',
+    romantic: '炉火月虹 · 海滨拾贝与相伴暖意',
+    sad1: '寒夜哀歌 · 逃亡夜路与风雪别离',
     upset: '暗潮压境 · 异变突生与戒备',
     battle1: '战场紧迫 · 决斗交锋与危机',
     battle2: '雪原对决 · 凌厉剑锋与死斗',
@@ -2504,14 +2507,15 @@
   };
 
   var BGM_MOOD_SCENE_FALLBACK = {
+    title: '主界面 · 雪瓷启幕',
     peaceful: '日常晴朗 · 悠闲生活与庭园',
     relax: '夜色静谧 · 休憩与夜谈',
     cheerful: '明朗欢快 · 集市与假日相伴',
     academy: '魔法学府 · 课堂与书库',
     sacred: '神圣秘境 · 礼堂与仪典',
     emotional: '深情回响 · 倾诉与重逢',
-    romantic: '柔和微光 · 月下与海风',
-    sad: '风雪离歌 · 别离与远行',
+    romantic: '炉火月虹 · 月下与海风暖意',
+    sad: '寒夜离歌 · 别离与远行',
     upset: '暗潮骤起 · 戒备与迷局',
     battle: '战场紧迫 · 决斗与危机',
     comedy_medium: '轻快逸趣 · 微服漫游与趣事',
@@ -2928,12 +2932,12 @@
     }
   }
 
-  function callBgmStop() {
+  function callBgmStop(opts) {
     var fn = (root && typeof root.bgmStop === 'function')
       ? root.bgmStop
       : (typeof bgmStop === 'function' ? bgmStop : null);
     if (fn) {
-      try { fn(false); } catch (e) {}
+      try { fn(false, opts); } catch (e) {}
       return;
     }
     if (typeof document !== 'undefined') {
@@ -3203,6 +3207,11 @@
     var groups = (root && root.BGM_GROUPS) || (typeof BGM_GROUPS !== 'undefined' ? BGM_GROUPS : {});
     var files = (root && root.BGM_FILES) || (typeof BGM_FILES !== 'undefined' ? BGM_FILES : {});
     var groupKeys = Object.keys(groups);
+    var titleIdx = groupKeys.indexOf('title');
+    if (titleIdx > 0) {
+      groupKeys.splice(titleIdx, 1);
+      groupKeys.unshift('title');
+    }
     var flatTracks = [];
     groupKeys.forEach(function (g) {
       if (Array.isArray(groups[g])) {
@@ -3268,7 +3277,7 @@
       stopBtn.onclick = function () {
         codexPlayingTrack = null;
         codexAuditionDirty = true;
-        callBgmStop();
+        callBgmStop({ preserveContext: true });
         playSfx('glass_tap');
         renderCodexBgmTab(container);
       };
@@ -3279,7 +3288,7 @@
         codexAuditionDirty = true;
         if (codexPlayingTrack === key) {
           codexPlayingTrack = null;
-          callBgmStop();
+          callBgmStop({ preserveContext: true });
         } else {
           codexPlayingTrack = key;
           callBgmPlay(key);

@@ -37,16 +37,18 @@
   ];
 
   var SOUNDTRACK_CATALOG = [
-    { key: 'comedy_medium', title: '微服出游曲 · 序曲', mood: '标题主旋律 · 轻快明朗' },
-    { key: 'sacred1', title: '冰晶协奏 · 序曲', mood: '星霜圣域 · 圣洁庄严' },
-    { key: 'peaceful1', title: '银蓝晨光 I', mood: '公爵府 · 悠然日常' },
+    { key: 'title_overture', title: '雪晶序曲 · 标题主题', mood: '主界面 · 雪瓷冰晶' },
+    { key: 'sacred1', title: '贵族纹章 · 圣殿 I', mood: '星霜圣域 · 圣洁庄严' },
     { key: 'sacred2', title: '冰晶宫殿 II', mood: '极北秘境 · 星霜回响' },
+    { key: 'peaceful1', title: '银蓝晨光 I', mood: '公爵府 · 悠然日常' },
     { key: 'academy1', title: '阿斯拉钟塔 I', mood: '魔法学府 · 晨钟长廊' },
     { key: 'relax1', title: '雪夜壁炉 I', mood: '静谧夜色 · 暖灯微光' },
+    { key: 'relax2', title: '霜月静思 II', mood: '静谧夜色 · 霜月清辉' },
     { key: 'cheerful1', title: '集市晴日 I', mood: '领地街巷 · 明朗欢歌' },
-    { key: 'romantic', title: '月虹潮声', mood: '盛夏海湾 · 月下轻语' },
-    { key: 'emotional1', title: '远行余温', mood: '北行旅途 · 深情余韵' },
-    { key: 'sad1', title: '灰烬初雪', mood: '黑夜变故 · 风雪离歌' },
+    { key: 'comedy_medium', title: '微服出游曲', mood: '微服私访 · 轻快明朗' },
+    { key: 'romantic', title: '炉火余韵 · 月虹', mood: '盛夏海湾 · 月下轻语' },
+    { key: 'emotional1', title: '霜月挽歌', mood: '北行旅途 · 深情余韵' },
+    { key: 'sad1', title: '寒夜哀歌', mood: '黑夜变故 · 风雪离歌' },
     { key: 'battle1', title: '锋刃交错 I', mood: '战术演武 · 交锋决意' },
     { key: 'battle2', title: '霜原决意 II', mood: '冰封峡谷 · 雪原死斗' }
   ];
@@ -3393,7 +3395,7 @@
 
     if (prevMode === 'settings' && mode !== 'settings') {
       var curBgmKey = (root && typeof root.bgmGetState === 'function' && root.bgmGetState()) ? root.bgmGetState().key : null;
-      var titleKey = (root && root.TITLE_BGM_KEY) || 'comedy_medium';
+      var titleKey = (root && root.TITLE_BGM_KEY) || 'title_overture';
       var needsTitleRestore = !!st.auditionTrackKey || (curBgmKey && curBgmKey !== titleKey);
       if (needsTitleRestore) {
         st.auditionTrackKey = null;
@@ -3553,7 +3555,7 @@
         var bs = root.bgmGetState();
         if (bs && bs.key) {
           if (root.TITLE_BGM_KEY && bs.key === root.TITLE_BGM_KEY) {
-            return root.TITLE_BGM_TITLE || '微服出游曲';
+            return root.TITLE_BGM_TITLE || '雪晶序曲';
           }
           for (var k = 0; k < SOUNDTRACK_CATALOG.length; k++) {
             if (SOUNDTRACK_CATALOG[k].key === bs.key) return SOUNDTRACK_CATALOG[k].title;
@@ -3561,7 +3563,7 @@
         }
       }
     } catch (e) {}
-    return (root && root.TITLE_BGM_TITLE) || '微服出游曲';
+    return (root && root.TITLE_BGM_TITLE) || '雪晶序曲';
   }
 
   function syncTitleAudioButton(preferDom) {

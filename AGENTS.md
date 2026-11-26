@@ -32,10 +32,11 @@
   1. 战斗 UI 统一读 `CombatEngine.getBattleState()` 并由 `combat:statechange` 驱动刷新；
   2. 棱镜 UI 激活时 `W/E/A/D/1..9` 归 `CombatPrismUI`，统一 `X` 结束回合、`L` 战报抽屉；
   3. 战斗角色统一使用 `js/sprites/` 22 套零 PNG 像素骨骼与显式 `animMap`；奔跑循环仅用纯步态帧（无专用帧回退 `[0,1]`），雷纳德支持土/火/风三系施法。
+- **战斗特效审美**：战斗特效坚持色彩明亮、晶莹通透、体量饱满、连贯流畅的日系奇幻审美，严禁用暗黑写实毒舌评审打压明亮特效。
 
 ## 五、音频与 BGM 规范
 
-- **全覆盖配置**：主界面固定 `Music/Sacred 1.mp3`；每个 `SCENES` 须显式配置 `bgm` 贴合剧情情绪，新增背景类同步 `BG_CLASS_TYPE`，所引用 `.mp3` 须真实存在于 `Music/`。
+- **全覆盖配置**：主界面固定 `Music/Comical_medium-speed.mp3`（轻快冷门曲）；每个 `SCENES` 须显式配置 `bgm` 贴合剧情情绪，新增背景类同步 `BG_CLASS_TYPE`，所引用 `.mp3` 须真实存在于 `Music/`。
 - **章节连贯性**：普通日常/成长对话保持单一连贯 BGM（第一章 `s_start` 永久锁单一 `peaceful` → `Music/Peaceful 1.mp3`，零中途切曲），仅重大幕间转折或突袭战斗高潮处切曲。
 
 ## 六、原著基准与叙事 / 舞台 / 面板规范

@@ -5570,6 +5570,92 @@ body.cb-battle-active #fx {
   }
 }
 
+/* 传统列模式窄桌面 / 150% DPI 缩放 (<1024px)：收敛 6+6 舞台高度，确保 .cb-deck 与技能卡首屏直接完整可见可点 */
+@media (max-width: 1023px) {
+  .cb-arena-field {
+    min-height: 220px;
+    max-height: min(360px, 44vh);
+    max-height: min(360px, 44dvh);
+    overflow-y: auto;
+    overflow-x: hidden;
+    align-items: stretch;
+  }
+
+  #battle-screen .cb-formation-grid,
+  #battle-screen .cb-ally-grid,
+  #battle-screen #cb-ally-formation,
+  #battle-screen #cb-enemy-zone.cb-enemy-grid,
+  #battle-screen #cb-enemy-zone.cb-formation-grid {
+    grid-template-rows: repeat(3, minmax(0, auto));
+    gap: 2px 6px;
+  }
+
+  #battle-screen .cb-slot {
+    padding: 1px 2px 3px;
+  }
+
+  #battle-screen .cb-slot.is-empty {
+    min-height: 16px;
+  }
+
+  #battle-screen .cb-slot-pad {
+    height: 16px;
+    bottom: 2px;
+  }
+}
+
+/* 窄横屏桌面 / 平板横屏 (721px–1023px 且高 >520px，如 960×600)：横向三列紧凑操作台，全技能首屏直达 */
+@media (min-width: 721px) and (max-width: 1023px) and (min-height: 521px) and (orientation: landscape) {
+  #battle-screen .cb-shell {
+    gap: 6px;
+    padding: 6px 10px 8px;
+  }
+
+  .cb-topbar {
+    padding: 5px 10px;
+    gap: 4px 10px;
+  }
+
+  .cb-deck {
+    grid-template-columns: 186px minmax(0, 1fr) 96px;
+    gap: 8px;
+    padding: 7px 9px;
+  }
+
+  .cb-left-console {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .cb-overcast-box {
+    flex: 0 0 auto;
+    border-right: none;
+    border-bottom: 1px solid var(--cb-hairline);
+    padding: 2px 2px 5px;
+  }
+
+  #battle-screen .cb-log-box {
+    min-height: 52px;
+    max-height: 76px;
+  }
+
+  #b-actions .cb-skill-card {
+    min-height: 76px;
+    padding: 6px 8px 5px;
+  }
+
+  #battle-screen .cb-skills-grid.cards-compact .cb-skill-card {
+    min-height: 70px;
+  }
+
+  .cb-endturn-btn {
+    min-height: 84px;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 6px;
+  }
+}
+
 /* 移动端竖屏精雕 & 安卓 Chrome 桌面版网站竖屏防挤压
    (<=720px | 竖屏 <=1120px | 宽高比 <=4/5 · 严格不影响 1440×900 / 1280×720 / 844×390) */
 @media (max-width: 720px), (orientation: portrait) and (max-width: 1120px), (max-aspect-ratio: 4/5) {
@@ -5805,6 +5891,7 @@ body.cb-battle-active #fx {
     gap: 5px;
     padding: 0 0 8px;
     min-height: 0;
+    max-height: none;
     overflow-y: auto;
     overflow-x: hidden;
     overscroll-behavior: contain;
@@ -6534,6 +6621,7 @@ body.cb-battle-active #fx {
     gap: 8px;
     padding: 0;
     min-height: 0;
+    max-height: none;
     height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
@@ -7345,6 +7433,27 @@ body.cb-battle-active #fx {
 
   #battle-screen .cb-enemy-zone.multi-enemies .cb-px-actor {
     margin-bottom: -3px;
+  }
+}
+
+/* 窄桌面 / 150% DPI 缩放 (<1024px) 紧凑精灵比例：适配 220–360px 紧凑战场高度，确保角色与敌方完整可见 */
+@media (max-width: 1023px) {
+  #battle-screen {
+    --px-scale: 1.05;
+  }
+
+  #battle-screen .cb-ally-grid .cb-slot,
+  #battle-screen #cb-ally-formation .cb-slot {
+    --px-scale: 0.92;
+  }
+
+  #battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-e-stage.has-px-actor {
+    --px-scale: 1.05;
+  }
+
+  #battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor,
+  #battle-screen .cb-enemy-grid.multi-enemies .cb-e-stage.has-px-actor {
+    --px-scale: 0.72;
   }
 }
 

@@ -37,7 +37,8 @@
   ];
 
   var SOUNDTRACK_CATALOG = [
-    { key: 'sacred1', title: '冰晶协奏 · 序曲', mood: '标题主旋律 · 冰晶霜华' },
+    { key: 'comedy_medium', title: '微服出游曲 · 序曲', mood: '标题主旋律 · 轻快明朗' },
+    { key: 'sacred1', title: '冰晶协奏 · 序曲', mood: '星霜圣域 · 圣洁庄严' },
     { key: 'peaceful1', title: '银蓝晨光 I', mood: '公爵府 · 悠然日常' },
     { key: 'sacred2', title: '冰晶宫殿 II', mood: '极北秘境 · 星霜回响' },
     { key: 'academy1', title: '阿斯拉钟塔 I', mood: '魔法学府 · 晨钟长廊' },
@@ -46,7 +47,6 @@
     { key: 'romantic', title: '月虹潮声', mood: '盛夏海湾 · 月下轻语' },
     { key: 'emotional1', title: '远行余温', mood: '北行旅途 · 深情余韵' },
     { key: 'sad1', title: '灰烬初雪', mood: '黑夜变故 · 风雪离歌' },
-    { key: 'comedy_medium', title: '微服出游曲', mood: '姐妹趣事 · 轻快中速' },
     { key: 'battle1', title: '锋刃交错 I', mood: '战术演武 · 交锋决意' },
     { key: 'battle2', title: '霜原决意 II', mood: '冰封峡谷 · 雪原死斗' }
   ];
@@ -3331,7 +3331,7 @@
 
     if (prevMode === 'settings' && mode !== 'settings') {
       var curBgmKey = (root && typeof root.bgmGetState === 'function' && root.bgmGetState()) ? root.bgmGetState().key : null;
-      var titleKey = (root && root.TITLE_BGM_KEY) || 'sacred1';
+      var titleKey = (root && root.TITLE_BGM_KEY) || 'comedy_medium';
       var needsTitleRestore = !!st.auditionTrackKey || (curBgmKey && curBgmKey !== titleKey);
       if (needsTitleRestore) {
         st.auditionTrackKey = null;
@@ -3491,7 +3491,7 @@
         var bs = root.bgmGetState();
         if (bs && bs.key) {
           if (root.TITLE_BGM_KEY && bs.key === root.TITLE_BGM_KEY) {
-            return root.TITLE_BGM_TITLE || '冰晶协奏';
+            return root.TITLE_BGM_TITLE || '微服出游曲';
           }
           for (var k = 0; k < SOUNDTRACK_CATALOG.length; k++) {
             if (SOUNDTRACK_CATALOG[k].key === bs.key) return SOUNDTRACK_CATALOG[k].title;
@@ -3499,7 +3499,7 @@
         }
       }
     } catch (e) {}
-    return (root && root.TITLE_BGM_TITLE) || '冰晶协奏';
+    return (root && root.TITLE_BGM_TITLE) || '微服出游曲';
   }
 
   function syncTitleAudioButton(preferDom) {

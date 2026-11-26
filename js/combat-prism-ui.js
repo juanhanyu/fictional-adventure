@@ -206,15 +206,48 @@
     return null;
   }
 
-  function shouldDissolve(battleOverride) {
+  function shouldHardDissolve(battleOverride) {
     const bs = getBattleScreen();
     if (!bs || !isVisible(bs)) return true;
     if (document.getElementById('cb-palace-modal') || document.getElementById('cb-result-modal')) return true;
     if (hasBlockingOverlay()) return true;
-    if (Date.now() < uiState.animDissolveUntil) return true;
     const b = battleOverride || getEngineBattle();
     if (b && b.over) return true;
     return false;
+  }
+
+  function isBriefDissolving() {
+    return Date.now() < uiState.animDissolveUntil;
+  }
+
+  function shouldDissolve(battleOverride) {
+    return shouldHardDissolve(battleOverride) || isBriefDissolving();
+  }
+
+  function cancelDissolve() {
+    if (uiState.dissolveTimer) {
+      clearTimeout(uiState.dissolveTimer);
+      uiState.dissolveTimer = 0;
+    }
+    const wasDissolving = uiState.animDissolveUntil > 0;
+    uiState.animDissolveUntil = 0;
+    if (uiState.rigEl && !shouldHardDissolve()) {
+      uiState.rigEl.classList.remove('dissolved');
+    }
+    return wasDissolving;
+  }
+
+  function startBriefDissolve() {
+    if (uiState.dissolveTimer) {
+      clearTimeout(uiState.dissolveTimer);
+      uiState.dissolveTimer = 0;
+    }
+    uiState.animDissolveUntil = Date.now() + 90;
+    uiState.dissolveTimer = setTimeout(() => {
+      uiState.dissolveTimer = 0;
+      uiState.animDissolveUntil = 0;
+      sync();
+    }, 95);
   }
 
   function readSkillCards() {
@@ -568,9 +601,13 @@
   }
 
   function cycleAmp(delta) {
+    const wasDissolving = cancelDissolve();
     const step = delta < 0 ? -1 : 1;
     const info = readOvercastInfo();
-    if (!info.enabled || !info.allowedTiers.length) return false;
+    if (!info.enabled || !info.allowedTiers.length) {
+      if (wasDissolving) sync();
+      return false;
+    }
     const tiers = info.allowedTiers.map(t => t.pct);
     const cur = info.overcastPct;
 
@@ -590,11 +627,15 @@
       }
     }
     const nextVal = lower != null ? lower : tiers[0];
-    if (Math.abs(nextVal - cur) <= 1e-4) return false;
+    if (Math.abs(nextVal - cur) <= 1e-4) {
+      if (wasDissolving) sync();
+      return false;
+    }
     return applyAmpPct(nextVal);
   }
 
   function stepAmpByWheel(delta) {
+    cancelDissolve();
     const step = delta < 0 ? -1 : 1;
     const info = readOvercastInfo();
     if (!info.enabled || !info.allowedTiers.length) return false;
@@ -683,30 +724,39 @@
   }
 
   function triggerSourceButton(item) {
+    if (!item) return false;
+    const isSkill = (item.kind === 'skill' && !!item.skillId)
+      || (!!item.skillId && item.kind !== 'tool' && !String(item.skillId).startsWith('tool_'));
     const liveBtn = resolveLiveSourceBtn(item);
-    if (!item || !liveBtn || liveBtn.disabled) return false;
+    if (isSkill) {
+      if (item.disabled || (liveBtn && liveBtn.disabled)) return false;
+    } else {
+      if (!liveBtn || liveBtn.disabled) return false;
+    }
     uiState.hoveredBladeIdx = null;
     uiState.hoveredWingIdx = null;
     uiState.menuMode = 'root';
     uiState.lastBladeSig = '';
-    if (uiState.dissolveTimer) {
-      clearTimeout(uiState.dissolveTimer);
-      uiState.dissolveTimer = 0;
-    }
-    if (item.kind === 'skill') {
-      uiState.animDissolveUntil = Date.now() + 260;
-      uiState.dissolveTimer = setTimeout(() => {
-        uiState.dissolveTimer = 0;
-        sync();
-      }, 280);
-    }
+    cancelDissolve();
     clearRealHover();
-    liveBtn.click();
+    if (isSkill && global.CombatEngine && typeof global.CombatEngine.useSkill === 'function') {
+      // 直接调用 CombatEngine.useSkill，绕开屏外隐藏 .cb-skill-card 的粗触控两段确认与 140ms 防抖
+      const res = global.CombatEngine.useSkill(item.skillId);
+      if (res && res.ok === false) {
+        sync();
+        return false;
+      }
+      startBriefDissolve();
+    } else if (liveBtn) {
+      if (isSkill) startBriefDissolve();
+      liveBtn.click();
+    }
     sync();
     return true;
   }
 
   function setMode(nextMode) {
+    cancelDissolve();
     if (nextMode === 'amp') {
       cycleAmp(1);
       return;
@@ -728,6 +778,7 @@
   function openSkills() { setMode('skills'); }
   function openAmp() { return cycleAmp(1); }
   function openGuard() {
+    cancelDissolve();
     const guards = readSkillCards().filter(c => c.isGuard && !c.disabled);
     if (guards.length === 1) {
       triggerSourceButton(guards[0]);
@@ -1055,14 +1106,53 @@
     uiState.svgEl.innerHTML = parts.join('');
   }
 
+  function measureBoxInField(el, field, fRectFallback) {
+    if (!el || !field) return null;
+    // 优先沿 offsetParent 累加静止布局坐标（相对 field 内边距盒），彻底免疫 .cb-px-actor 冲刺 translate3d 与 field 震屏 rotate
+    if (field.offsetWidth > 0 && field.offsetHeight > 0 && el.offsetWidth > 0 && el.offsetHeight > 0) {
+      let left = 0;
+      let top = 0;
+      let cur = el;
+      let steps = 0;
+      while (cur && cur !== field && cur !== document.body && cur !== document.documentElement && steps < 24) {
+        left += cur.offsetLeft || 0;
+        top += cur.offsetTop || 0;
+        const parent = cur.offsetParent;
+        if (parent && parent !== field) {
+          left += (parent.clientLeft || 0) - (parent.scrollLeft || 0);
+          top += (parent.clientTop || 0) - (parent.scrollTop || 0);
+        }
+        cur = parent;
+        steps += 1;
+      }
+      if (cur === field) {
+        const w = el.offsetWidth;
+        const h = el.offsetHeight;
+        return { left, top, right: left + w, bottom: top + h, width: w, height: h };
+      }
+    }
+    const fRect = fRectFallback || field.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    return {
+      left: r.left - fRect.left,
+      top: r.top - fRect.top,
+      right: r.right - fRect.left,
+      bottom: r.bottom - fRect.top,
+      width: r.width,
+      height: r.height,
+    };
+  }
+
   function syncRigAnchor() {
     if (!uiState.rigEl) return;
     const field = uiState.rigEl.parentElement;
     const playerStage = document.getElementById('cb-player-stage');
     if (!field || !playerStage) return;
-    const fRect = field.getBoundingClientRect();
-    const pRect = playerStage.getBoundingClientRect();
-    if (fRect.width < 100 || pRect.width < 40) return;
+    const fRectFallback = field.getBoundingClientRect();
+    const fieldW = field.offsetWidth > 0 ? field.offsetWidth : fRectFallback.width;
+    const fieldH = field.offsetHeight > 0 ? field.offsetHeight : fRectFallback.height;
+    const pBox = measureBoxInField(playerStage, field, fRectFallback);
+    if (fieldW < 100 || !pBox || pBox.width < 40) return;
 
     const eZone = document.getElementById('cb-enemy-zone');
     const enemyCount = eZone ? eZone.querySelectorAll('.cb-enemy-card').length : 0;
@@ -1076,33 +1166,33 @@
     uiState.shortViewport = isShortViewport;
     uiState.narrowDesktop = isNarrowDesktop;
 
-    // 实时测算 6+6 战场全部真实避障边界：
-    //   - 敌方：#cb-enemy-zone .cb-enemy-card、.cb-intent-banner、.cb-px-actor、.cb-e-plate
-    //   - 友方：#cb-ally-vanguard-slot .cb-px-actor、#cb-p-portrait .cb-px-actor、#cb-ally-formation .cb-px-actor
-    //   - 底部面板：#cb-player-pane 与 .cb-ally-pane
+    // 实时测算 6+6 战场静止槽位/容器避障边界（严禁测量受冲刺 transform: translate3d 驱动的 .cb-px-actor！）：
+    //   - 敌方：#cb-enemy-zone .cb-enemy-card、.cb-intent-banner、.cb-e-stage、.cb-e-plate
+    //   - 友方：#cb-ally-vanguard-slot、#cb-p-portrait、#cb-ally-formation .cb-ally-slot.is-occupied
+    //   - 底部面板：#cb-player-pane 与 #cb-ally-pane / .cb-ally-pane
     //   - 中场留空走廊：#cb-mid-corridor
     let intentMaxBottom = 0;
-    let enemyMinTop = fRect.height;
-    let enemyMinLeft = fRect.width;
+    let enemyMinTop = fieldH;
+    let enemyMinLeft = fieldW;
     let allyActorRight = 0;
     let hasVanguardActor = false;
-    let paneTop = fRect.height;
+    let paneTop = fieldH;
     let allyPaneRight = 0;
     const obstacles = [];
     const seenObstacleEls = new Set();
 
     const pushObstacle = (el, kind, role) => {
       if (!el || seenObstacleEls.has(el) || !isVisible(el)) return null;
-      const r = el.getBoundingClientRect();
-      if (r.width <= 12 || r.height <= 4) return null;
+      const m = measureBoxInField(el, field, fRectFallback);
+      if (!m || m.width <= 12 || m.height <= 4) return null;
       seenObstacleEls.add(el);
       const box = {
         kind,
         role: role || '',
-        left: r.left - fRect.left,
-        top: r.top - fRect.top,
-        right: r.right - fRect.left,
-        bottom: r.bottom - fRect.top,
+        left: m.left,
+        top: m.top,
+        right: m.right,
+        bottom: m.bottom,
       };
       obstacles.push(box);
       return box;
@@ -1121,44 +1211,40 @@
           intentMaxBottom = Math.max(intentMaxBottom, box.bottom);
         }
       });
-      eZone.querySelectorAll('.cb-px-actor, .cb-e-plate').forEach(el => {
-        const r = el.getBoundingClientRect();
-        if (r.height > 12) {
-          const box = pushObstacle(el, 'lower', 'enemy-lower');
-          if (box) {
-            enemyMinTop = Math.min(enemyMinTop, box.top);
-          }
+      // 仅测静止容器 .cb-e-stage / .cb-e-plate，彻底免疫敌方 .cb-px-actor 冲刺位移
+      eZone.querySelectorAll('.cb-e-stage, .cb-e-plate').forEach(el => {
+        const box = pushObstacle(el, 'lower', 'enemy-lower');
+        if (box && (box.bottom - box.top) > 12) {
+          enemyMinTop = Math.min(enemyMinTop, box.top);
         }
       });
     }
 
-    // 友方前排（雷纳德 #cb-ally-vanguard-slot .cb-px-actor）与后排（希尔维亚及 6 槽编队骨骼）
-    playerStage.querySelectorAll('#cb-ally-vanguard-slot .cb-px-actor').forEach(el => {
-      const box = pushObstacle(el, 'ally', 'vanguard');
+    // 友方静止槽位/容器（#cb-ally-vanguard-slot、#cb-p-portrait、.cb-ally-slot.is-occupied），彻底免疫近战冲刺位移
+    const vanguardSlot = playerStage.querySelector('#cb-ally-vanguard-slot');
+    if (vanguardSlot) {
+      const box = pushObstacle(vanguardSlot, 'ally', 'vanguard');
       if (box) {
         hasVanguardActor = true;
         allyActorRight = Math.max(allyActorRight, box.right);
       }
-    });
-    const sylviaActor = playerStage.querySelector('#cb-p-portrait .cb-px-actor') || document.getElementById('cb-p-portrait');
-    if (sylviaActor) {
-      const box = pushObstacle(sylviaActor, 'ally', 'sylvia');
+    }
+    const sylviaPortrait = playerStage.querySelector('#cb-p-portrait') || document.getElementById('cb-p-portrait');
+    if (sylviaPortrait) {
+      const box = pushObstacle(sylviaPortrait, 'ally', 'sylvia');
       if (box) allyActorRight = Math.max(allyActorRight, box.right);
     }
-    playerStage.querySelectorAll('#cb-ally-formation .cb-px-actor').forEach(el => {
-      const box = pushObstacle(el, 'ally', 'ally-formation');
+    playerStage.querySelectorAll('#cb-ally-formation .cb-ally-slot.is-occupied').forEach(slotEl => {
+      const box = pushObstacle(slotEl, 'ally', 'ally-slot');
       if (box) allyActorRight = Math.max(allyActorRight, box.right);
     });
 
-    // 底部状态面板（希尔维亚 #cb-player-pane 与同伴 .cb-ally-pane）
-    field.querySelectorAll('#cb-player-pane, .cb-ally-pane').forEach(el => {
-      const r = el.getBoundingClientRect();
-      if (r.height > 12) {
-        const box = pushObstacle(el, 'lower', el.id === 'cb-player-pane' ? 'player-pane' : 'ally-pane');
-        if (box) {
-          paneTop = Math.min(paneTop, box.top);
-          allyPaneRight = Math.max(allyPaneRight, box.right);
-        }
+    // 底部状态面板（希尔维亚 #cb-player-pane 与同伴 #cb-ally-pane / .cb-ally-pane）
+    field.querySelectorAll('#cb-player-pane, #cb-ally-pane, .cb-ally-pane').forEach(el => {
+      const box = pushObstacle(el, 'lower', el.id === 'cb-player-pane' ? 'player-pane' : 'ally-pane');
+      if (box && (box.bottom - box.top) > 12) {
+        paneTop = Math.min(paneTop, box.top);
+        allyPaneRight = Math.max(allyPaneRight, box.right);
       }
     });
 
@@ -1169,34 +1255,36 @@
     let corridorW = 0;
     const midCorridor = document.getElementById('cb-mid-corridor') || field.querySelector('.cb-mid-corridor');
     if (midCorridor && isVisible(midCorridor)) {
-      const mr = midCorridor.getBoundingClientRect();
-      if (mr.width > 40) {
+      const mr = measureBoxInField(midCorridor, field, fRectFallback);
+      if (mr && mr.width > 40) {
         hasMidCorridor = true;
-        corridorLeft = Math.round(mr.left - fRect.left);
-        corridorRight = Math.round(mr.right - fRect.left);
+        corridorLeft = Math.round(mr.left);
+        corridorRight = Math.round(mr.right);
         corridorW = Math.round(mr.width);
       }
     }
     if (!hasMidCorridor && eZone) {
-      const eRect = eZone.getBoundingClientRect();
-      const impliedLeft = Math.round(pRect.right - fRect.left);
-      const impliedRight = Math.round(eRect.left - fRect.left);
-      const impliedW = impliedRight - impliedLeft;
-      if (eRect.width > 40 && impliedW >= 160) {
-        hasMidCorridor = true;
-        corridorLeft = impliedLeft;
-        corridorRight = impliedRight;
-        corridorW = impliedW;
+      const eBox = measureBoxInField(eZone, field, fRectFallback);
+      if (eBox) {
+        const impliedLeft = Math.round(pBox.right);
+        const impliedRight = Math.round(eBox.left);
+        const impliedW = impliedRight - impliedLeft;
+        if (eBox.width > 40 && impliedW >= 160) {
+          hasMidCorridor = true;
+          corridorLeft = impliedLeft;
+          corridorRight = impliedRight;
+          corridorW = impliedW;
+        }
       }
     }
 
     const portraitRight = allyActorRight > 12
       ? Math.round(allyActorRight)
-      : Math.round(pRect.right - fRect.left - 80);
+      : Math.round(pBox.right - 80);
     const allyRightBound = Math.max(120, portraitRight);
-    const enemyLeftBound = enemyMinLeft < fRect.width
+    const enemyLeftBound = enemyMinLeft < fieldW
       ? Math.round(enemyMinLeft)
-      : (hasMidCorridor ? corridorRight : Math.round(fRect.width * 0.68));
+      : (hasMidCorridor ? corridorRight : Math.round(fieldW * 0.68));
     const openStart = hasMidCorridor ? Math.max(allyRightBound + 8, corridorLeft) : (allyRightBound + 8);
     const openSpan = Math.max(0, enemyLeftBound - openStart);
     const compactRig = hasMidCorridor
@@ -1207,13 +1295,13 @@
     uiState.rigEl.classList.toggle('compact-multi', compactRig);
     uiState.rigEl.classList.toggle('narrow-desktop', isNarrowDesktop);
 
-    uiState.lastFieldW = Math.round(fRect.width);
-    uiState.lastFieldH = Math.round(fRect.height);
+    uiState.lastFieldW = Math.round(fieldW);
+    uiState.lastFieldH = Math.round(fieldH);
     uiState.skyTopY = Math.max(0, Math.round(intentMaxBottom));
     uiState.skyBotY = Math.max(uiState.skyTopY + 140, Math.round(Math.min(enemyMinTop, paneTop)));
     uiState.portraitRight = allyRightBound;
     uiState.allyPaneRight = Math.round(allyPaneRight);
-    uiState.enemyLeftX = enemyMinLeft < fRect.width ? Math.round(enemyMinLeft) : 0;
+    uiState.enemyLeftX = enemyMinLeft < fieldW ? Math.round(enemyMinLeft) : 0;
     uiState.hasMidCorridor = hasMidCorridor;
     uiState.corridorLeft = corridorLeft;
     uiState.corridorRight = corridorRight;
@@ -1234,38 +1322,38 @@
         anchorX = Math.round(Math.max(minAnchorX, Math.min(maxAnchorX, preferredAnchor)));
       } else {
         const midGapX = Math.round((allyRightBound + enemyLeftBound) * 0.5 - (wingMinLeft + wingMaxRight) * 0.5);
-        anchorX = Math.round(Math.max(110, Math.min(fRect.width - wingMaxRight - 8, midGapX)));
+        anchorX = Math.round(Math.max(110, Math.min(fieldW - wingMaxRight - 8, midGapX)));
       }
 
       const wingTopExtent = (compactRig && isNarrowDesktop) ? 104 : (compactRig ? 118 : 126);
       const wingBotExtent = (compactRig && isNarrowDesktop) ? 132 : (compactRig ? 156 : 164);
       const wingsOverlapAllyPane = allyPaneRight > 0 && (anchorX + wingMinLeft) < (allyPaneRight + 6);
-      const botLimit = wingsOverlapAllyPane ? Math.min(fRect.height - 10, paneTop - 8) : (fRect.height - 10);
-      const minAy = Math.min(wingTopExtent + 10, Math.round(fRect.height * 0.42));
+      const botLimit = wingsOverlapAllyPane ? Math.min(fieldH - 10, paneTop - 8) : (fieldH - 10);
+      const minAy = Math.min(wingTopExtent + 10, Math.round(fieldH * 0.42));
       const maxAy = Math.max(minAy, Math.round(botLimit - wingBotExtent));
-      const idealAy = Math.round(fRect.height * 0.45);
+      const idealAy = Math.round(fieldH * 0.45);
       anchorY = Math.round(Math.max(minAy, Math.min(maxAy, idealAy)));
     } else {
-      const stageRight = pRect.right - fRect.left;
+      const stageRight = pBox.right;
       if (compactRig) {
         const pullLeft = isNarrowDesktop ? 106 : 82;
         const minX = isNarrowDesktop ? 152 : 176;
-        anchorX = Math.round(Math.min(fRect.width * 0.24, Math.max(minX, stageRight - pullLeft)));
+        anchorX = Math.round(Math.min(fieldW * 0.24, Math.max(minX, stageRight - pullLeft)));
         const skyMid = Math.round((uiState.skyTopY + uiState.skyBotY) * 0.52);
         if (isNarrowDesktop) {
-          const minAy = Math.min(180, Math.round(fRect.height * 0.34));
-          const maxAy = Math.max(minAy, Math.round(fRect.height - 220));
+          const minAy = Math.min(180, Math.round(fieldH * 0.34));
+          const maxAy = Math.max(minAy, Math.round(fieldH - 220));
           anchorY = Math.round(Math.max(minAy, Math.min(maxAy, skyMid)));
         } else {
-          const minAy = Math.min(200, Math.round(fRect.height * 0.38));
-          const maxAy = Math.max(minAy, Math.round(fRect.height - 190));
+          const minAy = Math.min(200, Math.round(fieldH * 0.38));
+          const maxAy = Math.max(minAy, Math.round(fieldH - 190));
           anchorY = Math.round(Math.max(minAy, Math.min(maxAy, skyMid)));
         }
       } else {
-        anchorX = Math.round(Math.min(fRect.width * 0.34, Math.max(196, stageRight - 44)));
-        const minAy = Math.min(200, Math.round(fRect.height * 0.42));
-        const maxAy = Math.max(minAy, Math.round(fRect.height - 172));
-        anchorY = Math.round(Math.max(minAy, Math.min(maxAy, fRect.height * 0.44)));
+        anchorX = Math.round(Math.min(fieldW * 0.34, Math.max(196, stageRight - 44)));
+        const minAy = Math.min(200, Math.round(fieldH * 0.42));
+        const maxAy = Math.max(minAy, Math.round(fieldH - 172));
+        anchorY = Math.round(Math.max(minAy, Math.min(maxAy, fieldH * 0.44)));
       }
     }
 
@@ -1288,6 +1376,7 @@
       endTop.title = '结束本回合，留存最多 1 点 AP（快捷键 X）';
       endTop.innerHTML = '结束回合 <span class="cb-kbd">X</span>';
       endTop.addEventListener('click', () => {
+        cancelDissolve();
         const realEnd = document.getElementById('cb-btn-endturn');
         if (realEnd && !realEnd.disabled) {
           uiState.menuMode = 'root';
@@ -1963,15 +2052,15 @@
     const ampWingBtn = nav.querySelector('#cb-pw-amp');
     const ampMiniBtn = nav.querySelector('#cb-pw-amp-mini');
 
-    nav.querySelector('#cb-pw-magic').addEventListener('click', () => openSkills());
-    ampWingBtn.addEventListener('click', () => cycleAmp(1));
-    ampWingBtn.addEventListener('contextmenu', ev => { ev.preventDefault(); ev.stopPropagation(); cycleAmp(-1); });
+    nav.querySelector('#cb-pw-magic').addEventListener('click', () => { cancelDissolve(); openSkills(); });
+    ampWingBtn.addEventListener('click', () => { cancelDissolve(); cycleAmp(1); });
+    ampWingBtn.addEventListener('contextmenu', ev => { ev.preventDefault(); ev.stopPropagation(); cancelDissolve(); cycleAmp(-1); });
     ampWingBtn.addEventListener('wheel', onAmpWheel, { passive: false });
-    nav.querySelector('#cb-pw-guard').addEventListener('click', () => openGuard());
-    nav.querySelector('#cb-pw-assist').addEventListener('click', () => openAssist());
-    nav.querySelector('#cb-pw-back').addEventListener('click', () => closeCascade());
-    ampMiniBtn.addEventListener('click', () => cycleAmp(1));
-    ampMiniBtn.addEventListener('contextmenu', ev => { ev.preventDefault(); ev.stopPropagation(); cycleAmp(-1); });
+    nav.querySelector('#cb-pw-guard').addEventListener('click', () => { cancelDissolve(); openGuard(); });
+    nav.querySelector('#cb-pw-assist').addEventListener('click', () => { cancelDissolve(); openAssist(); });
+    nav.querySelector('#cb-pw-back').addEventListener('click', () => { cancelDissolve(); closeCascade(); });
+    ampMiniBtn.addEventListener('click', () => { cancelDissolve(); cycleAmp(1); });
+    ampMiniBtn.addEventListener('contextmenu', ev => { ev.preventDefault(); ev.stopPropagation(); cancelDissolve(); cycleAmp(-1); });
     ampMiniBtn.addEventListener('wheel', onAmpWheel, { passive: false });
 
     return nav;
@@ -2063,7 +2152,8 @@
       }
 
       const field = bs.querySelector('.cb-arena-field');
-      const dissolved = shouldDissolve(b);
+      const hardDissolved = shouldHardDissolve(b);
+      const dissolved = hardDissolved || isBriefDissolving();
       if (!usePrism || uiState.menuMode === 'root' || dissolved) {
         if (uiState.hoveredSkillId) {
           syncAvForecast(null, b);
@@ -2075,7 +2165,7 @@
       }
 
       if (!usePrism) {
-        if (uiState.rigEl) uiState.rigEl.classList.remove('dissolved');
+        if (uiState.rigEl) uiState.rigEl.classList.remove('dissolved', 'is-hard-dissolved');
         return;
       }
 
@@ -2096,6 +2186,7 @@
       }
 
       uiState.rigEl.classList.toggle('dissolved', dissolved);
+      uiState.rigEl.classList.toggle('is-hard-dissolved', hardDissolved);
       uiState.rigEl.classList.toggle('mode-root', uiState.menuMode === 'root');
       uiState.rigEl.classList.toggle('mode-skills', uiState.menuMode === 'skills');
       uiState.rigEl.classList.remove('mode-amp');
@@ -2256,7 +2347,7 @@
             wrap.style.left = `${g.left}px`;
             wrap.style.top = `${g.top}px`;
             wrap.style.transform = uiState.hoveredBladeIdx === idx
-              ? `translateX(14px) rotate(${g.rot}deg) scale(1.025)`
+              ? `translateX(0) rotate(${g.rot}deg) scale(1.015)`
               : `rotate(${g.rot}deg)`;
 
             const btn = document.createElement('button');
@@ -2304,7 +2395,7 @@
               const liveItem = uiState.currentItems[idx];
               uiState.hoveredBladeIdx = idx;
               wrap.classList.add('hovered');
-              wrap.style.transform = `translateX(14px) rotate(${g.rot}deg) scale(1.025)`;
+              wrap.style.transform = `translateX(0) rotate(${g.rot}deg) scale(1.015)`;
               if (liveItem && liveItem.kind === 'skill') {
                 syncSkillHoverPreview(resolveLiveSourceBtn(liveItem), true, liveItem.skillId);
                 syncAvForecast(liveItem.skillId, uiState.lastBattleState || getEngineBattle());
@@ -2360,7 +2451,7 @@
   }
 
   function onKeyDown(ev) {
-    if (!isActive() || shouldDissolve()) return;
+    if (!isActive() || shouldHardDissolve()) return;
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
     const tgt = ev.target;
     if (tgt && tgt.closest && tgt.closest('input, textarea, select')) return;
@@ -2400,6 +2491,7 @@
     if (k === 'w') {
       ev.preventDefault();
       ev.stopImmediatePropagation();
+      cancelDissolve();
       if (uiState.menuMode === 'skills') closeCascade();
       else openSkills();
       return;
@@ -2408,6 +2500,7 @@
     if (k === 'e') {
       ev.preventDefault();
       ev.stopImmediatePropagation();
+      cancelDissolve();
       cycleAmp(ev.shiftKey ? -1 : 1);
       return;
     }
@@ -2415,6 +2508,7 @@
     if (k === 'a') {
       ev.preventDefault();
       ev.stopImmediatePropagation();
+      cancelDissolve();
       if (uiState.menuMode === 'guard') closeCascade();
       else openGuard();
       return;
@@ -2423,6 +2517,7 @@
     if (k === 'd') {
       ev.preventDefault();
       ev.stopImmediatePropagation();
+      cancelDissolve();
       if (uiState.menuMode === 'assist') closeCascade();
       else openAssist();
       return;
@@ -2433,6 +2528,7 @@
       if (realEnd && !realEnd.disabled) {
         ev.preventDefault();
         ev.stopImmediatePropagation();
+        cancelDissolve();
         uiState.menuMode = 'root';
         uiState.lastBladeSig = '';
         clearRealHover();
@@ -2448,6 +2544,7 @@
       if (item && !item.disabled) {
         ev.preventDefault();
         ev.stopImmediatePropagation();
+        cancelDissolve();
         triggerSourceButton(item);
       }
     }

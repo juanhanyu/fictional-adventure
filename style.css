@@ -723,6 +723,11 @@ body.ui-hidden #btn-ui .ico-sun { display: block; }
   --dialog-gap: 0px;
 }
 
+body.roam #game-screen {
+  position: relative;
+  --abh: 52px;
+}
+
 #stage {
   flex: 1;
   display: flex;
@@ -738,7 +743,7 @@ body.ui-hidden #btn-ui .ico-sun { display: block; }
 }
 
 body.roam #stage {
-  --boxh: max(92px, calc(170px - var(--abh)));
+  --boxh: 108px;
 }
 
 @media (min-width: 1080px) {
@@ -803,11 +808,16 @@ body.roam #stage {
   transition: right 0.28s cubic-bezier(0.22, 1, 0.36, 1), bottom 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-body.roam #stage:has(#text-box.dialog-hidden) #portraits,
-body.roam.dialog-hidden #portraits,
-body.roam #stage:has(#text-box.dialog-hidden) #css-portraits,
-body.roam.dialog-hidden #css-portraits {
-  bottom: 0px;
+/* 方案 B · 自由探索立绘永久固底（Δy=0px, Δh=0px），严禁改动非 .roam 主线剧情立绘位置 */
+body.roam #portraits,
+body.roam #css-portraits {
+  bottom: 0px !important;
+  top: 40px !important;
+  transition: right 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.roam #portraits .p-slot {
+  bottom: 0 !important;
 }
 
 @media (min-width: 1080px) {
@@ -986,6 +996,7 @@ body.roam #text-box.dialog-hidden {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+  transform: translateX(-50%) translateY(10px);
 }
 
 .tb-corner {
@@ -1300,6 +1311,34 @@ body.roam #text-box.dialog-rows-2 #text {
     padding-left: 24px;
     padding-right: 24px;
   }
+}
+
+/* 方案 B · 自由探索底栏绝对定位脱离 flex 挤压，保留 52px 高度与 45° 双层削角冰晶边 */
+body.roam #game-screen #action-bar {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  z-index: 11;
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  transition: opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1), transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (min-width: 681px) {
+  body.roam:not(.ai-drawer-open) #game-screen #action-bar {
+    width: calc(100% - 32px);
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+body.roam.roam-dialog #game-screen #action-bar {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(12px);
 }
 
 #game-screen #action-bar::before {
@@ -2071,6 +2110,18 @@ body #card {
   right: 10px;
   bottom: calc(var(--boxh) + 52px);
   z-index: 8;
+  pointer-events: none;
+}
+body.roam #hotspots {
+  bottom: calc(var(--abh, 52px) + 52px);
+  transition: opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.22s cubic-bezier(0.22, 1, 0.36, 1), right 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+body.roam.roam-dialog #hotspots {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+body.roam.roam-dialog #hotspots .hotspot {
   pointer-events: none;
 }
 .hotspot {

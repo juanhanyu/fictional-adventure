@@ -533,12 +533,22 @@ body.ui-hidden #btn-ui {
 }
 
 body.roam #stage {
-  --boxh: max(100px, calc(142px - var(--abh)));
-  --tb-pad-top: 16px;
-  --tb-pad-bot: 14px;
-  --tb-fs: 17px;
-  --tb-lh: 1.60;
+  --boxh: 108px;
+  --tb-pad-top: 18px;
+  --tb-pad-bot: 16px;
+  --tb-fs: 17.5px;
+  --tb-lh: 1.56;
   --tb-row: 27px;
+  --tb-inner-h: calc(var(--boxh) - var(--tb-pad-top) - var(--tb-pad-bot));
+}
+
+body.roam.roam-dialog #stage {
+  --boxh: 136px;
+  --tb-pad-top: 22px;
+  --tb-pad-bot: 20px;
+  --tb-fs: 19px;
+  --tb-lh: 1.58;
+  --tb-row: 30px;
   --tb-inner-h: calc(var(--boxh) - var(--tb-pad-top) - var(--tb-pad-bot));
 }
 
@@ -554,12 +564,22 @@ body.roam #stage {
   }
 
   body.roam #stage {
-    --boxh: max(92px, calc(134px - var(--abh)));
-    --tb-pad-top: 14px;
-    --tb-pad-bot: 12px;
+    --boxh: 98px;
+    --tb-pad-top: 15px;
+    --tb-pad-bot: 13px;
     --tb-fs: 16.5px;
+    --tb-lh: 1.54;
+    --tb-row: 25.5px;
+    --tb-inner-h: calc(var(--boxh) - var(--tb-pad-top) - var(--tb-pad-bot));
+  }
+
+  body.roam.roam-dialog #stage {
+    --boxh: 126px;
+    --tb-pad-top: 20px;
+    --tb-pad-bot: 18px;
+    --tb-fs: 18px;
     --tb-lh: 1.56;
-    --tb-row: 26px;
+    --tb-row: 28px;
     --tb-inner-h: calc(var(--boxh) - var(--tb-pad-top) - var(--tb-pad-bot));
   }
 }
@@ -727,6 +747,10 @@ body.roam #text-box.dialog-rows-2 #text {
   padding-top: max(0px, calc((var(--tb-inner-h) - 2 * var(--tb-row)) / 2));
 }
 
+body.roam #text-box.dialog-rows-3 #text {
+  padding-top: max(0px, calc((var(--tb-inner-h) - 3 * var(--tb-row)) / 2));
+}
+
 #text .sys { color: var(--pr-sapphire); font-weight: 700; font-size: inherit; }
 #text .gold { color: var(--pr-gold-deep); font-weight: 700; }
 #text .ice { color: #0B6AA8; font-weight: 700; }
@@ -786,17 +810,28 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
   right: 116px;
 }
 
-body.roam #app section#game-screen #text-box #btn-backlog,
-body.roam #app section#game-screen #text-box button.tb-backlog-btn,
-body.roam #app section#game-screen #text-box .tb-backlog-btn,
-body.roam #app section#game-screen #text-box #tb-backlog-btn {
-  top: 8px;
-  right: 38px;
-  border-top: none;
-  background: transparent;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  box-shadow: none;
+/* 方案 B 态 B（问候/风物薄幕）：隐去冗余回看键，呈清透悬浮玻璃笺 */
+body.roam:not(.roam-dialog) #app section#game-screen #text-box #btn-backlog,
+body.roam:not(.roam-dialog) #app section#game-screen #text-box button.tb-backlog-btn,
+body.roam:not(.roam-dialog) #app section#game-screen #text-box .tb-backlog-btn,
+body.roam:not(.roam-dialog) #app section#game-screen #text-box #tb-backlog-btn {
+  display: none !important;
+}
+
+/* 方案 B 态 C（场景内人物对话薄幕）：回看键轻盈停靠于薄幕顶沿右上外侧，零压正文首行 */
+body.roam.roam-dialog #app section#game-screen #text-box #btn-backlog,
+body.roam.roam-dialog #app section#game-screen #text-box button.tb-backlog-btn,
+body.roam.roam-dialog #app section#game-screen #text-box .tb-backlog-btn,
+body.roam.roam-dialog #app section#game-screen #text-box #tb-backlog-btn {
+  top: -24px;
+  right: 28px;
+  border-top: 1.5px solid rgba(22, 88, 235, 0.44);
+  border-bottom: 1px solid rgba(96, 128, 180, 0.24);
+  background: rgba(248, 251, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 -4px 12px rgba(14, 43, 120, 0.08);
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
 }
 
 #app section#game-screen #text-box .vn-ctrl-btn {
@@ -2187,16 +2222,24 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   opacity: 1;
   visibility: visible;
   pointer-events: none;
+  transition: opacity 0.09s ease;
 }
 
+/* 90ms 施法轻溶隐：纯视觉柔和淡出，绝不位移或锁死按钮点击/键盘连招 */
 .cb-prism-rig.dissolved {
-  opacity: 0;
-  visibility: hidden;
-  transform: translateX(16px) scale(1.03);
+  opacity: 0.14;
+  visibility: visible;
   pointer-events: none;
 }
 
-.cb-prism-rig.dissolved * {
+/* 模态弹窗 / 战斗结束 / 高优覆盖层硬隐藏：彻底屏蔽交互 */
+.cb-prism-rig.is-hard-dissolved {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.cb-prism-rig.is-hard-dissolved * {
   pointer-events: none !important;
 }
 
@@ -2255,23 +2298,19 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
 
 @keyframes prRootSnap {
   from {
-    opacity: 0.92;
-    transform: translateX(-6px);
+    opacity: 0.88;
   }
   to {
     opacity: 1;
-    transform: translateX(0);
   }
 }
 
 @keyframes prCascadeSnap {
   from {
-    opacity: 0.92;
-    transform: translateX(-8px);
+    opacity: 0.88;
   }
   to {
     opacity: 1;
-    transform: translateX(0);
   }
 }
 
@@ -2323,11 +2362,24 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
 .cb-prism-rig.compact-multi.narrow-desktop .cb-pwing-wrap[data-wing="2"] { left: 34px; top: 22px;   --rot: 1.0deg; }
 .cb-prism-rig.compact-multi.narrow-desktop .cb-pwing-wrap[data-wing="3"] { left: 24px; top: 82px;   --rot: 2.8deg; }
 
+/* 保持命中外盒原地不动（translateX(0)），绝不右滑逃离鼠标，改用柔和折光高亮与极微缩放 */
 .cb-pwing-wrap:hover,
 .cb-pwing-wrap.hovered {
-  transform: translateX(12px) rotate(var(--rot)) scale(1.03);
-  filter: drop-shadow(0 12px 28px rgba(22, 88, 235, 0.46));
+  transform: translateX(0) rotate(var(--rot)) scale(1.015);
+  filter: drop-shadow(0 12px 28px rgba(22, 88, 235, 0.46)) brightness(1.03);
   z-index: 5;
+}
+
+.cb-pwing .cb-pw-body,
+.cb-pwing .cb-pw-arrow {
+  transition: transform 0.14s var(--pr-ease);
+}
+
+.cb-pwing:not(:disabled):hover .cb-pw-body,
+.cb-pwing-wrap.hovered .cb-pwing:not(:disabled) .cb-pw-body,
+.cb-pwing:not(:disabled):hover .cb-pw-arrow,
+.cb-pwing-wrap.hovered .cb-pwing:not(:disabled) .cb-pw-arrow {
+  transform: translateX(2px);
 }
 
 .cb-pwing {
@@ -3727,7 +3779,7 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
 
 .cb-blade-wrap:hover,
 .cb-blade-wrap.hovered {
-  filter: drop-shadow(0 12px 26px rgba(22, 88, 235, 0.50));
+  filter: drop-shadow(0 12px 26px rgba(22, 88, 235, 0.50)) brightness(1.03);
   z-index: 6;
 }
 
@@ -3823,6 +3875,12 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   display: flex;
   flex-direction: column;
   gap: 2px;
+  transition: transform 0.14s var(--pr-ease);
+}
+
+.cb-blade:not(:disabled):hover .cb-bl-content,
+.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-content {
+  transform: translateX(2px);
 }
 
 .cb-bl-top,
@@ -4622,5 +4680,408 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
 @media (max-width: 1023px) {
   #battle-screen .cb-av-rail {
     display: none !important;
+  }
+}
+
+/* ==================== 10. 自由探索方案 B · 立绘固底 × 悬浮半透磨砂雪瓷切角薄幕 × 三态联动 (STRICTLY body.roam) ==================== */
+
+/* 10.1 舞台容器与立绘永久固底绝对零跳动（Δy === 0.0px, Δh === 0.0px；严格不触及非 .roam 主线剧情） */
+body.roam #game-screen {
+  position: relative;
+  --abh: 52px;
+}
+
+body.roam #game-screen #portraits,
+body.roam #game-screen #css-portraits {
+  bottom: 0px !important;
+  top: 40px !important;
+  transition: right 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.roam #portraits .p-slot {
+  bottom: 0 !important;
+}
+
+/* 自由探索内立绘焦点/悬停/情绪切换严格零 translateY / scale 位移，仅做柔和光学明暗与饱和度过渡 */
+body.roam #portraits .p-slot img,
+body.roam #portraits .p-slot.active img,
+body.roam #portraits .p-slot.dim img,
+body.roam #portraits .p-slot.active[data-emo] img,
+body.roam #portraits.roam-npc .p-slot img,
+body.roam #portraits.roam-npc .p-slot:hover img {
+  transform: none !important;
+  transition: filter 0.32s var(--pr-ease);
+}
+
+body.roam #portraits .p-slot.active img {
+  filter: brightness(1.04) saturate(1.04) drop-shadow(0 12px 26px rgba(14, 43, 120, 0.30));
+}
+
+body.roam #portraits .p-slot.active[data-char="alice"] img {
+  filter: brightness(1.0) saturate(1.02) drop-shadow(0 12px 24px rgba(14, 43, 120, 0.26));
+}
+
+body.roam #portraits .p-slot.dim img {
+  filter: brightness(0.68) saturate(0.78) drop-shadow(0 8px 18px rgba(14, 34, 84, 0.20));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  body.roam:not(.roam-dialog) #portraits.roam-npc .p-slot:hover img {
+    filter: brightness(1.06) saturate(1.05) drop-shadow(0 14px 30px rgba(22, 88, 235, 0.28));
+  }
+}
+
+/* 10.2 自由探索底栏绝对定位解耦（保留 52px 高度、calc(100% - 32px) 宽度与 45° 双层削角冰晶边） */
+body.roam #game-screen #action-bar {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  z-index: 11;
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  transition: opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1), transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (min-width: 681px) {
+  body.roam:not(.ai-drawer-open) #game-screen #action-bar {
+    width: calc(100% - 32px);
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+/* 态 C（场景内对话）：底栏平滑淡隐下沉 */
+body.roam.roam-dialog #game-screen #action-bar {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(12px);
+}
+
+/* 10.3 悬浮半透磨砂雪瓷切角薄幕 (body.roam #text-box) */
+body.roam #game-screen #text-box {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--abh, 52px) + 12px);
+  margin-left: auto;
+  margin-right: auto;
+  transform: translateY(0);
+  width: min(calc(100% - 48px), 960px);
+  max-width: none;
+  height: 108px;
+  min-height: 108px;
+  padding: var(--tb-pad-top) 50px var(--tb-pad-bot) 42px;
+  z-index: 12;
+  overflow: visible;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  filter: drop-shadow(0 -12px 30px rgba(13, 38, 104, 0.17));
+  transition: opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1), transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), bottom 0.24s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.roam #game-screen #text-box.has-cameo {
+  padding-left: 96px;
+}
+
+body.roam #game-screen #text-box.season-flavor {
+  padding-left: 42px;
+  padding-right: 50px;
+}
+
+/* 双层伪元素 45° 双斜切角工艺：外层连续 1px 冰青→皇家蓝→香槟金棱镜折光边 + 内层半透磨砂雪瓷薄幕 */
+body.roam #game-screen #text-box::before {
+  inset: 0;
+  background: linear-gradient(
+    132deg,
+    rgba(125, 211, 252, 0.96) 0%,
+    rgba(22, 88, 235, 0.66) 28%,
+    rgba(255, 255, 255, 0.98) 50%,
+    rgba(196, 164, 108, 0.80) 74%,
+    rgba(46, 119, 248, 0.88) 100%
+  );
+  clip-path: polygon(
+    16px 0,
+    calc(100% - 22px) 0,
+    100% 22px,
+    100% calc(100% - 14px),
+    calc(100% - 14px) 100%,
+    14px 100%,
+    0 calc(100% - 14px),
+    0 16px
+  );
+}
+
+body.roam #game-screen #text-box::after {
+  inset: 1px;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(125, 211, 252, 0.92) 0%,
+      rgba(22, 88, 235, 0.68) 34%,
+      rgba(255, 255, 255, 0.96) 52%,
+      rgba(196, 164, 108, 0.76) 76%,
+      rgba(125, 211, 252, 0.72) 100%
+    ) top / 100% 1.5px no-repeat,
+    var(--pr-caustic),
+    linear-gradient(
+      158deg,
+      rgba(250, 251, 253, 0.86) 0%,
+      rgba(248, 251, 255, 0.84) 52%,
+      rgba(236, 245, 255, 0.85) 100%
+    );
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  clip-path: polygon(
+    15.5px 0,
+    calc(100% - 21.5px) 0,
+    100% 21.5px,
+    100% calc(100% - 13.5px),
+    calc(100% - 13.5px) 100%,
+    13.5px 100%,
+    0 calc(100% - 13.5px),
+    0 15.5px
+  );
+}
+
+/* 悬浮薄幕内探出切角名牌与继续菱形符对齐 */
+body.roam #game-screen #text-box > #tb-speaker,
+body.roam #game-screen #tb-speaker {
+  left: 26px;
+  top: -16px;
+}
+
+body.roam #game-screen #text-box > #more,
+body.roam #game-screen #text-box > #tb-next {
+  right: 22px;
+  bottom: 12px;
+}
+
+/* 态 A（收起态）：保持绝对定位，零布局挤压 */
+body.roam #game-screen #text-box.dialog-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(10px);
+}
+
+/* 态 B（场景问候语 / 季度风物薄幕）：轻悬于 52px 削角底栏正上方 */
+body.roam:not(.roam-dialog) #game-screen #text-box:not(.dialog-hidden) {
+  bottom: calc(var(--abh, 52px) + 12px);
+  height: 108px;
+  min-height: 108px;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* 态 C（场景内人物对话薄幕）：优雅落位底边 16px，轻覆立绘最底端衣摆 */
+body.roam.roam-dialog #game-screen #text-box:not(.dialog-hidden) {
+  bottom: 16px;
+  height: 136px;
+  min-height: 136px;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+  filter: drop-shadow(0 -14px 34px rgba(13, 38, 104, 0.20));
+}
+
+body.roam.roam-dialog #game-screen #text-box::before {
+  clip-path: polygon(
+    18px 0,
+    calc(100% - 26px) 0,
+    100% 26px,
+    100% calc(100% - 14px),
+    calc(100% - 14px) 100%,
+    14px 100%,
+    0 calc(100% - 14px),
+    0 18px
+  );
+}
+
+body.roam.roam-dialog #game-screen #text-box::after {
+  clip-path: polygon(
+    17.5px 0,
+    calc(100% - 25.5px) 0,
+    100% 25.5px,
+    100% calc(100% - 13.5px),
+    calc(100% - 13.5px) 100%,
+    13.5px 100%,
+    0 calc(100% - 13.5px),
+    0 17.5px
+  );
+}
+
+/* 10.4 #hotspots / #choices / #sylvia-hub 子元素三态联动（绝不对 #sylvia-hub 写 display: none） */
+body.roam #game-screen #stage #hotspots {
+  bottom: calc(var(--abh, 52px) + 52px);
+  transition: opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.22s cubic-bezier(0.22, 1, 0.36, 1), right 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.roam.roam-dialog #game-screen #stage #hotspots {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.roam.roam-dialog #game-screen #stage #hotspots .hotspot {
+  pointer-events: none;
+}
+
+body.roam #game-screen #stage > #choices {
+  bottom: calc(var(--abh, 52px) + 18px);
+  width: min(calc(100% - 48px), 880px);
+  z-index: 16;
+}
+
+body.roam:not(.roam-dialog) #game-screen #stage:has(#text-box:not(.dialog-hidden)) > #choices {
+  bottom: calc(var(--abh, 52px) + 12px + 108px + 18px);
+}
+
+body.roam.roam-dialog #game-screen #stage > #choices {
+  bottom: calc(16px + 136px + 34px);
+  width: min(calc(100% - 48px), 880px);
+  max-height: min(44vh, calc(100% - 206px));
+  z-index: 16;
+}
+
+body.roam #game-screen #sylvia-hub .sh-corner-controls {
+  bottom: calc(var(--abh, 52px) + 10px);
+  right: 16px;
+}
+
+body.roam #game-screen #sylvia-hub #sh-charm-popover,
+body.roam #game-screen #sylvia-hub .sh-charm-popover {
+  bottom: calc(var(--abh, 52px) + 48px);
+  right: 16px;
+}
+
+body.roam #stage:has(#text-box:not(.dialog-hidden)) #sylvia-hub .sh-corner-controls,
+body.roam #stage:has(#text-box:not(.dialog-hidden)) #sylvia-hub #sh-charm-popover,
+body.roam #stage:has(#text-box:not(.dialog-hidden)) #sylvia-hub .sh-charm-popover,
+body.roam.roam-dialog #game-screen #sylvia-hub .sh-corner-controls,
+body.roam.roam-dialog #game-screen #sylvia-hub #sh-charm-popover,
+body.roam.roam-dialog #game-screen #sylvia-hub .sh-charm-popover {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(6px);
+}
+
+/* 10.5 720p 桌面紧凑高度适配 (max-height: 760px) */
+@media (max-height: 760px) {
+  body.roam #game-screen #text-box,
+  body.roam:not(.roam-dialog) #game-screen #text-box:not(.dialog-hidden) {
+    height: 98px;
+    min-height: 98px;
+  }
+
+  body.roam.roam-dialog #game-screen #text-box,
+  body.roam.roam-dialog #game-screen #text-box:not(.dialog-hidden) {
+    height: 126px;
+    min-height: 126px;
+  }
+
+  body.roam #game-screen #text-box > #tb-speaker,
+  body.roam #game-screen #tb-speaker {
+    top: -14px;
+  }
+
+  body.roam:not(.roam-dialog) #game-screen #stage:has(#text-box:not(.dialog-hidden)) > #choices {
+    bottom: calc(var(--abh, 52px) + 12px + 98px + 14px);
+  }
+
+  body.roam.roam-dialog #game-screen #stage > #choices {
+    bottom: calc(16px + 126px + 32px);
+    max-height: min(42vh, calc(100% - 194px));
+  }
+}
+
+/* 10.6 AI 边栏兼容 (body.roam.ai-drawer-open, min-width: 821px) */
+@media (min-width: 821px) {
+  body.roam.ai-drawer-open #game-screen #portraits,
+  body.roam.ai-drawer-open #game-screen #css-portraits {
+    right: 402px;
+  }
+
+  body.roam.ai-drawer-open #game-screen #text-box {
+    left: 18px;
+    right: 420px;
+    width: min(calc(100% - 438px), 900px);
+    max-width: none;
+    margin: 0 auto;
+    border-right: none;
+    padding-left: 36px;
+    padding-right: 48px;
+  }
+
+  body.roam.ai-drawer-open #game-screen #text-box.has-cameo {
+    padding-left: 96px;
+  }
+
+  body.roam.ai-drawer-open #game-screen #text-box.season-flavor {
+    padding-left: 36px;
+    padding-right: 48px;
+  }
+
+  body.roam.ai-drawer-open #game-screen #text-box > #tb-speaker,
+  body.roam.ai-drawer-open #game-screen #tb-speaker {
+    left: 26px;
+  }
+
+  body.roam.ai-drawer-open #game-screen #text-box > #more,
+  body.roam.ai-drawer-open #game-screen #text-box > #tb-next {
+    right: 20px;
+  }
+
+  body.roam.ai-drawer-open #game-screen #action-bar {
+    left: calc((100% - 402px) / 2);
+    width: calc(100% - 426px);
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+    border-right: none;
+    overflow: visible;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  body.roam.ai-drawer-open #game-screen #stage > #choices {
+    left: calc((100% - 402px) / 2);
+    width: min(calc(100% - 438px), 840px);
+    margin: 0;
+  }
+
+  body.roam.ai-drawer-open #game-screen #stage #hotspots {
+    right: 412px;
+  }
+}
+
+/* 10.7 窄屏兜底与减弱动效偏好 */
+@media (max-width: 680px) {
+  body.roam #game-screen #text-box {
+    width: calc(100% - 16px);
+    padding-left: 18px;
+    padding-right: 28px;
+  }
+
+  body.roam #game-screen #text-box.has-cameo {
+    padding-left: 78px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.roam #game-screen #text-box,
+  body.roam #game-screen #action-bar,
+  body.roam #game-screen #stage #hotspots,
+  body.roam #portraits .p-slot img {
+    transition: none !important;
   }
 }

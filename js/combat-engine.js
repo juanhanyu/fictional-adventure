@@ -1939,8 +1939,19 @@
 
     const mhp = Math.max(Math.round(floorP.mhp * 0.85), curS.mhp || 80);
     const mmp = Math.max(Math.round(floorP.mmp * 0.85), curS.mmp || 120);
-    const hp = opts.fullRestore ? mhp : Math.max(1, Math.min(mhp, curS.hp || mhp));
-    const mp = opts.fullRestore ? mmp : Math.max(20, Math.min(mmp, curS.mp || mmp));
+    const clampRatio = v => Math.max(0, Math.min(1, v));
+    const hpRatio = (curS.mhp > 0 && typeof curS.hp === 'number' && Number.isFinite(curS.hp))
+      ? clampRatio(curS.hp / curS.mhp)
+      : 1;
+    const mpRatio = (curS.mmp > 0 && typeof curS.mp === 'number' && Number.isFinite(curS.mp))
+      ? clampRatio(curS.mp / curS.mmp)
+      : 1;
+    const hp = opts.fullRestore
+      ? mhp
+      : Math.min(mhp, Math.max(Math.round(mhp * hpRatio), Math.max(1, Math.round(mhp * 0.35))));
+    const mp = opts.fullRestore
+      ? mmp
+      : Math.min(mmp, Math.max(Math.round(mmp * mpRatio), Math.min(mmp, 60)));
 
     const learned = new Set([...(curS.skills || []), ...(curS.skillsLearned || [])]);
     const age = curS.ageY || 0;
@@ -4600,6 +4611,7 @@
       headless: !!opts.headless,
       done: opts.done || null,
       fromArena: !!opts.fromArena,
+      fullRestore: !!opts.fullRestore,
       _forceCrit: !!opts.forceCrit,
       // 专属战场仪表
       playerHits: 0,
@@ -8300,7 +8312,7 @@
       slot.innerHTML = '';
       safeSfx('modal_close');
       if (STAGE_CONFIGS[b.id]) {
-        startStage(b.id, { fromArena: b.fromArena, done: b.done });
+        startStage(b.id, { fromArena: b.fromArena, fullRestore: !!(b.fromArena || b.fullRestore), done: b.done });
       } else {
         startCustomOrStageBattle(b._customCfg || {}, b.done);
       }
@@ -8527,7 +8539,7 @@
         const sid = btn.getAttribute('data-stage');
         safeSfx('open');
         ov.classList.add('hidden');
-        startStage(sid, { fromArena: true });
+        startStage(sid, { fromArena: true, fullRestore: true });
       };
     });
   }
@@ -8578,6 +8590,8 @@
     if (pStage) pStage.classList.remove('has-vanguard-ally');
     const ao = document.getElementById('arena-overlay');
     if (ao) ao.classList.add('hidden');
+    const cardEl = typeof document !== 'undefined' ? document.getElementById('card') : null;
+    if (cardEl && cardEl.classList) cardEl.classList.add('hidden');
     bs.classList.remove('palace-timestop', 'wand-refract', 'hit-shake', 'heavy-shake', 'hidden');
   }
 

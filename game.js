@@ -169,8 +169,8 @@ function sfx(type, opts){
 // ========== BGM (背景音乐) ==========
 // 情境 → 音乐文件（放在 Music/，相对路径 file:// 也能播）。缺文件则静默降级。
 const BGM_BASE = 'Music/';
-const TITLE_BGM_KEY = 'sacred1';
-const TITLE_BGM_TITLE = '冰晶协奏';
+const TITLE_BGM_KEY = 'comedy_medium';
+const TITLE_BGM_TITLE = '微服出游曲';
 const BGM_FILES = {
   battle1:'Music/Battle & Tension 1.mp3',
   battle2:'Music/Battle & Tension 2.mp3',
@@ -1543,6 +1543,7 @@ var sceneQueue = [];
 var storyChain = null; // 剧情链：runSceneQueue 顺序播放的剩余场景
 var typing = false, typeTimer = null, fullText = '', textIdx = 0;
 var currentScene = null;
+var roamDialogActive = false;
 var pendingPicks = null;
 let codex = (()=>{ try { return JSON.parse(localStorage.getItem(CODEX_KEY) || '{"endings":[],"chars":[],"eggs":0}'); } catch(e){ return {endings:[],chars:[],eggs:0}; } })();
 
@@ -1993,7 +1994,7 @@ function updateContinueBtn(){
 
 // ========== HUD / UI ==========
 function isSystemAwakened(){
-  return !!(flag('system_awakened') || S.phase !== 'prologue' || flag('named') || (S.ageY || 0) > 0 || S.freeRoam);
+  return !!(flag('system_awakened') || S.phase !== 'prologue' || flag('named') || (S.ageY || 0) > 0 || S.freeRoam || roamDialogActive);
 }
 function syncStageChromeMode(){
   if(typeof document === 'undefined' || !document.body) return;
@@ -2001,7 +2002,7 @@ function syncStageChromeMode(){
   const age = Number(S.ageY) || 0;
   const awakened = isSystemAwakened();
   cl.toggle('stage-pre-system', !awakened);
-  cl.toggle('stage-story', !S.freeRoam);
+  cl.toggle('stage-story', !S.freeRoam && !roamDialogActive);
   cl.toggle('stage-infant', age < 1);
   cl.toggle('stage-early-child', age >= 1 && age < 4);
   cl.toggle('stage-no-arena', !hasSkill('virtual_duel') && S.phase !== 'academy' && S.phase !== 'journey' && S.phase !== 'finale');
@@ -2634,22 +2635,48 @@ function applyLineEffects(L){
   syncStageChromeMode();
 }
 
+function clearRoamDialogForTransition(){
+  const wasRoamDialog = !!roamDialogActive;
+  roamDialogActive = false;
+  if(typeof document !== 'undefined' && document.body){
+    document.body.classList.remove('roam-dialog');
+    if(wasRoamDialog) document.body.classList.remove('roam');
+  }
+  if(wasRoamDialog){
+    $('portraits')?.classList.remove('roam-npc');
+    show('action-bar', 0);
+    syncStageChromeMode();
+  }
+}
+
 function playLines(lines, done){
   const gen = ++lineGen;
   let i = 0;
   const list = Array.isArray(lines) ? lines : [];
+  const keepRoamStage = !!((S.freeRoam || roamDialogActive) && !currentScene && !storyChain);
   S.freeRoam = false;
+  roamDialogActive = keepRoamStage;
   awaitingChoice = false;
   setAwaitingChoiceUI(false);
-  show('action-bar', 0);
+  roamPromptDone = null;
   show('hotspots', 0);
-  const _curSc = currentScene ? SCENES[currentScene] : null;
-  if(!(_curSc && _curSc.loc)) show('loc-bar', 0);
   const dialogBox = $('text-box');
   setDialogHidden(false);
-  if(dialogBox){ dialogBox.removeAttribute('data-roam-prompt'); dialogBox.removeAttribute('data-greeting-char'); }
-  document.body.classList.remove('roam');   // 剧情：恢复完整高度对话框
-  $('portraits')?.classList.remove('roam-npc');
+  if(dialogBox){
+    dialogBox.classList.remove('season-flavor');
+    dialogBox.removeAttribute('data-roam-prompt');
+    dialogBox.removeAttribute('data-greeting-char');
+  }
+  if(keepRoamStage){
+    document.body.classList.add('roam', 'roam-dialog');
+    $('portraits')?.classList.add('roam-npc');
+  } else {
+    show('action-bar', 0);
+    const _curSc = currentScene ? SCENES[currentScene] : null;
+    if(!(_curSc && _curSc.loc)) show('loc-bar', 0);
+    document.body.classList.remove('roam', 'roam-dialog');   // 剧情：恢复完整高度对话框
+    $('portraits')?.classList.remove('roam-npc');
+  }
   const ch = $('choices'); if(ch) ch.innerHTML = '';
   syncStageChromeMode();
   syncRaisingHubSafe();
@@ -2722,6 +2749,7 @@ function playLines(lines, done){
         if(L.cg === 'end'){
           cgHide();                          // cg:'end' 退出 CG，继续渲染本行的普通文本（fall through）
         } else {
+          clearRoamDialogForTransition();
           cgShow(L.cg);                          // 显示对应 CG 图
           // 台词：ch 为说话人（彩色），否则为旁白（白色），逐字快速打出
           const isNarr = !L.ch;
@@ -2818,6 +2846,7 @@ function playLines(lines, done){
       if(L.pickTier != null){
         // 该等阶的「勇者之赐」已经选过：直接跳过，不要卡住剧情
         if(S.picksDone.includes(L.pickTier)) continue;
+        clearRoamDialogForTransition();
         flag('resume_after_pick', 1);
         // 选卡结束后，继续播放本场景剩下的台词
         afterPick = { rest: list.slice(i), done: done };
@@ -2826,6 +2855,7 @@ function playLines(lines, done){
       }
 
       if(L.battle){
+        clearRoamDialogForTransition();
         startBattle(L.battle, ()=>{ if(gen===lineGen) next(); });
         return;
       }
@@ -2950,6 +2980,27 @@ function dismissRoamPrompt(){
   return true;
 }
 
+function stagePointHitsOpaquePortrait(clientX, clientY){
+  if(typeof clientX !== 'number' || typeof clientY !== 'number') return false;
+  const slots = document.querySelectorAll('#portraits .p-slot:not(.hidden):not(.ps-leave)');
+  for(const slot of slots){
+    const img = slot.querySelector('img');
+    if(!img) continue;
+    const rect = img.getBoundingClientRect();
+    if(!rect || !rect.width || !rect.height) continue;
+    if(clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) continue;
+    if(portraitPixelIsOpaque(img, clientX, clientY)) return true;
+  }
+  const cssPs = document.querySelectorAll('#css-portraits .css-p');
+  for(const cp of cssPs){
+    const rect = cp.getBoundingClientRect();
+    if(rect && rect.width && rect.height && clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom){
+      return true;
+    }
+  }
+  return false;
+}
+
 function bindAdvance(){
   const tb=$('text-box');
   if(!tb) return;
@@ -2965,15 +3016,51 @@ function bindAdvance(){
   tb.onclick=e=>{
     if(e && e.target && e.target.closest && e.target.closest('button')) return;
     if(S.freeRoam && tb.hasAttribute('data-roam-prompt') && !typing && !awaitingChoice){
-      const isCoarseTouch = !!(typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-        && window.matchMedia('(hover: none) and (pointer: coarse)').matches);
-      const touchTap = isCoarseTouch && e && e.isTrusted === true;
-      const dismiss=!!(e && e.target && e.target.closest && e.target.closest('#more')) || touchTap;
-      if(dismiss) dismissRoamPrompt();
+      const promptKind = tb.getAttribute('data-roam-prompt');
+      const hitMore = !!(e && e.target && e.target.closest && e.target.closest('#more'));
+      if(promptKind === 'greeting'){
+        dismissRoamPrompt();
+        return;
+      }
+      if(promptKind === 'season'){
+        const isCoarseTouch = !!(typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+          && window.matchMedia('(hover: none) and (pointer: coarse)').matches);
+        const touchTap = isCoarseTouch && e && e.isTrusted === true;
+        if(hitMore || touchTap) dismissRoamPrompt();
+        return;
+      }
+      if(hitMore) dismissRoamPrompt();
       return;
     }
     advanceDialog();
   };
+  const stageEl=$('stage');
+  if(stageEl && !stageEl._roamGreetingDismissBound){
+    stageEl._roamGreetingDismissBound = true;
+    stageEl.addEventListener('click', e=>{
+      if(!S.freeRoam || typing || awaitingChoice) return;
+      const curTb=$('text-box');
+      if(!curTb || curTb.getAttribute('data-roam-prompt') !== 'greeting') return;
+      const tgt = e && e.target;
+      if(tgt && tgt.closest && tgt.closest('#text-box, #choices, #sylvia-hub, #loc-bar, #hotspots, .hotspot, .css-p')) return;
+      if(tgt && tgt.closest && tgt.closest('.p-slot')){
+        const slot = tgt.closest('.p-slot');
+        const img = slot && slot.querySelector('img');
+        if(e.detail === 0 || (img && portraitPixelIsOpaque(img, e.clientX, e.clientY))) return;
+        if(typeof document.elementFromPoint === 'function'){
+          const pSlots = Array.from(document.querySelectorAll('#portraits .p-slot'));
+          const prev = pSlots.map(el=>el.style.pointerEvents);
+          pSlots.forEach(el=>{ el.style.pointerEvents = 'none'; });
+          let under = null;
+          try { under = document.elementFromPoint(e.clientX, e.clientY); }
+          finally { pSlots.forEach((el, idx)=>{ el.style.pointerEvents = prev[idx]; }); }
+          if(under && under.closest && under.closest('#text-box, #choices, #sylvia-hub, #loc-bar, #hotspots, .hotspot, .css-p')) return;
+        }
+      }
+      if(e && e.detail !== 0 && stagePointHitsOpaquePortrait(e.clientX, e.clientY)) return;
+      dismissRoamPrompt();
+    });
+  }
 }
 bindAdvance();
 
@@ -3239,7 +3326,7 @@ function renderHotspots(){
   try{ while(box.firstChild) box.removeChild(box.firstChild); }catch(e){}
   if(!S.freeRoam){
     show(box,0);
-    $('portraits')?.classList.remove('roam-npc');
+    if(!roamDialogActive) $('portraits')?.classList.remove('roam-npc');
     if(typeof window !== 'undefined' && window.RaisingHub && typeof window.RaisingHub.syncSylviaHub === 'function'){
       try { window.RaisingHub.syncSylviaHub(); } catch(e){}
     }
@@ -3267,34 +3354,92 @@ function renderHotspots(){
     usable.push({combatStage:'hulan_beast_tide', label:'北境协防·冰封峡谷', icon:'mountain', x:86, y:30});
   }
   const peeps = whoIsHere();
-  // stage portraits for NPCs present
-  clearPortraits();
+  const targetPeeps = peeps.slice(0, 4);
   const pRoot = $('portraits');
   if(pRoot) pRoot.classList.add('roam-npc');
   const slots = ['left','center','right','fourth'];
-  peeps.slice(0,4).forEach((id,i)=>{
-    const slot = slots[i] || 'center';
-    showPortrait(id, 'normal', slot, true);
-    const el = $(slot==='left'?'p-left':slot==='right'?'p-right':slot==='fourth'?'p-fourth':'p-center');
-    if(el){
-      el.style.pointerEvents = 'auto';
-      el.style.cursor = 'pointer';
-      el.onclick = (e)=>{
-        e.stopPropagation();
-        if(!S.freeRoam) return;
-        const img=el.querySelector('img');
-        // detail===0 表示键盘/脚本触发；真实指针点击才进行透明像素命中检测。
-        const onCharacter=e.detail===0 || portraitPixelIsOpaque(img,e.clientX,e.clientY);
-        if(!onCharacter){
-          forwardPortraitClick(e.clientX,e.clientY);
-          return;
+  const bindRoamPortraitClick = (el, id)=>{
+    if(!el) return;
+    el.style.pointerEvents = 'auto';
+    el.style.cursor = 'pointer';
+    el.onclick = (e)=>{
+      if(!S.freeRoam){ e.stopPropagation(); return; }
+      const img=el.querySelector('img');
+      // detail===0 表示键盘/脚本触发；真实指针点击才进行透明像素命中检测。
+      const onCharacter=e.detail===0 || portraitPixelIsOpaque(img,e.clientX,e.clientY);
+      if(!onCharacter){
+        if(forwardPortraitClick(e.clientX,e.clientY)){
+          e.stopPropagation();
         }
-        sfx('click');
-        talkTo(id);
-      };
+        return;
+      }
+      e.stopPropagation();
+      sfx('click');
+      talkTo(id);
+    };
+  };
+  const sameStageOrder = targetPeeps.length > 0
+    && Array.isArray(stage)
+    && stage.length === targetPeeps.length
+    && targetPeeps.every((id, i)=>{
+      if(!stage[i] || stage[i].id !== id) return false;
+      const el = $(PORTRAIT_SLOTS[i]);
+      return !!(el && !el.classList.contains('hidden') && !el.classList.contains('ps-leave') && el.getAttribute('data-char') === id);
+    });
+  if(sameStageOrder){
+    const cssP = $('css-portraits');
+    if(cssP && cssP.childNodes.length) cssP.innerHTML = '';
+    for(let i = targetPeeps.length; i < PORTRAIT_SLOTS.length; i++){
+      const unused = $(PORTRAIT_SLOTS[i]);
+      if(!unused) continue;
+      clearPortraitLeaveTimer(unused);
+      unused.classList.add('hidden');
+      unused.classList.remove('active','dim','ps-enter','ps-leave');
+      unused.style.pointerEvents = '';
+      unused.style.cursor = '';
+      unused.onclick = null;
+      unused.removeAttribute('data-char');
+      unused.removeAttribute('data-emo');
     }
-  });
-  stage = peeps.slice(0,4).map(id=>({id, emo:'normal', active:true})); // 供 layout 排布
+    targetPeeps.forEach((id, i)=>{
+      const el = $(PORTRAIT_SLOTS[i]);
+      if(!el) return;
+      clearPortraitLeaveTimer(el);
+      const file = (typeof resolvePortrait==='function') ? resolvePortrait(id, 'normal') : (PORTRAIT_FILES[id+'_normal']);
+      const img = el.querySelector('img');
+      const nm = el.querySelector('.p-name');
+      if(file && img){
+        if(img.getAttribute('src') !== file){
+          attachPortraitFallback(img, el, id, 'normal', true, ()=>{
+            el.classList.add('hidden');
+            addCssPortrait(id, true);
+          });
+          img.src = file;
+        }
+        el.setAttribute('data-char', id);
+        el.setAttribute('data-emo', 'normal');
+        el.classList.remove('hidden','dim','ps-enter','ps-leave');
+        el.classList.add('active');
+        if(nm) nm.textContent = CHARS[id]?.short || id;
+        if(typeof BranchingDirector !== 'undefined' && BranchingDirector.syncStageEmotionBadge){
+          BranchingDirector.syncStageEmotionBadge(el, id, 'normal');
+        }
+      } else {
+        showPortrait(id, 'normal', slots[i] || 'center', true);
+      }
+      bindRoamPortraitClick(el, id);
+    });
+  } else {
+    // stage portraits for NPCs present
+    clearPortraits();
+    targetPeeps.forEach((id,i)=>{
+      const slot = slots[i] || 'center';
+      showPortrait(id, 'normal', slot, true);
+      const el = $(slot==='left'?'p-left':slot==='right'?'p-right':slot==='fourth'?'p-fourth':'p-center');
+      bindRoamPortraitClick(el, id);
+    });
+  }
+  stage = targetPeeps.map(id=>({id, emo:'normal', active:true})); // 供 layout 排布
   layoutPortraits();
   if(!usable.length && !peeps.length){
     show(box,0);
@@ -3369,13 +3514,15 @@ function enterFreeRoam(options={}){
   bgmOverlayStack = [];
   if(options.restoreLoc) bgmLoc = null;
   roamPromptDone = null;
-  S.freeRoam=true; awaitingChoice=false; setAwaitingChoiceUI(false); show('action-bar',1); updateHUD(); syncStageChromeMode(); updateLocBar(); save();
+  roamDialogActive = false;
+  document.body.classList.remove('roam-dialog');
+  document.body.classList.add('roam');
+  S.freeRoam=true; awaitingChoice=false; setAwaitingChoiceUI(false); show('action-bar',1); syncActionBarHeight(); updateHUD(); syncStageChromeMode(); updateLocBar(); save();
   if(options.restoreLoc){
     const targetBg = (LOCS[S.loc] && LOCS[S.loc].bg) || S.bg;
     if(targetBg) setBG(targetBg);
     bgmFreeRoam(targetBg || '', S.phase, S.loc);
   }
-  document.body.classList.add('roam');
   const box=$('choices'); if(box) box.innerHTML='';
   setSpeaker(null);
   const nextBtn=document.querySelector('[data-act="next"]');
@@ -3578,6 +3725,8 @@ function ambientText(id){
 // action bar
 document.getElementById('action-bar').onclick = e=>{
   const btn = e.target.closest('[data-act]'); if(!btn||!S.freeRoam) return;
+  const tb = $('text-box');
+  if(tb && tb.getAttribute('data-roam-prompt') === 'greeting') dismissRoamPrompt();
   const act = btn.dataset.act; sfx('click');
   if(act==='explore') openMap();
   else if(act==='talk') doTalk();
@@ -4322,6 +4471,7 @@ function dismissPickScreen(){
 }
 function triggerBraveGift(tier){
   if(S.picksDone.includes(tier)) return;
+  clearRoamDialogForTransition();
   S.tier = Math.max(S.tier, tier);
   pendingPicks = tier;
   // build 7 cards: for tier 0 guarantee virtual_duel as star; tier1 ice_palace; tier2 mana_cycle
@@ -4511,6 +4661,7 @@ function spawnEnemy(cfg){
 }
 function startBattle(cfg, done){
   closeHudMoreDrawer();
+  clearRoamDialogForTransition();
   B = { enemy: spawnEnemy(cfg), cfg:cfg||{}, done, ap:2, apMax:2, turn:0, log:[], over:false };
   setBG('bg-battle'); bgmPlayType('battle', {force:true}); show('battle-screen',1);
   renderBattle();
@@ -5056,6 +5207,8 @@ function loadFromManualSlot(slotId){
   if(typeof RelicsAndEvents !== 'undefined' && RelicsAndEvents.ensureRelicsState){
     RelicsAndEvents.ensureRelicsState(S);
   }
+  roamDialogActive = false;
+  if(typeof document !== 'undefined' && document.body) document.body.classList.remove('roam-dialog');
   bgmLoc = null;
   syncLocUnlocksForState();
   save();
@@ -5552,12 +5705,13 @@ function stepChain(){
   S.storyPending=storyChain.queue.slice(currentIdx);
   resetDialogAdvanceState();
   S.freeRoam = false;
+  roamDialogActive = false;
   awaitingChoice = false;
   setAwaitingChoiceUI(false);
   setDialogHidden(false);
   show('action-bar', 0);
   show('hotspots', 0);
-  document.body.classList.remove('roam');
+  document.body.classList.remove('roam', 'roam-dialog');
   $('portraits')?.classList.remove('roam-npc');
   if(cgActive || isOverlayVisible('cg-screen')) cgHide(true);
   const prevCard = $('card');
@@ -5599,12 +5753,13 @@ function runScene(id){
   if(typeof VNUx!=='undefined'&&VNUx.onSceneStart) VNUx.onSceneStart(id);
   resetDialogAdvanceState();
   S.freeRoam = false;
+  roamDialogActive = false;
   awaitingChoice = false;
   setAwaitingChoiceUI(false);
   setDialogHidden(false);
   show('action-bar', 0);
   show('hotspots', 0);
-  document.body.classList.remove('roam');
+  document.body.classList.remove('roam', 'roam-dialog');
   $('portraits')?.classList.remove('roam-npc');
   if(cgActive || isOverlayVisible('cg-screen')) cgHide(true);
   const prevCard = $('card');
@@ -6066,6 +6221,7 @@ bindLetterDemo();
 function newGame(){
   S=baseState();
   if(typeof window !== 'undefined') window.S = S;
+  roamDialogActive = false;
   BACKLOG_LOG.length = 0;
   closeHudMoreDrawer();
   setPov(false);
@@ -6074,7 +6230,8 @@ function newGame(){
   show('loc-bar', 0);
   if(cgActive || isOverlayVisible('cg-screen')) cgHide(true);
   const cd=$('card'); if(cd){ cd.onclick=null; show(cd,0); }
-  document.body.classList.remove('ai-drawer-open', 'roam');
+  document.body.classList.remove('ai-drawer-open', 'roam', 'roam-dialog');
+  $('portraits')?.classList.remove('roam-npc');
   S.season = seasonOf(S.month);
   if(typeof VNUx!=='undefined'&&VNUx.clearBacklog) VNUx.clearBacklog();
   bgmLoc = null;
@@ -6091,12 +6248,14 @@ function newGame(){
 function continueGame(){
   if(!load()){ toast('没有存档'); sfx('bad'); return; }
   if(typeof window !== 'undefined') window.S = S;
+  roamDialogActive = false;
   closeHudMoreDrawer();
   setPov(false);
   setAwaitingChoiceUI(false);
   if(cgActive || isOverlayVisible('cg-screen')) cgHide(true);
   const cd=$('card'); if(cd){ cd.onclick=null; show(cd,0); }
-  document.body.classList.remove('ai-drawer-open');
+  document.body.classList.remove('ai-drawer-open', 'roam', 'roam-dialog');
+  $('portraits')?.classList.remove('roam-npc');
   bgmUnlock(); // 用户点击继续 → 解锁音频
   bgmLoc = null;
   bgmOverlayStack = [];
@@ -6187,6 +6346,7 @@ if($('btn-title-settings')){
 function returnToTitle(opts){
   opts = opts || {};
   save();
+  roamDialogActive = false;
   closeHudMoreDrawer();
   setPov(false);
   setAwaitingChoiceUI(false);
@@ -6206,7 +6366,8 @@ function returnToTitle(opts){
       if(typeof window.RaisingHub.closeEndingScreen === 'function') window.RaisingHub.closeEndingScreen();
     } catch(e){}
   }
-  document.body.classList.remove('ai-drawer-open', 'roam', 'cb-battle-active');
+  document.body.classList.remove('ai-drawer-open', 'roam', 'roam-dialog', 'cb-battle-active');
+  $('portraits')?.classList.remove('roam-npc');
   show('pick-screen',0); show('game-screen',0); show('battle-screen',0); show('arena-overlay',0); show('panel',0); show('map-overlay',0); show('stats-overlay',0); show('sys-popup',0);
   if($('backlog-overlay')) show('backlog-overlay',0);
   show('title-screen',1);
@@ -6835,6 +6996,10 @@ if(typeof window !== 'undefined'){
     window.S = S;
     currentScene = curSc || null;
     storyChain = curChain || null;
+    roamDialogActive = false;
+    if(typeof document !== 'undefined' && document.body){
+      document.body.classList.remove('roam-dialog');
+    }
     bgmLoc = null;
     bgmOverlayStack = [];
     sceneBgmType = null;

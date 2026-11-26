@@ -119,7 +119,7 @@ body.cg-mode #sylvia-hub {
   clip-path: none;
   overflow: visible;
   filter: drop-shadow(0 6px 16px rgba(14, 43, 120, 0.14));
-  transition: bottom 0.24s var(--rh-ease), right 0.24s var(--rh-ease), opacity 0.2s var(--rh-ease);
+  transition: bottom 0.24s var(--rh-ease), right 0.24s var(--rh-ease), opacity 0.22s var(--rh-ease), transform 0.22s var(--rh-ease), visibility 0.22s var(--rh-ease);
 }
 
 #game-screen #sylvia-hub .sh-corner-controls::before,
@@ -161,9 +161,19 @@ body.cg-mode #sylvia-hub {
   z-index: 2;
 }
 
-/* 自由探索中对话框展开时平滑上避至 #text-box 上沿 */
-#stage:has(#text-box:not(.dialog-hidden)) #sylvia-hub .sh-corner-controls {
-  bottom: calc(var(--boxh, 112px) + 10px);
+/* 方案 B · 态 A 贴合 52px 削角底栏右上方；态 B（问候/风物薄幕）与态 C（场景对话）仅淡隐子元素，严禁对 #sylvia-hub 写 display: none */
+body.roam #game-screen #sylvia-hub .sh-corner-controls {
+  bottom: calc(var(--abh, 52px) + 10px);
+  right: 16px;
+  transform: translateY(0);
+}
+
+body.roam #stage:has(#text-box:not(.dialog-hidden)) #sylvia-hub .sh-corner-controls,
+body.roam.roam-dialog #game-screen #sylvia-hub .sh-corner-controls {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(6px);
 }
 
 /* 选项卡片展开时临时退让，杜绝遮挡分支选项 */
@@ -351,6 +361,7 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
   flex-direction: column;
   gap: 5px;
   animation: rhFadeRise 0.2s var(--rh-ease);
+  transition: bottom 0.24s var(--rh-ease), right 0.24s var(--rh-ease), opacity 0.22s var(--rh-ease), transform 0.22s var(--rh-ease), visibility 0.22s var(--rh-ease);
 }
 
 #game-screen #sylvia-hub .sh-charm-popover::before,
@@ -392,8 +403,21 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
   z-index: 2;
 }
 
-#stage:has(#text-box:not(.dialog-hidden)) #sylvia-hub .sh-charm-popover {
-  bottom: calc(var(--boxh, 112px) + 48px);
+/* 方案 B · 态 A 悬浮于底栏及养成细条上方；态 B/C 仅淡隐小记卡本身 */
+body.roam #game-screen #sylvia-hub #sh-charm-popover,
+body.roam #game-screen #sylvia-hub .sh-charm-popover {
+  bottom: calc(var(--abh, 52px) + 48px);
+  right: 16px;
+}
+
+body.roam #stage:has(#text-box:not(.dialog-hidden)) #sylvia-hub #sh-charm-popover,
+body.roam #stage:has(#text-box:not(.dialog-hidden)) #sylvia-hub .sh-charm-popover,
+body.roam.roam-dialog #game-screen #sylvia-hub #sh-charm-popover,
+body.roam.roam-dialog #game-screen #sylvia-hub .sh-charm-popover {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(6px);
 }
 
 .sh-charm-popover strong {
@@ -3500,9 +3524,9 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
 
 /* 安卓 Chrome 桌面版竖屏专属舒适触控与阅读比例 (980×2120 等 portrait 681px–1120px) */
 @media (orientation: portrait) and (min-width: 681px) and (max-width: 1120px) {
-  #game-screen #sylvia-hub .sh-corner-controls {
+  body.roam #game-screen #sylvia-hub .sh-corner-controls {
     top: auto;
-    bottom: 10px;
+    bottom: calc(var(--abh, 52px) + 10px);
     right: 12px;
     min-height: 36px;
   }
@@ -3552,9 +3576,9 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
 
 /* 手机竖屏精裁 (390×844, max-width: 680px) */
 @media (max-width: 680px) {
-  #game-screen #sylvia-hub .sh-corner-controls {
+  body.roam #game-screen #sylvia-hub .sh-corner-controls {
     top: auto;
-    bottom: 8px;
+    bottom: calc(var(--abh, 52px) + 8px);
     left: 8px;
     right: 8px;
     max-width: calc(100% - 16px);
@@ -4001,9 +4025,9 @@ body.ai-drawer-open #sylvia-hub .sh-charm-popover {
     display: none !important;
   }
 
-  #game-screen #sylvia-hub .sh-corner-controls {
+  body.roam #game-screen #sylvia-hub .sh-corner-controls {
     top: auto;
-    bottom: 6px;
+    bottom: calc(var(--abh, 52px) + 6px);
     right: 10px;
     min-height: 28px;
     max-width: calc(100% - 20px);

@@ -1906,11 +1906,261 @@ body.ai-drawer-open .causal-ripple-stack {
   gap: 5px;
 }
 
+#arena-overlay .arena-loadout-bar .arena-rel-pill.staff {
+  border-left: 2px solid rgba(27, 35, 51, 0.28);
+  background: rgba(27, 35, 51, 0.045);
+  color: #37445C;
+  font-weight: 600;
+}
+
+#arena-overlay .arena-loadout-bar .arena-rel-pill.staff.is-equipped {
+  border-left-color: #1658EB;
+  background: rgba(22, 88, 235, 0.085);
+  color: #0E2B78;
+  font-weight: 700;
+}
+
+#arena-overlay .arena-loadout-bar .alb-micro-art,
+.arena-loadout-bar .alb-micro-art {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+#arena-overlay .arena-loadout-bar .alb-micro-art img,
+#arena-overlay .arena-loadout-bar .alb-micro-art svg,
+.arena-loadout-bar .alb-micro-art img,
+.arena-loadout-bar .alb-micro-art svg {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
+#arena-overlay .arena-loadout-bar .arena-rel-pill.staff.is-barehand .alb-micro-prism {
+  color: #526078;
+}
+
 /* 随身铭记容器与演武整备外壳紧凑留白 */
 #app #panel #panel-body .relics-dashboard,
 body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard {
   gap: 9px;
   color: #1B2333;
+}
+
+/* 演武沙盒顶部「法杖整备」切角雪瓷三卡区（1440×900 & 1280×720 紧凑零溢出） */
+body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .arena-staff-strip,
+.relics-dashboard .arena-staff-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 0 9px;
+  border: none;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.13);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.relics-dashboard .arena-staff-strip .ass-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.relics-dashboard .arena-staff-strip .ass-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1B2333;
+}
+
+.relics-dashboard .arena-staff-strip .ass-title .rel-svg-ico {
+  color: #1658EB;
+}
+
+.relics-dashboard .arena-staff-strip .ass-summary {
+  font-size: 12px;
+  color: #526078;
+}
+
+.relics-dashboard .arena-staff-strip .ass-summary b {
+  color: #1658EB;
+  font-weight: 700;
+}
+
+.relics-dashboard .arena-staff-strip .ass-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.relics-dashboard .arena-staff-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 7px 11px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #1B2333;
+  text-align: left;
+  cursor: pointer;
+  isolation: isolate;
+  transition: transform 0.14s ease;
+}
+
+.relics-dashboard .arena-staff-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: rgba(27, 35, 51, 0.17);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  pointer-events: none;
+  transition: background 0.16s ease;
+}
+
+.relics-dashboard .arena-staff-card::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  z-index: 0;
+  background: #FFFFFF;
+  clip-path: polygon(0 0, calc(100% - 9.5px) 0, 100% 9.5px, 100% 100%, 7.5px 100%, 0 calc(100% - 7.5px));
+  pointer-events: none;
+  transition: background 0.16s ease;
+}
+
+.relics-dashboard .arena-staff-card > * {
+  position: relative;
+  z-index: 2;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .relics-dashboard .arena-staff-card:not(.is-active):hover::before {
+    background: rgba(22, 88, 235, 0.45);
+  }
+  .relics-dashboard .arena-staff-card:not(.is-active):hover::after {
+    background: #F4F7FC;
+  }
+}
+
+.relics-dashboard .arena-staff-card.is-active::before {
+  background: linear-gradient(135deg, #1658EB 0%, #38BDF8 100%);
+}
+
+.relics-dashboard .arena-staff-card.is-active::after {
+  inset: 1.5px;
+  background: linear-gradient(135deg, #EEF5FF 0%, #FAFBFD 100%);
+}
+
+.relics-dashboard .arena-staff-card:focus-visible {
+  outline: 2px solid #1658EB;
+  outline-offset: 2px;
+}
+
+.relics-dashboard .arena-staff-card .asc-staff-art {
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: #1658EB;
+}
+
+.relics-dashboard .arena-staff-card.is-barehand:not(.is-active) .asc-staff-art {
+  color: #526078;
+}
+
+.relics-dashboard .arena-staff-card .asc-staff-art img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 3px 6px rgba(22, 88, 235, 0.16));
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.relics-dashboard .arena-staff-card .asc-staff-art .arena-staff-prism {
+  width: 38px;
+  height: 38px;
+  display: block;
+}
+
+.relics-dashboard .arena-staff-card .asc-staff-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.relics-dashboard .arena-staff-card .asc-staff-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.relics-dashboard .arena-staff-card .asc-staff-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1B2333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.relics-dashboard .arena-staff-card.is-active .asc-staff-name {
+  color: #0E2B78;
+}
+
+.relics-dashboard .arena-staff-card .asc-staff-state {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border: none;
+  border-radius: 0;
+  background: rgba(22, 88, 235, 0.08);
+  color: #1658EB;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.relics-dashboard .arena-staff-card .asc-staff-state.is-active {
+  background: #1658EB;
+  color: #FFFFFF;
+}
+
+.relics-dashboard .arena-staff-card .asc-staff-desc {
+  font-size: 11px;
+  line-height: 1.38;
+  color: #37445C;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 body section#arena-loadout-modal.overlay .end-card.rumor-card .rumor-head {
@@ -2180,7 +2430,29 @@ body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard 
 
 #app #panel #panel-body .relics-dashboard .rel-slot-top,
 body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-slot-top {
+  align-items: center;
+  gap: 8px;
   color: #1B2333;
+}
+
+.relics-dashboard .rel-slot-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.relics-dashboard .rel-slot-meta b {
+  flex: 0 0 auto;
+  max-width: 100%;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #1B2333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 #app #panel #panel-body .relics-dashboard .rel-slot-fx,
@@ -2196,10 +2468,9 @@ body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard.
   line-height: 1.42;
 }
 
-#app #panel #panel-body .relics-dashboard .rel-ico,
-#app #panel #panel-body .relics-dashboard .rc-ico,
-body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-ico,
-body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rc-ico {
+/* 降级 SVG 图标保持简洁尺寸；板 A 实图 (.has-item-art) 放开至 44×44px 无重框雪瓷展示 */
+.relics-dashboard .rel-ico:not(.has-item-art),
+.relics-dashboard .rc-ico:not(.has-item-art) {
   width: 28px;
   height: 28px;
   border-radius: 0;
@@ -2212,18 +2483,77 @@ body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard 
   color: #1C4CB8;
 }
 
-#app #panel #panel-body .relics-dashboard .rel-slot .rel-ico,
-body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-slot .rel-ico {
+.relics-dashboard .rel-slot .rel-ico:not(.has-item-art) {
   width: 22px;
   height: 22px;
   border-radius: 0;
 }
 
-#app #panel #panel-body .relics-dashboard .rel-card.locked .rc-ico,
-body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-card.locked .rc-ico {
+.relics-dashboard .rel-card.locked .rc-ico:not(.has-item-art) {
   background: rgba(82, 96, 120, 0.08);
   border: none;
   color: #526078;
+}
+
+.relics-dashboard .rel-ico.has-item-art,
+.relics-dashboard .rc-ico.has-item-art,
+.relics-dashboard .rel-slot .rel-ico.has-item-art,
+.relics-dashboard .rel-card .rc-ico.has-item-art {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.relics-dashboard .rel-ico.has-item-art img,
+.relics-dashboard .rc-ico.has-item-art img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 2px 5px rgba(27, 35, 51, 0.14));
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.relics-dashboard .rel-card.locked .rc-ico.has-item-art {
+  background: transparent;
+  border: none;
+}
+
+.relics-dashboard .rel-card.locked .rc-ico.has-item-art img,
+.relics-dashboard .rc-ico.has-item-art.is-locked img {
+  filter: grayscale(0.92) brightness(1.04) contrast(0.84);
+  opacity: 0.52;
+}
+
+.relics-dashboard .rc-ico-lock {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 17px;
+  height: 17px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(250, 251, 253, 0.94);
+  color: #526078;
+  border: none;
+  border-radius: 0;
+  box-shadow: 0 1px 3px rgba(27, 35, 51, 0.16);
+  pointer-events: none;
+}
+
+.relics-dashboard .rc-ico-lock .rel-svg-ico {
+  vertical-align: 0;
 }
 
 /* 佩带 / 卸下无框浅冰蓝徽条 + 1px 底线（零第三层框套框） */
@@ -2809,7 +3139,38 @@ body section#rumor-overlay.overlay .end-card.rumor-card .rcb-main .rel-svg-ico {
   margin-right: 4px;
 }
 
+@media (max-height: 760px) {
+  body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard.is-sandbox {
+    gap: 7px;
+  }
+
+  .relics-dashboard .arena-staff-strip {
+    gap: 5px;
+    padding-bottom: 7px;
+  }
+
+  .relics-dashboard .arena-staff-card {
+    padding: 6px 9px;
+    gap: 8px;
+  }
+
+  .relics-dashboard .arena-staff-card .asc-staff-art,
+  .relics-dashboard .arena-staff-card .asc-staff-art img {
+    width: 44px;
+    height: 44px;
+  }
+
+  .relics-dashboard .arena-staff-card .asc-staff-art .arena-staff-prism {
+    width: 34px;
+    height: 34px;
+  }
+}
+
 @media (max-width: 780px) {
+  .relics-dashboard .arena-staff-strip .ass-grid {
+    grid-template-columns: 1fr;
+  }
+
   body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard.is-sandbox .bond-grid,
   body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard.is-sandbox .rel-cards-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2836,7 +3197,10 @@ body section#rumor-overlay.overlay .end-card.rumor-card .rcb-main .rel-svg-ico {
   .aid-btn,
   .aid-starter-chip,
   #btn-open-ending-forecast,
-  .cd-forecast-btn {
+  .cd-forecast-btn,
+  .relics-dashboard .arena-staff-card,
+  .relics-dashboard .arena-staff-card::before,
+  .relics-dashboard .arena-staff-card::after {
     animation: none !important;
     transition: none !important;
   }

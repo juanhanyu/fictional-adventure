@@ -8,6 +8,32 @@
   var MAX_EQUIPPED_RELICS = 3;
   var ARENA_RELICS_KEY = 'ojousama_arena_relics_v1';
   var ARENA_ASSIST_KEY = 'ojousama_arena_assist_v1';
+  var ARENA_STAFF_KEY = 'ojousama_arena_staff_v1';
+
+  var ARENA_STAFF_ORDER = ['none', 'eclipse_wand', 'north_saint_staff'];
+  var ARENA_STAVES_CATALOG = {
+    none: {
+      id: 'none',
+      name: '徒手导魔',
+      shortTag: '常规无杖',
+      desc: '标准原味构筑 · 零法杖附加词条',
+      fallbackKey: 'prism'
+    },
+    eclipse_wand: {
+      id: 'eclipse_wand',
+      name: '晦轮杖',
+      shortTag: '真实魔伤',
+      desc: '魔力上限显著提升 · 穿透真实魔伤',
+      fallbackKey: 'star'
+    },
+    north_saint_staff: {
+      id: 'north_saint_staff',
+      name: '极北圣晶杖',
+      shortTag: '圣晶增幅',
+      desc: '高阶魔导增幅 · 施法省蓝',
+      fallbackKey: 'iceShard'
+    }
+  };
 
   function escapeHtml(s) {
     return String(s == null ? '' : s)
@@ -62,6 +88,44 @@
     var sz = size || 15;
     var body = REL_SVG_PATHS[name] || REL_SVG_PATHS.star;
     return '<svg class="rel-svg-ico" viewBox="0 0 18 18" width="' + sz + '" height="' + sz + '" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
+  }
+
+  function getItemArtRegistry() {
+    if (typeof window !== 'undefined' && window.ItemArtRegistry) return window.ItemArtRegistry;
+    if (root && root.ItemArtRegistry) return root.ItemArtRegistry;
+    return null;
+  }
+
+  function hasRelicArt(itemId) {
+    var reg = getItemArtRegistry();
+    return !!(reg && typeof reg.getIconUrl === 'function' && reg.getIconUrl(itemId));
+  }
+
+  function renderRelicArt(itemId, fallbackSvg, size, cls) {
+    var sz = Number(size) || 44;
+    var artCls = cls ? ('rel-art-img ' + cls) : 'rel-art-img';
+    var reg = getItemArtRegistry();
+    if (reg && typeof reg.getIconUrl === 'function' && reg.getIconUrl(itemId)) {
+      if (typeof reg.renderIconHTML === 'function') {
+        return reg.renderIconHTML(itemId, { size: sz, cls: artCls, eager: true });
+      }
+      var url = reg.getIconUrl(itemId);
+      return '<img class="item-art-img ' + escapeHtml(artCls) + '" src="' + escapeHtml(url) + '" alt="" width="' + Math.round(sz) + '" height="' + Math.round(sz) + '" data-item-id="' + escapeHtml(itemId) + '" decoding="async" draggable="false">';
+    }
+    return fallbackSvg || '';
+  }
+
+  function renderBarehandPrismSVG(size, cls) {
+    var sz = Math.round(Number(size) || 48);
+    var c = cls ? ('arena-staff-prism ' + cls) : 'arena-staff-prism';
+    return (
+      '<svg class="' + escapeHtml(c) + '" width="' + sz + '" height="' + sz + '" viewBox="0 0 36 36" fill="none" aria-hidden="true">' +
+        '<polygon points="18,4 29,18 18,32 7,18" fill="rgba(22,88,235,0.08)" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>' +
+        '<polygon points="18,9.5 24,18 18,26.5 12,18" fill="rgba(56,189,248,0.18)" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/>' +
+        '<line x1="7" y1="18" x2="29" y2="18" stroke="currentColor" stroke-width="1" opacity="0.55"/>' +
+        '<circle cx="18" cy="18" r="1.8" fill="currentColor"/>' +
+      '</svg>'
+    );
   }
 
   function getS() {
@@ -610,6 +674,28 @@
     return val || null;
   }
 
+  function normalizeStaffId(staffId) {
+    return (staffId === 'eclipse_wand' || staffId === 'north_saint_staff' || staffId === 'none')
+      ? staffId
+      : 'none';
+  }
+
+  function getArenaSandboxStaff() {
+    try {
+      var v = localStorage.getItem(ARENA_STAFF_KEY);
+      return normalizeStaffId(v);
+    } catch (e) {}
+    return 'none';
+  }
+
+  function setArenaSandboxStaff(staffId) {
+    var val = normalizeStaffId(staffId);
+    try {
+      localStorage.setItem(ARENA_STAFF_KEY, val);
+    } catch (e) {}
+    return val;
+  }
+
   function ensureRelicsState(targetS) {
     var st = targetS || getS();
     if (!st) return null;
@@ -734,6 +820,19 @@
     var st = ensureRelicsState(opts.state);
     if (!st) return [];
     return st.equippedRelics.filter(function (id) { return isRelicUnlocked(id, st); }).slice(0, MAX_EQUIPPED_RELICS);
+  }
+
+  function getActiveStaffForBattle(opts) {
+    opts = opts || {};
+    if (opts.headless) return 'none';
+    if (opts.staff !== undefined) {
+      return normalizeStaffId(opts.staff);
+    }
+    if (opts.fromArena && !opts.useSaveStats) {
+      return getArenaSandboxStaff();
+    }
+    var st = opts.state !== undefined ? opts.state : getS();
+    return normalizeStaffId(st && st.equippedStaff);
   }
 
   function getActiveBondAssistForBattle(opts) {
@@ -3244,6 +3343,44 @@
     );
   }
 
+  function renderArenaStaffStripHTML() {
+    var activeStaff = getArenaSandboxStaff();
+    var activeDef = ARENA_STAVES_CATALOG[activeStaff] || ARENA_STAVES_CATALOG.none;
+    var cardsHtml = ARENA_STAFF_ORDER.map(function (sid) {
+      var def = ARENA_STAVES_CATALOG[sid];
+      var active = activeStaff === sid;
+      var isBarehand = sid === 'none';
+      var hasArt = !isBarehand && hasRelicArt(sid);
+      var artHtml = isBarehand
+        ? renderBarehandPrismSVG(48, 'staff-art-prism')
+        : renderRelicArt(sid, relIco(def.fallbackKey || 'star', 24), 48, 'staff-art-img');
+      return (
+        '<button type="button" class="arena-staff-card' + (active ? ' is-active' : '') + (isBarehand ? ' is-barehand' : '') + '" ' +
+          'data-arena-staff="' + sid + '" aria-pressed="' + (active ? 'true' : 'false') + '" ' +
+          'title="' + escapeHtml(def.name + '：' + def.desc) + '">' +
+          '<span class="asc-staff-art' + (hasArt ? ' has-item-art' : ' is-prism') + '">' + artHtml + '</span>' +
+          '<span class="asc-staff-body">' +
+            '<span class="asc-staff-top">' +
+              '<b class="asc-staff-name">' + escapeHtml(def.name) + '</b>' +
+              '<span class="asc-staff-state' + (active ? ' is-active' : '') + '">' + (active ? '已执握' : '点选') + '</span>' +
+            '</span>' +
+            '<span class="asc-staff-desc">' + escapeHtml(def.desc) + '</span>' +
+          '</span>' +
+        '</button>'
+      );
+    }).join('');
+
+    return (
+      '<section class="arena-staff-strip" id="arena-staff-strip" aria-label="演武法杖整备">' +
+        '<div class="ass-head">' +
+          '<span class="ass-title">' + relIco('prism', 14) + '<span>法杖整备</span></span>' +
+          '<span class="ass-summary">当前执杖：<b>' + escapeHtml(activeDef.name) + '</b></span>' +
+        '</div>' +
+        '<div class="ass-grid">' + cardsHtml + '</div>' +
+      '</section>'
+    );
+  }
+
   function renderRelicsAndAssistHTML(opts) {
     opts = opts || {};
     var isSandbox = !!opts.sandbox;
@@ -3258,12 +3395,16 @@
         return '<div class="rel-slot empty"><span>空铭记槽位 ' + (idx + 1) + '</span><small>点击下方已解锁秘宝佩带</small></div>';
       }
       var syn = def.setId ? RELIC_SYNERGIES[def.setId] : null;
+      var slotHasArt = hasRelicArt(def.id);
+      var slotArtHtml = renderRelicArt(def.id, def.icon, 44, 'rel-slot-art');
       return (
         '<div class="rel-slot filled" data-relic-unequip="' + def.id + '">' +
           '<div class="rel-slot-top">' +
-            '<span class="rel-ico">' + def.icon + '</span>' +
-            '<b>' + escapeHtml(def.name) + '</b>' +
-            (syn ? '<span class="rc-set-badge" data-set-id="' + syn.id + '" style="--syn-accent:' + syn.color + '">' + escapeHtml(syn.name) + '</span>' : '') +
+            '<span class="rel-ico' + (slotHasArt ? ' has-item-art' : '') + '">' + slotArtHtml + '</span>' +
+            '<div class="rel-slot-meta">' +
+              '<b>' + escapeHtml(def.name) + '</b>' +
+              (syn ? '<span class="rc-set-badge" data-set-id="' + syn.id + '" style="--syn-accent:' + syn.color + '">' + escapeHtml(syn.name) + '</span>' : '') +
+            '</div>' +
             '<button type="button" class="rel-mini-btn" data-relic-toggle="' + def.id + '">卸下</button>' +
           '</div>' +
           '<div class="rel-slot-fx">' + escapeHtml(def.effectText) + '</div>' +
@@ -3276,10 +3417,17 @@
       var syn = def.setId ? RELIC_SYNERGIES[def.setId] : null;
       var unlocked = unlockedList.indexOf(id) !== -1;
       var isEq = equipped.indexOf(id) !== -1;
+      var cardHasArt = hasRelicArt(id);
+      var cardIcoHtml = cardHasArt
+        ? ('<span class="rc-ico has-item-art' + (unlocked ? '' : ' is-locked') + '">' +
+            renderRelicArt(id, unlocked ? def.icon : relIco('lock', 16), 44, 'rel-card-art') +
+            (unlocked ? '' : '<span class="rc-ico-lock" aria-hidden="true">' + relIco('lock', 11) + '</span>') +
+          '</span>')
+        : ('<span class="rc-ico">' + (unlocked ? def.icon : relIco('lock', 16)) + '</span>');
       return (
         '<article class="rel-card' + (unlocked ? '' : ' locked') + (isEq ? ' equipped' : '') + '" data-relic-id="' + id + '">' +
           '<div class="rc-head">' +
-            '<span class="rc-ico">' + (unlocked ? def.icon : relIco('lock', 16)) + '</span>' +
+            cardIcoHtml +
             '<div class="rc-titles">' +
               '<div class="rc-name">' + escapeHtml(def.name) +
                 (syn ? '<span class="rc-set-badge" data-set-id="' + syn.id + '" style="--syn-accent:' + syn.color + '">' + relIco(syn.iconKey || 'star', 12) + '<span>' + escapeHtml(syn.name) + '</span></span>' : '') +
@@ -3330,7 +3478,7 @@
                 '<span>佩带至多 3 件信物，实时改变战斗魔战节奏与破招规则</span>' +
               '</div>' +
             '</div>'
-          : '') +
+          : renderArenaStaffStripHTML()) +
         renderSynergyStripHTML(equipped) +
         '<div class="rel-slots-grid">' + slotsHtml + '</div>' +
         '<h4 class="rel-sec-title">✦ 羁绊心念援护（战斗中每场 1 次 · 0 AP）</h4>' +
@@ -3348,6 +3496,15 @@
   function bindRelicsContainerEvents(container, opts) {
     if (!container) return;
     opts = opts || {};
+    container.querySelectorAll('[data-arena-staff]').forEach(function (btn) {
+      btn.onclick = function (e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        var sid = btn.getAttribute('data-arena-staff');
+        setArenaSandboxStaff(sid);
+        if (typeof window !== 'undefined' && typeof window.sfx === 'function') window.sfx('tab_switch');
+        if (typeof opts.onChanged === 'function') opts.onChanged();
+      };
+    });
     container.querySelectorAll('[data-relic-toggle]').forEach(function (btn) {
       btn.onclick = function (e) {
         if (e && e.stopPropagation) e.stopPropagation();
@@ -3368,6 +3525,18 @@
   }
 
   function renderArenaLoadoutBarHTML() {
+    var staffId = getArenaSandboxStaff();
+    var staffMeta = ARENA_STAVES_CATALOG[staffId] || ARENA_STAVES_CATALOG.none;
+    var staffHasArt = staffId !== 'none' && hasRelicArt(staffId);
+    var staffMicro = staffId === 'none'
+      ? renderBarehandPrismSVG(20, 'alb-micro-prism')
+      : renderRelicArt(staffId, relIco(staffMeta.fallbackKey || 'star', 14), 20, 'alb-micro-img');
+    var staffPill =
+      '<span class="arena-rel-pill staff' + (staffId !== 'none' ? ' is-equipped' : ' is-barehand') + '" data-arena-staff-pill="' + staffId + '" title="' + escapeHtml(staffMeta.name + '：' + staffMeta.desc) + '">' +
+        '<span class="alb-micro-art' + (staffHasArt ? ' has-item-art' : '') + '">' + staffMicro + '</span>' +
+        '<span>' + escapeHtml(staffMeta.name) + '</span>' +
+      '</span>';
+
     var equipped = getArenaSandboxRelics();
     var activeSyns = getActiveSynergies(equipped);
     var assist = getArenaSandboxAssist();
@@ -3375,7 +3544,14 @@
     var chips = equipped.length
       ? equipped.map(function (id) {
           var r = RELICS_CATALOG[id];
-          return '<span class="arena-rel-pill">' + r.icon + '<span>' + escapeHtml(r.name) + '</span></span>';
+          var rHasArt = hasRelicArt(id);
+          var rMicro = renderRelicArt(id, r.icon, 20, 'alb-micro-img');
+          return (
+            '<span class="arena-rel-pill relic" data-arena-relic-pill="' + id + '">' +
+              '<span class="alb-micro-art' + (rHasArt ? ' has-item-art' : '') + '">' + rMicro + '</span>' +
+              '<span>' + escapeHtml(r.name) + '</span>' +
+            '</span>'
+          );
         }).join('')
       : '<span class="arena-rel-empty">未装配铭记（标准原味难度）</span>';
     var synPills = activeSyns.map(function (syn) {
@@ -3385,21 +3561,56 @@
         '</span>'
       );
     }).join('');
+    var hasAnyCustom = !!(equipped.length || assist || staffId !== 'none');
 
     return (
       '<div class="arena-loadout-bar" id="arena-loadout-bar">' +
         '<div class="alb-left">' +
-          '<span class="alb-label">✦ 战前铭记整备：</span>' +
+          '<span class="alb-label">✦ 战前整备：</span>' +
+          staffPill +
           chips +
           synPills +
           (assistMeta ? '<span class="arena-rel-pill bond">' + assistMeta.icon + '<span>援护·' + escapeHtml(assistMeta.name) + '</span></span>' : '') +
         '</div>' +
         '<div class="alb-actions">' +
-          '<button type="button" class="arena-mode-chip" id="am-open-loadout">✦ 配装 12 秘宝 / 心念援护 (' + equipped.length + '/3)</button>' +
-          (equipped.length || assist ? '<button type="button" class="arena-mode-chip" id="am-clear-loadout">清空配装</button>' : '') +
+          '<button type="button" class="arena-mode-chip" id="am-open-loadout">✦ 法杖 / 12 秘宝 / 援护 (' + equipped.length + '/3)</button>' +
+          (hasAnyCustom ? '<button type="button" class="arena-mode-chip" id="am-clear-loadout">清空配装</button>' : '') +
         '</div>' +
       '</div>'
     );
+  }
+
+  function syncArenaLoadoutBarDom() {
+    if (typeof document === 'undefined') return;
+    var existingBar = document.getElementById('arena-loadout-bar');
+    if (!existingBar || !existingBar.parentNode) return;
+    var oldOpen = existingBar.querySelector('#am-open-loadout');
+    var oldClear = existingBar.querySelector('#am-clear-loadout');
+    var oldOpenClick = oldOpen ? oldOpen.onclick : null;
+    var oldClearClick = oldClear ? oldClear.onclick : null;
+    var holder = document.createElement('div');
+    holder.innerHTML = renderArenaLoadoutBarHTML();
+    var nextBar = holder.firstElementChild;
+    if (!nextBar) return;
+    existingBar.parentNode.replaceChild(nextBar, existingBar);
+    var newOpen = nextBar.querySelector('#am-open-loadout');
+    var newClear = nextBar.querySelector('#am-clear-loadout');
+    if (newOpen && oldOpenClick) newOpen.onclick = oldOpenClick;
+    if (newClear) {
+      if (oldClearClick) {
+        newClear.onclick = function () {
+          setArenaSandboxStaff('none');
+          oldClearClick();
+        };
+      } else {
+        newClear.onclick = function () {
+          setArenaSandboxStaff('none');
+          setArenaSandboxRelics([]);
+          setArenaSandboxAssist(null);
+          syncArenaLoadoutBarDom();
+        };
+      }
+    }
   }
 
   function closeArenaLoadoutModal() {
@@ -3421,17 +3632,27 @@
       document.body.appendChild(ov);
     }
     ov.onclick = function (e) { if (e && e.target === ov) closeArenaLoadoutModal(); };
+    var notifyUpdated = function () {
+      if (typeof onUpdated === 'function') {
+        onUpdated();
+      } else {
+        syncArenaLoadoutBarDom();
+      }
+    };
     var redraw = function () {
       var prevScroll = ov.querySelector('.rumor-scroll');
       var savedTop = prevScroll ? prevScroll.scrollTop : 0;
+      var staffId = getArenaSandboxStaff();
+      var staffMeta = ARENA_STAVES_CATALOG[staffId] || ARENA_STAVES_CATALOG.none;
       var equipped = getArenaSandboxRelics();
       var assistId = getArenaSandboxAssist();
       var assistMeta = assistId ? BOND_ASSISTS[assistId] : null;
+      var hasAnyCustom = !!(equipped.length || assistId || staffId !== 'none');
       ov.classList.remove('hidden');
       ov.innerHTML =
         '<div class="end-card rumor-card alm-loadout-shell">' +
           '<div class="rumor-head">' +
-            '<div><h2>✦ 演武沙盒 · 战前铭记整备</h2><p class="rumor-sub">自由组合至多 3 件经典秘宝与 1 名伙伴心念援护（零存档污染）</p></div>' +
+            '<div><h2>✦ 演武沙盒 · 法杖与铭记整备</h2><p class="rumor-sub">自由切换试炼法杖，并组合至多 3 件经典秘宝与 1 名伙伴心念援护（零存档污染）</p></div>' +
             '<div class="rumor-head-actions">' +
               '<button type="button" class="modal-close-x" id="alm-close-x" aria-label="关闭铭记整备">×</button>' +
             '</div>' +
@@ -3441,9 +3662,9 @@
             '<div class="alm-scroll-fade" aria-hidden="true"></div>' +
           '</div>' +
           '<div class="modal-foot end-btns alm-foot">' +
-            '<span class="alm-foot-meta">已佩带 <b>' + equipped.length + ' / ' + MAX_EQUIPPED_RELICS + '</b> 件秘宝 · 心念援护：<b>' + (assistMeta ? escapeHtml(assistMeta.name) : '未选定') + '</b></span>' +
+            '<span class="alm-foot-meta">执杖：<b>' + escapeHtml(staffMeta.name) + '</b> · 秘宝 <b>' + equipped.length + ' / ' + MAX_EQUIPPED_RELICS + '</b> · 援护：<b>' + (assistMeta ? escapeHtml(assistMeta.name) : '未选定') + '</b></span>' +
             '<div class="alm-foot-actions">' +
-              ((equipped.length || assistId) ? '<button type="button" class="tbtn ghost" id="alm-clear-all">清空配装</button>' : '') +
+              (hasAnyCustom ? '<button type="button" class="tbtn ghost" id="alm-clear-all">清空配装</button>' : '') +
               '<button type="button" class="tbtn primary" id="alm-close-done">完成整备</button>' +
             '</div>' +
           '</div>' +
@@ -3469,16 +3690,17 @@
         sandbox: true,
         onChanged: function () {
           redraw();
-          if (typeof onUpdated === 'function') onUpdated();
+          notifyUpdated();
         }
       });
       var clearBtn = ov.querySelector('#alm-clear-all');
       if (clearBtn) {
         clearBtn.onclick = function () {
+          setArenaSandboxStaff('none');
           setArenaSandboxRelics([]);
           setArenaSandboxAssist(null);
           redraw();
-          if (typeof onUpdated === 'function') onUpdated();
+          notifyUpdated();
         };
       }
       var closeX = ov.querySelector('#alm-close-x');
@@ -3726,6 +3948,8 @@
 
   var API = {
     MAX_EQUIPPED_RELICS: MAX_EQUIPPED_RELICS,
+    ARENA_STAFF_ORDER: ARENA_STAFF_ORDER,
+    ARENA_STAVES_CATALOG: ARENA_STAVES_CATALOG,
     RELICS_CATALOG: RELICS_CATALOG,
     RELICS: RELICS_CATALOG,
     RELIC_ORDER: RELIC_ORDER,
@@ -3736,6 +3960,7 @@
     BOND_ORDER: BOND_ORDER,
     SEASONAL_EVENTS: SEASONAL_EVENTS,
     EVENTS_BY_ID: EVENTS_BY_ID,
+    renderRelicArt: renderRelicArt,
     getActiveSynergies: getActiveSynergies,
     hasSynergyTier: hasSynergyTier,
     getSynergyProgress: getSynergyProgress,
@@ -3751,7 +3976,10 @@
     setArenaSandboxRelics: setArenaSandboxRelics,
     getArenaSandboxAssist: getArenaSandboxAssist,
     setArenaSandboxAssist: setArenaSandboxAssist,
+    getArenaSandboxStaff: getArenaSandboxStaff,
+    setArenaSandboxStaff: setArenaSandboxStaff,
     getActiveRelicsForBattle: getActiveRelicsForBattle,
+    getActiveStaffForBattle: getActiveStaffForBattle,
     getUnlockedBondAssists: getUnlockedBondAssists,
     getActiveBondAssistForBattle: getActiveBondAssistForBattle,
     selectBondAssist: selectBondAssist,
@@ -3762,10 +3990,12 @@
     rerollSeasonalBoard: rerollSeasonalBoard,
     resolveEncounterChoice: resolveEncounterChoice,
     onSeasonAdvanced: onSeasonAdvanced,
+    renderArenaStaffStripHTML: renderArenaStaffStripHTML,
     renderRelicsPanelHTML: renderRelicsPanelHTML,
     renderRelicsAndAssistHTML: renderRelicsAndAssistHTML,
     bindRelicsContainerEvents: bindRelicsContainerEvents,
     renderArenaLoadoutBarHTML: renderArenaLoadoutBarHTML,
+    syncArenaLoadoutBarDom: syncArenaLoadoutBarDom,
     openArenaLoadoutModal: openArenaLoadoutModal,
     closeArenaLoadoutModal: closeArenaLoadoutModal,
     openRumorBoard: openRumorBoard,

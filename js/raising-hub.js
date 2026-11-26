@@ -57,6 +57,28 @@
     return SVG_ICONS[name] || SVG_ICONS.crystal;
   }
 
+  function getItemArtRegistry() {
+    if (typeof window !== 'undefined' && window.ItemArtRegistry) return window.ItemArtRegistry;
+    if (root && root.ItemArtRegistry) return root.ItemArtRegistry;
+    return null;
+  }
+
+  function hasRaisingItemArt(itemId) {
+    if (!itemId) return false;
+    var reg = getItemArtRegistry();
+    return !!(reg && typeof reg.getIconUrl === 'function' && reg.getIconUrl(itemId));
+  }
+
+  function renderRaisingItemIcon(itemId, fallbackIconKey, size, extraCls) {
+    var reg = getItemArtRegistry();
+    if (itemId && reg && typeof reg.getIconUrl === 'function' && reg.getIconUrl(itemId) && typeof reg.renderIconHTML === 'function') {
+      var px = Number(size) > 0 ? Math.round(Number(size)) : 36;
+      var cls = ('rh-item-art' + (extraCls ? ' ' + extraCls : '')).trim();
+      return reg.renderIconHTML(itemId, { size: px, cls: cls, eager: true });
+    }
+    return ico(fallbackIconKey);
+  }
+
   function escapeHtml(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;')
@@ -600,17 +622,29 @@
     return hub;
   }
 
-  function showCharmPopover(title, desc) {
+  function showCharmPopover(title, desc, itemId) {
     if (typeof document === 'undefined') return;
     var pop = document.getElementById('sh-charm-popover');
     if (!pop) return;
-    if (_activeCharmTipId === title && !pop.classList.contains('hidden')) {
+    var tipKey = (itemId ? String(itemId) + ':' : '') + String(title || '');
+    if (_activeCharmTipId === tipKey && !pop.classList.contains('hidden')) {
       pop.classList.add('hidden');
       _activeCharmTipId = null;
       return;
     }
-    _activeCharmTipId = title;
-    pop.innerHTML = '<strong>' + escapeHtml(title) + '</strong><span>' + escapeHtml(desc) + '</span>';
+    _activeCharmTipId = tipKey;
+    var hasArt = !!(itemId && hasRaisingItemArt(itemId));
+    pop.classList.toggle('has-item-art', hasArt);
+    if (hasArt) {
+      pop.innerHTML =
+        '<span class="sh-pop-art">' + renderRaisingItemIcon(itemId, null, 44, 'sh-pop-art-img') + '</span>' +
+        '<div class="sh-pop-body">' +
+          '<strong>' + escapeHtml(title) + '</strong>' +
+          '<span>' + escapeHtml(desc) + '</span>' +
+        '</div>';
+    } else {
+      pop.innerHTML = '<strong>' + escapeHtml(title) + '</strong><span>' + escapeHtml(desc) + '</span>';
+    }
     pop.classList.remove('hidden');
   }
 
@@ -748,15 +782,17 @@
       charmsEl.innerHTML = charms.map(function (cid) {
         var meta = KEEPSAKE_CHARM_META[cid];
         if (!meta) return '';
-        return '<button type="button" class="sh-charm-btn" data-charm-id="' + escapeHtml(cid) + '" title="' + escapeHtml(meta.name) + '" aria-label="' + escapeHtml(meta.name) + '">' + ico(meta.icon) + '</button>';
+        var hasArt = hasRaisingItemArt(cid);
+        return '<button type="button" class="sh-charm-btn' + (hasArt ? ' has-item-art' : '') + '" data-charm-id="' + escapeHtml(cid) + '" title="' + escapeHtml(meta.name) + '" aria-label="' + escapeHtml(meta.name) + '">' + renderRaisingItemIcon(cid, meta.icon, 22, 'sh-charm-art-img') + '</button>';
       }).join('');
       charmsEl.querySelectorAll('[data-charm-id]').forEach(function (b) {
         b.onclick = function (e) {
           if (e && e.stopPropagation) e.stopPropagation();
-          var meta = KEEPSAKE_CHARM_META[b.getAttribute('data-charm-id')];
+          var cid = b.getAttribute('data-charm-id');
+          var meta = KEEPSAKE_CHARM_META[cid];
           if (meta) {
             sfxSafe('click');
-            showCharmPopover(meta.name, meta.note);
+            showCharmPopover(meta.name, meta.note, cid);
           }
         };
       });
@@ -2730,10 +2766,11 @@
           var price = getShopPrice(it, st);
           var owned = (st.cozyBag && st.cozyBag[it.id]) || 0;
           var canAfford = (st.gold || 0) >= price;
+          var hasArt = hasRaisingItemArt(it.id);
           return (
             '<article class="rh-shop-card" data-item-id="' + escapeHtml(it.id) + '">' +
               '<div class="rh-sc-top">' +
-                '<span class="rh-sc-ico" data-ico="' + escapeHtml(it.icon) + '">' + ico(it.icon) + '</span>' +
+                '<span class="rh-sc-ico' + (hasArt ? ' has-item-art' : '') + '" data-ico="' + escapeHtml(it.icon) + '">' + renderRaisingItemIcon(it.id, it.icon, 44, 'rh-shop-art-img') + '</span>' +
                 '<div class="rh-sc-title">' +
                   '<strong>' + escapeHtml(it.name) + '</strong>' +
                   '<span class="rh-sc-tag">' + escapeHtml(it.tag) + '</span>' +
@@ -2789,9 +2826,10 @@
         var bagHtml = ownedList.length
           ? ownedList.map(function (it) {
               var cnt = st.cozyBag[it.id] || 0;
+              var hasArt = hasRaisingItemArt(it.id);
               return (
                 '<div class="rh-gift-item">' +
-                  '<div class="rgi-main"><span class="rh-sc-ico" data-ico="' + escapeHtml(it.icon) + '">' + ico(it.icon) + '</span><div><strong>' + escapeHtml(it.name) + '</strong><small>持有 ' + cnt + ' · ' + escapeHtml(it.tag) + '</small></div></div>' +
+                  '<div class="rgi-main"><span class="rh-sc-ico' + (hasArt ? ' has-item-art' : '') + '" data-ico="' + escapeHtml(it.icon) + '">' + renderRaisingItemIcon(it.id, it.icon, 36, 'rh-gift-art-img') + '</span><div><strong>' + escapeHtml(it.name) + '</strong><small>持有 ' + cnt + ' · ' + escapeHtml(it.tag) + '</small></div></div>' +
                   '<button type="button" class="rh-btn rh-btn-buy sm" data-send-gift="' + escapeHtml(it.id) + '"' + (selDone || !_shopUiState.selectedChar ? ' disabled' : '') + '>' + (selDone ? '本季已赠' : '致赠此物') + '</button>' +
                 '</div>'
               );
@@ -4117,6 +4155,8 @@
     adjustLeisure: adjustLeisure,
     getMoodInfo: getMoodInfo,
     getSylviaStage: getSylviaStage,
+    renderRaisingItemIcon: renderRaisingItemIcon,
+    showCharmPopover: showCharmPopover,
     syncSylviaHub: syncSylviaHub,
     tapSylvia: tapSylvia,
     rollSeasonChars: rollSeasonChars,

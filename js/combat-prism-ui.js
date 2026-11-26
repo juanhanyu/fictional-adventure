@@ -513,11 +513,16 @@
     const wandBtn = document.getElementById('cb-btn-wand');
     if (wandBtn && isVisible(wandBtn)) {
       const isOn = wandBtn.classList.contains('active');
+      const artApi = (typeof window !== 'undefined' && window.ItemArtRegistry) || global.ItemArtRegistry || null;
+      const wandIconHtml = (artApi && typeof artApi.renderIconHTML === 'function')
+        ? (artApi.renderIconHTML('eclipse_wand', { size: 20, cls: 'cb-bl-art-icon', decorative: true, eager: true }) || '')
+        : '';
       items.push({
         kind: 'tool',
         key: 'R',
         skillId: 'tool_wand',
         name: '晦轮杖',
+        iconHtml: wandIconHtml,
         pathLabel: '魔法真伤',
         foot: isOn ? '真伤已展开 · 穿法抗与魔盾' : '收鞘态 · 展开享100%魔法真伤',
         cost: wandBtn.disabled ? '不可用' : (isOn ? 'ON' : 'OFF'),
@@ -1867,6 +1872,12 @@
     style.id = 'cb-prism-exp-inline-style';
     style.textContent = [
       '.cb-bl-tags-right{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;}',
+      '.cb-bl-top:has(.cb-bl-art-wrap){align-items:center;}',
+      '.cb-bl-name.has-art{display:inline-flex;align-items:center;gap:6px;line-height:1.15;}',
+      '.cb-bl-art-wrap{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;flex-shrink:0;}',
+      '.cb-bl-art-icon{width:20px;height:20px;object-fit:contain;display:block;flex-shrink:0;filter:drop-shadow(0 1px 3px rgba(14,43,120,0.28));transition:transform 0.14s ease,filter 0.16s ease;}',
+      '.cb-blade.compact .cb-bl-art-wrap,.cb-blade.compact .cb-bl-art-icon{width:17px;height:17px;}',
+      '.cb-blade:not(:disabled):hover .cb-bl-art-icon,.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-art-icon{filter:drop-shadow(0 0 6px rgba(217,243,255,0.82));}',
       '.cb-bl-exp{font-size:10px;font-weight:700;line-height:1.22;padding:1px 5px;white-space:nowrap;flex-shrink:0;letter-spacing:0.02em;}',
       '.cb-bl-exp.is-warn{color:#b41f35;background:rgba(201,42,62,0.13);border-left:2px solid #c92a3e;}',
       '.cb-bl-exp.is-safe{color:#0b6e76;background:rgba(15,139,146,0.11);border-left:2px solid #0f8b92;}',
@@ -2104,7 +2115,7 @@
 
   function buildItemsSignature(mode, items) {
     return `${mode}|${uiState.lastFieldW}x${uiState.lastFieldH}|${uiState.lastAnchorX},${uiState.lastAnchorY}|${uiState.portraitRight}:${uiState.allyPaneRight}:${uiState.corridorLeft}-${uiState.corridorRight}:${uiState.hasMidCorridor ? 1 : 0}|${uiState.skyTopY}:${uiState.skyBotY}:${uiState.enemyLeftX}|${uiState.compactMulti ? 1 : 0}|${uiState.narrowDesktop ? 1 : 0}|${uiState.shortViewport ? 1 : 0}|` + items.map((it, idx) =>
-      `${idx}:${it.key}:${it.slotIdx != null ? it.slotIdx : ''}:${it.skillId || ''}:${it.name || ''}:${it.pathLabel || ''}:${it.cost}:${it.foot || it.desc || ''}:${it.oppLabel || ''}:${it.expKind || ''}:${it.expText || ''}:${it.disabled ? 1 : 0}`
+      `${idx}:${it.key}:${it.slotIdx != null ? it.slotIdx : ''}:${it.skillId || ''}:${it.name || ''}:${it.iconHtml ? 1 : 0}:${it.pathLabel || ''}:${it.cost}:${it.foot || it.desc || ''}:${it.oppLabel || ''}:${it.expKind || ''}:${it.expText || ''}:${it.disabled ? 1 : 0}`
     ).join('||');
   }
 
@@ -2377,11 +2388,14 @@
               ? `<span class="cb-bl-tags-right">${expHtml}${badgeHtml}</span>`
               : '';
 
+            const nameIconHtml = item.iconHtml
+              ? `<span class="cb-bl-art-wrap" aria-hidden="true">${item.iconHtml}</span>`
+              : '';
             btn.innerHTML = `
               <span class="cb-bl-key">${escapeHtml(item.key)}</span>
               <div class="cb-bl-content">
                 <div class="cb-bl-top">
-                  <span class="cb-bl-name">${escapeHtml(item.name)}</span>
+                  <span class="cb-bl-name${item.iconHtml ? ' has-art' : ''}">${nameIconHtml}${escapeHtml(item.name)}</span>
                   ${rightTagsHtml}
                 </div>
                 <div class="cb-bl-bot">

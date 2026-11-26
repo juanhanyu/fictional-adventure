@@ -2214,6 +2214,180 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
   border-color: rgba(14, 43, 120, 0.34);
 }
 
+/* 状态面板随身法杖雪瓷细线带 (.sc-staff-strip) */
+.sc-staff-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 10px 2px 2px;
+  border: none;
+  border-top: 1px solid rgba(27, 35, 51, 0.12);
+  border-radius: 0;
+  background: transparent;
+  font-size: 12px;
+  color: #323D52;
+}
+
+.sc-staff-label,
+.sc-staff-head,
+.sc-staff-strip > b {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #526078;
+  flex-shrink: 0;
+}
+
+.sc-staff-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sc-staff-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 240px;
+  min-width: 0;
+  padding: 5px 12px 5px 8px;
+  border: none;
+  border-left: 2px solid rgba(22, 88, 235, 0.34);
+  border-radius: 0;
+  background: linear-gradient(90deg, rgba(235, 244, 255, 0.72) 0%, rgba(250, 251, 253, 0.36) 100%);
+  color: #1B2333;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.sc-staff-card:hover {
+  background: linear-gradient(90deg, rgba(22, 88, 235, 0.10) 0%, rgba(235, 244, 255, 0.56) 100%);
+  border-left-color: #1658EB;
+}
+
+.sc-staff-card:focus-visible {
+  outline: 1.5px solid #1658EB;
+  outline-offset: 2px;
+}
+
+.sc-staff-card.active,
+.sc-staff-card.equipped {
+  border-left: 2.5px solid #1658EB;
+  background: linear-gradient(90deg, rgba(22, 88, 235, 0.12) 0%, rgba(238, 245, 255, 0.68) 100%);
+}
+
+.sys-chronicle .sc-staff-strip .sc-staff-ico {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.sys-chronicle .sc-staff-strip .sc-staff-card .item-art-img,
+.sys-chronicle .sc-staff-strip .sc-staff-card .item-art-svg {
+  width: 40px;
+  height: 40px;
+  max-width: 40px;
+  max-height: 40px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 0;
+}
+
+.sc-staff-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sc-staff-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #1B2333;
+  line-height: 1.25;
+}
+
+.sc-staff-eq {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #1658EB;
+  background: rgba(22, 88, 235, 0.10);
+  padding: 1px 5px;
+  border: none;
+  border-radius: 0;
+}
+
+.sc-staff-tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #526078;
+}
+
+.sc-staff-desc {
+  font-size: 11px;
+  line-height: 1.38;
+  color: #526078;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-staff-go {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #1658EB;
+  white-space: nowrap;
+}
+
+.sc-staff-switch-btn {
+  flex-shrink: 0;
+  padding: 6px 11px;
+  border: none;
+  border-bottom: 1.5px solid rgba(22, 88, 235, 0.42);
+  border-radius: 0;
+  background: rgba(22, 88, 235, 0.07);
+  color: #103FA8;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+.sc-staff-switch-btn:hover {
+  background: rgba(22, 88, 235, 0.14);
+  color: #0E2B78;
+  border-bottom-color: #1658EB;
+}
+
+.sc-staff-switch-btn:focus-visible {
+  outline: 1.5px solid #1658EB;
+  outline-offset: 2px;
+}
+
 /* 底部随身铭记细线带 (.sc-relic-strip) */
 .sc-relic-strip {
   display: flex;
@@ -2243,14 +2417,31 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
 .sc-relic-tag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 2px;
-  background: transparent;
-  border: 1px solid rgba(27, 35, 51, 0.16);
+  gap: 6px;
+  padding: 3px 9px 3px 6px;
+  border-radius: 0;
+  background: rgba(22, 88, 235, 0.055);
+  border: none;
+  border-left: 2px solid rgba(22, 88, 235, 0.42);
   color: #1B2333;
   font-size: 11.5px;
   font-weight: 600;
+  line-height: 1.3;
+}
+
+.sys-chronicle .sc-relic-chip .item-art-img,
+.sys-chronicle .sc-relic-chip .item-art-svg {
+  width: 22px;
+  height: 22px;
+  max-width: 22px;
+  max-height: 22px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  filter: drop-shadow(0 1px 3px rgba(15, 36, 86, 0.16));
 }
 
 .sc-synergy-pill,
@@ -2259,10 +2450,11 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  border-radius: 2px;
-  background: rgba(28, 76, 184, 0.08);
-  border: 1px solid #1C4CB8;
-  color: #1C4CB8;
+  border-radius: 0;
+  background: rgba(22, 88, 235, 0.08);
+  border: none;
+  border-left: 2px solid #1658EB;
+  color: #1658EB;
   font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -2406,6 +2598,28 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
   #panel .sc-meta-grid > div,
   #panel .sc-meta-item {
     padding: 6px 2px;
+  }
+
+  #panel .sc-staff-strip {
+    padding: 7px 2px 2px;
+    gap: 6px 8px;
+  }
+
+  #panel .sys-chronicle .sc-staff-strip .sc-staff-ico,
+  #panel .sys-chronicle .sc-staff-strip .sc-staff-card .item-art-img,
+  #panel .sys-chronicle .sc-staff-strip .sc-staff-card .item-art-svg {
+    width: 32px;
+    height: 32px;
+    max-width: 32px;
+    max-height: 32px;
+  }
+
+  #panel .sys-chronicle .sc-relic-chip .item-art-img,
+  #panel .sys-chronicle .sc-relic-chip .item-art-svg {
+    width: 18px;
+    height: 18px;
+    max-width: 18px;
+    max-height: 18px;
   }
 
   #panel .sc-relic-strip {
@@ -3973,6 +4187,33 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
     line-height: 1.35;
   }
 
+  #sys-popup .sp-card .sc-staff-strip {
+    padding: 6px 2px 0;
+    gap: 6px 8px;
+  }
+
+  #sys-popup .sp-card .sc-staff-card {
+    padding: 4px 9px 4px 6px;
+    gap: 7px;
+  }
+
+  #sys-popup .sp-card .sys-chronicle .sc-staff-strip .sc-staff-ico,
+  #sys-popup .sp-card .sys-chronicle .sc-staff-strip .sc-staff-card .item-art-img,
+  #sys-popup .sp-card .sys-chronicle .sc-staff-strip .sc-staff-card .item-art-svg {
+    width: 30px;
+    height: 30px;
+    max-width: 30px;
+    max-height: 30px;
+  }
+
+  #sys-popup .sp-card .sys-chronicle .sc-relic-chip .item-art-img,
+  #sys-popup .sp-card .sys-chronicle .sc-relic-chip .item-art-svg {
+    width: 18px;
+    height: 18px;
+    max-width: 18px;
+    max-height: 18px;
+  }
+
   #sys-popup .sp-card .sc-relic-strip {
     padding: 6px 2px 0;
   }
@@ -4156,143 +4397,18 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
   border-radius: 0;
 }
 
-#panel .p-inv {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0;
-  border-top: 1px solid rgba(27, 35, 51, 0.12);
-}
-
-#panel .inv-slot {
+/* 76px 图形化背包 (.inv-gb-shell) 与综合面板雪瓷衔接（已清除旧 3 列 .p-inv / 32px .inv-ico-box 冲突约束） */
+#panel #panel-body .inv-gb-shell {
+  width: 100%;
+  border: none;
   border-radius: 0;
   background: transparent;
-  border: none;
-  border-bottom: 1px solid rgba(27, 35, 51, 0.12);
-  color: #526078;
 }
 
-#panel .inv-slot.filled {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  text-align: left;
-  padding: 15px 14px;
-  gap: 8px;
-  border: none;
-  border-bottom: 1px solid rgba(27, 35, 51, 0.12);
-  border-right: 1px solid rgba(27, 35, 51, 0.09);
-  background: transparent;
-  color: #1B2333;
-  box-shadow: none;
-  transition: background 0.16s ease;
-}
-
-#panel .inv-slot.filled:nth-child(3n) {
-  border-right: none;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  #panel .inv-slot.filled:hover {
-    background: rgba(28, 76, 184, 0.04);
-  }
-}
-
-#panel .inv-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-#panel .inv-ico-box {
-  width: 32px;
-  height: 32px;
-  border-radius: 2px;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid rgba(27, 35, 51, 0.15);
-  color: #1C4CB8;
-  font-size: 16px;
-}
-
-#panel .inv-ico-box svg {
-  width: 17px;
-  height: 17px;
-  display: block;
-}
-
-#panel .inv-title-wrap {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 6px;
-}
-
-#panel .inv-title-wrap b,
-#panel .inv-name {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: #1B2333;
-  line-height: 1.35;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#panel .inv-qty {
-  flex-shrink: 0;
-  padding: 0 5px;
-  border-radius: 2px;
-  background: transparent;
-  border: 1px solid rgba(28, 76, 184, 0.30);
-  color: #1C4CB8;
-  font-size: 11.5px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-#panel .inv-desc {
-  font-size: 12px;
-  line-height: 1.6;
-  color: #526078;
-  margin: 0;
-}
-
-#panel .inv-foot {
+#panel #panel-body .inv-gb-summary {
   margin-top: auto;
   padding-top: 8px;
-  border-top: 1px solid rgba(27, 35, 51, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-#panel .inv-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 7px;
-  border-radius: 2px;
-  background: transparent;
-  border: 1px solid rgba(27, 35, 51, 0.14);
-  color: #526078;
-  font-size: 11.5px;
-  font-weight: 600;
-}
-
-#panel .inv-foot .tbtn,
-#panel .inv-use-btn {
-  min-width: 0;
-  min-height: 30px;
-  padding: 4px 14px;
-  font-size: 12px;
-  margin-top: 0 !important;
+  border-top: 1px solid rgba(27, 35, 51, 0.09);
 }
 
 #panel .p-ach {
@@ -5885,19 +6001,6 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
   #stats-body .stat-item {
     border-bottom: 1px solid rgba(27, 35, 51, 0.12);
   }
-
-  #panel .p-inv,
-  .p-inv {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  #panel .inv-slot.filled:nth-child(3n) {
-    border-right: 1px solid rgba(27, 35, 51, 0.09);
-  }
-
-  #panel .inv-slot.filled:nth-child(2n) {
-    border-right: none;
-  }
 }
 
 @media (max-width: 680px),
@@ -6234,17 +6337,6 @@ body.ai-drawer-open #app section#game-screen #text-box .vn-read-controls {
     top: 6px;
     max-width: calc(100% - 16px);
     padding: 4px 10px;
-  }
-
-  #panel .p-inv,
-  .p-inv {
-    grid-template-columns: 1fr;
-  }
-
-  #panel .inv-slot.filled,
-  #panel .inv-slot.filled:nth-child(3n),
-  #panel .inv-slot.filled:nth-child(2n) {
-    border-right: none;
   }
 
   /* Clean single-row 44px touch-target tabs on 390px with soft right fade */

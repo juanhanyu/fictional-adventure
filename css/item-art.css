@@ -1,0 +1,1470 @@
+/* =========================================================================
+   《转生千金》板 A 道具实绘图标总表 & 76px 图形化背包样式体系 (css/item-art.css)
+   美学母版：雪瓷冰白 #FAFBFD + 皇家蓝 #1658EB + 冰青 #7DD3FC + 淡香槟金 #C4A46C
+   硬纪律：
+     1. 全站严禁圆框套圆框（所有内部格、卡、微图槽均采用直角或 7px 切角 + 1px 冰线）
+     2. 严禁旧暗底/旧棕金残留，通透雪瓷折射质感
+     3. 完整适配桌面端 1440×900 与 1280×720，确保零裁切、零溢出、清晰锐利
+   ========================================================================= */
+
+/* ==================== 0. 道具艺术设计令牌 ==================== */
+:root {
+  --ia-canvas: #FAFBFD;
+  --ia-plate-hi: #FFFFFF;
+  --ia-plate-mid: #F3F8FF;
+  --ia-plate-lo: #E8F2FF;
+  --ia-ink: #1A2436;
+  --ia-ink-body: #323D52;
+  --ia-ink-muted: #526078;
+  --ia-sapphire: #1658EB;
+  --ia-sapphire-hi: #2E77F8;
+  --ia-sapphire-mid: #103FA8;
+  --ia-sapphire-deep: #0E2B78;
+  --ia-cyan: #7DD3FC;
+  --ia-cyan-mid: #38BDF8;
+  --ia-gold: #C4A46C;
+  --ia-gold-deep: #8C6928;
+  --ia-gold-pale: #EFE0BE;
+  --ia-line: rgba(22, 88, 235, 0.18);
+  --ia-line-soft: rgba(27, 35, 51, 0.12);
+  --ia-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ==================== 1. 全站基础实绘图标原语 ==================== */
+.item-art-img {
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 2px 5px rgba(15, 36, 86, 0.14));
+}
+
+.item-art-svg,
+.item-art-fallback {
+  display: block;
+  flex-shrink: 0;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  color: var(--ia-sapphire);
+  filter: drop-shadow(0 1px 3px rgba(22, 88, 235, 0.18));
+}
+
+/* 标准尺寸修饰符 */
+.item-art-xs {
+  width: 18px;
+  height: 18px;
+}
+
+.item-art-sm {
+  width: 24px;
+  height: 24px;
+}
+
+.item-art-md {
+  width: 36px;
+  height: 36px;
+}
+
+.item-art-lg {
+  width: 56px;
+  height: 56px;
+}
+
+.item-art-xl {
+  width: 64px;
+  height: 64px;
+}
+
+.item-art-hero {
+  width: 148px;
+  height: 148px;
+  filter: drop-shadow(0 8px 18px rgba(15, 36, 86, 0.18));
+}
+
+/* ==================== 2. 76px 图形化背包双栏布局 (openPanel('inv')) ==================== */
+.inv-gb-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 268px;
+  gap: 0;
+  min-height: 416px;
+  align-items: stretch;
+  color: var(--ia-ink);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+.inv-gb-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 2px 18px 8px 2px;
+}
+
+/* 顶部分类筛选栏：平铺下划线/切角微光，严禁套圆框 */
+.inv-gb-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 0 0 8px;
+  border: none;
+  border-bottom: 1px solid rgba(22, 88, 235, 0.16);
+}
+
+.inv-gb-filters button,
+.inv-gb-filter,
+.inv-gb-tab {
+  position: relative;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px 6px;
+  margin: 0;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ia-ink-muted);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: color 0.16s var(--ia-ease), border-color 0.16s var(--ia-ease), background 0.16s var(--ia-ease);
+}
+
+.inv-gb-filters button:hover,
+.inv-gb-filter:hover,
+.inv-gb-tab:hover {
+  color: var(--ia-sapphire);
+  background: rgba(22, 88, 235, 0.05);
+}
+
+.inv-gb-filters button.active,
+.inv-gb-filters button.on,
+.inv-gb-filters button[aria-selected="true"],
+.inv-gb-filters button[aria-pressed="true"],
+.inv-gb-filter.active,
+.inv-gb-filter.on,
+.inv-gb-tab.active,
+.inv-gb-tab.on {
+  color: var(--ia-sapphire);
+  font-weight: 800;
+  border-bottom-color: var(--ia-sapphire);
+  background: linear-gradient(180deg, rgba(22, 88, 235, 0) 40%, rgba(22, 88, 235, 0.09) 100%);
+}
+
+.inv-gb-filters button:focus-visible,
+.inv-gb-filter:focus-visible,
+.inv-gb-tab:focus-visible {
+  outline: 1.5px solid var(--ia-sapphire);
+  outline-offset: 2px;
+}
+
+.inv-gb-filter-cnt,
+.inv-gb-filters small,
+.inv-gb-filters em {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ia-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.inv-gb-filters button.active .inv-gb-filter-cnt,
+.inv-gb-filters button.on .inv-gb-filter-cnt,
+.inv-gb-filter.active small,
+.inv-gb-filter.on small {
+  color: var(--ia-sapphire-mid);
+}
+
+.inv-gb-summary,
+.inv-gb-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--ia-ink-muted);
+}
+
+/* 76px 图形化图标格网 */
+.inv-gb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 76px);
+  gap: 8px;
+  align-content: start;
+  justify-content: start;
+}
+
+.inv-gb-empty {
+  grid-column: 1 / -1;
+  padding: 44px 16px;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--ia-ink-muted);
+  border-top: 1px dashed rgba(22, 88, 235, 0.16);
+  border-bottom: 1px dashed rgba(22, 88, 235, 0.16);
+  background: rgba(243, 248, 255, 0.45);
+}
+
+/* 76×76px 雪瓷切角格子（左上 + 右下 7px 斜切，零圆角，双伪元素描边 + 冰蓝底面） */
+.inv-gb-slot {
+  position: relative;
+  box-sizing: border-box;
+  width: 76px;
+  height: 76px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0 !important;
+  background: transparent;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: visible;
+  transition: filter 0.16s var(--ia-ease), transform 0.16s var(--ia-ease);
+}
+
+.inv-gb-slot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: rgba(22, 88, 235, 0.22);
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  transition: background 0.16s var(--ia-ease);
+}
+
+.inv-gb-slot::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.96) 0%, rgba(238, 246, 255, 0.92) 100%);
+  clip-path: polygon(6.5px 0, 100% 0, 100% calc(100% - 6.5px), calc(100% - 6.5px) 100%, 0 100%, 0 6.5px);
+  transition: background 0.16s var(--ia-ease), inset 0.14s var(--ia-ease);
+}
+
+.inv-gb-slot:hover {
+  filter: drop-shadow(0 4px 10px rgba(22, 88, 235, 0.16));
+}
+
+.inv-gb-slot:hover::before {
+  background: rgba(22, 88, 235, 0.56);
+}
+
+.inv-gb-slot:hover::after {
+  background: linear-gradient(155deg, #FFFFFF 0%, #E6F2FF 100%);
+}
+
+.inv-gb-slot:focus-visible {
+  outline: 2px solid var(--ia-sapphire);
+  outline-offset: 2px;
+}
+
+/* 选中态：皇家蓝切角高亮框 */
+.inv-gb-slot.selected,
+.inv-gb-slot.is-selected,
+.inv-gb-slot[aria-selected="true"] {
+  filter: drop-shadow(0 5px 14px rgba(22, 88, 235, 0.26));
+}
+
+.inv-gb-slot.selected::before,
+.inv-gb-slot.is-selected::before,
+.inv-gb-slot[aria-selected="true"]::before {
+  background: linear-gradient(135deg, #2E77F8 0%, #1658EB 52%, #0E2B78 100%);
+}
+
+.inv-gb-slot.selected::after,
+.inv-gb-slot.is-selected::after,
+.inv-gb-slot[aria-selected="true"]::after {
+  inset: 2px;
+  background: linear-gradient(155deg, #FFFFFF 0%, #E7F2FF 100%);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+
+/* 已佩/已装备态：淡金 × 皇蓝棱边高亮 */
+.inv-gb-slot.equipped::before {
+  background: linear-gradient(135deg, #C4A46C 0%, #EFE0BE 28%, #1658EB 76%, #0E2B78 100%);
+}
+
+.inv-gb-slot.equipped.selected::before,
+.inv-gb-slot.equipped.is-selected::before {
+  background: linear-gradient(135deg, #C4A46C 0%, #2E77F8 42%, #1658EB 78%, #0E2B78 100%);
+}
+
+/* 格子内 58×58px 居中通透实图 */
+.inv-gb-slot .item-art-img,
+.inv-gb-slot .item-art-svg {
+  position: relative;
+  z-index: 2;
+  width: 58px;
+  height: 58px;
+  max-width: 58px;
+  max-height: 58px;
+  object-fit: contain;
+  transition: transform 0.18s var(--ia-ease), filter 0.18s var(--ia-ease);
+}
+
+.inv-gb-slot:hover .item-art-img,
+.inv-gb-slot:hover .item-art-svg {
+  transform: scale(1.05) translateY(-1px);
+  filter: drop-shadow(0 4px 8px rgba(15, 36, 86, 0.2));
+}
+
+.inv-gb-slot.selected .item-art-img,
+.inv-gb-slot.selected .item-art-svg {
+  transform: scale(1.04);
+}
+
+/* 顶角淡金/皇蓝细角标「已佩」（显式子节点） */
+.inv-gb-eq,
+.inv-gb-equipped,
+.inv-gb-badge,
+.inv-gb-slot .inv-gb-tag {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 4;
+  padding: 1px 4px;
+  border: none;
+  border-radius: 0;
+  background: linear-gradient(135deg, rgba(196, 164, 108, 0.96) 0%, rgba(140, 105, 40, 0.95) 100%);
+  color: #FFFFFF;
+  font-size: 9.5px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.inv-gb-slot.selected .inv-gb-eq,
+.inv-gb-slot.selected .inv-gb-equipped,
+.inv-gb-slot.selected .inv-gb-badge {
+  background: linear-gradient(135deg, #1658EB 0%, #0E2B78 100%);
+}
+
+/* 兜底：若 .inv-gb-slot.equipped 未内嵌角标节点，由 CSS 自动补绘右上角「已佩」细角标 */
+.inv-gb-slot.equipped:not(:has(.inv-gb-eq, .inv-gb-equipped, .inv-gb-badge, .inv-gb-tag)) {
+  background: linear-gradient(135deg, #C4A46C 0%, #EFE0BE 28%, #1658EB 76%, #0E2B78 100%);
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+}
+
+.inv-gb-slot.equipped:not(:has(.inv-gb-eq, .inv-gb-equipped, .inv-gb-badge, .inv-gb-tag))::before {
+  inset: 1px;
+  z-index: 1;
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.96) 0%, rgba(238, 246, 255, 0.92) 100%);
+  clip-path: polygon(6.5px 0, 100% 0, 100% calc(100% - 6.5px), calc(100% - 6.5px) 100%, 0 100%, 0 6.5px);
+}
+
+.inv-gb-slot.equipped.selected:not(:has(.inv-gb-eq, .inv-gb-equipped, .inv-gb-badge, .inv-gb-tag))::before {
+  inset: 2px;
+  background: linear-gradient(155deg, #FFFFFF 0%, #E7F2FF 100%);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+
+.inv-gb-slot.equipped:not(:has(.inv-gb-eq, .inv-gb-equipped, .inv-gb-badge, .inv-gb-tag))::after {
+  content: '已佩';
+  inset: auto;
+  top: 2px;
+  right: 2px;
+  z-index: 4;
+  padding: 1px 4px;
+  background: linear-gradient(135deg, rgba(196, 164, 108, 0.96) 0%, rgba(140, 105, 40, 0.95) 100%);
+  color: #FFFFFF;
+  font-size: 9.5px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  clip-path: none;
+}
+
+.inv-gb-slot.equipped.selected:not(:has(.inv-gb-eq, .inv-gb-equipped, .inv-gb-badge, .inv-gb-tag))::after {
+  background: linear-gradient(135deg, #1658EB 0%, #0E2B78 100%);
+}
+
+/* 右下角无框小计数（如 ×3） */
+.inv-gb-qty {
+  position: absolute;
+  right: 4px;
+  bottom: 2px;
+  z-index: 4;
+  padding: 0 3px;
+  border: none;
+  border-radius: 0;
+  background: rgba(250, 251, 253, 0.88);
+  color: var(--ia-sapphire-mid);
+  font-family: ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Consolas, monospace;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+/* 右栏精鉴卡：宽 268px @1440 / 244px @1280，仅左侧 1px 冰蓝竖分隔线，绝无套框 */
+.inv-gb-detail {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  border-left: 1px solid rgba(22, 88, 235, 0.18);
+  border-radius: 0;
+  background: transparent;
+  padding: 4px 2px 8px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.inv-gb-detail-empty {
+  margin: auto 0;
+  padding: 24px 8px;
+  text-align: center;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--ia-ink-muted);
+}
+
+/* 148×148px 无重边框雪瓷鉴赏台 + 居中高清大图标 */
+.inv-gb-stage,
+.inv-gb-art,
+.inv-gb-hero,
+.inv-gb-preview {
+  position: relative;
+  width: 148px;
+  height: 148px;
+  margin: 2px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 0;
+  background: radial-gradient(
+    circle at 50% 48%,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(232, 243, 255, 0.72) 60%,
+    rgba(22, 88, 235, 0.04) 100%
+  );
+  flex-shrink: 0;
+}
+
+.inv-gb-stage::before,
+.inv-gb-art::before,
+.inv-gb-hero::before,
+.inv-gb-preview::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to right, rgba(22, 88, 235, 0.34), rgba(22, 88, 235, 0.34)) 0 0 / 12px 1px no-repeat,
+    linear-gradient(to bottom, rgba(22, 88, 235, 0.34), rgba(22, 88, 235, 0.34)) 0 0 / 1px 12px no-repeat,
+    linear-gradient(to left, rgba(196, 164, 108, 0.44), rgba(196, 164, 108, 0.44)) 100% 100% / 12px 1px no-repeat,
+    linear-gradient(to top, rgba(196, 164, 108, 0.44), rgba(196, 164, 108, 0.44)) 100% 100% / 1px 12px no-repeat;
+}
+
+.inv-gb-stage .item-art-img,
+.inv-gb-stage .item-art-svg,
+.inv-gb-art .item-art-img,
+.inv-gb-art .item-art-svg,
+.inv-gb-hero .item-art-img,
+.inv-gb-hero .item-art-svg,
+.inv-gb-preview .item-art-img,
+.inv-gb-preview .item-art-svg {
+  width: 132px;
+  height: 132px;
+  max-width: 92%;
+  max-height: 92%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 18px rgba(15, 36, 86, 0.18));
+}
+
+.inv-gb-cat,
+.inv-gb-kicker,
+.inv-gb-type {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--ia-sapphire);
+}
+
+.inv-gb-status,
+.inv-gb-state,
+.inv-gb-eq-tag {
+  padding: 1px 6px;
+  border: none;
+  border-radius: 0;
+  background: rgba(196, 164, 108, 0.18);
+  color: var(--ia-gold-deep);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.inv-gb-name,
+.inv-gb-title,
+.inv-gb-detail h3 {
+  margin: 0;
+  text-align: center;
+  font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', Georgia, serif;
+  font-size: 17.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+  color: var(--ia-ink);
+}
+
+.inv-gb-rule {
+  height: 1px;
+  width: 100%;
+  border: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(22, 88, 235, 0.24) 22%,
+    rgba(196, 164, 108, 0.36) 78%,
+    transparent 100%
+  );
+  margin: 0;
+}
+
+.inv-gb-desc {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.66;
+  color: var(--ia-ink-body);
+}
+
+.inv-gb-lore {
+  margin: 0;
+  padding-left: 9px;
+  border-left: 2px solid rgba(22, 88, 235, 0.24);
+  font-family: 'Noto Serif SC', 'Source Han Serif SC', serif;
+  font-size: 11.8px;
+  line-height: 1.62;
+  color: var(--ia-ink-muted);
+}
+
+.inv-gb-eff,
+.inv-gb-effect,
+.inv-gb-stats {
+  padding: 7px 10px;
+  border: none;
+  border-left: 2px solid var(--ia-sapphire);
+  border-radius: 0;
+  background: rgba(22, 88, 235, 0.055);
+  font-size: 12px;
+  line-height: 1.56;
+  color: var(--ia-sapphire-deep);
+  font-weight: 600;
+}
+
+.inv-gb-actions,
+.inv-gb-foot {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid rgba(22, 88, 235, 0.14);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inv-gb-btn,
+.inv-gb-act,
+.inv-gb-actions button {
+  flex: 1 1 auto;
+  min-height: 36px;
+  padding: 7px 14px;
+  border: none;
+  border-radius: 0 !important;
+  background: linear-gradient(180deg, #2E77F8 0%, #1658EB 49.4%, #0E2B78 50.6%, #081A54 100%);
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  cursor: pointer;
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  transition: filter 0.16s var(--ia-ease), background 0.16s var(--ia-ease), color 0.16s var(--ia-ease);
+}
+
+.inv-gb-btn:hover:not(:disabled),
+.inv-gb-act:hover:not(:disabled),
+.inv-gb-actions button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.inv-gb-btn:focus-visible,
+.inv-gb-act:focus-visible,
+.inv-gb-actions button:focus-visible {
+  outline: 2px solid var(--ia-sapphire);
+  outline-offset: 2px;
+}
+
+.inv-gb-btn.ghost,
+.inv-gb-btn.secondary,
+.inv-gb-btn.unequip,
+.inv-gb-btn.is-unequip,
+.inv-gb-act.ghost,
+.inv-gb-act.unequip,
+.inv-gb-actions button.ghost,
+.inv-gb-actions button.unequip {
+  background: rgba(22, 88, 235, 0.075);
+  color: var(--ia-sapphire-mid);
+  border-bottom: 1.5px solid rgba(22, 88, 235, 0.42);
+  clip-path: none;
+}
+
+.inv-gb-btn.ghost:hover:not(:disabled),
+.inv-gb-btn.secondary:hover:not(:disabled),
+.inv-gb-btn.unequip:hover:not(:disabled),
+.inv-gb-btn.is-unequip:hover:not(:disabled),
+.inv-gb-act.ghost:hover:not(:disabled),
+.inv-gb-act.unequip:hover:not(:disabled),
+.inv-gb-actions button.ghost:hover:not(:disabled),
+.inv-gb-actions button.unequip:hover:not(:disabled) {
+  filter: none;
+  background: rgba(22, 88, 235, 0.14);
+  color: var(--ia-sapphire-deep);
+  border-bottom-color: var(--ia-sapphire);
+}
+
+.inv-gb-btn:disabled,
+.inv-gb-act:disabled,
+.inv-gb-actions button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  filter: grayscale(0.25);
+}
+
+.inv-gb-note {
+  width: 100%;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ia-ink-muted);
+  text-align: center;
+}
+
+/* ==================== 3. 状态面板法杖 / 铭记微图槽 ==================== */
+.sc-staff-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 10px 2px 2px;
+  border: none;
+  border-top: 1px solid rgba(27, 35, 51, 0.12);
+  border-radius: 0;
+  background: transparent;
+  font-size: 12px;
+  color: var(--ia-ink-body);
+}
+
+.sc-staff-label,
+.sc-staff-head,
+.sc-staff-strip > b {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ia-ink-muted);
+  flex-shrink: 0;
+}
+
+.sc-staff-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sc-staff-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 11px 5px 7px;
+  border: none;
+  border-left: 2px solid rgba(22, 88, 235, 0.34);
+  border-radius: 0 !important;
+  background: rgba(238, 245, 255, 0.72);
+  color: var(--ia-ink);
+  text-align: left;
+  transition: background 0.16s var(--ia-ease), border-color 0.16s var(--ia-ease);
+}
+
+button.sc-staff-card,
+.sc-staff-card[data-staff-id] {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+button.sc-staff-card:hover,
+.sc-staff-card[data-staff-id]:hover {
+  background: rgba(22, 88, 235, 0.10);
+  border-left-color: var(--ia-sapphire);
+}
+
+.sc-staff-card.active,
+.sc-staff-card.equipped,
+.sc-staff-card.on,
+.sc-staff-card[aria-pressed="true"] {
+  background: linear-gradient(90deg, rgba(22, 88, 235, 0.12) 0%, rgba(235, 244, 255, 0.72) 100%);
+  border-left: 2.5px solid var(--ia-sapphire);
+  color: var(--ia-sapphire-deep);
+}
+
+.sc-staff-ico {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.sc-staff-card .item-art-img,
+.sc-staff-card .item-art-svg {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.sc-staff-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sc-staff-name,
+.sc-staff-card strong,
+.sc-staff-card b {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ia-ink);
+  line-height: 1.25;
+}
+
+.sc-staff-desc,
+.sc-staff-meta,
+.sc-staff-card small {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--ia-ink-muted);
+}
+
+.sc-staff-tag,
+.sc-staff-eq {
+  margin-left: 5px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ia-sapphire);
+  background: rgba(22, 88, 235, 0.09);
+}
+
+.sc-staff-eq {
+  color: var(--ia-gold-deep);
+  background: rgba(196, 164, 108, 0.20);
+}
+
+.sc-staff-go {
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ia-sapphire);
+  white-space: nowrap;
+  flex-shrink: 0;
+  opacity: 0.85;
+  transition: transform 0.16s var(--ia-ease), opacity 0.16s var(--ia-ease);
+}
+
+button.sc-staff-card:hover .sc-staff-go {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+.sc-staff-switch-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border: none;
+  border-bottom: 1.5px solid rgba(22, 88, 235, 0.42);
+  border-radius: 0 !important;
+  background: rgba(22, 88, 235, 0.075);
+  color: var(--ia-sapphire-mid);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.16s var(--ia-ease), color 0.16s var(--ia-ease), border-color 0.16s var(--ia-ease);
+}
+
+.sc-staff-switch-btn:hover {
+  background: var(--ia-sapphire);
+  border-bottom-color: var(--ia-sapphire-deep);
+  color: #FFFFFF;
+}
+
+.sc-staff-switch-btn:focus-visible {
+  outline: 1.5px solid var(--ia-sapphire);
+  outline-offset: 2px;
+}
+
+/* 状态面板随身铭记微图槽（去圆角重框，改 2px 皇蓝左脉细条 + 20px 实图） */
+.sc-relic-chip,
+.sc-relic-chip.has-item-art {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px 3px 6px;
+  border: none;
+  border-left: 2px solid rgba(22, 88, 235, 0.42);
+  border-radius: 0 !important;
+  background: rgba(22, 88, 235, 0.055);
+  color: var(--ia-ink);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.sc-relic-chip .item-art-img,
+.sc-relic-chip .item-art-svg {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 3px rgba(15, 36, 86, 0.16));
+}
+
+/* ==================== 4. 小铺与赠礼去圆框实图展台 ==================== */
+.rh-sc-ico.has-item-art,
+.rh-sc-ico.has-item-art[data-ico],
+.rh-sc-ico:has(.item-art-img) {
+  box-sizing: border-box;
+  width: 48px;
+  height: 48px;
+  padding: 2px;
+  border: none;
+  border-radius: 0 !important;
+  background: linear-gradient(150deg, rgba(242, 246, 254, 0.94) 0%, rgba(230, 240, 253, 0.66) 100%);
+  box-shadow: inset 0 -1px 0 rgba(22, 88, 235, 0.16);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.rh-sc-ico.has-item-art .item-art-img,
+.rh-sc-ico.has-item-art .item-art-svg,
+.rh-sc-ico:has(.item-art-img) .item-art-img {
+  width: 44px;
+  height: 44px;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 5px rgba(14, 43, 120, 0.16));
+  transition: transform 0.2s var(--ia-ease), filter 0.2s var(--ia-ease);
+}
+
+.rh-shop-card:hover .rh-sc-ico.has-item-art .item-art-img,
+.rh-shop-card:hover .rh-sc-ico:has(.item-art-img) .item-art-img {
+  transform: translateY(-1px) scale(1.05);
+  filter: drop-shadow(0 4px 8px rgba(14, 43, 120, 0.22));
+}
+
+.rh-gift-item .rh-sc-ico.has-item-art,
+.rh-gift-item .rh-sc-ico.has-item-art[data-ico],
+.rh-gift-item .rh-sc-ico:has(.item-art-img) {
+  width: 40px;
+  height: 40px;
+}
+
+.rh-gift-item .rh-sc-ico.has-item-art .item-art-img,
+.rh-gift-item .rh-sc-ico.has-item-art .item-art-svg {
+  width: 36px;
+  height: 36px;
+}
+
+/* ==================== 5. 书桌挂件与浮卡微图 ==================== */
+#game-screen #sylvia-hub .sh-corner-controls .sh-charm-btn.has-item-art,
+#sylvia-hub .sh-charm-btn.has-item-art,
+#raising-hub .sh-charm-btn.has-item-art,
+.sh-charm-btn.has-item-art {
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  padding: 2px;
+  border: none;
+  border-radius: 0 !important;
+  background: transparent;
+  box-shadow: none;
+  line-height: 0;
+  overflow: visible;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#game-screen #sylvia-hub .sh-corner-controls .sh-charm-btn.has-item-art .item-art-img,
+#sylvia-hub .sh-charm-btn.has-item-art .item-art-img,
+.sh-charm-btn.has-item-art .item-art-img,
+.sh-charm-btn.has-item-art .item-art-svg {
+  width: 22px;
+  height: 22px;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(14, 43, 120, 0.24));
+  transition: transform 0.16s var(--ia-ease), filter 0.16s var(--ia-ease);
+}
+
+#game-screen #sylvia-hub .sh-corner-controls .sh-charm-btn.has-item-art:hover .item-art-img,
+#sylvia-hub .sh-charm-btn.has-item-art:hover .item-art-img,
+.sh-charm-btn.has-item-art:hover .item-art-img {
+  transform: scale(1.1);
+  filter: drop-shadow(0 2px 5px rgba(22, 88, 235, 0.30));
+}
+
+.sh-charm-popover .sh-pop-art,
+.sh-pop-art {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 0 !important;
+  background: transparent;
+  line-height: 0;
+}
+
+.sh-pop-art .item-art-img,
+.sh-pop-art .item-art-svg,
+img.sh-pop-art {
+  width: 44px;
+  height: 44px;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 6px rgba(14, 43, 120, 0.20));
+}
+
+/* ==================== 6. 演武法杖切换槽 & 铭记图录实图槽 ==================== */
+.arena-staff-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 0 9px;
+  border: none;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.13);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.arena-staff-strip .ass-head,
+.arena-staff-head,
+.arena-staff-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.arena-staff-strip .ass-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.arena-staff-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: none;
+  border-radius: 0 !important;
+  color: var(--ia-ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.arena-staff-card:focus-visible {
+  outline: 2px solid var(--ia-sapphire);
+  outline-offset: 2px;
+}
+
+.arena-staff-card.locked,
+.arena-staff-card:disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+  filter: grayscale(0.35);
+}
+
+.arena-staff-card .asc-staff-art,
+.arena-staff-ico {
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.arena-staff-card .asc-staff-art .item-art-img,
+.arena-staff-card .item-art-img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 3px 6px rgba(22, 88, 235, 0.16));
+}
+
+.arena-staff-card .asc-staff-art .arena-staff-prism,
+.arena-staff-card .item-art-svg {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+}
+
+/* 铭记槽 & 图录卡去重框实图图标（匹配 ai-branching.css 高特异性） */
+.rel-ico.has-item-art,
+.rc-ico.has-item-art,
+#app #panel #panel-body .relics-dashboard .rel-ico.has-item-art,
+#app #panel #panel-body .relics-dashboard .rc-ico.has-item-art,
+#app #panel #panel-body .relics-dashboard .rel-slot .rel-ico.has-item-art,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-ico.has-item-art,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rc-ico.has-item-art,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-slot .rel-ico.has-item-art {
+  position: relative;
+  background: transparent;
+  border: none;
+  border-radius: 0 !important;
+  box-shadow: none;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+#app #panel #panel-body .relics-dashboard .rel-slot .rel-ico.has-item-art,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-slot .rel-ico.has-item-art,
+.rel-ico.has-item-art {
+  width: 34px;
+  height: 34px;
+}
+
+#app #panel #panel-body .relics-dashboard .rel-slot .rel-ico.has-item-art .item-art-img,
+#app #panel #panel-body .relics-dashboard .rel-slot .rel-ico.has-item-art .item-art-svg,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-slot .rel-ico.has-item-art .item-art-img,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-slot .rel-ico.has-item-art .item-art-svg,
+.rel-ico.has-item-art .item-art-img,
+.rel-ico.has-item-art .item-art-svg {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.relics-dashboard .rel-slot-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+
+#app #panel #panel-body .relics-dashboard .rc-ico.has-item-art,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rc-ico.has-item-art,
+.rc-ico.has-item-art {
+  width: 44px;
+  height: 44px;
+}
+
+#app #panel #panel-body .relics-dashboard .rc-ico.has-item-art .item-art-img,
+#app #panel #panel-body .relics-dashboard .rc-ico.has-item-art .item-art-svg,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rc-ico.has-item-art .item-art-img,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rc-ico.has-item-art .item-art-svg,
+.rc-ico.has-item-art .item-art-img,
+.rc-ico.has-item-art .item-art-svg {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+
+#app #panel #panel-body .relics-dashboard .rel-card.locked .rc-ico.has-item-art .item-art-img,
+body section#arena-loadout-modal.overlay .end-card.rumor-card .relics-dashboard .rel-card.locked .rc-ico.has-item-art .item-art-img,
+.rc-ico.has-item-art.is-locked .item-art-img {
+  opacity: 0.42;
+  filter: grayscale(0.78) drop-shadow(0 1px 2px rgba(15, 36, 86, 0.10));
+}
+
+.rc-ico.has-item-art .rc-ico-lock {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 17px;
+  height: 17px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 0;
+  background: rgba(250, 251, 253, 0.92);
+  color: var(--ia-ink-muted);
+  box-shadow: 0 1px 3px rgba(15, 36, 86, 0.14);
+  pointer-events: none;
+}
+
+/* 演武大厅配装摘要条微图 */
+#arena-overlay .arena-rel-pill .item-art-img,
+#arena-overlay .arena-rel-pill .item-art-svg,
+.arena-loadout-bar .arena-rel-pill .item-art-img,
+.arena-loadout-bar .arena-rel-pill .item-art-svg,
+.arena-loadout-bar .alb-micro-art .item-art-img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* ==================== 7. 战斗顶栏法杖与 Buff 铭记微图 ==================== */
+#battle-screen #cb-btn-wand {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#battle-screen #cb-btn-wand .item-art-img,
+#battle-screen #cb-btn-wand .item-art-svg,
+#cb-btn-wand .item-art-img,
+#cb-btn-wand .item-art-svg {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+  vertical-align: middle;
+  filter: drop-shadow(0 1px 2px rgba(22, 88, 235, 0.28));
+}
+
+#battle-screen #cb-btn-wand.active .item-art-img,
+#battle-screen #cb-btn-wand.active .item-art-svg,
+#cb-btn-wand.active .item-art-img,
+#cb-btn-wand.active .item-art-svg {
+  filter:
+    drop-shadow(0 0 4px rgba(125, 211, 252, 0.80))
+    drop-shadow(0 1px 2px rgba(8, 26, 84, 0.36));
+}
+
+#battle-screen .cb-buff-chip.relic {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#battle-screen .cb-buff-chip.relic .item-art-img,
+#battle-screen .cb-buff-chip.relic .item-art-svg,
+.cb-buff-chip.relic .item-art-img,
+.cb-buff-chip.relic .item-art-svg {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 2px rgba(15, 36, 86, 0.18));
+}
+
+/* ==================== 8. 典藏图鉴信物手札实图 ==================== */
+.memento-ico.has-item-art,
+#app #codex #codex-list .memento-ico.has-item-art {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 0 !important;
+  background: transparent;
+  box-shadow: none;
+  line-height: 0;
+  overflow: visible;
+}
+
+.memento-ico.has-item-art .item-art-img,
+.memento-ico.has-item-art .item-art-svg,
+#app #codex #codex-list .memento-ico.has-item-art .item-art-img,
+#app #codex #codex-list .memento-ico.has-item-art .item-art-svg {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 5px rgba(16, 32, 68, 0.18));
+}
+
+.ms-crest.has-item-art,
+#codex #codex-list .ms-crest.has-item-art,
+#app #codex #codex-list .ms-crest.has-item-art {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 0 !important;
+  background: transparent;
+  pointer-events: none;
+  opacity: 0.96;
+}
+
+.ms-crest.has-item-art .item-art-img,
+.ms-crest.has-item-art .item-art-svg,
+#app #codex #codex-list .ms-crest.has-item-art .item-art-img,
+#app #codex #codex-list .ms-crest.has-item-art .item-art-svg {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 7px rgba(22, 88, 235, 0.18));
+}
+
+#app #codex #codex-list .memento-stationery:has(.ms-crest.has-item-art) .ms-salutation {
+  padding-right: 60px;
+}
+
+/* ==================== 9. 桌面紧凑视口适配 (1280×720) ==================== */
+@media (max-width: 1360px), (max-height: 760px) {
+  .inv-gb-shell {
+    grid-template-columns: minmax(0, 1fr) 244px;
+    min-height: 360px;
+  }
+
+  .inv-gb-main {
+    gap: 10px;
+    padding: 2px 14px 6px 2px;
+  }
+
+  .inv-gb-detail {
+    padding: 2px 2px 6px 16px;
+    gap: 8px;
+  }
+
+  .inv-gb-stage,
+  .inv-gb-art,
+  .inv-gb-hero,
+  .inv-gb-preview {
+    width: 132px;
+    height: 132px;
+  }
+
+  .inv-gb-stage .item-art-img,
+  .inv-gb-stage .item-art-svg,
+  .inv-gb-art .item-art-img,
+  .inv-gb-art .item-art-svg,
+  .inv-gb-hero .item-art-img,
+  .inv-gb-hero .item-art-svg,
+  .inv-gb-preview .item-art-img,
+  .inv-gb-preview .item-art-svg {
+    width: 118px;
+    height: 118px;
+  }
+
+  .inv-gb-name,
+  .inv-gb-title,
+  .inv-gb-detail h3 {
+    font-size: 16px;
+  }
+
+  .inv-gb-desc {
+    font-size: 12px;
+    line-height: 1.58;
+  }
+
+  .inv-gb-eff,
+  .inv-gb-effect,
+  .inv-gb-stats {
+    padding: 6px 9px;
+    font-size: 11.5px;
+  }
+
+  .inv-gb-btn,
+  .inv-gb-act,
+  .inv-gb-actions button {
+    min-height: 33px;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  /* 1280×720 状态面板首屏紧凑收敛 */
+  #panel .sc-staff-strip {
+    padding: 7px 2px 2px;
+    gap: 6px 8px;
+  }
+
+  .sc-staff-card {
+    padding: 4px 9px 4px 6px;
+    gap: 7px;
+  }
+
+  .sc-staff-ico {
+    width: 28px;
+    height: 28px;
+  }
+
+  .sc-staff-card .item-art-img,
+  .sc-staff-card .item-art-svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .sc-relic-chip .item-art-img,
+  .sc-relic-chip .item-art-svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* 1280×720 演武与战斗顶栏紧凑收敛 */
+  .arena-staff-strip .ass-grid {
+    gap: 6px;
+  }
+
+  .arena-staff-card .asc-staff-art,
+  .arena-staff-ico {
+    width: 42px;
+    height: 42px;
+  }
+
+  .arena-staff-card .asc-staff-art .item-art-img,
+  .arena-staff-card .item-art-img {
+    width: 42px;
+    height: 42px;
+  }
+
+  .arena-staff-card .asc-staff-art .arena-staff-prism,
+  .arena-staff-card .item-art-svg {
+    width: 34px;
+    height: 34px;
+  }
+
+  #battle-screen #cb-btn-wand .item-art-img,
+  #battle-screen #cb-btn-wand .item-art-svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  #battle-screen .cb-buff-chip.relic .item-art-img,
+  #battle-screen .cb-buff-chip.relic .item-art-svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .memento-ico.has-item-art,
+  #app #codex #codex-list .memento-ico.has-item-art {
+    width: 38px;
+    height: 38px;
+  }
+
+  .memento-ico.has-item-art .item-art-img,
+  .memento-ico.has-item-art .item-art-svg,
+  #app #codex #codex-list .memento-ico.has-item-art .item-art-img,
+  #app #codex #codex-list .memento-ico.has-item-art .item-art-svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .ms-crest.has-item-art,
+  #codex #codex-list .ms-crest.has-item-art,
+  #app #codex #codex-list .ms-crest.has-item-art {
+    width: 42px;
+    height: 42px;
+  }
+
+  .ms-crest.has-item-art .item-art-img,
+  .ms-crest.has-item-art .item-art-svg,
+  #app #codex #codex-list .ms-crest.has-item-art .item-art-img,
+  #app #codex #codex-list .ms-crest.has-item-art .item-art-svg {
+    width: 42px;
+    height: 42px;
+  }
+}
+
+@media (max-width: 720px) {
+  .inv-gb-shell {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .inv-gb-main {
+    padding: 0 0 12px;
+  }
+
+  .inv-gb-detail {
+    border-left: none;
+    border-top: 1px solid rgba(22, 88, 235, 0.18);
+    padding: 14px 2px 4px;
+  }
+
+  .arena-staff-strip .ass-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inv-gb-slot,
+  .inv-gb-slot .item-art-img,
+  .inv-gb-slot .item-art-svg,
+  .rh-sc-ico.has-item-art .item-art-img,
+  .sh-charm-btn.has-item-art .item-art-img {
+    transition: none;
+  }
+}

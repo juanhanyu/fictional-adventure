@@ -749,6 +749,12 @@
       if (bgExtra >= maxBgExtra && portraitCount >= maxPortraits) break;
     }
 
+    if (!saveData && window.ItemArtRegistry && typeof window.ItemArtRegistry.listAllUrls === 'function') {
+      try {
+        pushAllUnique(urls, window.ItemArtRegistry.listAllUrls());
+      } catch (e) {}
+    }
+
     return enqueue(urls, 'low');
   }
 

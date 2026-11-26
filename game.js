@@ -1582,6 +1582,7 @@ function baseState(){
     mailboxRead: {},
     seasonLedger: null,
     lastAction: '',
+    equippedStaff: 'none',
     equippedRelics: [],
     relicsUnlocked: {},
     selectedBondAssist: null,
@@ -2029,6 +2030,7 @@ function migrateStorySave(raw){
     raw.flags.story_gate_repaired_v3=1;
   }
   if(!Array.isArray(raw.storyPending)) raw.storyPending=[];
+  if(raw.equippedStaff !== 'eclipse_wand' && raw.equippedStaff !== 'north_saint_staff') raw.equippedStaff = 'none';
   return raw;
 }
 
@@ -2042,6 +2044,7 @@ function load(){
     if(r){
       const raw=migrateStorySave(JSON.parse(r));
       S=Object.assign(baseState(), raw);
+      if(S.equippedStaff !== 'eclipse_wand' && S.equippedStaff !== 'north_saint_staff') S.equippedStaff = 'none';
       if(typeof window !== 'undefined') window.S = S;
       if(typeof BranchingDirector !== 'undefined' && BranchingDirector.ensureCausalState) BranchingDirector.ensureCausalState(S);
       if(typeof RelicsAndEvents !== 'undefined' && RelicsAndEvents.ensureRelicsState) RelicsAndEvents.ensureRelicsState(S);
@@ -5200,6 +5203,143 @@ function openStatsPanel(){
   if(wasHidden) sfx('modal_open');
 }
 
+const MAIN_STAFF_ORDER = ['eclipse_wand', 'north_saint_staff'];
+const MAIN_STAFF_DEFS = {
+  none: {
+    id: 'none',
+    name: '徒手导魔',
+    shortEffect: '常规构筑 · 零额外耗蓝与暴露风险',
+    desc: '不借外物法杖，以自身魔力回路直接构筑术式。法攻倍率 ×1.00，无额外耗蓝与耳目暴露风险。',
+    lore: '希尔维亚自幼锤炼的徒手塑形技艺，经手构筑沉稳精准，随时可切换随身法器。'
+  },
+  eclipse_wand: {
+    id: 'eclipse_wand',
+    name: '晦轮杖',
+    shortEffect: '100% 真实魔伤 · +24% MaxMP 额外耗蓝 · 零自创惩罚',
+    desc: '外层黑曜星环嵌合冰晶棱芯的短杖。施法视作 100% 真实魔伤、无自创惩罚，额外耗蓝 +24% 最大魔力；希尔维亚永不触发日蚀。',
+    lore: '公爵府卷宗移交保管的「静止的日蚀」，深蓝杖身悬着无声旋转的冰蓝细环。'
+  },
+  north_saint_staff: {
+    id: 'north_saint_staff',
+    name: '极北圣晶杖',
+    shortEffect: '法攻 ×1.28 · 暴伤 +20% · 增幅耗蓝 -25%',
+    desc: '极北寒晶雕琢的圣域法杖。法攻倍率 ×1.28、暴击伤害 +20%，魔力增幅额外耗蓝降低 25%。',
+    lore: '凝萃极北冻土终年不化之冰髓而成的白银圣杖，杖首六棱冰晶清辉凛然。'
+  }
+};
+
+function getItemArtRegistrySafe(){
+  if(typeof window !== 'undefined' && window.ItemArtRegistry) return window.ItemArtRegistry;
+  if(typeof ItemArtRegistry !== 'undefined' && ItemArtRegistry) return ItemArtRegistry;
+  return null;
+}
+
+function getItemArtMetaSafe(keyOrItem){
+  const reg = getItemArtRegistrySafe();
+  if(reg && typeof reg.getItem === 'function'){
+    try { return reg.getItem(keyOrItem) || null; } catch(e){ return null; }
+  }
+  return null;
+}
+
+function renderItemArtSafe(keyOrItem, opts){
+  const o = opts || {};
+  const reg = getItemArtRegistrySafe();
+  if(reg && typeof reg.renderIconHTML === 'function'){
+    try { return reg.renderIconHTML(keyOrItem, o); } catch(e){}
+  }
+  const sz = Number(o.size) > 0 ? Math.round(Number(o.size)) : 32;
+  const extraCls = o.className || o.cls || '';
+  const cls = (`item-art-svg item-art-fallback${extraCls ? ' ' + extraCls : ''}`).trim();
+  const ariaAttr = (o.decorative || o.ariaHidden)
+    ? ' aria-hidden="true"'
+    : ` role="img" aria-label="${escapeText(o.alt || '魔导棱镜')}"`;
+  return `<svg class="${escapeText(cls)}" width="${sz}" height="${sz}" viewBox="0 0 36 36" fill="none"${ariaAttr}><polygon points="18,4 29,18 18,32 7,18" fill="rgba(22,88,235,0.08)" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><polygon points="18,9.5 24,18 18,26.5 12,18" fill="rgba(56,189,248,0.16)" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><line x1="7" y1="18" x2="29" y2="18" stroke="currentColor" stroke-width="1" opacity="0.55"/><circle cx="18" cy="18" r="1.8" fill="currentColor"/></svg>`;
+}
+
+function hasOwnedStaff(staffId){
+  if(staffId === 'none') return true;
+  if(!S) return false;
+  const inv = Array.isArray(S.inv) ? S.inv : [];
+  const fl = S.flags || {};
+  if(staffId === 'eclipse_wand'){
+    return !!(
+      inv.some(it => it && (it.id === 'eclipse_wand' || it.id === 'wand_eclipse' || it.id === 'eclipse_staff' || (it.name && (it.name.includes('晦轮') || it.name.includes('静止的日蚀'))))) ||
+      fl.got_eclipse_wand || fl.has_eclipse_wand || fl.ch_interlude_white_night
+    );
+  }
+  if(staffId === 'north_saint_staff'){
+    return !!(
+      inv.some(it => it && (it.id === 'north_saint_staff' || it.id === 'saint_staff' || it.id === 'north_staff' || it.id === 'polar_saint_staff' || (it.name && (it.name.includes('极北圣晶') || it.name.includes('圣晶杖'))))) ||
+      fl.got_north_saint_staff || fl.has_north_saint_staff || fl.north_saint_staff
+    );
+  }
+  return false;
+}
+
+function getOwnedMainStaves(){
+  return MAIN_STAFF_ORDER.filter(hasOwnedStaff);
+}
+
+function getEquippedMainStaff(){
+  const cur = S && S.equippedStaff;
+  if(cur === 'eclipse_wand' || cur === 'north_saint_staff') return cur;
+  return 'none';
+}
+
+function equipMainStaff(staffId){
+  const nextId = (staffId == null || staffId === '') ? 'none' : String(staffId);
+  if(!MAIN_STAFF_DEFS[nextId]) return false;
+  if(nextId !== 'none' && !hasOwnedStaff(nextId)){
+    toast('尚未获得该法杖');
+    sfx('bad');
+    return false;
+  }
+  S.equippedStaff = nextId;
+  save();
+  sfx(nextId === 'none' ? 'tab_switch' : 'ok');
+  toast(nextId === 'none'
+    ? '已卸下法杖，切换为徒手导魔'
+    : `已装备随身法杖：${MAIN_STAFF_DEFS[nextId].name}`);
+  const panelEl = $('panel');
+  if(panelEl && !panelEl.classList.contains('hidden')){
+    const activeTabBtn = panelEl.querySelector('#panel-tabs .ptab.on');
+    const activeTab = (activeTabBtn && activeTabBtn.dataset && activeTabBtn.dataset.t) || 'status';
+    openPanel(activeTab);
+  } else {
+    const popEl = $('sys-popup');
+    const popBody = popEl && !popEl.classList.contains('hidden') ? popEl.querySelector('.sp-body') : null;
+    if(popBody && popBody.querySelector('.sys-chronicle')){
+      popBody.innerHTML = statusPanelHTML();
+    }
+  }
+  return true;
+}
+
+function openStaffInventoryFromStatus(ev){
+  if(ev && typeof ev.stopPropagation === 'function') ev.stopPropagation();
+  const cur = getEquippedMainStaff();
+  const owned = getOwnedMainStaves();
+  const selKey = cur !== 'none'
+    ? `staff:${cur}`
+    : (owned.length ? `staff:${owned[0]}` : null);
+  openPanel('inv', { filter: 'gear', selectKey: selKey, fromTab: true });
+}
+
+function cycleMainStaffQuick(ev){
+  if(ev && typeof ev.stopPropagation === 'function') ev.stopPropagation();
+  const owned = getOwnedMainStaves();
+  if(!owned.length){
+    openStaffInventoryFromStatus(ev);
+    return;
+  }
+  const ring = ['none'].concat(owned);
+  const cur = getEquippedMainStaff();
+  const idx = ring.indexOf(cur);
+  const next = ring[(idx + 1) % ring.length];
+  equipMainStaff(next);
+}
+
 // 单一数据源：右上角「状态」面板与剧情里的系统面板共用此渲染（保证数值永远一致）
 function statusPanelHTML(){
   const named = flag('named');
@@ -5223,6 +5363,32 @@ function statusPanelHTML(){
       </div>`
     : '';
   const initialCrestHTML = `<div class="sc-portrait-fallback sc-portrait-crest" aria-label="初始纹章"><svg viewBox="0 0 48 48" width="42" height="42" fill="none" aria-hidden="true"><path d="M24 5L38 13V25.5C38 33.8 32 39.8 24 43C16 39.8 10 33.8 10 25.5V13L24 5Z" stroke="#1658EB" stroke-width="1.35" fill="rgba(56,189,248,0.14)"/><polygon points="24,13 27.2,20.8 35,24 27.2,27.2 24,35 20.8,27.2 13,24 20.8,20.8" stroke="#38BDF8" stroke-width="1.15" fill="rgba(255,255,255,0.45)"/><circle cx="24" cy="24" r="2.4" fill="#1658EB"/></svg></div>`;
+  const curStaffId = getEquippedMainStaff();
+  const curStaff = MAIN_STAFF_DEFS[curStaffId] || MAIN_STAFF_DEFS.none;
+  const ownedStaves = getOwnedMainStaves();
+  const staffArtHTML = renderItemArtSafe(curStaffId, {
+    size: 40,
+    className: 'sc-staff-art',
+    alt: curStaff.name,
+    decorative: true
+  });
+  const staffQuickBtn = ownedStaves.length > 0
+    ? `<button type="button" class="sc-staff-switch-btn" data-staff-cycle="1" onclick="cycleMainStaffQuick(event)" title="快捷切换随身法杖">${curStaffId === 'none' ? '切装' : '换杖'}</button>`
+    : '';
+  const staffStripHTML = `<div class="sc-staff-strip">
+    <span class="sc-staff-label">随身法杖</span>
+    <div class="sc-staff-list">
+      <button type="button" class="sc-staff-card${curStaffId !== 'none' ? ' active equipped' : ''}" data-staff-id="${escapeText(curStaffId)}" data-open-staff-inv="1" onclick="openStaffInventoryFromStatus(event)" title="点击前往背包法器栏查看与切装">
+        <span class="sc-staff-ico" aria-hidden="true">${staffArtHTML}</span>
+        <span class="sc-staff-info">
+          <span class="sc-staff-name">${escapeText(curStaff.name)}${curStaffId !== 'none' ? '<span class="sc-staff-eq">已执</span>' : '<span class="sc-staff-tag">默认</span>'}</span>
+          <small class="sc-staff-desc">${escapeText(curStaff.shortEffect)}</small>
+        </span>
+        <span class="sc-staff-go" aria-hidden="true">法器栏 →</span>
+      </button>
+      ${staffQuickBtn}
+    </div>
+  </div>`;
   let relicStripHTML = '';
   if(typeof RelicsAndEvents !== 'undefined' && RelicsAndEvents.getActiveRelicsForBattle){
     const eq = (Array.isArray(S.equippedRelics) ? S.equippedRelics : []).filter(Boolean);
@@ -5232,8 +5398,14 @@ function statusPanelHTML(){
     if(eq.length || syns.length){
       relicStripHTML = `<div class="sc-relic-strip">
         <span class="sc-relic-label">随身铭记</span>
-        ${eq.map(id=>`<span class="sc-relic-chip">${cat[id]?.name || id}</span>`).join('')}
-        ${syns.map(sy=>`<span class="sc-synergy-pill">✦ ${sy.name} (${sy.count})</span>`).join('')}
+        ${eq.map(id=>{
+          const rDef = cat[id];
+          const rName = (rDef && rDef.name) || id;
+          const rTitle = (rDef && rDef.effectText) || rName;
+          const rArt = renderItemArtSafe(id, { size: 22, alt: rName, decorative: true });
+          return `<span class="sc-relic-chip has-item-art" data-relic-id="${escapeText(id)}" title="${escapeText(rTitle)}">${rArt}<span class="sc-relic-name">${escapeText(rName)}</span></span>`;
+        }).join('')}
+        ${syns.map(sy=>`<span class="sc-synergy-pill">✦ ${escapeText(sy.name)} (${sy.count})</span>`).join('')}
       </div>`;
     }
   }
@@ -5293,6 +5465,7 @@ function statusPanelHTML(){
         <div class="sc-meta-item"><b>金币</b> ${S.gold}</div>
         <div class="sc-meta-item sc-meta-wide"><b>亲和</b> <span class="sc-elem-group"><span class="sc-elem-pill ice">✦ 冰</span><span class="sc-elem-pill water">◇ 水</span></span></div>
       </div>
+      ${staffStripHTML}
       ${relicStripHTML}
     </div>
   </div>`;
@@ -5430,6 +5603,431 @@ function getUnlockedChaptersList(){
     if(ch.flag && flag(ch.flag)) return true;
     return false;
   });
+}
+
+const INV_GB_FILTERS = [
+  { id: 'all',   label: '全部' },
+  { id: 'gear',  label: '法器与铭记' },
+  { id: 'story', label: '剧情信物' },
+  { id: 'cozy',  label: '茶点与赠礼' }
+];
+const _invUiState = {
+  filter: 'all',
+  selectedKey: null,
+  lastIdx: 0
+};
+
+function isInvItemStaffMatch(it, staffId){
+  if(!it) return false;
+  const id = it.id || '';
+  const nm = it.name || '';
+  if(staffId === 'eclipse_wand'){
+    return id === 'eclipse_wand' || id === 'wand_eclipse' || id === 'eclipse_staff' || nm.includes('晦轮') || nm.includes('静止的日蚀');
+  }
+  if(staffId === 'north_saint_staff'){
+    return id === 'north_saint_staff' || id === 'saint_staff' || id === 'north_staff' || id === 'polar_saint_staff' || nm.includes('极北圣晶') || nm.includes('圣晶杖');
+  }
+  return false;
+}
+
+function collectGraphicalInventoryEntries(){
+  const entries = [];
+  const coveredStaffIds = new Set();
+  const coveredRelicIds = new Set();
+  const invArr = Array.isArray(S && S.inv) ? S.inv : [];
+
+  // 1. 法器（已拥有的随身法杖）
+  const curStaffId = getEquippedMainStaff();
+  getOwnedMainStaves().forEach(staffId => {
+    const def = MAIN_STAFF_DEFS[staffId];
+    if(!def) return;
+    coveredStaffIds.add(staffId);
+    const art = getItemArtMetaSafe(staffId);
+    const invMatch = invArr.find(it => isInvItemStaffMatch(it, staffId));
+    entries.push({
+      key: `staff:${staffId}`,
+      itemId: staffId,
+      artKey: staffId,
+      kind: 'staff',
+      filterGroup: 'gear',
+      name: def.name,
+      categoryLabel: '随身法器',
+      qty: 1,
+      showQty: false,
+      equipped: curStaffId === staffId,
+      effectText: def.shortEffect,
+      desc: (art && art.desc) || def.desc,
+      lore: (art && art.lore) || def.lore || (invMatch && invMatch.desc) || ''
+    });
+  });
+
+  // 2. 随身铭记（已解锁的 RELICS_CATALOG 铭记）
+  if(typeof RelicsAndEvents !== 'undefined' && (RelicsAndEvents.RELICS_CATALOG || RelicsAndEvents.RELICS)){
+    if(typeof RelicsAndEvents.ensureRelicsState === 'function'){
+      try { RelicsAndEvents.ensureRelicsState(S); } catch(e){}
+    }
+    const cat = RelicsAndEvents.RELICS_CATALOG || RelicsAndEvents.RELICS || {};
+    const order = Array.isArray(RelicsAndEvents.RELIC_ORDER) ? RelicsAndEvents.RELIC_ORDER : Object.keys(cat);
+    const eqRelics = Array.isArray(S && S.equippedRelics) ? S.equippedRelics : [];
+    order.forEach(rid => {
+      const def = cat[rid];
+      if(!def) return;
+      const unlocked = (typeof RelicsAndEvents.isRelicUnlocked === 'function')
+        ? RelicsAndEvents.isRelicUnlocked(rid, S)
+        : !!(S && S.relicsUnlocked && S.relicsUnlocked[rid]);
+      if(!unlocked) return;
+      coveredRelicIds.add(rid);
+      const art = getItemArtMetaSafe(rid);
+      entries.push({
+        key: `relic:${rid}`,
+        itemId: rid,
+        artKey: rid,
+        kind: 'relic',
+        filterGroup: 'gear',
+        name: def.name || (art && art.name) || rid,
+        categoryLabel: def.owner ? `随身铭记 · ${def.owner}` : '随身铭记',
+        qty: 1,
+        showQty: false,
+        equipped: eqRelics.includes(rid),
+        effectText: def.effectText || (art && art.desc) || '',
+        desc: def.tag ? `铭记特性：${def.tag}` : ((art && art.desc) || def.effectText || ''),
+        lore: def.lore || (art && art.lore) || ''
+      });
+    });
+  }
+
+  // 3. 剧情信物与消耗品（聚合 S.inv，保持原数组不变且不吞掉别名独立信物）
+  const invGrouped = [];
+  const invByKey = Object.create(null);
+  invArr.forEach(it => {
+    if(!it) return;
+    if(coveredStaffIds.has('eclipse_wand') && isInvItemStaffMatch(it, 'eclipse_wand')) return;
+    if(coveredStaffIds.has('north_saint_staff') && isInvItemStaffMatch(it, 'north_saint_staff')) return;
+    if(it.id && coveredRelicIds.has(it.id)) return;
+    const rawKey = it.id || it.name || 'item';
+    const addQty = Math.max(1, Number(it.qty) || 1);
+    if(invByKey[rawKey]){
+      invByKey[rawKey].qty += addQty;
+    } else {
+      const rec = { item: it, qty: addQty, rawKey };
+      invByKey[rawKey] = rec;
+      invGrouped.push(rec);
+    }
+  });
+  invGrouped.forEach(({ item: it, qty, rawKey }) => {
+    const isCookie = it.id === 'cookie';
+    const art = getItemArtMetaSafe(it);
+    const desc = it.desc || (art && art.desc) || '随身收纳的纪念小物。';
+    const lore = (art && art.lore && art.lore !== desc) ? art.lore : '';
+    entries.push({
+      key: `inv:${rawKey}`,
+      itemId: it.id || rawKey,
+      artKey: it,
+      kind: isCookie ? 'consumable' : 'story',
+      filterGroup: 'story',
+      name: it.name || (art && art.name) || it.id || '未知物品',
+      categoryLabel: isCookie ? '随身消耗品' : '剧情信物',
+      qty,
+      showQty: qty > 1 || isCookie,
+      equipped: false,
+      effectText: isCookie ? '食用后立即恢复 1 点体力（不超过当前体力上限）。' : ((art && art.desc && art.desc !== desc) ? art.desc : ''),
+      desc,
+      lore
+    });
+  });
+
+  // 4. 茶点与赠礼（聚合 S.cozyBag，保持原对象不变）
+  const cozyBag = (S && S.cozyBag && typeof S.cozyBag === 'object' && !Array.isArray(S.cozyBag)) ? S.cozyBag : {};
+  const rh = (typeof window !== 'undefined' && window.RaisingHub) ? window.RaisingHub : null;
+  const shopCatalog = (rh && Array.isArray(rh.COZY_SHOP_CATALOG)) ? rh.COZY_SHOP_CATALOG : [];
+  const shopById = Object.create(null);
+  const orderedCozyIds = [];
+  shopCatalog.forEach(item => {
+    if(item && item.id){
+      shopById[item.id] = item;
+      if((Number(cozyBag[item.id]) || 0) > 0) orderedCozyIds.push(item.id);
+    }
+  });
+  Object.keys(cozyBag).forEach(cid => {
+    if(!shopById[cid] && (Number(cozyBag[cid]) || 0) > 0) orderedCozyIds.push(cid);
+  });
+  orderedCozyIds.forEach(cid => {
+    const cnt = Math.floor(Number(cozyBag[cid]) || 0);
+    if(cnt <= 0) return;
+    const shopItem = shopById[cid] || null;
+    const art = getItemArtMetaSafe(cid);
+    const desc = (shopItem && shopItem.desc) || (art && art.desc) || '于温馨小铺购入的心意物件。';
+    const lore = (art && art.lore && art.lore !== desc) ? art.lore : '';
+    entries.push({
+      key: `cozy:${cid}`,
+      itemId: cid,
+      artKey: cid,
+      kind: 'cozy',
+      filterGroup: 'cozy',
+      name: (shopItem && shopItem.name) || (art && art.name) || cid,
+      categoryLabel: (shopItem && shopItem.tag) ? `茶点赠礼 · ${shopItem.tag}` : '茶点与赠礼',
+      qty: cnt,
+      showQty: true,
+      equipped: false,
+      effectText: (shopItem && shopItem.effectDesc) || '',
+      desc,
+      lore
+    });
+  });
+
+  return entries;
+}
+
+function renderInvDetailCardHTML(entry){
+  if(!entry){
+    return `<div class="inv-gb-detail-empty">点击左侧任意 76px 格子，或使用方向键 ↑↓←→ 切换选中，即可在此精鉴实图并执行佩装、食用或赠礼。</div>`;
+  }
+  const heroArt = renderItemArtSafe(entry.artKey, {
+    size: 148,
+    alt: entry.name,
+    eager: true
+  });
+  let statusBadge = '';
+  if(entry.equipped){
+    statusBadge = `<span class="inv-gb-eq-tag">${entry.kind === 'staff' ? '✦ 当前佩执' : '✦ 已佩带'}</span>`;
+  }
+  const qtyBadge = entry.qty > 1 ? `<span class="inv-gb-state">持有 ×${entry.qty}</span>` : '';
+
+  let actionsHTML = '';
+  if(entry.kind === 'staff'){
+    actionsHTML = entry.equipped
+      ? `<button type="button" class="inv-gb-btn unequip" data-equip-staff="none">卸下法杖（改用徒手）</button>`
+      : `<button type="button" class="inv-gb-btn" data-equip-staff="${escapeText(entry.itemId)}">佩执此杖</button>`;
+  } else if(entry.kind === 'relic'){
+    const maxRel = (typeof RelicsAndEvents !== 'undefined' && RelicsAndEvents.MAX_EQUIPPED_RELICS) || 3;
+    const eqCount = Array.isArray(S && S.equippedRelics) ? S.equippedRelics.length : 0;
+    actionsHTML = entry.equipped
+      ? `<button type="button" class="inv-gb-btn unequip" data-toggle-relic="${escapeText(entry.itemId)}">卸下随身铭记（${eqCount}/${maxRel}）</button>`
+      : `<button type="button" class="inv-gb-btn" data-toggle-relic="${escapeText(entry.itemId)}">佩带此铭记（${eqCount}/${maxRel}）</button>`;
+  } else if(entry.kind === 'consumable' && entry.itemId === 'cookie'){
+    actionsHTML = `<button type="button" class="inv-gb-btn" data-use="cookie">食用热饼干（+1 体力）</button>`;
+  } else if(entry.kind === 'cozy'){
+    actionsHTML = `<button type="button" class="inv-gb-btn" data-use-cozy="${escapeText(entry.itemId)}">自用享用</button><button type="button" class="inv-gb-btn ghost" data-gift-cozy="${escapeText(entry.itemId)}">快捷赠礼 →</button>`;
+  } else {
+    actionsHTML = `<div class="inv-gb-note">随身典藏 · 旅途信物（妥善收存于行囊之中）</div>`;
+  }
+
+  return `<div class="inv-gb-stage">${heroArt}</div>
+    <div class="inv-gb-cat"><span>${escapeText(entry.categoryLabel)}</span>${statusBadge}${qtyBadge}</div>
+    <h3 class="inv-gb-name">${escapeText(entry.name)}</h3>
+    <hr class="inv-gb-rule"/>
+    ${entry.effectText ? `<div class="inv-gb-eff">${escapeText(entry.effectText)}</div>` : ''}
+    <p class="inv-gb-desc">${escapeText(entry.desc)}</p>
+    ${entry.lore ? `<p class="inv-gb-lore">${escapeText(entry.lore)}</p>` : ''}
+    <div class="inv-gb-actions">${actionsHTML}</div>`;
+}
+
+function renderGraphicalInventoryPanel(body, opts){
+  const validFilters = new Set(INV_GB_FILTERS.map(f => f.id));
+  if(opts && opts.filter && validFilters.has(opts.filter)){
+    _invUiState.filter = opts.filter;
+  }
+  if(opts && opts.selectKey){
+    _invUiState.selectedKey = opts.selectKey;
+  }
+  if(!validFilters.has(_invUiState.filter)) _invUiState.filter = 'all';
+
+  const allEntries = collectGraphicalInventoryEntries();
+  const counts = {
+    all: allEntries.length,
+    gear: allEntries.filter(e => e.filterGroup === 'gear').length,
+    story: allEntries.filter(e => e.filterGroup === 'story').length,
+    cozy: allEntries.filter(e => e.filterGroup === 'cozy').length
+  };
+  const visibleEntries = _invUiState.filter === 'all'
+    ? allEntries
+    : allEntries.filter(e => e.filterGroup === _invUiState.filter);
+
+  let selectedIdx = -1;
+  if(_invUiState.selectedKey && visibleEntries.length){
+    selectedIdx = visibleEntries.findIndex(e => e.key === _invUiState.selectedKey || e.itemId === _invUiState.selectedKey);
+  }
+  if(selectedIdx < 0 && visibleEntries.length){
+    selectedIdx = Math.min(Math.max(0, _invUiState.lastIdx || 0), visibleEntries.length - 1);
+  }
+  const selectedEntry = selectedIdx >= 0 ? visibleEntries[selectedIdx] : null;
+  _invUiState.selectedKey = selectedEntry ? selectedEntry.key : null;
+  _invUiState.lastIdx = selectedIdx >= 0 ? selectedIdx : 0;
+
+  const filterHTML = INV_GB_FILTERS.map(f => {
+    const on = _invUiState.filter === f.id;
+    return `<button type="button" class="inv-gb-filter${on ? ' active on' : ''}" data-inv-filter="${f.id}" role="tab" aria-selected="${on ? 'true' : 'false'}"><span>${f.label}</span><small class="inv-gb-filter-cnt">${counts[f.id] || 0}</small></button>`;
+  }).join('');
+
+  const emptyHints = {
+    all: '行囊空空如也。旅途中收入的法器、随身铭记、信物与小铺茶点都会收整于此。',
+    gear: '暂未收执随身法杖或解锁随身铭记。推进主线与奇遇后即可在此一键佩装。',
+    story: '暂未收入剧情信物或随身消耗品。',
+    cozy: '暂未购入小铺茶点或赠礼，可前往「小铺」挑选心意物件。'
+  };
+
+  const slotsHTML = visibleEntries.length
+    ? visibleEntries.map((entry, idx) => {
+        const isSel = idx === selectedIdx;
+        const iconHTML = renderItemArtSafe(entry.artKey, {
+          size: 58,
+          alt: entry.name,
+          decorative: true
+        });
+        const eqTag = entry.equipped
+          ? `<span class="inv-gb-eq">${entry.kind === 'staff' ? '已执' : '已佩'}</span>`
+          : '';
+        const qtyTag = entry.showQty
+          ? `<span class="inv-gb-qty">×${entry.qty}</span>`
+          : '';
+        const ariaLbl = `${entry.name}${entry.equipped ? '（已佩）' : ''}${entry.showQty ? ` ×${entry.qty}` : ''}`;
+        return `<button type="button" class="inv-gb-slot${isSel ? ' selected is-selected' : ''}${entry.equipped ? ' equipped' : ''}" data-inv-key="${escapeText(entry.key)}" data-inv-idx="${idx}" role="option" aria-selected="${isSel ? 'true' : 'false'}" aria-label="${escapeText(ariaLbl)}" title="${escapeText(entry.name)}">${iconHTML}${eqTag}${qtyTag}</button>`;
+      }).join('')
+    : `<div class="inv-gb-empty">${emptyHints[_invUiState.filter] || emptyHints.all}</div>`;
+
+  const rawInvLen = Array.isArray(S && S.inv) ? S.inv.length : 0;
+  body.innerHTML = `<div class="inv-gb-shell" data-inv-filter="${escapeText(_invUiState.filter)}">
+    <div class="inv-gb-main">
+      <div class="inv-gb-filters" role="tablist" aria-label="背包道具分类">${filterHTML}</div>
+      <div class="inv-gb-grid" role="listbox" aria-label="随身道具格网">${slotsHTML}</div>
+      <div class="inv-gb-summary">
+        <span>随身实录 ${allEntries.length} 项 · 剧情行囊 ${rawInvLen}/50</span>
+        <span>点击或方向键 ↑↓←→ 切换精鉴</span>
+      </div>
+    </div>
+    <aside class="inv-gb-detail" aria-live="polite">${renderInvDetailCardHTML(selectedEntry)}</aside>
+  </div>`;
+
+  const shell = body.querySelector('.inv-gb-shell');
+  const detailEl = shell ? shell.querySelector('.inv-gb-detail') : null;
+  const gridEl = shell ? shell.querySelector('.inv-gb-grid') : null;
+
+  function bindDetailActions(entry){
+    if(!detailEl || !entry) return;
+    detailEl.querySelectorAll('[data-equip-staff]').forEach(btn => {
+      btn.onclick = () => {
+        equipMainStaff(btn.getAttribute('data-equip-staff'));
+      };
+    });
+    detailEl.querySelectorAll('[data-toggle-relic]').forEach(btn => {
+      btn.onclick = () => {
+        const rid = btn.getAttribute('data-toggle-relic');
+        if(typeof RelicsAndEvents !== 'undefined' && typeof RelicsAndEvents.toggleEquipRelic === 'function'){
+          const res = RelicsAndEvents.toggleEquipRelic(rid, { state: S });
+          if(res && res.ok){
+            sfx(res.action === 'equipped' ? 'ok' : 'tab_switch');
+            toast(res.action === 'equipped'
+              ? `已佩带随身铭记：${entry.name}`
+              : `已卸下随身铭记：${entry.name}`);
+          } else if(res && res.reason === 'max_3'){
+            sfx('bad');
+          }
+          openPanel('inv');
+        }
+      };
+    });
+    detailEl.querySelectorAll('[data-use]').forEach(btn => {
+      btn.onclick = () => useItem(btn.getAttribute('data-use'));
+    });
+    detailEl.querySelectorAll('[data-use-cozy]').forEach(btn => {
+      btn.onclick = () => {
+        const cid = btn.getAttribute('data-use-cozy');
+        const rhApi = (typeof window !== 'undefined' && window.RaisingHub) ? window.RaisingHub : null;
+        if(rhApi && typeof rhApi.useCozyItem === 'function'){
+          rhApi.useCozyItem(cid, S);
+          openPanel('inv');
+        }
+      };
+    });
+    detailEl.querySelectorAll('[data-gift-cozy]').forEach(btn => {
+      btn.onclick = () => {
+        const rhApi = (typeof window !== 'undefined' && window.RaisingHub) ? window.RaisingHub : null;
+        if(rhApi && typeof rhApi.openShopModal === 'function'){
+          show('panel', 0);
+          rhApi.openShopModal('gift');
+        } else {
+          toast('请于自由探索期前往「小铺」赠礼页致赠');
+        }
+      };
+    });
+  }
+
+  function selectByIdx(nextIdx, optsSel){
+    if(!visibleEntries.length || !shell || !detailEl) return;
+    const clamped = Math.max(0, Math.min(visibleEntries.length - 1, nextIdx));
+    const entry = visibleEntries[clamped];
+    if(!entry) return;
+    selectedIdx = clamped;
+    _invUiState.selectedKey = entry.key;
+    _invUiState.lastIdx = clamped;
+    const slotBtns = Array.from(shell.querySelectorAll('.inv-gb-slot'));
+    slotBtns.forEach((b, i) => {
+      const on = i === clamped;
+      b.classList.toggle('selected', on);
+      b.classList.toggle('is-selected', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    detailEl.innerHTML = renderInvDetailCardHTML(entry);
+    bindDetailActions(entry);
+    if(optsSel && optsSel.playSfx) sfx('click');
+    if(optsSel && optsSel.focus && slotBtns[clamped]){
+      try { slotBtns[clamped].focus({ preventScroll: true }); } catch(e){}
+      if(typeof slotBtns[clamped].scrollIntoView === 'function'){
+        try { slotBtns[clamped].scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch(e){}
+      }
+    }
+  }
+
+  if(shell){
+    shell.querySelectorAll('[data-inv-filter]').forEach(btn => {
+      btn.onclick = () => {
+        const nextF = btn.getAttribute('data-inv-filter');
+        if(!nextF || nextF === _invUiState.filter) return;
+        _invUiState.filter = nextF;
+        _invUiState.lastIdx = 0;
+        sfx('tab_switch');
+        renderGraphicalInventoryPanel(body, { filter: nextF });
+      };
+    });
+    if(gridEl){
+      gridEl.onclick = e => {
+        const slot = e.target && e.target.closest ? e.target.closest('.inv-gb-slot') : null;
+        if(!slot) return;
+        const idx = Number(slot.getAttribute('data-inv-idx'));
+        if(Number.isFinite(idx)) selectByIdx(idx, { playSfx: true });
+      };
+    }
+    shell._moveInvFocus = (arrowKey) => {
+      if(!visibleEntries.length) return false;
+      const slotBtns = Array.from(shell.querySelectorAll('.inv-gb-slot'));
+      if(!slotBtns.length) return false;
+      let cols = 1;
+      if(slotBtns.length > 1 && typeof slotBtns[0].getBoundingClientRect === 'function'){
+        const r0 = slotBtns[0].getBoundingClientRect();
+        if(r0 && r0.width > 0){
+          let sameRow = 0;
+          for(let i = 0; i < slotBtns.length; i++){
+            const ri = slotBtns[i].getBoundingClientRect();
+            if(Math.abs(ri.top - r0.top) < 8) sameRow++;
+            else break;
+          }
+          cols = Math.max(1, sameRow);
+        } else {
+          cols = Math.min(slotBtns.length, 6);
+        }
+      }
+      let nextIdx = selectedIdx;
+      if(arrowKey === 'ArrowRight') nextIdx = Math.min(slotBtns.length - 1, selectedIdx + 1);
+      else if(arrowKey === 'ArrowLeft') nextIdx = Math.max(0, selectedIdx - 1);
+      else if(arrowKey === 'ArrowDown') nextIdx = Math.min(slotBtns.length - 1, selectedIdx + cols);
+      else if(arrowKey === 'ArrowUp') nextIdx = Math.max(0, selectedIdx - cols);
+      if(nextIdx !== selectedIdx){
+        selectByIdx(nextIdx, { playSfx: true, focus: true });
+      }
+      return true;
+    };
+  }
+  bindDetailActions(selectedEntry);
 }
 
 function openPanel(tab, opts){
@@ -5579,32 +6177,7 @@ function openPanel(tab, opts){
       });
     }
   } else if(tab==='inv'){
-    const grouped = [];
-    const byKey = Object.create(null);
-    (S.inv || []).forEach(it => {
-      if(!it) return;
-      const key = it.id || it.name || 'item';
-      const addQty = Math.max(1, Number(it.qty) || 1);
-      if(byKey[key]){
-        byKey[key].qty += addQty;
-      } else {
-        const entry = { item: it, qty: addQty };
-        byKey[key] = entry;
-        grouped.push(entry);
-      }
-    });
-    const slots = grouped.map(({item: it, qty})=>{
-      const svgIco = uiIco(it.icon || it.id, 18);
-      const useBtnOrTag = it.id === 'cookie'
-        ? `<button type="button" class="tbtn inv-use-btn" data-use="${escapeText(it.id)}">食用</button>`
-        : `<span class="inv-tag">随身典藏 · 可赠礼</span>`;
-      return `<div class="inv-slot filled"><div class="inv-head"><span class="inv-ico-box" aria-hidden="true">${svgIco}</span><div class="inv-title-wrap"><b>${escapeText(it.name||it.id||'未知物品')}</b><span class="inv-qty">×${qty}</span></div></div><div class="inv-desc">${escapeText(it.desc||'随身收纳的纪念小物。')}</div><div class="inv-foot">${useBtnOrTag}</div></div>`;
-    }).join('');
-    body.innerHTML=`<div class="p-inv">${slots || '<div class="inv-slot">空</div>'}</div>
-      <p style="margin-top:8px;color:#526078;font-size:12px">背包 ${S.inv.length}/50 · 系统收纳（单手可握之物）</p>`;
-    body.querySelectorAll('[data-use]').forEach(b=>{
-      b.onclick=()=>useItem(b.getAttribute('data-use'));
-    });
+    renderGraphicalInventoryPanel(body, opts);
   } else if(tab==='ach'){
     const unlocked = ACH.filter(a=>S.ach[a.id]);
     const lockedN = ACH.length - unlocked.length;
@@ -6830,6 +7403,14 @@ document.addEventListener('keydown', e=>{
   }
   if(isEditable) return;
   if(isOverlayVisible('ai-drawer')) return;
+  if((e.key==='ArrowUp' || e.key==='ArrowDown' || e.key==='ArrowLeft' || e.key==='ArrowRight') && isOverlayVisible('panel')){
+    const invShell = $('panel-body') && $('panel-body').querySelector('.inv-gb-shell');
+    if(invShell && typeof invShell._moveInvFocus === 'function'){
+      if(typeof e.preventDefault === 'function') e.preventDefault();
+      invShell._moveInvFocus(e.key);
+      return;
+    }
+  }
   if(e.key===' ' || e.key==='Enter'){
     // 若非空格关闭型弹窗（帮助/图鉴/养成/信笺/VN弹窗/战斗等）正在展示，禁止穿透推进对话
     if(isNonDialogModalBlockingSpace()) return;

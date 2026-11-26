@@ -1797,7 +1797,7 @@
   }
 
   function getEquippedStaffDef(player) {
-    const id = (player && player.equippedStaff) || (player && player.wandActive ? 'eclipse_wand' : 'none');
+    const id = (player && player.wandActive) ? 'eclipse_wand' : ((player && player.equippedStaff) || 'none');
     return COMBAT_BALANCE_V22.STAVES[id] || COMBAT_BALANCE_V22.STAVES.none;
   }
 
@@ -1852,6 +1852,31 @@
     return (typeof RelicsAndEvents !== 'undefined' && RelicsAndEvents) ? RelicsAndEvents : global.RelicsAndEvents || null;
   }
 
+  function getItemArtApi() {
+    return (typeof window !== 'undefined' && window.ItemArtRegistry)
+      || (typeof ItemArtRegistry !== 'undefined' && ItemArtRegistry)
+      || global.ItemArtRegistry
+      || null;
+  }
+
+  function renderWandArtIcon() {
+    const art = getItemArtApi();
+    if (art && typeof art.renderIconHTML === 'function') {
+      const html = art.renderIconHTML('eclipse_wand', { size: 18, cls: 'cb-wand-art', decorative: true, eager: true });
+      if (html) return html;
+    }
+    return CB_SVG.wand;
+  }
+
+  function renderRelicMicroArt(itemId) {
+    const art = getItemArtApi();
+    if (art && typeof art.renderIconHTML === 'function') {
+      if (typeof art.hasArt === 'function' && !art.hasArt(itemId)) return '';
+      return art.renderIconHTML(itemId, { size: 16, cls: 'cb-relic-micro-art', decorative: true, eager: true }) || '';
+    }
+    return '';
+  }
+
   function hasRelic(player, relicId) {
     return !!(player && Array.isArray(player.relics) && player.relics.indexOf(relicId) !== -1);
   }
@@ -1872,6 +1897,16 @@
     const baseCrit = activeRelics.indexOf('belmont_schedule') !== -1 ? 0.15 : 0;
     const synInfo = resolveActiveSynergies(activeRelics);
     const actPreset = stageCfg && COMBAT_BALANCE_V22.ACTS_PLAYER_PRESET[stageCfg.id];
+    let selectedStaff = 'none';
+    if (!opts.headless) {
+      const winRel = (typeof window !== 'undefined' && window.RelicsAndEvents) || relApi;
+      const rawStaff = (winRel && typeof winRel.getActiveStaffForBattle === 'function')
+        ? winRel.getActiveStaffForBattle({ fromArena: !!opts.fromArena, headless: !!opts.headless, state: curS })
+        : ((curS && curS.equippedStaff) || 'none');
+      if (rawStaff && COMBAT_BALANCE_V22.STAVES[rawStaff]) {
+        selectedStaff = rawStaff;
+      }
+    }
 
     if (usePreset && p) {
       const pSpd = p.spd || (actPreset && actPreset.spd) || 100;
@@ -1907,8 +1942,8 @@
         hasManaCycle: !!p.manaCycle,
         canAmp: (p.mmp || 0) > 0,
         canManaAmp: (p.mmp || 0) > 0,
-        hasEclipseWand: !!p.eclipseWand,
-        equippedStaff: 'none',
+        hasEclipseWand: !!p.eclipseWand || selectedStaff === 'eclipse_wand',
+        equippedStaff: selectedStaff,
         wandPersistent: false,
         wandActive: false,
         wandCooldown: 0,
@@ -2025,8 +2060,8 @@
       hasManaCycle: learned.has('mana_cycle'),
       canAmp: mmp > 0,
       canManaAmp: mmp > 0,
-      hasEclipseWand: hasEclipseInSave(),
-      equippedStaff: 'none',
+      hasEclipseWand: hasEclipseInSave() || selectedStaff === 'eclipse_wand',
+      equippedStaff: selectedStaff,
       wandPersistent: false,
       wandActive: false,
       wandCooldown: 0,
@@ -2919,8 +2954,10 @@
 
   function isEclipseStaffForSkill(player, skill) {
     if (!player || !skill || !(skill.power > 0) || skill.atkKind !== 'matk') return false;
+    if (player.wandActive) return true;
+    if (player.hasEclipseWand) return false;
     const staff = getEquippedStaffDef(player);
-    return !!(player.wandActive || (staff && staff.trueMagic));
+    return !!(staff && staff.trueMagic);
   }
 
   function getAmpTierInfo(ampPct) {
@@ -4873,7 +4910,7 @@
     p.wandActive = forceVal !== undefined ? !!forceVal : !p.wandActive;
     if (!p.wandActive) {
       p.wandPersistent = false;
-      if (p.equippedStaff === 'eclipse_wand') p.equippedStaff = 'none';
+      if (p.equippedStaff === 'eclipse_wand' && !p.hasEclipseWand) p.equippedStaff = 'none';
     }
     syncDerivedBattleState(b);
     if (!b.headless) safeSfx(p.wandActive ? 'eclipse_cast' : 'tab_switch', p.wandActive ? { gain: 0.72 } : undefined);
@@ -6982,7 +7019,7 @@
           <div class="cb-meters" id="cb-meters"></div>
           <div class="cb-top-tools">
             <button class="cb-tool-btn palace-btn" id="cb-btn-palace">${CB_SVG.crystal} 冰晶宫殿 <span class="cb-kbd">Q</span></button>
-            <button class="cb-tool-btn wand-btn hidden" id="cb-btn-wand">${CB_SVG.wand} 晦轮杖 <span class="cb-kbd">R</span></button>
+            <button class="cb-tool-btn wand-btn hidden" id="cb-btn-wand">${renderWandArtIcon()} 晦轮杖 <span class="cb-kbd">R</span></button>
             <button class="cb-tool-btn assist-btn locked-hint hidden" id="cb-btn-assist" disabled>${CB_SVG.assist} 心念援护 <span class="cb-kbd">F</span></button>
             <button class="cb-tool-btn retreat-btn" id="cb-btn-retreat">${CB_SVG.retreat} 撤出</button>
           </div>
@@ -7383,9 +7420,10 @@
       wBtn.classList.toggle('active', !!p.wandActive);
       const extraMpTip = Math.round(Math.max(1, p.mmp || 100) * COMBAT_BALANCE_V22.STAVES.eclipse_wand.extraMpPct);
       wBtn.title = `晦轮杖（V2.2）：100% 魔法真伤，无视法抗与魔法盾，仅物理实体甲阻尼；额外耗蓝 +${extraMpTip} MP，无冷却`;
+      const wandIcon = renderWandArtIcon();
       wBtn.innerHTML = p.wandActive
-        ? `${CB_SVG.wand} 晦轮杖：真伤 ON <span class="cb-kbd">R</span>`
-        : `${CB_SVG.wand} 晦轮杖：收鞘 <span class="cb-kbd">R</span>`;
+        ? `${wandIcon} 晦轮杖：真伤 ON <span class="cb-kbd">R</span>`
+        : `${wandIcon} 晦轮杖：收鞘 <span class="cb-kbd">R</span>`;
       wBtn.disabled = b.over;
     } else {
       wBtn.classList.add('hidden');
@@ -7590,12 +7628,21 @@
         buffs.push(`<span class="cb-buff-chip synergy" title="【${syn.name}·${syn.tier || syn.count}件共鸣】${synDesc}">✦ ${syn.name}·${syn.tier || syn.count}件</span>`);
       });
     }
+    if (p.equippedStaff === 'north_saint_staff') {
+      const stArt = renderRelicMicroArt('north_saint_staff');
+      const stLead = stArt || '✦ ';
+      buffs.push(`<span class="cb-buff-chip relic staff-chip${stArt ? ' has-art' : ''}" title="【极北圣晶杖】法攻倍率 ×1.28 · 暴伤 +20% · 增幅额外耗蓝降低 25%">${stLead}<span class="cb-chip-label">极北圣晶杖</span></span>`);
+    }
     if (p.relics && p.relics.length) {
       const api = getRelicsApi();
       const relMap = (api && (api.RELICS_CATALOG || api.RELICS)) || {};
       p.relics.forEach(rid => {
         const rm = relMap[rid];
-        if (rm) buffs.push(`<span class="cb-buff-chip relic" title="${String(rm.effectText || '').replace(/"/g, '&quot;')}">✦ ${rm.name}</span>`);
+        if (rm) {
+          const microArt = renderRelicMicroArt(rid);
+          const lead = microArt || '✦ ';
+          buffs.push(`<span class="cb-buff-chip relic${microArt ? ' has-art' : ''}" title="${String(rm.effectText || '').replace(/"/g, '&quot;')}">${lead}<span class="cb-chip-label">${rm.name}</span></span>`);
+        }
       });
     }
     if (p.status.blind > 0) buffs.push(`<span class="cb-buff-chip debuff">视线受阻×${p.status.blind}</span>`);

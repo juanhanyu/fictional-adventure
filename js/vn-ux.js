@@ -3333,6 +3333,7 @@
 
   function renderCodexMementoTab(container) {
     var openCount = MEMENTO_CATALOG.filter(isMementoUnlocked).length;
+    var artReg = (typeof window !== 'undefined' && window.ItemArtRegistry) || (root && root.ItemArtRegistry) || null;
     var cardsHtml = MEMENTO_CATALOG.map(function (m) {
       var open = isMementoUnlocked(m);
       var expanded = open && codexExpandedMemento === m.id;
@@ -3351,9 +3352,16 @@
           '</article>'
         );
       }
+      var hasArt = !!(artReg && typeof artReg.renderIconHTML === 'function' && (!artReg.hasArt || artReg.hasArt(m.id)));
+      var cardIcoHtml = hasArt
+        ? artReg.renderIconHTML(m.id, { size: 42, cls: 'memento-art-img', decorative: true })
+        : getSvg(m.iconKey);
+      var crestHtml = hasArt
+        ? artReg.renderIconHTML(m.id, { size: 48, cls: 'ms-crest-art-img', decorative: true })
+        : getSvg('snowflake');
       var stationeryHtml = expanded
-        ? '<div class="memento-stationery">' +
-            '<div class="ms-crest" aria-hidden="true">' + getSvg('snowflake') + '</div>' +
+        ? '<div class="memento-stationery' + (hasArt ? ' has-crest-art' : '') + '">' +
+            '<div class="ms-crest' + (hasArt ? ' has-item-art' : '') + '" aria-hidden="true">' + crestHtml + '</div>' +
             '<div class="ms-salutation">' + escapeHtml(m.salutation) + '</div>' +
             '<div class="ms-body">' + escapeHtml(m.body).replace(/\n/g, '<br>') + '</div>' +
             '<div class="ms-sign">—— ' + escapeHtml(m.sign) + '</div>' +
@@ -3363,7 +3371,7 @@
       return (
         '<article class="memento-card unlocked' + (expanded ? ' expanded' : '') + '" data-memento-id="' + escapeHtml(m.id) + '">' +
           '<button type="button" class="memento-toggle-btn" data-memento-open="' + escapeHtml(m.id) + '">' +
-            '<span class="memento-ico" aria-hidden="true">' + getSvg(m.iconKey) + '</span>' +
+            '<span class="memento-ico' + (hasArt ? ' has-item-art' : '') + '" aria-hidden="true">' + cardIcoHtml + '</span>' +
             '<div class="memento-titles">' +
               '<div class="memento-name">' + escapeHtml(m.name) + '</div>' +
               '<div class="memento-owner">' + escapeHtml(m.owner) + ' · ' + escapeHtml(m.era) + '</div>' +

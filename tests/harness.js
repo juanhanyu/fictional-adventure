@@ -139,6 +139,7 @@ const scriptFiles = [
   'js/story-vol3.js',
   'js/story-vol4.js',
   'js/ai-personas.js',
+  'js/item-art-registry.js',
   'game.js',
   'js/sfx-suite.js',
   'js/voice-manifest.js',

@@ -3305,6 +3305,34 @@ body section#arena-loadout-modal.overlay .relics-dashboard .rc-lore {
   flex-shrink: 0;
 }
 
+#app #codex #codex-list .memento-ico.has-item-art {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+
+#app #codex #codex-list .memento-ico.has-item-art .memento-art-img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 2px 5px rgba(16, 32, 68, 0.18));
+  transition: transform 0.18s var(--ap-ease), filter 0.18s var(--ap-ease);
+}
+
+#app #codex #codex-list .memento-toggle-btn:hover .memento-ico.has-item-art .memento-art-img {
+  transform: scale(1.06);
+  filter: drop-shadow(0 3px 8px rgba(22, 88, 235, 0.24));
+}
+
 .memento-titles {
   flex: 1;
   min-width: 0;
@@ -3369,12 +3397,40 @@ body section#arena-loadout-modal.overlay .relics-dashboard .rc-lore {
   position: relative;
 }
 
+#app #codex #codex-list .memento-stationery.has-crest-art .ms-salutation {
+  padding-right: 60px;
+}
+
 #app #codex #codex-list .ms-crest {
   position: absolute;
   top: 10px;
   right: 14px;
   font-size: 15px;
   color: rgba(28, 76, 184, 0.34);
+}
+
+#app #codex #codex-list .ms-crest.has-item-art {
+  top: 10px;
+  right: 14px;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+#app #codex #codex-list .ms-crest.has-item-art .ms-crest-art-img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 3px 7px rgba(22, 88, 235, 0.18));
 }
 
 #app #codex #codex-list .ms-salutation {

@@ -260,7 +260,7 @@ const expectedDiffKeys = [
   'charlotte_shy', 'charlotte_smile', 'noelle_smile',
 ];
 ok('PORTRAIT_DIFF_PROTOCOL 完整登记 lein/peilin 与全部 9 张表情差分协议',
-  expectedDiffKeys.every((k) => typeof proto[k] === 'string' && proto[k].endsWith('.png')),
+  expectedDiffKeys.every((k) => typeof proto[k] === 'string' && /\.(png|webp)$/.test(proto[k])),
   'keys=' + Object.keys(proto).join(','));
 
 win.FAILED_PORTRAIT_URLS.clear();
@@ -273,11 +273,11 @@ if (ainoImg && typeof ainoImg.onerror === 'function') ainoImg.onerror();
 const fallbackSrc = ainoImg ? ainoImg.getAttribute('src') : '';
 const resolvedAfterFail = win.resolvePortrait('aino', 'serious');
 ok('M3.1 缺失表情差分触发 onerror 后优雅回落至 _normal 且记忆失败 URL（无崩溃无破图）',
-  initialSrc === 'assets/portraits/aino_serious.png'
-  && fallbackSrc === 'assets/portraits/aino_normal.png'
+  initialSrc === 'assets/portraits/aino_serious.webp'
+  && fallbackSrc === 'assets/portraits/aino_normal.webp'
   && !ainoSlot.classList.contains('hidden')
-  && win.FAILED_PORTRAIT_URLS.has('assets/portraits/aino_serious.png')
-  && resolvedAfterFail === 'assets/portraits/aino_normal.png',
+  && win.FAILED_PORTRAIT_URLS.has('assets/portraits/aino_serious.webp')
+  && resolvedAfterFail === 'assets/portraits/aino_normal.webp',
   `init=${initialSrc}, fb=${fallbackSrc}, next=${resolvedAfterFail}`);
 
 // 8) EXITS.jikan 热点避开人物面部且全部 y <= 66

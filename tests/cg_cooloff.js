@@ -1,5 +1,5 @@
 'use strict';
-// 童年夏天·树荫乘凉 CG（cool_off.png）：s_sisters_grow（五岁）内插入了主角用冰霜之息给爱丽丝降温的 CG 段
+// 童年夏天·树荫乘凉 CG（cool_off.webp）：s_sisters_grow（五岁）内插入了主角用冰霜之息给爱丽丝降温的 CG 段
 const h=require('./harness.js');
 const win=h.win;
 const $=(id)=>win.document.getElementById(id);
@@ -29,7 +29,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const st=win.__getS();
   ok('场景无崩溃', !err);
   ok('触发了 CG 演出（>=6 句）', cgCount>=6);
-  ok('使用了 cool_off.png', seen.has('cool_off.png'));
+  ok('使用了 cool_off.webp', seen.has('cool_off.webp'));
   console.log('  CG图集:', [...seen].join(', ') || '(无)');
   ok('走到自由探索', st.freeRoam===true);
   console.log('  CG推进:', cgCount, '| guard:', guard);

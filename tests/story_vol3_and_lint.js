@@ -97,7 +97,7 @@ const pState = win.__getS();
 pState.flags.named = 1;
 pState.ageY = 15;
 pState.alias = null;
-ok('伪装前希尔维亚解析为学院银发立绘', win.resolvePortrait('sylvia', 'normal') === 'assets/portraits/sylvia_teenage_normal.png');
+ok('伪装前希尔维亚解析为学院银发立绘', win.resolvePortrait('sylvia', 'normal') === 'assets/portraits/sylvia_teenage_normal.webp');
 
 pState.alias = '眷寒渔';
 win.updateHUD();

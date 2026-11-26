@@ -20,7 +20,7 @@ ok('cgHide 加 faded 淡出', $('cg-screen').classList.contains('faded'));
 ok('cgHide 移除 cg-mode', !win.document.body.classList.contains('cg-mode'));
 
 // 旁白白色
-win.cgShow('parting.png'); win.cgText(null, '回头。是火光。', true);
+win.cgShow('parting.webp'); win.cgText(null, '回头。是火光。', true);
 ok('旁白用 c-narrator 白色', $('cg-text').innerHTML.includes('c-narrator'));
 win.cgHide();
 

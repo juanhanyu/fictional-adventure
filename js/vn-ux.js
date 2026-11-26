@@ -1959,7 +1959,7 @@
   var CG_GALLERY_CATALOG = [
     {
       id: 'cool_off.png',
-      file: 'cool_off.png',
+      file: 'cool_off.webp',
       title: '午后树荫的冰霜之息',
       vol: '第一卷 · 公爵篇',
       quote: '「姐姐大人是冰系真好……嗯。再来一口？」',
@@ -1969,7 +1969,7 @@
     },
     {
       id: 'reno_story.png',
-      file: 'reno_story.png',
+      file: 'reno_story.webp',
       title: '浪人叔叔的远方奇谈',
       vol: '第一卷 · 公爵篇',
       quote: '「驰弩帝国北边的雪狼，跑起来像一团滚动的雪球！等你去了魔法大学，报我名字就行。」',
@@ -1989,7 +1989,7 @@
     },
     {
       id: 'beatrice_battle.png',
-      file: 'beatrice_battle.png',
+      file: 'beatrice_battle.webp',
       title: '东翼死路 · 长女立阵',
       vol: '第二卷 · 学院篇',
       quote: '「十七岁的贝阿特丽丝站在仆人通道正中，前封后追，只回头留下一句：我在这里挡一下。」',
@@ -1999,7 +1999,7 @@
     },
     {
       id: 'parting.png',
-      file: 'parting.png',
+      file: 'parting.webp',
       title: '火光如日 · 姐妹诀别',
       vol: '第二卷 · 学院篇',
       quote: '「听好了，听贝阿特丽丝大人的话。跑得越远越好，然后——找到希尔维亚。」',
@@ -2029,7 +2029,7 @@
     },
     {
       id: 'vol3_ash_snow.png',
-      file: 'vol3_ash_snow.png',
+      file: 'vol3_ash_snow.webp',
       title: '暗渠之外 · 灰烬初雪',
       vol: '第三卷 · 旅途篇',
       quote: '「白雪落满她的长发，白落在白上，分不清哪些是今冬的雪，哪些是她自己。」',
@@ -2039,7 +2039,7 @@
     },
     {
       id: 'vol3_jikan_parting.png',
-      file: 'vol3_jikan_parting.png',
+      file: 'vol3_jikan_parting.webp',
       fallbackSrc: 'assets/bg/jikan.jpg',
       title: '晨雾霁馆 · 糖面饼与窗影',
       vol: '第三卷 · 旅途篇',
@@ -2050,7 +2050,7 @@
     },
     {
       id: 'vol3_ice_canyon_clash.png',
-      file: 'vol3_ice_canyon_clash.png',
+      file: 'vol3_ice_canyon_clash.webp',
       title: '风雪重逢 · 隔空钢冰',
       vol: '第三卷 · 旅途篇',
       quote: '「菱形钢冰短锥在艾诺肩后半步凭空成形，飞雪掠过衣领，浅蓝眼眸穿过漫天雪沫笔直落来。」',

@@ -221,6 +221,47 @@
   }
   .card-accent-ice { border-top-color: var(--ice); }
   .card-accent-gold { border-top-color: var(--gold); }
+  .card-spotlight {
+    grid-column: 1 / -1;
+    border: 1px solid rgba(22, 88, 235, 0.36);
+    border-top: 3px solid var(--royal);
+    background: linear-gradient(125deg, #FFFFFF 0%, #F4F8FE 62%, #EBF3FE 100%);
+    flex-direction: row;
+    align-items: center;
+    gap: 24px;
+    padding: 18px 22px;
+  }
+  .card-spotlight-main {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .card-spotlight .card-title {
+    font-size: 17px;
+    margin-bottom: 6px;
+  }
+  .card-spotlight .card-desc {
+    margin-bottom: 0;
+  }
+  .card-spotlight .card-actions {
+    flex: 0 0 auto;
+    border-top: none;
+    border-left: 1px solid var(--line);
+    padding-top: 0;
+    padding-left: 20px;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .tab.tab-featured {
+    color: var(--royal);
+    font-weight: 700;
+  }
+  .tab.tab-featured::before {
+    background: var(--gold);
+  }
+  .tab.tab-featured.active {
+    color: #FFFFFF;
+  }
 
   .card-meta {
     display: flex; align-items: center; justify-content: space-between;
@@ -336,17 +377,19 @@
       <div class="brand">
         <h1>✦ 转生千金 · 审阅台</h1>
       </div>
-      <button class="tab active" data-key="overview" data-desc="本批全新交互产物（4 项：三版明亮战斗特效竞技场 + 三版雁形战斗舞台）与历次视觉竞标审阅总览">总览</button>
+      <button class="tab active" data-key="overview" data-desc="最新置顶：板 A 圣晶厚涂 70 图定稿选稿台 + 本批 4 项（三版特效/雁形舞台）与历次 14 项审阅总览">总览</button>
       <div class="sep" aria-hidden="true"></div>
       <span class="row-label row-label-new">本批新上</span>
       <nav class="nav-strip" id="nav-new" aria-label="本批新增交互审阅入口">
+        <button class="tab tab-new tab-featured" data-key="board_a_70" data-src="./board_a_selector/board_a_70_selector.html" data-desc="板 A 圣晶厚涂 · 全游戏 31 件道具 70 张定稿交互选稿台（晦轮杖 10 选 1 + 30 件双案择优 + 76px 实寸 + 一键复制定稿单）" title="板 A 圣晶厚涂 · 31 件道具 70 张定稿选稿台">★ 板 A 道具 70 图选稿</button>
+        <div class="sep" aria-hidden="true"></div>
         <button class="tab tab-new" data-key="vfx_arena" data-src="./vfx_3boards/vfx_3boards_arena.html" data-desc="三版明亮战斗特效同台竞技场（A/B/C · 真角色舞台）" title="三版明亮战斗特效同台竞技场（A/B/C · 真角色舞台）">三版明亮战斗特效竞技场 A/B/C</button>
         <div class="sep" aria-hidden="true"></div>
         <button class="tab tab-new" data-key="stage_a" data-src="./battle_stage_3boards/stage_demo_a_echelon.html" data-desc="雁形战斗舞台 · 方案 A（斜向雁阵 + 底部通栏轻队卡）" title="雁形战斗舞台 · 方案 A（斜向雁阵 + 底部通栏轻队卡）">雁形舞台 A·斜向通栏</button>
         <button class="tab tab-new" data-key="stage_b" data-src="./battle_stage_3boards/stage_demo_b_theater.html" data-desc="雁形战斗舞台 · 方案 B（宽屏剧场透视雁阵 + 左下阶梯卡）" title="雁形战斗舞台 · 方案 B（宽屏剧场透视雁阵 + 左下阶梯卡）">雁形舞台 B·剧场阶梯</button>
         <button class="tab tab-new" data-key="stage_c" data-src="./battle_stage_3boards/stage_demo_c_astral.html" data-desc="雁形战斗舞台 · 方案 C（大雁展翅折线 + 底中双微岛）" title="雁形战斗舞台 · 方案 C（大雁展翅折线 + 底中双微岛）">雁形舞台 C·展翅微岛</button>
       </nav>
-      <a id="open-direct" class="open-ext is-hidden" href="./vfx_3boards/vfx_3boards_arena.html" target="_blank" rel="noopener">新窗 ↗</a>
+      <a id="open-direct" class="open-ext is-hidden" href="./board_a_selector/board_a_70_selector.html" target="_blank" rel="noopener">新窗 ↗</a>
     </div>
 
     <div class="bar-row bar-secondary">
@@ -370,7 +413,7 @@
         <div class="sep" aria-hidden="true"></div>
         <button class="tab" data-key="title" data-src="./vesteria_title_demo.html" data-desc="电脑端单文件主界面 Demo（含 B+C 融合冰晶 + Sacred 1.mp3 + 同舞台转场）" title="电脑端主界面 Demo">主界面 Demo</button>
       </nav>
-      <span id="cur-desc" class="cur-desc" title="本批全新交互产物（4 项：三版明亮战斗特效竞技场 + 三版雁形战斗舞台）与历次视觉竞标审阅总览">本批全新交互产物（4 项：三版明亮战斗特效竞技场 + 三版雁形战斗舞台）与历次视觉竞标审阅总览</span>
+      <span id="cur-desc" class="cur-desc" title="最新置顶：板 A 圣晶厚涂 70 图定稿选稿台 + 本批 4 项（三版特效/雁形舞台）与历次 14 项审阅总览">最新置顶：板 A 圣晶厚涂 70 图定稿选稿台 + 本批 4 项（三版特效/雁形舞台）与历次 14 项审阅总览</span>
     </div>
   </header>
 
@@ -380,13 +423,27 @@
         <div>
           <div class="section-head">
             <div class="section-head-left">
-              <span class="section-kicker">NEW RELEASE · 4 INTERACTIVE DEMOS</span>
-              <h2 class="section-title">本批置顶审阅入口（三版明亮战斗特效竞技场 + 三版雁形战斗舞台）</h2>
+              <span class="section-kicker">PINNED FINAL PICK &amp; NEW RELEASE · 5 INTERACTIVE DEMOS</span>
+              <h2 class="section-title">本批置顶审阅入口（板 A 道具 70 图定稿选稿台 · 三版特效竞技场 · 三版雁形战斗舞台）</h2>
             </div>
             <span class="section-note">点击「页内审阅」即刻切换全屏实机视图，或点击「独立新窗 ↗」直接打开</span>
           </div>
 
           <div class="featured-grid-2col" style="margin-top: 14px;">
+            <article class="card card-spotlight">
+              <div class="card-spotlight-main">
+                <div class="card-meta">
+                  <span class="card-cat">★ TOP PICK · BOARD A · 31 ITEMS · 70 WEBP</span>
+                  <span class="card-tag">最新置顶 · 定稿选稿台</span>
+                </div>
+                <h3 class="card-title">板 A 圣晶厚涂 · 31 件道具 70 张定稿选稿台</h3>
+                <p class="card-desc">全游戏 31 件道具 70 张 384×384 RGBA 透明成品终稿选型台：专区 1「晦轮杖（静止的日蚀）」10 选 1 精鉴 + 专区 2 其余 30 件道具 4 组二选一对比，同屏呈现 76×76px 背包实寸格、三底色实时检边、384px 原寸灯箱与「一键复制我的定稿选单」。</p>
+              </div>
+              <div class="card-actions">
+                <button class="btn-enter" data-jump="board_a_70">进入 70 图选稿台</button>
+                <a class="link-ext" href="./board_a_selector/board_a_70_selector.html" target="_blank" rel="noopener">独立新窗打开 ↗</a>
+              </div>
+            </article>
             <article class="card">
               <div>
                 <div class="card-meta">

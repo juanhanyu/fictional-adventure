@@ -1,0 +1,2401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>转生千金 · 板 A 圣晶厚涂 31 件道具 70 张定稿交互选稿台</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpolygon points='16,2 30,16 16,30 2,16' fill='%231658eb'/%3E%3Cpolygon points='16,8 24,16 16,24 8,16' fill='%23FAFBFD'/%3E%3C/svg%3E" />
+<style>
+  /* =========================================================================
+     《转生千金》板 A 圣晶厚涂 · 全游戏 31 件道具 70 张定稿交互选稿台
+     设计语言：雪瓷冰白 #FAFBFD × 皇家蓝 #1658EB × 冰青 #5ABCF5 × 淡金 #C9A45C
+     棱镜折射建筑体系 · 零圆框套圆框（全站直角 + 切角 + 1px 建筑细线）
+     适配桌面端 1440×900 与 1280×720 · 纯离线相对路径 ./items/*.webp
+     ========================================================================= */
+  :root {
+    --bg-canvas: #FAFBFD;
+    --bg-surface: #FFFFFF;
+    --bg-subtle: #F3F6FB;
+    --bg-ice: #EDF3FC;
+    --ink-deep: #1B2333;
+    --ink-body: #323D52;
+    --ink-muted: #526078;
+    --ink-faint: #7E8CA3;
+    --rule: rgba(27, 35, 51, 0.13);
+    --rule-soft: rgba(27, 35, 51, 0.08);
+    --rule-strong: rgba(27, 35, 51, 0.22);
+    --royal: #1658EB;
+    --royal-deep: #0E3BA6;
+    --royal-bright: #2B74FF;
+    --royal-wash: rgba(22, 88, 235, 0.065);
+    --royal-wash-strong: rgba(22, 88, 235, 0.12);
+    --royal-line: rgba(22, 88, 235, 0.34);
+    --gold: #C9A45C;
+    --gold-deep: #8A6722;
+    --gold-wash: rgba(201, 164, 92, 0.12);
+    --ice-cyan: #5ABCF5;
+    --ice-cyan-deep: #1B7EC2;
+    --emerald: #0A8762;
+    --emerald-wash: rgba(10, 135, 98, 0.1);
+    --serif: "Noto Serif SC", "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", "STSong", Georgia, serif;
+    --sans: "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    --mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg-canvas);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(22, 88, 235, 0.25);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(22, 88, 235, 0.48);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 102px;
+  }
+
+  html, body {
+    width: 100%;
+    min-height: 100vh;
+    background: var(--bg-canvas);
+    color: var(--ink-deep);
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.48;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* 雪瓷冰晶折射氛围底光 */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(960px 420px at 8% 0%, rgba(90, 188, 245, 0.11), transparent 64%),
+      radial-gradient(860px 420px at 94% 4%, rgba(22, 88, 235, 0.06), transparent 62%),
+      radial-gradient(660px 340px at 84% 96%, rgba(201, 164, 92, 0.065), transparent 64%);
+  }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: inherit;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  [tabindex="0"]:focus-visible {
+    outline: 2px solid var(--royal);
+    outline-offset: 2px;
+  }
+
+  img {
+    display: block;
+    pointer-events: none;
+  }
+
+  textarea, pre, code, .selectable {
+    user-select: text;
+  }
+
+  /* =========================================================================
+     动态底色模式（全局作用于全部鉴赏格、76px 实寸格、384px 原寸弹窗）
+     ========================================================================= */
+  body[data-bg="porcelain"] {
+    --stage-bg:
+      linear-gradient(45deg, rgba(22, 88, 235, 0.036) 25%, transparent 25%, transparent 75%, rgba(22, 88, 235, 0.036) 75%),
+      linear-gradient(45deg, rgba(22, 88, 235, 0.036) 25%, transparent 25%, transparent 75%, rgba(22, 88, 235, 0.036) 75%),
+      linear-gradient(155deg, #FFFFFF 0%, #F4F8FE 58%, #EBF2FC 100%);
+    --stage-bg-size: 20px 20px, 20px 20px, 100% 100%;
+    --stage-bg-pos: 0 0, 10px 10px, 0 0;
+    --slot-bg:
+      linear-gradient(160deg, #FFFFFF 0%, #F3F7FE 55%, #E7F0FC 100%);
+    --slot-border: rgba(22, 88, 235, 0.22);
+    --slot-inner-grid: rgba(22, 88, 235, 0.055);
+    --stage-ink: var(--ink-muted);
+    --stage-art-shadow: drop-shadow(0 5px 10px rgba(27, 35, 51, 0.16));
+    --slot-art-shadow: drop-shadow(0 2px 4px rgba(27, 35, 51, 0.16));
+  }
+
+  body[data-bg="deepsea"] {
+    --stage-bg:
+      linear-gradient(45deg, rgba(147, 197, 253, 0.065) 25%, transparent 25%, transparent 75%, rgba(147, 197, 253, 0.065) 75%),
+      linear-gradient(45deg, rgba(147, 197, 253, 0.065) 25%, transparent 25%, transparent 75%, rgba(147, 197, 253, 0.065) 75%),
+      linear-gradient(155deg, #101E34 0%, #0B1628 100%);
+    --stage-bg-size: 18px 18px, 18px 18px, 100% 100%;
+    --stage-bg-pos: 0 0, 9px 9px, 0 0;
+    --slot-bg: linear-gradient(155deg, #162844 0%, #0D192D 100%);
+    --slot-border: rgba(90, 188, 245, 0.34);
+    --slot-inner-grid: rgba(90, 188, 245, 0.08);
+    --stage-ink: #C6D8F2;
+    --stage-art-shadow: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
+    --slot-art-shadow: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.42));
+  }
+
+  body[data-bg="purewhite"] {
+    --stage-bg: #FFFFFF;
+    --stage-bg-size: auto;
+    --stage-bg-pos: 0 0;
+    --slot-bg: #FFFFFF;
+    --slot-border: rgba(27, 35, 51, 0.16);
+    --slot-inner-grid: transparent;
+    --stage-ink: var(--ink-muted);
+    --stage-art-shadow: drop-shadow(0 4px 10px rgba(27, 35, 51, 0.11));
+    --slot-art-shadow: drop-shadow(0 2px 4px rgba(27, 35, 51, 0.11));
+  }
+
+  /* =========================================================================
+     顶部粘性控制条（双层纤细建筑眉栏：主控制 54px + 分区锚点 34px = 88px）
+     ========================================================================= */
+  .sticky-shell {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    background: rgba(250, 251, 253, 0.96);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--rule);
+  }
+  .sticky-shell::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--royal) 0%, var(--ice-cyan) 56%, var(--gold) 100%);
+    opacity: 0.78;
+    pointer-events: none;
+  }
+
+  .topbar-main {
+    max-width: 1400px;
+    margin: 0 auto;
+    height: 54px;
+    padding: 0 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+  }
+  .brand-gem {
+    width: 20px;
+    height: 20px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .brand-gem::before {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    background: linear-gradient(135deg, var(--royal) 0%, var(--ice-cyan) 100%);
+    transform: rotate(45deg);
+  }
+  .brand-gem::after {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    background: var(--bg-canvas);
+    transform: rotate(45deg);
+  }
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.18;
+  }
+  .brand-title {
+    font-family: var(--serif);
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: var(--ink-deep);
+    white-space: nowrap;
+  }
+  .brand-sub {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--gold-deep);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .topbar-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1 1 auto;
+    justify-content: flex-end;
+    min-width: 0;
+  }
+
+  /* 进度指示器（无边框极简建筑色块 + 底部 2px 进度线） */
+  .progress-box {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 4px 10px;
+    background: var(--bg-ice);
+    border-left: 2px solid var(--royal);
+    min-width: 126px;
+    flex: 0 0 auto;
+  }
+  .progress-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .progress-label {
+    color: var(--ink-muted);
+    font-weight: 600;
+  }
+  .progress-num {
+    font-family: var(--mono);
+    font-weight: 800;
+    color: var(--royal);
+    font-size: 12.5px;
+  }
+  .progress-track {
+    height: 2px;
+    width: 100%;
+    background: rgba(22, 88, 235, 0.16);
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, var(--royal), var(--ice-cyan));
+    transition: width 0.24s var(--ease);
+  }
+
+  .v-sep {
+    width: 1px;
+    height: 22px;
+    background: var(--rule);
+    flex: 0 0 1px;
+  }
+
+  /* 批量操作按钮（无圆框，纯细底线交互） */
+  .batch-ops {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 0 0 auto;
+  }
+  .btn-flat {
+    padding: 6px 9px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-body);
+    white-space: nowrap;
+    transition: color 0.14s ease, background 0.14s ease;
+  }
+  .btn-flat:hover {
+    color: var(--royal);
+    background: var(--royal-wash);
+  }
+  .btn-flat-danger:hover {
+    color: #B4233C;
+    background: rgba(180, 35, 60, 0.07);
+  }
+
+  /* 三底色建筑切换条（1px 外框，内部直角纯色块零圆角嵌套） */
+  .bg-switch {
+    display: inline-flex;
+    align-items: stretch;
+    border: 1px solid var(--rule);
+    background: var(--bg-surface);
+    flex: 0 0 auto;
+  }
+  .bg-btn {
+    padding: 6px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    white-space: nowrap;
+    border-right: 1px solid var(--rule-soft);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.14s ease, color 0.14s ease;
+  }
+  .bg-btn:last-child {
+    border-right: none;
+  }
+  .bg-btn:hover {
+    color: var(--royal);
+    background: var(--royal-wash);
+  }
+  .bg-btn.active {
+    background: var(--ink-deep);
+    color: #FFFFFF;
+  }
+  .bg-swatch {
+    width: 9px;
+    height: 9px;
+    display: inline-block;
+    border: 1px solid rgba(27, 35, 51, 0.28);
+    flex-shrink: 0;
+  }
+  .bg-btn.active .bg-swatch {
+    border-color: rgba(255, 255, 255, 0.65);
+  }
+  .sw-porcelain { background: linear-gradient(135deg, #FFFFFF 50%, #DCE8FA 50%); }
+  .sw-deepsea { background: #10203A; }
+  .sw-white { background: #FFFFFF; }
+
+  /* 皇家蓝削角主按钮 */
+  .btn-copy-primary {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: #FFFFFF;
+    background: linear-gradient(135deg, var(--royal) 0%, var(--royal-bright) 100%);
+    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+    white-space: nowrap;
+    transition: filter 0.15s ease, transform 0.15s ease;
+  }
+  .btn-copy-primary:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+  .btn-copy-primary:active {
+    transform: translateY(0);
+  }
+
+  /* 第二行：分区快速锚点条 */
+  .topbar-sub {
+    border-top: 1px solid var(--rule-soft);
+    background: rgba(243, 246, 251, 0.85);
+  }
+  .topbar-sub-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    height: 34px;
+    padding: 0 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .anchor-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .anchor-nav::-webkit-scrollbar { display: none; }
+  .anchor-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    text-decoration: none;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: color 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+  }
+  .anchor-link:hover {
+    color: var(--royal);
+    background: rgba(22, 88, 235, 0.055);
+    border-bottom-color: var(--royal);
+  }
+  .anchor-count {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--royal);
+  }
+  .sub-hint {
+    font-size: 11px;
+    color: var(--ink-faint);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* =========================================================================
+     主内容容器
+     ========================================================================= */
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px 22px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  /* 顶部导言带（简洁高信息密度建筑横幅） */
+  .intro-strip {
+    background: var(--bg-surface);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--royal);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+  }
+  .intro-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .intro-kicker {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--royal);
+    text-transform: uppercase;
+  }
+  .intro-headline {
+    font-family: var(--serif);
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    letter-spacing: 0.03em;
+  }
+  .intro-desc {
+    font-size: 12.5px;
+    color: var(--ink-muted);
+  }
+  .intro-stats {
+    display: flex;
+    align-items: stretch;
+    border-left: 1px solid var(--rule);
+    flex-shrink: 0;
+  }
+  .stat-cell {
+    padding: 2px 16px;
+    border-right: 1px solid var(--rule-soft);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .stat-cell:last-child { border-right: none; padding-right: 4px; }
+  .stat-val {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    line-height: 1.2;
+  }
+  .stat-val.accent { color: var(--royal); }
+  .stat-key {
+    font-size: 11px;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+
+  /* 分区标题栏 */
+  .sec-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+    position: relative;
+  }
+  .sec-header::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    width: 96px;
+    height: 2px;
+    background: var(--royal);
+  }
+  .sec-header.accent-ice::after { background: var(--ice-cyan-deep); }
+  .sec-header.accent-gold::after { background: var(--gold); }
+  .sec-header.accent-emerald::after { background: var(--emerald); }
+
+  .sec-title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .sec-kicker {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--royal);
+    text-transform: uppercase;
+  }
+  .sec-header.accent-ice .sec-kicker { color: var(--ice-cyan-deep); }
+  .sec-header.accent-gold .sec-kicker { color: var(--gold-deep); }
+  .sec-header.accent-emerald .sec-kicker { color: var(--emerald); }
+
+  .sec-title {
+    font-family: var(--serif);
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    letter-spacing: 0.04em;
+  }
+  .sec-sub {
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+  .sec-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .sec-status {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--royal);
+    background: var(--royal-wash);
+    padding: 4px 12px;
+    clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+    white-space: nowrap;
+  }
+
+  /* =========================================================================
+     专区 1：晦轮杖（静止的日蚀）10 选 1 精鉴区 — 5 列 × 2 行
+     ========================================================================= */
+  .eclipse-grid {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 13px;
+  }
+
+  .wand-card {
+    position: relative;
+    background: var(--bg-surface);
+    border: 1px solid var(--rule);
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    transition: border-color 0.16s var(--ease), box-shadow 0.16s var(--ease), transform 0.16s var(--ease);
+  }
+  .wand-card:hover {
+    border-color: rgba(22, 88, 235, 0.52);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px -14px rgba(22, 88, 235, 0.34);
+  }
+  .wand-card.is-selected {
+    border: 2px solid var(--royal);
+    box-shadow: 0 10px 26px -12px rgba(22, 88, 235, 0.38);
+  }
+  /* 选中时的左上削角蓝色饰条 + 右上折角已选标 */
+  .wand-card.is-selected::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--royal), var(--ice-cyan));
+    z-index: 4;
+  }
+
+  .picked-ribbon {
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 5;
+    background: var(--royal);
+    color: #FFFFFF;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 3px 10px 3px 14px;
+    clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%);
+    line-height: 1.3;
+  }
+  .wand-card.is-selected .picked-ribbon {
+    display: block;
+  }
+
+  .wand-stage {
+    position: relative;
+    height: 196px;
+    background: var(--stage-bg);
+    background-size: var(--stage-bg-size);
+    background-position: var(--stage-bg-pos);
+    border-bottom: 1px solid var(--rule-soft);
+    overflow: hidden;
+  }
+
+  .wand-code-tag {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 3;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: var(--ink-deep);
+    background: rgba(255, 255, 255, 0.88);
+    padding: 2px 7px;
+    border-left: 2px solid var(--royal);
+  }
+  body[data-bg="deepsea"] .wand-code-tag {
+    background: rgba(14, 27, 48, 0.84);
+    color: #E6F0FF;
+    border-left-color: var(--ice-cyan);
+  }
+
+  /* 放大镜按钮（位于左上角编号下方空域，绝不遮挡法杖尾坠、顶部角标或右下 76px 格） */
+  .zoom-btn {
+    position: absolute;
+    left: 8px;
+    top: 34px;
+    z-index: 4;
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--ink-body);
+    border: 1px solid var(--rule);
+    transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+  }
+  .zoom-btn:hover {
+    background: var(--royal);
+    color: #FFFFFF;
+    border-color: var(--royal);
+  }
+  body[data-bg="deepsea"] .zoom-btn {
+    background: rgba(16, 30, 52, 0.86);
+    color: #D9E8FF;
+    border-color: rgba(90, 188, 245, 0.34);
+  }
+  body[data-bg="deepsea"] .zoom-btn:hover {
+    background: var(--royal);
+    color: #FFFFFF;
+    border-color: var(--royal);
+  }
+
+  /* 150px 高清法杖主图（略向左上微偏，让右下 76px 实寸格零遮挡） */
+  .wand-hd-wrap {
+    position: absolute;
+    left: 14px;
+    top: 22px;
+    width: 150px;
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .wand-hd-img {
+    width: 150px;
+    height: 150px;
+    object-fit: contain;
+    filter: var(--stage-art-shadow);
+    transition: transform 0.22s var(--ease);
+  }
+  .wand-card:hover .wand-hd-img {
+    transform: scale(1.045);
+  }
+
+  /* 真实 76×76px 背包格实寸缩略（绝对 76×76 尺寸！） */
+  .real-slot-76 {
+    width: 76px;
+    height: 76px;
+    flex: 0 0 76px;
+    background: var(--slot-bg);
+    border: 1px solid var(--slot-border);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .real-slot-76::before {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border: 1px solid var(--slot-inner-grid);
+    pointer-events: none;
+  }
+  .real-slot-76 img {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    filter: var(--slot-art-shadow);
+  }
+  .real-slot-tag {
+    position: absolute;
+    right: 2px;
+    bottom: 1px;
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--stage-ink);
+    opacity: 0.8;
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .wand-corner-slot {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    z-index: 3;
+  }
+
+  .wand-meta {
+    padding: 10px 12px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background: var(--bg-surface);
+  }
+  .wand-card.is-selected .wand-meta {
+    background: linear-gradient(180deg, rgba(22, 88, 235, 0.045) 0%, #FFFFFF 100%);
+  }
+  .wand-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .wand-name {
+    font-family: var(--serif);
+    font-size: 13.5px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    white-space: nowrap;
+  }
+  .wand-card.is-selected .wand-name {
+    color: var(--royal-deep);
+  }
+  .wand-state-dot {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+  .wand-card.is-selected .wand-state-dot {
+    color: var(--royal);
+  }
+  .wand-note {
+    font-size: 11.5px;
+    color: var(--ink-muted);
+    line-height: 1.42;
+  }
+
+  /* =========================================================================
+     专区 2：其余 30 件道具二选一选稿墙（4 组清晰分隔，桌面双列卡）
+     ========================================================================= */
+  .group-block {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .dual-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 15px;
+  }
+
+  .item-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--rule);
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.16s var(--ease);
+  }
+  .item-card.has-pick {
+    border-color: rgba(22, 88, 235, 0.28);
+  }
+
+  .item-head {
+    padding: 11px 14px 10px;
+    border-bottom: 1px solid var(--rule-soft);
+    background: linear-gradient(180deg, #FFFFFF 0%, #F9FBFE 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .item-head-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .item-title-group {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+  .item-cn {
+    font-family: var(--serif);
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    white-space: nowrap;
+  }
+  .item-id {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-faint);
+    background: var(--bg-subtle);
+    padding: 1px 6px;
+  }
+  .item-cat-tag {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--gold-deep);
+    background: var(--gold-wash);
+    padding: 1px 7px;
+    white-space: nowrap;
+  }
+  .item-pick-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--ink-faint);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .item-card.has-pick .item-pick-badge {
+    color: var(--royal);
+  }
+  .item-lore {
+    font-size: 12px;
+    color: var(--ink-muted);
+    line-height: 1.48;
+  }
+
+  /* 左右二选一主体 */
+  .item-choices {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    flex: 1 1 auto;
+  }
+
+  .choice-pane {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    border-right: 1px solid var(--rule-soft);
+    transition: background 0.16s ease, box-shadow 0.16s ease;
+  }
+  .choice-pane:last-child {
+    border-right: none;
+  }
+  .choice-pane:hover {
+    background: rgba(22, 88, 235, 0.025);
+  }
+  .choice-pane.is-selected {
+    box-shadow: inset 0 0 0 2px var(--royal);
+    background: rgba(22, 88, 235, 0.03);
+    z-index: 2;
+  }
+
+  .choice-top {
+    padding: 7px 11px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    border-bottom: 1px solid var(--rule-soft);
+    background: rgba(250, 251, 253, 0.85);
+    min-height: 32px;
+  }
+  .choice-pane.is-selected .choice-top {
+    background: var(--royal-wash);
+  }
+  .choice-label-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+  .choice-ver {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    white-space: nowrap;
+  }
+  .choice-pane.is-selected .choice-ver {
+    color: var(--royal);
+  }
+  .choice-trait {
+    font-size: 11.5px;
+    color: var(--ink-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .choice-top-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .choice-check {
+    display: none;
+    background: var(--royal);
+    color: #FFFFFF;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 8px 2px 10px;
+    clip-path: polygon(6px 0, 100% 0, 100% 100%, 0 100%);
+    white-space: nowrap;
+  }
+  .choice-pane.is-selected .choice-check {
+    display: inline-block;
+  }
+
+  .choice-zoom {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-muted);
+    background: transparent;
+    transition: background 0.14s ease, color 0.14s ease;
+  }
+  .choice-zoom:hover {
+    background: var(--royal);
+    color: #FFFFFF;
+  }
+
+  .choice-stage {
+    padding: 12px 12px 13px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: var(--stage-bg);
+    background-size: var(--stage-bg-size);
+    background-position: var(--stage-bg-pos);
+    flex: 1 1 auto;
+  }
+
+  .choice-hd-box {
+    width: 152px;
+    height: 152px;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .choice-hd-img {
+    width: 152px;
+    height: 152px;
+    object-fit: contain;
+    filter: var(--stage-art-shadow);
+    transition: transform 0.2s var(--ease);
+  }
+  .choice-pane:hover .choice-hd-img {
+    transform: scale(1.045);
+  }
+
+  .choice-side-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+  }
+  .choice-slot-caption {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--stage-ink);
+    white-space: nowrap;
+  }
+  .choice-pick-hint {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--stage-ink);
+    opacity: 0.72;
+    white-space: nowrap;
+  }
+  .choice-pane.is-selected .choice-pick-hint {
+    color: var(--royal);
+    opacity: 1;
+  }
+  body[data-bg="deepsea"] .choice-pane.is-selected .choice-pick-hint {
+    color: var(--ice-cyan);
+  }
+
+  /* =========================================================================
+     弹窗系统（384px 原寸鉴赏灯箱 & 定稿选单导出窗）— 零圆框套圆框
+     ========================================================================= */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    background: rgba(15, 25, 44, 0.62);
+    backdrop-filter: blur(5px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-backdrop.is-open {
+    display: flex;
+  }
+
+  .modal-panel {
+    background: var(--bg-surface);
+    border: 1px solid var(--royal-line);
+    border-top: 3px solid var(--royal);
+    box-shadow: 0 24px 60px rgba(15, 25, 44, 0.34);
+    max-width: 780px;
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .modal-head {
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--rule);
+    background: linear-gradient(180deg, #FFFFFF 0%, #F5F8FD 100%);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .modal-title-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .modal-title {
+    font-family: var(--serif);
+    font-size: 16.5px;
+    font-weight: 800;
+    color: var(--ink-deep);
+  }
+  .modal-sub {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-muted);
+  }
+  .modal-close {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: var(--ink-muted);
+    transition: background 0.14s ease, color 0.14s ease;
+  }
+  .modal-close:hover {
+    background: var(--royal-wash);
+    color: var(--royal);
+  }
+
+  /* 384px 原寸灯箱内容 */
+  .lightbox-body {
+    display: grid;
+    grid-template-columns: 420px minmax(0, 1fr);
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .lightbox-stage {
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--stage-bg);
+    background-size: var(--stage-bg-size);
+    background-position: var(--stage-bg-pos);
+    border-right: 1px solid var(--rule);
+  }
+  .lightbox-img-384 {
+    width: 384px;
+    height: 384px;
+    object-fit: contain;
+    filter: var(--stage-art-shadow);
+  }
+  .lightbox-info {
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .lb-meta-block {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .lb-lore {
+    font-size: 12.5px;
+    color: var(--ink-body);
+    line-height: 1.6;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .lb-sizes-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    padding: 10px 12px;
+    background: var(--bg-subtle);
+    border-left: 2px solid var(--royal);
+  }
+  .lb-size-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+  .lb-slot-48 {
+    width: 48px;
+    height: 48px;
+    background: var(--slot-bg);
+    border: 1px solid var(--slot-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .lb-slot-48 img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    filter: var(--slot-art-shadow);
+  }
+  .lb-size-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-muted);
+  }
+  .lb-variants-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .lb-ver-btn {
+    padding: 5px 10px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink-body);
+    background: var(--bg-subtle);
+    border: 1px solid var(--rule-soft);
+  }
+  .lb-ver-btn:hover {
+    border-color: var(--royal);
+    color: var(--royal);
+  }
+  .lb-ver-btn.active {
+    background: var(--royal);
+    color: #FFFFFF;
+    border-color: var(--royal);
+  }
+  .lb-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--rule-soft);
+  }
+
+  /* 导出选单弹窗 */
+  .export-body {
+    padding: 16px 18px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+  }
+  .copy-banner {
+    padding: 9px 12px;
+    background: var(--emerald-wash);
+    border-left: 3px solid var(--emerald);
+    color: #065F46;
+    font-size: 12.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .copy-banner.warn {
+    background: var(--gold-wash);
+    border-left-color: var(--gold);
+    color: #7A5410;
+  }
+  .format-tabs {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .fmt-tab {
+    padding: 7px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-muted);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .fmt-tab:hover { color: var(--royal); }
+  .fmt-tab.active {
+    color: var(--royal);
+    border-bottom-color: var(--royal);
+    background: var(--royal-wash);
+  }
+  .export-textarea {
+    width: 100%;
+    min-height: 210px;
+    padding: 12px 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.65;
+    color: var(--ink-deep);
+    background: var(--bg-subtle);
+    border: 1px solid var(--rule);
+    resize: vertical;
+  }
+  .export-textarea:focus {
+    outline: 2px solid var(--royal);
+    outline-offset: -1px;
+  }
+  .export-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .export-footer-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-outline {
+    padding: 7px 13px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--royal);
+    border: 1px solid var(--royal-line);
+    background: var(--bg-surface);
+  }
+  .btn-outline:hover {
+    background: var(--royal-wash);
+  }
+
+  /* 轻提示条 */
+  .toast {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 150;
+    background: var(--ink-deep);
+    color: #FFFFFF;
+    padding: 10px 18px;
+    font-size: 12.5px;
+    font-weight: 600;
+    border-left: 3px solid var(--ice-cyan);
+    box-shadow: 0 12px 30px rgba(15, 25, 44, 0.28);
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .toast.is-show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* =========================================================================
+     1280×720 桌面紧凑适配（保证零溢出、5列×2行晦轮杖与双列30道具完美呈显）
+     ========================================================================= */
+  @media (max-width: 1340px) {
+    .topbar-main, .topbar-sub-inner, .page {
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+    .brand-title { font-size: 14px; }
+    .bg-btn { padding: 6px 8px; font-size: 11px; }
+    .btn-copy-primary { padding: 7px 14px; font-size: 12px; }
+    .eclipse-grid { gap: 10px; }
+    .wand-stage { height: 184px; }
+    .wand-hd-wrap { left: 8px; top: 18px; width: 146px; height: 146px; }
+    .wand-hd-img { width: 146px; height: 146px; }
+    .wand-corner-slot { right: 6px; bottom: 6px; }
+    .choice-stage { padding: 10px; gap: 8px; }
+    .choice-hd-box, .choice-hd-img { width: 138px; height: 138px; }
+    .sub-hint { display: none; }
+  }
+
+  @media (max-width: 1080px) {
+    .eclipse-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dual-grid { grid-template-columns: 1fr; }
+    .lightbox-body { grid-template-columns: 1fr; }
+    .lightbox-stage { border-right: none; border-bottom: 1px solid var(--rule); }
+    .intro-strip { flex-direction: column; align-items: flex-start; }
+    .intro-stats { border-left: none; border-top: 1px solid var(--rule); padding-top: 8px; width: 100%; }
+  }
+</style>
+</head>
+<body data-bg="porcelain">
+
+  <!-- 顶部双层粘性控制条 -->
+  <header class="sticky-shell">
+    <div class="topbar-main">
+      <div class="brand">
+        <div class="brand-gem" aria-hidden="true"></div>
+        <div class="brand-text">
+          <span class="brand-title">板 A 圣晶厚涂 · 道具定稿选稿台</span>
+          <span class="brand-sub">BOARD A · 31 ITEMS · 70 WEBP CUTOUTS</span>
+        </div>
+      </div>
+
+      <div class="topbar-controls">
+        <div class="progress-box" aria-live="polite">
+          <div class="progress-row">
+            <span class="progress-label">定稿进度</span>
+            <span class="progress-num" id="progress-text">已选 31 / 31 件</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progress-fill" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <div class="batch-ops">
+          <button type="button" class="btn-flat" id="btn-default-all" title="全部 31 件恢复默认 v01 / v1">全部默认 v1</button>
+          <button type="button" class="btn-flat btn-flat-danger" id="btn-clear-all" title="清空全部已选记录，从 0 开始逐件挑选">清空重选</button>
+        </div>
+
+        <div class="v-sep" aria-hidden="true"></div>
+
+        <div class="bg-switch" role="group" aria-label="底色切换">
+          <button type="button" class="bg-btn active" data-bg-mode="porcelain" title="快捷键 1：雪瓷浅格（游戏实装底）">
+            <span class="bg-swatch sw-porcelain" aria-hidden="true"></span>雪瓷浅格（游戏实装底）
+          </button>
+          <button type="button" class="bg-btn" data-bg-mode="deepsea" title="快捷键 2：深海蓝检边（检验透明边缘）">
+            <span class="bg-swatch sw-deepsea" aria-hidden="true"></span>深海蓝检边
+          </button>
+          <button type="button" class="bg-btn" data-bg-mode="purewhite" title="快捷键 3：纯白鉴赏">
+            <span class="bg-swatch sw-white" aria-hidden="true"></span>纯白鉴赏
+          </button>
+        </div>
+
+        <button type="button" class="btn-copy-primary" id="btn-copy-picks">
+          <span>📋 一键复制我的定稿选单</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="topbar-sub">
+      <div class="topbar-sub-inner">
+        <nav class="anchor-nav" aria-label="道具分组快速跳转">
+          <a class="anchor-link" href="#sec-eclipse">✦ 晦轮杖 10选1 <span class="anchor-count" id="cnt-eclipse">1/1</span></a>
+          <a class="anchor-link" href="#grp-staves-relics">法杖与随身铭记 <span class="anchor-count" id="cnt-staves">13/13</span></a>
+          <a class="anchor-link" href="#grp-story">独立剧情物品 <span class="anchor-count" id="cnt-story">3/3</span></a>
+          <a class="anchor-link" href="#grp-shop">温馨小铺与九人赠礼 <span class="anchor-count" id="cnt-shop">12/12</span></a>
+          <a class="anchor-link" href="#grp-memento">信物手札补充 <span class="anchor-count" id="cnt-memento">2/2</span></a>
+        </nav>
+        <span class="sub-hint">点击方案卡即刻选定并自动记忆 · 点击放大镜看 384px 原寸 · 键 1/2/3 切底色</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <!-- 导言概要带 -->
+    <section class="intro-strip" aria-label="本批物料概要">
+      <div class="intro-left">
+        <span class="intro-kicker">SACRED CRYSTAL SEMI-IMPASTO · FINAL PICK CONSOLE</span>
+        <h1 class="intro-headline">全游戏 31 件道具 × 70 张 384×384 透明成品 · 终稿选型台</h1>
+        <p class="intro-desc">默认已预选 <strong>v01 / v1</strong>，你只需顺手点选更心仪的造型，完成后点击右上角<strong>「一键复制我的定稿选单」</strong>直接发回对话即可一键实装全游戏！</p>
+      </div>
+      <div class="intro-stats">
+        <div class="stat-cell">
+          <span class="stat-val accent">10 选 1</span>
+          <span class="stat-key">晦轮杖专属精鉴</span>
+        </div>
+        <div class="stat-cell">
+          <span class="stat-val">30 × 2</span>
+          <span class="stat-key">全道具双案择优</span>
+        </div>
+        <div class="stat-cell">
+          <span class="stat-val">76px</span>
+          <span class="stat-key">背包实寸同屏检视</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 专区 1：晦轮杖 10 选 1 -->
+    <section id="sec-eclipse" aria-labelledby="title-eclipse">
+      <div class="sec-header">
+        <div class="sec-title-wrap">
+          <span class="sec-kicker">SECTION 01 · SIGNATURE RELIC WAND · 10 VARIATIONS</span>
+          <h2 class="sec-title" id="title-eclipse">专区 1 · 晦轮杖（静止的日蚀）10 选 1 精鉴区</h2>
+          <p class="sec-sub">希尔维亚专属短魔杖（+24% MaxMP · 100% 真实魔伤 · 零日蚀惩罚）——深蓝杖身托举静旋浅蓝冰环，中央悬浮纯粹漆黑日蚀核。</p>
+        </div>
+        <div class="sec-right">
+          <span class="sec-status" id="eclipse-picked-badge">当前定稿：v01 经典宫廷</span>
+        </div>
+      </div>
+
+      <div class="eclipse-grid" id="eclipse-grid"></div>
+    </section>
+
+    <!-- 专区 2：其余 30 件道具二选一选稿墙（4 组） -->
+    <section id="sec-dual-wall" aria-label="其余 30 件道具二选一选稿墙" style="display:flex;flex-direction:column;gap:28px;">
+      <div id="dual-groups-mount" style="display:flex;flex-direction:column;gap:28px;"></div>
+    </section>
+  </main>
+
+  <!-- 384px 原寸鉴赏灯箱弹窗 -->
+  <div class="modal-backdrop" id="lightbox-modal" role="dialog" aria-modal="true" aria-labelledby="lb-title">
+    <div class="modal-panel">
+      <div class="modal-head">
+        <div class="modal-title-wrap">
+          <h3 class="modal-title" id="lb-title">原寸鉴赏</h3>
+          <span class="modal-sub" id="lb-subtitle">384×384 RGBA</span>
+        </div>
+        <button type="button" class="modal-close" id="lb-close" aria-label="关闭原寸弹窗">✕</button>
+      </div>
+      <div class="lightbox-body">
+        <div class="lightbox-stage">
+          <img class="lightbox-img-384" id="lb-img" src="" alt="" />
+        </div>
+        <div class="lightbox-info">
+          <div class="lb-meta-block">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <span style="font-size:11px;font-weight:700;letter-spacing:0.1em;color:var(--royal);text-transform:uppercase;">384×384 原寸检视</span>
+              <span style="font-family:var(--mono);font-size:11px;color:var(--ink-faint);" id="lb-filename"></span>
+            </div>
+            <p class="lb-lore" id="lb-lore"></p>
+
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--ink-muted);margin-bottom:6px;">游戏内实寸缩略预览</div>
+              <div class="lb-sizes-row">
+                <div class="lb-size-col">
+                  <div class="real-slot-76">
+                    <img id="lb-slot-76" src="" alt="" />
+                  </div>
+                  <span class="lb-size-label">76×76 背包格</span>
+                </div>
+                <div class="lb-size-col">
+                  <div class="lb-slot-48">
+                    <img id="lb-slot-48" src="" alt="" />
+                  </div>
+                  <span class="lb-size-label">48×48 小图标</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--ink-muted);margin-bottom:6px;">快速切换同道具候选版本</div>
+              <div class="lb-variants-strip" id="lb-variants"></div>
+            </div>
+
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--ink-muted);margin-bottom:6px;">即时切换检边底色</div>
+              <div class="bg-switch" role="group" aria-label="弹窗内底色切换">
+                <button type="button" class="bg-btn" data-bg-mode="porcelain"><span class="bg-swatch sw-porcelain"></span>雪瓷浅格</button>
+                <button type="button" class="bg-btn" data-bg-mode="deepsea"><span class="bg-swatch sw-deepsea"></span>深海蓝</button>
+                <button type="button" class="bg-btn" data-bg-mode="purewhite"><span class="bg-swatch sw-white"></span>纯白</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="lb-actions">
+            <span style="font-size:12px;font-weight:700;color:var(--ink-muted);" id="lb-pick-status"></span>
+            <button type="button" class="btn-copy-primary" id="lb-select-btn">✓ 选定此版本</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 定稿选单导出弹窗 -->
+  <div class="modal-backdrop" id="export-modal" role="dialog" aria-modal="true" aria-labelledby="export-title">
+    <div class="modal-panel" style="max-width: 720px;">
+      <div class="modal-head">
+        <div class="modal-title-wrap">
+          <h3 class="modal-title" id="export-title">板 A 圣晶厚涂 · 我的定稿选单</h3>
+          <span class="modal-sub" id="export-progress-sub">已选 31 / 31 件</span>
+        </div>
+        <button type="button" class="modal-close" id="export-close" aria-label="关闭导出弹窗">✕</button>
+      </div>
+      <div class="export-body">
+        <div class="copy-banner" id="export-banner">
+          <span id="export-banner-text">✓ 已自动复制到剪贴板！可直接粘贴回对话下达定稿。</span>
+        </div>
+        <div class="format-tabs" role="tablist">
+          <button type="button" class="fmt-tab active" data-fmt="compact" role="tab">精简一行清单（推荐贴回对话）</button>
+          <button type="button" class="fmt-tab" data-fmt="grouped" role="tab">分组明细清单（含精准 ID）</button>
+          <button type="button" class="fmt-tab" data-fmt="json" role="tab">JSON 结构数据</button>
+        </div>
+        <textarea class="export-textarea" id="export-textarea" readonly aria-label="定稿选单文本"></textarea>
+        <div class="export-footer">
+          <div class="export-footer-left">
+            <button type="button" class="btn-outline" id="btn-fill-missing" style="display:none;">未选项目按 v1 补齐并复制</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button type="button" class="btn-outline" id="btn-export-close">关闭</button>
+            <button type="button" class="btn-copy-primary" id="btn-export-recopy">📋 再次复制清单</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  const STORAGE_KEY = 'ojousama_board_a_picks';
+  const BG_STORAGE_KEY = 'ojousama_board_a_bg';
+
+  /* =========================================================================
+     完整 31 件道具 × 70 张透明 WebP 唯一数据清单
+     ========================================================================= */
+  const ECLIPSE_ITEM = {
+    id: 'eclipse_wand',
+    name: '晦轮杖',
+    cat: '本命短魔杖',
+    lore: '原著专属短魔杖：比前臂更短的深蓝少女杖身，顶环静旋浅蓝薄冰环，中央悬浮纯粹漆黑日蚀核。',
+    defaultVer: 'v01',
+    variants: [
+      { ver: 'v01', label: '经典宫廷', note: '蓝釉修长短柄 × 冷银双新月托', file: 'eclipse_wand_v01.webp' },
+      { ver: 'v02', label: '圣银星轨', note: '镂空秘银双环浑天仪星轨', file: 'eclipse_wand_v02.webp' },
+      { ver: 'v03', label: '雪瓷金纹', note: '霜瓷小翼舒展 × 淡金卷草纹', file: 'eclipse_wand_v03.webp' },
+      { ver: 'v04', label: '冰晶棱冠', note: '多面冰晶冠爪 × 银藤缠柄', file: 'eclipse_wand_v04.webp' },
+      { ver: 'v05', label: '纤细礼仪', note: '少女细靛漆柄 × 冰滴坠饰钩月', file: 'eclipse_wand_v05.webp' },
+      { ver: 'v06', label: '霜花圣轮', note: '六瓣雪花银轮 × 蓝银丝带螺旋柄', file: 'eclipse_wand_v06.webp' },
+      { ver: 'v07', label: '星辉双环', note: '偏轴双轨冰环 × 蓝晶棱柱杖身', file: 'eclipse_wand_v07.webp' },
+      { ver: 'v08', label: '圣殿拱冠', note: '哥特冷银穹顶星冠 × 金珠点饰', file: 'eclipse_wand_v08.webp' },
+      { ver: 'v09', label: '新月权杖', note: '不对称单月银弧 × 切面海蓝柄', file: 'eclipse_wand_v09.webp' },
+      { ver: 'v10', label: '霜羽灵杖', note: '半透冰晶双羽 × 渐银灵巧短柄', file: 'eclipse_wand_v10.webp' }
+    ]
+  };
+
+  const DUAL_GROUPS = [
+    {
+      key: 'staves',
+      anchorId: 'grp-staves-relics',
+      kicker: 'GROUP 01 · STAFF & RELICS · 13 ITEMS',
+      title: '法杖与随身铭记（13 件）',
+      sub: '极北圣晶杖与 12 件原著套装共鸣铭记秘宝——点击任意一侧即选定。',
+      accentClass: '',
+      items: [
+        {
+          id: 'north_saint_staff', name: '极北圣晶杖', cat: '极北圣杖',
+          lore: '极北纯白冰晶圣杖，纯粹蓝白圣芒折射（魔攻 ×1.28、暴伤 +20%、增幅耗蓝减免 25%）。',
+          v1: { trait: '皇冠晶簇', file: 'north_saint_staff_v1.webp' },
+          v2: { trait: '双翼星棱尖塔', file: 'north_saint_staff_v2.webp' }
+        },
+        {
+          id: 'ice_pebble', name: '冰蓝石子', cat: '公爵府铭记',
+          lore: '年幼时在公爵府花坛边拾得的冰蓝小石，握在掌心总是凉丝丝地令人定神。',
+          v1: { trait: '盈润水磨卵石', file: 'ice_pebble_v1.webp' },
+          v2: { trait: '冰脉晶纹润石', file: 'ice_pebble_v2.webp' }
+        },
+        {
+          id: 'blue_vial', name: '淡蓝小瓶', cat: '圣域铭记',
+          lore: '药神于四岁宴会所赠，如同装了一小块晴空的小玻璃瓶，瓶塞始终紧封如初。',
+          v1: { trait: '梨形古典晴空瓶', file: 'blue_vial_v1.webp' },
+          v2: { trait: '切面圆球炼金瓶', file: 'blue_vial_v2.webp' }
+        },
+        {
+          id: 'alice_flower_cake', name: '爱丽丝的花饼', cat: '公爵府铭记',
+          lore: '花瓣摆成歪斜笑脸的蜂蜜烤饼，风吹过饼屑时总像有人悄悄托住了衣袖。',
+          v1: { trait: '平视浅金酥饼', file: 'alice_flower_cake_v1.webp' },
+          v2: { trait: '俯角琥珀千层酥', file: 'alice_flower_cake_v2.webp' }
+        },
+        {
+          id: 'noelle_manuscript', name: '省魔手稿', cat: '学院铭记',
+          lore: '诺艾儿夹着橘猫胡须书签的推导手稿，每道水幕回路都算清了最省力的路径。',
+          v1: { trait: '繁复星阵卷轴', file: 'noelle_manuscript_v1.webp' },
+          v2: { trait: '清雅蓝丝带卷轴', file: 'noelle_manuscript_v2.webp' }
+        },
+        {
+          id: 'shell_pin', name: '月虹螺胸针', cat: '夏日铭记',
+          lore: '三姐妹并肩潜入海湾拾起的月虹螺，螺壳内侧至今留着淡淡的潮声虹彩。',
+          v1: { trait: '横卧全螺母贝胸针', file: 'shell_pin_v1.webp' },
+          v2: { trait: '竖椭圆秘银蕾丝框', file: 'shell_pin_v2.webp' }
+        },
+        {
+          id: 'belmont_schedule', name: '无名巡防抄件', cat: '学院铭记',
+          lore: '带着淡淡薄荷茶香的工整抄件，字里行间将傲气藏进了分毫不差的刻度里。',
+          v1: { trait: '四折方笺配薄荷枝', file: 'belmont_schedule_v1.webp' },
+          v2: { trait: '蓝丝带束折卷册', file: 'belmont_schedule_v2.webp' }
+        },
+        {
+          id: 'cross', name: '银十字架', cat: '神殿铭记',
+          lore: '海伦娜在离校欢送仪式上郑重放进掌心的希里昂见习生唯一银质神殿信物。',
+          v1: { trait: '百合卷草素银十字', file: 'cross_v1.webp' },
+          v2: { trait: '冰晶星芒圣礼十字', file: 'cross_v2.webp' }
+        },
+        {
+          id: 'ebony_sword', name: '乌木紫穗剑', cat: '澄岚铭记',
+          lore: '澄岚霁馆老霁相赠的三十年百炼铁剑，柄端系着霁岚亲手编的紫蝶剑穗。',
+          v1: { trait: '半出鞘露精钢剑刃', file: 'ebony_sword_v1.webp' },
+          v2: { trait: '归鞘乌木配紫蝶穗', file: 'ebony_sword_v2.webp' }
+        },
+        {
+          id: 'frost_cipher', name: '霜封暗记', cat: '书房铭记',
+          lore: '政变前夜拼出暗流后公爵交托的隐秘联络银徽，寒意沉静总能稳住呼吸。',
+          v1: { trait: '六角雪花浮雕银徽', file: 'frost_cipher_v1.webp' },
+          v2: { trait: '盾形冰晶蜡封纹章', file: 'frost_cipher_v2.webp' }
+        },
+        {
+          id: 'aino_academy_handkerchief', name: '雪纹手帕', cat: '极北铭记',
+          lore: '边角绣着六瓣赫兰冰纹的洁白亚麻帕，总带着雪后松林般的清冽寒意。',
+          v1: { trait: '利落三角折法', file: 'aino_academy_handkerchief_v1.webp' },
+          v2: { trait: '轻褶方帕展角', file: 'aino_academy_handkerchief_v2.webp' }
+        },
+        {
+          id: 'aino_frost_shard', name: '钢冰试炼笺', cat: '极北铭记',
+          lore: '艾诺凝结的零气泡通透薄冰铭牌，内部凝着枪冰三式交错收束的发力轨迹。',
+          v1: { trait: '锐利竖菱形冰笺', file: 'aino_frost_shard_v1.webp' },
+          v2: { trait: '六角镜面冰碑', file: 'aino_frost_shard_v2.webp' }
+        },
+        {
+          id: 'northwind_pass', name: '北风堡木牌', cat: '北境铭记',
+          lore: '凭恒温冰膜护住巴依军需药箱后获赠的北境边关木牌，浸着松脂与冷风气息。',
+          v1: { trait: '圆盾深松木铁箍牌', file: 'northwind_pass_v1.webp' },
+          v2: { trait: '尖盾星霜纹边关牌', file: 'northwind_pass_v2.webp' }
+        }
+      ]
+    },
+    {
+      key: 'story',
+      anchorId: 'grp-story',
+      kicker: 'GROUP 02 · STORY KEY ITEMS · 3 ITEMS',
+      title: '独立剧情物品（3 件）',
+      sub: '公爵府日常彩蛋与学院分支线专属关键剧情物品。',
+      accentClass: 'accent-ice',
+      items: [
+        {
+          id: 'cookie', name: '热饼干', cat: '公爵府日常',
+          lore: '「大小姐别告诉夫人，饭前吃点心要挨骂的。」刚出炉暖烘烘的偷吃小点心。',
+          v1: { trait: '双片叠放黄油饼干', file: 'cookie_v1.webp' },
+          v2: { trait: '五瓣花纹大圆饼干', file: 'cookie_v2.webp' }
+        },
+        {
+          id: 'noelle_errata', name: '精算勘误册', cat: '诺艾儿分支',
+          lore: '字迹严整如尺的高阶防御术式勘误册，一笔一画算清所有骄傲与人情。',
+          v1: { trait: '皇家蓝硬壳星盘封', file: 'noelle_errata_v1.webp' },
+          v2: { trait: '微展精算页配黄铜尺', file: 'noelle_errata_v2.webp' }
+        },
+        {
+          id: 'belmont_challenge', name: '烫金战书羊皮笺', cat: '夏洛特分支',
+          lore: '夏洛特离校前塞进书袋的约战书，烫金花边与火漆间傲气凛然。',
+          v1: { trait: '绯红双剑火漆信封', file: 'belmont_challenge_v1.webp' },
+          v2: { trait: '金带皇家蓝火漆笺', file: 'belmont_challenge_v2.webp' }
+        }
+      ]
+    },
+    {
+      key: 'shop',
+      anchorId: 'grp-shop',
+      kicker: 'GROUP 03 · COZY SHOP & NINE-CHAR GIFTS · 12 ITEMS',
+      title: '温馨小铺与九人赠礼（12 件）',
+      sub: '贯穿养成自由活动期的茶点、文具、饰物与九位核心角色分层赠礼全套。',
+      accentClass: 'accent-gold',
+      items: [
+        {
+          id: 'shop_caramel_cookie', name: '焦糖黄油曲奇', cat: '茶点 · 4G',
+          lore: '酥脆香甜的手工黄油小饼，咬下时溢开微暖焦糖与海盐余韵，佐茶最宜。',
+          v1: { trait: '贝壳纹单片焦糖曲奇', file: 'shop_caramel_cookie_v1.webp' },
+          v2: { trait: '双片挤花焦糖黄油酥', file: 'shop_caramel_cookie_v2.webp' }
+        },
+        {
+          id: 'shop_mint_tea', name: '冰镇薄荷叶茶', cat: '饮品 · 6G',
+          lore: '清冽回甘的精选薄荷冷泡茶，晶莹冰块与鲜绿薄荷入口瞬间提神醒脑。',
+          v1: { trait: '切面水晶有柄茶杯', file: 'shop_mint_tea_v1.webp' },
+          v2: { trait: '修长银托水晶冰茶杯', file: 'shop_mint_tea_v2.webp' }
+        },
+        {
+          id: 'shop_honey_pancake', name: '蜂蜜松饼礼盒', cat: '茶点 · 7G',
+          lore: '淋着花蜜的松软厚松饼，用浅蓝丝带扎着淡雅雪瓷点心礼盒。',
+          v1: { trait: '方盒三层流蜜松饼', file: 'shop_honey_pancake_v1.webp' },
+          v2: { trait: '八角礼盒花蜜松饼', file: 'shop_honey_pancake_v2.webp' }
+        },
+        {
+          id: 'shop_osmanthus_cake', name: '澄岚桂花米糕', cat: '风物 · 8G',
+          lore: '澄岚镇老铺现蒸的清甜雪白米糕，撒满细碎金桂，温润饱腹。',
+          v1: { trait: '青竹叶托双块桂花糕', file: 'shop_osmanthus_cake_v1.webp' },
+          v2: { trait: '雪瓷浅碟三块桂花糕', file: 'shop_osmanthus_cake_v2.webp' }
+        },
+        {
+          id: 'shop_parchment_journal', name: '羊皮抄录本', cat: '文具 · 10G',
+          lore: '纸页厚实匀净的随身手账本配洁白羽毛笔，记公式、日程或旅途见闻极顺手。',
+          v1: { trait: '竖册旁倚白羽银尖笔', file: 'shop_parchment_journal_v1.webp' },
+          v2: { trait: '斜册横置白羽银尖笔', file: 'shop_parchment_journal_v2.webp' }
+        },
+        {
+          id: 'shop_ice_bookmark', name: '雪晶雕花书签', cat: '饰物 · 12G',
+          lore: '仿六瓣冰花打磨的剔透秘银书签，日光斜照时映出浅蓝微芒。',
+          v1: { trait: '直柄六瓣雪花银书签', file: 'shop_ice_bookmark_v1.webp' },
+          v2: { trait: '弧柄冰滴霜藤银书签', file: 'shop_ice_bookmark_v2.webp' }
+        },
+        {
+          id: 'shop_sword_tassel_oil', name: '乌木护刃清油', cat: '养护 · 12G',
+          lore: '细密松香调制的保养清油配拭剑绒布，拭过木剑与铁锋后手感温润不滑。',
+          v1: { trait: '祖母绿切面油瓶配青布', file: 'shop_sword_tassel_oil_v1.webp' },
+          v2: { trait: '暖琥珀圆瓶配素绒布', file: 'shop_sword_tassel_oil_v2.webp' }
+        },
+        {
+          id: 'shop_polar_lily_dried', name: '北极铃兰干花', cat: '花礼 · 14G',
+          lore: '借寒气封存的淡白铃兰标本，花瓣在双面水晶玻璃夹片间完好如初。',
+          v1: { trait: '椭圆秘银吊坠标本框', file: 'shop_polar_lily_dried_v1.webp' },
+          v2: { trait: '方正冰铆玻璃标本板', file: 'shop_polar_lily_dried_v2.webp' }
+        },
+        {
+          id: 'shop_frost_cedar_sachet', name: '霜杉干叶香囊', cat: '香礼 · 14G',
+          lore: '素白细麻缝制的清雅香囊，满载公爵府冬园般沉静的霜杉气息。',
+          v1: { trait: '圆润束口霜杉麻囊', file: 'shop_frost_cedar_sachet_v1.webp' },
+          v2: { trait: '水滴形绣纹流苏香囊', file: 'shop_frost_cedar_sachet_v2.webp' }
+        },
+        {
+          id: 'shop_silver_moon_clip', name: '银月蓝晶发夹', cat: '饰物 · 15G',
+          lore: '纤细银枝镶着一小粒天青晶石，别在鬓侧清丽脱俗。',
+          v1: { trait: '大弯月银枝蓝晶发夹', file: 'shop_silver_moon_clip_v1.webp' },
+          v2: { trait: '横向银枝抱月蓝晶夹', file: 'shop_silver_moon_clip_v2.webp' }
+        },
+        {
+          id: 'shop_magic_theory_notes', name: '梅林阻率批注集', cat: '典籍 · 16G',
+          lore: '收录多位高阶法师实测勘误的珍贵抄本，省去大量盲目试错工夫。',
+          v1: { trait: '素雅金角皇家蓝典籍', file: 'shop_magic_theory_notes_v1.webp' },
+          v2: { trait: '星盘金纹索引标签典籍', file: 'shop_magic_theory_notes_v2.webp' }
+        },
+        {
+          id: 'shop_warming_frost_stone', name: '温霜护手怀石', cat: '奇物 · 18G',
+          lore: '赫兰匠人打磨的奇巧暖石，表层清凉却能持久散出柔和琥珀暖意。',
+          v1: { trait: '鹅卵形霜瓷暖心怀石', file: 'shop_warming_frost_stone_v1.webp' },
+          v2: { trait: '水滴形青霜琥珀怀石', file: 'shop_warming_frost_stone_v2.webp' }
+        }
+      ]
+    },
+    {
+      key: 'memento',
+      anchorId: 'grp-memento',
+      kicker: 'GROUP 04 · LETTERS & NOTES · 2 ITEMS',
+      title: '信物手札补充（2 件）',
+      sub: '手札档案馆专属信笺与药商便笺图标。',
+      accentClass: 'accent-emerald',
+      items: [
+        {
+          id: 'alice_letter', name: '爱丽丝的风铃草信笺', cat: '信物手札',
+          lore: '学院北侧风铃草开时爱丽丝寄来的淡蓝信笺，夹页间仍留着清浅风息与花香。',
+          v1: { trait: '素蓝单朵风铃草绑信', file: 'alice_letter_v1.webp' },
+          v2: { trait: '银纹折信夹风铃花枝', file: 'alice_letter_v2.webp' }
+        },
+        {
+          id: 'peilin_note', name: '沛霖的药行纸条', cat: '信物手札',
+          lore: '苏秦商路药商沛霖裁得工整的粗纹便笺，纸角带着干草药与温茶余韵。',
+          v1: { trait: '展卷粗纹药笺配干花', file: 'peilin_note_v1.webp' },
+          v2: { trait: '卷束药笺配草药枝', file: 'peilin_note_v2.webp' }
+        }
+      ]
+    }
+  ];
+
+  // 平铺全部 31 件道具索引表，便于导出与灯箱检索
+  const ALL_ITEMS = [
+    ECLIPSE_ITEM,
+    ...DUAL_GROUPS.flatMap(g => g.items.map(it => ({
+      id: it.id,
+      name: it.name,
+      cat: it.cat,
+      lore: it.lore,
+      groupKey: g.key,
+      groupTitle: g.title,
+      defaultVer: 'v1',
+      variants: [
+        { ver: 'v1', label: it.v1.trait, note: it.v1.trait, file: it.v1.file },
+        { ver: 'v2', label: it.v2.trait, note: it.v2.trait, file: it.v2.file }
+      ]
+    })))
+  ];
+  const ITEM_BY_ID = Object.fromEntries(ALL_ITEMS.map(it => [it.id, it]));
+
+  const ZOOM_SVG = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" aria-hidden="true"><circle cx="7" cy="7" r="4.6"/><path d="M10.6 10.6L14 14"/><path d="M7 5v4M5 7h4"/></svg>';
+
+  /* =========================================================================
+     状态管理 + localStorage 持久化（受管键 ojousama_board_a_picks）
+     ========================================================================= */
+  function buildDefaultPicks() {
+    const out = {};
+    ALL_ITEMS.forEach(it => { out[it.id] = it.defaultVer; });
+    return out;
+  }
+
+  function loadPicks() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return buildDefaultPicks();
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return buildDefaultPicks();
+      const clean = {};
+      ALL_ITEMS.forEach(it => {
+        const val = parsed[it.id];
+        if (val && it.variants.some(v => v.ver === val)) {
+          clean[it.id] = val;
+        }
+      });
+      return clean;
+    } catch (_) {
+      return buildDefaultPicks();
+    }
+  }
+
+  function savePicks() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(picks));
+    } catch (_) {}
+  }
+
+  let picks = loadPicks();
+  let currentExportFmt = 'compact';
+  let currentLightbox = { itemId: null, ver: null };
+  let toastTimer = null;
+
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('is-show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('is-show'), 2200);
+  }
+
+  /* =========================================================================
+     底色切换
+     ========================================================================= */
+  function setBgMode(mode) {
+    if (!['porcelain', 'deepsea', 'purewhite'].includes(mode)) mode = 'porcelain';
+    document.body.setAttribute('data-bg', mode);
+    document.querySelectorAll('[data-bg-mode]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.bgMode === mode);
+    });
+    try { localStorage.setItem(BG_STORAGE_KEY, mode); } catch (_) {}
+  }
+
+  document.querySelectorAll('[data-bg-mode]').forEach(btn => {
+    btn.addEventListener('click', () => setBgMode(btn.dataset.bgMode));
+  });
+
+  try {
+    const savedBg = localStorage.getItem(BG_STORAGE_KEY);
+    if (savedBg) setBgMode(savedBg);
+  } catch (_) {}
+
+  /* =========================================================================
+     渲染专区 1：晦轮杖 10 选 1 网格
+     ========================================================================= */
+  function renderEclipseGrid() {
+    const grid = document.getElementById('eclipse-grid');
+    grid.innerHTML = ECLIPSE_ITEM.variants.map(v => {
+      const src = './items/' + v.file;
+      return `
+        <article class="wand-card" data-item-id="eclipse_wand" data-ver="${v.ver}" tabindex="0" role="button" aria-pressed="false" aria-label="晦轮杖 ${v.ver} ${v.label}">
+          <span class="picked-ribbon">✓ 已选</span>
+          <div class="wand-stage">
+            <span class="wand-code-tag">${v.ver}</span>
+            <div class="wand-hd-wrap">
+              <img class="wand-hd-img" src="${src}" alt="晦轮杖 ${v.ver} ${v.label}" width="150" height="150" decoding="async" />
+            </div>
+            <div class="real-slot-76 wand-corner-slot" title="游戏内真实 76×76px 背包格尺寸">
+              <img src="${src}" alt="" width="64" height="64" decoding="async" />
+              <span class="real-slot-tag">76px</span>
+            </div>
+            <button type="button" class="zoom-btn" data-zoom-item="eclipse_wand" data-zoom-ver="${v.ver}" title="查看 384×384 原寸" aria-label="放大查看晦轮杖 ${v.ver} 384px 原寸">
+              ${ZOOM_SVG}
+            </button>
+          </div>
+          <div class="wand-meta">
+            <div class="wand-title-row">
+              <span class="wand-name">${v.ver} · ${v.label}</span>
+              <span class="wand-state-dot" data-state-label="eclipse_wand:${v.ver}">点击选中</span>
+            </div>
+            <p class="wand-note">${v.note}</p>
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  /* =========================================================================
+     渲染专区 2：4 组共 30 件道具二选一选稿墙
+     ========================================================================= */
+  function renderDualGroups() {
+    const mount = document.getElementById('dual-groups-mount');
+    mount.innerHTML = DUAL_GROUPS.map(g => {
+      const cardsHtml = g.items.map(it => {
+        const panesHtml = ['v1', 'v2'].map(ver => {
+          const v = it[ver];
+          const src = './items/' + v.file;
+          return `
+            <div class="choice-pane" data-item-id="${it.id}" data-ver="${ver}" tabindex="0" role="button" aria-pressed="false" aria-label="${it.name} 方案 ${ver} ${v.trait}">
+              <div class="choice-top">
+                <div class="choice-label-wrap">
+                  <span class="choice-ver">方案 ${ver}</span>
+                  <span class="choice-trait" title="${v.trait}">${v.trait}</span>
+                </div>
+                <div class="choice-top-right">
+                  <span class="choice-check">✓ 已选</span>
+                  <button type="button" class="choice-zoom" data-zoom-item="${it.id}" data-zoom-ver="${ver}" title="放大看 384×384 原寸" aria-label="放大查看 ${it.name} ${ver} 384px 原寸">
+                    ${ZOOM_SVG}
+                  </button>
+                </div>
+              </div>
+              <div class="choice-stage">
+                <div class="choice-hd-box">
+                  <img class="choice-hd-img" src="${src}" alt="${it.name} 方案 ${ver}" width="152" height="152" decoding="async" />
+                </div>
+                <div class="choice-side-col">
+                  <div class="real-slot-76" title="游戏内真实 76×76px 背包格尺寸">
+                    <img src="${src}" alt="" width="64" height="64" decoding="async" />
+                    <span class="real-slot-tag">76px</span>
+                  </div>
+                  <span class="choice-slot-caption">76px 实寸格</span>
+                  <span class="choice-pick-hint" data-state-label="${it.id}:${ver}">点击选中</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <article class="item-card" data-card-item="${it.id}">
+            <div class="item-head">
+              <div class="item-head-top">
+                <div class="item-title-group">
+                  <h3 class="item-cn">${it.name}</h3>
+                  <span class="item-id">${it.id}</span>
+                  <span class="item-cat-tag">${it.cat}</span>
+                </div>
+                <span class="item-pick-badge" data-card-badge="${it.id}">未选</span>
+              </div>
+              <p class="item-lore">${it.lore}</p>
+            </div>
+            <div class="item-choices">
+              ${panesHtml}
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      return `
+        <section class="group-block" id="${g.anchorId}" aria-labelledby="title-${g.key}">
+          <div class="sec-header ${g.accentClass}">
+            <div class="sec-title-wrap">
+              <span class="sec-kicker">${g.kicker}</span>
+              <h2 class="sec-title" id="title-${g.key}">${g.title}</h2>
+              <p class="sec-sub">${g.sub}</p>
+            </div>
+            <div class="sec-right">
+              <span class="sec-status" id="grp-status-${g.key}">已选 ${g.items.length} / ${g.items.length}</span>
+            </div>
+          </div>
+          <div class="dual-grid">
+            ${cardsHtml}
+          </div>
+        </section>
+      `;
+    }).join('');
+  }
+
+  /* =========================================================================
+     同步全部选中态、计数与进度条
+     ========================================================================= */
+  function syncUI() {
+    const total = ALL_ITEMS.length;
+    let pickedCount = 0;
+
+    // 1. 晦轮杖
+    const ecPick = picks.eclipse_wand || '';
+    if (ecPick) pickedCount++;
+    const ecVar = ECLIPSE_ITEM.variants.find(v => v.ver === ecPick);
+    document.getElementById('eclipse-picked-badge').textContent = ecVar
+      ? `当前定稿：${ecVar.ver} ${ecVar.label}`
+      : '尚未选定晦轮杖';
+    document.getElementById('cnt-eclipse').textContent = (ecPick ? 1 : 0) + '/1';
+
+    document.querySelectorAll('.wand-card[data-item-id="eclipse_wand"]').forEach(card => {
+      const sel = card.dataset.ver === ecPick;
+      card.classList.toggle('is-selected', sel);
+      card.setAttribute('aria-pressed', sel ? 'true' : 'false');
+      const lbl = card.querySelector('[data-state-label]');
+      if (lbl) lbl.textContent = sel ? '★ 已定稿' : '点击选中';
+    });
+
+    // 2. 4 组 30 件道具
+    DUAL_GROUPS.forEach(g => {
+      let gCount = 0;
+      g.items.forEach(it => {
+        const cur = picks[it.id] || '';
+        if (cur) { gCount++; pickedCount++; }
+
+        const card = document.querySelector(`.item-card[data-card-item="${it.id}"]`);
+        if (card) {
+          card.classList.toggle('has-pick', Boolean(cur));
+          const badge = card.querySelector(`[data-card-badge="${it.id}"]`);
+          if (badge) badge.textContent = cur ? `✓ 已选 ${cur}` : '未选';
+          card.querySelectorAll('.choice-pane').forEach(pane => {
+            const sel = pane.dataset.ver === cur;
+            pane.classList.toggle('is-selected', sel);
+            pane.setAttribute('aria-pressed', sel ? 'true' : 'false');
+            const hint = pane.querySelector('[data-state-label]');
+            if (hint) hint.textContent = sel ? '★ 当前定稿' : '点击选中';
+          });
+        }
+      });
+      const st = document.getElementById('grp-status-' + g.key);
+      if (st) st.textContent = `已选 ${gCount} / ${g.items.length}`;
+      const ac = document.getElementById('cnt-' + g.key);
+      if (ac) ac.textContent = `${gCount}/${g.items.length}`;
+    });
+
+    // 3. 顶部进度条
+    document.getElementById('progress-text').textContent = `已选 ${pickedCount} / ${total} 件`;
+    document.getElementById('progress-fill').style.width = ((pickedCount / total) * 100).toFixed(1) + '%';
+
+    // 4. 若灯箱开着，同步灯箱按钮状态
+    if (currentLightbox.itemId) {
+      updateLightboxPickState();
+    }
+  }
+
+  function selectVariant(itemId, ver) {
+    picks[itemId] = ver;
+    savePicks();
+    syncUI();
+  }
+
+  /* =========================================================================
+     事件委托：选中卡片 / 打开 384px 原寸灯箱
+     ========================================================================= */
+  document.addEventListener('click', (e) => {
+    const zoomBtn = e.target.closest('[data-zoom-item]');
+    if (zoomBtn) {
+      e.stopPropagation();
+      openLightbox(zoomBtn.dataset.zoomItem, zoomBtn.dataset.zoomVer);
+      return;
+    }
+
+    const selectable = e.target.closest('.wand-card[data-item-id], .choice-pane[data-item-id]');
+    if (selectable) {
+      const id = selectable.dataset.itemId;
+      const ver = selectable.dataset.ver;
+      selectVariant(id, ver);
+      const item = ITEM_BY_ID[id];
+      if (item) showToast(`已选定：${item.name} → ${ver}`);
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    // ESC 关闭弹窗
+    if (e.key === 'Escape') {
+      closeLightbox();
+      closeExportModal();
+      return;
+    }
+
+    // 焦点卡片上按 Enter / Space 选中
+    if ((e.key === 'Enter' || e.key === ' ') && document.activeElement) {
+      const el = document.activeElement;
+      if (el.matches('.wand-card[data-item-id], .choice-pane[data-item-id]')) {
+        e.preventDefault();
+        selectVariant(el.dataset.itemId, el.dataset.ver);
+        return;
+      }
+    }
+
+    // 快捷键 1 / 2 / 3 切底色（非输入框焦点时）
+    const tag = document.activeElement ? document.activeElement.tagName : '';
+    if (tag !== 'TEXTAREA' && tag !== 'INPUT') {
+      if (e.key === '1') setBgMode('porcelain');
+      else if (e.key === '2') setBgMode('deepsea');
+      else if (e.key === '3') setBgMode('purewhite');
+    }
+  });
+
+  /* =========================================================================
+     批量操作：全部默认 v1 / 清空重选
+     ========================================================================= */
+  document.getElementById('btn-default-all').addEventListener('click', () => {
+    picks = buildDefaultPicks();
+    savePicks();
+    syncUI();
+    showToast('已将全部 31 件道具设为默认 v01 / v1');
+  });
+
+  document.getElementById('btn-clear-all').addEventListener('click', () => {
+    picks = {};
+    savePicks();
+    syncUI();
+    showToast('已清空全部选择（0 / 31），请随手点选');
+  });
+
+  /* =========================================================================
+     384px 原寸鉴赏灯箱
+     ========================================================================= */
+  const lbModal = document.getElementById('lightbox-modal');
+
+  function updateLightboxPickState() {
+    const item = ITEM_BY_ID[currentLightbox.itemId];
+    if (!item) return;
+    const isPicked = picks[item.id] === currentLightbox.ver;
+    const st = document.getElementById('lb-pick-status');
+    const btn = document.getElementById('lb-select-btn');
+    if (isPicked) {
+      st.textContent = `★ ${currentLightbox.ver} 当前已设为定稿`;
+      st.style.color = 'var(--royal)';
+      btn.textContent = '✓ 已选定此版本';
+    } else {
+      st.textContent = picks[item.id] ? `当前定稿为 ${picks[item.id]}` : '该道具尚未选定';
+      st.style.color = 'var(--ink-muted)';
+      btn.textContent = `✓ 改选为 ${currentLightbox.ver}`;
+    }
+  }
+
+  function openLightbox(itemId, ver) {
+    const item = ITEM_BY_ID[itemId];
+    if (!item) return;
+    const v = item.variants.find(x => x.ver === ver) || item.variants[0];
+    currentLightbox = { itemId: item.id, ver: v.ver };
+
+    const src = './items/' + v.file;
+    document.getElementById('lb-title').textContent = `${item.name} · ${v.ver} ${v.label}`;
+    document.getElementById('lb-subtitle').textContent = `${item.id} · 384×384 RGBA WebP`;
+    document.getElementById('lb-filename').textContent = v.file;
+    document.getElementById('lb-lore').textContent = item.lore;
+    document.getElementById('lb-img').src = src;
+    document.getElementById('lb-img').alt = `${item.name} ${v.ver}`;
+    document.getElementById('lb-slot-76').src = src;
+    document.getElementById('lb-slot-48').src = src;
+
+    const strip = document.getElementById('lb-variants');
+    strip.innerHTML = item.variants.map(opt => `
+      <button type="button" class="lb-ver-btn ${opt.ver === v.ver ? 'active' : ''}" data-lb-switch="${opt.ver}">
+        ${opt.ver}${item.id === 'eclipse_wand' ? ' ' + opt.label : ' · ' + opt.label}
+      </button>
+    `).join('');
+
+    strip.querySelectorAll('[data-lb-switch]').forEach(btn => {
+      btn.addEventListener('click', () => openLightbox(item.id, btn.dataset.lbSwitch));
+    });
+
+    updateLightboxPickState();
+    lbModal.classList.add('is-open');
+  }
+
+  function closeLightbox() {
+    lbModal.classList.remove('is-open');
+    currentLightbox = { itemId: null, ver: null };
+  }
+
+  document.getElementById('lb-close').addEventListener('click', closeLightbox);
+  lbModal.addEventListener('click', (e) => {
+    if (e.target === lbModal) closeLightbox();
+  });
+  document.getElementById('lb-select-btn').addEventListener('click', () => {
+    if (!currentLightbox.itemId) return;
+    selectVariant(currentLightbox.itemId, currentLightbox.ver);
+    const item = ITEM_BY_ID[currentLightbox.itemId];
+    showToast(`已定稿：${item.name} → ${currentLightbox.ver}`);
+  });
+
+  /* =========================================================================
+     一键复制定稿选单
+     ========================================================================= */
+  const exportModal = document.getElementById('export-modal');
+
+  function formatExportText(fmt) {
+    if (fmt === 'compact') {
+      return ALL_ITEMS.map(it => `${it.name}: ${picks[it.id] || '未选'}`).join(' | ');
+    }
+    if (fmt === 'json') {
+      const obj = {};
+      ALL_ITEMS.forEach(it => { obj[it.id] = picks[it.id] || null; });
+      return JSON.stringify(obj, null, 2);
+    }
+    // grouped
+    const lines = ['【板 A 圣晶厚涂 · 31 件道具定稿选单】', ''];
+    const ecPick = picks.eclipse_wand || '未选';
+    const ecVar = ECLIPSE_ITEM.variants.find(v => v.ver === ecPick);
+    lines.push('■ 专区 1 · 晦轮杖（10 选 1）');
+    lines.push(`- 晦轮杖 (eclipse_wand): ${ecPick}${ecVar ? ' · ' + ecVar.label : ''}`);
+    lines.push('');
+    DUAL_GROUPS.forEach(g => {
+      lines.push(`■ ${g.title}`);
+      g.items.forEach(it => {
+        const pv = picks[it.id] || '未选';
+        const trait = pv === 'v1' ? it.v1.trait : (pv === 'v2' ? it.v2.trait : '尚未选择');
+        lines.push(`- ${it.name} (${it.id}): ${pv} · ${trait}`);
+      });
+      lines.push('');
+    });
+    return lines.join('\n').trim();
+  }
+
+  async function copyTextSafely(text) {
+    try {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (_) {}
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return Boolean(ok);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function renderExportModal(copiedOk) {
+    const pickedCount = ALL_ITEMS.filter(it => Boolean(picks[it.id])).length;
+    const missing = ALL_ITEMS.length - pickedCount;
+    const text = formatExportText(currentExportFmt);
+
+    document.getElementById('export-progress-sub').textContent = `已选 ${pickedCount} / ${ALL_ITEMS.length} 件`;
+    document.getElementById('export-textarea').value = text;
+
+    const banner = document.getElementById('export-banner');
+    const bannerText = document.getElementById('export-banner-text');
+    const fillBtn = document.getElementById('btn-fill-missing');
+
+    if (missing > 0) {
+      banner.classList.add('warn');
+      bannerText.textContent = (copiedOk ? '✓ 已复制到剪贴板！' : '请全选下方清单复制。') + ` 提示：尚有 ${missing} 件标记为「未选」，可点击左下角一键按 v1 补齐。`;
+      fillBtn.style.display = 'inline-block';
+    } else {
+      banner.classList.remove('warn');
+      bannerText.textContent = copiedOk
+        ? '✓ 全部 31 件定稿清单已自动复制到剪贴板！直接粘贴回对话即可实装。'
+        : '全部 31 件定稿清单已生成，请点击「再次复制清单」或手动全选复制。';
+      fillBtn.style.display = 'none';
+    }
+
+    document.querySelectorAll('.fmt-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.fmt === currentExportFmt);
+    });
+  }
+
+  async function openExportModal() {
+    const text = formatExportText(currentExportFmt);
+    const ok = await copyTextSafely(text);
+    renderExportModal(ok);
+    exportModal.classList.add('is-open');
+    if (ok) showToast('✓ 定稿选单已复制到剪贴板');
+  }
+
+  function closeExportModal() {
+    exportModal.classList.remove('is-open');
+  }
+
+  document.getElementById('btn-copy-picks').addEventListener('click', openExportModal);
+  document.getElementById('export-close').addEventListener('click', closeExportModal);
+  document.getElementById('btn-export-close').addEventListener('click', closeExportModal);
+  exportModal.addEventListener('click', (e) => {
+    if (e.target === exportModal) closeExportModal();
+  });
+
+  document.querySelectorAll('.fmt-tab').forEach(tab => {
+    tab.addEventListener('click', async () => {
+      currentExportFmt = tab.dataset.fmt;
+      const text = formatExportText(currentExportFmt);
+      const ok = await copyTextSafely(text);
+      renderExportModal(ok);
+      if (ok) showToast('已切换格式并重新复制到剪贴板');
+    });
+  });
+
+  document.getElementById('btn-export-recopy').addEventListener('click', async () => {
+    const text = formatExportText(currentExportFmt);
+    const ok = await copyTextSafely(text);
+    renderExportModal(ok);
+    showToast(ok ? '✓ 已重新复制到剪贴板' : '请手动按 Ctrl+C 复制选中文本');
+    const ta = document.getElementById('export-textarea');
+    ta.focus();
+    ta.select();
+  });
+
+  document.getElementById('btn-fill-missing').addEventListener('click', async () => {
+    ALL_ITEMS.forEach(it => {
+      if (!picks[it.id]) picks[it.id] = it.defaultVer;
+    });
+    savePicks();
+    syncUI();
+    const text = formatExportText(currentExportFmt);
+    const ok = await copyTextSafely(text);
+    renderExportModal(ok);
+    showToast('✓ 已将未选项目按 v1 补齐并复制完整 31 件定稿清单');
+  });
+
+  /* =========================================================================
+     初始化渲染
+     ========================================================================= */
+  renderEclipseGrid();
+  renderDualGroups();
+  syncUI();
+})();
+</script>
+</body>
+</html>

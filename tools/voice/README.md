@@ -2,9 +2,9 @@
 
 3 步直接产出全角色日语成品语音包（全量 **1,276 句** / 主线+战斗 **900 句**，`-16 LUFS` 响度统一、`64 kbps mono MP3`）：
 
-1. **打开 Colab**：[点此打开 `fish_drama3_colab.ipynb`](https://colab.research.google.com/github/juanhanyu/fictional-adventure/blob/main/tools/voice/fish_drama3_colab.ipynb)（优先选 **A100 / H100**；L4 / T4 / CPU 亦自动直连 Fish Audio API）。
+1. **打开 Colab**：[点此打开 `fish_drama3_colab.ipynb`](https://colab.research.google.com/github/juanhanyu/fictional-adventure/blob/main/tools/voice/fish_drama3_colab.ipynb)（首选 **G4 (RTX PRO 6000 Blackwell 96GB)**，亦支持 **H100 / A100**；L4 / T4 / CPU 自动直连 Fish Audio API）。
 2. **填 Key 并全部运行**：在 **Cell 1** 填入 `FISH_API_KEY`（或存进 Colab 左侧 🔑 Secrets），保持默认 `SCOPE = "all"`，点击菜单 **代码执行程序 → 全部运行 (Run All)**。
-   - **H100 80GB**：自动启用 `fishaudio/drama-3`（FP8）
+   - **G4 (RTX PRO 6000 Blackwell 96GB) / H100 / H200 / B200**：自动启用满血原版 `fishaudio/drama-3`（FP8）
    - **A100 80GB**：自动启用 `fishaudio/drama-3-int4`
    - **A100 40GB**：自动启用 `fishaudio/drama-3-int4` + 5 项显存收紧参数（参考音 `<= 19s`）
    - **L4 / T4 / CPU**：免下 22GB 权重，自动切 Fish Audio API（默认 `drama-3`，可一键改 `s2.1-pro-free`）

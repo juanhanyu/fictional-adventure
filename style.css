@@ -1279,6 +1279,74 @@ body.roam #text-box.dialog-rows-2 #text {
   box-shadow: 0 -4px 16px rgba(18, 24, 34, 0.06);
 }
 
+/* 顶部双切角悬浮雪瓷棱镜底座：与上方 #sylvia-hub 削角及 [下个季度] 棱镜按钮呼应，双层伪元素 1px 冰晶斜切边，严格保持原纤薄高度 */
+#game-screen #action-bar {
+  position: relative;
+  border: none;
+  border-top: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: visible;
+  filter: drop-shadow(0 -6px 18px rgba(14, 43, 120, 0.13));
+}
+
+@media (min-width: 681px) {
+  body:not(.ai-drawer-open) #game-screen #action-bar {
+    width: calc(100% - 32px);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+#game-screen #action-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: auto;
+  z-index: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(64, 148, 245, 0.88) 0%,
+    rgba(125, 211, 252, 0.92) 22%,
+    rgba(22, 88, 235, 0.72) 44%,
+    rgba(196, 164, 108, 0.82) 72%,
+    rgba(46, 119, 248, 0.86) 100%
+  );
+  clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%, 0 14px);
+  pointer-events: none;
+}
+
+#game-screen #action-bar::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  right: 1px;
+  bottom: 0;
+  z-index: 0;
+  background:
+    linear-gradient(90deg, rgba(125, 211, 252, 0.78) 0%, rgba(22, 88, 235, 0.44) 28%, rgba(255, 255, 255, 0.92) 50%, rgba(196, 164, 108, 0.56) 74%, rgba(125, 211, 252, 0.72) 100%) top / 100% 1.5px no-repeat,
+    linear-gradient(112deg, transparent 14%, rgba(255, 255, 255, 0.56) 28%, rgba(125, 211, 252, 0.14) 36%, transparent 50%, rgba(239, 224, 190, 0.12) 78%, transparent 94%),
+    linear-gradient(180deg, rgba(252, 254, 255, 0.94) 0%, rgba(242, 248, 255, 0.93) 56%, rgba(232, 243, 254, 0.96) 100%);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  clip-path: polygon(13.5px 0, calc(100% - 13.5px) 0, 100% 13.5px, 100% 100%, 0 100%, 0 13.5px);
+  pointer-events: none;
+}
+
+#game-screen #action-bar > * {
+  position: relative;
+  z-index: 2;
+}
+
 #action-bar .ab-scroll {
   display: flex;
   flex-wrap: wrap;

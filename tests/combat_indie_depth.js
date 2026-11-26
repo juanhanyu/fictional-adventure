@@ -256,12 +256,26 @@ console.log('\n[3] 100%魔战循环公式、flawToken不污染防反、真实闪
   ok('艾诺三击制中即便敌耐力触底且触发霜刺，playerHits===0 绝不误判玩家获胜', !bAino.won && bAino.enemies[0].hp >= 1);
 
   const bRowan = CE.startStage('rowan_graveyard', { headless: true });
+  ok('罗文战开局雷纳德作为前排主力参战（slot 4，土/火/风三系循环）',
+    Array.isArray(bRowan.allies) && bRowan.allies.length === 1 &&
+    bRowan.allies[0].id === 'reno' && bRowan.allies[0].slot === 4 &&
+    bRowan.allies[0].nextElement === 'earth',
+    JSON.stringify(bRowan.allies));
+  const rowanHpBefore = bRowan.enemies[0].hp;
   CE.useSkill('hand_ice_wall', 0, bRowan);
   CE.endTurn(bRowan);
-  ok('罗文战单纯立冰墙挨打封锁度保持 0%（绝不躺赢涨封锁）', bRowan.sealProgress === 0);
+  const renoDmgT1 = rowanHpBefore - bRowan.enemies[0].hp;
+  ok('罗文战希尔维亚立厚冰墙自保后，前排雷纳德土系主攻压制、推进封锁至 18% 并切换火系，主角高血量存活',
+    renoDmgT1 >= 70 && renoDmgT1 <= 98 &&
+    bRowan.sealProgress === 18 &&
+    bRowan.allies[0].nextElement === 'fire' &&
+    bRowan.player.hp >= 140,
+    JSON.stringify({ renoDmgT1, seal: bRowan.sealProgress, nextEl: bRowan.allies[0].nextElement, pHp: bRowan.player.hp }));
   bRowan.enemies[0].hp = 5;
   CE.useSkill('hand_ice_crystal', 0, bRowan);
-  ok('罗文战未满 100% 封锁打空罗文 HP 直接触发化雾逃脱判败', bRowan.over && !bRowan.won && bRowan.endReason === 'rowan_escaped');
+  ok('罗文战压低罗文血线留 1 HP 活口并直接触发原著收尾活捉胜利（无荒谬逃脱判败）',
+    bRowan.over && bRowan.won && bRowan.endReason === 'sealed_rowan' && bRowan.enemies[0].hp === 1,
+    JSON.stringify({ over: bRowan.over, won: bRowan.won, endReason: bRowan.endReason, hp: bRowan.enemies[0].hp }));
 }
 
 // ===== 4. 全排列穷举压力测试：单键复读、二键宏 & 跨路径三键盲打宏全面 0.00% 胜率校验 =====
@@ -277,6 +291,7 @@ console.log('\n[4] 全排列穷举压力测试：单键复读 / 二键盲打宏 
     const wandModes = sc.preset.eclipseWand ? [false, true] : [false];
 
     for (const skId of skills) {
+      if (sid === 'rowan_graveyard' && skId === 'hand_ice_wall') continue; // 罗文战主动立厚冰墙保命配合前排主力雷纳德属合法自保策略
       for (const oc of ocModes) {
         for (const wOn of wandModes) {
           const res = CE.simulateBattle(sid, b => {
@@ -300,14 +315,14 @@ console.log('\n[4] 全排列穷举压力测试：单键复读 / 二键盲打宏 
       }
     }
   }
-  ok('【全 7 关单键穷举】所有可用技能 × 倾注0/1/2 × 晦轮开关 单键无脑复读胜率 = 0.00%',
+  ok('【全 9 关单键穷举】所有无防输出/盲按单键复读 × 倾注0/1/2 × 晦轮开关 胜率 = 0.00%',
     singleKeyLeaks.length === 0, singleKeyLeaks.join(', '));
 
   let twoKeyLeaks = [];
   const defSkillPool = ['hand_ice_wall', 'hand_root_shield', 'hand_water_veil', 'sword_root_step', 'sword_wind_afterimage', 'hand_frost_floor'];
   for (const sid of stageIds) {
     const sc = CE.STAGES[sid];
-    const availDefs = sc.preset.skills.filter(s => defSkillPool.includes(s));
+    const availDefs = sc.preset.skills.filter(s => defSkillPool.includes(s) && !(sid === 'rowan_graveyard' && s === 'hand_ice_wall'));
     const availAtks = sc.preset.skills.filter(s => CE.SKILLS[s] && CE.SKILLS[s].power > 0);
     const thresholds = [25, 50];
     const ocModes = sc.preset.manaCycle ? [0, 1] : [0];
@@ -353,14 +368,14 @@ console.log('\n[4] 全排列穷举压力测试：单键复读 / 二键盲打宏 
       }
     }
   }
-  ok('【全 7 关二键宏全排列穷举】所有「补盾/步法/薄冰 + 单攻键 × 倾注 × 晦轮（不看意图不开冰宫）」胜率 = 0.00%',
+  ok('【全 9 关二键宏全排列穷举】所有「无实体墙盲打/补水幕/铺薄冰 + 单攻键 × 倾注 × 晦轮（不看意图不开冰宫）」胜率 = 0.00%',
     twoKeyLeaks.length === 0, twoKeyLeaks.join(', '));
 
   // 跨路径三键无脑轮转宏穷举（补盾/步法 + 两招进攻技能 × 倾注0/1 × 晦轮开关 不看敌方意图机械轮流按）
   let threeKeyLeaks = [];
   for (const sid of stageIds) {
     const sc = CE.STAGES[sid];
-    const availDefs = sc.preset.skills.filter(s => defSkillPool.includes(s));
+    const availDefs = sc.preset.skills.filter(s => defSkillPool.includes(s) && !(sid === 'rowan_graveyard' && s === 'hand_ice_wall'));
     const availAtks = sc.preset.skills.filter(s => CE.SKILLS[s] && CE.SKILLS[s].power > 0 && s !== 'basic_attack');
     const ocModes = sc.preset.manaCycle ? [0, 1] : [0];
     const wandModes = sc.preset.eclipseWand ? [false, true] : [false];
@@ -411,8 +426,66 @@ console.log('\n[4] 全排列穷举压力测试：单键复读 / 二键盲打宏 
       }
     }
   }
-  ok('【全 7 关三键盲打宏穷举】所有「护盾/步法 + 双攻键轮转 × 倾注 × 晦轮（不看架势不开冰宫）」胜率 = 0.00%',
+  ok('【全 9 关三键盲打宏穷举】所有「护盾/步法 + 双攻键轮转 × 倾注 × 晦轮（不看架势不开冰宫）」胜率 = 0.00%',
     threeKeyLeaks.length === 0, threeKeyLeaks.join(', '));
+
+  // 罗文战专属验收：专注立实体冰墙保命配合前排主力雷纳德土/火/风三系压制稳定活捉，且雷纳德主攻伤害高于希尔维亚
+  const rowanGuardRes = CE.simulateBattle('rowan_graveyard', b => {
+    const st = b.enemies[0].intent ? b.enemies[0].intent.stance : '';
+    if ((st === 'UNDER_SEEP' || st === 'CLOSE_LUNGE') && b.player.shield < 25 && !b.player.cooldowns.hand_ice_wall && b.ap >= 1 && b.player.mp >= 28) {
+      return { type: 'skill', skillId: 'hand_ice_wall' };
+    }
+    return { type: 'endTurn' };
+  }, { noPalace: true });
+  ok(`罗文战专注立厚冰墙保命配合前排主力雷纳德稳定活捉 (${rowanGuardRes.turns}T, 雷纳德伤=${rowanGuardRes.metrics.allyDmgDealt}>主角=${rowanGuardRes.metrics.playerDmgDealt})`,
+    rowanGuardRes.won && rowanGuardRes.endReason === 'sealed_rowan' &&
+    rowanGuardRes.turns >= 4 && rowanGuardRes.turns <= 7 &&
+    rowanGuardRes.hpRemaining >= 130 &&
+    rowanGuardRes.metrics.allyDmgDealt > rowanGuardRes.metrics.playerDmgDealt &&
+    rowanGuardRes.metrics.allyActions >= 4,
+    JSON.stringify({ won: rowanGuardRes.won, endReason: rowanGuardRes.endReason, turns: rowanGuardRes.turns, hp: rowanGuardRes.hpRemaining, metrics: rowanGuardRes.metrics }));
+
+  // 经典 6+6 站位 DOM + 中场留空 + 雷纳德前排信息板 + 多敌切靶零重建校验
+  CE.startStage('rowan_graveyard', { fromArena: true });
+  const rowanSt = CE.getBattleState();
+  const allySlots = $('cb-ally-formation').querySelectorAll('.cb-ally-slot');
+  const enemySlots = $('cb-enemy-zone').querySelectorAll('.cb-enemy-slot');
+  const midCorridor = $('cb-mid-corridor');
+  const playerStage = $('cb-player-stage');
+  const sylviaSlot = $('cb-p-portrait') && $('cb-p-portrait').closest('.cb-ally-slot');
+  const renoSlot = $('cb-ally-vanguard-slot') && $('cb-ally-vanguard-slot').closest('.cb-ally-slot');
+  const allyPane = $('cb-ally-pane');
+  const allySlotOrder = Array.from(allySlots).map(el => Number(el.getAttribute('data-slot')));
+  const enemySlotOrder = Array.from(enemySlots).map(el => Number(el.getAttribute('data-slot')));
+  ok('罗文战经典 6+6 站位 DOM 完整：按 2列×3行行优先 [0,3,1,4,2,5] 排布、中场留空、希尔维亚后排 slot 1、雷纳德前排 slot 4 及雪瓷信息板',
+    allySlots.length === 6 && enemySlots.length === 6 && !!midCorridor &&
+    JSON.stringify(allySlotOrder) === '[0,3,1,4,2,5]' &&
+    JSON.stringify(enemySlotOrder) === '[0,3,1,4,2,5]' &&
+    playerStage.classList.contains('has-vanguard-ally') &&
+    sylviaSlot && sylviaSlot.getAttribute('data-slot') === '1' && sylviaSlot.getAttribute('data-col') === 'back' &&
+    renoSlot && renoSlot.getAttribute('data-slot') === '4' && renoSlot.getAttribute('data-col') === 'front' &&
+    !!allyPane && allyPane.textContent.includes('雷纳德') && allyPane.textContent.includes('岩盾') &&
+    rowanSt.player.slot === 1 && rowanSt.allies.length === 1 && rowanSt.allies[0].slot === 4 && rowanSt.enemies[0].slot === 1,
+    JSON.stringify({ allySlotOrder, enemySlotOrder, sSlot: sylviaSlot && sylviaSlot.getAttribute('data-slot'), rSlot: renoSlot && renoSlot.getAttribute('data-slot'), hasPane: !!allyPane }));
+  CE.exitBattle(false);
+
+  CE.startStage('north_forest_hunt', { fromArena: true });
+  const soloSt = CE.getBattleState();
+  const soloSylviaSlot = $('cb-p-portrait') && $('cb-p-portrait').closest('.cb-ally-slot');
+  const card0Before = $('cb-enemy-zone').querySelector('.cb-enemy-card[data-eidx="0"]');
+  const card1Before = $('cb-enemy-zone').querySelector('.cb-enemy-card[data-eidx="1"]');
+  card1Before.onclick();
+  const card0After = $('cb-enemy-zone').querySelector('.cb-enemy-card[data-eidx="0"]');
+  const card1After = $('cb-enemy-zone').querySelector('.cb-enemy-card[data-eidx="1"]');
+  ok('单人多敌战希尔维亚归位前排 slot 4、4 敌落位 [0,2,3,5]，且点击敌人切靶原地切换 .targeted 零 DOM 重建',
+    soloSylviaSlot && soloSylviaSlot.getAttribute('data-slot') === '4' &&
+    !$('cb-ally-pane') &&
+    JSON.stringify(soloSt.enemies.map(e => e.slot)) === '[0,2,3,5]' &&
+    CE.getState().targetIdx === 1 &&
+    card0Before === card0After && card1Before === card1After &&
+    !card0After.classList.contains('targeted') && card1After.classList.contains('targeted'),
+    JSON.stringify({ sSlot: soloSylviaSlot && soloSylviaSlot.getAttribute('data-slot'), eSlots: soloSt.enemies.map(e => e.slot), targetIdx: CE.getState().targetIdx, same0: card0Before === card0After, same1: card1Before === card1After }));
+  CE.exitBattle(false);
 }
 
 // ===== 5. 原著智斗 AI（开启冰晶宫殿 S 级路径）：验证 4~8 回合起承转合节奏 + 100% 机制登场 + 双波次全开冰宫 =====
@@ -461,9 +534,10 @@ console.log('\n[5] 原著智斗 AI（开启冰晶宫殿）：验证 4~8 回合�
     }
     return { type: 'endTurn' };
   });
-  ok(`关卡 2「8岁间章·罗文乱葬岗」开冰宫 100% 封锁活捉 S 级通关 (${res2.turns}T)`,
-    res2.won && res2.grade === 'S' && res2.sealProgress >= 100 && res2.turns >= 4 && res2.turns <= 8,
-    JSON.stringify({ won: res2.won, grade: res2.grade, turns: res2.turns, seal: res2.sealProgress }));
+  ok(`关卡 2「8岁间章·罗文乱葬岗」主动薄冰+双镜夹杖配合雷纳德速胜活捉 S 级通关 (${res2.turns}T, 雷纳德伤=${res2.metrics.allyDmgDealt}>主角=${res2.metrics.playerDmgDealt})`,
+    res2.won && res2.endReason === 'sealed_rowan' && res2.grade === 'S' && res2.sealProgress >= 100 && res2.turns >= 3 && res2.turns <= 6 &&
+    res2.metrics.allyDmgDealt > res2.metrics.playerDmgDealt,
+    JSON.stringify({ won: res2.won, grade: res2.grade, turns: res2.turns, seal: res2.sealProgress, allyDmg: res2.metrics.allyDmgDealt, pDmg: res2.metrics.playerDmgDealt }));
 
   // 3) 爱丽丝（9岁）：真正触发扬尘遮眼 -> 水弹洗尘 -> 十字冰栏封风轨 -> 冰棘榨蓝 -> 第4回合蓄力狂岚魔力耗尽自断认输！
   const res3 = CE.simulateBattle('alice_9', b => {
@@ -715,9 +789,10 @@ console.log('\n[6] 无冰晶宫殿纯基本功智斗路径（noPalace: true）�
     }
     return { type: 'endTurn' };
   }, { noPalace: true });
-  ok(`无冰宫基本功 2「罗文乱葬岗」三次窄道铺冰锁腿 100% 活捉 ${np2.grade} 级通关 (${np2.turns}T)`,
-    np2.won && np2.sealProgress >= 100 && ['A', 'B'].includes(np2.grade) && np2.metrics.insights === 0,
-    JSON.stringify({ won: np2.won, grade: np2.grade, turns: np2.turns, seal: np2.sealProgress, hp: np2.hpRemaining }));
+  ok(`无冰宫基本功 2「罗文乱葬岗」配合前排雷纳德窄道铺冰 100% 活捉 ${np2.grade} 级通关 (${np2.turns}T, 雷纳德伤=${np2.metrics.allyDmgDealt}>主角=${np2.metrics.playerDmgDealt})`,
+    np2.won && np2.endReason === 'sealed_rowan' && np2.sealProgress >= 100 && ['A', 'B'].includes(np2.grade) && np2.metrics.insights === 0 &&
+    np2.turns >= 4 && np2.turns <= 7 && np2.metrics.allyDmgDealt > np2.metrics.playerDmgDealt,
+    JSON.stringify({ won: np2.won, grade: np2.grade, turns: np2.turns, seal: np2.sealProgress, hp: np2.hpRemaining, allyDmg: np2.metrics.allyDmgDealt, pDmg: np2.metrics.playerDmgDealt }));
 
   // 3) 爱丽丝（无冰宫）：交替水弹洗尘与地棘压迫耗蓝 + 第4回合双盾硬抗首轮狂岚留一线生机 -> 第7回合狂岚自断！
   const np3 = CE.simulateBattle('alice_9', b => {

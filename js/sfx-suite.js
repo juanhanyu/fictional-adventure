@@ -14,6 +14,8 @@
   var MIN_ATTACK = 0.002;
   var MAX_ATTACK = 0.014;
   var TITLE_BTN_SELECTOR = '.title-menu button, .v3-prism-cta, .v3-edge-link, .corner-tool-btn';
+  var COMBAT_BTN_SELECTOR = '.cb-tool-btn, .cb-pwing, .cb-spine-btn, .cb-blade, .cb-amp-tier-blade, .cb-amp-tick, .cb-plog-toggle, .cb-oc-btn, .cb-skill-card, .cb-endturn-btn, .ib-info-btn, .cb-trait-pill, .cb-enemy-card:not(.dead), .cp-opt-btn, .cp-close-x, #cb-modal-slot .tbtn, #am-close, .arena-mode-chip, .arena-stage-card';
+  var COMBAT_GROUP_SELECTOR = '.cb-top-tools, #cb-prism-root, #cb-prism-blade-list, .cb-cascade-spine, .cb-amp-tiers, .cb-amp-ticks, #cb-oc-seg, #b-actions, #cb-enemy-zone, .arena-mode-group, .arena-loadout-bar, .arena-stage-grid, #cb-modal-slot';
   var TITLE_OWN_SFX_IDS = {
     'btn-new': 1,
     'btn-continue': 1,
@@ -91,6 +93,10 @@
     boundTitleEl: null,
     titlePointerHandler: null,
     titleClickHandler: null,
+    boundCombatEls: [],
+    combatPointerEnterHandler: null,
+    combatPointerLeaveHandler: null,
+    lastCombatHoverEl: null,
     gestureBound: false
   };
 
@@ -2915,6 +2921,146 @@
     }
   }
 
+  // =========================================================================
+  // 战斗与演武全按键鼠标经过音效委托（捕获阶段 pointerenter 去重 · 零泄漏幂等）
+  // =========================================================================
+  function isCombatBtnSkipped(el) {
+    if (!el) return true;
+    if (el.disabled) return true;
+    if (typeof el.matches === 'function') {
+      try {
+        if (el.matches(':disabled')) return true;
+      } catch (err) {}
+    }
+    if (typeof el.getAttribute === 'function' && el.getAttribute('aria-disabled') === 'true') return true;
+    if (el.classList && (el.classList.contains('hidden') || el.classList.contains('dead'))) return true;
+    if (typeof el.closest === 'function') {
+      if (el.closest('.hidden, .dead, .dissolved')) return true;
+    }
+    return false;
+  }
+
+  function bindCombatDelegation() {
+    try {
+      if (typeof document === 'undefined' || !document.addEventListener) return false;
+      var battleEl = typeof document.getElementById === 'function' ? document.getElementById('battle-screen') : null;
+      var arenaEl = typeof document.getElementById === 'function' ? document.getElementById('arena-overlay') : null;
+      var nextHosts = (battleEl && arenaEl) ? [battleEl, arenaEl] : [document];
+
+      if (state.boundCombatEls && state.boundCombatEls.length === nextHosts.length) {
+        var sameHosts = true;
+        for (var h = 0; h < nextHosts.length; h++) {
+          if (state.boundCombatEls[h] !== nextHosts[h]) {
+            sameHosts = false;
+            break;
+          }
+        }
+        if (sameHosts) return true;
+      }
+
+      if (state.boundCombatEls && state.boundCombatEls.length) {
+        for (var r = 0; r < state.boundCombatEls.length; r++) {
+          var prevHost = state.boundCombatEls[r];
+          try {
+            if (prevHost && state.combatPointerEnterHandler) {
+              prevHost.removeEventListener('pointerenter', state.combatPointerEnterHandler, true);
+            }
+            if (prevHost && state.combatPointerLeaveHandler) {
+              prevHost.removeEventListener('pointerleave', state.combatPointerLeaveHandler, true);
+            }
+          } catch (err) {}
+        }
+      }
+
+      var onCombatPointerEnter = function (e) {
+        try {
+          if (!e) return;
+          if (e.pointerType && e.pointerType !== 'mouse') return;
+          var target = e.target;
+          if (!target) return;
+          if (typeof target.closest !== 'function') {
+            target = target.parentElement || null;
+            if (!target || typeof target.closest !== 'function') return;
+          }
+
+          var btn = target.closest(COMBAT_BTN_SELECTOR);
+          if (!btn) {
+            if (state.lastCombatHoverEl && (
+              !state.lastCombatHoverEl.isConnected ||
+              (typeof state.lastCombatHoverEl.contains === 'function' && !state.lastCombatHoverEl.contains(target))
+            )) {
+              state.lastCombatHoverEl = null;
+            }
+            return;
+          }
+
+          var scopeEl = btn.closest('#battle-screen, #arena-overlay');
+          if (!scopeEl) return;
+
+          if (isCombatBtnSkipped(btn)) {
+            if (state.lastCombatHoverEl === btn) state.lastCombatHoverEl = null;
+            return;
+          }
+
+          if (btn === state.lastCombatHoverEl) return;
+          state.lastCombatHoverEl = btn;
+
+          var groupContainer = btn.closest(COMBAT_GROUP_SELECTOR) || btn.parentElement || scopeEl;
+          var siblingSelector = (typeof btn.matches === 'function' && btn.matches('.cb-enemy-card'))
+            ? '.cb-enemy-card:not(.dead)'
+            : COMBAT_BTN_SELECTOR;
+          var all = groupContainer && typeof groupContainer.querySelectorAll === 'function'
+            ? groupContainer.querySelectorAll(siblingSelector)
+            : [];
+          var step = 0;
+          var visibleIdx = 0;
+          for (var i = 0; i < all.length; i++) {
+            var el = all[i];
+            if (el === btn) {
+              step = visibleIdx;
+              break;
+            }
+            if (!isCombatBtnSkipped(el)) {
+              visibleIdx++;
+            }
+          }
+          play('title_hover', { step: step });
+        } catch (err) {}
+      };
+
+      var onCombatPointerLeave = function (e) {
+        try {
+          if (!e || !state.lastCombatHoverEl) return;
+          if (e.pointerType && e.pointerType !== 'mouse') return;
+          var target = e.target;
+          if (target === state.lastCombatHoverEl) {
+            state.lastCombatHoverEl = null;
+          } else if (
+            target &&
+            target !== document &&
+            typeof target.contains === 'function' &&
+            target.contains(state.lastCombatHoverEl)
+          ) {
+            state.lastCombatHoverEl = null;
+          }
+        } catch (err) {}
+      };
+
+      for (var k = 0; k < nextHosts.length; k++) {
+        nextHosts[k].addEventListener('pointerenter', onCombatPointerEnter, true);
+        nextHosts[k].addEventListener('pointerleave', onCombatPointerLeave, true);
+      }
+
+      state.boundCombatEls = nextHosts;
+      state.combatPointerEnterHandler = onCombatPointerEnter;
+      state.combatPointerLeaveHandler = onCombatPointerLeave;
+      state.lastCombatHoverEl = null;
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   function bindGestureUnlock() {
     try {
       if (state.gestureBound || typeof document === 'undefined' || !document.addEventListener) return;
@@ -2944,6 +3090,7 @@
   function autoInit() {
     bindGestureUnlock();
     bindTitleDelegation();
+    bindCombatDelegation();
   }
 
   try {
@@ -2978,6 +3125,7 @@
     isMuted: isMuted,
     listCues: listCues,
     bindTitleDelegation: bindTitleDelegation,
+    bindCombatDelegation: bindCombatDelegation,
     getEngineInfo: getEngineInfo
   };
 

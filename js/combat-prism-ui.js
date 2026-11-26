@@ -1,14 +1,16 @@
 /* =========================================================================
    《转生千金》Option 2 · P5 式希尔维亚周身棱晶放射指令翼适配器 (js/combat-prism-ui.js)
    职责：
-     - 挂载于 #battle-screen .cb-arena-field，在桌面端（>=1024px）将技能选择转化为
-       Persona 5 式角色锚定多面体蓝宝棱晶放射翼：
+     - 挂载于 #battle-screen .cb-arena-field，在桌面端（>=1024px）锚定于中场空区 #cb-mid-corridor 偏左，
+       将技能选择转化为 Persona 5 式角色锚定多面体蓝宝棱晶放射翼：
          [W] 冰水术式  → 展开实时同步自 #b-actions 的斜切术式级联翼（支持 [1..9] 直施）
-         [E] 魔力增幅  → 展开三阶魔力增幅级联（0%常规 / ★20%魔力盈溢 / ★★40%极寒过载 / ★★★60%星霜极限）+ 0%–60% 磁吸微调滑条（展开后再按 E 快速切档，1/2/3/4 直选）
+         [E] 魔力增幅  → 1:1 复刻标杆外露直按三阶魔力增幅（左键/E 原地升档 0%→20%→40%→60%→0%，
+                         右键/Shift+E 原地降档 60%→40%→20%→0%，滚轮微调；技能列表顶脊 #cb-pw-amp-mini 同款直按不跳离）
          [A] 守势/护盾 → 优先瞬发当前可用守势护盾技，多项时展开守势翼，无可用时稳守回合
          [D] 演武辅助  → 展开冰晶宫殿 / 心念援护 / 晦轮杖 / 结束回合四项战术翼
          [X] 结束回合  → 顶栏常驻一键结束回合（AP 归零时流光提示，绝与 [E] 增幅互不冲突）
          [L] 战报手札  → 棱晶模式底部单行实况战报条 + 可展开历史记录
+     - 适配 6+6 站位（含雷纳德前排 #cb-ally-vanguard-slot、.cb-ally-pane 与 #cb-enemy-zone .cb-enemy-card 避障）
      - 由 combat:statechange 事件驱动同步 + 签名差分复绘，彻底根除悬停与 60fps 像素帧触发的 DOM 销毁抖动
      - 零破坏既有 DOM ID 与自动化测试（JSDOM 环境下静默旁路）
    ========================================================================= */
@@ -124,15 +126,13 @@
     shortViewport: false,
     viewportW: 1440,
     viewportH: 900,
-    menuMode: 'root', // 'root' | 'skills' | 'amp' | 'guard' | 'assist'
+    menuMode: 'root', // 'root' | 'skills' | 'guard' | 'assist'
     logExpanded: false,
     hoveredWingIdx: null,
     hoveredBladeIdx: null,
-    hoveredAmpIdx: null,
-    sliderDragging: false,
-    sliderKeyStep: false,
-    lastSliderAppliedPct: -1,
-    onWindowPointerUp: null,
+    ampPulseTimer: 0,
+    lastAmpPct: -1,
+    lastAmpWheelAt: 0,
     bsObserver: null,
     modalObserver: null,
     rafId: 0,
@@ -141,8 +141,6 @@
     svgEl: null,
     cascadeListEl: null,
     ampPanelEl: null,
-    ampSliderEl: null,
-    ampTierBtns: [],
     spineEl: null,
     logBarEl: null,
     currentItems: [],
@@ -155,7 +153,13 @@
     skyTopY: 0,
     skyBotY: 540,
     portraitRight: 210,
+    allyPaneRight: 0,
     enemyLeftX: 0,
+    hasMidCorridor: false,
+    corridorLeft: 0,
+    corridorRight: 0,
+    corridorW: 0,
+    hasVanguardActor: false,
     obstacles: [],
     twoColBlades: false,
     animDissolveUntil: 0,
@@ -256,15 +260,6 @@
     if (dm >= 0.40 - 1e-4) return base * 1.18;
     if (dm >= 0.20 - 1e-4) return base * 1.08;
     return base;
-  }
-
-  function snapAmpPctInt(rawInt, maxPctInt) {
-    const cap = Math.max(0, Math.min(MAX_AMP_INT, Math.round(Number(maxPctInt) || 0)));
-    const clamped = Math.max(0, Math.min(cap, Math.round(Number(rawInt) || 0)));
-    if (cap >= 60 && Math.abs(clamped - 60) <= 2) return 60;
-    if (cap >= 40 && Math.abs(clamped - 40) <= 2) return 40;
-    if (cap >= 20 && Math.abs(clamped - 20) <= 2) return 20;
-    return clamped;
   }
 
   function formatAmpBadge(overcastPct, tier) {
@@ -512,6 +507,29 @@
     return items;
   }
 
+  function triggerAmpPulse() {
+    if (typeof document === 'undefined') return;
+    if (uiState.ampPulseTimer) {
+      clearTimeout(uiState.ampPulseTimer);
+      uiState.ampPulseTimer = 0;
+    }
+    const targets = [
+      document.getElementById('cb-pw-amp'),
+      document.getElementById('cb-pw-amp-mini'),
+    ].filter(Boolean);
+    targets.forEach(el => {
+      el.classList.remove('is-amp-pulse');
+      void el.offsetWidth;
+      el.classList.add('is-amp-pulse');
+    });
+    uiState.ampPulseTimer = setTimeout(() => {
+      uiState.ampPulseTimer = 0;
+      targets.forEach(el => {
+        if (el && el.isConnected) el.classList.remove('is-amp-pulse');
+      });
+    }, 360);
+  }
+
   function applyAmpPct(pct) {
     const info = readOvercastInfo();
     if (!info.enabled) return false;
@@ -521,6 +539,7 @@
     val = Math.max(0, Math.min(info.maxAmpCap, val));
     val = Math.round(val * 100) / 100;
 
+    const targetInt = Math.round(val * 100);
     if (global.CombatEngine && typeof global.CombatEngine.setOvercastPct === 'function') {
       global.CombatEngine.setOvercastPct(val);
     } else if (global.CombatEngine && typeof global.CombatEngine.setAmpPct === 'function') {
@@ -528,6 +547,9 @@
     } else if (global.CombatEngine && typeof global.CombatEngine.setOvercast === 'function') {
       const nextMode = val >= 0.58 ? 3 : val >= 0.38 ? 2 : val >= 0.18 ? 1 : 0;
       global.CombatEngine.setOvercast(nextMode);
+    }
+    if (!uiState.syncing && uiState.lastAmpPct !== targetInt) {
+      sync();
     }
     return true;
   }
@@ -545,22 +567,58 @@
     if (!info.enabled || !info.allowedTiers.length) return false;
     const tiers = info.allowedTiers.map(t => t.pct);
     const cur = info.overcastPct;
-    let nextVal = tiers[0];
+
+    if (step > 0) {
+      // 1:1 标杆左键/E 原地升档：0% → 20% → 40% → 60% → 0%（按 maxAmpCap 动态封顶循环）
+      const higher = tiers.find(v => v > cur + 0.005);
+      const nextVal = higher != null ? higher : tiers[0];
+      return applyAmpPct(nextVal);
+    }
+
+    // 1:1 标杆右键/Shift+E 原地降档：60% → 40% → 20% → 0%（已在 0% 时静默止步）
+    let lower = null;
+    for (let i = tiers.length - 1; i >= 0; i--) {
+      if (tiers[i] < cur - 0.005) {
+        lower = tiers[i];
+        break;
+      }
+    }
+    const nextVal = lower != null ? lower : tiers[0];
+    if (Math.abs(nextVal - cur) <= 1e-4) return false;
+    return applyAmpPct(nextVal);
+  }
+
+  function stepAmpByWheel(delta) {
+    const step = delta < 0 ? -1 : 1;
+    const info = readOvercastInfo();
+    if (!info.enabled || !info.allowedTiers.length) return false;
+    const tiers = info.allowedTiers.map(t => t.pct);
+    const cur = info.overcastPct;
 
     if (step > 0) {
       const higher = tiers.find(v => v > cur + 0.005);
-      nextVal = higher != null ? higher : tiers[0];
-    } else {
-      let lower = null;
-      for (let i = tiers.length - 1; i >= 0; i--) {
-        if (tiers[i] < cur - 0.005) {
-          lower = tiers[i];
-          break;
-        }
-      }
-      nextVal = lower != null ? lower : tiers[tiers.length - 1];
+      if (higher == null) return false;
+      return applyAmpPct(higher);
     }
-    return applyAmpPct(nextVal);
+    let lower = null;
+    for (let i = tiers.length - 1; i >= 0; i--) {
+      if (tiers[i] < cur - 0.005) {
+        lower = tiers[i];
+        break;
+      }
+    }
+    if (lower == null) return false;
+    return applyAmpPct(lower);
+  }
+
+  function onAmpWheel(ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (!ev.deltaY) return;
+    const now = Date.now();
+    if (now - uiState.lastAmpWheelAt < 90) return;
+    uiState.lastAmpWheelAt = now;
+    stepAmpByWheel(ev.deltaY < 0 ? 1 : -1);
   }
 
   function resolveLiveSourceBtn(item) {
@@ -585,16 +643,25 @@
     return item.sourceBtn || null;
   }
 
-  function dispatchRealHover(btn, isEnter) {
-    if (!btn) return;
+  function syncSkillHoverPreview(btn, isEnter, skillId) {
+    // 静音同步引擎推演条与敌方血条预扣：使用 onfocus/onblur 避免触发旧 .cb-skill-card.onmouseenter 重复播音，
+    // .cb-blade 悬停音效统一由 sfx-suite.js 接管。
     try {
-      const evName = isEnter ? 'mouseenter' : 'mouseleave';
-      if (isEnter && typeof btn.onmouseenter === 'function') {
-        btn.onmouseenter(new MouseEvent(evName));
-      } else if (!isEnter && typeof btn.onmouseleave === 'function') {
-        btn.onmouseleave(new MouseEvent(evName));
+      if (isEnter) {
+        if (btn && typeof btn.onfocus === 'function') {
+          btn.onfocus();
+          return;
+        }
+        if (skillId && global.CombatEngine && typeof global.CombatEngine.syncHoverEnemyGlow === 'function') {
+          global.CombatEngine.syncHoverEnemyGlow(skillId);
+        }
       } else {
-        btn.dispatchEvent(new MouseEvent(evName, { bubbles: false }));
+        if (btn && typeof btn.onblur === 'function') {
+          btn.onblur();
+        }
+        if (global.CombatEngine && typeof global.CombatEngine.syncHoverEnemyGlow === 'function') {
+          global.CombatEngine.syncHoverEnemyGlow(null);
+        }
       }
     } catch (e) {}
   }
@@ -602,13 +669,10 @@
   function clearRealHover() {
     const cards = readSkillCards();
     if (cards.length && cards[0].sourceBtn) {
-      dispatchRealHover(cards[0].sourceBtn, false);
+      syncSkillHoverPreview(cards[0].sourceBtn, false, null);
+    } else {
+      syncSkillHoverPreview(null, false, null);
     }
-    try {
-      if (global.CombatEngine && typeof global.CombatEngine.syncHoverEnemyGlow === 'function') {
-        global.CombatEngine.syncHoverEnemyGlow(null);
-      }
-    } catch (e) {}
   }
 
   function triggerSourceButton(item) {
@@ -616,7 +680,6 @@
     if (!item || !liveBtn || liveBtn.disabled) return false;
     uiState.hoveredBladeIdx = null;
     uiState.hoveredWingIdx = null;
-    uiState.hoveredAmpIdx = null;
     uiState.menuMode = 'root';
     uiState.lastBladeSig = '';
     if (uiState.dissolveTimer) {
@@ -637,18 +700,18 @@
   }
 
   function setMode(nextMode) {
-    const valid = nextMode === 'skills' || nextMode === 'amp' || nextMode === 'guard' || nextMode === 'assist'
+    if (nextMode === 'amp') {
+      cycleAmp(1);
+      return;
+    }
+    const valid = nextMode === 'skills' || nextMode === 'guard' || nextMode === 'assist'
       ? nextMode
       : 'root';
     if (uiState.menuMode !== valid) {
-      if (uiState.menuMode === 'amp' && uiState.ampSliderEl && typeof document !== 'undefined' && document.activeElement === uiState.ampSliderEl) {
-        uiState.ampSliderEl.blur();
-      }
       clearRealHover();
       uiState.menuMode = valid;
       uiState.hoveredWingIdx = null;
       uiState.hoveredBladeIdx = null;
-      uiState.hoveredAmpIdx = null;
       uiState.lastBladeSig = '';
       safeSfx('ui_tick');
     }
@@ -656,12 +719,7 @@
   }
 
   function openSkills() { setMode('skills'); }
-  function openAmp() {
-    const info = readOvercastInfo();
-    if (!info.enabled) return false;
-    setMode('amp');
-    return true;
-  }
+  function openAmp() { return cycleAmp(1); }
   function openGuard() {
     const guards = readSkillCards().filter(c => c.isGuard && !c.disabled);
     if (guards.length === 1) {
@@ -690,7 +748,8 @@
   function resolveBladeVerticalBounds(absLeft, absRight, fieldH) {
     let safeTop = 8;
     let safeBot = Math.max(140, fieldH - 12);
-    if (uiState.compactMulti) {
+    const overlapsEnemyZone = uiState.enemyLeftX > 0 && absRight > uiState.enemyLeftX - 6;
+    if (uiState.compactMulti && (!uiState.hasMidCorridor || overlapsEnemyZone)) {
       safeTop = Math.max(safeTop, (uiState.skyTopY || 0) + 8);
       if (uiState.skyBotY > safeTop + 120) {
         safeBot = Math.min(safeBot, uiState.skyBotY - 8);
@@ -725,33 +784,92 @@
     const safeCount = Math.max(1, count);
     const fieldW = Math.max(640, uiState.lastFieldW || 1200);
     const fieldH = Math.max(360, uiState.lastFieldH || 560);
-    const anchorX = Math.max(120, uiState.lastAnchorX || 260);
-    const anchorY = Math.max(120, uiState.lastAnchorY || Math.round(fieldH * 0.44));
+    const anchorX = Math.max(110, uiState.lastAnchorX || 260);
+    const anchorY = Math.max(110, uiState.lastAnchorY || Math.round(fieldH * 0.45));
     const viewportW = uiState.viewportW || (typeof window !== 'undefined' ? window.innerWidth : 1440);
     const viewportH = uiState.viewportH || (typeof window !== 'undefined' ? window.innerHeight : 900);
     const isTightDesktop = viewportH <= 760 || viewportW <= 1320 || !!uiState.narrowDesktop || !!uiState.shortViewport;
-    const compact = safeCount >= 8 || isTightDesktop;
+    const compact = safeCount >= 7 || isTightDesktop || !!uiState.compactMulti;
     const isCompactSpine = !!(isTightDesktop || (uiState.compactMulti && uiState.narrowDesktop));
     const spineH = isCompactSpine ? 26 : 30;
-    const spineGap = isCompactSpine ? 6 : 10;
-    const minLeftFromPortrait = Math.max(20, (uiState.portraitRight - anchorX) + 12);
+    const spineGap = isCompactSpine ? 6 : 8;
 
-    // 凡技能 >= 7（或在矮/窄桌面 <=760h / <=1320w 或多敌时 >= 6），无论单敌还是多敌一律切双列天区紧凑排版，按真实障碍物夹紧上下包络
-    const twoCol = safeCount >= 7 || (isTightDesktop && safeCount >= 6) || (!!uiState.compactMulti && safeCount >= 6);
+    const allyRight = Math.max(120, uiState.portraitRight || 210);
+    const enemyLeft = uiState.enemyLeftX > 0
+      ? uiState.enemyLeftX
+      : (uiState.hasMidCorridor && uiState.corridorRight > 0 ? uiState.corridorRight : fieldW - 14);
+    const freeLeftAbs = Math.max(uiState.hasMidCorridor ? uiState.corridorLeft : 0, allyRight + 10);
+    const freeRightAbs = Math.min(fieldW - 12, enemyLeft - 12);
+    const freeWidth = Math.max(0, freeRightAbs - freeLeftAbs);
+    const minLeftFromAlly = Math.max(14, freeLeftAbs - anchorX);
+
+    // 1. 预评估中场空区单列几何：在三列 6+6 舞台下，中场走廊纵贯全场，单列可无遮挡容纳 1–12 项术式
+    const naturalSingleW = (isTightDesktop || uiState.compactMulti) ? 288 : 326;
+    const singleW = freeWidth >= 232
+      ? Math.max(224, Math.min(naturalSingleW, freeWidth - 14))
+      : naturalSingleW;
+    const singleForceW = singleW < naturalSingleW;
+    let singleMinLeft = minLeftFromAlly;
+    if (uiState.allyPaneRight > 0 && anchorX + singleMinLeft < uiState.allyPaneRight + 6) {
+      const paneClearLeft = (uiState.allyPaneRight + 8) - anchorX;
+      if (anchorX + paneClearLeft + singleW <= freeRightAbs) {
+        singleMinLeft = Math.max(singleMinLeft, Math.round(paneClearLeft));
+      }
+    }
+    const singleMaxLeft = (freeRightAbs - anchorX) - singleW;
+    const singleSlack = Math.max(0, singleMaxLeft - singleMinLeft);
+    const singleArcX = Math.max(0, Math.min(uiState.compactMulti || isTightDesktop ? 10 : 18, Math.floor(singleSlack * 0.45)));
+    let singleBaseX = uiState.hasMidCorridor
+      ? Math.round(Math.max(singleMinLeft, Math.min(singleMaxLeft - singleArcX, uiState.compactMulti ? 26 : 42)))
+      : (uiState.compactMulti ? Math.max(30, singleMinLeft) : Math.max(52, singleMinLeft));
+    if (uiState.hasMidCorridor && singleMaxLeft < singleMinLeft) {
+      singleBaseX = Math.round(singleMinLeft);
+    }
+    const singleBounds = resolveBladeVerticalBounds(
+      anchorX + singleBaseX,
+      anchorX + singleBaseX + singleW + singleArcX,
+      fieldH
+    );
+    const singleMinTopOff = (singleBounds.safeTop + spineH + spineGap) - anchorY;
+    const singleMaxBotOff = singleBounds.safeBot - anchorY;
+    const singleAvailSpan = Math.max(120, singleMaxBotOff - singleMinTopOff);
+    const minSingleH = isTightDesktop ? 32 : 34;
+    const minSingleGap = safeCount >= 10 ? 2 : 3;
+    const singleNeededH = safeCount * minSingleH + Math.max(0, safeCount - 1) * minSingleGap;
+    const singleFitsCorridor = uiState.hasMidCorridor && freeWidth >= 224 && singleAvailSpan >= singleNeededH;
+
+    // 2. 双列触发判定：
+    //    - 中场走廊极宽（单敌远置等）足以零遮挡容纳双列且技能 >= 7 时，切双列；
+    //    - 若中场走廊单列能完整无遮挡容纳（含 6–12 技能），优先走中场单列彻底零压敌卡；
+    //    - 若无中场走廊或窗口极矮单列放不下，退回避障双列天区排版。
+    const twoColBladeW = isTightDesktop ? 262 : 286;
+    const twoColIdealGap = isTightDesktop ? 12 : 16;
+    const twoColFitsCorridor = safeCount >= 7 && freeWidth >= (twoColBladeW * 2 + twoColIdealGap + 12);
+    const needTwoColFallback = !singleFitsCorridor && (
+      safeCount >= 7 || (isTightDesktop && safeCount >= 6) || (!!uiState.compactMulti && safeCount >= 6)
+    );
+    const twoCol = twoColFitsCorridor || needTwoColFallback;
+
     if (twoCol) {
       const col1Count = Math.ceil(safeCount / 2);
       const col2Count = safeCount - col1Count;
-      const bladeW = isTightDesktop ? 266 : 292;
-      let colGap = isTightDesktop ? 14 : 20;
-      let col1Left = minLeftFromPortrait;
+      let bladeW = twoColBladeW;
+      let colGap = twoColIdealGap;
+      let col1Left = minLeftFromAlly;
+      if (twoColFitsCorridor && uiState.allyPaneRight > 0 && anchorX + col1Left < uiState.allyPaneRight + 6) {
+        const paneClearLeft = (uiState.allyPaneRight + 8) - anchorX;
+        if (anchorX + paneClearLeft + bladeW * 2 + colGap <= freeRightAbs) {
+          col1Left = Math.max(col1Left, Math.round(paneClearLeft));
+        }
+      }
       let col2Left = col1Left + bladeW + colGap;
 
-      // 单敌/双敌若双列右侧逼近敌卡，优先温和收拢列距并左贴希尔维亚立绘右沿，避免与敌卡水平撞车
-      if (!uiState.compactMulti && uiState.enemyLeftX > 0) {
+      // 优先贴紧中场/友方右侧，严格避免双列右沿跨入敌方卡片区
+      if (uiState.enemyLeftX > 0) {
         const enemyLimitInRig = (uiState.enemyLeftX - 10) - anchorX;
         if (col2Left + bladeW > enemyLimitInRig) {
           colGap = isTightDesktop ? 10 : 12;
-          const tightLeft = Math.max(12, (uiState.portraitRight - anchorX) + 6);
+          const tightLeft = Math.max(12, (allyRight - anchorX) + 6);
           const neededShift = (col1Left + bladeW * 2 + colGap) - enemyLimitInRig;
           col1Left = Math.max(tightLeft, col1Left - Math.max(0, neededShift));
           col2Left = col1Left + bladeW + colGap;
@@ -813,7 +931,9 @@
           colIdx: inCol2 ? 1 : 0,
           showHairline: !inCol2,
           bladeH,
+          bladeW,
           forceHeight,
+          forceWidth: false,
           tipX: curveX + 4,
           tipY: topY + Math.round(bladeH * 0.5),
           elbowX: Math.round(curveX * 0.52),
@@ -829,18 +949,32 @@
       };
     }
 
-    // 少技能场景（<=5 式或宽大屏 <=6 式单敌）：延续经典弧形单列棱晶翼并动态夹紧可视边界
-    const baseX = uiState.compactMulti ? Math.max(30, minLeftFromPortrait) : Math.max(52, minLeftFromPortrait);
-    const singleW = isTightDesktop ? 320 : 352;
-    const { safeTop, safeBot } = resolveBladeVerticalBounds(anchorX + baseX, anchorX + baseX + singleW, fieldH);
-    const minTopOffset = (safeTop + spineH + spineGap) - anchorY;
-    const maxBotOffset = safeBot - anchorY;
-    const availSpan = Math.max(160, maxBotOffset - minTopOffset);
-    const defaultBladeH = compact ? (availSpan < 340 ? 38 : 42) : 48;
-    const fitBladeH = safeCount > 0 ? Math.floor((availSpan - Math.max(0, safeCount - 1) * 2) / safeCount) : defaultBladeH;
-    const bladeH = Math.max(32, Math.min(defaultBladeH, fitBladeH));
-    const forceHeight = bladeH < defaultBladeH;
-    const idealStep = safeCount <= 4 ? 64 : safeCount === 5 ? 56 : 50;
+    // 3. 单列中场棱晶翼（覆盖少技能经典弧线与 6–12 技能中场空区纵向展开，严格不压友方前排与敌方卡片）
+    const { safeTop, safeBot } = singleBounds;
+    const minTopOffset = singleMinTopOff;
+    const maxBotOffset = singleMaxBotOff;
+    const availSpan = singleAvailSpan;
+    let defaultBladeH;
+    let idealStep;
+    if (safeCount <= 4) {
+      defaultBladeH = compact ? 42 : 48;
+      idealStep = compact ? 54 : 62;
+    } else if (safeCount === 5) {
+      defaultBladeH = compact ? 42 : 46;
+      idealStep = compact ? 50 : 54;
+    } else if (safeCount === 6) {
+      defaultBladeH = isTightDesktop ? 40 : 44;
+      idealStep = isTightDesktop ? 46 : 50;
+    } else if (safeCount <= 8) {
+      defaultBladeH = isTightDesktop ? 38 : 42;
+      idealStep = isTightDesktop ? 42 : 47;
+    } else {
+      defaultBladeH = isTightDesktop ? 36 : 40;
+      idealStep = isTightDesktop ? 39 : 44;
+    }
+    const fitBladeH = safeCount > 0 ? Math.floor((availSpan - Math.max(0, safeCount - 1) * minSingleGap) / safeCount) : defaultBladeH;
+    const bladeH = Math.max(30, Math.min(defaultBladeH, fitBladeH));
+    const forceHeight = bladeH < defaultBladeH || safeCount >= 7;
     const maxAllowedStep = safeCount > 1 ? Math.floor((availSpan - bladeH) / (safeCount - 1)) : idealStep;
     const stepY = safeCount > 1 ? Math.max(bladeH + 2, Math.min(idealStep, maxAllowedStep)) : idealStep;
 
@@ -849,13 +983,13 @@
     if (startY < minTopOffset) startY = minTopOffset;
     if (startY + totalH > maxBotOffset) startY = Math.max(minTopOffset, maxBotOffset - totalH);
 
-    const arcX = uiState.compactMulti ? 16 : 28;
-    const maxRot = compact ? 1.4 : 2.4;
+    const arcX = uiState.hasMidCorridor ? singleArcX : (uiState.compactMulti ? 16 : 28);
+    const maxRot = safeCount >= 9 ? 0.9 : (compact ? 1.4 : 2.2);
 
     const coords = [];
     for (let i = 0; i < safeCount; i++) {
       const frac = safeCount === 1 ? 0.5 : i / (safeCount - 1);
-      const curveX = Math.round(baseX + Math.sin(frac * Math.PI) * arcX);
+      const curveX = Math.round(singleBaseX + Math.sin(frac * Math.PI) * arcX);
       const topY = Math.round(startY + i * stepY);
       const rot = Number((-maxRot + frac * (maxRot * 2)).toFixed(2));
       coords.push({
@@ -867,75 +1001,25 @@
         colIdx: 0,
         showHairline: true,
         bladeH,
+        bladeW: singleW,
         forceHeight,
+        forceWidth: singleForceW,
         tipX: curveX + 4,
         tipY: topY + Math.round(bladeH * 0.5),
         elbowX: Math.round(curveX * 0.54),
         elbowY: Math.round((topY + Math.round(bladeH * 0.5)) * 0.65),
       });
     }
+    const maxSpineLeft = uiState.hasMidCorridor
+      ? Math.max(singleMinLeft - 4, (freeRightAbs - anchorX) - Math.min(singleW, 250))
+      : singleBaseX - 8;
+    const spineLeft = Math.round(Math.max(singleMinLeft - 6, Math.min(singleBaseX - 4, maxSpineLeft)));
     return {
       coords,
       spineTop: Math.max(safeTop - anchorY, startY - (spineH + spineGap)),
-      spineLeft: baseX - 8,
+      spineLeft,
       bladeH,
       twoCol: false,
-    };
-  }
-
-  function computeAmpPanelGeometry() {
-    const fieldH = Math.max(360, uiState.lastFieldH || 560);
-    const anchorX = Math.max(120, uiState.lastAnchorX || 260);
-    const anchorY = Math.max(120, uiState.lastAnchorY || Math.round(fieldH * 0.44));
-    const compact = !!(uiState.compactMulti || uiState.narrowDesktop || uiState.shortViewport);
-    const isNarrowMulti = !!(uiState.compactMulti && uiState.narrowDesktop);
-    const spineH = (isNarrowMulti || uiState.shortViewport) ? 26 : 30;
-    const spineGap = (isNarrowMulti || uiState.shortViewport) ? 6 : 10;
-
-    const tierCount = V22_AMP_TIERS.length;
-    const tierH = isNarrowMulti ? 34 : (compact ? 38 : 44);
-    const fineH = isNarrowMulti ? 74 : (compact ? 82 : 92);
-    const panelH = tierH * tierCount + fineH;
-    const minLeftFromPortrait = Math.max(28, (uiState.portraitRight - anchorX) + 12);
-    const panelLeft = uiState.compactMulti ? minLeftFromPortrait : Math.max(56, minLeftFromPortrait);
-    const panelW = compact ? 336 : 368;
-    const { safeTop, safeBot } = resolveBladeVerticalBounds(anchorX + panelLeft, anchorX + panelLeft + panelW, fieldH);
-
-    const minTopOffset = (safeTop + spineH + spineGap) - anchorY;
-    const maxBotOffset = safeBot - anchorY;
-    let panelTop = (uiState.compactMulti || uiState.shortViewport)
-      ? Math.round(minTopOffset + Math.max(0, (maxBotOffset - minTopOffset - panelH) * 0.35))
-      : -Math.round(panelH * 0.48);
-    if (panelTop < minTopOffset) panelTop = minTopOffset;
-    if (panelTop + panelH > maxBotOffset) panelTop = Math.max(minTopOffset, maxBotOffset - panelH);
-
-    const targets = [];
-    for (let i = 0; i < tierCount; i++) {
-      const midY = Math.round(panelTop + tierH * (i + 0.5));
-      targets.push({
-        tipX: panelLeft + 3,
-        tipY: midY,
-        elbowX: Math.round(panelLeft * 0.54),
-        elbowY: Math.round(midY * 0.66),
-        hero: i === 1 || i === 3,
-      });
-    }
-    const fineMidY = Math.round(panelTop + tierH * tierCount + fineH * 0.46);
-    targets.push({
-      tipX: panelLeft + 3,
-      tipY: fineMidY,
-      elbowX: Math.round(panelLeft * 0.54),
-      elbowY: Math.round(fineMidY * 0.66),
-      hero: false,
-    });
-
-    return {
-      panelLeft,
-      panelTop,
-      panelH,
-      spineTop: Math.max(safeTop - anchorY, panelTop - (spineH + spineGap)),
-      spineLeft: panelLeft,
-      targets,
     };
   }
 
@@ -983,102 +1067,199 @@
     uiState.viewportW = viewportW;
     uiState.viewportH = viewportH;
     uiState.shortViewport = isShortViewport;
-    uiState.compactMulti = isMulti;
     uiState.narrowDesktop = isNarrowDesktop;
-    uiState.rigEl.classList.toggle('compact-multi', isMulti);
-    uiState.rigEl.classList.toggle('narrow-desktop', isNarrowDesktop);
 
-    // 实时测算战场中真实遮挡边界（上方敌人意图栏底沿、下方敌方立绘/信息卡与我方面板顶沿、左侧立绘右沿）
+    // 实时测算 6+6 战场全部真实避障边界：
+    //   - 敌方：#cb-enemy-zone .cb-enemy-card、.cb-intent-banner、.cb-px-actor、.cb-e-plate
+    //   - 友方：#cb-ally-vanguard-slot .cb-px-actor、#cb-p-portrait .cb-px-actor、#cb-ally-formation .cb-px-actor
+    //   - 底部面板：#cb-player-pane 与 .cb-ally-pane
+    //   - 中场留空走廊：#cb-mid-corridor
     let intentMaxBottom = 0;
     let enemyMinTop = fRect.height;
     let enemyMinLeft = fRect.width;
+    let allyActorRight = 0;
+    let hasVanguardActor = false;
+    let paneTop = fRect.height;
+    let allyPaneRight = 0;
     const obstacles = [];
+    const seenObstacleEls = new Set();
+
+    const pushObstacle = (el, kind, role) => {
+      if (!el || seenObstacleEls.has(el) || !isVisible(el)) return null;
+      const r = el.getBoundingClientRect();
+      if (r.width <= 12 || r.height <= 4) return null;
+      seenObstacleEls.add(el);
+      const box = {
+        kind,
+        role: role || '',
+        left: r.left - fRect.left,
+        top: r.top - fRect.top,
+        right: r.right - fRect.left,
+        bottom: r.bottom - fRect.top,
+      };
+      obstacles.push(box);
+      return box;
+    };
+
     if (eZone) {
       eZone.querySelectorAll('.cb-enemy-card').forEach(card => {
-        const cr = card.getBoundingClientRect();
-        if (cr.width > 12 && cr.height > 12) {
-          enemyMinLeft = Math.min(enemyMinLeft, cr.left - fRect.left);
+        const box = pushObstacle(card, 'enemy-card', 'enemy');
+        if (box) {
+          enemyMinLeft = Math.min(enemyMinLeft, box.left);
         }
       });
       eZone.querySelectorAll('.cb-intent-banner').forEach(el => {
-        const r = el.getBoundingClientRect();
-        if (r.height > 4) {
-          const bottom = r.bottom - fRect.top;
-          intentMaxBottom = Math.max(intentMaxBottom, bottom);
-          obstacles.push({
-            kind: 'intent',
-            left: r.left - fRect.left,
-            top: r.top - fRect.top,
-            right: r.right - fRect.left,
-            bottom,
-          });
+        const box = pushObstacle(el, 'intent', 'enemy-intent');
+        if (box) {
+          intentMaxBottom = Math.max(intentMaxBottom, box.bottom);
         }
       });
       eZone.querySelectorAll('.cb-px-actor, .cb-e-plate').forEach(el => {
         const r = el.getBoundingClientRect();
         if (r.height > 12) {
-          const top = r.top - fRect.top;
-          enemyMinTop = Math.min(enemyMinTop, top);
-          obstacles.push({
-            kind: 'lower',
-            left: r.left - fRect.left,
-            top,
-            right: r.right - fRect.left,
-            bottom: r.bottom - fRect.top,
-          });
+          const box = pushObstacle(el, 'lower', 'enemy-lower');
+          if (box) {
+            enemyMinTop = Math.min(enemyMinTop, box.top);
+          }
         }
       });
     }
-    const playerPane = document.getElementById('cb-player-pane');
-    let paneTop = fRect.height;
-    if (playerPane) {
-      const pr = playerPane.getBoundingClientRect();
-      if (pr.height > 12) {
-        paneTop = pr.top - fRect.top;
-        obstacles.push({
-          kind: 'lower',
-          left: pr.left - fRect.left,
-          top: paneTop,
-          right: pr.right - fRect.left,
-          bottom: pr.bottom - fRect.top,
-        });
+
+    // 友方前排（雷纳德 #cb-ally-vanguard-slot .cb-px-actor）与后排（希尔维亚及 6 槽编队骨骼）
+    playerStage.querySelectorAll('#cb-ally-vanguard-slot .cb-px-actor').forEach(el => {
+      const box = pushObstacle(el, 'ally', 'vanguard');
+      if (box) {
+        hasVanguardActor = true;
+        allyActorRight = Math.max(allyActorRight, box.right);
+      }
+    });
+    const sylviaActor = playerStage.querySelector('#cb-p-portrait .cb-px-actor') || document.getElementById('cb-p-portrait');
+    if (sylviaActor) {
+      const box = pushObstacle(sylviaActor, 'ally', 'sylvia');
+      if (box) allyActorRight = Math.max(allyActorRight, box.right);
+    }
+    playerStage.querySelectorAll('#cb-ally-formation .cb-px-actor').forEach(el => {
+      const box = pushObstacle(el, 'ally', 'ally-formation');
+      if (box) allyActorRight = Math.max(allyActorRight, box.right);
+    });
+
+    // 底部状态面板（希尔维亚 #cb-player-pane 与同伴 .cb-ally-pane）
+    field.querySelectorAll('#cb-player-pane, .cb-ally-pane').forEach(el => {
+      const r = el.getBoundingClientRect();
+      if (r.height > 12) {
+        const box = pushObstacle(el, 'lower', el.id === 'cb-player-pane' ? 'player-pane' : 'ally-pane');
+        if (box) {
+          paneTop = Math.min(paneTop, box.top);
+          allyPaneRight = Math.max(allyPaneRight, box.right);
+        }
+      }
+    });
+
+    // 中场留空走廊测量（三列经典舞台；若 #cb-mid-corridor 尚未挂载亦自动识别列1与列3间真实空隙）
+    let hasMidCorridor = false;
+    let corridorLeft = 0;
+    let corridorRight = 0;
+    let corridorW = 0;
+    const midCorridor = document.getElementById('cb-mid-corridor') || field.querySelector('.cb-mid-corridor');
+    if (midCorridor && isVisible(midCorridor)) {
+      const mr = midCorridor.getBoundingClientRect();
+      if (mr.width > 40) {
+        hasMidCorridor = true;
+        corridorLeft = Math.round(mr.left - fRect.left);
+        corridorRight = Math.round(mr.right - fRect.left);
+        corridorW = Math.round(mr.width);
       }
     }
-    const pActor = document.querySelector('#cb-p-portrait .cb-px-actor') || document.getElementById('cb-p-portrait');
-    const portraitRight = pActor && pActor.getBoundingClientRect().width > 12
-      ? Math.round(pActor.getBoundingClientRect().right - fRect.left)
+    if (!hasMidCorridor && eZone) {
+      const eRect = eZone.getBoundingClientRect();
+      const impliedLeft = Math.round(pRect.right - fRect.left);
+      const impliedRight = Math.round(eRect.left - fRect.left);
+      const impliedW = impliedRight - impliedLeft;
+      if (eRect.width > 40 && impliedW >= 160) {
+        hasMidCorridor = true;
+        corridorLeft = impliedLeft;
+        corridorRight = impliedRight;
+        corridorW = impliedW;
+      }
+    }
+
+    const portraitRight = allyActorRight > 12
+      ? Math.round(allyActorRight)
       : Math.round(pRect.right - fRect.left - 80);
+    const allyRightBound = Math.max(120, portraitRight);
+    const enemyLeftBound = enemyMinLeft < fRect.width
+      ? Math.round(enemyMinLeft)
+      : (hasMidCorridor ? corridorRight : Math.round(fRect.width * 0.68));
+    const openStart = hasMidCorridor ? Math.max(allyRightBound + 8, corridorLeft) : (allyRightBound + 8);
+    const openSpan = Math.max(0, enemyLeftBound - openStart);
+    const compactRig = hasMidCorridor
+      ? (openSpan < 400 || isNarrowDesktop)
+      : (isMulti || (hasVanguardActor && openSpan < 400));
+
+    uiState.compactMulti = compactRig;
+    uiState.rigEl.classList.toggle('compact-multi', compactRig);
+    uiState.rigEl.classList.toggle('narrow-desktop', isNarrowDesktop);
 
     uiState.lastFieldW = Math.round(fRect.width);
     uiState.lastFieldH = Math.round(fRect.height);
     uiState.skyTopY = Math.max(0, Math.round(intentMaxBottom));
     uiState.skyBotY = Math.max(uiState.skyTopY + 140, Math.round(Math.min(enemyMinTop, paneTop)));
-    uiState.portraitRight = Math.max(120, portraitRight);
+    uiState.portraitRight = allyRightBound;
+    uiState.allyPaneRight = Math.round(allyPaneRight);
     uiState.enemyLeftX = enemyMinLeft < fRect.width ? Math.round(enemyMinLeft) : 0;
+    uiState.hasMidCorridor = hasMidCorridor;
+    uiState.corridorLeft = corridorLeft;
+    uiState.corridorRight = corridorRight;
+    uiState.corridorW = corridorW;
+    uiState.hasVanguardActor = hasVanguardActor;
     uiState.obstacles = obstacles;
 
-    const stageRight = pRect.right - fRect.left;
     let anchorX;
     let anchorY;
-    if (isMulti) {
-      const pullLeft = isNarrowDesktop ? 106 : 82;
-      const minX = isNarrowDesktop ? 152 : 176;
-      anchorX = Math.round(Math.min(fRect.width * 0.24, Math.max(minX, stageRight - pullLeft)));
-      const skyMid = Math.round((uiState.skyTopY + uiState.skyBotY) * 0.52);
-      if (isNarrowDesktop) {
-        const minAy = Math.min(180, Math.round(fRect.height * 0.34));
-        const maxAy = Math.max(minAy, Math.round(fRect.height - 220));
-        anchorY = Math.round(Math.max(minAy, Math.min(maxAy, skyMid)));
+    if (hasMidCorridor) {
+      // 优雅锚定在中场空区 #cb-mid-corridor 偏左：紧邻我方前排右侧，零遮挡友方骨骼与敌方卡片
+      const wingMinLeft = compactRig ? 24 : 46;
+      const wingMaxRight = compactRig ? (isNarrowDesktop ? 260 : 272) : 352;
+      const preferredAnchor = Math.max(corridorLeft + (compactRig ? 8 : 12), allyRightBound + 12);
+      const minAnchorX = Math.max(110, allyRightBound - wingMinLeft + 10);
+      const maxAnchorX = enemyLeftBound - wingMaxRight - 10;
+      if (maxAnchorX >= minAnchorX) {
+        anchorX = Math.round(Math.max(minAnchorX, Math.min(maxAnchorX, preferredAnchor)));
       } else {
-        const minAy = Math.min(200, Math.round(fRect.height * 0.38));
-        const maxAy = Math.max(minAy, Math.round(fRect.height - 190));
-        anchorY = Math.round(Math.max(minAy, Math.min(maxAy, skyMid)));
+        const midGapX = Math.round((allyRightBound + enemyLeftBound) * 0.5 - (wingMinLeft + wingMaxRight) * 0.5);
+        anchorX = Math.round(Math.max(110, Math.min(fRect.width - wingMaxRight - 8, midGapX)));
       }
+
+      const wingTopExtent = (compactRig && isNarrowDesktop) ? 104 : (compactRig ? 118 : 126);
+      const wingBotExtent = (compactRig && isNarrowDesktop) ? 132 : (compactRig ? 156 : 164);
+      const wingsOverlapAllyPane = allyPaneRight > 0 && (anchorX + wingMinLeft) < (allyPaneRight + 6);
+      const botLimit = wingsOverlapAllyPane ? Math.min(fRect.height - 10, paneTop - 8) : (fRect.height - 10);
+      const minAy = Math.min(wingTopExtent + 10, Math.round(fRect.height * 0.42));
+      const maxAy = Math.max(minAy, Math.round(botLimit - wingBotExtent));
+      const idealAy = Math.round(fRect.height * 0.45);
+      anchorY = Math.round(Math.max(minAy, Math.min(maxAy, idealAy)));
     } else {
-      anchorX = Math.round(Math.min(fRect.width * 0.34, Math.max(196, stageRight - 44)));
-      const minAy = Math.min(200, Math.round(fRect.height * 0.42));
-      const maxAy = Math.max(minAy, Math.round(fRect.height - 172));
-      anchorY = Math.round(Math.max(minAy, Math.min(maxAy, fRect.height * 0.44)));
+      const stageRight = pRect.right - fRect.left;
+      if (compactRig) {
+        const pullLeft = isNarrowDesktop ? 106 : 82;
+        const minX = isNarrowDesktop ? 152 : 176;
+        anchorX = Math.round(Math.min(fRect.width * 0.24, Math.max(minX, stageRight - pullLeft)));
+        const skyMid = Math.round((uiState.skyTopY + uiState.skyBotY) * 0.52);
+        if (isNarrowDesktop) {
+          const minAy = Math.min(180, Math.round(fRect.height * 0.34));
+          const maxAy = Math.max(minAy, Math.round(fRect.height - 220));
+          anchorY = Math.round(Math.max(minAy, Math.min(maxAy, skyMid)));
+        } else {
+          const minAy = Math.min(200, Math.round(fRect.height * 0.38));
+          const maxAy = Math.max(minAy, Math.round(fRect.height - 190));
+          anchorY = Math.round(Math.max(minAy, Math.min(maxAy, skyMid)));
+        }
+      } else {
+        anchorX = Math.round(Math.min(fRect.width * 0.34, Math.max(196, stageRight - 44)));
+        const minAy = Math.min(200, Math.round(fRect.height * 0.42));
+        const maxAy = Math.max(minAy, Math.round(fRect.height - 172));
+        anchorY = Math.round(Math.max(minAy, Math.min(maxAy, fRect.height * 0.44)));
+      }
     }
 
     uiState.lastAnchorX = anchorX;
@@ -1200,8 +1381,78 @@
       '.cb-bl-exp.is-safe{color:#0b6e76;background:rgba(15,139,146,0.11);border-left:2px solid #0f8b92;}',
       '.cb-blade:not(:disabled):hover .cb-bl-exp.is-warn,.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-exp.is-warn{color:#ffe082;background:rgba(255,209,128,0.22);border-left-color:#ffd180;}',
       '.cb-blade:not(:disabled):hover .cb-bl-exp.is-safe,.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-exp.is-safe{color:#c4f9ff;background:rgba(155,244,255,0.18);border-left-color:#9bf4ff;}',
+      /* Zero-specificity fallbacks for direct-press amp pips, tier themes (ice-cyan -> royal blue -> champagne gold), and pulse */
+      ':where(.cb-amp-meta){display:inline-flex;align-items:center;gap:6px;}',
+      ':where(.cb-amp-pips){display:inline-flex;align-items:center;gap:4px;vertical-align:middle;line-height:1;flex-shrink:0;}',
+      ':where(.cb-amp-pip){display:inline-block;width:8px;height:8px;background:rgba(22,88,235,0.20);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);transition:background 0.16s ease,transform 0.16s ease,filter 0.16s ease;}',
+      ':where(.cb-amp-pip.is-locked){opacity:0.32;}',
+      ':where(.cb-amp-pip.on,.cb-amp-pip.lit-t1){background:linear-gradient(135deg,#BAE6FD,#0EA5E9);transform:scale(1.16);filter:drop-shadow(0 0 3px rgba(56,189,248,0.68));}',
+      ':where(.cb-amp-pip.lit-t2){background:linear-gradient(135deg,#60A5FA,#1658EB);transform:scale(1.20);filter:drop-shadow(0 0 4px rgba(22,88,235,0.75));}',
+      ':where(.cb-amp-pip.gold,.cb-amp-pip.lit-t3){background:linear-gradient(135deg,#FFF3C4,#D4A94A);transform:scale(1.26);filter:drop-shadow(0 0 5px rgba(212,169,74,0.88));}',
+      ':where(.cb-amp-val){font-family:var(--pr-mono,monospace);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--pr-ink-mid,#223456);white-space:nowrap;}',
+      ':where(.cb-pwing.amp-t1){box-shadow:inset 0 0 0 1px rgba(56,189,248,0.52);}',
+      ':where(.cb-pwing.amp-t1)::after{background:linear-gradient(180deg,#BAE6FD 0%,#38BDF8 50%,#0284C7 100%);}',
+      ':where(.cb-pwing.amp-t1 .cb-amp-val,.cb-pwing.amp-t1 .cb-pw-en){color:#0284C7;}',
+      ':where(.cb-pwing.amp-t2){box-shadow:inset 0 0 0 1px rgba(22,88,235,0.56);}',
+      ':where(.cb-pwing.amp-t2)::after{background:linear-gradient(180deg,#93C5FD 0%,#1658EB 52%,#0E2B78 100%);}',
+      ':where(.cb-pwing.amp-t2 .cb-amp-val,.cb-pwing.amp-t2 .cb-pw-en){color:#1658EB;}',
+      ':where(.cb-pwing.amp-t3){box-shadow:inset 0 0 0 1px rgba(229,192,110,0.78);}',
+      ':where(.cb-pwing.amp-t3)::after{background:linear-gradient(180deg,#FFF1B8 0%,#E5C06E 48%,#B38A3E 100%);}',
+      ':where(.cb-pwing.amp-t3 .cb-amp-val,.cb-pwing.amp-t3 .cb-pw-en){color:#9A7228;}',
+      ':where(.cb-pwing:not(.hero-prism):not(:disabled):hover .cb-amp-pip){background:rgba(217,243,255,0.34);}',
+      ':where(.cb-pwing:not(.hero-prism):not(:disabled):hover .cb-amp-pip.lit-t1){background:linear-gradient(135deg,#E0F7FF,#38BDF8);}',
+      ':where(.cb-pwing:not(.hero-prism):not(:disabled):hover .cb-amp-pip.lit-t2){background:linear-gradient(135deg,#DBEAFE,#93C5FD);}',
+      ':where(.cb-pwing:not(.hero-prism):not(:disabled):hover .cb-amp-pip.lit-t3){background:linear-gradient(135deg,#FFF7D6,#E5C06E);}',
+      ':where(.cb-pwing:not(.hero-prism):not(:disabled):hover .cb-amp-val){color:rgba(232,245,255,0.96);}',
+      ':where(.cb-mini-key){display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;flex-shrink:0;background:rgba(22,88,235,0.14);color:var(--pr-sapphire,#1658eb);font-family:var(--pr-mono,monospace);font-size:10.5px;font-weight:800;clip-path:polygon(3px 0,100% 0,calc(100% - 3px) 100%,0 100%);}',
+      ':where(.cb-amp-pips-mini){gap:3px;}',
+      ':where(.cb-amp-pips-mini .cb-amp-pip){width:6.5px;height:6.5px;}',
+      ':where(.cb-amp-mini-val){font-variant-numeric:tabular-nums;white-space:nowrap;}',
+      ':where(.cb-spine-btn.amp-mini.amp-t1){background:linear-gradient(108deg,#7DD3FC 0%,#0EA5E9 52%,#0284C7 100%);color:#FFFFFF;}',
+      ':where(.cb-spine-btn.amp-mini.amp-t2){background:linear-gradient(108deg,#2E77F8 0%,#1658EB 52%,#0B256E 100%);color:#EEF6FF;}',
+      ':where(.cb-spine-btn.amp-mini.amp-t3){background:linear-gradient(112deg,#FFF3CE 0%,#E7C675 46%,#C9A04A 100%);color:#102044;}',
+      ':where(.cb-spine-btn.amp-mini.amp-t1 .cb-mini-key,.cb-spine-btn.amp-mini.amp-t2 .cb-mini-key,.cb-spine-btn.amp-mini:hover .cb-mini-key){background:rgba(255,255,255,0.24);color:#FFFFFF;}',
+      ':where(.cb-spine-btn.amp-mini.amp-t3 .cb-mini-key){background:rgba(16,32,68,0.14);color:#102044;}',
+      ':where(.cb-spine-btn.amp-mini.amp-t1 .cb-amp-pip,.cb-spine-btn.amp-mini.amp-t2 .cb-amp-pip,.cb-spine-btn.amp-mini:hover .cb-amp-pip){background:rgba(255,255,255,0.30);}',
+      ':where(.cb-spine-btn.amp-mini.amp-t1 .cb-amp-pip.on,.cb-spine-btn.amp-mini.amp-t2 .cb-amp-pip.on){background:#FFFFFF;filter:drop-shadow(0 0 3px rgba(255,255,255,0.85));}',
+      ':where(.cb-spine-btn.amp-mini.amp-t3 .cb-amp-pip.on){background:linear-gradient(135deg,#FFFFFF,#7C5310);filter:drop-shadow(0 0 3px rgba(255,248,220,0.90));}',
+      '@keyframes cbAmpPulse{0%{filter:brightness(1);transform:scale(1);}35%{filter:brightness(1.20) drop-shadow(0 0 10px rgba(56,189,248,0.62));transform:scale(1.032);}100%{filter:brightness(1);transform:scale(1);}}',
+      '@keyframes cbAmpPulseGold{0%{filter:brightness(1);transform:scale(1);}35%{filter:brightness(1.24) drop-shadow(0 0 14px rgba(229,192,110,0.85));transform:scale(1.04);}100%{filter:brightness(1);transform:scale(1);}}',
+      ':where(.is-amp-pulse){animation:cbAmpPulse 0.34s cubic-bezier(0.22,1,0.36,1);}',
+      ':where(.amp-t3.is-amp-pulse){animation:cbAmpPulseGold 0.36s cubic-bezier(0.22,1,0.36,1);}',
     ].join('');
     (document.head || document.documentElement).appendChild(style);
+  }
+
+  function renderAmpPipsHtml(ampInfo, isMini) {
+    const t = ampInfo && ampInfo.enabled ? ampInfo.tier : 0;
+    const maxCap = ampInfo ? ampInfo.maxAmpCap : MAX_AMP_PCT;
+    const pipThresholds = [0.20, 0.40, 0.60];
+    const pips = pipThresholds.map((thr, idx) => {
+      const lvl = idx + 1;
+      const locked = !ampInfo || !ampInfo.enabled || thr > maxCap + 1e-4;
+      let cls = 'cb-amp-pip';
+      if (locked) {
+        cls += ' is-locked';
+      } else if (lvl <= t) {
+        cls += ' on lit';
+        if (t >= 3) cls += ' gold lit-t3';
+        else if (t === 2) cls += ' lit-t2';
+        else cls += ' lit-t1';
+      }
+      return `<span class="${cls}"></span>`;
+    }).join('');
+    if (isMini) {
+      return `<span class="cb-amp-pips cb-amp-pips-mini" aria-hidden="true">${pips}</span>`;
+    }
+    return `<span class="cb-amp-pips" id="cb-pw-amp-pips" aria-hidden="true">${pips}</span>`;
+  }
+
+  function formatAmpValText(ampInfo) {
+    if (!ampInfo || !ampInfo.enabled) return '不可增幅';
+    if (ampInfo.pctInt <= 0) return '+0% · 0 MP';
+    const mpStr = ampInfo.extraMp > 0 ? `+${ampInfo.extraMp} MP` : '0 MP';
+    return `+${ampInfo.pctInt}% · ${mpStr}`;
   }
 
   function buildRigDOM(field) {
@@ -1216,25 +1467,6 @@
     nav.id = 'cb-prism-rig';
     nav.className = 'cb-prism-rig mode-root';
     nav.setAttribute('aria-label', '希尔维亚棱晶放射指令翼');
-
-    const tierBladesHtml = V22_AMP_TIERS.map(t => {
-      const tierCls = t.tier === 3 ? ' is-tier-3' : (t.tier === 2 ? ' is-tier-2' : '');
-      return `
-      <button type="button" class="cb-amp-tier-blade${tierCls}" data-amp-tier="${t.tier}" data-amp-pct="${t.pct}">
-        <span class="cb-atb-key">${t.key}</span>
-        <div class="cb-atb-body">
-          <div class="cb-atb-top">
-            <span class="cb-atb-title">${escapeHtml(t.name)}</span>
-            <span class="cb-atb-mult">${escapeHtml(t.multLabel)}</span>
-          </div>
-          <div class="cb-atb-bot">
-            <span class="cb-atb-meta">${escapeHtml(t.effect)}</span>
-            <span class="cb-atb-cost">+0 MP</span>
-          </div>
-        </div>
-      </button>
-    `;
-    }).join('');
 
     nav.innerHTML = `
       <svg class="cb-prism-svg" id="cb-prism-svg" viewBox="-42 -250 470 500" aria-hidden="true"></svg>
@@ -1254,16 +1486,15 @@
         </div>
 
         <div class="cb-pwing-wrap" data-wing="1">
-          <button type="button" class="cb-pwing cb-prism-wing" id="cb-pw-amp" title="展开三阶魔力增幅面板（快捷键 E；展开后再按 E 快速切档或 1/2/3/4 直选）">
+          <button type="button" class="cb-pwing cb-prism-wing amp-t0" id="cb-pw-amp" title="魔力增幅（左键 / E 原地升档 · 右键 / Shift+E 原地降档 · 滚轮微调）">
             <span class="cb-pw-key">E</span>
             <div class="cb-pw-body">
               <div class="cb-pw-top">
                 <span class="cb-pw-title">魔力增幅</span>
                 <span class="cb-pw-en" id="cb-pw-amp-en">1.00×</span>
               </div>
-              <span class="cb-pw-sub" id="cb-pw-amp-sub"><span class="cb-amp-crystals"><span class="cb-amp-crys"></span><span class="cb-amp-crys"></span><span class="cb-amp-crys"></span></span><span class="cb-amp-badge">常规</span></span>
+              <span class="cb-pw-sub cb-amp-meta" id="cb-pw-amp-sub"><span class="cb-amp-pips" id="cb-pw-amp-pips" aria-hidden="true"><span class="cb-amp-pip"></span><span class="cb-amp-pip"></span><span class="cb-amp-pip"></span></span><span class="cb-amp-val" id="cb-pw-amp-val">+0% · 0 MP</span></span>
             </div>
-            <span class="cb-pw-arrow">▸</span>
           </button>
         </div>
 
@@ -1298,39 +1529,10 @@
       <div class="cb-prism-cascade" id="cb-prism-cascade">
         <div class="cb-cascade-spine" id="cb-cascade-spine">
           <button type="button" class="cb-spine-btn" id="cb-pw-back">← 返回 [ESC]</button>
-          <button type="button" class="cb-spine-btn amp-mini" id="cb-pw-amp-mini" title="展开三阶魔力增幅或快速切档（快捷键 E）">✦ [E] 增幅 常规</button>
+          <button type="button" class="cb-spine-btn amp-mini amp-t0" id="cb-pw-amp-mini" title="原地调档（左键 / E 升档 · 右键 / Shift+E 降档 · 滚轮微调）"><span class="cb-mini-key">E</span> <span class="cb-amp-pips cb-amp-pips-mini" aria-hidden="true"><span class="cb-amp-pip"></span><span class="cb-amp-pip"></span><span class="cb-amp-pip"></span></span><span class="cb-amp-mini-val" id="cb-pw-amp-mini-val">增幅 +0%</span></button>
         </div>
         <div id="cb-prism-blade-list" class="cb-prism-blade-list"></div>
-        <div id="cb-prism-amp-panel" class="cb-prism-amp-panel" role="region" aria-label="三阶魔力增幅面板">
-          <div class="cb-amp-tiers" id="cb-amp-tiers">${tierBladesHtml}</div>
-          <div class="cb-amp-finetune" id="cb-amp-finetune">
-            <div class="cb-amp-ft-head">
-              <span class="cb-amp-ft-label">精细控魔 · 魔力微调</span>
-              <div class="cb-amp-ft-metrics">
-                <span class="cb-amp-ft-pct" id="cb-amp-ft-pct">0%</span>
-                <span class="cb-amp-ft-sep">·</span>
-                <span class="cb-amp-ft-mp" id="cb-amp-ft-mp">+0 MP</span>
-                <span class="cb-amp-ft-sep">·</span>
-                <span class="cb-amp-ft-mult" id="cb-amp-ft-mult">1.00×</span>
-              </div>
-            </div>
-            <div class="cb-amp-slider-wrap">
-              <div class="cb-amp-rail-marks" aria-hidden="true">
-                <span class="cb-amp-notch t1" id="cb-amp-notch-t1"></span>
-                <span class="cb-amp-notch t2" id="cb-amp-notch-t2"></span>
-                <span class="cb-amp-notch t3" id="cb-amp-notch-t3"></span>
-              </div>
-              <input type="range" id="cb-amp-slider" class="cb-amp-slider" min="0" max="60" step="1" value="0" aria-label="精细控魔增幅百分比" />
-              <div class="cb-amp-ticks" id="cb-amp-ticks">
-                <button type="button" class="cb-amp-tick" data-amp-snap="0">0%</button>
-                <button type="button" class="cb-amp-tick t1" data-amp-snap="20">20% ★</button>
-                <button type="button" class="cb-amp-tick t2" data-amp-snap="40">40% ★★</button>
-                <button type="button" class="cb-amp-tick t3" data-amp-snap="60">60% ★★★</button>
-              </div>
-            </div>
-            <div class="cb-amp-ft-note" id="cb-amp-ft-note">1% 步进 · 20%★ / 40%★★ / 60%★★★ 处 ±2% 磁吸吸附</div>
-          </div>
-        </div>
+        <div id="cb-prism-amp-panel" class="cb-prism-amp-panel hidden" hidden aria-hidden="true" style="display:none"></div>
       </div>
     `;
 
@@ -1339,8 +1541,6 @@
     uiState.svgEl = nav.querySelector('#cb-prism-svg');
     uiState.cascadeListEl = nav.querySelector('#cb-prism-blade-list');
     uiState.ampPanelEl = nav.querySelector('#cb-prism-amp-panel');
-    uiState.ampSliderEl = nav.querySelector('#cb-amp-slider');
-    uiState.ampTierBtns = Array.from(nav.querySelectorAll('.cb-amp-tier-blade'));
     uiState.spineEl = nav.querySelector('#cb-cascade-spine');
 
     nav.querySelectorAll('.cb-pwing-wrap').forEach(wrap => {
@@ -1355,229 +1555,24 @@
       });
     });
 
+    const ampWingBtn = nav.querySelector('#cb-pw-amp');
+    const ampMiniBtn = nav.querySelector('#cb-pw-amp-mini');
+
     nav.querySelector('#cb-pw-magic').addEventListener('click', () => openSkills());
-    nav.querySelector('#cb-pw-amp').addEventListener('click', () => openAmp());
-    nav.querySelector('#cb-pw-amp').addEventListener('contextmenu', ev => { ev.preventDefault(); ev.stopPropagation(); cycleAmp(-1); });
+    ampWingBtn.addEventListener('click', () => cycleAmp(1));
+    ampWingBtn.addEventListener('contextmenu', ev => { ev.preventDefault(); ev.stopPropagation(); cycleAmp(-1); });
+    ampWingBtn.addEventListener('wheel', onAmpWheel, { passive: false });
     nav.querySelector('#cb-pw-guard').addEventListener('click', () => openGuard());
     nav.querySelector('#cb-pw-assist').addEventListener('click', () => openAssist());
     nav.querySelector('#cb-pw-back').addEventListener('click', () => closeCascade());
-    nav.querySelector('#cb-pw-amp-mini').addEventListener('click', () => {
-      if (uiState.menuMode === 'amp') cycleAmp(1);
-      else openAmp();
-    });
-    nav.querySelector('#cb-pw-amp-mini').addEventListener('contextmenu', ev => { ev.preventDefault(); ev.stopPropagation(); cycleAmp(-1); });
-
-    // Bind persistent tier blade handlers ONCE (updated strictly in-place!)
-    uiState.ampTierBtns.forEach((btn, idx) => {
-      const pct = Number(btn.getAttribute('data-amp-pct')) || 0;
-      btn.addEventListener('mouseenter', () => {
-        uiState.hoveredAmpIdx = idx;
-        renderCurrentSvg();
-      });
-      btn.addEventListener('mouseleave', () => {
-        if (uiState.hoveredAmpIdx === idx) uiState.hoveredAmpIdx = null;
-        renderCurrentSvg();
-      });
-      btn.addEventListener('click', () => {
-        if (!btn.disabled) selectAmpTier(pct);
-      });
-    });
-
-    // Bind persistent slider tick shortcuts
-    nav.querySelectorAll('.cb-amp-tick').forEach(tickBtn => {
-      const snapVal = Number(tickBtn.getAttribute('data-amp-snap')) || 0;
-      tickBtn.addEventListener('click', () => {
-        if (!tickBtn.disabled) selectAmpTier(snapVal / 100);
-      });
-    });
-
-    // Bind persistent magnetic fine-tune slider (NEVER recreated during drag!)
-    const slider = uiState.ampSliderEl;
-    if (slider) {
-      const startDrag = () => {
-        uiState.sliderDragging = true;
-        uiState.lastSliderAppliedPct = -1;
-      };
-      slider.addEventListener('pointerdown', startDrag);
-      slider.addEventListener('mousedown', startDrag);
-      slider.addEventListener('keydown', ev => {
-        if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight' || ev.key === 'ArrowUp' || ev.key === 'ArrowDown') {
-          uiState.sliderKeyStep = true;
-        }
-      });
-      slider.addEventListener('input', () => {
-        const info = readOvercastInfo();
-        if (!info.enabled || info.maxPctInt <= 0) return;
-        const rawInt = Number(slider.value);
-        const finalInt = uiState.sliderKeyStep
-          ? Math.max(0, Math.min(info.maxPctInt, Math.round(rawInt)))
-          : snapAmpPctInt(rawInt, info.maxPctInt);
-        uiState.sliderKeyStep = false;
-        if (String(finalInt) !== slider.value) {
-          slider.value = String(finalInt);
-        }
-        const fillPct = Math.max(0, Math.min(100, (finalInt / MAX_AMP_INT) * 100));
-        slider.style.setProperty('--amp-fill', `${fillPct.toFixed(1)}%`);
-        if (finalInt !== uiState.lastSliderAppliedPct) {
-          uiState.lastSliderAppliedPct = finalInt;
-          applyAmpPct(finalInt / 100);
-        }
-      });
-      slider.addEventListener('change', () => {
-        uiState.sliderDragging = false;
-        uiState.lastSliderAppliedPct = -1;
-      });
-    }
+    ampMiniBtn.addEventListener('click', () => cycleAmp(1));
+    ampMiniBtn.addEventListener('contextmenu', ev => { ev.preventDefault(); ev.stopPropagation(); cycleAmp(-1); });
+    ampMiniBtn.addEventListener('wheel', onAmpWheel, { passive: false });
 
     return nav;
   }
 
-  function syncAmpPanel(ampInfo) {
-    if (!uiState.ampPanelEl) return;
-    const geom = computeAmpPanelGeometry();
-    uiState.ampPanelEl.style.left = `${geom.panelLeft}px`;
-    uiState.ampPanelEl.style.top = `${geom.panelTop}px`;
-    if (uiState.rigEl) uiState.rigEl.classList.remove('two-col-blades');
-    uiState.twoColBlades = false;
-    if (uiState.spineEl) {
-      uiState.spineEl.style.top = `${geom.spineTop}px`;
-      uiState.spineEl.style.left = `${geom.spineLeft}px`;
-    }
-
-    // Update 4 canonical 3-tier amp blades in-place
-    uiState.ampTierBtns.forEach((btn, i) => {
-      const t = V22_AMP_TIERS[i];
-      if (!t) return;
-      const isLocked = !ampInfo.enabled || t.pct > ampInfo.maxAmpCap + 1e-4;
-      const isActive = ampInfo.enabled && !isLocked && ampInfo.tier === t.tier;
-      const isExact = isActive && Math.abs(ampInfo.overcastPct - t.pct) <= 0.005;
-
-      btn.disabled = isLocked;
-      btn.classList.toggle('is-locked', isLocked);
-      btn.classList.toggle('active', isActive);
-      btn.classList.toggle('is-finetuned', isActive && !isExact);
-      btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-
-      const multEl = btn.querySelector('.cb-atb-mult');
-      const costEl = btn.querySelector('.cb-atb-cost');
-      if (multEl) {
-        const liveTierMult = Array.isArray(ampInfo.ampTierMults) && typeof ampInfo.ampTierMults[t.tier] === 'number'
-          ? `${ampInfo.ampTierMults[t.tier].toFixed(2)}×`
-          : t.multLabel;
-        multEl.textContent = isLocked ? `上限 ${ampInfo.maxPctInt}%` : liveTierMult;
-      }
-      if (costEl) {
-        if (isLocked) {
-          costEl.textContent = '已锁定';
-        } else {
-          const mpDelta = (Array.isArray(ampInfo.ampTierExtraMps) && typeof ampInfo.ampTierExtraMps[t.tier] === 'number' && isFinite(ampInfo.ampTierExtraMps[t.tier]))
-            ? ampInfo.ampTierExtraMps[t.tier]
-            : Math.round(ampInfo.maxMp * t.pct * (ampInfo.ampDiscountFactor != null ? ampInfo.ampDiscountFactor : 1));
-          costEl.textContent = `+${mpDelta} MP`;
-        }
-      }
-    });
-
-    // Update fine-tune slider and live readouts in-place (zero DOM destruction!)
-    // Range stays on fixed 0..60 scale so 20%★ (33.33%) / 40%★★ (66.67%) / 60%★★★ (100%) notches always align;
-    // values above maxAmpCap are visually locked and clamped cleanly.
-    const slider = uiState.ampSliderEl;
-    const sliderMax = Math.max(0, ampInfo.maxPctInt);
-    if (slider) {
-      slider.disabled = !ampInfo.enabled || sliderMax <= 0;
-      const targetStr = String(ampInfo.pctInt);
-      if (!uiState.sliderDragging && slider.value !== targetStr) {
-        slider.value = targetStr;
-      }
-      const curInt = uiState.sliderDragging
-        ? Math.min(sliderMax, Number(slider.value) || 0)
-        : ampInfo.pctInt;
-      const fillPct = Math.max(0, Math.min(100, (curInt / MAX_AMP_INT) * 100));
-      const capPct = Math.max(0, Math.min(100, (sliderMax / MAX_AMP_INT) * 100));
-      slider.style.setProperty('--amp-fill', `${fillPct.toFixed(1)}%`);
-      slider.style.setProperty('--amp-cap', `${capPct.toFixed(1)}%`);
-      slider.classList.toggle('tier-1', ampInfo.tier === 1);
-      slider.classList.toggle('tier-2', ampInfo.tier === 2);
-      slider.classList.toggle('tier-3', ampInfo.tier >= 3);
-    }
-
-    const notchT1 = uiState.ampPanelEl.querySelector('#cb-amp-notch-t1');
-    const notchT2 = uiState.ampPanelEl.querySelector('#cb-amp-notch-t2');
-    const notchT3 = uiState.ampPanelEl.querySelector('#cb-amp-notch-t3');
-    if (notchT1) {
-      notchT1.style.left = '33.33%';
-      notchT1.classList.toggle('is-locked', sliderMax < 20);
-      notchT1.classList.toggle('lit', ampInfo.tier >= 1 && sliderMax >= 20);
-    }
-    if (notchT2) {
-      notchT2.style.left = '66.67%';
-      notchT2.classList.toggle('is-locked', sliderMax < 40);
-      notchT2.classList.toggle('lit', ampInfo.tier >= 2 && sliderMax >= 40);
-    }
-    if (notchT3) {
-      notchT3.style.left = '100%';
-      notchT3.classList.toggle('is-locked', sliderMax < 60);
-      notchT3.classList.toggle('lit', ampInfo.tier >= 3 && sliderMax >= 60);
-    }
-
-    const ticks = uiState.ampPanelEl.querySelectorAll('.cb-amp-tick');
-    ticks.forEach(tb => {
-      const snapInt = Number(tb.getAttribute('data-amp-snap')) || 0;
-      const locked = !ampInfo.enabled || snapInt > sliderMax;
-      tb.disabled = locked;
-      tb.classList.toggle('is-locked', locked);
-      tb.classList.toggle('active', !locked && Math.abs(ampInfo.pctInt - snapInt) <= 0);
-      if (snapInt === 40) {
-        tb.textContent = locked ? '40% 锁定' : '40% ★★';
-      } else if (snapInt === 60) {
-        tb.textContent = locked ? '60% 锁定' : '60% ★★★';
-      }
-    });
-
-    const pctEl = uiState.ampPanelEl.querySelector('#cb-amp-ft-pct');
-    const mpEl = uiState.ampPanelEl.querySelector('#cb-amp-ft-mp');
-    const multEl = uiState.ampPanelEl.querySelector('#cb-amp-ft-mult');
-    const noteEl = uiState.ampPanelEl.querySelector('#cb-amp-ft-note');
-
-    if (pctEl) {
-      pctEl.textContent = `${ampInfo.pctInt}%`;
-      pctEl.classList.toggle('tier-1', ampInfo.tier === 1);
-      pctEl.classList.toggle('tier-2', ampInfo.tier === 2);
-      pctEl.classList.toggle('tier-3', ampInfo.tier >= 3);
-    }
-    if (mpEl) {
-      mpEl.textContent = `+${ampInfo.extraMp} MP`;
-    }
-    if (multEl) {
-      multEl.textContent = `${ampInfo.ampMult.toFixed(2)}×`;
-      multEl.classList.toggle('tier-1', ampInfo.tier === 1);
-      multEl.classList.toggle('tier-2', ampInfo.tier === 2);
-      multEl.classList.toggle('tier-3', ampInfo.tier >= 3);
-    }
-    if (noteEl) {
-      if (!ampInfo.enabled) {
-        noteEl.textContent = '当前战局不可启用魔力增幅';
-      } else if (ampInfo.pctInt <= 0) {
-        noteEl.textContent = sliderMax < 60
-          ? `常规施法 · 本战上限 ${sliderMax}%，拖动 1% 步进并在档位处 ±2% 磁吸`
-          : '常规施法 · 拖动 1% 步进，20%★ / 40%★★ / 60%★★★ 处 ±2% 磁吸';
-      } else if (ampInfo.tier >= 3) {
-        noteEl.textContent = '★★★星霜极限已激活 · +3破锁 · 30%穿抗 · 限手持重术';
-      } else if (ampInfo.tier >= 2) {
-        noteEl.textContent = sliderMax >= 60
-          ? `★★极寒过载已激活（+2破锁 · 20%穿抗）· 距 ★★★极限 差 ${Math.max(0, 60 - ampInfo.pctInt)}%`
-          : '★★极寒过载已激活 · +2破锁 · 20%穿抗 · 护盾+45%';
-      } else if (ampInfo.tier >= 1) {
-        noteEl.textContent = sliderMax >= 40
-          ? `★魔力盈溢已激活（+1破锁 · 10%穿抗）· 距 ★★过载 差 ${Math.max(0, 40 - ampInfo.pctInt)}%`
-          : '★魔力盈溢已激活 · +1破锁 · 10%穿抗 · 护盾+35%';
-      } else {
-        noteEl.textContent = `魔力蓄势段 · 距 ★魔力盈溢 差 ${Math.max(0, 20 - ampInfo.pctInt)}%`;
-      }
-    }
-  }
-
-  function renderCurrentSvg(ampInfoOverride) {
+  function renderCurrentSvg() {
     if (!uiState.rigEl) return;
     if (uiState.menuMode === 'root') {
       const rootTips = uiState.compactMulti && uiState.narrowDesktop
@@ -1601,11 +1596,6 @@
             { tipX: 50, tipY: 134, elbowX: 26, elbowY: 86,  hero: false },
           ];
       renderSvgHairlines(rootTips, uiState.hoveredWingIdx);
-    } else if (uiState.menuMode === 'amp') {
-      const { targets } = computeAmpPanelGeometry();
-      const info = ampInfoOverride || readOvercastInfo();
-      const litIdx = uiState.hoveredAmpIdx != null ? uiState.hoveredAmpIdx : (info ? info.tier : 0);
-      renderSvgHairlines(targets, litIdx);
     } else {
       const { coords } = computeBladeGeometry(uiState.currentItems.length);
       const hairTargets = [];
@@ -1619,7 +1609,7 @@
   }
 
   function buildItemsSignature(mode, items) {
-    return `${mode}|${uiState.lastFieldW}x${uiState.lastFieldH}|${uiState.skyTopY}:${uiState.skyBotY}:${uiState.enemyLeftX}|${uiState.compactMulti ? 1 : 0}|${uiState.narrowDesktop ? 1 : 0}|${uiState.shortViewport ? 1 : 0}|` + items.map((it, idx) =>
+    return `${mode}|${uiState.lastFieldW}x${uiState.lastFieldH}|${uiState.lastAnchorX},${uiState.lastAnchorY}|${uiState.portraitRight}:${uiState.allyPaneRight}:${uiState.corridorLeft}-${uiState.corridorRight}:${uiState.hasMidCorridor ? 1 : 0}|${uiState.skyTopY}:${uiState.skyBotY}:${uiState.enemyLeftX}|${uiState.compactMulti ? 1 : 0}|${uiState.narrowDesktop ? 1 : 0}|${uiState.shortViewport ? 1 : 0}|` + items.map((it, idx) =>
       `${idx}:${it.key}:${it.slotIdx != null ? it.slotIdx : ''}:${it.skillId || ''}:${it.name || ''}:${it.pathLabel || ''}:${it.cost}:${it.foot || it.desc || ''}:${it.oppLabel || ''}:${it.expKind || ''}:${it.expText || ''}:${it.disabled ? 1 : 0}`
     ).join('||');
   }
@@ -1639,14 +1629,16 @@
         uiState.logExpanded = false;
         uiState.hoveredWingIdx = null;
         uiState.hoveredBladeIdx = null;
-        uiState.hoveredAmpIdx = null;
-        uiState.sliderDragging = false;
-        uiState.lastSliderAppliedPct = -1;
+        uiState.lastAmpPct = -1;
         uiState.lastBladeSig = '';
         uiState.animDissolveUntil = 0;
         if (uiState.dissolveTimer) {
           clearTimeout(uiState.dissolveTimer);
           uiState.dissolveTimer = 0;
+        }
+        if (uiState.ampPulseTimer) {
+          clearTimeout(uiState.ampPulseTimer);
+          uiState.ampPulseTimer = 0;
         }
       }
 
@@ -1680,7 +1672,7 @@
       const ampInfo = readOvercastInfo(b);
       const assistItems = readAssistItems(b);
 
-      if (uiState.menuMode === 'amp' && !ampInfo.enabled) {
+      if (uiState.menuMode === 'amp') {
         uiState.menuMode = 'root';
       }
 
@@ -1688,7 +1680,7 @@
       uiState.rigEl.classList.toggle('dissolved', dissolved);
       uiState.rigEl.classList.toggle('mode-root', uiState.menuMode === 'root');
       uiState.rigEl.classList.toggle('mode-skills', uiState.menuMode === 'skills');
-      uiState.rigEl.classList.toggle('mode-amp', uiState.menuMode === 'amp');
+      uiState.rigEl.classList.remove('mode-amp');
       uiState.rigEl.classList.toggle('mode-guard', uiState.menuMode === 'guard');
       uiState.rigEl.classList.toggle('mode-assist', uiState.menuMode === 'assist');
 
@@ -1715,38 +1707,33 @@
         }
       }
 
-      // Sync Root Wing [E] — 3 diamond crystal pips (tier 1 sapphire, tier 2 frost-sapphire, tier 3 champagne-gold) + crisp live badge
+      // Sync Root Wing [E] — 1:1 exposed direct-press amp meter (3 diamond pips .cb-amp-pips + #cb-pw-amp-val + tier theme classes)
+      const ampTier = ampInfo.enabled ? Math.min(3, Math.max(0, ampInfo.tier)) : 0;
       const ampBtn = document.getElementById('cb-pw-amp');
       const ampEn = document.getElementById('cb-pw-amp-en');
       const ampSub = document.getElementById('cb-pw-amp-sub');
       if (ampBtn && ampSub) {
         ampBtn.disabled = !ampInfo.enabled;
+        ampBtn.classList.toggle('amp-t0', !ampInfo.enabled || ampTier === 0);
+        ampBtn.classList.toggle('amp-t1', ampInfo.enabled && ampTier === 1);
+        ampBtn.classList.toggle('amp-t2', ampInfo.enabled && ampTier === 2);
+        ampBtn.classList.toggle('amp-t3', ampInfo.enabled && ampTier >= 3);
         ampBtn.classList.toggle('amp-charged', ampInfo.enabled && ampInfo.overcastPct > 0.001);
-        ampBtn.classList.toggle('amp-tier-2', ampInfo.enabled && ampInfo.tier === 2);
-        ampBtn.classList.toggle('amp-tier-3', ampInfo.enabled && ampInfo.tier >= 3);
-        ampBtn.classList.toggle('amp-max', ampInfo.enabled && ampInfo.tier >= 3);
+        ampBtn.classList.toggle('amp-tier-1', ampInfo.enabled && ampTier === 1);
+        ampBtn.classList.toggle('amp-tier-2', ampInfo.enabled && ampTier === 2);
+        ampBtn.classList.toggle('amp-tier-3', ampInfo.enabled && ampTier >= 3);
+        ampBtn.classList.toggle('amp-max', ampInfo.enabled && ampTier >= 3);
         ampBtn.title = ampInfo.enabled
-          ? `展开三阶魔力增幅级联（当前：${ampInfo.badge} · +${ampInfo.extraMp}MP · ${ampInfo.multBadge}）`
+          ? `魔力增幅（左键 / E 升档 · 右键 / Shift+E 降档 · 滚轮微调；当前：${ampInfo.badge} · +${ampInfo.extraMp} MP · ${ampInfo.multBadge}）`
           : '当前不可增幅';
         if (ampEn) {
           ampEn.textContent = (!uiState.compactMulti && ampInfo.enabled && ampInfo.lockHint)
             ? `${ampInfo.multBadge}${ampInfo.lockHint}`
             : ampInfo.multBadge;
         }
-        const t = ampInfo.enabled ? ampInfo.tier : 0;
-        const pip1Cls = t >= 3 ? ' lit-t3' : t === 2 ? ' lit-t2' : t === 1 ? ' lit-t1' : '';
-        const pip2Cls = t >= 3 ? ' lit-t3' : t === 2 ? ' lit-t2' : '';
-        const pip3Cls = t >= 3 ? ' lit-t3' : '';
-        const crysHtml =
-          `<span class="cb-amp-crystals" aria-hidden="true">` +
-            `<span class="cb-amp-crys${pip1Cls}"></span>` +
-            `<span class="cb-amp-crys${pip2Cls}"></span>` +
-            `<span class="cb-amp-crys${pip3Cls}"></span>` +
-          `</span>`;
-        const mpSuffix = (!uiState.compactMulti && ampInfo.enabled && ampInfo.extraMp > 0)
-          ? `<span class="cb-amp-mp"> · +${ampInfo.extraMp}MP</span>`
-          : '';
-        ampSub.innerHTML = `${crysHtml}<span class="cb-amp-badge">${escapeHtml(ampInfo.badge)}</span>${mpSuffix}`;
+        const pipsHtml = renderAmpPipsHtml(ampInfo, false);
+        const valText = formatAmpValText(ampInfo);
+        ampSub.innerHTML = `${pipsHtml}<span class="cb-amp-val" id="cb-pw-amp-val">${escapeHtml(valText)}</span>`;
       }
 
       // Sync Root Wing [A]
@@ -1782,137 +1769,151 @@
         }
       }
 
-      // Sync Spine Mini Amp Button
+      // Sync Spine Mini Amp Button (in-place direct step inside skill/guard/assist cascades!)
       const miniAmp = document.getElementById('cb-pw-amp-mini');
       if (miniAmp) {
         miniAmp.disabled = !ampInfo.enabled;
+        miniAmp.classList.toggle('amp-t0', !ampInfo.enabled || ampTier === 0);
+        miniAmp.classList.toggle('amp-t1', ampInfo.enabled && ampTier === 1);
+        miniAmp.classList.toggle('amp-t2', ampInfo.enabled && ampTier === 2);
+        miniAmp.classList.toggle('amp-t3', ampInfo.enabled && ampTier >= 3);
         miniAmp.classList.toggle('charged', ampInfo.enabled && ampInfo.overcastPct > 0.001);
-        miniAmp.classList.toggle('tier-3', ampInfo.enabled && ampInfo.tier >= 3);
-        miniAmp.classList.toggle('max-tier', ampInfo.enabled && ampInfo.tier >= 3);
+        miniAmp.classList.toggle('tier-1', ampInfo.enabled && ampTier === 1);
+        miniAmp.classList.toggle('tier-2', ampInfo.enabled && ampTier === 2);
+        miniAmp.classList.toggle('tier-3', ampInfo.enabled && ampTier >= 3);
+        miniAmp.classList.toggle('max-tier', ampInfo.enabled && ampTier >= 3);
+        miniAmp.title = ampInfo.enabled
+          ? `原地调档不离列表（左键 / E 升档 · 右键 / Shift+E 降档 · 滚轮微调；当前 +${ampInfo.pctInt}% · +${ampInfo.extraMp} MP）`
+          : '当前不可增幅';
         if (!ampInfo.enabled) {
           miniAmp.textContent = '◇ 不可增幅';
-        } else if (uiState.menuMode === 'amp') {
-          miniAmp.textContent = `✦ [E] 切档 · ${ampInfo.badge}`;
         } else {
-          miniAmp.textContent = `✦ [E] 增幅 ${ampInfo.shortLabel} (${ampInfo.multBadge})`;
+          const miniSuffix = (!uiState.narrowDesktop && !uiState.compactMulti && ampInfo.extraMp > 0)
+            ? ` · +${ampInfo.extraMp}MP`
+            : '';
+          miniAmp.innerHTML = `<span class="cb-mini-key">E</span> ${renderAmpPipsHtml(ampInfo, true)}<span class="cb-amp-mini-val" id="cb-pw-amp-mini-val">增幅 +${ampInfo.pctInt}%${miniSuffix}</span>`;
         }
+      }
+
+      const prevAmpPct = uiState.lastAmpPct;
+      uiState.lastAmpPct = ampInfo.pctInt;
+      if (prevAmpPct >= 0 && prevAmpPct !== ampInfo.pctInt) {
+        triggerAmpPulse();
       }
 
       // Populate Active Cascade Mode
-      if (uiState.menuMode === 'amp') {
-        uiState.currentItems = [];
-        syncAmpPanel(ampInfo);
-      } else {
-        let rawItems = [];
-        if (uiState.menuMode === 'skills') {
-          rawItems = allSkills;
-        } else if (uiState.menuMode === 'guard') {
-          rawItems = allSkills.filter(s => s.isGuard);
-        } else if (uiState.menuMode === 'assist') {
-          rawItems = assistItems;
+      let rawItems = [];
+      if (uiState.menuMode === 'skills') {
+        rawItems = allSkills;
+      } else if (uiState.menuMode === 'guard') {
+        rawItems = allSkills.filter(s => s.isGuard);
+      } else if (uiState.menuMode === 'assist') {
+        rawItems = assistItems;
+      }
+      const listItems = rawItems.map((it, idx) => (
+        it.kind === 'skill'
+          ? Object.assign({}, it, { key: idx < 9 ? String(idx + 1) : '·', displayIdx: idx })
+          : Object.assign({}, it, { displayIdx: idx })
+      ));
+      uiState.currentItems = listItems;
+
+      if (uiState.cascadeListEl && uiState.menuMode !== 'root') {
+        const { coords, spineTop, spineLeft, twoCol } = computeBladeGeometry(listItems.length);
+        uiState.twoColBlades = !!twoCol;
+        uiState.rigEl.classList.toggle('two-col-blades', !!twoCol);
+        if (uiState.spineEl) {
+          uiState.spineEl.style.top = `${spineTop}px`;
+          uiState.spineEl.style.left = `${spineLeft}px`;
         }
-        const listItems = rawItems.map((it, idx) => (
-          it.kind === 'skill'
-            ? Object.assign({}, it, { key: idx < 9 ? String(idx + 1) : '·', displayIdx: idx })
-            : Object.assign({}, it, { displayIdx: idx })
-        ));
-        uiState.currentItems = listItems;
 
-        if (uiState.cascadeListEl && uiState.menuMode !== 'root') {
-          const { coords, spineTop, spineLeft, twoCol } = computeBladeGeometry(listItems.length);
-          uiState.twoColBlades = !!twoCol;
-          uiState.rigEl.classList.toggle('two-col-blades', !!twoCol);
-          if (uiState.spineEl) {
-            uiState.spineEl.style.top = `${spineTop}px`;
-            uiState.spineEl.style.left = `${spineLeft}px`;
-          }
+        const nextSig = buildItemsSignature(uiState.menuMode, listItems);
+        if (nextSig !== uiState.lastBladeSig) {
+          uiState.lastBladeSig = nextSig;
+          uiState.cascadeListEl.innerHTML = '';
 
-          const nextSig = buildItemsSignature(uiState.menuMode, listItems);
-          if (nextSig !== uiState.lastBladeSig) {
-            uiState.lastBladeSig = nextSig;
-            uiState.cascadeListEl.innerHTML = '';
+          listItems.forEach((item, idx) => {
+            const g = coords[idx];
+            const wrap = document.createElement('div');
+            wrap.className = 'cb-blade-wrap' + (uiState.hoveredBladeIdx === idx ? ' hovered' : '');
+            wrap.style.left = `${g.left}px`;
+            wrap.style.top = `${g.top}px`;
+            wrap.style.transform = uiState.hoveredBladeIdx === idx
+              ? `translateX(14px) rotate(${g.rot}deg) scale(1.025)`
+              : `rotate(${g.rot}deg)`;
 
-            listItems.forEach((item, idx) => {
-              const g = coords[idx];
-              const wrap = document.createElement('div');
-              wrap.className = 'cb-blade-wrap' + (uiState.hoveredBladeIdx === idx ? ' hovered' : '');
-              wrap.style.left = `${g.left}px`;
-              wrap.style.top = `${g.top}px`;
-              wrap.style.transform = uiState.hoveredBladeIdx === idx
-                ? `translateX(14px) rotate(${g.rot}deg) scale(1.025)`
-                : `rotate(${g.rot}deg)`;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            const expCls = item.expKind === 'warn' ? ' is-exp-warn' : (item.expKind === 'safe' ? ' is-exp-safe' : '');
+            btn.className = 'cb-blade' + (g.compact ? ' compact' : '') + (item.oppLabel ? ' opp-ready' : '') + expCls;
+            btn.disabled = !!item.disabled;
+            btn.setAttribute('data-prism-idx', String(idx));
+            if (item.skillId) btn.setAttribute('data-sk', item.skillId);
+            if (g.forceHeight && g.bladeH) {
+              btn.style.height = `${g.bladeH}px`;
+              btn.style.minHeight = `${g.bladeH}px`;
+            }
+            if (g.forceWidth && g.bladeW) {
+              btn.style.width = `${g.bladeW}px`;
+            }
 
-              const btn = document.createElement('button');
-              btn.type = 'button';
-              const expCls = item.expKind === 'warn' ? ' is-exp-warn' : (item.expKind === 'safe' ? ' is-exp-safe' : '');
-              btn.className = 'cb-blade' + (g.compact ? ' compact' : '') + (item.oppLabel ? ' opp-ready' : '') + expCls;
-              btn.disabled = !!item.disabled;
-              btn.setAttribute('data-prism-idx', String(idx));
-              if (item.skillId) btn.setAttribute('data-sk', item.skillId);
-              if (g.forceHeight && g.bladeH) {
-                btn.style.height = `${g.bladeH}px`;
-                btn.style.minHeight = `${g.bladeH}px`;
-              }
+            const expHtml = item.expKind === 'warn'
+              ? `<span class="cb-bl-exp is-warn" title="耳目近在咫尺，施放将增加暴露度">${escapeHtml(item.expText)}</span>`
+              : (item.expKind === 'safe'
+                ? `<span class="cb-bl-exp is-safe" title="${escapeHtml(item.expText || '隐蔽安全')}">隐蔽</span>`
+                : '');
+            const badgeHtml = item.oppLabel
+              ? `<span class="cb-bl-tag opp">${escapeHtml(item.oppLabel)}</span>`
+              : (!expHtml && item.pathLabel ? `<span class="cb-bl-tag">◆${escapeHtml(item.pathLabel)}</span>` : '');
+            const rightTagsHtml = (expHtml || badgeHtml)
+              ? `<span class="cb-bl-tags-right">${expHtml}${badgeHtml}</span>`
+              : '';
 
-              const expHtml = item.expKind === 'warn'
-                ? `<span class="cb-bl-exp is-warn" title="耳目近在咫尺，施放将增加暴露度">${escapeHtml(item.expText)}</span>`
-                : (item.expKind === 'safe'
-                  ? `<span class="cb-bl-exp is-safe" title="${escapeHtml(item.expText || '隐蔽安全')}">隐蔽</span>`
-                  : '');
-              const badgeHtml = item.oppLabel
-                ? `<span class="cb-bl-tag opp">${escapeHtml(item.oppLabel)}</span>`
-                : (!expHtml && item.pathLabel ? `<span class="cb-bl-tag">◆${escapeHtml(item.pathLabel)}</span>` : '');
-              const rightTagsHtml = (expHtml || badgeHtml)
-                ? `<span class="cb-bl-tags-right">${expHtml}${badgeHtml}</span>`
-                : '';
-
-              btn.innerHTML = `
-                <span class="cb-bl-key">${escapeHtml(item.key)}</span>
-                <div class="cb-bl-content">
-                  <div class="cb-bl-top">
-                    <span class="cb-bl-name">${escapeHtml(item.name)}</span>
-                    ${rightTagsHtml}
-                  </div>
-                  <div class="cb-bl-bot">
-                    <span class="cb-bl-meta">${escapeHtml(item.foot || item.desc)}</span>
-                    <span class="cb-bl-cost">${escapeHtml(item.cost)}</span>
-                  </div>
+            btn.innerHTML = `
+              <span class="cb-bl-key">${escapeHtml(item.key)}</span>
+              <div class="cb-bl-content">
+                <div class="cb-bl-top">
+                  <span class="cb-bl-name">${escapeHtml(item.name)}</span>
+                  ${rightTagsHtml}
                 </div>
-              `;
+                <div class="cb-bl-bot">
+                  <span class="cb-bl-meta">${escapeHtml(item.foot || item.desc)}</span>
+                  <span class="cb-bl-cost">${escapeHtml(item.cost)}</span>
+                </div>
+              </div>
+            `;
 
-              btn.addEventListener('mouseenter', () => {
-                const liveItem = uiState.currentItems[idx];
-                uiState.hoveredBladeIdx = idx;
-                wrap.classList.add('hovered');
-                wrap.style.transform = `translateX(14px) rotate(${g.rot}deg) scale(1.025)`;
-                if (liveItem && liveItem.kind === 'skill') {
-                  dispatchRealHover(resolveLiveSourceBtn(liveItem), true);
-                }
-                renderCurrentSvg();
-              });
-              btn.addEventListener('mouseleave', () => {
-                const liveItem = uiState.currentItems[idx];
-                if (uiState.hoveredBladeIdx === idx) uiState.hoveredBladeIdx = null;
-                wrap.classList.remove('hovered');
-                wrap.style.transform = `rotate(${g.rot}deg)`;
-                if (liveItem && liveItem.kind === 'skill') {
-                  dispatchRealHover(resolveLiveSourceBtn(liveItem), false);
-                }
-                renderCurrentSvg();
-              });
-              btn.addEventListener('click', () => {
-                const liveItem = uiState.currentItems[idx];
-                if (liveItem) triggerSourceButton(liveItem);
-              });
-
-              wrap.appendChild(btn);
-              uiState.cascadeListEl.appendChild(wrap);
+            btn.addEventListener('mouseenter', () => {
+              const liveItem = uiState.currentItems[idx];
+              uiState.hoveredBladeIdx = idx;
+              wrap.classList.add('hovered');
+              wrap.style.transform = `translateX(14px) rotate(${g.rot}deg) scale(1.025)`;
+              if (liveItem && liveItem.kind === 'skill') {
+                syncSkillHoverPreview(resolveLiveSourceBtn(liveItem), true, liveItem.skillId);
+              }
+              renderCurrentSvg();
             });
-          }
+            btn.addEventListener('mouseleave', () => {
+              const liveItem = uiState.currentItems[idx];
+              if (uiState.hoveredBladeIdx === idx) uiState.hoveredBladeIdx = null;
+              wrap.classList.remove('hovered');
+              wrap.style.transform = `rotate(${g.rot}deg)`;
+              if (liveItem && liveItem.kind === 'skill') {
+                syncSkillHoverPreview(resolveLiveSourceBtn(liveItem), false, liveItem.skillId);
+              }
+              renderCurrentSvg();
+            });
+            btn.addEventListener('click', () => {
+              const liveItem = uiState.currentItems[idx];
+              if (liveItem) triggerSourceButton(liveItem);
+            });
+
+            wrap.appendChild(btn);
+            uiState.cascadeListEl.appendChild(wrap);
+          });
         }
       }
 
-      renderCurrentSvg(ampInfo);
+      renderCurrentSvg();
     } finally {
       uiState.syncing = false;
     }
@@ -1934,7 +1935,7 @@
     if (!isActive() || shouldDissolve()) return;
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
     const tgt = ev.target;
-    if (tgt && tgt.closest && tgt.id !== 'cb-amp-slider' && tgt.closest('input, textarea, select')) return;
+    if (tgt && tgt.closest && tgt.closest('input, textarea, select')) return;
 
     const k = String(ev.key || '').toLowerCase();
     if (ev.repeat) {
@@ -1979,11 +1980,7 @@
     if (k === 'e') {
       ev.preventDefault();
       ev.stopImmediatePropagation();
-      if (uiState.menuMode !== 'amp') {
-        openAmp();
-      } else {
-        cycleAmp(ev.shiftKey ? -1 : 1);
-      }
+      cycleAmp(ev.shiftKey ? -1 : 1);
       return;
     }
 
@@ -2017,18 +2014,7 @@
       return;
     }
 
-    if (ev.key >= '1' && ev.key <= '4' && uiState.menuMode === 'amp') {
-      const tierDef = V22_AMP_TIERS[Number(ev.key) - 1];
-      const info = readOvercastInfo();
-      if (tierDef && info.enabled && tierDef.pct <= info.maxAmpCap + 1e-4) {
-        ev.preventDefault();
-        ev.stopImmediatePropagation();
-        selectAmpTier(tierDef.pct);
-      }
-      return;
-    }
-
-    if (ev.key >= '1' && ev.key <= '9' && uiState.menuMode !== 'root' && uiState.menuMode !== 'amp') {
+    if (ev.key >= '1' && ev.key <= '9' && uiState.menuMode !== 'root') {
       const idx = Number(ev.key) - 1;
       const item = uiState.currentItems[idx];
       if (item && !item.disabled) {
@@ -2097,12 +2083,6 @@
       attachModalObserver();
     }
 
-    uiState.onWindowPointerUp = () => {
-      uiState.sliderDragging = false;
-      uiState.lastSliderAppliedPct = -1;
-    };
-    window.addEventListener('pointerup', uiState.onWindowPointerUp);
-    window.addEventListener('mouseup', uiState.onWindowPointerUp);
     window.addEventListener('combat:statechange', onCombatStateChange);
     window.addEventListener('keydown', onKeyDown, true);
     window.addEventListener('contextmenu', onContextMenu);
@@ -2121,6 +2101,10 @@
       clearTimeout(uiState.dissolveTimer);
       uiState.dissolveTimer = 0;
     }
+    if (uiState.ampPulseTimer) {
+      clearTimeout(uiState.ampPulseTimer);
+      uiState.ampPulseTimer = 0;
+    }
     if (uiState.bsObserver) {
       uiState.bsObserver.disconnect();
       uiState.bsObserver = null;
@@ -2128,11 +2112,6 @@
     if (uiState.modalObserver) {
       uiState.modalObserver.disconnect();
       uiState.modalObserver = null;
-    }
-    if (uiState.onWindowPointerUp) {
-      window.removeEventListener('pointerup', uiState.onWindowPointerUp);
-      window.removeEventListener('mouseup', uiState.onWindowPointerUp);
-      uiState.onWindowPointerUp = null;
     }
     window.removeEventListener('combat:statechange', onCombatStateChange);
     window.removeEventListener('keydown', onKeyDown, true);
@@ -2148,10 +2127,9 @@
     uiState.svgEl = null;
     uiState.cascadeListEl = null;
     uiState.ampPanelEl = null;
-    uiState.ampSliderEl = null;
-    uiState.ampTierBtns = [];
     uiState.spineEl = null;
     uiState.logBarEl = null;
+    uiState.lastAmpPct = -1;
     const bs = getBattleScreen();
     if (bs) bs.classList.remove('prism-radial-active');
   }
@@ -2179,6 +2157,10 @@
       menuMode: uiState.menuMode,
       logExpanded: uiState.logExpanded,
       itemCount: uiState.currentItems.length,
+      ampPct: uiState.lastAmpPct,
+      hasMidCorridor: uiState.hasMidCorridor,
+      anchorX: uiState.lastAnchorX,
+      anchorY: uiState.lastAnchorY,
     }),
   };
 

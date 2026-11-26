@@ -23,6 +23,8 @@ const RUNTIME_FILES = [
   'game.js',
   'style.css',
   'manifest.json',
+  'css/combat-rank-badge.css',
+  'js/combat-rank-badge.js',
 ];
 
 const RUNTIME_DIRS = [
@@ -73,7 +75,7 @@ function shouldSkipEntry(name) {
   return false;
 }
 
-function collectFilesFromDir(absDir, relPrefix, outList) {
+function collectFilesFromDir(absDir, relPrefix, outList, seenRelPaths) {
   const entries = fs.readdirSync(absDir, { withFileTypes: true });
   entries.sort((a, b) => a.name.localeCompare(b.name));
   for (const entry of entries) {
@@ -81,8 +83,11 @@ function collectFilesFromDir(absDir, relPrefix, outList) {
     const absPath = path.join(absDir, entry.name);
     const relPath = path.join(relPrefix, entry.name);
     if (entry.isDirectory()) {
-      collectFilesFromDir(absPath, relPath, outList);
+      collectFilesFromDir(absPath, relPath, outList, seenRelPaths);
     } else if (entry.isFile()) {
+      const normRel = relPath.split(path.sep).join('/');
+      if (seenRelPaths && seenRelPaths.has(normRel)) continue;
+      if (seenRelPaths) seenRelPaths.add(normRel);
       const stat = fs.statSync(absPath);
       outList.push({ absPath, relPath, size: stat.size });
     }
@@ -103,6 +108,7 @@ function main() {
   }
 
   const staged = [];
+  const seenRelPaths = new Set();
   const missingRequired = [];
 
   for (const rel of RUNTIME_FILES) {
@@ -112,8 +118,12 @@ function main() {
       missingRequired.push(rel);
       continue;
     }
+    const relPath = rel.split('/').join(path.sep);
+    const normRel = rel.split(path.sep).join('/');
+    if (seenRelPaths.has(normRel)) continue;
+    seenRelPaths.add(normRel);
     const stat = fs.statSync(abs);
-    staged.push({ absPath: abs, relPath: rel, size: stat.size });
+    staged.push({ absPath: abs, relPath, size: stat.size });
   }
 
   for (const dir of RUNTIME_DIRS) {
@@ -122,7 +132,7 @@ function main() {
       missingRequired.push(dir + '/');
       continue;
     }
-    collectFilesFromDir(absDir, dir, staged);
+    collectFilesFromDir(absDir, dir, staged, seenRelPaths);
   }
 
   if (missingRequired.length > 0) {

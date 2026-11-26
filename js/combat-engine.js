@@ -89,12 +89,60 @@
     } catch (e) {}
   }
 
-  let _lastCardHoverSfxTs = 0;
-  function playCardHoverSfx() {
-    const now = Date.now();
-    if (now - _lastCardHoverSfxTs < 65) return;
-    _lastCardHoverSfxTs = now;
-    safeSfx('card_hover');
+  const ALLY_ELEM_META = {
+    earth: { short: '土', skillName: '地陷岩棱', badge: '土 · 地陷岩棱' },
+    fire:  { short: '火', skillName: '赤焰封线', badge: '火 · 赤焰封线' },
+    wind:  { short: '风', skillName: '疾风截势', badge: '风 · 疾风截势' },
+  };
+
+  const ENEMY_FORMATION_SLOTS = {
+    1: [1],
+    2: [0, 2],
+    3: [0, 2, 4],
+    4: [0, 2, 3, 5],
+    5: [0, 1, 2, 3, 5],
+    6: [0, 1, 2, 3, 4, 5],
+  };
+
+  function resolveEnemyFormationSlots(enemies) {
+    const list = Array.isArray(enemies) ? enemies : [];
+    const count = Math.max(1, Math.min(6, list.length || 1));
+    const defaults = ENEMY_FORMATION_SLOTS[count] || ENEMY_FORMATION_SLOTS[6];
+    const used = new Set();
+    const assigned = new Array(list.length).fill(-1);
+    list.forEach((e, idx) => {
+      if (e && Number.isInteger(e.slot) && e.slot >= 0 && e.slot <= 5 && !used.has(e.slot)) {
+        assigned[idx] = e.slot;
+        used.add(e.slot);
+      }
+    });
+    let defCursor = 0;
+    for (let idx = 0; idx < list.length; idx++) {
+      if (assigned[idx] >= 0) continue;
+      let picked = -1;
+      while (defCursor < defaults.length) {
+        const cand = defaults[defCursor++];
+        if (!used.has(cand)) { picked = cand; break; }
+      }
+      if (picked < 0) {
+        for (let s = 0; s < 6; s++) {
+          if (!used.has(s)) { picked = s; break; }
+        }
+      }
+      if (picked < 0) picked = idx % 6;
+      assigned[idx] = picked;
+      used.add(picked);
+    }
+    return assigned;
+  }
+
+  function getFormationSlotCoords(side, slotIdx) {
+    const s = Math.max(0, Math.min(5, Number(slotIdx) || 0));
+    const row = s % 3;
+    const col = side === 'ally'
+      ? (s < 3 ? 'back' : 'front')
+      : (s < 3 ? 'front' : 'back');
+    return { slot: s, row, col };
   }
 
   function logTag(cls, txt, bold) {
@@ -992,9 +1040,32 @@
       crestKind: 'rowan',
       emoji: '🌑',
       bg: 'bg-img-night bg-night',
-      tags: ['8岁童年配装', '白昼冰镜核验', '窄道铺冰+双镜夹杖', '打死算逃脱失败'],
-      summary: '秋夜月升，罗文影子已恢复正常。须用8岁基础薄冰配合雷纳德切窄道锁腿，借冰晶宫殿核验白昼第四面冰镜并识破脱手旋杖，凑满100%封锁活捉！',
+      tags: ['8岁童年配装', '雷纳德前排主力', '白昼冰镜核验', '窄道铺冰+双镜夹杖'],
+      summary: '秋夜月升，罗文影子已恢复正常。雷纳德立于前排以土/火/风三系压制强敌，你须在后排立厚冰墙挡下偷袭黑光与脱手旋杖，配合蔓地薄冰与冰晶宫殿双镜夹杖加速活捉！',
       sealRule: true,
+      allies: [
+        {
+          id: 'reno',
+          name: '雷纳德',
+          title: '前排主力 · 维斯特利亚',
+          spriteId: 'reno',
+          role: 'vanguard',
+          slot: 4,
+          hp: 560,
+          mhp: 560,
+          atk: 62,
+          matk: 82,
+          def: 34,
+          mdef: 36,
+          spd: 118,
+          shield: 45,
+          maxShield: 160,
+          shieldKind: 'solid',
+          tauntFront: true,
+          coverPlayerMitigate: 0.45,
+          elements: ['earth', 'fire', 'wind'],
+        },
+      ],
       preset: {
         age: 8,
         hp: 150, mhp: 150, mp: 255, mmp: 255,
@@ -1020,22 +1091,22 @@
       },
       waves: [
         {
-          intro: '雷纳德从歪脖子树跳下：「别当着家长的面打小孩。」注意：必须留活口审问，打空罗文生命将致其化雾遁逃失败！',
+          intro: '雷纳德从歪脖子树跳下挡在你身前：「别当着家长的面打小孩。」前排交由雷纳德主攻压制，留意罗文绕过前排的偷袭黑光与脱手旋杖，立实体冰墙保命或铺薄冰加速合围活捉！',
           enemies: [
             {
               id: 'rowan',
               name: '罗文（圣级血族侍卫）',
               emoji: '🌑',
               elem: 'dark',
-              hp: 290,
-              mhp: 290,
+              hp: 560,
+              mhp: 560,
               atk: 48,
               def: 15,
               mdef: 18,
               spd: 114,
               maxLocks: 4,
               shieldKind: 'magic',
-              trait: '活捉铁律：纯挨打不涨封锁度，非窄道盲丢冰晶遭晦轮折射且HP归零将化雾逃脱判败！晦轮黑光无视纯魔盾，唯实体厚冰墙与石板可阻尼；须铺【蔓地薄冰】抓窄道(+38%)配【双镜夹杖】满100%活捉！',
+              trait: '圣级刺客：正面突围由前排雷纳德接下，但【晦轮黑光】与【脱手旋杖】会绕过前排直袭后排希尔维亚！晦轮真伤穿透水幕，唯实体厚冰墙配雷纳德掀石可阻尼75%；铺【蔓地薄冰】与【双镜夹杖】可加速活捉！',
               aiType: 'rowan',
             },
           ],
@@ -2070,9 +2141,10 @@
       return;
     }
 
-    // 2. 罗文（8岁乱葬岗：龟缩碎壁、窄道突围、脱手旋杖袭心；已铺设地面薄冰设伏时视为战术布阵）
+    // 2. 罗文（8岁乱葬岗：正面突围由前排雷纳德硬接；偷袭黑光与脱手旋杖绕过前排直袭后排希尔维亚！）
     if (ai === 'rowan') {
-      if (playerTurtling && !(b.frostFloorTurns > 0)) {
+      const hasVanguard = Array.isArray(b.allies) && b.allies.some(a => a && a.hp > 0 && a.tauntFront);
+      if (!hasVanguard && playerTurtling && !(b.frostFloorTurns > 0)) {
         mem.turtleStreak = 0;
         enemy.intent = {
           stance: 'HEAVY_WINDUP',
@@ -2088,31 +2160,35 @@
         enemy.intent = {
           stance: 'UNDER_SEEP',
           moveName: '晦轮银环·越位蚀心黑光',
-          dmg: 60,
+          dmg: hasVanguard ? 108 : 60,
           bypassHalfShield: true,
           eclipseTrueMagic: true,
           elem: 'dark',
           renoRockBlock: true,
           refractIceCrystal: true,
+          targetRole: 'backline',
         };
       } else if (step === 1) {
         enemy.intent = {
           stance: 'DUAL_CAST',
           moveName: '血魔震土·石碑窄道突围',
-          dmg: 50,
+          dmg: hasVanguard ? 62 : 50,
           elem: 'dark',
           narrowPassWindow: true,
+          targetRole: 'frontline',
         };
       } else {
         enemy.intent = {
           stance: 'CLOSE_LUNGE',
           moveName: '虚刺雷纳德·脱手旋杖袭心',
-          dmg: 60,
+          dmg: hasVanguard ? 114 : 60,
           bypassHalfShield: true,
           eclipseTrueMagic: true,
           elem: 'dark',
+          renoRockBlock: true,
           thrownStaff: true,
           refractIceCrystal: true,
+          targetRole: 'backline',
         };
       }
       return;
@@ -3559,6 +3635,87 @@
     return idx >= 0 ? b.enemies[idx] : null;
   }
 
+  function refreshSkillCardsTargetPreviewInPlace(b, primary) {
+    if (!b || b.headless || typeof document === 'undefined') return;
+    const actGrid = document.getElementById('b-actions');
+    if (!actGrid) return;
+    const p = b.player;
+    const targetStance = primary && primary.intent ? primary.intent.stance : '';
+    const targetMoveKey = primary && primary.intent ? primary.intent.moveKey : '';
+    actGrid.querySelectorAll('.cb-skill-card[data-sk]').forEach(btn => {
+      const skId = btn.getAttribute('data-sk');
+      const sk = TACTICAL_SKILLS[skId];
+      if (!sk) return;
+      const cd = p.cooldowns[skId] || 0;
+      const usedUp = sk.maxUses && (p.usedMaxSkills[skId] || 0) >= sk.maxUses;
+      const disabled = !!btn.disabled;
+      const est = sk.power > 0 ? estimateSkillDamage(b, sk, primary) : null;
+
+      let oppText = '';
+      let oppCls = 'cb-opp-pill';
+      if (!disabled && targetMoveKey === 'TEMPEST_VACUUM' && sk.path === 'SWORD' && (sk.dodgeLunge || sk.counterLunge)) {
+        oppText = '✦ 斩风瞬反';
+      } else if (!disabled && targetMoveKey === 'EYE_STILLNESS' && ((sk.path === 'SWORD' && sk.dodgeLunge) || (sk.path === 'SWORD' && sk.counterLunge && p.status.poise > 0) || (sk.path === 'REMOTE' && p.wandActive))) {
+        oppText = '✦ 可破静滞';
+      } else if (!disabled && sk.path === 'REMOTE' && targetStance === 'DUAL_CAST') {
+        oppText = '✦ 可破招';
+      } else if (!disabled && sk.path === 'SWORD' && (sk.dodgeLunge || sk.counterLunge) && targetStance === 'CLOSE_LUNGE') {
+        oppText = '✦ 可闪反';
+      } else if (!disabled && sk.path === 'INSIGHT') {
+        oppText = '✦ 必杀看破';
+      } else if (!disabled && est && est.chainApplied) {
+        oppText = '✦ 连携1.35×';
+        oppCls = 'cb-opp-pill chain';
+      }
+      btn.classList.toggle('opp-glow', !!oppText);
+      const nameRow = btn.querySelector('.csc-name-row');
+      if (nameRow) {
+        let pill = nameRow.querySelector('.cb-opp-pill');
+        if (oppText) {
+          if (!pill) {
+            pill = document.createElement('span');
+            const armPill = nameRow.querySelector('.cb-arm-pill');
+            if (armPill) nameRow.insertBefore(pill, armPill);
+            else nameRow.appendChild(pill);
+          }
+          pill.className = oppCls;
+          pill.textContent = oppText;
+        } else if (pill) {
+          pill.remove();
+        }
+      }
+      const footSpan = btn.querySelector('.csc-foot > span:first-child');
+      if (footSpan && !usedUp && cd <= 0 && est) {
+        footSpan.textContent = est.mirrorBlocked ? '将被镜冰格挡' : `预计 ~${est.dmg}${sk.aoe ? ' (全体)' : ''}`;
+      }
+    });
+  }
+
+  function applyTargetSelectionInPlace(b) {
+    if (!b || b.headless || typeof document === 'undefined') return;
+    const eZone = document.getElementById('cb-enemy-zone');
+    if (eZone) {
+      eZone.querySelectorAll('.cb-enemy-card').forEach(card => {
+        const cIdx = Number(card.getAttribute('data-eidx'));
+        card.classList.toggle('targeted', cIdx === b.targetIdx);
+      });
+    }
+    const primary = getPrimaryAliveEnemy(b);
+    if (primary) {
+      const elEmoji = document.getElementById('b-emoji');
+      const elName = document.getElementById('b-ename');
+      const elHp = document.getElementById('b-ehp');
+      const elHpNum = document.getElementById('b-ehp-num');
+      if (elEmoji) elEmoji.textContent = primary.emoji || '';
+      if (elName) elName.textContent = primary.name;
+      if (elHp) elHp.style.width = `${Math.max(0, primary.hp / primary.mhp * 100)}%`;
+      if (elHpNum) elHpNum.textContent = `${primary.hp}/${primary.mhp}`;
+    }
+    refreshSkillCardsTargetPreviewInPlace(b, primary);
+    updateOvercastPreviewUI(b, hoveredSkillId);
+    emitCombatStateChange(b);
+  }
+
   function selectTarget(idx, b) {
     b = b || activeBattle;
     if (!b || b.over || !Array.isArray(b.enemies)) return false;
@@ -3566,7 +3723,7 @@
     if (!target || target.hp <= 0) return false;
     b.targetIdx = idx;
     armedSkillId = null;
-    if (!b.headless) renderCombatUI();
+    if (!b.headless) applyTargetSelectionInPlace(b);
     return true;
   }
 
@@ -4005,7 +4162,7 @@
         skipHitStop = !!arg2.skipHitStop;
       } else if (typeof arg2 === 'number') {
         enemyIdx = arg2;
-      } else if (arg2 === 'player' || arg2 === 'enemy') {
+      } else if (arg2 === 'player' || arg2 === 'enemy' || arg2 === 'ally') {
         side = arg2;
         enemyIdx = typeof arg3 === 'number' ? arg3 : ((b && b.targetIdx) || 0);
       } else {
@@ -4018,7 +4175,13 @@
     let host = targetEl;
     if (!host) {
       if (side === 'player') {
-        host = document.querySelector('#battle-screen #cb-player-stage .cb-standee-wrap')
+        const pPort = document.getElementById('cb-p-portrait');
+        host = (pPort && pPort.closest('.cb-standee-wrap'))
+          || document.querySelector('#battle-screen #cb-player-stage .cb-standee-wrap:not(.cb-ally-standee)')
+          || document.getElementById('cb-player-stage');
+      } else if (side === 'ally') {
+        host = document.querySelector('#battle-screen #cb-ally-vanguard-slot .cb-standee-wrap')
+          || document.getElementById('cb-ally-vanguard-slot')
           || document.getElementById('cb-player-stage');
       } else {
         host = document.querySelector(`#battle-screen .cb-enemy-card[data-eidx="${enemyIdx}"] .cb-e-stage`)
@@ -4079,16 +4242,59 @@
     const div = document.createElement('div');
     div.className = 'cb-float-num ' + (kind || 'dmg');
     div.textContent = text;
-    if (side === 'player') {
-      div.style.left = '18%';
-      div.style.top = kind === 'mp' ? '44%' : kind === 'shield' ? '36%' : '28%';
-    } else {
-      const total = Math.max(1, (b.enemies || []).length);
-      const idx = Math.max(0, Math.min(total - 1, enemyIdx || 0));
-      const pct = 40 + ((idx + 0.5) / total) * 56;
-      div.style.left = pct.toFixed(1) + '%';
-      div.style.top = '34%';
+
+    let positioned = false;
+    if (!isJsdomEnv()) {
+      const field = document.querySelector('#battle-screen .cb-arena-field');
+      if (field && typeof field.getBoundingClientRect === 'function') {
+        const fRect = field.getBoundingClientRect();
+        if (fRect && fRect.width > 40 && fRect.height > 40) {
+          let anchorEl = null;
+          if (side === 'player') {
+            anchorEl = document.getElementById('cb-p-portrait')
+              || document.querySelector('#cb-player-stage .cb-standee-wrap:not(.cb-ally-standee)');
+          } else if (side === 'ally') {
+            anchorEl = document.getElementById('cb-ally-vanguard-slot')
+              || document.querySelector('#cb-ally-formation .cb-ally-standee');
+          } else {
+            const idx = Math.max(0, Number(enemyIdx) || 0);
+            anchorEl = document.querySelector(`#cb-enemy-zone .cb-enemy-card[data-eidx="${idx}"] .cb-e-stage`)
+              || document.querySelector(`#cb-enemy-zone .cb-enemy-card[data-eidx="${idx}"]`);
+          }
+          if (anchorEl && typeof anchorEl.getBoundingClientRect === 'function') {
+            const aRect = anchorEl.getBoundingClientRect();
+            if (aRect && aRect.width > 4 && aRect.height > 4) {
+              const cx = (aRect.left + aRect.width * 0.5) - fRect.left;
+              const yRatio = kind === 'mp' ? 0.44 : kind === 'shield' ? 0.34 : side === 'enemy' ? 0.22 : 0.24;
+              const cy = (aRect.top + aRect.height * yRatio) - fRect.top;
+              const leftPct = Math.max(6, Math.min(94, (cx / fRect.width) * 100));
+              const topPct = Math.max(8, Math.min(82, (cy / fRect.height) * 100));
+              div.style.left = leftPct.toFixed(1) + '%';
+              div.style.top = topPct.toFixed(1) + '%';
+              positioned = true;
+            }
+          }
+        }
+      }
     }
+
+    if (!positioned) {
+      if (side === 'player') {
+        const hasAllies = !!(b.allies && b.allies.length > 0);
+        div.style.left = hasAllies ? '12%' : '22%';
+        div.style.top = kind === 'mp' ? '44%' : kind === 'shield' ? '36%' : '28%';
+      } else if (side === 'ally') {
+        div.style.left = '27%';
+        div.style.top = kind === 'shield' ? '36%' : '28%';
+      } else {
+        const total = Math.max(1, (b.enemies || []).length);
+        const idx = Math.max(0, Math.min(total - 1, enemyIdx || 0));
+        const pct = 58 + ((idx + 0.5) / total) * 36;
+        div.style.left = pct.toFixed(1) + '%';
+        div.style.top = '34%';
+      }
+    }
+
     layer.appendChild(div);
     trackVfxTimer(() => { if (div.parentNode) div.remove(); }, 1060);
   }
@@ -4210,6 +4416,44 @@
     return true;
   }
 
+  function buildAllyCombatants(stageCfg) {
+    const list = (stageCfg && Array.isArray(stageCfg.allies)) ? stageCfg.allies : [];
+    return list.map((tpl, idx) => {
+      const aSpd = tpl.spd || 110;
+      const aBaseAv = computeBaseAv(aSpd);
+      const elems = Array.isArray(tpl.elements) && tpl.elements.length ? tpl.elements.slice() : ['earth'];
+      return Object.assign({}, tpl, {
+        idx,
+        id: tpl.id || `ally_${idx}`,
+        name: tpl.name || '友军',
+        title: tpl.title || '前排主力',
+        spriteId: tpl.spriteId || tpl.id || 'reno',
+        role: tpl.role || 'vanguard',
+        slot: Number.isInteger(tpl.slot) && tpl.slot >= 0 && tpl.slot <= 5 ? tpl.slot : 4,
+        hp: tpl.hp != null ? tpl.hp : (tpl.mhp || 400),
+        mhp: tpl.mhp != null ? tpl.mhp : (tpl.hp || 400),
+        atk: tpl.atk || 50,
+        matk: tpl.matk || 60,
+        def: tpl.def || 25,
+        mdef: tpl.mdef || 25,
+        spd: aSpd,
+        baseAv: aBaseAv,
+        av: Math.round(aBaseAv * 0.25),
+        shield: Math.max(0, tpl.shield || 0),
+        maxShield: Math.max(tpl.shield || 0, tpl.maxShield || 160),
+        shieldKind: tpl.shieldKind || 'solid',
+        tauntFront: tpl.tauntFront !== false,
+        coverPlayerMitigate: tpl.coverPlayerMitigate != null ? tpl.coverPlayerMitigate : 0.45,
+        elements: elems,
+        elemCycleIdx: 0,
+        nextElement: elems[0],
+        totalDmgDealt: 0,
+        actionsTaken: 0,
+        status: {},
+      });
+    });
+  }
+
   function initWave(b, waveIdx) {
     const sc = b.stageCfg;
     const w = sc.waves[waveIdx];
@@ -4219,6 +4463,10 @@
     b.oneMoreUsedThisTurn = false;
     b.oneMoreActive = false;
     if (b.player) b.player.av = 0;
+    if (!Array.isArray(b.allies)) b.allies = buildAllyCombatants(sc);
+    b.allies.forEach(a => {
+      if (a) a.av = Math.round((a.baseAv || computeBaseAv(a.spd || 110)) * 0.25);
+    });
     if (b.aiMemory) b.aiMemory.turtleStreak = 0;
     b._pendingElementVFX = [];
     b._pendingPixelActions = [];
@@ -4257,11 +4505,13 @@
     if (w.witnessActive && b.exposure < (w.initialExposure || 25)) {
       b.exposure = w.initialExposure || 25;
     }
+    const enemySlots = resolveEnemyFormationSlots(w.enemies);
     b.enemies = w.enemies.map((tpl, idx) => {
       const eSpd = tpl.spd || (tpl.boss ? 112 : 95);
       const eBaseAv = computeBaseAv(eSpd);
       const eMaxLocks = tpl.maxLocks != null ? tpl.maxLocks : (tpl.boss ? 4 : 3);
       return Object.assign({}, tpl, {
+        slot: enemySlots[idx],
         status: {},
         shield: Math.max(0, tpl.shield || 0),
         shieldKind: tpl.shieldKind || 'magic',
@@ -4325,11 +4575,13 @@
   function createBattleState(stageCfg, opts) {
     opts = opts || {};
     const player = buildPlayerCombatant(stageCfg, opts);
+    const allies = buildAllyCombatants(stageCfg);
     const b = {
       id: stageCfg.id,
       battleInstanceId: ++_battleInstanceSeq,
       stageCfg,
       player,
+      allies,
       enemies: [],
       targetIdx: 0,
       waveIdx: 0,
@@ -4388,6 +4640,9 @@
         weaknessBreaks: 0,
         oneMoreCount: 0,
         overflowBreaksIntercepted: 0,
+        allyActions: 0,
+        allyDmgDealt: 0,
+        playerDmgDealt: 0,
       },
       palaceInspectedWaves: {},
       log: [],
@@ -5120,7 +5375,7 @@
         // 罗文非窄道窗口盲丢凝华冰晶：遭晦轮银环折射反噬
         if (e.aiType === 'rowan' && e.intent && e.intent.refractIceCrystal && sk.id === 'hand_ice_crystal') {
           hitCounterPenalty = true;
-          const refDmg = 24;
+          const refDmg = (b.allies && b.allies.length > 0) ? 46 : 24;
           const blk = Math.min(Math.max(0, p.shield), refDmg);
           p.shield = Math.max(0, p.shield - blk);
           p.hp = Math.max(0, p.hp - (refDmg - blk));
@@ -5280,19 +5535,20 @@
           }
         }
 
-        // 罗文乱葬岗：窄道铺冰配合雷纳德按肩封锁（冷却后再次铺设薄冰抓窄道可重复叠加 +38%，无冰宫亦可苦战活捉）！
+        // 罗文乱葬岗：窄道铺冰配合雷纳德按肩封锁，以及双镜夹杖加速活捉！
         if (b.stageCfg.sealRule) {
           if (stance === 'DUAL_CAST' && b.frostFloorTurns > 0 && sk.elem === 'ice') {
             b.frostFloorTurns = 0;
             e.status.stagger = 1;
             didInterrupt = true;
             b.metrics.interrupts += 1;
-            b.sealProgress = Math.min(100, b.sealProgress + 38);
+            const narrowBoost = (b.allies && b.allies.length > 0) ? 22 : 38;
+            b.sealProgress = Math.min(100, b.sealProgress + narrowBoost);
             decideEnemyIntent(e, b);
             spawnBanner(b, '🪨❄️ 窄道滑冰 · 雷纳德按肩锁脉！', 'interrupt');
             triggerBreakJuice(b, 'break_chime');
             playedBreakOrParry = true;
-            pushLog(b, logTag('cbl-star', `🪨❄️ 罗文穿过石碑窄道恰好踏碎你铺开的薄冰，左腿慢了半步！雷纳德按肩灌入土系魔力——合围封锁度 +38%（${b.sealProgress}%）！`));
+            pushLog(b, logTag('cbl-star', `🪨❄️ 罗文穿过石碑窄道恰好踏碎你铺开的薄冰，左腿慢了半步！雷纳德按肩灌入土系魔力——合围封锁度 +${narrowBoost}%（${b.sealProgress}%）！`));
           } else if (sk.sealBoost) {
             if (stance === 'CLOSE_LUNGE') {
               b.sealProgress = Math.min(100, b.sealProgress + sk.sealBoost);
@@ -5345,6 +5601,7 @@
           shatterShield: !!sk.shatterShield,
           pierceHalfShield: !!sk.pierceHalfShield,
           severSeep: !!sk.severSeep,
+          nonLethalCap: !!b.stageCfg.sealRule,
         });
         const shieldBroken = shieldBeforeHit > 0 && (e.shield || 0) <= 0;
         if (shieldBroken) anyShieldShattered = true;
@@ -5407,6 +5664,7 @@
         }
 
         b.aiMemory.currentTurnDmgDealt += dmgRes.actualHpLoss;
+        b.metrics.playerDmgDealt = (b.metrics.playerDmgDealt || 0) + dmgRes.actualHpLoss + (dmgRes.shieldAbsorbed || 0);
 
         if (sk.applyVuln) e.status.vuln = (e.status.vuln || 0) + sk.applyVuln;
         if (sk.chill) e.status.chill = (e.status.chill || 0) + sk.chill;
@@ -5679,6 +5937,12 @@
     p.shield = Math.max(0, Math.floor(Math.max(0, p.shield) * retainRate));
     if (p.shield <= 0) p.shieldKind = 'solid';
 
+    (b.allies || []).forEach(a => {
+      if (!a || a.hp <= 0) return;
+      a.shield = Math.max(0, Math.floor(Math.max(0, a.shield || 0) * 0.65));
+      a.av = Math.round((a.baseAv || computeBaseAv(a.spd || 110)) * 0.25);
+    });
+
     p.wandCooldown = 0;
     Object.keys(p.cooldowns).forEach(k => {
       if (p.cooldowns[k] > 0) p.cooldowns[k]--;
@@ -5710,17 +5974,14 @@
       return false;
     }
 
-    // 2. 罗文乱葬岗活捉铁律：凑满 100% 合围封锁判胜；若未满 100% 却把罗文打空 HP，化雾逃脱判败！
+    // 2. 罗文乱葬岗原著活捉收束：将罗文压至 <= 1 HP 或合围封锁满 100% 且希尔维亚存活，即刻闭合石棱并钉穿袖口留活口！
     if (b.stageCfg.sealRule) {
-      if (b.sealProgress >= 100) {
-        pushLog(b, logTag('cbl-star', `🪨❄️ 四道石棱轰然闭合将罗文压入地面，你一发冰锥钉穿他袖口定在离地半寸——成功活捉留口供！`, true));
-        finishBattle(b, true, 'sealed_rowan');
-        return true;
-      }
       const rowan = b.enemies[0];
-      if (rowan && rowan.hp <= 0) {
-        pushLog(b, logTag('cbl-danger', `❌ 合围尚未成形（${b.sealProgress}%）！重伤的罗文借晦轮杖偏折月影化作血雾遁逃，线索断绝！`, true));
-        finishBattle(b, false, 'rowan_escaped');
+      if (b.player && b.player.hp > 0 && (b.sealProgress >= 100 || (rowan && rowan.hp <= 1))) {
+        b.sealProgress = 100;
+        if (rowan && rowan.hp < 1) rowan.hp = 1;
+        pushLog(b, logTag('cbl-star', `🪨❄️ 雷纳德五指收紧，四道石棱轰然闭合将罗文压进地面，你一发冰锥钉穿他袖口摁在土面上——皮肉分毫未伤，成功活捉留活口审问！`, true));
+        finishBattle(b, true, 'sealed_rowan');
         return true;
       }
       ensureValidTarget(b);
@@ -5811,7 +6072,134 @@
       e.status.chill -= 1;
       if (e.status.chill <= 0) delete e.status.chill;
     }
+    if (e.status.windSuppressed > 0) {
+      delete e.status.windSuppressed;
+    }
     return false;
+  }
+
+  function runAlliesPhase(b, bankedAp) {
+    if (!b || b.over || !Array.isArray(b.allies) || !b.allies.length) {
+      return { ended: false };
+    }
+    for (const ally of b.allies) {
+      if (!ally || ally.hp <= 0 || b.over) continue;
+      const target = getPrimaryAliveEnemy(b);
+      if (!target || target.hp <= 0) break;
+      const targetIdx = b.enemies.indexOf(target);
+      const elems = Array.isArray(ally.elements) && ally.elements.length ? ally.elements : ['earth'];
+      const elem = ally.nextElement || elems[(ally.elemCycleIdx || 0) % elems.length] || 'earth';
+      const elemMeta = ALLY_ELEM_META[elem] || ALLY_ELEM_META.earth;
+
+      const defMit = COMBAT_BALANCE_V22.DEF_K / (COMBAT_BALANCE_V22.DEF_K + Math.max(0, target.mdef || 0));
+      let rawPower = 1.24;
+      let lockBreak = 1;
+      let sealGain = 18;
+      let shatterMagicShield = false;
+      let triggeredFrost = false;
+      let actionLabel = `${ally.name} · ${elemMeta.skillName}`;
+      let floatTag = elemMeta.skillName;
+      let floatKind = 'crit';
+      let shGain = 0;
+
+      if (elem === 'earth') {
+        const prevSh = ally.shield || 0;
+        ally.shield = Math.min(ally.maxShield || 160, prevSh + 45);
+        ally.shieldKind = 'solid';
+        shGain = Math.max(0, ally.shield - prevSh);
+        if (shGain > 0) spawnCombatFloat(b, 'ally', `+${shGain} 岩盾`, 'shield');
+        if (b.stageCfg.sealRule && b.frostFloorTurns > 0) {
+          triggeredFrost = true;
+          b.frostFloorTurns = 0;
+          rawPower = 1.34;
+          lockBreak = 3;
+          sealGain = 38;
+          actionLabel = `${ally.name} · 地陷岩棱（薄冰合围）`;
+          floatTag = '按肩锁脉!';
+          floatKind = 'gold-crit';
+          spawnBanner(b, '🪨❄️ 薄冰滑步 · 雷纳德按肩锁脉！', 'interrupt');
+        } else {
+          rawPower = 1.24;
+          lockBreak = 1;
+          sealGain = 18;
+        }
+      } else if (elem === 'fire') {
+        rawPower = 1.44;
+        shatterMagicShield = (target.shieldKind || 'magic') === 'magic';
+        target.status.vuln = Math.max(target.status.vuln || 0, 2);
+        lockBreak = 1;
+        sealGain = 18;
+      } else {
+        rawPower = 1.30;
+        target.status.windSuppressed = 1;
+        lockBreak = 1;
+        sealGain = 18;
+      }
+
+      const stateMult = target.broken ? 1.12 : (target.status && target.status.vuln > 0 && elem !== 'fire' ? 1.08 : 1.0);
+      const finalDmg = Math.max(12, Math.round((ally.matk || 82) * rawPower * defMit * stateMult));
+      const dmgRes = dealDamageToEnemy(b, target, finalDmg, {
+        shatterShield: shatterMagicShield,
+        nonLethalCap: !!b.stageCfg.sealRule,
+      });
+
+      const recordedDmg = Math.max(finalDmg, (dmgRes.actualHpLoss || 0) + (dmgRes.shieldAbsorbed || 0));
+      ally.totalDmgDealt = (ally.totalDmgDealt || 0) + recordedDmg;
+      ally.actionsTaken = (ally.actionsTaken || 0) + 1;
+      b.metrics.allyActions = (b.metrics.allyActions || 0) + 1;
+      b.metrics.allyDmgDealt = (b.metrics.allyDmgDealt || 0) + recordedDmg;
+
+      let didBreak = false;
+      if (lockBreak > 0 && target.hp > 0 && !target.broken && (target.maxLocks || 0) > 0) {
+        target.locks = Math.max(0, (target.locks != null ? target.locks : target.maxLocks) - lockBreak);
+        if (target.locks <= 0) {
+          target.broken = true;
+          didBreak = true;
+          b.metrics.weaknessBreaks = (b.metrics.weaknessBreaks || 0) + 1;
+          const pushKey = target.boss ? 'boss' : (target.mhp >= 220 ? 'elite' : 'mob');
+          const pushPct = COMBAT_BALANCE_V22.HSR_AV.pushPct[pushKey] || 0.45;
+          target.av = Math.round((target.av || target.baseAv || 100) + (target.baseAv || 100) * pushPct);
+        }
+      }
+
+      if (b.stageCfg.sealRule) {
+        b.sealProgress = Math.min(100, (b.sealProgress || 0) + sealGain);
+      }
+
+      if (elem === 'earth' && triggeredFrost) {
+        pushLog(b, logTag('cbl-star', `🪨❄️ 罗文踏中你铺开的薄冰、左腿慢了半步！${ally.name}按肩灌入土系魔力，地陷岩棱重击 ${target.name} ${finalDmg} 伤害并连破 3 层弱点锁——合围封锁度 +${sealGain}%（${b.sealProgress}%）！`, true));
+      } else if (elem === 'earth') {
+        pushLog(b, logTag('cbl-star', `🪨 前排 ${ally.name} 踏地催动「地陷岩棱」，重击 ${target.name} ${finalDmg} 伤害并自补 +${shGain} 岩盾（合围封锁 ${b.sealProgress}%）！`));
+      } else if (elem === 'fire') {
+        pushLog(b, logTag('cbl-star', `🔥 前排 ${ally.name} 甩出「赤焰封线」封堵退路，震散魔盾并对 ${target.name} 造成 ${finalDmg} 伤害、附加易伤（合围封锁 ${b.sealProgress}%）！`));
+      } else {
+        pushLog(b, logTag('cbl-star', `🌪️ 前排 ${ally.name} 振袖卷起「疾风截势」压制 ${target.name}，造成 ${finalDmg} 伤害并削弱其本轮攻势（合围封锁 ${b.sealProgress}%）！`));
+      }
+      if (didBreak) {
+        pushLog(b, logTag('cbl-ice', `✦ ${ally.name} 击碎 ${target.name} 全部弱点锁，使其陷入破防易伤！`));
+      }
+
+      ally.elemCycleIdx = ((ally.elemCycleIdx || 0) + 1) % elems.length;
+      ally.nextElement = elems[ally.elemCycleIdx];
+
+      spawnCombatFloat(b, 'enemy', `-${finalDmg} ${floatTag}`, floatKind, targetIdx);
+      queueHitPulse(b, 'enemy', targetIdx);
+      queueElementVFX(b, elem === 'earth' ? 'break' : 'crit', 'enemy', targetIdx, { skipHitStop: true });
+      queuePixelAction(b, {
+        type: 'ally_action',
+        allyKey: `ally:${ally.id}`,
+        element: elem,
+        targetIdx,
+        dmg: finalDmg,
+        label: actionLabel,
+      });
+      if (!b.headless) safeSfx(triggeredFrost || didBreak ? 'break_chime' : 'ice_cast');
+
+      if (checkImmediateVictoryOrNextWave(b, { fromEndTurn: true, bankedAp })) {
+        return { ended: true };
+      }
+    }
+    return { ended: false };
   }
 
   function _endTurnCore(b) {
@@ -5833,6 +6221,13 @@
     b.aiMemory.currentTurnDmgDealt = 0;
 
     const banked = Math.min(1, Math.max(0, b.ap));
+
+    // 前排友军主力行动阶段（如罗文战雷纳德土/火/风三系压制）
+    const allyRes = runAlliesPhase(b, banked);
+    if (allyRes.ended) {
+      if (!b.headless) renderCombatUI();
+      return true;
+    }
 
     // 敌方依次行动
     for (const e of b.enemies) {
@@ -5912,6 +6307,53 @@
       }
 
       if (intent.dmg > 0) {
+        const frontAlly = (b.allies || []).find(a => a && a.hp > 0 && a.tauntFront);
+        const targetsAlly = !!(
+          frontAlly &&
+          intent.targetRole !== 'backline' &&
+          intent.stance !== 'UNDER_SEEP' &&
+          intent.stance !== 'CLOSE_LUNGE' &&
+          !intent.thrownStaff &&
+          !intent.eclipseTrueMagic
+        );
+
+        if (targetsAlly) {
+          let allyIncoming = Math.round(intent.dmg);
+          if (e.broken) allyIncoming = Math.round(allyIncoming * COMBAT_BALANCE_V22.HSR_AV.breakRecoveryAtkMult);
+          if (e.status.chill > 0) allyIncoming = Math.round(allyIncoming * 0.86);
+          if (e.status.windSuppressed > 0) allyIncoming = Math.round(allyIncoming * 0.85);
+          const aDef = Math.max(0, intent.elem === 'phys' ? (frontAlly.def || 0) : (frontAlly.mdef || 0));
+          allyIncoming = Math.max(4, Math.round(allyIncoming * (COMBAT_BALANCE_V22.DEF_K / (COMBAT_BALANCE_V22.DEF_K + aDef))));
+
+          frontAlly.shield = Math.max(0, frontAlly.shield || 0);
+          const aBlk = Math.min(frontAlly.shield, allyIncoming);
+          frontAlly.shield = Math.max(0, frontAlly.shield - aBlk);
+          const allyHpLoss = Math.max(0, allyIncoming - aBlk);
+          frontAlly.hp = Math.max(0, frontAlly.hp - allyHpLoss);
+
+          queuePixelAction(b, {
+            type: 'enemy_attack',
+            enemyIdx: b.enemies.indexOf(e),
+            enemy: e,
+            intent,
+            hpLoss: allyHpLoss,
+            blocked: allyHpLoss === 0,
+            targetActorKey: `ally:${frontAlly.id}`,
+          });
+          if (allyHpLoss > 0) {
+            spawnCombatFloat(b, 'ally', `-${allyHpLoss}`, 'enemy-dmg');
+            queueHitPulse(b, 'ally', 0);
+            if (!b.headless) safeSfx('bad');
+            pushLog(b, logTag('cbl-ice', `🪨 前排 ${frontAlly.name} 正面硬接 ${e.name} 的「${intent.moveName}」，岩盾抵消 ${aBlk}、承伤 ${allyHpLoss}（后排希尔维亚安然无恙）！`));
+          } else {
+            spawnCombatFloat(b, 'ally', `岩盾格挡 ${aBlk}`, 'shield');
+            if (!b.headless) safeSfx('shield_block');
+            pushLog(b, logTag('cbl-ice', `🪨 前排 ${frontAlly.name} 凭厚重岩盾稳稳拦下 ${e.name} 的「${intent.moveName}」（岩盾剩余 ${frontAlly.shield}）！`));
+          }
+          if (tickEnemyEndTurn(b, e)) return true;
+          continue;
+        }
+
         let afterimageShearMult = 1.0;
         // 1) 风行残像闪避（风神多段御风招式可震散单层残像，仅减免部分余岚）
         if (p.status.afterimage > 0) {
@@ -5921,7 +6363,7 @@
             pushLog(b, logTag('cbl-emerald', `🌪️ ${e.name} 御风震散你的「风行残像」，余岚仍旧破风袭身！`));
           } else {
             pushLog(b, logTag('cbl-emerald', `💨 「风行残像」碎裂，你真身避开了 ${e.name} 的「${intent.moveName}」！`));
-            queuePixelAction(b, { type: 'enemy_attack', enemyIdx: b.enemies.indexOf(e), enemy: e, intent, hpLoss: 0, evaded: true });
+            queuePixelAction(b, { type: 'enemy_attack', enemyIdx: b.enemies.indexOf(e), enemy: e, intent, hpLoss: 0, evaded: true, targetActorKey: 'player' });
             if (hasRelic(p, 'alice_flower_cake')) {
               const beforeMp = p.mp;
               p.mp = Math.min(p.mmp, p.mp + 10);
@@ -5964,7 +6406,7 @@
           queueHitPulse(b, 'enemy', ripIdx);
           queueElementVFX(b, 'sword', 'enemy', ripIdx);
           queueElementVFX(b, 'break', 'enemy', ripIdx);
-          queuePixelAction(b, { type: 'enemy_attack', enemyIdx: ripIdx, enemy: e, intent, hpLoss: 0, parried: true });
+          queuePixelAction(b, { type: 'enemy_attack', enemyIdx: ripIdx, enemy: e, intent, hpLoss: 0, parried: true, targetActorKey: 'player' });
           if (!getPixelVfxApi()) addCombatTrauma(0.64, b);
           triggerBreakJuice(b, 'parry');
           if (getSynergyTier(p, 'jikan_blade') >= 2 && p.hasManaCycle && riposteDmg > 0) {
@@ -5992,6 +6434,7 @@
         let incoming = Math.round(intent.dmg * afterimageShearMult);
         if (e.broken) incoming = Math.round(incoming * COMBAT_BALANCE_V22.HSR_AV.breakRecoveryAtkMult);
         if (e.status.chill > 0) incoming = Math.round(incoming * 0.86);
+        if (e.status.windSuppressed > 0) incoming = Math.round(incoming * 0.85);
         if (intent.elem === 'fire' && p.passives.includes('temp_sense')) {
           incoming = Math.round(incoming * 0.8);
         }
@@ -6005,28 +6448,43 @@
         const isRowanEclipseTrue = !!intent.eclipseTrueMagic;
         const playerShieldKind = p.shieldKind || 'solid';
         const bypassMagicPlayerShield = !!(isRowanEclipseTrue && p.shield > 0 && playerShieldKind === 'magic');
+        let allyGuarded = false;
+
+        if (frontAlly && b.stageCfg.sealRule && intent.renoRockBlock) {
+          allyGuarded = true;
+          queuePixelAction(b, {
+            type: 'ally_guard',
+            allyKey: `ally:${frontAlly.id}`,
+            targetActorKey: 'player',
+            label: `${frontAlly.name} · 掀石协防`,
+          });
+        }
 
         if (isRowanEclipseTrue) {
           // V2.2 敌我同规：罗文晦轮杖魔法真伤无视 MDEF 与魔法水幕；实体厚冰墙阻尼 50%，叠加雷纳德岩板阻尼 75%
           if (p.shield > 0 && playerShieldKind === 'solid') {
             if (b.stageCfg.sealRule && intent.renoRockBlock) {
               incoming = Math.round(incoming * 0.25);
-              pushLog(b, logTag('cbl-star', `🪨 雷纳德勾起碎石板与你的实体冰墙合力阻尼 75% 晦轮真伤！（须铺设蔓地薄冰主动设伏才能推进封锁度）`));
+              pushLog(b, logTag('cbl-star', `🪨 雷纳德掀石板与你的实体厚冰墙合力阻尼 75% 晦轮真伤！`));
             } else {
               incoming = Math.round(incoming * 0.50);
               pushLog(b, logTag('cbl-ice', `🧊 实体冰墙硬抗阻尼了 50% 晦轮黑芒真伤！`));
             }
           } else if (bypassMagicPlayerShield) {
-            pushLog(b, logTag('cbl-violet', `🌑 罗文晦轮杖引动 100% 魔法真伤，直接洞穿法抗与魔法水幕！（宜改用凝结冰墙等实体盾抵挡）`));
+            if (b.stageCfg.sealRule && intent.renoRockBlock) {
+              incoming = Math.round(incoming * 0.82);
+            }
+            pushLog(b, logTag('cbl-violet', `🌑 罗文晦轮杖绕过前排引动 100% 魔法真伤，直接洞穿法抗与魔法水幕！（宜立凝水厚冰墙等实体盾抵挡）`));
           } else if (b.stageCfg.sealRule && intent.renoRockBlock) {
-            incoming = Math.round(incoming * 0.65);
+            incoming = Math.round(incoming * 0.82);
+            pushLog(b, logTag('cbl-danger', `🌑 罗文偷袭绕过前排直击后排！雷纳德仓促掀石仅削去些许余势，毫无冰墙防备的你遭到重创！`));
           }
           incoming = Math.max(4, Math.round(incoming));
         } else {
-          // 罗文首击黑光等常规雷纳德岩板协助减伤
+          // 常规招式下雷纳德岩板协助减伤
           if (b.stageCfg.sealRule && intent.renoRockBlock && p.shield > 0) {
             incoming = Math.round(incoming * 0.45);
-            pushLog(b, logTag('cbl-star', `🪨 雷纳德勾起碎石板与你的冰墙合力拦下大半黑光！（提示：须铺设蔓地薄冰主动设伏才能推进封锁度）`));
+            pushLog(b, logTag('cbl-star', `🪨 雷纳德掀石板与你的冰墙合力拦下大半攻势！`));
           }
           // V2.2 K=80 双曲线比值防御
           const pDef = Math.max(0, intent.elem === 'phys' ? p.def : p.mdef);
@@ -6063,7 +6521,7 @@
           queueHitPulse(b, 'player', 0);
           const eHitVfx = intent.elem === 'water' ? 'water' : intent.elem === 'ice' ? 'ice' : 'sword';
           queueElementVFX(b, eHitVfx, 'player', 0, { skipHitStop: true });
-          queuePixelAction(b, { type: 'enemy_attack', enemyIdx: b.enemies.indexOf(e), enemy: e, intent, hpLoss, blocked: false });
+          queuePixelAction(b, { type: 'enemy_attack', enemyIdx: b.enemies.indexOf(e), enemy: e, intent, hpLoss, blocked: false, targetActorKey: 'player', guardedByAlly: allyGuarded ? `ally:${frontAlly.id}` : null });
           if (!b.headless) safeSfx('bad');
           pushLog(b, logTag('cbl-danger', `❗ ${e.name} 施展「${intent.moveName}」，造成 ${hpLoss} 伤害${hpLoss < incoming ? `（护盾抵消 ${incoming - hpLoss}）` : ''}！`));
           if (intent.scoresHit && b.stageCfg.hitRule) {
@@ -6076,7 +6534,7 @@
             }
           }
         } else {
-          queuePixelAction(b, { type: 'enemy_attack', enemyIdx: b.enemies.indexOf(e), enemy: e, intent, hpLoss: 0, blocked: true });
+          queuePixelAction(b, { type: 'enemy_attack', enemyIdx: b.enemies.indexOf(e), enemy: e, intent, hpLoss: 0, blocked: true, targetActorKey: 'player', guardedByAlly: allyGuarded ? `ally:${frontAlly.id}` : null });
           if (!b.headless) safeSfx('shield_block');
           pushLog(b, logTag('cbl-ice', `🛡️ 你的护盾稳稳挡下了 ${e.name} 的「${intent.moveName}」！`));
         }
@@ -6406,6 +6864,15 @@
     if (!root) return null;
     if (root.querySelector('.cb-shell')) return root;
 
+    // CSS Grid 2列×3行（行优先流）：每行依次 [左列, 右列]，使后排(0,1,2)居左列、前排(3,4,5)居右列靠中场
+    const allySlotsHtml = [0, 3, 1, 4, 2, 5].map(s => {
+      const c = getFormationSlotCoords('ally', s);
+      const standeeHtml = s === 4
+        ? '<div class="cb-standee-wrap" id="cb-player-standee-wrap"><div class="cb-magic-circle" aria-hidden="true"></div><div class="cb-p-portrait" id="cb-p-portrait"></div></div>'
+        : '';
+      return `<div class="cb-slot cb-ally-slot${s === 4 ? ' is-occupied' : ' is-empty'}" data-side="ally" data-slot="${c.slot}" data-row="${c.row}" data-col="${c.col}"><div class="cb-slot-pad"></div>${standeeHtml}</div>`;
+    }).join('');
+
     root.innerHTML = `
       <div class="cb-backdrop" id="cb-backdrop"></div>
       <div class="cb-vignette" aria-hidden="true"></div>
@@ -6432,37 +6899,40 @@
           <div class="cb-callout-layer" id="cb-callout-layer"></div>
 
           <div class="cb-player-stage" id="cb-player-stage">
-            <div class="cb-standee-wrap">
-              <div class="cb-magic-circle" aria-hidden="true"></div>
-              <div class="cb-p-portrait" id="cb-p-portrait"></div>
+            <div class="cb-formation-grid cb-ally-grid" id="cb-ally-formation">
+              ${allySlotsHtml}
             </div>
-            <aside class="cb-player-pane" id="cb-player-pane">
-              <div class="cb-p-header">
-                <div class="cb-p-title">
-                  <div class="cb-p-name" id="cb-p-name">希尔维亚</div>
-                  <div class="cb-p-sub" id="cb-p-sub">物攻 -- · 魔攻 --</div>
+            <div class="cb-party-panes" id="cb-party-panes">
+              <aside class="cb-player-pane" id="cb-player-pane">
+                <div class="cb-p-header">
+                  <div class="cb-p-title">
+                    <div class="cb-p-name" id="cb-p-name">希尔维亚</div>
+                    <div class="cb-p-sub" id="cb-p-sub">物攻 -- · 魔攻 --</div>
+                  </div>
+                  <div class="cb-ap-row" id="cb-ap-row"></div>
                 </div>
-                <div class="cb-ap-row" id="cb-ap-row"></div>
-              </div>
-              <div class="cb-bars-wrap">
-                <div class="cb-stat-row">
-                  <div class="cb-stat-top"><span>生命值 HP</span><span id="cb-php-txt">0/0</span></div>
-                  <div class="cb-stat-track"><div class="cb-stat-fill hp" id="cb-php-bar"></div></div>
-                </div>
-                <div class="cb-stat-row">
-                  <div class="cb-stat-top"><span>魔力池 MP</span><span id="cb-pmp-txt">0/0</span></div>
-                  <div class="cb-stat-track">
-                    <div class="cb-stat-fill mp" id="cb-pmp-bar"></div>
-                    <div class="cb-mp-commit" id="cb-mp-commit"></div>
-                    <div class="cb-stat-ticks"></div>
+                <div class="cb-bars-wrap">
+                  <div class="cb-stat-row">
+                    <div class="cb-stat-top"><span>生命值 HP</span><span id="cb-php-txt">0/0</span></div>
+                    <div class="cb-stat-track"><div class="cb-stat-fill hp" id="cb-php-bar"></div></div>
+                  </div>
+                  <div class="cb-stat-row">
+                    <div class="cb-stat-top"><span>魔力池 MP</span><span id="cb-pmp-txt">0/0</span></div>
+                    <div class="cb-stat-track">
+                      <div class="cb-stat-fill mp" id="cb-pmp-bar"></div>
+                      <div class="cb-mp-commit" id="cb-mp-commit"></div>
+                      <div class="cb-stat-ticks"></div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="cb-buff-list" id="cb-p-buffs"></div>
-            </aside>
+                <div class="cb-buff-list" id="cb-p-buffs"></div>
+              </aside>
+            </div>
           </div>
 
-          <section class="cb-enemy-zone" id="cb-enemy-zone"></section>
+          <div class="cb-mid-corridor" id="cb-mid-corridor" aria-hidden="true"></div>
+
+          <section class="cb-enemy-zone cb-formation-grid cb-enemy-grid" id="cb-enemy-zone"></section>
         </div>
 
         <div class="cb-forecast-bar" id="cb-forecast-bar">${isCoarseTouchDevice() ? '轻点技能卡查看破招与预计伤害，再次点击施放' : '悬停任意技能卡，实时推演架势克制、破招截断、预计伤害与魔力增幅'}</div>
@@ -6554,6 +7024,10 @@
 
   function syncHoverEnemyGlow(sid, bOverride) {
     if (typeof document === 'undefined') return;
+    if (sid && typeof sid === 'object' && ('enemies' in sid || 'player' in sid)) {
+      bOverride = sid;
+      sid = hoveredSkillId || null;
+    }
     const b = bOverride || activeBattle;
     const eZone = document.getElementById('cb-enemy-zone');
     if (!eZone) return;
@@ -6849,8 +7323,25 @@
     const pxApi = getPixelVfxApi();
     const isVol3Disguise = VOL3_DISGUISE_STAGES.has(b.id) || (p.name && p.name.includes('眷寒渔'));
     const pImg = resolveCharImg('sylvia', p.hp < p.mhp * 0.4 ? 'serious' : 'normal', stageAge, { disguise: isVol3Disguise });
+    const allies = Array.isArray(b.allies) ? b.allies : [];
+    const hasVanguardAlly = allies.length > 0;
+    const playerStage = document.getElementById('cb-player-stage');
+    if (playerStage) {
+      playerStage.classList.toggle('has-vanguard-ally', hasVanguardAlly);
+    }
+    const allyGrid = document.getElementById('cb-ally-formation');
     const pPortEl = document.getElementById('cb-p-portrait');
-    const pStandeeWrap = pPortEl ? pPortEl.closest('.cb-standee-wrap') : null;
+    const pStandeeWrap = document.getElementById('cb-player-standee-wrap') || (pPortEl ? pPortEl.closest('.cb-standee-wrap') : null);
+    const playerSlotIdx = hasVanguardAlly ? 1 : 4;
+    const occupiedAllySlots = new Set([playerSlotIdx]);
+
+    if (allyGrid && pStandeeWrap) {
+      const pTargetSlot = allyGrid.querySelector(`.cb-ally-slot[data-slot="${playerSlotIdx}"]`);
+      if (pTargetSlot && pStandeeWrap.parentElement !== pTargetSlot) {
+        pTargetSlot.appendChild(pStandeeWrap);
+      }
+    }
+
     if (pxApi && pPortEl) {
       const pSpriteId = pxApi.resolvePlayerSpriteId(b, isVol3Disguise);
       pPortEl.classList.remove('is-svg');
@@ -6873,6 +7364,100 @@
       pPortEl.classList.toggle('is-svg', !pImg);
       pPortEl.innerHTML = pImg ? `<img src="${pImg}" alt="${p.name}"/>` : renderBeastCrestSVG('wolf');
     }
+
+    const primaryAlly = allies[0] || null;
+    const partyPanes = document.getElementById('cb-party-panes');
+    if (primaryAlly && allyGrid) {
+      const aSlotIdx = Number.isInteger(primaryAlly.slot) && primaryAlly.slot >= 0 && primaryAlly.slot <= 5 ? primaryAlly.slot : 4;
+      occupiedAllySlots.add(aSlotIdx);
+      const aTargetSlot = allyGrid.querySelector(`.cb-ally-slot[data-slot="${aSlotIdx}"]`);
+      let vWrap = document.getElementById('cb-ally-vanguard-slot');
+      const aActorKey = `ally:${primaryAlly.id}`;
+      const aSpriteId = primaryAlly.spriteId || primaryAlly.id || 'reno';
+      if (!vWrap) {
+        vWrap = document.createElement('div');
+        vWrap.id = 'cb-ally-vanguard-slot';
+        vWrap.className = 'cb-ally-vanguard-slot';
+        vWrap.innerHTML = `<div class="cb-standee-wrap cb-ally-standee"><div class="cb-magic-circle ally" aria-hidden="true"></div><div class="cb-ally-portrait" id="cb-ally-portrait"></div></div>`;
+      }
+      vWrap.setAttribute('data-ally-id', primaryAlly.id);
+      vWrap.setAttribute('data-slot', String(aSlotIdx));
+      if (aTargetSlot && vWrap.parentElement !== aTargetSlot) {
+        aTargetSlot.appendChild(vWrap);
+      }
+      const allyStandee = vWrap.querySelector('.cb-ally-standee');
+      const allyPortEl = vWrap.querySelector('#cb-ally-portrait');
+      const aImg = resolveCharImg(primaryAlly.id, 'normal', stageAge);
+      if (pxApi && allyPortEl) {
+        allyPortEl.classList.remove('is-svg');
+        allyPortEl.classList.add('has-px-actor');
+        if (allyStandee) allyStandee.classList.add('has-px-actor');
+        const existingAllyPx = allyPortEl.querySelector(`.cb-px-actor[data-sprite-id="${aSpriteId}"][data-actor-key="${aActorKey}"]`);
+        if (!existingAllyPx) {
+          allyPortEl.innerHTML = pxApi.renderActorMarkup(aSpriteId, {
+            actorKey: aActorKey,
+            label: primaryAlly.name,
+            dead: primaryAlly.hp <= 0,
+            fallbackImg: aImg,
+          });
+        } else {
+          existingAllyPx.classList.toggle('is-dead', primaryAlly.hp <= 0);
+        }
+      } else if (allyPortEl) {
+        allyPortEl.classList.remove('has-px-actor');
+        if (allyStandee) allyStandee.classList.remove('has-px-actor');
+        allyPortEl.classList.toggle('is-svg', !aImg);
+        allyPortEl.innerHTML = aImg ? `<img src="${aImg}" alt="${primaryAlly.name}"/>` : `<span class="cb-ally-fallback-badge">${primaryAlly.name}</span>`;
+      }
+
+      if (partyPanes) {
+        let allyPane = document.getElementById('cb-ally-pane');
+        if (!allyPane) {
+          allyPane = document.createElement('aside');
+          allyPane.id = 'cb-ally-pane';
+          allyPane.className = 'cb-ally-pane';
+          partyPanes.appendChild(allyPane);
+        }
+        const nextElem = primaryAlly.nextElement || (primaryAlly.elements && primaryAlly.elements[0]) || 'earth';
+        const elemMeta = ALLY_ELEM_META[nextElem] || ALLY_ELEM_META.earth;
+        const aHpPct = Math.max(0, Math.min(100, (primaryAlly.hp / Math.max(1, primaryAlly.mhp)) * 100));
+        const aShPct = Math.max(0, Math.min(100, ((primaryAlly.shield || 0) / Math.max(1, primaryAlly.maxShield || 160)) * 100));
+        allyPane.innerHTML = `
+          <div class="cb-ally-header">
+            <div class="cb-ally-title">
+              <div class="cb-ally-name">${primaryAlly.name}</div>
+              <div class="cb-ally-role">${primaryAlly.title || '前排主力'}</div>
+            </div>
+            <span class="cb-ally-elem-badge elem-${nextElem}" data-next-elem="${nextElem}">下回合 · ${elemMeta.badge}</span>
+          </div>
+          <div class="cb-bars-wrap">
+            <div class="cb-stat-row">
+              <div class="cb-stat-top"><span>生命值 HP</span><span class="cb-ally-hp-txt">${primaryAlly.hp}/${primaryAlly.mhp}</span></div>
+              <div class="cb-stat-track"><div class="cb-stat-fill hp ally-hp" style="width:${aHpPct.toFixed(1)}%"></div></div>
+            </div>
+            <div class="cb-stat-row">
+              <div class="cb-stat-top"><span>岩盾护壁</span><span class="cb-ally-shield-txt">${primaryAlly.shield || 0}/${primaryAlly.maxShield || 160}</span></div>
+              <div class="cb-stat-track"><div class="cb-stat-fill shield ally-shield" style="width:${aShPct.toFixed(1)}%"></div></div>
+            </div>
+          </div>
+        `;
+      }
+    } else {
+      const oldV = document.getElementById('cb-ally-vanguard-slot');
+      if (oldV && oldV.parentNode) oldV.remove();
+      const oldPane = document.getElementById('cb-ally-pane');
+      if (oldPane && oldPane.parentNode) oldPane.remove();
+    }
+
+    if (allyGrid) {
+      allyGrid.querySelectorAll('.cb-ally-slot').forEach(slotEl => {
+        const sIdx = Number(slotEl.getAttribute('data-slot'));
+        const occ = occupiedAllySlots.has(sIdx);
+        slotEl.classList.toggle('is-occupied', occ);
+        slotEl.classList.toggle('is-empty', !occ);
+      });
+    }
+
     document.getElementById('cb-p-name').textContent = p.name;
     document.getElementById('cb-p-sub').textContent = `物攻 ${p.atk} · 魔攻 ${p.matk} · 双抗 ${p.def}/${p.mdef}`;
 
@@ -6964,6 +7549,7 @@
     const isMultiEnemy = b.enemies.length > 1;
     const eZone = document.getElementById('cb-enemy-zone');
     eZone.classList.toggle('multi-enemies', isMultiEnemy);
+    eZone.setAttribute('data-enemy-count', String(b.enemies.length));
 
     // 复用既有敌方像素精灵 DOM：严格核对 battleInstanceId 与 waveIdx，杜绝跨波次/重开串用残态精灵！
     const waveSig = `${b.battleInstanceId || 0}:${b.waveIdx || 0}`;
@@ -6979,7 +7565,22 @@
     }
     eZone.dataset.waveSig = waveSig;
 
-    eZone.innerHTML = b.enemies.map((e, idx) => {
+    const enemySlotAssignments = resolveEnemyFormationSlots(b.enemies);
+    const enemyBySlot = new Map();
+    b.enemies.forEach((e, idx) => {
+      const assignedSlot = enemySlotAssignments[idx];
+      e.slot = assignedSlot;
+      enemyBySlot.set(assignedSlot, { e, idx, slot: assignedSlot });
+    });
+
+    // CSS Grid 2列×3行（行优先流）：每行依次 [前排靠中场(0,1,2), 后排(3,4,5)]
+    eZone.innerHTML = [0, 3, 1, 4, 2, 5].map(s => {
+      const coords = getFormationSlotCoords('enemy', s);
+      const entry = enemyBySlot.get(s);
+      if (!entry) {
+        return `<div class="cb-slot cb-enemy-slot is-empty" data-side="enemy" data-slot="${coords.slot}" data-row="${coords.row}" data-col="${coords.col}"><div class="cb-slot-pad"></div></div>`;
+      }
+      const { e, idx, slot } = entry;
       const intent = e.intent || { stance: 'STAGGERED', moveName: '已倒下', dmg: 0 };
       const sm = STANCE_META[intent.stance] || STANCE_META.HEAVY_WINDUP;
       const eImg = e.charId ? resolveCharImg(e.charId, 'normal', stageAge) : null;
@@ -7042,58 +7643,61 @@
         : `<div class="cb-e-avatar${eVisual.isSvg ? ' is-svg' : ''}${eVisual.isCgPortrait ? ' is-cg-portrait' : ''}">${eVisual.html}</div>`;
 
       return `
-        <article class="cb-enemy-card${idx === b.targetIdx ? ' targeted' : ''}${e.hp <= 0 ? ' dead' : ''}${intent.stance === 'STAGGERED' ? ' staggered' : ''}${isHeavyWarn ? ' intent-heavy-warn' : ''}${e.boss && (e.phase || 1) >= 2 ? ' phase2-boss' : ''}" data-eidx="${idx}">
-          <div class="cb-intent-banner stance-${intent.stance}" tabindex="0">
-            <div class="ib-row">
-              <span class="ib-stance-tag">${sm.short}</span>
-              <span class="ib-move-name">${shortMove}</span>
-              <span class="ib-dmg-pill">${dmgPillText}</span>
-              <button type="button" class="ib-info-btn" aria-label="查看架势对策" title="${fullTipAttr}">i</button>
-            </div>
-            ${nextLine}
-            <div class="cb-intent-tip" role="tooltip">
-              <div class="ib-tip-head">${sm.badge}</div>
-              <div class="ib-tip-move">招式：<b>${intent.moveName}</b></div>
-              <div class="ib-tip-hint">${sm.hint}</div>
-            </div>
-          </div>
-
-          <div class="cb-e-stage${pxApi ? ' has-px-actor' : ''}">
-            <div class="cb-magic-circle enemy" aria-hidden="true"></div>
-            ${eStageHtml}
-          </div>
-
-          <div class="cb-e-plate">
-            <span class="cb-hp-microtag" data-eidx="${idx}"></span>
-            <div class="cb-e-info">
-              <div class="cb-e-name">
-                <span class="cb-e-title">${e.name}</span>
-                <span class="cb-e-badges">
-                  ${traitHtml}
-                  <span class="cb-elem-tag elem-${e.elem || 'phys'}">${ELEM_LABEL[e.elem] || '剑术'}</span>
-                </span>
+        <div class="cb-slot cb-enemy-slot is-occupied" data-side="enemy" data-slot="${coords.slot}" data-row="${coords.row}" data-col="${coords.col}">
+          <div class="cb-slot-pad"></div>
+          <article class="cb-enemy-card${idx === b.targetIdx ? ' targeted' : ''}${e.hp <= 0 ? ' dead' : ''}${intent.stance === 'STAGGERED' ? ' staggered' : ''}${isHeavyWarn ? ' intent-heavy-warn' : ''}${e.boss && (e.phase || 1) >= 2 ? ' phase2-boss' : ''}" data-eidx="${idx}" data-slot="${slot}">
+            <div class="cb-intent-banner stance-${intent.stance}" tabindex="0">
+              <div class="ib-row">
+                <span class="ib-stance-tag">${sm.short}</span>
+                <span class="ib-move-name">${shortMove}</span>
+                <span class="ib-dmg-pill">${dmgPillText}</span>
+                <button type="button" class="ib-info-btn" aria-label="查看架势对策" title="${fullTipAttr}">i</button>
+              </div>
+              ${nextLine}
+              <div class="cb-intent-tip" role="tooltip">
+                <div class="ib-tip-head">${sm.badge}</div>
+                <div class="ib-tip-move">招式：<b>${intent.moveName}</b></div>
+                <div class="ib-tip-hint">${sm.hint}</div>
               </div>
             </div>
-            <div class="cb-bars-wrap">
-              <div class="cb-stat-row">
-                <div class="cb-stat-top">
-                  <span class="cb-stat-label">${hpLabel}</span>
-                  <span class="cb-stat-val">${e.nonLethalSpar ? '点到为止' : `${e.hp}/${e.mhp}`}${e.shield ? ` (+盾${e.shield})` : ''}</span>
-                </div>
-                <div class="cb-stat-track">
-                  <div class="cb-stat-fill ehp" style="width:${e.nonLethalSpar ? 100 : Math.max(0, e.hp / e.mhp * 100)}%"></div>
-                  <div class="cb-ehp-preview cb-hp-preview" data-eidx="${idx}"></div>
+
+            <div class="cb-e-stage${pxApi ? ' has-px-actor' : ''}">
+              <div class="cb-magic-circle enemy" aria-hidden="true"></div>
+              ${eStageHtml}
+            </div>
+
+            <div class="cb-e-plate">
+              <span class="cb-hp-microtag" data-eidx="${idx}"></span>
+              <div class="cb-e-info">
+                <div class="cb-e-name">
+                  <span class="cb-e-title">${e.name}</span>
+                  <span class="cb-e-badges">
+                    ${traitHtml}
+                    <span class="cb-elem-tag elem-${e.elem || 'phys'}">${ELEM_LABEL[e.elem] || '剑术'}</span>
+                  </span>
                 </div>
               </div>
-              ${e.mmp != null ? `
-              <div class="cb-stat-row">
-                <div class="cb-stat-top"><span class="cb-stat-label">${mpLabel}</span><span class="cb-stat-val">${e.mp}/${e.mmp}</span></div>
-                <div class="cb-stat-track"><div class="cb-stat-fill emp" style="width:${Math.max(0, e.mp / e.mmp * 100)}%"></div></div>
-              </div>` : ''}
+              <div class="cb-bars-wrap">
+                <div class="cb-stat-row">
+                  <div class="cb-stat-top">
+                    <span class="cb-stat-label">${hpLabel}</span>
+                    <span class="cb-stat-val">${e.nonLethalSpar ? '点到为止' : `${e.hp}/${e.mhp}`}${e.shield ? ` (+盾${e.shield})` : ''}</span>
+                  </div>
+                  <div class="cb-stat-track">
+                    <div class="cb-stat-fill ehp" style="width:${e.nonLethalSpar ? 100 : Math.max(0, e.hp / e.mhp * 100)}%"></div>
+                    <div class="cb-ehp-preview cb-hp-preview" data-eidx="${idx}"></div>
+                  </div>
+                </div>
+                ${e.mmp != null ? `
+                <div class="cb-stat-row">
+                  <div class="cb-stat-top"><span class="cb-stat-label">${mpLabel}</span><span class="cb-stat-val">${e.mp}/${e.mmp}</span></div>
+                  <div class="cb-stat-track"><div class="cb-stat-fill emp" style="width:${Math.max(0, e.mp / e.mmp * 100)}%"></div></div>
+                </div>` : ''}
+              </div>
+              <div class="cb-buff-list">${eBuffs.join('')}</div>
             </div>
-            <div class="cb-buff-list">${eBuffs.join('')}</div>
-          </div>
-        </article>
+          </article>
+        </div>
       `;
     }).join('');
 
@@ -7139,10 +7743,7 @@
       card.onclick = () => {
         const idx = Number(card.getAttribute('data-eidx'));
         if (b.enemies[idx] && b.enemies[idx].hp > 0) {
-          armedSkillId = null;
-          hoveredSkillId = null;
-          b.targetIdx = idx;
-          renderCombatUI();
+          selectTarget(idx, b);
         }
       };
     });
@@ -7231,7 +7832,6 @@
         const sid = btn.getAttribute('data-sk');
         btn.onmouseenter = () => {
           hoveredSkillId = sid;
-          if (!btn.disabled) playCardHoverSfx();
           if (activeBattle) updateOvercastPreviewUI(activeBattle, sid);
         };
         btn.onfocus = () => {
@@ -7275,11 +7875,11 @@
       if (b._pendingPixelActions && b._pendingPixelActions.length) {
         const pxQueue = b._pendingPixelActions.slice();
         b._pendingPixelActions.length = 0;
-        const enemyBatch = [];
+        const turnBatch = [];
         pxQueue.forEach(act => {
           if (act.waveIdx !== (b.waveIdx || 0)) return;
-          if (act.type === 'enemy_attack') {
-            enemyBatch.push(act);
+          if (act.type === 'enemy_attack' || act.type === 'ally_action' || act.type === 'ally_guard') {
+            turnBatch.push(act);
           } else if (act.type === 'skill') {
             pxApi.playSkillAction(b, act);
           } else if (act.type === 'wand_toggle') {
@@ -7290,8 +7890,40 @@
             pxApi.playBondAssist(act.charId);
           }
         });
-        if (enemyBatch.length) {
-          pxApi.playEnemySequence(b, enemyBatch);
+        if (turnBatch.length) {
+          if (typeof pxApi.playTurnSequence === 'function') {
+            pxApi.playTurnSequence(b, turnBatch);
+          } else {
+            const allyActs = turnBatch.filter(a => a.type === 'ally_action');
+            const allyGuards = turnBatch.filter(a => a.type === 'ally_guard');
+            const enemyActs = turnBatch.filter(a => a.type === 'enemy_attack');
+            allyActs.forEach(a => {
+              if (typeof pxApi.playAllyAction === 'function') {
+                pxApi.playAllyAction(b, a);
+              } else if (typeof pxApi.playRenoSupport === 'function') {
+                pxApi.playRenoSupport(a.element, { enemyIdx: a.targetIdx, tagText: a.label });
+              }
+            });
+            const runEnemyHalf = () => {
+              allyGuards.forEach(a => {
+                if (typeof pxApi.playAllyGuard === 'function') {
+                  pxApi.playAllyGuard(b, a);
+                }
+              });
+              if (enemyActs.length) {
+                pxApi.playEnemySequence(b, enemyActs);
+              }
+            };
+            if (allyActs.length > 0 && (allyGuards.length > 0 || enemyActs.length > 0) && typeof global.setTimeout === 'function') {
+              trackVfxTimer(() => {
+                if (activeBattle === b && !b.headless && getPixelVfxApi()) {
+                  runEnemyHalf();
+                }
+              }, 380);
+            } else {
+              runEnemyHalf();
+            }
+          }
         }
       }
     } else {
@@ -7301,7 +7933,9 @@
         pulses.forEach(pt => {
           const el = pt.side === 'player'
             ? document.getElementById('cb-p-portrait')
-            : eZone.querySelector(`.cb-enemy-card[data-eidx="${pt.enemyIdx}"] .cb-e-avatar`);
+            : pt.side === 'ally'
+              ? (document.getElementById('cb-ally-portrait') || document.getElementById('cb-ally-vanguard-slot'))
+              : eZone.querySelector(`.cb-enemy-card[data-eidx="${pt.enemyIdx}"] .cb-e-avatar`);
           if (el) {
             el.classList.remove('cb-unit-hit');
             void el.offsetWidth;
@@ -7514,8 +8148,8 @@
 
     const parts = [];
     if (!b.won) {
-      if (b.endReason === 'rowan_escaped') {
-        parts.push('合围封锁度尚未蓄满便耗空目标生命，罗文借晦轮杖化雾脱身；须先铺蔓地薄冰卡窄道并合拢双镜夹杖。');
+      if (b.stageCfg && b.stageCfg.sealRule) {
+        parts.push('罗文的晦轮黑光与脱手旋杖会绕过前排雷纳德直袭后排；面对偷袭回合务必立起凝水厚冰墙，配合前排压制与蔓地薄冰即可稳妥活捉。');
       } else if (b.endReason === 'crate_destroyed') {
         parts.push('医疗药箱在持续冲撞下失守；面对蓄力撞箱回合应及时立起钢冰生根盾协防，并以隔空瞬凝截断蓄势。');
       } else if (b.endReason === 'exposed') {
@@ -7612,8 +8246,8 @@
         rewardText = `获得实战收益：${rew.skillName ? `习得「<b>${rew.skillName}</b>」 · ` : ''}经验 +${rew.exp || 30}${rew.gold ? ` · 银币 +${rew.gold}` : ''}`;
       }
     } else {
-      rewardText = b.endReason === 'rowan_escaped'
-        ? '失利原因：未满 100% 合围封锁便打空罗文生命，致其借晦轮杖化雾遁逃！'
+      rewardText = (b.stageCfg && b.stageCfg.sealRule)
+        ? '战术提示：雷纳德顶在前排主攻，留意罗文偷袭黑光与脱手旋杖回合立起实体厚冰墙自保！'
         : '战术提示：紧盯敌方架势预告，切忌无脑复读单招或原地龟缩叠盾！';
     }
 
@@ -7707,6 +8341,12 @@
     if (eZone) delete eZone.dataset.waveSig;
     const pPort = document.getElementById('cb-p-portrait');
     if (pPort) pPort.innerHTML = '';
+    const allySlot = document.getElementById('cb-ally-vanguard-slot');
+    if (allySlot && allySlot.parentNode) allySlot.remove();
+    const allyPane = document.getElementById('cb-ally-pane');
+    if (allyPane && allyPane.parentNode) allyPane.remove();
+    const pStage = document.getElementById('cb-player-stage');
+    if (pStage) pStage.classList.remove('has-vanguard-ally');
     const bs = document.getElementById('battle-screen');
     if (bs) {
       bs.classList.add('hidden');
@@ -7930,6 +8570,12 @@
     if (eZone) delete eZone.dataset.waveSig;
     const pPort = bs.querySelector('#cb-p-portrait');
     if (pPort) pPort.innerHTML = '';
+    const allySlot = bs.querySelector('#cb-ally-vanguard-slot');
+    if (allySlot && allySlot.parentNode) allySlot.remove();
+    const allyPane = bs.querySelector('#cb-ally-pane');
+    if (allyPane && allyPane.parentNode) allyPane.remove();
+    const pStage = bs.querySelector('#cb-player-stage');
+    if (pStage) pStage.classList.remove('has-vanguard-ally');
     const ao = document.getElementById('arena-overlay');
     if (ao) ao.classList.add('hidden');
     bs.classList.remove('palace-timestop', 'wand-refract', 'hit-shake', 'heavy-shake', 'hidden');
@@ -8047,6 +8693,7 @@
       {
         id: 'player',
         side: 'player',
+        allyIdx: -1,
         enemyIdx: -1,
         name: p.name || '希尔维亚',
         charId: 'sylvia',
@@ -8057,12 +8704,32 @@
         broken: false,
       },
     ];
+    (b.allies || []).forEach((a, idx) => {
+      if (!a || a.hp <= 0) return;
+      const aBaseAv = a.baseAv || computeBaseAv(a.spd || 110);
+      units.push({
+        id: a.id || `ally_${idx}`,
+        side: 'ally',
+        allyIdx: idx,
+        enemyIdx: -1,
+        name: a.name,
+        charId: a.id || null,
+        spriteId: a.spriteId || a.id || 'reno',
+        spd: a.spd || 110,
+        baseAv: aBaseAv,
+        simAv: Math.max(1, Number(a.av) || Math.round(aBaseAv * 0.25)),
+        isOneMore: false,
+        broken: false,
+        nextElement: a.nextElement || (a.elements && a.elements[0]) || 'earth',
+      });
+    });
     (b.enemies || []).forEach((e, idx) => {
       if (!e || e.hp <= 0) return;
       const eBaseAv = e.baseAv || computeBaseAv(e.spd || 95);
       units.push({
         id: e.id || `enemy_${idx}`,
         side: 'enemy',
+        allyIdx: -1,
         enemyIdx: idx,
         name: e.name,
         charId: e.charId || null,
@@ -8077,13 +8744,14 @@
       });
     });
 
+    const sideRank = s => (s === 'player' ? 0 : s === 'ally' ? 1 : 2);
     const queue = [];
     let cumAv = 0;
     for (let step = 0; step < total && units.length > 0; step++) {
       let best = units[0];
       for (let i = 1; i < units.length; i++) {
         const u = units[i];
-        if (u.simAv < best.simAv || (u.simAv === best.simAv && u.side === 'player' && best.side !== 'player')) {
+        if (u.simAv < best.simAv || (u.simAv === best.simAv && sideRank(u.side) < sideRank(best.side))) {
           best = u;
         }
       }
@@ -8094,9 +8762,11 @@
         order: step,
         id: best.id,
         side: best.side,
+        allyIdx: best.allyIdx != null ? best.allyIdx : -1,
         enemyIdx: best.enemyIdx,
         name: best.name,
         charId: best.charId,
+        spriteId: best.spriteId || null,
         av: Math.round(cumAv),
         deltaAv: Math.round(delta),
         spd: best.spd,
@@ -8106,6 +8776,7 @@
         locks: best.locks,
         maxLocks: best.maxLocks,
         intentStance: best.intentStance || null,
+        nextElement: best.nextElement || null,
       });
       best.simAv = best.baseAv;
       best.isOneMore = false;
@@ -8121,6 +8792,8 @@
     const derived = computeDerivedAmpState(p);
     const staffDef = getEquippedStaffDef(p);
     const primary = getPrimaryAliveEnemy(b);
+    const hasAllies = Array.isArray(b.allies) && b.allies.length > 0;
+    const enemySlotMap = resolveEnemyFormationSlots(b.enemies);
     return {
       id: b.id,
       battleInstanceId: b.battleInstanceId || 0,
@@ -8159,6 +8832,7 @@
       recentLogs: (b.log || []).slice(-14),
       player: {
         name: p.name,
+        slot: hasAllies ? 1 : 4,
         hp: p.hp,
         mhp: p.mhp,
         mp: p.mp,
@@ -8230,8 +8904,38 @@
           };
         }).filter(Boolean),
       },
+      allies: (b.allies || []).map((a, idx) => ({
+        idx,
+        id: a.id || `ally_${idx}`,
+        name: a.name,
+        title: a.title || '',
+        spriteId: a.spriteId || a.id || 'reno',
+        role: a.role || 'vanguard',
+        slot: Number.isInteger(a.slot) ? a.slot : 4,
+        hp: a.hp,
+        mhp: a.mhp,
+        atk: a.atk,
+        matk: a.matk,
+        def: a.def,
+        mdef: a.mdef,
+        spd: a.spd || 110,
+        av: a.av || 0,
+        baseAv: a.baseAv || computeBaseAv(a.spd || 110),
+        shield: a.shield || 0,
+        maxShield: a.maxShield || 160,
+        shieldKind: a.shieldKind || 'solid',
+        tauntFront: !!a.tauntFront,
+        coverPlayerMitigate: a.coverPlayerMitigate || 0,
+        elements: Array.isArray(a.elements) ? a.elements.slice() : ['earth'],
+        nextElement: a.nextElement || (a.elements && a.elements[0]) || 'earth',
+        totalDmgDealt: a.totalDmgDealt || 0,
+        actionsTaken: a.actionsTaken || 0,
+        alive: a.hp > 0,
+        status: Object.assign({}, a.status),
+      })),
       enemies: (b.enemies || []).map((e, idx) => ({
         idx,
+        slot: Number.isInteger(e.slot) ? e.slot : enemySlotMap[idx],
         id: e.id || `enemy_${idx}`,
         name: e.name,
         charId: e.charId || null,

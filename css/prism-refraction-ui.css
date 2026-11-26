@@ -4138,4 +4138,489 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   border-bottom: none;
 }
 
+/* ==================== 9.x TOP-LEFT FLOATING AV RAIL (1:1 PRISM DEMO) ==================== */
 
+/* 9.x.1 悬浮定位与基础容器（全区零圆角，禁止圆框套圆框） */
+#battle-screen .cb-av-rail {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 192px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 22;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  box-sizing: border-box;
+  border-radius: 0;
+}
+
+#battle-screen .cb-av-rail,
+#battle-screen .cb-av-rail * {
+  box-sizing: border-box;
+  border-radius: 0 !important;
+}
+
+#battle-screen .cb-av-rail.hidden,
+#battle-screen .cb-av-rail[hidden] {
+  display: none;
+}
+
+#battle-screen .cb-av-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 9.x.2 双层虹彩切角行壳（1:1 复刻标杆 .av-row / .av-row-in） */
+#battle-screen .cb-av-row {
+  position: relative;
+  width: 100%;
+  border: none;
+  padding: 1.5px;
+  text-align: left;
+  background: var(--pr-rim);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  filter: drop-shadow(0 8px 18px rgba(10, 28, 82, 0.22));
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), filter 0.2s ease;
+}
+
+#battle-screen .cb-av-row:focus-visible {
+  outline: 1.5px solid var(--pr-sapphire);
+  outline-offset: 2px;
+  filter: drop-shadow(0 0 10px rgba(22, 88, 235, 0.52));
+}
+
+#battle-screen .cb-av-row-in {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 14px 5px 11px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(235, 244, 255, 0.88) 100%);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  clip-path: polygon(0 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+  overflow: hidden;
+}
+
+#battle-screen .cb-av-row-in::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3.5px;
+  background: linear-gradient(180deg, #2D75F8 0%, #1658EB 56%, #0E2B78 100%);
+  pointer-events: none;
+}
+
+/* 敌方阵营切角行壳 */
+#battle-screen .cb-av-row.enemy-row {
+  cursor: pointer;
+  background: var(--pr-rim-enemy);
+}
+
+#battle-screen .cb-av-row.enemy-row:not(.acting):hover {
+  transform: translateX(3px);
+  filter: drop-shadow(0 10px 20px rgba(209, 52, 86, 0.30));
+}
+
+#battle-screen .cb-av-row.enemy-row:focus-visible {
+  outline-color: var(--pr-crimson);
+  filter: drop-shadow(0 0 10px rgba(209, 52, 86, 0.50));
+}
+
+#battle-screen .cb-av-row.enemy-row .cb-av-row-in::before {
+  background: linear-gradient(180deg, #FF7C94 0%, #D13456 56%, #9E1B3A 100%);
+}
+
+/* 前排友军（雷纳德）琥珀香槟金暖瓷切角行壳 */
+#battle-screen .cb-av-row.ally-row {
+  background: var(--pr-rim-gold);
+}
+
+#battle-screen .cb-av-row.ally-row .cb-av-row-in {
+  background: linear-gradient(135deg, rgba(255, 253, 248, 0.94) 0%, rgba(247, 239, 224, 0.88) 100%);
+}
+
+#battle-screen .cb-av-row.ally-row .cb-av-row-in::before {
+  background: linear-gradient(180deg, #F5DFB0 0%, #C68B3E 56%, #8B5B1E 100%);
+}
+
+/* 当前行动者（深皇家蓝宝石折面 + 4.5px 香槟金竖条） */
+#battle-screen .cb-av-row.acting {
+  transform: translateX(6px);
+  filter: drop-shadow(0 10px 24px rgba(22, 88, 235, 0.36));
+}
+
+#battle-screen .cb-av-row.acting .cb-av-row-in {
+  background: linear-gradient(180deg, #2E77F8 0%, #1658EB 49.5%, #0E2B78 50.5%, #081A54 100%);
+}
+
+#battle-screen .cb-av-row.acting .cb-av-row-in::before {
+  width: 4.5px;
+  background: linear-gradient(180deg, #FFF2C6 0%, #C4A46C 58%, #8C6928 100%);
+}
+
+/* 前排友军行动中（深琥珀金折面，确保纯白姓名高对比） */
+#battle-screen .cb-av-row.ally-row.acting {
+  filter: drop-shadow(0 10px 24px rgba(198, 139, 62, 0.38));
+}
+
+#battle-screen .cb-av-row.ally-row.acting .cb-av-row-in {
+  background: linear-gradient(180deg, #B97E2E 0%, #98621A 49.5%, #6F4510 50.5%, #4D2E08 100%);
+}
+
+/* 敌方行动中（绯红宝石折面） */
+#battle-screen .cb-av-row.enemy-row.acting {
+  filter: drop-shadow(0 10px 24px rgba(209, 52, 86, 0.38));
+}
+
+#battle-screen .cb-av-row.enemy-row.acting .cb-av-row-in {
+  background: linear-gradient(180deg, #E24464 0%, #C22346 49.5%, #8D1530 50.5%, #650D22 100%);
+}
+
+/* 下轮预测虚影 & 击破再动 / 推条高光反馈 */
+#battle-screen .cb-av-row.ghost {
+  opacity: 0.62;
+}
+
+#battle-screen .cb-av-row.ghost .cb-av-row-in {
+  background: linear-gradient(135deg, rgba(246, 250, 255, 0.80) 0%, rgba(226, 238, 254, 0.72) 100%);
+}
+
+#battle-screen .cb-av-row.ally-row.ghost .cb-av-row-in {
+  background: linear-gradient(135deg, rgba(255, 252, 245, 0.82) 0%, rgba(245, 236, 218, 0.74) 100%);
+}
+
+#battle-screen .cb-av-row.flash-onemore {
+  background: var(--pr-rim-gold);
+  filter: drop-shadow(0 8px 20px rgba(196, 164, 108, 0.36));
+}
+
+#battle-screen .cb-av-row.flash-delay,
+#battle-screen .cb-av-row.enemy-row.flash-delay {
+  background: linear-gradient(
+    132deg,
+    rgba(156, 228, 255, 0.98) 0%,
+    rgba(22, 88, 235, 0.76) 34%,
+    rgba(255, 255, 255, 0.98) 54%,
+    rgba(125, 211, 252, 0.94) 100%
+  );
+  transform: translateX(3px);
+  filter: drop-shadow(0 8px 20px rgba(22, 88, 235, 0.32));
+}
+
+/* 9.x.3 像素切角头像块、姓名、纯数值 AV、事件条与预测条 */
+#battle-screen .cb-av-portrait {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  background: radial-gradient(circle at 50% 34%, #FFFFFF 0%, #D9E9FC 75%, #B8D3F8 100%);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#battle-screen .cb-av-row.enemy-row .cb-av-portrait {
+  background: radial-gradient(circle at 50% 34%, #FFF6F8 0%, #FAD6DE 78%, #EFAEC0 100%);
+}
+
+#battle-screen .cb-av-row.ally-row .cb-av-portrait {
+  background: radial-gradient(circle at 50% 34%, #FFFDF7 0%, #F4E4C4 76%, #E2C58E 100%);
+}
+
+#battle-screen .cb-av-portrait canvas,
+#battle-screen .cb-av-portrait canvas.cb-av-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+}
+
+#battle-screen .cb-av-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--pr-serif);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  color: var(--pr-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#battle-screen .cb-av-row.acting .cb-av-name {
+  color: #FFFFFF;
+  text-shadow: 0 1px 6px rgba(6, 18, 56, 0.45);
+}
+
+#battle-screen .cb-av-val {
+  flex-shrink: 0;
+  font-family: var(--pr-mono);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  color: var(--pr-sapphire);
+  white-space: nowrap;
+}
+
+#battle-screen .cb-av-row.enemy-row .cb-av-val {
+  color: #9E1B3A;
+}
+
+#battle-screen .cb-av-row.ally-row .cb-av-val {
+  color: #8B5B1E;
+}
+
+#battle-screen .cb-av-row.acting .cb-av-val {
+  color: #D9F3FF;
+  text-shadow: 0 0 10px rgba(125, 211, 252, 0.55);
+}
+
+#battle-screen .cb-av-row.ally-row.acting .cb-av-val {
+  color: #FFF2C6;
+  text-shadow: 0 0 10px rgba(245, 223, 176, 0.52);
+}
+
+#battle-screen .cb-av-row.enemy-row.acting .cb-av-val {
+  color: #FFD9E1;
+  text-shadow: 0 0 10px rgba(255, 143, 164, 0.50);
+}
+
+#battle-screen .cb-av-event-strip {
+  padding: 4px 12px;
+  font-family: var(--pr-sans);
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  background: linear-gradient(90deg, rgba(255, 252, 242, 0.94), rgba(244, 234, 206, 0.86));
+  color: var(--pr-gold-deep);
+  border-left: 2.5px solid var(--pr-gold);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 100%, 0 100%);
+  filter: drop-shadow(0 4px 10px rgba(10, 28, 82, 0.16));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#battle-screen .cb-av-event-strip.delay {
+  background: linear-gradient(90deg, rgba(240, 249, 255, 0.94), rgba(214, 238, 255, 0.88));
+  color: var(--pr-sapphire-deep);
+  border-left-color: var(--pr-sapphire);
+}
+
+#battle-screen .cb-av-forecast {
+  display: none;
+  margin-top: 2px;
+  padding: 6px 12px;
+  background: linear-gradient(90deg, rgba(252, 254, 255, 0.95) 0%, rgba(230, 242, 255, 0.90) 100%);
+  border-left: 2.5px solid var(--pr-sapphire);
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+  font-family: var(--pr-sans);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--pr-sapphire-deep);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  filter: drop-shadow(0 6px 14px rgba(10, 28, 82, 0.22));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#battle-screen .cb-av-forecast.show {
+  display: block;
+}
+
+#battle-screen .cb-av-forecast.show.gold,
+#battle-screen .cb-av-forecast.gold {
+  background: linear-gradient(90deg, rgba(255, 252, 242, 0.96) 0%, rgba(245, 235, 206, 0.92) 100%);
+  border-left-color: var(--pr-gold);
+  color: var(--pr-gold-deep);
+}
+
+/* 9.x.4 双分辨率防遮挡响应式规则（保住 1440×900 与 1280×720 罗文战 Slot 1 希尔维亚头顶净空） */
+
+/* 1440×900 罗文战前排友军双人同场：紧凑单行高 ~37-40px × 3 + 4px × 2，稳居 Slot 1 头顶之上 >= +27px；预测条向右探入 Slot 3 上方空旷区 */
+#battle-screen .cb-av-rail.is-vanguard-compact {
+  top: 4px;
+  left: 6px;
+  gap: 4px;
+}
+
+#battle-screen .cb-av-rail.is-vanguard-compact .cb-av-list {
+  gap: 4px;
+}
+
+#battle-screen .cb-av-rail.is-vanguard-compact .cb-av-row {
+  padding: 1.5px;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+}
+
+#battle-screen .cb-av-rail.is-vanguard-compact .cb-av-row-in {
+  gap: 8px;
+  padding: 3px 11px 3px 9px;
+  clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+}
+
+#battle-screen .cb-av-rail.is-vanguard-compact .cb-av-row.acting {
+  transform: translateX(4px);
+}
+
+#battle-screen .cb-av-rail.is-vanguard-compact .cb-av-portrait {
+  width: 28px;
+  height: 28px;
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+}
+
+#battle-screen .cb-av-rail.is-vanguard-compact .cb-av-name {
+  font-size: 12.5px;
+  line-height: 1.18;
+}
+
+#battle-screen .cb-av-rail.is-vanguard-compact .cb-av-val {
+  font-size: 13.5px;
+  line-height: 1.15;
+}
+
+#battle-screen .cb-av-rail.is-vanguard-compact .cb-av-forecast {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 0;
+  margin-top: 0;
+  width: max-content;
+  max-width: 240px;
+  white-space: nowrap;
+  z-index: 26;
+}
+
+/* 1280×720 桌面紧凑档 & 罗文战超紧凑防遮挡档 */
+@media (max-width: 1360px), (max-height: 760px) {
+  #battle-screen .cb-av-rail {
+    top: 6px;
+    left: 6px;
+    width: 170px;
+    gap: 4px;
+  }
+
+  #battle-screen .cb-av-list {
+    gap: 4px;
+  }
+
+  #battle-screen .cb-av-row {
+    padding: 1px;
+    clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  }
+
+  #battle-screen .cb-av-row-in {
+    gap: 7px;
+    padding: 3px 10px 3px 8px;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+  }
+
+  #battle-screen .cb-av-row.acting {
+    transform: translateX(5px);
+  }
+
+  #battle-screen .cb-av-portrait {
+    width: 26px;
+    height: 26px;
+    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  }
+
+  #battle-screen .cb-av-name {
+    font-size: 12px;
+  }
+
+  #battle-screen .cb-av-val {
+    font-size: 13px;
+  }
+
+  #battle-screen .cb-av-event-strip {
+    padding: 3px 10px;
+    font-size: 10px;
+  }
+
+  #battle-screen .cb-av-forecast {
+    margin-top: 1px;
+    padding: 4px 10px;
+    font-size: 10.5px;
+  }
+
+  /* 罗文战超紧凑档：单行 ~25px × 3 + 2px × 2 = 79px（底边 ~81px），配合 Slot 1 缩放 1.18 净空 >= +18px */
+  #battle-screen .cb-av-rail.is-vanguard-compact {
+    top: 2px;
+    left: 4px;
+    width: 158px;
+    gap: 2px;
+  }
+
+  #battle-screen .cb-av-rail.is-vanguard-compact .cb-av-list {
+    gap: 2px;
+  }
+
+  #battle-screen .cb-av-rail.is-vanguard-compact .cb-av-row {
+    padding: 1px;
+    clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+  }
+
+  #battle-screen .cb-av-rail.is-vanguard-compact .cb-av-row-in {
+    gap: 6px;
+    padding: 1.5px 8px 1.5px 6px;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+  }
+
+  #battle-screen .cb-av-rail.is-vanguard-compact .cb-av-row.acting {
+    transform: translateX(4px);
+  }
+
+  #battle-screen .cb-av-rail.is-vanguard-compact .cb-av-portrait {
+    width: 20px;
+    height: 20px;
+    clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+  }
+
+  #battle-screen .cb-av-rail.is-vanguard-compact .cb-av-name {
+    font-size: 11px;
+    line-height: 1.15;
+  }
+
+  #battle-screen .cb-av-rail.is-vanguard-compact .cb-av-val {
+    font-size: 11.5px;
+    line-height: 1.1;
+  }
+
+  #battle-screen .cb-av-rail.is-vanguard-compact .cb-av-event-strip {
+    padding: 2px 8px;
+    font-size: 9.5px;
+  }
+
+  #battle-screen .cb-av-rail.is-vanguard-compact .cb-av-forecast {
+    margin-top: 0;
+    padding: 4px 9px;
+    font-size: 10px;
+  }
+
+  /* 1280×720 罗文战双人阵：微收 Slot 1 8岁希尔维亚像素比例（脚底仍紧贴踏位），把头顶安全下移约 16px */
+  #battle-screen .cb-player-stage.has-vanguard-ally .cb-ally-slot[data-slot="1"] .cb-px-actor {
+    --px-scale: 1.18;
+  }
+}
+
+/* 移动端 (<1024px) 隐藏左上角悬浮行动跑条 */
+@media (max-width: 1023px) {
+  #battle-screen .cb-av-rail {
+    display: none !important;
+  }
+}

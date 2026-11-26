@@ -1219,6 +1219,122 @@
     ctx.putImageData(imgData, 0, 0);
   }
 
+  /* -------------------- 行动跑条像素精灵头部裁剪缓存接口 -------------------- */
+  const _headCanvasCache = new Map(); // `${spriteId}:${size}` -> HTMLCanvasElement
+
+  // 全 22 套像素精灵第 0 帧精准居中头部裁切表（实机目视逐套定稿）
+  const HEAD_CROP_OVERRIDES = {
+    // 7 只四足魔兽（面向左侧，精准框住兽首/口鼻/双眸，避免原 anchors.head 截成背刺）
+    wolf_alpha:         { sx: 18, sy: 59, size: 44 },
+    pack_wolf:          { sx: 6,  sy: 48, size: 42 },
+    frost_hound:        { sx: 15, sy: 48, size: 46 },
+    tundra_brute:       { sx: 25, sy: 66, size: 44 },
+    abyss_behemoth:     { sx: 27, sy: 69, size: 46 },
+    ridge_claw:         { sx: 15, sy: 44, size: 46 },
+    shadow_jackal:      { sx: 10, sy: 50, size: 46 },
+    // 15 位人形/首领角色（保留完整发冠/帽顶/头角，面容与双眸居中，剥离旁侧武器/浮石/魔球干扰）
+    beatrice:           { sx: 33, sy: 5,  size: 44 },
+    sylvia_young:       { sx: 42, sy: 11, size: 42 },
+    sylvia_silver:      { sx: 49, sy: 8,  size: 42 },
+    sylvia_disguise:    { sx: 48, sy: 10, size: 42 },
+    reno:               { sx: 47, sy: 17, size: 38 },
+    rowan:              { sx: 61, sy: 23, size: 36 },
+    alice:              { sx: 42, sy: 12, size: 44 },
+    aino:               { sx: 47, sy: 9,  size: 44 },
+    noelle:             { sx: 57, sy: 8,  size: 42 },
+    charlotte:          { sx: 46, sy: 7,  size: 44 },
+    jilan:              { sx: 48, sy: 8,  size: 44 },
+    corridor_vanguard:  { sx: 53, sy: 17, size: 44 },
+    flame_mage:         { sx: 51, sy: 16, size: 46 },
+    eastwing_commander: { sx: 57, sy: 22, size: 39 },
+    wind_god_avatar:    { sx: 45, sy: 22, size: 44 },
+  };
+
+  function getHeadCanvas(spriteId, size = 34) {
+    if (!spriteId || typeof spriteId !== 'string') return null;
+    if (typeof document === 'undefined' || typeof document.createElement !== 'function' || isJsdomEnv()) {
+      return null;
+    }
+    const targetSize = (typeof size === 'number' && Number.isFinite(size) && size > 0)
+      ? Math.round(size)
+      : 34;
+    const cacheKey = `${spriteId}:${targetSize}`;
+    if (_headCanvasCache.has(cacheKey)) return _headCanvasCache.get(cacheKey);
+
+    const entry = getPixelBankEntry(spriteId);
+    if (!entry) return null;
+    const imgData = decodeBankFrame(spriteId, 0);
+    if (!imgData) return null;
+
+    const w = entry.w | 0;
+    const h = entry.h | 0;
+    if (w <= 0 || h <= 0) return null;
+
+    try {
+      const srcCanvas = document.createElement('canvas');
+      if (!srcCanvas || typeof srcCanvas.getContext !== 'function') return null;
+      srcCanvas.width = w;
+      srcCanvas.height = h;
+      const sctx = srcCanvas.getContext('2d');
+      if (!sctx) return null;
+      sctx.putImageData(imgData, 0, 0);
+
+      const headCanvas = document.createElement('canvas');
+      if (!headCanvas || typeof headCanvas.getContext !== 'function') return null;
+      headCanvas.width = targetSize;
+      headCanvas.height = targetSize;
+      const hctx = headCanvas.getContext('2d');
+      if (!hctx) return null;
+      hctx.imageSmoothingEnabled = false;
+
+      const override = HEAD_CROP_OVERRIDES[spriteId];
+      let cropSize;
+      let sx;
+      let sy;
+      if (override && override.size > 0) {
+        cropSize = Math.min(w, h, Math.round(override.size));
+        sx = Math.max(0, Math.min(w - cropSize, Math.round(override.sx)));
+        sy = Math.max(0, Math.min(h - cropSize, Math.round(override.sy)));
+      } else {
+        const head = (entry.anchors && Array.isArray(entry.anchors.head) && entry.anchors.head.length >= 2)
+          ? entry.anchors.head
+          : [w / 2, h * 0.28];
+        cropSize = Math.min(w, h, Math.max(40, Math.min(54, Math.round(Math.min(w, h) * 0.38))));
+        sx = Math.max(0, Math.min(w - cropSize, Math.round(head[0] - cropSize / 2)));
+        sy = Math.max(0, Math.min(h - cropSize, Math.round(head[1] - cropSize * 0.44)));
+      }
+
+      hctx.drawImage(srcCanvas, sx, sy, cropSize, cropSize, 0, 0, targetSize, targetSize);
+      _headCanvasCache.set(cacheKey, headCanvas);
+      return headCanvas;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function drawHeadCanvas(targetCanvas, spriteId, size = 34) {
+    if (!targetCanvas || typeof targetCanvas.getContext !== 'function') return false;
+    const targetSize = (typeof size === 'number' && Number.isFinite(size) && size > 0)
+      ? Math.round(size)
+      : 34;
+    const src = getHeadCanvas(spriteId, targetSize);
+    if (!src) return false;
+    try {
+      if (targetCanvas.width !== targetSize || targetCanvas.height !== targetSize) {
+        targetCanvas.width = targetSize;
+        targetCanvas.height = targetSize;
+      }
+      const ctx = targetCanvas.getContext('2d');
+      if (!ctx) return false;
+      ctx.clearRect(0, 0, targetSize, targetSize);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(src, 0, 0, targetSize, targetSize);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   function hasPngSheetInstalled(spriteId) {
     const list = global.PIXEL_PNG_SHEETS_INSTALLED;
     if (list === true) return true;
@@ -5139,6 +5255,8 @@
     resolvePlayerSpriteId,
     resolveEnemySpriteId,
     resolvePoseFrame,
+    getHeadCanvas,
+    drawHeadCanvas,
     renderActorMarkup,
     syncStage,
     playSkillAction,

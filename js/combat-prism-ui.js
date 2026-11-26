@@ -130,6 +130,7 @@
     logExpanded: false,
     hoveredWingIdx: null,
     hoveredBladeIdx: null,
+    hoveredSkillId: null,
     ampPulseTimer: 0,
     lastAmpPct: -1,
     lastAmpWheelAt: 0,
@@ -143,9 +144,14 @@
     ampPanelEl: null,
     spineEl: null,
     logBarEl: null,
+    avRailEl: null,
+    avListEl: null,
+    avForecastEl: null,
     currentItems: [],
     lastBattleWaveKey: '',
+    lastBattleState: null,
     lastBladeSig: '',
+    lastAvSig: '',
     lastAnchorX: 280,
     lastAnchorY: 280,
     lastFieldW: 1280,
@@ -673,6 +679,7 @@
     } else {
       syncSkillHoverPreview(null, false, null);
     }
+    syncAvForecast(null, uiState.lastBattleState);
   }
 
   function triggerSourceButton(item) {
@@ -1370,6 +1377,401 @@
     }
   }
 
+  function formatAvShortName(rawName, fallback) {
+    const src = String(rawName == null ? '' : rawName).trim();
+    if (!src) return fallback || '未知';
+    const stripped = src
+      .replace(/\s*(?:（[^）]*）|\([^)]*\)|「[^」]*」)\s*/g, '')
+      .replace(/[·・\-—\s]+$/g, '')
+      .trim();
+    return stripped || src;
+  }
+
+  function formatAvSkillShortName(rawName) {
+    const src = String(rawName == null ? '' : rawName).trim();
+    if (!src) return '术式';
+    const cleaned = src
+      .replace(/^[❄️✦⚡◇◆]+\s*/u, '')
+      .replace(/\s*(?:（[^）]*）|\([^)]*\)|「[^」]*」)\s*/g, '')
+      .replace(/[·・\-—\s]+$/g, '')
+      .trim();
+    return cleaned || src;
+  }
+
+  function resolveAvSpriteId(item, battleState, pxApi) {
+    if (!item) return '';
+    if (item.side === 'player') {
+      if (pxApi && typeof pxApi.resolvePlayerSpriteId === 'function') {
+        try {
+          const resolved = pxApi.resolvePlayerSpriteId(battleState, false);
+          if (resolved) return resolved;
+        } catch (e) {}
+      }
+      return item.spriteId || 'sylvia_silver';
+    }
+    if (item.side === 'ally') {
+      const allies = battleState && Array.isArray(battleState.allies) ? battleState.allies : null;
+      const allyObj = (allies && item.allyIdx != null && item.allyIdx >= 0) ? allies[item.allyIdx] : null;
+      return item.spriteId || (allyObj && allyObj.spriteId) || 'reno';
+    }
+    if (item.side === 'enemy') {
+      const enemies = battleState && Array.isArray(battleState.enemies) ? battleState.enemies : null;
+      const enemyObj = (enemies && item.enemyIdx != null && item.enemyIdx >= 0) ? enemies[item.enemyIdx] : null;
+      if (pxApi && typeof pxApi.resolveEnemySpriteId === 'function') {
+        try {
+          const resolved = pxApi.resolveEnemySpriteId(enemyObj || item.id || item.charId);
+          if (resolved) return resolved;
+        } catch (e) {}
+      }
+      return item.spriteId || (enemyObj && (enemyObj.spriteId || enemyObj.charId || enemyObj.id)) || item.charId || item.id || '';
+    }
+    return item.spriteId || '';
+  }
+
+  function syncAvRailTargetHighlight(targetIdx) {
+    const listEl = (uiState.avListEl && uiState.avListEl.isConnected)
+      ? uiState.avListEl
+      : (typeof document !== 'undefined' ? document.getElementById('cb-av-list') : null);
+    if (!listEl) return;
+    listEl.querySelectorAll('.cb-av-row.enemy-row').forEach(row => {
+      const eidx = Number(row.getAttribute('data-eidx'));
+      const isTargeted = typeof targetIdx === 'number' && isFinite(targetIdx) && eidx === targetIdx;
+      row.classList.toggle('is-targeted', isTargeted);
+      row.setAttribute('aria-pressed', isTargeted ? 'true' : 'false');
+    });
+  }
+
+  function selectAvEnemyTarget(eidx) {
+    if (typeof eidx !== 'number' || !isFinite(eidx) || eidx < 0) return false;
+    const bs = getBattleScreen();
+    const card = bs ? bs.querySelector(`.cb-enemy-card[data-eidx="${eidx}"]`) : null;
+    let triggered = false;
+    if (card && !card.classList.contains('dead')) {
+      card.click();
+      triggered = true;
+    } else if (global.CombatEngine && typeof global.CombatEngine.selectTarget === 'function') {
+      triggered = !!global.CombatEngine.selectTarget(eidx);
+    }
+    if (triggered) {
+      safeSfx('ui_tick', { gain: 0.65 });
+      const latest = getEngineBattle();
+      if (latest) {
+        uiState.lastBattleState = latest;
+        syncAvRailTargetHighlight(latest.targetIdx);
+        if (uiState.hoveredSkillId) {
+          syncAvForecast(uiState.hoveredSkillId, latest);
+        }
+      } else {
+        syncAvRailTargetHighlight(eidx);
+      }
+    }
+    return triggered;
+  }
+
+  function ensureAvRail(field) {
+    if (typeof document === 'undefined') return null;
+    const host = field || document.querySelector('#battle-screen .cb-arena-field');
+    if (!host) return null;
+
+    ensurePrismExposureStyle();
+
+    if (uiState.avRailEl && uiState.avRailEl.isConnected && uiState.avRailEl.parentNode === host) {
+      if (!uiState.avListEl || !uiState.avListEl.isConnected) {
+        uiState.avListEl = uiState.avRailEl.querySelector('#cb-av-list');
+      }
+      if (!uiState.avForecastEl || !uiState.avForecastEl.isConnected) {
+        uiState.avForecastEl = uiState.avRailEl.querySelector('#cb-av-forecast');
+      }
+      if (uiState.avListEl && uiState.avForecastEl) {
+        return uiState.avRailEl;
+      }
+    }
+
+    const existing = document.getElementById('cb-av-rail');
+    if (existing && existing.parentNode) {
+      existing.parentNode.removeChild(existing);
+    }
+
+    const rail = document.createElement('aside');
+    rail.className = 'cb-av-rail';
+    rail.id = 'cb-av-rail';
+    rail.setAttribute('aria-label', '行动顺序条');
+    rail.innerHTML = [
+      '<div class="cb-av-list" id="cb-av-list"></div>',
+      '<div class="cb-av-forecast" id="cb-av-forecast"></div>',
+    ].join('');
+
+    host.appendChild(rail);
+    uiState.avRailEl = rail;
+    uiState.avListEl = rail.querySelector('#cb-av-list');
+    uiState.avForecastEl = rail.querySelector('#cb-av-forecast');
+    uiState.lastAvSig = '';
+    return rail;
+  }
+
+  function syncAvForecast(hoveredSkillId, battleState) {
+    uiState.hoveredSkillId = hoveredSkillId || null;
+
+    const forecastEl = (uiState.avForecastEl && uiState.avForecastEl.isConnected)
+      ? uiState.avForecastEl
+      : (typeof document !== 'undefined' ? document.getElementById('cb-av-forecast') : null);
+    const listEl = (uiState.avListEl && uiState.avListEl.isConnected)
+      ? uiState.avListEl
+      : (typeof document !== 'undefined' ? document.getElementById('cb-av-list') : null);
+
+    if (listEl) {
+      listEl.querySelectorAll('.cb-av-row.flash-delay').forEach(el => {
+        el.classList.remove('flash-delay');
+      });
+    }
+    if (!forecastEl) return null;
+
+    const resetForecast = () => {
+      forecastEl.classList.remove('show', 'gold');
+      forecastEl.textContent = '';
+      return forecastEl;
+    };
+
+    if (!hoveredSkillId) {
+      return resetForecast();
+    }
+
+    const state = battleState || uiState.lastBattleState || getEngineBattle();
+    if (!state || state.over || !state.player) {
+      return resetForecast();
+    }
+
+    const skills = Array.isArray(state.player.skills) ? state.player.skills : [];
+    const skill = skills.find(sk => sk && sk.id === hoveredSkillId) || null;
+    if (!skill) {
+      return resetForecast();
+    }
+
+    const enemies = Array.isArray(state.enemies) ? state.enemies : [];
+    const rawTargetIdx = typeof state.targetIdx === 'number' ? state.targetIdx : 0;
+    let target = enemies[rawTargetIdx] || null;
+    if (!target || target.alive === false || (typeof target.hp === 'number' && target.hp <= 0)) {
+      target = enemies.find(e => e && e.alive !== false && (typeof e.hp !== 'number' || e.hp > 0)) || null;
+    }
+    const resolvedTargetIdx = target
+      ? (typeof target.idx === 'number' ? target.idx : enemies.indexOf(target))
+      : -1;
+
+    const lockDamage = (skill.forecast && typeof skill.forecast.lockDamage === 'number')
+      ? skill.forecast.lockDamage
+      : (typeof skill.lockDamage === 'number' ? skill.lockDamage : 0);
+
+    const targetLocks = target && typeof target.locks === 'number' ? target.locks : 0;
+    const willBreakAll = !!(target && !target.broken && targetLocks > 0 && lockDamage >= targetLocks);
+
+    if (willBreakAll) {
+      const pushPctMap = (state.balance && state.balance.HSR_AV && state.balance.HSR_AV.pushPct) || {
+        boss: 0.35,
+        elite: 0.45,
+        mob: 0.50,
+      };
+      const pushKey = target.boss ? 'boss' : ((Number(target.mhp) || 0) >= 220 ? 'elite' : 'mob');
+      const pushPct = typeof pushPctMap[pushKey] === 'number' ? pushPctMap[pushKey] : 0.45;
+      const baseAv = Number(target.baseAv) || 100;
+      const curAv = (typeof target.av === 'number' && isFinite(target.av)) ? target.av : baseAv;
+      const newAv = Math.round(curAv + baseAv * pushPct);
+      const shortTarget = formatAvShortName(target.name, '敌方');
+
+      forecastEl.classList.add('show', 'gold');
+      forecastEl.textContent = `⚡ 击破再动 · ${shortTarget} → ${newAv}`;
+
+      if (listEl && resolvedTargetIdx >= 0) {
+        const firstEnemyRow = listEl.querySelector(`.cb-av-row.enemy-row[data-eidx="${resolvedTargetIdx}"]:not(.ghost)`)
+          || listEl.querySelector(`.cb-av-row.enemy-row[data-eidx="${resolvedTargetIdx}"]`);
+        if (firstEnemyRow) firstEnemyRow.classList.add('flash-delay');
+      }
+      return forecastEl;
+    }
+
+    if (lockDamage > 0) {
+      const shortSkill = formatAvSkillShortName(skill.name || skill.id);
+      forecastEl.classList.remove('gold');
+      forecastEl.classList.add('show');
+      forecastEl.textContent = `◇ ${shortSkill} · 碎锁 ${lockDamage}`;
+      return forecastEl;
+    }
+
+    const engineSkillDef = (global.CombatEngine && global.CombatEngine.SKILLS && global.CombatEngine.SKILLS[skill.id]) || null;
+    const selfAdvancePct = typeof skill.selfAdvancePct === 'number'
+      ? skill.selfAdvancePct
+      : (skill.forecast && typeof skill.forecast.selfAdvancePct === 'number'
+        ? skill.forecast.selfAdvancePct
+        : (engineSkillDef && typeof engineSkillDef.selfAdvancePct === 'number' ? engineSkillDef.selfAdvancePct : 0));
+
+    if (selfAdvancePct > 0) {
+      forecastEl.classList.remove('gold');
+      forecastEl.classList.add('show');
+      forecastEl.textContent = `✦ 疾步拉条 · 自提前 ${Math.round(selfAdvancePct * 100)}%`;
+      return forecastEl;
+    }
+
+    return resetForecast();
+  }
+
+  function syncAvRail(battleState, field) {
+    const state = battleState || uiState.lastBattleState || getEngineBattle();
+    if (state) uiState.lastBattleState = state;
+
+    const rail = ensureAvRail(field);
+    if (!rail || !uiState.avListEl || !uiState.avForecastEl) return null;
+
+    const queue = state && Array.isArray(state.actionQueue) ? state.actionQueue : [];
+    if (!state || queue.length === 0) {
+      if (uiState.lastAvSig !== '__empty__') {
+        uiState.avListEl.innerHTML = '';
+        uiState.lastAvSig = '__empty__';
+      }
+      rail.classList.add('hidden');
+      syncAvForecast(null, state);
+      return rail;
+    }
+
+    rail.classList.remove('hidden');
+
+    const hasVanguard = Array.isArray(state.allies) && state.allies.length > 0;
+    rail.classList.toggle('is-vanguard-compact', hasVanguard);
+
+    const maxRows = hasVanguard ? 3 : 4;
+    const visibleQueue = queue.slice(0, maxRows);
+    const pxApi = global.CombatPixelVFX || null;
+    const stageId = state.stageId || state.id || '';
+    const oneMoreActive = !!state.oneMoreActive;
+    const pxReady = (pxApi && typeof pxApi.drawHeadCanvas === 'function') ? 1 : 0;
+
+    const rowEntries = visibleQueue.map((item, idx) => {
+      const side = item && item.side ? item.side : 'player';
+      const spriteId = resolveAvSpriteId(item, state, pxApi);
+      const avVal = Math.max(0, Math.round(Number(item && item.av) || 0));
+      return {
+        idx,
+        side,
+        spriteId,
+        avVal,
+        id: (item && item.id) || '',
+        allyIdx: (item && item.allyIdx != null) ? Number(item.allyIdx) : -1,
+        enemyIdx: (item && item.enemyIdx != null) ? Number(item.enemyIdx) : -1,
+        fullName: (item && item.name) || (side === 'player' ? '希尔维亚' : side === 'ally' ? '友军' : '敌方'),
+      };
+    });
+
+    const nextAvSig = [
+      stageId,
+      hasVanguard ? '1' : '0',
+      oneMoreActive ? '1' : '0',
+      pxReady,
+      rowEntries.map(r => `${r.side}|${r.id}|${r.allyIdx}|${r.enemyIdx}|${r.avVal}|${r.spriteId}|${r.fullName}`).join(';'),
+    ].join('::');
+
+    if (nextAvSig !== uiState.lastAvSig || uiState.avListEl.children.length === 0) {
+      uiState.lastAvSig = nextAvSig;
+      uiState.avListEl.innerHTML = '';
+
+      const seenUnits = new Set();
+      rowEntries.forEach(entry => {
+        const { idx, side, spriteId, avVal, allyIdx, enemyIdx, fullName, id } = entry;
+        const unitKey = side === 'player'
+          ? 'player'
+          : (side === 'ally'
+            ? `ally:${allyIdx >= 0 ? allyIdx : (id || '0')}`
+            : `enemy:${enemyIdx >= 0 ? enemyIdx : (id || '0')}`);
+        const isGhost = seenUnits.has(unitKey);
+        seenUnits.add(unitKey);
+
+        const isActing = idx === 0;
+        const isOneMoreRow = oneMoreActive && side === 'player' && isActing && !isGhost;
+        const shortName = formatAvShortName(fullName, side === 'player' ? '希尔维亚' : side === 'ally' ? '友军' : '敌方');
+
+        const row = document.createElement('div');
+        row.className = 'cb-av-row'
+          + (side === 'enemy' ? ' enemy-row' : '')
+          + (side === 'ally' ? ' ally-row' : '')
+          + (isActing ? ' acting' : '')
+          + (isGhost ? ' ghost' : '')
+          + (isOneMoreRow ? ' flash-onemore' : '');
+        row.setAttribute('data-side', side);
+        if (side === 'enemy' && enemyIdx >= 0) {
+          row.setAttribute('data-eidx', String(enemyIdx));
+          row.setAttribute('role', 'button');
+          row.setAttribute('tabindex', '0');
+          row.addEventListener('click', () => {
+            selectAvEnemyTarget(enemyIdx);
+          });
+          row.addEventListener('keydown', ev => {
+            if (ev.key === 'Enter' || ev.key === ' ') {
+              ev.preventDefault();
+              selectAvEnemyTarget(enemyIdx);
+            }
+          });
+        } else if (side === 'ally' && allyIdx >= 0) {
+          row.setAttribute('data-aidx', String(allyIdx));
+        }
+        row.setAttribute('title', fullName);
+
+        const inner = document.createElement('div');
+        inner.className = 'cb-av-row-in';
+
+        const portrait = document.createElement('div');
+        portrait.className = 'cb-av-portrait';
+        const canvas = document.createElement('canvas');
+        canvas.className = 'cb-av-canvas';
+        canvas.width = 34;
+        canvas.height = 34;
+        portrait.appendChild(canvas);
+
+        let drawn = false;
+        if (pxApi && typeof pxApi.drawHeadCanvas === 'function' && spriteId) {
+          try {
+            drawn = !!pxApi.drawHeadCanvas(canvas, spriteId, 34);
+          } catch (e) {
+            drawn = false;
+          }
+        }
+        if (!drawn) {
+          portrait.classList.add('is-fallback');
+          canvas.style.display = 'none';
+          const fallbackEl = document.createElement('span');
+          fallbackEl.className = 'cb-av-fallback';
+          fallbackEl.setAttribute('aria-hidden', 'true');
+          fallbackEl.textContent = shortName.slice(0, 1) || '?';
+          portrait.appendChild(fallbackEl);
+        }
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'cb-av-name';
+        nameEl.textContent = shortName;
+
+        const valEl = document.createElement('div');
+        valEl.className = 'cb-av-val';
+        valEl.textContent = String(avVal);
+
+        inner.appendChild(portrait);
+        inner.appendChild(nameEl);
+        inner.appendChild(valEl);
+        row.appendChild(inner);
+        uiState.avListEl.appendChild(row);
+
+        if (isOneMoreRow) {
+          const eventStrip = document.createElement('div');
+          eventStrip.className = 'cb-av-event-strip';
+          eventStrip.textContent = '⚡ 击破再动 · 0';
+          uiState.avListEl.appendChild(eventStrip);
+        }
+      });
+    }
+
+    syncAvRailTargetHighlight(state.targetIdx);
+    if (uiState.hoveredSkillId) {
+      syncAvForecast(uiState.hoveredSkillId, state);
+    }
+
+    return rail;
+  }
+
   function ensurePrismExposureStyle() {
     if (typeof document === 'undefined' || document.getElementById('cb-prism-exp-inline-style')) return;
     const style = document.createElement('style');
@@ -1416,6 +1818,9 @@
       ':where(.cb-spine-btn.amp-mini.amp-t1 .cb-amp-pip,.cb-spine-btn.amp-mini.amp-t2 .cb-amp-pip,.cb-spine-btn.amp-mini:hover .cb-amp-pip){background:rgba(255,255,255,0.30);}',
       ':where(.cb-spine-btn.amp-mini.amp-t1 .cb-amp-pip.on,.cb-spine-btn.amp-mini.amp-t2 .cb-amp-pip.on){background:#FFFFFF;filter:drop-shadow(0 0 3px rgba(255,255,255,0.85));}',
       ':where(.cb-spine-btn.amp-mini.amp-t3 .cb-amp-pip.on){background:linear-gradient(135deg,#FFFFFF,#7C5310);filter:drop-shadow(0 0 3px rgba(255,248,220,0.90));}',
+      ':where(.cb-av-fallback){display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-family:var(--pr-serif,serif);font-size:15px;font-weight:800;line-height:1;color:var(--pr-sapphire-deep,#0e2b78);user-select:none;}',
+      ':where(.cb-av-row.enemy-row .cb-av-fallback){color:#9E1B3A;}',
+      ':where(.cb-av-row.ally-row .cb-av-fallback){color:#8B5B1E;}',
       '@keyframes cbAmpPulse{0%{filter:brightness(1);transform:scale(1);}35%{filter:brightness(1.20) drop-shadow(0 0 10px rgba(56,189,248,0.62));transform:scale(1.032);}100%{filter:brightness(1);transform:scale(1);}}',
       '@keyframes cbAmpPulseGold{0%{filter:brightness(1);transform:scale(1);}35%{filter:brightness(1.24) drop-shadow(0 0 14px rgba(229,192,110,0.85));transform:scale(1.04);}100%{filter:brightness(1);transform:scale(1);}}',
       ':where(.is-amp-pulse){animation:cbAmpPulse 0.34s cubic-bezier(0.22,1,0.36,1);}',
@@ -1622,6 +2027,7 @@
       if (!bs) return;
 
       const b = battleOverride || getEngineBattle();
+      if (b) uiState.lastBattleState = b;
       const bwKey = b ? `${b.battleInstanceId || 0}:${b.waveIdx || 0}` : '';
       if (bwKey && bwKey !== uiState.lastBattleWaveKey) {
         uiState.lastBattleWaveKey = bwKey;
@@ -1629,8 +2035,10 @@
         uiState.logExpanded = false;
         uiState.hoveredWingIdx = null;
         uiState.hoveredBladeIdx = null;
+        uiState.hoveredSkillId = null;
         uiState.lastAmpPct = -1;
         uiState.lastBladeSig = '';
+        uiState.lastAvSig = '';
         uiState.animDissolveUntil = 0;
         if (uiState.dissolveTimer) {
           clearTimeout(uiState.dissolveTimer);
@@ -1654,12 +2062,23 @@
         toggleBtn.textContent = uiState.enabled ? '◆ 棱晶翼' : '◇ 传统列';
       }
 
+      const field = bs.querySelector('.cb-arena-field');
+      const dissolved = shouldDissolve(b);
+      if (!usePrism || uiState.menuMode === 'root' || dissolved) {
+        if (uiState.hoveredSkillId) {
+          syncAvForecast(null, b);
+        }
+      }
+      if (!isJsdomEnv() && isVisible(bs) && field) {
+        ensureAvRail(field);
+        syncAvRail(b, field);
+      }
+
       if (!usePrism) {
         if (uiState.rigEl) uiState.rigEl.classList.remove('dissolved');
         return;
       }
 
-      const field = bs.querySelector('.cb-arena-field');
       if (!field) return;
       buildRigDOM(field);
       syncLogBar(b);
@@ -1676,7 +2095,6 @@
         uiState.menuMode = 'root';
       }
 
-      const dissolved = shouldDissolve(b);
       uiState.rigEl.classList.toggle('dissolved', dissolved);
       uiState.rigEl.classList.toggle('mode-root', uiState.menuMode === 'root');
       uiState.rigEl.classList.toggle('mode-skills', uiState.menuMode === 'skills');
@@ -1882,26 +2300,36 @@
               </div>
             `;
 
-            btn.addEventListener('mouseenter', () => {
+            const onBladeEnter = () => {
               const liveItem = uiState.currentItems[idx];
               uiState.hoveredBladeIdx = idx;
               wrap.classList.add('hovered');
               wrap.style.transform = `translateX(14px) rotate(${g.rot}deg) scale(1.025)`;
               if (liveItem && liveItem.kind === 'skill') {
                 syncSkillHoverPreview(resolveLiveSourceBtn(liveItem), true, liveItem.skillId);
+                syncAvForecast(liveItem.skillId, uiState.lastBattleState || getEngineBattle());
+              } else {
+                syncAvForecast(null, uiState.lastBattleState || getEngineBattle());
               }
               renderCurrentSvg();
-            });
-            btn.addEventListener('mouseleave', () => {
+            };
+            const onBladeLeave = () => {
               const liveItem = uiState.currentItems[idx];
               if (uiState.hoveredBladeIdx === idx) uiState.hoveredBladeIdx = null;
               wrap.classList.remove('hovered');
               wrap.style.transform = `rotate(${g.rot}deg)`;
               if (liveItem && liveItem.kind === 'skill') {
                 syncSkillHoverPreview(resolveLiveSourceBtn(liveItem), false, liveItem.skillId);
+                if (uiState.hoveredSkillId === liveItem.skillId) {
+                  syncAvForecast(null, uiState.lastBattleState || getEngineBattle());
+                }
               }
               renderCurrentSvg();
-            });
+            };
+            btn.addEventListener('mouseenter', onBladeEnter);
+            btn.addEventListener('mouseleave', onBladeLeave);
+            btn.addEventListener('focus', onBladeEnter);
+            btn.addEventListener('blur', onBladeLeave);
             btn.addEventListener('click', () => {
               const liveItem = uiState.currentItems[idx];
               if (liveItem) triggerSourceButton(liveItem);
@@ -2091,7 +2519,7 @@
   }
 
   function unmount() {
-    if (!uiState.mounted) return;
+    if (!uiState.mounted && !uiState.avRailEl && !uiState.rigEl && !uiState.logBarEl) return;
     uiState.mounted = false;
     if (uiState.rafId && typeof cancelAnimationFrame === 'function') {
       cancelAnimationFrame(uiState.rafId);
@@ -2123,12 +2551,22 @@
     if (uiState.logBarEl && uiState.logBarEl.parentNode) {
       uiState.logBarEl.parentNode.removeChild(uiState.logBarEl);
     }
+    const avRail = uiState.avRailEl || (typeof document !== 'undefined' ? document.getElementById('cb-av-rail') : null);
+    if (avRail && avRail.parentNode) {
+      avRail.parentNode.removeChild(avRail);
+    }
     uiState.rigEl = null;
     uiState.svgEl = null;
     uiState.cascadeListEl = null;
     uiState.ampPanelEl = null;
     uiState.spineEl = null;
     uiState.logBarEl = null;
+    uiState.avRailEl = null;
+    uiState.avListEl = null;
+    uiState.avForecastEl = null;
+    uiState.lastAvSig = '';
+    uiState.lastBattleState = null;
+    uiState.hoveredSkillId = null;
     uiState.lastAmpPct = -1;
     const bs = getBattleScreen();
     if (bs) bs.classList.remove('prism-radial-active');
@@ -2138,6 +2576,9 @@
     mount,
     unmount,
     sync,
+    ensureAvRail,
+    syncAvRail,
+    syncAvForecast,
     setMode,
     openSkills,
     openAmp,
@@ -2161,6 +2602,8 @@
       hasMidCorridor: uiState.hasMidCorridor,
       anchorX: uiState.lastAnchorX,
       anchorY: uiState.lastAnchorY,
+      avRailMounted: !!(uiState.avRailEl && uiState.avRailEl.isConnected),
+      hoveredSkillId: uiState.hoveredSkillId,
     }),
   };
 

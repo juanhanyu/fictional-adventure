@@ -1,0 +1,2836 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>方案 C · 展翼星轨雁阵 × 悬浮雪瓷双微岛 — 转生千金战斗舞台竞标</title>
+<style>
+  /* =========================================================================
+     方案 C：幻想水浒传 / 皇家骑士团 · 展翼星轨雁阵 + 底部居中极轻雪瓷双微卡
+     视觉母版：雪瓷冰白 + 皇家蓝 #1658EB + 冰青 #7DD3FC + 香槟金 #C4A46C
+     铁律：全站零圆角 (border-radius: 0px)，严禁圆框套圆框，所有层级用 1px
+           折射边线、切角几何、左竖色条与留白字重表达。
+     ========================================================================= */
+  :root {
+    --pr-alabaster: rgba(248, 251, 255, 0.92);
+    --pr-alabaster-hi: rgba(255, 255, 255, 0.95);
+    --pr-alabaster-mid: rgba(240, 248, 255, 0.89);
+    --pr-alabaster-lo: rgba(226, 239, 255, 0.88);
+    --pr-ink: #1A2436;
+    --pr-ink-mid: #344766;
+    --pr-ink-muted: #5C708E;
+    --pr-sapphire-hi: #2E77F8;
+    --pr-sapphire: #1658EB;
+    --pr-sapphire-mid: #103FA8;
+    --pr-sapphire-deep: #0E2B78;
+    --pr-sapphire-abyss: #081A54;
+    --pr-cyan: #7DD3FC;
+    --pr-cyan-strong: #0EA5E9;
+    --pr-cyan-gleam: #D9F3FF;
+    --pr-gold: #C4A46C;
+    --pr-gold-hi: #F6E4B8;
+    --pr-gold-deep: #8C6928;
+    --pr-gold-pale: #EFE0BE;
+    --pr-crimson: #D13456;
+    --pr-crimson-hi: #FF7C94;
+    --pr-crimson-deep: #9E1B3A;
+    --pr-emerald: #0E8A64;
+    --pr-amber: #C68B3E;
+    --pr-rim: linear-gradient(132deg, rgba(125,211,252,0.95) 0%, rgba(22,88,235,0.65) 28%, rgba(255,255,255,0.98) 50%, rgba(196,164,108,0.80) 74%, rgba(46,119,248,0.88) 100%);
+    --pr-rim-gold: linear-gradient(135deg, rgba(246,228,184,0.98) 0%, rgba(196,164,108,0.78) 38%, rgba(255,255,255,0.98) 56%, rgba(125,211,252,0.86) 100%);
+    --pr-rim-enemy: linear-gradient(132deg, rgba(255,143,164,0.94) 0%, rgba(209,52,86,0.70) 30%, rgba(255,255,255,0.96) 52%, rgba(196,164,108,0.78) 76%, rgba(22,88,235,0.72) 100%);
+    --pr-sapphire-prism: linear-gradient(180deg, #2E77F8 0%, #1658EB 49.4%, #0E2B78 50.6%, #081A54 100%);
+    --pr-glass-plate: linear-gradient(154deg, rgba(255,255,255,0.94) 0%, rgba(243,249,255,0.90) 56%, rgba(228,240,255,0.91) 100%);
+    --pr-caustic: linear-gradient(112deg, transparent 12%, rgba(255,255,255,0.62) 26%, rgba(125,211,252,0.16) 33%, transparent 48%, rgba(239,224,190,0.14) 76%, transparent 92%);
+    --pr-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong', Georgia, serif;
+    --pr-sans: 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    --pr-mono: ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Consolas, monospace;
+    --pr-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    border-radius: 0px !important;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: #0d1629;
+    font-family: var(--pr-sans);
+    color: var(--pr-ink);
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button {
+    font-family: inherit;
+    border: none;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+  }
+  button:focus-visible {
+    outline: 1.5px solid var(--pr-sapphire);
+    outline-offset: 2px;
+  }
+
+  /* ==================== 整体三段架构：顶条(46px) + 全景舞台(1fr) + 极细底战报(32px) ==================== */
+  #app {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ==================== 1. 顶部雪瓷纤细指挥顶条 (46px) ==================== */
+  .top-bar {
+    position: relative;
+    z-index: 40;
+    height: 46px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 16px;
+    background: linear-gradient(180deg, rgba(252,254,255,0.95) 0%, rgba(238,246,255,0.92) 100%);
+    backdrop-filter: blur(18px) saturate(145%);
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
+    border-bottom: 1px solid rgba(22, 88, 235, 0.28);
+    box-shadow: 0 4px 18px rgba(10, 28, 82, 0.14);
+  }
+  .top-bar::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: -1px;
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent 0%, rgba(125,211,252,0.85) 18%, rgba(22,88,235,0.75) 48%, rgba(196,164,108,0.82) 78%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .tb-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex-shrink: 0;
+  }
+  .tb-diamond {
+    width: 14px;
+    height: 14px;
+    background: var(--pr-sapphire-prism);
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .tb-diamond::after {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    background: var(--pr-gold-hi);
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  }
+  .tb-title-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .tb-title {
+    font-family: var(--pr-serif);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--pr-sapphire-deep);
+    white-space: nowrap;
+  }
+  .tb-sub {
+    font-family: var(--pr-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--pr-gold-deep);
+    white-space: nowrap;
+  }
+  .tb-sep {
+    width: 1px;
+    height: 18px;
+    background: rgba(22, 88, 235, 0.22);
+    flex-shrink: 0;
+  }
+  .tb-meta {
+    font-family: var(--pr-mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--pr-ink-mid);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .tb-meta strong {
+    color: var(--pr-sapphire);
+    margin-left: 3px;
+  }
+
+  /* 预设三态切换器（无圆框套圆框：平铺斜切色块 + 1px 竖线隔断） */
+  .tb-presets {
+    display: flex;
+    align-items: stretch;
+    height: 30px;
+    background: rgba(22, 88, 235, 0.06);
+    border-top: 1px solid rgba(22, 88, 235, 0.22);
+    border-bottom: 1px solid rgba(22, 88, 235, 0.22);
+    flex-shrink: 0;
+  }
+  .tb-preset-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 13px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--pr-ink-mid);
+    border-right: 1px solid rgba(22, 88, 235, 0.18);
+    transition: background 0.16s ease, color 0.16s ease;
+    white-space: nowrap;
+  }
+  .tb-preset-btn:last-child { border-right: none; }
+  .tb-preset-btn .ptag {
+    font-family: var(--pr-mono);
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--pr-sapphire);
+    opacity: 0.85;
+  }
+  .tb-preset-btn:hover:not(.active) {
+    background: rgba(22, 88, 235, 0.12);
+    color: var(--pr-sapphire-deep);
+  }
+  .tb-preset-btn.active {
+    background: var(--pr-sapphire-prism);
+    color: #FFFFFF;
+  }
+  .tb-preset-btn.active .ptag {
+    color: var(--pr-gold-hi);
+    opacity: 1;
+  }
+  .tb-preset-btn.active::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--pr-cyan) 0%, var(--pr-gold-hi) 100%);
+  }
+
+  /* 顶部右侧：展翼阵线开关 + 结束回合 */
+  .tb-tools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .tb-toggle {
+    position: relative;
+    height: 30px;
+    padding: 0 12px 0 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--pr-sapphire-deep);
+    background: rgba(255, 255, 255, 0.78);
+    border-left: 3px solid var(--pr-cyan-strong);
+    border-top: 1px solid rgba(22, 88, 235, 0.24);
+    border-right: 1px solid rgba(22, 88, 235, 0.24);
+    border-bottom: 1px solid rgba(22, 88, 235, 0.24);
+    transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+    white-space: nowrap;
+  }
+  .tb-toggle .led {
+    width: 7px;
+    height: 7px;
+    background: rgba(22, 88, 235, 0.24);
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    transition: background 0.16s ease, transform 0.16s ease;
+  }
+  .tb-toggle:hover {
+    background: rgba(226, 240, 255, 0.96);
+  }
+  .tb-toggle.active {
+    background: var(--pr-sapphire-prism);
+    color: #FFFFFF;
+    border-left-color: var(--pr-gold-hi);
+    border-color: rgba(125, 211, 252, 0.65);
+  }
+  .tb-toggle.active .led {
+    background: var(--pr-gold-hi);
+    transform: scale(1.22);
+    filter: drop-shadow(0 0 4px rgba(246, 228, 184, 0.95));
+  }
+
+  .tb-endturn {
+    height: 30px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--pr-ink);
+    background: linear-gradient(135deg, rgba(255,253,247,0.92), rgba(244,235,214,0.88));
+    border-left: 3px solid var(--pr-gold-deep);
+    border-top: 1px solid rgba(196, 164, 108, 0.45);
+    border-right: 1px solid rgba(196, 164, 108, 0.45);
+    border-bottom: 1px solid rgba(196, 164, 108, 0.45);
+    white-space: nowrap;
+  }
+  .tb-endturn:hover {
+    background: linear-gradient(180deg, #C79948 0%, #9E7328 50%, #735116 100%);
+    color: #FFFFFF;
+  }
+  .tb-endturn kbd {
+    font-family: var(--pr-mono);
+    font-size: 10.5px;
+    font-weight: 800;
+    color: var(--pr-gold-deep);
+  }
+  .tb-endturn:hover kbd { color: #FFF4D2; }
+
+  /* ==================== 2. 全景通透战斗舞台 ==================== */
+  .stage-viewport {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+    background: #101b33;
+  }
+
+  /* 实景背景图 + 极淡影院级景深氛围（不糊不暗，保留画卷清透感） */
+  .stage-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center 45%;
+    transition: opacity 0.35s ease;
+    transform: scale(1.01);
+  }
+  .stage-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg,
+        rgba(14, 28, 62, 0.16) 0%,
+        rgba(14, 28, 62, 0.02) 28%,
+        rgba(14, 28, 62, 0.04) 64%,
+        rgba(10, 20, 44, 0.34) 100%),
+      radial-gradient(ellipse 68% 48% at 50% 66%, rgba(255, 255, 255, 0.04) 0%, rgba(8, 18, 42, 0.20) 100%);
+    pointer-events: none;
+  }
+
+  /* 场景粒子 / 技能特效 Canvas（全屏透明覆层） */
+  #fx-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 25;
+  }
+
+  /* 地面星轨雁阵 SVG 层（平时仅行动者+锁定目标微光环，开启阵线后显现 6+6 大雁双翼虚线） */
+  #formation-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 8;
+    overflow: visible;
+  }
+  .chevron-lattice {
+    opacity: 0;
+    transition: opacity 0.34s var(--pr-ease);
+  }
+  .stage-viewport.show-lattice .chevron-lattice {
+    opacity: 1;
+  }
+  @keyframes dashFlowAlly {
+    from { stroke-dashoffset: 28; }
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes dashFlowEnemy {
+    from { stroke-dashoffset: 0; }
+    to { stroke-dashoffset: 28; }
+  }
+  @keyframes astralSpinSlow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @keyframes astralPulse {
+    0%, 100% { opacity: 0.78; }
+    50% { opacity: 1; }
+  }
+  .chevron-line-ally {
+    fill: none;
+    stroke: rgba(196, 236, 255, 0.92);
+    stroke-width: 1.75;
+    stroke-dasharray: 7 5;
+    filter: drop-shadow(0 1px 3px rgba(8, 22, 62, 0.82));
+    animation: dashFlowAlly 2.6s linear infinite;
+  }
+  .chevron-line-ally-sub {
+    fill: none;
+    stroke: rgba(168, 220, 255, 0.62);
+    stroke-width: 1.15;
+    stroke-dasharray: 3 5;
+    filter: drop-shadow(0 1px 2px rgba(8, 22, 62, 0.72));
+  }
+  .chevron-line-enemy {
+    fill: none;
+    stroke: rgba(255, 174, 194, 0.90);
+    stroke-width: 1.75;
+    stroke-dasharray: 7 5;
+    filter: drop-shadow(0 1px 3px rgba(48, 10, 24, 0.82));
+    animation: dashFlowEnemy 2.6s linear infinite;
+  }
+  .chevron-line-enemy-sub {
+    fill: none;
+    stroke: rgba(255, 174, 194, 0.56);
+    stroke-width: 1.15;
+    stroke-dasharray: 3 5;
+    filter: drop-shadow(0 1px 2px rgba(48, 10, 24, 0.72));
+  }
+  .chevron-node-label {
+    font-family: var(--pr-mono);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    fill: rgba(242, 249, 255, 0.96);
+    paint-order: stroke;
+    stroke: rgba(8, 18, 44, 0.88);
+    stroke-width: 3.2px;
+    stroke-linejoin: miter;
+  }
+  .chevron-node-label.enemy {
+    fill: rgba(255, 230, 236, 0.96);
+  }
+
+  /* ==================== 3. 角色骨骼舞台层 (6+6 展翼雁阵) ==================== */
+  .actors-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 14;
+    pointer-events: none;
+  }
+
+  .actor-node {
+    position: absolute;
+    transform: translate(-50%, -100%);
+    pointer-events: auto;
+    transition: left 0.42s var(--pr-ease), top 0.42s var(--pr-ease), filter 0.2s ease;
+    will-change: transform, left, top;
+  }
+  .actor-node.is-enemy { cursor: pointer; }
+  .actor-node.is-enemy:hover .sprite-wrap {
+    filter: drop-shadow(0 0 12px rgba(255, 134, 160, 0.65));
+  }
+  .actor-node.is-hit .sprite-wrap {
+    animation: actorRecoil 0.26s ease-out;
+  }
+  @keyframes actorRecoil {
+    0% { transform: translateX(0); filter: brightness(2.0); }
+    35% { transform: translateX(12px); filter: brightness(1.6) saturate(1.4); }
+    100% { transform: translateX(0); filter: brightness(1); }
+  }
+
+  /* 地面软投影（贴地落地感） */
+  .actor-shadow {
+    position: absolute;
+    left: 50%;
+    bottom: 2px;
+    transform: translateX(-50%);
+    width: 68%;
+    height: 13px;
+    background: radial-gradient(ellipse at center, rgba(6, 14, 34, 0.56) 0%, rgba(6, 14, 34, 0.22) 55%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* 精灵呼吸容器 */
+  .sprite-wrap {
+    position: relative;
+    z-index: 2;
+    transform-origin: 50% 96%;
+    animation: spriteBreathe 2.8s ease-in-out infinite;
+    transition: filter 0.22s ease;
+  }
+  .actor-node[data-phase="1"] .sprite-wrap { animation-delay: -0.6s; }
+  .actor-node[data-phase="2"] .sprite-wrap { animation-delay: -1.3s; }
+  .actor-node[data-phase="3"] .sprite-wrap { animation-delay: -2.0s; }
+  .actor-node[data-phase="4"] .sprite-wrap { animation-delay: -0.9s; }
+  .actor-node[data-phase="5"] .sprite-wrap { animation-delay: -1.7s; }
+
+  @keyframes spriteBreathe {
+    0%, 100% { transform: translateY(0px) scaleY(1); }
+    50% { transform: translateY(-2.4px) scaleY(1.018); }
+  }
+
+  .sprite-canvas {
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    filter: drop-shadow(0 6px 10px rgba(8, 18, 42, 0.34));
+  }
+  .sprite-canvas.flip-x {
+    transform: scaleX(-1);
+  }
+  .actor-node.is-acting .sprite-canvas {
+    filter: drop-shadow(0 0 10px rgba(125, 211, 252, 0.58)) drop-shadow(0 6px 12px rgba(10, 28, 82, 0.44));
+  }
+  .actor-node.amp-t2 .sprite-canvas {
+    filter: drop-shadow(0 0 14px rgba(46, 119, 248, 0.78)) drop-shadow(0 6px 12px rgba(10, 28, 82, 0.48));
+  }
+  .actor-node.amp-t3 .sprite-canvas {
+    filter: drop-shadow(0 0 18px rgba(246, 212, 128, 0.92)) drop-shadow(0 0 8px rgba(125, 211, 252, 0.72));
+  }
+
+  /* 雷纳德前锋脚下：极轻量 1 行岩盾 + 元素微徽标（绝不画大面板！） */
+  .reno-micro-badge {
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 4px);
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 9px 2px 8px;
+    background: linear-gradient(135deg, rgba(255, 253, 248, 0.94) 0%, rgba(245, 237, 222, 0.90) 100%);
+    border-left: 3px solid var(--pr-amber);
+    border-bottom: 1px solid rgba(196, 164, 108, 0.55);
+    box-shadow: 0 4px 12px rgba(12, 24, 52, 0.24);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #543610;
+    white-space: nowrap;
+    cursor: pointer;
+    z-index: 6;
+    transition: background 0.16s ease, transform 0.16s ease;
+  }
+  .reno-micro-badge:hover {
+    background: linear-gradient(135deg, #FFFBF0 0%, #F4E4C4 100%);
+    transform: translateX(-50%) translateY(-1px);
+  }
+  .reno-micro-badge .shd {
+    font-family: var(--pr-mono);
+    font-weight: 800;
+    color: #8C5A16;
+  }
+  .reno-micro-badge .elem-dot {
+    width: 6px; height: 6px;
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    background: #C68B3E;
+  }
+  .reno-micro-badge[data-elem="fire"] { border-left-color: #D9483B; color: #7C1E15; }
+  .reno-micro-badge[data-elem="fire"] .elem-dot { background: #E8593C; }
+  .reno-micro-badge[data-elem="wind"] { border-left-color: #0E9A74; color: #0B5642; }
+  .reno-micro-badge[data-elem="wind"] .elem-dot { background: #16B88D; }
+
+  /* 6v6 侧翼友军超轻 1 行脚下微条（仅保留名字 + 极细 3px 血条，零挤压） */
+  .ally-wing-chip {
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 3px);
+    transform: translateX(-50%);
+    min-width: 78px;
+    padding: 2px 7px 3px 7px;
+    background: rgba(248, 252, 255, 0.90);
+    border-left: 2.5px solid var(--pr-sapphire);
+    box-shadow: 0 3px 10px rgba(10, 26, 68, 0.24);
+    white-space: nowrap;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .ally-wing-chip .awc-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--pr-ink);
+    line-height: 1.25;
+  }
+  .ally-wing-chip .awc-hp {
+    font-family: var(--pr-mono);
+    font-size: 9.5px;
+    color: var(--pr-sapphire-deep);
+  }
+  .ally-wing-chip .awc-bar {
+    margin-top: 2px;
+    height: 2.5px;
+    background: rgba(22, 88, 235, 0.16);
+    overflow: hidden;
+  }
+  .ally-wing-chip .awc-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #1658EB 0%, #38BDF8 100%);
+  }
+
+  /* 敌方头顶意图轻语（锁定目标清晰展示，非锁定 6v6 极简徽标，不遮头不重叠） */
+  .enemy-intent-tag {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 2px);
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 9px 2px 7px;
+    background: rgba(252, 248, 250, 0.94);
+    border-left: 3px solid var(--pr-crimson);
+    border-bottom: 1px solid rgba(209, 52, 86, 0.36);
+    box-shadow: 0 4px 12px rgba(48, 12, 26, 0.24);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #7D1530;
+    white-space: nowrap;
+    z-index: 8;
+    pointer-events: none;
+  }
+  .enemy-intent-tag .e-dmg {
+    font-family: var(--pr-mono);
+    font-weight: 800;
+    color: var(--pr-crimson);
+  }
+  .enemy-intent-tag.is-compact {
+    padding: 1px 6px;
+    font-size: 9.5px;
+    opacity: 0.88;
+  }
+
+  /* 敌方脚下精致雪瓷绯红名牌（瘦身无大框，绝不挤压邻位） */
+  .enemy-foot-plate {
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 4px);
+    transform: translateX(-50%);
+    min-width: 126px;
+    padding: 3px 9px 4px 9px;
+    background: linear-gradient(145deg, rgba(255, 252, 253, 0.94) 0%, rgba(247, 238, 242, 0.90) 100%);
+    border-left: 3px solid var(--pr-crimson);
+    border-bottom: 1px solid rgba(209, 52, 86, 0.34);
+    box-shadow: 0 6px 16px rgba(24, 10, 26, 0.28);
+    z-index: 6;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+  }
+  .actor-node.is-target .enemy-foot-plate {
+    border-left-width: 4px;
+    border-left-color: var(--pr-gold);
+    background: linear-gradient(145deg, rgba(255, 254, 252, 0.97) 0%, rgba(250, 240, 244, 0.94) 100%);
+    box-shadow: 0 6px 18px rgba(209, 52, 86, 0.36), inset 0 0 0 1px rgba(196, 164, 108, 0.52);
+  }
+  .enemy-foot-plate.is-compact {
+    min-width: 108px;
+    padding: 2px 7px 3px 7px;
+  }
+  .efp-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    line-height: 1.2;
+  }
+  .efp-name {
+    font-family: var(--pr-serif);
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--pr-ink);
+    white-space: nowrap;
+  }
+  .enemy-foot-plate.is-compact .efp-name { font-size: 10.5px; }
+  .efp-hp {
+    font-family: var(--pr-mono);
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--pr-crimson-deep);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .efp-bar {
+    margin-top: 3px;
+    height: 3.5px;
+    background: rgba(209, 52, 86, 0.18);
+    position: relative;
+    overflow: hidden;
+  }
+  .efp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #B81D42 0%, #E8466B 72%, #FF8DA4 100%);
+    transition: width 0.28s var(--pr-ease);
+  }
+  .efp-locks {
+    margin-top: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+    flex-wrap: nowrap;
+  }
+  .efp-pips {
+    display: inline-flex;
+    align-items: center;
+    gap: 2.5px;
+    flex-shrink: 0;
+  }
+  .lock-pip {
+    width: 6px;
+    height: 6px;
+    background: linear-gradient(135deg, #F6E4B8 0%, #C4A46C 60%, #8C6928 100%);
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .enemy-foot-plate.is-compact .lock-pip {
+    width: 5.5px;
+    height: 5.5px;
+  }
+  .lock-pip.broken {
+    background: rgba(26, 36, 54, 0.20);
+    transform: scale(0.76);
+  }
+  .efp-lock-txt {
+    font-family: var(--pr-mono);
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--pr-gold-deep);
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .efp-lock-txt.broken {
+    color: var(--pr-sapphire);
+  }
+
+  /* 伤害 / 状态飘字 */
+  .float-pop {
+    position: absolute;
+    left: 50%;
+    top: 12%;
+    transform: translate(-50%, 0);
+    font-family: var(--pr-mono);
+    font-size: 20px;
+    font-weight: 900;
+    color: #FFFFFF;
+    text-shadow: 0 2px 0 #0E2B78, 0 0 12px rgba(56, 189, 248, 0.92);
+    pointer-events: none;
+    z-index: 50;
+    white-space: nowrap;
+    animation: popFloatUp 0.95s var(--pr-ease) forwards;
+  }
+  .float-pop.gold {
+    color: #FFF4CC;
+    text-shadow: 0 2px 0 #7C5514, 0 0 16px rgba(246, 206, 108, 0.95);
+    font-size: 23px;
+  }
+  .float-pop.shield {
+    color: #D9F5FF;
+    text-shadow: 0 2px 0 #0C4A6E, 0 0 12px rgba(125, 211, 252, 0.9);
+    font-size: 16px;
+  }
+  @keyframes popFloatUp {
+    0% { opacity: 0; transform: translate(-50%, 8px) scale(0.8); }
+    18% { opacity: 1; transform: translate(-50%, -14px) scale(1.12); }
+    70% { opacity: 1; transform: translate(-50%, -32px) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -48px) scale(0.95); }
+  }
+
+  /* ==================== 4. 左上角 1:1 行动跑条 (cb-av-rail · 零遮头) ==================== */
+  .cb-av-rail {
+    position: absolute;
+    top: 12px;
+    left: 14px;
+    width: 178px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 30;
+    pointer-events: auto;
+  }
+  .cb-av-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .cb-av-row {
+    position: relative;
+    width: 100%;
+    padding: 1.5px;
+    text-align: left;
+    background: var(--pr-rim);
+    clip-path: polygon(0 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+    filter: drop-shadow(0 6px 14px rgba(10, 28, 82, 0.22));
+    transition: transform 0.22s var(--pr-ease), filter 0.2s ease;
+  }
+  .cb-av-row-in {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px 4px 9px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.94) 0%, rgba(235,244,255,0.88) 100%);
+    backdrop-filter: blur(14px) saturate(140%);
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+    overflow: hidden;
+  }
+  .cb-av-row-in::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3.5px;
+    background: linear-gradient(180deg, #2D75F8 0%, #1658EB 56%, #0E2B78 100%);
+  }
+  .cb-av-row.ally-row { background: var(--pr-rim-gold); }
+  .cb-av-row.ally-row .cb-av-row-in {
+    background: linear-gradient(135deg, rgba(255,253,248,0.94) 0%, rgba(247,239,224,0.88) 100%);
+  }
+  .cb-av-row.ally-row .cb-av-row-in::before {
+    background: linear-gradient(180deg, #F5DFB0 0%, #C68B3E 56%, #8B5B1E 100%);
+  }
+  .cb-av-row.enemy-row {
+    cursor: pointer;
+    background: var(--pr-rim-enemy);
+  }
+  .cb-av-row.enemy-row:hover:not(.acting) {
+    transform: translateX(3px);
+    filter: drop-shadow(0 8px 18px rgba(209, 52, 86, 0.30));
+  }
+  .cb-av-row.enemy-row .cb-av-row-in::before {
+    background: linear-gradient(180deg, #FF7C94 0%, #D13456 56%, #9E1B3A 100%);
+  }
+  .cb-av-row.enemy-row.is-targeted {
+    transform: translateX(4px);
+    background: var(--pr-rim-gold);
+  }
+  .cb-av-row.acting {
+    transform: translateX(6px);
+    filter: drop-shadow(0 8px 20px rgba(22, 88, 235, 0.36));
+  }
+  .cb-av-row.acting .cb-av-row-in {
+    background: var(--pr-sapphire-prism);
+  }
+  .cb-av-row.acting .cb-av-row-in::before {
+    width: 4.5px;
+    background: linear-gradient(180deg, #FFF2C6 0%, #C4A46C 58%, #8C6928 100%);
+  }
+  .cb-av-portrait {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    background: rgba(22, 88, 235, 0.10);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cb-av-row.acting .cb-av-portrait {
+    background: rgba(255, 255, 255, 0.18);
+  }
+  .cb-av-canvas {
+    width: 28px;
+    height: 28px;
+    image-rendering: pixelated;
+    display: block;
+  }
+  .cb-av-name {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--pr-serif);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--pr-ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cb-av-row.acting .cb-av-name { color: #FFFFFF; }
+  .cb-av-val {
+    font-family: var(--pr-mono);
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--pr-sapphire);
+    font-variant-numeric: tabular-nums;
+  }
+  .cb-av-row.enemy-row .cb-av-val { color: var(--pr-crimson-deep); }
+  .cb-av-row.ally-row .cb-av-val { color: var(--pr-gold-deep); }
+  .cb-av-row.acting .cb-av-val { color: var(--pr-gold-hi); }
+
+  /* ==================== 5. 中场自由呼吸棱镜指令翼 (Prism Radial Rig) ==================== */
+  .prism-rig {
+    position: absolute;
+    left: 39.8%;
+    top: 39.5%;
+    transform: translateY(-50%);
+    z-index: 32;
+    pointer-events: none;
+  }
+  .prism-svg {
+    position: absolute;
+    left: -26px;
+    top: 50%;
+    width: 110px;
+    height: 280px;
+    transform: translateY(-50%);
+    overflow: visible;
+    pointer-events: none;
+  }
+  .rig-orbit-gold {
+    fill: none;
+    stroke: rgba(239, 224, 190, 0.65);
+    stroke-width: 1.1;
+    stroke-dasharray: 4 4;
+  }
+  .rig-orbit-blue {
+    fill: none;
+    stroke: rgba(125, 211, 252, 0.72);
+    stroke-width: 1;
+  }
+  .rig-hairline {
+    fill: none;
+    stroke: rgba(168, 220, 255, 0.68);
+    stroke-width: 1.1;
+  }
+  .rig-hairline.hero-line {
+    stroke: rgba(246, 228, 184, 0.88);
+    stroke-width: 1.4;
+  }
+
+  .prism-wing-stack {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-left: 22px;
+    pointer-events: auto;
+  }
+  .prism-wing-wrap {
+    position: relative;
+    transition: transform 0.18s var(--pr-ease);
+  }
+  .prism-wing-wrap:nth-child(1) { transform: translateX(0px) rotate(-1.2deg); }
+  .prism-wing-wrap:nth-child(2) { transform: translateX(12px) rotate(-0.3deg); }
+  .prism-wing-wrap:nth-child(3) { transform: translateX(10px) rotate(0.5deg); }
+  .prism-wing-wrap:nth-child(4) { transform: translateX(0px) rotate(1.2deg); }
+  .prism-wing-wrap:hover { transform: translateX(18px) rotate(0deg); }
+
+  .cb-pwing {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 256px;
+    height: 46px;
+    padding: 0 20px 0 18px;
+    background: var(--pr-glass-plate);
+    color: var(--pr-ink);
+    clip-path: polygon(13px 0, calc(100% - 13px) 0, 100% 50%, calc(100% - 18px) 100%, 0 100%, 7px 50%);
+    filter: drop-shadow(0 8px 18px rgba(10, 28, 82, 0.24));
+    text-align: left;
+    overflow: hidden;
+    transition: filter 0.18s ease, background 0.18s ease;
+  }
+  .cb-pwing::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--pr-caustic);
+    pointer-events: none;
+  }
+  .cb-pwing::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 10px;
+    background: var(--pr-sapphire-prism);
+    clip-path: polygon(7px 0, 100% 0, 3.5px 50%, 100% 100%, 0 100%, 6.5px 50%);
+    pointer-events: none;
+  }
+
+  /* [W] 主蓝宝石棱晶翼 */
+  .cb-pwing.hero-prism {
+    width: 266px;
+    height: 52px;
+    padding: 0 22px 0 20px;
+    background: var(--pr-sapphire-prism);
+    color: #FFFFFF;
+    clip-path: polygon(15px 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%, 7.5px 50%);
+    filter: drop-shadow(0 10px 22px rgba(22, 88, 235, 0.36));
+  }
+  .cb-pwing.hero-prism::after {
+    background: linear-gradient(180deg, #EFE0BE 0%, #C4A46C 56%, #8C6928 100%);
+  }
+  .cb-pwing:not(.hero-prism):hover {
+    background: var(--pr-sapphire-prism);
+    color: #FFFFFF;
+  }
+  .cb-pwing:not(.hero-prism):hover::after {
+    background: linear-gradient(180deg, #EFE0BE, #C4A46C);
+  }
+  .cb-pwing:not(.hero-prism):hover .cb-pw-en,
+  .cb-pwing:not(.hero-prism):hover .cb-pw-sub,
+  .cb-pwing:not(.hero-prism):hover .cb-amp-val {
+    color: rgba(217, 243, 255, 0.94);
+  }
+  .cb-pwing:not(.hero-prism):hover .cb-pw-key {
+    background: rgba(255, 255, 255, 0.22);
+    color: #FFFFFF;
+  }
+
+  .cb-pw-key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    background: rgba(22, 88, 235, 0.12);
+    color: var(--pr-sapphire);
+    font-family: var(--pr-mono);
+    font-size: 11.5px;
+    font-weight: 800;
+    clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+    position: relative;
+    z-index: 2;
+  }
+  .cb-pwing.hero-prism .cb-pw-key {
+    background: rgba(255, 255, 255, 0.22);
+    color: #FFFFFF;
+  }
+  .cb-pw-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5px;
+    position: relative;
+    z-index: 2;
+  }
+  .cb-pw-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .cb-pw-title {
+    font-family: var(--pr-serif);
+    font-size: 14.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  .cb-pw-en {
+    font-family: var(--pr-mono);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--pr-sapphire);
+    white-space: nowrap;
+  }
+  .cb-pwing.hero-prism .cb-pw-en { color: var(--pr-cyan-gleam); }
+  .cb-pw-sub {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--pr-ink-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cb-pwing.hero-prism .cb-pw-sub { color: rgba(224, 242, 255, 0.90); }
+
+  /* [E] 外露直按三阶魔力增幅翼主题流光 */
+  .cb-amp-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .cb-amp-pips {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  .cb-amp-pip {
+    width: 7.5px;
+    height: 7.5px;
+    background: rgba(22, 88, 235, 0.20);
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    transition: background 0.18s ease, transform 0.18s ease;
+  }
+  .cb-amp-pip.lit-t1 {
+    background: linear-gradient(135deg, #BAE6FD 0%, #38BDF8 55%, #0284C7 100%);
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 3px rgba(56, 189, 248, 0.8));
+  }
+  .cb-amp-pip.lit-t2 {
+    background: linear-gradient(135deg, #9BE7FF 0%, #2E77F8 50%, #1658EB 100%);
+    transform: scale(1.20);
+    filter: drop-shadow(0 0 4px rgba(22, 88, 235, 0.85));
+  }
+  .cb-amp-pip.lit-t3 {
+    background: linear-gradient(135deg, #FFF7D6 0%, #E7C675 50%, #B38A3E 100%);
+    transform: scale(1.26);
+    filter: drop-shadow(0 0 5px rgba(212, 169, 74, 0.95));
+  }
+  .cb-amp-val {
+    font-family: var(--pr-mono);
+    font-size: 10.5px;
+    font-weight: 800;
+    color: var(--pr-ink-mid);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  #pw-amp.amp-t1 {
+    box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.62);
+    background: linear-gradient(154deg, rgba(246, 253, 255, 0.96) 0%, rgba(224, 246, 255, 0.93) 100%);
+  }
+  #pw-amp.amp-t1::after { background: linear-gradient(180deg, #BAE6FD 0%, #38BDF8 50%, #0284C7 100%); }
+  #pw-amp.amp-t1 .cb-amp-val { color: #0284C7; }
+
+  #pw-amp.amp-t2 {
+    box-shadow: inset 0 0 0 1px rgba(22, 88, 235, 0.64);
+    background: linear-gradient(154deg, rgba(240, 248, 255, 0.97) 0%, rgba(212, 232, 255, 0.94) 100%);
+  }
+  #pw-amp.amp-t2::after { background: linear-gradient(180deg, #93C5FD 0%, #1658EB 52%, #0E2B78 100%); }
+  #pw-amp.amp-t2 .cb-amp-val { color: #1658EB; }
+
+  #pw-amp.amp-t3 {
+    box-shadow: inset 0 0 0 1px rgba(229, 192, 110, 0.85);
+    background: linear-gradient(154deg, rgba(255, 253, 245, 0.97) 0%, rgba(248, 237, 210, 0.94) 100%);
+    filter: drop-shadow(0 8px 20px rgba(196, 154, 68, 0.42));
+  }
+  #pw-amp.amp-t3::after { background: linear-gradient(180deg, #FFF1B8 0%, #E5C06E 48%, #B38A3E 100%); }
+  #pw-amp.amp-t3 .cb-amp-val { color: #9A7228; }
+
+  @keyframes ampPulseFlash {
+    0% { filter: brightness(1); }
+    30% { filter: brightness(1.36) saturate(1.25); }
+    100% { filter: brightness(1); }
+  }
+  .is-amp-pulse { animation: ampPulseFlash 0.34s ease-out; }
+
+  /* 展开的级联术式子翼（[W] / [D]） */
+  .prism-sub-panel {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    padding-left: 16px;
+    pointer-events: auto;
+    width: 286px;
+  }
+  .prism-rig.mode-sub .prism-wing-stack { display: none; }
+  .prism-rig.mode-sub .prism-sub-panel { display: flex; }
+
+  .sub-spine {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 5px 14px 5px 14px;
+    background: var(--pr-sapphire-prism);
+    color: #FFFFFF;
+    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  }
+  .sub-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #FFFFFF;
+  }
+  .sub-back-btn:hover { color: var(--pr-gold-hi); }
+  .sub-amp-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 1px 7px;
+    background: rgba(255, 255, 255, 0.14);
+    font-family: var(--pr-mono);
+    font-size: 10px;
+    font-weight: 800;
+    color: #FFF4D2;
+  }
+  .sub-amp-mini:hover { background: rgba(255, 255, 255, 0.24); }
+
+  .cb-blade {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 14px 6px 12px;
+    background: var(--pr-glass-plate);
+    color: var(--pr-ink);
+    clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%, 5px 50%);
+    filter: drop-shadow(0 6px 14px rgba(10, 28, 82, 0.22));
+    text-align: left;
+    transition: transform 0.14s var(--pr-ease), background 0.14s ease;
+  }
+  .cb-blade::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 8px;
+    background: var(--pr-sapphire-prism);
+    clip-path: polygon(5px 0, 100% 0, 2.5px 50%, 100% 100%, 0 100%, 4.5px 50%);
+  }
+  .cb-blade:hover {
+    transform: translateX(8px);
+    background: var(--pr-sapphire-prism);
+    color: #FFFFFF;
+  }
+  .cb-blade:hover::after { background: linear-gradient(180deg, #FFF2C6, #C4A46C); }
+  .cb-blade:hover .bl-meta,
+  .cb-blade:hover .bl-cost { color: #D9F3FF; }
+  .cb-blade:hover .bl-dmg { color: #FFF1B8; }
+  .cb-blade:hover .cb-pw-key { background: rgba(255,255,255,0.22); color: #FFFFFF; }
+
+  .bl-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .bl-top { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+  .bl-name { font-family: var(--pr-serif); font-size: 13px; font-weight: 700; white-space: nowrap; }
+  .bl-cost { font-family: var(--pr-mono); font-size: 10px; font-weight: 800; color: var(--pr-sapphire); white-space: nowrap; }
+  .bl-bot { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  .bl-meta { font-size: 10px; color: var(--pr-ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bl-dmg { font-family: var(--pr-mono); font-size: 10.5px; font-weight: 800; color: var(--pr-gold-deep); white-space: nowrap; }
+
+  /* ==================== 6. 方案 C 独创：底部居中悬浮雪瓷双微岛 (各 220×50px · 零挤压) ==================== */
+  .dual-island-dock {
+    position: absolute;
+    left: 50%;
+    bottom: 11px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    z-index: 30;
+    pointer-events: auto;
+  }
+
+  .mini-island {
+    position: relative;
+    width: 220px;
+    height: 50px;
+    padding: 1.5px;
+    background: var(--pr-rim);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    filter: drop-shadow(0 8px 20px rgba(10, 26, 72, 0.28));
+    transition: transform 0.2s var(--pr-ease), filter 0.2s ease;
+  }
+  .mini-island.is-vanguard { background: var(--pr-rim-gold); }
+  .mini-island.is-crate { background: linear-gradient(135deg, rgba(167,243,208,0.92), rgba(14,138,100,0.68), rgba(255,255,255,0.95), rgba(196,164,108,0.78)); }
+  .mini-island:hover {
+    transform: translateY(-2px);
+    filter: drop-shadow(0 10px 24px rgba(22, 88, 235, 0.34));
+  }
+
+  .mini-island-in {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px 5px 10px;
+    background: var(--pr-glass-plate);
+    backdrop-filter: blur(18px) saturate(145%);
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
+    clip-path: polygon(0 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+    overflow: hidden;
+  }
+  .mini-island-in::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3.5px;
+    background: var(--pr-sapphire-prism);
+  }
+  .mini-island.is-vanguard .mini-island-in {
+    background: linear-gradient(150deg, rgba(255,254,250,0.95) 0%, rgba(248,240,225,0.90) 100%);
+  }
+  .mini-island.is-vanguard .mini-island-in::before {
+    background: linear-gradient(180deg, #F6E4B8 0%, #C68B3E 56%, #8B5B1E 100%);
+  }
+  .mini-island.is-crate .mini-island-in::before {
+    background: linear-gradient(180deg, #6EE7B7 0%, #0E8A64 60%, #065F46 100%);
+  }
+
+  .mi-head {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    background: rgba(22, 88, 235, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .mini-island.is-vanguard .mi-head { background: rgba(198, 139, 62, 0.12); }
+  .mini-island.is-crate .mi-head {
+    background: rgba(14, 138, 100, 0.12);
+    font-family: var(--pr-serif);
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--pr-emerald);
+  }
+  .mi-head canvas {
+    width: 34px;
+    height: 34px;
+    image-rendering: pixelated;
+    display: block;
+  }
+
+  .mi-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+  }
+  .mi-row-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px;
+    line-height: 1;
+  }
+  .mi-name {
+    font-family: var(--pr-serif);
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--pr-ink);
+    white-space: nowrap;
+  }
+  .mi-tag {
+    font-family: var(--pr-mono);
+    font-size: 9.5px;
+    font-weight: 800;
+    color: var(--pr-sapphire);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .mini-island.is-vanguard .mi-tag { color: var(--pr-gold-deep); }
+  .mini-island.is-crate .mi-tag { color: var(--pr-emerald); }
+
+  .mi-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .mi-stat-line {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .mi-lbl {
+    font-family: var(--pr-mono);
+    font-size: 8.5px;
+    font-weight: 800;
+    color: var(--pr-ink-muted);
+    width: 14px;
+    flex-shrink: 0;
+  }
+  .mi-track {
+    flex: 1;
+    height: 4px;
+    background: rgba(26, 36, 54, 0.12);
+    position: relative;
+    overflow: hidden;
+  }
+  .mi-fill {
+    height: 100%;
+    transition: width 0.25s var(--pr-ease);
+  }
+  .mi-fill.hp { background: linear-gradient(90deg, #0E8A64 0%, #34D399 100%); }
+  .mi-fill.mp { background: linear-gradient(90deg, #1658EB 0%, #38BDF8 100%); }
+  .mi-fill.shd { background: linear-gradient(90deg, #C68B3E 0%, #F6E4B8 100%); }
+  .mi-fill.mp-preview {
+    position: absolute;
+    top: 0; bottom: 0;
+    background: rgba(246, 200, 96, 0.85);
+    pointer-events: none;
+  }
+  .mi-num {
+    font-family: var(--pr-mono);
+    font-size: 9.5px;
+    font-weight: 800;
+    color: var(--pr-ink);
+    font-variant-numeric: tabular-nums;
+    width: 50px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .mi-num.mp-warn { color: var(--pr-gold-deep); }
+
+  /* ==================== 7. 底部极细单行战报栏 (32px) + 可展开手札抽屉 ==================== */
+  .chronicle-bar {
+    position: relative;
+    z-index: 40;
+    height: 32px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 14px 0 16px;
+    background: rgba(247, 251, 255, 0.94);
+    border-top: 1px solid rgba(22, 88, 235, 0.24);
+    border-left: 3.5px solid var(--pr-gold-deep);
+    font-size: 11.5px;
+    color: var(--pr-ink);
+  }
+  .chr-latest {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chr-latest strong { color: var(--pr-sapphire-deep); }
+  .chr-keys {
+    font-family: var(--pr-mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--pr-ink-muted);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .chr-toggle {
+    flex-shrink: 0;
+    height: 22px;
+    padding: 0 10px;
+    background: rgba(22, 88, 235, 0.08);
+    border-left: 1px solid rgba(22, 88, 235, 0.26);
+    color: var(--pr-sapphire);
+    font-family: var(--pr-mono);
+    font-size: 10.5px;
+    font-weight: 800;
+  }
+  .chr-toggle:hover, .chr-toggle.active {
+    background: var(--pr-sapphire-prism);
+    color: #FFFFFF;
+  }
+
+  .chr-drawer {
+    position: absolute;
+    right: 12px;
+    bottom: 38px;
+    width: 460px;
+    max-height: 156px;
+    overflow-y: auto;
+    padding: 8px 14px;
+    background: rgba(249, 252, 255, 0.96);
+    border-top: 2px solid var(--pr-sapphire);
+    border-left: 2.5px solid var(--pr-gold);
+    border-bottom: 1px solid rgba(22, 88, 235, 0.22);
+    box-shadow: 0 -10px 26px rgba(10, 28, 82, 0.20);
+    z-index: 50;
+    display: none;
+  }
+  .chr-drawer.open { display: block; }
+  .chr-row {
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(22, 88, 235, 0.10);
+    font-size: 11.5px;
+    line-height: 1.45;
+  }
+  .chr-row:last-child { border-bottom: none; }
+
+  /* ==================== 8. 1280×720 紧致桌面自适应（零裁切零重叠） ==================== */
+  @media (max-width: 1340px), (max-height: 760px) {
+    .top-bar { height: 42px; padding: 0 12px; gap: 8px; }
+    .tb-sub { display: none; }
+    .tb-title { font-size: 13px; }
+    .tb-preset-btn { padding: 0 10px; font-size: 11.5px; }
+    .tb-toggle { padding: 0 10px 0 8px; font-size: 11.5px; }
+    .cb-av-rail { top: 10px; left: 10px; width: 164px; gap: 4px; }
+    .cb-av-list { gap: 4px; }
+    .cb-av-row-in { padding: 3px 10px 3px 8px; gap: 7px; }
+    .cb-av-portrait, .cb-av-canvas { width: 24px; height: 24px; }
+    .cb-av-name { font-size: 11px; }
+    .prism-rig { left: 40.2%; top: 38.5%; }
+    .cb-pwing { width: 236px; height: 42px; padding: 0 18px 0 16px; }
+    .cb-pwing.hero-prism { width: 246px; height: 47px; padding: 0 20px 0 18px; }
+    .cb-pw-title { font-size: 13.5px; }
+    .cb-pw-sub { font-size: 10px; }
+    .prism-wing-stack { gap: 6px; }
+    .dual-island-dock { bottom: 9px; gap: 10px; }
+    .chr-keys { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- 顶部雪瓷纤细指挥顶条 -->
+  <header class="top-bar">
+    <div class="tb-brand">
+      <span class="tb-diamond" aria-hidden="true"></span>
+      <div class="tb-title-wrap">
+        <span class="tb-title">方案 C · 展翼星轨雁阵</span>
+        <span class="tb-sub">ASTRAL CHEVRON</span>
+      </div>
+      <span class="tb-sep" aria-hidden="true"></span>
+      <div class="tb-meta" id="tb-meta">TURN <strong>02</strong> · AP <strong id="tb-ap">2/2</strong> · <span id="tb-stage-name">月夜墓园</span></div>
+    </div>
+
+    <nav class="tb-presets" aria-label="战斗情景预设">
+      <button class="tb-preset-btn active" data-preset="rowan" id="btn-preset-rowan">
+        <span class="ptag">2v1</span>打罗文·双翼协同
+      </button>
+      <button class="tb-preset-btn" data-preset="hulan" id="btn-preset-hulan">
+        <span class="ptag">1v3</span>赫兰兽潮·展翼群怪
+      </button>
+      <button class="tb-preset-btn" data-preset="full6v6" id="btn-preset-full6v6">
+        <span class="ptag">6v6</span>满编雁翼对峙
+      </button>
+    </nav>
+
+    <div class="tb-tools">
+      <button class="tb-toggle" id="btn-toggle-lattice" aria-pressed="false" title="切换 6+6 大雁展翼折线阵势 (G)">
+        <span class="led" aria-hidden="true"></span>
+        <span>展示 6+6 展翼雁形阵线</span>
+      </button>
+      <button class="tb-endturn" id="btn-endturn" title="结束本回合 (X)">
+        <kbd>X</kbd><span>结束回合</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 全景通透战斗舞台 -->
+  <main class="stage-viewport" id="stage">
+    <div class="stage-bg" id="stage-bg"></div>
+
+    <!-- 地面无框星轨微光环 + 可开关 6+6 展翼雁形虚线阵 -->
+    <svg id="formation-svg" viewBox="0 0 1440 818" preserveAspectRatio="none" aria-hidden="true"></svg>
+
+    <!-- 真实骨骼像素角色层 -->
+    <div class="actors-layer" id="actors-layer"></div>
+
+    <!-- 粒子 / 三阶电弧 / 冰术特效层 -->
+    <canvas id="fx-canvas"></canvas>
+
+    <!-- 左上角 1:1 行动跑条（零遮头） -->
+    <aside class="cb-av-rail" id="cb-av-rail" aria-label="行动顺序轨">
+      <div class="cb-av-list" id="cb-av-list"></div>
+    </aside>
+
+    <!-- 中场自由呼吸棱镜指令翼 -->
+    <section class="prism-rig" id="prism-rig" aria-label="棱镜指令翼">
+      <svg class="prism-svg" viewBox="-26 -140 110 280" aria-hidden="true">
+        <path class="rig-orbit-gold" d="M 0 -106 A 112 112 0 0 1 42 108" />
+        <path class="rig-orbit-blue" d="M -8 -84 A 92 92 0 0 1 32 90" />
+        <path class="rig-hairline hero-line" d="M 0 0 L 22 -52 L 46 -78" />
+        <path class="rig-hairline" d="M 0 0 L 28 -18 L 56 -26" />
+        <path class="rig-hairline" d="M 0 0 L 28 18 L 54 26" />
+        <path class="rig-hairline" d="M 0 0 L 22 52 L 46 78" />
+        <polygon fill="none" stroke="rgba(239,224,190,0.82)" stroke-width="1.1" points="0,-12 12,0 0,12 -12,0" />
+        <polygon fill="#1658EB" points="0,-7 7,0 0,7 -7,0" />
+        <polygon fill="#EFE0BE" points="0,-3.5 3.5,0 0,3.5 -3.5,0" />
+      </svg>
+
+      <!-- 根级四翼 -->
+      <div class="prism-wing-stack" id="prism-root">
+        <div class="prism-wing-wrap">
+          <button class="cb-pwing hero-prism" id="pw-arts">
+            <span class="cb-pw-key">W</span>
+            <span class="cb-pw-body">
+              <span class="cb-pw-top">
+                <span class="cb-pw-title">冰水术式</span>
+                <span class="cb-pw-en">ARTS</span>
+              </span>
+              <span class="cb-pw-sub" id="pw-arts-sub">展开 4 式冰晶法术 · 按 1-4 直施</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="prism-wing-wrap">
+          <button class="cb-pwing amp-t0" id="pw-amp" title="左键/E 原地升档 · 右键/Shift+E 降档 · 滚轮步进">
+            <span class="cb-pw-key">E</span>
+            <span class="cb-pw-body">
+              <span class="cb-pw-top">
+                <span class="cb-pw-title">魔力增幅</span>
+                <span class="cb-amp-meta">
+                  <span class="cb-amp-pips" id="pw-amp-pips">
+                    <span class="cb-amp-pip"></span>
+                    <span class="cb-amp-pip"></span>
+                    <span class="cb-amp-pip"></span>
+                  </span>
+                  <span class="cb-amp-val" id="pw-amp-val">0% · 1.00×</span>
+                </span>
+              </span>
+              <span class="cb-pw-sub" id="pw-amp-sub">常规施法 · 点 E / 左键升至 ★20%</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="prism-wing-wrap">
+          <button class="cb-pwing" id="pw-guard">
+            <span class="cb-pw-key">A</span>
+            <span class="cb-pw-body">
+              <span class="cb-pw-top">
+                <span class="cb-pw-title">冰盾守势</span>
+                <span class="cb-pw-en">GUARD</span>
+              </span>
+              <span class="cb-pw-sub" id="pw-guard-sub">冰晶穹盾 · 增幅获 1.35×~1.45× 盾量</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="prism-wing-wrap">
+          <button class="cb-pwing" id="pw-assist">
+            <span class="cb-pw-key">D</span>
+            <span class="cb-pw-body">
+              <span class="cb-pw-top">
+                <span class="cb-pw-title">演武辅助</span>
+                <span class="cb-pw-en">ASSIST</span>
+              </span>
+              <span class="cb-pw-sub" id="pw-assist-sub">晦轮杖真伤 · 雷纳德三系 · 冰晶宫殿</span>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 展开的术式/辅助子翼 -->
+      <div class="prism-sub-panel" id="prism-sub">
+        <div class="sub-spine">
+          <button class="sub-back-btn" id="btn-sub-back">◂ 返回 [ESC]</button>
+          <button class="sub-amp-mini" id="btn-sub-amp" title="点 E 原地切换魔力增幅">E 增幅 0%</button>
+        </div>
+        <div id="prism-sub-list" style="display:flex;flex-direction:column;gap:5px;"></div>
+      </div>
+    </section>
+
+    <!-- 方案 C 独创：底部居中极轻悬浮雪瓷双微岛（高 50px × 宽各 220px，与 6+6 左右雁翼零挤压） -->
+    <section class="dual-island-dock" id="dual-island-dock" aria-label="核心角色悬浮双微岛"></section>
+  </main>
+
+  <!-- 底部极细单行实况战报条 + 历史抽屉 -->
+  <footer class="chronicle-bar">
+    <div class="chr-latest" id="chr-latest"></div>
+    <div class="chr-keys">W 术式 · E 升档增幅 · A 冰盾 · D 辅助 · G 雁阵线 · X 结束回合</div>
+    <button class="chr-toggle" id="btn-log-toggle">[L] 战报</button>
+    <div class="chr-drawer" id="chr-drawer"></div>
+  </footer>
+</div>
+
+<!-- 复用 /tmp/battle_stage_3boards/assets/sprites/ 全部真实零 PNG 像素骨骼库 -->
+<script src="assets/sprites/sylvia_silver.js"></script>
+<script src="assets/sprites/reno.js"></script>
+<script src="assets/sprites/beatrice.js"></script>
+<script src="assets/sprites/charlotte.js"></script>
+<script src="assets/sprites/aino.js"></script>
+<script src="assets/sprites/alice.js"></script>
+<script src="assets/sprites/noelle.js"></script>
+<script src="assets/sprites/rowan.js"></script>
+<script src="assets/sprites/tundra_brute.js"></script>
+<script src="assets/sprites/frost_hound.js"></script>
+<script src="assets/sprites/abyss_behemoth.js"></script>
+<script src="assets/sprites/eastwing_commander.js"></script>
+<script src="assets/sprites/corridor_vanguard.js"></script>
+<script src="assets/sprites/flame_mage.js"></script>
+<script src="assets/sprites/wind_god_avatar.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  /* =========================================================================
+     1. 真实像素矩阵 RLE 解码器 + 全 22 套精准头部裁切表（零 PNG 外链）
+     ========================================================================= */
+  const BANK_CHARS = '.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&()_+-=<>?[]{}|~';
+  const BANK_CHAR_LUT = new Int8Array(128).fill(-1);
+  for (let i = 0; i < BANK_CHARS.length; i++) {
+    const code = BANK_CHARS.charCodeAt(i);
+    if (code < 128) BANK_CHAR_LUT[code] = i;
+  }
+
+  const HEAD_CROP_OVERRIDES = {
+    wolf_alpha:         { sx: 18, sy: 59, size: 44 },
+    pack_wolf:          { sx: 6,  sy: 48, size: 42 },
+    frost_hound:        { sx: 15, sy: 48, size: 46 },
+    tundra_brute:       { sx: 25, sy: 66, size: 44 },
+    abyss_behemoth:     { sx: 27, sy: 69, size: 46 },
+    ridge_claw:         { sx: 15, sy: 44, size: 46 },
+    shadow_jackal:      { sx: 10, sy: 50, size: 46 },
+    beatrice:           { sx: 33, sy: 5,  size: 44 },
+    sylvia_young:       { sx: 42, sy: 11, size: 42 },
+    sylvia_silver:      { sx: 49, sy: 8,  size: 42 },
+    sylvia_disguise:    { sx: 48, sy: 10, size: 42 },
+    reno:               { sx: 47, sy: 17, size: 38 },
+    rowan:              { sx: 61, sy: 23, size: 36 },
+    alice:              { sx: 42, sy: 12, size: 44 },
+    aino:               { sx: 47, sy: 9,  size: 44 },
+    noelle:             { sx: 57, sy: 8,  size: 42 },
+    charlotte:          { sx: 46, sy: 7,  size: 44 },
+    jilan:              { sx: 48, sy: 8,  size: 44 },
+    corridor_vanguard:  { sx: 53, sy: 17, size: 44 },
+    flame_mage:         { sx: 51, sy: 16, size: 46 },
+    eastwing_commander: { sx: 57, sy: 22, size: 39 },
+    wind_god_avatar:    { sx: 45, sy: 22, size: 44 },
+  };
+
+  const frameCache = new Map();
+  const headCache = new Map();
+
+  function hexToRgb(hex) {
+    if (!hex || typeof hex !== 'string') return null;
+    const c = hex.replace('#', '').trim();
+    if (c.length !== 6) return null;
+    const n = parseInt(c, 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+
+  function getBank(id) {
+    const bank = window.PIXEL_SPRITE_BANK || {};
+    return bank[id] || null;
+  }
+
+  function decodeFrame(spriteId, frameIdx) {
+    const entry = getBank(spriteId);
+    if (!entry) return null;
+    const idx = Math.max(0, Math.min(entry.frames.length - 1, frameIdx | 0));
+    const key = spriteId + ':' + idx;
+    if (frameCache.has(key)) return frameCache.get(key);
+
+    const w = entry.w | 0;
+    const h = entry.h | 0;
+    const rgba = new Uint8ClampedArray(w * h * 4);
+    const palRgb = entry._palRgb || (entry._palRgb = entry.palette.map(hexToRgb));
+    const rows = entry.frames[idx] || [];
+
+    for (let y = 0; y < h && y < rows.length; y++) {
+      const row = rows[y];
+      if (!row) continue;
+      const rowOff = y * w;
+      const rLen = row.length;
+      let x = 0;
+      for (let i = 0; i < rLen && x < w; i++) {
+        const code = row.charCodeAt(i);
+        let rep = 1;
+        if (i + 1 < rLen && row.charCodeAt(i + 1) === 42) {
+          let j = i + 2, n = 0;
+          while (j < rLen) {
+            const d = row.charCodeAt(j) - 48;
+            if (d < 0 || d > 9) break;
+            n = n * 10 + d;
+            j++;
+          }
+          rep = n > 0 ? n : 1;
+          i = j - 1;
+        }
+        if (code === 46) { x += rep; continue; }
+        const pi = code < 128 ? BANK_CHAR_LUT[code] : -1;
+        const rgb = pi > 0 ? palRgb[pi] : null;
+        if (!rgb) { x += rep; continue; }
+        const endX = x + rep < w ? x + rep : w;
+        for (; x < endX; x++) {
+          const off = (rowOff + x) << 2;
+          rgba[off] = rgb[0];
+          rgba[off + 1] = rgb[1];
+          rgba[off + 2] = rgb[2];
+          rgba[off + 3] = 255;
+        }
+      }
+    }
+    const img = new ImageData(rgba, w, h);
+    frameCache.set(key, img);
+    return img;
+  }
+
+  function drawHeadToCanvas(canvas, spriteId, size) {
+    const entry = getBank(spriteId);
+    if (!entry || !canvas) return;
+    const key = spriteId + ':' + size;
+    let src = headCache.get(key);
+    if (!src) {
+      const img = decodeFrame(spriteId, 0);
+      if (!img) return;
+      const full = document.createElement('canvas');
+      full.width = entry.w;
+      full.height = entry.h;
+      full.getContext('2d').putImageData(img, 0, 0);
+
+      src = document.createElement('canvas');
+      src.width = size;
+      src.height = size;
+      const ctx = src.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      const ov = HEAD_CROP_OVERRIDES[spriteId] || { sx: entry.w * 0.3, sy: entry.h * 0.1, size: 42 };
+      const cs = Math.min(entry.w, entry.h, ov.size);
+      const sx = Math.max(0, Math.min(entry.w - cs, ov.sx));
+      const sy = Math.max(0, Math.min(entry.h - cs, ov.sy));
+      ctx.drawImage(full, sx, sy, cs, cs, 0, 0, size, size);
+      headCache.set(key, src);
+    }
+    canvas.width = size;
+    canvas.height = size;
+    const tctx = canvas.getContext('2d');
+    tctx.imageSmoothingEnabled = false;
+    tctx.clearRect(0, 0, size, size);
+    tctx.drawImage(src, 0, 0, size, size);
+  }
+
+  /* =========================================================================
+     2. 6+6 大雁展翅折线阵 (Winged V-Chevron) 坐标表（百分比：宽 × 高）
+        设计法则：中前排尖锋突出，上下双翼优雅斜掠后收，中场留出 34%~66%
+        纵贯无阻的星轨走廊，彻底错开左上 AV 轨与底部居中双微岛！
+     ========================================================================= */
+  const CHEVRON_ALLIES = {
+    A1: { x: 29.2, y: 69.5, label: '前锋尖·V1', depthScale: 1.07 },
+    A2: { x: 22.4, y: 57.2, label: '上翼·V2',   depthScale: 0.96 },
+    A3: { x: 22.2, y: 82.2, label: '下翼·V3',   depthScale: 1.12 },
+    A4: { x: 15.6, y: 69.5, label: '中枢·R1',   depthScale: 1.03 },
+    A5: { x: 10.6, y: 52.0, label: '上梢·R2',   depthScale: 0.90 },
+    A6: { x: 10.4, y: 88.2, label: '下梢·R3',   depthScale: 1.15 },
+  };
+
+  const CHEVRON_ENEMIES = {
+    E1: { x: 70.8, y: 69.5, label: '敌尖·V1',   depthScale: 1.07 },
+    E2: { x: 77.6, y: 57.2, label: '敌上翼·V2', depthScale: 0.96 },
+    E3: { x: 77.8, y: 82.2, label: '敌下翼·V3', depthScale: 1.12 },
+    E4: { x: 84.4, y: 69.5, label: '敌中枢·R1', depthScale: 1.03 },
+    E5: { x: 89.4, y: 52.0, label: '敌上梢·R2', depthScale: 0.90 },
+    E6: { x: 89.6, y: 88.2, label: '敌下梢·R3', depthScale: 1.15 },
+  };
+
+  /* =========================================================================
+     3. V2.2 魔力增幅唯一数值事实源（0% / 20% / 40% / 60% 三阶方案 B）
+     ========================================================================= */
+  const AMP_TIERS = [
+    { tier: 0, pct: 0.00, pctInt: 0,  mult: 1.00, locks: 0, pen: 0,  shdMult: 1.00, label: '常规',           short: '0% · 1.00×',  sub: '常规施法 · 点 E / 左键升至 ★20%' },
+    { tier: 1, pct: 0.20, pctInt: 20, mult: 1.43, locks: 1, pen: 10, shdMult: 1.35, label: '★一阶·魔力盈溢', short: '20% · 1.43×', sub: '+1破锁 · 10%穿抗 · 护盾1.35×' },
+    { tier: 2, pct: 0.40, pctInt: 40, mult: 1.70, locks: 2, pen: 20, shdMult: 1.45, label: '★★二阶·极寒过载', short: '40% · 1.70×', sub: '+2破锁 · 20%穿抗 · 护盾1.45×' },
+    { tier: 3, pct: 0.60, pctInt: 60, mult: 1.98, locks: 3, pen: 30, shdMult: 1.45, label: '★★★三阶·星霜极限', short: '60% · 1.98×', sub: '+3破锁 · 30%穿抗 · 限手持重术' },
+  ];
+
+  const SKILLS = [
+    { id: 'ice_lance',   key: '1', name: '极寒冰枪',   path: '手持重术', baseMp: 28, baseDmg: 82, baseLocks: 2, overcastCap: 0.60, elem: 'ice',  desc: '凝霜贯阵 · 最高享★★★60%星霜极限' },
+    { id: 'remote_cone', key: '2', name: '隔空冰锥',   path: '远程术式', baseMp: 20, baseDmg: 58, baseLocks: 2, overcastCap: 0.40, elem: 'ice',  desc: '无视护盾压制 · 最高享★★40%过载' },
+    { id: 'frost_ring',  key: '3', name: '霜环连刃',   path: '手持重术', baseMp: 34, baseDmg: 68, baseLocks: 1, overcastCap: 0.60, elem: 'ice',  desc: '折射寒刃齐射 · 可叠三阶星霜增幅' },
+    { id: 'mirror_cut',  key: '4', name: '冰镜剑舞',   path: '剑技斩击', baseMp: 12, baseDmg: 48, baseLocks: 1, overcastCap: 0.00, elem: 'sword', desc: '顺斩补刀回蓝 · 不吃增幅上限0%' },
+  ];
+
+  const RENO_ELEMS = [
+    { id: 'earth', name: '土·岩壁护盾', short: '土系', castFrame: 6 },
+    { id: 'fire',  name: '火·炽焰突刺', short: '火系', castFrame: 8 },
+    { id: 'wind',  name: '风·疾翼援护', short: '风系', castFrame: 10 },
+  ];
+
+  /* =========================================================================
+     4. 三大战斗场景预设（打罗文 2v1 / 赫兰兽潮 1v3 / 满编 6v6 雁翼对峙）
+     ========================================================================= */
+  function buildPresets() {
+    return {
+      rowan: {
+        id: 'rowan',
+        stageName: '月夜遗迹 · 晦轮对峙',
+        bg: 'assets/bg/bg_ruins.jpg',
+        baseScale: 1.52,
+        compactCards: false,
+        allies: [
+          { id: 'sylvia', name: '希尔维亚', shortName: '希尔维亚', sprite: 'sylvia_silver', slot: 'A4', x: 16.5, y: 69.5, hp: 148, mhp: 160, mp: 224, mmp: 260, shield: 36, role: 'is-hero', acting: true, av: 0 },
+          { id: 'reno',   name: '雷纳德',   shortName: '雷纳德',   sprite: 'reno',          slot: 'A1', x: 29.2, y: 69.5, hp: 186, mhp: 210, mp: 96,  mmp: 120, shield: 84, role: 'is-vanguard', av: 34 },
+        ],
+        enemies: [
+          { id: 'rowan',  name: '罗文·晦轮使徒', shortName: '罗文', sprite: 'rowan', slot: 'E1', x: 74.5, y: 69.5, hp: 310, mhp: 360, locks: 4, maxLocks: 4, intent: '晦轮掷杖袭心', intentDmg: 48, av: 21 },
+        ],
+        crate: null,
+        introLog: '【月夜对峙】雷纳德立于前锋尖位展开岩盾，希尔维亚在后翼星轨蓄势锁定罗文。',
+      },
+      hulan: {
+        id: 'hulan',
+        stageName: '赫兰冰峡 · 兽潮防线',
+        bg: 'assets/bg/ice_canyon.jpg',
+        baseScale: 1.28,
+        compactCards: false,
+        allies: [
+          { id: 'sylvia', name: '希尔维亚', shortName: '希尔维亚', sprite: 'sylvia_silver', slot: 'A4', x: 22.8, y: 69.5, hp: 218, mhp: 250, mp: 264, mmp: 300, shield: 45, role: 'is-hero', acting: true, av: 0 },
+        ],
+        enemies: [
+          { id: 'tundra_brute',   name: '冻土重甲兽',   shortName: '重甲兽', sprite: 'tundra_brute',   slot: 'E1', x: 70.8, y: 68.0, hp: 242, mhp: 265, locks: 5, maxLocks: 5, intent: '重甲冲撞药箱', intentDmg: 46, av: 18 },
+          { id: 'frost_hound',    name: '霜牙冰狼',     shortName: '冰狼',   sprite: 'frost_hound',    slot: 'E2', x: 82.8, y: 50.5, hp: 158, mhp: 175, locks: 3, maxLocks: 3, intent: '寒牙突袭',     intentDmg: 32, av: 29 },
+          { id: 'abyss_behemoth', name: '深渊冰脊巨兽', shortName: '冰脊兽', sprite: 'abyss_behemoth', slot: 'E3', x: 83.2, y: 86.2, hp: 315, mhp: 340, locks: 6, maxLocks: 6, intent: '地裂霜息',     intentDmg: 54, av: 44 },
+        ],
+        crate: { name: '补给药箱守卫', hp: 180, mhp: 180, resonance: 2, maxRes: 3 },
+        introLog: '【赫兰兽潮】三头冰原魔兽呈展翼之势压境，希尔维亚凭中场星轨直面兽潮锋线！',
+      },
+      full6v6: {
+        id: 'full6v6',
+        stageName: '王立学院演武场 · 6v6 雁翼对峙',
+        bg: 'assets/bg/training.jpg',
+        baseScale: 1.02,
+        compactCards: true,
+        allies: [
+          { id: 'reno',      name: '雷纳德',     shortName: '雷纳德',   sprite: 'reno',          slot: 'A1', x: CHEVRON_ALLIES.A1.x, y: CHEVRON_ALLIES.A1.y, hp: 210, mhp: 210, mp: 108, mmp: 120, shield: 92, role: 'is-vanguard', av: 24 },
+          { id: 'charlotte', name: '夏洛特',     shortName: '夏洛特',   sprite: 'charlotte',     slot: 'A2', x: CHEVRON_ALLIES.A2.x, y: CHEVRON_ALLIES.A2.y, hp: 162, mhp: 170, mp: 140, mmp: 150, shield: 0,  role: 'is-wing', av: 36 },
+          { id: 'noelle',    name: '诺艾尔',     shortName: '诺艾尔',   sprite: 'noelle',        slot: 'A3', x: CHEVRON_ALLIES.A3.x, y: CHEVRON_ALLIES.A3.y, hp: 174, mhp: 185, mp: 112, mmp: 130, shield: 0,  role: 'is-wing', av: 48 },
+          { id: 'sylvia',    name: '希尔维亚',   shortName: '希尔维亚', sprite: 'sylvia_silver', slot: 'A4', x: CHEVRON_ALLIES.A4.x, y: CHEVRON_ALLIES.A4.y, hp: 235, mhp: 250, mp: 272, mmp: 300, shield: 48, role: 'is-hero', acting: true, av: 0 },
+          { id: 'beatrice',  name: '贝阿特丽丝', shortName: '贝阿特',   sprite: 'beatrice',      slot: 'A5', x: CHEVRON_ALLIES.A5.x, y: CHEVRON_ALLIES.A5.y, hp: 152, mhp: 165, mp: 190, mmp: 210, shield: 0,  role: 'is-wing', av: 56 },
+          { id: 'aino',      name: '伊诺',       shortName: '伊诺',     sprite: 'aino',          slot: 'A6', x: CHEVRON_ALLIES.A6.x, y: CHEVRON_ALLIES.A6.y, hp: 158, mhp: 165, mp: 175, mmp: 195, shield: 0,  role: 'is-wing', av: 64 },
+        ],
+        enemies: [
+          { id: 'eastwing',  name: '东翼总指挥', shortName: '总指挥', sprite: 'eastwing_commander', slot: 'E1', x: CHEVRON_ENEMIES.E1.x, y: CHEVRON_ENEMIES.E1.y, hp: 340, mhp: 360, locks: 5, maxLocks: 5, intent: '圣辉断空斩', intentDmg: 52, av: 16 },
+          { id: 'rowan',     name: '罗文',       shortName: '罗文',   sprite: 'rowan',              slot: 'E2', x: CHEVRON_ENEMIES.E2.x, y: CHEVRON_ENEMIES.E2.y, hp: 260, mhp: 290, locks: 4, maxLocks: 4, intent: '晦轮折光',   intentDmg: 42, av: 28 },
+          { id: 'vanguard',  name: '长廊先锋',   shortName: '先锋卫', sprite: 'corridor_vanguard',  slot: 'E3', x: CHEVRON_ENEMIES.E3.x, y: CHEVRON_ENEMIES.E3.y, hp: 245, mhp: 260, locks: 3, maxLocks: 3, intent: '长戟穿阵',   intentDmg: 38, av: 40 },
+          { id: 'windgod',   name: '风神化身',   shortName: '风神',   sprite: 'wind_god_avatar',    slot: 'E4', x: CHEVRON_ENEMIES.E4.x, y: CHEVRON_ENEMIES.E4.y, hp: 390, mhp: 420, locks: 6, maxLocks: 6, intent: '苍穹风暴眼', intentDmg: 58, av: 52 },
+          { id: 'flamemage', name: '烈焰术士',   shortName: '焰术士', sprite: 'flame_mage',         slot: 'E5', x: CHEVRON_ENEMIES.E5.x, y: CHEVRON_ENEMIES.E5.y, hp: 195, mhp: 210, locks: 3, maxLocks: 3, intent: '炎柱咏唱',   intentDmg: 44, av: 60 },
+          { id: 'behemoth',  name: '冰脊巨兽',   shortName: '冰脊兽', sprite: 'abyss_behemoth',     slot: 'E6', x: CHEVRON_ENEMIES.E6.x, y: CHEVRON_ENEMIES.E6.y, hp: 310, mhp: 340, locks: 5, maxLocks: 5, intent: '寒岩践踏',   intentDmg: 49, av: 68 },
+        ],
+        crate: null,
+        introLog: '【满编 6v6 雁翼对峙】十二名战力分列左右对称展翼雁阵，中场星轨与双微岛零挤压纵贯全屏。',
+      },
+    };
+  }
+
+  /* =========================================================================
+     5. 核心运行态
+     ========================================================================= */
+  const presets = buildPresets();
+  const state = {
+    presetId: 'rowan',
+    turn: 2,
+    ap: 2,
+    maxAp: 2,
+    ampTierIdx: 0,       // 0..3 -> 0%, 20%, 40%, 60%
+    wandOn: true,        // 晦轮杖真伤态
+    renoElemIdx: 0,      // 0:土 1:火 2:风
+    showLattice: false,  // 默认画面清透如画，一键开关展示 6+6 展翼雁形阵线
+    menuMode: 'root',    // 'root' | 'arts' | 'assist'
+    targetIdx: 0,
+    logOpen: false,
+    logs: [],
+    animMap: new Map(),  // unitId -> { frame, until, returnFrame }
+    projectiles: [],
+    particles: [],
+    sparks: [],
+  };
+
+  function curPreset() { return presets[state.presetId]; }
+  function curAmp() { return AMP_TIERS[state.ampTierIdx]; }
+  function getHero() { return curPreset().allies.find(a => a.role === 'is-hero') || curPreset().allies[0]; }
+  function getVanguard() { return curPreset().allies.find(a => a.role === 'is-vanguard') || null; }
+  function getTarget() {
+    const es = curPreset().enemies;
+    if (!es.length) return null;
+    if (state.targetIdx >= es.length) state.targetIdx = 0;
+    return es[state.targetIdx];
+  }
+
+  function pushLog(html) {
+    state.logs.unshift({ turn: state.turn, html });
+    if (state.logs.length > 18) state.logs.pop();
+    renderChronicle();
+  }
+
+  /* =========================================================================
+     6. 舞台 DOM & SVG 星轨渲染（零圆框、零死板空方格）
+     ========================================================================= */
+  const stageEl = document.getElementById('stage');
+  const stageBgEl = document.getElementById('stage-bg');
+  const svgEl = document.getElementById('formation-svg');
+  const actorsLayer = document.getElementById('actors-layer');
+  const avListEl = document.getElementById('cb-av-list');
+  const dualDockEl = document.getElementById('dual-island-dock');
+  const prismRigEl = document.getElementById('prism-rig');
+  const subListEl = document.getElementById('prism-sub-list');
+  const fxCanvas = document.getElementById('fx-canvas');
+  const fxCtx = fxCanvas.getContext('2d');
+
+  function getStageRect() {
+    const r = stageEl.getBoundingClientRect();
+    return { w: Math.max(640, r.width), h: Math.max(400, r.height) };
+  }
+
+  function calcViewportScaleFactor() {
+    const { h } = getStageRect();
+    return Math.max(0.76, Math.min(1.06, h / 818));
+  }
+
+  function renderFormationSvg() {
+    const { w, h } = getStageRect();
+    svgEl.setAttribute('viewBox', `0 0 ${Math.round(w)} ${Math.round(h)}`);
+    const px = pct => (pct / 100) * w;
+    const py = pct => (pct / 100) * h;
+
+    const preset = curPreset();
+    const hero = getHero();
+    const tgt = getTarget();
+    const tier = state.ampTierIdx;
+
+    // 1) 当前行动者脚下：极淡雪瓷冰蓝 / 香槟金星轨菱纹微光环（随三阶增幅进化！）
+    let actorHalo = '';
+    if (hero) {
+      const hx = px(hero.x), hy = py(hero.y) - 4;
+      const rx = 56, ry = 17;
+      const ringStroke = tier === 3 ? '#F4D37E' : tier === 2 ? '#4D94FF' : tier === 1 ? '#7DD3FC' : 'rgba(186, 230, 255, 0.85)';
+      const fillGlow = tier === 3 ? 'rgba(246, 212, 118, 0.24)' : tier === 2 ? 'rgba(22, 88, 235, 0.22)' : tier === 1 ? 'rgba(125, 211, 252, 0.20)' : 'rgba(224, 244, 255, 0.14)';
+      actorHalo = `
+        <g class="active-halo" style="animation: astralPulse 2.8s ease-in-out infinite;">
+          <ellipse cx="${hx}" cy="${hy}" rx="${rx}" ry="${ry}" fill="${fillGlow}" stroke="${ringStroke}" stroke-width="${tier >= 2 ? 1.6 : 1.2}" />
+          <ellipse cx="${hx}" cy="${hy}" rx="${rx * 0.72}" ry="${ry * 0.70}" fill="none" stroke="${ringStroke}" stroke-width="0.9" stroke-dasharray="5 4" opacity="0.88" />
+          <polygon points="${hx},${hy - ry - 4} ${hx + rx + 6},${hy} ${hx},${hy + ry + 4} ${hx - rx - 6},${hy}" fill="none" stroke="${tier === 3 ? '#FFF3C4' : 'rgba(239,224,190,0.75)'}" stroke-width="1" opacity="0.86" />
+          ${tier >= 2 ? `<ellipse cx="${hx}" cy="${hy}" rx="${rx * 1.24}" ry="${ry * 1.24}" fill="none" stroke="${tier === 3 ? '#F6D98C' : '#38BDF8'}" stroke-width="1.2" stroke-dasharray="10 6" opacity="0.85" />` : ''}
+          ${tier === 3 ? `<ellipse cx="${hx}" cy="${hy}" rx="${rx * 1.46}" ry="${ry * 1.44}" fill="none" stroke="#FFF4CC" stroke-width="1.35" stroke-dasharray="3 5" opacity="0.92" />` : ''}
+          <polygon points="${hx - rx - 6},${hy} ${hx - rx - 10},${hy - 3} ${hx - rx - 14},${hy} ${hx - rx - 10},${hy + 3}" fill="${ringStroke}" />
+          <polygon points="${hx + rx + 6},${hy} ${hx + rx + 10},${hy - 3} ${hx + rx + 14},${hy} ${hx + rx + 10},${hy + 3}" fill="${ringStroke}" />
+        </g>
+      `;
+    }
+
+    // 2) 锁定目标脚下：极淡绯红金星轨准星微光环
+    let targetHalo = '';
+    if (tgt) {
+      const tx = px(tgt.x), ty = py(tgt.y) - 4;
+      const rx = 58, ry = 18;
+      targetHalo = `
+        <g class="target-halo" style="animation: astralPulse 2.2s ease-in-out infinite;">
+          <ellipse cx="${tx}" cy="${ty}" rx="${rx}" ry="${ry}" fill="rgba(209, 52, 86, 0.16)" stroke="rgba(255, 148, 170, 0.90)" stroke-width="1.35" />
+          <ellipse cx="${tx}" cy="${ty}" rx="${rx * 0.72}" ry="${ry * 0.72}" fill="none" stroke="rgba(239, 224, 190, 0.85)" stroke-width="1" stroke-dasharray="4 4" />
+          <polygon points="${tx},${ty - ry - 4} ${tx + rx + 6},${ty} ${tx},${ty + ry + 4} ${tx - rx - 6},${ty}" fill="none" stroke="rgba(255, 172, 188, 0.76)" stroke-width="1" />
+        </g>
+      `;
+    }
+
+    // 3) 可一键切换的「6+6 展翼雁形阵线」（大雁双翼折线：中前锋突出、上下翼斜掠后收，绝非死板 6 宫格！）
+    const A = CHEVRON_ALLIES;
+    const E = CHEVRON_ENEMIES;
+    const occupiedSlots = new Set([
+      ...preset.allies.map(u => u.slot),
+      ...preset.enemies.map(u => u.slot),
+    ]);
+    const pt = n => `${px(n.x).toFixed(1)},${(py(n.y) - 4).toFixed(1)}`;
+    const allyOuterPath = `M ${pt(A.A5)} L ${pt(A.A2)} L ${pt(A.A1)} L ${pt(A.A3)} L ${pt(A.A6)}`;
+    const allyInnerPath = `M ${pt(A.A5)} L ${pt(A.A4)} L ${pt(A.A6)} M ${pt(A.A4)} L ${pt(A.A1)}`;
+    const enemyOuterPath = `M ${pt(E.E5)} L ${pt(E.E2)} L ${pt(E.E1)} L ${pt(E.E3)} L ${pt(E.E6)}`;
+    const enemyInnerPath = `M ${pt(E.E5)} L ${pt(E.E4)} L ${pt(E.E6)} M ${pt(E.E4)} L ${pt(E.E1)}`;
+
+    const renderVertex = (slotKey, node, isEnemy) => {
+      const vx = px(node.x), vy = py(node.y) - 4;
+      const stroke = isEnemy ? 'rgba(255, 174, 194, 0.94)' : 'rgba(196, 236, 255, 0.96)';
+      const fill = isEnemy ? 'rgba(209, 52, 86, 0.28)' : 'rgba(22, 88, 235, 0.28)';
+      const isOccupied = occupiedSlots.has(slotKey);
+      return `
+        <g>
+          <ellipse cx="${vx}" cy="${vy}" rx="22" ry="7" fill="${fill}" stroke="${stroke}" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.86" />
+          <polygon points="${vx},${vy - 5} ${vx + 7},${vy} ${vx},${vy + 5} ${vx - 7},${vy}" fill="#FFFFFF" fill-opacity="0.90" stroke="${stroke}" stroke-width="1.2" />
+          ${!isOccupied ? `<text x="${vx}" y="${vy + 17}" text-anchor="middle" class="chevron-node-label ${isEnemy ? 'enemy' : ''}">${node.label}</text>` : ''}
+        </g>
+      `;
+    };
+
+    const midX = (w * 0.50).toFixed(1);
+    const latticeMarkup = `
+      <g class="chevron-lattice">
+        <!-- 中场星轨对称轴（极淡，标示自由指令走廊） -->
+        <line x1="${midX}" y1="${(h * 0.14).toFixed(1)}" x2="${midX}" y2="${(h * 0.88).toFixed(1)}"
+              stroke="rgba(239, 224, 190, 0.36)" stroke-width="1" stroke-dasharray="2 7" />
+        <polygon points="${midX},${(h * 0.52 - 5).toFixed(1)} ${(w * 0.5 + 5).toFixed(1)},${(h * 0.52).toFixed(1)} ${midX},${(h * 0.52 + 5).toFixed(1)} ${(w * 0.5 - 5).toFixed(1)},${(h * 0.52).toFixed(1)}"
+                 fill="rgba(239, 224, 190, 0.65)" />
+
+        <!-- 左翼：我方 6 位展翼雁阵 -->
+        <path class="chevron-line-ally" d="${allyOuterPath}" />
+        <path class="chevron-line-ally-sub" d="${allyInnerPath}" />
+        ${Object.entries(A).map(([k, n]) => renderVertex(k, n, false)).join('')}
+
+        <!-- 右翼：敌方 6 位展翼雁阵 -->
+        <path class="chevron-line-enemy" d="${enemyOuterPath}" />
+        <path class="chevron-line-enemy-sub" d="${enemyInnerPath}" />
+        ${Object.entries(E).map(([k, n]) => renderVertex(k, n, true)).join('')}
+      </g>
+    `;
+
+    svgEl.innerHTML = latticeMarkup + actorHalo + targetHalo;
+  }
+
+  function renderActors() {
+    const preset = curPreset();
+    const vScale = calcViewportScaleFactor();
+    const now = performance.now();
+    actorsLayer.innerHTML = '';
+
+    const drawUnit = (unit, isEnemy, idx) => {
+      const bank = getBank(unit.sprite);
+      if (!bank) return;
+      const slotInfo = isEnemy ? CHEVRON_ENEMIES[unit.slot] : CHEVRON_ALLIES[unit.slot];
+      const depth = preset.id === 'full6v6' && slotInfo ? slotInfo.depthScale : 1.0;
+      const scale = preset.baseScale * depth * vScale;
+      const dispW = Math.round(bank.w * scale);
+      const dispH = Math.round(bank.h * scale);
+
+      const node = document.createElement('div');
+      node.className = 'actor-node'
+        + (isEnemy ? ' is-enemy' : ' is-ally')
+        + (unit.acting ? ' is-acting' : '')
+        + (unit.acting && state.ampTierIdx >= 2 ? ` amp-t${state.ampTierIdx}` : '')
+        + (isEnemy && idx === state.targetIdx ? ' is-target' : '');
+      node.dataset.uid = unit.id;
+      node.dataset.phase = String(idx % 6);
+      node.style.left = unit.x + '%';
+      node.style.top = unit.y + '%';
+      node.style.zIndex = String(Math.round(unit.y * 10));
+
+      // 朝向修正：左翼友军一律面朝右，右翼敌军一律面朝左
+      const needFlip = isEnemy ? (bank.facing === 'right') : (bank.facing === 'left');
+
+      const shadow = document.createElement('div');
+      shadow.className = 'actor-shadow';
+      node.appendChild(shadow);
+
+      const wrap = document.createElement('div');
+      wrap.className = 'sprite-wrap';
+
+      const canvas = document.createElement('canvas');
+      canvas.className = 'sprite-canvas' + (needFlip ? ' flip-x' : '');
+      canvas.width = bank.w;
+      canvas.height = bank.h;
+      canvas.style.width = dispW + 'px';
+      canvas.style.height = dispH + 'px';
+      const anim = state.animMap.get(unit.id);
+      const frameIdx = (anim && anim.until > now) ? anim.frame : 0;
+      const imgData = decodeFrame(unit.sprite, frameIdx);
+      if (imgData) canvas.getContext('2d').putImageData(imgData, 0, 0);
+      wrap.appendChild(canvas);
+      node.appendChild(wrap);
+
+      // 雷纳德前锋：脚下仅附极微小 1 行岩盾 + 三系元素徽标（不画整张大面板！）
+      if (!isEnemy && unit.role === 'is-vanguard') {
+        const elInfo = RENO_ELEMS[state.renoElemIdx];
+        const badge = document.createElement('button');
+        badge.className = 'reno-micro-badge';
+        badge.dataset.elem = elInfo.id;
+        badge.title = '点击切换雷纳德三系元素援护（土/火/风）';
+        badge.innerHTML = `<span class="elem-dot"></span><span>岩盾</span><span class="shd">${unit.shield}</span><span>· ${elInfo.short}</span>`;
+        badge.addEventListener('click', (e) => {
+          e.stopPropagation();
+          cycleRenoElement();
+        });
+        node.appendChild(badge);
+      }
+
+      // 6v6 侧翼友军：仅附极简 1 行血条微签，保持全翼通透
+      if (!isEnemy && unit.role === 'is-wing') {
+        const chip = document.createElement('div');
+        chip.className = 'ally-wing-chip';
+        const pct = Math.max(0, Math.min(100, Math.round((unit.hp / unit.mhp) * 100)));
+        chip.innerHTML = `
+          <div class="awc-row"><span>${unit.shortName}</span><span class="awc-hp">${unit.hp}</span></div>
+          <div class="awc-bar"><div class="awc-fill" style="width:${pct}%"></div></div>
+        `;
+        node.appendChild(chip);
+      }
+
+      // 敌方：头顶意图轻语 + 脚下精致绯红微牌
+      if (isEnemy) {
+        const isTarget = idx === state.targetIdx;
+        if (isTarget || !preset.compactCards) {
+          const it = document.createElement('div');
+          it.className = 'enemy-intent-tag' + (!isTarget ? ' is-compact' : '');
+          it.innerHTML = `<span>⚔ ${unit.intent}</span><span class="e-dmg">${unit.intentDmg}</span>`;
+          node.appendChild(it);
+        }
+
+        const plate = document.createElement('div');
+        plate.className = 'enemy-foot-plate' + (preset.compactCards ? ' is-compact' : '');
+        const hpPct = Math.max(0, Math.min(100, Math.round((unit.hp / unit.mhp) * 100)));
+        const pipsHtml = Array.from({ length: unit.maxLocks }, (_, k) =>
+          `<span class="lock-pip ${k >= unit.locks ? 'broken' : ''}"></span>`
+        ).join('');
+        plate.innerHTML = `
+          <div class="efp-top">
+            <span class="efp-name">${preset.compactCards ? unit.shortName : unit.name}</span>
+            <span class="efp-hp">${unit.hp}/${unit.mhp}</span>
+          </div>
+          <div class="efp-bar"><div class="efp-fill" style="width:${hpPct}%"></div></div>
+          <div class="efp-locks">
+            <span class="efp-pips">${pipsHtml}</span>
+            <span class="efp-lock-txt ${unit.locks <= 0 ? 'broken' : ''}">${unit.locks <= 0 ? 'BREAK!' : '锁 ' + unit.locks}</span>
+          </div>
+        `;
+        node.appendChild(plate);
+
+        node.addEventListener('click', () => {
+          state.targetIdx = idx;
+          renderAll();
+          pushLog(`星轨准星锁定目标：<strong>${unit.name}</strong>（余锁 ${unit.locks}/${unit.maxLocks}）。`);
+        });
+      }
+
+      actorsLayer.appendChild(node);
+    };
+
+    preset.allies.forEach((a, i) => drawUnit(a, false, i));
+    preset.enemies.forEach((e, i) => drawUnit(e, true, i));
+  }
+
+  /* =========================================================================
+     7. 左上角 1:1 行动跑条（桌面高度自适应行数，绝对零遮头）
+     ========================================================================= */
+  function renderAvRail() {
+    const preset = curPreset();
+    const { h } = getStageRect();
+    const maxRows = h < 680 ? 4 : 5;
+    const queue = [
+      ...preset.allies.map((a, idx) => ({
+        side: a.role === 'is-hero' ? 'player' : 'ally',
+        idx, name: a.shortName, sprite: a.sprite, av: a.av, acting: !!a.acting,
+      })),
+      ...preset.enemies.map((e, idx) => ({
+        side: 'enemy',
+        idx, name: e.shortName, sprite: e.sprite, av: e.av, acting: false,
+      })),
+    ].sort((a, b) => a.av - b.av).slice(0, maxRows);
+
+    avListEl.innerHTML = '';
+    queue.forEach((row) => {
+      const el = document.createElement('div');
+      el.className = 'cb-av-row'
+        + (row.side === 'ally' ? ' ally-row' : '')
+        + (row.side === 'enemy' ? ' enemy-row' : '')
+        + (row.acting ? ' acting' : '')
+        + (row.side === 'enemy' && row.idx === state.targetIdx ? ' is-targeted' : '');
+      const inner = document.createElement('div');
+      inner.className = 'cb-av-row-in';
+
+      const port = document.createElement('div');
+      port.className = 'cb-av-portrait';
+      const cv = document.createElement('canvas');
+      cv.className = 'cb-av-canvas';
+      drawHeadToCanvas(cv, row.sprite, 28);
+      port.appendChild(cv);
+
+      const nm = document.createElement('div');
+      nm.className = 'cb-av-name';
+      nm.textContent = row.name;
+
+      const vl = document.createElement('div');
+      vl.className = 'cb-av-val';
+      vl.textContent = String(row.av);
+
+      inner.append(port, nm, vl);
+      el.appendChild(inner);
+
+      if (row.side === 'enemy') {
+        el.setAttribute('role', 'button');
+        el.setAttribute('tabindex', '0');
+        el.addEventListener('click', () => {
+          state.targetIdx = row.idx;
+          renderAll();
+        });
+      }
+      avListEl.appendChild(el);
+    });
+  }
+
+  /* =========================================================================
+     8. 方案 C 独创：底部居中悬浮雪瓷双微岛（各 220×50px，零挤压左右翼）
+     ========================================================================= */
+  function renderDualIslands() {
+    const preset = curPreset();
+    const hero = getHero();
+    const vanguard = getVanguard();
+    const amp = curAmp();
+    const extraMp = Math.round(hero.mmp * amp.pct);
+    const mpPct = Math.max(0, Math.min(100, (hero.mp / hero.mmp) * 100));
+    const costPct = Math.min(mpPct, (extraMp / hero.mmp) * 100);
+    const hpPct = Math.max(0, Math.min(100, (hero.hp / hero.mhp) * 100));
+
+    dualDockEl.innerHTML = '';
+
+    // 左卡：主角希尔维亚（220×50px）
+    const heroCard = document.createElement('div');
+    heroCard.className = 'mini-island is-hero';
+    heroCard.innerHTML = `
+      <div class="mini-island-in">
+        <div class="mi-head"><canvas id="mi-head-hero"></canvas></div>
+        <div class="mi-info">
+          <div class="mi-row-top">
+            <span class="mi-name">${hero.name}</span>
+            <span class="mi-tag">${state.wandOn ? '晦轮·真伤' : '冰盾 ' + hero.shield}</span>
+          </div>
+          <div class="mi-bars">
+            <div class="mi-stat-line">
+              <span class="mi-lbl">HP</span>
+              <span class="mi-track"><span class="mi-fill hp" style="width:${hpPct.toFixed(1)}%"></span></span>
+              <span class="mi-num">${hero.hp}/${hero.mhp}</span>
+            </div>
+            <div class="mi-stat-line">
+              <span class="mi-lbl">MP</span>
+              <span class="mi-track">
+                <span class="mi-fill mp" style="width:${mpPct.toFixed(1)}%"></span>
+                ${extraMp > 0 ? `<span class="mi-fill mp-preview" style="left:${(mpPct - costPct).toFixed(1)}%;width:${costPct.toFixed(1)}%"></span>` : ''}
+              </span>
+              <span class="mi-num ${extraMp > 0 ? 'mp-warn' : ''}">${extraMp > 0 ? hero.mp + ' -' + extraMp : hero.mp + '/' + hero.mmp}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    dualDockEl.appendChild(heroCard);
+    drawHeadToCanvas(heroCard.querySelector('#mi-head-hero'), hero.sprite, 34);
+
+    // 右卡：若有前锋雷纳德（2v1 / 6v6）显示雷纳德雪瓷暖金微卡；1v3 赫兰兽潮显示药箱守卫×共鸣微卡
+    if (vanguard) {
+      const vHpPct = Math.max(0, Math.min(100, (vanguard.hp / vanguard.mhp) * 100));
+      const vShdPct = Math.max(0, Math.min(100, (vanguard.shield / 120) * 100));
+      const elInfo = RENO_ELEMS[state.renoElemIdx];
+      const vanCard = document.createElement('div');
+      vanCard.className = 'mini-island is-vanguard';
+      vanCard.innerHTML = `
+        <div class="mini-island-in">
+          <div class="mi-head"><canvas id="mi-head-van"></canvas></div>
+          <div class="mi-info">
+            <div class="mi-row-top">
+              <span class="mi-name">${vanguard.name}</span>
+              <span class="mi-tag">前锋 · ${elInfo.short}</span>
+            </div>
+            <div class="mi-bars">
+              <div class="mi-stat-line">
+                <span class="mi-lbl">HP</span>
+                <span class="mi-track"><span class="mi-fill hp" style="width:${vHpPct.toFixed(1)}%"></span></span>
+                <span class="mi-num">${vanguard.hp}/${vanguard.mhp}</span>
+              </div>
+              <div class="mi-stat-line">
+                <span class="mi-lbl">盾</span>
+                <span class="mi-track"><span class="mi-fill shd" style="width:${vShdPct.toFixed(1)}%"></span></span>
+                <span class="mi-num">岩盾 ${vanguard.shield}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      dualDockEl.appendChild(vanCard);
+      drawHeadToCanvas(vanCard.querySelector('#mi-head-van'), vanguard.sprite, 34);
+    } else if (preset.crate) {
+      const c = preset.crate;
+      const cPct = Math.round((c.hp / c.mhp) * 100);
+      const rPct = Math.round((c.resonance / c.maxRes) * 100);
+      const crateCard = document.createElement('div');
+      crateCard.className = 'mini-island is-crate';
+      crateCard.innerHTML = `
+        <div class="mini-island-in">
+          <div class="mi-head">箱</div>
+          <div class="mi-info">
+            <div class="mi-row-top">
+              <span class="mi-name">${c.name}</span>
+              <span class="mi-tag">${state.ampTierIdx >= 1 ? '守卫 ×2' : '防线 intact'}</span>
+            </div>
+            <div class="mi-bars">
+              <div class="mi-stat-line">
+                <span class="mi-lbl">箱</span>
+                <span class="mi-track"><span class="mi-fill hp" style="width:${cPct}%"></span></span>
+                <span class="mi-num">${c.hp}/${c.mhp}</span>
+              </div>
+              <div class="mi-stat-line">
+                <span class="mi-lbl">鸣</span>
+                <span class="mi-track"><span class="mi-fill mp" style="width:${rPct}%"></span></span>
+                <span class="mi-num">伊诺 ${c.resonance}/${c.maxRes}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      dualDockEl.appendChild(crateCard);
+    }
+  }
+
+  /* =========================================================================
+     9. 中场棱镜指令翼 & 外露直按三阶增幅同步
+     ========================================================================= */
+  function renderPrismUI() {
+    const amp = curAmp();
+    const hero = getHero();
+    const ampBtn = document.getElementById('pw-amp');
+    ampBtn.className = `cb-pwing amp-t${amp.tier}`;
+
+    const pipsEl = document.getElementById('pw-amp-pips');
+    const pipCls = amp.tier === 3 ? 'lit-t3' : amp.tier === 2 ? 'lit-t2' : 'lit-t1';
+    pipsEl.innerHTML = [1, 2, 3].map(n =>
+      `<span class="cb-amp-pip ${amp.tier >= n ? pipCls : ''}"></span>`
+    ).join('');
+
+    document.getElementById('pw-amp-val').textContent = amp.short;
+    document.getElementById('pw-amp-sub').textContent = amp.sub;
+    document.getElementById('pw-guard-sub').textContent = `冰晶穹盾 · 盾量 ${amp.shdMult.toFixed(2)}×（${Math.round(52 * amp.shdMult)}点）`;
+    document.getElementById('btn-sub-amp').textContent = `E 增幅 ${amp.pctInt}% (${amp.mult.toFixed(2)}×)`;
+
+    prismRigEl.classList.toggle('mode-sub', state.menuMode !== 'root');
+
+    if (state.menuMode === 'arts') {
+      subListEl.innerHTML = '';
+      SKILLS.forEach((sk) => {
+        const effPct = Math.min(amp.pct, sk.overcastCap);
+        const effTierObj = AMP_TIERS.find(t => Math.abs(t.pct - effPct) < 0.01) || AMP_TIERS[0];
+        const extraMp = Math.round(hero.mmp * effPct);
+        const totalMp = sk.baseMp + extraMp;
+        const estDmg = Math.round(sk.baseDmg * effTierObj.mult * (state.wandOn ? 1.12 : 1));
+        const estLocks = sk.baseLocks + effTierObj.locks;
+        const btn = document.createElement('button');
+        btn.className = 'cb-blade';
+        btn.innerHTML = `
+          <span class="cb-pw-key">${sk.key}</span>
+          <span class="bl-body">
+            <span class="bl-top">
+              <span class="bl-name">${sk.name}</span>
+              <span class="bl-cost">${totalMp} MP · 上限${Math.round(sk.overcastCap * 100)}%</span>
+            </span>
+            <span class="bl-bot">
+              <span class="bl-meta">${sk.path} · 破锁 ${estLocks}</span>
+              <span class="bl-dmg">≈ ${estDmg} 伤</span>
+            </span>
+          </span>
+        `;
+        btn.addEventListener('click', () => castSkill(sk, effTierObj, totalMp, estDmg, estLocks));
+        subListEl.appendChild(btn);
+      });
+    } else if (state.menuMode === 'assist') {
+      const elInfo = RENO_ELEMS[state.renoElemIdx];
+      const assistItems = [
+        { key: 'R', name: '晦轮杖 · 魔法真伤', cost: state.wandOn ? '已展开 ON' : '收鞘 OFF', meta: '100%真实魔伤 · 无自创惩罚', fn: toggleWand },
+        { key: 'F', name: `雷纳德三系切换 (${elInfo.short})`, cost: '土/火/风', meta: `当前：${elInfo.name}`, fn: cycleRenoElement },
+        { key: 'Q', name: '冰晶宫殿 · 并行推演', cost: '1/1 就绪', meta: '洞穿敌阵弱点 · 目标余锁 -1', fn: triggerIcePalace },
+      ];
+      subListEl.innerHTML = '';
+      assistItems.forEach((it) => {
+        const btn = document.createElement('button');
+        btn.className = 'cb-blade';
+        btn.innerHTML = `
+          <span class="cb-pw-key">${it.key}</span>
+          <span class="bl-body">
+            <span class="bl-top">
+              <span class="bl-name">${it.name}</span>
+              <span class="bl-cost">${it.cost}</span>
+            </span>
+            <span class="bl-bot"><span class="bl-meta">${it.meta}</span></span>
+          </span>
+        `;
+        btn.addEventListener('click', it.fn);
+        subListEl.appendChild(btn);
+      });
+    }
+  }
+
+  function renderTopAndLog() {
+    const preset = curPreset();
+    document.getElementById('tb-ap').textContent = `${state.ap}/${state.maxAp}`;
+    document.getElementById('tb-stage-name').textContent = preset.stageName;
+    document.querySelectorAll('.tb-preset-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.preset === state.presetId);
+    });
+    const latBtn = document.getElementById('btn-toggle-lattice');
+    latBtn.classList.toggle('active', state.showLattice);
+    latBtn.setAttribute('aria-pressed', String(state.showLattice));
+    stageEl.classList.toggle('show-lattice', state.showLattice);
+  }
+
+  function renderChronicle() {
+    const latest = state.logs[0];
+    document.getElementById('chr-latest').innerHTML = latest ? latest.html : '';
+    const drawer = document.getElementById('chr-drawer');
+    drawer.classList.toggle('open', state.logOpen);
+    document.getElementById('btn-log-toggle').classList.toggle('active', state.logOpen);
+    drawer.innerHTML = state.logs.map(l => `<div class="chr-row"><strong>[T${l.turn}]</strong> ${l.html}</div>`).join('');
+  }
+
+  function renderAll() {
+    stageBgEl.style.backgroundImage = `url('${curPreset().bg}')`;
+    renderTopAndLog();
+    renderFormationSvg();
+    renderActors();
+    renderAvRail();
+    renderDualIslands();
+    renderPrismUI();
+    renderChronicle();
+  }
+
+  /* =========================================================================
+     10. 交互逻辑：增幅升档、术式释放、像素动作帧、VFX、切预设
+     ========================================================================= */
+  function stepAmp(delta) {
+    if (delta > 0) {
+      state.ampTierIdx = (state.ampTierIdx + 1) % AMP_TIERS.length;
+    } else {
+      state.ampTierIdx = Math.max(0, state.ampTierIdx - 1);
+    }
+    const amp = curAmp();
+    const btn = document.getElementById('pw-amp');
+    btn.classList.remove('is-amp-pulse');
+    void btn.offsetWidth;
+    btn.classList.add('is-amp-pulse');
+
+    // 在希尔维亚周身迸发对应阶位冰晶/金雷粒子
+    const hero = getHero();
+    if (hero) spawnBurstPct(hero.x, hero.y - 8, amp.tier === 3 ? 'gold' : amp.tier === 2 ? 'blue' : 'cyan', 14 + amp.tier * 6);
+
+    renderFormationSvg();
+    renderActors();
+    renderDualIslands();
+    renderPrismUI();
+    pushLog(`魔力增幅切换至 <strong>${amp.label}（${amp.pctInt}% · ${amp.mult.toFixed(2)}×）</strong>${amp.locks > 0 ? `，破锁 +${amp.locks} · 穿抗 ${amp.pen}%` : ''}。`);
+  }
+
+  function playUnitPose(unitId, frame, durationMs) {
+    state.animMap.set(unitId, { frame, until: performance.now() + durationMs });
+    renderActors();
+    setTimeout(() => {
+      const cur = state.animMap.get(unitId);
+      if (cur && cur.until <= performance.now() + 20) {
+        state.animMap.delete(unitId);
+        renderActors();
+      }
+    }, durationMs + 30);
+  }
+
+  function spawnFloatPop(unitId, text, cls) {
+    const node = actorsLayer.querySelector(`.actor-node[data-uid="${unitId}"]`);
+    if (!node) return;
+    const el = document.createElement('div');
+    el.className = 'float-pop' + (cls ? ' ' + cls : '');
+    el.textContent = text;
+    node.appendChild(el);
+    setTimeout(() => el.remove(), 980);
+  }
+
+  function castSkill(sk, effTier, totalMp, estDmg, estLocks) {
+    const hero = getHero();
+    const tgt = getTarget();
+    if (!hero || !tgt) return;
+
+    hero.mp = Math.max(0, hero.mp - totalMp);
+    state.ap = Math.max(0, state.ap - 1);
+    playUnitPose(hero.id, 4, 420);
+
+    const { w, h } = getStageRect();
+    state.projectiles.push({
+      sx: (hero.x / 100) * w + 36,
+      sy: (hero.y / 100) * h - 62,
+      tx: (tgt.x / 100) * w,
+      ty: (tgt.y / 100) * h - 54,
+      t: 0,
+      dur: 0.28,
+      tone: effTier.tier === 3 ? 'gold' : 'cyan',
+      onHit: () => {
+        tgt.hp = Math.max(1, tgt.hp - estDmg);
+        tgt.locks = Math.max(0, tgt.locks - estLocks);
+        spawnBurstPct(tgt.x, tgt.y - 8, effTier.tier === 3 ? 'gold' : 'cyan', 22);
+        const tgtNode = actorsLayer.querySelector(`.actor-node[data-uid="${tgt.id}"]`);
+        if (tgtNode) {
+          tgtNode.classList.remove('is-hit');
+          void tgtNode.offsetWidth;
+          tgtNode.classList.add('is-hit');
+        }
+        playUnitPose(tgt.id, 5, 300);
+        renderActors();
+        renderDualIslands();
+        spawnFloatPop(tgt.id, `-${estDmg}${effTier.tier >= 2 ? '!' : ''}`, effTier.tier === 3 ? 'gold' : '');
+      },
+    });
+
+    state.menuMode = 'root';
+    renderAll();
+    pushLog(`希尔维亚施放 <strong>${sk.name}</strong>（${effTier.label} ${effTier.mult.toFixed(2)}×），命中 <strong>${tgt.name}</strong> 造成 <strong>${estDmg}</strong> 伤害，破锁 -${estLocks}！`);
+  }
+
+  function castGuard() {
+    const hero = getHero();
+    const amp = curAmp();
+    const gain = Math.round(52 * amp.shdMult);
+    hero.shield += gain;
+    state.ap = Math.max(0, state.ap - 1);
+    playUnitPose(hero.id, 3, 380);
+    spawnBurstPct(hero.x, hero.y - 8, 'cyan', 18);
+    renderAll();
+    spawnFloatPop(hero.id, `+${gain} 冰盾`, 'shield');
+    pushLog(`希尔维亚展开 <strong>冰晶穹盾</strong>（${amp.shdMult.toFixed(2)}×），护盾提升 +${gain}。`);
+  }
+
+  function toggleWand() {
+    state.wandOn = !state.wandOn;
+    renderAll();
+    pushLog(`晦轮杖切换为 <strong>${state.wandOn ? '展开态（100% 魔法真伤）' : '收鞘态'}</strong>。`);
+  }
+
+  function cycleRenoElement() {
+    state.renoElemIdx = (state.renoElemIdx + 1) % RENO_ELEMS.length;
+    const elInfo = RENO_ELEMS[state.renoElemIdx];
+    const van = getVanguard();
+    if (van) {
+      playUnitPose(van.id, elInfo.castFrame, 420);
+      spawnBurstPct(van.x, van.y - 8, elInfo.id === 'fire' ? 'gold' : 'cyan', 14);
+    }
+    renderAll();
+    pushLog(`前锋雷纳德切换元素援护至 <strong>${elInfo.name}</strong>。`);
+  }
+
+  function triggerIcePalace() {
+    const tgt = getTarget();
+    if (tgt) {
+      tgt.locks = Math.max(0, tgt.locks - 1);
+      spawnBurstPct(tgt.x, tgt.y - 8, 'blue', 16);
+    }
+    state.menuMode = 'root';
+    renderAll();
+    pushLog(`【冰晶宫殿·并行推演】希尔维亚洞悉 <strong>${tgt ? tgt.name : '敌方'}</strong> 招式死角，余锁 -1！`);
+  }
+
+  function endTurn() {
+    state.turn += 1;
+    state.ap = state.maxAp;
+    const hero = getHero();
+    if (hero) hero.mp = Math.min(hero.mmp, hero.mp + 24);
+    state.menuMode = 'root';
+    renderAll();
+    pushLog(`回合流转至 <strong>第 ${state.turn} 回合</strong>，AP 恢复至 ${state.ap}/${state.maxAp}，魔战循环回蓝 +24。`);
+  }
+
+  function switchPreset(presetId) {
+    if (!presets[presetId]) return;
+    state.presetId = presetId;
+    state.targetIdx = 0;
+    state.menuMode = 'root';
+    state.ap = state.maxAp;
+    state.logs = [];
+    renderAll();
+    pushLog(curPreset().introLog);
+  }
+
+  /* =========================================================================
+     11. Canvas 实时粒子 / 冰术弹道 / 三阶香槟金电弧 VFX
+     ========================================================================= */
+  const ambientMotes = Array.from({ length: 28 }, () => ({
+    x: Math.random(),
+    y: Math.random(),
+    r: 1 + Math.random() * 2.1,
+    vx: -0.00018 + Math.random() * 0.00036,
+    vy: 0.00022 + Math.random() * 0.00045,
+    a: 0.25 + Math.random() * 0.45,
+  }));
+
+  function spawnBurstPct(xPct, yPct, tone, count) {
+    const { w, h } = getStageRect();
+    const cx = (xPct / 100) * w;
+    const cy = (yPct / 100) * h;
+    for (let i = 0; i < count; i++) {
+      const ang = (Math.PI * 2 * i) / count + Math.random() * 0.4;
+      const spd = 1.6 + Math.random() * 3.8;
+      state.particles.push({
+        x: cx, y: cy,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd - 0.8,
+        life: 1,
+        decay: 0.025 + Math.random() * 0.025,
+        size: 2.2 + Math.random() * 3,
+        tone,
+      });
+    }
+  }
+
+  function resizeFxCanvas() {
+    const { w, h } = getStageRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    fxCanvas.width = Math.round(w * dpr);
+    fxCanvas.height = Math.round(h * dpr);
+    fxCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  let lastFrameTs = performance.now();
+  function fxLoop(ts) {
+    const dt = Math.min(0.05, (ts - lastFrameTs) / 1000);
+    lastFrameTs = ts;
+    const { w, h } = getStageRect();
+    fxCtx.clearRect(0, 0, w, h);
+
+    // 1) 环境飘雪/星尘微粒
+    for (const m of ambientMotes) {
+      m.x = (m.x + m.vx * 60 * dt + 1) % 1;
+      m.y = (m.y + m.vy * 60 * dt) % 1;
+      const mx = m.x * w, my = m.y * h;
+      fxCtx.fillStyle = `rgba(224, 244, 255, ${m.a.toFixed(2)})`;
+      fxCtx.beginPath();
+      fxCtx.moveTo(mx, my - m.r);
+      fxCtx.lineTo(mx + m.r, my);
+      fxCtx.lineTo(mx, my + m.r);
+      fxCtx.lineTo(mx - m.r, my);
+      fxCtx.closePath();
+      fxCtx.fill();
+    }
+
+    // 2) 三阶星霜极限 (60%) 香槟金冰雷电弧 VFX（环绕希尔维亚周身！）
+    const hero = getHero();
+    if (hero && state.ampTierIdx === 3) {
+      const hx = (hero.x / 100) * w;
+      const hy = (hero.y / 100) * h - 62;
+      for (let arc = 0; arc < 2; arc++) {
+        const a0 = (ts * 0.0032 + arc * Math.PI) % (Math.PI * 2);
+        fxCtx.beginPath();
+        for (let s = 0; s <= 5; s++) {
+          const ang = a0 + s * 0.36;
+          const rad = 42 + Math.sin(ts * 0.015 + s * 2.1 + arc) * 8;
+          const ax = hx + Math.cos(ang) * rad;
+          const ay = hy + Math.sin(ang) * (rad * 0.72);
+          if (s === 0) fxCtx.moveTo(ax, ay); else fxCtx.lineTo(ax, ay);
+        }
+        fxCtx.strokeStyle = arc === 0 ? 'rgba(255, 236, 174, 0.86)' : 'rgba(125, 211, 252, 0.82)';
+        fxCtx.lineWidth = arc === 0 ? 1.8 : 1.3;
+        fxCtx.stroke();
+      }
+    }
+
+    // 3) 术式弹道光束
+    for (let i = state.projectiles.length - 1; i >= 0; i--) {
+      const p = state.projectiles[i];
+      p.t += dt;
+      const u = Math.min(1, p.t / p.dur);
+      const x = p.sx + (p.tx - p.sx) * u;
+      const y = p.sy + (p.ty - p.sy) * u - Math.sin(u * Math.PI) * 26;
+      const tx = p.sx + (p.tx - p.sx) * Math.max(0, u - 0.22);
+      const ty = p.sy + (p.ty - p.sy) * Math.max(0, u - 0.22) - Math.sin(Math.max(0, u - 0.22) * Math.PI) * 26;
+
+      fxCtx.strokeStyle = p.tone === 'gold' ? 'rgba(255, 236, 168, 0.95)' : 'rgba(125, 224, 255, 0.95)';
+      fxCtx.lineWidth = 4;
+      fxCtx.beginPath();
+      fxCtx.moveTo(tx, ty);
+      fxCtx.lineTo(x, y);
+      fxCtx.stroke();
+
+      fxCtx.fillStyle = '#FFFFFF';
+      fxCtx.beginPath();
+      fxCtx.moveTo(x, y - 7);
+      fxCtx.lineTo(x + 12, y);
+      fxCtx.lineTo(x, y + 7);
+      fxCtx.lineTo(x - 8, y);
+      fxCtx.closePath();
+      fxCtx.fill();
+
+      if (u >= 1) {
+        if (typeof p.onHit === 'function') p.onHit();
+        state.projectiles.splice(i, 1);
+      }
+    }
+
+    // 4) 爆发棱晶碎粒
+    for (let i = state.particles.length - 1; i >= 0; i--) {
+      const pt = state.particles[i];
+      pt.x += pt.vx;
+      pt.y += pt.vy;
+      pt.vy += 0.06;
+      pt.life -= pt.decay;
+      if (pt.life <= 0) { state.particles.splice(i, 1); continue; }
+      const col = pt.tone === 'gold'
+        ? `rgba(255, 232, 158, ${pt.life.toFixed(2)})`
+        : pt.tone === 'blue'
+          ? `rgba(74, 148, 255, ${pt.life.toFixed(2)})`
+          : `rgba(148, 226, 255, ${pt.life.toFixed(2)})`;
+      fxCtx.fillStyle = col;
+      const s = pt.size * pt.life;
+      fxCtx.beginPath();
+      fxCtx.moveTo(pt.x, pt.y - s);
+      fxCtx.lineTo(pt.x + s, pt.y);
+      fxCtx.lineTo(pt.x, pt.y + s);
+      fxCtx.lineTo(pt.x - s, pt.y);
+      fxCtx.closePath();
+      fxCtx.fill();
+    }
+
+    requestAnimationFrame(fxLoop);
+  }
+
+  /* =========================================================================
+     12. 事件绑定与键盘热键（W/E/A/D/1..4/X/L/G/ESC）
+     ========================================================================= */
+  document.querySelectorAll('.tb-preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchPreset(btn.dataset.preset));
+  });
+
+  document.getElementById('btn-toggle-lattice').addEventListener('click', () => {
+    state.showLattice = !state.showLattice;
+    renderTopAndLog();
+    pushLog(state.showLattice
+      ? '已展开 <strong>6+6 展翼雁形阵线</strong>（中前锋突出 · 上下双翼斜掠后收）。'
+      : '已收起阵线虚线，回归清透无框星轨微光环。');
+  });
+
+  document.getElementById('btn-endturn').addEventListener('click', endTurn);
+  document.getElementById('btn-log-toggle').addEventListener('click', () => {
+    state.logOpen = !state.logOpen;
+    renderChronicle();
+  });
+
+  document.getElementById('pw-arts').addEventListener('click', () => {
+    state.menuMode = 'arts';
+    renderPrismUI();
+  });
+  document.getElementById('pw-assist').addEventListener('click', () => {
+    state.menuMode = 'assist';
+    renderPrismUI();
+  });
+  document.getElementById('pw-guard').addEventListener('click', castGuard);
+  document.getElementById('btn-sub-back').addEventListener('click', () => {
+    state.menuMode = 'root';
+    renderPrismUI();
+  });
+
+  const ampBtn = document.getElementById('pw-amp');
+  ampBtn.addEventListener('click', () => stepAmp(1));
+  ampBtn.addEventListener('contextmenu', (e) => { e.preventDefault(); stepAmp(-1); });
+  ampBtn.addEventListener('wheel', (e) => { e.preventDefault(); stepAmp(e.deltaY < 0 ? 1 : -1); }, { passive: false });
+  document.getElementById('btn-sub-amp').addEventListener('click', () => stepAmp(1));
+
+  window.addEventListener('keydown', (e) => {
+    const k = e.key.toLowerCase();
+    if (k === 'e') { e.preventDefault(); stepAmp(e.shiftKey ? -1 : 1); }
+    else if (k === 'w') { e.preventDefault(); state.menuMode = state.menuMode === 'arts' ? 'root' : 'arts'; renderPrismUI(); }
+    else if (k === 'a') { e.preventDefault(); castGuard(); }
+    else if (k === 'd') { e.preventDefault(); state.menuMode = state.menuMode === 'assist' ? 'root' : 'assist'; renderPrismUI(); }
+    else if (k === 'escape') { state.menuMode = 'root'; state.logOpen = false; renderPrismUI(); renderChronicle(); }
+    else if (k === 'x') { e.preventDefault(); endTurn(); }
+    else if (k === 'l') { e.preventDefault(); state.logOpen = !state.logOpen; renderChronicle(); }
+    else if (k === 'g') { e.preventDefault(); state.showLattice = !state.showLattice; renderTopAndLog(); }
+    else if (state.menuMode === 'arts' && ['1', '2', '3', '4'].includes(k)) {
+      const idx = Number(k) - 1;
+      const sk = SKILLS[idx];
+      if (sk) {
+        const amp = curAmp();
+        const effPct = Math.min(amp.pct, sk.overcastCap);
+        const effTier = AMP_TIERS.find(t => Math.abs(t.pct - effPct) < 0.01) || AMP_TIERS[0];
+        const hero = getHero();
+        const totalMp = sk.baseMp + Math.round(hero.mmp * effPct);
+        const estDmg = Math.round(sk.baseDmg * effTier.mult * (state.wandOn ? 1.12 : 1));
+        castSkill(sk, effTier, totalMp, estDmg, sk.baseLocks + effTier.locks);
+      }
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    resizeFxCanvas();
+    renderAll();
+  });
+
+  // 初始化启动
+  resizeFxCanvas();
+  switchPreset('rowan');
+  requestAnimationFrame(fxLoop);
+})();
+</script>
+</body>
+</html>

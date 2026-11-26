@@ -1,0 +1,173 @@
+/* =========================================================
+   战斗等阶铭牌 · 方案 C（星轨建筑印记 / Astral Architectural Crest）
+   雪瓷冰白战斗底牌专用 · 7 阶几何星刻与材质升华梯度 · 严禁圆框套圆框
+   ========================================================= */
+
+.cb-rank-svg-defs {
+  position: fixed;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+}
+
+/* 防跳动硬约束：固定行高与盒高，同行不折行、绝不撑高名牌容器 */
+#battle-screen .cb-rank-badge,
+.cb-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  flex-shrink: 0;
+  line-height: 1;
+  height: 18px;
+  margin-right: 5px;
+  padding: 0;
+  border: none;
+  border-radius: 0 !important;
+  background: transparent;
+  box-shadow: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#battle-screen .cb-rank-badge > svg,
+.cb-rank-badge > svg,
+.cb-rank-badge .cb-rank-svg {
+  display: block;
+  height: 100%;
+  width: auto;
+  overflow: visible;
+  flex-shrink: 0;
+}
+
+/* 多敌紧凑态：严格收敛至 16px，避免挤压多敌名牌标题宽度 */
+#battle-screen .cb-enemy-zone.multi-enemies .cb-rank-badge,
+#battle-screen .cb-enemy-grid.multi-enemies .cb-rank-badge,
+#battle-screen .cb-rank-badge.is-compact,
+.cb-rank-badge.is-compact {
+  height: 16px;
+  margin-right: 4px;
+}
+
+/* 2× 特写展示态（供图鉴/调用方显式指定 mode: 'macro'） */
+.cb-rank-badge.is-macro {
+  height: auto;
+  margin-right: 0;
+}
+
+/* 7 阶星轨印记专属光学投影层次（克制雪瓷折射感，零黑底霓虹） */
+.cb-rank-badge.cb-rank-t1 {
+  filter: drop-shadow(0 1px 1.5px rgba(50, 68, 95, 0.14));
+}
+
+.cb-rank-badge.cb-rank-t2 {
+  filter: drop-shadow(0 1px 3px rgba(31, 150, 212, 0.22));
+}
+
+.cb-rank-badge.cb-rank-t3 {
+  filter: drop-shadow(0 1.5px 4px rgba(22, 88, 235, 0.28));
+}
+
+.cb-rank-badge.cb-rank-t4 {
+  filter: drop-shadow(0 1.5px 4px rgba(8, 22, 68, 0.30));
+}
+
+.cb-rank-badge.cb-rank-t5 {
+  filter: drop-shadow(0 1.5px 4px rgba(150, 110, 42, 0.34));
+}
+
+.cb-rank-badge.cb-rank-t6 {
+  filter:
+    drop-shadow(0 1.5px 4px rgba(158, 27, 58, 0.30))
+    drop-shadow(0 1px 2px rgba(14, 9, 20, 0.36));
+}
+
+.cb-rank-badge.cb-rank-t7 {
+  filter:
+    drop-shadow(0 0 2.5px rgba(198, 156, 70, 0.62))
+    drop-shadow(0 1px 4px rgba(86, 184, 248, 0.48));
+}
+
+.cb-rank-badge.is-macro.cb-rank-t7 {
+  filter:
+    drop-shadow(0 0 8px rgba(198, 156, 70, 0.62))
+    drop-shadow(0 2px 16px rgba(86, 184, 248, 0.52));
+}
+
+/* =========================================================
+   三大战斗名称宿主的零抖动同行对齐
+   ========================================================= */
+
+/* 1. 我方主角面板 (#cb-player-pane) */
+#battle-screen #cb-player-pane .cb-p-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+#battle-screen #cb-player-pane .cb-p-name > .cb-rank-badge {
+  margin-right: 0;
+}
+
+/* 2. 前排友军面板 (#cb-ally-pane / .cb-ally-pane) */
+#battle-screen #cb-ally-pane .cb-ally-title,
+#battle-screen .cb-ally-pane .cb-ally-title,
+#battle-screen .cb-ally-pane .cb-a-title {
+  align-items: center;
+}
+
+#battle-screen #cb-ally-pane .cb-ally-name,
+#battle-screen .cb-ally-pane .cb-ally-name,
+#battle-screen .cb-ally-pane .cb-a-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  min-width: 0;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+#battle-screen #cb-ally-pane .cb-ally-name > .cb-rank-badge,
+#battle-screen .cb-ally-pane .cb-ally-name > .cb-rank-badge,
+#battle-screen .cb-ally-pane .cb-a-name > .cb-rank-badge {
+  margin-right: 0;
+}
+
+/* 3. 敌方底牌名称 (.cb-enemy-card[data-eidx] .cb-e-title)
+   保持原生 block + text-overflow: ellipsis 不破字节点，padding/margin 抵消零撑高并防切阴影 */
+#battle-screen .cb-enemy-card .cb-e-title {
+  line-height: 18px;
+  padding: 2px 0;
+  margin: -2px 0;
+}
+
+#battle-screen .cb-enemy-card .cb-e-title > .cb-rank-badge {
+  vertical-align: middle;
+  transform: translateY(-0.5px);
+}
+
+#battle-screen .cb-enemy-zone.multi-enemies .cb-enemy-card .cb-e-title,
+#battle-screen .cb-enemy-grid.multi-enemies .cb-enemy-card .cb-e-title {
+  line-height: 16px;
+  padding: 1px 0;
+  margin: -1px 0;
+}
+
+/* 1280×720 桌面紧凑态精细收敛 */
+@media (max-width: 1360px), (max-height: 760px) {
+  #battle-screen #cb-player-pane .cb-p-name {
+    gap: 5px;
+  }
+
+  #battle-screen #cb-ally-pane .cb-ally-name,
+  #battle-screen .cb-ally-pane .cb-ally-name,
+  #battle-screen .cb-ally-pane .cb-a-name {
+    gap: 4px;
+  }
+}

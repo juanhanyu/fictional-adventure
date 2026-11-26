@@ -1,0 +1,1889 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三版明亮战斗特效 · 同台竞技场（方案 A / B / C）</title>
+<style>
+  :root {
+    --bg-canvas: #FAFBFD;
+    --bg-panel: #FFFFFF;
+    --bg-soft: #F3F7FD;
+    --bg-hover: #EAF2FE;
+    --bg-active: #E2EEFF;
+    --royal: #1658EB;
+    --royal-deep: #1042B8;
+    --cyan: #0EA5E9;
+    --cyan-soft: #38BDF8;
+    --gold: #D97706;
+    --gold-bg: #FEF7E0;
+    --gold-line: #F59E0B;
+    --ink: #0F1C33;
+    --ink-sub: #4E607D;
+    --ink-mute: #7A8CA8;
+    --line: #D8E4F3;
+    --line-soft: #E8F0FA;
+    --chrome-h: 92px;
+    --foot-h: 34px;
+    --grid-gap: 12px;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-canvas);
+    color: var(--ink);
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input {
+    font-family: inherit;
+  }
+
+  button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--royal);
+    outline-offset: -2px;
+  }
+
+  /* 全局极细滚动条 */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-thumb { background: #C2D5EE; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  /* 顶部棱镜折射 3px 光带 */
+  .prism-strip {
+    height: 3px;
+    width: 100%;
+    background: linear-gradient(90deg, #1658EB 0%, #0EA5E9 38%, #67E8F9 66%, #FDE68A 88%, #1658EB 100%);
+    flex-shrink: 0;
+  }
+
+  .app-shell {
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    height: 100vh;
+    background:
+      radial-gradient(ellipse 68% 42% at 50% 0%, rgba(22, 88, 235, 0.045) 0%, rgba(250, 251, 253, 0) 70%),
+      var(--bg-canvas);
+  }
+
+  /* ==================== 顶部精简控制栏（无嵌套圆框，1px 建筑分界线） ==================== */
+  .topbar {
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+    z-index: 20;
+  }
+
+  .bar-row {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    padding: 0 16px;
+    gap: 12px;
+  }
+
+  .bar-row.row-primary {
+    height: 44px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .bar-row.row-skills {
+    height: 44px;
+  }
+
+  /* 左侧标题 */
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .brand-prism {
+    width: 14px;
+    height: 14px;
+    background: linear-gradient(135deg, #1658EB 0%, #38BDF8 62%, #FDE68A 100%);
+    transform: rotate(45deg);
+    flex-shrink: 0;
+  }
+
+  .brand-title {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    color: var(--ink);
+  }
+
+  .brand-sub {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--ink-mute);
+    padding-left: 8px;
+    border-left: 1px solid var(--line);
+  }
+
+  /* 通用无边框无缝分段控件组（严禁圆框套圆框） */
+  .seg-strip {
+    display: flex;
+    align-items: stretch;
+    height: 100%;
+  }
+
+  .seg-btn {
+    position: relative;
+    border: none;
+    background: transparent;
+    color: var(--ink-sub);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 0 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    white-space: nowrap;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+
+  .seg-btn:hover {
+    background: var(--bg-soft);
+    color: var(--royal);
+  }
+
+  .seg-btn.active {
+    background: var(--bg-active);
+    color: var(--royal);
+  }
+
+  .seg-btn.active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: var(--royal);
+  }
+
+  .seg-divider {
+    width: 1px;
+    background: var(--line-soft);
+    align-self: stretch;
+    margin: 9px 0;
+    flex-shrink: 0;
+  }
+
+  .seg-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--ink-mute);
+    display: inline-flex;
+    align-items: center;
+    padding-right: 6px;
+    white-space: nowrap;
+  }
+
+  /* 视图切换区 */
+  .view-controls {
+    display: flex;
+    align-items: stretch;
+    height: 100%;
+    border-left: 1px solid var(--line-soft);
+    border-right: 1px solid var(--line-soft);
+  }
+
+  .view-controls .seg-btn {
+    border-right: 1px solid var(--line-soft);
+  }
+
+  .view-controls .seg-btn:last-child {
+    border-right: none;
+  }
+
+  .layout-toggle {
+    display: inline-flex;
+    align-items: stretch;
+    height: 100%;
+    margin-left: 4px;
+    border-left: 1px solid var(--line-soft);
+  }
+
+  .layout-toggle.is-hidden {
+    display: none;
+  }
+
+  .layout-btn {
+    border: none;
+    background: transparent;
+    color: var(--ink-mute);
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 0 9px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.12s, background 0.12s;
+  }
+
+  .layout-btn:hover {
+    color: var(--royal);
+    background: var(--bg-soft);
+  }
+
+  .layout-btn.active {
+    color: var(--royal);
+    background: var(--bg-soft);
+  }
+
+  /* 播放控制区 */
+  .play-controls {
+    display: flex;
+    align-items: stretch;
+    height: 100%;
+    gap: 0;
+    flex-shrink: 0;
+  }
+
+  .btn-replay {
+    border: none;
+    background: var(--royal);
+    color: #FFFFFF;
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 0 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    transition: background 0.12s;
+  }
+
+  .btn-replay:hover {
+    background: var(--royal-deep);
+  }
+
+  .btn-loop {
+    border: none;
+    border-left: 1px solid var(--line-soft);
+    border-right: 1px solid var(--line-soft);
+    background: transparent;
+    color: var(--ink-sub);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 0 11px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: background 0.12s, color 0.12s;
+  }
+
+  .btn-loop:hover {
+    background: var(--bg-soft);
+    color: var(--royal);
+  }
+
+  .btn-loop .loop-dot {
+    width: 7px;
+    height: 7px;
+    background: #CBD5E1;
+    transform: rotate(45deg);
+    transition: background 0.15s;
+  }
+
+  .btn-loop.active {
+    color: var(--royal);
+    background: var(--bg-soft);
+  }
+
+  .btn-loop.active .loop-dot {
+    background: var(--cyan);
+  }
+
+  .speed-group {
+    display: inline-flex;
+    align-items: stretch;
+    height: 100%;
+  }
+
+  .speed-btn {
+    position: relative;
+    border: none;
+    border-right: 1px solid var(--line-soft);
+    background: transparent;
+    color: var(--ink-sub);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 0 9px;
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+    transition: background 0.12s, color 0.12s;
+  }
+
+  .speed-btn:last-child { border-right: none; }
+  .speed-btn:hover { background: var(--bg-soft); color: var(--royal); }
+  .speed-btn.active {
+    background: var(--bg-active);
+    color: var(--royal);
+  }
+  .speed-btn.active::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 2px;
+    background: var(--royal);
+  }
+
+  /* 第 2 行：9 招技能按钮条 + 魔力增幅档位 */
+  .skill-strip {
+    display: flex;
+    align-items: stretch;
+    flex: 1 1 auto;
+    min-width: 0;
+    border-left: 1px solid var(--line-soft);
+    border-right: 1px solid var(--line-soft);
+  }
+
+  .skill-btn {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    border: none;
+    border-right: 1px solid var(--line-soft);
+    background: transparent;
+    color: var(--ink-sub);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 0 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    white-space: nowrap;
+    transition: background 0.12s, color 0.12s;
+  }
+
+  .skill-btn.wide {
+    flex: 1.32 1 0;
+  }
+
+  .skill-btn:last-child {
+    border-right: none;
+  }
+
+  .skill-btn .sk-num {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--ink-mute);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .skill-btn:hover {
+    background: var(--bg-soft);
+    color: var(--royal);
+  }
+
+  .skill-btn:hover .sk-num {
+    color: var(--cyan);
+  }
+
+  .skill-btn.active {
+    background: var(--bg-active);
+    color: var(--royal);
+    font-weight: 700;
+  }
+
+  .skill-btn.active .sk-num {
+    color: var(--royal);
+  }
+
+  .skill-btn.active::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 2.5px;
+    background: var(--royal);
+  }
+
+  /* 魔力增幅 4 档 */
+  .amp-strip {
+    display: flex;
+    align-items: stretch;
+    flex-shrink: 0;
+    border-left: 1px solid var(--line-soft);
+  }
+
+  .amp-strip .seg-label {
+    padding: 0 9px;
+    border-right: 1px solid var(--line-soft);
+    background: var(--bg-soft);
+    color: var(--ink-sub);
+  }
+
+  .amp-btn {
+    position: relative;
+    border: none;
+    border-right: 1px solid var(--line-soft);
+    background: transparent;
+    color: var(--ink-sub);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 0 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    transition: background 0.12s, color 0.12s;
+  }
+
+  .amp-btn:last-child { border-right: none; }
+  .amp-btn:hover { background: var(--bg-soft); color: var(--royal); }
+
+  .amp-btn.active {
+    background: var(--bg-active);
+    color: var(--royal);
+    font-weight: 700;
+  }
+
+  .amp-btn.active::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 2.5px;
+    background: var(--royal);
+  }
+
+  .amp-btn[data-amp="3"].active {
+    background: var(--gold-bg);
+    color: var(--gold);
+  }
+
+  .amp-btn[data-amp="3"].active::after {
+    background: linear-gradient(90deg, #F59E0B, #FBBF24, #0EA5E9);
+  }
+
+  /* ==================== 主展厅舞台容器 ==================== */
+  .arena-main {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 18px;
+    overflow: hidden;
+  }
+
+  /* --- 三版同台 · 默认 2+1 严格等大对称网格（上 A / B，下居中 C） --- */
+  .boards-grid {
+    --board-w: min(
+      calc((100vw - 50px) / 2),
+      calc((100vh - var(--chrome-h) - 24px - var(--grid-gap) - var(--foot-h) * 2) * 16 / 9 / 2)
+    );
+    display: grid;
+    grid-template-columns: repeat(4, calc(var(--board-w) / 2));
+    column-gap: var(--grid-gap);
+    row-gap: var(--grid-gap);
+    justify-content: center;
+    align-content: center;
+  }
+
+  .boards-grid .board-card[data-edition="A"] { grid-column: 1 / 3; grid-row: 1; }
+  .boards-grid .board-card[data-edition="B"] { grid-column: 3 / 5; grid-row: 1; }
+  .boards-grid .board-card[data-edition="C"] { grid-column: 2 / 4; grid-row: 2; }
+
+  /* --- 三版同台 · 横向三联平铺模式 --- */
+  .boards-grid.layout-row {
+    --row-w: min(
+      calc((100vw - 60px) / 3),
+      calc((100vh - var(--chrome-h) - 36px - var(--foot-h)) * 16 / 9)
+    );
+    grid-template-columns: repeat(3, var(--row-w));
+    grid-template-rows: auto;
+    column-gap: 12px;
+    row-gap: 0;
+  }
+
+  .boards-grid.layout-row .board-card[data-edition="A"] { grid-column: 1; grid-row: 1; }
+  .boards-grid.layout-row .board-card[data-edition="B"] { grid-column: 2; grid-row: 1; }
+  .boards-grid.layout-row .board-card[data-edition="C"] { grid-column: 3; grid-row: 1; }
+
+  /* --- 单版大舞台精鉴模式 --- */
+  .boards-grid.mode-focus {
+    --focus-w: min(
+      calc(100vw - 44px),
+      calc((100vh - var(--chrome-h) - 28px - 44px) * 16 / 9)
+    );
+    grid-template-columns: var(--focus-w);
+    grid-template-rows: auto;
+    gap: 0;
+  }
+
+  .boards-grid.mode-focus .board-card {
+    display: none;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+  }
+
+  .boards-grid.mode-focus[data-focus="A"] .board-card[data-edition="A"],
+  .boards-grid.mode-focus[data-focus="B"] .board-card[data-edition="B"],
+  .boards-grid.mode-focus[data-focus="C"] .board-card[data-edition="C"] {
+    display: flex;
+  }
+
+  /* ==================== 单个展板卡片（清澄雪瓷边框 + 零嵌套圆框） ==================== */
+  .board-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    box-shadow: 0 2px 10px rgba(15, 28, 51, 0.045);
+    overflow: hidden;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .board-card:hover {
+    border-color: #9BC1F3;
+    box-shadow: 0 4px 16px rgba(22, 88, 235, 0.08);
+  }
+
+  .stage-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #EFF6FF;
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  .stage-wrap canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .stage-bg {
+    z-index: 1;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  .stage-vfx {
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* 舞台左上角极简版本角标（直角无框半透明雪瓷色块） */
+  .stage-corner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 9px 3px 0;
+    background: rgba(250, 251, 253, 0.86);
+    border-right: 1px solid rgba(216, 228, 243, 0.9);
+    border-bottom: 1px solid rgba(216, 228, 243, 0.9);
+    pointer-events: none;
+  }
+
+  .corner-code {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 20px;
+    background: var(--royal);
+    color: #FFFFFF;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+  }
+
+  .board-card[data-edition="B"] .corner-code { background: #0284C7; }
+  .board-card[data-edition="C"] .corner-code { background: #2563EB; }
+
+  .corner-text {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: 0.2px;
+  }
+
+  /* 底部 1 行极简风格标签（绝无打分或冗长评语） */
+  .board-foot {
+    height: var(--foot-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0 0 11px;
+    border-top: 1px solid var(--line-soft);
+    background: var(--bg-panel);
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .boards-grid.mode-focus .board-foot {
+    height: 44px;
+    padding: 0 0 0 14px;
+  }
+
+  .foot-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .foot-name {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--ink);
+    flex-shrink: 0;
+  }
+
+  .foot-sep {
+    color: #C2D4EC;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+
+  .foot-tag {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-sub);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .foot-actions {
+    display: flex;
+    align-items: stretch;
+    height: 100%;
+    flex-shrink: 0;
+  }
+
+  .btn-expand {
+    border: none;
+    border-left: 1px solid var(--line-soft);
+    background: transparent;
+    color: var(--royal);
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 0 11px;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: background 0.12s, color 0.12s;
+  }
+
+  .btn-expand:hover {
+    background: var(--bg-hover);
+    color: var(--royal-deep);
+  }
+
+  /* 单版精鉴专属时间轴区（三版同台时自动隐藏） */
+  .focus-scrub {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    flex: 1 1 auto;
+    max-width: 420px;
+    margin: 0 12px;
+  }
+
+  .boards-grid.mode-focus .focus-scrub {
+    display: flex;
+  }
+
+  .focus-scrub input[type="range"] {
+    flex: 1 1 auto;
+    accent-color: var(--royal);
+    cursor: pointer;
+    height: 4px;
+  }
+
+  .focus-time {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--ink-sub);
+    font-variant-numeric: tabular-nums;
+    min-width: 90px;
+    text-align: right;
+  }
+
+  .btn-peak, .btn-back {
+    display: none;
+    border: none;
+    border-left: 1px solid var(--line-soft);
+    background: transparent;
+    color: var(--ink-sub);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 0 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.12s, color 0.12s;
+  }
+
+  .btn-peak:hover, .btn-back:hover {
+    background: var(--bg-hover);
+    color: var(--royal);
+  }
+
+  .boards-grid.mode-focus .btn-peak,
+  .boards-grid.mode-focus .btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .boards-grid.mode-focus .btn-expand {
+    display: none;
+  }
+
+  .boards-grid.layout-row .foot-name { font-size: 11.5px; }
+  .boards-grid.layout-row .foot-tag { font-size: 11px; }
+  .boards-grid.layout-row .btn-expand { padding: 0 8px; font-size: 11px; }
+
+  /* 1280×720 紧致微调 */
+  @media (max-height: 760px) {
+    :root {
+      --chrome-h: 88px;
+      --foot-h: 30px;
+      --grid-gap: 9px;
+    }
+    .bar-row.row-primary { height: 42px; }
+    .bar-row.row-skills { height: 42px; }
+    .arena-main { padding: 9px 14px; }
+    .foot-name { font-size: 12px; }
+    .foot-tag { font-size: 11.5px; }
+  }
+
+  @media (max-width: 1320px) {
+    .brand-sub { display: none; }
+    .skill-btn { font-size: 12px; padding: 0 4px; }
+    .skill-btn .sk-num { display: none; }
+    .amp-btn { padding: 0 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <div class="prism-strip"></div>
+
+  <header class="topbar">
+    <!-- 第 1 行：标题 + 视图切换 + 播放控制 -->
+    <div class="bar-row row-primary">
+      <div class="brand">
+        <span class="brand-prism" aria-hidden="true"></span>
+        <span class="brand-title">三版明亮战斗特效 · 同台竞技场</span>
+        <span class="brand-sub">雪瓷宫殿实机同播</span>
+      </div>
+
+      <div class="view-controls" id="view-controls">
+        <button class="seg-btn active" data-view="all">三版同台齐放</button>
+        <button class="seg-btn" data-view="A">单版精鉴 A</button>
+        <button class="seg-btn" data-view="B">单版精鉴 B</button>
+        <button class="seg-btn" data-view="C">单版精鉴 C</button>
+        <div class="layout-toggle" id="layout-toggle" title="切换三版同台排列方式">
+          <button class="layout-btn active" data-layout="grid">2+1 大网格</button>
+          <button class="layout-btn" data-layout="row">横三联</button>
+        </div>
+      </div>
+
+      <div class="play-controls">
+        <button class="btn-replay" id="btn-replay" title="立即同步重播 (Space)">▶ 重播齐放</button>
+        <button class="btn-loop active" id="btn-loop" title="自动循环播放开关">
+          <span class="loop-dot"></span>循环播
+        </button>
+        <div class="speed-group" id="speed-group" title="播放倍速">
+          <button class="speed-btn active" data-speed="1">1×</button>
+          <button class="speed-btn" data-speed="0.5">0.5×</button>
+          <button class="speed-btn" data-speed="0.25">0.25×</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第 2 行：9 招技能按钮条 + 魔力增幅档位 -->
+    <div class="bar-row row-skills">
+      <div class="skill-strip" id="skill-strip" role="tablist" aria-label="核心技能"></div>
+
+      <div class="amp-strip" id="amp-strip" role="group" aria-label="魔力增幅档位">
+        <span class="seg-label">魔力增幅</span>
+        <button class="amp-btn active" data-amp="0">0%</button>
+        <button class="amp-btn" data-amp="1">20% ★</button>
+        <button class="amp-btn" data-amp="2">40% ★★</button>
+        <button class="amp-btn" data-amp="3">60% ★★★</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="arena-main">
+    <div class="boards-grid" id="boards-grid" data-focus="A">
+      <!-- 方案 A -->
+      <article class="board-card" data-edition="A">
+        <div class="stage-wrap" data-focus-trigger="A" title="点击放大精鉴方案 A">
+          <canvas class="stage-bg" id="bg-A" width="640" height="360"></canvas>
+          <canvas class="stage-vfx" id="vfx-A" width="1280" height="720"></canvas>
+          <div class="stage-corner">
+            <span class="corner-code">A</span>
+            <span class="corner-text">原版炫彩连贯进化版</span>
+          </div>
+        </div>
+        <div class="board-foot">
+          <div class="foot-meta">
+            <span class="foot-name">方案 A · 原版炫彩连贯版</span>
+            <span class="foot-sep">/</span>
+            <span class="foot-tag">高饱和 PixelFX 像素光栅连发</span>
+          </div>
+          <div class="focus-scrub">
+            <input type="range" class="scrub-slider" data-edition="A" min="0" max="1220" value="0">
+            <span class="focus-time" id="time-A">0 / 1220ms</span>
+          </div>
+          <div class="foot-actions">
+            <button class="btn-peak" data-peak="A">★ 定格峰值</button>
+            <button class="btn-back" data-view-back>← 返回三版同台</button>
+            <button class="btn-expand" data-focus-trigger="A">放大精鉴 ↗</button>
+          </div>
+        </div>
+      </article>
+
+      <!-- 方案 B -->
+      <article class="board-card" data-edition="B">
+        <div class="stage-wrap" data-focus-trigger="B" title="点击放大精鉴方案 B">
+          <canvas class="stage-bg" id="bg-B" width="640" height="360"></canvas>
+          <canvas class="stage-vfx" id="vfx-B" width="1280" height="720"></canvas>
+          <div class="stage-corner">
+            <span class="corner-code">B</span>
+            <span class="corner-text">星之海高亮像素辉光版</span>
+          </div>
+        </div>
+        <div class="board-foot">
+          <div class="foot-meta">
+            <span class="foot-name">方案 B · 星之海像素辉光版</span>
+            <span class="foot-sep">/</span>
+            <span class="foot-tag">HD-2D 水晶切面与柔光星芒</span>
+          </div>
+          <div class="focus-scrub">
+            <input type="range" class="scrub-slider" data-edition="B" min="0" max="1500" value="0">
+            <span class="focus-time" id="time-B">0 / 1500ms</span>
+          </div>
+          <div class="foot-actions">
+            <button class="btn-peak" data-peak="B">★ 定格峰值</button>
+            <button class="btn-back" data-view-back>← 返回三版同台</button>
+            <button class="btn-expand" data-focus-trigger="B">放大精鉴 ↗</button>
+          </div>
+        </div>
+      </article>
+
+      <!-- 方案 C -->
+      <article class="board-card" data-edition="C">
+        <div class="stage-wrap" data-focus-trigger="C" title="点击放大精鉴方案 C">
+          <canvas class="stage-bg" id="bg-C" width="640" height="360"></canvas>
+          <canvas class="stage-vfx" id="vfx-C" width="1280" height="720"></canvas>
+          <div class="stage-corner">
+            <span class="corner-code">C</span>
+            <span class="corner-text">日系动画刀光×立体棱镜折射版</span>
+          </div>
+        </div>
+        <div class="board-foot">
+          <div class="foot-meta">
+            <span class="foot-name">方案 C · 日系动画棱镜版</span>
+            <span class="foot-sep">/</span>
+            <span class="foot-tag">60fps 赛璐璐刀光与 3D 折射</span>
+          </div>
+          <div class="focus-scrub">
+            <input type="range" class="scrub-slider" data-edition="C" min="0" max="1120" value="0">
+            <span class="focus-time" id="time-C">0 / 1120ms</span>
+          </div>
+          <div class="foot-actions">
+            <button class="btn-peak" data-peak="C">★ 定格峰值</button>
+            <button class="btn-back" data-view-back>← 返回三版同台</button>
+            <button class="btn-expand" data-focus-trigger="C">放大精鉴 ↗</button>
+          </div>
+        </div>
+      </article>
+    </div>
+  </main>
+</div>
+
+<!-- 纯本地相对路径资产，零外链 -->
+<script src="./assets/pixelfx-bundle.js"></script>
+<script src="./assets/sylvia_silver.js"></script>
+<script src="./assets/beatrice.js"></script>
+<script src="./assets/wolf_alpha.js"></script>
+<script src="./assets/vfx_edition_a.js"></script>
+<script src="./assets/vfx_edition_b.js"></script>
+<script src="./assets/vfx_edition_c.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ==========================================================================
+     1. 9 招核心技能配置表
+     ========================================================================== */
+  const SKILL_LIST = [
+    { id: 'ice_crystal',       label: '冰晶术',       mode: 'single', kind: 'magic' },
+    { id: 'tri_prism_ice',     label: '三棱冰晶',     mode: 'single', kind: 'magic' },
+    { id: 'starfrost_scatter', label: '星霜散华',     mode: 'single', kind: 'ultimate' },
+    { id: 'raging_surge',      label: '激流涌',       mode: 'single', kind: 'water' },
+    { id: 'water_cleave',      label: '断水刃',       mode: 'single', kind: 'melee' },
+    { id: 'frost_thorn_field', label: '霜域棘阵(3敌)', mode: 'multi',  kind: 'aoe', wide: true },
+    { id: 'steel_ice_curtain', label: '钢冰护幕',     mode: 'self',   kind: 'shield' },
+    { id: 'sword_send_slash',  label: '送刀斩',       mode: 'single', kind: 'melee' },
+    { id: 'wind_afterimage',   label: '风行残像',     mode: 'dash',   kind: 'wind' }
+  ];
+
+  const SKILL_BY_ID = Object.create(null);
+  SKILL_LIST.forEach(s => { SKILL_BY_ID[s.id] = s; });
+
+  /* ==========================================================================
+     2. 真实零 PNG 像素角色解码器 + 轮廓闪白蒙版缓存
+     ========================================================================== */
+  const BANK_CHARS = '.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&()_+-=<>?[]{}|~';
+  const BANK_LUT = new Int8Array(128).fill(-1);
+  for (let i = 0; i < BANK_CHARS.length; i++) {
+    const c = BANK_CHARS.charCodeAt(i);
+    if (c < 128) BANK_LUT[c] = i;
+  }
+
+  const spriteFrameCache = new Map();
+
+  function hexToRgb(hex) {
+    if (!hex || typeof hex !== 'string') return null;
+    const s = hex.charAt(0) === '#' ? hex.slice(1) : hex;
+    if (s.length !== 6) return null;
+    const n = parseInt(s, 16);
+    return Number.isFinite(n) ? [(n >> 16) & 255, (n >> 8) & 255, n & 255] : null;
+  }
+
+  function decodeSpriteFrame(spriteId, frameIdx) {
+    const bank = window.PIXEL_SPRITE_BANK;
+    const entry = bank && bank[spriteId];
+    if (!entry) return null;
+    const idx = Math.max(0, Math.min(entry.frames.length - 1, frameIdx | 0));
+    const key = spriteId + ':' + idx;
+    if (spriteFrameCache.has(key)) return spriteFrameCache.get(key);
+
+    const w = entry.w | 0;
+    const h = entry.h | 0;
+    const pal = entry._rgb || (entry._rgb = entry.palette.map(hexToRgb));
+    const rows = entry.frames[idx] || [];
+
+    const mainCanvas = document.createElement('canvas');
+    mainCanvas.width = w;
+    mainCanvas.height = h;
+    const mctx = mainCanvas.getContext('2d');
+    const img = mctx.createImageData(w, h);
+    const out = img.data;
+
+    // 同步生成精准像素轮廓冰白闪白蒙版（命中闪白绝不污染背景）
+    const flashCanvas = document.createElement('canvas');
+    flashCanvas.width = w;
+    flashCanvas.height = h;
+    const fctx = flashCanvas.getContext('2d');
+    const fImg = fctx.createImageData(w, h);
+    const fOut = fImg.data;
+
+    for (let y = 0; y < h && y < rows.length; y++) {
+      const row = rows[y];
+      if (typeof row !== 'string') continue;
+      let x = 0;
+      const len = row.length;
+      for (let i = 0; i < len && x < w; i++) {
+        const code = row.charCodeAt(i);
+        let rep = 1;
+        if (i + 1 < len && row.charCodeAt(i + 1) === 42) {
+          let j = i + 2, n = 0;
+          while (j < len) {
+            const d = row.charCodeAt(j) - 48;
+            if (d < 0 || d > 9) break;
+            n = n * 10 + d;
+            j++;
+          }
+          rep = n > 0 ? n : 1;
+          i = j - 1;
+        }
+        if (code === 46) { x += rep; continue; }
+        const pi = code < 128 ? BANK_LUT[code] : -1;
+        const rgb = pi > 0 ? pal[pi] : null;
+        if (!rgb) { x += rep; continue; }
+        const endX = Math.min(w, x + rep);
+        for (; x < endX; x++) {
+          const p = (y * w + x) << 2;
+          out[p] = rgb[0];
+          out[p + 1] = rgb[1];
+          out[p + 2] = rgb[2];
+          out[p + 3] = 255;
+
+          fOut[p] = 240;
+          fOut[p + 1] = 250;
+          fOut[p + 2] = 255;
+          fOut[p + 3] = 255;
+        }
+      }
+    }
+
+    mctx.putImageData(img, 0, 0);
+    fctx.putImageData(fImg, 0, 0);
+
+    const packed = { canvas: mainCanvas, flashCanvas, entry };
+    spriteFrameCache.set(key, packed);
+    return packed;
+  }
+
+  /* ==========================================================================
+     3. 统一雪瓷柱廊宫殿舞台几何与预渲染背景（640×360 逻辑画布）
+     ========================================================================== */
+  const W = 640;
+  const H = 360;
+  const GROUND_Y = 282;
+
+  const HERO_ACTOR = { id: 'sylvia_silver', footX: 142, footY: GROUND_Y, scale: 0.98 };
+  const SINGLE_ENEMY_ACTOR = { id: 'beatrice', footX: 482, footY: GROUND_Y, scale: 0.98 };
+  const MULTI_ENEMY_ACTORS = [
+    { id: 'wolf_alpha', footX: 394, footY: GROUND_Y - 16, scale: 0.84 },
+    { id: 'beatrice',   footX: 482, footY: GROUND_Y,      scale: 0.96 },
+    { id: 'wolf_alpha', footX: 560, footY: GROUND_Y + 14, scale: 0.86 }
+  ];
+
+  function computeActorPoints(actor) {
+    const bank = window.PIXEL_SPRITE_BANK || {};
+    const entry = bank[actor.id];
+    const s = actor.scale;
+    if (!entry || !entry.anchors) {
+      return {
+        footX: actor.footX, footY: actor.footY,
+        centerX: actor.footX, centerY: actor.footY - 54 * s,
+        castX: actor.footX + 56 * s, castY: actor.footY - 56 * s,
+        hitX: actor.footX, hitY: actor.footY - 50 * s,
+        headY: actor.footY - 86 * s
+      };
+    }
+    const a = entry.anchors;
+    return {
+      footX: actor.footX,
+      footY: actor.footY,
+      centerX: actor.footX + (a.hit[0] - a.feet[0]) * s,
+      centerY: actor.footY + (a.hit[1] - a.feet[1]) * s,
+      castX: actor.footX + (a.cast[0] - a.feet[0]) * s,
+      castY: actor.footY + (a.cast[1] - a.feet[1]) * s,
+      hitX: actor.footX + (a.hit[0] - a.feet[0]) * s,
+      hitY: actor.footY + (a.hit[1] - a.feet[1]) * s,
+      headY: actor.footY + (a.head[1] - a.feet[1]) * s
+    };
+  }
+
+  /* 预渲染静态雪瓷柱廊宫殿底图（含 16px 防微震出血边距） */
+  const PAD = 16;
+  const palaceCache = document.createElement('canvas');
+  palaceCache.width = W + PAD * 2;
+  palaceCache.height = H + PAD * 2;
+
+  function buildPalaceCache() {
+    const ctx = palaceCache.getContext('2d');
+    ctx.save();
+    ctx.translate(PAD, PAD);
+
+    // 1. 清澄白昼雪瓷天穹
+    const sky = ctx.createLinearGradient(0, -PAD, 0, 232);
+    sky.addColorStop(0, '#C6E0FA');
+    sky.addColorStop(0.50, '#E5F2FE');
+    sky.addColorStop(1, '#F8FCFF');
+    ctx.fillStyle = sky;
+    ctx.fillRect(-PAD, -PAD, W + PAD * 2, 248);
+
+    // 2. 柔和白昼天光斜束
+    const ray1 = ctx.createLinearGradient(70, 0, 290, 240);
+    ray1.addColorStop(0, 'rgba(255, 255, 255, 0.72)');
+    ray1.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = ray1;
+    ctx.beginPath();
+    ctx.moveTo(64, -PAD); ctx.lineTo(176, -PAD); ctx.lineTo(312, 236); ctx.lineTo(188, 236);
+    ctx.closePath(); ctx.fill();
+
+    const ray2 = ctx.createLinearGradient(350, 0, 560, 240);
+    ray2.addColorStop(0, 'rgba(255, 255, 255, 0.56)');
+    ray2.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = ray2;
+    ctx.beginPath();
+    ctx.moveTo(356, -PAD); ctx.lineTo(448, -PAD); ctx.lineTo(568, 236); ctx.lineTo(476, 236);
+    ctx.closePath(); ctx.fill();
+
+    // 3. 宫殿高拱尖窗（5 座，雪白与冰蓝玻璃折射 + 极轻淡金窗格）
+    for (let i = 0; i < 5; i++) {
+      const wx = 44 + i * 124;
+      const wg = ctx.createLinearGradient(wx, 20, wx, 214);
+      wg.addColorStop(0, '#B0D5F7');
+      wg.addColorStop(0.55, '#E2F1FE');
+      wg.addColorStop(1, '#FFFFFF');
+      ctx.fillStyle = wg;
+      ctx.beginPath();
+      ctx.moveTo(wx, 214);
+      ctx.lineTo(wx, 78);
+      ctx.quadraticCurveTo(wx + 32, 18, wx + 64, 78);
+      ctx.lineTo(wx + 64, 214);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(22, 88, 235, 0.14)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(wx + 32, 48);
+      ctx.lineTo(wx + 32, 214);
+      ctx.moveTo(wx, 126);
+      ctx.lineTo(wx + 64, 126);
+      ctx.stroke();
+    }
+
+    // 4. 洁白雪瓷大理石立柱 + 淡金柱饰 + 皇家蓝细垂旗
+    const pillars = [16, 134, 258, 382, 506, 620];
+    for (let i = 0; i < pillars.length; i++) {
+      const px = pillars[i];
+      const pg = ctx.createLinearGradient(px - 13, 0, px + 13, 0);
+      pg.addColorStop(0, '#DAE9F9');
+      pg.addColorStop(0.36, '#FFFFFF');
+      pg.addColorStop(0.76, '#EBF3FC');
+      pg.addColorStop(1, '#C9DCF4');
+      ctx.fillStyle = pg;
+      ctx.fillRect(px - 12, -PAD, 24, 236 + PAD);
+
+      // 淡金柱冠与柱础
+      ctx.fillStyle = '#E6CA82';
+      ctx.fillRect(px - 15, 22, 30, 3.5);
+      ctx.fillRect(px - 14, 215, 28, 4.5);
+
+      if (i === 1 || i === 4) {
+        ctx.fillStyle = 'rgba(22, 88, 235, 0.18)';
+        ctx.beginPath();
+        ctx.moveTo(px - 8, 28);
+        ctx.lineTo(px + 8, 28);
+        ctx.lineTo(px + 8, 114);
+        ctx.lineTo(px, 126);
+        ctx.lineTo(px - 8, 114);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(217, 119, 6, 0.34)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+
+    // 5. 后景白玉柱廊护栏
+    ctx.fillStyle = '#EEF6FF';
+    ctx.fillRect(-PAD, 214, W + PAD * 2, 16);
+    ctx.fillStyle = '#C7DDF6';
+    ctx.fillRect(-PAD, 228, W + PAD * 2, 2.5);
+
+    // 6. 明亮雪瓷大理石透视地面
+    const floor = ctx.createLinearGradient(0, 230, 0, H + PAD);
+    floor.addColorStop(0, '#F1F7FF');
+    floor.addColorStop(0.45, '#E7F2FE');
+    floor.addColorStop(1, '#D7E8FB');
+    ctx.fillStyle = floor;
+    ctx.fillRect(-PAD, 230, W + PAD * 2, H - 230 + PAD);
+
+    // 地平高光细线
+    ctx.strokeStyle = 'rgba(22, 88, 235, 0.16)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-PAD, 230.5);
+    ctx.lineTo(W + PAD, 230.5);
+    ctx.stroke();
+
+    // 透视方砖格线
+    ctx.strokeStyle = 'rgba(22, 88, 235, 0.10)';
+    ctx.lineWidth = 1;
+    const rows = [238, 250, 266, 286, 312, 344];
+    for (let r = 0; r < rows.length; r++) {
+      ctx.beginPath();
+      ctx.moveTo(-PAD, rows[r]);
+      ctx.lineTo(W + PAD, rows[r]);
+      ctx.stroke();
+    }
+    for (let c = -6; c <= 14; c++) {
+      const topX = 320 + (c - 4) * 44;
+      const botX = 320 + (c - 4) * 116;
+      ctx.beginPath();
+      ctx.moveTo(topX, 230);
+      ctx.lineTo(botX, H + PAD);
+      ctx.stroke();
+    }
+
+    // 地面斜向日光镜面柔反光
+    const sunG = ctx.createLinearGradient(110, 230, 520, H);
+    sunG.addColorStop(0, 'rgba(255, 255, 255, 0.56)');
+    sunG.addColorStop(0.55, 'rgba(255, 255, 255, 0.18)');
+    sunG.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = sunG;
+    ctx.beginPath();
+    ctx.moveTo(86, 230); ctx.lineTo(356, 230); ctx.lineTo(548, H + PAD); ctx.lineTo(226, H + PAD);
+    ctx.closePath(); ctx.fill();
+
+    ctx.restore();
+  }
+  buildPalaceCache();
+
+  function drawActorSprite(ctx, spriteId, footX, footY, scale, frameIdx, hurtFlash, knockX) {
+    const spr = decodeSpriteFrame(spriteId, frameIdx);
+    if (!spr) return;
+    const e = spr.entry;
+    const ax = e.anchors ? e.anchors.feet[0] : e.w * 0.5;
+    const ay = e.anchors ? e.anchors.feet[1] : e.h * 0.95;
+    const dw = Math.round(e.w * scale);
+    const dh = Math.round(e.h * scale);
+    const rx = footX + (knockX || 0);
+    const dx = Math.round(rx - ax * scale);
+    const dy = Math.round(footY - ay * scale);
+
+    ctx.save();
+    // 清透雪瓷冷蓝落地柔影
+    ctx.fillStyle = 'rgba(22, 88, 235, 0.16)';
+    ctx.beginPath();
+    ctx.ellipse(rx, footY + 2, 30 * scale, 7 * scale, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(spr.canvas, dx, dy, dw, dh);
+
+    if (hurtFlash > 0.04) {
+      ctx.globalAlpha = Math.min(0.78, hurtFlash * 0.78);
+      ctx.drawImage(spr.flashCanvas, dx, dy, dw, dh);
+    }
+    ctx.restore();
+  }
+
+  /* ==========================================================================
+     4. 三版特效引擎统一封装（精准坐标适配 + onShake/onHitStop/onImpact 同步）
+     ========================================================================== */
+  const EDITION_CONFIGS = [
+    {
+      key: 'A',
+      module: window.VfxEditionA,
+      bgEl: document.getElementById('bg-A'),
+      vfxEl: document.getElementById('vfx-A'),
+      timeEl: document.getElementById('time-A'),
+      sliderEl: document.querySelector('.scrub-slider[data-edition="A"]')
+    },
+    {
+      key: 'B',
+      module: window.VfxEditionB,
+      bgEl: document.getElementById('bg-B'),
+      vfxEl: document.getElementById('vfx-B'),
+      timeEl: document.getElementById('time-B'),
+      sliderEl: document.querySelector('.scrub-slider[data-edition="B"]')
+    },
+    {
+      key: 'C',
+      module: window.VfxEditionC,
+      bgEl: document.getElementById('bg-C'),
+      vfxEl: document.getElementById('vfx-C'),
+      timeEl: document.getElementById('time-C'),
+      sliderEl: document.querySelector('.scrub-slider[data-edition="C"]')
+    }
+  ];
+
+  function getSkillMetaForEdition(mod, skillId) {
+    const list = (mod && mod.SKILLS) || [];
+    for (let i = 0; i < list.length; i++) {
+      if (list[i].id === skillId) return list[i];
+    }
+    return list[0] || { id: skillId, duration: 1300, peakMs: 600 };
+  }
+
+  function getDurationForBoard(board, skillId) {
+    const meta = getSkillMetaForEdition(board.module, skillId);
+    return meta.durationMs || meta.duration || (board.engine.getDuration ? board.engine.getDuration(skillId) : 1300);
+  }
+
+  function getPeakForBoard(board, skillId) {
+    const meta = getSkillMetaForEdition(board.module, skillId);
+    return meta.peakMs || meta.peakTime || Math.round(getDurationForBoard(board, skillId) * 0.5);
+  }
+
+  const boards = EDITION_CONFIGS.map(cfg => {
+    const bgCtx = cfg.bgEl.getContext('2d');
+    const engine = cfg.module.create(cfg.vfxEl);
+    return {
+      key: cfg.key,
+      module: cfg.module,
+      engine,
+      bgCtx,
+      bgEl: cfg.bgEl,
+      vfxEl: cfg.vfxEl,
+      timeEl: cfg.timeEl,
+      sliderEl: cfg.sliderEl,
+      elapsed: 0,
+      duration: 1220,
+      peakMs: 560,
+      hitAge: 9999,
+      hitImpactX: 0,
+      shakeMag: 0,
+      shakeDur: 0,
+      shakeAge: 9999,
+      hitStopRemain: 0,
+      syntheticImpactFired: false
+    };
+  });
+
+  const BOARD_MAP = Object.create(null);
+  boards.forEach(b => { BOARD_MAP[b.key] = b; });
+
+  function triggerBoardImpact(board, impactX, skillId) {
+    const sk = SKILL_BY_ID[skillId];
+    // 钢冰护幕属于自身护盾，不触发敌方受击闪白；风行残像仅当命中在敌方区域时触发敌方闪白
+    if (sk && sk.mode === 'self') return;
+    if (sk && sk.mode === 'dash' && typeof impactX === 'number' && impactX < 300) return;
+    board.hitAge = 0;
+    board.hitImpactX = impactX || 482;
+  }
+
+  function triggerBoardShake(board, magPx, durMs) {
+    const clampedMag = Math.min(7.5, Math.max(1.8, magPx));
+    board.shakeMag = Math.max(board.shakeMag, clampedMag);
+    board.shakeDur = Math.max(120, Math.min(280, durMs || 200));
+    board.shakeAge = 0;
+  }
+
+  function triggerBoardHitStop(board, ms) {
+    const dur = Math.min(55, Math.max(0, Number(ms) || 0));
+    if (dur > board.hitStopRemain) board.hitStopRemain = dur;
+  }
+
+  function buildOptsForBoard(board, skillId, ampTier, seed, enableCallbacks) {
+    const heroPts = computeActorPoints(HERO_ACTOR);
+    const enemyPts = computeActorPoints(SINGLE_ENEMY_ACTOR);
+    const multiPts = MULTI_ENEMY_ACTORS.map(computeActorPoints);
+    const sk = SKILL_BY_ID[skillId] || SKILL_LIST[0];
+    const isSelf = sk.mode === 'self';
+    const isMulti = sk.mode === 'multi';
+
+    const onImpact = enableCallbacks ? function (beatIdx, info) {
+      let ix = enemyPts.hitX;
+      if (info && typeof info.x === 'number') ix = info.x;
+      triggerBoardImpact(board, ix, skillId);
+    } : undefined;
+
+    const onShake = enableCallbacks ? function (magOrTrauma, durMs) {
+      // 方案 C 传 0~1 trauma 值；方案 A 传像素级震幅 (3~14)
+      const magPx = magOrTrauma <= 1.2 ? (magOrTrauma * 6.8) : (magOrTrauma * 0.62);
+      triggerBoardShake(board, magPx, durMs || 210);
+    } : undefined;
+
+    const onHitStop = enableCallbacks ? function (ms) {
+      triggerBoardHitStop(board, ms);
+    } : undefined;
+
+    if (board.key === 'A') {
+      // 方案 A：steel_ice_curtain 内部用 cx = from.x - 16，故居中偏移 +16 严丝合缝包裹希尔维亚
+      const fromPt = isSelf
+        ? { x: heroPts.centerX + 16, y: heroPts.centerY - 4 }
+        : { x: heroPts.castX, y: heroPts.castY };
+      return {
+        from: fromPt,
+        to: { x: enemyPts.hitX, y: enemyPts.hitY },
+        targets: multiPts.map(p => ({ x: p.hitX, y: p.hitY, groundY: p.footY })),
+        groundY: GROUND_Y,
+        targetGroundY: GROUND_Y,
+        ampTier,
+        onImpact,
+        onShake,
+        onHitStop
+      };
+    }
+
+    if (board.key === 'B') {
+      return {
+        caster: {
+          x: heroPts.centerX,
+          y: heroPts.centerY,
+          castX: heroPts.castX,
+          castY: heroPts.castY,
+          feetY: heroPts.footY,
+          headY: heroPts.headY
+        },
+        target: {
+          x: enemyPts.hitX,
+          y: enemyPts.hitY,
+          feetY: enemyPts.footY,
+          headY: enemyPts.headY
+        },
+        targets: multiPts.map(p => ({
+          x: p.hitX,
+          y: p.hitY,
+          feetY: p.footY,
+          headY: p.headY
+        })),
+        ampTier,
+        seed
+      };
+    }
+
+    // 方案 C
+    return {
+      from: { x: heroPts.castX, y: heroPts.castY },
+      heroCenter: { x: heroPts.centerX, y: heroPts.centerY },
+      anchor: (isSelf || sk.mode === 'dash') ? { x: heroPts.centerX, y: heroPts.centerY } : undefined,
+      to: { x: enemyPts.hitX, y: enemyPts.hitY },
+      targets: isMulti ? multiPts.map(p => ({ x: p.hitX, y: p.hitY })) : undefined,
+      groundY: GROUND_Y + 4,
+      ampTier,
+      seed,
+      replace: true,
+      onImpact,
+      onShake
+    };
+  }
+
+  /* ==========================================================================
+     5. 全局展厅状态与同步播放调度
+     ========================================================================== */
+  const appState = {
+    view: 'all',       // 'all' | 'A' | 'B' | 'C'
+    layout: 'grid',    // 'grid' (2+1) | 'row' (横三联)
+    skillId: 'ice_crystal',
+    ampTier: 0,
+    speed: 1,
+    loop: true,
+    paused: false,
+    seedCounter: 20261126,
+    simClockMs: 0,
+    idleAfterEndMs: 0
+  };
+
+  function renderBoardStage(board) {
+    const ctx = board.bgCtx;
+    let sx = 0, sy = 0;
+    if (board.shakeMag > 0.1 && board.shakeAge < board.shakeDur) {
+      const k = 1 - board.shakeAge / Math.max(1, board.shakeDur);
+      sx = Math.sin(board.shakeAge * 0.27) * board.shakeMag * k;
+      sy = Math.cos(board.shakeAge * 0.34) * board.shakeMag * 0.55 * k;
+    }
+
+    // 同步施加微震到 VFX 画布（保证角色与特效 100% 锁合不漂移）
+    board.vfxEl.style.transform = (Math.abs(sx) > 0.08 || Math.abs(sy) > 0.08)
+      ? `translate(${(sx * 0.85).toFixed(2)}px, ${(sy * 0.85).toFixed(2)}px)`
+      : '';
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.drawImage(palaceCache, Math.round(-PAD + sx), Math.round(-PAD + sy));
+
+    // 漂浮微量洁白雪瓷日光尘
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.78)';
+    const t = appState.simClockMs;
+    for (let i = 0; i < 10; i++) {
+      const mx = ((i * 67 + t * 0.009) % W);
+      const my = 36 + ((i * 39) % 168) + Math.sin(t * 0.002 + i * 1.1) * 3.5;
+      ctx.fillRect(Math.round(mx), Math.round(my), 2, 2);
+    }
+
+    const sk = SKILL_BY_ID[appState.skillId] || SKILL_LIST[0];
+    const el = board.elapsed;
+    const peak = Math.max(360, board.peakMs || 560);
+
+    // 希尔维亚姿态帧与当前招式真实峰值联动：蓄力(3) → 前步施法(4) → 峰值爆发(4/5) → 优雅回待机呼吸(0/1)
+    let heroFrame = Math.floor(appState.simClockMs / 360) % 2;
+    if (el < 140) {
+      heroFrame = 3;
+    } else if (el < peak * 0.72) {
+      heroFrame = 4;
+    } else if (el < peak + 220) {
+      heroFrame = (sk.kind === 'melee' || sk.kind === 'ultimate' || sk.kind === 'wind') ? 5 : 4;
+    }
+    drawActorSprite(ctx, HERO_ACTOR.id, HERO_ACTOR.footX + sx * 0.35, HERO_ACTOR.footY + sy * 0.35, HERO_ACTOR.scale, heroFrame, 0, 0);
+
+    // 敌方受击闪白与微后仰
+    const hitActive = board.hitAge < 250;
+    const hurtFlash = hitActive ? Math.pow(1 - board.hitAge / 250, 1.25) : 0;
+    const knockX = hitActive ? Math.sin((board.hitAge / 250) * Math.PI) * 5.2 : 0;
+    const enemyIdle = Math.floor((appState.simClockMs + 140) / 390) % 2;
+    const enemyFrame = hitActive ? 6 : enemyIdle;
+
+    if (sk.mode === 'multi') {
+      // 按 footY 景深依次渲染 wolf_alpha + beatrice + wolf_alpha 三人斜雁站位
+      for (let i = 0; i < MULTI_ENEMY_ACTORS.length; i++) {
+        const m = MULTI_ENEMY_ACTORS[i];
+        drawActorSprite(ctx, m.id, m.footX + sx * 0.8, m.footY + sy * 0.8, m.scale, enemyFrame, hurtFlash, knockX);
+      }
+    } else {
+      drawActorSprite(ctx, SINGLE_ENEMY_ACTOR.id, SINGLE_ENEMY_ACTOR.footX + sx * 0.8, SINGLE_ENEMY_ACTOR.footY + sy * 0.8, SINGLE_ENEMY_ACTOR.scale, enemyFrame, hurtFlash, knockX);
+    }
+  }
+
+  function renderBoardVfx(board) {
+    if (board.key === 'C') {
+      board.engine.render({ noShake: true });
+    } else {
+      board.engine.render();
+    }
+  }
+
+  function updateBoardScrubUI(board) {
+    const shown = Math.min(board.duration, Math.round(board.elapsed));
+    board.sliderEl.max = String(board.duration);
+    board.sliderEl.value = String(shown);
+    board.timeEl.textContent = shown + ' / ' + board.duration + 'ms';
+  }
+
+  function playAllSynchronized(skillId, ampTier) {
+    if (skillId) appState.skillId = skillId;
+    if (typeof ampTier === 'number') appState.ampTier = ampTier;
+    appState.paused = false;
+    appState.idleAfterEndMs = 0;
+    appState.seedCounter += 97;
+    const seed = appState.seedCounter;
+
+    for (let i = 0; i < boards.length; i++) {
+      const b = boards[i];
+      b.elapsed = 0;
+      b.duration = getDurationForBoard(b, appState.skillId);
+      b.peakMs = getPeakForBoard(b, appState.skillId);
+      b.hitAge = 9999;
+      b.shakeMag = 0;
+      b.shakeDur = 0;
+      b.shakeAge = 9999;
+      b.hitStopRemain = 0;
+      b.syntheticImpactFired = false;
+
+      b.engine.clear();
+      const opts = buildOptsForBoard(b, appState.skillId, appState.ampTier, seed, true);
+      b.engine.play(appState.skillId, opts);
+      renderBoardStage(b);
+      renderBoardVfx(b);
+      updateBoardScrubUI(b);
+    }
+    syncControlStates();
+  }
+
+  function seekSingleBoard(board, targetMs) {
+    const dur = getDurationForBoard(board, appState.skillId);
+    const clampedMs = Math.max(0, Math.min(dur - 1, Number(targetMs) || 0));
+    const seed = appState.seedCounter;
+    const sk = SKILL_BY_ID[appState.skillId] || SKILL_LIST[0];
+
+    board.duration = dur;
+    board.peakMs = getPeakForBoard(board, appState.skillId);
+    board.elapsed = clampedMs;
+    board.shakeMag = 0;
+    board.shakeAge = 9999;
+    board.hitStopRemain = 0;
+
+    // 峰值附近展示真实受击姿态与轻微冰白闪光
+    const nearPeak = sk.mode !== 'self' && Math.abs(clampedMs - board.peakMs) < 130;
+    board.hitAge = nearPeak ? 55 : 9999;
+
+    const opts = buildOptsForBoard(board, appState.skillId, appState.ampTier, seed, false);
+    if (board.key === 'B' && typeof board.engine.seek === 'function') {
+      board.engine.clear();
+      board.engine.play(appState.skillId, opts);
+      board.engine.seek(clampedMs);
+      board.engine.render();
+    } else if (board.key === 'C' && typeof board.engine.seek === 'function') {
+      board.engine.seek(appState.skillId, clampedMs, opts);
+      board.engine.render({ noShake: true });
+    } else {
+      // 方案 A：以精确 16.6667ms 固定步长模拟至目标帧
+      board.engine.clear();
+      board.engine.play(appState.skillId, opts);
+      let remain = clampedMs;
+      const step = 16.6667;
+      let guard = 0;
+      while (remain > 0.01 && guard < 400) {
+        const dt = remain > step ? step : remain;
+        board.engine.update(dt);
+        remain -= dt;
+        guard++;
+      }
+      board.engine.render();
+    }
+
+    renderBoardStage(board);
+    updateBoardScrubUI(board);
+  }
+
+  function freezeAllAtPeak() {
+    appState.paused = true;
+    for (let i = 0; i < boards.length; i++) {
+      const b = boards[i];
+      const peak = getPeakForBoard(b, appState.skillId);
+      seekSingleBoard(b, peak);
+    }
+  }
+
+  /* ==========================================================================
+     6. 顶栏与展板 UI 装配与事件绑定
+     ========================================================================== */
+  const skillStripEl = document.getElementById('skill-strip');
+  const boardsGridEl = document.getElementById('boards-grid');
+  const layoutToggleEl = document.getElementById('layout-toggle');
+  const btnLoopEl = document.getElementById('btn-loop');
+
+  function buildSkillButtons() {
+    skillStripEl.innerHTML = '';
+    SKILL_LIST.forEach((sk, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'skill-btn' + (sk.wide ? ' wide' : '');
+      btn.dataset.skill = sk.id;
+      btn.setAttribute('role', 'tab');
+      btn.innerHTML = `<span class="sk-num">${idx + 1}</span><span>${sk.label}</span>`;
+      btn.addEventListener('click', () => playAllSynchronized(sk.id));
+      skillStripEl.appendChild(btn);
+    });
+  }
+
+  function setView(viewKey) {
+    appState.view = viewKey;
+    const isFocus = viewKey !== 'all';
+    boardsGridEl.classList.toggle('mode-focus', isFocus);
+    if (isFocus) {
+      boardsGridEl.dataset.focus = viewKey;
+    }
+    layoutToggleEl.classList.toggle('is-hidden', isFocus);
+    syncControlStates();
+  }
+
+  function setLayout(layoutKey) {
+    appState.layout = layoutKey === 'row' ? 'row' : 'grid';
+    boardsGridEl.classList.toggle('layout-row', appState.layout === 'row');
+    syncControlStates();
+  }
+
+  function syncControlStates() {
+    document.querySelectorAll('#view-controls .seg-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.view === appState.view);
+    });
+    document.querySelectorAll('#layout-toggle .layout-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.layout === appState.layout);
+    });
+    document.querySelectorAll('#skill-strip .skill-btn').forEach(btn => {
+      const active = btn.dataset.skill === appState.skillId;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    document.querySelectorAll('#amp-strip .amp-btn').forEach(btn => {
+      btn.classList.toggle('active', Number(btn.dataset.amp) === appState.ampTier);
+    });
+    document.querySelectorAll('#speed-group .speed-btn').forEach(btn => {
+      btn.classList.toggle('active', Number(btn.dataset.speed) === appState.speed);
+    });
+    btnLoopEl.classList.toggle('active', appState.loop);
+  }
+
+  // 绑定顶栏事件
+  document.querySelectorAll('#view-controls .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => setView(btn.dataset.view));
+  });
+
+  document.querySelectorAll('#layout-toggle .layout-btn').forEach(btn => {
+    btn.addEventListener('click', () => setLayout(btn.dataset.layout));
+  });
+
+  document.querySelectorAll('#amp-strip .amp-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      appState.ampTier = Number(btn.dataset.amp) || 0;
+      playAllSynchronized();
+    });
+  });
+
+  document.getElementById('btn-replay').addEventListener('click', () => playAllSynchronized());
+
+  btnLoopEl.addEventListener('click', () => {
+    appState.loop = !appState.loop;
+    if (appState.loop && appState.paused) {
+      playAllSynchronized();
+    } else {
+      syncControlStates();
+    }
+  });
+
+  document.querySelectorAll('#speed-group .speed-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      appState.speed = Number(btn.dataset.speed) || 1;
+      syncControlStates();
+    });
+  });
+
+  // 展板放大精鉴 / 返回同台 / 单版进度条 & 定格峰值
+  document.querySelectorAll('[data-focus-trigger]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      const ed = el.dataset.focusTrigger;
+      // 如果已在单版精鉴中点击画布，直接重播当前招式
+      if (appState.view === ed && el.classList.contains('stage-wrap')) {
+        playAllSynchronized();
+        return;
+      }
+      e.stopPropagation();
+      setView(ed);
+    });
+  });
+
+  document.querySelectorAll('[data-view-back]').forEach(btn => {
+    btn.addEventListener('click', () => setView('all'));
+  });
+
+  document.querySelectorAll('[data-peak]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const b = BOARD_MAP[btn.dataset.peak];
+      if (!b) return;
+      appState.paused = true;
+      seekSingleBoard(b, getPeakForBoard(b, appState.skillId));
+    });
+  });
+
+  document.querySelectorAll('.scrub-slider').forEach(slider => {
+    slider.addEventListener('input', () => {
+      const b = BOARD_MAP[slider.dataset.edition];
+      if (!b) return;
+      appState.paused = true;
+      seekSingleBoard(b, Number(slider.value));
+    });
+  });
+
+  // 桌面快捷键：1~9 切招，Space/R 重播，Esc 返回三版同台
+  window.addEventListener('keydown', (e) => {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    if (e.key >= '1' && e.key <= '9') {
+      const sk = SKILL_LIST[Number(e.key) - 1];
+      if (sk) playAllSynchronized(sk.id);
+    } else if (e.key === ' ' || e.key === 'r' || e.key === 'R') {
+      e.preventDefault();
+      playAllSynchronized();
+    } else if (e.key === 'Escape' && appState.view !== 'all') {
+      setView('all');
+    }
+  });
+
+  /* ==========================================================================
+     7. 60fps 统一驱动主循环
+     ========================================================================== */
+  let lastRafTs = 0;
+
+  function tick(ts) {
+    const rawDt = lastRafTs ? Math.min(48, Math.max(0, ts - lastRafTs)) : 16.6667;
+    lastRafTs = ts;
+    appState.simClockMs += rawDt;
+
+    if (!appState.paused) {
+      const scaledDt = rawDt * appState.speed;
+      let anyActive = false;
+
+      for (let i = 0; i < boards.length; i++) {
+        const b = boards[i];
+
+        // 震动与受击计时按真实帧率衰减，保证顿帧结束立刻恢复流畅打击反馈
+        if (b.hitAge < 2000) b.hitAge += rawDt;
+        if (b.shakeAge < 2000) b.shakeAge += rawDt;
+
+        // 响应 onHitStop 短顿帧
+        if (b.hitStopRemain > 0) {
+          b.hitStopRemain = Math.max(0, b.hitStopRemain - rawDt);
+          renderBoardStage(b);
+          anyActive = true;
+          continue;
+        }
+
+        b.elapsed += scaledDt;
+        b.engine.update(scaledDt);
+
+        // 方案 B 不主动抛 onImpact：在它的真实峰值打击拍点自动触发等效柔和受击闪白与微震
+        if (b.key === 'B' && !b.syntheticImpactFired && b.elapsed >= b.peakMs * 0.88) {
+          b.syntheticImpactFired = true;
+          const sk = SKILL_BY_ID[appState.skillId];
+          if (sk && sk.mode !== 'self' && sk.mode !== 'dash') {
+            triggerBoardImpact(b, SINGLE_ENEMY_ACTOR.footX, appState.skillId);
+            triggerBoardShake(b, 3.6 + appState.ampTier * 0.9, 195);
+          } else {
+            triggerBoardShake(b, 1.8 + appState.ampTier * 0.4, 140);
+          }
+        }
+
+        renderBoardStage(b);
+        renderBoardVfx(b);
+        updateBoardScrubUI(b);
+
+        if (b.engine.isActive() || b.elapsed < b.duration) {
+          anyActive = true;
+        }
+      }
+
+      if (!anyActive) {
+        appState.idleAfterEndMs += rawDt;
+        if (appState.loop && appState.idleAfterEndMs >= 420) {
+          playAllSynchronized();
+        }
+      }
+    }
+
+    requestAnimationFrame(tick);
+  }
+
+  /* ==========================================================================
+     8. 暴露检视与自动化验证句柄（支持 URL 参数与 Playwright 实机验证）
+     ========================================================================== */
+  window.VfxArena = {
+    getSkills: () => SKILL_LIST.map(s => s.id),
+    getState: () => ({
+      view: appState.view,
+      layout: appState.layout,
+      skillId: appState.skillId,
+      ampTier: appState.ampTier,
+      speed: appState.speed,
+      loop: appState.loop,
+      paused: appState.paused
+    }),
+    setView,
+    setLayout,
+    playSkill: (skillId, ampTier) => playAllSynchronized(skillId, ampTier),
+    setAmp: (tier) => { appState.ampTier = Math.max(0, Math.min(3, Number(tier) || 0)); playAllSynchronized(); },
+    setSpeed: (sp) => { appState.speed = Number(sp) || 1; syncControlStates(); },
+    setLoop: (on) => { appState.loop = !!on; syncControlStates(); },
+    freezeAtPeak: (skillId, ampTier) => {
+      if (skillId) appState.skillId = skillId;
+      if (typeof ampTier === 'number') appState.ampTier = Math.max(0, Math.min(3, ampTier));
+      syncControlStates();
+      freezeAllAtPeak();
+    }
+  };
+
+  // URL 参数便捷入口：?skill=starfrost_scatter&amp=3&view=all&layout=grid
+  const qs = new URLSearchParams(window.location.search);
+  if (qs.has('skill') && SKILL_BY_ID[qs.get('skill')]) appState.skillId = qs.get('skill');
+  if (qs.has('amp')) appState.ampTier = Math.max(0, Math.min(3, Number(qs.get('amp')) || 0));
+  if (qs.has('layout')) appState.layout = qs.get('layout') === 'row' ? 'row' : 'grid';
+  if (qs.has('view') && ['all', 'A', 'B', 'C'].includes(qs.get('view'))) appState.view = qs.get('view');
+
+  buildSkillButtons();
+  setLayout(appState.layout);
+  setView(appState.view);
+  playAllSynchronized();
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

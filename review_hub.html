@@ -191,7 +191,14 @@
     font-size: 12px; color: var(--muted);
   }
 
-  /* 6 New Batch Cards: 3×2 Crisp Architectural Grid */
+  /* Batch 2 Top 4 Cards: 2×2 Crisp Architectural Grid */
+  .featured-grid-2col {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  /* 6 Previous Batch Cards: 3×2 Crisp Architectural Grid */
   .featured-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -329,24 +336,29 @@
       <div class="brand">
         <h1>✦ 转生千金 · 审阅台</h1>
       </div>
-      <button class="tab active" data-key="overview" data-desc="本批全新交互产物（6 项）与历次视觉竞标审阅总览目录">总览</button>
+      <button class="tab active" data-key="overview" data-desc="本批全新交互产物（4 项：三版明亮战斗特效竞技场 + 三版雁形战斗舞台）与历次视觉竞标审阅总览">总览</button>
       <div class="sep" aria-hidden="true"></div>
-      <span class="row-label row-label-new">本批新品</span>
+      <span class="row-label row-label-new">本批新上</span>
       <nav class="nav-strip" id="nav-new" aria-label="本批新增交互审阅入口">
-        <button class="tab tab-new" data-key="spec_v3" data-src="./vfx_lab/combat_spec_v3.html" data-desc="V3.1 战斗数值策划交互白皮书（完整公式、三阶魔力增幅曲线、防御模型与实时演算沙盒）" title="V3.1 战斗数值策划交互白皮书">V3.1 战斗策划白皮书</button>
-        <button class="tab tab-new" data-key="vfx_lab" data-src="./vfx_lab/combat_vfx_lab.html" data-desc="新版战斗特效对比实验室（含按键缩圈与线性格挡沙盒、新旧法术粒子实机对照）" title="新版战斗特效对比实验室（含按键缩圈与线性格挡沙盒）">战斗特效实验室</button>
-        <button class="tab tab-new" data-key="r3" data-src="./item_art_r3_4boards_backpack_preview.html" data-desc="第三轮 2×2 四板道具背包审阅（板 G / H / I / J 对比与 76px 实机背包联调）" title="第三轮 2×2 四板道具背包审阅（板 G / H / I / J）">道具 R3·G/H/I/J</button>
+        <button class="tab tab-new" data-key="vfx_arena" data-src="./vfx_3boards/vfx_3boards_arena.html" data-desc="三版明亮战斗特效同台竞技场（A/B/C · 真角色舞台）" title="三版明亮战斗特效同台竞技场（A/B/C · 真角色舞台）">三版明亮战斗特效竞技场 A/B/C</button>
         <div class="sep" aria-hidden="true"></div>
-        <button class="tab tab-new" data-key="dlg_a" data-src="./dialogue_demos/dialogue_demo_a_bubble.html" data-desc="防立绘跳动对话 · 方案 A（雪瓷棱镜气泡：自由活动双人立绘零位移对话）" title="防立绘跳动对话 · 方案 A（雪瓷棱镜气泡）">对话 A·棱镜气泡</button>
-        <button class="tab tab-new" data-key="dlg_b" data-src="./dialogue_demos/dialogue_demo_b_overlay.html" data-desc="防立绘跳动对话 · 方案 B（立绘固底 + 悬浮磨砂薄幕：零跳动贴底立绘）" title="防立绘跳动对话 · 方案 B（立绘固底 + 悬浮磨砂薄幕）">对话 B·固底薄幕</button>
-        <button class="tab tab-new" data-key="dlg_c" data-src="./dialogue_demos/dialogue_demo_c_sidecard.html" data-desc="防立绘跳动对话 · 方案 C（宽屏侧翼交谈手札卡：侧栏交谈记录 + 稳定立绘舞台）" title="防立绘跳动对话 · 方案 C（宽屏侧翼交谈手札卡）">对话 C·侧翼手札</button>
+        <button class="tab tab-new" data-key="stage_a" data-src="./battle_stage_3boards/stage_demo_a_echelon.html" data-desc="雁形战斗舞台 · 方案 A（斜向雁阵 + 底部通栏轻队卡）" title="雁形战斗舞台 · 方案 A（斜向雁阵 + 底部通栏轻队卡）">雁形舞台 A·斜向通栏</button>
+        <button class="tab tab-new" data-key="stage_b" data-src="./battle_stage_3boards/stage_demo_b_theater.html" data-desc="雁形战斗舞台 · 方案 B（宽屏剧场透视雁阵 + 左下阶梯卡）" title="雁形战斗舞台 · 方案 B（宽屏剧场透视雁阵 + 左下阶梯卡）">雁形舞台 B·剧场阶梯</button>
+        <button class="tab tab-new" data-key="stage_c" data-src="./battle_stage_3boards/stage_demo_c_astral.html" data-desc="雁形战斗舞台 · 方案 C（大雁展翅折线 + 底中双微岛）" title="雁形战斗舞台 · 方案 C（大雁展翅折线 + 底中双微岛）">雁形舞台 C·展翅微岛</button>
       </nav>
-      <a id="open-direct" class="open-ext is-hidden" href="./vfx_lab/combat_spec_v3.html" target="_blank" rel="noopener">新窗 ↗</a>
+      <a id="open-direct" class="open-ext is-hidden" href="./vfx_3boards/vfx_3boards_arena.html" target="_blank" rel="noopener">新窗 ↗</a>
     </div>
 
     <div class="bar-row bar-secondary">
       <span class="row-label row-label-archive">历次审阅</span>
       <nav class="nav-strip" id="nav-archive" aria-label="历次视觉竞标与实机审阅入口">
+        <button class="tab" data-key="spec_v3" data-src="./vfx_lab/combat_spec_v3.html" data-desc="V3.1 战斗数值策划交互白皮书（完整公式、三阶魔力增幅曲线、防御模型与实时演算沙盒）" title="V3.1 战斗数值策划交互白皮书">V3.1 战斗白皮书</button>
+        <button class="tab" data-key="vfx_lab" data-src="./vfx_lab/combat_vfx_lab.html" data-desc="新版战斗特效对比实验室（含按键缩圈与线性格挡沙盒、新旧法术粒子实机对照）" title="新版战斗特效对比实验室（含按键缩圈与线性格挡沙盒）">特效实验室</button>
+        <button class="tab" data-key="r3" data-src="./item_art_r3_4boards_backpack_preview.html" data-desc="第三轮 2×2 四板道具背包审阅（板 G / H / I / J 对比与 76px 实机背包联调）" title="第三轮 2×2 四板道具背包审阅（板 G / H / I / J）">道具 R3·G–J</button>
+        <button class="tab" data-key="dlg_a" data-src="./dialogue_demos/dialogue_demo_a_bubble.html" data-desc="防立绘跳动对话 · 方案 A（雪瓷棱镜气泡：自由活动双人立绘零位移对话）" title="防立绘跳动对话 · 方案 A（雪瓷棱镜气泡）">对话 A</button>
+        <button class="tab" data-key="dlg_b" data-src="./dialogue_demos/dialogue_demo_b_overlay.html" data-desc="防立绘跳动对话 · 方案 B（立绘固底 + 悬浮磨砂薄幕：零跳动贴底立绘）" title="防立绘跳动对话 · 方案 B（立绘固底 + 悬浮磨砂薄幕）">对话 B</button>
+        <button class="tab" data-key="dlg_c" data-src="./dialogue_demos/dialogue_demo_c_sidecard.html" data-desc="防立绘跳动对话 · 方案 C（宽屏侧翼交谈手札卡：侧栏交谈记录 + 稳定立绘舞台）" title="防立绘跳动对话 · 方案 C（宽屏侧翼交谈手札卡）">对话 C</button>
+        <div class="sep" aria-hidden="true"></div>
         <button class="tab" data-key="r2" data-src="./item_art_r2_3boards_backpack_preview.html" data-desc="第二轮道具三板（板 D 30图原风 / 板 E 像素化 / 板 F 直传图同款）× 76px 图形化背包" title="第二轮道具三板（板 D / E / F）">道具 R2·D/E/F</button>
         <button class="tab" data-key="r1" data-src="./item_art_3boards_backpack_preview.html" data-desc="第一轮道具三板（板 A 圣晶厚涂 / 板 B 鎏金水彩 / 板 C 高精像素）× 76px 图形化背包" title="第一轮道具三板（板 A / B / C）">道具 R1·A/B/C</button>
         <div class="sep" aria-hidden="true"></div>
@@ -358,7 +370,7 @@
         <div class="sep" aria-hidden="true"></div>
         <button class="tab" data-key="title" data-src="./vesteria_title_demo.html" data-desc="电脑端单文件主界面 Demo（含 B+C 融合冰晶 + Sacred 1.mp3 + 同舞台转场）" title="电脑端主界面 Demo">主界面 Demo</button>
       </nav>
-      <span id="cur-desc" class="cur-desc" title="本批全新交互产物（6 项）与历次视觉竞标审阅总览目录">本批全新交互产物（6 项）与历次视觉竞标审阅总览目录</span>
+      <span id="cur-desc" class="cur-desc" title="本批全新交互产物（4 项：三版明亮战斗特效竞技场 + 三版雁形战斗舞台）与历次视觉竞标审阅总览">本批全新交互产物（4 项：三版明亮战斗特效竞技场 + 三版雁形战斗舞台）与历次视觉竞标审阅总览</span>
     </div>
   </header>
 
@@ -368,10 +380,82 @@
         <div>
           <div class="section-head">
             <div class="section-head-left">
-              <span class="section-kicker">NEW RELEASE · 6 INTERACTIVE DEMOS</span>
-              <h2 class="section-title">本批全新审阅入口</h2>
+              <span class="section-kicker">NEW RELEASE · 4 INTERACTIVE DEMOS</span>
+              <h2 class="section-title">本批置顶审阅入口（三版明亮战斗特效竞技场 + 三版雁形战斗舞台）</h2>
             </div>
-            <span class="section-note">点击「页内审阅」即刻切换全屏实机视图，或点击「新窗 ↗」独立打开</span>
+            <span class="section-note">点击「页内审阅」即刻切换全屏实机视图，或点击「独立新窗 ↗」直接打开</span>
+          </div>
+
+          <div class="featured-grid-2col" style="margin-top: 14px;">
+            <article class="card">
+              <div>
+                <div class="card-meta">
+                  <span class="card-cat">COMBAT VFX ARENA · A / B / C</span>
+                  <span class="card-tag">三版同台齐放</span>
+                </div>
+                <h3 class="card-title">三版明亮战斗特效同台竞技场（A/B/C · 真角色舞台）</h3>
+                <p class="card-desc">方案 A 原版炫彩连贯进化版 / 方案 B 星之海高亮像素辉光版 / 方案 C 日系动画刀光×立体棱镜折射版同屏实机对比，支持 9 大技能、三阶魔力增幅与慢放精鉴。</p>
+              </div>
+              <div class="card-actions">
+                <button class="btn-enter" data-jump="vfx_arena">页内审阅</button>
+                <a class="link-ext" href="./vfx_3boards/vfx_3boards_arena.html" target="_blank" rel="noopener">独立新窗 ↗</a>
+              </div>
+            </article>
+
+            <article class="card card-accent-ice">
+              <div>
+                <div class="card-meta">
+                  <span class="card-cat">ECHELON BATTLE STAGE · SCHEME A</span>
+                  <span class="card-tag">雁形舞台构图</span>
+                </div>
+                <h3 class="card-title">雁形战斗舞台 · 方案 A（斜向雁阵 + 底部通栏轻队卡）</h3>
+                <p class="card-desc">斜向雁阵景深排布与底部通栏轻量化队卡结合，清晰呈现多角色站位层次与战场视野留白，支持多场景与满编阵型实机切换。</p>
+              </div>
+              <div class="card-actions">
+                <button class="btn-enter" data-jump="stage_a">页内审阅</button>
+                <a class="link-ext" href="./battle_stage_3boards/stage_demo_a_echelon.html" target="_blank" rel="noopener">独立新窗 ↗</a>
+              </div>
+            </article>
+
+            <article class="card card-accent-gold">
+              <div>
+                <div class="card-meta">
+                  <span class="card-cat">ECHELON BATTLE STAGE · SCHEME B</span>
+                  <span class="card-tag">雁形舞台构图</span>
+                </div>
+                <h3 class="card-title">雁形战斗舞台 · 方案 B（宽屏剧场透视雁阵 + 左下阶梯卡）</h3>
+                <p class="card-desc">宽屏剧场透视纵深构图配合左下角阶梯式队卡编排与魔导等阶铭牌联动，凸显敌我交锋的纵深压迫感与操作聚焦。</p>
+              </div>
+              <div class="card-actions">
+                <button class="btn-enter" data-jump="stage_b">页内审阅</button>
+                <a class="link-ext" href="./battle_stage_3boards/stage_demo_b_theater.html" target="_blank" rel="noopener">独立新窗 ↗</a>
+              </div>
+            </article>
+
+            <article class="card card-accent-ice">
+              <div>
+                <div class="card-meta">
+                  <span class="card-cat">ECHELON BATTLE STAGE · SCHEME C</span>
+                  <span class="card-tag">雁形舞台构图</span>
+                </div>
+                <h3 class="card-title">雁形战斗舞台 · 方案 C（大雁展翅折线 + 底中双微岛）</h3>
+                <p class="card-desc">大雁展翅对称折线阵型搭配底部居中双微岛信息条，最大化释放宽屏战斗舞台与特效施法演出空间。</p>
+              </div>
+              <div class="card-actions">
+                <button class="btn-enter" data-jump="stage_c">页内审阅</button>
+                <a class="link-ext" href="./battle_stage_3boards/stage_demo_c_astral.html" target="_blank" rel="noopener">独立新窗 ↗</a>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-head">
+            <div class="section-head-left">
+              <span class="section-kicker">PREVIOUS BATCH · 6 INTERACTIVE DEMOS</span>
+              <h2 class="section-title">上批审阅入口（V3.1 战斗白皮书 · 特效实验室 · 道具 R3 · 防立绘跳动对话）</h2>
+            </div>
+            <span class="section-note">全部完整保留，可点击下方卡片或顶部第二栏随时切换</span>
           </div>
 
           <div class="featured-grid" style="margin-top: 14px;">

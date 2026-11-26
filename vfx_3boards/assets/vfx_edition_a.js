@@ -1,0 +1,3525 @@
+/* ============================================================================
+   《转生千金》新版明亮战斗特效竞标 · 方案 A（原版 PixelFX 炫彩进化 · 丝滑连贯重构派）
+   导出：window.VfxEditionA
+   逻辑画布：640×360（16:9 高清展示，自动适配任意分辨率目标 Canvas）
+   核心突破：
+   1. 彻底废除旧版 MAX=2 并发硬上限 -> 48 槽位独立 PixelFX 精灵池 + 600 粒子 + 多层流光系统
+   2. 丝滑四段无缝衔接：聚能魔法阵 -> 高速流光弹道/位移 -> 精准相位预热大体积爆裂 -> 晶莹余光渐隐
+   3. 宝石高饱和亮色系（皇家蓝 #1658EB / 电光天蓝 #38BDF8 / 冰青 #67E8F9 / 翡翠青 / 香槟金 #FDE68A），
+      在雪瓷明亮宫殿舞台上通透明亮、体量饱满、绝不发灰发暗
+   4. 全 9 招独立视觉叙事 + ampTier (0|1|2|3) 炫彩魔力增幅分级（3 阶香槟金星环 + 冰雷电弧 + 星爆）
+   5. 自动复用已加载的 window.PixelFX；若宿主未预先加载则自动使用内置核心零报错运行
+   ============================================================================ */
+(function (global) {
+  'use strict';
+
+  const LOGICAL_W = 640;
+  const LOGICAL_H = 360;
+  const MAX_PFX_SLOTS = 48;
+  const MAX_PARTICLES = 640;
+
+  /* -------------------- 宝石明亮色板（零灰黑脏色，雪瓷舞台极高通透度） -------------------- */
+  const PALETTES = {
+    ice:       ['#1E40AF', '#1658EB', '#0284C7', '#0EA5E9', '#38BDF8', '#7DD3FC', '#E0F7FF', '#FFFFFF'],
+    iceGold:   ['#1658EB', '#0284C7', '#0EA5E9', '#38BDF8', '#67E8F9', '#FDE68A', '#FEF9C3', '#FFFFFF'],
+    water:     ['#0369A1', '#0284C7', '#0EA5E9', '#06B6D4', '#22D3EE', '#67E8F9', '#CFFAFE', '#FFFFFF'],
+    slash:     ['#1D4ED8', '#0284C7', '#0EA5E9', '#38BDF8', '#67E8F9', '#E0F9FF', '#FFFFFF'],
+    slashGold: ['#1658EB', '#0EA5E9', '#38BDF8', '#67E8F9', '#FDE68A', '#FEF9C3', '#FFFFFF'],
+    slashWind: ['#047857', '#059669', '#10B981', '#2DD4BF', '#6EE7B7', '#CCFBF1', '#FFFFFF'],
+    shield:    ['#1658EB', '#0284C7', '#0EA5E9', '#38BDF8', '#7DD3FC', '#BAE6FD', '#FDE68A', '#FFFFFF'],
+    wind:      ['#047857', '#059669', '#10B981', '#14B8A6', '#2DD4BF', '#6EE7B7', '#CCFBF1', '#FFFFFF'],
+    gold:      ['#B45309', '#D97706', '#F59E0B', '#FBBF24', '#FCD34D', '#FDE68A', '#FEF9C3', '#FFFFFF'],
+    gold7:     ['#D97706', '#F59E0B', '#FBBF24', '#FCD34D', '#FDE68A', '#FEF9C3', '#FFFFFF'],
+    cyanSpark: ['#FFFFFF', '#E0F7FF', '#67E8F9', '#0EA5E9'],
+    goldSpark: ['#FFFFFF', '#FEF9C3', '#FDE68A', '#F59E0B'],
+    aquaSpark: ['#FFFFFF', '#CFFAFE', '#22D3EE', '#0284C7'],
+    windSpark: ['#FFFFFF', '#CCFBF1', '#6EE7B7', '#059669'],
+  };
+
+  /* -------------------- 9 招技能元数据 -------------------- */
+  const SKILLS = [
+    {
+      id: 'ice_crystal',
+      name: '冰晶术',
+      en: 'Ice Crystal',
+      kind: 'projectile',
+      targetMode: 'single',
+      duration: 1220,
+      peakMs: 510,
+      accent: '#38BDF8',
+      desc: '明亮聚能晶环 → 电光冰枪疾射 → 裂纹晶块爆裂飞散'
+    },
+    {
+      id: 'tri_prism_ice',
+      name: '三棱冰晶',
+      en: 'Tri-Prism Ice',
+      kind: 'barrage',
+      targetMode: 'single',
+      duration: 1400,
+      peakMs: 590,
+      accent: '#0EA5E9',
+      desc: '上/中/下三轨错峰 110ms 齐射棱晶冰枪 → 三连晶爆电弧'
+    },
+    {
+      id: 'starfrost_scatter',
+      name: '星霜散华',
+      en: 'Starfrost Scatter',
+      kind: 'ultimate',
+      targetMode: 'single',
+      duration: 1720,
+      peakMs: 880,
+      accent: '#7DD3FC',
+      desc: '旋转冰蓝天穹法阵 + 8 道倾斜星霜光雨 → 巨型雪花金星爆'
+    },
+    {
+      id: 'raging_surge',
+      name: '激流涌',
+      en: 'Raging Surge',
+      kind: 'beam',
+      targetMode: 'single',
+      duration: 1460,
+      peakMs: 580,
+      accent: '#06B6D4',
+      desc: '碧蓝涌泉 → 精准胸口高压清透水柱 + 翻涌巨浪满屏水花'
+    },
+    {
+      id: 'water_cleave',
+      name: '断水刃',
+      en: 'Water Cleave',
+      kind: 'melee',
+      targetMode: 'single',
+      duration: 1180,
+      peakMs: 430,
+      accent: '#22D3EE',
+      desc: '极速跃进双连天蓝×电光青×纯白锋芒月牙交叉斩 + 飞溅水珠'
+    },
+    {
+      id: 'frost_thorn_field',
+      name: '霜域棘阵',
+      en: 'Frost Thorn Field',
+      kind: 'aoe',
+      targetMode: 'multi',
+      duration: 1680,
+      peakMs: 680,
+      accent: '#38BDF8',
+      desc: '冰脉迅速蔓延 3 敌 → 70ms 节拍依次破土高大冰棘 + 飘雪全覆盖'
+    },
+    {
+      id: 'steel_ice_curtain',
+      name: '钢冰护幕',
+      en: 'Steel Ice Curtain',
+      kind: 'buff',
+      targetMode: 'self',
+      duration: 1520,
+      peakMs: 620,
+      accent: '#FDE68A',
+      desc: '通透明亮冰蓝×淡金多面棱镜护盾 + 旋转晶环 + 落成闪光'
+    },
+    {
+      id: 'sword_send_slash',
+      name: '送刀斩',
+      en: 'Sword Send Slash',
+      kind: 'melee',
+      targetMode: 'single',
+      duration: 1220,
+      peakMs: 430,
+      accent: '#67E8F9',
+      desc: '凌厉冰青×纯白大弧刀光 + 二段反手十字晶斩 + 高能爆星'
+    },
+    {
+      id: 'wind_afterimage',
+      name: '风行残像',
+      en: 'Wind Afterimage',
+      kind: 'dash',
+      targetMode: 'single',
+      duration: 1380,
+      peakMs: 500,
+      accent: '#34D399',
+      desc: '明亮翡翠青双道旋风疾驰 + 三重晶透残像 + 飘散风叶星光'
+    }
+  ];
+
+  const SKILL_MAP = Object.create(null);
+  for (let i = 0; i < SKILLS.length; i++) SKILL_MAP[SKILLS[i].id] = SKILLS[i];
+
+  /* -------------------- 数学与缓动工具 -------------------- */
+  const TAU = Math.PI * 2;
+  const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const easeOutCubic = t => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+  const easeOutQuart = t => 1 - Math.pow(1 - clamp(t, 0, 1), 4);
+  const easeInQuad = t => { const u = clamp(t, 0, 1); return u * u; };
+  const easeInOutSine = t => -(Math.cos(Math.PI * clamp(t, 0, 1)) - 1) * 0.5;
+  const easeOutBack = t => {
+    const u = clamp(t, 0, 1);
+    const c1 = 1.70158;
+    const c3 = c1 + 1;
+    return 1 + c3 * Math.pow(u - 1, 3) + c1 * Math.pow(u - 1, 2);
+  };
+
+  function quadBezier(p0, p1, p2, t) {
+    const u = 1 - t;
+    return {
+      x: u * u * p0.x + 2 * u * t * p1.x + t * t * p2.x,
+      y: u * u * p0.y + 2 * u * t * p1.y + t * t * p2.y
+    };
+  }
+
+  function quadBezierTangent(p0, p1, p2, t) {
+    const dx = 2 * (1 - t) * (p1.x - p0.x) + 2 * t * (p2.x - p1.x);
+    const dy = 2 * (1 - t) * (p1.y - p0.y) + 2 * t * (p2.y - p1.y);
+    return Math.atan2(dy, dx);
+  }
+
+  function makeRng(seed) {
+    let s = (seed >>> 0) || 1337;
+    return function () {
+      s = (s + 0x6D2B79F5) >>> 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  /* -------------------- PixelFX 核心获取（优先 window.PixelFX，缺失时零报错内建兜底） -------------------- */
+  let _embeddedPFX = null;
+  function getPixelFX() {
+    if (global.PixelFX && global.PixelFX.FX && typeof global.PixelFX.createFx === 'function') {
+      return global.PixelFX;
+    }
+    if (!_embeddedPFX && typeof __createEmbeddedPixelFX === 'function') {
+      _embeddedPFX = __createEmbeddedPixelFX();
+    }
+    return _embeddedPFX;
+  }
+
+  /* -------------------- 共享可复用 PixelFX 离屏像素画布池（零 GC 抖动） -------------------- */
+  const _scratchCache = new Map();
+  function getScratchSurface(PFX, w, h, ox, oy) {
+    const key = `${w}x${h}`;
+    let s = _scratchCache.get(key);
+    if (!s) {
+      const cvs = document.createElement('canvas');
+      cvs.width = w;
+      cvs.height = h;
+      const ctx = cvs.getContext('2d', { alpha: true });
+      ctx.imageSmoothingEnabled = false;
+      const imgData = ctx.createImageData(w, h);
+      const frame = PFX.createFrame(w, h, ox, oy);
+      s = { canvas: cvs, ctx, imgData, frame };
+      _scratchCache.set(key, s);
+    }
+    s.frame.ox = ox | 0;
+    s.frame.oy = oy | 0;
+    return s;
+  }
+
+  /* 各 PixelFX 动画的紧凑局部像素缓冲区规格（确保绝不裁边，同时像素光栅飞快） */
+  const PFX_BOUNDS = {
+    magic_circle_cast: { w: 120, h: 112, ox: -60,  oy: -68 },
+    ice_lance:         { w: 168, h: 64,  ox: -144, oy: -32 },
+    ice_crystal:       { w: 80,  h: 96,  ox: -40,  oy: -72 },
+    ice_shatter:       { w: 144, h: 108, ox: -64,  oy: -76 },
+    frost_nova:        { w: 256, h: 104, ox: -128, oy: -82 },
+    ice_spikes:        { w: 210, h: 104, ox: -28,  oy: -80 },
+    icicle_fall:       { w: 108, h: 136, ox: -54,  oy: -108 },
+    snowflake_burst:   { w: 132, h: 124, ox: -66,  oy: -108 },
+    blizzard_vortex:   { w: 120, h: 140, ox: -60,  oy: -106 },
+    water_jet:         { w: 248, h: 76,  ox: -28,  oy: -30 },
+    wave_crash:        { w: 236, h: 92,  ox: -118, oy: -76 },
+    splash:            { w: 140, h: 120, ox: -70,  oy: -86 },
+    sword_slash:       { w: 168, h: 124, ox: -74,  oy: -98 },
+    double_slash:      { w: 144, h: 124, ox: -18,  oy: -88 },
+    divine_shield:     { w: 96,  h: 96,  ox: -48,  oy: -72 },
+    crit_hit:          { w: 168, h: 120, ox: -68,  oy: -84 },
+    parry:             { w: 176, h: 100, ox: -88,  oy: -80 },
+    hit_spark:         { w: 132, h: 88,  ox: -40,  oy: -64 }
+  };
+
+  /* -------------------- 绘制辅助（明亮雪瓷高可读性矢量/像素混合原语） -------------------- */
+  function drawStarFlare(ctx, x, y, radius, innerRatio, points, rot, outerColor, coreColor, alpha) {
+    if (alpha <= 0.01 || radius <= 0.5) return;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+    ctx.globalAlpha = clamp(alpha, 0, 1);
+
+    // 紧凑明亮星晕（不扩散成模糊大圆团）
+    const glowR = radius * 0.56;
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, glowR);
+    g.addColorStop(0, coreColor);
+    g.addColorStop(0.32, outerColor);
+    g.addColorStop(1, 'rgba(56,189,248,0)');
+    ctx.save();
+    ctx.globalAlpha = clamp(alpha * 0.48, 0, 1);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, glowR, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+
+    // 锐利外层菱星
+    ctx.fillStyle = outerColor;
+    ctx.beginPath();
+    for (let i = 0; i < points * 2; i++) {
+      const a = (i * Math.PI) / points;
+      const r = i % 2 === 0 ? radius : radius * innerRatio;
+      const px = Math.cos(a) * r;
+      const py = Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // 纯白尖锐星芯
+    ctx.fillStyle = coreColor;
+    ctx.beginPath();
+    for (let i = 0; i < points * 2; i++) {
+      const a = (i * Math.PI) / points;
+      const r = i % 2 === 0 ? radius * 0.68 : radius * innerRatio * 0.55;
+      const px = Math.cos(a) * r;
+      const py = Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawMagicCircle(ctx, mc) {
+    const p = clamp(mc.age / mc.dur, 0, 1);
+    const envIn = easeOutBack(clamp(mc.age / mc.fadeIn, 0, 1));
+    const envOut = mc.age > mc.dur - mc.fadeOut ? clamp((mc.dur - mc.age) / mc.fadeOut, 0, 1) : 1;
+    const alpha = envOut * mc.alpha;
+    if (alpha <= 0.01) return;
+
+    const r = mc.radius * (0.35 + 0.65 * envIn);
+    const sy = mc.sy;
+
+    ctx.save();
+    ctx.translate(mc.x, mc.y);
+    ctx.scale(1, sy);
+    ctx.globalAlpha = clamp(alpha, 0, 1);
+
+    // 底部明亮折射冰蓝光盘
+    const bg = ctx.createRadialGradient(0, 0, r * 0.1, 0, 0, r * 1.25);
+    bg.addColorStop(0, mc.innerGlow);
+    bg.addColorStop(0.65, mc.outerGlow);
+    bg.addColorStop(1, 'rgba(14,165,233,0)');
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.25, 0, TAU);
+    ctx.fill();
+
+    // 外双环 + 符文刻度
+    ctx.rotate(mc.rot);
+    ctx.strokeStyle = mc.rimColor;
+    ctx.lineWidth = mc.lineW;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, TAU);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = Math.max(1, mc.lineW * 0.45);
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.87, 0, TAU);
+    ctx.stroke();
+
+    // 12 个发光符文棱点
+    ctx.fillStyle = mc.runeColor;
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * TAU;
+      const rx = Math.cos(a) * r * 0.935;
+      const ry = Math.sin(a) * r * 0.935;
+      ctx.save();
+      ctx.translate(rx, ry);
+      ctx.rotate(a + Math.PI * 0.25);
+      const sz = i % 3 === 0 ? 3.2 : 1.9;
+      ctx.fillRect(-sz * 0.5, -sz * 0.5, sz, sz);
+      ctx.restore();
+    }
+
+    // 反向旋转六芒星（冰晶几何感）
+    ctx.rotate(-mc.rot * 2.1);
+    ctx.strokeStyle = mc.starColor;
+    ctx.lineWidth = Math.max(1.2, mc.lineW * 0.65);
+    for (let k = 0; k < 2; k++) {
+      ctx.beginPath();
+      for (let i = 0; i < 3; i++) {
+        const a = (i / 3) * TAU + (k * Math.PI) / 3;
+        const px = Math.cos(a) * r * 0.84;
+        const py = Math.sin(a) * r * 0.84;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    // 三阶香槟金外星环
+    if (mc.goldTriple) {
+      ctx.rotate(mc.rot * 3.0);
+      ctx.strokeStyle = '#F59E0B';
+      ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 1.18, 0, TAU);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#FDE68A';
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([9, 5]);
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 1.29, 0, TAU);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#FEF9C3';
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * TAU;
+        const gx = Math.cos(a) * r * 1.23;
+        const gy = Math.sin(a) * r * 1.23;
+        ctx.beginPath();
+        ctx.moveTo(gx, gy - 4);
+        ctx.lineTo(gx + 3, gy);
+        ctx.lineTo(gx, gy + 4);
+        ctx.lineTo(gx - 3, gy);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    ctx.restore();
+
+    // 脉冲上升晶芒光丝
+    if (p < 0.78) {
+      const pulse = Math.sin(clamp(p / 0.78, 0, 1) * Math.PI);
+      ctx.save();
+      ctx.globalAlpha = pulse * 0.34 * alpha;
+      const colH = r * 1.7;
+      const cg = ctx.createLinearGradient(mc.x, mc.y, mc.x, mc.y - colH);
+      cg.addColorStop(0, mc.goldTriple ? 'rgba(253,230,138,0.65)' : 'rgba(56,189,248,0.55)');
+      cg.addColorStop(0.55, 'rgba(125,211,252,0.22)');
+      cg.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = cg;
+      ctx.fillRect(mc.x - r * 0.65, mc.y - colH, r * 1.3, colH);
+      ctx.restore();
+    }
+  }
+
+  function buildLightningPoints(x0, y0, x1, y1, jitter, depth, rng) {
+    let pts = [{ x: x0, y: y0 }, { x: x1, y: y1 }];
+    let amp = jitter;
+    for (let d = 0; d < depth; d++) {
+      const next = [pts[0]];
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i];
+        const b = pts[i + 1];
+        const mx = (a.x + b.x) * 0.5;
+        const my = (a.y + b.y) * 0.5;
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const nx = -dy / len;
+        const ny = dx / len;
+        const off = (rng() - 0.5) * 2 * amp;
+        next.push({ x: mx + nx * off, y: my + ny * off }, b);
+      }
+      pts = next;
+      amp *= 0.56;
+    }
+    return pts;
+  }
+
+  function drawLightningArc(ctx, arc) {
+    const p = clamp(arc.age / arc.dur, 0, 1);
+    const alpha = (1 - easeInQuad(p)) * (0.72 + 0.28 * Math.sin(arc.age * 0.09));
+    if (alpha <= 0.02 || arc.pts.length < 2) return;
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalAlpha = clamp(alpha, 0, 1);
+
+    const strokePath = pts => {
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.stroke();
+    };
+
+    // 外层饱和宝石蓝/琥珀金辉光
+    ctx.strokeStyle = arc.outerColor;
+    ctx.lineWidth = arc.width * 3.1;
+    ctx.globalAlpha = clamp(alpha * 0.42, 0, 1);
+    strokePath(arc.pts);
+
+    // 中层电光冰青/香槟金
+    ctx.strokeStyle = arc.midColor;
+    ctx.lineWidth = arc.width * 1.75;
+    ctx.globalAlpha = clamp(alpha * 0.92, 0, 1);
+    strokePath(arc.pts);
+
+    // 锐利纯白电芯
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = Math.max(1.1, arc.width * 0.72);
+    ctx.globalAlpha = clamp(alpha, 0, 1);
+    strokePath(arc.pts);
+
+    // 分支细电弧
+    if (arc.branches && arc.branches.length) {
+      for (let b = 0; b < arc.branches.length; b++) {
+        const br = arc.branches[b];
+        ctx.strokeStyle = arc.midColor;
+        ctx.lineWidth = Math.max(1.1, arc.width * 0.95);
+        ctx.globalAlpha = clamp(alpha * 0.78, 0, 1);
+        strokePath(br);
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 0.9;
+        strokePath(br);
+      }
+    }
+    ctx.restore();
+  }
+
+  /* 棱镜通透冰晶护盾（钢冰护幕核心多面体护盾，绝不发黑发脏） */
+  function drawPrismShield(ctx, sh) {
+    const p = clamp(sh.age / sh.dur, 0, 1);
+    const enter = easeOutBack(clamp(sh.age / 240, 0, 1));
+    const exit = sh.age > sh.dur - 280 ? clamp((sh.dur - sh.age) / 280, 0, 1) : 1;
+    const alpha = exit;
+    if (alpha <= 0.01) return;
+
+    const r = sh.radius * (0.45 + 0.55 * enter);
+    const lockFlash = sh.age >= sh.lockAt && sh.age < sh.lockAt + 210
+      ? Math.sin(((sh.age - sh.lockAt) / 210) * Math.PI)
+      : 0;
+
+    ctx.save();
+    ctx.translate(sh.x, sh.y);
+    ctx.globalAlpha = clamp(alpha, 0, 1);
+
+    // 1) 通透明亮冰蓝×淡金玻璃穹顶底光（中心保持高通透让主角清晰可见，边缘折射加亮）
+    const domeGrad = ctx.createRadialGradient(0, -4, r * 0.15, 0, 0, r * 1.08);
+    domeGrad.addColorStop(0, 'rgba(224,247,255,0.08)');
+    domeGrad.addColorStop(0.55, 'rgba(56,189,248,0.16)');
+    domeGrad.addColorStop(0.84, 'rgba(22,88,235,0.28)');
+    domeGrad.addColorStop(1, 'rgba(253,230,138,0.44)');
+    ctx.fillStyle = domeGrad;
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * TAU + Math.PI / 8;
+      const px = Math.cos(a) * r;
+      const py = Math.sin(a) * r * 1.06;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // 2) 多面棱镜内折射晶格（冰蓝 + 香槟金双棱线，透出主角轮廓）
+    const rot = sh.age * 0.0014;
+    ctx.strokeStyle = 'rgba(22,88,235,0.78)';
+    ctx.lineWidth = 2.8;
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * TAU + Math.PI / 8;
+      const px = Math.cos(a) * r;
+      const py = Math.sin(a) * r * 1.06;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.stroke();
+
+    // 外圈多面切分棱线（仅绘于外环带，绝不糊挡主角面部）
+    ctx.strokeStyle = 'rgba(56,189,248,0.82)';
+    ctx.lineWidth = 1.5;
+    const innerR = r * 0.68;
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * TAU + Math.PI / 8;
+      const ix = Math.cos(a) * innerR;
+      const iy = Math.sin(a) * innerR * 1.04;
+      const ox = Math.cos(a) * r * 0.98;
+      const oy = Math.sin(a) * r * 1.04;
+      ctx.moveTo(ix, iy);
+      ctx.lineTo(ox, oy);
+    }
+    ctx.stroke();
+
+    // 内圈淡金八角晶框
+    ctx.strokeStyle = 'rgba(245,158,11,0.78)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * TAU + Math.PI / 8;
+      const ix = Math.cos(a) * innerR;
+      const iy = Math.sin(a) * innerR * 1.04;
+      if (i === 0) ctx.moveTo(ix, iy);
+      else ctx.lineTo(ix, iy);
+    }
+    ctx.closePath();
+    ctx.stroke();
+
+    // 外缘香槟金高光棱框 + 8 个顶点宝石光钉
+    ctx.strokeStyle = lockFlash > 0.1 ? '#FFFFFF' : '#FDE68A';
+    ctx.lineWidth = 2.0 + lockFlash * 2.0;
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * TAU + Math.PI / 8;
+      const px = Math.cos(a) * (r + 1.8);
+      const py = Math.sin(a) * (r * 1.06 + 1.8);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.stroke();
+
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * TAU + Math.PI / 8;
+      const px = Math.cos(a) * r;
+      const py = Math.sin(a) * r * 1.06;
+      ctx.fillStyle = i % 2 === 0 ? '#FFFFFF' : '#FDE68A';
+      ctx.beginPath();
+      ctx.arc(px, py, 2.6, 0, TAU);
+      ctx.fill();
+    }
+
+    // 3) 斜向通透玻璃扫光带（裁剪在八边形内，清爽半透明）
+    ctx.save();
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * TAU + Math.PI / 8;
+      const px = Math.cos(a) * r;
+      const py = Math.sin(a) * r * 1.06;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.clip();
+    const sweepPos = -r * 1.6 + ((sh.age * 0.24) % (r * 3.4));
+    ctx.rotate(-0.55);
+    const sg = ctx.createLinearGradient(sweepPos - 16, 0, sweepPos + 16, 0);
+    sg.addColorStop(0, 'rgba(255,255,255,0)');
+    sg.addColorStop(0.5, `rgba(255,255,255,${0.32 + lockFlash * 0.28})`);
+    sg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = sg;
+    ctx.fillRect(sweepPos - 16, -r * 1.5, 32, r * 3);
+    ctx.restore();
+
+    // 4) 倾斜 3D 旋转冰晶微光环 + 3 枚公转钻石冰棱
+    for (let ringIdx = 0; ringIdx < (sh.ampTier >= 2 ? 2 : 1); ringIdx++) {
+      const tilt = ringIdx === 0 ? -0.26 : 0.30;
+      const orbR = r * (ringIdx === 0 ? 1.24 : 1.36);
+      const dir = ringIdx === 0 ? 1 : -1;
+      ctx.save();
+      ctx.rotate(tilt);
+      ctx.strokeStyle = ringIdx === 0 ? 'rgba(14,165,233,0.92)' : 'rgba(245,158,11,0.88)';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, orbR, orbR * 0.30, 0, 0, TAU);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 1.1;
+      ctx.setLineDash([12, 10]);
+      ctx.lineDashOffset = -sh.age * 0.09 * dir;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, orbR * 0.96, orbR * 0.28, 0, 0, TAU);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      for (let c = 0; c < 3; c++) {
+        const ca = rot * 2.4 * dir + (c / 3) * TAU;
+        const cx = Math.cos(ca) * orbR;
+        const cy = Math.sin(ca) * orbR * 0.30;
+        const depth = Math.sin(ca);
+        const csz = 6.8 + depth * 2.2;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.fillStyle = ringIdx === 0 ? '#1658EB' : '#D97706';
+        ctx.beginPath();
+        ctx.moveTo(0, -csz * 1.4);
+        ctx.lineTo(csz * 0.75, 0);
+        ctx.lineTo(0, csz * 1.4);
+        ctx.lineTo(-csz * 0.75, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = ringIdx === 0 ? '#BAE6FD' : '#FEF08A';
+        ctx.beginPath();
+        ctx.moveTo(0, -csz * 1.35);
+        ctx.lineTo(0, csz * 1.35);
+        ctx.lineTo(-csz * 0.7, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(0, -csz * 0.35, 1.9, 0, TAU);
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    // 5) 护幕落成闪光波纹（锐利外扩金蓝双环）
+    if (lockFlash > 0.02) {
+      const lp = clamp((sh.age - sh.lockAt) / 210, 0, 1);
+      const lr = r * (1.0 + lp * 0.58);
+      ctx.strokeStyle = '#F59E0B';
+      ctx.lineWidth = 4.2 * (1 - lp);
+      ctx.globalAlpha = clamp(lockFlash * 0.92, 0, 1);
+      ctx.beginPath();
+      ctx.arc(0, 0, lr, 0, TAU);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 2.0 * (1 - lp);
+      ctx.beginPath();
+      ctx.arc(0, 0, lr * 0.98, 0, TAU);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /* 凌厉清晰分层月牙刀光（严格分层：深天蓝外脊 -> 电光冰青刃体 -> 极细纯白锋芒，绝不糊白块！） */
+  function drawCrescentSlash(ctx, sl) {
+    const p = clamp(sl.age / sl.dur, 0, 1);
+    if (p <= 0 || p >= 1) return;
+
+    const sweepP = easeOutQuart(clamp(p / 0.30, 0, 1));
+    const tailP = easeInQuad(clamp((p - 0.16) / 0.84, 0, 1));
+    const alpha = p < 0.72 ? 1 : clamp((1 - p) / 0.28, 0, 1);
+    if (alpha <= 0.02) return;
+
+    const aHead = lerp(sl.startAngle, sl.endAngle, sweepP);
+    const aTail = lerp(sl.startAngle, sl.endAngle, tailP * 0.85);
+    if (Math.abs(aHead - aTail) < 0.03) return;
+
+    const segs = 28;
+    const thick = sl.thickness * (1 - tailP * 0.42);
+    const rx = sl.rx;
+    const ry = sl.ry;
+
+    function buildCrescentPoly(widthScale, radialOffset) {
+      const outer = [];
+      const inner = [];
+      for (let i = 0; i <= segs; i++) {
+        const u = i / segs;
+        const a = lerp(aTail, aHead, u);
+        const profile = Math.pow(Math.sin(u * Math.PI), 0.58) * (0.45 + 0.65 * u);
+        const w = thick * widthScale * profile;
+        const cosA = Math.cos(a);
+        const sinA = Math.sin(a);
+        outer.push({ x: cosA * (rx + radialOffset), y: sinA * (ry + radialOffset) });
+        inner.push({ x: cosA * Math.max(4, rx + radialOffset - w), y: sinA * Math.max(4, ry + radialOffset - w) });
+      }
+      ctx.beginPath();
+      ctx.moveTo(outer[0].x, outer[0].y);
+      for (let i = 1; i <= segs; i++) ctx.lineTo(outer[i].x, outer[i].y);
+      for (let i = segs; i >= 0; i--) ctx.lineTo(inner[i].x, inner[i].y);
+      ctx.closePath();
+    }
+
+    ctx.save();
+    ctx.translate(sl.x, sl.y);
+    ctx.rotate(sl.tilt);
+    ctx.globalAlpha = clamp(alpha, 0, 1);
+
+    // 第 1 层：饱和宝石皇家蓝/深天蓝刃影（明亮舞台极高锐度轮廓）
+    ctx.fillStyle = sl.outerColor;
+    buildCrescentPoly(1.22, 3.0);
+    ctx.fill();
+
+    // 第 2 层：明亮电光青/冰蓝主刃体
+    ctx.fillStyle = sl.midColor;
+    buildCrescentPoly(0.86, 1.2);
+    ctx.fill();
+
+    // 第 3 层：高亮水青/冰白内切光纹
+    ctx.fillStyle = sl.hiColor;
+    buildCrescentPoly(0.42, 0.5);
+    ctx.fill();
+
+    // 第 4 层：仅 2.4px 极细纯白锋芒刃缘（锐利不泛白糊块）
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = Math.max(2.0, thick * 0.13);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (let i = 0; i <= segs; i++) {
+      const u = i / segs;
+      const a = lerp(aTail, aHead, u);
+      const px = Math.cos(a) * rx;
+      const py = Math.sin(a) * ry;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    // 刀尖星芒闪耀
+    if (p < 0.60) {
+      const tipX = Math.cos(aHead) * rx;
+      const tipY = Math.sin(aHead) * ry;
+      drawStarFlare(ctx, tipX, tipY, 17 * (1 - p * 0.8), 0.20, 4, aHead, sl.midColor, '#FFFFFF', alpha);
+    }
+
+    ctx.restore();
+  }
+
+  /* 真实像素骨骼晶透翡翠青白残像缓存（自动读取 PIXEL_SPRITE_BANK.sylvia_silver 疾跑帧 [7,8,9]，缺失时平滑回退精致剪影） */
+  const _afterimageCache = new Map();
+  const _BANK_CHARS = '.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&()_+-=<>?[]{}|~';
+  const _BANK_LUT = (function () {
+    const lut = new Int8Array(128).fill(-1);
+    for (let i = 0; i < _BANK_CHARS.length; i++) {
+      const c = _BANK_CHARS.charCodeAt(i);
+      if (c < 128) lut[c] = i;
+    }
+    return lut;
+  })();
+
+  function getCrystalAfterimageCanvas(frameIdx) {
+    const bank = global.PIXEL_SPRITE_BANK;
+    const entry = bank && (bank.sylvia_silver || bank.sylvia_young || bank.sylvia_disguise);
+    if (!entry || !Array.isArray(entry.frames) || !entry.frames.length) return null;
+    const idx = clamp(frameIdx | 0, 0, entry.frames.length - 1);
+    const key = entry.id + ':' + idx;
+    if (_afterimageCache.has(key)) return _afterimageCache.get(key);
+
+    const w = entry.w | 0;
+    const h = entry.h | 0;
+    const cvs = document.createElement('canvas');
+    cvs.width = w;
+    cvs.height = h;
+    const c = cvs.getContext('2d');
+    const img = c.createImageData(w, h);
+    const rgba = img.data;
+    const palLum = entry.palette.map(hex => {
+      if (!hex || hex.length < 7) return -1;
+      const n = parseInt(hex.slice(1, 7), 16);
+      const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+      return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    });
+
+    // 5 阶晶透翡翠青白光影色带（深翠描边 -> 翡翠青 -> 薄荷青 -> 霜白高光）
+    const ramp = [
+      [4, 120, 87, 230],
+      [16, 185, 129, 215],
+      [52, 211, 153, 215],
+      [167, 243, 208, 225],
+      [242, 255, 252, 242]
+    ];
+
+    const rows = entry.frames[idx] || [];
+    for (let y = 0; y < h && y < rows.length; y++) {
+      const row = rows[y];
+      if (!row) continue;
+      let x = 0;
+      const rLen = row.length;
+      for (let i = 0; i < rLen && x < w; i++) {
+        const code = row.charCodeAt(i);
+        let rep = 1;
+        if (i + 1 < rLen && row.charCodeAt(i + 1) === 42) {
+          let j = i + 2, n = 0;
+          while (j < rLen) {
+            const d = row.charCodeAt(j) - 48;
+            if (d < 0 || d > 9) break;
+            n = n * 10 + d;
+            j++;
+          }
+          rep = n > 0 ? n : 1;
+          i = j - 1;
+        }
+        if (code === 46) { x += rep; continue; }
+        const pi = code < 128 ? _BANK_LUT[code] : -1;
+        const lum = pi > 0 ? palLum[pi] : -1;
+        if (lum < 0) { x += rep; continue; }
+        const col = ramp[Math.min(4, Math.max(0, Math.floor(lum * 4.8)))];
+        const endX = Math.min(w, x + rep);
+        for (; x < endX; x++) {
+          const off = (y * w + x) << 2;
+          rgba[off] = col[0];
+          rgba[off + 1] = col[1];
+          rgba[off + 2] = col[2];
+          rgba[off + 3] = col[3];
+        }
+      }
+    }
+    c.putImageData(img, 0, 0);
+    const res = { canvas: cvs, w, h, feet: (entry.anchors && entry.anchors.feet) || [w * 0.5, h - 4] };
+    _afterimageCache.set(key, res);
+    return res;
+  }
+
+  /* 三重晶透青白光影残像（优先真实像素精灵翡翠晶化疾驰帧，独立模式下优雅回退） */
+  function drawWindAfterimage(ctx, af) {
+    const p = clamp(af.age / af.dur, 0, 1);
+    const alpha = (1 - easeInQuad(p) * 0.82) * af.alpha;
+    if (alpha <= 0.02) return;
+
+    const spr = getCrystalAfterimageCanvas(af.frameIdx != null ? af.frameIdx : 8);
+    ctx.save();
+    ctx.translate(af.x, af.y);
+    ctx.globalAlpha = clamp(alpha, 0, 1);
+
+    // 背后清新翡翠疾风尾流扫线
+    for (let i = 0; i < 6; i++) {
+      const ly = -76 + i * 12;
+      const lw = 18 + (i % 3) * 11;
+      const ox = -24 - lw - p * 16;
+      ctx.fillStyle = i % 2 === 0 ? 'rgba(16,185,129,0.58)' : 'rgba(204,251,241,0.85)';
+      ctx.fillRect(ox, ly, lw, 2.2);
+    }
+
+    if (spr) {
+      const sc = af.scale * 0.88;
+      ctx.scale(af.facing, 1);
+      ctx.imageSmoothingEnabled = false;
+      const dw = spr.w * sc;
+      const dh = spr.h * sc;
+      const dx = -spr.feet[0] * sc;
+      const dy = -spr.feet[1] * sc;
+
+      // 淡翡翠微光底晕
+      const bg = ctx.createRadialGradient(0, -dh * 0.48, 6, 0, -dh * 0.48, dw * 0.46);
+      bg.addColorStop(0, 'rgba(52,211,153,0.34)');
+      bg.addColorStop(1, 'rgba(52,211,153,0)');
+      ctx.fillStyle = bg;
+      ctx.beginPath();
+      ctx.arc(0, -dh * 0.48, dw * 0.46, 0, TAU);
+      ctx.fill();
+
+      ctx.drawImage(spr.canvas, dx, dy, dw, dh);
+    } else {
+      // 独立运行兜底：修长优雅翡翠风灵剪影
+      const s = af.scale * 0.96;
+      ctx.scale(af.facing * s, s);
+      const grad = ctx.createLinearGradient(-18, -72, 22, -4);
+      grad.addColorStop(0, 'rgba(5,150,105,0.78)');
+      grad.addColorStop(0.55, 'rgba(52,211,153,0.82)');
+      grad.addColorStop(1, 'rgba(240,255,250,0.95)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(-24, -60);
+      ctx.quadraticCurveTo(-4, -76, 10, -68);
+      ctx.quadraticCurveTo(16, -60, 10, -48);
+      ctx.lineTo(28, -42);
+      ctx.lineTo(12, -36);
+      ctx.lineTo(20, -8);
+      ctx.lineTo(-14, -8);
+      ctx.lineTo(-22, -32);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  /* 霜域棘阵：高大晶亮多面英雄冰棘（叠加在 PixelFX ice_spikes 上，保证 3 敌全覆盖高耸体量） */
+  function drawHeroThorns(ctx, th) {
+    const p = clamp(th.age / th.dur, 0, 1);
+    const erupt = easeOutBack(clamp(th.age / 190, 0, 1));
+    const exit = th.age > th.dur - 260 ? clamp((th.dur - th.age) / 260, 0, 1) : 1;
+    const alpha = exit;
+    if (alpha <= 0.02) return;
+
+    ctx.save();
+    ctx.translate(th.x, th.y);
+    ctx.globalAlpha = clamp(alpha, 0, 1);
+
+    // 底部明亮冰环辉光
+    const gg = ctx.createRadialGradient(0, 0, 3, 0, 0, 38 * erupt);
+    gg.addColorStop(0, 'rgba(224,247,255,0.82)');
+    gg.addColorStop(0.55, 'rgba(56,189,248,0.45)');
+    gg.addColorStop(1, 'rgba(14,165,233,0)');
+    ctx.fillStyle = gg;
+    ctx.beginPath();
+    ctx.ellipse(0, 2, 38 * erupt, 12 * erupt, 0, 0, TAU);
+    ctx.fill();
+
+    // 逐根绘制多面冰棘（皇家蓝背阴面 + 电光冰蓝受光面 + 纯白棱脊）
+    for (let i = 0; i < th.spikes.length; i++) {
+      const sp = th.spikes[i];
+      const spErupt = easeOutBack(clamp((th.age - sp.delay) / 180, 0, 1));
+      if (spErupt <= 0.02) continue;
+      const h = sp.h * spErupt * (1 - clamp((p - 0.78) / 0.22, 0, 1) * 0.25);
+      const w = sp.w;
+      const tipX = sp.dx + sp.lean * spErupt;
+      const tipY = -h;
+      const baseL = sp.dx - w * 0.52;
+      const baseR = sp.dx + w * 0.52;
+      const midX = sp.dx - w * 0.1 + sp.lean * spErupt * 0.45;
+
+      // 左侧高亮晶面（冰白 -> 电光天蓝）
+      const leftG = ctx.createLinearGradient(tipX, tipY, baseL, 0);
+      leftG.addColorStop(0, '#FFFFFF');
+      leftG.addColorStop(0.35, th.goldAccent ? '#FEF9C3' : '#BAE6FD');
+      leftG.addColorStop(1, '#38BDF8');
+      ctx.fillStyle = leftG;
+      ctx.beginPath();
+      ctx.moveTo(tipX, tipY);
+      ctx.lineTo(baseL, 2);
+      ctx.lineTo(midX, 2);
+      ctx.closePath();
+      ctx.fill();
+
+      // 右侧宝石皇家蓝晶面（高对比度，绝不发黑）
+      const rightG = ctx.createLinearGradient(tipX, tipY, baseR, 0);
+      rightG.addColorStop(0, '#67E8F9');
+      rightG.addColorStop(0.42, '#0EA5E9');
+      rightG.addColorStop(1, '#1658EB');
+      ctx.fillStyle = rightG;
+      ctx.beginPath();
+      ctx.moveTo(tipX, tipY);
+      ctx.lineTo(midX, 2);
+      ctx.lineTo(baseR, 2);
+      ctx.closePath();
+      ctx.fill();
+
+      // 锐利宝石蓝描边 + 纯白中脊高光
+      ctx.strokeStyle = '#1E40AF';
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(baseL, 2);
+      ctx.lineTo(tipX, tipY);
+      ctx.lineTo(baseR, 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(tipX, tipY + 1);
+      ctx.lineTo(midX, 0);
+      ctx.stroke();
+
+      // 棘尖闪光星芒
+      if (th.age > sp.delay + 120 && th.age < th.dur - 240 && sp.primary) {
+        const tw = 0.65 + 0.35 * Math.sin(th.age * 0.02 + i * 1.9);
+        drawStarFlare(ctx, tipX, tipY, 10 * tw, 0.24, 4, th.age * 0.004, th.goldAccent ? '#FDE68A' : '#38BDF8', '#FFFFFF', alpha * tw);
+      }
+    }
+    ctx.restore();
+  }
+
+  /* 地面晶亮冰脉（从施法者脚下迅速蔓延至所有目标脚下） */
+  function drawIceVein(ctx, vein) {
+    const grow = easeOutCubic(clamp(vein.age / vein.growMs, 0, 1));
+    const exit = vein.age > vein.dur - 320 ? clamp((vein.dur - vein.age) / 320, 0, 1) : 1;
+    if (grow <= 0.01 || exit <= 0.01) return;
+
+    const pts = vein.pts;
+    const totalSegs = pts.length - 1;
+    const maxSeg = grow * totalSegs;
+
+    function tracePartial() {
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 0; i < totalSegs; i++) {
+        if (i + 1 <= maxSeg) {
+          ctx.lineTo(pts[i + 1].x, pts[i + 1].y);
+        } else if (i < maxSeg) {
+          const frac = maxSeg - i;
+          ctx.lineTo(lerp(pts[i].x, pts[i + 1].x, frac), lerp(pts[i].y, pts[i + 1].y, frac));
+          break;
+        }
+      }
+    }
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalAlpha = clamp(exit, 0, 1);
+
+    // 冰霜光晕底床
+    ctx.strokeStyle = 'rgba(56,189,248,0.48)';
+    ctx.lineWidth = vein.width * 3.1;
+    tracePartial();
+    ctx.stroke();
+
+    // 宝石皇家蓝冰裂外缘
+    ctx.strokeStyle = '#1658EB';
+    ctx.lineWidth = vein.width * 1.7;
+    tracePartial();
+    ctx.stroke();
+
+    // 明亮电光青冰脉芯
+    ctx.strokeStyle = '#67E8F9';
+    ctx.lineWidth = vein.width;
+    tracePartial();
+    ctx.stroke();
+
+    // 纯白寒芒裂纹
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = Math.max(1.2, vein.width * 0.42);
+    tracePartial();
+    ctx.stroke();
+
+    // 冰脉沿线晶芽分支
+    for (let b = 0; b < vein.spurs.length; b++) {
+      const sp = vein.spurs[b];
+      if (grow < sp.at) continue;
+      const spP = easeOutCubic(clamp((grow - sp.at) / 0.14, 0, 1));
+      ctx.strokeStyle = '#0EA5E9';
+      ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      ctx.moveTo(sp.x, sp.y);
+      ctx.lineTo(sp.x + sp.dx * spP, sp.y + sp.dy * spP);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#E0F7FF';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(sp.x, sp.y);
+      ctx.lineTo(sp.x + sp.dx * spP, sp.y + sp.dy * spP);
+      ctx.stroke();
+    }
+
+    // 冰脉前端疾驰星火
+    if (grow < 0.99) {
+      const idx = Math.min(totalSegs - 1, Math.floor(maxSeg));
+      const frac = maxSeg - idx;
+      const hx = lerp(pts[idx].x, pts[idx + 1].x, frac);
+      const hy = lerp(pts[idx].y, pts[idx + 1].y, frac);
+      drawStarFlare(ctx, hx, hy, 12, 0.28, 4, vein.age * 0.02, '#38BDF8', '#FFFFFF', 1);
+    }
+
+    ctx.restore();
+  }
+
+  /* 高空倾斜落下的明亮星霜冰柱/光雨（星霜散华专属） */
+  function drawSkyIcicleBeam(ctx, bm) {
+    const p = clamp(bm.age / bm.dur, 0, 1);
+    if (p <= 0 || p >= 1) return;
+
+    const fallP = easeInQuad(clamp(p / 0.48, 0, 1));
+    const fade = p < 0.48 ? 1 : clamp(1 - (p - 0.48) / 0.52, 0, 1);
+
+    const headX = lerp(bm.x0, bm.x1, fallP);
+    const headY = lerp(bm.y0, bm.y1, fallP);
+    const tailFrac = Math.max(0, fallP - 0.45);
+    const tailX = lerp(bm.x0, bm.x1, tailFrac);
+    const tailY = lerp(bm.y0, bm.y1, tailFrac);
+
+    ctx.save();
+    ctx.globalAlpha = clamp(fade, 0, 1);
+    ctx.lineCap = 'round';
+
+    // 明亮天蓝光柱外辉
+    const g = ctx.createLinearGradient(tailX, tailY, headX, headY);
+    g.addColorStop(0, 'rgba(56,189,248,0)');
+    g.addColorStop(0.55, bm.gold ? 'rgba(253,230,138,0.75)' : 'rgba(56,189,248,0.72)');
+    g.addColorStop(1, bm.gold ? '#FDE68A' : '#67E8F9');
+    ctx.strokeStyle = g;
+    ctx.lineWidth = bm.width * 2.4;
+    ctx.beginPath();
+    ctx.moveTo(tailX, tailY);
+    ctx.lineTo(headX, headY);
+    ctx.stroke();
+
+    // 宝石皇家蓝晶柱边缘
+    ctx.strokeStyle = bm.gold ? '#F59E0B' : '#1658EB';
+    ctx.lineWidth = bm.width * 1.15;
+    ctx.beginPath();
+    ctx.moveTo(lerp(tailX, headX, 0.25), lerp(tailY, headY, 0.25));
+    ctx.lineTo(headX, headY);
+    ctx.stroke();
+
+    // 纯白星霜棱芯
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = Math.max(1.8, bm.width * 0.48);
+    ctx.beginPath();
+    ctx.moveTo(lerp(tailX, headX, 0.35), lerp(tailY, headY, 0.35));
+    ctx.lineTo(headX, headY);
+    ctx.stroke();
+
+    // 冰枪尖端锐利菱形晶体头
+    if (p < 0.58) {
+      const ang = Math.atan2(bm.y1 - bm.y0, bm.x1 - bm.x0);
+      ctx.save();
+      ctx.translate(headX, headY);
+      ctx.rotate(ang);
+      ctx.fillStyle = '#0EA5E9';
+      ctx.beginPath();
+      ctx.moveTo(14, 0);
+      ctx.lineTo(-4, -5.5);
+      ctx.lineTo(-14, 0);
+      ctx.lineTo(-4, 5.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath();
+      ctx.moveTo(12, 0);
+      ctx.lineTo(-3, -2.8);
+      ctx.lineTo(-9, 0);
+      ctx.lineTo(-3, 2.8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // 落地晶星爆发
+    if (p >= 0.46) {
+      const ip = clamp((p - 0.46) / 0.54, 0, 1);
+      const ir = 10 + easeOutCubic(ip) * 28;
+      ctx.strokeStyle = bm.gold ? '#FDE68A' : '#38BDF8';
+      ctx.lineWidth = 2.6 * (1 - ip);
+      ctx.beginPath();
+      ctx.ellipse(bm.x1, bm.y1, ir, ir * 0.32, 0, 0, TAU);
+      ctx.stroke();
+      drawStarFlare(ctx, bm.x1, bm.y1 - 4, 18 * (1 - ip * 0.8), 0.22, 4, ip * 1.2, bm.gold ? '#FDE68A' : '#38BDF8', '#FFFFFF', 1 - ip);
+    }
+
+    ctx.restore();
+  }
+
+  /* 连续流光轨迹/丝带（彻底消灭弹道与起手/爆裂之间的断档！） */
+  function drawLuminousRibbon(ctx, rb) {
+    const pts = rb.pts;
+    if (pts.length < 2) return;
+    const fade = rb.age > rb.dur - rb.fadeOut ? clamp((rb.dur - rb.age) / rb.fadeOut, 0, 1) : 1;
+    if (fade <= 0.01) return;
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalAlpha = clamp(fade * rb.alpha, 0, 1);
+
+    for (let i = 1; i < pts.length; i++) {
+      const u = i / (pts.length - 1);
+      const p0 = pts[i - 1];
+      const p1 = pts[i];
+      const w = rb.width * (0.22 + 0.78 * Math.sin(u * Math.PI * 0.85));
+
+      ctx.strokeStyle = rb.outerColor;
+      ctx.lineWidth = w * 2.1;
+      ctx.globalAlpha = clamp(fade * rb.alpha * 0.36 * u, 0, 1);
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p1.x, p1.y);
+      ctx.stroke();
+
+      ctx.strokeStyle = rb.midColor;
+      ctx.lineWidth = w;
+      ctx.globalAlpha = clamp(fade * rb.alpha * 0.92 * u, 0, 1);
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p1.x, p1.y);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = Math.max(1.2, w * 0.38);
+      ctx.globalAlpha = clamp(fade * rb.alpha * u, 0, 1);
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p1.x, p1.y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /* 激流涌清透高压水柱增亮光束层（与 PixelFX water_jet 精准重合，胸口直击绝不偏移） */
+  function drawWaterStreamOverlay(ctx, ws) {
+    const p = clamp(ws.age / ws.dur, 0, 1);
+    const grow = easeOutCubic(clamp(ws.age / ws.extendMs, 0, 1));
+    const fade = ws.age > ws.dur - 190 ? clamp((ws.dur - ws.age) / 190, 0, 1) : 1;
+    if (grow <= 0.02 || fade <= 0.02) return;
+
+    const dx = ws.x1 - ws.x0;
+    const dy = ws.y1 - ws.y0;
+    const dist = Math.hypot(dx, dy) || 1;
+    const ang = Math.atan2(dy, dx);
+    const len = dist * grow;
+    const w = ws.width * (0.85 + 0.15 * Math.sin(ws.age * 0.045));
+
+    ctx.save();
+    ctx.translate(ws.x0, ws.y0);
+    ctx.rotate(ang);
+    ctx.globalAlpha = clamp(fade, 0, 1);
+
+    // 外层透明碧蓝水压包裹
+    const g = ctx.createLinearGradient(0, -w, 0, w);
+    g.addColorStop(0, 'rgba(3,105,161,0.0)');
+    g.addColorStop(0.2, 'rgba(14,165,233,0.58)');
+    g.addColorStop(0.5, 'rgba(103,232,249,0.82)');
+    g.addColorStop(0.8, 'rgba(14,165,233,0.58)');
+    g.addColorStop(1, 'rgba(3,105,161,0.0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, -w, len, w * 2);
+
+    // 螺旋水流丝带（丝滑高速流动感）
+    ctx.lineWidth = 2.6;
+    ctx.strokeStyle = 'rgba(224,249,255,0.88)';
+    for (let strand = 0; strand < 2; strand++) {
+      ctx.beginPath();
+      const ph = strand * Math.PI - ws.age * 0.026;
+      for (let x = 0; x <= len; x += 8) {
+        const y = Math.sin(x * 0.055 + ph) * (w * 0.62);
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    // 细纯白高压水芯
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.fillRect(0, -w * 0.19, len, w * 0.38);
+
+    // 喷口与命中点水压环
+    for (let rIdx = 0; rIdx < 3; rIdx++) {
+      const rp = ((ws.age * 0.0045 + rIdx / 3) % 1);
+      const rx = rp * len;
+      ctx.strokeStyle = rp > 0.7 ? '#FFFFFF' : '#67E8F9';
+      ctx.lineWidth = 2.0 * (1 - rp * 0.4);
+      ctx.beginPath();
+      ctx.ellipse(rx, 0, 5, w * (0.85 + rp * 0.35), 0, 0, TAU);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  /* 粒子绘制（全部高饱和通透晶亮，零暗灰尘） */
+  function drawParticle(ctx, pt) {
+    const lifeRatio = clamp(pt.life / pt.maxLife, 0, 1);
+    const alpha = Math.min(1, lifeRatio * 2.4) * pt.alpha;
+    if (alpha <= 0.02) return;
+
+    ctx.save();
+    ctx.translate(pt.x, pt.y);
+    ctx.globalAlpha = clamp(alpha, 0, 1);
+
+    if (pt.kind === 'shard') {
+      // 多面亮冰晶碎片（双色棱面 + 纯白高光点）
+      ctx.rotate(pt.rot);
+      const s = pt.size;
+      ctx.fillStyle = pt.color2 || '#1658EB';
+      ctx.beginPath();
+      ctx.moveTo(s * 1.4, 0);
+      ctx.lineTo(0, -s * 0.68);
+      ctx.lineTo(-s * 1.2, 0);
+      ctx.lineTo(0, s * 0.68);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = pt.color;
+      ctx.beginPath();
+      ctx.moveTo(s * 1.4, 0);
+      ctx.lineTo(0, -s * 0.68);
+      ctx.lineTo(-s * 1.2, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(-s * 0.15, -s * 0.35, Math.max(1.5, s * 0.55), Math.max(1.2, s * 0.25));
+    } else if (pt.kind === 'drop') {
+      // 晶亮飞溅水珠（水滴泪形 + 白色反光点）
+      const ang = Math.atan2(pt.vy, pt.vx);
+      ctx.rotate(ang);
+      const s = pt.size;
+      ctx.fillStyle = pt.color2 || '#0284C7';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s * 1.5, s * 0.78, 0, 0, TAU);
+      ctx.fill();
+      ctx.fillStyle = pt.color;
+      ctx.beginPath();
+      ctx.ellipse(s * 0.15, -s * 0.1, s * 1.15, s * 0.52, 0, 0, TAU);
+      ctx.fill();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath();
+      ctx.arc(s * 0.45, -s * 0.2, Math.max(1, s * 0.28), 0, TAU);
+      ctx.fill();
+    } else if (pt.kind === 'snow') {
+      // 清晰六角晶雪花
+      ctx.rotate(pt.rot);
+      const s = pt.size;
+      ctx.strokeStyle = pt.color2 || '#38BDF8';
+      ctx.lineWidth = 1.9;
+      for (let i = 0; i < 3; i++) {
+        const a = (i * Math.PI) / 3;
+        ctx.beginPath();
+        ctx.moveTo(-Math.cos(a) * s, -Math.sin(a) * s);
+        ctx.lineTo(Math.cos(a) * s, Math.sin(a) * s);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 1.0;
+      for (let i = 0; i < 3; i++) {
+        const a = (i * Math.PI) / 3;
+        ctx.beginPath();
+        ctx.moveTo(-Math.cos(a) * s * 0.85, -Math.sin(a) * s * 0.85);
+        ctx.lineTo(Math.cos(a) * s * 0.85, Math.sin(a) * s * 0.85);
+        ctx.stroke();
+      }
+    } else if (pt.kind === 'leaf') {
+      // 明亮翡翠风叶（3D 翻滚感）
+      ctx.rotate(pt.rot);
+      const flip = Math.cos(pt.age * 0.011 + pt.seed);
+      ctx.scale(1, 0.35 + 0.65 * Math.abs(flip));
+      const s = pt.size;
+      ctx.fillStyle = pt.color2 || '#059669';
+      ctx.beginPath();
+      ctx.moveTo(s * 1.45, 0);
+      ctx.quadraticCurveTo(0, -s * 0.85, -s * 1.35, 0);
+      ctx.quadraticCurveTo(0, s * 0.85, s * 1.45, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = pt.color;
+      ctx.beginPath();
+      ctx.moveTo(s * 1.3, 0);
+      ctx.quadraticCurveTo(0, -s * 0.55, -s * 1.1, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.moveTo(-s * 1.0, 0);
+      ctx.lineTo(s * 1.1, 0);
+      ctx.stroke();
+    } else if (pt.kind === 'spark') {
+      // 高速电光针芒
+      const ang = Math.atan2(pt.vy, pt.vx);
+      const spd = Math.hypot(pt.vx, pt.vy);
+      const len = clamp(pt.size * 2.2 + spd * 0.025, 5, 24);
+      ctx.rotate(ang);
+      ctx.strokeStyle = pt.color;
+      ctx.lineWidth = pt.size * 0.9;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-len, 0);
+      ctx.lineTo(2, 0);
+      ctx.stroke();
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = Math.max(1, pt.size * 0.42);
+      ctx.beginPath();
+      ctx.moveTo(-len * 0.55, 0);
+      ctx.lineTo(2, 0);
+      ctx.stroke();
+    } else {
+      // 'star' / 'mote': 璀璨菱形微星
+      const tw = 0.72 + 0.28 * Math.sin(pt.age * 0.024 + pt.seed);
+      const s = pt.size * tw;
+      ctx.fillStyle = pt.color;
+      ctx.beginPath();
+      ctx.moveTo(0, -s * 1.4);
+      ctx.lineTo(s * 0.55, -s * 0.55);
+      ctx.lineTo(s * 1.4, 0);
+      ctx.lineTo(s * 0.55, s * 0.55);
+      ctx.lineTo(0, s * 1.4);
+      ctx.lineTo(-s * 0.55, s * 0.55);
+      ctx.lineTo(-s * 1.4, 0);
+      ctx.lineTo(-s * 0.55, -s * 0.55);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath();
+      ctx.arc(0, 0, Math.max(1, s * 0.42), 0, TAU);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /* -------------------- 实例化引擎工厂 create(canvas, config) -------------------- */
+  function create(canvas, config) {
+    if (!canvas) throw new Error('VfxEditionA.create(canvas) requires a valid canvas element');
+    const cfg = config || {};
+    const autoClear = cfg.autoClear !== false;
+    const ctx = canvas.getContext('2d', { alpha: true });
+
+    let _seedSeq = 101;
+    const nextSeed = () => { _seedSeq = (_seedSeq * 1664525 + 1013904223) >>> 0; return (_seedSeq % 9999) + 1; };
+
+    const state = {
+      timeMs: 0,
+      timelines: [],
+      pfxSlots: [],
+      magicCircles: [],
+      ribbons: [],
+      waterStreams: [],
+      iceVeins: [],
+      heroThorns: [],
+      shields: [],
+      slashes: [],
+      skyBeams: [],
+      afterimages: [],
+      lightningArcs: [],
+      starFlares: [],
+      shockRings: [],
+      particles: [],
+      flashes: []
+    };
+
+    /* --- 池添加辅助 --- */
+    function spawnPfx(fxName, opts, cfgSlot) {
+      const PFX = getPixelFX();
+      if (!PFX || !PFX.FX || !PFX.FX[fxName]) return null;
+      const def = PFX.FX[fxName];
+      const c = cfgSlot || {};
+      const b = PFX_BOUNDS[fxName] || { w: 160, h: 120, ox: -80, oy: -80 };
+
+      // 48 并发槽位保护：仅超 48 时回收最早结束槽
+      if (state.pfxSlots.length >= MAX_PFX_SLOTS) {
+        state.pfxSlots.shift();
+      }
+
+      const instOpts = Object.assign({ seed: nextSeed() }, opts || {}, { x: 0, y: 0 });
+      let inst = null;
+      try {
+        inst = PFX.createFx(def, instOpts);
+      } catch (e) {
+        return null;
+      }
+
+      // 相位预热（精准跳过旧版僵立前摇，命中即炸裂/起浪/盛放！）
+      const preWarm = c.preWarmSec || 0;
+      if (preWarm > 0) {
+        const step = 0.025;
+        let rem = preWarm;
+        while (rem > 1e-4) {
+          const d = rem > step ? step : rem;
+          inst.update(d);
+          rem -= d;
+        }
+      }
+
+      const slot = {
+        fxName,
+        inst,
+        layer: c.layer || 'main',
+        bufW: c.bufW || b.w,
+        bufH: c.bufH || b.h,
+        ox: c.ox != null ? c.ox : b.ox,
+        oy: c.oy != null ? c.oy : b.oy,
+        x: c.x || 0,
+        y: c.y || 0,
+        scale: c.scale || 1.5,
+        angle: c.angle || 0,
+        flipX: !!c.flipX,
+        timeScale: c.timeScale || 1.0,
+        alpha: c.alpha != null ? c.alpha : 1.0,
+        lightGain: c.lightGain != null ? c.lightGain : 1.15,
+        glowColor: c.glowColor || null,
+        glowRadius: c.glowRadius || 0,
+        glowAlpha: c.glowAlpha || 0,
+        clipRight: c.clipRight != null ? c.clipRight : 1.0,
+        age: 0,
+        dur: c.durMs || 900,
+        fadeIn: c.fadeInMs != null ? c.fadeInMs : 40,
+        fadeOut: c.fadeOutMs != null ? c.fadeOutMs : 180,
+        onUpdate: c.onUpdate || null
+      };
+      state.pfxSlots.push(slot);
+      return slot;
+    }
+
+    function addParticle(p) {
+      if (state.particles.length >= MAX_PARTICLES) {
+        state.particles.shift();
+      }
+      state.particles.push(Object.assign({
+        kind: 'star',
+        x: 0, y: 0, vx: 0, vy: 0,
+        gravity: 0, drag: 1.5,
+        size: 4, rot: 0, vrot: 0,
+        color: '#38BDF8', color2: '#1658EB',
+        alpha: 1, life: 500, maxLife: 500,
+        age: 0, groundY: 9999, bounce: 0,
+        seed: Math.random() * 100
+      }, p, { maxLife: p.life || 500 }));
+    }
+
+    function addShockRing(r) {
+      state.shockRings.push(Object.assign({
+        x: 0, y: 0, r0: 8, r1: 72, sy: 0.34,
+        color: '#38BDF8', coreColor: '#FFFFFF',
+        lineW: 4, age: 0, dur: 380, layer: 'back'
+      }, r));
+    }
+
+    function addStarFlare(f) {
+      state.starFlares.push(Object.assign({
+        x: 0, y: 0, r0: 6, r1: 36, inner: 0.22,
+        points: 4, rot: 0, vrot: 0.003,
+        outerColor: '#38BDF8', coreColor: '#FFFFFF',
+        alpha: 1, age: 0, dur: 320
+      }, f));
+    }
+
+    function addLightning(x0, y0, x1, y1, opts) {
+      const o = opts || {};
+      const rng = makeRng(nextSeed());
+      const pts = buildLightningPoints(x0, y0, x1, y1, o.jitter || 14, o.depth || 4, rng);
+      const branches = [];
+      const bCount = o.branches != null ? o.branches : 2;
+      for (let i = 0; i < bCount; i++) {
+        const idx = Math.max(1, Math.min(pts.length - 2, Math.floor(pts.length * (0.28 + i * 0.26))));
+        const st = pts[idx];
+        const bx = st.x + (rng() - 0.5) * 48;
+        const by = st.y + (rng() - 0.5) * 38;
+        branches.push(buildLightningPoints(st.x, st.y, bx, by, 7, 3, rng));
+      }
+      state.lightningArcs.push({
+        pts,
+        branches,
+        outerColor: o.outerColor || '#1658EB',
+        midColor: o.midColor || '#67E8F9',
+        width: o.width || 2.2,
+        age: 0,
+        dur: o.dur || 230
+      });
+    }
+
+    function addMagicCircle(mc) {
+      state.magicCircles.push(Object.assign({
+        x: 0, y: 0, radius: 42, sy: 0.34,
+        rot: 0, vrot: 0.0022,
+        rimColor: '#0EA5E9', runeColor: '#E0F7FF', starColor: '#38BDF8',
+        innerGlow: 'rgba(224,247,255,0.65)', outerGlow: 'rgba(14,165,233,0.28)',
+        lineW: 2.2, alpha: 0.95, goldTriple: false,
+        age: 0, dur: 520, fadeIn: 130, fadeOut: 180, layer: 'back'
+      }, mc));
+    }
+
+    function addFlash(x, y, r, color, dur, alpha) {
+      state.flashes.push({
+        x, y, r, color: color || '#38BDF8',
+        age: 0, dur: dur || 180, alpha: alpha != null ? alpha : 0.62
+      });
+    }
+
+    function spawnBurstParticles(x, y, count, kind, opts) {
+      const o = opts || {};
+      const rng = makeRng(nextSeed());
+      for (let i = 0; i < count; i++) {
+        const a = o.angleBase != null
+          ? o.angleBase + (rng() - 0.5) * (o.spread || 1.2)
+          : rng() * TAU;
+        const spd = lerp(o.spdMin || 65, o.spdMax || 240, rng());
+        addParticle({
+          kind,
+          x: x + (rng() - 0.5) * (o.jitter || 10),
+          y: y + (rng() - 0.5) * (o.jitter || 10),
+          vx: Math.cos(a) * spd,
+          vy: Math.sin(a) * spd - (o.upBias || 30),
+          gravity: o.gravity != null ? o.gravity : (kind === 'snow' || kind === 'mote' ? 28 : 340),
+          drag: o.drag != null ? o.drag : 1.3,
+          size: lerp(o.sizeMin || 3, o.sizeMax || 6.5, rng()),
+          rot: rng() * TAU,
+          vrot: (rng() - 0.5) * 10,
+          color: o.colors ? o.colors[Math.floor(rng() * o.colors.length)] : '#67E8F9',
+          color2: o.color2 || '#1658EB',
+          life: lerp(o.lifeMin || 360, o.lifeMax || 720, rng()),
+          groundY: o.groundY != null ? o.groundY : 9999,
+          bounce: o.bounce != null ? o.bounce : 0.35
+        });
+      }
+    }
+
+    /* --- 魔力增幅（ampTier 0..3）统一炫彩升级钩子 --- */
+    function triggerAmpCastAura(x, groundY, ampTier, isEmerald) {
+      if (ampTier <= 0) return;
+      addMagicCircle({
+        x, y: groundY + 2,
+        radius: 38 + ampTier * 8,
+        sy: 0.32,
+        rimColor: ampTier >= 3 ? '#F59E0B' : (isEmerald ? '#10B981' : '#0EA5E9'),
+        starColor: ampTier >= 3 ? '#FDE68A' : (isEmerald ? '#34D399' : '#38BDF8'),
+        runeColor: '#FFFFFF',
+        goldTriple: ampTier >= 3,
+        dur: 460 + ampTier * 60
+      });
+      if (ampTier >= 2) {
+        for (let i = 0; i < (ampTier === 3 ? 3 : 2); i++) {
+          const ang = -Math.PI * 0.8 + i * 0.75;
+          addLightning(
+            x + Math.cos(ang) * 26, groundY - 22,
+            x + Math.cos(ang + 1.2) * 34, groundY - 68,
+            {
+              outerColor: ampTier === 3 ? '#D97706' : '#1658EB',
+              midColor: ampTier === 3 ? '#FDE68A' : '#67E8F9',
+              width: ampTier === 3 ? 2.4 : 1.7,
+              dur: 210
+            }
+          );
+        }
+      }
+    }
+
+    function triggerAmpImpactUpgrade(x, y, groundY, ampTier) {
+      if (ampTier <= 0) return;
+      // 1~3 阶统一附加晶环与星爆
+      addShockRing({
+        x, y: groundY + 2,
+        r0: 14, r1: 68 + ampTier * 22, sy: 0.30,
+        color: ampTier >= 3 ? '#F59E0B' : '#0EA5E9',
+        coreColor: ampTier >= 3 ? '#FEF9C3' : '#FFFFFF',
+        lineW: 3.2 + ampTier * 0.8,
+        dur: 400 + ampTier * 50
+      });
+
+      if (ampTier >= 2) {
+        const boltCount = ampTier === 3 ? 5 : 2;
+        for (let i = 0; i < boltCount; i++) {
+          const a = (i / boltCount) * TAU + 0.35;
+          const dist = 48 + ampTier * 16;
+          addLightning(x, y, x + Math.cos(a) * dist, y + Math.sin(a) * dist * 0.72, {
+            outerColor: ampTier === 3 ? '#D97706' : '#1658EB',
+            midColor: ampTier === 3 ? '#FDE68A' : '#67E8F9',
+            width: ampTier === 3 ? 2.6 : 1.9,
+            dur: 260,
+            branches: ampTier === 3 ? 3 : 1
+          });
+        }
+      }
+
+      if (ampTier === 3) {
+        // ★★★三阶·星霜极限：香槟金三环 + 璀璨星爆 + 冰雷金雨
+        addMagicCircle({
+          x, y: groundY + 2,
+          radius: 58, sy: 0.31,
+          rimColor: '#F59E0B', starColor: '#FDE68A', runeColor: '#FFFFFF',
+          innerGlow: 'rgba(254,249,195,0.68)', outerGlow: 'rgba(245,158,11,0.32)',
+          goldTriple: true,
+          dur: 640, fadeIn: 90, fadeOut: 220
+        });
+        spawnPfx('crit_hit', {
+          palette: PALETTES.gold,
+          height: 24,
+          aim: 0.1
+        }, {
+          x, y: y + 32, scale: 1.55, durMs: 560, layer: 'front',
+          glowColor: 'rgba(253,230,138,0.55)', glowRadius: 56, glowAlpha: 0.55
+        });
+        addStarFlare({
+          x, y, r0: 12, r1: 62, inner: 0.20, points: 8,
+          outerColor: '#FDE68A', coreColor: '#FFFFFF', dur: 420
+        });
+        spawnBurstParticles(x, y, 22, 'star', {
+          spdMin: 80, spdMax: 240, sizeMin: 3.5, sizeMax: 7.5,
+          colors: ['#FDE68A', '#FCD34D', '#67E8F9', '#FFFFFF'],
+          gravity: 110, lifeMin: 420, lifeMax: 760
+        });
+      }
+    }
+
+    function scheduleTimeline(cues) {
+      const tl = {
+        age: 0,
+        cues: cues.map(c => ({ at: c.at || 0, fn: c.fn, fired: false })),
+        done: false
+      };
+      // 立即执行 at === 0 的起手动作
+      for (let i = 0; i < tl.cues.length; i++) {
+        if (tl.cues[i].at <= 0) {
+          tl.cues[i].fired = true;
+          tl.cues[i].fn();
+        }
+      }
+      state.timelines.push(tl);
+    }
+
+    function safeCall(fn, ...args) {
+      if (typeof fn === 'function') {
+        try { fn(...args); } catch (e) {}
+      }
+    }
+
+    /* ============================================================================
+       9 大核心招式无缝四段编排
+       ============================================================================ */
+    function play(skillId, opts) {
+      const o = opts || {};
+      const groundY = Number.isFinite(o.groundY) ? o.groundY : 286;
+      const from = o.from ? { x: o.from.x, y: o.from.y } : { x: 158, y: 216 };
+      const to = o.to ? { x: o.to.x, y: o.to.y } : { x: 472, y: 218 };
+      const amp = clamp(Math.round(o.ampTier || 0), 0, 3);
+      const ampScale = 1 + amp * 0.095;
+      const targets = Array.isArray(o.targets) && o.targets.length
+        ? o.targets.map(t => ({
+            x: t.x,
+            y: t.y,
+            groundY: Number.isFinite(t.groundY) ? t.groundY : (Number.isFinite(t.footY) ? t.footY : groundY)
+          }))
+        : [
+            { x: 410, y: 210, groundY: groundY - 12 },
+            { x: 486, y: 222, groundY: groundY },
+            { x: 560, y: 234, groundY: groundY + 10 }
+          ];
+      const targetGroundY = Number.isFinite(o.targetGroundY) ? o.targetGroundY : groundY;
+      const icePal = amp >= 3 ? PALETTES.iceGold : PALETTES.ice;
+
+      /* ---------- 1. 冰晶术 (ice_crystal) ---------- */
+      if (skillId === 'ice_crystal') {
+        const travelMs = 200;
+        scheduleTimeline([
+          {
+            at: 0,
+            fn() {
+              // Stage 1: 明亮聚能魔法阵 + 悬空棱晶核心
+              spawnPfx('magic_circle_cast', { palette: icePal }, {
+                x: from.x - 16, y: groundY + 2, scale: 1.2 * ampScale,
+                preWarmSec: 0.92, timeScale: 2.1, durMs: 420, layer: 'back',
+                glowColor: 'rgba(56,189,248,0.45)', glowRadius: 48, glowAlpha: 0.45
+              });
+              addMagicCircle({
+                x: from.x - 16, y: groundY + 2, radius: 42 * ampScale, sy: 0.32,
+                goldTriple: amp >= 3, dur: 460
+              });
+              spawnPfx('ice_crystal', { palette: icePal, height: 30 }, {
+                x: from.x + 8, y: from.y + 34, scale: 1.25 * ampScale,
+                durMs: 260, fadeOutMs: 80, layer: 'front'
+              });
+              addStarFlare({
+                x: from.x + 8, y: from.y, r0: 4, r1: 28 * ampScale,
+                outerColor: '#38BDF8', coreColor: '#FFFFFF', dur: 240
+              });
+              triggerAmpCastAura(from.x - 16, groundY, amp, false);
+              spawnBurstParticles(from.x + 8, from.y, 12, 'star', {
+                spdMin: 25, spdMax: 85, colors: ['#E0F7FF', '#67E8F9', '#38BDF8'],
+                gravity: -20, lifeMin: 220, lifeMax: 380
+              });
+            }
+          },
+          {
+            at: 165,
+            fn() {
+              // Stage 2: 平滑高速电光冰枪疾射 + 连续晶尘流光尾迹（与起手无缝重叠 45ms）
+              const dx = to.x - from.x;
+              const dy = to.y - from.y;
+              const ang = Math.atan2(dy, dx);
+              const ribbon = {
+                pts: [{ x: from.x + 6, y: from.y }],
+                width: 9 * ampScale,
+                outerColor: '#1658EB',
+                midColor: '#38BDF8',
+                alpha: 0.92,
+                age: 0,
+                dur: 420,
+                fadeOut: 220
+              };
+              state.ribbons.push(ribbon);
+
+              spawnPfx('ice_lance', { palette: icePal, length: 54 }, {
+                x: from.x + 6, y: from.y,
+                angle: ang,
+                scale: 1.62 * ampScale,
+                timeScale: 1.4,
+                durMs: travelMs + 70,
+                fadeInMs: 25,
+                fadeOutMs: 60,
+                layer: 'front',
+                glowColor: 'rgba(56,189,248,0.55)', glowRadius: 36, glowAlpha: 0.5,
+                onUpdate(slot, dtSec, age) {
+                  const p = easeOutCubic(clamp(age / travelMs, 0, 1));
+                  slot.x = lerp(from.x + 6, to.x, p);
+                  slot.y = lerp(from.y, to.y, p);
+                  if (p < 1) {
+                    ribbon.pts.push({ x: slot.x, y: slot.y });
+                    if (ribbon.pts.length > 20) ribbon.pts.shift();
+                    addParticle({
+                      kind: Math.random() < 0.55 ? 'shard' : 'star',
+                      x: slot.x - Math.cos(ang) * 14 + (Math.random() - 0.5) * 12,
+                      y: slot.y - Math.sin(ang) * 14 + (Math.random() - 0.5) * 12,
+                      vx: -Math.cos(ang) * 55 + (Math.random() - 0.5) * 40,
+                      vy: -Math.sin(ang) * 55 + (Math.random() - 0.5) * 40,
+                      size: 3 + Math.random() * 3.2,
+                      color: Math.random() < 0.35 ? '#FFFFFF' : '#67E8F9',
+                      color2: '#1658EB',
+                      life: 240 + Math.random() * 180
+                    });
+                  }
+                }
+              });
+
+              addShockRing({
+                x: from.x + 12, y: from.y, r0: 6, r1: 30, sy: 0.85,
+                color: '#67E8F9', coreColor: '#FFFFFF', lineW: 3, dur: 200, layer: 'front'
+              });
+            }
+          },
+          {
+            at: 365,
+            fn() {
+              // Stage 3: 命中明亮裂纹晶块 -> 立刻开裂并在 140ms 后彻底崩裂化为漫天翻滚晶亮碎片（绝不僵立！）
+              safeCall(o.onImpact, 0, to, true);
+              safeCall(o.onShake, 6.5 + amp * 2.2, 240);
+              safeCall(o.onHitStop, 50 + amp * 14);
+
+              // 原版 ice_shatter 精准预热 0.42s + 1.65x 倍速：
+              // 365~500ms 明亮电光蓝晶块剧震裂纹蔓延，510ms 耀眼白闪彻底爆碎成漫天翻滚弹跳冰块！
+              spawnPfx('ice_shatter', { palette: icePal }, {
+                x: to.x, y: targetGroundY - 2,
+                scale: 1.98 * ampScale,
+                preWarmSec: 0.42,
+                timeScale: 1.68,
+                durMs: 840,
+                fadeInMs: 12,
+                fadeOutMs: 220,
+                layer: 'main',
+                glowColor: 'rgba(56,189,248,0.46)', glowRadius: 62 * ampScale, glowAlpha: 0.42
+              });
+
+              spawnPfx('hit_spark', { palette: PALETTES.slash, height: 22, aim: 0.1 }, {
+                x: to.x, y: to.y + 30, scale: 1.65 * ampScale,
+                durMs: 380, layer: 'front'
+              });
+
+              addFlash(to.x, to.y, 52 * ampScale, '#38BDF8', 150, 0.42);
+              addStarFlare({
+                x: to.x, y: to.y, r0: 10, r1: 46 * ampScale, points: 8,
+                outerColor: '#38BDF8', coreColor: '#FFFFFF', dur: 260
+              });
+              addShockRing({
+                x: to.x, y: targetGroundY + 2, r0: 12, r1: 86 * ampScale, sy: 0.30,
+                color: '#0EA5E9', coreColor: '#FFFFFF', lineW: 4, dur: 440
+              });
+
+              spawnBurstParticles(to.x, to.y, 24 + amp * 8, 'shard', {
+                spdMin: 80, spdMax: 250, sizeMin: 3.6, sizeMax: 7.5,
+                colors: ['#FFFFFF', '#E0F7FF', '#67E8F9', '#38BDF8'],
+                color2: '#1658EB',
+                groundY: targetGroundY, bounce: 0.44, lifeMin: 480, lifeMax: 800
+              });
+
+              if (amp >= 2) {
+                spawnPfx('frost_nova', { palette: icePal, reach: 68 }, {
+                  x: to.x, y: targetGroundY + 2, scale: 1.35 * ampScale,
+                  preWarmSec: 0.38, timeScale: 1.45, durMs: 680, layer: 'back'
+                });
+              }
+              triggerAmpImpactUpgrade(to.x, to.y, targetGroundY, amp);
+            }
+          },
+          {
+            at: 510,
+            fn() {
+              // 晶块正式爆碎瞬间：大体积冰块向四周崩裂飞散 + 漫天晶亮碎片与雪星！
+              safeCall(o.onShake, 5.2 + amp, 180);
+              addFlash(to.x, to.y - 6, 56 * ampScale, '#67E8F9', 160, 0.40);
+              addStarFlare({
+                x: to.x, y: to.y - 8, r0: 10, r1: 52 * ampScale, points: 8,
+                outerColor: amp >= 3 ? '#FDE68A' : '#38BDF8', coreColor: '#FFFFFF', dur: 320
+              });
+              addShockRing({
+                x: to.x, y: to.y - 6, r0: 14, r1: 78 * ampScale, sy: 0.85,
+                color: '#67E8F9', coreColor: '#FFFFFF', lineW: 3.4, dur: 340, layer: 'front'
+              });
+              spawnBurstParticles(to.x, to.y - 8, 36, 'shard', {
+                spdMin: 115, spdMax: 320, upBias: 110, sizeMin: 4.0, sizeMax: 9.2,
+                colors: ['#FFFFFF', '#E0F7FF', '#67E8F9', '#38BDF8', '#0EA5E9'],
+                color2: '#1658EB',
+                groundY: targetGroundY, bounce: 0.48, lifeMin: 460, lifeMax: 760
+              });
+              // Stage 4: 晶莹余光与飘雪星屑
+              spawnBurstParticles(to.x, to.y - 18, 20, 'snow', {
+                spdMin: 22, spdMax: 78, upBias: 55, gravity: 24,
+                sizeMin: 3.2, sizeMax: 6.2,
+                colors: ['#FFFFFF', '#E0F7FF'], color2: '#38BDF8',
+                lifeMin: 480, lifeMax: 740
+              });
+            }
+          }
+        ]);
+        return;
+      }
+
+      /* ---------- 2. 三棱冰晶 (tri_prism_ice) ---------- */
+      if (skillId === 'tri_prism_ice') {
+        const arcs = [-62, 0, 48]; // 上 / 中 / 下三轨明显弧线分化
+        const stagger = 110;      // 严格 110ms 错峰
+        const travelMs = 215;
+
+        const cues = [
+          {
+            at: 0,
+            fn() {
+              // Stage 1: 三棱聚能法阵 + 三枚轨道水晶起势
+              spawnPfx('magic_circle_cast', { palette: icePal }, {
+                x: from.x - 14, y: groundY + 2, scale: 1.25 * ampScale,
+                preWarmSec: 0.95, timeScale: 2.2, durMs: 560, layer: 'back'
+              });
+              addMagicCircle({
+                x: from.x - 14, y: groundY + 2, radius: 44 * ampScale, sy: 0.32,
+                goldTriple: amp >= 3, dur: 600
+              });
+              triggerAmpCastAura(from.x - 14, groundY, amp, false);
+              for (let k = 0; k < 3; k++) {
+                const cy = from.y + (k - 1) * 20;
+                addStarFlare({
+                  x: from.x + 10, y: cy, r0: 4, r1: 22,
+                  outerColor: '#38BDF8', coreColor: '#FFFFFF', dur: 240 + k * 90
+                });
+              }
+            }
+          }
+        ];
+
+        for (let k = 0; k < 3; k++) {
+          const launchAt = 120 + k * stagger;
+          const hitAt = launchAt + travelMs;
+          const arcLift = arcs[k];
+          const p0 = { x: from.x + 10, y: from.y + (k - 1) * 14 };
+          const p2 = { x: to.x + (k - 1) * 10, y: to.y + (k - 1) * 14 };
+          const p1 = { x: (p0.x + p2.x) * 0.5, y: (p0.y + p2.y) * 0.5 + arcLift };
+
+          cues.push({
+            at: launchAt,
+            fn() {
+              const ribbon = {
+                pts: [p0],
+                width: 8.2 * ampScale,
+                outerColor: '#1658EB',
+                midColor: k === 1 ? '#67E8F9' : '#38BDF8',
+                alpha: 0.95,
+                age: 0,
+                dur: 640,
+                fadeOut: 240
+              };
+              state.ribbons.push(ribbon);
+
+              spawnPfx('ice_lance', { palette: icePal, length: 50 }, {
+                x: p0.x, y: p0.y,
+                angle: quadBezierTangent(p0, p1, p2, 0),
+                scale: 1.52 * ampScale,
+                timeScale: 1.45,
+                durMs: travelMs + 65,
+                fadeInMs: 18,
+                fadeOutMs: 55,
+                layer: 'front',
+                glowColor: 'rgba(56,189,248,0.46)', glowRadius: 30, glowAlpha: 0.4,
+                onUpdate(slot, dtSec, age) {
+                  const t = easeOutCubic(clamp(age / travelMs, 0, 1));
+                  const pos = quadBezier(p0, p1, p2, t);
+                  slot.x = pos.x;
+                  slot.y = pos.y;
+                  slot.angle = quadBezierTangent(p0, p1, p2, Math.min(0.99, t));
+                  if (t < 1) {
+                    ribbon.pts.push({ x: pos.x, y: pos.y });
+                    if (ribbon.pts.length > 26) ribbon.pts.shift();
+                    if (Math.random() < 0.72) {
+                      addParticle({
+                        kind: 'star',
+                        x: pos.x + (Math.random() - 0.5) * 10,
+                        y: pos.y + (Math.random() - 0.5) * 10,
+                        vx: (Math.random() - 0.5) * 45,
+                        vy: (Math.random() - 0.5) * 45,
+                        size: 3.0 + Math.random() * 2.5,
+                        color: k === 1 ? '#FFFFFF' : '#67E8F9',
+                        life: 280 + Math.random() * 160
+                      });
+                    }
+                  }
+                }
+              });
+            }
+          });
+
+          cues.push({
+            at: hitAt,
+            fn() {
+              const isLast = k === 2;
+              safeCall(o.onImpact, 0, p2, isLast);
+              safeCall(o.onShake, isLast ? (8 + amp * 2.2) : 4.5, isLast ? 240 : 120);
+              safeCall(o.onHitStop, isLast ? (60 + amp * 12) : 28);
+
+              spawnPfx(isLast ? 'crit_hit' : 'hit_spark', {
+                palette: isLast ? icePal : PALETTES.slash,
+                height: 22,
+                aim: (k - 1) * 0.28
+              }, {
+                x: p2.x, y: p2.y + 30,
+                scale: (isLast ? 1.65 : 1.52) * ampScale,
+                durMs: isLast ? 560 : 420,
+                layer: 'front'
+              });
+
+              addFlash(p2.x, p2.y, (isLast ? 56 : 38) * ampScale, '#38BDF8', 140, isLast ? 0.44 : 0.36);
+              addStarFlare({
+                x: p2.x, y: p2.y,
+                r0: 8, r1: (isLast ? 52 : 36) * ampScale,
+                points: isLast ? 8 : 4,
+                outerColor: isLast && amp >= 2 ? '#FDE68A' : '#38BDF8',
+                coreColor: '#FFFFFF',
+                dur: isLast ? 340 : 280
+              });
+              addShockRing({
+                x: p2.x, y: p2.y, r0: 8, r1: (isLast ? 68 : 48) * ampScale, sy: 0.78,
+                color: '#67E8F9', coreColor: '#FFFFFF', lineW: 3.2, dur: 340, layer: 'front'
+              });
+
+              // 电光火花与三连电弧
+              addLightning(p2.x - 28, p2.y - 28, p2.x + 30, p2.y + 24, {
+                outerColor: '#1658EB', midColor: '#67E8F9', width: 2.2, dur: 260, branches: 2
+              });
+
+              spawnBurstParticles(p2.x, p2.y, isLast ? 28 : 16, 'shard', {
+                spdMin: 85, spdMax: 260, sizeMin: 3.4, sizeMax: 7.0,
+                colors: ['#FFFFFF', '#E0F7FF', '#67E8F9', '#38BDF8'],
+                color2: '#1658EB',
+                groundY: targetGroundY, bounce: 0.4, lifeMin: 400, lifeMax: 700
+              });
+              spawnBurstParticles(p2.x, p2.y, isLast ? 20 : 10, 'spark', {
+                spdMin: 140, spdMax: 330, sizeMin: 2.4, sizeMax: 4.2,
+                colors: ['#FFFFFF', '#67E8F9', '#FDE68A'],
+                gravity: 160, lifeMin: 240, lifeMax: 440
+              });
+
+              if (isLast) {
+                // 第三击引爆明亮晶块连爆
+                spawnPfx('ice_shatter', { palette: icePal }, {
+                  x: to.x, y: targetGroundY - 2, scale: 1.72 * ampScale,
+                  preWarmSec: 0.56, timeScale: 1.75, durMs: 740, layer: 'main',
+                  glowColor: 'rgba(56,189,248,0.44)', glowRadius: 56 * ampScale, glowAlpha: 0.4
+                });
+                triggerAmpImpactUpgrade(to.x, to.y, targetGroundY, amp);
+              }
+            }
+          });
+        }
+
+        scheduleTimeline(cues);
+        return;
+      }
+
+      /* ---------- 3. 星霜散华 (starfrost_scatter) ---------- */
+      if (skillId === 'starfrost_scatter') {
+        const cues = [
+          {
+            at: 0,
+            fn() {
+              // Stage 1: 大型明亮旋转冰蓝法阵（地面法阵 + 高空星霜天穹法阵）
+              spawnPfx('magic_circle_cast', { palette: icePal }, {
+                x: from.x - 10, y: groundY + 4, scale: 1.55 * ampScale,
+                preWarmSec: 0.88, timeScale: 1.9, durMs: 760, layer: 'back',
+                glowColor: 'rgba(56,189,248,0.42)', glowRadius: 56, glowAlpha: 0.38
+              });
+              addMagicCircle({
+                x: from.x - 10, y: groundY + 4, radius: 56 * ampScale, sy: 0.30,
+                goldTriple: amp >= 2, dur: 880, fadeIn: 140, fadeOut: 240
+              });
+              // 高空巨大旋转星霜法阵
+              addMagicCircle({
+                x: to.x - 24, y: 46, radius: 96 * ampScale, sy: 0.27,
+                rimColor: '#0EA5E9', starColor: '#FDE68A', runeColor: '#FFFFFF',
+                innerGlow: 'rgba(224,247,255,0.62)', outerGlow: 'rgba(56,189,248,0.28)',
+                goldTriple: true, lineW: 2.6,
+                dur: 1120, fadeIn: 150, fadeOut: 260, layer: 'front'
+              });
+              triggerAmpCastAura(from.x - 10, groundY, amp, false);
+            }
+          }
+        ];
+
+        // Stage 2: 8 道高空倾斜落下的明亮星霜冰柱/光雨（绵延至终结峰值，与巨型雪花冰爆完美同框！）
+        const rainOffsets = [-84, -40, 14, 64, -62, -10, 42, 76];
+        for (let i = 0; i < 8; i++) {
+          const dropAt = 210 + i * 68;
+          const ox = rainOffsets[i];
+          const tx = to.x + ox;
+          const ty = targetGroundY + (i % 3 - 1) * 7;
+          const isGold = i % 3 === 2 || amp >= 3;
+
+          cues.push({
+            at: dropAt,
+            fn() {
+              state.skyBeams.push({
+                x0: tx - 96, y0: -16,
+                x1: tx, y1: ty,
+                width: (i % 2 === 0 ? 7.8 : 6.0) * ampScale,
+                gold: isGold,
+                age: 0,
+                dur: 540
+              });
+              if (i % 2 === 0) {
+                spawnPfx('icicle_fall', { palette: isGold ? PALETTES.iceGold : PALETTES.ice }, {
+                  x: tx, y: ty, scale: 1.55 * ampScale,
+                  preWarmSec: 0.50, timeScale: 1.75, durMs: 700, layer: 'main'
+                });
+              }
+            }
+          });
+
+          cues.push({
+            at: dropAt + 220,
+            fn() {
+              safeCall(o.onShake, 3.2, 90);
+              spawnBurstParticles(tx, ty - 6, 8, 'shard', {
+                spdMin: 55, spdMax: 165, upBias: 60, sizeMin: 2.8, sizeMax: 5.5,
+                colors: isGold ? ['#FEF9C3', '#FDE68A', '#67E8F9'] : ['#FFFFFF', '#BAE6FD', '#38BDF8'],
+                groundY: ty, bounce: 0.35, lifeMin: 300, lifeMax: 520
+              });
+            }
+          });
+        }
+
+        // Stage 3: 终结巨型雪花冰爆 + 香槟金星芒散华（降低浑浊雾晕，凸显每片清晰像素雪花与金星！）
+        cues.push({
+          at: 710,
+          fn() {
+            safeCall(o.onImpact, 0, to, true);
+            safeCall(o.onShake, 10.5 + amp * 2.5, 340);
+            safeCall(o.onHitStop, 75 + amp * 15);
+
+            spawnPfx('frost_nova', { palette: amp >= 2 ? PALETTES.iceGold : PALETTES.ice, reach: 108 }, {
+              x: to.x, y: targetGroundY + 4,
+              scale: 1.92 * ampScale,
+              preWarmSec: 0.42, timeScale: 1.42, durMs: 920,
+              layer: 'back',
+              glowColor: 'rgba(56,189,248,0.34)', glowRadius: 72 * ampScale, glowAlpha: 0.32
+            });
+
+            spawnPfx('snowflake_burst', { palette: PALETTES.ice, count: 11 }, {
+              x: to.x, y: targetGroundY + 12,
+              scale: 2.15 * ampScale,
+              preWarmSec: 0.22, timeScale: 1.25, durMs: 980,
+              layer: 'front',
+              glowColor: 'rgba(125,211,252,0.28)', glowRadius: 60, glowAlpha: 0.28
+            });
+
+            spawnPfx('crit_hit', { palette: PALETTES.gold, height: 26, aim: 0.08 }, {
+              x: to.x, y: to.y + 34,
+              scale: 1.78 * ampScale, durMs: 560, layer: 'front'
+            });
+
+            addFlash(to.x, to.y - 10, 72 * ampScale, '#7DD3FC', 190, 0.36);
+            addStarFlare({
+              x: to.x, y: to.y - 12, r0: 14, r1: 78 * ampScale, inner: 0.16, points: 8,
+              outerColor: '#FDE68A', coreColor: '#FFFFFF', dur: 480
+            });
+            addStarFlare({
+              x: to.x, y: to.y - 12, r0: 10, r1: 60 * ampScale, inner: 0.22, points: 6, rot: 0.3,
+              outerColor: '#38BDF8', coreColor: '#FFFFFF', dur: 440
+            });
+            addShockRing({
+              x: to.x, y: targetGroundY + 4, r0: 18, r1: 142 * ampScale, sy: 0.28,
+              color: '#F59E0B', coreColor: '#FEF9C3', lineW: 4.5, dur: 560
+            });
+            addShockRing({
+              x: to.x, y: targetGroundY + 4, r0: 10, r1: 116 * ampScale, sy: 0.28,
+              color: '#38BDF8', coreColor: '#FFFFFF', lineW: 3.5, dur: 500
+            });
+
+            // 香槟金星芒散华 + 漫天清晰晶亮六角雪花
+            spawnBurstParticles(to.x, to.y - 16, 36 + amp * 10, 'star', {
+              spdMin: 70, spdMax: 290, upBias: 70, gravity: 95,
+              sizeMin: 4, sizeMax: 8.5,
+              colors: ['#FDE68A', '#FCD34D', '#FFFFFF', '#67E8F9', '#38BDF8'],
+              lifeMin: 560, lifeMax: 940
+            });
+            spawnBurstParticles(to.x, to.y - 36, 38, 'snow', {
+              spdMin: 45, spdMax: 180, upBias: 85, gravity: 26,
+              sizeMin: 4.0, sizeMax: 8.2,
+              colors: ['#FFFFFF', '#E0F7FF', '#FEF9C3'], color2: '#0EA5E9',
+              lifeMin: 640, lifeMax: 980
+            });
+
+            triggerAmpImpactUpgrade(to.x, to.y, targetGroundY, amp);
+          }
+        });
+
+        scheduleTimeline(cues);
+        return;
+      }
+
+      /* ---------- 4. 激流涌 (raging_surge) ---------- */
+      if (skillId === 'raging_surge') {
+        const jetStart = { x: from.x + 8, y: from.y - 2 };
+        const jetEnd = { x: to.x, y: to.y - 4 }; // 精准瞄准敌人胸口中心！严禁贴地戳偏！
+        const dx = jetEnd.x - jetStart.x;
+        const dy = jetEnd.y - jetStart.y;
+        const dist = Math.hypot(dx, dy);
+        const ang = Math.atan2(dy, dx);
+        const jetScale = 1.55 * (1 + amp * 0.06);
+        const extendMs = 155;
+
+        scheduleTimeline([
+          {
+            at: 0,
+            fn() {
+              // Stage 1: 起手碧蓝涌泉
+              addMagicCircle({
+                x: from.x - 8, y: groundY + 2, radius: 44 * ampScale, sy: 0.30,
+                rimColor: '#0284C7', starColor: '#22D3EE', runeColor: '#CFFAFE',
+                innerGlow: 'rgba(207,250,254,0.72)', outerGlow: 'rgba(6,182,212,0.34)',
+                goldTriple: amp >= 3, dur: 520
+              });
+              spawnPfx('splash', { palette: PALETTES.water, stone: false }, {
+                x: from.x - 4, y: groundY + 4, scale: 1.35 * ampScale,
+                preWarmSec: 0.22, timeScale: 1.45, durMs: 520, layer: 'back'
+              });
+              addShockRing({
+                x: jetStart.x, y: jetStart.y, r0: 6, r1: 34, sy: 0.85,
+                color: '#22D3EE', coreColor: '#FFFFFF', lineW: 3.5, dur: 260, layer: 'front'
+              });
+              triggerAmpCastAura(from.x - 8, groundY, amp, false);
+              spawnBurstParticles(jetStart.x, jetStart.y, 16, 'drop', {
+                spdMin: 55, spdMax: 160, upBias: 60, sizeMin: 3, sizeMax: 5.5,
+                colors: ['#CFFAFE', '#67E8F9', '#22D3EE'], color2: '#0284C7',
+                groundY, lifeMin: 280, lifeMax: 460
+              });
+            }
+          },
+          {
+            at: 165,
+            fn() {
+              // Stage 2: 连续丝滑高压清透水柱（与 PixelFX water_jet 精准对齐，由 0 丝滑延伸至胸口！）
+              const pfxLen = Math.max(60, Math.min(205, Math.round(dist / jetScale)));
+              spawnPfx('water_jet', { palette: PALETTES.water, length: pfxLen }, {
+                x: jetStart.x, y: jetStart.y - 6, // 补偿 water_jet 中心线 +6px 下垂，精准直贯胸口！
+                angle: ang,
+                scale: jetScale,
+                timeScale: 1.35,
+                durMs: 620,
+                fadeInMs: 25,
+                fadeOutMs: 180,
+                layer: 'front',
+                clipRight: 0.08,
+                glowColor: 'rgba(34,211,238,0.38)', glowRadius: 38, glowAlpha: 0.36,
+                onUpdate(slot, dtSec, age) {
+                  slot.clipRight = easeOutCubic(clamp(age / extendMs, 0.08, 1));
+                }
+              });
+
+              state.waterStreams.push({
+                x0: jetStart.x, y0: jetStart.y,
+                x1: jetEnd.x, y1: jetEnd.y,
+                width: 17 * ampScale,
+                extendMs,
+                age: 0,
+                dur: 620
+              });
+            }
+          },
+          {
+            at: 165 + extendMs,
+            fn() {
+              // Stage 3: 精准踩点翻涌巨浪 + 满屏晶亮水花！
+              safeCall(o.onImpact, 0, to, true);
+              safeCall(o.onShake, 8.8 + amp * 2.2, 320);
+              safeCall(o.onHitStop, 55 + amp * 12);
+
+              spawnPfx('wave_crash', { palette: PALETTES.water }, {
+                x: to.x + 36, y: targetGroundY + 6,
+                scale: 2.02 * ampScale,
+                preWarmSec: 0.56, timeScale: 1.48, durMs: 980,
+                layer: 'main',
+                glowColor: 'rgba(14,165,233,0.42)', glowRadius: 72 * ampScale, glowAlpha: 0.42
+              });
+
+              spawnPfx('splash', { palette: PALETTES.water, stone: false }, {
+                x: to.x, y: targetGroundY + 4,
+                scale: 1.98 * ampScale,
+                preWarmSec: 0.24, timeScale: 1.32, durMs: 880,
+                layer: 'front'
+              });
+
+              addFlash(to.x, to.y, 62 * ampScale, '#22D3EE', 175, 0.44);
+              addStarFlare({
+                x: to.x, y: to.y, r0: 10, r1: 50 * ampScale, points: 6,
+                outerColor: '#22D3EE', coreColor: '#FFFFFF', dur: 300
+              });
+              addShockRing({
+                x: to.x, y: targetGroundY + 4, r0: 16, r1: 128 * ampScale, sy: 0.28,
+                color: '#0EA5E9', coreColor: '#CFFAFE', lineW: 4.5, dur: 540
+              });
+
+              // 满屏晶亮水花（高通透天蓝/水青/白高光水珠）
+              spawnBurstParticles(to.x, to.y, 48 + amp * 12, 'drop', {
+                spdMin: 95, spdMax: 330, upBias: 135, gravity: 460,
+                sizeMin: 3.4, sizeMax: 7.4,
+                colors: ['#FFFFFF', '#CFFAFE', '#67E8F9', '#22D3EE', '#38BDF8'],
+                color2: '#0284C7',
+                groundY: targetGroundY, bounce: 0.32, lifeMin: 460, lifeMax: 840
+              });
+              spawnBurstParticles(to.x, to.y - 14, 18, 'star', {
+                spdMin: 60, spdMax: 210, upBias: 80, gravity: 120,
+                sizeMin: 3, sizeMax: 6,
+                colors: ['#FFFFFF', '#CFFAFE', '#67E8F9'],
+                lifeMin: 400, lifeMax: 720
+              });
+
+              triggerAmpImpactUpgrade(to.x, to.y, targetGroundY, amp);
+            }
+          },
+          {
+            at: 540,
+            fn() {
+              // 巨浪翻涌二段浪花水幕
+              spawnBurstParticles(to.x + 12, targetGroundY - 26, 26, 'drop', {
+                spdMin: 80, spdMax: 250, upBias: 120, gravity: 420,
+                sizeMin: 3, sizeMax: 6.2,
+                colors: ['#FFFFFF', '#CFFAFE', '#67E8F9', '#38BDF8'],
+                color2: '#0369A1',
+                groundY: targetGroundY, bounce: 0.28, lifeMin: 400, lifeMax: 700
+              });
+              addShockRing({
+                x: to.x + 6, y: targetGroundY + 4, r0: 24, r1: 152 * ampScale, sy: 0.26,
+                color: '#22D3EE', coreColor: '#FFFFFF', lineW: 3.2, dur: 520
+              });
+            }
+          }
+        ]);
+        return;
+      }
+
+      /* ---------- 5. 断水刃 (water_cleave) ---------- */
+      if (skillId === 'water_cleave') {
+        const dashMs = 195;
+        const p0 = { x: from.x, y: from.y + 12 };
+        const p2 = { x: to.x - 36, y: to.y + 4 };
+        const p1 = { x: (p0.x + p2.x) * 0.5, y: Math.min(p0.y, p2.y) - 52 };
+
+        scheduleTimeline([
+          {
+            at: 0,
+            fn() {
+              // Stage 1: 极速跃进水影轨线
+              addShockRing({
+                x: from.x, y: groundY + 2, r0: 8, r1: 48, sy: 0.30,
+                color: '#0EA5E9', coreColor: '#CFFAFE', lineW: 3.5, dur: 280
+              });
+              triggerAmpCastAura(from.x, groundY, amp, false);
+
+              const dashRibbon = {
+                pts: [p0],
+                width: 11 * ampScale,
+                outerColor: '#0284C7',
+                midColor: '#22D3EE',
+                alpha: 0.9,
+                age: 0,
+                dur: 460,
+                fadeOut: 240
+              };
+              state.ribbons.push(dashRibbon);
+
+              const stepN = 14;
+              for (let i = 1; i <= stepN; i++) {
+                const t = i / stepN;
+                const pos = quadBezier(p0, p1, p2, t);
+                dashRibbon.pts.push(pos);
+              }
+              spawnBurstParticles(from.x + 12, from.y, 16, 'drop', {
+                angleBase: -0.3, spread: 0.9, spdMin: 120, spdMax: 260,
+                sizeMin: 2.8, sizeMax: 5.5,
+                colors: ['#FFFFFF', '#67E8F9', '#22D3EE'], color2: '#0284C7',
+                groundY, lifeMin: 260, lifeMax: 450
+              });
+            }
+          },
+          {
+            at: dashMs,
+            fn() {
+              // Stage 2: 一段上挑冰青月牙水刃（与 PixelFX double_slash 精准校准中心！）
+              safeCall(o.onShake, 5.2, 130);
+              safeCall(o.onHitStop, 35);
+
+              const dsScale = 1.92 * ampScale;
+              spawnPfx('double_slash', {
+                palette: amp >= 3 ? PALETTES.slashGold : PALETTES.slash,
+                sparks: PALETTES.aquaSpark
+              }, {
+                x: to.x - 34 * dsScale,
+                y: to.y + 23 * dsScale,
+                scale: dsScale,
+                timeScale: 1.05,
+                durMs: 760,
+                fadeInMs: 10,
+                fadeOutMs: 180,
+                layer: 'front'
+              });
+
+              // 分层锐利上挑月牙水刃（保持 480ms 以便与二段斩形成鲜明清晰的 X 双月牙交叉！）
+              state.slashes.push({
+                x: to.x - 4, y: to.y + 2,
+                rx: 88 * ampScale, ry: 54 * ampScale,
+                tilt: -0.58,
+                startAngle: -2.45, endAngle: 0.72,
+                thickness: 22 * ampScale,
+                outerColor: '#0284C7',
+                midColor: '#22D3EE',
+                hiColor: '#A5F3FC',
+                age: 0, dur: 480
+              });
+
+              addStarFlare({
+                x: to.x, y: to.y, r0: 8, r1: 36 * ampScale, points: 4, rot: -0.58,
+                outerColor: '#22D3EE', coreColor: '#FFFFFF', dur: 260
+              });
+
+              spawnBurstParticles(to.x, to.y, 22, 'drop', {
+                angleBase: -0.6, spread: 1.3, spdMin: 110, spdMax: 290, upBias: 60,
+                sizeMin: 3.2, sizeMax: 6.4,
+                colors: ['#FFFFFF', '#CFFAFE', '#67E8F9', '#22D3EE'],
+                color2: '#0284C7', groundY: targetGroundY, bounce: 0.35,
+                lifeMin: 380, lifeMax: 660
+              });
+            }
+          },
+          {
+            at: dashMs + 145,
+            fn() {
+              // Stage 3: 二段下劈交叉水刃 + 满天飞溅水珠与水花爆裂
+              safeCall(o.onImpact, 0, to, true);
+              safeCall(o.onShake, 8.2 + amp * 2.2, 240);
+              safeCall(o.onHitStop, 60 + amp * 12);
+
+              state.slashes.push({
+                x: to.x + 2, y: to.y - 2,
+                rx: 94 * ampScale, ry: 58 * ampScale,
+                tilt: 0.56,
+                startAngle: 2.48, endAngle: -0.78,
+                thickness: 25 * ampScale,
+                outerColor: '#1658EB',
+                midColor: '#0EA5E9',
+                hiColor: '#67E8F9',
+                age: 0, dur: 460
+              });
+
+              spawnPfx('splash', { palette: PALETTES.water, stone: false }, {
+                x: to.x + 6, y: targetGroundY + 2, scale: 1.55 * ampScale,
+                preWarmSec: 0.24, timeScale: 1.38, durMs: 680, layer: 'main'
+              });
+
+              addFlash(to.x, to.y, 48 * ampScale, '#38BDF8', 150, 0.34);
+              addStarFlare({
+                x: to.x, y: to.y, r0: 10, r1: 48 * ampScale, points: 8, rot: 0.56,
+                outerColor: amp >= 3 ? '#FDE68A' : '#38BDF8', coreColor: '#FFFFFF', dur: 320
+              });
+              addShockRing({
+                x: to.x, y: targetGroundY + 2, r0: 14, r1: 96 * ampScale, sy: 0.28,
+                color: '#0EA5E9', coreColor: '#CFFAFE', lineW: 3.8, dur: 420
+              });
+
+              spawnBurstParticles(to.x, to.y, 36 + amp * 8, 'drop', {
+                angleBase: 0.4, spread: 2.4, spdMin: 120, spdMax: 320, upBias: 95,
+                sizeMin: 3.4, sizeMax: 7.0,
+                colors: ['#FFFFFF', '#CFFAFE', '#67E8F9', '#38BDF8', '#0EA5E9'],
+                color2: '#0369A1', groundY: targetGroundY, bounce: 0.35,
+                lifeMin: 420, lifeMax: 760
+              });
+
+              triggerAmpImpactUpgrade(to.x, to.y, targetGroundY, amp);
+            }
+          }
+        ]);
+        return;
+      }
+
+      /* ---------- 6. 霜域棘阵 · 3 目标群攻 (frost_thorn_field) ---------- */
+      if (skillId === 'frost_thorn_field') {
+        const beatMs = 70; // 严格 70ms 节拍依次破土！
+        const cues = [
+          {
+            at: 0,
+            fn() {
+              // Stage 1: 施法者脚下寒霜聚能法阵
+              spawnPfx('magic_circle_cast', { palette: icePal }, {
+                x: from.x - 10, y: groundY + 4, scale: 1.38 * ampScale,
+                preWarmSec: 0.95, timeScale: 2.0, durMs: 560, layer: 'back'
+              });
+              addMagicCircle({
+                x: from.x - 10, y: groundY + 4, radius: 48 * ampScale, sy: 0.30,
+                goldTriple: amp >= 3, dur: 620
+              });
+              triggerAmpCastAura(from.x - 10, groundY, amp, false);
+            }
+          },
+          {
+            at: 115,
+            fn() {
+              // Stage 2: 地面晶亮冰脉从施法者脚下迅速蔓延至全部 3 名敌人！
+              const rng = makeRng(nextSeed());
+              for (let idx = 0; idx < targets.length; idx++) {
+                const tg = targets[idx];
+                const sx = from.x + 6;
+                const sy = groundY + 2;
+                const ex = tg.x;
+                const ey = tg.groundY + 2;
+                const segs = 7;
+                const pts = [{ x: sx, y: sy }];
+                const spurs = [];
+                for (let s = 1; s < segs; s++) {
+                  const u = s / segs;
+                  const jx = (rng() - 0.5) * 14;
+                  const jy = (rng() - 0.5) * 12;
+                  const px = lerp(sx, ex, u) + jx;
+                  const py = lerp(sy, ey, u) + jy;
+                  pts.push({ x: px, y: py });
+                  spurs.push({
+                    at: u,
+                    x: px, y: py,
+                    dx: (rng() - 0.3) * 26,
+                    dy: (rng() < 0.5 ? -1 : 1) * (10 + rng() * 14)
+                  });
+                }
+                pts.push({ x: ex, y: ey });
+
+                state.iceVeins.push({
+                  pts,
+                  spurs,
+                  width: 3.4 * ampScale,
+                  growMs: 225 + idx * beatMs,
+                  age: 0,
+                  dur: 1220
+                });
+              }
+
+              // 走廊辅助蔓延冰棘（桥接施法者到敌阵）
+              spawnPfx('ice_spikes', { palette: icePal, reach: 138, height: 34 }, {
+                x: from.x + 28, y: groundY + 4,
+                scale: 1.38 * ampScale,
+                timeScale: 1.75, durMs: 780, layer: 'back'
+              });
+            }
+          }
+        ];
+
+        // Stage 3: 按 70ms 节拍依次在全部 3 名敌人脚下破土冲起高大晶亮冰棘（3 敌 100% 全覆盖！）
+        for (let idx = 0; idx < targets.length; idx++) {
+          const tg = targets[idx];
+          const eruptAt = 340 + idx * beatMs;
+          const isLast = idx === targets.length - 1;
+
+          cues.push({
+            at: eruptAt,
+            fn() {
+              safeCall(o.onImpact, idx, tg, isLast);
+              safeCall(o.onShake, isLast ? (9 + amp * 2) : 5.2, isLast ? 280 : 140);
+              if (isLast) safeCall(o.onHitStop, 58 + amp * 12);
+
+              // 每名敌人独立完整 PixelFX ice_spikes + frost_nova（彻底告别 MAX=2 吞目标！）
+              spawnPfx('ice_spikes', { palette: icePal, reach: 58, height: 64 }, {
+                x: tg.x - 36, y: tg.groundY + 5,
+                scale: 1.65 * ampScale,
+                preWarmSec: 0.08, timeScale: 1.48, durMs: 960,
+                layer: 'main',
+                glowColor: 'rgba(56,189,248,0.58)', glowRadius: 56 * ampScale, glowAlpha: 0.52
+              });
+
+              spawnPfx('frost_nova', { palette: icePal, reach: 48 }, {
+                x: tg.x, y: tg.groundY + 4,
+                scale: 1.28 * ampScale,
+                preWarmSec: 0.42, timeScale: 1.5, durMs: 760,
+                layer: 'back'
+              });
+
+              // 多面晶亮高大英雄冰棘簇（围绕该敌脚下冲天破土）
+              const rng = makeRng(nextSeed() + idx * 31);
+              state.heroThorns.push({
+                x: tg.x, y: tg.groundY + 4,
+                goldAccent: amp >= 3,
+                age: 0, dur: 980,
+                spikes: [
+                  { dx: -24, h: 52 * ampScale, w: 15, lean: -14, delay: 20, primary: false },
+                  { dx: 24,  h: 56 * ampScale, w: 16, lean: 16,  delay: 25, primary: false },
+                  { dx: -8,  h: 82 * ampScale, w: 20, lean: -7,  delay: 0,  primary: true },
+                  { dx: 10,  h: 74 * ampScale, w: 18, lean: 10,  delay: 12, primary: true },
+                  { dx: 0,   h: (94 + rng() * 10) * ampScale, w: 23, lean: (idx - 1) * 6, delay: 0, primary: true }
+                ]
+              });
+
+              addFlash(tg.x, tg.y + 6, 48 * ampScale, '#38BDF8', 160, 0.48);
+              addStarFlare({
+                x: tg.x, y: tg.y - 12, r0: 8, r1: 40 * ampScale, points: 6,
+                outerColor: amp >= 3 ? '#FDE68A' : '#38BDF8', coreColor: '#FFFFFF', dur: 300
+              });
+              addShockRing({
+                x: tg.x, y: tg.groundY + 4, r0: 10, r1: 68 * ampScale, sy: 0.30,
+                color: '#0EA5E9', coreColor: '#FFFFFF', lineW: 3.6, dur: 420
+              });
+
+              spawnBurstParticles(tg.x, tg.groundY - 12, 18 + amp * 4, 'shard', {
+                spdMin: 75, spdMax: 230, upBias: 135, sizeMin: 3.4, sizeMax: 7.2,
+                colors: ['#FFFFFF', '#E0F7FF', '#67E8F9', '#38BDF8'],
+                color2: '#1658EB',
+                groundY: tg.groundY, bounce: 0.4, lifeMin: 440, lifeMax: 780
+              });
+
+              if (isLast) {
+                triggerAmpImpactUpgrade(tg.x, tg.y, tg.groundY, amp);
+              } else if (amp >= 3) {
+                addLightning(tg.x, tg.y, targets[idx + 1].x, targets[idx + 1].y, {
+                  outerColor: '#D97706', midColor: '#FDE68A', width: 2.3, dur: 280, branches: 2
+                });
+              }
+            }
+          });
+        }
+
+        // 空中雪晶全战场飘落（2 组并发 PixelFX snowflake_burst + 46 枚晶亮六角雪花）
+        cues.push({
+          at: 430,
+          fn() {
+            const leftX = targets[0].x;
+            const rightX = targets[targets.length - 1].x;
+            const midX = (leftX + rightX) * 0.5;
+
+            spawnPfx('snowflake_burst', { palette: icePal, count: 9 }, {
+              x: leftX + 10, y: groundY - 4, scale: 1.52 * ampScale,
+              preWarmSec: 0.14, timeScale: 1.25, durMs: 960, layer: 'front'
+            });
+            spawnPfx('snowflake_burst', { palette: icePal, count: 9 }, {
+              x: rightX - 10, y: groundY + 4, scale: 1.52 * ampScale,
+              preWarmSec: 0.14, timeScale: 1.25, durMs: 960, layer: 'front'
+            });
+
+            const rng = makeRng(nextSeed());
+            for (let i = 0; i < 46; i++) {
+              addParticle({
+                kind: i % 4 === 0 ? 'star' : 'snow',
+                x: midX + (rng() - 0.5) * 260,
+                y: 36 + rng() * 145,
+                vx: (rng() - 0.5) * 32,
+                vy: 24 + rng() * 44,
+                gravity: 10,
+                drag: 0.4,
+                size: 3.4 + rng() * 4.4,
+                rot: rng() * TAU,
+                vrot: (rng() - 0.5) * 3.2,
+                color: i % 5 === 0 && amp >= 3 ? '#FDE68A' : '#FFFFFF',
+                color2: '#38BDF8',
+                life: 720 + rng() * 440,
+                groundY: groundY + 22
+              });
+            }
+          }
+        });
+
+        scheduleTimeline(cues);
+        return;
+      }
+
+      /* ---------- 7. 钢冰护幕 (steel_ice_curtain) ---------- */
+      if (skillId === 'steel_ice_curtain') {
+        const cx = from.x - 16; // 居中包裹主角身体！
+        const cy = from.y + 4;
+
+        scheduleTimeline([
+          {
+            at: 0,
+            fn() {
+              // Stage 1: 主角脚下冰蓝×淡金聚能护盾法阵
+              spawnPfx('magic_circle_cast', { palette: PALETTES.shield }, {
+                x: cx, y: groundY + 4, scale: 1.48 * ampScale,
+                preWarmSec: 0.88, timeScale: 1.85, durMs: 760, layer: 'back',
+                glowColor: 'rgba(56,189,248,0.36)', glowRadius: 60, glowAlpha: 0.36
+              });
+              addMagicCircle({
+                x: cx, y: groundY + 4, radius: 58 * ampScale, sy: 0.30,
+                rimColor: '#0EA5E9', starColor: '#FDE68A', runeColor: '#FFFFFF',
+                innerGlow: 'rgba(224,247,255,0.58)', outerGlow: 'rgba(253,230,138,0.30)',
+                goldTriple: amp >= 2, dur: 1220, fadeIn: 140, fadeOut: 280
+              });
+              triggerAmpCastAura(cx, groundY, amp, false);
+
+              spawnBurstParticles(cx, groundY - 4, 24, 'star', {
+                spdMin: 30, spdMax: 95, upBias: 120, gravity: -35,
+                sizeMin: 3, sizeMax: 6.5,
+                colors: ['#FFFFFF', '#BAE6FD', '#38BDF8', '#FDE68A'],
+                lifeMin: 480, lifeMax: 840
+              });
+            }
+          },
+          {
+            at: 190,
+            fn() {
+              // Stage 2: 通透明亮冰蓝×淡金多面棱镜护盾 + 原版 divine_shield 晶莹核心（半透明绝不遮脸！）
+              spawnPfx('divine_shield', { palette: PALETTES.shield, radius: 34 }, {
+                x: cx, y: cy + 44,
+                scale: 1.94 * ampScale,
+                alpha: 0.72,
+                lightGain: 0.9,
+                timeScale: 1.15, durMs: 1180,
+                fadeInMs: 140, fadeOutMs: 280,
+                layer: 'main',
+                glowColor: 'rgba(56,189,248,0.28)', glowRadius: 68 * ampScale, glowAlpha: 0.28
+              });
+
+              state.shields.push({
+                x: cx, y: cy - 2,
+                radius: 64 * ampScale,
+                ampTier: amp,
+                lockAt: 260,
+                age: 0,
+                dur: 1180
+              });
+            }
+          },
+          {
+            at: 450,
+            fn() {
+              // Stage 3: 结实护幕落成闪光（星芒位于护盾顶冠与左右翼缘，保持主角清晰通透！）
+              safeCall(o.onImpact, 0, { x: cx, y: cy }, true);
+              safeCall(o.onShake, 3.8 + amp, 150);
+
+              spawnPfx('parry', { palette: PALETTES.gold7, height: 28 }, {
+                x: cx, y: cy + 46, scale: 1.55 * ampScale,
+                alpha: 0.56, durMs: 420, layer: 'front'
+              });
+
+              addStarFlare({
+                x: cx, y: cy - 62 * ampScale, r0: 8, r1: 36 * ampScale, points: 8,
+                outerColor: '#FDE68A', coreColor: '#FFFFFF', dur: 460
+              });
+              addStarFlare({
+                x: cx - 58 * ampScale, y: cy - 4, r0: 6, r1: 24 * ampScale, points: 4,
+                outerColor: '#38BDF8', coreColor: '#FFFFFF', dur: 420
+              });
+              addStarFlare({
+                x: cx + 58 * ampScale, y: cy - 4, r0: 6, r1: 24 * ampScale, points: 4,
+                outerColor: '#38BDF8', coreColor: '#FFFFFF', dur: 420
+              });
+              addShockRing({
+                x: cx, y: cy, r0: 52 * ampScale, r1: 108 * ampScale, sy: 0.96,
+                color: '#F59E0B', coreColor: '#FFFFFF', lineW: 3.6, dur: 440, layer: 'front'
+              });
+              addShockRing({
+                x: cx, y: groundY + 4, r0: 18, r1: 98 * ampScale, sy: 0.30,
+                color: '#38BDF8', coreColor: '#FEF9C3', lineW: 3.4, dur: 480
+              });
+
+              spawnBurstParticles(cx, cy, 24 + amp * 6, 'star', {
+                spdMin: 68, spdMax: 175, upBias: 35, gravity: -15,
+                sizeMin: 3.5, sizeMax: 7,
+                colors: ['#FFFFFF', '#FDE68A', '#67E8F9', '#38BDF8'],
+                lifeMin: 480, lifeMax: 820
+              });
+
+              if (amp >= 3) {
+                // 3 阶护盾：外围香槟金三环 + 冰金雷弧守护（不在胸口压黑/压糊主角）
+                addMagicCircle({
+                  x: cx, y: groundY + 4, radius: 74, sy: 0.30,
+                  rimColor: '#F59E0B', starColor: '#FDE68A', runeColor: '#FFFFFF',
+                  innerGlow: 'rgba(254,249,195,0.45)', outerGlow: 'rgba(245,158,11,0.28)',
+                  goldTriple: true, dur: 760, fadeIn: 90, fadeOut: 240
+                });
+                for (let b = 0; b < 4; b++) {
+                  const a = (b / 4) * TAU + 0.4;
+                  const rIn = 58 * ampScale;
+                  const rOut = 92 * ampScale;
+                  addLightning(
+                    cx + Math.cos(a) * rIn, cy + Math.sin(a) * rIn * 0.85,
+                    cx + Math.cos(a + 0.55) * rOut, cy + Math.sin(a + 0.55) * rOut * 0.85,
+                    { outerColor: '#D97706', midColor: '#FDE68A', width: 2.2, dur: 300, branches: 2 }
+                  );
+                }
+              }
+            }
+          }
+        ]);
+        return;
+      }
+
+      /* ---------- 8. 送刀斩 (sword_send_slash) ---------- */
+      if (skillId === 'sword_send_slash') {
+        scheduleTimeline([
+          {
+            at: 0,
+            fn() {
+              // Stage 1: 瞬间拔刀聚芒 + 疾电突刺光轨
+              addStarFlare({
+                x: from.x + 12, y: from.y - 4, r0: 6, r1: 38 * ampScale, points: 4,
+                outerColor: '#67E8F9', coreColor: '#FFFFFF', dur: 220
+              });
+              triggerAmpCastAura(from.x - 10, groundY, amp, false);
+
+              const dashPts = [];
+              for (let i = 0; i <= 10; i++) {
+                const t = i / 10;
+                dashPts.push({
+                  x: lerp(from.x + 8, to.x - 24, t),
+                  y: lerp(from.y, to.y, t) - Math.sin(t * Math.PI) * 14
+                });
+              }
+              state.ribbons.push({
+                pts: dashPts,
+                width: 9.5 * ampScale,
+                outerColor: '#1658EB',
+                midColor: '#67E8F9',
+                alpha: 0.94,
+                age: 0, dur: 440, fadeOut: 220
+              });
+            }
+          },
+          {
+            at: 165,
+            fn() {
+              // Stage 2A: 瞬间拉出凌厉明亮的冰青×纯白大弧刀光
+              safeCall(o.onShake, 5.8, 150);
+              safeCall(o.onHitStop, 40);
+
+              const swScale = 2.08 * ampScale;
+              spawnPfx('sword_slash', {
+                palette: amp >= 3 ? PALETTES.slashGold : PALETTES.slash,
+                sparks: PALETTES.cyanSpark,
+                radius: 48
+              }, {
+                x: to.x - 26 * swScale,
+                y: to.y + 38 * swScale,
+                scale: swScale,
+                durMs: 640,
+                fadeInMs: 10,
+                fadeOutMs: 160,
+                layer: 'front'
+              });
+
+              // 超大凌厉冰青×纯白月牙大弧刀光（延长保留，与二段十字斩完美叠合！）
+              state.slashes.push({
+                x: to.x - 12, y: to.y + 6,
+                rx: 114 * ampScale, ry: 74 * ampScale,
+                tilt: -0.22,
+                startAngle: -2.65, endAngle: 0.88,
+                thickness: 27 * ampScale,
+                outerColor: '#1658EB',
+                midColor: '#38BDF8',
+                hiColor: '#CFFAFE',
+                age: 0, dur: 480
+              });
+
+              spawnBurstParticles(to.x, to.y, 18, 'spark', {
+                spdMin: 150, spdMax: 340, sizeMin: 2.5, sizeMax: 4.5,
+                colors: ['#FFFFFF', '#67E8F9', '#38BDF8'],
+                gravity: 140, lifeMin: 240, lifeMax: 420
+              });
+            }
+          },
+          {
+            at: 345,
+            fn() {
+              // Stage 2B + Stage 3: 二段反手十字晶斩 + 高能锐利爆星（降雾提锐，刀锋切割感爆棚！）
+              safeCall(o.onImpact, 0, to, true);
+              safeCall(o.onShake, 9.8 + amp * 2.4, 280);
+              safeCall(o.onHitStop, 72 + amp * 15);
+
+              const dsScale = 1.98 * ampScale;
+              spawnPfx('double_slash', {
+                palette: amp >= 3 ? PALETTES.slashGold : PALETTES.slash,
+                sparks: amp >= 2 ? PALETTES.goldSpark : PALETTES.cyanSpark
+              }, {
+                x: to.x - 34 * dsScale,
+                y: to.y + 23 * dsScale,
+                scale: dsScale,
+                durMs: 740,
+                fadeInMs: 10,
+                fadeOutMs: 190,
+                layer: 'front'
+              });
+
+              state.slashes.push({
+                x: to.x, y: to.y,
+                rx: 98 * ampScale, ry: 54 * ampScale,
+                tilt: 0.68,
+                startAngle: 2.55, endAngle: -0.78,
+                thickness: 24 * ampScale,
+                outerColor: '#1658EB',
+                midColor: '#0EA5E9',
+                hiColor: '#E0F9FF',
+                age: 0, dur: 450
+              });
+              state.slashes.push({
+                x: to.x, y: to.y,
+                rx: 94 * ampScale, ry: 50 * ampScale,
+                tilt: -0.68,
+                startAngle: -2.55, endAngle: 0.78,
+                thickness: 22 * ampScale,
+                outerColor: '#0284C7',
+                midColor: '#67E8F9',
+                hiColor: '#FFFFFF',
+                age: 0, dur: 450
+              });
+
+              spawnPfx('crit_hit', {
+                palette: amp >= 2 ? PALETTES.iceGold : PALETTES.ice,
+                height: 26, aim: 0.05
+              }, {
+                x: to.x, y: to.y + 38,
+                scale: 1.85 * ampScale, durMs: 640, layer: 'front',
+                lightGain: 0.85,
+                glowColor: 'rgba(103,232,249,0.32)', glowRadius: 54 * ampScale, glowAlpha: 0.28
+              });
+
+              spawnPfx('parry', {
+                palette: amp >= 2 ? PALETTES.gold7 : PALETTES.slash,
+                height: 28
+              }, {
+                x: to.x, y: to.y + 42, scale: 1.62 * ampScale,
+                durMs: 520, layer: 'front'
+              });
+
+              addFlash(to.x, to.y, 58 * ampScale, '#67E8F9', 150, 0.34);
+              addStarFlare({
+                x: to.x, y: to.y, r0: 14, r1: 72 * ampScale, inner: 0.14, points: 8,
+                outerColor: amp >= 2 ? '#FDE68A' : '#38BDF8', coreColor: '#FFFFFF', dur: 420
+              });
+              addStarFlare({
+                x: to.x, y: to.y, r0: 10, r1: 96 * ampScale, inner: 0.08, points: 4, rot: Math.PI * 0.25,
+                outerColor: '#38BDF8', coreColor: '#FFFFFF', dur: 380
+              });
+              addShockRing({
+                x: to.x, y: targetGroundY + 2, r0: 14, r1: 112 * ampScale, sy: 0.28,
+                color: '#0EA5E9', coreColor: '#FFFFFF', lineW: 4, dur: 460
+              });
+
+              spawnBurstParticles(to.x, to.y, 32 + amp * 8, 'spark', {
+                spdMin: 160, spdMax: 380, sizeMin: 2.6, sizeMax: 5.0,
+                colors: ['#FFFFFF', '#E0F9FF', '#67E8F9', '#FDE68A'],
+                gravity: 110, lifeMin: 300, lifeMax: 560
+              });
+              spawnBurstParticles(to.x, to.y, 20, 'shard', {
+                spdMin: 80, spdMax: 240, sizeMin: 3.2, sizeMax: 6.5,
+                colors: ['#FFFFFF', '#BAE6FD', '#38BDF8'], color2: '#1658EB',
+                groundY: targetGroundY, bounce: 0.4, lifeMin: 400, lifeMax: 720
+              });
+
+              triggerAmpImpactUpgrade(to.x, to.y, targetGroundY, amp);
+            }
+          }
+        ]);
+        return;
+      }
+
+      /* ---------- 9. 风行残像 (wind_afterimage) ---------- */
+      if (skillId === 'wind_afterimage') {
+        const p0 = { x: from.x - 10, y: from.y + 8 };
+        const p2 = { x: to.x + 18, y: to.y + 6 };
+        const p1 = { x: (p0.x + p2.x) * 0.5, y: Math.min(p0.y, p2.y) - 44 };
+
+        scheduleTimeline([
+          {
+            at: 0,
+            fn() {
+              // Stage 1: 明亮翡翠青旋风起势
+              spawnPfx('blizzard_vortex', { palette: PALETTES.wind, height: 64 }, {
+                x: from.x - 12, y: groundY + 4,
+                scale: 1.42 * ampScale, timeScale: 1.4, durMs: 560,
+                fadeInMs: 40, fadeOutMs: 220, layer: 'back',
+                glowColor: 'rgba(52,211,153,0.40)', glowRadius: 52, glowAlpha: 0.38
+              });
+              addMagicCircle({
+                x: from.x - 12, y: groundY + 4, radius: 44 * ampScale, sy: 0.30,
+                rimColor: '#059669', starColor: '#34D399', runeColor: '#CCFBF1',
+                innerGlow: 'rgba(204,251,241,0.68)', outerGlow: 'rgba(16,185,129,0.32)',
+                goldTriple: amp >= 3, dur: 580
+              });
+              triggerAmpCastAura(from.x - 12, groundY, amp, true);
+            }
+          },
+          {
+            at: 110,
+            fn() {
+              // Stage 2: 双道交织明亮翡翠青旋风疾驰轨迹
+              const upperPts = [];
+              const lowerPts = [];
+              const steps = 26;
+              for (let i = 0; i <= steps; i++) {
+                const t = i / steps;
+                const base = quadBezier(p0, p1, p2, t);
+                const wave = Math.sin(t * Math.PI * 3.5) * 18;
+                upperPts.push({ x: base.x, y: base.y - 10 + wave });
+                lowerPts.push({ x: base.x, y: base.y + 12 - wave });
+              }
+              state.ribbons.push({
+                pts: upperPts,
+                width: 10.5 * ampScale,
+                outerColor: '#059669',
+                midColor: '#34D399',
+                alpha: 0.90,
+                age: 0, dur: 720, fadeOut: 300
+              });
+              state.ribbons.push({
+                pts: lowerPts,
+                width: 8.2 * ampScale,
+                outerColor: '#0D9488',
+                midColor: '#6EE7B7',
+                alpha: 0.84,
+                age: 0, dur: 740, fadeOut: 320
+              });
+
+              for (let i = 0; i < 24; i++) {
+                const t = i / 24;
+                const pos = quadBezier(p0, p1, p2, t);
+                addParticle({
+                  kind: i % 3 === 0 ? 'star' : 'leaf',
+                  x: pos.x + (Math.random() - 0.5) * 30,
+                  y: pos.y + (Math.random() - 0.5) * 36,
+                  vx: 45 + Math.random() * 90,
+                  vy: -35 + Math.random() * 55,
+                  gravity: 16, drag: 0.85,
+                  size: 4.5 + Math.random() * 3.8,
+                  rot: Math.random() * TAU,
+                  vrot: (Math.random() - 0.5) * 8,
+                  color: i % 3 === 0 ? '#FFFFFF' : '#6EE7B7',
+                  color2: '#059669',
+                  life: 640 + Math.random() * 440
+                });
+              }
+            }
+          },
+          // 三重晶透青白光影残像（精准调用真实像素骨骼疾跑帧 [7, 8, 9]，沿疾驰弧线形成三连翡翠光影！）
+          {
+            at: 140,
+            fn() {
+              const pos = quadBezier(p0, p1, p2, 0.22);
+              state.afterimages.push({
+                x: pos.x, y: groundY - 2, scale: 1.00, facing: 1, frameIdx: 7,
+                alpha: 0.72, age: 0, dur: 680
+              });
+            }
+          },
+          {
+            at: 215,
+            fn() {
+              const pos = quadBezier(p0, p1, p2, 0.49);
+              state.afterimages.push({
+                x: pos.x, y: groundY - 10, scale: 1.04, facing: 1, frameIdx: 8,
+                alpha: 0.86, age: 0, dur: 680
+              });
+            }
+          },
+          {
+            at: 290,
+            fn() {
+              const pos = quadBezier(p0, p1, p2, 0.75);
+              state.afterimages.push({
+                x: pos.x, y: groundY - 4, scale: 1.08, facing: 1, frameIdx: 9,
+                alpha: 0.96, age: 0, dur: 680
+              });
+            }
+          },
+          {
+            at: 365,
+            fn() {
+              // Stage 3: 目标点翡翠旋风席卷 + 疾风斩光 + 漫天风叶星光！
+              safeCall(o.onImpact, 0, to, true);
+              safeCall(o.onShake, 7.0 + amp * 2.0, 240);
+              safeCall(o.onHitStop, 52 + amp * 12);
+
+              spawnPfx('blizzard_vortex', { palette: PALETTES.wind, height: 80 }, {
+                x: to.x, y: targetGroundY + 6,
+                scale: 1.72 * ampScale, timeScale: 1.35, durMs: 860,
+                fadeInMs: 40, fadeOutMs: 260, layer: 'main',
+                glowColor: 'rgba(52,211,153,0.40)', glowRadius: 62 * ampScale, glowAlpha: 0.38
+              });
+
+              const swScale = 1.78 * ampScale;
+              spawnPfx('sword_slash', {
+                palette: PALETTES.slashWind,
+                sparks: PALETTES.windSpark,
+                radius: 44
+              }, {
+                x: to.x - 24 * swScale,
+                y: to.y + 36 * swScale,
+                scale: swScale, durMs: 580, layer: 'front'
+              });
+
+              state.slashes.push({
+                x: to.x, y: to.y,
+                rx: 92 * ampScale, ry: 54 * ampScale,
+                tilt: -0.34,
+                startAngle: -2.45, endAngle: 0.82,
+                thickness: 22 * ampScale,
+                outerColor: '#059669',
+                midColor: '#34D399',
+                hiColor: '#CCFBF1',
+                age: 0, dur: 390
+              });
+
+              addFlash(to.x, to.y, 58 * ampScale, '#34D399', 160, 0.36);
+              addStarFlare({
+                x: to.x, y: to.y, r0: 10, r1: 52 * ampScale, points: 8,
+                outerColor: amp >= 3 ? '#FDE68A' : '#34D399', coreColor: '#FFFFFF', dur: 360
+              });
+              addShockRing({
+                x: to.x, y: targetGroundY + 4, r0: 14, r1: 118 * ampScale, sy: 0.28,
+                color: '#10B981', coreColor: '#CCFBF1', lineW: 4, dur: 480
+              });
+
+              spawnBurstParticles(to.x, to.y - 10, 36 + amp * 8, 'leaf', {
+                spdMin: 70, spdMax: 255, upBias: 95, gravity: 22, drag: 1.05,
+                sizeMin: 4.5, sizeMax: 8.2,
+                colors: ['#A7F3D0', '#6EE7B7', '#34D399', '#CCFBF1'],
+                color2: '#059669', lifeMin: 560, lifeMax: 960
+              });
+              spawnBurstParticles(to.x, to.y - 8, 26, 'star', {
+                spdMin: 60, spdMax: 210, upBias: 70, gravity: 18,
+                sizeMin: 3.2, sizeMax: 6.8,
+                colors: ['#FFFFFF', '#CCFBF1', '#6EE7B7', '#FDE68A'],
+                lifeMin: 480, lifeMax: 840
+              });
+
+              triggerAmpImpactUpgrade(to.x, to.y, targetGroundY, amp);
+            }
+          }
+        ]);
+        return;
+      }
+
+      // 兜底：若传入未知技能 ID，平滑走冰晶术
+      play('ice_crystal', opts);
+    }
+
+    /* -------------------- 状态推进 update(dtMs) -------------------- */
+    function update(dtMs) {
+      const dt = clamp(Number.isFinite(dtMs) ? dtMs : 16.67, 0, 80);
+      const dtSec = dt * 0.001;
+      state.timeMs += dt;
+
+      // 1. 调度时间轴
+      for (let i = state.timelines.length - 1; i >= 0; i--) {
+        const tl = state.timelines[i];
+        tl.age += dt;
+        let allFired = true;
+        for (let j = 0; j < tl.cues.length; j++) {
+          const c = tl.cues[j];
+          if (!c.fired) {
+            if (tl.age >= c.at) {
+              c.fired = true;
+              c.fn();
+            } else {
+              allFired = false;
+            }
+          }
+        }
+        if (allFired) state.timelines.splice(i, 1);
+      }
+
+      // 2. PixelFX 48 并发池推进（子步长 <= 0.04s 保证物理精准不跳过阶段）
+      for (let i = state.pfxSlots.length - 1; i >= 0; i--) {
+        const sl = state.pfxSlots[i];
+        sl.age += dt;
+        if (sl.age >= sl.dur) {
+          state.pfxSlots.splice(i, 1);
+          continue;
+        }
+        if (sl.onUpdate) sl.onUpdate(sl, dtSec, sl.age);
+        let stepRem = dtSec * sl.timeScale;
+        while (stepRem > 1e-4) {
+          const d = stepRem > 0.04 ? 0.04 : stepRem;
+          sl.inst.update(d);
+          stepRem -= d;
+        }
+      }
+
+      // 3. 其余图层推进
+      const advanceList = (list, extra) => {
+        for (let i = list.length - 1; i >= 0; i--) {
+          const it = list[i];
+          it.age += dt;
+          if (extra) extra(it, dt, dtSec);
+          if (it.age >= it.dur) list.splice(i, 1);
+        }
+      };
+
+      advanceList(state.magicCircles, mc => { mc.rot += mc.vrot * dt; });
+      advanceList(state.ribbons);
+      advanceList(state.waterStreams);
+      advanceList(state.iceVeins);
+      advanceList(state.heroThorns);
+      advanceList(state.shields);
+      advanceList(state.slashes);
+      advanceList(state.skyBeams);
+      advanceList(state.afterimages);
+      advanceList(state.lightningArcs);
+      advanceList(state.starFlares, f => { f.rot += f.vrot * dt; });
+      advanceList(state.shockRings);
+      advanceList(state.flashes);
+
+      // 4. 粒子物理更新
+      for (let i = state.particles.length - 1; i >= 0; i--) {
+        const p = state.particles[i];
+        p.age += dt;
+        p.life -= dt;
+        if (p.life <= 0) {
+          state.particles.splice(i, 1);
+          continue;
+        }
+        p.vy += p.gravity * dtSec;
+        const damp = Math.max(0, 1 - p.drag * dtSec);
+        p.vx *= damp;
+        p.vy *= damp;
+        if (p.kind === 'snow' || p.kind === 'leaf') {
+          p.vx += Math.sin(p.age * 0.006 + p.seed) * 24 * dtSec;
+        }
+        p.x += p.vx * dtSec;
+        p.y += p.vy * dtSec;
+        p.rot += p.vrot * dtSec;
+        if (p.y >= p.groundY && p.vy > 0) {
+          p.y = p.groundY;
+          if (p.bounce > 0 && p.vy > 45) {
+            p.vy = -p.vy * p.bounce;
+            p.vx *= 0.68;
+            p.vrot *= 0.6;
+          } else {
+            p.vy = 0;
+            p.vx *= 0.5;
+          }
+        }
+      }
+    }
+
+    /* -------------------- PixelFX 单槽高清亮彩光栅合成 -------------------- */
+    function renderPfxLayer(layerName) {
+      const PFX = getPixelFX();
+      if (!PFX) return;
+      for (let i = 0; i < state.pfxSlots.length; i++) {
+        const sl = state.pfxSlots[i];
+        if (sl.layer !== layerName) continue;
+
+        const envIn = sl.fadeIn > 0 ? clamp(sl.age / sl.fadeIn, 0, 1) : 1;
+        const envOut = sl.age > sl.dur - sl.fadeOut ? clamp((sl.dur - sl.age) / Math.max(1, sl.fadeOut), 0, 1) : 1;
+        const alpha = envIn * envOut * sl.alpha;
+        if (alpha <= 0.01) continue;
+
+        const surf = getScratchSurface(PFX, sl.bufW, sl.bufH, sl.ox, sl.oy);
+        PFX.clearFrame(surf.frame);
+        sl.inst.draw(surf.frame);
+        PFX.composite(surf.frame, surf.imgData.data, null, sl.lightGain);
+        surf.ctx.putImageData(surf.imgData, 0, 0);
+
+        ctx.save();
+        ctx.translate(sl.x, sl.y);
+
+        // 明亮柔光底晕（让电光冰蓝体量在雪瓷宫殿舞台上散发通透光芒，不脏不暗）
+        if (sl.glowColor && sl.glowRadius > 2 && sl.glowAlpha > 0) {
+          const gr = sl.glowRadius;
+          const g = ctx.createRadialGradient(0, -14, 2, 0, -14, gr);
+          g.addColorStop(0, sl.glowColor);
+          g.addColorStop(1, 'rgba(56,189,248,0)');
+          ctx.globalAlpha = clamp(alpha * sl.glowAlpha, 0, 1);
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(0, -14, gr, 0, TAU);
+          ctx.fill();
+        }
+
+        ctx.rotate(sl.angle);
+        ctx.scale(sl.flipX ? -sl.scale : sl.scale, sl.scale);
+        ctx.globalAlpha = clamp(alpha, 0, 1);
+        ctx.imageSmoothingEnabled = false;
+
+        if (sl.clipRight < 0.999) {
+          const visW = Math.max(2, Math.floor(sl.bufW * sl.clipRight));
+          ctx.drawImage(surf.canvas, 0, 0, visW, sl.bufH, sl.ox, sl.oy, visW, sl.bufH);
+        } else {
+          ctx.drawImage(surf.canvas, sl.ox, sl.oy);
+        }
+
+        ctx.restore();
+      }
+    }
+
+    function renderShockRings(layerName) {
+      for (let i = 0; i < state.shockRings.length; i++) {
+        const r = state.shockRings[i];
+        if (r.layer !== layerName) continue;
+        const p = clamp(r.age / r.dur, 0, 1);
+        const rad = lerp(r.r0, r.r1, easeOutCubic(p));
+        const alpha = 1 - easeInQuad(p);
+        if (alpha <= 0.02) continue;
+
+        ctx.save();
+        ctx.translate(r.x, r.y);
+        ctx.globalAlpha = clamp(alpha, 0, 1);
+
+        ctx.strokeStyle = r.color;
+        ctx.lineWidth = Math.max(1.2, r.lineW * (1 - p * 0.65));
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rad, rad * r.sy, 0, 0, TAU);
+        ctx.stroke();
+
+        ctx.strokeStyle = r.coreColor;
+        ctx.lineWidth = Math.max(0.9, r.lineW * 0.42 * (1 - p * 0.6));
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rad * 0.96, rad * r.sy * 0.96, 0, 0, TAU);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    /* -------------------- 分层高清渲染 render(preserveExisting) -------------------- */
+    function render(preserveExisting) {
+      const cw = canvas.width || LOGICAL_W;
+      const ch = canvas.height || LOGICAL_H;
+
+      if (autoClear && !preserveExisting) {
+        ctx.clearRect(0, 0, cw, ch);
+      }
+
+      ctx.save();
+      if (cw !== LOGICAL_W || ch !== LOGICAL_H) {
+        ctx.scale(cw / LOGICAL_W, ch / LOGICAL_H);
+      }
+
+      // Layer 0: 地面法阵、地面冰脉、后景震荡环与后景 PixelFX
+      for (let i = 0; i < state.magicCircles.length; i++) {
+        if (state.magicCircles[i].layer === 'back') drawMagicCircle(ctx, state.magicCircles[i]);
+      }
+      for (let i = 0; i < state.iceVeins.length; i++) {
+        drawIceVein(ctx, state.iceVeins[i]);
+      }
+      renderShockRings('back');
+      renderPfxLayer('back');
+
+      // Layer 1: 主体特效层（英雄冰棘、护盾底、主体 PixelFX、流光丝带、晶透残像、水柱）
+      for (let i = 0; i < state.heroThorns.length; i++) {
+        drawHeroThorns(ctx, state.heroThorns[i]);
+      }
+      renderPfxLayer('main');
+      for (let i = 0; i < state.shields.length; i++) {
+        drawPrismShield(ctx, state.shields[i]);
+      }
+      for (let i = 0; i < state.ribbons.length; i++) {
+        drawLuminousRibbon(ctx, state.ribbons[i]);
+      }
+      for (let i = 0; i < state.afterimages.length; i++) {
+        drawWindAfterimage(ctx, state.afterimages[i]);
+      }
+      for (let i = 0; i < state.waterStreams.length; i++) {
+        drawWaterStreamOverlay(ctx, state.waterStreams[i]);
+      }
+
+      // Layer 2: 前景高潮层（天穹法阵、倾斜星霜光雨、月牙刀光、前景 PixelFX、电弧）
+      for (let i = 0; i < state.magicCircles.length; i++) {
+        if (state.magicCircles[i].layer !== 'back') drawMagicCircle(ctx, state.magicCircles[i]);
+      }
+      for (let i = 0; i < state.skyBeams.length; i++) {
+        drawSkyIcicleBeam(ctx, state.skyBeams[i]);
+      }
+      for (let i = 0; i < state.slashes.length; i++) {
+        drawCrescentSlash(ctx, state.slashes[i]);
+      }
+      renderPfxLayer('front');
+      renderShockRings('front');
+      for (let i = 0; i < state.lightningArcs.length; i++) {
+        drawLightningArc(ctx, state.lightningArcs[i]);
+      }
+
+      // Layer 3: 晶莹粒子 + 命中柔光闪 + 锐利星芒
+      for (let i = 0; i < state.particles.length; i++) {
+        drawParticle(ctx, state.particles[i]);
+      }
+      for (let i = 0; i < state.flashes.length; i++) {
+        const fl = state.flashes[i];
+        const p = clamp(fl.age / fl.dur, 0, 1);
+        const a = (1 - p) * (1 - p) * fl.alpha;
+        if (a <= 0.01) continue;
+        const rad = fl.r * (0.5 + 0.7 * easeOutCubic(p));
+        const g = ctx.createRadialGradient(fl.x, fl.y, 1, fl.x, fl.y, rad);
+        g.addColorStop(0, '#FFFFFF');
+        g.addColorStop(0.35, fl.color);
+        g.addColorStop(1, 'rgba(56,189,248,0)');
+        ctx.save();
+        ctx.globalAlpha = clamp(a, 0, 1);
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(fl.x, fl.y, rad, 0, TAU);
+        ctx.fill();
+        ctx.restore();
+      }
+      for (let i = 0; i < state.starFlares.length; i++) {
+        const f = state.starFlares[i];
+        const p = clamp(f.age / f.dur, 0, 1);
+        const rad = p < 0.25
+          ? lerp(f.r0, f.r1, easeOutBack(p / 0.25))
+          : lerp(f.r1, f.r0 * 0.4, easeInQuad((p - 0.25) / 0.75));
+        const a = (p < 0.7 ? 1 : clamp((1 - p) / 0.3, 0, 1)) * f.alpha;
+        drawStarFlare(ctx, f.x, f.y, rad, f.inner, f.points, f.rot, f.outerColor, f.coreColor, a);
+      }
+
+      ctx.restore();
+    }
+
+    function clear() {
+      state.timelines.length = 0;
+      state.pfxSlots.length = 0;
+      state.magicCircles.length = 0;
+      state.ribbons.length = 0;
+      state.waterStreams.length = 0;
+      state.iceVeins.length = 0;
+      state.heroThorns.length = 0;
+      state.shields.length = 0;
+      state.slashes.length = 0;
+      state.skyBeams.length = 0;
+      state.afterimages.length = 0;
+      state.lightningArcs.length = 0;
+      state.starFlares.length = 0;
+      state.shockRings.length = 0;
+      state.particles.length = 0;
+      state.flashes.length = 0;
+      const cw = canvas.width || LOGICAL_W;
+      const ch = canvas.height || LOGICAL_H;
+      ctx.clearRect(0, 0, cw, ch);
+    }
+
+    function isActive() {
+      return !!(
+        state.timelines.length ||
+        state.pfxSlots.length ||
+        state.magicCircles.length ||
+        state.ribbons.length ||
+        state.waterStreams.length ||
+        state.iceVeins.length ||
+        state.heroThorns.length ||
+        state.shields.length ||
+        state.slashes.length ||
+        state.skyBeams.length ||
+        state.afterimages.length ||
+        state.lightningArcs.length ||
+        state.starFlares.length ||
+        state.shockRings.length ||
+        state.particles.length ||
+        state.flashes.length
+      );
+    }
+
+    function getDuration(skillId) {
+      return (SKILL_MAP[skillId] && SKILL_MAP[skillId].duration) || 1250;
+    }
+
+    function getStats() {
+      return {
+        pfxActive: state.pfxSlots.length,
+        particles: state.particles.length,
+        totalLayers: state.pfxSlots.length + state.magicCircles.length + state.heroThorns.length +
+          state.slashes.length + state.skyBeams.length + state.ribbons.length + state.afterimages.length
+      };
+    }
+
+    return {
+      play,
+      update,
+      render,
+      clear,
+      isActive,
+      getDuration,
+      getStats
+    };
+  }
+
+  /* -------------------- 嵌入式 PixelFX 惰性兜底占位（由组装脚本注入） -------------------- */
+  function __createEmbeddedPixelFX() {
+/* Bundled from patch-gg/pixelfx (MIT License, Copyright (c) 2026 Patch & Hugo Duprez) */
+var PixelFX=(()=>{var Ua=Object.defineProperty;var Mr=Object.getOwnPropertyDescriptor;var pr=Object.getOwnPropertyNames;var xr=Object.prototype.hasOwnProperty;var et=(o,t)=>{for(var n in t)Ua(o,n,{get:t[n],enumerable:!0})},wr=(o,t,n,a)=>{if(t&&typeof t=="object"||typeof t=="function")for(let e of pr(t))!xr.call(o,e)&&e!==n&&Ua(o,e,{get:()=>t[e],enumerable:!(a=Mr(t,e))||a.enumerable});return o};var mr=o=>wr(Ua({},"__esModule",{value:!0}),o);var _1={};et(_1,{FX:()=>J1,clearFrame:()=>na,composite:()=>Wa,createFrame:()=>ta,createFx:()=>T0});var T=Math.PI*2,L=(o,t=0,n=1)=>o<t?t:o>n?n:o,Hn=(o,t,n)=>o+(t-o)*n;var uo=o=>o-Math.floor(o),wn=(o,t)=>(o%t+t)%t,Ht=(o,t,n)=>L((o-t)/(n-t)),z=(o,t,n)=>{let a=Ht(n,o,t);return a*a*(3-2*a)};var U={linear:o=>o,inQuad:o=>o*o,outQuad:o=>1-(1-o)*(1-o),inOutQuad:o=>o<.5?2*o*o:1-Math.pow(-2*o+2,2)/2,inCubic:o=>o*o*o,outCubic:o=>1-Math.pow(1-o,3),inOutCubic:o=>o<.5?4*o*o*o:1-Math.pow(-2*o+2,3)/2,inQuart:o=>o*o*o*o,outQuart:o=>1-Math.pow(1-o,4),inExpo:o=>o<=0?0:Math.pow(2,10*o-10),outExpo:o=>o>=1?1:1-Math.pow(2,-10*o),inSine:o=>1-Math.cos(o*Math.PI/2),outSine:o=>Math.sin(o*Math.PI/2),inOutSine:o=>-(Math.cos(Math.PI*o)-1)/2,inBack:(o,t=1.70158)=>o<=0?0:o>=1?1:(t+1)*o*o*o-t*o*o,outBack:(o,t=1.70158)=>o<=0?0:o>=1?1:1+(t+1)*Math.pow(o-1,3)+t*Math.pow(o-1,2),outElastic:o=>o<=0?0:o>=1?1:Math.pow(2,-10*o)*Math.sin((o*10-.75)*(2*Math.PI/3))+1,outBounce:o=>o<1/2.75?7.5625*o*o:o<2/2.75?7.5625*(o-=1.5/2.75)*o+.75:o<2.5/2.75?7.5625*(o-=2.25/2.75)*o+.9375:7.5625*(o-=2.625/2.75)*o+.984375};function Mo(...o){let t=2654435769;for(let n of o)t=Math.imul(t^(n|0),2246822507),t^=t>>>13,t=Math.imul(t,3266489909),t^=t>>>16;return t>>>0}var G=(...o)=>Mo(...o)/4294967296,X=class{constructor(t=1){this.s=t>>>0||1}next(){let t=this.s=this.s+1831565813>>>0;return t=Math.imul(t^t>>>15,t|1),t^=t+Math.imul(t^t>>>7,t|61),((t^t>>>14)>>>0)/4294967296}range(t,n){return t+(n-t)*this.next()}int(t,n){return Math.floor(this.range(t,n+1))}chance(t){return this.next()<t}sign(){return this.next()<.5?-1:1}pick(t){return t[Math.floor(this.next()*t.length)]}gauss(){return(this.next()+this.next()+this.next()+this.next()-2)*1.732}},v0=(...o)=>new X(Mo(...o));function at(o,t=0){let n=Math.floor(o),a=o-n,e=a*a*(3-2*a);return Hn(G(n,t),G(n+1,t),e)*2-1}function Vt(o,t,n=0){let a=Math.floor(o),e=Math.floor(t),s=o-a,i=t-e,f=s*s*(3-2*s),u=i*i*(3-2*i),g=G(a,e,n),h=G(a+1,e,n),c=G(a,e+1,n),r=G(a+1,e+1,n);return Hn(Hn(g,h,f),Hn(c,r,f),u)*2-1}function A0(o,t,n=0,a=0,e=0){let s=Math.floor(o),i=Math.floor(t),f=o-s,u=t-i,g=f*f*(3-2*f),h=u*u*(3-2*u),c=n?wn(s,n):s,r=n?wn(s+1,n):s+1,l=a?wn(i,a):i,p=a?wn(i+1,a):i+1,m=G(c,l,e),A=G(r,l,e),R=G(c,p,e),y=G(r,p,e);return Hn(Hn(m,A,g),Hn(R,y,g),h)*2-1}var Dt=(o,t,n)=>255<<24|(n&255)<<16|(t&255)<<8|o&255,qn=o=>o&255,Vn=o=>o>>>8&255,Qn=o=>o>>>16&255;function C(o){if(typeof o=="number")return o;let t=o.replace("#","");t.length===3&&(t=t[0]+t[0]+t[1]+t[1]+t[2]+t[2]);let n=parseInt(t.slice(0,6),16);return Dt(n>>16&255,n>>8&255,n&255)}var po=o=>"#"+[qn(o),Vn(o),Qn(o)].map(t=>t.toString(16).padStart(2,"0")).join("");function tt(o,t,n){return n=L(n),Dt(qn(o)+(qn(t)-qn(o))*n,Vn(o)+(Vn(t)-Vn(o))*n,Qn(o)+(Qn(t)-Qn(o))*n)}var gt=(o,t)=>Dt(Math.min(255,qn(o)*t),Math.min(255,Vn(o)*t),Math.min(255,Qn(o)*t)),R0=o=>(.299*qn(o)+.587*Vn(o)+.114*Qn(o))/255,E0=o=>o.map(C);var _Yc=new WeakMap;function Y(o,t){if(o&&typeof o=="object"){let m=_Yc.get(o),c=m&&m[t];if(c)return c;let p=o.map(C),r=p.length===t?p:Array.from({length:t},(n,a)=>p[Math.round(a*(p.length-1)/Math.max(1,t-1))]);if(!m)_Yc.set(o,m={});return m[t]=r,r}return o=o.map(C),o.length===t?o:Array.from({length:t},(n,a)=>o[Math.round(a*(o.length-1)/Math.max(1,t-1))])}var P0={fire:["#1f0b10","#4a1118","#8c1d1c","#cc3a1a","#f2701f","#ffae35","#ffe27a","#fff8d6"],ember:["#1a0a0e","#3d1012","#701a14","#a8301a","#e0561e","#ff8a2a","#ffc46a"],lava:["#14060a","#380a10","#6e1210","#ac2410","#e8501a","#ff8c2a","#ffd25a"],smoke:["#0e0c12","#1d1a22","#2e2a35","#433e4b","#5c5664","#7b7484","#a39cab"],dust:["#1c1610","#33281c","#4f3f2c","#6e5a40","#927a58","#b89f78","#dcc8a2"],ice:["#0c1430","#162c5c","#1f4f94","#2f7fcc","#58b4ec","#9bdcff","#d8f4ff","#ffffff"],water:["#081830","#0e2e5a","#14508c","#1c76bc","#36a2e0","#78ccf4","#c4ecff","#ffffff"],electric:["#0a0f2e","#172a78","#2550d0","#3f8cff","#7cc8ff","#c8f0ff","#ffffff"],volt:["#24160a","#5e3a0c","#a8680f","#e8a218","#ffd23c","#fff08a","#ffffff"],poison:["#0d1a0c","#173a14","#265e18","#3f8a1e","#6cb82a","#a8e04a","#e0ff8a"],holy:["#2a1c08","#5a3e10","#9a6c18","#d8a428","#ffd84a","#fff09a","#fffbe6","#ffffff"],heal:["#08201a","#0f3f2c","#17663e","#24924e","#3ec466","#7ee88a","#c8ffc4","#ffffff"],arcane:["#140a26","#2b1252","#481c88","#6b2cc0","#9a48ec","#c684ff","#ecc8ff","#ffffff"],shadow:["#050308","#0f0a18","#1c1230","#2c1a4a","#432468","#5e3290","#8048b8","#a970e0"],blood:["#14040a","#3a0a14","#6a101c","#a01824","#d42a30","#ff5a50","#ff9a8a"],earth:["#140e0a","#2a1e14","#47321e","#69492a","#8e6638","#b88a52","#dcb47c"],stone:["#0e0e12","#1c1c24","#2c2c38","#42424f","#5c5c6b","#7d7d8c","#a4a4b2","#d0d0da"],gold:["#1e1206","#4a2c08","#86520c","#c48412","#f0b424","#ffe066","#fff6c4","#ffffff"],leaf:["#0c1a0e","#163418","#225224","#357530","#4f9a3a","#7cc048","#b4e070","#e4ffb0"],wood:["#160c06","#2e1a0c","#4a2c14","#6a421e","#8e5c2c","#b47c40","#d8a464"],metal:["#0c0e14","#1c2230","#2e3648","#4a5468","#6e7a90","#9aa6ba","#d0d8e6","#ffffff"],bone:["#1a1814","#3a352c","#5e5648","#8a806c","#b8ad96","#e4dcc8","#fffaf0"],neon:["#1a0516","#3d0a33","#701560","#b0228f","#f53cd1","#ff86e6","#ffd2f6","#ffffff"],cyber:["#041418","#08303a","#0c5260","#108088","#18b4b0","#4ce8d8","#b4fff0","#ffffff"],matrix:["#020a04","#05200c","#0a3c16","#106624","#1a9a34","#3cd650","#a4ffa8","#e8ffe8"],candy:["#ff4a5a","#ff9a2a","#ffe03c","#5ad84a","#3cc8ff","#7a6cff","#f53cd1"],night:["#07060d","#0c0a18","#131026","#1b1734","#241f44","#2f2956"]},Q1=Object.fromEntries(Object.entries(P0).map(([o,t])=>[o,E0(t)])),I=C("#ffffff"),Z1=C("#000000"),$1=C("#0b0a10"),tc=C("#f53cd1");var yr={A:".#.|#.#|###|#.#|#.#",B:"##.|#.#|##.|#.#|##.",C:".##|#..|#..|#..|.##",D:"##.|#.#|#.#|#.#|##.",E:"###|#..|##.|#..|###",F:"###|#..|##.|#..|#..",G:".##|#..|#.#|#.#|.##",H:"#.#|#.#|###|#.#|#.#",I:"###|.#.|.#.|.#.|###",J:"..#|..#|..#|#.#|.#.",K:"#.#|#.#|##.|#.#|#.#",L:"#..|#..|#..|#..|###",M:"#.#|###|###|#.#|#.#",N:"##.|#.#|#.#|#.#|#.#",O:".#.|#.#|#.#|#.#|.#.",P:"##.|#.#|##.|#..|#..",Q:".#.|#.#|#.#|##.|.##",R:"##.|#.#|##.|#.#|#.#",S:".##|#..|.#.|..#|##.",T:"###|.#.|.#.|.#.|.#.",U:"#.#|#.#|#.#|#.#|###",V:"#.#|#.#|#.#|#.#|.#.",W:"#.#|#.#|###|###|#.#",X:"#.#|#.#|.#.|#.#|#.#",Y:"#.#|#.#|.#.|.#.|.#.",Z:"###|..#|.#.|#..|###",0:"###|#.#|#.#|#.#|###",1:".#.|##.|.#.|.#.|###",2:"##.|..#|.#.|#..|###",3:"##.|..#|.#.|..#|##.",4:"#.#|#.#|###|..#|..#",5:"###|#..|##.|..#|##.",6:".##|#..|###|#.#|###",7:"###|..#|.#.|.#.|.#.",8:"###|#.#|###|#.#|###",9:"###|#.#|###|..#|##.","+":"...|.#.|###|.#.|...","-":"...|...|###|...|...","!":"#|#|#|.|#","?":"##.|..#|.#.|...|.#.",".":".|.|.|.|#",",":"..|..|..|.#|#.",":":".|#|.|#|.","/":"..#|..#|.#.|#..|#..","%":"#.#|..#|.#.|#..|#.#",x:"...|#.#|.#.|#.#|...","*":"#.#|.#.|#.#|...|...","'":"#|#|.|.|.","(":".#|#.|#.|#.|.#",")":"#.|.#|.#|.#|#.","<":"..#|.#.|#..|.#.|..#",">":"#..|.#.|..#|.#.|#..","=":"...|###|...|###|...",_:"...|...|...|...|###","#":"#.#|###|#.#|###|#.#"},br={A:".###.|#...#|#...#|#####|#...#|#...#|#...#",B:"####.|#...#|#...#|####.|#...#|#...#|####.",C:".###.|#...#|#....|#....|#....|#...#|.###.",D:"####.|#...#|#...#|#...#|#...#|#...#|####.",E:"#####|#....|#....|####.|#....|#....|#####",F:"#####|#....|#....|####.|#....|#....|#....",G:".###.|#...#|#....|#.###|#...#|#...#|.####",H:"#...#|#...#|#...#|#####|#...#|#...#|#...#",I:"###|.#.|.#.|.#.|.#.|.#.|###",J:"..###|...#.|...#.|...#.|...#.|#..#.|.##..",K:"#...#|#..#.|#.#..|##...|#.#..|#..#.|#...#",L:"#....|#....|#....|#....|#....|#....|#####",M:"#...#|##.##|#.#.#|#.#.#|#...#|#...#|#...#",N:"#...#|#...#|##..#|#.#.#|#..##|#...#|#...#",O:".###.|#...#|#...#|#...#|#...#|#...#|.###.",P:"####.|#...#|#...#|####.|#....|#....|#....",Q:".###.|#...#|#...#|#...#|#.#.#|#..#.|.##.#",R:"####.|#...#|#...#|####.|#.#..|#..#.|#...#",S:".####|#....|#....|.###.|....#|....#|####.",T:"#####|..#..|..#..|..#..|..#..|..#..|..#..",U:"#...#|#...#|#...#|#...#|#...#|#...#|.###.",V:"#...#|#...#|#...#|#...#|#...#|.#.#.|..#..",W:"#...#|#...#|#...#|#.#.#|#.#.#|#.#.#|.#.#.",X:"#...#|#...#|.#.#.|..#..|.#.#.|#...#|#...#",Y:"#...#|#...#|.#.#.|..#..|..#..|..#..|..#..",Z:"#####|....#|...#.|..#..|.#...|#....|#####",0:".###.|#...#|#..##|#.#.#|##..#|#...#|.###.",1:".#.|##.|.#.|.#.|.#.|.#.|###",2:".###.|#...#|....#|...#.|..#..|.#...|#####",3:"#####|...#.|..#..|...#.|....#|#...#|.###.",4:"...#.|..##.|.#.#.|#..#.|#####|...#.|...#.",5:"#####|#....|####.|....#|....#|#...#|.###.",6:"..##.|.#...|#....|####.|#...#|#...#|.###.",7:"#####|....#|...#.|..#..|.#...|.#...|.#...",8:".###.|#...#|#...#|.###.|#...#|#...#|.###.",9:".###.|#...#|#...#|.####|....#|...#.|.##..","!":"#|#|#|#|#|.|#","?":".###.|#...#|....#|...#.|..#..|.....|..#..","+":".....|..#..|..#..|#####|..#..|..#..|.....","-":"....|....|....|####|....|....|....",".":".|.|.|.|.|.|#",",":"..|..|..|..|..|.#|#.",":":".|.|#|.|.|#|.","/":"....#|....#|...#.|..#..|.#...|#....|#....","%":"##...|##..#|...#.|..#..|.#...|#..##|...##",x:".....|.....|#...#|.#.#.|..#..|.#.#.|#...#","*":".....|..#..|#.#.#|.###.|#.#.#|..#..|.....","'":"#|#|.|.|.|.|.","<":"...#|..#.|.#..|#...|.#..|..#.|...#",">":"#...|.#..|..#.|...#|..#.|.#..|#...","=":"....|....|####|....|####|....|....","(":"..#|.#.|#..|#..|#..|.#.|..#",")":"#..|.#.|..#|..#|..#|.#.|#..","#":".#.#.|.#.#.|#####|.#.#.|#####|.#.#.|.#.#."};function xo(o,t){let n={};for(let[a,e]of Object.entries(o)){let s=e.split("|");if(n[a]={w:s[0].length,rows:s.map(i=>[...i].map(f=>f==="#"))},s.length!==t)throw new Error(`glyph ${a} has ${s.length} rows, expected ${t}`)}return n}var I0={mini:{h:5,space:2,gap:1,glyphs:xo(yr,5)},big:{h:7,space:3,gap:1,glyphs:xo(br,7)}};function Q0(o,t="mini"){let n=I0[t],a=0;for(let e of String(o)){let s=n.glyphs[e]??n.glyphs[e.toUpperCase()];a+=(s?s.w:n.space)+n.gap}return Math.max(0,a-n.gap)}function Z0(o,t,n){let a=I0[t],e=0;for(let s of String(o)){let i=a.glyphs[s]??a.glyphs[s.toUpperCase()];if(!i){e+=a.space+a.gap;continue}for(let f=0;f<a.h;f++)for(let u=0;u<i.w;u++)i.rows[f][u]&&n(e+u,f);e+=i.w+a.gap}}var kr=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5].map(o=>(o+.5)/16),vr={c:0,a:1,l:0,k:0},wo=new WeakMap,ht=(o,...t)=>typeof o=="function"?o(...t):o,S0=class{constructor(t){this.frame=t,this.reset()}reset(){let t=this.frame;return this.w=t.w,this.h=t.h,this.ox=t.ox|0,this.oy=t.oy|0,this.C=t.color,this.L=t.light,this.tx=0,this.ty=0,this.fx=1,this.cs=1,this.sn=0,this.fade=1,this.lightK=1,this.layer="front",this}place(t,n,a=!1,e=0){return this.tx=Number.isFinite(t)?t:0,this.ty=Number.isFinite(n)?n:0,this.fx=a?-1:1,e=Number.isFinite(e)?e:0,this.cs=Math.cos(e),this.sn=Math.sin(e),this}toX(t,n){return this.tx+t*this.fx*this.cs-n*this.sn}toY(t,n){return this.ty+t*this.fx*this.sn+n*this.cs}fromX(t,n){let a=t-this.tx,e=n-this.ty;return(a*this.cs+e*this.sn)*this.fx}fromY(t,n){let a=t-this.tx,e=n-this.ty;return-a*this.sn+e*this.cs}cellX(t,n){return Math.floor(this.toX(Math.floor(t)+.5,Math.floor(n)+.5))}cellY(t,n){return Math.floor(this.toY(Math.floor(t)+.5,Math.floor(n)+.5))}put(t,n,a,e=1){if(!a||(e*=this.fade,e<1&&e<=kr[(n&3)<<2|t&3]))return;let s=t-this.ox,i=n-this.oy;s<0||i<0||s>=this.w||i>=this.h||(this.C[i*this.w+s]=a)}add(t,n,a,e=1){if(e*=this.fade*this.lightK,e<=.004)return;let s=t-this.ox,i=n-this.oy;if(s<0||i<0||s>=this.w||i>=this.h)return;let f=i*this.w+s,u=this.L[f],g=Math.min(255,(u&255)+(a&255)*e)|0,h=Math.min(255,(u>>>8&255)+(a>>>8&255)*e)|0,c=Math.min(255,(u>>>16&255)+(a>>>16&255)*e)|0;this.L[f]=255<<24|c<<16|h<<8|g}blendPx(t,n,a,e){if(e*=this.fade,!a||e<=.004)return;let s=t-this.ox,i=n-this.oy;if(s<0||i<0||s>=this.w||i>=this.h)return;let f=i*this.w+s,u=this.C[f],g=(u>>>24)/255,h=e+g*(1-e),c=e/h,r=l=>(a>>>l&255)*c+(u>>>l&255)*(1-c)&255;this.C[f]=(h*255&255)<<24|r(16)<<16|r(8)<<8|r(0)}blend(t,n,a,e){this.blendPx(this.cellX(t,n),this.cellY(t,n),a,e)}disc(t,n,a,e,s){if(a<.5)return this.blend(t,n,ht(e,0,0),ht(s,0,0));this.each(t-a,n-a,t+a,n+a,(i,f,u,g)=>{let h=i-t,c=f-n,r=h*h+c*c;if(r>a*a)return;let l=Math.sqrt(r)/a,p=Math.atan2(c,h);this.blendPx(u,g,ht(e,l,p),ht(s,l,p))})}get(t,n){let a=this.cellX(t,n)-this.ox,e=this.cellY(t,n)-this.oy;return a<0||e<0||a>=this.w||e>=this.h?0:this.C[e*this.w+a]}px(t,n,a){this.put(this.cellX(t,n),this.cellY(t,n),a,1)}dot(t,n,a,e=1){e>0&&this.put(this.cellX(t,n),this.cellY(t,n),a,e)}light(t,n,a,e=1){this.add(this.cellX(t,n),this.cellY(t,n),a,e)}each(t,n,a,e,s){if(this.sn===0){let tx=this.tx,ty=this.ty,fx=this.fx,x0=tx+t*fx,x1=tx+a*fx,y0=ty+n,y1=ty+e;if(x0>x1){let z=x0;x0=x1;x1=z}if(y0>y1){let z=y0;y0=y1;y1=z}if(!Number.isFinite(x0)||!Number.isFinite(x1)||!Number.isFinite(y0)||!Number.isFinite(y1))return;let h=Math.max(Math.floor(x0),this.ox),c=Math.min(Math.ceil(x1),this.ox+this.w-1),r=Math.max(Math.floor(y0),this.oy),l=Math.min(Math.ceil(y1),this.oy+this.h-1);for(let p=r;p<=l;p++){let ry=p+.5-ty;for(let m=h;m<=c;m++)s((m+.5-tx)*fx,ry,m,p)}return}let i=1/0,f=-1/0,u=1/0,g=-1/0;for(let p=0;p<4;p++){let m=p&1?a:t,A=p&2?e:n,R=this.toX(m,A),y=this.toY(m,A);R<i&&(i=R),R>f&&(f=R),y<u&&(u=y),y>g&&(g=y)}if(!Number.isFinite(i)||!Number.isFinite(f)||!Number.isFinite(u)||!Number.isFinite(g))return;let h=Math.max(Math.floor(i),this.ox),c=Math.min(Math.ceil(f),this.ox+this.w-1),r=Math.max(Math.floor(u),this.oy),l=Math.min(Math.ceil(g),this.oy+this.h-1);for(let p=r;p<=l;p++)for(let m=h;m<=c;m++){let A=m+.5,R=p+.5;s(this.fromX(A,R),this.fromY(A,R),m,p)}}shade(t,n,a,e,s){let i=vr;this.each(t,n,a,e,(f,u,g,h)=>{i.c=0,i.a=1,i.l=0,i.k=0;let c=s(f,u,i)||i.c;c&&this.put(g,h,c,i.a),i.k>0&&this.add(g,h,i.l||c,i.k)})}line(t,n,a,e,s,i=1){let f=this.cellX(t,n),u=this.cellY(t,n),g=this.cellX(a,e),h=this.cellY(a,e);if(!Number.isFinite(f)||!Number.isFinite(u)||!Number.isFinite(g)||!Number.isFinite(h))return;let c=Math.abs(g-f),r=-Math.abs(h-u),l=f<g?1:-1,p=u<h?1:-1,m=Math.max(c,-r)||1,A=typeof s=="function",R=typeof i=="function",y=c+r,d=0,lim=Math.min(4096,c-r+4);while(d<=lim){let b=d++/m;if(this.put(f,u,A?s(b):s,R?i(b):i),f===g&&u===h)break;let k=2*y;k>=r&&(y+=r,f+=l),k<=c&&(y+=c,u+=p)}}polyline(t,n,a=1){for(let e=1;e<t.length;e++)this.line(t[e-1][0],t[e-1][1],t[e][0],t[e][1],n,a)}beam(t,n,a,e,s,i,f=1){let u=s/2,g=a-t,h=e-n,c=g*g+h*h||1e-9;this.shade(Math.min(t,a)-u,Math.min(n,e)-u,Math.max(t,a)+u,Math.max(n,e)+u,(r,l,p)=>{let m=L(((r-t)*g+(l-n)*h)/c),A=t+g*m-r,R=n+h*m-l,y=A*A+R*R;if(y>u*u)return;let d=Math.sqrt(y)/u;p.c=ht(i,m,d),p.a=ht(f,m,d)})}circle(t,n,a,e,s=1){if(a<.6)return this.dot(t,n,ht(e,0,0),ht(s,0,0));this.shade(t-a,n-a,t+a,n+a,(i,f,u)=>{let g=i-t,h=f-n,c=g*g+h*h;if(c>a*a)return;let r=Math.sqrt(c)/a,l=Math.atan2(h,g);u.c=ht(e,r,l),u.a=ht(s,r,l)})}ellipse(t,n,a,e,s,i=1){a<=0||e<=0||this.shade(t-a,n-e,t+a,n+e,(f,u,g)=>{let h=(f-t)/a,c=(u-n)/e,r=h*h+c*c;if(r>1)return;let l=Math.sqrt(r),p=Math.atan2(c,h);g.c=ht(s,l,p),g.a=ht(i,l,p)})}ring(t,n,a,e,s,i=1){let f=Math.max(0,a-e);this.shade(t-a,n-a,t+a,n+a,(u,g,h)=>{let c=u-t,r=g-n,l=c*c+r*r;if(l>a*a||l<f*f)return;let p=e>0?(Math.sqrt(l)-f)/(a-f||1):1,m=Math.atan2(r,c);h.c=ht(s,p,m),h.a=ht(i,p,m)})}arc(t,n,a,e,s,i,f,u=1){let g=i-s,h=typeof e=="function";this.shade(t-a,n-a,t+a,n+a,(c,r,l)=>{let p=c-t,m=r-n,A=Math.sqrt(p*p+m*m);if(A>a)return;let R=Math.atan2(m,p)-s;if(R-=Math.floor(R/(Math.PI*2))*Math.PI*2,R>g)return;let y=R/g,d=h?e(y):e;if(d<=0||A<a-d)return;let b=(A-(a-d))/d;l.c=ht(f,y,b),l.a=ht(u,y,b)})}rect(t,n,a,e,s,i=1){if(this.sn===0){let f=Math.round(t),u=Math.round(n),g=Math.round(t+a),h=Math.round(n+e);for(let c=u;c<h;c++)for(let r=f;r<g;r++)this.put(this.cellX(r,c),this.cellY(r,c),s,i);return}this.shade(t,n,t+a,n+e,(f,u,g)=>{f<t||u<n||f>=t+a||u>=n+e||(g.c=s,g.a=i)})}poly(t,n,a=1){let e=1/0,s=1/0,i=-1/0,f=-1/0;for(let[g,h]of t)g<e&&(e=g),g>i&&(i=g),h<s&&(s=h),h>f&&(f=h);let u=t.length;this.shade(e,s,i,f,(g,h,c)=>{let r=!1;for(let l=0,p=u-1;l<u;p=l++){let[m,A]=t[l],[R,y]=t[p];A>h!=y>h&&g<(R-m)*(h-A)/(y-A)+m&&(r=!r)}r&&(c.c=ht(n,g,h),c.a=ht(a,g,h))})}tri(t,n,a,e,s,i,f,u=1){this.poly([[t,n],[a,e],[s,i]],f,u)}glow(t,n,a,e,s=.5){let fk=s*this.fade*this.lightK;if(a<1||fk<=.004||!Number.isFinite(a))return;if(a>46)a=46;let i=this.toX(t,n),f=this.toY(t,n);if(!Number.isFinite(i)||!Number.isFinite(f))return;let ox=this.ox,oy=this.oy,W=this.w,Lbuf=this.L,u=Math.max(ox,Math.floor(i-a)),g=Math.min(ox+W-1,Math.ceil(i+a)),h=Math.max(oy,Math.floor(f-a)),c=Math.min(oy+this.h-1,Math.ceil(f+a));if(u>g||h>c)return;let invA=1/a,er=e&255,eg=e>>>8&255,eb=e>>>16&255;for(let r=h;r<=c;r++){let l=(r+.5-f)*invA,l2=l*l;if(l2>=1)continue;let row=(r-oy)*W-ox;for(let p=u;p<=g;p++){let m=(p+.5-i)*invA,A=m*m+l2;if(A>=1)continue;let R=1-Math.sqrt(A),k=R*R*fk;if(k<=.004)continue;let idx=row+p,cur=Lbuf[idx],nr=(cur&255)+er*k,ng=(cur>>>8&255)+eg*k,nb=(cur>>>16&255)+eb*k;Lbuf[idx]=255<<24|(nb>255?255:nb|0)<<16|(ng>255?255:ng|0)<<8|(nr>255?255:nr|0)}}}glowLine(t,n,a,e,s,i,f=.5){if(s<1||f<=.004||!Number.isFinite(s))return;if(s>24)s=24;let u=this.toX(t,n),g=this.toY(t,n),h=this.toX(a,e),c=this.toY(a,e);if(!Number.isFinite(u)||!Number.isFinite(g)||!Number.isFinite(h)||!Number.isFinite(c))return;let r=h-u,l=c-g,p=r*r+l*l||1e-9,m=Math.max(this.ox,Math.floor(Math.min(u,h)-s)),A=Math.min(this.ox+this.w-1,Math.ceil(Math.max(u,h)+s)),R=Math.max(this.oy,Math.floor(Math.min(g,c)-s)),y=Math.min(this.oy+this.h-1,Math.ceil(Math.max(g,c)+s));for(let d=R;d<=y;d++)for(let b=m;b<=A;b++){let k=b+.5,w=d+.5,x=L(((k-u)*r+(w-g)*l)/p),M=u+r*x-k,v=g+l*x-w,E=Math.sqrt(M*M+v*v)/s;if(E>=1)continue;let P=1-E;this.add(b,d,i,P*P*f)}}glowRing(t,n,a,e,s,i=.5){if(e<1||i<=.004||!Number.isFinite(a)||!Number.isFinite(e))return;let f=this.toX(t,n),u=this.toY(t,n);if(!Number.isFinite(f)||!Number.isFinite(u))return;let g=Math.min(54,a+e),h0=Math.max(this.oy,Math.floor(u-g)),h1=Math.min(this.oy+this.h-1,Math.ceil(u+g)),c0=Math.max(this.ox,Math.floor(f-g)),c1=Math.min(this.ox+this.w-1,Math.ceil(f+g));for(let h=h0;h<=h1;h++)for(let c=c0;c<=c1;c++){let r=Math.abs(Math.hypot(c+.5-f,h+.5-u)-a)/e;if(r>=1)continue;let l=1-r;this.add(c,h,s,l*l*i)}}sprite(t,n,a,e,s={}){let i=wo.get(t);i||wo.set(t,i=t.map(c=>[...c]));let f=s.scale??1,u=s.a??1,g=i[0]?.length??0,h={};for(let c=0;c<i.length;c++)for(let r=0;r<i[c].length;r++){let l=i[c][r];if(l==="."||l===" ")continue;let p=s.tint;if(p===void 0&&(p=h[l],p===void 0&&(p=h[l]=n[l]===void 0?0:C(n[l]))),!p)continue;let m=s.flip?g-1-r:r,A=s.flipY?i.length-1-c:c;f===1?this.dot(a+m,e+A,p,u):this.rect(a+m*f,e+A*f,f,f,p,u)}}text(t,n,a,e,s={}){let i=s.font??"mini",f=s.scale??1,u=s.a??1,g=Q0(t,i)*f,h=Math.round(s.align==="center"?n-g/2:s.align==="right"?n-g:n),c=Math.round(a),r=s.outline,l=s.shadow;r!==void 0&&Z0(t,i,(p,m)=>this.rect(h+p*f-1,c+m*f-1,f+2,f+2,r,u)),l!==void 0&&Z0(t,i,(p,m)=>this.rect(h+p*f+1,c+m*f+1,f,f,l,u)),Z0(t,i,(p,m)=>this.rect(h+p*f,c+m*f,f,f,ht(e,p,m),u))}measure(t,n={}){let a=n.scale??1;return[Q0(t,n.font??"mini")*a,I0[n.font??"mini"].h*a]}mask(t,n,a,e,s=1){for(let i=0;i<t.h;i++)for(let f=0;f<t.w;f++)t.data[i*t.w+f]&&this.dot(n+f,a+i,ht(e,f,i),ht(s,f,i))}outline(t,n,a,e,s=1){let i=(f,u)=>f>=0&&u>=0&&f<t.w&&u<t.h&&t.data[u*t.w+f];for(let f=-1;f<=t.h;f++)for(let u=-1;u<=t.w;u++)!i(u,f)&&(i(u-1,f)||i(u+1,f)||i(u,f-1)||i(u,f+1))&&this.dot(n+u,a+f,ht(e,u,f),ht(s,u,f))}};var ja=["....kkkkk...","..kkhhhhhk..",".khhhhhhhhk.",".khhhhhhhhhk",".khhssssshhk",".khsessesshk",".khsessesshk","..ksssssssk.","...kkSSSkk..","..kttttttk..",".kttTttTttk.",".ksttTTttsk.",".kstttttttk.","..kbbbbbbk..","..kppkkppk..","..kppk.kppk.","..kppk.kppk.","..koook.kook","..kkkkk.kkkk"],bo={k:"#17121f",h:"#7a4128",s:"#f3c49d",S:"#c98b6c",e:"#17121f",t:"#5f6f94",T:"#46536f",b:"#8a5a32",p:"#38334a",o:"#6a4030",H:"#a35d34",w:"#ffffff",m:"#a3564a",g:"#e8c060",L:"#7f90b6",O:"#8f5a3f",P:"#4b4560",c:"#f53cd1",C:"#ff8fe6",D:"#a31f8a"},Zn={k:"#0e0c14",A:"#e4e6ec",B:"#b6b9c3",C:"#868995",D:"#5c5e6a",E:"#6e707c",F:"#4b4d58",G:"#34353f",J:"#2a2b33",m:"#f53cd1"},D0=["...........kkk..........","..........kAABk.........",".........kAAABJk........",".........kABBJJk........",".........kBBBJCDk.......",".........kBCJDDDk.......",".........kkJJJDk........",".......kkkkABBJCkk......","......kAABCJBCCCkDk.....","......kABBCJCCCmDkDk....","......kBBCDDJCDDDkDk....","......kABCDJDDDDDkk.....",".....kAABDkDDDDJkk......",".....kABCDkDDJJGkk......",".....kABCkJJJGGGkk......","....kJJCDkFFFGGGk.......","....kAJJDkJJJGGGk.......","....kJCJJkABBJGGk.......",".....kJCCkBBCDJJJk......",".....kCCCJBBCDJJDk......",".....kCCCDJCCDkJDDk.....","......kCDDJBCDkDDDk.....",".......kDJJJCDkDDDkk....",".......kJBCJCDkDDDkk....",".......kBDJBCDkCDDkk....","........kJJBCDkCDDk.....","........kBBBCDkCCDDk....","........kBBBCDkCCDDk....",".........kBBCDkJDDDk....","........kBJJJJkCJJJk....","........kBBCCDkCCDDk....","........kBBCDDkCDDk.....","........kBBCDkCCDDk.....","........kBCCDkCCDDk.....","........kBCDDkCDDDk.....",".......kJBCJkkkDJkkkk...",".......kAJJAAAAkCCCCCk..","........kkkkkkkkkkkkk..."];function mo(o,t=1){let n=o.length*t,a=o[0].length*t,e=new Uint8Array(a*n);return o.forEach((s,i)=>[...s].forEach((f,u)=>{if(f!==".")for(let g=0;g<t*t;g++)e[(i*t+(g/t|0))*a+u*t+g%t]=1})),{w:a,h:n,data:e}}var Ar={1:mo(ja,1),2:mo(D0,1)};function yo(o,t){let n=o[0].length,a=new Uint32Array(n*o.length);return o.forEach((e,s)=>[...e].forEach((i,f)=>a[s*n+f]=i==="."?0:C(t[i]))),a}var Rr={1:yo(ja,bo),2:yo(D0,Zn)};function $0(o=1){o=o===2?2:1;let t=Ar[o],n=-Math.floor(t.w/2),a=-t.h;return{mask:t,pixels:Rr[o],x:n,y:a,w:t.w,h:t.h,k:o,head:[0,a],chest:[0,o===2?-26:a+11],...o===2?{eyes:[[13,3],[15,3]]}:{}}}function ta(o,t,n=0,a=0){return{w:o,h:t,ox:n,oy:a,color:new Uint32Array(o*t),light:new Uint32Array(o*t)}}function na(o){return o.color.fill(0),o.light.fill(0),o}var ko=new WeakMap;function Ka(o){let t=ko.get(o);return t||ko.set(o,t=new S0(o)),t.reset()}var vo=.3,Ao=o=>Array.isArray(o)&&o.length>0&&o.every(t=>typeof t=="number"||/^#[0-9a-f]{3,8}$/i.test(t));function Ro(o,t={}){let n={...o.options??{},...t};for(let[a,e]of Object.entries(o.options??{}))Ao(e)&&Ao(t[a])&&t[a].length!==e.length&&(n[a]=Y(t[a],e.length).map(po));return o.actor&&!n.actor&&(n.actor=$0(o.actor===2?2:1)),n}function T0(o,t={}){let n=o.meta??{},a=Ro(n,t),e=o.create?o.create(a):o,s=n.duration??1,i=0,f=1/0;return{meta:n,options:a,get t(){return i},update(u){if(!Number.isFinite(u)||u<=0)return;let step=u>0.05?0.05:u;if(i+=u,!e.update)return;let g=Math.min(2,Math.max(1,Math.ceil(step*60-1e-9)));for(let h=0;h<g;h++)e.update(step/g,a)},draw(u,g){let h=Ka(u);h.place(a.x??0,a.y??0,!!a.flip,a.angle??0),h.fade=f===1/0?1:L(1-(i-f)/vo),h.lightK=a.light??1;let c=n.loop?i%s:Math.min(i,s);g!=="front"&&e.drawBack&&(h.layer="back",e.drawBack(h,c,a)),g!=="back"&&(h.layer="front",e.draw(h,c,a))},stop(){f===1/0&&(f=i)},done(){return i-f>=vo||!n.loop&&i>=s}}}function Wa(o,t,n=null,a=1){let e=o.w*o.h,s=o.color,i=o.light,f=typeof n=="number",o32=n===null&&t.buffer&&(t.byteOffset&3)===0?new Uint32Array(t.buffer,t.byteOffset,e):null;for(let u=0;u<e;u++){let g=s[u],h=i[u]&16777215;if(n===null&&(g|h)===0){if(o32)o32[u]=0;else{let z0=u<<2;t[z0]=0,t[z0+1]=0,t[z0+2]=0,t[z0+3]=0}continue}let c,r,l,p,m=g>>>24;if(m===255)c=g&255,r=g>>>8&255,l=g>>>16&255,p=255;else if(n===null)c=g&255,r=g>>>8&255,l=g>>>16&255,p=m;else{let R=f?n:n[u],y=m/255;c=(g&255)*y+(R&255)*(1-y),r=(g>>>8&255)*y+(R>>>8&255)*(1-y),l=(g>>>16&255)*y+(R>>>16&255)*(1-y),p=255}if(h){let R=(h&255)*a,y=(h>>>8&255)*a,d=(h>>>16&255)*a;if(p<255){let b=p/255,k=c*b+R,w=r*b+y,x=l*b+d,M=Math.min(1,Math.max(b,Math.max(R,y,d)/255));M>0&&(c=Math.min(255,k/M),r=Math.min(255,w/M),l=Math.min(255,x/M),p=M*255)}else c=Math.min(255,c+R),r=Math.min(255,r+y),l=Math.min(255,l+d)}let A=u*4;t[A]=c,t[A+1]=r,t[A+2]=l,t[A+3]=p}return t}var qa={};et(qa,{draw:()=>Vr,meta:()=>Uo});function Ca(o,t,n,a,e,s=0,i=0){if(i<=0)return[o+n*e,t+a*e+.5*s*e*e];let f=(1-Math.exp(-i*e))/i,u=s/i;return[o+n*f,t+u*e+(a-u)*f]}function mt(o,t,n,a,e,s){for(let i=0;i<n;i++){let f=v0(a,i,911),u=f.next()*t,g=typeof e=="function"?e(f):e,h=((o-u)%t+t)%t;for(;h<g;h+=t)s(h,g,v0(a,i),i)}}var Nt=950,So=[[1,0],[-1,0],[0,1],[0,-1]],Eo=[[1,1],[1,-1],[-1,1],[-1,-1]],$n=["#fff3a6","#ffe26b","#ff8a2a","#f2561d"].map(C),Do=["#ffffff","#fff3a6","#ffe26b","#ffc23d","#ff8a2a","#f2561d","#c9281f","#8a1f17","#4a1712"].map(C),t0=["#7b6f72","#5d5660","#433d48","#2b2630","#1a171e"].map(C),Po=(o,t)=>o[Math.min(o.length-1,Math.max(0,Math.floor(t*o.length)))],S={SPARK:0,MOTE:1,STREAK:2,FLAKE:3,VAPOUR:4,DUST:5,STAR:6,EMBER:7,SMOKE:8,FIRE:9,BRAND:10,GRIT:11},ot={SMOKES:1,BIG:2,BACK:4},Io=new Set([S.VAPOUR,S.DUST,S.SMOKE]),V=class{constructor(t={}){this.R=t.rng??new X(t.seed??1),this.list=[],this.t=0,this.ground=t.ground??(()=>1/0),this.sparks=(t.sparks??$n).map(C),this.haze=t.haze===void 0?null:C(t.haze),this.onLand=t.onLand??null}spawn(t,n,a,e,s,i,f=I,u=1,g=0,h=0){if(this.list.length>=36)return;this.list.push({k:t,x:n,y:a,vx:e,vy:s,life:i,max:i,col:f?C(f):0,size:u,seed:this.R.next()*100,delay:g,flag:h})}get count(){return this.list.length}update(t){this.t+=t;let n=this.R,a=this.t;for(let e=this.list.length-1;e>=0;e--){let s=this.list[e];if(s.delay>0){s.delay-=t;continue}if((s.life-=t)<=0){if(s.k===S.FIRE&&s.flag&ot.SMOKES){let i=s.flag&ot.BIG;this.spawn(S.SMOKE,s.x,s.y,s.vx*.6,s.vy*.6-6,i?n.range(1.3,2.3):n.range(.8,1.4),0,s.size*(i?.85:.7),0,i?ot.BIG:0)}this.list.splice(e,1);continue}switch(s.k){case S.FIRE:s.vy-=95*t,s.vx+=Math.sin(a*17+s.seed)*30*t,s.vx-=s.vx*5*t,s.vy-=s.vy*3.2*t;break;case S.GRIT:{s.vy+=Nt*t,s.vx-=s.vx*.8*t;let i=this.ground(s.x),f=s.y+s.vy*t;s.x+=s.vx*t,s.vy>0&&s.y<=i&&f>=i?(s.y=i-.25,s.vy>130&&n.chance(.4)?(s.vy=-s.vy*.25,s.vx=s.vx*.5+n.range(-10,10)):(s.vx=s.vy=0,s.life=Math.min(s.life,.5))):s.y=f;continue}case S.BRAND:{s.vy+=Nt*.8*t,s.vx-=s.vx*.9*t,n.chance(.9*Math.min(1,t*60))&&this.spawn(S.FIRE,s.x,s.y,s.vx*.1+n.range(-7,7),s.vy*.1-10,n.range(.16,.32),0,n.range(.9,1.7)*(.5+s.life/s.max*.6),0,n.chance(.4)?ot.SMOKES:0);let i=this.ground(s.x),f=s.y+s.vy*t;s.x+=s.vx*t,s.vy>0&&s.y<=i&&f>=i?(this.onLand?.(s.x,i),this.list.splice(e,1)):s.y=f;continue}case S.SPARK:{s.vy+=Nt*.45*t,s.vx-=s.vx*2.2*t,s.vy-=s.vy*2.2*t;let i=this.ground(s.x),f=s.y+s.vy*t;s.x+=s.vx*t,s.vy>0&&s.y<=i&&f>=i?(s.vy=-s.vy*.45,s.vx*=.7,s.y=i-.25):s.y=f;continue}case S.STREAK:s.vx+=s.vx*3*t,s.vy+=s.vy*3*t;break;case S.FLAKE:s.vx-=s.vx*2.2*t,s.vy-=s.vy*2.2*t-35*t,s.x+=Math.sin(this.t*2.5+s.seed)*7*t;break;case S.EMBER:s.vy+=(-30+Math.sin(a*3+s.seed)*20)*t,s.vx+=Math.cos(a*2.3+s.seed)*45*t,s.vx-=s.vx*1.6*t,s.vy-=s.vy*1.6*t;break;case S.SMOKE:{let i=s.flag&ot.BIG;s.vy-=(i?23:16)*t,s.vx+=Math.sin(a*1.3+s.seed)*8*t,s.vx-=s.vx*1.6*t,s.vy-=s.vy*1.2*t;break}case S.MOTE:s.vx-=s.vx*.6*t,s.vy-=s.vy*.6*t;break;default:{let i=Io.has(s.k)?4:1.6;s.vx-=s.vx*i*t,s.vy-=s.vy*i*t+5*t}}s.x+=s.vx*t,s.y+=s.vy*t}}draw(t,n){for(let a of this.list){if(a.delay>0||n&&(Io.has(a.k)||a.flag&ot.BACK?"back":"front")!==n)continue;let e=a.life/a.max,s=a.x,i=a.y,f=Math.hypot(a.vx,a.vy)||1,u=a.vx/f,g=a.vy/f;switch(a.k){case S.SPARK:{let h=this.sparks,c=e>.6?h[0]:e>.3?h[1]:h[2],r=Math.min(9,1+f*.022);t.line(s-u*r,i-g*r,s-u*r*.4,i-g*r*.4,e>.5?c:h[h.length-1]),t.line(s-u*r*.45,i-g*r*.45,s,i,c),t.glow(s,i,3,c,.45*e);break}case S.MOTE:{let h=Math.min(16,.5+f*.026)*a.size,c=e<.35?e/.35:1;t.line(s-u*h,i-g*h,s-u*h*.35,i-g*h*.35,gt(a.col,.55),c),t.line(s-u*h*.4,i-g*h*.4,s,i,a.col,c),t.glow(s,i,2.5+a.size,a.col,.4*e);break}case S.STREAK:{let h=L(f/30,1,7);for(let c=h;c>=0;c-=.5)t.dot(s-u*c,i-g*c,c<1?I:c<h*.5?a.col:gt(a.col,.6),c<h*.5?1:1.2-c/h);t.glow(s,i,4,a.col,.4);break}case S.FLAKE:{let h=Math.min(1,e*3);if(t.dot(s,i,a.col,h),a.size>1.3)for(let[c,r]of So)t.dot(s+c,i+r,gt(a.col,.8),h*.8);break}case S.VAPOUR:{let h=a.size*(.6+(1-e)*.9);t.disc(s,i,h,a.col,Math.pow(e,1.3)*.45),this.haze&&t.glow(s,i,h*1.8,this.haze,.16*e);break}case S.DUST:t.disc(s,i,a.size*(.6+(1-e)*.9),a.col,Math.pow(e,1.3)*.7);break;case S.SMOKE:{let h=1-e,c=a.flag&ot.BIG,r=a.size*(.65+Math.min(1,h*2.5)*.45+h*(c?.5:.4)),l=Math.min(1,h*12)*Math.min(1,e*2.4)*(c?.7:.58),p=a.col?tt(a.col,Po(t0,h),h):Po(t0,h*1.05);t.disc(s,i,r,p,l*.45),t.disc(s+r*.05,i+r*.06,r*.74,p,l*.62),h<.5&&t.disc(s-r*.22,i-r*.3,r*.5,tt(p,I,.12),l*.4*(1-h*2));break}case S.FIRE:{let h=1-e,c=Math.min(.999,Math.pow(h,.62)+a.seed%1*.1),r=Do,l=r.length,p=Math.min(l-2,Math.floor(c*(l-1))),m=a.size*(.55+.45*Math.min(1,h*7))*(1-h*.55),A=r[p];p>=l-2?t.disc(s,i,m,A,Math.min(1,e*3)*.85):(t.circle(s,i,m,r[Math.min(l-1,p+2)]),t.circle(s-m*.16,i-m*.22,m*.78,A),m>1.6&&t.circle(s,i-m*.9,m*.42,A),p<=3&&m>1.8&&t.circle(s-m*.28,i-m*.34,m*.36,r[Math.max(0,p-1)]),p<6&&t.glow(s,i,m*2.4+2,A,.18*e));break}case S.BRAND:t.circle(s,i,1.6,$n[3]),t.px(s,i,Math.sin(this.t*40+a.seed)>0?$n[0]:$n[1]),t.px(s+1,i,$n[1]),t.glow(s,i,7,$n[2],.45);break;case S.GRIT:(e>.25||e*4>.5)&&(t.px(s,i,a.col),a.size>=2&&(t.px(s+1,i,a.col),t.px(s,i+1,gt(a.col,.8)),t.px(s+1,i+1,gt(a.col,.7))));break;case S.EMBER:{let h=e>.6?this.sparks[0]:e>.3?this.sparks[1]:this.sparks[2];if(e<.25&&Math.sin(this.t*40+a.seed)<0)break;t.px(s,i,h),a.size>1.5&&t.px(s,i+1,this.sparks[this.sparks.length-1]),t.glow(s,i,3+a.size,h,.35*e);break}default:{let h=.6+.4*Math.sin(this.t*(8+a.seed%5)+a.seed);if(a.size<1){h*e>.25&&t.px(s,i,h>.8?I:a.col),t.glow(s,i,3,a.col,.4*e*h);break}nt(t,s,i,a.size*h*Math.min(1,e*3),a.col,gt(a.col,.75),.5*e*h)}}}}};var Q={SHARD:0,CHUNK:1,DRIP:2},lt=class{constructor(t={}){this.list=[],this.ground=t.ground??(()=>1/0)}add(t){if(this.list.length>=22)return;let n=t.life??1;this.list.push({kind:Q.SHARD,vx:0,vy:0,a:0,va:0,s:1,c:I,g:1,drag:0,bounce:0,rest:!1,...t,life:n,max:n})}get count(){return this.list.length}update(t){for(let n=this.list.length-1;n>=0;n--){let a=this.list[n];if((a.life-=t)<=0){this.list.splice(n,1);continue}if(a.rest)continue;a.vy+=Nt*a.g*t,a.vx-=a.vx*a.drag*t,a.vy-=a.vy*a.drag*t,a.x+=a.vx*t,a.y+=a.vy*t,a.a+=a.va*t;let e=this.ground(a.x),s=a.vy;a.g<=0||a.y<e||s<=0||(a.y=e-.01,a.kind===Q.DRIP?a.life=0:a.bounce>0&&s>70?(a.vy=-s*a.bounce,a.vx*=.7,a.va*=.6):(a.rest=!0,a.vx=a.vy=0))}}draw(t){for(let n of this.list){let a=Math.min(1,n.life/.4),e=Math.cos(n.a),s=Math.sin(n.a);if(n.kind===Q.SHARD)for(let i=-n.s/2;i<=n.s/2;i+=.5)t.dot(n.x+e*i,n.y+s*i,i>n.s/2-.6?I:C(n.c),a);else if(n.kind===Q.DRIP)t.dot(n.x,n.y,C(n.c),a),t.dot(n.x,n.y-1,C(n.c),a*.5);else{let i=(n.ramp??["#1c2030","#3a4a66","#6e86a8","#a8c0dc","#e8f2ff"]).map(C),f=i.length,u=Math.round(n.x),g=Math.round(n.y),h=Math.ceil(n.s)+1;for(let c=-h;c<=h;c++)for(let r=-h;r<=h;r++){let l=(r+.5)*e+(c+.5)*s,p=-(r+.5)*s+(c+.5)*e,m=Math.abs(l)/n.s+Math.abs(p)/(n.s*.62);m>1.3||t.dot(u+r,g+c,m>1?i[0]:p<0?l<0?i[f-1]:i[f-2]:l<0?i[f-3]:i[Math.max(1,f-4)],a)}}}}},Z=class{constructor(){this.list=[]}add(t,n,a,e,s,i){this.list.push({x:t,y:n,r:a,color:C(e),k:s,life:i,max:i})}update(t){for(let n=this.list.length-1;n>=0;n--)(this.list[n].life-=t)<=0&&this.list.splice(n,1)}draw(t){for(let n of this.list){let a=n.life/n.max;t.glow(n.x,n.y,n.r*(.55+.45*a),n.color,n.k*a*a)}}};function nt(o,t,n,a,e,s=e,i=.6){let f=Math.round(a);if(f<1)return;let u=Math.floor(t),g=Math.floor(n);for(let h=1;h<=f;h++){let c=h>f*.6?s:e;for(let[r,l]of So)o.px(u+r*h,g+l*h,c)}if(f>=3)for(let[h,c]of Eo)o.px(u+h,g+c,e);if(f>=6)for(let[h,c]of Eo)o.px(u+h*2,g+c*2,s);o.px(u,g,I),o.glow(t,n,4+f*2,e,i)}function Rt(o,t,n,a,e,s){if(a<1)return;let i=s.map(C),f=i.length;for(let u=0;u<8;u++){let g=u*Math.PI/4,h=u%4===0?a:u%2===0?a*.6:a*.3,c=Math.cos(g),r=Math.sin(g);for(let l=0;l<=h;l+=.5){let p=l/h;o.dot(t+c*l,n+r*l,p<.35?I:p<.7?i[f-2]:i[f-3],p<.6?1:e*1.5*(1-p)+.2)}}}function bt(o,t,n,a,e,s,i,f,u=()=>!0,g=!1){if(a<=0||i<=0)return;let h=f.map(C),c=h.length;for(let r=0,l=Math.ceil(a*T*1.2);r<l;r++){let p=r/l*T,m=Math.cos(p),A=Math.sin(p);if(u(p))for(let R=s;R>=0;R-=.5){let y=R/s,d=y<.15?g?I:h[c-1]:y<.4?h[c-2]:y<.7?h[c-3]:h[c-4];o.dot(t+m*(a-R),n+A*(a-R)*e,d,i*(y<.4?1.2:1.15-y))}}}function Ya(o,t,n,a,e,s,i,f={}){if(a<1.5)return;let u=i.map(C),g=u.length,h=A=>u[Math.max(0,g-1-A)],c=f.a??1,r=n-a,l=t-e*.14,p=f.glint??-1,m=(A,R)=>{let y=(n-(R+.5))/a;return y>=0&&y<=1&&Math.abs(A+.5-(t+s*y))<=e/2*(1-y)+.35};for(let A=Math.floor(r)-1;A<Math.ceil(n);A++)for(let R=Math.floor(t-e/2-Math.abs(s)-2);R<=Math.ceil(t+e/2+Math.abs(s)+2);R++){if(!m(R,A)){(m(R-1,A)||m(R+1,A)||m(R,A+1)||m(R,A-1)&&A<n-1)&&o.dot(R,A,u[0],c);continue}if(f.white){o.dot(R,A,I,c);continue}let y=(n-(A+.5))/a,d=l+(t+s-l)*y,b=t+s*y,k=e/2*(1-y)+.35,w=R+.5,x=y>.9?I:Math.abs(w-d)<.55?h(1):w<d?w-(b-k)<1?h(1):(w-(b-k))/Math.max(1,d-(b-k))>.55?h(2):h(3):b+k-w<1.2?h(Math.min(g-2,6)):(w-d)/Math.max(1,b+k-d)>.5?h(5):h(4);if(p>=0&&w<=d+.6){let M=Math.abs(y-p);M<.05?x=I:M<.1&&(x=h(1))}o.dot(R,A,x,c)}}var Ac=C("#15131d"),Rc=C("#0d0b14"),Ec=C("#221d33"),Pc=C("#4a4263"),Ic=C("#2b2639"),Sc=C("#211d2d"),Dc=C("#1a1724");var _t=Object.fromEntries(Object.entries(Zn).map(([o,t])=>[o,C(t)>>>0])),Bc=_t.k,Lc=_t.J,Hc=_t.m,Nc=[_t.A,_t.B,_t.C,_t.D],zc=[_t.E,_t.F,_t.G,_t.G],Qt=Math.PI/180;var Kt=(o,t)=>[o[0]+t[0],o[1]+t[1],o[2]+t[2]],sn=(o,t)=>[o[0]-t[0],o[1]-t[1],o[2]-t[2]],Zt=(o,t)=>[o[0]*t,o[1]*t,o[2]*t],ea=(o,t)=>o[0]*t[0]+o[1]*t[1]+o[2]*t[2],L0=(o,t)=>[o[1]*t[2]-o[2]*t[1],o[2]*t[0]-o[0]*t[2],o[0]*t[1]-o[1]*t[0]],s0=o=>Math.hypot(o[0],o[1],o[2]),Wt=o=>Zt(o,1/(s0(o)||1e-6)),n0=o=>{let t=Math.cos(o),n=Math.sin(o);return[t,0,n,0,1,0,-n,0,t]},a0=o=>{let t=Math.cos(o),n=Math.sin(o);return[t,-n,0,n,t,0,0,0,1]},e0=(o,t)=>{let n=new Array(9);for(let a=0;a<3;a++)for(let e=0;e<3;e++)n[a*3+e]=o[a*3]*t[e]+o[a*3+1]*t[3+e]+o[a*3+2]*t[6+e];return n},F0=(o,t)=>[o[0]*t[0]+o[1]*t[1]+o[2]*t[2],o[3]*t[0]+o[4]*t[1]+o[5]*t[2],o[6]*t[0]+o[7]*t[1]+o[8]*t[2]];var Er=o=>Math.max(0,Math.min(1,o)),st={pelvis:19.7,spine1:2.8,spine2:4.6,shoulderUp:2.5,shoulderOut:5.9,neckUp:4,headUp:3.1,hipDown:1.1,hipOut:2.8,thigh:8.6,shin:8.3,upper:7.6,fore:7.4,turn:36*Qt},B0={lean:0,crouch:0,yaw:0,fx:-3,fy:-15,bx:5,by:-15,ffx:-2,ffy:-4,fbx:3,fby:-4};function O0(o,t,n,a,e){let s=sn(t,o),i=s0(s),f=n+a-.02;i>f&&(s=Zt(s,f/i),i=f);let u=Wt(s),g=(n*n-a*a+i*i)/(2*i),h=Math.sqrt(Math.max(0,n*n-g*g)),c=sn(e,Zt(u,ea(e,u)));return c=s0(c)<1e-4?Wt(L0(u,[0,0,1])):Wt(c),{joint:Kt(o,Kt(Zt(u,g),Zt(c,h))),end:Kt(o,s),u,v:c}}function yn(o,t){return{t:o,R:t}}function mn(o,t,n){let a=Wt(sn(t,o)),e=sn(n,Zt(a,ea(n,a)));e=s0(e)<1e-4?Wt(L0(a,[0,0,1])):Wt(e);let s=L0(a,e);return yn(o,[a[0],e[0],s[0],a[1],e[1],s[1],a[2],e[2],s[2]])}var To=o=>Ur[o];function Pr(o){let t={...B0,...o},n=t.lean,a=t.weapon&&To(t.weapon),e=t.offWeapon&&To(t.offWeapon),s=t.sa??0,i=t.wl??1,f=Math.sqrt(Math.max(0,1-i*i))*(t.wz??1),u=[Math.cos(s)*i,-Math.sin(s)*i,f],g=[-Math.sin(s),-Math.cos(s),0],h=!!(t.two&&a),c=t.fz??(h?3:4.5),r=(t.fx-B0.fx)/24,l=h?0:(t.bx-B0.bx)/22,p=st.turn+(r>=0?-44*Qt*Math.min(1,r):28*Qt*Math.min(1,-r*1.8));p+=(l>0?34*Qt*Math.min(1,l):0)+(t.twist??0)*4*Qt,t.turn!==void 0&&(p=t.turn);let m=st.turn+(p-st.turn)*.45,A=Math.atan2(n,13),R=e0(a0(-A*.25),n0(-m)),y=e0(a0(-A),n0(-p)),d=[t.ffx,-t.ffy-1.8,t.fzz??2.4],b=[t.fbx,-t.fby-1.8,t.bzz??-2.4],k=[n*.2,st.pelvis-t.crouch,0],w=Gt=>Kt(k,F0(R,[0,-st.hipDown,Gt*st.hipOut])),x=(st.thigh+st.shin)*.995;for(let[Gt,jt]of[[1,d],[-1,b]]){let Jt=w(Gt),pn=Jt[0]-jt[0],xn=Jt[2]-jt[2],Xn=pn*pn+xn*xn;if(Xn<x*x){let k0=jt[1]+Math.sqrt(x*x-Xn);Jt[1]>k0&&(k=[k[0],k[1]-(Jt[1]-k0),k[2]])}}let M=Kt(k,[Math.sin(A*.45)*st.spine1,Math.cos(A*.45)*st.spine1,0]),v=Kt(M,[Math.sin(A)*st.spine2,Math.cos(A)*st.spine2,0]),E=Kt(v,F0(y,[0,st.neckUp,0])),P=st.turn*.9+(p-st.turn)*.35,D=A*.35+(t.hy??0)*7*Qt,B=(t.hx??0)*7*Qt,F=e0(a0(-D-B),n0(-P)),O=Kt(E,F0(F,[.15,st.headUp,0])),H=(Gt,jt)=>{let Jt=Kt(v,F0(y,[0,st.shoulderUp,Gt*st.shoulderOut])),pn=sn(jt,Jt),xn=s0(pn);return Kt(Jt,Zt(Wt(pn),Math.min(1.8,Math.max(0,xn-11)*.35)))},N=[t.fx,-t.fy,c],j=h?[t.fx+u[0]*a.two,-t.fy+u[1]*a.two,c+u[2]*a.two]:[t.bx,-t.by,t.bz??(t.armsFront?5.5:-4.5)],K=H(1,N),_=H(-1,j),$=(Gt,jt,Jt,pn)=>{let xn=Er((jt[1]-Jt[1]+2)/10),Xn=[-.55+xn*1.1,-1+xn*.9,Gt*(.45+xn*.5)];if(!pn)return Xn;let k0=Wt(sn(jt,Jt)),io=Xn,co=1/0;for(let Na=0;Na<16;Na++){let fo=Na/16*Math.PI*2,ho=Wt(L0(k0,[.3,1,.2])),ur=L0(k0,ho),za=Kt(Zt(ho,Math.cos(fo)),Zt(ur,Math.sin(fo))),lo=O0(Jt,jt,st.upper,st.fore,za),dr=Wt(sn(lo.end,lo.joint)),go=Math.abs(ea(dr,pn))*.7+(1-ea(Wt(Xn),za))*.55;go<co&&(co=go,io=za)}return io},q=a?a.across?g:u:null,ct=h?a.across?g:u:e?[Math.cos(t.sb??Math.PI),-Math.sin(t.sb??Math.PI),0]:null,ft=O0(K,N,st.upper,st.fore,$(1,N,K,q)),Ut=O0(_,j,st.upper,st.fore,$(-1,j,_,ct)),Yt=Gt=>F0(R,[1,0,Gt*.35]),Lt=w(1),La=w(-1),Bn=O0(Lt,d,st.thigh,st.shin,Yt(1)),Ln=O0(La,b,st.thigh,st.shin,Yt(-1)),V0=Gt=>{let jt=m*.6+Gt*8*Qt;return[Math.cos(jt),0,Math.sin(jt)]},Ha={pelvis:yn(k,R),waist:yn(M,e0(a0(-A*.6),n0(-(p+m)/2))),chest:yn(v,y),head:yn(O,F),neck:yn(E,F),upperN:mn(K,ft.joint,ft.v),foreN:mn(ft.joint,ft.end,ft.v),upperF:mn(_,Ut.joint,Ut.v),foreF:mn(Ut.joint,Ut.end,Ut.v),thighN:mn(Lt,Bn.joint,Bn.v),shinN:mn(Bn.joint,Bn.end,Bn.v),thighF:mn(La,Ln.joint,Ln.v),shinF:mn(Ln.joint,Ln.end,Ln.v)};return Ha.footN=yn(Bn.end,e0(n0(-Math.atan2(V0(1)[2],V0(1)[0])),a0(t.toeF?-55*Qt:0))),Ha.footF=yn(Ln.end,e0(n0(-Math.atan2(V0(-1)[2],V0(-1)[0])),a0(t.toeB?-55*Qt:0))),{B:Ha,W:a,OW:e,q:t,axis:u,side:g,armN:ft,armF:Ut,legN:Bn,legF:Ln,sN:K,sF:_,hipN:Lt,hipF:La,turn:p}}var rn=300,bn=240,Ir=150,Sr=180,Fo=new Float32Array(rn*bn),Dr=new Float32Array(rn*bn),Oo=new Int8Array(rn*bn),Tr=new Int8Array(rn*bn),Fr=new Int8Array(rn*bn),Or=new Float32Array(rn*bn),Br=new Float32Array(rn*bn),Lr=new Uint32Array(rn*bn),Hr=[],Uc=Wt([-.55,.72,.5]);var Lo=0;var Bo=0;function Nr(o,t,n,a,e,s,i,f){if(!(Bo&&a!==Bo)){if(Oo[o]===0)Hr.push(o);else if(t<=Fo[o])return;Fo[o]=t,Dr[o]=n,Oo[o]=a,Tr[o]=e,Fr[o]=Lo,Or[o]=s,Br[o]=i,Lr[o]=f}}var zr={pelvis:1,waist:2,chest:3,neck:4,head:5,face:6,upperN:7,elbowN:8,foreN:9,handN:10,upperF:11,elbowF:12,foreF:13,handF:14,thighN:15,kneeN:16,shinN:17,footN:18,thighF:19,kneeF:20,shinF:21,footF:22,weapon:23,offWeapon:24};var J=Object.fromEntries(Object.entries({hi:"#ffffff",a:"#e8edf6",b:"#a4afc6",d:"#68748f",gold:"#ffd84a",goldD:"#b8862a",grip:"#7a3a2a",gripD:"#4a2018",wood:"#8a5a32",woodD:"#5a3820",dark:"#3a3448",darkD:"#262033",olive:"#58663f",oliveA:"#7d8c58",oliveD:"#3a4529"}).map(([o,t])=>[o,C(t)>>>0]));function aa(o,t,n,a){for(let e=t;e<=t+n+.01;e+=.4){let s=e-t,i=s>n-5?Math.max(0,(n-s)/5*a):a;for(let f=-i;f<=i+.01;f+=.4)o(e,f,f<-a*.4?J.hi:f>a*.4?J.d:J.a)}}var o0=(o,t,n,a,e,s=.8)=>{for(let i=t;i<=n;i+=.4)for(let f=-s;f<=s+.01;f+=.4)o(i,f,f>.1?e:a)},Ur={sword:{two:-4.4,draw(o,t){let n=t.two?-6.5:-2.6;o0(o,n,2.2,J.grip,J.gripD);for(let a=-1.4;a<=1.4;a+=.4)o(n-.4,a,J.gold);for(let a=-4.6;a<=4.6;a+=.4)o(2.6,a,Math.abs(a)>3.8?J.goldD:J.gold),o(3,a,J.goldD);aa(o,3.2,25,2.2)}},greatsword:{two:-4.8,draw(o){o0(o,-7.2,2.2,J.grip,J.gripD);for(let t=-1.8;t<=1.8;t+=.4)o(-7.6,t,J.gold);for(let t=-6.6;t<=6.6;t+=.4)o(2.6,t,Math.abs(t)>5.6?J.goldD:J.gold),o(3,t,J.goldD);aa(o,3.2,31,3);for(let t=4;t<=28;t+=.4)o(t,0,J.b)}},dagger:{draw(o){o0(o,-2.4,1.8,J.grip,J.gripD);for(let t=-2.6;t<=2.6;t+=.4)o(2.2,t,J.goldD);aa(o,2.6,10,1.3)}},spear:{two:-12,draw(o){o0(o,-18,36,J.wood,J.woodD,.5),aa(o,36,11,2);for(let t=-2.4;t<=2.4;t+=.4)o(36,t,J.goldD)}},hammer:{two:-7,draw(o){for(let t of[-.8,0,.8])for(let n=-10;n<=18;n+=.4)for(let a=-.8;a<=.81;a+=.4)o(n,a,a>.1?J.woodD:J.wood,t);for(let t=18;t<=28;t+=.4)for(let n=-9;n<=9;n+=.4){let a=Math.abs(n)>7.4?n<0?J.a:J.d:t<20?J.hi:t>26.4?J.d:Math.abs(n)<2?J.gold:J.b;if(o(t,n,a,4.5),o(t,n,a,-4.5),t<18.4||t>27.6||Math.abs(n)>8.6)for(let e=-4;e<=4;e+=.4)o(t,n,n<0?J.a:t>27.6?J.d:J.b,e)}}},scythe:{two:-11,draw(o){o0(o,-16,31,J.dark,J.darkD,.5);for(let t=0;t<=28;t+=.4){let n=t/28,a=3.2*(1-n)+.3,e=31.5-n*n*12;for(let s=-a;s<=a;s+=.4)o(e+s,t+.8,s>a*.3?J.hi:s<-a*.4?J.d:J.b)}}},claw:{draw(o){for(let t of[-2.4,0,2.4])for(let n=2;n<=9.5;n+=.4){let a=(n-2)/7.5,e=t+a*a*1.8;o(n,e,a>.55?J.hi:J.a),a<.6&&o(n,e+.8,J.d)}}},bow:{across:!0,draw(o,t,n){for(let f=-1;f<=1.001;f+=.025){let u=f*17,g=6*(1-f*f)-1;o(g,u,Math.abs(f)>.85?J.goldD:J.wood),o(g+.8,u,J.woodD)}let a=o.at(-1,-17),e=o.at(-1,17),s=t.pull?n:o.at(-1,0),i=(f,u,g)=>{let h=Math.max(2,Math.ceil(s0(sn(u,f))/.4)),c=J.a;for(let r=0;r<=h;r++){let l=Kt(f,Zt(sn(u,f),r/h)),p=Math.round(l[0]),m=Math.round(l[1]),A=(Sr-m)*rn+(Ir+p);Lo=-1,Nr(A,l[2]+.05,2,zr.weapon,2,p,m,g??c)}};if(i(a,s),i(e,s),t.nocked){let f=s,u=o.at(13,0);i(f,u,J.wood);for(let g=9;g<=13;g+=.4)for(let h=-(13-g)*.45;h<=(13-g)*.45;h+=.4)o(g,h,J.hi)}}},pistol:{across:!0,draw(o){for(let t=-1;t<=9.5;t+=.4)for(let n=-4.2;n<=-2.4;n+=.4)o(t,n,n<-3.6?J.a:n>-2.9?J.d:J.b);for(let t=-1.2;t<=1.2;t+=.4)for(let n=-2.4;n<=2.4;n+=.4)o(t,n,J.gripD);o(9,-4.6,J.hi)}},launcher:{two:-9,draw(o){for(let t=-14;t<=22;t+=.4)for(let n=-6;n<=-1;n+=.4)o(t,n,n<-4.8?J.oliveA:n>-2.2?J.oliveD:Math.abs(t-3)<1.4?J.gold:J.olive);for(let t=-6.8;t<=-.2;t+=.4)o(22.4,t,J.b),o(-14.4,t,J.d)}},handle:{draw(o){o0(o,-2.6,6,J.grip,J.gripD);for(let t=-1.6;t<=1.6;t+=.4)o(-3,t,J.gold),o(6.4,t,J.gold)}}};var jr=null;jr=Pr({}).B;var Ga=38,Ho=52,W=Object.fromEntries(Object.entries({ink:"#0b0a1a",wood:"#724c2e",woodL:"#a0703a",woodD:"#4e331f",straw:"#d2aa55",strawL:"#f0d98a",burlapD:"#86643a",burlap:"#b38b57",burlapL:"#c9a26c",red:"#9a2f3c",redL:"#c4434f",white:"#ffffff"}).map(([o,t])=>[o,C(t)])),Jc=["#efe7dc","#c9bfb8","#8f8693","#5a5468"].map(C),Yr=new Uint32Array(Ga*Ho);(function(){let t=(e,s,i)=>{e>=0&&s>=0&&e<Ga&&s<Ho&&(Yr[s*Ga+e]=i)},n=(e,s,i,f,u)=>{for(let g=0;g<f;g++)for(let h=0;h<i;h++)t(e+h,s+g,u)};n(15,38,8,14,W.ink),n(16,34,6,18,W.wood),n(16,34,2,18,W.woodL),n(20,34,2,18,W.woodD),n(1,18,36,1,W.ink),n(1,23,36,1,W.ink),n(1,19,36,4,W.wood),n(1,19,36,1,W.woodL),n(1,22,36,1,W.woodD);for(let[e,s]of[[0,-1],[33,1]]){n(e,17,5,8,W.straw);for(let[i,f,u]of[[2,16,W.straw],[3,15,W.strawL],[1,17,W.strawL],[2,25,W.straw],[1,26,W.strawL],[3,25,W.burlapD],[2,19,W.strawL],[3,21,W.strawL],[1,22,W.burlapD],[2,23,W.strawL]])t(e+i,f,u);t(s<0?e-1:e+5,19,W.straw),t(s<0?e-1:e+5,22,W.strawL)}let a=(e,s,i,f)=>{n(e+1,s,i-2,1,W.ink),n(e+1,s+f-1,i-2,1,W.ink),n(e,s+1,1,f-2,W.ink),n(e+i-1,s+1,1,f-2,W.ink),n(e+1,s+1,i-2,f-2,W.burlap),n(e+i-4,s+1,3,f-2,W.burlapD),n(e+1,s+f-3,i-2,2,W.burlapD),n(e+1,s+1,1,f-4,W.burlapL),n(e+1,s+1,i-6,1,W.burlapL);for(let u=s+2;u<s+f-2;u+=3)for(let g=e+3+u%2;g<e+i-4;g+=4)t(g,u,W.burlapD)};a(9,17,20,24);for(let e=19;e<36;e++)for(let s=11;s<27;s++){let i=Math.hypot(s-18.5,e-27);(i>4&&i<5.4||i<1.9)&&t(s,e,s+e<45?W.redL:W.red)}for(let e=10;e<28;e++)t(e,36,e&1?W.woodL:W.straw),t(e,37,e&1?W.woodD:W.wood);for(let[e,s,i]of[[11,41,W.straw],[12,42,W.strawL],[14,41,W.strawL],[15,42,W.straw],[23,41,W.straw],[24,42,W.strawL],[26,41,W.straw],[13,43,W.straw],[25,43,W.straw]])t(e,s,i);a(10,1,18,16);for(let e of[14,23])for(let s=-2;s<=2;s++)t(e+s,7+s,W.ink),t(e-s,7+s,W.ink);for(let e=14;e<24;e++)t(e,12,e&1?W.ink:W.burlapD);for(let e of[15,18,21])t(e,11,W.ink),t(e,13,W.ink);for(let e=12;e<26;e++)t(e,16,e&1?W.woodL:W.straw),t(e,17,e&1?W.wood:W.woodD);for(let[e,s,i]of[[13,0,W.straw],[15,0,W.strawL],[18,0,W.straw],[21,0,W.strawL],[24,0,W.straw],[9,4,W.straw],[28,6,W.straw],[8,7,W.strawL],[29,3,W.strawL]])t(e,s,i)})();var Gr={flash:[W.white,1],char:[C("#1a0c0e"),.72],ice:[C("#a8e8ff"),.72],shadow:[C("#3a1a70"),.5],holy:[C("#fff4c0"),.5],red:[C("#ff2040"),.45],shock:[C("#8fd6ff"),.6],poison:[C("#58c43a"),.5]},_c=[W.strawL,W.straw,W.straw,W.burlapD,W.burlapD];var No=new Uint8Array(912),Jr=new Uint32Array(912);D0.forEach((o,t)=>[...o].forEach((n,a)=>{n!=="."&&(No[t*24+a]=1,Jr[t*24+a]=C(Zn[n]))}));var _r=new Int16Array(912).fill(-1);for(let o=0;o<38;o++)for(let t=0;t<24;t++){let n=-1,a=1e9;for(let e=Math.max(0,o-7);e<Math.min(38,o+8);e++)for(let s=Math.max(0,t-7);s<Math.min(24,t+8);s++){let i=(s-t)*(s-t)+(e-o)*(e-o);No[e*24+s]&&i<a&&(a=i,n=e*24+s)}_r[o*24+t]=n}var Et={crouch:3,fx:11,fy:-21,bx:9,by:-21,ffx:7,fbx:-7};function H0(o,t,n){let a=!1;for(let e=0,s=o.length-1;e<o.length;s=e++){let[i,f]=o[e],[u,g]=o[s];f>n!=g>n&&t<(u-i)*(n-f)/(g-f)+i&&(a=!a)}return a}function vn(o){let t=0,n=0,a=0;for(let e=0,s=o.length-1;e<o.length;s=e++){let[i,f]=o[s],[u,g]=o[e],h=i*g-u*f;t+=h,n+=(i+u)*h,a+=(f+g)*h}if(Math.abs(t)<1e-6){let e=o.length;return{x:o.reduce((s,i)=>s+i[0],0)/e,y:o.reduce((s,i)=>s+i[1],0)/e,area:0}}return{x:n/(3*t),y:a/(3*t),area:Math.abs(t)/2}}function An(o,t,n,a){let e=-Math.sin(a),s=Math.cos(a),i=g=>(g[0]-t)*e+(g[1]-n)*s,f=[],u=[];for(let g=0;g<o.length;g++){let h=o[g],c=o[(g+1)%o.length],r=i(h),l=i(c);if((r>=0?f:u).push(h),r>=0!=l>=0){let p=r/(r-l),m=[h[0]+(c[0]-h[0])*p,h[1]+(c[1]-h[1])*p];f.push(m),u.push(m)}}return[f,u].filter(g=>g.length>=3)}function Xr(o,t,n,a){let e=1/0,s=1/0,i=-1/0,f=-1/0;for(let[u,g]of t)e=Math.min(e,u),i=Math.max(i,u),s=Math.min(s,g),f=Math.max(f,g);for(let u=Math.floor(s);u<=Math.ceil(f);u++)for(let g=Math.floor(e);g<=Math.ceil(i);g++)H0(t,g+.5,u+.5)&&o.blend(g,u,n,a)}var kn=class{constructor(t={}){this.list=[],this.ground=t.ground??(()=>1/0),this.onLand=t.onLand??null,this.onCrumble=t.onCrumble??null,this.onSkid=t.onSkid??null}add(t){if(this.list.length>=16)return;let n=t.life??1;this.list.push({vx:0,vy:0,a:0,va:0,f:0,vf:0,lit:.6,g:1,drag:.3,bounce:.35,rest:!1,brittle:!1,...t,life:n,max:n})}get count(){return this.list.length}corners(t){let n=Math.cos(t.a),a=Math.sin(t.a),e=Math.cos(t.f);return t.pts.map(([s,i])=>{let f=i*e;return[t.x+s*n-f*a,t.y+s*a+f*n]})}seat(t){let n=-1/0;for(let a of this.corners(t))n=Math.max(n,a[1]);return n}update(t){for(let n=this.list.length-1;n>=0;n--){let a=this.list[n];if((a.life-=t)<=0){this.list.splice(n,1);continue}let e=this.ground(a.x)-.5;if(a.rest&&a.crumble!==void 0&&(a.restT=(a.restT??0)+t)>a.crumble){this.onCrumble?.(a),this.list.splice(n,1);continue}if(a.rest){Math.abs(a.vx)>8&&this.onSkid?.(a,a.x,e+.5),a.x+=a.vx*t,a.vx-=a.vx*7*t,a.a+=a.va*t,a.va-=a.va*9*t,a.vf-=a.vf*9*t,a.f+=a.vf*t,a.y-=this.seat(a)-e;continue}a.vy+=Nt*a.g*t,a.vx-=a.vx*a.drag*t,a.vy-=a.vy*a.drag*t,a.x+=a.vx*t,a.y+=a.vy*t,a.a+=a.va*t,a.f+=a.vf*t;let s=this.seat(a);if(!(a.g<=0||s<e||a.vy<=0)){if(a.y-=s-e,a.vy>70&&(a.hits=(a.hits??0)+1,this.onLand?.(a,a.x,e+.5,a.vy)),a.brittle&&a.vy>70&&a.hits>=a.brittle){this.list.splice(n,1);continue}a.vy>70&&a.bounce>0?(a.vy=-a.vy*a.bounce,a.vx*=.75,a.va*=.6,a.vf*=.5):(a.rest=!0,a.vy=0)}}}draw(t,n){let a=n.length;for(let e of this.list){let s=Math.min(1,e.life/.35),i=this.corners(e),f=Math.cos(e.f),u=Math.abs(f),g=e.lit*(.35+.65*u),h=u>.97&&!e.rest;if(u>.25)if(e.solid&&e.tone!==void 0)t.poly(i,h?n[a-1]:n[L(Math.round(1+e.tone*5*(.6+.4*u)),1,a-2)],s);else if(e.solid){let p=e.ridge??-Math.PI/2,m=Math.cos(p),A=Math.sin(p),R=Math.cos(e.a),y=Math.sin(e.a),d=m*R-A*f*y,k=-(m*y+A*f*R),w=d;k*-.55+w*-.84<0&&(k=-k,w=-w);let x=h?n[a-1]:n[L(Math.round(3+g*3),3,a-2)],M=n[L(Math.round(1+g*2),1,3)];t.poly(i,(v,E)=>{let P=(v-e.x)*k+(E-e.y)*w;return P>.6?x:P>-.6?n[a-2]:M},s)}else Xr(t,i,h?n[a-1]:n[L(Math.round(3+g*3),3,a-2)],(.3+.35*g+(h?.3:0))*s);let c=0,r=0,l=0;for(let[p,m]of i)c+=p,r+=m;c/=i.length,r/=i.length;for(let p=0;p<i.length;p++){let[m,A]=i[p],[R,y]=i[(p+1)%i.length],d=y-A,b=m-R;d*((m+R)/2-c)+b*((A+y)/2-r)<0&&(d=-d,b=-b);let k=Math.hypot(d,b)||1,w=(-d*.55-b*.84)/k;t.line(m,A,R,y,u<.25||w>.35?n[a-1]:w>-.25?n[a-2]:e.solid?n[1]:n[Math.max(2,a-4)],s),i[p][1]<i[l][1]&&(l=p)}u>.7&&t.dot(i[l][0],i[l][1],I,s),t.glow(c,r,5,n[a-3],(h?.5:.14)*s)}}};function oa(o,t,n,a,e,s,i,f={}){let u=a-t,g=e-n,h=Math.hypot(u,g);if(h<1.5||s<.5)return;let c=u/h,r=g/h,l=-r,p=c,m=f.a??1,A=f.dim??0,R=f.jag??-1,y=f.glint??-1,d=v=>i[L(v-A,0,i.length-1)],b=s/2,k=v=>b*(1-v)+.35,w=v=>b*(1-v)*(R>=0&&v>R?.55:1)+.35,x=v=>-s*.12*(1-v),M=b+2;o.shade(Math.min(t,a)-M,Math.min(n,e)-M,Math.max(t,a)+M,Math.max(n,e),(v,E,P)=>{let D=v-t,B=E-n,F=(D*c+B*r)/h,O=D*l+B*p;if(F<0)return;let H=k(Math.min(F,1)),N=w(Math.min(F,1));if(F>1||O<-H||O>N){let _=F>1?(F-1)*h:0;Math.max(_,O<-H?-H-O:O-N)<1&&F<1+1/h&&(P.c=d(0),P.a=m);return}if(P.a=m,f.white)return P.c=I;let j=x(F),K;if(F>.88?K=I:Math.abs(O-j)<.55?K=d(6):O<j?K=O+H<1?d(6):(O+H)/Math.max(1,j+H)>.55?d(5):d(4):K=N-O<1.1?d(1):(O-j)/Math.max(1,N-j)>.5?d(2):d(3),R>=0&&Math.abs(F-R)*h<.8&&O>j?K=d(6):O<j&&K!==d(6)&&(Math.floor(v)*73856093^Math.floor(E)*19349663)%997<30&&(K=d(7)),y>=0&&O<=j+.6){let _=Math.abs(F-y)*h;_<.8?K=I:_<1.8&&(K=d(6))}P.c=K})}function zo(o){let t=o.int(1,3),n=[];for(let a=0;a<t;a++)n.push([.38+.4*(a+o.range(.2,.8))/t,o.range(.24,.36)*(1-a*.15)]);return{branches:n,plate:o.chance(.45),fork:o.chance(.45)}}function Ja(o,t,n,a,e,s,i,f={}){let u=i.length,g=f.a??1,h=f.hot??0;if(e=Math.round(e/(Math.PI/18))*(Math.PI/18),a<1.2){o.dot(t,n,I,g);return}if(a<2.6){let A=Math.floor((e%(Math.PI/3)+Math.PI/3)/(Math.PI/6))%2?[[1,0],[-1,0],[0,1],[0,-1]]:[[1,1],[-1,-1],[1,-1],[-1,1]];for(let[R,y]of A)o.dot(t+R,n+y,h>.5?I:i[u-3],g);o.dot(t,n,I,g),o.glow(t,n,4,i[u-3],.2*g);return}let c=h>.5?I:i[u-2],r=h>.5?i[u-2]:i[u-3],l=a>=7,p=a<4?[]:l?s.branches.slice(0,2):[[.58,.36]];for(let m=0;m<6;m++){let A=e+m*T/6,R=Math.cos(A),y=Math.sin(A);o.line(t,n,t+R*a,n+y*a,c,g);for(let[d,b]of p){let k=t+R*a*d,w=n+y*a*d,x=Math.max(1,a*b);for(let M of[-1,1])o.line(k,w,k+Math.cos(A+M*Math.PI/3)*x,w+Math.sin(A+M*Math.PI/3)*x,r,g)}if(s.fork&&l&&!s.plate)for(let d of[-1,1])o.dot(t+R*a+Math.cos(A+d*.9)*1.2,n+y*a+Math.sin(A+d*.9)*1.2,r,g);o.dot(t+R*a,n+y*a,I,g)}if(s.plate&&l){let m=a*.34;for(let A=0;A<6;A++){let R=e+Math.PI/6+A*T/6,y=R+T/6;o.line(t+Math.cos(R)*m,n+Math.sin(R)*m,t+Math.cos(y)*m,n+Math.sin(y)*m,i[u-3],g)}}o.px(t,n,I),o.glow(t,n,3+a*1.2,i[u-4],(.14+.35*h)*g),h>.3&&o.glow(t,n,2+a*.5,I,.3*h*g)}function Rn(o,t,...n){let a=Math.max(.001,t-.05-o);for(let e of n)for(let s of e.list)s.life>a&&(s.life=a)}function _a(o,t,n,a,e,s={}){let i=[],f=s.step??[1.6,2.6],u=s.len??18,g=s.fork??.16,h=s.a0??o.range(0,T),c=s.spread??T,r=(l,p,m,A,R,y)=>{let d=[[l,p,m]];for(let b=0;b<R;b++){A+=o.range(-.55,.55);let k=o.range(f[0],f[1]),w=l+Math.cos(A)*k,x=p+Math.sin(A)*k;if(!t(w,x))break;l=w,p=x,m+=k,d.push([l,p,m]),y<2&&d.length>2&&o.chance(g)&&r(l,p,m,A+o.sign()*o.range(.6,1.2),Math.ceil(R*.5),y+1)}d.length>1&&i.push(d)};for(let l=0;l<e;l++)r(n,a,0,h+l/e*c+o.range(-.3,.3)*Math.min(1,c/T),u,0);return i}function Xa(o,t,n,a,e={}){let s=a.length,i=e.ox??0,f=e.oy??0,u=e.hot??!0,g=e.a??1,h=(c,r)=>{let[l,p,m]=c[r-1],[A,R,y]=c[r];if(m>=n)return null;let d=Math.min(1,(n-m)/Math.max(.01,y-m));return[l+i,p+f,l+i+(A-l)*d,p+f+(R-p)*d,n-y<3]};for(let c of t)for(let r=1;r<c.length;r++){let l=h(c,r);if(!l)break;o.line(l[0],l[1]+1,l[2],l[3]+1,a[Math.min(2,s-1)],g)}for(let c of t)for(let r=1;r<c.length;r++){let l=h(c,r);if(!l)break;let p=u&&l[4];o.line(l[0],l[1],l[2],l[3],p?I:a[s-2],g),p?o.glow(l[2],l[3],5,a[s-3],.5*g):r%2&&o.glow(l[2],l[3],3,a[s-3],.18*g)}}var Uo={name:"Ice lance",desc:"A faceted ice spear flying right: a light pulse runs through its core, rings of cold air shear off the tip, frost peels off into a wake and crystals shed behind it.",tags:["ice","lance","spear","projectile","directional","magic","loop"],size:[176,64],origin:[146,32],duration:.8,loop:!0,fps:30,bg:"dark",options:{palette:["#151a3d","#212f6b","#2c58aa","#3a8bd8","#62c8f4","#a6ecff","#dcfbff","#ffffff"],length:40,seed:13}};function qr(o,t,n,a,e){let f=u=>u>-16?3.5*(-u/16)+.3:u<-n+3?3.5*(.7+.3*((u+n)/3)):3.5;o.shade(-n-1,-3.5-2,1,3.5+2,(u,g,h)=>{if(u>0||u<-n)return;let c=f(u);if(Math.abs(g)>c+.5){Math.abs(g)<c+1.5&&(h.c=t[1]);return}let r=g/Math.max(.5,c);if(u>-1.5)return h.c=I;if(r>-.3&&r<.35&&Math.abs(u-a)<2.5)return h.c=I;if(r<-.3&&Math.abs(u-e)<1)return h.c=I;h.c=r<-.72?I:r<-.36?t[6]:r<-.18?t[7]:r<.38?t[4]:r<.78?t[2]:t[1]})}function Vr(o,t,n){let a=Y(n.palette,8),e=Uo.duration,s=n.seed,i=n.length,f=t/e;o.each(-i-100,-12,-i+4,12,(h,c,r,l)=>{let p=(-i+4-h)/104,m=4.5*(1-p)**.7+.5+1.5*Math.sin(p*9-f*T*2)*p,A=Math.abs(c)/m;if(A>=1)return;let R=(1-A*A)*(1-p)**1.4;R<.04||(o.blendPx(r,l,A<.25&&p<.4?a[6]:A<.6?a[5]:a[4],R*.7),R>.3&&o.add(r,l,a[5],.12*R))}),o.glowLine(-i-60,0,0,0,14,a[4],.22),mt(t,e,14,s,h=>h.range(.35,.55),(h,c,r)=>{let l=r.range(-i+2,-8),[p,m]=Ca(l,r.range(-2.5,2.5),-r.range(150,230),r.sign()*r.range(8,30),h,0,2.2),A=h/c,R=1.2+5.5*A,y=.5*(1-A)**1.3;o.disc(p,m,R,A<.3?a[6]:a[5],d=>y*(1-d*d)),o.glow(p,m,R*1.6,a[4],.1*(1-A))}),mt(t,e,9,s+1,h=>h.range(.4,.6),(h,c,r)=>{let[l,p]=Ca(r.range(-i,-6),r.range(-3,3),-r.range(170,260),r.range(-35,35),h,60,1.2),m=h/c,A=r.range(0,T)+h*r.range(10,18)*r.sign(),R=r.range(1.2,2.2),y=Math.cos(A),d=Math.sin(A);if(!(m>.85&&h*30%2<1)&&(o.line(l-y*R,p-d*R,l+y*R,p+d*R,a[5]),o.px(l+y*R,p+d*R,I),Math.cos(A*2)>.9)){for(let[b,k]of[[1,0],[-1,0],[0,1],[0,-1]])o.px(l+b,p+k,a[6]);o.glow(l,p,6,a[5],.45)}}),mt(t,e,12,s+2,h=>h.range(.16,.26),(h,c,r)=>{let l=r.sign()*r.range(4,13),p=r.range(-20,0)-h*r.range(280,380),m=r.range(6,16),A=h/c;o.line(p,l,p+m,l,R=>R>.7?a[6]:a[4],R=>R*(1-A)*1.4)});for(let h=0;h<3;h++){let c=(f*3+h/3)%1,r=-4-c*(i+20),l=4.5+c*8,p=1.2+c*2.6;if(!(c>.8)){for(let m=0;m<40;m++){let A=m/40*T,R=r+Math.cos(A)*p,y=Math.sin(A)*l;Math.abs(y)<4.6&&R>-i-2||o.px(R,y,Math.cos(A)>0?c<.35?I:a[6]:c<.4?a[5]:a[4])}o.glowRing(r,0,l*.75,3,a[5],.14*(1-c))}}for(let[h,c,r]of[[-1,10,4],[1,9,4],[-.2,6,3]])oa(o,-i+3,h*1.5,-i+3-c,h*(2+c*.5),r,a);let u=-i+f*2%1*(i+6),g=-((f*2+.5)%1)*i*1.2;qr(o,a,i,u,g),o.glowLine(-i,0,0,0,10,a[4],.1),o.glow(u,0,8,a[6],.3),o.glow(0,0,8,I,.4),o.glow(-i*.4,0,30,a[3],.16)}var Qa={};et(Qa,{act:()=>$r,create:()=>ei,meta:()=>Qr});var Qr={name:"Frost nova",desc:"Frost spirals into a spinning snowflake, then a wave blooms three rings of ice crystals round the caster; snow drifts, frost creeps, and the ice melts back into the floor.",tags:["ice","nova","aoe","frost","magic","one-shot"],size:[288,192],origin:[144,150],duration:3.4,loop:!1,fps:30,bg:"ground",actor:2,options:{palette:["#151a3d","#212f6b","#2c58aa","#3a8bd8","#62c8f4","#a6ecff","#dcfbff","#ffffff"],reach:104,seed:4}},jo={turn:1.15,crouch:0,fx:-7,fy:-44,bx:8,by:-44,ffx:-5,fbx:6},Va={turn:1.15,crouch:8,lean:3,fx:-9,fy:-8,bx:11,by:-8,ffx:-8,fbx:9},Zr={turn:1,crouch:2,fx:-8,fy:-17,bx:9,by:-17,ffx:-4,fbx:5},$r={target:{x:76},poses:[[-.34,Et],[-.04,{...jo,crouch:2,fy:-36,by:-36}],[.36,jo],[.42,Va,"snap"],[.9,{...Va,crouch:7}],[1.9,{...Va,crouch:6}],[2.6,Zr],[3.4,Et]],hits:[{t:.42,stop:.1,shake:.26,amp:2,target:!1},{t:.66,push:.9,straw:6,y:-10,skin:"ice",shiver:1.7},{t:2.9,push:.2,straw:0,flash:0,skin:null}],dust:[{t:.42,x:10,n:5,dir:1,c:"#d8f2ff"},{t:.42,x:-10,n:5,dir:-1,c:"#d8f2ff"}]},yt=.42,sa=.62,$t=1.95,ra=.7,tn=-24,ti=[{q:[.15,.24],h:[24,32],w:[10,13],n:2,kids:2},{q:[.36,.52],h:[13,19],w:[7,9],n:3,kids:1},{q:[.62,.9],h:[5,10],w:[4,6],n:4,kids:0}];function ni(o,t,n,a,e,s,i){for(let f=Math.floor(n);f<=Math.ceil(a);f++){let u=Math.abs(f+.5),g=u/e,h=L((s*1.15-g)/.15);if(h<=0)continue;let c=G(f,17),r=i>0&&u>i-3,l=c<.45?Math.round((1+G(f,5)*3)*(1-g*.6)):0,p=(4+G(f,11)*4)*(1-g*.5);o.dot(f,0,r||c<.25?I:t[6],h);for(let m=1;m<=l;m++)o.dot(f,-m,m===l?I:t[5],h);l>1&&G(f,9)<.5&&o.dot(f+(G(f,3)<.5?-1:1),-l+1,t[6],h);for(let m=1;m<=p;m++){let A=m/p;o.dot(f,m,G(f*31+m,7)<.06?I:A<.25?t[6]:A<.55?t[5]:t[4],h*(1.1-A)*(r?1.3:1))}}}function ai(o,t,n,a,e,s,i){if(!(e<.8)){for(let f=0;f<6;f++){let u=s+f*T/6,g=Math.cos(u),h=Math.sin(u);for(let c=0;c<=e;c+=.5)o.dot(n+g*c,a+h*c,c<e*.4?I:t[6],i+.2);if(e>3)for(let c of[-1,1]){let r=n+g*e*.6,l=a+h*e*.6,p=u+c*.9;for(let m=0;m<=e*.35;m+=.5)o.dot(r+Math.cos(p)*m,l+Math.sin(p)*m,t[5],i)}}o.px(n,a,I),o.glow(n,a,10+e*3,t[5],.35+.5*i)}}function ei(o){let t=Y(o.palette,8),n=[t[0],t[0],t[1],t[2],t[3],t[4],t[5],t[6]],a=o.reach,e=new X(o.seed),s=()=>0,i=new V({rng:e,ground:s,sparks:[t[7],t[6],t[5],t[4]],haze:t[5]}),f=new lt({ground:s}),u=new Z,g=R=>R<yt?0:a*(1-Math.pow(1-L((R-yt)/sa),3)),h=R=>yt+sa*(1-Math.cbrt(1-Math.min(1,R/a))),c=[];for(let R of[-1,1])ti.forEach((y,d)=>{for(let b=0;b<y.n;b++){let k=y.q[0]+(y.q[1]-y.q[0])*(b+e.range(.2,.8))/y.n,w=e.range(...y.h),x=e.range(...y.w),M=[{dx:0,h:w,w:x,lean:R*w*e.range(.1,.28)}];for(let v=0;v<y.kids;v++){let E=v%2?-R:R,P=w*e.range(.4,.62);M.unshift({dx:E*e.range(.3,.5)*x,h:P,w:x*.62,lean:E*P*e.range(.35,.6)})}c.push({x:R*k*a,d:k*a,h:w,back:(b+d+(R>0?1:0))%2===1,t0:h(k*a)+e.range(0,.03),up:!1,parts:M,phase:e.next()})}});let r=0,l=!1,p=R=>z($t,$t+ra,R),m=(R,y)=>{let d=p(r);for(let b of c){if(!b.up||b.back!==y||d>=1)continue;let k=U.outBack(L((r-b.t0)/.1),2.6),w=r<b.t0+.03,x=((r-b.t0)*.7+b.phase*3)%1.6/.5;for(let M of b.parts)Ya(R,b.x+M.dx,y?-1:0,M.h*k*(1-d),M.w*(1-d*.3),M.lean*k*(1-d),y?n:t,{white:w,glint:x<=1?x:-1})}},A=(R,y)=>{if(r<yt)return;let d=L((r-yt)/(sa+.15));if(!(d>=1)&&(bt(R,0,0,g(r)+2,.16,Math.max(2,10*Math.pow(1-d,.7)),d<.75?1:(1-d)/.25,t,b=>Math.sin(b)<0===y,r-yt<.1),!y))for(let b of[-1,1])R.glow(b*(g(r)+2),-2,22,t[5],.55*(1-d))};return{update(R){if(r+=R,r<yt-.06){if(e.chance(.9)){let d=e.range(0,T),b=e.range(26,58),k=e.range(.2,.3),w=b*3/(Math.exp(3*k)-1),x=Math.cos(d)*b,M=Math.min(tn+Math.sin(d)*b*.8,-2),v=Math.hypot(x,M-tn)||1;i.spawn(S.STREAK,x,M,-x/v*w,(tn-M)/v*w,k,e.chance(.5)?t[6]:t[5])}if(e.chance(.14)){let d=e.sign();i.spawn(S.VAPOUR,d*e.range(28,60),-e.range(0,2),-d*e.range(35,70),-e.range(0,3),e.range(.35,.5),t[6],e.range(2,3))}}if(r>=yt&&!l){l=!0,u.add(0,tn,84,t[4],.8,.55),u.add(0,tn,45,I,.7,.12);for(let d=0;d<22;d++){let b=e.range(-Math.PI,.25),k=e.range(110,280);f.add({kind:Q.SHARD,x:e.range(-3,3),y:tn,vx:Math.cos(b)*k,vy:Math.sin(b)*k,g:.7,drag:.6,bounce:.3,life:e.range(.9,1.5),a:e.range(0,T),va:e.range(-20,20),s:e.range(1.5,3.5),c:e.pick([t[7],t[6],t[5]])})}for(let d=0;d<14;d++){let b=e.range(-Math.PI,0),k=e.range(40,160);i.spawn(S.FLAKE,0,tn,Math.cos(b)*k,Math.sin(b)*k,e.range(1.2,1.8),e.chance(.6)?I:t[6],e.range(.5,1.6))}}let y=g(r);if(r>yt&&r<yt+sa)for(let d of[-1,1])i.spawn(S.VAPOUR,d*y+e.range(-2,2),-e.range(0,5),d*e.range(15,75),-e.range(2,15),e.range(.6,1),e.chance(.7)?t[6]:t[5],e.range(3,5.5)*(1-.4*(y/a))),e.chance(.45)&&i.spawn(S.FLAKE,d*y,-2,d*e.range(10,45),-e.range(30,85),e.range(1.1,1.9),e.chance(.5)?I:t[6],e.range(.5,1.2));for(let d of c)if(!d.up&&r>=d.t0){d.up=!0;for(let b=0;b<2+Math.round(d.h/8);b++){let k=-Math.PI/2+e.range(-1.3,1.3),w=e.range(60,200)*(.5+d.h/40);f.add({kind:Q.SHARD,x:d.x+e.range(-3,3),y:0,vx:Math.cos(k)*w,vy:Math.sin(k)*w,g:.8,drag:.6,bounce:.3,life:e.range(.9,1.6),a:e.range(0,T),va:e.range(-18,18),s:e.range(1.5,3),c:e.pick([t[7],t[6],t[5]])})}i.spawn(S.VAPOUR,d.x,-1,e.range(-30,30),-e.range(2,8),e.range(.5,.9),t[6],e.range(2.5,4)),d.h>10&&i.spawn(S.STAR,d.x+e.range(-3,3),-e.range(4,d.h*.8),0,-3,e.range(.3,.6),t[6],e.range(1,2.4))}if(r>yt+.2&&r<$t+.2){if(e.chance(.5)){let d=e.pick(c);d.up&&i.spawn(S.STAR,d.x+e.range(-3,3),-e.range(2,d.h*.9),0,-3,e.range(.3,.6),e.chance(.6)?t[6]:I,e.range(.6,2.2))}r<$t-.3&&e.chance(.16)&&i.spawn(S.FLAKE,e.range(-1,1)*y,-e.range(40,90),e.range(-5,5),e.range(3,10),e.range(1.1,1.5),e.chance(.5)?I:t[6],e.range(.5,1.4))}if(r>$t&&r<$t+ra){if(e.chance(.5)){let d=e.pick(c);f.add({kind:Q.DRIP,x:d.x+e.range(-3,3),y:-e.range(3,d.h*.6*(1-p(r))),vy:10,g:.6,life:1,c:t[5]})}e.chance(.25)&&i.spawn(S.VAPOUR,e.range(-1,1)*a*.8,-e.range(0,3),e.range(-10,10),-e.range(6,16),e.range(.6,1),t[5],e.range(3,5))}i.update(R),f.update(R),u.update(R)},drawBack(R){let y=1-z($t+.2,$t+ra+.6,r),d=g(r);y>0&&r>yt&&ni(R,t,-Math.max(12,d+1),Math.max(12,d+1),a,y,d),A(R,!0),m(R,!0),i.draw(R,"back")},draw(R){if(A(R,!1),m(R,!1),r<yt){let y=r/yt,d=1+.25*Math.exp(-((r-yt*.55)**2)/.002)+.3*Math.exp(-((r-yt*.85)**2)/.002);ai(R,t,0,tn,(2+5.5*y*y)*d,r*4,y)}else if(r<yt+.22){let y=(r-yt)/.22;Rt(R,0,tn,36*Math.pow(1-y,1.5),1-y,t),R.glow(0,tn,46,I,.6*(1-y))}if(r>yt){let y=(1-z($t,$t+ra+.3,r))*(.85+.15*Math.sin(r*2.4)),d=g(r);for(let b=-3;b<=3;b++)R.glow(b/3.5*d,-4,26,t[4],.16*y)}f.draw(R),i.draw(R,"front"),u.draw(R)}}}var te={};et(te,{create:()=>si,meta:()=>Ko});var Ko={name:"Ice spikes",desc:"A frost line races along the floor and clusters of jagged ice blades burst up behind it in a rising wave, glint, flash white together and shatter into toppling shards.",tags:["ice","spikes","ground","wave","directional","magic","one-shot"],size:[264,112],origin:[24,96],duration:3,loop:!1,fps:30,bg:"ground",options:{palette:["#151a3d","#212f6b","#2c58aa","#3a8bd8","#62c8f4","#a6ecff","#dcfbff","#ffffff"],reach:172,height:56,seed:3}},nn=.04,Za=.44,oi=.74,$a=1.2,N0=1.36,z0=1.42,ia=1.75;function si(o){let t=Y(o.palette,8),n=new X(o.seed),a=o.reach,e=()=>0,s=new V({rng:n,ground:e,sparks:[t[7],t[6],t[5],t[4]],haze:t[5]}),i=new lt({ground:e}),f=new Z,u=(w,x,M,v)=>{for(let E=0;E<v;E++)i.add({kind:Q.SHARD,x:w+n.range(-2,2),y:x-1,vx:M*.5+n.range(-45,45),vy:-n.range(30,100),g:.8,drag:.6,bounce:.35,life:n.range(.4,.75),a:n.range(0,T),va:n.range(-18,18),s:n.range(1.2,2.4),c:t[n.int(4,7)]})},g=new kn({ground:e,onCrumble:w=>{u(w.x,0,0,3),s.spawn(S.VAPOUR,w.x,-1,n.range(-12,12),-n.range(2,8),n.range(.4,.7),t[6],n.range(1.4,2.2))},onLand:(w,x,M,v)=>{v<110||(s.spawn(S.VAPOUR,x,M-1,n.range(-20,20),-n.range(2,8),n.range(.4,.7),t[6],n.range(1.4,2.4)),u(x,M,w.vx,3),n.chance(.3)&&s.spawn(S.STAR,x,M-2,0,-5,n.range(.2,.4),I,n.range(.8,1.6)))}}),h=w=>a*(1-Math.pow(1-Ht(w,nn,nn+Za),1.7)),c=w=>nn+Za*(1-Math.pow(1-L(w/a),1/1.7)),r=w=>.28+.72*Math.exp(-(((w-.64)/.3)**2)),l=[];for(let w=10;w<a-2;w+=n.range(20,26)){let x=w/a,M=o.height*r(x)*n.range(.88,1.06),v=L(M*.36,5,14),E=M*n.range(.2,.34),P=[{dx:v*n.range(.35,.6),h:M*n.range(.5,.7),w:v*.7,lean:M*n.range(.4,.6),back:!0,delay:n.range(.02,.05),jag:n.chance(.5)?n.range(.35,.6):-1},{dx:0,h:M,w:v,lean:E,back:!1,delay:0,jag:n.chance(.7)?n.range(.32,.58):-1,main:!0}];M>14&&P.push({dx:-v*n.range(.35,.55),h:M*n.range(.24,.4),w:v*.55,lean:-M*n.range(0,.12),back:!1,delay:n.range(.03,.07),jag:-1}),l.push({x:w,q:x,H:M,W:v,blades:P,main:P[1],t0:c(w)+.012,up:!1})}let p=l.reduce((w,x)=>x.H>w.H?x:w,l[0]),m=0,A=!1,R=!1,y=(w,x)=>{let M=U.outBack(L((m-w.t0-x.delay)/.09),2.2),v=w.x+x.dx;return{g:M,x:v,tx:v+x.lean*M,ty:-x.h*M,white:m-w.t0-x.delay<.03||m>=N0&&m<z0}},d=w=>{if(!(m>=z0))for(let x of[0,1,2])for(let M of l){if(m<M.t0)continue;let v=m>=$a&&m<N0&&(Math.floor(m*40)+Math.round(M.x))%2?1:0;for(let E of M.blades){if(x===0!==E.back||x===1!=!!E.main)continue;let P=y(M,E);if(P.g<=0)continue;let D=(m-oi-M.q*.34)/.2;oa(w,P.x+v,0,P.tx+v,P.ty,E.w,t,{white:P.white,jag:E.jag,dim:E.back?1:0,glint:D>=0&&D<=1?D:-1})}if(x===2){let E=L(1-(m-M.t0)/.15),P=m>=N0;w.glow(M.x+M.main.lean*.4,-M.H*.45,M.H*.9+10,t[4],(.16+.42*E+(P?.4:0))*(.85+.15*Math.sin(m*3+M.x))),E>0&&w.glow(M.x,-2,14,I,.55*E)}}},b=w=>{let x=h(m);for(let M=-3;M<=Math.min(x,a+6);M++){let v=L(M/a),E=m-c(Math.max(0,M)),P=1-z(ia+v*.35,ia+v*.35+.6,m);if(P<=0||E<0)continue;let D=G(M,17),B=z(0,.3,E),F=x-M<3&&x<a;w.dot(M,0,F||E<.06||D<.3?I:t[6],P);let O=D<.45?Math.round(B*(1+G(M,5)*2.6)):0;for(let N=1;N<=O;N++)w.dot(M,-N,N===O?I:t[5],P);O>1&&G(M,9)<.5&&w.dot(M+1,-O+1,t[6],P);let H=B*(2+G(M,11)*4)*(1-v*.3);for(let N=1;N<=H;N++)w.dot(M,N,G(M*31+N,7)<.06?I:N<2?t[5]:N<4?t[4]:t[3],P*(1.1-N/(H+1)));F&&w.dot(M,-1,I)}x<a&&m>nn&&(w.glow(x,-2,16,t[6],.6),w.glow(x,-1,7,I,.6))},k=(w,x)=>{let M=y(w,x),v=M.tx-M.x,E=M.ty,P=Math.hypot(v,E)||1,D=-E/P,B=v/P,F=x.w/2,O=[[M.x-D*F,-B*F],[M.tx,M.ty],[M.x+D*F,B*F]],H=Math.atan2(E,v)+Math.PI/2,N=[O];x.h>9&&(N=N.flatMap(j=>An(j,M.x+v*.4,E*.4,H))),x.h>22&&(N=N.flatMap(j=>j.some(([,K])=>K<E*.5)?An(j,M.x+v*.72,E*.72,H):[j]));for(let j of N){let K=0,_=0;for(let[q,ct]of j)K+=q,_+=ct;K/=j.length,_/=j.length;let $=L(-_/40);g.add({pts:j.map(([q,ct])=>[q-K,ct-_]),x:K,y:_,vx:n.range(-25,60),vy:-n.range(40,130)*(.5+$),a:0,va:n.range(-8,8),f:n.range(-.7,.7),vf:n.range(-6,6),lit:x.back?.45:.75,g:.9,drag:.6,bounce:.3,solid:!0,ridge:Math.atan2(E,v),brittle:x.h>30?2:1,crumble:n.range(.12,.4),life:n.range(1,1.4)})}for(let j=0;j<2+x.h/7;j++){let K=n.next();i.add({kind:n.chance(.15)?Q.CHUNK:Q.SHARD,x:M.x+v*K+n.range(-1.5,1.5),y:E*K,vx:n.range(-60,90),vy:-n.range(60,230),g:.9,drag:.6,bounce:.3,life:n.range(.7,1.3),a:n.range(0,T),va:n.range(-20,20),s:n.range(1.2,3.2),c:t[n.int(4,7)],ramp:[t[1],t[3],t[4],t[6],t[7]]})}};return{update(w){if(m+=w,m-w<=nn&&m>nn){for(let M=0;M<4;M++)s.spawn(S.VAPOUR,n.range(0,6),-n.range(0,3),n.range(10,60),-n.range(2,12),n.range(.4,.7),t[6],n.range(2,3.2));f.add(4,-4,26,t[5],.6,.25)}let x=h(m);m>nn&&x<a-1&&(n.chance(.5)&&s.spawn(S.STREAK,x-n.range(4,12),-n.range(1,3),n.range(40,80),-n.range(0,6),n.range(.08,.14),n.chance(.5)?t[6]:I),n.chance(.3)&&s.spawn(S.FLAKE,x,-1,n.range(10,50),-n.range(20,70),n.range(.5,.9),n.chance(.5)?I:t[6],n.range(.5,1.2)),n.chance(.12)&&s.spawn(S.VAPOUR,x,-n.range(0,3),n.range(20,60),-n.range(2,10),n.range(.4,.7),t[6],n.range(1.6,2.8)));for(let M of l){if(M.up||m<M.t0)continue;M.up=!0;let v=M===p,E=3+Math.round(M.H/8);for(let P=0;P<E;P++){let D=-Math.PI/2+n.range(-1.1,1),B=n.range(60,190)*(.45+M.H/44);i.add({kind:Q.SHARD,x:M.x+n.range(-3,3),y:-1,vx:Math.cos(D)*B+25,vy:Math.sin(D)*B,g:.8,drag:.6,bounce:.3,life:n.range(.6,1.1),a:n.range(0,T),va:n.range(-18,18),s:n.range(1.2,3),c:t[n.int(5,7)]})}s.spawn(S.VAPOUR,M.x,-1,n.range(-10,40),-n.range(2,10),n.range(.5,.9),t[6],n.range(2.2,3.4)*(.6+M.H/60));for(let P=0;P<2;P++)s.spawn(S.FLAKE,M.x+n.range(-4,4),-n.range(2,M.H*.5),n.range(-20,40),-n.range(20,60),n.range(.6,1.1),n.chance(.5)?I:t[6],n.range(.5,1.3));if(M.H>16&&s.spawn(S.STAR,M.x+M.main.lean,-M.H*.96,0,-4,n.range(.3,.5),I,n.range(1.4,2.6),.08),f.add(M.x,-M.H*.4,16+M.H*.6,t[5],.5,.18),v){f.add(M.x,-M.H*.5,54,I,.5,.14);for(let P=0;P<4;P++)s.spawn(S.VAPOUR,M.x+n.range(-6,6),-n.range(0,4),n.range(-40,60),-n.range(4,16),n.range(.6,1),t[6],n.range(3,4.5))}}if(m>nn+Za&&m<$a&&n.chance(.09)){let M=n.pick(l),v=n.pick(M.blades),E=y(M,v),P=n.range(.3,.95);s.spawn(S.STAR,E.x+(E.tx-E.x)*P,E.ty*P,0,-3,n.range(.25,.5),n.chance(.6)?I:t[6],n.range(.6,2))}if(!R&&m>=$a){R=!0;for(let M of l)for(let v=0;v<2;v++)i.add({kind:Q.SHARD,x:M.x+n.range(-4,4),y:-n.range(4,M.H*.8),vx:n.range(-20,20),vy:-n.range(0,30),g:.8,drag:.5,bounce:.3,life:n.range(.3,.6),a:n.range(0,T),va:n.range(-18,18),s:n.range(1,1.8),c:t[n.int(5,7)]})}if(!A&&m>=z0){A=!0;for(let M of l){for(let v of M.blades)k(M,v);for(let v=0;v<2;v++)s.spawn(S.VAPOUR,M.x+n.range(-6,6),-n.range(1,8),n.range(-30,50),-n.range(4,18),n.range(.6,1.1),t[6],n.range(2.4,4)*(.7+M.H/60));n.chance(.7)&&s.spawn(S.STAR,M.x+n.range(-6,6),-n.range(4,M.H),n.range(-10,10),-n.range(6,20),n.range(.4,.8),n.chance(.5)?I:t[6],n.range(1,2.2));for(let v=0;v<2;v++)s.spawn(S.FLAKE,M.x+n.range(-6,6),-n.range(4,M.H),n.range(-30,60),-n.range(30,90),n.range(.9,1.5),n.chance(.6)?I:t[6],n.range(.5,1.5));f.add(M.x,-M.H*.5,22+M.H,I,.45,.12)}for(let M=0;M<5;M++)f.add(a*(M+.5)/5,-18,40,t[4],.4,.5)}if(A&&m<z0+.8&&n.chance(.1)&&i.list.length){let M=n.pick(i.list);s.spawn(S.STAR,M.x,M.y-1,0,-3,n.range(.2,.4),n.chance(.5)?I:t[6],n.range(.6,1.5))}s.update(w),i.update(w),g.update(w),f.update(w),Rn(m,Ko.duration,s,i,g)},drawBack(w){b(w),s.draw(w,"back")},draw(w){d(w);let x=(1-z(ia,ia+.9,m))*z(nn,nn+.3,m),M=h(m);for(let v=0;v<6;v++)w.glow(M*(v+.5)/6,-3,26,t[4],.15*x);if(m>=N0&&m<z0+.1)for(let v of l)nt(w,v.x+v.main.lean,-v.H,6*(1-L((m-N0)/.16)),t[6],t[4],.4);g.draw(w,t),i.draw(w),s.draw(w,"front"),f.draw(w)}}}var ae={};et(ae,{create:()=>fi,meta:()=>Jo});var Jo={name:"Ice shatter",desc:"A block of ice takes a hit from the left: it jolts, cracks race over its faces, it flashes white and bursts into chunks that tumble, bounce and skid off in a roll of ice dust.",tags:["ice","shatter","break","destroy","impact","directional","one-shot"],size:[224,112],origin:[68,90],duration:2.8,loop:!1,fps:30,bg:"ground",options:{palette:["#151a3d","#212f6b","#2c58aa","#3a8bd8","#62c8f4","#a6ecff","#dcfbff","#ffffff"],seed:6}},cn=.26,ne=.4,ri=.54,Nn=.62,En=.68,Wo=[[-16,0],[-16,-28],[12,-28],[12,0]],Co=[[-16,-28],[-8,-34],[20,-34],[12,-28]],Yo=[[12,0],[12,-28],[20,-34],[20,-6]],Go=[[-16,0],[-16,-28],[-8,-34],[20,-34],[20,-6],[12,0]],pt=[-16,-15],ii=[[-16,-21],[-5,-28],[3,-13],[-16,-9]],ci=[[5,-28],[12,-28],[12,-10]];function fi(o){let t=Y(o.palette,8),n=new X(o.seed),a=()=>0,e=new V({rng:n,ground:a,sparks:[t[7],t[6],t[5],t[4]],haze:t[5]}),s=new lt({ground:a}),i=new Z,f=[],u=(M,v,E,P)=>{for(let D=0;D<P;D++)s.add({kind:Q.SHARD,x:M+n.range(-2,2),y:v-1,vx:E*.6+n.range(-35,45),vy:-n.range(30,100),g:.8,drag:.6,bounce:.35,life:n.range(.4,.8),a:n.range(0,T),va:n.range(-18,18),s:n.range(1.2,2.4),c:t[n.int(4,7)]})},g=new kn({ground:a,onLand:(M,v,E,P)=>{P<100||(e.spawn(S.VAPOUR,v,E-1,M.vx*.3+n.range(-15,15),-n.range(2,10),n.range(.4,.7),t[6],n.range(1.6,2.8)),u(v,E,M.vx,2),n.chance(.3)&&e.spawn(S.STAR,v,E-3,0,-5,n.range(.2,.4),I,n.range(.8,1.6)))},onSkid:(M,v)=>{n.chance(.5)&&f.push({x:Math.round(v+n.range(-1,1)),t:0})},onCrumble:M=>{u(M.x,0,M.vx,3),e.spawn(S.VAPOUR,M.x,-1,n.range(-10,14),-n.range(2,6),n.range(.4,.7),t[6],n.range(1.2,2))}}),h=[],c=[];for(let M=0;M<3;M++){let v=n.range(-12,8),E=n.range(-24,-6),P=n.range(0,T);for(let D=0;D<9&&(P+=n.range(-.6,.6),v+=Math.cos(P)*1.5,E+=Math.sin(P)*1.2,!(v<-14||v>10||E<-26||E>-2));D++)h.push([Math.floor(v),Math.floor(E)])}for(let M=0;M<5;M++)c.push([n.int(-12,8),n.int(-23,-4),n.chance(.4)?1:0]);let r=(M,v)=>H0(Go,M,v),l=_a(n,r,pt[0]+1,pt[1],4,{len:8,a0:-.9,spread:1.9}),p=_a(n,r,pt[0]+1,pt[1],6,{len:18,a0:-1.3,spread:2.7,fork:.16}),m=0,A=!1,R=!1,y=!1,d=!1,b=()=>m>=cn&&m<cn+.05?2:m>=cn+.05&&m<cn+.12||m>=ri&&m<Nn&&Math.floor(m*40)%2?1:0,k=M=>{if(m>=En)return;let v=b(),E=m>=Nn,P=-40+70*Ht(m,.04,.3),D=F=>F.map(([O,H])=>[O+v,H]);if(M.poly(D([[-17,1],[-17,-28.5],[-8.3,-35.2],[21,-35.2],[21,-5.6],[12.5,1]]),t[0]),E){M.poly(D(Go),I);return}M.poly(D(Wo),(F,O)=>{let H=F-v,N=H+O*.8;return Math.abs(N-P)<1.3&&O<-6?I:O<-9&&(Math.abs(N+21)<1.1||Math.abs(N+16.5)<.6)?t[6]:(Math.abs(H+7.5)<.5&&O<-6||Math.abs(O+5.5)<.5&&H>-8)&&(Math.floor(H)+Math.floor(O))%2===0?t[5]:H0(ii,H,O)?O<-25.5?t[6]:t[5]:H0(ci,H,O)?t[3]:O<-25.5?t[5]:O<-8?t[4]:O<-2.5?t[3]:t[2]}),M.poly(D(Co),(F,O)=>O>-29.5?t[7]:O<-32.5?t[5]:G(Math.floor(F),Math.floor(O),3)<.08?t[7]:t[6]),M.poly(D(Yo),(F,O)=>{let H=F-v;return H<13.5||Math.abs(H-16.5)<.6&&O<-8?t[3]:O>(H-12)*-.75-3?t[1]:t[2]});for(let[F,O]of h)M.px(F+v,O,t[5]);for(let[F,O,H]of c)M.px(F+v,O,t[6]),H&&(M.px(F+v+1,O,t[5]),M.px(F+v,O+1,t[5]));let B=(F,O,H)=>M.line(F[0]+v,F[1],O[0]+v,O[1],H);B([-16,-28],[12,-28],I),B([-16,-28],[-8,-34],t[6]),B([-8,-34],[20,-34],t[5]),B([12,-28],[20,-34],t[7]),B([-16,-1],[-16,-28],t[5]),B([12,-1],[12,-28],t[6]),B([20,-6],[20,-34],t[3]),B([13,-1],[20,-6],t[1]),m>=cn&&Xa(M,l,(m-cn)*170,t,{ox:v}),m>=ne&&Xa(M,p,(m-ne)*200,t,{ox:v})},w=M=>{let v=1-z(En+.6,En+1.5,m);if(v>0)for(let E=-22;E<=26;E++){let P=Math.abs(E-2)/24,D=G(E,41),B=v*L((1.1-P)/.25);if(!(B<=0)){M.dot(E,0,D<.35?I:t[6],B),D<.4&&(E<-16||E>20)&&M.dot(E,-1,t[5],B);for(let F=1;F<=1+Math.round(G(E,7)*3*(1-P));F++)M.dot(E,F,F<2?t[5]:t[4],B*(1-F/5))}}for(let E of f){let P=1-E.t/.9;P>0&&(M.dot(E.x,0,E.t<.15?I:t[6],P),M.dot(E.x,1,t[4],P*.6))}},x=()=>{let M=(v,E,P)=>{let D=vn(v);return D.area<E||P>4?[v]:An(v,D.x+n.range(-1,1),D.y+n.range(-1,1),n.range(0,Math.PI)).flatMap(B=>M(B,E,P+1))};for(let[v,E,P]of[[Wo,.6,46],[Co,1,40],[Yo,.3,46]])for(let D of M(v,P,0)){let B=vn(D),F=B.x-pt[0],O=B.y-pt[1],H=Math.hypot(F,O)||1,N=n.range(50,150)*(.7+.3*(1-H/40));g.add({pts:D.map(([j,K])=>[j-B.x,K-B.y]),x:B.x,y:B.y,vx:F/H*N*.9+n.range(40,110),vy:O/H*N*.4-n.range(60,200),a:0,va:n.range(-10,10),f:n.range(-.9,.9),vf:n.range(-7,7),tone:E,lit:E,g:.9,drag:.5,bounce:.38,solid:!0,brittle:3,crumble:n.range(.25,.6),life:n.range(1.5,1.9)})}for(let v=0;v<46;v++){let E=n.range(-15,19),P=-n.range(1,33),D=E-pt[0],B=P-pt[1],F=Math.hypot(D,B)||1,O=n.range(60,200);r(E,P)&&s.add({kind:n.chance(.15)?Q.CHUNK:Q.SHARD,x:E,y:P,vx:D/F*O*.8+n.range(20,90),vy:B/F*O*.4-n.range(60,240),g:.85,drag:.6,bounce:.32,life:n.range(.8,1.4),a:n.range(0,T),va:n.range(-22,22),s:n.range(1.2,3.4),c:t[n.int(4,7)],ramp:[t[1],t[3],t[4],t[6],t[7]]})}for(let v=0;v<9;v++)e.spawn(S.VAPOUR,n.range(-6,18),-n.range(1,6),n.range(10,130),-n.range(2,12),n.range(.6,1.1),t[6],n.range(2.2,3.8));for(let v=0;v<5;v++)e.spawn(S.DUST,n.range(-6,16),-n.range(1,4),n.range(30,110),-n.range(2,8),n.range(.5,.9),t[5],n.range(1.6,2.8));for(let v=0;v<4;v++)e.spawn(S.VAPOUR,n.range(-8,18),-n.range(8,28),n.range(-10,50),-n.range(8,24),n.range(.6,1),t[6],n.range(2.6,4));for(let v=0;v<16;v++){let E=n.range(-Math.PI*.9,-.1),P=n.range(40,140);e.spawn(S.FLAKE,n.range(-8,16),-n.range(6,28),Math.cos(E)*P+20,Math.sin(E)*P,n.range(1,1.6),n.chance(.6)?I:t[6],n.range(.5,1.6))}for(let v=0;v<7;v++)e.spawn(S.STAR,n.range(-14,40),-n.range(4,40),n.range(-8,16),-n.range(4,16),n.range(.4,.8),n.chance(.5)?I:t[6],n.range(1,2.4));i.add(2,-17,64,I,.85,.14),i.add(16,-18,86,t[4],.5,.55)};return{update(M){if(m+=M,!A&&m>=cn){A=!0,i.add(pt[0],pt[1],24,I,.6,.08),i.add(pt[0]+6,pt[1],40,t[5],.4,.3);for(let v=0;v<12;v++){let E=Math.PI+n.range(-.9,.9),P=n.range(50,120);e.spawn(S.SPARK,pt[0]-1,pt[1],Math.cos(E)*P,Math.sin(E)*P-40,n.range(.15,.4))}for(let v=0;v<6;v++){let E=Math.PI+n.range(-1,.8),P=n.range(40,100);s.add({kind:Q.SHARD,x:pt[0]-1,y:pt[1]+n.range(-2,2),vx:Math.cos(E)*P,vy:Math.sin(E)*P-60,g:.85,drag:.6,bounce:.3,life:n.range(.5,.9),a:n.range(0,T),va:n.range(-20,20),s:n.range(1.2,2.4),c:t[n.int(5,7)]})}}if(!y&&m>=ne){y=!0,i.add(0,-16,36,t[6],.35,.15);for(let v=0;v<3;v++)s.add({kind:Q.SHARD,x:n.range(-14,18),y:-n.range(4,30),vx:n.range(-30,30),vy:-n.range(10,50),g:.85,drag:.6,bounce:.3,life:n.range(.4,.7),a:n.range(0,T),va:n.range(-20,20),s:n.range(1,2),c:t[n.int(5,7)]})}if(!d&&m>=Nn&&(d=!0,i.add(2,-17,44,I,.7,.08)),!R&&m>=En&&(R=!0,x()),R&&m<En+1&&n.chance(.08)&&s.list.length){let v=n.pick(s.list);e.spawn(S.STAR,v.x,v.y-1,0,-3,n.range(.2,.4),n.chance(.5)?I:t[6],n.range(.6,1.5))}for(let v=f.length-1;v>=0;v--)(f[v].t+=M)>.9&&f.splice(v,1);e.update(M),s.update(M),g.update(M),i.update(M),Rn(m,Jo.duration,e,s,g)},drawBack(M){w(M),e.draw(M,"back")},draw(M){k(M);let v=m-cn;v>=0&&v<.2&&(nt(M,pt[0]-1,pt[1],9*U.outBack(Math.min(1,v/.04))*(1-v/.2),t[6],t[4],.7),v<.08&&Rt(M,pt[0]-1,pt[1],14*(1-v/.08),1-v/.08,t));let E=1-z(En,En+.4,m),P=z(cn,Nn,m);E>0&&(M.glow(2,-17,34,t[4],(.16+.22*P)*E),M.glow(2,-2,30,t[4],.14*E)),m>=Nn&&m<En+.12&&Rt(M,2,-17,26*(1-L((m-Nn)/.18)),1-L((m-Nn)/.18),t),g.draw(M,t),s.draw(M),e.draw(M,"front"),i.draw(M)}}}var ee={};et(ee,{draw:()=>gi,drawBack:()=>li,meta:()=>zn});var zn={name:"Blizzard vortex",desc:"A swirling snow tornado: wind bands spin up a leaning funnel, flakes and ice crystals orbit in front and behind, snow boils at its foot and cold light fills its throat.",tags:["ice","snow","blizzard","tornado","vortex","wind","loop"],size:[128,116],origin:[64,102],duration:2,loop:!0,fps:30,bg:"ground",options:{palette:["#151a3d","#212f6b","#2c58aa","#3a8bd8","#62c8f4","#a6ecff","#dcfbff","#ffffff"],height:80,seed:17}},ca=.24,fa=(o,t)=>4+28*Math.pow(L(o/t),1.35),fn=(o,t,n)=>(5*Math.sin(T*n+o*.05)+1.5*Math.sin(T*n*2-o*.11))*(o/t)-2*(o/t);function _o(o,t,n,a,e){let s=zn.duration,i=a.height,f=n/s;mt(n,s,58,a.seed+9,u=>u.range(.5,.9),(u,g,h)=>{let c=h.range(2,i),r=h.range(8,12)*(1.45-c/i),l=h.range(0,T)+u*r,p=u/g,m=Math.min(1,u/.08)*(p>.7?(1-p)/.3:1),A=h.range(.7,1.5),R=Math.ceil(A/.07);for(let y=0;y<=R;y++){let d=l-y*.07,b=Math.sin(d);if(b>=0!==e)continue;let k=Math.min(i+4,c+u*16-y*.25),w=fa(Math.min(k,i),i)*(1+Math.min(.3,Math.max(0,k-i*.84)*.03)),x=y/R,M=fn(Math.min(k,i),i,f)+Math.cos(d)*w,v=-k+b*w*ca,E=e?x<.15?I:x<.5?t[6]:t[5]:x<.3?t[5]:x<.6?t[4]:t[3];o.dot(M,v,E,m*(x<.6?1:1.5-x*1.2)*(e?1:.85))}})}function hi(o,t,n,a){o.each(-44,-a-6,44,2,(e,s,i,f)=>{let u=-s;if(u<0||u>a+4)return;let g=fa(u,a),h=e-fn(u,a,n),c=h/g;if(c*c>=1)return;let r=u/a,l=Math.pow(Math.abs(c),3),p=Math.sin(Math.asin(c)*3-T*n*2+u*.2)*.5+.5,m=(.07+.24*l+.12*p)*L((1-Math.abs(c))/.18)*(r>.7?Math.max(0,(1-r)/.3):1)*(u<4?u/4:1);m<.03||(o.blendPx(i,f,l>.5?t[6]:p>.6?t[5]:t[4],m),(l>.3||p>.75)&&o.add(i,f,t[5],.16*Math.max(l,p-.5)*(1-r*.5)))})}function Xo(o,t,n,a,e){let s=zn.duration,i=a.height,f=n/s;mt(n,s,76,a.seed,u=>u.range(.9,1.6),(u,g,h,c)=>{let r=h.range(0,i*.6),l=r+u*h.range(14,30),p=u/g;if(l>i+8)return;let m=h.range(7,11)*(1.5-l/i),A=h.range(0,T)+u*m,R=1+h.range(.05,.3)+Math.min(.35,Math.max(0,l-i*.82)*.04),y=fa(Math.min(l,i),i)*R,d=Math.sin(A);if(d>=0!==e)return;let b=fn(Math.min(l,i),i,f)+Math.cos(A)*y,k=-l+d*y*ca,w=c%5===0,x=Math.min(1,u/.1)*(p>.8?(1-p)/.2:1);if(x<=0)return;let M=A-.25,v=fn(Math.min(l,i),i,f)+Math.cos(M)*y,E=-l+2+Math.sin(M)*y*ca;if(e){if(o.line(v,E,b,k,P=>P>.6?t[6]:t[4],P=>P*x),o.dot(b,k,w?I:h.chance(.5)?I:t[6],x),w){for(let[P,D]of[[1,0],[-1,0],[0,1],[0,-1]])o.dot(b+P,k+D,t[6],x);o.glow(b,k,5,t[5],.35*x)}}else o.line(v,E,b,k,t[3],P=>P*x*.8),o.dot(b,k,w?t[5]:t[4],x)})}function qo(o,t,n,a,e){let s=zn.duration,i=n/s;mt(n,s,12,a.seed+5,f=>f.range(.8,1.2),(f,u,g)=>{let h=g.range(0,T)+f*g.range(4,6),c=9+f*g.range(8,16),r=Math.sin(h),l=f/u;if(r>=0!==e)return;let p=fn(0,1,i)+Math.cos(h)*c,m=-2-f*g.range(4,10)+r*c*.2,A=2+4*l,R=.5*(1-l)**1.2*Math.min(1,f/.1);o.disc(p,m,A,e?t[6]:t[5],y=>R*(1-y*y)),o.disc(p-A*.25,m-A*.3,A*.5,I,y=>R*.5*(1-y*y)*(1-l))})}function li(o,t,n){let a=Y(n.palette,8),e=n.height,s=t/zn.duration;for(let i=-30;i<=30;i++){let f=Math.abs(i)/30,u=Math.round((1-f*f)*(1.5+G(i,3)*1.5));for(let g=0;g<u;g++)o.px(i,-g,g===u-1?I:a[5]);o.dot(i,0,a[6],1-f*.5),o.dot(i,1,a[4],.8-f*.6)}o.glow(0,-2,40,a[4],.22),qo(o,a,t,n,!1),_o(o,a,t,n,!1),Xo(o,a,t,n,!1)}function gi(o,t,n){let a=Y(n.palette,8),e=n.height,s=t/zn.duration;hi(o,a,s,e),o.glow(fn(e*.45,e,s),-e*.45,40,a[4],.3),o.glow(fn(e*.15,e,s),-e*.15,18,a[5],.4+.1*Math.sin(T*s*4)),o.glow(fn(e*.05,e,s),-3,10,I,.3),_o(o,a,t,n,!0),Xo(o,a,t,n,!0),qo(o,a,t,n,!0),mt(t,zn.duration,10,n.seed+3,i=>i.range(.9,1.3),(i,f,u)=>{let g=u.range(0,T),h=fa(e,e)*(.6+i*.9),c=i/f,r=3+6*c,l=Math.min(h,36),p=fn(e,e,s)+Math.cos(g)*l,m=-e-2-i*4+Math.sin(g)*l*ca,A=.24*(1-c)*Math.min(1,i/.15);o.disc(p,m,r*.8,a[6],R=>A*(1-R*R)),o.glow(p,m,r*1.5,a[4],.08*(1-c))})}var se={};et(se,{create:()=>Mi,meta:()=>ha});var ha={name:"Icicle fall",desc:"An icicle drips and trembles, snaps off its frosted root, drops, stabs the floor and bursts into skidding shards, splinters and rolling frost.",tags:["ice","icicle","fall","trap","shatter","one-shot"],size:[152,120],origin:[76,100],duration:2.6,loop:!1,fps:30,bg:"ground",options:{palette:["#151a3d","#212f6b","#2c58aa","#3a8bd8","#62c8f4","#a6ecff","#dcfbff","#ffffff"],seed:4}},kt=-80,an=36,Un=12,oe=.16,U0=.3,hn=.6,ln=hn+.04,ui=Math.sqrt(2*(-kt-an)/Nt),xt=ln+ui;function di(o,t,n,a,e,s,i={}){let f=h=>s/2*Math.pow(1-h,.75)*(1+.14*Math.sin(h*13+.5))*(h<.08?1.15:1)+.3,u=i.tilt??0,g=i.cut??0;o.shade(n-s/2-4,a-1,n+s/2+4+Math.abs(u)*e,a+e+1,(h,c,r)=>{let l=(c-a)/e,p=n+u*e*l+.7*Math.sin(l*6+1),m=h-p;if(l<g||l>1)return;let A=f(l);if(Math.abs(m)>A+1)return;if(Math.abs(m)>A){r.c=t[1];return}if(i.white)return r.c=I;let R=m/A,y=Math.sin(l*13+.5)>.7,d=l>.88?I:R<-.72?t[6]:R<-.2?y?t[7]:t[5]:R<.18?l<.72?t[7]:t[6]:R>.8?t[2]:Math.abs(R-.45)<.1&&l>.15&&l<.6?t[5]:R<.6?t[4]:t[3];i.glint>=0&&R<.25&&Math.abs(l-i.glint)<.06&&(d=I),r.c=d})}function Mi(o){let t=Y(o.palette,8),n=new X(o.seed),a=()=>0,e=new V({rng:n,ground:a,sparks:[t[7],t[6],t[5],t[4]],haze:t[5]}),s=new lt({ground:a}),i=new Z,f=(A,R,y,d)=>{for(let b=0;b<d;b++)s.add({kind:Q.SHARD,x:A+n.range(-2,2),y:R-1,vx:y*.5+n.range(-45,45),vy:-n.range(30,100),g:.8,drag:.6,bounce:.35,life:n.range(.4,.75),a:n.range(0,T),va:n.range(-18,18),s:n.range(1.2,2.4),c:t[n.int(4,7)]})},u=new kn({ground:a,onLand:(A,R,y,d)=>{d<100||(e.spawn(S.VAPOUR,R,y-1,n.range(-15,15),-n.range(2,8),n.range(.4,.6),t[6],n.range(1.4,2.2)),f(R,y,A.vx,2))},onCrumble:A=>f(A.x,0,A.vx,3)}),g=[];for(let A=-18;A<=18;A++){let R=G(A,o.seed,2),y=Math.abs(A)/18;g.push({x:A,h:1+Math.round((.6+R*1.8)*(1-y*.7)),stub:R<.3&&Math.abs(A)>7?2+Math.round(G(A,5)*5*(1-y*.5)):0})}let h=0,c=!1,r=!1,l=!1,p=0,m=()=>kt+(h<ln?0:.5*Nt*(h-ln)**2);return{update(A){if(h+=A,!l&&h>=oe&&(l=!0,s.add({kind:Q.DRIP,x:.5,y:kt+an+1,vy:20,g:.9,life:1.2,c:t[6]})),h>U0&&h<hn&&n.chance(.25)&&e.spawn(S.FLAKE,n.range(-6,6),kt+n.range(0,3),n.range(-8,8),n.range(5,20),n.range(.6,1.1),n.chance(.5)?I:t[6],n.range(.5,1.1)),!c&&h>=hn){c=!0,i.add(0,kt+4,24,I,.6,.1),i.add(0,kt+4,32,t[5],.4,.3);for(let R=0;R<7;R++){let y=n.range(0,T),d=n.range(30,110);s.add({kind:Q.SHARD,x:n.range(-4,4),y:kt+2,vx:Math.cos(y)*d,vy:Math.sin(y)*d-20,g:.8,drag:.8,bounce:.3,life:n.range(.5,.9),a:n.range(0,T),va:n.range(-20,20),s:n.range(1,2),c:t[n.int(5,7)]})}for(let R=0;R<3;R++)e.spawn(S.VAPOUR,n.range(-5,5),kt+2,n.range(-25,25),n.range(-5,5),n.range(.4,.7),t[6],n.range(1.6,2.6));for(let R=0;R<5;R++)e.spawn(S.FLAKE,n.range(-6,6),kt+2,n.range(-30,30),n.range(-20,20),n.range(.6,1.2),n.chance(.5)?I:t[6],n.range(.5,1.3))}if(h>ln&&h<xt&&n.chance(.5)){let R=m();e.spawn(S.MOTE,n.range(-3,3),R+n.range(0,an*.6),n.range(-10,10),n.range(-40,-10),n.range(.2,.35),n.chance(.5)?t[6]:t[5],.6)}if(!r&&h>=xt){r=!0;let R=-an;i.add(0,-16,46,I,.85,.12),i.add(0,-16,58,t[4],.5,.5);let y=[[[-Un/2,R],[Un/2,R],[.5,0]]];for(let d of[.3,.58,.8])y=y.flatMap(b=>An(b,0,R+an*d+n.range(-2,2),n.range(-.4,.4)));y=y.flatMap(d=>vn(d).area>22?An(d,vn(d).x,vn(d).y,Math.PI/2+n.range(-.5,.5)):[d]);for(let d of y){let b=vn(d),k=b.x<.5?-1:1,w=L(-b.y/an);u.add({pts:d.map(([x,M])=>[x-b.x,M-b.y]),x:b.x,y:b.y,vx:k*n.range(30,110)+n.range(-15,15),vy:-n.range(70,200)*(.4+w),a:0,va:n.range(-12,12),f:n.range(-.7,.7),vf:n.range(-8,8),lit:.75,g:.9,drag:.6,bounce:.35,solid:!0,ridge:Math.PI/2,brittle:2,crumble:n.range(.15,.45),life:n.range(1,1.4)})}for(let d=0;d<52;d++){let b=-Math.PI/2+n.range(-1.25,1.25),k=n.range(60,230);s.add({kind:n.chance(.15)?Q.CHUNK:Q.SHARD,x:n.range(-3,3),y:-n.range(1,10),vx:Math.cos(b)*k,vy:Math.sin(b)*k,g:.85,drag:.6,bounce:.32,life:n.range(.6,1.2),a:n.range(0,T),va:n.range(-22,22),s:n.range(1.2,3),c:t[n.int(4,7)],ramp:[t[1],t[3],t[4],t[6],t[7]]})}for(let d=0;d<10;d++){let b=n.sign();e.spawn(S.VAPOUR,b*n.range(0,8),-n.range(1,6),b*n.range(25,90),-n.range(2,14),n.range(.6,1.1),t[6],n.range(2.2,3.8))}for(let d=0;d<12;d++)e.spawn(S.FLAKE,n.range(-6,6),-n.range(2,16),n.range(-70,70),-n.range(30,110),n.range(1,1.5),n.chance(.6)?I:t[6],n.range(.5,1.5));for(let d=0;d<6;d++)e.spawn(S.STAR,n.range(-24,24),-n.range(4,34),n.range(-10,10),-n.range(4,14),n.range(.4,.8),n.chance(.5)?I:t[6],n.range(1,2.2))}if(r&&h<xt+.9&&n.chance(.08)&&s.list.length){let R=n.pick(s.list);e.spawn(S.STAR,R.x,R.y-1,0,-3,n.range(.2,.4),n.chance(.5)?I:t[6],n.range(.6,1.4))}e.update(A),s.update(A),u.update(A),i.update(A),Rn(h,ha.duration,e,s,u)},drawBack(A){if(h>U0&&h<xt+.05){let R=h<ln?Ht(h,U0,ln)*.35:.35+.65*Ht(h,ln,xt),y=3+7*R;for(let d=Math.floor(-y);d<=y;d++){let b=1-(d/y)**2;A.blend(d+.5,0,t[0],.7*R*b),Math.abs(d)<y*.7&&A.blend(d+.5,1,t[0],.45*R*b)}}if(h>=xt){let R=U.outCubic(Ht(h,xt,xt+.25)),y=1-z(xt+.8,xt+1.5,h);for(let b=-26;b<=26;b++){let k=Math.abs(b+.5)/26,w=G(b,23),x=y*L((R*1.15-k)/.15);if(!(x<=0)){if(A.dot(b,0,w<.35||k>R-.12?I:t[6],x),w<.4)for(let M=1;M<=Math.round((1+G(b,3)*2.5)*(1-k));M++)A.dot(b+Math.sign(b)*(M>1?1:0),-M,M>1?I:t[5],x);for(let M=1;M<=Math.round((2+G(b,7)*3)*(1-k*.6));M++)A.dot(b,M,M<2?t[5]:t[4],x*(1.1-M/6))}}let d=Ht(h,xt,xt+.35);d<1&&bt(A,0,.5,6+34*U.outCubic(d),.18,Math.max(1,4*(1-d)),1.1-d,[t[3],t[4],t[5],t[6]],b=>Math.sin(b)<0)}e.draw(A,"back")},draw(A){let R=1-z(ha.duration-.7,ha.duration-.2,h);for(let y of g){for(let d=0;d<y.h+1;d++)A.dot(y.x,kt-1-d,d===y.h?I:d===y.h-1?t[6]:d===0?t[3]:t[5],R);for(let d=0;d<y.stub;d++)A.dot(y.x,kt+d,d===y.stub-1?I:d===0?t[5]:t[4],R);y.stub>4&&A.dot(y.x+1,kt,t[3],R)}if(c)for(let y=-Un/2+1;y<=Un/2-1;y++){let d=1+Math.round(G(y,77)*2.5);for(let b=0;b<d;b++)A.dot(y,kt+b,b===d-1?h<hn+.15?I:t[6]:y<0?t[5]:t[3],R)}if(A.glow(0,kt,18,t[4],.3*R),h>=xt){let y=Ht(h,xt,xt+.35);y<1&&bt(A,0,.5,6+34*U.outCubic(y),.18,Math.max(1,4*(1-y)),1.1-y,[t[3],t[4],t[5],t[6]],d=>Math.sin(d)>=0,y<.15),h<xt+.22&&nt(A,.5,-3,10*U.outBack(Math.min(1,(h-xt)/.05))*(1-(h-xt)/.22),t[6],t[4],.7)}if(h<xt){let y=m(),d=h>U0&&h<hn?(Math.floor(h*36)%2?1:0)*Math.round(Ht(h,U0,hn)*1.4+.4):0,b=h>=ln,k=b?Nt*(h-ln):0;if(b)for(let[x,M]of[[-3,.7],[.5,1],[4,.6]]){let v=Math.min(30,k*.07)*M;v>2&&A.line(x,y-v,x,y+3,E=>E>.75?t[6]:E>.4?t[4]:t[3])}let w=(h-.04)/.3;if(di(A,t,d+.5,y,an,Un,{white:h>=xt-.025||h>=hn&&h<hn+.03,glint:w>=0&&w<=1?w:-1}),c&&h<hn+.12&&A.line(-Un/2-1,kt+1,Un/2+1,kt+1,I),A.glow(.5,y+an*.5,20,t[4],.28),h<oe){let x=Ht(h,0,oe);A.dot(.5,kt+an+1,t[6],x),x>.6&&A.px(.5,kt+an+2,I)}}u.draw(A,t),s.draw(A),e.draw(A,"front"),i.draw(A)}}}var re={};et(re,{create:()=>pi,meta:()=>Vo});var Vo={name:"Snowflake burst",desc:"A cold pop: frost gathers and flashes white in a ring, then crisp six-armed snowflakes spin out, slow, twinkle and drift down to settle and melt.",tags:["ice","snow","snowflake","burst","magic","one-shot"],size:[140,120],origin:[70,106],duration:3.2,loop:!1,fps:30,bg:"ground",options:{palette:["#151a3d","#212f6b","#2c58aa","#3a8bd8","#62c8f4","#a6ecff","#dcfbff","#ffffff"],count:9,seed:8}},jn=.16,Tt=-48;function pi(o){let t=Y(o.palette,8),n=new X(o.seed),a=()=>0,e=new V({rng:n,ground:a,sparks:[t[7],t[6],t[5],t[4]],haze:t[5]}),s=new Z,i=[],f=[2,0,1,0,2,0,1,0,1];for(let c=0;c<o.count;c++){let r=f[c%f.length],l=r===2?n.range(9.5,11.5):r===1?n.range(6,7.5):n.range(3,4.5),p=c/o.count*T+n.range(-.3,.3)+.4,m=n.range(80,120)*(1.4-l/14);i.push({x:0,y:Tt,vx:Math.cos(p)*m,vy:Math.sin(p)*m*.85-20,r:l,rot:n.range(0,T),w0:n.sign()*n.range(7,12),w1:n.sign()*n.range(.4,1),d:zo(n),life:n.range(2.1,2.8),age:0,ph:n.range(0,T),tw:n.range(.5,.85),tw0:n.range(.15,.6),rest:!1,popped:!1})}let u=0,g=!1,h=c=>c.r*Math.min(1,U.outBack(L(c.age/.18),2))*Math.min(1,(c.life-c.age)/.35);return{update(c){if(u+=c,u<jn-.03&&n.chance(.8)){let r=n.range(0,T),l=n.range(22,44),p=n.range(.12,.16),m=l*3/(Math.exp(3*p)-1);e.spawn(S.STREAK,Math.cos(r)*l,Tt+Math.sin(r)*l,-Math.cos(r)*m,-Math.sin(r)*m,p,n.chance(.5)?t[6]:t[5])}if(!g&&u>=jn){g=!0,s.add(0,Tt,44,I,.8,.1),s.add(0,Tt,72,t[4],.5,.6);for(let r=0;r<22;r++){let l=n.range(0,T),p=n.range(80,150);e.spawn(S.MOTE,0,Tt,Math.cos(l)*p,Math.sin(l)*p,n.range(.25,.5),n.chance(.5)?t[6]:t[5],n.range(.6,1))}for(let r=0;r<18;r++){let l=n.range(-Math.PI,.2),p=n.range(30,110);e.spawn(S.FLAKE,0,Tt,Math.cos(l)*p,Math.sin(l)*p,n.range(1,1.6),n.chance(.6)?I:t[6],n.range(.5,1.5))}for(let r=0;r<12;r++){let l=n.range(0,T),p=n.range(10,44);e.spawn(S.STAR,Math.cos(l)*p,Tt+Math.sin(l)*p*.85,0,n.range(2,6),n.range(.3,.6),n.chance(.5)?I:t[6],n.range(.8,2.2),n.range(.08,1.6))}}if(g){for(let r of i)if(r.age+=c,!(r.age>=r.life)&&(r.rest||(r.vx-=r.vx*2.8*c,r.vy-=r.vy*2.8*c-26*c,r.x+=r.vx*c+Math.sin(u*1.8+r.ph)*5*c,r.y+=r.vy*c,r.rot+=(r.w1+(r.w0-r.w1)*Math.exp(-r.age*2.5))*c,r.y>-h(r)*.3&&(r.rest=!0,r.y=-1,r.life=Math.min(r.life,r.age+.6))),!r.popped&&r.life-r.age<.1)){r.popped=!0;for(let l=0;l<2;l++)e.spawn(S.STAR,r.x+n.range(-2,2),r.y+n.range(-2,2),n.range(-6,6),-n.range(2,8),n.range(.2,.4),n.chance(.5)?I:t[6],n.range(.8,1.6))}}e.update(c),s.update(c),Rn(u,Vo.duration,e)},draw(c){if(u<jn){let l=u/jn;Ja(c,0,Tt,1+3.2*l*l,u*20,i[0].d,t,{hot:l}),c.glow(0,Tt,8+14*l,t[5],.3+.4*l)}let r=u-jn;if(r>=0&&r<.4){r<.07&&c.circle(0,Tt,6*(1-r/.07)+1,I),Rt(c,0,Tt,28*Math.pow(Math.max(0,1-r/.26),1.5),1-r/.26,t);let l=U.outCubic(r/.4),p=5+34*l;c.ring(0,Tt,p,Math.max(1,2.4*(1-l)),r<.08?I:r<.2?t[6]:t[5],1.15-l),c.glowRing(0,Tt,p,5,t[5],.4*(1-l))}g&&c.glow(0,Tt,46,t[4],.3*(1-z(jn,jn+1.6,u)));for(let l of i){if(!g||l.age>=l.life)continue;let p=h(l),m=Math.max(0,Math.sin((l.age-l.tw0)/l.tw*T))**8*(l.age>l.tw0?1:0);if(l.rest){let A=Math.max(1,Math.round(p*1.2*((l.life-l.age)/.6)));for(let R=-A;R<=A;R++)c.px(l.x+R,-1,Math.abs(R)===A?t[5]:R===0?I:t[6]);c.glow(l.x,-1,3+A,t[4],.3);continue}Ja(c,l.x,l.y,p,l.rot,l.d,t,{hot:Math.max(m,1-L(l.age/.12))}),c.glow(l.x,l.y,6+p*1.4,t[4],.12),m>.5&&Rt(c,l.x,l.y,(3+p*.7)*m,m,t)}e.draw(c),s.draw(c)}}}var fe={};et(fe,{draw:()=>yi,drawBack:()=>mi,meta:()=>la});var la={name:"Ice crystal",desc:"A floating ice crystal turning slowly in its own cold light: its facets brighten and darken as they turn, glints flash on them, frost motes circle it.",tags:["ice","crystal","gem","pickup","float","magic","loop"],size:[96,100],origin:[48,92],duration:3,loop:!0,fps:30,bg:"ground",options:{palette:["#151a3d","#212f6b","#2c58aa","#3a8bd8","#62c8f4","#a6ecff","#dcfbff","#ffffff"],height:34,seed:21}},ie=.28,r0=ce([-.55,-.75,-.45]);function ce([o,t,n]){let a=Math.hypot(o,t,n)||1;return[o/a,t/a,n/a]}function xi(o,t){let n=Math.cos(ie),a=Math.sin(ie),e=(r,l,p)=>[r,l*n-p*a,l*a+p*n],s=r=>Array.from({length:6},(l,p)=>e(Math.cos(o+p*T/6)*t,r,Math.sin(o+p*T/6)*t)),i=s(-t*.45),f=s(t*.45),u=e(0,-t*2.2,0),g=e(0,t*1.7,0),h=[];for(let r=0;r<6;r++){let l=(r+1)%6;h.push([u,i[l],i[r]],[i[r],i[l],f[l],f[r]],[f[r],f[l],g])}let c=[];for(let r of h){let[l,p,m]=r,A=[p[0]-l[0],p[1]-l[1],p[2]-l[2]],R=[m[0]-l[0],m[1]-l[1],m[2]-l[2]],y=ce([A[1]*R[2]-A[2]*R[1],A[2]*R[0]-A[0]*R[2],A[0]*R[1]-A[1]*R[0]]),d=r.reduce((v,E)=>v+E[0],0)/r.length,b=r.reduce((v,E)=>v+E[1],0)/r.length,k=r.reduce((v,E)=>v+E[2],0)/r.length;if(y[0]*d+y[1]*b+y[2]*k<0&&(y=y.map(v=>-v)),y[2]>=-.02)continue;let w=Math.max(0,y[0]*r0[0]+y[1]*r0[1]+y[2]*r0[2]),x=ce([r0[0],r0[1],r0[2]-1]),M=Math.max(0,y[0]*x[0]+y[1]*x[1]+y[2]*x[2]);c.push({pts:r.map(v=>[v[0],v[1]]),lit:w,spec:M,cx:d,cy:b})}return c}function wi(o){let t=[...o].sort((s,i)=>s[0]-i[0]||s[1]-i[1]),n=(s,i,f)=>(i[0]-s[0])*(f[1]-s[1])-(i[1]-s[1])*(f[0]-s[0]),a=[],e=[];for(let s of t){for(;a.length>=2&&n(a[a.length-2],a[a.length-1],s)<=0;)a.pop();a.push(s)}for(let s of t.reverse()){for(;e.length>=2&&n(e[e.length-2],e[e.length-1],s)<=0;)e.pop();e.push(s)}return a.slice(0,-1).concat(e.slice(0,-1))}function mi(o,t,n){let a=Y(n.palette,8),e=t/la.duration,s=Math.sin(T*e)*2.5,i=-n.height+s,f=1-s/12,u=11*f;for(let g=Math.floor(-u);g<=u;g++){let h=1-(g/u)**2;o.blend(g+.5,0,a[0],.65*h),Math.abs(g)<u*.6&&o.blend(g+.5,1,a[0],.4*h)}o.glow(0,-1,24,a[4],.2+.05*Math.sin(T*e*2)),Qo(o,a,t,n,i,!1)}function Qo(o,t,n,a,e,s){let i=la.duration;mt(n,i,16,a.seed,f=>f.range(1.6,2.6),(f,u,g,h)=>{let c=g.range(0,T)+f*g.range(1.6,2.6),r=g.range(14,22),l=e+g.range(-14,12)-f*g.range(3,7),p=Math.sin(c),m=f/u;if(p>=0!==s)return;let A=Math.cos(c)*r,R=l+p*r*.3,y=Math.min(1,f/.2)*(m>.75?(1-m)/.25:1);if(s){if(o.dot(A,R,h%4===0?I:t[6],y),h%4===0)for(let[d,b]of[[1,0],[-1,0],[0,1],[0,-1]])o.dot(A+d,R+b,t[5],y);o.glow(A,R,4,t[5],.3*y)}else o.dot(A,R,t[4],y*.9)})}function yi(o,t,n){let a=Y(n.palette,8),e=t/la.duration,s=Math.sin(T*e)*2.5,i=-n.height+s,f=8;o.glow(0,i,34,a[3],.26),o.glow(0,i,14,a[5],.18+.08*Math.sin(T*e*3));let u=xi(T/6*e,f),g=wi(u.flatMap(l=>l.pts)),h=0,c=0;for(let[l,p]of g)h+=l,c+=p;h/=g.length,c/=g.length,o.poly(g.map(([l,p])=>{let m=Math.hypot(l-h,p-c)||1;return[l+(l-h)/m*1.2,p+i+(p-c)/m*1.2]}),a[1]);for(let l of u){let p=l.spec>.985?I:a[L(Math.round(1+Math.pow(l.lit,1.4)*6.6),1,7)];o.poly(l.pts.map(([m,A])=>[m,A+i]),p)}for(let l of u)for(let p=0;p<l.pts.length;p++){let[m,A]=l.pts[p],[R,y]=l.pts[(p+1)%l.pts.length];o.line(m,A+i,R,y+i,l.lit>.6?a[7]:l.lit>.3?a[6]:a[4])}for(let l of u)l.spec>.96&&nt(o,l.cx,l.cy+i,Math.round(2+(l.spec-.96)*150),a[6],a[4],.5);let r=e*2%1;r<.12&&nt(o,0,i-f*2.2*Math.cos(ie),Math.round(5*Math.sin(r/.12*Math.PI)),a[6],a[4],.6),Qo(o,a,t,n,i,!0)}var ge={};et(ge,{draw:()=>vi,meta:()=>os});var h0=["#0a1630","#123063","#1b5596","#2a7fc4","#45a9e3","#86d3f5","#cdf1ff","#ffffff"],bi=["#141219","#221f2b","#34303f","#4a4558","#655f74","#8a8498"];function l0(o,t,n,a,e,s,i,f=1){let u=Math.hypot(a,e)||1,g=a/u,h=e/u,c=Math.min(5,u*.011);if(c>=1&&o.line(t-g*(c+1),n-h*(c+1),t-g*1.2,n-h*1.2,r=>r<.45?i[3]:s>1?i[5]:i[4],f),s>=3)o.circle(t,n,1.75,i[4],f),o.circle(t-.25,n-.25,1.15,i[6],f),o.dot(t-.7,n-.7,I,f);else if(s>=2){let r=Math.floor(t),l=Math.floor(n);o.dot(r,l,I,f),o.dot(r+1,l,i[6],f),o.dot(r,l+1,i[5],f),o.dot(r+1,l+1,i[4],f)}else o.dot(t,n,u>160?i[6]:i[5],f)}var i0=class{constructor({sy:t=.22,g:n=820,drag:a=.35,onLand:e=null}={}){this.sy=t,this.g=n,this.drag=a,this.onLand=e,this.list=[]}add(t){let n=t.life??4;this.list.push({x:0,z:0,h:0,vx:0,vz:0,vh:0,s:1,delay:0,...t,life:n,max:n})}get count(){return this.list.length}update(t){let n=this.drag*t;for(let a=this.list.length-1;a>=0;a--){let e=this.list[a];if(e.delay>0){e.delay-=t;continue}if((e.life-=t)<=0){this.list.splice(a,1);continue}e.vh-=this.g*t,e.vx-=e.vx*n,e.vz-=e.vz*n,e.vh-=e.vh*n*.5,e.x+=e.vx*t,e.z+=e.vz*t,e.h+=e.vh*t,e.h<=0&&e.vh<0&&(e.h=0,this.list.splice(a,1),this.onLand?.(e))}}draw(t,n,a){for(let e of this.list){if(e.delay>0||a==="back"&&e.z>=0||a==="front"&&e.z<0)continue;let s=e.x,i=e.z*this.sy-e.h;l0(t,s,i,e.vx,e.vz*this.sy-e.vh,e.s,n,Math.min(1,e.life/.2)),t.glow(s,i,2.5+e.s,n[5],.1+.05*e.s)}}};function ki(o,t,n,a,e,s,i,{n:f=2,gap:u=3,half:g=0,hot:h=!1,glint:c=0,seed:r=0,wob:l=0}={}){if(!(s<=.02||a<.5)){for(let p=0;p<f;p++){let m=a-p*u;if(m<.6)break;let A=s*(1-p*.42),R=Math.max(6,Math.ceil(m*T*1.3)),y=1.15-2.3*Math.min(1,A*1.25);for(let d=0;d<R;d++){let b=d/R*T,k=Math.sin(b),w=k>0;if(g>0&&!w||g<0&&w||at(b*4.7+r*13.1+p*5.3,r)*.65+at(b*11.3+r*7.7,r+3)*.35<y)continue;let x=A*(w?1:.7)*(.88-.12*Math.cos(b)),M=h&&w&&p===0?I:i[x>.7?6:x>.38?5:4],v=l?m+l*at(b*2.6+r*1.9+p,r+11):m,E=t+Math.cos(b)*v,P=n+k*v*e;o.dot(E,P,M),p===0&&o.light(E,P,i[4],.3*x)}}if(c>0&&g>=0){let p=t+Math.cos(2.05)*a,m=n+Math.sin(2.05)*a*e;o.px(p,m,I),o.glow(p,m,3+c*2,i[5],.35*c)}}}var c0=class{constructor({sy:t=.22}={}){this.sy=t,this.list=[]}add(t,n,a,e,s,i={}){this.list.push({x:t,z:n,r0:a,r1:e,life:s,age:-(i.delay??0),k:i.k??1,n:i.n??2,gap:i.gap??3,hot:i.hot??.1,glint:i.glint??0,seed:this.seq=(this.seq??0)+1})}get count(){return this.list.length}update(t){for(let n=this.list.length-1;n>=0;n--)(this.list[n].age+=t)>=this.list[n].life&&this.list.splice(n,1)}draw(t,n,a=0){for(let e of this.list){if(e.age<0)continue;let s=e.age/e.life,i=e.r0+(e.r1-e.r0)*(1-Math.pow(1-s,2.6)),f=e.k*Math.pow(1-s,1.7);ki(t,e.x,e.z*this.sy,i,this.sy,f,n,{n:e.n,gap:e.gap*(.55+.6*s),half:a,hot:e.age<e.hot,glint:e.glint*f,seed:e.seed})}}};function Zo(o,t,n,a,e,s,i,f,u=0){if(s<=.01||a<1)return;let g=e/a;o.shade(t-a,n-e,t+a,n+e,(h,c,r)=>{let l=(h-t)/a,p=(c-n)/e,m=l*l+p*p;if(m>1)return;let A=(h-t)*.36,R=(c-n)/g*.36,y=Vt(A+u*7.13,R-f*.35,u),d=Vt(A*2.2-f*.3,R*2.2+u*3.1,u+9),b=1-Math.abs(y)*4.6+d*.3,k=1.02-s*(1.15-m*.9);b<k||(r.c=b>k+.4?I:i[6])})}var f0=class{constructor(){this.list=[]}add(t,n,a,e,s,i,f,u,g=.25,h=0){this.list.push({x:t,y:n,vx:a,vy:e,r0:s,r1:i,life:f,max:f,c:C(u),a:g,delay:h})}get count(){return this.list.length}update(t){for(let n=this.list.length-1;n>=0;n--){let a=this.list[n];if(a.delay>0){a.delay-=t;continue}if((a.life-=t)<=0){this.list.splice(n,1);continue}a.vx-=a.vx*2.4*t,a.vy-=a.vy*2.4*t+7*t,a.x+=a.vx*t,a.y+=a.vy*t}}draw(t,n){for(let a of this.list){if(a.delay>0)continue;let e=1-a.life/a.max,s=a.r0+(a.r1-a.r0)*(1-Math.pow(1-e,2.2)),i=a.a*Math.min(1,e/.12)*Math.pow(1-e,1.4);i<.01||(t.disc(a.x,a.y,s,a.c,f=>i*(1-f*f)*(1-f*.5)),t.disc(a.x-s*.2,a.y-s*.32,s*.55,I,f=>i*.25*(1-f)*(1-f)),n&&t.glow(a.x,a.y,s*1.5,n,.16*i/a.a*Math.min(1,a.a*3)))}}};function $o(o,t,n,a,e,s=1){if(a<.9)return o.dot(t,n,e[6],s);o.circle(t+a*.12,n+a*.2,a,e[4],s),o.circle(t,n,a*.84,e[6],s),a>1.6&&o.circle(t-a*.3,n-a*.32,a*.46,I,s)}function ts(o,t,n,a,e){o.shade(t-a-1,n-a-1,t+a+1,n+a+1,(s,i,f)=>{let u=s-t,g=i-n,h=Math.hypot(u*1.1,g);if(h>a+.8)return;let c=(u+g)/Math.max(.5,a);f.c=h>a?e[0]:c<-.7?e[5]:c<.2?e[4]:c<.8?e[3]:e[2]})}var ns=()=>bi.map(C);var os={name:"Water jet",desc:"A pressurised stream blasts right: a tight glassy rod with surges running down it that swells, roughens, bends under its weight and breaks into chunks, spray and mist.",tags:["water","jet","stream","hose","spray","directional","loop"],size:[188,80],origin:[14,32],duration:1,loop:!0,fps:30,bg:"dark",options:{palette:h0,length:118,seed:3}},he=os.duration,as=520,le=260,g0=(o,t)=>(o/t)**2*9,es=(o,t)=>2.6+5.4*Math.pow(o/t,1.1);function vi(o,t,n){let a=Y(n.palette,8),e=t/he,s=n.length,i=n.seed,f=e*T;for(let g=0;g<=s+3;g++){let h=g+.5,c=h/s;if(c>1)break;let r=g0(h,s),l=z(.25,1,c),p=((h-e*le*2)%130+130)%130-65,m=es(h,s)+Math.exp(-(p*p)/90)*1.4*(1-c*.5),A=m+A0(h*.18-e*30,9,30,0,i+1)*2.2*l,R=m+A0(h*.18-e*30,3,30,0,i+1)*2.2*l;for(let y=Math.floor(r-A);y<=Math.ceil(r+R);y++){let d=y+.5,b=(d-r)/Math.max(.8,d<r?A:R),k=Math.abs(b);if(k>1||c>.55&&A0(h*.12-e*25,(d-r)*.25,25,0,i+2)<-.9+1.6*z(.55,1,c))continue;let w=A0(h*.06-e*40,Math.floor(d-r+20)*1.7,40,0,i),x=k<.2?0:k<.48?1:k<.78?2:3;w>.35&&(x=Math.max(0,x-1)),b>.4&&(x=Math.min(3,x+1)),o.px(g,y,[I,a[6],a[5],a[4]][x]),x===0&&o.light(h,d,a[5],.12)}}let u=.85+.15*Math.sin(f*6);o.circle(0,0,4.4*u,a[5]),o.circle(0,0,3.4*u,a[6]),o.circle(0,0,2.2*u,I);for(let g=0;g<T;g+=.35)o.dot(Math.cos(g+f*2)*5.2*u,Math.sin(g+f*2)*5.2*u,a[5],.6);o.glow(0,0,24,a[5],.6*u),o.glow(0,0,8,I,.4*u);for(let g=0;g<6;g++){let h=s*.82+(g*13+e*le)%78,c=g0(Math.min(h,s),s)+(h>s?((h-s)/60)**2*10:0)+Math.sin(g*2.1)*1.5;h<s+34&&l0(o,h,c,le,40,g%3===0?3:2,a)}mt(t,he,70,i+3,g=>g.range(.2,.42),(g,h,c)=>{let r=Math.sqrt(c.next()),l=s*(.3+.7*r),p=g0(l,s)+c.range(-1,1)*es(l,s),m=c.range(150,270)*(.55+.45*r),A=c.range(-1,1)*110*r+c.range(-10,20),R=l+m*g,y=p+A*g+.5*as*g*g,d=g/h;R>s+50||y>40||y<-28||d>.75&&c.next()<(d-.75)*4||(c.next()<.45?o.px(R,y,d<.5?I:a[6]):l0(o,R,y,m,A+as*g,c.next()<.2?2:1,a))}),mt(t,he,12,i+4,g=>g.range(.7,1),(g,h,c)=>{let r=g/h,l=s*c.range(.7,1)+g*c.range(20,45),p=g0(Math.min(l,s),s)+c.range(-5,5)+g*c.range(4,14),m=c.range(3,5)+r*c.range(5,9),A=c.range(.1,.18)*Math.min(1,r/.15)*Math.pow(1-r,1.5);o.disc(l,p,m,a[6],R=>A*(1-R*R))});for(let g=0;g<s;g+=10)o.glow(g,g0(g,s),14+g*.1,a[4],.26*(1-g/s*.5));o.glow(s*.9,g0(s*.9,s),26,a[5],.22)}var Me={};et(Me,{create:()=>Ei,meta:()=>Kn});var Kn={name:"Wave crash",desc:"A swell rolls in and steepens, its lip throws forward and curls over a dark barrel, then crashes into a burst of white foam and spray that surges on and fades to lace.",tags:["water","wave","crash","surf","foam","spray","one-shot"],size:[224,104],origin:[112,86],duration:3.2,loop:!1,fps:30,bg:"ground",options:{palette:h0,seed:6}},ue=.22,Ai=820,rt=1.2,ss=.62,Pn=110,Xt=o=>o<rt?-80+72*U.inOutSine(o/rt):-8+30*U.outCubic(L((o-rt)/1.4)),In=o=>o<rt?5+33*U.inOutSine(L(o/(rt*.92))):38*(1-U.outCubic(L((o-rt)/.45)))+5*(1-z(rt,rt+1.6,o)),Ri=o=>o<rt?24-16*z(.3,rt,o):8+14*z(rt,rt+.6,o),de=o=>L((o-ss)/(rt-ss));function Ei(o){let t=Y(o.palette,8),n=new X(o.seed),a=o.seed,e=new V({rng:n}),s=new f0,i=new Z,f=new c0({sy:ue}),u=[],g=[],h=new i0({sy:ue,g:Ai,onLand:d=>{f.add(d.x,d.z,.6,2+d.s*1.8,.3+d.s*.1,{n:1,k:.9,hot:.05}),g.push({x:d.x,y:d.z*ue,age:0})}}),c=0,r=!1,l=(d,b)=>{let k=Xt(b),w=In(b),x=d-k;return w*Math.exp(-((x/(x<0?30:Ri(b)))**2))},p=(d,b)=>{let k=de(b),w=Xt(b),x=In(b);return[w+1+d*30*Math.pow(k,.8),-x-4*d*(1-d)*(1+4*k)+d*d*x*U.inQuad(k)*.98,(11-8.5*d)*(.5+.5*k)]},m=(d,b,k,w,x,M,v,E=0)=>u.push({x:d,y:b,vx:k,vy:w,r0:x,r1:M,life:v,max:v,delay:E});function A(d,b){let k=Xt(c),w=In(c);for(let x=-Pn;x<Pn;x++){let M=x+.5,v=l(M,c),E=1-z(Pn-24,Pn,Math.abs(M));if(v<.6||E<=0)continue;let P=M>k,D=Math.exp(-(((M-k)/9)**2)),B=b*E*1.4;for(let F=Math.floor(-v);F<0;F++){let O=F+.5,H=(O+v)/v,N=O+v,j;if(N<1)j=D>.5&&w>14&&at(M*.6+c*9,a)>-.35?I:P?t[5]:t[6];else if(N<2.4&&D>.35&&w>14)j=Vt(M*.5,O*.5+c*6,a+1)>-.1?I:t[6];else{let K=D*(1-H)*1.6,_=Vt((M*.9-O*.35)*.8,O*.12+c*5,a+2),$=Vt(M*.18-c*2,O*.9,a+3),q=_>.55&&H<.85?6:K>.8?5:K>.45||_>.3?4:K>.2||_>.05?3:H<.6?2:1,ct=H<.14||$>.55?4:$>.25||H<.32?3:H<.7?2:1;j=t[Math.round(ct+(q-ct)*z(k-5,k+5,M))]}d.dot(x,F,j,B)}}}function R(d){let b=de(c);if(b<=0||c>=rt)return;let k=new Map;for(let P=0;P<=1;P+=.012){let[D,B,F]=p(P,c),[O,H]=p(Math.min(1,P+.012),c),N=O-D,j=H-B,K=Math.hypot(N,j)||1,_=j/K,$=-N/K;for(let q=0;q<=1;q+=.5/Math.max(1,F)){let ct=D+_*(q-.5)*F,ft=B+$*(q-.5)*F,Ut=Math.floor(ft)*1024+Math.floor(ct),Yt=q<.18?I:q<.36?P>.8?I:t[6]:q<.56?t[5]:q<.76?t[4]:t[3],Lt=k.get(Ut);(!Lt||q<Lt.q)&&k.set(Ut,{x:ct,y:ft,c:Yt,q})}}for(let P of k.values())d.px(P.x,P.y,P.c);for(let P=0;P<=1;P+=.125){let[D,B,F]=p(P,c);d.glow(D,B,6+F,t[5],.24*b)}let[w,x]=p(1,c),M=Math.sin(Math.PI*L((b-.55)/.45));M>.05&&nt(d,w,x,6*M,t[6],t[5],.5*M);let[v,E]=p(.6,c);d.glow(v-3,E+8,16,t[4],.25*b)}function y(d,b){for(let k=-Pn;k<Pn;k++){let w=k+.5,x=1-z(Pn-30,Pn,Math.abs(w)),M=b*x;if(M<=.02)continue;let v=at(w*.3-c*3,a+4);d.dot(k,0,v>.55?t[6]:t[4],M*1.2),d.blend(w,1.5,t[2],.6*M),d.blend(w,2.5,t[1],.45*M)}}return{update(d){c+=d;let b=de(c);if(c<rt&&In(c)>14&&n.chance(.5)){let k=Xt(c),w=In(c);e.spawn(S.FLAKE,k+n.range(-4,3),-w-n.range(0,2),-n.range(20,60),-n.range(10,40),n.range(.5,.9),n.chance(.5)?I:t[6],n.range(.6,1.3))}if(b>.3&&c<rt&&n.chance(.35)){let[k,w]=p(1,c);h.add({x:k,z:n.range(-3,3),h:-w,vx:n.range(30,90),vz:n.range(-10,10),vh:n.range(-20,40),s:n.chance(.3)?2:1})}if(!r&&c>=rt){r=!0;let[k]=p(1,rt-.001);i.add(k,-20,56,t[5],.8,.55),i.add(k,-4,22,I,.6,.1);for(let w=0;w<46;w++){let x=n.range(-.9,.6)*Math.PI,M=n.range(30,120);h.add({x:k+n.range(-6,6),z:n.range(-4,4),h:n.range(2,8),vx:Math.cos(x)*M*.85+18,vz:Math.sin(x)*M*.5,vh:n.range(120,320),s:n.chance(.15)?3:n.chance(.35)?2:1,delay:n.range(0,.1)})}for(let w=0;w<14;w++)h.add({x:k+n.range(-3,3),z:n.range(-2,2),h:n.range(2,6),vx:n.range(-15,25),vz:n.range(-8,8),vh:n.range(220,300),s:n.chance(.3)?2:1,delay:n.range(.04,.16)});for(let w=0;w<34;w++)m(k+n.range(-12,10),-n.range(2,12),n.range(-40,130),-n.range(30,150),n.range(1,2),n.range(1.8,4.2),n.range(.4,.95),n.range(0,.14));for(let w=0;w<34;w++){let x=n.range(-Math.PI*.95,-Math.PI*.05),M=n.range(40,160);e.spawn(S.FLAKE,k+n.range(-8,8),-n.range(4,14),Math.cos(x)*M+25,Math.sin(x)*M,n.range(.6,1.3),n.chance(.5)?I:t[6],n.range(.6,1.4),n.range(0,.1))}for(let w=0;w<12;w++)s.add(k+n.range(-10,14),-n.range(3,16),n.range(-20,70),-n.range(6,24),3,n.range(9,15),n.range(1.1,1.7),n.chance(.5)?t[6]:I,.26,n.range(0,.2));for(let w=0;w<10;w++)e.spawn(S.STAR,k+n.range(-20,24),-n.range(6,40),0,-5,n.range(.3,.6),t[6],n.range(1,2.4),n.range(.05,.4));f.add(k,0,6,40,1.2,{n:2,gap:3,k:1.1,hot:.12})}if(r&&c<rt+1.1&&n.chance(.45*(1-(c-rt)/1.1))){let k=Xt(c)+n.range(-6,14);m(k,-n.range(1,4),n.range(10,40),-n.range(10,40),n.range(.9,1.8),n.range(1.8,3.6),n.range(.4,.8))}r&&c<rt+.8&&n.chance(.12)&&s.add(Xt(c)+n.range(-8,8),-n.range(2,6),n.range(10,40),-n.range(3,10),3,n.range(7,11),n.range(.8,1.1),t[6],.2);for(let k=u.length-1;k>=0;k--){let w=u[k];if(w.delay>0){w.delay-=d;continue}if((w.life-=d)<=0){u.splice(k,1);continue}w.vx-=w.vx*2.5*d,w.vy+=(160-w.vy*2.5)*d,w.x+=w.vx*d,w.y=Math.min(w.y+w.vy*d,-1)}for(let k=g.length-1;k>=0;k--)(g[k].age+=d)>.12&&g.splice(k,1);h.update(d),f.update(d),s.update(d),e.update(d),i.update(d)},drawBack(d){let b=z(0,.25,c)*(1-z(Kn.duration-.7,Kn.duration-.1,c));y(d,b),f.draw(d,t,-1),h.draw(d,t,"back")},draw(d){let b=z(0,.25,c)*(1-z(Kn.duration-.7,Kn.duration-.1,c));if(A(d,b),R(d),f.draw(d,t,1),r){let w=1-z(rt+.4,Kn.duration-.15,c),x=-20,M=Xt(c)+10;for(let v=Math.floor(x);v<M;v++){let E=v+.5,P=1-Math.abs(Vt(E*.35,c*.8,a+7))*4;P>1.15-w*1.1&&d.px(v,0,P>1.4-w?I:t[6]),P>1.4-w*.9&&d.px(v,1,t[5])}}for(let w of u){if(w.delay>0)continue;let x=1-w.life/w.max,M=(w.r0+(w.r1-w.r0)*U.outCubic(x))*(1-z(.7,1,x));M>.6&&$o(d,w.x,w.y,M,t)}for(let w of g)w.age<.06&&d.px(w.x,w.y,I),d.glow(w.x,w.y,4,t[5],.25*(1-w.age/.12));h.draw(d,t,"front");let k=(c-rt)/.08;if(k>=0&&k<1){let[w]=p(1,rt-.001);d.circle(w,-3,8*(1-k*.4),I),d.ellipse(w,0,14,2.6,x=>x<.6?I:t[6])}e.draw(d),s.draw(d,t[5]),i.draw(d),c<rt?(d.glow(Xt(c)+4,-In(c)+2,26,t[4],.22*z(.2,rt,c)),d.glowLine(Xt(c)-26,-In(c)*.45,Xt(c),-In(c),10,t[5],.14*z(.2,rt,c))):d.glow(Xt(c),-10,34,t[4],.26*(1-z(rt,Kn.duration-.3,c)))}}}var me={};et(me,{create:()=>Si,meta:()=>Pi});var Pi={name:"Splash",desc:"A stone drops into still water: a white hit, a crown that tears into droplets arcing out to plink down with rings, a jet that bounces back, foam and drifting mist.",tags:["water","splash","impact","drop","liquid","one-shot"],size:[176,100],origin:[88,78],duration:2.5,loop:!1,fps:30,bg:"ground",options:{palette:h0,stone:!0,seed:3}},qt=.22,Ft=.16,Ii=820,rs=12,pe=.3,u0=.11,ua=o=>19*U.outCubic(L(o/.09))*(1-U.inQuad(L((o-.12)/.3))),we=o=>3+7.5*U.outCubic(L(o/.45)),ga=o=>we(o)+ua(o)*.42+3*U.outCubic(L(o/.25)),xe=o=>26*(U.outCubic(L(o/.12))-U.inQuad(L((o-.15)/.28)));function Si(o){let t=Y(o.palette,8),n=new X(o.seed),a=ns(),e=n.range(0,T),s=new V({rng:n}),i=new f0,f=new Z,u=new c0({sy:qt}),g=[],h=[],c=Array.from({length:rs},(d,b)=>({a:(b*T/rs+e)%T,L:n.range(.2,.36)})),r=new i0({sy:qt,g:Ii,onLand:d=>{if(u.add(d.x,d.z,.6,2+d.s*1.8,.34+d.s*.1,{n:1,k:.95,hot:.06}),g.push({x:d.x,y:d.z*qt,s:d.s,age:0}),d.s>1&&!d.small)for(let b=0;b<d.s;b++){let k=n.range(0,T),w=n.range(10,34);r.add({x:d.x,z:d.z,h:.5,vx:Math.cos(k)*w,vz:Math.sin(k)*w,vh:n.range(55,110),s:1,small:!0,life:1})}}}),l=0,p=new Set,m=(d,b)=>!p.has(d)&&l>=b&&p.add(d),A=(d,b)=>b*(.86+.14*at(Math.cos(d)*2.2+Math.sin(d)*1.3+e*3,o.seed));function R(d,b){let k=l-Ft,w=ua(k);if(k<0||w<.7)return;let x=we(k),M=ga(k),v=k<.045,E=new Map,P=(F,O,H,N,j)=>{let K=Math.floor(F),_=Math.floor(O),$=(_+4096)*8192+K+4096,q=E.get($);(!q||j>q.r)&&E.set($,{x:K,y:_,c:H,a:N,r:j})},D=Math.ceil(M*T*1.6);for(let F=0;F<D;F++){let O=F/D*T,H=Math.sin(O),N=Math.cos(O);if(H<0!==b)continue;let j=Math.floor((O+e)*M/2.2),K=G(j,31)<.3,_=A(O,w),$=1-L((k-.13-.14*G(j,7))/.1),q=Math.ceil(_*1.4)+2;for(let ct=0;ct<=q*$;ct++){let ft=ct/q,Ut=x+(M-x)*Math.pow(ft,2.2),Yt=N*Ut,Lt=H*Ut*qt-_*ft;v?P(Yt,Lt,I,1,3):b?P(Yt,Lt,ft>.72?K?t[5]:t[4]:K?t[3]:t[2],1,1):Math.abs(N)>.9?P(Yt,Lt,N<0?Math.abs(N)>.97?I:t[6]:t[4],1,2):ft<.1?P(Yt,Lt,ft<.05?I:t[6],1,2):K?P(Yt,Lt,N<-.2?t[6]:t[5],1,1):P(Yt,Lt,N<0?t[5]:t[4],.22,0)}if(!v&&$>=1){let ct=N*M,ft=H*M*qt-_;P(ct,ft,b?t[5]:N<.45?I:t[6],1,3),!b&&N<.2&&P(ct,ft+1,t[6],1,2)}}for(let F of E.values())F.r===0?d.blend(F.x,F.y,F.c,F.a):d.px(F.x,F.y,F.c);let B=1-z(u0,u0+.1,k);for(let F of c){if(Math.sin(F.a)<0!==b||B<=0)continue;let O=A(F.a,w),H=w*F.L*B,N=Math.cos(F.a)*M,j=Math.sin(F.a)*M*qt-O,K=N+Math.cos(F.a)*H*.45,_=j-H;H>=1&&d.line(N,j,K,_,v?I:b?t[4]:t[6]),k>.04&&k<u0&&l0(d,K-(b?0:.5),_-1,0,-1,b?1:2,t),!b&&Math.sin(F.a)>.3&&d.glow(N,j,6,t[5],.22*B)}}function y(d){let b=l-Ft-pe,k=xe(b);if(b<0||k<.8)return;let w=-k;d.ellipse(0,0,5,2.4,(x,M)=>Math.sin(M)>0?null:x<.5?I:Math.cos(M)<0?t[6]:t[5]),d.shade(-3,w-2,3,0,(x,M,v)=>{let E=L((M-w)/k),P=1.15+1.5*E*E*E,D=x/P;Math.abs(D)>1||(v.c=D<-.5?t[6]:D<.3?I:D<.72?t[5]:t[4])}),b<.12&&(d.circle(0,w-1,1.7,t[5]),d.circle(-.3,w-1.3,1.1,t[6]),d.px(-1,w-2,I)),d.glowLine(0,-1,0,w,7,t[5],.3)}return{update(d){if(l+=d,m("hit",Ft)){f.add(0,-6,52,t[5],.6,.45),f.add(0,-4,16,I,.5,.08),u.add(0,0,8,56,2,{n:2,gap:3.4,k:1.35,hot:.16,glint:1}),u.add(0,0,5,38,1.7,{n:1,k:.9,delay:.14});for(let k=0;k<20;k++){let w=n.range(0,T),x=n.range(50,125);r.add({x:Math.cos(w)*3,z:Math.sin(w)*3,h:n.range(1,6),vx:Math.cos(w)*x,vz:Math.sin(w)*x,vh:n.range(160,270),s:n.chance(.25)?2:1,delay:n.range(0,.04)})}for(let k=0;k<9;k++){let w=k%2?1:-1,x=w*n.range(4,12);i.add(x,-n.range(1,7),w*n.range(25,70),-n.range(4,16),n.range(2.5,4),n.range(7,11),n.range(.9,1.5),n.chance(.5)?t[6]:t[5],n.range(.3,.42),n.range(0,.1))}}if(m("spray",Ft+.04)){for(let k=0;k<20;k++){let w=n.range(0,T);s.spawn(S.FLAKE,Math.cos(w)*9,Math.sin(w)*9*qt-n.range(6,15),Math.cos(w)*n.range(25,90),-n.range(30,100),n.range(.7,1.3),n.chance(.5)?I:t[6],n.range(.6,1.5))}for(let k=0;k<5;k++)s.spawn(S.STAR,n.range(-13,13),-n.range(6,20),0,-4,n.range(.25,.55),t[6],n.range(1,2.4),n.range(0,.15))}if(m("tear",Ft+u0)){let k=ua(u0),w=ga(u0);for(let x of c){let M=x.a+n.range(-.08,.08),v=n.range(32,88),E=k*x.L;r.add({x:Math.cos(x.a)*(w+E*.45),z:Math.sin(x.a)*w,h:k+E+1,vx:Math.cos(M)*v,vz:Math.sin(M)*v,vh:n.range(90,190),s:n.chance(.3)?3:2})}}let b=l-Ft;if(b>.13&&b<.3&&n.chance(.3)){let k=n.range(0,T),w=ga(b),x=n.range(15,45);r.add({x:Math.cos(k)*w,z:Math.sin(k)*w,h:A(k,ua(b))*n.range(.6,1),vx:Math.cos(k)*x,vz:Math.sin(k)*x,vh:n.range(-10,45),s:n.chance(.3)?2:1})}if(m("fall",Ft+.3))for(let k=0;k<8;k++){let w=n.range(0,T),x=ga(.3),M=n.range(15,40);r.add({x:Math.cos(w)*x,z:Math.sin(w)*x,h:n.range(3,7),vx:Math.cos(w)*M,vz:Math.sin(w)*M,vh:n.range(30,80),s:n.chance(.4)?2:1})}if(m("bead",Ft+pe+.12)){r.add({x:0,z:.2,h:xe(.12)+1,vx:n.range(-6,6),vz:0,vh:55,s:3});for(let k=0;k<3;k++)i.add(n.range(-3,3),-xe(.12)+n.range(2,8),n.range(-14,14),-n.range(4,12),2,n.range(4,6),n.range(.6,1),t[6],.3)}if(m("slump",Ft+pe+.38)){u.add(0,0,3,30,1.5,{n:2,gap:2.6,k:.9});for(let k=0;k<4;k++)i.add(n.range(-6,6),-n.range(1,4),n.range(-30,30),-n.range(3,10),2.5,n.range(6,9),n.range(.8,1.2),t[5],.28)}for(let[k,w]of[[0,.95],[1,1.2],[2,1.5]])m("glug"+k,Ft+w)&&h.push({x:n.range(-5,5),z:n.range(-6,6),t0:l,r:n.range(1.3,2.3),popped:!1});for(let k of h)if(!k.popped&&l-k.t0>.2){k.popped=!0,u.add(k.x,k.z,1,7,.6,{n:1,k:.9}),g.push({x:k.x,y:k.z*qt,s:1,age:0});for(let w=0;w<2;w++)r.add({x:k.x,z:k.z,h:1,vx:n.range(-20,20),vz:n.range(-10,10),vh:n.range(50,90),s:1,small:!0,life:1})}for(let k=g.length-1;k>=0;k--)(g[k].age+=d)>.14&&g.splice(k,1);r.update(d),u.update(d),i.update(d),s.update(d),f.update(d)},drawBack(d){let b=l-Ft;if(b>0&&b<.26){let k=we(b)*.85*(1-z(.12,.26,b));d.ellipse(0,0,k,k*qt+.6,(w,x)=>Math.sin(x)<0?t[1]:t[2])}u.draw(d,t,-1),R(d,!0),r.draw(d,t,"back")},draw(d){let b=l-Ft;if(u.draw(d,t,1),b>.2){let k=4+11*U.outCubic(L((b-.2)/.7)),w=z(.2,.32,b)*(1-z(.5,2,b))*.9;Zo(d,0,0,k,k*qt+.5,w,t,l,o.seed)}R(d,!1),y(d);for(let k of h){let w=(l-k.t0)/.2;if(w>1)continue;let x=k.r*U.outBack(w),M=k.x,v=k.z*qt;for(let E=Math.PI;E<=T+.01;E+=.5/Math.max(1,x))d.dot(M+Math.cos(E)*x,v+Math.sin(E)*x,t[6]);d.px(M-x*.4,v-x*.6,I),d.glow(M,v-1,4,t[5],.25)}for(let k of g){let w=k.age/.14;w<.5&&d.px(k.x,k.y,I),k.s>1&&d.line(k.x,k.y-1,k.x,k.y-1-3*(1-w),w<.4?I:t[6]),d.glow(k.x,k.y,4,t[5],.3*(1-w))}if(r.draw(d,t,"front"),b>=0&&b<.07&&(d.ellipse(0,0,10,2.4,k=>k<.6?I:t[6]),nt(d,0,-3,5*(1-b/.07),t[6],t[5],.5)),o.stone&&l<Ft){let k=l/Ft,w=-70+70*(.4*k+.6*k*k);d.line(0,w-12,0,w-3,a[4],x=>x*.8),ts(d,0,w,2.6,a)}i.draw(d,t[5]),s.draw(d),f.draw(d),b>0&&(d.glow(0,-2,34,t[4],.2*(1-z(0,1.6,b))),d.glow(0,2,64,t[3],.16*(1-z(.1,2.1,b))))}}}var ye={};et(ye,{act:()=>Fi,create:()=>Li,meta:()=>Di});var Di={name:"Sword slash",desc:"A tilted crescent whips round in two frames, cools from white to deep blue as it trails off, glints at the tip and throws sparks.",tags:["melee","slash","sword","combat","directional","one-shot"],size:[136,104],origin:[44,92],duration:.75,loop:!1,fps:30,bg:"ground",actor:2,options:{palette:["#212f6b","#2c58aa","#3a8bd8","#62c8f4","#b8c9e8","#e8f1ff","#ffffff"],sparks:["#fff3a6","#ffe26b","#ff8a2a","#f2561d"],radius:42,seed:2}},d0={...Et,weapon:"sword",fx:12,fy:-21,sa:-.85},is={...d0,x:-8,crouch:4,lean:-4,fx:-7,fy:-35,sa:-2.65,bx:9,by:-25,armsFront:!0,ffx:9,fbx:-8},Ti={...d0,x:0,crouch:2,lean:3,fx:16,fy:-37,sa:-1.45,bx:-7,by:-24,ffx:11,fbx:-10,ghost:1},cs={...d0,x:2,crouch:5,lean:5,fx:20,fy:-21,sa:.62,bx:-9,by:-24,ffx:13,fbx:-10,toeB:!0},Fi={target:{x:58},poses:[[-.55,{...d0,x:-8}],[-.3,is],[-.08,{...is,crouch:5,lean:-5}],[0,Ti,"snap"],[.06,cs,"snap"],[.3,{...cs,x:3,crouch:6}],[.58,{...d0,x:1,crouch:3,fx:15,fy:-21,sa:.1,bx:-5,by:-21,ffx:9,fbx:-7}],[.86,{...d0,x:-8}]],hits:[{t:.06,stop:.14,shake:.18,amp:2,push:2.8,straw:18}],dust:[{t:.06,x:16,n:7,dir:1},{t:.06,x:-11,n:4,dir:-1}]};function M0(o,t,n){let a=Math.cos(n)*t,e=Math.sin(n)*t*o.sy,s=Math.cos(o.rot),i=Math.sin(o.rot);return[o.cx+a*s-e*i,o.cy+a*i+e*s]}function Oi(o,t,n,a,e,s){if(Math.abs(a)<.02||e<.3)return;let i=t.ramp,f=i.length,u=Math.sign(a),g=Math.abs(a),h=Math.cos(t.rot),c=Math.sin(t.rot),r=t.R+2;o.shade(t.cx-r,t.cy-r,t.cx+r,t.cy+r,(l,p,m)=>{let A=l-t.cx,R=p-t.cy,y=A*h+R*c,d=(-A*c+R*h)/t.sy,b=Math.hypot(y,d);if(b>t.R+.5||b<t.R-e-1)return;let k=u*(Math.atan2(d,y)-n)%T;if(k<0&&(k+=T),k>g)return;let w=k/g,x=e*Math.pow(Math.sin(Math.PI*Math.pow(w,2.2)),.6);if(x<.35)return;let M=(t.R-b)/x;if(M<0||M>1)return;let v=M<.22&&s<.5?0:Math.round(M*(f-1)*.75+s*2.4-w*.8+.4);m.c=i[f-1-L(v,0,f-1)],m.a=Math.min(1,w/.4)});for(let l=0;l<=g;l+=.3){let[p,m]=M0(t,t.R-e*.4,n+u*l);o.glow(p,m,5+e,i[f-3],.22*(1-s)*(l/g))}}function fs(o,t,n){let a=n-t.t0;if(a<0)return;let e=t.a1-t.a0,s=U.outExpo(L(a/t.sweep)),i=z(t.sweep+t.hold,t.sweep+t.hold+t.trail,a),f=L(a/(t.sweep+t.hold+t.trail));i<1&&Oi(o,t,t.a0+e*i,e*(s-i),t.W*(1-i*.55),f);let u=.7*(1-L((a-t.sweep-t.hold)/(t.trail+.2)));if(i>.02&&u>0)for(let g=0;g<=i;g+=.6/(Math.abs(e)*t.R)){let[h,c]=M0(t,t.R-.5,t.a0+e*g);o.dot(h,c,t.ramp[1],u*(.4+.6*g))}}function Bi(o){let[t,n]=M0(o,o.R-o.W*.3,o.a1),[a,e]=M0(o,o.R-o.W*.3,o.a1+Math.sign(o.a1-o.a0)*.05),s=Math.hypot(a-t,e-n)||1;return{x:t,y:n,dx:(a-t)/s,dy:(e-n)/s}}function Li(o){let t=Y(o.palette,7),n=new X(o.seed),a=new V({rng:n,ground:()=>0,sparks:o.sparks}),e=o.radius,s=-2.55,i=.95,f={cx:6,cy:-26,R:e,sy:.6,rot:-.38,a0:s,a1:i,W:12,t0:0,sweep:.06,hold:.06,trail:.24,ramp:t},u={...f,R:e*(33/42),W:e*(4.5/42),a0:s+(i-s)*.1,a1:i-(i-s)*(.15/3.5),t0:.017,hold:.03,trail:.2,ramp:t.slice(0,6)},g=Bi(f),h=0,c=!1;return{update(r){if(h+=r,!c&&h>=f.sweep){c=!0;for(let l=0;l<10;l++){let p=Math.atan2(g.dy,g.dx)+n.range(-.5,.5),m=n.range(150,400);a.spawn(S.SPARK,g.x,g.y,Math.cos(p)*m,Math.sin(p)*m,n.range(.12,.35))}for(let l=0;l<16;l++){let p=s+(i-s)*n.range(.3,1),[m,A]=M0(f,f.R,p),R=m-f.cx,y=A-f.cy,d=Math.hypot(R,y)||1,b=n.range(30,100);a.spawn(S.MOTE,m,A,R/d*b,y/d*b-10,n.range(.25,.55),t[4+n.int(0,1)],.6)}}a.update(r)},draw(r){fs(r,u,h),fs(r,f,h);let l=h-f.sweep*.6;if(l>0&&l<.22&&nt(r,g.x,g.y,9*U.outBack(Math.min(1,l/.05))*(1-l/.22),t[5],t[3],.6),h<.3){let[p,m]=M0(f,f.R-4,f.a0+(f.a1-f.a0)*U.outExpo(L(h/f.sweep)));r.glow(p,m,40,t[3],.5*(1-h/.3))}a.draw(r)}}}var Pe={};et(Pe,{act:()=>Ui,create:()=>Ki,meta:()=>zi});var be=o=>({cx:0,cy:0,R:30,sy:1,rot:0,a0:0,dir:1,k:0,...o});function da(o,t,n,a,e,s,i=.55,f={}){let u=n-a*Math.PI/2;return be({cx:o-Math.cos(u)*e,cy:t-Math.sin(u)*e,R:e,sy:1,rot:0,a0:u-a*s*i,dir:a,span:s,...f})}function Ot(o,t,n){let a=o.a0+o.dir*n,e=Math.cos(a)*t,s=Math.sin(a)*t*o.sy-o.k*(o.R-t),i=Math.cos(o.rot),f=Math.sin(o.rot);return[o.cx+e*i-s*f,o.cy+e*f+s*i]}function ke(o,t){let[n,a]=Ot(o,o.R,t),[e,s]=Ot(o,o.R,t+.01),i=Math.hypot(e-n,s-a)||1;return{x:n,y:a,dx:(e-n)/i,dy:(s-a)/i,a:o.a0+o.dir*t}}function Hi(o,t,n){let a=Math.cos(o.rot),e=Math.sin(o.rot),s=t-o.cx,i=n-o.cy,f=s*a+i*e,u=-s*e+i*a;if(!o.k)return[Math.hypot(f,u/o.sy),Math.atan2(u/o.sy,f)];let g=u+o.k*o.R,h=o.sy*o.sy-o.k*o.k,c=2*g*o.k,r=f*f*o.sy*o.sy+g*g,l=(-c+Math.sqrt(c*c+4*h*r))/(2*h);return[l,Math.atan2((g-o.k*l)/o.sy,f)]}function j0(o,t,n,a,e,s,i=0,f=1){if(a-n<.005)return;let u=Math.cos(t.rot),g=Math.sin(t.rot),h=t.R+f+1,c=h*t.sy+t.k*(e+2),r=Math.hypot(h*u,c*g)+1,l=Math.hypot(h*g,c*u)+1,p=t.R-e-1,m=Math.abs(g)*h+t.k*(e+2)+2,A=i>0?t.cy-m:t.cy-l,R=i<0?t.cy+m:t.cy+l;o.shade(t.cx-r,A,t.cx+r,R,(y,d,b)=>{let[k,w]=Hi(t,y,d);if(k>t.R+f||k<p||i&&(Math.sin(w)<0?-1:1)!==i)return;let x=t.dir*(w-t.a0)%T;for(x<0&&(x+=T);x<n;)x+=T;if(!(x>a))return s(x,k,b,w)})}function p0(o,t,n,a,e,s,i,f=0,u=.6){let g=u/Math.max(4,n);for(let h=a;h<=e;h+=g){let c=t.a0+t.dir*h;if(f&&(Math.sin(c)<0?-1:1)!==f)continue;let[r,l]=Ot(t,n,h),p=typeof i=="function"?i(h):i;p>0&&o.dot(r,l,typeof s=="function"?s(h):s,p)}}function K0(o,t,n,a,e,s,i,f,u=0,g=.35){for(let h=a;h<=e;h+=g){let c=t.a0+t.dir*h;if(u&&(Math.sin(c)<0?-1:1)!==u)continue;let[r,l]=Ot(t,n,h),p=typeof f=="function"?f(h):f;p>.004&&o.glow(r,l,s,i,p)}}function ve(o,t,n,a=0){let e=n-t.t0;if(e<0)return;let s=t.ramp,i=s.length,f=t.sweep+t.hold+t.trail,u=t.hot??0,g=U.outExpo(L(e/t.sweep)),h=z(t.sweep+t.hold,f,e),c=L(e/f),r=t.span*g,l=t.span*h,p=t.W*(1-h*.55);h<1&&r-l>.01&&(j0(o,t,l,r,p,(A,R,y)=>{let d=(A-l)/(r-l),b=p*Math.pow(Math.sin(Math.PI*Math.pow(d,t.lens?1:2.2)),t.lens?.75:.6);if(b<.35)return;let k=(t.R-R)/b;if(k<0||k>1)return;let w=k<.22&&c<.5||k<u*.7?0:Math.round(k*(i-1)*.75+c*2.4-d*.8+.4-u*3);y.c=s[i-1-L(w,0,i-1)],y.a=Math.min(1,d/(t.lens?.1:.4))},a),K0(o,t,t.R-p*.4,l,r,5+p,s[i-3],A=>(.22+u*.3)*(1-c)*((A-l)/(r-l)),a,.3));let m=.7*(1-L((e-t.sweep-t.hold)/(t.trail+.2)));h>.02&&m>0&&p0(o,t,t.R-.5,0,l,s[2],A=>m*(.4+.6*A/t.span),a)}var Ma=o=>ke({...o,R:o.R-o.W*.3},o.span);function Ae(o,t,n,a,e,s=.3){for(let i=0;i<a;i++){let[f,u]=Ot(n,n.R,n.span*t.range(s,1)),g=f-n.cx,h=u-n.cy,c=Math.hypot(g,h)||1,r=t.range(30,100);o.spawn(S.MOTE,f,u,g/c*r,Math.min(25,h/c*r)-10,t.range(.25,.55),t.pick(e),.6)}}function hs(o){return o=C(o),{light:tt(gt(o,1.35),I,.08),body:o,shade:gt(o,.64),dust:tt(gt(o,1.2),Dt(150,140,150),.3),dark:gt(o,.42)}}var Ni=C("#1a1422");function ls(o,t,n){let a=.6+t.s*.75,e=Math.min(1,t.life/.5),s=Math.cos(t.a)*a*.4,i=Math.sin(t.a)*a*.4;o.shade(t.x-a-1,t.y-a-1,t.x+a+1,t.y+a+1,(f,u,g)=>{let h=f-t.x,c=u-t.y,r=Math.hypot(h*1.15,c);if(r>a+.9)return;let l=h*s+c*i;g.c=r>a?Ni:l<-.4?n.light:l>.6?n.shade:n.body,g.a=e})}function gs(o,t,n,a,e=7,s=.3){let i=[];for(let f=0;f<n;f++){let u=o.chance(.5+s*.5)?1:-1,g=a*o.range(.45,1)*(f<2?1:.7),h=[[t+u*o.range(0,1.5),0]],c=h[0][0],r=0;for(;Math.abs(c-t)<g&&r<e;)if(c+=u*o.range(1.5,3.5),r=Math.min(e,Math.max(0,r+o.range(-.6,1.6)*(Math.abs(c-t)>3?1:.3))),h.push([Math.round(c),Math.round(r)]),o.chance(.18)&&h.length>3&&r<e-2){let l=[[Math.round(c),Math.round(r)]],p=c,m=r;for(let A=o.int(1,3);A>0;A--)p+=u*o.range(1,3),m+=o.range(.8,2),l.push([Math.round(p),Math.round(Math.min(e+1,m))]);i.push({pts:l,at:Math.abs(c-t)/a,fork:!0})}i.push({pts:h,at:0,fork:!1})}return i}function Re(o,t,n,a,e,s,i,f,u,g){for(let c of[0,1,2])for(let r of a){let l=Math.cos(r.a),p=Math.sin(r.a),m=r.len*e;for(let A=0;A<=m;A+=.5){let R=r.w*s*(1-A/m)*Math.min(1,.5+A/3),y=c===0?R+.8:c===1?R:R*.45;if(c===2&&A>m*.55)break;for(let d=-y;d<=y;d+=.5)o.px(t+l*A-p*d,n+p*A+l*d,c===0?g:c===1?A<m*.35?u:f:i)}}let h=2.4*e*Math.sqrt(s);o.circle(t,n,h+.8,u),o.circle(t,n,h,i)}function pa(o,t,n,a,e,s,i,f){let u=Math.ceil(e*s*2.2);for(let g=0;g<=u;g++){let h=g/u-.5,c=a+h*s,r=1.4*(1-Math.abs(h)*2);for(let l=-r*.5;l<=r*.5+.01;l+=.5)o.dot(t+Math.cos(c)*(e+l),n+Math.sin(c)*(e+l),i,f)}}function us(o,t,n){let a=0;for(let e=1;e<o.length&&a<t;e++){let[s,i]=o[e-1],[f,u]=o[e],g=Math.hypot(f-s,u-i),h=Math.min(1,(t-a)/g);n(s,i,s+(f-s)*h,i+(u-i)*h,a),a+=g}}var zi={name:"Double slash",desc:"A down cut, then an up cut that crosses it: the moment the X closes both strokes flash white, the crossing bursts with light and sparks, and a dotted X lingers.",tags:["melee","slash","combo","sword","cross","combat","directional","one-shot"],size:[164,108],origin:[44,92],duration:.8,loop:!1,fps:30,bg:"ground",actor:2,options:{palette:["#2a0a22","#5e1238","#a01f4e","#e0386a","#ff86a6","#ffd2dd","#ffffff"],sparks:["#fff3a6","#ffe26b","#ff8a2a","#f2561d"],seed:6}},C0={...Et,weapon:"sword",fx:12,fy:-21,sa:-.85},ds={...C0,x:-7,crouch:4,lean:-4,fx:-7,fy:-35,sa:-2.65,bx:9,by:-25,armsFront:!0,ffx:9,fbx:-8},W0={...C0,x:3,crouch:6,lean:6,fx:22,fy:-20,sa:.62,bx:-8,by:-24,ffx:13,fbx:-10,toeB:!0},Ui={target:{x:62},poses:[[-.42,{...C0,x:-7}],[-.18,ds],[-.04,{...ds,crouch:5}],[0,{...C0,x:0,crouch:2,lean:3,fx:16,fy:-37,sa:-1.45,bx:-7,by:-24,ffx:11,fbx:-9,ghost:1},"snap"],[.06,W0,"snap"],[.14,{...W0,x:4,crouch:6,lean:5,fx:20,fy:-17,sa:.85,ghost:1}],[.17,{...W0,x:5,crouch:3,lean:5,fx:22,fy:-28,sa:.1,by:-18,toeB:!0,ghost:1},"snap"],[.21,{...W0,x:6,crouch:1,lean:6,fx:19,fy:-37,sa:-.95,by:-18,ffx:13,fby:-6},"snap"],[.5,{...W0,x:6,crouch:3,lean:3,fx:18,fy:-36,sa:-1.05,by:-19,ffx:12}],[.92,{...C0,x:-7}]],hits:[{t:.06,stop:.05,shake:.08,amp:1,push:1.4,straw:8},{t:.16,stop:.14,shake:.2,amp:2,push:2.8,straw:18,y:-28}],dust:[{t:.06,x:16,n:5,dir:1},{t:.17,x:-8,n:4,dir:-1}]},Ee=.14,ji=62,Ms=(o,t,n,a,e,s)=>da(o,t,n,a,ji,e,.55,s);function Ki(o){let t=Y(o.palette,7),n=new X(o.seed),a=new V({rng:n,ground:()=>0,sparks:o.sparks}),e=new Z,s=34,i=-23,f=Ms(s,i,.72,1,.84,{W:10,t0:0,sweep:.06,hold:.07,trail:.24,ramp:t,lens:!0}),u=Ms(s,i,-.66,-1,.84,{W:11,t0:Ee,sweep:.06,hold:.06,trail:.26,ramp:t,lens:!0}),g=[Ma(f),Ma(u)],h=[-2.4,-1.1,.2,1.6].map(A=>({a:A+n.range(-.2,.2),r:n.range(5,8),v:n.range(70,120),arc:n.range(.4,.7)})),c=Ee+.012,r=0,l=!1,p=!1,m=!1;return{update(A){if(r+=A,!l&&r>=f.sweep){l=!0,Ae(a,n,f,10,[t[4],t[5]]);for(let R=0;R<6;R++){let y=Math.atan2(g[0].dy,g[0].dx)+n.range(-.5,.5),d=n.range(120,300);a.spawn(S.SPARK,g[0].x,g[0].y,Math.cos(y)*d,Math.sin(y)*d,n.range(.12,.3))}}if(!m&&r>=c){m=!0,e.add(s,i,56,t[3],.45,.4),e.add(s,i,18,I,.6,.08);for(let R=0;R<18;R++){let y=n.range(-Math.PI,Math.PI)*.8,d=n.range(140,360);a.spawn(S.SPARK,s,i,Math.cos(y)*d,Math.sin(y)*d-40,n.range(.14,.4))}for(let R=0;R<5;R++)a.spawn(S.STAR,s+n.range(-14,14),i+n.range(-12,12),0,-4,n.range(.2,.4),n.chance(.5)?t[5]:I,n.range(1,2.2),n.range(.05,.2))}!p&&r>=Ee+u.sweep&&(p=!0,Ae(a,n,u,12,[t[4],t[5]])),a.update(A),e.update(A)},draw(A){let R=r>=c&&r<c+.07?1:0;f.hot=u.hot=R,ve(A,f,r),ve(A,u,r);for(let[d,b]of[[f,g[0]],[u,g[1]]]){let k=r-d.t0-d.sweep*.6;k>0&&k<.2&&nt(A,b.x,b.y,7*U.outBack(Math.min(1,k/.05))*(1-k/.2),t[5],t[3],.5)}let y=r-c;if(y>=0&&y<.26){let d=y/.26;Rt(A,s,i,22*Math.pow(1-d,1.4),1-d,t),A.glow(s,i,34,t[4],.35*(1-d))}if(y>=.03&&y<.15){let d=(y-.03)/.12;for(let b of h)pa(A,s,i,b.a,b.r+b.v*(y-.03),b.arc*(1-.4*d),d<.4?t[6]:d<.7?t[5]:t[4],1-d)}for(let d of[f,u]){let b=r-d.t0;if(b<=0||b>=.25)continue;let k=Ma({...d,span:d.span*U.outExpo(L(b/d.sweep))});A.glow(k.x,k.y,40,t[3],.5*(1-b/.25))}a.draw(A),e.draw(A)}}}var De={};et(De,{act:()=>Ci,create:()=>Gi,meta:()=>Wi});var Wi={name:"Claw swipe",desc:"Three claw marks rake down one after another, white-hot, cooling through orange to red, then close up from both ends and leave a dotted scar, with hot flecks and drips.",tags:["melee","claw","swipe","beast","scratch","combat","directional","one-shot"],size:[128,96],origin:[36,84],duration:.9,loop:!1,fps:30,bg:"ground",actor:2,options:{palette:["#2a0808","#5c0f12","#a51d1d","#e2401f","#ff8a2a","#ffd166","#fff3c4","#ffffff"],sparks:["#fff3c4","#ffd166","#ff8a2a","#c42a1a"],seed:8}},Wn={...Et,weapon:"claw",offWeapon:"claw",sa:-.4,sb:-.9,crouch:5,lean:3,fx:14,fy:-21,bx:8,by:-25,ffx:9,fbx:-8},ps={...Wn,x:-6,crouch:4,lean:-3,fx:3,fy:-41,sa:-1.4,bx:7,by:-18,sb:-.3,ffx:10},Ci={target:{x:58},poses:[[-.46,{...Wn,x:-6}],[-.2,ps],[-.05,{...ps,crouch:5}],[0,{...Wn,x:0,crouch:3,lean:4,fx:19,fy:-36,sa:-.9,bx:-7,by:-24,ghost:1},"snap"],[.05,{...Wn,x:2,crouch:5,lean:6,fx:23,fy:-24,sa:.5,bx:-7,by:-24,ffx:13,fbx:-10,toeB:!0},"snap"],[.1,{...Wn,x:3,crouch:7,lean:7,fx:22,fy:-12,sa:1.2,bx:-7,by:-24,ffx:13,fbx:-10,toeB:!0},"snap"],[.42,{...Wn,x:3,crouch:6,lean:5,fx:21,fy:-13,sa:1.1,bx:-6,by:-22,ffx:13,fbx:-10}],[.9,{...Wn,x:-6}]],hits:[{t:.04,stop:.03,push:.9,straw:5,y:-30,flash:.03},{t:.08,stop:.03,push:.9,straw:5,y:-26,flash:.03},{t:.12,stop:.08,shake:.14,amp:2,push:1.4,straw:9,y:-18}],dust:[{t:.1,x:12,n:6,dir:1}]},Ie=.05,Yi=.04,Se=.16,xs=.3;function Gi(o){let t=Y(o.palette,8),n=t.length,a=new X(o.seed),e=()=>0,s=new V({rng:a,ground:e,sparks:o.sparks}),i=new lt({ground:e}),f=new Z,u=[0,1,2].map(c=>{let r=da(31+c*8,-23+c*2,1.84,1,40,.84-c*.05,.5);return{s:r,t0:c*Yi,W:4.2-c*.4,open:!1,end:ke(r,r.span)}}),g=0,h=c=>L(1-(g-c.t0)/.42);return{update(c){g+=c;for(let r of u)if(!r.open&&g>=r.t0+Ie*.7){r.open=!0,f.add(r.end.x,r.end.y-6,34,t[4],.45,.3);for(let l=0;l<7;l++){let p=Math.atan2(r.end.dy,r.end.dx)+a.range(-.5,.5),m=a.range(110,260);s.spawn(S.SPARK,r.end.x,r.end.y,Math.cos(p)*m,Math.sin(p)*m,a.range(.12,.32))}for(let l=0;l<5;l++){let[p,m]=Ot(r.s,r.s.R,r.s.span*a.range(.15,.9));s.spawn(S.MOTE,p,m,a.range(-60,-10),a.range(-30,30),a.range(.2,.4),a.chance(.5)?t[5]:t[4],.5)}for(let l=0;l<2;l++){let[p,m]=Ot(r.s,r.s.R-1,r.s.span*a.range(.35,.75));i.add({kind:Q.DRIP,x:p,y:m,vx:a.range(-8,8),vy:a.range(10,40),g:.55,life:1.2,c:t[3]})}}i.update(c),s.update(c),f.update(c)},draw(c){for(let r of u){let l=g-r.t0;if(l<0)continue;let p=r.s.span,m=p*U.outExpo(L(l/Ie)),A=z(Se,Se+xs,l),R=p/2*A,y=Math.min(m,p-p/2*A),d=h(r);y-R>.02&&(j0(c,r.s,R,y,r.W,(w,x,M)=>{let v=w/p,E=r.W*Math.pow(Math.sin(Math.PI*v),1.15)*(1-.55*A),P=Math.abs(x-(r.s.R-r.W/2))/(E/2+.01);if(E<.5||P>1)return;let D=Math.round((1-d)*5.2+P*1.6+(m<p?(p-w)/p:0)*.5);M.c=t[n-1-L(D,0,n-2)]},0,2),K0(c,r.s,r.s.R-r.W/2,R,y,11,t[4],.42*d*d,0,.2));let b=.8*(1-L((l-Se-xs*.5)/.4));A>.05&&b>0&&(p0(c,r.s,r.s.R-r.W/2,.04*p,R,t[2],b),p0(c,r.s,r.s.R-r.W/2,p-R,.96*p,t[2],b));let k=l-Ie*.4;k>0&&k<.16&&nt(c,r.end.x,r.end.y,5*U.outBack(Math.min(1,k/.04))*(1-k/.16),t[6],t[4],.4)}i.draw(c),s.draw(c),f.draw(c)}}}var Oe={};et(Oe,{act:()=>_i,create:()=>Xi,meta:()=>Ji});var Ji={name:"Heavy cleave",desc:"A glint over the head, then a thick ember arc accelerates over the top into the floor: a white slam, glowing cracks, dust rolling both ways, grit and rising embers.",tags:["melee","slash","cleave","axe","heavy","ground","fire","combat","directional","one-shot"],size:[208,116],origin:[68,96],duration:1.9,loop:!1,fps:30,bg:"ground",actor:2,options:{palette:["#2a0c10","#5c1414","#a3241a","#e0481c","#ff8a2a","#ffc23d","#fff0a0","#ffffff"],stone:"#4a3f69",seed:5}},Sn={...Et,weapon:"greatsword",two:!0,sa:-1,fx:11,fy:-21},ws={...Sn,x:-4,crouch:2,lean:-2,fx:1,fy:-42,sa:-2.45,ffx:8,fbx:-7},ms={...Sn,x:0,crouch:7,lean:6,fx:17,fy:-21,sa:.72,ffx:11,fbx:-10,toeB:!0},_i={target:{x:66},poses:[[-.42,{...Sn,x:-4}],[-.3,{...Sn,x:-3,crouch:4,fx:13,fy:-29,sa:-1.3}],[-.12,{...ws,crouch:4}],[.2,{...ws,crouch:3}],[.27,{...Sn,x:-1,y:-2,crouch:0,lean:2,fx:11,fy:-42,sa:-1.45,ffx:10,ghost:1},"snap"],[.31,{...Sn,x:0,y:-1,crouch:3,lean:4,fx:18,fy:-33,sa:-.45,ffx:12,ghost:1},"snap"],[.335,ms,"snap"],[.85,{...ms,crouch:6,lean:5}],[1.3,{...Sn,x:-2,crouch:4,lean:2,fx:15,fy:-23,sa:.1}],[1.7,{...Sn,x:-4}]],hits:[{t:.335,stop:.2,shake:.34,amp:3,push:3.2,straw:28,y:-8}],dust:[{t:.335,x:18,n:8,dir:1},{t:.335,x:-12,n:5,dir:-1}]},gn=.2,Fe=.135,Bt=gn+Fe,Cn=.05,xa=.22,Te=o=>U.inQuad(L((o-gn)/Fe)),ys=o=>gn+Fe*Math.sqrt(L(o));function Xi(o){let t=Y(o.palette,8),n=t.length,a=new X(o.seed),e=hs(o.stone),s=()=>0,i=new V({rng:a,ground:s,sparks:[t[6],t[5],t[4],t[3]]}),f=new lt({ground:s}),u=new Z,g=be({cx:3,cy:-22,R:37,sy:.88,rot:.32,a0:-2.45,dir:1}),h=0;for(;Ot(g,g.R,h)[1]<-.5&&h<4;)h+=.005;let c={...g,R:g.R*.76},r=16,l=5,[p]=Ot(g,g.R-2,h),m=Ot(g,g.R-3,0),A=gs(a,p,4,40,7,.4),R=[-Math.PI,-2.7,-2.15,-1.62,-1.05,-.45,0].map((w,x)=>({a:w+a.range(-.08,.08),len:(x===0||x===6?20:x===3?15:9)+a.range(0,4),w:1.6+a.range(0,.6)})),y=[-2.5,-1.9,-1.2,-.6].map(w=>({a:w+a.range(-.15,.15),r:8+a.range(0,3),v:a.range(80,130),arc:a.range(.35,.6)})),d=0,b=!1,k=(w,x,M,v,E)=>{let P=d-v,D=h*Te(P),B=h*z(Bt+Cn,Bt+Cn+xa,P);if(D<.02||B>=D-.02)return;let F=z(Bt+Cn,Bt+Cn+xa,P),O=1-.75*F;j0(w,x,B,D,M,(H,N,j)=>{let K=Math.max(0,P-ys(H/h)),_=(H-B)/(D-B),$=M*O*Math.pow(Math.sin(Math.PI*Math.pow(_,2.2)),.6);if($<.4)return;let q=(x.R-N)/$;if(q<0||q>1)return;let ct=E&&q<.22&&K<.12?0:Math.round(q*(n-1)*.62+K*7+Math.max(0,P-Bt)*10-_*.8+(E?.7:1.7));j.c=t[n-1-L(ct,0,n-1)],j.a=Math.min(1,_/.35)*(1.2-F)}),E&&K0(w,x,x.R-M*.4,B,D,7+M*.5,t[4],H=>.26*Math.exp(-Math.max(0,P-ys(H/h))/.2)*((H-B)/(D-B)))};return{update(w){if(d+=w,d<gn-.04&&a.chance(.35)){let x=a.range(0,T),M=a.range(14,26),v=a.range(.14,.2),E=M*3/(Math.exp(3*v)-1);i.spawn(S.STREAK,m[0]+Math.cos(x)*M,m[1]+Math.sin(x)*M,-Math.cos(x)*E,-Math.sin(x)*E,v,a.chance(.5)?t[5]:t[4])}if(d>gn&&d<Bt&&a.chance(.7)){let x=h*Te(d)*a.range(.6,1),[M,v]=Ot(g,g.R-a.range(0,6),x);i.spawn(S.EMBER,M,v,a.range(-20,20),a.range(-40,-10),a.range(.5,1.1),t[4],a.range(1,2))}if(!b&&d>=Bt){b=!0,u.add(p,-6,26,I,.9,.1),u.add(p,-12,64,t[4],.5,.8);for(let x=0;x<26;x++){let M=-Math.PI/2+a.range(-1.2,1.35),v=a.range(140,360);i.spawn(S.SPARK,p,-1,Math.cos(M)*v,Math.sin(M)*v-40,a.range(.15,.5))}for(let x=0;x<20;x++){let M=x%2?-1:1;i.spawn(S.SMOKE,p+M*a.range(0,8),-a.range(2,6),M*a.range(45,135),-a.range(2,12),a.range(1,1.45),e.dust,a.range(5,8.5),a.range(0,.07),ot.BIG)}for(let x=0;x<4;x++)i.spawn(S.SMOKE,p+a.range(-4,4),-a.range(3,8),a.range(-15,15),-a.range(40,90),a.range(1,1.45),e.dust,a.range(4,6.5),a.range(.02,.1),ot.BIG);for(let x=0;x<8;x++)i.spawn(S.DUST,p+a.range(-4,4),-a.range(1,4),a.range(-60,60),-a.range(8,30),a.range(.35,.7),e.dust,a.range(2,3.5));for(let x=0;x<44;x++){let M=-Math.PI/2+a.range(-.7,1),v=a.range(60,230);i.spawn(S.GRIT,p+a.range(-3,3),-1,Math.cos(M)*v,Math.sin(M)*v,a.range(1,1.5),a.pick([e.light,e.body,e.body,e.shade]),a.chance(.35)?2:1)}for(let x=0;x<6;x++)f.add({kind:Q.CHUNK,x:p+a.range(-3,3),y:-2,vx:a.range(-50,110),vy:-a.range(120,260),g:1,drag:.4,bounce:.3,life:a.range(1.15,1.5),a:a.range(0,T),va:a.range(-14,14),s:a.int(1,2)});for(let x=0;x<16;x++)i.spawn(S.EMBER,p+a.range(-8,8),-a.range(1,6),a.range(-50,60),-a.range(30,110),a.range(.7,1.5),t[4],a.range(1,2))}if(b&&d<Bt+.6&&a.chance(.12)){let x=a.pick(A),M=a.pick(x.pts);i.spawn(S.EMBER,M[0],M[1]-1,a.range(-12,12),-a.range(20,50),a.range(.5,.9),t[4],1)}f.update(w);for(let x of f.list)if(x.rest&&!x.dusted){x.dusted=!0;for(let M=0;M<2;M++)i.spawn(S.DUST,x.x+a.range(-1.5,1.5),-.5,a.sign()*a.range(8,30),-a.range(2,12),a.range(.3,.6),e.dust,a.range(1.3,2.4))}i.update(w),u.update(w)},drawBack(w){let x=d-Bt;if(x>=0){let M=1-z(1,1.5,x);for(let E=0;E<=2;E++)for(let P=-9;P<=9;P++){let D=Math.hypot((P+.5)/9,(E+.5)/3.5);if(D>1)continue;let B=Math.pow(L(1-x/.8),1.4)*(1.2-D)-G(P,E,3)*.3;B>.08?w.dot(p+P,E,t[L(Math.round(B*9),1,7)],M):w.dot(p+P,E,D<.5?e.dark:e.shade,(D<.9-G(P,E,9)*.3?1:1-D)*M)}let v=x/.45;v<1&&bt(w,p,.5,6+46*U.outCubic(v),.16,Math.max(1,3*(1-v)),1.15-v,[e.body,e.light,t[4],t[6]],E=>Math.sin(E)<0)}i.draw(w,"back")},draw(w){let x=d-Bt;if(d<gn+.03){let E=U.outBack(L(d/.1))*(1+.15*Math.sin(d*60))*(d>gn?1-(d-gn)/.03:1);nt(w,m[0],m[1],1+7*E,t[6],t[4],.5),w.glow(m[0],m[1],22,t[4],.3*E)}if(x>=0){let E=Math.pow(L(1-x/1.2),1.2),P=1-z(1.15,1.5,x);for(let B of A){let F=40*U.outCubic(L((x-B.at*.1)/.13))*(B.fork?.3:1);F<=0||us(B.pts,F,(O,H,N,j,K)=>{let _=E*(1-K/46)-(B.fork?.12:0),$=_>.72?I:_>.08?t[L(Math.round(_*8),1,6)]:e.dark;j>.5&&w.line(O+1,H,N+1,j,e.dark,P),w.line(O,H,N,j,$,P),_>.25&&(K|0)%6<2&&w.glow(N,j,6,t[4],.2*_*P)})}E>0&&w.glow(p,-2,34,t[4],.32*E*P);let D=x/.45;D<1&&bt(w,p,.5,6+46*U.outCubic(D),.16,Math.max(1,3*(1-D)),1.15-D,[e.body,e.light,t[4],t[6]],B=>Math.sin(B)>=0)}k(w,c,l,.02,!1),k(w,g,r,0,!0);let M=h*z(Bt+Cn,Bt+Cn+xa,d),v=.8*(1-L((d-Bt-Cn)/(xa+.25)));if(M>.02&&v>0&&p0(w,g,g.R-.5,0,M,t[3],E=>v*(.4+.6*E/h)),d>gn&&d<Bt+.05){let[E,P]=Ot(g,g.R-5,h*Te(d));w.glow(E,P,40,t[4],.5)}if(x>=0&&x<.035?Re(w,p,-1,R,1,1,I,t[6],t[7],t[5]):x>=.035&&x<.07&&Re(w,p,-1,R,1.25,.55,t[7],t[6],t[6],t[4]),x>=.05&&x<.16){let E=(x-.05)/.11;for(let P of y)pa(w,p,-1,P.a,P.r+P.v*(x-.05),P.arc*(1-.4*E),E<.4?t[6]:E<.7?t[5]:t[4],1-E)}if(x>=0&&x<.2){let E=Math.exp(-x/.05);w.glow(p,-6,30,t[5],.8*E),w.glow(p,-2,10,I,.7*E)}for(let E of f.list)ls(w,E,e);i.draw(w,"front"),u.draw(w)}}}var Ne={};et(Ne,{draw:()=>t1,meta:()=>Is});function G0(o,t,n=0){let a=Math.floor(o),e=o-a,s=e*e*(3-2*e),i=G(wn(a,t),n),f=G(wn(a+1,t),n);return(i+(f-i)*s)*2-1}function vs(o){return o?(t,n,a=0,e=0)=>{let s=Math.max(1,Math.round(n*o));return G0(t/o*s+e,s,a)}:(t,n,a=0,e=0)=>at(t*n+e,a)}function ma(o,t,n,a,e,s){for(let i=0;i<n;i++){let f=v0(a,i),u=f.next()*t,g=e(f,i);for(let h=wn(o-u,t);h<g.life;h+=t)s(g,h,i)}}var x0=o=>[...o].reverse(),un=[[1,1,6],[.76,.86,4],[.54,.68,2],[.3,.42,0]];var Be=[[1,1,7],[.76,.86,5],[.54,.68,3],[.3,.42,2]];function ya(o,t,n,a,e,s,i,f,u,g=un,h=.5,c=1.1){if(!(a<1))for(let[r,l,p]of g){let m=a*l,A=u[p];for(let R=0;R<=m;R++){let y=R/Math.max(1,m),d=e*r*Math.pow(1-y,.85)*Math.min(1,(R+1.5)/3.5)+i(9,f,R*.45)*h;if(d<.3)continue;let b=t+s*y*y*l+i(4,f+7,R*.2)*y*c,k=Math.round(n-R);for(let w=Math.round(b-d),x=Math.round(b+d);w<=x;w++)o.px(w,k,A)}}}function Le(o,t,n,a,e,s,i,f,u,g,h,c=un,r=.5,l=1.1){if(s<1)return;let p=-e,m=a;for(let[A,R,y]of c){let d=s*R,b=h[y];for(let k=0;k<=d;k+=.5){let w=k/Math.max(1,d),x=i*A*Math.pow(1-w,.85)*Math.min(1,(k+1.5)/3.5)+u(9,g,k*.45)*r;if(x<.3)continue;let M=f*w*w*R+u(4,g+7,k*.2)*w*l,v=t+a*k+p*M,E=n+e*k+m*M;for(let P=-x;P<=x;P+=.5)o.px(v+p*P,E+m*P,b)}}}function Y0(o,t,n,a,e){if(a<.6)return o.px(t,n,e);let s=o.toX(t,n),i=o.toY(t,n),f=a*a;for(let u=Math.floor(i-a);u<=Math.ceil(i+a);u++){let g=u+.5-i,h=f-g*g;if(h<0)continue;let c=Math.sqrt(h);for(let r=Math.ceil(s-c-.5);r<=Math.floor(s+c-.5);r++)o.put(r,u,e,1)}}function wa(o,t,n,a,e,s){if(s<=.004)return;if(a<.5)return o.blend(t,n,e,s);let i=o.toX(t,n),f=o.toY(t,n),u=a*a;for(let g=Math.floor(f-a);g<=Math.ceil(f+a);g++){let h=g+.5-f,c=u-h*h;if(c<0)continue;let r=Math.sqrt(c);for(let l=Math.ceil(i-r-.5);l<=Math.floor(i+r-.5);l++)o.blendPx(l,g,e,s)}}function He(o,t,n,a,e,s,i,f=.18,u=0,g=-1){let h=1-a,c=i.length,r=Math.min(.999,Math.pow(h,.62)+s*.1),l=Math.min(c-2,Math.floor(r*(c-1))),p=e*(.55+.45*Math.min(1,h*7))*(1-h*.55),m=i[l];if(l>=c-2)return wa(o,t,n,p,m,Math.min(1,a*3)*.85);Y0(o,t,n,p,i[Math.min(c-1,l+2)]),p>1.6&&g>-.99&&Y0(o,t+u*p*1.5,n+g*p*1.5,p*.3,i[Math.min(c-1,l+1)]),Y0(o,t-p*.16,n-p*.22,p*.78,m),p>1.6&&Y0(o,t+u*p*.9,n+g*p*.9,p*.42,m),l<=3&&p>1.8&&Y0(o,t-p*.28,n-p*.34,p*.36,i[Math.max(0,l-1)]),l<6&&o.glow(t,n,p*2.4+2,m,f*a)}var bs=(o,t)=>o[Math.min(o.length-1,Math.max(0,Math.floor(t*o.length)))];function As(o,t,n,a,e,s=0,i=!1,f=1){let u=1-a,g=e*(.65+Math.min(1,u*2.5)*.45+u*(i?.5:.4)),h=Math.min(1,u*12)*Math.min(1,a*2.4)*(i?.7:.58)*f,c=s?tt(s,bs(t0,u),u):bs(t0,u*1.05);wa(o,t,n,g,c,h*.45),wa(o,t+g*.05,n+g*.06,g*.74,c,h*.62),u<.5&&wa(o,t-g*.22,n-g*.3,g*.5,tt(c,I,.12),h*.4*(1-u*2))}function Rs(o,t,n,a,e,s,i){if(a<.25&&Math.sin(i)<0)return;let f=a>.6?s[0]:a>.3?s[1]:s[2];if(e>=2){let u=a>.45?s[2]:s[3];o.px(t-1,n,u),o.px(t+1,n,u),o.px(t,n-1,u),o.px(t,n+1,u),o.px(t,n,f),o.glow(t,n,8,f,.4*a);return}o.px(t,n,f),e>1.4&&o.px(t,n+1,s[3]),o.glow(t,n,3+e,f,.35*a)}function Es(o,t,n,a,e,s,i){let f=Math.hypot(a,e)||1,u=a/f,g=e/f,h=Math.min(9,1+f*.022),c=s>.6?i[0]:s>.3?i[1]:i[2];o.line(t-u*h,n-g*h,t-u*h*.4,n-g*h*.4,s>.5?c:i[i.length-1]),o.line(t-u*h*.45,n-g*h*.45,t,n,c),o.glow(t,n,3,c,.45*s)}function ks(o,t,n,a,e){if(a<=0)return[o+t*e+.5*n*e*e,t+n*e];let s=Math.exp(-a*e),i=n/a;return[o+i*e+(t-i)*(1-s)/a,i+(t-i)*s]}function ba(o,t,n,a,e,s,i,f,u){let g=ks(o,n,s,f,e),h=ks(t,a,i,u,e);return[g[0],h[0],g[1],h[1]]}function Ps(o,t,n,a,e,s,i){i<=.004||a<1||e<.5||o.shade(t-a,n-e,t+a,n+e,(f,u,g)=>{let h=(f-t)/a,c=(u-n)/e,r=h*h+c*c;if(r>=1)return;let l=1-Math.sqrt(r);g.l=s,g.k=l*l*i})}function w0(o,t,n,a){let e=t.list,s=[],i=[];for(let u of e)(u.k===S.FIRE?i:s).push(u);let f=u=>{for(let g of i)g.delay<=0&&!!(g.flag&ot.BACK)===u&&He(o,g.x,g.y,g.life/g.max,g.size,g.seed%1,n)};t.list=s,a!=="front"&&(t.draw(o,"back"),f(!0)),a!=="back"&&(f(!1),t.draw(o,"front")),t.list=e}var dh=C("#5b5566");var Is={name:"Fireball",desc:"A fireball flying right: a churning white-hot head with a corona of flame, a long torn tail of flame puffs cooling into smoke, embers shed behind.",tags:["fire","fireball","projectile","magic","directional","loop"],size:[136,56],origin:[112,28],duration:1.2,loop:!0,fps:30,bg:"dark",options:{palette:["#4a1712","#8a1f17","#c9281f","#f2561d","#ff8a2a","#ffc23d","#ffe26b","#fff3a6","#ffffff"],radius:5,speed:120,seed:5}},J0=Is.duration,qi=vs(J0),Vi=C("#5b5566"),Qi=[[30,4.2,0],[23,4.4,-1.6],[22,4.4,1.6],[15,4.6,0]],Zi=[[-1.3,6,1.1],[-1.8,8,1.2],[-2.3,7,1.1],[1.3,6,1.1],[1.8,8,1.2],[2.3,7,1.1]];function $i(o,t,n,a,e,s,i){let f=n/J0;o.shade(s-a*2.4,i-a*1.7,s+a*1.5,i+a*1.7,(u,g,h)=>{u-=s,g-=i;let c=Math.hypot(u,g),r=Math.atan2(g,u),l=Math.max(0,-Math.cos(r)),p=r/T,m=.55*G0(p*9+f*9,9,e)+.35*G0(p*5-f*10,5,e+1),A=a*(1+.55*l*l)+m;if(c>A)return;let R=G0(p*5-f*10+c*.45,5,e+2),y=1-c/A+.26*R+.1*(1-l);return A-c<1&&l<.3?y>.3?t[3]:t[5]:y>.74?t[0]:y>.58?t[1]:y>.42?t[2]:y>.27?t[4]:y>.13?t[5]:t[6]})}function t1(o,t,n){let a=Y(n.palette,9),e=x0(a),s=n.seed,i=n.radius,f=n.speed,u=(y,d=0,b=0)=>qi(t,y,d,b),g=tt(tt(e[3],e[4],.5),I,.25),h=tt(Vi,e[6],.3),c=[e[1],e[2],e[4],e[5]],r=[e[1],e[2],e[4],e[6]],l=u(3,s+50)*.5,p=u(2.5,s+51)*.7,m=[],A=[];ma(t,J0,130,s+100,y=>{let d=y.range(.22,.55),b=y.chance(.55),k=-y.range(2,24);return{x:k,y:y.range(-1,1)*(i-.1*-k),v:f*y.range(.3,.6),vy:y.range(-16,16),fl:d,sm:b,sl:y.range(.25,.45),s:y.range(1.3,2.9),f:y.next()*.5+.5*(-k/24),life:d+(b?.45:0)}},(y,d)=>{let b=Math.min(d,y.fl),[k,w,x,M]=ba(0,y.y,y.v,y.vy,b,0,-70,4.5,3),v=y.x+k-f*b;if(d<y.fl)return m.push([d,v,w,y]);if(!y.sm||d-y.fl>y.sl)return;let E=d-y.fl,[P,D]=ba(v,w,x-f,M*.6-6,E,f*2,-30,2,1.2);A.push([E,P,D,y])});for(let[y,d,b,k]of A)As(o,d,b,1-y/k.sl,k.s*.9,h);m.sort((y,d)=>d[0]-y[0]);for(let[y,d,b,k]of m){let w=y/k.fl;He(o,d,b,1-w,k.s*(1+1.3*w),k.f,e,.07,-.86,-.5)}Qi.forEach(([y,d,b],k)=>{let w=(s*5+k)*17,x=y*(.82+.25*u(4,w))*(1+.3*Math.max(0,u(2.4,w+3)));Le(o,l+1,p+b*.5,-1,b*.02,x,d*i/5,u(3,w+5)*3+b,u,w,e,un,.5,1.1+x*.05)}),Zi.forEach(([y,d,b],k)=>{let w=(s*5+k+20)*17,x=d*(.7+.4*(.5+.5*u(6,w))),M=Math.cos(y)*i*.85,v=Math.sin(y)*i*.85,E=Math.cos(y)*.55-1,P=Math.sin(y)*.55,D=Math.hypot(E,P);Le(o,l+M,p+v,E/D,P/D,x,b,-Math.sign(y)*1.5,u,w,e,un)}),$i(o,e,t,i,s,l,p),ma(t,J0,26,s+200,y=>({a:y.range(-2.4,2.4),v:y.range(30,70),life:y.range(.08,.18)}),(y,d)=>{let b=Math.cos(y.a),k=Math.sin(y.a),w=i*.9+y.v*d,x=l+b*w-f*.4*d,M=p+k*w,v=1-d/y.life,E=1+2*v;o.line(x-b*E+f*.02,M-k*E,x,M,v>.5?e[1]:e[3]),o.glow(x,M,3,e[2],.4*v)}),ma(t,J0,30,s+300,y=>({x:-y.range(2,16),y:y.range(-3,3),v:f*y.range(.3,.8),vy:y.range(-20,20),life:y.range(.25,.55),big:y.chance(.25),ph:y.range(0,6.3)}),(y,d)=>{let[b,k,w,x]=ba(0,y.y,y.v,y.vy,d,0,50,3,2),M=y.x+b-f*d,v=1-d/y.life;y.big?Rs(o,M,k,v,2,r,d*40+y.ph):Es(o,M,k,w-f,x,v,c)});let R=.85+.15*u(9,s+7);o.glowLine(l-6,p,-50,-2,12,g,.2*R),o.glow(l-2,p,42,g,.42*R),o.glow(l,p,13,e[1],.3*R)}var ze={};et(ze,{create:()=>r1,meta:()=>Ds});var Ds={name:"Flame pillar",desc:"The floor cracks and glows, a column of fire erupts white-hot and roars, spewing embers and shedding flame, then collapses into rolling smoke.",tags:["fire","pillar","eruption","spell","ground","one-shot"],size:[184,256],origin:[92,232],duration:5,loop:!1,fps:30,bg:"ground",options:{palette:["#4a1712","#8a1f17","#c9281f","#f2561d","#ff8a2a","#ffc23d","#ffe26b","#fff3a6","#ffffff"],stone:"#4a3f69",height:140,seed:5}},At=.55,Ss=.12,dn=1.95,Yn=2.45,n1=C("#0d0a12"),a1=C("#1a1422"),e1=Dt(255,176,96);function o1(o){return o=C(o),{light:tt(gt(o,1.35),I,.08),body:o,shade:gt(o,.64),dust:tt(gt(o,1.2),Dt(150,140,150),.3)}}function s1(o,t,n){let a=.6+t.s*.75,e=Math.min(1,t.life/.5),s=Math.cos(t.a)*a*.4,i=Math.sin(t.a)*a*.4;o.shade(t.x-a-1,t.y-a-1,t.x+a+1,t.y+a+1,(f,u,g)=>{let h=f-t.x,c=u-t.y,r=Math.hypot(h*1.15,c);if(r>a+.9)return;let l=h*s+c*i;g.c=r>a?a1:l<-.4?n.light:l>.6?n.shade:n.body,g.a=e})}function r1(o){let t=Y(o.palette,9),n=x0(t),a=o.height,e=o1(o.stone),s=new X(o.seed),i=()=>0,f=new V({rng:s,ground:i,sparks:[n[1],n[2],n[4],n[5]]}),u=new lt({ground:i}),g=new Z,h=tt(tt(n[3],n[4],.5),I,.25),c=o.seed*13,r=[],l=(x,M,v,E,P,D)=>{let B=[[x,M]];for(let F=0;F<E;F+=2)v+=s.range(-.55,.55),x+=Math.cos(v)*2,M+=Math.sin(v)*.76,B.push([x,M]);return r.push({pts:B,t0:P,grow:s.range(.22,.36),w:D}),B};for(let x=0;x<9;x++){let M=x/9*T+s.range(-.25,.25),v=l(s.range(-1,1),s.range(-.3,.3),M,s.range(20,40),s.range(0,.16),1),E=3+s.int(0,v.length-6);v.length>8&&l(v[E][0],v[E][1],M+s.sign()*s.range(.5,1),s.range(6,14),.18+s.range(0,.15),0)}let p=Array.from({length:7},(x,M)=>({o:(G(M,c,1)-.5)*1.4,w:.05+G(M,c,2)*.06,f:1+G(M,c,3)*2})),m=0,A=!1,R=!1,y=x=>x<At?0:x<At+Ss?a*U.outCubic((x-At)/Ss):x<dn?a*(1+.05*at(x*3,c)):a*(1-U.inQuad(L((x-dn)/(Yn-dn)))),d=x=>x<At?0:x<dn?12*(1+.45*Math.exp(-(x-At)*7))*(.94+.06*at(x*9,c+1)):12*(1-z(dn,Yn,x))+1.5*(1-z(Yn-.1,Yn,x)),b=x=>z(0,At,x)*.75+.25*z(At-.05,At+.1,x)-z(Yn-.3,Ds.duration-.6,x)*1.05;function k(x){let M=y(m),v=d(m);if(M<1||v<.3)return;if(m<dn+.25){let P=L(v/12),D=(B,F,O)=>at(m*B+O,F);for(let B=0;B<5;B++){let F=(c+B)*17,O=(B-2)*v*.4,H=(12+12*(.5+.5*at(m*3.3+B,F)))*P*(B===2?1.2:B%4===0?.6:.9);ya(x,O+at(m*2,F+2)*1.5,-M+12,H,3.4*P*(B%4===0?.7:1),-O*.3+at(m*2.2,F+1)*3,D,F,n,un)}}let E=[n[0],n[1],n[2],n[3],n[4],n[5],n[6],n[7]];for(let P=0;P>=-M;P--){let D=-P/M,B=at(-P*.04+m*1.6,c+2)*1.6*D,F=1+.7*Math.max(0,1- -P/12)**2,O=1-z(.82,1,D)*.7,H=v*F*O*(1+.65*Math.max(0,at(P*.2+m*8,c+3))**1.5),N=v*F*O*(1+.65*Math.max(0,at(P*.2+m*8,c+4))**1.5),j=(-P*.032+m*3.6)%1<.09?1:0;for(let K=Math.floor(B-H*1.15);K<=Math.ceil(B+N*1.15);K++){let _=K+.5-B,$=Math.abs(_)/(_<0?H:N);if($>1.15)continue;let q=$<.12?0:$<.26?1:$<.42?2:$<.56?3:$<.7?4:$<.84?5:$<.96?6:7;for(let ct of p)Math.abs(_/v-ct.o-.06*Math.sin(m*ct.f*3+ct.o*9))<ct.w&&(q=Math.max(0,q-1));q=Math.max(0,q-j),!(q===7&&G(K,P,Math.floor(m*20))<.5)&&x.px(K,P,E[q])}P%12===0&&x.glow(B,P,v*2.4+8,h,.28*L(v/12))}x.glow(0,-M*.45,92,h,.3*L(v/12))}function w(x){let M=b(m);if(!(M<=-.05)){for(let v of r){let E=Math.floor(v.pts.length*L((m-v.t0)/v.grow));for(let P=1;P<E;P++){let D=P/v.pts.length,B=M*(1-.45*D),[F,O]=v.pts[P-1],[H,N]=v.pts[P];if(B<0){let K=1+B*3;K>0&&x.line(F,O,H,N,n1,K);continue}let j=B>.85?n[1]:B>.65?n[2]:B>.45?n[4]:B>.25?n[5]:B>.1?n[6]:n[7];v.w&&P<v.pts.length*.5&&B>.2&&(x.line(F,O+1,H,N+1,B>.6?n[5]:n[6]),x.line(F,O-1,H,N-1,n[7])),x.line(F,O,H,N,j),P%2===0&&x.glow(H,N,5+7*B,h,.3*B)}}M>0&&Ps(x,0,.5,44,8,h,.35*M)}}return{update(x){if(m+=x,m<At&&s.chance(.6*x*60*z(.15,At,m))&&f.spawn(S.FIRE,s.range(-5,5),-1,s.range(-6,6),-s.range(20,45),s.range(.15,.3),0,s.range(1,2.2)),m<At&&s.chance(.5*x*60*z(0,At,m))){let E=s.pick(r),P=s.int(0,Math.floor(E.pts.length*L((m-E.t0)/E.grow))-1);if(P>=0){let[D,B]=E.pts[P];s.chance(.5)?f.spawn(S.FIRE,D,B-1,s.range(-5,5),-s.range(15,35),s.range(.15,.3),0,s.range(.8,1.6)):f.spawn(S.EMBER,D,B-1,s.range(-15,15),-s.range(30,70),s.range(.5,1),n[3],1)}}if(!A&&m>=At){A=!0,g.add(0,-40,90,e1,.7,.6),g.add(0,-8,44,I,.7,.1);for(let E=0;E<70;E++){let P=-Math.PI/2+s.range(-1.1,1.1),D=s.range(100,260);f.spawn(S.SPARK,s.range(-4,4),-2,Math.cos(P)*D,Math.sin(P)*D,s.range(.25,.7))}for(let E=0;E<18;E++)u.add({kind:Q.CHUNK,x:s.range(-6,6),y:-2,vx:s.range(-110,110),vy:-s.range(150,330),g:1,drag:.4,bounce:.3,life:s.range(1.6,2.4),a:s.range(0,T),va:s.range(-16,16),s:s.int(1,3)});for(let E=0;E<60;E++){let P=-Math.PI/2+s.range(-.9,.9),D=s.range(80,260);f.spawn(S.GRIT,s.range(-5,5),-1,Math.cos(P)*D,Math.sin(P)*D,s.range(1,1.8),s.pick([e.light,e.body,e.body,e.shade]),s.chance(.4)?2:1)}for(let E=0;E<14;E++){let P=s.sign();f.spawn(S.SMOKE,P*s.range(2,10),-s.range(1,4),P*s.range(40,110),-s.range(2,10),s.range(1,1.8),e.dust,s.range(4,7),s.range(0,.06),ot.BIG)}}let M=y(m),v=d(m);if(m>At&&m<Yn&&M>4){if(s.chance(.9*x*60)){let E=s.sign(),P=-s.range(4,M*.9);f.spawn(S.FIRE,E*v*s.range(.7,1.1),P,E*s.range(15,40),-s.range(30,70),s.range(.25,.5),0,s.range(1.6,3.2),0,s.chance(.35)?ot.SMOKES:0)}s.chance(.7*x*60)&&f.spawn(S.FIRE,s.range(-v,v),-M+s.range(0,6),s.range(-20,20),-s.range(30,80),s.range(.35,.7),0,s.range(3,5.5),0,s.chance(.6)?ot.SMOKES|(m<dn-.3?ot.BIG:0):0),m<dn&&s.chance(.5*x*60)&&f.spawn(S.EMBER,s.range(-v,v)*.6,-M+4,s.range(-60,60),-s.range(50,110),s.range(.7,1.3),n[3],s.chance(.2)?2:1)}m>=dn&&!R&&(R=!0),R&&m<Yn-.1&&s.chance(1.6*x*60)&&f.spawn(S.FIRE,s.range(-v-2,v+2),-M-s.range(0,8),s.range(-30,30),-s.range(10,50),s.range(.4,.75),0,s.range(3.5,6.5),0,ot.SMOKES),u.update(x);for(let E of u.list)if(E.rest&&!E.dusted){E.dusted=!0;for(let P=0;P<3;P++)f.spawn(S.DUST,E.x+s.range(-1.5,1.5),-.5,s.sign()*s.range(8,35),-s.range(2,18),s.range(.3,.6),e.dust,s.range(1.3,2.6))}f.update(x),g.update(x)},drawBack(x){w(x),w0(x,f,n,"back");let M=(m-At)/.45;M>0&&M<1&&bt(x,0,.5,84*U.outCubic(M),.18,Math.max(1,4*(1-M)),1.15-M,[e.body,e.light,n[4],n[1]],v=>Math.sin(v)<0)},draw(x){k(x);for(let E of u.list)s1(x,E,e);w0(x,f,n,"front");let M=(m-At)/.45;M>0&&M<1&&bt(x,0,.5,84*U.outCubic(M),.18,Math.max(1,4*(1-M)),1.15-M,[e.body,e.light,n[4],n[1]],E=>Math.sin(E)>=0,M<.15);let v=(m-At)/.08;v>0&&v<1&&(x.ellipse(0,-2,16*(1-v*.3),6,n[2]),x.ellipse(0,-3,11*(1-v*.3),4,v<.5?I:n[1])),g.draw(x)}}}var je={};et(je,{act:()=>c1,create:()=>u1,meta:()=>Ue});var Ue={name:"Fire ring",desc:"A white flash at the feet, then flames race outward along the floor in a ring, flaring as the front passes and burning down behind it over a smouldering scorch.",tags:["fire","ring","nova","aoe","spell","ground","one-shot"],size:[224,128],origin:[112,92],duration:3.9,loop:!1,fps:30,bg:"ground",actor:2,options:{palette:["#4a1712","#8a1f17","#c9281f","#f2561d","#ff8a2a","#ffc23d","#ffe26b","#fff3a6","#ffffff"],reach:92,seed:6}},Ts={turn:1.15,crouch:0,fx:-7,fy:-44,bx:8,by:-44,ffx:-5,fbx:6},Fs={turn:1.15,crouch:8,lean:3,fx:-9,fy:-8,bx:11,by:-8,ffx:-8,fbx:9},i1={turn:1,crouch:2,fx:-8,fy:-17,bx:9,by:-17,ffx:-4,fbx:5},c1={target:{x:70},poses:[[-.32,Et],[.02,Ts],[.27,{...Ts,y:-1}],[.32,Fs,"snap"],[.85,{...Fs,crouch:7}],[1.5,i1],[2.4,Et],[3.9,Et]],hits:[{t:.32,stop:.1,shake:.28,amp:3,target:!1},{t:.6,push:1.2,straw:10,y:-8,skin:"char"},{t:3.5,push:0,straw:0,flash:0,skin:null}],dust:[{t:.32,x:10,n:6,dir:1},{t:.32,x:-10,n:6,dir:-1}]},Gn=.2,ut=.32,Dn=.75,f1=C("#0d0a12"),h1=C("#17121d"),l1=Dt(255,176,96),g1=[[1,1,7],[.7,.8,6],[.4,.55,5]];function u1(o){let t=Y(o.palette,9),n=x0(t),a=o.reach,e=new X(o.seed),s=()=>0,i=o.seed*7,f=new V({rng:e,ground:s,sparks:[n[1],n[2],n[4],n[5]]}),u=new Z,g=tt(tt(n[3],n[4],.5),I,.25),h=y=>a*U.outCubic(L((y-ut)/Dn)),c=y=>ut+Dn*(1-Math.cbrt(1-Math.min(1,y/a))),r=[];for(let y=10;y<=a;y+=9){let d=T*Math.sqrt((y*y+(y*Gn)**2)/2),b=Math.max(5,Math.round(d/8.5));for(let k=0;k<b;k++){let w=(k+e.range(.15,.85))/b*T,x=y+e.range(-3,3),M=Math.min(1,x/a);r.push({x:Math.cos(w)*x,y:Math.sin(w)*x*Gn,back:Math.sin(w)<0,t0:c(x)+e.range(0,.04),life:(.3+1*M*M)*e.range(.85,1.2),h:e.range(9,15)*(.6+.55*M),w:e.range(1.8,2.7)*(.75+.3*M),n:e.int(0,1e5)})}}r.sort((y,d)=>y.y-d.y);let l=0,p=!1,m=(y,d)=>{let b=(k,w=0,x=0)=>at(l*k+x,w);for(let k of r){if(k.back!==d)continue;let w=l-k.t0;if(w<0||w>k.life)continue;let x=w/k.life,M=U.outBack(L(w/.08),2),v=1-Math.pow(Math.max(0,(x-.1)/.9),1.3),E=k.h*M*v*(.85+.15*at(l*3.3,k.n))*(1+.5*Math.max(0,at(l*2.6,k.n+70)-.55));if(E<1)continue;let P=x<.3?d?Be:un:x<.65?Be:g1;ya(y,k.x,k.y,E,k.w*(.6+.4*v),b(2.2,k.n+40)*1.5-k.x*.02,b,k.n,n,P)}},A=y=>{let d=h(l),b=1-z(Ue.duration-1.2,Ue.duration-.15,l);if(!(d<1||b<=0))for(let k=Math.floor(-d*Gn);k<=Math.ceil(d*Gn);k++)for(let w=Math.floor(-d);w<=Math.ceil(d);w++){let x=Math.hypot(w+.5,(k+.5)/Gn);if(x>d)continue;let M=l-c(x),v=G(w,k,i),E=1-M/(1.2+v*.9);if(E>0&&v<.03+.06*E){y.px(w,k,E>.7?n[3]:E>.45?n[4]:E>.2?n[5]:n[6]),y.light(w,k,n[4],.3*E);continue}y.blend(w,k,v<.5?f1:h1,Math.min(1,M*3)*(.55-x/a*.25)*b)}},R=(y,d)=>{let b=(l-ut)/(Dn+.1);b<0||b>=1||bt(y,0,0,h(l)+1.5,Gn,Math.max(1.5,6*(1-b)),b<.75?1:(1-b)/.25,[n[6],n[4],n[2],n[1]],k=>Math.sin(k)<0===d,b<.12)};return{update(y){if(l+=y,l<ut-.05&&e.chance(.9*y*60)){let d=e.range(0,T),b=e.range(26,54),k=e.range(.18,.26),w=b*3/(Math.exp(3*k)-1),x=Math.cos(d)*b,M=Math.min(-2,-6+Math.sin(d)*b*.45),v=Math.hypot(x,M+4)||1;f.spawn(S.STREAK,x,M,-x/v*w,(-4-M)/v*w,k,e.chance(.5)?n[2]:n[3])}if(l<ut&&e.chance(.5*y*60*(l/ut))&&f.spawn(S.FIRE,e.range(-4,4),-1,e.range(-8,8),-e.range(20,40),e.range(.12,.24),0,e.range(1,2.2)),!p&&l>=ut){p=!0,u.add(0,-18,64,l1,.85,.5),u.add(0,-6,30,I,.8,.08);for(let d=0;d<40;d++){let b=e.range(0,T),k=e.range(80,220);f.spawn(S.SPARK,Math.cos(b)*3,-2,Math.cos(b)*k,Math.sin(b)*k*.4-e.range(40,120),e.range(.2,.5))}}if(l>ut&&l<ut+Dn+1.2)for(let d=0;d<3;d++){if(!e.chance(.75*y*60))continue;let b=e.pick(r),k=l-b.t0;k<0||k>b.life*.7||(f.spawn(S.FIRE,b.x+e.range(-1,1),b.y-b.h*.6,e.range(-5,5),-e.range(20,40),e.range(.2,.4),0,e.range(1.2,2.4),0,e.chance(.5)?ot.SMOKES|(b.back?ot.BACK:0):b.back?ot.BACK:0),e.chance(.12)&&f.spawn(S.EMBER,b.x,b.y-b.h*.5,e.range(-15,15),-e.range(30,70),e.range(.6,1.3),n[3],1,0,b.back?ot.BACK:0))}f.update(y),u.update(y)},drawBack(y){A(y),R(y,!0),m(y,!0),w0(y,f,n,"back");let d=h(l),b=l<ut?0:1-z(ut+Dn,ut+Dn+1.4,l);if(b>0)for(let k=0;k<16;k++)y.glow(Math.cos(k/16*T)*d,Math.sin(k/16*T)*d*Gn-3,16,g,.2*b)},draw(y){if(R(y,!1),m(y,!1),w0(y,f,n,"front"),l<ut&&y.glow(0,-3,8+22*(l/ut),g,.6*(l/ut)),l>=ut&&l<ut+.1){let b=1-(l-ut)/.1;y.ellipse(0,-1,14*(.6+.4*b),4,n[2]),y.ellipse(0,-1,9*(.6+.4*b),2.6,b>.5?I:n[1])}let d=z(ut-.05,ut,l)*(1-z(ut+Dn*.5,ut+Dn+1.2,l));d>0&&y.glow(0,-6,92,g,.3*d),u.draw(y)}}}var We={};et(We,{draw:()=>w1,drawBack:()=>x1,meta:()=>M1});var Aa=["#06040b","#150c26","#2a1150","#461a84","#6f2cc0","#9d5cec","#cfa6ff","#f6eaff"];function Os(o,t,n,a,e,s,i=0){let f=o.L,u=o.w,g=o.ox,h=o.oy;o.each(t,n,a,e,(c,r,l,p)=>{if(!s(c,r))return;let m=(p-h)*u+(l-g),A=f[m];A&&(i<=0?f[m]=0:f[m]=255<<24|(A>>>16&255)*i<<16|(A>>>8&255)*i<<8|(A&255)*i)})}function d1(o,t,n,a,e){if(!Number.isFinite(o)||!Number.isFinite(t)||!Number.isFinite(a)||a<=0)return;if(a>56)a=56;let s=n>0?n*n:-1,i=a*a;for(let f=Math.floor(t-a);f<=Math.ceil(t+a);f++){let u=f+.5,g=u-t,h=g*g;if(h>=i)continue;let c=Math.sqrt(i-h),r=h<s?Math.sqrt(s-h):0;for(let l=Math.floor(o-c),p=Math.ceil(o+c);l<=p;l++){let m=l+.5,A=m-o;if(r>0&&A>-r&&A<r){l=Math.max(l,Math.floor(o+r)-1);continue}let R=A*A+h;R<i&&R>=s&&e(m,u,Math.sqrt(R))}}}function Bs(o,t,n,a,e,s,i){if(e<=a||i<=.004)return;let f=C(s),u=e-a;d1(t,n,Math.max(0,a),e,(g,h,c)=>{let r=1-(c-a)/u;o.light(g,h,f,r*r*i)})}var Tn={FLAME:0,SOOT:1},ka=class{constructor(t){this.R=t.rng,this.list=[],this.t=0,this.F=E0(t.flame),this.soot=E0(t.soot),this.cap=C(t.cap),this.rim=E0(t.rim),this.floor=t.floor??null}spawn(t,n,a,e,s,i,f,u=0,g=!1){if(this.list.length>=24)return;this.list.push({k:t,x:n,y:a,vx:e,vy:s,life:i,max:i,size:f,delay:u,smokes:g,seed:this.R.next()*100})}get count(){return this.list.length}update(t){this.t+=t;let n=this.t;for(let a=this.list.length-1;a>=0;a--){let e=this.list[a];if(e.delay>0){e.delay-=t;continue}if((e.life-=t)<=0){e.k===Tn.FLAME&&e.smokes&&this.spawn(Tn.SOOT,e.x,e.y-1,e.vx*.5,e.vy*.5-6,this.R.range(.9,1.6),e.size*1.25),this.list.splice(a,1);continue}if(e.k===Tn.FLAME?(e.vy-=95*t,e.vx+=Math.sin(n*17+e.seed)*30*t,e.vx-=e.vx*5*t,e.vy-=e.vy*3.2*t):(e.vy-=18*t,e.vx+=Math.sin(n*1.3+e.seed)*8*t,e.vx-=e.vx*1.6*t,e.vy-=e.vy*1.3*t),e.x+=e.vx*t,e.y+=e.vy*t,this.floor&&e.k===Tn.SOOT){let s=this.floor(e.x)-e.size*.6;e.y>s&&(e.y=s,e.vy=Math.min(0,e.vy),e.vx*=1-2*t)}}}draw(t,n,a=null){let e=this.F,s=e.length;for(let i of this.list){if(i.delay>0||i.k!==n)continue;let f=i.life/i.max,u=1-f,g=i.x,h=i.y;if(i.k===Tn.FLAME){let E=Math.min(.999,Math.pow(u,.62)+i.seed%1*.1),P=Math.min(s-2,Math.floor(E*(s-1))),D=i.size*(.55+.45*Math.min(1,u*7))*(1-u*.55),B=e[P];P>=s-3?t.disc(g,h,D,B,Math.min(1,f*3)*.8):(t.circle(g,h,D,e[Math.min(s-1,P+2)]),t.circle(g-D*.16,h-D*.22,D*.78,B),D>1.6&&t.circle(g,h-D*.9,D*.42,B),P<=3&&D>1.8&&t.circle(g-D*.28,h-D*.34,D*.36,e[Math.max(0,P-1)]),P<6&&t.glow(g,h,D*2.4+2,B,.2*f));continue}let c=i.size*(.65+Math.min(1,u*2.5)*.45+u*.45),r=Math.min(1,u*10)*Math.min(1,f*2.2)*.72,l=tt(this.soot[0],this.soot[1],u),p=r*.5,m=1-(1-r*.5)*(1-r*.62);t.disc(g,h+c*.06,c,l,E=>E<.72?m:p);let A=a?a.k:0;if(A<.5&&t.disc(g-c*.2,h-c*.32,c*.48,this.cap,r*.32*(1-u*.7)*(1-A*2)),A<=.02)continue;let R=a.x-g,y=a.y-h,d=Math.sqrt(R*R+y*y)||1,b=R/d,k=y/d,w=Math.min(1,a.k*L(1.3-d/a.reach))*r;if(w<=.02)continue;let[x,M,v]=this.rim;t.disc(g+b*c*.26,h+k*c*.26,c*.72,v,w*.55),t.disc(g+b*c*.5,h+k*c*.5,c*.46,M,w*.5),c>3&&t.disc(g+b*c*.68,h+k*c*.68,c*.24,x,w*.4)}}};var va=class{constructor(t={}){this.list=[],this.floor=t.floor??(()=>0),this.onLand=t.onLand??null,this.g=t.g??.8}add(t,n,a,e,s=1){this.list.push({x:t,y:n,vx:a,vy:e,size:s})}update(t){for(let n=this.list.length-1;n>=0;n--){let a=this.list[n];a.vy+=Nt*this.g*t,a.vx-=a.vx*.4*t,a.x+=a.vx*t,a.y+=a.vy*t;let e=this.floor(a.x);a.vy>0&&a.y>=e&&(this.onLand?.(a.x,e,a.vy,a.size),this.list.splice(n,1))}}draw(t,n,a){for(let e of this.list){let s=e.vy<0;t.px(e.x,e.y,n),e.size>1.4&&t.px(e.x,e.y+(s?1:-1),n),t.px(e.x,e.y-(e.size>1.4&&!s?1:0),a)}}};function Ls(o,t,n,a,e){if(n<1)return;let s=n*.17+.6;o.shade(-n-3,-s-2,n+3,s+2,(i,f)=>{let u=i/n,g=(f-.5)/s,h=Math.sqrt(u*u+g*g);if(!(h>1.18)){if(h>1)return g<0&&h<1.09?Math.abs(u)<.55?t[6]:Math.abs(u)<.85?t[5]:t[4]:g>=0&&h<1.09?t[2]:f>-.5&&at(i*.7,9)>.15?t[1]:void 0;for(let c of e){let r=a-c.t0,l=r*46*c.w+1,p=i-c.x,m=(f-.5)/.17,A=Math.sqrt(p*p+m*m)||1,R=Math.sqrt(p*p+(m/.17)**2)/A;if(Math.abs(A-l)<.55*R&&r<c.life)return r<c.life*.5?t[4]:t[3]}return g<-.55&&g>-.85&&at(i*.25+a*1.3,4)>.2?at(i*.6-a*2,6)>.55?t[5]:t[2]:g<-.35&&h>.72?h>.9?t[3]:t[2]:h>.86?t[1]:t[0]}})}var M1={name:"Eclipse",desc:"A black moon over the sun: a breathing pearl corona with long streamers, a thin white rim, and one diamond bead blazing on its edge.",tags:["shadow","eclipse","moon","sun","corona","sky","magic","loop"],size:[160,144],origin:[80,72],duration:4,loop:!0,fps:30,bg:"sky",options:{palette:Aa,pearl:["#5a4f8a","#a99be0","#e6defa","#fffaf2"],seed:3}},it=19,Ke=4,Hs=-.72,Ra=(o,t,n)=>Math.sin(T*t*o/Ke+n),p1=Array.from({length:18},(o,t)=>{let n=t%2?0:Math.PI,a=(G(t,1)-.5)*(G(t,2)<.7?1.3:3.1),e=n+a,s=Math.abs(Math.cos(e));return{a:e,len:(10+G(t,3)*28)*(.45+.75*s),curl:(G(t,4)-.5)*18e-5,k:1+t%3,ph:G(t,5)*T,w:G(t,6)}});function x1(o,t,n){let a=Y(n.palette,8),e=Y(n.pearl,4),s=n.seed;mt(t,Ke,26,s,f=>f.range(1.2,2.6),(f,u,g)=>{let h=g.range(-78,78),c=g.range(-70,70);if(Math.hypot(h,c)<it+22)return;let r=Math.sin(Math.PI*f/u);o.dot(h,c,r>.7?I:e[1],r*1.2),r>.85&&g.next()<.4&&(o.dot(h-1,c,e[0],.8),o.dot(h+1,c,e[0],.8))});let i=1+.08*Ra(t,1,0);o.glow(0,0,72*i,a[4],.38),o.glow(0,0,46*i,e[1],.34);for(let f of p1){let u=f.len*(1+.18*Ra(t,f.k,f.ph));for(let g=4;g<=u;g+=.85){let h=g/u,c=f.a+f.curl*g*g,r=it+1+g,l=Math.cos(c)*r,p=Math.sin(c)*r;o.dot(l,p,h<.3?e[2]:h<.65?e[1]:a[5],h<.75?1:(1-h)*4)}o.glowLine(Math.cos(f.a)*(it+4),Math.sin(f.a)*(it+4),Math.cos(f.a)*(it+u*.6),Math.sin(f.a)*(it+u*.6),3,e[1],.12)}}function w1(o,t,n){let a=Y(n.palette,8),e=Y(n.pearl,4),s=1+.08*Ra(t,1,0),i=it+10;o.shade(-i,-i,i,i,(h,c,r)=>{let l=Math.sqrt(h*h+c*c);if(l<it-.5||l>it+9*s)return;let p=Math.atan2(c,h),m=(l-it)/(9*s),A=.55+.3*Math.cos(p*23+Math.sin(p*5)*2)+.15*Math.cos(p*41-T*t/Ke),R=(1-m)**2.2*A*(.75+.4*Math.abs(Math.cos(p)));if(l<it+.9)return e[3];if(!(R<.1))return R>.45&&(Math.floor(h)+Math.floor(c)&1)===0&&(r.k=.2*R),R>.72?e[2]:R>.42?e[1]:R>.22?a[5]:a[4]}),o.shade(-it,-it,it,it,(h,c)=>{let r=Math.sqrt(h*h+c*c);if(!(r>=it-.5))return r>it-2.2&&h<-it*.45?a[1]:a[0]});let f=Math.cos(Hs)*(it+.4),u=Math.sin(Hs)*(it+.4),g=.75+.25*Ra(t,2,1);for(let h=0;h<8;h++){let c=h*Math.PI/4+.12,r=(h%2?7:22)*g*(h===1||h===5?1.6:1);for(let l=1;l<=r;l+=.5){let p=l/r,m=f+Math.cos(c)*l,A=u+Math.sin(c)*l;if(m*m+A*A<(it-.5)**2)break;o.dot(m,A,p<.35?I:p<.7?e[2]:e[1],p<.5?1:(1-p)*2.2)}}o.circle(f,u,3*g,e[2]),o.circle(f,u,2.2*g,e[3]),o.circle(f,u,1.4,I),o.glow(f,u,46*g,e[2],.8*g),o.glow(f,u,14,I,.8),Bs(o,0,0,it-.5,it+16,e[2],.35*s),Os(o,-it,-it,it,it,(h,c)=>h*h+c*c<(it-.6)**2)}var Ye={};et(Ye,{create:()=>b1,meta:()=>m1});var m1={name:"Shadow tendrils",desc:"A dark pool opens on the floor; tentacles with lit rims and hooked tips lash up out of it with a splash, writhe, and sink back as it closes.",tags:["shadow","tentacle","tendril","ground","dark","magic","one-shot"],size:[208,130],origin:[104,106],duration:3.2,loop:!1,fps:30,bg:"ground",options:{palette:Aa,seed:3}},Ns=40,y1=.34,zs=2.5,Ws=.5,Us=-.6,js=-.8;function Ce(o,t){let n=L((t-o.t0)/.2),a=L((t-o.t1)/Ws);if(n<=0||a>=1)return null;let e=.07*Math.sin(Math.PI*L(a/.3)),s=U.inOutCubic(L((a-.12)/.88)),i=U.outBack(n,1.8)*(1+e)*(1-s),f=(1-i)*o.L,u=o.A*(.25+.75*z(o.t0+.08,o.t0+.5,t)),g=(.04+o.H*U.outBack(L((t-o.t0-.1)/.32),2.5))*(1+.5*a)*(1+.18*Math.sin(t*2.3+o.ph)),h=o.lean+.12*Math.sin(t*1.6+o.ph);o.whip&&(h+=o.whip.a*Math.exp(-(((t-o.whip.t)/.14)**2)));let c=-Math.PI/2+h,r=o.x-Math.cos(c)*f,l=o.y-Math.sin(c)*f,p=[],m=Math.ceil(o.L);for(let A=0;A<=m;A++){let R=A,y=R/o.L;p.push({x:r,y:l,th:c,w:o.W*Math.pow(1-y,.75)+.45,u:y,s:R}),c+=(u*Math.sin(R/o.lam*T-o.om*t+o.ph)+o.curl*g*z(.58,1,y)),r+=Math.cos(c),l+=Math.sin(c)}return p}function Ks(o,t,n,a,e){let s=t.y;for(let c of n){if(c.y>s)continue;let r=-Math.sin(c.th),l=Math.cos(c.th),p=r*Us+l*js>=0?1:-1;for(let m=-c.w;m<=c.w;m+=.9){let A=c.x+r*m,R=c.y+l*m,y=m/c.w*p;R<=s&&o.px(A,R,y>.55?a[2]:y>-.45?a[1]:a[0])}}let i=(e-t.t0)*150,f=(e-t.t0)*55%(t.L*1.8)-4;for(let c of n){if(c.y>s)continue;let r=-Math.sin(c.th),l=Math.cos(c.th),p=r*Us+l*js,A=(p>=0?1:-1)*c.w,R=c.x+r*A,y=c.y+l*A,d=c.x-r*A,b=c.y-l*A;b<=s&&o.px(d,b,a[3]),y<=s&&o.px(R,y,Math.abs(p)>.8&&c.u>.15?a[7]:c.u>.85||Math.abs(p)>.3?a[6]:a[5]),c.u>.62&&c.u<.93&&c.s%3<.5&&o.px(c.x+r*t.curl*c.w*.45,c.y+l*t.curl*c.w*.45,a[4]);let k=Math.min(Math.abs(c.s-i),Math.abs(c.s-f)*1.6);k<2.5&&o.px(c.x,c.y,k<1?a[7]:a[5])}let u=n[n.length-1];u.y<=s&&(o.px(u.x,u.y,I),o.glow(u.x,u.y,6,a[6],.25));for(let c=0;c<n.length;c+=8)n[c].y<s&&o.glow(n[c].x,n[c].y,9,a[4],.1);let g=n[Math.min(n.length-1,Math.max(0,Math.round(i*2)))];i<t.L&&g.y<s&&o.glow(g.x,g.y,10,a[6],.45);let h=n.find(c=>c.y<=s);if(h){let c=h.w+1.5;o.line(h.x-c,s,h.x+c,s,a[5]),o.px(h.x-c-1,s+.5,a[3]),o.px(h.x+c+1,s+.5,a[3])}}function b1(o){let t=Y(o.palette,8),n=new X(o.seed),a=()=>0,e=[t[0],t[0],t[1],t[1],t[3],t[4],t[5],t[6]],s=new V({rng:n,ground:a,sparks:[t[7],t[6],t[5],t[4]],haze:t[4]}),i=new ka({rng:n,flame:[t[7],t[6],t[5],t[4],t[3],t[2],t[1],t[1],t[0]],soot:[tt(t[3],t[2],.55),tt(t[2],t[1],.5)],cap:tt(t[4],t[2],.5),rim:[t[6],t[5],t[4]],floor:a}),f=[],u=[],g=[],h=0,c=0,r=b=>Ns*U.outCubic(L(b/y1))*(1-U.inCubic(L((b-zs)/.45))),l=(b,k)=>Math.abs(b)<r(k)*.95,p=new va({onLand:(b,k,w,x)=>{l(b,h)?f.push({x:b,t0:h,life:.5,w:.6}):u.push({x:b,t0:h,s:x})}}),m=[[-22,-2.5],[-8,-3],[7,-3],[21,-2.5],[-28,2.5],[-1,3],[27,2.5]],A=[3,0,5,2,4,1,6],R=[1,5,0,6,3,2,4],y=m.map(([b,k],w)=>{let x=k<0,M=Math.sign(b)||1;return{x:b+n.range(-3,3),y:k,back:x,L:x?n.range(46,62):n.range(32,46),W:x?n.range(3.2,4):n.range(3.8,4.6),lean:M*(.06+Math.abs(b)/120)+n.range(-.06,.06),curl:n.chance(.75)?-M:M,lam:n.range(36,50),om:n.range(4.5,7)*n.sign(),ph:n.range(0,T),A:n.range(.06,.085),H:n.range(.15,.32),t0:.3+A[w]*.045+n.range(0,.03),t1:1.5+R[w]*.1+n.range(0,.05),whip:n.chance(.45)?{t:n.range(.9,1.5),a:n.range(.28,.45)*n.sign()}:null,up:!1,down:!1}});function d(b,k,w,x){for(let M=0;M<w;M++)p.add(b+n.range(-2,2),k-1,n.range(-70,70)*x,-n.range(90,230)*x,n.chance(.4)?2:1);f.push({x:b,t0:h,life:.7,w:1}),g.push({x:b,y:k-7,r:30,k:.6*x,life:.25,max:.25})}return{update(b){h+=b;for(let w of y){if(!w.up&&h>=w.t0){w.up=!0,d(w.x,w.y,12,1);for(let x=0;x<4;x++)s.spawn(S.SPARK,w.x,w.y-2,n.range(-80,80),-n.range(120,260),n.range(.2,.45))}if(!w.down&&h>=w.t1+Ws*.8&&(w.down=!0,d(w.x,w.y,6,.6)),h>w.t0+.2&&h<w.t1&&n.chance(b*1.6)){let x=Ce(w,h),M=x&&x[Math.floor(n.range(.3,.95)*x.length)];M&&M.y<w.y&&s.spawn(S.STAR,M.x-Math.sin(M.th)*M.w,M.y+Math.cos(M.th)*M.w,0,-4,n.range(.25,.5),t[6],n.range(1,2.2))}}let k=r(h);if(k>8&&h<zs-.4){for(c+=b*9;c>1;c--)i.spawn(Tn.SOOT,n.range(-.8,.8)*k,-n.range(1,4),n.range(-8,8),-n.range(14,30),n.range(.6,.85),n.range(3,6));n.chance(b*16)&&s.spawn(S.MOTE,n.range(-.8,.8)*k,-2,n.range(-8,8),-n.range(30,80),n.range(.5,1),n.pick([t[7],t[6],t[6],t[5]]),n.range(.6,1.1)),n.chance(b*5)&&s.spawn(S.EMBER,n.range(-.8,.8)*k,-3,n.range(-10,10),-n.range(20,45),n.range(.6,1),t[6]),n.chance(b*3)&&f.push({x:n.range(-.7,.7)*k,t0:h,life:.6,w:.5}),n.chance(b*7)&&s.spawn(S.VAPOUR,n.range(-.7,.7)*k,-n.range(2,8),n.range(-6,6),-n.range(10,22),n.range(.6,.9),n.chance(.5)?t[3]:t[4],n.range(3,6))}for(let w of[f,u])for(let x=w.length-1;x>=0;x--)h-w[x].t0>(w[x].life??.6)&&w.splice(x,1);for(let w=g.length-1;w>=0;w--)(g[w].life-=b)<=0&&g.splice(w,1);p.update(b),i.update(b),s.update(b)},drawBack(b){let k=r(h),w=k/Ns;Ls(b,t,k,h,f),w>0&&(b.glow(0,-16,86,t[4],.22*w),b.glow(0,-8,k*1.7+12,t[4],.32*w*(.9+.1*Math.sin(h*5))),b.glow(0,0,k*1.15,t[5],.18*w)),i.draw(b,Tn.SOOT,{x:0,y:6,k:w,reach:70}),s.draw(b,"back");for(let x of y)if(x.back){let M=Ce(x,h);M&&Ks(b,x,M,e,h)}},draw(b){for(let k of y)if(!k.back){let w=Ce(k,h);w&&Ks(b,k,w,t,h)}p.draw(b,t[1],t[5]);for(let k of u){let w=1-(h-k.t0)/.6;b.dot(k.x,-.5,t[1],w*1.5),b.dot(k.x+1,-.5,t[2],w),k.s>1&&b.dot(k.x-1,-.5,t[2],w),b.dot(k.x,-1.5,t[5],w)}s.draw(b,"front");for(let k of g){let w=k.life/k.max;b.glow(k.x,k.y,k.r*(.6+.4*w),t[5],k.k*w*w)}}}}var qe={};et(qe,{create:()=>I1,meta:()=>A1});var k1=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5].map(o=>(o+.5)/16);var Cs=(o,t)=>k1[(Math.floor(t)&3)<<2|Math.floor(o)&3];function Ys(o,t,n,a,e,s,i=1,f=null){if(a<.5)return;let u=typeof s=="function",g=typeof i=="function",h=a*e;o.shade(t-a-1,n-h-1,t+a+1,n+h+1,(c,r,l)=>{let p=(c-t)/a,m=(r-n)/Math.max(.3,h),A=Math.hypot(p,m);if(A<1e-6)return;let R=Math.hypot(p/a,m/Math.max(.3,h))/A;if(Math.abs(A-1)/R>.5)return;let y=Math.atan2(m,p);f&&!f(y)||(l.c=u?s(y):s,l.a=g?i(y):i)})}var Ea=[[".#.","#.#",".#.",".#.","#.#"],["#.#","#.#",".#.","#.#","#.#"],["##.","#.#","##.","#..","#.."],["#..","#.#","###","#.#","..#"],[".##","#..",".#.","..#","##."],["###",".#.","###",".#.",".#."],["#.#","###","#.#","..#","..#"],[".#.",".##",".#.","##.",".#."]];function Ge(o,t,n,a,e,s=1,i=0){let f=Ea[(t%Ea.length+Ea.length)%Ea.length],u=Math.round(n)-1,g=Math.round(a)-f.length+1;i&&o.sprite(f,{},u,g+1,{tint:i,a:s}),o.sprite(f,{},u,g,{tint:e,a:s})}var wt=40,Pa=35,Fn=24,Ia=30,It=.3,Jn=192,_n=11,_0=8,zt=[.04,.42],Gs=[.1,.48],Ct=[.3,.6],m0=[.52,.88],en=[.9,1.3],vt=1.52,St=2.42,Xe=3.45,v1=3.9,A1={name:"Magic circle cast",desc:"A circle draws itself on the floor, runes ignite one by one, it flashes, and a column of light fires up and breaks apart into glints.",tags:["arcane","magic","circle","rune","cast","column","summon","ground","one-shot"],size:[200,220],origin:[100,192],duration:v1,loop:!1,fps:30,bg:"ground",options:{palette:P0.arcane,seed:6}},R1=o=>(o%T+T)%T,E1=o=>Math.abs(Math.atan2(Math.sin(o-Math.PI/2),Math.cos(o-Math.PI/2))),Je=(o,t)=>t[0]+E1(o)/Math.PI*(t[1]-t[0]),Js=o=>Ct[0]+R1(o+Math.PI/2)/T*(Ct[1]-Ct[0]),_s=o=>-Math.PI/2+(o+.5)*T/_0,P1=o=>en[0]+o*(en[1]-en[0])/(_0-1),Xs=o=>St+.2+o*.08;function _e(o){return o<en[0]?.55:o<vt?.55+.4*z(en[0],vt,o):o<vt+.07?1.2:o<St?.92:.92*(1-z(St,Xe,o))}function I1(o){let t=Y(o.palette,8),n=o.seed,a=new X(n),e=new V({rng:a,ground:()=>0,sparks:[I,t[6],t[5],t[4]]}),s=new Z,i=[I,t[6],t[5],t[4],t[3]],f=Array.from({length:9},()=>({o:a.range(-.85,.85),w:a.range(.04,.1),f:a.range(1,3)})),u=x=>[0,1,2].map(M=>x+M*T/3).map(M=>[Math.cos(M)*Fn,Math.sin(M)*Fn]),g=u(-Math.PI/2),h=u(Math.PI/2),c=[];for(let x=0;x<3;x++)for(let M of[g,h])c.push({p0:M[x],p1:M[(x+1)%3],t0:m0[0]+x*(m0[1]-m0[0])/3,dur:(m0[1]-m0[0])/3});let r=0,l=!1,p=!1,m=new Array(_0).fill(!1),A=(x,M)=>M<.05?I:M<.16?t[6]:x>1?I:x>.8?t[6]:x>.45?t[5]:x>.28?t[4]:t[3],R=x=>L(x/.3);function y(x,M,v,E,P,D,B){let F=L((r-E)/P);if(F<=0)return;let O=0,H=F,N=M[1],j=v[1];if(N<0!=j<0){let ft=N/(N-j);N<0===B?H=Math.min(H,ft):O=ft}else if(N<0!==B)return;if(H<=O)return;let K=ft=>[M[0]+(v[0]-M[0])*ft,(N+(j-N)*ft)*It],[_,$]=K(O),[q,ct]=K(H);x.line(_,$,q,ct,ft=>A(D,r-(E+(O+(H-O)*ft)*P)),R(D))}function d(x,M){if(r>=Xe)return;let v=_e(r),E=M?O=>Math.sin(O)<0:O=>Math.sin(O)>=0,P=R(v),D=(O,H,N)=>Ys(x,0,0,O,It,j=>N&&N(j)?I:A(v,r-H(j)),j=>r<H(j)?0:P,E),B=r>en[0]&&r<St?(r-en[0])*5+(r-en[0])**2*4:null;D(wt,O=>Je(O,zt),B===null?null:O=>[0,Math.PI].some(H=>Math.abs(Math.atan2(Math.sin(O-B-H),Math.cos(O-B-H)))<.22)),D(Pa,O=>Je(O,Gs)),D(Fn,Js);for(let O=0;O<32;O++){let H=(O+.5)*T/32;if(Math.sin(H)<0!==M)continue;let N=Je(H,Gs)+.03;r<N||x.line(Math.cos(H)*Pa,Math.sin(H)*Pa*It,Math.cos(H)*wt,Math.sin(H)*wt*It,A(v,r-N),P*(O%2?.6:1))}for(let O of c)y(x,O.p0,O.p1,O.t0,O.dur,v,M)}function b(x,M){for(let v=0;v<_0;v++){let E=_s(v);if(Math.sin(E)<0!==M)continue;let P=Math.cos(E)*Ia,D=Math.sin(E)*Ia*It,B=r-P1(v),F=L((r-Xs(v))/.25);if(r<Js(E)||F>=1)continue;if(B<0){Ge(x,v,P,D-1,t[3]);continue}let O=3*U.outBack(L(B/.2),2.4),H=B>.2?Math.sin(r*5+v)*.5:0,N=D-1-O+H,j=B<.07||r>vt&&r<vt+.07,K=_e(r);Ge(x,v,P,N,j?I:K>.8?I:t[6],1-F,j?t[6]:t[4]),B<.1&&nt(x,P,N-2,4*(1-B/.1)+1,t[6],t[5],.5),x.glow(P,N-2,8,t[5],(.3+.3*K)*(1-F)),x.glow(P,D,6,t[4],.2*(1-F))}}function k(x){if(r<vt-.22||r>St+.6)return;if(r<vt){let F=z(vt-.22,vt-.04,r),O=-(Jn-10)*U.outCubic(F);for(let H=-1;H>=O;H--)x.dot(0,H,H>O+6?t[6]:I,F*(.35+.65*(1+H/Jn)));x.glow(0,O,9,t[6],.5*F),x.glow(0,-6,24,t[5],.4*F);return}let M=r-vt,v=L((r-St)/.45),E=-Jn*U.outExpo(L(M/.09)),P=r<St?_n*(1+.38*Math.exp(-M*9)):_n*(1-U.outCubic(v)*.85),D=1-z(St+.25,St+.55,r),B=M<.067;if(!(D<=0)){for(let F=3;F>=Math.ceil(E);F--){let O=-F,H=P*(1+.5*Math.exp(-Math.max(0,O)/6)),N=uo(O*.022-M*2.6)<.07?1:0;for(let j=Math.floor(-H*1.3);j<=Math.ceil(H*1.3);j++){let K=Math.abs(j+.5)/H;if(v>0&&Vt(j*.32,O*.11-(r-St)*6,n)*.5+.5<v*1.25-.1)continue;let _=K<.2?0:K<.42?1:K<.66?2:K<.88?3:4;for(let q of f)Math.abs((j+.5)/H-q.o-.05*Math.sin(r*q.f+q.o*9))<q.w&&(_=Math.max(0,_-1));_=B?0:Math.max(0,_-N),!((K<.88?1:(1.3-K)/.42)*D<=Cs(j,F)*(K<.66?.2:1))&&x.px(j,F,i[_])}(O&7)===0&&O<Jn-H*2.4-8&&x.glow(0,F,H*2.4+6,t[5],.3*D)}for(let F=0;F<6;F++){let O=(r-(vt+.08+F*.16))/.8;if(O<0||O>1)continue;let H=P*1.4*(1+O*.35),N=H*.3,j=-3-U.outQuad(O)*120,K=Math.ceil(H*7);for(let _=0;_<K;_++){let $=_/K*T;x.dot(Math.cos($)*H,j+Math.sin($)*N,O<.3?I:t[6],(1-O)*D*(Math.sin($)<0?.6:1))}}x.glow(0,-4,34,t[6],.45*D),x.glow(0,-60,70,t[4],.25*D)}}function w(x,M){for(let[v,E,P,D,B]of[[0,wt*.6,wt*2,6,.5],[.08,wt*.4,wt*1.4,3,.4]]){let F=(r-vt-v)/B;F<0||F>=1||bt(x,0,0,E+(P-E)*U.outCubic(F),It,Math.max(1,D*(1-F)),1.15-F,[t[3],t[5],t[6],I],O=>Math.sin(O)<0===M,F<.2)}}return{update(x){if(r+=x,r>zt[0]&&r<m0[1]&&a.chance(.5)){let M,v;if(r<zt[1]){let E=Math.PI/2+a.sign()*((r-zt[0])/(zt[1]-zt[0]))*Math.PI;M=Math.cos(E)*wt,v=Math.sin(E)*wt*It}else if(r<Ct[1]){let E=-Math.PI/2+(r-Ct[0])/(Ct[1]-Ct[0])*T;M=Math.cos(E)*Fn,v=Math.sin(E)*Fn*It}else{let E=a.pick(c.filter(D=>r>=D.t0&&r<D.t0+D.dur))??c[0],P=L((r-E.t0)/E.dur);M=E.p0[0]+(E.p1[0]-E.p0[0])*P,v=(E.p0[1]+(E.p1[1]-E.p0[1])*P)*It}e.spawn(S.EMBER,M,v-1,a.range(-12,12),a.range(-30,-8),a.range(.25,.55),t[6],1)}if(r>en[1]-.1&&r<vt-.05&&a.chance(.7)){let M=a.range(0,T),v=a.range(wt*.7,wt*1.1),E=a.range(.16,.24),P=v*3/(Math.exp(3*E)-1),D=Math.cos(M)*v,B=Math.sin(M)*v*It-1,F=Math.hypot(D,B+2)||1;e.spawn(S.STREAK,D,B,-D/F*P,(-2-B)/F*P,E,a.chance(.5)?t[6]:t[5])}if(!l&&r>=vt){l=!0,s.add(0,-56,104,t[5],.9,.6),s.add(0,-5,36,I,.8,.14);for(let M=0;M<36;M++){let v=a.sign(),E=a.range(80,175);e.spawn(S.SPARK,v*a.range(0,wt*.5),-1,v*E,-a.range(30,180),a.range(.25,.7))}for(let M=0;M<26;M++)e.spawn(S.STAR,a.range(-wt,wt),-a.range(1,6),a.range(-20,20),-a.range(40,130),a.range(.5,1.1),a.pick([I,t[6],t[5]]),a.range(.8,2.3));for(let M=0;M<34;M++){let v=a.sign();e.spawn(S.STAR,v*a.range(0,14),-a.range(1,4),v*a.range(50,140),-a.range(10,90),a.range(.4,.95),a.pick([I,t[6],t[6],t[5]]),a.range(.7,2.2))}}if(r>en[0]&&r<St+.2&&a.chance(.12)){let M=a.range(0,T),v=a.pick([wt,Pa,Fn]);e.spawn(S.STAR,Math.cos(M)*v,Math.sin(M)*v*It-.5,0,-a.range(2,8),a.range(.25,.45),a.pick([I,t[6]]),a.range(.8,2))}if(r>vt&&r<St&&(a.chance(.5)&&e.spawn(S.STAR,a.range(-1,1)*_n*1.5,-a.range(0,120),a.range(-10,10),-a.range(30,85),a.range(.5,1.1),a.pick([I,t[6],t[5]]),a.range(.7,2)),a.chance(.35)&&e.spawn(S.MOTE,a.range(-1,1)*_n*.8,-a.range(0,50),0,-a.range(160,300),a.range(.2,.35),a.chance(.5)?I:t[6],.8)),!p&&r>=St){p=!0;for(let M=0;M<46;M++)e.spawn(S.STAR,a.range(-1,1)*_n*.9,-a.range(2,Jn*.8),a.range(-12,12),-a.range(8,40),a.range(.5,1.15),a.pick([I,I,t[6],t[5]]),a.range(.6,2.4))}r>St&&r<St+.4&&a.chance(.8)&&(e.spawn(S.STAR,a.range(-1,1)*_n*.7,-a.range(2,Jn*.78),a.range(-8,8),-a.range(10,50),a.range(.4,.9),a.pick([I,t[6],t[5]]),a.range(.6,1.8)),a.chance(.4)&&e.spawn(S.MOTE,a.range(-1,1)*_n*.5,-a.range(2,Jn*.7),0,-a.range(60,140),a.range(.2,.4),t[6],.7));for(let M=0;M<_0;M++)if(!m[M]&&r>=Xs(M)){m[M]=!0;let v=_s(M),E=Math.cos(v)*Ia,P=Math.sin(v)*Ia*It-5;for(let D=0;D<4;D++)e.spawn(S.STAR,E+a.range(-2,2),P+a.range(-2,2),a.range(-14,14),-a.range(10,40),a.range(.3,.55),a.pick([I,t[6]]),a.range(.6,1.6))}e.update(x),s.update(x)},drawBack(x){let M=_e(r);if(r<Xe){let v=M*z(zt[0],zt[1]+.2,r);x.glow(0,0,wt*1.3,t[4],.28*v);for(let E of[-1,1])x.glow(E*wt*.6,1,wt*.7,t[5],.12*v)}w(x,!0),d(x,!0),b(x,!0),k(x),e.draw(x,"back")},draw(x){w(x,!1),d(x,!1),b(x,!1);let M=(v,E)=>{nt(x,v,E,2,t[6],t[5],.5),x.glow(v,E,7,t[6],.45)};if(r>zt[0]&&r<zt[1])for(let v of[-1,1]){let E=Math.PI/2+v*((r-zt[0])/(zt[1]-zt[0]))*Math.PI;M(Math.cos(E)*wt,Math.sin(E)*wt*It)}if(r>Ct[0]&&r<Ct[1]){let v=-Math.PI/2+(r-Ct[0])/(Ct[1]-Ct[0])*T;M(Math.cos(v)*Fn,Math.sin(v)*Fn*It)}for(let v of c)if(r>v.t0&&r<v.t0+v.dur){let E=(r-v.t0)/v.dur;M(v.p0[0]+(v.p1[0]-v.p0[0])*E,(v.p0[1]+(v.p1[1]-v.p0[1])*E)*It)}if(r>=vt&&r<vt+.24){let v=(r-vt)/.24;Rt(x,0,-8,34*Math.pow(1-v,1.5),1-v,t),x.glow(0,-26,56,I,.5*(1-v))}e.draw(x,"front"),s.draw(x)}}}var Qe={};et(Qe,{create:()=>T1,meta:()=>D1});var dt=-42,Pt=26,y0=.3,On=1.75,S1=2.2,on=2.42,Sa=[.36,.46,.57,.7,.85,1.03,1.24,1.49],D1={name:"Time stop",desc:"A clock face springs open, ticks slower and slower, freezes drained of colour, cracks, then shatters into falling shards.",tags:["arcane","time","clock","freeze","stop","shatter","magic","one-shot"],size:[196,136],origin:[98,118],duration:3.6,loop:!1,fps:30,bg:"ground",options:{palette:P0.arcane,seed:14}};function Ve(o){let t=0;for(let n of Sa)o>n&&(t+=U.outBack(L((o-n)/.07),3));return-Math.PI/2+t*(T/12)}var Vs=o=>o<y0?1:Math.max(0,1-(o-y0)/(On-y0))**1.6;function qs(o){let t=0;for(let n=0;n<Math.min(o,On);n+=1/120)t+=Vs(n)/120;return t}function T1(o){let t=Y(o.palette,8),n=new X(o.seed),a=t.map(d=>{let b=R0(d)*255;return Dt(b*.92,b*.96,Math.min(255,b*1.06))}),e=new V({rng:n,ground:()=>0,sparks:[I,t[6],t[5],t[4]]}),s=new lt({ground:()=>0}),i=new Z,f=Array.from({length:14},(d,b)=>({a:n.range(0,T),r:Pt+n.range(5,14),w:n.range(1.4,2.6)*(b%2?1:-1),tilt:n.range(-.5,.5),c:n.pick([I,t[6],t[5]])})),u=n.range(-6,6),g=n.range(-6,6),h=[],c=(d,b,k,w,x)=>{let M=[[d,b]];for(let v=0;v<w&&(k+=n.range(-.55,.55),d+=Math.cos(k)*n.range(1.6,2.6),b+=Math.sin(k)*n.range(1.6,2.6),!(Math.hypot(d,b)>Pt-.5));v++)M.push([d,b]),x<1&&M.length>3&&n.chance(.14)&&c(d,b,k+n.sign()*n.range(.6,1.1),w/2,x+1);h.push(M)};for(let d=0;d<7;d++)c(u,g,d/7*T+n.range(-.3,.3),16,0);let r=0,l=0,p=0,m=!1,A=!1;function R(d,b,k,w){let x=dt,M=Pt*k;if(M<1)return;d.disc(0,x,M,b[1],P=>.3+.35*P*P),d.ring(0,x,M+.5,1,b[6]),d.ring(0,x,M-1.5,1,b[4]),d.ring(0,x,M+2,1,b[3],.6);for(let P=0;P<60;P++){let D=P/60*T;if(P%5)d.dot(Math.cos(D)*(M-3.5),x+Math.sin(D)*(M-3.5),b[4],.8);else{let B=P%15===0,F=M-(B?8:6.5);d.line(Math.cos(D)*F,x+Math.sin(D)*F,Math.cos(D)*(M-3),x+Math.sin(D)*(M-3),B?b[7]:b[6])}}d.ring(0,x,M*.3,1,b[4],.8);let v=-Math.PI/2+(Ve(r)+Math.PI/2)/12+.9,E=Ve(r)+(A?Math.sin(r*70)*.012:0);if(d.beam(0,x,Math.cos(v)*M*.48,x+Math.sin(v)*M*.48,2.6,(P,D)=>D<.5?b[6]:b[4]),d.line(-Math.cos(E)*5,x-Math.sin(E)*5,Math.cos(E)*(M-4),x+Math.sin(E)*(M-4),P=>P>.75?b[7]:b[6]),d.line(-Math.cos(E)*5+.5,x-Math.sin(E)*5,-Math.cos(E)*2,x-Math.sin(E)*2,b[5]),d.circle(0,x,2.2,b[5]),d.circle(0,x,1.2,b[7]),w>0)for(let P of h)for(let D=0,B=Math.floor(P.length*w);D<B;D++){let[F,O]=P[D],H=D>B-3&&w<1;d.px(F,x+O,H?I:b[7]),H||d.px(F,x+O-1,b[2])}}return{update(d){for(r+=d,l=qs(r);p<Sa.length&&r>=Sa[p];){p++;let b=Ve(r+.1);i.add(Math.cos(b)*(Pt-4),dt+Math.sin(b)*(Pt-4),22,t[6],.6,.12);for(let k=0;k<3;k++)e.spawn(S.STAR,Math.cos(b)*(Pt+1),dt+Math.sin(b)*(Pt+1),Math.cos(b)*30+n.range(-15,15),Math.sin(b)*30+n.range(-15,15),n.range(.2,.4),n.pick([I,t[6]]),n.range(.7,1.3))}if(!A&&r>=On&&(A=!0,i.add(0,dt,70,I,.7,.2)),!m&&r>=on){m=!0,i.add(0,dt,80,I,.8,.16),i.add(0,dt,100,t[5],.6,.6);for(let b=0;b<64;b++){let k=n.range(0,T),w=n.range(0,Pt),x=Math.cos(k)*w,M=dt+Math.sin(k)*w,v=n.range(40,140),E=x-u,P=M-dt-g,D=Math.hypot(E,P)||1;s.add({kind:Q.SHARD,x,y:M,vx:E/D*v+n.range(-25,25),vy:P/D*v*.7-n.range(40,120),g:.9,drag:.5,bounce:.25,life:n.range(.8,1.15),a:n.range(0,T),va:n.range(-22,22),s:n.range(1.5,3.6),c:n.pick([a[7],a[6],a[6],a[5]])})}for(let b=0;b<10;b++){let k=n.range(0,T),w=n.range(40,110);s.add({kind:Q.CHUNK,x:Math.cos(k)*Pt*.6,y:dt+Math.sin(k)*Pt*.6,vx:Math.cos(k)*w,vy:Math.sin(k)*w*.6-n.range(60,130),g:1,drag:.4,bounce:.3,life:n.range(.9,1.15),a:n.range(0,T),va:n.range(-14,14),s:n.range(1.6,3),ramp:[a[1],a[3],a[4],a[6],a[7]]})}for(let b=0;b<26;b++){let k=n.range(0,T),w=n.range(30,110);e.spawn(b%2?S.STAR:S.MOTE,0,dt,Math.cos(k)*w,Math.sin(k)*w,n.range(.4,.8),n.pick([I,t[6],t[5]]),n.range(.8,1.8))}for(let b=0;b<18;b++){let k=n.range(0,T),w=n.range(90,200);e.spawn(S.SPARK,0,dt,Math.cos(k)*w,Math.sin(k)*w,n.range(.2,.45))}for(let b=0;b<12;b++){let k=n.range(0,T),w=n.range(0,Pt*.8);e.spawn(S.VAPOUR,Math.cos(k)*w,dt+Math.sin(k)*w,Math.cos(k)*n.range(10,40),Math.sin(k)*n.range(10,30)-n.range(5,20),n.range(.6,1),n.chance(.5)?a[5]:t[4],n.range(3,6))}}s.update(d),e.update(d),i.update(d)},drawBack(d){let b=z(0,y0,r)*(1-z(on,on+.5,r)),k=r>=On;if(b>0&&d.glow(0,-1,40,k?a[5]:t[4],.25*b),r<on)for(let w of f)y(d,w,!0)},draw(d){let b=r>=On,k=r<y0?U.outBack(r/y0,2.6):1;if(r<on){let w=r>=On&&r<On+.06||r>=on-.05;R(d,w?a.map(()=>I):b?a:t,k,L((r-S1)/.18)),d.glow(0,dt,Pt*1.9,b?a[5]:t[4],.32*k),d.glowRing(0,dt,Pt,7,b?a[6]:t[5],.28*k);for(let x of f)y(d,x,!1)}if(r<.35){let w=r/.35;d.ring(0,dt,Pt*(.4+1.2*U.outCubic(w)),Math.max(1,3*(1-w)),w<.3?I:t[6],1.2-w),w<.5&&Rt(d,0,dt,26*(1-w*2)+2,1-w*2,t)}if(r<on)for(let w of Sa){if(r<w)continue;let x=(l-qs(w))/.32;x>=1||d.ring(0,dt,Pt+3+24*U.outCubic(x),1,b?a[5]:t[5],(b?.6:.8)*Math.pow(1-x,1.6))}if(r>=on&&r<on+.2){let w=(r-on)/.2;Rt(d,0,dt,34*(1-w)+2,1-w,t),d.ring(0,dt,Pt+30*U.outCubic(w),Math.max(1,3*(1-w)),I,1.2-w)}s.draw(d),e.draw(d),i.draw(d)}};function y(d,b,k){let w=b.a+b.w*l,x=Math.sin(w);if(x<0!==k)return;let M=Math.cos(w)*b.r,v=dt+Math.cos(w)*b.r*b.tilt+x*b.r*.3,E=r>=On,P=Vs(r)*b.w,D=E?a[6]:b.c;if(d.dot(M,v,D,k?.6:1),Math.abs(P)>.2)for(let B=1;B<=3;B++){let F=w-Math.sign(b.w)*B*.05*Math.min(1,Math.abs(P));d.dot(Math.cos(F)*b.r,dt+Math.cos(F)*b.r*b.tilt+Math.sin(F)*b.r*.3,B<2?t[5]:t[4],(k?.5:.9)*(1-B/4))}k||d.glow(M,v,5,E?a[6]:t[6],.3)}}var to={};et(to,{act:()=>F1,draw:()=>B1,drawBack:()=>O1,meta:()=>Ta});var Zs=["#3b1d2a","#7a3a2c","#c4652e","#f0a040","#ffd25e","#fff0a0","#fffbe0","#ffffff"];var Qs=new WeakMap;function $s(o){let t=Qs.get(o.mask);if(t&&t.x===o.x&&t.y===o.y)return t;let n=o.mask,a=(i,f)=>i>=0&&f>=0&&i<n.w&&f<n.h&&n.data[f*n.w+i]>0,e=[],s=[];for(let i=-1;i<=n.h;i++)for(let f=-1;f<=n.w;f++){let u=a(f-1,i)+a(f+1,i)+a(f,i-1)+a(f,i+1);a(f,i)?u<4&&e.push([o.x+f,o.y+i]):u&&s.push([o.x+f,o.y+i])}return t={x:o.x,y:o.y,edge:e,out:s,top:o.y,bottom:o.y+n.h,at:(i,f)=>a(Math.floor(i)-o.x,Math.floor(f)-o.y)},Qs.set(o.mask,t),t}function Ze(o,t,n,a,e,s,i=1,f=null){if(a<.5)return;let u=Math.ceil(Math.max(a,e)*T*1.5)+6,g=typeof s=="function",h=typeof i=="function";for(let c=0;c<u;c++){let r=c/u*T;f&&!f(r)||o.dot(t+Math.cos(r)*a,n+Math.sin(r)*e,g?s(r):s,h?i(r):i)}}var Ta={name:"Divine shield",desc:"A bubble of gold light round the character: a bright rim and a thin gold film, meridians turning like a slow globe, a sheen sweeping across and sparkles winking on it.",tags:["holy","shield","bubble","barrier","buff","character","loop"],size:[88,84],origin:[44,68],duration:2.4,loop:!0,fps:30,bg:"ground",actor:2,options:{palette:Zs,radius:29,seed:8}},X0={turn:.7,crouch:3,lean:1,fx:5,fy:-33,bx:10,by:-20,ffx:4,fbx:-2},F1={onBody:!0,poses:[[0,X0],[.6,{...X0,crouch:4}],[1.2,{...X0,fy:-35,crouch:3}],[1.8,{...X0,crouch:4}],[2.4,X0]]},Mt=-22,Da=.34,b0=4,tr=.26;function q0(o,t,n){let a=o*Math.cos(t)*Math.sin(n),e=o*Math.sin(t),s=o*Math.cos(t)*Math.cos(n);return[a,Mt-(e*Math.cos(Da)-s*Math.sin(Da)),e*Math.sin(Da)+s*Math.cos(Da)]}var $e=(o,t)=>-1.7+3.4*L(o/t%1/.55);function nr(o,t,n,a){let e=Y(n.palette,8),s=n.radius,i=Ta.duration,f=t/i*(Math.PI/b0),u=$e(t,i),g=new Map,h=(c,r,l)=>{if(l<0!==a)return;let p=Math.floor(c)*1e3+Math.floor(r),m=Math.abs(l)/s,A=(c-(r-Mt))/(s*1.414),R=Math.abs(A-u)<.12?1:0,y=g.get(p);(!y||m<y[2])&&g.set(p,[c,r,m,R||(y?y[3]:0)])};for(let c=0;c<2*b0;c++){let r=f+c*Math.PI/b0;for(let l=-Math.PI/2;l<=Math.PI/2;l+=1.15/s)h(...q0(s,l,r))}for(let c=0;c<T;c+=1.15/s)h(...q0(s,0,c));for(let[c,r,l,p]of g.values())a?o.blend(c,r,e[4],.32):p?o.px(c,r,I):l<.4?o.px(c,r,e[6]):o.blend(c,r,l<.7?e[6]:e[5],l<.7?.8:.55)}function ar(o,t,n,a){let e=Y(n.palette,8),s=n.radius,i=$e(t,Ta.duration);o.each(-s-1,Mt-s-1,s+1,Mt+s+1,(f,u,g,h)=>{let c=Math.hypot(f,u-Mt)/s;if(c>=1)return;let r=(f-(u-Mt))/(s*1.414),l=Math.max(0,1-Math.abs(r-i)/.22),p=(a?.07:.03)+.26*Math.pow(c,6)+.2*l*(a?.3:1);o.blendPx(g,h,l>.5&&!a?e[6]:e[5],p)})}function O1(o,t,n){let a=Y(n.palette,8),e=n.radius,s=Math.sqrt(e*e-Mt*Mt);ar(o,t,n,!0),nr(o,t,n,!0),Ze(o,0,0,s,s*tr,a[5],.8,i=>Math.sin(i)<0),o.glow(0,Mt,e*1.1,a[4],.14)}function B1(o,t,n){let a=Y(n.palette,8),e=n.radius,s=Ta.duration,i=Math.sqrt(e*e-Mt*Mt),f=n.actor;if(f)for(let[r,l]of $s(f).out)o.light(r,l,a[5],.3);ar(o,t,n,!1),nr(o,t,n,!1);let u=$e(t,s);for(let r=0,l=Math.ceil(e*T*1.4);r<l;r++){let p=r/l*T,m=Math.cos(p)*e,A=Mt+Math.sin(p)*e,R=(m-(A-Mt))/(e*1.414),y=Math.cos(p+2.36),d=Math.abs(R-u)<.15;o.dot(m,A,d||y>.75?I:y>-.2?a[6]:a[5],1),o.dot(Math.cos(p)*(e-1),Mt+Math.sin(p)*(e-1),a[4],.35+.3*y)}o.glowRing(0,Mt,e,6,a[4],.32);let g=t/s*(Math.PI/b0);for(let r=0;r<2*b0;r++){let[l,p,m]=q0(e,0,g+r*Math.PI/b0);if(!(m<e*.15)){if(o.px(l,p,I),m>e*.45)for(let[A,R]of[[1,0],[-1,0],[0,1],[0,-1]])o.blend(l+A,p+R,a[6],.7);o.glow(l,p,4,a[5],.3)}}let[h,c]=q0(e,Math.PI/2,0);nt(o,h,c,2+Math.round(1.5+1.5*Math.sin(t/s*T*2)),I,a[6],.45);for(let r of[0,Math.PI]){let l=t/s*T+r+.8;nt(o,Math.cos(l)*e,Mt+Math.sin(l)*e,2,I,a[6],.4)}for(let r=3.55;r<4.2;r+=.04)o.px(Math.cos(r)*e*.74,Mt+Math.sin(r)*e*.74,r>3.7&&r<4.05?I:a[6]);o.px(Math.cos(3.4)*e*.62,Mt+Math.sin(3.4)*e*.62,I);for(let r=.45;r<.8;r+=.05)o.dot(Math.cos(r)*e*.8,Mt+Math.sin(r)*e*.8,a[5],.6);Ze(o,0,0,i,i*tr,r=>Math.sin(r)>.6?I:a[6],1,r=>Math.sin(r)>=0);for(let r=-2;r<=2;r++)o.glow(r*i*.5,0,12,a[4],.18);mt(t,s,9,n.seed,r=>r.range(.35,.6),(r,l,p)=>{let[m,A,R]=q0(e,p.range(-1.2,1.3),p.range(0,T)+g),y=Math.sin(r/l*Math.PI);R<0||nt(o,m,A,1+2.5*y*p.range(.6,1),I,a[6],.45*y)}),mt(t,s,12,n.seed+1,r=>r.range(1.2,2.2),(r,l,p)=>{let m=p.range(-.7,.7)*e,A=r/l,R=m+Math.sin(A*6+p.range(0,6))*2,y=Mt+e*.75-A*e*1.4;Math.hypot(R,y-Mt)>e-2||(o.dot(R,y,A<.5?a[6]:a[5],Math.sin(A*Math.PI)),o.light(R,y,a[5],.4*Math.sin(A*Math.PI)))})}var ao={};et(ao,{create:()=>U1,meta:()=>N1});var no=C("#0d0a12"),L1=C("#1a1422"),H1=Math.atan2(-1,-1);function or(o){return o=C(o),{light:tt(gt(o,1.35),I,.08),body:o,shade:gt(o,.64),dust:tt(gt(o,1.2),Dt(150,140,150),.3),lip:tt(gt(o,1.55),I,.12)}}function sr(o,t,n,{len:a=[7,10],w:e=[1.5,2.1],fwd:s=1.8,back:i=.6,jag:f=1,jit:u=.18}={}){return Array.from({length:t},(g,h)=>{let c=n+h/t*T+o.range(-u,u),r=Math.cos(c-n),l=o.range(a[0],a[1])*(1+s*Math.pow(Math.max(0,r),3)+i*Math.pow(Math.max(0,-r),3))*(h%2?f:1);return{a:c,len:l,w:o.range(e[0],e[1])*(h%2?Math.sqrt(f):1)}})}function Mn(o,t,n,a,e,s,[i,f,u,g],h=1,c=2.4){for(let l=0;l<3;l++)for(let p of a){let m=Math.cos(p.a),A=Math.sin(p.a),R=p.len*e;for(let y=0;y<=R&&!(l===2&&y>R*.55);y+=.5){let d=p.w*s*(1-y/R)*Math.min(1,.5+y/3),b=l===0?d+.8:l===1?d:d*.45,k=l===0?i:l===1?y<R*.35?u:f:g;for(let w=-b;w<=b;w+=.5)o.dot(t+m*y-A*w,n+A*y+m*w,k,h)}}let r=c*e*Math.sqrt(s);o.circle(t,n,r+.8,u,h),o.circle(t,n,r,g,h)}function Fa(o,t,n,a,e,s,i,f,u=f,g=1,h=1,c=1/0){if(a<=0||g<=0)return;let r=T/s.length;for(let l of s){let p=r*(1-l.gap*i)+.02,m=a*(1+l.dr*i),A=Math.max(4,Math.ceil(m*p*1.8));for(let R=0;R<=A;R++){let y=R/A,d=l.a+(y-.5)*p,b=Math.max(.5,e*(l.w??1)*(1-i*Math.pow(Math.abs(2*y-1),1.6))),k=Math.cos(d),w=Math.sin(d);for(let x=-b/2;x<=b/2+.01;x+=.5)n+w*(m+x)*h<c&&o.dot(t+k*(m+x),n+w*(m+x)*h,x>-.26?f:u,g)}}}function er(o,t,n,a,e,{jit:s=.55,steer:i=.45,step:f=[2,4],maxY:u=1/0,d0:g=0}={}){let h=[[t,n,g]],c=0,r=a;for(;c<e-.01;){let l=Math.min(e-c,o.range(f[0],f[1]));r+=o.range(-s,s)+(a-r)*i,t+=Math.cos(r)*l,n=L(n+Math.sin(r)*l,.5,u),c+=l,h.push([t,n,g+c])}return h}function rr(o,t,{len:n=[14,40],dive:a=.85,maxY:e=22,forks:s=.5,x0:i=[1,5]}={}){let f=[];for(let u=0;u<t;u++){let g=u%2?1:-1,h=.06+Math.pow(o.next(),1.7)*a,c=o.range(n[0],n[1])*(1-.5*h/(a+.06)),r=g>0?h:Math.PI-h,l=er(o,g*o.range(i[0],i[1]),o.range(.5,1.5),r,c,{maxY:e}),p={pts:l,len:c,t0:o.range(0,.035),kids:[]};for(let m=2;m<l.length-1;m++)if(o.chance(s*.4)){let[A,R,y]=l[m];p.kids.push(er(o,A,R,r+o.sign()*o.range(.45,1),o.range(3,9)*(1-.5*m/l.length),{maxY:e,d0:y,jit:.7,step:[1.5,3]}))}f.push(p)}return f}function ir(o,t,n,a,e,s,i,f=1){if(f<=0)return;let u=g=>{let h=a(g);return h>.75?e[0]:h>.5?e[1]:h>.3?e[2]:h>.12?e[3]:s};for(let g of t){let h=n(g);if(!(h<=0))for(let c of[g.pts,...g.kids])for(let r=1;r<c.length;r++){let[l,p,m]=c[r-1],[A,R,y]=c[r];if(m>=h)break;let d=y>h?(h-m)/(y-m):1,b=l+(A-l)*d,k=p+(R-p)*d;o.line(l,p+1,b,k+1,i,x=>G(Math.round(l+(b-l)*x),Math.round(p+(k-p)*x),5)<.3?f*.8:0),o.line(l,p,b,k,x=>u(m+(y-m)*d*x),f);let w=a(m);w>.12&&o.glow((l+b)/2,(p+k)/2,4+w*4,e[2],.22*w*f)}}}function cr(o,t,n,a,e,s,i=1){if(a<1||e<.3||i<=0)return;let f=a*.8,u=-a*.2,g=Math.max(2,a*.55),h=n>0?t-g-e-1:t-1,c=n>0?t+1:t+g+e+1;o.shade(h,-a-1,c,0,(r,l,p)=>{if(l>0)return;let m=(l-u)/f;if(m<=-1||m>=1)return;let A=1-m*m,R=g*Math.sqrt(A)-g,y=e*Math.pow(A,.45),d=(R-(r-t)*n)/Math.max(.5,y);d<0||d>1||(p.c=d<.28?s[0]:d<.62?s[1]:s[2],p.a=i*(m<-.8?.7:1)*(d>.7?1.25-d*.8:1))})}var fr=(o,t=6)=>Array.from({length:t},()=>o.range(.7,1.12));function hr(o,t,n){let a=.75+t.s*.8,e=t.pts.length,s=Math.min(1,t.life/.5),i=Math.cos(t.a),f=Math.sin(t.a);o.shade(t.x-a-2,t.y-a-2,t.x+a+2,t.y+a+2,(u,g,h)=>{let c=u-t.x,r=g-t.y,l=c*i+r*f,p=-c*f+r*i,m=Math.hypot(l,p),A=Math.atan2(p,l);A<0&&(A+=T);let R=A/T*e,y=Math.floor(R)%e,d=R-Math.floor(R),b=a*(t.pts[y]*(1-d)+t.pts[(y+1)%e]*d);if(m>b+.85)return;if(h.a=s,m>b)return L1;let k=Math.cos((y+.5)/e*T+t.a-H1);return m<b*.42?k>.55?n.light:n.body:k>.35?n.light:k<-.4?n.shade:n.body})}var N1={name:"Critical hit",desc:"A critical hit: a jagged starburst slams in white and overshoots, a ring breaks into flying arcs, sparks streak off, shards tumble to the floor under a big flare.",tags:["impact","hit","crit","critical","combat","directional","one-shot"],size:[216,136],origin:[84,106],duration:.9,loop:!1,fps:30,bg:"ground",options:{palette:["#2a0510","#5c0a1c","#a3142a","#e0302c","#ff7a2a","#ffc23d","#fff09a","#ffffff"],height:26,aim:.12,seed:3}},Oa=[[0,1,1,1,[6,7,7,7]],[.025,1.3,1,1,[2,5,6,7]],[.058,1.05,.72,1,[2,4,5,6]],[.092,1.22,.3,1,[1,2,3,4]],[.125]];function z1(o,t,n,a,e,s){for(let[i,f,u]of[[1,0,a],[0,1,a*.45],[.7,.7,a*.16],[.7,-.7,a*.16]])for(let g of[-1,1])for(let h=1;h<=u;h++){let c=h/u,r=c<.7?1:e*(1.6-c);if(o.dot(t+g*i*h,n+g*f*h,c<.35?I:c<.7?s[6]:s[5],r),f===0&&c<.42)for(let l of[-1,1])o.dot(t+g*h,n+l,c<.2?s[6]:s[5],c<.3?1:e)}o.glowLine(t-a,n,t+a,n,6,s[6],.5*e),o.glowLine(t,n-a*.45,t,n+a*.45,4,s[6],.3*e)}function U1(o){let t=Y(o.palette,8),n=new X(o.seed),a=0,e=-o.height,s=o.aim,i=()=>0,f=new V({rng:n,ground:i,sparks:[t[7],t[6],t[5],t[3]]}),u=new lt({ground:i}),g=new Z,h=sr(n,14,s,{len:[11,15],w:[1.8,2.5],fwd:1.4,back:.6,jag:.5});[...h].sort((l,p)=>p.len-l.len).slice(0,2).forEach(l=>l.len*=1.3);let c=Array.from({length:7},(l,p)=>{let m=s+p/7*T;return{a:m,gap:n.range(.55,.85),dr:n.range(.08,.4)+.15*Math.max(0,Math.cos(m-s)),w:.7+.5*Math.max(0,Math.cos(m-s))}});g.add(a,e,84,t[5],.6,.5),g.add(a,e,30,I,.7,.1),g.add(a,-4,44,t[4],.3,.45);for(let l=0;l<36;l++){let p=n.chance(.22),m=(p?s+Math.PI:s)+n.range(-1,1)*(p?.6:.8),A=n.range(170,430)*(p?.6:1);f.spawn(S.SPARK,a,e,Math.cos(m)*A,Math.sin(m)*A-50,n.range(.15,.5),I,1,n.chance(.3)?n.range(0,.04):0)}for(let l=0;l<10;l++){let p=s+n.range(-1,1)*1.1-.35,m=n.range(110,280);u.add({kind:Q.SHARD,x:a,y:e,vx:Math.cos(p)*m,vy:Math.sin(p)*m-40,g:.8,drag:.7,bounce:.35,life:n.range(.55,.85),a:n.range(0,T),va:n.range(-25,25),s:n.range(2,4.5),c:n.pick([t[7],t[6],t[6],t[5]])})}for(let l=0;l<12;l++){let p=s-Math.PI/2+n.range(-1.4,1.4),m=n.range(35,110);f.spawn(S.MOTE,a+Math.cos(p)*4,e+Math.sin(p)*4,Math.cos(p)*m,Math.sin(p)*m-15,n.range(.35,.7),n.pick([t[6],t[5],t[5]]),.6,n.range(0,.05))}for(let l=0;l<5;l++){let p=n.range(0,T),m=n.range(14,34);f.spawn(S.STAR,a+Math.cos(p)*m,e+Math.sin(p)*m*.8,0,-4,n.range(.22,.38),n.chance(.5)?t[6]:I,n.range(1.6,3),n.range(.08,.32))}let r=0;return{update(l){r+=l,f.update(l),u.update(l),g.update(l)},draw(l){let p=L((r-.03)/.37);if(r>=.03&&p<1){let R=10+30*U.outCubic(p),y=z(.12,.6,p),d=Math.max(1,3.6*Math.pow(1-p,1.2)),b=p<.12?7:p<.3?6:p<.5?5:p<.75?4:3;Fa(l,a,e,R,d,c,y,t[b],t[Math.max(2,b-2)],p<.6?1:(1-p)/.4,1,0),p<.6&&l.glowRing(a,e,R,6,t[5],.35*Math.pow(1-p/.6,2))}u.draw(l),f.draw(l);let m=(r-.04)/.28;m>0&&m<1&&(z1(l,a,e,64*Math.pow(1-m,1.3),1-m,t),l.glow(a,e,56,t[5],.4*(1-m)));for(let R=0;R<Oa.length-1;R++)if(r>=Oa[R][0]&&r<Oa[R+1][0]){let[,y,d,b,k]=Oa[R];Mn(l,a,e,h,y,d,k.map(w=>t[w]),b,2.6)}let A=Math.exp(-r/.05);A>.02&&(l.glow(a,e,44,t[5],.4*A),l.glow(a,e,12,I,.6*A)),g.draw(l)}}}var eo={};et(eo,{create:()=>K1,meta:()=>j1});var j1={name:"Parry",desc:"Two blades clash: their edges flash in an X, a white four-point star rings out, a ring breaks into arcs and a fan of gold sparks sprays up and rains down.",tags:["impact","parry","block","clash","sword","metal","sparks","one-shot"],size:[200,112],origin:[100,96],duration:1,loop:!1,fps:30,bg:"ground",options:{palette:["#2a1a08","#6a4410","#b07a1a","#e8b030","#ffe066","#fff6c4","#ffffff"],height:30,seed:11}};function K1(o){let t=Y(o.palette,7),n=new X(o.seed),a=0,e=-o.height,s=()=>0,i=new V({rng:n,ground:s,sparks:[t[4],t[4],t[3],t[2]]}),f=new Z,u=[];for(let r=0;r<8;r++)u.push({a:r*Math.PI/4+n.range(-.04,.04),len:r%2?n.range(6,8):r%4===0?n.range(19,22):n.range(14,17),w:r%2?1.2:2.2});let g=Array.from({length:6},(r,l)=>({a:l/6*T+n.range(-.1,.1),gap:n.range(.55,.8),dr:n.range(.1,.35)})),h=[-.62+n.range(-.08,.08),Math.PI+.62+n.range(-.08,.08)];f.add(a,e,60,t[4],.65,.4),f.add(a,e,22,I,.8,.08);for(let r=0;r<24;r++){let l=r%2?1:-1,p=-Math.PI/2+l*n.range(.3,1.3),m=n.range(130,290);i.spawn(S.SPARK,a+l*n.range(1,3),e,Math.cos(p)*m,Math.sin(p)*m,n.range(.45,.85),I,1,r>17?n.range(.02,.07):0)}for(let r=0;r<8;r++){let l=n.range(0,T),p=n.range(40,110);i.spawn(S.MOTE,a,e,Math.cos(l)*p,Math.sin(l)*p-20,n.range(.3,.55),n.pick([t[5],t[6]]),.6,n.range(0,.04))}for(let r=0;r<3;r++){let l=n.range(0,T),p=n.range(12,26);i.spawn(S.STAR,a+Math.cos(l)*p,e+Math.sin(l)*p,0,-3,n.range(.22,.34),I,n.range(1.6,2.6),n.range(.1,.3))}let c=0;return{update(r){c+=r,i.update(r),f.update(r)},draw(r){let l=(c-.03)/.36;if(l>=0&&l<1){let m=8+24*U.outCubic(l),A=z(.15,.6,l),R=l<.15?6:l<.35?5:l<.6?4:3;Fa(r,a,e,m,Math.max(1,2.6*Math.pow(1-l,1.2)),g,A,t[R],t[Math.max(2,R-2)],l<.6?1:(1-l)/.4,1,0),l<.5&&r.glowRing(a,e,m,5,t[4],.3*(1-l/.5))}if(i.draw(r),c<.058)for(let m of h){let A=Math.cos(m),R=Math.sin(m),y=c<.025?26:32,d=c<.025?1:.6;for(let b=-y;b<=y;b+=.5){let k=Math.abs(b)/y;r.dot(a+A*b,e+R*b,k<.4?I:k<.75?t[5]:t[4],k<.6?1:d*(1.3-k))}r.glowLine(a-A*y,e-R*y,a+A*y,e+R*y,4,t[5],.35*d)}c<.025?Mn(r,a,e,u,1,1,[t[4],I,I,I],1,2.6):c<.058?Mn(r,a,e,u,1.25,.65,[t[2],t[5],t[6],I],1,2.6):c<.092&&Mn(r,a,e,u,1.4,.3,[t[2],t[4],t[5],t[6]],1,2);let p=Math.exp(-c/.05);p>.02&&(r.glow(a,e,30,t[4],.5*p),r.glow(a,e,10,I,.4*p)),f.draw(r)}}}var so={};et(so,{create:()=>C1,meta:()=>W1});var W1={name:"Hit spark",desc:"The everyday hit: a sharp, lopsided cross flare with one long ray along the blow round a white diamond core, then a cone of sparks and hot chips that fall and bounce.",tags:["impact","hit","spark","combat","directional","one-shot"],size:[136,80],origin:[44,64],duration:.5,loop:!1,fps:30,bg:"ground",options:{palette:["#4a1712","#c9281f","#f2561d","#ff8a2a","#ffe26b","#fff3a6","#ffffff"],height:20,aim:.1,seed:4}};function oo(o,t,n,a,e,s,i,f=0){let u=Math.cos(a),g=Math.sin(a);for(let h=f*e;h<=e;h+=.5){let c=h/e,r=s*Math.pow(1-c,1.6),l=c<.3?I:c<.62?i[5]:c<.88?i[4]:i[3];if(o.px(t+u*h,n+g*h,l),r>.45)for(let p=.5;p<=r;p+=.5)for(let m of[-p,p])o.px(t+u*h-g*m,n+g*h+u*m,c<.3&&p<1?i[5]:i[4])}}function lr(o,t,n,a,e){for(let s=-a-1;s<=a+1;s++)for(let i=-a-1;i<=a+1;i++){let f=Math.abs(i)+Math.abs(s);f<=a?o.px(t+i,n+s,I):f===a+1&&o.px(t+i,n+s,e[3])}}function C1(o){let t=Y(o.palette,7),n=new X(o.seed),a=0,e=-o.height,s=o.aim,i=()=>0,f=new V({rng:n,ground:i,sparks:[t[6],t[5],t[4],t[2]]}),u=new Z,g=n.range(-.08,.08),h=[{a:s+g,L:n.range(33,37),w:2.2},{a:s+Math.PI+g,L:n.range(8,10),w:2.2},{a:s-Math.PI/2+g,L:n.range(15,18),w:2.6},{a:s+Math.PI/2+g,L:n.range(10,12),w:2.3},{a:s-Math.PI/4+g,L:n.range(5,7),w:1}];u.add(a,e,38,t[4],.35,.18),u.add(a+Math.cos(s)*10,e+Math.sin(s)*10,22,t[5],.45,.1),u.add(a,-2,26,t[3],.22,.22);for(let r=0;r<9;r++){let l=s+n.range(-.6,.6)-.15,p=n.range(170,360);f.spawn(S.SPARK,a+1,e,Math.cos(l)*p,Math.sin(l)*p-40,n.range(.25,.45),I,1,r>6?n.range(.01,.03):0)}for(let r=0;r<6;r++){let l=s+n.range(-1.1,.5)-.3,p=n.range(70,170);f.spawn(S.GRIT,a+1,e,Math.cos(l)*p,Math.sin(l)*p-n.range(30,80),n.range(.35,.45),n.pick([t[5],t[4],t[4],t[3]]),1)}let c=0;return{update(r){c+=r,f.update(r),u.update(r)},draw(r){if(f.draw(r),c<.025){for(let p of h)oo(r,a,e,p.a,p.L,p.w,t);lr(r,a,e,4,t)}else if(c<.058){for(let p of h)oo(r,a,e,p.a,p.L*1.2,p.w*.55,t,.12);lr(r,a,e,3,t)}else if(c<.092){let p=h[0];oo(r,a,e,p.a,p.L*1.3,.6,[t[0],t[1],t[2],t[3],t[3],t[4]],.4)}let l=Math.exp(-c/.045);l>.02&&(r.glow(a,e,22,t[4],.3*l),r.glow(a,e,7,I,.15*l),r.glowLine(a,e,a+Math.cos(s)*26,e+Math.sin(s)*26,4,t[5],.25*l)),u.draw(r)}}}var ro={};et(ro,{create:()=>G1,meta:()=>gr});var gr={name:"Ground slam",desc:"Something lands hard: the floor flashes and cracks, two crescent shock waves race out along it, a dust wave and a tall dust cloud rise, rocks erupt, bounce and settle.",tags:["impact","ground","slam","shockwave","quake","rocks","dust","one-shot"],size:[288,208],origin:[144,164],duration:3.2,loop:!1,fps:30,bg:"ground",options:{palette:["#2a1712","#5e2c1c","#a4502a","#e8893a","#ffc764","#fff0b4","#ffffff"],stone:"#4a3f69",reach:104,seed:5}},Ba=.6;function Y1(o,t,n,a,e){for(let s=-12;s<=11;s++){let i=Math.abs(s+.5)/12,f=Math.round(2.6*(1-i*i));if(i<.84){for(let u=0;u<f;u++)o.dot(s,u,no,e);o.dot(s,f,n>.5?a[5]:n>.2?a[4]:t.lip,e)}else o.dot(s,-1,i>.93?t.light:t.lip,e),i<.9&&o.dot(s,-2,t.light,e*.8)}}function G1(o){let t=Y(o.palette,7),n=or(o.stone),a=o.reach,e=new X(o.seed),s=()=>0,i=gr.duration,f=new V({rng:e,ground:s,sparks:[t[6],t[5],t[4],t[3]]}),u=new lt({ground:s}),g=new Z,h=[I,t[5],t[4],t[3]],c=tt(n.dust,I,.2),r=rr(e,10,{len:[22,58],dive:.55,maxY:22,forks:.7,x0:[2,9]}),l=w=>7+(a-7)*U.outCubic(L((w-.015)/Ba)),p=w=>Math.pow(L(1-w/.8),1.4),m=w=>[6+28*Math.pow(1-w,.75),1.5+5*Math.pow(1-w,.9)],A=[{a:-.07,len:e.range(34,40),w:1.9},{a:Math.PI+.07,len:e.range(34,40),w:1.9},{a:-.42+e.range(-.08,.08),len:e.range(15,20),w:1.5},{a:-Math.PI+.42+e.range(-.08,.08),len:e.range(15,20),w:1.5},{a:-Math.PI/2+e.range(-.15,.15),len:e.range(18,24),w:1.7},{a:-1.05+e.range(-.1,.1),len:e.range(10,14),w:1.2},{a:-Math.PI+1.05+e.range(-.1,.1),len:e.range(10,14),w:1.2}],R=[];for(let w of r)for(let[x,M,v]of w.pts)v>3&&v<32&&e.chance(.25)&&R.push({x,y:M,d:v,life:e.range(.8,2.2),ph:e.range(0,T)});g.add(0,-12,96,t[4],.6,.6),g.add(0,-4,50,I,.9,.14);for(let w=0;w<56;w++){let x=w<14,M=e.sign(),v=x?M>0?-e.range(.04,.6):Math.PI+e.range(.04,.6):-Math.PI/2+e.range(-1.15,1.15),E=x?e.range(150,380):e.range(200,500);f.spawn(S.SPARK,e.range(-4,4),-1,Math.cos(v)*E,Math.sin(v)*E,x?e.range(.2,.5):e.range(.25,.65),I,1,x?0:e.range(0,.05))}for(let w=0;w<20;w++){let x=w<3?4:e.int(1,3),M=-Math.PI/2+e.range(-.5,.5),v=x>3?e.range(110,190):e.range(170,380)*(x>2?.8:1);u.add({kind:Q.CHUNK,x:e.range(-7,7),y:-2,vx:Math.cos(M)*v,vy:Math.sin(M)*v,g:1,drag:.4,bounce:.38,life:e.range(1.9,2.7),a:e.range(0,T),va:e.range(-14,14),s:x,pts:fr(e),pvy:0})}for(let w=0;w<110;w++){let x=e.range(-1,1),M=-Math.PI/2+x*.65,v=e.range(110,380)*(1-.35*Math.abs(x));f.spawn(S.GRIT,x*6,-1,Math.cos(M)*v,Math.sin(M)*v,e.range(1,2.2),e.pick([n.light,n.body,n.body,n.shade,n.shade,n.lip]),e.chance(.35)?2:1)}for(let w=0;w<28;w++){let x=w<14,M=e.sign();f.spawn(S.SMOKE,x?e.range(-5,5):M*e.range(4,12),-e.range(2,10),x?e.range(-12,12):M*e.range(14,38),-e.range(50,130)*(x?1:e.range(.3,.6)),e.range(1.9,2.7),e.chance(.35)?c:n.dust,x?e.range(4.5,9):e.range(4,7.5),e.range(.02,.22),ot.BIG)}for(let w=0;w<10;w++){let x=e.sign();f.spawn(S.SMOKE,x*e.range(2,14),-e.range(2,6),x*e.range(20,70),-e.range(4,20),e.range(1.4,2.3),n.dust,e.range(6,9),e.range(0,.08),ot.BIG)}for(let w=0;w<26;w++)f.spawn(S.FLAKE,e.range(-22,22),-e.range(14,80),e.range(-12,12),e.range(-10,4),e.range(1.2,2),e.chance(.5)?n.lip:c,e.range(.5,1.2),e.range(.25,1));let y=0,d=[e.next(),e.next()],b=(w,x)=>{let M=L((y-.015)/(Ba+.1));y<.015||M>=.9||bt(w,0,.5,l(y)+1,.16,Math.max(1,4*Math.pow(1-M,.8)),M<.55?1.1:(.9-M)/.35,M<.35?[t[3],t[4],t[5],t[6]]:[n.body,n.light,t[4],t[5]],v=>Math.sin(v)<0===x,y<.09)},k=w=>{let x=L((y-.03)/(Ba+.16));if(y<.03||x>=1)return;let M=l(y),[v,E]=m(x),P=x<.7?1:(1-x)/.3,D=x<.14?[I,t[6],t[5]]:x<.34?[t[6],t[5],t[4]]:x<.55?[t[5],t[4],n.lip]:[n.lip,n.light,n.dust];for(let B of[-1,1])cr(w,B*M,B,v,E,D,P),w.glow(B*M,-v*.3,8+v*.7,t[4],.5*(1-x)*P)};return{update(w){y+=w;let x=L((y-.015)/Ba);if(x>0&&x<1){let M=l(y),[v]=m(x);for(let E=0;E<2;E++){let P=E?1:-1;for(d[E]+=w*120*(1-x*.7);d[E]>1;d[E]--)f.spawn(S.SMOKE,P*(M-e.range(1,7)),-e.range(.5,3),P*e.range(15,70)*(1-x),-e.range(2,12),e.range(1,2.1),e.chance(.3)?c:n.dust,e.range(2.5,6.5)*(1-.4*x),0,ot.BIG),e.chance(.5)&&f.spawn(S.DUST,P*(M-e.range(0,3)),-e.range(.3,.9)*v,P*e.range(-15,25),-e.range(8,35),e.range(.3,.6),e.chance(.5)?c:n.dust,e.range(1.2,2.4)),e.chance(.4)&&f.spawn(S.GRIT,P*M,-1,P*e.range(10,60),-e.range(40,140)*(1-x),e.range(.5,1),e.pick([n.light,n.body,n.lip]),1),x<.45&&e.chance(.2)&&f.spawn(S.SPARK,P*M,-1,P*e.range(60,200),-e.range(30,160),e.range(.12,.3))}}for(let M of u.list)M.pvy=M.vy;u.update(w);for(let M of u.list)if(M.pvy>70&&M.vy<=0){let v=M.pvy>200?3:2;for(let E=0;E<v;E++)f.spawn(S.DUST,M.x+e.range(-1.5,1.5),-.5,e.sign()*e.range(8,35),-e.range(2,16),e.range(.3,.65),n.dust,e.range(1.3,2.4)*(.7+M.s*.25));M.pvy=0}f.update(w),g.update(w)},drawBack(w){let x=1-z(i-.9,i-.15,y),M=p(y);y>.02&&Y1(w,n,M,t,x),ir(w,r,v=>v.len*U.outCubic(L((y-v.t0)/.1)),v=>M*L(1.2-v/40),h,no,n.light,x);for(let v of R){let E=1-(y-.1)/v.life;if(y<.1||E<=0)continue;let P=.6+.4*Math.sin(y*23+v.ph);w.px(v.x,v.y,E*P>.55?t[5]:E*P>.25?t[4]:t[3]),w.glow(v.x,v.y,4,t[4],.35*E*P)}b(w,!0),f.draw(w,"back")},draw(w){b(w,!1),k(w);for(let M of u.list)hr(w,M,n);f.draw(w,"front"),y<.035?(w.ellipse(0,0,30,4.5,M=>M>.8?t[4]:M>.5?t[6]:I),Mn(w,0,-1,A,1,1,[t[4],t[6],I,I])):y<.07&&Mn(w,0,-1,A,1.25,.5,[t[3],t[5],t[6],I]),y<.14&&w.glowLine(-80,0,80,0,10,t[5],.55*(1-y/.14));let x=p(y);x>0&&w.glow(0,1,46,t[4],.35*x),g.draw(w)}}}var J1={ice_lance:qa,frost_nova:Qa,ice_spikes:te,ice_shatter:ae,blizzard_vortex:ee,icicle_fall:se,snowflake_burst:re,ice_crystal:fe,water_jet:ge,wave_crash:Me,splash:me,sword_slash:ye,double_slash:Pe,claw_swipe:De,heavy_cleave:Oe,fireball:Ne,flame_pillar:ze,fire_ring:je,eclipse:We,shadow_tendrils:Ye,magic_circle_cast:qe,time_stop:Qe,divine_shield:to,crit_hit:ao,parry:eo,hit_spark:so,ground_slam:ro};return mr(_1);})();
+return PixelFX;
+}
+
+  /* -------------------- 统一对外暴露接口 -------------------- */
+  global.VfxEditionA = {
+    meta: {
+      id: 'edition_a',
+      name: '方案 A · 原版炫彩连贯进化版',
+      subtitle: '保留原版 PixelFX 明亮电光冰蓝体量，彻底修复连贯性、并发上限与断档',
+      styleTag: '炫彩明亮像素 · 无缝连贯升级',
+      palette: ['#38BDF8', '#0EA5E9', '#67E8F9', '#FFFFFF', '#FDE68A']
+    },
+    SKILLS,
+    create
+  };
+})(typeof window !== 'undefined' ? window : globalThis);

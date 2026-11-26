@@ -1,0 +1,1877 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1440, initial-scale=1.0" />
+<title>方案 B · 七色阶 × 宫廷珐琅纹章印记</title>
+<style>
+  :root {
+    --font-serif: 'Noto Serif CJK SC', 'Noto Serif SC', 'Source Han Serif SC', 'Liberation Serif', Georgia, serif;
+    --font-sans: 'Noto Sans CJK SC', 'Noto Sans SC', 'Liberation Sans', sans-serif;
+    --font-mono: 'Noto Sans Mono CJK SC', 'DejaVu Sans Mono', monospace;
+
+    --snow-page: #EEF3FA;
+    --snow-card: #FAFBFD;
+    --snow-hi: #FFFFFF;
+    --ink: #172236;
+    --ink-body: #334460;
+    --ink-muted: #5C6F8C;
+    --sapphire: #1658EB;
+    --sapphire-deep: #0E2B78;
+    --cyan: #7DD3FC;
+    --gold: #C4A46C;
+    --gold-deep: #8A6628;
+    --crimson: #D13456;
+    --crimson-deep: #981936;
+    --hairline: rgba(34, 58, 102, 0.14);
+    --hairline-strong: rgba(34, 58, 102, 0.26);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    width: 1440px;
+    height: 900px;
+    overflow: hidden;
+    background: var(--snow-page);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+  }
+
+  /* 全屏雪瓷展板：极淡古典书志经纬暗格 + 雪瓷冰白基底 */
+  .board {
+    position: relative;
+    width: 1440px;
+    height: 900px;
+    padding: 13px 22px 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background:
+      linear-gradient(90deg, rgba(22, 88, 235, 0.028) 1px, transparent 1px) 0 0 / 72px 72px,
+      linear-gradient(180deg, rgba(22, 88, 235, 0.028) 1px, transparent 1px) 0 0 / 72px 72px,
+      linear-gradient(180deg, #F7FAFE 0%, #EEF3FA 56%, #E7EEF8 100%);
+  }
+
+  /* 顶部宫廷皇家蓝 + 香槟金冠线 */
+  .board::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #0E2B78 0%, #1658EB 36%, #C4A46C 70%, #E7D5AE 100%);
+  }
+
+  /* =========================================================
+     1. 顶部紧凑标题栏
+     ========================================================= */
+  .board-header {
+    flex: 0 0 48px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 18px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid var(--hairline-strong);
+    position: relative;
+  }
+
+  .board-header::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    width: 210px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--sapphire) 0%, var(--gold) 100%);
+  }
+
+  .bh-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .bh-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-serif);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: var(--gold-deep);
+    text-transform: uppercase;
+  }
+
+  .bh-eyebrow-rule {
+    display: inline-block;
+    width: 18px;
+    height: 1px;
+    background: var(--gold);
+  }
+
+  .bh-title {
+    font-family: var(--font-serif);
+    font-size: 21.5px;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+  }
+
+  .bh-title .accent {
+    color: var(--sapphire-deep);
+  }
+
+  .bh-mid {
+    flex: 1;
+    padding-left: 16px;
+    border-left: 1px solid var(--hairline-strong);
+    font-family: var(--font-serif);
+    font-size: 12px;
+    line-height: 1.48;
+    color: var(--ink-body);
+    padding-bottom: 1px;
+  }
+
+  .bh-mid b {
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  .bh-meta {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding-bottom: 2px;
+  }
+
+  .bh-meta-item {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-body);
+    padding: 2px 10px;
+    border-left: 1px solid var(--hairline-strong);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .bh-meta-item:first-child {
+    border-left: none;
+    padding-left: 0;
+  }
+
+  .bh-meta-item em {
+    font-style: normal;
+    color: var(--sapphire);
+    margin-right: 4px;
+  }
+
+  /* =========================================================
+     通用区块顶标
+     ========================================================= */
+  .sec-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    height: 21px;
+    flex-shrink: 0;
+  }
+
+  .sec-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-serif);
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--ink);
+  }
+
+  .sec-num {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #FFFFFF;
+    background: var(--sapphire-deep);
+    padding: 1px 6px;
+    letter-spacing: 0.06em;
+  }
+
+  .sec-sub {
+    font-size: 11px;
+    color: var(--ink-muted);
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .sec-divider-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-body);
+  }
+
+  .swatch-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    transform: rotate(45deg);
+  }
+
+  /* =========================================================
+     核心组件：方案 B · 宫廷哑光珐琅 × 书志切角纹章印记 (.rank-seal)
+     - 严格零圆角、零玻璃反光、零霓虹模糊外光
+     - 外层 1px 闭合切角掐丝金属边 + 内层哑光矿物珐琅釉面
+     - 左侧金属柱 + 1px 凹嵌掐丝暗槽 + 专属 SVG 纹章刻符 + 1px 竖细线 + 衬线阶名
+     ========================================================= */
+  .rank-seal {
+    --seal-cut: 5px;
+    --seal-wire: #9CA9BC;
+    --seal-pillar: #7C899E;
+    --seal-pillar-groove: rgba(25, 36, 56, 0.16);
+    --seal-bg-top: #F4F4F0;
+    --seal-bg-bot: #E7E9E5;
+    --seal-rule: rgba(58, 72, 96, 0.30);
+    --seal-glyph: #49576E;
+    --seal-text: #2B374C;
+    --seal-texture-opacity: 0.05;
+
+    position: relative;
+    display: inline-flex;
+    align-items: stretch;
+    vertical-align: middle;
+    padding: 1px;
+    background: var(--seal-wire);
+    clip-path: polygon(
+      0 0,
+      calc(100% - var(--seal-cut)) 0,
+      100% var(--seal-cut),
+      100% 100%,
+      0 100%
+    );
+    flex-shrink: 0;
+    user-select: none;
+    line-height: 1;
+  }
+
+  .rank-seal-in {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 7px 0 0;
+    background: linear-gradient(180deg, var(--seal-bg-top) 0%, var(--seal-bg-bot) 100%);
+    clip-path: polygon(
+      0 0,
+      calc(100% - var(--seal-cut) + 0.5px) 0,
+      100% calc(var(--seal-cut) - 0.5px),
+      100% 100%,
+      0 100%
+    );
+    overflow: hidden;
+  }
+
+  /* 极细哑光矿物珐琅微颗粒层（手工瓷釉手感，零玻璃反光） */
+  .rank-seal-in::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: var(--seal-texture-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.90' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='64' height='64' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  }
+
+  /* 左侧垂直阶位掐丝金属柱 + 右缘 1px 凹嵌掐丝缝 */
+  .rs-pillar {
+    width: 3px;
+    align-self: stretch;
+    background: var(--seal-pillar);
+    box-shadow: 1px 0 0 var(--seal-pillar-groove);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* 左侧专属几何等阶刻符 */
+  .rs-glyph {
+    width: 17px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--seal-glyph);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .rs-glyph svg {
+    width: 11.5px;
+    height: 11.5px;
+    display: block;
+  }
+
+  /* 书志 1px 极细竖分隔线 */
+  .rs-rule {
+    width: 1px;
+    height: 11px;
+    background: var(--seal-rule);
+    margin-right: 5px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* 典雅衬线阶位文字 */
+  .rs-text {
+    font-family: var(--font-serif);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--seal-text);
+    line-height: 1;
+    padding-right: 2px;
+    position: relative;
+    z-index: 1;
+    white-space: nowrap;
+  }
+
+  /* 神级右侧微星缀饰（凸显至高神格，仅 tier-7 显示） */
+  .rs-crown-dot {
+    display: none;
+    width: 4px;
+    height: 4px;
+    transform: rotate(45deg);
+    background: #FFE799;
+    margin-left: 2px;
+    margin-right: 1px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .rank-seal.tier-7 .rs-crown-dot {
+    display: inline-block;
+  }
+
+  /* ---------- 2× 材质与刻符特写尺寸 ---------- */
+  .rank-seal.size-2x {
+    --seal-cut: 10px;
+    padding: 1.5px;
+    filter: drop-shadow(0 4px 10px rgba(20, 32, 58, 0.12));
+  }
+
+  .rank-seal.size-2x .rank-seal-in {
+    height: 40px;
+    padding: 0 14px 0 0;
+  }
+
+  .rank-seal.size-2x .rs-pillar {
+    width: 6px;
+  }
+
+  .rank-seal.size-2x .rs-glyph {
+    width: 34px;
+    height: 40px;
+  }
+
+  .rank-seal.size-2x .rs-glyph svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .rank-seal.size-2x .rs-rule {
+    width: 1px;
+    height: 22px;
+    margin-right: 10px;
+  }
+
+  .rank-seal.size-2x .rs-text {
+    font-size: 22px;
+    letter-spacing: 0.1em;
+    padding-right: 3px;
+  }
+
+  .rank-seal.size-2x .rs-crown-dot {
+    width: 6px;
+    height: 6px;
+    margin-left: 5px;
+    margin-right: 2px;
+  }
+
+  /* ---------- 七大等阶严格配色：白 → 绿 → 蓝 → 紫 → 橙 → 红 → 彩 ---------- */
+
+  /* 1. 初级 · 白（素银羊皮白）— 温润羊皮素白 × 素银掐丝，在雪瓷卡上锐利脱底 */
+  .rank-seal.tier-1 {
+    --seal-wire: #9CA9BC;
+    --seal-pillar: #7A879C;
+    --seal-pillar-groove: rgba(34, 46, 68, 0.14);
+    --seal-bg-top: #F5F4F0;
+    --seal-bg-bot: #E8EAE6;
+    --seal-rule: rgba(66, 80, 104, 0.30);
+    --seal-glyph: #4E5D75;
+    --seal-text: #2A364B;
+  }
+
+  /* 2. 中级 · 绿（松石翡翠绿）— 孔雀石哑光淡釉 × 翡翠青铜柱 */
+  .rank-seal.tier-2 {
+    --seal-wire: #5EAA90;
+    --seal-pillar: #12805B;
+    --seal-pillar-groove: rgba(10, 68, 48, 0.16);
+    --seal-bg-top: #E5F5ED;
+    --seal-bg-bot: #CFE9DD;
+    --seal-rule: rgba(14, 102, 72, 0.32);
+    --seal-glyph: #0F7251;
+    --seal-text: #0A4D37;
+  }
+
+  /* 3. 高级 · 蓝（钴青贵族蓝）— 贵族钴釉 × 皇家蓝柱 */
+  .rank-seal.tier-3 {
+    --seal-wire: #5184DB;
+    --seal-pillar: #1654CC;
+    --seal-pillar-groove: rgba(10, 38, 106, 0.18);
+    --seal-bg-top: #E0ECFC;
+    --seal-bg-bot: #C8DEFA;
+    --seal-rule: rgba(16, 62, 162, 0.32);
+    --seal-glyph: #1248B5;
+    --seal-text: #0A2B72;
+  }
+
+  /* 4. 圣级 · 紫（鸢尾皇室紫）— 超凡分水岭！深鸢尾宝石珐琅 × 香槟鎏金掐丝 */
+  .rank-seal.tier-4 {
+    --seal-wire: linear-gradient(135deg, #E5CA8E 0%, #B38B44 52%, #E0C384 100%);
+    --seal-pillar: linear-gradient(180deg, #EBD198 0%, #B88D44 100%);
+    --seal-pillar-groove: rgba(20, 8, 38, 0.42);
+    --seal-bg-top: #58318A;
+    --seal-bg-bot: #3C1D66;
+    --seal-rule: rgba(235, 209, 152, 0.44);
+    --seal-glyph: #F2D89C;
+    --seal-text: #FCF8EE;
+    --seal-texture-opacity: 0.06;
+  }
+
+  /* 5. 王级 · 橙（琥珀鎏金橙）— 醇正皇家琥珀暖橙釉 × 明鎏金丝（与冷调绯红帝级一眼拉出冷暖明度鸿沟） */
+  .rank-seal.tier-5 {
+    --seal-wire: linear-gradient(135deg, #FFE094 0%, #D98618 52%, #F7CF74 100%);
+    --seal-pillar: linear-gradient(180deg, #FFE69E 0%, #E59820 100%);
+    --seal-pillar-groove: rgba(74, 28, 2, 0.42);
+    --seal-bg-top: #D96B12;
+    --seal-bg-bot: #AD4A06;
+    --seal-rule: rgba(255, 228, 158, 0.52);
+    --seal-glyph: #FFE6A3;
+    --seal-text: #FFFBF0;
+    --seal-texture-opacity: 0.06;
+  }
+
+  /* 6. 帝级 · 红（绯红火漆红）— 冷冽勃艮第宫廷火漆绯红 × 帝国赤金丝 */
+  .rank-seal.tier-6 {
+    --seal-wire: linear-gradient(135deg, #EECA84 0%, #9E1934 48%, #E7BE72 100%);
+    --seal-pillar: linear-gradient(180deg, #EAC47A 0%, #B98638 52%, #DBA852 100%);
+    --seal-pillar-groove: rgba(42, 2, 10, 0.50);
+    --seal-bg-top: #940F2A;
+    --seal-bg-bot: #5E0618;
+    --seal-rule: rgba(242, 206, 140, 0.48);
+    --seal-glyph: #F4D28B;
+    --seal-text: #FFF5F6;
+    --seal-texture-opacity: 0.065;
+  }
+
+  /* 7. 神级 · 彩（星穹幻彩鎏金）— 中世纪星图多色矿彩珐琅 × 珍珠母贝幻彩鎏金掐丝 */
+  .rank-seal.tier-7 {
+    --seal-wire: linear-gradient(
+      120deg,
+      #74ECFF 0%,
+      #FFE691 25%,
+      #E192FF 52%,
+      #FF8FB2 77%,
+      #74ECFF 100%
+    );
+    --seal-pillar: linear-gradient(
+      180deg,
+      #78ECFF 0%,
+      #FFE58F 33%,
+      #DC8CFF 66%,
+      #FF8AB0 100%
+    );
+    --seal-pillar-groove: rgba(16, 14, 42, 0.48);
+    --seal-rule: rgba(255, 234, 168, 0.58);
+    --seal-glyph: #FFEBA8;
+    --seal-text: #FFFDF5;
+    --seal-texture-opacity: 0.06;
+  }
+
+  .rank-seal.tier-7 .rs-pillar {
+    width: 3.5px;
+  }
+
+  .rank-seal.size-2x.tier-7 .rs-pillar {
+    width: 7px;
+  }
+
+  /* 神级多色哑光星穹矿彩织锦釉：孔雀钴青 → 皇家堇紫 → 玫瑰红宝 → 圣金琥珀（1:1 一眼识彩，零霓虹感） */
+  .rank-seal.tier-7 .rank-seal-in {
+    background:
+      repeating-linear-gradient(
+        45deg,
+        rgba(255, 242, 200, 0.065) 0px,
+        rgba(255, 242, 200, 0.065) 1px,
+        transparent 1px,
+        transparent 6px
+      ),
+      repeating-linear-gradient(
+        -45deg,
+        rgba(128, 232, 255, 0.055) 0px,
+        rgba(128, 232, 255, 0.055) 1px,
+        transparent 1px,
+        transparent 6px
+      ),
+      linear-gradient(
+        106deg,
+        #16708E 0%,
+        #4F2E8C 34%,
+        #9B2766 68%,
+        #BA7A1B 100%
+      );
+  }
+
+  /* 超凡四阶极细内凹掐丝压边（哑光金属雕槽立体感，绝无玻璃斜光） */
+  .rank-seal.tier-4 .rank-seal-in::after,
+  .rank-seal.tier-5 .rank-seal-in::after,
+  .rank-seal.tier-6 .rank-seal-in::after,
+  .rank-seal.tier-7 .rank-seal-in::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    box-shadow: inset 0 1px 0 rgba(255, 244, 214, 0.24), inset 0 -1px 0 rgba(12, 6, 20, 0.34);
+  }
+
+  /* =========================================================
+     2. 中上区：全 7 阶对照陈列板
+     ========================================================= */
+  .showcase-section {
+    flex: 0 0 256px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .showcase-plate-wrap {
+    flex: 1;
+    display: flex;
+    padding: 1px;
+    background: var(--hairline-strong);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    filter: drop-shadow(0 6px 16px rgba(16, 34, 72, 0.07));
+  }
+
+  .showcase-plate {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--snow-card);
+    border-top: 2px solid var(--sapphire);
+    clip-path: polygon(0 0, calc(100% - 13.5px) 0, 100% 13.5px, 100% 100%, 9.5px 100%, 0 calc(100% - 9.5px));
+  }
+
+  .tier-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 78px repeat(7, minmax(0, 1fr));
+    min-height: 0;
+  }
+
+  .row-guide-col {
+    display: grid;
+    grid-template-rows: 26px 82px 26px 61px;
+    background: #F1F5FB;
+    border-right: 1px solid var(--hairline-strong);
+  }
+
+  .rg-cell {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 9px;
+    border-bottom: 1px solid var(--hairline);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--ink-muted);
+    letter-spacing: 0.04em;
+    line-height: 1.3;
+  }
+
+  .rg-cell:last-child {
+    border-bottom: none;
+  }
+
+  .rg-cell strong {
+    color: var(--ink);
+    font-family: var(--font-serif);
+    font-size: 11px;
+  }
+
+  .tier-col {
+    display: grid;
+    grid-template-rows: 26px 82px 26px 61px;
+    border-right: 1px solid var(--hairline);
+    position: relative;
+  }
+
+  .tier-col:last-child {
+    border-right: none;
+  }
+
+  .tier-col.col-divider {
+    border-left: 1.5px solid rgba(196, 164, 108, 0.78);
+  }
+
+  .tc-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px;
+    background: #F5F8FD;
+    border-bottom: 1px solid var(--hairline);
+    font-size: 10.5px;
+  }
+
+  .tier-col.is-transcendent .tc-head {
+    background: #F8F5EE;
+  }
+
+  .tc-num {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    color: var(--ink-muted);
+    letter-spacing: 0.06em;
+  }
+
+  .tier-col.is-transcendent .tc-num {
+    color: var(--gold-deep);
+  }
+
+  .tc-hue {
+    font-weight: 700;
+    color: var(--ink);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .tc-swatch {
+    width: 8px;
+    height: 8px;
+    display: inline-block;
+    border: 1px solid rgba(20, 34, 60, 0.22);
+  }
+
+  .tc-2x {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(rgba(30, 58, 114, 0.075) 1px, transparent 1px) 0 0 / 10px 10px,
+      #FAFBFD;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .tc-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 0 6px;
+    background: #F7F9FC;
+    border-bottom: 1px solid var(--hairline);
+    font-size: 10.5px;
+    color: var(--ink-body);
+    white-space: nowrap;
+  }
+
+  .tc-note b {
+    font-family: var(--font-serif);
+    color: var(--ink);
+  }
+
+  .tc-1x {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    background: #FAFBFD;
+    padding: 5px 8px;
+  }
+
+  .tc-1x-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .tc-1x-name {
+    font-family: var(--font-serif);
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: 0.02em;
+  }
+
+  .tc-1x-hex {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    color: var(--ink-muted);
+    letter-spacing: 0.03em;
+  }
+
+  .showcase-foot {
+    height: 29px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    background: #F1F5FB;
+    border-top: 1px solid var(--hairline-strong);
+    font-size: 11px;
+    color: var(--ink-body);
+  }
+
+  .spectrum-strip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .spectrum-bars {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .sp-seg {
+    height: 9px;
+    width: 34px;
+    display: inline-block;
+    border: 1px solid rgba(20, 34, 60, 0.18);
+  }
+
+  .spec-params {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 10.5px;
+    color: var(--ink-muted);
+  }
+
+  .spec-params b {
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  /* =========================================================
+     3. 下半区：真实游戏战斗名牌嵌入预览（5 组实战对阵 + 1 格验收卡）
+     ========================================================= */
+  .battle-section {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .matchup-grid {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: 9px 14px;
+  }
+
+  .matchup-box {
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(230, 239, 250, 0.88) 100%);
+    border: 1px solid var(--hairline-strong);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .matchup-head {
+    height: 22px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 11px;
+    background: rgba(247, 250, 254, 0.96);
+    border-bottom: 1px solid var(--hairline);
+    font-size: 11px;
+  }
+
+  .mh-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .mh-idx {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--sapphire);
+  }
+
+  .mh-act {
+    font-family: var(--font-serif);
+    font-size: 11.5px;
+    color: var(--ink);
+  }
+
+  .mh-right {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    letter-spacing: 0.02em;
+  }
+
+  .mh-right .delta {
+    color: var(--crimson-deep);
+    font-weight: 700;
+    margin-left: 4px;
+  }
+
+  .mh-right .delta.even {
+    color: var(--sapphire-deep);
+  }
+
+  .matchup-arena {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr);
+    align-items: center;
+    padding: 6px 10px;
+    background:
+      radial-gradient(ellipse at 22% 50%, rgba(22, 88, 235, 0.055), transparent 62%),
+      radial-gradient(ellipse at 78% 50%, rgba(209, 52, 86, 0.055), transparent 62%),
+      linear-gradient(180deg, #E8F0FA 0%, #DFE9F8 100%);
+  }
+
+  .vs-spine {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 100%;
+  }
+
+  .vs-line {
+    width: 1px;
+    flex: 1;
+    max-height: 28px;
+    background: linear-gradient(180deg, transparent, rgba(22, 88, 235, 0.30), transparent);
+  }
+
+  .vs-mark {
+    font-family: var(--font-serif);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--gold-deep);
+  }
+
+  /* =========================================================
+     1:1 复刻本作雪瓷冰晶战卡（完整闭合 45° 切角双层壳，绝不断边！）
+     - 严格零圆框套圆框
+     - 明确 7px 清晰 HP/MP 血蓝条
+     - 弱点锁与原著实战状态刻度条
+     ========================================================= */
+  .cb-card-shell {
+    position: relative;
+    padding: 1px;
+    filter: drop-shadow(0 5px 11px rgba(14, 34, 80, 0.11));
+  }
+
+  .cb-card-shell.player {
+    background: rgba(74, 124, 210, 0.44);
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+  }
+
+  .cb-card-shell.enemy {
+    background: rgba(196, 62, 92, 0.38);
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  }
+
+  .cb-card-shell.enemy.is-emperor {
+    background: rgba(143, 18, 42, 0.50);
+  }
+
+  .cb-card-shell.enemy.is-divine {
+    background: linear-gradient(135deg, rgba(28, 122, 152, 0.60), rgba(102, 54, 168, 0.58), rgba(194, 132, 34, 0.56));
+  }
+
+  .cb-card {
+    position: relative;
+    background: linear-gradient(156deg, #FFFFFF 0%, #FAFBFD 62%, #F1F6FD 100%);
+    padding: 7px 11px 7px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .cb-card-shell.player .cb-card {
+    border-left: 3px solid var(--sapphire);
+    border-top: 2px solid var(--gold);
+    clip-path: polygon(0 0, calc(100% - 11.5px) 0, 100% 11.5px, 100% 100%, 8.5px 100%, 0 calc(100% - 8.5px));
+  }
+
+  .cb-card-shell.enemy .cb-card {
+    border-top: 2px solid var(--crimson);
+    clip-path: polygon(9.5px 0, 100% 0, 100% calc(100% - 9.5px), calc(100% - 9.5px) 100%, 0 100%, 0 9.5px);
+  }
+
+  .cb-card-shell.enemy.is-emperor .cb-card {
+    border-top-color: #8F1028;
+  }
+
+  .cb-card-shell.enemy.is-divine .cb-card {
+    border-top: 2px solid #59328E;
+    background: linear-gradient(156deg, #FFFFFF 0%, #FAFBFD 64%, #F2EFFA 100%);
+  }
+
+  .cb-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(30, 54, 100, 0.10);
+  }
+
+  .cb-identity {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .cb-name {
+    font-family: var(--font-serif);
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.02em;
+  }
+
+  .cb-ap-gems {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .cb-ap-gem {
+    width: 7px;
+    height: 7px;
+    transform: rotate(45deg);
+    background: linear-gradient(135deg, #62B4FF 0%, #1658EB 65%, #0E2B78 100%);
+  }
+
+  .cb-ap-gem.used {
+    background: rgba(22, 88, 235, 0.16);
+  }
+
+  .cb-elem-tag {
+    padding: 1px 5px;
+    font-size: 10.5px;
+    font-weight: 700;
+    line-height: 1.3;
+    flex-shrink: 0;
+    background: rgba(28, 76, 184, 0.08);
+    color: var(--sapphire-deep);
+  }
+
+  .cb-elem-tag.elem-fire {
+    background: rgba(196, 37, 68, 0.09);
+    color: var(--crimson-deep);
+  }
+
+  .cb-elem-tag.elem-dark {
+    background: rgba(76, 45, 115, 0.10);
+    color: #482775;
+  }
+
+  .cb-elem-tag.elem-ice {
+    background: rgba(18, 103, 168, 0.10);
+    color: #0E5890;
+  }
+
+  .cb-elem-tag.elem-wind {
+    background: rgba(14, 124, 91, 0.10);
+    color: #0E6D50;
+  }
+
+  .cb-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .cb-stat-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .cb-stat-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10.5px;
+    font-weight: 600;
+    line-height: 1.15;
+    color: var(--ink-body);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cb-stat-lbl {
+    font-size: 10px;
+    color: var(--ink-muted);
+    letter-spacing: 0.04em;
+  }
+
+  .cb-stat-val {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .cb-stat-val .shield-add {
+    color: #0E68A6;
+    font-family: var(--font-sans);
+    font-weight: 700;
+  }
+
+  .cb-stat-track {
+    position: relative;
+    height: 7px;
+    background: rgba(20, 38, 78, 0.13);
+    clip-path: polygon(3px 0%, calc(100% - 3px) 0%, 100% 50%, calc(100% - 3px) 100%, 3px 100%, 0% 50%);
+    overflow: hidden;
+  }
+
+  .cb-stat-fill {
+    height: 100%;
+    clip-path: polygon(3px 0%, calc(100% - 3px) 0%, 100% 50%, calc(100% - 3px) 100%, 3px 100%, 0% 50%);
+  }
+
+  .cb-stat-fill.hp {
+    background: linear-gradient(180deg, #F0627D 0%, #D93050 50%, #A91B39 100%);
+  }
+
+  .cb-stat-fill.mp {
+    background: linear-gradient(180deg, #7CD4FF 0%, #2B7EF5 50%, #1147B8 100%);
+  }
+
+  .cb-foot-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 5px;
+    margin-top: 1px;
+    overflow: hidden;
+  }
+
+  .cb-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.25;
+    padding: 1.5px 5px;
+    background: rgba(24, 40, 74, 0.055);
+    border-left: 2px solid rgba(24, 40, 74, 0.28);
+    color: var(--ink-body);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .cb-chip.lock {
+    background: rgba(196, 164, 108, 0.16);
+    border-left-color: var(--gold-deep);
+    color: #5E4312;
+  }
+
+  .cb-chip.lock svg {
+    width: 9px;
+    height: 9px;
+    flex-shrink: 0;
+  }
+
+  .cb-chip.shield {
+    background: rgba(18, 103, 168, 0.10);
+    border-left-color: #1267A8;
+    color: #0D5084;
+  }
+
+  .cb-chip.sapphire {
+    background: rgba(22, 88, 235, 0.09);
+    border-left-color: var(--sapphire);
+    color: var(--sapphire-deep);
+  }
+
+  .cb-chip.synergy {
+    background: var(--sapphire-deep);
+    border-left-color: var(--cyan);
+    color: #FFFFFF;
+  }
+
+  .cb-chip.phase2 {
+    background: #8B1328;
+    border-left-color: #F0CA7A;
+    color: #FFF5F6;
+  }
+
+  .cb-chip.divine-tag {
+    background: linear-gradient(90deg, #16607C 0%, #4E2D87 60%, #86265C 100%);
+    border-left-color: #FFE48F;
+    color: #FFFDF4;
+  }
+
+  /* =========================================================
+     右下第 6 格：方案 B 宫廷材质规格与多敌窄卡压测验收卡（零溢出精确布局）
+     ========================================================= */
+  .spec-box {
+    display: flex;
+    flex-direction: column;
+    background: var(--snow-card);
+    border: 1px solid var(--hairline-strong);
+    border-top: 2px solid var(--gold);
+    overflow: hidden;
+  }
+
+  .spec-body {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1.18fr 1fr;
+  }
+
+  .spec-col-left {
+    padding: 7px 12px 6px;
+    border-right: 1px solid var(--hairline);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    min-height: 0;
+  }
+
+  .spec-col-title {
+    font-family: var(--font-serif);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--sapphire-deep);
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+  }
+
+  .spec-points {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .spec-points li {
+    position: relative;
+    padding-left: 11px;
+    font-size: 10.2px;
+    line-height: 1.38;
+    color: var(--ink-body);
+  }
+
+  .spec-points li::before {
+    content: '◆';
+    position: absolute;
+    left: 0;
+    top: 1px;
+    font-size: 7.5px;
+    color: var(--gold-deep);
+  }
+
+  .spec-points li b {
+    color: var(--ink);
+  }
+
+  .spec-col-right {
+    padding: 7px 11px 6px;
+    background: #F4F7FC;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    min-height: 0;
+  }
+
+  .narrow-test-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .narrow-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 3px 7px;
+    background: #FAFBFD;
+    border: 1px solid rgba(30, 56, 104, 0.16);
+    border-left: 2.5px solid var(--crimson);
+  }
+
+  .narrow-strip.is-king {
+    border-left-color: #C75D0E;
+  }
+
+  .narrow-strip.is-god {
+    border-left-color: #58318A;
+  }
+
+  .narrow-strip .ns-id {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  .narrow-strip .ns-name {
+    font-family: var(--font-serif);
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .narrow-strip .ns-lock {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #5E4312;
+    background: rgba(196, 164, 108, 0.18);
+    padding: 1px 4px;
+    white-space: nowrap;
+  }
+
+  .spec-footnote {
+    font-size: 9.8px;
+    color: var(--ink-muted);
+    line-height: 1.3;
+    border-top: 1px solid var(--hairline);
+    padding-top: 4px;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<!-- 隐藏 SVG 符号库：7 阶专属宫廷几何刻符 + 弱点锁小图标 -->
+<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
+  <defs>
+    <!-- 1. 初级（白）：素银单菱印 -->
+    <symbol id="glyph-t1" viewBox="0 0 16 16">
+      <polygon points="8,1.8 14.2,8 8,14.2 1.8,8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/>
+      <polygon points="8,5.8 10.2,8 8,10.2 5.8,8" fill="currentColor" opacity="0.28"/>
+    </symbol>
+
+    <!-- 2. 中级（绿）：翡翠双核菱 -->
+    <symbol id="glyph-t2" viewBox="0 0 16 16">
+      <polygon points="8,1.5 14.5,8 8,14.5 1.5,8" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="miter"/>
+      <polygon points="8,4.5 11.5,8 8,11.5 4.5,8" fill="currentColor"/>
+      <line x1="8" y1="0.4" x2="8" y2="2.2" stroke="currentColor" stroke-width="1.2"/>
+      <line x1="8" y1="13.8" x2="8" y2="15.6" stroke="currentColor" stroke-width="1.2"/>
+    </symbol>
+
+    <!-- 3. 高级（蓝）：贵族四芒星徽 -->
+    <symbol id="glyph-t3" viewBox="0 0 16 16">
+      <path d="M8 1 L9.7 6.3 L15 8 L9.7 9.7 L8 15 L6.3 9.7 L1 8 L6.3 6.3 Z" fill="currentColor"/>
+      <line x1="3.0" y1="3.0" x2="5.1" y2="5.1" stroke="currentColor" stroke-width="1.15"/>
+      <line x1="13.0" y1="3.0" x2="10.9" y2="5.1" stroke="currentColor" stroke-width="1.15"/>
+      <line x1="3.0" y1="13.0" x2="5.1" y2="10.9" stroke="currentColor" stroke-width="1.15"/>
+      <line x1="13.0" y1="13.0" x2="10.9" y2="10.9" stroke="currentColor" stroke-width="1.15"/>
+    </symbol>
+
+    <!-- 4. 圣级（紫）：皇室四叶鸢尾菱 -->
+    <symbol id="glyph-t4" viewBox="0 0 16 16">
+      <polygon points="8,0.9 10.3,4.2 8,6.5 5.7,4.2" fill="currentColor"/>
+      <polygon points="8,15.1 10.3,11.8 8,9.5 5.7,11.8" fill="currentColor"/>
+      <polygon points="0.9,8 4.2,5.7 6.5,8 4.2,10.3" fill="currentColor"/>
+      <polygon points="15.1,8 11.8,5.7 9.5,8 11.8,10.3" fill="currentColor"/>
+      <polygon points="8,6.1 9.9,8 8,9.9 6.1,8" fill="#FFFFFF" opacity="0.92"/>
+    </symbol>
+
+    <!-- 5. 王级（橙）：王权三尖冠菱 -->
+    <symbol id="glyph-t5" viewBox="0 0 16 16">
+      <path d="M1.6 10.4 L2.6 4.4 L5.7 7.2 L8 2.4 L10.3 7.2 L13.4 4.4 L14.4 10.4 Z" fill="currentColor"/>
+      <rect x="2.2" y="11.2" width="11.6" height="1.4" fill="currentColor"/>
+      <polygon points="8,13.1 9.5,14.5 8,15.8 6.5,14.5" fill="currentColor"/>
+      <circle cx="8" cy="1.4" r="0.95" fill="currentColor"/>
+    </symbol>
+
+    <!-- 6. 帝级（红）：帝国双翼十字剑菱 -->
+    <symbol id="glyph-t6" viewBox="0 0 16 16">
+      <polygon points="8,0.8 9.2,4.2 8.7,14.8 8,15.6 7.3,14.8 6.8,4.2" fill="currentColor"/>
+      <polygon points="8,4.7 10.9,8 8,11.3 5.1,8" fill="currentColor"/>
+      <polygon points="8,6.3 9.5,8 8,9.7 6.5,8" fill="#630819"/>
+      <path d="M5.4 6.1 L1.2 4.1 L2.4 7.1 L1.0 8.5 L4.6 9.5 L3.6 7.8 Z" fill="currentColor"/>
+      <path d="M10.6 6.1 L14.8 4.1 L13.6 7.1 L15.0 8.5 L11.4 9.5 L12.4 7.8 Z" fill="currentColor"/>
+    </symbol>
+
+    <!-- 7. 神级（彩）：星穹八芒冠轮 -->
+    <symbol id="glyph-t7" viewBox="0 0 16 16">
+      <path d="M8 0.5 L9.3 5.9 L15.5 8 L9.3 10.1 L8 15.5 L6.7 10.1 L0.5 8 L6.7 5.9 Z" fill="currentColor"/>
+      <path d="M2.5 2.5 L6.8 5.6 L8 8 L5.6 6.8 Z" fill="currentColor" opacity="0.90"/>
+      <path d="M13.5 2.5 L10.4 6.8 L8 8 L9.2 5.6 Z" fill="currentColor" opacity="0.90"/>
+      <path d="M2.5 13.5 L5.6 9.2 L8 8 L6.8 10.4 Z" fill="currentColor" opacity="0.90"/>
+      <path d="M13.5 13.5 L9.2 10.4 L8 8 L10.4 9.2 Z" fill="currentColor" opacity="0.90"/>
+      <circle cx="8" cy="8" r="2.2" fill="#2A265A" stroke="currentColor" stroke-width="1"/>
+      <circle cx="8" cy="8" r="0.95" fill="#FFFFFF"/>
+    </symbol>
+
+    <!-- 弱点锁小图标 -->
+    <symbol id="ico-lock" viewBox="0 0 12 12">
+      <path d="M3.5 5.2 V3.6 C3.5 2.1 4.6 1 6 1 C7.4 1 8.5 2.1 8.5 3.6 V5.2" fill="none" stroke="currentColor" stroke-width="1.35"/>
+      <rect x="2.2" y="5.1" width="7.6" height="5.8" fill="currentColor"/>
+      <rect x="5.4" y="6.8" width="1.2" height="2.4" fill="#FAFBFD"/>
+    </symbol>
+  </defs>
+</svg>
+
+<main class="board">
+  <!-- ==================== 顶部紧凑标题栏 ==================== -->
+  <header class="board-header">
+    <div class="bh-left">
+      <div class="bh-eyebrow">
+        <span class="bh-eyebrow-rule"></span>
+        HERALDIC ENAMEL SYSTEM · BOARD B · 1440×900
+      </div>
+      <h1 class="bh-title">方案 B · <span class="accent">七色阶 × 宫廷珐琅纹章印记</span></h1>
+    </div>
+
+    <div class="bh-mid">
+      取法《暗喻幻想》与宫廷纹章院藏书票：<b>哑光珠宝珐琅</b> × <b>七阶几何刻符</b> × <b>1px 掐丝书签切角</b>，零玻璃浮光与圆框套嵌，在雪瓷战卡上沉稳高贵、一眼辨阶。
+    </div>
+
+    <div class="bh-meta">
+      <span class="bh-meta-item"><em>◆</em>白绿蓝紫橙红彩</span>
+      <span class="bh-meta-item"><em>◆</em>哑光矿釉无眩光</span>
+      <span class="bh-meta-item"><em>◆</em>45° 书志切角</span>
+    </div>
+  </header>
+
+  <!-- ==================== 中上区：全 7 阶对照陈列 ==================== -->
+  <section class="showcase-section">
+    <div class="sec-bar">
+      <h2 class="sec-title">
+        <span class="sec-num">01</span>
+        全七阶对照陈列 · 白 → 绿 → 蓝 → 紫 → 橙 → 红 → 彩
+      </h2>
+      <div class="sec-sub">
+        <span class="sec-divider-pill"><i class="swatch-dot" style="background:#5184DB"></i>凡俗三阶（初·中·高）：浅色矿物珐琅 + 深墨衬线</span>
+        <span style="color:var(--gold)">│</span>
+        <span class="sec-divider-pill"><i class="swatch-dot" style="background:#7D2464"></i>超凡四阶（圣·王·帝·神）：深色宝石珐琅 + 鎏金掐丝</span>
+      </div>
+    </div>
+
+    <div class="showcase-plate-wrap">
+      <div class="showcase-plate">
+        <div class="tier-grid" id="tier-grid"></div>
+        <div class="showcase-foot">
+          <div class="spectrum-strip">
+            <span style="font-weight:700;color:var(--ink)">七阶色相递进检视</span>
+            <div class="spectrum-bars">
+              <span class="sp-seg" style="background:linear-gradient(90deg,#F5F4F0,#D8DCE3)" title="初级·白"></span>
+              <span class="sp-seg" style="background:linear-gradient(90deg,#12805B,#56B896)" title="中级·绿"></span>
+              <span class="sp-seg" style="background:linear-gradient(90deg,#1654CC,#5A90F0)" title="高级·蓝"></span>
+              <span class="sp-seg" style="background:linear-gradient(90deg,#3C1D66,#7040AD)" title="圣级·紫"></span>
+              <span class="sp-seg" style="background:linear-gradient(90deg,#AD4A06,#E67B1A)" title="王级·橙"></span>
+              <span class="sp-seg" style="background:linear-gradient(90deg,#5E0618,#A41634)" title="帝级·红"></span>
+              <span class="sp-seg" style="background:linear-gradient(90deg,#16708E,#543096,#A4286A,#C4821C)" title="神级·彩"></span>
+            </div>
+            <span style="font-size:10.5px;color:var(--ink-muted)">白 → 绿 → 蓝 → 紫 → 橙 → 红 → 彩（暖琥珀橙与冷绯红火漆色相与明度严格拉分）</span>
+          </div>
+          <div class="spec-params">
+            <span>实战高度 <b>20px</b></span>
+            <span>字体 <b>Noto Serif CJK Bold 11.5px</b></span>
+            <span>切角 <b>45° 书签印</b></span>
+            <span>对比度 <b>≥ 7.5:1</b></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 下半区：真实游戏战斗名牌嵌入预览 ==================== -->
+  <section class="battle-section">
+    <div class="sec-bar">
+      <h2 class="sec-title">
+        <span class="sec-num">02</span>
+        真实游戏战斗名牌 1:1 嵌入预览 · 覆全七阶 5 组原著实战对阵
+      </h2>
+      <div class="sec-sub">
+        <span>1:1 复刻本作雪瓷冰晶战卡（<code style="font-family:var(--font-mono);font-size:10.5px;color:var(--sapphire-deep)">#FAFBFD</code>）· 7px 清晰 HP/MP 血蓝条 · 弱点锁与架势刻印</span>
+      </div>
+    </div>
+
+    <div class="matchup-grid" id="matchup-grid"></div>
+  </section>
+</main>
+
+<script>
+  const TIERS = [
+    {
+      id: 1,
+      roman: 'I',
+      name: '初级',
+      shortHue: '白·素银',
+      swatch: '#EAECE8',
+      glyphName: '素银单菱',
+      craftNote: '羊皮浅釉',
+      sampleName: '希尔维亚',
+      hex: '#EFEFE9 / #2A364B',
+      transcendent: false
+    },
+    {
+      id: 2,
+      roman: 'II',
+      name: '中级',
+      shortHue: '绿·翡翠',
+      swatch: '#12805B',
+      glyphName: '双核翠菱',
+      craftNote: '松石淡釉',
+      sampleName: '希尔维亚',
+      hex: '#D9EFE5 / #0A4D37',
+      transcendent: false
+    },
+    {
+      id: 3,
+      roman: 'III',
+      name: '高级',
+      shortHue: '蓝·钴青',
+      swatch: '#1654CC',
+      glyphName: '贵族四芒',
+      craftNote: '钴青釉面',
+      sampleName: '希尔维亚',
+      hex: '#D4E5FB / #0A2B72',
+      transcendent: false
+    },
+    {
+      id: 4,
+      roman: 'IV',
+      name: '圣级',
+      shortHue: '紫·鸢尾',
+      swatch: '#4E2A7F',
+      glyphName: '四叶鸢尾',
+      craftNote: '深釉鎏金',
+      sampleName: '罗文',
+      hex: '#4A2778 / #F2D89C',
+      transcendent: true
+    },
+    {
+      id: 5,
+      roman: 'V',
+      name: '王级',
+      shortHue: '橙·琥珀',
+      swatch: '#CC5E0E',
+      glyphName: '王权三尖冠',
+      craftNote: '琥珀金丝',
+      sampleName: '裂地兽领主',
+      hex: '#C45B0C / #FFE6A3',
+      transcendent: true
+    },
+    {
+      id: 6,
+      roman: 'VI',
+      name: '帝级',
+      shortHue: '红·火漆',
+      swatch: '#7F0B22',
+      glyphName: '双翼剑菱',
+      craftNote: '火漆赤金',
+      sampleName: '红莲铁幕',
+      hex: '#790A21 / #F4D28B',
+      transcendent: true
+    },
+    {
+      id: 7,
+      roman: 'VII',
+      name: '神级',
+      shortHue: '彩·星穹',
+      swatch: 'linear-gradient(135deg,#2FB8DE 0%,#7E48D8 38%,#DE3F88 72%,#F2B840 100%)',
+      glyphName: '八芒冠轮',
+      craftNote: '星穹矿彩',
+      sampleName: '风神·岚',
+      hex: '星穹幻彩 / #FFEBA8',
+      transcendent: true
+    }
+  ];
+
+  function renderSeal(tierId, sizeClass = '') {
+    const t = TIERS[tierId - 1];
+    return `
+      <span class="rank-seal tier-${t.id} ${sizeClass}">
+        <span class="rank-seal-in">
+          <span class="rs-pillar" aria-hidden="true"></span>
+          <span class="rs-glyph" aria-hidden="true">
+            <svg><use href="#glyph-t${t.id}"></use></svg>
+          </span>
+          <span class="rs-rule" aria-hidden="true"></span>
+          <span class="rs-text">${t.name}</span>
+          <span class="rs-crown-dot" aria-hidden="true"></span>
+        </span>
+      </span>
+    `;
+  }
+
+  // 中上区全 7 阶对照陈列
+  const tierGrid = document.getElementById('tier-grid');
+  tierGrid.innerHTML = `
+    <div class="row-guide-col">
+      <div class="rg-cell"><strong>阶序 / 色名</strong></div>
+      <div class="rg-cell"><strong>2× 特写</strong><span>材质与刻符</span></div>
+      <div class="rg-cell"><strong>刻符解构</strong></div>
+      <div class="rg-cell"><strong>1:1 实战</strong><span>战卡原尺寸</span></div>
+    </div>
+    ${TIERS.map((t, idx) => `
+      <div class="tier-col ${t.transcendent ? 'is-transcendent' : ''} ${idx === 3 ? 'col-divider' : ''}">
+        <div class="tc-head">
+          <span class="tc-num">TIER ${t.roman}</span>
+          <span class="tc-hue">
+            <span class="tc-swatch" style="background:${t.swatch}"></span>
+            ${t.shortHue}
+          </span>
+        </div>
+        <div class="tc-2x">
+          ${renderSeal(t.id, 'size-2x')}
+        </div>
+        <div class="tc-note">
+          <b>${t.glyphName}</b> · ${t.craftNote}
+        </div>
+        <div class="tc-1x">
+          <div class="tc-1x-inline">
+            ${renderSeal(t.id)}
+            <span class="tc-1x-name">${t.sampleName}</span>
+          </div>
+          <span class="tc-1x-hex">${t.hex}</span>
+        </div>
+      </div>
+    `).join('')}
+  `;
+
+  // 5 组原著实战对阵数据（覆盖全 7 阶）
+  const MATCHUPS = [
+    {
+      idx: '01',
+      title: '学院虚拟决斗 · 同阶切磋',
+      delta: '同阶对阵（白 vs 白）',
+      even: true,
+      player: {
+        tier: 1,
+        name: '希尔维亚',
+        ap: [1, 1, 1],
+        hp: '160/160', hpPct: 100,
+        mp: '185/220', mpPct: 84,
+        chips: [
+          { cls: 'shield', txt: '薄冰壁 28' },
+          { cls: 'sapphire', txt: '冰晶宫殿·推演' }
+        ]
+      },
+      enemy: {
+        tier: 1,
+        name: '贝阿特丽丝',
+        elem: '火', elemCls: 'elem-fire',
+        hp: '132/165', hpPct: 80,
+        mp: '90/140', mpPct: 64,
+        lock: '2/2',
+        weak: '弱：冰 / 水',
+        chips: [{ cls: '', txt: '烈焰斗气×1' }]
+      }
+    },
+    {
+      idx: '02',
+      title: '乱葬岗月夜活捉战 · 跨二阶死斗',
+      delta: '跨阶压制（绿 vs 紫）',
+      even: false,
+      player: {
+        tier: 2,
+        name: '希尔维亚',
+        ap: [1, 1, 0],
+        hp: '210/240', hpPct: 87.5,
+        mp: '268/340', mpPct: 79,
+        chips: [
+          { cls: 'sapphire', txt: '地面薄冰·窄道' },
+          { cls: 'synergy', txt: '雷纳德援护' }
+        ]
+      },
+      enemy: {
+        tier: 4,
+        name: '罗文',
+        elem: '暗', elemCls: 'elem-dark',
+        hp: '420/560', hpPct: 75,
+        mp: '380/480', mpPct: 79,
+        lock: '3/4',
+        weak: '弱：冰 / 束缚',
+        chips: [{ cls: 'sapphire', txt: '活捉 62%' }]
+      }
+    },
+    {
+      idx: '03',
+      title: '赫兰霜渊峡谷 · 领主破甲战',
+      delta: '跨阶强敌（蓝 vs 橙）',
+      even: false,
+      player: {
+        tier: 3,
+        name: '希尔维亚',
+        ap: [1, 1, 1],
+        hp: '312/340', hpPct: 92,
+        mp: '490/560', mpPct: 87.5,
+        chips: [
+          { cls: 'shield', txt: '极寒盾 84' },
+          { cls: 'sapphire', txt: '晦轮杖 +24%MP' }
+        ]
+      },
+      enemy: {
+        tier: 5,
+        name: '裂地兽领主',
+        elem: '冰岩', elemCls: 'elem-ice',
+        hp: '980/1320', hpPct: 74, shield: 120,
+        mp: '210/300', mpPct: 70,
+        lock: '4/5',
+        weak: '弱：冰枪 / 破甲',
+        chips: [{ cls: 'shield', txt: '实体甲 40%' }]
+      }
+    },
+    {
+      idx: '04',
+      title: '东翼火廊突围 · 帝国封锁官',
+      delta: '高危强压（蓝 vs 红）',
+      even: false,
+      player: {
+        tier: 3,
+        name: '希尔维亚',
+        ap: [1, 1, 0],
+        hp: '274/360', hpPct: 76,
+        mp: '412/620', mpPct: 66.5,
+        chips: [
+          { cls: 'sapphire', txt: '魔战循环·回蓝' },
+          { cls: 'synergy', txt: '看破·仆道回风' }
+        ]
+      },
+      enemy: {
+        tier: 6,
+        name: '红莲铁幕',
+        cardCls: 'is-emperor',
+        elem: '烈焰', elemCls: 'elem-fire',
+        hp: '840/1680', hpPct: 50, shield: 180,
+        mp: '520/640', mpPct: 81,
+        lock: '4/6',
+        weak: '弱：水 / 截断',
+        chips: [{ cls: 'phase2', txt: '✦ 二阶段封廊' }]
+      }
+    },
+    {
+      idx: '05',
+      title: '风暴眼试剑 · 七大列强神域',
+      delta: '神域试炼（蓝 vs 彩）',
+      even: false,
+      player: {
+        tier: 3,
+        name: '希尔维亚',
+        ap: [1, 1, 1],
+        hp: '348/380', hpPct: 91.5,
+        mp: '575/680', mpPct: 84.5,
+        chips: [
+          { cls: 'sapphire', txt: '生根步·斩风瞬反' },
+          { cls: 'shield', txt: '冰盾 96' }
+        ]
+      },
+      enemy: {
+        tier: 7,
+        name: '风神·岚',
+        cardCls: 'is-divine',
+        elem: '飓风', elemCls: 'elem-wind',
+        hp: '1960/2400', hpPct: 81.5,
+        mp: '920/1000', mpPct: 92,
+        lock: '6/6',
+        weak: '弱：风眼 / 剑反',
+        chips: [{ cls: 'divine-tag', txt: '✦ 风暴眼全开' }]
+      }
+    }
+  ];
+
+  function renderMatchup(m) {
+    const p = m.player;
+    const e = m.enemy;
+    return `
+      <article class="matchup-box">
+        <div class="matchup-head">
+          <div class="mh-left">
+            <span class="mh-idx">${m.idx}</span>
+            <span class="mh-act">${m.title}</span>
+          </div>
+          <div class="mh-right">
+            <span class="delta ${m.even ? 'even' : ''}">${m.delta}</span>
+          </div>
+        </div>
+        <div class="matchup-arena">
+          <!-- 我方雪瓷战卡（完整闭合切角壳） -->
+          <div class="cb-card-shell player">
+            <div class="cb-card">
+              <div class="cb-top-row">
+                <div class="cb-identity">
+                  ${renderSeal(p.tier)}
+                  <span class="cb-name">${p.name}</span>
+                </div>
+                <div class="cb-ap-gems" aria-label="行动点">
+                  ${p.ap.map(on => `<span class="cb-ap-gem ${on ? '' : 'used'}"></span>`).join('')}
+                </div>
+              </div>
+              <div class="cb-bars">
+                <div class="cb-stat-row">
+                  <div class="cb-stat-top">
+                    <span class="cb-stat-lbl">生命 HP</span>
+                    <span class="cb-stat-val">${p.hp}</span>
+                  </div>
+                  <div class="cb-stat-track"><div class="cb-stat-fill hp" style="width:${p.hpPct}%"></div></div>
+                </div>
+                <div class="cb-stat-row">
+                  <div class="cb-stat-top">
+                    <span class="cb-stat-lbl">魔力 MP</span>
+                    <span class="cb-stat-val">${p.mp}</span>
+                  </div>
+                  <div class="cb-stat-track"><div class="cb-stat-fill mp" style="width:${p.mpPct}%"></div></div>
+                </div>
+              </div>
+              <div class="cb-foot-row">
+                ${p.chips.map(c => `<span class="cb-chip ${c.cls}">${c.txt}</span>`).join('')}
+              </div>
+            </div>
+          </div>
+
+          <!-- 中轴 VS 标 -->
+          <div class="vs-spine" aria-hidden="true">
+            <span class="vs-line"></span>
+            <span class="vs-mark">VS</span>
+            <span class="vs-line"></span>
+          </div>
+
+          <!-- 敌方雪瓷战卡（完整闭合切角壳） -->
+          <div class="cb-card-shell enemy ${e.cardCls || ''}">
+            <div class="cb-card">
+              <div class="cb-top-row">
+                <div class="cb-identity">
+                  ${renderSeal(e.tier)}
+                  <span class="cb-name">${e.name}</span>
+                </div>
+                <span class="cb-elem-tag ${e.elemCls}">${e.elem}</span>
+              </div>
+              <div class="cb-bars">
+                <div class="cb-stat-row">
+                  <div class="cb-stat-top">
+                    <span class="cb-stat-lbl">敌方生命</span>
+                    <span class="cb-stat-val">${e.hp}${e.shield ? ` <span class="shield-add">+盾${e.shield}</span>` : ''}</span>
+                  </div>
+                  <div class="cb-stat-track"><div class="cb-stat-fill hp" style="width:${e.hpPct}%"></div></div>
+                </div>
+                <div class="cb-stat-row">
+                  <div class="cb-stat-top">
+                    <span class="cb-stat-lbl">敌方魔力</span>
+                    <span class="cb-stat-val">${e.mp}</span>
+                  </div>
+                  <div class="cb-stat-track"><div class="cb-stat-fill mp" style="width:${e.mpPct}%"></div></div>
+                </div>
+              </div>
+              <div class="cb-foot-row">
+                <span class="cb-chip lock"><svg><use href="#ico-lock"></use></svg>锁 ${e.lock}</span>
+                <span class="cb-chip">${e.weak}</span>
+                ${e.chips.map(c => `<span class="cb-chip ${c.cls}">${c.txt}</span>`).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  // 右下第 6 格：方案 B 宫廷材质亮点与多敌窄卡极限检验（零溢出紧凑精排）
+  const specCardHtml = `
+    <article class="spec-box">
+      <div class="matchup-head">
+        <div class="mh-left">
+          <span class="mh-idx">06</span>
+          <span class="mh-act">方案 B · 宫廷珐琅书志工艺与窄卡可读性校验</span>
+        </div>
+        <div class="mh-right" style="color:var(--gold-deep);font-weight:700">区别于玻璃反光 · 哑光实感</div>
+      </div>
+      <div class="spec-body">
+        <div class="spec-col-left">
+          <div class="spec-col-title">◆ 材质差异化与视觉秩序</div>
+          <ul class="spec-points">
+            <li><b>哑光矿釉无浮光：</b>弃用玻璃高光与霓虹晕光，以温润矿彩底釉 + 1px 闭合切角掐丝呈典籍实感。</li>
+            <li><b>浅釉 ▸ 深釉阶层跃迁：</b>凡俗三阶浅釉深墨清爽耐看；圣/王/帝/神转深宝釉鎏金，威压一秒入眼。</li>
+            <li><b>零圆框套嵌：</b>45° 书签切角 + 左侧色柱与 1px 竖线区隔刻符与宋体字，天然融入雪瓷战卡。</li>
+          </ul>
+        </div>
+        <div class="spec-col-right">
+          <div class="spec-col-title">◆ 多敌窄卡极限校验（宽 230px）</div>
+          <div class="narrow-test-stack">
+            <div class="narrow-strip is-king">
+              <span class="ns-id">${renderSeal(5)}<span class="ns-name">裂地兽领主</span></span>
+              <span class="ns-lock">锁 4/5</span>
+            </div>
+            <div class="narrow-strip">
+              <span class="ns-id">${renderSeal(6)}<span class="ns-name">红莲铁幕</span></span>
+              <span class="ns-lock">锁 4/6</span>
+            </div>
+            <div class="narrow-strip is-god">
+              <span class="ns-id">${renderSeal(7)}<span class="ns-name">风神·岚</span></span>
+              <span class="ns-lock">锁 6/6</span>
+            </div>
+          </div>
+          <div class="spec-footnote">紧凑 54~62px 宽幅：三敌并列零折行，色相与刻符双通道辨阶。</div>
+        </div>
+      </div>
+    </article>
+  `;
+
+  document.getElementById('matchup-grid').innerHTML =
+    MATCHUPS.map(renderMatchup).join('') + specCardHtml;
+</script>
+</body>
+</html>

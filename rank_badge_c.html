@@ -1,0 +1,1899 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1440, initial-scale=1.0" />
+<title>方案 C · 自由创意 · 星轨魔导阶位印</title>
+<style>
+  :root {
+    --pr-ink: #1A2436;
+    --pr-ink-mid: #3A4B66;
+    --pr-ink-muted: #5F728F;
+    --pr-sapphire-hi: #2E77F8;
+    --pr-sapphire: #1658EB;
+    --pr-sapphire-mid: #103FA8;
+    --pr-sapphire-deep: #0E2B78;
+    --pr-sapphire-abyss: #081A54;
+    --pr-cyan: #7DD3FC;
+    --pr-cyan-deep: #1267A8;
+    --pr-gold: #C4A46C;
+    --pr-gold-deep: #8C6928;
+    --pr-gold-pale: #EFE0BE;
+    --pr-crimson: #D13456;
+    --pr-crimson-deep: #9E1B3A;
+    --pr-emerald: #0E8A64;
+    --pr-line-soft: rgba(96, 128, 180, 0.22);
+    --pr-line-mid: rgba(22, 88, 235, 0.30);
+    --pr-glass-plate: linear-gradient(
+      154deg,
+      rgba(255, 255, 255, 0.97) 0%,
+      rgba(244, 249, 255, 0.94) 56%,
+      rgba(232, 242, 255, 0.94) 100%
+    );
+    --pr-caustic: linear-gradient(
+      112deg,
+      transparent 12%,
+      rgba(255, 255, 255, 0.72) 26%,
+      rgba(125, 211, 252, 0.16) 33%,
+      transparent 47%,
+      rgba(239, 224, 190, 0.15) 76%,
+      transparent 92%
+    );
+    --font-serif: 'Noto Serif CJK SC', 'Noto Serif SC', 'Songti SC', Georgia, serif;
+    --font-sans: 'Noto Sans CJK SC', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    --font-mono: 'DejaVu Sans Mono', ui-monospace, Consolas, monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border-radius: 0 !important;
+  }
+
+  html, body {
+    width: 1440px;
+    height: 900px;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 76% 52% at 50% 16%, #FFFFFF 0%, #F7FAFF 52%, #EAF1FC 100%);
+    color: var(--pr-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+  }
+
+  /* 微妙星轨几何底纹 */
+  .board-bg-ornament {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .board-shell {
+    position: relative;
+    z-index: 1;
+    width: 1440px;
+    height: 900px;
+    padding: 16px 26px 16px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+
+  /* ==================== 1. 顶部紧凑标题栏 ==================== */
+  .top-header {
+    height: 54px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2px 9px 14px;
+    border-bottom: 1px solid rgba(22, 88, 235, 0.18);
+    position: relative;
+  }
+
+  .top-header::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 2px;
+    bottom: 11px;
+    width: 4px;
+    background: linear-gradient(180deg, #7DD3FC 0%, #1658EB 55%, #C4A46C 100%);
+  }
+
+  .top-header::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    width: 240px;
+    height: 2px;
+    background: linear-gradient(90deg, #1658EB 0%, #7DD3FC 68%, transparent 100%);
+  }
+
+  .title-block {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .eyebrow-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: var(--pr-sapphire);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+  }
+
+  .eyebrow-dot {
+    width: 5px;
+    height: 5px;
+    background: var(--pr-gold);
+    transform: rotate(45deg);
+    display: inline-block;
+  }
+
+  .title-main-row {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+
+  .title-main-row h1 {
+    font-family: var(--font-serif);
+    font-size: 21px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    color: #111F3A;
+    white-space: nowrap;
+  }
+
+  .title-sep {
+    width: 1px;
+    height: 14px;
+    background: rgba(22, 88, 235, 0.28);
+    align-self: center;
+    flex-shrink: 0;
+  }
+
+  .title-philosophy {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--pr-ink-mid);
+    letter-spacing: 0.015em;
+    white-space: nowrap;
+  }
+
+  .title-philosophy b {
+    color: var(--pr-sapphire-deep);
+    font-weight: 700;
+  }
+
+  .strata-legend {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    padding-left: 14px;
+    border-left: 1px solid rgba(22, 88, 235, 0.16);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--pr-ink-mid);
+    white-space: nowrap;
+  }
+
+  .legend-gem {
+    width: 7px;
+    height: 7px;
+    transform: rotate(45deg);
+    flex-shrink: 0;
+  }
+
+  /* ==================== 2. 中上区：全 7 阶对照陈列 ==================== */
+  .gallery-vitrine {
+    height: 326px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid rgba(22, 88, 235, 0.18);
+    border-top: 2px solid var(--pr-sapphire);
+    box-shadow: 0 10px 26px rgba(14, 43, 120, 0.06);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* 四重天域表头 */
+  .strata-band {
+    height: 28px;
+    display: grid;
+    grid-template-columns: 36px repeat(7, 1fr);
+    border-bottom: 1px solid rgba(22, 88, 235, 0.14);
+    background: linear-gradient(180deg, rgba(242, 247, 255, 0.92), rgba(248, 251, 255, 0.72));
+  }
+
+  .strata-corner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid rgba(22, 88, 235, 0.14);
+    font-size: 9px;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--pr-ink-muted);
+    letter-spacing: 0.05em;
+  }
+
+  .stratum-head {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    border-right: 1px solid rgba(22, 88, 235, 0.14);
+    position: relative;
+  }
+
+  .stratum-head:last-child {
+    border-right: none;
+  }
+
+  .stratum-head::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+  }
+
+  .stratum-head.s-mortal {
+    grid-column: 2 / span 3;
+    color: var(--pr-sapphire-mid);
+  }
+  .stratum-head.s-mortal::before {
+    background: linear-gradient(90deg, #9AB0CA 0%, #38A8DF 48%, #1658EB 100%);
+  }
+
+  .stratum-head.s-saint {
+    grid-column: 5 / span 1;
+    color: #0E2B78;
+    background: rgba(14, 43, 120, 0.035);
+  }
+  .stratum-head.s-saint::before {
+    background: linear-gradient(90deg, #0E2B78 0%, #C4A46C 100%);
+  }
+
+  .stratum-head.s-sovereign {
+    grid-column: 6 / span 2;
+    color: #7A541C;
+    background: rgba(196, 164, 108, 0.07);
+  }
+  .stratum-head.s-sovereign::before {
+    background: linear-gradient(90deg, #C4A46C 0%, #D13456 62%, #1C1320 100%);
+  }
+
+  .stratum-head.s-divine {
+    grid-column: 8 / span 1;
+    color: #0C235E;
+    background: linear-gradient(90deg, rgba(125, 211, 252, 0.12), rgba(239, 224, 190, 0.16));
+  }
+  .stratum-head.s-divine::before {
+    background: linear-gradient(90deg, #7DD3FC 0%, #C4A46C 50%, #7DD3FC 100%);
+  }
+
+  .stratum-en {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 600;
+    opacity: 0.68;
+    letter-spacing: 0.12em;
+  }
+
+  /* 上行：2× 材质与星刻特写 */
+  .gallery-row-2x {
+    height: 186px;
+    display: grid;
+    grid-template-columns: 36px repeat(7, 1fr);
+    border-bottom: 1px solid rgba(22, 88, 235, 0.15);
+  }
+
+  /* 下行：1:1 实战字号 */
+  .gallery-row-1x {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 36px repeat(7, 1fr);
+    background: linear-gradient(180deg, rgba(247, 250, 255, 0.85), rgba(241, 247, 255, 0.92));
+  }
+
+  .row-rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-right: 1px solid rgba(22, 88, 235, 0.14);
+    background: rgba(22, 88, 235, 0.035);
+    color: var(--pr-sapphire-deep);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    line-height: 1.15;
+  }
+
+  .row-rail small {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--pr-sapphire);
+    letter-spacing: 0.06em;
+  }
+
+  .rank-cell-2x {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 10px 11px 10px;
+    border-right: 1px solid rgba(96, 128, 180, 0.16);
+    overflow: hidden;
+  }
+
+  .rank-cell-2x:last-child {
+    border-right: none;
+  }
+
+  /* 每阶专属柔和展台背景呼吸感，严格保持明净雪瓷基调 */
+  .rank-cell-2x.tier-4 {
+    background: radial-gradient(ellipse 85% 65% at 50% 42%, rgba(14, 43, 120, 0.045) 0%, transparent 74%);
+  }
+  .rank-cell-2x.tier-5 {
+    background: radial-gradient(ellipse 85% 65% at 50% 42%, rgba(196, 164, 108, 0.08) 0%, transparent 74%);
+  }
+  .rank-cell-2x.tier-6 {
+    background: radial-gradient(ellipse 85% 65% at 50% 42%, rgba(158, 27, 58, 0.055) 0%, transparent 74%);
+  }
+  .rank-cell-2x.tier-7 {
+    background:
+      radial-gradient(ellipse 92% 72% at 50% 44%, rgba(22, 88, 235, 0.09) 0%, rgba(125, 211, 252, 0.07) 48%, rgba(239, 224, 190, 0.06) 80%, transparent 100%);
+  }
+
+  .cell-top-meta {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--pr-ink-muted);
+    letter-spacing: 0.06em;
+  }
+
+  .cell-roman {
+    color: var(--pr-sapphire-mid);
+    font-family: var(--font-serif);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .tier-5 .cell-roman { color: #8A6421; }
+  .tier-6 .cell-roman { color: #9E1B3A; }
+  .tier-7 .cell-roman { color: #0E2B78; }
+
+  .seal-stage-2x {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  /* 细微星轨水平参考线 */
+  .seal-stage-2x::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    top: 50%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(96, 128, 180, 0.18), transparent);
+    z-index: 0;
+  }
+
+  .seal-stage-2x > .rank-seal-wrap {
+    position: relative;
+    z-index: 1;
+  }
+
+  .cell-caption {
+    width: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .cell-mat-name {
+    font-family: var(--font-serif);
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #16243D;
+    letter-spacing: 0.02em;
+  }
+
+  .cell-mat-desc {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--pr-ink-muted);
+    line-height: 1.32;
+  }
+
+  /* 1:1 实战字号行 */
+  .rank-cell-1x {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 10px 8px;
+    border-right: 1px solid rgba(96, 128, 180, 0.16);
+    position: relative;
+  }
+
+  .rank-cell-1x:last-child {
+    border-right: none;
+  }
+
+  .rank-cell-1x.tier-7 {
+    background: radial-gradient(ellipse 90% 80% at 50% 42%, rgba(125, 211, 252, 0.10), transparent 76%);
+  }
+
+  .scale-1x-solo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 30px;
+    position: relative;
+  }
+
+  .scale-1x-solo::before {
+    content: '';
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    top: 50%;
+    height: 1px;
+    background: rgba(96, 128, 180, 0.14);
+  }
+
+  .scale-1x-solo > .rank-seal-wrap {
+    position: relative;
+    z-index: 1;
+  }
+
+  .scale-1x-inline-strip {
+    width: 100%;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.96);
+    border-top: 1px solid rgba(96, 128, 180, 0.20);
+    border-bottom: 1px solid rgba(96, 128, 180, 0.14);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 6px;
+  }
+
+  .strip-char-name {
+    font-family: var(--font-serif);
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--pr-ink);
+    white-space: nowrap;
+  }
+
+  .scale-1x-cue {
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--pr-ink-muted);
+    letter-spacing: 0.04em;
+  }
+
+  /* ==================== 3. 下半区：真实游戏战斗名牌嵌入预览 ==================== */
+  .combat-section {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .section-bar {
+    height: 24px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2px;
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-serif);
+    font-size: 14.5px;
+    font-weight: 900;
+    color: #111F3A;
+    letter-spacing: 0.03em;
+  }
+
+  .section-diamond {
+    width: 8px;
+    height: 8px;
+    background: linear-gradient(135deg, #7DD3FC, #1658EB);
+    transform: rotate(45deg);
+    display: inline-block;
+  }
+
+  .section-meta {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--pr-ink-muted);
+    letter-spacing: 0.02em;
+  }
+
+  .section-meta b {
+    color: var(--pr-sapphire-deep);
+    font-weight: 700;
+  }
+
+  /* 明亮冰晶战庭展板（100% 雪瓷冰蓝基调，托出雪瓷切面战卡立体阴影） */
+  .combat-arena-board {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    background:
+      linear-gradient(125deg, rgba(255, 255, 255, 0.50) 0%, transparent 32%, rgba(125, 211, 252, 0.14) 58%, rgba(239, 224, 190, 0.14) 100%),
+      linear-gradient(180deg, #E7F0FC 0%, #DAE7F9 56%, #E4EEFB 100%);
+    border: 1px solid rgba(22, 88, 235, 0.22);
+    border-top: 2px solid var(--pr-sapphire);
+    padding: 11px 13px 12px 13px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    overflow: hidden;
+  }
+
+  .combat-arena-board::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(90deg, rgba(22, 88, 235, 0.04) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(22, 88, 235, 0.04) 1px, transparent 1px);
+    background-size: 36px 36px;
+    pointer-events: none;
+  }
+
+  .matchup-col {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-width: 0;
+    height: 100%;
+  }
+
+  /* 对阵顶部小标 */
+  .matchup-head {
+    height: 22px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2px 3px 2px;
+    border-bottom: 1px solid rgba(22, 88, 235, 0.18);
+  }
+
+  .matchup-idx {
+    font-family: var(--font-serif);
+    font-size: 11.5px;
+    font-weight: 800;
+    color: #162644;
+    letter-spacing: 0.02em;
+  }
+
+  .matchup-idx span {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--pr-sapphire);
+    margin-right: 4px;
+  }
+
+  .matchup-tag {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    letter-spacing: 0.03em;
+    background: rgba(255, 255, 255, 0.72);
+    border-left: 2px solid var(--pr-sapphire);
+    color: var(--pr-sapphire-deep);
+  }
+
+  .matchup-tag.t-saint { border-left-color: #0E2B78; color: #0E2B78; }
+  .matchup-tag.t-king { border-left-color: #B48B41; color: #7C5819; }
+  .matchup-tag.t-emp { border-left-color: #D13456; color: #9E1B3A; }
+  .matchup-tag.t-god {
+    border-left-color: #C4A46C;
+    color: #0C215C;
+    background: linear-gradient(90deg, rgba(255,255,255,0.92), rgba(224,243,255,0.85));
+  }
+
+  /* 1:1 复刻本作雪瓷冰晶我方战卡 (.cb-player-pane) */
+  .cb-card-shadow {
+    filter: drop-shadow(0 9px 18px rgba(10, 28, 82, 0.15));
+  }
+
+  .cb-player-pane {
+    position: relative;
+    border: 1px solid rgba(96, 146, 224, 0.46);
+    border-left: 3.5px solid var(--pr-sapphire);
+    border-top: 2px solid var(--pr-gold);
+    background: var(--pr-caustic), var(--pr-glass-plate);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    padding: 9px 11px 9px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .cb-p-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(96, 128, 180, 0.18);
+  }
+
+  .cb-name-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  .cb-p-name,
+  .cb-e-title {
+    font-family: var(--font-serif);
+    font-size: 13.5px;
+    font-weight: 800;
+    color: var(--pr-ink);
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+  }
+
+  .cb-ap-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .cb-ap-gem {
+    width: 7px;
+    height: 7px;
+    transform: rotate(45deg);
+    border: 1px solid rgba(27, 35, 51, 0.28);
+    background: #FFFFFF;
+  }
+
+  .cb-ap-gem.on {
+    background: linear-gradient(135deg, #6BC5F8 0%, #1658EB 55%, #0C2566 100%);
+    border-color: var(--pr-sapphire-deep);
+  }
+
+  .cb-ap-label {
+    margin-left: 2px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--pr-sapphire);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cb-p-sub {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--pr-ink-muted);
+    font-variant-numeric: tabular-nums;
+    display: flex;
+    justify-content: space-between;
+    margin-top: -2px;
+  }
+
+  /* 战斗血蓝条：精确 7px 高度 + 六角棱镜切面 */
+  .cb-bars-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .cb-stat-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5px;
+  }
+
+  .cb-stat-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--pr-ink-mid);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cb-stat-val {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--pr-ink);
+  }
+
+  .cb-stat-val .shield-txt {
+    color: var(--pr-cyan-deep);
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 9.5px;
+  }
+
+  .cb-stat-track {
+    position: relative;
+    height: 7px;
+    background: rgba(14, 34, 84, 0.14);
+    clip-path: polygon(3.5px 0%, calc(100% - 3.5px) 0%, 100% 50%, calc(100% - 3.5px) 100%, 3.5px 100%, 0% 50%);
+    overflow: hidden;
+  }
+
+  .cb-stat-fill {
+    height: 100%;
+    clip-path: polygon(3.5px 0%, calc(100% - 3.5px) 0%, 100% 50%, calc(100% - 3.5px) 100%, 3.5px 100%, 0% 50%);
+  }
+
+  .cb-stat-fill.hp,
+  .cb-stat-fill.ehp {
+    background: linear-gradient(180deg, #FF8FA4 0%, #E03A59 49%, #B51E3E 51%, #8E1430 100%);
+  }
+
+  .cb-stat-fill.mp,
+  .cb-stat-fill.emp {
+    background: linear-gradient(180deg, #9BE7FF 0%, #3288FF 49%, #1658EB 51%, #0E2B78 100%);
+  }
+
+  .cb-shield-sliver {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    background: repeating-linear-gradient(
+      -45deg,
+      rgba(125, 211, 252, 0.92) 0px,
+      rgba(125, 211, 252, 0.92) 3px,
+      rgba(255, 255, 255, 0.95) 3px,
+      rgba(255, 255, 255, 0.95) 5px
+    );
+    opacity: 0.92;
+  }
+
+  /* Buff 标签：严格无外框圆角，仅 2px 左侧色条 + 极轻底色 */
+  .cb-buff-list {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 5px;
+    overflow: hidden;
+    padding-top: 1px;
+  }
+
+  .cb-buff-chip {
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.25;
+    padding: 1.5px 5px;
+    background: rgba(27, 35, 51, 0.055);
+    border-left: 2px solid rgba(27, 35, 51, 0.28);
+    color: var(--pr-ink-mid);
+    white-space: nowrap;
+  }
+
+  .cb-buff-chip.sapphire {
+    background: rgba(22, 88, 235, 0.08);
+    border-left-color: var(--pr-sapphire);
+    color: var(--pr-sapphire-deep);
+  }
+
+  .cb-buff-chip.shield {
+    background: rgba(18, 103, 168, 0.09);
+    border-left-color: var(--pr-cyan-deep);
+    color: var(--pr-cyan-deep);
+  }
+
+  .cb-buff-chip.gold {
+    background: rgba(196, 164, 108, 0.15);
+    border-left-color: #B48A3E;
+    color: #785417;
+  }
+
+  .cb-buff-chip.crimson {
+    background: rgba(209, 52, 86, 0.09);
+    border-left-color: var(--pr-crimson);
+    color: var(--pr-crimson-deep);
+  }
+
+  .cb-buff-chip.synergy {
+    background: var(--pr-sapphire);
+    border-left-color: var(--pr-cyan);
+    color: #FFFFFF;
+  }
+
+  /* 中间 VS 棱镜分隔器 */
+  .vs-bridge {
+    height: 24px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 6px;
+  }
+
+  .vs-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(22, 88, 235, 0.30), rgba(196, 164, 108, 0.45));
+  }
+
+  .vs-line.right {
+    background: linear-gradient(90deg, rgba(196, 164, 108, 0.45), rgba(209, 52, 86, 0.30), transparent);
+  }
+
+  .vs-core {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--pr-sapphire-deep);
+  }
+
+  .vs-diamond {
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(145deg, #1658EB 0%, #0E2B78 100%);
+    color: #FFFFFF;
+    font-size: 8px;
+    font-weight: 900;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    letter-spacing: 0;
+  }
+
+  .vs-core.boss-vs .vs-diamond {
+    background: linear-gradient(145deg, #D13456 0%, #7C122A 100%);
+  }
+
+  .vs-core.god-vs .vs-diamond {
+    background: linear-gradient(145deg, #F5E2B6 0%, #B88E40 100%);
+    color: #1A1205;
+  }
+
+  /* 1:1 复刻本作雪瓷冰晶敌方战卡 (.cb-e-plate) */
+  .cb-e-plate {
+    position: relative;
+    border: 1px solid rgba(209, 52, 86, 0.38);
+    border-top: 2px solid var(--pr-crimson);
+    background: var(--pr-caustic), var(--pr-glass-plate);
+    clip-path: polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px);
+    padding: 9px 11px 10px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .cb-e-plate.phase2 {
+    border-color: rgba(158, 27, 58, 0.56);
+    border-top-color: #9E1B3A;
+    background:
+      linear-gradient(120deg, rgba(209, 52, 86, 0.06) 0%, transparent 45%),
+      var(--pr-caustic),
+      var(--pr-glass-plate);
+  }
+
+  .cb-e-plate.divine-trial {
+    border-color: rgba(196, 164, 108, 0.62);
+    border-top: 2px solid #C4A46C;
+    background:
+      linear-gradient(132deg, rgba(125, 211, 252, 0.08) 0%, rgba(255, 255, 255, 0.55) 48%, rgba(239, 224, 190, 0.12) 100%),
+      var(--pr-glass-plate);
+  }
+
+  .cb-e-name {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(96, 128, 180, 0.18);
+  }
+
+  .cb-elem-tag {
+    padding: 1px 5px;
+    font-family: var(--font-sans);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.3;
+    flex-shrink: 0;
+  }
+
+  .cb-elem-tag.elem-fire { background: rgba(196, 37, 68, 0.09); color: #9E1B3A; }
+  .cb-elem-tag.elem-dark { background: rgba(14, 43, 120, 0.10); color: #0E2B78; }
+  .cb-elem-tag.elem-earth { background: rgba(140, 105, 40, 0.12); color: #7C5819; }
+  .cb-elem-tag.elem-wind { background: rgba(14, 124, 91, 0.10); color: #0E7C5B; }
+
+  /* 弱点锁行（晶体棱形弱点锁，零圆框套圆框） */
+  .cb-lock-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 3px 6px;
+    background: rgba(14, 34, 84, 0.04);
+    border-left: 2px solid var(--pr-sapphire);
+  }
+
+  .cb-lock-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--pr-ink-mid);
+  }
+
+  .cb-lock-pips {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .lock-pip {
+    width: 7px;
+    height: 7px;
+    transform: rotate(45deg);
+    display: inline-block;
+  }
+
+  .lock-pip.locked {
+    background: linear-gradient(135deg, #3288FF 0%, #0E2B78 100%);
+    box-shadow: 0 0 0 1px rgba(14, 43, 120, 0.35);
+  }
+
+  .lock-pip.locked.crimson-lock {
+    background: linear-gradient(135deg, #E85572 0%, #9E1B3A 100%);
+    box-shadow: 0 0 0 1px rgba(158, 27, 58, 0.38);
+  }
+
+  .lock-pip.locked.gold-lock {
+    background: linear-gradient(135deg, #F4DFAA 0%, #A97E2E 100%);
+    box-shadow: 0 0 0 1px rgba(140, 105, 40, 0.45);
+  }
+
+  .lock-pip.cracked {
+    background: transparent;
+    border: 1px solid rgba(95, 114, 143, 0.50);
+  }
+
+  .cb-lock-count {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--pr-sapphire-deep);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cb-weak-hint {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--pr-ink-muted);
+    white-space: nowrap;
+  }
+
+  /* 阶位印 SVG 包装与光晕层次 */
+  .rank-seal-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    line-height: 0;
+  }
+
+  .rank-seal-wrap svg {
+    display: block;
+    overflow: visible;
+  }
+
+  .rank-seal-wrap.tier-2 {
+    filter: drop-shadow(0 2px 4px rgba(31, 150, 212, 0.22));
+  }
+  .rank-seal-wrap.tier-3 {
+    filter: drop-shadow(0 3px 7px rgba(22, 88, 235, 0.30));
+  }
+  .rank-seal-wrap.tier-4 {
+    filter: drop-shadow(0 3px 8px rgba(8, 22, 68, 0.34));
+  }
+  .rank-seal-wrap.tier-5 {
+    filter: drop-shadow(0 3px 9px rgba(150, 110, 42, 0.36));
+  }
+  .rank-seal-wrap.tier-6 {
+    filter: drop-shadow(0 3px 9px rgba(158, 27, 58, 0.34)) drop-shadow(0 2px 5px rgba(14, 9, 20, 0.42));
+  }
+  .rank-seal-wrap.tier-7 {
+    filter:
+      drop-shadow(0 0 4px rgba(198, 156, 70, 0.62))
+      drop-shadow(0 1px 7px rgba(86, 184, 248, 0.48));
+  }
+
+  .rank-seal-wrap.macro.tier-7 {
+    filter:
+      drop-shadow(0 0 8px rgba(198, 156, 70, 0.62))
+      drop-shadow(0 2px 16px rgba(86, 184, 248, 0.52));
+  }
+</style>
+</head>
+<body>
+
+<!-- 共享 SVG 渐变定义（零 ID 冲突） -->
+<svg width="0" height="0" style="position:absolute;pointer-events:none;" aria-hidden="true">
+  <defs>
+    <!-- Tier 1: 雪瓷冷银 -->
+    <linearGradient id="t1-fill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F7FAFE" />
+      <stop offset="56%" stop-color="#E7EEF7" />
+      <stop offset="100%" stop-color="#D7E2F0" />
+    </linearGradient>
+    <linearGradient id="t1-stroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#B0C2D8" />
+      <stop offset="50%" stop-color="#869BB7" />
+      <stop offset="100%" stop-color="#6F86A5" />
+    </linearGradient>
+
+    <!-- Tier 2: 冰青折光 -->
+    <linearGradient id="t2-fill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EFFBFF" />
+      <stop offset="48%" stop-color="#C8EDFF" />
+      <stop offset="100%" stop-color="#9BDDFB" />
+    </linearGradient>
+    <linearGradient id="t2-glint" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0)" />
+      <stop offset="38%" stop-color="rgba(255,255,255,0.72)" />
+      <stop offset="55%" stop-color="rgba(255,255,255,0)" />
+    </linearGradient>
+    <linearGradient id="t2-stroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#64C8F7" />
+      <stop offset="50%" stop-color="#1D95D4" />
+      <stop offset="100%" stop-color="#0E6BA8" />
+    </linearGradient>
+
+    <!-- Tier 3: 皇家深蓝双面棱晶 -->
+    <linearGradient id="t3-fill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#357DF9" />
+      <stop offset="48.5%" stop-color="#1658EB" />
+      <stop offset="51.5%" stop-color="#0E308A" />
+      <stop offset="100%" stop-color="#081C58" />
+    </linearGradient>
+    <linearGradient id="t3-stroke" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#9BE3FF" />
+      <stop offset="45%" stop-color="#3B87FA" />
+      <stop offset="100%" stop-color="#07194E" />
+    </linearGradient>
+
+    <!-- Tier 4: 深钴星渊 × 淡金 -->
+    <linearGradient id="t4-fill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#153586" />
+      <stop offset="52%" stop-color="#0A1E57" />
+      <stop offset="100%" stop-color="#051034" />
+    </linearGradient>
+    <linearGradient id="t4-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F7E8C4" />
+      <stop offset="45%" stop-color="#CFA968" />
+      <stop offset="78%" stop-color="#EFE0BE" />
+      <stop offset="100%" stop-color="#997330" />
+    </linearGradient>
+    <radialGradient id="t4-star-glow" cx="28%" cy="50%" r="42%">
+      <stop offset="0%" stop-color="rgba(125,211,252,0.28)" />
+      <stop offset="60%" stop-color="rgba(22,88,235,0.10)" />
+      <stop offset="100%" stop-color="rgba(5,16,52,0)" />
+    </radialGradient>
+
+    <!-- Tier 5: 温润香槟金锻面 -->
+    <linearGradient id="t5-fill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF8E5" />
+      <stop offset="28%" stop-color="#F0DCA6" />
+      <stop offset="52%" stop-color="#D7B26A" />
+      <stop offset="78%" stop-color="#E8CF93" />
+      <stop offset="100%" stop-color="#AD8238" />
+    </linearGradient>
+    <linearGradient id="t5-stroke" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFDF5" />
+      <stop offset="25%" stop-color="#C89E4F" />
+      <stop offset="100%" stop-color="#6B4913" />
+    </linearGradient>
+    <linearGradient id="t5-sheen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0)" />
+      <stop offset="42%" stop-color="rgba(255,253,242,0.58)" />
+      <stop offset="56%" stop-color="rgba(255,255,255,0)" />
+    </linearGradient>
+
+    <!-- Tier 6: 深曜黑金 × 绯金冠芒 -->
+    <linearGradient id="t6-fill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#291B26" />
+      <stop offset="48%" stop-color="#140F1A" />
+      <stop offset="100%" stop-color="#09070D" />
+    </linearGradient>
+    <radialGradient id="t6-crimson-core" cx="26%" cy="50%" r="48%">
+      <stop offset="0%" stop-color="rgba(209,52,86,0.46)" />
+      <stop offset="58%" stop-color="rgba(158,27,58,0.16)" />
+      <stop offset="100%" stop-color="rgba(9,7,13,0)" />
+    </radialGradient>
+    <linearGradient id="t6-stroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FCE4B0" />
+      <stop offset="28%" stop-color="#E04A68" />
+      <stop offset="56%" stop-color="#D7AF63" />
+      <stop offset="82%" stop-color="#B02142" />
+      <stop offset="100%" stop-color="#F2D498" />
+    </linearGradient>
+    <linearGradient id="t6-crown" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFF1CC" />
+      <stop offset="55%" stop-color="#E2B45E" />
+      <stop offset="100%" stop-color="#D13456" />
+    </linearGradient>
+
+    <!-- Tier 7: 纯白圣光 × 鎏金星环 × 细微虹彩棱光 -->
+    <linearGradient id="t7-fill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="44%" stop-color="#FCFEFF" />
+      <stop offset="72%" stop-color="#F2F9FF" />
+      <stop offset="100%" stop-color="#FFFDF5" />
+    </linearGradient>
+    <linearGradient id="t7-prism-wash" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(125,211,252,0.22)" />
+      <stop offset="32%" stop-color="rgba(255,255,255,0.05)" />
+      <stop offset="60%" stop-color="rgba(239,212,148,0.24)" />
+      <stop offset="84%" stop-color="rgba(186,184,255,0.18)" />
+      <stop offset="100%" stop-color="rgba(125,211,252,0.20)" />
+    </linearGradient>
+    <linearGradient id="t7-stroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#B68731" />
+      <stop offset="22%" stop-color="#F2D893" />
+      <stop offset="44%" stop-color="#58BEF6" />
+      <stop offset="64%" stop-color="#D4AE5E" />
+      <stop offset="84%" stop-color="#9A9CEB" />
+      <stop offset="100%" stop-color="#A67926" />
+    </linearGradient>
+    <linearGradient id="t7-gold-ring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9F7222" />
+      <stop offset="48%" stop-color="#DFB968" />
+      <stop offset="100%" stop-color="#966A1D" />
+    </linearGradient>
+  </defs>
+</svg>
+
+<!-- 背景微弱星轨建筑几何底纹 -->
+<svg class="board-bg-ornament" width="1440" height="900" viewBox="0 0 1440 900" aria-hidden="true">
+  <ellipse cx="1290" cy="110" rx="260" ry="96" transform="rotate(-14 1290 110)" fill="none" stroke="rgba(22,88,235,0.055)" stroke-width="1" />
+  <ellipse cx="1290" cy="110" rx="210" ry="72" transform="rotate(10 1290 110)" fill="none" stroke="rgba(196,164,108,0.07)" stroke-width="1" />
+  <line x1="0" y1="81" x2="1440" y2="81" stroke="rgba(22,88,235,0.035)" stroke-width="1" />
+  <path d="M 1290 60 L 1296 104 L 1340 110 L 1296 116 L 1290 160 L 1284 116 L 1240 110 L 1284 104 Z" fill="rgba(196,164,108,0.05)" />
+</svg>
+
+<main class="board-shell">
+
+  <!-- 1. 顶部紧凑标题栏 -->
+  <header class="top-header">
+    <div class="title-block">
+      <div class="eyebrow-row">
+        <span>PROPOSAL C · FREE CREATIVE ARCHITECTURE</span>
+        <i class="eyebrow-dot"></i>
+        <span>ASTRAL-ORBIT ARCANE RANK SEALS · 《转生千金》原生雪瓷冰晶体系</span>
+      </div>
+      <div class="title-main-row">
+        <h1>方案 C · 自由创意 · 星轨魔导阶位印</h1>
+        <span class="title-sep"></span>
+        <p class="title-philosophy">跳出网游七色套路，以 <b>几何星刻演进 × 材质升华梯度 × 切面轮廓跃迁</b> 将贵族魔导阶位压迫感原生铸入雪瓷蓝金世界观</p>
+      </div>
+    </div>
+    <div class="strata-legend">
+      <div class="legend-item"><i class="legend-gem" style="background:linear-gradient(135deg,#CFDCEB,#1658EB);"></i>凡阶 I–III</div>
+      <div class="legend-item"><i class="legend-gem" style="background:linear-gradient(135deg,#0E2B78,#C4A46C);"></i>超凡 IV</div>
+      <div class="legend-item"><i class="legend-gem" style="background:linear-gradient(135deg,#E2C27E,#9E1B3A);"></i>霸主 V–VI</div>
+      <div class="legend-item"><i class="legend-gem" style="background:#FFFFFF;border:1.5px solid #C4A46C;box-shadow:0 0 5px rgba(86,184,248,0.7);"></i>列强 VII</div>
+    </div>
+  </header>
+
+  <!-- 2. 中上区：全 7 阶对照陈列 -->
+  <section class="gallery-vitrine" aria-label="全7阶对照陈列">
+    <div class="strata-band">
+      <div class="strata-corner">TIER</div>
+      <div class="stratum-head s-mortal"><span>I · 凡阶三境</span><span class="stratum-en">MORTAL ARCANA · 霜银至深蓝</span></div>
+      <div class="stratum-head s-saint"><span>II · 踏入超凡</span><span class="stratum-en">SAINT</span></div>
+      <div class="stratum-head s-sovereign"><span>III · 冠冕霸主</span><span class="stratum-en">SOVEREIGN · 鎏金至曜绯</span></div>
+      <div class="stratum-head s-divine"><span>IV · 七大列强</span><span class="stratum-en">DIVINE</span></div>
+    </div>
+
+    <!-- 上行：2× 材质与星刻特写 -->
+    <div class="gallery-row-2x" id="row-2x">
+      <div class="row-rail">材质与星刻特写<small>2× MACRO</small></div>
+    </div>
+
+    <!-- 下行：1:1 实战字号 -->
+    <div class="gallery-row-1x" id="row-1x">
+      <div class="row-rail">实战字号<small>1:1 REAL</small></div>
+    </div>
+  </section>
+
+  <!-- 3. 下半区：真实游戏战斗名牌嵌入预览（5组覆盖全部7阶） -->
+  <section class="combat-section" aria-label="真实游戏战斗名牌嵌入预览">
+    <div class="section-bar">
+      <div class="section-title">
+        <i class="section-diamond"></i>
+        <span>真实游戏战斗名牌 1:1 嵌入预览 · 5 组实战对阵覆盖全 7 阶</span>
+      </div>
+      <div class="section-meta">
+        1:1 复刻本作雪瓷冰晶战卡 <b>.cb-player-pane / .cb-e-plate</b> · 7px 切面血蓝条 · 晶体弱点锁 · 严格零圆框套圆框
+      </div>
+    </div>
+
+    <div class="combat-arena-board" id="matchups-grid"></div>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  const RANKS = [
+    {
+      id: 1,
+      key: 'novice',
+      name: '初级',
+      roman: 'I',
+      code: '01',
+      matName: '雪瓷冷银 · 单星刻',
+      matDesc: '哑光冷银瓷板 · 1 道星刻线\n克制素雅，标识学徒初阶',
+      sampleChar: '贝阿特丽丝',
+      cue1x: '冷银 1 刻 · 单切角'
+    },
+    {
+      id: 2,
+      key: 'adept',
+      name: '中级',
+      roman: 'II',
+      code: '02',
+      matName: '冰青折光 · 双星刻',
+      matDesc: '澄澈霜青棱面 · 2 道星刻线\n透亮折光，魔导渐成气象',
+      sampleChar: '希尔维亚',
+      cue1x: '冰青 2 刻 · 冰棱切'
+    },
+    {
+      id: 3,
+      key: 'master',
+      name: '高级',
+      roman: 'III',
+      code: '03',
+      matName: '皇家深蓝 · 三星刻',
+      matDesc: '皇家蓝宝石双面棱晶 · 3 刻\n凡阶顶峰，锐利沉稳',
+      sampleChar: '希尔维亚',
+      cue1x: '皇蓝 3 刻 · 六角棱'
+    },
+    {
+      id: 4,
+      key: 'saint',
+      name: '圣级',
+      roman: 'IV',
+      code: '04',
+      matName: '深钴星渊 · 金星菱',
+      matDesc: '深钴夜蓝嵌香槟金星菱纹章\n跨过凡圣界碑的超凡威仪',
+      sampleChar: '罗文',
+      cue1x: '钴金星菱 · 翼切印'
+    },
+    {
+      id: 5,
+      key: 'king',
+      name: '王级',
+      roman: 'V',
+      code: '05',
+      matName: '香槟金锻 · 冠星印',
+      matDesc: '温润香槟锻金 · 冠冕六芒印\n贵族霸主金属压迫质感',
+      sampleChar: '裂地兽领主',
+      cue1x: '锻金王冠 · 冠顶印'
+    },
+    {
+      id: 6,
+      key: 'emperor',
+      name: '帝级',
+      roman: 'VI',
+      code: '06',
+      matName: '深曜黑金 · 绯金冠',
+      matDesc: '日蚀深曜黑金配绯金八芒冠\n帝境压境仍严守蓝金体系',
+      sampleChar: '红莲铁幕',
+      cue1x: '曜黑绯冠 · 双翼印'
+    },
+    {
+      id: 7,
+      key: 'divine',
+      name: '神级',
+      roman: 'VII',
+      code: '07',
+      matName: '纯白圣光 · 鎏金星环',
+      matDesc: '圣晶留白 × 双轨星环 × 虹棱\n七大列强法则降临之神圣',
+      sampleChar: '风神·岚',
+      cue1x: '圣白星环 · 天翼印'
+    }
+  ];
+
+  /**
+   * 构造高精度光学缩放 SVG 阶位印（零圆框套圆框 · 全建筑棱镜几何）
+   * mode: 'macro' (2× 展示特写) | 'combat' (1:1 实战名牌字号，采用独立光学字号与线宽补偿)
+   */
+  function renderRankSeal(tierId, mode) {
+    const isMacro = mode === 'macro';
+    let svg = '';
+
+    if (tierId === 1) {
+      // 初级：雪瓷冷银 · 单星刻 · 单斜切角
+      const w = isMacro ? 118 : 58;
+      const h = isMacro ? 44 : 22;
+      const sw = isMacro ? 1.35 : 2.3;
+      const fs = isMacro ? 19.5 : 24.5;
+      const ty = isMacro ? 29.5 : 31.2;
+      const ls = isMacro ? 1.8 : 0.8;
+      svg = `
+        <svg width="${w}" height="${h}" viewBox="0 0 118 44" aria-label="初级">
+          <polygon points="8,2 116,2 116,36 110,42 2,42 2,8" fill="url(#t1-fill)" stroke="url(#t1-stroke)" stroke-width="${sw}" />
+          <!-- 左侧冷银锚条 -->
+          <polygon points="8,3 13,3 13,41 3,41 3,8" fill="#8EA3BE" opacity="0.48" />
+          <line x1="10" y1="4.4" x2="113" y2="4.4" stroke="#FFFFFF" stroke-width="1.1" opacity="0.92" />
+          <!-- 单星刻线 (/) + 微星点 -->
+          <line x1="23" y1="32" x2="31.5" y2="12" stroke="#4D627E" stroke-width="${isMacro ? 2.2 : 3.4}" stroke-linecap="square" />
+          <polygon points="34,9.5 35.6,12.8 39,14.4 35.6,16 34,19.3 32.4,16 29,14.4 32.4,12.8" fill="#5B7291" />
+          <line x1="44" y1="10.5" x2="44" y2="33.5" stroke="#899EB9" stroke-width="${isMacro ? 1 : 1.5}" opacity="0.58" />
+          <!-- 阶位字 -->
+          <text x="79" y="${ty}" text-anchor="middle" font-family="Noto Serif CJK SC, Noto Serif SC, serif" font-size="${fs}" font-weight="800" fill="#32445F" letter-spacing="${ls}">初级</text>
+        </svg>`;
+    } else if (tierId === 2) {
+      // 中级：冰青折光 · 双星刻 · 四角冰棱切
+      const w = isMacro ? 124 : 61;
+      const h = isMacro ? 44 : 22;
+      const sw = isMacro ? 1.45 : 2.45;
+      const fs = isMacro ? 19.5 : 24.5;
+      const ty = isMacro ? 29.5 : 31.2;
+      const ls = isMacro ? 1.8 : 0.8;
+      svg = `
+        <svg width="${w}" height="${h}" viewBox="0 0 124 44" aria-label="中级">
+          <polygon points="9,2 115,2 122,9 122,35 115,42 9,42 2,35 2,9" fill="url(#t2-fill)" stroke="url(#t2-stroke)" stroke-width="${sw}" />
+          <!-- 冰晶斜折光带 -->
+          <polygon points="28,3 54,3 38,41 12,41" fill="url(#t2-glint)" />
+          <line x1="11" y1="4.6" x2="113" y2="4.6" stroke="#FFFFFF" stroke-width="1.2" opacity="0.92" />
+          <!-- 双星刻线 (//) + 冰菱点 -->
+          <line x1="18.5" y1="32" x2="26.5" y2="12" stroke="#0B5F97" stroke-width="${isMacro ? 2.2 : 3.3}" />
+          <line x1="27.5" y1="32" x2="35.5" y2="12" stroke="#0B5F97" stroke-width="${isMacro ? 2.2 : 3.3}" />
+          <polygon points="38.5,9.5 41,13 38.5,16.5 36,13" fill="#1484C7" />
+          <line x1="47.5" y1="10" x2="47.5" y2="34" stroke="#1E94D4" stroke-width="${isMacro ? 1 : 1.5}" opacity="0.55" />
+          <!-- 阶位字 -->
+          <text x="84" y="${ty}" text-anchor="middle" font-family="Noto Serif CJK SC, Noto Serif SC, serif" font-size="${fs}" font-weight="800" fill="#06416E" letter-spacing="${ls}">中级</text>
+        </svg>`;
+    } else if (tierId === 3) {
+      // 高级：皇家深蓝双面棱晶 · 三星刻 · 六角锐切
+      const w = isMacro ? 132 : 65;
+      const h = isMacro ? 46 : 23;
+      const sw = isMacro ? 1.55 : 2.5;
+      const fs = isMacro ? 20 : 25;
+      const ty = isMacro ? 30.5 : 32.2;
+      const ls = isMacro ? 2.0 : 0.9;
+      svg = `
+        <svg width="${w}" height="${h}" viewBox="0 0 132 46" aria-label="高级">
+          <polygon points="11,2 121,2 130,23 121,44 11,44 2,23" fill="url(#t3-fill)" stroke="url(#t3-stroke)" stroke-width="${sw}" />
+          <!-- 双面棱镜中央折光脊 -->
+          <line x1="6" y1="23" x2="126" y2="23" stroke="#7DD3FC" stroke-width="1" opacity="0.48" />
+          <line x1="14" y1="5" x2="118" y2="5" stroke="#D9F3FF" stroke-width="1.2" opacity="0.75" />
+          <!-- 三星刻线 (///) 递增高度 -->
+          <line x1="18" y1="33" x2="24.5" y2="15.5" stroke="#BBEBFF" stroke-width="${isMacro ? 2.1 : 3.0}" />
+          <line x1="26.5" y1="34" x2="34" y2="12" stroke="#FFFFFF" stroke-width="${isMacro ? 2.4 : 3.4}" />
+          <line x1="35" y1="33" x2="41.5" y2="15.5" stroke="#BBEBFF" stroke-width="${isMacro ? 2.1 : 3.0}" />
+          <polygon points="35.2,7.8 37.3,10.6 35.2,13.4 33.1,10.6" fill="#9CE2FF" />
+          <line x1="50" y1="10" x2="50" y2="36" stroke="#7DD3FC" stroke-width="${isMacro ? 1 : 1.5}" opacity="0.46" />
+          <!-- 阶位字 -->
+          <text x="88" y="${ty}" text-anchor="middle" font-family="Noto Serif CJK SC, Noto Serif SC, serif" font-size="${fs}" font-weight="900" fill="#FFFFFF" letter-spacing="${ls}">高级</text>
+        </svg>`;
+    } else if (tierId === 4) {
+      // 圣级：深钴星渊 × 淡金星菱纹章 · 踏入超凡双翼切印
+      const w = isMacro ? 140 : 69;
+      const h = isMacro ? 48 : 24;
+      const sw = isMacro ? 1.7 : 2.7;
+      const fs = isMacro ? 20.5 : 25.5;
+      const ty = isMacro ? 31.2 : 32.8;
+      const ls = isMacro ? 2.2 : 1.0;
+      svg = `
+        <svg width="${w}" height="${h}" viewBox="0 0 140 48" aria-label="圣级">
+          <!-- 外轮廓：超凡阶梯翼切 -->
+          <polygon points="14,3 126,3 132,11 138,24 132,37 126,45 14,45 8,37 2,24 8,11" fill="url(#t4-fill)" stroke="url(#t4-gold)" stroke-width="${sw}" />
+          <polygon points="14,3 126,3 132,11 138,24 132,37 126,45 14,45 8,37 2,24 8,11" fill="url(#t4-star-glow)" />
+          <!-- 内嵌细金建筑经线 -->
+          <line x1="18" y1="7.2" x2="122" y2="7.2" stroke="#E8D2A1" stroke-width="${isMacro ? 0.95 : 1.25}" opacity="0.68" />
+          <line x1="18" y1="40.8" x2="122" y2="40.8" stroke="#C4A46C" stroke-width="${isMacro ? 0.95 : 1.25}" opacity="0.58" />
+          <!-- 左侧：淡金星菱纹章 (菱形星轨 + 四芒圣星) -->
+          <polygon points="31.5,9.5 46,24 31.5,38.5 17,24" fill="none" stroke="url(#t4-gold)" stroke-width="${isMacro ? 1.4 : 2.2}" />
+          <path d="M 31.5 12.2 L 34.6 20.9 L 43.3 24 L 34.6 27.1 L 31.5 35.8 L 28.4 27.1 L 19.7 24 L 28.4 20.9 Z" fill="url(#t4-gold)" />
+          <polygon points="31.5,21.2 34.3,24 31.5,26.8 28.7,24" fill="#FFFFFF" />
+          <!-- 左右翼金铆点 -->
+          <polygon points="8.5,24 11.8,21.2 15.1,24 11.8,26.8" fill="#EFE0BE" />
+          <polygon points="124.9,24 128.2,21.2 131.5,24 128.2,26.8" fill="#EFE0BE" />
+          <line x1="52.5" y1="11" x2="52.5" y2="37" stroke="#C4A46C" stroke-width="${isMacro ? 1.05 : 1.5}" opacity="0.52" />
+          <!-- 阶位字 -->
+          <text x="89" y="${ty}" text-anchor="middle" font-family="Noto Serif CJK SC, Noto Serif SC, serif" font-size="${fs}" font-weight="900" fill="#FAF0D6" letter-spacing="${ls}">圣级</text>
+        </svg>`;
+    } else if (tierId === 5) {
+      // 王级：温润香槟金锻面 · 冠星印 · 顶部王冠微耸切脊
+      const w = isMacro ? 144 : 71;
+      const h = isMacro ? 52 : 25;
+      const sw = isMacro ? 1.7 : 2.65;
+      const fs = isMacro ? 21 : 25.5;
+      const ty = isMacro ? 34.2 : 35.4;
+      const ls = isMacro ? 2.4 : 1.0;
+      svg = `
+        <svg width="${w}" height="${h}" viewBox="0 0 144 52" aria-label="王级">
+          <!-- 王冠耸脊建筑印廓 -->
+          <polygon points="14,7 58,7 72,1.2 86,7 130,7 136,15 142,27 136,39 130,47 14,47 8,39 2,27 8,15" fill="url(#t5-fill)" stroke="url(#t5-stroke)" stroke-width="${sw}" />
+          <!-- 锻面金属扫光 -->
+          <polygon points="36,8 78,8 56,46 14,46" fill="url(#t5-sheen)" />
+          <!-- 上下精刻线与顶冠菱晶 -->
+          <line x1="18" y1="10.8" x2="126" y2="10.8" stroke="#FFFDF5" stroke-width="${isMacro ? 1.15 : 1.4}" opacity="0.90" />
+          <line x1="18" y1="43.5" x2="126" y2="43.5" stroke="#7A561A" stroke-width="${isMacro ? 1.05 : 1.35}" opacity="0.55" />
+          <polygon points="72,3.6 75.5,7 72,10.4 68.5,7" fill="#5A3D0E" />
+          <!-- 左侧：冠冕六芒星印 -->
+          <path d="M 22.5 19.2 L 26 13.8 L 30 17.8 L 33 12 L 36 17.8 L 40 13.8 L 43.5 19.2 Z" fill="#2A1B07" />
+          <path d="M 33 19.6 L 35.4 26.4 L 42.6 24.4 L 37.5 30 L 42.6 35.6 L 35.4 33.6 L 33 40.4 L 30.6 33.6 L 23.4 35.6 L 28.5 30 L 23.4 24.4 L 30.6 26.4 Z" fill="#2A1B07" />
+          <polygon points="33,27 36,30 33,33 30,30" fill="#FFF7DF" />
+          <line x1="52" y1="14" x2="52" y2="40" stroke="#785418" stroke-width="${isMacro ? 1.1 : 1.55}" opacity="0.52" />
+          <!-- 阶位字（暗铜浮雕高对比） -->
+          <text x="91" y="${ty}" text-anchor="middle" font-family="Noto Serif CJK SC, Noto Serif SC, serif" font-size="${fs}" font-weight="900" fill="#221404" letter-spacing="${ls}">王级</text>
+        </svg>`;
+    } else if (tierId === 6) {
+      // 帝级：深曜黑金 × 绯金冠芒 · 双阶帝国翼锋
+      const w = isMacro ? 150 : 75;
+      const h = isMacro ? 54 : 26;
+      const sw = isMacro ? 1.85 : 2.85;
+      const fs = isMacro ? 21.5 : 26;
+      const ty = isMacro ? 34.4 : 35.6;
+      const ls = isMacro ? 2.4 : 1.1;
+      svg = `
+        <svg width="${w}" height="${h}" viewBox="0 0 150 54" aria-label="帝级">
+          <!-- 外双阶绯金翼锋 -->
+          <polygon points="10,27 18,16 14,16 20,8 56,8 65.5,2.6 75,7 84.5,2.6 94,8 130,8 136,16 132,16 140,27 132,38 136,38 130,46 94,46 75,51.4 56,46 20,46 14,38 18,38" fill="url(#t6-fill)" stroke="url(#t6-stroke)" stroke-width="${sw}" />
+          <!-- 深绯暗辉 -->
+          <polygon points="14,27 22,10 128,10 136,27 128,44 22,44" fill="url(#t6-crimson-core)" />
+          <!-- 左右锐金侧矛 -->
+          <polygon points="1,27 9,23.2 9,30.8" fill="#E64F6D" />
+          <polygon points="149,27 141,23.2 141,30.8" fill="#E64F6D" />
+          <!-- 内细金框线 -->
+          <line x1="25" y1="11.8" x2="125" y2="11.8" stroke="#E8C47B" stroke-width="${isMacro ? 0.95 : 1.3}" opacity="0.72" />
+          <line x1="25" y1="42.2" x2="125" y2="42.2" stroke="#DC3A5B" stroke-width="${isMacro ? 0.95 : 1.3}" opacity="0.74" />
+          <!-- 左侧：绯金帝冠八芒日蚀星 -->
+          <path d="M 26 16.5 L 36.5 27 L 26 37.5 L 30.2 27 Z M 47 16.5 L 36.5 27 L 47 37.5 L 42.8 27 Z" fill="#E64867" opacity="0.95" />
+          <path d="M 36.5 11.8 L 39.6 23.9 L 51.8 27 L 39.6 30.1 L 36.5 42.2 L 33.4 30.1 L 21.2 27 L 33.4 23.9 Z" fill="url(#t6-crown)" />
+          <polygon points="36.5,22 41.5,27 36.5,32 31.5,27" fill="#120C17" stroke="#FAE2A8" stroke-width="${isMacro ? 1.15 : 1.5}" />
+          <polygon points="36.5,25 38.5,27 36.5,29 34.5,27" fill="#FF7390" />
+          <line x1="56.5" y1="14" x2="56.5" y2="40" stroke="#DFB569" stroke-width="${isMacro ? 1.05 : 1.5}" opacity="0.56" />
+          <!-- 阶位字 -->
+          <text x="95" y="${ty}" text-anchor="middle" font-family="Noto Serif CJK SC, Noto Serif SC, serif" font-size="${fs}" font-weight="900" fill="#FFF3D8" letter-spacing="${ls}">帝级</text>
+        </svg>`;
+    } else {
+      // 神级：纯白圣光 × 鎏金星环 × 细微虹彩棱光（七大列强·法则神格）
+      const w = isMacro ? 158 : 78;
+      const h = isMacro ? 58 : 27;
+      const sw = isMacro ? 1.95 : 3.0;
+      const fs = isMacro ? 22 : 26.5;
+      const ty = isMacro ? 36.2 : 37.2;
+      const ls = isMacro ? 2.6 : 1.2;
+      svg = `
+        <svg width="${w}" height="${h}" viewBox="0 0 158 58" aria-label="神级">
+          <!-- 圣晶天翼菱矛主廓 -->
+          <polygon points="2,29 18,16 24,9 66,9 79,2.8 92,9 134,9 140,16 156,29 140,42 134,49 92,49 79,55.2 66,49 24,49 18,42" fill="url(#t7-fill)" stroke="url(#t7-stroke)" stroke-width="${sw}" />
+          <!-- 内部微虹彩圣光棱面 -->
+          <polygon points="7,29 21,17.5 26,11.5 67,11.5 79,6 91,11.5 132,11.5 137,17.5 151,29 137,40.5 132,46.5 91,46.5 79,52 67,46.5 26,46.5 21,40.5" fill="url(#t7-prism-wash)" />
+          <!-- 内精雕鎏金建筑细线 -->
+          <polygon points="14,29 25,13 133,13 144,29 133,45 25,45" fill="none" stroke="#C69A44" stroke-width="${isMacro ? 0.95 : 1.35}" opacity="0.74" />
+          <!-- 上下星轨圣针（神格超界感） -->
+          <line x1="40.5" y1="2.4" x2="40.5" y2="55.6" stroke="url(#t7-gold-ring)" stroke-width="${isMacro ? 1.2 : 1.85}" opacity="0.88" />
+          <!-- 左右鎏金棱锋点 -->
+          <polygon points="9.5,29 14.5,25.8 19.5,29 14.5,32.2" fill="#C99A3E" />
+          <polygon points="138.5,29 143.5,25.8 148.5,29 143.5,32.2" fill="#C99A3E" />
+          <!-- 左侧：鎏金双轨星环 × 八芒圣晶星 -->
+          <ellipse cx="40.5" cy="29" rx="17" ry="6.4" transform="rotate(-28 40.5 29)" fill="none" stroke="url(#t7-gold-ring)" stroke-width="${isMacro ? 1.45 : 2.25}" />
+          <ellipse cx="40.5" cy="29" rx="17" ry="6.4" transform="rotate(28 40.5 29)" fill="none" stroke="#36AAF0" stroke-width="${isMacro ? 1.25 : 1.95}" opacity="0.88" />
+          <path d="M 40.5 13.5 L 43.2 25.6 L 55.2 29 L 43.2 32.4 L 40.5 44.5 L 37.8 32.4 L 25.8 29 L 37.8 25.6 Z" fill="url(#t7-gold-ring)" />
+          <path d="M 32.8 21.2 L 40.5 26.6 L 48.2 21.2 L 42.8 29 L 48.2 36.8 L 40.5 31.4 L 32.8 36.8 L 38.2 29 Z" fill="#C99A3E" opacity="0.78" />
+          <polygon points="40.5,25.2 44.3,29 40.5,32.8 36.7,29" fill="#259CEB" />
+          <polygon points="40.5,27.2 42.3,29 40.5,30.8 38.7,29" fill="#FFFFFF" />
+          <!-- 右侧精雕分隔线 -->
+          <line x1="62.5" y1="16" x2="62.5" y2="42" stroke="#C59C4B" stroke-width="${isMacro ? 1.05 : 1.5}" opacity="0.62" />
+          <!-- 阶位字（深皇家天穹蓝，纯白底上极高贵族对比） -->
+          <text x="98.5" y="${ty}" text-anchor="middle" font-family="Noto Serif CJK SC, Noto Serif SC, serif" font-size="${fs}" font-weight="900" fill="#091D54" letter-spacing="${ls}">神级</text>
+        </svg>`;
+    }
+
+    return `<span class="rank-seal-wrap tier-${tierId} ${isMacro ? 'macro' : 'combat'}">${svg}</span>`;
+  }
+
+  // 1. 填充全 7 阶对照陈列（2× 上行 & 1:1 下行）
+  const row2x = document.getElementById('row-2x');
+  const row1x = document.getElementById('row-1x');
+
+  RANKS.forEach(r => {
+    const c2 = document.createElement('div');
+    c2.className = `rank-cell-2x tier-${r.id}`;
+    c2.innerHTML = `
+      <div class="cell-top-meta">
+        <span>TIER ${r.code}</span>
+        <span class="cell-roman">${r.roman}</span>
+      </div>
+      <div class="seal-stage-2x">
+        ${renderRankSeal(r.id, 'macro')}
+      </div>
+      <div class="cell-caption">
+        <div class="cell-mat-name">${r.matName}</div>
+        <div class="cell-mat-desc">${r.matDesc.replace('\n', '<br/>')}</div>
+      </div>
+    `;
+    row2x.appendChild(c2);
+
+    const c1 = document.createElement('div');
+    c1.className = `rank-cell-1x tier-${r.id}`;
+    c1.innerHTML = `
+      <div class="scale-1x-solo">
+        ${renderRankSeal(r.id, 'combat')}
+      </div>
+      <div class="scale-1x-inline-strip">
+        ${renderRankSeal(r.id, 'combat')}
+        <span class="strip-char-name">${r.sampleChar}</span>
+      </div>
+      <div class="scale-1x-cue">${r.cue1x}</div>
+    `;
+    row1x.appendChild(c1);
+  });
+
+  // 2. 填充下半区 5 组真实战斗名牌嵌入预览（覆盖全 7 阶）
+  const MATCHUPS = [
+    {
+      idx: '01',
+      scene: '宅邸切磋',
+      tag: '同阶初试',
+      tagCls: '',
+      vsText: '初级 ⚔ 初级',
+      vsCls: '',
+      player: {
+        tier: 1,
+        name: '希尔维亚',
+        apOn: 3, apMax: 3,
+        subL: '物攻 18 · 魔攻 34',
+        subR: '常规 0%',
+        hp: 165, mhp: 165,
+        mp: 240, mmp: 260,
+        buffs: [
+          { text: '冰晶宫殿', cls: 'sapphire' },
+          { text: '温感微控', cls: '' }
+        ]
+      },
+      enemy: {
+        tier: 1,
+        name: '贝阿特丽丝',
+        elem: '火系', elemCls: 'elem-fire',
+        hp: 242, mhp: 278, shield: 0,
+        mp: 120, mmp: 160,
+        locks: 3, maxLocks: 5, lockStyle: '', weak: '弱 水/冰',
+        plateCls: '',
+        buffs: [
+          { text: '烈焰斗气×3', cls: 'gold' },
+          { text: '剑障防反', cls: '' }
+        ]
+      }
+    },
+    {
+      idx: '02',
+      scene: '乱葬岗活捉',
+      tag: '跨阶压制',
+      tagCls: 't-saint',
+      vsText: '中级 ⚔ 圣级',
+      vsCls: '',
+      player: {
+        tier: 2,
+        name: '希尔维亚',
+        apOn: 2, apMax: 3,
+        subL: '物攻 24 · 魔攻 42',
+        subR: '★20% 盈溢',
+        hp: 148, mhp: 185,
+        mp: 195, mmp: 275,
+        buffs: [
+          { text: '蔓地薄冰', cls: 'shield' },
+          { text: '双镜预备', cls: 'sapphire' }
+        ]
+      },
+      enemy: {
+        tier: 4,
+        name: '罗文',
+        elem: '暗系', elemCls: 'elem-dark',
+        hp: 254, mhp: 290, shield: 0,
+        mp: 310, mmp: 340,
+        locks: 4, maxLocks: 4, lockStyle: '', weak: '弱 实体冰墙',
+        plateCls: '',
+        buffs: [
+          { text: '晦轮折射', cls: 'sapphire' },
+          { text: '封锁 62%', cls: 'gold' }
+        ]
+      }
+    },
+    {
+      idx: '03',
+      scene: '霜渊峡谷',
+      tag: '领主威压',
+      tagCls: 't-king',
+      vsText: '高级 ⚔ 王级',
+      vsCls: 'boss-vs',
+      player: {
+        tier: 3,
+        name: '希尔维亚',
+        apOn: 3, apMax: 3,
+        subL: '物攻 42 · 魔攻 54',
+        subR: '★20% 盈溢',
+        hp: 212, mhp: 240,
+        mp: 264, mmp: 300,
+        buffs: [
+          { text: '魔战循环', cls: 'sapphire' },
+          { text: '伊诺共鸣', cls: 'shield' }
+        ]
+      },
+      enemy: {
+        tier: 5,
+        name: '裂地兽领主',
+        elem: '土系', elemCls: 'elem-earth',
+        hp: 540, mhp: 650, shield: 115,
+        mp: 180, mmp: 220,
+        locks: 4, maxLocks: 6, lockStyle: 'gold-lock', weak: '弱 破核冰枪',
+        plateCls: '',
+        buffs: [
+          { text: '实体甲 35%', cls: 'gold' },
+          { text: '实体盾 115', cls: 'shield' }
+        ]
+      }
+    },
+    {
+      idx: '04',
+      scene: '东翼火廊',
+      tag: '帝境绝境',
+      tagCls: 't-emp',
+      vsText: '高级 ⚔ 帝级',
+      vsCls: 'boss-vs',
+      player: {
+        tier: 3,
+        name: '希尔维亚',
+        apOn: 2, apMax: 3,
+        subL: '物攻 46 · 魔攻 56',
+        subR: '★★40% 过载',
+        hp: 176, mhp: 250,
+        mp: 218, mmp: 310,
+        buffs: [
+          { text: '霁馆生根步', cls: 'sapphire' },
+          { text: '回风看破', cls: 'shield' }
+        ]
+      },
+      enemy: {
+        tier: 6,
+        name: '红莲铁幕',
+        elem: '火系', elemCls: 'elem-fire',
+        hp: 310, mhp: 620, shield: 75,
+        mp: 240, mmp: 280,
+        locks: 5, maxLocks: 6, lockStyle: 'crimson-lock', weak: '弱 覆水截断',
+        plateCls: 'phase2',
+        buffs: [
+          { text: '✦ 二阶段', cls: 'synergy' },
+          { text: '烈焰斗气×2', cls: 'crimson' }
+        ]
+      }
+    },
+    {
+      idx: '05',
+      scene: '风暴眼试剑',
+      tag: '列强神威',
+      tagCls: 't-god',
+      vsText: '高级 ⚔ 神级',
+      vsCls: 'god-vs',
+      player: {
+        tier: 3,
+        name: '希尔维亚',
+        apOn: 3, apMax: 3,
+        subL: '物攻 48 · 魔攻 56',
+        subR: '★★★60% 极限',
+        hp: 192, mhp: 255,
+        mp: 278, mmp: 310,
+        buffs: [
+          { text: '星霜极限', cls: 'gold' },
+          { text: '风行残像', cls: 'sapphire' }
+        ]
+      },
+      enemy: {
+        tier: 7,
+        name: '风神·岚',
+        elem: '风系', elemCls: 'elem-wind',
+        hp: 710, mhp: 940, shield: 105,
+        mp: 480, mmp: 500,
+        locks: 6, maxLocks: 6, lockStyle: 'gold-lock', weak: '弱 风眼看破',
+        plateCls: 'divine-trial',
+        buffs: [
+          { text: '风暴眼全开', cls: 'gold' },
+          { text: '风步闪避×1', cls: 'shield' }
+        ]
+      }
+    }
+  ];
+
+  function renderApGems(on, max) {
+    let out = '';
+    for (let i = 0; i < max; i++) {
+      out += `<i class="cb-ap-gem${i < on ? ' on' : ''}"></i>`;
+    }
+    return `${out}<span class="cb-ap-label">${on}/${max}</span>`;
+  }
+
+  function renderLockPips(cur, max, styleCls) {
+    let out = '';
+    for (let i = 0; i < max; i++) {
+      const cls = i < cur ? `locked ${styleCls}` : 'cracked';
+      out += `<i class="lock-pip ${cls}"></i>`;
+    }
+    return out;
+  }
+
+  const grid = document.getElementById('matchups-grid');
+  MATCHUPS.forEach(m => {
+    const p = m.player;
+    const e = m.enemy;
+    const pHpPct = Math.round((p.hp / p.mhp) * 100);
+    const pMpPct = Math.round((p.mp / p.mmp) * 100);
+    const eHpPct = Math.round((e.hp / e.mhp) * 100);
+    const eMpPct = Math.round((e.mp / e.mmp) * 100);
+    const shieldPct = e.shield > 0 ? Math.min(26, Math.round((e.shield / e.mhp) * 100) + 4) : 0;
+
+    const col = document.createElement('div');
+    col.className = 'matchup-col';
+    col.innerHTML = `
+      <div class="matchup-head">
+        <div class="matchup-idx"><span>${m.idx}</span>${m.scene}</div>
+        <div class="matchup-tag ${m.tagCls}">${m.tag}</div>
+      </div>
+
+      <!-- 我方雪瓷冰晶战卡 -->
+      <div class="cb-card-shadow">
+        <article class="cb-player-pane">
+          <div class="cb-p-header">
+            <div class="cb-name-group">
+              ${renderRankSeal(p.tier, 'combat')}
+              <span class="cb-p-name">${p.name}</span>
+            </div>
+            <div class="cb-ap-row">${renderApGems(p.apOn, p.apMax)}</div>
+          </div>
+          <div class="cb-p-sub">
+            <span>${p.subL}</span>
+            <span style="color:#1658EB;font-weight:700;">${p.subR}</span>
+          </div>
+          <div class="cb-bars-wrap">
+            <div class="cb-stat-row">
+              <div class="cb-stat-top"><span>生命值 HP</span><span class="cb-stat-val">${p.hp}/${p.mhp}</span></div>
+              <div class="cb-stat-track"><div class="cb-stat-fill hp" style="width:${pHpPct}%"></div></div>
+            </div>
+            <div class="cb-stat-row">
+              <div class="cb-stat-top"><span>魔力池 MP</span><span class="cb-stat-val">${p.mp}/${p.mmp}</span></div>
+              <div class="cb-stat-track"><div class="cb-stat-fill mp" style="width:${pMpPct}%"></div></div>
+            </div>
+          </div>
+          <div class="cb-buff-list">
+            ${p.buffs.map(b => `<span class="cb-buff-chip ${b.cls}">${b.text}</span>`).join('')}
+          </div>
+        </article>
+      </div>
+
+      <!-- VS 阶位对阵指示 -->
+      <div class="vs-bridge">
+        <span class="vs-line"></span>
+        <div class="vs-core ${m.vsCls}">
+          <span class="vs-diamond">VS</span>
+          <span>${m.vsText}</span>
+        </div>
+        <span class="vs-line right"></span>
+      </div>
+
+      <!-- 敌方雪瓷冰晶战卡 -->
+      <div class="cb-card-shadow">
+        <article class="cb-e-plate ${e.plateCls}">
+          <div class="cb-e-name">
+            <div class="cb-name-group">
+              ${renderRankSeal(e.tier, 'combat')}
+              <span class="cb-e-title">${e.name}</span>
+            </div>
+            <span class="cb-elem-tag ${e.elemCls}">${e.elem}</span>
+          </div>
+
+          <div class="cb-lock-row">
+            <div class="cb-lock-left">
+              <span>弱点锁</span>
+              <span class="cb-lock-pips">${renderLockPips(e.locks, e.maxLocks, e.lockStyle)}</span>
+              <span class="cb-lock-count">${e.locks}/${e.maxLocks}</span>
+            </div>
+            <span class="cb-weak-hint">${e.weak}</span>
+          </div>
+
+          <div class="cb-bars-wrap">
+            <div class="cb-stat-row">
+              <div class="cb-stat-top">
+                <span>敌方生命</span>
+                <span class="cb-stat-val">${e.hp}/${e.mhp}${e.shield ? ` <span class="shield-txt">(+盾${e.shield})</span>` : ''}</span>
+              </div>
+              <div class="cb-stat-track">
+                <div class="cb-stat-fill ehp" style="width:${eHpPct}%"></div>
+                ${shieldPct ? `<div class="cb-shield-sliver" style="width:${shieldPct}%"></div>` : ''}
+              </div>
+            </div>
+            <div class="cb-stat-row">
+              <div class="cb-stat-top"><span>敌方魔力</span><span class="cb-stat-val">${e.mp}/${e.mmp}</span></div>
+              <div class="cb-stat-track"><div class="cb-stat-fill emp" style="width:${eMpPct}%"></div></div>
+            </div>
+          </div>
+
+          <div class="cb-buff-list">
+            ${e.buffs.map(b => `<span class="cb-buff-chip ${b.cls}">${b.text}</span>`).join('')}
+          </div>
+        </article>
+      </div>
+    `;
+    grid.appendChild(col);
+  });
+})();
+</script>
+</body>
+</html>

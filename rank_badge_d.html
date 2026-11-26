@@ -1,0 +1,1768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1440, initial-scale=1.0" />
+<title>方案 D · 自由发挥 · 水彩星墨魔导阶印</title>
+<style>
+  :root {
+    --paper-hi: #FCFDFE;
+    --paper-mid: #F4F7FC;
+    --paper-lo: #EBF1FA;
+    --ink: #162238;
+    --ink-mid: #384B6A;
+    --ink-muted: #617492;
+    --sapphire: #1658EB;
+    --sapphire-deep: #0E2B78;
+    --sapphire-abyss: #081A54;
+    --cyan: #7DD3FC;
+    --gold: #C4A46C;
+    --gold-deep: #8C6928;
+    --gold-pale: #EFE0BE;
+    --crimson: #D13456;
+    --crimson-deep: #9E1B3A;
+    --emerald: #0E8A64;
+    --hairline: rgba(96, 130, 182, 0.22);
+    --hairline-strong: rgba(22, 88, 235, 0.30);
+    --serif: 'Noto Serif CJK SC', 'Noto Serif SC', 'Source Han Serif SC', Georgia, serif;
+    --sans: 'Noto Sans CJK SC', 'Noto Sans SC', sans-serif;
+    --mono: 'DejaVu Sans Mono', ui-monospace, monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    width: 1440px;
+    height: 900px;
+    overflow: hidden;
+    background: var(--paper-mid);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+  }
+
+  /* 全屏单页画板：冷压雪瓷水彩纸底 */
+  .board {
+    position: relative;
+    width: 1440px;
+    height: 900px;
+    padding: 18px 28px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background:
+      radial-gradient(ellipse 680px 360px at 94% 4%, rgba(125, 211, 252, 0.20) 0%, rgba(22, 88, 235, 0.05) 48%, transparent 76%),
+      radial-gradient(ellipse 520px 300px at 6% 96%, rgba(196, 164, 108, 0.14) 0%, rgba(125, 211, 252, 0.06) 52%, transparent 78%),
+      radial-gradient(ellipse 460px 240px at 88% 92%, rgba(139, 92, 246, 0.08) 0%, transparent 70%),
+      linear-gradient(162deg, #FCFDFE 0%, #F4F8FD 52%, #EDF3FB 100%);
+    overflow: hidden;
+  }
+
+  /* 细腻冷压水彩纸纹层 */
+  .paper-grain {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.42;
+  }
+
+  /* 角落极淡手绘水彩星沫装饰 */
+  .corner-wash {
+    position: absolute;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .corner-wash.tr {
+    top: -18px;
+    right: -12px;
+    width: 420px;
+    height: 150px;
+    opacity: 0.52;
+  }
+  .corner-wash.bl {
+    bottom: -14px;
+    left: -10px;
+    width: 340px;
+    height: 120px;
+    opacity: 0.36;
+  }
+
+  .board > header,
+  .board > section {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* ==================== 顶部标题栏 ==================== */
+  .board-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding-bottom: 10px;
+    border-bottom: 1px solid transparent;
+    border-image: linear-gradient(90deg, #1658EB 0%, rgba(125, 211, 252, 0.72) 34%, rgba(196, 164, 108, 0.68) 72%, rgba(96, 130, 182, 0.14) 100%) 1;
+  }
+
+  .bh-left {
+    display: flex;
+    align-items: stretch;
+    gap: 13px;
+  }
+
+  .bh-accent {
+    width: 3.5px;
+    background: linear-gradient(180deg, #2E77F8 0%, #1658EB 52%, #C4A46C 100%);
+    flex-shrink: 0;
+  }
+
+  .bh-title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .bh-title {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--sapphire-deep);
+    line-height: 1.15;
+  }
+
+  .bh-en {
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: var(--gold-deep);
+    font-weight: 600;
+  }
+
+  .bh-sub {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--ink-mid);
+    letter-spacing: 0.02em;
+    line-height: 1.35;
+  }
+
+  .bh-sub b {
+    color: var(--sapphire-deep);
+    font-weight: 700;
+  }
+
+  .bh-meta {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 0;
+    padding-bottom: 2px;
+  }
+
+  .bh-meta-item {
+    padding: 0 12px;
+    border-left: 1px solid var(--hairline);
+    text-align: right;
+  }
+  .bh-meta-item:first-child {
+    border-left: none;
+  }
+  .bh-meta-item:last-child {
+    padding-right: 0;
+  }
+
+  .bh-meta-k {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+  }
+
+  .bh-meta-v {
+    display: block;
+    margin-top: 1px;
+    font-family: var(--serif);
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--sapphire-deep);
+  }
+
+  /* ==================== 区块小眉标 ==================== */
+  .sec-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .sec-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--serif);
+    font-size: 13.5px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--sapphire-deep);
+  }
+
+  .sec-diamond {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    transform: rotate(45deg);
+    background: linear-gradient(135deg, #2E77F8, #1658EB);
+    box-shadow: 0 0 0 1.5px rgba(196, 164, 108, 0.65);
+  }
+
+  .sec-hint {
+    font-size: 11px;
+    color: var(--ink-muted);
+    letter-spacing: 0.02em;
+  }
+
+  /* ==================== 中上区：全 7 阶图谱 ==================== */
+  .gallery-sec {
+    flex: 0 0 auto;
+  }
+
+  .gallery-folio {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, rgba(244, 249, 255, 0.80) 100%);
+    border-top: 1.5px solid rgba(22, 88, 235, 0.42);
+    border-bottom: 1px solid var(--hairline);
+    box-shadow: 0 10px 26px rgba(14, 43, 120, 0.06);
+  }
+
+  .tier-col {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 11px 8px 10px;
+    border-left: 1px solid rgba(96, 130, 182, 0.16);
+  }
+  .tier-col:first-child {
+    border-left: none;
+  }
+  .tier-col.is-divine {
+    background: linear-gradient(180deg, rgba(125, 211, 252, 0.09) 0%, rgba(196, 164, 108, 0.08) 55%, rgba(139, 92, 246, 0.05) 100%);
+  }
+
+  .tc-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 0 4px 7px;
+    border-bottom: 1px dashed rgba(96, 130, 182, 0.22);
+  }
+
+  .tc-idx {
+    font-family: Georgia, serif;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--gold-deep);
+    letter-spacing: 0.06em;
+  }
+
+  .tc-poetic {
+    font-family: var(--serif);
+    font-size: 12.5px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: 0.04em;
+  }
+
+  /* 2x 放大特写区 */
+  .tc-stage-2x {
+    height: 92px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .tc-scale-tag {
+    position: absolute;
+    top: 5px;
+    left: 4px;
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--ink-muted);
+    letter-spacing: 0.04em;
+    opacity: 0.78;
+  }
+
+  /* 1:1 实战字号区 */
+  .tc-stage-1x {
+    height: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    position: relative;
+    background: linear-gradient(90deg, transparent 0%, rgba(226, 238, 255, 0.34) 50%, transparent 100%);
+    border-top: 1px solid rgba(96, 130, 182, 0.14);
+    border-bottom: 1px solid rgba(96, 130, 182, 0.14);
+  }
+
+  .tc-1x-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .tc-1x-sample {
+    font-family: var(--serif);
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: 0.02em;
+  }
+
+  /* 底部工艺注释 */
+  .tc-notes {
+    padding: 7px 4px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .tc-metal {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--sapphire-deep);
+    letter-spacing: 0.02em;
+  }
+  .tier-col[data-tier="4"] .tc-metal { color: #532D9C; }
+  .tier-col[data-tier="5"] .tc-metal { color: #8A4F08; }
+  .tier-col[data-tier="6"] .tc-metal { color: #9E1B3A; }
+  .tier-col[data-tier="7"] .tc-metal { color: #1648B8; }
+
+  .tc-desc {
+    font-size: 10px;
+    line-height: 1.42;
+    color: var(--ink-muted);
+  }
+
+  /* ==================== 核心：水彩星墨魔导阶印组件 ==================== */
+  .rank-seal {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    flex-shrink: 0;
+    user-select: none;
+    overflow: visible;
+  }
+
+  .rank-seal.size-2x {
+    width: 156px;
+    height: 56px;
+  }
+
+  .rank-seal.size-1x {
+    width: 72px;
+    height: 26px;
+  }
+
+  .rank-seal .rs-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .rank-seal .rs-text {
+    position: relative;
+    z-index: 2;
+    font-family: var(--serif);
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+    /* 向右微偏移，与左侧手绘星芒形成优雅视觉平衡 */
+    transform: translateX(13px);
+  }
+
+  .rank-seal.size-2x .rs-text {
+    font-size: 24px;
+    letter-spacing: 0.16em;
+    transform: translate(14px, -0.5px);
+  }
+
+  .rank-seal.size-1x .rs-text {
+    font-size: 11.5px;
+    letter-spacing: 0.10em;
+    transform: translate(7px, -0.3px);
+  }
+
+  /* 7 阶字体墨色与极细纸光层次 */
+  .rank-seal.t1 .rs-text {
+    color: #1D3557;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .rank-seal.t2 .rs-text {
+    color: #083358;
+    text-shadow: 0 1px 0 rgba(235, 252, 255, 0.82);
+  }
+  .rank-seal.t3 .rs-text {
+    color: #FFFFFF;
+    text-shadow: 0 1px 2px rgba(7, 24, 78, 0.65), 0 0 6px rgba(16, 62, 168, 0.35);
+  }
+  .rank-seal.t4 .rs-text {
+    color: #FDF9FF;
+    text-shadow: 0 1px 2.5px rgba(38, 14, 84, 0.72), 0 0 5px rgba(130, 82, 212, 0.30);
+  }
+  .rank-seal.t5 .rs-text {
+    color: #FFFDF4;
+    text-shadow: 0 1px 2.5px rgba(82, 40, 2, 0.82), 0 0 5px rgba(146, 82, 8, 0.45);
+  }
+  .rank-seal.t6 .rs-text {
+    color: #FFF8EC;
+    text-shadow: 0 1px 2.5px rgba(84, 8, 22, 0.82), 0 0 6px rgba(154, 18, 44, 0.40);
+  }
+  .rank-seal.t7 .rs-text {
+    color: #FFFFFF;
+    text-shadow: 0 1px 2.5px rgba(10, 28, 92, 0.84), 0 0 7px rgba(24, 72, 196, 0.55);
+  }
+
+  /* ==================== 下半区：5 组雪瓷冰晶实战对阵 + 工艺图例 ==================== */
+  .combat-sec {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .match-grid {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 12px 14px;
+    min-height: 0;
+  }
+
+  .match-module {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 0;
+  }
+
+  .mm-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2px;
+  }
+
+  .mm-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--sapphire-deep);
+    letter-spacing: 0.03em;
+  }
+
+  .mm-num {
+    font-family: Georgia, serif;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--gold-deep);
+    padding-right: 6px;
+    border-right: 1px solid rgba(196, 164, 108, 0.55);
+  }
+
+  .mm-gap-note {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--ink-muted);
+  }
+  .mm-gap-note.danger { color: var(--crimson-deep); }
+  .mm-gap-note.divine { color: #2D4CC8; }
+
+  .mm-duel {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr);
+    align-items: stretch;
+    gap: 0;
+    min-height: 0;
+  }
+
+  .vs-axis {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    position: relative;
+  }
+
+  .vs-axis::before,
+  .vs-axis::after {
+    content: '';
+    width: 1px;
+    flex: 1 1 auto;
+    background: linear-gradient(180deg, transparent, rgba(96, 130, 182, 0.34), transparent);
+  }
+
+  .vs-glyph {
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--gold-deep);
+    letter-spacing: 0.04em;
+  }
+
+  /* ===== 1:1 复刻本作雪瓷冰晶战卡 (.cb-player-pane / .cb-e-plate) ===== */
+  .sim-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 9px 11px 9px;
+    background:
+      linear-gradient(112deg, transparent 10%, rgba(255, 255, 255, 0.68) 26%, rgba(125, 211, 252, 0.14) 34%, transparent 48%, rgba(239, 224, 190, 0.12) 78%, transparent 94%),
+      linear-gradient(154deg, rgba(255, 255, 255, 0.96) 0%, rgba(244, 250, 255, 0.93) 56%, rgba(230, 241, 255, 0.92) 100%);
+    filter: drop-shadow(0 6px 14px rgba(14, 43, 120, 0.10));
+    min-width: 0;
+  }
+
+  .sim-card.ally {
+    border: 1px solid rgba(96, 146, 224, 0.44);
+    border-left: 3px solid var(--sapphire);
+    border-top: 2px solid var(--gold);
+    clip-path: polygon(0 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  }
+
+  .sim-card.enemy {
+    border: 1px solid rgba(209, 52, 86, 0.36);
+    border-top: 2px solid var(--crimson);
+    border-right: 2.5px solid rgba(209, 52, 86, 0.62);
+    clip-path: polygon(13px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 13px);
+  }
+
+  .sim-card.enemy.is-divine-card {
+    border-color: rgba(59, 91, 219, 0.42);
+    border-top: 2px solid var(--sapphire);
+    border-right: 2.5px solid var(--gold);
+  }
+
+  .sc-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(96, 130, 182, 0.18);
+  }
+
+  .sc-id {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .sc-name {
+    font-family: var(--serif);
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--ink);
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+  }
+
+  .sc-ap {
+    display: inline-flex;
+    align-items: center;
+    gap: 2.5px;
+    flex-shrink: 0;
+  }
+
+  .ap-gem {
+    width: 6px;
+    height: 6px;
+    transform: rotate(45deg);
+    background: linear-gradient(135deg, #7DD3FC, #1658EB);
+    box-shadow: 0 0 0 1px rgba(14, 43, 120, 0.28);
+  }
+  .ap-gem.empty {
+    background: rgba(14, 43, 120, 0.14);
+    box-shadow: none;
+  }
+
+  .sc-elem {
+    padding: 1px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.3;
+    flex-shrink: 0;
+  }
+  .sc-elem.fire  { background: rgba(196, 37, 68, 0.08); color: #9E1B3A; }
+  .sc-elem.dark  { background: rgba(83, 45, 156, 0.09); color: #4A248C; }
+  .sc-elem.earth { background: rgba(154, 90, 14, 0.09); color: #7C4408; }
+  .sc-elem.wind  { background: rgba(14, 138, 100, 0.09); color: #0B6E4F; }
+
+  /* 精确 7px 六角切面结晶 HP / MP 轨 */
+  .sc-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 6px 0;
+  }
+
+  .sc-bar-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5px;
+  }
+
+  .sc-bar-meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: 10px;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sc-bar-k {
+    font-weight: 700;
+    color: var(--ink-muted);
+    letter-spacing: 0.04em;
+  }
+
+  .sc-bar-v {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--ink-mid);
+  }
+  .sc-bar-v .shield-note {
+    color: #0D6E96;
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 9.5px;
+  }
+
+  .sc-track {
+    position: relative;
+    height: 7px;
+    background: rgba(14, 34, 84, 0.14);
+    clip-path: polygon(3px 0%, calc(100% - 3px) 0%, 100% 50%, calc(100% - 3px) 100%, 3px 100%, 0% 50%);
+    overflow: hidden;
+  }
+
+  .sc-fill {
+    height: 100%;
+    clip-path: polygon(3px 0%, calc(100% - 3px) 0%, 100% 50%, calc(100% - 3px) 100%, 3px 100%, 0% 50%);
+  }
+
+  .sc-fill.hp {
+    background: linear-gradient(180deg, #FF8FA4 0%, #E03A59 49%, #B51E3E 51%, #8E1430 100%);
+  }
+
+  .sc-fill.mp {
+    background: linear-gradient(180deg, #9BE7FF 0%, #3288FF 49%, #1658EB 51%, #0E2B78 100%);
+  }
+
+  /* 弱点锁 & 战卡状态条（严格零圆框套圆框：仅左侧 2px 色线 + 无边框底色） */
+  .sc-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+    padding-top: 5px;
+    border-top: 1px dashed rgba(96, 130, 182, 0.20);
+  }
+
+  .lock-strip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .lock-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--ink-mid);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .lock-pips {
+    display: inline-flex;
+    align-items: center;
+    gap: 2.5px;
+  }
+
+  .lock-pip {
+    width: 6.5px;
+    height: 6.5px;
+    transform: rotate(45deg);
+    background: linear-gradient(135deg, #EFE0BE 0%, #C4A46C 55%, #8C6928 100%);
+    box-shadow: 0 0 0 0.8px rgba(140, 105, 40, 0.55);
+  }
+
+  .lock-pip.cracked {
+    background: rgba(14, 43, 120, 0.13);
+    box-shadow: inset 0 0 0 0.8px rgba(96, 130, 182, 0.38);
+  }
+
+  .chip {
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.25;
+    padding: 1.5px 5px;
+    background: rgba(27, 35, 51, 0.045);
+    border-left: 2px solid rgba(27, 35, 51, 0.26);
+    color: var(--ink-mid);
+    white-space: nowrap;
+  }
+  .chip.sapphire {
+    background: rgba(22, 88, 235, 0.07);
+    border-left-color: var(--sapphire);
+    color: var(--sapphire-deep);
+  }
+  .chip.gold {
+    background: rgba(196, 164, 108, 0.14);
+    border-left-color: var(--gold-deep);
+    color: #704B12;
+  }
+  .chip.crimson {
+    background: rgba(209, 52, 86, 0.08);
+    border-left-color: var(--crimson);
+    color: var(--crimson-deep);
+  }
+  .chip.ice {
+    background: rgba(14, 138, 178, 0.09);
+    border-left-color: #0E7EA8;
+    color: #0B5D7E;
+  }
+
+  /* ===== 第 6 格：方案 D 核心工艺解构与阶差阶梯 ===== */
+  .spec-folio {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 10px 14px 10px;
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.92) 0%, rgba(241, 247, 255, 0.88) 100%);
+    border-top: 2px solid var(--sapphire);
+    border-left: 1px solid rgba(96, 130, 182, 0.28);
+    border-right: 1px solid rgba(96, 130, 182, 0.22);
+    border-bottom: 1px solid rgba(96, 130, 182, 0.24);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+  }
+
+  .sf-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .sf-title {
+    font-family: var(--serif);
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--sapphire-deep);
+    letter-spacing: 0.04em;
+  }
+
+  .sf-sub {
+    font-size: 10px;
+    color: var(--gold-deep);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .sf-points {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px 12px;
+    margin: 7px 0;
+  }
+
+  .sf-pt {
+    border-left: 2px solid rgba(22, 88, 235, 0.36);
+    padding-left: 8px;
+  }
+  .sf-pt.gold-edge {
+    border-left-color: var(--gold);
+  }
+
+  .sf-pt-t {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 2px;
+  }
+
+  .sf-pt-d {
+    font-size: 10px;
+    line-height: 1.38;
+    color: var(--ink-muted);
+  }
+
+  .sf-ladder {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 6px;
+    border-top: 1px dashed rgba(96, 130, 182, 0.26);
+  }
+
+  .sf-ladder-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .sf-swatch {
+    width: 34px;
+    height: 6px;
+  }
+
+  .sf-step-name {
+    font-family: var(--serif);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--ink-mid);
+  }
+
+  .sf-arrow {
+    font-size: 9px;
+    color: var(--gold-deep);
+    opacity: 0.72;
+  }
+</style>
+</head>
+<body>
+
+<!-- 全局共享 SVG 水彩纸纹 / 湿画边缘滤镜 / 鎏金与星墨渐变库 -->
+<svg width="0" height="0" style="position:absolute;pointer-events:none;" aria-hidden="true">
+  <defs>
+    <!-- 冷压水彩纸颗粒纹理 -->
+    <filter id="coldpress-paper" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="4" seed="11" result="noise" />
+      <feColorMatrix type="matrix" values="
+        0 0 0 0 0.52
+        0 0 0 0 0.60
+        0 0 0 0 0.74
+        0 0 0 0.055 0" in="noise" result="tint" />
+    </filter>
+
+    <!-- 2x 放大特写专用：细腻水彩湿边晕染滤镜（保留锐利质感不发糊） -->
+    <filter id="wc-bleed-2x" x="-14%" y="-24%" width="128%" height="148%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.055 0.095" numOctaves="3" seed="7" result="turb" />
+      <feDisplacementMap in="SourceGraphic" in2="turb" scale="3.4" xChannelSelector="R" yChannelSelector="G" result="disp" />
+      <feGaussianBlur in="disp" stdDeviation="0.35" />
+    </filter>
+
+    <!-- 2x 湿边干痕滤镜 -->
+    <filter id="wc-edge-2x" x="-12%" y="-20%" width="124%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.08 0.12" numOctaves="2" seed="19" result="turb" />
+      <feDisplacementMap in="SourceGraphic" in2="turb" scale="2.2" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+
+    <!-- 1:1 实战字号专用：轻度边缘有机微颤（确保 26px 高度依然极度清晰） -->
+    <filter id="wc-bleed-1x" x="-10%" y="-18%" width="120%" height="136%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.065 0.11" numOctaves="2" seed="7" result="turb" />
+      <feDisplacementMap in="SourceGraphic" in2="turb" scale="2.1" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+
+    <!-- 金箔星芒微辉 -->
+    <filter id="star-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="0.8" stdDeviation="1.1" flood-color="#0B1E54" flood-opacity="0.34" />
+    </filter>
+
+    <!-- 金属细线渐变 -->
+    <linearGradient id="metal-silver" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7B93B2" stop-opacity="0.1" />
+      <stop offset="22%" stop-color="#89A2C2" stop-opacity="0.92" />
+      <stop offset="68%" stop-color="#BFD2E8" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#7B93B2" stop-opacity="0" />
+    </linearGradient>
+
+    <linearGradient id="metal-ice-silver" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1E7BA6" stop-opacity="0.15" />
+      <stop offset="24%" stop-color="#38A4CE" stop-opacity="0.95" />
+      <stop offset="70%" stop-color="#A5E4FA" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#1E7BA6" stop-opacity="0" />
+    </linearGradient>
+
+    <linearGradient id="metal-silver-gold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#DCE9FF" stop-opacity="0.15" />
+      <stop offset="24%" stop-color="#F2E2BA" stop-opacity="0.95" />
+      <stop offset="56%" stop-color="#FFFFFF" stop-opacity="0.98" />
+      <stop offset="82%" stop-color="#C9A86A" stop-opacity="0.85" />
+      <stop offset="100%" stop-color="#C9A86A" stop-opacity="0" />
+    </linearGradient>
+
+    <linearGradient id="metal-champagne" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#E7D3A3" stop-opacity="0.12" />
+      <stop offset="20%" stop-color="#F6E6BC" stop-opacity="0.98" />
+      <stop offset="52%" stop-color="#FFFDF5" stop-opacity="0.98" />
+      <stop offset="80%" stop-color="#D4AE60" stop-opacity="0.92" />
+      <stop offset="100%" stop-color="#B08434" stop-opacity="0" />
+    </linearGradient>
+
+    <linearGradient id="metal-gold-foil" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF8DF" />
+      <stop offset="38%" stop-color="#E8C574" />
+      <stop offset="72%" stop-color="#BD8C34" />
+      <stop offset="100%" stop-color="#FFF0C2" />
+    </linearGradient>
+
+    <linearGradient id="metal-silver-star" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="45%" stop-color="#C9DCEF" />
+      <stop offset="100%" stop-color="#6B88AD" />
+    </linearGradient>
+
+    <!-- 宝石星芯 -->
+    <radialGradient id="gem-sapphire" cx="38%" cy="34%" r="65%">
+      <stop offset="0%" stop-color="#D9F6FF" />
+      <stop offset="35%" stop-color="#38A8FF" />
+      <stop offset="78%" stop-color="#1448C8" />
+      <stop offset="100%" stop-color="#081C64" />
+    </radialGradient>
+
+    <radialGradient id="gem-ruby" cx="36%" cy="32%" r="66%">
+      <stop offset="0%" stop-color="#FFE4C8" />
+      <stop offset="36%" stop-color="#F44E62" />
+      <stop offset="78%" stop-color="#A8142E" />
+      <stop offset="100%" stop-color="#580716" />
+    </radialGradient>
+
+    <radialGradient id="gem-amethyst" cx="36%" cy="34%" r="65%">
+      <stop offset="0%" stop-color="#F8E8FF" />
+      <stop offset="42%" stop-color="#B47AF5" />
+      <stop offset="85%" stop-color="#5528A2" />
+      <stop offset="100%" stop-color="#2D1260" />
+    </radialGradient>
+
+    <!-- ========== 7 阶水彩颜料渐变 ========== -->
+    <!-- T1 初雪淡雾 -->
+    <linearGradient id="wc-t1-under" x1="0%" y1="20%" x2="100%" y2="80%">
+      <stop offset="0%" stop-color="#CFE0F2" stop-opacity="0.72" />
+      <stop offset="58%" stop-color="#DCE7F3" stop-opacity="0.58" />
+      <stop offset="100%" stop-color="#E6EEF7" stop-opacity="0.18" />
+    </linearGradient>
+    <linearGradient id="wc-t1-core" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C1D5EB" stop-opacity="0.76" />
+      <stop offset="52%" stop-color="#D5E3F2" stop-opacity="0.78" />
+      <stop offset="100%" stop-color="#B8CCE3" stop-opacity="0.45" />
+    </linearGradient>
+
+    <!-- T2 晴岚冰青 -->
+    <linearGradient id="wc-t2-under" x1="0%" y1="25%" x2="100%" y2="75%">
+      <stop offset="0%" stop-color="#7CD8F2" stop-opacity="0.72" />
+      <stop offset="54%" stop-color="#A6E6F9" stop-opacity="0.62" />
+      <stop offset="100%" stop-color="#BAEBF9" stop-opacity="0.20" />
+    </linearGradient>
+    <linearGradient id="wc-t2-core" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5BC4EA" stop-opacity="0.80" />
+      <stop offset="48%" stop-color="#87DAF4" stop-opacity="0.82" />
+      <stop offset="100%" stop-color="#4EB6DF" stop-opacity="0.56" />
+    </linearGradient>
+
+    <!-- T3 群青星海 -->
+    <linearGradient id="wc-t3-under" x1="0%" y1="15%" x2="100%" y2="85%">
+      <stop offset="0%" stop-color="#3A8CF6" stop-opacity="0.68" />
+      <stop offset="55%" stop-color="#2260DE" stop-opacity="0.55" />
+      <stop offset="100%" stop-color="#7DD3FC" stop-opacity="0.22" />
+    </linearGradient>
+    <linearGradient id="wc-t3-core" x1="0%" y1="0%" x2="100%" y2="90%">
+      <stop offset="0%" stop-color="#1A4EC6" stop-opacity="0.93" />
+      <stop offset="52%" stop-color="#1E5AE0" stop-opacity="0.92" />
+      <stop offset="86%" stop-color="#153FA8" stop-opacity="0.84" />
+      <stop offset="100%" stop-color="#3B89EC" stop-opacity="0.48" />
+    </linearGradient>
+
+    <!-- T4 暮霭紫晶 -->
+    <linearGradient id="wc-t4-under" x1="0%" y1="20%" x2="100%" y2="80%">
+      <stop offset="0%" stop-color="#9B72E8" stop-opacity="0.66" />
+      <stop offset="56%" stop-color="#7348C8" stop-opacity="0.52" />
+      <stop offset="100%" stop-color="#C9A8F8" stop-opacity="0.24" />
+    </linearGradient>
+    <linearGradient id="wc-t4-core" x1="0%" y1="0%" x2="100%" y2="95%">
+      <stop offset="0%" stop-color="#4A258E" stop-opacity="0.94" />
+      <stop offset="48%" stop-color="#6238B2" stop-opacity="0.92" />
+      <stop offset="84%" stop-color="#452284" stop-opacity="0.86" />
+      <stop offset="100%" stop-color="#8A60D8" stop-opacity="0.48" />
+    </linearGradient>
+
+    <!-- T5 鎏金琥珀 -->
+    <linearGradient id="wc-t5-under" x1="0%" y1="18%" x2="100%" y2="82%">
+      <stop offset="0%" stop-color="#EBB954" stop-opacity="0.72" />
+      <stop offset="54%" stop-color="#D49226" stop-opacity="0.58" />
+      <stop offset="100%" stop-color="#F6D88C" stop-opacity="0.26" />
+    </linearGradient>
+    <linearGradient id="wc-t5-core" x1="0%" y1="0%" x2="100%" y2="92%">
+      <stop offset="0%" stop-color="#8F4F08" stop-opacity="0.94" />
+      <stop offset="46%" stop-color="#B56E12" stop-opacity="0.93" />
+      <stop offset="82%" stop-color="#8E4E0A" stop-opacity="0.88" />
+      <stop offset="100%" stop-color="#D49630" stop-opacity="0.52" />
+    </linearGradient>
+
+    <!-- T6 绯曜朱砂 -->
+    <linearGradient id="wc-t6-under" x1="0%" y1="20%" x2="100%" y2="80%">
+      <stop offset="0%" stop-color="#EE6268" stop-opacity="0.68" />
+      <stop offset="52%" stop-color="#CC2846" stop-opacity="0.56" />
+      <stop offset="100%" stop-color="#F4A064" stop-opacity="0.26" />
+    </linearGradient>
+    <linearGradient id="wc-t6-core" x1="0%" y1="0%" x2="100%" y2="90%">
+      <stop offset="0%" stop-color="#8A102B" stop-opacity="0.95" />
+      <stop offset="46%" stop-color="#BA1E3E" stop-opacity="0.93" />
+      <stop offset="82%" stop-color="#941530" stop-opacity="0.88" />
+      <stop offset="100%" stop-color="#D94B48" stop-opacity="0.52" />
+    </linearGradient>
+
+    <!-- T7 极光流彩洒金（外圈粉青紫金极光晕染 + 核心晶蓝星靛承字确保1:1锐利） -->
+    <linearGradient id="wc-t7-under" x1="0%" y1="15%" x2="100%" y2="85%">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.72" />
+      <stop offset="34%" stop-color="#6366F1" stop-opacity="0.62" />
+      <stop offset="68%" stop-color="#C084FC" stop-opacity="0.56" />
+      <stop offset="100%" stop-color="#F2C86E" stop-opacity="0.55" />
+    </linearGradient>
+    <linearGradient id="wc-t7-core" x1="0%" y1="0%" x2="100%" y2="95%">
+      <stop offset="0%" stop-color="#0E4AA8" stop-opacity="0.93" />
+      <stop offset="34%" stop-color="#2852C8" stop-opacity="0.92" />
+      <stop offset="66%" stop-color="#583CB8" stop-opacity="0.90" />
+      <stop offset="88%" stop-color="#2478B8" stop-opacity="0.82" />
+      <stop offset="100%" stop-color="#DFB256" stop-opacity="0.60" />
+    </linearGradient>
+    <radialGradient id="wc-t7-halo" cx="56%" cy="46%" r="55%">
+      <stop offset="0%" stop-color="#9BE7FF" stop-opacity="0.40" />
+      <stop offset="48%" stop-color="#E0C3FC" stop-opacity="0.22" />
+      <stop offset="100%" stop-color="#F6D788" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+</svg>
+
+<main class="board">
+  <!-- 纸纹与角落淡彩装饰 -->
+  <svg class="paper-grain" width="1440" height="900" aria-hidden="true">
+    <rect width="1440" height="900" filter="url(#coldpress-paper)" />
+  </svg>
+
+  <svg class="corner-wash tr" viewBox="0 0 420 150" aria-hidden="true">
+    <path d="M95,12 C175,-6 290,8 415,24 C422,52 396,92 342,98 C264,108 214,68 134,72 C84,74 52,32 95,12 Z" fill="url(#wc-t2-under)" filter="url(#wc-bleed-2x)" opacity="0.46" />
+    <path d="M210,36 C285,22 365,34 410,64 C392,98 332,126 270,114 C216,104 176,56 210,36 Z" fill="url(#wc-t5-under)" filter="url(#wc-bleed-2x)" opacity="0.20" />
+    <circle cx="152" cy="86" r="2.2" fill="#5BC4EA" opacity="0.55" />
+    <circle cx="168" cy="94" r="1.2" fill="#C4A46C" opacity="0.65" />
+    <circle cx="322" cy="118" r="1.8" fill="#1658EB" opacity="0.35" />
+  </svg>
+
+  <svg class="corner-wash bl" viewBox="0 0 340 120" aria-hidden="true">
+    <path d="M-8,52 C48,28 142,46 218,68 C266,82 296,104 260,118 C178,128 66,126 -10,116 Z" fill="url(#wc-t1-under)" filter="url(#wc-bleed-2x)" opacity="0.65" />
+    <circle cx="242" cy="64" r="1.7" fill="#C4A46C" opacity="0.55" />
+    <circle cx="268" cy="76" r="1.1" fill="#7DD3FC" opacity="0.60" />
+  </svg>
+
+  <!-- ==================== 顶部标题栏 ==================== -->
+  <header class="board-header">
+    <div class="bh-left">
+      <div class="bh-accent"></div>
+      <div>
+        <div class="bh-title-row">
+          <h1 class="bh-title">方案 D · 自由发挥 · 水彩星墨魔导阶印</h1>
+          <span class="bh-en">Watercolor Star-Ink &amp; Court Filigree Arcane Seals</span>
+        </div>
+        <p class="bh-sub">
+          呼应冷压水彩奇幻绘本美学，<b>彻底破除几何硬框与圆框套圆框</b>——以手绘水彩星墨挥毫阶带叠加极细冷银/鎏金星象刻线、飞白墨点与递进星芒印，赋予雪瓷战卡魔导手抄本般的轻小说艺术灵魂。
+        </p>
+      </div>
+    </div>
+    <div class="bh-meta">
+      <div class="bh-meta-item">
+        <span class="bh-meta-k">Spectrum</span>
+        <span class="bh-meta-v">诗意七色水彩光谱</span>
+      </div>
+      <div class="bh-meta-item">
+        <span class="bh-meta-k">Filigree</span>
+        <span class="bh-meta-v">冷银 → 鎏金 → 蓝晶星盘</span>
+      </div>
+      <div class="bh-meta-item">
+        <span class="bh-meta-k">Viewport</span>
+        <span class="bh-meta-v">1440 × 900 · 1:1 实机校验</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== 中上区：全 7 阶 2× 与 1:1 双行对照 ==================== -->
+  <section class="gallery-sec">
+    <div class="sec-head">
+      <h2 class="sec-title"><span class="sec-diamond"></span>Ⅰ · 全 7 阶魔导星墨印图谱（2× 材质笔触特写 × 1:1 实战字号对照）</h2>
+      <span class="sec-hint">全系无封闭边框 · 1–2 阶深墨映淡彩 / 3–7 阶雪瓷金墨映浓彩 · 笔触形态、金属星轨与星芒瓣数逐阶跃升</span>
+    </div>
+    <div class="gallery-folio" id="tier-gallery"></div>
+  </section>
+
+  <!-- ==================== 下半区：5 组雪瓷战卡实测 + 工艺图例 ==================== -->
+  <section class="combat-sec">
+    <div class="sec-head">
+      <h2 class="sec-title"><span class="sec-diamond"></span>Ⅱ · 雪瓷冰晶实战战卡 1:1 嵌合实测（5 组经典对阵覆盖全 7 阶）</h2>
+      <span class="sec-hint">1:1 复刻本作切角雪瓷牌（.cb-player-pane / .cb-e-plate）· 7px 六角结晶血蓝条 · 弱点锁菱晶</span>
+    </div>
+    <div class="match-grid" id="match-grid"></div>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ==================== 全 7 阶水彩星墨阶印定义 ==================== */
+  const TIERS = [
+    {
+      id: 1,
+      code: '01',
+      label: '初级',
+      poetic: '初雪淡雾',
+      metalTag: '冷银细丝 · 单点初芒',
+      desc: '单扫淡雾水痕与轻纸白呼吸感，极细冷银底线托起初学阶位。',
+      swatch: 'linear-gradient(90deg, #B8CDE4, #DCE8F4)',
+      sampleName: '希尔维亚',
+      wetEdge: '#8CA7C8',
+      splatter: '#9EB6D4',
+      goldFleck: false,
+      starMode: 1
+    },
+    {
+      id: 2,
+      code: '02',
+      label: '中级',
+      poetic: '晴岚冰青',
+      metalTag: '冷银冰青 · 四芒冰菱',
+      desc: '双层冰青湿画晕染配晶透飞沫，冷银菱星带出清晰魔力流向。',
+      swatch: 'linear-gradient(90deg, #43B2DC, #9BE3F7)',
+      sampleName: '希尔维亚',
+      wetEdge: '#278BB6',
+      splatter: '#52C0E8',
+      goldFleck: false,
+      starMode: 2
+    },
+    {
+      id: 3,
+      code: '03',
+      label: '高级',
+      poetic: '群青星海',
+      metalTag: '银金双辉 · 十字星针',
+      desc: '皇家群青浓彩铺底转雪白楷墨，银金双划与笔锋飞白初显锋芒。',
+      swatch: 'linear-gradient(90deg, #133EA8, #3888F8)',
+      sampleName: '希尔维亚',
+      wetEdge: '#0E2E86',
+      splatter: '#3A8AF6',
+      goldFleck: true,
+      starMode: 3
+    },
+    {
+      id: 4,
+      code: '04',
+      label: '圣级',
+      poetic: '暮霭紫晶',
+      metalTag: '淡金月弧 · 紫晶星印',
+      desc: '暮霭紫晶叠染冷熏衣草水花，开放式淡金双星轨配弦月圣星。',
+      swatch: 'linear-gradient(90deg, #47228A, #9970E4)',
+      sampleName: '罗文',
+      wetEdge: '#371872',
+      splatter: '#8E62DE',
+      goldFleck: true,
+      starMode: 4
+    },
+    {
+      id: 5,
+      code: '05',
+      label: '王级',
+      poetic: '鎏金琥珀',
+      metalTag: '古金双轨 · 六芒王徽',
+      desc: '厚重琥珀金棕挥毫托出领主威压，古金双刻线与六芒星冠落金箔。',
+      swatch: 'linear-gradient(90deg, #8A4B08, #E2AC44)',
+      sampleName: '裂地兽领主',
+      wetEdge: '#6E3904',
+      splatter: '#D69428',
+      goldFleck: true,
+      starMode: 5
+    },
+    {
+      id: 6,
+      code: '06',
+      label: '帝级',
+      poetic: '绯曜朱砂',
+      metalTag: '帝金翎轨 · 红宝八芒',
+      desc: '双笔锋朱砂绯曜炽焰飞扫，红宝石八芒曜星与金箔星尘横贯笔尾。',
+      swatch: 'linear-gradient(90deg, #860F2A, #E45458)',
+      sampleName: '红莲铁幕',
+      wetEdge: '#6A0A20',
+      splatter: '#DC3B4C',
+      goldFleck: true,
+      starMode: 6
+    },
+    {
+      id: 7,
+      code: '07',
+      label: '神级',
+      poetic: '极光流彩洒金',
+      metalTag: '金箔星盘 · 蓝晶八芒',
+      desc: '青蓝紫金湿画极光晕染如魔导圣页，蓝晶金箔八芒星盘加冕全阶之巅。',
+      swatch: 'linear-gradient(90deg, #38BDF8, #4F46E5, #C084FC, #E8BD62)',
+      sampleName: '风神·岚',
+      wetEdge: '#1E4CC4',
+      splatter: '#60A5FA',
+      goldFleck: true,
+      starMode: 7
+    }
+  ];
+
+  /* 手绘各阶差异化水彩笔触轮廓（viewBox 0 0 156 56） */
+  function getBrushPaths(tierId) {
+    switch (tierId) {
+      case 1:
+        return {
+          under: 'M 15,28 C 20,14 48,11 86,12 C 115,13 136,15 144,24 C 148,31 134,42 106,43 C 70,45 30,44 17,37 C 12,34 13,31 15,28 Z',
+          core:  'M 22,27 C 28,17 56,15 92,16 C 116,17 132,19 136,27 C 138,34 122,40 94,40 C 60,41 32,39 23,34 C 19,32 20,29 22,27 Z',
+          wisp:  'M 131,24 C 139,23 146,24 150,27',
+          bloom: '<ellipse cx="76" cy="23" rx="34" ry="7.5" fill="#FFFFFF" opacity="0.34" />'
+        };
+      case 2:
+        return {
+          under: 'M 13,26 C 18,12 46,9 88,10 C 119,11 140,14 147,23 C 151,32 136,44 104,45 C 68,46 28,44 15,36 C 10,33 11,30 13,26 Z',
+          core:  'M 20,26 C 26,15 54,13 94,14 C 120,15 135,19 139,27 C 141,35 123,41 94,41 C 59,42 30,40 21,34 C 17,31 18,29 20,26 Z',
+          wisp:  'M 132,22 C 142,20 148,22 153,26 M 126,37 C 136,38 144,36 149,33',
+          bloom: '<ellipse cx="82" cy="22" rx="38" ry="8" fill="#E6FAFF" opacity="0.32" />'
+        };
+      case 3:
+        return {
+          under: 'M 12,27 C 16,11 45,8 90,9 C 122,10 144,13 150,23 C 153,32 138,44 104,46 C 65,48 26,45 14,37 C 9,33 10,30 12,27 Z',
+          core:  'M 18,26 C 24,14 54,12 96,13 C 122,14 138,18 142,27 C 144,36 125,42 94,42 C 57,43 28,40 19,35 C 15,32 16,29 18,26 Z',
+          wisp:  'M 134,19 C 144,17 151,19 155,23 M 130,36 C 141,37 148,35 153,31',
+          bloom: '<ellipse cx="86" cy="21" rx="40" ry="7.5" fill="#7DD3FC" opacity="0.22" />'
+        };
+      case 4:
+        return {
+          under: 'M 11,26 C 15,9 46,7 91,8 C 124,9 145,13 151,23 C 155,33 139,45 103,47 C 64,48 25,45 13,37 C 8,33 9,30 11,26 Z',
+          core:  'M 17,26 C 23,13 54,11 97,12 C 124,13 140,18 143,27 C 145,36 125,42 93,43 C 56,43 27,40 18,34 C 14,32 15,29 17,26 Z',
+          wisp:  'M 134,18 C 145,15 152,18 156,22 M 132,37 C 142,39 149,36 154,32',
+          bloom: '<ellipse cx="78" cy="21" rx="42" ry="8" fill="#D5B8FF" opacity="0.22" />'
+        };
+      case 5:
+        return {
+          under: 'M 10,26 C 14,9 44,6 92,8 C 126,9 147,13 152,23 C 156,33 139,46 102,47 C 62,49 23,46 12,37 C 7,33 8,29 10,26 Z',
+          core:  'M 16,26 C 22,13 53,11 98,12 C 126,13 141,18 144,27 C 146,36 125,43 93,43 C 55,44 26,41 17,35 C 13,32 14,29 16,26 Z',
+          wisp:  'M 134,17 C 146,15 153,18 157,22 M 131,38 C 143,40 150,37 156,32',
+          bloom: '<ellipse cx="86" cy="21" rx="42" ry="8" fill="#FFE28A" opacity="0.22" />'
+        };
+      case 6:
+        return {
+          under: 'M 9,26 C 14,8 45,5 93,7 C 128,8 149,12 154,23 C 158,34 140,46 102,48 C 60,50 22,46 11,37 C 6,33 7,29 9,26 Z',
+          core:  'M 16,25 C 22,12 54,10 99,11 C 127,12 142,17 145,27 C 147,36 126,43 92,43 C 54,44 25,41 16,35 C 12,32 13,28 16,25 Z',
+          wisp:  'M 135,16 C 148,13 155,17 160,21 M 132,38 C 145,40 153,36 158,31',
+          bloom: '<ellipse cx="86" cy="21" rx="43" ry="8.5" fill="#FF9E7D" opacity="0.24" />'
+        };
+      default: // Tier 7 极光流彩洒金
+        return {
+          under: 'M 7,26 C 12,6 45,3 95,5 C 132,7 152,11 157,23 C 161,35 142,48 102,50 C 58,52 19,47 9,37 C 4,33 5,29 7,26 Z',
+          core:  'M 15,25 C 21,12 54,10 100,11 C 128,12 143,17 146,27 C 148,37 126,43 92,44 C 53,44 24,41 15,35 C 11,32 12,28 15,25 Z',
+          wisp:  'M 134,14 C 148,11 156,15 162,20 M 132,39 C 146,42 154,37 161,31',
+          bloom: '<ellipse cx="88" cy="24" rx="56" ry="15" fill="url(#wc-t7-halo)" />'
+        };
+    }
+  }
+
+  /* 宫廷冷银/鎏金星象刻线（严格开放式无封闭框！） */
+  function getFiligreeSvg(tierId) {
+    switch (tierId) {
+      case 1:
+        return `
+          <path d="M 30,41.5 Q 84,43 138,39.5" fill="none" stroke="url(#metal-silver)" stroke-width="0.95" />
+          <circle cx="136" cy="39.5" r="1.1" fill="#8EA7C6" opacity="0.85" />
+        `;
+      case 2:
+        return `
+          <path d="M 28,42 Q 86,43.5 142,38.5" fill="none" stroke="url(#metal-ice-silver)" stroke-width="1.05" />
+          <path d="M 116,12.5 Q 134,13 145,17" fill="none" stroke="url(#metal-ice-silver)" stroke-width="0.85" opacity="0.8" />
+          <path d="M 140,38.5 L 145,35.5" fill="none" stroke="#36A0CC" stroke-width="0.85" opacity="0.75" />
+        `;
+      case 3:
+        return `
+          <path d="M 28,42.5 Q 88,44 144,38.5" fill="none" stroke="url(#metal-silver-gold)" stroke-width="1.15" />
+          <path d="M 102,11.5 Q 128,11.5 146,16.5" fill="none" stroke="url(#metal-silver-gold)" stroke-width="0.95" opacity="0.9" />
+          <polygon points="145,38.3 147.2,36.8 145,35.3 142.8,36.8" fill="#F2E2BA" opacity="0.9" />
+        `;
+      case 4:
+        return `
+          <path d="M 26,43 Q 86,46 146,38" fill="none" stroke="url(#metal-champagne)" stroke-width="1.15" />
+          <path d="M 42,10.5 Q 92,7.5 144,15" fill="none" stroke="url(#metal-champagne)" stroke-width="0.95" opacity="0.88" />
+          <circle cx="145" cy="15.3" r="1.35" fill="#F6E6BC" />
+          <circle cx="42" cy="10.5" r="1.05" fill="#F6E6BC" opacity="0.85" />
+        `;
+      case 5:
+        return `
+          <path d="M 25,43.5 Q 86,46.5 148,38.5" fill="none" stroke="url(#metal-champagne)" stroke-width="1.25" />
+          <path d="M 38,45.8 Q 86,48.2 132,43.2" fill="none" stroke="url(#metal-champagne)" stroke-width="0.7" opacity="0.72" />
+          <path d="M 52,9.8 L 86,6.8 L 122,9.8" fill="none" stroke="url(#metal-champagne)" stroke-width="1.05" opacity="0.92" />
+          <polygon points="86,4.6 88.2,6.8 86,9.0 83.8,6.8" fill="#FFF2C4" />
+        `;
+      case 6:
+        return `
+          <path d="M 24,44 Q 88,47 152,37.5" fill="none" stroke="url(#metal-champagne)" stroke-width="1.35" />
+          <path d="M 42,10 Q 94,6 150,15.5" fill="none" stroke="url(#metal-champagne)" stroke-width="1.15" />
+          <path d="M 136,12.5 L 154,13.8 L 144,18.2" fill="none" stroke="#F8E2A6" stroke-width="0.9" opacity="0.92" />
+          <path d="M 138,41 L 155,38.5 L 146,34.5" fill="none" stroke="#F8E2A6" stroke-width="0.9" opacity="0.92" />
+        `;
+      default: // Tier 7 神级星轨双弧
+        return `
+          <path d="M 14,39 C 46,51 110,50 155,34" fill="none" stroke="url(#metal-champagne)" stroke-width="1.35" />
+          <path d="M 20,13 C 58,3 114,4 154,18" fill="none" stroke="url(#metal-champagne)" stroke-width="1.15" />
+          <path d="M 40,46.5 C 76,51 118,48.5 148,40" fill="none" stroke="#FFFFFF" stroke-width="0.65" opacity="0.72" />
+          <polygon points="92,4.4 94.3,6.6 92,8.8 89.7,6.6" fill="#FFF9E0" />
+          <polygon points="148,15.5 150,17.3 148,19.1 146,17.3" fill="#FFF9E0" />
+          <circle cx="152" cy="35" r="1.5" fill="#F8E4A8" />
+        `;
+    }
+  }
+
+  /* 左侧递进魔导星芒印（1→7 阶：冷银点芒 → 四芒冰菱 → 十字星针 → 月弧星印 → 六芒王星 → 红宝八芒 → 蓝晶金箔星盘） */
+  function getStarEmblemSvg(tierId) {
+    const cx = 29, cy = 27.5;
+    switch (tierId) {
+      case 1:
+        return `
+          <g transform="translate(${cx},${cy})">
+            <path d="M 0,-7.5 L 1.6,-1.6 L 7.5,0 L 1.6,1.6 L 0,7.5 L -1.6,1.6 L -7.5,0 L -1.6,-1.6 Z"
+                  fill="url(#metal-silver-star)" stroke="#526E94" stroke-width="0.6" />
+            <circle cx="0" cy="0" r="1.4" fill="#FFFFFF" />
+          </g>
+        `;
+      case 2:
+        return `
+          <g transform="translate(${cx},${cy})" filter="url(#star-glow)">
+            <path d="M 0,-9.5 L 2.4,-2.4 L 9.5,0 L 2.4,2.4 L 0,9.5 L -2.4,2.4 L -9.5,0 L -2.4,-2.4 Z"
+                  fill="#FFFFFF" stroke="#1E7BA6" stroke-width="0.75" />
+            <path d="M 0,-4.4 L 2.2,0 L 0,4.4 L -2.2,0 Z" fill="#38BDF8" />
+            <circle cx="-8.5" cy="-6.5" r="1.1" fill="#38BDF8" opacity="0.85" />
+          </g>
+        `;
+      case 3:
+        return `
+          <g transform="translate(${cx},${cy})" filter="url(#star-glow)">
+            <path d="M 0,-10.5 L 2.3,-2.3 L 10.5,0 L 2.3,2.3 L 0,10.5 L -2.3,2.3 L -10.5,0 L -2.3,-2.3 Z"
+                  fill="url(#metal-silver-gold)" stroke="#0E2B78" stroke-width="0.65" />
+            <path d="M -5.4,-5.4 L 5.4,5.4 M 5.4,-5.4 L -5.4,5.4" stroke="#F8F0D8" stroke-width="0.95" stroke-linecap="round" />
+            <circle cx="0" cy="0" r="2.2" fill="url(#gem-sapphire)" stroke="#FFFFFF" stroke-width="0.55" />
+            <circle cx="9.2" cy="-7.6" r="1.25" fill="#F2E2BA" />
+          </g>
+        `;
+      case 4:
+        return `
+          <g transform="translate(${cx},${cy})" filter="url(#star-glow)">
+            <!-- 弦月圣弧 -->
+            <path d="M -2.5,-10.8 A 10.8,10.8 0 1,0 5.5,9.4 A 8.4,8.4 0 1,1 -2.5,-10.8 Z"
+                  fill="url(#metal-gold-foil)" stroke="#3B1A72" stroke-width="0.5" />
+            <!-- 圣星 -->
+            <path d="M 2.5,-8.8 L 4.4,-2.0 L 11.0,0 L 4.4,2.0 L 2.5,8.8 L 0.6,2.0 L -5.5,0 L 0.6,-2.0 Z"
+                  fill="#FFF8E6" stroke="#8C6928" stroke-width="0.55" />
+            <circle cx="2.5" cy="0" r="2.1" fill="url(#gem-amethyst)" stroke="#FFF4D0" stroke-width="0.55" />
+          </g>
+        `;
+      case 5:
+        return `
+          <g transform="translate(${cx},${cy})" filter="url(#star-glow)">
+            <circle cx="0" cy="0" r="9.6" fill="none" stroke="#F6E2A8" stroke-width="0.8" stroke-dasharray="3.2 2.4" opacity="0.9" />
+            <!-- 六芒王星 -->
+            <path d="M 0,-11.6 L 2.2,-3.8 L 10.0,-5.8 L 4.4,0 L 10.0,5.8 L 2.2,3.8 L 0,11.6 L -2.2,3.8 L -10.0,5.8 L -4.4,0 L -10.0,-5.8 L -2.2,-3.8 Z"
+                  fill="url(#metal-gold-foil)" stroke="#683604" stroke-width="0.6" />
+            <circle cx="0" cy="0" r="2.8" fill="#FFFDF0" stroke="#B07414" stroke-width="0.7" />
+            <circle cx="0" cy="0" r="1.2" fill="#D98B1C" />
+          </g>
+        `;
+      case 6:
+        return `
+          <g transform="translate(${cx},${cy})" filter="url(#star-glow)">
+            <circle cx="0" cy="0" r="11.2" fill="none" stroke="#F8DDA0" stroke-width="0.75" opacity="0.78" />
+            <!-- 八芒帝曜星 -->
+            <path d="M 0,-12.5 L 2.3,-3.6 L 8.8,-8.8 L 3.6,-2.3 L 12.5,0 L 3.6,2.3 L 8.8,8.8 L 2.3,3.6 L 0,12.5 L -2.3,3.6 L -8.8,8.8 L -3.6,2.3 L -12.5,0 L -3.6,-2.3 L -8.8,-8.8 L -2.3,-3.6 Z"
+                  fill="url(#metal-gold-foil)" stroke="#6A0D20" stroke-width="0.6" />
+            <circle cx="0" cy="0" r="3.4" fill="url(#gem-ruby)" stroke="#FFF0C2" stroke-width="0.75" />
+          </g>
+        `;
+      default: // Tier 7 致敬参考图《重要.jpg》的蓝晶金箔八芒魔导星盘！
+        return `
+          <g transform="translate(${cx},${cy})" filter="url(#star-glow)">
+            <!-- 外圈星盘断环 -->
+            <path d="M -12.4,-4.6 A 13.2,13.2 0 0,1 10.6,-7.8" fill="none" stroke="#FFF4CE" stroke-width="0.95" opacity="0.92" />
+            <path d="M 12.2,5.0 A 13.2,13.2 0 0,1 -10.8,7.6" fill="none" stroke="#9BE7FF" stroke-width="0.95" opacity="0.92" />
+            <!-- 八芒立体鎏金星盘 -->
+            <path d="M 0,-13.6 L 2.6,-4.0 L 9.8,-9.8 L 4.0,-2.6 L 13.6,0 L 4.0,2.6 L 9.8,9.8 L 2.6,4.0 L 0,13.6 L -2.6,4.0 L -9.8,9.8 L -4.0,2.6 L -13.6,0 L -4.0,-2.6 L -9.8,-9.8 L -2.6,-4.0 Z"
+                  fill="url(#metal-gold-foil)" stroke="#143894" stroke-width="0.6" />
+            <!-- 蓝宝石星芯 -->
+            <circle cx="0" cy="0" r="4.1" fill="url(#gem-sapphire)" stroke="#FFF6D4" stroke-width="0.9" />
+            <circle cx="-1.2" cy="-1.2" r="1.15" fill="#FFFFFF" opacity="0.92" />
+            <!-- 伴星微芒 -->
+            <polygon points="-13.6,-10.5 -12.4,-9.3 -13.6,-8.1 -14.8,-9.3" fill="#FFF7D6" />
+            <polygon points="12.2,-11.2 13.2,-10.2 12.2,-9.2 11.2,-10.2" fill="#A5EAFF" />
+          </g>
+        `;
+    }
+  }
+
+  /* 飞沫墨点 + 高阶金箔星屑 */
+  function getSplatterSvg(t) {
+    const id = t.id;
+    let out = `
+      <circle cx="144" cy="16" r="1.4" fill="${t.splatter}" opacity="0.58" />
+      <circle cx="150" cy="24" r="0.95" fill="${t.splatter}" opacity="0.52" />
+      <circle cx="141" cy="39" r="1.6" fill="${t.splatter}" opacity="0.48" />
+      <circle cx="12" cy="17" r="1.2" fill="${t.splatter}" opacity="0.46" />
+      <circle cx="9" cy="35" r="0.9" fill="${t.splatter}" opacity="0.44" />
+    `;
+    if (id >= 3) {
+      out += `
+        <circle cx="148" cy="12" r="1.1" fill="#F6E2A8" opacity="0.82" />
+        <circle cx="136" cy="44" r="1.0" fill="#F6E2A8" opacity="0.72" />
+      `;
+    }
+    if (id >= 4) {
+      out += `
+        <polygon points="128,14 129.6,15.6 128,17.2 126.4,15.6" fill="#FFF3C8" opacity="0.88" />
+        <circle cx="52" cy="43" r="0.95" fill="#F6E2A8" opacity="0.76" />
+      `;
+    }
+    if (id >= 5) {
+      out += `
+        <polygon points="139,20 141,22 139,24 137,22" fill="#FFEAA6" opacity="0.92" />
+        <polygon points="48,14 49.5,15.5 48,17 46.5,15.5" fill="#FFEAA6" opacity="0.84" />
+        <circle cx="112" cy="44" r="1.1" fill="#FFE69A" opacity="0.82" />
+      `;
+    }
+    if (id >= 6) {
+      out += `
+        <polygon points="151,18 153.2,20.2 151,22.4 148.8,20.2" fill="#FFF4CC" opacity="0.95" />
+        <circle cx="62" cy="11" r="1.15" fill="#FFE498" opacity="0.88" />
+        <circle cx="122" cy="45" r="1.2" fill="#FFCE80" opacity="0.84" />
+      `;
+    }
+    if (id === 7) {
+      out += `
+        <polygon points="56,12 58.2,14.2 56,16.4 53.8,14.2" fill="#FFFDF0" opacity="0.96" />
+        <polygon points="136,15 138.2,17.2 136,19.4 133.8,17.2" fill="#FFF3C2" opacity="0.96" />
+        <polygon points="124,42 125.8,43.8 124,45.6 122.2,43.8" fill="#A5EAFF" opacity="0.92" />
+        <circle cx="72" cy="46" r="1.25" fill="#F6D884" opacity="0.92" />
+        <circle cx="148" cy="27" r="1.4" fill="#F8E29E" opacity="0.92" />
+        <circle cx="105" cy="10" r="1.1" fill="#FFFFFF" opacity="0.94" />
+      `;
+    }
+    return out;
+  }
+
+  /* 渲染单个水彩星墨魔导阶印 HTML */
+  function renderRankSeal(tierId, size) {
+    const t = TIERS[tierId - 1];
+    const b = getBrushPaths(tierId);
+    const bleedFilter = size === '2x' ? 'url(#wc-bleed-2x)' : 'url(#wc-bleed-1x)';
+    const edgeFilter = size === '2x' ? 'url(#wc-edge-2x)' : 'none';
+    const wetStrokeW = size === '2x' ? '1.15' : '1.4';
+
+    return `
+      <span class="rank-seal t${tierId} size-${size}" aria-label="${t.label}">
+        <svg class="rs-svg" viewBox="0 0 156 56" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          <!-- 层1：宽湿画水痕底晕 -->
+          <path d="${b.under}" fill="url(#wc-t${tierId}-under)" filter="${bleedFilter}" />
+          <!-- 层2：核心星墨主扫 + 水彩干边积色线 + 透纸高光水花 -->
+          <path d="${b.core}" fill="url(#wc-t${tierId}-core)" filter="${bleedFilter}" />
+          <path d="${b.core}" fill="none" stroke="${t.wetEdge}" stroke-opacity="0.34" stroke-width="${wetStrokeW}" filter="${edgeFilter}" />
+          ${b.bloom}
+          <!-- 层3：飞白笔锋与水彩飞沫金箔点 -->
+          <path d="${b.wisp}" fill="none" stroke="${t.splatter}" stroke-width="1.35" stroke-linecap="round" opacity="0.52" />
+          ${getSplatterSvg(t)}
+          <!-- 层4：开放式宫廷冷银/鎏金星象刻线 -->
+          ${getFiligreeSvg(tierId)}
+          <!-- 层5：左侧递进魔导星芒印 -->
+          ${getStarEmblemSvg(tierId)}
+        </svg>
+        <span class="rs-text">${t.label}</span>
+      </span>
+    `;
+  }
+
+  /* ==================== 渲染中上区全 7 阶图谱 ==================== */
+  const galleryEl = document.getElementById('tier-gallery');
+  galleryEl.innerHTML = TIERS.map(t => `
+    <div class="tier-col${t.id === 7 ? ' is-divine' : ''}" data-tier="${t.id}">
+      <div class="tc-head">
+        <span class="tc-idx">${t.code}</span>
+        <span class="tc-poetic">${t.poetic}</span>
+      </div>
+      <div class="tc-stage-2x">
+        <span class="tc-scale-tag">2× ZOOM</span>
+        ${renderRankSeal(t.id, '2x')}
+      </div>
+      <div class="tc-stage-1x">
+        <span class="tc-scale-tag">1:1 COMBAT</span>
+        <div class="tc-1x-inline">
+          ${renderRankSeal(t.id, '1x')}
+          <span class="tc-1x-sample">${t.sampleName}</span>
+        </div>
+      </div>
+      <div class="tc-notes">
+        <div class="tc-metal">${t.metalTag}</div>
+        <div class="tc-desc">${t.desc}</div>
+      </div>
+    </div>
+  `).join('');
+
+  /* ==================== 下半区 5 组实战对阵数据 ==================== */
+  const MATCHUPS = [
+    {
+      num: '01',
+      title: '同阶切磋 · 宅邸初试',
+      gapText: '同阶对峙（初级 vs 初级）',
+      gapClass: '',
+      ally: {
+        tier: 1, name: '希尔维亚', ap: [1, 1, 0],
+        hp: 190, mhp: 210, mp: 130, mmp: 160,
+        chip: '冰晶宫殿 · 就绪', chipCls: 'sapphire',
+        subChip: '增幅 0%'
+      },
+      enemy: {
+        tier: 1, name: '贝阿特丽丝', elem: '火', elemCls: 'fire',
+        hp: 236, mhp: 278, mp: 108, mmp: 150,
+        locks: 3, maxLocks: 4,
+        chip: '烈焰斗气×1', chipCls: 'crimson'
+      }
+    },
+    {
+      num: '02',
+      title: '乱葬岗夜战 · 跨阶活捉',
+      gapText: '跨 2 阶压迫（中级 vs 圣级）',
+      gapClass: 'danger',
+      ally: {
+        tier: 2, name: '希尔维亚', ap: [1, 1, 1],
+        hp: 242, mhp: 280, mp: 168, mmp: 230,
+        chip: '★一阶·盈溢 20%', chipCls: 'ice',
+        subChip: '薄冰设伏'
+      },
+      enemy: {
+        tier: 4, name: '罗文', elem: '暗', elemCls: 'dark',
+        hp: 265, mhp: 290, mp: 210, mmp: 240,
+        locks: 4, maxLocks: 5,
+        chip: '活捉封锁 62%', chipCls: 'gold'
+      }
+    },
+    {
+      num: '03',
+      title: '冰封峡谷 · 领主破冰',
+      gapText: '跨 2 阶威压（高级 vs 王级）',
+      gapClass: 'danger',
+      ally: {
+        tier: 3, name: '希尔维亚', ap: [1, 1, 1],
+        hp: 345, mhp: 390, mp: 256, mmp: 340,
+        chip: '★★二阶·过载 40%', chipCls: 'sapphire',
+        subChip: '伊诺共鸣'
+      },
+      enemy: {
+        tier: 5, name: '裂地兽领主', elem: '地', elemCls: 'earth',
+        hp: 540, mhp: 650, shield: 115, mp: 180, mmp: 220,
+        locks: 5, maxLocks: 6,
+        chip: '实体甲 35%', chipCls: 'gold'
+      }
+    },
+    {
+      num: '04',
+      title: '东翼火廊 · 红莲封锁',
+      gapText: '跨 3 阶强敌（高级 vs 帝级）',
+      gapClass: 'danger',
+      ally: {
+        tier: 3, name: '希尔维亚', ap: [1, 1, 0],
+        hp: 318, mhp: 410, mp: 244, mmp: 360,
+        chip: '★★★星霜极限 60%', chipCls: 'gold',
+        subChip: '晦轮真伤'
+      },
+      enemy: {
+        tier: 6, name: '红莲铁幕', elem: '火', elemCls: 'fire',
+        hp: 465, mhp: 620, shield: 75, mp: 260, mmp: 320,
+        locks: 5, maxLocks: 7,
+        chip: '✦ 二阶段封廊', chipCls: 'crimson'
+      }
+    },
+    {
+      num: '05',
+      title: '七大列强 · 风暴眼试剑',
+      gapText: '跨 4 阶天堑（高级 vs 神级）',
+      gapClass: 'divine',
+      ally: {
+        tier: 3, name: '希尔维亚', ap: [1, 1, 1],
+        hp: 362, mhp: 440, mp: 298, mmp: 400,
+        chip: '生根步 · 魔战循环', chipCls: 'sapphire',
+        subChip: '冰宫看破'
+      },
+      enemy: {
+        tier: 7, name: '风神·岚', elem: '风', elemCls: 'wind',
+        hp: 780, mhp: 940, shield: 105, mp: 380, mmp: 450,
+        locks: 6, maxLocks: 8,
+        chip: '风暴眼全开', chipCls: 'ice',
+        isDivineCard: true
+      }
+    }
+  ];
+
+  function renderLockPips(cur, max) {
+    let html = '';
+    for (let i = 0; i < max; i++) {
+      html += `<span class="lock-pip${i >= cur ? ' cracked' : ''}"></span>`;
+    }
+    return html;
+  }
+
+  function renderMatchup(m) {
+    const a = m.ally;
+    const e = m.enemy;
+    const aHpPct = Math.round((a.hp / a.mhp) * 100);
+    const aMpPct = Math.round((a.mp / a.mmp) * 100);
+    const eHpPct = Math.round((e.hp / e.mhp) * 100);
+    const eMpPct = Math.round((e.mp / e.mmp) * 100);
+
+    return `
+      <article class="match-module">
+        <div class="mm-bar">
+          <span class="mm-tag"><span class="mm-num">VS ${m.num}</span>${m.title}</span>
+          <span class="mm-gap-note ${m.gapClass}">${m.gapText}</span>
+        </div>
+        <div class="mm-duel">
+          <!-- 我方雪瓷冰晶战卡 -->
+          <div class="sim-card ally">
+            <div class="sc-head">
+              <div class="sc-id">
+                ${renderRankSeal(a.tier, '1x')}
+                <span class="sc-name">${a.name}</span>
+              </div>
+              <span class="sc-ap" title="行动点 AP">
+                ${a.ap.map(on => `<span class="ap-gem${on ? '' : ' empty'}"></span>`).join('')}
+              </span>
+            </div>
+            <div class="sc-bars">
+              <div class="sc-bar-row">
+                <div class="sc-bar-meta"><span class="sc-bar-k">HP</span><span class="sc-bar-v">${a.hp}/${a.mhp}</span></div>
+                <div class="sc-track"><div class="sc-fill hp" style="width:${aHpPct}%"></div></div>
+              </div>
+              <div class="sc-bar-row">
+                <div class="sc-bar-meta"><span class="sc-bar-k">MP</span><span class="sc-bar-v">${a.mp}/${a.mmp}</span></div>
+                <div class="sc-track"><div class="sc-fill mp" style="width:${aMpPct}%"></div></div>
+              </div>
+            </div>
+            <div class="sc-foot">
+              <span class="chip ${a.chipCls}">${a.chip}</span>
+              <span class="chip">${a.subChip}</span>
+            </div>
+          </div>
+
+          <div class="vs-axis"><span class="vs-glyph">vs</span></div>
+
+          <!-- 敌方雪瓷冰晶战卡 -->
+          <div class="sim-card enemy${e.isDivineCard ? ' is-divine-card' : ''}">
+            <div class="sc-head">
+              <div class="sc-id">
+                ${renderRankSeal(e.tier, '1x')}
+                <span class="sc-name">${e.name}</span>
+              </div>
+              <span class="sc-elem ${e.elemCls}">${e.elem}</span>
+            </div>
+            <div class="sc-bars">
+              <div class="sc-bar-row">
+                <div class="sc-bar-meta">
+                  <span class="sc-bar-k">HP</span>
+                  <span class="sc-bar-v">${e.hp}/${e.mhp}${e.shield ? ` <span class="shield-note">+盾${e.shield}</span>` : ''}</span>
+                </div>
+                <div class="sc-track"><div class="sc-fill hp" style="width:${eHpPct}%"></div></div>
+              </div>
+              <div class="sc-bar-row">
+                <div class="sc-bar-meta"><span class="sc-bar-k">MP</span><span class="sc-bar-v">${e.mp}/${e.mmp}</span></div>
+                <div class="sc-track"><div class="sc-fill mp" style="width:${eMpPct}%"></div></div>
+              </div>
+            </div>
+            <div class="sc-foot">
+              <span class="lock-strip">
+                <span class="lock-label">锁 ${e.locks}/${e.maxLocks}</span>
+                <span class="lock-pips">${renderLockPips(e.locks, e.maxLocks)}</span>
+              </span>
+              <span class="chip ${e.chipCls}">${e.chip}</span>
+            </div>
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  /* 第 6 格：方案 D 核心工艺与递进总结卡 */
+  const craftSummaryHtml = `
+    <article class="match-module">
+      <div class="mm-bar">
+        <span class="mm-tag"><span class="mm-num">SPEC</span>方案 D · 独创美学与实机契合要点</span>
+        <span class="mm-gap-note">纯矢量 SVG · 零 PNG 资源负担</span>
+      </div>
+      <div class="spec-folio">
+        <div class="sf-head">
+          <span class="sf-title">水彩星墨 × 宫廷冷银金箔递进体系</span>
+          <span class="sf-sub">零圆框套圆框 · 100% 契合雪瓷基底</span>
+        </div>
+        <div class="sf-points">
+          <div class="sf-pt">
+            <div class="sf-pt-t">一、破除死板框体，融入雪瓷纸感</div>
+            <div class="sf-pt-d">以双层湿画笔触与干边积色直接晕染于切角战卡表面，不套任何封闭边框或胶囊盒。</div>
+          </div>
+          <div class="sf-pt gold-edge">
+            <div class="sf-pt-t">二、色相 × 墨重 × 星芒三重辨识</div>
+            <div class="sf-pt-d">1–2 阶浅彩深墨显清透；3–7 阶浓彩白墨配冷银→古金→蓝晶星盘，越阶压迫感一眼即知。</div>
+          </div>
+          <div class="sf-pt gold-edge">
+            <div class="sf-pt-t">三、致敬原画绘本灵魂</div>
+            <div class="sf-pt-d">提取参考水彩晶瓶的青蓝湿画晕染、飞沫墨点与蓝宝石八芒金箔吊坠，凝炼为神级阶印。</div>
+          </div>
+          <div class="sf-pt">
+            <div class="sf-pt-t">四、1:1 小字号锐利可读</div>
+            <div class="sf-pt-d">26px 实战高度启用轻量边缘滤镜与高对比宋体楷墨，72px 宽不挤占长角色名与弱点锁。</div>
+          </div>
+        </div>
+        <div class="sf-ladder">
+          ${TIERS.map((t, idx) => `
+            <div class="sf-ladder-step">
+              <span class="sf-swatch" style="background:${t.swatch}"></span>
+              <span class="sf-step-name">${t.label}</span>
+            </div>
+            ${idx < TIERS.length - 1 ? '<span class="sf-arrow">›</span>' : ''}
+          `).join('')}
+        </div>
+      </div>
+    </article>
+  `;
+
+  document.getElementById('match-grid').innerHTML = MATCHUPS.map(renderMatchup).join('') + craftSummaryHtml;
+})();
+</script>
+</body>
+</html>

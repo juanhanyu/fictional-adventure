@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>转生千金 · 一站式视觉竞标与实机交互审阅台</title>
+<style>
+  :root {
+    --bg: #FAFBFD;
+    --ink: #1B2333;
+    --muted: #5A6782;
+    --royal: #1658EB;
+    --ice: #38BDF8;
+    --gold: #C9A45C;
+    --line: rgba(22, 88, 235, 0.16);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; width: 100%; overflow: hidden;
+    background: var(--bg); color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    display: flex; flex-direction: column;
+  }
+  header {
+    height: 54px; flex: 0 0 54px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+    padding: 0 16px;
+    background: linear-gradient(180deg, #FFFFFF 0%, #F4F7FC 100%);
+    border-bottom: 1px solid var(--line);
+    position: relative;
+    overflow: hidden;
+  }
+  header::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+    background: linear-gradient(90deg, var(--royal), var(--ice) 55%, var(--gold));
+    opacity: 0.7;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    min-width: 0; flex: 1 1 auto; overflow: hidden;
+  }
+  .brand h1 {
+    font-family: "Noto Serif SC", "Songti SC", serif;
+    font-size: 15px; font-weight: 700; letter-spacing: 0.06em; color: var(--ink);
+    white-space: nowrap; flex: 0 0 auto; line-height: 1.2;
+  }
+  .brand span {
+    font-size: 11.5px; color: var(--muted); letter-spacing: 0.02em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    min-width: 0; flex: 1 1 auto; line-height: 1.2;
+    padding-left: 10px; border-left: 1px solid var(--line);
+  }
+  nav {
+    display: flex; align-items: center; gap: 2px;
+    flex-wrap: nowrap; flex: 0 0 auto;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  .tab {
+    appearance: none; border: none; background: transparent; cursor: pointer;
+    padding: 7px 10px; font-size: 12px; font-weight: 600; color: var(--muted);
+    letter-spacing: 0.02em; white-space: nowrap; flex: 0 0 auto;
+    line-height: 1.2; position: relative;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .tab:hover { color: var(--royal); background: rgba(22, 88, 235, 0.05); }
+  .tab:focus-visible { outline: 2px solid var(--royal); outline-offset: -2px; }
+  .tab.active {
+    color: #FFFFFF;
+    background: linear-gradient(135deg, #1658EB 0%, #2B74FF 100%);
+    clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+    padding: 7px 14px;
+  }
+  .sep { width: 1px; height: 16px; background: var(--line); margin: 0 4px; flex: 0 0 1px; }
+  .stage {
+    flex: 1; position: relative; background: #EEF3FA; overflow: hidden;
+  }
+  iframe {
+    width: 100%; height: 100%; border: none; display: block; background: var(--bg);
+  }
+  .open-ext {
+    font-size: 12px; color: var(--royal); text-decoration: none; font-weight: 600;
+    padding: 6px 6px 6px 10px; border-left: 1px solid var(--line); margin-left: 4px;
+    white-space: nowrap; flex: 0 0 auto; line-height: 1.2;
+  }
+  .open-ext:hover { text-decoration: underline; }
+  @media (max-width: 1360px) {
+    header { padding: 0 12px; gap: 8px; }
+    .brand h1 { font-size: 14px; }
+    .tab { padding: 7px 8px; font-size: 11.5px; }
+    .tab.active { padding: 7px 12px; }
+    .open-ext { font-size: 11.5px; padding: 6px 4px 6px 8px; }
+  }
+  @media (max-width: 1140px) {
+    .brand span { display: none; }
+    nav { flex: 0 1 auto; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <h1>✦ 转生千金 · 审阅台</h1>
+      <span id="cur-desc" title="第二轮道具三板（板 D 30图原风 / 板 E 像素化 / 板 F 直传图同款）× 76px 图形化背包">第二轮道具三板（板 D 30图原风 / 板 E 像素化 / 板 F 直传图同款）× 76px 图形化背包</span>
+    </div>
+    <nav id="nav" aria-label="交互审阅方案切换">
+      <button class="tab active" data-key="r2" data-src="./item_art_r2_3boards_backpack_preview.html" data-desc="第二轮道具三板（板 D 30图原风 / 板 E 像素化 / 板 F 直传图同款）× 76px 图形化背包" title="第二轮道具三板（板 D 30图原风 / 板 E 像素化 / 板 F 直传图同款）× 76px 图形化背包">道具 R2·D/E/F</button>
+      <button class="tab" data-key="r1" data-src="./item_art_3boards_backpack_preview.html" data-desc="第一轮道具三板（板 A 圣晶厚涂 / 板 B 鎏金水彩 / 板 C 高精像素）× 76px 图形化背包" title="第一轮道具三板（板 A 圣晶厚涂 / 板 B 鎏金水彩 / 板 C 高精像素）× 76px 图形化背包">道具 R1·A/B/C</button>
+      <div class="sep" aria-hidden="true"></div>
+      <button class="tab" data-key="rank_d" data-src="./rank_badge_d.html" data-desc="等阶标识 · 方案 D（自由发挥：水彩星墨魔导阶印）" title="等阶标识 · 方案 D（自由发挥：水彩星墨魔导阶印）">等阶 D·星墨</button>
+      <button class="tab" data-key="rank_e" data-src="./rank_badge_e.html" data-desc="等阶标识 · 方案 E（自由发挥：高奢珠宝领针 × 去底块排印）" title="等阶标识 · 方案 E（自由发挥：高奢珠宝领针 × 去底块排印）">等阶 E·领针</button>
+      <button class="tab" data-key="rank_a" data-src="./rank_badge_a.html" data-desc="等阶标识 · 方案 A（七色阶 × 全站冰晶折射反光）" title="等阶标识 · 方案 A（七色阶 × 全站冰晶折射反光）">等阶 A·冰晶</button>
+      <button class="tab" data-key="rank_b" data-src="./rank_badge_b.html" data-desc="等阶标识 · 方案 B（七色阶 × 宫廷哑光珐琅纹章）" title="等阶标识 · 方案 B（七色阶 × 宫廷哑光珐琅纹章）">等阶 B·珐琅</button>
+      <button class="tab" data-key="rank_c" data-src="./rank_badge_c.html" data-desc="等阶标识 · 方案 C（自由发挥：星轨魔导阶位印）" title="等阶标识 · 方案 C（自由发挥：星轨魔导阶位印）">等阶 C·星轨</button>
+      <div class="sep" aria-hidden="true"></div>
+      <button class="tab" data-key="title" data-src="./vesteria_title_demo.html" data-desc="电脑端单文件主界面 Demo（含 B+C 融合冰晶 + Sacred 1.mp3 + 同舞台转场）" title="电脑端单文件主界面 Demo（含 B+C 融合冰晶 + Sacred 1.mp3 + 同舞台转场）">主界面 Demo</button>
+      <a id="open-direct" class="open-ext" href="./item_art_r2_3boards_backpack_preview.html" target="_blank" rel="noopener">新窗 ↗</a>
+    </nav>
+  </header>
+  <div class="stage">
+    <iframe id="frame" src="./item_art_r2_3boards_backpack_preview.html"></iframe>
+  </div>
+  <script>
+    const frame = document.getElementById('frame');
+    const desc = document.getElementById('cur-desc');
+    const openDirect = document.getElementById('open-direct');
+    const tabs = Array.from(document.querySelectorAll('#nav .tab'));
+
+    function activateTab(btn, updateHash) {
+      tabs.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const src = btn.dataset.src;
+      const text = btn.dataset.desc || '';
+      frame.src = src;
+      desc.textContent = text;
+      desc.title = text;
+      openDirect.href = src;
+      if (updateHash && btn.dataset.key) {
+        try { history.replaceState(null, '', '#' + btn.dataset.key); } catch (_) {}
+      }
+    }
+
+    tabs.forEach(btn => {
+      btn.addEventListener('click', () => activateTab(btn, true));
+    });
+
+    const initKey = (new URLSearchParams(location.search).get('tab') || location.hash.replace(/^#/, '')).trim();
+    if (initKey) {
+      const target = tabs.find(b => b.dataset.key === initKey);
+      if (target) activateTab(target, false);
+    }
+  </script>
+</body>
+</html>

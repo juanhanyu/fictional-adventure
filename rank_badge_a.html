@@ -1,0 +1,2048 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1440, initial-scale=1.0" />
+<title>方案 A · 七色阶 × 冰晶折射反光质感</title>
+<style>
+  :root {
+    /* 严格沿用 css/prism-refraction-ui.css 全站冰晶折射设计令牌 */
+    --pr-alabaster: rgba(248, 251, 255, 0.94);
+    --pr-alabaster-hi: rgba(255, 255, 255, 0.97);
+    --pr-ink: #1A2436;
+    --pr-ink-mid: #3A4B66;
+    --pr-ink-muted: #5F728F;
+    --pr-sapphire-hi: #2E77F8;
+    --pr-sapphire: #1658EB;
+    --pr-sapphire-mid: #103FA8;
+    --pr-sapphire-deep: #0E2B78;
+    --pr-sapphire-abyss: #081A54;
+    --pr-cyan: #7DD3FC;
+    --pr-cyan-gleam: #D9F3FF;
+    --pr-gold: #C4A46C;
+    --pr-gold-deep: #8C6928;
+    --pr-gold-pale: #EFE0BE;
+    --pr-crimson: #D13456;
+    --pr-crimson-deep: #9E1B3A;
+    --pr-emerald: #0E8A64;
+    --pr-hairline: rgba(96, 128, 180, 0.24);
+    --pr-hairline-soft: rgba(96, 128, 180, 0.16);
+    --pr-rim: linear-gradient(
+      132deg,
+      rgba(125, 211, 252, 0.95) 0%,
+      rgba(22, 88, 235, 0.62) 28%,
+      rgba(255, 255, 255, 0.98) 50%,
+      rgba(196, 164, 108, 0.78) 74%,
+      rgba(46, 119, 248, 0.88) 100%
+    );
+    --pr-glass-plate: linear-gradient(
+      154deg,
+      rgba(255, 255, 255, 0.96) 0%,
+      rgba(245, 250, 255, 0.92) 56%,
+      rgba(232, 243, 255, 0.93) 100%
+    );
+    --pr-caustic: linear-gradient(
+      112deg,
+      transparent 12%,
+      rgba(255, 255, 255, 0.68) 26%,
+      rgba(125, 211, 252, 0.16) 33%,
+      transparent 47%,
+      rgba(239, 224, 190, 0.14) 76%,
+      transparent 92%
+    );
+    --pr-sapphire-prism: linear-gradient(
+      180deg,
+      #2E77F8 0%,
+      #1658EB 49.4%,
+      #0E2B78 50.6%,
+      #081A54 100%
+    );
+    --font-serif: 'Noto Serif CJK SC', 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', Georgia, serif;
+    --font-sans: 'Noto Sans CJK SC', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    --font-mono: 'Noto Sans Mono CJK SC', 'DejaVu Sans Mono', ui-monospace, Consolas, monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+    border-radius: 0 !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    width: 1440px;
+    height: 900px;
+    overflow: hidden;
+    font-family: var(--font-sans);
+    color: var(--pr-ink);
+    background: #EFF5FC;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+  }
+
+  /* ==================== 主展板画布（1440×900 严丝合缝） ==================== */
+  .board {
+    position: relative;
+    width: 1440px;
+    height: 900px;
+    padding: 0 26px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    background:
+      radial-gradient(ellipse 980px 420px at 14% -6%, rgba(125, 211, 252, 0.24) 0%, transparent 72%),
+      radial-gradient(ellipse 760px 380px at 88% 10%, rgba(196, 164, 108, 0.15) 0%, transparent 70%),
+      radial-gradient(ellipse 900px 440px at 52% 104%, rgba(22, 88, 235, 0.11) 0%, transparent 74%),
+      linear-gradient(158deg, #FAFBFD 0%, #EEF4FC 52%, #E5EFFB 100%);
+    overflow: hidden;
+  }
+
+  /* 圣殿基底极淡斜向冰晶折光束 */
+  .board::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(124deg, transparent 14%, rgba(255, 255, 255, 0.54) 22%, rgba(125, 211, 252, 0.08) 27%, transparent 34%),
+      linear-gradient(124deg, transparent 58%, rgba(255, 255, 255, 0.36) 64%, rgba(196, 164, 108, 0.06) 68%, transparent 75%);
+    z-index: 0;
+  }
+
+  .board > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* ==================== 1. 顶部紧凑标题栏 ==================== */
+  .top-header {
+    margin: 0 -26px;
+    padding: 11px 28px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(242, 248, 255, 0.90) 100%);
+    box-shadow: 0 6px 20px rgba(14, 43, 120, 0.07);
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .top-header::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1.5px;
+    background: linear-gradient(
+      90deg,
+      rgba(22, 88, 235, 0.88) 0%,
+      rgba(125, 211, 252, 0.96) 28%,
+      rgba(196, 164, 108, 0.82) 56%,
+      rgba(22, 88, 235, 0.72) 82%,
+      rgba(125, 211, 252, 0.28) 100%
+    );
+  }
+
+  .th-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  .th-tag {
+    padding: 5px 15px 5px 13px;
+    background: var(--pr-sapphire-prism);
+    color: #FFFFFF;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    filter: drop-shadow(0 4px 10px rgba(14, 43, 120, 0.24));
+    flex-shrink: 0;
+  }
+
+  .th-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .th-h1 {
+    font-family: var(--font-serif);
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--pr-ink);
+    line-height: 1.15;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .th-h1 .th-en {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: var(--pr-sapphire);
+    opacity: 0.86;
+  }
+
+  .th-sub {
+    font-size: 12px;
+    color: var(--pr-ink-mid);
+    letter-spacing: 0.025em;
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+
+  .th-specs {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+
+  .th-spec-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding-left: 14px;
+    border-left: 1px solid rgba(96, 128, 180, 0.26);
+  }
+
+  .th-spec-item:first-child {
+    border-left: none;
+    padding-left: 0;
+  }
+
+  .th-spec-k {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    color: var(--pr-ink-muted);
+    text-transform: uppercase;
+  }
+
+  .th-spec-v {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--pr-sapphire-deep);
+    letter-spacing: 0.03em;
+  }
+
+  /* ==================== 通用区块头部 ==================== */
+  .sec-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 7px;
+  }
+
+  .sec-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .sec-num {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: var(--pr-sapphire);
+    padding: 2px 9px 2px 8px;
+    background: linear-gradient(90deg, rgba(22, 88, 235, 0.12), rgba(125, 211, 252, 0.14));
+    border-left: 2.5px solid var(--pr-sapphire);
+    clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 100%, 0 100%);
+  }
+
+  .sec-title {
+    font-family: var(--font-serif);
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--pr-ink);
+    letter-spacing: 0.06em;
+  }
+
+  .sec-note {
+    font-size: 11.5px;
+    color: var(--pr-ink-muted);
+    letter-spacing: 0.02em;
+  }
+
+  .sec-legend {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 11px;
+    color: var(--pr-ink-mid);
+  }
+
+  .sec-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .legend-dot {
+    width: 6px;
+    height: 6px;
+    display: inline-block;
+    transform: rotate(45deg);
+    background: var(--pr-sapphire);
+  }
+
+  .legend-dot.gold { background: var(--pr-gold); }
+  .legend-dot.cyan { background: #38BDF8; }
+  .legend-dot.crimson { background: var(--pr-crimson); }
+
+  /* ==================== 核心组件：七阶冰晶折射棱镜徽章 ==================== */
+  /*
+     结构说明（严格零圆框套圆框）：
+     .rank-badge 为外层切角水晶折射棱（1.5px 倒角光边）
+     .rank-core  为内部多面切晶本体（双切面明暗 + 45° 双镜面反光斜带 + 顶边极细高光棱）
+     实战 1:1 尺寸特调斜光落点于左右翼缘，确保高光折射与汉字对比度兼得！
+  */
+  .rank-badge {
+    --rk-rim: linear-gradient(132deg, #9EC1E6 0%, #6A92C6 30%, #FFFFFF 52%, #A6C6E8 76%, #5A7FB2 100%);
+    --rk-body: linear-gradient(180deg, #FFFFFF 0%, #EFF6FE 48.5%, #DCEAF8 50.5%, #EDF5FE 100%);
+    --rk-text: #1B335B;
+    --rk-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
+    --rk-glint-a: rgba(255, 255, 255, 0.28);
+    --rk-glint-b: rgba(255, 255, 255, 0.56);
+    --rk-caustic: rgba(125, 211, 252, 0.34);
+    --rk-top-edge: rgba(255, 255, 255, 0.90);
+    --rk-bottom-gleam: rgba(125, 211, 252, 0.45);
+    --rk-gem: linear-gradient(135deg, #FFFFFF 0%, #7DD3FC 48%, #2E77F8 100%);
+    --rk-shadow: drop-shadow(0 2px 5px rgba(24, 54, 112, 0.18));
+
+    position: relative;
+    display: inline-flex;
+    align-items: stretch;
+    padding: 1.5px;
+    background: var(--rk-rim);
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+    filter: var(--rk-shadow);
+    vertical-align: middle;
+    flex-shrink: 0;
+    line-height: 1;
+    user-select: none;
+  }
+
+  .rank-core {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 3px 10px 3px 9px;
+    background: var(--rk-body);
+    clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
+    color: var(--rk-text);
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-shadow: var(--rk-text-shadow);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  /* 1:1 实战尺寸 45° 镜面斜光：精准扫过左前棱角与右后折面，绝不冲淡中区文字对比度 */
+  .rank-core::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(
+        126deg,
+        transparent 0%,
+        transparent 7%,
+        var(--rk-glint-a) 13%,
+        rgba(255, 255, 255, 0.05) 19%,
+        transparent 21%,
+        var(--rk-glint-b) 23.5%,
+        rgba(255, 255, 255, 0.10) 26.5%,
+        transparent 29%,
+        transparent 73%,
+        var(--rk-caustic) 81%,
+        transparent 92%
+      );
+    z-index: 1;
+  }
+
+  /* 顶边极细高光棱 + 底部内部全反射亮棱 */
+  .rank-core::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    box-shadow:
+      inset 0 1px 0 var(--rk-top-edge),
+      inset 0 -1px 0 var(--rk-bottom-gleam);
+    z-index: 2;
+  }
+
+  .rank-core > * {
+    position: relative;
+    z-index: 3;
+  }
+
+  /* 左侧微缩切面晶菱 */
+  .rk-gem {
+    display: inline-block;
+    width: 5.5px;
+    height: 5.5px;
+    background: var(--rk-gem);
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.65));
+  }
+
+  /* 圣级/王级/帝级/神级：升级为精雕四芒星钻 */
+  .rank-badge.has-star .rk-gem {
+    width: 7px;
+    height: 7px;
+    clip-path: polygon(50% 0%, 64% 36%, 100% 50%, 64% 64%, 50% 100%, 36% 64%, 0% 50%, 36% 36%);
+  }
+
+  /* 神级右端极微星点呼应 */
+  .rk-star-r {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    background: linear-gradient(135deg, #FFFFFF 0%, #FDE68A 55%, #7DD3FC 100%);
+    clip-path: polygon(50% 0%, 66% 34%, 100% 50%, 66% 66%, 50% 100%, 34% 66%, 0% 50%, 34% 34%);
+    flex-shrink: 0;
+    opacity: 0.94;
+  }
+
+  .rk-label {
+    display: inline-block;
+    transform: translateY(-0.2px);
+  }
+
+  /* ---------- 2× 材质特写放大尺寸 ---------- */
+  .rank-badge.size-2x {
+    padding: 2.5px;
+    clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+  }
+
+  .rank-badge.size-2x .rank-core {
+    min-width: 124px;
+    height: 41px;
+    padding: 0 22px 0 20px;
+    gap: 8px;
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+  }
+
+  /* 2× 特写展示更舒展的双重 45° 镜面反光斜带 */
+  .rank-badge.size-2x .rank-core::before {
+    background:
+      linear-gradient(
+        125deg,
+        transparent 0%,
+        transparent 10%,
+        var(--rk-glint-a) 16.5%,
+        rgba(255, 255, 255, 0.05) 23%,
+        transparent 25.5%,
+        var(--rk-glint-b) 28.5%,
+        rgba(255, 255, 255, 0.12) 32%,
+        transparent 35%,
+        transparent 69%,
+        var(--rk-caustic) 78%,
+        transparent 90%
+      );
+  }
+
+  .rank-badge.size-2x .rank-core::after {
+    box-shadow:
+      inset 0 1.5px 0 var(--rk-top-edge),
+      inset 0 -1.5px 0 var(--rk-bottom-gleam);
+  }
+
+  .rank-badge.size-2x .rk-gem {
+    width: 10px;
+    height: 10px;
+  }
+
+  .rank-badge.size-2x.has-star .rk-gem {
+    width: 13px;
+    height: 13px;
+  }
+
+  .rank-badge.size-2x .rk-star-r {
+    width: 9px;
+    height: 9px;
+  }
+
+  /* ==================== 七色阶精密调色盘（白 → 绿 → 蓝 → 紫 → 橙 → 红 → 彩） ==================== */
+
+  /* 1. 初级 · 白 · 雪瓷冰白晶（特调冷冰青斜光折射带，白底上依旧晶莹剔透、切面鲜明） */
+  .rank-tier-1 {
+    --rk-rim: linear-gradient(132deg, #98BEE6 0%, #5B87BE 28%, #FFFFFF 50%, #98BCE4 74%, #4F76AA 100%);
+    --rk-body: linear-gradient(180deg, #FFFFFF 0%, #EEF5FD 48.8%, #D5E6F8 50.6%, #E8F2FC 100%);
+    --rk-text: #162E57;
+    --rk-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.88);
+    --rk-glint-a: rgba(125, 211, 252, 0.34);
+    --rk-glint-b: rgba(255, 255, 255, 0.96);
+    --rk-caustic: rgba(56, 189, 248, 0.28);
+    --rk-top-edge: rgba(255, 255, 255, 0.98);
+    --rk-bottom-gleam: rgba(96, 148, 212, 0.48);
+    --rk-gem: linear-gradient(135deg, #7DD3FC 0%, #3B82F6 52%, #1E3A8A 100%);
+    --rk-shadow: drop-shadow(0 2px 5px rgba(38, 76, 138, 0.20));
+  }
+
+  /* 2. 中级 · 绿 · 翠青翡晶 */
+  .rank-tier-2 {
+    --rk-rim: linear-gradient(132deg, #A7F3D0 0%, #10B981 30%, #FFFFFF 52%, #6EE7B7 75%, #047857 100%);
+    --rk-body: linear-gradient(180deg, #25B888 0%, #0E8F66 49.0%, #097050 50.8%, #06533D 100%);
+    --rk-text: #FFFFFF;
+    --rk-text-shadow: 0 1px 2px rgba(2, 38, 26, 0.62);
+    --rk-glint-a: rgba(255, 255, 255, 0.26);
+    --rk-glint-b: rgba(236, 253, 245, 0.56);
+    --rk-caustic: rgba(167, 243, 208, 0.32);
+    --rk-top-edge: rgba(236, 253, 245, 0.84);
+    --rk-bottom-gleam: rgba(110, 231, 183, 0.44);
+    --rk-gem: linear-gradient(135deg, #FFFFFF 0%, #A7F3D0 55%, #34D399 100%);
+    --rk-shadow: drop-shadow(0 2px 6px rgba(6, 108, 76, 0.28));
+  }
+
+  /* 3. 高级 · 蓝 · 皇家冰蓝晶 */
+  .rank-tier-3 {
+    --rk-rim: linear-gradient(132deg, #BAE6FD 0%, #2E77F8 30%, #FFFFFF 52%, #7DD3FC 76%, #0E2B78 100%);
+    --rk-body: linear-gradient(180deg, #3A83FA 0%, #1658EB 49.0%, #0F3BA0 50.8%, #082368 100%);
+    --rk-text: #FFFFFF;
+    --rk-text-shadow: 0 1px 2px rgba(6, 18, 58, 0.64);
+    --rk-glint-a: rgba(255, 255, 255, 0.26);
+    --rk-glint-b: rgba(224, 244, 255, 0.58);
+    --rk-caustic: rgba(125, 211, 252, 0.36);
+    --rk-top-edge: rgba(217, 243, 255, 0.88);
+    --rk-bottom-gleam: rgba(125, 211, 252, 0.48);
+    --rk-gem: linear-gradient(135deg, #FFFFFF 0%, #BAE6FD 52%, #60A5FA 100%);
+    --rk-shadow: drop-shadow(0 2px 7px rgba(18, 62, 178, 0.32));
+  }
+
+  /* 4. 圣级 · 紫 · 星霜紫晶 */
+  .rank-tier-4 {
+    --rk-rim: linear-gradient(132deg, #E9D5FF 0%, #8B5CF6 28%, #FFFFFF 51%, #C4B5FD 75%, #4C1D95 100%);
+    --rk-body: linear-gradient(180deg, #9164EE 0%, #6D3AD6 49.0%, #5024B0 50.8%, #381582 100%);
+    --rk-text: #FFFFFF;
+    --rk-text-shadow: 0 1px 2px rgba(30, 8, 76, 0.66);
+    --rk-glint-a: rgba(255, 255, 255, 0.26);
+    --rk-glint-b: rgba(243, 232, 255, 0.58);
+    --rk-caustic: rgba(196, 181, 253, 0.36);
+    --rk-top-edge: rgba(243, 232, 255, 0.86);
+    --rk-bottom-gleam: rgba(196, 181, 253, 0.48);
+    --rk-gem: linear-gradient(135deg, #FFFFFF 0%, #E9D5FF 52%, #A78BFA 100%);
+    --rk-shadow: drop-shadow(0 2px 7px rgba(88, 38, 186, 0.32));
+  }
+
+  /* 5. 王级 · 橙 · 鎏金琥珀晶 */
+  .rank-tier-5 {
+    --rk-rim: linear-gradient(132deg, #FEF3C7 0%, #F59E0B 28%, #FFFFFF 51%, #FDBA74 75%, #9A3412 100%);
+    --rk-body: linear-gradient(180deg, #EE921E 0%, #D16608 49.0%, #AB4804 50.8%, #7F3104 100%);
+    --rk-text: #FFFFFF;
+    --rk-text-shadow: 0 1px 2px rgba(72, 22, 2, 0.66);
+    --rk-glint-a: rgba(255, 251, 235, 0.28);
+    --rk-glint-b: rgba(254, 243, 199, 0.62);
+    --rk-caustic: rgba(253, 224, 138, 0.36);
+    --rk-top-edge: rgba(255, 248, 220, 0.88);
+    --rk-bottom-gleam: rgba(253, 186, 116, 0.48);
+    --rk-gem: linear-gradient(135deg, #FFFFFF 0%, #FEF08A 50%, #F59E0B 100%);
+    --rk-shadow: drop-shadow(0 2px 7px rgba(180, 77, 6, 0.32));
+  }
+
+  /* 6. 帝级 · 红 · 赤绯曜红晶 */
+  .rank-tier-6 {
+    --rk-rim: linear-gradient(132deg, #FECDD3 0%, #E11D48 28%, #FFFFFF 50%, #FDE68A 75%, #881337 100%);
+    --rk-body: linear-gradient(180deg, #E63B5A 0%, #C21A3E 49.0%, #98112F 50.8%, #6B0A20 100%);
+    --rk-text: #FFFFFF;
+    --rk-text-shadow: 0 1px 2px rgba(64, 4, 18, 0.68);
+    --rk-glint-a: rgba(255, 255, 255, 0.26);
+    --rk-glint-b: rgba(255, 228, 230, 0.58);
+    --rk-caustic: rgba(253, 224, 138, 0.34);
+    --rk-top-edge: rgba(255, 232, 236, 0.86);
+    --rk-bottom-gleam: rgba(251, 113, 133, 0.46);
+    --rk-gem: linear-gradient(135deg, #FFFFFF 0%, #FDE68A 52%, #FB7185 100%);
+    --rk-shadow: drop-shadow(0 2px 8px rgba(176, 20, 56, 0.34));
+  }
+
+  /* 7. 神级 · 彩 · 虹彩星辉棱镜（冰青 → 皇家蓝 → 星霜紫 → 玫绯 → 鎏金，全光谱宝石分光） */
+  .rank-tier-7 {
+    --rk-rim: linear-gradient(
+      125deg,
+      #5EEAD4 0%,
+      #38BDF8 16%,
+      #3B82F6 30%,
+      #A855F7 44%,
+      #FFFFFF 53%,
+      #F43F5E 68%,
+      #FBBF24 85%,
+      #38BDF8 100%
+    );
+    --rk-body:
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.18) 0%,
+        rgba(255, 255, 255, 0.02) 48.8%,
+        rgba(10, 16, 48, 0.36) 50.6%,
+        rgba(8, 12, 40, 0.50) 100%
+      ),
+      linear-gradient(
+        104deg,
+        #0A93B8 0%,
+        #1D5EE6 24%,
+        #7539DC 50%,
+        #D12C6D 76%,
+        #DC840E 100%
+      );
+    --rk-text: #FFFFFF;
+    --rk-text-shadow: 0 1px 3px rgba(10, 14, 42, 0.84), 0 0 8px rgba(125, 211, 252, 0.36);
+    --rk-glint-a: rgba(255, 255, 255, 0.32);
+    --rk-glint-b: rgba(255, 255, 255, 0.68);
+    --rk-caustic: rgba(254, 240, 138, 0.44);
+    --rk-top-edge: rgba(255, 255, 255, 0.94);
+    --rk-bottom-gleam: rgba(125, 211, 252, 0.64);
+    --rk-gem: linear-gradient(135deg, #FFFFFF 0%, #7DD3FC 42%, #FDE68A 100%);
+    --rk-shadow: drop-shadow(0 0 6px rgba(56, 189, 248, 0.46)) drop-shadow(0 2px 9px rgba(139, 92, 246, 0.36));
+  }
+
+  /* 2× 特写允许更鲜亮的一丝镜面高光，放大细节极具宝石清冽通透感 */
+  .rank-badge.size-2x:not(.rank-tier-1) {
+    --rk-glint-a: rgba(255, 255, 255, 0.34);
+    --rk-glint-b: rgba(255, 255, 255, 0.72);
+  }
+  .rank-badge.size-2x.rank-tier-7 {
+    --rk-glint-a: rgba(255, 255, 255, 0.38);
+    --rk-glint-b: rgba(255, 255, 255, 0.80);
+  }
+
+  /* ==================== 2. 中上区：全 7 阶对照陈列 ==================== */
+  .showcase-section {
+    flex-shrink: 0;
+  }
+
+  .showcase-shell {
+    position: relative;
+    padding: 1.5px;
+    background: var(--pr-rim);
+    clip-path: polygon(16px 0%, 100% 0%, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0% 100%, 0% 16px);
+    filter: drop-shadow(0 10px 24px rgba(14, 43, 120, 0.11));
+  }
+
+  .showcase-inner {
+    background: var(--pr-caustic), var(--pr-glass-plate);
+    clip-path: polygon(15px 0%, 100% 0%, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0% 100%, 0% 15px);
+    display: grid;
+    grid-template-columns: 78px repeat(7, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  /* 最左侧行标栏 */
+  .row-guide-col {
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, rgba(22, 88, 235, 0.055) 0%, rgba(22, 88, 235, 0.025) 100%);
+    border-right: 1px solid rgba(96, 128, 180, 0.24);
+  }
+
+  .rg-top {
+    height: 128px;
+    padding: 12px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 4px;
+    border-bottom: 1px dashed rgba(96, 128, 180, 0.26);
+  }
+
+  .rg-bot {
+    height: 68px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 3px;
+  }
+
+  .rg-scale {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--pr-sapphire);
+    letter-spacing: 0.04em;
+  }
+
+  .rg-desc {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--pr-ink-mid);
+    line-height: 1.3;
+  }
+
+  /* 每个等阶展示列（仅用 1px 竖线分隔，零套盒） */
+  .tier-col {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid rgba(96, 128, 180, 0.16);
+  }
+
+  .tier-col:last-child {
+    border-right: none;
+    background: linear-gradient(180deg, rgba(125, 211, 252, 0.09) 0%, rgba(168, 85, 247, 0.05) 55%, rgba(251, 191, 36, 0.07) 100%);
+  }
+
+  .tc-zoom-row {
+    height: 128px;
+    padding: 10px 10px 9px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px dashed rgba(96, 128, 180, 0.26);
+  }
+
+  .tc-meta-top {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 10.5px;
+    padding: 0 4px;
+  }
+
+  .tc-idx {
+    font-family: var(--font-mono);
+    font-weight: 800;
+    color: var(--pr-ink-muted);
+    letter-spacing: 0.06em;
+  }
+
+  .tc-color-pill {
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--pr-ink-mid);
+  }
+
+  .tc-swatch {
+    width: 7px;
+    height: 7px;
+    display: inline-block;
+    transform: rotate(45deg);
+  }
+
+  .tc-material {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .tc-mat-name {
+    font-family: var(--font-serif);
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--pr-ink);
+    letter-spacing: 0.06em;
+  }
+
+  .tc-mat-hex {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    color: var(--pr-ink-muted);
+    letter-spacing: 0.03em;
+  }
+
+  /* 下行：1:1 实战字号（紧贴角色名前，置于纯雪瓷白条上验证真实分离度） */
+  .tc-live-row {
+    height: 68px;
+    padding: 8px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    background: rgba(250, 251, 253, 0.95);
+  }
+
+  .tc-live-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+  }
+
+  .tc-live-name {
+    font-family: var(--font-serif);
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--pr-ink);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .tc-live-sub {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    color: var(--pr-ink-muted);
+    letter-spacing: 0.02em;
+  }
+
+  /* ==================== 3. 下半区：真实游戏战斗名牌 1:1 嵌入预览 ==================== */
+  .battle-section {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .matchup-grid {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: 10px 14px;
+  }
+
+  /* 单组实战对阵行容器 */
+  .matchup-row {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 7px 11px 9px;
+    background: linear-gradient(180deg, rgba(232, 241, 253, 0.64) 0%, rgba(218, 232, 250, 0.56) 100%);
+    border-top: 1.5px solid rgba(96, 134, 198, 0.34);
+    border-bottom: 1px solid rgba(96, 134, 198, 0.22);
+  }
+
+  .matchup-row.is-god-match {
+    background:
+      linear-gradient(112deg, rgba(125, 211, 252, 0.14) 0%, rgba(139, 92, 246, 0.10) 52%, rgba(251, 191, 36, 0.11) 100%),
+      linear-gradient(180deg, rgba(232, 241, 253, 0.72) 0%, rgba(220, 232, 252, 0.66) 100%);
+    border-top: 2px solid transparent;
+    border-image: linear-gradient(90deg, #1658EB 0%, #7DD3FC 35%, #A855F7 68%, #F59E0B 100%) 1;
+  }
+
+  .mr-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 11px;
+  }
+
+  .mr-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 700;
+    color: var(--pr-ink);
+    letter-spacing: 0.04em;
+  }
+
+  .mr-idx {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--pr-sapphire);
+    letter-spacing: 0.08em;
+  }
+
+  .mr-tiers-summary {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--pr-ink-muted);
+    letter-spacing: 0.04em;
+  }
+
+  .mr-cards {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr);
+    align-items: stretch;
+    gap: 7px;
+    flex: 1;
+  }
+
+  .mr-vs {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .mr-vs-line {
+    width: 1px;
+    flex: 1;
+    background: linear-gradient(180deg, transparent, rgba(22, 88, 235, 0.34), transparent);
+  }
+
+  .mr-vs-text {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--pr-sapphire-deep);
+    padding: 3px 4px;
+    background: rgba(255, 255, 255, 0.88);
+    border-top: 1px solid rgba(22, 88, 235, 0.34);
+    border-bottom: 1px solid rgba(22, 88, 235, 0.34);
+  }
+
+  /* ==================== 1:1 复刻本作雪瓷冰晶战卡 ==================== */
+  /* 我方名牌 (.cb-player-pane) */
+  .cb-player-pane {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 8px 11px 8px 12px;
+    border: 1.5px solid rgba(96, 146, 224, 0.44);
+    border-left: 3.5px solid var(--pr-sapphire);
+    border-top: 2px solid var(--pr-gold);
+    background: var(--pr-caustic), linear-gradient(154deg, #FFFFFF 0%, #FAFBFD 58%, #EEF5FD 100%);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    filter: drop-shadow(0 6px 14px rgba(10, 28, 82, 0.13));
+  }
+
+  .cb-p-header {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--pr-hairline-soft);
+  }
+
+  .cb-p-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .cb-p-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .cb-p-name {
+    font-family: var(--font-serif);
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--pr-ink);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  .cb-p-sub {
+    font-size: 10px;
+    color: var(--pr-ink-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+
+  .cb-ap-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding-bottom: 1px;
+    border-bottom: 1px solid var(--pr-hairline);
+    flex-shrink: 0;
+  }
+
+  .cb-ap-gem {
+    width: 6.5px;
+    height: 6.5px;
+    transform: rotate(45deg);
+    border: 1px solid rgba(27, 35, 51, 0.28);
+    background: #FFFFFF;
+  }
+
+  .cb-ap-gem.on {
+    background: linear-gradient(135deg, #6BC5F8 0%, #1C4CB8 55%, #0C2566 100%);
+    border-color: var(--pr-sapphire-deep);
+  }
+
+  .cb-ap-label {
+    margin-left: 2px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--pr-sapphire);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 敌方名牌 (.cb-e-plate) */
+  .cb-e-plate {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 8px 11px;
+    border: 1.5px solid rgba(209, 52, 86, 0.36);
+    border-top: 2px solid var(--pr-crimson);
+    background: var(--pr-caustic), linear-gradient(154deg, #FFFFFF 0%, #FAFBFD 58%, #EEF5FD 100%);
+    clip-path: polygon(13px 0%, 100% 0%, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0% 100%, 0% 13px);
+    filter: drop-shadow(0 6px 14px rgba(10, 28, 82, 0.14));
+  }
+
+  .cb-e-plate.is-targeted {
+    border-color: rgba(22, 88, 235, 0.50);
+    border-top-color: var(--pr-sapphire);
+  }
+
+  .cb-e-plate.is-god-plate {
+    border-color: rgba(124, 58, 237, 0.44);
+    border-top: 2px solid #7C3AED;
+    background:
+      linear-gradient(118deg, rgba(125, 211, 252, 0.12) 0%, transparent 32%, rgba(168, 85, 247, 0.08) 64%, rgba(251, 191, 36, 0.10) 100%),
+      linear-gradient(154deg, #FFFFFF 0%, #FAFBFD 58%, #F1F6FE 100%);
+  }
+
+  .cb-e-head {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--pr-hairline-soft);
+  }
+
+  .cb-e-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .cb-e-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .cb-e-title {
+    font-family: var(--font-serif);
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--pr-ink);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cb-e-badges {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .cb-elem-tag {
+    padding: 1px 5px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.35;
+    background: rgba(28, 76, 184, 0.07);
+    color: var(--pr-ink-mid);
+  }
+  .cb-elem-tag.elem-fire { background: rgba(196, 37, 68, 0.09); color: var(--pr-crimson-deep); }
+  .cb-elem-tag.elem-dark { background: rgba(109, 40, 217, 0.10); color: #5B21B6; }
+  .cb-elem-tag.elem-earth { background: rgba(180, 83, 9, 0.10); color: #9A3412; }
+  .cb-elem-tag.elem-wind { background: rgba(14, 124, 91, 0.10); color: #0B7A58; }
+
+  .cb-trait-pill {
+    padding: 1px 5px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.35;
+    background: rgba(22, 88, 235, 0.08);
+    color: var(--pr-sapphire);
+  }
+
+  /* 7px 清晰血蓝条（完全对齐 combat.css + prism-refraction-ui.css 六角斜切结晶轨） */
+  .cb-bars-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .cb-stat-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .cb-stat-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--pr-ink-mid);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+
+  .cb-stat-val {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--pr-ink);
+  }
+
+  .cb-stat-track {
+    position: relative;
+    height: 7px;
+    background: rgba(14, 34, 84, 0.13);
+    clip-path: polygon(3.5px 0%, calc(100% - 3.5px) 0%, 100% 50%, calc(100% - 3.5px) 100%, 3.5px 100%, 0% 50%);
+    overflow: hidden;
+  }
+
+  .cb-stat-fill {
+    height: 100%;
+    clip-path: polygon(3.5px 0%, calc(100% - 3.5px) 0%, 100% 50%, calc(100% - 3.5px) 100%, 3.5px 100%, 0% 50%);
+  }
+
+  .cb-stat-fill.hp {
+    background: linear-gradient(180deg, #FF8FA4 0%, #E03A59 49%, #B51E3E 51%, #8E1430 100%);
+  }
+
+  .cb-stat-fill.mp {
+    background: linear-gradient(180deg, #9BE7FF 0%, #3288FF 49%, #1658EB 51%, #0E2B78 100%);
+  }
+
+  /* 弱点锁与状态条（零圆框，仅左侧色条） */
+  .cb-buff-list {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 4px;
+    overflow: hidden;
+  }
+
+  .cb-buff-chip {
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.25;
+    padding: 1.5px 5.5px;
+    background: rgba(27, 35, 51, 0.055);
+    border-left: 2px solid rgba(27, 35, 51, 0.28);
+    color: var(--pr-ink-mid);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cb-buff-chip.lock {
+    background: rgba(22, 88, 235, 0.08);
+    border-left-color: var(--pr-sapphire);
+    color: var(--pr-sapphire-deep);
+  }
+
+  .cb-buff-chip.shield {
+    background: rgba(14, 165, 233, 0.10);
+    border-left-color: #0284C7;
+    color: #0369A1;
+  }
+
+  .cb-buff-chip.gold {
+    background: rgba(196, 164, 108, 0.16);
+    border-left-color: var(--pr-gold-deep);
+    color: #7A581B;
+  }
+
+  .cb-buff-chip.phase2 {
+    background: var(--pr-sapphire);
+    border-left-color: var(--pr-cyan);
+    color: #FFFFFF;
+  }
+
+  .cb-buff-chip.debuff {
+    background: rgba(209, 52, 86, 0.09);
+    border-left-color: var(--pr-crimson);
+    color: var(--pr-crimson-deep);
+  }
+
+  /* ==================== 第 6 格：冰晶折射四层光学工艺解构 & 规范卡 ==================== */
+  .spec-card-shell {
+    position: relative;
+    padding: 1.5px;
+    background: var(--pr-rim);
+    clip-path: polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px);
+    filter: drop-shadow(0 8px 18px rgba(14, 43, 120, 0.10));
+    display: flex;
+  }
+
+  .spec-card-inner {
+    flex: 1;
+    padding: 9px 14px;
+    background: var(--pr-caustic), var(--pr-glass-plate);
+    clip-path: polygon(13px 0%, 100% 0%, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0% 100%, 0% 13px);
+    display: grid;
+    grid-template-columns: 236px 1fr;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .anatomy-stage {
+    height: 100%;
+    padding: 8px 10px;
+    background: linear-gradient(150deg, #F6FAFF 0%, #E7F0FC 100%);
+    border-right: 1px solid rgba(96, 128, 180, 0.22);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .anatomy-cap {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 800;
+    color: var(--pr-sapphire);
+    letter-spacing: 0.08em;
+  }
+
+  .anatomy-diagram {
+    position: relative;
+    width: 214px;
+    height: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .anatomy-callouts {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px 8px;
+    font-size: 9.5px;
+    color: var(--pr-ink-mid);
+  }
+
+  .anatomy-callouts span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  .anatomy-callouts b {
+    font-family: var(--font-mono);
+    color: var(--pr-sapphire);
+  }
+
+  .spec-points {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    gap: 6px;
+  }
+
+  .sp-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(96, 128, 180, 0.20);
+  }
+
+  .sp-title {
+    font-family: var(--font-serif);
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--pr-ink);
+    letter-spacing: 0.06em;
+  }
+
+  .sp-badge {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 800;
+    color: #0B7A58;
+    background: rgba(14, 138, 100, 0.10);
+    padding: 2px 7px;
+  }
+
+  .sp-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+  }
+
+  .sp-item {
+    border-left: 2px solid var(--pr-sapphire);
+    padding-left: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .sp-item.gold { border-left-color: var(--pr-gold-deep); }
+  .sp-item.emerald { border-left-color: var(--pr-emerald); }
+  .sp-item.prism { border-left-color: #7C3AED; }
+
+  .sp-item-h {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--pr-ink);
+  }
+
+  .sp-item-p {
+    font-size: 10px;
+    color: var(--pr-ink-mid);
+    line-height: 1.38;
+  }
+
+  .mono-tok {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--pr-sapphire-deep);
+    background: rgba(22, 88, 235, 0.07);
+    padding: 0 3px;
+  }
+</style>
+</head>
+<body>
+<main class="board">
+
+  <!-- ==================== 顶部紧凑标题栏 ==================== -->
+  <header class="top-header">
+    <div class="th-left">
+      <div class="th-tag">PITCH · A</div>
+      <div class="th-titles">
+        <h1 class="th-h1">
+          方案 A · 七色阶 × 冰晶折射反光质感
+          <span class="th-en">PRISM REFRACTION RANK CRESTS · 7-TIER</span>
+        </h1>
+        <p class="th-sub">
+          承袭全站冰晶折射圣殿语汇，以「白→绿→蓝→紫→橙→红→彩」双切面棱晶与 45° 镜面斜光，在雪瓷名牌上实现零圆框高对比身份辨识。
+        </p>
+      </div>
+    </div>
+    <div class="th-specs">
+      <div class="th-spec-item">
+        <span class="th-spec-k">GEOMETRY</span>
+        <span class="th-spec-v">零圆框 · 平行斜切棱镜</span>
+      </div>
+      <div class="th-spec-item">
+        <span class="th-spec-k">OPTICS</span>
+        <span class="th-spec-v">45° 镜面反光 × 双切面</span>
+      </div>
+      <div class="th-spec-item">
+        <span class="th-spec-k">PALETTE</span>
+        <span class="th-spec-v">克制珠宝色 · 雪瓷高对比</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== 中上区：全 7 阶对照陈列 ==================== -->
+  <section class="showcase-section">
+    <div class="sec-head">
+      <div class="sec-title-wrap">
+        <span class="sec-num">SECTION 01</span>
+        <h2 class="sec-title">全 7 阶等阶标识对照陈列</h2>
+        <span class="sec-note">严格遵循原著「白 → 绿 → 蓝 → 紫 → 橙 → 红 → 彩」序列 · 上行 2× 材质放大 / 下行 1:1 实战名牌字号</span>
+      </div>
+      <div class="sec-legend">
+        <span><i class="legend-dot cyan"></i>外圈 132° 折射晶棱</span>
+        <span><i class="legend-dot"></i>49.5% 水平双切面</span>
+        <span><i class="legend-dot gold"></i>45° 双镜面斜光带</span>
+        <span><i class="legend-dot crimson"></i>顶边 1px 高光棱</span>
+      </div>
+    </div>
+
+    <div class="showcase-shell">
+      <div class="showcase-inner">
+        <!-- 左侧行标引导 -->
+        <div class="row-guide-col">
+          <div class="rg-top">
+            <span class="rg-scale">2×</span>
+            <span class="rg-desc">材质特写<br/>折光与切角</span>
+          </div>
+          <div class="rg-bot">
+            <span class="rg-scale">1:1</span>
+            <span class="rg-desc">实战字号<br/>名牌紧贴</span>
+          </div>
+        </div>
+
+        <!-- 01 初级 · 白 -->
+        <div class="tier-col">
+          <div class="tc-zoom-row">
+            <div class="tc-meta-top">
+              <span class="tc-idx">TIER 01</span>
+              <span class="tc-color-pill"><i class="tc-swatch" style="background:#DCEAF8;border:1px solid #5B87BE;"></i>白</span>
+            </div>
+            <span class="rank-badge rank-tier-1 size-2x">
+              <span class="rank-core"><i class="rk-gem"></i><span class="rk-label">初级</span></span>
+            </span>
+            <div class="tc-material">
+              <span class="tc-mat-name">雪瓷冰白晶</span>
+              <span class="tc-mat-hex">#EEF5FD · 冰青棱边</span>
+            </div>
+          </div>
+          <div class="tc-live-row">
+            <div class="tc-live-inline">
+              <span class="rank-badge rank-tier-1"><span class="rank-core"><i class="rk-gem"></i><span class="rk-label">初级</span></span></span>
+              <span class="tc-live-name">希尔维亚</span>
+            </div>
+            <span class="tc-live-sub">雪瓷底清晰分离 · 深靛字</span>
+          </div>
+        </div>
+
+        <!-- 02 中级 · 绿 -->
+        <div class="tier-col">
+          <div class="tc-zoom-row">
+            <div class="tc-meta-top">
+              <span class="tc-idx">TIER 02</span>
+              <span class="tc-color-pill"><i class="tc-swatch" style="background:#0E8F66;"></i>绿</span>
+            </div>
+            <span class="rank-badge rank-tier-2 size-2x">
+              <span class="rank-core"><i class="rk-gem"></i><span class="rk-label">中级</span></span>
+            </span>
+            <div class="tc-material">
+              <span class="tc-mat-name">翠青翡晶</span>
+              <span class="tc-mat-hex">#0E8F66 · 翡翠冷光</span>
+            </div>
+          </div>
+          <div class="tc-live-row">
+            <div class="tc-live-inline">
+              <span class="rank-badge rank-tier-2"><span class="rank-core"><i class="rk-gem"></i><span class="rk-label">中级</span></span></span>
+              <span class="tc-live-name">希尔维亚</span>
+            </div>
+            <span class="tc-live-sub">清润翡青 · 零荧光俗感</span>
+          </div>
+        </div>
+
+        <!-- 03 高级 · 蓝 -->
+        <div class="tier-col">
+          <div class="tc-zoom-row">
+            <div class="tc-meta-top">
+              <span class="tc-idx">TIER 03</span>
+              <span class="tc-color-pill"><i class="tc-swatch" style="background:#1658EB;"></i>蓝</span>
+            </div>
+            <span class="rank-badge rank-tier-3 size-2x">
+              <span class="rank-core"><i class="rk-gem"></i><span class="rk-label">高级</span></span>
+            </span>
+            <div class="tc-material">
+              <span class="tc-mat-name">皇家冰蓝晶</span>
+              <span class="tc-mat-hex">#1658EB · 全站本命蓝</span>
+            </div>
+          </div>
+          <div class="tc-live-row">
+            <div class="tc-live-inline">
+              <span class="rank-badge rank-tier-3"><span class="rank-core"><i class="rk-gem"></i><span class="rk-label">高级</span></span></span>
+              <span class="tc-live-name">希尔维亚</span>
+            </div>
+            <span class="tc-live-sub">同源皇家蓝宝石棱镜</span>
+          </div>
+        </div>
+
+        <!-- 04 圣级 · 紫 -->
+        <div class="tier-col">
+          <div class="tc-zoom-row">
+            <div class="tc-meta-top">
+              <span class="tc-idx">TIER 04</span>
+              <span class="tc-color-pill"><i class="tc-swatch" style="background:#6D3AD6;"></i>紫</span>
+            </div>
+            <span class="rank-badge rank-tier-4 has-star size-2x">
+              <span class="rank-core"><i class="rk-gem"></i><span class="rk-label">圣级</span></span>
+            </span>
+            <div class="tc-material">
+              <span class="tc-mat-name">星霜紫晶</span>
+              <span class="tc-mat-hex">#6D3AD6 · 四芒星钻</span>
+            </div>
+          </div>
+          <div class="tc-live-row">
+            <div class="tc-live-inline">
+              <span class="rank-badge rank-tier-4 has-star"><span class="rank-core"><i class="rk-gem"></i><span class="rk-label">圣级</span></span></span>
+              <span class="tc-live-name">罗文</span>
+            </div>
+            <span class="tc-live-sub">冷调鸢尾紫 · 圣阶星印</span>
+          </div>
+        </div>
+
+        <!-- 05 王级 · 橙 -->
+        <div class="tier-col">
+          <div class="tc-zoom-row">
+            <div class="tc-meta-top">
+              <span class="tc-idx">TIER 05</span>
+              <span class="tc-color-pill"><i class="tc-swatch" style="background:#D16608;"></i>橙</span>
+            </div>
+            <span class="rank-badge rank-tier-5 has-star size-2x">
+              <span class="rank-core"><i class="rk-gem"></i><span class="rk-label">王级</span></span>
+            </span>
+            <div class="tc-material">
+              <span class="tc-mat-name">鎏金琥珀晶</span>
+              <span class="tc-mat-hex">#D16608 · 香槟金棱</span>
+            </div>
+          </div>
+          <div class="tc-live-row">
+            <div class="tc-live-inline">
+              <span class="rank-badge rank-tier-5 has-star"><span class="rank-core"><i class="rk-gem"></i><span class="rk-label">王级</span></span></span>
+              <span class="tc-live-name">裂地兽领主</span>
+            </div>
+            <span class="tc-live-sub">琥珀鎏金 · 呼应全站淡金</span>
+          </div>
+        </div>
+
+        <!-- 06 帝级 · 红 -->
+        <div class="tier-col">
+          <div class="tc-zoom-row">
+            <div class="tc-meta-top">
+              <span class="tc-idx">TIER 06</span>
+              <span class="tc-color-pill"><i class="tc-swatch" style="background:#C21A3E;"></i>红</span>
+            </div>
+            <span class="rank-badge rank-tier-6 has-star size-2x">
+              <span class="rank-core"><i class="rk-gem"></i><span class="rk-label">帝级</span></span>
+            </span>
+            <div class="tc-material">
+              <span class="tc-mat-name">赤绯曜红晶</span>
+              <span class="tc-mat-hex">#C21A3E · 曜红金折</span>
+            </div>
+          </div>
+          <div class="tc-live-row">
+            <div class="tc-live-inline">
+              <span class="rank-badge rank-tier-6 has-star"><span class="rank-core"><i class="rk-gem"></i><span class="rk-label">帝级</span></span></span>
+              <span class="tc-live-name">红莲铁幕</span>
+            </div>
+            <span class="tc-live-sub">宝石赤绯 · 严别琥珀橙</span>
+          </div>
+        </div>
+
+        <!-- 07 神级 · 彩 -->
+        <div class="tier-col">
+          <div class="tc-zoom-row">
+            <div class="tc-meta-top">
+              <span class="tc-idx">TIER 07</span>
+              <span class="tc-color-pill"><i class="tc-swatch" style="background:linear-gradient(135deg,#0A93B8,#3B82F6,#A855F7,#F43F5E,#FBBF24);"></i>彩</span>
+            </div>
+            <span class="rank-badge rank-tier-7 has-star size-2x">
+              <span class="rank-core"><i class="rk-gem"></i><span class="rk-label">神级</span><i class="rk-star-r"></i></span>
+            </span>
+            <div class="tc-material">
+              <span class="tc-mat-name">虹彩星辉棱镜</span>
+              <span class="tc-mat-hex">青蓝紫绯金 · 极光折射</span>
+            </div>
+          </div>
+          <div class="tc-live-row">
+            <div class="tc-live-inline">
+              <span class="rank-badge rank-tier-7 has-star"><span class="rank-core"><i class="rk-gem"></i><span class="rk-label">神级</span><i class="rk-star-r"></i></span></span>
+              <span class="tc-live-name">风神·岚</span>
+            </div>
+            <span class="tc-live-sub">全光谱分光 · 星辉外晕</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 下半区：真实游戏战斗名牌 1:1 嵌入预览 ==================== -->
+  <section class="battle-section">
+    <div class="sec-head">
+      <div class="sec-title-wrap">
+        <span class="sec-num">SECTION 02</span>
+        <h2 class="sec-title">真实游戏战斗名牌 1:1 嵌入预览</h2>
+        <span class="sec-note">完整覆盖全 7 等阶的 5 组实战对阵 · 复刻本作雪瓷冰晶战卡、7px 清晰血蓝条、AP 菱晶与弱点锁</span>
+      </div>
+      <div class="sec-legend">
+        <span><i class="legend-dot"></i>左卡：我方读数面板 (.cb-player-pane)</span>
+        <span><i class="legend-dot crimson"></i>右卡：敌方底座名牌 (.cb-e-plate)</span>
+      </div>
+    </div>
+
+    <div class="matchup-grid">
+
+      <!-- 对阵 1：[初级] 希尔维亚 vs [初级] 贝阿特丽丝 -->
+      <article class="matchup-row">
+        <div class="mr-head">
+          <div class="mr-title"><span class="mr-idx">BATTLE 01</span>第一卷 · 梦境初试（虚拟决斗）</div>
+          <div class="mr-tiers-summary">白 [初级] VS 白 [初级]</div>
+        </div>
+        <div class="mr-cards">
+          <div class="cb-player-pane">
+            <div class="cb-p-header">
+              <div class="cb-p-top-row">
+                <div class="cb-p-name-row">
+                  <span class="rank-badge rank-tier-1"><span class="rank-core"><i class="rk-gem"></i><span class="rk-label">初级</span></span></span>
+                  <span class="cb-p-name">希尔维亚</span>
+                </div>
+                <div class="cb-ap-row">
+                  <i class="cb-ap-gem on"></i><i class="cb-ap-gem on"></i><i class="cb-ap-gem on"></i>
+                  <span class="cb-ap-label">3/3</span>
+                </div>
+              </div>
+              <div class="cb-p-sub">物攻 24 · 魔攻 42 · 水克火 1.5×</div>
+            </div>
+            <div class="cb-bars-wrap">
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>生命值 HP</span><span class="cb-stat-val">196/210</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill hp" style="width:93%"></div></div>
+              </div>
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>魔力池 MP</span><span class="cb-stat-val">185/220</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill mp" style="width:84%"></div></div>
+              </div>
+            </div>
+            <div class="cb-buff-list">
+              <span class="cb-buff-chip shield">凝结冰障 36</span>
+              <span class="cb-buff-chip">冰水亲和</span>
+            </div>
+          </div>
+
+          <div class="mr-vs">
+            <span class="mr-vs-line"></span>
+            <span class="mr-vs-text">VS</span>
+            <span class="mr-vs-line"></span>
+          </div>
+
+          <div class="cb-e-plate is-targeted">
+            <div class="cb-e-head">
+              <div class="cb-e-top-row">
+                <div class="cb-e-name-row">
+                  <span class="rank-badge rank-tier-1"><span class="rank-core"><i class="rk-gem"></i><span class="rk-label">初级</span></span></span>
+                  <span class="cb-e-title">贝阿特丽丝</span>
+                </div>
+                <div class="cb-e-badges">
+                  <span class="cb-trait-pill">特性</span>
+                  <span class="cb-elem-tag elem-fire">火</span>
+                </div>
+              </div>
+              <div class="cb-p-sub">架势：抬肩重劈前摇 · 宜水弹浇弱</div>
+            </div>
+            <div class="cb-bars-wrap">
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>敌方生命</span><span class="cb-stat-val">218/278</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill hp" style="width:78%"></div></div>
+              </div>
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>敌方魔力</span><span class="cb-stat-val">92/140</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill mp" style="width:66%"></div></div>
+              </div>
+            </div>
+            <div class="cb-buff-list">
+              <span class="cb-buff-chip lock">锁 2/3</span>
+              <span class="cb-buff-chip gold">烈焰斗气×3</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- 对阵 2：[中级] 希尔维亚 vs [圣级] 罗文 -->
+      <article class="matchup-row">
+        <div class="mr-head">
+          <div class="mr-title"><span class="mr-idx">BATTLE 02</span>第一卷 · 间章《白昼里的夜》乱葬岗</div>
+          <div class="mr-tiers-summary">绿 [中级] VS 紫 [圣级]</div>
+        </div>
+        <div class="mr-cards">
+          <div class="cb-player-pane">
+            <div class="cb-p-header">
+              <div class="cb-p-top-row">
+                <div class="cb-p-name-row">
+                  <span class="rank-badge rank-tier-2"><span class="rank-core"><i class="rk-gem"></i><span class="rk-label">中级</span></span></span>
+                  <span class="cb-p-name">希尔维亚</span>
+                </div>
+                <div class="cb-ap-row">
+                  <i class="cb-ap-gem on"></i><i class="cb-ap-gem on"></i><i class="cb-ap-gem on"></i>
+                  <span class="cb-ap-label">3/3</span>
+                </div>
+              </div>
+              <div class="cb-p-sub">物攻 32 · 魔攻 68 · 雷纳德岩板协防</div>
+            </div>
+            <div class="cb-bars-wrap">
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>生命值 HP</span><span class="cb-stat-val">245/260</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill hp" style="width:94%"></div></div>
+              </div>
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>魔力池 MP</span><span class="cb-stat-val">260/320</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill mp" style="width:81%"></div></div>
+              </div>
+            </div>
+            <div class="cb-buff-list">
+              <span class="cb-buff-chip lock">合围封锁 62%</span>
+              <span class="cb-buff-chip shield">实体厚冰墙</span>
+            </div>
+          </div>
+
+          <div class="mr-vs">
+            <span class="mr-vs-line"></span>
+            <span class="mr-vs-text">VS</span>
+            <span class="mr-vs-line"></span>
+          </div>
+
+          <div class="cb-e-plate">
+            <div class="cb-e-head">
+              <div class="cb-e-top-row">
+                <div class="cb-e-name-row">
+                  <span class="rank-badge rank-tier-4 has-star"><span class="rank-core"><i class="rk-gem"></i><span class="rk-label">圣级</span></span></span>
+                  <span class="cb-e-title">罗文</span>
+                </div>
+                <div class="cb-e-badges">
+                  <span class="cb-trait-pill">特性</span>
+                  <span class="cb-elem-tag elem-dark">暗</span>
+                </div>
+              </div>
+              <div class="cb-p-sub">架势：石碑窄道潜行 · 须活捉留口供</div>
+            </div>
+            <div class="cb-bars-wrap">
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>敌方生命</span><span class="cb-stat-val">232/290</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill hp" style="width:80%"></div></div>
+              </div>
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>敌方魔力</span><span class="cb-stat-val">168/240</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill mp" style="width:70%"></div></div>
+              </div>
+            </div>
+            <div class="cb-buff-list">
+              <span class="cb-buff-chip lock">锁 3/4</span>
+              <span class="cb-buff-chip debuff">晦轮杖真伤</span>
+              <span class="cb-buff-chip">窄道薄冰</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- 对阵 3：[高级] 希尔维亚 vs [王级] 裂地兽领主 -->
+      <article class="matchup-row">
+        <div class="mr-head">
+          <div class="mr-title"><span class="mr-idx">BATTLE 03</span>第二卷 · 赫兰冻土补给线防卫战</div>
+          <div class="mr-tiers-summary">蓝 [高级] VS 橙 [王级]</div>
+        </div>
+        <div class="mr-cards">
+          <div class="cb-player-pane">
+            <div class="cb-p-header">
+              <div class="cb-p-top-row">
+                <div class="cb-p-name-row">
+                  <span class="rank-badge rank-tier-3"><span class="rank-core"><i class="rk-gem"></i><span class="rk-label">高级</span></span></span>
+                  <span class="cb-p-name">希尔维亚</span>
+                </div>
+                <div class="cb-ap-row">
+                  <i class="cb-ap-gem on"></i><i class="cb-ap-gem on"></i><i class="cb-ap-gem on"></i>
+                  <span class="cb-ap-label">3/3</span>
+                </div>
+              </div>
+              <div class="cb-p-sub">物攻 48 · 魔攻 118 · 魔战循环就绪</div>
+            </div>
+            <div class="cb-bars-wrap">
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>生命值 HP</span><span class="cb-stat-val">340/380</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill hp" style="width:89%"></div></div>
+              </div>
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>魔力池 MP</span><span class="cb-stat-val">420/520</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill mp" style="width:81%"></div></div>
+              </div>
+            </div>
+            <div class="cb-buff-list">
+              <span class="cb-buff-chip gold">增幅 ★20%</span>
+              <span class="cb-buff-chip shield">货箱护卫×2</span>
+            </div>
+          </div>
+
+          <div class="mr-vs">
+            <span class="mr-vs-line"></span>
+            <span class="mr-vs-text">VS</span>
+            <span class="mr-vs-line"></span>
+          </div>
+
+          <div class="cb-e-plate">
+            <div class="cb-e-head">
+              <div class="cb-e-top-row">
+                <div class="cb-e-name-row">
+                  <span class="rank-badge rank-tier-5 has-star"><span class="rank-core"><i class="rk-gem"></i><span class="rk-label">王级</span></span></span>
+                  <span class="cb-e-title">裂地兽领主</span>
+                </div>
+                <div class="cb-e-badges">
+                  <span class="cb-trait-pill">特性</span>
+                  <span class="cb-elem-tag elem-earth">土</span>
+                </div>
+              </div>
+              <div class="cb-p-sub">架势：腹下晶核地脉震荡 · 需增幅破锁</div>
+            </div>
+            <div class="cb-bars-wrap">
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>敌方生命</span><span class="cb-stat-val">510/650 (+盾115)</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill hp" style="width:78%"></div></div>
+              </div>
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>敌方魔力</span><span class="cb-stat-val">145/220</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill mp" style="width:66%"></div></div>
+              </div>
+            </div>
+            <div class="cb-buff-list">
+              <span class="cb-buff-chip lock">锁 4/6</span>
+              <span class="cb-buff-chip shield">实体盾 115</span>
+              <span class="cb-buff-chip">实体甲 35%</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- 对阵 4：[高级] 希尔维亚 vs [帝级] 红莲铁幕 -->
+      <article class="matchup-row">
+        <div class="mr-head">
+          <div class="mr-title"><span class="mr-idx">BATTLE 04</span>第三卷 · 转折点东翼火廊突围战</div>
+          <div class="mr-tiers-summary">蓝 [高级] VS 红 [帝级]</div>
+        </div>
+        <div class="mr-cards">
+          <div class="cb-player-pane">
+            <div class="cb-p-header">
+              <div class="cb-p-top-row">
+                <div class="cb-p-name-row">
+                  <span class="rank-badge rank-tier-3"><span class="rank-core"><i class="rk-gem"></i><span class="rk-label">高级</span></span></span>
+                  <span class="cb-p-name">希尔维亚</span>
+                </div>
+                <div class="cb-ap-row">
+                  <i class="cb-ap-gem on"></i><i class="cb-ap-gem on"></i><i class="cb-ap-gem"></i>
+                  <span class="cb-ap-label">2/3</span>
+                </div>
+              </div>
+              <div class="cb-p-sub">物攻 54 · 魔攻 134 · 晦轮杖真伤共鸣</div>
+            </div>
+            <div class="cb-bars-wrap">
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>生命值 HP</span><span class="cb-stat-val">312/410</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill hp" style="width:76%"></div></div>
+              </div>
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>魔力池 MP</span><span class="cb-stat-val">390/560</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill mp" style="width:70%"></div></div>
+              </div>
+            </div>
+            <div class="cb-buff-list">
+              <span class="cb-buff-chip gold">增幅 ★★40%</span>
+              <span class="cb-buff-chip lock">仆道回风看破</span>
+            </div>
+          </div>
+
+          <div class="mr-vs">
+            <span class="mr-vs-line"></span>
+            <span class="mr-vs-text">VS</span>
+            <span class="mr-vs-line"></span>
+          </div>
+
+          <div class="cb-e-plate">
+            <div class="cb-e-head">
+              <div class="cb-e-top-row">
+                <div class="cb-e-name-row">
+                  <span class="rank-badge rank-tier-6 has-star"><span class="rank-core"><i class="rk-gem"></i><span class="rk-label">帝级</span></span></span>
+                  <span class="cb-e-title">红莲铁幕</span>
+                </div>
+                <div class="cb-e-badges">
+                  <span class="cb-trait-pill">特性</span>
+                  <span class="cb-elem-tag elem-fire">火</span>
+                </div>
+              </div>
+              <div class="cb-p-sub">架势：封廊锁火高危咏唱 · 必断破招</div>
+            </div>
+            <div class="cb-bars-wrap">
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>敌方生命</span><span class="cb-stat-val">465/620 (+盾75)</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill hp" style="width:75%"></div></div>
+              </div>
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>敌方魔力</span><span class="cb-stat-val">210/280</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill mp" style="width:75%"></div></div>
+              </div>
+            </div>
+            <div class="cb-buff-list">
+              <span class="cb-buff-chip phase2">✦ 二阶段</span>
+              <span class="cb-buff-chip lock">锁 5/7</span>
+              <span class="cb-buff-chip shield">魔法盾 75</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- 对阵 5：[高级] 希尔维亚 vs [神级] 风神·岚 -->
+      <article class="matchup-row is-god-match">
+        <div class="mr-head">
+          <div class="mr-title"><span class="mr-idx">BATTLE 05</span>第三卷 · 七大列强「风暴眼试剑」</div>
+          <div class="mr-tiers-summary" style="color:#6D28D9;">蓝 [高级] VS 彩 [神级]</div>
+        </div>
+        <div class="mr-cards">
+          <div class="cb-player-pane">
+            <div class="cb-p-header">
+              <div class="cb-p-top-row">
+                <div class="cb-p-name-row">
+                  <span class="rank-badge rank-tier-3"><span class="rank-core"><i class="rk-gem"></i><span class="rk-label">高级</span></span></span>
+                  <span class="cb-p-name">希尔维亚</span>
+                </div>
+                <div class="cb-ap-row">
+                  <i class="cb-ap-gem on"></i><i class="cb-ap-gem on"></i><i class="cb-ap-gem on"></i>
+                  <span class="cb-ap-label">3/3</span>
+                </div>
+              </div>
+              <div class="cb-p-sub">物攻 60 · 魔攻 148 · 冰晶宫殿推演</div>
+            </div>
+            <div class="cb-bars-wrap">
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>生命值 HP</span><span class="cb-stat-val">368/430</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill hp" style="width:86%"></div></div>
+              </div>
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>魔力池 MP</span><span class="cb-stat-val">480/600</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill mp" style="width:80%"></div></div>
+              </div>
+            </div>
+            <div class="cb-buff-list">
+              <span class="cb-buff-chip gold">★★★60% 星霜极限</span>
+              <span class="cb-buff-chip lock">生根步瞬反</span>
+            </div>
+          </div>
+
+          <div class="mr-vs">
+            <span class="mr-vs-line"></span>
+            <span class="mr-vs-text" style="color:#6D28D9;border-color:rgba(124,58,237,0.42);">VS</span>
+            <span class="mr-vs-line"></span>
+          </div>
+
+          <div class="cb-e-plate is-god-plate">
+            <div class="cb-e-head">
+              <div class="cb-e-top-row">
+                <div class="cb-e-name-row">
+                  <span class="rank-badge rank-tier-7 has-star"><span class="rank-core"><i class="rk-gem"></i><span class="rk-label">神级</span><i class="rk-star-r"></i></span></span>
+                  <span class="cb-e-title">风神·岚</span>
+                </div>
+                <div class="cb-e-badges">
+                  <span class="cb-trait-pill">特性</span>
+                  <span class="cb-elem-tag elem-wind">风</span>
+                </div>
+              </div>
+              <div class="cb-p-sub">架势：真空连刃 × 风眼静滞反制阵</div>
+            </div>
+            <div class="cb-bars-wrap">
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>敌方生命</span><span class="cb-stat-val">785/940 (+盾105)</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill hp" style="width:84%"></div></div>
+              </div>
+              <div class="cb-stat-row">
+                <div class="cb-stat-top"><span>敌方魔力</span><span class="cb-stat-val">390/480</span></div>
+                <div class="cb-stat-track"><div class="cb-stat-fill mp" style="width:81%"></div></div>
+              </div>
+            </div>
+            <div class="cb-buff-list">
+              <span class="cb-buff-chip phase2">✦ 风暴眼</span>
+              <span class="cb-buff-chip lock">锁 6/9</span>
+              <span class="cb-buff-chip shield">风壁 105</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- 第 6 格：冰晶折射四层光学工艺剖面 & 视觉规范卡 -->
+      <aside class="spec-card-shell">
+        <div class="spec-card-inner">
+          <div class="anatomy-stage">
+            <div class="anatomy-cap">
+              <span>OPTICAL ANATOMY</span>
+              <span>4-LAYER</span>
+            </div>
+            <div class="anatomy-diagram">
+              <span class="rank-badge rank-tier-7 has-star size-2x" style="transform:scale(0.86);">
+                <span class="rank-core" style="min-width:118px;height:38px;padding:0 18px;font-size:17px;">
+                  <i class="rk-gem"></i>
+                  <span class="rk-label">神级</span>
+                  <i class="rk-star-r"></i>
+                </span>
+              </span>
+              <svg width="214" height="76" viewBox="0 0 214 76" style="position:absolute;inset:0;pointer-events:none;overflow:visible;z-index:8;">
+                <!-- ① 左上外圈 132° 折射晶棱 -->
+                <polyline points="18,16 48,16 61,22" fill="none" stroke="#1658EB" stroke-width="1.1"/>
+                <polygon points="61,19.5 63.5,22 61,24.5 58.5,22" fill="#1658EB"/>
+                <text x="4" y="19.5" fill="#1658EB" font-size="10" font-weight="800" font-family="monospace">①</text>
+
+                <!-- ④ 顶边 1px 纯白高光棱 -->
+                <polyline points="196,16 154,16 140,22" fill="none" stroke="#8C6928" stroke-width="1.1"/>
+                <polygon points="140,19.5 142.5,22 140,24.5 137.5,22" fill="#8C6928"/>
+                <text x="199" y="19.5" fill="#8C6928" font-size="10" font-weight="800" font-family="monospace">④</text>
+
+                <!-- ③ 45° 双镜面反光斜带 -->
+                <polyline points="18,62 56,62 72,44" fill="none" stroke="#0E8A64" stroke-width="1.1"/>
+                <polygon points="72,41.5 74.5,44 72,46.5 69.5,44" fill="#0E8A64"/>
+                <text x="4" y="65.5" fill="#0E8A64" font-size="10" font-weight="800" font-family="monospace">③</text>
+
+                <!-- ② 49.5% 水平双切面分界 -->
+                <polyline points="196,62 164,62 152,39" fill="none" stroke="#7C3AED" stroke-width="1.1"/>
+                <polygon points="152,36.5 154.5,39 152,41.5 149.5,39" fill="#7C3AED"/>
+                <text x="199" y="65.5" fill="#7C3AED" font-size="10" font-weight="800" font-family="monospace">②</text>
+              </svg>
+            </div>
+            <div class="anatomy-callouts">
+              <span><b>①</b>132° 折射晶棱</span>
+              <span><b>②</b>双切面折光</span>
+              <span><b>③</b>45° 镜面斜带</span>
+              <span><b>④</b>顶边纯白高光</span>
+            </div>
+          </div>
+
+          <div class="spec-points">
+            <div class="sp-head">
+              <span class="sp-title">方案 A 核心设计规范与落地优势</span>
+              <span class="sp-badge">100% 契合全站宪法</span>
+            </div>
+            <div class="sp-list">
+              <div class="sp-item">
+                <span class="sp-item-h">零圆框套圆框 · 纯切角构造</span>
+                <span class="sp-item-p">全组件 <span class="mono-tok">border-radius: 0</span>，以平行四边形水晶倒角承袭全站棱镜语汇。</span>
+              </div>
+              <div class="sp-item emerald">
+                <span class="sp-item-h">雪瓷白底高对比 · 初级不融底</span>
+                <span class="sp-item-p">初级白晶配冰青折射棱与深靛字，全 7 阶在 <span class="mono-tok">#FAFBFD</span> 底面清晰锐利。</span>
+              </div>
+              <div class="sp-item gold">
+                <span class="sp-item-h">克制珠宝色相 · 绝无廉价荧光</span>
+                <span class="sp-item-p">翡青、皇家蓝、星霜紫、鎏金琥珀与赤绯红逐阶拉开色距，典雅统一。</span>
+              </div>
+              <div class="sp-item prism">
+                <span class="sp-item-h">神级分光棱镜 · 纯 CSS 零图片</span>
+                <span class="sp-item-p">青蓝紫绯金五段分光叠合切面明暗，完全离线自包含且高分屏零锯齿。</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

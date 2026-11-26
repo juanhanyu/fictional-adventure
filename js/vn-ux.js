@@ -31,6 +31,9 @@
     typeSpeed: 'normal',
     bgmVol: 0.5,
     sfxVol: 0.65,
+    voiceVol: 0.90,
+    voiceEnabled: true,
+    voiceAutoWait: true,
     fxEnabled: true,
     bright: 1
   };
@@ -40,6 +43,8 @@
   var skipMode = false;
   var autoTimer = null;
   var skipTimer = null;
+  var autoVoiceWaitGen = 0;
+  var inExternalAudioSync = false;
   var currentLineMeta = null;
 
   var pendingDeleteSlotId = null;
@@ -79,6 +84,7 @@
     compass: '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="6.4"/><polygon points="11.8,6.2 10.2,10.2 6.2,11.8 7.8,7.8"/></svg>',
     play: '<svg viewBox="0 0 14 14" width="11" height="11" fill="currentColor" aria-hidden="true"><polygon points="3.6,2.2 11.6,7 3.6,11.8"/></svg>',
     stop: '<svg viewBox="0 0 14 14" width="11" height="11" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.2"/></svg>',
+    voice: '<svg viewBox="0 0 18 18" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3,7.2 6.6,7.2 10.2,4.2 10.2,13.8 6.6,10.8 3,10.8"/><path d="M12.6 6.4a3.6 3.6 0 010 5.2M14.7 4.4a6.4 6.4 0 010 9.2"/></svg>',
     chevronLeft: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>',
     chevronRight: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>',
     close: '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>',
@@ -222,6 +228,7 @@
     var kind = entry.kind || 'line';
     var last = backlogList.length ? backlogList[backlogList.length - 1] : null;
     if (last && last.text === rawText && last.speaker === spk && last.kind === kind) {
+      if (entry.voiceId && !last.voiceId) last.voiceId = String(entry.voiceId);
       return false;
     }
     backlogSeq += 1;
@@ -230,6 +237,7 @@
       kind: kind,
       speaker: spk,
       charId: entry.charId || null,
+      voiceId: entry.voiceId ? String(entry.voiceId) : null,
       text: rawText,
       locName: getLocName(st),
       dateStr: getDateLabel(st)
@@ -280,6 +288,7 @@
         kind: it.kind || 'line',
         speaker: it.speaker || '',
         charId: it.charId || null,
+        voiceId: it.voiceId ? String(it.voiceId) : null,
         text: String(it.text || ''),
         locName: it.locName || '',
         dateStr: it.dateStr || ''
@@ -325,6 +334,7 @@
     var resolveFn = (root && typeof root.resolvePortrait === 'function')
       ? root.resolvePortrait
       : (typeof resolvePortrait === 'function' ? resolvePortrait : null);
+    var ve = root && root.VoiceEngine;
 
     var rowsHtml = backlogList.length
       ? backlogList.map(function (item) {
@@ -345,13 +355,21 @@
           var avatarHtml = portraitSrc
             ? '<img class="vb-av" src="' + escapeHtml(portraitSrc) + '" data-char-id="' + escapeHtml(item.charId || '') + '" data-speaker="' + escapeHtml(item.speaker || '') + '" data-kind="' + escapeHtml(item.kind || 'line') + '" alt=""/>'
             : '<span class="vb-av-ph">' + phIcon + '</span>';
+          var hasEntryVoice = !!(item.voiceId && ve && typeof ve.hasVoice === 'function' && ve.hasVoice(item.voiceId));
+          var isEntryPlaying = !!(hasEntryVoice && typeof ve.getCurrentVoiceId === 'function' && ve.getCurrentVoiceId() === item.voiceId);
+          var voiceBtnHtml = hasEntryVoice
+            ? '<button type="button" class="vb-voice-btn' + (isEntryPlaying ? ' is-playing' : '') + '" data-vb-voice="' + escapeHtml(item.voiceId) + '" data-vb-char="' + escapeHtml(item.charId || '') + '" title="重听此句语音" aria-label="重听此句语音">' + getSvg('voice') + '<span>重听</span></button>'
+            : '';
           return (
             '<div class="vb-row kind-' + escapeHtml(item.kind) + '">' +
               '<div class="vb-left">' + avatarHtml + '</div>' +
               '<div class="vb-main">' +
                 '<div class="vb-meta">' +
                   '<span class="vb-spk">' + escapeHtml(item.speaker || '旁白') + '</span>' +
-                  '<span class="vb-ctx">' + escapeHtml([item.dateStr, item.locName].filter(Boolean).join(' · ')) + '</span>' +
+                  '<span class="vb-meta-right">' +
+                    voiceBtnHtml +
+                    '<span class="vb-ctx">' + escapeHtml([item.dateStr, item.locName].filter(Boolean).join(' · ')) + '</span>' +
+                  '</span>' +
                 '</div>' +
                 '<div class="vb-text">' + escapeHtml(item.text).replace(/\n/g, '<br>') + '</div>' +
               '</div>' +
@@ -394,6 +412,17 @@
         }
         var sp = createBacklogFallbackSpan(img.getAttribute('data-speaker'), img.getAttribute('data-kind'));
         if (img.parentNode) img.parentNode.replaceChild(sp, img);
+      };
+    });
+
+    ov.querySelectorAll('.vb-voice-btn').forEach(function (btn) {
+      btn.onclick = function (e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        var vid = btn.getAttribute('data-vb-voice') || '';
+        var cid = btn.getAttribute('data-vb-char') || '';
+        if (vid && root && root.VoiceEngine && typeof root.VoiceEngine.playById === 'function') {
+          root.VoiceEngine.playById(vid, { force: true, ignoreSkip: true, mode: 'backlog', charId: cid || null, updateReplaySlot: false });
+        }
       };
     });
 
@@ -1216,12 +1245,22 @@
     var merged = Object.assign({}, DEFAULT_PREFS);
     merged.bright = readExternalBrightness();
     try {
+      if (root && root.VoiceEngine) {
+        if (typeof root.VoiceEngine.getVolume === 'function') merged.voiceVol = clampNum(root.VoiceEngine.getVolume(), 0, 1);
+        if (typeof root.VoiceEngine.isEnabled === 'function') merged.voiceEnabled = !!root.VoiceEngine.isEnabled();
+        if (typeof root.VoiceEngine.getAutoWait === 'function') merged.voiceAutoWait = !!root.VoiceEngine.getAutoWait();
+      }
+    } catch (e) {}
+    try {
       var raw = JSON.parse(localStorage.getItem(VN_PREFS_KEY) || 'null');
       if (raw && typeof raw === 'object') {
         if (raw.autoSpeed != null) merged.autoSpeed = clampNum(raw.autoSpeed, 300, 6000);
         if (raw.typeSpeed != null) merged.typeSpeed = normalizeTypeSpeed(raw.typeSpeed);
         if (raw.bgmVol != null) merged.bgmVol = clampNum(raw.bgmVol, 0, 1);
         if (raw.sfxVol != null) merged.sfxVol = clampNum(raw.sfxVol, 0, 1);
+        if (raw.voiceVol != null) merged.voiceVol = clampNum(raw.voiceVol, 0, 1);
+        if (raw.voiceEnabled != null) merged.voiceEnabled = !!raw.voiceEnabled;
+        if (raw.voiceAutoWait != null) merged.voiceAutoWait = !!raw.voiceAutoWait;
         if (raw.fxEnabled != null) merged.fxEnabled = !!raw.fxEnabled;
         if (raw.bright != null) merged.bright = clampNum(raw.bright, 0.5, 1.5);
       }
@@ -1259,6 +1298,20 @@
       if (sfxFn) {
         try { sfxFn(val); } catch (e) {}
       }
+    } else if (key === 'voiceVol') {
+      if (root && root.VoiceEngine && typeof root.VoiceEngine.setVolume === 'function') {
+        try { root.VoiceEngine.setVolume(val, { notifyVnUx: false }); } catch (e) {}
+      }
+      syncSettingsKeyField('voiceVol', val);
+    } else if (key === 'voiceEnabled') {
+      if (root && root.VoiceEngine && typeof root.VoiceEngine.setEnabled === 'function') {
+        try { root.VoiceEngine.setEnabled(!!val, { notifyVnUx: false }); } catch (e) {}
+      }
+      syncSettingsKeyField('voiceEnabled', !!val);
+    } else if (key === 'voiceAutoWait') {
+      if (root && root.VoiceEngine && typeof root.VoiceEngine.setAutoWait === 'function') {
+        try { root.VoiceEngine.setAutoWait(!!val, { notifyVnUx: false }); } catch (e) {}
+      }
     } else if (key === 'typeSpeed') {
       var tsFn = (root && typeof root.setTypeSpeed === 'function')
         ? root.setTypeSpeed
@@ -1289,29 +1342,56 @@
     }
   }
 
-  function syncExternalAudioPrefs() {
-    var p = loadPrefs();
-    var bgmGet = (root && typeof root.bgmGetVolume === 'function')
-      ? root.bgmGetVolume
-      : (typeof bgmGetVolume === 'function' ? bgmGetVolume : null);
-    if (bgmGet) {
-      try {
-        var bv = Number(bgmGet());
-        if (!isNaN(bv)) p.bgmVol = clampNum(bv, 0, 1);
-      } catch (e) {}
+  function syncExternalAudioPrefs(patch) {
+    if (inExternalAudioSync) return Object.assign({}, loadPrefs());
+    inExternalAudioSync = true;
+    try {
+      var p = loadPrefs();
+      var bgmGet = (root && typeof root.bgmGetVolume === 'function')
+        ? root.bgmGetVolume
+        : (typeof bgmGetVolume === 'function' ? bgmGetVolume : null);
+      if (bgmGet) {
+        try {
+          var bv = Number(bgmGet());
+          if (!isNaN(bv)) p.bgmVol = clampNum(bv, 0, 1);
+        } catch (e) {}
+      }
+      var sfxGet = (root && typeof root.sfxGetVolume === 'function')
+        ? root.sfxGetVolume
+        : (typeof sfxGetVolume === 'function' ? sfxGetVolume : null);
+      if (sfxGet) {
+        try {
+          var sv = Number(sfxGet());
+          if (!isNaN(sv)) p.sfxVol = clampNum(sv, 0, 1);
+        } catch (e) {}
+      }
+      if (root && root.VoiceEngine) {
+        try {
+          if (typeof root.VoiceEngine.getVolume === 'function') {
+            var vv = Number(root.VoiceEngine.getVolume());
+            if (!isNaN(vv)) p.voiceVol = clampNum(vv, 0, 1);
+          }
+          if (typeof root.VoiceEngine.isEnabled === 'function') {
+            p.voiceEnabled = !!root.VoiceEngine.isEnabled();
+          }
+          if (typeof root.VoiceEngine.getAutoWait === 'function') {
+            p.voiceAutoWait = !!root.VoiceEngine.getAutoWait();
+          }
+        } catch (e) {}
+      }
+      if (patch && typeof patch === 'object') {
+        if (patch.bgmVol != null) p.bgmVol = clampNum(patch.bgmVol, 0, 1);
+        if (patch.sfxVol != null) p.sfxVol = clampNum(patch.sfxVol, 0, 1);
+        if (patch.voiceVol != null) p.voiceVol = clampNum(patch.voiceVol, 0, 1);
+        if (patch.voiceEnabled != null) p.voiceEnabled = !!patch.voiceEnabled;
+        if (patch.voiceAutoWait != null) p.voiceAutoWait = !!patch.voiceAutoWait;
+      }
+      p.bright = readExternalBrightness();
+      syncPrefsModalDOM();
+      return Object.assign({}, p);
+    } finally {
+      inExternalAudioSync = false;
     }
-    var sfxGet = (root && typeof root.sfxGetVolume === 'function')
-      ? root.sfxGetVolume
-      : (typeof sfxGetVolume === 'function' ? sfxGetVolume : null);
-    if (sfxGet) {
-      try {
-        var sv = Number(sfxGet());
-        if (!isNaN(sv)) p.sfxVol = clampNum(sv, 0, 1);
-      } catch (e) {}
-    }
-    p.bright = readExternalBrightness();
-    syncPrefsModalDOM();
-    return Object.assign({}, p);
   }
 
   function syncSavedPrefsToEngine() {
@@ -1323,6 +1403,9 @@
     if (hasStored) {
       applyPrefToEngine('bgmVol', p.bgmVol);
       applyPrefToEngine('sfxVol', p.sfxVol);
+      applyPrefToEngine('voiceVol', p.voiceVol);
+      applyPrefToEngine('voiceEnabled', p.voiceEnabled);
+      applyPrefToEngine('voiceAutoWait', p.voiceAutoWait);
       applyPrefToEngine('bright', p.bright);
     } else {
       syncExternalAudioPrefs();
@@ -1343,6 +1426,12 @@
       p.bgmVol = clampNum(value, 0, 1);
     } else if (key === 'sfxVol') {
       p.sfxVol = clampNum(value, 0, 1);
+    } else if (key === 'voiceVol') {
+      p.voiceVol = clampNum(value, 0, 1);
+    } else if (key === 'voiceEnabled') {
+      p.voiceEnabled = !!value;
+    } else if (key === 'voiceAutoWait') {
+      p.voiceAutoWait = !!value;
     } else if (key === 'fxEnabled') {
       p.fxEnabled = !!value;
     } else if (key === 'bright') {
@@ -1352,7 +1441,7 @@
     }
     persistPrefs();
     applyPrefToEngine(key, p[key]);
-    if (key === 'autoSpeed' && autoMode) {
+    if ((key === 'autoSpeed' || key === 'voiceAutoWait') && autoMode) {
       scheduleAutoStep();
     }
     syncPrefsModalDOM();
@@ -1364,6 +1453,9 @@
     persistPrefs();
     applyPrefToEngine('bgmVol', vnPrefs.bgmVol);
     applyPrefToEngine('sfxVol', vnPrefs.sfxVol);
+    applyPrefToEngine('voiceVol', vnPrefs.voiceVol);
+    applyPrefToEngine('voiceEnabled', vnPrefs.voiceEnabled);
+    applyPrefToEngine('voiceAutoWait', vnPrefs.voiceAutoWait);
     applyPrefToEngine('typeSpeed', vnPrefs.typeSpeed);
     applyPrefToEngine('fxEnabled', vnPrefs.fxEnabled);
     applyPrefToEngine('bright', vnPrefs.bright);
@@ -1498,6 +1590,7 @@
   }
 
   function clearAutoTimer() {
+    autoVoiceWaitGen += 1;
     if (autoTimer) {
       clearTimeout(autoTimer);
       autoTimer = null;
@@ -1508,6 +1601,27 @@
     if (skipTimer) {
       clearTimeout(skipTimer);
       skipTimer = null;
+    }
+  }
+
+  function updateVoiceReplayButton() {
+    if (typeof document === 'undefined') return;
+    var ve = root && root.VoiceEngine;
+    var canReplay = !!(ve && typeof ve.canReplayCurrent === 'function' && ve.canReplayCurrent());
+    var isVoicing = !!(ve && typeof ve.isPlaying === 'function' && ve.isPlaying());
+    var curId = (ve && typeof ve.getCurrentVoiceId === 'function') ? ve.getCurrentVoiceId() : null;
+    var btn = document.getElementById('btn-vn-voice-replay');
+    if (btn) {
+      btn.classList.toggle('is-unavailable', !canReplay);
+      btn.classList.toggle('is-playing', canReplay && isVoicing);
+      btn.disabled = !canReplay;
+    }
+    var backlogOv = document.getElementById('vn-backlog-modal');
+    if (backlogOv && !backlogOv.classList.contains('hidden')) {
+      backlogOv.querySelectorAll('.vb-voice-btn').forEach(function (b) {
+        var vid = b.getAttribute('data-vb-voice') || '';
+        b.classList.toggle('is-playing', !!(isVoicing && curId && vid === curId));
+      });
     }
   }
 
@@ -1523,6 +1637,7 @@
       bSkip.classList.toggle('active', !!skipMode);
       bSkip.setAttribute('aria-pressed', skipMode ? 'true' : 'false');
     }
+    updateVoiceReplayButton();
   }
 
   function performAdvance() {
@@ -1566,11 +1681,29 @@
       }, 120);
       return;
     }
-    var delay = loadPrefs().autoSpeed;
+    var prefs = loadPrefs();
+    var ve = root && root.VoiceEngine;
+    if (prefs.voiceAutoWait && ve && typeof ve.isPlaying === 'function' && ve.isPlaying()) {
+      var myGen = autoVoiceWaitGen;
+      if (typeof ve.onEndedOnce === 'function') {
+        ve.onEndedOnce(function () {
+          if (myGen !== autoVoiceWaitGen || !autoMode) return;
+          if (canAdvanceReading()) scheduleAutoStep();
+        });
+      }
+      return;
+    }
+    var delay = prefs.autoSpeed;
     autoTimer = setTimeout(function () {
       autoTimer = null;
       if (!autoMode) return;
       if (isDialogTyping()) {
+        scheduleAutoStep();
+        return;
+      }
+      var curPrefs = loadPrefs();
+      var curVe = root && root.VoiceEngine;
+      if (curPrefs.voiceAutoWait && curVe && typeof curVe.isPlaying === 'function' && curVe.isPlaying()) {
         scheduleAutoStep();
         return;
       }
@@ -1639,6 +1772,9 @@
     clearSkipTimer();
     updateReadControlUI();
     if (skipMode) {
+      if (root && root.VoiceEngine && typeof root.VoiceEngine.stop === 'function') {
+        try { root.VoiceEngine.stop({ reason: 'skip' }); } catch (e) {}
+      }
       if (isAwaitingChoice()) {
         skipMode = false;
         updateReadControlUI();
@@ -1785,6 +1921,26 @@
     if (sfxSlider) sfxSlider.value = String(Math.round(p.sfxVol * 100));
     if (sfxVal) sfxVal.textContent = Math.round(p.sfxVol * 100) + '%';
 
+    var voiceSlider = ov.querySelector('#pref-voice-vol');
+    var voiceVal = ov.querySelector('#pref-voice-val');
+    var voicePct = Math.round(clampNum(p.voiceVol != null ? p.voiceVol : 0.90, 0, 1) * 100);
+    if (voiceSlider) voiceSlider.value = String(voicePct);
+    if (voiceVal) voiceVal.textContent = voicePct + '%';
+
+    var voiceToggleBtn = ov.querySelector('#pref-voice-toggle');
+    if (voiceToggleBtn) {
+      voiceToggleBtn.classList.toggle('on', !!p.voiceEnabled);
+      voiceToggleBtn.textContent = p.voiceEnabled ? '已开启 · 角色配音' : '已关闭 · 静音';
+      voiceToggleBtn.setAttribute('aria-pressed', p.voiceEnabled ? 'true' : 'false');
+    }
+
+    var voiceWaitBtn = ov.querySelector('#pref-voice-autowait');
+    if (voiceWaitBtn) {
+      voiceWaitBtn.classList.toggle('on', !!p.voiceAutoWait);
+      voiceWaitBtn.textContent = p.voiceAutoWait ? '已开启 · 播完翻页' : '已关闭 · 按时翻页';
+      voiceWaitBtn.setAttribute('aria-pressed', p.voiceAutoWait ? 'true' : 'false');
+    }
+
     var brightSlider = ov.querySelector('#pref-bright');
     var brightVal = ov.querySelector('#pref-bright-val');
     var brightPct = Math.round(clampNum(p.bright != null ? p.bright : 1, 0.5, 1.5) * 100);
@@ -1825,6 +1981,7 @@
     var p = loadPrefs();
     var bgmPct = Math.round(p.bgmVol * 100);
     var sfxPct = Math.round(p.sfxVol * 100);
+    var voicePct = Math.round(clampNum(p.voiceVol != null ? p.voiceVol : 0.90, 0, 1) * 100);
     var brightPct = Math.round(clampNum(p.bright != null ? p.bright : 1, 0.5, 1.5) * 100);
 
     ov.innerHTML =
@@ -1870,6 +2027,25 @@
                 '<input type="range" class="prefs-slider" id="pref-sfx-vol" min="0" max="100" step="1" value="' + sfxPct + '"/>' +
                 '<span class="prefs-val" id="pref-sfx-val">' + sfxPct + '%</span>' +
               '</div>' +
+            '</div>' +
+            '<div class="prefs-row prefs-slider-row">' +
+              '<div class="prefs-label"><b>角色语音音量</b><span>剧情对白、互动问候与战斗演出语音</span></div>' +
+              '<div class="prefs-slider-wrap">' +
+                '<input type="range" class="prefs-slider" id="pref-voice-vol" min="0" max="100" step="1" value="' + voicePct + '"/>' +
+                '<span class="prefs-val" id="pref-voice-val">' + voicePct + '%</span>' +
+              '</div>' +
+            '</div>' +
+            '<div class="prefs-row">' +
+              '<div class="prefs-label"><b>角色语音开关</b><span>开启或静默全部角色配音</span></div>' +
+              '<button type="button" class="prefs-toggle' + (p.voiceEnabled ? ' on' : '') + '" id="pref-voice-toggle" aria-pressed="' + (p.voiceEnabled ? 'true' : 'false') + '">' +
+                (p.voiceEnabled ? '已开启 · 角色配音' : '已关闭 · 静音') +
+              '</button>' +
+            '</div>' +
+            '<div class="prefs-row">' +
+              '<div class="prefs-label"><b>Auto 等待语音播完</b><span>自动阅读模式下等待当前语音播毕再翻页</span></div>' +
+              '<button type="button" class="prefs-toggle' + (p.voiceAutoWait ? ' on' : '') + '" id="pref-voice-autowait" aria-pressed="' + (p.voiceAutoWait ? 'true' : 'false') + '">' +
+                (p.voiceAutoWait ? '已开启 · 播完翻页' : '已关闭 · 按时翻页') +
+              '</button>' +
             '</div>' +
             '<div class="prefs-row prefs-slider-row">' +
               '<div class="prefs-label"><b>背景明度</b><span>单独调节场景底图亮度，平稳顺滑不打断配乐</span></div>' +
@@ -1928,6 +2104,26 @@
       sfxInput.oninput = function () {
         setPref('sfxVol', Number(sfxInput.value) / 100);
         playSfxAuditionPing();
+      };
+    }
+    var voiceInput = ov.querySelector('#pref-voice-vol');
+    if (voiceInput) {
+      voiceInput.oninput = function () {
+        setPref('voiceVol', Number(voiceInput.value) / 100);
+      };
+    }
+    var voiceToggleBtn = ov.querySelector('#pref-voice-toggle');
+    if (voiceToggleBtn) {
+      voiceToggleBtn.onclick = function () {
+        playSfx('glass_tap');
+        setPref('voiceEnabled', !loadPrefs().voiceEnabled);
+      };
+    }
+    var voiceWaitBtn = ov.querySelector('#pref-voice-autowait');
+    if (voiceWaitBtn) {
+      voiceWaitBtn.onclick = function () {
+        playSfx('glass_tap');
+        setPref('voiceAutoWait', !loadPrefs().voiceAutoWait);
       };
     }
     var brightInput = ov.querySelector('#pref-bright');
@@ -3607,6 +3803,21 @@
         ctrlWrap.className = 'vn-read-controls';
         ctrlWrap.setAttribute('aria-label', '阅读控制栏');
 
+        var btnVoiceReplay = document.createElement('button');
+        btnVoiceReplay.type = 'button';
+        btnVoiceReplay.id = 'btn-vn-voice-replay';
+        btnVoiceReplay.className = 'vn-ctrl-btn vn-ctrl-voice is-unavailable';
+        btnVoiceReplay.title = '重播当前语音';
+        btnVoiceReplay.setAttribute('aria-label', '重播当前语音');
+        btnVoiceReplay.disabled = true;
+        btnVoiceReplay.innerHTML = getSvg('voice') + '<span>重播</span>';
+        btnVoiceReplay.onclick = function (e) {
+          if (e && e.stopPropagation) e.stopPropagation();
+          if (root && root.VoiceEngine && typeof root.VoiceEngine.replayCurrent === 'function') {
+            root.VoiceEngine.replayCurrent();
+          }
+        };
+
         var btnAuto = document.createElement('button');
         btnAuto.type = 'button';
         btnAuto.id = 'btn-vn-auto';
@@ -3643,6 +3854,7 @@
           togglePrefsModal();
         };
 
+        ctrlWrap.appendChild(btnVoiceReplay);
         ctrlWrap.appendChild(btnAuto);
         ctrlWrap.appendChild(btnSkip);
         ctrlWrap.appendChild(btnPrefs);
@@ -3964,6 +4176,10 @@
     syncSavedPrefsToEngine();
     ensureVNUIButtons();
     bindHotkeys();
+    if (root && typeof root.addEventListener === 'function') {
+      root.addEventListener('voice:statechange', updateVoiceReplayButton);
+    }
+    updateVoiceReplayButton();
   }
 
   var API = {

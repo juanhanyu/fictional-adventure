@@ -1,0 +1,299 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-11-26T13:14:09.076Z",
+  "mainlineSceneCount": 41,
+  "branchSceneCount": 17,
+  "totalUniqueLines": 1276,
+  "totalRawLines": 1283,
+  "duplicatesCollapsed": 7,
+  "unmappedWarningCount": 0,
+  "unmappedWarnings": [],
+  "skippedParenthesizedCount": {
+    "total": 19,
+    "mainline": 3,
+    "branch": 16
+  },
+  "skippedParenthesized": [
+    {
+      "scope": "mainline",
+      "sceneId": "s_start",
+      "lineIdx": "40",
+      "speaker": "？？？",
+      "ch": "sophia",
+      "zh_text": "（抱着我的那个女人还在轻声说话。我听不懂语言，但从语调判断，她应该很开心。）"
+    },
+    {
+      "scope": "mainline",
+      "sceneId": "s_start",
+      "lineIdx": "41",
+      "speaker": "？？？",
+      "ch": "claude",
+      "zh_text": "（低沉而稳重的男声。语气里有明显的颤抖，像是怕弄坏什么易碎的东西。）"
+    },
+    {
+      "scope": "mainline",
+      "sceneId": "s_turnpoint",
+      "lineIdx": "9",
+      "speaker": "索菲亚",
+      "ch": "sophia",
+      "zh_text": "（白色法杖。霜杉木簪。看了我一眼。点头。）"
+    },
+    {
+      "scope": "branch",
+      "sceneId": "v_alice_shade",
+      "lineIdx": "4",
+      "speaker": "希尔维亚",
+      "ch": null,
+      "zh_text": "（午后的风吹动窗边树影，要怎么回答爱丽丝？）"
+    },
+    {
+      "scope": "branch",
+      "sceneId": "v_alice_shade_r2",
+      "lineIdx": "2",
+      "speaker": "希尔维亚",
+      "ch": null,
+      "zh_text": "（她低头看着那枚干叶书签，像在等一个能写进心底的答案。）"
+    },
+    {
+      "scope": "branch",
+      "sceneId": "v_beatrice_practice",
+      "lineIdx": "4",
+      "speaker": "希尔维亚",
+      "ch": null,
+      "zh_text": "（姐姐藏在背后的手指还在微微发烫。）"
+    },
+    {
+      "scope": "branch",
+      "sceneId": "v_beatrice_practice_r2",
+      "lineIdx": "2",
+      "speaker": "希尔维亚",
+      "ch": null,
+      "zh_text": "（火光映在她认真的蓝眼睛里，平日的咋呼气全收了起来。）"
+    },
+    {
+      "scope": "branch",
+      "sceneId": "v_noelle_clocktower",
+      "lineIdx": "4",
+      "speaker": "希尔维亚",
+      "ch": null,
+      "zh_text": "（橘猫仰头喵了一声，诺艾儿的鼻尖被高处冷风吹得发红。）"
+    },
+    {
+      "scope": "branch",
+      "sceneId": "v_noelle_clocktower_r2",
+      "lineIdx": "2",
+      "speaker": "希尔维亚",
+      "ch": null,
+      "zh_text": "（她手指悬在猫耳朵上方不远处，认真得像在拆解高阶术式。）"
+    },
+    {
+      "scope": "branch",
+      "sceneId": "v_aino_flowerhouse",
+      "lineIdx": "5",
+      "speaker": "希尔维亚",
+      "ch": null,
+      "zh_text": "（原来极北之地长大的人，连舌头也是怕烫的。）"
+    },
+    {
+      "scope": "branch",
+      "sceneId": "v_aino_flowerhouse_r2",
+      "lineIdx": "2",
+      "speaker": "希尔维亚",
+      "ch": null,
+      "zh_text": "（往日她只点出差错从不亲手演示——眼前这一遍，是离开前郑重的预演。）"
+    },
+    {
+      "scope": "branch",
+      "sceneId": "v_charlotte_memorial",
+      "lineIdx": "4",
+      "speaker": "希尔维亚",
+      "ch": null,
+      "zh_text": "（积水正顺着她刚挖好的浅沟绕开两边树根流向低处。）"
+    },
+    {
+      "scope": "branch",
+      "sceneId": "v_charlotte_memorial_r2",
+      "lineIdx": "2",
+      "speaker": "希尔维亚",
+      "ch": null,
+      "zh_text": "（王后母族贝尔蒙家私军换防的细节从她话音里漏出一角。）"
+    },
+    {
+      "scope": "branch",
+      "sceneId": "v_helena_corridor",
+      "lineIdx": "4",
+      "speaker": "希尔维亚",
+      "ch": null,
+      "zh_text": "（晚霞映在她垂下的绿眸里，难得卸下了小太阳般的坚强。）"
+    },
+    {
+      "scope": "branch",
+      "sceneId": "v_helena_corridor_r2",
+      "lineIdx": "2",
+      "speaker": "希尔维亚",
+      "ch": null,
+      "zh_text": "（她双手合十望着我，金发镀着最后一抹暮光。）"
+    },
+    {
+      "scope": "branch",
+      "sceneId": "v_ajun_kitchen",
+      "lineIdx": "4",
+      "speaker": "希尔维亚",
+      "ch": null,
+      "zh_text": "（研究药物适配，为什么会问到王室纹章银杯、客房朝向与夜巡换班？）"
+    },
+    {
+      "scope": "branch",
+      "sceneId": "v_ajun_kitchen_r2",
+      "lineIdx": "2",
+      "speaker": "希尔维亚",
+      "ch": null,
+      "zh_text": "（巴依使团冬假访府、旧纹章银杯、侧门与换班……有人正借使团之手拼凑公爵府的布防图！）"
+    },
+    {
+      "scope": "branch",
+      "sceneId": "v_jilan_night",
+      "lineIdx": "4",
+      "speaker": "渔",
+      "ch": null,
+      "zh_text": "（夜风吹动她发间亮紫色的蝴蝶发饰，白日里两倍速的大嗓门轻得像叹息。）"
+    },
+    {
+      "scope": "branch",
+      "sceneId": "v_jilan_night_r2",
+      "lineIdx": "2",
+      "speaker": "渔",
+      "ch": null,
+      "zh_text": "（走廊门框上旧名牌留下的钉孔在月光下清晰可见。）"
+    }
+  ],
+  "batchCounts": {
+    "batch_vol1a": 183,
+    "batch_vol1b": 179,
+    "batch_vol2": 246,
+    "batch_vol3_4": 238,
+    "batch_combat_mono": 140,
+    "batch_interactive": 290
+  },
+  "byTier": {
+    "main": 846,
+    "mono": 86,
+    "combat": 54,
+    "interactive": 290
+  },
+  "byCategory": {
+    "main": {
+      "raw": 850,
+      "unique": 846,
+      "collapsed": 4
+    },
+    "mono": {
+      "raw": 86,
+      "unique": 86,
+      "collapsed": 0
+    },
+    "interactive_roam_greet": {
+      "raw": 23,
+      "unique": 23,
+      "collapsed": 0
+    },
+    "interactive_roam_talk": {
+      "raw": 81,
+      "unique": 81,
+      "collapsed": 0
+    },
+    "interactive_tap": {
+      "raw": 36,
+      "unique": 36,
+      "collapsed": 0
+    },
+    "interactive_gift": {
+      "raw": 30,
+      "unique": 30,
+      "collapsed": 0
+    },
+    "interactive_branch": {
+      "raw": 123,
+      "unique": 120,
+      "collapsed": 3
+    },
+    "combat": {
+      "raw": 54,
+      "unique": 54,
+      "collapsed": 0
+    }
+  },
+  "byProfile": {
+    "sophia": 35,
+    "beatrice": 167,
+    "sylvia": 393,
+    "claude": 26,
+    "alice": 181,
+    "npc_mature_f": 24,
+    "yaoshen": 15,
+    "reno": 20,
+    "npc_knight_m": 18,
+    "npc_scholar_m": 28,
+    "emma": 13,
+    "noelle": 32,
+    "hol": 11,
+    "aino": 54,
+    "charlotte": 27,
+    "helena": 34,
+    "ajun": 20,
+    "npc_boy_m": 8,
+    "jilan": 53,
+    "ji": 39,
+    "npc_lively_f": 17,
+    "npc_child_f": 10,
+    "fengshen": 26,
+    "rowan": 23,
+    "fashen": 2
+  },
+  "byChar": {
+    "sophia": 35,
+    "beatrice": 167,
+    "sylvia": 393,
+    "claude": 26,
+    "alice": 181,
+    "teacher": 8,
+    "yaoshen": 15,
+    "reno": 20,
+    "servant_a": 9,
+    "maid": 3,
+    "instructor": 2,
+    "merchant_bakery": 3,
+    "merchant_jewel": 3,
+    "emma": 13,
+    "teacher_middle": 10,
+    "anna": 11,
+    "noelle": 32,
+    "hol": 11,
+    "aino": 54,
+    "charlotte": 27,
+    "helena": 34,
+    "ajun": 20,
+    "huke": 3,
+    "jilan": 53,
+    "ji": 39,
+    "masha": 17,
+    "axu": 10,
+    "kyle": 6,
+    "mage_aurora": 2,
+    "musa": 8,
+    "fengshen": 26,
+    "jiqing": 5,
+    "rowan": 23,
+    "eastwing_commander": 1,
+    "fashen": 2,
+    "lein": 2,
+    "peilin": 2
+  },
+  "combatCueCount": 54,
+  "castingProfilesCount": 25,
+  "ssotVerification": {
+    "distinctPrimaryModels": 25,
+    "allProfilesMapped": true,
+    "globalVoiceIdUnique": true
+  }
+}

@@ -2778,6 +2778,20 @@
                 '<span id="v3-set-sfx-val" class="v3-slider-val">65%</span>' +
               '</div>' +
               '<div class="v3-slider-row">' +
+                '<label class="v3-slider-lbl" for="v3-set-voice">角色语音</label>' +
+                '<input id="v3-set-voice" class="v3-hairline-range" type="range" min="0" max="100" step="1" value="90"/>' +
+                '<span id="v3-set-voice-val" class="v3-slider-val">90%</span>' +
+              '</div>' +
+              '<div class="v3-switch-row">' +
+                '<span class="v3-slider-lbl">语音开关</span>' +
+                '<div class="v3-bare-switcher">' +
+                  '<button type="button" id="v3-set-voice-toggle" aria-pressed="true" aria-label="切换角色语音开关">' +
+                    '<span class="v3-voice-dot" aria-hidden="true"></span>' +
+                    '<span id="v3-voice-toggle-val" class="v3-sw-val">开启</span>' +
+                  '</button>' +
+                '</div>' +
+              '</div>' +
+              '<div class="v3-slider-row">' +
                 '<label class="v3-slider-lbl" for="v3-set-bright">背景亮度</label>' +
                 '<input id="v3-set-bright" class="v3-hairline-range" type="range" min="45" max="100" step="1" value="100"/>' +
                 '<span id="v3-set-bright-val" class="v3-slider-val">100%</span>' +
@@ -3043,13 +3057,15 @@
      ========================================================================= */
 
   function readLiveSettings() {
-    var res = { bgm: 0.5, sfx: 0.65, bright: 1, typeSpeed: 'normal', fxEnabled: true };
+    var res = { bgm: 0.5, sfx: 0.65, voiceVol: 0.90, voiceEnabled: true, bright: 1, typeSpeed: 'normal', fxEnabled: true };
     try {
       if (root && root.VNUx && typeof root.VNUx.getPrefs === 'function') {
         var p = root.VNUx.getPrefs();
         if (p) {
           if (typeof p.bgmVol === 'number') res.bgm = clamp(p.bgmVol, 0, 1);
           if (typeof p.sfxVol === 'number') res.sfx = clamp(p.sfxVol, 0, 1);
+          if (typeof p.voiceVol === 'number') res.voiceVol = clamp(p.voiceVol, 0, 1);
+          if (typeof p.voiceEnabled === 'boolean') res.voiceEnabled = p.voiceEnabled;
           if (typeof p.bright === 'number') res.bright = clamp(p.bright, 0.45, 1.0);
           if (p.typeSpeed) res.typeSpeed = String(p.typeSpeed);
           if (typeof p.fxEnabled === 'boolean') res.fxEnabled = p.fxEnabled;
@@ -3064,6 +3080,13 @@
       if (root && typeof root.sfxGetVolume === 'function') {
         var sv = Number(root.sfxGetVolume());
         if (!isNaN(sv)) res.sfx = clamp(sv, 0, 1);
+      }
+      if (root && root.VoiceEngine && typeof root.VoiceEngine.getVolume === 'function') {
+        var vv = Number(root.VoiceEngine.getVolume());
+        if (!isNaN(vv)) res.voiceVol = clamp(vv, 0, 1);
+      }
+      if (root && root.VoiceEngine && typeof root.VoiceEngine.isEnabled === 'function') {
+        res.voiceEnabled = !!root.VoiceEngine.isEnabled();
       }
       if (root && typeof root.getTypeSpeed === 'function') {
         var ts = root.getTypeSpeed();
@@ -3085,7 +3108,16 @@
     var s = readLiveSettings();
     updateSliderVisual(document.getElementById('v3-set-bgm'), document.getElementById('v3-set-bgm-val'), Math.round(s.bgm * 100), 0, 100);
     updateSliderVisual(document.getElementById('v3-set-sfx'), document.getElementById('v3-set-sfx-val'), Math.round(s.sfx * 100), 0, 100);
+    updateSliderVisual(document.getElementById('v3-set-voice'), document.getElementById('v3-set-voice-val'), Math.round(s.voiceVol * 100), 0, 100);
     updateSliderVisual(document.getElementById('v3-set-bright'), document.getElementById('v3-set-bright-val'), Math.round(clamp(s.bright, 0.45, 1.0) * 100), 45, 100);
+
+    var voiceToggleBtn = document.getElementById('v3-set-voice-toggle');
+    var voiceToggleVal = document.getElementById('v3-voice-toggle-val');
+    if (voiceToggleBtn) {
+      voiceToggleBtn.classList.toggle('is-off', !s.voiceEnabled);
+      voiceToggleBtn.setAttribute('aria-pressed', s.voiceEnabled ? 'true' : 'false');
+    }
+    if (voiceToggleVal) voiceToggleVal.textContent = s.voiceEnabled ? '开启' : '关闭';
 
     var speedEl = document.getElementById('v3-speed-val');
     if (speedEl) {
@@ -3118,6 +3150,17 @@
         st.lastSfxPingAt = now;
         playSfxSafe('glass_tap');
       }
+    } else if (kind === 'voiceVol') {
+      var vv = clamp(Number(val), 0, 1);
+      try { if (root && typeof root.setSetting === 'function') root.setSetting('voiceVol', vv); } catch (e) {}
+      try { if (root && root.VNUx && root.VNUx.setPref) root.VNUx.setPref('voiceVol', vv); } catch (e) {}
+      try { if (root && root.VoiceEngine && root.VoiceEngine.setVolume) root.VoiceEngine.setVolume(vv); } catch (e) {}
+    } else if (kind === 'voiceEnabled') {
+      var von = !!val;
+      try { if (root && typeof root.setSetting === 'function') root.setSetting('voiceEnabled', von); } catch (e) {}
+      try { if (root && root.VNUx && root.VNUx.setPref) root.VNUx.setPref('voiceEnabled', von); } catch (e) {}
+      try { if (root && root.VoiceEngine && root.VoiceEngine.setEnabled) root.VoiceEngine.setEnabled(von); } catch (e) {}
+      playSfxSafe('glass_tap');
     } else if (kind === 'bright') {
       var bv = clamp(Number(val), 0.45, 1.0);
       try { if (root && root.VNUx && root.VNUx.setPref) root.VNUx.setPref('bright', bv); } catch (e) {}
@@ -3241,6 +3284,25 @@
         var pct = clamp(Number(sfxIn.value) || 0, 0, 100);
         updateSliderVisual(sfxIn, sfxVal, pct, 0, 100);
         applySettingValue('sfx', pct / 100);
+      });
+    }
+
+    var voiceIn = panel.querySelector('#v3-set-voice');
+    var voiceVal = panel.querySelector('#v3-set-voice-val');
+    if (voiceIn) {
+      voiceIn.addEventListener('input', function () {
+        var pct = clamp(Number(voiceIn.value) || 0, 0, 100);
+        updateSliderVisual(voiceIn, voiceVal, pct, 0, 100);
+        applySettingValue('voiceVol', pct / 100);
+      });
+    }
+
+    var voiceToggleBtn = panel.querySelector('#v3-set-voice-toggle');
+    if (voiceToggleBtn) {
+      voiceToggleBtn.addEventListener('click', function () {
+        var s = readLiveSettings();
+        applySettingValue('voiceEnabled', !s.voiceEnabled);
+        syncSettingsDOM();
       });
     }
 
@@ -4041,6 +4103,7 @@
     openSettingsMode: openSettingsMode,
     returnToMain: returnToMain,
     syncAudioButton: syncTitleAudioButton,
+    syncSettingsDOM: syncSettingsDOM,
     syncArchiveMeta: syncArchiveMeta,
     getMode: getMode,
     indexMenuItems: indexMenuItems,

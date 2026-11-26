@@ -1,0 +1,1108 @@
+{
+  "schemaVersion": "1.0.0",
+  "project": "转生千金～到了异世界就要悠闲地生活",
+  "purpose": "全链路日语配音选角 SSOT（25 套零撞车 Fish Audio 日语模型 + 角色别名映射 + voiceId/路径契约 + 战斗语音点位表）",
+  "ssotContract": {
+    "normalization": "CRLF->LF, replace /[\\u3000\\s]+/g with single ASCII space, trim",
+    "hashAlgorithm": "FNV-1a 32-bit unsigned lowercase 8-char hex (offset 0x811c9dc5, prime 0x01000193)",
+    "hashInput": "${charId}|${normalizeVoiceText(text)}",
+    "voiceIdPatterns": {
+      "story": "${sceneId}__${charId}__${fnv1aHex(charId + '|' + normalizeVoiceText(text))}",
+      "mono": "${sceneId}__${charId}__${fnv1aHex(charId + '|' + normalizeVoiceText(text))}",
+      "combat": "combat__${cueKey}",
+      "interactive": "inter__${kind}__${charId}__${fnv1aHex(charId + '|' + normalizeVoiceText(text))}"
+    },
+    "audioPathPatterns": {
+      "story": "assets/voice/story/${sceneId}/${voiceId}.mp3",
+      "mono": "assets/voice/story/${sceneId}/${voiceId}.mp3",
+      "combat": "assets/voice/combat/${voiceId}.mp3",
+      "interactive": "assets/voice/interactive/${kind}/${voiceId}.mp3"
+    },
+    "interactiveKinds": [
+      "tap",
+      "gift",
+      "roam_greet",
+      "roam_talk",
+      "branch"
+    ],
+    "skipLineRegex": "^（[\\s\\S]*）$",
+    "roamGreetContract": "roamGreetingText(charId, locId) appends ROAM_PLACE_DETAIL[locId] (or '<locName>今天很安静。' / '这里今天很安静。'); voiceId hashes ONLY the character's spoken greeting prefix before detail.",
+    "speakerResolutionOrder": [
+      "1. If text matches /^（[\\s\\S]*）$/, skip (pure stage action / choice prompt, not spoken).",
+      "2. If speaker === '家庭教师', force charId = 'teacher' (overrides ch: 'lecturer' in s_sisters_grow).",
+      "3. If speaker === '霁清', inspect active portrait id or ch: if 'ji' (adult proposal in s_eye_of_storm), return 'ji'; else 'jiqing'.",
+      "4. If speaker matches /^[？?]+$/, resolve via ch -> active portrait id -> scene context (s_start: sophia/claude, s_yaoshen: yaoshen).",
+      "5. Look up trimmed speaker in speakerAliases.",
+      "6. Fall back to ch (if valid), then active portrait id (portraits.find(p => p && p.active !== false)?.id)."
+    ]
+  },
+  "speakerAliases": {
+    "希尔维亚": "sylvia",
+    "希尔维亚·维斯特利亚": "sylvia",
+    "渔": "sylvia",
+    "眷寒渔": "sylvia",
+    "爱丽丝": "alice",
+    "爱丽丝·维斯特利亚": "alice",
+    "贝阿特丽丝": "beatrice",
+    "贝阿特丽丝·维斯特利亚": "beatrice",
+    "贝蒂": "beatrice",
+    "索菲亚": "sophia",
+    "索菲亚·维斯特利亚": "sophia",
+    "母亲": "sophia",
+    "克劳德": "claude",
+    "克劳德·维斯特利亚": "claude",
+    "父亲": "claude",
+    "雷纳德": "reno",
+    "雷纳德·维斯特利亚": "reno",
+    "叔叔": "reno",
+    "艾诺": "aino",
+    "艾诺·塔尔维": "aino",
+    "海伦娜": "helena",
+    "海伦娜·德尔菲": "helena",
+    "罗文": "rowan",
+    "诺艾儿": "noelle",
+    "夏洛特": "charlotte",
+    "夏洛特·贝尔蒙": "charlotte",
+    "艾玛": "emma",
+    "艾玛·克莱尔": "emma",
+    "阿琼": "ajun",
+    "阿琼·普拉塔": "ajun",
+    "霁岚": "jilan",
+    "老霁": "ji",
+    "霁馆主": "ji",
+    "霁叔": "ji",
+    "霁清": "jiqing",
+    "风神": "fengshen",
+    "岚": "fengshen",
+    "兰": "fengshen",
+    "药神": "yaoshen",
+    "法神": "fashen",
+    "霍尔": "hol",
+    "中年教师": "teacher_middle",
+    "格雷教授": "teacher_middle",
+    "玛莎": "masha",
+    "阿蓿": "axu",
+    "家庭教师": "teacher",
+    "安娜": "anna",
+    "安娜·贝尔": "anna",
+    "凯尔": "kyle",
+    "莱恩": "lein",
+    "沛霖": "peilin",
+    "穆萨": "musa",
+    "巴依随军药师": "musa",
+    "虎克": "huke",
+    "问询骑士": "servant_a",
+    "侍卫": "servant_a",
+    "魔法师": "servant_a",
+    "侍从": "servant_a",
+    "女仆": "maid",
+    "点心店老板": "merchant_bakery",
+    "首饰店老板": "merchant_jewel",
+    "剑术教官": "instructor",
+    "教官": "instructor",
+    "女法师": "mage_aurora",
+    "极光女法师": "mage_aurora",
+    "东翼封锁官": "eastwing_commander",
+    "红莲铁幕": "eastwing_commander"
+  },
+  "combatCueKeys": {
+    "bondAssists": [
+      "bond_assist_alice",
+      "bond_assist_noelle",
+      "bond_assist_aino",
+      "bond_assist_jilan",
+      "bond_assist_charlotte"
+    ],
+    "bossQuotes": [
+      "boss_beatrice_intro",
+      "boss_alice_intro",
+      "boss_alice_surrender",
+      "boss_aino_intro",
+      "boss_aino_block",
+      "boss_aino_surrender",
+      "boss_eastwing_phase2",
+      "boss_fengshen_intro",
+      "boss_fengshen_phase2"
+    ],
+    "allyCues": [
+      "aino_spear",
+      "reno_graveyard_start"
+    ],
+    "sylviaSystem": [
+      "amp_tier_1",
+      "amp_tier_2",
+      "amp_tier_3",
+      "eclipse_wand",
+      "insight_success",
+      "interrupt",
+      "parry",
+      "one_more",
+      "player_hit",
+      "player_hit_heavy",
+      "shield_block",
+      "dodge",
+      "victory_s",
+      "victory",
+      "defeat"
+    ],
+    "sylviaSkills": [
+      "skill_basic_attack",
+      "skill_hand_water_surge",
+      "skill_hand_ice_crystal",
+      "skill_hand_ice_wall",
+      "skill_hand_frost_floor",
+      "skill_hand_root_shield",
+      "skill_hand_water_veil",
+      "skill_hand_thorn_field",
+      "skill_remote_blind_shot",
+      "skill_remote_snap_spike",
+      "skill_sword_root_step",
+      "skill_sword_water_edge",
+      "skill_sword_wind_afterimage",
+      "skill_insight_beatrice_pillar",
+      "skill_insight_rowan_prism",
+      "skill_insight_alice_cage",
+      "skill_insight_aino_bead",
+      "skill_insight_noelle_sever",
+      "skill_insight_jackal_throat",
+      "skill_insight_hulan_resonance",
+      "skill_insight_eastwing_draft",
+      "skill_insight_wind_stillness",
+      "skill_insight_generic_flaw"
+    ]
+  },
+  "charIdToProfileId": {
+    "sylvia": "sylvia",
+    "alice": "alice",
+    "beatrice": "beatrice",
+    "sophia": "sophia",
+    "claude": "claude",
+    "reno": "reno",
+    "aino": "aino",
+    "helena": "helena",
+    "rowan": "rowan",
+    "noelle": "noelle",
+    "charlotte": "charlotte",
+    "emma": "emma",
+    "ajun": "ajun",
+    "jilan": "jilan",
+    "ji": "ji",
+    "fengshen": "fengshen",
+    "yaoshen": "yaoshen",
+    "fashen": "fashen",
+    "hol": "hol",
+    "teacher_middle": "npc_scholar_m",
+    "peilin": "npc_scholar_m",
+    "merchant_bakery": "npc_scholar_m",
+    "merchant_jewel": "npc_scholar_m",
+    "instructor": "npc_scholar_m",
+    "musa": "npc_scholar_m",
+    "lecturer": "npc_scholar_m",
+    "teacher": "npc_mature_f",
+    "anna": "npc_mature_f",
+    "maid": "npc_mature_f",
+    "mage_aurora": "npc_mature_f",
+    "masha": "npc_lively_f",
+    "kyle": "npc_knight_m",
+    "lein": "npc_knight_m",
+    "servant_a": "npc_knight_m",
+    "eastwing_commander": "npc_knight_m",
+    "axu": "npc_child_f",
+    "jiqing": "npc_boy_m",
+    "huke": "npc_boy_m"
+  },
+  "profiles": [
+    {
+      "profileId": "sylvia",
+      "roleNames": [
+        "希尔维亚·维斯特利亚",
+        "渔",
+        "眷寒渔"
+      ],
+      "charIds": [
+        "sylvia"
+      ],
+      "primary": {
+        "title": "フリーレン2",
+        "id": "5a7a3dec0d9c415db57e9a7ce2ecee51",
+        "url": "https://fish.audio/m/5a7a3dec0d9c415db57e9a7ce2ecee51/",
+        "likes": 192,
+        "uses": 18384,
+        "animeRef": "葬送的芙莉莲 · 芙莉莲",
+        "seiyuuRef": "种崎敦美"
+      },
+      "backup": {
+        "title": "Maomao",
+        "id": "6dd3237f85ce487ba75c5c7c49960a7e",
+        "url": "https://fish.audio/m/6dd3237f85ce487ba75c5c7c49960a7e/",
+        "likes": 24,
+        "uses": 2027,
+        "animeRef": "药屋少女的呢喃 · 猫猫",
+        "seiyuuRef": "悠木碧"
+      },
+      "alt": {
+        "title": "フリーレン",
+        "id": "9619dc8987174b069a721eb269a5a9dd",
+        "url": "https://fish.audio/m/9619dc8987174b069a721eb269a5a9dd/",
+        "likes": 55,
+        "uses": null,
+        "animeRef": "葬送的芙莉莲 · 芙莉莲",
+        "seiyuuRef": "种崎敦美"
+      },
+      "voiceDirection": "清冷淡泊、略带懒散的银发冰系少女音；日常语速舒缓克制、少情绪起伏，吐槽精准简短，实战咏唱与独白沉静如雪原寒镜，绝不大喊大叫。",
+      "defaultDrama3Tag": "(calm)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "alice",
+      "roleNames": [
+        "爱丽丝·维斯特利亚"
+      ],
+      "charIds": [
+        "alice"
+      ],
+      "primary": {
+        "title": "ホタル",
+        "id": "0d4d2a579d6146debf509b79eb83e7de",
+        "url": "https://fish.audio/m/0d4d2a579d6146debf509b79eb83e7de/",
+        "likes": 60,
+        "uses": 2267,
+        "animeRef": "崩坏：星穹铁道 · 流萤",
+        "seiyuuRef": "楠木灯 (soft breathy)"
+      },
+      "backup": {
+        "title": "暁美ほむら",
+        "id": "1dfec5f3889844a488ec004dbfdfe939",
+        "url": "https://fish.audio/m/1dfec5f3889844a488ec004dbfdfe939/",
+        "likes": 28,
+        "uses": 1678,
+        "animeRef": "魔法少女小圆 · 晓美焰",
+        "seiyuuRef": "斋藤千和"
+      },
+      "voiceDirection": "轻柔气声、安静克制的白发三妹声线；句首常有微顿，对姐姐大人满怀执拗而清澈的依恋，逻辑冷峻却尾音轻软。",
+      "defaultDrama3Tag": "(soft)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "beatrice",
+      "roleNames": [
+        "贝阿特丽丝·维斯特利亚",
+        "贝蒂"
+      ],
+      "charIds": [
+        "beatrice"
+      ],
+      "primary": {
+        "title": "御坂美琴",
+        "id": "238cb3c58a3a40ab98de605fcea13cac",
+        "url": "https://fish.audio/m/238cb3c58a3a40ab98de605fcea13cac/",
+        "likes": 26,
+        "uses": 1585,
+        "animeRef": "某科学的超电磁炮 · 御坂美琴",
+        "seiyuuRef": "佐藤利奈"
+      },
+      "backup": {
+        "title": "chisato",
+        "id": "71787b4bb26845688eb6349b4a6c2504",
+        "url": "https://fish.audio/m/71787b4bb26845688eb6349b4a6c2504/",
+        "likes": 12,
+        "uses": 1332,
+        "animeRef": "莉可丽丝 · 锦木千束",
+        "seiyuuRef": "安济知佳"
+      },
+      "alt": {
+        "title": "Misaka Mikoto",
+        "id": "85fab2113fa143fbb630e625417756d7",
+        "url": "https://fish.audio/m/85fab2113fa143fbb630e625417756d7/",
+        "likes": 14,
+        "uses": null,
+        "animeRef": "某科学的超电磁炮 · 御坂美琴",
+        "seiyuuRef": "佐藤利奈"
+      },
+      "voiceDirection": "爽朗明亮、中气十足的火系大小姐兼护妹狂魔；自称「贝阿特丽丝大人」时昂扬骄傲，动情或绝境护妹时又炽烈真挚、带一点倔强哭腔。",
+      "defaultDrama3Tag": "(energetic)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "sophia",
+      "roleNames": [
+        "索菲亚·维斯特利亚",
+        "母亲"
+      ],
+      "charIds": [
+        "sophia"
+      ],
+      "primary": {
+        "title": "ヨル・フォージャー2.0",
+        "id": "b0bd7cca0bdd4f66818c1f5e68332456",
+        "url": "https://fish.audio/m/b0bd7cca0bdd4f66818c1f5e68332456/",
+        "likes": 219,
+        "uses": 16047,
+        "animeRef": "间谍过家家 · 约尔·福杰",
+        "seiyuuRef": "早见沙织"
+      },
+      "backup": {
+        "title": "saber",
+        "id": "1133ea766c684f0192b7409ee64728ab",
+        "url": "https://fish.audio/m/1133ea766c684f0192b7409ee64728ab/",
+        "likes": 43,
+        "uses": 4159,
+        "animeRef": "Fate · Saber",
+        "seiyuuRef": "川澄绫子"
+      },
+      "voiceDirection": "温婉优雅、如冬日红茶般安定的公爵夫人女中音；宠溺三姐妹时轻柔含笑，关键时刻（转折点断后、管住克劳德公文）则外柔内刚、一锤定音。",
+      "defaultDrama3Tag": "(gentle)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "claude",
+      "roleNames": [
+        "克劳德·维斯特利亚",
+        "父亲"
+      ],
+      "charIds": [
+        "claude"
+      ],
+      "primary": {
+        "title": "日本人渋い声の男性",
+        "id": "9600581739c44a9c8bd1401faae802ae",
+        "url": "https://fish.audio/m/9600581739c44a9c8bd1401faae802ae/",
+        "likes": 277,
+        "uses": 36115,
+        "animeRef": "成熟端方公爵男低音",
+        "seiyuuRef": "原生醇厚日语男低音"
+      },
+      "backup": {
+        "title": "Kento nanami",
+        "id": "b57578ec012f4cee8873c5edf852591e",
+        "url": "https://fish.audio/m/b57578ec012f4cee8873c5edf852591e/",
+        "likes": 28,
+        "uses": 3560,
+        "animeRef": "咒术回战 · 七海建人",
+        "seiyuuRef": "津田健次郎"
+      },
+      "voiceDirection": "低沉稳重、字句短促如铁钉落地的维斯特利亚公爵男低音；平时端方威严却暗藏笨拙慈爱，政变夜交代逃生时冷静决绝。",
+      "defaultDrama3Tag": "(serious)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "reno",
+      "roleNames": [
+        "雷纳德·维斯特利亚",
+        "叔叔"
+      ],
+      "charIds": [
+        "reno"
+      ],
+      "primary": {
+        "title": "Gojo Japanese🇯🇵",
+        "id": "55d9c07449d44ac6907ceec3b103251d",
+        "url": "https://fish.audio/m/55d9c07449d44ac6907ceec3b103251d/",
+        "likes": 117,
+        "uses": 15246,
+        "animeRef": "咒术回战 · 五条悟",
+        "seiyuuRef": "中村悠一"
+      },
+      "backup": {
+        "title": "坂田銀時",
+        "id": "5725b046fa77469e8d190fad743a3bf2",
+        "url": "https://fish.audio/m/5725b046fa77469e8d190fad743a3bf2/",
+        "likes": 22,
+        "uses": 2540,
+        "animeRef": "银魂 · 坂田银时",
+        "seiyuuRef": "杉田智和"
+      },
+      "voiceDirection": "洒脱不羁、略带玩世不恭的浪人叔叔声线；讲北境故事时眉飞色舞，乱葬岗护侄女与转折点独守十字路口时瞬切深不可测的可靠压迫感。",
+      "defaultDrama3Tag": "(playful)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "aino",
+      "roleNames": [
+        "艾诺·塔尔维"
+      ],
+      "charIds": [
+        "aino"
+      ],
+      "primary": {
+        "title": "Mikasa Ackerman",
+        "id": "f676808556364158a9c3e87738cf6d7f",
+        "url": "https://fish.audio/m/f676808556364158a9c3e87738cf6d7f/",
+        "likes": 21,
+        "uses": 2910,
+        "animeRef": "进击的巨人 · 三笠·阿克曼",
+        "seiyuuRef": "石川由依"
+      },
+      "backup": {
+        "title": "Ryo Yamada (Bocchi the Rock!)",
+        "id": "0785d6732191409792641c70dec8c733",
+        "url": "https://fish.audio/m/0785d6732191409792641c70dec8c733/",
+        "likes": 57,
+        "uses": 14286,
+        "animeRef": "孤独摇滚！ · 山田凉",
+        "seiyuuRef": "水野朔"
+      },
+      "voiceDirection": "冷冽干脆、惜字如金的赫兰冰系女骑士声线；平直少抑扬、实事求是，话语冷硬如北境钢冰却在不经意处流露极细微的关照。",
+      "defaultDrama3Tag": "(serious)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "helena",
+      "roleNames": [
+        "海伦娜·德尔菲"
+      ],
+      "charIds": [
+        "helena"
+      ],
+      "primary": {
+        "title": "Emilia-tan",
+        "id": "61d3eb6176374a4eb0766b847c9f6ace",
+        "url": "https://fish.audio/m/61d3eb6176374a4eb0766b847c9f6ace/",
+        "likes": 47,
+        "uses": 8588,
+        "animeRef": "Re:从零开始的异世界生活 · 爱蜜莉雅",
+        "seiyuuRef": "高桥李依"
+      },
+      "backup": {
+        "title": "アスナ",
+        "id": "f2e45ab1a4a548e2860efea1aa2b416e",
+        "url": "https://fish.audio/m/f2e45ab1a4a548e2860efea1aa2b416e/",
+        "likes": 126,
+        "uses": 9315,
+        "animeRef": "刀剑神域 · 亚丝娜",
+        "seiyuuRef": "户松遥"
+      },
+      "voiceDirection": "清澈温柔、自带晴日微光的神殿交换生少女音；明朗善良却背负神殿宿命，日落长廊分别与赠银十字架时清透带一丝不舍。",
+      "defaultDrama3Tag": "(warm)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "rowan",
+      "roleNames": [
+        "罗文"
+      ],
+      "charIds": [
+        "rowan"
+      ],
+      "primary": {
+        "title": "Aizen",
+        "id": "eda2fadcf6e84d738f90468a5765ec95",
+        "url": "https://fish.audio/m/eda2fadcf6e84d738f90468a5765ec95/",
+        "likes": 91,
+        "uses": 48314,
+        "animeRef": "死神 BLEACH · 蓝染惣右介",
+        "seiyuuRef": "速水奖"
+      },
+      "backup": {
+        "title": "Suguru geto",
+        "id": "401fb8456f1149b39fbda42f8ea8df40",
+        "url": "https://fish.audio/m/401fb8456f1149b39fbda42f8ea8df40/",
+        "likes": 21,
+        "uses": 3877,
+        "animeRef": "咒术回战 · 夏油杰",
+        "seiyuuRef": "樱井孝宏"
+      },
+      "voiceDirection": "斯文从容、慢条斯理的圣级血族侍卫男中低音；表面礼貌温和毫无破绽，语速从容近乎优雅，直至乱葬岗摊牌时透出深渊般的冰冷威压。",
+      "defaultDrama3Tag": "(calm)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "noelle",
+      "roleNames": [
+        "诺艾儿"
+      ],
+      "charIds": [
+        "noelle"
+      ],
+      "primary": {
+        "title": "フェルン",
+        "id": "1dac8f5fd50648388edfcb4ca6cfb378",
+        "url": "https://fish.audio/m/1dac8f5fd50648388edfcb4ca6cfb378/",
+        "likes": 538,
+        "uses": 29414,
+        "animeRef": "葬送的芙莉莲 · 菲伦",
+        "seiyuuRef": "市之濑加那"
+      },
+      "backup": {
+        "title": "优香yuuka",
+        "id": "14073a8ffcad4c2297ee567777b18d23",
+        "url": "https://fish.audio/m/14073a8ffcad4c2297ee567777b18d23/",
+        "likes": 29,
+        "uses": 3937,
+        "animeRef": "蔚蓝档案 · 早濑优香",
+        "seiyuuRef": "春花らん"
+      },
+      "voiceDirection": "认真板正、咬字清晰的平民水系首席少女音；表面克制带点较真倔强，提到弟弟虎克或接受善意时微微别扭放软。",
+      "defaultDrama3Tag": "(serious)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "charlotte",
+      "roleNames": [
+        "夏洛特·贝尔蒙"
+      ],
+      "charIds": [
+        "charlotte"
+      ],
+      "primary": {
+        "title": "远坂凛",
+        "id": "8fa714e374ba42658cdc285d52575cda",
+        "url": "https://fish.audio/m/8fa714e374ba42658cdc285d52575cda/",
+        "likes": 38,
+        "uses": 1343,
+        "animeRef": "Fate/stay night · 远坂凛",
+        "seiyuuRef": "植田佳奈"
+      },
+      "backup": {
+        "title": "式波・アスカ・ラングレー.",
+        "id": "2e5c5f6b2e7a4492a25f23c01741575e",
+        "url": "https://fish.audio/m/2e5c5f6b2e7a4492a25f23c01741575e/",
+        "likes": 135,
+        "uses": 8563,
+        "animeRef": "新世纪福音战士 · 式波·明日香·兰格雷",
+        "seiyuuRef": "宫村优子"
+      },
+      "voiceDirection": "矜持锐利、傲娇体面的贝尔蒙贵族大小姐声线；语调高昂精致、不肯示弱，但在纪念林树下卸下面具时嗓音微沉显露孤傲寂寞。",
+      "defaultDrama3Tag": "(confident)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "emma",
+      "roleNames": [
+        "艾玛·克莱尔"
+      ],
+      "charIds": [
+        "emma"
+      ],
+      "primary": {
+        "title": "Ikuyo Kita (Bocchi the Rock!)",
+        "id": "6f8e195041ca4eb19c1180dd1fd430f8",
+        "url": "https://fish.audio/m/6f8e195041ca4eb19c1180dd1fd430f8/",
+        "likes": 31,
+        "uses": 6296,
+        "animeRef": "孤独摇滚！ · 喜多郁代",
+        "seiyuuRef": "长谷川育美"
+      },
+      "backup": {
+        "title": "Yotsuba",
+        "id": "d081632a59d54205a0a1125deecfb544",
+        "url": "https://fish.audio/m/d081632a59d54205a0a1125deecfb544/",
+        "likes": 48,
+        "uses": 11883,
+        "animeRef": "五等分的花嫁 · 中野四叶",
+        "seiyuuRef": "佐仓绫音"
+      },
+      "voiceDirection": "明快甜朗、充满活力的室友少女音；聊到食堂焦糖布丁与校园八卦时尾音雀跃上扬，像一缕温暖的奶油阳光。",
+      "defaultDrama3Tag": "(cheerful)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "ajun",
+      "roleNames": [
+        "阿琼·普拉塔"
+      ],
+      "charIds": [
+        "ajun"
+      ],
+      "primary": {
+        "title": "Izuku Midoriya",
+        "id": "f80568062315479fa2b3a48010bb3c41",
+        "url": "https://fish.audio/m/f80568062315479fa2b3a48010bb3c41/",
+        "likes": 10,
+        "uses": 630,
+        "animeRef": "我的英雄学院 · 绿谷出久",
+        "seiyuuRef": "山下大辉"
+      },
+      "backup": {
+        "title": "ルフィ",
+        "id": "96d3853344ae4b658454fdcb33debe59",
+        "url": "https://fish.audio/m/96d3853344ae4b658454fdcb33debe59/",
+        "likes": 11,
+        "uses": 1428,
+        "animeRef": "海贼王 · 蒙奇·D·路飞",
+        "seiyuuRef": "田中真弓"
+      },
+      "voiceDirection": "赤诚热忱、阳光直率的巴依留学生少年音；语速稍快、热情爽朗，做咖喱和递小本子时毫不设防。",
+      "defaultDrama3Tag": "(cheerful)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "jilan",
+      "roleNames": [
+        "霁岚"
+      ],
+      "charIds": [
+        "jilan"
+      ],
+      "primary": {
+        "title": "Nobara Kugisaki",
+        "id": "98a92fb4e57345549ab1315b95b686b1",
+        "url": "https://fish.audio/m/98a92fb4e57345549ab1315b95b686b1/",
+        "likes": 61,
+        "uses": 6537,
+        "animeRef": "咒术回战 · 钉崎野蔷薇",
+        "seiyuuRef": "濑户麻沙美"
+      },
+      "backup": {
+        "title": "Nami",
+        "id": "7c15e56e951347cb9ad7c1be76bb01be",
+        "url": "https://fish.audio/m/7c15e56e951347cb9ad7c1be76bb01be/",
+        "likes": 35,
+        "uses": 7777,
+        "animeRef": "海贼王 · 娜美",
+        "seiyuuRef": "冈村明美"
+      },
+      "voiceDirection": "飒爽利落、大嗓门直脾气的澄岚剑馆少女音；白日练剑吐槽老爹时两倍速干脆清脆，夜廊谈起空房钉孔与北上分别时流露藏不住的细腻热忱。",
+      "defaultDrama3Tag": "(energetic)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "ji",
+      "roleNames": [
+        "老霁",
+        "霁馆主",
+        "霁清（成年）"
+      ],
+      "charIds": [
+        "ji"
+      ],
+      "primary": {
+        "title": "スネーク",
+        "id": "2b81a500b07a4346b679fd82b84172a5",
+        "url": "https://fish.audio/m/2b81a500b07a4346b679fd82b84172a5/",
+        "likes": 135,
+        "uses": 6963,
+        "animeRef": "合金装备 · 斯内克",
+        "seiyuuRef": "大冢明夫"
+      },
+      "backup": {
+        "title": "Jotaro Kujo",
+        "id": "1b0799a6f5ad4294bcf8c6d45a537dd9",
+        "url": "https://fish.audio/m/1b0799a6f5ad4294bcf8c6d45a537dd9/",
+        "likes": 57,
+        "uses": 17188,
+        "animeRef": "JOJO的奇妙冒险 · 空条承太郎",
+        "seiyuuRef": "小野大辅"
+      },
+      "voiceDirection": "厚重沧桑、略带粗粝暖意的隐世剑馆大叔低音；教生根步与送刀时稳如山岳，聊到糊粥与故人「兰」时深情而豁达。",
+      "defaultDrama3Tag": "(calm)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "fengshen",
+      "roleNames": [
+        "风神",
+        "岚",
+        "兰"
+      ],
+      "charIds": [
+        "fengshen"
+      ],
+      "primary": {
+        "title": "SHINOBU",
+        "id": "7c6003ecdaf24ef1a81a4b38d653d48b",
+        "url": "https://fish.audio/m/7c6003ecdaf24ef1a81a4b38d653d48b/",
+        "likes": 65,
+        "uses": 11972,
+        "animeRef": "鬼灭之刃 · 蝴蝶忍（双态）",
+        "seiyuuRef": "早见沙织"
+      },
+      "backup": {
+        "title": "胡蝶しのぶ",
+        "id": "f4bc7511619b428aa174ab663bf844a1",
+        "url": "https://fish.audio/m/f4bc7511619b428aa174ab663bf844a1/",
+        "likes": 110,
+        "uses": 9009,
+        "animeRef": "鬼灭之刃 · 蝴蝶忍",
+        "seiyuuRef": "早见沙织"
+      },
+      "alt": {
+        "title": "Yae Miko JP",
+        "id": "87522cb7c4f749e3be28a78bb42c6739",
+        "url": "https://fish.audio/m/87522cb7c4f749e3be28a78bb42c6739/",
+        "likes": 14,
+        "uses": null,
+        "animeRef": "原神 · 八重神子",
+        "seiyuuRef": "佐仓绫音"
+      },
+      "voiceDirection": "轻盈戏谑与高天孤寂并存的七大列强双态声线；少年期「岚/兰」活泼飘逸带波浪尾音，风暴眼与漏水水杯独白中则静谧通透、隐含锋锐与旧痛。",
+      "defaultDrama3Tag": "(gentle)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "yaoshen",
+      "roleNames": [
+        "药神"
+      ],
+      "charIds": [
+        "yaoshen"
+      ],
+      "primary": {
+        "title": "偽ジャムおじさん",
+        "id": "23adbd5fd89840b2926ce687fbce5354",
+        "url": "https://fish.audio/m/23adbd5fd89840b2926ce687fbce5354/",
+        "likes": 22,
+        "uses": 1721,
+        "animeRef": "慈祥老顽童中年男声",
+        "seiyuuRef": "原生慈祥老顽童男声"
+      },
+      "backup": {
+        "title": "Old Joseph Joestar",
+        "id": "d2ca4f4f879f49cc84ac05a08e802ce4",
+        "url": "https://fish.audio/m/d2ca4f4f879f49cc84ac05a08e802ce4/",
+        "likes": 12,
+        "uses": 1749,
+        "animeRef": "JOJO的奇妙冒险 · 老乔瑟夫",
+        "seiyuuRef": "石冢运升"
+      },
+      "voiceDirection": "和蔼幽默、笑纹满面的七大列强老顽童声线；说话温和逗趣毫无架子，递出淡蓝小瓶时藏着深不可测的慈悲与份量。",
+      "defaultDrama3Tag": "(warm)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "fashen",
+      "roleNames": [
+        "法神"
+      ],
+      "charIds": [
+        "fashen"
+      ],
+      "primary": {
+        "title": "Raiden Shogun JP",
+        "id": "997db0af55f0411e82e7b0e2df8c6faa",
+        "url": "https://fish.audio/m/997db0af55f0411e82e7b0e2df8c6faa/",
+        "likes": 92,
+        "uses": 7308,
+        "animeRef": "原神 · 雷电将军",
+        "seiyuuRef": "泽城美雪"
+      },
+      "backup": {
+        "title": "MAKIMA",
+        "id": "e708ab2b66a740d5bab79fdcc93c95c3",
+        "url": "https://fish.audio/m/e708ab2b66a740d5bab79fdcc93c95c3/",
+        "likes": 10,
+        "uses": 1903,
+        "animeRef": "电锯人 · 玛奇玛",
+        "seiyuuRef": "楠木灯"
+      },
+      "voiceDirection": "凛冽威仪、自带神级压迫感的魔法大学校长御姐低音；字句简短凌厉，提雷纳德欠钱时冷淡中透出一丝冷幽默。",
+      "defaultDrama3Tag": "(serious)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "hol",
+      "roleNames": [
+        "霍尔"
+      ],
+      "charIds": [
+        "hol"
+      ],
+      "primary": {
+        "title": "津田健次郎",
+        "id": "6b3310e2778747ccbd831bd511ad9824",
+        "url": "https://fish.audio/m/6b3310e2778747ccbd831bd511ad9824/",
+        "likes": 87,
+        "uses": 14100,
+        "animeRef": "津田健次郎倦怠叔音",
+        "seiyuuRef": "津田健次郎"
+      },
+      "backup": {
+        "title": "Kakashi",
+        "id": "c2ae609069f14b20ab3576dd7b2c0750",
+        "url": "https://fish.audio/m/c2ae609069f14b20ab3576dd7b2c0750/",
+        "likes": 31,
+        "uses": 3479,
+        "animeRef": "火影忍者 · 旗木卡卡西",
+        "seiyuuRef": "井上和彦"
+      },
+      "voiceDirection": "慵懒低哑、漫不经心的冰系导师倦怠叔音；语速拖慢爱早下课，却在不经意点拨冰魔力与照看窗台冻土白霜时流露沉稳可靠。",
+      "defaultDrama3Tag": "(relaxed)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "npc_scholar_m",
+      "roleNames": [
+        "中年教师",
+        "格雷教授",
+        "沛霖",
+        "点心店老板",
+        "首饰店老板",
+        "剑术教官",
+        "穆萨",
+        "巴依随军药师"
+      ],
+      "charIds": [
+        "teacher_middle",
+        "peilin",
+        "merchant_bakery",
+        "merchant_jewel",
+        "instructor",
+        "musa",
+        "lecturer"
+      ],
+      "primary": {
+        "title": "森川智之(ディズニー)",
+        "id": "256c4ea5a4424ea280688aac865fe0e8",
+        "url": "https://fish.audio/m/256c4ea5a4424ea280688aac865fe0e8/",
+        "likes": 16,
+        "uses": 2217,
+        "animeRef": "儒雅稳重学者/掌柜男声",
+        "seiyuuRef": "森川智之"
+      },
+      "backup": {
+        "title": "穏やかで知的な男性",
+        "id": "18386e9137da42bca96ef2c7d3950670",
+        "url": "https://fish.audio/m/18386e9137da42bca96ef2c7d3950670/",
+        "likes": 7,
+        "uses": 357,
+        "animeRef": "温和知性男声",
+        "seiyuuRef": "原生温和知性男声"
+      },
+      "voiceDirection": "字正腔圆、儒雅从容的中年男性声线；适配学院讲师、药商沛霖、巴依老药师穆萨与王都商贩，随身份在严谨与热络之间自然微调。",
+      "defaultDrama3Tag": "(calm)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "npc_mature_f",
+      "roleNames": [
+        "家庭教师",
+        "安娜·贝尔",
+        "女仆",
+        "极光女法师"
+      ],
+      "charIds": [
+        "teacher",
+        "anna",
+        "maid",
+        "mage_aurora"
+      ],
+      "primary": {
+        "title": "落ち着いた女性",
+        "id": "0089dce5fefb4c6ba9b9f2f0debe1ddc",
+        "url": "https://fish.audio/m/0089dce5fefb4c6ba9b9f2f0debe1ddc/",
+        "likes": 1623,
+        "uses": 299990,
+        "animeRef": "沉稳干练成熟女声",
+        "seiyuuRef": "原生沉稳日语女声"
+      },
+      "backup": {
+        "title": "Rias Gremory",
+        "id": "bd292494573e426e8fb814a828aaff2a",
+        "url": "https://fish.audio/m/bd292494573e426e8fb814a828aaff2a/",
+        "likes": 49,
+        "uses": 6435,
+        "animeRef": "恶魔高校D×D · 莉雅丝·吉蒙里",
+        "seiyuuRef": "日笠阳子"
+      },
+      "voiceDirection": "清晰干练、语调稳重的成年女性声线；适配水系导师安娜、公爵府家庭教师、侍女与极光女法师，兼具亲和与专业度。",
+      "defaultDrama3Tag": "(calm)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "npc_lively_f",
+      "roleNames": [
+        "玛莎"
+      ],
+      "charIds": [
+        "masha"
+      ],
+      "primary": {
+        "title": "元気な女性",
+        "id": "5161d41404314212af1254556477c17d",
+        "url": "https://fish.audio/m/5161d41404314212af1254556477c17d/",
+        "likes": 2450,
+        "uses": 599792,
+        "animeRef": "爽朗利落公会大姐女声",
+        "seiyuuRef": "原生元气日语女声"
+      },
+      "backup": {
+        "title": "落ち着いた女性",
+        "id": "0089dce5fefb4c6ba9b9f2f0debe1ddc",
+        "url": "https://fish.audio/m/0089dce5fefb4c6ba9b9f2f0debe1ddc/",
+        "likes": 1623,
+        "uses": 299990,
+        "animeRef": "沉稳干练成熟女声",
+        "seiyuuRef": "原生沉稳日语女声"
+      },
+      "voiceDirection": "麻利爽快、接地气的澄岚冒险者公会柜台大姐声线；语速干脆、嘴上嫌麻烦却处处照应熟客。",
+      "defaultDrama3Tag": "(confident)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "npc_knight_m",
+      "roleNames": [
+        "凯尔",
+        "莱恩",
+        "问询骑士",
+        "侍卫",
+        "魔法师",
+        "侍从",
+        "东翼封锁官"
+      ],
+      "charIds": [
+        "kyle",
+        "lein",
+        "servant_a",
+        "eastwing_commander"
+      ],
+      "primary": {
+        "title": "tomioka giyuu",
+        "id": "c08240cf2dab491faac3318a2e67af66",
+        "url": "https://fish.audio/m/c08240cf2dab491faac3318a2e67af66/",
+        "likes": 49,
+        "uses": 5036,
+        "animeRef": "鬼灭之刃 · 富冈义勇",
+        "seiyuuRef": "樱井孝宏"
+      },
+      "backup": {
+        "title": "中村悠一",
+        "id": "2ba82b7fce4e46aebabba64225a5c7e6",
+        "url": "https://fish.audio/m/2ba82b7fce4e46aebabba64225a5c7e6/",
+        "likes": 5,
+        "uses": 1231,
+        "animeRef": "硬朗青年骑士男声",
+        "seiyuuRef": "中村悠一"
+      },
+      "voiceDirection": "清朗干练的青年男声；适配极光小队队长凯尔、旅伴莱恩、问询骑士/侍卫与东翼封锁官，兼具正气与实战张力。",
+      "defaultDrama3Tag": "(serious)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "npc_child_f",
+      "roleNames": [
+        "阿蓿"
+      ],
+      "charIds": [
+        "axu"
+      ],
+      "primary": {
+        "title": "Anya",
+        "id": "c3c5599aec5c45e1a4c826baae1e08f8",
+        "url": "https://fish.audio/m/c3c5599aec5c45e1a4c826baae1e08f8/",
+        "likes": 87,
+        "uses": 13710,
+        "animeRef": "间谍过家家 · 阿尼亚·福杰",
+        "seiyuuRef": "种崎敦美"
+      },
+      "backup": {
+        "title": "幼い子供の声",
+        "id": "1d0c9878f3a54a4f968a2c4ef68c6c22",
+        "url": "https://fish.audio/m/1d0c9878f3a54a4f968a2c4ef68c6c22/",
+        "likes": 11,
+        "uses": 1387,
+        "animeRef": "清澈童声",
+        "seiyuuRef": "原生日语幼童女声"
+      },
+      "voiceDirection": "天真脆亮、充满山野灵气的牧羊小女孩童声；喊萤尾羊和拉着渔奔跑时欢脱清脆、毫无阴霾。",
+      "defaultDrama3Tag": "(cheerful)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    },
+    {
+      "profileId": "npc_boy_m",
+      "roleNames": [
+        "霁清（少年）",
+        "虎克"
+      ],
+      "charIds": [
+        "jiqing",
+        "huke"
+      ],
+      "primary": {
+        "title": "Killua Japanese 🇯🇵",
+        "id": "81c275e0b1f64b5a8151b8c06033f8f5",
+        "url": "https://fish.audio/m/81c275e0b1f64b5a8151b8c06033f8f5/",
+        "likes": 10,
+        "uses": 1513,
+        "animeRef": "全职猎人 · 奇犽·揍敌客",
+        "seiyuuRef": "伊濑茉莉也"
+      },
+      "backup": {
+        "title": "Anya",
+        "id": "c3c5599aec5c45e1a4c826baae1e08f8",
+        "url": "https://fish.audio/m/c3c5599aec5c45e1a4c826baae1e08f8/",
+        "likes": 87,
+        "uses": 13710,
+        "animeRef": "间谍过家家 · 阿尼亚·福杰",
+        "seiyuuRef": "种崎敦美"
+      },
+      "voiceDirection": "清亮倔强、朝气满满的少年正太声线；适配阿斯拉送信少年霁清与诺艾儿硬气的弟弟虎克。",
+      "defaultDrama3Tag": "(energetic)",
+      "refPreferences": {
+        "minSec": 8,
+        "maxSec": 30
+      }
+    }
+  ]
+}

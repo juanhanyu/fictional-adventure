@@ -141,6 +141,8 @@ const scriptFiles = [
   'js/ai-personas.js',
   'game.js',
   'js/sfx-suite.js',
+  'js/voice-manifest.js',
+  'js/voice-engine.js',
   'js/branching-director.js',
   'js/combat-engine.js',
   'js/ai-chat-panel.js',

@@ -658,6 +658,11 @@
       bubble.setAttribute('data-stage', stage);
       bubble.setAttribute('data-mood', mood.key);
     }
+    try {
+      if (root && root.VoiceEngine && typeof root.VoiceEngine.playInteractive === 'function') {
+        root.VoiceEngine.playInteractive('tap', 'sylvia', line);
+      }
+    } catch (e) {}
 
     clearTimeout(_tapResetTimer);
     clearTimeout(_bubbleHideTimer);
@@ -2652,6 +2657,11 @@
     } else {
       sfxSafe('click');
     }
+    try {
+      if (root && root.VoiceEngine && typeof root.VoiceEngine.playInteractive === 'function') {
+        root.VoiceEngine.playInteractive('gift', charId, reactionText);
+      }
+    } catch (e) {}
 
     var cm = getCHARS()[charId] || { short: charId };
     recordSeasonAction('致赠「' + item.name + '」予' + cm.short, tier === 'loved' ? '深得欢心' : (tier === 'liked' ? '欣然收下' : '礼貌致谢'), st);

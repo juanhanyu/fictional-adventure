@@ -1,0 +1,209 @@
+/* =========================================================================
+   转生千金 · 角色语音 UI 与冰晶折射微交互样式 (css/voice-ui.css)
+   视觉纪律：雪瓷冰白 + 皇家蓝 #1658eb + 冰青 #38bdf8 / 淡金 #c8a86b
+   严禁圆框套圆框：全部内嵌控件采用 1px 分隔线、直角/切角与无边框微色块表达
+   ========================================================================= */
+
+/* ---------- 1. 对话框阅读控制栏：极简重播按钮 (#btn-vn-voice-replay) ---------- */
+#app section#game-screen #text-box .vn-read-controls #btn-vn-voice-replay {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 8px 0 6px;
+  margin-right: 2px;
+  border: none;
+  border-right: 1px solid rgba(22, 88, 235, 0.22);
+  border-bottom: 1.5px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #1e3a6e;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.16s ease, border-bottom-color 0.16s ease, background-color 0.16s ease;
+}
+
+#app section#game-screen #text-box .vn-read-controls #btn-vn-voice-replay svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+#app section#game-screen #text-box .vn-read-controls #btn-vn-voice-replay:hover {
+  color: #1658eb;
+  border-bottom-color: #1658eb;
+  background: rgba(22, 88, 235, 0.06);
+}
+
+#app section#game-screen #text-box .vn-read-controls #btn-vn-voice-replay.is-playing {
+  color: #1658eb;
+  border-bottom-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.11);
+}
+
+#app section#game-screen #text-box .vn-read-controls #btn-vn-voice-replay.is-unavailable {
+  display: none;
+}
+
+/* ---------- 2. Backlog 回看内联重听按钮 (.vb-voice-btn) ---------- */
+body section#vn-backlog-modal.overlay .vb-meta-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+body section#vn-backlog-modal.overlay .vb-voice-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: none;
+  border-left: 2px solid rgba(22, 88, 235, 0.45);
+  border-radius: 0;
+  background: rgba(22, 88, 235, 0.06);
+  color: #1658eb;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background-color 0.16s ease, color 0.16s ease, border-left-color 0.16s ease;
+}
+
+body section#vn-backlog-modal.overlay .vb-voice-btn svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+body section#vn-backlog-modal.overlay .vb-voice-btn:hover,
+body section#vn-backlog-modal.overlay .vb-voice-btn:focus-visible {
+  background: rgba(22, 88, 235, 0.13);
+  border-left-color: #1658eb;
+  color: #0e3eb3;
+}
+
+body section#vn-backlog-modal.overlay .vb-voice-btn.is-playing {
+  background: rgba(56, 189, 248, 0.18);
+  border-left-color: #38bdf8;
+  color: #0b41c2;
+}
+
+/* ---------- 3. 标题页设置区：无框语音开关与纵向节奏覆盖 ---------- */
+#title-screen .v3-set-body {
+  max-height: min(560px, 64vh);
+  padding: 14px 0 10px;
+}
+
+#title-screen .v3-set-section {
+  margin-bottom: 14px;
+}
+
+#title-screen .v3-set-sec-lbl {
+  margin-bottom: 8px;
+}
+
+#title-screen .v3-slider-row,
+#title-screen .v3-switch-row {
+  min-height: 34px;
+  padding: 2px 0;
+}
+
+#title-screen .v3-bare-switcher .v3-sw-arrow {
+  min-height: 32px;
+}
+
+#title-screen #v3-set-voice-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 0 4px;
+  border: none;
+  border-bottom: 1px solid rgba(22, 88, 235, 0.24);
+  border-radius: 0;
+  background: transparent;
+  color: #1b2333;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: color 0.18s ease, border-bottom-color 0.18s ease, background-color 0.18s ease;
+}
+
+#title-screen #v3-set-voice-toggle .v3-sw-val {
+  flex: 0 0 auto;
+}
+
+#title-screen #v3-set-voice-toggle:hover,
+#title-screen #v3-set-voice-toggle:focus-visible {
+  color: #1658eb;
+  border-bottom-color: #1658eb;
+  background: rgba(22, 88, 235, 0.04);
+}
+
+#title-screen #v3-set-voice-toggle.is-off {
+  color: #64748b;
+  border-bottom-color: rgba(100, 116, 139, 0.26);
+}
+
+#title-screen #v3-set-voice-toggle .v3-voice-dot {
+  width: 6px;
+  height: 6px;
+  transform: rotate(45deg);
+  background: #1658eb;
+  flex-shrink: 0;
+  transition: background-color 0.18s ease, opacity 0.18s ease;
+}
+
+#title-screen #v3-set-voice-toggle.is-off .v3-voice-dot {
+  background: #94a3b8;
+  opacity: 0.55;
+}
+
+/* ---------- 4. 极克制发音微光指示 (.is-voicing) ---------- */
+@keyframes voicePrismPulse {
+  0%, 100% {
+    opacity: 0.52;
+  }
+  50% {
+    opacity: 0.96;
+  }
+}
+
+#app section#game-screen #text-box.is-voicing::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 24px;
+  right: 24px;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(22, 88, 235, 0) 0%,
+    rgba(22, 88, 235, 0.48) 28%,
+    rgba(56, 189, 248, 0.72) 50%,
+    rgba(200, 168, 107, 0.45) 72%,
+    rgba(22, 88, 235, 0) 100%
+  );
+  animation: voicePrismPulse 1.8s ease-in-out infinite;
+}
+
+#portraits .p-slot.active.is-voicing img {
+  filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.28));
+  transition: filter 0.22s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app section#game-screen #text-box.is-voicing::after {
+    animation: none;
+    opacity: 0.78;
+  }
+}

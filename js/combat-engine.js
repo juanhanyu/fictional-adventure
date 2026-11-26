@@ -4372,6 +4372,22 @@
     trackVfxTimer(() => { if (el.parentNode) el.remove(); }, 2200);
   }
 
+  function emitCombatVoiceCue(b, cueKey, meta) {
+    if (!b || b.headless || !cueKey) return false;
+    const payload = Object.assign({ cueKey, stageId: b.id, waveIdx: b.waveIdx || 0 }, meta || {});
+    try {
+      if (typeof window !== 'undefined' && window.VoiceEngine && typeof window.VoiceEngine.playCombatCue === 'function') {
+        window.VoiceEngine.playCombatCue(cueKey, payload);
+      }
+    } catch (e) {}
+    try {
+      if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof window.CustomEvent === 'function') {
+        window.dispatchEvent(new window.CustomEvent('combat:voice', { detail: payload }));
+      }
+    } catch (e) {}
+    return true;
+  }
+
   function triggerBossPhase2(b, enemy) {
     if (!b || !enemy || (enemy.phase || 1) >= 2) return false;
     enemy.phase = 2;
@@ -4420,6 +4436,16 @@
     addCombatTrauma(0.92, b);
     const bossIdx = b.enemies ? b.enemies.indexOf(enemy) : 0;
     if (bossIdx >= 0) queueElementVFX(b, 'break', 'enemy', bossIdx);
+    const bossPhase2Cue = enemy.aiType === 'eastwing_boss'
+      ? 'boss_eastwing_phase2'
+      : enemy.aiType === 'wind_god_boss'
+        ? 'boss_fengshen_phase2'
+        : `boss_phase2_${enemy.aiType || enemy.id || 'boss'}`;
+    emitCombatVoiceCue(b, bossPhase2Cue, {
+      enemyId: enemy.id,
+      aiType: enemy.aiType,
+      charId: enemy.aiType === 'wind_god_boss' ? 'fengshen' : (enemy.aiType === 'eastwing_boss' ? 'eastwing_commander' : enemy.id)
+    });
     if (!b.headless) {
       safeSfx('phase2');
       if (typeof global.bgmShiftBattlePhase2 === 'function') global.bgmShiftBattlePhase2();
@@ -4574,6 +4600,9 @@
 
     if (w.intro) pushLog(b, logTag('cbl-ice', w.intro));
     syncDerivedBattleState(b);
+    if (waveIdx > 0) {
+      emitCombatVoiceCue(b, `stage_start_${b.id}_w${waveIdx + 1}`, { stageId: b.id, waveIdx, charId: 'sylvia' });
+    }
   }
 
   function isPalaceReady(b) {
@@ -4712,6 +4741,7 @@
     val = Math.round(val * 100) / 100;
     val = Math.max(0, Math.min(maxCap, val));
     const prevAmp = Number(b.player.ampPct) || 0;
+    const prevTier = getAmpTierInfo(prevAmp).tier;
     const tierInfo = getAmpTierInfo(val);
     const nextMode = tierInfo.tier;
     const changed = Math.abs(prevAmp - val) > 1e-4 || b.player.overcastMode !== nextMode;
@@ -4726,6 +4756,13 @@
     if (!b.headless) {
       if (changed && !(opts && opts.silent)) {
         safeSfx('amp_charge', { ampPct: val });
+        if (tierInfo.tier > prevTier && tierInfo.tier >= 1) {
+          const nowTs = Date.now();
+          if (nowTs - (b._lastAmpVoiceTs || 0) >= 650) {
+            b._lastAmpVoiceTs = nowTs;
+            emitCombatVoiceCue(b, `amp_tier_${tierInfo.tier}`, { tier: tierInfo.tier, ampPct: val, charId: 'sylvia' });
+          }
+        }
         try {
           const pxApi = getPixelVfxApi();
           if (pxApi && typeof pxApi.playAmpChargeBurst === 'function') {
@@ -4849,6 +4886,7 @@
       pushLog(b, logTag('cbl-violet', `🪄 催动「晦轮杖」暗银细环：下一次魔法附带【100% 魔法真伤】（无视法抗与魔法盾，仅物理实体甲阻尼；额外耗蓝 +${extraMpNow} MP，保留暴击与魔战循环，无冷却）！${b.witnessActive ? `（⚠️ 耳目附近拔杖引动异象，暴露风险升至 ${b.exposure}%！）` : ''}`));
       spawnBanner(b, '🪄 晦轮杖 · 魔法真伤', 'wand');
       queuePixelAction(b, { type: 'wand_toggle' });
+      emitCombatVoiceCue(b, 'eclipse_wand', { charId: 'sylvia' });
       if (b.witnessActive && b.exposure >= 100) {
         finishBattle(b, false, 'exposed');
         return false;
@@ -4975,6 +5013,7 @@
     }
     syncDerivedBattleState(b);
     spawnBanner(b, '❄️ 冰晶宫殿 · 破绽锁定！', 'interrupt');
+    emitCombatVoiceCue(b, 'insight_success', { clueId, unlockedSkill: skId, charId: 'sylvia' });
     if (!b.headless) safeSfx('ice_shatter');
     if (!b.headless) renderCombatUI();
     return { ok: true, correct: true, unlockedSkill: skId, feedback: finalFb };
@@ -5039,6 +5078,7 @@
       b.metrics.enteredUnderSeep = true;
       spawnBanner(b, '💧 冰面暗流 · 杀阵成型！', 'danger');
       pushLog(b, logTag('cbl-ice', `💧【尺量应急水垫】诺艾儿借薄水垫卸开致命追击退至十五米外（稳守 165 HP + 60 水幕），冰缝下的暗水线已彻底锁死你的脚底！`, true));
+      emitCombatVoiceCue(b, 'boss_phase2_noelle', { enemyId: enemy.id, aiType: 'noelle', charId: 'noelle' });
       return { actualHpLoss, shieldAbsorbed, magicShieldBypassed, enteredUnderSeep: true };
     }
 
@@ -5185,6 +5225,20 @@
       }
       if (b.exposure >= 70) b.exposureWarningTriggered = true;
     }
+
+    // 玩家出手语音锚点：优先 skill_${skillId}，缺失时回退 skill_path_${sk.path}
+    const veCast = (typeof window !== 'undefined' && window.VoiceEngine) ? window.VoiceEngine : null;
+    const primarySkillCue = `skill_${skillId}`;
+    const fallbackPathCue = `skill_path_${sk.path}`;
+    const fallbackPathLower = `skill_path_${String(sk.path || '').toLowerCase()}`;
+    const resolvedSkillCue = (veCast && typeof veCast.hasVoice === 'function' && typeof veCast.makeCombatKey === 'function')
+      ? (veCast.hasVoice(veCast.makeCombatKey(primarySkillCue))
+          ? primarySkillCue
+          : (veCast.hasVoice(veCast.makeCombatKey(fallbackPathCue))
+              ? fallbackPathCue
+              : (veCast.hasVoice(veCast.makeCombatKey(fallbackPathLower)) ? fallbackPathLower : primarySkillCue)))
+      : primarySkillCue;
+    emitCombatVoiceCue(b, resolvedSkillCue, { skillId, path: sk.path, fallbackCueKey: fallbackPathCue, charId: 'sylvia' });
 
     // 自身净化/护盾/场地效果（注意水系先冲净 blind 再执行命中判定！）
     const washedBlindJustNow = !!(sk.clearBlind && p.status.blind > 0);
@@ -5515,6 +5569,7 @@
         if (est.mirrorBlocked) {
           if (!b.headless && !playedBladeClash) { safeSfx('blade_clash'); playedBladeClash = true; }
           pushLog(b, logTag('cbl-muted', `🧊 艾诺随手凝出一面无气泡薄冰挡下「${sk.name}」：「路径太慢，这不算有效命中。」`));
+          emitCombatVoiceCue(b, 'boss_aino_block', { enemyId: e.id, charId: 'aino' });
           return;
         }
 
@@ -5534,6 +5589,7 @@
             spawnBanner(b, '💥 截断破招 INTERRUPT!', 'interrupt');
             triggerBreakJuice(b, 'break_chime');
             playedBreakOrParry = true;
+            emitCombatVoiceCue(b, 'interrupt', { skillId, enemyId: e.id, charId: 'sylvia' });
           }
           if (getSynergyTier(p, 'academy_stars') >= 2) {
             e.status.vuln = (e.status.vuln || 0) + 2;
@@ -5560,6 +5616,7 @@
             spawnBanner(b, '🪨❄️ 窄道滑冰 · 雷纳德按肩锁脉！', 'interrupt');
             triggerBreakJuice(b, 'break_chime');
             playedBreakOrParry = true;
+            emitCombatVoiceCue(b, 'interrupt', { skillId, enemyId: e.id, charId: 'sylvia' });
             pushLog(b, logTag('cbl-star', `🪨❄️ 罗文穿过石碑窄道恰好踏碎你铺开的薄冰，左腿慢了半步！雷纳德按肩灌入土系魔力——合围封锁度 +${narrowBoost}%（${b.sealProgress}%）！`));
           } else if (sk.sealBoost) {
             if (stance === 'CLOSE_LUNGE') {
@@ -5584,6 +5641,7 @@
           spawnBanner(b, '✦ 生根步·斩风瞬反！', 'riposte');
           triggerBreakJuice(b, 'parry');
           playedBreakOrParry = true;
+          emitCombatVoiceCue(b, 'parry', { skillId, enemyId: e.id, charId: 'sylvia' });
           pushLog(b, logTag('cbl-emerald', `✦ 生根步·斩风瞬反！你踏稳砂面迎锋切入真空连刃，震散风暴眼威势并斩获 +1 AP 与连携追击！`, true));
         } else if (est.willRiposte) {
           b.metrics.ripostes += 1;
@@ -5591,6 +5649,7 @@
           spawnBanner(b, '⚡ 覆水迎锋 · 卸力截斩！', 'riposte');
           triggerBreakJuice(b, 'parry');
           playedBreakOrParry = true;
+          emitCombatVoiceCue(b, 'parry', { skillId, enemyId: e.id, charId: 'sylvia' });
         }
 
         const critRate = getPlayerCritChance(p, sk);
@@ -5771,6 +5830,7 @@
               if (omGain > 0) spawnCombatFloat(b, 'player', `+${omGain} MP`, 'mp');
               spawnBanner(b, '✦ ONE MORE · 乘胜追击!', 'riposte');
               pushLog(b, logTag('cbl-star', `✦【弱点击破 · ONE MORE】击碎 ${e.name} 全部弱点锁（行动推条 +${Math.round(pushPct * 100)}%），赢得额外追击 +1 AP、+${omGain} MP！`, true));
+              emitCombatVoiceCue(b, 'one_more', { enemyId: e.id, charId: 'sylvia' });
               if (!b.headless) safeSfx('one_more');
               playedBreakOrParry = true;
             } else {
@@ -5851,6 +5911,7 @@
           if (!getPixelVfxApi()) addCombatTrauma(0.64, b);
           if (!b.headless) safeSfx('ice_shatter');
           spawnBanner(b, '❄️ 艾诺支援 · 极寒冰枪贯落！', 'interrupt');
+          emitCombatVoiceCue(b, 'aino_spear', { enemyId: bossTarget.id, charId: 'aino' });
           pushLog(b, logTag('cbl-cobalt', `❄️【冰原共鸣】峡谷崖顶艾诺射落第 ${b.ainoSpearsFiredInWave} 道无气泡极寒冰枪，重创 ${bossTarget.name} ${spearDmg} 伤害！`, true));
           // 无冰宫基本功路径：本波累计引落第 2 发艾诺冰枪命中领主时，同样震碎腹下晶核！
           if (bossTarget.aiType === 'hulan_lord' && !bossTarget.coreShattered && b.ainoSpearsFiredInWave >= 2) {
@@ -5979,6 +6040,7 @@
     if (b.stageCfg.hitRule) {
       if (b.playerHits >= (b.stageCfg.targetHits || 3)) {
         pushLog(b, logTag('cbl-star', `❄️ 冰珠弹在艾诺手背上！艾诺微怔：「……这算命中。三击已满，你赢了。」`, true));
+        emitCombatVoiceCue(b, 'boss_aino_surrender', { enemyId: 'aino', charId: 'aino' });
         finishBattle(b, true, 'three_hits');
         return true;
       }
@@ -6274,6 +6336,7 @@
       if (intent.selfFizzleIfLowMp && e.mp != null && e.mp < intent.mpCost) {
         b.metrics.manaFizzleWin = true;
         pushLog(b, logTag('cbl-ice', `💨 狂躁的气流骤然散去！爱丽丝晃了一下：「……没魔力了。……认输。」`, true));
+        emitCombatVoiceCue(b, 'boss_alice_surrender', { enemyId: e.id, charId: 'alice' });
         e.hp = 0;
         if (checkImmediateVictoryOrNextWave(b, { fromEndTurn: true, bankedAp: banked })) {
           if (!b.headless) renderCombatUI();
@@ -6375,6 +6438,7 @@
             pushLog(b, logTag('cbl-emerald', `🌪️ ${e.name} 御风震散你的「风行残像」，余岚仍旧破风袭身！`));
           } else {
             pushLog(b, logTag('cbl-emerald', `💨 「风行残像」碎裂，你真身避开了 ${e.name} 的「${intent.moveName}」！`));
+            emitCombatVoiceCue(b, 'dodge', { enemyId: e.id, charId: 'sylvia' });
             queuePixelAction(b, { type: 'enemy_attack', enemyIdx: b.enemies.indexOf(e), enemy: e, intent, hpLoss: 0, evaded: true, targetActorKey: 'player' });
             if (hasRelic(p, 'alice_flower_cake')) {
               const beforeMp = p.mp;
@@ -6414,6 +6478,7 @@
             spawnBanner(b, '⚡ 生根侧滑 · 卸力破闪！', 'riposte');
             pushLog(b, logTag('cbl-emerald', `🗡️ 你沉膝侧滑卸开「${intent.moveName}」，震散其闪避架势并顺势削出 ${riposteDmg} 伤害（下一记送刀强化）！`));
           }
+          emitCombatVoiceCue(b, 'parry', { enemyId: e.id, charId: 'sylvia' });
           const ripIdx = b.enemies.indexOf(e);
           queueHitPulse(b, 'enemy', ripIdx);
           queueElementVFX(b, 'sword', 'enemy', ripIdx);
@@ -6535,6 +6600,7 @@
           queueElementVFX(b, eHitVfx, 'player', 0, { skipHitStop: true });
           queuePixelAction(b, { type: 'enemy_attack', enemyIdx: b.enemies.indexOf(e), enemy: e, intent, hpLoss, blocked: false, targetActorKey: 'player', guardedByAlly: allyGuarded ? `ally:${frontAlly.id}` : null });
           if (!b.headless) safeSfx('bad');
+          emitCombatVoiceCue(b, hpLoss >= 45 ? 'player_hit_heavy' : 'player_hit', { hpLoss, enemyId: e.id, charId: 'sylvia' });
           pushLog(b, logTag('cbl-danger', `❗ ${e.name} 施展「${intent.moveName}」，造成 ${hpLoss} 伤害${hpLoss < incoming ? `（护盾抵消 ${incoming - hpLoss}）` : ''}！`));
           if (intent.scoresHit && b.stageCfg.hitRule) {
             const hitGain = (intent.slipStrike && !p.status.rooted) ? 2 : 1;
@@ -6548,6 +6614,7 @@
         } else {
           queuePixelAction(b, { type: 'enemy_attack', enemyIdx: b.enemies.indexOf(e), enemy: e, intent, hpLoss: 0, blocked: true, targetActorKey: 'player', guardedByAlly: allyGuarded ? `ally:${frontAlly.id}` : null });
           if (!b.headless) safeSfx('shield_block');
+          emitCombatVoiceCue(b, 'shield_block', { enemyId: e.id, charId: 'sylvia' });
           pushLog(b, logTag('cbl-ice', `🛡️ 你的护盾稳稳挡下了 ${e.name} 的「${intent.moveName}」！`));
         }
 
@@ -6713,6 +6780,7 @@
     syncDerivedBattleState(b);
     spawnBanner(b, `💞 ${meta ? `${meta.icon} ${meta.name}·${meta.title}` : '心念援护'}！`, 'riposte');
     queuePixelAction(b, { type: 'bond_assist', charId: cid });
+    emitCombatVoiceCue(b, `bond_assist_${cid}`, { charId: cid });
     if (!b.headless) safeSfx('egg');
     if (!b.headless) renderCombatUI();
     return { ok: true, charId: cid };
@@ -6797,8 +6865,22 @@
     if (won) {
       saveArenaRecord(b.id, b.grade, b.turn);
       if (!b.headless) safeSfx(b.grade === 'S' ? 'grade_s' : 'level');
+      const winCue = b.grade === 'S' ? 'victory_s' : 'victory';
+      const isSurrenderWin = reason === 'three_hits' || !!(b.metrics && b.metrics.manaFizzleWin);
+      const veWin = (typeof window !== 'undefined' && window.VoiceEngine) ? window.VoiceEngine : null;
+      const activeVid = (veWin && typeof veWin.getCurrentVoiceId === 'function') ? veWin.getCurrentVoiceId() : '';
+      const surrenderPlaying = isSurrenderWin && veWin && typeof veWin.isPlaying === 'function' && veWin.isPlaying()
+        && (activeVid === 'combat__boss_aino_surrender' || activeVid === 'combat__boss_alice_surrender');
+      if (!b.headless && surrenderPlaying && typeof veWin.onEndedOnce === 'function') {
+        veWin.onEndedOnce(() => {
+          if (activeBattle === b) emitCombatVoiceCue(b, winCue, { grade: b.grade, stageId: b.id, charId: 'sylvia' });
+        });
+      } else {
+        emitCombatVoiceCue(b, winCue, { grade: b.grade, stageId: b.id, charId: 'sylvia' });
+      }
     } else {
       if (!b.headless) safeSfx('bad');
+      emitCombatVoiceCue(b, 'defeat', { reason: b.endReason, stageId: b.id, charId: 'sylvia' });
     }
     applyStageRewardsToGame(b);
 
@@ -8331,6 +8413,9 @@
   function exitBattle(won, opts) {
     opts = opts || {};
     const b = activeBattle;
+    if (typeof window !== 'undefined' && window.VoiceEngine && typeof window.VoiceEngine.stop === 'function') {
+      try { window.VoiceEngine.stop({ reason: 'battle_exit' }); } catch (e) {}
+    }
     activeBattle = null;
     hoveredSkillId = null;
     armedSkillId = null;
@@ -8618,6 +8703,19 @@
       resetBattleDomForStart(bs);
       if (document.body) document.body.classList.add('cb-battle-active');
       renderCombatUI();
+      const stageIntroVoiceMap = {
+        beatrice_11:     { cueKey: 'boss_beatrice_intro',  charId: 'beatrice' },
+        rowan_graveyard: { cueKey: 'reno_graveyard_start', charId: 'reno' },
+        alice_9:         { cueKey: 'boss_alice_intro',     charId: 'alice' },
+        aino_sparring:   { cueKey: 'boss_aino_intro',      charId: 'aino' },
+        wind_god_eye:    { cueKey: 'boss_fengshen_intro',  charId: 'fengshen' },
+      };
+      const introVoice = stageIntroVoiceMap[b.id];
+      if (introVoice) {
+        emitCombatVoiceCue(b, introVoice.cueKey, { stageId: b.id, waveIdx: 0, charId: introVoice.charId, fallbackCueKey: `stage_start_${b.id}` });
+      } else {
+        emitCombatVoiceCue(b, `stage_start_${b.id}`, { stageId: b.id, waveIdx: 0, charId: 'sylvia' });
+      }
     }
     return b;
   }
@@ -8690,6 +8788,7 @@
     resetBattleDomForStart(bs);
     if (typeof document !== 'undefined' && document.body) document.body.classList.add('cb-battle-active');
     renderCombatUI();
+    emitCombatVoiceCue(b, `stage_start_${b.id}`, { stageId: b.id, waveIdx: 0, charId: 'sylvia' });
     return b;
   }
 

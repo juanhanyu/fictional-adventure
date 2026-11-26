@@ -203,6 +203,21 @@ let bgmUserPausedTitle = false; // 用户在标题曲库试听中主动暂停标
 let _bgmSeq = 0;          // 单调递增操作序号，彻底杜绝旧淡出回调反向打断/压零新曲
 let bgmOverlayStack = []; // 瞬态全屏氛围界面栈（arena / deduction / ending）
 let bgmVolume = (()=>{ try { const v=parseFloat(localStorage.getItem(MUSIC_VOL_KEY)); return Number.isFinite(v)?Math.max(0,Math.min(1,v)):0.5; } catch(e){ return 0.5; } })();
+let bgmDuckGain = 1.0;
+
+function bgmEffectiveVolume(){
+  return (bgmMuted || muted) ? 0 : Math.max(0, Math.min(1, bgmVolume * bgmDuckGain));
+}
+function bgmSetDuck(ratio, ms){
+  const n = Number(ratio);
+  bgmDuckGain = Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 1.0;
+  const el = bgmEl;
+  if(!el || !bgmKey) return bgmDuckGain;
+  const target = bgmEffectiveVolume();
+  const dur = ms != null ? Math.max(0, Number(ms) || 0) : 180;
+  bgmFadeTo(el, target, dur);
+  return bgmDuckGain;
+}
 
 function isJsdomEnv(){
   try { return typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent || ''); }
@@ -286,7 +301,7 @@ function bgmStop(fade=true){
   };
   if(fade && !el.paused && el.volume > 0.005){
     bgmCancelFade(el);
-    try{ el.volume = Math.min(el.volume, (bgmMuted||muted)?0:bgmVolume); }catch(e){}
+    try{ el.volume = Math.min(el.volume, bgmEffectiveVolume()); }catch(e){}
     bgmFadeTo(el, 0, 500, kill);
   } else {
     kill();
@@ -300,7 +315,7 @@ function bgmAudio(){
   catch(e){ try{ el = new Audio(); }catch(e2){ return null; } }
   if(!el.loop) el.loop = true;
   if(!el.preload) el.preload = 'auto';
-  el.volume = (bgmMuted || muted) ? 0 : bgmVolume;
+  el.volume = bgmEffectiveVolume();
   if(!el._bgmEventsBound){
     el._bgmEventsBound = true;
     el.onerror = ()=>{
@@ -341,6 +356,7 @@ function bgmGetState(){
     sceneType: sceneBgmType,
     loc: bgmLoc,
     volume: bgmVolume,
+    duckGain: bgmDuckGain,
     muted: isMuted(),
     unlocked: bgmUnlocked,
     pendingPlay: bgmPendingPlay,
@@ -354,7 +370,7 @@ function bgmPlay(key, {fade=true}={}){
   if(!key) return;
   const file = BGM_FILES[key]; if(!file) return;
   if(bgmKey === key && bgmEl && !bgmEl.paused && !bgmPendingPlay){
-    const wantVol = (bgmMuted || muted) ? 0 : bgmVolume;
+    const wantVol = bgmEffectiveVolume();
     if(!bgmEl._fadeIv && Math.abs((bgmEl.volume || 0) - wantVol) > 0.01){
       try { bgmEl.volume = wantVol; } catch(e){}
     }
@@ -370,7 +386,7 @@ function bgmPlay(key, {fade=true}={}){
     if(_bgmSeq !== seq || bgmKey !== key) return; // 期间又被切换
     const el = bgmAudio(); if(!el) return;
     bgmCancelFade(el);
-    const targetVol = (bgmMuted || muted) ? 0 : bgmVolume;
+    const targetVol = bgmEffectiveVolume();
     try { el.src = encodeAudioPath(file); el.loop = true; } catch(e){ return; } // 逐段 encodeURIComponent 编码空格与 &
     bgmEl = el;
     if(fade && targetVol > 0){
@@ -389,7 +405,7 @@ function bgmPlay(key, {fade=true}={}){
         if(_bgmSeq !== seq) return;
         bgmPendingPlay = true;
         bgmCancelFade(el);
-        try { el.volume = (bgmMuted || muted) ? 0 : bgmVolume; } catch(e){}
+        try { el.volume = bgmEffectiveVolume(); } catch(e){}
         notifyBgmStateChange();
       });
     } else {
@@ -407,7 +423,7 @@ function bgmPlay(key, {fade=true}={}){
   };
   if(prev && prev.src && fade && !wasBlocked){
     bgmCancelFade(prev);
-    try{ prev.volume = Math.min(prev.volume, (bgmMuted||muted)?0:bgmVolume); }catch(e){}
+    try{ prev.volume = Math.min(prev.volume, bgmEffectiveVolume()); }catch(e){}
     bgmFadeTo(prev, 0, 550, ()=>{
       if(_bgmSeq === seq && bgmKey === key){
         startNew();
@@ -447,8 +463,13 @@ function bgmUnlock(){
       window.CrystalSFX.unlock();
     }
   } catch(e){}
+  try {
+    if(typeof window !== 'undefined' && window.VoiceEngine && typeof window.VoiceEngine.unlock === 'function'){
+      window.VoiceEngine.unlock();
+    }
+  } catch(e){}
   if(bgmKey && bgmEl && bgmEl.src && (bgmEl.paused || bgmPendingPlay)){
-    const targetVol = (bgmMuted || muted) ? 0 : bgmVolume;
+    const targetVol = bgmEffectiveVolume();
     if(!bgmEl._fadeIv){
       try { bgmEl.volume = targetVol; } catch(e){}
     }
@@ -717,7 +738,7 @@ function bgmSyncFromBG(cls, phase, loc){
   bgmPlayType(type);
 }
 function bgmApplyMute(){
-  const target = (bgmMuted || muted) ? 0 : bgmVolume;
+  const target = bgmEffectiveVolume();
   if(!bgmEl){
     if(target > 0 && bgmIsTitleScreenVisible() && !isJsdomEnv()){
       bgmPlayTitle({ fade: true });
@@ -763,7 +784,7 @@ function bgmSetVolume(v, opts){
   }
   if(bgmEl){
     bgmCancelFade(bgmEl);
-    try { bgmEl.volume = (bgmMuted || muted) ? 0 : bgmVolume; } catch(e){}
+    try { bgmEl.volume = bgmEffectiveVolume(); } catch(e){}
   }
   try {
     const pct = Math.round(bgmVolume * 100);
@@ -794,6 +815,11 @@ function setMuted(m){
   try {
     if(typeof window !== 'undefined' && window.CrystalSFX && typeof window.CrystalSFX.setMuted === 'function'){
       window.CrystalSFX.setMuted(next);
+    }
+  } catch(e){}
+  try {
+    if(typeof window !== 'undefined' && window.VoiceEngine && typeof window.VoiceEngine.syncMuted === 'function'){
+      window.VoiceEngine.syncMuted(next);
     }
   } catch(e){}
   if(!next) bgmUnlock();
@@ -2578,7 +2604,7 @@ function advanceDialog(){
     (typeof window.VNUx.isAutoMode === 'function' && window.VNUx.isAutoMode()) ||
     (typeof window.VNUx.isSkipMode === 'function' && window.VNUx.isSkipMode())
   ));
-  // If still typing: complete the line only (stay on this message)
+  // If still typing: complete the line only (stay on this message) — 绝不中断当前语音
   if(typing){
     if(!isAutoOrSkip) sfx('ui_tick', { gain: 0.42 });
     skipType();
@@ -2586,11 +2612,102 @@ function advanceDialog(){
   }
   // Message fully shown: go next
   if(lineCB){
+    if(typeof window !== 'undefined' && window.VoiceEngine && typeof window.VoiceEngine.shouldInterruptOnAdvance === 'function' && window.VoiceEngine.shouldInterruptOnAdvance()){
+      window.VoiceEngine.stop({ reason: 'advance' });
+    }
     if(!isAutoOrSkip) sfx('ui_tick', { gain: 0.46 });
     const fn = lineCB;
     lineCB = null;
     try { fn(); } catch(err){ console.error('lineCB error', err); enterFreeRoam(); }
   }
+}
+
+function collectNextVoicePrefetch(list, startIdx, sceneId){
+  const out = [];
+  if(!Array.isArray(list)) return out;
+  for(let k = startIdx; k < list.length && out.length < 2; k++){
+    const item = list[k];
+    if(!item) continue;
+    if(typeof item === 'string'){
+      out.push({ sceneId, charId: null, speaker: null, text: item });
+      continue;
+    }
+    if(typeof item === 'object' && typeof item.text === 'string' && item.text){
+      let pChar = item.ch || null;
+      if(!pChar && Array.isArray(item.portraits) && item.portraits.length){
+        const act = item.portraits.find(p => p && p.active !== false);
+        if(act) pChar = act.id;
+      }
+      const isMono = !item.ch && !item.speaker && Array.isArray(item.portraits)
+        && item.portraits.length === 1 && item.portraits[0] && item.portraits[0].active === true;
+      const hasSpk = !!(item.ch || item.speaker || item.voice);
+      out.push({
+        sceneId,
+        charId: hasSpk ? pChar : (isMono ? item.portraits[0].id : null),
+        speaker: item.speaker || null,
+        text: item.text,
+        explicitVoice: item.voice || null
+      });
+    }
+  }
+  return out;
+}
+
+function triggerLineVoice(L, list, nextIdx){
+  const ve = (typeof window !== 'undefined' && window.VoiceEngine) ? window.VoiceEngine : null;
+  if(!ve) return null;
+  const text = typeof L === 'string' ? L : (L && typeof L.text === 'string' ? L.text : '');
+  if(!text) return null;
+  if(typeof L === 'object' && L && L._voiceKind === 'roam_talk'){
+    const rawChar = L.ch || curSpeakerId || null;
+    const resolved = ve.resolveCharId ? ve.resolveCharId(rawChar, L.speaker || '', 'roam') : (rawChar || '');
+    const vid = resolved ? ve.makeInteractiveKey('roam_talk', resolved, text) : '';
+    if(resolved && typeof ve.playInteractive === 'function'){
+      ve.playInteractive('roam_talk', resolved, text, { speaker: L.speaker || '', updateReplaySlot: true, ignoreSkip: false });
+    }
+    return vid || null;
+  }
+  const scId = currentScene || 'roam';
+  const isObj = !!(L && typeof L === 'object');
+  const hasSpk = isObj && !!(L.ch || L.speaker || L.voice);
+  const isMono = isObj && !L.ch && !L.speaker && Array.isArray(L.portraits)
+    && L.portraits.length === 1 && L.portraits[0] && L.portraits[0].active === true;
+  const rawChar = hasSpk ? (L.ch || curSpeakerId || null) : (isMono ? (L.portraits[0].id || null) : null);
+  const rawSpk = isObj ? (L.speaker || null) : null;
+  const resolved = ve.resolveCharId ? ve.resolveCharId(rawChar, rawSpk, scId) : (rawChar || '');
+  const explicitVoice = isObj && L.voice ? L.voice : null;
+  const storyVoiceId = explicitVoice || (typeof ve.makeStoryKey === 'function' ? ve.makeStoryKey(scId, resolved || 'narrator', text) : '');
+  const upcoming = collectNextVoicePrefetch(list, nextIdx, scId);
+
+  // 若主线 story key 未在清单命中，回退查询 branch 支线键（兼容 branching-director 独立支线与蝴蝶效应行）
+  if(!explicitVoice && resolved && storyVoiceId && typeof ve.hasVoice === 'function' && !ve.hasVoice(storyVoiceId) && typeof ve.makeInteractiveKey === 'function'){
+    const branchVoiceId = ve.makeInteractiveKey('branch', resolved, text);
+    if(branchVoiceId && ve.hasVoice(branchVoiceId)){
+      if(typeof ve.playStoryLine === 'function'){
+        ve.playStoryLine({
+          sceneId: scId,
+          charId: resolved,
+          speaker: rawSpk,
+          text,
+          explicitVoice: branchVoiceId,
+          nextLines: upcoming
+        });
+      }
+      return branchVoiceId;
+    }
+  }
+
+  if(typeof ve.playStoryLine === 'function'){
+    ve.playStoryLine({
+      sceneId: scId,
+      charId: rawChar,
+      speaker: rawSpk,
+      text,
+      explicitVoice,
+      nextLines: upcoming
+    });
+  }
+  return storyVoiceId || null;
 }
 
 function applyLineEffects(L){
@@ -2712,7 +2829,8 @@ function playLines(lines, done){
       // plain string
       if(typeof L === 'string'){
         setSpeaker(null);
-        if(typeof VNUx!=='undefined'&&VNUx.recordLine) VNUx.recordLine(null, L);
+        const voiceId = triggerLineVoice(L, list, i);
+        if(typeof VNUx!=='undefined'&&VNUx.recordLine) VNUx.recordLine({ speaker: null, text: L, voiceId });
         typeText(L, ()=>{ if(gen===lineGen) next(); });
         return;
       }
@@ -2754,12 +2872,19 @@ function playLines(lines, done){
           // 台词：ch 为说话人（彩色），否则为旁白（白色），逐字快速打出
           const isNarr = !L.ch;
           const spk = L.speaker || (L.ch ? CHARS[L.ch]?.short : null);
-          if(typeof VNUx!=='undefined'&&VNUx.recordLine) VNUx.recordLine({ speaker: spk, charId: L.ch || curSpeakerId, text: L.text || '', kind: 'cg' });
+          const cgVoiceId = triggerLineVoice(L, list, i);
+          if(typeof VNUx!=='undefined'&&VNUx.recordLine) VNUx.recordLine({ speaker: spk, charId: L.ch || curSpeakerId, text: L.text || '', kind: 'cg', voiceId: cgVoiceId });
+          const goNextAfterCg = ()=>{
+            if(typeof window !== 'undefined' && window.VoiceEngine && typeof window.VoiceEngine.shouldInterruptOnAdvance === 'function' && window.VoiceEngine.shouldInterruptOnAdvance()){
+              window.VoiceEngine.stop({ reason: 'advance' });
+            }
+            if(gen===lineGen) next();
+          };
           cgTextType(spk, L.text || '', isNarr, ()=>{   // 打字完成后的回调
             if(gen!==lineGen) return;
-            $('cg-screen').onclick = ()=>{ $('cg-screen').onclick=null; if(gen===lineGen) next(); };
+            $('cg-screen').onclick = ()=>{ $('cg-screen').onclick=null; goNextAfterCg(); };
           });
-          // 打字过程中点击：立刻补全整句（不推进），等再次点击才推进
+          // 打字过程中点击：立刻补全整句（不推进、不停语音），等再次点击才推进
           const cgAdvance = ()=>{
             if(cgTyping){
               cgTyping=false;
@@ -2767,11 +2892,11 @@ function playLines(lines, done){
               // 立即显示完整台词并进入“点一下推进”状态
               const box=$('cg-text');
               box.innerHTML = cgSpeakerHtml + cgLineHtml;
-              $('cg-screen').onclick = ()=>{ $('cg-screen').onclick=null; if(gen===lineGen) next(); };
+              $('cg-screen').onclick = ()=>{ $('cg-screen').onclick=null; goNextAfterCg(); };
               return;
             }
             $('cg-screen').onclick = null;
-            if(gen===lineGen) next();
+            goNextAfterCg();
           };
           $('cg-screen').onclick = cgAdvance;
           return;
@@ -2781,11 +2906,13 @@ function playLines(lines, done){
 
       // chapter card — pause then continue this line's text or next
       if(L.card){
+        const nextIdxAfterCard = i;
         showCard(L.card.vol, L.card.t, L.card.s, ()=>{
           if(gen !== lineGen) return;
           if(L.text){
             setSpeaker(L.speaker||null, curSpeakerId);
-            if(typeof VNUx!=='undefined'&&VNUx.recordLine) VNUx.recordLine(L.speaker||null, L.text);
+            const cardVoiceId = triggerLineVoice(L, list, nextIdxAfterCard);
+            if(typeof VNUx!=='undefined'&&VNUx.recordLine) VNUx.recordLine({ speaker: L.speaker||null, charId: (L.ch || L.speaker) ? (L.ch || curSpeakerId) : null, text: L.text, voiceId: cardVoiceId });
             typeText(L.text, ()=>{ if(gen===lineGen) next(); });
           } else next();
         });
@@ -2796,7 +2923,8 @@ function playLines(lines, done){
         awaitingChoice = true;
         setAwaitingChoiceUI(true);
         setSpeaker(L.speaker||null, curSpeakerId);
-        if(typeof VNUx!=='undefined'&&VNUx.recordLine&&L.text) VNUx.recordLine(L.speaker||null, L.text);
+        const choiceVoiceId = L.text ? triggerLineVoice(L, list, i) : null;
+        if(typeof VNUx!=='undefined'&&VNUx.recordLine&&L.text) VNUx.recordLine({ speaker: L.speaker||null, charId: (L.ch || L.speaker) ? (L.ch || curSpeakerId) : null, text: L.text, voiceId: choiceVoiceId });
         clearInterval(typeTimer);
         typing = false;
         typeDoneCB = null;
@@ -2832,7 +2960,8 @@ function playLines(lines, done){
       if(L.freeRoam){
         if(L.text){
           setSpeaker(L.speaker||null, curSpeakerId);
-          if(typeof VNUx!=='undefined'&&VNUx.recordLine) VNUx.recordLine({ speaker: L.speaker||null, charId: curSpeakerId, text: L.text });
+          const roamVoiceId = triggerLineVoice(L, list, i);
+          if(typeof VNUx!=='undefined'&&VNUx.recordLine) VNUx.recordLine({ speaker: L.speaker||null, charId: curSpeakerId, text: L.text, voiceId: roamVoiceId });
           typeText(L.text, ()=>{
             if(gen !== lineGen) return;
             enterFreeRoam();
@@ -2868,7 +2997,8 @@ function playLines(lines, done){
       // text line
       if(L.text){
         setSpeaker(L.speaker||null, curSpeakerId);
-        if(typeof VNUx!=='undefined'&&VNUx.recordLine) VNUx.recordLine({ speaker: L.speaker||null, charId: curSpeakerId, text: L.text });
+        const lineVoiceId = triggerLineVoice(L, list, i);
+        if(typeof VNUx!=='undefined'&&VNUx.recordLine) VNUx.recordLine({ speaker: L.speaker||null, charId: curSpeakerId, text: L.text, voiceId: lineVoiceId });
         typeText(L.text, ()=>{ if(gen===lineGen) next(); });
         return;
       }
@@ -3689,6 +3819,11 @@ function showRoamGreeting(charId, locId=S.loc){
     el.classList.toggle('active',active);
     el.classList.toggle('dim',!active);
   });
+  const detail = ROAM_PLACE_DETAIL[locId] || (LOCS[locId]?.name ? LOCS[locId].name + '今天很安静。' : '这里今天很安静。');
+  const pureGreeting = greeting.endsWith(detail) ? greeting.slice(0, greeting.length - detail.length).trim() : greeting.trim();
+  if(pureGreeting && typeof window !== 'undefined' && window.VoiceEngine && typeof window.VoiceEngine.playInteractive === 'function'){
+    window.VoiceEngine.playInteractive('roam_greet', charId, pureGreeting, { updateReplaySlot: true });
+  }
   save();
   return true;
 }
@@ -4056,7 +4191,9 @@ function talkLines(id){
     const source = (eligible && eligible.length) ? eligible : pool;
     const lines = pick(source).map(L=>{
       // deep copy plain objects
-      return Object.assign({}, L);
+      const copy = Object.assign({}, L);
+      if(copy && (copy.ch || copy.speaker)) copy._voiceKind = 'roam_talk';
+      return copy;
     });
     return lines;
   }
@@ -5507,6 +5644,10 @@ function openPanel(tab, opts){
     const cur = getSettings();
     const bgmPct = Math.round(bgmVolume * 100);
     const sfxPct = Math.round(sfxVolume * 100);
+    const liveVoiceVol = (typeof window !== 'undefined' && window.VoiceEngine && typeof window.VoiceEngine.getVolume === 'function')
+      ? window.VoiceEngine.getVolume()
+      : (Number.isFinite(Number(cur.voiceVol)) ? Number(cur.voiceVol) : 0.90);
+    const voicePct = Math.round(Math.max(0, Math.min(1, liveVoiceVol)) * 100);
     const brightVal = Number.isFinite(Number(cur.bright)) ? Number(cur.bright) : 1;
     const brightPct = Math.round(brightVal * 100);
     body.innerHTML = `<div class="p-stat" style="grid-template-columns:1fr">
@@ -5514,14 +5655,17 @@ function openPanel(tab, opts){
       <input type="range" id="set-bgm" min="0" max="100" value="${bgmPct}" style="width:100%">
       <div class="set-row-head" style="margin-top:14px"><b>音效音量 (SFX)</b><span id="set-sfx-val" class="set-val">${sfxPct}%</span></div>
       <input type="range" id="set-sfx" min="0" max="100" value="${sfxPct}" style="width:100%">
+      <div class="set-row-head" style="margin-top:14px"><b>角色语音音量</b><span id="set-voice-val" class="set-val">${voicePct}%</span></div>
+      <input type="range" id="set-voice" min="0" max="100" value="${voicePct}" style="width:100%">
       <div class="set-row-head" style="margin-top:14px"><b>背景明度</b><span id="set-bright-val" class="set-val">${brightPct}%</span></div>
       <input type="range" id="set-bright" min="50" max="150" value="${brightPct}" style="width:100%">
-      <div style="color:#526078;font-size:12px">100% 为默认画面明度，调节背景明度不影响音乐播放</div>
+      <div style="color:#526078;font-size:12px">100% 为默认画面明度，调节背景明度不影响音乐与语音播放</div>
     </div>
     <button class="tbtn" id="set-reset" style="margin-top:18px">全部恢复默认</button>`;
     // 同步绑定事件，杜绝刚打开弹窗时立即交互漏绑
     const bm=$('set-bgm'); if(bm) bm.oninput=()=>{ setSetting('bgm', bm.value/100); };
     const sx=$('set-sfx'); if(sx) sx.oninput=()=>{ setSetting('sfx', sx.value/100); };
+    const vc=$('set-voice'); if(vc) vc.oninput=()=>{ setSetting('voiceVol', vc.value/100); };
     const br=$('set-bright'); if(br) br.oninput=()=>{ setSetting('bright', br.value/100); };
     const rs=$('set-reset'); if(rs) rs.onclick=()=>{ resetSettings(); openPanel('settings'); toast('已恢复默认设置'); };
   }
@@ -5540,15 +5684,56 @@ function openPanel(tab, opts){
 
 // ========== 设置（音量/亮度等，持久化） ==========
 function getSettings(){
-  try { return Object.assign({bgm:0.5, sfx:0.65, bright:1}, JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')); }
-  catch(e){ return {bgm:0.5, sfx:0.65, bright:1}; }
+  try { return Object.assign({bgm:0.5, sfx:0.65, voiceVol:0.90, voiceEnabled:true, bright:1}, JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')); }
+  catch(e){ return {bgm:0.5, sfx:0.65, voiceVol:0.90, voiceEnabled:true, bright:1}; }
 }
 function setSetting(k, v){
   const s = getSettings(); s[k]=v;
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch(e){}
-  // 只应用被改动的项：改亮度绝不触碰 bgm，避免滑动亮度时 BGM 反复淡入淡出卡顿
+  // 只应用被改动的项：改亮度绝不触碰 bgm / voice，避免滑动亮度时音频反复淡入淡出卡顿
   if(k==='bgm'){ bgmSetVolume(v, { syncSettings: false }); }
   else if(k==='sfx'){ sfxSetVolume(v, { syncSettings: false }); }
+  else if(k==='voiceVol'){
+    const nv = Math.max(0, Math.min(1, Number.isFinite(Number(v)) ? Number(v) : 0.90));
+    try {
+      const pct = Math.round(nv * 100);
+      const sl = $('set-voice');
+      if(sl && Number(sl.value) !== pct) sl.value = String(pct);
+      const vl = $('set-voice-val');
+      if(vl) vl.textContent = pct + '%';
+    } catch(e){}
+    try {
+      if(typeof window !== 'undefined' && window.VoiceEngine && typeof window.VoiceEngine.setVolume === 'function'){
+        window.VoiceEngine.setVolume(nv, { syncSettings: false });
+      } else {
+        const raw = JSON.parse(localStorage.getItem(VN_PREFS_KEY) || '{}');
+        if(raw && typeof raw === 'object'){
+          raw.voiceVol = nv;
+          localStorage.setItem(VN_PREFS_KEY, JSON.stringify(raw));
+        }
+        if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.syncExternalAudioPrefs === 'function'){
+          window.VNUx.syncExternalAudioPrefs({ voiceVol: nv });
+        }
+      }
+    } catch(e){}
+  }
+  else if(k==='voiceEnabled'){
+    const flagOn = !!v;
+    try {
+      if(typeof window !== 'undefined' && window.VoiceEngine && typeof window.VoiceEngine.setEnabled === 'function'){
+        window.VoiceEngine.setEnabled(flagOn, { syncSettings: false });
+      } else {
+        const raw = JSON.parse(localStorage.getItem(VN_PREFS_KEY) || '{}');
+        if(raw && typeof raw === 'object'){
+          raw.voiceEnabled = flagOn;
+          localStorage.setItem(VN_PREFS_KEY, JSON.stringify(raw));
+        }
+        if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.syncExternalAudioPrefs === 'function'){
+          window.VNUx.syncExternalAudioPrefs({ voiceEnabled: flagOn });
+        }
+      }
+    } catch(e){}
+  }
   else if(k==='bright'){
     applyBrightness(v);
     try {
@@ -5573,17 +5758,27 @@ function resetSettings(){
   try { localStorage.removeItem(SETTINGS_KEY); } catch(e){}
   bgmSetVolume(0.5, { syncSettings: false });
   sfxSetVolume(0.65, { syncSettings: false });
+  try {
+    if(typeof window !== 'undefined' && window.VoiceEngine){
+      if(typeof window.VoiceEngine.setVolume === 'function') window.VoiceEngine.setVolume(0.90, { syncSettings: false, syncVnPrefs: false, notifyVnUx: false });
+      if(typeof window.VoiceEngine.setEnabled === 'function') window.VoiceEngine.setEnabled(true, { syncSettings: false, syncVnPrefs: false, notifyVnUx: false });
+      if(typeof window.VoiceEngine.setAutoWait === 'function') window.VoiceEngine.setAutoWait(true, { syncSettings: false, syncVnPrefs: false, notifyVnUx: false });
+    }
+  } catch(e){}
   applyBrightness(1);
   try {
     const raw = JSON.parse(localStorage.getItem(VN_PREFS_KEY) || '{}');
     if(raw && typeof raw === 'object'){
       raw.bgmVol = 0.5;
       raw.sfxVol = 0.65;
+      raw.voiceVol = 0.90;
+      raw.voiceEnabled = true;
+      raw.voiceAutoWait = true;
       raw.bright = 1;
       localStorage.setItem(VN_PREFS_KEY, JSON.stringify(raw));
     }
     if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.syncExternalAudioPrefs === 'function'){
-      window.VNUx.syncExternalAudioPrefs({ bgmVol: 0.5, sfxVol: 0.65 });
+      window.VNUx.syncExternalAudioPrefs({ bgmVol: 0.5, sfxVol: 0.65, voiceVol: 0.90, voiceEnabled: true, voiceAutoWait: true });
     }
   } catch(e){}
 }
@@ -5594,6 +5789,14 @@ function applySettings(){
   if(rawStored){
     if(Number.isFinite(Number(s.bgm))) bgmSetVolume(s.bgm, { syncSettings: false, syncVnPrefs: false });
     if(Number.isFinite(Number(s.sfx))) sfxSetVolume(s.sfx, { syncSettings: false, syncVnPrefs: false });
+    if(typeof window !== 'undefined' && window.VoiceEngine){
+      if(Number.isFinite(Number(s.voiceVol)) && typeof window.VoiceEngine.setVolume === 'function'){
+        window.VoiceEngine.setVolume(s.voiceVol, { syncSettings: false, syncVnPrefs: false, notifyVnUx: false });
+      }
+      if(typeof s.voiceEnabled === 'boolean' && typeof window.VoiceEngine.setEnabled === 'function'){
+        window.VoiceEngine.setEnabled(s.voiceEnabled, { syncSettings: false, syncVnPrefs: false, notifyVnUx: false });
+      }
+    }
   }
   applyBrightness(s.bright);
 }
@@ -5701,6 +5904,7 @@ function stepChain(){
   const sc = SCENES[id];
   if(!sc){ stepChain(); return; }
   currentScene = id;
+  if(typeof window!=='undefined'&&window.VoiceEngine&&typeof window.VoiceEngine.stop==='function') window.VoiceEngine.stop({ reason: 'scene_change', clearCurrent: true });
   if(typeof VNUx!=='undefined'&&VNUx.onSceneStart) VNUx.onSceneStart(id);
   S.storyPending=storyChain.queue.slice(currentIdx);
   resetDialogAdvanceState();
@@ -5750,6 +5954,7 @@ function runScene(id){
   const sc = SCENES[id];
   if(!sc){ console.warn('missing scene', id); toast('剧情缺失：'+id); enterFreeRoam(); return; }
   currentScene = id;
+  if(typeof window!=='undefined'&&window.VoiceEngine&&typeof window.VoiceEngine.stop==='function') window.VoiceEngine.stop({ reason: 'scene_change', clearCurrent: true });
   if(typeof VNUx!=='undefined'&&VNUx.onSceneStart) VNUx.onSceneStart(id);
   resetDialogAdvanceState();
   S.freeRoam = false;
@@ -6345,6 +6550,7 @@ if($('btn-title-settings')){
 }
 function returnToTitle(opts){
   opts = opts || {};
+  if(typeof window!=='undefined'&&window.VoiceEngine&&typeof window.VoiceEngine.stop==='function') window.VoiceEngine.stop({ reason: 'return_title', clearCurrent: true });
   save();
   roamDialogActive = false;
   closeHudMoreDrawer();
@@ -6937,6 +7143,8 @@ if(typeof window !== 'undefined'){
   window.bgmStop = typeof bgmStop !== 'undefined' ? bgmStop : ()=>{};
   window.bgmSetVolume = typeof bgmSetVolume !== 'undefined' ? bgmSetVolume : ()=>{};
   window.bgmGetVolume = ()=>bgmVolume;
+  window.bgmSetDuck = typeof bgmSetDuck !== 'undefined' ? bgmSetDuck : ()=>1;
+  window.bgmGetDuck = ()=>bgmDuckGain;
   window.bgmUnlock = typeof bgmUnlock !== 'undefined' ? bgmUnlock : ()=>{};
   window.bgmPlayType = typeof bgmPlayType !== 'undefined' ? bgmPlayType : ()=>{};
   window.bgmRestoreScene = typeof bgmRestoreScene !== 'undefined' ? bgmRestoreScene : ()=>{};

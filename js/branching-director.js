@@ -272,26 +272,34 @@
   }
 
   /**
-   * 为舞台立绘槽位同步可见的情绪角标与光晕（让单图立绘角色在主舞台也有鲜明 Galgame 神态演出）
+   * 为舞台立绘槽位同步 data-emo 状态钩子，并清理残留的旧 .p-emo-badge 情绪文字角标
+   * （主线舞台完全依赖立绘精细表情与细微光影过渡，绝不生成角色旁两字文字标签）
    */
   function syncStageEmotionBadge(slotEl, charId, emotion) {
     if (!slotEl || typeof document === 'undefined') return;
     var emo = String(emotion || 'normal').trim();
     slotEl.setAttribute('data-emo', emo);
-    var badge = slotEl.querySelector('.p-emo-badge');
-    if (!badge) {
-      badge = document.createElement('div');
-      badge.className = 'p-emo-badge hidden';
-      badge.setAttribute('aria-hidden', 'true');
-      slotEl.appendChild(badge);
+    if (typeof slotEl.querySelectorAll === 'function') {
+      var staleBadges = slotEl.querySelectorAll('.p-emo-badge');
+      for (var i = 0; i < staleBadges.length; i++) {
+        staleBadges[i].textContent = '';
+        if (typeof staleBadges[i].remove === 'function') {
+          staleBadges[i].remove();
+        } else if (staleBadges[i].parentNode) {
+          staleBadges[i].parentNode.removeChild(staleBadges[i]);
+        }
+      }
+    } else if (typeof slotEl.querySelector === 'function') {
+      var badge = slotEl.querySelector('.p-emo-badge');
+      if (badge) {
+        badge.textContent = '';
+        if (typeof badge.remove === 'function') {
+          badge.remove();
+        } else if (badge.parentNode) {
+          badge.parentNode.removeChild(badge);
+        }
+      }
     }
-    if (!charId || emo === 'normal' || !STAGE_EMO_BADGES[emo]) {
-      badge.className = 'p-emo-badge hidden';
-      badge.textContent = '';
-      return;
-    }
-    badge.textContent = STAGE_EMO_BADGES[emo];
-    badge.className = 'p-emo-badge emo-' + emo;
   }
 
   function showCausalRipple(text, kind) {

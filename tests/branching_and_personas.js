@@ -394,20 +394,35 @@ function ok(label, cond) {
     && win.__getS().inv.some(x => x.id === 'ebony_sword')
     && win.__getS().inv.some(x => x.id === 'northwind_pass'));
 
-  console.log('\n===== 5. 舞台单图角色情绪角标 + 酒馆尾注双向联动 + CSS 层级检验 =====');
+  console.log('\n===== 5. 舞台角色情绪钩子（零情绪文字角标） + 酒馆尾注双向联动 + CSS 层级检验 =====');
   win.show('game-screen', 1);
   win.applyLineEffects({ portraits: [{ id: 'sylvia', slot: 'left', active: false }, { id: 'charlotte', slot: 'right', emo: 'normal', active: true }] });
   const charlotteSlot = win.document.querySelector('.p-slot[data-char="charlotte"]');
-  const normalBadgeHidden = !!charlotteSlot && (!charlotteSlot.querySelector('.p-emo-badge') || charlotteSlot.querySelector('.p-emo-badge').classList.contains('hidden'));
+  const normalNoBadge = !!charlotteSlot && !charlotteSlot.querySelector('.p-emo-badge');
+  // 注入模拟旧残留 .p-emo-badge，验证切换情绪时自动清理且不再向 .p-slot 渲染可见文字角标
+  if (charlotteSlot) {
+    const staleBadge = win.document.createElement('div');
+    staleBadge.className = 'p-emo-badge emo-happy';
+    staleBadge.textContent = '浅笑';
+    charlotteSlot.appendChild(staleBadge);
+  }
   Director.applyAIOutcome('charlotte', { emotion: 'shy', causal_deltas: { axis: 'none', delta: 0, clue: 'none' }, memory_echo: '' }, { silent: true });
-  const shyBadge = charlotteSlot && charlotteSlot.querySelector('.p-emo-badge');
-  ok('单图立绘角色（如夏洛特）切换非 normal 表情时，主舞台实时渲染可见 Galgame 情绪角标（✿ 微赧）',
-    normalBadgeHidden && !!shyBadge && !shyBadge.classList.contains('hidden') && shyBadge.textContent.includes('微赧'));
+  const remainingBadges = charlotteSlot ? charlotteSlot.querySelectorAll('.p-emo-badge') : [];
+  const cssContent = fs.readFileSync(path.join(ROOT, 'css/ai-branching.css'), 'utf8');
+  const styleCssContent = fs.readFileSync(path.join(ROOT, 'style.css'), 'utf8');
+  ok('舞台立绘切换情绪时同步 data-emo="shy"，彻底清理残留且不再向 .p-slot 渲染任何 .p-emo-badge 文字角标（css/ai-branching.css 同步隐藏双保险）',
+    normalNoBadge
+    && !!charlotteSlot
+    && charlotteSlot.getAttribute('data-emo') === 'shy'
+    && remainingBadges.length === 0
+    && /\.p-emo-badge\s*\{[^}]*display:\s*none\s*!important/.test(cssContent));
 
   // 检验 CSS 层级与隐藏模式规则
-  const cssContent = fs.readFileSync(path.join(ROOT, 'css/ai-branching.css'), 'utf8');
-  ok('CSS 层级规范：#hotspots(8) > #portraits(6)，.ai-drawer(42) < .overlay(50)，且兼容 ui-hidden / pov-hidden / cg-mode',
-    /#hotspots\s*\{[^}]*z-index:\s*8/.test(cssContent)
+  ok('CSS 层级规范：#portraits(8) > #css-portraits(7) > #hotspots(6)，.ai-drawer(42) < .overlay(50)，且兼容 ui-hidden / pov-hidden / cg-mode',
+    /#hotspots\s*\{[^}]*z-index:\s*6\b/.test(cssContent)
+    && /#hotspots\s*\{[^}]*z-index:\s*6\b/.test(styleCssContent)
+    && /#css-portraits\s*\{[^}]*z-index:\s*7\b/.test(styleCssContent)
+    && /#portraits\s*\{[^}]*z-index:\s*8\b/.test(styleCssContent)
     && /\.ai-drawer\s*\{[\s\S]*?z-index:\s*42/.test(cssContent)
     && /body\.ui-hidden[\s\S]*?#btn-ai-drawer/.test(cssContent)
     && /body\.cg-mode\s+\.ai-drawer/.test(cssContent));

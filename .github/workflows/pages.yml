@@ -1,0 +1,97 @@
+name: Deploy GitHub Pages (Main Game + Demos)
+
+on:
+  push:
+    branches:
+      - main
+      - preview/demos
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & Deploy Dual-Branch Pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout main (production game)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: _src_main
+          fetch-depth: 1
+
+      - name: Checkout preview/demos (interactive demos)
+        uses: actions/checkout@v4
+        with:
+          ref: preview/demos
+          path: _src_demos
+          fetch-depth: 1
+
+      - name: Assemble _site artifact (main at /, demos at /demos/)
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          mkdir -p _site/demos
+
+          # Copy production game runtime files from main (exclude non-runtime dev/archive assets)
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.agents' \
+            --exclude='tests' \
+            --exclude='tools' \
+            --exclude='references' \
+            --exclude='desktop' \
+            --exclude='server' \
+            --exclude='fictional-adventure-cloud-sandbox-pack.zip' \
+            --exclude='转生千金_1_87.txt' \
+            --exclude='终章_索尔希里奥多_修改版.txt' \
+            _src_main/ _site/
+
+          # Copy standalone interactive demos from preview/demos into /demos/
+          rsync -a \
+            --exclude='.git' \
+            _src_demos/ _site/demos/
+
+          # Bypass Jekyll processing
+          touch _site/.nojekyll
+
+          # Sanity-check required runtime files and total artifact size (< 1 GB limit)
+          for req in index.html game.js style.css manifest.json css js assets Music demos/review_hub.html; do
+            if [ ! -e "_site/$req" ]; then
+              echo "ERROR: Missing required Pages asset: _site/$req" >&2
+              exit 1
+            fi
+          done
+
+          du -sh _site _site/demos
+          TOTAL_MB=$(du -sm _site | awk '{print $1}')
+          echo "Total Pages site size: ${TOTAL_MB} MB"
+          if [ "$TOTAL_MB" -ge 950 ]; then
+            echo "ERROR: _site size (${TOTAL_MB} MB) approaches GitHub Pages 1 GB limit" >&2
+            exit 1
+          fi
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

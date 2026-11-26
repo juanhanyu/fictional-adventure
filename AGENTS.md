@@ -8,6 +8,7 @@
 ## 二、版本控制与行尾纪律
 
 - **分支隔离**：正式改动验收后入库并推送 `origin/main`，提交后确认 `git status --short` 归零且 `HEAD == origin/main`；独立演示页与实验原型统一放 `preview/demos`，严禁混入 `main`。
+- **交互演示与审阅交付**：凡交互式审阅页、多方案竞标与独立 Demo，统一推入 `preview/demos` 分支并通过 GitHub Pages 公开 HTTPS 链接交付（严禁给用户发远端 VM `localhost` 或依赖跨文件相对路径的沙盒 iframe）；遵循单文件 `< 50 MB`、总站 `< 1 GB`、控制推送频次且绝不上传任何密钥或私人凭证。
 - **提交与行尾**：不提交未对齐半成品；编辑已有文件保持原行尾（如 `js/story-vol3.js` 为 CRLF，避免整文件假 diff）。
 
 ## 三、UI 与独立桌面规格

@@ -139,35 +139,102 @@
   margin-right: 0;
 }
 
-/* 3. 敌方底牌名称 (.cb-enemy-card[data-eidx] .cb-e-title)
-   保持原生 block + text-overflow: ellipsis 不破字节点，padding/margin 抵消零撑高并防切阴影 */
+/* 3. 敌方脚下微条名称 (.cb-enemy-card[data-eidx] .cb-e-title)
+   保持原生 inline/block 截断不破字节点，极窄微条内优雅微缩至 12px（@1280 为 11px）绝不撑破 16px 单行 */
 #battle-screen .cb-enemy-card .cb-e-title {
-  line-height: 18px;
-  padding: 2px 0;
-  margin: -2px 0;
+  line-height: 15px;
+  padding: 0;
+  margin: 0;
 }
 
-#battle-screen .cb-enemy-card .cb-e-title > .cb-rank-badge {
+#battle-screen .cb-enemy-card .cb-e-title > .cb-rank-badge,
+#battle-screen .cb-enemy-card .cb-e-title .cb-rank-badge {
+  height: 12px;
+  margin-right: 2px;
   vertical-align: middle;
   transform: translateY(-0.5px);
 }
 
 #battle-screen .cb-enemy-zone.multi-enemies .cb-enemy-card .cb-e-title,
 #battle-screen .cb-enemy-grid.multi-enemies .cb-enemy-card .cb-e-title {
-  line-height: 16px;
-  padding: 1px 0;
-  margin: -1px 0;
+  line-height: 15px;
+  padding: 0;
+  margin: 0;
+}
+
+/* 4. 右下唯一锁定目标详情卡标题 (#cb-target-detail-pane .cb-td-title) 同行居中对齐 */
+#battle-screen #cb-target-detail-pane .cb-td-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-title > .cb-rank-badge,
+#battle-screen #cb-target-detail-pane .cb-td-title .cb-rank-badge {
+  height: 17px;
+  margin-right: 0;
+}
+
+/* 5. 左下等规 1-2 / 3-6 队卡铭牌紧凑适配 */
+#battle-screen #cb-party-panes[data-party-layout="1-2"] .cb-rank-badge {
+  height: 15px;
+  margin-right: 0;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="3-6"] #cb-player-pane .cb-p-name,
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-ally-pane .cb-ally-name,
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-ally-pane .cb-a-name {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 15px;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-rank-badge {
+  height: 11px;
+  margin-right: 2px;
+  vertical-align: middle;
+  transform: translateY(-0.5px);
 }
 
 /* 1280×720 桌面紧凑态精细收敛 */
 @media (max-width: 1360px), (max-height: 760px) {
   #battle-screen #cb-player-pane .cb-p-name {
-    gap: 5px;
+    gap: 4px;
   }
 
   #battle-screen #cb-ally-pane .cb-ally-name,
   #battle-screen .cb-ally-pane .cb-ally-name,
   #battle-screen .cb-ally-pane .cb-a-name {
     gap: 4px;
+  }
+
+  #battle-screen #cb-target-detail-pane .cb-td-title {
+    gap: 4px;
+  }
+
+  #battle-screen #cb-target-detail-pane .cb-td-title > .cb-rank-badge,
+  #battle-screen #cb-target-detail-pane .cb-td-title .cb-rank-badge {
+    height: 15px;
+  }
+
+  #battle-screen #cb-party-panes[data-party-layout="1-2"] .cb-rank-badge {
+    height: 14px;
+  }
+
+  #battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-rank-badge {
+    height: 10.5px;
+  }
+
+  #battle-screen .cb-enemy-card .cb-e-title > .cb-rank-badge,
+  #battle-screen .cb-enemy-card .cb-e-title .cb-rank-badge {
+    height: 11px;
+    margin-right: 2px;
   }
 }

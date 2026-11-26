@@ -7587,6 +7587,1721 @@ body.cb-battle-active #fx {
   }
 }
 
+/* ==================== Z2. 对称剧场雁阵 Stage B（镜面对称雁阵 / 敌脚下微条 / 右下锁定详情卡 / 左下 1-6 队卡） ==================== */
+
+/* 1. 屏幕阅读器隐藏辅助（保留 DOM / innerHTML 供测试与无障碍读取） */
+#battle-screen .cb-sr-only,
+.cb-sr-only {
+  position: absolute !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 2. 隐藏空槽位踏板与交互（严禁对 .cb-slot.is-empty 设 display: none，保证 pickEmptyAllySlot() 坐标测量） */
+#battle-screen .cb-slot.is-empty {
+  pointer-events: none;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+#battle-screen .cb-slot.is-empty .cb-slot-pad {
+  display: none !important;
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* 占槽脚底微光环（替代厚重格板，极简通透地纹） */
+#battle-screen .cb-slot.is-occupied .cb-slot-pad {
+  width: min(76%, 116px);
+  height: 16px;
+  bottom: 8px;
+  opacity: 0.62;
+  clip-path: none;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(125, 211, 252, 0.36) 0%,
+    rgba(22, 88, 235, 0.16) 52%,
+    transparent 78%
+  );
+  transition: opacity 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+#battle-screen .cb-slot.is-occupied .cb-slot-pad::after {
+  display: none;
+}
+
+#battle-screen .cb-ally-grid .cb-slot.is-occupied:has([data-ally-id="reno"]) .cb-slot-pad,
+#battle-screen .cb-ally-grid .cb-slot.slot-ally-reno .cb-slot-pad,
+#battle-screen .cb-ally-grid .cb-slot[data-unit="reno"] .cb-slot-pad {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(239, 224, 190, 0.44) 0%,
+    rgba(198, 139, 62, 0.22) 52%,
+    transparent 78%
+  );
+}
+
+#battle-screen .cb-enemy-grid .cb-slot.is-occupied .cb-slot-pad {
+  bottom: 42px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(209, 52, 86, 0.28) 0%,
+    rgba(22, 88, 235, 0.10) 54%,
+    transparent 78%
+  );
+}
+
+/* 锁定目标脚下微光环（皇家蓝 × 香槟金柔光，严守 Δy === 0px） */
+#battle-screen .cb-enemy-grid .cb-slot.is-targeted .cb-slot-pad,
+#battle-screen .cb-enemy-grid .cb-slot.targeted .cb-slot-pad,
+#battle-screen .cb-enemy-grid .cb-slot:has(.cb-enemy-card.targeted) .cb-slot-pad {
+  opacity: 0.96;
+  width: min(82%, 126px);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(239, 224, 190, 0.56) 0%,
+    rgba(22, 88, 235, 0.44) 44%,
+    rgba(125, 211, 252, 0.24) 68%,
+    transparent 84%
+  );
+}
+
+/* 3. 左右镜像宽屏剧场舞台布局（1440×900 基准，双底角面板脱离流绝对定位，两侧舞台完全对称） */
+#battle-screen .cb-arena-field {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(340px, 32%) minmax(260px, 1fr) minmax(340px, 32%);
+  gap: 0;
+  align-items: stretch;
+  padding: 0;
+  overflow: visible;
+}
+
+#battle-screen .cb-player-stage {
+  position: relative;
+  z-index: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  gap: 0;
+  padding: 0;
+  overflow: visible;
+}
+
+#battle-screen #cb-ally-formation,
+#battle-screen #cb-enemy-zone.cb-enemy-grid,
+#battle-screen #cb-enemy-zone.cb-formation-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 6px 8px;
+  align-items: stretch;
+  justify-items: stretch;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 112px 4px 174px;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+#battle-screen:not(.prism-radial-active) #cb-ally-formation,
+#battle-screen:not(.prism-radial-active) #cb-enemy-zone.cb-enemy-grid,
+#battle-screen:not(.prism-radial-active) #cb-enemy-zone.cb-formation-grid {
+  padding-top: 64px;
+  padding-bottom: 162px;
+}
+
+#battle-screen #cb-ally-formation .cb-ally-slot {
+  padding: 0 2px 10px;
+}
+
+#battle-screen #cb-enemy-zone .cb-enemy-slot,
+#battle-screen #cb-enemy-zone.multi-enemies .cb-enemy-slot {
+  padding: 0 2px 2px;
+}
+
+#battle-screen .cb-slot > .cb-ally-vanguard-slot,
+#battle-screen .cb-slot > .cb-ally-extra-slot {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: visible;
+  pointer-events: none;
+}
+
+#battle-screen .cb-ally-vanguard-slot > .cb-ally-standee,
+#battle-screen .cb-ally-extra-slot > .cb-ally-standee,
+#battle-screen .cb-ally-portrait.has-px-actor {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: visible;
+}
+
+/* 4. 三排景深透视比例（通过 --depth-scale 乘入 --px-scale，严禁对 .cb-slot / .cb-px-actor 套 transform: scale()） */
+#battle-screen .cb-slot[data-row="0"] {
+  --depth-scale: 0.86;
+  z-index: 2;
+}
+
+#battle-screen .cb-slot[data-row="1"] {
+  --depth-scale: 1.00;
+  z-index: 4;
+}
+
+#battle-screen .cb-slot[data-row="2"] {
+  --depth-scale: 1.12;
+  z-index: 6;
+}
+
+#battle-screen .cb-ally-grid .cb-slot,
+#battle-screen #cb-ally-formation .cb-slot {
+  --px-base-scale: 1.56;
+  --px-scale: calc(var(--px-base-scale, 1.56) * var(--depth-scale, 1));
+}
+
+/* 3–6 人满编友军雁阵：三排全占时与敌侧 5–6 人档保持景深视觉对称，杜绝撞入左上 AV 行动条与排间压头 */
+#battle-screen #cb-ally-formation:has(.cb-ally-extra-slot) .cb-slot {
+  --px-base-scale: 1.04;
+  --px-scale: calc(var(--px-base-scale, 1.04) * var(--depth-scale, 1));
+}
+
+#battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-slot,
+#battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-e-stage.has-px-actor {
+  --px-base-scale: 1.68;
+  --px-scale: calc(var(--px-base-scale, 1.68) * var(--depth-scale, 1));
+}
+
+#battle-screen .cb-enemy-grid.multi-enemies .cb-slot,
+#battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor,
+#battle-screen .cb-enemy-grid.multi-enemies .cb-e-stage.has-px-actor {
+  --px-base-scale: 1.38;
+  --px-scale: calc(var(--px-base-scale, 1.38) * var(--depth-scale, 1));
+}
+
+#battle-screen #cb-enemy-zone[data-enemy-count="4"] .cb-slot,
+#battle-screen #cb-enemy-zone[data-enemy-count="4"] .cb-e-stage.has-px-actor {
+  --px-base-scale: 1.18;
+  --px-scale: calc(var(--px-base-scale, 1.18) * var(--depth-scale, 1));
+}
+
+#battle-screen #cb-enemy-zone[data-enemy-count="5"] .cb-slot,
+#battle-screen #cb-enemy-zone[data-enemy-count="6"] .cb-slot,
+#battle-screen #cb-enemy-zone[data-enemy-count="5"] .cb-e-stage.has-px-actor,
+#battle-screen #cb-enemy-zone[data-enemy-count="6"] .cb-e-stage.has-px-actor {
+  --px-base-scale: 0.86;
+  --px-scale: calc(var(--px-base-scale, 0.86) * var(--depth-scale, 1));
+}
+
+#battle-screen .cb-px-actor {
+  width: calc(var(--px-fw, 142px) * var(--px-scale, calc(var(--px-base-scale, 1.56) * var(--depth-scale, 1))) * var(--px-sm, 1));
+  height: calc(var(--px-fh, 124px) * var(--px-scale, calc(var(--px-base-scale, 1.56) * var(--depth-scale, 1))) * var(--px-sm, 1));
+}
+
+/* 5. 左右镜像 V 型锐角雁阵错位（我方 ">" 锐角推进 / 敌方 "<" 镜像包抄，仅平移零缩放） */
+#battle-screen #cb-ally-formation > .cb-ally-slot[data-row="0"][data-col="back"] {
+  transform: translate(-14px, 4px);
+}
+#battle-screen #cb-ally-formation > .cb-ally-slot[data-row="0"][data-col="front"] {
+  transform: translate(-10px, 6px);
+}
+#battle-screen #cb-ally-formation > .cb-ally-slot[data-row="1"][data-col="back"] {
+  transform: translate(12px, 0px);
+}
+#battle-screen #cb-ally-formation > .cb-ally-slot[data-row="1"][data-col="front"] {
+  transform: translate(24px, 0px);
+}
+#battle-screen #cb-ally-formation > .cb-ally-slot[data-row="2"][data-col="back"] {
+  transform: translate(-16px, 0px);
+}
+#battle-screen #cb-ally-formation > .cb-ally-slot[data-row="2"][data-col="front"] {
+  transform: translate(-8px, 0px);
+}
+
+#battle-screen #cb-enemy-zone > .cb-enemy-slot[data-row="0"][data-col="front"] {
+  transform: translate(10px, 6px);
+}
+#battle-screen #cb-enemy-zone > .cb-enemy-slot[data-row="0"][data-col="back"] {
+  transform: translate(14px, 4px);
+}
+#battle-screen #cb-enemy-zone > .cb-enemy-slot[data-row="1"][data-col="front"] {
+  transform: translate(-24px, 0px);
+}
+#battle-screen #cb-enemy-zone > .cb-enemy-slot[data-row="1"][data-col="back"] {
+  transform: translate(-12px, 0px);
+}
+#battle-screen #cb-enemy-zone > .cb-enemy-slot[data-row="2"][data-col="front"] {
+  transform: translate(8px, 0px);
+}
+#battle-screen #cb-enemy-zone > .cb-enemy-slot[data-row="2"][data-col="back"] {
+  transform: translate(16px, 0px);
+}
+
+/* 意图浮层展开时提层，确保悬停提示不被近排或底角详情卡裁切 */
+#battle-screen .cb-slot:has(.cb-intent-banner:hover),
+#battle-screen .cb-slot:has(.cb-intent-banner:focus-within),
+#battle-screen .cb-slot:has(.cb-intent-banner.tip-open) {
+  z-index: 46;
+}
+
+/* 6. 敌方脚下超薄微条（彻底消灭敌方大白墙，严守 targeted Δy === 0px） */
+#battle-screen .cb-enemy-card,
+#battle-screen .cb-enemy-zone:not(.multi-enemies) .cb-enemy-card,
+#battle-screen .cb-enemy-zone.multi-enemies .cb-enemy-card,
+#battle-screen #cb-enemy-zone:not(.multi-enemies) .cb-enemy-slot > .cb-enemy-card:has(.cb-px-actor) {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-width: 100%;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: visible;
+  transform: none;
+}
+
+#battle-screen .cb-enemy-card .cb-e-stage {
+  position: relative;
+  width: 100%;
+  flex: 1 1 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: visible;
+}
+
+#battle-screen .cb-enemy-card .cb-e-stage .cb-px-actor {
+  margin-bottom: -4px;
+}
+
+#battle-screen .cb-enemy-card.targeted .cb-e-stage .cb-px-shadow {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(22, 88, 235, 0.46) 0%,
+    rgba(125, 211, 252, 0.28) 46%,
+    rgba(196, 164, 108, 0.20) 70%,
+    transparent 86%
+  );
+}
+
+#battle-screen .cb-enemy-card .cb-e-plate,
+#battle-screen .cb-enemy-zone.multi-enemies .cb-e-plate,
+#battle-screen .cb-enemy-grid.multi-enemies .cb-e-plate {
+  position: relative;
+  z-index: 14;
+  width: 144px;
+  min-width: 144px;
+  max-width: 144px;
+  min-height: 0;
+  height: auto;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 5px 3px;
+  margin: 0;
+  border-radius: 0;
+  background: rgba(250, 251, 253, 0.84);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: none;
+  border-bottom: 1px solid rgba(125, 211, 252, 0.78);
+  box-shadow: 0 2px 8px rgba(10, 28, 82, 0.12);
+  filter: none;
+  overflow: visible;
+  box-sizing: border-box;
+  transform: none;
+}
+
+#battle-screen .cb-enemy-card.targeted .cb-e-plate {
+  background: rgba(250, 251, 253, 0.92);
+  border: none;
+  border-bottom: 1px solid #1658EB;
+  box-shadow: 0 3px 12px rgba(22, 88, 235, 0.24), 0 0 0 0 transparent;
+  filter: none;
+  transform: none;
+}
+
+#battle-screen .cb-enemy-card.counter-target-glow .cb-e-plate {
+  background: rgba(242, 249, 255, 0.92);
+  border: none;
+  border-bottom: 1px solid #1267A8;
+  box-shadow: 0 3px 12px rgba(18, 103, 168, 0.26);
+  transform: none;
+}
+
+#battle-screen .cb-enemy-card.is-lethal .cb-e-plate,
+#battle-screen .cb-enemy-card.phase2-boss .cb-e-plate {
+  background: rgba(254, 246, 248, 0.90);
+  border: none;
+  border-bottom: 1px solid #D13456;
+  box-shadow: 0 3px 12px rgba(209, 52, 86, 0.24);
+  transform: none;
+}
+
+#battle-screen .cb-enemy-card.staggered .cb-e-plate {
+  border-bottom-color: #7DD3FC;
+  transform: none;
+}
+
+#battle-screen .cb-enemy-card.intent-heavy-warn .cb-e-plate {
+  border-bottom-color: #D13456;
+  transform: none;
+}
+
+#battle-screen .cb-enemy-card .cb-e-micro-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 16px;
+  min-height: 16px;
+  max-height: 16px;
+  min-width: 0;
+  line-height: 1;
+}
+
+#battle-screen .cb-enemy-card .cb-lock-diamond {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  display: inline-block;
+  margin: 0 1px;
+  transform: rotate(45deg);
+  background: rgba(148, 168, 200, 0.56);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72);
+  transition: background 0.16s ease, box-shadow 0.16s ease;
+}
+
+#battle-screen .cb-enemy-card.targeted .cb-lock-diamond {
+  background: linear-gradient(135deg, #7DD3FC 0%, #1658EB 55%, #0E2B78 100%);
+  box-shadow:
+    0 0 0 1px rgba(239, 224, 190, 0.95),
+    0 0 6px rgba(22, 88, 235, 0.80),
+    0 0 10px rgba(196, 164, 108, 0.56);
+}
+
+#battle-screen .cb-enemy-card .cb-e-micro-head .cb-e-title {
+  flex: 1 1 0;
+  min-width: 0;
+  font-family: var(--font-serif);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 15px;
+  color: #1A2436;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#battle-screen .cb-enemy-card .cb-e-lock-pip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  height: 13px;
+  padding: 0 3px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #0E2B78;
+  background: rgba(22, 88, 235, 0.11);
+  border-left: 1.5px solid #1658EB;
+  white-space: nowrap;
+}
+
+#battle-screen .cb-enemy-card .cb-e-lock-pip.is-broken,
+#battle-screen .cb-enemy-card.staggered .cb-e-lock-pip {
+  color: #8C6928;
+  background: rgba(196, 164, 108, 0.22);
+  border-left-color: #C4A46C;
+}
+
+/* 严格 5px 敌脚下微血条 + 预扣段 + 轻盈浮出 microtag */
+#battle-screen .cb-enemy-card .cb-e-plate .cb-stat-track,
+#battle-screen .cb-enemy-zone.multi-enemies .cb-e-plate .cb-stat-track,
+#battle-screen .cb-enemy-grid.multi-enemies .cb-e-plate .cb-stat-track {
+  position: relative;
+  width: 100%;
+  height: 5px;
+  min-height: 5px;
+  max-height: 5px;
+  background: rgba(14, 34, 84, 0.16);
+  border: none;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+#battle-screen .cb-enemy-card .cb-e-plate .cb-stat-fill.ehp {
+  height: 100%;
+  background: linear-gradient(90deg, #C42544 0%, #E64564 62%, #FF8FA4 100%);
+  clip-path: none;
+}
+
+#battle-screen .cb-enemy-card .cb-hp-microtag {
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  height: 15px;
+  padding: 1px 5px;
+  font-size: 9.5px;
+  line-height: 1;
+  z-index: 20;
+}
+
+/* 敌脚下 5px 血条紧邻的超紧凑单行意图微标（17px–18px 高，无外框套内框） */
+#battle-screen .cb-enemy-card .cb-intent-banner,
+#battle-screen .cb-enemy-zone.multi-enemies .cb-intent-banner,
+#battle-screen .cb-enemy-grid.multi-enemies .cb-intent-banner {
+  position: relative;
+  z-index: 15;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: 18px;
+  min-height: 18px;
+  max-height: 18px;
+  padding: 0 3px;
+  margin-top: 1px;
+  border: none;
+  border-left: 2px solid #1658EB;
+  border-radius: 0;
+  background: rgba(22, 88, 235, 0.08);
+  box-shadow: none;
+  filter: none;
+  display: flex;
+  align-items: center;
+  overflow: visible;
+  box-sizing: border-box;
+  transform: none;
+}
+
+#battle-screen .cb-enemy-card .cb-intent-banner.stance-DUAL_CAST,
+#battle-screen .cb-enemy-card .cb-intent-banner.stance-HEAVY_WINDUP,
+#battle-screen .cb-enemy-card .cb-intent-banner.stance-UNDER_SEEP {
+  background: rgba(209, 52, 86, 0.11);
+  border-left-color: #D13456;
+}
+
+#battle-screen .cb-enemy-card .cb-intent-banner.stance-CLOSE_LUNGE {
+  background: rgba(16, 63, 168, 0.10);
+  border-left-color: #103FA8;
+}
+
+#battle-screen .cb-enemy-card .cb-intent-banner.stance-GUARD_COUNTER,
+#battle-screen .cb-enemy-card .cb-intent-banner.stance-STAGGERED {
+  background: rgba(18, 103, 168, 0.10);
+  border-left-color: #1267A8;
+}
+
+#battle-screen .cb-enemy-card .cb-intent-banner:hover,
+#battle-screen .cb-enemy-card .cb-intent-banner:focus-within,
+#battle-screen .cb-enemy-card .cb-intent-banner.tip-open {
+  z-index: 46;
+}
+
+#battle-screen .cb-enemy-card .cb-intent-banner .ib-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+#battle-screen .cb-enemy-card .cb-intent-banner .ib-stance-tag {
+  padding: 0 4px;
+  height: 13px;
+  line-height: 13px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  clip-path: none;
+  flex-shrink: 0;
+}
+
+/* 完整招式名统一在右下唯一锁定详情卡与悬停浮层展示；脚下极窄微条隐藏截断单字，留足架势徽章+预计伤害清晰呼吸空间 */
+#battle-screen .cb-enemy-card .cb-intent-banner .ib-move-name {
+  display: none;
+}
+
+#battle-screen .cb-enemy-card .cb-intent-banner .ib-dmg-pill {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 0 2px;
+  font-size: 9.5px;
+  font-weight: 800;
+  line-height: 1.15;
+  border: none;
+  border-bottom: none;
+  white-space: nowrap;
+}
+
+#battle-screen .cb-enemy-card .cb-intent-banner .ib-info-btn {
+  width: 13px;
+  height: 13px;
+  font-size: 8.5px;
+  border: none;
+  border-left: 1px solid rgba(27, 35, 51, 0.16);
+  background: rgba(27, 35, 51, 0.05);
+  flex-shrink: 0;
+}
+
+#battle-screen .cb-enemy-card .cb-intent-tip {
+  z-index: 48;
+  top: calc(100% + 4px);
+  right: 0;
+  left: auto;
+  width: 236px;
+  max-width: 280px;
+}
+
+/* 近排 (row=2) 敌方意图浮层向上展开，避免压入右下详情卡 */
+#battle-screen .cb-enemy-slot[data-row="2"] .cb-intent-tip {
+  top: auto;
+  bottom: calc(100% + 5px);
+  transform: translateY(4px);
+}
+
+#battle-screen .cb-enemy-slot[data-row="2"] .cb-intent-banner:hover .cb-intent-tip,
+#battle-screen .cb-enemy-slot[data-row="2"] .cb-intent-banner:focus-within .cb-intent-tip,
+#battle-screen .cb-enemy-slot[data-row="2"] .cb-intent-banner.tip-open .cb-intent-tip {
+  transform: translateY(0);
+}
+
+/* 7. 右下唯一锁定目标详情卡 (#cb-target-detail-pane · 雪瓷磨砂 45° 切角 + 1px 横向分隔) */
+#battle-screen #cb-target-detail-pane {
+  position: absolute;
+  right: 14px;
+  bottom: 10px;
+  width: 332px;
+  z-index: 22;
+  padding: 7px 11px 7px 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  color: var(--cb-ink);
+  background: rgba(250, 251, 253, 0.94);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(196, 164, 108, 0.42);
+  border-top: 2px solid #1658EB;
+  border-radius: 0;
+  box-shadow: 0 10px 26px rgba(10, 28, 82, 0.18);
+  overflow: visible;
+  pointer-events: auto;
+}
+
+#battle-screen #cb-target-detail-pane.is-empty,
+#battle-screen #cb-target-detail-pane:empty {
+  display: none;
+}
+
+#battle-screen #cb-target-detail-pane:hover,
+#battle-screen #cb-target-detail-pane:focus-within,
+#battle-screen #cb-target-detail-pane:has(.cb-trait-wrap.tip-open) {
+  z-index: 46;
+}
+
+#battle-screen #cb-target-detail-pane.is-phase2 {
+  border-top-color: #D13456;
+}
+
+#battle-screen #cb-target-detail-pane.is-broken {
+  border-top-color: #7DD3FC;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(96, 128, 180, 0.22);
+  min-width: 0;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-title {
+  font-family: var(--font-serif);
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #1A2436;
+  letter-spacing: 0.03em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+#battle-screen #cb-target-detail-pane .cb-trait-tip {
+  bottom: calc(100% + 8px);
+  top: auto;
+  right: 0;
+  z-index: 48;
+  width: min(304px, 76vw);
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(96, 128, 180, 0.18);
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-bars .cb-stat-row {
+  gap: 2px;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-bars .cb-stat-top {
+  font-size: 10.5px;
+  line-height: 1.15;
+  color: #3A4B66;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-bars .cb-stat-track {
+  height: 6px;
+  background: rgba(14, 34, 84, 0.14);
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-hp-preview {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0%;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.96) 0%,
+    rgba(107, 197, 248, 0.92) 34%,
+    rgba(196, 37, 68, 0.94) 78%,
+    rgba(255, 240, 243, 0.96) 100%
+  );
+  box-shadow: inset 2px 0 0 rgba(255, 255, 255, 0.92);
+  transition: left 0.14s cubic-bezier(0.22, 1, 0.36, 1), width 0.14s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.14s ease;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-hp-preview.is-active {
+  opacity: 1;
+  animation: cbHpPreviewPulse 1.15s ease-in-out infinite;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-hp-preview.is-break {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.96) 0%, #6BC5F8 42%, #1658EB 100%);
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-hp-preview.is-lethal {
+  background: linear-gradient(90deg, rgba(255, 241, 245, 0.96) 0%, rgba(224, 72, 100, 0.94) 44%, rgba(155, 24, 51, 0.96) 100%);
+  animation: cbHpLethalPulse 0.95s ease-in-out infinite;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-locks {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-top: 1px;
+  line-height: 1.15;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-locks-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #5F728F;
+  flex-shrink: 0;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-locks-gems {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-lock-gem {
+  font-size: 10.5px;
+  line-height: 1;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-lock-gem.is-solid {
+  color: #1658EB;
+  text-shadow: 0 0 4px rgba(125, 211, 252, 0.65);
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-lock-gem.is-cracked {
+  color: rgba(95, 114, 143, 0.38);
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-locks-val {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #0E2B78;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-locks.is-broken .cb-td-locks-val {
+  color: #8C6928;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-intent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 5px;
+  padding: 2px 0 2px 7px;
+  border-left: 2.5px solid #1658EB;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-intent.stance-DUAL_CAST,
+#battle-screen #cb-target-detail-pane .cb-td-intent.stance-HEAVY_WINDUP,
+#battle-screen #cb-target-detail-pane .cb-td-intent.stance-UNDER_SEEP {
+  border-left-color: #D13456;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-intent.stance-CLOSE_LUNGE {
+  border-left-color: #103FA8;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-intent.stance-GUARD_COUNTER,
+#battle-screen #cb-target-detail-pane .cb-td-intent.stance-STAGGERED {
+  border-left-color: #1267A8;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-intent-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-intent-row .ib-stance-tag {
+  padding: 1px 5px;
+  font-size: 9.5px;
+  line-height: 1.2;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-intent.stance-DUAL_CAST .ib-stance-tag,
+#battle-screen #cb-target-detail-pane .cb-td-intent.stance-HEAVY_WINDUP .ib-stance-tag,
+#battle-screen #cb-target-detail-pane .cb-td-intent.stance-UNDER_SEEP .ib-stance-tag {
+  background: #D13456;
+  color: #FFFFFF;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-intent.stance-CLOSE_LUNGE .ib-stance-tag {
+  background: #103FA8;
+  color: #FFFFFF;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-intent.stance-GUARD_COUNTER .ib-stance-tag,
+#battle-screen #cb-target-detail-pane .cb-td-intent.stance-STAGGERED .ib-stance-tag {
+  background: #1267A8;
+  color: #FFFFFF;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-move-name {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #1A2436;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-intent-row .ib-dmg-pill {
+  font-size: 10.5px;
+  font-weight: 800;
+  border-bottom: none;
+  color: #9E1B3A;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-intent-hint {
+  font-size: 10px;
+  line-height: 1.32;
+  color: #4A5B76;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-next-tendency {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #103FA8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-buffs {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 3px;
+  margin-top: 5px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(96, 128, 180, 0.16);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-buffs::-webkit-scrollbar {
+  display: none;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-buffs:empty {
+  display: none;
+}
+
+#battle-screen #cb-target-detail-pane .cb-td-buffs .cb-buff-chip {
+  height: 17px;
+  padding: 0 5px;
+  font-size: 9.5px;
+  line-height: 17px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* 8. 左下等规 1–6 人队卡 (#cb-party-panes · 绝对定位锚定左下角) */
+#battle-screen #cb-party-panes {
+  position: absolute;
+  left: 14px;
+  bottom: 10px;
+  z-index: 22;
+  width: max-content;
+  margin: 0;
+  padding: 0;
+  pointer-events: auto;
+}
+
+/* 8a. 1–2 人态：纵向栈排，严格等高 54px × 宽 328px */
+#battle-screen #cb-party-panes[data-party-layout="1-2"],
+#battle-screen #cb-party-panes:not([data-party-layout="3-6"]) {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="1-2"] #cb-player-pane,
+#battle-screen #cb-party-panes[data-party-layout="1-2"] #cb-ally-pane,
+#battle-screen #cb-party-panes[data-party-layout="1-2"] .cb-ally-pane,
+#battle-screen #cb-party-panes:not([data-party-layout="3-6"]) #cb-player-pane,
+#battle-screen #cb-party-panes:not([data-party-layout="3-6"]) #cb-ally-pane,
+#battle-screen #cb-party-panes:not([data-party-layout="3-6"]) .cb-ally-pane {
+  position: relative;
+  width: 328px;
+  height: 54px;
+  min-height: 54px;
+  max-height: 54px;
+  padding: 5px 12px 5px 11px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  box-sizing: border-box;
+  border: 1px solid rgba(96, 128, 180, 0.24);
+  border-left: 3px solid #1658EB;
+  border-radius: 0;
+  background: rgba(250, 251, 253, 0.94);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  box-shadow: 0 8px 20px rgba(10, 28, 82, 0.16);
+}
+
+#battle-screen #cb-party-panes #cb-player-pane {
+  overflow: visible;
+}
+
+#battle-screen #cb-party-panes #cb-ally-pane,
+#battle-screen #cb-party-panes .cb-ally-pane {
+  border-left-color: #C68B3E;
+  background: rgba(255, 253, 248, 0.94);
+  overflow: hidden;
+}
+
+#battle-screen #cb-party-panes .cb-ally-pane.cb-ally-extra-pane {
+  border-left-color: #2E77F8;
+  background: rgba(248, 252, 255, 0.94);
+}
+
+#battle-screen #cb-party-panes .cb-ally-pane.is-dead,
+#battle-screen #cb-party-panes .cb-ally-pane.dead,
+#battle-screen #cb-party-panes .cb-ally-pane.is-down {
+  opacity: 0.45;
+  filter: grayscale(0.75);
+}
+
+#battle-screen #cb-party-panes[data-party-layout="1-2"] #cb-player-pane .cb-p-header,
+#battle-screen #cb-party-panes:not([data-party-layout="3-6"]) #cb-player-pane .cb-p-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 0;
+  padding: 0 0 3px;
+  border-bottom: 1px solid rgba(96, 128, 180, 0.20);
+  min-height: 17px;
+}
+
+#battle-screen #cb-party-panes #cb-player-pane .cb-p-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+#battle-screen #cb-party-panes #cb-player-pane .cb-p-name {
+  font-size: 12.5px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.03em;
+}
+
+#battle-screen #cb-party-panes #cb-player-pane .cb-p-sub {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+#battle-screen #cb-party-panes #cb-player-pane .cb-ap-row {
+  gap: 4px;
+  padding: 0;
+  border-bottom: none;
+}
+
+#battle-screen #cb-party-panes #cb-player-pane .cb-ap-gem {
+  width: 6.5px;
+  height: 6.5px;
+}
+
+#battle-screen #cb-party-panes #cb-player-pane .cb-ap-label {
+  font-size: 10px;
+  margin-left: 2px;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="1-2"] .cb-ally-header,
+#battle-screen #cb-party-panes:not([data-party-layout="3-6"]) .cb-ally-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 0;
+  padding: 0 0 3px;
+  border-bottom: 1px solid rgba(198, 139, 62, 0.22);
+  min-height: 17px;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="1-2"] .cb-ally-name,
+#battle-screen #cb-party-panes:not([data-party-layout="3-6"]) .cb-ally-name {
+  font-size: 12.5px;
+  line-height: 1.15;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="1-2"] .cb-ally-role,
+#battle-screen #cb-party-panes:not([data-party-layout="3-6"]) .cb-ally-role {
+  font-size: 9.5px;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="1-2"] .cb-ally-elem-badge,
+#battle-screen #cb-party-panes:not([data-party-layout="3-6"]) .cb-ally-elem-badge {
+  padding: 1px 5px;
+  font-size: 9.5px;
+  line-height: 1.15;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="1-2"] .cb-bars-wrap,
+#battle-screen #cb-party-panes:not([data-party-layout="3-6"]) .cb-bars-wrap {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  align-items: center;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="1-2"] .cb-stat-row,
+#battle-screen #cb-party-panes:not([data-party-layout="3-6"]) .cb-stat-row {
+  gap: 2px;
+  min-width: 0;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="1-2"] .cb-stat-top,
+#battle-screen #cb-party-panes:not([data-party-layout="3-6"]) .cb-stat-top {
+  font-size: 9.5px;
+  line-height: 1.1;
+  color: #3A4B66;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="1-2"] .cb-stat-track,
+#battle-screen #cb-party-panes:not([data-party-layout="3-6"]) .cb-stat-track {
+  height: 5px;
+  min-height: 5px;
+}
+
+/* 希尔维亚遗物与增益微图标带（悬浮停靠于队卡正上方，板 A 16px 微图标完整清晰零裁切） */
+#battle-screen #cb-party-panes #cb-p-buffs {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 5px);
+  width: max-content;
+  max-width: min(440px, calc(100vw - 420px));
+  max-height: 44px;
+  overflow-y: auto;
+  overflow-x: visible;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  z-index: 24;
+  pointer-events: auto;
+}
+
+#battle-screen #cb-party-panes #cb-p-buffs:empty {
+  display: none;
+}
+
+#battle-screen #cb-party-panes #cb-p-buffs .cb-buff-chip {
+  height: 20px;
+  padding: 1px 6px;
+  font-size: 10px;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(250, 251, 253, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 6px rgba(10, 28, 82, 0.14);
+}
+
+#battle-screen #cb-party-panes #cb-p-buffs .cb-buff-chip.relic.has-art {
+  padding: 1px 6px 1px 4px;
+}
+
+#battle-screen #cb-party-panes #cb-p-buffs .cb-buff-chip.relic .cb-relic-micro-art,
+#battle-screen #cb-party-panes #cb-p-buffs .cb-buff-chip.relic .item-art-img,
+#battle-screen #cb-party-panes #cb-p-buffs .cb-buff-chip.relic .item-art-svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* 8b. 3–6 人态：2×3 等规紧凑网格（总宽 <=430px，总高 <=81px，单卡严格等高 38px） */
+#battle-screen #cb-party-panes[data-party-layout="3-6"] {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(126px, 140px));
+  grid-auto-rows: 38px;
+  gap: 5px;
+  width: max-content;
+  max-width: 430px;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="3-6"] #cb-player-pane,
+#battle-screen #cb-party-panes[data-party-layout="3-6"] #cb-ally-pane,
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-ally-pane {
+  position: relative;
+  width: 100%;
+  height: 38px;
+  min-height: 38px;
+  max-height: 38px;
+  padding: 3px 7px 3px 8px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  box-sizing: border-box;
+  border: 1px solid rgba(96, 128, 180, 0.24);
+  border-left: 3px solid #1658EB;
+  border-radius: 0;
+  background: rgba(250, 251, 253, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 5px 14px rgba(10, 28, 82, 0.14);
+}
+
+#battle-screen #cb-party-panes[data-party-layout="3-6"] #cb-ally-pane,
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-ally-pane {
+  border-left-color: #C68B3E;
+  background: rgba(255, 253, 248, 0.94);
+}
+
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-ally-pane.cb-ally-extra-pane {
+  border-left-color: #2E77F8;
+  background: rgba(248, 252, 255, 0.94);
+}
+
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-p-header,
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-ally-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  border-bottom: none;
+  min-height: 15px;
+  height: 15px;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-p-name,
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-ally-name {
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-ap-gem,
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-ally-role,
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-ally-elem-badge {
+  display: none;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-ap-label {
+  font-size: 8px;
+  letter-spacing: -0.02em;
+  margin-left: 0;
+  flex-shrink: 0;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-bars-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-stat-row {
+  gap: 0;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-stat-top {
+  display: none;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-stat-track {
+  height: 4px;
+  min-height: 4px;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-stat-row + .cb-stat-row .cb-stat-track {
+  height: 3px;
+  min-height: 3px;
+}
+
+/* 9. 1280×720 桌面紧凑适配 */
+@media (max-width: 1360px), (max-height: 760px) {
+  #battle-screen .cb-arena-field {
+    grid-template-columns: minmax(300px, 32%) minmax(220px, 1fr) minmax(300px, 32%);
+  }
+
+  #battle-screen #cb-ally-formation,
+  #battle-screen #cb-enemy-zone.cb-enemy-grid,
+  #battle-screen #cb-enemy-zone.cb-formation-grid {
+    gap: 4px 6px;
+    padding: 72px 2px 150px;
+  }
+
+  #battle-screen:not(.prism-radial-active) #cb-ally-formation,
+  #battle-screen:not(.prism-radial-active) #cb-enemy-zone.cb-enemy-grid,
+  #battle-screen:not(.prism-radial-active) #cb-enemy-zone.cb-formation-grid {
+    padding-top: 38px;
+    padding-bottom: 140px;
+  }
+
+  #battle-screen #cb-ally-formation .cb-ally-slot {
+    padding: 0 2px 6px;
+  }
+
+  #battle-screen .cb-slot.is-occupied .cb-slot-pad {
+    width: min(74%, 102px);
+    height: 14px;
+    bottom: 4px;
+  }
+
+  #battle-screen .cb-enemy-grid .cb-slot.is-occupied .cb-slot-pad {
+    bottom: 38px;
+  }
+
+  #battle-screen .cb-ally-grid .cb-slot,
+  #battle-screen #cb-ally-formation .cb-slot {
+    --px-base-scale: 1.26;
+    --px-scale: calc(var(--px-base-scale, 1.26) * var(--depth-scale, 1));
+  }
+
+  #battle-screen #cb-ally-formation:has(.cb-ally-extra-slot) .cb-slot {
+    --px-base-scale: 0.78;
+    --px-scale: calc(var(--px-base-scale, 0.78) * var(--depth-scale, 1));
+  }
+
+  #battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-slot,
+  #battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-e-stage.has-px-actor {
+    --px-base-scale: 1.38;
+    --px-scale: calc(var(--px-base-scale, 1.38) * var(--depth-scale, 1));
+  }
+
+  #battle-screen .cb-enemy-grid.multi-enemies .cb-slot,
+  #battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor,
+  #battle-screen .cb-enemy-grid.multi-enemies .cb-e-stage.has-px-actor {
+    --px-base-scale: 1.04;
+    --px-scale: calc(var(--px-base-scale, 1.04) * var(--depth-scale, 1));
+  }
+
+  #battle-screen #cb-enemy-zone[data-enemy-count="4"] .cb-slot,
+  #battle-screen #cb-enemy-zone[data-enemy-count="4"] .cb-e-stage.has-px-actor {
+    --px-base-scale: 0.90;
+    --px-scale: calc(var(--px-base-scale, 0.90) * var(--depth-scale, 1));
+  }
+
+  #battle-screen #cb-enemy-zone[data-enemy-count="5"] .cb-slot,
+  #battle-screen #cb-enemy-zone[data-enemy-count="6"] .cb-slot,
+  #battle-screen #cb-enemy-zone[data-enemy-count="5"] .cb-e-stage.has-px-actor,
+  #battle-screen #cb-enemy-zone[data-enemy-count="6"] .cb-e-stage.has-px-actor {
+    --px-base-scale: 0.61;
+    --px-scale: calc(var(--px-base-scale, 0.61) * var(--depth-scale, 1));
+  }
+
+  /* 1280×720 镜像 V 型雁阵错位收敛 */
+  #battle-screen #cb-ally-formation > .cb-ally-slot[data-row="0"][data-col="back"] {
+    transform: translate(-10px, 2px);
+  }
+  #battle-screen #cb-ally-formation > .cb-ally-slot[data-row="0"][data-col="front"] {
+    transform: translate(-8px, 4px);
+  }
+  #battle-screen #cb-ally-formation > .cb-ally-slot[data-row="1"][data-col="back"] {
+    transform: translate(9px, 0px);
+  }
+  #battle-screen #cb-ally-formation > .cb-ally-slot[data-row="1"][data-col="front"] {
+    transform: translate(18px, 0px);
+  }
+  #battle-screen #cb-ally-formation > .cb-ally-slot[data-row="2"][data-col="back"] {
+    transform: translate(-12px, 0px);
+  }
+  #battle-screen #cb-ally-formation > .cb-ally-slot[data-row="2"][data-col="front"] {
+    transform: translate(-6px, 0px);
+  }
+
+  #battle-screen #cb-enemy-zone > .cb-enemy-slot[data-row="0"][data-col="front"] {
+    transform: translate(8px, 4px);
+  }
+  #battle-screen #cb-enemy-zone > .cb-enemy-slot[data-row="0"][data-col="back"] {
+    transform: translate(10px, 2px);
+  }
+  #battle-screen #cb-enemy-zone > .cb-enemy-slot[data-row="1"][data-col="front"] {
+    transform: translate(-18px, 0px);
+  }
+  #battle-screen #cb-enemy-zone > .cb-enemy-slot[data-row="1"][data-col="back"] {
+    transform: translate(-9px, 0px);
+  }
+  #battle-screen #cb-enemy-zone > .cb-enemy-slot[data-row="2"][data-col="front"] {
+    transform: translate(6px, 0px);
+  }
+  #battle-screen #cb-enemy-zone > .cb-enemy-slot[data-row="2"][data-col="back"] {
+    transform: translate(12px, 0px);
+  }
+
+  /* 敌脚下微条 126px 紧凑档 */
+  #battle-screen .cb-enemy-card .cb-e-plate,
+  #battle-screen .cb-enemy-zone.multi-enemies .cb-e-plate,
+  #battle-screen .cb-enemy-grid.multi-enemies .cb-e-plate {
+    width: 126px;
+    min-width: 126px;
+    max-width: 126px;
+    padding: 2px 4px 2px;
+    gap: 1.5px;
+  }
+
+  #battle-screen .cb-enemy-card .cb-e-micro-head {
+    height: 15px;
+    min-height: 15px;
+    max-height: 15px;
+    gap: 3px;
+  }
+
+  #battle-screen .cb-enemy-card .cb-lock-diamond {
+    width: 6px;
+    height: 6px;
+  }
+
+  #battle-screen .cb-enemy-card .cb-e-micro-head .cb-e-title {
+    font-size: 10.5px;
+  }
+
+  #battle-screen .cb-enemy-card .cb-e-lock-pip {
+    font-size: 8.5px;
+    padding: 0 2.5px;
+    height: 12px;
+  }
+
+  #battle-screen .cb-enemy-card .cb-intent-banner,
+  #battle-screen .cb-enemy-zone.multi-enemies .cb-intent-banner,
+  #battle-screen .cb-enemy-grid.multi-enemies .cb-intent-banner {
+    height: 17px;
+    min-height: 17px;
+    max-height: 17px;
+    padding: 0 2.5px;
+  }
+
+  #battle-screen .cb-enemy-card .cb-intent-banner .ib-row {
+    gap: 3px;
+  }
+
+  #battle-screen .cb-enemy-card .cb-intent-banner .ib-stance-tag {
+    font-size: 8.5px;
+    padding: 0 3px;
+    height: 12px;
+    line-height: 12px;
+  }
+
+  #battle-screen .cb-enemy-card .cb-intent-banner .ib-move-name {
+    display: none;
+  }
+
+  #battle-screen .cb-enemy-card .cb-intent-banner .ib-dmg-pill {
+    font-size: 8.5px;
+  }
+
+  #battle-screen .cb-enemy-card .cb-intent-banner .ib-info-btn {
+    width: 12px;
+    height: 12px;
+    font-size: 8px;
+  }
+
+  /* 右下锁定目标详情卡 1280×720 */
+  #battle-screen #cb-target-detail-pane {
+    right: 10px;
+    bottom: 8px;
+    width: 296px;
+    padding: 5px 9px 5px 10px;
+  }
+
+  #battle-screen #cb-target-detail-pane .cb-td-head {
+    padding-bottom: 3px;
+  }
+
+  #battle-screen #cb-target-detail-pane .cb-td-title {
+    font-size: 12.5px;
+  }
+
+  #battle-screen #cb-target-detail-pane .cb-td-bars {
+    padding: 4px 0;
+    gap: 3px;
+  }
+
+  #battle-screen #cb-target-detail-pane .cb-td-bars .cb-stat-top {
+    font-size: 10px;
+  }
+
+  #battle-screen #cb-target-detail-pane .cb-td-bars .cb-stat-track {
+    height: 5px;
+  }
+
+  #battle-screen #cb-target-detail-pane .cb-td-intent {
+    margin-top: 4px;
+    padding: 1px 0 1px 6px;
+  }
+
+  #battle-screen #cb-target-detail-pane .cb-td-move-name {
+    font-size: 11px;
+  }
+
+  #battle-screen #cb-target-detail-pane .cb-td-intent-hint {
+    font-size: 9.5px;
+    -webkit-line-clamp: 1;
+  }
+
+  #battle-screen #cb-target-detail-pane .cb-td-buffs {
+    margin-top: 4px;
+    padding-top: 3px;
+  }
+
+  /* 左下 1–6 人队卡 1280×720 */
+  #battle-screen #cb-party-panes {
+    left: 10px;
+    bottom: 8px;
+  }
+
+  #battle-screen #cb-party-panes[data-party-layout="1-2"],
+  #battle-screen #cb-party-panes:not([data-party-layout="3-6"]) {
+    gap: 5px;
+  }
+
+  #battle-screen #cb-party-panes[data-party-layout="1-2"] #cb-player-pane,
+  #battle-screen #cb-party-panes[data-party-layout="1-2"] #cb-ally-pane,
+  #battle-screen #cb-party-panes[data-party-layout="1-2"] .cb-ally-pane,
+  #battle-screen #cb-party-panes:not([data-party-layout="3-6"]) #cb-player-pane,
+  #battle-screen #cb-party-panes:not([data-party-layout="3-6"]) #cb-ally-pane,
+  #battle-screen #cb-party-panes:not([data-party-layout="3-6"]) .cb-ally-pane {
+    width: 296px;
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
+    padding: 4px 10px 4px 9px;
+    gap: 2px;
+  }
+
+  #battle-screen #cb-party-panes[data-party-layout="1-2"] #cb-player-pane .cb-p-header,
+  #battle-screen #cb-party-panes:not([data-party-layout="3-6"]) #cb-player-pane .cb-p-header,
+  #battle-screen #cb-party-panes[data-party-layout="1-2"] .cb-ally-header,
+  #battle-screen #cb-party-panes:not([data-party-layout="3-6"]) .cb-ally-header {
+    padding-bottom: 2px;
+    min-height: 15px;
+  }
+
+  #battle-screen #cb-party-panes[data-party-layout="1-2"] #cb-player-pane .cb-p-name,
+  #battle-screen #cb-party-panes:not([data-party-layout="3-6"]) #cb-player-pane .cb-p-name,
+  #battle-screen #cb-party-panes[data-party-layout="1-2"] .cb-ally-name,
+  #battle-screen #cb-party-panes:not([data-party-layout="3-6"]) .cb-ally-name {
+    font-size: 11.5px;
+  }
+
+  #battle-screen #cb-party-panes[data-party-layout="1-2"] .cb-stat-top,
+  #battle-screen #cb-party-panes:not([data-party-layout="3-6"]) .cb-stat-top {
+    font-size: 9px;
+  }
+
+  #battle-screen #cb-party-panes[data-party-layout="1-2"] .cb-stat-track,
+  #battle-screen #cb-party-panes:not([data-party-layout="3-6"]) .cb-stat-track {
+    height: 4px;
+    min-height: 4px;
+  }
+
+  #battle-screen #cb-party-panes #cb-p-buffs {
+    max-width: min(404px, calc(100vw - 360px));
+    max-height: 40px;
+  }
+
+  #battle-screen #cb-party-panes #cb-p-buffs .cb-buff-chip {
+    height: 18px;
+    font-size: 9.5px;
+    padding: 1px 5px;
+  }
+
+  #battle-screen #cb-party-panes #cb-p-buffs .cb-buff-chip.relic .cb-relic-micro-art,
+  #battle-screen #cb-party-panes #cb-p-buffs .cb-buff-chip.relic .item-art-img,
+  #battle-screen #cb-party-panes #cb-p-buffs .cb-buff-chip.relic .item-art-svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  #battle-screen #cb-party-panes[data-party-layout="3-6"] {
+    grid-template-columns: repeat(3, minmax(122px, 132px));
+    grid-auto-rows: 36px;
+    gap: 4px;
+    max-width: 404px;
+  }
+
+  #battle-screen #cb-party-panes[data-party-layout="3-6"] #cb-player-pane,
+  #battle-screen #cb-party-panes[data-party-layout="3-6"] #cb-ally-pane,
+  #battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-ally-pane {
+    height: 36px;
+    min-height: 36px;
+    max-height: 36px;
+    padding: 2px 6px 2px 7px;
+    gap: 2px;
+  }
+
+  #battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-p-name,
+  #battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-ally-name {
+    font-size: 10.5px;
+  }
+}
+
+/* 10. 窄桌面 / 960×600 高 DPI (<1024px) 不溢出防重叠适配 */
+@media (max-width: 1023px) {
+  #battle-screen .cb-arena-field {
+    grid-template-columns: minmax(210px, 46%) minmax(250px, 54%);
+    grid-auto-rows: auto;
+    gap: 6px 8px;
+    padding: 4px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  #battle-screen .cb-arena-field > #cb-mid-corridor,
+  #battle-screen .cb-arena-field > .cb-mid-corridor {
+    display: none;
+  }
+
+  #battle-screen .cb-arena-field > #cb-player-stage,
+  #battle-screen .cb-arena-field > #cb-enemy-zone {
+    grid-column: auto;
+  }
+
+  #battle-screen #cb-ally-formation,
+  #battle-screen #cb-enemy-zone.cb-enemy-grid,
+  #battle-screen #cb-enemy-zone.cb-formation-grid {
+    padding: 4px 2px;
+    grid-template-rows: repeat(3, minmax(0, auto));
+    gap: 3px 4px;
+  }
+
+  #battle-screen #cb-ally-formation .cb-ally-slot,
+  #battle-screen #cb-enemy-zone .cb-enemy-slot {
+    padding: 1px 2px 4px;
+    transform: none !important;
+  }
+
+  #battle-screen .cb-slot[data-row="0"] { --depth-scale: 0.92; }
+  #battle-screen .cb-slot[data-row="1"] { --depth-scale: 1.00; }
+  #battle-screen .cb-slot[data-row="2"] { --depth-scale: 1.04; }
+
+  #battle-screen .cb-ally-grid .cb-slot,
+  #battle-screen #cb-ally-formation .cb-slot {
+    --px-base-scale: 0.90;
+    --px-scale: calc(var(--px-base-scale, 0.90) * var(--depth-scale, 1));
+  }
+
+  #battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-slot,
+  #battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-e-stage.has-px-actor {
+    --px-base-scale: 1.00;
+    --px-scale: calc(var(--px-base-scale, 1.00) * var(--depth-scale, 1));
+  }
+
+  #battle-screen .cb-enemy-grid.multi-enemies .cb-slot,
+  #battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor,
+  #battle-screen .cb-enemy-grid.multi-enemies .cb-e-stage.has-px-actor {
+    --px-base-scale: 0.72;
+    --px-scale: calc(var(--px-base-scale, 0.72) * var(--depth-scale, 1));
+  }
+
+  #battle-screen .cb-enemy-card .cb-e-plate,
+  #battle-screen .cb-enemy-zone.multi-enemies .cb-e-plate,
+  #battle-screen .cb-enemy-grid.multi-enemies .cb-e-plate {
+    width: 104px;
+    min-width: 104px;
+    max-width: 104px;
+  }
+
+  #battle-screen #cb-party-panes {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    width: 100%;
+    max-width: 100%;
+    margin-top: 4px;
+  }
+
+  #battle-screen #cb-party-panes[data-party-layout="1-2"] #cb-player-pane,
+  #battle-screen #cb-party-panes[data-party-layout="1-2"] #cb-ally-pane,
+  #battle-screen #cb-party-panes[data-party-layout="1-2"] .cb-ally-pane,
+  #battle-screen #cb-party-panes:not([data-party-layout="3-6"]) #cb-player-pane,
+  #battle-screen #cb-party-panes:not([data-party-layout="3-6"]) #cb-ally-pane,
+  #battle-screen #cb-party-panes:not([data-party-layout="3-6"]) .cb-ally-pane {
+    width: 100%;
+    height: auto;
+    min-height: 44px;
+    max-height: none;
+  }
+
+  #battle-screen #cb-party-panes[data-party-layout="3-6"] {
+    width: 100%;
+    max-width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 34px;
+  }
+
+  #battle-screen #cb-party-panes[data-party-layout="3-6"] #cb-player-pane,
+  #battle-screen #cb-party-panes[data-party-layout="3-6"] #cb-ally-pane,
+  #battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-ally-pane {
+    height: 34px;
+    min-height: 34px;
+    max-height: 34px;
+  }
+
+  #battle-screen #cb-party-panes #cb-p-buffs {
+    position: static;
+    width: 100%;
+    max-width: 100%;
+    max-height: 36px;
+    margin-top: 3px;
+  }
+
+  #battle-screen #cb-target-detail-pane {
+    grid-column: 1 / -1;
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    padding: 5px 8px;
+  }
+}
+
+@media (max-width: 720px) {
+  #battle-screen .cb-arena-field {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #battle-screen .cb-enemy-card .cb-e-plate,
+  #battle-screen .cb-enemy-zone.multi-enemies .cb-e-plate,
+  #battle-screen .cb-enemy-grid.multi-enemies .cb-e-plate {
+    width: min(100%, 132px);
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
 /* 降动效无障碍护栏 */
 @media (prefers-reduced-motion: reduce) {
   #arena-overlay,
@@ -7605,6 +9320,8 @@ body.cb-battle-active #fx {
   #battle-screen .cb-stat-track .cb-hp-preview.is-lethal,
   #battle-screen .cb-stat-track .cb-ehp-preview.is-active,
   #battle-screen .cb-stat-track .cb-ehp-preview.is-lethal,
+  #battle-screen #cb-target-detail-pane .cb-td-hp-preview.is-active,
+  #battle-screen #cb-target-detail-pane .cb-td-hp-preview.is-lethal,
   #battle-screen .cb-hp-microtag.show {
     animation: none !important;
   }

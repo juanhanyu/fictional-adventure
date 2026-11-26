@@ -3739,6 +3739,149 @@
     });
   }
 
+  function buildEnemyBuffChipsHTML(e) {
+    if (!e) return '';
+    const eBuffs = [];
+    if (e.boss && (e.phase || 1) >= 2) eBuffs.push(`<span class="cb-buff-chip synergy">✦ 二阶段</span>`);
+    if (e.broken) eBuffs.push(`<span class="cb-buff-chip gold">✦ 弱点击破 1.35×</span>`);
+    else if (e.maxLocks > 0 && e.hp > 0) eBuffs.push(`<span class="cb-buff-chip">锁 ${e.locks}/${e.maxLocks}</span>`);
+    if (e.shield > 0) eBuffs.push(`<span class="cb-buff-chip shield">${e.shieldKind === 'solid' ? '实体盾' : '魔法盾'} ${e.shield}</span>`);
+    if (e.solidArmor > 0) eBuffs.push(`<span class="cb-buff-chip">实体甲 ${Math.round(e.solidArmor * 100)}%</span>`);
+    if (e.fireAura > 0) eBuffs.push(`<span class="cb-buff-chip gold">烈焰斗气×${e.fireAura}</span>`);
+    if (e.evadeCharges > 0) eBuffs.push(`<span class="cb-buff-chip">闪避层×${e.evadeCharges}</span>`);
+    if (e.status && e.status.evadeSealed > 0) eBuffs.push(`<span class="cb-buff-chip debuff">风步已封(${e.status.evadeSealed})</span>`);
+    if (e.flawToken > 0) eBuffs.push(`<span class="cb-buff-chip gold">下击破绽+20%</span>`);
+    if (e.seepStacks > 0 && !e.seepSevered) eBuffs.push(`<span class="cb-buff-chip debuff">暗水线×${e.seepStacks}</span>`);
+    if (e.seepSevered) eBuffs.push(`<span class="cb-buff-chip">暗流已冻绝</span>`);
+    if (e.status && e.status.vuln > 0) eBuffs.push(`<span class="cb-buff-chip gold">易伤(${e.status.vuln})</span>`);
+    if (e.status && e.status.chill > 0) eBuffs.push(`<span class="cb-buff-chip">寒颤(${e.status.chill})</span>`);
+    return eBuffs.join('');
+  }
+
+  function renderTargetDetailPane(b) {
+    if (typeof document === 'undefined') return;
+    const pane = document.getElementById('cb-target-detail-pane');
+    if (!pane) return;
+    if (!b || b.headless || !Array.isArray(b.enemies)) {
+      pane.innerHTML = '';
+      pane.classList.add('is-empty');
+      pane.classList.remove('is-broken', 'is-phase2');
+      pane.removeAttribute('data-eidx');
+      return;
+    }
+    const primary = getPrimaryAliveEnemy(b);
+    const tIdx = primary ? b.enemies.indexOf(primary) : -1;
+    if (!primary || tIdx < 0) {
+      pane.innerHTML = '';
+      pane.classList.add('is-empty');
+      pane.classList.remove('is-broken', 'is-phase2');
+      pane.removeAttribute('data-eidx');
+      return;
+    }
+
+    const intent = primary.intent || { stance: 'STAGGERED', moveName: '已倒下', dmg: 0 };
+    const sm = STANCE_META[intent.stance] || STANCE_META.HEAVY_WINDUP;
+    const safeTrait = String(primary.trait || '').replace(/"/g, '&quot;');
+    const traitHtml = primary.trait
+      ? `<span class="cb-trait-wrap"><button type="button" class="cb-trait-pill" title="${safeTrait}">特性</button><span class="cb-trait-tip" role="tooltip">${primary.trait}</span></span>`
+      : '';
+    const hpPct = primary.nonLethalSpar
+      ? 100
+      : Math.max(0, Math.min(100, (primary.hp / Math.max(1, primary.mhp)) * 100));
+    const hpLabel = primary.nonLethalSpar ? '切磋耐力（三击制）' : '生命值 HP';
+    const hpVal = `${primary.nonLethalSpar ? '点到为止' : `${primary.hp}/${primary.mhp}`}${primary.shield ? ` (+盾${primary.shield})` : ''}`;
+
+    const maxLocks = Math.max(0, Number(primary.maxLocks) || 0);
+    const curLocks = primary.broken ? 0 : Math.max(0, Math.min(maxLocks, primary.locks != null ? primary.locks : maxLocks));
+    let locksRowHtml = '';
+    if (maxLocks > 0) {
+      const gems = [];
+      for (let i = 0; i < maxLocks; i++) {
+        const solid = i < curLocks;
+        gems.push(`<span class="cb-td-lock-gem${solid ? ' is-solid' : ' is-cracked'}" aria-hidden="true">${solid ? '◆' : '◇'}</span>`);
+      }
+      locksRowHtml = `
+        <div class="cb-td-locks${primary.broken ? ' is-broken' : ''}" aria-label="破防锁 ${curLocks}/${maxLocks}">
+          <span class="cb-td-locks-label">破防锁</span>
+          <span class="cb-td-locks-gems">${gems.join('')}</span>
+          <span class="cb-td-locks-val">${curLocks}/${maxLocks}${primary.broken ? ' · BREAK' : ''}</span>
+        </div>`;
+    }
+
+    const dmgPillText = intent.dmg > 0
+      ? (intent.shatterPlayerShield ? `预计 ${intent.dmg} · 破盾` : `预计 ${intent.dmg}`)
+      : '失衡';
+    const showNextTendency = hasRelic(b.player, 'belmont_schedule');
+    const nextTendencyHtml = (showNextTendency && primary.hp > 0)
+      ? `<div class="cb-td-next-tendency">✦ 下回合预判：${predictNextIntentTendency(primary, b)}</div>`
+      : '';
+    const eBuffsHtml = buildEnemyBuffChipsHTML(primary);
+
+    pane.classList.remove('is-empty');
+    pane.setAttribute('data-eidx', String(tIdx));
+    pane.classList.toggle('is-broken', !!primary.broken);
+    pane.classList.toggle('is-phase2', !!(primary.boss && (primary.phase || 1) >= 2));
+
+    pane.innerHTML = `
+      <div class="cb-td-head">
+        <span class="cb-td-title" data-eidx="${tIdx}">${primary.name}</span>
+        <span class="cb-td-badges cb-e-badges">
+          ${traitHtml}
+          <span class="cb-elem-tag elem-${primary.elem || 'phys'}">${ELEM_LABEL[primary.elem] || '剑术'}</span>
+        </span>
+      </div>
+      <div class="cb-td-bars cb-bars-wrap">
+        <div class="cb-stat-row">
+          <div class="cb-stat-top">
+            <span class="cb-stat-label">${hpLabel}</span>
+            <span class="cb-stat-val">${hpVal}</span>
+          </div>
+          <div class="cb-stat-track">
+            <div class="cb-stat-fill ehp" style="width:${hpPct.toFixed(1)}%"></div>
+            <div class="cb-td-hp-preview cb-hp-preview" data-eidx="${tIdx}"></div>
+          </div>
+        </div>
+        ${primary.mmp != null ? `
+        <div class="cb-stat-row">
+          <div class="cb-stat-top">
+            <span class="cb-stat-label">魔力 MP</span>
+            <span class="cb-stat-val">${primary.mp}/${primary.mmp}</span>
+          </div>
+          <div class="cb-stat-track">
+            <div class="cb-stat-fill emp" style="width:${Math.max(0, Math.min(100, (primary.mp / Math.max(1, primary.mmp)) * 100)).toFixed(1)}%"></div>
+          </div>
+        </div>` : ''}
+        ${locksRowHtml}
+      </div>
+      <div class="cb-td-intent stance-${intent.stance}">
+        <div class="cb-td-intent-row">
+          <span class="ib-stance-tag">${sm.short}</span>
+          <span class="cb-td-move-name">${intent.moveName}</span>
+          <span class="ib-dmg-pill">${dmgPillText}</span>
+        </div>
+        <div class="cb-td-intent-hint">${sm.hint}</div>
+        ${nextTendencyHtml}
+      </div>
+      <div class="cb-td-buffs cb-buff-list">${eBuffsHtml}</div>
+    `;
+
+    const traitBtn = pane.querySelector('.cb-trait-pill');
+    if (traitBtn) {
+      traitBtn.onclick = ev => {
+        ev.stopPropagation();
+        const wrap = traitBtn.closest('.cb-trait-wrap');
+        if (!wrap) return;
+        const wasOpen = wrap.classList.contains('tip-open');
+        const eZoneEl = document.getElementById('cb-enemy-zone');
+        if (eZoneEl) {
+          eZoneEl.querySelectorAll('.cb-intent-banner.tip-open, .cb-trait-wrap.tip-open').forEach(el => el.classList.remove('tip-open'));
+        }
+        pane.querySelectorAll('.cb-trait-wrap.tip-open').forEach(el => el.classList.remove('tip-open'));
+        if (!wasOpen) wrap.classList.add('tip-open');
+      };
+    }
+  }
+
   function applyTargetSelectionInPlace(b) {
     if (!b || b.headless || typeof document === 'undefined') return;
     const eZone = document.getElementById('cb-enemy-zone');
@@ -3759,6 +3902,7 @@
       if (elHp) elHp.style.width = `${Math.max(0, primary.hp / primary.mhp * 100)}%`;
       if (elHpNum) elHpNum.textContent = `${primary.hp}/${primary.mhp}`;
     }
+    renderTargetDetailPane(b);
     refreshSkillCardsTargetPreviewInPlace(b, primary);
     updateOvercastPreviewUI(b, hoveredSkillId);
     emitCombatStateChange(b);
@@ -7033,7 +7177,7 @@
             <div class="cb-formation-grid cb-ally-grid" id="cb-ally-formation">
               ${allySlotsHtml}
             </div>
-            <div class="cb-party-panes" id="cb-party-panes">
+            <div class="cb-party-panes" id="cb-party-panes" data-party-layout="1-2" data-party-count="1">
               <aside class="cb-player-pane" id="cb-player-pane">
                 <div class="cb-p-header">
                   <div class="cb-p-title">
@@ -7064,6 +7208,8 @@
           <div class="cb-mid-corridor" id="cb-mid-corridor" aria-hidden="true"></div>
 
           <section class="cb-enemy-zone cb-formation-grid cb-enemy-grid" id="cb-enemy-zone"></section>
+
+          <aside class="cb-target-detail-pane" id="cb-target-detail-pane" aria-label="当前锁定目标详情"></aside>
         </div>
 
         <div class="cb-forecast-bar" id="cb-forecast-bar">${isCoarseTouchDevice() ? '轻点技能卡查看破招与预计伤害，再次点击施放' : '悬停任意技能卡，实时推演架势克制、破招截断、预计伤害与魔力增幅'}</div>
@@ -7161,6 +7307,7 @@
     }
     const b = bOverride || activeBattle;
     const eZone = document.getElementById('cb-enemy-zone');
+    const tdPane = document.getElementById('cb-target-detail-pane');
     if (!eZone) return;
 
     eZone.querySelectorAll('.cb-enemy-card').forEach(card => {
@@ -7175,6 +7322,13 @@
       tag.textContent = '';
       tag.classList.remove('show', 'is-lethal', 'is-break');
     });
+    if (tdPane) {
+      tdPane.querySelectorAll('.cb-td-hp-preview').forEach(el => {
+        el.style.width = '0%';
+        el.style.left = '0%';
+        el.classList.remove('is-active', 'is-lethal', 'is-break');
+      });
+    }
 
     if (!sid || !b || b.headless) return;
     const sk = TACTICAL_SKILLS[sid];
@@ -7192,6 +7346,7 @@
       const cardEl = eZone.querySelector(`.cb-enemy-card[data-eidx="${eIdx}"]`);
       const prevEl = eZone.querySelector(`.cb-hp-preview[data-eidx="${eIdx}"]`)
         || eZone.querySelector(`.cb-ehp-preview[data-eidx="${eIdx}"]`);
+      const tdPrevEl = tdPane ? tdPane.querySelector(`.cb-td-hp-preview[data-eidx="${eIdx}"]`) : null;
       const tagEl = eZone.querySelector(`.cb-hp-microtag[data-eidx="${eIdx}"]`);
 
       const est = sk.power > 0 ? estimateSkillDamage(b, sk, en) : null;
@@ -7236,17 +7391,31 @@
         cardEl.classList.add('counter-target-glow');
       }
 
-      if (hpDmg > 0 && prevEl) {
+      if (hpDmg > 0 && (prevEl || tdPrevEl)) {
         const leftPct = Math.max(0, ((en.hp - hpDmg) / maxHp) * 100);
         const widthPct = Math.max(0, Math.min(100 - leftPct, (hpDmg / maxHp) * 100));
-        prevEl.style.left = `${leftPct.toFixed(2)}%`;
-        prevEl.style.width = `${widthPct.toFixed(2)}%`;
-        prevEl.classList.add('is-active');
-        if (isLethal) {
-          prevEl.classList.add('is-lethal');
-          if (cardEl) cardEl.classList.add('is-lethal');
-        } else if (canBreak || willShieldBreak) {
-          prevEl.classList.add('is-break');
+        const leftStr = `${leftPct.toFixed(2)}%`;
+        const widthStr = `${widthPct.toFixed(2)}%`;
+        if (prevEl) {
+          prevEl.style.left = leftStr;
+          prevEl.style.width = widthStr;
+          prevEl.classList.add('is-active');
+          if (isLethal) {
+            prevEl.classList.add('is-lethal');
+            if (cardEl) cardEl.classList.add('is-lethal');
+          } else if (canBreak || willShieldBreak) {
+            prevEl.classList.add('is-break');
+          }
+        }
+        if (tdPrevEl) {
+          tdPrevEl.style.left = leftStr;
+          tdPrevEl.style.width = widthStr;
+          tdPrevEl.classList.add('is-active');
+          if (isLethal) {
+            tdPrevEl.classList.add('is-lethal');
+          } else if (canBreak || willShieldBreak) {
+            tdPrevEl.classList.add('is-break');
+          }
         }
       }
 
@@ -7456,6 +7625,7 @@
     const isVol3Disguise = VOL3_DISGUISE_STAGES.has(b.id) || (p.name && p.name.includes('眷寒渔'));
     const pImg = resolveCharImg('sylvia', p.hp < p.mhp * 0.4 ? 'serious' : 'normal', stageAge, { disguise: isVol3Disguise });
     const allies = Array.isArray(b.allies) ? b.allies : [];
+    const totalParty = 1 + allies.length;
     const hasVanguardAlly = allies.length > 0;
     const playerStage = document.getElementById('cb-player-stage');
     if (playerStage) {
@@ -7499,8 +7669,19 @@
 
     const primaryAlly = allies[0] || null;
     const partyPanes = document.getElementById('cb-party-panes');
+    if (partyPanes) {
+      partyPanes.setAttribute('data-party-layout', totalParty <= 2 ? '1-2' : '3-6');
+      partyPanes.setAttribute('data-party-count', String(totalParty));
+      partyPanes.querySelectorAll('.cb-ally-extra-pane').forEach(el => el.remove());
+    }
+    if (allyGrid) {
+      allyGrid.querySelectorAll('.cb-ally-extra-slot').forEach(el => el.remove());
+    }
+
     if (primaryAlly && allyGrid) {
-      const aSlotIdx = Number.isInteger(primaryAlly.slot) && primaryAlly.slot >= 0 && primaryAlly.slot <= 5 ? primaryAlly.slot : 4;
+      const aSlotIdx = (Number.isInteger(primaryAlly.slot) && primaryAlly.slot >= 0 && primaryAlly.slot <= 5 && !occupiedAllySlots.has(primaryAlly.slot))
+        ? primaryAlly.slot
+        : ([4, 3, 5, 0, 2, 1].find(s => !occupiedAllySlots.has(s)) ?? 4);
       occupiedAllySlots.add(aSlotIdx);
       const aTargetSlot = allyGrid.querySelector(`.cb-ally-slot[data-slot="${aSlotIdx}"]`);
       let vWrap = document.getElementById('cb-ally-vanguard-slot');
@@ -7513,6 +7694,8 @@
         vWrap.innerHTML = `<div class="cb-standee-wrap cb-ally-standee"><div class="cb-magic-circle ally" aria-hidden="true"></div><div class="cb-ally-portrait" id="cb-ally-portrait"></div></div>`;
       }
       vWrap.setAttribute('data-ally-id', primaryAlly.id);
+      vWrap.setAttribute('data-aidx', '0');
+      vWrap.setAttribute('data-actor-key', aActorKey);
       vWrap.setAttribute('data-slot', String(aSlotIdx));
       if (aTargetSlot && vWrap.parentElement !== aTargetSlot) {
         aTargetSlot.appendChild(vWrap);
@@ -7550,6 +7733,8 @@
           allyPane.className = 'cb-ally-pane';
           partyPanes.appendChild(allyPane);
         }
+        allyPane.setAttribute('data-ally-id', primaryAlly.id);
+        allyPane.setAttribute('data-aidx', '0');
         const nextElem = primaryAlly.nextElement || (primaryAlly.elements && primaryAlly.elements[0]) || 'earth';
         const elemMeta = ALLY_ELEM_META[nextElem] || ALLY_ELEM_META.earth;
         const aHpPct = Math.max(0, Math.min(100, (primaryAlly.hp / Math.max(1, primaryAlly.mhp)) * 100));
@@ -7573,6 +7758,106 @@
             </div>
           </div>
         `;
+      }
+
+      if (allies.length > 1) {
+        const extraSlotOrder = [3, 5, 0, 2, 1, 4];
+        const maxAllyCount = Math.min(5, allies.length);
+        for (let aIdx = 1; aIdx < maxAllyCount; aIdx++) {
+          const extraAlly = allies[aIdx];
+          if (!extraAlly) continue;
+          const exSlotIdx = (Number.isInteger(extraAlly.slot) && extraAlly.slot >= 0 && extraAlly.slot <= 5 && !occupiedAllySlots.has(extraAlly.slot))
+            ? extraAlly.slot
+            : extraSlotOrder.find(s => !occupiedAllySlots.has(s));
+          if (exSlotIdx == null) break;
+          occupiedAllySlots.add(exSlotIdx);
+          const exTargetSlot = allyGrid.querySelector(`.cb-ally-slot[data-slot="${exSlotIdx}"]`);
+          const exId = extraAlly.id || `ally_${aIdx}`;
+          const exActorKey = `ally:${exId}`;
+          const exSpriteId = extraAlly.spriteId || extraAlly.id || 'reno';
+          const exName = extraAlly.name || '友军';
+
+          const exWrap = document.createElement('div');
+          exWrap.className = 'cb-ally-vanguard-slot cb-ally-extra-slot';
+          exWrap.setAttribute('data-ally-id', exId);
+          exWrap.setAttribute('data-aidx', String(aIdx));
+          exWrap.setAttribute('data-actor-key', exActorKey);
+          exWrap.setAttribute('data-slot', String(exSlotIdx));
+          exWrap.innerHTML = `<div class="cb-standee-wrap cb-ally-standee"><div class="cb-magic-circle ally" aria-hidden="true"></div><div class="cb-ally-portrait"></div></div>`;
+          if (exTargetSlot) {
+            exTargetSlot.appendChild(exWrap);
+          }
+
+          const exStandee = exWrap.querySelector('.cb-ally-standee');
+          const exPortEl = exWrap.querySelector('.cb-ally-portrait');
+          const exImg = resolveCharImg(extraAlly.charId || extraAlly.id, 'normal', stageAge);
+          if (pxApi && exPortEl) {
+            exPortEl.classList.remove('is-svg');
+            exPortEl.classList.add('has-px-actor');
+            if (exStandee) exStandee.classList.add('has-px-actor');
+            exPortEl.innerHTML = pxApi.renderActorMarkup(exSpriteId, {
+              actorKey: exActorKey,
+              label: exName,
+              dead: (extraAlly.hp || 0) <= 0,
+              fallbackImg: exImg,
+            });
+          } else if (exPortEl) {
+            exPortEl.classList.remove('has-px-actor');
+            if (exStandee) exStandee.classList.remove('has-px-actor');
+            exPortEl.classList.toggle('is-svg', !exImg);
+            exPortEl.innerHTML = exImg
+              ? `<img src="${exImg}" alt="${exName}"/>`
+              : `<span class="cb-ally-fallback-badge">${exName}</span>`;
+          }
+
+          if (partyPanes) {
+            const exPane = document.createElement('aside');
+            exPane.className = 'cb-ally-pane cb-ally-extra-pane';
+            exPane.setAttribute('data-ally-id', exId);
+            exPane.setAttribute('data-aidx', String(aIdx));
+            if ((extraAlly.hp || 0) <= 0) exPane.classList.add('is-dead');
+            const exElem = extraAlly.nextElement || extraAlly.elem || (extraAlly.elements && extraAlly.elements[0]) || 'ice';
+            const exElemMeta = ALLY_ELEM_META[exElem];
+            const exBadgeTxt = exElemMeta ? exElemMeta.badge : (ELEM_LABEL[exElem] || '协战');
+            const exHp = extraAlly.hp != null ? extraAlly.hp : (extraAlly.mhp || 100);
+            const exMhp = Math.max(1, extraAlly.mhp != null ? extraAlly.mhp : exHp);
+            const exHpPct = Math.max(0, Math.min(100, (exHp / exMhp) * 100));
+            const exShield = Math.max(0, extraAlly.shield || 0);
+            const exMaxShield = Math.max(exShield, extraAlly.maxShield || 120);
+            const exShPct = Math.max(0, Math.min(100, (exShield / Math.max(1, exMaxShield)) * 100));
+            const exHasMp = extraAlly.mmp != null && extraAlly.mmp > 0;
+            const exMp = exHasMp ? Math.max(0, extraAlly.mp != null ? extraAlly.mp : extraAlly.mmp) : 0;
+            const exMpPct = exHasMp ? Math.max(0, Math.min(100, (exMp / Math.max(1, extraAlly.mmp)) * 100)) : 0;
+            const exSecondBarHtml = exHasMp
+              ? `
+                <div class="cb-stat-row">
+                  <div class="cb-stat-top"><span>魔力 MP</span><span class="cb-ally-mp-txt">${exMp}/${extraAlly.mmp}</span></div>
+                  <div class="cb-stat-track"><div class="cb-stat-fill mp ally-mp" style="width:${exMpPct.toFixed(1)}%"></div></div>
+                </div>`
+              : `
+                <div class="cb-stat-row">
+                  <div class="cb-stat-top"><span>护壁</span><span class="cb-ally-shield-txt">${exShield}/${exMaxShield}</span></div>
+                  <div class="cb-stat-track"><div class="cb-stat-fill shield ally-shield" style="width:${exShPct.toFixed(1)}%"></div></div>
+                </div>`;
+            exPane.innerHTML = `
+              <div class="cb-ally-header">
+                <div class="cb-ally-title">
+                  <div class="cb-ally-name">${exName}</div>
+                  <div class="cb-ally-role">${extraAlly.title || '同队协战'}</div>
+                </div>
+                <span class="cb-ally-elem-badge elem-${exElem}" data-next-elem="${exElem}">${exBadgeTxt}</span>
+              </div>
+              <div class="cb-bars-wrap">
+                <div class="cb-stat-row">
+                  <div class="cb-stat-top"><span>生命值 HP</span><span class="cb-ally-hp-txt">${exHp}/${exMhp}${exHasMp && exShield > 0 ? ` (+盾${exShield})` : ''}</span></div>
+                  <div class="cb-stat-track"><div class="cb-stat-fill hp ally-hp" style="width:${exHpPct.toFixed(1)}%"></div></div>
+                </div>
+                ${exSecondBarHtml}
+              </div>
+            `;
+            partyPanes.appendChild(exPane);
+          }
+        }
       }
     } else {
       const oldV = document.getElementById('cb-ally-vanguard-slot');
@@ -7733,23 +8018,9 @@
         intent.shatterPlayerShield ||
         (intent.dmg && intent.dmg >= 65)
       ));
-      const eBuffs = [];
-      if (e.boss && (e.phase || 1) >= 2) eBuffs.push(`<span class="cb-buff-chip synergy">✦ 二阶段</span>`);
-      if (e.broken) eBuffs.push(`<span class="cb-buff-chip gold">✦ 弱点击破 1.35×</span>`);
-      else if (e.maxLocks > 0 && e.hp > 0) eBuffs.push(`<span class="cb-buff-chip">锁 ${e.locks}/${e.maxLocks}</span>`);
-      if (e.shield > 0) eBuffs.push(`<span class="cb-buff-chip shield">${e.shieldKind === 'solid' ? '实体盾' : '魔法盾'} ${e.shield}</span>`);
-      if (e.solidArmor > 0) eBuffs.push(`<span class="cb-buff-chip">实体甲 ${Math.round(e.solidArmor * 100)}%</span>`);
-      if (e.fireAura > 0) eBuffs.push(`<span class="cb-buff-chip gold">烈焰斗气×${e.fireAura}</span>`);
-      if (e.evadeCharges > 0) eBuffs.push(`<span class="cb-buff-chip">闪避层×${e.evadeCharges}</span>`);
-      if (e.status.evadeSealed > 0) eBuffs.push(`<span class="cb-buff-chip debuff">风步已封(${e.status.evadeSealed})</span>`);
-      if (e.flawToken > 0) eBuffs.push(`<span class="cb-buff-chip gold">下击破绽+20%</span>`);
-      if (e.seepStacks > 0 && !e.seepSevered) eBuffs.push(`<span class="cb-buff-chip debuff">暗水线×${e.seepStacks}</span>`);
-      if (e.seepSevered) eBuffs.push(`<span class="cb-buff-chip">暗流已冻绝</span>`);
-      if (e.status.vuln > 0) eBuffs.push(`<span class="cb-buff-chip gold">易伤(${e.status.vuln})</span>`);
-      if (e.status.chill > 0) eBuffs.push(`<span class="cb-buff-chip">寒颤(${e.status.chill})</span>`);
 
       const nextLine = (showNextTendency && e.hp > 0)
-        ? `<div class="ib-next-tendency">✦ 下回合预判：${predictNextIntentTendency(e, b)}</div>`
+        ? `<div class="ib-next-tendency cb-sr-only">✦ 下回合预判：${predictNextIntentTendency(e, b)}</div>`
         : '';
 
       const eVisual = renderEnemyVisualHTML({
@@ -7764,12 +8035,14 @@
         ? (intent.shatterPlayerShield ? `预计 ${intent.dmg} · 破盾` : `预计 ${intent.dmg}`)
         : '失衡';
       const fullTipAttr = String(`${sm.badge} | 招式：${intent.moveName} | ${sm.hint}`).replace(/"/g, '&quot;');
-      const safeTrait = String(e.trait || '').replace(/"/g, '&quot;');
-      const traitHtml = e.trait
-        ? `<span class="cb-trait-wrap"><button type="button" class="cb-trait-pill" title="${safeTrait}">特性</button><span class="cb-trait-tip" role="tooltip">${e.trait}</span></span>`
-        : '';
-      const hpLabel = e.nonLethalSpar ? '切磋耐力（三击制）' : (isMultiEnemy ? 'HP' : '敌方生命');
-      const mpLabel = isMultiEnemy ? 'MP' : '敌方魔力';
+      const lockPipHtml = e.broken
+        ? `<span class="cb-e-lock-pip is-broken" title="弱点击破">BREAK</span>`
+        : (e.maxLocks > 0 && e.hp > 0
+            ? `<span class="cb-e-lock-pip" title="破防锁">◆${e.locks != null ? e.locks : e.maxLocks}</span>`
+            : '');
+      const eHpPct = e.nonLethalSpar
+        ? 100
+        : Math.max(0, Math.min(100, (e.hp / Math.max(1, e.mhp)) * 100));
 
       const eSpriteId = pxApi ? pxApi.resolveEnemySpriteId(e) : null;
       const eActorKey = `enemy:${idx}`;
@@ -7787,21 +8060,6 @@
         <div class="cb-slot cb-enemy-slot is-occupied" data-side="enemy" data-slot="${coords.slot}" data-row="${coords.row}" data-col="${coords.col}">
           <div class="cb-slot-pad"></div>
           <article class="cb-enemy-card${idx === b.targetIdx ? ' targeted' : ''}${e.hp <= 0 ? ' dead' : ''}${intent.stance === 'STAGGERED' ? ' staggered' : ''}${isHeavyWarn ? ' intent-heavy-warn' : ''}${e.boss && (e.phase || 1) >= 2 ? ' phase2-boss' : ''}" data-eidx="${idx}" data-slot="${slot}">
-            <div class="cb-intent-banner stance-${intent.stance}" tabindex="0">
-              <div class="ib-row">
-                <span class="ib-stance-tag">${sm.short}</span>
-                <span class="ib-move-name">${shortMove}</span>
-                <span class="ib-dmg-pill">${dmgPillText}</span>
-                <button type="button" class="ib-info-btn" aria-label="查看架势对策" title="${fullTipAttr}">i</button>
-              </div>
-              ${nextLine}
-              <div class="cb-intent-tip" role="tooltip">
-                <div class="ib-tip-head">${sm.badge}</div>
-                <div class="ib-tip-move">招式：<b>${intent.moveName}</b></div>
-                <div class="ib-tip-hint">${sm.hint}</div>
-              </div>
-            </div>
-
             <div class="cb-e-stage${pxApi ? ' has-px-actor' : ''}">
               <div class="cb-magic-circle enemy" aria-hidden="true"></div>
               ${eStageHtml}
@@ -7809,33 +8067,29 @@
 
             <div class="cb-e-plate">
               <span class="cb-hp-microtag" data-eidx="${idx}"></span>
-              <div class="cb-e-info">
-                <div class="cb-e-name">
-                  <span class="cb-e-title">${e.name}</span>
-                  <span class="cb-e-badges">
-                    ${traitHtml}
-                    <span class="cb-elem-tag elem-${e.elem || 'phys'}">${ELEM_LABEL[e.elem] || '剑术'}</span>
-                  </span>
+              <div class="cb-e-micro-head">
+                <span class="cb-lock-diamond" aria-hidden="true"></span>
+                <span class="cb-e-title">${e.name}</span>
+                ${lockPipHtml}
+              </div>
+              <div class="cb-stat-track">
+                <div class="cb-stat-fill ehp" style="width:${eHpPct.toFixed(1)}%"></div>
+                <div class="cb-ehp-preview cb-hp-preview" data-eidx="${idx}"></div>
+              </div>
+              <div class="cb-intent-banner stance-${intent.stance}" tabindex="0">
+                <div class="ib-row">
+                  <span class="ib-stance-tag">${sm.short}</span>
+                  <span class="ib-move-name">${shortMove}</span>
+                  <span class="ib-dmg-pill">${dmgPillText}</span>
+                  <button type="button" class="ib-info-btn" aria-label="查看架势对策" title="${fullTipAttr}">i</button>
+                </div>
+                ${nextLine}
+                <div class="cb-intent-tip" role="tooltip">
+                  <div class="ib-tip-head">${sm.badge}</div>
+                  <div class="ib-tip-move">招式：<b>${intent.moveName}</b></div>
+                  <div class="ib-tip-hint">${sm.hint}</div>
                 </div>
               </div>
-              <div class="cb-bars-wrap">
-                <div class="cb-stat-row">
-                  <div class="cb-stat-top">
-                    <span class="cb-stat-label">${hpLabel}</span>
-                    <span class="cb-stat-val">${e.nonLethalSpar ? '点到为止' : `${e.hp}/${e.mhp}`}${e.shield ? ` (+盾${e.shield})` : ''}</span>
-                  </div>
-                  <div class="cb-stat-track">
-                    <div class="cb-stat-fill ehp" style="width:${e.nonLethalSpar ? 100 : Math.max(0, e.hp / e.mhp * 100)}%"></div>
-                    <div class="cb-ehp-preview cb-hp-preview" data-eidx="${idx}"></div>
-                  </div>
-                </div>
-                ${e.mmp != null ? `
-                <div class="cb-stat-row">
-                  <div class="cb-stat-top"><span class="cb-stat-label">${mpLabel}</span><span class="cb-stat-val">${e.mp}/${e.mmp}</span></div>
-                  <div class="cb-stat-track"><div class="cb-stat-fill emp" style="width:${Math.max(0, e.mp / e.mmp * 100)}%"></div></div>
-                </div>` : ''}
-              </div>
-              <div class="cb-buff-list">${eBuffs.join('')}</div>
             </div>
           </article>
         </div>
@@ -7856,6 +8110,7 @@
       });
     }
 
+    renderTargetDetailPane(b);
     updateOvercastPreviewUI(b, hoveredSkillId);
 
     eZone.querySelectorAll('.ib-info-btn').forEach(btn => {
@@ -7865,6 +8120,10 @@
         if (!banner) return;
         const wasOpen = banner.classList.contains('tip-open');
         eZone.querySelectorAll('.cb-intent-banner.tip-open, .cb-trait-wrap.tip-open').forEach(el => el.classList.remove('tip-open'));
+        const tdPaneEl = document.getElementById('cb-target-detail-pane');
+        if (tdPaneEl) {
+          tdPaneEl.querySelectorAll('.cb-trait-wrap.tip-open').forEach(el => el.classList.remove('tip-open'));
+        }
         if (!wasOpen) banner.classList.add('tip-open');
       };
     });
@@ -8483,12 +8742,27 @@
     }
     const eZone = document.getElementById('cb-enemy-zone');
     if (eZone) delete eZone.dataset.waveSig;
+    const tdPane = document.getElementById('cb-target-detail-pane');
+    if (tdPane) {
+      tdPane.innerHTML = '';
+      tdPane.classList.add('is-empty');
+      tdPane.classList.remove('is-broken', 'is-phase2');
+      tdPane.removeAttribute('data-eidx');
+    }
     const pPort = document.getElementById('cb-p-portrait');
     if (pPort) pPort.innerHTML = '';
     const allySlot = document.getElementById('cb-ally-vanguard-slot');
     if (allySlot && allySlot.parentNode) allySlot.remove();
     const allyPane = document.getElementById('cb-ally-pane');
     if (allyPane && allyPane.parentNode) allyPane.remove();
+    document.querySelectorAll('#battle-screen .cb-ally-extra-slot, #battle-screen .cb-ally-extra-pane').forEach(el => {
+      if (el && el.parentNode) el.remove();
+    });
+    const partyPanes = document.getElementById('cb-party-panes');
+    if (partyPanes) {
+      partyPanes.setAttribute('data-party-layout', '1-2');
+      partyPanes.setAttribute('data-party-count', '1');
+    }
     const pStage = document.getElementById('cb-player-stage');
     if (pStage) pStage.classList.remove('has-vanguard-ally');
     const bs = document.getElementById('battle-screen');
@@ -8712,12 +8986,27 @@
     }
     const eZone = bs.querySelector('#cb-enemy-zone');
     if (eZone) delete eZone.dataset.waveSig;
+    const tdPane = bs.querySelector('#cb-target-detail-pane');
+    if (tdPane) {
+      tdPane.innerHTML = '';
+      tdPane.classList.add('is-empty');
+      tdPane.classList.remove('is-broken', 'is-phase2');
+      tdPane.removeAttribute('data-eidx');
+    }
     const pPort = bs.querySelector('#cb-p-portrait');
     if (pPort) pPort.innerHTML = '';
     const allySlot = bs.querySelector('#cb-ally-vanguard-slot');
     if (allySlot && allySlot.parentNode) allySlot.remove();
     const allyPane = bs.querySelector('#cb-ally-pane');
     if (allyPane && allyPane.parentNode) allyPane.remove();
+    bs.querySelectorAll('.cb-ally-extra-slot, .cb-ally-extra-pane').forEach(el => {
+      if (el && el.parentNode) el.remove();
+    });
+    const partyPanes = bs.querySelector('#cb-party-panes');
+    if (partyPanes) {
+      partyPanes.setAttribute('data-party-layout', '1-2');
+      partyPanes.setAttribute('data-party-count', '1');
+    }
     const pStage = bs.querySelector('#cb-player-stage');
     if (pStage) pStage.classList.remove('has-vanguard-ally');
     const ao = document.getElementById('arena-overlay');

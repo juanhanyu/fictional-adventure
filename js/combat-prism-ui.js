@@ -166,6 +166,10 @@
     corridorRight: 0,
     corridorW: 0,
     hasVanguardActor: false,
+    partyLayout: '',
+    partyDockTop: 0,
+    targetPaneLeft: 0,
+    targetPaneTop: 0,
     obstacles: [],
     twoColBlades: false,
     animDissolveUntil: 0,
@@ -868,8 +872,12 @@
 
     // 1. 预评估中场空区单列几何：在三列 6+6 舞台下，中场走廊纵贯全场，单列可无遮挡容纳 1–12 项术式
     const naturalSingleW = (isTightDesktop || uiState.compactMulti) ? 288 : 326;
-    const singleW = freeWidth >= 232
-      ? Math.max(224, Math.min(naturalSingleW, freeWidth - 14))
+    const availRightW = uiState.hasMidCorridor
+      ? Math.max(0, freeRightAbs - Math.max(freeLeftAbs, anchorX + 14))
+      : freeWidth;
+    const effectiveFreeW = availRightW > 0 ? Math.min(freeWidth, availRightW) : freeWidth;
+    const singleW = effectiveFreeW >= 232
+      ? Math.max(224, Math.min(naturalSingleW, effectiveFreeW - 14))
       : naturalSingleW;
     const singleForceW = singleW < naturalSingleW;
     let singleMinLeft = minLeftFromAlly;
@@ -879,7 +887,13 @@
         singleMinLeft = Math.max(singleMinLeft, Math.round(paneClearLeft));
       }
     }
-    const singleMaxLeft = (freeRightAbs - anchorX) - singleW;
+    let singleMaxLeft = (freeRightAbs - anchorX) - singleW;
+    if (uiState.targetPaneLeft > 0 && anchorX + singleMaxLeft + singleW > uiState.targetPaneLeft - 8) {
+      const targetClearMaxLeft = (uiState.targetPaneLeft - 8) - anchorX - singleW;
+      if (targetClearMaxLeft >= singleMinLeft) {
+        singleMaxLeft = Math.min(singleMaxLeft, Math.round(targetClearMaxLeft));
+      }
+    }
     const singleSlack = Math.max(0, singleMaxLeft - singleMinLeft);
     const singleArcX = Math.max(0, Math.min(uiState.compactMulti || isTightDesktop ? 10 : 18, Math.floor(singleSlack * 0.45)));
     let singleBaseX = uiState.hasMidCorridor
@@ -899,7 +913,7 @@
     const minSingleH = isTightDesktop ? 32 : 34;
     const minSingleGap = safeCount >= 10 ? 2 : 3;
     const singleNeededH = safeCount * minSingleH + Math.max(0, safeCount - 1) * minSingleGap;
-    const singleFitsCorridor = uiState.hasMidCorridor && freeWidth >= 224 && singleAvailSpan >= singleNeededH;
+    const singleFitsCorridor = uiState.hasMidCorridor && effectiveFreeW >= 224 && singleAvailSpan >= singleNeededH;
 
     // 2. 双列触发判定：
     //    - 中场走廊极宽（单敌远置等）足以零遮挡容纳双列且技能 >= 7 时，切双列；
@@ -907,7 +921,7 @@
     //    - 若无中场走廊或窗口极矮单列放不下，退回避障双列天区排版。
     const twoColBladeW = isTightDesktop ? 262 : 286;
     const twoColIdealGap = isTightDesktop ? 12 : 16;
-    const twoColFitsCorridor = safeCount >= 7 && freeWidth >= (twoColBladeW * 2 + twoColIdealGap + 12);
+    const twoColFitsCorridor = safeCount >= 7 && availRightW >= (twoColBladeW * 2 + twoColIdealGap + 12);
     const needTwoColFallback = !singleFitsCorridor && (
       safeCount >= 7 || (isTightDesktop && safeCount >= 6) || (!!uiState.compactMulti && safeCount >= 6)
     );
@@ -1148,6 +1162,17 @@
     };
   }
 
+  function isDisplayedInLayout(el) {
+    if (!isVisible(el) || el.hidden) return false;
+    if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+      try {
+        const cs = window.getComputedStyle(el);
+        if (cs && cs.display === 'none') return false;
+      } catch (e) {}
+    }
+    return true;
+  }
+
   function syncRigAnchor() {
     if (!uiState.rigEl) return;
     const field = uiState.rigEl.parentElement;
@@ -1159,6 +1184,7 @@
     const pBox = measureBoxInField(playerStage, field, fRectFallback);
     if (fieldW < 100 || !pBox || pBox.width < 40) return;
 
+    const bs = getBattleScreen();
     const eZone = document.getElementById('cb-enemy-zone');
     const enemyCount = eZone ? eZone.querySelectorAll('.cb-enemy-card').length : 0;
     const isMulti = enemyCount >= 3;
@@ -1171,25 +1197,32 @@
     uiState.shortViewport = isShortViewport;
     uiState.narrowDesktop = isNarrowDesktop;
 
-    // 实时测算 6+6 战场静止槽位/容器避障边界（严禁测量受冲刺 transform: translate3d 驱动的 .cb-px-actor！）：
-    //   - 敌方：#cb-enemy-zone .cb-enemy-card、.cb-intent-banner、.cb-e-stage、.cb-e-plate
-    //   - 友方：#cb-ally-vanguard-slot、#cb-p-portrait、#cb-ally-formation .cb-ally-slot.is-occupied
-    //   - 底部面板：#cb-player-pane 与 #cb-ally-pane / .cb-ally-pane
+    // 实时测算 6+6 对称剧场静止槽位/容器避障边界（严禁测量受冲刺 transform: translate3d 驱动的 .cb-px-actor！）：
+    //   - 敌方：#cb-enemy-zone .cb-enemy-card、.cb-intent-banner（区分上半区与脚下微标）、.cb-e-stage、.cb-e-plate
+    //   - 友方：#cb-ally-vanguard-slot、.cb-ally-vanguard-slot、#cb-p-portrait、#cb-ally-formation .cb-ally-slot.is-occupied
+    //   - 双底角面板：#cb-party-panes / #cb-player-pane / #cb-ally-pane / .cb-ally-pane 与 #cb-target-detail-pane
     //   - 中场留空走廊：#cb-mid-corridor
     let intentMaxBottom = 0;
     let enemyMinTop = fieldH;
     let enemyMinLeft = fieldW;
     let allyActorRight = 0;
     let hasVanguardActor = false;
+    let occupiedAllySlots = 0;
     let paneTop = fieldH;
+    let allyPaneTop = fieldH;
     let allyPaneRight = 0;
+    let partyLayout = '';
+    let partyDockTop = 0;
+    let targetPaneLeft = 0;
+    let targetPaneTop = 0;
+    let targetPaneFound = false;
     const obstacles = [];
     const seenObstacleEls = new Set();
 
-    const pushObstacle = (el, kind, role) => {
-      if (!el || seenObstacleEls.has(el) || !isVisible(el)) return null;
-      const m = measureBoxInField(el, field, fRectFallback);
-      if (!m || m.width <= 12 || m.height <= 4) return null;
+    const pushObstacle = (el, kind, role, preMeasured) => {
+      if (!el || seenObstacleEls.has(el) || !isDisplayedInLayout(el)) return null;
+      const m = preMeasured || measureBoxInField(el, field, fRectFallback);
+      if (!m || m.width < 4 || m.height < 4) return null;
       seenObstacleEls.add(el);
       const box = {
         kind,
@@ -1211,8 +1244,23 @@
         }
       });
       eZone.querySelectorAll('.cb-intent-banner').forEach(el => {
-        const box = pushObstacle(el, 'intent', 'enemy-intent');
-        if (box) {
+        if (!el || seenObstacleEls.has(el) || !isDisplayedInLayout(el)) return;
+        const m = measureBoxInField(el, field, fRectFallback);
+        if (!m || m.width < 4 || m.height < 4) return;
+        // Stage B 敌方脚下意图微标绝不误判为顶部天花板：仅舞台上半区且位于精灵上方时作为 kind:'intent' 更新 intentMaxBottom
+        const ownerCard = el.closest ? el.closest('.cb-enemy-card') : null;
+        const ownerStage = ownerCard ? ownerCard.querySelector('.cb-e-stage') : null;
+        let isFootBanner = false;
+        if (ownerStage && isDisplayedInLayout(ownerStage)) {
+          const stageM = measureBoxInField(ownerStage, field, fRectFallback);
+          if (stageM && stageM.height >= 4 && m.top >= stageM.bottom - 18) {
+            isFootBanner = true;
+          }
+        }
+        const isUpperIntent = !isFootBanner && m.bottom < fieldH * 0.42 && m.top < fieldH * 0.35;
+        const intentKind = isUpperIntent ? 'intent' : (m.top >= fieldH * 0.58 ? 'lower' : 'enemy-card');
+        const box = pushObstacle(el, intentKind, 'enemy-intent', m);
+        if (box && isUpperIntent) {
           intentMaxBottom = Math.max(intentMaxBottom, box.bottom);
         }
       });
@@ -1225,33 +1273,70 @@
       });
     }
 
-    // 友方静止槽位/容器（#cb-ally-vanguard-slot、#cb-p-portrait、.cb-ally-slot.is-occupied），彻底免疫近战冲刺位移
-    const vanguardSlot = playerStage.querySelector('#cb-ally-vanguard-slot');
-    if (vanguardSlot) {
-      const box = pushObstacle(vanguardSlot, 'ally', 'vanguard');
+    // 友方多编队（1–6 人）静止槽位/容器右沿扫描（严格只测静止槽位，绝不测冲刺中的 .cb-px-actor）
+    field.querySelectorAll('#cb-ally-vanguard-slot, .cb-ally-vanguard-slot').forEach(vSlot => {
+      const box = pushObstacle(vSlot, 'ally', 'vanguard');
       if (box) {
         hasVanguardActor = true;
         allyActorRight = Math.max(allyActorRight, box.right);
       }
-    }
+    });
     const sylviaPortrait = playerStage.querySelector('#cb-p-portrait') || document.getElementById('cb-p-portrait');
     if (sylviaPortrait) {
       const box = pushObstacle(sylviaPortrait, 'ally', 'sylvia');
       if (box) allyActorRight = Math.max(allyActorRight, box.right);
     }
-    playerStage.querySelectorAll('#cb-ally-formation .cb-ally-slot.is-occupied').forEach(slotEl => {
+    field.querySelectorAll('#cb-ally-formation .cb-ally-slot.is-occupied').forEach(slotEl => {
       const box = pushObstacle(slotEl, 'ally', 'ally-slot');
-      if (box) allyActorRight = Math.max(allyActorRight, box.right);
+      if (box) {
+        occupiedAllySlots += 1;
+        allyActorRight = Math.max(allyActorRight, box.right);
+      }
     });
+    if (occupiedAllySlots >= 2) {
+      hasVanguardActor = true;
+    }
 
-    // 底部状态面板（希尔维亚 #cb-player-pane 与同伴 #cb-ally-pane / .cb-ally-pane）
-    field.querySelectorAll('#cb-player-pane, #cb-ally-pane, .cb-ally-pane').forEach(el => {
-      const box = pushObstacle(el, 'lower', el.id === 'cb-player-pane' ? 'player-pane' : 'ally-pane');
-      if (box && (box.bottom - box.top) > 12) {
-        paneTop = Math.min(paneTop, box.top);
+    // 底部双锚点面板扫描（左下 1–6 队卡 #cb-party-panes / #cb-player-pane / #cb-ally-pane / .cb-ally-pane 与右下锁定详情卡 #cb-target-detail-pane）
+    const bottomPanelEls = new Set();
+    field.querySelectorAll('#cb-party-panes, #cb-player-pane, #cb-ally-pane, .cb-ally-pane, #cb-target-detail-pane').forEach(el => {
+      bottomPanelEls.add(el);
+    });
+    const partyDockEl = field.querySelector('#cb-party-panes') || document.getElementById('cb-party-panes');
+    if (partyDockEl && (!bs || bs.contains(partyDockEl))) {
+      partyLayout = partyDockEl.getAttribute('data-party-layout') || '';
+      bottomPanelEls.add(partyDockEl);
+    }
+    const targetDetailEl = field.querySelector('#cb-target-detail-pane') || document.getElementById('cb-target-detail-pane');
+    if (targetDetailEl && (!bs || bs.contains(targetDetailEl))) {
+      bottomPanelEls.add(targetDetailEl);
+    }
+
+    bottomPanelEls.forEach(el => {
+      const isTargetDetail = el.id === 'cb-target-detail-pane';
+      const isPartyDock = el.id === 'cb-party-panes';
+      const role = isTargetDetail
+        ? 'target-detail-pane'
+        : (isPartyDock ? 'party-panes' : (el.id === 'cb-player-pane' ? 'player-pane' : 'ally-pane'));
+      const box = pushObstacle(el, 'lower', role);
+      if (!box) return;
+      if (isPartyDock) {
+        partyDockTop = Math.round(box.top);
+      }
+      if (isTargetDetail) {
+        targetPaneLeft = Math.round(box.left);
+        targetPaneTop = Math.round(box.top);
+        targetPaneFound = true;
+      }
+      paneTop = Math.min(paneTop, box.top);
+      if (!isTargetDetail) {
+        allyPaneTop = Math.min(allyPaneTop, box.top);
         allyPaneRight = Math.max(allyPaneRight, box.right);
       }
     });
+    if (!partyDockTop && allyPaneTop < fieldH) {
+      partyDockTop = Math.round(allyPaneTop);
+    }
 
     // 中场留空走廊测量（三列经典舞台；若 #cb-mid-corridor 尚未挂载亦自动识别列1与列3间真实空隙）
     let hasMidCorridor = false;
@@ -1312,19 +1397,36 @@
     uiState.corridorRight = corridorRight;
     uiState.corridorW = corridorW;
     uiState.hasVanguardActor = hasVanguardActor;
+    uiState.partyLayout = partyLayout;
+    uiState.partyDockTop = partyDockTop;
+    uiState.targetPaneLeft = targetPaneLeft;
+    uiState.targetPaneTop = targetPaneTop;
     uiState.obstacles = obstacles;
 
     let anchorX;
     let anchorY;
     if (hasMidCorridor) {
-      // 优雅锚定在中场空区 #cb-mid-corridor 偏左：紧邻我方前排右侧，零遮挡友方骨骼与敌方卡片
+      // 中场走廊居中取锚：在左翼最前锋占槽右沿与右翼最前排敌卡左沿之间丝滑居中，同时保证展开扇叶右沿不压敌阵
       const wingMinLeft = compactRig ? 24 : 46;
       const wingMaxRight = compactRig ? (isNarrowDesktop ? 260 : 272) : 352;
-      const preferredAnchor = Math.max(corridorLeft + (compactRig ? 8 : 12), allyRightBound + 12);
+      const corridorOpenLeft = Math.max(corridorLeft, allyRightBound + 10);
+      const corridorOpenRight = Math.min(fieldW - 12, enemyLeftBound - 10);
+      const expectedFreeW = Math.max(0, (enemyLeftBound - 12) - corridorOpenLeft);
+      const naturalBladeW = (compactRig || isNarrowDesktop) ? 288 : 326;
+      const expectedBladeW = expectedFreeW >= 232
+        ? Math.max(224, Math.min(naturalBladeW, expectedFreeW - 14))
+        : naturalBladeW;
       const minAnchorX = Math.max(110, allyRightBound - wingMinLeft + 10);
       const maxAnchorX = enemyLeftBound - wingMaxRight - 10;
+      const bladeFitMaxAnchorX = (enemyLeftBound - 12) - expectedBladeW - 14;
+      const effectiveMaxAnchorX = maxAnchorX >= minAnchorX
+        ? Math.max(minAnchorX, Math.min(maxAnchorX, bladeFitMaxAnchorX))
+        : maxAnchorX;
+      const centeredAnchor = Math.round((corridorOpenLeft + corridorOpenRight) * 0.5 - wingMaxRight * 0.5);
+      const floorAnchor = Math.max(corridorLeft + (compactRig ? 8 : 12), allyRightBound + 12);
+      const preferredAnchor = Math.max(floorAnchor, centeredAnchor);
       if (maxAnchorX >= minAnchorX) {
-        anchorX = Math.round(Math.max(minAnchorX, Math.min(maxAnchorX, preferredAnchor)));
+        anchorX = Math.round(Math.max(minAnchorX, Math.min(effectiveMaxAnchorX, preferredAnchor)));
       } else {
         const midGapX = Math.round((allyRightBound + enemyLeftBound) * 0.5 - (wingMinLeft + wingMaxRight) * 0.5);
         anchorX = Math.round(Math.max(110, Math.min(fieldW - wingMaxRight - 8, midGapX)));
@@ -1333,10 +1435,23 @@
       const wingTopExtent = (compactRig && isNarrowDesktop) ? 104 : (compactRig ? 118 : 126);
       const wingBotExtent = (compactRig && isNarrowDesktop) ? 132 : (compactRig ? 156 : 164);
       const wingsOverlapAllyPane = allyPaneRight > 0 && (anchorX + wingMinLeft) < (allyPaneRight + 6);
-      const botLimit = wingsOverlapAllyPane ? Math.min(fieldH - 10, paneTop - 8) : (fieldH - 10);
-      const minAy = Math.min(wingTopExtent + 10, Math.round(fieldH * 0.42));
+      const wingsOverlapTargetPane = targetPaneFound && targetPaneLeft > 0 && (anchorX + wingMaxRight) > (targetPaneLeft - 6);
+      let botLimit = fieldH - 10;
+      if (wingsOverlapAllyPane && allyPaneTop < fieldH) {
+        botLimit = Math.min(botLimit, allyPaneTop - 8);
+      }
+      if (wingsOverlapTargetPane && targetPaneTop < fieldH) {
+        botLimit = Math.min(botLimit, targetPaneTop - 8);
+      }
+      // 双底角面板上方净空保底：上方空间充足时优先将四片根翼稳稳悬于双底角之上并纵向居中
+      if (paneTop < fieldH && (paneTop - 8 - wingBotExtent) >= (wingTopExtent + 8)) {
+        botLimit = Math.min(botLimit, paneTop - 8);
+      }
+      const topLimit = 8;
+      const minAy = Math.min(topLimit + wingTopExtent + 6, Math.round(fieldH * 0.42));
       const maxAy = Math.max(minAy, Math.round(botLimit - wingBotExtent));
-      const idealAy = Math.round(fieldH * 0.45);
+      const stageMidAy = Math.round((topLimit + botLimit) * 0.5 - (wingBotExtent - wingTopExtent) * 0.5);
+      const idealAy = paneTop < fieldH ? Math.min(Math.round(fieldH * 0.45), stageMidAy) : Math.round(fieldH * 0.45);
       anchorY = Math.round(Math.max(minAy, Math.min(maxAy, idealAy)));
     } else {
       const stageRight = pBox.right;
@@ -2116,7 +2231,7 @@
   function buildItemsSignature(mode, items) {
     return `${mode}|${uiState.lastFieldW}x${uiState.lastFieldH}|${uiState.lastAnchorX},${uiState.lastAnchorY}|${uiState.portraitRight}:${uiState.allyPaneRight}:${uiState.corridorLeft}-${uiState.corridorRight}:${uiState.hasMidCorridor ? 1 : 0}|${uiState.skyTopY}:${uiState.skyBotY}:${uiState.enemyLeftX}|${uiState.compactMulti ? 1 : 0}|${uiState.narrowDesktop ? 1 : 0}|${uiState.shortViewport ? 1 : 0}|` + items.map((it, idx) =>
       `${idx}:${it.key}:${it.slotIdx != null ? it.slotIdx : ''}:${it.skillId || ''}:${it.name || ''}:${it.iconHtml ? 1 : 0}:${it.pathLabel || ''}:${it.cost}:${it.foot || it.desc || ''}:${it.oppLabel || ''}:${it.expKind || ''}:${it.expText || ''}:${it.disabled ? 1 : 0}`
-    ).join('||');
+    ).join('||') + `|${uiState.partyLayout || ''}:${Math.round(uiState.partyDockTop || 0)}:${Math.round(uiState.targetPaneLeft || 0)}:${Math.round(uiState.targetPaneTop || 0)}`;
   }
 
   function sync(battleOverride) {

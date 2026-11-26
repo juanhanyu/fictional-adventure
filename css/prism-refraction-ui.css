@@ -1775,6 +1775,24 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   color: #FFFFFF;
 }
 
+@keyframes prPalaceReadyGlow {
+  0%, 100% {
+    color: #FFFFFF;
+    box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.45), 0 3px 12px rgba(22, 88, 235, 0.34);
+    filter: brightness(1);
+  }
+  50% {
+    color: #FFFFFF;
+    box-shadow: 0 0 0 1px rgba(186, 230, 253, 0.88), 0 4px 16px rgba(56, 189, 248, 0.54);
+    filter: brightness(1.08);
+  }
+}
+
+#battle-screen .cb-tool-btn.palace-btn.pulse-hint:not(:disabled) {
+  color: #FFFFFF;
+  animation: prPalaceReadyGlow 2.2s ease-in-out infinite;
+}
+
 #battle-screen .cb-tool-btn.palace-btn:hover:not(:disabled),
 #battle-screen .cb-tool-btn.wand-btn.active:hover:not(:disabled) {
   filter: brightness(1.1);
@@ -1819,98 +1837,133 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   filter: none;
 }
 
-/* 8.2 敌方瘦身零跳动切面雪瓷棱镜牌 (.cb-enemy-card / .cb-e-plate / .cb-intent-banner)
-       .cb-intent-banner 与 .cb-e-plate 均保留 overflow: visible，由 ::before 绘制斜切冰晶底板，
-       保证 .cb-hp-microtag / .cb-intent-tip / .cb-trait-tip 零裁切且选靶/悬停 Δy === 0px */
-#battle-screen .cb-intent-banner {
+/* 8.2 敌方脚下超薄雪瓷微条 (.cb-enemy-card / .cb-e-plate / .cb-intent-banner)
+       彻底消除敌方大白墙，精灵脚下仅托极细半透雪瓷微条 + 5px 微血条 + 18px 单行意图微标；
+       严守选靶/悬停 Δy === 0px，浮层 z-index: 48 零裁切 */
+#battle-screen .cb-enemy-card .cb-e-plate,
+#battle-screen .cb-enemy-zone.multi-enemies .cb-e-plate,
+#battle-screen .cb-enemy-grid.multi-enemies .cb-e-plate {
+  position: relative;
   border: none;
-  background: transparent;
+  border-bottom: 1px solid rgba(125, 211, 252, 0.80);
+  background: linear-gradient(180deg, rgba(250, 251, 253, 0.86) 0%, rgba(238, 246, 255, 0.82) 100%);
+  backdrop-filter: blur(10px) saturate(135%);
+  -webkit-backdrop-filter: blur(10px) saturate(135%);
+  box-shadow: 0 3px 10px rgba(10, 28, 82, 0.14);
+  filter: none;
+  overflow: visible;
+  padding: 2px 5px 3px;
+  transform: none;
+}
+
+#battle-screen .cb-enemy-card .cb-e-plate::before,
+#battle-screen .cb-enemy-card .cb-intent-banner::before {
+  content: none !important;
+  display: none !important;
+}
+
+#battle-screen .cb-enemy-card.targeted .cb-e-plate {
+  border: none;
+  border-bottom: 1px solid var(--pr-sapphire);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(236, 246, 255, 0.90) 100%);
+  box-shadow: 0 3px 12px rgba(22, 88, 235, 0.26);
+  filter: none;
+  transform: none;
+}
+
+#battle-screen .cb-enemy-card.counter-target-glow .cb-e-plate {
+  border: none;
+  border-bottom: 1px solid #1267A8;
+  background: linear-gradient(180deg, rgba(244, 251, 255, 0.94) 0%, rgba(222, 242, 255, 0.88) 100%);
+  box-shadow: 0 3px 12px rgba(18, 103, 168, 0.28);
+  filter: none;
+  transform: none;
+}
+
+#battle-screen .cb-enemy-card.staggered .cb-e-plate {
+  border: none;
+  border-bottom: 1px solid var(--pr-cyan);
+  box-shadow: 0 3px 12px rgba(125, 211, 252, 0.34);
+  filter: none;
+  transform: none;
+}
+
+#battle-screen .cb-enemy-card.is-lethal .cb-e-plate,
+#battle-screen .cb-enemy-card.phase2-boss .cb-e-plate {
+  border: none;
+  border-bottom: 1px solid var(--pr-crimson);
+  background: linear-gradient(180deg, rgba(255, 248, 250, 0.92) 0%, rgba(252, 236, 241, 0.88) 100%);
+  box-shadow: 0 3px 12px rgba(209, 52, 86, 0.26);
+  filter: none;
+  transform: none;
+}
+
+#battle-screen .cb-enemy-card.intent-heavy-warn .cb-e-plate {
+  border: none;
+  border-bottom: 1px solid var(--pr-crimson);
+  filter: none;
+  transform: none;
+}
+
+#battle-screen .cb-enemy-card .cb-intent-banner,
+#battle-screen .cb-enemy-zone.multi-enemies .cb-intent-banner,
+#battle-screen .cb-enemy-grid.multi-enemies .cb-intent-banner {
+  border: none;
+  border-left: 2px solid var(--pr-sapphire);
+  background: rgba(22, 88, 235, 0.08);
   box-shadow: none;
-  padding: 3px 8px;
-  height: 26px;
-  min-height: 26px;
-  max-height: 26px;
+  filter: none;
+  padding: 0 2px;
+  height: 18px;
+  min-height: 18px;
+  max-height: 18px;
   box-sizing: border-box;
   white-space: nowrap;
   overflow: visible;
-  filter: drop-shadow(0 6px 14px rgba(10, 28, 82, 0.14));
+  transform: none;
 }
 
-#battle-screen .cb-enemy-zone.multi-enemies .cb-intent-banner,
-#battle-screen .cb-enemy-grid.multi-enemies .cb-intent-banner {
-  padding: 2px 6px;
-  height: 22px;
-  min-height: 22px;
-  max-height: 22px;
+#battle-screen .cb-enemy-card .cb-intent-banner.stance-DUAL_CAST,
+#battle-screen .cb-enemy-card .cb-intent-banner.stance-HEAVY_WINDUP,
+#battle-screen .cb-enemy-card .cb-intent-banner.stance-UNDER_SEEP {
+  border-left-color: var(--pr-crimson);
+  background: rgba(209, 52, 86, 0.11);
 }
 
-#battle-screen .cb-intent-banner::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--pr-glass-plate);
-  border-top: 2px solid var(--pr-sapphire);
-  clip-path: polygon(8px 0%, 100% 0%, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0% 100%, 0% 8px);
-  box-shadow: inset 0 0 0 1px rgba(96, 134, 198, 0.34);
-  pointer-events: none;
+#battle-screen .cb-enemy-card .cb-intent-banner.stance-CLOSE_LUNGE {
+  border-left-color: var(--pr-sapphire-mid);
+  background: rgba(16, 63, 168, 0.10);
 }
 
-#battle-screen .cb-intent-banner.stance-DUAL_CAST::before,
-#battle-screen .cb-intent-banner.stance-HEAVY_WINDUP::before,
-#battle-screen .cb-intent-banner.stance-UNDER_SEEP::before {
-  border-top-color: var(--pr-crimson);
-  box-shadow: inset 0 0 0 1px rgba(209, 52, 86, 0.36);
+#battle-screen .cb-enemy-card .cb-intent-banner.stance-GUARD_COUNTER,
+#battle-screen .cb-enemy-card .cb-intent-banner.stance-STAGGERED {
+  border-left-color: #1267A8;
+  background: rgba(18, 103, 168, 0.10);
 }
 
-#battle-screen .cb-enemy-card.targeted .cb-intent-banner,
-#battle-screen .cb-enemy-card.counter-target-glow .cb-intent-banner,
-#battle-screen .cb-enemy-card.is-lethal .cb-intent-banner {
-  border: none;
-  background: transparent;
-  box-shadow: none;
+#battle-screen .cb-enemy-card .cb-intent-banner .ib-stance-tag {
+  clip-path: none;
+  padding: 0 3px;
 }
 
-#battle-screen .cb-enemy-card.targeted .cb-intent-banner::before {
-  box-shadow: inset 0 0 0 1px rgba(22, 88, 235, 0.48);
-}
-
-#battle-screen .cb-enemy-card.counter-target-glow .cb-intent-banner::before {
-  border-top-color: var(--pr-cyan);
-  box-shadow: inset 0 0 0 1px rgba(18, 103, 168, 0.48);
-}
-
-#battle-screen .cb-enemy-card.is-lethal .cb-intent-banner::before {
-  border-top-color: var(--pr-crimson);
-  box-shadow: inset 0 0 0 1px rgba(209, 52, 86, 0.56);
-}
-
-#battle-screen .ib-stance-tag {
+#battle-screen #cb-target-detail-pane .ib-stance-tag {
   clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
   padding: 1px 6px;
 }
 
-#battle-screen .cb-enemy-zone.multi-enemies .ib-stance-tag,
-#battle-screen .cb-enemy-grid.multi-enemies .ib-stance-tag {
-  padding: 1px 4px;
-}
-
-#battle-screen .cb-e-plate {
-  position: relative;
+/* 8.3 双底角雪瓷磨砂 45° 切角卡：右下锁定目标详情卡 (#cb-target-detail-pane) + 左下 1–6 人队卡 (#cb-party-panes)
+       均以 ::before 绘制 45° 切角雪瓷玻璃底板，保留 overflow: visible 避免裁切特性浮层与板 A 遗物微图标 */
+#battle-screen #cb-target-detail-pane {
   border: none;
   background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow: none;
+  filter: drop-shadow(0 12px 26px rgba(10, 28, 82, 0.22));
   overflow: visible;
-  filter: drop-shadow(0 10px 20px rgba(10, 28, 82, 0.18));
-  padding: 6px 10px;
 }
 
-#battle-screen .cb-enemy-zone.multi-enemies .cb-e-plate,
-#battle-screen .cb-enemy-grid.multi-enemies .cb-e-plate {
-  padding: 4px 7px;
-}
-
-#battle-screen .cb-e-plate::before {
+#battle-screen #cb-target-detail-pane::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -1918,151 +1971,109 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   background: var(--pr-caustic), var(--pr-glass-plate);
   backdrop-filter: blur(18px) saturate(145%);
   -webkit-backdrop-filter: blur(18px) saturate(145%);
-  border-top: 2px solid var(--pr-crimson);
-  clip-path: polygon(10px 0%, 100% 0%, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0% 100%, 0% 10px);
-  box-shadow: inset 0 0 0 1px rgba(209, 52, 86, 0.34);
+  border-top: 2px solid var(--pr-sapphire);
+  clip-path: polygon(12px 0%, 100% 0%, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0% 100%, 0% 12px);
+  box-shadow:
+    inset 0 0 0 1px rgba(196, 164, 108, 0.44),
+    inset 0 -1px 0 rgba(22, 88, 235, 0.24);
   pointer-events: none;
 }
 
-#battle-screen .cb-enemy-card.targeted .cb-e-plate,
-#battle-screen .cb-enemy-card.counter-target-glow .cb-e-plate,
-#battle-screen .cb-enemy-card.is-lethal .cb-e-plate,
-#battle-screen .cb-enemy-card.staggered .cb-e-plate,
-#battle-screen .cb-enemy-card.intent-heavy-warn .cb-e-plate,
-#battle-screen .cb-enemy-card.phase2-boss .cb-e-plate {
+#battle-screen #cb-target-detail-pane.is-phase2::before {
+  border-top-color: var(--pr-crimson);
+  box-shadow:
+    inset 0 0 0 1px rgba(209, 52, 86, 0.44),
+    inset 0 -1px 0 rgba(196, 164, 108, 0.32);
+}
+
+#battle-screen #cb-target-detail-pane.is-broken::before {
+  border-top-color: var(--pr-cyan);
+  box-shadow:
+    inset 0 0 0 1px rgba(125, 211, 252, 0.72),
+    inset 0 -1px 0 rgba(196, 164, 108, 0.36);
+}
+
+#battle-screen #cb-party-panes #cb-player-pane,
+#battle-screen #cb-party-panes #cb-ally-pane,
+#battle-screen #cb-party-panes .cb-ally-pane {
   border: none;
   background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  clip-path: none;
   box-shadow: none;
+  filter: drop-shadow(0 8px 18px rgba(10, 28, 82, 0.18));
 }
 
-#battle-screen .cb-enemy-card.targeted .cb-e-plate {
-  filter: drop-shadow(0 12px 24px rgba(22, 88, 235, 0.28));
-}
-
-#battle-screen .cb-enemy-card.targeted .cb-e-plate::before {
-  border-top-color: var(--pr-sapphire);
-  box-shadow: inset 0 0 0 1px rgba(22, 88, 235, 0.56);
-}
-
-#battle-screen .cb-enemy-card.counter-target-glow .cb-e-plate::before {
-  border-top-color: #1267A8;
-  box-shadow: inset 0 0 0 1px rgba(18, 103, 168, 0.54);
-}
-
-#battle-screen .cb-enemy-card.staggered .cb-e-plate::before {
-  border-top-color: var(--pr-cyan);
-  box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.85);
-}
-
-#battle-screen .cb-enemy-card.is-lethal .cb-e-plate::before,
-#battle-screen .cb-enemy-card.phase2-boss .cb-e-plate::before {
-  border-top-color: var(--pr-crimson);
-  box-shadow: inset 0 0 0 1px rgba(209, 52, 86, 0.58);
-}
-
-/* 8.3 我方左下雪瓷棱镜读数面板 (.cb-player-pane + 雷纳德前排 #cb-ally-pane) */
-#battle-screen .cb-player-pane {
-  position: relative;
-  border: 1.5px solid rgba(96, 146, 224, 0.44);
-  border-left: 3.5px solid var(--pr-sapphire);
-  border-top: 2px solid var(--pr-gold);
+#battle-screen #cb-party-panes #cb-player-pane::before,
+#battle-screen #cb-party-panes #cb-ally-pane::before,
+#battle-screen #cb-party-panes .cb-ally-pane::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background: var(--pr-caustic), var(--pr-glass-plate);
-  backdrop-filter: blur(20px) saturate(145%);
-  -webkit-backdrop-filter: blur(20px) saturate(145%);
-  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
-  box-shadow: none;
-  filter: drop-shadow(0 10px 22px rgba(10, 28, 82, 0.18));
-  padding: 8px 12px;
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  border-left: 3px solid var(--pr-sapphire);
+  clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  box-shadow:
+    inset 0 1px 0 rgba(125, 211, 252, 0.44),
+    inset 0 -1px 0 rgba(96, 134, 198, 0.30),
+    inset -1px 0 0 rgba(196, 164, 108, 0.32);
+  pointer-events: none;
 }
 
-#battle-screen #cb-ally-pane,
-#battle-screen .cb-ally-pane {
-  border: none;
-  border-left: 2px solid #C68B3E;
+#battle-screen #cb-party-panes #cb-player-pane.wand-aura::before {
+  border-left-color: var(--pr-sapphire-deep);
+  box-shadow:
+    inset 0 1px 0 rgba(196, 164, 108, 0.62),
+    inset 0 -1px 0 rgba(22, 88, 235, 0.36);
+}
+
+#battle-screen #cb-party-panes #cb-player-pane.rooted-aura::before {
+  border-left-color: var(--pr-emerald);
+}
+
+#battle-screen #cb-party-panes #cb-ally-pane::before,
+#battle-screen #cb-party-panes .cb-ally-pane::before {
+  border-left-color: #C68B3E;
+  background:
+    var(--pr-caustic),
+    linear-gradient(154deg, rgba(255, 253, 248, 0.95) 0%, rgba(247, 239, 224, 0.90) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(198, 139, 62, 0.34),
+    inset 0 -1px 0 rgba(196, 164, 108, 0.28);
+}
+
+#battle-screen #cb-party-panes .cb-ally-pane.cb-ally-extra-pane::before {
+  border-left-color: var(--pr-sapphire-hi);
   background: var(--pr-caustic), var(--pr-glass-plate);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
-  box-shadow: inset 0 1px 0 rgba(198, 139, 62, 0.24), inset 0 -1px 0 rgba(96, 134, 198, 0.24);
-  filter: drop-shadow(0 8px 18px rgba(10, 28, 82, 0.14));
-  padding: 6px 10px;
+  box-shadow:
+    inset 0 1px 0 rgba(125, 211, 252, 0.38),
+    inset 0 -1px 0 rgba(96, 134, 198, 0.26);
 }
 
-#battle-screen .cb-player-pane .cb-p-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  column-gap: 8px;
-  row-gap: 3px;
-}
-
-#battle-screen .cb-player-pane .cb-p-title {
-  display: contents;
-}
-
-#battle-screen .cb-player-pane .cb-p-name {
-  grid-column: 1;
-  grid-row: 1;
-  white-space: nowrap;
-}
-
-#battle-screen .cb-player-pane .cb-ap-row {
-  grid-column: 2;
-  grid-row: 1;
-  justify-self: end;
-}
-
-#battle-screen .cb-player-pane .cb-p-sub {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  margin-top: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-variant-numeric: tabular-nums;
+#battle-screen #cb-party-panes[data-party-layout="3-6"] #cb-player-pane::before,
+#battle-screen #cb-party-panes[data-party-layout="3-6"] #cb-ally-pane::before,
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-ally-pane::before {
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
 }
 
 @media (max-width: 1360px), (max-height: 760px) {
-  #battle-screen .cb-enemy-zone.multi-enemies .cb-intent-banner,
-  #battle-screen .cb-enemy-grid.multi-enemies .cb-intent-banner {
-    padding: 1px 5px;
-    height: 21px;
-    min-height: 21px;
-    max-height: 21px;
-  }
-
+  #battle-screen .cb-enemy-card .cb-e-plate,
   #battle-screen .cb-enemy-zone.multi-enemies .cb-e-plate,
   #battle-screen .cb-enemy-grid.multi-enemies .cb-e-plate {
-    padding: 3px 6px;
+    padding: 2px 4px 2px;
   }
 
-  #battle-screen .cb-player-pane {
-    padding: 6px 10px;
-  }
-
-  #battle-screen #cb-ally-pane,
-  #battle-screen .cb-ally-pane {
-    padding: 5px 9px;
-  }
-
-  #battle-screen .cb-player-pane .cb-p-header {
-    margin-bottom: 5px;
-    padding-bottom: 4px;
-    row-gap: 2px;
-  }
-
-  #battle-screen .cb-player-pane .cb-p-name {
-    font-size: 14.5px;
-  }
-
-  #battle-screen .cb-player-pane .cb-p-sub {
-    font-size: 11px;
-    letter-spacing: 0.01em;
-    line-height: 1.3;
-  }
-
-  #battle-screen .cb-player-pane .cb-ap-row {
-    gap: 5px;
+  #battle-screen .cb-enemy-card .cb-intent-banner,
+  #battle-screen .cb-enemy-zone.multi-enemies .cb-intent-banner,
+  #battle-screen .cb-enemy-grid.multi-enemies .cb-intent-banner {
+    padding: 0 2px;
+    height: 17px;
+    min-height: 17px;
+    max-height: 17px;
   }
 }
 
@@ -2099,29 +2110,41 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   background: linear-gradient(90deg, transparent, rgba(255, 143, 164, 0.26), transparent);
 }
 
-/* 战斗六角切面结晶 HP / MP 轨（我方 8px / 单敌 6px / 多敌与雷纳德 5px） */
+/* 战斗六角切面结晶 HP / MP 轨（详情卡 6px / 敌脚下微血条严格 5px / 1-2 队卡 5px / 3-6 队卡 4px+3px） */
 #battle-screen .cb-stat-track {
-  height: 8px;
-  background: rgba(14, 34, 84, 0.14);
-  clip-path: polygon(4px 0%, calc(100% - 4px) 0%, 100% 50%, calc(100% - 4px) 100%, 4px 100%, 0% 50%);
-}
-
-#battle-screen .cb-e-plate .cb-stat-track {
   height: 6px;
   background: rgba(14, 34, 84, 0.14);
   clip-path: polygon(3px 0%, calc(100% - 3px) 0%, 100% 50%, calc(100% - 3px) 100%, 3px 100%, 0% 50%);
 }
 
+#battle-screen .cb-enemy-card .cb-e-plate .cb-stat-track,
 #battle-screen .cb-enemy-zone.multi-enemies .cb-e-plate .cb-stat-track,
-#battle-screen .cb-enemy-grid.multi-enemies .cb-e-plate .cb-stat-track,
-#battle-screen #cb-ally-pane .cb-stat-track,
-#battle-screen .cb-ally-pane .cb-stat-track {
+#battle-screen .cb-enemy-grid.multi-enemies .cb-e-plate .cb-stat-track {
+  height: 5px;
+  min-height: 5px;
+  max-height: 5px;
+  background: rgba(14, 34, 84, 0.16);
+  clip-path: polygon(2px 0%, calc(100% - 2px) 0%, 100% 50%, calc(100% - 2px) 100%, 2px 100%, 0% 50%);
+}
+
+#battle-screen #cb-party-panes[data-party-layout="1-2"] .cb-stat-track,
+#battle-screen #cb-party-panes:not([data-party-layout="3-6"]) .cb-stat-track {
   height: 5px;
   clip-path: polygon(2px 0%, calc(100% - 2px) 0%, 100% 50%, calc(100% - 2px) 100%, 2px 100%, 0% 50%);
 }
 
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-stat-track {
+  height: 4px;
+  clip-path: none;
+}
+
+#battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-stat-row + .cb-stat-row .cb-stat-track {
+  height: 3px;
+  clip-path: none;
+}
+
 #battle-screen .cb-stat-fill {
-  clip-path: polygon(4px 0%, calc(100% - 4px) 0%, 100% 50%, calc(100% - 4px) 100%, 4px 100%, 0% 50%);
+  clip-path: none;
 }
 
 #battle-screen .cb-stat-fill.hp,
@@ -4670,8 +4693,8 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
     font-size: 10px;
   }
 
-  /* 1280×720 罗文战双人阵：微收 Slot 1 8岁希尔维亚像素比例（脚底仍紧贴踏位），把头顶安全下移约 16px */
-  #battle-screen .cb-player-stage.has-vanguard-ally .cb-ally-slot[data-slot="1"] .cb-px-actor {
+  /* 1280×720 罗文战双人阵：微收 Slot 1 8岁希尔维亚像素比例（脚底仍紧贴踏位），把头顶安全下移约 16px；3–6 人满编阵交由统一多排比例掌控 */
+  #battle-screen .cb-player-stage.has-vanguard-ally:not(:has(.cb-ally-extra-slot)) .cb-ally-slot[data-slot="1"] .cb-px-actor {
     --px-scale: 1.18;
   }
 }

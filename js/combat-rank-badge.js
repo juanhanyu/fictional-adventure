@@ -872,10 +872,11 @@
   }
 
   /**
-   * 同步战斗界面全部三类目标节点的方案 C 等阶铭牌：
+   * 同步战斗界面全部四类目标节点的方案 C 等阶铭牌：
    * 1. 我方主角名称（#cb-player-pane）
-   * 2. 前排友军名称（#cb-ally-pane / .cb-ally-pane）
-   * 3. 敌方底牌名称（.cb-enemy-card[data-eidx] .cb-e-title）
+   * 2. 前排与同队友军名称（#cb-ally-pane / .cb-ally-pane）
+   * 3. 敌方脚下微条名称（.cb-enemy-card[data-eidx] .cb-e-title，始终 compact）
+   * 4. 右下锁定目标详情卡标题（#cb-target-detail-pane .cb-td-title，标准尺寸）
    */
   function syncBattleBadges(stateOverride) {
     if (typeof document === 'undefined') return 0;
@@ -889,6 +890,9 @@
     ensureSvgDefs();
     let updated = 0;
 
+    const partyPanes = root.querySelector('#cb-party-panes');
+    const isCompactParty = !!(partyPanes && partyPanes.getAttribute('data-party-layout') === '3-6');
+
     // 1. 玩家名称节点（#cb-player-pane）
     const playerPane = root.querySelector('#cb-player-pane');
     if (playerPane) {
@@ -896,13 +900,13 @@
       if (pNameEl) {
         const pUnit = (state && state.player) || (rawBattle && rawBattle.player) || { name: readPlainNameText(pNameEl) };
         const pSpec = resolveUnitRank(pUnit, { side: 'player', battleState: state, rawBattle });
-        if (pSpec && mountBadgeBeforeText(pNameEl, pSpec, { compact: false })) {
+        if (pSpec && mountBadgeBeforeText(pNameEl, pSpec, { compact: isCompactParty })) {
           updated++;
         }
       }
     }
 
-    // 2. 前排友军名称节点（#cb-ally-pane / .cb-ally-pane）
+    // 2. 前排与同队友军名称节点（#cb-ally-pane / .cb-ally-pane）
     const allyPanes = root.querySelectorAll('#cb-ally-pane, .cb-ally-pane');
     if (allyPanes && allyPanes.length) {
       const alliesList = (state && Array.isArray(state.allies) && state.allies)
@@ -930,23 +934,17 @@
           allyUnit = { id: attrId || (plainName.indexOf('雷纳德') >= 0 ? 'reno' : `ally_${paneIdx}`), name: plainName };
         }
         const aSpec = resolveUnitRank(allyUnit, { side: 'ally', battleState: state, rawBattle });
-        if (aSpec && mountBadgeBeforeText(aNameEl, aSpec, { compact: false })) {
+        if (aSpec && mountBadgeBeforeText(aNameEl, aSpec, { compact: isCompactParty })) {
           updated++;
         }
       });
     }
 
-    // 3. 每个敌人底牌名称节点（.cb-enemy-card[data-eidx] .cb-e-title）
-    const eZone = root.querySelector('#cb-enemy-zone');
+    // 3. 每个敌人脚下微条名称节点（.cb-enemy-card[data-eidx] .cb-e-title，保持 compact）
     const enemyCards = root.querySelectorAll('.cb-enemy-card[data-eidx]');
     const enemiesList = (state && Array.isArray(state.enemies) && state.enemies)
       || (rawBattle && Array.isArray(rawBattle.enemies) && rawBattle.enemies)
       || [];
-    const isCompact = !!(
-      (eZone && eZone.classList.contains('multi-enemies')) ||
-      enemyCards.length > 1 ||
-      enemiesList.length > 1
-    );
 
     enemyCards.forEach(card => {
       const titleEl = card.querySelector('.cb-e-title');
@@ -956,10 +954,47 @@
         ? enemiesList[eIdx]
         : { name: readPlainNameText(titleEl) };
       const eSpec = resolveUnitRank(enemyUnit, { side: 'enemy', battleState: state, rawBattle });
-      if (eSpec && mountBadgeBeforeText(titleEl, eSpec, { compact: isCompact })) {
+      if (eSpec && mountBadgeBeforeText(titleEl, eSpec, { compact: true })) {
         updated++;
       }
     });
+
+    // 4. 右下唯一锁定目标详情卡标题节点（#cb-target-detail-pane .cb-td-title）
+    const tdPane = root.querySelector('#cb-target-detail-pane');
+    if (tdPane && !tdPane.classList.contains('is-empty')) {
+      const tdTitleEl = tdPane.querySelector('.cb-td-title');
+      if (tdTitleEl) {
+        const attrIdxRaw = tdTitleEl.getAttribute('data-eidx') != null
+          ? tdTitleEl.getAttribute('data-eidx')
+          : tdPane.getAttribute('data-eidx');
+        let targetIdx = (attrIdxRaw != null && attrIdxRaw !== '') ? Number(attrIdxRaw) : NaN;
+        if (!Number.isInteger(targetIdx)) {
+          if (state && Number.isInteger(state.targetIdx)) {
+            targetIdx = state.targetIdx;
+          } else if (rawBattle && Number.isInteger(rawBattle.targetIdx)) {
+            targetIdx = rawBattle.targetIdx;
+          }
+        }
+        let targetUnit = (Number.isInteger(targetIdx) && enemiesList[targetIdx])
+          ? enemiesList[targetIdx]
+          : null;
+        if (!targetUnit) {
+          const plainTdName = readPlainNameText(tdTitleEl);
+          if (plainTdName && enemiesList.length) {
+            targetUnit = enemiesList.find(e => e && e.name === plainTdName) || null;
+          }
+          if (!targetUnit && plainTdName) {
+            targetUnit = { name: plainTdName };
+          }
+        }
+        if (targetUnit) {
+          const tdSpec = resolveUnitRank(targetUnit, { side: 'enemy', battleState: state, rawBattle });
+          if (tdSpec && mountBadgeBeforeText(tdTitleEl, tdSpec, { compact: false })) {
+            updated++;
+          }
+        }
+      }
+    }
 
     return updated;
   }

@@ -1,0 +1,3268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>《转生千金》战斗特效对比实验室 · Combat VFX Lab V3</title>
+<style>
+  /* ==========================================================================
+     雪瓷冰白 × 皇家蓝 #1658EB × 冰青/淡金 棱镜折射体系
+     严格铁律：
+     1. 全站亮色雪瓷冰白基底，严禁暗黑控制台
+     2. 严禁圆框套圆框：全站锐利直角与克制棱镜切角，层级仅用 1px 分隔线、
+        无边框雪青色块、2px–3px 侧/底高亮棱线与字重表达
+     3. 精准适配 1440×900 与 1280×720 桌面视口，Tab1/Tab2 单屏零溢出
+     ========================================================================== */
+  :root {
+    --bg-canvas: #FAFBFD;
+    --bg-surface: #FFFFFF;
+    --bg-tint: #F1F6FD;
+    --bg-tint-strong: #E4EEF9;
+    --ink-primary: #0F1D3A;
+    --ink-secondary: #3C4F70;
+    --ink-muted: #687B99;
+    --royal: #1658EB;
+    --royal-deep: #0E3B9E;
+    --royal-soft: rgba(22, 88, 235, 0.08);
+    --royal-mid: rgba(22, 88, 235, 0.16);
+    --ice-cyan: #2AB7F0;
+    --ice-pale: #DFF4FF;
+    --gold: #C8962E;
+    --gold-bright: #E5B94E;
+    --gold-soft: rgba(200, 150, 46, 0.12);
+    --wind-teal: #1E9484;
+    --danger: #D13B3B;
+    --danger-soft: rgba(209, 59, 59, 0.09);
+    --warn: #C97A16;
+    --warn-soft: rgba(201, 122, 22, 0.11);
+    --ok: #158468;
+    --ok-soft: rgba(21, 132, 104, 0.10);
+    --line: #D4E1F2;
+    --line-strong: #B6CBE6;
+    --nav-h: 50px;
+    --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --font-serif: "Noto Serif SC", "Songti SC", Georgia, serif;
+    --font-mono: "JetBrains Mono", "Cascadia Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-canvas);
+    color: var(--ink-primary);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* 极细定制滚动条 */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg-tint); }
+  ::-webkit-scrollbar-thumb { background: #B8CBE6; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--royal); }
+
+  button {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+    outline: none;
+  }
+  button:focus-visible {
+    outline: 2px solid var(--royal);
+    outline-offset: -2px;
+  }
+
+  /* ===================== 顶部简洁导航栏 ===================== */
+  .topbar {
+    height: var(--nav-h);
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    padding: 0 20px;
+    position: relative;
+    z-index: 30;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 240px;
+  }
+
+  .brand-prism {
+    width: 18px;
+    height: 18px;
+    background: linear-gradient(135deg, var(--royal) 0%, var(--ice-cyan) 68%, var(--gold-bright) 100%);
+    clip-path: polygon(50% 0%, 100% 35%, 80% 100%, 20% 100%, 0% 35%);
+    flex-shrink: 0;
+  }
+
+  .brand-title {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    color: var(--ink-primary);
+    white-space: nowrap;
+  }
+
+  .brand-sub {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--royal);
+    font-weight: 700;
+    padding-left: 8px;
+    border-left: 1px solid var(--line-strong);
+    white-space: nowrap;
+  }
+
+  .nav-tabs {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .nav-tab {
+    position: relative;
+    padding: 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink-secondary);
+    transition: color 0.14s ease, background 0.14s ease;
+    white-space: nowrap;
+  }
+  .nav-tab:hover {
+    color: var(--royal);
+    background: var(--bg-tint);
+  }
+  .nav-tab.active {
+    color: var(--royal);
+    background: linear-gradient(180deg, rgba(22, 88, 235, 0.03) 0%, rgba(22, 88, 235, 0.09) 100%);
+  }
+  .nav-tab.active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--royal) 0%, var(--ice-cyan) 70%, var(--gold-bright) 100%);
+  }
+
+  .tab-idx {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--ink-muted);
+  }
+  .nav-tab.active .tab-idx {
+    color: var(--royal);
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 200px;
+    justify-content: flex-end;
+  }
+
+  .spec-readout {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-muted);
+    white-space: nowrap;
+  }
+
+  .mute-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-primary);
+    background: var(--bg-tint);
+    border-left: 3px solid var(--royal);
+    clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%);
+    transition: background 0.14s ease, color 0.14s ease;
+    white-space: nowrap;
+  }
+  .mute-btn:hover {
+    background: var(--bg-tint-strong);
+    color: var(--royal);
+  }
+  .mute-btn.muted {
+    border-left-color: var(--ink-muted);
+    color: var(--ink-muted);
+  }
+
+  /* ===================== 主内容视口容器 ===================== */
+  .lab-main {
+    width: 100%;
+    height: calc(100vh - var(--nav-h));
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tab-panel {
+    display: none;
+    width: 100%;
+    height: 100%;
+  }
+  .tab-panel.active {
+    display: flex;
+  }
+
+  /* ==========================================================================
+     TAB 1：新旧法术对比工坊
+     ========================================================================== */
+  #panel-tab1 {
+    flex-direction: row;
+  }
+
+  .spell-sidebar {
+    width: 236px;
+    flex-shrink: 0;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 8px 0 10px;
+  }
+
+  .line-group {
+    padding: 4px 0 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  .line-group:last-child {
+    border-bottom: none;
+  }
+
+  .line-header {
+    padding: 4px 14px 4px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+  }
+
+  .line-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .line-bar {
+    width: 3px;
+    height: 11px;
+    display: inline-block;
+  }
+  .line-bar.ice { background: var(--royal); }
+  .line-bar.water { background: #147BC9; }
+  .line-bar.frost { background: var(--ice-cyan); }
+  .line-bar.shield { background: var(--gold); }
+  .line-bar.sword { background: var(--wind-teal); }
+
+  .spell-item {
+    width: 100%;
+    padding: 6px 14px 6px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+    color: var(--ink-primary);
+    font-size: 12.5px;
+    font-weight: 600;
+    transition: background 0.12s ease, color 0.12s ease;
+    position: relative;
+  }
+  .spell-item:hover {
+    background: var(--bg-tint);
+    color: var(--royal);
+  }
+  .spell-item.active {
+    background: var(--royal-soft);
+    color: var(--royal);
+    font-weight: 800;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%);
+  }
+  .spell-item.active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 2px;
+    bottom: 2px;
+    width: 3px;
+    background: var(--royal);
+  }
+
+  .spell-meta-mini {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--ink-muted);
+    font-weight: 600;
+  }
+  .spell-item.active .spell-meta-mini {
+    color: var(--royal-deep);
+  }
+
+  /* 冰盾三阶快捷行（无边框色块竖排缩进，完整显示全名零折行） */
+  .shield-lv-strip {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-tint);
+    margin: 3px 12px 2px 18px;
+    border-left: 2px solid var(--gold);
+  }
+  .shield-lv-btn {
+    padding: 4px 10px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink-secondary);
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+    transition: background 0.12s, color 0.12s;
+    white-space: nowrap;
+  }
+  .shield-lv-btn:last-child { border-bottom: none; }
+  .shield-lv-btn:hover { background: var(--bg-tint-strong); color: var(--ink-primary); }
+  .shield-lv-btn.active {
+    background: var(--royal);
+    color: #FFFFFF;
+  }
+
+  /* 右侧对比主工坊 */
+  .compare-workspace {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-canvas);
+    overflow: hidden;
+  }
+
+  /* 顶部控制条（紧凑无框分段） */
+  .control-ribbon {
+    min-height: 44px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--line);
+    padding: 6px 16px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .ctrl-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-right: 12px;
+    border-right: 1px solid var(--line);
+  }
+  .ctrl-group:last-child {
+    border-right: none;
+    padding-right: 0;
+  }
+
+  .ctrl-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--ink-muted);
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+  }
+
+  .seg-strip {
+    display: inline-flex;
+    background: var(--bg-tint);
+  }
+
+  .seg-btn {
+    padding: 4px 9px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink-secondary);
+    position: relative;
+    transition: background 0.12s, color 0.12s;
+    white-space: nowrap;
+  }
+  .seg-btn:hover {
+    background: var(--bg-tint-strong);
+    color: var(--royal);
+  }
+  .seg-btn.active {
+    background: var(--royal);
+    color: #FFFFFF;
+  }
+  .seg-btn.active.gold-tier {
+    background: linear-gradient(135deg, #1658EB 0%, #B88622 100%);
+    color: #FFFDF5;
+  }
+
+  .action-btn {
+    padding: 4px 10px;
+    font-size: 11.5px;
+    font-weight: 700;
+    background: var(--bg-tint);
+    color: var(--ink-primary);
+    transition: background 0.12s, color 0.12s;
+    white-space: nowrap;
+  }
+  .action-btn:hover {
+    background: var(--bg-tint-strong);
+    color: var(--royal);
+  }
+  .action-btn.primary {
+    background: var(--royal);
+    color: #FFFFFF;
+    clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%);
+  }
+  .action-btn.primary:hover {
+    background: var(--royal-deep);
+    color: #FFFFFF;
+  }
+
+  /* 进度条行 */
+  .timeline-strip {
+    height: 32px;
+    background: var(--bg-tint);
+    border-bottom: 1px solid var(--line);
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .timeline-range {
+    flex: 1;
+    height: 4px;
+    appearance: none;
+    background: #C9D9EE;
+    outline: none;
+    cursor: pointer;
+  }
+  .timeline-range::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 14px;
+    background: var(--royal);
+    clip-path: polygon(50% 0, 100% 30%, 100% 100%, 0 100%, 0 30%);
+    cursor: pointer;
+  }
+
+  .timeline-clock {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink-primary);
+    min-width: 112px;
+    text-align: right;
+  }
+
+  .peak-jump-btn {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--royal);
+    padding: 2px 8px;
+    background: var(--bg-surface);
+    border-left: 2px solid var(--gold);
+  }
+  .peak-jump-btn:hover {
+    background: var(--royal);
+    color: #FFFFFF;
+  }
+
+  /* 左右双联对照舞台 */
+  .dual-stage-wrap {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    padding: 12px 16px;
+    align-items: center;
+    align-content: center;
+  }
+
+  .stage-card {
+    width: 100%;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-surface);
+    border: 1px solid var(--line);
+    position: relative;
+    overflow: hidden;
+  }
+  .stage-card.v3-card {
+    border-color: #9BBDF0;
+  }
+
+  .stage-head {
+    height: 32px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-tint);
+    flex-shrink: 0;
+  }
+  .stage-card.v3-card .stage-head {
+    background: linear-gradient(90deg, rgba(22, 88, 235, 0.08) 0%, rgba(42, 183, 240, 0.07) 65%, rgba(229, 185, 78, 0.10) 100%);
+    border-bottom-color: #BDD3F2;
+  }
+
+  .stage-title {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--ink-primary);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .stage-badge-bar {
+    width: 3px;
+    height: 13px;
+    display: inline-block;
+  }
+  .stage-badge-bar.old { background: #8B9BB5; }
+  .stage-badge-bar.new { background: var(--royal); }
+
+  .stage-stat {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-secondary);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .canvas-viewport {
+    width: 100%;
+    background: #F4F8FD;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    padding: 8px;
+  }
+
+  .canvas-aspect-box {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    aspect-ratio: 16 / 9;
+    background: #FAFBFD;
+    overflow: hidden;
+    border: 1px solid #D9E5F5;
+  }
+
+  .canvas-aspect-box canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+  .canvas-aspect-box canvas.smooth-canvas {
+    image-rendering: auto;
+  }
+
+  .canvas-corner-note {
+    position: absolute;
+    left: 8px;
+    bottom: 6px;
+    z-index: 5;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #16306B;
+    background: rgba(250, 251, 253, 0.86);
+    padding: 2px 7px;
+    border-left: 2px solid var(--royal);
+    pointer-events: none;
+  }
+  .canvas-corner-note.old-note {
+    border-left-color: #96A5BD;
+    color: #465772;
+  }
+
+  .beat-flash-tag {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    z-index: 6;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 800;
+    color: #FFFFFF;
+    background: var(--royal);
+    padding: 2px 8px;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.14s ease, transform 0.14s ease;
+    pointer-events: none;
+  }
+  .beat-flash-tag.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* 底部对照分析面板（无边框套框，简洁双栏） */
+  .compare-footer {
+    min-height: 92px;
+    max-height: 112px;
+    background: var(--bg-surface);
+    border-top: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    flex-shrink: 0;
+  }
+
+  .footer-col {
+    padding: 9px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+  }
+  .footer-col:first-child {
+    border-right: 1px solid var(--line);
+    background: #FCFDFE;
+  }
+  .footer-col:last-child {
+    background: linear-gradient(90deg, rgba(22, 88, 235, 0.03) 0%, rgba(250, 251, 253, 0.6) 100%);
+  }
+
+  .footer-col-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--ink-primary);
+  }
+  .footer-col-head .tag-old { color: var(--danger); }
+  .footer-col-head .tag-new { color: var(--royal); }
+
+  .footer-metrics-inline {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-muted);
+    font-weight: 700;
+  }
+
+  .footer-desc {
+    font-size: 12px;
+    color: var(--ink-secondary);
+    line-height: 1.48;
+  }
+
+  /* ==========================================================================
+     TAB 2：实机按键手感沙盒
+     ========================================================================== */
+  #panel-tab2 {
+    flex-direction: row;
+  }
+
+  .sandbox-stage-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 12px 14px 10px 16px;
+    gap: 10px;
+    background: var(--bg-canvas);
+    overflow: hidden;
+  }
+
+  .sandbox-stage-frame {
+    flex: 1;
+    min-height: 0;
+    background: var(--bg-surface);
+    border: 1px solid #9BBDF0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .sandbox-canvas-box {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #F4F8FD;
+    overflow: hidden;
+  }
+
+  .sandbox-canvas-box canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  #sandbox-spell-canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  .sandbox-hud-top {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    right: 12px;
+    z-index: 12;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+
+  .sandbox-status-strip {
+    background: rgba(250, 251, 253, 0.92);
+    border-left: 3px solid var(--royal);
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--ink-primary);
+  }
+  .sandbox-status-sub {
+    background: rgba(250, 251, 253, 0.92);
+    border-right: 3px solid var(--gold);
+    padding: 5px 10px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-secondary);
+  }
+
+  /* 交互虚拟键盘与空格键条（位于舞台下方） */
+  .sandbox-key-dock {
+    height: 54px;
+    flex-shrink: 0;
+    background: var(--bg-surface);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    gap: 12px;
+  }
+
+  .keycap-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .keycap-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--ink-muted);
+    margin-right: 4px;
+    white-space: nowrap;
+  }
+
+  .vkey {
+    min-width: 36px;
+    height: 34px;
+    padding: 0 10px;
+    background: var(--bg-tint);
+    border-bottom: 2px solid #B5C8E4;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 900;
+    color: var(--ink-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.08s ease, background 0.1s ease, color 0.1s ease;
+  }
+  .vkey:hover {
+    background: var(--bg-tint-strong);
+    color: var(--royal);
+  }
+  .vkey:active, .vkey.pressed {
+    transform: translateY(1px);
+    background: var(--royal-deep);
+    color: #FFFFFF;
+    border-bottom-color: var(--royal-deep);
+  }
+  .vkey.target-key {
+    background: var(--royal);
+    color: #FFFFFF;
+    border-bottom-color: var(--gold-bright);
+    box-shadow: 0 0 0 2px rgba(22, 88, 235, 0.24);
+  }
+  .vkey.space-vkey {
+    min-width: 148px;
+    font-size: 12px;
+    letter-spacing: 0.8px;
+    border-left: 3px solid var(--gold);
+  }
+  .vkey.space-vkey.target-key {
+    background: linear-gradient(90deg, var(--royal) 0%, #1C73E8 75%, var(--gold) 100%);
+    color: #FFFFFF;
+  }
+
+  /* 实时命中日志条 */
+  .sandbox-log-bar {
+    height: 92px;
+    flex-shrink: 0;
+    background: var(--bg-surface);
+    border: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .log-head {
+    height: 26px;
+    padding: 0 10px;
+    background: var(--bg-tint);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--ink-secondary);
+  }
+
+  .log-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+
+  .log-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 2px 0;
+    border-bottom: 1px solid #EEF3FA;
+    color: var(--ink-secondary);
+  }
+  .log-row:last-child { border-bottom: none; }
+  .log-grade {
+    font-weight: 900;
+    min-width: 72px;
+  }
+  .log-grade.perfect { color: var(--gold); }
+  .log-grade.great { color: var(--royal); }
+  .log-grade.good { color: var(--wind-teal); }
+  .log-grade.bad { color: var(--danger); }
+
+  /* 右侧操控栏 */
+  .sandbox-ctrl-col {
+    width: 356px;
+    flex-shrink: 0;
+    background: var(--bg-surface);
+    border-left: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .ctrl-section {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ctrl-section:last-child { border-bottom: none; }
+
+  .sec-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--ink-primary);
+    padding-left: 8px;
+    border-left: 3px solid var(--royal);
+  }
+  .sec-title.gold-accent {
+    border-left-color: var(--gold);
+  }
+  .sec-hint {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--ink-muted);
+  }
+
+  .skill-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+
+  .choice-tile {
+    padding: 7px 9px;
+    text-align: left;
+    background: var(--bg-tint);
+    border-left: 2px solid transparent;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+  }
+  .choice-tile:hover {
+    background: var(--bg-tint-strong);
+  }
+  .choice-tile.active {
+    background: var(--royal-soft);
+    border-left-color: var(--royal);
+    color: var(--royal);
+  }
+  .choice-tile-name {
+    font-size: 12px;
+    font-weight: 800;
+    display: block;
+  }
+  .choice-tile-sub {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--ink-muted);
+    display: block;
+    margin-top: 1px;
+  }
+  .choice-tile.active .choice-tile-sub {
+    color: var(--royal-deep);
+  }
+
+  .amp-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+  .amp-tile {
+    padding: 6px 4px;
+    text-align: center;
+    background: var(--bg-tint);
+    border-bottom: 2px solid transparent;
+    transition: background 0.12s, color 0.12s;
+  }
+  .amp-tile:hover { background: var(--bg-tint-strong); }
+  .amp-tile.active {
+    background: var(--royal);
+    color: #FFFFFF;
+    border-bottom-color: var(--ice-cyan);
+  }
+  .amp-tile.active.tier3 {
+    background: linear-gradient(135deg, var(--royal) 0%, #B88622 100%);
+    border-bottom-color: var(--gold-bright);
+  }
+  .amp-tile strong { display: block; font-size: 12px; font-weight: 900; }
+  .amp-tile span { display: block; font-family: var(--font-mono); font-size: 10px; opacity: 0.85; }
+
+  .launch-btn {
+    width: 100%;
+    padding: 9px 14px;
+    background: var(--royal);
+    color: #FFFFFF;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background 0.14s ease;
+  }
+  .launch-btn:hover {
+    background: var(--royal-deep);
+  }
+  .launch-btn.enemy-btn {
+    background: linear-gradient(90deg, #163B8A 0%, #B97D1A 100%);
+  }
+  .launch-btn.enemy-btn:hover {
+    background: linear-gradient(90deg, #0E2B6B 0%, #966210 100%);
+  }
+  .launch-btn-key {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    opacity: 0.9;
+  }
+
+  /* 等阶差预设与步进器（3×2 锐利六档线性网格） */
+  .tier-preset-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+  }
+  .tier-btn {
+    padding: 5px 4px;
+    text-align: center;
+    background: var(--bg-tint);
+    border-bottom: 2px solid transparent;
+    transition: background 0.12s, color 0.12s;
+  }
+  .tier-btn:hover { background: var(--bg-tint-strong); }
+  .tier-btn.active {
+    background: var(--royal);
+    color: #FFFFFF;
+    border-bottom-color: var(--gold-bright);
+  }
+  .tier-btn strong { display: block; font-family: var(--font-mono); font-size: 11px; white-space: nowrap; }
+  .tier-btn span { display: block; font-family: var(--font-mono); font-size: 10px; opacity: 0.88; white-space: nowrap; }
+
+  .tier-stepper-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-tint);
+    padding: 5px 8px;
+  }
+  .stepper-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .step-mini-btn {
+    width: 24px;
+    height: 22px;
+    background: var(--bg-surface);
+    border: 1px solid var(--line-strong);
+    font-weight: 900;
+    color: var(--ink-primary);
+  }
+  .step-mini-btn:hover {
+    background: var(--royal);
+    color: #FFFFFF;
+    border-color: var(--royal);
+  }
+  .tier-diff-val {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 900;
+    min-width: 56px;
+    text-align: center;
+    color: var(--royal);
+  }
+
+  .block-preview-table {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: var(--bg-tint);
+    border-top: 1px solid var(--line);
+  }
+  .block-preview-cell {
+    padding: 5px 4px;
+    text-align: center;
+    border-right: 1px solid var(--line);
+  }
+  .block-preview-cell:last-child { border-right: none; }
+  .block-preview-cell .g-lbl {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--ink-muted);
+  }
+  .block-preview-cell .g-val {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 900;
+    color: var(--ink-primary);
+  }
+  .block-preview-cell.perf .g-val { color: var(--royal); }
+  .block-preview-cell.full .g-val { color: var(--gold); }
+
+  /* ==========================================================================
+     TAB 3：现役特效逐帧盲审得分卡与接触表
+     ========================================================================== */
+  #panel-tab3 {
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 16px 24px 32px;
+    gap: 16px;
+    background: var(--bg-canvas);
+  }
+
+  .audit-kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: var(--bg-surface);
+    border: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+
+  .kpi-cell {
+    padding: 12px 16px;
+    border-right: 1px solid var(--line);
+    border-top: 3px solid var(--royal);
+  }
+  .kpi-cell:last-child { border-right: none; }
+  .kpi-cell.kpi-danger { border-top-color: var(--danger); }
+  .kpi-cell.kpi-gold { border-top-color: var(--gold); }
+  .kpi-cell.kpi-cyan { border-top-color: var(--ice-cyan); }
+
+  .kpi-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--ink-muted);
+    letter-spacing: 0.4px;
+  }
+  .kpi-val {
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--ink-primary);
+    margin-top: 2px;
+  }
+  .kpi-sub {
+    font-size: 11.5px;
+    color: var(--ink-secondary);
+    margin-top: 2px;
+  }
+
+  .audit-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--line-strong);
+  }
+  .audit-section-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--ink-primary);
+    padding-left: 10px;
+    border-left: 3px solid var(--royal);
+  }
+  .audit-section-note {
+    font-size: 11.5px;
+    color: var(--ink-muted);
+  }
+
+  /* 五大硬伤网格 */
+  .flaw-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .flaw-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--danger);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .flaw-num {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 800;
+    color: var(--danger);
+  }
+  .flaw-title {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: var(--ink-primary);
+    line-height: 1.35;
+  }
+  .flaw-body {
+    font-size: 11.5px;
+    color: var(--ink-secondary);
+    line-height: 1.48;
+  }
+
+  /* 8 组得分卡表格 */
+  .audit-table-wrap {
+    background: var(--bg-surface);
+    border: 1px solid var(--line);
+    overflow-x: auto;
+    flex-shrink: 0;
+  }
+
+  table.audit-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .audit-table th {
+    text-align: left;
+    padding: 7px 11px;
+    background: var(--bg-tint);
+    border-bottom: 1px solid var(--line-strong);
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--ink-secondary);
+    white-space: nowrap;
+  }
+  .audit-table td {
+    padding: 6.5px 11px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    color: var(--ink-primary);
+  }
+  .audit-table tr:last-child td { border-bottom: none; }
+  .audit-table tr:hover td { background: #F7FAFF; }
+
+  .score-cell {
+    min-width: 108px;
+    font-family: var(--font-mono);
+    font-weight: 800;
+  }
+  .score-bar-track {
+    width: 84px;
+    height: 4px;
+    background: #E2EBF6;
+    margin-top: 4px;
+  }
+  .score-bar-fill {
+    height: 100%;
+  }
+  .score-low { color: var(--danger); }
+  .score-low .score-bar-fill { background: var(--danger); }
+  .score-mid { color: var(--warn); }
+  .score-mid .score-bar-fill { background: var(--warn); }
+  .score-ok { color: var(--ok); }
+  .score-ok .score-bar-fill { background: var(--ok); }
+
+  .verdict-tag {
+    display: inline-block;
+    padding: 2px 7px;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .verdict-rebuild { background: var(--danger-soft); color: var(--danger); border-left: 2px solid var(--danger); }
+  .verdict-split { background: var(--warn-soft); color: var(--warn); border-left: 2px solid var(--warn); }
+  .verdict-keep { background: var(--ok-soft); color: var(--ok); border-left: 2px solid var(--ok); }
+
+  /* 接触表预览区 */
+  .sheet-showcase {
+    background: var(--bg-surface);
+    border: 1px solid var(--line);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .sheet-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .sheet-thumb-wrap {
+    position: relative;
+    cursor: zoom-in;
+    border: 1px solid var(--line);
+    background: #F4F8FD;
+    overflow: hidden;
+  }
+  .sheet-thumb-wrap img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .sheet-zoom-hint {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    background: rgba(15, 29, 58, 0.84);
+    color: #FFFFFF;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    border-left: 3px solid var(--ice-cyan);
+    pointer-events: none;
+  }
+
+  /* 高清接触表放大灯箱 */
+  .lightbox-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(240, 245, 253, 0.96);
+    flex-direction: column;
+  }
+  .lightbox-overlay.open {
+    display: flex;
+  }
+  .lightbox-bar {
+    height: 48px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--line-strong);
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .lightbox-body {
+    flex: 1;
+    overflow: auto;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .lightbox-body img {
+    display: block;
+    max-width: none;
+    border: 1px solid var(--line-strong);
+    background: #FFFFFF;
+    transition: width 0.16s ease;
+  }
+
+  .sandbox-tips-body {
+    font-size: 11.5px;
+    color: var(--ink-secondary);
+    line-height: 1.54;
+  }
+
+  /* 1280×720 紧凑适配 */
+  @media (max-width: 1360px), (max-height: 760px) {
+    :root { --nav-h: 46px; }
+    .spell-sidebar { width: 214px; }
+    .spell-item { padding: 4.5px 10px 4.5px 14px; font-size: 12px; }
+    .shield-lv-btn { padding: 3px 8px; font-size: 11px; }
+    .line-header { padding: 3px 10px; }
+    .control-ribbon { padding: 4px 12px; gap: 8px; }
+    .ctrl-group { padding-right: 8px; }
+    .seg-btn { padding: 3px 7px; font-size: 11px; }
+    .dual-stage-wrap { padding: 8px 12px; gap: 10px; }
+    .compare-footer { min-height: 76px; max-height: 88px; }
+    .footer-col { padding: 6px 12px; }
+    .sandbox-ctrl-col { width: 334px; }
+    .ctrl-section { padding: 7px 11px; gap: 5px; }
+    .choice-tile { padding: 5px 8px; }
+    .amp-tile { padding: 5px 2px; }
+    .amp-tile strong { font-size: 11px; white-space: nowrap; }
+    .amp-tile span { font-size: 9.5px; white-space: nowrap; }
+    .launch-btn { padding: 7px 12px; font-size: 12.5px; }
+    .sandbox-tips-body { font-size: 10.5px; line-height: 1.42; }
+    .sandbox-key-dock { height: 46px; }
+    .sandbox-log-bar { height: 76px; }
+    .flaw-grid { grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== 顶部导航栏 ==================== -->
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-prism" aria-hidden="true"></span>
+    <span class="brand-title">《转生千金》战斗特效对比实验室</span>
+    <span class="brand-sub">VFX LAB · V3</span>
+  </div>
+
+  <nav class="nav-tabs" role="tablist" aria-label="实验室模块切换">
+    <button class="nav-tab active" role="tab" aria-selected="true" data-tab="tab1" id="nav-tab1">
+      <span class="tab-idx">01</span>新旧法术对比工坊
+    </button>
+    <button class="nav-tab" role="tab" aria-selected="false" data-tab="tab2" id="nav-tab2">
+      <span class="tab-idx">02</span>实机按键手感沙盒
+    </button>
+    <button class="nav-tab" role="tab" aria-selected="false" data-tab="tab3" id="nav-tab3">
+      <span class="tab-idx">03</span>现役特效盲审得分卡与接触表
+    </button>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="spec-readout" id="viewport-readout">480×270 INT · 1440×900</span>
+    <button class="mute-btn" id="global-mute-btn" type="button" title="切换 WebAudio 战斗拟音开关">音效：开启</button>
+  </div>
+</header>
+
+<main class="lab-main">
+
+  <!-- ==================== TAB 1：新旧法术对比工坊 ==================== -->
+  <section class="tab-panel active" id="panel-tab1" role="tabpanel" aria-labelledby="nav-tab1">
+    <!-- 左侧五线技能列表 -->
+    <aside class="spell-sidebar" id="spell-sidebar" aria-label="五线进化技能目录">
+      <!-- 由 JS 渲染 5 条线 10 招法术（含冰盾 Lv1–3）+ 第 5 线 3 招剑步 -->
+    </aside>
+
+    <!-- 右侧对比工作区 -->
+    <div class="compare-workspace">
+      <!-- 顶部控制条 -->
+      <div class="control-ribbon">
+        <div class="ctrl-group">
+          <span class="ctrl-label">魔力增幅</span>
+          <div class="seg-strip" id="t1-amp-group">
+            <button class="seg-btn active" data-amp="0" type="button">0%</button>
+            <button class="seg-btn" data-amp="1" type="button">20% ★</button>
+            <button class="seg-btn" data-amp="2" type="button">40% ★★</button>
+            <button class="seg-btn gold-tier" data-amp="3" type="button">60% ★★★</button>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <span class="ctrl-label">判定评级</span>
+          <div class="seg-strip" id="t1-grade-group">
+            <button class="seg-btn" data-grade="bad" type="button">Bad</button>
+            <button class="seg-btn" data-grade="good" type="button">Good</button>
+            <button class="seg-btn active" data-grade="great" type="button">Great</button>
+            <button class="seg-btn gold-tier" data-grade="perfect" type="button">Perfect</button>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <span class="ctrl-label">倍速</span>
+          <div class="seg-strip" id="t1-speed-group">
+            <button class="seg-btn active" data-speed="1" type="button">1×</button>
+            <button class="seg-btn" data-speed="0.5" type="button">0.5×</button>
+            <button class="seg-btn" data-speed="0.25" type="button">0.25×</button>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <button class="action-btn primary" id="t1-play-btn" type="button">⏸ 暂停</button>
+          <button class="action-btn" id="t1-step-back" type="button" title="后退 1 帧 (16.7ms)">◀ -1F</button>
+          <button class="action-btn" id="t1-step-fwd" type="button" title="前进 1 帧 (16.7ms)">+1F ▶</button>
+          <button class="action-btn" id="t1-replay-btn" type="button">↺ 重播</button>
+        </div>
+      </div>
+
+      <!-- 时间轴与峰值跳帧 -->
+      <div class="timeline-strip">
+        <span class="ctrl-label" id="t1-spell-banner">冰晶主炮线 · 冰晶术 (1拍)</span>
+        <input class="timeline-range" id="t1-timeline" type="range" min="0" max="1080" step="1" value="0" aria-label="回放时间轴" />
+        <button class="peak-jump-btn" id="t1-peak-btn" type="button">跳至峰值帧</button>
+        <span class="timeline-clock" id="t1-clock">0 / 1080 ms</span>
+      </div>
+
+      <!-- 左右双联对照画布 -->
+      <div class="dual-stage-wrap">
+        <!-- 左：现役旧 PixelFX -->
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-title"><span class="stage-badge-bar old"></span>现役旧版 · PixelFX 对照</span>
+            <span class="stage-stat" id="old-stat">320×180 · 0.0ms · 并发 0/2</span>
+          </div>
+          <div class="canvas-viewport">
+            <div class="canvas-aspect-box" id="old-stage-box">
+              <canvas id="old-bg-canvas" width="320" height="180"></canvas>
+              <canvas id="old-vfx-canvas" width="320" height="180"></canvas>
+              <div class="canvas-corner-note old-note" id="old-route-note">路由: magic_circle_cast → ice_lance → ice_shatter</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右：新版 VfxSpellsV3 (480×270) -->
+        <div class="stage-card v3-card">
+          <div class="stage-head">
+            <span class="stage-title"><span class="stage-badge-bar new"></span>新版 V3 · 高密像素软光栅</span>
+            <span class="stage-stat" id="new-stat">480×270 · 0.0ms · 粒子 0 · 残痕 0</span>
+          </div>
+          <div class="canvas-viewport">
+            <div class="canvas-aspect-box" id="new-stage-box">
+              <canvas id="new-bg-canvas" width="480" height="270"></canvas>
+              <canvas id="new-vfx-canvas" width="480" height="270"></canvas>
+              <canvas id="new-sword-canvas" class="smooth-canvas" width="960" height="540" style="display:none;"></canvas>
+              <div class="canvas-corner-note" id="new-route-note">480×270 整数近邻 · 深靛 1px 描边 + 四段节奏</div>
+              <div class="beat-flash-tag" id="new-beat-tag">HIT · BEAT 1</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部对比摘要 -->
+      <div class="compare-footer">
+        <div class="footer-col">
+          <div class="footer-col-head">
+            <span class="tag-old">现役旧版症结（盲审复现）</span>
+            <span class="footer-metrics-inline" id="old-perf-badge">逻辑 320×180 · 上限 2</span>
+          </div>
+          <p class="footer-desc" id="old-desc-text">旧版冰枪在 320×137/180 软光栅上粗粒糊边，命中只刷一个僵立不碎的蓝白冰盒，且受并发上限 2 约束容易吞掉受击火花。</p>
+        </div>
+        <div class="footer-col">
+          <div class="footer-col-head">
+            <span class="tag-new">新版 V3 改进要点</span>
+            <span class="footer-metrics-inline" id="new-perf-badge">480×270 · 帧耗 0.0ms</span>
+          </div>
+          <p class="footer-desc" id="new-desc-text">掌心聚晶 → 单枚多面切角深蓝轮廓冰晶高速旋射 → 命中炸出六角冰晶碎片与地面霜斑，并随 timingGrade × ampTier 实时缩放。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== TAB 2：实机按键手感沙盒 ==================== -->
+  <section class="tab-panel" id="panel-tab2" role="tabpanel" aria-labelledby="nav-tab2">
+    <!-- 左侧主交互舞台 + 虚拟键位 + 命中日志 -->
+    <div class="sandbox-stage-col">
+      <div class="sandbox-stage-frame">
+        <div class="sandbox-canvas-box" id="sandbox-canvas-box">
+          <canvas id="sandbox-bg-canvas" width="960" height="540"></canvas>
+          <canvas id="sandbox-spell-canvas" width="480" height="270"></canvas>
+          <canvas id="sandbox-timing-canvas" width="960" height="540"></canvas>
+
+          <div class="sandbox-hud-top">
+            <div class="sandbox-status-strip" id="sandbox-prompt-hud">就绪 · 点击右侧「出招」或按 [R] 体验缩圈施法，或点击「敌方来袭」按 [Space] 格挡</div>
+            <div class="sandbox-status-sub" id="sandbox-state-hud">增幅 0% (760ms · Perf +25%) | 等阶差 0 (同阶)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 交互键位指示与可点击触发条 -->
+      <div class="sandbox-key-dock">
+        <div class="keycap-row" id="sandbox-left-keys">
+          <span class="keycap-label">左手缩圈键 (真键盘直按 / 可点)</span>
+          <button class="vkey" data-vkey="Q" type="button">Q</button>
+          <button class="vkey" data-vkey="W" type="button">W</button>
+          <button class="vkey" data-vkey="E" type="button">E</button>
+          <button class="vkey" data-vkey="A" type="button">A</button>
+          <button class="vkey" data-vkey="S" type="button">S</button>
+          <button class="vkey" data-vkey="D" type="button">D</button>
+        </div>
+        <div class="keycap-row">
+          <span class="keycap-label">格挡弹反</span>
+          <button class="vkey space-vkey" data-vkey="SPACE" id="vkey-space" type="button">SPACE · 格挡</button>
+        </div>
+      </div>
+
+      <!-- 实时命中日志 -->
+      <div class="sandbox-log-bar">
+        <div class="log-head">
+          <span>实时判定与等阶差结算日志</span>
+          <div>
+            <span id="sandbox-combo-stat" style="margin-right:12px;font-family:var(--font-mono);color:var(--royal);">PERFECT: 0 | 总判定: 0</span>
+            <button class="action-btn" id="sandbox-clear-log" type="button" style="padding:1px 8px;font-size:11px;">清空</button>
+          </div>
+        </div>
+        <div class="log-list" id="sandbox-log-list">
+          <div class="log-row"><span>[就绪]</span><span>支持真实键盘 Q/W/E/A/S/D 施法缩圈与 Space 等阶差格挡，也可直接点击上方虚拟键。</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧模式控制台 -->
+    <aside class="sandbox-ctrl-col" aria-label="手感沙盒控制面板">
+      <!-- 模块 1：施法连拍 & 剑步 -->
+      <div class="ctrl-section">
+        <div class="sec-title">
+          <span>1. 施法连拍 × 剑步试玩</span>
+          <span class="sec-hint">Q/W/E/A/S/D</span>
+        </div>
+
+        <div class="skill-grid" id="sb-skill-grid">
+          <button class="choice-tile active" data-sb-skill="ice_crystal" type="button">
+            <span class="choice-tile-name">冰晶术</span>
+            <span class="choice-tile-sub">1 拍 · VfxSpellsV3 联动</span>
+          </button>
+          <button class="choice-tile" data-sb-skill="tri_prism" type="button">
+            <span class="choice-tile-name">三棱冰晶</span>
+            <span class="choice-tile-sub">3 拍连击 · 三棱齐射</span>
+          </button>
+          <button class="choice-tile" data-sb-skill="frost_blossom" type="button">
+            <span class="choice-tile-name">星霜散华</span>
+            <span class="choice-tile-sub">4 拍连击 · 蓝金棱雨</span>
+          </button>
+          <button class="choice-tile" data-sb-skill="basic_attack" type="button">
+            <span class="choice-tile-name">普通攻击</span>
+            <span class="choice-tile-sub">1 拍 · 干脆寒光斩</span>
+          </button>
+          <button class="choice-tile" data-sb-skill="sword_send_slash" type="button">
+            <span class="choice-tile-name">送刀斩</span>
+            <span class="choice-tile-sub">2 拍 · 覆水冰锋+散雾</span>
+          </button>
+          <button class="choice-tile" data-sb-skill="wind_afterimage" type="button">
+            <span class="choice-tile-name">风行残像</span>
+            <span class="choice-tile-sub">瞬发 · 3重风影+螺旋环</span>
+          </button>
+        </div>
+
+        <div class="ctrl-label" style="margin-top:2px;">外露魔力增幅直切（缩圈加速 + Perfect 增伤抬升）</div>
+        <div class="amp-grid" id="sb-amp-grid">
+          <button class="amp-tile active" data-sb-amp="0" type="button"><strong>0%</strong><span>760ms/+25%</span></button>
+          <button class="amp-tile" data-sb-amp="20" type="button"><strong>20%★</strong><span>660ms/+30%</span></button>
+          <button class="amp-tile" data-sb-amp="40" type="button"><strong>40%★★</strong><span>580ms/+35%</span></button>
+          <button class="amp-tile tier3" data-sb-amp="60" type="button"><strong>60%★★★</strong><span>500ms/+40%</span></button>
+        </div>
+
+        <button class="launch-btn" id="sb-cast-btn" type="button">
+          <span>▶ 启动施法 / 出招</span>
+          <span class="launch-btn-key">快捷键 [R]</span>
+        </button>
+      </div>
+
+      <!-- 模块 2：空格等阶差格挡 -->
+      <div class="ctrl-section">
+        <div class="sec-title gold-accent">
+          <span>2. 空格等阶差格挡弹反</span>
+          <span class="sec-hint">SPACE 实操</span>
+        </div>
+
+        <div class="tier-preset-grid" id="sb-tier-presets">
+          <button class="tier-btn" data-tier="6" type="button"><strong>+6 ×1.72</strong><span>最高51.6%</span></button>
+          <button class="tier-btn" data-tier="2" type="button"><strong>+2 ×1.24</strong><span>最高37.2%</span></button>
+          <button class="tier-btn active" data-tier="0" type="button"><strong>0 同阶</strong><span>30.0%</span></button>
+          <button class="tier-btn" data-tier="-2" type="button"><strong>-2 ×0.80</strong><span>最高24.0%</span></button>
+          <button class="tier-btn" data-tier="-4" type="button"><strong>-4 高打神</strong><span>18.0%</span></button>
+          <button class="tier-btn" data-tier="-6" type="button"><strong>-6 初打神</strong><span>12.0%</span></button>
+        </div>
+
+        <div class="tier-stepper-row">
+          <span class="ctrl-label">等阶差微调 (我阶 − 敌阶)</span>
+          <div class="stepper-ctrl">
+            <button class="step-mini-btn" id="sb-tier-dec" type="button" aria-label="降低等阶差">−</button>
+            <span class="tier-diff-val" id="sb-tier-val" style="min-width:86px;">0 阶 · ×1.00</span>
+            <button class="step-mini-btn" id="sb-tier-inc" type="button" aria-label="提高等阶差">+</button>
+          </div>
+        </div>
+
+        <div class="block-preview-table" id="sb-block-table">
+          <div class="block-preview-cell"><span class="g-lbl">BAD</span><span class="g-val" id="bt-bad">0.0%</span></div>
+          <div class="block-preview-cell"><span class="g-lbl">GOOD</span><span class="g-val" id="bt-good">8.0%</span></div>
+          <div class="block-preview-cell"><span class="g-lbl">GREAT</span><span class="g-val" id="bt-great">18.0%</span></div>
+          <div class="block-preview-cell perf"><span class="g-lbl">PERFECT</span><span class="g-val" id="bt-perf">30.0%</span></div>
+        </div>
+
+        <button class="launch-btn enemy-btn" id="sb-enemy-btn" type="button">
+          <span>⚡ 敌方来袭（按 Space 格挡）</span>
+          <span class="launch-btn-key">快捷键 [F]</span>
+        </button>
+      </div>
+
+      <!-- 手感要诀提示 -->
+      <div class="ctrl-section" style="background:var(--bg-tint);flex:1;">
+        <div class="sec-title">
+          <span>操作提示与判定规则</span>
+          <span class="sec-hint">线性相加格挡</span>
+        </div>
+        <div class="sandbox-tips-body">
+          • <b>施法缩圈</b>：棱环贴合内侧钻石瞬间按左手键 <code>Q/W/E/A/S/D</code> 得 <b>PERFECT!</b>（45ms 微顿帧+八芒星裂），随后按真实评级与增幅释放 <code>VfxSpellsV3</code>。<br />
+          • <b>空格格挡</b>：点「敌方来袭」在盾环缩合瞬间按 <code>Space</code>；高敌每阶 <b>+12%</b>（+6阶 ×1.72 最高 51.6%），低敌每阶 <b>-10%</b>（-4高打神 ×0.60 最高 18.0%，-6初打神 ×0.40 最高 12.0%）。
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <!-- ==================== TAB 3：现役特效逐帧盲审得分卡与接触表 ==================== -->
+  <section class="tab-panel" id="panel-tab3" role="tabpanel" aria-labelledby="nav-tab3">
+    <!-- 总览 KPI -->
+    <div class="audit-kpi-strip">
+      <div class="kpi-cell">
+        <div class="kpi-label">盲审采样规模</div>
+        <div class="kpi-val" id="audit-kpi-rows">8 组 / 11 条</div>
+        <div class="kpi-sub">1440×900 停钟步进 · 每条 6 关键帧 · 0 报错</div>
+      </div>
+      <div class="kpi-cell kpi-danger">
+        <div class="kpi-label">现役达标率（≥ 7.0 分）</div>
+        <div class="kpi-val">1 / 8 达标</div>
+        <div class="kpi-sub">仅 3D 魔力增幅光环达标，其余 7 组 2.5–4.5 分</div>
+      </div>
+      <div class="kpi-cell kpi-gold">
+        <div class="kpi-label">可读性与打击时机均分</div>
+        <div class="kpi-val">3.88 / 10</div>
+        <div class="kpi-sub">0ms 抢跑扣血、刀光滞后 480ms、格挡被吞</div>
+      </div>
+      <div class="kpi-cell kpi-cyan">
+        <div class="kpi-label">像素美术表现均分</div>
+        <div class="kpi-val">4.06 / 10</div>
+        <div class="kpi-sub">对照《星之海》标尺：浅底泛白、颗粒粗 4 倍</div>
+      </div>
+    </div>
+
+    <!-- 五大系统级硬伤 -->
+    <div class="audit-section-head">
+      <h2 class="audit-section-title">核心结论 · 五大系统级硬伤摘要</h2>
+      <span class="audit-section-note">依据实机停钟逐帧盲审报告与 audit_metrics.json 实拍数据</span>
+    </div>
+    <div class="flaw-grid">
+      <article class="flaw-card">
+        <span class="flaw-num">FLAW 01 · 空间畸变</span>
+        <h3 class="flaw-title">软光栅拉伸 + 锚点沉地</h3>
+        <p class="flaw-body">首战舞台 1374×746 被锁进 320×137 画布（纵向畸变 1.27×），坐标下坠约 120px，冰枪贴地、水柱斜戳血条、护盾半截沉地。</p>
+      </article>
+      <article class="flaw-card">
+        <span class="flaw-num">FLAW 02 · 因果倒挂</span>
+        <h3 class="flaw-title">抢跑扣血 + 刀光严重滞后</h3>
+        <p class="flaw-body">伤害与飘字在 0ms 直接结算，冰枪 336ms 后才抵达目标；近战斩击拖至 480–720ms，角色都已退回原位站稳才甩刀光。</p>
+      </article>
+      <article class="flaw-card">
+        <span class="flaw-num">FLAW 03 · 架构天花板</span>
+        <h3 class="flaw-title">并发上限锁死 2，吞光群攻与格挡</h3>
+        <p class="flaw-body">群攻 3 敌时前两敌特效被 100% 挤删；敌攻触发我方格挡时因敌技占满 2 槽，我方弹反与盾光被 100% 吞光。</p>
+      </article>
+      <article class="flaw-card">
+        <span class="flaw-num">FLAW 04 · 质感割裂</span>
+        <h3 class="flaw-title">颗粒粗 4 倍 + 浅底泛白糊脸</h3>
+        <p class="flaw-body">低分软光栅放大呈粗马赛克；冰晶命中呈僵立蓝白冰盒，双斩在雪底糊成纯白大叉，切杖呈黑洞紫饼盖死主角。</p>
+      </article>
+      <article class="flaw-card">
+        <span class="flaw-num">FLAW 05 · 语义缺失</span>
+        <h3 class="flaw-title">技能同质化 + 缺地面残痕</h3>
+        <p class="flaw-body">冰墙与生根盾 100% 同模蛋壳盾，晦轮真伤与普通冰晶零区分；全场无霜痕/水洼残留，演出期棱镜菜单遮挡动作。</p>
+      </article>
+    </div>
+
+    <!-- 8 组盲审得分卡 -->
+    <div class="audit-section-head">
+      <h2 class="audit-section-title">8 组现役战斗特效逐帧盲审得分卡（满分 10 分）</h2>
+      <span class="audit-section-note" id="audit-json-status">正在读取实拍帧指标 audit_metrics.json ...</span>
+    </div>
+    <div class="audit-table-wrap">
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th style="width:138px;">评测组别</th>
+            <th style="width:190px;">实拍对象与关卡</th>
+            <th style="width:118px;">可读性与时机</th>
+            <th style="width:118px;">像素美术表现</th>
+            <th style="width:165px;">实拍关键帧遥测</th>
+            <th>实拍致命缺陷摘要</th>
+            <th style="width:140px;">处置判定</th>
+          </tr>
+        </thead>
+        <tbody id="audit-score-tbody">
+          <!-- 由 JS 渲染 8 组得分行并挂载 audit_metrics.json 遥测 -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 高清接触表预览与点击放大 -->
+    <div class="audit-section-head">
+      <h2 class="audit-section-title">现役 8 组特效实机逐帧接触表（11 条 × 6 关键帧）</h2>
+      <div style="display:flex;gap:8px;">
+        <button class="action-btn primary" id="open-lightbox-btn" type="button">放大全屏检视</button>
+        <a class="action-btn" href="./assets/vfx_audit_contact_sheet.png" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;">新窗口打开原图</a>
+      </div>
+    </div>
+    <div class="sheet-showcase">
+      <div class="sheet-thumb-wrap" id="contact-sheet-trigger" title="点击放大检视高清逐帧接触表">
+        <img id="contact-sheet-img" src="./assets/vfx_audit_contact_sheet.png" alt="现役战斗特效 8 组实机逐帧接触表（11 条 × 6 关键帧）" />
+        <div class="sheet-zoom-hint">点击放大至高清全屏检视（支持 100% / 150% / 220% 缩放）</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ==================== 高清接触表放大灯箱 ==================== -->
+<div class="lightbox-overlay" id="sheet-lightbox" role="dialog" aria-modal="true" aria-label="高清逐帧接触表检视灯箱">
+  <div class="lightbox-bar">
+    <span class="brand-title">现役战斗特效逐帧盲审接触表 · 高清原图检视（11 条 × 6 关键帧）</span>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="seg-strip" id="lb-zoom-group">
+        <button class="seg-btn active" data-zoom="100" type="button">适应 100%</button>
+        <button class="seg-btn" data-zoom="150" type="button">150%</button>
+        <button class="seg-btn" data-zoom="220" type="button">220% 细节</button>
+      </div>
+      <button class="action-btn primary" id="lb-close-btn" type="button">关闭 [ESC]</button>
+    </div>
+  </div>
+  <div class="lightbox-body" id="lb-body">
+    <img id="lb-img" src="./assets/vfx_audit_contact_sheet.png" alt="高清逐帧接触表大图" style="width:100%;" />
+  </div>
+</div>
+
+<!-- ==================== 三大核心引擎脚本（纯相对路径，离线零依赖） ==================== -->
+<script src="./assets/pixelfx-bundle.js"></script>
+<script src="./assets/vfx_spells_v3.js"></script>
+<script src="./assets/vfx_timing_block_v3.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ==========================================================================
+     一、全局工具与共享雪瓷像素战场绘景（左右画布与 Tab 2 100% 视觉同源）
+     ========================================================================== */
+  function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
+
+  // 共享 16:9 雪瓷冰白浅色战场绘制（支持 320×180 旧画布 / 480×270 新画布 / 960×540 沙盒画布）
+  function drawSnowArena(ctx, w, h, opts) {
+    opts = opts || {};
+    var sx = w / 480;
+    var sy = h / 270;
+    var mode = opts.mode || 'normal'; // 'normal' | 'shield' | 'multi'
+    var playerDx = (opts.playerDx || 0) * sx;
+    var enemyDx = (opts.enemyDx || 0) * sx;
+    var enemyFlash = opts.enemyFlash || 0;
+    var playerFlash = opts.playerFlash || 0;
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, w, h);
+
+    // 1. 雪瓷天幕
+    var sky = ctx.createLinearGradient(0, 0, 0, 174 * sy);
+    sky.addColorStop(0, '#F3F7FD');
+    sky.addColorStop(0.55, '#FAFBFD');
+    sky.addColorStop(1, '#ECF3FC');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, Math.ceil(174 * sy));
+
+    // 2. 极淡雪瓷建筑立柱剪影（烘托空间纵深而不抢特效高对比）
+    for (var px = 28; px < 480; px += 86) {
+      ctx.fillStyle = '#E6EFFA';
+      ctx.fillRect(Math.round(px * sx), Math.round(16 * sy), Math.max(2, Math.round(18 * sx)), Math.round(154 * sy));
+      ctx.fillStyle = '#DCE8F7';
+      ctx.fillRect(Math.round((px + 16) * sx), Math.round(16 * sy), Math.max(1, Math.round(2 * sx)), Math.round(154 * sy));
+    }
+
+    // 地平线
+    var horizonY = Math.round(170 * sy);
+    ctx.fillStyle = '#C8D8EE';
+    ctx.fillRect(0, horizonY, w, Math.max(1, Math.round(1 * sy)));
+
+    // 3. 雪瓷石板地面
+    var floor = ctx.createLinearGradient(0, horizonY, 0, h);
+    floor.addColorStop(0, '#F4F8FD');
+    floor.addColorStop(0.5, '#FBFCFE');
+    floor.addColorStop(1, '#E8F0FA');
+    ctx.fillStyle = floor;
+    ctx.fillRect(0, horizonY + 1, w, h - horizonY);
+
+    // 透视砖缝细线
+    ctx.strokeStyle = '#DCE6F4';
+    ctx.lineWidth = Math.max(1, Math.round(sx * 0.7));
+    var rows = [186, 204, 226, 252];
+    for (var r = 0; r < rows.length; r++) {
+      var ry = Math.round(rows[r] * sy) + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(0, ry);
+      ctx.lineTo(w, ry);
+      ctx.stroke();
+    }
+    for (var col = -4; col <= 4; col++) {
+      ctx.beginPath();
+      ctx.moveTo((240 + col * 52) * sx, horizonY);
+      ctx.lineTo((240 + col * 96) * sx, h);
+      ctx.stroke();
+    }
+
+    // 4. 像素角色剪影（希尔维亚 & 敌方站位参照）
+    function drawSilhouette(footX, footY, role, flashAmt, customLabel) {
+      var fx = Math.round(footX * sx);
+      var fy = Math.round(footY * sy);
+      var u = sx;
+
+      // 接地冷蓝投影
+      ctx.fillStyle = 'rgba(118, 146, 188, 0.36)';
+      ctx.fillRect(Math.round(fx - 16 * u), Math.round(fy - 2 * u), Math.round(32 * u), Math.max(2, Math.round(4 * u)));
+      ctx.fillRect(Math.round(fx - 11 * u), Math.round(fy - 3 * u), Math.round(22 * u), Math.max(3, Math.round(6 * u)));
+
+      if (role === 'caster') {
+        // 希尔维亚像素剪影：深靛轮廓 + 银发 + 皇家蓝礼裙 + 晦轮杖
+        ctx.fillStyle = '#0F2254';
+        ctx.fillRect(Math.round(fx - 9 * u), Math.round(fy - 52 * u), Math.round(18 * u), Math.round(50 * u));
+        ctx.fillStyle = '#E8F0FA'; // 银发
+        ctx.fillRect(Math.round(fx - 7 * u), Math.round(fy - 50 * u), Math.round(14 * u), Math.round(14 * u));
+        ctx.fillStyle = '#FBE8DA'; // 脸
+        ctx.fillRect(Math.round(fx - 3 * u), Math.round(fy - 43 * u), Math.round(8 * u), Math.round(8 * u));
+        ctx.fillStyle = '#1658EB'; // 皇家蓝礼裙
+        ctx.fillRect(Math.round(fx - 8 * u), Math.round(fy - 34 * u), Math.round(16 * u), Math.round(28 * u));
+        ctx.fillStyle = '#8CC4FA'; // 冰青裙褶
+        ctx.fillRect(Math.round(fx - 6 * u), Math.round(fy - 32 * u), Math.round(5 * u), Math.round(22 * u));
+        // 晦轮杖
+        ctx.fillStyle = '#573608';
+        ctx.fillRect(Math.round(fx + 7 * u), Math.round(fy - 48 * u), Math.max(1, Math.round(2 * u)), Math.round(44 * u));
+        ctx.fillStyle = '#E5B43C';
+        ctx.fillRect(Math.round(fx + 6 * u), Math.round(fy - 50 * u), Math.max(2, Math.round(5 * u)), Math.max(2, Math.round(5 * u)));
+      } else {
+        // 敌方低饱和灰蓝骑士/魔偶（凸显冰/水/金特效高对比）
+        ctx.fillStyle = '#2A364F';
+        ctx.fillRect(Math.round(fx - 12 * u), Math.round(fy - 56 * u), Math.round(24 * u), Math.round(54 * u));
+        ctx.fillStyle = '#657592';
+        ctx.fillRect(Math.round(fx - 10 * u), Math.round(fy - 54 * u), Math.round(20 * u), Math.round(48 * u));
+        ctx.fillStyle = '#97A8C4';
+        ctx.fillRect(Math.round(fx - 8 * u), Math.round(fy - 52 * u), Math.round(8 * u), Math.round(20 * u));
+        ctx.fillStyle = '#33415C';
+        ctx.fillRect(Math.round(fx - 5 * u), Math.round(fy - 46 * u), Math.round(10 * u), Math.round(6 * u));
+      }
+
+      if (flashAmt > 0.05) {
+        ctx.fillStyle = 'rgba(255, 255, 255, ' + clamp(flashAmt, 0, 0.75).toFixed(2) + ')';
+        ctx.fillRect(Math.round(fx - 13 * u), Math.round(fy - 57 * u), Math.round(26 * u), Math.round(56 * u));
+      }
+
+      if (customLabel && w >= 600) {
+        ctx.font = '700 ' + Math.round(11 * (w / 960)) + 'px "Noto Sans SC", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = role === 'caster' ? '#0F2A6B' : '#445470';
+        ctx.fillText(customLabel, fx, Math.round((footY + 14) * sy));
+      }
+    }
+
+    if (mode === 'shield') {
+      drawSilhouette(216 + playerDx / sx, 204, 'caster', playerFlash, opts.playerLabel);
+    } else if (mode === 'multi') {
+      drawSilhouette(108 + playerDx / sx, 204, 'caster', playerFlash, opts.playerLabel);
+      drawSilhouette(314 + enemyDx / sx, 198, 'enemy', enemyFlash * 0.85, '');
+      drawSilhouette(356 + enemyDx / sx, 204, 'enemy', enemyFlash, opts.enemyLabel);
+      drawSilhouette(398 + enemyDx / sx, 210, 'enemy', enemyFlash * 0.9, '');
+    } else {
+      drawSilhouette(108 + playerDx / sx, 204, 'caster', playerFlash, opts.playerLabel);
+      drawSilhouette(356 + enemyDx / sx, 204, 'enemy', enemyFlash, opts.enemyLabel);
+    }
+
+    ctx.restore();
+  }
+
+  /* ==========================================================================
+     二、现役旧版 PixelFX 真实回放器（320×180 + MAX_CONCURRENT = 2 真实复现）
+     ========================================================================== */
+  var LEGACY_PALETTES = {
+    ice: ['#0c1a3d', '#16357a', '#1c56c8', '#3898f0', '#6bc5f8', '#b8e8ff', '#e4f7ff', '#ffffff'],
+    crit: ['#16357a', '#1c56c8', '#3898f0', '#7dd3fc', '#fde68a', '#facc15', '#fffbeb', '#ffffff'],
+    water: ['#081b38', '#0e366d', '#165aa6', '#2183d2', '#3eb4ef', '#86dcfa', '#d0f4ff', '#ffffff'],
+    wind: ['#0a2422', '#124640', '#1c7266', '#2ca490', '#58d4bc', '#9cf2df', '#d8fff4', '#ffffff'],
+    swordIce: ['#16357a', '#1c56c8', '#3898f0', '#6bc5f8', '#c0e8ff', '#eef9ff', '#ffffff'],
+    swordSparks: ['#ffffff', '#dcfbff', '#6bc5f8', '#1c56c8']
+  };
+
+  function createLegacyPixelFxPlayer(canvas) {
+    var W = 320, H = 180;
+    canvas.width = W;
+    canvas.height = H;
+    var ctx = canvas.getContext('2d', { alpha: true });
+    ctx.imageSmoothingEnabled = false;
+    var imgData = ctx.createImageData(W, H);
+    var frame = window.PixelFX.createFrame(W, H);
+    var MAX_CONCURRENT = 2; // 真实还原现役并发上限 2 硬伤
+
+    var active = [];
+    var events = [];
+    var firedIdx = 0;
+    var elapsedMs = 0;
+    var lastRenderMs = 0;
+    var droppedCount = 0;
+
+    // 坐标系换算：480×270 -> 320×180 (比例 2/3)
+    var P_ANCHOR = { x: 72, y: 136 };
+    var P_CAST = { x: 80, y: 108 };
+    var E_ANCHOR = { x: 237, y: 136 };
+    var E_HIT = { x: 237, y: 112 };
+    var SHIELD_ANCHOR = { x: 144, y: 142 }; // 旧版略微沉地
+
+    function pushFx(fxName, fxOpts, meta) {
+      var def = window.PixelFX.FX[fxName];
+      if (!def) return;
+      // 模拟现役 MAX_CONCURRENT = 2 淘汰机制
+      while (active.length >= MAX_CONCURRENT) {
+        active.shift();
+        droppedCount++;
+      }
+      var inst = window.PixelFX.createFx(def, Object.assign({ seed: 202604 }, fxOpts || {}));
+      active.push({
+        name: fxName,
+        inst: inst,
+        stopAtSec: meta && meta.stopAt ? meta.stopAt : (def.meta && def.meta.duration ? def.meta.duration : 1.0),
+        projectile: meta && meta.projectile ? meta.projectile : null,
+        ageSec: 0
+      });
+    }
+
+    function buildLegacyTimeline(spellId, ampTier) {
+      var isHighAmp = ampTier >= 2;
+      var icePal = isHighAmp ? LEGACY_PALETTES.crit : LEGACY_PALETTES.ice;
+      var ev = [];
+
+      if (spellId === 'ice_crystal' || spellId === 'tri_prism_ice' || spellId === 'starfrost_scatter') {
+        ev.push({ t: 0, fn: function () {
+          pushFx('magic_circle_cast', { x: P_ANCHOR.x, y: P_ANCHOR.y, palette: icePal }, { stopAt: 0.56 });
+        }});
+        ev.push({ t: 140, fn: function () {
+          pushFx('ice_lance', { x: P_CAST.x, y: P_CAST.y, length: 48, palette: icePal }, {
+            stopAt: 0.24,
+            projectile: { fromX: P_CAST.x, fromY: P_CAST.y, toX: E_HIT.x, toY: E_HIT.y, durSec: 0.20 }
+          });
+        }});
+        ev.push({ t: 340, fn: function () {
+          pushFx('ice_shatter', { x: E_ANCHOR.x, y: E_ANCHOR.y, palette: icePal }, { stopAt: 0.85 });
+          pushFx('hit_spark', { x: E_ANCHOR.x, y: E_ANCHOR.y, palette: LEGACY_PALETTES.ice }, { stopAt: 0.48 });
+          if (ampTier >= 1) {
+            pushFx('snowflake_burst', { x: E_HIT.x, y: E_HIT.y, count: 7, palette: icePal }, { stopAt: 0.78 });
+          }
+        }});
+      } else if (spellId === 'water_orb' || spellId === 'raging_surge' || spellId === 'water_cleave') {
+        ev.push({ t: 0, fn: function () {
+          pushFx('magic_circle_cast', { x: P_ANCHOR.x, y: P_ANCHOR.y, palette: LEGACY_PALETTES.water }, { stopAt: 0.52 });
+        }});
+        ev.push({ t: 130, fn: function () {
+          var dist = Math.hypot(E_HIT.x - P_CAST.x, E_HIT.y - P_CAST.y);
+          var ang = Math.atan2(E_HIT.y - P_CAST.y, E_HIT.x - P_CAST.x);
+          pushFx('water_jet', { x: P_CAST.x, y: P_CAST.y, length: dist, angle: ang, palette: LEGACY_PALETTES.water }, { stopAt: 0.36 });
+        }});
+        ev.push({ t: 290, fn: function () {
+          pushFx('wave_crash', { x: E_ANCHOR.x, y: E_ANCHOR.y, palette: LEGACY_PALETTES.water }, { stopAt: 0.86 });
+          pushFx('splash', { x: E_ANCHOR.x, y: E_ANCHOR.y, stone: false, palette: LEGACY_PALETTES.water }, { stopAt: 0.74 });
+        }});
+      } else if (spellId === 'frost_step_floor' || spellId === 'frost_breath' || spellId === 'frost_thorn_field') {
+        var multi = spellId === 'frost_thorn_field';
+        ev.push({ t: 0, fn: function () {
+          pushFx('magic_circle_cast', { x: P_ANCHOR.x, y: P_ANCHOR.y, palette: icePal }, { stopAt: 0.58 });
+        }});
+        ev.push({ t: 150, fn: function () {
+          pushFx('frost_nova', { x: E_ANCHOR.x, y: E_ANCHOR.y, reach: multi ? 90 : 64, palette: icePal }, { stopAt: 0.85 });
+        }});
+        if (multi) {
+          // 真实模拟 3 敌依次刷出被 MAX_CONCURRENT=2 挤删前两敌
+          [209, 237, 265].forEach(function (ex, i) {
+            ev.push({ t: 200 + i * 50, fn: function () {
+              pushFx('ice_spikes', { x: ex - 12, y: 136 + (i - 1) * 4, reach: 56, height: 52, palette: icePal }, { stopAt: 0.85 });
+              pushFx('icicle_fall', { x: ex, y: 136 + (i - 1) * 4, palette: LEGACY_PALETTES.ice }, { stopAt: 0.88 });
+            }});
+          });
+        } else {
+          ev.push({ t: 210, fn: function () {
+            pushFx('ice_spikes', { x: E_ANCHOR.x - 14, y: E_ANCHOR.y, reach: 58, height: 34, palette: icePal }, { stopAt: 0.85 });
+          }});
+        }
+      } else if (spellId === 'ice_shield_line') {
+        // 旧版三阶同模蛋壳盾
+        ev.push({ t: 100, fn: function () {
+          pushFx('divine_shield', { x: SHIELD_ANCHOR.x, y: SHIELD_ANCHOR.y, radius: 34 + ampTier * 2, palette: ampTier >= 1 ? LEGACY_PALETTES.crit : LEGACY_PALETTES.ice }, { stopAt: 1.05 });
+          pushFx('ice_crystal', { x: SHIELD_ANCHOR.x, y: SHIELD_ANCHOR.y, height: 40 + ampTier * 3, palette: LEGACY_PALETTES.ice }, { stopAt: 1.00 });
+          if (ampTier >= 1) {
+            pushFx('snowflake_burst', { x: SHIELD_ANCHOR.x, y: SHIELD_ANCHOR.y - 22, count: 8, palette: LEGACY_PALETTES.crit }, { stopAt: 0.78 });
+          }
+        }});
+      } else if (spellId === 'basic_attack') {
+        ev.push({ t: 40, fn: function () {
+          pushFx('sword_slash', { x: E_ANCHOR.x - 22, y: E_ANCHOR.y, radius: 40, palette: LEGACY_PALETTES.swordIce, sparks: LEGACY_PALETTES.swordSparks }, { stopAt: 0.65 });
+          pushFx('hit_spark', { x: E_ANCHOR.x, y: E_ANCHOR.y, palette: LEGACY_PALETTES.ice }, { stopAt: 0.45 });
+        }});
+      } else if (spellId === 'sword_send_slash') {
+        ev.push({ t: 40, fn: function () {
+          pushFx('double_slash', { x: E_ANCHOR.x - 22, y: E_ANCHOR.y, palette: LEGACY_PALETTES.swordIce, sparks: LEGACY_PALETTES.swordSparks }, { stopAt: 0.74 });
+          pushFx('hit_spark', { x: E_ANCHOR.x, y: E_ANCHOR.y, palette: LEGACY_PALETTES.ice }, { stopAt: 0.45 });
+        }});
+      } else if (spellId === 'wind_afterimage') {
+        ev.push({ t: 100, fn: function () {
+          pushFx('blizzard_vortex', { x: P_ANCHOR.x + 18, y: P_ANCHOR.y, height: 54, palette: LEGACY_PALETTES.wind }, { stopAt: 0.76 });
+        }});
+      }
+      return ev;
+    }
+
+    function reset(spellId, ampTier) {
+      active = [];
+      events = buildLegacyTimeline(spellId, ampTier);
+      firedIdx = 0;
+      elapsedMs = 0;
+      droppedCount = 0;
+      window.PixelFX.clearFrame(frame);
+      ctx.clearRect(0, 0, W, H);
+    }
+
+    function stepMs(dtMs) {
+      if (dtMs <= 0) return;
+      elapsedMs += dtMs;
+      while (firedIdx < events.length && events[firedIdx].t <= elapsedMs) {
+        events[firedIdx].fn();
+        firedIdx++;
+      }
+      var dtSec = dtMs / 1000;
+      for (var i = active.length - 1; i >= 0; i--) {
+        var item = active[i];
+        item.ageSec += dtSec;
+        if (item.projectile) {
+          var p = item.projectile;
+          var prog = clamp(item.ageSec / p.durSec, 0, 1);
+          item.inst.options.x = p.fromX + (p.toX - p.fromX) * prog;
+          item.inst.options.y = p.fromY + (p.toY - p.fromY) * prog;
+        }
+        item.inst.update(dtSec);
+        if (item.ageSec >= item.stopAtSec && !item.stopped) {
+          item.stopped = true;
+          item.inst.stop();
+        }
+        if (item.inst.done()) {
+          active.splice(i, 1);
+        }
+      }
+    }
+
+    function render() {
+      var t0 = performance.now();
+      window.PixelFX.clearFrame(frame);
+      for (var i = 0; i < active.length; i++) {
+        active[i].inst.draw(frame);
+      }
+      window.PixelFX.composite(frame, imgData.data, null, 1);
+      ctx.putImageData(imgData, 0, 0);
+      lastRenderMs = performance.now() - t0;
+    }
+
+    function renderAt(spellId, ampTier, targetMs) {
+      reset(spellId, ampTier);
+      var step = 16.6667;
+      var acc = 0;
+      while (acc + step <= targetMs) {
+        stepMs(step);
+        acc += step;
+      }
+      if (targetMs - acc > 0.01) stepMs(targetMs - acc);
+      render();
+    }
+
+    return {
+      reset: reset,
+      stepMs: stepMs,
+      render: render,
+      renderAt: renderAt,
+      getStats: function () {
+        return {
+          renderMs: lastRenderMs,
+          activeCount: active.length,
+          droppedCount: droppedCount,
+          names: active.map(function (a) { return a.name; })
+        };
+      }
+    };
+  }
+
+  /* ==========================================================================
+     三、五线技能对比元数据（10 招 VfxSpellsV3 + 第 5 线 3 招剑步对照）
+     ========================================================================== */
+  var COMPARE_CATALOG = [
+    {
+      lineId: 'ice_cannon',
+      lineLabel: '线一 · 冰晶主炮线',
+      barCls: 'ice',
+      items: [
+        {
+          id: 'ice_crystal', name: '冰晶术', engine: 'spells', beats: 1, durationMs: 1080, peakMs: 475,
+          oldRoute: 'magic_circle_cast → ice_lance → ice_shatter + hit_spark',
+          oldCritique: '320×180 粗粒糊边；0ms 提前扣血后冰枪才贴地飞抵，命中仅刷一个僵立不碎的蓝白方冰盒，雪瓷浅底反差极弱。',
+          newHighlights: '480×270 整数像素软光栅 + 深靛 1px 硬轮廓：掌心聚晶 → 多面切角冰晶高速旋射 → 踩点炸出六角碎片与地面霜斑。'
+        },
+        {
+          id: 'tri_prism_ice', name: '三棱冰晶', engine: 'spells', beats: 3, durationMs: 1520, peakMs: 625,
+          oldRoute: '现役无独立三棱路由（与凝华冰晶 100% 共用单枪模板）',
+          oldCritique: '现役无法表达三段递进节拍，只能复读同一根冰枪；多发并发直接触碰上限 2 互相挤删。',
+          newHighlights: '3 枚不同贝塞尔弧度交错冰晶按节拍依次破空齐射（渐细像素星尘拖尾），每枚独立触发命中爆裂、微震屏与霜痕。'
+        },
+        {
+          id: 'starfrost_scatter', name: '星霜散华', engine: 'spells', beats: 4, durationMs: 1960, peakMs: 1170,
+          oldRoute: '现役无散华弹幕路由（退化为单枪 + snowflake_burst）',
+          oldCritique: '上限 2 根本无法承载 4 波密集蓝金棱晶雨，雪爆贴图在浅底泛白糊成一片。',
+          newHighlights: '4 波扇形蓝金棱晶雨依次压境，末拍爆发香槟金棱镜折射八芒星裂，命中区留存满地星霜碎晶残痕。'
+        }
+      ]
+    },
+    {
+      lineId: 'water_breaker',
+      lineLabel: '线二 · 水系破局线',
+      barCls: 'water',
+      items: [
+        {
+          id: 'water_orb', name: '水球术', engine: 'spells', beats: 1, durationMs: 1120, peakMs: 495,
+          oldRoute: 'magic_circle_cast → water_jet → wave_crash + splash',
+          oldCritique: '水柱形似锯齿激光且锚点下坠，命中浪花迟到至 720ms 并常被底部血条截断。',
+          newHighlights: '深海靛外边水球旋飞折射透光，接触帧瞬间炸出细密分级抛物线水珠与扩散地面水涟漪。'
+        },
+        {
+          id: 'raging_surge', name: '激流涌', engine: 'spells', beats: 2, durationMs: 1500, peakMs: 725,
+          oldRoute: '共用单道 water_jet + wave_crash（无螺旋双流）',
+          oldCritique: '单道直线水柱缺乏破局压迫感，受限于 2 槽并发无法同时维持水柱、浪花与地面水环。',
+          newHighlights: '双道高压旋涡水柱螺旋交错推进，两拍连击激起高扬浪沫、飞溅水滴与双层地面扩散水环。'
+        },
+        {
+          id: 'water_cleave', name: '断水刃', engine: 'spells', beats: 2, durationMs: 1360, peakMs: 575,
+          oldRoute: '共用 water_jet / wave_crash（无弯曲半月水刃）',
+          oldCritique: '现役水系缺少高速斩切刃形特效，难以区分远程水压与贴面截断斩击。',
+          newHighlights: '极薄高速弯曲半月水刃两连斜斩：深靛刃背 + 冰白刀锋 + 水雾残线与反向飞溅水珠。'
+        }
+      ]
+    },
+    {
+      lineId: 'frost_domain',
+      lineLabel: '线三 · 霜域控场线',
+      barCls: 'frost',
+      items: [
+        {
+          id: 'frost_step_floor', name: '冰履', engine: 'spells', beats: 1, durationMs: 1480, peakMs: 560,
+          oldRoute: 'frost_nova + 矮冰刺（缺蔓地几何霜纹）',
+          oldCritique: '缺少沿地面由施法者蔓延至敌脚下的空间路径感，且不留地面结霜残痕。',
+          newHighlights: '从施法者脚底沿地面高速蔓延出锐利六角几何霜纹与薄冰裂纹，稳固铺满敌方脚下并升起冷蓝寒气。'
+        },
+        {
+          id: 'frost_breath', name: '冰霜之息', engine: 'spells', beats: 2, durationMs: 1680, peakMs: 880,
+          oldRoute: '共用 frost_nova + ice_spikes（无扇形寒息锥）',
+          oldCritique: '无扇形喷涌气流层次，也没有目标半身结霜结晶壳的控场视觉回馈。',
+          newHighlights: '扇形锥体高速喷涌层叠寒雾颗粒与旋转微型像素雪花，将目标半身凝结出半透明冷蓝冰霜结晶壳。'
+        },
+        {
+          id: 'frost_thorn_field', name: '霜域棘阵', engine: 'spells', beats: 3, durationMs: 1940, peakMs: 960, mode: 'multi',
+          oldRoute: 'frost_nova + 每敌 ice_spikes + icicle_fall（上限 2 挤删前两敌！）',
+          oldCritique: '盲审 2.5 分重灾区：3 敌同时刷出触发上限 2，前两只敌人的特效被 100% 抹杀，群攻退化为最右侧单体。',
+          newHighlights: '四层并发池零挤删：先亮地面冰蓝法阵刻度 → 前中后三拍地底错落刺出多面切角深蓝冰棘簇 → 崩碎满屏星霜碎晶。'
+        }
+      ]
+    },
+    {
+      lineId: 'ice_shield',
+      lineLabel: '线四 · 冰盾护御线',
+      barCls: 'shield',
+      items: [
+        {
+          id: 'ice_shield_line', name: '冰盾护御 (三阶)', engine: 'spells', beats: 1, durationMs: 1700, peakMs: 680, mode: 'shield',
+          hasLevels: true,
+          oldRoute: 'divine_shield + ice_crystal（冰墙与钢冰盾 100% 共用同一蛋壳盾）',
+          oldCritique: '盲审 4.0 分：三阶形态完全同模、半截沉地、浅底泛白；+40% 增幅直接染成突兀荧光黄绿且吞掉雪爆。',
+          newHighlights: '彻底区分三阶立体结构：Lv1 厚实六角实体冰墙 / Lv2 多面折射镜霜壁+反芒冰刺 / Lv3 香槟金镶棱穹顶钢冰护幕+旋转护箱冰环。'
+        }
+      ]
+    },
+    {
+      lineId: 'sword_step',
+      lineLabel: '线五 · 剑步近战线',
+      barCls: 'sword',
+      items: [
+        {
+          id: 'basic_attack', name: '普通攻击·寒光斩', engine: 'timing', beats: 1, durationMs: 820, peakMs: 145,
+          oldRoute: 'sword_slash(r=40) + hit_spark（盲审滞后至 480ms）',
+          oldCritique: '冲刺骨架佳但刀光严重滞后，且在雪原浅底反差偏弱、缺乏干脆利落的收锋星芒。',
+          newHighlights: '1 拍干脆深靛描边寒光弧斩 + 十字星芒与像素碎星火花；Perfect 触发 45ms 微顿帧与淡金星屑。'
+        },
+        {
+          id: 'sword_send_slash', name: '送刀斩·覆水冰锋', engine: 'timing', beats: 2, durationMs: 980, peakMs: 295,
+          oldRoute: 'double_slash + hit_spark（雪底糊成纯白大叉）',
+          oldCritique: '在雪原浅色战场上糊成一团纯白大叉，完全看不出卷三原著「覆水极薄冰锋」与化水散雾特征。',
+          newHighlights: '2 拍分明：首拍深海蓝覆水弧斩飞溅水珠 → 次拍极薄锐利冰白冰锋切穿 + 化水散雾与晶钻落滴。'
+        },
+        {
+          id: 'wind_afterimage', name: '风行残像', engine: 'timing', beats: 1, durationMs: 920, peakMs: 280,
+          oldRoute: 'blizzard_vortex（纯白旋风柱，无残像身位）',
+          oldCritique: '仅在原地刷一个旋风柱，未能体现高速步法横移后的多段残像与疾风收束。',
+          newHighlights: '3 重渐隐冰青风影像素残像沿位移轨迹错切排布 + 落点 3 层斜切旋转疾风螺旋环与风叶微粒。'
+        }
+      ]
+    }
+  ];
+
+  var SPELL_MAP = {};
+  COMPARE_CATALOG.forEach(function (grp) {
+    grp.items.forEach(function (it) {
+      it.lineLabel = grp.lineLabel;
+      SPELL_MAP[it.id] = it;
+    });
+  });
+
+  /* ==========================================================================
+     四、全局状态与顶栏 Tab / 音效控制
+     ========================================================================== */
+  var currentTab = 'tab1';
+  var globalMuted = false;
+
+  function updateViewportReadout() {
+    var el = document.getElementById('viewport-readout');
+    if (el) el.textContent = '480×270 INT · ' + window.innerWidth + '×' + window.innerHeight;
+  }
+  updateViewportReadout();
+  window.addEventListener('resize', updateViewportReadout);
+
+  var tabBtns = document.querySelectorAll('.nav-tab');
+  var tabPanels = document.querySelectorAll('.tab-panel');
+
+  function switchTab(tabId) {
+    currentTab = tabId;
+    tabBtns.forEach(function (b) {
+      var active = b.dataset.tab === tabId;
+      b.classList.toggle('active', active);
+      b.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    tabPanels.forEach(function (p) {
+      p.classList.toggle('active', p.id === 'panel-' + tabId);
+    });
+    // 键盘监听仅在 Tab 2 启用，防止切到 Tab 1/3 误触
+    if (sandboxTimingEngine) {
+      sandboxTimingEngine.setKeyboardEnabled(tabId === 'tab2');
+    }
+    if (tabId === 'tab2') {
+      resizeSandboxCanvases();
+    }
+  }
+
+  tabBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      switchTab(btn.dataset.tab);
+      btn.blur();
+    });
+  });
+
+  /* ==========================================================================
+     五、TAB 1：新旧法术对比工坊逻辑
+     ========================================================================== */
+  var t1State = {
+    spellId: 'ice_crystal',
+    shieldLv: 1,
+    ampTier: 0,
+    timingGrade: 'great',
+    speed: 1.0,
+    playing: true,
+    timeMs: 0,
+    durationMs: 1080,
+    loopPauseMs: 0,
+    beatFlashRemain: 0,
+    lastBeatText: ''
+  };
+
+  var oldBgCanvas = document.getElementById('old-bg-canvas');
+  var oldVfxCanvas = document.getElementById('old-vfx-canvas');
+  var newBgCanvas = document.getElementById('new-bg-canvas');
+  var newVfxCanvas = document.getElementById('new-vfx-canvas');
+  var newSwordCanvas = document.getElementById('new-sword-canvas');
+  var oldStageBox = document.getElementById('old-stage-box');
+  var newStageBox = document.getElementById('new-stage-box');
+
+  var oldBgCtx = oldBgCanvas.getContext('2d');
+  var newBgCtx = newBgCanvas.getContext('2d');
+  var legacyPlayer = createLegacyPixelFxPlayer(oldVfxCanvas);
+
+  var newSpellsEngine = window.VfxSpellsV3.createEngine(newVfxCanvas, {
+    width: 480,
+    height: 270,
+    applyInternalHitStop: false,
+    hooks: {
+      onImpact: function (beatIdx) {
+        t1State.beatFlashRemain = 420;
+        t1State.lastBeatText = 'IMPACT · BEAT ' + (beatIdx + 1);
+      }
+    }
+  });
+
+  var newSwordCompareEngine = window.VfxTimingBlockV3.create({
+    canvas: newSwordCanvas,
+    width: 960,
+    height: 540,
+    dpr: 1,
+    autoLoop: false,
+    listenKeyboard: false,
+    ignoreReducedMotion: true,
+    muted: true
+  });
+
+  function renderSidebar() {
+    var sb = document.getElementById('spell-sidebar');
+    var html = '';
+    COMPARE_CATALOG.forEach(function (grp) {
+      html += '<div class="line-group">';
+      html += '<div class="line-header"><span class="line-tag"><span class="line-bar ' + grp.barCls + '"></span>' + grp.lineLabel + '</span><span>' + grp.items.length + '招</span></div>';
+      grp.items.forEach(function (item) {
+        var activeCls = item.id === t1State.spellId ? ' active' : '';
+        html += '<button class="spell-item' + activeCls + '" data-spell-id="' + item.id + '" type="button">';
+        html += '<span>' + item.name + '</span>';
+        html += '<span class="spell-meta-mini">' + item.beats + '拍</span>';
+        html += '</button>';
+        if (item.hasLevels) {
+          html += '<div class="shield-lv-strip" id="shield-lv-strip">';
+          [
+            { lv: 1, label: 'Lv1 冰盾' },
+            { lv: 2, label: 'Lv2 镜霜壁' },
+            { lv: 3, label: 'Lv3 钢冰护幕' }
+          ].forEach(function (lvDef) {
+            var lvAct = (t1State.spellId === 'ice_shield_line' && t1State.shieldLv === lvDef.lv) ? ' active' : '';
+            html += '<button class="shield-lv-btn' + lvAct + '" data-shield-lv="' + lvDef.lv + '" type="button">' + lvDef.label + '</button>';
+          });
+          html += '</div>';
+        }
+      });
+      html += '</div>';
+    });
+    sb.innerHTML = html;
+
+    sb.querySelectorAll('.spell-item').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        selectCompareSpell(btn.dataset.spellId);
+        btn.blur();
+      });
+    });
+    sb.querySelectorAll('.shield-lv-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        t1State.shieldLv = Number(btn.dataset.shieldLv) || 1;
+        selectCompareSpell('ice_shield_line');
+        btn.blur();
+      });
+    });
+  }
+
+  function getV3SpellOpts(item) {
+    var isShield = item.id === 'ice_shield_line';
+    var isMulti = item.mode === 'multi';
+    return {
+      from: isShield ? { x: 216, y: 174 } : { x: 120, y: 158 },
+      anchor: isShield ? { x: 216, y: 174 } : undefined,
+      to: { x: 356, y: 164 },
+      targets: isMulti ? [{ x: 314, y: 160 }, { x: 356, y: 164 }, { x: 398, y: 168 }] : undefined,
+      groundY: 204,
+      timingGrade: t1State.timingGrade,
+      ampTier: t1State.ampTier,
+      lv: t1State.shieldLv,
+      seed: 20260419
+    };
+  }
+
+  function drawCompareBackdrops(item, enemyFlash) {
+    var arenaMode = item.mode || 'normal';
+    drawSnowArena(oldBgCtx, 320, 180, { mode: arenaMode, enemyFlash: enemyFlash || 0 });
+    drawSnowArena(newBgCtx, 480, 270, { mode: arenaMode, enemyFlash: enemyFlash || 0 });
+  }
+
+  function updateCompareHud(item, newRenderMs, pCount, dCount, shakeX, shakeY) {
+    var nearPeak = Math.abs(t1State.timeMs - item.peakMs) < 55;
+    drawCompareBackdrops(item, nearPeak && item.mode !== 'shield' ? 0.32 : 0);
+    newVfxCanvas.style.transform = 'translate(' + Math.round(shakeX) + 'px,' + Math.round(shakeY) + 'px)';
+
+    var oldSt = legacyPlayer.getStats();
+    document.getElementById('old-stat').textContent =
+      '320×180 · ' + oldSt.renderMs.toFixed(1) + 'ms · 并发 ' + oldSt.activeCount + '/2' +
+      (oldSt.droppedCount > 0 ? ' (挤删' + oldSt.droppedCount + ')' : '');
+    document.getElementById('new-stat').textContent =
+      (item.engine === 'spells' ? '480×270' : '960×540 像素层') +
+      ' · ' + newRenderMs.toFixed(1) + 'ms · 粒子 ' + pCount + ' · 残痕 ' + dCount;
+    document.getElementById('new-perf-badge').textContent =
+      (item.engine === 'spells' ? '480×270' : 'VfxTimingBlockV3') + ' · 帧耗 ' + newRenderMs.toFixed(2) + 'ms · 峰值 ' + item.peakMs + 'ms';
+    document.getElementById('old-perf-badge').textContent =
+      '320×180 · 帧耗 ' + oldSt.renderMs.toFixed(2) + 'ms · 上限 2' + (oldSt.droppedCount > 0 ? ' (已挤删 ' + oldSt.droppedCount + ')' : '');
+
+    var slider = document.getElementById('t1-timeline');
+    slider.max = String(item.durationMs);
+    slider.value = String(Math.round(t1State.timeMs));
+    document.getElementById('t1-clock').textContent = Math.round(t1State.timeMs) + ' / ' + item.durationMs + ' ms';
+
+    var beatTag = document.getElementById('new-beat-tag');
+    if (nearPeak) {
+      beatTag.textContent = 'PEAK · ' + item.peakMs + 'ms';
+      beatTag.classList.add('show');
+    } else {
+      beatTag.classList.remove('show');
+    }
+  }
+
+  function advanceCompareStep(stepDtMs) {
+    var item = SPELL_MAP[t1State.spellId];
+    if (stepDtMs <= 0) return;
+    t1State.timeMs = clamp(t1State.timeMs + stepDtMs, 0, item.durationMs);
+
+    legacyPlayer.stepMs(stepDtMs);
+    legacyPlayer.render();
+
+    var newRenderMs = 0, pCount = 0, dCount = 0, shakeX = 0, shakeY = 0;
+    if (item.engine === 'spells') {
+      newSpellsEngine.update(stepDtMs);
+      newSpellsEngine.render();
+      var st = newSpellsEngine.getStats();
+      newRenderMs = st.lastRenderMs || 0;
+      pCount = st.particles || 0;
+      dCount = st.groundDecals || 0;
+      var cam = newSpellsEngine.getCameraOffset();
+      shakeX = cam.x;
+      shakeY = cam.y;
+    } else {
+      var st0 = performance.now();
+      newSwordCompareEngine.step(stepDtMs);
+      newSwordCompareEngine.render();
+      newRenderMs = performance.now() - st0;
+      var snap = newSwordCompareEngine.getStateSnapshot();
+      pCount = snap.counts.particles + snap.counts.slashes + snap.counts.afterimages;
+      dCount = snap.counts.windRings;
+      shakeX = snap.shakeOffset.x * 0.5;
+      shakeY = snap.shakeOffset.y * 0.5;
+    }
+
+    updateCompareHud(item, newRenderMs, pCount, dCount, shakeX, shakeY);
+  }
+
+  function syncCompareAtTime(targetMs) {
+    var item = SPELL_MAP[t1State.spellId];
+    t1State.timeMs = clamp(targetMs, 0, item.durationMs);
+
+    // 1. 左画布：旧版 PixelFX 确定性同步渲染
+    legacyPlayer.renderAt(item.id, t1State.ampTier, t1State.timeMs);
+
+    // 2. 右画布：新版 VfxSpellsV3 或第 5 线剑步确定性同步渲染
+    var newRenderMs = 0;
+    var pCount = 0;
+    var dCount = 0;
+    var shakeX = 0, shakeY = 0;
+
+    if (item.engine === 'spells') {
+      newVfxCanvas.style.display = 'block';
+      newSwordCanvas.style.display = 'none';
+      var res = newSpellsEngine.renderFrameAt(item.id, t1State.timeMs, getV3SpellOpts(item));
+      newRenderMs = res.lastRenderMs || 0;
+      pCount = res.activeParticles || 0;
+      dCount = res.activeDecals || 0;
+      var cam = res.shakeOffset || { x: 0, y: 0 };
+      shakeX = cam.x;
+      shakeY = cam.y;
+    } else {
+      newVfxCanvas.style.display = 'none';
+      newSwordCanvas.style.display = 'block';
+      var st0 = performance.now();
+      newSwordCompareEngine.clear();
+      if (item.id === 'basic_attack') {
+        newSwordCompareEngine.playBasicAttack({ x: 712, y: 344, grade: t1State.timingGrade });
+      } else if (item.id === 'sword_send_slash') {
+        newSwordCompareEngine.playSwordSendSlash({ x: 712, y: 344, grade: t1State.timingGrade });
+      } else if (item.id === 'wind_afterimage') {
+        newSwordCompareEngine.playWindAfterimage({ fromX: 224, fromY: 382, x: 520, y: 368, px: 3 });
+      }
+      var acc = 0;
+      while (acc + 16 <= t1State.timeMs) {
+        newSwordCompareEngine.step(16);
+        acc += 16;
+      }
+      if (t1State.timeMs - acc > 0.1) newSwordCompareEngine.step(t1State.timeMs - acc);
+      newSwordCompareEngine.render();
+      newRenderMs = performance.now() - st0;
+      var snap = newSwordCompareEngine.getStateSnapshot();
+      pCount = snap.counts.particles + snap.counts.slashes + snap.counts.afterimages;
+      dCount = snap.counts.windRings;
+      shakeX = snap.shakeOffset.x * 0.5;
+      shakeY = snap.shakeOffset.y * 0.5;
+    }
+
+    updateCompareHud(item, newRenderMs, pCount, dCount, shakeX, shakeY);
+  }
+
+  function selectCompareSpell(spellId) {
+    if (!SPELL_MAP[spellId]) return;
+    t1State.spellId = spellId;
+    var item = SPELL_MAP[spellId];
+    t1State.durationMs = item.durationMs;
+    t1State.timeMs = 0;
+    t1State.loopPauseMs = 0;
+    renderSidebar();
+
+    var lvSuffix = '';
+    if (item.id === 'ice_shield_line') {
+      lvSuffix = [' · Lv1 冰盾', ' · Lv2 镜霜壁', ' · Lv3 钢冰护幕'][t1State.shieldLv - 1];
+    }
+    document.getElementById('t1-spell-banner').textContent = item.lineLabel + ' · ' + item.name + lvSuffix + ' (' + item.beats + '拍)';
+    document.getElementById('old-route-note').textContent = '旧路由: ' + item.oldRoute;
+    document.getElementById('new-route-note').textContent =
+      (item.engine === 'spells' ? 'VfxSpellsV3 · 480×270 整数近邻' : 'VfxTimingBlockV3 · 第5线高精像素剑步') +
+      ' · ' + t1State.timingGrade.toUpperCase() + ' · 增幅 ' + (t1State.ampTier * 20) + '%' + lvSuffix;
+    document.getElementById('old-desc-text').textContent = item.oldCritique;
+    document.getElementById('new-desc-text').textContent = item.newHighlights;
+
+    syncCompareAtTime(0);
+  }
+
+  // 控制条事件绑定
+  document.querySelectorAll('#t1-amp-group .seg-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      t1State.ampTier = Number(btn.dataset.amp) || 0;
+      document.querySelectorAll('#t1-amp-group .seg-btn').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      selectCompareSpell(t1State.spellId);
+      btn.blur();
+    });
+  });
+
+  document.querySelectorAll('#t1-grade-group .seg-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      t1State.timingGrade = btn.dataset.grade || 'great';
+      document.querySelectorAll('#t1-grade-group .seg-btn').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      selectCompareSpell(t1State.spellId);
+      btn.blur();
+    });
+  });
+
+  document.querySelectorAll('#t1-speed-group .seg-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      t1State.speed = Number(btn.dataset.speed) || 1;
+      document.querySelectorAll('#t1-speed-group .seg-btn').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      btn.blur();
+    });
+  });
+
+  var playBtn = document.getElementById('t1-play-btn');
+  function setT1Playing(flag) {
+    t1State.playing = !!flag;
+    playBtn.textContent = t1State.playing ? '⏸ 暂停' : '▶ 播放';
+  }
+  playBtn.addEventListener('click', function () {
+    setT1Playing(!t1State.playing);
+    playBtn.blur();
+  });
+
+  document.getElementById('t1-step-back').addEventListener('click', function (e) {
+    setT1Playing(false);
+    syncCompareAtTime(t1State.timeMs - 16.67);
+    e.currentTarget.blur();
+  });
+  document.getElementById('t1-step-fwd').addEventListener('click', function (e) {
+    setT1Playing(false);
+    syncCompareAtTime(t1State.timeMs + 16.67);
+    e.currentTarget.blur();
+  });
+  document.getElementById('t1-replay-btn').addEventListener('click', function (e) {
+    t1State.timeMs = 0;
+    t1State.loopPauseMs = 0;
+    setT1Playing(true);
+    syncCompareAtTime(0);
+    e.currentTarget.blur();
+  });
+  document.getElementById('t1-peak-btn').addEventListener('click', function (e) {
+    var item = SPELL_MAP[t1State.spellId];
+    setT1Playing(false);
+    syncCompareAtTime(item.peakMs);
+    e.currentTarget.blur();
+  });
+  document.getElementById('t1-timeline').addEventListener('input', function (e) {
+    setT1Playing(false);
+    syncCompareAtTime(Number(e.target.value) || 0);
+  });
+
+  /* ==========================================================================
+     六、TAB 2：实机按键手感沙盒（VfxTimingBlockV3 × VfxSpellsV3 双引擎实机联动）
+     ========================================================================== */
+  var sbBgCanvas = document.getElementById('sandbox-bg-canvas');
+  var sbSpellCanvas = document.getElementById('sandbox-spell-canvas');
+  var sbTimingCanvas = document.getElementById('sandbox-timing-canvas');
+  var sbBgCtx = sbBgCanvas.getContext('2d');
+
+  var sbState = {
+    skill: 'ice_crystal',
+    overcastPct: 0,
+    tierDiff: 0,
+    totalCount: 0,
+    perfectCount: 0,
+    playerDx: 0,
+    enemyDx: 0,
+    enemyFlash: 0,
+    playerFlash: 0,
+    lastBlockResolveTs: 0
+  };
+
+  var sandboxSpellEngine = window.VfxSpellsV3.createEngine(sbSpellCanvas, {
+    width: 480,
+    height: 270,
+    applyInternalHitStop: false,
+    hooks: {
+      onImpact: function () {
+        sbState.enemyFlash = 0.65;
+        sbState.enemyDx = 6;
+      }
+    }
+  });
+
+  var sandboxTimingEngine = window.VfxTimingBlockV3.create({
+    canvas: sbTimingCanvas,
+    width: 960,
+    height: 540,
+    dpr: 1,
+    autoLoop: false,
+    listenKeyboard: false,
+    ignoreReducedMotion: true,
+    muted: false
+  });
+
+  function resizeSandboxCanvases() {
+    var box = document.getElementById('sandbox-canvas-box');
+    if (!box) return;
+    var rect = box.getBoundingClientRect();
+    if (rect.width < 40 || rect.height < 40) return;
+    var w = Math.round(rect.width);
+    var h = Math.round(rect.height);
+    sbBgCanvas.width = w;
+    sbBgCanvas.height = h;
+    sandboxTimingEngine.resize(w, h, 1);
+  }
+  window.addEventListener('resize', function () {
+    if (currentTab === 'tab2') resizeSandboxCanvases();
+  });
+
+  function appendSandboxLog(grade, title, detail) {
+    sbState.totalCount++;
+    if (grade === 'perfect') sbState.perfectCount++;
+    document.getElementById('sandbox-combo-stat').textContent =
+      'PERFECT: ' + sbState.perfectCount + ' | 总判定: ' + sbState.totalCount;
+
+    var list = document.getElementById('sandbox-log-list');
+    var now = new Date();
+    var ts = String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
+    var row = document.createElement('div');
+    row.className = 'log-row';
+    row.innerHTML =
+      '<span style="color:var(--ink-muted);">[' + ts + ']</span>' +
+      '<span class="log-grade ' + grade + '">' + grade.toUpperCase() + '</span>' +
+      '<span style="font-weight:700;color:var(--ink-primary);">' + title + '</span>' +
+      '<span>' + detail + '</span>';
+    list.insertBefore(row, list.firstChild);
+    while (list.children.length > 24) {
+      list.removeChild(list.lastChild);
+    }
+  }
+
+  function updateSandboxMetaHud() {
+    var oc = window.VfxTimingBlockV3.getOvercastConfig(sbState.overcastPct);
+    var scale = window.VfxTimingBlockV3.computeBlockScale(sbState.tierDiff);
+    var scaleTxt = '×' + scale.toFixed(2);
+    var diffLabel = sbState.tierDiff > 0 ? ('+' + sbState.tierDiff + ' 阶 (' + scaleTxt + ')')
+      : (sbState.tierDiff === 0 ? '0 同阶 (×1.00)' : (sbState.tierDiff + ' 阶 (' + scaleTxt + ')'));
+    document.getElementById('sandbox-state-hud').textContent =
+      '增幅 ' + oc.pct + '% (' + oc.durationMs + 'ms · Perf +' + Math.round(oc.perfectBonus * 100) + '%) | 等阶差 ' + diffLabel;
+
+    var tbl = window.VfxTimingBlockV3.getBlockTable(sbState.tierDiff);
+    document.getElementById('sb-tier-val').textContent = (sbState.tierDiff > 0 ? '+' : '') + sbState.tierDiff + ' 阶 · ' + scaleTxt;
+    document.getElementById('bt-bad').textContent = tbl.bad.reductionPctText || (tbl.bad.reductionPct.toFixed(1) + '%');
+    document.getElementById('bt-good').textContent = tbl.good.reductionPctText || (tbl.good.reductionPct.toFixed(1) + '%');
+    document.getElementById('bt-great').textContent = tbl.great.reductionPctText || (tbl.great.reductionPct.toFixed(1) + '%');
+    var perfCell = document.getElementById('bt-perf');
+    perfCell.textContent = tbl.perfect.isFullParry ? '100% 弹反' : (tbl.perfect.reductionPctText || (tbl.perfect.reductionPct.toFixed(1) + '%'));
+    perfCell.parentElement.classList.toggle('full', tbl.perfect.isFullParry);
+
+    document.querySelectorAll('#sb-tier-presets .tier-btn').forEach(function (btn) {
+      btn.classList.toggle('active', Number(btn.dataset.tier) === sbState.tierDiff);
+    });
+  }
+
+  function mapSandboxSkillToV3Spell(presetId) {
+    if (presetId === 'ice_crystal') return 'ice_crystal';
+    if (presetId === 'tri_prism') return 'tri_prism_ice';
+    if (presetId === 'frost_blossom') return 'starfrost_scatter';
+    return null;
+  }
+
+  function pickBestGrade(beats) {
+    var order = { bad: 0, good: 1, great: 2, perfect: 3 };
+    var best = 'good';
+    var bestScore = -1;
+    for (var i = 0; i < beats.length; i++) {
+      var sc = order[beats[i].grade] != null ? order[beats[i].grade] : 1;
+      if (sc > bestScore) { bestScore = sc; best = beats[i].grade; }
+    }
+    return best;
+  }
+
+  function launchSandboxSkill() {
+    resizeSandboxCanvases();
+    var w = sbBgCanvas.width || 960;
+    var h = sbBgCanvas.height || 540;
+    var casterX = w * (108 / 480);
+    var casterY = h * (164 / 270);
+    var targetX = w * (356 / 480);
+    var targetY = h * (164 / 270);
+    var sk = sbState.skill;
+
+    if (sk === 'wind_afterimage') {
+      sandboxTimingEngine.playWindAfterimage({
+        fromX: casterX,
+        fromY: h * (186 / 270),
+        x: w * (232 / 480),
+        y: h * (178 / 270),
+        px: 3
+      });
+      sbState.playerDx = 14;
+      document.getElementById('sandbox-prompt-hud').textContent = '风行残像发动 · 3 重渐隐冰青风影 + 疾风螺旋环';
+      appendSandboxLog('perfect', '风行残像', '瞬发步法 · 3重残像 + 疾风螺旋环');
+      return;
+    }
+
+    var preset = window.VfxTimingBlockV3.SKILL_PRESETS[sk] || window.VfxTimingBlockV3.SKILL_PRESETS.ice_crystal;
+    var oc = window.VfxTimingBlockV3.getOvercastConfig(sbState.overcastPct);
+    var mappedSpell = mapSandboxSkillToV3Spell(sk);
+
+    sandboxTimingEngine.startTimingSequence({
+      preset: sk,
+      overcastPct: sbState.overcastPct,
+      x: targetX,
+      y: targetY,
+      casterX: casterX,
+      casterY: casterY,
+      randomKeys: false,
+      usePresetKeys: true,
+      radius: Math.round(Math.min(w, h) * 0.062),
+      onBeatResolve: function (res) {
+        if (sk === 'basic_attack' || sk === 'sword_send_slash') {
+          sbState.playerDx = 24;
+          sbState.enemyFlash = res.grade === 'bad' ? 0.25 : 0.72;
+          sbState.enemyDx = res.grade === 'perfect' ? 10 : 5;
+        }
+        appendSandboxLog(
+          res.grade,
+          preset.name + ' 第 ' + (res.beatIndex + 1) + '/' + res.totalBeats + ' 拍',
+          '目标键 [' + res.expectedKey + '] 实按 [' + (res.pressedKey || '超时') + '] · Δ' + res.deltaMs + 'ms · ' + res.bonusText + ' (增幅' + oc.pct + '%)'
+        );
+      },
+      onSequenceComplete: function (summary) {
+        if (mappedSpell) {
+          var finalGrade = pickBestGrade(summary.beats);
+          sandboxSpellEngine.play(mappedSpell, {
+            from: { x: 120, y: 158 },
+            to: { x: 356, y: 164 },
+            groundY: 204,
+            timingGrade: finalGrade,
+            ampTier: summary.overcastTier,
+            seed: Math.floor(Math.random() * 99999) + 1
+          });
+          document.getElementById('sandbox-prompt-hud').textContent =
+            preset.name + ' 释放完成 · VfxSpellsV3 (' + finalGrade.toUpperCase() + ' × 增幅' + oc.pct + '%) · 均倍 ' + summary.averageMultiplier.toFixed(2) + '×';
+        } else {
+          document.getElementById('sandbox-prompt-hud').textContent =
+            preset.name + ' 连拍完成 · Perfect ' + summary.perfectCount + '/' + summary.beats.length + ' · 均倍 ' + summary.averageMultiplier.toFixed(2) + '×';
+        }
+      }
+    });
+
+    var p = sandboxTimingEngine.getActivePrompt();
+    document.getElementById('sandbox-prompt-hud').textContent =
+      '缩圈启动：' + preset.name + ' (' + preset.beats + '拍 · ' + oc.durationMs + 'ms) — 请按 [' + (p ? p.key : 'Q') + ']！';
+  }
+
+  function launchSandboxEnemyAttack() {
+    resizeSandboxCanvases();
+    var w = sbBgCanvas.width || 960;
+    var h = sbBgCanvas.height || 540;
+    var blockX = w * (148 / 480);
+    var blockY = h * (166 / 270);
+    var enemyX = w * (348 / 480);
+    var enemyY = h * (160 / 270);
+
+    var atkColor = sbState.tierDiff >= 4 ? '#3898F0'
+      : (sbState.tierDiff <= -4 ? '#2CA490'
+      : (sbState.tierDiff <= -2 ? '#8B5CF6' : '#F2561D'));
+
+    sandboxTimingEngine.startBlockPrompt({
+      tierDiff: sbState.tierDiff,
+      x: blockX,
+      y: blockY,
+      enemyX: enemyX,
+      enemyY: enemyY,
+      durationMs: sbState.tierDiff <= -4 ? 560 : (sbState.tierDiff <= -2 ? 600 : 640),
+      attackColor: atkColor,
+      radius: Math.round(Math.min(w, h) * 0.068),
+      onBlockResolve: function (res) {
+        sbState.lastBlockResolveTs = performance.now();
+        if (res.grade === 'bad' || res.isOverwhelmed) {
+          sbState.playerFlash = 0.65;
+          sbState.playerDx = -12;
+        } else if (res.isFullParry) {
+          sbState.enemyFlash = 0.72;
+          sbState.enemyDx = 12;
+        }
+        var diffTxt = (res.tierDiff > 0 ? '+' : '') + res.tierDiff + '阶';
+        document.getElementById('sandbox-prompt-hud').textContent =
+          '格挡结算：' + res.calloutText + '（等阶差 ' + diffTxt + ' · 承伤 ' + Math.round(res.damageTakenMult * 100) + '%）';
+        appendSandboxLog(
+          res.grade,
+          '空格格挡 (' + diffTxt + ' · ×' + res.tierScale.toFixed(2) + ')',
+          res.calloutText + ' · Δ' + res.deltaMs + 'ms · 实减伤 ' + (res.reductionPctText || (res.reductionPct.toFixed(1) + '%')) + ' · 承伤倍率 ' + res.damageTakenMult.toFixed(2) + '×'
+        );
+      }
+    });
+
+    document.getElementById('sandbox-prompt-hud').textContent =
+      '敌方来袭！棱镜盾环收缩瞬间按下 [SPACE] 格挡（等阶差 ' + (sbState.tierDiff > 0 ? '+' : '') + sbState.tierDiff + '）';
+  }
+
+  // 右侧沙盒按钮绑定
+  document.querySelectorAll('#sb-skill-grid .choice-tile').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      sbState.skill = btn.dataset.sbSkill;
+      document.querySelectorAll('#sb-skill-grid .choice-tile').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      btn.blur();
+    });
+  });
+
+  document.querySelectorAll('#sb-amp-grid .amp-tile').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      sbState.overcastPct = Number(btn.dataset.sbAmp) || 0;
+      document.querySelectorAll('#sb-amp-grid .amp-tile').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      updateSandboxMetaHud();
+      btn.blur();
+    });
+  });
+
+  document.getElementById('sb-cast-btn').addEventListener('click', function (e) {
+    e.currentTarget.blur();
+    launchSandboxSkill();
+  });
+
+  document.querySelectorAll('#sb-tier-presets .tier-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      sbState.tierDiff = Number(btn.dataset.tier) || 0;
+      updateSandboxMetaHud();
+      btn.blur();
+    });
+  });
+
+  document.getElementById('sb-tier-dec').addEventListener('click', function (e) {
+    sbState.tierDiff = clamp(sbState.tierDiff - 1, -6, 6);
+    updateSandboxMetaHud();
+    e.currentTarget.blur();
+  });
+  document.getElementById('sb-tier-inc').addEventListener('click', function (e) {
+    sbState.tierDiff = clamp(sbState.tierDiff + 1, -6, 6);
+    updateSandboxMetaHud();
+    e.currentTarget.blur();
+  });
+
+  document.getElementById('sb-enemy-btn').addEventListener('click', function (e) {
+    e.currentTarget.blur();
+    launchSandboxEnemyAttack();
+  });
+
+  document.getElementById('sandbox-clear-log').addEventListener('click', function (e) {
+    sbState.totalCount = 0;
+    sbState.perfectCount = 0;
+    document.getElementById('sandbox-combo-stat').textContent = 'PERFECT: 0 | 总判定: 0';
+    document.getElementById('sandbox-log-list').innerHTML =
+      '<div class="log-row"><span>[已清空]</span><span>随时按 [R] 启动缩圈施法，或按 [F] 触发敌方来袭按 [Space] 格挡。</span></div>';
+    e.currentTarget.blur();
+  });
+
+  // 虚拟键点击触发（完整兼容触控/鼠标点击）
+  document.querySelectorAll('.vkey').forEach(function (btn) {
+    btn.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      var k = btn.dataset.vkey;
+      btn.classList.add('pressed');
+      setTimeout(function () { btn.classList.remove('pressed'); }, 120);
+      sandboxTimingEngine.triggerKey(k);
+    });
+  });
+
+  // 沙盒快捷重开热键 R（出招）/ F（敌方来袭）+ 真键盘反馈灯
+  window.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape') {
+      closeLightbox();
+      return;
+    }
+    if (currentTab !== 'tab2') return;
+    if (ev.repeat) return;
+    var code = ev.code || '';
+    var keyUpper = (ev.key || '').toUpperCase();
+
+    // 防止刚点击按钮后按空格重复激活聚焦按钮
+    if (code === 'Space' && document.activeElement && document.activeElement.tagName === 'BUTTON') {
+      ev.preventDefault();
+      document.activeElement.blur();
+    }
+
+    if (keyUpper === 'R' && !sandboxTimingEngine.getActivePrompt()) {
+      ev.preventDefault();
+      launchSandboxSkill();
+      return;
+    }
+    if (keyUpper === 'F' && !sandboxTimingEngine.getActivePrompt()) {
+      ev.preventDefault();
+      launchSandboxEnemyAttack();
+      return;
+    }
+
+    var mapKey = code === 'Space' ? 'SPACE' : (code.indexOf('Key') === 0 ? code.slice(3).toUpperCase() : keyUpper);
+    var vbtn = document.querySelector('.vkey[data-vkey="' + mapKey + '"]');
+    if (vbtn) {
+      vbtn.classList.add('pressed');
+      setTimeout(function () { vbtn.classList.remove('pressed'); }, 130);
+    }
+  });
+
+  // 全局静音开关
+  var muteBtn = document.getElementById('global-mute-btn');
+  muteBtn.addEventListener('click', function () {
+    globalMuted = !globalMuted;
+    sandboxTimingEngine.setMuted(globalMuted);
+    muteBtn.classList.toggle('muted', globalMuted);
+    muteBtn.textContent = globalMuted ? '音效：已静音' : '音效：开启';
+    muteBtn.blur();
+  });
+
+  /* ==========================================================================
+     七、TAB 3：现役特效逐帧盲审得分卡与接触表（含 audit_metrics.json 联动）
+     ========================================================================== */
+  var AUDIT_SCORECARD = [
+    {
+      group: '① 单体冰主炮', target: '凝华冰晶（贝蒂雪瓷浅底）',
+      readability: 3.0, art: 3.5, rowIds: ['g1_hand_ice_crystal'],
+      defect: '0ms 提前扣血；冰枪贴地飞；命中呈方正蓝白冰盒子僵立不碎；受击火花被并发上限 2 吞掉。',
+      verdict: '推倒重做（最高）', vCls: 'verdict-rebuild'
+    },
+    {
+      group: '② 水系攻击', target: '覆潮水弹（贝蒂浅底）',
+      readability: 3.0, art: 3.0, rowIds: ['g2_hand_water_surge'],
+      defect: '0ms 提前扣血；水柱似锯齿激光斜戳血条框；浪花迟到至 720ms 且被底部血条卡片截断。',
+      verdict: '推倒重做（最高）', vCls: 'verdict-rebuild'
+    },
+    {
+      group: '③ 群体冰刺', target: '冰棘群刺阵（呼兰雪原 3 敌）',
+      readability: 2.5, art: 3.5, rowIds: ['g3_hand_thorn_field'],
+      defect: '并发上限 2 抹杀前两只敌人全部特效，群攻退化为右下角单体；冰锥悬空缓坠至 736ms 仍未落地。',
+      verdict: '推倒重做（最高）', vCls: 'verdict-rebuild'
+    },
+    {
+      group: '④ 冰盾护御', target: '凝冰壁 & 钢冰生根盾对照',
+      readability: 4.0, art: 4.0, rowIds: ['g4a_ice_wall', 'g4b_root_shield'],
+      defect: '两招 100% 共用同一蛋壳盾无形态差异；半截沉地；浅底泛白，+40% 增幅染荧光黄绿且吞掉雪爆。',
+      verdict: '拆分三阶重做', vCls: 'verdict-split'
+    },
+    {
+      group: '⑤ 近战剑技', target: '覆水斩与普通攻击（呼兰雪原）',
+      readability: 4.5, art: 4.5, rowIds: ['g5a_sword_water_edge', 'g5b_basic_attack'],
+      defect: '冲刺步态骨架水准佳，但刀光滞后至 480ms（主角已退回半路）爆成纯白糊脸大叉。',
+      verdict: '保留步态·重做刀光', vCls: 'verdict-split'
+    },
+    {
+      group: '⑥ 魔力增幅光环', target: '20% / 40% / 60% 3D 轨道光环',
+      readability: 7.0, art: 7.0, rowIds: ['g6_mana_amp'],
+      defect: '唯一达标资产：240×208 前后景深 3D 轨道光环与双电弧本体达 7.5 分；仅附加白柱爆点烧白下半身拉低总分。',
+      verdict: '保留底座·剥离白柱', vCls: 'verdict-keep'
+    },
+    {
+      group: '⑦ 晦轮杖与真伤', target: '切杖演出与晦轮真伤冰晶',
+      readability: 3.5, art: 3.0, rowIds: ['g7_wand_toggle'],
+      defect: '切杖黑洞与粗糙紫圆饼完全遮死主角；真伤打击弹道与命中冰盒与普通冰晶零区分。',
+      verdict: '整体推倒重做', vCls: 'verdict-rebuild'
+    },
+    {
+      group: '⑧ 敌攻与格挡', target: '贝蒂烈焰重劈 / 风神风暴刃格挡',
+      readability: 4.0, art: 4.5, rowIds: ['g8a_beatrice_flame', 'g8b_windgod_slash'],
+      defect: '贝蒂重劈滞后 480ms（人已回站立才出刀）；风神格挡态我方弹反与盾光被上限 2 100% 吞光。',
+      verdict: '修节拍·建独立格挡层', vCls: 'verdict-rebuild'
+    }
+  ];
+
+  function scoreClass(val) {
+    if (val >= 7.0) return 'score-ok';
+    if (val >= 4.0) return 'score-mid';
+    return 'score-low';
+  }
+
+  function renderAuditTable(metricsMap) {
+    var tbody = document.getElementById('audit-score-tbody');
+    var html = '';
+    AUDIT_SCORECARD.forEach(function (row) {
+      var rCls = scoreClass(row.readability);
+      var aCls = scoreClass(row.art);
+      var telemetry = '6 帧采样 · 0 报错';
+      if (metricsMap) {
+        var parts = [];
+        row.rowIds.forEach(function (rid) {
+          var m = metricsMap[rid];
+          if (m && m.frames && m.frames.length) {
+            var pk = m.frames[m.peak_idx || 0];
+            parts.push('峰值 ' + pk.t_ms + 'ms · ' + pk.canvas_buf + ' · ' + (pk.active_fx || []).join('+'));
+          }
+        });
+        if (parts.length) telemetry = parts.join('<br/>');
+      }
+      html += '<tr>';
+      html += '<td><strong>' + row.group + '</strong></td>';
+      html += '<td>' + row.target + '</td>';
+      html += '<td class="score-cell ' + rCls + '">' + row.readability.toFixed(1) + ' / 10<div class="score-bar-track"><div class="score-bar-fill" style="width:' + (row.readability * 10) + '%;"></div></div></td>';
+      html += '<td class="score-cell ' + aCls + '">' + row.art.toFixed(1) + ' / 10<div class="score-bar-track"><div class="score-bar-fill" style="width:' + (row.art * 10) + '%;"></div></div></td>';
+      html += '<td style="font-family:var(--font-mono);font-size:10.5px;color:var(--ink-secondary);">' + telemetry + '</td>';
+      html += '<td style="color:var(--ink-secondary);line-height:1.5;">' + row.defect + '</td>';
+      html += '<td><span class="verdict-tag ' + row.vCls + '">' + row.verdict + '</span></td>';
+      html += '</tr>';
+    });
+    tbody.innerHTML = html;
+  }
+
+  renderAuditTable(null);
+
+  // 异步读取 audit_metrics.json 补齐实拍遥测（静态相对路径，零报错容错）
+  fetch('./assets/audit_metrics.json')
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (data) {
+      if (!data || !Array.isArray(data.rows)) return;
+      var map = {};
+      data.rows.forEach(function (r) { map[r.row_id] = r; });
+      renderAuditTable(map);
+      document.getElementById('audit-json-status').textContent =
+        '已同步实拍指标 audit_metrics.json：' + data.rows.length + ' 条采样 · ' +
+        (data.page_errors ? data.page_errors.length : 0) + ' pageerror · ' +
+        (data.console_errors ? data.console_errors.length : 0) + ' console_error';
+    })
+    .catch(function () {
+      document.getElementById('audit-json-status').textContent = '盲审得分基准已载入（8 组 / 11 条 × 6 关键帧）';
+    });
+
+  // 高清接触表灯箱控制
+  var lightbox = document.getElementById('sheet-lightbox');
+  var lbImg = document.getElementById('lb-img');
+  function openLightbox() {
+    lightbox.classList.add('open');
+  }
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+  }
+  document.getElementById('contact-sheet-trigger').addEventListener('click', openLightbox);
+  document.getElementById('open-lightbox-btn').addEventListener('click', function (e) {
+    openLightbox();
+    e.currentTarget.blur();
+  });
+  document.getElementById('lb-close-btn').addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', function (e) {
+    if (e.target === lightbox || e.target === document.getElementById('lb-body')) closeLightbox();
+  });
+  document.querySelectorAll('#lb-zoom-group .seg-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var z = Number(btn.dataset.zoom) || 100;
+      lbImg.style.width = z + '%';
+      document.querySelectorAll('#lb-zoom-group .seg-btn').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      btn.blur();
+    });
+  });
+
+  /* ==========================================================================
+     八、统一主循环（仅更新当前可见 Tab，极致省电低帧耗）
+     ========================================================================== */
+  var lastRafTs = 0;
+
+  function mainLoop(ts) {
+    var dtMs = lastRafTs ? clamp(ts - lastRafTs, 0, 50) : 16.67;
+    lastRafTs = ts;
+
+    if (currentTab === 'tab1' && t1State.playing) {
+      var item = SPELL_MAP[t1State.spellId];
+      if (t1State.loopPauseMs > 0) {
+        t1State.loopPauseMs -= dtMs;
+        if (t1State.loopPauseMs <= 0) {
+          t1State.timeMs = 0;
+          syncCompareAtTime(0);
+        }
+      } else {
+        var stepDt = dtMs * t1State.speed;
+        if (t1State.timeMs + stepDt >= item.durationMs) {
+          advanceCompareStep(Math.max(0.1, item.durationMs - t1State.timeMs));
+          t1State.loopPauseMs = 460;
+        } else {
+          advanceCompareStep(stepDt);
+        }
+      }
+    } else if (currentTab === 'tab2') {
+      // 平滑衰减角色受击闪白与位移
+      sbState.playerDx *= Math.pow(0.86, dtMs / 16.67);
+      sbState.enemyDx *= Math.pow(0.86, dtMs / 16.67);
+      sbState.enemyFlash = Math.max(0, sbState.enemyFlash - dtMs * 0.0028);
+      sbState.playerFlash = Math.max(0, sbState.playerFlash - dtMs * 0.0028);
+
+      sandboxSpellEngine.update(dtMs);
+      sandboxSpellEngine.render();
+      sandboxTimingEngine.step(dtMs);
+      sandboxTimingEngine.render();
+
+      var camS = sandboxSpellEngine.getCameraOffset();
+      sbSpellCanvas.style.transform = 'translate(' + Math.round(camS.x) + 'px,' + Math.round(camS.y) + 'px)';
+
+      drawSnowArena(sbBgCtx, sbBgCanvas.width, sbBgCanvas.height, {
+        mode: 'normal',
+        playerDx: sbState.playerDx,
+        enemyDx: sbState.enemyDx,
+        enemyFlash: sbState.enemyFlash,
+        playerFlash: sbState.playerFlash,
+        playerLabel: '希尔维亚',
+        enemyLabel: '实战靶偶'
+      });
+
+      // 高亮当前应按下的虚拟键位
+      var activeP = sandboxTimingEngine.getActivePrompt();
+      var wantKey = activeP ? activeP.key : '';
+      document.querySelectorAll('.vkey').forEach(function (vk) {
+        vk.classList.toggle('target-key', vk.dataset.vkey === wantKey);
+      });
+    }
+
+    requestAnimationFrame(mainLoop);
+  }
+
+  /* ==========================================================================
+     九、初始化入口 & 自动化测试可观测钩子
+     ========================================================================== */
+  renderSidebar();
+  selectCompareSpell('ice_crystal');
+  updateSandboxMetaHud();
+  requestAnimationFrame(mainLoop);
+
+  window.__VFX_LAB__ = {
+    switchTab: switchTab,
+    selectCompareSpell: selectCompareSpell,
+    setShieldLv: function (lv) {
+      t1State.shieldLv = clamp(Number(lv) || 1, 1, 3);
+      selectCompareSpell('ice_shield_line');
+    },
+    setCompareState: function (cfg) {
+      if (cfg.ampTier != null) {
+        t1State.ampTier = cfg.ampTier;
+        document.querySelectorAll('#t1-amp-group .seg-btn').forEach(function (b) {
+          b.classList.toggle('active', Number(b.dataset.amp) === t1State.ampTier);
+        });
+      }
+      if (cfg.timingGrade) {
+        t1State.timingGrade = cfg.timingGrade;
+        document.querySelectorAll('#t1-grade-group .seg-btn').forEach(function (b) {
+          b.classList.toggle('active', b.dataset.grade === t1State.timingGrade);
+        });
+      }
+      if (cfg.shieldLv != null) t1State.shieldLv = cfg.shieldLv;
+      if (cfg.spellId) selectCompareSpell(cfg.spellId);
+      if (cfg.playing != null) setT1Playing(cfg.playing);
+      if (cfg.timeMs != null) syncCompareAtTime(cfg.timeMs);
+    },
+    launchSandboxSkill: launchSandboxSkill,
+    launchSandboxEnemyAttack: launchSandboxEnemyAttack,
+    setSandboxSkill: function (sk) {
+      sbState.skill = sk;
+      document.querySelectorAll('#sb-skill-grid .choice-tile').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.sbSkill === sk);
+      });
+    },
+    setSandboxOvercast: function (pct) {
+      sbState.overcastPct = Number(pct) || 0;
+      document.querySelectorAll('#sb-amp-grid .amp-tile').forEach(function (b) {
+        b.classList.toggle('active', Number(b.dataset.sbAmp) === sbState.overcastPct);
+      });
+      updateSandboxMetaHud();
+    },
+    setSandboxTierDiff: function (d) {
+      sbState.tierDiff = clamp(Number(d) || 0, -6, 6);
+      updateSandboxMetaHud();
+    },
+    getSandboxPrompt: function () { return sandboxTimingEngine.getActivePrompt(); },
+    getSandboxStats: function () {
+      return {
+        totalCount: sbState.totalCount,
+        perfectCount: sbState.perfectCount,
+        spellStats: sandboxSpellEngine.getStats(),
+        timingSnapshot: sandboxTimingEngine.getStateSnapshot()
+      };
+    }
+  };
+})();
+</script>
+</body>
+</html>

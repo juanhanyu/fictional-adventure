@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>《转生千金～到了异世界就要悠闲地生活》战斗数值策划终版白皮书（V3.1）</title>
+<style>
+  /* ==========================================================================
+     《转生千金》雪瓷冰白 #FAFBFD × 皇家蓝 #1658EB 棱镜折射白皮书排版系统
+     设计铁律：
+     1. 全站亮色雪瓷冰白基底，绝不使用暗黑面板或重胶囊圆框
+     2. 严禁圆框套圆框：直角与克制棱镜切角，层级靠 1px 冰线、无边框浅冰色块、
+        2px–3px 皇家蓝/淡金棱线与排版字重清晰划分
+     3. 完整离线自包含，零外部 CDN 依赖，适配 1440×900 / 1280×720 及打印导出
+     ========================================================================== */
+  :root {
+    --bg-canvas: #FAFBFD;
+    --bg-surface: #FFFFFF;
+    --bg-tint: #F1F6FD;
+    --bg-tint-strong: #E4EEF9;
+    --ink-primary: #0F1D3A;
+    --ink-secondary: #354766;
+    --ink-muted: #657896;
+    --royal: #1658EB;
+    --royal-deep: #0E3B9E;
+    --royal-soft: rgba(22, 88, 235, 0.08);
+    --ice-cyan: #2AB7F0;
+    --ice-pale: #DFF4FF;
+    --gold: #C8962E;
+    --gold-bright: #E5B94E;
+    --gold-soft: rgba(200, 150, 46, 0.11);
+    --teal: #158468;
+    --teal-soft: rgba(21, 132, 104, 0.09);
+    --line: #D4E1F2;
+    --line-strong: #B6CBE6;
+    --nav-h: 52px;
+    --toc-w: 278px;
+    --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --font-serif: "Noto Serif SC", "Songti SC", Georgia, serif;
+    --font-mono: "JetBrains Mono", "Cascadia Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: calc(var(--nav-h) + 18px);
+    background: var(--bg-canvas);
+    color: var(--ink-primary);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.72;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    min-height: 100vh;
+    background: var(--bg-canvas);
+    color: var(--ink-primary);
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-tint); }
+  ::-webkit-scrollbar-thumb { background: #B8CBE6; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--royal); }
+
+  a { color: var(--royal); text-decoration: none; }
+  a:hover { color: var(--royal-deep); }
+  button:focus-visible, a:focus-visible, input:focus-visible {
+    outline: 2px solid var(--royal);
+    outline-offset: 1px;
+  }
+
+  /* ===================== 顶部固定棱镜导航条 ===================== */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    height: var(--nav-h);
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+    padding: 0 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .read-progress {
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    height: 2.5px;
+    width: 0%;
+    background: linear-gradient(90deg, var(--royal) 0%, var(--ice-cyan) 68%, var(--gold-bright) 100%);
+    transition: width 0.08s linear;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .brand-prism {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--royal) 0%, var(--ice-cyan) 66%, var(--gold-bright) 100%);
+    clip-path: polygon(50% 0%, 100% 36%, 80% 100%, 20% 100%, 0% 36%);
+  }
+
+  .brand-title {
+    font-size: 14.5px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    color: var(--ink-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .brand-ver {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--royal);
+    padding-left: 10px;
+    border-left: 1px solid var(--line-strong);
+    white-space: nowrap;
+  }
+
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .top-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 13px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-primary);
+    background: var(--bg-tint);
+    border-left: 3px solid var(--royal);
+    border-top: none;
+    border-right: none;
+    border-bottom: none;
+    cursor: pointer;
+    clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%);
+    transition: background 0.14s, color 0.14s;
+    white-space: nowrap;
+  }
+  .top-btn:hover {
+    background: var(--bg-tint-strong);
+    color: var(--royal);
+  }
+  .top-btn.primary {
+    background: var(--royal);
+    color: #FFFFFF;
+    border-left-color: var(--gold-bright);
+  }
+  .top-btn.primary:hover {
+    background: var(--royal-deep);
+    color: #FFFFFF;
+  }
+
+  .toc-toggle-btn {
+    display: none;
+  }
+
+  /* ===================== 主体双栏骨架 ===================== */
+  .layout-shell {
+    display: flex;
+    align-items: flex-start;
+    max-width: 1520px;
+    margin: 0 auto;
+    min-height: calc(100vh - var(--nav-h));
+  }
+
+  /* 左侧目录栏 */
+  .toc-sidebar {
+    position: sticky;
+    top: var(--nav-h);
+    width: var(--toc-w);
+    height: calc(100vh - var(--nav-h));
+    flex-shrink: 0;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .toc-head {
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%);
+  }
+
+  .toc-head-title {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.9px;
+    color: var(--ink-muted);
+    margin-bottom: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .toc-search {
+    width: 100%;
+    padding: 6px 9px;
+    font-family: var(--font-sans);
+    font-size: 12px;
+    color: var(--ink-primary);
+    background: var(--bg-tint);
+    border: 1px solid var(--line);
+    border-left: 2px solid var(--royal);
+  }
+  .toc-search::placeholder { color: var(--ink-muted); }
+
+  .toc-nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0 14px;
+  }
+
+  .toc-link {
+    display: block;
+    position: relative;
+    color: var(--ink-secondary);
+    transition: background 0.12s, color 0.12s;
+    line-height: 1.42;
+  }
+  .toc-link:hover {
+    background: var(--bg-tint);
+    color: var(--royal);
+  }
+  .toc-h2 {
+    padding: 6.5px 14px 6.5px 15px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--ink-primary);
+    border-top: 1px solid #EEF3FA;
+  }
+  .toc-h2:first-child { border-top: none; }
+  .toc-h3 {
+    padding: 4.5px 14px 4.5px 26px;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--ink-muted);
+  }
+  .toc-link.active {
+    background: var(--royal-soft);
+    color: var(--royal);
+    font-weight: 800;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%);
+  }
+  .toc-link.active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 2px;
+    bottom: 2px;
+    width: 3px;
+    background: var(--royal);
+  }
+  .toc-link.hidden { display: none; }
+
+  .toc-foot {
+    padding: 10px 14px;
+    background: var(--bg-tint);
+    border-top: 1px solid var(--line);
+    font-size: 11px;
+    color: var(--ink-secondary);
+    line-height: 1.5;
+  }
+  .toc-foot strong { color: var(--royal); font-family: var(--font-mono); }
+
+  /* 右侧正文画布 */
+  .doc-main {
+    flex: 1;
+    min-width: 0;
+    padding: 26px 40px 72px;
+  }
+
+  .doc-container {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* ===================== 顶部文档导言横幅与 KPI 条 ===================== */
+  .doc-hero {
+    background: linear-gradient(135deg, #FFFFFF 0%, #F4F8FF 68%, #FCF8EE 100%);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--royal);
+    padding: 24px 28px 20px;
+    margin-bottom: 18px;
+    position: relative;
+  }
+
+  .hero-kicker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--royal);
+    letter-spacing: 0.6px;
+  }
+  .hero-kicker-gold {
+    color: var(--gold);
+    padding-left: 10px;
+    border-left: 1px solid var(--line-strong);
+  }
+
+  .doc-h1 {
+    font-family: var(--font-serif);
+    font-size: 25px;
+    font-weight: 800;
+    line-height: 1.32;
+    color: var(--ink-primary);
+    letter-spacing: 0.3px;
+    margin-bottom: 14px;
+  }
+
+  .hero-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+    font-size: 12.5px;
+    color: var(--ink-secondary);
+    line-height: 1.62;
+  }
+  .hero-meta strong { color: var(--ink-primary); }
+
+  /* 4 格核心 KPI 条（与特效实验室 Tab 3 同源直角分格，绝无套框） */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: var(--bg-surface);
+    border: 1px solid var(--line);
+    margin-bottom: 26px;
+  }
+  .kpi-item {
+    padding: 13px 16px;
+    border-right: 1px solid var(--line);
+    border-top: 3px solid var(--royal);
+  }
+  .kpi-item:last-child { border-right: none; }
+  .kpi-item.k-cyan { border-top-color: var(--ice-cyan); }
+  .kpi-item.k-gold { border-top-color: var(--gold); }
+  .kpi-item.k-teal { border-top-color: var(--teal); }
+
+  .kpi-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--ink-muted);
+    letter-spacing: 0.4px;
+  }
+  .kpi-val {
+    font-family: var(--font-mono);
+    font-size: 19px;
+    font-weight: 900;
+    color: var(--ink-primary);
+    margin: 3px 0 2px;
+  }
+  .kpi-sub {
+    font-size: 11.5px;
+    color: var(--ink-secondary);
+    line-height: 1.42;
+  }
+
+  /* ===================== 章节排版 ===================== */
+  .chapter {
+    background: var(--bg-surface);
+    border: 1px solid var(--line);
+    padding: 24px 28px 26px;
+    margin-bottom: 22px;
+  }
+
+  .chapter-title {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    font-family: var(--font-serif);
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--ink-primary);
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid var(--line-strong);
+    position: relative;
+  }
+  .chapter-title::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 84px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--royal) 0%, var(--ice-cyan) 100%);
+  }
+
+  .ch-num {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 900;
+    color: #FFFFFF;
+    background: var(--royal);
+    padding: 2px 8px;
+    clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 0 100%);
+    flex-shrink: 0;
+  }
+
+  .sub-title {
+    font-size: 15.5px;
+    font-weight: 800;
+    color: var(--ink-primary);
+    margin: 22px 0 11px;
+    padding-left: 10px;
+    border-left: 3px solid var(--royal);
+    line-height: 1.4;
+  }
+
+  .spec-p {
+    margin: 10px 0;
+    color: var(--ink-secondary);
+    font-size: 13.8px;
+    line-height: 1.76;
+  }
+  .spec-p strong { color: var(--ink-primary); }
+
+  .spec-list {
+    margin: 10px 0 14px 20px;
+    color: var(--ink-secondary);
+    font-size: 13.6px;
+    line-height: 1.74;
+  }
+  .spec-list > li {
+    margin-bottom: 7px;
+  }
+  .spec-list strong { color: var(--ink-primary); }
+  .spec-sublist {
+    margin: 5px 0 6px 18px;
+    list-style-type: square;
+  }
+  .spec-sublist li {
+    margin-bottom: 4px;
+  }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.90em;
+    color: var(--royal-deep);
+    background: var(--bg-tint);
+    padding: 1px 5px;
+    font-weight: 600;
+  }
+
+  .prism-note {
+    margin: 14px 0;
+    padding: 11px 16px;
+    background: var(--bg-tint);
+    border-left: 3px solid var(--gold);
+    color: var(--ink-secondary);
+    font-size: 13px;
+    line-height: 1.66;
+  }
+  .prism-note strong { color: var(--ink-primary); }
+
+  /* ===================== 印刷级原生 HTML 数学公式 ===================== */
+  .math-display {
+    margin: 14px 0 16px;
+    padding: 14px 18px;
+    background: linear-gradient(90deg, #F3F8FF 0%, #FAFBFD 100%);
+    border-left: 3px solid var(--royal);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+  }
+  .math-formula-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    font-size: 14px;
+    color: var(--ink-primary);
+    line-height: 1.6;
+  }
+  .m-lhs { font-weight: 800; color: var(--ink-primary); }
+  .m-eq, .m-op-mul, .m-plus { font-family: var(--font-mono); font-weight: 800; color: var(--ink-muted); }
+  .m-term { font-weight: 700; padding: 1px 6px; background: rgba(255,255,255,0.85); border-bottom: 1.5px solid var(--line-strong); }
+  .m-term.m-accent { color: var(--royal); border-bottom-color: var(--royal); }
+  .m-term.m-gold { color: var(--gold); border-bottom-color: var(--gold); }
+  .m-group-box { padding: 2px 8px; background: var(--royal-soft); border-bottom: 1.5px solid var(--royal); font-weight: 700; }
+  .m-hi { color: var(--royal-deep); }
+  .m-paren { font-family: var(--font-mono); font-weight: 800; color: var(--royal); }
+  .m-var { font-style: italic; font-family: Georgia, "Times New Roman", serif; font-weight: 700; color: var(--ink-primary); }
+  .m-sub { font-size: 0.76em; font-style: normal; font-family: var(--font-sans); color: var(--ink-secondary); }
+  .m-op { font-family: var(--font-mono); font-weight: 700; color: var(--royal-deep); }
+  .m-bold { font-weight: 900; color: var(--royal); }
+  .m-inline-hint { font-size: 12px; color: var(--ink-muted); margin-left: 6px; }
+
+  /* Underbrace 拆解排布 */
+  .m-ub {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 4px;
+  }
+  .m-ub-val {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 900;
+    color: var(--ink-primary);
+    padding: 0 8px 3px;
+    border-bottom: 2px solid var(--line-strong);
+  }
+  .m-ub-val.m-accent {
+    color: var(--royal);
+    border-bottom-color: var(--royal);
+  }
+  .m-ub-cap {
+    font-size: 10.5px;
+    color: var(--ink-muted);
+    margin-top: 3px;
+    white-space: nowrap;
+  }
+  .m-result {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--royal);
+    background: var(--royal-soft);
+    padding: 2px 10px;
+    border-bottom: 2px solid var(--gold);
+  }
+
+  /* 分段花括号 */
+  .m-cases-wrap {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .m-cases-lhs {
+    display: flex;
+    align-items: center;
+    font-weight: 800;
+    white-space: nowrap;
+    font-size: 14px;
+  }
+  .m-cases-brace {
+    width: 6px;
+    border-left: 2.5px solid var(--royal);
+    border-top: 2px solid var(--royal);
+    border-bottom: 2px solid var(--royal);
+    flex-shrink: 0;
+  }
+  .m-cases-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: center;
+  }
+  .m-case-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    font-size: 13.5px;
+  }
+  .m-case-expr {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--ink-primary);
+    min-width: 190px;
+  }
+  .m-case-cond {
+    font-family: var(--font-mono);
+    font-weight: 800;
+    color: var(--royal);
+    background: var(--bg-surface);
+    padding: 1px 8px;
+    border-left: 2px solid var(--royal);
+  }
+  .m-case-note {
+    font-size: 12.2px;
+    color: var(--ink-muted);
+  }
+
+  /* 原生分式 */
+  .m-frac {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    vertical-align: middle;
+    margin: 0 3px;
+    font-size: 0.88em;
+    line-height: 1.2;
+  }
+  .m-num {
+    padding: 0 4px 2px;
+    border-bottom: 1.5px solid var(--ink-primary);
+  }
+  .m-den {
+    padding: 2px 4px 0;
+  }
+
+  .math-inline {
+    font-family: var(--font-sans);
+    color: var(--ink-primary);
+    font-weight: 600;
+  }
+
+  /* 七阶刻度条 */
+  .rank-scale-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+  .rk-title {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--ink-muted);
+    margin-right: 6px;
+  }
+  .rk-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    background: var(--bg-surface);
+    border-left: 3px solid var(--line-strong);
+    font-size: 12.5px;
+    font-weight: 700;
+  }
+  .rk-chip b { font-family: var(--font-mono); color: var(--royal); }
+  .rk-chip.rk-4 { border-left-color: #2AB7F0; }
+  .rk-chip.rk-5 { border-left-color: #1658EB; }
+  .rk-chip.rk-6 { border-left-color: #7C3AED; }
+  .rk-chip.rk-7 { border-left-color: var(--gold); background: var(--gold-soft); }
+  .rk-arrow { color: var(--ink-muted); font-family: var(--font-mono); font-weight: 700; }
+
+  /* ===================== 战场 6+6 站位示意图 ===================== */
+  .diagram-box {
+    margin: 14px 0 16px;
+    border: 1px solid var(--line);
+    border-top: 2px solid var(--royal);
+    background: #F7FAFF;
+  }
+  .diagram-head {
+    padding: 6px 14px;
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--royal);
+    background: var(--bg-tint);
+    border-bottom: 1px solid var(--line);
+  }
+  .diagram-pre {
+    padding: 14px 18px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--ink-primary);
+  }
+  .diagram-pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+    font-weight: 600;
+  }
+
+  /* ===================== 表格排版 ===================== */
+  .table-wrap {
+    margin: 12px 0 18px;
+    border: 1px solid var(--line);
+    overflow-x: auto;
+    background: var(--bg-surface);
+  }
+
+  table.spec-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.6px;
+    line-height: 1.56;
+    font-variant-numeric: tabular-nums;
+  }
+  .spec-table thead th {
+    background: var(--bg-tint);
+    color: var(--ink-primary);
+    font-weight: 800;
+    font-size: 11.8px;
+    padding: 8px 10px;
+    border-bottom: 1.5px solid var(--line-strong);
+    white-space: nowrap;
+  }
+  .spec-table tbody td {
+    padding: 7.5px 10px;
+    border-bottom: 1px solid #E5EEF9;
+    color: var(--ink-secondary);
+    vertical-align: top;
+  }
+  .spec-table tbody tr:nth-child(even) td {
+    background: #FAFDFE;
+  }
+  .spec-table tbody tr:hover td {
+    background: #EEF5FF;
+  }
+  .spec-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .spec-table strong {
+    color: var(--ink-primary);
+  }
+
+  /* ===================== 内嵌交互速算组件（严格无圆框套框） ===================== */
+  .calc-panel {
+    margin: 12px 0 18px;
+    border: 1px solid #B9D0F2;
+    border-top: 3px solid var(--royal);
+    background: #F7FAFF;
+  }
+  .calc-head {
+    padding: 8px 14px;
+    background: linear-gradient(90deg, rgba(22, 88, 235, 0.08) 0%, rgba(42, 183, 240, 0.06) 72%, rgba(200, 150, 46, 0.09) 100%);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .calc-title {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: var(--ink-primary);
+  }
+  .calc-badge {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--royal);
+  }
+  .calc-controls {
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .calc-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .calc-lbl {
+    font-size: 11.8px;
+    font-weight: 800;
+    color: var(--ink-muted);
+    min-width: 106px;
+  }
+  .calc-seg {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+  .cbtn {
+    padding: 4px 10px;
+    font-family: var(--font-sans);
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink-secondary);
+    background: var(--bg-surface);
+    border: none;
+    border-bottom: 2px solid var(--line);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+  }
+  .cbtn:hover {
+    background: var(--bg-tint-strong);
+    color: var(--royal);
+  }
+  .cbtn.active {
+    background: var(--royal);
+    color: #FFFFFF;
+    border-bottom-color: var(--ice-cyan);
+  }
+  .cbtn.active.gold {
+    background: linear-gradient(135deg, var(--royal) 0%, #B88622 100%);
+    border-bottom-color: var(--gold-bright);
+  }
+  .calc-toggles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 12.2px;
+    color: var(--ink-primary);
+  }
+  .ctog {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .ctog input {
+    accent-color: var(--royal);
+    width: 14px;
+    height: 14px;
+  }
+  .calc-result-bar {
+    padding: 10px 14px;
+    background: var(--bg-surface);
+    border-top: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .calc-formula-live {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-secondary);
+    font-weight: 700;
+  }
+  .calc-output-pair {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .calc-big {
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--royal);
+  }
+  .calc-delta {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--teal);
+    background: var(--teal-soft);
+    padding: 2px 8px;
+    border-left: 2px solid var(--teal);
+  }
+
+  /* 线性格挡预设条 */
+  .calc-tier-bar {
+    display: grid;
+    grid-template-columns: repeat(11, minmax(0, 1fr));
+    gap: 3px;
+    padding: 10px 12px 8px;
+  }
+  .calc-tier-bar .cbtn {
+    padding: 5px 2px;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    line-height: 1.3;
+    white-space: nowrap;
+  }
+  .calc-tier-bar .cbtn small {
+    display: block;
+    font-size: 10px;
+    opacity: 0.85;
+  }
+  .cb-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: var(--bg-surface);
+    border-top: 1px solid var(--line);
+  }
+  .cb-cell {
+    padding: 9px 10px;
+    text-align: center;
+    border-right: 1px solid var(--line);
+  }
+  .cb-cell:last-child { border-right: none; }
+  .cb-lbl {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-muted);
+  }
+  .cb-cell strong {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 17px;
+    font-weight: 900;
+    color: var(--ink-primary);
+    margin-top: 2px;
+  }
+  .cb-cell.cb-perf strong { color: var(--royal); }
+
+  /* ===================== 底部收尾与响应式 ===================== */
+  .doc-footer {
+    margin-top: 24px;
+    padding: 16px 20px;
+    background: var(--bg-surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--royal);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+
+  @media (max-width: 1320px) {
+    :root { --toc-w: 246px; }
+    .doc-main { padding: 20px 24px 60px; }
+    .chapter { padding: 20px 22px; }
+  }
+
+  @media (max-width: 980px) {
+    .toc-toggle-btn { display: inline-flex; }
+    .toc-sidebar {
+      position: fixed;
+      left: 0;
+      top: var(--nav-h);
+      z-index: 45;
+      transform: translateX(-100%);
+      transition: transform 0.2s ease;
+      box-shadow: 6px 0 24px rgba(15, 29, 58, 0.12);
+    }
+    .toc-sidebar.open { transform: translateX(0); }
+    .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+    .kpi-item:nth-child(2) { border-right: none; }
+    .kpi-item:nth-child(1), .kpi-item:nth-child(2) { border-bottom: 1px solid var(--line); }
+  }
+
+  @media print {
+    .topbar, .toc-sidebar, .calc-panel { display: none !important; }
+    .doc-main { padding: 0; }
+    .chapter { break-inside: avoid-page; border: none; border-bottom: 1px solid #CCC; padding: 12px 0; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <button type="button" class="top-btn toc-toggle-btn" id="toc-toggle-btn" aria-label="切换章节目录">☰ 目录</button>
+    <span class="brand-prism" aria-hidden="true"></span>
+    <span class="brand-title">《转生千金》战斗数值策划终版白皮书</span>
+    <span class="brand-ver">SPEC · V3.1</span>
+  </div>
+  <div class="topbar-actions">
+    <a class="top-btn primary" href="./combat_vfx_lab.html">打开战斗特效实验室 ↗</a>
+    <button type="button" class="top-btn" onclick="window.print()">打印 / 导出</button>
+  </div>
+  <div class="read-progress" id="read-progress"></div>
+</header>
+
+<div class="layout-shell">
+  <aside class="toc-sidebar" id="toc-sidebar" aria-label="白皮书章节目录">
+    <div class="toc-head">
+      <div class="toc-head-title">
+        <span>目录导航 · 全 11 章</span>
+        <span style="font-family:var(--font-mono);color:var(--royal);">V3.1</span>
+      </div>
+      <input type="search" class="toc-search" id="toc-search" placeholder="筛选章节或关键词..." aria-label="筛选目录" />
+    </div>
+    <nav class="toc-nav" id="toc-nav">
+      <a class="toc-link toc-h2" href="#sec-1" data-target="sec-1">一、总览：V3.1 终版七大定案（相对 V2.2 根治与 V3.0 去水分收紧）</a>
+<a class="toc-link toc-h2" href="#sec-2" data-target="sec-2">二、核心伤害与防御数学体系（V3.1 去水分收紧版）</a>
+<a class="toc-link toc-h3" href="#sec-2-1" data-target="sec-2-1">2.1 收紧型统一「相加增伤池」终版公式</a>
+<a class="toc-link toc-h3" href="#sec-2-2" data-target="sec-2-2">2.2 公开透明拆解：新「满配暴击核爆倍率」算式与去水分对照</a>
+<a class="toc-link toc-h2" href="#sec-3" data-target="sec-3">三、精准缩圈判定 × 魔力增幅共振 × 等阶差线性相加格挡</a>
+<a class="toc-link toc-h3" href="#sec-3-1" data-target="sec-3-1">3.1 缩圈随机键四档与魔力增幅共振（唯一规则，零附加彩蛋）</a>
+<a class="toc-link toc-h3" href="#sec-3-2" data-target="sec-3-2">3.2 等阶差线性相加格挡公式（无人工封顶、无人工保底）</a>
+<a class="toc-link toc-h2" href="#sec-4" data-target="sec-4">四、三档魔力增幅 × 100% 原著魔战循环 × 法杖与省蓝经济</a>
+<a class="toc-link toc-h3" href="#sec-4-1" data-target="sec-4-1">4.1 三档魔力增幅精算表（彻底根治 40% 二阶废档）</a>
+<a class="toc-link toc-h3" href="#sec-4-2" data-target="sec-4-2">4.2 100% 原著魔战循环、总省蓝硬地板 0.60× 与三把法杖三角定位</a>
+<a class="toc-link toc-h2" href="#sec-5" data-target="sec-5">五、精简 5 线进化技能体系 + 1 个独立身法槽</a>
+<a class="toc-link toc-h2" href="#sec-6" data-target="sec-6">六、删「冰宫看破技」后的常规机制迁移、罗文协同战与风神测试关定位</a>
+<a class="toc-link toc-h3" href="#sec-6-1" data-target="sec-6-1">6.1 六大重点幕次常规机制迁移总表（零卡关铁律）</a>
+<a class="toc-link toc-h3" href="#sec-6-2" data-target="sec-6-2">6.2 专项设计：第 2 幕罗文乱葬岗协同战（经典 6+6 站位）</a>
+<a class="toc-link toc-h3" href="#sec-6-3" data-target="sec-6-3">6.3 专项定位：第 9 幕风神·岚（仅演武大厅测试用关卡）</a>
+<a class="toc-link toc-h2" href="#sec-7" data-target="sec-7">七、全 9 幕 V3.1 数值重校全量配置表</a>
+<a class="toc-link toc-h3" href="#sec-7-1" data-target="sec-7-1">7.1 演武预设主角面板（每幕严格对齐原著年龄、等阶与技能进化）</a>
+<a class="toc-link toc-h3" href="#sec-7-2" data-target="sec-7-2">7.2 全 9 幕敌方阵容与 V3.1 适配收紧乘区后的重校参数表</a>
+<a class="toc-link toc-h2" href="#sec-8" data-target="sec-8">八、12,600 场 Python 蒙特卡洛真实仿真验证报告（V3.1 实测回填）</a>
+<a class="toc-link toc-h3" href="#sec-8-1" data-target="sec-8-1">8.1 全 9 幕三轨（各 300 场）+ 全完美（100 场）完整实测总表</a>
+<a class="toc-link toc-h3" href="#sec-8-2" data-target="sec-8-2">8.2 第 5 幕诺艾儿「未解锁风行残像」专项 900 场防卡关验证</a>
+<a class="toc-link toc-h2" href="#sec-9" data-target="sec-9">九、主线存档养成收敛方案（年龄断档补齐 + 全属性比例型双曲正切软上限）</a>
+<a class="toc-link toc-h3" href="#sec-9-1" data-target="sec-9-1">9.1 年龄成长保底补档表（修复 8/9/12/14 岁血量断档）</a>
+<a class="toc-link toc-h3" href="#sec-9-2" data-target="sec-9-2">9.2 全六维「比例型双曲正切软上限」换算公式</a>
+<a class="toc-link toc-h3" href="#sec-9-3" data-target="sec-9-3">9.3 三档养成存档 × 全 9 幕（2,700 场普通手操轨）收敛度实测表</a>
+<a class="toc-link toc-h2" href="#sec-10" data-target="sec-10">十、铭记秘宝、套装共鸣与被动克制微调修订清单（V3.1）</a>
+<a class="toc-link toc-h2" href="#sec-11" data-target="sec-11">十一、工程落盘接口契约与代码字段对照附录</a>
+    </nav>
+    <div class="toc-foot">
+      <div>唯一事实源：<strong>V3.1 终版</strong></div>
+      <div>仿真样本：<strong>12,600 场</strong> · 存档 <strong>27/27 全胜</strong></div>
+    </div>
+  </aside>
+
+  <main class="doc-main">
+    <div class="doc-container">
+      <section class="doc-hero">
+        <div class="hero-kicker">
+          <span>COMBAT NUMERIC BALANCE WHITEPAPER · V3.1</span>
+          <span class="hero-kicker-gold">线性等阶格挡 · 去水分收紧相加池 · 12,600 场蒙特卡洛验证</span>
+        </div>
+        <h1 class="doc-h1">《转生千金～到了异世界就要悠闲地生活》战斗数值策划终版白皮书（V3.1）</h1>
+        <div class="hero-meta">
+          <div class="meta-line"><strong>文档状态</strong>：V3.1 终版唯一数值事实源（经 12,600 场 Python 蒙特卡洛真实仿真验证，27 组主线养成存档 100% 胜率）</div><div class="meta-line"><strong>适用范围</strong>：战斗核心引擎、棱镜战斗界面、8 大主线剧情关卡与演武大厅测试关卡（共 9 幕配置）、主线养成存档属性换算、法杖与铭记秘宝系统</div><div class="meta-line"><strong>仿真脚本位置</strong>：<code>/tmp/v3_balance_sim/sim_v3.py</code>（可通过 <code>python3 tools/run_safe.py --timeout 60 -- python3 /tmp/v3_balance_sim/sim_v3.py</code> 一键完整复现）</div><div class="meta-line"><strong>阅读约定</strong>：本文第 1 至第 10 章所有正文、公式与统计表均使用清晰中文全称（如「生命值」「魔力值」「行动点」「单次行动伤害」「单位魔力效率」「击杀回合数」「群体范围技」「第一波 / 第二波」「首领」「90 分位」等），杜绝裸英文缩写；缩圈与格挡四档判定首次给出中英对照（<code>差劲（Bad）</code>、<code>良好（Good）</code>、<code>优秀（Great）</code>、<code>完美（Perfect）</code>），后文统一使用中文。所有工程代码标识与字段映射统一归置文末第 11 章附录，便于程序无歧义落地。</div>
+        </div>
+      </section>
+
+      <section class="kpi-strip" aria-label="V3.1 核心定案指标总览">
+        <div class="kpi-item">
+          <div class="kpi-label">满配暴击核爆倍率</div>
+          <div class="kpi-val">6.12× / 6.53×</div>
+          <div class="kpi-sub">相加池 2.72×；较旧 V2.2 (15.83×) 收敛 −61.3% / −58.8%</div>
+        </div>
+        <div class="kpi-item k-cyan">
+          <div class="kpi-label">线性等阶差格挡公式</div>
+          <div class="kpi-val">+12% / −10%</div>
+          <div class="kpi-sub">+6 阶 51.6% · 0 同阶 30.0% · −4 高打神 18.0% · −6 初打神 12.0%</div>
+        </div>
+        <div class="kpi-item k-teal">
+          <div class="kpi-label">12,600 场蒙特卡洛实测</div>
+          <div class="kpi-val">27 / 27 全胜</div>
+          <div class="kpi-sub">三档养成存档 100% 胜率；无残像第 5 幕 900 场 100% 零卡关</div>
+        </div>
+        <div class="kpi-item k-gold">
+          <div class="kpi-label">精简进化技能与关卡定位</div>
+          <div class="kpi-val">5 线 + 1 身法</div>
+          <div class="kpi-sub">第 2 幕雷纳德 6+6 协同活捉；第 9 幕风神标定「仅演武测试关」</div>
+        </div>
+      </section>
+
+      <section class="chapter" id="sec-1">
+<h2 class="chapter-title"><span class="ch-num">01</span><span>一、总览：V3.1 终版七大定案（相对 V2.2 根治与 V3.0 去水分收紧）</span></h2>
+<p class="spec-p">早期 V2.2 版本暴露出六大结构性病灶：① 13 个常规技加 10 个冰晶宫殿看破技令菜单臃肿，且删看破技后第 5 幕诺艾儿脚底暗流会直接秒杀未解锁「风行残像」的玩家；② 魔力增幅 <code>40%</code> 二阶沦为夹心废档（二阶护盾仅从 <code>1.35×</code> 涨至 <code>1.45×</code> 血亏）；③ 魔力精算、省魔手稿与极北圣晶杖乘法叠穿至 <code>0.319×</code> 耗蓝，叠加魔战循环后全员永动满蓝；④ 增伤区多路连乘叠加易伤、连携与高额饰品，令满配核爆飙至 <code>15.83×</code>；⑤ 存档映射仅限制了魔法攻击，双防最高超出演武预设 <code>+422%</code>，而 9/12/14 岁速通血量断档导致暴毙；⑥ 第 8 幕（14 岁）演武预设越权塞入了 15 岁才习得的剑步。</p>
+<p class="spec-p">V3.1 在 V3.0 架构根治的基础上，<strong>进一步砍除泛滥增伤水分、全面切换直觉透明的「等阶差线性相加格挡公式」、并明晰第 2 幕协同战与第 9 幕演武测试关定位</strong>，锁定七大唯一设计准则：</p>
+<div class="table-wrap"><table class="spec-table"><thead><tr><th style="text-align:left;">维度</th><th style="text-align:left;">V2.2 现状与痛点</th><th style="text-align:left;">V3.1 终版拍板定案</th><th style="text-align:left;">12,600 场实测成效</th></tr></thead><tbody><tr><td style="text-align:left;"><strong>技能架构</strong></td><td style="text-align:left;">13 常规技 + 10 冰宫看破技 = 23 技能，含独立「隔空断咏线」</td><td style="text-align:left;">彻底删除「隔空断咏线」与全部「冰宫看破技」；改用<strong>精简 5 线原位进化 + 1 个独立身法槽（风行残像）</strong>，界面常驻至多 6 槽</td><td style="text-align:left;">菜单压缩 74%，全 9 幕（含无残像第 5 幕 900 场）常规解法 <strong>100% 通关零卡关</strong></td></tr><tr><td style="text-align:left;"><strong>收紧相加增伤池</strong></td><td style="text-align:left;">增幅 × 击破 × 易伤 × 连携 × 铭记多路连乘，核爆达 <code>15.83×</code></td><td style="text-align:left;">改为<strong>收紧型统一相加增伤池</strong>：弱点击破收敛至 <strong><code>+10%</code></strong>；<strong>彻底移除泛滥的「易伤 <code>+25%</code>」「破招/瞬反连携 <code>+25%</code>」与「常规失衡 <code>+20%</code>」伤害乘区</strong>；铭记「雪纹手帕」回调至 <strong><code>+2%</code></strong>（其余常规铭记/被动收束至 <code>+2%–+5%</code>）</td><td style="text-align:left;">满配相加池压回 <strong><code>2.72×</code></strong>；叠属性克制与暴击后，常规暴击核爆 <strong><code>6.12×</code>（<code>-61.3%</code>）</strong>、圣晶暴击核爆 <strong><code>6.53×</code>（<code>-58.8%</code>）</strong>，彻底终结伤害膨胀</td></tr><tr><td style="text-align:left;"><strong>魔力增幅</strong></td><td style="text-align:left;">40% 二阶攻击边际最低，二阶护盾 <code>1.45×</code> 血亏成废档</td><td style="text-align:left;">明确 <code>20% / 40% / 60%</code> 为<strong>额外消耗最大魔力百分比</strong>；攻击相加增伤 <code>+40% / +80% / +120%</code>、穿抗 <code>10% / 22% / 35%</code>、破锁 <code>+1 / +2 / +3</code>；护盾阶梯 <code>1.35× / 1.70×</code> 并赋予二阶护箱 90 + 钢霜壁垒减伤 15%</td><td style="text-align:left;">首领战 40% 二阶攻击占比达 <code>37%–65%</code>，赫兰与风神战 40% 二阶护盾占比达 <code>96%–100%</code></td></tr><tr><td style="text-align:left;"><strong>魔力经济与法杖</strong></td><td style="text-align:left;">省蓝叠穿 <code>0.319×</code> 无限满蓝；极北圣晶杖 <code>+28%</code> 魔攻超标</td><td style="text-align:left;">100% 尊重原著<strong>等量有效生命伤害回流魔力</strong>与<strong>晦轮杖 100% 真伤 + 24% 最大魔力耗蓝（永不日蚀）</strong>；设立<strong>总省蓝硬地板 <code>0.60×</code></strong>；极北圣晶杖回调至 <code>+14%</code> 魔攻、<code>+10%</code> 暴伤、<code>-10%</code> 增幅耗蓝</td><td style="text-align:left;">有盾态即便满配 <code>0.60×</code> 地板连发 60% 仍严格净耗蓝（<code>-1</code> 至 <code>-59</code>），破盾破核后爽快正回流（<code>+43</code> 至 <code>+173</code>）</td></tr><tr><td style="text-align:left;"><strong>线性等阶差格挡</strong></td><td style="text-align:left;">缺少直觉透明的原著七阶实力压制表达</td><td style="text-align:left;">严格对应原著七阶（<code>初级 1 → 神级 7</code>），名牌直显等阶标识；同阶基准 <code>0% / 8% / 18% / 30%</code>；<strong>高于敌每阶 <code>+12%</code> 相加（<code>×(1+0.12d)</code>，无人工封顶，自然触顶物理 100%）；低于敌每阶 <code>-10%</code> 相加（<code>×max(0, 1-0.10|d|)</code>，无人工保底）</strong></td><td style="text-align:left;">心算即得、线性顺滑：<code>+6</code> 阶 <code>×1.72</code> 最高 <code>51.6%</code>、<code>+2</code> 阶 <code>×1.24</code> 最高 <code>37.2%</code>、<code>-2</code> 阶 <code>×0.80</code> 最高 <code>24.0%</code>、<code>-4</code> 高打神 <code>×0.60</code> 最高 <code>18.0%</code>、<code>-6</code> 初打神 <code>×0.40</code> 最高 <code>12.0%</code></td></tr><tr><td style="text-align:left;"><strong>第 2 幕协同与第 9 幕定位</strong></td><td style="text-align:left;">旧版 8 岁希尔维亚单挑圣级罗文割裂设定；第 9 幕剧情归属模糊</td><td style="text-align:left;"><strong>第 2 幕罗文乱葬岗</strong>保留「前排王级雷纳德主力三系压制 + 后排 8 岁希尔维亚自保护盾/薄冰牵制 + 原著活捉留口收尾」；<strong>第 9 幕风神·岚</strong>明确标定为<strong>「仅演武大厅测试用关卡」</strong>（原著无此交手情节，专供高阶机制与极限手感测试）</td><td style="text-align:left;">第 2 幕 5.00 回合 100% 活捉（雷纳德主输出占比 <code>77.6%–80.3%</code>）；第 9 幕演武测试关普通轨 9.04 / 高手轨 7.08 回合</td></tr><tr><td style="text-align:left;"><strong>存档与演武收敛</strong></td><td style="text-align:left;">9/12/14 岁血量断档导致速通阵亡；双防超预设 <code>+422%</code></td><td style="text-align:left;">补齐 8/9/12/14 岁年龄基础档；为生命、魔力、物攻、魔攻、物防、法抗全部套用<strong>比例型双曲正切软上限</strong>；第 8 幕（14 岁）移除越权剑步</td><td style="text-align:left;">27 组存档实测（9 幕 × 3 档，2,700 场）<strong>27/27 全部 100% 胜率</strong>，全属性偏差收敛在 <code>[-9%, +27%]</code></td></tr></tbody></table></div>
+</section>
+<section class="chapter" id="sec-2">
+<h2 class="chapter-title"><span class="ch-num">02</span><span>二、核心伤害与防御数学体系（V3.1 去水分收紧版）</span></h2>
+<h3 class="sub-title" id="sec-2-1">2.1 收紧型统一「相加增伤池」终版公式</h3>
+<p class="spec-p">所有常规攻击与法术伤害（除明确标注的真实伤害机制外）严格遵循唯一公式：</p>
+<div class="math-display"><div class="math-formula-row"><span class="m-lhs">最终伤害</span><span class="m-eq">=</span><span class="m-term">攻击力</span><span class="m-op-mul">×</span><span class="m-term">技能倍率</span><span class="m-op-mul">×</span><span class="m-group-box"><span class="m-paren">(</span>1 + <span class="m-hi">魔力增幅%</span> + <span class="m-hi">缩圈精准%</span> + <span class="m-hi">弱点击破%</span> + <span class="m-hi">克制微调铭记/被动%</span><span class="m-paren">)</span></span><span class="m-op-mul">×</span><span class="m-term">战场架势修正</span><span class="m-op-mul">×</span><span class="m-term m-accent">属性克制</span><span class="m-op-mul">×</span><span class="m-term m-gold">暴击</span><span class="m-op-mul">×</span><span class="m-term">防御承伤比</span></div></div>
+<p class="spec-p">各乘区与加项严格边界如下（<strong>严禁在公式外私自挂载隐藏正向连乘项，彻底杜绝易伤与连携膨胀</strong>）：</p>
+<ol class="spec-list"><li><strong>攻击力区</strong>：<ul class="spec-sublist"><li>纯法术技能（冰晶主炮线、水系破局线、霜域控场线）：<span class="math-inline"><span class="m-txt">魔法攻击</span>  ×  <span class="m-txt">法杖魔攻倍率</span></span>（徒手与晦轮杖 <code>1.00×</code>，极北圣晶杖 <code>1.14×</code>）。</li><li>纯物理技能（普通攻击，或魔力不足 <code>12</code> 点时退化的零耗寒锋斩）：<span class="math-inline"><span class="m-txt">物理攻击</span></span>。</li><li>混合剑技（卷三进化后的<code>寒锋斩 / 送刀斩</code>）：<span class="math-inline">0.95  ×  <span class="m-txt">物理攻击</span> + 0.55  ×  (<span class="m-txt">魔法攻击</span>  ×  <span class="m-txt">法杖魔攻倍率</span>)</span>。</li></ul></li><li><strong>技能倍率区</strong>：取技能表规定的基础倍率（如<code>星霜散华</code>为 <code>2.02×</code>），或触发条件倍率（如<code>寒锋斩</code>迎击贴身突袭触发「迎锋反斩」时为 <code>2.10×</code>）。</li><li><strong>收紧型统一相加增伤池</strong>（保底不低于 <code>0.35×</code>，防止多重负修正导致零伤卡死）：<ul class="spec-sublist"><li><strong>魔力增幅%</strong>：<code>0%</code>（常规）｜ <code>+40%</code>（一阶 20%）｜ <code>+80%</code>（二阶 40%）｜ <code>+120%</code>（三阶 60%），自由微调连续段公式见第 4.1 节。</li><li><strong>缩圈精准%</strong>：<code>差劲 -15%</code> ｜ <code>良好 0%</code> ｜ <code>优秀 +12%</code> ｜ <code>完美 +25% / +30% / +35% / +40%</code>（随增幅档位共振递增，详见第 3.1 节）。</li><li><strong>弱点击破%</strong>：目标处于弱点击破态 <strong><code>+10%</code>（<code>+0.10</code>，由旧 <code>+30%</code> 严厉收紧）</strong>。弱点击破的核心战术价值在于<strong>打断敌方蓄力、瞬间破除常规防御架势、触发额外破盾与眩晕控场、以及返还行动点与魔力</strong>，而非充当暴力伤害乘区。</li><li><strong>彻底移除泛滥乘区</strong>：<strong>全面取消「易伤 <code>+25%</code>」、「破招/瞬反连携 <code>+25%</code>」与「常规架势失衡 <code>+20%</code>」伤害加项</strong>！破招、截断与瞬反完全保留其核心动作与策略价值——立即跳过敌方蓄力行动、迎锋卸力 <code>-60%</code> 免伤、剥除敌方闪避、额外削减弱点锁、破除风神外圈风暴壁、返还 <code>+1</code> 行动点及追击回蓝 <code>+12%</code> 最大魔力——不再叠加进常规伤害倍率中。</li><li><strong>克制微调铭记 / 被动 / 套装%（严格收束至 <code>+2%–+5%</code>）</strong>：</li><li>铭记<code>雪纹手帕</code>：冰系相加增伤 <strong><code>+2%</code>（<code>+0.02</code>，由旧 <code>+20%</code> 大幅回调）</strong>；</li><li>铭记<code>月虹螺胸针</code>：水/风系相加增伤 <strong><code>+3%</code>（<code>+0.03</code>）</strong>；</li><li>铭记<code>乌木紫穗剑</code>：剑步线相加增伤 <strong><code>+4%</code>（<code>+0.04</code>）</strong>；</li><li>被动<code>寒锋剑意</code>：卷三剑技相加增伤 <strong><code>+5%</code>（<code>+0.05</code>）</strong>；</li><li>套装<code>北境霜锋（3 件）</code>：每回合首次冰晶主炮线/霜域控场线相加增伤 <strong><code>+5%</code>（<code>+0.05</code>）</strong>。</li><li>以上全部直接并入本相加池，杜绝小饰品堆爆伤害。</li></ul></li><li><strong>战场架势修正（仅规则性减伤/场景约束，不作为正向膨胀源）</strong>：<ul class="spec-sublist"><li>烈焰斗气：每层使敌方受非熄火伤害减免 <code>10%</code>（最多 3 层 <code>-30%</code>）；</li><li>风神外圈风暴壁：未破招/未失衡/未击破前偏折盲攻，承伤 <code>0.42×</code>；</li><li>爱丽丝微风缓冲：魔力大于 0 时微风卸力，承伤 <code>0.80×</code>；</li><li>北林群狼合围：场上存活狼只 <code>≥ 3</code> 时，单体攻击受牵制承伤 <code>0.45×</code>（引导使用范围霜域技）。</li></ul></li><li><strong>独立属性克制区</strong>：克制 <strong><code>1.50×</code></strong> ｜ 中立 <strong><code>1.00×</code></strong> ｜ 被克 <strong><code>0.75×</code></strong>。循环关系严格遵守原著：<code>水克火 → 火克冰 → 冰克风 → 风克土 → 土克水</code>、<code>光暗互克</code>；物理无属性克制。</li><li><strong>独立暴击区</strong>：基础暴击率 <code>5%</code>（搭配铭记可提升）；常规基础暴击倍率 <strong><code>1.50×</code></strong>，装备<code>极北圣晶杖</code>提升至 <strong><code>1.60×</code></strong>，激活<code>学院星辉（3 件）</code>再 <code>+0.10</code>（封顶 <code>1.70×</code>）。</li><li><strong>防御承伤比区（双曲线比值防御 <code>K = 80</code> 对比晦轮杖真伤）</strong>：<ul class="spec-sublist"><li>常规攻击：<span class="math-inline"><span class="m-txt">有效防御</span> = <span class="m-txt">目标对应防御</span>  ×  (1 - <span class="m-op">min</span>(0.75,  <span class="m-txt">总穿抗率</span>))</span>，<span class="math-inline"><span class="m-txt">防御承伤比</span> = <span class="m-frac"><span class="m-num">80</span><span class="m-den">80 + <span class="m-txt">有效防御</span></span></span></span>。</li><li><strong>晦轮杖魔法真实伤害</strong>：<code>100%</code> 无视目标魔法防御与魔法护盾；仅当目标拥有物理实体厚甲（如赫兰冻土重甲兽 <code>30%</code>、霜渊裂地兽未破核 <code>35%</code>）时按 <span class="math-inline">1 - <span class="m-txt">实体甲阻尼率</span></span> 结算。</li></ul></li></ol>
+<h3 class="sub-title" id="sec-2-2">2.2 公开透明拆解：新「满配暴击核爆倍率」算式与去水分对照</h3>
+
+<div class="calc-panel" id="calc-pool-widget" aria-label="V3.1 相加增伤池交互试算器">
+  <div class="calc-head">
+    <span class="calc-title">交互试算器 · V3.1 收紧相加增伤池实时核验</span>
+    <span class="calc-badge">实时对照 V2.2 核爆 15.83×</span>
+  </div>
+  <div class="calc-controls">
+    <div class="calc-row">
+      <span class="calc-lbl">魔力增幅档位</span>
+      <div class="calc-seg" data-calc-group="amp">
+        <button type="button" class="cbtn" data-val="0">0% (+0%)</button>
+        <button type="button" class="cbtn" data-val="0.40">20%★ (+40%)</button>
+        <button type="button" class="cbtn" data-val="0.80">40%★★ (+80%)</button>
+        <button type="button" class="cbtn active gold" data-val="1.20">60%★★★ (+120%)</button>
+      </div>
+    </div>
+    <div class="calc-row">
+      <span class="calc-lbl">缩圈精准评级</span>
+      <div class="calc-seg" data-calc-group="ring">
+        <button type="button" class="cbtn" data-val="bad">差劲 (−15%)</button>
+        <button type="button" class="cbtn" data-val="good">良好 (0%)</button>
+        <button type="button" class="cbtn" data-val="great">优秀 (+12%)</button>
+        <button type="button" class="cbtn active gold" data-val="perfect">完美 (共振)</button>
+      </div>
+    </div>
+    <div class="calc-row">
+      <span class="calc-lbl">击破与饰品微调</span>
+      <div class="calc-toggles">
+        <label class="ctog"><input type="checkbox" id="cp-break" checked /> 弱点击破 <b>+10%</b></label>
+        <label class="ctog"><input type="checkbox" id="cp-handkerchief" checked /> 雪纹手帕 <b>+2%</b></label>
+        <label class="ctog"><input type="checkbox" id="cp-elem" checked /> 属性克制 <b>×1.50</b></label>
+      </div>
+    </div>
+    <div class="calc-row">
+      <span class="calc-lbl">独立暴击乘区</span>
+      <div class="calc-seg" data-calc-group="crit">
+        <button type="button" class="cbtn" data-val="1.00">未暴击 (1.00×)</button>
+        <button type="button" class="cbtn" data-val="1.50">常规暴击 (1.50×)</button>
+        <button type="button" class="cbtn active gold" data-val="1.60">极北圣晶杖 (1.60×)</button>
+      </div>
+    </div>
+  </div>
+  <div class="calc-result-bar">
+    <div class="calc-formula-live" id="cp-formula">相加池：1.00 + 1.20 + 0.40 + 0.10 + 0.02 = 2.72× ｜ 独立乘区：× 1.50 × 1.60</div>
+    <div class="calc-output-pair">
+      <span class="calc-big" id="cp-total">6.53×</span>
+      <span class="calc-delta" id="cp-delta">相对 V2.2 (15.83×) 收敛 −58.8%</span>
+    </div>
+  </div>
+</div>
+
+<p class="spec-p">以下算式完全公开透明，每一步均可手算核验（并与 <code>/tmp/v3_balance_sim/sim_v3.py</code> 实算一致）：</p>
+<ol class="spec-list"><li><strong>V3.1 满配相加增伤池拆解</strong>：<div class="math-display math-breakdown"><div class="math-formula-row"><span class="m-lhs">相加增伤池</span><span class="m-eq">=</span><span class="m-ub"><span class="m-ub-val">1.00</span><span class="m-ub-cap">基础基准</span></span><span class="m-plus">+</span><span class="m-ub"><span class="m-ub-val m-accent">1.20</span><span class="m-ub-cap">60% 三阶魔力增幅</span></span><span class="m-plus">+</span><span class="m-ub"><span class="m-ub-val m-accent">0.40</span><span class="m-ub-cap">完美三阶共振</span></span><span class="m-plus">+</span><span class="m-ub"><span class="m-ub-val">0.10</span><span class="m-ub-cap">弱点击破</span></span><span class="m-plus">+</span><span class="m-ub"><span class="m-ub-val">0.02</span><span class="m-ub-cap">铭记·雪纹手帕</span></span><span class="m-eq">=</span><span class="m-result">2.72×</span></div></div></li><li><strong>叠加独立乘区后的满配暴击核爆倍率</strong>：<ul class="spec-sublist"><li><strong>常规基础暴击（<code>1.50×</code>）</strong>：<span class="math-inline">2.72  ×  1.50<span class="m-txt">（属性克制）</span>  ×  1.50<span class="m-txt">（基础暴击）</span> = <strong class="m-bold">6.12 × </strong></span>（相对旧 V2.2 <code>15.83×</code> 暴降 <strong><code>-61.3%</code></strong>）</li><li><strong>极北圣晶杖暴击（<code>1.60×</code>）</strong>：<span class="math-inline">2.72  ×  1.50<span class="m-txt">（属性克制）</span>  ×  1.60<span class="m-txt">（圣晶暴击）</span> = 6.528 ×   ≈  <strong class="m-bold">6.53 × </strong></span>（相对旧 V2.2 <code>15.83×</code> 暴降 <strong><code>-58.8%</code></strong>）</li><li><em>注：即便额外叠满北境霜锋三件套 <code>+0.05</code>，相加池亦仅 <code>2.77×</code>，极北圣晶杖克制暴击仅 <code>6.65×</code>，全生命周期数值天花板稳如磐石。</em></li></ul></li></ol>
+<p class="spec-p"><strong>全情景倍率收敛对比总表（V2.2 旧连乘池 对比 V3.1 收紧相加池）</strong>：</p>
+<div class="table-wrap"><table class="spec-table"><thead><tr><th style="text-align:left;">战斗情景</th><th style="text-align:center;">V2.2 旧连乘倍率</th><th style="text-align:left;">V3.1 收紧相加池算式</th><th style="text-align:center;">V3.1 最终倍率</th><th style="text-align:center;">相对 V2.2 变化</th><th style="text-align:left;">策划评价</th></tr></thead><tbody><tr><td style="text-align:left;">常规平放（0% 增幅 · 良好 · 无克制）</td><td style="text-align:center;"><code>1.00×</code></td><td style="text-align:left;"><code>1.00</code></td><td style="text-align:center;"><strong><code>1.00×</code></strong></td><td style="text-align:center;"><code>0.0%</code></td><td style="text-align:left;">基准完全一致</td></tr><tr><td style="text-align:left;">轻度爆发（20% 增幅 · 优秀 +12% · 克制 1.5×）</td><td style="text-align:center;"><code>2.14×</code></td><td style="text-align:left;"><code>(1.00 + 0.40 + 0.12) × 1.50</code></td><td style="text-align:center;"><strong><code>2.28×</code></strong></td><td style="text-align:center;"><code>+6.6%</code></td><td style="text-align:left;">前中期手操正反馈更清晰</td></tr><tr><td style="text-align:left;">主力破防（40% 增幅 · 完美 +35% · 击破 +10% · 克制 1.5×；已去易伤）</td><td style="text-align:center;"><code>4.54×</code></td><td style="text-align:left;"><code>(1.00 + 0.80 + 0.35 + 0.10) × 1.50</code></td><td style="text-align:center;"><strong><code>3.38×</code></strong></td><td style="text-align:center;"><strong><code>-25.7%</code></strong></td><td style="text-align:left;">剥除易伤水分，40% 破防节奏扎实可控</td></tr><tr><td style="text-align:left;">高阶三阶爆发（60% 增幅 · 完美 +40% · 击破 +10% · 克制 1.5×；去易伤与连携）</td><td style="text-align:center;"><code>7.13×</code></td><td style="text-align:left;"><code>(1.00 + 1.20 + 0.40 + 0.10) × 1.50</code></td><td style="text-align:center;"><strong><code>4.05×</code></strong></td><td style="text-align:center;"><strong><code>-43.2%</code></strong></td><td style="text-align:left;">消除连携套娃，破招回归动作控场本位</td></tr><tr><td style="text-align:left;"><strong>满配常规暴击核爆</strong>（上项 + 雪纹手帕 +2% + 基础暴击 1.5×）</td><td style="text-align:center;"><code>15.83×</code></td><td style="text-align:left;"><code>(1.00 + 1.20 + 0.40 + 0.10 + 0.02) × 1.50 × 1.50</code></td><td style="text-align:center;"><strong><code>6.12×</code></strong></td><td style="text-align:center;"><strong><code>-61.3%</code></strong></td><td style="text-align:left;"><strong>核爆彻底去水分，首领战全程稳健</strong></td></tr><tr><td style="text-align:left;"><strong>满配圣晶暴击核爆</strong>（上项 + 雪纹手帕 +2% + 圣晶暴击 1.6×）</td><td style="text-align:center;"><code>15.83×</code></td><td style="text-align:left;"><code>(1.00 + 1.20 + 0.40 + 0.10 + 0.02) × 1.50 × 1.60</code></td><td style="text-align:center;"><strong><code>6.53×</code></strong></td><td style="text-align:center;"><strong><code>-58.8%</code></strong></td><td style="text-align:left;"><strong>高配法杖保留爽感且绝不击穿血线</strong></td></tr></tbody></table></div>
+</section>
+<section class="chapter" id="sec-3">
+<h2 class="chapter-title"><span class="ch-num">03</span><span>三、精准缩圈判定 × 魔力增幅共振 × 等阶差线性相加格挡</span></h2>
+<h3 class="sub-title" id="sec-3-1">3.1 缩圈随机键四档与魔力增幅共振（唯一规则，零附加彩蛋）</h3>
+<p class="spec-p">为兼顾动作节拍爽感与规则极简透明，终版<strong>彻底砍光一切零碎彩蛋</strong>（无特殊连击隐藏技、无特定按键暴击彩蛋、无额外返行动点彩蛋），只保留唯一清晰的四档精准判定：</p>
+<div class="table-wrap"><table class="spec-table"><thead><tr><th style="text-align:left;">判定档位</th><th style="text-align:left;">进攻类技能（并入相加增伤池）</th><th style="text-align:center;">护盾类技能（护盾倍率修正）</th><th style="text-align:center;">护手开关「关闭（自动判定）」落点</th></tr></thead><tbody><tr><td style="text-align:left;"><strong>差劲（Bad）</strong></td><td style="text-align:left;"><code>-15%</code></td><td style="text-align:center;"><code>-10%</code></td><td style="text-align:center;">不触发</td></tr><tr><td style="text-align:left;"><strong>良好（Good）</strong></td><td style="text-align:left;"><code>0%</code>（基准）</td><td style="text-align:center;"><code>0%</code>（基准）</td><td style="text-align:center;"><strong>100% 按本档自动结算</strong></td></tr><tr><td style="text-align:left;"><strong>优秀（Great）</strong></td><td style="text-align:left;"><code>+12%</code></td><td style="text-align:center;"><code>+10%</code></td><td style="text-align:center;">不触发</td></tr><tr><td style="text-align:left;"><strong>完美（Perfect）</strong></td><td style="text-align:left;"><strong>随当前魔力增幅共振递增</strong>：<br>• <code>0%</code> 常规：<code>+25%</code><br>• <code>20%</code> 一阶：<code>+30%</code><br>• <code>40%</code> 二阶：<code>+35%</code><br>• <code>60%</code> 三阶：<code>+40%</code></td><td style="text-align:center;"><code>+20%</code></td><td style="text-align:center;">不触发</td></tr></tbody></table></div>
+<ul class="spec-list"><li><strong>多拍技能算术均值结算</strong>：<code>2</code> 拍（如激流涌、断水刃、冰霜之息、寒锋斩）、<code>3</code> 拍（三棱冰晶、霜域棘阵）、<code>4</code> 拍（星霜散华）每拍独立弹出随机键位缩圈，各拍获得的精准百分比<strong>取算术平均值</strong>计入本次技能的相加增伤池（例如 4 拍星霜散华在 60% 三阶增幅下打出「3 完美 + 1 优秀」，精准增伤为 <span class="math-inline">(40%  ×  3 + 12%) / 4 = +33%</span>）。</li><li><strong>护手模式三档开关（设置页及战斗右上角随时可切）</strong>：<ul class="spec-sublist"><li><strong>标准开启</strong>：默认缩圈速度（<code>0% 760</code> 毫秒 / <code>20% 660</code> 毫秒 / <code>40% 580</code> 毫秒 / <code>60% 500</code> 毫秒），四档全生效；</li><li><strong>宽松模式</strong>：判定窗口放宽 <code>+35%</code>，显著降低操作失误压力；</li><li><strong>关闭（自动判定）</strong>：隐藏缩圈交互，所有攻击与护盾自动按 <code>良好（0%）</code> 结算，所有防御格挡自动按 <code>良好（同阶 8.0%）</code> 结算，确保纯剧情/策略玩家零卡关通全篇。</li></ul></li><li><strong>反向数值标尺铁律</strong>：全 9 幕敌人血量与防线均以<strong>「熟练手操玩家常态打出 优秀 ~ 完美」</strong>作为反向标尺定锚，配合 V3.1 收紧相加池，彻底防止手操熟练后数值崩坏碾压。</li></ul>
+<h3 class="sub-title" id="sec-3-2">3.2 等阶差线性相加格挡公式（无人工封顶、无人工保底）</h3>
+
+<div class="calc-panel" id="calc-block-widget" aria-label="V3.1 线性等阶差格挡速算器">
+  <div class="calc-head">
+    <span class="calc-title">交互速算器 · 等阶差线性相加格挡实测（与特效实验室 100% 同源）</span>
+    <span class="calc-badge" id="cb-scale-badge">当前系数：×1.00（同阶基准）</span>
+  </div>
+  <div class="calc-tier-bar" id="cb-presets">
+    <button type="button" class="cbtn" data-d="6">+6 ×1.72<small>51.6%</small></button>
+    <button type="button" class="cbtn" data-d="5">+5 ×1.60<small>48.0%</small></button>
+    <button type="button" class="cbtn" data-d="2">+2 ×1.24<small>37.2%</small></button>
+    <button type="button" class="cbtn" data-d="1">+1 ×1.12<small>33.6%</small></button>
+    <button type="button" class="cbtn active" data-d="0">0 同阶<small>30.0%</small></button>
+    <button type="button" class="cbtn" data-d="-1">-1 ×0.90<small>27.0%</small></button>
+    <button type="button" class="cbtn" data-d="-2">-2 ×0.80<small>24.0%</small></button>
+    <button type="button" class="cbtn" data-d="-3">-3 ×0.70<small>21.0%</small></button>
+    <button type="button" class="cbtn" data-d="-4">-4 高打神<small>18.0%</small></button>
+    <button type="button" class="cbtn" data-d="-5">-5 ×0.50<small>15.0%</small></button>
+    <button type="button" class="cbtn" data-d="-6">-6 初打神<small>12.0%</small></button>
+  </div>
+  <div class="cb-grid">
+    <div class="cb-cell"><span class="cb-lbl">差劲（0% 基准）</span><strong id="cb-bad">0.0%</strong></div>
+    <div class="cb-cell"><span class="cb-lbl">良好（8% 基准）</span><strong id="cb-good">8.0%</strong></div>
+    <div class="cb-cell"><span class="cb-lbl">优秀（18% 基准）</span><strong id="cb-great">18.0%</strong></div>
+    <div class="cb-cell cb-perf"><span class="cb-lbl">完美（30% 基准）</span><strong id="cb-perfect">30.0%</strong></div>
+  </div>
+</div>
+
+<p class="spec-p">严格对应原著《转生千金》七大实力等阶，战斗中<strong>角色与敌方名牌前直接挂载等阶徽标</strong>（如 <code>初级</code>、<code>中级</code>、<code>高级</code>、<code>圣级</code>、<code>王级</code>、<code>帝级</code>、<code>神级</code>），界面简洁干练：</p>
+<div class="math-display"><div class="rank-scale-strip"><span class="rk-title">原著七阶刻度</span><span class="rk-chip rk-1"><b>1</b><span>初级</span></span><span class="rk-arrow">→</span><span class="rk-chip rk-2"><b>2</b><span>中级</span></span><span class="rk-arrow">→</span><span class="rk-chip rk-3"><b>3</b><span>高级</span></span><span class="rk-arrow">→</span><span class="rk-chip rk-4"><b>4</b><span>圣级</span></span><span class="rk-arrow">→</span><span class="rk-chip rk-5"><b>5</b><span>王级</span></span><span class="rk-arrow">→</span><span class="rk-chip rk-6"><b>6</b><span>帝级</span></span><span class="rk-arrow">→</span><span class="rk-chip rk-7"><b>7</b><span>神级</span></span></div></div>
+<p class="spec-p">设等阶差 <span class="math-inline"><var class="m-var">d</var> = <span class="m-txt">防御方等阶</span> - <span class="m-txt">攻击方等阶</span></span>，同阶基准格挡减伤率为 <span class="math-inline"><var class="m-var">B</var><sub class="m-sub">0</sub></span>：<strong><code>差劲 0%</code> ｜ <code>良好 8%</code> ｜ <code>优秀 18%</code> ｜ <code>完美 30%</code></strong>。V3.1 全面采用直觉透明的<strong>线性相加等阶差系数公式</strong>（无人工封顶、无人工保底，仅受物理减伤区间 <span class="math-inline">[0%,  100%]</span> 自然约束）：</p>
+<div class="math-display"><div class="m-cases-wrap"><div class="m-cases-lhs">等阶系数 <var class="m-var">S</var>(<var class="m-var">d</var>) =</div><div class="m-cases-brace"></div><div class="m-cases-rows"><div class="m-case-row"><span class="m-case-expr">1 + <b>0.12</b> × <var class="m-var">d</var></span><span class="m-case-cond"><var class="m-var">d</var> ≥ 0</span><span class="m-case-note">高于敌人每高 1 阶 +12% 相加（高 1 阶 ×1.12、高 2 阶 ×1.24…无人工封顶）</span></div><div class="m-case-row"><span class="m-case-expr"><span class="m-op">max</span>(0, 1 − <b>0.10</b> × |<var class="m-var">d</var>|)</span><span class="m-case-cond"><var class="m-var">d</var> &lt; 0</span><span class="m-case-note">低于敌人每低 1 阶 −10% 相加（低 1 阶 ×0.90、低 2 阶 ×0.80…无人工保底）</span></div></div></div></div>
+<div class="math-display"><div class="math-formula-row"><span class="m-lhs">最终格挡减伤率 <var class="m-var">B</var>(<var class="m-var">d</var>)</span><span class="m-eq">=</span><span class="m-op">min</span><span class="m-paren">(</span><b>100%</b>,&nbsp; <var class="m-var">B</var><sub class="m-sub">0</sub> × <var class="m-var">S</var>(<var class="m-var">d</var>)<span class="m-paren">)</span><span class="m-inline-hint">（仅受物理减伤区间 [0%, 100%] 自然约束）</span></div></div>
+<p class="spec-p"><strong>全等阶差线性相加格挡实算矩阵</strong>：</p>
+<div class="table-wrap"><table class="spec-table"><thead><tr><th style="text-align:center;">等阶差（我阶 − 敌阶）</th><th style="text-align:center;">线性系数</th><th style="text-align:left;">对应原著与实战典型场景</th><th style="text-align:center;">差劲</th><th style="text-align:center;">良好</th><th style="text-align:center;">优秀</th><th style="text-align:center;">完美</th></tr></thead><tbody><tr><td style="text-align:center;"><strong><code>+6</code> 阶</strong></td><td style="text-align:center;"><strong><code>×1.72</code></strong></td><td style="text-align:left;">神级面对初级（七阶体系最大正阶差）</td><td style="text-align:center;"><code>0.0%</code></td><td style="text-align:center;"><code>13.8%</code></td><td style="text-align:center;"><code>31.0%</code></td><td style="text-align:center;"><strong><code>51.6%</code></strong></td></tr><tr><td style="text-align:center;"><strong><code>+5</code> 阶</strong></td><td style="text-align:center;"><strong><code>×1.60</code></strong></td><td style="text-align:left;">神级面对中级</td><td style="text-align:center;"><code>0.0%</code></td><td style="text-align:center;"><code>12.8%</code></td><td style="text-align:center;"><code>28.8%</code></td><td style="text-align:center;"><strong><code>48.0%</code></strong></td></tr><tr><td style="text-align:center;"><strong><code>+2</code> 阶</strong></td><td style="text-align:center;"><strong><code>×1.24</code></strong></td><td style="text-align:left;">第 6 幕北林：高级希尔维亚面对初级灰棘狼</td><td style="text-align:center;"><code>0.0%</code></td><td style="text-align:center;"><code>9.9%</code></td><td style="text-align:center;"><code>22.3%</code></td><td style="text-align:center;"><strong><code>37.2%</code></strong></td></tr><tr><td style="text-align:center;"><strong><code>+1</code> 阶</strong></td><td style="text-align:center;"><strong><code>×1.12</code></strong></td><td style="text-align:left;">第 6 幕高级面对中级头狼；乱葬岗王级雷纳德面对圣级罗文</td><td style="text-align:center;"><code>0.0%</code></td><td style="text-align:center;"><code>9.0%</code></td><td style="text-align:center;"><code>20.2%</code></td><td style="text-align:center;"><strong><code>33.6%</code></strong></td></tr><tr><td style="text-align:center;"><strong><code>0</code> 阶（同阶）</strong></td><td style="text-align:center;"><strong><code>×1.00</code></strong></td><td style="text-align:left;">第 1 幕贝阿特丽丝、第 3 幕爱丽丝、第 5 幕诺艾儿、第 6 幕影豺</td><td style="text-align:center;"><code>0.0%</code></td><td style="text-align:center;"><strong><code>8.0%</code></strong></td><td style="text-align:center;"><strong><code>18.0%</code></strong></td><td style="text-align:center;"><strong><code>30.0%</code></strong></td></tr><tr><td style="text-align:center;"><strong><code>-1</code> 阶</strong></td><td style="text-align:center;"><strong><code>×0.90</code></strong></td><td style="text-align:left;">第 4 幕中级打高级艾诺；第 7/8 幕高级打圣级领主与红莲铁幕</td><td style="text-align:center;"><code>0.0%</code></td><td style="text-align:center;"><code>7.2%</code></td><td style="text-align:center;"><code>16.2%</code></td><td style="text-align:center;"><strong><code>27.0%</code></strong></td></tr><tr><td style="text-align:center;"><strong><code>-2</code> 阶</strong></td><td style="text-align:center;"><strong><code>×0.80</code></strong></td><td style="text-align:left;">第 2 幕罗文乱葬岗：8 岁中级希尔维亚面对圣级罗文余波</td><td style="text-align:center;"><code>0.0%</code></td><td style="text-align:center;"><code>6.4%</code></td><td style="text-align:center;"><code>14.4%</code></td><td style="text-align:center;"><strong><code>24.0%</code></strong></td></tr><tr><td style="text-align:center;"><strong><code>-3</code> 阶</strong></td><td style="text-align:center;"><strong><code>×0.70</code></strong></td><td style="text-align:left;">高级面对帝级强者</td><td style="text-align:center;"><code>0.0%</code></td><td style="text-align:center;"><code>5.6%</code></td><td style="text-align:center;"><code>12.6%</code></td><td style="text-align:center;"><strong><code>21.0%</code></strong></td></tr><tr><td style="text-align:center;"><strong><code>-4</code> 阶</strong></td><td style="text-align:center;"><strong><code>×0.60</code></strong></td><td style="text-align:left;"><strong>第 9 幕（仅演武大厅测试关）：高级（3 阶）面对神级风神·岚（7 阶）</strong></td><td style="text-align:center;"><code>0.0%</code></td><td style="text-align:center;"><strong><code>4.8%</code></strong></td><td style="text-align:center;"><strong><code>10.8%</code></strong></td><td style="text-align:center;"><strong><code>18.0%</code></strong></td></tr><tr><td style="text-align:center;"><strong><code>-5</code> 阶</strong></td><td style="text-align:center;"><strong><code>×0.50</code></strong></td><td style="text-align:left;">中级（2 阶）面对神级（7 阶）</td><td style="text-align:center;"><code>0.0%</code></td><td style="text-align:center;"><code>4.0%</code></td><td style="text-align:center;"><code>9.0%</code></td><td style="text-align:center;"><strong><code>15.0%</code></strong></td></tr><tr><td style="text-align:center;"><strong><code>-6</code> 阶</strong></td><td style="text-align:center;"><strong><code>×0.40</code></strong></td><td style="text-align:left;">初级（1 阶）面对神级（7 阶，七阶体系最大负阶差）</td><td style="text-align:center;"><code>0.0%</code></td><td style="text-align:center;"><strong><code>3.2%</code></strong></td><td style="text-align:center;"><strong><code>7.2%</code></strong></td><td style="text-align:center;"><strong><code>12.0%</code></strong></td></tr></tbody></table></div>
+<ul class="spec-list"><li><strong>结算顺序</strong>：敌方来袭伤害依次经过「战场状态减伤（如寒颤 <code>-14%</code>、迎锋卸力 <code>-60%</code>、钢霜壁垒 <code>-15%</code>）→ 防御比值承伤（或晦轮真伤实体盾阻尼）→ 乘以 <span class="math-inline">(1 - <var class="m-var">B</var>(<var class="m-var">d</var>))</span> 线性等阶差格挡减伤 → 玩家护盾抵消 → 剩余溢出扣除生命值」。</li><li><strong>线性公式手感优势</strong>：相比指数衰减，线性相加公式一眼可心算（高 1 阶 <code>+12%</code>、低 1 阶 <code>-10%</code>），在越级挑战（如第 9 幕演武测试关面对神级风神，<span class="math-inline"><var class="m-var">d</var> = -4</span> 系数 <code>×0.60</code>）时既体现明显的神级威压削弱（完美格挡从 <code>30.0%</code> 压降至 <code>18.0%</code>、良好仅 <code>4.8%</code>），又保留玩家精准按空格卸力的操作回报与正反馈，避免一刀切归零带来的挫败感。</li></ul>
+</section>
+<section class="chapter" id="sec-4">
+<h2 class="chapter-title"><span class="ch-num">04</span><span>四、三档魔力增幅 × 100% 原著魔战循环 × 法杖与省蓝经济</span></h2>
+<h3 class="sub-title" id="sec-4-1">4.1 三档魔力增幅精算表（彻底根治 40% 二阶废档）</h3>
+<ul class="spec-list"><li><strong>明确定义</strong>：增幅滑条支持 <code>0%–60%</code> 自由微调并在三个质变节点磁吸；其中 <strong><code>20% / 40% / 60%</code> 严格表示在技能基础耗蓝之外，额外投入自身最大魔力上限的 <code>20% / 40% / 60%</code></strong>。</li><li><strong>分段连续公式（全部计入统一相加增伤池）</strong>：<ul class="spec-sublist"><li><code>0% ≤ p &lt; 20%</code>：<span class="math-inline"><span class="m-txt">增幅增伤</span> = 1.40  ×  <var class="m-var">p</var></span>；</li><li><code>20% ≤ p &lt; 40%</code>（★一阶·魔力盈溢）：<span class="math-inline"><span class="m-txt">增幅增伤</span> = 0.40 + 1.10  ×  (<var class="m-var">p</var> - 0.20)</span>；</li><li><code>40% ≤ p &lt; 60%</code>（★★二阶·极寒过载）：<span class="math-inline"><span class="m-txt">增幅增伤</span> = 0.80 + 0.90  ×  (<var class="m-var">p</var> - 0.40)</span>；</li><li><code>p = 60%</code>（★★★三阶·星霜极限）：<span class="math-inline"><span class="m-txt">增幅增伤</span> = 1.20</span>。</li></ul></li><li><strong>护盾增幅平滑双段（上限 <code>40%</code>，彻底解决 V2.2 二阶血亏）</strong>：<ul class="spec-sublist"><li><code>0% → 20%</code>：<code>1.00× → 1.35×</code>（增幅 <code>+0.35×</code>）；</li><li><code>20% → 40%</code>：<code>1.35× → 1.70×</code>（<strong>等幅递增 <code>+0.35×</code>，绝不血亏</strong>）。</li></ul></li></ul>
+<p class="spec-p"><strong>四主档全维收益实测表</strong>（以第 7 幕 55 魔法攻击、330 最大魔力、持有魔力精算、<code>星霜散华</code> 2.02× 攻击 32 魔法防御目标为基准）：</p>
+<div class="table-wrap"><table class="spec-table"><thead><tr><th style="text-align:center;">增幅档位（额外最大魔力）</th><th style="text-align:left;">阶位称谓</th><th style="text-align:center;">相加增伤</th><th style="text-align:center;">完美共振总增伤</th><th style="text-align:center;">穿抗率</th><th style="text-align:center;">额外破锁</th><th style="text-align:center;">耗蓝（魔力精算）</th><th style="text-align:center;">单次行动伤害（良好 / 完美）</th><th style="text-align:center;">单位魔力效率（良好）</th><th style="text-align:center;">护盾倍率</th><th style="text-align:left;">钢冰护幕护箱与专属附效</th></tr></thead><tbody><tr><td style="text-align:center;"><strong><code>0%</code></strong></td><td style="text-align:left;">常规</td><td style="text-align:center;"><code>+0%</code></td><td style="text-align:center;"><code>+25%</code></td><td style="text-align:center;"><code>0%</code></td><td style="text-align:center;"><code>+0</code></td><td style="text-align:center;"><code>36</code></td><td style="text-align:center;"><code>81</code> / <code>102</code></td><td style="text-align:center;"><code>2.25</code></td><td style="text-align:center;"><code>1.00×</code></td><td style="text-align:left;">护箱 <code>36</code>（常规生根反刺）</td></tr><tr><td style="text-align:center;"><strong><code>20%</code></strong></td><td style="text-align:left;"><strong>★一阶·魔力盈溢</strong></td><td style="text-align:center;"><strong><code>+40%</code></strong></td><td style="text-align:center;"><strong><code>+70%</code></strong></td><td style="text-align:center;"><strong><code>10%</code></strong></td><td style="text-align:center;"><strong><code>+1</code></strong></td><td style="text-align:center;"><code>92</code></td><td style="text-align:center;"><code>117</code> / <code>142</code></td><td style="text-align:center;"><code>1.27</code></td><td style="text-align:center;"><strong><code>1.35×</code></strong></td><td style="text-align:left;">护箱 <strong><code>60</code></strong>（镜霜壁/钢冰护幕同步净化 1 项异常）</td></tr><tr><td style="text-align:center;"><strong><code>40%</code></strong></td><td style="text-align:left;"><strong>★★二阶·极寒过载</strong></td><td style="text-align:center;"><strong><code>+80%</code></strong></td><td style="text-align:center;"><strong><code>+115%</code></strong></td><td style="text-align:center;"><strong><code>22%</code></strong></td><td style="text-align:center;"><strong><code>+2</code></strong></td><td style="text-align:center;"><code>148</code></td><td style="text-align:center;"><code>156</code> / <code>187</code></td><td style="text-align:center;"><code>1.05</code></td><td style="text-align:center;"><strong><code>1.70×</code></strong></td><td style="text-align:left;">护箱 <strong><code>90</code></strong> + <strong>「钢霜壁垒」</strong>（本回合自身与药箱最终减伤 <code>15%</code>、护盾留存升至 <code>60%</code>、护箱留存升至 <code>55%</code>、赫兰战艾诺视野共鸣 <code>+1</code>）</td></tr><tr><td style="text-align:center;"><strong><code>60%</code></strong></td><td style="text-align:left;"><strong>★★★三阶·星霜极限</strong></td><td style="text-align:center;"><strong><code>+120%</code></strong></td><td style="text-align:center;"><strong><code>+160%</code></strong></td><td style="text-align:center;"><strong><code>35%</code></strong></td><td style="text-align:center;"><strong><code>+3</code></strong></td><td style="text-align:center;"><code>204</code></td><td style="text-align:center;"><code>199</code> / <code>235</code></td><td style="text-align:center;"><code>0.98</code></td><td style="text-align:center;">上限 40%</td><td style="text-align:left;">香槟金三环 + 冰雷电弧特效 + 三阶蓄力音效</td></tr></tbody></table></div>
+<p class="spec-p"><strong>40% 二阶不再是夹心废档的仿真铁证</strong>：</p>
+<ol class="spec-list"><li>攻击端从 <code>20% → 40%</code>，相加增伤等幅再跳 <code>+40%</code>，穿抗增量 <code>+12%</code> 高于一阶的 <code>+10%</code>，配合完美共振达 <code>+115%</code>；在 V3.1 实测中，第 5 幕诺艾儿、第 8 幕红莲铁幕、第 9 幕风神测试关里 <strong><code>40%</code> 二阶攻击占比达 <code>37%–65%</code></strong>，是名副其实的主力过载档。</li><li>护盾端 <code>40%</code> 二阶将护盾拉至 <code>1.70×</code>、护箱拉至 <code>90</code> 点并附带 <code>15%</code> 减伤与 <code>60%</code> 留存；在赫兰协防战与风神测试关中 <strong><code>40%</code> 二阶护盾占比高达 <code>96%–100%</code></strong>。</li></ol>
+<h3 class="sub-title" id="sec-4-2">4.2 100% 原著魔战循环、总省蓝硬地板 <code>0.60×</code> 与三把法杖三角定位</h3>
+<ol class="spec-list"><li><strong>100% 尊重原著魔战循环（第 5 幕起解锁）</strong>：<ul class="spec-sublist"><li>凡魔法及水冰复合攻击对敌人造成的<strong>有效生命伤害</strong>（扣除敌方护盾吸收后的真实掉血），<strong>100% 等量 <code>1:1</code> 回流为希尔维亚魔力值</strong>（物理普攻不触发；打在护盾上的伤害不回蓝）。</li></ul></li><li><strong>总省蓝折扣硬地板 <code>0.60×</code>（杜绝乘法叠穿击穿蓝量经济）</strong>：<ul class="spec-sublist"><li>无论同时拥有多少省蓝来源（被动<code>魔力精算 -15%</code>、铭记<code>省魔手稿</code>、套装<code>学院星辉 3 件 -15%</code>、法杖<code>极北圣晶杖 -10%</code>），<strong>基础技能耗蓝、增幅额外耗蓝、以及晦轮杖额外耗蓝的最终折扣倍率均严格不低于 <code>0.60×</code>（累计省蓝封顶 <code>40%</code>）</strong>。</li><li>铭记<code>省魔手稿</code>由过于失衡的「增幅额外耗蓝 <code>-50%</code>」回调为健康的「基础魔力消耗 <code>-15%</code>、魔力增幅额外消耗 <code>-20%</code>」。</li></ul></li><li><strong>三把法杖清晰三角定位（极北圣晶杖回调至健康区间，晦轮杖 100% 原著）</strong>：</li></ol>
+<div class="table-wrap"><table class="spec-table"><thead><tr><th style="text-align:left;">法杖</th><th style="text-align:center;">魔法攻击倍率</th><th style="text-align:center;">暴击伤害加成</th><th style="text-align:center;">特殊真实伤害</th><th style="text-align:center;">额外魔力消耗 / 折扣</th><th style="text-align:left;">核心战术定位</th></tr></thead><tbody><tr><td style="text-align:left;"><strong>徒手导魔</strong></td><td style="text-align:center;"><code>1.00×</code></td><td style="text-align:center;"><code>+0%</code></td><td style="text-align:center;">无</td><td style="text-align:center;">无额外耗蓝 / 零暴露</td><td style="text-align:left;">泛用稳健、耳目隐匿战首选</td></tr><tr><td style="text-align:left;"><strong>晦轮杖</strong></td><td style="text-align:center;"><code>1.00×</code></td><td style="text-align:center;"><code>+0%</code></td><td style="text-align:center;"><strong><code>100%</code> 魔法真实伤害</strong>（无视法抗与魔法盾；实体厚甲按比例阻尼；<strong>希尔维亚永不发动日蚀，零冷却零自创惩罚</strong>）</td><td style="text-align:center;">每次施法额外消耗 <strong><code>24%</code> 最大魔力</strong>（受 <code>0.60×</code> 省蓝地板约束）</td><td style="text-align:left;"><strong>高法抗（<code>≥28</code>）与厚魔法护盾首领</strong>（如红莲铁幕、风神测试关）的专属破盾直伤王牌</td></tr><tr><td style="text-align:left;"><strong>极北圣晶杖</strong></td><td style="text-align:center;"><strong><code>1.14×</code>（回调自 <code>1.28×</code>）</strong></td><td style="text-align:center;"><strong><code>+10%</code>（回调自 <code>+20%</code>）</strong></td><td style="text-align:center;">无</td><td style="text-align:center;">增幅额外耗蓝 <strong><code>-10%</code>（回调自 <code>-25%</code>）</strong>（受 <code>0.60×</code> 地板约束）</td><td style="text-align:left;"><strong>中低法抗、已破甲/破核、及群怪清场</strong>下的高续航输出最优解</td></tr></tbody></table></div>
+<p class="spec-p"><strong>三把法杖实战对比</strong>（第 7 幕基准：55 魔法攻击、330 最大魔力、魔力精算、星霜散华 <code>40%</code> 增幅、良好判定）：</p>
+<div class="table-wrap"><table class="spec-table"><thead><tr><th style="text-align:left;">目标类型</th><th style="text-align:center;">徒手导魔（总伤/实血/耗蓝/净蓝）</th><th style="text-align:center;">晦轮杖（总伤/实血/耗蓝/净蓝）</th><th style="text-align:center;">极北圣晶杖（总伤/实血/耗蓝/净蓝）</th><th style="text-align:center;">最优解归属</th></tr></thead><tbody><tr><td style="text-align:left;">低抗无盾杂兵（法抗 10 / 无盾）</td><td style="text-align:center;"><code>184 / 184 / 148 / +36</code></td><td style="text-align:center;"><code>200 / 200 / 215 / -15</code></td><td style="text-align:center;"><strong><code>210 / 210 / 137 / +73</code></strong></td><td style="text-align:center;"><strong>极北圣晶杖</strong></td></tr><tr><td style="text-align:left;">中抗魔盾首领（法抗 32 / 魔盾 120，如红莲）</td><td style="text-align:center;"><code>156 / 36 / 148 / -112</code></td><td style="text-align:center;"><strong><code>200 / 200 / 215 / -15</code></strong></td><td style="text-align:center;"><code>178 / 58 / 137 / -79</code></td><td style="text-align:center;"><strong>晦轮杖</strong>（直穿魔盾 3.4 倍实血）</td></tr><tr><td style="text-align:left;">高抗魔盾首领（法抗 44 / 魔盾 175，如风神）</td><td style="text-align:center;"><code>144 / 0 / 148 / -148</code></td><td style="text-align:center;"><strong><code>200 / 200 / 215 / -15</code></strong></td><td style="text-align:center;"><code>165 / 0 / 137 / -137</code></td><td style="text-align:center;"><strong>晦轮杖</strong>（唯一直接削血）</td></tr><tr><td style="text-align:left;">高抗实体重甲（法抗 40 / 实盾 125 / 甲 35%，如赫兰未破核）</td><td style="text-align:center;"><code>148 / 23 / 148 / -125</code></td><td style="text-align:center;"><code>130 / 5 / 215 / -210</code></td><td style="text-align:center;"><strong><code>169 / 44 / 137 / -93</code></strong></td><td style="text-align:center;"><strong>极北圣晶杖</strong>（实体甲克制晦轮）</td></tr></tbody></table></div>
+<p class="spec-p"><strong>省蓝地板 <code>0.60×</code> 防无脑永动实测</strong>（60% 三阶增幅 · 良好判定 · 满配 = 魔力精算 + 省魔手稿 + 极北圣晶杖触及 <code>0.60×</code> 地板）：</p>
+<div class="table-wrap"><table class="spec-table"><thead><tr><th style="text-align:left;">检验幕次与敌方状态</th><th style="text-align:center;">无铭记徒手（总伤/实血/耗蓝/净蓝）</th><th style="text-align:center;">满配 <code>0.60×</code> 地板（总伤/实血/耗蓝/净蓝）</th><th style="text-align:left;">蓝量经济结论</th></tr></thead><tbody><tr><td style="text-align:left;">第 5 幕诺艾儿（水，法抗 26，尺量水幕 44）</td><td style="text-align:center;"><code>157 / 113 / 184 / -71</code></td><td style="text-align:center;"><code>179 / 135 / 136 / -1</code></td><td style="text-align:left;">有水幕时满配仍严格净耗，杜绝无脑连发</td></tr><tr><td style="text-align:left;">第 5 幕诺艾儿（破盾常态）</td><td style="text-align:center;"><code>157 / 157 / 184 / -27</code></td><td style="text-align:center;"><code>179 / 179 / 136 / +43</code></td><td style="text-align:left;">破盾后奖励满配续航</td></tr><tr><td style="text-align:left;">第 7 幕领主未破核（土，法抗 40，实盾 125）</td><td style="text-align:center;"><code>190 / 65 / 204 / -139</code></td><td style="text-align:center;"><code>217 / 92 / 151 / -59</code></td><td style="text-align:left;">未破核强轰重亏蓝，逼迫引冰枪破核</td></tr><tr><td style="text-align:left;">第 7 幕领主破核后（土，法抗 12，无盾）</td><td style="text-align:center;"><code>225 / 225 / 204 / +21</code></td><td style="text-align:center;"><code>257 / 257 / 151 / +106</code></td><td style="text-align:left;">破核后享受 100% 魔战循环收割爽感</td></tr><tr><td style="text-align:left;">第 8 幕红莲铁幕（火，法抗 32，魔盾 120，水克火）</td><td style="text-align:center;"><code>221 / 101 / 182 / -81</code></td><td style="text-align:center;"><code>252 / 132 / 134 / -2</code></td><td style="text-align:left;">满配打盾仍无法凭空涨蓝</td></tr><tr><td style="text-align:left;">第 9 幕风神二阶段魔盾（风，法抗 44，魔盾 175，冰克风）</td><td style="text-align:center;"><code>284 / 109 / 204 / -95</code></td><td style="text-align:center;"><code>324 / 149 / 151 / -2</code></td><td style="text-align:left;">破壁破盾前绝不永动满蓝</td></tr><tr><td style="text-align:left;">第 9 幕风神破壁破盾后（无盾，冰克风）</td><td style="text-align:center;"><code>284 / 284 / 204 / +80</code></td><td style="text-align:center;"><code>324 / 324 / 151 / +173</code></td><td style="text-align:left;">破防窗口全力爆发以战养战</td></tr></tbody></table></div>
+</section>
+<section class="chapter" id="sec-5">
+<h2 class="chapter-title"><span class="ch-num">05</span><span>五、精简 5 线进化技能体系 + 1 个独立身法槽</span></h2>
+<p class="spec-p">彻底删除旧版「隔空断咏线」与全部 10 个「冰晶宫殿看破专武」。角色成长升阶时<strong>直接原位进化替换低阶技能</strong>，战斗菜单常驻永远只有 <strong>5 条主线 + 1 个独立身法槽（至多 6 槽）</strong>：</p>
+<div class="table-wrap"><table class="spec-table"><thead><tr><th style="text-align:left;">技能线与定位</th><th style="text-align:left;">进化阶段与名称</th><th style="text-align:left;">解锁时间（适用幕次）</th><th style="text-align:center;">缩圈拍数</th><th style="text-align:center;">属性</th><th style="text-align:center;">行动点</th><th style="text-align:center;">基础耗蓝</th><th style="text-align:center;">冷却回合</th><th style="text-align:center;">倍率 / 护盾公式</th><th style="text-align:center;">增幅上限</th><th style="text-align:center;">破锁 / 暴露</th><th style="text-align:left;">核心战术效果</th></tr></thead><tbody><tr><td style="text-align:left;"><strong>线 1：冰晶主炮线</strong><br>（单体核心爆发）</td><td style="text-align:left;">1阶 <strong><code>冰晶术</code></strong></td><td style="text-align:left;">初始（第 1/2/3 幕）</td><td style="text-align:center;">1 拍</td><td style="text-align:center;">冰</td><td style="text-align:center;">1</td><td style="text-align:center;">26</td><td style="text-align:center;">0</td><td style="text-align:center;"><code>1.55×</code> 魔攻</td><td style="text-align:center;"><code>60%</code></td><td style="text-align:center;">1 / <code>+55%</code></td><td style="text-align:left;">附寒颤 1 层；配合冰履触发罗文窄道锁腿</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">2阶 <strong><code>三棱冰晶</code></strong></td><td style="text-align:left;">12 岁艾诺指点后（第 4/5/8 幕）</td><td style="text-align:center;">3 拍</td><td style="text-align:center;">冰</td><td style="text-align:center;">1</td><td style="text-align:center;">36</td><td style="text-align:center;">0</td><td style="text-align:center;"><code>1.80×</code> 魔攻</td><td style="text-align:center;"><code>60%</code></td><td style="text-align:center;">1 / <code>+62%</code></td><td style="text-align:left;">附寒颤 1 层；<strong>3 拍快凝可截断【双手控场】并绕穿艾诺正面镜冰</strong></td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">3阶 <strong><code>星霜散华</code></strong></td><td style="text-align:left;">15 岁卷三起（第 6/7/9 幕）</td><td style="text-align:center;">4 拍</td><td style="text-align:center;">冰</td><td style="text-align:center;">1</td><td style="text-align:center;">42</td><td style="text-align:center;">0</td><td style="text-align:center;"><code>2.02×</code> 魔攻</td><td style="text-align:center;"><code>60%</code></td><td style="text-align:center;">1 / <code>+68%</code></td><td style="text-align:left;">4 拍扇形齐射、附寒颤 2 层、<strong>固有穿抗 8%</strong>、截断【双手控场】</td></tr><tr><td style="text-align:left;"><strong>线 2：水系破局线</strong><br>（克火/净异常/零暴露）</td><td style="text-align:left;">1阶 <strong><code>水球术</code></strong></td><td style="text-align:left;">初始（第 1/2/3 幕）</td><td style="text-align:center;">1 拍</td><td style="text-align:center;">水</td><td style="text-align:center;">1</td><td style="text-align:center;">22</td><td style="text-align:center;">0</td><td style="text-align:center;"><code>1.38×</code> 魔攻</td><td style="text-align:center;"><code>60%</code></td><td style="text-align:center;">1 / <code>0%</code></td><td style="text-align:left;">克火 <code>1.5×</code>、浇弱 1 层烈焰斗气、冲净扬尘致盲、零冰系暴露</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">2阶 <strong><code>激流涌</code></strong></td><td style="text-align:left;">12 岁学院水系进阶（第 5/8 幕）</td><td style="text-align:center;">2 拍</td><td style="text-align:center;">水</td><td style="text-align:center;">1</td><td style="text-align:center;">30</td><td style="text-align:center;">0</td><td style="text-align:center;"><code>1.62×</code> 魔攻</td><td style="text-align:center;"><code>60%</code></td><td style="text-align:center;">1 / <code>0%</code></td><td style="text-align:left;">克火、浇弱 1 层斗气、冲净致盲与灼烧、<strong>截断【双手控场】</strong>、零暴露</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">3阶 <strong><code>断水刃</code></strong></td><td style="text-align:left;">15 岁卷三起（第 6/7/9 幕）</td><td style="text-align:center;">2 拍</td><td style="text-align:center;">水</td><td style="text-align:center;">1</td><td style="text-align:center;">36</td><td style="text-align:center;">0</td><td style="text-align:center;"><code>1.78×</code> 魔攻</td><td style="text-align:center;"><code>60%</code></td><td style="text-align:center;">1 / <code>0%</code></td><td style="text-align:left;"><strong>穿甲切割（固有穿抗 25% + 无视半数护盾）</strong>、浇弱 2 层斗气、截断破招、零暴露</td></tr><tr><td style="text-align:left;"><strong>线 3：霜域控场线</strong><br>（铺冰/群冻/群刺回蓝）</td><td style="text-align:left;">1阶 <strong><code>冰履</code></strong></td><td style="text-align:left;">8 岁起（第 1/2/3 幕）</td><td style="text-align:center;">1 拍</td><td style="text-align:center;">冰</td><td style="text-align:center;">1</td><td style="text-align:center;">18</td><td style="text-align:center;">1</td><td style="text-align:center;"><code>0.85×</code> 全体魔攻</td><td style="text-align:center;"><code>60%</code></td><td style="text-align:center;">1 / <code>+50%</code></td><td style="text-align:left;">全体必中、铺冰 2 回合（降重击伤 15%、降敌速 15%）、罗文窄道锁腿核心</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">2阶 <strong><code>冰霜之息</code></strong></td><td style="text-align:left;">11 岁起（第 3/4/5/8 幕）</td><td style="text-align:center;">2 拍</td><td style="text-align:center;">冰</td><td style="text-align:center;">1</td><td style="text-align:center;">34</td><td style="text-align:center;">1</td><td style="text-align:center;"><code>1.18×</code> 全体魔攻</td><td style="text-align:center;"><code>60%</code></td><td style="text-align:center;">1 / <code>+58%</code></td><td style="text-align:left;">全体必中、铺冰 2 回合、寒颤 2 层、<strong>破 1 层闪避、榨爱丽丝 15 蓝、冻绝诺艾儿脚底暗流</strong></td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">3阶 <strong><code>霜域棘阵</code></strong></td><td style="text-align:left;">15 岁卷三起（第 6/7/9 幕）</td><td style="text-align:center;">3 拍</td><td style="text-align:center;">冰</td><td style="text-align:center;">2</td><td style="text-align:center;">56</td><td style="text-align:center;">1</td><td style="text-align:center;"><code>1.56×</code> 全体魔攻</td><td style="text-align:center;"><code>60%</code></td><td style="text-align:center;">1 / <code>+70%</code></td><td style="text-align:left;">全场必中群刺、群怪魔战多倍回蓝、铺冰 + 寒颤 2 层、<strong>扰乱破除风神「风眼静滞」</strong></td></tr><tr><td style="text-align:left;"><strong>线 4：冰盾护御线</strong><br>（实体盾/反刺/护箱）</td><td style="text-align:left;">1阶 <strong><code>冰盾</code></strong></td><td style="text-align:left;">初始（第 1/2/3 幕）</td><td style="text-align:center;">1 拍</td><td style="text-align:center;">冰</td><td style="text-align:center;">1</td><td style="text-align:center;">26</td><td style="text-align:center;">1</td><td style="text-align:center;">实体盾 <code>32 + 0.62×魔攻</code></td><td style="text-align:center;"><code>40%</code></td><td style="text-align:center;">0 / <code>+55%</code></td><td style="text-align:left;">实体厚冰盾（阻尼晦轮真伤 50%，叠加雷纳德岩板 75%）、生根防滑 1 回合</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">2阶 <strong><code>镜霜壁</code></strong></td><td style="text-align:left;">12 岁无气泡冰（第 4/5/8 幕）</td><td style="text-align:center;">2 拍</td><td style="text-align:center;">冰</td><td style="text-align:center;">1</td><td style="text-align:center;">32</td><td style="text-align:center;">1</td><td style="text-align:center;">实体盾 <code>38 + 0.68×魔攻</code></td><td style="text-align:center;"><code>40%</code></td><td style="text-align:center;">0 / <code>+60%</code></td><td style="text-align:left;">高密实体盾、生根防滑、<strong>反刺 12 点（反震艾诺近身双刺开破镜窗）</strong>、增幅时净异常</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">3阶 <strong><code>钢冰护幕</code></strong></td><td style="text-align:left;">15 岁卷三起（第 6/7/9 幕）</td><td style="text-align:center;">2 拍</td><td style="text-align:center;">冰</td><td style="text-align:center;">1</td><td style="text-align:center;">36</td><td style="text-align:center;">1</td><td style="text-align:center;">实体盾 <code>44 + 0.74×魔攻</code></td><td style="text-align:center;"><code>40%</code></td><td style="text-align:center;">0 / <code>+62%</code></td><td style="text-align:left;">实体盾 + 反刺 15 + 净异常 + <strong>护箱 <code>36 / 60 / 90</code>（40% 增幅启钢霜壁垒：减伤 15%、护盾留存 60%、护箱留存 55%）</strong></td></tr><tr><td style="text-align:left;"><strong>线 5：普攻 / 剑步线</strong><br>（零蓝兜底 → 卷三剑技）</td><td style="text-align:left;">1阶 <strong><code>普通攻击</code></strong></td><td style="text-align:left;">初始（第 1/2/3/4/5/8 幕）</td><td style="text-align:center;">1 拍</td><td style="text-align:center;">物理</td><td style="text-align:center;">1</td><td style="text-align:center;">0</td><td style="text-align:center;">0</td><td style="text-align:center;"><code>0.85×</code> 物攻</td><td style="text-align:center;"><code>0%</code></td><td style="text-align:center;">0 / <code>0%</code></td><td style="text-align:left;">零耗蓝兜底平击，<strong>调息回气 +6% 最大魔力</strong>（防前期空蓝软锁）</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">2阶 <strong><code>寒锋斩</code></strong><br>（送刀斩）</td><td style="text-align:left;">15 岁老霁教剑后（第 6/7/9 幕）</td><td style="text-align:center;">2 拍</td><td style="text-align:center;">水/剑</td><td style="text-align:center;">1</td><td style="text-align:center;">12*</td><td style="text-align:center;">0</td><td style="text-align:center;">常态 <code>1.35×</code> / 迎锋 <strong><code>2.10×</code></strong> 混合</td><td style="text-align:center;"><code>0%</code></td><td style="text-align:center;">1 / <strong><code>-12%</code></strong></td><td style="text-align:left;">*魔力 <code>&lt;12</code> 自动零耗兜底平斩；迎击【贴身突袭】触发生根卸力 <code>-60%</code> 伤 + 破闪避 + 化水消痕；迎击风神【真空连刃】触发<strong>「斩风瞬反」</strong>（失衡破壁 + <code>+1</code> 行动点 + 追击回蓝 <code>12%</code>，不再叠易伤与连携乘区）</td></tr><tr><td style="text-align:left;"><strong>独立身法槽</strong></td><td style="text-align:left;"><strong><code>风行残像</code></strong></td><td style="text-align:left;">11 岁战胜爱丽丝后（第 4–9 幕）</td><td style="text-align:center;">1 拍</td><td style="text-align:center;">风</td><td style="text-align:center;">1</td><td style="text-align:center;">18</td><td style="text-align:center;">3</td><td style="text-align:center;">身法效用</td><td style="text-align:center;"><code>0%</code></td><td style="text-align:center;">0 / <code>0%</code></td><td style="text-align:left;">获 <code>1</code> 层残像闪避（规避常规攻击，减免风神多段岚刃 40%）、自拉行动值 <code>25%</code>、下回合 <code>+1</code> 行动点</td></tr></tbody></table></div>
+<blockquote class="prism-note"><strong>关键设计说明</strong>：彻底删除「隔空断咏线」后，原先由隔空技承担的「截断敌方【双手控场】」职责无缝升级至 <strong>2 阶及以上的 <code>三棱冰晶 / 星霜散华</code> 与 <code>激流涌 / 断水刃</code></strong>（任意 <code>≥20%</code> 增幅的单体攻击技亦可截断），零学习成本且大幅强化进化成就感。</blockquote>
+</section>
+<section class="chapter" id="sec-6">
+<h2 class="chapter-title"><span class="ch-num">06</span><span>六、删「冰宫看破技」后的常规机制迁移、罗文协同战与风神测试关定位</span></h2>
+<h3 class="sub-title" id="sec-6-1">6.1 六大重点幕次常规机制迁移总表（零卡关铁律）</h3>
+<div class="table-wrap"><table class="spec-table"><thead><tr><th style="text-align:left;">幕次</th><th style="text-align:left;">原 V2.2 冰宫看破技依赖</th><th style="text-align:left;">V3.1 常规 5+1 技能无痛迁移解法</th><th style="text-align:left;">防卡关实测结论</th></tr></thead><tbody><tr><td style="text-align:left;"><strong>第 2 幕 · 罗文乱葬岗协同战</strong></td><td style="text-align:left;">原靠「双镜合拢夹杖」一次性 <code>+44%</code> 封锁</td><td style="text-align:left;"><strong>保留 6+6 双人协同战</strong>（详下 6.2 节）：前排王级雷纳德主力土/火/风三系压制抗线；后排 8 岁希尔维亚以 <code>冰履</code> 薄冰牵制触发「岩冰合围」，以 <code>冰盾</code> 配合雷纳德掀石板自保并推进封锁，活捉留口收尾</td><td style="text-align:left;">全轨 100% 胜率，稳落 <code>5.00</code> 回合，雷纳德主输出占比 <code>77.6%–80.3%</code></td></tr><tr><td style="text-align:left;"><strong>第 3 幕 · 爱丽丝（9 岁）</strong></td><td style="text-align:left;">原靠「封路十字冰栏」封风步 3 回合 + 榨 22 蓝</td><td style="text-align:left;">11 岁霜域线进化为 <strong><code>冰霜之息</code></strong>（全体必中不吃闪避）：每次直接破 1 层风步闪避、榨蓝 15 点、铺冰将爱丽丝次轮风步上限压至 1 层；配合 <code>水球术</code> 洗扬尘，第 4 回合狂岚检定蓝竭认输</td><td style="text-align:left;">全轨 100% 胜率，稳落 <code>4.00</code> 回合</td></tr><tr><td style="text-align:left;"><strong>第 4 幕 · 艾诺（冰上三击制）</strong></td><td style="text-align:left;">原靠「盲区弹指冰珠」白送 1 分 + 隔空断咏拿另外 2 分</td><td style="text-align:left;">12 岁进化 <strong><code>三棱冰晶</code></strong> 抓艾诺【双手压地·双翼刺阵】空档直接破镜记 1 分；立 <strong><code>镜霜壁</code></strong> 生根防滑挡住近身双刺并反刺露隙，下回合 <code>三棱冰晶</code> 穿镜再记 1 分；增幅 <code>冰霜之息</code> 亦可冻缓手速创造破镜窗</td><td style="text-align:left;">全轨 100% 胜率，稳落 <code>5.00</code> 回合（9 回合时限充裕）</td></tr><tr><td style="text-align:left;"><strong>第 5 幕 · 诺艾儿（14 岁）</strong></td><td style="text-align:left;"><strong>最严重旧卡关点</strong>：删冰宫且未解锁「风行残像」时，205 绕盾暗流必秒 190 满血主角</td><td style="text-align:left;"><strong>双重常规解法 + 容错底线</strong>：① 诺艾儿亮出【冰缝暗流】意图时，施放 <strong><code>冰霜之息</code></strong> 顺地表冻彻冰缝，<strong>直接冻绝暗流 + 碎水幕 + 架势失衡</strong>；② 亦可开 <code>风行残像</code> 替身引爆；③ 硬吃直伤回调至 <code>115</code>（重伤警示而非满血即死）</td><td style="text-align:left;">专项移除「风行残像」实测 <strong>900 场（三轨×300）100.0% 胜率零卡关</strong></td></tr><tr><td style="text-align:left;"><strong>第 7 幕 · 赫兰冻土兽潮</strong></td><td style="text-align:left;">原靠「伊诺共鸣锁核」1 发破核，否则无冰宫药箱易碎</td><td style="text-align:left;">常规 <strong><code>星霜散华</code> / <code>断水刃</code></strong> 截断领主【双臂聚寒】直接 <code>+2</code> 艾诺共鸣，<strong>40% 二阶 <code>钢冰护幕</code></strong> 护箱 <code>90</code> 点兼 <code>+1</code> 视野共鸣；每满 2 点引落崖顶艾诺极寒冰枪，第二波第 2 发贯通震碎腹下晶核清零 35% 实体厚甲并降双抗 70%</td><td style="text-align:left;">自动 100% / 普通 92.7% / 高手 100% 胜率，稳落 <code>7.00–8.70</code> 回合</td></tr><tr><td style="text-align:left;"><strong>第 9 幕 · 风神·岚</strong><br><strong>（仅演武大厅测试用关卡）</strong></td><td style="text-align:left;">原靠「风眼静滞穿心」破圆心反制阵</td><td style="text-align:left;"><strong>明确定位为仅演武大厅测试用关卡（原著无此交手情节）</strong>，专供高阶手感与机制极限测试：①【双袖引风】用 <code>星霜散华</code> / <code>断水刃</code> 截断破风暴壁；② 二阶段【真空连刃】用 <strong><code>寒锋斩</code></strong> 触发「生根步·斩风瞬反」破壁回行动点与回蓝；③ 二阶段【风眼静滞】用 <strong><code>霜域棘阵</code> 或 <code>≥40%</code> 增幅攻击</strong> 破阵；④ 线性格挡低 4 阶系数 <code>×0.60</code>（<code>0/4.8/10.8/18.0%</code>）搭配 <code>40%</code> 二阶 <code>钢冰护幕</code> 抗压</td><td style="text-align:left;">自动 100% / 普通 97.0% / 高手 100% 胜率；高手 <code>7.08</code> / 普通 <code>9.04</code> 回合</td></tr></tbody></table></div>
+<blockquote class="prism-note">其余 3 幕同步收口：第 1 幕贝阿特丽丝用 <code>水球术</code> 逐层浇弱烈焰斗气、<code>冰履</code> 降重劈伤；第 6 幕第二波霜脊影豺用 <code>寒锋斩</code> 迎锋破闪消痕 + <code>断水刃</code> 零暴露穿甲；第 8 幕（14 岁）严守原著移除 15 岁剑步，改以 <code>激流涌</code>（水克火 + 截断封廊锁火）+ <code>晦轮杖</code>（真伤穿魔盾）+ <code>风行残像</code>（避岔口冲锋）突围。</blockquote>
+<h3 class="sub-title" id="sec-6-2">6.2 专项设计：第 2 幕罗文乱葬岗协同战（经典 6+6 站位）</h3>
+<p class="spec-p">严格落实原著战力铁律与终版定案：<strong>8 岁中级（2 阶）的希尔维亚绝无可能靠单挑打赢圣级（4 阶）血族侍卫罗文。</strong> 本战保留经典 <strong>6+6 站位</strong>与原著活捉留口收尾：</p>
+<div class="diagram-box"><div class="diagram-head">经典 6+6 战场站位示意图</div><pre class="diagram-pre"><code>          【我方阵地（6 格）】                         【敌方阵地（6 格）】
+      后排                前排                       前排                后排
+  [   空位   ]        [   空位   ]               [   空位   ]        [   空位   ]
+  [ 希尔维亚 ]  ──▶  [  雷纳德  ]     ◀═══▶     [   罗文   ]        [   空位   ]
+  (8岁 · 中级)        (王级 · 抗线)              (圣级 · 晦轮杖)
+  [   空位   ]        [   空位   ]               [   空位   ]        [   空位   ]</code></pre></div>
+<ol class="spec-list"><li><strong>前排主力友军 · 雷纳德（王级 5 阶 · 站在希尔维亚正前方）</strong>：<ul class="spec-sublist"><li><strong>属性面板</strong>：生命值 <code>560</code> ｜ 魔法攻击 <code>82</code> ｜ 物理防御 <code>34</code> ｜ 魔法防御 <code>38</code> ｜ 速度 <code>118</code>（高圣级罗文 1 阶，线性系数 <code>×1.12</code>，正面完美格挡率达 <strong><code>33.6%</code></strong>）。</li><li><strong>前排掩护与抗线职责</strong>：全盘拦截罗文正面主攻（<code>血魔震土</code>、<code>晦轮主束</code> 等），仅当罗文发动越位暗术或「虚刺雷纳德、实则脱手旋杖袭心」绕过前排时，后排希尔维亚才直接承压。</li><li><strong>土 / 火 / 风三系主力压制循环（承担全场 78%–80% 主输出）</strong>：</li><li><strong>火系 · <code>赤炎压制弹</code></strong>：<code>2.15×</code> 魔法攻击，主力轰碎罗文暗影魔盾并压低其血线（<strong>原著留 1 血活捉留口，绝不致死</strong>），推进合围 <code>+6%</code>；</li><li><strong>土系 · <code>岩柱封路阵</code></strong>：<code>1.95×</code> 魔法攻击，压迫罗文走位并推进合围 <code>+10%</code>；<strong>若后排希尔维亚提前铺下 <code>冰履</code> 薄冰，自动触发「岩冰合围」协同：雷纳德伤害 <code>+20%</code>、合围额外 <code>+8%</code></strong>；</li><li><strong>风系 · <code>裂风截影刃</code></strong>：<code>1.85×</code> 魔法攻击，无视半数护盾并截断罗文血雾遁逃，推进合围 <code>+8%</code>；</li><li><strong>破锁与收网协同</strong>：雷纳德每回合稳削 <code>1</code> 层弱点锁；当目标被希尔维亚控场失衡或弱点击破时，雷纳德自动加速收拢四道岩牢完成原著活捉收尾。</li></ul></li><li><strong>后排支援主角 · 希尔维亚（8 岁 · 中级 2 阶 · 绝不单挑）</strong>：<ul class="spec-sublist"><li><strong>属性面板</strong>：生命值 <code>155</code> ｜ 魔力值 <code>240</code> ｜ 物理攻击 <code>12</code> ｜ 魔法攻击 <code>34</code> ｜ 物理防御 <code>8</code> ｜ 魔法防御 <code>12</code> ｜ 速度 <code>96</code>（低圣级罗文 2 阶，线性系数 <code>×0.80</code>，格挡减伤率为 <strong><code>0.0% / 6.4% / 14.4% / 24.0%</code></strong>）。</li><li><strong>三大核心战术目标</strong>：</li><li><strong>自保不死</strong>：在罗文「越位蚀心黑光」与「脱手旋杖袭心」越过雷纳德直取后排时，立即立起实体 <strong><code>冰盾</code></strong> 与雷纳德前排石板合力阻尼 <code>75%</code> 晦轮真伤；硬架脱手旋杖同步推进合围 <code>+18%</code>（开启 20% 增幅升至 <code>+24%</code>）并打断罗文攻势；</li><li><strong>薄冰牵制</strong>：在石碑窄道铺设 <strong><code>冰履</code></strong>，为雷纳德的 <code>岩柱封路阵</code> 搭建「岩冰合围」，并在罗文窄道突围时补冰触发滑冰锁腿（失衡 + 合围 <code>+20%</code>）；</li><li><strong>破锁助攻</strong>：配合雷纳德用 <code>冰晶术</code>（可开 20% 增幅 <code>+1</code> 破锁）打碎罗文 5 层弱点锁，加速活捉收网。</li></ul></li><li><strong>300 场三轨实测验证结果</strong>：<ul class="spec-sublist"><li>自动 / 普通 / 高手 / 全完美四轨均为 <strong><code>100.0%</code> 胜率、稳定 <code>5.00</code> 回合</strong> 活捉罗文；</li><li><strong>雷纳德主输出占比实测达 <code>77.6%</code>（自动轨）/ <code>80.3%</code>（普通轨）/ <code>79.0%</code>（高手轨）</strong>，雷纳德残血 <code>88.2%</code> 稳如磐石，8 岁希尔维亚残血 <code>100.0%</code> 零伤完成自保、薄冰牵制与活捉收尾。</li></ul></li></ol>
+<h3 class="sub-title" id="sec-6-3">6.3 专项定位：第 9 幕风神·岚（仅演武大厅测试用关卡）</h3>
+<ul class="spec-list"><li><strong>剧情边界声明</strong>：严格遵照原著《转生千金》，希尔维亚在原著主线中<strong>并无与神级「风神·岚」正面交手的情节</strong>；因此本关卡<strong>不归入主线剧情战</strong>，仅作为<strong>演武大厅专属极限测试关卡</strong>保留，不计入主线必通门槛。</li><li><strong>测试职能定位</strong>：集中检验三大高阶战斗维度——① 低 4 阶线性格挡压迫感（<code>×0.60</code>，减伤 <code>0.0% / 4.8% / 10.8% / 18.0%</code>）；② 40% 二阶 <code>钢冰护幕</code> 生存线与 60% 三阶 <code>星霜散华</code> 破防收割节奏；③ 卷三 <code>寒锋斩</code> 迎击【真空连刃】与 <code>霜域棘阵</code> 破除【风眼静滞】的动作连招手感。</li></ul>
+</section>
+<section class="chapter" id="sec-7">
+<h2 class="chapter-title"><span class="ch-num">07</span><span>七、全 9 幕 V3.1 数值重校全量配置表</span></h2>
+<h3 class="sub-title" id="sec-7-1">7.1 演武预设主角面板（每幕严格对齐原著年龄、等阶与技能进化）</h3>
+<div class="table-wrap"><table class="spec-table"><thead><tr><th style="text-align:center;">幕次</th><th style="text-align:left;">关卡名称与定位</th><th style="text-align:center;">年龄</th><th style="text-align:center;">原著等阶</th><th style="text-align:center;">生命值</th><th style="text-align:center;">魔力值</th><th style="text-align:center;">物攻</th><th style="text-align:center;">魔攻</th><th style="text-align:center;">物防</th><th style="text-align:center;">法抗</th><th style="text-align:center;">速度</th><th style="text-align:center;">魔战循环</th><th style="text-align:center;">晦轮杖</th><th style="text-align:left;">当幕常驻技能槽（5 线 + 身法）</th></tr></thead><tbody><tr><td style="text-align:center;">1</td><td style="text-align:left;">贝阿特丽丝（11岁·虚拟决斗）</td><td style="text-align:center;">9 岁</td><td style="text-align:center;">中级(2)</td><td style="text-align:center;">165</td><td style="text-align:center;">230</td><td style="text-align:center;">14</td><td style="text-align:center;">35</td><td style="text-align:center;">9</td><td style="text-align:center;">12</td><td style="text-align:center;">100</td><td style="text-align:center;">关</td><td style="text-align:center;">无</td><td style="text-align:left;">冰晶术、水球术、冰履、冰盾、普通攻击</td></tr><tr><td style="text-align:center;">2</td><td style="text-align:left;">罗文乱葬岗协同战（主线协同活捉）</td><td style="text-align:center;">8 岁</td><td style="text-align:center;">中级(2)</td><td style="text-align:center;">155</td><td style="text-align:center;">240</td><td style="text-align:center;">12</td><td style="text-align:center;">34</td><td style="text-align:center;">8</td><td style="text-align:center;">12</td><td style="text-align:center;">96</td><td style="text-align:center;">关</td><td style="text-align:center;">无</td><td style="text-align:left;">冰晶术、水球术、冰履、冰盾、普通攻击（+前排王级雷纳德）</td></tr><tr><td style="text-align:center;">3</td><td style="text-align:left;">爱丽丝（9岁·虚拟决斗）</td><td style="text-align:center;">11 岁</td><td style="text-align:center;">中级(2)</td><td style="text-align:center;">170</td><td style="text-align:center;">275</td><td style="text-align:center;">15</td><td style="text-align:center;">38</td><td style="text-align:center;">10</td><td style="text-align:center;">14</td><td style="text-align:center;">102</td><td style="text-align:center;">关</td><td style="text-align:center;">无</td><td style="text-align:left;">冰晶术、水球术、<strong>冰霜之息</strong>、冰盾、普通攻击</td></tr><tr><td style="text-align:center;">4</td><td style="text-align:left;">艾诺·塔尔维（冰上三击制）</td><td style="text-align:center;">12 岁</td><td style="text-align:center;">中级(2)</td><td style="text-align:center;">185</td><td style="text-align:center;">285</td><td style="text-align:center;">18</td><td style="text-align:center;">44</td><td style="text-align:center;">12</td><td style="text-align:center;">16</td><td style="text-align:center;">105</td><td style="text-align:center;">关</td><td style="text-align:center;">无</td><td style="text-align:left;"><strong>三棱冰晶</strong>、冰霜之息、<strong>镜霜壁</strong>、普通攻击、<strong>风行残像</strong>（纯冰禁水）</td></tr><tr><td style="text-align:center;">5</td><td style="text-align:left;">诺艾儿（14岁·虚拟决斗）</td><td style="text-align:center;">14 岁</td><td style="text-align:center;">高级(3)</td><td style="text-align:center;">215</td><td style="text-align:center;">300</td><td style="text-align:center;">22</td><td style="text-align:center;">48</td><td style="text-align:center;">14</td><td style="text-align:center;">20</td><td style="text-align:center;">106</td><td style="text-align:center;"><strong>开</strong></td><td style="text-align:center;">无</td><td style="text-align:left;">三棱冰晶、<strong>激流涌</strong>、冰霜之息、镜霜壁、普通攻击、风行残像</td></tr><tr><td style="text-align:center;">6</td><td style="text-align:left;">北林群狼 + 霜脊影豺（双波）</td><td style="text-align:center;">15 岁</td><td style="text-align:center;">高级(3)</td><td style="text-align:center;">235</td><td style="text-align:center;">315</td><td style="text-align:center;">42</td><td style="text-align:center;">50</td><td style="text-align:center;">17</td><td style="text-align:center;">23</td><td style="text-align:center;">110</td><td style="text-align:center;"><strong>开</strong></td><td style="text-align:center;"><strong>有</strong></td><td style="text-align:left;"><strong>星霜散华</strong>、<strong>断水刃</strong>、<strong>霜域棘阵</strong>、<strong>钢冰护幕</strong>、<strong>寒锋斩</strong>、风行残像</td></tr><tr><td style="text-align:center;">7</td><td style="text-align:left;">赫兰冰封峡谷·冻土兽潮（双波）</td><td style="text-align:center;">16 岁</td><td style="text-align:center;">高级(3)</td><td style="text-align:center;">255</td><td style="text-align:center;">330</td><td style="text-align:center;">46</td><td style="text-align:center;">55</td><td style="text-align:center;">19</td><td style="text-align:center;">26</td><td style="text-align:center;">110</td><td style="text-align:center;"><strong>开</strong></td><td style="text-align:center;"><strong>有</strong></td><td style="text-align:left;">星霜散华、断水刃、霜域棘阵、钢冰护幕、寒锋斩、风行残像</td></tr><tr><td style="text-align:center;">8</td><td style="text-align:left;">转折点·东翼火廊突围（双波）</td><td style="text-align:center;">14 岁</td><td style="text-align:center;">高级(3)</td><td style="text-align:center;">225</td><td style="text-align:center;">305</td><td style="text-align:center;">24</td><td style="text-align:center;">52</td><td style="text-align:center;">16</td><td style="text-align:center;">22</td><td style="text-align:center;">108</td><td style="text-align:center;"><strong>开</strong></td><td style="text-align:center;"><strong>有</strong></td><td style="text-align:left;">三棱冰晶、激流涌、冰霜之息、镜霜壁、普通攻击、风行残像（<strong>严守 14 岁无剑步</strong>）</td></tr><tr><td style="text-align:center;">9</td><td style="text-align:left;"><strong>风神·岚（仅演武大厅测试用关卡）</strong></td><td style="text-align:center;">16 岁</td><td style="text-align:center;">高级(3)</td><td style="text-align:center;">255</td><td style="text-align:center;">330</td><td style="text-align:center;">48</td><td style="text-align:center;">56</td><td style="text-align:center;">19</td><td style="text-align:center;">26</td><td style="text-align:center;">112</td><td style="text-align:center;"><strong>开</strong></td><td style="text-align:center;">无*</td><td style="text-align:left;">星霜散华、断水刃、霜域棘阵、钢冰护幕、寒锋斩、风行残像</td></tr></tbody></table></div>
+<blockquote class="prism-note">*注：第 9 幕仅作演武大厅测试关，默认徒手进入；在演武装备页持有晦轮杖/极北圣晶杖时可自由切换测试。</blockquote>
+<h3 class="sub-title" id="sec-7-2">7.2 全 9 幕敌方阵容与 V3.1 适配收紧乘区后的重校参数表</h3>
+<p class="spec-p">因 V3.1 将弱点击破压至 <code>+10%</code> 并彻底移除易伤 <code>+25%</code>、连携 <code>+25%</code> 与失衡 <code>+20%</code> 增伤乘区，对各幕首领血量与护盾做了对应比例的精准微调，确保全 9 幕继续保持健康击杀回合数与高通过率：</p>
+<div class="table-wrap"><table class="spec-table"><thead><tr><th style="text-align:center;">幕次</th><th style="text-align:left;">波次与敌人名称</th><th style="text-align:center;">原著等阶（等阶差与格挡系数）</th><th style="text-align:center;">属性</th><th style="text-align:center;">生命值（相对 V3.0）</th><th style="text-align:center;">初始护盾（类型）</th><th style="text-align:center;">物防 / 法抗</th><th style="text-align:center;">速度</th><th style="text-align:center;">弱点锁</th><th style="text-align:left;">核心机制与 V3.1 重校说明</th></tr></thead><tbody><tr><td style="text-align:center;">1</td><td style="text-align:left;">贝阿特丽丝（11岁）</td><td style="text-align:center;">中级(2)（<code>0 / ×1.00</code>）</td><td style="text-align:center;">火</td><td style="text-align:center;"><strong>448</strong>（微调自 468）</td><td style="text-align:center;">0（魔盾）</td><td style="text-align:center;">11 / 18</td><td style="text-align:center;">96</td><td style="text-align:center;">4</td><td style="text-align:left;">初始 2 层烈焰斗气；第 3 拍剑障防反加 25 盾；引导水球术克火浇斗气</td></tr><tr><td style="text-align:center;">2</td><td style="text-align:left;">罗文（血族侍卫）</td><td style="text-align:center;">圣级(4)（主角 <code>-2 / ×0.80</code>；雷纳德 <code>+1 / ×1.12</code>）</td><td style="text-align:center;">暗</td><td style="text-align:center;"><strong>1,620</strong>（不变）</td><td style="text-align:center;">95（魔盾）</td><td style="text-align:center;">24 / 28</td><td style="text-align:center;">114</td><td style="text-align:center;">5</td><td style="text-align:left;">6+6 协同活捉战：匹配前排王级雷纳德输出池；留 1 血活捉，封锁满 100% 或压至 1 血且封锁 <code>≥60%</code> 胜</td></tr><tr><td style="text-align:center;">3</td><td style="text-align:left;">爱丽丝（9岁）</td><td style="text-align:center;">中级(2)（<code>0 / ×1.00</code>）</td><td style="text-align:center;">风</td><td style="text-align:center;"><strong>580</strong>（不变）</td><td style="text-align:center;">0（魔盾）</td><td style="text-align:center;">10 / 18</td><td style="text-align:center;">122</td><td style="text-align:center;">4</td><td style="text-align:left;">魔力 84、2 层风步闪避、微风缓冲 0.80×；第 4/7 回合狂岚需 22 魔力否则自断认输</td></tr><tr><td style="text-align:center;">4</td><td style="text-align:left;">艾诺·塔尔维</td><td style="text-align:center;">高级(3)（<code>-1 / ×0.90</code>）</td><td style="text-align:center;">冰</td><td style="text-align:center;"><strong>999</strong>（切磋）</td><td style="text-align:center;">0（实盾）</td><td style="text-align:center;">16 / 20</td><td style="text-align:center;">116</td><td style="text-align:center;">3</td><td style="text-align:left;">三击制（9 回合限时）；正面无瑕镜冰免疫常规慢攻，三棱冰晶断咏与镜霜壁反刺开窗抢 3 分</td></tr><tr><td style="text-align:center;">5</td><td style="text-align:left;">诺艾儿（14岁·首领）</td><td style="text-align:center;">高级(3)（<code>0 / ×1.00</code>）</td><td style="text-align:center;">水</td><td style="text-align:center;"><strong>1,740</strong>（微调自 2,080）</td><td style="text-align:center;"><strong>44</strong>（魔盾）</td><td style="text-align:center;">18 / 26</td><td style="text-align:center;">104</td><td style="text-align:center;">6</td><td style="text-align:left;">魔力 230；尺量水幕每回合补至 <code>36–44</code>；42% 血下入脚底暗流（冰霜之息冻绝，硬吃伤害 115）</td></tr><tr><td style="text-align:center;">6</td><td style="text-align:left;">第一波：灰棘头狼 + 灰棘狼×3</td><td style="text-align:center;">中级(2) / 初级(1)（<code>+1 / +2</code>，<code>×1.12 / ×1.24</code>）</td><td style="text-align:center;">风</td><td style="text-align:center;">370 / 225×3</td><td style="text-align:center;">头狼 45（实盾）</td><td style="text-align:center;">12/12 与 8/8</td><td style="text-align:center;">108 / 102</td><td style="text-align:center;">4 / 2</td><td style="text-align:left;">3 狼以上压单体伤 0.45×，引导霜域棘阵多倍回蓝 2 回合清场</td></tr><tr><td style="text-align:center;"></td><td style="text-align:left;">第二波：霜脊影豺（银级）</td><td style="text-align:center;">高级(3)（<code>0 / ×1.00</code>）</td><td style="text-align:center;">冰</td><td style="text-align:center;"><strong>810</strong>（微调自 880）</td><td style="text-align:center;">0（魔盾）</td><td style="text-align:center;">24 / 40</td><td style="text-align:center;">124</td><td style="text-align:center;">5</td><td style="text-align:left;">耳目迫近（初始暴露 35%）；常备 1 层疾影闪避；引导寒锋斩迎锋破闪消痕 + 断水刃穿甲</td></tr><tr><td style="text-align:center;">7</td><td style="text-align:left;">第一波：冻土重甲兽 + 狂狼×2</td><td style="text-align:center;">高级(3) / 中级(2)（<code>0 / +1</code>）</td><td style="text-align:center;">土 / 冰</td><td style="text-align:center;"><strong>380</strong> / <strong>200×2</strong></td><td style="text-align:center;">重甲 <strong>70</strong>（实盾）</td><td style="text-align:center;">36/32 与 10/12</td><td style="text-align:center;">84 / 106</td><td style="text-align:center;">5 / 3</td><td style="text-align:left;">医疗药箱耐久 120（波次间修补 +25）；重甲 30% 实体甲；撞箱 28–30</td></tr><tr><td style="text-align:center;"></td><td style="text-align:left;">第二波：霜渊裂地兽（领主）+ 爪兽</td><td style="text-align:center;">圣级(4) / 中级(2)（<code>-1 / +1</code>）</td><td style="text-align:center;">土 / 风</td><td style="text-align:center;"><strong>1,220</strong> / <strong>225</strong>（领主调自 1,520）</td><td style="text-align:center;">领主 <strong>125</strong>（实盾）</td><td style="text-align:center;">42/40 与 12/14</td><td style="text-align:center;">88 / 118</td><td style="text-align:center;">6 / 3</td><td style="text-align:left;">领主 35% 实体厚甲；截断 +2 共鸣、40% 钢冰护幕 +1 共鸣；2 发艾诺冰枪震碎晶核双抗降 70%</td></tr><tr><td style="text-align:center;">8</td><td style="text-align:left;">第一波：宫廷突击队长 + 赤炎术士</td><td style="text-align:center;">高级(3) / 中级(2)（<code>0 / +1</code>）</td><td style="text-align:center;">物理 / 火</td><td style="text-align:center;"><strong>490</strong> / <strong>390</strong></td><td style="text-align:center;"><strong>80</strong> 实盾 / <strong>50</strong> 魔盾</td><td style="text-align:center;">24/22 与 14/22</td><td style="text-align:center;">94 / 102</td><td style="text-align:center;">4 / 3</td><td style="text-align:left;">队长重盾反击 + 术士双手结印赤炎火墙</td></tr><tr><td style="text-align:center;"></td><td style="text-align:left;">第二波：东翼封锁官·红莲铁幕</td><td style="text-align:center;">圣级(4)（<code>-1 / ×0.90</code>）</td><td style="text-align:center;">火</td><td style="text-align:center;"><strong>2,940</strong>（微调自 3,280）</td><td style="text-align:center;"><strong>120</strong>（魔盾）</td><td style="text-align:center;">28 / 32</td><td style="text-align:center;">108</td><td style="text-align:center;">6</td><td style="text-align:left;">初始 2 层斗气；50% 血入二阶段刷新 <strong>125</strong> 魔盾，交替【封廊锁火（必断）】与【岔口冲锋】</td></tr><tr><td style="text-align:center;">9</td><td style="text-align:left;"><strong>风神·岚（仅演武大厅测试用关卡）</strong></td><td style="text-align:center;"><strong>神级(7)（<code>-4 / ×0.60</code>）</strong></td><td style="text-align:center;">风</td><td style="text-align:center;"><strong>2,800</strong>（微调自 3,340）</td><td style="text-align:center;"><strong>155</strong>（魔盾）</td><td style="text-align:center;"><strong>37 / 45</strong></td><td style="text-align:center;"><strong>132</strong></td><td style="text-align:center;"><strong>7</strong></td><td style="text-align:left;"><strong>低 4 阶线性格挡系数 <code>×0.60</code>（最高 18.0%）</strong>；外圈风暴壁减伤 58%；50% 血入二阶段刷新 <strong>175</strong> 魔盾，交替【真空连刃（寒锋斩瞬反）】与【风眼静滞（霜域棘阵/40% 增幅破阵）】</td></tr></tbody></table></div>
+</section>
+<section class="chapter" id="sec-8">
+<h2 class="chapter-title"><span class="ch-num">08</span><span>八、12,600 场 Python 蒙特卡洛真实仿真验证报告（V3.1 实测回填）</span></h2>
+<p class="spec-p">仿真器 <code>/tmp/v3_balance_sim/sim_v3.py</code> 在严格执行 V3.1 收紧相加增伤池与线性等阶差格挡公式后，完整跑通 12,600 场仿真：</p>
+<ul class="spec-list"><li><strong>基础三轨验证</strong>：全 9 幕 × 3 轨（自动判定轨 / 普通手操轨 / 高手手操轨）× 300 场 = <strong>8,100 场</strong>；</li><li><strong>理论极限压测</strong>：全 9 幕 × 100% 全完美轨 × 100 场 = <strong>900 场</strong>；</li><li><strong>防卡关专项验证</strong>：第 5 幕诺艾儿移除「风行残像」× 3 轨 × 300 场 = <strong>900 场</strong>；</li><li><strong>存档养成收敛验证</strong>：全 9 幕 × 3 档养成（速通保底 / 正常养成 / 重肝养成）× 100 场 = <strong>2,700 场</strong>。</li></ul>
+<h3 class="sub-title" id="sec-8-1">8.1 全 9 幕三轨（各 300 场）+ 全完美（100 场）完整实测总表</h3>
+<div class="table-wrap"><table class="spec-table"><thead><tr><th style="text-align:left;">幕次与目标回合带</th><th style="text-align:left;">测试轨道</th><th style="text-align:center;">胜率</th><th style="text-align:center;">平均击杀回合</th><th style="text-align:center;">中位（最小~最大 / 90 分位）</th><th style="text-align:center;">残血均值</th><th style="text-align:center;">残蓝均值</th><th style="text-align:center;">攻击增幅分布（0/20/40/60%）</th><th style="text-align:center;">护盾增幅分布（0/20/40%）</th><th style="text-align:left;">关键专项指标</th></tr></thead><tbody><tr><td style="text-align:left;"><strong>第 1 幕 · 贝阿特丽丝</strong><br>目标：<code>4–6</code> 回合</td><td style="text-align:left;">自动判定轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>6.31</code></td><td style="text-align:center;"><code>7.0 (4~7 / 7)</code></td><td style="text-align:center;"><code>61.3%</code></td><td style="text-align:center;"><code>5.5%</code></td><td style="text-align:center;"><code>100 / 0 / 0 / 0</code></td><td style="text-align:center;"><code>100 / 0 / 0</code></td><td style="text-align:left;">前期无魔战循环，蓝量把控紧致</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">普通手操轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>5.67</code></strong></td><td style="text-align:center;"><code>6.0 (3~7 / 6)</code></td><td style="text-align:center;"><code>69.9%</code></td><td style="text-align:center;"><code>6.1%</code></td><td style="text-align:center;"><code>70 / 30 / 0 / 0</code></td><td style="text-align:center;"><code>100 / 0 / 0</code></td><td style="text-align:left;">稳落 <code>4–6</code> 回合黄金区间</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">高手手操轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>4.38</code></strong></td><td style="text-align:center;"><code>5.0 (3~6 / 6)</code></td><td style="text-align:center;"><code>83.2%</code></td><td style="text-align:center;"><code>6.9%</code></td><td style="text-align:center;"><code>67 / 33 / 0 / 0</code></td><td style="text-align:center;"><code>100 / 0 / 0</code></td><td style="text-align:left;">稳落 <code>4–6</code> 回合下沿</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">全完美压测</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>3.00</code></td><td style="text-align:center;"><code>3.0 (3~3 / 3)</code></td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>1.8%</code></td><td style="text-align:center;"><code>67 / 33 / 0 / 0</code></td><td style="text-align:center;"><code>100 / 0 / 0</code></td><td style="text-align:left;">教学初战理论顶峰 3 回合</td></tr><tr><td style="text-align:left;"><strong>第 2 幕 · 罗文乱葬岗</strong><br>6+6 双人协同活捉战<br>目标：<code>4–6</code> 回合</td><td style="text-align:left;">自动判定轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>5.00</code></strong></td><td style="text-align:center;"><code>5.0 (5~5 / 5)</code></td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>12.5%</code></td><td style="text-align:center;"><code>100 / 0 / 0 / 0</code></td><td style="text-align:center;"><code>100 / 0 / 0</code></td><td style="text-align:left;"><strong>雷纳德输出占比 <code>77.6%</code></strong>、残血 <code>88.2%</code></td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">普通手操轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>5.00</code></strong></td><td style="text-align:center;"><code>5.0 (5~5 / 5)</code></td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>11.7%</code></td><td style="text-align:center;"><code>80 / 20 / 0 / 0</code></td><td style="text-align:center;"><code>50 / 50 / 0</code></td><td style="text-align:left;"><strong>雷纳德输出占比 <code>80.3%</code></strong>、残血 <code>88.2%</code></td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">高手手操轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>5.00</code></strong></td><td style="text-align:center;"><code>5.0 (5~5 / 5)</code></td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>11.7%</code></td><td style="text-align:center;"><code>80 / 20 / 0 / 0</code></td><td style="text-align:center;"><code>50 / 50 / 0</code></td><td style="text-align:left;"><strong>雷纳德输出占比 <code>79.0%</code></strong>、残血 <code>88.2%</code></td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">全完美压测</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>5.00</code></td><td style="text-align:center;"><code>5.0 (5~5 / 5)</code></td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>11.7%</code></td><td style="text-align:center;"><code>80 / 20 / 0 / 0</code></td><td style="text-align:center;"><code>50 / 50 / 0</code></td><td style="text-align:left;">8 岁希尔维亚零伤自保 + 薄冰牵制活捉</td></tr><tr><td style="text-align:left;"><strong>第 3 幕 · 爱丽丝</strong><br>目标：<code>4–6</code> 回合</td><td style="text-align:left;">自动判定轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>4.00</code></strong></td><td style="text-align:center;"><code>4.0 (4~4 / 4)</code></td><td style="text-align:center;"><code>65.3%</code></td><td style="text-align:center;"><code>2.5%</code></td><td style="text-align:center;"><code>89 / 11 / 0 / 0</code></td><td style="text-align:center;"><code>0 / 0 / 0</code></td><td style="text-align:left;">第 4 回合狂岚魔竭自断认输</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">普通手操轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>4.00</code></strong></td><td style="text-align:center;"><code>4.0 (4~4 / 4)</code></td><td style="text-align:center;"><code>68.2%</code></td><td style="text-align:center;"><code>2.5%</code></td><td style="text-align:center;"><code>89 / 11 / 0 / 0</code></td><td style="text-align:center;"><code>0 / 0 / 0</code></td><td style="text-align:left;">冰霜之息完美替代十字冰栏</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">高手手操轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>4.00</code></strong></td><td style="text-align:center;"><code>4.0 (4~4 / 4)</code></td><td style="text-align:center;"><code>71.4%</code></td><td style="text-align:center;"><code>2.5%</code></td><td style="text-align:center;"><code>89 / 11 / 0 / 0</code></td><td style="text-align:center;"><code>0 / 0 / 0</code></td><td style="text-align:left;">同阶格挡稳定拉高残血</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">全完美压测</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>4.00</code></td><td style="text-align:center;"><code>4.0 (4~4 / 4)</code></td><td style="text-align:center;"><code>74.1%</code></td><td style="text-align:center;"><code>2.5%</code></td><td style="text-align:center;"><code>89 / 11 / 0 / 0</code></td><td style="text-align:center;"><code>0 / 0 / 0</code></td><td style="text-align:left;">高度还原原著风魔拉锯智斗</td></tr><tr><td style="text-align:left;"><strong>第 4 幕 · 艾诺</strong><br>冰上三击制<br>目标：<code>4–6</code> 回合</td><td style="text-align:left;">自动判定轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>5.00</code></strong></td><td style="text-align:center;"><code>5.0 (5~5 / 5)</code></td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>6.3%</code></td><td style="text-align:center;"><code>75 / 25 / 0 / 0</code></td><td style="text-align:center;"><code>67 / 33 / 0</code></td><td style="text-align:left;">三棱冰晶断咏 + 镜霜壁反刺抢 3 击</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">普通手操轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>5.00</code></strong></td><td style="text-align:center;"><code>5.0 (5~5 / 5)</code></td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>6.3%</code></td><td style="text-align:center;"><code>75 / 25 / 0 / 0</code></td><td style="text-align:center;"><code>67 / 33 / 0</code></td><td style="text-align:left;">删隔空线与看破技后零卡关</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">高手手操轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>5.00</code></strong></td><td style="text-align:center;"><code>5.0 (5~5 / 5)</code></td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>6.3%</code></td><td style="text-align:center;"><code>75 / 25 / 0 / 0</code></td><td style="text-align:center;"><code>67 / 33 / 0</code></td><td style="text-align:left;">9 回合限时内留足 4 回合容错</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">全完美压测</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>5.00</code></td><td style="text-align:center;"><code>5.0 (5~5 / 5)</code></td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>6.3%</code></td><td style="text-align:center;"><code>75 / 25 / 0 / 0</code></td><td style="text-align:center;"><code>67 / 33 / 0</code></td><td style="text-align:left;">达成纯冰切磋原著氛围</td></tr><tr><td style="text-align:left;"><strong>第 5 幕 · 诺艾儿</strong><br>首领战（魔战初启）<br>目标：<code>7–10</code> 回合</td><td style="text-align:left;">自动判定轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>9.01</code></strong></td><td style="text-align:center;"><code>9.0 (8~13 / 9)</code></td><td style="text-align:center;"><code>48.0%</code></td><td style="text-align:center;"><code>35.9%</code></td><td style="text-align:center;"><code>22 / 56 / 23 / 0</code></td><td style="text-align:center;"><code>6 / 94 / 0</code></td><td style="text-align:left;">自动轨亦零暴毙稳落 9 回合</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">普通手操轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>7.54</code></strong></td><td style="text-align:center;"><code>8.0 (6~9 / 8)</code></td><td style="text-align:center;"><code>55.2%</code></td><td style="text-align:center;"><code>38.2%</code></td><td style="text-align:center;"><code>4 / 59 / 37 / 0</code></td><td style="text-align:center;"><code>0 / 100 / 0</code></td><td style="text-align:left;"><strong>40% 二阶攻击占比 37%</strong>，稳落目标带</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">高手手操轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>6.35</code></strong></td><td style="text-align:center;"><code>6.0 (5~7 / 7)</code></td><td style="text-align:center;"><code>65.6%</code></td><td style="text-align:center;"><code>44.1%</code></td><td style="text-align:center;"><code>0 / 38 / 57 / 5</code></td><td style="text-align:center;"><code>0 / 100 / 0</code></td><td style="text-align:left;"><strong>40% 二阶占比 57%</strong> + 60% 三阶斩杀</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">全完美压测</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>5.48</code></td><td style="text-align:center;"><code>5.0 (4~6 / 6)</code></td><td style="text-align:center;"><code>76.1%</code></td><td style="text-align:center;"><code>33.1%</code></td><td style="text-align:center;"><code>0 / 28 / 54 / 18</code></td><td style="text-align:center;"><code>0 / 0 / 0</code></td><td style="text-align:left;">理论最快 5.48 回合，绝不被蒸发</td></tr><tr><td style="text-align:left;"><strong>第 6 幕 · 北林双波</strong><br>群狼 + 影豺<br>目标：<code>4–6</code> 回合</td><td style="text-align:left;">自动判定轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>4.00</code></strong></td><td style="text-align:center;"><code>4.0 (4~4 / 4)</code></td><td style="text-align:center;"><code>50.2%</code></td><td style="text-align:center;"><code>95.7%</code></td><td style="text-align:center;"><code>40 / 60 / 0 / 0</code></td><td style="text-align:center;"><code>0 / 0 / 0</code></td><td style="text-align:left;">第一波群刺回蓝 + 第二波零暴露斩杀</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">普通手操轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>5.49</code></strong></td><td style="text-align:center;"><code>6.0 (4~6 / 6)</code></td><td style="text-align:center;"><code>45.0%</code></td><td style="text-align:center;"><code>94.7%</code></td><td style="text-align:center;"><code>0 / 100 / 0 / 0</code></td><td style="text-align:center;"><code>0 / 0 / 0</code></td><td style="text-align:left;">寒锋斩迎锋破闪消痕流畅</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">高手手操轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>4.81</code></strong></td><td style="text-align:center;"><code>5.0 (3~5 / 5)</code></td><td style="text-align:center;"><code>51.6%</code></td><td style="text-align:center;"><code>79.2%</code></td><td style="text-align:center;"><code>0 / 76 / 24 / 0</code></td><td style="text-align:center;"><code>0 / 0 / 0</code></td><td style="text-align:left;">稳落 <code>4–6</code> 回合正中</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">全完美压测</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>4.80</code></td><td style="text-align:center;"><code>5.0 (3~5 / 5)</code></td><td style="text-align:center;"><code>56.4%</code></td><td style="text-align:center;"><code>73.5%</code></td><td style="text-align:center;"><code>0 / 77 / 23 / 0</code></td><td style="text-align:center;"><code>0 / 0 / 0</code></td><td style="text-align:left;">0% 暴露失误率</td></tr><tr><td style="text-align:left;"><strong>第 7 幕 · 赫兰兽潮</strong><br>双波护箱领主战<br>目标：<code>7–10</code> 回合</td><td style="text-align:left;">自动判定轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>8.70</code></strong></td><td style="text-align:center;"><code>9.0 (8~9 / 9)</code></td><td style="text-align:center;"><code>71.5%</code></td><td style="text-align:center;"><code>65.3%</code></td><td style="text-align:center;"><code>33 / 39 / 27 / 0</code></td><td style="text-align:center;"><strong><code>0 / 0 / 100</code></strong></td><td style="text-align:left;"><strong>药箱均剩 <code>120.0/120</code></strong>，40% 二阶盾全勤</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">普通手操轨</td><td style="text-align:center;"><code>92.7%</code></td><td style="text-align:center;"><strong><code>7.00</code></strong></td><td style="text-align:center;"><code>7.0 (7~7 / 7)</code></td><td style="text-align:center;"><code>62.9%</code></td><td style="text-align:center;"><code>78.6%</code></td><td style="text-align:center;"><code>9 / 45 / 46 / 0</code></td><td style="text-align:center;"><strong><code>4 / 1 / 96</code></strong></td><td style="text-align:left;">药箱均剩 <code>120.0/120</code>；7.3% 败因均为连续差劲漏箱，保留五星战紧迫感</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">高手手操轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>7.01</code></strong></td><td style="text-align:center;"><code>7.0 (7~9 / 7)</code></td><td style="text-align:center;"><code>67.1%</code></td><td style="text-align:center;"><code>98.7%</code></td><td style="text-align:center;"><code>9 / 45 / 28 / 18</code></td><td style="text-align:center;"><strong><code>0 / 0 / 100</code></strong></td><td style="text-align:left;">药箱均剩 <code>119.9/120</code>；三阶 60% 用于破核收割</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">全完美压测</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>7.00</code></td><td style="text-align:center;"><code>7.0 (7~7 / 7)</code></td><td style="text-align:center;"><code>70.2%</code></td><td style="text-align:center;"><code>97.9%</code></td><td style="text-align:center;"><code>9 / 45 / 29 / 18</code></td><td style="text-align:center;"><code>0 / 0 / 100</code></td><td style="text-align:left;">2 发艾诺冰枪破核节奏丝滑</td></tr><tr><td style="text-align:left;"><strong>第 8 幕 · 东翼火廊</strong><br>14 岁双波二阶段战<br>目标：<code>7–10</code> 回合</td><td style="text-align:left;">自动判定轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>10.11</code></td><td style="text-align:center;"><code>10.0 (8~13 / 11)</code></td><td style="text-align:center;"><code>40.4%</code></td><td style="text-align:center;"><code>79.5%</code></td><td style="text-align:center;"><code>14 / 47 / 39 / 0</code></td><td style="text-align:center;"><code>0 / 100 / 0</code></td><td style="text-align:left;">自动轨 10 回合稳健突围</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">普通手操轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>7.11</code></strong></td><td style="text-align:center;"><code>7.0 (6~9 / 8)</code></td><td style="text-align:center;"><code>50.5%</code></td><td style="text-align:center;"><code>75.7%</code></td><td style="text-align:center;"><code>0 / 46 / 54 / 0</code></td><td style="text-align:center;"><code>0 / 100 / 0</code></td><td style="text-align:left;">稳落 <code>7–10</code> 回合带，40% 二阶攻占比 54%</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">高手手操轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>6.45</code></strong></td><td style="text-align:center;"><code>6.0 (6~8 / 7)</code></td><td style="text-align:center;"><code>55.7%</code></td><td style="text-align:center;"><code>62.2%</code></td><td style="text-align:center;"><code>0 / 33 / 62 / 5</code></td><td style="text-align:center;"><code>0 / 100 / 0</code></td><td style="text-align:left;">90 分位 7 回合，严守 14 岁无剑步设定</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">全完美压测</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>6.02</code></td><td style="text-align:center;"><code>6.0 (6~7 / 6)</code></td><td style="text-align:center;"><code>58.9%</code></td><td style="text-align:center;"><code>82.4%</code></td><td style="text-align:center;"><code>0 / 34 / 60 / 6</code></td><td style="text-align:center;"><code>0 / 100 / 0</code></td><td style="text-align:left;">晦轮杖真伤穿红莲火盾表现亮眼</td></tr><tr><td style="text-align:left;"><strong>第 9 幕 · 风神·岚</strong><br><strong>（仅演武大厅测试用关卡）</strong><br>目标：高手 <code>7–9</code><br>普通 <code>9–11</code> 回合</td><td style="text-align:left;">自动判定轨</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>10.03</code></strong></td><td style="text-align:center;"><code>10.0 (9~11 / 10)</code></td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>93.0%</code></td><td style="text-align:center;"><code>19 / 27 / 54 / 0</code></td><td style="text-align:center;"><strong><code>0 / 0 / 100</code></strong></td><td style="text-align:left;">低 4 阶线性格挡（×0.60）配 40% 钢冰护幕稳过</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">普通手操轨</td><td style="text-align:center;"><strong><code>97.0%</code></strong></td><td style="text-align:center;"><strong><code>9.04</code></strong></td><td style="text-align:center;"><strong><code>9.0 (8~11 / 9)</code></strong></td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>91.7%</code></td><td style="text-align:center;"><code>1 / 34 / 65 / 0</code></td><td style="text-align:center;"><strong><code>2 / 0 / 98</code></strong></td><td style="text-align:left;"><strong>精准钉入 <code>9–11</code> 回合靶心</strong>（3% 连续漏盾致败）</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">高手手操轨</td><td style="text-align:center;"><strong><code>100.0%</code></strong></td><td style="text-align:center;"><strong><code>7.08</code></strong></td><td style="text-align:center;"><strong><code>7.0 (6~8 / 8)</code></strong></td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>93.7%</code></td><td style="text-align:center;"><code>0 / 34 / 17 / 49</code></td><td style="text-align:center;"><strong><code>0 / 0 / 100</code></strong></td><td style="text-align:left;"><strong>精准钉入 <code>7–9</code> 回合靶心</strong>，40% 盾与 60% 三阶协同</td></tr><tr><td style="text-align:left;"></td><td style="text-align:left;">全完美压测</td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><strong><code>6.01</code></strong></td><td style="text-align:center;"><code>6.0 (6~7 / 6)</code></td><td style="text-align:center;"><code>100.0%</code></td><td style="text-align:center;"><code>92.9%</code></td><td style="text-align:center;"><code>0 / 29 / 11 / 60</code></td><td style="text-align:center;"><code>0 / 0 / 100</code></td><td style="text-align:left;">彻底终结 V2.2 的 3 回合蒸发</td></tr></tbody></table></div>
+<h3 class="sub-title" id="sec-8-2">8.2 第 5 幕诺艾儿「未解锁风行残像」专项 900 场防卡关验证</h3>
+<p class="spec-p">模拟玩家在主线跳过或未胜第 3 幕爱丽丝决斗、因此背包中<strong>没有「风行残像」</strong>的极端场景（仅靠常规 5 线技能中的 <code>冰霜之息</code> 冻绝脚底暗流）：</p>
+<div class="table-wrap"><table class="spec-table"><thead><tr><th style="text-align:left;">测试轨道（每轨 300 场）</th><th style="text-align:center;">胜率</th><th style="text-align:center;">平均击杀回合</th><th style="text-align:center;">回合区间</th><th style="text-align:left;">结论</th></tr></thead><tbody><tr><td style="text-align:left;">自动判定轨（护手关闭）</td><td style="text-align:center;"><strong><code>100.0%</code></strong></td><td style="text-align:center;"><code>8.90</code></td><td style="text-align:center;"><code>7 ~ 11</code></td><td style="text-align:left;">彻底消除旧版 205 真伤即死软锁</td></tr><tr><td style="text-align:left;">普通手操轨（常规玩家）</td><td style="text-align:center;"><strong><code>100.0%</code></strong></td><td style="text-align:center;"><code>7.58</code></td><td style="text-align:center;"><code>6 ~ 9</code></td><td style="text-align:left;">与完整技能组体验高度一致</td></tr><tr><td style="text-align:left;">高手手操轨（熟练玩家）</td><td style="text-align:center;"><strong><code>100.0%</code></strong></td><td style="text-align:center;"><code>6.39</code></td><td style="text-align:center;"><code>4 ~ 8</code></td><td style="text-align:left;">零依赖冰宫看破技、零依赖身法槽</td></tr></tbody></table></div>
+</section>
+<section class="chapter" id="sec-9">
+<h2 class="chapter-title"><span class="ch-num">09</span><span>九、主线存档养成收敛方案（年龄断档补齐 + 全属性比例型双曲正切软上限）</span></h2>
+<h3 class="sub-title" id="sec-9-1">9.1 年龄成长保底补档表（修复 8/9/12/14 岁血量断档）</h3>
+<p class="spec-p">为彻底消除旧版主线逻辑中 8→10 岁、10→15 岁之间长期无生命值成长保底导致的速通档骤死，终版补齐 8 / 9 / 12 / 14 岁完整保底节点：</p>
+<div class="table-wrap"><table class="spec-table"><thead><tr><th style="text-align:center;">年龄节点</th><th style="text-align:left;">对应主线阶段与幕次</th><th style="text-align:center;">生命值下限</th><th style="text-align:center;">魔力值下限</th><th style="text-align:center;">基础物攻下限</th><th style="text-align:center;">基础魔法下限</th><th style="text-align:center;">基础物防下限</th><th style="text-align:center;">基础法抗下限</th></tr></thead><tbody><tr><td style="text-align:center;"><strong>8 岁</strong></td><td style="text-align:left;">卷一间章 · 罗文乱葬岗（<strong>提升补档</strong>）</td><td style="text-align:center;"><strong><code>150</code></strong></td><td style="text-align:center;"><strong><code>235</code></strong></td><td style="text-align:center;"><code>12</code></td><td style="text-align:center;"><code>52</code></td><td style="text-align:center;"><code>8</code></td><td style="text-align:center;"><code>11</code></td></tr><tr><td style="text-align:center;"><strong>9 岁</strong></td><td style="text-align:left;">卷一第 4 章 · 贝阿特丽丝（<strong>补档</strong>）</td><td style="text-align:center;"><strong><code>162</code></strong></td><td style="text-align:center;"><strong><code>230</code></strong></td><td style="text-align:center;"><code>14</code></td><td style="text-align:center;"><code>58</code></td><td style="text-align:center;"><code>9</code></td><td style="text-align:center;"><code>12</code></td></tr><tr><td style="text-align:center;"><strong>11 岁</strong></td><td style="text-align:left;">卷一末 · 爱丽丝决斗</td><td style="text-align:center;"><code>170</code></td><td style="text-align:center;"><code>275</code></td><td style="text-align:center;"><code>15</code></td><td style="text-align:center;"><code>68</code></td><td style="text-align:center;"><code>10</code></td><td style="text-align:center;"><code>14</code></td></tr><tr><td style="text-align:center;"><strong>12 岁</strong></td><td style="text-align:left;">卷二学院 · 艾诺冰上战（<strong>补档</strong>）</td><td style="text-align:center;"><strong><code>185</code></strong></td><td style="text-align:center;"><strong><code>285</code></strong></td><td style="text-align:center;"><code>18</code></td><td style="text-align:center;"><code>82</code></td><td style="text-align:center;"><code>12</code></td><td style="text-align:center;"><code>16</code></td></tr><tr><td style="text-align:center;"><strong>14 岁</strong></td><td style="text-align:left;">卷二 · 诺艾儿 &amp; 东翼火廊（<strong>补档</strong>）</td><td style="text-align:center;"><strong><code>218</code></strong></td><td style="text-align:center;"><strong><code>300</code></strong></td><td style="text-align:center;"><code>24</code></td><td style="text-align:center;"><code>105</code></td><td style="text-align:center;"><code>15</code></td><td style="text-align:center;"><code>21</code></td></tr><tr><td style="text-align:center;"><strong>15 岁</strong></td><td style="text-align:left;">卷三旅途 · 北林狩猎</td><td style="text-align:center;"><code>235</code></td><td style="text-align:center;"><code>315</code></td><td style="text-align:center;"><code>42</code></td><td style="text-align:center;"><code>118</code></td><td style="text-align:center;"><code>17</code></td><td style="text-align:center;"><code>23</code></td></tr><tr><td style="text-align:center;"><strong>16 岁</strong></td><td style="text-align:left;">卷三北境 · 赫兰兽潮 &amp; 演武测试关</td><td style="text-align:center;"><code>255</code></td><td style="text-align:center;"><code>330</code></td><td style="text-align:center;"><code>46</code></td><td style="text-align:center;"><code>130</code></td><td style="text-align:center;"><code>19</code></td><td style="text-align:center;"><code>26</code></td></tr></tbody></table></div>
+<h3 class="sub-title" id="sec-9-2">9.2 全六维「比例型双曲正切软上限」换算公式</h3>
+<p class="spec-p">旧版战斗属性换算仅对魔法攻击做了固定绝对值双曲正切软上限，导致物理攻击、物理防御、魔法防御在正常/重肝存档中暴涨至 <code>+167% ~ +422%</code>。终版将全部六项核心战斗属性统一纳入<strong>比例型双曲正切软上限</strong>（设当前关卡演武预设基准值为 <span class="math-inline"><var class="m-var">X</var><sub class="m-sub">基准</sub></span>，主线存档推导原始值为 <span class="math-inline"><var class="m-var">X</var><sub class="m-sub">原</sub></span>）：</p>
+<div class="math-display"><div class="m-cases-wrap"><div class="m-cases-lhs"><var class="m-var">X</var><sub class="m-sub">实战</sub> =</div><div class="m-cases-brace"></div><div class="m-cases-rows"><div class="m-case-row"><span class="m-case-expr">四舍五入( <span class="m-op">max</span>(<var class="m-var">r</var><sub class="m-sub">底</sub> · <var class="m-var">X</var><sub class="m-sub">基准</sub>,&nbsp; <var class="m-var">X</var><sub class="m-sub">原</sub>) )</span><span class="m-case-cond"><var class="m-var">X</var><sub class="m-sub">原</sub> ≤ <var class="m-var">X</var><sub class="m-sub">基准</sub></span><span class="m-case-note">速通保底护栏</span></div><div class="m-case-row"><span class="m-case-expr">四舍五入( <var class="m-var">X</var><sub class="m-sub">基准</sub> + (<var class="m-var">g</var><sub class="m-sub">顶</sub> · <var class="m-var">X</var><sub class="m-sub">基准</sub>) · <span class="m-op">tanh</span><span class="m-frac"><span class="m-num"><var class="m-var">X</var><sub class="m-sub">原</sub> − <var class="m-var">X</var><sub class="m-sub">基准</sub></span><span class="m-den"><span class="m-op">max</span>(6, <var class="m-var">s</var><sub class="m-sub">尺</sub> · <var class="m-var">X</var><sub class="m-sub">基准</sub>)</span></span> )</span><span class="m-case-cond"><var class="m-var">X</var><sub class="m-sub">原</sub> &gt; <var class="m-var">X</var><sub class="m-sub">基准</sub></span><span class="m-case-note">重肝平滑软上限</span></div></div></div></div>
+<div class="table-wrap"><table class="spec-table"><thead><tr><th style="text-align:left;">战斗属性</th><th style="text-align:left;">存档原始推导式 <span class="math-inline"><var class="m-var">X</var><sub class="m-sub">原</sub></span></th><th style="text-align:center;">最低保底占比 <span class="math-inline"><var class="m-var">r</var><sub class="m-sub">底</sub></span></th><th style="text-align:center;">最高增幅占比 <span class="math-inline"><var class="m-var">g</var><sub class="m-sub">顶</sub></span></th><th style="text-align:center;">缓坡尺度占比 <span class="math-inline"><var class="m-var">s</var><sub class="m-sub">尺</sub></span></th><th style="text-align:center;">理论收敛区间</th></tr></thead><tbody><tr><td style="text-align:left;"><strong>最大生命值</strong></td><td style="text-align:left;">存档最大生命值</td><td style="text-align:center;"><code>0.94</code></td><td style="text-align:center;"><code>+20%</code></td><td style="text-align:center;"><code>0.70</code></td><td style="text-align:center;"><code>[-6%, +20%]</code></td></tr><tr><td style="text-align:left;"><strong>最大魔力值</strong></td><td style="text-align:left;">存档最大魔力值</td><td style="text-align:center;"><code>0.94</code></td><td style="text-align:center;"><code>+18%</code></td><td style="text-align:center;"><code>0.70</code></td><td style="text-align:center;"><code>[-6%, +18%]</code></td></tr><tr><td style="text-align:left;"><strong>物理攻击</strong></td><td style="text-align:left;"><span class="math-inline"><span class="m-txt">存档物攻</span> + 0.35  ×  <span class="m-txt">四维·体能</span></span></td><td style="text-align:center;"><code>0.92</code></td><td style="text-align:center;"><code>+24%</code></td><td style="text-align:center;"><code>0.95</code></td><td style="text-align:center;"><code>[-8%, +24%]</code></td></tr><tr><td style="text-align:left;"><strong>魔法攻击</strong></td><td style="text-align:left;"><span class="math-inline">0.45  ×  <span class="m-txt">存档魔法</span> + 0.35  ×  <span class="m-txt">四维·魔感</span></span></td><td style="text-align:center;"><code>0.92</code></td><td style="text-align:center;"><code>+24%</code></td><td style="text-align:center;"><code>0.95</code></td><td style="text-align:center;"><code>[-8%, +24%]</code></td></tr><tr><td style="text-align:left;"><strong>物理防御</strong></td><td style="text-align:left;"><span class="math-inline"><span class="m-txt">存档物防</span> + 0.18  ×  <span class="m-txt">体能</span> + 0.10  ×  <span class="m-txt">仪态</span></span></td><td style="text-align:center;"><code>0.92</code></td><td style="text-align:center;"><code>+25%</code></td><td style="text-align:center;"><code>1.00</code></td><td style="text-align:center;"><code>[-8%, +25%]</code></td></tr><tr><td style="text-align:left;"><strong>魔法防御</strong></td><td style="text-align:left;"><span class="math-inline"><span class="m-txt">存档法抗</span> + 0.22  ×  <span class="m-txt">四维·心智</span></span></td><td style="text-align:center;"><code>0.92</code></td><td style="text-align:center;"><code>+25%</code></td><td style="text-align:center;"><code>1.00</code></td><td style="text-align:center;"><code>[-8%, +25%]</code></td></tr></tbody></table></div>
+<h3 class="sub-title" id="sec-9-3">9.3 三档养成存档 × 全 9 幕（2,700 场普通手操轨）收敛度实测表</h3>
+<div class="table-wrap"><table class="spec-table"><thead><tr><th style="text-align:left;">幕次</th><th style="text-align:left;">速通保底档（偏差范围 / 胜率 / 均回合）</th><th style="text-align:left;">正常养成档（偏差范围 / 胜率 / 均回合）</th><th style="text-align:left;">重肝养成档（偏差范围 / 胜率 / 均回合）</th></tr></thead><tbody><tr><td style="text-align:left;">第 1 幕 · 贝阿特丽丝</td><td style="text-align:left;">命 <code>-2%</code> 魔攻 <code>-3%</code> 双防 <code>+8%~+11%</code> ｜ <strong><code>100%</code></strong> / <code>5.98</code></td><td style="text-align:left;">命 <code>-2%</code> 魔攻 <code>+3%</code> 双防 <code>+22%~+25%</code> ｜ <strong><code>100%</code></strong> / <code>5.03</code></td><td style="text-align:left;">命 <code>-2%</code> 魔攻 <code>+14%</code> 双防 <code>+22%~+25%</code> ｜ <strong><code>100%</code></strong> / <code>3.10</code></td></tr><tr><td style="text-align:left;">第 2 幕 · 罗文乱葬岗（6+6）</td><td style="text-align:left;">命 <code>-3%</code> 魔攻 <code>-9%</code> 双防 <code>+8%~+12%</code> ｜ <strong><code>100%</code></strong> / <code>5.00</code></td><td style="text-align:left;">命 <code>-3%</code> 魔攻 <code>+3%</code> 双防 <code>+17%~+25%</code> ｜ <strong><code>100%</code></strong> / <code>5.00</code></td><td style="text-align:left;">命 <code>-3%</code> 魔攻 <code>+12%</code> 双防 <code>+25%</code> ｜ <strong><code>100%</code></strong> / <code>5.00</code></td></tr><tr><td style="text-align:left;">第 3 幕 · 爱丽丝</td><td style="text-align:left;">命 <code>0%</code> 魔攻 <code>0%</code> 双防 <code>+7%~+10%</code> ｜ <strong><code>100%</code></strong> / <code>4.00</code></td><td style="text-align:left;">命 <code>0%</code> 魔攻 <code>+5%</code> 双防 <code>+20%~+21%</code> ｜ <strong><code>100%</code></strong> / <code>4.00</code></td><td style="text-align:left;">命 <code>0%</code> 魔攻 <code>+16%</code> 双防 <code>+20%~+21%</code> ｜ <strong><code>100%</code></strong> / <code>4.00</code></td></tr><tr><td style="text-align:left;">第 4 幕 · 艾诺</td><td style="text-align:left;">命 <code>0%</code> 魔攻 <code>+2%</code> 双防 <code>+8%~+12%</code> ｜ <strong><code>100%</code></strong> / <code>5.00</code></td><td style="text-align:left;">命 <code>0%</code> 魔攻 <code>+7%</code> 双防 <code>+25%</code> ｜ <strong><code>100%</code></strong> / <code>5.00</code></td><td style="text-align:left;">命 <code>0%</code> 魔攻 <code>+16%</code> 双防 <code>+25%</code> ｜ <strong><code>100%</code></strong> / <code>5.00</code></td></tr><tr><td style="text-align:left;">第 5 幕 · 诺艾儿</td><td style="text-align:left;">命 <code>0%</code> 魔攻 <code>+4%</code> 双防 <code>+10%~+14%</code> ｜ <strong><code>100%</code></strong> / <code>6.75</code></td><td style="text-align:left;">命 <code>0%</code> 魔攻 <code>+10%</code> 双防 <code>+20%~+21%</code> ｜ <strong><code>100%</code></strong> / <code>5.92</code></td><td style="text-align:left;">命 <code>0%</code> 魔攻 <code>+17%</code> 双防 <code>+21%~+25%</code> ｜ <strong><code>100%</code></strong> / <code>5.47</code></td></tr><tr><td style="text-align:left;">第 6 幕 · 北林双波</td><td style="text-align:left;">命 <code>0%</code> 魔攻 <code>+6%</code> 双防 <code>+9%~+12%</code> ｜ <strong><code>100%</code></strong> / <code>5.06</code></td><td style="text-align:left;">命 <code>0%</code> 魔攻 <code>+12%</code> 双防 <code>+22%~+24%</code> ｜ <strong><code>100%</code></strong> / <code>4.64</code></td><td style="text-align:left;">命 <code>0%</code> 魔攻 <code>+16%</code> 双防 <code>+24%~+26%</code> ｜ <strong><code>100%</code></strong> / <code>4.26</code></td></tr><tr><td style="text-align:left;">第 7 幕 · 赫兰兽潮</td><td style="text-align:left;">命 <code>0%</code> 魔攻 <code>+5%</code> 双防 <code>+8%~+11%</code> ｜ <strong><code>100%</code></strong> / <code>7.00</code></td><td style="text-align:left;">命 <code>0%</code> 魔攻 <code>+13%</code> 双防 <code>+19%~+26%</code> ｜ <strong><code>100%</code></strong> / <code>6.99</code></td><td style="text-align:left;">命 <code>0%</code> 魔攻 <code>+15%</code> 双防 <code>+23%~+26%</code> ｜ <strong><code>100%</code></strong> / <code>6.96</code></td></tr><tr><td style="text-align:left;">第 8 幕 · 东翼火廊</td><td style="text-align:left;">命 <code>-3%</code> 魔攻 <code>+2%</code> 双防 <code>+5%~+6%</code> ｜ <strong><code>100%</code></strong> / <code>7.07</code></td><td style="text-align:left;">命 <code>-3%</code> 魔攻 <code>+8%</code> 双防 <code>+23%~+25%</code> ｜ <strong><code>100%</code></strong> / <code>6.66</code></td><td style="text-align:left;">命 <code>-3%</code> 魔攻 <code>+13%</code> 双防 <code>+23%~+25%</code> ｜ <strong><code>100%</code></strong> / <code>6.15</code></td></tr><tr><td style="text-align:left;">第 9 幕 · 风神·岚（仅演武测试关）</td><td style="text-align:left;">命 <code>0%</code> 魔攻 <code>+5%</code> 双防 <code>+8%~+11%</code> ｜ <strong><code>100%</code></strong> / <code>8.78</code></td><td style="text-align:left;">命 <code>0%</code> 魔攻 <code>+11%</code> 双防 <code>+19%~+26%</code> ｜ <strong><code>100%</code></strong> / <code>8.38</code></td><td style="text-align:left;">命 <code>0%</code> 魔攻 <code>+14%</code> 双防 <code>+23%~+26%</code> ｜ <strong><code>100%</code></strong> / <code>7.78</code></td></tr></tbody></table></div>
+<p class="spec-p"><strong>收敛验收结论</strong>：27 组养成存档全满贯 <strong><code>100%</code> 胜率</strong>！相比 V2.2 的第 1/8 幕速通暴毙与重肝 <code>+422%</code> 坦克崩坏，V3.1 既确保勤奋养成的玩家获得肉眼可见的提升（如风神演武测试关从速通 8.78 回合流畅缩至正常 8.38 / 重肝 7.78 回合），又绝不破坏任何一幕的核心策略节奏。</p>
+</section>
+<section class="chapter" id="sec-10">
+<h2 class="chapter-title"><span class="ch-num">10</span><span>十、铭记秘宝、套装共鸣与被动克制微调修订清单（V3.1）</span></h2>
+<p class="spec-p">因删除了「隔空断咏线」与全部「冰宫看破技」、彻底移除泛滥「易伤」乘区、并将常规饰品/被动/套装增伤<strong>统一收束至 <code>+2%–+5%</code> 克制微调区间</strong>（不删减收藏品数量，保留全部 12 件秘宝与 4 大套装的机制乐趣），修订对照如下：</p>
+<div class="table-wrap"><table class="spec-table"><thead><tr><th style="text-align:left;">项目</th><th style="text-align:left;">V2.2 旧条款（挂钩已删机制或数值膨胀）</th><th style="text-align:left;">V3.1 克制微调终版条款</th></tr></thead><tbody><tr><td style="text-align:left;"><strong>雪纹手帕</strong>（铭记）</td><td style="text-align:left;">首回合首次【隔空瞬凝】免 1 行动点；冰系伤 <code>×1.20</code></td><td style="text-align:left;">首回合首次施放<strong>【冰晶主炮线】</strong>免 <code>1</code> 行动点；冰系相加增伤大幅回调至 <strong><code>+2%</code>（<code>+0.02</code>）</strong></td></tr><tr><td style="text-align:left;"><strong>月虹螺胸针</strong>（铭记）</td><td style="text-align:left;">水/风系伤害 <code>+18%</code></td><td style="text-align:left;">水/风系相加增伤收束至 <strong><code>+3%</code>（<code>+0.03</code>）</strong>，保留净异常与微幅回蓝效用</td></tr><tr><td style="text-align:left;"><strong>乌木紫穗剑</strong>（铭记）</td><td style="text-align:left;">挂钩【霁馆剑步】，伤害 <code>+15%</code></td><td style="text-align:left;">平滑映射至<strong>线 5 普攻 / 剑步线（含进化后 <code>寒锋斩</code>）</strong>，相加增伤收束至 <strong><code>+4%</code>（<code>+0.04</code>）</strong></td></tr><tr><td style="text-align:left;"><strong>寒锋剑意</strong>（被动）</td><td style="text-align:left;">卷三剑技增伤 <code>+15%</code></td><td style="text-align:left;">卷三剑技相加增伤收束至 <strong><code>+5%</code>（<code>+0.05</code>）</strong>，突出迎锋免伤与破闪机制价值</td></tr><tr><td style="text-align:left;"><strong>北境霜锋（3 件）</strong></td><td style="text-align:left;">每回合首次【隔空冰系】附 2 层寒颤并享 <code>+15%</code> 碎霜增伤</td><td style="text-align:left;">每回合首次施放<strong>【冰晶主炮线】或【霜域控场线】</strong>附加 2 层寒颤，相加增伤收束至 <strong><code>+5%</code>（<code>+0.05</code>）</strong></td></tr><tr><td style="text-align:left;"><strong>省魔手稿</strong>（铭记）</td><td style="text-align:left;">魔法基础耗蓝 <code>-20%</code>，增幅额外耗蓝 <code>-50%</code></td><td style="text-align:left;">魔法基础耗蓝 <strong><code>-15%</code></strong>，增幅额外耗蓝 <strong><code>-20%</code></strong>（与魔力精算、法杖叠算后受 <code>0.60×</code> 总省蓝地板约束）</td></tr><tr><td style="text-align:left;"><strong>霜封暗记</strong>（铭记）</td><td style="text-align:left;">开启「冰晶宫殿」看破死角后回 18% 魔力与 +1 行动点</td><td style="text-align:left;">每场战斗首次<strong>触发截断破招或弱点击破</strong>时，立即回复 <code>18%</code> 最大魔力并获得 <code>+1</code> 行动点</td></tr><tr><td style="text-align:left;"><strong>冰蓝石子</strong>（铭记）</td><td style="text-align:left;">每回合首次【经手构筑】获 +8 护盾</td><td style="text-align:left;">每回合首次施放<strong>魔法技能（线 1–4）</strong>额外凝结 <code>8</code> 点实体护盾</td></tr><tr><td style="text-align:left;"><strong>学院星辉（2/3 件）</strong></td><td style="text-align:left;">2件：冰宫看破或破招附 2 易伤回 12% 蓝；3件：法术蓝耗 <code>-15%</code>，暴伤 <code>1.65×</code></td><td style="text-align:left;">2件：<strong>彻底移除易伤乘区</strong>，改为截断破招或弱点击破时额外回复 <code>12%</code> 最大魔力并额外削减 <code>1</code> 层弱点锁；3件：基础魔法耗蓝 <code>-15%</code>（受 <code>0.60×</code> 地板约束），暴击倍率 <code>+0.10</code>（封顶 <code>1.70×</code>）</td></tr></tbody></table></div>
+</section>
+<section class="chapter" id="sec-11">
+<h2 class="chapter-title"><span class="ch-num">11</span><span>十一、工程落盘接口契约与代码字段对照附录</span></h2>
+<p class="spec-p">本附录仅供程序与自动化校验使用，列出与上述十章一一对应的代码常量、关卡标识与引擎契约：</p>
+<div class="table-wrap"><table class="spec-table"><thead><tr><th style="text-align:left;">中文策划术语</th><th style="text-align:left;">推荐代码常量 / 字段名</th><th style="text-align:left;">V3.1 锁定值 / 说明</th></tr></thead><tbody><tr><td style="text-align:left;">统一数值配置对象</td><td style="text-align:left;"><code>COMBAT_BALANCE_V31</code></td><td style="text-align:left;">替代旧 <code>COMBAT_BALANCE_V22</code> / <code>V30</code>（可保留别名兼容旧测试导出校验）</td></tr><tr><td style="text-align:left;">防御常量 / 穿抗上限</td><td style="text-align:left;"><code>DEF_K</code> / <code>MAX_DEF_PIERCE</code></td><td style="text-align:left;"><code>80</code> / <code>0.75</code></td></tr><tr><td style="text-align:left;">总省蓝折扣硬地板</td><td style="text-align:left;"><code>MIN_MP_DISCOUNT_FLOOR</code></td><td style="text-align:left;"><code>0.60</code>（适用于基础耗蓝、增幅额外耗蓝、晦轮杖额外耗蓝）</td></tr><tr><td style="text-align:left;">收紧相加增伤池常量</td><td style="text-align:left;"><code>ADDITIVE_POOL_V31</code></td><td style="text-align:left;"><code>breakBonus: 0.10</code>；移除 <code>vulnBonus</code>、<code>breakChainDmgBonus</code>、<code>staggerDmgBonus</code>；<code>snowHandkerchief: 0.02</code>、<code>moonConch: 0.03</code>、<code>ebonySword: 0.04</code>、<code>frostEdgePassive: 0.05</code>、<code>northFrostSet3: 0.05</code></td></tr><tr><td style="text-align:left;">魔力增幅四主档</td><td style="text-align:left;"><code>AMP_TIERS</code> / <code>OVERCAST_V3</code></td><td style="text-align:left;"><code>[0, 0.20, 0.40, 0.60]</code>；相加增伤 <code>[0, 0.40, 0.80, 1.20]</code>；穿抗 <code>[0, 0.10, 0.22, 0.35]</code>；破锁 <code>[0, 1, 2, 3]</code>；护盾倍率 <code>[1.00, 1.35, 1.70]</code></td></tr><tr><td style="text-align:left;">缩圈精准四档与共振</td><td style="text-align:left;"><code>RING_TIMING</code></td><td style="text-align:left;">攻击：<code>bad -0.15 / good 0 / great +0.12 / perfect [0.25, 0.30, 0.35, 0.40]</code>；护盾：<code>[-0.10, 0, +0.10, +0.20]</code>；护手开关 <code>ringAssistMode: &#x27;standard&#x27; | &#x27;relaxed&#x27; | &#x27;off&#x27;</code>（持久化受管键 <code>combat_ring_assist_mode</code>）</td></tr><tr><td style="text-align:left;">原著七阶与线性等阶差格挡</td><td style="text-align:left;"><code>RANK_TIERS</code> / <code>computeBlockScale(d)</code> / <code>calcRankBlockRate(defRank, atkRank, grade)</code></td><td style="text-align:left;"><code>1..7</code>（初级~神级）；同阶基准 <code>[0, 0.08, 0.18, 0.30]</code>；<code>computeBlockScale(d) = d &gt;= 0 ? 1 + 0.12 * d : Math.max(0, 1 - 0.10 * Math.abs(d))</code>；最终减伤 <code>Math.min(1, base * scale)</code>（无人工封顶、无人工保底）</td></tr><tr><td style="text-align:left;">5+1 进化技能标识</td><td style="text-align:left;"><code>SKILL_LINES</code></td><td style="text-align:left;"><code>ice_1_crystal → ice_2_prism → ice_3_starfrost</code>；<code>water_1_ball → water_2_surge → water_3_blade</code>；<code>frost_1_step → frost_2_breath → frost_3_thorns</code>；<code>shield_1_ice → shield_2_mirror → shield_3_steel</code>；<code>sword_1_basic → sword_2_cold_edge</code>；独立槽 <code>move_afterimage</code></td></tr><tr><td style="text-align:left;">第 2 幕协同战与主力友军</td><td style="text-align:left;"><code>rowan_graveyard</code> / <code>allies[]</code> / <code>reno</code></td><td style="text-align:left;">第 2 幕（Act 2）<code>rowan_graveyard</code> 注入前排主力友军 <code>reno</code>（雷纳德：<code>rank: 5, hp: 560, matk: 82, def: 34, mdef: 38, spd: 118</code>，土/火/风三系法术压制与前排掀石板承伤掩护），后排为 8 岁希尔维亚，活捉留口收尾</td></tr><tr><td style="text-align:left;">第 9 幕演武测试关标记</td><td style="text-align:left;"><code>wind_god_eye</code> / <code>arenaTestOnly: true</code></td><td style="text-align:left;">第 9 幕（Act 9）<code>wind_god_eye</code> 显式标记 <code>arenaTestOnly: true</code>（仅演武大厅测试用关卡，非主线剧情战），敌方 <code>wind_god</code> 参数 <code>hp: 2800, shield: 155, p2Shield: 175, rank: 7</code></td></tr><tr><td style="text-align:left;">存档年龄补档与双曲正切软上限</td><td style="text-align:left;"><code>syncStatsToAge</code> / <code>buildPlayerCombatant</code> / <code>SAVE_SOFT_CAP_RATIOS</code></td><td style="text-align:left;">补齐 8/9/12/14 岁基础下限；六维软上限参数 <code>hp:(0.20,0.70,0.94)</code>、<code>mp:(0.18,0.70,0.94)</code>、<code>atk/matk:(0.24,0.95,0.92)</code>、<code>def/mdef:(0.25,1.00,0.92)</code></td></tr><tr><td style="text-align:left;">战斗状态单源契约</td><td style="text-align:left;"><code>CombatEngine.getBattleState()</code> + <code>combat:statechange</code></td><td style="text-align:left;">棱镜界面仅从 <code>getBattleState()</code> 渲染名牌等阶徽标、5+1 技能槽、增幅滑条与 6+6 友军面板</td></tr></tbody></table></div>
+</section>
+
+      <footer class="doc-footer">
+        <span>《转生千金～到了异世界就要悠闲地生活》战斗数值策划终版白皮书（V3.1） · 离线自包含静态审阅版</span>
+        <a href="#top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">回到顶部 ↑</a>
+      </footer>
+    </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* 1. 顶部阅读进度条 & 左侧目录滚动高亮（IntersectionObserver） */
+  var progressBar = document.getElementById('read-progress');
+  function updateProgress() {
+    var docH = document.documentElement.scrollHeight - window.innerHeight;
+    var pct = docH > 0 ? Math.min(100, Math.max(0, (window.scrollY / docH) * 100)) : 0;
+    if (progressBar) progressBar.style.width = pct.toFixed(1) + '%';
+  }
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+  var tocLinks = Array.prototype.slice.call(document.querySelectorAll('.toc-link'));
+  var linkMap = {};
+  var targets = [];
+  tocLinks.forEach(function (a) {
+    var id = a.getAttribute('data-target');
+    var el = id ? document.getElementById(id) : null;
+    if (el) {
+      linkMap[id] = a;
+      targets.push(el);
+    }
+    a.addEventListener('click', function () {
+      var sb = document.getElementById('toc-sidebar');
+      if (sb) sb.classList.remove('open');
+    });
+  });
+
+  function setActiveToc(id) {
+    tocLinks.forEach(function (a) {
+      a.classList.toggle('active', a.getAttribute('data-target') === id);
+    });
+    var activeEl = linkMap[id];
+    if (activeEl && activeEl.scrollIntoView) {
+      var nav = document.getElementById('toc-nav');
+      if (nav) {
+        var nr = nav.getBoundingClientRect();
+        var ar = activeEl.getBoundingClientRect();
+        if (ar.top < nr.top + 12 || ar.bottom > nr.bottom - 12) {
+          activeEl.scrollIntoView({ block: 'nearest' });
+        }
+      }
+    }
+  }
+
+  if ('IntersectionObserver' in window && targets.length) {
+    var visibleSet = new Set();
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (ent) {
+        if (ent.isIntersecting) visibleSet.add(ent.target.id);
+        else visibleSet.delete(ent.target.id);
+      });
+      if (visibleSet.size > 0) {
+        for (var i = 0; i < targets.length; i++) {
+          if (visibleSet.has(targets[i].id)) {
+            setActiveToc(targets[i].id);
+            break;
+          }
+        }
+      }
+    }, { rootMargin: '-60px 0px -70% 0px', threshold: 0 });
+    targets.forEach(function (t) { obs.observe(t); });
+    setActiveToc(targets[0].id);
+  }
+
+  /* 2. 目录快速检索 */
+  var searchInput = document.getElementById('toc-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', function () {
+      var q = searchInput.value.trim().toLowerCase();
+      tocLinks.forEach(function (a) {
+        var hit = !q || a.textContent.toLowerCase().indexOf(q) !== -1;
+        a.classList.toggle('hidden', !hit);
+      });
+    });
+  }
+
+  var tocToggle = document.getElementById('toc-toggle-btn');
+  if (tocToggle) {
+    tocToggle.addEventListener('click', function () {
+      var sb = document.getElementById('toc-sidebar');
+      if (sb) sb.classList.toggle('open');
+    });
+  }
+
+  /* 3. V3.1 收紧相加增伤池交互试算器 */
+  var poolState = { amp: 1.20, ring: 'perfect', crit: 1.60 };
+  var perfectByAmp = { '0': 0.25, '0.4': 0.30, '0.8': 0.35, '1.2': 0.40 };
+  var ringBase = { bad: -0.15, good: 0.00, great: 0.12 };
+
+  function updatePoolCalc() {
+    var amp = poolState.amp;
+    var ringVal = poolState.ring === 'perfect' ? (perfectByAmp[String(amp)] || 0.25) : ringBase[poolState.ring];
+    var brk = document.getElementById('cp-break') && document.getElementById('cp-break').checked ? 0.10 : 0;
+    var hk = document.getElementById('cp-handkerchief') && document.getElementById('cp-handkerchief').checked ? 0.02 : 0;
+    var elem = document.getElementById('cp-elem') && document.getElementById('cp-elem').checked ? 1.50 : 1.00;
+    var crit = poolState.crit;
+
+    var pool = Math.max(0.35, 1.0 + amp + ringVal + brk + hk);
+    var total = pool * elem * crit;
+    var deltaPct = ((total / 15.83) - 1) * 100;
+
+    var terms = ['1.00'];
+    if (amp > 0) terms.push(amp.toFixed(2) + '(增幅)');
+    if (ringVal !== 0) terms.push((ringVal > 0 ? '+' : '−') + Math.abs(ringVal).toFixed(2) + '(精准)');
+    if (brk > 0) terms.push('0.10(击破)');
+    if (hk > 0) terms.push('0.02(手帕)');
+    var sumStr = terms.join(' + ').replace(/\+ −/g, '− ');
+
+    var fEl = document.getElementById('cp-formula');
+    var tEl = document.getElementById('cp-total');
+    var dEl = document.getElementById('cp-delta');
+    if (fEl) fEl.textContent = '相加池：' + sumStr + ' = ' + pool.toFixed(2) + '× ｜ 独立乘区：× ' + elem.toFixed(2) + '(克制) × ' + crit.toFixed(2) + '(暴击)';
+    if (tEl) tEl.textContent = total.toFixed(2) + '×';
+    if (dEl) dEl.textContent = '相对 V2.2 核爆 (15.83×) 变化 ' + (deltaPct >= 0 ? '+' : '') + deltaPct.toFixed(1) + '%';
+  }
+
+  document.querySelectorAll('#calc-pool-widget .calc-seg .cbtn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var grp = btn.parentElement.getAttribute('data-calc-group');
+      btn.parentElement.querySelectorAll('.cbtn').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      if (grp === 'amp') poolState.amp = Number(btn.getAttribute('data-val'));
+      else if (grp === 'ring') poolState.ring = btn.getAttribute('data-val');
+      else if (grp === 'crit') poolState.crit = Number(btn.getAttribute('data-val'));
+      updatePoolCalc();
+    });
+  });
+  ['cp-break', 'cp-handkerchief', 'cp-elem'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('change', updatePoolCalc);
+  });
+  updatePoolCalc();
+
+  /* 4. V3.1 线性等阶差格挡速算器 */
+  function computeBlockScale(d) {
+    return d >= 0 ? (1 + 0.12 * d) : Math.max(0, 1 - 0.10 * Math.abs(d));
+  }
+  function updateBlockCalc(d) {
+    var scale = computeBlockScale(d);
+    var fmt = function (base) { return (Math.min(1, base * scale) * 100).toFixed(1) + '%'; };
+    var tag = d > 0 ? ('高于敌 ' + d + ' 阶') : (d === 0 ? '同阶基准' : ('低于敌 ' + Math.abs(d) + ' 阶'));
+    var badge = document.getElementById('cb-scale-badge');
+    if (badge) badge.textContent = '当前系数：×' + scale.toFixed(2) + '（' + tag + '）';
+    document.getElementById('cb-bad').textContent = fmt(0.00);
+    document.getElementById('cb-good').textContent = fmt(0.08);
+    document.getElementById('cb-great').textContent = fmt(0.18);
+    document.getElementById('cb-perfect').textContent = fmt(0.30);
+    document.querySelectorAll('#cb-presets .cbtn').forEach(function (b) {
+      b.classList.toggle('active', Number(b.getAttribute('data-d')) === d);
+    });
+  }
+  document.querySelectorAll('#cb-presets .cbtn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      updateBlockCalc(Number(btn.getAttribute('data-d')));
+    });
+  });
+  updateBlockCalc(0);
+})();
+</script>
+</body>
+</html>

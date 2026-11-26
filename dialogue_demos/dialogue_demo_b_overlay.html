@@ -1,0 +1,2610 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>方案 B · 立绘固底解耦 × 悬浮磨砂雪瓷薄幕覆写 — 《转生千金》交互 Demo</title>
+<style>
+/* ==========================================================================
+   《转生千金》自由活动角色对话防立绘跳动 · 方案 B 实机交互 Demo
+   核心解法：立绘永远固底解耦 (bottom: 0) + 悬浮半透磨砂雪瓷棱镜薄幕覆写
+   视觉体系：雪瓷冰白基底 × 皇家蓝 #1658EB × 冰青 #7DD3FC × 香槟金 #C4A46C
+   红线规范：全站零圆框套圆框 (border-radius: 0px)，以 45° 斜切角 + 1px 细线区分层级
+   ========================================================================== */
+
+:root {
+  /* 雪瓷冰晶折射令牌（对齐游戏 css/prism-refraction-ui.css） */
+  --pr-alabaster: rgba(250, 251, 253, 0.88);
+  --pr-alabaster-hi: rgba(255, 255, 255, 0.94);
+  --pr-alabaster-mid: rgba(244, 249, 255, 0.88);
+  --pr-alabaster-lo: rgba(232, 242, 255, 0.86);
+  --pr-ink: #1A2436;
+  --pr-ink-mid: #3A4B66;
+  --pr-ink-muted: #5F728F;
+  --pr-sapphire-hi: #2E77F8;
+  --pr-sapphire: #1658EB;
+  --pr-sapphire-mid: #103FA8;
+  --pr-sapphire-deep: #0E2B78;
+  --pr-sapphire-abyss: #081A54;
+  --pr-cyan: #7DD3FC;
+  --pr-cyan-gleam: #D9F3FF;
+  --pr-gold: #C4A46C;
+  --pr-gold-deep: #8C6928;
+  --pr-gold-pale: #EFE0BE;
+  --pr-emerald: #0E8A64;
+  --pr-emerald-deep: #096348;
+  --pr-crimson: #D13456;
+  --pr-line-soft: rgba(96, 128, 180, 0.24);
+  --pr-line-mid: rgba(22, 88, 235, 0.34);
+
+  --pr-rim: linear-gradient(
+    132deg,
+    rgba(125, 211, 252, 0.96) 0%,
+    rgba(22, 88, 235, 0.64) 28%,
+    rgba(255, 255, 255, 0.98) 50%,
+    rgba(196, 164, 108, 0.78) 74%,
+    rgba(46, 119, 248, 0.88) 100%
+  );
+  --pr-rim-gold: linear-gradient(
+    135deg,
+    rgba(239, 224, 190, 0.98) 0%,
+    rgba(196, 164, 108, 0.76) 36%,
+    rgba(255, 255, 255, 0.98) 54%,
+    rgba(125, 211, 252, 0.88) 100%
+  );
+  --pr-sapphire-prism: linear-gradient(
+    180deg,
+    #2E77F8 0%,
+    #1658EB 49.4%,
+    #0E2B78 50.6%,
+    #081A54 100%
+  );
+  --pr-emerald-prism: linear-gradient(
+    180deg,
+    #26B38A 0%,
+    #0E8A64 49.4%,
+    #096348 50.6%,
+    #064432 100%
+  );
+  --pr-slate-prism: linear-gradient(
+    180deg,
+    #4F6487 0%,
+    #314260 49.4%,
+    #212E45 50.6%,
+    #162033 100%
+  );
+  --pr-glass-plate: linear-gradient(
+    154deg,
+    rgba(255, 255, 255, 0.93) 0%,
+    rgba(244, 249, 255, 0.89) 56%,
+    rgba(230, 241, 255, 0.89) 100%
+  );
+  --pr-veil-plate: linear-gradient(
+    158deg,
+    rgba(250, 251, 253, 0.90) 0%,
+    rgba(246, 250, 255, 0.86) 52%,
+    rgba(236, 245, 255, 0.88) 100%
+  );
+  --pr-caustic: linear-gradient(
+    112deg,
+    transparent 12%,
+    rgba(255, 255, 255, 0.56) 26%,
+    rgba(125, 211, 252, 0.14) 34%,
+    transparent 48%,
+    rgba(239, 224, 190, 0.12) 76%,
+    transparent 92%
+  );
+
+  --pr-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --pr-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong', 'SimSun', Georgia, serif;
+  --pr-sans: 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
+  --pr-mono: ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  /* 核心布局高度参数（1440×900 基准） */
+  --telemetry-h: 38px;
+  --dock-bottom: 14px;
+  --dock-explore-h: 56px;
+  --dock-dialogue-h: 146px;
+  --dock-width: min(1140px, calc(100% - 48px));
+  --portrait-h: min(656px, calc(100vh - var(--telemetry-h) - 166px));
+  --dialog-fs: 19.5px;
+  --dialog-lh: 1.66;
+}
+
+@media (max-height: 760px) {
+  :root {
+    --telemetry-h: 34px;
+    --dock-bottom: 10px;
+    --dock-explore-h: 56px;
+    --dock-dialogue-h: 138px;
+    --dock-width: min(1080px, calc(100% - 36px));
+    --portrait-h: min(544px, calc(100vh - var(--telemetry-h) - 126px));
+    --dialog-fs: 18px;
+    --dialog-lh: 1.60;
+  }
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  border-radius: 0px !important;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #E8F1FC;
+  color: var(--pr-ink);
+  font-family: var(--pr-sans);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+button:focus-visible {
+  outline: 1.5px solid var(--pr-sapphire);
+  outline-offset: 2px;
+}
+
+#app-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  overflow: clip;
+}
+
+/* ==========================================================================
+   一、顶部实时验证标尺细栏（雪瓷冰晶体系，绝非暗黑控制台）
+   ========================================================================== */
+#telemetry-bar {
+  position: relative;
+  z-index: 40;
+  height: var(--telemetry-h);
+  flex: 0 0 var(--telemetry-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(242, 248, 255, 0.94) 100%);
+  border-bottom: 1px solid rgba(96, 128, 180, 0.26);
+  box-shadow: 0 4px 16px rgba(14, 43, 120, 0.08);
+  overflow: hidden;
+}
+
+#telemetry-bar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1.5px;
+  background: linear-gradient(
+    90deg,
+    var(--pr-sapphire) 0%,
+    var(--pr-cyan) 32%,
+    var(--pr-gold) 68%,
+    rgba(22, 88, 235, 0.52) 100%
+  );
+  pointer-events: none;
+}
+
+.tb-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+}
+
+.tb-plan-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 12px;
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+  font-family: var(--pr-serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+  flex-shrink: 0;
+}
+
+.tb-title {
+  font-family: var(--pr-serif);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pr-ink);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.tb-sub {
+  display: none;
+}
+
+/* 实时 Δy 监测仪表组（1px 细竖线分隔，零框套框） */
+.tb-metrics {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  height: 100%;
+  font-family: var(--pr-mono);
+  font-size: 11.5px;
+}
+
+.tb-metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 11px;
+  height: 22px;
+  border-left: 1px solid var(--pr-line-soft);
+  white-space: nowrap;
+}
+
+.tb-metric:first-child {
+  border-left: none;
+}
+
+.tb-metric-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--pr-emerald);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+.tb-metric-dot.warn {
+  background: var(--pr-crimson);
+}
+
+.tb-metric-lbl {
+  color: var(--pr-ink-muted);
+  font-family: var(--pr-sans);
+  font-size: 11px;
+}
+
+.tb-metric-val {
+  color: var(--pr-emerald-deep);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.tb-metric-val.mode-val {
+  color: var(--pr-sapphire);
+  font-family: var(--pr-serif);
+  font-weight: 700;
+}
+
+.tb-metric-val.peak-val {
+  color: var(--pr-ink-mid);
+}
+
+/* 顶部右侧控制簇 */
+.tb-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.tb-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 14px;
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+  font-family: var(--pr-serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  transition: filter 0.16s ease;
+}
+
+.tb-btn-primary:hover {
+  filter: brightness(1.12);
+}
+
+.tb-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  color: var(--pr-ink-mid);
+  font-size: 12px;
+  font-weight: 600;
+  border-left: 1px solid var(--pr-line-soft);
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.tb-btn-ghost:hover {
+  background: rgba(22, 88, 235, 0.08);
+  color: var(--pr-sapphire);
+}
+
+.tb-btn-ghost.active {
+  background: rgba(22, 88, 235, 0.12);
+  color: var(--pr-sapphire);
+  box-shadow: inset 0 -2px 0 var(--pr-sapphire);
+}
+
+/* ==========================================================================
+   二、游戏主舞台 (#stage) —— 真实玫瑰园背景 + 氛围光影
+   ========================================================================== */
+#stage {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  overflow: clip;
+  background: #DCE8F6;
+}
+
+#stage-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-image: url('./assets/garden.jpg');
+  background-size: cover;
+  background-position: center 42%;
+  background-repeat: no-repeat;
+}
+
+/* 顶部与底部极轻氛围 vignette，确保雪瓷控件与玫瑰园自然过渡 */
+#stage-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(16, 36, 82, 0.14) 0%, transparent 18%, transparent 74%, rgba(14, 34, 80, 0.22) 100%),
+    radial-gradient(ellipse at 50% 38%, rgba(255, 255, 255, 0.10) 0%, transparent 62%);
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   三、真实游戏 HUD（左上雪瓷切面状态棱镜 + 地点牌 / 右上晶簇导航 + 削角版 #sylvia-hub）
+   ========================================================================== */
+#hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 16;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px 18px 0;
+  pointer-events: none;
+}
+
+.hud-left-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+}
+
+/* 3.1 左上角切面雪瓷冰晶状态棱镜 (#hud-left) */
+#hud-left {
+  position: relative;
+  width: 316px;
+  padding: 9px 16px 9px 12px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  pointer-events: auto;
+  filter: drop-shadow(0 10px 24px rgba(14, 43, 120, 0.16));
+}
+
+#hud-left::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--pr-rim);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  pointer-events: none;
+}
+
+#hud-left::after {
+  content: '';
+  position: absolute;
+  inset: 1.5px;
+  z-index: 0;
+  background: var(--pr-glass-plate);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  clip-path: polygon(0 0, calc(100% - 17px) 0, 100% 17px, 100% 100%, 13px 100%, 0 calc(100% - 13px));
+  pointer-events: none;
+}
+
+#hud-left > * {
+  position: relative;
+  z-index: 2;
+}
+
+#hud-face {
+  width: 48px;
+  height: 52px;
+  padding: 1.5px;
+  flex-shrink: 0;
+  background: var(--pr-rim-gold);
+  clip-path: polygon(50% 0%, 100% 22%, 100% 78%, 50% 100%, 0% 78%, 0% 22%);
+  filter: drop-shadow(0 5px 12px rgba(14, 43, 120, 0.18));
+}
+
+#hud-face img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center 14%;
+  clip-path: polygon(50% 0%, 100% 22%, 100% 78%, 50% 100%, 0% 78%, 0% 22%);
+  background: radial-gradient(circle at 50% 34%, #F4F9FF 0%, #D4E5FB 70%, #B8D2F6 100%);
+}
+
+.hud-cols {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hud-row1 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+#hud-name {
+  font-family: var(--pr-serif);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--pr-ink);
+  letter-spacing: 0.08em;
+}
+
+#hud-age {
+  font-size: 11px;
+  color: var(--pr-ink-muted);
+}
+
+#hud-tier {
+  padding: 1px 8px;
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+  font-family: var(--pr-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+}
+
+#hud-gold {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--pr-gold-deep);
+  font-family: var(--pr-mono);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.hud-row2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+#hud-date {
+  color: var(--pr-sapphire);
+  font-family: var(--pr-mono);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+#hud-tod {
+  color: var(--pr-ink-muted);
+}
+
+.hud-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 2px;
+}
+
+.hud-bar-line {
+  display: grid;
+  grid-template-columns: 26px 1fr 44px;
+  align-items: center;
+  gap: 6px;
+}
+
+.hb-lbl {
+  font-size: 10px;
+  color: var(--pr-ink-muted);
+}
+
+.hud-bars .bar {
+  position: relative;
+  height: 5.5px;
+  background: rgba(14, 34, 84, 0.12);
+  clip-path: polygon(3px 0%, calc(100% - 3px) 0%, 100% 50%, calc(100% - 3px) 100%, 3px 100%, 0% 50%);
+}
+
+.hud-bars .bar i {
+  display: block;
+  height: 100%;
+  clip-path: polygon(3px 0%, calc(100% - 3px) 0%, 100% 50%, calc(100% - 3px) 100%, 3px 100%, 0% 50%);
+}
+
+.hud-bars .bar.hp i { width: 100%; background: linear-gradient(180deg, #FF8FA4 0%, #D93A5C 49%, #A61C3C 51%, #85122D 100%); }
+.hud-bars .bar.mp i { width: 92%; background: linear-gradient(180deg, #9BE7FF 0%, #3288FF 49%, #1658EB 51%, #0E2B78 100%); }
+.hud-bars .bar.st i { width: 80%; background: linear-gradient(180deg, #6CE6C0 0%, #16A67B 49%, #0B7A58 51%, #07593F 100%); }
+
+.hb-val {
+  font-style: normal;
+  font-family: var(--pr-mono);
+  font-size: 10px;
+  color: var(--pr-ink-mid);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 3.2 地点切面冰晶牌 (#loc-bar) */
+#loc-bar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 18px 6px 12px;
+  pointer-events: auto;
+  filter: drop-shadow(0 8px 18px rgba(14, 43, 120, 0.14));
+}
+
+#loc-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--pr-rim);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  pointer-events: none;
+}
+
+#loc-bar::after {
+  content: '';
+  position: absolute;
+  inset: 1.5px;
+  z-index: 0;
+  background: var(--pr-glass-plate);
+  backdrop-filter: blur(16px) saturate(145%);
+  -webkit-backdrop-filter: blur(16px) saturate(145%);
+  clip-path: polygon(0 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+  pointer-events: none;
+}
+
+#loc-bar > * {
+  position: relative;
+  z-index: 2;
+}
+
+.loc-crest {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pr-sapphire-prism);
+  color: #E0F4FF;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+#loc-name {
+  font-family: var(--pr-serif);
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--pr-ink);
+}
+
+.loc-tag {
+  padding: 1px 8px;
+  background: rgba(22, 88, 235, 0.10);
+  color: var(--pr-sapphire);
+  font-size: 11px;
+  font-weight: 600;
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+}
+
+/* 3.3 右上角切面晶簇导航条 (#hud-right) + 右上削角版 #sylvia-hub */
+.hud-right-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+#hud-right {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 10px 4px 14px;
+  pointer-events: auto;
+  filter: drop-shadow(0 10px 22px rgba(14, 43, 120, 0.14));
+}
+
+#hud-right::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--pr-rim);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 14px);
+  pointer-events: none;
+}
+
+#hud-right::after {
+  content: '';
+  position: absolute;
+  inset: 1.5px;
+  z-index: 0;
+  background: var(--pr-glass-plate);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  clip-path: polygon(13px 0, 100% 0, 100% calc(100% - 11px), calc(100% - 11px) 100%, 0 100%, 0 13px);
+  pointer-events: none;
+}
+
+#hud-right > * {
+  position: relative;
+  z-index: 2;
+}
+
+.hud-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 10px;
+  color: var(--pr-ink);
+  font-family: var(--pr-serif);
+  font-size: 12.5px;
+  font-weight: 600;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.hud-chip:hover {
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+}
+
+/* 右上削角版 #sylvia-hub（45° 双斜切角雪瓷书志浮条，内部零边框仅 1px 细竖线分隔） */
+#sylvia-hub {
+  position: relative;
+  pointer-events: auto;
+  filter: drop-shadow(0 8px 20px rgba(14, 43, 120, 0.13));
+}
+
+#sylvia-hub .sh-corner-controls {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 12px 0 14px;
+}
+
+#sylvia-hub .sh-corner-controls::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--pr-rim);
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  pointer-events: none;
+}
+
+#sylvia-hub .sh-corner-controls::after {
+  content: '';
+  position: absolute;
+  inset: 1.5px;
+  z-index: 0;
+  background:
+    linear-gradient(90deg, var(--pr-sapphire) 0%, var(--pr-cyan) 44%, var(--pr-gold) 80%, rgba(22, 88, 235, 0.45) 100%) top / 100% 1.5px no-repeat,
+    var(--pr-glass-plate);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  clip-path: polygon(11px 0, 100% 0, 100% calc(100% - 11px), calc(100% - 11px) 100%, 0 100%, 0 11px);
+  pointer-events: none;
+}
+
+#sylvia-hub .sh-corner-controls > * {
+  position: relative;
+  z-index: 2;
+}
+
+.sh-mood-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 9px 0 4px;
+  font-family: var(--pr-serif);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--pr-ink);
+  transition: color 0.16s ease, background 0.16s ease;
+}
+
+.sh-mood-item:hover {
+  background: rgba(22, 88, 235, 0.08);
+  color: var(--pr-sapphire);
+}
+
+.sh-mood-item .hm-ico {
+  color: var(--pr-emerald);
+  display: inline-flex;
+}
+
+.sh-mood-item .hm-val {
+  font-style: normal;
+  font-family: var(--pr-mono);
+  font-size: 11.5px;
+  color: var(--pr-emerald-deep);
+  padding-left: 6px;
+  border-left: 1px solid rgba(22, 88, 235, 0.22);
+}
+
+.sh-dock-sep {
+  width: 1px;
+  height: 14px;
+  background: rgba(22, 88, 235, 0.22);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+.sh-dock-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 9px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pr-ink-mid);
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.sh-dock-btn:hover {
+  background: rgba(22, 88, 235, 0.08);
+  color: var(--pr-sapphire);
+}
+
+.sh-dock-btn .sh-mail-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  background: var(--pr-sapphire);
+  transform: rotate(45deg);
+}
+
+/* 轻巧养成提示气泡 */
+#sh-toast {
+  position: absolute;
+  top: 42px;
+  right: 0;
+  padding: 8px 14px;
+  white-space: nowrap;
+  font-family: var(--pr-serif);
+  font-size: 12.5px;
+  color: var(--pr-ink);
+  background: var(--pr-glass-plate);
+  border-top: 1.5px solid var(--pr-sapphire);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  filter: drop-shadow(0 10px 22px rgba(14, 43, 120, 0.16));
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition: opacity 0.2s var(--pr-ease), transform 0.2s var(--pr-ease);
+}
+
+#sh-toast.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ==========================================================================
+   四、方案 B 核心核心：彻底解耦、永远固底的立绘层 (#portraits)
+   无论底部是 56px 极矮栏还是 146px 悬浮薄幕，bottom 恒为 0px，Δy === 0.0px！
+   ========================================================================== */
+#portraits {
+  position: absolute;
+  inset: 0;
+  bottom: 0 !important; /* 黄金基准线：立绘永远固底解耦 */
+  z-index: 6;
+  pointer-events: none;
+}
+
+.p-slot {
+  position: absolute;
+  bottom: 0 !important; /* 严禁任何模式修改 bottom / top / translateY */
+  height: 100%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.p-slot[data-char="sylvia"] {
+  left: 30%;
+}
+
+.p-slot[data-char="alice"] {
+  left: 70%;
+}
+
+.p-slot img {
+  display: block;
+  height: var(--portrait-h);
+  width: auto;
+  max-width: none;
+  object-fit: contain;
+  object-position: center bottom;
+  /* 绝不使用 scale / translateY，仅用光影滤镜表达聚焦与互动 */
+  filter: brightness(1) saturate(1) drop-shadow(0 12px 26px rgba(14, 34, 84, 0.28));
+  transition: filter 0.34s var(--pr-ease);
+}
+
+/* 探索态悬停微提亮（严格零位移！） */
+#stage[data-mode="explore"] .p-slot:hover img {
+  filter: brightness(1.06) saturate(1.05) drop-shadow(0 14px 32px rgba(22, 88, 235, 0.30));
+}
+
+/* 对话态：说话者提亮聚焦，聆听者柔和降饱和微暗（严格零位移！） */
+#stage[data-mode="dialogue"] .p-slot.speaking img {
+  filter: brightness(1.04) saturate(1.05) drop-shadow(0 14px 30px rgba(14, 43, 120, 0.32));
+}
+
+#stage[data-mode="dialogue"] .p-slot.dim img {
+  filter: brightness(0.68) saturate(0.76) drop-shadow(0 8px 18px rgba(14, 34, 84, 0.20));
+}
+
+/* 角色探索态悬浮交互名签（独立于 img 定位，绝不影响立绘高度或位置） */
+.p-interact-tag {
+  position: absolute;
+  bottom: 112px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 15px 5px 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0.90;
+  transition: opacity 0.22s var(--pr-ease);
+  filter: drop-shadow(0 8px 18px rgba(14, 43, 120, 0.18));
+}
+
+.p-interact-tag::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--pr-rim);
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+
+.p-interact-tag::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  z-index: 0;
+  background: var(--pr-glass-plate);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  clip-path: polygon(9.5px 0, 100% 0, calc(100% - 9.5px) 100%, 0 100%);
+}
+
+.p-interact-tag > * {
+  position: relative;
+  z-index: 2;
+}
+
+.p-interact-dia {
+  width: 6px;
+  height: 6px;
+  background: var(--pr-sapphire);
+  transform: rotate(45deg);
+}
+
+.p-slot[data-char="alice"] .p-interact-dia {
+  background: var(--pr-emerald);
+}
+
+.p-interact-name {
+  font-family: var(--pr-serif);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pr-ink);
+  letter-spacing: 0.08em;
+}
+
+.p-interact-hint {
+  font-size: 11px;
+  color: var(--pr-sapphire);
+  font-weight: 600;
+  padding-left: 7px;
+  border-left: 1px solid rgba(22, 88, 235, 0.24);
+}
+
+.p-slot[data-char="alice"] .p-interact-hint {
+  color: var(--pr-emerald-deep);
+  border-left-color: rgba(14, 138, 100, 0.24);
+}
+
+.p-slot:hover .p-interact-tag::after {
+  background: var(--pr-sapphire-prism);
+}
+
+.p-slot[data-char="alice"]:hover .p-interact-tag::after {
+  background: var(--pr-emerald-prism);
+}
+
+.p-slot:hover .p-interact-name,
+.p-slot:hover .p-interact-hint {
+  color: #FFFFFF;
+  border-left-color: rgba(255, 255, 255, 0.35);
+}
+
+.p-slot:hover .p-interact-dia {
+  background: var(--pr-cyan-gleam);
+}
+
+/* 对话态自动隐去角色交互名签 */
+#stage[data-mode="dialogue"] .p-interact-tag {
+  opacity: 0;
+}
+
+/* ==========================================================================
+   五、悬浮切角分支选项层 (#choices-layer) —— 居于对话幕正上方，绝不推挤立绘
+   ========================================================================== */
+#choices-layer {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--dock-bottom) + var(--dock-dialogue-h) + 22px);
+  transform: translateX(-50%);
+  z-index: 22;
+  width: min(460px, calc(100% - 64px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.26s var(--pr-ease), visibility 0.26s var(--pr-ease);
+}
+
+#choices-layer.open {
+  pointer-events: auto;
+  opacity: 1;
+  visibility: visible;
+}
+
+.choice-header {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 16px;
+  background: rgba(250, 251, 253, 0.86);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(22, 88, 235, 0.45);
+  border-bottom: 1px solid rgba(96, 128, 180, 0.24);
+  font-family: var(--pr-serif);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--pr-sapphire);
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+
+.choice-btn {
+  position: relative;
+  width: 100%;
+  padding: 11px 22px 11px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  color: var(--pr-ink);
+  font-family: var(--pr-serif);
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  filter: drop-shadow(0 8px 20px rgba(14, 43, 120, 0.16));
+  transition: transform 0.2s var(--pr-ease), color 0.18s ease;
+}
+
+.choice-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--pr-rim);
+  clip-path: polygon(14px 0%, 100% 0%, calc(100% - 14px) 100%, 0% 100%);
+}
+
+.choice-btn::after {
+  content: '';
+  position: absolute;
+  inset: 1.5px;
+  z-index: 0;
+  background: var(--pr-veil-plate);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  clip-path: polygon(13px 0%, 100% 0%, calc(100% - 13px) 100%, 0% 100%);
+  transition: background 0.18s ease;
+}
+
+.choice-btn > * {
+  position: relative;
+  z-index: 2;
+}
+
+.choice-num {
+  font-family: var(--pr-mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--pr-sapphire);
+  padding-right: 10px;
+  border-right: 1px solid rgba(22, 88, 235, 0.25);
+  flex-shrink: 0;
+}
+
+.choice-btn:hover {
+  transform: translateX(6px);
+  color: #FFFFFF;
+}
+
+.choice-btn:hover::after {
+  background: var(--pr-sapphire-prism);
+}
+
+.choice-btn:hover .choice-num {
+  color: var(--pr-cyan-gleam);
+  border-right-color: rgba(255, 255, 255, 0.32);
+}
+
+/* ==========================================================================
+   六、方案 B 同位舒展底部基座 (#bottom-dock)
+   自由探索态：56px 削角极矮操作栏
+   悬浮对话态：就地优雅向上舒展为 146px 悬浮半透磨砂雪瓷棱镜薄幕，轻覆衣摆
+   ========================================================================== */
+#bottom-dock {
+  position: absolute;
+  left: 50%;
+  bottom: var(--dock-bottom);
+  transform: translateX(-50%);
+  width: var(--dock-width);
+  height: var(--dock-explore-h);
+  z-index: 20;
+  filter: drop-shadow(0 -10px 30px rgba(14, 43, 120, 0.16));
+  transition: height 0.26s var(--pr-ease);
+  will-change: height;
+}
+
+#stage[data-mode="dialogue"] #bottom-dock {
+  height: var(--dock-dialogue-h);
+  filter: drop-shadow(0 -14px 36px rgba(13, 38, 104, 0.20));
+}
+
+/* 45° 双斜切角外棱框（::before）+ 磨砂雪瓷玻璃板与顶部 1px 冰蓝棱镜折光高亮边（::after） */
+#bottom-dock::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--pr-rim);
+  clip-path: polygon(
+    16px 0,
+    calc(100% - 16px) 0,
+    100% 16px,
+    100% calc(100% - 12px),
+    calc(100% - 12px) 100%,
+    12px 100%,
+    0 calc(100% - 12px),
+    0 16px
+  );
+  pointer-events: none;
+}
+
+#bottom-dock::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  z-index: 0;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(125, 211, 252, 0.92) 0%,
+      rgba(22, 88, 235, 0.72) 34%,
+      rgba(255, 255, 255, 0.96) 52%,
+      rgba(196, 164, 108, 0.78) 76%,
+      rgba(125, 211, 252, 0.72) 100%
+    ) top / 100% 1.5px no-repeat,
+    var(--pr-caustic),
+    var(--pr-veil-plate);
+  backdrop-filter: blur(16px) saturate(145%);
+  -webkit-backdrop-filter: blur(16px) saturate(145%);
+  clip-path: polygon(
+    15.5px 0,
+    calc(100% - 15.5px) 0,
+    100% 15.5px,
+    100% calc(100% - 11.5px),
+    calc(100% - 11.5px) 100%,
+    11.5px 100%,
+    0 calc(100% - 11.5px),
+    0 15.5px
+  );
+  pointer-events: none;
+}
+
+/* 对话态展开时切换标志性大 45° 双斜切角 */
+#stage[data-mode="dialogue"] #bottom-dock::before {
+  clip-path: polygon(
+    20px 0,
+    calc(100% - 28px) 0,
+    100% 28px,
+    100% calc(100% - 16px),
+    calc(100% - 16px) 100%,
+    16px 100%,
+    0 calc(100% - 16px),
+    0 20px
+  );
+}
+
+#stage[data-mode="dialogue"] #bottom-dock::after {
+  clip-path: polygon(
+    19.5px 0,
+    calc(100% - 27.5px) 0,
+    100% 27.5px,
+    100% calc(100% - 15.5px),
+    calc(100% - 15.5px) 100%,
+    15.5px 100%,
+    0 calc(100% - 15.5px),
+    0 19.5px
+  );
+}
+
+/* 6.1 探索态极矮 56px 操作栏内容层 */
+#dock-explore-view {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  gap: 10px;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.2s var(--pr-ease), visibility 0.2s var(--pr-ease);
+}
+
+#stage[data-mode="dialogue"] #dock-explore-view {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.ab-scroll {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.abtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 13px;
+  color: var(--pr-ink);
+  font-family: var(--pr-serif);
+  font-size: 13.5px;
+  font-weight: 600;
+  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+  transition: background 0.16s ease, color 0.16s ease;
+  white-space: nowrap;
+}
+
+.abtn + .abtn::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 14px;
+  background: rgba(96, 128, 180, 0.22);
+}
+
+.abtn svg {
+  color: var(--pr-ink-muted);
+  flex-shrink: 0;
+  transition: color 0.16s ease;
+}
+
+.abtn .ab-cost {
+  font-family: var(--pr-mono);
+  font-size: 11px;
+  color: var(--pr-ink-muted);
+  font-weight: 600;
+}
+
+.abtn:hover {
+  background: rgba(22, 88, 235, 0.09);
+  color: var(--pr-sapphire);
+}
+
+.abtn:hover svg,
+.abtn:hover .ab-cost {
+  color: var(--pr-sapphire);
+}
+
+.abtn.highlight-talk {
+  color: var(--pr-sapphire);
+  background: rgba(22, 88, 235, 0.07);
+}
+
+.abtn.highlight-talk svg {
+  color: var(--pr-sapphire);
+}
+
+.ab-next-pinned {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 26px;
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+  font-family: var(--pr-serif);
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  clip-path: polygon(13px 0%, calc(100% - 13px) 0%, 100% 50%, calc(100% - 13px) 100%, 13px 100%, 0% 50%);
+  filter: drop-shadow(0 5px 14px rgba(14, 43, 120, 0.28));
+  transition: filter 0.16s ease;
+  flex-shrink: 0;
+}
+
+.ab-next-pinned:hover {
+  filter: brightness(1.12) drop-shadow(0 7px 18px rgba(22, 88, 235, 0.36));
+}
+
+/* 6.2 对话态悬浮半透磨砂雪瓷薄幕内容层 */
+#dock-dialogue-view {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  padding: 26px 56px 20px 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.28s var(--pr-ease) 0.06s, visibility 0.28s var(--pr-ease) 0.06s;
+}
+
+#stage[data-mode="dialogue"] #dock-dialogue-view {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* 左上角探出式 45° 切角名牌（随说话者切换主题色条，零圆框套圆框） */
+#speaker-plate {
+  position: absolute;
+  left: 34px;
+  top: -19px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  filter: drop-shadow(0 8px 18px rgba(13, 43, 132, 0.26));
+  pointer-events: none;
+}
+
+#speaker-accent {
+  width: 6px;
+  height: 32px;
+  background: var(--pr-cyan);
+  clip-path: polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%);
+  margin-right: -3px;
+  position: relative;
+  z-index: 2;
+  transition: background 0.24s ease;
+}
+
+#speaker-plate[data-theme="alice"] #speaker-accent {
+  background: var(--pr-gold-pale);
+}
+
+#speaker-plate[data-theme="narrator"] #speaker-accent {
+  background: var(--pr-cyan-gleam);
+}
+
+#speaker-name-bar {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  height: 32px;
+  padding: 0 26px 0 18px;
+  background: var(--pr-sapphire-prism);
+  color: #FFFFFF;
+  clip-path: polygon(10px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+  transition: background 0.26s ease;
+}
+
+#speaker-plate[data-theme="alice"] #speaker-name-bar {
+  background: var(--pr-emerald-prism);
+}
+
+#speaker-plate[data-theme="narrator"] #speaker-name-bar {
+  background: var(--pr-slate-prism);
+}
+
+#speaker-name {
+  font-family: var(--pr-serif);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 32px;
+}
+
+#speaker-role {
+  font-family: var(--pr-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: rgba(224, 244, 255, 0.86);
+  line-height: 32px;
+}
+
+/* 对话幕右上顶沿轻量无框控制条（不挤压正文） */
+#dialogue-top-controls {
+  position: absolute;
+  right: 34px;
+  top: -24px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 6px;
+  background: rgba(250, 251, 253, 0.90);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1.5px solid rgba(22, 88, 235, 0.50);
+  border-bottom: 1px solid rgba(96, 128, 180, 0.24);
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  filter: drop-shadow(0 -4px 12px rgba(14, 43, 120, 0.08));
+}
+
+.dlg-step-badge {
+  font-family: var(--pr-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--pr-sapphire);
+  padding: 0 10px;
+}
+
+.dlg-ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--pr-ink-mid);
+  border-left: 1px solid rgba(96, 128, 180, 0.24);
+  transition: color 0.16s ease, background 0.16s ease;
+}
+
+.dlg-ctrl-btn:hover {
+  color: var(--pr-sapphire);
+  background: rgba(22, 88, 235, 0.08);
+}
+
+/* 轻小说正文排印区 */
+#dialogue-text {
+  font-family: var(--pr-serif);
+  font-size: var(--dialog-fs);
+  line-height: var(--dialog-lh);
+  letter-spacing: 0.03em;
+  color: var(--pr-ink);
+  max-width: 100%;
+  min-height: calc(var(--dialog-fs) * var(--dialog-lh) * 2);
+  display: flex;
+  align-items: center;
+}
+
+#dialogue-text-inner {
+  width: 100%;
+}
+
+#dialogue-text .accent-blue {
+  color: var(--pr-sapphire);
+  font-weight: 700;
+}
+
+#dialogue-text .accent-gold {
+  color: var(--pr-gold-deep);
+  font-weight: 700;
+}
+
+/* 右下角冰晶棱形继续提示符 */
+#dialogue-continue {
+  position: absolute;
+  right: 32px;
+  bottom: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--pr-sans);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--pr-ink-muted);
+  letter-spacing: 0.06em;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+#dialogue-continue.hidden-cue {
+  opacity: 0;
+}
+
+.continue-gem {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background: linear-gradient(135deg, var(--pr-cyan) 0%, var(--pr-sapphire) 100%);
+  transform: rotate(45deg);
+  animation: gemPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes gemPulse {
+  0%, 100% { opacity: 0.55; transform: rotate(45deg) scale(0.92); }
+  50% { opacity: 1; transform: rotate(45deg) scale(1.1); }
+}
+
+/* ==========================================================================
+   七、实时工程标尺辅助线层 (#ruler-overlay)
+   直观验证：立绘头顶线、眼部黄金线、底边 0.0px 基准线与薄幕覆写衣摆域
+   ========================================================================== */
+#ruler-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 35;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.16s var(--pr-ease);
+}
+
+#stage.rulers-on #ruler-overlay {
+  opacity: 1;
+}
+
+.ruler-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1.5px dashed rgba(22, 88, 235, 0.85);
+}
+
+.ruler-line.eye-line {
+  border-top: 1.5px dashed rgba(196, 164, 108, 0.96);
+}
+
+.ruler-line.bottom-line {
+  bottom: 0;
+  border-top: 2px solid rgba(14, 138, 100, 0.96);
+}
+
+.ruler-tag {
+  position: absolute;
+  right: 18px;
+  top: -11px;
+  padding: 2px 10px;
+  font-family: var(--pr-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: rgba(250, 251, 253, 0.94);
+  color: var(--pr-sapphire);
+  border-left: 2.5px solid var(--pr-sapphire);
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  box-shadow: 0 3px 10px rgba(14, 43, 120, 0.14);
+}
+
+.ruler-line.eye-line .ruler-tag {
+  color: var(--pr-gold-deep);
+  border-left-color: var(--pr-gold);
+}
+
+.ruler-line.bottom-line .ruler-tag {
+  top: -22px;
+  color: var(--pr-emerald-deep);
+  border-left-color: var(--pr-emerald);
+}
+
+/* 左侧覆写区域垂直标尺带 */
+.ruler-zone {
+  position: absolute;
+  left: 16px;
+  bottom: var(--dock-bottom);
+  width: 6px;
+  border-left: 2px solid var(--pr-sapphire);
+  border-top: 1.5px solid var(--pr-sapphire);
+  border-bottom: 1.5px solid var(--pr-sapphire);
+  transition: height 0.26s var(--pr-ease);
+}
+
+.ruler-zone-lbl {
+  position: absolute;
+  left: 0;
+  top: -28px;
+  padding: 2px 10px;
+  white-space: nowrap;
+  font-family: var(--pr-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--pr-sapphire);
+  background: rgba(250, 251, 253, 0.94);
+  border-left: 2.5px solid var(--pr-sapphire);
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  box-shadow: 0 3px 10px rgba(14, 43, 120, 0.14);
+}
+
+/* 屏幕底部轻量提示浮标（仅探索态左下显示，不遮角色） */
+#explore-tip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--dock-bottom) + var(--dock-explore-h) + 12px);
+  transform: translateX(-50%);
+  z-index: 15;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 16px;
+  background: rgba(250, 251, 253, 0.84);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(22, 88, 235, 0.38);
+  font-family: var(--pr-serif);
+  font-size: 12px;
+  color: var(--pr-ink-mid);
+  letter-spacing: 0.05em;
+  clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%);
+  pointer-events: none;
+  transition: opacity 0.22s var(--pr-ease);
+}
+
+#stage[data-mode="dialogue"] #explore-tip {
+  opacity: 0;
+}
+
+.tip-key {
+  font-family: var(--pr-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--pr-sapphire);
+}
+</style>
+</head>
+<body>
+<div id="app-shell">
+
+  <!-- ==================== 顶部实时验证标尺栏 ==================== -->
+  <header id="telemetry-bar" aria-label="方案 B 零跳动实时验证仪表">
+    <div class="tb-brand">
+      <span class="tb-plan-badge">方案 B</span>
+      <span class="tb-title">立绘固底解耦 × 悬浮磨砂雪瓷薄幕覆写</span>
+      <span class="tb-sub">bottom: 0 黄金基准线 · 仅衣摆叠覆 · 面部上身毫发无损</span>
+    </div>
+
+    <div class="tb-metrics" role="status" aria-live="polite">
+      <div class="tb-metric">
+        <span class="tb-metric-dot" id="dot-sylvia"></span>
+        <span class="tb-metric-lbl">希尔维亚 Δy</span>
+        <span class="tb-metric-val" id="val-sylvia-dy">0.0px</span>
+      </div>
+      <div class="tb-metric">
+        <span class="tb-metric-dot" id="dot-alice"></span>
+        <span class="tb-metric-lbl">爱丽丝 Δy</span>
+        <span class="tb-metric-val" id="val-alice-dy">0.0px</span>
+      </div>
+      <div class="tb-metric">
+        <span class="tb-metric-lbl">峰值漂移</span>
+        <span class="tb-metric-val peak-val" id="val-max-drift">0.0px</span>
+      </div>
+      <div class="tb-metric">
+        <span class="tb-metric-lbl">底栏状态</span>
+        <span class="tb-metric-val mode-val" id="val-mode-label">探索矮栏 56px</span>
+      </div>
+    </div>
+
+    <div class="tb-actions">
+      <button type="button" id="btn-toggle-mode" class="tb-btn-primary" title="快捷键 T：一键在 56px 极矮栏与 146px 悬浮薄幕间对比切换">
+        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+          <path d="M2.5 5.5h11M10.5 2.5l3 3-3 3M13.5 10.5h-11M5.5 7.5l-3 3 3 3"/>
+        </svg>
+        <span id="btn-toggle-text">切至悬浮薄幕对话</span>
+      </button>
+      <button type="button" id="btn-toggle-rulers" class="tb-btn-ghost" title="快捷键 G：显示/隐藏立绘锚点标尺辅助线" aria-pressed="false">
+        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+          <path d="M2 3.5h12M2 8h12M2 12.5h12"/>
+        </svg>
+        <span>标尺辅助线</span>
+      </button>
+      <button type="button" id="btn-reset-demo" class="tb-btn-ghost" title="重置对话与峰值计数">
+        <span>重置</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== 真实游戏场景舞台 ==================== -->
+  <main id="stage" data-mode="explore">
+    <div id="stage-bg" aria-hidden="true"></div>
+
+    <!-- 真实游戏 HUD -->
+    <div id="hud">
+      <div class="hud-left-stack">
+        <!-- 左上角切面雪瓷冰晶状态棱镜 -->
+        <div id="hud-left">
+          <div id="hud-face">
+            <img src="./assets/sylvia_teenage_normal.png" alt="希尔维亚头像" />
+          </div>
+          <div class="hud-cols">
+            <div class="hud-row1">
+              <span id="hud-name">希尔维亚</span>
+              <span id="hud-age">13岁</span>
+              <span id="hud-tier">水·中级</span>
+              <span id="hud-gold" title="金币">
+                <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="#1658EB" stroke-width="1.4" aria-hidden="true">
+                  <circle cx="8" cy="8" r="5.5" fill="rgba(22,88,235,0.12)"/>
+                  <polygon points="8,4.6 10.6,8 8,11.4 5.4,8" stroke="#38BDF8" stroke-width="1"/>
+                </svg>
+                <span>380</span>
+              </span>
+            </div>
+            <div class="hud-row2">
+              <span id="hud-date">第四年 · 蔷薇季</span>
+              <span id="hud-tod">晴 · 午后</span>
+            </div>
+            <div class="hud-bars">
+              <div class="hud-bar-line">
+                <span class="hb-lbl">生命</span>
+                <div class="bar hp"><i></i></div>
+                <em class="hb-val">180/180</em>
+              </div>
+              <div class="hud-bar-line">
+                <span class="hb-lbl">魔力</span>
+                <div class="bar mp"><i></i></div>
+                <em class="hb-val">238/260</em>
+              </div>
+              <div class="hud-bar-line">
+                <span class="hb-lbl">体力</span>
+                <div class="bar st"><i></i></div>
+                <em class="hb-val">8/10</em>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 地点切面冰晶牌 -->
+        <div id="loc-bar">
+          <span class="loc-crest" aria-hidden="true">
+            <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
+              <polygon points="8,1.5 14.5,8 8,14.5 1.5,8"/>
+              <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
+            </svg>
+          </span>
+          <span id="loc-name">公爵府 · 蔷薇庭院</span>
+          <span class="loc-tag">自由活动</span>
+        </div>
+      </div>
+
+      <!-- 右上角切面晶簇导航条 + 削角版 #sylvia-hub -->
+      <div class="hud-right-stack">
+        <div id="hud-right" role="toolbar" aria-label="快捷导航">
+          <button type="button" class="hud-chip" data-toast="战术演武场将在傍晚后开放切磋。">演武</button>
+          <button type="button" class="hud-chip" data-toast="当前四维：心智 64 · 魔导 78 · 礼仪 56 · 体魄 48">四维</button>
+          <button type="button" class="hud-chip" data-toast="综合属性面板：魔力盈溢已解锁至三阶。">面板</button>
+          <button type="button" class="hud-chip" data-toast="沉浸模式演示：当前正在展示方案 B 悬浮薄幕层。">沉浸</button>
+          <button type="button" class="hud-chip" data-toast="庭院 BGM：Peaceful 1 · 午后微风（静音示意）">音量</button>
+          <button type="button" class="hud-chip" data-toast="本页为方案 B 独立交互验证 Demo。">标题</button>
+        </div>
+
+        <!-- 右上削角版 #sylvia-hub -->
+        <div id="sylvia-hub" aria-label="希尔维亚养成中枢">
+          <div class="sh-corner-controls">
+            <button type="button" class="sh-mood-item" data-toast="希尔维亚当前心境「惬意 84」：蔷薇香气与微风令魔力回复更顺畅。">
+              <span class="hm-ico" aria-hidden="true">
+                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <polygon points="8,1.5 9.8,6.2 14.5,8 9.8,9.8 8,14.5 6.2,9.8 1.5,8 6.2,6.2"/>
+                </svg>
+              </span>
+              <span>惬意</span>
+              <em class="hm-val">84</em>
+            </button>
+            <span class="sh-dock-sep" aria-hidden="true"></span>
+            <button type="button" class="sh-dock-btn" data-toast="本季日程：午后庭院散步 · 晚间水系魔力微调。">
+              <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+                <rect x="2.2" y="3.2" width="11.6" height="10.4"/>
+                <path d="M5 1.8v2.6M11 1.8v2.6M2.2 6.5h11.6"/>
+              </svg>
+              <span>日程</span>
+            </button>
+            <span class="sh-dock-sep" aria-hidden="true"></span>
+            <button type="button" class="sh-dock-btn" data-toast="集市小铺：新到北境霜糖与白色风车手作折纸。">
+              <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+                <path d="M3 6.2h10l-.8 7H3.8L3 6.2z"/>
+                <path d="M5.5 6.2V4.8a2.5 2.5 0 015 0v1.4"/>
+              </svg>
+              <span>小铺</span>
+            </button>
+            <span class="sh-dock-sep" aria-hidden="true"></span>
+            <button type="button" class="sh-dock-btn" data-toast="火漆信匣：有 1 封雷纳德叔叔从北境寄来的见闻手札。">
+              <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+                <rect x="2" y="3.5" width="12" height="9"/>
+                <path d="M2 4l6 4.6L14 4"/>
+              </svg>
+              <span>信匣</span>
+              <span class="sh-mail-dot" aria-hidden="true"></span>
+            </button>
+          </div>
+          <div id="sh-toast" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 永远固底解耦的双立绘层 ==================== -->
+    <div id="portraits">
+      <div class="p-slot" id="slot-sylvia" data-char="sylvia" role="button" tabindex="0" aria-label="点击与希尔维亚交谈">
+        <img id="img-sylvia" src="./assets/sylvia_teenage_normal.png" alt="希尔维亚立绘" />
+        <div class="p-interact-tag">
+          <span class="p-interact-dia" aria-hidden="true"></span>
+          <span class="p-interact-name">希尔维亚</span>
+          <span class="p-interact-hint">点击交谈</span>
+        </div>
+      </div>
+
+      <div class="p-slot" id="slot-alice" data-char="alice" role="button" tabindex="0" aria-label="点击与爱丽丝交谈">
+        <img id="img-alice" src="./assets/alice_teenage_normal.png" alt="爱丽丝立绘" />
+        <div class="p-interact-tag">
+          <span class="p-interact-dia" aria-hidden="true"></span>
+          <span class="p-interact-name">爱丽丝</span>
+          <span class="p-interact-hint">点击交谈</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 悬浮切角分支选项层（居于对话幕正上方，不推挤立绘） ==================== -->
+    <div id="choices-layer" role="group" aria-label="对话分支选项">
+      <div class="choice-header">请选择回应</div>
+      <button type="button" class="choice-btn" data-choice="0">
+        <span class="choice-num">01</span>
+        <span>指尖凝一缕清风，陪她试着让风车转慢半拍</span>
+      </button>
+      <button type="button" class="choice-btn" data-choice="1">
+        <span class="choice-num">02</span>
+        <span>顺手折一枝白蔷薇，别在她发侧的银发夹旁</span>
+      </button>
+      <button type="button" class="choice-btn" data-choice="2">
+        <span class="choice-num">03</span>
+        <span>静静并肩听一会儿喷泉水声，什么也不急着说</span>
+      </button>
+    </div>
+
+    <!-- 探索态轻提示 -->
+    <div id="explore-tip" aria-hidden="true">
+      <span>点击立绘进入对话 · 按 <strong class="tip-key">T</strong> 切换对比</span>
+    </div>
+
+    <!-- ==================== 同位舒展底部基座（56px 削角矮栏 ↔ 146px 悬浮雪瓷薄幕） ==================== -->
+    <section id="bottom-dock" aria-label="底部探索操作栏与悬浮对话幕">
+      <!-- A. 自由探索极矮 56px 操作栏 -->
+      <nav id="dock-explore-view" aria-label="自由行动栏">
+        <div class="ab-scroll">
+          <button type="button" class="abtn" data-act="explore">
+            <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.45" aria-hidden="true"><polygon points="2.5,4.5 6.8,3 11.2,4.8 15.5,3.2 15.5,13.5 11.2,15 6.8,13.2 2.5,14.8"/><line x1="6.8" y1="3" x2="6.8" y2="13.2"/><line x1="11.2" y1="4.8" x2="11.2" y2="15"/></svg>
+            <span>地图</span>
+          </button>
+          <button type="button" class="abtn highlight-talk" data-act="talk" id="btn-bar-talk">
+            <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 4.5h12v7.8H7.2L4 15v-2.7H3V4.5z"/></svg>
+            <span>交谈</span>
+            <small class="ab-cost">体1</small>
+          </button>
+          <button type="button" class="abtn" data-act="train">
+            <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.45" aria-hidden="true"><polygon points="9,2 11,7 16,9 11,11 9,16 7,11 2,9 7,7"/></svg>
+            <span>修行</span>
+            <small class="ab-cost">体3</small>
+          </button>
+          <button type="button" class="abtn" data-act="study">
+            <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.45" aria-hidden="true"><path d="M3 3.5h5.2a1.8 1.8 0 011.8 1.8V15H3V3.5zM15 3.5H9.8A1.8 1.8 0 008 5.3V15h7V3.5z"/></svg>
+            <span>学习</span>
+            <small class="ab-cost">体2</small>
+          </button>
+          <button type="button" class="abtn" data-act="course">
+            <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.45" aria-hidden="true"><circle cx="9" cy="9" r="6.2"/><path d="M9 5.5v3.8l2.5 1.5"/></svg>
+            <span>课程</span>
+            <small class="ab-cost">体2+</small>
+          </button>
+          <button type="button" class="abtn" data-act="rest">
+            <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.45" aria-hidden="true"><path d="M13.8 11.4A5.5 5.5 0 016.6 4.2a5.8 5.8 0 107.2 7.2z"/></svg>
+            <span>休息</span>
+            <small class="ab-cost">恢复</small>
+          </button>
+          <button type="button" class="abtn" data-act="item">
+            <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.45" aria-hidden="true"><path d="M4.5 6.5h9l.8 8H3.7l.8-8z"/><path d="M6.5 6.5V5a2.5 2.5 0 015 0v1.5"/></svg>
+            <span>物品</span>
+          </button>
+          <button type="button" class="abtn" data-act="encounter">
+            <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.45" aria-hidden="true"><rect x="3.5" y="2.5" width="11" height="13"/><path d="M9 6.2l1.1 2.2 2.4.4-1.7 1.7.4 2.4L9 11.7l-2.2 1.2.4-2.4-1.7-1.7 2.4-.4z"/></svg>
+            <span>奇遇</span>
+          </button>
+        </div>
+        <button type="button" class="ab-next-pinned" data-act="next">
+          <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><polygon points="5,4 11.5,9 5,14"/><line x1="13" y1="4.5" x2="13" y2="13.5"/></svg>
+          <span>下个季度</span>
+        </button>
+      </nav>
+
+      <!-- B. 悬浮半透磨砂雪瓷切角对话幕 -->
+      <div id="dock-dialogue-view" role="region" aria-label="悬浮对话幕">
+        <div id="speaker-plate" data-theme="alice">
+          <span id="speaker-accent" aria-hidden="true"></span>
+          <div id="speaker-name-bar">
+            <span id="speaker-name">爱丽丝</span>
+            <span id="speaker-role">ALICE · 维斯特利亚三女</span>
+          </div>
+        </div>
+
+        <div id="dialogue-top-controls">
+          <span class="dlg-step-badge" id="dlg-step-badge">1 / 6</span>
+          <button type="button" class="dlg-ctrl-btn" id="btn-dlg-restart" title="重头开始本段对话">重听</button>
+          <button type="button" class="dlg-ctrl-btn" id="btn-dlg-close" title="快捷键 Esc：收起对话幕回到 56px 极矮栏">收起回探索 (Esc)</button>
+        </div>
+
+        <div id="dialogue-text">
+          <div id="dialogue-text-inner"></div>
+        </div>
+
+        <div id="dialogue-continue">
+          <span id="continue-label">点击薄幕继续</span>
+          <span class="continue-gem" aria-hidden="true"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 实时工程标尺辅助线层 ==================== -->
+    <div id="ruler-overlay" aria-hidden="true">
+      <div class="ruler-line" id="ruler-top">
+        <span class="ruler-tag" id="ruler-top-tag">立绘顶沿锚点 TOP = —</span>
+      </div>
+      <div class="ruler-line eye-line" id="ruler-eye">
+        <span class="ruler-tag" id="ruler-eye-tag">面部视线黄金域（100% 零遮挡）</span>
+      </div>
+      <div class="ruler-line bottom-line" id="ruler-bottom">
+        <span class="ruler-tag" id="ruler-bottom-tag">舞台基准底线 BOTTOM = 0.0px · Δy = 0.0px</span>
+      </div>
+      <div class="ruler-zone" id="ruler-zone">
+        <span class="ruler-zone-lbl" id="ruler-zone-lbl">探索矮栏 56px</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ------------------------------------------------------------------
+     一、立绘资产预加载（杜绝首次切换差分瞬间闪烁）
+     ------------------------------------------------------------------ */
+  const PORTRAIT_MAP = {
+    sylvia: {
+      normal: './assets/sylvia_teenage_normal.png',
+      smile: './assets/sylvia_teenage_smile.png',
+      happy: './assets/sylvia_teenage_happy.png'
+    },
+    alice: {
+      normal: './assets/alice_teenage_normal.png',
+      happy: './assets/alice_teenage_happy.png',
+      shy: './assets/alice_teenage_shy.png'
+    }
+  };
+
+  Object.values(PORTRAIT_MAP).forEach((emotions) => {
+    Object.values(emotions).forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  });
+
+  /* ------------------------------------------------------------------
+     二、原著轻小说质感庭院日常脚本（支持点击任意角色切入 + 悬浮选项分支）
+     ------------------------------------------------------------------ */
+  const SPEAKER_META = {
+    sylvia: { name: '希尔维亚', role: 'SYLVIA · 公爵府次女', theme: 'sylvia' },
+    alice: { name: '爱丽丝', role: 'ALICE · 公爵府三女', theme: 'alice' },
+    narrator: { name: '蔷薇庭院', role: 'ROSE GARDEN · 午后', theme: 'narrator' }
+  };
+
+  function buildScript(opener) {
+    const firstLine = opener === 'sylvia'
+      ? {
+          speaker: 'sylvia',
+          sylviaEmo: 'smile',
+          aliceEmo: 'normal',
+          html: '喷泉边的水汽把午后的热意压下去不少。爱丽丝，你手里的白色纸风车，刚刚又在听南墙那边的风吗？'
+        }
+      : {
+          speaker: 'alice',
+          sylviaEmo: 'normal',
+          aliceEmo: 'normal',
+          html: '姐姐……南面花架吹过来的风，带着白蔷薇晒暖后的淡甜。刚才纸风车轻轻转了半圈，又安静地停在膝上了。'
+        };
+
+    const secondLine = opener === 'sylvia'
+      ? {
+          speaker: 'alice',
+          sylviaEmo: 'smile',
+          aliceEmo: 'normal',
+          html: '嗯……南面花架的蔷薇今天开得最齐，风掠过花瓣的时候声音很软，像谁在石阶旁轻轻翻书一样。'
+        }
+      : {
+          speaker: 'sylvia',
+          sylviaEmo: 'smile',
+          aliceEmo: 'normal',
+          html: '难怪你一直望着石柱那边出神。连水流落进池里的响动，今天听起来都比平时慢上几分。'
+        };
+
+    return [
+      firstLine,
+      secondLine,
+      {
+        speaker: 'sylvia',
+        sylviaEmo: 'normal',
+        aliceEmo: 'normal',
+        html: '贝蒂上午还在练武场喊着要练到太阳落山，这会儿大概正缠着雷纳德叔叔拆解剑步。庭院里倒正好清静下来。'
+      },
+      {
+        speaker: 'alice',
+        sylviaEmo: 'normal',
+        aliceEmo: 'happy',
+        html: '有姐姐在旁边坐着，风向好像也会跟着安定下来。下午茶送来之前，姐姐想做点什么呢？',
+        hasChoice: true
+      },
+      /* 索引 4 与 5 由选项动态填充 */
+      null,
+      null
+    ];
+  }
+
+  const BRANCH_ENDINGS = [
+    [
+      {
+        speaker: 'alice',
+        sylviaEmo: 'smile',
+        aliceEmo: 'happy',
+        html: '呀……纸叶真的听话地慢下来了。水系的凉意混进微风里，指尖拂过去的时候，像接住了一片不会融化的雪。'
+      },
+      {
+        speaker: 'sylvia',
+        sylviaEmo: 'happy',
+        aliceEmo: 'happy',
+        html: '收力比使力更讲究分寸。既然风儿肯听你的话，待会儿茶点到了，我们就在树荫下再慢慢试两回吧。'
+      }
+    ],
+    [
+      {
+        speaker: 'alice',
+        sylviaEmo: 'smile',
+        aliceEmo: 'shy',
+        html: '唔……姐姐的手指有点凉，不过花瓣贴在耳侧很舒服。等下回去书房，可不能让贝蒂一眼就发现我偷偷藏了花。'
+      },
+      {
+        speaker: 'sylvia',
+        sylviaEmo: 'happy',
+        aliceEmo: 'shy',
+        html: '放心，白色蔷薇和你发丝几乎融在一处，不凑近瞧还真看不出来。再说，这本来就是庭院送给听风人的回礼。'
+      }
+    ],
+    [
+      {
+        speaker: 'sylvia',
+        sylviaEmo: 'smile',
+        aliceEmo: 'normal',
+        html: '什么任务也不排、什么魔导书也不翻，只看着喷泉水珠落进石池里——难得这样发一会儿呆，才算真正过上了悠闲日子。'
+      },
+      {
+        speaker: 'alice',
+        sylviaEmo: 'smile',
+        aliceEmo: 'happy',
+        html: '嗯。那我就陪姐姐一起发呆……如果风突然变凉了，我会记得第一时间告诉姐姐的。'
+      }
+    ]
+  ];
+
+  /* ------------------------------------------------------------------
+     三、DOM 引用与状态机
+     ------------------------------------------------------------------ */
+  const stage = document.getElementById('stage');
+  const slotSylvia = document.getElementById('slot-sylvia');
+  const slotAlice = document.getElementById('slot-alice');
+  const imgSylvia = document.getElementById('img-sylvia');
+  const imgAlice = document.getElementById('img-alice');
+  const dock = document.getElementById('bottom-dock');
+  const dockDialogueView = document.getElementById('dock-dialogue-view');
+  const choicesLayer = document.getElementById('choices-layer');
+
+  const speakerPlate = document.getElementById('speaker-plate');
+  const speakerNameEl = document.getElementById('speaker-name');
+  const speakerRoleEl = document.getElementById('speaker-role');
+  const dialogueTextInner = document.getElementById('dialogue-text-inner');
+  const dialogueContinue = document.getElementById('dialogue-continue');
+  const continueLabel = document.getElementById('continue-label');
+  const stepBadge = document.getElementById('dlg-step-badge');
+
+  const valSylviaDy = document.getElementById('val-sylvia-dy');
+  const valAliceDy = document.getElementById('val-alice-dy');
+  const valMaxDrift = document.getElementById('val-max-drift');
+  const valModeLabel = document.getElementById('val-mode-label');
+  const dotSylvia = document.getElementById('dot-sylvia');
+  const dotAlice = document.getElementById('dot-alice');
+  const btnToggleMode = document.getElementById('btn-toggle-mode');
+  const btnToggleText = document.getElementById('btn-toggle-text');
+  const btnToggleRulers = document.getElementById('btn-toggle-rulers');
+  const btnResetDemo = document.getElementById('btn-reset-demo');
+  const btnDlgRestart = document.getElementById('btn-dlg-restart');
+  const btnDlgClose = document.getElementById('btn-dlg-close');
+  const btnBarTalk = document.getElementById('btn-bar-talk');
+
+  const shToast = document.getElementById('sh-toast');
+  const rulerTop = document.getElementById('ruler-top');
+  const rulerTopTag = document.getElementById('ruler-top-tag');
+  const rulerEye = document.getElementById('ruler-eye');
+  const rulerBottomTag = document.getElementById('ruler-bottom-tag');
+  const rulerZone = document.getElementById('ruler-zone');
+  const rulerZoneLbl = document.getElementById('ruler-zone-lbl');
+
+  let mode = 'explore'; // 'explore' | 'dialogue'
+  let currentOpener = 'alice';
+  let script = buildScript('alice');
+  let stepIndex = 0;
+  let awaitingChoice = false;
+  let typingTimer = null;
+  let isTyping = false;
+  let fullLineText = '';
+  let toastTimer = null;
+
+  /* 基准锚点记录（每次窗口 resize 重新标定基准） */
+  let baseline = {
+    sylviaTop: null,
+    sylviaBottom: null,
+    aliceTop: null,
+    aliceBottom: null,
+    maxDrift: 0
+  };
+
+  function showToast(msg) {
+    shToast.textContent = msg;
+    shToast.classList.add('visible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      shToast.classList.remove('visible');
+    }, 2600);
+  }
+
+  function setPortraitEmo(charKey, emo) {
+    const targetImg = charKey === 'sylvia' ? imgSylvia : imgAlice;
+    const src = PORTRAIT_MAP[charKey][emo] || PORTRAIT_MAP[charKey].normal;
+    if (targetImg.getAttribute('src') !== src) {
+      targetImg.setAttribute('src', src);
+    }
+  }
+
+  function clearTyping() {
+    if (typingTimer) {
+      clearInterval(typingTimer);
+      typingTimer = null;
+    }
+    isTyping = false;
+  }
+
+  function renderStep(instant) {
+    const line = script[stepIndex];
+    if (!line) return;
+
+    const meta = SPEAKER_META[line.speaker] || SPEAKER_META.narrator;
+    speakerPlate.setAttribute('data-theme', meta.theme);
+    speakerNameEl.textContent = meta.name;
+    speakerRoleEl.textContent = meta.role;
+    stepBadge.textContent = (stepIndex + 1) + ' / ' + script.length;
+
+    /* 切换表情与说话者聚焦光影（严格零位移） */
+    setPortraitEmo('sylvia', line.sylviaEmo || 'normal');
+    setPortraitEmo('alice', line.aliceEmo || 'normal');
+
+    slotSylvia.classList.toggle('speaking', line.speaker === 'sylvia');
+    slotSylvia.classList.toggle('dim', line.speaker === 'alice');
+    slotAlice.classList.toggle('speaking', line.speaker === 'alice');
+    slotAlice.classList.toggle('dim', line.speaker === 'sylvia');
+
+    /* 处理选项状态 */
+    awaitingChoice = false;
+    choicesLayer.classList.remove('open');
+
+    /* 文本逐字浮现 */
+    clearTyping();
+    fullLineText = line.html;
+
+    const finishLine = () => {
+      clearTyping();
+      dialogueTextInner.textContent = fullLineText;
+      if (line.hasChoice) {
+        awaitingChoice = true;
+        choicesLayer.classList.add('open');
+        dialogueContinue.classList.add('hidden-cue');
+      } else {
+        dialogueContinue.classList.remove('hidden-cue');
+        continueLabel.textContent = stepIndex >= script.length - 1 ? '点击收起回探索栏' : '点击薄幕继续';
+      }
+    };
+
+    if (instant) {
+      finishLine();
+      return;
+    }
+
+    isTyping = true;
+    dialogueContinue.classList.add('hidden-cue');
+    let cursor = 0;
+    dialogueTextInner.textContent = '';
+    typingTimer = setInterval(() => {
+      cursor += 2;
+      if (cursor >= fullLineText.length) {
+        finishLine();
+      } else {
+        dialogueTextInner.textContent = fullLineText.slice(0, cursor);
+      }
+    }, 20);
+  }
+
+  function enterDialogue(opener, restart) {
+    if (opener && (restart || mode !== 'dialogue')) {
+      currentOpener = opener;
+      if (restart || stepIndex === 0) {
+        script = buildScript(currentOpener);
+        stepIndex = 0;
+      }
+    }
+    mode = 'dialogue';
+    stage.setAttribute('data-mode', 'dialogue');
+    updateModeUI();
+    renderStep(false);
+    sampleTelemetry();
+  }
+
+  function exitDialogue() {
+    clearTyping();
+    mode = 'explore';
+    awaitingChoice = false;
+    choicesLayer.classList.remove('open');
+    stage.setAttribute('data-mode', 'explore');
+    slotSylvia.classList.remove('speaking', 'dim');
+    slotAlice.classList.remove('speaking', 'dim');
+    setPortraitEmo('sylvia', 'normal');
+    setPortraitEmo('alice', 'normal');
+    updateModeUI();
+    sampleTelemetry();
+  }
+
+  function updateModeUI() {
+    const dialogH = getComputedStyle(document.documentElement).getPropertyValue('--dock-dialogue-h').trim() || '146px';
+    if (mode === 'dialogue') {
+      valModeLabel.textContent = '悬浮薄幕 ' + dialogH;
+      btnToggleText.textContent = '切回极矮探索栏 (56px)';
+    } else {
+      valModeLabel.textContent = '探索矮栏 56px';
+      btnToggleText.textContent = '切至悬浮薄幕对话';
+    }
+    updateRulerZone();
+  }
+
+  function advanceDialogue() {
+    if (mode !== 'dialogue') return;
+    if (awaitingChoice) return;
+    if (isTyping) {
+      /* 点击快进当前句 */
+      clearTyping();
+      const line = script[stepIndex];
+      dialogueTextInner.textContent = fullLineText;
+      if (line && line.hasChoice) {
+        awaitingChoice = true;
+        choicesLayer.classList.add('open');
+        dialogueContinue.classList.add('hidden-cue');
+      } else {
+        dialogueContinue.classList.remove('hidden-cue');
+        continueLabel.textContent = stepIndex >= script.length - 1 ? '点击收起回探索栏' : '点击薄幕继续';
+      }
+      return;
+    }
+    if (stepIndex < script.length - 1) {
+      stepIndex += 1;
+      renderStep(false);
+    } else {
+      /* 对话完毕，优雅收起回极矮 56px 底栏并重置为下次准备 */
+      exitDialogue();
+      script = buildScript(currentOpener);
+      stepIndex = 0;
+    }
+  }
+
+  function pickChoice(idx) {
+    if (!awaitingChoice) return;
+    const branch = BRANCH_ENDINGS[idx] || BRANCH_ENDINGS[0];
+    script[4] = branch[0];
+    script[5] = branch[1];
+    awaitingChoice = false;
+    choicesLayer.classList.remove('open');
+    stepIndex = 4;
+    renderStep(false);
+  }
+
+  /* ------------------------------------------------------------------
+     四、实时 Δy 锚点监测仪表 + 动态工程标尺辅助线
+     ------------------------------------------------------------------ */
+  function calibrateBaseline() {
+    const rs = imgSylvia.getBoundingClientRect();
+    const ra = imgAlice.getBoundingClientRect();
+    if (rs.height > 0 && ra.height > 0) {
+      baseline.sylviaTop = rs.top;
+      baseline.sylviaBottom = rs.bottom;
+      baseline.aliceTop = ra.top;
+      baseline.aliceBottom = ra.bottom;
+      baseline.maxDrift = 0;
+      updateRulersGeometry();
+      sampleTelemetry();
+    }
+  }
+
+  function updateRulerZone() {
+    const dockH = dock.getBoundingClientRect().height;
+    rulerZone.style.height = Math.round(dockH) + 'px';
+    rulerZoneLbl.textContent = mode === 'dialogue'
+      ? '悬浮薄幕覆写域 ' + Math.round(dockH) + 'px（仅轻覆衣摆）'
+      : '探索极矮栏 ' + Math.round(dockH) + 'px';
+  }
+
+  function updateRulersGeometry() {
+    const stageRect = stage.getBoundingClientRect();
+    const rs = imgSylvia.getBoundingClientRect();
+    if (rs.height <= 0) return;
+
+    const topRel = rs.top - stageRect.top;
+    const eyeRel = topRel + rs.height * 0.30;
+
+    rulerTop.style.top = topRel.toFixed(1) + 'px';
+    rulerTopTag.textContent = '立绘顶沿锚点 TOP = ' + topRel.toFixed(1) + 'px（恒定锁死）';
+
+    rulerEye.style.top = eyeRel.toFixed(1) + 'px';
+    rulerBottomTag.textContent = '舞台基准底线 BOTTOM = 0.0px · 实时 Δy = 0.0px';
+    updateRulerZone();
+  }
+
+  function sampleTelemetry() {
+    const rs = imgSylvia.getBoundingClientRect();
+    const ra = imgAlice.getBoundingClientRect();
+    if (baseline.sylviaTop === null || rs.height === 0 || ra.height === 0) {
+      return;
+    }
+
+    const dyS = Math.max(Math.abs(rs.top - baseline.sylviaTop), Math.abs(rs.bottom - baseline.sylviaBottom));
+    const dyA = Math.max(Math.abs(ra.top - baseline.aliceTop), Math.abs(ra.bottom - baseline.aliceBottom));
+    const currentMax = Math.max(dyS, dyA);
+    if (currentMax > baseline.maxDrift) {
+      baseline.maxDrift = currentMax;
+    }
+
+    const fmt = (v) => (v < 0.05 ? '0.0px' : v.toFixed(1) + 'px');
+    valSylviaDy.textContent = fmt(dyS);
+    valAliceDy.textContent = fmt(dyA);
+    valMaxDrift.textContent = fmt(baseline.maxDrift);
+    dotSylvia.classList.toggle('warn', dyS >= 0.5);
+    dotAlice.classList.toggle('warn', dyA >= 0.5);
+
+    if (stage.classList.contains('rulers-on')) {
+      updateRulerZone();
+    }
+  }
+
+  /* 在过渡动画期间高频采样，证明每一帧均 0.0px */
+  let rafMonitorId = null;
+  function startTransientSampling(durationMs) {
+    const endAt = performance.now() + durationMs;
+    if (rafMonitorId) cancelAnimationFrame(rafMonitorId);
+    function tick(now) {
+      sampleTelemetry();
+      if (now < endAt) {
+        rafMonitorId = requestAnimationFrame(tick);
+      } else {
+        rafMonitorId = null;
+      }
+    }
+    rafMonitorId = requestAnimationFrame(tick);
+  }
+
+  /* 暴露只读测量句柄，便于自动化验收程序核对 */
+  window.__DIALOGUE_DEMO_B__ = {
+    getMode: () => mode,
+    getBaseline: () => ({ ...baseline }),
+    measurePortraits: () => {
+      const stageRect = stage.getBoundingClientRect();
+      const s = imgSylvia.getBoundingClientRect();
+      const a = imgAlice.getBoundingClientRect();
+      const d = dock.getBoundingClientRect();
+      return {
+        mode,
+        stageHeight: stageRect.height,
+        dockHeight: d.height,
+        dockTop: d.top,
+        sylvia: { top: s.top, bottom: s.bottom, height: s.height },
+        alice: { top: a.top, bottom: a.bottom, height: a.height },
+        deltaY: {
+          sylviaTop: baseline.sylviaTop === null ? 0 : +(s.top - baseline.sylviaTop).toFixed(3),
+          sylviaBottom: baseline.sylviaBottom === null ? 0 : +(s.bottom - baseline.sylviaBottom).toFixed(3),
+          aliceTop: baseline.aliceTop === null ? 0 : +(a.top - baseline.aliceTop).toFixed(3),
+          aliceBottom: baseline.aliceBottom === null ? 0 : +(a.bottom - baseline.aliceBottom).toFixed(3),
+          maxDrift: +baseline.maxDrift.toFixed(3)
+        }
+      };
+    },
+    setMode: (nextMode) => {
+      if (nextMode === 'dialogue') {
+        enterDialogue(currentOpener, false);
+        startTransientSampling(500);
+      } else {
+        exitDialogue();
+        startTransientSampling(500);
+      }
+    },
+    showInstantStep: (idx) => {
+      if (mode !== 'dialogue') enterDialogue(currentOpener, false);
+      stepIndex = Math.max(0, Math.min(idx, script.length - 1));
+      renderStep(true);
+      sampleTelemetry();
+    }
+  };
+
+  /* ------------------------------------------------------------------
+     五、交互事件绑定
+     ------------------------------------------------------------------ */
+  slotSylvia.addEventListener('click', () => {
+    if (mode === 'explore') {
+      enterDialogue('sylvia', true);
+      startTransientSampling(500);
+    } else {
+      advanceDialogue();
+    }
+  });
+
+  slotAlice.addEventListener('click', () => {
+    if (mode === 'explore') {
+      enterDialogue('alice', true);
+      startTransientSampling(500);
+    } else {
+      advanceDialogue();
+    }
+  });
+
+  slotSylvia.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      slotSylvia.click();
+    }
+  });
+
+  slotAlice.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      slotAlice.click();
+    }
+  });
+
+  btnBarTalk.addEventListener('click', () => {
+    enterDialogue('alice', true);
+    startTransientSampling(500);
+  });
+
+  /* 其他底栏按钮与 HUD 按钮提供轻盈雪瓷提示 */
+  document.querySelectorAll('#dock-explore-view .abtn:not(#btn-bar-talk), .ab-next-pinned').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const label = btn.textContent.trim().replace(/\s+/g, ' ');
+      showToast('自由探索行动「' + label + '」：点击立绘或「交谈」体验方案 B 悬浮对话幕。');
+    });
+  });
+
+  document.querySelectorAll('[data-toast]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      showToast(btn.getAttribute('data-toast'));
+    });
+  });
+
+  /* 对话幕本体点击推进 */
+  dockDialogueView.addEventListener('click', (e) => {
+    if (e.target.closest('#dialogue-top-controls')) return;
+    advanceDialogue();
+  });
+
+  btnDlgRestart.addEventListener('click', (e) => {
+    e.stopPropagation();
+    script = buildScript(currentOpener);
+    stepIndex = 0;
+    renderStep(false);
+  });
+
+  btnDlgClose.addEventListener('click', (e) => {
+    e.stopPropagation();
+    exitDialogue();
+    startTransientSampling(500);
+  });
+
+  /* 分支选项点击 */
+  choicesLayer.querySelectorAll('.choice-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const idx = Number(btn.getAttribute('data-choice') || '0');
+      pickChoice(idx);
+      startTransientSampling(300);
+    });
+  });
+
+  /* 顶部一键对比切换 */
+  btnToggleMode.addEventListener('click', () => {
+    if (mode === 'explore') {
+      enterDialogue(currentOpener, false);
+    } else {
+      exitDialogue();
+    }
+    startTransientSampling(500);
+  });
+
+  /* 标尺辅助线开关 */
+  btnToggleRulers.addEventListener('click', () => {
+    const on = stage.classList.toggle('rulers-on');
+    btnToggleRulers.classList.toggle('active', on);
+    btnToggleRulers.setAttribute('aria-pressed', String(on));
+    if (on) {
+      updateRulersGeometry();
+    }
+  });
+
+  /* 重置演示 */
+  btnResetDemo.addEventListener('click', () => {
+    exitDialogue();
+    currentOpener = 'alice';
+    script = buildScript('alice');
+    stepIndex = 0;
+    calibrateBaseline();
+    showToast('已重置至自由探索初始状态（56px 极矮栏）。');
+  });
+
+  /* 快捷键支持 */
+  window.addEventListener('keydown', (e) => {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    const k = e.key.toLowerCase();
+    if (k === 't') {
+      e.preventDefault();
+      btnToggleMode.click();
+    } else if (k === 'g') {
+      e.preventDefault();
+      btnToggleRulers.click();
+    } else if (k === 'escape' && mode === 'dialogue') {
+      e.preventDefault();
+      exitDialogue();
+      startTransientSampling(500);
+    } else if ((e.key === ' ' || e.key === 'Enter') && mode === 'dialogue' && !awaitingChoice) {
+      if (document.activeElement && document.activeElement.tagName === 'BUTTON') return;
+      e.preventDefault();
+      advanceDialogue();
+    } else if (awaitingChoice && ['1', '2', '3'].includes(e.key)) {
+      e.preventDefault();
+      pickChoice(Number(e.key) - 1);
+    }
+  });
+
+  /* 首次图像就绪与窗口缩放时标定黄金基准线 */
+  function waitReadyAndCalibrate() {
+    const imgs = [imgSylvia, imgAlice];
+    let remaining = imgs.length;
+    const onOne = () => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        requestAnimationFrame(() => {
+          calibrateBaseline();
+          updateModeUI();
+        });
+      }
+    };
+    imgs.forEach((im) => {
+      if (im.complete && im.naturalHeight > 0) {
+        onOne();
+      } else {
+        im.addEventListener('load', onOne, { once: true });
+      }
+    });
+  }
+
+  window.addEventListener('resize', () => {
+    requestAnimationFrame(() => {
+      calibrateBaseline();
+      updateModeUI();
+    });
+  });
+
+  dock.addEventListener('transitionend', () => {
+    sampleTelemetry();
+    if (stage.classList.contains('rulers-on')) {
+      updateRulerZone();
+    }
+  });
+
+  waitReadyAndCalibrate();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1708 @@
+{
+  "page_errors": [],
+  "console_errors": [],
+  "rows": [
+    {
+      "row_id": "g1_hand_ice_crystal",
+      "title": "① 单体冰主炮：hand_ice_crystal（凝华冰晶 · 0%常规 · 雪瓷浅底）",
+      "subtitle": "路由: magic_circle_cast → ice_lance(190ms) → ice_shatter + hit_spark",
+      "clip": {
+        "x": 23,
+        "y": 36,
+        "width": 1394,
+        "height": 780
+      },
+      "trigger_res": {
+        "ok": true
+      },
+      "peak_idx": 3,
+      "frames": [
+        {
+          "idx": 0,
+          "t_ms": 0,
+          "label": "指令触发(查抢跑)",
+          "path": "/tmp/vfx_audit/frames/g1_hand_ice_crystal_f1_0ms.png",
+          "active_fx": [
+            "magic_circle_cast"
+          ],
+          "fx_count": 1,
+          "player_pose": "windup",
+          "player_frame": 3,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "-26"
+          ],
+          "hp_dropped": 26,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 1,
+          "t_ms": 96,
+          "label": "法阵前摇",
+          "path": "/tmp/vfx_audit/frames/g1_hand_ice_crystal_f2_96ms.png",
+          "active_fx": [
+            "magic_circle_cast"
+          ],
+          "fx_count": 1,
+          "player_pose": "windup",
+          "player_frame": 3,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "-26"
+          ],
+          "hp_dropped": 26,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 2,
+          "t_ms": 224,
+          "label": "冰枪飞行中段",
+          "path": "/tmp/vfx_audit/frames/g1_hand_ice_crystal_f3_224ms.png",
+          "active_fx": [
+            "magic_circle_cast",
+            "ice_lance"
+          ],
+          "fx_count": 2,
+          "player_pose": "strike",
+          "player_frame": 5,
+          "player_dx": 12,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "-26"
+          ],
+          "hp_dropped": 26,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 3,
+          "t_ms": 336,
+          "label": "接触命中瞬间",
+          "path": "/tmp/vfx_audit/frames/g1_hand_ice_crystal_f4_336ms.png",
+          "active_fx": [
+            "magic_circle_cast",
+            "ice_shatter"
+          ],
+          "fx_count": 2,
+          "player_pose": "strike",
+          "player_frame": 5,
+          "player_dx": 12,
+          "enemy0_pose": "hurt",
+          "enemy0_dx": 0.8,
+          "floats": [
+            "-26"
+          ],
+          "hp_dropped": 26,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 0.06,
+          "aura_tier": 0
+        },
+        {
+          "idx": 4,
+          "t_ms": 480,
+          "label": "碎冰爆发峰值",
+          "path": "/tmp/vfx_audit/frames/g1_hand_ice_crystal_f5_480ms.png",
+          "active_fx": [
+            "magic_circle_cast",
+            "ice_shatter"
+          ],
+          "fx_count": 2,
+          "player_pose": "strike",
+          "player_frame": 5,
+          "player_dx": 0.3,
+          "enemy0_pose": "hurt",
+          "enemy0_dx": -0.7,
+          "floats": [
+            "-26"
+          ],
+          "hp_dropped": 26,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 5,
+          "t_ms": 768,
+          "label": "余波消散",
+          "path": "/tmp/vfx_audit/frames/g1_hand_ice_crystal_f6_768ms.png",
+          "active_fx": [
+            "magic_circle_cast",
+            "ice_shatter"
+          ],
+          "fx_count": 2,
+          "player_pose": "idle",
+          "player_frame": 1,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "-26"
+          ],
+          "hp_dropped": 26,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        }
+      ]
+    },
+    {
+      "row_id": "g2_hand_water_surge",
+      "title": "② 水系攻击：hand_water_surge（覆潮水弹 · 雪瓷浅底）",
+      "subtitle": "路由: magic_circle_cast → water_jet(stopAt 0.34) → wave_crash + splash",
+      "clip": {
+        "x": 23,
+        "y": 36,
+        "width": 1394,
+        "height": 780
+      },
+      "trigger_res": {
+        "ok": true
+      },
+      "peak_idx": 4,
+      "frames": [
+        {
+          "idx": 0,
+          "t_ms": 0,
+          "label": "指令触发(查抢跑)",
+          "path": "/tmp/vfx_audit/frames/g2_hand_water_surge_f1_0ms.png",
+          "active_fx": [
+            "magic_circle_cast"
+          ],
+          "fx_count": 1,
+          "player_pose": "windup",
+          "player_frame": 3,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "-46"
+          ],
+          "hp_dropped": 46,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 1,
+          "t_ms": 96,
+          "label": "水法阵前摇",
+          "path": "/tmp/vfx_audit/frames/g2_hand_water_surge_f2_96ms.png",
+          "active_fx": [
+            "magic_circle_cast"
+          ],
+          "fx_count": 1,
+          "player_pose": "windup",
+          "player_frame": 3,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "-46"
+          ],
+          "hp_dropped": 46,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 2,
+          "t_ms": 192,
+          "label": "water_jet水柱",
+          "path": "/tmp/vfx_audit/frames/g2_hand_water_surge_f3_192ms.png",
+          "active_fx": [
+            "magic_circle_cast",
+            "water_jet"
+          ],
+          "fx_count": 2,
+          "player_pose": "cast_step",
+          "player_frame": 4,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "-46"
+          ],
+          "hp_dropped": 46,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 3,
+          "t_ms": 272,
+          "label": "接触浪潮起爆",
+          "path": "/tmp/vfx_audit/frames/g2_hand_water_surge_f4_272ms.png",
+          "active_fx": [
+            "wave_crash",
+            "splash"
+          ],
+          "fx_count": 2,
+          "player_pose": "strike",
+          "player_frame": 5,
+          "player_dx": 0,
+          "enemy0_pose": "hurt",
+          "enemy0_dx": 4.2,
+          "floats": [
+            "-46"
+          ],
+          "hp_dropped": 46,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 0.06,
+          "aura_tier": 0
+        },
+        {
+          "idx": 4,
+          "t_ms": 432,
+          "label": "wave_crash峰值",
+          "path": "/tmp/vfx_audit/frames/g2_hand_water_surge_f5_432ms.png",
+          "active_fx": [
+            "wave_crash",
+            "splash"
+          ],
+          "fx_count": 2,
+          "player_pose": "strike",
+          "player_frame": 5,
+          "player_dx": 0,
+          "enemy0_pose": "hurt",
+          "enemy0_dx": -0.5,
+          "floats": [
+            "-46"
+          ],
+          "hp_dropped": 46,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 5,
+          "t_ms": 720,
+          "label": "水花余波",
+          "path": "/tmp/vfx_audit/frames/g2_hand_water_surge_f6_720ms.png",
+          "active_fx": [
+            "wave_crash",
+            "splash"
+          ],
+          "fx_count": 2,
+          "player_pose": "idle",
+          "player_frame": 0,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "-46"
+          ],
+          "hp_dropped": 46,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        }
+      ]
+    },
+    {
+      "row_id": "g4a_ice_wall",
+      "title": "④A 冰盾护御：hand_ice_wall（凝水厚冰墙 · 雪瓷浅底）",
+      "subtitle": "路由: divine_shield + ice_crystal（与 hand_root_shield 共用同一路由）",
+      "clip": {
+        "x": 23,
+        "y": 36,
+        "width": 1394,
+        "height": 780
+      },
+      "trigger_res": {
+        "ok": true
+      },
+      "peak_idx": 3,
+      "frames": [
+        {
+          "idx": 0,
+          "t_ms": 0,
+          "label": "指令触发(+盾)",
+          "path": "/tmp/vfx_audit/frames/g4a_ice_wall_f1_0ms.png",
+          "active_fx": [],
+          "fx_count": 0,
+          "player_pose": "windup",
+          "player_frame": 3,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "+45 护盾"
+          ],
+          "hp_dropped": 0,
+          "p_shield": 45,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 1,
+          "t_ms": 80,
+          "label": "施法前摇",
+          "path": "/tmp/vfx_audit/frames/g4a_ice_wall_f2_80ms.png",
+          "active_fx": [],
+          "fx_count": 0,
+          "player_pose": "windup",
+          "player_frame": 3,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "+45 护盾"
+          ],
+          "hp_dropped": 0,
+          "p_shield": 45,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 2,
+          "t_ms": 144,
+          "label": "护盾刚展开",
+          "path": "/tmp/vfx_audit/frames/g4a_ice_wall_f3_144ms.png",
+          "active_fx": [
+            "divine_shield",
+            "ice_crystal"
+          ],
+          "fx_count": 2,
+          "player_pose": "cast_step",
+          "player_frame": 4,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "+45 护盾"
+          ],
+          "hp_dropped": 0,
+          "p_shield": 45,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 3,
+          "t_ms": 320,
+          "label": "冰盾+冰晶峰值",
+          "path": "/tmp/vfx_audit/frames/g4a_ice_wall_f4_320ms.png",
+          "active_fx": [
+            "divine_shield",
+            "ice_crystal"
+          ],
+          "fx_count": 2,
+          "player_pose": "strike",
+          "player_frame": 5,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "+45 护盾"
+          ],
+          "hp_dropped": 0,
+          "p_shield": 45,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 4,
+          "t_ms": 560,
+          "label": "护盾持续态",
+          "path": "/tmp/vfx_audit/frames/g4a_ice_wall_f5_560ms.png",
+          "active_fx": [
+            "divine_shield",
+            "ice_crystal"
+          ],
+          "fx_count": 2,
+          "player_pose": "cast_step",
+          "player_frame": 4,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "+45 护盾"
+          ],
+          "hp_dropped": 0,
+          "p_shield": 45,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 5,
+          "t_ms": 928,
+          "label": "余波消散",
+          "path": "/tmp/vfx_audit/frames/g4a_ice_wall_f6_928ms.png",
+          "active_fx": [
+            "divine_shield",
+            "ice_crystal"
+          ],
+          "fx_count": 2,
+          "player_pose": "idle",
+          "player_frame": 1,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "+45 护盾"
+          ],
+          "hp_dropped": 0,
+          "p_shield": 45,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        }
+      ]
+    },
+    {
+      "row_id": "g8a_beatrice_flame",
+      "title": "⑧A 敌方攻击与我方受击：贝蒂烈焰重劈（CLOSE_LUNGE + 我方真实受击）",
+      "subtitle": "路由: 敌方 windup → run 疾奔 → heavy_cleave(fire) + 我方 hurt/闪白/击退/hit_spark",
+      "clip": {
+        "x": 23,
+        "y": 36,
+        "width": 1394,
+        "height": 780
+      },
+      "trigger_res": {
+        "ok": true
+      },
+      "peak_idx": 3,
+      "frames": [
+        {
+          "idx": 0,
+          "t_ms": 48,
+          "label": "贝蒂蓄力后拉",
+          "path": "/tmp/vfx_audit/frames/g8a_beatrice_flame_f1_48ms.png",
+          "active_fx": [],
+          "fx_count": 0,
+          "player_pose": "idle",
+          "player_frame": 1,
+          "player_dx": 0,
+          "enemy0_pose": "windup",
+          "enemy0_dx": 3.8,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 1,
+          "t_ms": 144,
+          "label": "疾奔突进+火残影",
+          "path": "/tmp/vfx_audit/frames/g8a_beatrice_flame_f2_144ms.png",
+          "active_fx": [],
+          "fx_count": 0,
+          "player_pose": "idle",
+          "player_frame": 1,
+          "player_dx": 0,
+          "enemy0_pose": "run",
+          "enemy0_dx": -307.2,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 2,
+          "t_ms": 240,
+          "label": "贴身重劈+受击闪白",
+          "path": "/tmp/vfx_audit/frames/g8a_beatrice_flame_f3_240ms.png",
+          "active_fx": [
+            "heavy_cleave",
+            "hit_spark"
+          ],
+          "fx_count": 2,
+          "player_pose": "hurt",
+          "player_frame": 6,
+          "player_dx": -6.4,
+          "enemy0_pose": "cast_step",
+          "enemy0_dx": -320,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 0.06,
+          "aura_tier": 0
+        },
+        {
+          "idx": 3,
+          "t_ms": 352,
+          "label": "烈焰斩峰值+击退",
+          "path": "/tmp/vfx_audit/frames/g8a_beatrice_flame_f4_352ms.png",
+          "active_fx": [
+            "heavy_cleave",
+            "hit_spark"
+          ],
+          "fx_count": 2,
+          "player_pose": "hurt",
+          "player_frame": 6,
+          "player_dx": -2.1,
+          "enemy0_pose": "strike",
+          "enemy0_dx": -320,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 4,
+          "t_ms": 512,
+          "label": "贝蒂奔回归位",
+          "path": "/tmp/vfx_audit/frames/g8a_beatrice_flame_f5_512ms.png",
+          "active_fx": [
+            "heavy_cleave",
+            "hit_spark"
+          ],
+          "fx_count": 2,
+          "player_pose": "hurt",
+          "player_frame": 6,
+          "player_dx": 0,
+          "enemy0_pose": "run",
+          "enemy0_dx": -140.5,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 5,
+          "t_ms": 720,
+          "label": "收势余波",
+          "path": "/tmp/vfx_audit/frames/g8a_beatrice_flame_f6_720ms.png",
+          "active_fx": [
+            "heavy_cleave",
+            "hit_spark"
+          ],
+          "fx_count": 2,
+          "player_pose": "idle",
+          "player_frame": 0,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        }
+      ]
+    },
+    {
+      "row_id": "g3_hand_thorn_field",
+      "title": "③ 群体范围冰刺：hand_thorn_field（冰棘群刺阵 · 多目标雪原）",
+      "subtitle": "路由: frost_nova + 每敌 ice_spikes + snowflake_burst + icicle_fall（检验上限2淘汰）",
+      "clip": {
+        "x": 23,
+        "y": 36,
+        "width": 1394,
+        "height": 780
+      },
+      "trigger_res": {
+        "ok": true
+      },
+      "peak_idx": 3,
+      "frames": [
+        {
+          "idx": 0,
+          "t_ms": 0,
+          "label": "指令触发(多敌抢跑)",
+          "path": "/tmp/vfx_audit/frames/g3_hand_thorn_field_f1_0ms.png",
+          "active_fx": [
+            "magic_circle_cast"
+          ],
+          "fx_count": 1,
+          "player_pose": "magic_windup",
+          "player_frame": 7,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "-57",
+            "-75",
+            "-75",
+            "+52 MP"
+          ],
+          "hp_dropped": 2,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 1,
+          "t_ms": 96,
+          "label": "法阵蓄力",
+          "path": "/tmp/vfx_audit/frames/g3_hand_thorn_field_f2_96ms.png",
+          "active_fx": [
+            "magic_circle_cast"
+          ],
+          "fx_count": 1,
+          "player_pose": "magic_windup",
+          "player_frame": 7,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "-57",
+            "-75",
+            "-75",
+            "+52 MP"
+          ],
+          "hp_dropped": 2,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 2,
+          "t_ms": 160,
+          "label": "frost_nova+目标0",
+          "path": "/tmp/vfx_audit/frames/g3_hand_thorn_field_f3_160ms.png",
+          "active_fx": [
+            "frost_nova",
+            "ice_spikes"
+          ],
+          "fx_count": 2,
+          "player_pose": "magic_cast",
+          "player_frame": 8,
+          "player_dx": 0,
+          "enemy0_pose": "hurt",
+          "enemy0_dx": 6,
+          "floats": [
+            "-57",
+            "-75",
+            "-75",
+            "+52 MP"
+          ],
+          "hp_dropped": 2,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 0.06,
+          "aura_tier": 0
+        },
+        {
+          "idx": 3,
+          "t_ms": 240,
+          "label": "多敌冰刺/冰坠交错",
+          "path": "/tmp/vfx_audit/frames/g3_hand_thorn_field_f4_240ms.png",
+          "active_fx": [
+            "ice_spikes",
+            "icicle_fall"
+          ],
+          "fx_count": 2,
+          "player_pose": "magic_cast",
+          "player_frame": 8,
+          "player_dx": 0,
+          "enemy0_pose": "hurt",
+          "enemy0_dx": 4.6,
+          "floats": [
+            "-57",
+            "-75",
+            "-75",
+            "+52 MP"
+          ],
+          "hp_dropped": 2,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 4,
+          "t_ms": 416,
+          "label": "群刺爆发峰值",
+          "path": "/tmp/vfx_audit/frames/g3_hand_thorn_field_f5_416ms.png",
+          "active_fx": [
+            "ice_spikes",
+            "icicle_fall"
+          ],
+          "fx_count": 2,
+          "player_pose": "magic_cast",
+          "player_frame": 8,
+          "player_dx": 0,
+          "enemy0_pose": "hurt",
+          "enemy0_dx": 0,
+          "floats": [
+            "-57",
+            "-75",
+            "-75",
+            "+52 MP"
+          ],
+          "hp_dropped": 2,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 5,
+          "t_ms": 736,
+          "label": "余波消散",
+          "path": "/tmp/vfx_audit/frames/g3_hand_thorn_field_f6_736ms.png",
+          "active_fx": [
+            "ice_spikes",
+            "icicle_fall"
+          ],
+          "fx_count": 2,
+          "player_pose": "idle",
+          "player_frame": 1,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "-57",
+            "-75",
+            "-75",
+            "+52 MP"
+          ],
+          "hp_dropped": 2,
+          "p_shield": 0,
+          "canvas_buf": "320x137",
+          "time_scale": 1,
+          "aura_tier": 0
+        }
+      ]
+    },
+    {
+      "row_id": "g4b_root_shield",
+      "title": "④B 冰盾对照：hand_root_shield（钢冰生根盾 · +40%增幅）",
+      "subtitle": "路由: 与 hand_ice_wall 共用 divine_shield + ice_crystal (+snowflake_burst)",
+      "clip": {
+        "x": 23,
+        "y": 36,
+        "width": 1394,
+        "height": 780
+      },
+      "trigger_res": {
+        "ok": true
+      },
+      "peak_idx": 3,
+      "frames": [
+        {
+          "idx": 0,
+          "t_ms": 0,
+          "label": "+40%蓄能触发",
+          "path": "/tmp/vfx_audit/frames/g4b_root_shield_f1_0ms.png",
+          "active_fx": [
+            "snowflake_burst"
+          ],
+          "fx_count": 1,
+          "player_pose": "magic_windup",
+          "player_frame": 7,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "+104 护盾"
+          ],
+          "hp_dropped": 0,
+          "p_shield": 104,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 2
+        },
+        {
+          "idx": 1,
+          "t_ms": 80,
+          "label": "前摇起手",
+          "path": "/tmp/vfx_audit/frames/g4b_root_shield_f2_80ms.png",
+          "active_fx": [
+            "snowflake_burst"
+          ],
+          "fx_count": 1,
+          "player_pose": "magic_windup",
+          "player_frame": 7,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "+104 护盾"
+          ],
+          "hp_dropped": 0,
+          "p_shield": 104,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 2
+        },
+        {
+          "idx": 2,
+          "t_ms": 144,
+          "label": "护盾刚展开",
+          "path": "/tmp/vfx_audit/frames/g4b_root_shield_f3_144ms.png",
+          "active_fx": [
+            "divine_shield",
+            "ice_crystal"
+          ],
+          "fx_count": 2,
+          "player_pose": "magic_cast",
+          "player_frame": 8,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "+104 护盾"
+          ],
+          "hp_dropped": 0,
+          "p_shield": 104,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 2
+        },
+        {
+          "idx": 3,
+          "t_ms": 320,
+          "label": "盾+晶+雪爆(查淘汰)",
+          "path": "/tmp/vfx_audit/frames/g4b_root_shield_f4_320ms.png",
+          "active_fx": [
+            "divine_shield",
+            "ice_crystal"
+          ],
+          "fx_count": 2,
+          "player_pose": "magic_cast",
+          "player_frame": 8,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "+104 护盾"
+          ],
+          "hp_dropped": 0,
+          "p_shield": 104,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 2
+        },
+        {
+          "idx": 4,
+          "t_ms": 560,
+          "label": "持续态",
+          "path": "/tmp/vfx_audit/frames/g4b_root_shield_f5_560ms.png",
+          "active_fx": [
+            "divine_shield",
+            "ice_crystal"
+          ],
+          "fx_count": 2,
+          "player_pose": "idle",
+          "player_frame": 0,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "+104 护盾"
+          ],
+          "hp_dropped": 0,
+          "p_shield": 104,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 2
+        },
+        {
+          "idx": 5,
+          "t_ms": 928,
+          "label": "余波消散",
+          "path": "/tmp/vfx_audit/frames/g4b_root_shield_f6_928ms.png",
+          "active_fx": [
+            "divine_shield",
+            "ice_crystal"
+          ],
+          "fx_count": 2,
+          "player_pose": "idle",
+          "player_frame": 1,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "+104 护盾"
+          ],
+          "hp_dropped": 0,
+          "p_shield": 104,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 2
+        }
+      ]
+    },
+    {
+      "row_id": "g5a_sword_water_edge",
+      "title": "⑤A 近战剑技：sword_water_edge（送刀·覆水极薄冰锋）",
+      "subtitle": "路由: windup → run 疾奔 → double_slash + hit_spark + crit_hit → run 奔回",
+      "clip": {
+        "x": 23,
+        "y": 36,
+        "width": 1394,
+        "height": 780
+      },
+      "trigger_res": {
+        "ok": true
+      },
+      "peak_idx": 2,
+      "frames": [
+        {
+          "idx": 0,
+          "t_ms": 0,
+          "label": "收腰蓄力(查抢跑)",
+          "path": "/tmp/vfx_audit/frames/g5a_sword_water_edge_f1_0ms.png",
+          "active_fx": [],
+          "fx_count": 0,
+          "player_pose": "windup",
+          "player_frame": 3,
+          "player_dx": -0.0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "-48",
+            "+18 MP"
+          ],
+          "hp_dropped": 48,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 1,
+          "t_ms": 128,
+          "label": "疾奔冲锋+残影",
+          "path": "/tmp/vfx_audit/frames/g5a_sword_water_edge_f2_128ms.png",
+          "active_fx": [],
+          "fx_count": 0,
+          "player_pose": "run",
+          "player_frame": 9,
+          "player_dx": 287.2,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "-48",
+            "+18 MP"
+          ],
+          "hp_dropped": 48,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 2,
+          "t_ms": 224,
+          "label": "贴身双斩命中",
+          "path": "/tmp/vfx_audit/frames/g5a_sword_water_edge_f3_224ms.png",
+          "active_fx": [
+            "double_slash",
+            "hit_spark"
+          ],
+          "fx_count": 2,
+          "player_pose": "cast_step",
+          "player_frame": 4,
+          "player_dx": 321,
+          "enemy0_pose": "hurt",
+          "enemy0_dx": 5.6,
+          "floats": [
+            "-48",
+            "+18 MP"
+          ],
+          "hp_dropped": 48,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 0.06,
+          "aura_tier": 0
+        },
+        {
+          "idx": 3,
+          "t_ms": 320,
+          "label": "双斩交叉峰值+击退",
+          "path": "/tmp/vfx_audit/frames/g5a_sword_water_edge_f4_320ms.png",
+          "active_fx": [
+            "double_slash",
+            "hit_spark"
+          ],
+          "fx_count": 2,
+          "player_pose": "cast_step",
+          "player_frame": 4,
+          "player_dx": 321,
+          "enemy0_pose": "hurt",
+          "enemy0_dx": 3.8,
+          "floats": [
+            "-48",
+            "+18 MP"
+          ],
+          "hp_dropped": 48,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 4,
+          "t_ms": 480,
+          "label": "奔回归位",
+          "path": "/tmp/vfx_audit/frames/g5a_sword_water_edge_f5_480ms.png",
+          "active_fx": [
+            "double_slash",
+            "hit_spark"
+          ],
+          "fx_count": 2,
+          "player_pose": "run",
+          "player_frame": 9,
+          "player_dx": 140.9,
+          "enemy0_pose": "hurt",
+          "enemy0_dx": 0,
+          "floats": [
+            "-48",
+            "+18 MP"
+          ],
+          "hp_dropped": 48,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 5,
+          "t_ms": 672,
+          "label": "收势站稳",
+          "path": "/tmp/vfx_audit/frames/g5a_sword_water_edge_f6_672ms.png",
+          "active_fx": [
+            "double_slash",
+            "hit_spark"
+          ],
+          "fx_count": 2,
+          "player_pose": "idle",
+          "player_frame": 1,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "-48",
+            "+18 MP"
+          ],
+          "hp_dropped": 48,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        }
+      ]
+    },
+    {
+      "row_id": "g5b_basic_attack",
+      "title": "⑤B 平斩对照：basic_attack（剑术平斩）",
+      "subtitle": "路由: windup → run 疾奔 → sword_slash(r=40) + hit_spark → run 奔回",
+      "clip": {
+        "x": 23,
+        "y": 36,
+        "width": 1394,
+        "height": 780
+      },
+      "trigger_res": {
+        "ok": true
+      },
+      "peak_idx": 2,
+      "frames": [
+        {
+          "idx": 0,
+          "t_ms": 0,
+          "label": "收腰蓄力",
+          "path": "/tmp/vfx_audit/frames/g5b_basic_attack_f1_0ms.png",
+          "active_fx": [],
+          "fx_count": 0,
+          "player_pose": "windup",
+          "player_frame": 3,
+          "player_dx": -0.0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "-21"
+          ],
+          "hp_dropped": 21,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 1,
+          "t_ms": 128,
+          "label": "疾奔冲锋",
+          "path": "/tmp/vfx_audit/frames/g5b_basic_attack_f2_128ms.png",
+          "active_fx": [],
+          "fx_count": 0,
+          "player_pose": "run",
+          "player_frame": 9,
+          "player_dx": 287.2,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "-21"
+          ],
+          "hp_dropped": 21,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 2,
+          "t_ms": 224,
+          "label": "单斩sword_slash",
+          "path": "/tmp/vfx_audit/frames/g5b_basic_attack_f3_224ms.png",
+          "active_fx": [
+            "sword_slash",
+            "hit_spark"
+          ],
+          "fx_count": 2,
+          "player_pose": "cast_step",
+          "player_frame": 4,
+          "player_dx": 321,
+          "enemy0_pose": "hurt",
+          "enemy0_dx": 5.6,
+          "floats": [
+            "-21"
+          ],
+          "hp_dropped": 21,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 0.06,
+          "aura_tier": 0
+        },
+        {
+          "idx": 3,
+          "t_ms": 320,
+          "label": "斩光展开+击退",
+          "path": "/tmp/vfx_audit/frames/g5b_basic_attack_f4_320ms.png",
+          "active_fx": [
+            "sword_slash",
+            "hit_spark"
+          ],
+          "fx_count": 2,
+          "player_pose": "cast_step",
+          "player_frame": 4,
+          "player_dx": 321,
+          "enemy0_pose": "hurt",
+          "enemy0_dx": 3.8,
+          "floats": [
+            "-21"
+          ],
+          "hp_dropped": 21,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 4,
+          "t_ms": 480,
+          "label": "奔回归位",
+          "path": "/tmp/vfx_audit/frames/g5b_basic_attack_f5_480ms.png",
+          "active_fx": [
+            "sword_slash",
+            "hit_spark"
+          ],
+          "fx_count": 2,
+          "player_pose": "run",
+          "player_frame": 9,
+          "player_dx": 140.9,
+          "enemy0_pose": "hurt",
+          "enemy0_dx": 0,
+          "floats": [
+            "-21"
+          ],
+          "hp_dropped": 21,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 5,
+          "t_ms": 672,
+          "label": "收势",
+          "path": "/tmp/vfx_audit/frames/g5b_basic_attack_f6_672ms.png",
+          "active_fx": [
+            "sword_slash",
+            "hit_spark"
+          ],
+          "fx_count": 2,
+          "player_pose": "idle",
+          "player_frame": 1,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "-21"
+          ],
+          "hp_dropped": 21,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        }
+      ]
+    },
+    {
+      "row_id": "g6_mana_amp",
+      "title": "⑥ 三档魔力增幅光环对比：20% 一阶 / 40% 二阶 / 60% 三阶香槟金环+双电弧",
+      "subtitle": "240×208 双层前后景深 Canvas + playAmpChargeBurst（雪瓷浅底特写）",
+      "clip": {
+        "x": 0,
+        "y": 271,
+        "width": 540,
+        "height": 380
+      },
+      "peak_idx": 5,
+      "frames": [
+        {
+          "idx": 0,
+          "t_ms": 96,
+          "label": "20% 一阶·爆点",
+          "path": "/tmp/vfx_audit/frames/g6_mana_amp_f1_20pct.png",
+          "active_fx": [
+            "snowflake_burst"
+          ],
+          "fx_count": 1,
+          "player_pose": "idle",
+          "player_frame": 0,
+          "player_dx": 0,
+          "enemy0_pose": "tier=1",
+          "enemy0_dx": 0,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 1
+        },
+        {
+          "idx": 1,
+          "t_ms": 432,
+          "label": "20% 一阶·常驻单环",
+          "path": "/tmp/vfx_audit/frames/g6_mana_amp_f2_20pct.png",
+          "active_fx": [
+            "snowflake_burst"
+          ],
+          "fx_count": 1,
+          "player_pose": "idle",
+          "player_frame": 0,
+          "player_dx": 0,
+          "enemy0_pose": "tier=1",
+          "enemy0_dx": 0,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 1
+        },
+        {
+          "idx": 2,
+          "t_ms": 96,
+          "label": "40% 二阶·爆点",
+          "path": "/tmp/vfx_audit/frames/g6_mana_amp_f3_40pct.png",
+          "active_fx": [
+            "snowflake_burst"
+          ],
+          "fx_count": 1,
+          "player_pose": "idle",
+          "player_frame": 1,
+          "player_dx": 0,
+          "enemy0_pose": "tier=2",
+          "enemy0_dx": 0,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 2
+        },
+        {
+          "idx": 3,
+          "t_ms": 432,
+          "label": "40% 二阶·常驻双环",
+          "path": "/tmp/vfx_audit/frames/g6_mana_amp_f4_40pct.png",
+          "active_fx": [
+            "snowflake_burst"
+          ],
+          "fx_count": 1,
+          "player_pose": "idle",
+          "player_frame": 1,
+          "player_dx": 0,
+          "enemy0_pose": "tier=2",
+          "enemy0_dx": 0,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 2
+        },
+        {
+          "idx": 4,
+          "t_ms": 96,
+          "label": "60% 三阶·蓄能爆环",
+          "path": "/tmp/vfx_audit/frames/g6_mana_amp_f5_60pct.png",
+          "active_fx": [
+            "frost_nova",
+            "snowflake_burst"
+          ],
+          "fx_count": 2,
+          "player_pose": "idle",
+          "player_frame": 1,
+          "player_dx": 0,
+          "enemy0_pose": "tier=3",
+          "enemy0_dx": 0,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 3
+        },
+        {
+          "idx": 5,
+          "t_ms": 528,
+          "label": "60% 三阶·金环+双电弧",
+          "path": "/tmp/vfx_audit/frames/g6_mana_amp_f6_60pct.png",
+          "active_fx": [
+            "frost_nova",
+            "snowflake_burst"
+          ],
+          "fx_count": 2,
+          "player_pose": "idle",
+          "player_frame": 0,
+          "player_dx": 0,
+          "enemy0_pose": "tier=3",
+          "enemy0_dx": 0,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 3
+        }
+      ]
+    },
+    {
+      "row_id": "g7_wand_toggle",
+      "title": "⑦ 晦轮杖切换与真伤打击：playWandToggle(F1-F3) + 晦轮真伤冰晶(F4-F6)",
+      "subtitle": "切杖: eclipse(scale 0.46) + time_stop | 真伤打击: 仅起手刷小 eclipse，弹道与命中与常规冰晶完全同模",
+      "clip": {
+        "x": 23,
+        "y": 36,
+        "width": 1394,
+        "height": 780
+      },
+      "peak_idx": 1,
+      "frames": [
+        {
+          "idx": 0,
+          "t_ms": 96,
+          "label": "切杖前摇",
+          "path": "/tmp/vfx_audit/frames/g7_wand_f1_96ms.png",
+          "active_fx": [],
+          "fx_count": 0,
+          "player_pose": "windup",
+          "player_frame": 3,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 1,
+          "t_ms": 240,
+          "label": "切杖紫蚀+时停峰值",
+          "path": "/tmp/vfx_audit/frames/g7_wand_f2_240ms.png",
+          "active_fx": [
+            "eclipse",
+            "time_stop"
+          ],
+          "fx_count": 2,
+          "player_pose": "strike",
+          "player_frame": 5,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 2,
+          "t_ms": 528,
+          "label": "切杖余波",
+          "path": "/tmp/vfx_audit/frames/g7_wand_f3_528ms.png",
+          "active_fx": [
+            "eclipse",
+            "time_stop"
+          ],
+          "fx_count": 2,
+          "player_pose": "cast_step",
+          "player_frame": 4,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 3,
+          "t_ms": 80,
+          "label": "晦轮真伤·杖口紫蚀",
+          "path": "/tmp/vfx_audit/frames/g7_wand_f4_80ms.png",
+          "active_fx": [
+            "magic_circle_cast",
+            "eclipse"
+          ],
+          "fx_count": 2,
+          "player_pose": "windup",
+          "player_frame": 3,
+          "player_dx": 0,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "-81",
+            "+81 MP"
+          ],
+          "hp_dropped": 81,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 4,
+          "t_ms": 224,
+          "label": "晦轮真伤·飞行(无紫)",
+          "path": "/tmp/vfx_audit/frames/g7_wand_f5_224ms.png",
+          "active_fx": [
+            "eclipse",
+            "ice_lance"
+          ],
+          "fx_count": 2,
+          "player_pose": "strike",
+          "player_frame": 5,
+          "player_dx": 12,
+          "enemy0_pose": "idle",
+          "enemy0_dx": 0,
+          "floats": [
+            "-81",
+            "+81 MP"
+          ],
+          "hp_dropped": 81,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 5,
+          "t_ms": 352,
+          "label": "晦轮真伤·命中(查区分)",
+          "path": "/tmp/vfx_audit/frames/g7_wand_f6_352ms.png",
+          "active_fx": [
+            "eclipse",
+            "ice_shatter"
+          ],
+          "fx_count": 2,
+          "player_pose": "strike",
+          "player_frame": 5,
+          "player_dx": 12,
+          "enemy0_pose": "hurt",
+          "enemy0_dx": 0.8,
+          "floats": [
+            "-81",
+            "+81 MP"
+          ],
+          "hp_dropped": 81,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 0.06,
+          "aura_tier": 0
+        }
+      ]
+    },
+    {
+      "row_id": "g8b_windgod_slash",
+      "title": "⑧B 敌方攻击与受击/格挡：风神风暴刃（blizzard_vortex + double_slash + 格挡对照）",
+      "subtitle": "路由: 疾奔 → blizzard_vortex + double_slash + 我方受击(F1-F5) | F6: 现行 blocked(parry+divine_shield)",
+      "clip": {
+        "x": 23,
+        "y": 36,
+        "width": 1394,
+        "height": 780
+      },
+      "peak_idx": 3,
+      "frames": [
+        {
+          "idx": 0,
+          "t_ms": 48,
+          "label": "风神蓄力",
+          "path": "/tmp/vfx_audit/frames/g8b_windgod_f1_48ms.png",
+          "active_fx": [],
+          "fx_count": 0,
+          "player_pose": "idle",
+          "player_frame": 0,
+          "player_dx": 0,
+          "enemy0_pose": "windup",
+          "enemy0_dx": 3.8,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 1,
+          "t_ms": 144,
+          "label": "青岚疾奔+残影",
+          "path": "/tmp/vfx_audit/frames/g8b_windgod_f2_144ms.png",
+          "active_fx": [],
+          "fx_count": 0,
+          "player_pose": "idle",
+          "player_frame": 0,
+          "player_dx": 0,
+          "enemy0_pose": "run",
+          "enemy0_dx": -290.5,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 2,
+          "t_ms": 240,
+          "label": "贴身风暴双刃+受击",
+          "path": "/tmp/vfx_audit/frames/g8b_windgod_f3_240ms.png",
+          "active_fx": [
+            "blizzard_vortex",
+            "double_slash"
+          ],
+          "fx_count": 2,
+          "player_pose": "hurt",
+          "player_frame": 6,
+          "player_dx": -6.7,
+          "enemy0_pose": "cast_step",
+          "enemy0_dx": -300,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 0.06,
+          "aura_tier": 0
+        },
+        {
+          "idx": 3,
+          "t_ms": 368,
+          "label": "blizzard+双斩峰值",
+          "path": "/tmp/vfx_audit/frames/g8b_windgod_f4_368ms.png",
+          "active_fx": [
+            "blizzard_vortex",
+            "double_slash"
+          ],
+          "fx_count": 2,
+          "player_pose": "hurt",
+          "player_frame": 6,
+          "player_dx": 0.5,
+          "enemy0_pose": "strike",
+          "enemy0_dx": -300,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 4,
+          "t_ms": 544,
+          "label": "风神奔回归位",
+          "path": "/tmp/vfx_audit/frames/g8b_windgod_f5_544ms.png",
+          "active_fx": [
+            "blizzard_vortex",
+            "double_slash"
+          ],
+          "fx_count": 2,
+          "player_pose": "hurt",
+          "player_frame": 6,
+          "player_dx": 0,
+          "enemy0_pose": "run",
+          "enemy0_dx": -39.3,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        },
+        {
+          "idx": 5,
+          "t_ms": 272,
+          "label": "对照:现行格挡(blocked)",
+          "path": "/tmp/vfx_audit/frames/g8b_windgod_f6_blocked.png",
+          "active_fx": [
+            "blizzard_vortex",
+            "double_slash"
+          ],
+          "fx_count": 2,
+          "player_pose": "magic_windup",
+          "player_frame": 7,
+          "player_dx": 0,
+          "enemy0_pose": "strike",
+          "enemy0_dx": -300,
+          "floats": [],
+          "hp_dropped": 0,
+          "p_shield": 0,
+          "canvas_buf": "320x174",
+          "time_scale": 1,
+          "aura_tier": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,3756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>转生千金 · 第三轮 2×2 四板（G / H / I / J）道具美术 × 实机背包与面板交互展厅</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpolygon points='16,2 30,16 16,30 2,16' fill='%231658eb'/%3E%3Cpolygon points='16,8 24,16 16,24 8,16' fill='%23FAFBFD'/%3E%3C/svg%3E" />
+<style>
+  /* =========================================================================
+     《转生千金》雪瓷冰白 #FAFBFD × 皇家蓝 #1658EB × 冰青 × 淡金 棱镜折射体系
+     严格铁律：零圆框套圆框！层级区分一律用 1px 建筑细线、八角切角、无边框色块与字重留白
+     适配桌面端 1440×900 与 1280×720，零外链、纯相对路径 ./r3_assets/...
+     ========================================================================= */
+  :root {
+    --bg-canvas: #FAFBFD;
+    --bg-surface: #FFFFFF;
+    --bg-subtle: #F3F6FB;
+    --bg-ice: #EDF3FC;
+    --bg-prism: linear-gradient(150deg, #FFFFFF 0%, #F4F8FE 58%, #EBF2FC 100%);
+    --ink-deep: #1B2333;
+    --ink-body: #323D52;
+    --ink-muted: #526078;
+    --ink-faint: #7E8CA3;
+    --rule: rgba(27, 35, 51, 0.13);
+    --rule-soft: rgba(27, 35, 51, 0.08);
+    --rule-strong: rgba(27, 35, 51, 0.22);
+    --royal: #1658EB;
+    --royal-deep: #0E3BA6;
+    --royal-wash: rgba(22, 88, 235, 0.065);
+    --royal-wash-strong: rgba(22, 88, 235, 0.115);
+    --royal-line: rgba(22, 88, 235, 0.36);
+    --gold: #C9A45C;
+    --gold-deep: #8A6722;
+    --gold-wash: rgba(201, 164, 92, 0.11);
+    --gold-line: rgba(201, 164, 92, 0.45);
+    --ice-cyan: #5ABCF5;
+    --ice-cyan-deep: #1B7EC2;
+    --rose: #C93855;
+    --emerald: #0A8762;
+    --violet: #5D42B8;
+    --serif: "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", "STSong", Georgia, serif;
+    --sans: "Noto Sans CJK SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg-canvas);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(22, 88, 235, 0.24);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(22, 88, 235, 0.45);
+  }
+
+  html, body {
+    width: 100%;
+    min-height: 100vh;
+    background: var(--bg-canvas);
+    color: var(--ink-deep);
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.48;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* 雪瓷冰晶折射氛围底光 */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(920px 380px at 8% 0%, rgba(90, 188, 245, 0.11), transparent 64%),
+      radial-gradient(840px 420px at 94% 4%, rgba(22, 88, 235, 0.055), transparent 62%),
+      radial-gradient(640px 340px at 84% 96%, rgba(201, 164, 92, 0.065), transparent 64%);
+  }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: inherit;
+  }
+
+  button:focus-visible,
+  [tabindex="0"]:focus-visible {
+    outline: 2px solid var(--royal);
+    outline-offset: 2px;
+  }
+
+  img {
+    display: block;
+    pointer-events: none;
+  }
+
+  /* 像素板 H / J 强制锐利硬边渲染（绝不模糊、绝不加柔和雾影） */
+  .pixel-art {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  .art-float {
+    filter: drop-shadow(0 5px 10px rgba(27, 35, 51, 0.15));
+  }
+
+  .art-float-sm {
+    filter: drop-shadow(0 2px 5px rgba(27, 35, 51, 0.14));
+  }
+
+  /* =========================================================================
+     顶栏建筑眉栏 (52px)
+     ========================================================================= */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    height: 52px;
+    background: rgba(250, 251, 253, 0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    padding: 0 22px;
+    gap: 12px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .brand-gem {
+    width: 20px;
+    height: 20px;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .brand-gem::before {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    background: linear-gradient(135deg, var(--royal) 0%, var(--ice-cyan) 100%);
+    transform: rotate(45deg);
+  }
+
+  .brand-gem::after {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    background: var(--bg-canvas);
+    transform: rotate(45deg);
+  }
+
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.16;
+  }
+
+  .brand-title {
+    font-family: var(--serif);
+    font-size: 14.5px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: var(--ink-deep);
+    white-space: nowrap;
+  }
+
+  .brand-sub {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--gold-deep);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* 顶部三视角切换 — 建筑底线，零圆框 */
+  .view-tabs {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    height: 100%;
+    flex-shrink: 0;
+  }
+
+  .view-tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--ink-muted);
+    white-space: nowrap;
+    transition: color 0.16s var(--ease), background 0.16s var(--ease);
+  }
+
+  .view-tab:hover {
+    color: var(--ink-deep);
+    background: rgba(22, 88, 235, 0.035);
+  }
+
+  .view-tab .tab-idx {
+    font-family: var(--serif);
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .view-tab.active {
+    color: var(--royal);
+    font-weight: 700;
+    background: rgba(22, 88, 235, 0.045);
+  }
+
+  .view-tab.active .tab-idx {
+    color: var(--royal);
+  }
+
+  .view-tab.active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2.5px;
+    background: linear-gradient(90deg, var(--royal), var(--ice-cyan));
+  }
+
+  /* 全局 G/H/I/J 四板快切 */
+  .header-board-switch {
+    display: flex;
+    align-items: center;
+    border-left: 1px solid var(--rule);
+    padding-left: 12px;
+    flex-shrink: 0;
+  }
+
+  .hbs-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+    margin-right: 8px;
+    white-space: nowrap;
+  }
+
+  .hbs-btn {
+    padding: 5px 9px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s var(--ease);
+    white-space: nowrap;
+  }
+
+  .hbs-btn + .hbs-btn {
+    border-left: 1px solid var(--rule-soft);
+  }
+
+  .hbs-btn:hover {
+    color: var(--ink-deep);
+    background: var(--royal-wash);
+  }
+
+  .hbs-btn.active {
+    color: var(--royal);
+    font-weight: 800;
+    background: var(--royal-wash);
+    border-bottom-color: var(--royal);
+  }
+
+  /* =========================================================================
+     主舞台外壳
+     ========================================================================= */
+  .stage-shell {
+    position: relative;
+    z-index: 1;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 10px 22px 14px;
+  }
+
+  .view-pane {
+    display: none;
+  }
+
+  .view-pane.active {
+    display: block;
+  }
+
+  /* =========================================================================
+     八角切角冰晶棱镜槽位（零圆框套圆框！）
+     ========================================================================= */
+  .prism-frame {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(27, 35, 51, 0.19);
+    clip-path: polygon(
+      var(--cut, 10px) 0,
+      100% 0,
+      100% calc(100% - var(--cut, 10px)),
+      calc(100% - var(--cut, 10px)) 100%,
+      0 100%,
+      0 var(--cut, 10px)
+    );
+    padding: 1px;
+    transition: background 0.16s var(--ease), transform 0.16s var(--ease);
+  }
+
+  .prism-inner {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-prism);
+    clip-path: polygon(
+      calc(var(--cut, 10px) - 0.5px) 0,
+      100% 0,
+      100% calc(100% - var(--cut, 10px) + 0.5px),
+      calc(100% - var(--cut, 10px) + 0.5px) 100%,
+      0 100%,
+      0 calc(var(--cut, 10px) - 0.5px)
+    );
+    overflow: hidden;
+  }
+
+  .prism-inner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(90, 188, 245, 0.08) 38%, transparent 62%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .prism-frame.is-raw .prism-inner::before {
+    display: none;
+  }
+
+  .prism-frame.is-gold {
+    background: linear-gradient(135deg, var(--gold) 0%, rgba(201, 164, 92, 0.45) 100%);
+  }
+
+  .prism-frame.is-gold .prism-inner {
+    background: linear-gradient(150deg, #FFFFFF 0%, #FDFBF5 65%, #F6EEDD 100%);
+  }
+
+  .prism-frame.is-royal {
+    background: linear-gradient(135deg, var(--royal) 0%, var(--ice-cyan) 100%);
+    padding: 1.5px;
+  }
+
+  .prism-frame.is-royal .prism-inner {
+    background: linear-gradient(155deg, #FFFFFF 0%, #F1F6FF 55%, #E3EEFF 100%);
+  }
+
+  .prism-frame.is-empty {
+    background: rgba(27, 35, 51, 0.09);
+  }
+
+  .prism-frame.is-empty .prism-inner {
+    background: rgba(243, 246, 251, 0.65);
+  }
+
+  .prism-frame.is-locked {
+    background: rgba(27, 35, 51, 0.11);
+  }
+
+  .prism-frame.is-locked .prism-inner {
+    background: linear-gradient(150deg, #F8FAFD 0%, #EFF3F9 100%);
+  }
+
+  .prism-frame.is-dark-check .prism-inner {
+    background:
+      linear-gradient(45deg, #1b2840 25%, transparent 25%),
+      linear-gradient(-45deg, #1b2840 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #1b2840 75%),
+      linear-gradient(-45deg, transparent 75%, #1b2840 75%),
+      #233350;
+    background-size: 14px 14px;
+    background-position: 0 0, 0 7px, 7px -7px, -7px 0;
+  }
+
+  .prism-frame.is-dark-check .prism-inner::before {
+    display: none;
+  }
+
+  /* 棱镜槽内角标 — 无边框斜切色带 */
+  .corner-ribbon {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 1px 5px 2px 6px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    line-height: 1.25;
+    z-index: 4;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 4px 100%);
+  }
+
+  .corner-ribbon.royal { background: var(--royal); color: #FFFFFF; }
+  .corner-ribbon.gold { background: var(--gold); color: #FFFFFF; }
+
+  .corner-qty {
+    position: absolute;
+    right: 4px;
+    bottom: 2px;
+    font-size: 10.5px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-deep);
+    text-shadow: 0 0 4px #FFFFFF, 0 1px 2px #FFFFFF;
+    z-index: 4;
+  }
+
+  /* 通用控件组（直角 1px 框，无圆框套圆框） */
+  .ctrl-group {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--rule);
+    background: var(--bg-surface);
+  }
+
+  .ctrl-label {
+    padding: 5px 9px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--ink-muted);
+    background: var(--bg-subtle);
+    border-right: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+
+  .ctrl-btn {
+    padding: 5px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--ink-body);
+    border-right: 1px solid var(--rule-soft);
+    transition: all 0.14s var(--ease);
+    white-space: nowrap;
+  }
+
+  .ctrl-btn:last-child { border-right: none; }
+  .ctrl-btn:hover { color: var(--royal); background: var(--royal-wash); }
+  .ctrl-btn.active { background: var(--royal); color: #FFFFFF; font-weight: 700; }
+
+  /* =========================================================================
+     视角 1：2×2 四板同台全览矩阵（行 = 提示词1 vs 提示词2，列 = 原图精抠 vs 64×64 像素）
+     ========================================================================= */
+  .v1-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 8px;
+  }
+
+  .v1-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .v1-title-group h2 {
+    font-family: var(--serif);
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--ink-deep);
+    white-space: nowrap;
+    line-height: 1.24;
+  }
+
+  .v1-title-group span {
+    font-size: 11px;
+    color: var(--ink-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .v1-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  /* 2×2 列轴标尺 */
+  .m22-col-axis {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 7px;
+  }
+
+  .m22-axis-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 12px;
+    background: var(--bg-subtle);
+    border-top: 2px solid var(--ink-deep);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .m22-axis-head.is-pixel {
+    border-top-color: var(--royal);
+    background: linear-gradient(90deg, rgba(22, 88, 235, 0.06), rgba(90, 188, 245, 0.04));
+  }
+
+  .m22-axis-title {
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--ink-deep);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .m22-axis-code {
+    font-size: 10px;
+    font-weight: 800;
+    color: #FFFFFF;
+    background: var(--ink-deep);
+    padding: 1px 6px;
+    letter-spacing: 0.08em;
+  }
+
+  .m22-axis-head.is-pixel .m22-axis-code {
+    background: var(--royal);
+  }
+
+  .m22-axis-spec {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--ink-muted);
+  }
+
+  /* 行分组（提示词 1 / 提示词 2） */
+  .m22-prompt-band {
+    border: 1px solid var(--rule);
+    background: var(--bg-surface);
+    margin-bottom: 9px;
+  }
+
+  .m22-prompt-band:last-child {
+    margin-bottom: 0;
+  }
+
+  .m22-row-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 14px;
+    background: linear-gradient(90deg, rgba(22, 88, 235, 0.06) 0%, #FAFBFD 55%, #FFFFFF 100%);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .m22-row-banner.is-p2 {
+    background: linear-gradient(90deg, rgba(201, 164, 92, 0.11) 0%, #FAFBFD 55%, #FFFFFF 100%);
+  }
+
+  .m22-row-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .m22-row-badge {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--royal);
+    padding-left: 8px;
+    border-left: 3px solid var(--royal);
+  }
+
+  .m22-row-banner.is-p2 .m22-row-badge {
+    color: var(--gold-deep);
+    border-left-color: var(--gold);
+  }
+
+  .m22-row-title {
+    font-family: var(--serif);
+    font-size: 13.5px;
+    font-weight: 800;
+    color: var(--ink-deep);
+  }
+
+  .m22-row-desc {
+    font-size: 11px;
+    color: var(--ink-muted);
+  }
+
+  .m22-quad-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .m22-quad {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    position: relative;
+    transition: background 0.15s var(--ease);
+  }
+
+  .m22-quad:first-child {
+    border-right: 1px solid var(--rule);
+  }
+
+  .m22-quad.is-active {
+    background: rgba(22, 88, 235, 0.018);
+  }
+
+  .m22-quad-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 13px 7px;
+    border-bottom: 1px solid var(--rule-soft);
+    position: relative;
+  }
+
+  .m22-quad-head::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--q-accent, var(--royal));
+  }
+
+  .m22-q-id {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .m22-q-code {
+    font-family: var(--serif);
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--q-accent, var(--royal));
+    flex-shrink: 0;
+  }
+
+  .m22-q-name {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .m22-q-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .m22-q-spec {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    background: var(--bg-subtle);
+    color: var(--ink-muted);
+    white-space: nowrap;
+  }
+
+  .m22-q-spec.is-pixel {
+    background: var(--royal-wash);
+    color: var(--royal);
+  }
+
+  .m22-q-spec.is-bloom {
+    background: var(--gold-wash);
+    color: var(--gold-deep);
+  }
+
+  .m22-jump-btn {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--royal);
+    padding: 1px 0;
+    border-bottom: 1px solid var(--royal-line);
+    white-space: nowrap;
+    transition: opacity 0.14s;
+  }
+
+  .m22-jump-btn:hover { opacity: 0.7; }
+
+  /* 象限内 5 件道具一字排开 */
+  .m22-items-row {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    padding: 10px 8px 8px;
+    gap: 6px;
+    flex: 1;
+  }
+
+  .m22-item-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 2px 5px;
+    cursor: pointer;
+    transition: background 0.15s var(--ease), transform 0.15s var(--ease);
+    min-width: 0;
+  }
+
+  .m22-item-tile:hover {
+    background: var(--royal-wash);
+    transform: translateY(-1px);
+  }
+
+  /* 124×124 展示舞台（水彩 118px 与像素 128px 2×整数倍视觉主体等大且四周充足留白） */
+  .m22-art-box {
+    width: 124px;
+    height: 124px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .m22-art-box.mode-slot {
+    padding: 1px;
+    background: rgba(27, 35, 51, 0.17);
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  }
+
+  .m22-art-box.mode-slot.is-staff {
+    background: linear-gradient(135deg, var(--royal) 0%, var(--ice-cyan) 100%);
+  }
+
+  .m22-art-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    background: transparent;
+  }
+
+  .m22-art-box.mode-slot .m22-art-inner {
+    background: var(--bg-prism);
+    clip-path: polygon(9.5px 0, 100% 0, 100% calc(100% - 9.5px), calc(100% - 9.5px) 100%, 0 100%, 0 9.5px);
+  }
+
+  .m22-art-box.bg-white .m22-art-inner {
+    background: #FFFFFF;
+  }
+
+  .m22-art-box.bg-dark .m22-art-inner {
+    background:
+      linear-gradient(45deg, #1b2840 25%, transparent 25%),
+      linear-gradient(-45deg, #1b2840 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #1b2840 75%),
+      linear-gradient(-45deg, transparent 75%, #1b2840 75%),
+      #233350;
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  }
+
+  /* 水彩精抠/微晕/原画尺寸（122px×82%≈100px，与 2× 像素 106px 视觉齐平） */
+  .m22-art-img {
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+    transition: transform 0.18s var(--ease);
+  }
+
+  .m22-art-img.is-raw {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* 像素板 H/J 在矩阵里严格 128×128 (2.00× 整数倍，内容 106px，在 124px 槽内四周 9px 呼吸留白！) */
+  .m22-art-img.pixel-art {
+    width: 128px;
+    height: 128px;
+    max-width: none;
+    max-height: none;
+    flex-shrink: 0;
+  }
+
+  .m22-item-tile:hover .m22-art-img:not(.pixel-art) {
+    transform: scale(1.04);
+  }
+
+  .m22-item-name {
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    text-align: center;
+    white-space: nowrap;
+    line-height: 1.2;
+  }
+
+  .m22-item-sub {
+    font-size: 9.8px;
+    font-weight: 600;
+    color: var(--ink-faint);
+    text-align: center;
+    white-space: nowrap;
+    line-height: 1.15;
+  }
+
+  .m22-quad-foot {
+    padding: 6px 13px 7px;
+    border-top: 1px solid var(--rule-soft);
+    background: #FAFBFD;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--ink-muted);
+  }
+
+  .m22-quad-foot b {
+    color: var(--ink-deep);
+    font-weight: 700;
+  }
+
+  .m22-foot-tag {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--royal);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* 视角 1 底部四板选型速览横栏（建筑 1px 分隔，零圆框） */
+  .v1-eval-4strip {
+    margin-top: 9px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border: 1px solid var(--rule);
+    background: var(--bg-surface);
+  }
+
+  .v1-eval-col {
+    padding: 8px 13px 9px;
+    border-right: 1px solid var(--rule);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.14s var(--ease);
+  }
+  .v1-eval-col:last-child { border-right: none; }
+  .v1-eval-col:hover { background: var(--royal-wash); }
+  .v1-eval-col.active { background: rgba(22, 88, 235, 0.04); }
+  .v1-eval-col.active::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; top: -1px;
+    height: 2px;
+    background: var(--eval-accent, var(--royal));
+  }
+
+  .v1-eval-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--ink-deep);
+  }
+  .v1-eval-head em { font-style: normal; color: var(--eval-accent, var(--royal)); margin-right: 4px; }
+  .v1-eval-pill {
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 1px 6px;
+    background: var(--bg-subtle);
+    color: var(--ink-muted);
+    white-space: nowrap;
+  }
+  .v1-eval-col.active .v1-eval-pill { background: var(--royal); color: #FFFFFF; }
+  .v1-eval-text { font-size: 10.5px; color: var(--ink-muted); line-height: 1.42; }
+
+  /* =========================================================================
+     视角 2：76px 实机图形化背包交互试玩（含 200px 大图标预览）
+     ========================================================================= */
+  .sub-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 0 9px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 10px;
+    flex-wrap: nowrap;
+  }
+
+  .sub-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .board-strip {
+    display: inline-flex;
+    align-items: stretch;
+    border: 1px solid var(--rule);
+    background: var(--bg-surface);
+    flex-shrink: 0;
+  }
+
+  .board-pill-btn {
+    padding: 6px 11px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-right: 1px solid var(--rule-soft);
+    transition: all 0.15s var(--ease);
+    white-space: nowrap;
+  }
+
+  .board-pill-btn:last-child { border-right: none; }
+  .board-pill-btn .bp-code {
+    font-family: var(--serif);
+    font-size: 12.5px;
+    font-weight: 800;
+    color: var(--ink-muted);
+  }
+  .board-pill-btn .bp-name {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--ink-body);
+  }
+  .board-pill-btn:hover { background: var(--royal-wash); }
+  .board-pill-btn.active { background: var(--royal); color: #FFFFFF; }
+  .board-pill-btn.active .bp-code,
+  .board-pill-btn.active .bp-name { color: #FFFFFF; }
+
+  .telemetry-strip {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    font-size: 11.5px;
+    color: var(--ink-muted);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+
+  .telemetry-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+
+  .telemetry-item b {
+    color: var(--ink-deep);
+    font-weight: 800;
+  }
+
+  .telemetry-sep {
+    width: 1px;
+    height: 13px;
+    background: var(--rule);
+  }
+
+  /* 背包主窗体 */
+  .backpack-window {
+    border: 1px solid var(--rule-strong);
+    border-top: 2px solid var(--royal);
+    background: var(--bg-surface);
+    box-shadow: 0 16px 40px rgba(18, 28, 48, 0.075);
+    display: grid;
+    grid-template-columns: 214px minmax(0, 1fr) 456px;
+    min-height: 752px;
+  }
+
+  /* 左栏：分类 + 实时联动微型装备栏 */
+  .bp-rail {
+    border-right: 1px solid var(--rule);
+    background: linear-gradient(180deg, #F8FAFE 0%, #F3F6FB 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .bp-rail-head {
+    padding: 13px 16px 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .bp-rail-eyebrow {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: var(--gold-deep);
+    text-transform: uppercase;
+  }
+
+  .bp-rail-title {
+    font-family: var(--serif);
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+  }
+
+  .bp-cat-list {
+    padding: 5px 0;
+  }
+
+  .bp-cat-btn {
+    width: 100%;
+    padding: 9px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink-body);
+    position: relative;
+    transition: all 0.14s var(--ease);
+  }
+
+  .bp-cat-btn:hover { background: rgba(22, 88, 235, 0.045); color: var(--ink-deep); }
+  .bp-cat-btn.active {
+    background: var(--bg-surface);
+    color: var(--royal);
+    font-weight: 800;
+    border-top: 1px solid var(--rule-soft);
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .bp-cat-btn.active::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--royal);
+  }
+
+  .bp-cat-count {
+    font-size: 11px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-faint);
+  }
+  .bp-cat-btn.active .bp-cat-count { color: var(--royal); }
+
+  /* 左侧联动实时装备栏 */
+  .bp-equip-dock {
+    padding: 11px 14px;
+    border-top: 1px solid var(--rule);
+    background: rgba(255, 255, 255, 0.72);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .bp-dock-title {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--royal);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .bp-dock-staff {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 6px 8px;
+    background: var(--bg-canvas);
+    border-left: 2px solid var(--royal);
+    cursor: pointer;
+    transition: background 0.14s;
+  }
+  .bp-dock-staff:hover { background: var(--royal-wash); }
+
+  .prism-40 {
+    width: 40px;
+    height: 40px;
+    --cut: 6px;
+    flex-shrink: 0;
+  }
+  .prism-40 img {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    z-index: 2;
+  }
+  .prism-40 img.is-raw { width: 100%; height: 100%; object-fit: cover; }
+
+  .bp-dock-relics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .bp-dock-relic-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 4px 2px;
+    background: var(--bg-canvas);
+    border-top: 1.5px solid var(--gold);
+    transition: background 0.14s;
+  }
+  .bp-dock-relic-btn:hover { background: var(--gold-wash); }
+  .bp-dock-relic-btn.empty {
+    border-top: 1px dashed var(--rule-strong);
+    justify-content: center;
+    min-height: 60px;
+    font-size: 9.5px;
+    color: var(--ink-faint);
+  }
+  .bp-dock-relic-btn span {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--ink-body);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .bp-rail-foot {
+    padding: 11px 14px 13px;
+    border-top: 1px solid var(--rule);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .bp-syn-title {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .bp-syn-item {
+    padding-left: 8px;
+    border-left: 2px solid var(--royal);
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .bp-syn-item.is-gold { border-left-color: var(--gold); }
+  .bp-syn-name {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink-deep);
+    display: flex;
+    justify-content: space-between;
+  }
+  .bp-syn-name em {
+    font-style: normal;
+    font-size: 10.5px;
+    color: var(--royal);
+    font-variant-numeric: tabular-nums;
+  }
+  .bp-syn-item.is-gold .bp-syn-name em { color: var(--gold-deep); }
+  .bp-syn-desc { font-size: 10.5px; color: var(--ink-muted); line-height: 1.38; }
+
+  /* 中栏：76×76 雪瓷背包网格 */
+  .bp-center {
+    padding: 14px 20px 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: var(--bg-canvas);
+    min-width: 0;
+  }
+
+  .bp-center-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 14px;
+    gap: 10px;
+  }
+
+  .bp-center-title {
+    font-family: var(--serif);
+    font-size: 15.5px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    white-space: nowrap;
+  }
+
+  .bp-center-spec {
+    font-size: 11px;
+    color: var(--ink-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bp-grid-section-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    margin-bottom: 9px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .bp-grid-section-label::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--rule-soft);
+  }
+
+  .bp-slot-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px 10px;
+  }
+
+  .bp-slot-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    padding: 4px 2px;
+    transition: transform 0.15s var(--ease);
+    min-width: 0;
+  }
+  .bp-slot-unit:hover { transform: translateY(-2px); }
+  .bp-slot-unit.is-disabled { cursor: default; }
+  .bp-slot-unit.is-disabled:hover { transform: none; }
+
+  /* 实打实 76×76px 雪瓷棱镜背包槽 */
+  .bp-prism-76 {
+    width: 76px;
+    height: 76px;
+    --cut: 11px;
+    flex-shrink: 0;
+  }
+
+  .bp-prism-76 img {
+    width: 66px;
+    height: 66px;
+    object-fit: contain;
+    position: relative;
+    z-index: 2;
+    transition: transform 0.18s var(--ease);
+  }
+
+  /* 像素板在 76px 槽内严格 64×64 (1.00× 原生零失真，四周充足留白) */
+  .bp-prism-76 img.pixel-art {
+    width: 64px;
+    height: 64px;
+  }
+
+  .bp-prism-76 img.is-raw {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .bp-slot-unit:hover .bp-prism-76 img:not(.pixel-art) {
+    transform: scale(1.05);
+  }
+
+  .bp-slot-unit.selected .bp-prism-76 {
+    box-shadow: 0 8px 18px rgba(22, 88, 235, 0.2);
+  }
+
+  .bp-slot-name {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink-deep);
+    text-align: center;
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+  .bp-slot-unit.selected .bp-slot-name { color: var(--royal); }
+
+  .bp-slot-sub {
+    font-size: 10px;
+    color: var(--ink-faint);
+    text-align: center;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .bp-locked-glyph {
+    width: 26px;
+    height: 26px;
+    color: rgba(82, 96, 120, 0.34);
+    z-index: 2;
+  }
+
+  .bp-empty-diamond {
+    width: 8px;
+    height: 8px;
+    border: 1px solid rgba(27, 35, 51, 0.14);
+    transform: rotate(45deg);
+  }
+
+  /* 四板即时微型对照条（背包中栏下方，方便一边看 76px 背包一边横扫 G/H/I/J 当前选中道具） */
+  .bp-mini-4board {
+    margin-top: 14px;
+    padding: 9px 11px;
+    border: 1px solid var(--rule);
+    background: var(--bg-surface);
+  }
+
+  .bp-mini-4head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 10.5px;
+    font-weight: 800;
+    color: var(--ink-muted);
+    margin-bottom: 8px;
+  }
+
+  .bp-mini-4head em {
+    font-style: normal;
+    color: var(--royal);
+  }
+
+  .bp-mini-4grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .bp-mini-4item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 7px;
+    background: var(--bg-canvas);
+    border-left: 2px solid var(--rule);
+    cursor: pointer;
+    transition: all 0.14s var(--ease);
+    min-width: 0;
+  }
+
+  .bp-mini-4item:hover {
+    background: var(--royal-wash);
+  }
+
+  .bp-mini-4item.active {
+    background: var(--royal-wash);
+    border-left-color: var(--royal);
+  }
+
+  .prism-52 {
+    width: 52px;
+    height: 52px;
+    --cut: 7px;
+    flex-shrink: 0;
+  }
+  .prism-52 img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    z-index: 2;
+  }
+  .prism-52 img.pixel-art {
+    width: 48px;
+    height: 48px;
+  }
+  .prism-52 img.is-raw {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .bp-mini-4meta {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .bp-mini-4code {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    white-space: nowrap;
+  }
+  .bp-mini-4item.active .bp-mini-4code { color: var(--royal); }
+  .bp-mini-4sub {
+    font-size: 9.5px;
+    color: var(--ink-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bp-center-foot {
+    margin-top: 10px;
+    padding-top: 9px;
+    border-top: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--ink-muted);
+    gap: 10px;
+  }
+
+  .bp-toast {
+    min-height: 18px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--royal);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 右栏：道具详情卡 + 200px 大图标预览 */
+  .bp-inspect {
+    border-left: 1px solid var(--rule);
+    background: var(--bg-surface);
+    padding: 16px 20px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .insp-stage {
+    position: relative;
+    height: 228px;
+    background:
+      radial-gradient(circle at 50% 48%, rgba(90, 188, 245, 0.16) 0%, rgba(237, 243, 252, 0.65) 48%, rgba(250, 251, 253, 0.2) 82%);
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: -16px -20px 13px;
+    overflow: hidden;
+  }
+
+  .insp-stage.bg-dark {
+    background:
+      linear-gradient(45deg, #1b2840 25%, transparent 25%),
+      linear-gradient(-45deg, #1b2840 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #1b2840 75%),
+      linear-gradient(-45deg, transparent 75%, #1b2840 75%),
+      #233350;
+    background-size: 18px 18px;
+    background-position: 0 0, 0 9px, 9px -9px, -9px 0;
+  }
+
+  .insp-stage.bg-dark .insp-astro { color: rgba(90, 188, 245, 0.22); }
+  .insp-stage.bg-dark .insp-size-tag { color: rgba(220, 234, 255, 0.85); }
+
+  .insp-astro {
+    position: absolute;
+    width: 214px;
+    height: 214px;
+    color: rgba(22, 88, 235, 0.17);
+    pointer-events: none;
+  }
+
+  /* 200×200px 大图标预览容器 */
+  .insp-img-box {
+    width: 200px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .insp-img-box img {
+    width: 200px;
+    height: 200px;
+    object-fit: contain;
+  }
+
+  .insp-img-box img.art-float {
+    filter: drop-shadow(0 10px 18px rgba(27, 35, 51, 0.18));
+  }
+
+  /* 像素板在 200px 大预览舞台中严格 192×192 (3.00× 严格整数倍！) */
+  .insp-img-box img.pixel-art {
+    width: 192px;
+    height: 192px;
+  }
+
+  .insp-img-box img.is-raw {
+    width: 196px;
+    height: 196px;
+    object-fit: cover;
+    border: 1px solid var(--rule);
+    box-shadow: 0 6px 18px rgba(27, 35, 51, 0.12);
+  }
+
+  .insp-board-watermark {
+    position: absolute;
+    top: 9px;
+    left: 14px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--royal);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 2px 7px;
+    border-left: 2px solid var(--royal);
+    z-index: 3;
+  }
+
+  .insp-bg-toggle {
+    position: absolute;
+    top: 9px;
+    right: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    background: rgba(255, 255, 255, 0.88);
+    color: var(--ink-body);
+    border: 1px solid var(--rule);
+    z-index: 3;
+    transition: all 0.14s;
+  }
+  .insp-bg-toggle:hover { color: var(--royal); border-color: var(--royal); }
+  .insp-bg-toggle.active { background: var(--royal); color: #FFFFFF; border-color: var(--royal); }
+
+  .insp-size-tag {
+    position: absolute;
+    bottom: 7px;
+    right: 12px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+    z-index: 3;
+  }
+
+  .insp-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .insp-title {
+    font-family: var(--serif);
+    font-size: 19.5px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    line-height: 1.2;
+  }
+
+  .insp-en {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    color: var(--gold-deep);
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .insp-status-flag {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    padding: 3px 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .insp-status-flag.royal { background: var(--royal-wash-strong); color: var(--royal); border-left: 2px solid var(--royal); }
+  .insp-status-flag.gold { background: var(--gold-wash); color: var(--gold-deep); border-left: 2px solid var(--gold); }
+  .insp-status-flag.muted { background: var(--bg-subtle); color: var(--ink-muted); border-left: 2px solid var(--ink-faint); }
+
+  .insp-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin: 9px 0 10px;
+  }
+
+  .meta-tag {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink-body);
+    background: var(--bg-subtle);
+    padding: 2px 6px;
+    white-space: nowrap;
+  }
+  .meta-tag.accent { background: var(--royal-wash); color: var(--royal-deep); font-weight: 700; }
+  .meta-tag.gold { background: var(--gold-wash); color: var(--gold-deep); font-weight: 700; }
+
+  .insp-lore {
+    font-family: var(--serif);
+    font-size: 12px;
+    line-height: 1.66;
+    color: var(--ink-body);
+    padding: 7px 0 7px 11px;
+    border-left: 2px solid var(--gold);
+    background: linear-gradient(90deg, rgba(201, 164, 92, 0.055), transparent 85%);
+    margin-bottom: 10px;
+  }
+
+  .insp-ledger {
+    border-top: 1px solid var(--rule);
+    margin-bottom: 11px;
+  }
+
+  .insp-ledger-title {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    padding: 7px 0 5px;
+  }
+
+  .insp-stat-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 5px 0;
+    border-top: 1px solid var(--rule-soft);
+    font-size: 11.5px;
+  }
+  .insp-stat-key { color: var(--ink-muted); font-weight: 600; flex-shrink: 0; }
+  .insp-stat-val { color: var(--ink-deep); font-weight: 700; text-align: right; }
+  .insp-stat-val.hi { color: var(--royal); }
+
+  .insp-actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--rule);
+  }
+
+  .act-btn {
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    transition: all 0.15s var(--ease);
+    clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  }
+  .act-btn.primary { background: var(--royal); color: #FFFFFF; }
+  .act-btn.primary:hover { background: var(--royal-deep); }
+  .act-btn.secondary { background: var(--bg-ice); color: var(--royal-deep); }
+  .act-btn.secondary:hover { background: #DCE8FA; }
+  .act-btn.gold { background: var(--gold-wash); color: var(--gold-deep); }
+  .act-btn.gold:hover { background: rgba(201, 164, 92, 0.22); }
+
+  /* =========================================================================
+     视角 3：角色综合面板实寸小图标对照（64px 法杖槽 + 3×56px 铭记槽四板横向直击）
+     ========================================================================= */
+  .panel-window {
+    border: 1px solid var(--rule-strong);
+    border-top: 2px solid var(--royal);
+    background: var(--bg-surface);
+    box-shadow: 0 16px 40px rgba(18, 28, 48, 0.075);
+    display: grid;
+    grid-template-columns: 288px minmax(0, 1fr);
+    min-height: 752px;
+  }
+
+  .char-card {
+    border-right: 1px solid var(--rule);
+    background: linear-gradient(180deg, #FAFBFD 0%, #F2F6FC 100%);
+    padding: 16px 18px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .char-portrait-stage {
+    position: relative;
+    height: 204px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 44%, rgba(90, 188, 245, 0.16), rgba(250, 251, 253, 0.3) 68%);
+    border-bottom: 1px solid var(--rule);
+    margin: -16px -18px 11px;
+    overflow: hidden;
+  }
+
+  .char-astro-ring {
+    position: absolute;
+    width: 198px;
+    height: 198px;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(22, 88, 235, 0.19);
+  }
+
+  .char-portrait-img {
+    position: relative;
+    z-index: 2;
+    height: 196px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 14px rgba(27, 35, 51, 0.14));
+  }
+
+  .char-tier-ribbon {
+    position: absolute;
+    top: 9px; left: 12px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--royal);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 2px 7px;
+    border-left: 2px solid var(--royal);
+    z-index: 3;
+  }
+
+  .char-name-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-bottom: 7px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .char-name {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    letter-spacing: 0.04em;
+  }
+
+  .char-lv {
+    font-family: var(--serif);
+    font-size: 12.5px;
+    font-weight: 800;
+    color: var(--royal);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .char-subtitle {
+    font-size: 11px;
+    color: var(--ink-muted);
+    margin: 5px 0 10px;
+  }
+
+  .vital-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 11px;
+  }
+
+  .vital-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-body);
+    margin-bottom: 3px;
+    font-variant-numeric: tabular-nums;
+  }
+  .vital-head em { font-style: normal; font-size: 10px; color: var(--royal); }
+
+  .vital-track { height: 4px; background: rgba(27, 35, 51, 0.09); }
+  .vital-fill { height: 100%; }
+  .vital-fill.hp { background: linear-gradient(90deg, var(--rose), #E26B83); }
+  .vital-fill.mp { background: linear-gradient(90deg, var(--royal), var(--ice-cyan)); }
+  .vital-fill.st { background: linear-gradient(90deg, var(--emerald), #35B88E); }
+
+  .stat-matrix {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 9px;
+  }
+
+  .stat-cell {
+    padding: 6px 9px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .stat-cell:nth-child(odd) { border-right: 1px solid var(--rule-soft); }
+  .stat-cell:nth-child(3), .stat-cell:nth-child(4) { border-bottom: none; }
+  .stat-lbl { font-size: 10.5px; font-weight: 700; color: var(--ink-muted); }
+  .stat-num { font-family: var(--serif); font-size: 17px; font-weight: 800; color: var(--ink-deep); font-variant-numeric: tabular-nums; }
+  .stat-num.blue { color: var(--royal); }
+
+  .char-exp-row { margin-bottom: 9px; }
+
+  .char-constellation {
+    padding: 8px 0 7px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 9px;
+  }
+
+  .char-const-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--ink-muted);
+    margin-bottom: 6px;
+  }
+  .char-const-head em { font-style: normal; color: var(--royal); font-variant-numeric: tabular-nums; }
+
+  .char-stars {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 4px;
+  }
+
+  .char-star-node {
+    width: 10px;
+    height: 10px;
+    transform: rotate(45deg);
+    border: 1px solid rgba(27, 35, 51, 0.22);
+    background: var(--bg-surface);
+  }
+  .char-star-node.lit {
+    background: linear-gradient(135deg, var(--royal), var(--ice-cyan));
+    border-color: var(--royal);
+    box-shadow: 0 0 7px rgba(22, 88, 235, 0.26);
+  }
+
+  .affinity-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--ink-muted);
+  }
+  .affinity-tags { display: flex; gap: 6px; }
+  .aff-chip { font-size: 10.5px; font-weight: 700; padding: 2px 7px; background: var(--royal-wash); color: var(--royal); }
+  .aff-chip.water { background: rgba(27, 126, 194, 0.09); color: var(--ice-cyan-deep); }
+
+  /* 角色面板右侧 */
+  .panel-right {
+    padding: 14px 18px 13px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .sec-eyebrow {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--ink-deep);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 7px;
+  }
+  .sec-eyebrow span {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    letter-spacing: 0.02em;
+  }
+
+  .equip-top-row {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 10px;
+    gap: 15px;
+  }
+
+  .staff-loadout-box {
+    padding-right: 15px;
+    border-right: 1px solid var(--rule);
+  }
+
+  .staff-card {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 8px 10px;
+    background: linear-gradient(100deg, rgba(22, 88, 235, 0.055) 0%, rgba(250, 251, 253, 0.4) 100%);
+    border-top: 1.5px solid var(--royal);
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  /* 实寸 64×64 法杖棱镜槽 */
+  .prism-64 {
+    width: 64px;
+    height: 64px;
+    --cut: 9px;
+    flex-shrink: 0;
+  }
+  .prism-64 img {
+    width: 62px;
+    height: 62px;
+    object-fit: contain;
+    z-index: 2;
+  }
+  /* 像素板在 64px 法杖槽内严格 64×64 (1.00× 点对点原生！内容高 53px，上下留白 4px 绝不贴边) */
+  .prism-64 img.pixel-art {
+    width: 64px;
+    height: 64px;
+    max-width: none;
+    max-height: none;
+  }
+  .prism-64 img.is-raw {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .staff-info-name {
+    font-family: var(--serif);
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .staff-info-sub { font-size: 10.5px; font-weight: 700; color: var(--royal); margin: 2px 0; }
+  .staff-info-desc { font-size: 10.5px; color: var(--ink-muted); line-height: 1.35; }
+
+  /* 3×56px 随身铭记棱镜槽 */
+  .relic-slots-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .relic-slot-card {
+    padding: 7px 9px;
+    background: var(--bg-canvas);
+    border-top: 1.5px solid var(--gold);
+    border-bottom: 1px solid var(--rule-soft);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    cursor: pointer;
+    transition: background 0.14s;
+    min-width: 0;
+  }
+  .relic-slot-card:hover { background: var(--gold-wash); }
+  .relic-slot-card.empty {
+    border-top: 1px dashed var(--rule-strong);
+    background: transparent;
+    justify-content: center;
+    color: var(--ink-faint);
+    font-size: 11px;
+  }
+
+  /* 实寸 56×56 铭记棱镜槽（水彩与像素统一 52px，视觉体量齐平、四周充足留白不贴切角框） */
+  .prism-56 {
+    width: 56px;
+    height: 56px;
+    --cut: 8px;
+    flex-shrink: 0;
+  }
+  .prism-56 img {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+    z-index: 2;
+  }
+  .prism-56 img.pixel-art {
+    width: 52px;
+    height: 52px;
+  }
+  .prism-56 img.is-raw {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .rs-meta { min-width: 0; flex: 1; }
+  .rs-name { font-size: 12px; font-weight: 800; color: var(--ink-deep); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rs-set { font-size: 10px; font-weight: 700; color: var(--gold-deep); margin: 1px 0 2px; white-space: nowrap; }
+  .rs-unequip { font-size: 10px; font-weight: 600; color: var(--ink-muted); border-bottom: 1px solid var(--rule); }
+
+  /* 套装共鸣条 + 4 枚典藏铭记紧凑切换条 */
+  .panel-mid-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .psyn-card {
+    padding: 7px 11px;
+    background: var(--bg-canvas);
+    border-left: 2.5px solid var(--rule-strong);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .psyn-card.active { background: rgba(22, 88, 235, 0.045); border-left-color: var(--royal); }
+  .psyn-card.near { background: rgba(201, 164, 92, 0.06); border-left-color: var(--gold); }
+  .psyn-head { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; font-weight: 800; color: var(--ink-deep); }
+  .psyn-badge { font-size: 10px; font-weight: 700; padding: 1px 6px; background: var(--royal-wash-strong); color: var(--royal); }
+  .psyn-card.near .psyn-badge { background: var(--gold-wash); color: var(--gold-deep); }
+  .psyn-desc { font-size: 10.5px; color: var(--ink-body); line-height: 1.36; }
+
+  .vault-compact-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .vc-mini {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 9px;
+    background: var(--bg-canvas);
+    border-left: 2px solid var(--rule);
+    border-bottom: 1px solid var(--rule-soft);
+    cursor: pointer;
+    transition: all 0.14s var(--ease);
+    min-width: 0;
+  }
+  .vc-mini:hover { background: var(--royal-wash); }
+  .vc-mini.equipped { background: rgba(22, 88, 235, 0.04); border-left-color: var(--royal); }
+
+  .vc-mini-body { min-width: 0; flex: 1; }
+  .vc-mini-top { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+  .vc-mini-name { font-size: 11.5px; font-weight: 800; color: var(--ink-deep); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .vc-mini-pill {
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 1px 5px;
+    background: var(--bg-subtle);
+    color: var(--ink-muted);
+    flex-shrink: 0;
+  }
+  .vc-mini.equipped .vc-mini-pill { background: var(--royal); color: #FFFFFF; }
+  .vc-mini-fx { font-size: 10px; color: var(--ink-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* =========================================================================
+     核心重头戏：四板 G / H / I / J 实寸 64px 法杖槽 + 3×56px 铭记槽横向并排直击对照
+     ========================================================================= */
+  .ghij-compare-panel {
+    border-top: 2px solid var(--ink-deep);
+    background: linear-gradient(180deg, #F8FAFE 0%, #FFFFFF 100%);
+    padding: 11px 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    flex: 1;
+  }
+
+  .ghij-compare-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .ghij-compare-title {
+    font-family: var(--serif);
+    font-size: 12.5px;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    color: var(--royal);
+    white-space: nowrap;
+  }
+
+  .ghij-compare-hint {
+    font-size: 10.5px;
+    color: var(--ink-muted);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .ghij-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    background: var(--bg-surface);
+  }
+
+  .ghij-col {
+    padding: 10px 10px 9px;
+    border-right: 1px solid var(--rule);
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+    transition: background 0.15s var(--ease);
+    min-width: 0;
+  }
+
+  .ghij-col:last-child { border-right: none; }
+  .ghij-col:hover { background: rgba(22, 88, 235, 0.03); }
+  .ghij-col.active { background: rgba(22, 88, 235, 0.045); }
+
+  .ghij-col.active::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; top: -1px;
+    height: 2.5px;
+    background: var(--col-accent, var(--royal));
+  }
+
+  .ghij-col-head {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  .ghij-col-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+  }
+
+  .ghij-col-code {
+    font-family: var(--serif);
+    font-size: 13.5px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    white-space: nowrap;
+  }
+
+  .ghij-col-code em {
+    font-style: normal;
+    color: var(--col-accent, var(--royal));
+    margin-right: 5px;
+  }
+
+  .ghij-col-badge {
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 1px 5px;
+    background: var(--bg-subtle);
+    color: var(--ink-muted);
+    white-space: nowrap;
+  }
+  .ghij-col.active .ghij-col-badge {
+    background: var(--royal);
+    color: #FFFFFF;
+  }
+
+  .ghij-col-sub {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 每列上行：实寸 64×64 法杖槽 + 1 枚备选 56×56 铭记（确保 5 件道具一屏全齐！） */
+  .ghij-staff-band {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .ghij-staff-pair {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .ghij-staff-txt {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .ghij-slot-cap {
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--royal);
+    white-space: nowrap;
+  }
+
+  .ghij-slot-name {
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    white-space: nowrap;
+  }
+
+  .ghij-slot-meta {
+    font-size: 9.5px;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+
+  .ghij-reserve-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding-left: 8px;
+    border-left: 1px dashed var(--rule);
+    flex-shrink: 0;
+  }
+
+  .ghij-reserve-lbl {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+
+  /* 每列下行：实寸 3×56px 随身铭记槽横排 */
+  .ghij-relic-band {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .ghij-relic-label {
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--gold-deep);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .ghij-relic-3row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .ghij-mini-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .ghij-mini-slot span {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--ink-muted);
+    white-space: nowrap;
+  }
+
+  .ghij-col.active .ghij-mini-slot span {
+    color: var(--ink-deep);
+  }
+
+  .ghij-verdict-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 10.5px;
+    color: var(--ink-muted);
+  }
+  .ghij-verdict-row b { color: var(--ink-deep); }
+
+  /* =========================================================================
+     1280×720 桌面紧凑适配（保证零溢出、零换行挤压、像素仍为整数倍）
+     ========================================================================= */
+  @media (max-width: 1360px) {
+    .topbar { padding: 0 14px; gap: 8px; }
+    .brand-title { font-size: 13.5px; }
+    .brand-sub { display: none; }
+    .view-tab { padding: 0 10px; font-size: 12px; }
+    .header-board-switch { padding-left: 8px; }
+    .hbs-label { display: none; }
+    .hbs-btn { padding: 5px 7px; font-size: 11px; }
+    .stage-shell { padding: 8px 14px 12px; }
+
+    .m22-items-row { padding: 8px 6px 6px; gap: 4px; }
+    .m22-art-box { width: 114px; height: 114px; }
+    .m22-art-img { width: 110px; height: 110px; }
+    /* 1280 宽下 114px 盒中居中 128×128：内容 106px 四周留白 4px 不贴边且严格 2.00× 整数倍！ */
+    .m22-art-img.pixel-art { width: 128px; height: 128px; }
+    .v1-eval-4strip { display: none; }
+
+    .backpack-window { grid-template-columns: 196px minmax(0, 1fr) 412px; min-height: 620px; }
+    .bp-center { padding: 12px 14px 10px; }
+    .bp-inspect { padding: 14px 16px 12px; }
+    .insp-stage { margin: -14px -16px 11px; height: 214px; }
+    .board-pill-btn { padding: 5px 8px; }
+    .board-pill-btn .bp-name { font-size: 11px; }
+    .telemetry-strip { gap: 8px; font-size: 11px; }
+
+    .panel-window { grid-template-columns: 256px minmax(0, 1fr); min-height: 620px; }
+    .char-card { padding: 13px 14px 12px; }
+    .char-portrait-stage { height: 176px; margin: -13px -14px 9px; }
+    .char-portrait-img { height: 168px; }
+    .equip-top-row { grid-template-columns: 266px minmax(0, 1fr); gap: 11px; }
+    .staff-loadout-box { padding-right: 11px; }
+    .ghij-compare-title { font-size: 12px; }
+    .ghij-compare-hint { font-size: 10px; }
+    .ghij-col { padding: 8px 7px; }
+    .ghij-staff-txt { display: none; }
+    .ghij-relic-3row { gap: 4px; }
+  }
+</style>
+</head>
+<body>
+  <!-- 顶部建筑眉栏 -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-gem" aria-hidden="true"></div>
+      <div class="brand-text">
+        <div class="brand-title">转生千金 · 第三轮 2×2 四板道具美术展厅</div>
+        <div class="brand-sub">Round 3 · 2×2 Matrix (G / H / I / J) × Live Backpack &amp; Panel</div>
+      </div>
+    </div>
+
+    <nav class="view-tabs" aria-label="展厅三大视角切换">
+      <button type="button" class="view-tab active" data-view="compare">
+        <span class="tab-idx">01</span><span>2×2 四板全览矩阵</span>
+      </button>
+      <button type="button" class="view-tab" data-view="backpack">
+        <span class="tab-idx">02</span><span>76px 图形背包实机</span>
+      </button>
+      <button type="button" class="view-tab" data-view="panel">
+        <span class="tab-idx">03</span><span>角色面板实寸四板对照</span>
+      </button>
+    </nav>
+
+    <div class="header-board-switch" aria-label="全局快捷切换展板">
+      <span class="hbs-label">当前展板</span>
+      <button type="button" class="hbs-btn active" data-board="g">板 G 原图</button>
+      <button type="button" class="hbs-btn" data-board="h">板 H 像素</button>
+      <button type="button" class="hbs-btn" data-board="i">板 I 原图</button>
+      <button type="button" class="hbs-btn" data-board="j">板 J 像素</button>
+    </div>
+  </header>
+
+  <main class="stage-shell">
+    <!-- =====================================================================
+         视角 1：2×2 四板同台全览矩阵（行 = 提示词 1 vs 2，列 = 原图精抠 vs 64×64 像素）
+         ===================================================================== -->
+    <section id="view-compare" class="view-pane active" aria-label="2×2 四板同台全览矩阵">
+      <div class="v1-toolbar">
+        <div class="v1-title-group">
+          <h2>第三轮 2×2 矩阵同台评定 · 提示词 1 / 提示词 2 × 原图精抠 / 64×64 高精像素</h2>
+          <span>5 件原著核心道具同题对比 · 像素板强制 image-rendering: pixelated 整数倍硬边直出 · 单击任意道具直达 76px 背包试玩</span>
+        </div>
+        <div class="v1-controls">
+          <div class="ctrl-group" role="group" aria-label="显示模式切换">
+            <span class="ctrl-label">显示模式</span>
+            <button type="button" class="ctrl-btn active" data-mode="final">精抠透明槽位</button>
+            <button type="button" class="ctrl-btn" data-mode="raw">完整水彩原画</button>
+            <button type="button" class="ctrl-btn" data-mode="bloom">水彩微晕透底（G/I）</button>
+          </div>
+          <div class="ctrl-group" role="group" aria-label="底衬验边">
+            <span class="ctrl-label">验底</span>
+            <button type="button" class="ctrl-btn active" data-bg="slot">雪瓷槽</button>
+            <button type="button" class="ctrl-btn" data-bg="white">纯白裸图</button>
+            <button type="button" class="ctrl-btn" data-bg="dark">深蓝检边</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="matrix-2x2-root"></div>
+    </section>
+
+    <!-- =====================================================================
+         视角 2：76px 实机图形化背包交互试玩（含 200px 大图标预览）
+         ===================================================================== -->
+    <section id="view-backpack" class="view-pane" aria-label="76px 实机图形化背包交互试玩">
+      <div class="sub-bar">
+        <div class="sub-bar-left">
+          <div class="board-strip" id="bp-board-strip"></div>
+          <div class="ctrl-group" role="group" aria-label="背包底纹模式">
+            <span class="ctrl-label">渲染态</span>
+            <button type="button" class="ctrl-btn active" data-bp-mode="final">精抠透明</button>
+            <button type="button" class="ctrl-btn" data-bp-mode="bloom">微晕透底</button>
+            <button type="button" class="ctrl-btn" data-bp-mode="raw">完整原画</button>
+          </div>
+        </div>
+        <div class="telemetry-strip">
+          <span class="telemetry-item">实装规格 <b>76×76 棱镜格 + 200px 预览</b></span>
+          <span class="telemetry-sep"></span>
+          <span class="telemetry-item">法杖 <b id="bp-staff-status">晦轮杖</b></span>
+          <span class="telemetry-sep"></span>
+          <span class="telemetry-item">铭记 <b id="bp-relic-count">3 / 3</b></span>
+          <span class="telemetry-sep"></span>
+          <span class="telemetry-item">金币 <b>1,280 G</b></span>
+        </div>
+      </div>
+
+      <div class="backpack-window">
+        <!-- 左栏：品类筛选 + 实时联动微型装备栏 + 套装共鸣 -->
+        <aside class="bp-rail">
+          <div>
+            <div class="bp-rail-head">
+              <div class="bp-rail-eyebrow">Sylvia Inventory</div>
+              <div class="bp-rail-title">随身行囊</div>
+            </div>
+            <div class="bp-cat-list" id="bp-cat-list"></div>
+            <div class="bp-equip-dock" id="bp-equip-dock"></div>
+          </div>
+          <div class="bp-rail-foot" id="bp-synergy-box"></div>
+        </aside>
+
+        <!-- 中栏：76×76px 雪瓷棱镜背包网格 -->
+        <div class="bp-center">
+          <div>
+            <div class="bp-center-head">
+              <div class="bp-center-title" id="bp-grid-title">全部物品</div>
+              <div class="bp-center-spec" id="bp-grid-spec">76×76px 八角冰晶棱镜格 · 单击联动右侧 200px 详情与左侧装备栏</div>
+            </div>
+            <div class="bp-grid-section-label">已持有珍藏（第三轮 5 件核心道具 · 实机 76×76px 槽位）</div>
+            <div class="bp-slot-grid" id="bp-slot-grid"></div>
+            <div class="bp-grid-section-label" style="margin-top:13px;">未收录典藏槽位 &amp; 预留行囊格</div>
+            <div class="bp-slot-grid" id="bp-extra-grid"></div>
+            <div class="bp-mini-4board" id="bp-mini-4board"></div>
+          </div>
+          <div class="bp-center-foot">
+            <span id="bp-toast" class="bp-toast">✦ 点击任意 76px 道具格联动右侧 200px 详情与装备栏，或一键切换 G / H / I / J 展板</span>
+            <span>行囊容量 5 / 36</span>
+          </div>
+        </div>
+
+        <!-- 右栏：200px 大图标预览 + 道具详情与操作 -->
+        <aside class="bp-inspect" id="bp-inspect"></aside>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         视角 3：角色综合面板实寸小图标对照（64px 法杖槽 + 3×56px 铭记槽四板横向并排）
+         ===================================================================== -->
+    <section id="view-panel" class="view-pane" aria-label="角色综合面板实寸小图标对照">
+      <div class="sub-bar">
+        <div class="sub-bar-left">
+          <div class="board-strip" id="panel-board-strip"></div>
+          <div class="ctrl-group" role="group" aria-label="面板底纹模式">
+            <span class="ctrl-label">渲染态</span>
+            <button type="button" class="ctrl-btn active" data-panel-mode="final">精抠透明</button>
+            <button type="button" class="ctrl-btn" data-panel-mode="bloom">微晕透底</button>
+            <button type="button" class="ctrl-btn" data-panel-mode="raw">完整原画</button>
+          </div>
+        </div>
+        <div class="telemetry-strip">
+          <span class="telemetry-item">实寸对照 <b>64px 法杖槽 × 3×56px 铭记槽</b></span>
+          <span class="telemetry-sep"></span>
+          <span class="telemetry-item">四板一锤定音 <b>点击下方 G / H / I / J 任意列即时切板</b></span>
+        </div>
+      </div>
+
+      <div class="panel-window">
+        <!-- 左侧：希尔维亚雪瓷名片 -->
+        <aside class="char-card">
+          <div>
+            <div class="char-portrait-stage">
+              <span class="char-tier-ribbon">银阶魔导 · 冰水双亲和</span>
+              <svg class="char-astro-ring" viewBox="0 0 200 200" fill="none" aria-hidden="true">
+                <circle cx="100" cy="100" r="94" stroke="currentColor" stroke-width="0.9" stroke-dasharray="4 6" opacity="0.65"/>
+                <circle cx="100" cy="100" r="78" stroke="currentColor" stroke-width="1" opacity="0.45"/>
+                <polygon points="100,14 174,57 174,143 100,186 26,143 26,57" stroke="currentColor" stroke-width="0.85" opacity="0.38"/>
+                <polygon points="100,26 116,84 174,100 116,116 100,174 84,116 26,100 84,84" stroke="currentColor" stroke-width="0.75" opacity="0.34"/>
+              </svg>
+              <img src="./r3_assets/sylvia_portrait.png" class="char-portrait-img" alt="希尔维亚立绘" />
+            </div>
+
+            <div class="char-name-row">
+              <div class="char-name">希尔维亚 · 赫兰</div>
+              <div class="char-lv">Lv.18</div>
+            </div>
+            <div class="char-subtitle">第二卷 · 魔法大学篇 · 公爵府次女</div>
+
+            <div class="vital-list">
+              <div>
+                <div class="vital-head"><span>生命 HP</span><span>190 / 190</span></div>
+                <div class="vital-track"><div class="vital-fill hp" style="width:100%"></div></div>
+              </div>
+              <div>
+                <div class="vital-head"><span>魔力 MP <em id="panel-mp-bonus">(+24% 晦轮杖)</em></span><span id="panel-mp-val">322 / 322</span></div>
+                <div class="vital-track"><div class="vital-fill mp" style="width:100%"></div></div>
+              </div>
+              <div>
+                <div class="vital-head"><span>体力 ST</span><span>96 / 100</span></div>
+                <div class="vital-track"><div class="vital-fill st" style="width:96%"></div></div>
+              </div>
+            </div>
+
+            <div class="stat-matrix">
+              <div class="stat-cell"><span class="stat-lbl">攻击 ATK</span><span class="stat-num">20</span></div>
+              <div class="stat-cell"><span class="stat-lbl">魔力 MAG</span><span class="stat-num blue">56</span></div>
+              <div class="stat-cell"><span class="stat-lbl">物抗 PDEF</span><span class="stat-num">13</span></div>
+              <div class="stat-cell"><span class="stat-lbl">法抗 MDEF</span><span class="stat-num">22</span></div>
+            </div>
+
+            <div class="char-exp-row">
+              <div class="vital-head"><span>经验 EXP</span><span>1,480 / 2,000 · 74%</span></div>
+              <div class="vital-track"><div class="vital-fill mp" style="width:74%;background:linear-gradient(90deg,var(--gold),#E5C989)"></div></div>
+            </div>
+
+            <div class="char-constellation">
+              <div class="char-const-head"><span>✦ 勇者之赐命盘</span><em>5 / 7 星</em></div>
+              <div class="char-stars" aria-label="勇者之赐 5/7 星">
+                <span class="char-star-node lit"></span>
+                <span class="char-star-node lit"></span>
+                <span class="char-star-node lit"></span>
+                <span class="char-star-node lit"></span>
+                <span class="char-star-node lit"></span>
+                <span class="char-star-node"></span>
+                <span class="char-star-node"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="affinity-row">
+            <span>元素亲和</span>
+            <div class="affinity-tags">
+              <span class="aff-chip">✦ 冰</span>
+              <span class="aff-chip water">◇ 水</span>
+            </div>
+          </div>
+        </aside>
+
+        <!-- 右侧：当前展板实机槽位 + 典藏快切 + 四板 G/H/I/J 横向实寸对照 -->
+        <div class="panel-right">
+          <div class="equip-top-row">
+            <div class="staff-loadout-box" id="panel-staff-box"></div>
+            <div>
+              <div class="sec-eyebrow">
+                <span>✦ 随身铭记槽位（3×56px 棱镜格）</span>
+                <span id="panel-syn-summary">已激活共鸣：学院星辰 2/2</span>
+              </div>
+              <div class="relic-slots-row" id="panel-relic-slots"></div>
+            </div>
+          </div>
+
+          <div class="panel-mid-row" id="panel-syn-strip"></div>
+
+          <div>
+            <div class="sec-eyebrow">
+              <span>◈ 铭记典藏快选（点击换入/卸下，下方四板 3×56px 同步联动）</span>
+              <span>已解锁 4 / 12 · 最多同时佩带 3 件</span>
+            </div>
+            <div class="vault-compact-grid" id="panel-vault-grid"></div>
+          </div>
+
+          <!-- 四板 G / H / I / J 实寸 64px 法杖槽 + 3×56px 铭记槽横向并排直击对照 -->
+          <div class="ghij-compare-panel" id="panel-ghij-compare"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+<script>
+(function () {
+  'use strict';
+
+  const BOARDS = [
+    {
+      id: 'g',
+      code: '板 G',
+      promptRow: 1,
+      isPixel: false,
+      shortName: '提示词 1 · 原图精抠',
+      pillName: '提示词1 原图',
+      compactName: '提示词1 · 原图精抠',
+      en: 'PROMPT 1 · WATERCOLOR CUTOUT',
+      accent: '#1658EB',
+      techTag: '512px RGBA · 精抠/微晕/原画',
+      footSummary: '繁复巴洛克鎏金雕花与浓彩水彩线稿，精抠透底零杂丝，支持柔和微晕透底。',
+      footVerdict: '华丽繁复 · 精细水彩'
+    },
+    {
+      id: 'h',
+      code: '板 H',
+      promptRow: 1,
+      isPixel: true,
+      shortName: '提示词 1 · 64×64 高精像素',
+      pillName: '提示词1 像素',
+      compactName: '提示词1 · 64px 像素',
+      en: 'PROMPT 1 · 64×64 PIXEL ART',
+      accent: '#1B7EC2',
+      techTag: '64×64 原生像素 · 28 色硬边',
+      footSummary: '28 索引色无抖动精制，1px 深靛/深棕描边，硬 Alpha 0/255 零模糊，与战斗像素同源。',
+      footVerdict: 'pixelated · 华彩像素'
+    },
+    {
+      id: 'i',
+      code: '板 I',
+      promptRow: 2,
+      isPixel: false,
+      shortName: '提示词 2 · 原图精抠',
+      pillName: '提示词2 原图',
+      compactName: '提示词2 · 原图精抠',
+      en: 'PROMPT 2 · WATERCOLOR CUTOUT',
+      accent: '#C9A45C',
+      techTag: '512px RGBA · 精抠/微晕/原画',
+      footSummary: '古典博物图鉴级水彩与褐色细钢笔线，色阶温润通透、体积感立体，极契合雪瓷书志。',
+      footVerdict: '博物图鉴 · 温润通透'
+    },
+    {
+      id: 'j',
+      code: '板 J',
+      promptRow: 2,
+      isPixel: true,
+      shortName: '提示词 2 · 64×64 高精像素',
+      pillName: '提示词2 像素',
+      compactName: '提示词2 · 64px 像素',
+      en: 'PROMPT 2 · 64×64 PIXEL ART',
+      accent: '#5D42B8',
+      techTag: '64×64 原生像素 · 30 色 + 6 高光',
+      footSummary: '30 索引色 + 1px 褐色细轮廓 + 6 枚晶格高光点，64px/56px 实寸下轮廓最清爽易读。',
+      footVerdict: 'pixelated · 图鉴像素'
+    }
+  ];
+
+  const ITEMS = [
+    {
+      id: 'eclipse_wand',
+      name: '晦轮杖·静止的日蚀',
+      short: '晦轮杖',
+      en: 'ECLIPSE RING WAND',
+      catLabel: '法器装备',
+      categories: ['all', 'weapon'],
+      isStaff: true,
+      isRelic: false,
+      setId: null,
+      setName: '唯一主手法器',
+      owner: '第二卷 · 墓园夺杖战缴获',
+      materials: ['暗银蚀月环', '永夜晦核', '鎏金星纹柄'],
+      lore: '曾被罗文用以偏折月影天光的古老法杖。杖首晦核幽深如静止的日蚀，能将魔力化作无视法抗的纯净真伤，却无法将魔力送往高天——在希尔维亚手中永不触发日蚀。',
+      shortFx: '+24% MaxMP · 100% 真实魔伤 · 零自创惩罚',
+      stats: [
+        { k: '魔力上限增幅', v: '+24% MaxMP（260 → 322）', hi: true },
+        { k: '核心伤害规则', v: '100% 真实魔伤（无视法抗与魔法盾）', hi: true },
+        { k: '构筑兼容性', v: '零自创惩罚 · 完全兼容魔战循环' },
+        { k: '原著约束机制', v: '希尔维亚永不触发日蚀' }
+      ],
+      qty: 1
+    },
+    {
+      id: 'pale_blue_vial',
+      name: '淡蓝小瓶·魔力灵液',
+      short: '淡蓝小瓶',
+      en: 'PALE BLUE MANA VIAL',
+      catLabel: '剧情信物 · 铭记',
+      categories: ['all', 'story', 'relic'],
+      isStaff: false,
+      isRelic: true,
+      setId: 'dukedom_memory',
+      setName: '公爵府遗忆',
+      owner: '药神 · 圣域恩泽',
+      materials: ['晴空切面水晶', '鎏金封颈链', '圣域魔力灵液'],
+      lore: '四岁药神宴会时收下的赠礼，瓶中晃动着如同裁下一小块晴空的清透魔力灵液。「不要打开」——瓶塞始终紧封，却在意识危殆之际透出安神凉雾护住心脉。',
+      shortFx: '濒危（<35% HP）回 25% 生命并获风行残像',
+      stats: [
+        { k: '铭记定位', v: '濒危药雾保命 · 每战首次触发', hi: true },
+        { k: '实装效果', v: 'HP < 35% 回复 25% MaxHP + 1 层风行残像', hi: true },
+        { k: '所属套装', v: '公爵府遗忆（2件：首回合 +1 AP、+10 霜盾）' },
+        { k: '原著来源', v: '四岁药神宴会剧情解锁' }
+      ],
+      qty: 1
+    },
+    {
+      id: 'moon_conch_brooch',
+      name: '月虹螺胸针',
+      short: '月虹螺胸针',
+      en: 'MOON CONCH BROOCH',
+      catLabel: '剧情信物 · 铭记',
+      categories: ['all', 'story', 'relic'],
+      isStaff: false,
+      isRelic: true,
+      setId: 'academy_stars',
+      setName: '学院星辰',
+      owner: '三姐妹 · 夏日礁石',
+      materials: ['月虹珍珠母贝', '银金藤蔓托', '珍珠暗扣'],
+      lore: '贝阿特丽丝偷偷学了半个夏天的游泳，才陪着妹妹们一齐潜入海湾礁石缝里拾起的月虹螺。螺壳内壁泛着海潮退去后的珍珠虹彩，背扣打磨得光滑贴手。',
+      shortFx: '水风技能伤害 +18% · 连携追击回 8% MaxMP',
+      stats: [
+        { k: '铭记定位', v: '水风增伤 · 连携回蓝', hi: true },
+        { k: '实装效果', v: '水/风系伤害 +18%；连携追击回 8% MaxMP', hi: true },
+        { k: '所属套装', v: '学院星辰（2件：破锁额外回 10% MP）' },
+        { k: '原著来源', v: '海滨暑假三姐妹拾贝解锁' }
+      ],
+      qty: 1
+    },
+    {
+      id: 'wind_flower_cake',
+      name: '爱丽丝的风之花饼',
+      short: '风之花饼',
+      en: 'ALICE WIND FLOWER CAKE',
+      catLabel: '茶点赠礼 · 铭记',
+      categories: ['all', 'treat', 'relic'],
+      isStaff: false,
+      isRelic: true,
+      setId: 'dukedom_memory',
+      setName: '公爵府遗忆',
+      owner: '爱丽丝 · 微风之约',
+      materials: ['蜂蜜金酥花盏', '风息嫩叶花蕊', '糖霜微光'],
+      lore: '爱丽丝把风息花瓣细细叠成绽放花盏烤制的蜂蜜酥饼，出炉后小心包好塞进掌心。微风拂过温热酥香时，总像有人在身旁悄悄托住了衣袖。',
+      shortFx: '开局自带 1 层风行残像 · 闪避成功回 10 MP',
+      stats: [
+        { k: '铭记定位', v: '开局残像 · 借风闪避续航', hi: true },
+        { k: '实装效果', v: '每战开局 1 层风行残像；触发躲避 +10 MP', hi: true },
+        { k: '日常食用', v: '食用回复 15 MP · 触发「微风心境」' },
+        { k: '所属套装', v: '公爵府遗忆（与淡蓝小瓶激活 2 件共鸣）' }
+      ],
+      qty: 3
+    },
+    {
+      id: 'noelle_manuscript',
+      name: '诺艾儿的省魔手稿',
+      short: '省魔手稿',
+      en: 'NOELLE MANA-SAVING MANUSCRIPT',
+      catLabel: '随身铭记',
+      categories: ['all', 'relic'],
+      isStaff: false,
+      isRelic: true,
+      setId: 'academy_stars',
+      setName: '学院星辰',
+      owner: '诺艾儿 · 平等同盟',
+      materials: ['精算羊皮卷册', '皇家蓝绸带', '赤金火漆印'],
+      lore: '用深蓝丝带与火漆封缄的手写回路册，凝结着三年并肩推演与勘误的默契。每一道水幕与冰晶导流路径，都被诺艾儿分毫不差地算清了最省魔的节点。',
+      shortFx: '基础耗蓝 -20% · 魔力增幅保留一半额外耗蓝',
+      stats: [
+        { k: '铭记定位', v: '精算减耗 · 魔力增幅减负', hi: true },
+        { k: '实装效果', v: '全魔法基础耗蓝 -20%；增幅额外耗蓝减半', hi: true },
+        { k: '所属套装', v: '学院星辰（与月虹螺胸针激活 2 件共鸣）' },
+        { k: '原著来源', v: '魔法大学诺艾儿平等同盟线解锁' }
+      ],
+      qty: 1
+    }
+  ];
+
+  const LOCKED_HEIRLOOMS = [
+    { name: '雪纹手帕', sub: '艾诺 · 未收录', svg: '<path d="M9 2v14M2.9 5.5l12.2 7M15.1 5.5l-12.2 7"/>' },
+    { name: '乌木紫穗剑', sub: '澄岚霁馆 · 未收录', svg: '<path d="M14.8 3.2L7 11M5.2 9.4l3.4 3.4M6.5 11.5l-3 3"/>' },
+    { name: '银十字架', sub: '海伦娜 · 未收录', svg: '<path d="M9 2.5v13M4.8 6.8h8.4"/>' },
+    { name: '巡防抄件', sub: '夏洛特 · 未收录', svg: '<path d="M4.5 4a1.5 1.5 0 0 1 1.5-1.5h8v10a2 2 0 0 1-2 2H5"/><path d="M7.5 6h4M7.5 9h3.5"/>' },
+    { name: '北风堡木牌', sub: '北境防线 · 未收录', svg: '<path d="M4.5 3.5h9v7.8c0 2.6-2.5 4.2-5.7 5-3.2-.8-5.7-2.4-5.7-5V3.5z"/>' }
+  ];
+
+  const CATEGORIES = [
+    { id: 'all', name: '全部物品' },
+    { id: 'weapon', name: '法器装备' },
+    { id: 'story', name: '剧情信物' },
+    { id: 'relic', name: '随身铭记' },
+    { id: 'treat', name: '茶点赠礼' }
+  ];
+
+  const state = {
+    view: 'compare',        // 'compare' | 'backpack' | 'panel'
+    board: 'g',             // 'g' | 'h' | 'i' | 'j'
+    mode: 'final',          // 'final' | 'raw' | 'bloom'
+    matrixBg: 'slot',       // 'slot' | 'white' | 'dark'
+    inspectDark: false,
+    category: 'all',
+    selectedItem: 'eclipse_wand',
+    staffEquipped: true,
+    equippedRelics: ['pale_blue_vial', 'moon_conch_brooch', 'noelle_manuscript'],
+    cakeQty: 3,
+    toastMsg: '✦ 点击任意 76px 道具格联动右侧 200px 详情与左侧装备栏，或一键切换 G / H / I / J 展板'
+  };
+
+  // URL 查询参数初始化（便于直达指定视角/展板/渲染模式）
+  (function initFromQuery() {
+    const q = new URLSearchParams(window.location.search);
+    if (['compare', 'backpack', 'panel'].includes(q.get('view'))) state.view = q.get('view');
+    if (['g', 'h', 'i', 'j'].includes(q.get('board'))) state.board = q.get('board');
+    if (['final', 'raw', 'bloom'].includes(q.get('mode'))) state.mode = q.get('mode');
+    if (['slot', 'white', 'dark'].includes(q.get('bg'))) state.matrixBg = q.get('bg');
+    if (ITEMS.some(x => x.id === q.get('item'))) state.selectedItem = q.get('item');
+  })();
+
+  function getBoard(id) {
+    return BOARDS.find(b => b.id === id) || BOARDS[0];
+  }
+
+  function getItem(id) {
+    return ITEMS.find(x => x.id === id) || ITEMS[0];
+  }
+
+  /**
+   * 统一计算相对资源路径与渲染样式类：
+   * - 原图板 G / I：final -> ./r3_assets/{id}/final/{item}.png
+   *                 bloom -> ./r3_assets/{id}/bloom/{item}.png
+   *                 raw   -> ./r3_assets/{id}/raw/{item}.png
+   * - 像素板 H / J：raw   -> ./r3_assets/{id}/raw/{item}.png（对应水彩原画）
+   *                 final / bloom -> ./r3_assets/{id}/final_64/{item}.png（64×64 原生真像素 + image-rendering: pixelated！）
+   */
+  function resolveArt(boardId, itemId, modeOverride) {
+    const bo = getBoard(boardId);
+    const m = modeOverride || state.mode;
+    if (m === 'raw') {
+      return {
+        src: `./r3_assets/${bo.id}/raw/${itemId}.png`,
+        isPixel: false,
+        isRaw: true,
+        isBloom: false,
+        badge: '512px 原画'
+      };
+    }
+    if (bo.isPixel) {
+      return {
+        src: `./r3_assets/${bo.id}/final_64/${itemId}.png`,
+        isPixel: true,
+        isRaw: false,
+        isBloom: false,
+        badge: '64px 像素'
+      };
+    }
+    if (m === 'bloom') {
+      return {
+        src: `./r3_assets/${bo.id}/bloom/${itemId}.png`,
+        isPixel: false,
+        isRaw: false,
+        isBloom: true,
+        badge: '微晕透底'
+      };
+    }
+    return {
+      src: `./r3_assets/${bo.id}/final/${itemId}.png`,
+      isPixel: false,
+      isRaw: false,
+      isBloom: false,
+      badge: '512px 精抠'
+    };
+  }
+
+  function artImgClass(art, shadowCls) {
+    const cls = [];
+    if (art.isPixel) cls.push('pixel-art');
+    else if (art.isRaw) cls.push('is-raw');
+    else if (!art.isBloom && shadowCls) cls.push(shadowCls);
+    return cls.join(' ');
+  }
+
+  function getSynergyCounts() {
+    const eq = state.equippedRelics;
+    return {
+      duke: eq.filter(id => getItem(id).setId === 'dukedom_memory').length,
+      acad: eq.filter(id => getItem(id).setId === 'academy_stars').length
+    };
+  }
+
+  function setToast(msg) {
+    state.toastMsg = msg;
+    const el = document.getElementById('bp-toast');
+    if (el) el.textContent = msg;
+  }
+
+  function toggleRelic(id) {
+    const idx = state.equippedRelics.indexOf(id);
+    const name = getItem(id).short;
+    if (idx !== -1) {
+      state.equippedRelics.splice(idx, 1);
+      setToast(`已从随身铭记槽卸下【${name}】`);
+    } else if (state.equippedRelics.length >= 3) {
+      const removed = state.equippedRelics.shift();
+      state.equippedRelics.push(id);
+      setToast(`✦ 铭记槽已满，已将【${getItem(removed).short}】替换为【${name}】`);
+    } else {
+      state.equippedRelics.push(id);
+      setToast(`✦ 已佩带随身铭记【${name}】（${state.equippedRelics.length}/3）`);
+    }
+  }
+
+  // =========================================================================
+  // 视角 1：渲染 2×2 四板同台全览矩阵
+  // =========================================================================
+  function renderCompareView() {
+    document.querySelectorAll('#view-compare [data-mode]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === state.mode);
+    });
+    document.querySelectorAll('#view-compare [data-bg]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.bg === state.matrixBg);
+    });
+
+    const rowsConfig = [
+      {
+        rowNum: 1,
+        badge: 'ROW 1 · 提示词 1',
+        title: '繁复巴洛克鎏金 · 高饱和华彩水彩系',
+        desc: '精细金丝雕花与浓郁星夜紫 / 琥珀金 / 翠青水彩层次（左：板 G 原图精抠 · 右：板 H 64×64 像素）',
+        isP2: false,
+        boards: ['g', 'h']
+      },
+      {
+        rowNum: 2,
+        badge: 'ROW 2 · 提示词 2',
+        title: '古典博物图鉴 · 温润秘银珍珠水彩系',
+        desc: '优雅褐色细钢笔线与清透矿物水彩质感，极具雪瓷书志收藏气质（左：板 I 原图精抠 · 右：板 J 64×64 像素）',
+        isP2: true,
+        boards: ['i', 'j']
+      }
+    ];
+
+    const colAxisHtml = `
+      <div class="m22-col-axis">
+        <div class="m22-axis-head">
+          <div class="m22-axis-title"><span class="m22-axis-code">COL 1</span>原图精抠（板 G / 板 I）</div>
+          <span class="m22-axis-spec">${state.mode === 'bloom' ? '当前：水彩微晕透底 RGBA' : (state.mode === 'raw' ? '当前：完整冷压水彩原画' : '当前：512px 无损精抠透明槽位')}</span>
+        </div>
+        <div class="m22-axis-head is-pixel">
+          <div class="m22-axis-title"><span class="m22-axis-code">COL 2</span>64×64 高精像素化（板 H / 板 J）</div>
+          <span class="m22-axis-spec">${state.mode === 'raw' ? '当前：对应像素化母本水彩原画' : '当前：64×64 原生像素 · 2× 整数倍 pixelated 锐利硬边'}</span>
+        </div>
+      </div>
+    `;
+
+    const bandsHtml = rowsConfig.map(rc => {
+      const quadsHtml = rc.boards.map(bid => {
+        const bo = getBoard(bid);
+        const isActive = state.board === bo.id;
+        let specLabel = bo.techTag;
+        let specCls = bo.isPixel ? 'is-pixel' : '';
+        if (state.mode === 'raw') {
+          specLabel = bo.isPixel ? '母本完整水彩原画 · 512px' : '完整冷压水彩原画 · 512px';
+          specCls = '';
+        } else if (state.mode === 'bloom') {
+          specLabel = bo.isPixel ? '像素板硬边直出（无水晕）' : '水彩微晕透底 · 512px RGBA';
+          specCls = bo.isPixel ? 'is-pixel' : 'is-bloom';
+        }
+
+        const tilesHtml = ITEMS.map(it => {
+          const art = resolveArt(bo.id, it.id);
+          const boxCls = [
+            'm22-art-box',
+            state.matrixBg === 'slot' ? 'mode-slot' : '',
+            state.matrixBg === 'white' ? 'bg-white' : '',
+            state.matrixBg === 'dark' ? 'bg-dark' : '',
+            it.isStaff ? 'is-staff' : ''
+          ].filter(Boolean).join(' ');
+
+          return `
+            <div class="m22-item-tile" data-jump-board="${bo.id}" data-jump-item="${it.id}" title="点击进入 76px 背包试玩【${bo.code} · ${it.name}】">
+              <div class="${boxCls}">
+                <div class="m22-art-inner">
+                  <img src="${art.src}" alt="${bo.code} ${it.name}" class="m22-art-img ${artImgClass(art, 'art-float-sm')}" />
+                </div>
+              </div>
+              <div class="m22-item-name">${it.short}</div>
+              <div class="m22-item-sub">${art.badge}</div>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="m22-quad${isActive ? ' is-active' : ''}" style="--q-accent:${bo.accent}">
+            <div class="m22-quad-head">
+              <div class="m22-q-id">
+                <span class="m22-q-code">${bo.code}</span>
+                <span class="m22-q-name">${bo.shortName}</span>
+              </div>
+              <div class="m22-q-right">
+                <span class="m22-q-spec ${specCls}">${specLabel}</span>
+                <button type="button" class="m22-jump-btn" data-open-bp="${bo.id}">76px 背包 →</button>
+              </div>
+            </div>
+            <div class="m22-items-row">${tilesHtml}</div>
+            <div class="m22-quad-foot">
+              <span><b>质感特点：</b>${bo.footSummary}</span>
+              <span class="m22-foot-tag">${bo.footVerdict}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="m22-prompt-band">
+          <div class="m22-row-banner${rc.isP2 ? ' is-p2' : ''}">
+            <div class="m22-row-left">
+              <span class="m22-row-badge">${rc.badge}</span>
+              <span class="m22-row-title">${rc.title}</span>
+            </div>
+            <span class="m22-row-desc">${rc.desc}</span>
+          </div>
+          <div class="m22-quad-grid">${quadsHtml}</div>
+        </div>
+      `;
+    }).join('');
+
+    const evalStripHtml = `
+      <div class="v1-eval-4strip">
+        ${BOARDS.map(bo => `
+          <div class="v1-eval-col${state.board === bo.id ? ' active' : ''}" style="--eval-accent:${bo.accent}" data-eval-board="${bo.id}" title="点击切换至【${bo.code} · ${bo.shortName}】">
+            <div class="v1-eval-head">
+              <span><em>${bo.code}</em>${bo.shortName}</span>
+              <span class="v1-eval-pill">${state.board === bo.id ? '当前焦点' : (bo.isPixel ? '64px 像素' : '512px 原图')}</span>
+            </div>
+            <div class="v1-eval-text">${bo.footSummary}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    const root = document.getElementById('matrix-2x2-root');
+    root.innerHTML = colAxisHtml + bandsHtml + evalStripHtml;
+
+    root.querySelectorAll('[data-jump-board]').forEach(el => {
+      el.addEventListener('click', () => {
+        state.board = el.dataset.jumpBoard;
+        state.selectedItem = el.dataset.jumpItem;
+        state.category = 'all';
+        state.view = 'backpack';
+        const bo = getBoard(state.board);
+        setToast(`✦ 已切换至【${bo.code} · ${bo.shortName}】并选中【${getItem(state.selectedItem).name}】`);
+        renderAll();
+      });
+    });
+
+    root.querySelectorAll('[data-open-bp]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        state.board = btn.dataset.openBp;
+        state.view = 'backpack';
+        renderAll();
+      });
+    });
+
+    root.querySelectorAll('[data-eval-board]').forEach(el => {
+      el.addEventListener('click', () => {
+        state.board = el.dataset.evalBoard;
+        renderAll();
+      });
+    });
+  }
+
+  // =========================================================================
+  // 共用四板快捷按钮条（视角 2 & 视角 3）
+  // =========================================================================
+  function renderBoardStrip(containerId) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = BOARDS.map(b => `
+      <button type="button" class="board-pill-btn${state.board === b.id ? ' active' : ''}" data-pick-board="${b.id}">
+        <span class="bp-code">${b.code}</span>
+        <span class="bp-name">${b.pillName}</span>
+      </button>
+    `).join('');
+
+    el.querySelectorAll('[data-pick-board]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.board = btn.dataset.pickBoard;
+        const bo = getBoard(state.board);
+        setToast(`✦ 已无缝切换至【${bo.code} · ${bo.shortName}】实机渲染`);
+        renderAll();
+      });
+    });
+  }
+
+  // =========================================================================
+  // 视角 2：76px 实机图形化背包交互试玩（含 200px 大图标预览 & 装备栏联动）
+  // =========================================================================
+  function renderBackpackView() {
+    renderBoardStrip('bp-board-strip');
+    document.querySelectorAll('[data-bp-mode]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.bpMode === state.mode);
+    });
+
+    const curBoard = getBoard(state.board);
+    document.getElementById('bp-staff-status').textContent = state.staffEquipped ? '晦轮杖' : '徒手导魔';
+    document.getElementById('bp-relic-count').textContent = `${state.equippedRelics.length} / 3`;
+
+    // 左栏：分类列表
+    const catEl = document.getElementById('bp-cat-list');
+    catEl.innerHTML = CATEGORIES.map(cat => {
+      const cnt = ITEMS.filter(it => it.categories.includes(cat.id)).length;
+      return `
+        <button type="button" class="bp-cat-btn${state.category === cat.id ? ' active' : ''}" data-cat="${cat.id}">
+          <span>${cat.name}</span>
+          <span class="bp-cat-count">${cnt}</span>
+        </button>
+      `;
+    }).join('');
+    catEl.querySelectorAll('[data-cat]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.category = btn.dataset.cat;
+        const vis = ITEMS.filter(it => it.categories.includes(state.category));
+        if (vis.length && !vis.some(it => it.id === state.selectedItem)) {
+          state.selectedItem = vis[0].id;
+        }
+        renderBackpackView();
+      });
+    });
+
+    // 左栏：实时联动装备栏（主法杖 + 3 枚随身铭记）
+    const dockEl = document.getElementById('bp-equip-dock');
+    const wandArt = resolveArt(state.board, 'eclipse_wand');
+    const dockRelicsHtml = [0, 1, 2].map(i => {
+      const rid = state.equippedRelics[i];
+      if (!rid) {
+        return `<div class="bp-dock-relic-btn empty">空铭记</div>`;
+      }
+      const it = getItem(rid);
+      const art = resolveArt(state.board, rid);
+      return `
+        <button type="button" class="bp-dock-relic-btn" data-dock-item="${rid}" title="点击定位【${it.name}】">
+          <div class="prism-frame prism-40 is-gold${art.isRaw ? ' is-raw' : ''}">
+            <div class="prism-inner">
+              <img src="${art.src}" alt="${it.short}" class="${artImgClass(art, 'art-float-sm')}" />
+            </div>
+          </div>
+          <span>${it.short}</span>
+        </button>
+      `;
+    }).join('');
+
+    dockEl.innerHTML = `
+      <div class="bp-dock-title">
+        <span>✦ 实时装备栏</span>
+        <span style="color:var(--ink-faint)">${curBoard.code}</span>
+      </div>
+      <div class="bp-dock-staff" data-dock-item="eclipse_wand" role="button" tabindex="0" title="点击定位【晦轮杖】">
+        <div class="prism-frame prism-40 ${state.staffEquipped ? 'is-royal' : 'is-empty'}${wandArt.isRaw ? ' is-raw' : ''}">
+          <div class="prism-inner">
+            ${state.staffEquipped
+              ? `<img src="${wandArt.src}" alt="晦轮杖" class="${artImgClass(wandArt, 'art-float-sm')}" />`
+              : '<span class="bp-empty-diamond"></span>'}
+          </div>
+        </div>
+        <div style="min-width:0;">
+          <div style="font-size:11.5px;font-weight:800;color:var(--ink-deep);white-space:nowrap;">${state.staffEquipped ? '晦轮杖' : '徒手导魔'}</div>
+          <div style="font-size:9.5px;color:${state.staffEquipped ? 'var(--royal)' : 'var(--ink-faint)'};font-weight:700;">${state.staffEquipped ? '+24% MaxMP · 真伤' : '未装备法杖'}</div>
+        </div>
+      </div>
+      <div class="bp-dock-relics">${dockRelicsHtml}</div>
+    `;
+    dockEl.querySelectorAll('[data-dock-item]').forEach(el => {
+      el.addEventListener('click', () => {
+        state.selectedItem = el.dataset.dockItem;
+        renderBackpackView();
+      });
+    });
+
+    // 左栏底部：套装共鸣
+    const { duke, acad } = getSynergyCounts();
+    document.getElementById('bp-synergy-box').innerHTML = `
+      <div class="bp-syn-title"><span>✦ 套装共鸣状态</span><span>${(duke >= 2 ? 1 : 0) + (acad >= 2 ? 1 : 0)} 项生效</span></div>
+      <div class="bp-syn-item">
+        <div class="bp-syn-name"><span>学院星辰</span><em>${acad}/2 ${acad >= 2 ? '生效' : '未满'}</em></div>
+        <div class="bp-syn-desc">破锁额外回复 10% MaxMP，强化水冰连携。</div>
+      </div>
+      <div class="bp-syn-item is-gold">
+        <div class="bp-syn-name"><span>公爵府遗忆</span><em>${duke}/2 ${duke >= 2 ? '生效' : '差 ' + (2 - duke) + ' 件'}</em></div>
+        <div class="bp-syn-desc">开局首回合 +1 AP 并凝结 10 点初雪霜盾。</div>
+      </div>
+    `;
+
+    // 中栏：76×76 背包主网格
+    const curCat = CATEGORIES.find(c => c.id === state.category) || CATEGORIES[0];
+    document.getElementById('bp-grid-title').textContent = `${curCat.name} · ${curBoard.code}`;
+    document.getElementById('bp-grid-spec').textContent = curBoard.isPixel && state.mode !== 'raw'
+      ? '76×76px 雪瓷棱镜格 · 内部 64×64px 1:1 严格原生像素硬边'
+      : `76×76px 雪瓷棱镜格 · ${state.mode === 'bloom' ? '水彩微晕透底' : (state.mode === 'raw' ? '完整冷压水彩原画' : '512px 无损精抠透明')}`;
+
+    const visibleItems = ITEMS.filter(it => it.categories.includes(state.category));
+    const slotGrid = document.getElementById('bp-slot-grid');
+    const filledHtml = visibleItems.map(it => {
+      const sel = state.selectedItem === it.id;
+      const isEq = it.isStaff ? state.staffEquipped : state.equippedRelics.includes(it.id);
+      const frameCls = sel ? 'is-royal' : (isEq ? (it.isStaff ? 'is-royal' : 'is-gold') : '');
+      const ribbon = it.isStaff
+        ? (state.staffEquipped ? '<span class="corner-ribbon royal">装备中</span>' : '')
+        : (isEq ? '<span class="corner-ribbon gold">铭记中</span>' : '');
+      const qtyHtml = it.id === 'wind_flower_cake' ? `<span class="corner-qty">×${state.cakeQty}</span>` : '';
+      const art = resolveArt(state.board, it.id);
+      return `
+        <div class="bp-slot-unit${sel ? ' selected' : ''}" data-item="${it.id}" role="button" tabindex="0">
+          <div class="prism-frame bp-prism-76 ${frameCls}${art.isRaw ? ' is-raw' : ''}">
+            <div class="prism-inner">
+              ${ribbon}
+              ${qtyHtml}
+              <img src="${art.src}" alt="${it.name}" class="${artImgClass(art, 'art-float-sm')}" />
+            </div>
+          </div>
+          <div class="bp-slot-name">${it.short}</div>
+          <div class="bp-slot-sub">${it.isStaff ? '主手法器' : it.setName}</div>
+        </div>
+      `;
+    }).join('');
+
+    const padCount = Math.max(0, 5 - visibleItems.length);
+    const padHtml = Array.from({ length: padCount }, () => `
+      <div class="bp-slot-unit is-disabled">
+        <div class="prism-frame bp-prism-76 is-empty"><div class="prism-inner"><span class="bp-empty-diamond"></span></div></div>
+        <div class="bp-slot-name" style="color:var(--ink-faint);font-weight:500;">空置行囊格</div>
+        <div class="bp-slot-sub">—</div>
+      </div>
+    `).join('');
+    slotGrid.innerHTML = filledHtml + padHtml;
+
+    slotGrid.querySelectorAll('[data-item]').forEach(unit => {
+      unit.addEventListener('click', () => {
+        state.selectedItem = unit.dataset.item;
+        const it = getItem(state.selectedItem);
+        setToast(`✦ 已选中【${it.name}】— 右侧 200px 详情与下方四板对比已实时同步`);
+        renderBackpackView();
+      });
+    });
+
+    // 未收录 + 预留槽位
+    const lockedHtml = LOCKED_HEIRLOOMS.map(lk => `
+      <div class="bp-slot-unit is-disabled" title="${lk.name}（剧情推进后解锁）">
+        <div class="prism-frame bp-prism-76 is-locked">
+          <div class="prism-inner">
+            <svg class="bp-locked-glyph" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round">${lk.svg}</svg>
+          </div>
+        </div>
+        <div class="bp-slot-name" style="color:var(--ink-muted);font-weight:600;">${lk.name}</div>
+        <div class="bp-slot-sub">${lk.sub}</div>
+      </div>
+    `).join('');
+
+    const emptyRowHtml = Array.from({ length: 5 }, () => `
+      <div class="bp-slot-unit is-disabled">
+        <div class="prism-frame bp-prism-76 is-empty"><div class="prism-inner"><span class="bp-empty-diamond"></span></div></div>
+      </div>
+    `).join('');
+    document.getElementById('bp-extra-grid').innerHTML = lockedHtml + emptyRowHtml;
+
+    // 中栏下方：当前选中道具的四板 G/H/I/J 快速横扫切换条
+    const selItem = getItem(state.selectedItem);
+    const mini4El = document.getElementById('bp-mini-4board');
+    mini4El.innerHTML = `
+      <div class="bp-mini-4head">
+        <span>✦ 当前选中【<em>${selItem.name}</em>】四板同款快切对照</span>
+        <span>单击任意展板立即刷新整套背包与 200px 大预览</span>
+      </div>
+      <div class="bp-mini-4grid">
+        ${BOARDS.map(bo => {
+          const art = resolveArt(bo.id, selItem.id);
+          const isCur = bo.id === state.board;
+          return `
+            <div class="bp-mini-4item${isCur ? ' active' : ''}" data-mini-board="${bo.id}">
+              <div class="prism-frame prism-52 ${isCur ? 'is-royal' : (selItem.isStaff ? 'is-royal' : 'is-gold')}${art.isRaw ? ' is-raw' : ''}">
+                <div class="prism-inner">
+                  <img src="${art.src}" alt="${bo.code} ${selItem.short}" class="${artImgClass(art, 'art-float-sm')}" />
+                </div>
+              </div>
+              <div class="bp-mini-4meta">
+                <div class="bp-mini-4code">${bo.code} · ${bo.isPixel ? '像素' : '原图'}</div>
+                <div class="bp-mini-4sub">提示词${bo.promptRow} · ${art.isPixel ? '64px' : (art.isBloom ? '微晕' : (art.isRaw ? '原画' : '精抠'))}</div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+    mini4El.querySelectorAll('[data-mini-board]').forEach(el => {
+      el.addEventListener('click', () => {
+        state.board = el.dataset.miniBoard;
+        const bo = getBoard(state.board);
+        setToast(`✦ 已切换至【${bo.code} · ${bo.shortName}】`);
+        renderAll();
+      });
+    });
+
+    document.getElementById('bp-toast').textContent = state.toastMsg;
+
+    // 右栏：200px 大图标预览 + 详情卡
+    const item = selItem;
+    const art = resolveArt(state.board, item.id);
+    const isEq = item.isStaff ? state.staffEquipped : state.equippedRelics.includes(item.id);
+    const statusFlag = item.isStaff
+      ? (state.staffEquipped ? '<span class="insp-status-flag royal">✦ 主法杖槽装备中</span>' : '<span class="insp-status-flag muted">行囊收纳中</span>')
+      : (isEq ? '<span class="insp-status-flag gold">✦ 随身铭记佩带中</span>' : '<span class="insp-status-flag muted">未佩带</span>');
+
+    const sizeTagText = art.isPixel
+      ? '200px 预览台 · 192×192 (64px×3 整数倍 PIXELATED)'
+      : (art.isRaw ? '200px 预览台 · 完整冷压水彩原画' : (art.isBloom ? '200px 预览台 · 水彩微晕透底 RGBA' : '200px 预览台 · 512px 无损精抠 RGBA'));
+
+    const statsHtml = item.stats.map(st => `
+      <div class="insp-stat-row">
+        <span class="insp-stat-key">${st.k}</span>
+        <span class="insp-stat-val${st.hi ? ' hi' : ''}">${st.v}</span>
+      </div>
+    `).join('');
+
+    let actionsHtml = '';
+    if (item.isStaff) {
+      actionsHtml = `
+        <button type="button" class="act-btn primary" id="act-equip-toggle">${state.staffEquipped ? '卸下法杖' : '佩带晦轮杖'}</button>
+        <button type="button" class="act-btn secondary" id="act-inspect-note">检视晦核共鸣</button>
+      `;
+    } else if (item.id === 'wind_flower_cake') {
+      actionsHtml = `
+        <button type="button" class="act-btn primary" id="act-equip-toggle">${isEq ? '卸下铭记' : '佩带铭记'}</button>
+        <button type="button" class="act-btn gold" id="act-eat-cake">食用 (+15 MP)</button>
+        <button type="button" class="act-btn secondary" id="act-gift">赠礼</button>
+      `;
+    } else {
+      actionsHtml = `
+        <button type="button" class="act-btn primary" id="act-equip-toggle">${isEq ? '卸下铭记' : '佩带铭记'}</button>
+        <button type="button" class="act-btn secondary" id="act-gift">原著典藏鉴赏</button>
+      `;
+    }
+
+    document.getElementById('bp-inspect').innerHTML = `
+      <div>
+        <div class="insp-stage${state.inspectDark ? ' bg-dark' : ''}">
+          <span class="insp-board-watermark">${curBoard.code} · ${curBoard.shortName}</span>
+          <button type="button" class="insp-bg-toggle${state.inspectDark ? ' active' : ''}" id="btn-insp-dark">${state.inspectDark ? '雪瓷白底' : '深蓝检边'}</button>
+          <svg class="insp-astro" viewBox="0 0 200 200" fill="none" aria-hidden="true">
+            <circle cx="100" cy="100" r="92" stroke="currentColor" stroke-width="0.9" stroke-dasharray="3 6"/>
+            <circle cx="100" cy="100" r="74" stroke="currentColor" stroke-width="0.9" opacity="0.65"/>
+            <polygon points="100,16 172,58 172,142 100,184 28,142 28,58" stroke="currentColor" stroke-width="0.8" opacity="0.5"/>
+          </svg>
+          <div class="insp-img-box">
+            <img src="${art.src}" alt="${item.name}" class="${artImgClass(art, 'art-float')}" />
+          </div>
+          <span class="insp-size-tag">${sizeTagText}</span>
+        </div>
+
+        <div class="insp-head">
+          <div>
+            <div class="insp-title">${item.name}</div>
+            <div class="insp-en">${item.en}</div>
+          </div>
+          ${statusFlag}
+        </div>
+
+        <div class="insp-meta-row">
+          <span class="meta-tag accent">${item.catLabel}</span>
+          <span class="meta-tag gold">${item.setName}</span>
+          ${item.materials.map(m => `<span class="meta-tag">${m}</span>`).join('')}
+        </div>
+
+        <blockquote class="insp-lore">${item.lore}</blockquote>
+
+        <div class="insp-ledger">
+          <div class="insp-ledger-title">◈ 实装属性与原著机制</div>
+          ${statsHtml}
+        </div>
+      </div>
+
+      <div class="insp-actions">${actionsHtml}</div>
+    `;
+
+    document.getElementById('btn-insp-dark').addEventListener('click', () => {
+      state.inspectDark = !state.inspectDark;
+      renderBackpackView();
+    });
+
+    const eqBtn = document.getElementById('act-equip-toggle');
+    if (eqBtn) {
+      eqBtn.addEventListener('click', () => {
+        if (item.isStaff) {
+          state.staffEquipped = !state.staffEquipped;
+          setToast(state.staffEquipped ? '✦ 已佩带【晦轮杖·静止的日蚀】（+24% MaxMP · 100% 真实魔伤）' : '已卸下【晦轮杖】，切换为徒手导魔');
+        } else {
+          toggleRelic(item.id);
+        }
+        renderAll();
+      });
+    }
+
+    const eatBtn = document.getElementById('act-eat-cake');
+    if (eatBtn) {
+      eatBtn.addEventListener('click', () => {
+        if (state.cakeQty > 1) {
+          state.cakeQty -= 1;
+          setToast(`✦ 享用一枚【爱丽丝的风之花饼】：魔力回复 +15 MP，剩余 ×${state.cakeQty}`);
+        } else {
+          setToast('✦ 最后一枚花饼已细心收好，留作随身铭记！');
+        }
+        renderBackpackView();
+      });
+    }
+
+    const giftBtn = document.getElementById('act-gift');
+    if (giftBtn) {
+      giftBtn.addEventListener('click', () => {
+        if (item.id === 'pale_blue_vial') {
+          setToast('✦ 瓶中晴空灵液轻轻流转——谨记药神叮嘱，切勿拔塞');
+        } else {
+          setToast(`✦ 细细端详【${item.name}】，往日羁绊的微光在雪瓷展台上静静折射`);
+        }
+      });
+    }
+
+    const noteBtn = document.getElementById('act-inspect-note');
+    if (noteBtn) {
+      noteBtn.addEventListener('click', () => {
+        setToast('✦ 晦轮杖共鸣平稳：100% 真实魔伤就绪，希尔维亚永不触发日蚀');
+      });
+    }
+  }
+
+  // =========================================================================
+  // 视角 3：角色综合面板实寸小图标对照（64px 法杖槽 + 3×56px 铭记槽四板并排）
+  // =========================================================================
+  function renderPanelView() {
+    renderBoardStrip('panel-board-strip');
+    document.querySelectorAll('[data-panel-mode]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.panelMode === state.mode);
+    });
+
+    const curBoard = getBoard(state.board);
+    document.getElementById('panel-mp-bonus').textContent = state.staffEquipped ? '(+24% 晦轮杖)' : '(徒手导魔)';
+    document.getElementById('panel-mp-val').textContent = state.staffEquipped ? '322 / 322' : '260 / 260';
+
+    // 当前展板：64px 法杖槽
+    const wand = getItem('eclipse_wand');
+    const wandArt = resolveArt(state.board, 'eclipse_wand');
+    document.getElementById('panel-staff-box').innerHTML = `
+      <div class="sec-eyebrow">
+        <span>✦ 已佩带法杖（64×64px 棱镜槽）</span>
+        <span>${curBoard.code}</span>
+      </div>
+      <div class="staff-card">
+        <div class="prism-frame prism-64 ${state.staffEquipped ? 'is-royal' : 'is-empty'}${wandArt.isRaw ? ' is-raw' : ''}">
+          <div class="prism-inner">
+            ${state.staffEquipped
+              ? `<img src="${wandArt.src}" alt="晦轮杖" class="${artImgClass(wandArt, 'art-float-sm')}" />`
+              : '<span class="bp-empty-diamond"></span>'}
+          </div>
+        </div>
+        <div style="min-width:0;">
+          <div class="staff-info-name">
+            <span>${state.staffEquipped ? wand.short : '徒手导魔'}</span>
+            <button type="button" class="rs-unequip" id="panel-staff-toggle">${state.staffEquipped ? '卸下' : '佩带晦轮杖'}</button>
+          </div>
+          <div class="staff-info-sub">${state.staffEquipped ? '+24% MaxMP · 100% 真实魔伤' : '标准导魔 · 无附加修正'}</div>
+          <div class="staff-info-desc">${state.staffEquipped ? '零自创惩罚 · 兼容魔战循环 · 永不触发日蚀' : '点击右侧重新佩带晦轮杖'}</div>
+        </div>
+      </div>
+    `;
+    document.getElementById('panel-staff-toggle').addEventListener('click', () => {
+      state.staffEquipped = !state.staffEquipped;
+      renderAll();
+    });
+
+    // 套装共鸣
+    const { duke, acad } = getSynergyCounts();
+    const synParts = [];
+    if (acad >= 2) synParts.push('学院星辰 2/2 ✦');
+    if (duke >= 2) synParts.push('公爵府遗忆 2/2 ✦');
+    document.getElementById('panel-syn-summary').textContent = synParts.length
+      ? '已激活共鸣：' + synParts.join(' · ')
+      : '佩带 2 件同主题铭记激活共鸣';
+
+    document.getElementById('panel-syn-strip').innerHTML = `
+      <div class="psyn-card ${acad >= 2 ? 'active' : (acad === 1 ? 'near' : '')}">
+        <div class="psyn-head">
+          <span>✦ 套装共鸣 · 学院星辰</span>
+          <span class="psyn-badge">${acad} / 2 · ${acad >= 2 ? '回路协同已生效' : '差 ' + (2 - acad) + ' 件'}</span>
+        </div>
+        <div class="psyn-desc">2 件生效：弱点破锁额外回复 10% MaxMP（月虹螺胸针 / 省魔手稿）。</div>
+      </div>
+      <div class="psyn-card ${duke >= 2 ? 'active' : (duke === 1 ? 'near' : '')}">
+        <div class="psyn-head">
+          <span>◇ 套装共鸣 · 公爵府遗忆</span>
+          <span class="psyn-badge">${duke} / 2 · ${duke >= 2 ? '初雪护佑已生效' : '差 ' + (2 - duke) + ' 件'}</span>
+        </div>
+        <div class="psyn-desc">2 件生效：战斗首回合 +1 AP 并获 10 点初雪霜盾（淡蓝小瓶 / 风之花饼）。</div>
+      </div>
+    `;
+
+    // 当前展板：3×56px 随身铭记槽
+    const slotsEl = document.getElementById('panel-relic-slots');
+    slotsEl.innerHTML = [0, 1, 2].map(i => {
+      const rid = state.equippedRelics[i];
+      if (!rid) {
+        return `<div class="relic-slot-card empty">空铭记槽位 ${i + 1}</div>`;
+      }
+      const it = getItem(rid);
+      const art = resolveArt(state.board, rid);
+      return `
+        <div class="relic-slot-card" data-panel-unequip="${rid}" title="点击卸下【${it.name}】">
+          <div class="prism-frame prism-56 is-gold${art.isRaw ? ' is-raw' : ''}">
+            <div class="prism-inner">
+              <img src="${art.src}" alt="${it.name}" class="${artImgClass(art, 'art-float-sm')}" />
+            </div>
+          </div>
+          <div class="rs-meta">
+            <div class="rs-name">${it.short}</div>
+            <div class="rs-set">${it.setName}</div>
+            <span class="rs-unequip">点击卸下</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+    slotsEl.querySelectorAll('[data-panel-unequip]').forEach(el => {
+      el.addEventListener('click', () => {
+        toggleRelic(el.dataset.panelUnequip);
+        renderAll();
+      });
+    });
+
+    // 4 枚典藏铭记紧凑快选卡
+    const relics = ITEMS.filter(x => x.isRelic);
+    const vaultEl = document.getElementById('panel-vault-grid');
+    vaultEl.innerHTML = relics.map(it => {
+      const isEq = state.equippedRelics.includes(it.id);
+      const art = resolveArt(state.board, it.id);
+      return `
+        <div class="vc-mini${isEq ? ' equipped' : ''}" data-vault-toggle="${it.id}" role="button" tabindex="0" title="${it.name}：${it.shortFx}">
+          <div class="prism-frame prism-40 ${isEq ? 'is-royal' : 'is-gold'}${art.isRaw ? ' is-raw' : ''}">
+            <div class="prism-inner">
+              <img src="${art.src}" alt="${it.short}" class="${artImgClass(art, 'art-float-sm')}" />
+            </div>
+          </div>
+          <div class="vc-mini-body">
+            <div class="vc-mini-top">
+              <span class="vc-mini-name">${it.short}</span>
+              <span class="vc-mini-pill">${isEq ? '已佩带' : '换入'}</span>
+            </div>
+            <div class="vc-mini-fx">${it.shortFx}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    vaultEl.querySelectorAll('[data-vault-toggle]').forEach(el => {
+      el.addEventListener('click', () => {
+        toggleRelic(el.dataset.vaultToggle);
+        renderAll();
+      });
+    });
+
+    // =========================================================================
+    // 核心：四板 G / H / I / J 实寸 64px 法杖槽 + 3×56px 铭记槽横向并排直击对照
+    // =========================================================================
+    const activeRelicIds = state.equippedRelics.length === 3
+      ? state.equippedRelics
+      : ['pale_blue_vial', 'moon_conch_brooch', 'noelle_manuscript'];
+    const reserveRelic = relics.find(r => !activeRelicIds.includes(r.id)) || getItem('wind_flower_cake');
+
+    const colsHtml = BOARDS.map(bo => {
+      const isCur = state.board === bo.id;
+      const bWandArt = resolveArt(bo.id, 'eclipse_wand');
+      const bReserveArt = resolveArt(bo.id, reserveRelic.id);
+
+      const threeSlotsHtml = [0, 1, 2].map(idx => {
+        const rid = activeRelicIds[idx];
+        const it = getItem(rid);
+        const art = resolveArt(bo.id, rid);
+        return `
+          <div class="ghij-mini-slot">
+            <div class="prism-frame prism-56 is-gold${art.isRaw ? ' is-raw' : ''}">
+              <div class="prism-inner">
+                <img src="${art.src}" alt="${bo.code} ${it.short}" class="${artImgClass(art, 'art-float-sm')}" />
+              </div>
+            </div>
+            <span>${it.short}</span>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="ghij-col${isCur ? ' active' : ''}" style="--col-accent:${bo.accent}" data-ghij-pick="${bo.id}" title="点击将上方角色综合面板实时切换为【${bo.code} · ${bo.shortName}】">
+          <div class="ghij-col-head">
+            <div class="ghij-col-top">
+              <div class="ghij-col-code"><em>${bo.code}</em>${bo.isPixel ? '64px 像素' : '原图精抠'}</div>
+              <span class="ghij-col-badge">${isCur ? '✦ 当前预览' : (bo.isPixel ? 'PIXELATED' : '提示词 ' + bo.promptRow)}</span>
+            </div>
+            <div class="ghij-col-sub">提示词 ${bo.promptRow} · ${bo.isPixel ? '64px 1:1 严格整数倍硬边' : (state.mode === 'bloom' ? '水彩微晕透底 RGBA' : (state.mode === 'raw' ? '完整冷压水彩原画' : '512px 无损精抠透明'))}</div>
+          </div>
+
+          <!-- 实寸 64px 法杖槽 + 第 4 枚备选铭记 56px -->
+          <div class="ghij-staff-band">
+            <div class="ghij-staff-pair">
+              <div class="prism-frame prism-64 is-royal${bWandArt.isRaw ? ' is-raw' : ''}">
+                <div class="prism-inner">
+                  <img src="${bWandArt.src}" alt="${bo.code} 晦轮杖" class="${artImgClass(bWandArt, 'art-float-sm')}" />
+                </div>
+              </div>
+              <div class="ghij-staff-txt">
+                <span class="ghij-slot-cap">64×64 法杖槽</span>
+                <span class="ghij-slot-name">晦轮杖</span>
+                <span class="ghij-slot-meta">${bo.isPixel && state.mode !== 'raw' ? '1:1 原生像素' : bWandArt.badge}</span>
+              </div>
+            </div>
+            <div class="ghij-reserve-box" title="备选铭记（56×56px 实寸参考，点击上方典藏可换入）">
+              <div class="prism-frame prism-56${bReserveArt.isRaw ? ' is-raw' : ''}">
+                <div class="prism-inner">
+                  <img src="${bReserveArt.src}" alt="${bo.code} ${reserveRelic.short}" class="${artImgClass(bReserveArt, 'art-float-sm')}" />
+                </div>
+              </div>
+              <span class="ghij-reserve-lbl">备选·${reserveRelic.short}</span>
+            </div>
+          </div>
+
+          <!-- 实寸 3×56px 随身铭记槽横排 -->
+          <div class="ghij-relic-band">
+            <div class="ghij-relic-label">
+              <span>✦ 3×56px 随身铭记槽</span>
+              <span style="color:var(--ink-faint);font-weight:600;">实寸 1:1</span>
+            </div>
+            <div class="ghij-relic-3row">${threeSlotsHtml}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const cmpEl = document.getElementById('panel-ghij-compare');
+    cmpEl.innerHTML = `
+      <div class="ghij-compare-head">
+        <span class="ghij-compare-title">✦ 四板实寸对照 · 板 G / H / I / J（64px 法杖槽 × 3×56px 铭记槽横向并排）</span>
+        <span class="ghij-compare-hint">5 件道具 100% 实寸同屏 · 单击任意列即刻切板</span>
+      </div>
+      <div class="ghij-grid-4">${colsHtml}</div>
+      <div class="ghij-verdict-row">
+        <span><b>选板速览：</b>板 G / 板 I 保留水彩手绘笔触与柔光微晕；板 H / 板 J 为 64×64 原生像素硬边渲染，与战斗像素骨骼天然统一。</span>
+        <span>行1 提示词1（G/H） · 行2 提示词2（I/J）</span>
+      </div>
+    `;
+
+    cmpEl.querySelectorAll('[data-ghij-pick]').forEach(col => {
+      col.addEventListener('click', () => {
+        state.board = col.dataset.ghijPick;
+        renderAll();
+      });
+    });
+  }
+
+  // =========================================================================
+  // 总渲染与全局事件绑定
+  // =========================================================================
+  function renderAll() {
+    document.querySelectorAll('.view-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.view === state.view);
+    });
+    document.querySelectorAll('.view-pane').forEach(p => {
+      p.classList.toggle('active', p.id === 'view-' + state.view);
+    });
+    document.querySelectorAll('.hbs-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.board === state.board);
+    });
+
+    renderCompareView();
+    renderBackpackView();
+    renderPanelView();
+  }
+
+  document.querySelectorAll('.view-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      state.view = tab.dataset.view;
+      renderAll();
+    });
+  });
+
+  document.querySelectorAll('.hbs-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.board = btn.dataset.board;
+      const bo = getBoard(state.board);
+      setToast(`✦ 全局已切换至【${bo.code} · ${bo.shortName}】`);
+      renderAll();
+    });
+  });
+
+  document.querySelectorAll('#view-compare [data-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.mode = btn.dataset.mode;
+      renderAll();
+    });
+  });
+
+  document.querySelectorAll('#view-compare [data-bg]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.matrixBg = btn.dataset.bg;
+      renderCompareView();
+    });
+  });
+
+  document.querySelectorAll('[data-bp-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.mode = btn.dataset.bpMode;
+      setToast(`✦ 背包渲染态已切换为【${btn.textContent}】`);
+      renderAll();
+    });
+  });
+
+  document.querySelectorAll('[data-panel-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.mode = btn.dataset.panelMode;
+      renderAll();
+    });
+  });
+
+  renderAll();
+})();
+</script>
+</body>
+</html>

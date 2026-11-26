@@ -7,12 +7,16 @@
 <style>
   :root {
     --bg: #FAFBFD;
+    --surface: #FFFFFF;
+    --surface-ice: #F3F7FD;
     --ink: #1B2333;
     --muted: #5A6782;
     --royal: #1658EB;
+    --royal-deep: #0F42B8;
     --ice: #38BDF8;
     --gold: #C9A45C;
     --line: rgba(22, 88, 235, 0.16);
+    --line-soft: rgba(27, 35, 51, 0.09);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -21,123 +25,580 @@
     font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
     display: flex; flex-direction: column;
   }
+
+  /* ── Top Navigation Shell (Two Crisp Porcelain Rows, Zero Nested Rounded Boxes) ── */
   header {
-    height: 54px; flex: 0 0 54px;
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 12px;
-    padding: 0 16px;
-    background: linear-gradient(180deg, #FFFFFF 0%, #F4F7FC 100%);
+    flex: 0 0 auto;
+    background: linear-gradient(180deg, #FFFFFF 0%, #F5F8FD 100%);
     border-bottom: 1px solid var(--line);
     position: relative;
-    overflow: hidden;
+    z-index: 10;
   }
   header::after {
-    content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
-    background: linear-gradient(90deg, var(--royal), var(--ice) 55%, var(--gold));
-    opacity: 0.7;
+    content: "";
+    position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+    background: linear-gradient(90deg, var(--royal), var(--ice) 58%, var(--gold));
+    opacity: 0.78;
+    pointer-events: none;
   }
+
+  .bar-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 16px;
+    min-width: 0;
+  }
+  .bar-primary {
+    height: 44px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .bar-secondary {
+    height: 36px;
+    background: rgba(243, 247, 253, 0.78);
+  }
+
   .brand {
     display: flex; align-items: center; gap: 10px;
-    min-width: 0; flex: 1 1 auto; overflow: hidden;
+    flex: 0 0 auto;
   }
   .brand h1 {
     font-family: "Noto Serif SC", "Songti SC", serif;
-    font-size: 15px; font-weight: 700; letter-spacing: 0.06em; color: var(--ink);
-    white-space: nowrap; flex: 0 0 auto; line-height: 1.2;
+    font-size: 14.5px; font-weight: 700; letter-spacing: 0.06em; color: var(--ink);
+    white-space: nowrap; line-height: 1.2;
   }
-  .brand span {
-    font-size: 11.5px; color: var(--muted); letter-spacing: 0.02em;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    min-width: 0; flex: 1 1 auto; line-height: 1.2;
-    padding-left: 10px; border-left: 1px solid var(--line);
+
+  .row-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    white-space: nowrap; flex: 0 0 auto;
+    padding: 2px 8px;
+    line-height: 1.4;
   }
-  nav {
+  .row-label-new {
+    color: var(--royal);
+    background: rgba(22, 88, 235, 0.09);
+    clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+  }
+  .row-label-archive {
+    color: var(--muted);
+    padding-left: 0;
+  }
+
+  .nav-strip {
     display: flex; align-items: center; gap: 2px;
-    flex-wrap: nowrap; flex: 0 0 auto;
+    flex: 1 1 auto; min-width: 0;
     overflow-x: auto; scrollbar-width: none;
   }
-  nav::-webkit-scrollbar { display: none; }
+  .nav-strip::-webkit-scrollbar { display: none; }
+
   .tab {
     appearance: none; border: none; background: transparent; cursor: pointer;
-    padding: 7px 10px; font-size: 12px; font-weight: 600; color: var(--muted);
+    padding: 6px 10px; font-size: 12px; font-weight: 600; color: var(--muted);
     letter-spacing: 0.02em; white-space: nowrap; flex: 0 0 auto;
     line-height: 1.2; position: relative;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition: background 0.14s ease, color 0.14s ease;
   }
-  .tab:hover { color: var(--royal); background: rgba(22, 88, 235, 0.05); }
+  .tab:hover { color: var(--royal); background: rgba(22, 88, 235, 0.06); }
   .tab:focus-visible { outline: 2px solid var(--royal); outline-offset: -2px; }
+  .tab.tab-new { color: #243454; }
+  .tab.tab-new::before {
+    content: "";
+    display: inline-block; width: 5px; height: 5px;
+    background: var(--ice);
+    transform: rotate(45deg);
+    margin-right: 6px; vertical-align: 1px;
+  }
   .tab.active {
     color: #FFFFFF;
-    background: linear-gradient(135deg, #1658EB 0%, #2B74FF 100%);
+    background: linear-gradient(135deg, var(--royal) 0%, #2B74FF 100%);
     clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
-    padding: 7px 14px;
+    padding: 6px 14px;
   }
-  .sep { width: 1px; height: 16px; background: var(--line); margin: 0 4px; flex: 0 0 1px; }
+  .tab.tab-new.active::before { background: #F5E0A6; }
+
+  .bar-secondary .tab {
+    font-size: 11.5px; padding: 5px 9px; font-weight: 500;
+  }
+  .bar-secondary .tab.active {
+    padding: 5px 13px; font-weight: 600;
+  }
+
+  .sep {
+    width: 1px; height: 15px; background: var(--line);
+    margin: 0 4px; flex: 0 0 1px;
+  }
+
+  .cur-desc {
+    font-size: 11.5px; color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 340px; flex: 0 1 auto;
+    padding-left: 10px; border-left: 1px solid var(--line);
+    line-height: 1.2;
+  }
+
+  .open-ext {
+    font-size: 12px; color: var(--royal); text-decoration: none; font-weight: 600;
+    padding: 5px 4px 5px 10px; border-left: 1px solid var(--line);
+    white-space: nowrap; flex: 0 0 auto; line-height: 1.2;
+  }
+  .open-ext:hover { text-decoration: underline; }
+  .open-ext:focus-visible { outline: 2px solid var(--royal); outline-offset: 2px; }
+  .open-ext.is-hidden { display: none; }
+
+  /* ── Stage Container ── */
   .stage {
-    flex: 1; position: relative; background: #EEF3FA; overflow: hidden;
+    flex: 1 1 auto; min-height: 0;
+    position: relative; background: #EEF3FA; overflow: hidden;
   }
   iframe {
     width: 100%; height: 100%; border: none; display: block; background: var(--bg);
   }
-  .open-ext {
-    font-size: 12px; color: var(--royal); text-decoration: none; font-weight: 600;
-    padding: 6px 6px 6px 10px; border-left: 1px solid var(--line); margin-left: 4px;
-    white-space: nowrap; flex: 0 0 auto; line-height: 1.2;
+  iframe.is-hidden { display: none; }
+
+  /* ── Overview Portal (Flat Architectural Grid, Zero Rounded-Inside-Rounded) ── */
+  .overview {
+    width: 100%; height: 100%;
+    overflow-y: auto;
+    background:
+      radial-gradient(900px 420px at 88% -8%, rgba(56, 189, 248, 0.14), transparent 65%),
+      radial-gradient(760px 380px at 8% 0%, rgba(22, 88, 235, 0.08), transparent 60%),
+      var(--bg);
+    padding: 24px 32px 36px;
   }
-  .open-ext:hover { text-decoration: underline; }
-  @media (max-width: 1360px) {
-    header { padding: 0 12px; gap: 8px; }
-    .brand h1 { font-size: 14px; }
-    .tab { padding: 7px 8px; font-size: 11.5px; }
-    .tab.active { padding: 7px 12px; }
-    .open-ext { font-size: 11.5px; padding: 6px 4px 6px 8px; }
+  .overview.is-hidden { display: none; }
+
+  .overview-inner {
+    max-width: 1360px; margin: 0 auto;
+    display: flex; flex-direction: column; gap: 24px;
+  }
+
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .section-head-left {
+    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  }
+  .section-title {
+    font-family: "Noto Serif SC", "Songti SC", serif;
+    font-size: 18px; font-weight: 700; color: var(--ink); letter-spacing: 0.05em;
+  }
+  .section-kicker {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+    color: var(--royal); text-transform: uppercase;
+  }
+  .section-note {
+    font-size: 12px; color: var(--muted);
+  }
+
+  /* 6 New Batch Cards: 3×2 Crisp Architectural Grid */
+  .featured-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--royal);
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 16px 18px 14px;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+    position: relative;
+  }
+  .card:hover {
+    border-color: rgba(22, 88, 235, 0.45);
+    box-shadow: 0 10px 24px -14px rgba(22, 88, 235, 0.28);
+    transform: translateY(-1px);
+  }
+  .card-accent-ice { border-top-color: var(--ice); }
+  .card-accent-gold { border-top-color: var(--gold); }
+
+  .card-meta {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; margin-bottom: 8px;
+  }
+  .card-cat {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    color: var(--royal);
+  }
+  .card-accent-ice .card-cat { color: #0284C7; }
+  .card-accent-gold .card-cat { color: #9A752B; }
+  .card-tag {
+    font-size: 11px; font-weight: 600; color: var(--muted);
+    background: var(--surface-ice); padding: 2px 7px;
+  }
+
+  .card-title {
+    font-family: "Noto Serif SC", "Songti SC", serif;
+    font-size: 15px; font-weight: 700; color: var(--ink);
+    line-height: 1.4; margin-bottom: 8px;
+  }
+  .card-desc {
+    font-size: 12.5px; color: var(--muted); line-height: 1.6;
+    margin-bottom: 14px; flex: 1 1 auto;
+  }
+
+  .card-actions {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px solid var(--line-soft);
+    gap: 10px;
+  }
+  .btn-enter {
+    appearance: none; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--royal) 0%, #2B74FF 100%);
+    color: #FFFFFF;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+    padding: 7px 16px;
+    clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+    transition: filter 0.14s ease;
+  }
+  .btn-enter:hover { filter: brightness(1.08); }
+  .btn-enter:focus-visible { outline: 2px solid var(--royal-deep); outline-offset: 2px; }
+
+  .link-ext {
+    font-size: 12px; font-weight: 600; color: var(--royal);
+    text-decoration: none; white-space: nowrap;
+  }
+  .link-ext:hover { text-decoration: underline; }
+  .link-ext:focus-visible { outline: 2px solid var(--royal); outline-offset: 2px; }
+
+  /* Historical Archive Compact 4-Column List */
+  .archive-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .archive-item {
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid var(--line-soft);
+    padding: 12px 14px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    gap: 8px;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .archive-item:hover {
+    border-color: rgba(22, 88, 235, 0.34);
+    background: #FFFFFF;
+  }
+  .archive-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  }
+  .archive-name {
+    font-size: 13px; font-weight: 700; color: var(--ink);
+  }
+  .archive-group {
+    font-size: 10.5px; font-weight: 600; color: var(--muted);
+  }
+  .archive-desc {
+    font-size: 11.5px; color: var(--muted); line-height: 1.5;
+  }
+  .archive-ops {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 7px; border-top: 1px solid var(--line-soft);
+  }
+  .btn-text {
+    appearance: none; border: none; background: transparent; cursor: pointer;
+    font-size: 11.5px; font-weight: 700; color: var(--royal); padding: 2px 0;
+  }
+  .btn-text:hover { text-decoration: underline; }
+  .btn-text:focus-visible { outline: 2px solid var(--royal); outline-offset: 2px; }
+
+  @media (max-width: 1320px) {
+    .bar-row { padding: 0 12px; gap: 8px; }
+    .brand h1 { font-size: 13.5px; }
+    .tab { padding: 6px 8px; font-size: 11.5px; }
+    .tab.active { padding: 6px 12px; }
+    .cur-desc { max-width: 220px; }
+    .overview { padding: 18px 20px 28px; }
+    .featured-grid { gap: 12px; }
+    .card { padding: 14px 15px 12px; }
   }
   @media (max-width: 1140px) {
-    .brand span { display: none; }
-    nav { flex: 0 1 auto; }
+    .cur-desc { display: none; }
+    .featured-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .archive-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 </style>
 </head>
 <body>
   <header>
-    <div class="brand">
-      <h1>✦ 转生千金 · 审阅台</h1>
-      <span id="cur-desc" title="第二轮道具三板（板 D 30图原风 / 板 E 像素化 / 板 F 直传图同款）× 76px 图形化背包">第二轮道具三板（板 D 30图原风 / 板 E 像素化 / 板 F 直传图同款）× 76px 图形化背包</span>
+    <div class="bar-row bar-primary">
+      <div class="brand">
+        <h1>✦ 转生千金 · 审阅台</h1>
+      </div>
+      <button class="tab active" data-key="overview" data-desc="本批全新交互产物（6 项）与历次视觉竞标审阅总览目录">总览</button>
+      <div class="sep" aria-hidden="true"></div>
+      <span class="row-label row-label-new">本批新品</span>
+      <nav class="nav-strip" id="nav-new" aria-label="本批新增交互审阅入口">
+        <button class="tab tab-new" data-key="spec_v3" data-src="./vfx_lab/combat_spec_v3.html" data-desc="V3.1 战斗数值策划交互白皮书（完整公式、三阶魔力增幅曲线、防御模型与实时演算沙盒）" title="V3.1 战斗数值策划交互白皮书">V3.1 战斗策划白皮书</button>
+        <button class="tab tab-new" data-key="vfx_lab" data-src="./vfx_lab/combat_vfx_lab.html" data-desc="新版战斗特效对比实验室（含按键缩圈与线性格挡沙盒、新旧法术粒子实机对照）" title="新版战斗特效对比实验室（含按键缩圈与线性格挡沙盒）">战斗特效实验室</button>
+        <button class="tab tab-new" data-key="r3" data-src="./item_art_r3_4boards_backpack_preview.html" data-desc="第三轮 2×2 四板道具背包审阅（板 G / H / I / J 对比与 76px 实机背包联调）" title="第三轮 2×2 四板道具背包审阅（板 G / H / I / J）">道具 R3·G/H/I/J</button>
+        <div class="sep" aria-hidden="true"></div>
+        <button class="tab tab-new" data-key="dlg_a" data-src="./dialogue_demos/dialogue_demo_a_bubble.html" data-desc="防立绘跳动对话 · 方案 A（雪瓷棱镜气泡：自由活动双人立绘零位移对话）" title="防立绘跳动对话 · 方案 A（雪瓷棱镜气泡）">对话 A·棱镜气泡</button>
+        <button class="tab tab-new" data-key="dlg_b" data-src="./dialogue_demos/dialogue_demo_b_overlay.html" data-desc="防立绘跳动对话 · 方案 B（立绘固底 + 悬浮磨砂薄幕：零跳动贴底立绘）" title="防立绘跳动对话 · 方案 B（立绘固底 + 悬浮磨砂薄幕）">对话 B·固底薄幕</button>
+        <button class="tab tab-new" data-key="dlg_c" data-src="./dialogue_demos/dialogue_demo_c_sidecard.html" data-desc="防立绘跳动对话 · 方案 C（宽屏侧翼交谈手札卡：侧栏交谈记录 + 稳定立绘舞台）" title="防立绘跳动对话 · 方案 C（宽屏侧翼交谈手札卡）">对话 C·侧翼手札</button>
+      </nav>
+      <a id="open-direct" class="open-ext is-hidden" href="./vfx_lab/combat_spec_v3.html" target="_blank" rel="noopener">新窗 ↗</a>
     </div>
-    <nav id="nav" aria-label="交互审阅方案切换">
-      <button class="tab active" data-key="r2" data-src="./item_art_r2_3boards_backpack_preview.html" data-desc="第二轮道具三板（板 D 30图原风 / 板 E 像素化 / 板 F 直传图同款）× 76px 图形化背包" title="第二轮道具三板（板 D 30图原风 / 板 E 像素化 / 板 F 直传图同款）× 76px 图形化背包">道具 R2·D/E/F</button>
-      <button class="tab" data-key="r1" data-src="./item_art_3boards_backpack_preview.html" data-desc="第一轮道具三板（板 A 圣晶厚涂 / 板 B 鎏金水彩 / 板 C 高精像素）× 76px 图形化背包" title="第一轮道具三板（板 A 圣晶厚涂 / 板 B 鎏金水彩 / 板 C 高精像素）× 76px 图形化背包">道具 R1·A/B/C</button>
-      <div class="sep" aria-hidden="true"></div>
-      <button class="tab" data-key="rank_d" data-src="./rank_badge_d.html" data-desc="等阶标识 · 方案 D（自由发挥：水彩星墨魔导阶印）" title="等阶标识 · 方案 D（自由发挥：水彩星墨魔导阶印）">等阶 D·星墨</button>
-      <button class="tab" data-key="rank_e" data-src="./rank_badge_e.html" data-desc="等阶标识 · 方案 E（自由发挥：高奢珠宝领针 × 去底块排印）" title="等阶标识 · 方案 E（自由发挥：高奢珠宝领针 × 去底块排印）">等阶 E·领针</button>
-      <button class="tab" data-key="rank_a" data-src="./rank_badge_a.html" data-desc="等阶标识 · 方案 A（七色阶 × 全站冰晶折射反光）" title="等阶标识 · 方案 A（七色阶 × 全站冰晶折射反光）">等阶 A·冰晶</button>
-      <button class="tab" data-key="rank_b" data-src="./rank_badge_b.html" data-desc="等阶标识 · 方案 B（七色阶 × 宫廷哑光珐琅纹章）" title="等阶标识 · 方案 B（七色阶 × 宫廷哑光珐琅纹章）">等阶 B·珐琅</button>
-      <button class="tab" data-key="rank_c" data-src="./rank_badge_c.html" data-desc="等阶标识 · 方案 C（自由发挥：星轨魔导阶位印）" title="等阶标识 · 方案 C（自由发挥：星轨魔导阶位印）">等阶 C·星轨</button>
-      <div class="sep" aria-hidden="true"></div>
-      <button class="tab" data-key="title" data-src="./vesteria_title_demo.html" data-desc="电脑端单文件主界面 Demo（含 B+C 融合冰晶 + Sacred 1.mp3 + 同舞台转场）" title="电脑端单文件主界面 Demo（含 B+C 融合冰晶 + Sacred 1.mp3 + 同舞台转场）">主界面 Demo</button>
-      <a id="open-direct" class="open-ext" href="./item_art_r2_3boards_backpack_preview.html" target="_blank" rel="noopener">新窗 ↗</a>
-    </nav>
+
+    <div class="bar-row bar-secondary">
+      <span class="row-label row-label-archive">历次审阅</span>
+      <nav class="nav-strip" id="nav-archive" aria-label="历次视觉竞标与实机审阅入口">
+        <button class="tab" data-key="r2" data-src="./item_art_r2_3boards_backpack_preview.html" data-desc="第二轮道具三板（板 D 30图原风 / 板 E 像素化 / 板 F 直传图同款）× 76px 图形化背包" title="第二轮道具三板（板 D / E / F）">道具 R2·D/E/F</button>
+        <button class="tab" data-key="r1" data-src="./item_art_3boards_backpack_preview.html" data-desc="第一轮道具三板（板 A 圣晶厚涂 / 板 B 鎏金水彩 / 板 C 高精像素）× 76px 图形化背包" title="第一轮道具三板（板 A / B / C）">道具 R1·A/B/C</button>
+        <div class="sep" aria-hidden="true"></div>
+        <button class="tab" data-key="rank_d" data-src="./rank_badge_d.html" data-desc="等阶标识 · 方案 D（自由发挥：水彩星墨魔导阶印）" title="等阶标识 · 方案 D（水彩星墨魔导阶印）">等阶 D·星墨</button>
+        <button class="tab" data-key="rank_e" data-src="./rank_badge_e.html" data-desc="等阶标识 · 方案 E（自由发挥：高奢珠宝领针 × 去底块排印）" title="等阶标识 · 方案 E（高奢珠宝领针）">等阶 E·领针</button>
+        <button class="tab" data-key="rank_a" data-src="./rank_badge_a.html" data-desc="等阶标识 · 方案 A（七色阶 × 全站冰晶折射反光）" title="等阶标识 · 方案 A（冰晶折射）">等阶 A·冰晶</button>
+        <button class="tab" data-key="rank_b" data-src="./rank_badge_b.html" data-desc="等阶标识 · 方案 B（七色阶 × 宫廷哑光珐琅纹章）" title="等阶标识 · 方案 B（哑光珐琅）">等阶 B·珐琅</button>
+        <button class="tab" data-key="rank_c" data-src="./rank_badge_c.html" data-desc="等阶标识 · 方案 C（自由发挥：星轨魔导阶位印）" title="等阶标识 · 方案 C（星轨魔导）">等阶 C·星轨</button>
+        <div class="sep" aria-hidden="true"></div>
+        <button class="tab" data-key="title" data-src="./vesteria_title_demo.html" data-desc="电脑端单文件主界面 Demo（含 B+C 融合冰晶 + Sacred 1.mp3 + 同舞台转场）" title="电脑端主界面 Demo">主界面 Demo</button>
+      </nav>
+      <span id="cur-desc" class="cur-desc" title="本批全新交互产物（6 项）与历次视觉竞标审阅总览目录">本批全新交互产物（6 项）与历次视觉竞标审阅总览目录</span>
+    </div>
   </header>
-  <div class="stage">
-    <iframe id="frame" src="./item_art_r2_3boards_backpack_preview.html"></iframe>
-  </div>
+
+  <main class="stage">
+    <section id="overview" class="overview" aria-label="审阅台总览目录">
+      <div class="overview-inner">
+        <div>
+          <div class="section-head">
+            <div class="section-head-left">
+              <span class="section-kicker">NEW RELEASE · 6 INTERACTIVE DEMOS</span>
+              <h2 class="section-title">本批全新审阅入口</h2>
+            </div>
+            <span class="section-note">点击「页内审阅」即刻切换全屏实机视图，或点击「新窗 ↗」独立打开</span>
+          </div>
+
+          <div class="featured-grid" style="margin-top: 14px;">
+            <article class="card">
+              <div>
+                <div class="card-meta">
+                  <span class="card-cat">COMBAT SPEC · V3.1</span>
+                  <span class="card-tag">数值白皮书</span>
+                </div>
+                <h3 class="card-title">V3.1 战斗数值策划交互白皮书</h3>
+                <p class="card-desc">完整呈现三阶魔力增幅曲线、技能上限契约、防御模型与实时伤害/护盾验算交互文档，直链特效对比实验室。</p>
+              </div>
+              <div class="card-actions">
+                <button class="btn-enter" data-jump="spec_v3">页内审阅</button>
+                <a class="link-ext" href="./vfx_lab/combat_spec_v3.html" target="_blank" rel="noopener">独立新窗 ↗</a>
+              </div>
+            </article>
+
+            <article class="card card-accent-ice">
+              <div>
+                <div class="card-meta">
+                  <span class="card-cat">VFX LAB · SANDBOX</span>
+                  <span class="card-tag">特效与格挡沙盒</span>
+                </div>
+                <h3 class="card-title">新版战斗特效对比实验室（含按键缩圈与线性格挡沙盒）</h3>
+                <p class="card-desc">实时对比升级前后法术 VFX、像素粒子轨迹与音频审计指标，内置按键缩圈判定与线性格挡交互沙盒。</p>
+              </div>
+              <div class="card-actions">
+                <button class="btn-enter" data-jump="vfx_lab">页内审阅</button>
+                <a class="link-ext" href="./vfx_lab/combat_vfx_lab.html" target="_blank" rel="noopener">独立新窗 ↗</a>
+              </div>
+            </article>
+
+            <article class="card card-accent-gold">
+              <div>
+                <div class="card-meta">
+                  <span class="card-cat">ITEM ART · ROUND 3</span>
+                  <span class="card-tag">2×2 四板联调</span>
+                </div>
+                <h3 class="card-title">第三轮 2×2 四板道具背包审阅（板 G / H / I / J）</h3>
+                <p class="card-desc">四组第三轮道具美术板 G / H / I / J 同屏矩阵对比，涵盖原画 / Bloom / 64px 实机背包与角色装备栏验收。</p>
+              </div>
+              <div class="card-actions">
+                <button class="btn-enter" data-jump="r3">页内审阅</button>
+                <a class="link-ext" href="./item_art_r3_4boards_backpack_preview.html" target="_blank" rel="noopener">独立新窗 ↗</a>
+              </div>
+            </article>
+
+            <article class="card">
+              <div>
+                <div class="card-meta">
+                  <span class="card-cat">DIALOGUE BID · SCHEME A</span>
+                  <span class="card-tag">防立绘跳动</span>
+                </div>
+                <h3 class="card-title">防立绘跳动对话 · 方案 A（雪瓷棱镜气泡）</h3>
+                <p class="card-desc">自由活动角色对话竞标方案 A：雪瓷棱镜指向气泡悬浮呈现对白，立绘底锚纹丝不动，零布局挤压。</p>
+              </div>
+              <div class="card-actions">
+                <button class="btn-enter" data-jump="dlg_a">页内审阅</button>
+                <a class="link-ext" href="./dialogue_demos/dialogue_demo_a_bubble.html" target="_blank" rel="noopener">独立新窗 ↗</a>
+              </div>
+            </article>
+
+            <article class="card card-accent-ice">
+              <div>
+                <div class="card-meta">
+                  <span class="card-cat">DIALOGUE BID · SCHEME B</span>
+                  <span class="card-tag">防立绘跳动</span>
+                </div>
+                <h3 class="card-title">防立绘跳动对话 · 方案 B（立绘固底 + 悬浮磨砂薄幕）</h3>
+                <p class="card-desc">自由活动角色对话竞标方案 B：角色立绘锚定屏幕底边，底部悬浮轻透雪瓷磨砂对白薄幕，切换表情零跳动。</p>
+              </div>
+              <div class="card-actions">
+                <button class="btn-enter" data-jump="dlg_b">页内审阅</button>
+                <a class="link-ext" href="./dialogue_demos/dialogue_demo_b_overlay.html" target="_blank" rel="noopener">独立新窗 ↗</a>
+              </div>
+            </article>
+
+            <article class="card card-accent-gold">
+              <div>
+                <div class="card-meta">
+                  <span class="card-cat">DIALOGUE BID · SCHEME C</span>
+                  <span class="card-tag">防立绘跳动</span>
+                </div>
+                <h3 class="card-title">防立绘跳动对话 · 方案 C（宽屏侧翼交谈手札卡）</h3>
+                <p class="card-desc">自由活动角色对话竞标方案 C：充分利用宽屏横向空间，右侧手札卡片承载对白与选项，左侧舞台立绘完整留白。</p>
+              </div>
+              <div class="card-actions">
+                <button class="btn-enter" data-jump="dlg_c">页内审阅</button>
+                <a class="link-ext" href="./dialogue_demos/dialogue_demo_c_sidecard.html" target="_blank" rel="noopener">独立新窗 ↗</a>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-head">
+            <div class="section-head-left">
+              <span class="section-kicker">ARCHIVE · 8 ENTRIES</span>
+              <h2 class="section-title">历次审阅入口（道具板 A–F · 等阶铭牌 A–E · 主界面）</h2>
+            </div>
+            <span class="section-note">全部保留历史审阅页面，顶部第二栏随时一键切换</span>
+          </div>
+
+          <div class="archive-grid" style="margin-top: 12px;">
+            <div class="archive-item">
+              <div class="archive-head"><span class="archive-name">道具 R2 · 板 D / E / F</span><span class="archive-group">道具二轮</span></div>
+              <p class="archive-desc">板 D 30图原风 / 板 E 像素化 / 板 F 直传图同款 × 76px 背包</p>
+              <div class="archive-ops">
+                <button class="btn-text" data-jump="r2">页内打开</button>
+                <a class="link-ext" href="./item_art_r2_3boards_backpack_preview.html" target="_blank" rel="noopener">新窗 ↗</a>
+              </div>
+            </div>
+
+            <div class="archive-item">
+              <div class="archive-head"><span class="archive-name">道具 R1 · 板 A / B / C</span><span class="archive-group">道具一轮</span></div>
+              <p class="archive-desc">板 A 圣晶厚涂 / 板 B 鎏金水彩 / 板 C 高精像素 × 76px 背包</p>
+              <div class="archive-ops">
+                <button class="btn-text" data-jump="r1">页内打开</button>
+                <a class="link-ext" href="./item_art_3boards_backpack_preview.html" target="_blank" rel="noopener">新窗 ↗</a>
+              </div>
+            </div>
+
+            <div class="archive-item">
+              <div class="archive-head"><span class="archive-name">等阶 D · 水彩星墨</span><span class="archive-group">等阶铭牌</span></div>
+              <p class="archive-desc">自由发挥方案 D：水彩星墨魔导阶印体系</p>
+              <div class="archive-ops">
+                <button class="btn-text" data-jump="rank_d">页内打开</button>
+                <a class="link-ext" href="./rank_badge_d.html" target="_blank" rel="noopener">新窗 ↗</a>
+              </div>
+            </div>
+
+            <div class="archive-item">
+              <div class="archive-head"><span class="archive-name">等阶 E · 珠宝领针</span><span class="archive-group">等阶铭牌</span></div>
+              <p class="archive-desc">自由发挥方案 E：高奢珠宝领针 × 去底块排印</p>
+              <div class="archive-ops">
+                <button class="btn-text" data-jump="rank_e">页内打开</button>
+                <a class="link-ext" href="./rank_badge_e.html" target="_blank" rel="noopener">新窗 ↗</a>
+              </div>
+            </div>
+
+            <div class="archive-item">
+              <div class="archive-head"><span class="archive-name">等阶 A · 冰晶折射</span><span class="archive-group">等阶铭牌</span></div>
+              <p class="archive-desc">方案 A：七色阶 × 全站冰晶折射反光质感</p>
+              <div class="archive-ops">
+                <button class="btn-text" data-jump="rank_a">页内打开</button>
+                <a class="link-ext" href="./rank_badge_a.html" target="_blank" rel="noopener">新窗 ↗</a>
+              </div>
+            </div>
+
+            <div class="archive-item">
+              <div class="archive-head"><span class="archive-name">等阶 B · 哑光珐琅</span><span class="archive-group">等阶铭牌</span></div>
+              <p class="archive-desc">方案 B：七色阶 × 宫廷哑光珐琅纹章</p>
+              <div class="archive-ops">
+                <button class="btn-text" data-jump="rank_b">页内打开</button>
+                <a class="link-ext" href="./rank_badge_b.html" target="_blank" rel="noopener">新窗 ↗</a>
+              </div>
+            </div>
+
+            <div class="archive-item">
+              <div class="archive-head"><span class="archive-name">等阶 C · 星轨魔导</span><span class="archive-group">等阶铭牌</span></div>
+              <p class="archive-desc">自由发挥方案 C：星轨魔导阶位印</p>
+              <div class="archive-ops">
+                <button class="btn-text" data-jump="rank_c">页内打开</button>
+                <a class="link-ext" href="./rank_badge_c.html" target="_blank" rel="noopener">新窗 ↗</a>
+              </div>
+            </div>
+
+            <div class="archive-item">
+              <div class="archive-head"><span class="archive-name">电脑端主界面 Demo</span><span class="archive-group">标题舞台</span></div>
+              <p class="archive-desc">B+C 融合冰晶 + Sacred 1.mp3 + 同舞台无缝转场</p>
+              <div class="archive-ops">
+                <button class="btn-text" data-jump="title">页内打开</button>
+                <a class="link-ext" href="./vesteria_title_demo.html" target="_blank" rel="noopener">新窗 ↗</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <iframe id="frame" class="is-hidden" title="审阅台实机预览视图"></iframe>
+  </main>
+
   <script>
     const frame = document.getElementById('frame');
+    const overview = document.getElementById('overview');
     const desc = document.getElementById('cur-desc');
     const openDirect = document.getElementById('open-direct');
-    const tabs = Array.from(document.querySelectorAll('#nav .tab'));
+    const tabs = Array.from(document.querySelectorAll('header .tab[data-key]'));
 
     function activateTab(btn, updateHash) {
       tabs.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      const src = btn.dataset.src;
+      const key = btn.dataset.key;
+      const src = btn.dataset.src || '';
       const text = btn.dataset.desc || '';
-      frame.src = src;
       desc.textContent = text;
       desc.title = text;
-      openDirect.href = src;
-      if (updateHash && btn.dataset.key) {
-        try { history.replaceState(null, '', '#' + btn.dataset.key); } catch (_) {}
+
+      if (key === 'overview' || !src) {
+        overview.classList.remove('is-hidden');
+        frame.classList.add('is-hidden');
+        openDirect.classList.add('is-hidden');
+      } else {
+        overview.classList.add('is-hidden');
+        frame.classList.remove('is-hidden');
+        if (frame.getAttribute('src') !== src) {
+          frame.setAttribute('src', src);
+        }
+        openDirect.href = src;
+        openDirect.classList.remove('is-hidden');
+      }
+
+      if (updateHash && key) {
+        try {
+          const nextHash = key === 'overview' ? '#' : '#' + key;
+          history.replaceState(null, '', nextHash === '#' ? location.pathname + location.search : nextHash);
+        } catch (_) {}
+      }
+    }
+
+    function activateByKey(key, updateHash) {
+      const target = tabs.find(b => b.dataset.key === key);
+      if (target) {
+        activateTab(target, updateHash);
+        target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
       }
     }
 
@@ -145,10 +606,13 @@
       btn.addEventListener('click', () => activateTab(btn, true));
     });
 
+    document.querySelectorAll('[data-jump]').forEach(el => {
+      el.addEventListener('click', () => activateByKey(el.dataset.jump, true));
+    });
+
     const initKey = (new URLSearchParams(location.search).get('tab') || location.hash.replace(/^#/, '')).trim();
     if (initKey) {
-      const target = tabs.find(b => b.dataset.key === initKey);
-      if (target) activateTab(target, false);
+      activateByKey(initKey, false);
     }
   </script>
 </body>

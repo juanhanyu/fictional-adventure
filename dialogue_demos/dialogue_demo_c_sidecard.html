@@ -1,0 +1,2787 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>转生千金 · 方案 C：宽屏侧翼棱镜交谈手札卡</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%231658EB'/%3E%3Cpolygon points='16,4 27,16 16,28 5,16' fill='none' stroke='%23FFFFFF' stroke-width='2.2'/%3E%3Cpolygon points='16,10 21,16 16,22 11,16' fill='%237DD3FC'/%3E%3C/svg%3E"/>
+<style>
+  /* =========================================================================
+     《转生千金》自由活动角色对话防立绘跳动 · 方案 C：宽屏侧翼棱镜交谈手札卡
+     全站统一雪瓷冰白基底 + 皇家蓝 #1658EB + 冰青 #7DD3FC + 香槟淡金 #C4A46C
+     严格遵循：全页零圆角 (border-radius: 0px) · 严禁圆框套圆框 · 立绘 Δy === 0.0px
+     ========================================================================= */
+  :root {
+    --pr-alabaster: rgba(248, 251, 255, 0.93);
+    --pr-alabaster-hi: rgba(255, 255, 255, 0.96);
+    --pr-alabaster-lo: rgba(228, 240, 255, 0.91);
+    --pr-ink: #1A2436;
+    --pr-ink-mid: #3A4B66;
+    --pr-ink-muted: #5F728F;
+    --pr-sapphire-hi: #2E77F8;
+    --pr-sapphire: #1658EB;
+    --pr-sapphire-mid: #103FA8;
+    --pr-sapphire-deep: #0E2B78;
+    --pr-sapphire-abyss: #081A54;
+    --pr-cyan: #7DD3FC;
+    --pr-cyan-gleam: #D9F3FF;
+    --pr-gold: #C4A46C;
+    --pr-gold-deep: #8C6928;
+    --pr-gold-pale: #EFE0BE;
+    --pr-crimson: #D13456;
+    --pr-emerald: #0E8A64;
+    --pr-line-soft: rgba(96, 128, 180, 0.22);
+    --pr-line-mid: rgba(22, 88, 235, 0.34);
+    --pr-rim: linear-gradient(
+      132deg,
+      rgba(125, 211, 252, 0.96) 0%,
+      rgba(22, 88, 235, 0.68) 28%,
+      rgba(255, 255, 255, 0.98) 50%,
+      rgba(196, 164, 108, 0.80) 74%,
+      rgba(46, 119, 248, 0.90) 100%
+    );
+    --pr-rim-gold: linear-gradient(
+      135deg,
+      rgba(239, 224, 190, 0.98) 0%,
+      rgba(196, 164, 108, 0.78) 36%,
+      rgba(255, 255, 255, 0.98) 54%,
+      rgba(125, 211, 252, 0.88) 100%
+    );
+    --pr-sapphire-prism: linear-gradient(
+      180deg,
+      #2E77F8 0%,
+      #1658EB 49.4%,
+      #0E2B78 50.6%,
+      #081A54 100%
+    );
+    --pr-glass-plate: linear-gradient(
+      154deg,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(243, 249, 255, 0.92) 56%,
+      rgba(229, 241, 255, 0.93) 100%
+    );
+    --pr-caustic: linear-gradient(
+      112deg,
+      transparent 12%,
+      rgba(255, 255, 255, 0.68) 26%,
+      rgba(125, 211, 252, 0.14) 34%,
+      transparent 48%,
+      rgba(239, 224, 190, 0.15) 76%,
+      transparent 92%
+    );
+    --pr-stream: linear-gradient(
+      90deg,
+      var(--pr-sapphire) 0%,
+      var(--pr-cyan) 38%,
+      var(--pr-gold) 74%,
+      rgba(22, 88, 235, 0.52) 100%
+    );
+    --pr-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --pr-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong', 'SimSun', Georgia, serif;
+    --pr-sans: 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    --pr-mono: ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Consolas, monospace;
+
+    --ruler-h: 34px;
+    --abh: 56px;
+    --ph: 482px;
+    --card-w: 396px;
+    --wing-shift: 42px;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    border-radius: 0 !important;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: var(--pr-sans);
+    color: var(--pr-ink);
+    background: #DCE8F8;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  img {
+    -webkit-user-drag: none;
+    user-drag: none;
+  }
+
+  button {
+    font-family: inherit;
+    color: inherit;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    padding: 0;
+  }
+
+  button:focus-visible {
+    outline: 1.5px solid var(--pr-sapphire);
+    outline-offset: 2px;
+  }
+
+  /* ==================== 0. 顶部实时验证与演示控制细栏 ==================== */
+  #demo-telemetry {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--ruler-h);
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 0 18px;
+    background: linear-gradient(180deg, rgba(254, 255, 255, 0.96) 0%, rgba(240, 247, 255, 0.94) 100%);
+    border-bottom: 1px solid rgba(22, 88, 235, 0.22);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    font-size: 12px;
+  }
+
+  #demo-telemetry::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1.5px;
+    background: var(--pr-stream);
+    opacity: 0.72;
+    pointer-events: none;
+  }
+
+  .dt-left,
+  .dt-metrics,
+  .dt-controls {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    min-width: 0;
+  }
+
+  .dt-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--pr-serif);
+    font-weight: 700;
+    font-size: 12.5px;
+    letter-spacing: 0.06em;
+    color: var(--pr-ink);
+    white-space: nowrap;
+  }
+
+  .dt-dia {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    background: var(--pr-sapphire);
+    transform: rotate(45deg);
+    flex-shrink: 0;
+  }
+
+  .dt-sub {
+    color: var(--pr-ink-muted);
+    font-family: var(--pr-sans);
+    font-weight: 500;
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+    padding-left: 10px;
+    margin-left: 10px;
+    border-left: 1px solid rgba(22, 88, 235, 0.22);
+    white-space: nowrap;
+  }
+
+  .dt-metrics {
+    padding-left: 14px;
+    margin-left: 14px;
+    border-left: 1px solid rgba(22, 88, 235, 0.22);
+    gap: 14px;
+  }
+
+  .dt-readout {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--pr-mono);
+    font-size: 11.5px;
+    color: var(--pr-ink-mid);
+    white-space: nowrap;
+  }
+
+  .dt-lock-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--pr-emerald);
+    transform: rotate(45deg);
+    flex-shrink: 0;
+    box-shadow: 0 0 8px rgba(14, 138, 100, 0.45);
+  }
+
+  .dt-lock-dot.warn {
+    background: var(--pr-crimson);
+    box-shadow: 0 0 8px rgba(209, 52, 86, 0.45);
+  }
+
+  .dt-val {
+    font-weight: 700;
+    color: var(--pr-emerald);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dt-val.sapphire {
+    color: var(--pr-sapphire);
+  }
+
+  .dt-controls {
+    margin-left: auto;
+    height: 100%;
+  }
+
+  .dt-btn {
+    position: relative;
+    height: 26px;
+    padding: 0 11px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--pr-ink-mid);
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    transition: background 0.16s ease, color 0.16s ease;
+  }
+
+  .dt-btn + .dt-btn::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 12px;
+    background: rgba(22, 88, 235, 0.18);
+  }
+
+  .dt-btn:hover {
+    background: rgba(22, 88, 235, 0.08);
+    color: var(--pr-sapphire);
+  }
+
+  .dt-btn.active {
+    background: var(--pr-sapphire-prism);
+    color: #FFFFFF;
+  }
+
+  .dt-btn.active::before {
+    display: none;
+  }
+
+  .dt-btn-wing {
+    font-family: var(--pr-mono);
+    font-size: 10px;
+    opacity: 0.72;
+  }
+
+  /* ==================== 1. 桌面游戏主屏容器 ==================== */
+  #game-screen {
+    position: fixed;
+    top: var(--ruler-h);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* 庭院背景层 */
+  #bg-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: url('./assets/bg/garden.jpg') center center / cover no-repeat;
+  }
+
+  #bg-veil {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+      linear-gradient(180deg, rgba(16, 36, 78, 0.14) 0%, rgba(248, 251, 255, 0.02) 26%, rgba(16, 32, 66, 0.08) 76%, rgba(12, 26, 58, 0.22) 100%),
+      radial-gradient(ellipse at 50% 44%, rgba(255, 255, 255, 0.06) 0%, rgba(14, 34, 84, 0.12) 100%);
+    pointer-events: none;
+  }
+
+  /* 柔和光尘粒子（零布局开销） */
+  #ambient-motes {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .mote {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.78);
+    transform: rotate(45deg);
+    box-shadow: 0 0 8px rgba(125, 211, 252, 0.85);
+    animation: moteFloat 11s ease-in-out infinite;
+    opacity: 0.45;
+  }
+
+  @keyframes moteFloat {
+    0%, 100% { transform: translateY(0) rotate(45deg); opacity: 0.28; }
+    50% { transform: translateY(-22px) rotate(45deg); opacity: 0.68; }
+  }
+
+  /* ==================== 2. 顶部 HUD & 地点条 & 右上削角版 #sylvia-hub ==================== */
+  #hud {
+    position: absolute;
+    top: 12px;
+    left: 18px;
+    right: 18px;
+    z-index: 22;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+
+  /* 左上角雪瓷冰晶状态棱镜 */
+  .hud-left {
+    position: relative;
+    width: 318px;
+    padding: 9px 16px 9px 12px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    pointer-events: auto;
+    filter: drop-shadow(0 10px 24px rgba(14, 43, 120, 0.16));
+  }
+
+  .hud-left::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: var(--pr-rim);
+    clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 13px 100%, 0 calc(100% - 13px));
+    pointer-events: none;
+  }
+
+  .hud-left::after {
+    content: '';
+    position: absolute;
+    inset: 1.5px;
+    z-index: 0;
+    background: var(--pr-glass-plate);
+    backdrop-filter: blur(18px) saturate(145%);
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
+    clip-path: polygon(0 0, calc(100% - 17px) 0, 100% 17px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+    pointer-events: none;
+  }
+
+  .hud-left > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* 六角冰晶头像槽 */
+  #hud-face {
+    width: 48px;
+    height: 52px;
+    padding: 1.5px;
+    flex-shrink: 0;
+    background: var(--pr-rim-gold);
+    clip-path: polygon(50% 0%, 100% 22%, 100% 78%, 50% 100%, 0% 78%, 0% 22%);
+    filter: drop-shadow(0 5px 12px rgba(14, 43, 120, 0.18));
+  }
+
+  #hud-face img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 14%;
+    display: block;
+    clip-path: polygon(50% 0%, 100% 22%, 100% 78%, 50% 100%, 0% 78%, 0% 22%);
+    background: radial-gradient(circle at 50% 34%, #F4F9FF 0%, #D4E5FB 70%, #B8D2F6 100%);
+  }
+
+  .hud-cols {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .hud-row1 {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    line-height: 1.2;
+  }
+
+  #hud-name {
+    font-family: var(--pr-serif);
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--pr-ink);
+    letter-spacing: 0.08em;
+  }
+
+  #hud-age {
+    font-size: 11px;
+    color: var(--pr-ink-muted);
+    font-family: var(--pr-mono);
+  }
+
+  #hud-tier {
+    padding: 1px 7px;
+    background: var(--pr-sapphire-prism);
+    color: #FFFFFF;
+    font-family: var(--pr-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+  }
+
+  #hud-gold {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--pr-gold-deep);
+    font-family: var(--pr-mono);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .hud-row2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    line-height: 1.15;
+  }
+
+  #hud-date {
+    color: var(--pr-sapphire);
+    font-family: var(--pr-mono);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+
+  #hud-tod {
+    color: var(--pr-ink-muted);
+    font-size: 11px;
+  }
+
+  .hud-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5px;
+    margin-top: 1px;
+  }
+
+  .hud-bar-line {
+    display: grid;
+    grid-template-columns: 26px 1fr 48px;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    line-height: 1;
+  }
+
+  .hb-lbl {
+    color: var(--pr-ink-muted);
+    font-weight: 600;
+  }
+
+  .hb-val {
+    font-style: normal;
+    text-align: right;
+    font-family: var(--pr-mono);
+    font-size: 10px;
+    color: var(--pr-ink-mid);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hud-bars .bar {
+    height: 5.5px;
+    background: rgba(14, 34, 84, 0.12);
+    clip-path: polygon(3px 0%, calc(100% - 3px) 0%, 100% 50%, calc(100% - 3px) 100%, 3px 100%, 0% 50%);
+    overflow: hidden;
+  }
+
+  .hud-bars .bar i {
+    display: block;
+    height: 100%;
+    clip-path: polygon(3px 0%, calc(100% - 3px) 0%, 100% 50%, calc(100% - 3px) 100%, 3px 100%, 0% 50%);
+    transition: width 0.35s var(--pr-ease);
+  }
+
+  .hud-bars .bar.hp i { background: linear-gradient(180deg, #FF8FA4 0%, #D93A5C 49%, #A61C3C 51%, #85122D 100%); }
+  .hud-bars .bar.mp i { background: linear-gradient(180deg, #9BE7FF 0%, #3288FF 49%, #1658EB 51%, #0E2B78 100%); }
+  .hud-bars .bar.st i { background: linear-gradient(180deg, #6CE6C0 0%, #16A67B 49%, #0B7A58 51%, #07593F 100%); }
+
+  /* 右上角切面晶簇导航条 */
+  .hud-right-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 7px;
+    pointer-events: none;
+  }
+
+  .hud-right {
+    position: relative;
+    padding: 4px 10px 4px 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    pointer-events: auto;
+    filter: drop-shadow(0 10px 22px rgba(14, 43, 120, 0.14));
+  }
+
+  .hud-right::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: var(--pr-rim);
+    clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 11px), calc(100% - 11px) 100%, 0 100%, 0 14px);
+    pointer-events: none;
+  }
+
+  .hud-right::after {
+    content: '';
+    position: absolute;
+    inset: 1.5px;
+    z-index: 0;
+    background: var(--pr-glass-plate);
+    backdrop-filter: blur(18px) saturate(145%);
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
+    clip-path: polygon(13px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 13px);
+    pointer-events: none;
+  }
+
+  .hud-right > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  .hud-right .chip {
+    height: 30px;
+    padding: 0 9px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--pr-ink);
+    font-size: 12px;
+    font-weight: 600;
+    transition: background 0.16s ease, color 0.16s ease;
+  }
+
+  .hud-right .chip:hover {
+    background: var(--pr-sapphire-prism);
+    color: #FFFFFF;
+  }
+
+  .hud-right .chip svg {
+    flex-shrink: 0;
+  }
+
+  /* 右上削角版 #sylvia-hub（外层切角雪瓷折射条，内部纯细线分隔零套框） */
+  #sylvia-hub {
+    position: relative;
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    height: 34px;
+    padding: 0 10px 0 14px;
+    filter: drop-shadow(0 8px 20px rgba(14, 43, 120, 0.13));
+  }
+
+  #sylvia-hub::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: var(--pr-rim);
+    clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+    pointer-events: none;
+  }
+
+  #sylvia-hub::after {
+    content: '';
+    position: absolute;
+    inset: 1.5px;
+    z-index: 0;
+    background:
+      var(--pr-stream) top / 100% 1.5px no-repeat,
+      var(--pr-glass-plate);
+    backdrop-filter: blur(18px) saturate(145%);
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
+    clip-path: polygon(11px 0, 100% 0, 100% calc(100% - 11px), calc(100% - 11px) 100%, 0 100%, 0 11px);
+    pointer-events: none;
+  }
+
+  #sylvia-hub .sh-corner-controls {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    height: 100%;
+    gap: 0;
+  }
+
+  #sylvia-hub .hud-mood-pill,
+  #sylvia-hub .rh-dock-chip,
+  #sylvia-hub .sh-charm-btn {
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 9px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--pr-ink);
+    white-space: nowrap;
+    transition: background 0.16s ease, color 0.16s ease;
+  }
+
+  #sylvia-hub .hud-mood-pill {
+    font-family: var(--pr-serif);
+  }
+
+  #sylvia-hub .hud-mood-pill .hm-ico {
+    color: var(--pr-emerald);
+    display: inline-flex;
+  }
+
+  #sylvia-hub .hud-mood-pill .hm-val {
+    font-style: normal;
+    font-family: var(--pr-mono);
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--pr-emerald);
+    padding-left: 6px;
+    border-left: 1px solid rgba(22, 88, 235, 0.22);
+    font-variant-numeric: tabular-nums;
+  }
+
+  #sylvia-hub .sh-divider {
+    width: 1px;
+    height: 13px;
+    background: rgba(22, 88, 235, 0.22);
+    margin: 0 2px;
+    flex-shrink: 0;
+  }
+
+  #sylvia-hub .sh-charm-btn {
+    padding: 0 6px;
+    color: var(--pr-sapphire-mid);
+  }
+
+  #sylvia-hub .hud-mood-pill:hover,
+  #sylvia-hub .rh-dock-chip:hover,
+  #sylvia-hub .sh-charm-btn:hover {
+    background: rgba(22, 88, 235, 0.08);
+    color: var(--pr-sapphire);
+  }
+
+  #sylvia-hub .rh-mail-dot {
+    font-style: normal;
+    font-family: var(--pr-mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--pr-sapphire);
+    padding-left: 3px;
+  }
+
+  /* 地点切面冰晶牌 (#loc-bar) */
+  #loc-bar {
+    position: absolute;
+    top: 94px;
+    left: 18px;
+    z-index: 20;
+    padding: 6px 20px 6px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    filter: drop-shadow(0 8px 18px rgba(14, 43, 120, 0.13));
+  }
+
+  #loc-bar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: var(--pr-rim);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    pointer-events: none;
+  }
+
+  #loc-bar::after {
+    content: '';
+    position: absolute;
+    inset: 1.5px;
+    z-index: 0;
+    background: var(--pr-glass-plate);
+    backdrop-filter: blur(18px) saturate(145%);
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
+    clip-path: polygon(0 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+    pointer-events: none;
+  }
+
+  #loc-bar > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  .loc-crest {
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--pr-sapphire-prism);
+    color: #E0F4FF;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    flex-shrink: 0;
+  }
+
+  #loc-name {
+    font-family: var(--pr-serif);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--pr-ink);
+  }
+
+  .loc-area {
+    padding: 1px 8px;
+    background: rgba(22, 88, 235, 0.09);
+    color: var(--pr-sapphire);
+    font-size: 11px;
+    font-weight: 600;
+    clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+  }
+
+  #loc-desc {
+    color: var(--pr-ink-muted);
+    font-size: 11.5px;
+  }
+
+  /* ==================== 3. 主舞台与零跳动立绘层 ==================== */
+  #stage {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    z-index: 5;
+    overflow: hidden;
+  }
+
+  /* 关键铁律：#portraits 永久锁死 bottom: 0，不随任何对话开关修改任何高度/位移属性 */
+  #portraits {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .p-slot {
+    position: absolute;
+    bottom: 0;
+    height: var(--ph);
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
+  #p-left {
+    left: 19%;
+  }
+
+  #p-right {
+    left: 81%;
+  }
+
+  /* 立绘本体：严格仅使用光学 filter 切换焦点，严禁任何 translateY / scale / padding 改动！ */
+  .p-slot img {
+    display: block;
+    width: auto;
+    height: var(--ph);
+    max-height: var(--ph);
+    object-fit: contain;
+    object-position: center bottom;
+    filter: drop-shadow(0 12px 26px rgba(14, 30, 72, 0.28));
+    transition: filter 0.26s var(--pr-ease);
+  }
+
+  .p-slot:hover img {
+    filter: brightness(1.05) drop-shadow(0 14px 30px rgba(22, 88, 235, 0.30));
+  }
+
+  .p-slot.is-speaking img {
+    filter: brightness(1.04) saturate(1.04) drop-shadow(0 14px 34px rgba(22, 88, 235, 0.34));
+  }
+
+  .p-slot.is-bystander img {
+    filter: brightness(0.76) saturate(0.86) drop-shadow(0 8px 18px rgba(14, 28, 64, 0.24));
+  }
+
+  .p-slot.is-bystander:hover img {
+    filter: brightness(0.96) saturate(0.98) drop-shadow(0 12px 26px rgba(22, 88, 235, 0.28));
+  }
+
+  /* 说话人背部冰晶光晕（纯背景光，绝不触碰立绘定位） */
+  .p-aura {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    width: 300px;
+    height: 360px;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse at 50% 45%, rgba(125, 211, 252, 0.30) 0%, rgba(22, 88, 235, 0.12) 45%, transparent 72%);
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+    transition: opacity 0.32s var(--pr-ease);
+  }
+
+  .p-slot.is-speaking .p-aura {
+    opacity: 1;
+  }
+
+  /* 角色脚边极简切角名签（不遮面部，hover 提示点击交谈，不影响 <img> 坐标） */
+  .p-tag {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 14px 4px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+    pointer-events: none;
+    filter: drop-shadow(0 6px 14px rgba(14, 43, 120, 0.18));
+    transition: opacity 0.22s ease;
+  }
+
+  .p-tag::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: var(--pr-rim);
+    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  }
+
+  .p-tag::after {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    z-index: 0;
+    background: rgba(250, 253, 255, 0.92);
+    clip-path: polygon(7.5px 0, 100% 0, calc(100% - 7.5px) 100%, 0 100%);
+  }
+
+  .p-slot.is-speaking .p-tag::after {
+    background: var(--pr-sapphire-prism);
+  }
+
+  .p-tag-name,
+  .p-tag-cue {
+    position: relative;
+    z-index: 2;
+  }
+
+  .p-tag-name {
+    font-family: var(--pr-serif);
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--pr-ink);
+  }
+
+  .p-tag-cue {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--pr-sapphire);
+    padding-left: 7px;
+    border-left: 1px solid rgba(22, 88, 235, 0.26);
+  }
+
+  .p-slot.is-speaking .p-tag-name {
+    color: #FFFFFF;
+  }
+
+  .p-slot.is-speaking .p-tag-cue {
+    color: var(--pr-cyan-gleam);
+    border-left-color: rgba(255, 255, 255, 0.34);
+  }
+
+  /* ==================== 4. 方案 C 核心：侧翼雪瓷棱镜交谈手札卡 ==================== */
+  #side-folio-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 25;
+    pointer-events: none;
+  }
+
+  #side-folio {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    width: var(--card-w);
+    max-height: calc(100% - 146px);
+    display: flex;
+    flex-direction: column;
+    pointer-events: auto;
+    filter: drop-shadow(0 20px 44px rgba(10, 30, 92, 0.22));
+    transform: translateX(calc(-50% + var(--wing-offset, 0px)));
+    opacity: 1;
+    transition:
+      transform 0.34s var(--pr-ease),
+      opacity 0.24s var(--pr-ease);
+  }
+
+  /* 点左侧角色 → 紧邻左侧角色的右侧空域优雅展开（与右侧旁观者保持宽裕留白） */
+  #side-folio[data-wing="right"] {
+    --wing-offset: calc(-1 * var(--wing-shift));
+  }
+
+  /* 点右侧角色 → 紧邻右侧角色的左侧空域优雅展开（与左侧旁观者保持宽裕留白） */
+  #side-folio[data-wing="left"] {
+    --wing-offset: var(--wing-shift);
+  }
+
+  #side-folio.is-closed {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(calc(-50% + var(--wing-offset, 0px))) scale(0.985);
+  }
+
+  /* 外层 1px 冰晶折射细边 + 45° 上左/下右削角（外壳与内芯双层裁切，绝不被子背景遮盖切角） */
+  .sf-shell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    clip-path: polygon(22px 0, 100% 0, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0 100%, 0 22px);
+  }
+
+  .sf-shell::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: var(--pr-rim);
+    pointer-events: none;
+  }
+
+  .sf-shell::after {
+    content: '';
+    position: absolute;
+    inset: 1.5px;
+    z-index: 1;
+    background:
+      var(--pr-caustic),
+      var(--pr-glass-plate);
+    backdrop-filter: blur(22px) saturate(148%);
+    -webkit-backdrop-filter: blur(22px) saturate(148%);
+    clip-path: polygon(21px 0, 100% 0, 100% calc(100% - 21px), calc(100% - 21px) 100%, 0 100%, 0 21px);
+    pointer-events: none;
+  }
+
+  /* 顶边皇家蓝折射流光条 */
+  .sf-top-gleam {
+    position: absolute;
+    top: 1.5px;
+    left: 22px;
+    right: 1.5px;
+    height: 2.5px;
+    z-index: 5;
+    background: linear-gradient(90deg, var(--pr-sapphire) 0%, var(--pr-cyan) 36%, #FFFFFF 52%, var(--pr-gold) 78%, rgba(22, 88, 235, 0.55) 100%);
+    background-size: 200% 100%;
+    animation: prismFlow 6.5s linear infinite;
+    pointer-events: none;
+  }
+
+  @keyframes prismFlow {
+    0% { background-position: 0% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  /* 方向性冰棱指向信标：右翼展开时左沿亮起冰蓝棱尖指向左侧说话人，左翼展开时右沿指向右侧说话人 */
+  .sf-beacon {
+    position: absolute;
+    top: 56px;
+    width: 16px;
+    height: 28px;
+    z-index: 8;
+    pointer-events: none;
+    background: var(--pr-sapphire-prism);
+    filter: drop-shadow(0 3px 10px rgba(22, 88, 235, 0.42));
+    transition: opacity 0.22s ease;
+  }
+
+  .sf-beacon::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    background: linear-gradient(180deg, #D9F3FF 0%, #38BDF8 50%, #1658EB 100%);
+  }
+
+  #side-folio[data-wing="right"] .sf-beacon.beacon-left {
+    left: -13px;
+    clip-path: polygon(100% 0, 0 50%, 100% 100%, 62% 50%);
+    opacity: 1;
+  }
+
+  #side-folio[data-wing="right"] .sf-beacon.beacon-left::after {
+    clip-path: polygon(100% 14%, 18% 50%, 100% 86%, 70% 50%);
+  }
+
+  #side-folio[data-wing="right"] .sf-beacon.beacon-right {
+    opacity: 0;
+  }
+
+  #side-folio[data-wing="left"] .sf-beacon.beacon-right {
+    right: -13px;
+    clip-path: polygon(0 0, 100% 50%, 0 100%, 38% 50%);
+    opacity: 1;
+  }
+
+  #side-folio[data-wing="left"] .sf-beacon.beacon-right::after {
+    clip-path: polygon(0 14%, 82% 50%, 0 86%, 30% 50%);
+  }
+
+  #side-folio[data-wing="left"] .sf-beacon.beacon-left {
+    opacity: 0;
+  }
+
+  /* 手札内容层：内缩 1.5px 并同步切角，完整露出 1.5px 冰晶折射外框 */
+  .sf-inner {
+    position: relative;
+    z-index: 3;
+    margin: 1.5px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    clip-path: polygon(21px 0, 100% 0, 100% calc(100% - 21px), calc(100% - 21px) 100%, 0 100%, 0 21px);
+  }
+
+  /* 4.1 页眉：人物姓名 + 心情/羁绊微标 + 无框关闭 × */
+  .sf-head {
+    position: relative;
+    padding: 15px 16px 12px 22px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(238, 246, 255, 0.30) 100%);
+    border-bottom: 1px solid rgba(22, 88, 235, 0.14);
+  }
+
+  .sf-head::after {
+    content: '';
+    position: absolute;
+    left: 22px;
+    right: 16px;
+    bottom: -1px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--pr-sapphire) 0%, var(--pr-cyan) 40%, var(--pr-gold) 74%, transparent 100%);
+    opacity: 0.65;
+  }
+
+  .sf-identity {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .sf-kicker {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--pr-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--pr-sapphire);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .sf-kicker-dia {
+    width: 5px;
+    height: 5px;
+    background: var(--pr-sapphire);
+    transform: rotate(45deg);
+    flex-shrink: 0;
+  }
+
+  .sf-title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    flex-wrap: wrap;
+  }
+
+  #sf-name {
+    margin: 0;
+    font-family: var(--pr-serif);
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--pr-ink);
+    line-height: 1.2;
+  }
+
+  #sf-role {
+    font-size: 11.5px;
+    color: var(--pr-ink-muted);
+    letter-spacing: 0.04em;
+  }
+
+  /* 心情与羁绊微标：纯排版 + 1px 细竖线分隔（零胶囊、零内嵌框） */
+  .sf-meta-strip {
+    margin-top: 7px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11.5px;
+    color: var(--pr-ink-mid);
+  }
+
+  .sf-mood-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 600;
+    color: var(--pr-sapphire-deep);
+  }
+
+  .sf-mood-gem {
+    width: 6px;
+    height: 6px;
+    transform: rotate(45deg);
+    background: var(--pr-sapphire);
+    flex-shrink: 0;
+  }
+
+  .sf-meta-sep {
+    width: 1px;
+    height: 11px;
+    background: rgba(22, 88, 235, 0.24);
+  }
+
+  .sf-bond-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--pr-mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--pr-gold-deep);
+  }
+
+  .sf-bond-ticks {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .sf-bond-ticks i {
+    display: inline-block;
+    width: 5.5px;
+    height: 5.5px;
+    transform: rotate(45deg);
+    background: rgba(196, 164, 108, 0.26);
+    transition: background 0.24s ease, transform 0.24s ease;
+  }
+
+  .sf-bond-ticks i.filled {
+    background: var(--pr-gold);
+    box-shadow: 0 0 6px rgba(196, 164, 108, 0.55);
+  }
+
+  .sf-close {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    line-height: 1;
+    color: var(--pr-ink-muted);
+    flex-shrink: 0;
+    transition: background 0.16s ease, color 0.16s ease;
+  }
+
+  .sf-close:hover {
+    background: rgba(22, 88, 235, 0.09);
+    color: var(--pr-sapphire);
+  }
+
+  /* 4.2 中段对话流：柔和保留前 1 句历史对话 + 当前优雅逐字台词 */
+  .sf-body {
+    padding: 14px 20px 14px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    min-height: 162px;
+    cursor: pointer;
+  }
+
+  .sf-prev-turn {
+    padding: 2px 0 2px 10px;
+    border-left: 2px solid rgba(125, 211, 252, 0.72);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transition: opacity 0.22s ease;
+  }
+
+  .sf-prev-turn.is-empty {
+    display: none;
+  }
+
+  .sf-prev-who {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--pr-ink-muted);
+  }
+
+  .sf-prev-text {
+    font-family: var(--pr-serif);
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--pr-ink-muted);
+    opacity: 0.88;
+  }
+
+  .sf-stage-note {
+    font-family: var(--pr-serif);
+    font-size: 12.5px;
+    line-height: 1.58;
+    color: var(--pr-ink-mid);
+    font-style: italic;
+    padding-left: 10px;
+    border-left: 2px solid rgba(196, 164, 108, 0.68);
+  }
+
+  .sf-stage-note:empty {
+    display: none;
+  }
+
+  .sf-current-wrap {
+    min-height: 82px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  #sf-text {
+    font-family: var(--pr-serif);
+    font-size: 15.5px;
+    line-height: 1.78;
+    color: var(--pr-ink);
+    letter-spacing: 0.025em;
+  }
+
+  .sf-caret {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-left: 6px;
+    vertical-align: 2px;
+    background: var(--pr-sapphire);
+    transform: rotate(45deg);
+    animation: caretPulse 1.3s ease-in-out infinite;
+  }
+
+  @keyframes caretPulse {
+    0%, 100% { opacity: 0.28; transform: rotate(45deg) scale(0.86); }
+    50% { opacity: 1; transform: rotate(45deg) scale(1.08); }
+  }
+
+  /* 4.3 分支选项 / 赠礼展开区（手札内部自然流式衔接，纯细线分隔零套框） */
+  .sf-subpanel {
+    border-top: 1px solid rgba(22, 88, 235, 0.14);
+    background: linear-gradient(180deg, rgba(236, 245, 255, 0.50) 0%, rgba(248, 252, 255, 0.34) 100%);
+    padding: 8px 18px 8px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .sf-subpanel.hidden {
+    display: none;
+  }
+
+  .sf-sub-label {
+    font-family: var(--pr-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--pr-sapphire);
+    padding: 2px 0 4px;
+    text-transform: uppercase;
+  }
+
+  .sf-option-row {
+    position: relative;
+    width: 100%;
+    text-align: left;
+    padding: 8px 10px 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-family: var(--pr-serif);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--pr-ink);
+    border-left: 2px solid transparent;
+    transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease, padding-left 0.16s var(--pr-ease);
+  }
+
+  .sf-option-row + .sf-option-row {
+    border-top: 1px solid rgba(22, 88, 235, 0.09);
+  }
+
+  .sf-option-row:hover {
+    background: rgba(22, 88, 235, 0.09);
+    border-left-color: var(--pr-sapphire);
+    color: var(--pr-sapphire-deep);
+    padding-left: 16px;
+  }
+
+  .sf-opt-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .sf-opt-idx {
+    font-family: var(--pr-serif);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--pr-sapphire);
+    flex-shrink: 0;
+  }
+
+  .sf-opt-meta {
+    font-family: var(--pr-mono);
+    font-size: 10.5px;
+    color: var(--pr-gold-deep);
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /* 4.4 底段快捷互动指令条（自然融合：继续交谈 / 话题分支 / 赠礼 / 告辞） */
+  .sf-actions {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    border-top: 1px solid rgba(22, 88, 235, 0.18);
+    background: linear-gradient(180deg, rgba(246, 251, 255, 0.88) 0%, rgba(235, 244, 255, 0.94) 100%);
+    padding: 0;
+  }
+
+  .sf-act-primary {
+    position: relative;
+    flex: 1.35;
+    height: 40px;
+    padding: 0 20px 0 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    background: var(--pr-sapphire-prism);
+    color: #FFFFFF;
+    font-family: var(--pr-serif);
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+    transition: filter 0.16s ease;
+  }
+
+  .sf-act-primary:hover {
+    filter: brightness(1.12);
+  }
+
+  .sf-act-btn {
+    position: relative;
+    flex: 0.82;
+    height: 40px;
+    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-family: var(--pr-serif);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--pr-ink-mid);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    transition: background 0.16s ease, color 0.16s ease;
+  }
+
+  .sf-act-btn + .sf-act-btn::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 14px;
+    background: rgba(22, 88, 235, 0.18);
+  }
+
+  .sf-act-btn:hover,
+  .sf-act-btn.active {
+    background: rgba(22, 88, 235, 0.09);
+    color: var(--pr-sapphire);
+  }
+
+  /* 轻重节奏标注极细底纹（右留 28px 优雅避让下右 45° 削角） */
+  .sf-foot-note {
+    padding: 6px 28px 7px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 10.5px;
+    color: var(--pr-ink-muted);
+    border-top: 1px solid rgba(22, 88, 235, 0.09);
+    background: rgba(242, 248, 255, 0.65);
+  }
+
+  .sf-foot-tag {
+    font-family: var(--pr-mono);
+    font-size: 10px;
+    color: var(--pr-sapphire);
+    letter-spacing: 0.06em;
+  }
+
+  /* ==================== 5. 底部削角版 56px 矮操作栏 (#action-bar) ==================== */
+  #action-bar-wrap {
+    position: relative;
+    z-index: 30;
+    flex: 0 0 var(--abh);
+    height: var(--abh);
+    min-height: var(--abh);
+    max-height: var(--abh);
+    padding: 0 18px;
+    display: flex;
+    align-items: stretch;
+  }
+
+  #action-bar {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 18px 0 22px;
+    filter: drop-shadow(0 -6px 18px rgba(14, 43, 120, 0.10));
+    transition: opacity 0.24s ease;
+  }
+
+  /* 交谈时仅轻微柔化不改高度（Δh === 0.0px），鼠标移入即刻恢复满亮 */
+  body.folio-open #action-bar {
+    opacity: 0.90;
+  }
+
+  body.folio-open #action-bar:hover {
+    opacity: 1;
+  }
+
+  #action-bar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: var(--pr-rim);
+    clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%, 0 16px);
+    pointer-events: none;
+  }
+
+  #action-bar::after {
+    content: '';
+    position: absolute;
+    top: 1.5px;
+    left: 1.5px;
+    right: 1.5px;
+    bottom: 0;
+    z-index: 0;
+    background:
+      var(--pr-stream) top / 100% 1.5px no-repeat,
+      linear-gradient(180deg, rgba(251, 254, 255, 0.95) 0%, rgba(235, 244, 254, 0.97) 100%);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    clip-path: polygon(15px 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 0 100%, 0 15px);
+    pointer-events: none;
+  }
+
+  #action-bar > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  .ab-scroll {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .abtn {
+    position: relative;
+    height: 36px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--pr-serif);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--pr-ink);
+    white-space: nowrap;
+    transition: background 0.16s ease, color 0.16s ease;
+  }
+
+  .abtn + .abtn::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 14px;
+    background: rgba(22, 88, 235, 0.14);
+  }
+
+  .abtn svg {
+    color: var(--pr-ink-muted);
+    flex-shrink: 0;
+    transition: color 0.16s ease;
+  }
+
+  .abtn:hover {
+    background: rgba(22, 88, 235, 0.08);
+    color: var(--pr-sapphire);
+  }
+
+  .abtn:hover svg,
+  .abtn:hover .ab-cost {
+    color: var(--pr-sapphire);
+  }
+
+  .abtn.is-active-act {
+    background: rgba(22, 88, 235, 0.11);
+    color: var(--pr-sapphire-deep);
+    border-bottom: 2px solid var(--pr-sapphire);
+  }
+
+  .abtn.is-active-act svg {
+    color: var(--pr-sapphire);
+  }
+
+  .ab-cost {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-family: var(--pr-mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--pr-ink-muted);
+  }
+
+  .ab-next-pinned {
+    height: 36px;
+    padding: 0 26px;
+    background: var(--pr-sapphire-prism);
+    color: #FFFFFF;
+    font-family: var(--pr-serif);
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    clip-path: polygon(13px 0%, calc(100% - 13px) 0%, 100% 50%, calc(100% - 13px) 100%, 13px 100%, 0% 50%);
+    filter: drop-shadow(0 5px 14px rgba(14, 43, 120, 0.26));
+    transition: filter 0.16s ease;
+  }
+
+  .ab-next-pinned svg {
+    color: #D9F3FF;
+  }
+
+  .ab-next-pinned:hover {
+    background: var(--pr-sapphire-prism);
+    color: #FFFFFF;
+    filter: brightness(1.12) drop-shadow(0 6px 18px rgba(22, 88, 235, 0.36));
+  }
+
+  /* ==================== 6. 实时参考标尺叠加层 ==================== */
+  #ruler-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 18;
+    pointer-events: none;
+    display: none;
+  }
+
+  body.ruler-on #ruler-overlay {
+    display: block;
+  }
+
+  .ruler-hline {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    border-top: 1px dashed rgba(22, 88, 235, 0.68);
+  }
+
+  .ruler-hline.base {
+    border-top-color: rgba(14, 138, 100, 0.85);
+    border-top-style: solid;
+  }
+
+  .ruler-hline.eye {
+    border-top-color: rgba(196, 164, 108, 0.82);
+  }
+
+  .ruler-tag {
+    position: absolute;
+    left: 18px;
+    top: -19px;
+    padding: 1px 8px;
+    background: rgba(250, 253, 255, 0.94);
+    border-left: 2.5px solid var(--pr-sapphire);
+    font-family: var(--pr-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--pr-sapphire-deep);
+    white-space: nowrap;
+  }
+
+  .ruler-hline.base .ruler-tag {
+    border-left-color: var(--pr-emerald);
+    color: var(--pr-emerald);
+  }
+
+  .ruler-hline.eye .ruler-tag {
+    left: auto;
+    right: 14px;
+    transform: none;
+    border-left: none;
+    border-right: 2.5px solid var(--pr-gold-deep);
+    color: var(--pr-gold-deep);
+  }
+
+  .ruler-vline {
+    position: absolute;
+    top: 132px;
+    bottom: 0;
+    width: 1px;
+    border-left: 1px dotted rgba(22, 88, 235, 0.45);
+  }
+
+  /* 轻提示条 (#toast) */
+  #toast {
+    position: fixed;
+    top: calc(var(--ruler-h) + 14px);
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    z-index: 90;
+    padding: 7px 18px;
+    background: rgba(252, 254, 255, 0.96);
+    border-top: 2px solid var(--pr-sapphire);
+    border-left: 1px solid rgba(22, 88, 235, 0.25);
+    border-right: 1px solid rgba(22, 88, 235, 0.25);
+    border-bottom: 1px solid rgba(22, 88, 235, 0.25);
+    font-family: var(--pr-serif);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--pr-ink);
+    filter: drop-shadow(0 10px 22px rgba(14, 43, 120, 0.16));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease, transform 0.22s var(--pr-ease);
+  }
+
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ==================== 7. 1280×720 桌面紧凑适配 ==================== */
+  @media (max-width: 1360px), (max-height: 760px) {
+    :root {
+      --ruler-h: 32px;
+      --ph: 416px;
+      --card-w: 384px;
+      --wing-shift: 36px;
+    }
+
+    #p-left { left: 18.5%; }
+    #p-right { left: 81.5%; }
+
+    #hud { top: 10px; left: 14px; right: 14px; }
+    .hud-left { width: 300px; padding: 8px 14px 8px 11px; }
+    #hud-face { width: 44px; height: 48px; }
+    #loc-bar { top: 88px; left: 14px; padding: 5px 18px 5px 10px; }
+
+    #side-folio {
+      bottom: 16px;
+      max-height: calc(100% - 126px);
+    }
+
+    .sf-head { padding: 12px 14px 10px 18px; }
+    #sf-name { font-size: 17.5px; }
+    .sf-body { padding: 11px 16px 11px 18px; gap: 8px; min-height: 134px; }
+    .sf-current-wrap { min-height: 68px; }
+    #sf-text { font-size: 14.5px; line-height: 1.72; }
+    .sf-subpanel { padding: 6px 16px 6px 18px; }
+    .sf-option-row { padding: 6px 8px 6px 10px; font-size: 13px; }
+    .sf-act-primary, .sf-act-btn { height: 36px; font-size: 12.5px; }
+    .sf-foot-note { padding: 5px 26px 6px 18px; }
+    .abtn { padding: 0 10px; font-size: 13px; }
+    .dt-sub { display: none; }
+  }
+</style>
+</head>
+<body class="folio-open">
+
+<!-- ==================== 顶部实时验证标尺与演示细栏 ==================== -->
+<header id="demo-telemetry" aria-label="方案 C 验证与控制栏">
+  <div class="dt-left">
+    <span class="dt-brand">
+      <i class="dt-dia" aria-hidden="true"></i>
+      <span>方案 C · 宽屏侧翼棱镜交谈手札卡</span>
+    </span>
+    <span class="dt-sub">日常轻交互浮于非遮挡侧翼 · 底栏零增高 · 立绘原位零跳动</span>
+
+    <div class="dt-metrics" aria-live="polite">
+      <span class="dt-readout" title="实时比对双立绘 top/bottom 相对基准的最大绝对位移">
+        <i id="lock-dot" class="dt-lock-dot" aria-hidden="true"></i>
+        <span>立绘 Δy</span>
+        <strong id="metric-dy-max" class="dt-val">0.0px</strong>
+      </span>
+      <span class="dt-readout" title="底部 56px 矮操作栏实时高度变化">
+        <span>底栏 56px Δh</span>
+        <strong id="metric-bar-dh" class="dt-val sapphire">0.0px</strong>
+      </span>
+      <span class="dt-readout">
+        <span>侧翼</span>
+        <strong id="metric-wing" class="dt-val sapphire">右翼展开</strong>
+      </span>
+    </div>
+  </div>
+
+  <div class="dt-controls" role="toolbar" aria-label="演示切换按钮">
+    <button type="button" id="ctrl-left" class="dt-btn active" data-demo-char="beatrice">
+      <span>左侧·贝阿特丽丝</span>
+      <span class="dt-btn-wing">→右翼</span>
+    </button>
+    <button type="button" id="ctrl-right" class="dt-btn" data-demo-char="alice">
+      <span>右侧·爱丽丝</span>
+      <span class="dt-btn-wing">→左翼</span>
+    </button>
+    <button type="button" id="ctrl-close" class="dt-btn">
+      <span>收起手札</span>
+    </button>
+    <button type="button" id="ctrl-ruler" class="dt-btn" aria-pressed="false">
+      <span>参考标尺</span>
+    </button>
+  </div>
+</header>
+
+<!-- ==================== 桌面游戏舞台 ==================== -->
+<section id="game-screen" aria-label="公爵府庭院自由活动舞台">
+  <div id="bg-layer" aria-hidden="true"></div>
+  <div id="bg-veil" aria-hidden="true"></div>
+  <div id="ambient-motes" aria-hidden="true">
+    <span class="mote" style="left:14%;top:28%;animation-delay:0s;"></span>
+    <span class="mote" style="left:46%;top:22%;animation-delay:2.1s;"></span>
+    <span class="mote" style="left:61%;top:36%;animation-delay:4.2s;"></span>
+    <span class="mote" style="left:78%;top:24%;animation-delay:1.4s;"></span>
+    <span class="mote" style="left:33%;top:42%;animation-delay:3.3s;"></span>
+  </div>
+
+  <!-- 顶部 HUD + 右上削角版 #sylvia-hub -->
+  <header id="hud">
+    <div class="hud-left">
+      <div id="hud-face">
+        <img src="./assets/portraits/sylvia_young_normal.png" alt="希尔维亚"/>
+      </div>
+      <div class="hud-cols">
+        <div class="hud-row1">
+          <span id="hud-name">希尔维亚</span>
+          <span id="hud-age">10岁</span>
+          <span id="hud-tier">三阶</span>
+          <span id="hud-gold" title="金币">
+            <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="#1658EB" stroke-width="1.4" aria-hidden="true">
+              <polygon points="8,2 14,8 8,14 2,8" fill="rgba(22,88,235,0.12)"/>
+              <polygon points="8,5 11,8 8,11 5,8" stroke="#38BDF8" stroke-width="1"/>
+            </svg>
+            <span id="hud-gold-val">480</span>
+          </span>
+        </div>
+        <div class="hud-row2">
+          <span id="hud-date">帝国历 432年 · 春</span>
+          <span id="hud-tod">晴朗晨光</span>
+        </div>
+        <div class="hud-bars">
+          <div class="hud-bar-line">
+            <span class="hb-lbl">生命</span>
+            <div class="bar hp"><i style="width:100%"></i></div>
+            <em class="hb-val">160/160</em>
+          </div>
+          <div class="hud-bar-line">
+            <span class="hb-lbl">魔力</span>
+            <div class="bar mp"><i style="width:94%"></i></div>
+            <em class="hb-val">226/240</em>
+          </div>
+          <div class="hud-bar-line">
+            <span class="hb-lbl">体力</span>
+            <div class="bar st"><i id="hud-st-bar" style="width:80%"></i></div>
+            <em id="hud-st-num" class="hb-val">8/10</em>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hud-right-stack">
+      <div class="hud-right" role="toolbar" aria-label="右上功能条">
+        <button type="button" class="chip" data-toast="战术演武大厅（演示态）">
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3.5l1.5 1.5-9 9-2.5.5.5-2.5 9.5-8.5z"/><path d="M5 3.5L3.5 5l4 4M11.5 13l3 3 1.5-1.5-3-3"/></svg>
+          <span>演武</span>
+        </button>
+        <button type="button" class="chip" data-toast="养成四维面板（演示态）">
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="10,2.5 16.5,10 10,17.5 3.5,10"/><polygon points="10,6.2 13,10 10,13.8 7,10" stroke-width="1.1"/></svg>
+          <span>四维</span>
+        </button>
+        <button type="button" class="chip" data-toast="综合手账面板（演示态）">
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 4.2C3.5 3.5 4.1 3 4.8 3H10v14H4.8A1.3 1.3 0 013.5 15.7V4.2z"/><path d="M16.5 4.2c0-.7-.6-1.2-1.3-1.2H10v14h5.2c.7 0 1.3-.5 1.3-1.3V4.2z"/></svg>
+          <span>面板</span>
+        </button>
+        <button type="button" class="chip" data-toast="音量 · 庭院晨光曲（演示态）">
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3.5,8 7.5,8 11.5,4.5 11.5,15.5 7.5,12 3.5,12"/><path d="M14.2 7.2a4 4 0 010 5.6"/></svg>
+          <span>音量</span>
+        </button>
+        <button type="button" class="chip" data-toast="返回标题界面（演示态）">
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5L10 3.5l7 6"/><path d="M5 8.5V16.5h10V8.5"/></svg>
+          <span>标题</span>
+        </button>
+      </div>
+
+      <!-- 右上削角版 #sylvia-hub -->
+      <div id="sylvia-hub" aria-label="希尔维亚养成中枢">
+        <div class="sh-corner-controls">
+          <button type="button" class="hud-mood-pill" data-toast="心境 · 惬意（悠闲度 78/100）">
+            <span class="hm-ico" aria-hidden="true">
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="8,1.5 9.8,6.2 14.5,8 9.8,9.8 8,14.5 6.2,9.8 1.5,8 6.2,6.2"/></svg>
+            </span>
+            <span>惬意</span>
+            <em class="hm-val">78</em>
+          </button>
+          <span class="sh-divider" aria-hidden="true"></span>
+          <button type="button" class="sh-charm-btn" title="北极风铃草书签" data-toast="纪念挂件 · 北极风铃草书签（爱丽丝所赠）">
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.45"><path d="M8 2.5v11M4.5 6c2 0 3.5 1 3.5 2.5M11.5 5.5c-2 0-3.5 1-3.5 2.5"/></svg>
+          </button>
+          <button type="button" class="sh-charm-btn" title="冰棱发饰" data-toast="纪念挂件 · 银蓝冰棱发饰">
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.45"><polygon points="8,2 13,8 8,14 3,8"/></svg>
+          </button>
+          <span class="sh-divider" aria-hidden="true"></span>
+          <button type="button" class="rh-dock-chip" data-toast="季度日程排班（演示态）">
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.45" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="10"/><line x1="2.5" y1="6.8" x2="13.5" y2="6.8"/><line x1="5.5" y1="2" x2="5.5" y2="4.5"/><line x1="10.5" y1="2" x2="10.5" y2="4.5"/></svg>
+            <span>日程</span>
+          </button>
+          <button type="button" class="rh-dock-chip" data-toast="领地集市小铺（演示态）">
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.45" aria-hidden="true"><path d="M3 6.5h10l-.8 7H3.8l-.8-7z"/><path d="M5.5 6.5V5a2.5 2.5 0 015 0v1.5"/></svg>
+            <span>小铺</span>
+          </button>
+          <button type="button" class="rh-dock-chip" data-toast="火漆信匣 · 1 封未读家书">
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.45" aria-hidden="true"><rect x="2" y="3.5" width="12" height="9"/><polyline points="2.5,4 8,8.8 13.5,4"/></svg>
+            <span>信匣</span>
+            <em class="rh-mail-dot">1</em>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 地点信息条 -->
+  <div id="loc-bar">
+    <span class="loc-crest" aria-hidden="true">
+      <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.6">
+        <polygon points="8,2 14,8 8,14 2,8"/>
+      </svg>
+    </span>
+    <span id="loc-name">花园</span>
+    <span class="loc-area">公爵府</span>
+    <span id="loc-desc">修剪整齐的蔷薇花圃与喷泉</span>
+  </div>
+
+  <!-- 主舞台 -->
+  <main id="stage">
+    <!-- 立绘层：原位稳态锁死 bottom: 0，展开/切换/收起手札全程 Δy === 0.0px -->
+    <div id="portraits">
+      <div class="p-slot is-speaking" id="p-left" data-char="beatrice" role="button" tabindex="0" aria-label="与贝阿特丽丝交谈">
+        <span class="p-aura" aria-hidden="true"></span>
+        <img id="img-beatrice" src="./assets/portraits/beatrice_young_normal.png" alt="贝阿特丽丝·维斯特利亚"/>
+        <div class="p-tag">
+          <span class="p-tag-name">贝阿特丽丝</span>
+          <span class="p-tag-cue" id="cue-beatrice">交谈中</span>
+        </div>
+      </div>
+
+      <div class="p-slot is-bystander" id="p-right" data-char="alice" role="button" tabindex="0" aria-label="与爱丽丝交谈">
+        <span class="p-aura" aria-hidden="true"></span>
+        <img id="img-alice" src="./assets/portraits/alice_young_normal.png" alt="爱丽丝·维斯特利亚"/>
+        <div class="p-tag">
+          <span class="p-tag-name">爱丽丝</span>
+          <span class="p-tag-cue" id="cue-alice">点击轻谈</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 方案 C 核心：侧翼雪瓷棱镜交谈手札卡 -->
+    <div id="side-folio-layer">
+      <aside id="side-folio" data-wing="right" data-char="beatrice" aria-label="侧翼交谈手札卡">
+        <span class="sf-beacon beacon-left" aria-hidden="true"></span>
+        <span class="sf-beacon beacon-right" aria-hidden="true"></span>
+
+        <div class="sf-shell">
+          <span class="sf-top-gleam" aria-hidden="true"></span>
+
+          <div class="sf-inner">
+            <!-- 页眉：姓名 + 心情/羁绊微标 + 无框 × -->
+            <header class="sf-head">
+              <div class="sf-identity">
+                <div class="sf-kicker">
+                  <i class="sf-kicker-dia" aria-hidden="true"></i>
+                  <span id="sf-kicker-text">COURTYARD FOLIO // 右翼轻谈</span>
+                </div>
+                <div class="sf-title-row">
+                  <h2 id="sf-name">贝阿特丽丝</h2>
+                  <span id="sf-role">维斯特利亚长姐 · 蔷薇喷泉畔</span>
+                </div>
+                <div class="sf-meta-strip">
+                  <span class="sf-mood-inline">
+                    <i class="sf-mood-gem" aria-hidden="true"></i>
+                    <span id="sf-mood">心境·明快</span>
+                  </span>
+                  <span class="sf-meta-sep" aria-hidden="true"></span>
+                  <span class="sf-bond-inline">
+                    <span id="sf-bond-label">羁绊 Lv.4</span>
+                    <span id="sf-bond-ticks" class="sf-bond-ticks" aria-hidden="true">
+                      <i class="filled"></i><i class="filled"></i><i class="filled"></i><i class="filled"></i><i></i>
+                    </span>
+                  </span>
+                </div>
+              </div>
+              <button type="button" id="sf-close" class="sf-close" title="收起交谈手札 (Esc)" aria-label="收起交谈手札">×</button>
+            </header>
+
+            <!-- 中段对话流：前 1 句柔和历史 + 动作描写 + 当前逐字台词 -->
+            <div class="sf-body" id="sf-body" title="点击加速或推进对话">
+              <div class="sf-prev-turn" id="sf-prev-turn">
+                <span class="sf-prev-who" id="sf-prev-who"></span>
+                <span class="sf-prev-text" id="sf-prev-text"></span>
+              </div>
+              <div class="sf-stage-note" id="sf-stage-note"></div>
+              <div class="sf-current-wrap">
+                <div id="sf-text"></div>
+              </div>
+            </div>
+
+            <!-- 可展开分支选项 / 赠礼面板（纯细线排印，无圆框套框） -->
+            <div id="sf-subpanel" class="sf-subpanel hidden" role="group" aria-label="交谈选项"></div>
+
+            <!-- 底段快捷互动切角指令条 -->
+            <div class="sf-actions" role="toolbar" aria-label="交谈指令">
+              <button type="button" id="sf-btn-next" class="sf-act-primary">
+                <span>继续交谈</span>
+                <svg viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="4,2.5 9.5,7 4,11.5"/></svg>
+              </button>
+              <button type="button" id="sf-btn-topic" class="sf-act-btn">
+                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><polygon points="8,2 14,8 8,14 2,8"/></svg>
+                <span>分支</span>
+              </button>
+              <button type="button" id="sf-btn-gift" class="sf-act-btn">
+                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.5" y="6" width="11" height="7.5"/><line x1="8" y1="6" x2="8" y2="13.5"/><path d="M5 6c0-1.5 1.2-2.4 3-2.4S11 4.5 11 6"/></svg>
+                <span>赠礼</span>
+              </button>
+              <button type="button" id="sf-btn-end" class="sf-act-btn">
+                <span>结束</span>
+              </button>
+            </div>
+
+            <div class="sf-foot-note">
+              <span>日常轻谈手札 · 保留全宽主线大框节奏层次</span>
+              <span class="sf-foot-tag" id="sf-turn-counter">01 / 04</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- 参考标尺叠加层（开关触发，实证 top/bottom 绝对零位移） -->
+    <div id="ruler-overlay" aria-hidden="true">
+      <div class="ruler-hline" id="ruler-top"><span class="ruler-tag" id="ruler-top-lbl">PORTRAIT TOP</span></div>
+      <div class="ruler-hline eye" id="ruler-eye"><span class="ruler-tag" id="ruler-eye-lbl">EYE LINE · SAFE CLEARANCE</span></div>
+      <div class="ruler-hline base" id="ruler-bottom"><span class="ruler-tag" id="ruler-bottom-lbl">PORTRAIT BASE · Δy = 0.0px LOCKED</span></div>
+      <div class="ruler-vline" id="ruler-v-left"></div>
+      <div class="ruler-vline" id="ruler-v-right"></div>
+    </div>
+  </main>
+
+  <!-- 底部削角版 56px 矮操作栏（全程高度零变化） -->
+  <div id="action-bar-wrap">
+    <nav id="action-bar" aria-label="自由探索操作栏">
+      <div class="ab-scroll">
+        <button type="button" class="abtn" data-act="explore" data-toast="舆图 · 当前位于公爵府花园">
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="2.5,4.5 6.8,3 11.2,4.8 15.5,3.2 15.5,13.5 11.2,15 6.8,13.2 2.5,14.8"/><line x1="6.8" y1="3" x2="6.8" y2="13.2"/><line x1="11.2" y1="4.8" x2="11.2" y2="15"/></svg>
+          <span>地图</span>
+        </button>
+        <button type="button" class="abtn is-active-act" id="ab-talk" data-act="talk">
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4.5h12v7.8H7.2L4 15v-2.7H3V4.5z"/></svg>
+          <span>交谈</span>
+          <small class="ab-cost">体1</small>
+        </button>
+        <button type="button" class="abtn" data-act="train" data-toast="庭院晨练 · 剑术与魔力调律（演示态）">
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="9,2 11,7 16,9 11,11 9,16 7,11 2,9 7,7"/></svg>
+          <span>修行</span>
+          <small class="ab-cost">体3</small>
+        </button>
+        <button type="button" class="abtn" data-act="study" data-toast="书房自习 · 魔导典籍（演示态）">
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3.5h5.2a1.8 1.8 0 011.8 1.8V15H3V3.5zM15 3.5H9.8A1.8 1.8 0 008 5.3V15h7V3.5z"/></svg>
+          <span>学习</span>
+          <small class="ab-cost">体2</small>
+        </button>
+        <button type="button" class="abtn" data-act="course" data-toast="礼仪与魔法课程（演示态）">
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="6.2"/><path d="M9 5.5v3.8l2.5 1.5"/></svg>
+          <span>课程</span>
+          <small class="ab-cost">体2+</small>
+        </button>
+        <button type="button" class="abtn" data-act="rest" data-toast="在花廊稍作歇息，恢复体力">
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.8 11.4A5.5 5.5 0 016.6 4.2a5.8 5.8 0 107.2 7.2z"/></svg>
+          <span>休息</span>
+          <small class="ab-cost">恢复</small>
+        </button>
+        <button type="button" class="abtn" data-act="item" data-toast="行囊 · 蜜渍莓果 / 红茶罐 / 风铃草书签">
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6.5h9l.8 8H3.7l.8-8z"/><path d="M6.5 6.5V5a2.5 2.5 0 015 0v1.5"/></svg>
+          <span>物品</span>
+        </button>
+        <button type="button" class="abtn" data-act="encounter" data-toast="本季花园传闻 · 蔷薇花坊初绽（演示态）">
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="2.5" width="11" height="13"/><path d="M9 6.2l1.1 2.2 2.4.4-1.7 1.7.4 2.4L9 11.7l-2.2 1.2.4-2.4-1.7-1.7 2.4-.4z"/></svg>
+          <span>奇遇</span>
+        </button>
+      </div>
+      <button type="button" class="abtn ab-next-pinned" data-act="next" data-toast="推进至下一季度（演示态）">
+        <svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5,4 11.5,9 5,14"/><line x1="13" y1="4.5" x2="13" y2="13.5"/></svg>
+        <span>下个季度</span>
+      </button>
+    </nav>
+  </div>
+</section>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ==================== 1. 角色轻谈手札剧本文库（贴合《转生千金》公爵府庭院） ==================== */
+  const GIFTS = [
+    { id: 'berry', name: '北境蜜渍莓果', tag: '甜点 · 暖意' },
+    { id: 'tea',   name: '银丝红茶罐',   tag: '茶礼 · 醇香' },
+    { id: 'bell',  name: '风铃草干花书签', tag: '手作 · 雅致' }
+  ];
+
+  const CHARACTERS = {
+    beatrice: {
+      id: 'beatrice',
+      name: '贝阿特丽丝',
+      role: '维斯特利亚长姐 · 蔷薇喷泉畔',
+      wing: 'right',
+      kicker: 'COURTYARD FOLIO // 右翼轻谈',
+      mood: '心境·明快',
+      bond: 4,
+      maxBond: 5,
+      lines: [
+        {
+          prevWho: '希尔维亚',
+          prevText: '「姐姐早安。今天喷泉边的水雾好像比往常淡了一些。」',
+          note: '晨露尚未从蔷薇叶尖落尽，她提着绯红裙摆立在石阶旁，笑意明朗。',
+          text: '「你今天起得倒比院里练剑的侍卫还早。怎么，昨晚又趁着夜色在窗边悄悄试新的冰系术式了？」'
+        },
+        {
+          prevWho: '贝阿特丽丝',
+          prevText: '「你今天起得倒比院里练剑的侍卫还早……」',
+          note: '她顺手拂去石栏上沾着的一片粉白花瓣，眼底带着几分打趣。',
+          text: '「父亲前日还夸你性子沉稳，哪晓得你连花园里的露水都舍不得多睡一会儿。要我说，偶尔偷个懒晒晒太阳才像样。」',
+          showTopics: true
+        },
+        {
+          prevWho: '贝阿特丽丝',
+          prevText: '「偶尔偷个懒晒晒太阳才像样。」',
+          note: '喷泉的水柱在日光下折射出细碎虹彩，风里飘来烘焙房隐约的黄油甜香。',
+          text: '「厨房刚换了新一批蜂蜜杏仁酥，午后茶会前我先让女仆留一碟放凉。等你翻完那本魔导抄本，记得来露台找我。」'
+        },
+        {
+          prevWho: '贝阿特丽丝',
+          prevText: '「等你翻完那本魔导抄本，记得来露台找我。」',
+          note: '她微微偏过头，金发发尾在晨风里轻轻晃动。',
+          text: '「对了，爱丽丝方才在花圃那边忙了好一会儿，好像专门挑了最安静的风铃草要拿给你看呢。」'
+        }
+      ],
+      topics: [
+        {
+          label: '「只是顺手试了一下凝霜的弧度。」',
+          meta: '羁绊 +1',
+          prevWho: '希尔维亚',
+          prevText: '「只是顺手试了一下凝霜的弧度，没有耗多少魔力。」',
+          note: '贝阿特丽丝轻叹一声，伸手替她理了理衣领边的银蓝缎带。',
+          text: '「听听这副轻描淡写的语气。魔力再充沛也不能拿睡眠去换——今晚茶会结束，可不许再偷偷点烛火看书了。」',
+          mood: '心境·关切',
+          bondDelta: 1
+        },
+        {
+          label: '「午后的蜂蜜杏仁酥，算我一份。」',
+          meta: '心境明朗',
+          prevWho: '希尔维亚',
+          prevText: '「既然姐姐都替我留好了位置，午后的茶会我一定准时到。」',
+          note: '她眉梢扬起明快的弧度，像是早料到妹妹会点头。',
+          text: '「这才对嘛。我让厨房多烘了些肉桂糖霜，配你最喜欢的那款微苦红茶，保准比待在书房里自在得多。」',
+          mood: '心境·愉悦',
+          bondDelta: 0
+        }
+      ],
+      giftReply: {
+        berry: {
+          note: '她接过玻璃小罐对着日光晃了晃，唇角弯起灿烂的笑意。',
+          text: '「北境来的蜜渍莓果？颜色透亮得像红宝石一样。正好午后拿来配松饼，算你有心啦。」',
+          mood: '心境·欣喜'
+        },
+        tea: {
+          note: '她轻嗅茶罐封口散出的果木清香，赞许地点了点头。',
+          text: '「这罐银丝红茶的香气很干净，拿来招待来访的贵客都绰绰有余。走吧，下午我们就先开这一罐。」',
+          mood: '心境·赞赏'
+        },
+        bell: {
+          note: '她指尖小心托起薄如蝉翼的压花书签，神色柔和下来。',
+          text: '「风铃草夹得这么平整，一定费了不少细心。我把它夹进剑术手记里，翻页时总能想起今天的晨光。」',
+          mood: '心境·珍重'
+        }
+      }
+    },
+
+    alice: {
+      id: 'alice',
+      name: '爱丽丝',
+      role: '维斯特利亚幼妹 · 花圃风铃草畔',
+      wing: 'left',
+      kicker: 'COURTYARD FOLIO // 左翼轻谈',
+      mood: '心境·恬静',
+      bond: 4,
+      maxBond: 5,
+      lines: [
+        {
+          prevWho: '希尔维亚',
+          prevText: '「爱丽丝，你蹲在石盆边这么久，手不冷吗？」',
+          note: '她正细心地替新抽芽的风铃草拢土，听见脚步声立刻抬头，蓝眸亮了一瞬。',
+          text: '「姐姐大人……花园这边晨风有点凉。我刚好泡了温热的洋甘菊茶，你要不要先在花廊下坐一会儿？」'
+        },
+        {
+          prevWho: '爱丽丝',
+          prevText: '「我刚好泡了温热的洋甘菊茶，你要不要先坐一会儿？」',
+          note: '她轻轻拍去指尖沾着的细土，雪白袖口在晨光里泛着柔润光泽。',
+          text: '「北侧这几株风铃草今早刚结出花苞。花匠伯伯说，只要再晴上两天，就能挑出最安静的一朵夹进信纸里。」',
+          showTopics: true
+        },
+        {
+          prevWho: '爱丽丝',
+          prevText: '「只要再晴上两天，就能挑出最安静的一朵夹进信纸里。」',
+          note: '她微微垂下眼睫，将一本淡蓝封皮的小册子拢在怀前。',
+          text: '「姐姐大人每次专注看书，总会忘了按时用点心。我记下了厨房每天出炉的时间，以后每天都来提醒你。」'
+        },
+        {
+          prevWho: '爱丽丝',
+          prevText: '「以后每天都来提醒你。」',
+          note: '微风拂过石径旁的白蔷薇，她轻轻牵住衣角，声音柔和而笃定。',
+          text: '「只要姐姐大人还在庭院里散步，我就觉得今天一整天都会是很安稳的好天气。」'
+        }
+      ],
+      topics: [
+        {
+          label: '「等花开了，我们一起压成书签吧。」',
+          meta: '羁绊 +1',
+          prevWho: '希尔维亚',
+          prevText: '「等风铃草开了，我们把最安静的那一朵一起压成书签吧。」',
+          note: '爱丽丝的眼眸微微弯起，像盛进了一捧清澈的蓝天。',
+          text: '「嗯！那我要把最平整的那一张留给姐姐大人，夹在你最常翻的那本冰霜手札里，这样翻开就能看见我了。」',
+          mood: '心境·欢喜',
+          bondDelta: 1
+        },
+        {
+          label: '「待会儿陪我在蔷薇花廊走一圈？」',
+          meta: '心境温暖',
+          prevWho: '希尔维亚',
+          prevText: '「茶可以晚点喝，先陪我在蔷薇花廊慢慢走一圈？」',
+          note: '她耳尖染上极淡的绯色，立刻乖巧地点头。',
+          text: '「好呀。我刚才已经看过了，东边拱门那几株白蔷薇没有刺，风吹过来的时候花香最轻柔。」',
+          mood: '心境·雀跃',
+          bondDelta: 0
+        }
+      ],
+      giftReply: {
+        bell: {
+          note: '爱丽丝双手珍重地捧住风铃草书签，蓝宝石般的眼睛瞬间亮了起来。',
+          text: '「这是……姐姐大人亲手挑的风铃草书签吗？谢谢姐姐大人，我会一直贴身收在最喜欢的诗集里的！」',
+          mood: '心境·满心欢喜'
+        },
+        berry: {
+          note: '她小口尝了一颗酸甜的莓果，轻轻眨了眨眼。',
+          text: '「甜甜的，还带着一点清凉的果香……待会儿我也分贝蒂姐姐一点，大家一起吃会更开心。」',
+          mood: '心境·甜润'
+        },
+        tea: {
+          note: '她把银丝红茶罐抱在怀里，认真记下了冲泡的水温。',
+          text: '「姐姐大人喜欢的茶我记住了。明天一早我就试着用温热的茶壶泡好，再配两块松软的黄油小饼。」',
+          mood: '心境·温柔'
+        }
+      }
+    }
+  };
+
+  /* ==================== 2. 状态与 DOM 引用 ==================== */
+  const state = {
+    open: true,
+    activeChar: 'beatrice',
+    turnIndex: { beatrice: 0, alice: 0 },
+    subMode: null, // null | 'topics' | 'gifts'
+    typingTimer: null,
+    fullText: '',
+    typedLen: 0,
+    stamina: 8,
+    maxStamina: 10,
+    rulerOn: false,
+    baseline: null,
+    maxObservedDy: 0,
+    maxObservedBarDh: 0
+  };
+
+  const els = {
+    folio: document.getElementById('side-folio'),
+    sfKicker: document.getElementById('sf-kicker-text'),
+    sfName: document.getElementById('sf-name'),
+    sfRole: document.getElementById('sf-role'),
+    sfMood: document.getElementById('sf-mood'),
+    sfBondLabel: document.getElementById('sf-bond-label'),
+    sfBondTicks: document.getElementById('sf-bond-ticks'),
+    sfPrevTurn: document.getElementById('sf-prev-turn'),
+    sfPrevWho: document.getElementById('sf-prev-who'),
+    sfPrevText: document.getElementById('sf-prev-text'),
+    sfStageNote: document.getElementById('sf-stage-note'),
+    sfText: document.getElementById('sf-text'),
+    sfSubpanel: document.getElementById('sf-subpanel'),
+    sfTurnCounter: document.getElementById('sf-turn-counter'),
+    sfBody: document.getElementById('sf-body'),
+    sfClose: document.getElementById('sf-close'),
+    sfBtnNext: document.getElementById('sf-btn-next'),
+    sfBtnTopic: document.getElementById('sf-btn-topic'),
+    sfBtnGift: document.getElementById('sf-btn-gift'),
+    sfBtnEnd: document.getElementById('sf-btn-end'),
+
+    pLeft: document.getElementById('p-left'),
+    pRight: document.getElementById('p-right'),
+    imgBeatrice: document.getElementById('img-beatrice'),
+    imgAlice: document.getElementById('img-alice'),
+    cueBeatrice: document.getElementById('cue-beatrice'),
+    cueAlice: document.getElementById('cue-alice'),
+    actionBarWrap: document.getElementById('action-bar-wrap'),
+    abTalk: document.getElementById('ab-talk'),
+    stage: document.getElementById('stage'),
+
+    ctrlLeft: document.getElementById('ctrl-left'),
+    ctrlRight: document.getElementById('ctrl-right'),
+    ctrlClose: document.getElementById('ctrl-close'),
+    ctrlRuler: document.getElementById('ctrl-ruler'),
+
+    metricDyMax: document.getElementById('metric-dy-max'),
+    metricBarDh: document.getElementById('metric-bar-dh'),
+    metricWing: document.getElementById('metric-wing'),
+    lockDot: document.getElementById('lock-dot'),
+
+    rulerTop: document.getElementById('ruler-top'),
+    rulerEye: document.getElementById('ruler-eye'),
+    rulerBottom: document.getElementById('ruler-bottom'),
+    rulerTopLbl: document.getElementById('ruler-top-lbl'),
+    rulerEyeLbl: document.getElementById('ruler-eye-lbl'),
+    rulerBottomLbl: document.getElementById('ruler-bottom-lbl'),
+    rulerVLeft: document.getElementById('ruler-v-left'),
+    rulerVRight: document.getElementById('ruler-v-right'),
+
+    hudStBar: document.getElementById('hud-st-bar'),
+    hudStNum: document.getElementById('hud-st-num'),
+    toast: document.getElementById('toast')
+  };
+
+  /* ==================== 3. 轻提示与体力更新 ==================== */
+  let toastTimer = null;
+  function showToast(msg) {
+    els.toast.textContent = msg;
+    els.toast.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      els.toast.classList.remove('show');
+    }, 2200);
+  }
+
+  function updateStamina(delta) {
+    state.stamina = Math.max(0, Math.min(state.maxStamina, state.stamina + delta));
+    els.hudStNum.textContent = state.stamina + '/' + state.maxStamina;
+    els.hudStBar.style.width = Math.round((state.stamina / state.maxStamina) * 100) + '%';
+  }
+
+  /* ==================== 4. 实时立绘稳态标尺测量（Δy === 0.0px 实证） ==================== */
+  function captureRects() {
+    const b = els.imgBeatrice.getBoundingClientRect();
+    const a = els.imgAlice.getBoundingClientRect();
+    const bar = els.actionBarWrap.getBoundingClientRect();
+    return {
+      beatrice: { top: b.top, bottom: b.bottom, left: b.left, right: b.right, height: b.height },
+      alice: { top: a.top, bottom: a.bottom, left: a.left, right: a.right, height: a.height },
+      bar: { height: bar.height, top: bar.top, bottom: bar.bottom }
+    };
+  }
+
+  function resetBaseline() {
+    state.baseline = captureRects();
+    state.maxObservedDy = 0;
+    state.maxObservedBarDh = 0;
+    measureStability();
+  }
+
+  function measureStability() {
+    if (!state.baseline) return null;
+    const cur = captureRects();
+    const bTopD = Math.abs(cur.beatrice.top - state.baseline.beatrice.top);
+    const bBotD = Math.abs(cur.beatrice.bottom - state.baseline.beatrice.bottom);
+    const aTopD = Math.abs(cur.alice.top - state.baseline.alice.top);
+    const aBotD = Math.abs(cur.alice.bottom - state.baseline.alice.bottom);
+    const curDy = Math.max(bTopD, bBotD, aTopD, aBotD);
+    const curBarDh = Math.abs(cur.bar.height - state.baseline.bar.height);
+
+    if (curDy > state.maxObservedDy) state.maxObservedDy = curDy;
+    if (curBarDh > state.maxObservedBarDh) state.maxObservedBarDh = curBarDh;
+
+    els.metricDyMax.textContent = curDy.toFixed(1) + 'px';
+    els.metricBarDh.textContent = curBarDh.toFixed(1) + 'px';
+    els.lockDot.classList.toggle('warn', curDy > 0.1 || curBarDh > 0.1);
+
+    // 同步参考标尺线位置
+    const stageRect = els.stage.getBoundingClientRect();
+    const topY = cur.beatrice.top - stageRect.top;
+    const botY = cur.beatrice.bottom - stageRect.top - 1;
+    const eyeY = topY + cur.beatrice.height * 0.34;
+    els.rulerTop.style.top = topY + 'px';
+    els.rulerEye.style.top = eyeY + 'px';
+    els.rulerBottom.style.top = botY + 'px';
+    els.rulerVLeft.style.left = (cur.beatrice.right - stageRect.left) + 'px';
+    els.rulerVRight.style.left = (cur.alice.left - stageRect.left) + 'px';
+
+    els.rulerTopLbl.textContent = 'PORTRAIT TOP: ' + Math.round(cur.beatrice.top) + 'px · Δtop = ' + Math.max(bTopD, aTopD).toFixed(1) + 'px';
+    els.rulerEyeLbl.textContent = 'EYE LINE · CLEAR';
+    els.rulerBottomLbl.textContent = 'PORTRAIT BASE: ' + Math.round(cur.beatrice.bottom) + 'px · Δbottom = ' + Math.max(bBotD, aBotD).toFixed(1) + 'px · LOCKED';
+
+    return { cur, curDy, curBarDh, maxObservedDy: state.maxObservedDy, maxObservedBarDh: state.maxObservedBarDh };
+  }
+
+  /* ==================== 5. 逐字机与手札渲染 ==================== */
+  function stopTyping() {
+    if (state.typingTimer) {
+      clearInterval(state.typingTimer);
+      state.typingTimer = null;
+    }
+  }
+
+  function finishTyping() {
+    stopTyping();
+    state.typedLen = state.fullText.length;
+    renderTypedText(true);
+  }
+
+  function renderTypedText(done) {
+    const shown = state.fullText.slice(0, state.typedLen);
+    els.sfText.textContent = shown;
+    if (done) {
+      const caret = document.createElement('span');
+      caret.className = 'sf-caret';
+      caret.setAttribute('aria-hidden', 'true');
+      els.sfText.appendChild(caret);
+    }
+  }
+
+  function startTypewriter(text, instant) {
+    stopTyping();
+    state.fullText = text;
+    if (instant) {
+      state.typedLen = text.length;
+      renderTypedText(true);
+      return;
+    }
+    state.typedLen = 0;
+    renderTypedText(false);
+    state.typingTimer = setInterval(() => {
+      state.typedLen += 2;
+      if (state.typedLen >= state.fullText.length) {
+        finishTyping();
+      } else {
+        renderTypedText(false);
+      }
+    }, 22);
+  }
+
+  function renderBondTicks(level, max) {
+    els.sfBondLabel.textContent = '羁绊 Lv.' + level;
+    els.sfBondTicks.innerHTML = '';
+    for (let i = 0; i < max; i++) {
+      const dot = document.createElement('i');
+      if (i < level) dot.className = 'filled';
+      els.sfBondTicks.appendChild(dot);
+    }
+  }
+
+  function renderSubpanel() {
+    const ch = CHARACTERS[state.activeChar];
+    els.sfBtnTopic.classList.toggle('active', state.subMode === 'topics');
+    els.sfBtnGift.classList.toggle('active', state.subMode === 'gifts');
+
+    if (!state.subMode) {
+      els.sfSubpanel.classList.add('hidden');
+      els.sfSubpanel.innerHTML = '';
+      return;
+    }
+
+    els.sfSubpanel.classList.remove('hidden');
+    els.sfSubpanel.innerHTML = '';
+
+    const label = document.createElement('div');
+    label.className = 'sf-sub-label';
+    label.textContent = state.subMode === 'topics'
+      ? 'DIALOGUE BRANCH // 选择回应话题'
+      : 'GIFT OFFERING // 轻赠随身小礼';
+    els.sfSubpanel.appendChild(label);
+
+    if (state.subMode === 'topics') {
+      const numerals = ['Ⅰ', 'Ⅱ', 'Ⅲ'];
+      ch.topics.forEach((tp, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'sf-option-row';
+        btn.dataset.topicIdx = String(idx);
+        btn.innerHTML =
+          '<span class="sf-opt-left"><span class="sf-opt-idx">' + numerals[idx] + '</span><span>' + tp.label + '</span></span>' +
+          '<span class="sf-opt-meta">' + tp.meta + '</span>';
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          applyTopicChoice(ch, tp);
+        });
+        els.sfSubpanel.appendChild(btn);
+      });
+    } else if (state.subMode === 'gifts') {
+      GIFTS.forEach((g, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'sf-option-row';
+        btn.dataset.giftId = g.id;
+        btn.innerHTML =
+          '<span class="sf-opt-left"><span class="sf-opt-idx">0' + (idx + 1) + '</span><span>' + g.name + '</span></span>' +
+          '<span class="sf-opt-meta">' + g.tag + '</span>';
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          applyGift(ch, g);
+        });
+        els.sfSubpanel.appendChild(btn);
+      });
+    }
+  }
+
+  function applyTopicChoice(ch, tp) {
+    state.subMode = null;
+    if (tp.mood) ch.mood = tp.mood;
+    if (tp.bondDelta && ch.bond < ch.maxBond) {
+      ch.bond += tp.bondDelta;
+      showToast(ch.name + ' 羁绊提升至 Lv.' + ch.bond);
+    }
+    els.sfMood.textContent = ch.mood;
+    renderBondTicks(ch.bond, ch.maxBond);
+    setDialogueContent(tp.prevWho, tp.prevText, tp.note, tp.text, false);
+    renderSubpanel();
+    requestAnimationFrame(measureStability);
+  }
+
+  function applyGift(ch, gift) {
+    state.subMode = null;
+    const reply = ch.giftReply[gift.id];
+    if (reply.mood) ch.mood = reply.mood;
+    if (ch.bond < ch.maxBond) ch.bond += 1;
+    els.sfMood.textContent = ch.mood;
+    renderBondTicks(ch.bond, ch.maxBond);
+    setDialogueContent('希尔维亚 · 赠礼', '递出了「' + gift.name + '」。', reply.note, reply.text, false);
+    renderSubpanel();
+    showToast('已向 ' + ch.name + ' 赠出「' + gift.name + '」 · 羁绊 Lv.' + ch.bond);
+    requestAnimationFrame(measureStability);
+  }
+
+  function setDialogueContent(prevWho, prevText, note, text, instant) {
+    if (prevText) {
+      els.sfPrevTurn.classList.remove('is-empty');
+      els.sfPrevWho.textContent = prevWho || '';
+      els.sfPrevText.textContent = prevText;
+    } else {
+      els.sfPrevTurn.classList.add('is-empty');
+    }
+    els.sfStageNote.textContent = note || '';
+    startTypewriter(text, instant);
+  }
+
+  function syncStageVisuals() {
+    const isOpen = state.open;
+    const active = state.activeChar;
+
+    document.body.classList.toggle('folio-open', isOpen);
+    els.folio.classList.toggle('is-closed', !isOpen);
+    els.abTalk.classList.toggle('is-active-act', isOpen);
+
+    els.pLeft.classList.toggle('is-speaking', isOpen && active === 'beatrice');
+    els.pLeft.classList.toggle('is-bystander', isOpen && active !== 'beatrice');
+    els.pRight.classList.toggle('is-speaking', isOpen && active === 'alice');
+    els.pRight.classList.toggle('is-bystander', isOpen && active !== 'alice');
+
+    els.cueBeatrice.textContent = (isOpen && active === 'beatrice') ? '交谈中' : '点击轻谈';
+    els.cueAlice.textContent = (isOpen && active === 'alice') ? '交谈中' : '点击轻谈';
+
+    els.ctrlLeft.classList.toggle('active', isOpen && active === 'beatrice');
+    els.ctrlRight.classList.toggle('active', isOpen && active === 'alice');
+    els.ctrlClose.classList.toggle('active', !isOpen);
+
+    if (!isOpen) {
+      els.metricWing.textContent = '已收起';
+    } else {
+      els.metricWing.textContent = CHARACTERS[active].wing === 'right' ? '右翼展开' : '左翼展开';
+    }
+  }
+
+  function openCharacter(charId, options) {
+    const opts = options || {};
+    const ch = CHARACTERS[charId];
+    if (!ch) return;
+
+    const switching = !state.open || state.activeChar !== charId;
+    state.open = true;
+    state.activeChar = charId;
+    if (switching) {
+      state.subMode = null;
+    }
+
+    els.folio.setAttribute('data-wing', ch.wing);
+    els.folio.setAttribute('data-char', ch.id);
+    els.sfKicker.textContent = ch.kicker;
+    els.sfName.textContent = ch.name;
+    els.sfRole.textContent = ch.role;
+    els.sfMood.textContent = ch.mood;
+    renderBondTicks(ch.bond, ch.maxBond);
+
+    const idx = state.turnIndex[charId] % ch.lines.length;
+    const line = ch.lines[idx];
+    els.sfTurnCounter.textContent = '0' + (idx + 1) + ' / 0' + ch.lines.length;
+    setDialogueContent(line.prevWho, line.prevText, line.note, line.text, !!opts.instant);
+
+    if (line.showTopics && !opts.suppressTopics) {
+      state.subMode = 'topics';
+    }
+    renderSubpanel();
+    syncStageVisuals();
+
+    requestAnimationFrame(measureStability);
+    setTimeout(measureStability, 120);
+    setTimeout(measureStability, 380);
+  }
+
+  function advanceDialogue() {
+    if (!state.open) {
+      openCharacter(state.activeChar);
+      return;
+    }
+    if (state.typedLen < state.fullText.length) {
+      finishTyping();
+      return;
+    }
+    const ch = CHARACTERS[state.activeChar];
+    state.subMode = null;
+    state.turnIndex[ch.id] = (state.turnIndex[ch.id] + 1) % ch.lines.length;
+    openCharacter(ch.id);
+  }
+
+  function closeFolio() {
+    stopTyping();
+    state.open = false;
+    state.subMode = null;
+    renderSubpanel();
+    syncStageVisuals();
+    requestAnimationFrame(measureStability);
+    setTimeout(measureStability, 300);
+  }
+
+  /* ==================== 6. 事件绑定 ==================== */
+  els.pLeft.addEventListener('click', () => {
+    if (state.open && state.activeChar === 'beatrice') {
+      advanceDialogue();
+    } else {
+      openCharacter('beatrice');
+    }
+  });
+
+  els.pRight.addEventListener('click', () => {
+    if (state.open && state.activeChar === 'alice') {
+      advanceDialogue();
+    } else {
+      openCharacter('alice');
+    }
+  });
+
+  els.pLeft.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); els.pLeft.click(); }
+  });
+  els.pRight.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); els.pRight.click(); }
+  });
+
+  els.ctrlLeft.addEventListener('click', () => openCharacter('beatrice'));
+  els.ctrlRight.addEventListener('click', () => openCharacter('alice'));
+  els.ctrlClose.addEventListener('click', closeFolio);
+
+  els.ctrlRuler.addEventListener('click', () => {
+    state.rulerOn = !state.rulerOn;
+    document.body.classList.toggle('ruler-on', state.rulerOn);
+    els.ctrlRuler.classList.toggle('active', state.rulerOn);
+    els.ctrlRuler.setAttribute('aria-pressed', String(state.rulerOn));
+    measureStability();
+  });
+
+  els.sfBody.addEventListener('click', advanceDialogue);
+  els.sfBtnNext.addEventListener('click', advanceDialogue);
+  els.sfClose.addEventListener('click', closeFolio);
+  els.sfBtnEnd.addEventListener('click', closeFolio);
+
+  els.sfBtnTopic.addEventListener('click', () => {
+    state.subMode = (state.subMode === 'topics') ? null : 'topics';
+    renderSubpanel();
+    requestAnimationFrame(measureStability);
+  });
+
+  els.sfBtnGift.addEventListener('click', () => {
+    state.subMode = (state.subMode === 'gifts') ? null : 'gifts';
+    renderSubpanel();
+    requestAnimationFrame(measureStability);
+  });
+
+  els.abTalk.addEventListener('click', () => {
+    if (!state.open) {
+      updateStamina(-1);
+      openCharacter(state.activeChar);
+      showToast('展开侧翼轻谈手札（立绘原地零跳动）');
+    } else {
+      advanceDialogue();
+    }
+  });
+
+  document.querySelectorAll('[data-toast]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.act === 'rest') {
+        updateStamina(2);
+      }
+      showToast(btn.dataset.toast);
+    });
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && state.open) {
+      closeFolio();
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    resetBaseline();
+  });
+
+  /* ==================== 7. 初始化与测试钩子 ==================== */
+  window.__DEMO_C__ = {
+    getState: () => ({ ...state }),
+    getMetrics: () => measureStability(),
+    openCharacter,
+    closeFolio,
+    toggleRuler: (on) => {
+      state.rulerOn = typeof on === 'boolean' ? on : !state.rulerOn;
+      document.body.classList.toggle('ruler-on', state.rulerOn);
+      els.ctrlRuler.classList.toggle('active', state.rulerOn);
+      els.ctrlRuler.setAttribute('aria-pressed', String(state.rulerOn));
+      measureStability();
+    }
+  };
+
+  function init() {
+    const params = new URLSearchParams(window.location.search);
+    const startIdle = params.get('idle') === '1';
+    if (startIdle) {
+      state.open = false;
+      syncStageVisuals();
+    } else {
+      openCharacter('beatrice', { instant: true, suppressTopics: true });
+    }
+    resetBaseline();
+  }
+
+  if (document.readyState === 'complete') {
+    init();
+  } else {
+    window.addEventListener('load', init, { once: true });
+  }
+})();
+</script>
+</body>
+</html>

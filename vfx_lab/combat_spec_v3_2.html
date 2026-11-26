@@ -1,0 +1,3879 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>《转生千金～到了异世界就要悠闲地生活》战斗数值策划终版白皮书 V3.2</title>
+<style>
+/* ============================================================================
+   《转生千金》桌面视觉体系 · 雪瓷冰白 + 皇家蓝 + 冰青 + 香槟金
+   设计铁律：
+   1. 全站零外链字体/CDN，100% 离线自包含
+   2. 统一雪瓷冰白基底 (#FAFBFD)，严禁暗黑控制台
+   3. 45° 切角 + 直角建筑分隔线，严禁圆框套圆框 (全站 border-radius: 0)
+   4. 针对 1440×900 / 1280×720 桌面阅读与实机交互体验优化
+   ============================================================================ */
+:root {
+  --bg-canvas: #FAFBFD;
+  --bg-surface: #FFFFFF;
+  --bg-ice-soft: #F3F7FD;
+  --bg-ice-mid: #E8F0FC;
+  --bg-cyan-soft: #ECF8FC;
+  --bg-gold-soft: #FCF7EA;
+  --bg-rose-soft: #FDF2F4;
+  --bg-emerald-soft: #ECF9F4;
+
+  --royal: #1658EB;
+  --royal-deep: #0E3FA8;
+  --royal-bright: #2B6EF2;
+  --royal-tint: rgba(22, 88, 235, 0.08);
+  --royal-line: rgba(22, 88, 235, 0.22);
+
+  --ice-cyan: #0891B2;
+  --ice-sky: #0284C7;
+  --ice-frost: #38BDF8;
+
+  --gold: #B68427;
+  --gold-bright: #D4A34A;
+  --gold-line: rgba(182, 132, 39, 0.34);
+
+  --emerald: #0D8A62;
+  --crimson: #C53045;
+  --amber: #C47118;
+
+  --ink-primary: #14223B;
+  --ink-secondary: #3B4E6B;
+  --ink-muted: #647692;
+  --ink-faint: #8A9BB5;
+
+  --hairline: #DCE5F2;
+  --hairline-strong: #C3D3EA;
+
+  --font-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", Georgia, serif;
+  --font-sans: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", "Hiragino Sans GB", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", "Cascadia Code", "Consolas", "Liberation Mono", ui-monospace, monospace;
+
+  --chamfer-lg: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+  --chamfer-md: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+  --chamfer-sm: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+  --chamfer-bi: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  border-radius: 0 !important;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--bg-canvas);
+  color: var(--ink-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(900px 420px at 88% 0%, rgba(56, 189, 248, 0.08), transparent 65%),
+    radial-gradient(760px 360px at 14% 8%, rgba(22, 88, 235, 0.055), transparent 60%),
+    var(--bg-canvas);
+  min-height: 100vh;
+}
+
+/* 极细冰晶滚动条 */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #F1F5FB; }
+::-webkit-scrollbar-thumb { background: #B8C9E4; }
+::-webkit-scrollbar-thumb:hover { background: var(--royal); }
+
+:focus-visible {
+  outline: 2px solid var(--royal);
+  outline-offset: 2px;
+}
+
+.num, .mono, code, pre {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ================= 顶层两栏布局 ================= */
+.app-shell {
+  display: grid;
+  grid-template-columns: 244px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+/* 左侧目录导览 */
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--hairline);
+  display: flex;
+  flex-direction: column;
+  padding: 22px 0 16px;
+  z-index: 30;
+  overflow-y: auto;
+}
+
+.brand-block {
+  padding: 0 20px 18px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.brand-crest {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.brand-title {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-primary);
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.brand-sub {
+  font-size: 11px;
+  color: var(--ink-muted);
+  letter-spacing: 0.03em;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.brand-meta-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-ice-soft);
+  border-left: 3px solid var(--royal);
+  padding: 6px 10px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--royal-deep);
+  font-weight: 600;
+}
+
+.toc-nav {
+  padding: 14px 0;
+  flex: 1;
+}
+
+.toc-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding: 6px 20px 4px;
+}
+
+.toc-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 20px;
+  color: var(--ink-secondary);
+  text-decoration: none;
+  font-size: 12.5px;
+  font-weight: 500;
+  border-left: 3px solid transparent;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.toc-link:hover {
+  background: var(--bg-ice-soft);
+  color: var(--royal);
+}
+
+.toc-link.active {
+  background: var(--royal-tint);
+  color: var(--royal);
+  border-left-color: var(--royal);
+  font-weight: 700;
+}
+
+.toc-idx {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  width: 18px;
+  flex-shrink: 0;
+}
+
+.toc-link.active .toc-idx {
+  color: var(--royal);
+}
+
+.toc-star {
+  margin-left: auto;
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sidebar-footer {
+  padding: 14px 20px 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.quick-kv {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+}
+
+.qkv-item {
+  border-left: 2px solid var(--hairline-strong);
+  padding-left: 8px;
+}
+
+.qkv-item.gold { border-left-color: var(--gold-bright); }
+.qkv-item.royal { border-left-color: var(--royal); }
+.qkv-item.cyan { border-left-color: var(--ice-cyan); }
+
+.qkv-label {
+  font-size: 10px;
+  color: var(--ink-muted);
+  display: block;
+}
+
+.qkv-val {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+/* ================= 主内容工作区 ================= */
+.main-content {
+  padding: 28px 36px 72px;
+  max-width: 1188px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* 45° 切角水晶外框（使用外层 1px 底色做描边，无嵌套圆角） */
+.chamfer-frame {
+  position: relative;
+  background: var(--hairline-strong);
+  padding: 1px;
+  clip-path: var(--chamfer-lg);
+}
+
+.chamfer-frame.royal-accent {
+  background: linear-gradient(135deg, var(--royal) 0%, #7EB2F8 45%, var(--gold-bright) 100%);
+}
+
+.chamfer-inner {
+  background: var(--bg-surface);
+  clip-path: var(--chamfer-lg);
+  position: relative;
+}
+
+/* ================= HERO 顶部横幅 ================= */
+.hero-inner {
+  padding: 30px 34px 26px;
+  background:
+    linear-gradient(115deg, #FFFFFF 0%, #F7FAFF 64%, #EFF6FF 100%);
+  overflow: hidden;
+}
+
+.hero-bg-svg {
+  position: absolute;
+  right: -12px;
+  top: -12px;
+  width: 390px;
+  height: 260px;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.hero-kicker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--royal);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.hero-kicker-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--royal);
+  transform: rotate(45deg);
+  display: inline-block;
+}
+
+.hero-title {
+  font-family: var(--font-serif);
+  font-size: 27px;
+  font-weight: 700;
+  color: var(--ink-primary);
+  margin: 0 0 10px;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-title .ver-tag {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--royal);
+  background: var(--bg-ice-mid);
+  padding: 2px 10px;
+  margin-left: 10px;
+  vertical-align: 3px;
+  clip-path: var(--chamfer-sm);
+}
+
+.hero-lead {
+  color: var(--ink-secondary);
+  font-size: 13.5px;
+  max-width: 820px;
+  margin: 0 0 22px;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-lead strong { color: var(--ink-primary); }
+
+.hero-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--hairline);
+  padding-top: 18px;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-kpi {
+  padding-right: 18px;
+}
+
+.hero-kpi + .hero-kpi {
+  border-left: 1px solid var(--hairline);
+  padding-left: 18px;
+}
+
+.kpi-num {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--royal);
+}
+
+.kpi-num.cyan { color: var(--ice-cyan); }
+.kpi-num.gold { color: var(--gold); }
+.kpi-num.emerald { color: var(--emerald); }
+
+.kpi-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-primary);
+  margin-top: 4px;
+}
+
+.kpi-desc {
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  margin-top: 2px;
+}
+
+/* ================= 通用章节头部 ================= */
+.section {
+  margin-top: 38px;
+  scroll-margin-top: 20px;
+}
+
+.section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--hairline-strong);
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.section-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 78px;
+  height: 2px;
+  background: var(--royal);
+}
+
+.sec-title-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.sec-num {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--royal);
+  letter-spacing: 0.08em;
+}
+
+.sec-title {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink-primary);
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.sec-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  background: var(--bg-ice-soft);
+  padding: 3px 10px;
+  clip-path: var(--chamfer-sm);
+}
+
+.sec-badge.gold {
+  background: var(--bg-gold-soft);
+  color: var(--gold);
+}
+
+.sec-badge.royal {
+  background: var(--royal-tint);
+  color: var(--royal);
+}
+
+.sub-heading {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink-primary);
+  margin: 24px 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--royal);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sub-heading.gold { border-left-color: var(--gold-bright); }
+.sub-heading.cyan { border-left-color: var(--ice-cyan); }
+
+/* ================= 7 大核心升级卡片 ================= */
+.upgrade-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.upgrade-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--hairline);
+  border-top: 2px solid var(--royal);
+  padding: 16px 18px;
+  position: relative;
+  clip-path: var(--chamfer-md);
+}
+
+.upgrade-card.wide {
+  grid-column: 1 / -1;
+  border-top-color: var(--gold-bright);
+  background: linear-gradient(95deg, #FFFFFF 0%, #FCF9F2 100%);
+}
+
+.upgrade-card.cyan-top { border-top-color: var(--ice-cyan); }
+.upgrade-card.gold-top { border-top-color: var(--gold-bright); }
+.upgrade-card.emerald-top { border-top-color: var(--emerald); }
+
+.upg-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.upg-idx {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: #FFFFFF;
+  background: var(--royal);
+  padding: 2px 7px;
+  flex-shrink: 0;
+}
+
+.upgrade-card.cyan-top .upg-idx { background: var(--ice-cyan); }
+.upgrade-card.gold-top .upg-idx,
+.upgrade-card.wide .upg-idx { background: var(--gold); }
+.upgrade-card.emerald-top .upg-idx { background: var(--emerald); }
+
+.upg-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+.upg-body {
+  font-size: 12.8px;
+  color: var(--ink-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.upg-body strong { color: var(--ink-primary); }
+
+.upg-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--hairline);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--royal-deep);
+}
+
+.upg-metrics span b { color: var(--ink-muted); font-weight: 500; font-family: var(--font-sans); margin-right: 4px; }
+
+/* ================= 通用数据表格（雪瓷精密排版） ================= */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--hairline);
+}
+
+table.spec-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  text-align: left;
+}
+
+table.spec-table thead th {
+  background: var(--bg-ice-soft);
+  color: var(--ink-primary);
+  font-weight: 700;
+  font-size: 11.8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--hairline-strong);
+  white-space: nowrap;
+}
+
+table.spec-table tbody td {
+  padding: 9px 12px;
+  border-bottom: 1px solid #EAEFF7;
+  color: var(--ink-secondary);
+  vertical-align: middle;
+}
+
+table.spec-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+table.spec-table tbody tr:hover td {
+  background: #F7FAFF;
+}
+
+table.spec-table td.num,
+table.spec-table th.num {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+table.spec-table td.ctr,
+table.spec-table th.ctr {
+  text-align: center;
+}
+
+table.spec-table tr.row-highlight td {
+  background: var(--bg-gold-soft);
+}
+
+table.spec-table tr.row-stage-head td {
+  border-top: 1.5px solid var(--hairline-strong);
+}
+
+/* 无边框微色块标签（严禁嵌套圆框） */
+.tag {
+  display: inline-block;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.55;
+  white-space: nowrap;
+}
+
+.tag-royal { background: var(--royal-tint); color: var(--royal-deep); }
+.tag-cyan { background: var(--bg-cyan-soft); color: var(--ice-cyan); }
+.tag-gold { background: var(--bg-gold-soft); color: var(--gold); }
+.tag-emerald { background: var(--bg-emerald-soft); color: var(--emerald); }
+.tag-crimson { background: var(--bg-rose-soft); color: var(--crimson); }
+.tag-slate { background: #EEF2F8; color: var(--ink-secondary); }
+
+.grade-bad { color: var(--crimson); font-family: var(--font-mono); font-weight: 700; }
+.grade-good { color: var(--ink-secondary); font-family: var(--font-mono); font-weight: 700; }
+.grade-great { color: var(--ice-cyan); font-family: var(--font-mono); font-weight: 700; }
+.grade-perfect { color: var(--gold); font-family: var(--font-mono); font-weight: 700; }
+
+/* ================= 实时交互工作台（试算器通用） ================= */
+.calc-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+  gap: 0;
+  background: var(--bg-surface);
+}
+
+.calc-controls {
+  padding: 22px 24px;
+  border-right: 1px solid var(--hairline);
+}
+
+.calc-output {
+  padding: 22px 24px;
+  background: linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.preset-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.preset-btn {
+  appearance: none;
+  border: none;
+  background: var(--bg-ice-soft);
+  color: var(--ink-secondary);
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.14s ease;
+}
+
+.preset-btn:hover {
+  background: var(--bg-ice-mid);
+  color: var(--royal);
+}
+
+.preset-btn.active {
+  background: var(--royal);
+  color: #FFFFFF;
+}
+
+.ctrl-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.ctrl-row-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.field-group {
+  margin-bottom: 14px;
+}
+
+.field-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.8px;
+  font-weight: 700;
+  color: var(--ink-secondary);
+  margin-bottom: 6px;
+}
+
+.field-label .val-readout {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--royal);
+  font-weight: 700;
+}
+
+.spec-input, .spec-select {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  font-family: var(--font-sans);
+  font-size: 12.8px;
+  color: var(--ink-primary);
+  background: var(--bg-ice-soft);
+  border: 1px solid var(--hairline-strong);
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+
+.spec-input {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.spec-input:focus, .spec-select:focus {
+  outline: none;
+  border-color: var(--royal);
+  background: #FFFFFF;
+}
+
+/* 棱镜风格分段选择条（直角分割，无嵌套圆框） */
+.seg-group {
+  display: flex;
+  width: 100%;
+  background: var(--bg-ice-soft);
+  border: 1px solid var(--hairline-strong);
+}
+
+.seg-btn {
+  flex: 1;
+  appearance: none;
+  border: none;
+  border-right: 1px solid var(--hairline-strong);
+  background: transparent;
+  color: var(--ink-secondary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 6px;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+  text-align: center;
+}
+
+.seg-btn:last-child { border-right: none; }
+
+.seg-btn:hover:not(:disabled) {
+  background: var(--bg-ice-mid);
+  color: var(--royal);
+}
+
+.seg-btn.active {
+  background: var(--royal);
+  color: #FFFFFF;
+}
+
+.seg-btn.active.gold-act {
+  background: var(--gold);
+  color: #FFFFFF;
+}
+
+.seg-btn.active.cyan-act {
+  background: var(--ice-cyan);
+  color: #FFFFFF;
+}
+
+.seg-btn.active.bad-act {
+  background: var(--crimson);
+  color: #FFFFFF;
+}
+
+.seg-btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+/* 水晶菱形滑块 */
+.crystal-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: calc(100% - 16px);
+  height: 6px;
+  background: #DCE6F7;
+  outline: none;
+  margin: 8px 8px 6px;
+  cursor: pointer;
+}
+
+.crystal-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  background: var(--royal);
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 0 0 1px var(--royal);
+  transform: rotate(45deg);
+  cursor: pointer;
+}
+
+.crystal-range.gold-thumb::-webkit-slider-thumb {
+  background: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold);
+}
+
+.crystal-range::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  background: var(--royal);
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 0 0 1px var(--royal);
+  transform: rotate(45deg);
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.amp-snap-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.snap-btn {
+  appearance: none;
+  border: none;
+  background: var(--bg-ice-soft);
+  color: var(--ink-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 4px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.snap-btn:hover:not(:disabled) { color: var(--royal); background: var(--bg-ice-mid); }
+.snap-btn.active { background: var(--royal-tint); color: var(--royal); border-bottom-color: var(--royal); }
+.snap-btn.active.t3 { background: var(--bg-gold-soft); color: var(--gold); border-bottom-color: var(--gold); }
+.snap-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* 铭记/开关勾选网格 */
+.check-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hairline);
+}
+
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  padding: 4px 6px;
+  background: var(--bg-ice-soft);
+  user-select: none;
+}
+
+.check-item:hover { background: var(--bg-ice-mid); color: var(--ink-primary); }
+
+.check-item input[type="checkbox"] {
+  accent-color: var(--royal);
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* 右侧输出仪表盘 */
+.readout-trio {
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr 0.9fr;
+  border-bottom: 1px solid var(--hairline-strong);
+  padding-bottom: 14px;
+}
+
+.readout-cell { padding-right: 12px; }
+.readout-cell + .readout-cell {
+  border-left: 1px solid var(--hairline);
+  padding-left: 14px;
+}
+
+.readout-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.readout-big {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--royal);
+  margin-top: 4px;
+}
+
+.readout-big.gold { color: var(--gold); }
+.readout-big.cyan { color: var(--ice-cyan); }
+
+.readout-sub {
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  margin-top: 4px;
+}
+
+/* 相加池可视化占比条 */
+.pool-bar-block {
+  background: var(--bg-surface);
+  border-left: 3px solid var(--royal);
+  padding: 12px 14px;
+}
+
+.pool-bar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-primary);
+  margin-bottom: 8px;
+}
+
+.stacked-bar {
+  display: flex;
+  height: 22px;
+  width: 100%;
+  background: #E9EFF8;
+  overflow: hidden;
+}
+
+.bar-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #FFFFFF;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: width 0.2s ease;
+}
+
+.seg-base { background: var(--royal); }
+.seg-amp { background: var(--ice-cyan); }
+.seg-ring { background: var(--gold-bright); color: #1E1608; }
+.seg-break { background: #4F46E5; }
+.seg-extra { background: var(--emerald); }
+
+.pool-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 9px;
+  font-size: 11.5px;
+  color: var(--ink-secondary);
+}
+
+.leg-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  vertical-align: 0;
+}
+
+/* 乘区明细与蓝耗收支 */
+.formula-trace {
+  background: var(--bg-ice-soft);
+  padding: 11px 13px;
+  font-family: var(--font-mono);
+  font-size: 11.8px;
+  color: var(--ink-primary);
+  line-height: 1.7;
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.econ-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+}
+
+.econ-item {
+  border-top: 1px solid var(--hairline);
+  padding-top: 8px;
+}
+
+.econ-k { font-size: 11px; color: var(--ink-muted); }
+.econ-v {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-primary);
+  margin-top: 2px;
+}
+
+.econ-v.pos { color: var(--emerald); }
+.econ-v.neg { color: var(--crimson); }
+.econ-v.gold { color: var(--gold); }
+
+/* ================= 线性等阶差格挡试算器 ================= */
+.block-4col {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--hairline-strong);
+  border-bottom: 1px solid var(--hairline-strong);
+}
+
+.block-cell {
+  padding: 12px 12px 14px;
+  background: var(--bg-surface);
+}
+
+.block-cell + .block-cell {
+  border-left: 1px solid var(--hairline);
+}
+
+.block-grade {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.block-pct {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ink-primary);
+  margin: 4px 0 6px;
+}
+
+.block-meter {
+  height: 5px;
+  background: #E8EEF8;
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.block-meter-fill {
+  height: 100%;
+  transition: width 0.2s ease;
+}
+
+.block-sample {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
+/* ================= 数学公式展示盒 ================= */
+.formula-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--hairline);
+  border-left: 4px solid var(--royal);
+  padding: 18px 22px;
+  margin-bottom: 16px;
+}
+
+.formula-main {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.85;
+  color: var(--ink-primary);
+  background: var(--bg-ice-soft);
+  padding: 12px 16px;
+  margin: 0 0 12px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.formula-notes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+  font-size: 12.6px;
+  color: var(--ink-secondary);
+}
+
+.formula-note-item {
+  border-top: 1px solid var(--hairline);
+  padding-top: 10px;
+}
+
+.formula-note-item strong { color: var(--ink-primary); }
+
+/* 膨胀对比横条 */
+.inflation-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--hairline);
+  padding: 16px 20px;
+  margin-top: 14px;
+}
+
+.inf-row {
+  display: grid;
+  grid-template-columns: 205px minmax(0, 1fr) 78px;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.inf-track {
+  height: 18px;
+  background: #EFF4FB;
+  position: relative;
+}
+
+.inf-fill {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+/* ================= 筛选/切换 Tab 栏 ================= */
+.tab-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  border-bottom: 1px solid var(--hairline-strong);
+  margin-bottom: 16px;
+}
+
+.tab-btn {
+  appearance: none;
+  border: none;
+  background: var(--bg-ice-soft);
+  color: var(--ink-secondary);
+  font-family: var(--font-sans);
+  font-size: 12.8px;
+  font-weight: 700;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.14s ease;
+}
+
+.tab-btn:hover {
+  background: var(--bg-ice-mid);
+  color: var(--royal);
+}
+
+.tab-btn.active {
+  background: var(--bg-surface);
+  color: var(--royal);
+  border-top: 1px solid var(--hairline-strong);
+  border-left: 1px solid var(--hairline-strong);
+  border-right: 1px solid var(--hairline-strong);
+  border-bottom: 3px solid var(--royal);
+}
+
+.tab-btn .tab-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 6px;
+  opacity: 0.78;
+}
+
+.filter-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.filter-chip {
+  appearance: none;
+  border: none;
+  background: var(--bg-ice-soft);
+  color: var(--ink-secondary);
+  font-size: 11.8px;
+  font-weight: 600;
+  padding: 5px 11px;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+}
+
+.filter-chip:hover { background: var(--bg-ice-mid); color: var(--royal); }
+.filter-chip.active {
+  background: var(--royal);
+  color: #FFFFFF;
+}
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ================= 慢镜 QTE 键帽与分栏 ================= */
+.kbd-strip {
+  display: inline-flex;
+  gap: 5px;
+  vertical-align: middle;
+}
+
+.kbd-cap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: var(--bg-surface);
+  border: 1px solid var(--royal-line);
+  border-bottom: 2px solid var(--royal);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--royal-deep);
+}
+
+.split-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.info-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--hairline);
+  padding: 18px 20px;
+}
+
+.info-panel.gold-left { border-left: 4px solid var(--gold-bright); }
+.info-panel.royal-left { border-left: 4px solid var(--royal); }
+.info-panel.cyan-left { border-left: 4px solid var(--ice-cyan); }
+.info-panel.emerald-left { border-left: 4px solid var(--emerald); }
+
+.panel-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-primary);
+  margin: 0 0 10px;
+}
+
+.bullet-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.8px;
+  color: var(--ink-secondary);
+}
+
+.bullet-list li { margin-bottom: 6px; }
+.bullet-list li strong { color: var(--ink-primary); }
+
+/* ================= 浅冰雪瓷代码附录（严禁暗黑盒） ================= */
+.code-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--hairline-strong);
+}
+
+.code-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 16px;
+  background: var(--bg-ice-soft);
+  border-bottom: 1px solid var(--hairline);
+  font-size: 12px;
+  color: var(--ink-secondary);
+  font-family: var(--font-mono);
+}
+
+.copy-btn {
+  appearance: none;
+  border: none;
+  background: var(--royal);
+  color: #FFFFFF;
+  font-family: var(--font-sans);
+  font-size: 11.8px;
+  font-weight: 600;
+  padding: 5px 12px;
+  cursor: pointer;
+  clip-path: var(--chamfer-sm);
+}
+
+.copy-btn:hover { background: var(--royal-deep); }
+
+.code-pre {
+  margin: 0;
+  padding: 16px 20px;
+  background: #F6F9FE;
+  color: #162642;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.65;
+  overflow-x: auto;
+}
+
+/* 表格内一键载入试算器小按钮 */
+.load-calc-btn {
+  appearance: none;
+  border: none;
+  background: var(--bg-ice-soft);
+  color: var(--royal);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.load-calc-btn:hover {
+  background: var(--royal);
+  color: #FFFFFF;
+}
+
+/* 休闲模式四项杠杆栅格 */
+.lever-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--hairline);
+  margin-top: 14px;
+  padding-top: 14px;
+}
+
+.lever-item { padding-right: 12px; }
+.lever-item + .lever-item {
+  border-left: 1px solid var(--hairline);
+  padding-left: 14px;
+}
+
+.lever-val {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--emerald);
+}
+
+.lever-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-primary);
+  margin-top: 2px;
+}
+
+.lever-desc {
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  margin-top: 2px;
+}
+
+/* SVG 图表容器 */
+.chart-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--hairline);
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+
+.chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.chart-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+.chart-legend {
+  display: flex;
+  gap: 14px;
+  font-size: 11.5px;
+  color: var(--ink-muted);
+}
+
+.page-footer {
+  margin-top: 48px;
+  padding-top: 18px;
+  border-top: 1px solid var(--hairline-strong);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+/* 响应式：1280px 紧凑微调 & 窄屏折叠 */
+@media (max-width: 1320px) {
+  .app-shell { grid-template-columns: 216px minmax(0, 1fr); }
+  .main-content { padding: 22px 24px 56px; }
+  .calc-controls, .calc-output { padding: 18px 18px; }
+}
+
+@media (max-width: 1060px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--hairline); }
+  .calc-grid, .upgrade-grid, .split-2, .hero-kpis, .lever-grid { grid-template-columns: 1fr; }
+  .calc-controls { border-right: none; border-bottom: 1px solid var(--hairline); }
+  .hero-kpi + .hero-kpi, .lever-item + .lever-item { border-left: none; padding-left: 0; border-top: 1px solid var(--hairline); padding-top: 12px; }
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ==================== 左侧冰晶目录栏 ==================== -->
+  <aside class="sidebar" aria-label="文档目录">
+    <div class="brand-block">
+      <div class="brand-crest">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <polygon points="16,2 30,16 16,30 2,16" fill="#EDF4FF" stroke="#1658EB" stroke-width="1.5"/>
+          <polygon points="16,7 25,16 16,25 7,16" fill="#FFFFFF" stroke="#0891B2" stroke-width="1.2"/>
+          <polygon points="16,11.5 20.5,16 16,20.5 11.5,16" fill="#D4A34A"/>
+        </svg>
+        <div>
+          <div class="brand-title">转生千金 · V3.2</div>
+          <div class="brand-sub">战斗数值策划终版白皮书</div>
+        </div>
+      </div>
+      <div class="brand-meta-strip">
+        <span>V3.2.0 唯一事实源</span>
+        <span class="mono">16,900 场</span>
+      </div>
+    </div>
+
+    <nav class="toc-nav" id="tocNav">
+      <div class="toc-group-label">总纲与实时试算</div>
+      <a class="toc-link active" href="#sec-overview"><span class="toc-idx">01</span>核心升级摘要</a>
+      <a class="toc-link" href="#sec-dmg-calc"><span class="toc-idx">02</span>伤害与护盾试算器<span class="toc-star">★</span></a>
+      <a class="toc-link" href="#sec-block-calc"><span class="toc-idx">03</span>等阶差格挡试算器<span class="toc-star">★</span></a>
+
+      <div class="toc-group-label">数值体系与全技能</div>
+      <a class="toc-link" href="#sec-math"><span class="toc-idx">04</span>数学体系与三杖经济</a>
+      <a class="toc-link" href="#sec-skills"><span class="toc-idx">05</span>全 15 招技能拍数表</a>
+      <a class="toc-link" href="#sec-qte"><span class="toc-idx">06</span>0.25× 慢镜与杂兵规则</a>
+
+      <div class="toc-group-label">关卡、实测与工程契约</div>
+      <a class="toc-link" href="#sec-stages"><span class="toc-idx">07</span>全 9 幕配置与波浪曲线</a>
+      <a class="toc-link" href="#sec-sim"><span class="toc-idx">08</span>16,900 场仿真数据<span class="toc-star">★</span></a>
+      <a class="toc-link" href="#sec-relics"><span class="toc-idx">09</span>铭记秘宝与休闲模式</a>
+      <a class="toc-link" href="#sec-appendix"><span class="toc-idx">10</span>工程落盘接口契约</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="quick-kv">
+        <div class="qkv-item royal">
+          <span class="qkv-label">满配相加池</span>
+          <span class="qkv-val">1.87×</span>
+        </div>
+        <div class="qkv-item cyan">
+          <span class="qkv-label">防御常数</span>
+          <span class="qkv-val">K = 80</span>
+        </div>
+        <div class="qkv-item gold">
+          <span class="qkv-label">省蓝硬地板</span>
+          <span class="qkv-val">0.60×</span>
+        </div>
+        <div class="qkv-item">
+          <span class="qkv-label">慢镜倍率</span>
+          <span class="qkv-val">0.25×</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==================== 右侧主工作区 ==================== -->
+  <main class="main-content">
+
+    <!-- HERO 冰晶折射头图 -->
+    <header class="chamfer-frame royal-accent">
+      <div class="chamfer-inner hero-inner">
+        <svg class="hero-bg-svg" viewBox="0 0 390 260" fill="none" aria-hidden="true">
+          <polygon points="295,12 378,95 295,178 212,95" stroke="#1658EB" stroke-opacity="0.16" stroke-width="1.2" fill="#EBF3FF" fill-opacity="0.45"/>
+          <polygon points="295,38 352,95 295,152 238,95" stroke="#0891B2" stroke-opacity="0.22" stroke-width="1"/>
+          <polygon points="295,62 328,95 295,128 262,95" stroke="#D4A34A" stroke-opacity="0.42" stroke-width="1.2" fill="#FCF7EA" fill-opacity="0.5"/>
+          <line x1="150" y1="95" x2="390" y2="95" stroke="#1658EB" stroke-opacity="0.12" stroke-width="1"/>
+          <line x1="295" y1="0" x2="295" y2="230" stroke="#1658EB" stroke-opacity="0.12" stroke-width="1"/>
+          <polygon points="180,150 222,192 180,234 138,192" stroke="#0891B2" stroke-opacity="0.16" stroke-width="1" fill="#ECF8FC" fill-opacity="0.4"/>
+        </svg>
+
+        <div class="hero-kicker">
+          <span class="hero-kicker-dot"></span>
+          <span>SINGLE SOURCE OF TRUTH · 唯一授权工程落地基准 · 全面替代 V3.1 / V2.2</span>
+        </div>
+        <h1 class="hero-title">
+          《转生千金～到了异世界就要悠闲地生活》战斗数值策划终版白皮书<span class="ver-tag">V3.2</span>
+        </h1>
+        <p class="hero-lead">
+          全量数值经独立 Python 蒙特卡洛仿真器 <code>sim_v32.py</code> 实测 <strong>16,900 场</strong>（默认标准模式 9 幕 9,300 场 + 独立休闲模式主线 16 组 3,200 场 + 第 5 幕无残像 1,200 场 + 三档养成存档收敛 3,200 场）逐项严丝合缝校验。全站四档判定统一锁定纯英文标识：
+          <span class="grade-bad">BAD</span> / <span class="grade-good">GOOD</span> / <span class="grade-great">GREAT</span> / <span class="grade-perfect">PERFECT</span>。
+        </p>
+
+        <div class="hero-kpis">
+          <div class="hero-kpi">
+            <div class="kpi-num">1.87×</div>
+            <div class="kpi-label">满配相加增伤池天花板</div>
+            <div class="kpi-desc">技能本体恒占 53.5%–100%，较 V2.2 降幅 -73.4%</div>
+          </div>
+          <div class="hero-kpi">
+            <div class="kpi-num cyan">0.25×</div>
+            <div class="kpi-label">命中前慢镜触发缩圈</div>
+            <div class="kpi-desc">0ms 提前亮键（Q/W/E/A/S/D），5 招 0 拍瞬发</div>
+          </div>
+          <div class="hero-kpi">
+            <div class="kpi-num gold">16,900</div>
+            <div class="kpi-label">蒙特卡洛实机验证总场次</div>
+            <div class="kpi-desc">全 9 幕胜率、回合、残血与实机耗时 100% 落盘</div>
+          </div>
+          <div class="hero-kpi">
+            <div class="kpi-num emerald">100.0%</div>
+            <div class="kpi-label">休闲模式主线 16/16 组速通</div>
+            <div class="kpi-desc">combat_casual_mode 默认关闭，标准模式保留挑战</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ==================== 01. 七大核心升级摘要与版本演进 ==================== -->
+    <section class="section" id="sec-overview">
+      <div class="section-header">
+        <div class="sec-title-wrap">
+          <span class="sec-num">01</span>
+          <h2 class="sec-title">V3.2 七大核心升级摘要与版本演进对照</h2>
+        </div>
+        <span class="sec-badge royal">7 大核心定案 · 八维对照</span>
+      </div>
+
+      <div class="upgrade-grid">
+        <article class="upgrade-card">
+          <div class="upg-head">
+            <span class="upg-idx">UPG-01</span>
+            <span class="upg-title">方案一魔力增幅 1:1 直观档（+20% / +40% / +60%）</span>
+          </div>
+          <p class="upg-body">
+            较 V3.1（+40/+80/+120%）果断砍半，采用完全直观的 <strong>1:1 线性映射</strong> <code>addDmg(p) = p</code>，将 <strong>53.5%–100%</strong> 绝对输出大头归还技能本体与属性克制。护盾倍率 <code>1.00× / 1.25× / 1.50×</code>，40% 触发钢霜壁垒（减伤 12%、盾留 45%、箱留 50%、赫兰共鸣 +1）。
+          </p>
+          <div class="upg-metrics">
+            <span><b>穿抗</b>0 / 10 / 22 / 35%</span>
+            <span><b>额外破锁</b>+0 / +1 / +2 / +3</span>
+            <span><b>重炮上限</b>60% · <b>护盾</b>40%</span>
+          </div>
+        </article>
+
+        <article class="upgrade-card gold-top">
+          <div class="upg-head">
+            <span class="upg-idx">UPG-02</span>
+            <span class="upg-title">取消增幅×完美共振，全档固定平直四档英文判定</span>
+          </div>
+          <p class="upg-body">
+            彻底移除 V3.1 残留的「高增幅 × PERFECT 叠加共振」，全站统一纯英文判定标识，施放精准修正与魔力增幅完全解耦：<strong><span class="grade-bad">BAD -15%</span> / <span class="grade-good">GOOD 0%</span> / <span class="grade-great">GREAT +8%</span> / <span class="grade-perfect">PERFECT +15%</span></strong>，多拍招式取各拍算术均值。
+          </p>
+          <div class="upg-metrics">
+            <span><b>全站标识</b>BAD / GOOD / GREAT / PERFECT</span>
+            <span><b>自动轨</b>固定 GOOD 0%</span>
+          </div>
+        </article>
+
+        <article class="upgrade-card cyan-top">
+          <div class="upg-head">
+            <span class="upg-idx">UPG-03</span>
+            <span class="upg-title">满配相加池 1.87×，技能本体稳占绝对大头</span>
+          </div>
+          <p class="upg-body">
+            主线满配相加池锁定为 <code>1.00本体 + 0.60三阶 + 0.15PERFECT + 0.10击破 + 0.02手帕 = 1.87×</code>。乘以属性克制 <code>1.5×</code> 与暴击后，常规天花板为 <strong>4.21×</strong>（较 V2.2 <code>15.83×</code> 狂降 <strong>-73.4%</strong>），极北圣晶杖天花板 <strong>4.49×</strong>，彻底终结后期数值崩坏。
+          </p>
+          <div class="upg-metrics">
+            <span><b>本体占比</b>53.5%–100%</span>
+            <span><b>常规暴击顶</b>4.21×</span>
+            <span><b>圣晶暴击顶</b>4.49×</span>
+          </div>
+        </article>
+
+        <article class="upgrade-card">
+          <div class="upg-head">
+            <span class="upg-idx">UPG-04</span>
+            <span class="upg-title">全 15 招精确拍数 + 0.25× 命中前慢镜触发</span>
+          </div>
+          <p class="upg-body">
+            出手 <code>0ms</code> 即在受击侧提前亮键（左手 <code>Q/W/E/A/S/D</code>，预瞄压缩至 <code>160–180ms</code>），命中前约 <code>120ms</code> 平滑切入 <strong>0.25× 慢镜</strong>与 60 FPS 实时缩圈（窗口 <code>580/530/480/430ms</code>）。3 护盾 / 风行残像 / 普通攻击全 <strong>0 拍瞬发</strong>，寒锋斩 & 冰霜之息 1 拍，霜域棘阵 = 存活敌方数拍。
+          </p>
+          <div class="upg-metrics">
+            <span><b>0 拍瞬发</b>5 招</span>
+            <span><b>1 拍</b>5 招</span>
+            <span><b>2 拍</b>3 招</span>
+            <span><b>3 拍</b>1 招</span>
+            <span><b>动态拍</b>1 招</span>
+          </div>
+        </article>
+
+        <article class="upgrade-card cyan-top">
+          <div class="upg-head">
+            <span class="upg-idx">UPG-05</span>
+            <span class="upg-title">群怪杂兵统一 noBlockPrompt: true 极速连贯出招</span>
+          </div>
+          <p class="upg-body">
+            消除群怪波次连续弹窗按空格的节奏碎裂与操作疲劳：第 6 幕 W1 四狼、第 7 幕 W1 狂狼×2、W2 寒脊爪兽共 7 只杂兵统一设 <strong><code>noBlockPrompt: true</code></strong>，以 <strong>0.60s/只</strong> 极速出招且数值按直承伤校准；仅 12 名精英 / 首领 / 决斗对手触发线性等阶差空格格挡。
+          </p>
+          <div class="upg-metrics">
+            <span><b>杂兵出招</b>0.60s / 只</span>
+            <span><b>无格挡杂兵</b>7 只</span>
+            <span><b>触发格挡精英/首领</b>12 名</span>
+          </div>
+        </article>
+
+        <article class="upgrade-card emerald-top">
+          <div class="upg-head">
+            <span class="upg-idx">UPG-06</span>
+            <span class="upg-title">独立「休闲模式」开关（默认关闭）× 挑战与剧情解耦</span>
+          </div>
+          <p class="upg-body">
+            新增受管持久化开关 <code>combat_casual_mode</code>（默认 <code>false</code>）：开启后敌伤 <strong>-40%</strong>、敌血与护盾 <strong>-30%</strong>、我方每回合额外回蓝 <strong>+15% MaxMP</strong>、缩圈永不触发 <code>BAD</code> 扣伤 → 主线第 1–8 幕 16/16 组 <strong>100.0% 速通</strong>；默认标准模式不再为了自动轨妥协，保留真 boss 压迫感与心跳翻车率。
+          </p>
+          <div class="upg-metrics">
+            <span><b>敌伤</b>×0.60</span>
+            <span><b>敌血盾</b>×0.70</span>
+            <span><b>额外回蓝</b>+15%/回合</span>
+            <span><b>BAD 兜底</b>→ GOOD 0%</span>
+          </div>
+        </article>
+
+        <article class="upgrade-card wide">
+          <div class="upg-head">
+            <span class="upg-idx">UPG-07</span>
+            <span class="upg-title">第 1–8 幕波浪式短回合曲线 + 双波「从 Boss 波重开」+ 第 9 幕真神级风神·岚</span>
+          </div>
+          <p class="upg-body">
+            主线严格执行「快→稳→快→稳→首个高潮→双波爽清→守卫高潮→终章高潮」波浪曲线：第 1–4 幕 <strong>3–4 回合</strong>（罗文 6+6 协同雷纳德占 78.7%–81.6% 输出）、第 5–6 幕 <strong>5–6 回合</strong>、第 7 幕 <strong>6–7 回合</strong>、第 8 幕 <strong>7–8 回合</strong>，双波 W1 仅 <strong>2–3 回合极速清场</strong>，W2 阵亡支持一键<strong>「从 Boss 波重开」</strong>。第 9 幕风神·岚锁定为演武大厅专属 7 阶真神（<code>arenaTestOnly: true, godTierChallenge: true</code>）：自动 <strong>0.0%</strong> / 普通手操 <strong>9.0%</strong> / 高手标配 <strong>38.3%</strong> / 顶配双杖弑神 <strong>95.7%</strong>。
+          </p>
+        </article>
+      </div>
+
+      <h3 class="sub-heading">V2.2 → V3.1 → V3.2 八大维度总览对照</h3>
+      <div class="table-wrap">
+        <table class="spec-table">
+          <thead>
+            <tr>
+              <th style="width:15%">维度</th>
+              <th style="width:23%">V2.2（历史膨胀期）</th>
+              <th style="width:26%">V3.1（首轮收紧版）</th>
+              <th style="width:36%">V3.2 终版锁定定案</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>判定标签规范</strong></td>
+              <td>中文混杂</td>
+              <td>中英混排</td>
+              <td><strong>全英文统一：<span class="grade-bad">BAD</span> / <span class="grade-good">GOOD</span> / <span class="grade-great">GREAT</span> / <span class="grade-perfect">PERFECT</span></strong></td>
+            </tr>
+            <tr>
+              <td><strong>施放精准奖惩</strong></td>
+              <td>独立连乘 <code>1.35×</code></td>
+              <td>含「增幅 × PERFECT 共振」最高 <code>+40%</code></td>
+              <td><strong>取消共振，全档固定平直：<code>BAD -15%</code>｜<code>GOOD 0%</code>｜<code>GREAT +8%</code>｜<code>PERFECT +15%</code></strong></td>
+            </tr>
+            <tr>
+              <td><strong>魔力增幅倍率</strong></td>
+              <td><code>1.976×</code> 独立乘区</td>
+              <td><code>+40% / +80% / +120%</code>（上限 <code>2.72×</code>）</td>
+              <td><strong>方案一砍半 1:1 直观档：<code>+0% / +20% / +40% / +60%</code></strong>，本体恒占 <code>53.5%–100%</code></td>
+            </tr>
+            <tr>
+              <td><strong>满配增伤天花板</strong></td>
+              <td>7 乘区连乘 <code>15.83×</code></td>
+              <td>相加池 <code>2.72×</code>（圣晶暴击 <code>6.53×</code>）</td>
+              <td><strong>相加池 <code>1.87×</code>（常规暴击 <code>4.21×</code> / 圣晶杖 <code>4.49×</code>）</strong></td>
+            </tr>
+            <tr>
+              <td><strong>按键节奏与慢镜</strong></td>
+              <td>无慢镜、普攻/盾皆有圈</td>
+              <td>多招 2–4 拍长演出</td>
+              <td><strong>出手 <code>0ms</code> 亮键 + 命中前 <code>0.25×</code> 慢镜</strong>；5 招 <code>0 拍瞬发</code>，寒锋斩/冰霜之息 <code>1 拍</code>，霜域棘阵 = 存活敌数拍</td>
+            </tr>
+            <tr>
+              <td><strong>群怪杂兵格挡</strong></td>
+              <td>4 狼连弹 4 次空格</td>
+              <td>全敌弹空格格挡</td>
+              <td><strong>群怪小怪统一 <code>noBlockPrompt: true</code>（极速 <code>0.60s</code> 出招）</strong>；仅精英 / 首领 / 决斗弹格挡</td>
+            </tr>
+            <tr>
+              <td><strong>主线回合与难度</strong></td>
+              <td>动辄 9–12 回合、自动稳通</td>
+              <td>自动轨强保 100% 削弱压迫</td>
+              <td><strong>波浪短回合（3–4 → 5–6 → 6–7 → 7–8）</strong>；标准保留挑战 + 双波「从 Boss 波重开」与「1 秒再战」</td>
+            </tr>
+            <tr>
+              <td><strong>休闲剧情模式</strong></td>
+              <td>无独立开关</td>
+              <td>依赖关缩圈硬保自动 100%</td>
+              <td><strong>新增 <code>combat_casual_mode</code>（默认关闭）</strong>：敌伤 -40% / 敌血盾 -30% / 回蓝 +15% / 零 BAD → 主线 16/16 <code>100.0%</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ==================== 02. 内置实时交互：伤害与护盾试算器 ==================== -->
+    <section class="section" id="sec-dmg-calc">
+      <div class="section-header">
+        <div class="sec-title-wrap">
+          <span class="sec-num">02</span>
+          <h2 class="sec-title">实时交互 · V3.2 伤害与护盾试算器</h2>
+        </div>
+        <span class="sec-badge gold">100% 对齐 sim_v32.py 引擎 · 零外部依赖</span>
+      </div>
+
+      <div class="chamfer-frame royal-accent">
+        <div class="chamfer-inner calc-grid">
+          <!-- 左：参数控制区 -->
+          <div class="calc-controls">
+            <div class="preset-bar" id="dmgPresets" role="group" aria-label="试算器快捷场景预设">
+              <button type="button" class="preset-btn active" data-preset="act7_ref">第 7 幕基准（MATK 55 · 法抗 32）</button>
+              <button type="button" class="preset-btn" data-preset="max_pool">满配天花板（1.87× · 暴击）</button>
+              <button type="button" class="preset-btn" data-preset="eclipse_god">晦轮杖穿风神魔盾</button>
+              <button type="button" class="preset-btn" data-preset="cold_riposte">寒锋斩迎击断招</button>
+              <button type="button" class="preset-btn" data-preset="steel_shield">钢冰护幕 40% 壁垒</button>
+            </div>
+
+            <div class="ctrl-row">
+              <div>
+                <label class="field-label" for="inpMatk">基础魔攻 MATK</label>
+                <input id="inpMatk" class="spec-input" type="number" min="10" max="200" value="55">
+              </div>
+              <div>
+                <label class="field-label" for="inpAtk">基础物攻 ATK</label>
+                <input id="inpAtk" class="spec-input" type="number" min="5" max="150" value="46">
+              </div>
+              <div>
+                <label class="field-label" for="inpMmp">最大蓝量 MaxMP</label>
+                <input id="inpMmp" class="spec-input" type="number" min="100" max="700" step="5" value="330">
+              </div>
+            </div>
+
+            <div class="ctrl-row-2">
+              <div>
+                <label class="field-label" for="selSkill">选择技能（全部 15 招）<span class="val-readout" id="skillCapHint">上限 60%</span></label>
+                <select id="selSkill" class="spec-select"></select>
+              </div>
+              <div>
+                <label class="field-label" for="selStaff">持有法杖</label>
+                <select id="selStaff" class="spec-select">
+                  <option value="none">徒手导魔（常规计算，无附加蓝耗）</option>
+                  <option value="eclipse_wand">晦轮杖（100% 真伤穿法抗/魔盾 + 24% MaxMP）</option>
+                  <option value="north_saint_staff">极北圣晶杖（+14% 魔攻 / +10% 暴伤 / -10% 增幅蓝）</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 魔力增幅 0-60% 自由微调与磁吸 -->
+            <div class="field-group">
+              <div class="field-label">
+                <span>魔力增幅（方案一 1:1 线性 · 自由微调 & 磁吸）</span>
+                <span class="val-readout" id="ampValLabel">40% · ★★极寒过载</span>
+              </div>
+              <input id="rngAmp" class="crystal-range" type="range" min="0" max="60" step="1" value="40">
+              <div class="amp-snap-row" id="ampSnaps">
+                <button type="button" class="snap-btn" data-amp="0">0% 常规</button>
+                <button type="button" class="snap-btn" data-amp="20">20% ★盈溢</button>
+                <button type="button" class="snap-btn active" data-amp="40">40% ★★过载</button>
+                <button type="button" class="snap-btn" data-amp="60">60% ★★★极限</button>
+              </div>
+            </div>
+
+            <!-- 四档英文判定 -->
+            <div class="field-group">
+              <div class="field-label">
+                <span>施放精准判定（取消共振 · 全档平直）</span>
+                <span class="val-readout" id="gradeRuleNote">2 拍异字母 · 缩圈 480ms</span>
+              </div>
+              <div class="seg-group" id="gradeSeg" role="group" aria-label="施放精准判定四档">
+                <button type="button" class="seg-btn" data-grade="BAD">BAD (-15%)</button>
+                <button type="button" class="seg-btn active" data-grade="GOOD">GOOD (0%)</button>
+                <button type="button" class="seg-btn" data-grade="GREAT">GREAT (+8%)</button>
+                <button type="button" class="seg-btn" data-grade="PERFECT">PERFECT (+15%)</button>
+              </div>
+            </div>
+
+            <!-- 属性克制 & 暴击 & 防御 -->
+            <div class="ctrl-row-2">
+              <div>
+                <div class="field-label"><span>属性克制 ElemMult</span></div>
+                <div class="seg-group" id="elemSeg">
+                  <button type="button" class="seg-btn" data-elem="0.75">被克 0.75×</button>
+                  <button type="button" class="seg-btn active" data-elem="1.00">常规 1.00×</button>
+                  <button type="button" class="seg-btn" data-elem="1.50">克制 1.50×</button>
+                </div>
+              </div>
+              <div>
+                <div class="field-label"><span>暴击判定 CritMult</span><span class="val-readout" id="critValHint">1.00×</span></div>
+                <div class="seg-group" id="critSeg">
+                  <button type="button" class="seg-btn active" data-crit="0">非暴击 1.00×</button>
+                  <button type="button" class="seg-btn" data-crit="1">暴击结算</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="ctrl-row-2">
+              <div>
+                <div class="field-label">
+                  <span>目标防御（MDEF / DEF）</span>
+                  <span class="val-readout" id="defValLabel">32</span>
+                </div>
+                <input id="rngDef" class="crystal-range" type="range" min="0" max="80" step="1" value="32">
+              </div>
+              <div>
+                <label class="field-label" for="selField">场地/实体甲状态</label>
+                <select id="selField" class="spec-select">
+                  <option value="normal">常规战场（FieldMod 1.00× · 实体甲 0%）</option>
+                  <option value="wind_wall">风神外圈风壁未破（FieldMod 0.42×）</option>
+                  <option value="solid_35">赫兰领主未破核（实体甲 35%，减免晦轮杖）</option>
+                  <option value="solid_30">冻土重甲兽（实体甲 30%）</option>
+                  <option value="wind_cushion">爱丽丝风垫 / 火灵2层（FieldMod 0.80×）</option>
+                  <option value="pack_wolf">北林狼群 ≥3 只单体（FieldMod 0.45×）</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 铭记 / 被动 / 机制勾选 -->
+            <div class="check-grid">
+              <label class="check-item"><input type="checkbox" id="chkBreak">弱点击破（+10%）</label>
+              <label class="check-item"><input type="checkbox" id="chkHandkerchief">雪纹手帕（冰系 +2%）</label>
+              <label class="check-item"><input type="checkbox" id="chkNorthFrost">极北冰冠 3 件套（首冰 +5%）</label>
+              <label class="check-item"><input type="checkbox" id="chkAcademy3pc">学院星辉 3 件套（蓝 0.85× / 暴伤 +10%）</label>
+              <label class="check-item"><input type="checkbox" id="chkManaCalc" checked>被动 · 魔力精算（全蓝耗 0.85×）</label>
+              <label class="check-item"><input type="checkbox" id="chkManuscript">铭记 · 诺艾儿省魔手稿（0.85/0.80×）</label>
+              <label class="check-item"><input type="checkbox" id="chkFrostEdge">被动 · 冰刃融锋（寒锋斩 +5%）</label>
+              <label class="check-item"><input type="checkbox" id="chkRiposte">寒锋斩迎击（2.10×） / 扎根凝冰（盾 +20%）</label>
+              <label class="check-item" style="grid-column:1 / -1;background:var(--bg-emerald-soft);border-left:2px solid var(--emerald);color:var(--ink-primary);"><input type="checkbox" id="chkCasualDmg">独立开关 · 休闲模式缩圈兜底（BAD 自动提升为 GOOD 0%，永不触发扣伤）</label>
+            </div>
+          </div>
+
+          <!-- 右：实时拆解仪表区 -->
+          <div class="calc-output" aria-live="polite">
+            <div class="readout-trio">
+              <div class="readout-cell">
+                <div class="readout-label" id="outMainLabel">最终伤害</div>
+                <div class="readout-big" id="outFinalVal">122</div>
+                <div class="readout-sub" id="outMainSub">星霜散华 · 2.02×</div>
+              </div>
+              <div class="readout-cell">
+                <div class="readout-label" id="outPoolLabel">总相加池 AddPool</div>
+                <div class="readout-big cyan" id="outPoolVal">1.40×</div>
+                <div class="readout-sub" id="outPoolSub">主线满配上界 1.87×</div>
+              </div>
+              <div class="readout-cell">
+                <div class="readout-label" id="outShareLabel">技能本体占比</div>
+                <div class="readout-big gold" id="outShareVal">71.4%</div>
+                <div class="readout-sub" id="outShareSub">1.00 / 1.40 绝对大头</div>
+              </div>
+            </div>
+
+            <!-- 本体 vs 相加增伤拆解条 -->
+            <div class="pool-bar-block" id="poolBarBlock">
+              <div class="pool-bar-head">
+                <span id="poolBarTitle">相加增伤池结构拆解（技能本体 vs 外部增幅）</span>
+                <span class="mono" id="poolBarTotal">AddPool = 1.40×</span>
+              </div>
+              <div class="stacked-bar" id="stackedBar"></div>
+              <div class="pool-legend" id="poolLegend"></div>
+            </div>
+
+            <!-- 逐项乘区公式链路 -->
+            <div>
+              <div class="field-label" style="margin-bottom:5px;">
+                <span>实时全乘区公式链路</span>
+                <span class="val-readout" id="outTotalMultLabel">综合倍率 1.40×</span>
+              </div>
+              <div class="formula-trace" id="outFormulaTrace"></div>
+            </div>
+
+            <!-- 穿透、破锁、蓝耗与魔战循环净蓝 -->
+            <div class="econ-grid">
+              <div class="econ-item">
+                <div class="econ-k">防御承伤率 DefMit（K = 80）</div>
+                <div class="econ-v" id="outDefMit">78.1%（有效防 22.4）</div>
+              </div>
+              <div class="econ-item">
+                <div class="econ-k">本次破锁 / 慢镜窗口</div>
+                <div class="econ-v" id="outLocksWin">+2 额外破锁 · 480ms</div>
+              </div>
+              <div class="econ-item">
+                <div class="econ-k">总耗蓝（省蓝硬地板 0.60×）</div>
+                <div class="econ-v" id="outMpCost">148 MP（折扣 0.85×）</div>
+              </div>
+              <div class="econ-item">
+                <div class="econ-k">单位魔力效率 / 第 5 幕魔战净蓝</div>
+                <div class="econ-v" id="outMpEcon">0.82 伤/MP · 净 -26 MP</div>
+              </div>
+            </div>
+
+            <!-- 特殊机制说明条 -->
+            <div id="outSpecialNote" style="font-size:12px;color:var(--ink-secondary);background:var(--bg-ice-soft);padding:10px 12px;border-left:3px solid var(--ice-cyan);"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 03. 内置实时交互：线性等阶差格挡试算器 ==================== -->
+    <section class="section" id="sec-block-calc">
+      <div class="section-header">
+        <div class="sec-title-wrap">
+          <span class="sec-num">03</span>
+          <h2 class="sec-title">实时交互 · 线性等阶差格挡试算器（空格键）</h2>
+        </div>
+        <span class="sec-badge cyan">无人工封顶/保底 · 顺畅越阶曲线</span>
+      </div>
+
+      <div class="chamfer-frame">
+        <div class="chamfer-inner calc-grid">
+          <div class="calc-controls">
+            <div class="preset-bar" id="blockPresets">
+              <button type="button" class="preset-btn" data-pr="3" data-er="1">高阶压低阶（d = +2）</button>
+              <button type="button" class="preset-btn" data-pr="2" data-er="2">同阶切磋（d = 0）</button>
+              <button type="button" class="preset-btn" data-pr="3" data-er="4">越 1 阶首领（d = -1）</button>
+              <button type="button" class="preset-btn" data-pr="2" data-er="4">越 2 阶罗文（d = -2）</button>
+              <button type="button" class="preset-btn active" data-pr="3" data-er="7">越 4 阶弑神 · 风神（d = -4）</button>
+            </div>
+
+            <div class="field-group">
+              <div class="field-label">
+                <span>我方等阶 defRank（1 初级 → 7 神级）</span>
+                <span class="val-readout" id="prLabel">3 阶 · 高级</span>
+              </div>
+              <input id="rngPrRank" class="crystal-range" type="range" min="1" max="7" step="1" value="3">
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink-faint);font-family:var(--font-mono);">
+                <span>1 初级</span><span>2 中级</span><span>3 高级</span><span>4 圣级</span><span>5 王级</span><span>6 帝级</span><span>7 神级</span>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <div class="field-label">
+                <span>敌方等阶 atkRank（1 初级 → 7 神级）</span>
+                <span class="val-readout" id="erLabel">7 阶 · 神级</span>
+              </div>
+              <input id="rngErRank" class="crystal-range gold-thumb" type="range" min="1" max="7" step="1" value="7">
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink-faint);font-family:var(--font-mono);">
+                <span>1 初级</span><span>2 中级</span><span>3 高级</span><span>4 圣级</span><span>5 王级</span><span>6 帝级</span><span>7 神级</span>
+              </div>
+            </div>
+
+            <div class="ctrl-row-2" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--hairline);">
+              <div>
+                <label class="field-label" for="inpIncoming">示例敌方来袭伤害（实承演算）</label>
+                <input id="inpIncoming" class="spec-input" type="number" min="10" max="500" value="180">
+              </div>
+              <div style="display:flex;align-items:flex-end;">
+                <label class="check-item" style="width:100%;height:34px;">
+                  <input type="checkbox" id="chkCasualBlock">叠加休闲模式（敌伤 -40%）
+                </label>
+              </div>
+            </div>
+
+            <div class="formula-trace" style="margin-top:8px;white-space:pre-line;">同阶基数 Base(g)：BAD 0% ｜ GOOD 8% ｜ GREAT 18% ｜ PERFECT 30%
+d = defRank − atkRank
+• d ≥ 0：S(d) = 1 + 0.12 × d，BlockRate = min(100%, Base × S(d))
+• d &lt; 0：S(d) = max(0, 1 − 0.10 × |d|)，BlockRate = Base × S(d)</div>
+          </div>
+
+          <div class="calc-output" aria-live="polite">
+            <div class="readout-trio" style="grid-template-columns:1fr 1fr 1.2fr;">
+              <div class="readout-cell">
+                <div class="readout-label">等阶差 d</div>
+                <div class="readout-big gold" id="outRankDiff">-4</div>
+                <div class="readout-sub" id="outRankScenario">高级(3) vs 神级(7)</div>
+              </div>
+              <div class="readout-cell">
+                <div class="readout-label">线性系数 S(d)</div>
+                <div class="readout-big cyan" id="outScaleSd">0.60×</div>
+                <div class="readout-sub" id="outScaleFormula">1 − 0.10 × 4</div>
+              </div>
+              <div class="readout-cell">
+                <div class="readout-label">代表剧情映射</div>
+                <div style="font-size:13px;font-weight:700;color:var(--ink-primary);margin-top:8px;" id="outRankMap">越 4 阶弑神 · 风神·岚</div>
+                <div class="readout-sub" id="outRankTip">需搭配残像与迎击化解神威</div>
+              </div>
+            </div>
+
+            <!-- 四档精确减伤卡片带 -->
+            <div class="block-4col" id="blockFourCol"></div>
+
+            <!-- 纯 SVG 线性等阶差折线图 -->
+            <div>
+              <div class="chart-head" style="margin-bottom:6px;">
+                <span class="chart-title">等阶差 d ∈ [−6, +6] 减伤率线性走势</span>
+                <div class="chart-legend">
+                  <span><i class="leg-dot" style="background:var(--gold)"></i>PERFECT</span>
+                  <span><i class="leg-dot" style="background:var(--royal)"></i>GREAT</span>
+                  <span><i class="leg-dot" style="background:var(--ice-cyan)"></i>GOOD</span>
+                </div>
+              </div>
+              <svg id="blockCurveSvg" viewBox="0 0 460 156" style="width:100%;height:auto;display:block;background:#FFFFFF;border:1px solid var(--hairline);"></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 04. 核心伤害数学、防坑契约与三把法杖经济 ==================== -->
+    <section class="section" id="sec-math">
+      <div class="section-header">
+        <div class="sec-title-wrap">
+          <span class="sec-num">04</span>
+          <h2 class="sec-title">核心伤害数学、防坑契约与三把法杖经济</h2>
+        </div>
+        <span class="sec-badge">DEF_K = 80 · 省蓝地板 0.60×</span>
+      </div>
+
+      <div class="formula-panel">
+        <pre class="formula-main">最终伤害 = max(4, round(
+    有效主属性 × 技能基础倍率 × 相加增伤池 AddPool × 场地/机制系数 FieldMod
+  × 属性克制 ElemMult (1.50× / 1.00× / 0.75×)
+  × 暴击倍率 CritMult (1.00× / 常规 1.50× / 圣晶 1.60× / 顶配上限 1.70×)
+  × 防御承伤率 DefMit [ 80 / (80 + effDef) ]
+))
+
+AddPool = max(0.35, 1.00本体 + AmpAdd(0–0.60) + RingBonus(-0.15~+0.15) + BreakAdd(+0.10) + PassiveAdd + RelicAdd)
+主线满配上限：1.00 + 0.60 + 0.15 + 0.10 + 0.02(手帕) = 1.87×  （本体恒占 53.5%–100.0%）</pre>
+        <div class="formula-notes">
+          <div class="formula-note-item">
+            <strong>防御穿透与晦轮杖真伤（100% 尊重原著）</strong>：常规魔攻按 <code>effDef = rawDef × (1 − min(0.75, ampPierce + innatePierce))</code> 计算；<strong>晦轮杖</strong>无视魔法防御与魔力护盾，直接造成 <code>100%</code> 真实魔伤（仅受实体重甲如赫兰未破核 <code>35%</code> 减免），附加耗蓝 <code>24% MaxMP</code>，希尔维亚永不触发日蚀、零自创惩罚。
+          </div>
+          <div class="formula-note-item">
+            <strong>V3.2 仿真抓出的两项公平性防坑铁律</strong>：<br>
+            ① <strong>二阶段觉醒缓冲回合</strong>：红莲铁幕（50% HP）与风神·岚（55% HP）在玩家回合跨阈值时立即觉醒并设 <code>stagger = max(stagger, 1)</code>，杜绝 0 AP 回合尾凭空猝死；<br>
+            ② <strong>寒锋斩零蓝兜底继承回蓝</strong>：<code>MP &lt; 12</code> 触发 <code>0.85×</code> 平斩兜底时继承 <code>+6% MaxMP</code> 导魔回蓝，彻底消除长线软锁。
+          </div>
+        </div>
+      </div>
+
+      <!-- V2.2 vs V3.1 vs V3.2 膨胀对比 -->
+      <h3 class="sub-heading">数值膨胀收敛对比：V3.2（1.87×）vs V3.1（2.72×）vs V2.2（15.83×）</h3>
+      <div class="table-wrap">
+        <table class="spec-table">
+          <thead>
+            <tr>
+              <th>战斗情景</th>
+              <th class="num">V2.2 综合倍率</th>
+              <th class="num">V3.1 综合倍率</th>
+              <th class="num">V3.2 终版倍率</th>
+              <th class="num">较 V2.2 降幅</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>常规平放（0% 增幅 · GOOD · 无克制）</td>
+              <td class="num">1.00×</td>
+              <td class="num">1.00×</td>
+              <td class="num"><strong>1.00×</strong></td>
+              <td class="num">+0.0%</td>
+            </tr>
+            <tr>
+              <td>轻度爆发（20% 增幅 · GREAT +8% · 属性克制 1.5×）</td>
+              <td class="num">2.14×</td>
+              <td class="num">2.28×</td>
+              <td class="num"><strong>1.92×</strong></td>
+              <td class="num">-10.2%</td>
+            </tr>
+            <tr>
+              <td>主力破防（40% 增幅 · PERFECT +15% · 击破 +10% · 克制 1.5×）</td>
+              <td class="num">4.54×</td>
+              <td class="num">3.38×</td>
+              <td class="num"><strong>2.47×</strong></td>
+              <td class="num">-45.5%</td>
+            </tr>
+            <tr>
+              <td>高阶三阶（60% 增幅 · PERFECT +15% · 击破 +10% · 克制 1.5×）</td>
+              <td class="num">7.13×</td>
+              <td class="num">4.05×</td>
+              <td class="num"><strong>2.78×</strong></td>
+              <td class="num">-61.1%</td>
+            </tr>
+            <tr class="row-highlight">
+              <td><strong>满配常规暴击天花板</strong>（1.87× × 克制 1.5× × 常规暴击 1.5×）</td>
+              <td class="num">15.83×</td>
+              <td class="num">6.12×</td>
+              <td class="num" style="color:var(--royal);font-weight:800;">4.21×</td>
+              <td class="num" style="color:var(--emerald);font-weight:800;">-73.4%</td>
+            </tr>
+            <tr class="row-highlight">
+              <td><strong>满配圣晶暴击天花板</strong>（1.87× × 克制 1.5× × 圣晶暴击 1.6×）</td>
+              <td class="num">15.83×</td>
+              <td class="num">6.53×</td>
+              <td class="num" style="color:var(--gold);font-weight:800;">4.49×</td>
+              <td class="num" style="color:var(--emerald);font-weight:800;">-71.6%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="inflation-bars" aria-label="满配常规暴击天花板版本收敛对比">
+        <div class="inf-row">
+          <span style="font-weight:700;">V2.2 历史连乘天花板</span>
+          <div class="inf-track"><div class="inf-fill" style="width:100%;background:#9AA9C2;">15.83×（7 乘区失控膨胀）</div></div>
+          <span class="mono" style="text-align:right;color:var(--ink-muted);">基准</span>
+        </div>
+        <div class="inf-row">
+          <span style="font-weight:700;">V3.1 首轮收紧天花板</span>
+          <div class="inf-track"><div class="inf-fill" style="width:38.6%;background:var(--ice-cyan);">6.12×</div></div>
+          <span class="mono" style="text-align:right;color:var(--ice-cyan);">-61.3%</span>
+        </div>
+        <div class="inf-row">
+          <span style="font-weight:700;color:var(--royal);">V3.2 终版常规 / 圣晶上限</span>
+          <div class="inf-track"><div class="inf-fill" style="width:26.6%;background:var(--royal);">4.21×</div></div>
+          <span class="mono" style="text-align:right;color:var(--emerald);font-weight:800;">-73.4%</span>
+        </div>
+      </div>
+
+      <!-- 方案一精算表 -->
+      <h3 class="sub-heading gold">方案一 1:1 直观增幅精算表（第 7 幕基准：MATK 55 / MaxMP 330 / 魔力精算 / 星霜散华 2.02× / 法抗 32）</h3>
+      <div class="table-wrap">
+        <table class="spec-table">
+          <thead>
+            <tr>
+              <th class="ctr">档位</th>
+              <th>阶位称谓</th>
+              <th class="ctr">相加增伤</th>
+              <th class="ctr">PERFECT 总增</th>
+              <th class="ctr">穿抗</th>
+              <th class="ctr">额外破锁</th>
+              <th class="num">耗蓝(精算)</th>
+              <th class="ctr">单动伤(GOOD/PERF)</th>
+              <th class="num">效率(GOOD)</th>
+              <th class="ctr">护盾倍率</th>
+              <th>钢冰护幕护箱与附效</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="ctr mono"><strong>0%</strong></td>
+              <td>常规</td>
+              <td class="ctr mono">+0%</td>
+              <td class="ctr mono">+15%</td>
+              <td class="ctr mono">0%</td>
+              <td class="ctr mono">+0</td>
+              <td class="num">36</td>
+              <td class="ctr mono">81 / 93</td>
+              <td class="num">2.25</td>
+              <td class="ctr mono"><strong>1.00×</strong></td>
+              <td>护箱 36</td>
+            </tr>
+            <tr>
+              <td class="ctr mono"><span class="tag tag-cyan">20%</span></td>
+              <td>★魔力盈溢</td>
+              <td class="ctr mono"><strong>+20%</strong></td>
+              <td class="ctr mono">+35%</td>
+              <td class="ctr mono">10%</td>
+              <td class="ctr mono">+1</td>
+              <td class="num">92</td>
+              <td class="ctr mono">100 / 113</td>
+              <td class="num">1.09</td>
+              <td class="ctr mono"><strong>1.25×</strong></td>
+              <td>护箱 <strong>55</strong> + 净 1 异常</td>
+            </tr>
+            <tr>
+              <td class="ctr mono"><span class="tag tag-royal">40%</span></td>
+              <td>★★极寒过载</td>
+              <td class="ctr mono"><strong>+40%</strong></td>
+              <td class="ctr mono">+55%</td>
+              <td class="ctr mono">22%</td>
+              <td class="ctr mono">+2</td>
+              <td class="num">148</td>
+              <td class="ctr mono">122 / 135</td>
+              <td class="num">0.82</td>
+              <td class="ctr mono"><strong>1.50×</strong></td>
+              <td>护箱 <strong>85</strong> + <strong>钢霜壁垒</strong>（减伤 12%、盾留 45%、箱留 50%、赫兰共鸣 +1）</td>
+            </tr>
+            <tr class="row-highlight">
+              <td class="ctr mono"><span class="tag tag-gold">60%</span></td>
+              <td><strong>★★★星霜极限</strong></td>
+              <td class="ctr mono"><strong>+60%</strong></td>
+              <td class="ctr mono">+75%</td>
+              <td class="ctr mono">35%</td>
+              <td class="ctr mono">+3</td>
+              <td class="num">204</td>
+              <td class="ctr mono">145 / 158</td>
+              <td class="num">0.71</td>
+              <td class="ctr mono">上限 40%</td>
+              <td>仅限魔攻重炮线（冰/水/霜）；香槟金三环 + 冰雷电弧 VFX</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 三把法杖三角定位 + 省蓝硬地板验算 -->
+      <h3 class="sub-heading cyan">三把法杖三角定位（星霜散华 40% · GOOD）与总省蓝硬地板 0.60× 经济验算</h3>
+      <div class="table-wrap" style="margin-bottom:14px;">
+        <table class="spec-table">
+          <thead>
+            <tr>
+              <th style="width:24%">目标防线类型</th>
+              <th style="width:24%">徒手导魔（无附加蓝耗）</th>
+              <th style="width:26%">晦轮杖（100% 真伤 + 24% MaxMP）</th>
+              <th style="width:26%">极北圣晶杖（+14%魔攻/+10%暴伤/-10%增幅蓝）</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>低抗无盾杂兵（法抗 10 / 无盾）</td>
+              <td class="mono">总 143 / 血 143 / 耗 148 / 净 -5</td>
+              <td class="mono">总 156 / 血 156 / 耗 215 / 净 -59</td>
+              <td class="mono" style="color:var(--emerald);font-weight:700;">总 163 / 血 163 / 耗 137 / 净 +26（清杂最强）</td>
+            </tr>
+            <tr>
+              <td>中抗魔盾首领（法抗 30 / 魔盾 105，红莲）</td>
+              <td class="mono">总 123 / 血 18 / 耗 148 / 净 -130</td>
+              <td class="mono" style="color:var(--royal);font-weight:700;">总 156 / 血 156 / 耗 215 / 净 -59（破盾最优）</td>
+              <td class="mono">总 140 / 血 35 / 耗 137 / 净 -102</td>
+            </tr>
+            <tr>
+              <td>神级高抗魔盾（法抗 56 / 魔盾 190，风神）</td>
+              <td class="mono">总 104 / 血 0 / 耗 148 / 净 -148</td>
+              <td class="mono" style="color:var(--gold);font-weight:700;">总 156 / 血 156 / 耗 215 / 净 -59（唯一穿透）</td>
+              <td class="mono">总 119 / 血 0 / 耗 137 / 净 -137</td>
+            </tr>
+            <tr>
+              <td>高抗实体重甲（法抗 36 / 实盾 105 / 甲 35%，赫兰）</td>
+              <td class="mono">总 118 / 血 13 / 耗 148 / 净 -135</td>
+              <td class="mono" style="color:var(--crimson);">总 101 / 血 0 / 耗 215 / 净 -215（被实体甲克制）</td>
+              <td class="mono" style="color:var(--royal);font-weight:700;">总 135 / 血 30 / 耗 137 / 净 -107</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap">
+        <table class="spec-table">
+          <thead>
+            <tr>
+              <th>总省蓝地板 0.60× 检核场景（60% 三阶 · GOOD）</th>
+              <th class="ctr">无铭记徒手（总/血/耗/净）</th>
+              <th class="ctr">满配地板 0.60×（总/血/耗/净）</th>
+              <th>经济健康度结论</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>第 5 幕诺艾儿（水幕 38 未破）</td><td class="ctr mono">116 / 78 / 184 / -106</td><td class="ctr mono">132 / 94 / 136 / -42</td><td>严格净耗蓝，禁止盲砸三阶</td></tr>
+            <tr><td>第 5 幕诺艾儿（破盾常态）</td><td class="ctr mono">116 / 116 / 184 / -68</td><td class="ctr mono">132 / 132 / 136 / -4</td><td>满配仅近持平，拒绝无脑永动</td></tr>
+            <tr><td>第 7 幕领主未破核（实盾 105）</td><td class="ctr mono">141 / 36 / 204 / -168</td><td class="ctr mono">161 / 56 / 151 / -95</td><td>倒逼玩家配合艾诺破核</td></tr>
+            <tr><td>第 7 幕领主破核后（法抗 11 无盾）</td><td class="ctr mono">165 / 165 / 204 / -39</td><td class="ctr mono" style="color:var(--emerald);font-weight:700;">188 / 188 / 151 / +37</td><td><strong>破核奖励正向回蓝循环</strong></td></tr>
+            <tr><td>第 8 幕红莲铁幕（魔盾 105 水克火）</td><td class="ctr mono">163 / 58 / 182 / -124</td><td class="ctr mono">185 / 80 / 134 / -54</td><td>需先破魔盾或切晦轮杖</td></tr>
+            <tr><td>第 9 幕风神二阶段魔盾（魔盾 230）</td><td class="ctr mono">194 / 0 / 204 / -204</td><td class="ctr mono">221 / 0 / 151 / -151</td><td>盲打必空蓝，必须切晦轮杖/破壁</td></tr>
+            <tr><td>第 9 幕风神破壁破盾后（无盾冰克风）</td><td class="ctr mono">194 / 194 / 204 / -10</td><td class="ctr mono" style="color:var(--emerald);font-weight:700;">221 / 221 / 151 / +70</td><td><strong>机制达标给予华丽回蓝爆发</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ==================== 05. 全 15 招技能与精确拍数/键位池总表 ==================== -->
+    <section class="section" id="sec-skills">
+      <div class="section-header">
+        <div class="sec-title-wrap">
+          <span class="sec-num">05</span>
+          <h2 class="sec-title">精简 5 线进化技能 + 1 独立身法槽（全 15 招精确拍数表）</h2>
+        </div>
+        <span class="sec-badge royal">键位池 Q / W / E / A / S / D · 点击可载入试算器</span>
+      </div>
+
+      <div class="filter-strip" id="skillFilters">
+        <button type="button" class="filter-chip active" data-filter="all">全部 15 招</button>
+        <button type="button" class="filter-chip" data-filter="line1">线 1 冰晶主炮 (3)</button>
+        <button type="button" class="filter-chip" data-filter="line2">线 2 水系破局 (3)</button>
+        <button type="button" class="filter-chip" data-filter="line3">线 3 霜域控场 (3)</button>
+        <button type="button" class="filter-chip" data-filter="line4">线 4 冰盾护御 (3)</button>
+        <button type="button" class="filter-chip" data-filter="line5">线 5 近战导魔 (2)</button>
+        <button type="button" class="filter-chip" data-filter="line6">身法槽 (1)</button>
+        <button type="button" class="filter-chip" data-filter="instant">仅 0 拍瞬发 (5)</button>
+        <button type="button" class="filter-chip" data-filter="multi">仅多拍/动态拍 (5)</button>
+      </div>
+
+      <div class="table-wrap">
+        <table class="spec-table" id="skillsTable">
+          <thead>
+            <tr>
+              <th>技能线</th>
+              <th>技能名（ID）</th>
+              <th class="ctr">属性 / 类型</th>
+              <th class="ctr">AP / 蓝 / CD</th>
+              <th class="ctr">倍率 / 盾基</th>
+              <th class="ctr">增幅上限</th>
+              <th>V3.2 精确拍数与键位规则</th>
+              <th>核心机制与特化效果</th>
+              <th class="ctr">试算</th>
+            </tr>
+          </thead>
+          <tbody id="skillsTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ==================== 06. 0.25× 慢镜 QTE 时序与杂兵 noBlockPrompt ==================== -->
+    <section class="section" id="sec-qte">
+      <div class="section-header">
+        <div class="sec-title-wrap">
+          <span class="sec-num">06</span>
+          <h2 class="sec-title">0.25× 命中前慢镜触发机制 × 群怪杂兵 noBlockPrompt 规则</h2>
+        </div>
+        <span class="sec-badge cyan">左手舒适区 6 键 · 0.60s 杂兵快节奏</span>
+      </div>
+
+      <!-- 纯 SVG 物理时序图 -->
+      <div class="chart-card">
+        <div class="chart-head">
+          <span class="chart-title">单拍物理时间轴契约（<code>js/combat-pixel-vfx.js</code> · <code>simDt = realDt × _hitStopScale × _slowMoScale</code>）</span>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-secondary);">
+            <span>左手键位池：</span>
+            <span class="kbd-strip">
+              <span class="kbd-cap">Q</span><span class="kbd-cap">W</span><span class="kbd-cap">E</span><span class="kbd-cap">A</span><span class="kbd-cap">S</span><span class="kbd-cap">D</span>
+            </span>
+          </div>
+        </div>
+        <svg viewBox="0 0 1040 132" style="width:100%;height:auto;display:block;" aria-label="0.25倍命中前慢镜时序轴">
+          <!-- 背景轨 -->
+          <rect x="16" y="42" width="210" height="36" fill="#EBF2FE"/>
+          <rect x="230" y="42" width="165" height="36" fill="#E1F5FE"/>
+          <rect x="399" y="42" width="380" height="36" fill="#1658EB"/>
+          <rect x="783" y="42" width="90" height="36" fill="#D4A34A"/>
+          <rect x="877" y="42" width="147" height="36" fill="#EDF9F4"/>
+
+          <!-- 标签文字 -->
+          <text x="121" y="64" text-anchor="middle" fill="#0E3FA8" font-size="12" font-weight="700">① t=0ms 提前亮键（160–180ms）</text>
+          <text x="312" y="64" text-anchor="middle" fill="#0891B2" font-size="12" font-weight="700">② 飞行逼近（前 120ms）</text>
+          <text x="589" y="64" text-anchor="middle" fill="#FFFFFF" font-size="12.5" font-weight="700">③ PRE_IMPACT 切入 _slowMoScale = 0.25 · 60FPS 缩圈（580→430ms）</text>
+          <text x="828" y="64" text-anchor="middle" fill="#1D1405" font-size="12" font-weight="700">④ 顿帧 0.06</text>
+          <text x="950" y="64" text-anchor="middle" fill="#0D8A62" font-size="12" font-weight="700">⑤ 冰晶爆裂 + 飘字</text>
+
+          <!-- 顶部关键节点标注 -->
+          <line x1="16" y1="24" x2="16" y2="96" stroke="#1658EB" stroke-width="1.5"/>
+          <text x="20" y="20" fill="#1658EB" font-size="11" font-family="monospace" font-weight="700">0ms 出手帧亮键</text>
+
+          <line x1="399" y1="24" x2="399" y2="96" stroke="#0891B2" stroke-width="1.5"/>
+          <text x="404" y="20" fill="#0891B2" font-size="11" font-family="monospace" font-weight="700">进入子弹时间 0.25×</text>
+
+          <line x1="783" y1="24" x2="783" y2="96" stroke="#B68427" stroke-width="1.5"/>
+          <text x="787" y="20" fill="#B68427" font-size="11" font-family="monospace" font-weight="700">RESOLVE 瞬时弹回 1.00×</text>
+
+          <!-- 底部说明 -->
+          <text x="121" y="106" text-anchor="middle" fill="#647692" font-size="11">目标侧亮出下一拍键位徽标</text>
+          <text x="589" y="106" text-anchor="middle" fill="#3B4E6B" font-size="11">缩圈按真实 realDt 匀速收缩；0% 580ms｜20% 530ms｜40% 480ms｜60% 430ms</text>
+          <text x="895" y="106" text-anchor="middle" fill="#647692" font-size="11">45–65ms 顿帧 + 英文 BAD/GOOD/GREAT/PERFECT</text>
+        </svg>
+      </div>
+
+      <div class="split-2">
+        <div class="table-wrap">
+          <table class="spec-table">
+            <thead>
+              <tr>
+                <th class="ctr">增幅档位</th>
+                <th class="ctr">实时窗（+35% 宽容）</th>
+                <th class="ctr"><span class="grade-perfect">PERFECT</span></th>
+                <th class="ctr"><span class="grade-great">GREAT</span></th>
+                <th class="ctr"><span class="grade-good">GOOD</span></th>
+                <th class="ctr"><span class="grade-bad">BAD</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="ctr mono"><strong>0%</strong> 常规</td><td class="ctr mono"><strong>580 ms</strong></td><td class="ctr mono">±46 ms</td><td class="ctr mono">±105 ms</td><td class="ctr mono">±190 ms</td><td class="ctr">超窗/误按</td></tr>
+              <tr><td class="ctr mono"><strong>20%</strong> 一阶</td><td class="ctr mono"><strong>530 ms</strong></td><td class="ctr mono">±42 ms</td><td class="ctr mono">±96 ms</td><td class="ctr mono">±175 ms</td><td class="ctr">超窗/误按</td></tr>
+              <tr><td class="ctr mono"><strong>40%</strong> 二阶</td><td class="ctr mono"><strong>480 ms</strong></td><td class="ctr mono">±38 ms</td><td class="ctr mono">±88 ms</td><td class="ctr mono">±160 ms</td><td class="ctr">超窗/误按</td></tr>
+              <tr><td class="ctr mono"><strong>60%</strong> 三阶</td><td class="ctr mono"><strong>430 ms</strong></td><td class="ctr mono">±34 ms</td><td class="ctr mono">±78 ms</td><td class="ctr mono">±142 ms</td><td class="ctr">超窗/误按</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-wrap">
+          <table class="spec-table">
+            <thead>
+              <tr>
+                <th class="ctr">四档判定</th>
+                <th class="ctr">相加修正 RingBonus</th>
+                <th class="ctr">休闲模式兜底</th>
+                <th class="ctr">同阶格挡基数</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="ctr"><span class="grade-bad">BAD</span></td><td class="ctr mono" style="color:var(--crimson);font-weight:700;">-15%</td><td class="ctr">强提为 <strong>GOOD (0%)</strong></td><td class="ctr mono">0.0%</td></tr>
+              <tr><td class="ctr"><span class="grade-good">GOOD</span></td><td class="ctr mono">0%</td><td class="ctr mono">0%</td><td class="ctr mono">8.0%</td></tr>
+              <tr><td class="ctr"><span class="grade-great">GREAT</span></td><td class="ctr mono" style="color:var(--ice-cyan);font-weight:700;">+8%</td><td class="ctr mono">+8%</td><td class="ctr mono">18.0%</td></tr>
+              <tr><td class="ctr"><span class="grade-perfect">PERFECT</span></td><td class="ctr mono" style="color:var(--gold);font-weight:700;">+15%</td><td class="ctr mono">+15%</td><td class="ctr mono">30.0%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="split-2" style="margin-top:16px;">
+        <div class="info-panel cyan-left">
+          <h4 class="panel-title">杂兵群怪无空格格挡（<code>noBlockPrompt: true</code> · 7 只）</h4>
+          <ul class="bullet-list">
+            <li>攻击<strong>不弹出空格格挡窗</strong>，以 <strong>0.60s / 只</strong> 极速连贯出招，压缩 W1 敌回合冗余等待，其伤害数值已按无格挡直承伤精准校准。</li>
+            <li><strong>第 6 幕 W1</strong>：<code>灰棘头狼</code>、<code>灰棘狼·甲 / 乙 / 丙</code>（4 只）</li>
+            <li><strong>第 7 幕 W1</strong>：<code>霜原狂狼·甲 / 乙</code>（2 只）</li>
+            <li><strong>第 7 幕 W2</strong>：<code>寒脊爪兽</code>（1 只）</li>
+          </ul>
+        </div>
+        <div class="info-panel royal-left">
+          <h4 class="panel-title">精英 / 首领 / 决斗格挡白名单（<code>noBlockPrompt: false</code> · 12 名）</h4>
+          <ul class="bullet-list">
+            <li>实打攻击全部触发<strong>线性等阶差空格格挡窗</strong>（单次完整演出约 <code>1.95s</code>，自动轨 <code>1.40s</code>）。</li>
+            <li><strong>决斗与前中期首领</strong>：<code>贝阿特丽丝</code>、<code>罗文</code>、<code>爱丽丝</code>、<code>艾诺·塔尔维</code>、<code>诺艾儿</code></li>
+            <li><strong>中后期精英与终极首领</strong>：<code>霜脊影豺</code>、<code>冻土重甲兽</code>、<code>霜渊裂地兽（领主）</code>、<code>宫廷突击队长</code>、<code>赤炎术士</code>、<code>东翼封锁官·红莲铁幕</code>、<code>风神·岚</code></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 07. 全 9 幕波浪短回合曲线与面板/敌方配置 ==================== -->
+    <section class="section" id="sec-stages">
+      <div class="section-header">
+        <div class="sec-title-wrap">
+          <span class="sec-num">07</span>
+          <h2 class="sec-title">全 9 幕波浪式短回合曲线、演武面板与敌方阵容</h2>
+        </div>
+        <span class="sec-badge gold">主线 1–8 幕短回合波浪 · 第 9 幕真神演武</span>
+      </div>
+
+      <!-- 纯 SVG 波浪式短回合曲线 -->
+      <div class="chart-card">
+        <div class="chart-head">
+          <span class="chart-title">第 1–8 幕主线波浪短回合目标带 vs 标准普通手操均回合（附第 9 幕演武顶配弑神参照）</span>
+          <div class="chart-legend">
+            <span><i class="leg-dot" style="background:rgba(22,88,235,0.16)"></i>目标回合带</span>
+            <span><i class="leg-dot" style="background:var(--royal)"></i>标准·普通手操均回合</span>
+            <span><i class="leg-dot" style="background:var(--emerald)"></i>休闲·普通手操均回合</span>
+            <span><i class="leg-dot" style="background:var(--gold)"></i>第 9 幕顶配弑神 (6.80)</span>
+          </div>
+        </div>
+        <svg id="waveChartSvg" viewBox="0 0 1040 215" style="width:100%;height:auto;display:block;"></svg>
+      </div>
+
+      <div class="split-2" style="margin-bottom:18px;">
+        <div class="info-panel royal-left">
+          <h4 class="panel-title">主线体验契约：罗文 6+6 协同 × 双波「从 Boss 波重开」</h4>
+          <ul class="bullet-list">
+            <li><strong>第 2 幕罗文乱葬岗（锁定 4.00 回合）</strong>：王级雷纳德（<code>Rank 5</code>，HP 560 / MATK 82 / SPD 118）站前排中位依次施放火/土/风三系压制并承担 <strong>78.7%–81.6%</strong> 主输出，希尔维亚冰履封锁 + 冰盾折射脱手旋杖，4 回合活捉封印至 100%。</li>
+            <li><strong>双波「从 Boss 波重开」（<code>bossWaveRetry: true</code>）</strong>：适用于第 6 / 7 / 8 幕，W2 阵亡结算弹窗提供「从 Boss 波重开」与「重挑战全关」双项，零刷杂兵疲劳。</li>
+            <li><strong>演武大厅「1 秒再战」</strong>：任意演武关结算均提供零过场 1 秒再战按钮/热键。</li>
+          </ul>
+        </div>
+        <div class="info-panel gold-left">
+          <h4 class="panel-title">第 9 幕风神·岚（演武专属 · 真神级 7 阶挑战）</h4>
+          <ul class="bullet-list">
+            <li><strong>唯一标识</strong>：<code>mainline: false, arenaTestOnly: true, godTierChallenge: true</code>，不计入主线剧情通关要求。</li>
+            <li><strong>神级压迫参数</strong>：Rank 7 / HP 2810 / 魔盾 210 / ATK 156 / DEF 46 / MDEF 56 / SPD 160（抢先手神威疾风）；外圈风壁未破减伤至 <code>0.42×</code>；越 4 阶格挡系数 <code>0.60×</code>（PERFECT 仅减伤 18%）。</li>
+            <li><strong>四档分层胜率</strong>：自动 <strong>0.0%</strong>（T3 碾碎）｜普通手操 <strong>9.0%</strong>｜高手标配 <strong>38.3%</strong>｜顶配双杖弑神 <strong>95.7%</strong>（6.80 回合 · 101.5s）。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tab-bar" id="stageCfgTabs">
+        <button type="button" class="tab-btn active" data-tab="cfg-enemy">全 9 幕敌方阵容与终校参数（16 条目 · 含 noBlockPrompt）</button>
+        <button type="button" class="tab-btn" data-tab="cfg-player">演武预设主角面板（对齐原著 8–16 岁等阶）</button>
+      </div>
+
+      <div class="tab-panel active" id="cfg-enemy">
+        <div class="table-wrap">
+          <table class="spec-table">
+            <thead>
+              <tr>
+                <th class="ctr">幕/波</th>
+                <th>敌方名称</th>
+                <th class="ctr">等阶 / 属性</th>
+                <th class="num">HP</th>
+                <th class="ctr">护盾</th>
+                <th class="num">ATK</th>
+                <th class="ctr">DEF / MDEF</th>
+                <th class="num">SPD</th>
+                <th class="ctr">锁</th>
+                <th class="ctr">noBlockPrompt</th>
+                <th>核心招式伤害 / 机制备注</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="ctr mono">1 / W1</td><td><strong>贝阿特丽丝</strong></td><td class="ctr">中级(2) / 火</td><td class="num">405</td><td class="ctr mono">0</td><td class="num">44</td><td class="ctr mono">11 / 18</td><td class="num">96</td><td class="ctr mono">4</td><td class="ctr"><span class="tag tag-slate">false</span></td><td>2 层火灵；重劈/火蛇 42–48+4×层</td></tr>
+              <tr><td class="ctr mono">2 / W1</td><td><strong>罗文（活捉）</strong></td><td class="ctr">圣级(4) / 暗</td><td class="num">1460</td><td class="ctr mono">85 (魔)</td><td class="num">58</td><td class="ctr mono">24 / 28</td><td class="num">114</td><td class="ctr mono">5</td><td class="ctr"><span class="tag tag-slate">false</span></td><td>越位黑光/突围/脱手旋杖；雷纳德前排输出</td></tr>
+              <tr><td class="ctr mono">3 / W1</td><td><strong>爱丽丝</strong></td><td class="ctr">中级(2) / 风</td><td class="num">520</td><td class="ctr mono">0</td><td class="num">38</td><td class="ctr mono">10 / 18</td><td class="num">122</td><td class="ctr mono">4</td><td class="ctr"><span class="tag tag-slate">false</span></td><td>MP 84、闪避 2、风垫减伤 20%、T4 风暴</td></tr>
+              <tr><td class="ctr mono">4 / W1</td><td><strong>艾诺·塔尔维</strong></td><td class="ctr">高级(3) / 冰</td><td class="num">999*</td><td class="ctr mono">0</td><td class="num">48</td><td class="ctr mono">16 / 20</td><td class="num">116</td><td class="ctr mono">3</td><td class="ctr"><span class="tag tag-slate">false</span></td><td>非致死三击制（限 7 回合）；镜卫反刺开窗</td></tr>
+              <tr><td class="ctr mono">5 / W1</td><td><strong>诺艾儿</strong></td><td class="ctr">高级(3) / 水</td><td class="num">1040</td><td class="ctr mono">38 (魔)</td><td class="num">122</td><td class="ctr mono">18 / 24</td><td class="num">104</td><td class="ctr mono">5</td><td class="ctr"><span class="tag tag-slate">false</span></td><td>水幕 36/40；平切 132 / 双幕 144 / 暗流 132(陷阱140)</td></tr>
+              <tr><td class="ctr mono">6 / W1</td><td>灰棘头狼</td><td class="ctr">中级(2) / 风</td><td class="num">186</td><td class="ctr mono">12 (实)</td><td class="num">26</td><td class="ctr mono">11 / 11</td><td class="num">108</td><td class="ctr mono">4</td><td class="ctr"><span class="tag tag-cyan">true</span></td><td>群嚎 28(+5攻) / 撕咬 30（极速无格挡）</td></tr>
+              <tr><td class="ctr mono">6 / W1</td><td>灰棘狼·甲/乙/丙 ×3</td><td class="ctr">初级(1) / 风</td><td class="num">144</td><td class="ctr mono">0</td><td class="num">20</td><td class="ctr mono">8 / 8</td><td class="num">102</td><td class="ctr mono">2</td><td class="ctr"><span class="tag tag-cyan">true</span></td><td>撕咬 24；W1 霜域棘阵 2.00 回合必清</td></tr>
+              <tr><td class="ctr mono">6 / W2</td><td><strong>霜脊影豺</strong></td><td class="ctr">高级(3) / 冰</td><td class="num">1240</td><td class="ctr mono">52 (魔)</td><td class="num">108</td><td class="ctr mono">24 / 36</td><td class="num">124</td><td class="ctr mono">5</td><td class="ctr"><span class="tag tag-slate">false</span></td><td>暴露度机制、闪避 1；扑杀 110 / 冰刺 106</td></tr>
+              <tr><td class="ctr mono">7 / W1</td><td>冻土重甲兽</td><td class="ctr">高级(3) / 土</td><td class="num">262</td><td class="ctr mono">42 (实)</td><td class="num">84</td><td class="ctr mono">30 / 26</td><td class="num">84</td><td class="ctr mono">4</td><td class="ctr"><span class="tag tag-slate">false</span></td><td>30% 实体甲；撞箱 88/90（伤药箱 38）</td></tr>
+              <tr><td class="ctr mono">7 / W1</td><td>霜原狂狼·甲/乙 ×2</td><td class="ctr">中级(2) / 冰</td><td class="num">146</td><td class="ctr mono">0</td><td class="num">32</td><td class="ctr mono">10 / 12</td><td class="num">106</td><td class="ctr mono">2</td><td class="ctr"><span class="tag tag-cyan">true</span></td><td>撕咬 36（极速无格挡）</td></tr>
+              <tr><td class="ctr mono">7 / W2</td><td><strong>霜渊裂地兽（领主）</strong></td><td class="ctr">圣级(4) / 土</td><td class="num">1065</td><td class="ctr mono">98 (实)</td><td class="num">142</td><td class="ctr mono">38 / 36</td><td class="num">88</td><td class="ctr mono">5</td><td class="ctr"><span class="tag tag-slate">false</span></td><td>35% 实体甲；风暴 166 / 崩震 158 / 扑击 144；双矛破核清甲降防 70%</td></tr>
+              <tr><td class="ctr mono">7 / W2</td><td>寒脊爪兽</td><td class="ctr">中级(2) / 风</td><td class="num">165</td><td class="ctr mono">0</td><td class="num">44</td><td class="ctr mono">12 / 14</td><td class="num">118</td><td class="ctr mono">2</td><td class="ctr"><span class="tag tag-cyan">true</span></td><td>扑杀 42（极速无格挡）</td></tr>
+              <tr><td class="ctr mono">8 / W1</td><td>宫廷突击队长</td><td class="ctr">高级(3) / 物</td><td class="num">270</td><td class="ctr mono">34 (实)</td><td class="num">72</td><td class="ctr mono">20 / 18</td><td class="num">94</td><td class="ctr mono">3</td><td class="ctr"><span class="tag tag-slate">false</span></td><td>突刺 76 / 重盾 68；W1 必 2.00 回合</td></tr>
+              <tr><td class="ctr mono">8 / W1</td><td>赤炎术士</td><td class="ctr">中级(2) / 火</td><td class="num">205</td><td class="ctr mono">22 (魔)</td><td class="num">76</td><td class="ctr mono">14 / 18</td><td class="num">102</td><td class="ctr mono">3</td><td class="ctr"><span class="tag tag-slate">false</span></td><td>火墙 82 / 火球 74（附灼烧 2）</td></tr>
+              <tr><td class="ctr mono">8 / W2</td><td><strong>东翼封锁官·红莲铁幕</strong></td><td class="ctr">圣级(4) / 火</td><td class="num">1950</td><td class="ctr mono">98 (魔)</td><td class="num">130</td><td class="ctr mono">26 / 30</td><td class="num">108</td><td class="ctr mono">6</td><td class="ctr"><span class="tag tag-slate">false</span></td><td>P1 130/124/116；P2(≤50%) 觉醒缓冲 + 锁火 180(必断) / 破阵 158(穿半盾)</td></tr>
+              <tr class="row-highlight"><td class="ctr mono">9 / W1</td><td><strong>风神·岚（演武专属）</strong></td><td class="ctr"><span class="tag tag-gold">神级(7) / 风</span></td><td class="num"><strong>2810</strong></td><td class="ctr mono">210 (魔)</td><td class="num">156</td><td class="ctr mono">46 / 56</td><td class="num"><strong>160</strong></td><td class="ctr mono">7</td><td class="ctr"><span class="tag tag-slate">false</span></td><td>P1 150+50 / 180 / 144+44；P2(≤55%) 真空连刃 228+76 / 静滞 196+66 + 风蚀</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="cfg-player">
+        <div class="table-wrap">
+          <table class="spec-table">
+            <thead>
+              <tr>
+                <th class="ctr">幕次</th>
+                <th>场景</th>
+                <th class="ctr">年龄 / 等阶</th>
+                <th class="num">HP</th>
+                <th class="num">MP</th>
+                <th class="num">ATK</th>
+                <th class="num">MATK</th>
+                <th class="num">DEF</th>
+                <th class="num">MDEF</th>
+                <th class="num">SPD</th>
+                <th class="ctr">魔战循环</th>
+                <th>可用技能（进化阶段）</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="ctr mono">1</td><td>贝阿特丽丝</td><td class="ctr">9岁 / 中级(2)</td><td class="num">165</td><td class="num">230</td><td class="num">14</td><td class="num">35</td><td class="num">9</td><td class="num">12</td><td class="num">100</td><td class="ctr">否</td><td>冰晶 / 水球 / 冰履 / 冰盾 / 普攻</td></tr>
+              <tr><td class="ctr mono">2</td><td>罗文乱葬岗</td><td class="ctr">8岁 / 中级(2)</td><td class="num">155</td><td class="num">240</td><td class="num">12</td><td class="num">34</td><td class="num">8</td><td class="num">12</td><td class="num">96</td><td class="ctr">否</td><td>冰晶 / 水球 / 冰履 / 冰盾 / 普攻（+雷纳德）</td></tr>
+              <tr><td class="ctr mono">3</td><td>爱丽丝</td><td class="ctr">11岁 / 中级(2)</td><td class="num">170</td><td class="num">275</td><td class="num">15</td><td class="num">38</td><td class="num">10</td><td class="num">14</td><td class="num">102</td><td class="ctr">否</td><td>冰晶 / 水球 / 冰霜之息 / 冰盾 / 普攻</td></tr>
+              <tr><td class="ctr mono">4</td><td>艾诺三击制</td><td class="ctr">12岁 / 中级(2)</td><td class="num">185</td><td class="num">285</td><td class="num">18</td><td class="num">44</td><td class="num">12</td><td class="num">16</td><td class="num">105</td><td class="ctr">否</td><td>三棱 / 冰霜之息 / 镜霜壁 / 普攻 / 残像</td></tr>
+              <tr><td class="ctr mono">5</td><td>诺艾儿首领</td><td class="ctr">14岁 / 高级(3)</td><td class="num">215</td><td class="num">300</td><td class="num">22</td><td class="num">48</td><td class="num">14</td><td class="num">20</td><td class="num">106</td><td class="ctr"><span class="tag tag-emerald">是</span></td><td>三棱 / 激流涌 / 冰霜之息 / 镜霜壁 / 普攻 / 残像</td></tr>
+              <tr><td class="ctr mono">6</td><td>北林双波</td><td class="ctr">15岁 / 高级(3)</td><td class="num">235</td><td class="num">315</td><td class="num">42</td><td class="num">50</td><td class="num">17</td><td class="num">23</td><td class="num">110</td><td class="ctr"><span class="tag tag-emerald">是</span></td><td>星霜 / 断水刃 / 霜域棘阵 / 钢冰护幕 / 寒锋斩 / 残像</td></tr>
+              <tr><td class="ctr mono">7</td><td>赫兰兽潮</td><td class="ctr">16岁 / 高级(3)</td><td class="num">255</td><td class="num">330</td><td class="num">46</td><td class="num">55</td><td class="num">19</td><td class="num">26</td><td class="num">110</td><td class="ctr"><span class="tag tag-emerald">是</span></td><td>星霜 / 断水刃 / 霜域棘阵 / 钢冰护幕 / 寒锋斩 / 残像</td></tr>
+              <tr><td class="ctr mono">8</td><td>东翼火廊</td><td class="ctr">14岁 / 高级(3)</td><td class="num">225</td><td class="num">305</td><td class="num">24</td><td class="num">52</td><td class="num">16</td><td class="num">22</td><td class="num">108</td><td class="ctr"><span class="tag tag-emerald">是</span></td><td>三棱 / 激流涌 / 冰霜之息 / 镜霜壁 / 普攻 / 残像（含晦轮杖）</td></tr>
+              <tr class="row-highlight"><td class="ctr mono">9</td><td>演武风神·岚</td><td class="ctr">16岁 / 高级(3)</td><td class="num">255</td><td class="num">330</td><td class="num">48</td><td class="num">56</td><td class="num">19</td><td class="num">26</td><td class="num">112</td><td class="ctr"><span class="tag tag-emerald">是</span></td><td>满阶 6 招（标配无杖；顶配双杖 + 7 遗物）</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 08. 16,900 场真实仿真数据与实机预估耗时总览 ==================== -->
+    <section class="section" id="sec-sim">
+      <div class="section-header">
+        <div class="sec-title-wrap">
+          <span class="sec-num">08</span>
+          <h2 class="sec-title">16,900 场蒙特卡洛真实仿真数据与实机预估耗时</h2>
+        </div>
+        <span class="sec-badge gold">100% 取自 final_v32_report.txt 实测落盘</span>
+      </div>
+
+      <div style="font-size:12.2px;color:var(--ink-secondary);background:var(--bg-ice-soft);border-left:3px solid var(--royal);padding:10px 14px;margin-bottom:16px;">
+        <strong>桌面实机预估耗时物理模型</strong>：开场过场 <code>5.5s</code>（双波转场 <code>+3.0s</code>、转阶段觉醒 <code>+2.0s</code>）；选招首动 <code>1.70s</code> / 连动 <code>1.20s</code> / 调增幅 <code>+0.50s</code>；0 拍瞬发 <code>0.88s</code>；有拍技 <code>0.17s</code> 预瞄 + <code>0.32s</code> 飞行 + 每拍 <code>0.25×</code> 慢镜缩圈（<code>580/530/480/430ms × 命中比 + 0.06s 顿帧 + 0.14s 衔接</code>）+ <code>0.58s</code> 收尾；杂兵无格挡攻击 <code>0.60s/只</code>，精英/首领格挡攻击 <code>1.95s</code>（自动轨 <code>1.40s</code>）。
+      </div>
+
+      <!-- 模式切换 Tabs -->
+      <div class="tab-bar" id="simModeTabs">
+        <button type="button" class="tab-btn active" data-tab="sim-std">默认标准模式<span class="tab-sub">9 幕 · 9,300 场</span></button>
+        <button type="button" class="tab-btn" data-tab="sim-casual">独立休闲模式<span class="tab-sub">主线 16 组 · 3,200 场</span></button>
+        <button type="button" class="tab-btn" data-tab="sim-save">养成存档收敛<span class="tab-sub">32 组 · 3,200 场</span></button>
+        <button type="button" class="tab-btn" data-tab="sim-noafter">第 5 幕无残像防卡关<span class="tab-sub">1,200 场</span></button>
+      </div>
+
+      <!-- TAB 1: 默认标准模式 -->
+      <div class="tab-panel active" id="sim-std">
+        <div class="chart-card">
+          <div class="chart-head">
+            <span class="chart-title">全 9 幕实机耗时均值对照（普通手操轨 vs 高手手操轨 · 单位：秒）</span>
+            <div class="chart-legend">
+              <span><i class="leg-dot" style="background:var(--royal)"></i>普通手操轨</span>
+              <span><i class="leg-dot" style="background:var(--ice-cyan)"></i>高手手操轨</span>
+              <span><i class="leg-dot" style="background:var(--gold)"></i>顶配弑神 (第 9 幕)</span>
+            </div>
+          </div>
+          <svg id="simTimeSvg" viewBox="0 0 1040 190" style="width:100%;height:auto;display:block;"></svg>
+        </div>
+
+        <div class="filter-strip" id="stdTrackFilters">
+          <button type="button" class="filter-chip active" data-track="all">全部轨道 (37 行)</button>
+          <button type="button" class="filter-chip" data-track="auto">自动判定轨</button>
+          <button type="button" class="filter-chip" data-track="normal">普通手操轨</button>
+          <button type="button" class="filter-chip" data-track="expert">高手手操轨</button>
+          <button type="button" class="filter-chip" data-track="perfect">全 PERFECT / 顶配弑神</button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="spec-table">
+            <thead>
+              <tr>
+                <th>幕次与目标回合</th>
+                <th>模拟轨（样本量）</th>
+                <th class="num">胜率</th>
+                <th class="ctr">均回合（中位 / P90）</th>
+                <th class="ctr">W1 清场</th>
+                <th class="ctr">实机耗时均值（P90）</th>
+                <th class="ctr">胜场残血 / 残蓝</th>
+                <th>关键特征与败因</th>
+              </tr>
+            </thead>
+            <tbody id="stdSimTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 2: 独立休闲模式 -->
+      <div class="tab-panel" id="sim-casual">
+        <div class="info-panel emerald-left" style="margin-bottom:14px;">
+          <h4 class="panel-title">独立开关 <code>combat_casual_mode = true</code> 全主线 16/16 组 100.0% 速通验证（3,200 场）</h4>
+          <p style="margin:0;font-size:12.8px;color:var(--ink-secondary);">
+            开启休闲模式后（敌伤 <strong>-40%</strong> / 敌血与护盾 <strong>-30%</strong> / 每回合额外回蓝 <strong>+15% MaxMP</strong> / 缩圈永不触发 <code>BAD</code> 扣伤），无论自动判定还是普通手操，主线第 1–8 幕全部 <strong>100.0%</strong> 轻松通过，单战实机压至 <strong>24.6s – 85.0s</strong>，终章残血高达 61.3%–86.1%。
+          </p>
+        </div>
+        <div class="table-wrap">
+          <table class="spec-table">
+            <thead>
+              <tr>
+                <th>幕次</th>
+                <th class="ctr">休闲 · 自动判定轨（胜率 / 均回合 / 实机 / 残血）</th>
+                <th class="ctr">休闲 · 普通手操轨（胜率 / 均回合 / 实机 / 残血）</th>
+                <th class="ctr">较标准普通轨耗时降幅</th>
+                <th class="ctr">达标状态</th>
+              </tr>
+            </thead>
+            <tbody id="casualSimTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 3: 养成存档收敛 -->
+      <div class="tab-panel" id="sim-save">
+        <div class="formula-panel" style="border-left-color:var(--ice-cyan);">
+          <div style="font-size:13px;font-weight:700;color:var(--ink-primary);margin-bottom:8px;">
+            年龄保底表 <code>AGE_FLOOR_V3</code> 与六维比例双曲正切软上限映射
+          </div>
+          <pre class="formula-main" style="margin-bottom:10px;">x ≤ base：final(x) = round( max(base × f, x) )
+x &gt; base：final(x) = round( base + base × g × tanh( (x − base) / max(6, base × s) ) )
+参数 (g, s, f)：hp (0.20, 0.70, 0.94) ｜ mp (0.18, 0.70, 0.94) ｜ atk/matk (0.24, 0.95, 0.92) ｜ def/mdef (0.25, 1.00, 0.92)</pre>
+          <div class="table-wrap">
+            <table class="spec-table">
+              <thead>
+                <tr>
+                  <th class="ctr">年龄保底</th>
+                  <th class="num">7岁</th><th class="num">8岁</th><th class="num">9岁</th><th class="num">11岁</th>
+                  <th class="num">12岁</th><th class="num">14岁</th><th class="num">15岁</th><th class="num">16岁</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td class="ctr mono">mhp / mmp</td><td class="num">145 / 225</td><td class="num">150 / 235</td><td class="num">162 / 230</td><td class="num">170 / 275</td><td class="num">185 / 285</td><td class="num">218 / 300</td><td class="num">235 / 315</td><td class="num">255 / 330</td></tr>
+                <tr><td class="ctr mono">atk / mag</td><td class="num">11 / 50</td><td class="num">12 / 52</td><td class="num">14 / 58</td><td class="num">15 / 68</td><td class="num">18 / 82</td><td class="num">24 / 105</td><td class="num">42 / 118</td><td class="num">46 / 130</td></tr>
+                <tr><td class="ctr mono">pdef / mdef</td><td class="num">8 / 11</td><td class="num">8 / 11</td><td class="num">9 / 12</td><td class="num">10 / 14</td><td class="num">12 / 16</td><td class="num">15 / 21</td><td class="num">17 / 23</td><td class="num">19 / 26</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <h4 class="sub-heading">主线第 1–8 幕三档养成存档实测收敛总表（每组 100 场 · 速通与重肝回合差 ≤ 1.0 回合）</h4>
+        <div class="table-wrap">
+          <table class="spec-table">
+            <thead>
+              <tr>
+                <th>幕次</th>
+                <th class="ctr">速通保底档（标准普通轨 / 回合 / 耗时｜休闲保底）</th>
+                <th class="ctr">正常养成档（标准普通轨 / 回合 / 耗时）</th>
+                <th class="ctr">重肝养成档（标准普通轨 / 回合 / 耗时）</th>
+                <th class="ctr">速通-重肝回合差</th>
+              </tr>
+            </thead>
+            <tbody id="saveSimTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 4: 第 5 幕无残像防卡关 -->
+      <div class="tab-panel" id="sim-noafter">
+        <div class="info-panel royal-left" style="margin-bottom:14px;">
+          <h4 class="panel-title">第 5 幕诺艾儿「未解锁风行残像」防卡关专项验证（1,200 场）</h4>
+          <p style="margin:0;font-size:12.8px;color:var(--ink-secondary);">
+            彻底移除 <code>move_afterimage</code>，验证玩家仅凭必得技能<strong>「冰霜之息」</strong>冻绝诺艾儿冰缝暗流时的通关稳健度：标准三轨胜率 97.0%–100.0%，开启休闲模式自动轨 100.0% 精确 4 回合（50.6s）通关，零卡关死局。
+          </p>
+        </div>
+        <div class="table-wrap">
+          <table class="spec-table">
+            <thead>
+              <tr>
+                <th>测试模式与轨（各 300 场）</th>
+                <th class="num">胜率</th>
+                <th class="ctr">均回合（区间）</th>
+                <th class="num">实机耗时</th>
+                <th class="num">胜场均残血</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>标准模式 · 自动判定轨（护手关闭）</td><td class="num" style="color:var(--emerald);font-weight:700;">99.7%</td><td class="ctr mono">8.28 (6~10)</td><td class="num">93.1s</td><td class="num">60.9%</td></tr>
+              <tr><td>标准模式 · 普通手操轨（常规玩家）</td><td class="num" style="color:var(--emerald);font-weight:700;">97.0%</td><td class="ctr mono">6.81 (4~16)</td><td class="num">98.0s</td><td class="num">40.9%</td></tr>
+              <tr><td>标准模式 · 高手手操轨（熟练标配）</td><td class="num" style="color:var(--emerald);font-weight:700;">100.0%</td><td class="ctr mono">5.22 (4~12)</td><td class="num">81.8s</td><td class="num">38.2%</td></tr>
+              <tr class="row-highlight"><td><strong>休闲模式 · 自动判定轨（护手关闭）</strong></td><td class="num" style="color:var(--emerald);font-weight:800;">100.0%</td><td class="ctr mono"><strong>4.00 (4~4)</strong></td><td class="num"><strong>50.6s</strong></td><td class="num"><strong>76.7%</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 09. 铭记秘宝克制微调清单与「休闲模式」规范 ==================== -->
+    <section class="section" id="sec-relics">
+      <div class="section-header">
+        <div class="sec-title-wrap">
+          <span class="sec-num">09</span>
+          <h2 class="sec-title">铭记秘宝克制微调清单与「休闲模式」产品规格</h2>
+        </div>
+        <span class="sec-badge emerald">增伤带压制在 +2%–+5% · 独立受管设置键</span>
+      </div>
+
+      <div class="table-wrap" style="margin-bottom:18px;">
+        <table class="spec-table">
+          <thead>
+            <tr>
+              <th style="width:28%">物品 / 被动（ID）</th>
+              <th style="width:48%">V3.2 锁定效果（杜绝膨胀）</th>
+              <th style="width:24%">定位与备注</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>雪纹手帕</strong> (<code>snow_handkerchief</code>)</td><td>冰系相加增伤 <strong>+2%</strong>；第 1 回合首次冰主炮 <code>0 AP</code></td><td>唯一纳入主线满配池 <code>1.87×</code></td></tr>
+            <tr><td><strong>诺艾儿省魔手稿</strong> (<code>noelle_manuscript</code>)</td><td>基础蓝耗 <code>0.85×</code>、增幅蓝耗 <code>0.80×</code>（受 <code>0.60×</code> 硬地板约束）</td><td>魔力周转核心</td></tr>
+            <tr><td><strong>霜印徽章</strong> (<code>frost_seal_mark</code>)</td><td>每场首次破招/击破回蓝 <code>18% MaxMP</code> 并 <code>+1 AP</code></td><td>节奏加速器</td></tr>
+            <tr><td><strong>冰蓝鹅卵石</strong> (<code>ice_blue_pebble</code>)</td><td>每回合首次施放魔攻/盾技获 <code>+8</code> 护盾</td><td>生存微补</td></tr>
+            <tr><td><strong>贝尔蒙日程表</strong> (<code>belmont_schedule</code>)</td><td>暴击率 <code>+15%</code>（基础 <code>5%</code> → <code>20%</code>）</td><td>不增加暴伤上限</td></tr>
+            <tr><td><strong>学院星辉 3 件套</strong> (<code>academy_star_3pc</code>)</td><td>基础蓝耗 <code>0.85×</code>、暴伤 <code>+10%</code>（上限 <code>1.70×</code>）、击破回蓝 <code>12%</code> + 断招多破 1 锁</td><td>演武顶配</td></tr>
+            <tr><td><strong>极北冰冠 3 件套</strong> (<code>north_frost_3pc</code>)</td><td>每回合首次冰系/霜域相加增伤 <strong>+5%</strong></td><td>演武顶配</td></tr>
+            <tr><td><strong>被动四件组</strong>（感温辨火 / 扎根凝冰 / 魔力精算 / 冰刃融锋）</td><td>火伤 <code>-20%</code> / 盾值 <code>+20%</code> 与留存 <code>30%</code> / 全耗蓝 <code>0.85×</code> / 寒锋斩 <strong>+5%</strong></td><td>全部可叠加不溢出</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 休闲模式规范卡 -->
+      <div class="chamfer-frame">
+        <div class="chamfer-inner" style="padding:20px 24px;background:linear-gradient(100deg,#FFFFFF 0%,#F3FBF8 100%);">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div>
+              <span class="tag tag-emerald">受管持久化键：combat_casual_mode</span>
+              <span class="tag tag-slate" style="margin-left:6px;">默认值：false（关闭）</span>
+              <h4 style="margin:8px 0 4px;font-size:16px;color:var(--ink-primary);">独立设置开关「休闲模式」产品规范</h4>
+              <p style="margin:0;font-size:13px;color:var(--ink-secondary);">
+                唯一锁定文案说明：<strong>「开启后战斗难度大幅下降，适合想要轻松享受剧情的休闲玩家」</strong>（设置菜单随时切换，含战败弹窗快捷提示；风神挑战成绩榜显式标注是否开启）。
+              </p>
+            </div>
+          </div>
+          <div class="lever-grid">
+            <div class="lever-item">
+              <div class="lever-val">×0.60</div>
+              <div class="lever-label">敌方伤害 -40%</div>
+              <div class="lever-desc">敌方全伤害乘区统一压低至 60%</div>
+            </div>
+            <div class="lever-item">
+              <div class="lever-val">×0.70</div>
+              <div class="lever-label">敌血与护盾 -30%</div>
+              <div class="lever-desc">最大生命与初始/刷新盾 ×0.70（非致死三击制艾诺除外）</div>
+            </div>
+            <div class="lever-item">
+              <div class="lever-val">+15%</div>
+              <div class="lever-label">每回合额外回蓝</div>
+              <div class="lever-desc">我方每回合结束自动额外回复 +15% MaxMP</div>
+            </div>
+            <div class="lever-item">
+              <div class="lever-val">0 扣伤</div>
+              <div class="lever-label">缩圈永不触发 BAD</div>
+              <div class="lever-desc">所有 BAD 判定自动兜底提升为 GOOD (0%)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 10. 工程落盘接口契约附录 ==================== -->
+    <section class="section" id="sec-appendix">
+      <div class="section-header">
+        <div class="sec-title-wrap">
+          <span class="sec-num">10</span>
+          <h2 class="sec-title">工程落盘接口契约与代码字段对照附录</h2>
+        </div>
+        <span class="sec-badge">1:1 落盘 combat-engine / prism-ui / pixel-vfx</span>
+      </div>
+
+      <div class="code-box">
+        <div class="code-toolbar">
+          <span>COMBAT_BALANCE_V32 &amp; SKILL_BEAT_SPEC_V32（js/combat-engine.js · combat-prism-ui.js · combat-pixel-vfx.js）</span>
+          <button type="button" class="copy-btn" id="copyCodeBtn">复制契约常量</button>
+        </div>
+        <pre class="code-pre" id="contractCode">// 1. V3.2 核心常量唯一事实源（js/combat-engine.js）
+const COMBAT_BALANCE_V32 = {
+  version: '3.2.0',
+  defK: 80,
+  maxDefPierce: 0.75,
+  minMpDiscountFloor: 0.60,
+  manaCycleReturnRatio: 1.00, // 第 5 幕起有效 HP 魔伤 100% 等量回蓝
+  grades: ['BAD', 'GOOD', 'GREAT', 'PERFECT'],
+  ringAtkBonus: { BAD: -0.15, GOOD: 0.00, GREAT: 0.08, PERFECT: 0.15 }, // 全档固定平直，零共振
+  blockBaseSameRank: { BAD: 0.00, GOOD: 0.08, GREAT: 0.18, PERFECT: 0.30 },
+  blockRankSlope: { higher: 0.12, lower: 0.10 }, // d>=0: *(1+0.12d); d<0: *max(0, 1-0.10|d|)
+  ampTiers: [
+    { pct: 0.00, tier: 0, addDmg: 0.00, defPierce: 0.00, extraLocks: 0, shieldMult: 1.00, crateGuardSteel: 36 },
+    { pct: 0.20, tier: 1, addDmg: 0.20, defPierce: 0.10, extraLocks: 1, shieldMult: 1.25, crateGuardSteel: 55 },
+    { pct: 0.40, tier: 2, addDmg: 0.40, defPierce: 0.22, extraLocks: 2, shieldMult: 1.50, crateGuardSteel: 85,
+      fortressDmgMult: 0.88, fortressShieldRetain: 0.45, fortressCrateRetain: 0.50, hulanResonanceBonus: 1 },
+    { pct: 0.60, tier: 3, addDmg: 0.60, defPierce: 0.35, extraLocks: 3, shieldMult: 1.50 },
+  ],
+  casualModeKey: 'combat_casual_mode', // 默认 false
+  casualMode: {
+    enemyDmgMult: 0.60,
+    enemyHpShieldMult: 0.70,
+    playerTurnExtraMpPct: 0.15,
+    noBadPenalty: true,
+    uiDesc: '开启后战斗难度大幅下降，适合想要轻松享受剧情的休闲玩家',
+  },
+  slowMoQte: {
+    keyPool: ['Q', 'W', 'E', 'A', 'S', 'D'],
+    previewTelegraphMs: 170,          // 160–180ms 提前亮键预瞄
+    slowMoScale: 0.25,                // simDt = realDt * _hitStopScale * _slowMoScale
+    hitStopScale: 0.06,
+    hitStopMs: 55,                    // 45–65ms
+    ringWindowMs: [580, 530, 480, 430], // 对应 0% / 20% / 40% / 60%
+  },
+};
+
+// 2. 全部 15 招拍数与键位契约
+const SKILL_BEAT_SPEC_V32 = {
+  ice_1_crystal:     { beats: 1, keyRule: 'random_1' },
+  ice_2_prism:       { beats: 3, keyRule: 'same_3' },        // 同字母连按 3 次
+  ice_3_starfrost:   { beats: 2, keyRule: 'diff_2', vfxIcicles: [2, 2] }, // 2 拍异字母对应 2+2 冰锥
+  water_1_ball:      { beats: 1, keyRule: 'random_1' },
+  water_2_surge:     { beats: 2, keyRule: 'diff_2' },
+  water_3_blade:     { beats: 2, keyRule: 'diff_2' },
+  frost_1_step:      { beats: 1, keyRule: 'random_1' },
+  frost_2_breath:    { beats: 1, keyRule: 'random_1' },
+  frost_3_thorns:    { beats: 'alive_enemies', min: 1, max: 6, keyRule: 'per_target_impale' },
+  shield_1_ice:      { beats: 0, keyRule: 'instant_0' },
+  shield_2_mirror:   { beats: 0, keyRule: 'instant_0' },
+  shield_3_steel:    { beats: 0, keyRule: 'instant_0' },
+  sword_1_basic:     { beats: 0, keyRule: 'instant_0', fixedGrade: 'GOOD', mpRegenPct: 0.06 },
+  sword_2_cold_edge: { beats: 1, keyRule: 'random_1', zeroMpFallbackRegenPct: 0.06 },
+  move_afterimage:   { beats: 0, keyRule: 'instant_0' },
+};
+
+// 3. 关卡与敌方扩展字段契约
+// - 群怪杂兵统一配置 noBlockPrompt: true（灰棘头狼、灰棘狼×3、霜原狂狼×2、寒脊爪兽）
+// - 精英/首领/决斗对手配置 noBlockPrompt: false（触发线性等阶差空格格挡）
+// - 双波主线关（第 6 / 7 / 8 幕）配置 bossWaveRetry: true（W2 阵亡可「从 Boss 波重开」）
+// - Boss 跨二阶段阈值时必设 stagger = Math.max(stagger, 1)（觉醒缓冲回合防 0 AP 猝死）
+// - 第 9 幕风神·岚配置 mainline: false, arenaTestOnly: true, godTierChallenge: true</pre>
+      </div>
+    </section>
+
+    <footer class="page-footer">
+      <span>《转生千金～到了异世界就要悠闲地生活》 · 战斗数值策划终版交互白皮书 V3.2</span>
+      <span class="mono">SELF-CONTAINED · 0 EXTERNAL DEPS · VERIFIED 16,900 SIMS</span>
+    </footer>
+  </main>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ==========================================================================
+     一、V3.2 唯一数值事实源数据（与 sim_v32.py 100% 逐位一致）
+     ========================================================================== */
+  const DEF_K = 80.0;
+  const MAX_DEF_PIERCE = 0.75;
+  const MIN_MP_DISCOUNT_FLOOR = 0.60;
+
+  const RANK_NAMES = { 1: '初级', 2: '中级', 3: '高级', 4: '圣级', 5: '王级', 6: '帝级', 7: '神级' };
+  const RING_ATK_BONUS = { BAD: -0.15, GOOD: 0.00, GREAT: 0.08, PERFECT: 0.15 };
+  const BLOCK_BASE = { BAD: 0.00, GOOD: 0.08, GREAT: 0.18, PERFECT: 0.30 };
+  const RING_WINDOWS = [580, 530, 480, 430];
+
+  const STAVES = {
+    none: { name: '徒手导魔', trueMagic: false, matkMult: 1.00, critBonus: 0.00, extraMpPct: 0.00, ampMpDiscount: 0.00 },
+    eclipse_wand: { name: '晦轮杖', trueMagic: true, matkMult: 1.00, critBonus: 0.00, extraMpPct: 0.24, ampMpDiscount: 0.00 },
+    north_saint_staff: { name: '极北圣晶杖', trueMagic: false, matkMult: 1.14, critBonus: 0.10, extraMpPct: 0.00, ampMpDiscount: 0.10 },
+  };
+
+  const SKILLS = [
+    { id: 'ice_1_crystal', line: 1, lineName: '线 1 · 冰晶主炮', name: '冰晶术', elem: 'ice', elemText: '冰 / 魔攻', kind: 'matk', ap: 1, mp: 26, cd: 0, power: 1.55, powerText: '1.55×', ampCap: 60, beats: 1, beatText: '1 拍（池内随机 1 键）', innatePierce: 0.00, lockDmg: 1, desc: '破锁 1、寒冷 1、暴露 +55' },
+    { id: 'ice_2_prism', line: 1, lineName: '线 1 · 冰晶主炮', name: '三棱冰晶', elem: 'ice', elemText: '冰 / 魔攻', kind: 'matk', ap: 1, mp: 36, cd: 0, power: 1.80, powerText: '1.80×', ampCap: 60, beats: 3, beatText: '3 拍 · 固定 3 拍同一字母（如 E→E→E）', innatePierce: 0.00, lockDmg: 1, desc: '破锁 1、寒冷 1、可断 DUAL_CAST' },
+    { id: 'ice_3_starfrost', line: 1, lineName: '线 1 · 冰晶主炮', name: '星霜散华', elem: 'ice', elemText: '冰 / 魔攻', kind: 'matk', ap: 1, mp: 42, cd: 0, power: 2.02, powerText: '2.02×', ampCap: 60, beats: 2, beatText: '2 拍 · 连续不同字母（如 Q→D；4 枚冰锥 2+2）', innatePierce: 0.08, lockDmg: 1, desc: '破锁 1、寒冷 2、固有穿抗 8%、可断 DUAL_CAST' },
+
+    { id: 'water_1_ball', line: 2, lineName: '线 2 · 水系破局', name: '水球术', elem: 'water', elemText: '水 / 魔攻', kind: 'matk', ap: 1, mp: 22, cd: 0, power: 1.38, powerText: '1.38×', ampCap: 60, beats: 1, beatText: '1 拍（池内随机 1 键）', innatePierce: 0.00, lockDmg: 1, desc: '灭火灵 1、净盲、零暴露' },
+    { id: 'water_2_surge', line: 2, lineName: '线 2 · 水系破局', name: '激流涌', elem: 'water', elemText: '水 / 魔攻', kind: 'matk', ap: 1, mp: 30, cd: 0, power: 1.62, powerText: '1.62×', ampCap: 60, beats: 2, beatText: '2 拍 · 连续不同字母', innatePierce: 0.00, lockDmg: 1, desc: '灭火灵 1、净盲/灼烧、可断 DUAL_CAST、零暴露' },
+    { id: 'water_3_blade', line: 2, lineName: '线 2 · 水系破局', name: '断水刃', elem: 'water', elemText: '水 / 魔攻', kind: 'matk', ap: 1, mp: 36, cd: 0, power: 1.78, powerText: '1.78×', ampCap: 60, beats: 2, beatText: '2 拍 · 连续不同字母', innatePierce: 0.25, lockDmg: 1, desc: '灭火灵 2、净盲/灼烧、穿抗 25%、穿透 50% 护盾、可断 DUAL_CAST、零暴露' },
+
+    { id: 'frost_1_step', line: 3, lineName: '线 3 · 霜域控场', name: '冰履', elem: 'ice', elemText: '冰 / 群魔', kind: 'matk', aoe: true, ap: 1, mp: 18, cd: 1, power: 0.85, powerText: '0.85×', ampCap: 60, beats: 1, beatText: '1 拍（池内随机 1 键）', innatePierce: 0.00, lockDmg: 1, desc: '全体必中、冰面 2 回合、寒冷 1' },
+    { id: 'frost_2_breath', line: 3, lineName: '线 3 · 霜域控场', name: '冰霜之息', elem: 'ice', elemText: '冰 / 群魔', kind: 'matk', aoe: true, ap: 1, mp: 34, cd: 1, power: 1.18, powerText: '1.18×', ampCap: 60, beats: 1, beatText: '1 拍（由 2 拍精简为 1 拍）', innatePierce: 0.00, lockDmg: 1, desc: '全体必中、冰面 2、寒冷 2、冻绝暗流、吸风魔 15、剥闪避 1' },
+    { id: 'frost_3_thorns', line: 3, lineName: '线 3 · 霜域控场', name: '霜域棘阵', elem: 'ice', elemText: '冰 / 群魔', kind: 'matk', aoe: true, ap: 2, mp: 56, cd: 1, power: 1.56, powerText: '1.56×', ampCap: 60, beats: -1, beatText: '= 存活敌方数拍（1–6 拍，逐目标 0.25× 慢镜）', innatePierce: 0.00, lockDmg: 1, desc: '全体必中、冰面 2、寒冷 2、冻绝暗流、吸风魔 18、剥闪避 1、破风神静滞' },
+
+    { id: 'shield_1_ice', line: 4, lineName: '线 4 · 冰盾护御', name: '冰盾', elem: 'ice', elemText: '冰 / 护盾', kind: 'shield', ap: 1, mp: 26, cd: 1, power: 0, shieldBase: 32, shieldScale: 0.62, crateTiers: [0, 0, 0], powerText: '32 + 0.62×MATK', ampCap: 40, beats: 0, beatText: '0 拍（瞬发，无缩圈 QTE）', innatePierce: 0, lockDmg: 0, desc: '扎根防滑' },
+    { id: 'shield_2_mirror', line: 4, lineName: '线 4 · 冰盾护御', name: '镜霜壁', elem: 'ice', elemText: '冰 / 护盾', kind: 'shield', ap: 1, mp: 32, cd: 1, power: 0, shieldBase: 38, shieldScale: 0.68, crateTiers: [24, 38, 56], powerText: '38 + 0.68×MATK', ampCap: 40, beats: 0, beatText: '0 拍（瞬发，无缩圈 QTE）', innatePierce: 0, lockDmg: 0, desc: '扎根、反刺 12（破艾诺镜卫）、护箱 24/38/56、增幅净异常' },
+    { id: 'shield_3_steel', line: 4, lineName: '线 4 · 冰盾护御', name: '钢冰护幕', elem: 'ice', elemText: '冰 / 护盾', kind: 'shield', ap: 1, mp: 36, cd: 1, power: 0, shieldBase: 44, shieldScale: 0.74, crateTiers: [36, 55, 85], powerText: '44 + 0.74×MATK', ampCap: 40, beats: 0, beatText: '0 拍（瞬发，无缩圈 QTE）', innatePierce: 0, lockDmg: 0, desc: '扎根、反刺 15、护箱 36/55/85、全档净异常、40% 触发钢霜壁垒' },
+
+    { id: 'sword_1_basic', line: 5, lineName: '线 5 · 近战导魔', name: '普通攻击', elem: 'phys', elemText: '物 / 近战', kind: 'atk', ap: 1, mp: 0, cd: 0, power: 0.85, powerText: '0.85×', ampCap: 0, beats: 0, beatText: '0 拍（瞬发，固定 GOOD 0%）', innatePierce: 0, lockDmg: 0, desc: '立即回复 +6% MaxMP、零暴露' },
+    { id: 'sword_2_cold_edge', line: 5, lineName: '线 5 · 近战导魔', name: '寒锋斩', elem: 'water', elemText: '水 / 混伤', kind: 'hybrid', ap: 1, mp: 12, cd: 0, power: 1.35, ripostePower: 2.10, powerText: '1.35× / 迎击 2.10×', ampCap: 0, beats: 1, beatText: '1 拍（由 2 拍精简为 1 拍）', innatePierce: 0, lockDmg: 1, desc: '破锁 1、迎击减伤 60% 并破风神真空连刃、暴露 -12、零蓝兜底继承 +6% MaxMP' },
+
+    { id: 'move_afterimage', line: 6, lineName: '独立身法槽', name: '风行残像', elem: 'wind', elemText: '风 / 身法', kind: 'move', ap: 1, mp: 18, cd: 3, power: 0, powerText: '—', ampCap: 0, beats: 0, beatText: '0 拍（瞬发，无缩圈 QTE）', innatePierce: 0, lockDmg: 0, desc: '残像 1（闪避常规 / 减伤风神 40%）、下回合 +1 AP、行动条提前 25%' },
+  ];
+
+  /* 全 9 幕标准模式实测（9,300 场） */
+  const STD_SIM_ROWS = [
+    { act: 1, stage: '第 1 幕 · 贝阿特丽丝', target: '主线｜目标 3–4 回合', trackKey: 'auto', track: '自动判定轨 (300)', win: '100.0%', turns: '4.72 (5.0 / 5)', w1: '—', time: '47.9s (50.3s)', rem: '50.9% / 7.6%', note: '0% 常规稳推' },
+    { act: 1, stage: '', target: '', trackKey: 'normal', track: '普通手操轨 (300)', win: '100.0%', turns: '3.00 (3.0 / 3)', w1: '—', time: '37.5s (38.7s)', rem: '74.4% / 28.6%', note: '水球熄火 3 回合速克' },
+    { act: 1, stage: '', target: '', trackKey: 'expert', track: '高手手操轨 (300)', win: '100.0%', turns: '2.99 (3.0 / 3)', w1: '—', time: '35.9s (35.8s)', rem: '76.5% / 34.1%', note: '节奏凌厉' },
+    { act: 1, stage: '', target: '', trackKey: 'perfect', track: '全 PERFECT 标配 (100)', win: '100.0%', turns: '2.98 (3.0 / 3)', w1: '—', time: '35.6s (35.8s)', rem: '78.2% / 35.0%', note: '零失误示范' },
+
+    { act: 2, stage: '第 2 幕 · 罗文乱葬岗', target: '主线｜目标 4 回合', trackKey: 'auto', track: '自动判定轨 (300)', win: '100.0%', turns: '4.00 (4.0 / 4)', w1: '—', time: '45.7s (45.7s)', rem: '100.0% / 23.3%', note: '雷纳德占比 81.6%（残血 93.9%）' },
+    { act: 2, stage: '', target: '', trackKey: 'normal', track: '普通手操轨 (300)', win: '100.0%', turns: '4.00 (4.0 / 4)', w1: '—', time: '51.2s (51.3s)', rem: '100.0% / 0.0%', note: '雷纳德占比 80.1%（残血 93.9%）' },
+    { act: 2, stage: '', target: '', trackKey: 'expert', track: '高手手操轨 (300)', win: '100.0%', turns: '4.00 (4.0 / 4)', w1: '—', time: '51.3s (51.3s)', rem: '100.0% / 0.0%', note: '雷纳德占比 79.3%（残血 93.9%）' },
+    { act: 2, stage: '', target: '', trackKey: 'perfect', track: '全 PERFECT 标配 (100)', win: '100.0%', turns: '4.00 (4.0 / 4)', w1: '—', time: '51.3s (51.3s)', rem: '100.0% / 0.0%', note: '雷纳德占比 78.7%（残血 93.9%）' },
+
+    { act: 3, stage: '第 3 幕 · 爱丽丝', target: '主线｜目标 4 回合', trackKey: 'auto', track: '自动判定轨 (300)', win: '100.0%', turns: '4.00 (4.0 / 4)', w1: '—', time: '44.6s (44.6s)', rem: '58.8% / 2.5%', note: 'T4 吸蓝炸膛稳收' },
+    { act: 3, stage: '', target: '', trackKey: 'normal', track: '普通手操轨 (300)', win: '100.0%', turns: '4.00 (4.0 / 4)', w1: '—', time: '52.3s (52.5s)', rem: '62.2% / 2.5%', note: '净盲 + 冰霜之息吸蓝' },
+    { act: 3, stage: '', target: '', trackKey: 'expert', track: '高手手操轨 (300)', win: '100.0%', turns: '4.00 (4.0 / 4)', w1: '—', time: '52.4s (52.5s)', rem: '66.2% / 2.5%', note: '显性掉血与快节奏兼得' },
+    { act: 3, stage: '', target: '', trackKey: 'perfect', track: '全 PERFECT 标配 (100)', win: '100.0%', turns: '4.00 (4.0 / 4)', w1: '—', time: '52.5s (52.5s)', rem: '69.4% / 2.5%', note: '精确 4 回合' },
+
+    { act: 4, stage: '第 4 幕 · 艾诺三击制', target: '主线｜目标 3–4 回合', trackKey: 'auto', track: '自动判定轨 (300)', win: '100.0%', turns: '4.00 (4.0 / 4)', w1: '—', time: '44.3s (44.3s)', rem: '100.0% / 36.5%', note: '镜盾反刺 + 破招三击' },
+    { act: 4, stage: '', target: '', trackKey: 'normal', track: '普通手操轨 (300)', win: '100.0%', turns: '4.00 (4.0 / 4)', w1: '—', time: '50.1s (50.2s)', rem: '100.0% / 36.5%', note: '全轨 0 翻车教学关' },
+    { act: 4, stage: '', target: '', trackKey: 'expert', track: '高手手操轨 (300)', win: '100.0%', turns: '4.00 (4.0 / 4)', w1: '—', time: '50.2s (50.2s)', rem: '100.0% / 36.5%', note: '冰上华尔兹韵律感' },
+    { act: 4, stage: '', target: '', trackKey: 'perfect', track: '全 PERFECT 标配 (100)', win: '100.0%', turns: '4.00 (4.0 / 4)', w1: '—', time: '50.3s (50.3s)', rem: '100.0% / 36.5%', note: '精确 4 回合' },
+
+    { act: 5, stage: '第 5 幕 · 诺艾儿', target: '主线首领｜目标 5–6 回合', trackKey: 'auto', track: '自动判定轨 (300)', win: '100.0%', turns: '6.30 (6.0 / 7)', w1: '—', time: '77.2s (83.4s)', rem: '21.9% / 13.4%', note: '残血高压贴地飞过' },
+    { act: 5, stage: '', target: '', trackKey: 'normal', track: '普通手操轨 (300)', win: '99.7%', turns: '5.73 (6.0 / 7)', w1: '—', time: '88.5s (99.5s)', rem: '28.0% / 22.0%', note: '败因 hp_zero: 1，高压心跳' },
+    { act: 5, stage: '', target: '', trackKey: 'expert', track: '高手手操轨 (300)', win: '100.0%', turns: '5.34 (5.0 / 6)', w1: '—', time: '83.0s (88.6s)', rem: '38.7% / 31.0%', note: '20/40% 攻 60/28% 分布' },
+    { act: 5, stage: '', target: '', trackKey: 'perfect', track: '全 PERFECT 标配 (100)', win: '100.0%', turns: '4.96 (5.0 / 5)', w1: '—', time: '79.4s (81.5s)', rem: '41.1% / 18.8%', note: '5 回合干脆收官' },
+
+    { act: 6, stage: '第 6 幕 · 北林双波', target: '主线｜5–6 回合（W1 必 2）', trackKey: 'auto', track: '自动判定轨 (300)', win: '100.0%', turns: '5.82 (6.0 / 6)', w1: '2.00', time: '67.9s (69.4s)', rem: '45.0% / 99.7%', note: '4 狼无格挡极速 2 回合清场' },
+    { act: 6, stage: '', target: '', trackKey: 'normal', track: '普通手操轨 (300)', win: '100.0%', turns: '5.76 (6.0 / 6)', w1: '2.00', time: '80.9s (85.5s)', rem: '42.9% / 99.0%', note: '寒锋斩迎击影豺' },
+    { act: 6, stage: '', target: '', trackKey: 'expert', track: '高手手操轨 (300)', win: '100.0%', turns: '5.01 (5.0 / 5)', w1: '2.00', time: '73.3s (74.7s)', rem: '53.0% / 99.9%', note: '断水刃 40% 速杀' },
+    { act: 6, stage: '', target: '', trackKey: 'perfect', track: '全 PERFECT 标配 (100)', win: '100.0%', turns: '4.92 (5.0 / 5)', w1: '1.92', time: '70.9s (71.7s)', rem: '73.8% / 100.0%', note: '华丽溢杀爽感' },
+
+    { act: 7, stage: '第 7 幕 · 赫兰兽潮', target: '主线首领｜6–7 回合（W1 2–3）', trackKey: 'auto', track: '自动判定轨 (300)', win: '100.0%', turns: '7.66 (8.0 / 8)', w1: '3.00', time: '95.2s (97.2s)', rem: '16.6% / 57.5%', note: '药箱剩 102.0/120、濒死险胜' },
+    { act: 7, stage: '', target: '', trackKey: 'normal', track: '普通手操轨 (300)', win: '94.3%', turns: '6.82 (7.0 / 7)', w1: '3.00', time: '100.5s (111.4s)', rem: '24.2% / 60.5%', note: '败因 hp: 16, crate: 1；钢冰 40% 占 90%' },
+    { act: 7, stage: '', target: '', trackKey: 'expert', track: '高手手操轨 (300)', win: '100.0%', turns: '6.13 (6.0 / 7)', w1: '2.99', time: '91.6s (99.6s)', rem: '22.5% / 74.1%', note: '破核后 60% 三阶收割、药箱 107/120' },
+    { act: 7, stage: '', target: '', trackKey: 'perfect', track: '全 PERFECT 标配 (100)', win: '100.0%', turns: '5.98 (6.0 / 6)', w1: '2.99', time: '90.4s (90.6s)', rem: '24.5% / 79.3%', note: '6 回合精准破核' },
+
+    { act: 8, stage: '第 8 幕 · 东翼火廊', target: '主线首领｜7–8 回合（W1 必 2）', trackKey: 'auto', track: '自动判定轨 (300)', win: '0.0%', turns: '败亡 5.00 (5.0)', w1: '2.00', time: '80.8s (80.9s)', rem: '0.0% / 0.0%', note: 'burn_death: 300（标准模式拒白给）' },
+    { act: 8, stage: '', target: '', trackKey: 'normal', track: '普通手操轨 (300)', win: '92.7%', turns: '7.53 (8.0 / 8)', w1: '2.00', time: '121.5s (131.4s)', rem: '22.2% / 52.4%', note: 'hp: 11, burn: 11（可「从 Boss 波重开」）' },
+    { act: 8, stage: '', target: '', trackKey: 'expert', track: '高手手操轨 (300)', win: '100.0%', turns: '7.39 (7.0 / 8)', w1: '2.00', time: '120.9s (134.7s)', rem: '31.7% / 51.0%', note: '严格快于普通轨；双阶增幅断火墙' },
+    { act: 8, stage: '', target: '', trackKey: 'perfect', track: '全 PERFECT 标配 (100)', win: '100.0%', turns: '7.11 (7.0 / 8)', w1: '2.00', time: '116.1s (123.1s)', rem: '39.9% / 57.9%', note: '晦轮穿魔盾 + 60% 收官' },
+
+    { act: 9, stage: '第 9 幕 · 风神·岚', target: '演武大厅专属·真神级 7 阶', trackKey: 'auto', track: '自动判定轨 (300)', win: '0.0%', turns: '败亡 3.00 (3.0)', w1: '—', time: '32.3s (34.9s)', rem: '0.0% / 0.0%', note: 'T3 被神威碾碎（wind_retal: 199, hp: 101）' },
+    { act: 9, stage: '', target: '', trackKey: 'normal', track: '普通手操轨 (300)', win: '9.0%', turns: '9.70 (9.0 / 12)', w1: '—', time: '142.5s (167.2s)', rem: '16.7% / 76.1%', note: '严守 0%–10%（hp: 175, tempest: 98）' },
+    { act: 9, stage: '', target: '', trackKey: 'expert', track: '高手手操轨 (300)', win: '38.3%', turns: '10.05 (9.0 / 12)', w1: '—', time: '139.5s (162.8s)', rem: '26.4% / 78.2%', note: '严守 20%–45% 刀尖求生区间' },
+    { act: 9, stage: '', target: '', trackKey: 'perfect', track: '全 PERFECT 标配 (100)', win: '51.0%', turns: '9.00 (9.0 / 9)', w1: '—', time: '127.1s (127.5s)', rem: '25.9% / 74.9%', note: '严格单调高于高手轨' },
+    { act: 9, stage: '', target: '', trackKey: 'perfect', track: '全 PERFECT 顶配弑神 (300)', win: '95.7%', turns: '6.80 (7.0 / 7)', w1: '—', time: '101.5s (109.2s)', rem: '53.6% / 91.4%', note: '满遗物 + 晦轮/圣晶双杖切换，高含金量弑神', highlight: true },
+  ];
+
+  const CASUAL_SIM_ROWS = [
+    { name: '第 1 幕 · 贝阿特丽丝', auto: '100.0% / 2.00 / 24.6s / 83.6%', norm: '100.0% / 2.00 / 28.7s / 84.5%', stdTime: 37.5, casTime: 28.7 },
+    { name: '第 2 幕 · 罗文乱葬岗', auto: '100.0% / 4.00 / 45.7s / 100.0%', norm: '100.0% / 4.00 / 51.2s / 100.0%', stdTime: 51.2, casTime: 51.2 },
+    { name: '第 3 幕 · 爱丽丝', auto: '100.0% / 4.00 / 44.7s / 75.3%', norm: '100.0% / 3.99 / 51.8s / 77.3%', stdTime: 52.3, casTime: 51.8 },
+    { name: '第 4 幕 · 艾诺三击制', auto: '100.0% / 4.00 / 44.3s / 100.0%', norm: '100.0% / 4.00 / 50.0s / 100.0%', stdTime: 50.1, casTime: 50.0 },
+    { name: '第 5 幕 · 诺艾儿', auto: '100.0% / 4.00 / 50.7s / 76.7%', norm: '100.0% / 3.97 / 59.2s / 78.5%', stdTime: 88.5, casTime: 59.2 },
+    { name: '第 6 幕 · 北林双波', auto: '100.0% / 4.95 / 53.8s / 80.5%', norm: '100.0% / 4.82 / 62.6s / 82.3%', stdTime: 80.9, casTime: 62.6 },
+    { name: '第 7 幕 · 赫兰兽潮', auto: '100.0% / 4.12 / 62.3s / 90.0%', norm: '100.0% / 4.99 / 73.9s / 74.7%', stdTime: 100.5, casTime: 73.9 },
+    { name: '第 8 幕 · 东翼火廊', auto: '100.0% / 4.94 / 71.9s / 61.3%', norm: '100.0% / 4.89 / 85.0s / 86.1%', stdTime: 121.5, casTime: 85.0 },
+  ];
+
+  const SAVE_SIM_ROWS = [
+    { name: '第 1 幕 · 贝阿特丽丝', speed: '100% / 3.00 / 37.8s', normal: '100% / 2.98 / 36.2s', grind: '100% / 2.84 / 34.6s', diff: '0.16' },
+    { name: '第 2 幕 · 罗文乱葬岗', speed: '100% / 4.00 / 50.4s', normal: '100% / 4.00 / 50.4s', grind: '100% / 4.00 / 50.4s', diff: '0.00' },
+    { name: '第 3 幕 · 爱丽丝', speed: '100% / 4.00 / 52.3s', normal: '100% / 4.00 / 52.3s', grind: '100% / 4.00 / 52.3s', diff: '0.00' },
+    { name: '第 4 幕 · 艾诺三击制', speed: '100% / 4.00 / 50.1s', normal: '100% / 4.00 / 50.1s', grind: '100% / 4.00 / 50.1s', diff: '0.00' },
+    { name: '第 5 幕 · 诺艾儿', speed: '100% / 5.07 / 80.9s', normal: '100% / 5.05 / 77.5s', grind: '100% / 4.94 / 74.2s', diff: '0.13' },
+    { name: '第 6 幕 · 北林双波', speed: '100% / 5.38 / 76.5s', normal: '100% / 5.03 / 71.0s', grind: '100% / 4.99 / 69.3s', diff: '0.39' },
+    { name: '第 7 幕 · 赫兰兽潮', speed: '96% / 6.62 / 97.3s', normal: '100% / 6.25 / 92.8s', grind: '99% / 6.11 / 91.4s', diff: '0.51' },
+    { name: '第 8 幕 · 东翼火廊', speed: '92% / 7.13 / 116.5s', normal: '95% / 6.56 / 109.1s', grind: '100% / 6.12 / 101.9s', diff: '1.01' },
+  ];
+
+  /* ==========================================================================
+     二、公共数学函数（1:1 复刻 sim_v32.py）
+     ========================================================================== */
+  function calcAmpInfo(ampPctInt) {
+    const p = Math.max(0, Math.min(0.60, ampPctInt / 100));
+    let tier = 0, label = '常规', defPierce = 0.00, extraLocks = 0;
+    if (p >= 0.60 - 1e-6) { tier = 3; label = '★★★星霜极限'; defPierce = 0.35; extraLocks = 3; }
+    else if (p >= 0.40 - 1e-6) { tier = 2; label = '★★极寒过载'; defPierce = 0.22; extraLocks = 2; }
+    else if (p >= 0.20 - 1e-6) { tier = 1; label = '★魔力盈溢'; defPierce = 0.10; extraLocks = 1; }
+    const sp = Math.min(p, 0.40);
+    const shieldMult = 1.00 + (sp / 0.40) * 0.50;
+    return { p, tier, label, addDmg: p, defPierce, extraLocks, shieldMult };
+  }
+
+  function calcMpDiscount(manaCalc, manuscript, academy3pc, staffId, isAmpExtra) {
+    let f = 1.0;
+    if (manaCalc) f *= 0.85;
+    if (manuscript) f *= (isAmpExtra ? 0.80 : 0.85);
+    if (!isAmpExtra && academy3pc) f *= 0.85;
+    const st = STAVES[staffId] || STAVES.none;
+    if (isAmpExtra && st.ampMpDiscount > 0) f *= (1.0 - st.ampMpDiscount);
+    return Math.max(MIN_MP_DISCOUNT_FLOOR, Math.round(f * 1e6) / 1e6);
+  }
+
+  function calcRankBlock(pr, er, grade) {
+    const base = BLOCK_BASE[grade];
+    const d = pr - er;
+    const sd = d >= 0 ? (1.0 + 0.12 * d) : Math.max(0.0, 1.0 - 0.10 * Math.abs(d));
+    const rate = base <= 0 ? 0.0 : Math.min(1.0, base * sd);
+    return { d, sd, rate };
+  }
+
+  /* ==========================================================================
+     三、伤害与护盾试算器逻辑
+     ========================================================================== */
+  const dmgState = {
+    skillId: 'ice_3_starfrost',
+    grade: 'GOOD',
+    elemMult: 1.00,
+    isCrit: false,
+  };
+
+  const selSkill = document.getElementById('selSkill');
+  const selStaff = document.getElementById('selStaff');
+  const inpMatk = document.getElementById('inpMatk');
+  const inpAtk = document.getElementById('inpAtk');
+  const inpMmp = document.getElementById('inpMmp');
+  const rngAmp = document.getElementById('rngAmp');
+  const rngDef = document.getElementById('rngDef');
+  const selField = document.getElementById('selField');
+
+  const chkBreak = document.getElementById('chkBreak');
+  const chkHandkerchief = document.getElementById('chkHandkerchief');
+  const chkNorthFrost = document.getElementById('chkNorthFrost');
+  const chkAcademy3pc = document.getElementById('chkAcademy3pc');
+  const chkManaCalc = document.getElementById('chkManaCalc');
+  const chkManuscript = document.getElementById('chkManuscript');
+  const chkFrostEdge = document.getElementById('chkFrostEdge');
+  const chkRiposte = document.getElementById('chkRiposte');
+  const chkCasualDmg = document.getElementById('chkCasualDmg');
+
+  // 填充 15 招分组下拉框
+  (function populateSkillSelect() {
+    const groups = {};
+    SKILLS.forEach(s => {
+      if (!groups[s.lineName]) {
+        const og = document.createElement('optgroup');
+        og.label = s.lineName;
+        groups[s.lineName] = og;
+        selSkill.appendChild(og);
+      }
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = `${s.name}（${s.elemText} · ${s.powerText} · ${s.beats === -1 ? '存活敌数拍' : s.beats + '拍'}）`;
+      groups[s.lineName].appendChild(opt);
+    });
+    selSkill.value = dmgState.skillId;
+  })();
+
+  function updateDmgCalc() {
+    const sk = SKILLS.find(s => s.id === dmgState.skillId) || SKILLS[2];
+    const staffId = selStaff.value;
+    const staff = STAVES[staffId];
+    const matk = Math.max(1, Number(inpMatk.value) || 55);
+    const atk = Math.max(1, Number(inpAtk.value) || 46);
+    const mmp = Math.max(50, Number(inpMmp.value) || 330);
+
+    // 约束增幅上限
+    const rawAmp = Number(rngAmp.value) || 0;
+    const effAmpInt = Math.min(rawAmp, sk.ampCap);
+    document.getElementById('skillCapHint').textContent = `上限 ${sk.ampCap}%`;
+
+    // 更新磁吸按钮状态
+    document.querySelectorAll('#ampSnaps .snap-btn').forEach(btn => {
+      const v = Number(btn.dataset.amp);
+      btn.disabled = v > sk.ampCap;
+      btn.classList.toggle('active', v === effAmpInt);
+      btn.classList.toggle('t3', v === 60 && effAmpInt === 60);
+    });
+
+    const amp = calcAmpInfo(effAmpInt);
+    const ampLabelEl = document.getElementById('ampValLabel');
+    ampLabelEl.textContent = sk.ampCap === 0
+      ? '0% · 该技不可增幅'
+      : `${effAmpInt}% · ${amp.label}` + (rawAmp > sk.ampCap ? `（已按上限 ${sk.ampCap}% 截断）` : '');
+    ampLabelEl.style.color = amp.tier === 3 ? 'var(--gold)' : 'var(--royal)';
+
+    // 四档按钮联动（0 拍技自动灰显并说明）
+    const isInstant = sk.beats === 0;
+    document.querySelectorAll('#gradeSeg .seg-btn').forEach(btn => {
+      btn.disabled = isInstant;
+      const g = btn.dataset.grade;
+      const active = isInstant ? (g === 'GOOD') : (g === dmgState.grade);
+      btn.classList.toggle('active', active);
+      btn.classList.toggle('bad-act', active && g === 'BAD');
+      btn.classList.toggle('cyan-act', active && g === 'GREAT');
+      btn.classList.toggle('gold-act', active && g === 'PERFECT');
+    });
+
+    const winMs = RING_WINDOWS[amp.tier];
+    document.getElementById('gradeRuleNote').textContent = isInstant
+      ? '0 拍瞬发 · 固定 GOOD 0%'
+      : `${sk.beats === -1 ? '存活敌数拍' : sk.beats + '拍'} · 缩圈 ${winMs}ms`;
+
+    // 蓝耗计算（含 0.60× 硬地板）
+    const baseDf = calcMpDiscount(chkManaCalc.checked, chkManuscript.checked, chkAcademy3pc.checked, staffId, false);
+    const ampDf = calcMpDiscount(chkManaCalc.checked, chkManuscript.checked, chkAcademy3pc.checked, staffId, true);
+    const baseMp = sk.mp > 0 ? Math.max(1, Math.round(sk.mp * baseDf)) : 0;
+    const useEclipse = (staffId === 'eclipse_wand' && sk.kind === 'matk' && sk.power > 0);
+    const wandDf = calcMpDiscount(chkManaCalc.checked, chkManuscript.checked, chkAcademy3pc.checked, 'eclipse_wand', false);
+    const wandExtraMp = useEclipse ? Math.max(1, Math.round(mmp * STAVES.eclipse_wand.extraMpPct * wandDf)) : 0;
+    const ampExtraMp = effAmpInt > 0 ? Math.max(1, Math.round(mmp * amp.p * ampDf)) : 0;
+    const totalMp = baseMp + wandExtraMp + ampExtraMp;
+
+    const rawDef = Number(rngDef.value) || 0;
+    document.getElementById('defValLabel').textContent = String(rawDef);
+
+    // 特殊模式：护盾或身法
+    if (sk.kind === 'shield') {
+      const rootMult = chkRiposte.checked ? 1.20 : 1.00;
+      const baseShield = sk.shieldBase + matk * sk.shieldScale;
+      const finalShield = Math.round(baseShield * rootMult * amp.shieldMult);
+      const crateGuard = sk.crateTiers[Math.min(2, amp.tier)];
+
+      document.getElementById('outMainLabel').textContent = '最终护盾值';
+      document.getElementById('outFinalVal').textContent = String(finalShield);
+      document.getElementById('outFinalVal').className = 'readout-big cyan';
+      document.getElementById('outMainSub').textContent = `${sk.name} · 0 拍瞬发`;
+
+      document.getElementById('outPoolLabel').textContent = '护盾增幅倍率';
+      document.getElementById('outPoolVal').textContent = amp.shieldMult.toFixed(2) + '×';
+      document.getElementById('outPoolSub').textContent = `护盾线增幅上限 40%`;
+
+      document.getElementById('outShareLabel').textContent = '护箱值';
+      document.getElementById('outShareVal').textContent = crateGuard > 0 ? String(crateGuard) : '—';
+      document.getElementById('outShareSub').textContent = amp.tier >= 2 && sk.id === 'shield_3_steel' ? '激活钢霜壁垒！' : '赫兰药箱守护值';
+
+      document.getElementById('poolBarTitle').textContent = '护盾构成（基础盾值 × 扎根凝冰 × 增幅倍率）';
+      document.getElementById('poolBarTotal').textContent = `总盾 = ${finalShield}`;
+      const basePct = (1.0 / (amp.shieldMult * rootMult)) * 100;
+      document.getElementById('stackedBar').innerHTML =
+        `<div class="bar-seg seg-base" style="width:${basePct.toFixed(1)}%">基础 ${Math.round(baseShield)}</div>` +
+        `<div class="bar-seg seg-amp" style="width:${(100 - basePct).toFixed(1)}%">增益 +${finalShield - Math.round(baseShield)}</div>`;
+      document.getElementById('poolLegend').innerHTML =
+        `<span><i class="leg-dot seg-base"></i>技能盾基 ${sk.shieldBase} + ${sk.shieldScale}×${matk}</span>` +
+        `<span><i class="leg-dot seg-amp"></i>增幅 ${amp.shieldMult.toFixed(2)}× · 扎根 ${rootMult.toFixed(2)}×</span>`;
+
+      document.getElementById('outTotalMultLabel').textContent = `综合倍率 ${(amp.shieldMult * rootMult).toFixed(2)}×`;
+      document.getElementById('outFormulaTrace').textContent =
+        `(${sk.shieldBase} + ${matk} × ${sk.shieldScale}) × 扎根 ${rootMult.toFixed(2)}× × 增幅 ${amp.shieldMult.toFixed(2)}× = ${finalShield} 护盾`;
+      document.getElementById('outDefMit').textContent = '护盾技无视敌防';
+      document.getElementById('outLocksWin').textContent = '0 拍瞬发 · 0ms 缩圈';
+      document.getElementById('outMpCost').textContent = `${totalMp} MP（基 ${baseMp} + 增 ${ampExtraMp}）`;
+      document.getElementById('outMpEcon').textContent = `${(finalShield / Math.max(1, totalMp)).toFixed(2)} 盾/MP`;
+      document.getElementById('outSpecialNote').innerHTML =
+        `<strong>护盾机制：</strong>${sk.desc}` +
+        (amp.tier >= 2 && sk.id === 'shield_3_steel' ? '；<strong>40% 钢霜壁垒生效</strong>：受击减伤 12%、盾留存 45%、护箱留存 50%、艾诺共鸣 +1。' : '。');
+      return;
+    }
+
+    if (sk.kind === 'move') {
+      document.getElementById('outMainLabel').textContent = '身法收益';
+      document.getElementById('outFinalVal').textContent = '+1 AP';
+      document.getElementById('outFinalVal').className = 'readout-big cyan';
+      document.getElementById('outMainSub').textContent = '风行残像 · 0 拍瞬发';
+      document.getElementById('outPoolLabel').textContent = '行动条提前';
+      document.getElementById('outPoolVal').textContent = '25%';
+      document.getElementById('outPoolSub').textContent = '残像 1 层 · CD 3 回合';
+      document.getElementById('outShareLabel').textContent = '风神减伤';
+      document.getElementById('outShareVal').textContent = '40%';
+      document.getElementById('outShareSub').textContent = '常规攻击 100% 闪避';
+      document.getElementById('poolBarTitle').textContent = '独立身法槽（不参与攻击增伤池）';
+      document.getElementById('poolBarTotal').textContent = '0 拍瞬发';
+      document.getElementById('stackedBar').innerHTML = `<div class="bar-seg seg-amp" style="width:100%">残像闪避 + 下回合 +1 AP + 行动条提前 25%</div>`;
+      document.getElementById('poolLegend').innerHTML = `<span>独立身法槽无缩圈 QTE，零暴露，冷却 3 回合。</span>`;
+      document.getElementById('outTotalMultLabel').textContent = '功能技';
+      document.getElementById('outFormulaTrace').textContent = `消耗 1 AP / ${totalMp} MP → 获得 残像 1 层 + 下回合 +1 AP + ATB 提前 25%`;
+      document.getElementById('outDefMit').textContent = '不计入敌方防御';
+      document.getElementById('outLocksWin').textContent = '0 拍瞬发 · 无缩圈';
+      document.getElementById('outMpCost').textContent = `${totalMp} MP（折扣 ${baseDf.toFixed(2)}×）`;
+      document.getElementById('outMpEcon').textContent = '防必杀/续航节奏器';
+      document.getElementById('outSpecialNote').innerHTML = `<strong>说明：</strong>${sk.desc}。第 5 幕诺艾儿即使未解锁本技能，也可凭「冰霜之息」稳定通关。`;
+      return;
+    }
+
+    // === 攻击类技能（魔攻 / 物理 / 混伤）===
+    const effMatk = matk * staff.matkMult;
+    let atkStat = effMatk;
+    let statDesc = `MATK ${effMatk.toFixed(1)}`;
+    if (sk.kind === 'atk') {
+      atkStat = atk;
+      statDesc = `ATK ${atk}`;
+    } else if (sk.kind === 'hybrid') {
+      atkStat = atk * 0.95 + effMatk * 0.55;
+      statDesc = `0.95×ATK(${atk})+0.55×MATK(${effMatk.toFixed(1)})=${atkStat.toFixed(1)}`;
+    }
+
+    const pwr = (sk.id === 'sword_2_cold_edge' && chkRiposte.checked) ? sk.ripostePower : sk.power;
+
+    // 精准判定修正
+    const effGrade = isInstant ? 'GOOD' : ((dmgState.grade === 'BAD' && chkCasualDmg.checked) ? 'GOOD' : dmgState.grade);
+    const ringBonus = RING_ATK_BONUS[effGrade];
+    const breakAdd = chkBreak.checked ? 0.10 : 0.00;
+    const passiveAdd = (sk.kind === 'hybrid' && chkFrostEdge.checked) ? 0.05 : 0.00;
+    const relicHand = (sk.elem === 'ice' && chkHandkerchief.checked) ? 0.02 : 0.00;
+    const relicNorth = ((sk.line === 1 || sk.line === 3) && chkNorthFrost.checked) ? 0.05 : 0.00;
+    const relicAdd = relicHand + relicNorth;
+
+    const rawPool = 1.00 + amp.addDmg + ringBonus + breakAdd + passiveAdd + relicAdd;
+    const addPool = Math.max(0.35, Math.round(rawPool * 10000) / 10000);
+
+    // 场地系数 & 实体甲
+    const fieldMode = selField.value;
+    let fieldMod = 1.00;
+    let solidArmor = 0.00;
+    if (fieldMode === 'wind_wall') fieldMod = 0.42;
+    else if (fieldMode === 'wind_cushion') fieldMod = 0.80;
+    else if (fieldMode === 'pack_wolf') fieldMod = sk.aoe ? 1.00 : 0.45;
+    else if (fieldMode === 'solid_35') solidArmor = 0.35;
+    else if (fieldMode === 'solid_30') solidArmor = 0.30;
+
+    // 暴击
+    const critBonus = staff.critBonus + (chkAcademy3pc.checked ? 0.10 : 0.00);
+    const critMult = dmgState.isCrit ? Math.min(1.70, 1.50 + critBonus) : 1.00;
+    document.getElementById('critValHint').textContent = critMult.toFixed(2) + '×';
+
+    // 防御承伤率
+    let defMit, defDesc;
+    if (useEclipse) {
+      defMit = 1.00 - solidArmor;
+      defDesc = solidArmor > 0
+        ? `${(defMit * 100).toFixed(1)}%（晦轮真伤受实体甲 -${Math.round(solidArmor * 100)}%）`
+        : '100.0%（晦轮杖无视法抗与魔盾）';
+    } else {
+      const calcRawDef = sk.kind === 'hybrid' ? rawDef * 0.75 : rawDef;
+      const pierce = Math.min(MAX_DEF_PIERCE, amp.defPierce + (sk.innatePierce || 0));
+      const effDef = Math.max(0, calcRawDef * (1.0 - pierce));
+      defMit = DEF_K / (DEF_K + effDef);
+      defDesc = `${(defMit * 100).toFixed(1)}%（有效防 ${effDef.toFixed(1)} · 总穿抗 ${Math.round(pierce * 100)}%）`;
+    }
+
+    const elemMult = sk.elem === 'phys' ? 1.00 : dmgState.elemMult;
+    const totalMult = addPool * fieldMod * elemMult * critMult;
+    const finalDmg = Math.max(4, Math.round(atkStat * pwr * addPool * fieldMod * elemMult * critMult * defMit));
+
+    // 本体占比 %
+    const posPool = 1.00 + amp.addDmg + Math.max(0, ringBonus) + breakAdd + passiveAdd + relicAdd;
+    const baseSharePct = (1.00 / Math.max(1.00, addPool)) * 100;
+
+    // 渲染右侧核心三大数
+    document.getElementById('outMainLabel').textContent = '最终伤害';
+    const outFinalEl = document.getElementById('outFinalVal');
+    outFinalEl.textContent = String(finalDmg);
+    outFinalEl.className = 'readout-big' + (amp.tier === 3 || dmgState.isCrit ? ' gold' : '');
+    document.getElementById('outMainSub').textContent =
+      `${sk.name} · ${pwr.toFixed(2)}×${useEclipse ? ' · 晦轮真伤' : ''}${dmgState.isCrit ? ' · 暴击' : ''}`;
+
+    document.getElementById('outPoolLabel').textContent = '总相加池 AddPool';
+    document.getElementById('outPoolVal').textContent = addPool.toFixed(2) + '×';
+    document.getElementById('outPoolSub').textContent =
+      effGrade === 'BAD' ? '含 BAD -15% 扣伤惩罚' : (addPool >= 1.87 ? '达到或超过主线 1.87× 上界' : '主线满配上界 1.87×');
+
+    document.getElementById('outShareLabel').textContent = '技能本体占比';
+    document.getElementById('outShareVal').textContent = baseSharePct.toFixed(1) + '%';
+    document.getElementById('outShareSub').textContent =
+      ringBonus < 0
+        ? `本体 1.00（BAD 扣 -0.15 → 净 ${addPool.toFixed(2)}×）`
+        : `本体 1.00 / 总池 ${addPool.toFixed(2)}（外部 +${(addPool - 1).toFixed(2)}）`;
+
+    // 渲染堆叠条
+    document.getElementById('poolBarTitle').textContent = '相加增伤池结构拆解（技能本体占绝对大头）';
+    document.getElementById('poolBarTotal').textContent = `AddPool = ${addPool.toFixed(2)}×`;
+    const segs = [
+      { cls: 'seg-base', label: '技能本体', val: 1.00 },
+      { cls: 'seg-amp', label: '魔力增幅', val: amp.addDmg },
+      { cls: 'seg-ring', label: effGrade, val: Math.max(0, ringBonus) },
+      { cls: 'seg-break', label: '弱点击破', val: breakAdd },
+      { cls: 'seg-extra', label: '铭记/被动', val: passiveAdd + relicAdd },
+    ];
+    let barHtml = '';
+    let legHtml = '';
+    segs.forEach(s => {
+      if (s.val > 0.0001) {
+        const pct = (s.val / posPool) * 100;
+        barHtml += `<div class="bar-seg ${s.cls}" style="width:${pct.toFixed(1)}%">${pct >= 11 ? (s.val === 1 ? '本体 1.00' : '+' + Math.round(s.val * 100) + '%') : ''}</div>`;
+        legHtml += `<span><i class="leg-dot ${s.cls}"></i>${s.label} ${s.val === 1 ? '1.00' : '+' + Math.round(s.val * 100) + '%'}</span>`;
+      }
+    });
+    if (ringBonus < 0) {
+      legHtml += `<span style="color:var(--crimson);font-weight:700;">▪ BAD 扣减 -15%（净池 ${addPool.toFixed(2)}×）</span>`;
+    }
+    document.getElementById('stackedBar').innerHTML = barHtml;
+    document.getElementById('poolLegend').innerHTML = legHtml;
+
+    // 乘区公式链
+    document.getElementById('outTotalMultLabel').textContent = `综合倍率 ${totalMult.toFixed(2)}×`;
+    document.getElementById('outFormulaTrace').textContent =
+      `[${statDesc}] × 技倍 ${pwr.toFixed(2)} × 相加池 ${addPool.toFixed(2)} × 场地 ${fieldMod.toFixed(2)} × 克制 ${elemMult.toFixed(2)} × 暴击 ${critMult.toFixed(2)} × 承伤 ${defMit.toFixed(3)} = ${finalDmg}`;
+
+    // 防御、破锁、蓝耗与魔战循环
+    document.getElementById('outDefMit').textContent = defDesc;
+    const totalLocks = sk.lockDmg + amp.extraLocks;
+    document.getElementById('outLocksWin').textContent =
+      `破锁 ${totalLocks}（基${sk.lockDmg}+增${amp.extraLocks}）· ${isInstant ? '0拍瞬发' : '缩圈 ' + winMs + 'ms'}`;
+
+    const mpDetail = [];
+    if (baseMp > 0) mpDetail.push(`基${baseMp}`);
+    if (ampExtraMp > 0) mpDetail.push(`增${ampExtraMp}`);
+    if (wandExtraMp > 0) mpDetail.push(`晦轮${wandExtraMp}`);
+    document.getElementById('outMpCost').textContent =
+      totalMp === 0
+        ? `0 MP（普攻立即回 +${Math.round(mmp * 0.06)} MP）`
+        : `${totalMp} MP（${mpDetail.join('+')} · 折扣 ${baseDf.toFixed(2)}/${ampDf.toFixed(2)}×）`;
+
+    const effRatio = totalMp > 0 ? (finalDmg / totalMp).toFixed(2) : '∞';
+    const mpEconEl = document.getElementById('outMpEcon');
+    if (sk.elem !== 'phys') {
+      const netMp = finalDmg - totalMp;
+      mpEconEl.textContent = `${effRatio} 伤/MP · 实血回蓝净 ${netMp >= 0 ? '+' : ''}${netMp} MP`;
+      mpEconEl.className = 'econ-v ' + (netMp >= 0 ? 'pos' : 'neg');
+    } else {
+      mpEconEl.textContent = `零耗蓝导魔 · 立即回 +${Math.round(mmp * 0.06)} MP`;
+      mpEconEl.className = 'econ-v pos';
+    }
+
+    document.getElementById('outSpecialNote').innerHTML =
+      `<strong>招式契约（${sk.beatText}）：</strong>${sk.desc}` +
+      (chkCasualDmg.checked && dmgState.grade === 'BAD' && !isInstant ? ' ｜ <strong style="color:var(--emerald)">休闲模式生效：BAD 已自动兜底为 GOOD (0%)</strong>' : '') +
+      (baseDf <= 0.6001 || ampDf <= 0.6001 ? ' ｜ <strong style="color:var(--gold)">已触发总省蓝硬地板 0.60×</strong>' : '');
+  }
+
+  // 事件绑定：伤害试算器
+  selSkill.addEventListener('change', () => {
+    dmgState.skillId = selSkill.value;
+    updateDmgCalc();
+  });
+  [selStaff, inpMatk, inpAtk, inpMmp, rngDef, selField, chkBreak, chkHandkerchief, chkNorthFrost, chkAcademy3pc, chkManaCalc, chkManuscript, chkFrostEdge, chkRiposte, chkCasualDmg]
+    .forEach(el => el.addEventListener('input', updateDmgCalc));
+
+  // 魔力增幅滑条磁吸（接近 0/20/40/60 ±2% 磁吸提示，或精确微调）
+  rngAmp.addEventListener('input', () => {
+    const v = Number(rngAmp.value);
+    for (const snap of [0, 20, 40, 60]) {
+      if (Math.abs(v - snap) === 1) { rngAmp.value = snap; break; }
+    }
+    updateDmgCalc();
+  });
+
+  document.querySelectorAll('#ampSnaps .snap-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      rngAmp.value = btn.dataset.amp;
+      updateDmgCalc();
+    });
+  });
+
+  document.querySelectorAll('#gradeSeg .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      dmgState.grade = btn.dataset.grade;
+      updateDmgCalc();
+    });
+  });
+
+  document.querySelectorAll('#elemSeg .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      dmgState.elemMult = Number(btn.dataset.elem);
+      document.querySelectorAll('#elemSeg .seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+      updateDmgCalc();
+    });
+  });
+
+  document.querySelectorAll('#critSeg .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      dmgState.isCrit = btn.dataset.crit === '1';
+      document.querySelectorAll('#critSeg .seg-btn').forEach(b => {
+        b.classList.toggle('active', b === btn);
+        b.classList.toggle('gold-act', b === btn && dmgState.isCrit);
+      });
+      updateDmgCalc();
+    });
+  });
+
+  // 快捷预设
+  function applyPreset(key) {
+    document.querySelectorAll('#dmgPresets .preset-btn').forEach(b => b.classList.toggle('active', b.dataset.preset === key));
+    // 默认重置
+    chkBreak.checked = false;
+    chkHandkerchief.checked = false;
+    chkNorthFrost.checked = false;
+    chkAcademy3pc.checked = false;
+    chkManaCalc.checked = true;
+    chkManuscript.checked = false;
+    chkFrostEdge.checked = false;
+    chkRiposte.checked = false;
+    chkCasualDmg.checked = false;
+    selField.value = 'normal';
+
+    if (key === 'act7_ref') {
+      inpMatk.value = 55; inpAtk.value = 46; inpMmp.value = 330;
+      dmgState.skillId = 'ice_3_starfrost'; selSkill.value = 'ice_3_starfrost';
+      selStaff.value = 'none'; rngAmp.value = 40; dmgState.grade = 'GOOD';
+      dmgState.elemMult = 1.00; dmgState.isCrit = false; rngDef.value = 32;
+    } else if (key === 'max_pool') {
+      inpMatk.value = 56; inpAtk.value = 48; inpMmp.value = 330;
+      dmgState.skillId = 'ice_3_starfrost'; selSkill.value = 'ice_3_starfrost';
+      selStaff.value = 'north_saint_staff'; rngAmp.value = 60; dmgState.grade = 'PERFECT';
+      dmgState.elemMult = 1.50; dmgState.isCrit = true; rngDef.value = 24;
+      chkBreak.checked = true; chkHandkerchief.checked = true; chkManuscript.checked = true;
+    } else if (key === 'eclipse_god') {
+      inpMatk.value = 56; inpAtk.value = 48; inpMmp.value = 330;
+      dmgState.skillId = 'ice_3_starfrost'; selSkill.value = 'ice_3_starfrost';
+      selStaff.value = 'eclipse_wand'; rngAmp.value = 40; dmgState.grade = 'PERFECT';
+      dmgState.elemMult = 1.50; dmgState.isCrit = false; rngDef.value = 56;
+    } else if (key === 'cold_riposte') {
+      inpMatk.value = 55; inpAtk.value = 46; inpMmp.value = 330;
+      dmgState.skillId = 'sword_2_cold_edge'; selSkill.value = 'sword_2_cold_edge';
+      selStaff.value = 'none'; rngAmp.value = 0; dmgState.grade = 'PERFECT';
+      dmgState.elemMult = 1.50; dmgState.isCrit = false; rngDef.value = 30;
+      chkFrostEdge.checked = true; chkRiposte.checked = true;
+    } else if (key === 'steel_shield') {
+      inpMatk.value = 55; inpAtk.value = 46; inpMmp.value = 330;
+      dmgState.skillId = 'shield_3_steel'; selSkill.value = 'shield_3_steel';
+      selStaff.value = 'none'; rngAmp.value = 40; dmgState.grade = 'GOOD';
+      dmgState.elemMult = 1.00; dmgState.isCrit = false; rngDef.value = 32;
+      chkRiposte.checked = true;
+    }
+
+    document.querySelectorAll('#elemSeg .seg-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.elem) === dmgState.elemMult));
+    document.querySelectorAll('#critSeg .seg-btn').forEach(b => {
+      const active = (b.dataset.crit === '1') === dmgState.isCrit;
+      b.classList.toggle('active', active);
+      b.classList.toggle('gold-act', active && dmgState.isCrit);
+    });
+    updateDmgCalc();
+  }
+
+  document.querySelectorAll('#dmgPresets .preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => applyPreset(btn.dataset.preset));
+  });
+
+  /* ==========================================================================
+     四、线性等阶差格挡试算器逻辑 + 实时 SVG 折线图
+     ========================================================================== */
+  const rngPrRank = document.getElementById('rngPrRank');
+  const rngErRank = document.getElementById('rngErRank');
+  const inpIncoming = document.getElementById('inpIncoming');
+  const chkCasualBlock = document.getElementById('chkCasualBlock');
+
+  function getRankScenarioMeta(d) {
+    if (d >= 2) return ['高阶压制低阶（d = +' + d + '）', '格挡收益随每阶 +12% 线性扩大'];
+    if (d === 1) return ['高 1 阶优势（d = +1）', '容错从容，PERFECT 可减伤 33.6%'];
+    if (d === 0) return ['同阶对决 · 贝阿/爱丽/诺艾/影豺', '标准基数 0% / 8% / 18% / 30%'];
+    if (d === -1) return ['越 1 阶 · 艾诺 / 裂地领主 / 红莲铁幕', '系数 0.90×，精准格挡仍是核心减伤'];
+    if (d === -2) return ['越 2 阶 · 罗文乱葬岗', '系数 0.80×，需雷纳德前排抗压'];
+    if (d === -3) return ['越 3 阶高压试炼', '系数 0.70×，高阶威压显性化'];
+    if (d === -4) return ['越 4 阶弑神 · 演武风神·岚', '系数 0.60×，需搭配残像与寒锋迎击'];
+    return ['极端越阶（d = ' + d + '）', '线性衰减至 ' + Math.max(0, 100 - 10 * Math.abs(d)) + '%'];
+  }
+
+  function updateBlockCalc() {
+    const pr = Number(rngPrRank.value);
+    const er = Number(rngErRank.value);
+    const d = pr - er;
+    const rawIn = Math.max(10, Number(inpIncoming.value) || 180);
+    const effIn = chkCasualBlock.checked ? Math.round(rawIn * 0.60) : rawIn;
+
+    document.getElementById('prLabel').textContent = `${pr} 阶 · ${RANK_NAMES[pr]}`;
+    document.getElementById('erLabel').textContent = `${er} 阶 · ${RANK_NAMES[er]}`;
+
+    const samplePerf = calcRankBlock(pr, er, 'PERFECT');
+    const diffEl = document.getElementById('outRankDiff');
+    diffEl.textContent = (d > 0 ? '+' : '') + d;
+    diffEl.className = 'readout-big ' + (d > 0 ? 'cyan' : (d === 0 ? '' : 'gold'));
+    document.getElementById('outRankScenario').textContent = `${RANK_NAMES[pr]}(${pr}) vs ${RANK_NAMES[er]}(${er})`;
+    document.getElementById('outScaleSd').textContent = samplePerf.sd.toFixed(2) + '×';
+    document.getElementById('outScaleFormula').textContent = d >= 0 ? `1 + 0.12 × ${d}` : `max(0, 1 − 0.10 × ${Math.abs(d)})`;
+
+    const [mTitle, mTip] = getRankScenarioMeta(d);
+    document.getElementById('outRankMap').textContent = mTitle;
+    document.getElementById('outRankTip').textContent = mTip;
+
+    // 4 档卡片
+    const gradeMeta = [
+      { k: 'BAD', cls: 'grade-bad', color: '#C53045' },
+      { k: 'GOOD', cls: 'grade-good', color: '#647692' },
+      { k: 'GREAT', cls: 'grade-great', color: '#0891B2' },
+      { k: 'PERFECT', cls: 'grade-perfect', color: '#B68427' },
+    ];
+    document.getElementById('blockFourCol').innerHTML = gradeMeta.map(gm => {
+      const r = calcRankBlock(pr, er, gm.k).rate;
+      const pctStr = (r * 100).toFixed(1) + '%';
+      const taken = Math.round(effIn * (1 - r));
+      const saved = effIn - taken;
+      return `
+        <div class="block-cell">
+          <div class="block-grade ${gm.cls}">${gm.k}</div>
+          <div class="block-pct">${pctStr}</div>
+          <div class="block-meter"><div class="block-meter-fill" style="width:${Math.min(100, r * 100 / 0.55).toFixed(1)}%;background:${gm.color};"></div></div>
+          <div class="block-sample">实承 ${taken}（省 ${saved}）</div>
+        </div>`;
+    }).join('');
+
+    // 同步预设高亮
+    document.querySelectorAll('#blockPresets .preset-btn').forEach(b => {
+      b.classList.toggle('active', Number(b.dataset.pr) === pr && Number(b.dataset.er) === er);
+    });
+
+    // 绘制 SVG 折线图
+    renderBlockCurveSvg(d);
+  }
+
+  function renderBlockCurveSvg(activeD) {
+    const svg = document.getElementById('blockCurveSvg');
+    const W = 460, H = 156, padL = 38, padR = 16, padT = 16, padB = 26;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const ds = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
+    const xOf = d => padL + ((d + 6) / 12) * plotW;
+    const yOf = pct => padT + plotH - (pct / 60) * plotH;
+
+    let html = '';
+    // 水平网格 0/15/30/45/60%
+    [0, 15, 30, 45, 60].forEach(v => {
+      const y = yOf(v);
+      html += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#E6EEF9" stroke-width="1"/>`;
+      html += `<text x="${padL - 6}" y="${y + 3.5}" text-anchor="end" fill="#8A9BB5" font-size="9.5" font-family="monospace">${v}%</text>`;
+    });
+    // d=0 基准竖线
+    const x0 = xOf(0);
+    html += `<line x1="${x0}" y1="${padT}" x2="${x0}" y2="${H - padB}" stroke="#C3D3EA" stroke-dasharray="3,3" stroke-width="1"/>`;
+    // 当前 d 高亮竖线
+    const xa = xOf(activeD);
+    html += `<line x1="${xa}" y1="${padT}" x2="${xa}" y2="${H - padB}" stroke="#1658EB" stroke-opacity="0.35" stroke-width="1.5"/>`;
+
+    // 三条折线
+    const series = [
+      { grade: 'GOOD', color: '#0891B2' },
+      { grade: 'GREAT', color: '#1658EB' },
+      { grade: 'PERFECT', color: '#C49133' },
+    ];
+    series.forEach(s => {
+      const pts = ds.map(d => {
+        const sd = d >= 0 ? (1 + 0.12 * d) : Math.max(0, 1 - 0.10 * Math.abs(d));
+        const pct = Math.min(100, BLOCK_BASE[s.grade] * sd * 100);
+        return `${xOf(d).toFixed(1)},${yOf(pct).toFixed(1)}`;
+      }).join(' ');
+      html += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2"/>`;
+      // 当前点
+      const sdA = activeD >= 0 ? (1 + 0.12 * activeD) : Math.max(0, 1 - 0.10 * Math.abs(activeD));
+      const pctA = Math.min(100, BLOCK_BASE[s.grade] * sdA * 100);
+      const cy = yOf(pctA);
+      html += `<polygon points="${xa},${cy - 4.5} ${xa + 4.5},${cy} ${xa},${cy + 4.5} ${xa - 4.5},${cy}" fill="${s.color}" stroke="#FFFFFF" stroke-width="1.2"/>`;
+    });
+
+    // X 轴标签
+    [-6, -4, -2, 0, 2, 4, 6].forEach(d => {
+      const x = xOf(d);
+      html += `<text x="${x}" y="${H - 8}" text-anchor="middle" fill="${d === activeD ? '#1658EB' : '#647692'}" font-size="10" font-family="monospace" font-weight="${d === activeD ? '700' : '500'}">${d > 0 ? '+' + d : d}</text>`;
+    });
+
+    svg.innerHTML = html;
+  }
+
+  [rngPrRank, rngErRank, inpIncoming, chkCasualBlock].forEach(el => el.addEventListener('input', updateBlockCalc));
+  document.querySelectorAll('#blockPresets .preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      rngPrRank.value = btn.dataset.pr;
+      rngErRank.value = btn.dataset.er;
+      updateBlockCalc();
+    });
+  });
+
+  /* ==========================================================================
+     五、全 15 招技能表渲染 + 筛选 + 一键载入试算器
+     ========================================================================== */
+  function renderSkillsTable(filter) {
+    const tbody = document.getElementById('skillsTbody');
+    const list = SKILLS.filter(s => {
+      if (filter === 'all') return true;
+      if (filter === 'instant') return s.beats === 0;
+      if (filter === 'multi') return s.beats >= 2 || s.beats === -1;
+      return filter === ('line' + s.line);
+    });
+
+    tbody.innerHTML = list.map(s => {
+      const beatBadgeCls = s.beats === 0 ? 'tag-emerald' : (s.beats === 1 ? 'tag-cyan' : (s.beats === -1 ? 'tag-gold' : 'tag-royal'));
+      const capBadge = s.ampCap === 60 ? '<span class="tag tag-gold">60%</span>' : (s.ampCap === 40 ? '<span class="tag tag-royal">40%</span>' : '<span class="tag tag-slate">0%</span>');
+      return `
+        <tr>
+          <td style="white-space:nowrap;font-weight:600;color:var(--ink-primary);">${s.lineName}</td>
+          <td><strong>${s.name}</strong><br><code style="font-size:11px;color:var(--ink-muted);">${s.id}</code></td>
+          <td class="ctr" style="white-space:nowrap;">${s.elemText}</td>
+          <td class="ctr mono">${s.ap} / ${s.mp} / ${s.cd}</td>
+          <td class="ctr mono" style="font-weight:700;color:var(--ink-primary);">${s.powerText}</td>
+          <td class="ctr">${capBadge}</td>
+          <td><span class="tag ${beatBadgeCls}">${s.beats === -1 ? '存活敌数拍' : s.beats + ' 拍'}</span> ${s.beatText.replace(/^(\d+ 拍|= 存活敌方数拍)/, '')}</td>
+          <td>${s.desc}</td>
+          <td class="ctr"><button type="button" class="load-calc-btn" data-load-skill="${s.id}">载入试算</button></td>
+        </tr>`;
+    }).join('');
+
+    tbody.querySelectorAll('[data-load-skill]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sid = btn.dataset.loadSkill;
+        dmgState.skillId = sid;
+        selSkill.value = sid;
+        updateDmgCalc();
+        document.getElementById('sec-dmg-calc').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  }
+
+  document.querySelectorAll('#skillFilters .filter-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#skillFilters .filter-chip').forEach(b => b.classList.toggle('active', b === btn));
+      renderSkillsTable(btn.dataset.filter);
+    });
+  });
+
+  /* ==========================================================================
+     六、16,900 场仿真数据表格渲染 + 轨道筛选 + SVG 图表
+     ========================================================================== */
+  function renderStdSimTable(trackFilter) {
+    const tbody = document.getElementById('stdSimTbody');
+    const filtered = STD_SIM_ROWS.filter(r => trackFilter === 'all' || r.trackKey === trackFilter);
+    let lastAct = -1;
+    tbody.innerHTML = filtered.map(r => {
+      const isNewAct = r.act !== lastAct;
+      lastAct = r.act;
+      const actHeader = STD_SIM_ROWS.find(x => x.act === r.act && x.stage);
+      const winNum = parseFloat(r.win);
+      const winColor = winNum === 0 ? 'var(--crimson)' : (winNum < 50 ? 'var(--gold)' : (winNum < 96 ? 'var(--royal)' : 'var(--emerald)'));
+      return `
+        <tr class="${r.highlight ? 'row-highlight' : ''} ${isNewAct ? 'row-stage-head' : ''}">
+          <td>${isNewAct ? `<strong>${actHeader.stage}</strong><br><span style="font-size:11px;color:var(--ink-muted);">${actHeader.target}</span>` : '<span style="color:var(--ink-faint);">↳</span>'}</td>
+          <td style="white-space:nowrap;">${r.highlight ? '<strong>' + r.track + '</strong>' : r.track}</td>
+          <td class="num" style="color:${winColor};font-weight:800;white-space:nowrap;">${r.win}</td>
+          <td class="ctr mono" style="white-space:nowrap;">${r.turns}</td>
+          <td class="ctr mono" style="white-space:nowrap;">${r.w1}</td>
+          <td class="ctr mono" style="font-weight:700;color:var(--ink-primary);white-space:nowrap;">${r.time}</td>
+          <td class="ctr mono" style="white-space:nowrap;">${r.rem}</td>
+          <td>${r.note}</td>
+        </tr>`;
+    }).join('');
+  }
+
+  document.querySelectorAll('#stdTrackFilters .filter-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#stdTrackFilters .filter-chip').forEach(b => b.classList.toggle('active', b === btn));
+      renderStdSimTable(btn.dataset.track);
+    });
+  });
+
+  function renderCasualAndSaveTables() {
+    document.getElementById('casualSimTbody').innerHTML = CASUAL_SIM_ROWS.map(r => {
+      const diffPct = Math.round(((r.casTime - r.stdTime) / r.stdTime) * 100);
+      const diffStr = diffPct < 0 ? `${diffPct}%（提速 ${(r.stdTime - r.casTime).toFixed(1)}s）` : '机制锁定 4 回合';
+      return `
+        <tr>
+          <td><strong>${r.name}</strong></td>
+          <td class="ctr mono"><strong style="color:var(--emerald);">100.0%</strong> ${r.auto.slice(6)}</td>
+          <td class="ctr mono"><strong style="color:var(--emerald);">100.0%</strong> ${r.norm.slice(6)}</td>
+          <td class="ctr mono" style="color:var(--ice-cyan);font-weight:600;">${diffStr}</td>
+          <td class="ctr"><span class="tag tag-emerald">PASS</span></td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('saveSimTbody').innerHTML = SAVE_SIM_ROWS.map(r => `
+      <tr>
+        <td><strong>${r.name}</strong></td>
+        <td class="ctr mono">${r.speed} ｜ 休闲 <strong style="color:var(--emerald);">100%</strong></td>
+        <td class="ctr mono">${r.normal}</td>
+        <td class="ctr mono">${r.grind}</td>
+        <td class="ctr mono"><span class="tag tag-royal">Δ ${r.diff} 回合</span></td>
+      </tr>`).join('');
+  }
+
+  /* 波浪式短回合曲线 SVG（Section 07） */
+  function renderWaveChart() {
+    const svg = document.getElementById('waveChartSvg');
+    const data = [
+      { lbl: '第1幕 贝阿', min: 3, max: 4, std: 3.00, cas: 2.00 },
+      { lbl: '第2幕 罗文', min: 4, max: 4, std: 4.00, cas: 4.00 },
+      { lbl: '第3幕 爱丽', min: 4, max: 4, std: 4.00, cas: 3.99 },
+      { lbl: '第4幕 艾诺', min: 3, max: 4, std: 4.00, cas: 4.00 },
+      { lbl: '第5幕 诺艾', min: 5, max: 6, std: 5.73, cas: 3.97 },
+      { lbl: '第6幕 北林', min: 5, max: 6, std: 5.76, cas: 4.82 },
+      { lbl: '第7幕 赫兰', min: 6, max: 7, std: 6.82, cas: 4.99 },
+      { lbl: '第8幕 红莲', min: 7, max: 8, std: 7.53, cas: 4.89 },
+      { lbl: '第9幕 风神★', min: 6.5, max: 7.5, std: 6.80, cas: null, god: true },
+    ];
+    const W = 1040, H = 215, padL = 52, padR = 32, padT = 22, padB = 34;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const xOf = i => padL + (i / (data.length - 1)) * plotW;
+    const yOf = v => padT + plotH - (v / 9) * plotH;
+
+    let h = '';
+    [0, 2, 4, 6, 8].forEach(v => {
+      const y = yOf(v);
+      h += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#E6EEF9" stroke-width="1"/>`;
+      h += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" fill="#8A9BB5" font-size="11" font-family="monospace">${v}T</text>`;
+    });
+
+    // 目标回合带（1-8 幕）
+    const topPts = data.slice(0, 8).map((d, i) => `${xOf(i).toFixed(1)},${yOf(d.max).toFixed(1)}`);
+    const botPts = data.slice(0, 8).map((d, i) => `${xOf(i).toFixed(1)},${yOf(d.min).toFixed(1)}`).reverse();
+    h += `<polygon points="${topPts.concat(botPts).join(' ')}" fill="#1658EB" fill-opacity="0.11"/>`;
+
+    // 休闲普通轨折线（1-8 幕）
+    const casLine = data.slice(0, 8).map((d, i) => `${xOf(i).toFixed(1)},${yOf(d.cas).toFixed(1)}`).join(' ');
+    h += `<polyline points="${casLine}" fill="none" stroke="#0D8A62" stroke-width="2" stroke-dasharray="5,4"/>`;
+
+    // 标准普通轨折线（1-8 幕）
+    const stdLine = data.slice(0, 8).map((d, i) => `${xOf(i).toFixed(1)},${yOf(d.std).toFixed(1)}`).join(' ');
+    h += `<polyline points="${stdLine}" fill="none" stroke="#1658EB" stroke-width="2.6"/>`;
+
+    // 分隔线标识第 9 幕为演武专属
+    const xSep = (xOf(7) + xOf(8)) / 2;
+    h += `<line x1="${xSep}" y1="${padT}" x2="${xSep}" y2="${H - padB}" stroke="#D4A34A" stroke-dasharray="4,3" stroke-width="1.2"/>`;
+    h += `<text x="${xSep + 8}" y="${padT + 12}" fill="#B68427" font-size="10.5" font-weight="700">演武专属真神</text>`;
+
+    data.forEach((d, i) => {
+      const x = xOf(i), ys = yOf(d.std);
+      const col = d.god ? '#B68427' : '#1658EB';
+      h += `<polygon points="${x},${ys - 5.5} ${x + 5.5},${ys} ${x},${ys + 5.5} ${x - 5.5},${ys}" fill="${col}" stroke="#FFFFFF" stroke-width="1.5"/>`;
+      h += `<text x="${x}" y="${ys - 10}" text-anchor="middle" fill="${col}" font-size="11" font-family="monospace" font-weight="700">${d.std.toFixed(2)}</text>`;
+      if (d.cas !== null) {
+        const yc = yOf(d.cas);
+        h += `<rect x="${x - 3}" y="${yc - 3}" width="6" height="6" fill="#0D8A62"/>`;
+      }
+      h += `<text x="${x}" y="${H - 10}" text-anchor="middle" fill="${d.god ? '#B68427' : '#3B4E6B'}" font-size="11.5" font-weight="${d.god ? '700' : '600'}">${d.lbl}</text>`;
+    });
+
+    svg.innerHTML = h;
+  }
+
+  /* 全 9 幕实机耗时柱状图 SVG（Section 08） */
+  function renderSimTimeChart() {
+    const svg = document.getElementById('simTimeSvg');
+    const items = [
+      { lbl: '1 贝阿', norm: 37.5, exp: 35.9 },
+      { lbl: '2 罗文', norm: 51.2, exp: 51.3 },
+      { lbl: '3 爱丽', norm: 52.3, exp: 52.4 },
+      { lbl: '4 艾诺', norm: 50.1, exp: 50.2 },
+      { lbl: '5 诺艾', norm: 88.5, exp: 83.0 },
+      { lbl: '6 北林', norm: 80.9, exp: 73.3 },
+      { lbl: '7 赫兰', norm: 100.5, exp: 91.6 },
+      { lbl: '8 红莲', norm: 121.5, exp: 120.9 },
+      { lbl: '9 风神', norm: 142.5, exp: 101.5, god: true },
+    ];
+    const W = 1040, H = 190, padL = 48, padR = 20, padT = 18, padB = 30;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const maxS = 160;
+    const yOf = s => padT + plotH - (s / maxS) * plotH;
+
+    let h = '';
+    [0, 40, 80, 120, 160].forEach(v => {
+      const y = yOf(v);
+      h += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#E6EEF9" stroke-width="1"/>`;
+      h += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" fill="#8A9BB5" font-size="10.5" font-family="monospace">${v}s</text>`;
+    });
+    // 120s 参考线
+    const y120 = yOf(120);
+    h += `<line x1="${padL}" y1="${y120}" x2="${W - padR}" y2="${y120}" stroke="#D4A34A" stroke-dasharray="4,3" stroke-width="1"/>`;
+
+    const slotW = plotW / items.length;
+    items.forEach((it, i) => {
+      const cx = padL + i * slotW + slotW / 2;
+      const bw = 24;
+      const yN = yOf(it.norm), hN = padT + plotH - yN;
+      const yE = yOf(it.exp), hE = padT + plotH - yE;
+      h += `<rect x="${cx - bw - 2}" y="${yN}" width="${bw}" height="${hN}" fill="#1658EB"/>`;
+      h += `<text x="${cx - bw / 2 - 2}" y="${yN - 4}" text-anchor="middle" fill="#1658EB" font-size="10" font-family="monospace" font-weight="700">${it.norm}</text>`;
+      const expCol = it.god ? '#C49133' : '#0891B2';
+      h += `<rect x="${cx + 2}" y="${yE}" width="${bw}" height="${hE}" fill="${expCol}"/>`;
+      h += `<text x="${cx + bw / 2 + 2}" y="${yE - 4}" text-anchor="middle" fill="${expCol}" font-size="10" font-family="monospace" font-weight="700">${it.exp}</text>`;
+      h += `<text x="${cx}" y="${H - 8}" text-anchor="middle" fill="#3B4E6B" font-size="11.5" font-weight="600">${it.lbl}</text>`;
+    });
+
+    svg.innerHTML = h;
+  }
+
+  /* ==========================================================================
+     七、通用 Tab 切换、一键复制与侧边栏滚动联动
+     ========================================================================== */
+  function bindTabs(barId) {
+    const bar = document.getElementById(barId);
+    if (!bar) return;
+    const btns = Array.from(bar.querySelectorAll('.tab-btn'));
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        btns.forEach(b => b.classList.toggle('active', b === btn));
+        btns.forEach(b => {
+          const panel = document.getElementById(b.dataset.tab);
+          if (panel) panel.classList.toggle('active', b === btn);
+        });
+      });
+    });
+  }
+
+  bindTabs('stageCfgTabs');
+  bindTabs('simModeTabs');
+
+  document.getElementById('copyCodeBtn').addEventListener('click', function () {
+    const text = document.getElementById('contractCode').textContent;
+    const btn = this;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '已复制到剪贴板 ✓';
+        setTimeout(() => { btn.textContent = '复制契约常量'; }, 1800);
+      });
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      btn.textContent = '已复制到剪贴板 ✓';
+      setTimeout(() => { btn.textContent = '复制契约常量'; }, 1800);
+    }
+  });
+
+  // 目录 Scroll-Spy
+  const tocLinks = Array.from(document.querySelectorAll('#tocNav .toc-link'));
+  const secEls = tocLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  function updateScrollSpy() {
+    let current = secEls[0] ? secEls[0].id : '';
+    const y = window.scrollY + 120;
+    for (const el of secEls) {
+      if (el.offsetTop <= y) current = el.id;
+    }
+    tocLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + current));
+  }
+  window.addEventListener('scroll', updateScrollSpy, { passive: true });
+
+  /* ==========================================================================
+     八、初始化全部视图
+     ========================================================================== */
+  renderSkillsTable('all');
+  renderStdSimTable('all');
+  renderCasualAndSaveTables();
+  renderWaveChart();
+  renderSimTimeChart();
+  applyPreset('act7_ref');
+  updateBlockCalc();
+  updateScrollSpy();
+})();
+</script>
+</body>
+</html>

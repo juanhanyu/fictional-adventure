@@ -374,14 +374,30 @@ body.stage-story #hud .hud-right #btn-causal-quick {
 
 body.stage-infant #sylvia-hub,
 body.stage-infant #raising-hub,
+body.stage-infant #hud .hud-right #btn-ai-drawer,
+body.stage-infant #hud .hud-right #btn-stats,
+body.stage-infant #btn-ai-drawer,
+body.stage-infant #btn-stats,
 body.stage-infant #action-bar [data-act="map"],
 body.stage-infant #action-bar [data-act="explore"],
 body.stage-infant #action-bar [data-act="train"],
 body.stage-infant #action-bar [data-act="study"],
 body.stage-infant #action-bar [data-act="course"],
+body.stage-infant #action-bar [data-act="item"],
 body.stage-infant #action-bar [data-act="rumor"],
 body.stage-infant #action-bar [data-act="encounter"],
 body.stage-infant #action-bar #btn-rumor {
+  display: none !important;
+}
+
+body.roam.roam-dialog #hud .hud-right #btn-ai-drawer,
+body.roam.roam-dialog #hud .hud-right #btn-causal-quick,
+body.roam.roam-dialog #hud .hud-right #btn-arena,
+body.roam.roam-dialog #hud .hud-right #btn-stats,
+body.roam.roam-dialog #btn-ai-drawer,
+body.roam.roam-dialog #btn-causal-quick,
+body.roam.roam-dialog #btn-arena,
+body.roam.roam-dialog #btn-stats {
   display: none !important;
 }
 
@@ -818,7 +834,7 @@ body.roam:not(.roam-dialog) #app section#game-screen #text-box #tb-backlog-btn {
   display: none !important;
 }
 
-/* 方案 B 态 C（场景内人物对话薄幕）：回看键轻盈停靠于薄幕顶沿右上外侧，零压正文首行 */
+/* 方案 B 态 C（场景内人物对话薄幕）：回看键与阅读控制簇轻盈停靠于薄幕顶沿右上外侧，零压正文首行 */
 body.roam.roam-dialog #app section#game-screen #text-box #btn-backlog,
 body.roam.roam-dialog #app section#game-screen #text-box button.tb-backlog-btn,
 body.roam.roam-dialog #app section#game-screen #text-box .tb-backlog-btn,
@@ -826,6 +842,20 @@ body.roam.roam-dialog #app section#game-screen #text-box #tb-backlog-btn {
   top: -24px;
   right: 28px;
   border-top: 1.5px solid rgba(22, 88, 235, 0.44);
+  border-bottom: 1px solid rgba(96, 128, 180, 0.24);
+  background: rgba(248, 251, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 -4px 12px rgba(14, 43, 120, 0.08);
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+
+body.roam.roam-dialog #app section#game-screen #text-box #vn-read-controls,
+body.roam.roam-dialog #app section#game-screen #text-box .vn-read-controls {
+  top: -24px;
+  right: 114px;
+  padding: 0 10px;
+  border-top: 1.5px solid rgba(22, 88, 235, 0.36);
   border-bottom: 1px solid rgba(96, 128, 180, 0.24);
   background: rgba(248, 251, 255, 0.88);
   backdrop-filter: blur(12px);
@@ -853,6 +883,18 @@ body.roam.roam-dialog #app section#game-screen #text-box #tb-backlog-btn {
 }
 
 /* 1.5 对话分支斜切冰棱选项 (#choices .choice) */
+body:not(.roam) #stage > #choices {
+  bottom: calc(var(--boxh) + 52px);
+  max-height: min(44vh, calc(100% - var(--boxh) - 118px));
+}
+
+@media (max-width: 1024px), (max-height: 640px) {
+  body:not(.roam) #stage > #choices {
+    bottom: calc(var(--boxh) + 46px);
+    max-height: min(42vh, calc(100% - var(--boxh) - 110px));
+  }
+}
+
 #choices .choice {
   position: relative;
   border: none;
@@ -870,11 +912,29 @@ body.roam.roam-dialog #app section#game-screen #text-box #tb-backlog-btn {
   transition: transform 0.2s var(--pr-ease), background 0.18s ease, color 0.18s ease;
 }
 
-#choices .choice:hover:not(:disabled) {
-  background: var(--pr-sapphire-prism);
-  color: #FFFFFF;
+#choices .choice:hover:not(:disabled),
+#choices .choice.pick:hover:not(:disabled),
+#choices .choice.danger:hover:not(:disabled),
+#choices .choice.love:hover:not(:disabled),
+#choices .choice.egg:hover:not(:disabled) {
+  background: var(--pr-sapphire-prism) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 6px rgba(8, 26, 84, 0.46), 0 0 12px rgba(125, 211, 252, 0.34);
   box-shadow: none;
+  filter: drop-shadow(0 10px 22px rgba(14, 43, 120, 0.28));
   transform: translateX(8px);
+}
+
+#choices .choice:hover:not(:disabled)::before {
+  background: #ffffff !important;
+  box-shadow: 0 0 8px rgba(125, 211, 252, 0.65);
+}
+
+#choices .choice:hover:not(:disabled) *,
+#choices .choice:hover:not(:disabled) span,
+#choices .choice:hover:not(:disabled) .reason {
+  color: #ffffff !important;
+  text-shadow: 0 1px 6px rgba(8, 26, 84, 0.46), 0 0 12px rgba(125, 211, 252, 0.34);
 }
 
 /* 1.6 底部探索行动栏 (#action-bar) */
@@ -898,15 +958,27 @@ body.roam.roam-dialog #app section#game-screen #text-box #tb-backlog-btn {
   pointer-events: none;
 }
 
-#action-bar .ab-scroll .abtn {
+#action-bar .ab-scroll .abtn,
+#action-bar .ab-scroll .ab-btn {
   color: var(--pr-ink);
   font-family: var(--pr-serif);
   clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
 }
 
-#action-bar .ab-scroll .abtn:hover:not(:disabled) {
+#action-bar .ab-scroll .abtn:hover:not(:disabled),
+#action-bar .ab-scroll .ab-btn:hover:not(:disabled) {
   background: rgba(22, 88, 235, 0.08);
   color: var(--pr-sapphire);
+}
+
+#action-bar .ab-btn.is-unavailable,
+#action-bar .abtn.is-unavailable {
+  opacity: 0.45;
+}
+
+#action-bar .ab-btn.is-unavailable:hover:not(:disabled),
+#action-bar .abtn.is-unavailable:hover:not(:disabled) {
+  opacity: 0.65;
 }
 
 #action-bar .abtn.primary,
@@ -927,6 +999,65 @@ body.roam.roam-dialog #app section#game-screen #text-box #tb-backlog-btn {
 #action-bar .abtn[data-act="next"]:hover:not(:disabled),
 #action-bar .ab-next-pinned:hover:not(:disabled) {
   filter: brightness(1.12) drop-shadow(0 8px 20px rgba(22, 88, 235, 0.36));
+}
+
+@media (min-width: 681px) and (max-width: 1024px) {
+  #app #game-screen #action-bar,
+  body.roam:not(.ai-drawer-open) #app #game-screen #action-bar {
+    flex-wrap: nowrap;
+    height: 52px;
+    max-height: 52px;
+    gap: 6px;
+    padding: 5px 14px calc(5px + env(safe-area-inset-bottom));
+  }
+
+  #game-screen #action-bar .ab-scroll {
+    flex-wrap: nowrap;
+    min-width: 0;
+    flex: 0 1 auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    gap: 0;
+  }
+
+  #game-screen #action-bar .ab-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  #game-screen #action-bar .ab-scroll .abtn,
+  #game-screen #action-bar .ab-scroll .ab-btn {
+    height: 36px;
+    padding: 0 8px;
+    font-size: 11.5px;
+    gap: 4px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  #game-screen #action-bar .ab-scroll .abtn svg,
+  #game-screen #action-bar .ab-scroll .ab-btn svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  #game-screen #action-bar .ab-scroll .abtn small,
+  #game-screen #action-bar .ab-scroll .ab-btn small {
+    font-size: 10.5px;
+  }
+
+  #game-screen #action-bar .abtn.primary,
+  #game-screen #action-bar .abtn[data-act="next"],
+  #game-screen #action-bar .ab-next-pinned {
+    height: 36px;
+    padding: 0 16px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    clip-path: polygon(10px 0%, calc(100% - 10px) 0%, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0% 50%);
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
 }
 
 /* 1.7 场景切面冰棱热点 (#hotspots .hotspot) */
@@ -950,6 +1081,33 @@ body.roam.roam-dialog #app section#game-screen #text-box #tb-backlog-btn {
 
 #hotspots .hotspot:hover .hs-icon,
 #hotspots .hotspot.vignette-spot:hover .hs-icon {
+  color: var(--pr-cyan-gleam) !important;
+}
+
+#hotspots .hotspot.shop-spot {
+  background:
+    linear-gradient(90deg, #0E8A64 0%, #169B7B 46%, var(--pr-sapphire) 100%) top / 100% 2px no-repeat,
+    linear-gradient(158deg, rgba(255, 255, 255, 0.96) 0%, rgba(240, 250, 251, 0.93) 58%, rgba(230, 243, 255, 0.92) 100%) !important;
+  color: var(--pr-ink) !important;
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%) !important;
+  box-shadow: inset 0 -1px 0 rgba(14, 138, 100, 0.28), inset 1px 0 0 rgba(14, 138, 100, 0.22), inset -1px 0 0 rgba(22, 88, 235, 0.26) !important;
+}
+
+#hotspots .hotspot.shop-spot::before {
+  background: var(--pr-emerald) !important;
+}
+
+#hotspots .hotspot.shop-spot .hs-icon {
+  color: var(--pr-emerald) !important;
+}
+
+#hotspots .hotspot.shop-spot:hover {
+  background: linear-gradient(135deg, #0E8A64 0%, #146F8C 48%, #1658EB 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: none !important;
+}
+
+#hotspots .hotspot.shop-spot:hover .hs-icon {
   color: var(--pr-cyan-gleam) !important;
 }
 
@@ -1034,6 +1192,7 @@ body.roam.roam-dialog #app section#game-screen #text-box #tb-backlog-btn {
 #vn-saveload-modal.overlay,
 #vn-chapters-modal.overlay,
 #vn-prefs-modal.overlay,
+#ice-deduction-modal.overlay,
 #schedule-overlay.overlay,
 #schedule-modal.overlay,
 #season-report-overlay.overlay,
@@ -1043,9 +1202,22 @@ body.roam.roam-dialog #app section#game-screen #text-box #tb-backlog-btn {
 #mailbox-modal.overlay,
 #ending-screen.overlay,
 .rh-overlay {
-  background: rgba(14, 30, 72, 0.34);
+  background: rgba(14, 30, 72, 0.42);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  opacity: 1;
+  animation: none;
+  isolation: isolate;
+}
+
+#vn-prefs-modal,
+#vn-prefs-modal.overlay {
+  z-index: 95;
+}
+
+#ice-deduction-modal,
+#ice-deduction-modal.overlay {
+  z-index: 78;
 }
 
 #panel .end-card,
@@ -4963,8 +5135,19 @@ body.roam #portraits .p-slot.active[data-char="alice"] img {
   filter: brightness(1.0) saturate(1.02) drop-shadow(0 12px 24px rgba(14, 43, 120, 0.26));
 }
 
+#portraits .p-slot.dim:not(.ps-enter):not(.ps-leave),
+#portraits .p-slot.dim img,
+body.roam #portraits .p-slot.dim:not(.ps-enter):not(.ps-leave),
 body.roam #portraits .p-slot.dim img {
-  filter: brightness(0.68) saturate(0.78) drop-shadow(0 8px 18px rgba(14, 34, 84, 0.20));
+  opacity: 1;
+}
+
+#portraits .p-slot.dim img {
+  filter: brightness(0.68) saturate(0.82) drop-shadow(0 6px 14px rgba(14, 34, 84, 0.22));
+}
+
+body.roam #portraits .p-slot.dim img {
+  filter: brightness(0.68) saturate(0.82) drop-shadow(0 8px 18px rgba(14, 34, 84, 0.20));
 }
 
 @media (hover: hover) and (pointer: fine) {

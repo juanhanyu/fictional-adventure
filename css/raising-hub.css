@@ -2400,6 +2400,78 @@ body.roam.roam-dialog #game-screen #sylvia-hub .sh-charm-popover {
   font-weight: 700;
 }
 
+.rh-pouch-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 0;
+  color: var(--rh-sapphire-deep);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.rh-pouch-pill .rh-ico {
+  color: #1658eb;
+}
+
+.rh-pouch-pill b {
+  font-weight: 700;
+  color: var(--rh-ink);
+}
+
+/* 分地域商铺风物特产微签（无外框，左 2px 皇家蓝细线 + 极浅冰白底） */
+.rh-venue-specialty {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 3px 10px 3px 8px;
+  border: none;
+  border-left: 2px solid #1658eb;
+  border-radius: 0;
+  background: rgba(22, 88, 235, 0.06);
+  color: var(--rh-sapphire-deep);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  line-height: 1.45;
+}
+
+.rh-venue-specialty .rh-ico {
+  width: 12px;
+  height: 12px;
+  color: #1658eb;
+  flex-shrink: 0;
+}
+
+/* 纯随身礼囊赠礼模式顶栏提示带 */
+.rh-pouch-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  border: none;
+  border-left: 2px solid #1658eb;
+  border-radius: 0;
+  background: rgba(22, 88, 235, 0.05);
+  color: var(--rh-ink-body);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.rh-pouch-notice .rh-ico {
+  width: 14px;
+  height: 14px;
+  color: #1658eb;
+  flex-shrink: 0;
+}
+
+#shop-overlay .rh-shop-shell.is-pouch-only .rh-modal-scroll {
+  padding-top: 16px;
+}
+
 /* 裸排细线子页签 */
 .rh-subtabs {
   flex-shrink: 0;
@@ -2449,16 +2521,25 @@ body.roam.roam-dialog #game-screen #sylvia-hub .sh-charm-popover {
   transform: rotate(45deg);
 }
 
-/* 细线精品目录网格 */
+.rh-subtab-cnt {
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--rh-stone-ink);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+/* 细线精品目录网格：双栏舒展排布，确保单行价格 + 操作栏零挤压折行 */
 .rh-shop-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(264px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 0 26px;
 }
 
 .rh-shop-card {
   position: relative;
-  padding: 15px 8px 16px 12px;
+  padding: 15px 10px 15px 12px;
   border-radius: 0;
   background: transparent;
   border: none;
@@ -2561,8 +2642,8 @@ body.roam.roam-dialog #game-screen #sylvia-hub .sh-charm-popover {
   flex: 1;
   min-width: 0;
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 6px 8px;
   flex-wrap: wrap;
 }
 
@@ -2576,6 +2657,22 @@ body.roam.roam-dialog #game-screen #sylvia-hub .sh-charm-popover {
 .rh-sc-tag {
   font-size: 11.5px;
   color: var(--rh-stone-ink);
+}
+
+/* 产地特产微签：直角无边框浅青色块，零圆框套娃 */
+.rh-sc-origin {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border: none;
+  border-radius: 0;
+  background: rgba(10, 135, 98, 0.10);
+  color: var(--rh-emerald-ink);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  white-space: nowrap;
 }
 
 .rh-sc-stock {
@@ -2605,13 +2702,15 @@ body.roam.roam-dialog #game-screen #sylvia-hub .sh-charm-popover {
   line-height: 1.5;
 }
 
+#shop-overlay .rh-sc-foot,
 .rh-sc-foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
   margin-top: auto;
-  padding-top: 6px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(27, 35, 51, 0.08);
 }
 
 .rh-sc-price {
@@ -2623,6 +2722,7 @@ body.roam.roam-dialog #game-screen #sylvia-hub .sh-charm-popover {
   color: var(--rh-ink);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .rh-sc-price .rh-ico {
@@ -2632,20 +2732,106 @@ body.roam.roam-dialog #game-screen #sylvia-hub .sh-charm-popover {
 
 .rh-sc-price s,
 .rh-sc-price .rh-old-price {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
   color: var(--rh-stone-ink);
-  margin-left: 10px;
+  margin-left: 6px;
   text-decoration: line-through;
   text-decoration-color: rgba(82, 96, 120, 0.65);
 }
 
+/* [P1] 统一清爽齐平单行等高操作栏：彻底消除折行阶梯与三套混搭框线 */
+#shop-overlay .rh-sc-actions,
 .rh-sc-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: inline-flex;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+#shop-overlay .rh-sc-actions .rh-btn,
+#shop-overlay .rh-sc-actions .rh-sc-btn,
+#shop-overlay .rh-gift-item .rh-sc-btn {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 11px;
+  margin: 0;
+  border: none;
+  border-left: none;
+  border-bottom: none;
+  border-radius: 0;
+  box-shadow: none;
+  filter: none;
+  clip-path: none;
+  font-family: var(--rh-sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, filter 0.16s ease;
+}
+
+#shop-overlay .rh-sc-actions .rh-sc-btn::before,
+#shop-overlay .rh-gift-item .rh-sc-btn::before {
+  display: none;
+  content: none;
+}
+
+/* 自用：雪瓷冷灰无框轻色块 */
+#shop-overlay .rh-sc-actions .rh-sc-btn.is-use {
+  background: rgba(27, 35, 51, 0.06);
+  color: var(--rh-ink-body);
+}
+
+#shop-overlay .rh-sc-actions .rh-sc-btn.is-use:hover:not(:disabled) {
+  background: rgba(22, 88, 235, 0.11);
+  color: #1658eb;
+}
+
+/* 赠礼：冰蓝无框轻色块 */
+#shop-overlay .rh-sc-actions .rh-sc-btn.is-gift {
+  background: rgba(22, 88, 235, 0.095);
+  color: var(--rh-sapphire);
+}
+
+#shop-overlay .rh-sc-actions .rh-sc-btn.is-gift:hover:not(:disabled) {
+  background: rgba(22, 88, 235, 0.17);
+  color: var(--rh-sapphire-deep);
+}
+
+/* 购入 / 致赠此物：雪瓷切角皇家蓝轻实心键 */
+#shop-overlay .rh-sc-actions .rh-sc-btn.is-buy,
+#shop-overlay .rh-gift-item .rh-sc-btn.is-send {
+  padding: 0 13px;
+  background: linear-gradient(135deg, #2460e8 0%, #1658eb 56%, #0e3ba8 100%);
+  color: #ffffff;
+  font-weight: 700;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+
+#shop-overlay .rh-sc-actions .rh-sc-btn.is-buy:hover:not(:disabled),
+#shop-overlay .rh-gift-item .rh-sc-btn.is-send:hover:not(:disabled) {
+  filter: brightness(1.08);
+  color: #ffffff;
+}
+
+#shop-overlay .rh-sc-actions .rh-sc-btn.is-buy:disabled,
+#shop-overlay .rh-gift-item .rh-sc-btn.is-send:disabled {
+  background: rgba(82, 96, 120, 0.14);
+  color: var(--rh-stone-ink);
+  opacity: 0.72;
+  filter: none;
+  cursor: not-allowed;
 }
 
 /* 赠礼视图 */
@@ -3863,6 +4049,13 @@ body.roam.roam-dialog #game-screen #sylvia-hub .sh-charm-popover {
     position: absolute;
     top: 10px;
     right: 10px;
+  }
+
+  #shop-overlay .rh-sc-actions .rh-sc-btn,
+  #shop-overlay .rh-gift-item .rh-sc-btn {
+    height: 34px;
+    min-height: 34px;
+    padding: 0 10px;
   }
 
   .rh-sched-toolbar {

@@ -1561,8 +1561,8 @@ const ACH = [
   {id:'ice_palace_on', name:'冰中宫殿', desc:'构建冰晶宫殿', reward:'记忆格+3'},
   {id:'micro_service', name:'微服翻车', desc:'三姐妹微服出行并震惊全城', reward:'金币？？？'},
   {id:'shell_gift', name:'月虹螺之约', desc:'完成海滨的贝壳饰品', reward:'永久纪念'},
-  {id:'egg_garden', name:'花园密语', desc:'在花园发现隐藏彩蛋', reward:'小礼物'},
-  {id:'egg_cellar', name:'酒窖低语', desc:'在酒窖发现初代公爵的留言', reward:'剧情线索'},
+  {id:'egg_garden', name:'花园密语', desc:'在花园发现隐秘旧痕', reward:'小礼物'},
+  {id:'egg_cellar', name:'酒窖低语', desc:'在酒窖发现初代公爵的留言', reward:'尘封旧闻'},
   {id:'egg_clock', name:'钟塔野猫', desc:'在钟塔投喂野猫', reward:'诺艾儿好感'},
   {id:'black_hair', name:'墨色之名', desc:'以眷寒渔之名踏上旅途', reward:'身份切换'},
   {id:'sword_begin', name:'竹剑初握', desc:'在霁馆开始学剑', reward:'攻击成长开启'},
@@ -1836,12 +1836,16 @@ function addItem(it){
 }
 // 使用消耗品：热饼干恢复1点体力
 function useItem(id){
-  const idx = S.inv.findIndex(it=>it.id===id);
+  const idx = S.inv.findIndex(it=>it && it.id===id);
   if(idx<0) return;
   const it = S.inv[idx];
   if(it.id==='cookie'){
     S.st = clamp(S.st + 1, 0, S.mst);
-    S.inv.splice(idx,1);
+    if(Number(it.qty) > 1){
+      it.qty = Number(it.qty) - 1;
+    } else {
+      S.inv.splice(idx,1);
+    }
     sfx('ok');
     updateHUD();
     openPanel('inv');
@@ -2196,6 +2200,7 @@ function updateHUD(){
     ccEl.textContent = `${codexNum}`;
     ccEl.classList.toggle('is-zero', codexNum <= 0);
   }
+  if(S.freeRoam && typeof syncActionBarAvailability === 'function') syncActionBarAvailability();
 }
 
 let _bgTimer = null;
@@ -2560,6 +2565,9 @@ if(typeof window !== 'undefined' && typeof window.addEventListener === 'function
     if(_dialogRowsResizeTimer) clearTimeout(_dialogRowsResizeTimer);
     _dialogRowsResizeTimer = setTimeout(()=>{
       _dialogRowsResizeTimer = null;
+      if(S && S.freeRoam && typeof renderHotspots === 'function'){
+        renderHotspots();
+      }
       const tb = $('text-box'), tx = $('text');
       if(!tb || !tx || tb.classList.contains('dialog-hidden')) return;
       if(!tx.textContent || !tx.textContent.trim()) return;
@@ -2806,7 +2814,7 @@ function triggerLineVoice(L, list, nextIdx){
 function applyLineEffects(L){
   if(!L || typeof L === 'string') return;
   if(L.bg) setBG(L.bg);
-  if(L.loc){ S.loc = L.loc; updateLocBar(); }
+  if(L.loc){ S.loc = L.loc; updateLocBar({ skipBg: !!L.bg }); }
   // 行级 bgm：在场景内切换地点/背景时可强制指定并锁定 BGM，防止引擎误判为自由探索而切回 peaceful
   if(L.bgm){ bgmSceneStart(L.bgm); }
   // 记录当前说话人 id（用于对话框左侧小胸像）：单人说=L.ch；DUO/portraits=active 者
@@ -2859,10 +2867,13 @@ function clearRoamDialogForTransition(){
   }
 }
 
-function playLines(lines, done){
+function playLines(lines, done, opts){
   const gen = ++lineGen;
-  let i = 0;
   const list = Array.isArray(lines) ? lines : [];
+  const startIdx = (opts && Number.isFinite(opts.startIdx)) ? Math.max(0, Math.min(Math.floor(opts.startIdx), list.length)) : 0;
+  const baseIdx = (opts && Number.isFinite(opts.baseIdx)) ? Math.max(0, Math.floor(opts.baseIdx)) : 0;
+  const trackSceneIdx = !!(opts && opts.trackSceneIdx);
+  let i = startIdx;
   const keepRoamStage = !!((S.freeRoam || roamDialogActive) && !currentScene && !storyChain);
   S.freeRoam = false;
   roamDialogActive = keepRoamStage;
@@ -2912,7 +2923,9 @@ function playLines(lines, done){
     setAwaitingChoiceUI(false);
 
     while(i < list.length){
+      const curIdx = i;
       let L = list[i++];
+      if(trackSceneIdx && currentScene && S) S._lineIdx = baseIdx + curIdx;
 
       // 防御：只要本场景仍是「视角」场景，每渲染一行都重新确保 HUD/地点标隐藏
       // （避免某些渲染/刷新路径中途把 pov 状态清掉，导致「实际游玩不隐藏 UI」）
@@ -3026,8 +3039,9 @@ function playLines(lines, done){
         setDialogRows(fullText);
         $('text').innerHTML = escapeText(fullText);
         const rest = list.slice(i);
+        const restBaseIdx = baseIdx + i;
         const resumeRest = (rest.length || done) ? ()=>{
-          if(rest.length) playLines(rest, done);
+          if(rest.length) playLines(rest, done, { baseIdx: restBaseIdx, trackSceneIdx });
           else if(done) done();
         } : null;
         const rawChoices = typeof L.choices === 'function' ? L.choices() : (L.choices || []);
@@ -3071,7 +3085,7 @@ function playLines(lines, done){
         clearRoamDialogForTransition();
         flag('resume_after_pick', 1);
         // 选卡结束后，继续播放本场景剩下的台词
-        afterPick = { rest: list.slice(i), done: done };
+        afterPick = { rest: list.slice(i), done: done, baseIdx: baseIdx + i, trackSceneIdx };
         triggerBraveGift(L.pickTier);
         return;
       }
@@ -3257,15 +3271,22 @@ function bindAdvance(){
     }
     advanceDialog();
   };
-  const stageEl=$('stage');
-  if(stageEl && !stageEl._roamGreetingDismissBound){
-    stageEl._roamGreetingDismissBound = true;
-    stageEl.addEventListener('click', e=>{
+  const gameScreenEl=$('game-screen') || $('stage');
+  if(gameScreenEl && !gameScreenEl._roamGreetingDismissBound){
+    gameScreenEl._roamGreetingDismissBound = true;
+    gameScreenEl.addEventListener('click', e=>{
+      const tgt = e && e.target;
+      if(document.body && document.body.classList.contains('ui-hidden')){
+        if(tgt && tgt.closest && tgt.closest('#btn-ui, .overlay, .modal, #ai-drawer, #sys-popup, #card, #cg-screen')) return;
+        if(isBlockingOverlayForShortcut()) return;
+        uiShow();
+        if(e && typeof e.stopPropagation === 'function') e.stopPropagation();
+        return;
+      }
       if(!S.freeRoam || typing || awaitingChoice) return;
       const curTb=$('text-box');
       if(!curTb || curTb.getAttribute('data-roam-prompt') !== 'greeting') return;
-      const tgt = e && e.target;
-      if(tgt && tgt.closest && tgt.closest('#text-box, #choices, #sylvia-hub, #loc-bar, #hotspots, .hotspot, .css-p')) return;
+      if(tgt && tgt.closest && tgt.closest('#text-box, #choices, #action-bar, #sylvia-hub, #raising-hub, #loc-bar, #hotspots, .hotspot, .css-p, .overlay, .modal, #ai-drawer, #hud .hud-left, #hud .hud-right, #hud button, #hud a, #hud input, #hud .chip')) return;
       if(tgt && tgt.closest && tgt.closest('.p-slot')){
         const slot = tgt.closest('.p-slot');
         const img = slot && slot.querySelector('img');
@@ -3277,7 +3298,7 @@ function bindAdvance(){
           let under = null;
           try { under = document.elementFromPoint(e.clientX, e.clientY); }
           finally { pSlots.forEach((el, idx)=>{ el.style.pointerEvents = prev[idx]; }); }
-          if(under && under.closest && under.closest('#text-box, #choices, #sylvia-hub, #loc-bar, #hotspots, .hotspot, .css-p')) return;
+          if(under && under.closest && under.closest('#text-box, #choices, #action-bar, #sylvia-hub, #raising-hub, #loc-bar, #hotspots, .hotspot, .css-p, #hud .hud-left, #hud .hud-right, #hud button, #hud .chip')) return;
         }
       }
       if(e && e.detail !== 0 && stagePointHitsOpaquePortrait(e.clientX, e.clientY)) return;
@@ -3542,6 +3563,29 @@ function forwardPortraitClick(clientX,clientY){
   return true;
 }
 
+function syncActionBarAvailability(){
+  if(typeof document === 'undefined') return;
+  const bar = $('action-bar');
+  if(!bar) return;
+  const L = LOCS[S.loc];
+  const canTrain = !!(L && (L.tags?.includes('train') || S.loc==='garden' || S.loc==='training' || S.loc==='training_field' || S.loc==='ice_class' || S.loc==='northforest' || S.loc==='jikan'));
+  const canStudy = !!(L && (L.tags?.includes('study') || S.loc==='study' || S.loc==='library' || S.loc==='clocktower'));
+  const canCourse = (typeof availableCourses === 'function') ? availableCourses().length > 0 : false;
+  const rules = [
+    ['train', canTrain, '此处不宜修行，请前往花园、练武场、训练场或冰封峡谷'],
+    ['study', canStudy, '此处无书可读，请前往图书室、图书馆或钟塔'],
+    ['course', canCourse, '当前阶段暂无可修习的课程']
+  ];
+  rules.forEach(([act, ok, tip])=>{
+    const btn = bar.querySelector(`[data-act="${act}"]`);
+    if(!btn) return;
+    btn.classList.toggle('is-unavailable', !ok);
+    btn.setAttribute('aria-disabled', ok ? 'false' : 'true');
+    if(!ok) btn.setAttribute('title', tip);
+    else btn.removeAttribute('title');
+  });
+}
+
 function renderHotspots(){
   const box = $('hotspots');
   if(!box) return;
@@ -3555,6 +3599,7 @@ function renderHotspots(){
     }
     return;
   }
+  syncActionBarAvailability();
   let list = (EXITS[S.loc] || []).slice();
   if(S.ageY < 1 && S.loc === 'nursery'){
     list.push(
@@ -3575,6 +3620,21 @@ function renderHotspots(){
     usable.push({combatStage:'aino_sparring', label:'冰上实战·三击切磋', icon:'ice_cube', x:86, y:36});
   } else if(S.loc === 'ice_canyon' && flag('ch_distant_wind_1')){
     usable.push({combatStage:'hulan_beast_tide', label:'北境协防·冰封峡谷', icon:'mountain', x:86, y:30});
+  }
+  if(typeof window !== 'undefined' && window.RaisingHub && typeof window.RaisingHub.getShopVenueAtLoc === 'function'){
+    try {
+      const venue = window.RaisingHub.getShopVenueAtLoc(S.loc, S);
+      if(venue){
+        const pos = venue.hotspotPos || { x: 80, y: 58 };
+        usable.push({
+          shopVenue: venue,
+          label: venue.hotspotLabel || venue.name || '集市商摊',
+          icon: 'market',
+          x: pos.x,
+          y: pos.y
+        });
+      }
+    } catch(e){ console.error('RaisingHub.getShopVenueAtLoc', e); }
   }
   const peeps = whoIsHere();
   const targetPeeps = peeps.slice(0, 4);
@@ -3673,27 +3733,62 @@ function renderHotspots(){
     return;
   }
   show(box,1);
-  // 计算当前在场立绘的水平中心（与 layoutPortraits 一致），用于热点避脸防遮挡
+  // 计算当前在场立绘的水平中心（与 layoutPortraits 一致），按视口宽度自适应热点避让（含 960px 多人立绘防遮挡）
   const pCount = Math.min(4, peeps.length);
   const portraitXs = pCount === 1 ? [50] : pCount === 2 ? [30, 70] : pCount === 3 ? [20, 50, 80] : pCount >= 4 ? [14, 38, 62, 86] : [];
+  const vw = (typeof window !== 'undefined' && window.innerWidth) ? window.innerWidth : 1440;
+  const halfW = vw < 1100 ? 18 : (vw < 1360 ? 16 : 14);
+  const placed = [];
+  const hitsPortrait = (x, y) => portraitXs.length > 0 && y >= 19 && portraitXs.some(px => Math.abs(x - px) < halfW);
+  const hitsLocBar = (x, y) => y < 15 && x < 44;
+  const hitsPlaced = (x, y) => placed.some(p => Math.abs(p.x - x) < 13 && Math.abs(p.y - y) < 8);
   usable.forEach((ex,i)=>{
-    let hx = ex.x || (16 + i * 18);
-    let hy = Math.max(17, Math.min(64, ex.y || 48));
-    // 若热点落入立绘头部/五官区域（y 20..58 且与任一立绘中心水平距离 < 13%），自动避让至安全边缘或高空
-    if(portraitXs.length && hy >= 20 && hy <= 58){
-      for(const px of portraitXs){
-        if(Math.abs(hx - px) < 13){
-          if(px >= 60) hx = Math.min(90, Math.max(85, px + 18));
-          else if(px <= 40) hx = Math.max(10, Math.min(15, px - 18));
-          else hx = (i % 2 === 0) ? 13 : 87;
+    const origX = clamp(ex.x || (16 + i * 18), 9, 91);
+    const origY = clamp(ex.y || 48, 14, 62);
+    let hx = origX;
+    let hy = origY;
+    if(hitsPortrait(hx, hy) || hitsLocBar(hx, hy) || hitsPlaced(hx, hy)){
+      const cands = [];
+      const flankXs = origX <= 50 ? [9, 91, 12, 88] : [91, 9, 88, 12];
+      const flankYs = [hy, 30, 44, 56, 22];
+      for(const fx of flankXs){
+        for(const fy of flankYs){
+          cands.push([fx, clamp(fy, 20, 60)]);
         }
       }
+      if(pCount === 2 && vw >= 1150){
+        [hy, 26, 40, 54].forEach(cy => cands.push([50, clamp(cy, 20, 60)]));
+      }
+      const upperHigh = [52, 70, 86, 61, 78].sort((a,b) => Math.abs(a - origX) - Math.abs(b - origX));
+      upperHigh.forEach(ux => cands.push([ux, 14]));
+      const upperMid = [14, 86, 32, 68, 50, 22, 78].sort((a,b) => Math.abs(a - origX) - Math.abs(b - origX));
+      upperMid.forEach(ux => cands.push([ux, 17]));
+      let chosen = null;
+      for(const [cx, cy] of cands){
+        if(!hitsPortrait(cx, cy) && !hitsLocBar(cx, cy) && !hitsPlaced(cx, cy)){
+          chosen = [cx, cy];
+          break;
+        }
+      }
+      if(!chosen){
+        // 4 人全满极窄场景兜底：在上空清朗区挑与已放热点间距最大者
+        let bestScore = -1e9;
+        const skyPool = [[52,14],[70,14],[86,14],[14,17],[32,17],[68,17],[86,17],[50,17],[22,17],[78,17]];
+        for(const [cx, cy] of skyPool){
+          if(hitsLocBar(cx, cy)) continue;
+          const minP = placed.length ? Math.min(...placed.map(p => Math.hypot(p.x - cx, (p.y - cy) * 1.6))) : 99;
+          const score = minP - Math.abs(cx - origX) * 0.05;
+          if(score > bestScore){ bestScore = score; chosen = [cx, cy]; }
+        }
+      }
+      if(chosen){ hx = chosen[0]; hy = chosen[1]; }
     }
-    if(typeof window !== 'undefined' && window.innerWidth && window.innerWidth <= 520){
+    if(vw <= 520){
       hx = clamp(hx, 22, 78);
     }
+    placed.push({ x: hx, y: hy });
     const b = document.createElement('button');
-    b.className = 'hotspot' + (ex.egg?' egg':'') + (ex.babyFuss?' locked-baby':'');
+    b.className = 'hotspot' + (ex.egg?' egg':'') + (ex.babyFuss?' locked-baby':'') + (ex.shopVenue?' shop-spot':'');
     b.style.left = hx + '%';
     b.style.top = hy + '%';
     b.innerHTML = `<span class="hs-icon">${uiIco(ex.icon || LOCS[ex.to]?.icon || 'door', 14)}</span>${ex.label||LOCS[ex.to]?.name||ex.to}`;
@@ -3701,6 +3796,12 @@ function renderHotspots(){
       e.stopPropagation();
       if(!S.freeRoam) return;
       sfx('click');
+      if(ex.shopVenue){
+        if(typeof window !== 'undefined' && window.RaisingHub && typeof window.RaisingHub.openShopModal === 'function'){
+          window.RaisingHub.openShopModal('market');
+        }
+        return;
+      }
       if(ex.combatStage){ startBattle({stageId: ex.combatStage, fullRestore: true}, ()=>enterFreeRoam()); return; }
       if(ex.babyFuss){ doBabyFuss(ex.fussTo || 'parlor', ex.st || 0); return; }
       enterLoc(ex.to);
@@ -3708,8 +3809,104 @@ function renderHotspots(){
     box.appendChild(b);
   });
   if(typeof BranchingDirector !== 'undefined' && BranchingDirector.renderVignetteHotspots) BranchingDirector.renderVignetteHotspots();
+  layoutRoamSkyBandHotspots();
   if(typeof window !== 'undefined' && window.RaisingHub && typeof window.RaisingHub.syncSylviaHub === 'function'){
     try { window.RaisingHub.syncSylviaHub(); } catch(e){}
+  }
+}
+
+function layoutRoamSkyBandHotspots(){
+  const box = $('hotspots');
+  if(!box || !S || !S.freeRoam) return;
+  const vw = (typeof window !== 'undefined' && window.innerWidth) ? window.innerWidth : 1440;
+  const pCount = (typeof whoIsHere === 'function') ? Math.min(4, whoIsHere().length) : (Array.isArray(stage) ? Math.min(4, stage.length) : 0);
+  const spots = Array.from(box.querySelectorAll('.hotspot'));
+  if(!spots.length) return;
+  if(vw > 1040 || pCount < 1){
+    spots.forEach(el => {
+      el.classList.remove('sky-band');
+      el.style.maxWidth = '';
+    });
+    return;
+  }
+  const boxRect = box.getBoundingClientRect ? box.getBoundingClientRect() : null;
+  const boxW = boxRect && boxRect.width ? boxRect.width : 0;
+  let skySpots;
+  if(pCount >= 2){
+    skySpots = spots.slice();
+  } else {
+    // 1 人房间在窄视口下，仅将实测会与立绘槽位或地点条交叠的热点（如居中出口/偏左轶事）抬入顶部清朗天空带
+    const pRoot = $('portraits');
+    const pRects = [];
+    if(pRoot && pRoot.querySelectorAll){
+      pRoot.querySelectorAll('.p-slot:not(.hidden)').forEach(sl => {
+        const r = sl.getBoundingClientRect ? sl.getBoundingClientRect() : null;
+        if(r && r.width > 0 && r.height > 0) pRects.push(r);
+      });
+    }
+    const locBar0 = $('loc-bar');
+    const locRect0 = (locBar0 && locBar0.getBoundingClientRect) ? locBar0.getBoundingClientRect() : null;
+    skySpots = [];
+    spots.forEach(el => {
+      el.classList.remove('sky-band');
+      el.style.maxWidth = '';
+      if(boxW <= 0 || !pRects.length){
+        const lx = parseFloat(el.style.left);
+        if(!isNaN(lx) && Math.abs(lx - 50) < 22) skySpots.push(el);
+        return;
+      }
+      const r = el.getBoundingClientRect();
+      const hitP = pRects.some(pr => r.right > pr.left - 4 && r.left < pr.right + 4 && r.bottom > pr.top - 4 && r.top < pr.bottom + 4);
+      const hitL = !!(locRect0 && locRect0.width > 0 && r.right > locRect0.left - 6 && r.left < locRect0.right + 6 && r.bottom > locRect0.top - 4 && r.top < locRect0.bottom + 4);
+      if(hitP || hitL) skySpots.push(el);
+    });
+    if(!skySpots.length) return;
+  }
+  skySpots.sort((a, b) => {
+    const rank = el => el.classList.contains('vignette-spot') ? 2 : (el.classList.contains('shop-spot') ? 1 : 0);
+    return rank(a) - rank(b);
+  });
+  skySpots.forEach(el => {
+    el.classList.add('sky-band');
+    el.style.maxWidth = '';
+  });
+  if(boxW > 0){
+    const locBar = $('loc-bar');
+    const locRect = (locBar && locBar.getBoundingClientRect) ? locBar.getBoundingClientRect() : null;
+    const locRightRel = (locRect && locRect.width > 0) ? Math.max(0, locRect.right - boxRect.left) : Math.round(boxW * 0.25);
+    const startPx = Math.max(locRightRel + 12, Math.round(boxW * 0.22));
+    const endPx = boxW - 4;
+    const availW = Math.max(120, endPx - startPx);
+    const n = skySpots.length;
+    const minGap = 6;
+    let widths = skySpots.map(el => Math.ceil(el.getBoundingClientRect().width || 80));
+    let sumW = widths.reduce((a, b) => a + b, 0);
+    if(sumW + minGap * (n - 1) > availW){
+      const perCap = Math.max(52, Math.floor((availW - minGap * (n - 1)) / n));
+      skySpots.forEach(el => { el.style.maxWidth = perCap + 'px'; });
+      widths = skySpots.map(el => Math.ceil(el.getBoundingClientRect().width || perCap));
+      sumW = widths.reduce((a, b) => a + b, 0);
+    }
+    const slack = Math.max(0, availW - sumW);
+    const gap = n > 1 ? Math.min(16, Math.max(minGap, Math.floor(slack / (n + 1)))) : 0;
+    const usedW = sumW + gap * (n - 1);
+    let cursor = startPx + Math.max(0, Math.floor((availW - usedW) / 2));
+    if(cursor + usedW > endPx) cursor = Math.max(startPx, endPx - usedW);
+    skySpots.forEach((el, idx) => {
+      const w = widths[idx];
+      const cx = cursor + w / 2;
+      const pct = clamp((cx / boxW) * 100, 12, 96);
+      el.style.left = pct.toFixed(2) + '%';
+      el.style.top = '19px';
+      cursor += w + gap;
+    });
+  } else {
+    const n = skySpots.length;
+    skySpots.forEach((el, idx) => {
+      const pct = n === 1 ? 64 : (32 + (idx * 58) / (n - 1));
+      el.style.left = pct.toFixed(2) + '%';
+      el.style.top = '19px';
+    });
   }
 }
 
@@ -3726,6 +3923,9 @@ function enterFreeRoam(options={}){
   if(storyChain && storyChain.idx < storyChain.queue.length){ stepChain(); return; }
   if(storyChain && storyChain.idx >= storyChain.queue.length) storyChain=null;
   S.storyPending=[];
+  S._lineIdx=0;
+  delete S._resumeLineIdx;
+  delete S._resumeSceneId;
   currentScene=null;
   resetDialogAdvanceState();
   // 「视角」与瞬态覆盖层结束：恢复顶部 HUD，清理未退出 CG/报幕卡
@@ -3740,7 +3940,7 @@ function enterFreeRoam(options={}){
   roamDialogActive = false;
   document.body.classList.remove('roam-dialog');
   document.body.classList.add('roam');
-  S.freeRoam=true; awaitingChoice=false; setAwaitingChoiceUI(false); show('action-bar',1); syncActionBarHeight(); updateHUD(); syncStageChromeMode(); updateLocBar(); save();
+  S.freeRoam=true; awaitingChoice=false; setAwaitingChoiceUI(false); show('action-bar',1); syncActionBarHeight(); updateHUD(); syncStageChromeMode(); updateLocBar(); syncActionBarAvailability(); save();
   if(options.restoreLoc){
     const targetBg = (LOCS[S.loc] && LOCS[S.loc].bg) || S.bg;
     if(targetBg) setBG(targetBg);
@@ -3802,13 +4002,14 @@ function showPendingSeasonFlavor(){
   return true;
 }
 
-function updateLocBar(){
+function updateLocBar(opts){
   const L=LOCS[S.loc]; if(!L) return;
   show('loc-bar',1);
   $('loc-name').textContent = L.name;
   $('loc-desc').textContent = L.desc||'';
-  setBG(L.bg||'bg-room');
+  if(!(opts && opts.skipBg)) setBG(L.bg||'bg-room');
   bgmFreeRoam(L.bg||'bg-room', S.phase, S.loc); // 自由探索才按背景切音乐
+  if(S.freeRoam) syncActionBarAvailability();
 }
 function enterLoc(id){
   const L=LOCS[id];
@@ -3971,6 +4172,7 @@ function openMap(){
   closeHudMoreDrawer();
   const g=$('map-grid');
   if(!g) return;
+  show('map-overlay',1);
   let renderedVisual = false;
   if(typeof window !== 'undefined' && window.RaisingHub && typeof window.RaisingHub.renderVisualMap === 'function'){
     try {
@@ -4003,7 +4205,8 @@ function openMap(){
       g.appendChild(d);
     });
   }
-  show('map-overlay',1);
+  const mapScroll = document.querySelector('#map-overlay .modal-scroll');
+  if(mapScroll) mapScroll.scrollTop = 0;
   sfx('modal_open');
 }
 $('btn-map-close').onclick=()=>{ show('map-overlay',0); sfx('modal_close'); };
@@ -4692,7 +4895,7 @@ function dismissPickScreen(){
   sfx('modal_close');
   const ap = afterPick; afterPick = null;
   if(ap && ap.rest && ap.rest.length){
-    playLines(ap.rest, ap.done);
+    playLines(ap.rest, ap.done, { baseIdx: ap.baseIdx || 0, trackSceneIdx: !!ap.trackSceneIdx });
   } else if(ap && typeof ap.done === 'function'){
     ap.done();
   } else if(!S.freeRoam && !typing && !lineCB && !awaitingChoice){
@@ -4798,7 +5001,7 @@ function selectPick(p, tier){
   if(ap && ap.rest && ap.rest.length){
     // 剧情场景中的选卡：弹出习得面板，然后接着往下演
     sysPopup('✧ 勇者之赐 ✧', `你选择了：<b>${p.name}</b>（${p.tag||'赋技能'}）<br><br>技能已习得！<br><span style="color:#526078">${p.desc||''}</span>`);
-    playLines(ap.rest, ap.done);
+    playLines(ap.rest, ap.done, { baseIdx: ap.baseIdx || 0, trackSceneIdx: !!ap.trackSceneIdx });
     return;
   }
   playLines([
@@ -4935,7 +5138,7 @@ function renderBattle(){
   if(!B) return;
   const e=B.enemy;
   $('b-emoji').textContent=e.emoji;
-  $('b-ename').textContent=`${e.name}${e.boss?'（BOSS）':''}（${ELEM_NAME[e.elem]||''}）`;
+  $('b-ename').textContent=`${e.name}${e.boss?'（强敌）':''}（${ELEM_NAME[e.elem]||''}）`;
   $('b-ehp').style.width=(Math.max(0,e.hp)/e.mhp*100)+'%';
   $('b-ehp-num').textContent=`${Math.max(0,e.hp)}/${e.mhp}`;
   // 玩家行动
@@ -5181,6 +5384,11 @@ function openStatsOverlay(){
 }
 function openStatsPanel(){
   closeHudMoreDrawer();
+  if((Number(S.ageY) || 0) < 1){
+    toast('尚在襁褓之中，待一岁后再观四维星象盘。');
+    sfx('bad');
+    return;
+  }
   if(!S.stats) S.stats = {body:5, mind:15, mana:10, charm:8};
   const body = $('stats-body');
   if(!body){ openPanel('status'); return; }
@@ -5252,21 +5460,21 @@ const MAIN_STAFF_DEFS = {
     id: 'none',
     name: '徒手导魔',
     shortEffect: '常规构筑 · 零额外耗蓝与暴露风险',
-    desc: '不借外物法杖，以自身魔力回路直接构筑术式。法攻倍率 ×1.00，无额外耗蓝与耳目暴露风险。',
+    desc: '不借外物法杖，以自身魔力回路直接构筑术式。常规魔导出力，无额外耗蓝与耳目暴露风险。',
     lore: '希尔维亚自幼锤炼的徒手塑形技艺，经手构筑沉稳精准，随时可切换随身法器。'
   },
   eclipse_wand: {
     id: 'eclipse_wand',
     name: '晦轮杖',
-    shortEffect: '100% 真实魔伤 · +24% MaxMP 额外耗蓝 · 零自创惩罚',
-    desc: '外层黑曜星环嵌合冰晶棱芯的短杖。施法视作 100% 真实魔伤、无自创惩罚，额外耗蓝 +24% 最大魔力；希尔维亚永不触发日蚀。',
+    shortEffect: '100% 真实魔伤 · +24% MaxMP 额外耗蓝 · 随心塑形无滞碍',
+    desc: '外层黑曜星环嵌合冰晶棱芯的短杖。施法视作 100% 真实魔伤、随心塑形无滞碍，额外耗蓝 +24% 最大魔力；希尔维亚永不触发日蚀。',
     lore: '公爵府卷宗移交保管的「静止的日蚀」，深蓝杖身悬着无声旋转的冰蓝细环。'
   },
   north_saint_staff: {
     id: 'north_saint_staff',
     name: '极北圣晶杖',
-    shortEffect: '法攻 ×1.28 · 暴伤 +20% · 增幅耗蓝 -25%',
-    desc: '极北寒晶雕琢的圣域法杖。法攻倍率 ×1.28、暴击伤害 +20%，魔力增幅额外耗蓝降低 25%。',
+    shortEffect: '魔导威力提升 28% · 暴伤 +20% · 增幅耗蓝 -25%',
+    desc: '极北寒晶雕琢的圣域法杖。魔导威力提升 28%、暴击伤害 +20%，魔力增幅额外耗蓝降低 25%。',
     lore: '凝萃极北冻土终年不化之冰髓而成的白银圣杖，杖首六棱冰晶清辉凛然。'
   }
 };
@@ -5614,6 +5822,7 @@ function loadFromManualSlot(slotId){
   save();
   show('panel', 0);
   show('title-screen', 0);
+  uiShow();
   show('game-screen', 1);
   updateHUD();
   updateLocBar();
@@ -5799,7 +6008,7 @@ function collectGraphicalInventoryEntries(){
     if(cnt <= 0) return;
     const shopItem = shopById[cid] || null;
     const art = getItemArtMetaSafe(cid);
-    const desc = (shopItem && shopItem.desc) || (art && art.desc) || '于温馨小铺购入的心意物件。';
+    const desc = (shopItem && shopItem.desc) || (art && art.desc) || '于各地集市货摊购入的心意物件。';
     const lore = (art && art.lore && art.lore !== desc) ? art.lore : '';
     entries.push({
       key: `cozy:${cid}`,
@@ -5821,8 +6030,11 @@ function collectGraphicalInventoryEntries(){
   return entries;
 }
 
-function renderInvDetailCardHTML(entry){
+function renderInvDetailCardHTML(entry, isBabyInv){
   if(!entry){
+    if(isBabyInv){
+      return `<div class="inv-gb-detail-empty">摇篮旁暂未收置随身物件，待日后添置心爱小物便可在此细看。</div>`;
+    }
     return `<div class="inv-gb-detail-empty">点击左侧任意 76px 格子，或使用方向键 ↑↓←→ 切换选中，即可在此精鉴实图并执行佩装、食用或赠礼。</div>`;
   }
   const heroArt = renderItemArtSafe(entry.artKey, {
@@ -5866,7 +6078,11 @@ function renderInvDetailCardHTML(entry){
 }
 
 function renderGraphicalInventoryPanel(body, opts){
-  const validFilters = new Set(INV_GB_FILTERS.map(f => f.id));
+  const isBabyInv = !!(S && S.ageY < 1);
+  const activeFilters = isBabyInv
+    ? INV_GB_FILTERS.filter(f => f.id === 'all')
+    : INV_GB_FILTERS;
+  const validFilters = new Set(activeFilters.map(f => f.id));
   if(opts && opts.filter && validFilters.has(opts.filter)){
     _invUiState.filter = opts.filter;
   }
@@ -5897,16 +6113,18 @@ function renderGraphicalInventoryPanel(body, opts){
   _invUiState.selectedKey = selectedEntry ? selectedEntry.key : null;
   _invUiState.lastIdx = selectedIdx >= 0 ? selectedIdx : 0;
 
-  const filterHTML = INV_GB_FILTERS.map(f => {
+  const filterHTML = activeFilters.map(f => {
     const on = _invUiState.filter === f.id;
     return `<button type="button" class="inv-gb-filter${on ? ' active on' : ''}" data-inv-filter="${f.id}" role="tab" aria-selected="${on ? 'true' : 'false'}"><span>${f.label}</span><small class="inv-gb-filter-cnt">${counts[f.id] || 0}</small></button>`;
   }).join('');
 
-  const emptyHints = {
-    all: '行囊空空如也。旅途中收入的法器、随身铭记、信物与小铺茶点都会收整于此。',
-    gear: '暂未收执随身法杖或解锁随身铭记。推进主线与奇遇后即可在此一键佩装。',
+  const emptyHints = isBabyInv ? {
+    all: '摇篮旁暂未收置随身物件。'
+  } : {
+    all: '行囊空空如也。旅途中收入的法器、随身铭记、信物与各地集市茶点都会收整于此。',
+    gear: '暂未收执随身法杖或解锁随身铭记。随旅途前行与奇遇后即可在此一键佩装。',
     story: '暂未收入剧情信物或随身消耗品。',
-    cozy: '暂未购入小铺茶点或赠礼，可前往「小铺」挑选心意物件。'
+    cozy: '暂未购入茶点或赠礼。可打开舆图前往标有集市商徽的集市或货摊挑选心意物件。'
   };
 
   const slotsHTML = visibleEntries.length
@@ -5915,7 +6133,8 @@ function renderGraphicalInventoryPanel(body, opts){
         const iconHTML = renderItemArtSafe(entry.artKey, {
           size: 58,
           alt: entry.name,
-          decorative: true
+          decorative: true,
+          eager: true
         });
         const eqTag = entry.equipped
           ? `<span class="inv-gb-eq">${entry.kind === 'staff' ? '已执' : '已佩'}</span>`
@@ -5938,7 +6157,7 @@ function renderGraphicalInventoryPanel(body, opts){
         <span>点击或方向键 ↑↓←→ 切换精鉴</span>
       </div>
     </div>
-    <aside class="inv-gb-detail" aria-live="polite">${renderInvDetailCardHTML(selectedEntry)}</aside>
+    <aside class="inv-gb-detail" aria-live="polite">${renderInvDetailCardHTML(selectedEntry, isBabyInv)}</aside>
   </div>`;
 
   const shell = body.querySelector('.inv-gb-shell');
@@ -5989,7 +6208,7 @@ function renderGraphicalInventoryPanel(body, opts){
           show('panel', 0);
           rhApi.openShopModal('gift');
         } else {
-          toast('请于自由探索期前往「小铺」赠礼页致赠');
+          toast('请打开舆图前往标有集市商徽的集市货摊致赠');
         }
       };
     });
@@ -6081,18 +6300,30 @@ function openPanel(tab, opts){
   show('panel',1);
   if(wasHidden) sfx('modal_open');
   else if(opts && opts.fromTab) sfx('tab_switch');
-  const tabs=[['status','状态'],['causal','命运暗流'],['relics','铭记','✦ 铭记'],['skills','技能'],['tasks','任务'],['prof','人物'],['inv','背包'],['ach','成就'],['saves','档案'],['settings','设置']];
-  $('panel-tabs').innerHTML = tabs.map(([k,n,metaLabel])=>`<button class="ptab${(tab||'status')===k?' on':''}" data-t="${k}"${metaLabel?` data-tab-label="${metaLabel}"`:''}>${n}</button>`).join('');
+  const age = Number(S.ageY) || 0;
+  const isInfant = age < 1;
+  const noArena = !hasSkill('virtual_duel') && S.phase !== 'academy' && S.phase !== 'journey' && S.phase !== 'finale';
+  const noCausal = age < 4;
+  const hasUnlockedRelic = !!(S && S.relicsUnlocked && Object.keys(S.relicsUnlocked).some(k => S.relicsUnlocked[k]));
+  const allTabs=[['status','状态'],['causal','命运暗流'],['relics','铭记','✦ 铭记'],['skills','技能'],['tasks','任务'],['prof','人物'],['inv','背包'],['ach','成就'],['saves','档案'],['settings','设置']];
+  const tabs = allTabs.filter(([k])=>{
+    if(k === 'causal' && (isInfant || noCausal)) return false;
+    if(k === 'relics' && (isInfant || (noCausal && !hasUnlockedRelic))) return false;
+    return true;
+  });
+  tab = tab || 'status';
+  if(!tabs.some(([k]) => k === tab)) tab = 'status';
+  $('panel-tabs').innerHTML = tabs.map(([k,n,metaLabel])=>`<button class="ptab${tab===k?' on':''}" data-t="${k}"${metaLabel?` data-tab-label="${metaLabel}"`:''}>${n}</button>`).join('');
   $('panel-tabs').onclick=e=>{
     const btn=e.target.closest('[data-t]');
     const t=btn?btn.dataset.t:e.target.dataset.t;
     if(t) openPanel(t, { fromTab: true });
   };
   const body=$('panel-body');
-  tab = tab||'status';
   if(tab==='status'){
+    const statsJumpBtn = isInfant ? '' : `<button type="button" class="sc-jump-stats-btn" onclick="show('panel',0);openStatsOverlay();">查看养成四维星象盘 →</button>`;
     body.innerHTML= statusPanelHTML() + `<div class="sc-foot-note">
-      <button type="button" class="sc-jump-stats-btn" onclick="show('panel',0);openStatsOverlay();">查看养成四维星象盘 →</button>
+      ${statsJumpBtn}
       <span class="sc-foot-picks">「勇者之赐」已用 ${S.picksDone.length}/7 次</span>
     </div>`;
     const scImg = body.querySelector('.sc-portrait-img');
@@ -6108,7 +6339,7 @@ function openPanel(tab, opts){
   } else if(tab==='causal'){
     body.innerHTML = (typeof BranchingDirector !== 'undefined' && BranchingDirector.renderCausalPanelHTML)
       ? BranchingDirector.renderCausalPanelHTML(S)
-      : '<p style="color:#526078">命运暗流模块尚未加载。</p>';
+      : '<p style="color:#526078">命运暗流尚未启封。</p>';
   } else if(tab==='relics'){
     if(typeof RelicsAndEvents !== 'undefined' && RelicsAndEvents.renderRelicsPanelHTML){
       body.innerHTML = RelicsAndEvents.renderRelicsPanelHTML(S);
@@ -6116,7 +6347,7 @@ function openPanel(tab, opts){
         RelicsAndEvents.bindRelicsContainerEvents(body, { state: S, onChanged: ()=>openPanel('relics') });
       }
     } else {
-      body.innerHTML = '<p style="color:#526078">随身铭记模块尚未加载。</p>';
+      body.innerHTML = '<p style="color:#526078">随身铭记尚未启封。</p>';
     }
   } else if(tab==='skills'){
     const cnNames={ice_crystal:'冰晶术',virtual_duel:'虚拟决斗',ice_sense:'寒息感知',water_veil:'水之帷幕',quiet_mind:'静心',baby_talk:'天籁初声',mana_sip:'魔力小啜',silk_thread:'千缕银丝',ice_palace:'冰晶宫殿',multi_cast:'二重咏唱',frost_armor:'霜铠',deep_read:'深读',mirror_ice:'镜冰',wind_step_s:'残影步（简）',heal_touch:'温手',mana_cycle:'魔战循环',domain_frost:'霜域',perfect_cast:'无咏唱具现',fate_eye:'因果薄片',sword_mana:'魔剑同化',memory_link:'记忆连丝',zero_field:'绝对零度逼近',temp_sense:'温度感知',wind_afterimage:'风行残像',mana_calc:'魔力精算',root_ice:'生根之冰',noble_bearing:'公爵气度',lullaby:'摇篮曲',etiquette:'贵族仪态',water_ball:'水球术',basic_guard:'基本防御架',theory_note:'理论笔记',water_veil_s:'水膜',ice_sphere:'完美冰球',root_step:'生根步',soft_cut:'送刀',frost_edge:'覆冰锋',instant_ice:'隔空凝冰',stealth_edge:'覆水无痕'};
@@ -6150,8 +6381,9 @@ function openPanel(tab, opts){
           const desc = fallbackDescs[id] || p.desc || (courseSkills[id] && courseSkills[id].desc) || '已领悟的专属技艺，可在实战与日常中灵活施展。';
           return `<div class="p-skill"><div class="sk-name">${escapeText(displayName)}</div><div class="sk-desc">${escapeText(desc)}</div></div>`;
         }).join('')}</div>`;
+    const arenaBtnHTML = (isInfant || noArena) ? '' : '<button type="button" class="tbtn ghost" id="btn-panel-arena">步入战术演武场</button>';
     body.innerHTML = skillRows
-      + `<div class="p-skill-actions">${hasSkill('virtual_duel') ? '<button type="button" class="tbtn" id="btn-duel">进入虚拟决斗（梦境）</button>' : ''}<button type="button" class="tbtn ghost" id="btn-panel-arena">战术演武沙盒</button></div>`;
+      + `<div class="p-skill-actions">${hasSkill('virtual_duel') ? '<button type="button" class="tbtn" id="btn-duel">进入虚拟决斗（梦境）</button>' : ''}${arenaBtnHTML}</div>`;
     const b=$('btn-duel'); if(b) b.onclick=()=>{ show('panel',0); openDuelMenu(); };
     const ba=$('btn-panel-arena'); if(ba) ba.onclick=()=>{ show('panel',0); if(typeof openArenaHub==='function') openArenaHub({fromTitle:false}); };
   } else if(tab==='tasks'){
@@ -6554,6 +6786,66 @@ function runSceneQueue(queue, idx){
   stepChain();
   return true;
 }
+function consumeSceneResumeIdx(id, lines){
+  const arr = Array.isArray(lines) ? lines : [];
+  const rawIdx = (S && typeof S._resumeLineIdx === 'number') ? S._resumeLineIdx : 0;
+  const matched = !!(S && rawIdx > 0 && S._resumeSceneId === id);
+  if(S){
+    delete S._resumeLineIdx;
+    delete S._resumeSceneId;
+  }
+  if(!matched || !arr.length) return 0;
+  return Math.max(0, Math.min(Math.floor(rawIdx), arr.length - 1));
+}
+function restoreVisualStateBeforeLine(lines, targetIdx){
+  if(!Array.isArray(lines) || targetIdx <= 0) return;
+  let lastBg = null;
+  let lastLoc = null;
+  let lastBgm = null;
+  let lastCg = null;
+  let virtualStage = [];
+  const limit = Math.min(targetIdx, lines.length);
+  for(let k = 0; k < limit; k++){
+    const ln = lines[k];
+    if(!ln || typeof ln !== 'object') continue;
+    if(ln.loc){
+      lastLoc = ln.loc;
+      if(!ln.bg && LOCS[ln.loc] && LOCS[ln.loc].bg) lastBg = LOCS[ln.loc].bg;
+    }
+    if(ln.bg){
+      lastBg = ln.bg;
+      if(!Array.isArray(ln.portraits) && !ln.ch) virtualStage = [];
+    }
+    if(ln.bgm) lastBgm = ln.bgm;
+    if(ln.cg){
+      lastCg = (ln.cg === 'end') ? null : ln.cg;
+    } else if(lastCg && !ln.choices && !ln.freeRoam && !ln.card){
+      lastCg = null;
+    }
+    if(Array.isArray(ln.portraits)){
+      virtualStage = ln.portraits.filter(Boolean).map(p=>({ id:p.id, emo:p.emo||'normal', active:p.active!==false }));
+    } else if(ln.ch){
+      const emo = ln.emo || 'normal';
+      const idx = virtualStage.findIndex(p => p.id === ln.ch);
+      if(idx >= 0){
+        virtualStage = virtualStage.map((p, j) => j === idx ? { id: p.id, emo, active: true } : { id: p.id, emo: p.emo, active: false });
+      } else {
+        const nextStage = virtualStage.map(p => ({ id: p.id, emo: p.emo, active: false }));
+        nextStage.push({ id: ln.ch, emo, active: true });
+        if(nextStage.length > 4) nextStage.shift();
+        virtualStage = nextStage;
+      }
+    }
+  }
+  if(lastLoc){
+    S.loc = lastLoc;
+    updateLocBar({ skipBg: !!lastBg });
+  }
+  if(lastBg) setBG(lastBg);
+  if(lastBgm) bgmSceneStart(lastBgm);
+  if(virtualStage.length) applyStage(virtualStage);
+  if(lastCg) cgShow(lastCg);
+}
 function stepChain(){
   if(!storyChain) return;
   if(storyChain.idx >= storyChain.queue.length){
@@ -6590,20 +6882,24 @@ function stepChain(){
   if(id === 's_start') delete bgmGroupIdx.peaceful;
   bgmSceneStart(sc.bgm); // 记录并播放场景 bgm，贯穿整个场景
   if(sc.phase) S.phase = sc.phase;
-  if(sc.loc){ S.loc = sc.loc; updateLocBar(); }
+  if(sc.loc){ S.loc = sc.loc; updateLocBar({ skipBg: !!sc.bg }); }
   else { show('loc-bar', 0); }
   updateHUD();
   syncStageChromeMode();
   syncRaisingHubSafe();
   // 「视角」演出：pov 场景隐藏顶部 HUD，非 pov 场景务必恢复
   setPov(!!sc.pov);
-  const go = ()=> playLines(sc.lines || [], ()=>{
+  const scLines = sc.lines || [];
+  const resumeIdx = consumeSceneResumeIdx(id, scLines);
+  S._lineIdx = resumeIdx;
+  if(resumeIdx > 0) restoreVisualStateBeforeLine(scLines, resumeIdx);
+  const go = ()=> playLines(scLines, ()=>{
     // 只有场景确实播放结束，才写入对应的“已完成”门控标记。
     markStoryGateCompleted(id);
     if(storyChain && storyChain.idx < storyChain.queue.length){ stepChain(); }
     else { storyChain = null; enterFreeRoam(); }
-  });
-  if(sc.card) showCard(sc.card.vol, sc.card.t, sc.card.s, go);
+  }, { startIdx: resumeIdx, trackSceneIdx: true });
+  if(sc.card && resumeIdx === 0) showCard(sc.card.vol, sc.card.t, sc.card.s, go);
   else go();
   save();
 }
@@ -6615,7 +6911,7 @@ function runScene(id){
   storyChain = null;
   S.storyPending=[id];
   const sc = SCENES[id];
-  if(!sc){ console.warn('missing scene', id); toast('剧情缺失：'+id); enterFreeRoam(); return; }
+  if(!sc){ console.warn('missing scene', id); toast('前路迷雾未散，暂且折返歇脚。'); enterFreeRoam(); return; }
   currentScene = id;
   if(typeof window!=='undefined'&&window.VoiceEngine&&typeof window.VoiceEngine.stop==='function') window.VoiceEngine.stop({ reason: 'scene_change', clearCurrent: true });
   if(typeof VNUx!=='undefined'&&VNUx.onSceneStart) VNUx.onSceneStart(id);
@@ -6639,15 +6935,19 @@ function runScene(id){
   if(id === 's_start') delete bgmGroupIdx.peaceful;
   bgmSceneStart(sc.bgm); // 记录并播放场景 bgm，贯穿整个场景
   if(sc.phase) S.phase = sc.phase;
-  if(sc.loc){ S.loc = sc.loc; updateLocBar(); }
+  if(sc.loc){ S.loc = sc.loc; updateLocBar({ skipBg: !!sc.bg }); }
   else { show('loc-bar', 0); }
   updateHUD();
   syncStageChromeMode();
   syncRaisingHubSafe();
   // 「视角」演出：pov 场景隐藏顶部 HUD，非 pov 场景务必恢复
   setPov(!!sc.pov);
-  const go = ()=> playLines(sc.lines || [], sc.done);
-  if(sc.card) showCard(sc.card.vol, sc.card.t, sc.card.s, go);
+  const scLines = sc.lines || [];
+  const resumeIdx = consumeSceneResumeIdx(id, scLines);
+  S._lineIdx = resumeIdx;
+  if(resumeIdx > 0) restoreVisualStateBeforeLine(scLines, resumeIdx);
+  const go = ()=> playLines(scLines, sc.done, { startIdx: resumeIdx, trackSceneIdx: true });
+  if(sc.card && resumeIdx === 0) showCard(sc.card.vol, sc.card.t, sc.card.s, go);
   else go();
   save();
 }
@@ -6745,15 +7045,15 @@ SCENES.s_huke = {
 
 // ----- JOURNEY -----
 SCENES.s_turnpoint = {
-  bgm:'sad', bg:'bg-night', phase:'finale',
-  card:{vol:'第一卷', t:'转折点（一）', s:'——'},
+  bgm:'sad', bg:'bg-img-dining', phase:'finale',
+  card:{vol:'第二卷', t:'转折点（一）', s:'——'},
   lines:[
     {do:()=>{ S.ageY=Math.max(S.ageY,15); syncStatsToAge(); }},
     {bgm:'peaceful', text:'十五岁的冬天。寒假。公爵府。\n雷纳德叔叔背着大包风尘仆仆出现在餐厅门口，靴子上全是泥，笑得像没心没肺的大孩子。'},
     {ch:'reno', speaker:'雷纳德', text:'惊喜！我回来啦！'},
     {text:'父亲扶额，母亲笑着摇头，贝蒂冲上去给了他一拳（没打中）。'},
     {text:'六个人坐在一张桌子上。姐姐的论文改完了——「十八遍！贝阿特丽丝大人的旷世巨著！」\n一切都很好。'},
-    {text:'我躺在床上。枕头很软。'},
+    {bg:'bg-img-ownroom bg-night', text:'我躺在床上。枕头很软。'},
     {bgm:'battle', sfx:'bad', text:'碎裂声。不是玻璃——是石头。从大门方向。', portraits: []},
     {ch:'claude', speaker:'克劳德', text:'穿鞋。'},
     {text:'父亲的脸上是一种我从没见过的东西。把所有情绪削掉后的骨架。'},
@@ -7110,6 +7410,7 @@ function newGame(){
   syncStageChromeMode();
   syncRaisingHubSafe();
   bgmUnlock(); // 用户点击开始 → 解锁音频
+  uiShow();
   show('title-screen',0); show('game-screen',1);
   runScene('s_start');
 }
@@ -7129,6 +7430,7 @@ function continueGame(){
   bgmOverlayStack = [];
   sceneBgmType = null;
   syncLocUnlocksForState();
+  uiShow();
   show('title-screen',0); show('game-screen',1);
   spawnCardExitVeil();
   updateHUD();
@@ -7235,10 +7537,24 @@ function returnToTitle(opts){
       if(typeof window.RaisingHub.closeEndingScreen === 'function') window.RaisingHub.closeEndingScreen();
     } catch(e){}
   }
+  if(typeof RelicsAndEvents !== 'undefined'){
+    try {
+      if(typeof RelicsAndEvents.closeRumorBoard === 'function') RelicsAndEvents.closeRumorBoard();
+      if(typeof RelicsAndEvents.closeArenaLoadoutModal === 'function') RelicsAndEvents.closeArenaLoadoutModal();
+    } catch(e){}
+  }
+  if(typeof window !== 'undefined' && window.AmbientFX && typeof window.AmbientFX.closeDeductionBoard === 'function'){
+    try { window.AmbientFX.closeDeductionBoard(true); } catch(e){}
+  }
   document.body.classList.remove('ai-drawer-open', 'roam', 'roam-dialog', 'cb-battle-active');
   $('portraits')?.classList.remove('roam-npc');
   show('pick-screen',0); show('game-screen',0); show('battle-screen',0); show('arena-overlay',0); show('panel',0); show('map-overlay',0); show('stats-overlay',0); show('sys-popup',0);
+  show('codex',0); show('help-screen',0);
+  if($('rumor-overlay')) show('rumor-overlay',0);
+  if($('arena-loadout-modal')) show('arena-loadout-modal',0);
+  if($('ice-deduction-modal')) show('ice-deduction-modal',0);
   if($('backlog-overlay')) show('backlog-overlay',0);
+  uiShow();
   show('title-screen',1);
   setBG('bg-title');
   if(typeof VNUx !== 'undefined'){
@@ -7507,7 +7823,20 @@ document.addEventListener('keydown', e=>{
     if(bo && bo.classList.contains('hidden')) openBacklog();
     else if(bo) show('backlog-overlay', 0);
   }
-  if((e.key==='m'||e.key==='M') && S.freeRoam && isOverlayVisible('game-screen') && !cgActive && !isBlockingOverlayForShortcut()) openMap();
+  if((e.key==='h'||e.key==='H') && !e.ctrlKey && !e.metaKey && !e.altKey && isOverlayVisible('game-screen') && !isOverlayVisible('title-screen') && !cgActive && !isBlockingOverlayForShortcut()){
+    if(typeof e.preventDefault === 'function') e.preventDefault();
+    sfx('ui_tick', { gain: 0.65 });
+    uiToggle();
+    return;
+  }
+  if((e.key==='m'||e.key==='M') && S.freeRoam && isOverlayVisible('game-screen') && !cgActive && !isBlockingOverlayForShortcut()){
+    if((Number(S.ageY) || 0) < 1){
+      toast('你还太小，还不能独自查看舆图。');
+      sfx('bad');
+      return;
+    }
+    openMap();
+  }
 });
 
 
@@ -7868,6 +8197,7 @@ if(typeof window !== 'undefined'){
   window.applyStage = applyStage;
   window.syncLocUnlocksForState = syncLocUnlocksForState;
   window.renderHotspots = renderHotspots;
+  window.layoutRoamSkyBandHotspots = layoutRoamSkyBandHotspots;
   window.STORY_CHAPTERS = typeof STORY_CHAPTERS !== 'undefined' ? STORY_CHAPTERS : window.STORY_CHAPTERS;
   window.__STORY_CHAPTERS = window.STORY_CHAPTERS;
   window.STORY_GATE_BY_SCENE = STORY_GATE_BY_SCENE;

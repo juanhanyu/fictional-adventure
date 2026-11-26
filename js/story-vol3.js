@@ -719,7 +719,7 @@
   // =========================================================================
   SCENES.s_leaky_cup = {
     bgm: 'relax',
-    bg: 'bg-img-forest bg-night',
+    bg: 'bg-img-night bg-night',
     loc: 'road',
     phase: 'journey',
     pov: 'fengshen',
@@ -727,7 +727,7 @@
     lines: [
       { do: () => { ensureJourneyState(38); S.ageY = Math.max(S.ageY, 15); syncStatsToAge(); } },
       // —— 第一幕：松林篝火旁等汤烧开时的爱丽丝（直接对话演出） ——
-      T('离开海边后的第三个夜晚，他们在半山腰的一片松林里落了脚。\n篝火烧得很旺，松枝在火堆里噼啪作响，火星子顺着夜风往上飘，转眼融进了漆黑的树冠里。', { bg: 'bg-img-forest bg-night', loc: 'road', portraits: [] }),
+      T('离开海边后的第三个夜晚，他们在半山腰的一片松林里落了脚。\n篝火烧得很旺，松枝在火堆里噼啪作响，火星子顺着夜风往上飘，转眼融进了漆黑的树冠里。', { bg: 'bg-img-night bg-night', loc: 'road', portraits: [] }),
       T('高烧刚退下去的爱丽丝裹着岚宽大的外袍靠坐在树根旁，脸色还有些发白，手腕露在袍袖外头，一条歪歪扭扭的贝壳手链沾着海盐和泥印，被火光照得一闪一闪。'),
       DUO(['fengshen', '岚'], ['alice', '爱丽丝', 'normal'], 'fengshen', '趁热把汤喝了。我这双手只管刮风掀海浪，可不会伺候烧糊涂的小病号。'),
       DUO(['fengshen', '岚'], ['alice', '爱丽丝', 'normal'], 'alice', '……谢谢师父。手链上的海盐和泥印，等天亮找到溪水再慢慢洗。'),

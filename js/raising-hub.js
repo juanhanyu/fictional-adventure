@@ -544,9 +544,9 @@
             '<span class="rh-dc-ico">' + ico('calendar') + '</span>' +
             '<span class="rh-dc-lbl"><span class="rh-dc-full">日程排班</span><span class="rh-dc-short">日程</span></span>' +
           '</button>' +
-          '<button type="button" id="btn-raising-shop" class="rh-dock-chip">' +
+          '<button type="button" id="btn-raising-shop" class="rh-dock-chip hidden">' +
             '<span class="rh-dc-ico">' + ico('basket') + '</span>' +
-            '<span class="rh-dc-lbl"><span class="rh-dc-full">集市小铺</span><span class="rh-dc-short">小铺</span></span>' +
+            '<span class="rh-dc-lbl"><span class="rh-dc-full">集市</span><span class="rh-dc-short">集市</span></span>' +
           '</button>' +
           '<button type="button" id="btn-raising-mailbox" class="rh-dock-chip">' +
             '<span class="rh-dc-ico">' + ico('envelope') + '</span>' +
@@ -811,16 +811,29 @@
     if (schedBtn) {
       schedBtn.classList.toggle('hidden', ageY < 1);
     }
+    var shopVenue = getShopVenueAtLoc(st.loc, st);
     var shopBtn = hub.querySelector('#btn-raising-shop');
     if (shopBtn) {
-      shopBtn.classList.toggle('hidden', ageY < 4);
+      if (shopVenue) {
+        shopBtn.classList.remove('hidden');
+        shopBtn.setAttribute('data-shop-venue', shopVenue.id);
+        shopBtn.setAttribute('title', shopVenue.name);
+        shopBtn.setAttribute('aria-label', shopVenue.name);
+        var shopFull = shopBtn.querySelector('.rh-dc-full');
+        var shopShort = shopBtn.querySelector('.rh-dc-short');
+        if (shopFull) shopFull.textContent = shopVenue.shortBadge;
+        if (shopShort) shopShort.textContent = shopVenue.shortBadge;
+      } else {
+        shopBtn.classList.add('hidden');
+        shopBtn.removeAttribute('data-shop-venue');
+      }
     }
     var mailBtn = hub.querySelector('#btn-raising-mailbox');
     if (mailBtn) {
       mailBtn.classList.toggle('hidden', !(ageY >= 10 || unread > 0));
     }
 
-    // 第三/四卷开启「终幕回响」入口
+    // 终章或达终幕解锁标志后开启「终幕回响」入口
     var endBtn = hub.querySelector('#btn-raising-ending');
     if (endBtn) {
       endBtn.classList.toggle('hidden', !canOpenEndingForecast(st));
@@ -866,14 +879,139 @@
     ice_canyon: 'assets/bg/ice_canyon.jpg'
   };
 
-  var SHOP_LOC_SET = {
-    parlor: true,
-    town: true,
-    market: true,
-    cafeteria: true,
-    chenglan_guild: true,
-    ice_canyon: true
+  // 分地域集市与商铺唯一事实源（严格限定 6 处真实商业地点，彻底废除全局随身商城与起居室售货）
+  var SHOP_VENUES = {
+    town: {
+      id: 'town',
+      name: '利维莫尔镇集市',
+      shortBadge: '镇集市',
+      subtitle: '公爵领地长街上的青石集市，点心摊、纸墨铺与饰品货柜沿街铺开。',
+      specialty: '领地特色 · 蜂蜜松饼礼盒、焦糖黄油曲奇与霜杉香囊',
+      originLabel: '领地风物',
+      specialties: ['shop_honey_pancake', 'shop_frost_cedar_sachet'],
+      hotspotLabel: '走近货摊 · 利维莫尔镇集市',
+      hotspotPos: { x: 80, y: 58 },
+      icon: 'basket',
+      items: [
+        'shop_caramel_cookie',
+        'shop_mint_tea',
+        'shop_honey_pancake',
+        'shop_parchment_journal',
+        'shop_frost_cedar_sachet',
+        'shop_silver_moon_clip',
+        'shop_ice_bookmark',
+        'shop_sword_tassel_oil'
+      ]
+    },
+    market: {
+      id: 'market',
+      name: '王都中央材料市场',
+      shortBadge: '王都集市',
+      subtitle: '王都内城最繁盛的魔导器物与典籍商廊，孤本抄录与异域奇物皆有陈列。',
+      specialty: '王都专供 · 梅林阻率批注集、温霜护手怀石与雕花书签',
+      originLabel: '王都专供',
+      specialties: ['shop_magic_theory_notes', 'shop_warming_frost_stone'],
+      hotspotLabel: '逛摊 · 王都中央材料市场',
+      hotspotPos: { x: 80, y: 58 },
+      icon: 'basket',
+      items: [
+        'shop_parchment_journal',
+        'shop_ice_bookmark',
+        'shop_sword_tassel_oil',
+        'shop_frost_cedar_sachet',
+        'shop_silver_moon_clip',
+        'shop_magic_theory_notes',
+        'shop_warming_frost_stone'
+      ]
+    },
+    cafeteria: {
+      id: 'cafeteria',
+      name: '学院食堂 · 甜点茶饮柜',
+      shortBadge: '甜点柜',
+      subtitle: '阿斯拉魔法大学午后香气浮动的点心长柜，专售现焙茶点与冷泡薄荷茶。',
+      specialty: '食堂现焙 · 蜂蜜松饼礼盒、焦糖黄油曲奇与薄荷叶茶',
+      originLabel: '食堂现焙',
+      specialties: ['shop_honey_pancake', 'shop_caramel_cookie'],
+      hotspotLabel: '甜点柜台 · 学院食堂',
+      hotspotPos: { x: 80, y: 58 },
+      icon: 'cup',
+      items: [
+        'shop_caramel_cookie',
+        'shop_mint_tea',
+        'shop_honey_pancake'
+      ]
+    },
+    flowerhouse: {
+      id: 'flowerhouse',
+      name: '校园花坊 · 温室花礼角',
+      shortBadge: '花坊',
+      subtitle: '玻璃温室一角的静雅花摊，备有寒封北极铃兰、干叶香囊与草本茶包。',
+      specialty: '花坊珍礼 · 寒封北极铃兰干花与手缝霜杉香囊',
+      originLabel: '温室花礼',
+      specialties: ['shop_polar_lily_dried', 'shop_frost_cedar_sachet'],
+      hotspotLabel: '温室花摊 · 校园花坊',
+      hotspotPos: { x: 80, y: 58 },
+      icon: 'flower',
+      items: [
+        'shop_polar_lily_dried',
+        'shop_frost_cedar_sachet',
+        'shop_mint_tea'
+      ]
+    },
+    chenglan_guild: {
+      id: 'chenglan_guild',
+      name: '澄岚街市与公会补给柜',
+      shortBadge: '澄岚集市',
+      subtitle: '澄岚青石街畔的市井摊铺与公会补给窗，现蒸米糕混着松油木香迎面而来。',
+      specialty: '澄岚限定 · 老铺现蒸澄岚桂花米糕与行旅养护补给',
+      originLabel: '澄岚限定',
+      specialties: ['shop_osmanthus_cake'],
+      hotspotLabel: '走近货摊 · 澄岚街市',
+      hotspotPos: { x: 80, y: 58 },
+      icon: 'basket',
+      items: [
+        'shop_osmanthus_cake',
+        'shop_caramel_cookie',
+        'shop_mint_tea',
+        'shop_parchment_journal',
+        'shop_sword_tassel_oil',
+        'shop_silver_moon_clip',
+        'shop_frost_cedar_sachet'
+      ]
+    },
+    ice_canyon: {
+      id: 'ice_canyon',
+      name: '北境前线 · 行商补给摊',
+      shortBadge: '行商摊',
+      subtitle: '赫兰冰封峡谷营帐外的军需行商马车，专备防寒怀石、护刃清油与雪原干花。',
+      specialty: '北境军需 · 温霜护手怀石、北极铃兰干花与雪晶书签',
+      originLabel: '北境军需',
+      specialties: ['shop_warming_frost_stone', 'shop_polar_lily_dried'],
+      hotspotLabel: '军需行商 · 冰封峡谷',
+      hotspotPos: { x: 80, y: 58 },
+      icon: 'crystal',
+      items: [
+        'shop_warming_frost_stone',
+        'shop_polar_lily_dried',
+        'shop_ice_bookmark',
+        'shop_sword_tassel_oil',
+        'shop_caramel_cookie',
+        'shop_mint_tea'
+      ]
+    }
   };
+
+  function getShopVenueAtLoc(locId, targetS) {
+    var st = targetS || getS();
+    if (!st || Number(st.ageY || 0) < 4) return null;
+    var lid = locId != null ? String(locId) : (st.loc ? String(st.loc) : '');
+    if (!lid) return null;
+    return Object.prototype.hasOwnProperty.call(SHOP_VENUES, lid) ? SHOP_VENUES[lid] : null;
+  }
+
+  function isShopLocation(locId, targetS) {
+    return !!getShopVenueAtLoc(locId, targetS);
+  }
 
   // 严格遵守原著角色出现纪律：海伦娜绝不在食堂随机出现；艾诺在冰融之际后退出学院、远行的风(下)后驻防冰封峡谷
   var NPC_SCHEDULE_RULES = {
@@ -1175,11 +1313,12 @@
         if (hasCombatSpotAtLoc(L.id, st)) {
           badges.push('<span class="rh-map-badge badge-combat">' + ico('sword') + '<span>实战</span></span>');
         }
-        if (SHOP_LOC_SET[L.id]) {
-          badges.push('<span class="rh-map-badge badge-shop">' + ico('basket') + '<span>集市</span></span>');
+        var locShopVenue = getShopVenueAtLoc(L.id, st);
+        if (locShopVenue) {
+          badges.push('<span class="rh-map-badge badge-shop">' + ico('basket') + '<span>' + escapeHtml(locShopVenue.shortBadge) + '</span></span>');
         }
         if (hasUnclaimedEggAtLoc(L, st)) {
-          badges.push('<span class="rh-map-badge badge-egg">' + ico('egg') + '<span>彩蛋</span></span>');
+          badges.push('<span class="rh-map-badge badge-egg">' + ico('egg') + '<span>秘闻</span></span>');
         }
 
         var npcHtml = npcs.map(function (cid) {
@@ -1201,7 +1340,7 @@
         btn.setAttribute('data-loc', L.id);
         btn.innerHTML =
           '<div class="rh-map-thumb">' +
-            '<img src="' + escapeHtml(thumb) + '" alt="' + escapeHtml(L.name) + '" loading="lazy"/>' +
+            '<img src="' + escapeHtml(thumb) + '" alt="' + escapeHtml(L.name) + '" loading="eager" decoding="sync"/>' +
             '<div class="rh-map-thumb-scrim"></div>' +
             (isHere ? '<span class="rh-map-here-pill"><span class="rh-dia" aria-hidden="true"></span><span>当前所在</span></span>' : '') +
             (npcHtml ? '<div class="rh-map-npcs">' + npcHtml + '</div>' : '') +
@@ -2570,12 +2709,18 @@
     return charm >= 50 ? Math.max(1, Math.floor(def.price * 0.9)) : def.price;
   }
 
-  function getAvailableShopItems(targetS) {
+  function getAvailableShopItems(targetS, locId) {
     var st = ensureRaisingState(targetS);
-    var ph = (st && st.phase) || 'prologue';
-    return COZY_SHOP_CATALOG.filter(function (it) {
-      return !it.phases || it.phases.indexOf(ph) !== -1;
-    });
+    if (!st) return [];
+    var targetLoc = locId != null ? locId : st.loc;
+    var venue = getShopVenueAtLoc(targetLoc, st);
+    if (!venue || !Array.isArray(venue.items)) return [];
+    var stock = [];
+    for (var i = 0; i < venue.items.length; i++) {
+      var item = getShopItem(venue.items[i]);
+      if (item) stock.push(item);
+    }
+    return stock;
   }
 
   function getGiftableChars(targetS) {
@@ -2594,6 +2739,12 @@
     var st = ensureRaisingState(targetS);
     var item = getShopItem(itemId);
     if (!st || !item) return { ok: false, reason: 'invalid' };
+    var venue = getShopVenueAtLoc(st.loc, st);
+    if (!venue || !Array.isArray(venue.items) || venue.items.indexOf(item.id) === -1) {
+      sfxSafe('bad');
+      toastSafe(venue ? (venue.name + '并未陈列「' + item.name + '」') : '此处并无集市货摊，请前往各地商铺选购');
+      return { ok: false, reason: 'not_sold_here' };
+    }
     var price = getShopPrice(item, st);
     if ((st.gold || 0) < price) {
       sfxSafe('bad');
@@ -2603,13 +2754,13 @@
     st.gold -= price;
     st.cozyBag[item.id] = (st.cozyBag[item.id] || 0) + 1;
     syncDeskCharms(st);
-    recordSeasonAction('购入「' + item.name + '」', '花费 ' + price + ' 金币', st);
+    recordSeasonAction('于' + venue.shortBadge + '购入「' + item.name + '」', '花费 ' + price + ' 金币', st);
     saveSafe();
     updateHudSafe();
     syncSylviaHub(st);
     sfxSafe('ok');
-    toastSafe('已购入「' + item.name + '」');
-    return { ok: true, item: item, price: price, count: st.cozyBag[item.id] };
+    toastSafe('已于' + venue.shortBadge + '购入「' + item.name + '」');
+    return { ok: true, item: item, price: price, count: st.cozyBag[item.id], venue: venue.id };
   }
 
   function useCozyItem(itemId, targetS) {
@@ -2745,13 +2896,28 @@
     }
     ov.classList.add('overlay', 'rh-overlay');
 
-    if (initialTab === 'market' || initialTab === 'gift') {
-      _shopUiState.tab = initialTab;
+    var venueAtOpen = getShopVenueAtLoc(st.loc, st);
+    if (venueAtOpen) {
+      _shopUiState.tab = initialTab === 'gift' ? 'gift' : 'market';
+    } else {
+      if (initialTab !== 'gift') {
+        toastSafe('此处并无集市货摊，已为你展开随身礼囊');
+      }
+      _shopUiState.tab = 'gift';
     }
 
     function renderShopUI() {
+      var venue = getShopVenueAtLoc(st.loc, st);
+      var hasVenue = !!venue;
+      if (!hasVenue) {
+        _shopUiState.tab = 'gift';
+      }
+      ov.setAttribute('data-shop-mode', hasVenue ? 'venue' : 'pouch');
+      if (hasVenue) ov.setAttribute('data-shop-venue', venue.id);
+      else ov.removeAttribute('data-shop-venue');
+
       var discountOn = ((st.stats && st.stats.charm) || 0) >= 50;
-      var stock = getAvailableShopItems(st);
+      var stock = hasVenue ? getAvailableShopItems(st, venue.id) : [];
       var giftChars = getGiftableChars(st);
       if (!_shopUiState.selectedChar || giftChars.indexOf(_shopUiState.selectedChar) === -1) {
         _shopUiState.selectedChar = giftChars[0] || null;
@@ -2759,14 +2925,18 @@
       var charsObj = getCHARS();
       var sk = seasonKeyOf(st);
       var giftedMap = (st.giftedSeason && st.giftedSeason[sk]) || {};
+      var ownedList = COZY_SHOP_CATALOG.filter(function (it) { return ((st.cozyBag && st.cozyBag[it.id]) || 0) > 0; });
+      var ownedTotal = ownedList.reduce(function (sum, it) { return sum + ((st.cozyBag && st.cozyBag[it.id]) || 0); }, 0);
 
       var bodyHtml = '';
-      if (_shopUiState.tab === 'market') {
+      if (hasVenue && _shopUiState.tab === 'market') {
+        var venueSpecs = Array.isArray(venue.specialties) ? venue.specialties : [];
         var cards = stock.map(function (it) {
           var price = getShopPrice(it, st);
           var owned = (st.cozyBag && st.cozyBag[it.id]) || 0;
           var canAfford = (st.gold || 0) >= price;
           var hasArt = hasRaisingItemArt(it.id);
+          var isSpec = venueSpecs.indexOf(it.id) !== -1;
           return (
             '<article class="rh-shop-card" data-item-id="' + escapeHtml(it.id) + '">' +
               '<div class="rh-sc-top">' +
@@ -2774,6 +2944,7 @@
                 '<div class="rh-sc-title">' +
                   '<strong>' + escapeHtml(it.name) + '</strong>' +
                   '<span class="rh-sc-tag">' + escapeHtml(it.tag) + '</span>' +
+                  (isSpec && venue.originLabel ? '<span class="rh-sc-origin">' + escapeHtml(venue.originLabel) + '</span>' : '') +
                 '</div>' +
                 (owned > 0 ? '<span class="rh-sc-stock">持有 ' + owned + '</span>' : '') +
               '</div>' +
@@ -2782,9 +2953,9 @@
               '<div class="rh-sc-foot">' +
                 '<span class="rh-sc-price">' + ico('coin') + '<b>' + price + '</b>' + (discountOn && price < it.price ? '<s class="rh-old-price">原' + it.price + '</s>' : '') + '</span>' +
                 '<div class="rh-sc-actions">' +
-                  (owned > 0 ? '<button type="button" class="rh-btn ghost sm" data-use-item="' + escapeHtml(it.id) + '">自用</button>' : '') +
-                  (owned > 0 && giftChars.length ? '<button type="button" class="rh-btn soft sm" data-goto-gift="' + escapeHtml(it.id) + '">赠礼</button>' : '') +
-                  '<button type="button" class="rh-btn rh-btn-buy sm" data-buy-item="' + escapeHtml(it.id) + '"' + (canAfford ? '' : ' disabled') + '>购入</button>' +
+                  (owned > 0 ? '<button type="button" class="rh-btn rh-sc-btn is-use" data-use-item="' + escapeHtml(it.id) + '">自用</button>' : '') +
+                  (owned > 0 && giftChars.length ? '<button type="button" class="rh-btn rh-sc-btn is-gift" data-goto-gift="' + escapeHtml(it.id) + '">赠礼</button>' : '') +
+                  '<button type="button" class="rh-btn rh-sc-btn is-buy rh-btn-buy" data-buy-item="' + escapeHtml(it.id) + '"' + (canAfford ? '' : ' disabled') + '>购入</button>' +
                 '</div>' +
               '</div>' +
             '</article>'
@@ -2792,7 +2963,6 @@
         }).join('');
         bodyHtml = '<div class="rh-shop-grid">' + cards + '</div>';
       } else {
-        var ownedList = COZY_SHOP_CATALOG.filter(function (it) { return ((st.cozyBag && st.cozyBag[it.id]) || 0) > 0; });
         var charChips = giftChars.map(function (cid) {
           var cm = charsObj[cid] || { short: cid };
           var av = resolvePortraitSafe(cid, 'normal');
@@ -2823,6 +2993,9 @@
         }
 
         var selDone = _shopUiState.selectedChar && !!giftedMap[_shopUiState.selectedChar];
+        var emptyTip = hasVenue
+          ? '随身礼囊暂空，可切回「集市铺面」挑选本地小物。'
+          : '随身礼囊暂空，前往城镇集市、学院食堂、校园花坊或行商货摊选购后即可在此致赠。';
         var bagHtml = ownedList.length
           ? ownedList.map(function (it) {
               var cnt = st.cozyBag[it.id] || 0;
@@ -2830,43 +3003,63 @@
               return (
                 '<div class="rh-gift-item">' +
                   '<div class="rgi-main"><span class="rh-sc-ico' + (hasArt ? ' has-item-art' : '') + '" data-ico="' + escapeHtml(it.icon) + '">' + renderRaisingItemIcon(it.id, it.icon, 36, 'rh-gift-art-img') + '</span><div><strong>' + escapeHtml(it.name) + '</strong><small>持有 ' + cnt + ' · ' + escapeHtml(it.tag) + '</small></div></div>' +
-                  '<button type="button" class="rh-btn rh-btn-buy sm" data-send-gift="' + escapeHtml(it.id) + '"' + (selDone || !_shopUiState.selectedChar ? ' disabled' : '') + '>' + (selDone ? '本季已赠' : '致赠此物') + '</button>' +
+                  '<button type="button" class="rh-btn rh-sc-btn is-send" data-send-gift="' + escapeHtml(it.id) + '"' + (selDone || !_shopUiState.selectedChar ? ' disabled' : '') + '>' + (selDone ? '本季已赠' : '致赠此物') + '</button>' +
                 '</div>'
               );
             }).join('')
-          : '<p class="rh-empty-tip">礼囊暂空，先去「集市铺面」挑选几件心意小物吧。</p>';
+          : '<p class="rh-empty-tip">' + emptyTip + '</p>';
+
+        var pouchNotice = hasVenue
+          ? ''
+          : '<div class="rh-pouch-notice">' + ico('gift') + '<span>当前地点并无商铺货摊，仅可从随身礼囊中挑选已有物件致赠亲友。</span></div>';
 
         bodyHtml =
           '<div class="rh-gift-layout">' +
+            pouchNotice +
             '<div class="rh-gift-chars">' + (charChips || '<p class="rh-empty-tip">本阶段暂无可致赠对象。</p>') + '</div>' +
             reactionBox +
             '<div class="rh-gift-bag">' + bagHtml + '</div>' +
           '</div>';
       }
 
+      var headCrest = hasVenue ? ico(venue.icon || 'basket') : ico('gift');
+      var headTitle = hasVenue ? venue.name : '随身礼囊 · 心意赠礼';
+      var headSub = hasVenue
+        ? venue.subtitle
+        : '取出行囊中收存的茶点、花礼与随身小物，致赠身畔亲友';
+      var specialtyStrip = (hasVenue && venue.specialty)
+        ? '<div class="rh-venue-specialty">' + ico('spark') + '<span>' + escapeHtml(venue.specialty) + '</span></div>'
+        : '';
+      var headRightHtml = hasVenue
+        ? '<span class="rh-gold-pill">' + ico('coin') + '<b>' + (st.gold || 0) + '</b> 金币</span>' +
+          (discountOn ? '<span class="rh-discount-pill">气质优待 · 九折</span>' : '') +
+          '<button type="button" class="modal-close-x rh-close-x" id="rh-shop-close" aria-label="关闭商铺">×</button>'
+        : '<span class="rh-pouch-pill">' + ico('gift') + '<span>礼囊 <b>' + ownedTotal + '</b> 件</span></span>' +
+          '<button type="button" class="modal-close-x rh-close-x" id="rh-shop-close" aria-label="关闭随身礼囊">×</button>';
+      var tabsHtml = hasVenue
+        ? '<div class="rh-subtabs">' +
+            '<button type="button" class="rh-subtab' + (_shopUiState.tab === 'market' ? ' on' : '') + '" data-shop-tab="market">' + ico('basket') + '<span>集市铺面</span><em class="rh-subtab-cnt">' + stock.length + '</em></button>' +
+            '<button type="button" class="rh-subtab' + (_shopUiState.tab === 'gift' ? ' on' : '') + '" data-shop-tab="gift">' + ico('gift') + '<span>心意赠礼</span><em class="rh-subtab-cnt">' + ownedTotal + '</em></button>' +
+          '</div>'
+        : '';
+
       ov.innerHTML =
-        '<div class="end-card modal-shell rh-modal-shell rh-shop-shell">' +
+        '<div class="end-card modal-shell rh-modal-shell rh-shop-shell' + (hasVenue ? '' : ' is-pouch-only') + '">' +
           '<div class="modal-head rh-modal-head">' +
             '<div class="rh-head-title">' +
-              '<span class="rh-head-crest">' + ico('basket') + '</span>' +
+              '<span class="rh-head-crest">' + headCrest + '</span>' +
               '<div>' +
-                '<h2>集市小铺与心意赠礼</h2>' +
-                '<p class="rh-head-sub">挑选茶点、文具与风物小物，自用怡情或致赠身畔亲友</p>' +
+                '<h2>' + escapeHtml(headTitle) + '</h2>' +
+                '<p class="rh-head-sub">' + escapeHtml(headSub) + '</p>' +
+                specialtyStrip +
               '</div>' +
             '</div>' +
-            '<div class="rh-head-right">' +
-              '<span class="rh-gold-pill">' + ico('coin') + '<b>' + (st.gold || 0) + '</b> 金币</span>' +
-              (discountOn ? '<span class="rh-discount-pill">气质优待 · 九折</span>' : '') +
-              '<button type="button" class="modal-close-x rh-close-x" id="rh-shop-close" aria-label="关闭集市小铺">×</button>' +
-            '</div>' +
+            '<div class="rh-head-right">' + headRightHtml + '</div>' +
           '</div>' +
-          '<div class="rh-subtabs">' +
-            '<button type="button" class="rh-subtab' + (_shopUiState.tab === 'market' ? ' on' : '') + '" data-shop-tab="market">' + ico('basket') + '<span>集市铺面</span></button>' +
-            '<button type="button" class="rh-subtab' + (_shopUiState.tab === 'gift' ? ' on' : '') + '" data-shop-tab="gift">' + ico('gift') + '<span>心意赠礼</span></button>' +
-          '</div>' +
+          tabsHtml +
           '<div class="modal-scroll rh-modal-scroll">' + bodyHtml + '</div>' +
           '<div class="modal-foot rh-modal-foot">' +
-            '<button type="button" class="rh-btn ghost" id="rh-shop-done">收起小铺</button>' +
+            '<button type="button" class="rh-btn ghost" id="rh-shop-done">' + (hasVenue ? '收起小铺' : '收起礼囊') + '</button>' +
           '</div>' +
         '</div>';
 
@@ -2875,7 +3068,9 @@
       ov.querySelector('#rh-shop-done').onclick = closeShopModal;
       ov.querySelectorAll('[data-shop-tab]').forEach(function (btn) {
         btn.onclick = function () {
-          _shopUiState.tab = btn.getAttribute('data-shop-tab');
+          var nextTab = btn.getAttribute('data-shop-tab');
+          if (!hasVenue && nextTab === 'market') return;
+          _shopUiState.tab = nextTab;
           renderShopUI();
         };
       });
@@ -3663,11 +3858,10 @@
   function canOpenEndingForecast(targetS) {
     var st = targetS || getS();
     if (!st) return false;
-    return st.phase === 'journey'
-      || st.phase === 'finale'
-      || flagSafe('did_turnpoint', st)
-      || flagSafe('arrived_jikan', st)
-      || flagSafe('ch_distant_wind_1', st);
+    return st.phase === 'finale'
+      || flagSafe('ch_leaky_cup', st)
+      || flagSafe('ending_unlocked', st)
+      || flagSafe('ch_ending', st);
   }
 
   function evaluateCareerId(st) {
@@ -4145,6 +4339,7 @@
     SYLVIA_DIARY_ENTRIES: SYLVIA_DIARY_ENTRIES,
     NPC_SCHEDULE_RULES: NPC_SCHEDULE_RULES,
     LOC_BG_THUMB: LOC_BG_THUMB,
+    SHOP_VENUES: SHOP_VENUES,
     COZY_SHOP_CATALOG: COZY_SHOP_CATALOG,
     GIFT_PREFS: GIFT_PREFS,
     MAILBOX_CATALOG: MAILBOX_CATALOG,
@@ -4168,6 +4363,8 @@
     closeSchedulePlanner: closeSchedulePlanner,
     openSeasonReport: openSeasonReport,
     closeSeasonReport: closeSeasonReport,
+    getShopVenueAtLoc: getShopVenueAtLoc,
+    isShopLocation: isShopLocation,
     getShopPrice: getShopPrice,
     getAvailableShopItems: getAvailableShopItems,
     buyCozyItem: buyCozyItem,

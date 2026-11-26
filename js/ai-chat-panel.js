@@ -270,7 +270,7 @@
       obj = JSON.parse(extracted);
     }
     if (!obj || typeof obj !== 'object') {
-      throw new Error('模型响应格式无法解析');
+      throw new Error('灵语回音微弱散乱，请重新传音。');
     }
     var Personas = root.AI_PERSONAS;
     var sanitize = (Personas && Personas.sanitizeNarrativeOutput) ? Personas.sanitizeNarrativeOutput : function (s) { return String(s || '').trim(); };
@@ -278,7 +278,7 @@
 
     var action = sanitize(String(obj.action || '')).slice(0, 300);
     var reply = sanitize(String(obj.reply || '')).slice(0, 800);
-    if (!reply) throw new Error('角色未返回有效台词');
+    if (!reply) throw new Error('眼前之人一时默然，未能传来回音，请再试一次。');
 
     var deltas = (obj.causal_deltas && typeof obj.causal_deltas === 'object') ? obj.causal_deltas : {};
     return {
@@ -307,7 +307,7 @@
     var fetchImpl = params.fetchImpl || root.fetch.bind(root);
 
     var Personas = root.AI_PERSONAS;
-    if (!Personas) throw new Error('灵魂卡模块尚未加载。');
+    if (!Personas) throw new Error('灵语心镜尚未就绪，请稍候再试。');
     if (!snap || !snap.playing) throw new Error('请先开始游戏或继续存档。');
     var person = (snap.people || []).find(function (p) { return p.id === charId; });
     if (!person) throw new Error('当前角色不在场，请先走近角色或切换对象。');
@@ -317,7 +317,7 @@
 
     if (cfg.mode === 'proxy') {
       var url = String(cfg.proxyUrl || '').trim();
-      if (!url) throw new Error('请先填写本地/云端代理服务地址。');
+      if (!url) throw new Error('灵语信标尚未指定，请先在「共鸣设置」高级配置中填写中转地址。');
       var headers = { 'Content-Type': 'application/json' };
       if (cfg.apiKey && cfg.apiKey.trim()) {
         headers['X-OpenAI-Api-Key'] = cfg.apiKey.trim();
@@ -344,14 +344,14 @@
       });
       var respJson = await resp.json().catch(function () { return {}; });
       if (!resp.ok) {
-        throw new Error(respJson.error || '代理请求失败，请确认本地代理服务已启动。');
+        throw new Error(respJson.error || '灵语传音未能送达，请稍候重试或检查共鸣设置。');
       }
       return parseStructuredModelOutput(respJson, charId);
     }
 
     var key = String(cfg.apiKey || '').trim();
     if (!key) {
-      throw new Error('请先在「共鸣通道设置」填入访问密钥，或切换为本地内置共鸣桥接。');
+      throw new Error('尚未填入共鸣凭证，请在「共鸣设置」中填写或切回内置灵语共鸣。');
     }
     var model = String(cfg.model || 'gpt-4.1').trim();
     var isCustomRelay = !!(cfg.baseUrl && !/api\.openai\.com/i.test(cfg.baseUrl));
@@ -418,8 +418,8 @@
       });
       if (!gptResp.ok) {
         throw new Error(gptResp.status === 429
-          ? '对话服务调用频率或额度受限，请稍后再试。'
-          : '直连对话服务失败（HTTP ' + gptResp.status + '），请检查访问密钥、服务地址与对话模型名。');
+          ? '此刻灵语共鸣略显拥挤，请片刻后再试传音。'
+          : '灵语传音受阻（' + gptResp.status + '），请确认「共鸣设置」中的凭证与信标地址。');
       }
       var gptData = await gptResp.json();
       var gptText = (((gptData.choices || [])[0] || {}).message || {}).content || '';
@@ -477,8 +477,8 @@
 
     if (!directResp.ok) {
       throw new Error(directResp.status === 429
-        ? '对话服务调用频率或额度已达上限，请稍后再试。'
-        : '直连对话服务失败（HTTP ' + directResp.status + '），请检查访问密钥是否有效。');
+        ? '此刻灵语共鸣略显拥挤，请片刻后再试传音。'
+        : '灵语传音受阻（' + directResp.status + '），请确认「共鸣设置」中的凭证是否有效。');
     }
     var directData = await directResp.json();
     var rawText = (((directData.candidates || [])[0] || {}).content || {}).parts
@@ -624,11 +624,11 @@
     var hasKey = !!(keyEl && keyEl.value.trim());
     var modelName = (modelEl && modelEl.value.trim()) || 'gpt-4.1';
     if (selMode === 'codex') {
-      summaryEl.textContent = '✦ 当前共鸣通道：本地内置共鸣桥接（免密钥 · 开箱即用）';
+      summaryEl.textContent = '✦ 当前共鸣：内置灵语共鸣（默认就绪）';
     } else if (selMode === 'direct') {
-      summaryEl.textContent = '✦ 当前共鸣通道：直连自定义对话服务（' + (hasKey ? '已填写访问密钥' : '待填写访问密钥') + ' · ' + modelName + '）';
+      summaryEl.textContent = '✦ 当前共鸣：自定义信标（' + (hasKey ? '已备凭证' : '待填凭证') + ' · ' + modelName + '）';
     } else {
-      summaryEl.textContent = '✦ 当前共鸣通道：自定义中转代理服务（' + modelName + '）';
+      summaryEl.textContent = '✦ 当前共鸣：中转信标（' + modelName + '）';
     }
   }
 
@@ -650,37 +650,37 @@
           '<div><h3 class="aid-title">灵魂交谈</h3><p class="aid-sub" id="aid-gate-tag">等待角色登场</p></div>' +
         '</div>' +
         '<div class="aid-head-btns">' +
-          '<button type="button" id="aid-btn-cfg" class="aid-icon-btn aid-cfg-toggle" title="接口设置" aria-label="接口设置" data-tip="接口设置">' + SVG_GEAR_ICON + '<span class="aid-icon-label">设置</span></button>' +
+          '<button type="button" id="aid-btn-cfg" class="aid-icon-btn aid-cfg-toggle" title="共鸣设置" aria-label="共鸣设置" data-tip="共鸣设置">' + SVG_GEAR_ICON + '<span class="aid-icon-label">设置</span></button>' +
           '<button type="button" id="aid-btn-close" class="aid-icon-btn" title="收起抽屉" aria-label="收起抽屉">×</button>' +
         '</div>' +
       '</div>' +
       '<div id="aid-cfg-box" class="aid-cfg hidden">' +
         '<div class="aid-cfg-summary" id="aid-cfg-summary"></div>' +
         '<details class="aid-dev-disclosure" id="aid-dev-disclosure">' +
-          '<summary>高级连接配置（自定义服务 / 访问凭证）</summary>' +
+          '<summary>高级共鸣配置（自定义信标 / 凭证）</summary>' +
           '<div class="aid-dev-fields">' +
             '<div class="aid-cfg-row">' +
               '<label>共鸣通道</label>' +
               '<select id="aid-mode">' +
-                '<option value="codex"' + (cfg.mode === 'proxy' && cfg.provider === 'codex' ? ' selected' : '') + '>本地内置共鸣桥接（免密钥 · 推荐）</option>' +
-                '<option value="direct"' + (cfg.mode === 'direct' ? ' selected' : '') + '>直连自定义对话服务（需填写访问密钥）</option>' +
-                '<option value="proxy"' + (cfg.mode === 'proxy' && cfg.provider !== 'codex' ? ' selected' : '') + '>连接自定义中转代理服务</option>' +
+                '<option value="codex"' + (cfg.mode === 'proxy' && cfg.provider === 'codex' ? ' selected' : '') + '>内置灵语共鸣（默认就绪 · 免凭证）</option>' +
+                '<option value="direct"' + (cfg.mode === 'direct' ? ' selected' : '') + '>自定义直连信标（需填写凭证）</option>' +
+                '<option value="proxy"' + (cfg.mode === 'proxy' && cfg.provider !== 'codex' ? ' selected' : '') + '>自定义中转信标</option>' +
               '</select>' +
             '</div>' +
             '<div class="aid-cfg-row" id="aid-baseurl-row">' +
-              '<label>自定义服务地址 <small>（支持官方或兼容中转地址）</small></label>' +
+              '<label>信标地址 <small>（兼容通用接口地址）</small></label>' +
               '<input type="text" id="aid-baseurl" placeholder="https://api.openai.com/v1"/>' +
             '</div>' +
             '<div class="aid-cfg-row" id="aid-key-row">' +
-              '<label>访问密钥 <small>（仅存本机浏览器）</small></label>' +
-              '<input type="password" id="aid-apikey" placeholder="粘贴访问密钥" autocomplete="off"/>' +
+              '<label>共鸣凭证 <small>（仅存本机）</small></label>' +
+              '<input type="password" id="aid-apikey" placeholder="粘贴访问凭证" autocomplete="off"/>' +
             '</div>' +
             '<div class="aid-cfg-row" id="aid-proxy-row">' +
-              '<label>代理服务地址</label>' +
+              '<label>中转地址</label>' +
               '<input type="text" id="aid-proxy" placeholder="http://localhost:8787/api/chat"/>' +
             '</div>' +
             '<div class="aid-cfg-row">' +
-              '<label>对话模型名 <small>（可直接输入兼容模型名称）</small></label>' +
+              '<label>灵语模型 <small>（可按需调整）</small></label>' +
               '<input type="text" id="aid-model" list="aid-model-list" placeholder="gpt-4.1"/>' +
               '<datalist id="aid-model-list">' +
                 '<option value="gpt-5"></option>' +
@@ -690,7 +690,7 @@
               '</datalist>' +
             '</div>' +
             '<div class="aid-cfg-foot">' +
-              '<button type="button" id="aid-cfg-save" class="aid-btn primary">保存配置</button>' +
+              '<button type="button" id="aid-cfg-save" class="aid-btn primary">保存设置</button>' +
             '</div>' +
           '</div>' +
         '</details>' +
@@ -731,10 +731,9 @@
 
     var cfgBox = aside.querySelector('#aid-cfg-box');
     var disclosure = aside.querySelector('#aid-dev-disclosure');
-    if (cfgBox && disclosure && typeof MutationObserver === 'function') {
+    if (cfgBox && typeof MutationObserver === 'function') {
       var cfgObserver = new MutationObserver(function () {
         if (!cfgBox.classList.contains('hidden')) {
-          disclosure.open = true;
           updateCfgSummary();
         }
       });
@@ -746,8 +745,8 @@
     aside.querySelector('#aid-btn-cfg').onclick = function () {
       var willOpen = cfgBox.classList.contains('hidden');
       cfgBox.classList.toggle('hidden');
-      if (willOpen && disclosure) {
-        disclosure.open = true;
+      if (willOpen) {
+        if (disclosure) disclosure.open = false;
         updateCfgSummary();
       }
     };
@@ -768,8 +767,8 @@
       updateCfgSummary();
       cfgBox.classList.add('hidden');
       setStatus(selMode === 'codex'
-        ? '已切换为本地内置共鸣桥接（免密钥）'
-        : '已保存共鸣通道设置（' + (nextCfg.mode === 'proxy' ? '中转代理' : '直连服务') + ' · ' + nextCfg.model + '）');
+        ? '已切回内置灵语共鸣'
+        : '已更新共鸣设置（' + (nextCfg.mode === 'proxy' ? '中转信标' : '直连信标') + ' · ' + nextCfg.model + '）');
     };
     aside.querySelector('#aid-target').onchange = function () {
       refreshBadge();
@@ -985,19 +984,19 @@
     updateDrawerAvatar(avatar, sigil, cid, hiddenId, lastEmotionByChar[cid] || 'normal', avatarAlt);
 
     if (hiddenId) {
-      gateTag.textContent = '时间锁：初生盲听 · 尚未识名';
+      gateTag.textContent = '初生时分 · 声影朦胧';
     } else if (cid && root.AI_PERSONAS) {
       var gate = root.AI_PERSONAS.getTemporalGate(cid, snap, snap.causal);
       if (cid === 'aino' && gate.stageLabel === '赫兰冰封峡谷前线重逢期') {
-        gateTag.textContent = '保密锁：冰封峡谷 · 仅称「魔剑士 / 渔」';
+        gateTag.textContent = '冰封峡谷 · 化名「渔」隐踪中';
       } else if (gate.isChenglanDisguise && (cid === 'lein' || cid === 'peilin')) {
-        gateTag.textContent = '认知锁：商路 · 仅识「渔」';
+        gateTag.textContent = '塞北商路 · 世人唯识「渔」';
       } else if (gate.isChenglanDisguise && cid === 'musa') {
-        gateTag.textContent = '认知锁：北风堡 · 仅识冰剑士「渔」';
+        gateTag.textContent = '北风堡 · 世人唯识冰剑士「渔」';
       } else if (gate.isChenglanDisguise && (cid === 'jilan' || cid === 'ji' || cid === 'masha' || cid === 'kyle' || cid === 'mage_aurora')) {
-        gateTag.textContent = '认知锁：澄岚 · 仅识「渔」';
+        gateTag.textContent = '澄岚镇 · 世人唯识「渔」';
       } else {
-        gateTag.textContent = '时间锁：' + snap.player.age + '岁 · ' + (snap.location || '当前场景');
+        gateTag.textContent = snap.player.age + '岁 · ' + (snap.location || '当前场景');
       }
     } else {
       gateTag.textContent = snap.playing ? (snap.location + ' · 等待角色登场') : '请先进入游戏场景';
@@ -1012,7 +1011,7 @@
           '<i class="aid-mini-bar"><b style="left:' + summary.ratio + '%"></b></i>' +
           '<span><b>' + summary.rightVal + '</b> ' + summary.rightLabel + '</span>';
       } else {
-        axisMini.innerHTML = '<span class="aid-axis-hint">✧ 专属灵魂卡已装载</span>';
+        axisMini.innerHTML = '<span class="aid-axis-hint">✧ 心意灵犀已通</span>';
       }
     } else {
       axisMini.innerHTML = '';
@@ -1593,7 +1592,7 @@
       if (cfgBox) cfgBox.classList.remove('hidden');
       if (disclosure) disclosure.open = true;
       updateCfgSummary();
-      setStatus('请先填入访问密钥，或切换为本地内置共鸣桥接后再发送。');
+      setStatus('尚未填入共鸣凭证，请在「共鸣设置」中填写或切回内置灵语共鸣。');
       return;
     }
 
@@ -1674,7 +1673,7 @@
       if (err && err.name === 'AbortError') {
         setStatus('已取消发送 · 输入文字已保留');
       } else {
-        setStatus((err && err.message) ? err.message : '共鸣连接失败，请检查网络或访问凭证。输入已保留。');
+        setStatus((err && err.message) ? err.message : '灵语回音未能接通，请稍后再试或检查共鸣设置。输入已保留。');
       }
     } finally {
       if (activeAbort === reqAbort) {
@@ -1747,7 +1746,7 @@
     if (drawerEl) {
       var banner = drawerEl.querySelector('#aid-vignette-banner');
       var txt = drawerEl.querySelector('#aid-vignette-text');
-      txt.textContent = '小场景自由推进中：可与角色多聊几轮，随后点击下方按钮织入剧情';
+      txt.textContent = '此刻正可畅所欲言：多聊几句后，点击下方即可续写后事';
       banner.classList.remove('hidden');
       drawerEl.querySelector('#aid-input').focus();
     }

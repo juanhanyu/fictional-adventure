@@ -2944,6 +2944,12 @@
     renderArchiveInspector(slotById[st.selectedSlotId] || { slotId: st.selectedSlotId, isAuto: st.selectedSlotId === 0, empty: true, meta: null });
   }
 
+  function cleanArchiveTitle(raw) {
+    var s = String(raw || '').trim();
+    if (!s) return '';
+    return s.replace(/^([^\s·：\-—]+)\s*·\s*\1(?=[·\s：\-—]|$)/, '$1');
+  }
+
   function renderArchiveInspector(slot) {
     var codeEl = document.getElementById('v3-arc-slot-code');
     var latestEl = document.getElementById('v3-arc-latest');
@@ -2968,9 +2974,9 @@
     titleEl.classList.toggle('is-empty', isEmpty);
     if (isEmpty) {
       titleEl.textContent = isAuto ? '尚未生成自动记忆' : '尚未刻录的记忆晶体';
-      metaEl.innerHTML = '<p class="v3-arc-empty-copy">此晶簇当前为空白状态。进入旅程后，可随时于综合面板中刻录时空片段，或由章节节点自动写入核心。</p>';
+      metaEl.innerHTML = '<p class="v3-arc-empty-copy">此晶簇当前为空白状态。进入旅程后，可随时于随身手札中刻录当下片段，或于每卷重要时节自动铭入核心。</p>';
     } else {
-      titleEl.textContent = meta.chapterTitle || meta.locName || '维斯特利亚旅途片段';
+      titleEl.textContent = cleanArchiveTitle(meta.chapterTitle || meta.locName || '维斯特利亚旅途片段');
       var rows = [];
       if (meta.savedAt) rows.push('<div class="v3-arc-meta-row"><span class="v3-arc-meta-lbl">保存时间</span><span>' + escapeHtml(meta.savedAt) + '</span></div>');
       var progressParts = [meta.name || '希尔维亚', meta.ageStr || '0岁', 'Lv.' + (meta.lv || 1)];

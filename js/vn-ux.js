@@ -169,15 +169,32 @@
     return (st.ageY || 0) <= 0 ? (st.ageD || 0) + '天' : st.ageY + '岁';
   }
 
+  function dedupChapterTitle(raw) {
+    var s = String(raw || '').trim();
+    if (!s) return '';
+    return s.replace(/^([^\s·：\-—]+)\s*·\s*\1(?=[·\s：\-—]|$)/, '$1');
+  }
+
+  function joinVolAndTitle(vol, title) {
+    var v = String(vol || '').trim();
+    var t = String(title || '').trim();
+    if (!v) return dedupChapterTitle(t);
+    if (!t) return v;
+    if (t === v || (t.indexOf(v) === 0 && /^[\s·：\-—]/.test(t.slice(v.length)))) {
+      return dedupChapterTitle(t);
+    }
+    return dedupChapterTitle(v + ' · ' + t);
+  }
+
   function getChapterTitleForState(st, scId) {
     var chaps = typeof STORY_CHAPTERS !== 'undefined' ? STORY_CHAPTERS : (root.__STORY_CHAPTERS || []);
     var cid = scId || (st && st === getS() ? getCurrentSceneId() : null);
     if (cid) {
       var found = chaps.find(function (c) { return c && c.id === cid; });
-      if (found) return (found.vol ? found.vol + ' · ' : '') + (found.title || found.t || cid);
+      if (found) return joinVolAndTitle(found.vol, found.title || found.t || cid);
       var scenes = typeof SCENES !== 'undefined' ? SCENES : (root.SCENES || {});
       if (scenes[cid] && scenes[cid].card) {
-        return (scenes[cid].card.vol || '') + ' · ' + (scenes[cid].card.s || scenes[cid].card.t || cid);
+        return joinVolAndTitle(scenes[cid].card.vol, scenes[cid].card.s || scenes[cid].card.t || cid);
       }
       return cid;
     }
@@ -382,7 +399,7 @@
       '<div class="end-card vn-modal-card">' +
         '<div class="vn-modal-head">' +
           '<div class="vn-modal-head-copy">' +
-            '<h2><span class="vn-head-ico" aria-hidden="true">' + getSvg('scroll') + '</span><span>对话回看 · Backlog</span></h2>' +
+            '<h2><span class="vn-head-ico" aria-hidden="true">' + getSvg('scroll') + '</span><span>往昔回声 · 对话手札</span></h2>' +
             '<p class="vn-modal-sub">共保留最近 ' + backlogList.length + ' / ' + MAX_BACKLOG + ' 条对白、心声与选项抉择（快捷键 L）</p>' +
           '</div>' +
           '<button type="button" class="modal-close-x" id="vb-close" aria-label="关闭对话回看">×</button>' +
@@ -469,12 +486,13 @@
     if (raw.state && typeof raw.state === 'object') {
       var fallbackMeta = buildMeta(raw.state, raw.currentScene || null, ts);
       var rawMeta = (raw.meta && typeof raw.meta === 'object') ? raw.meta : {};
+      var rawLineIdx = raw.lineIdx != null ? Number(raw.lineIdx) : Number(raw.state && raw.state._lineIdx);
       var mergedMeta = {
         name: rawMeta.name != null ? String(rawMeta.name) : fallbackMeta.name,
         ageStr: rawMeta.ageStr != null ? String(rawMeta.ageStr) : fallbackMeta.ageStr,
         phaseName: rawMeta.phaseName != null ? String(rawMeta.phaseName) : fallbackMeta.phaseName,
         locName: rawMeta.locName != null ? String(rawMeta.locName) : fallbackMeta.locName,
-        chapterTitle: rawMeta.chapterTitle != null ? String(rawMeta.chapterTitle) : fallbackMeta.chapterTitle,
+        chapterTitle: dedupChapterTitle(rawMeta.chapterTitle != null ? String(rawMeta.chapterTitle) : fallbackMeta.chapterTitle),
         lv: rawMeta.lv != null ? Number(rawMeta.lv) || 1 : fallbackMeta.lv,
         gold: rawMeta.gold != null ? Number(rawMeta.gold) || 0 : fallbackMeta.gold,
         savedAt: rawMeta.savedAt != null ? String(rawMeta.savedAt) : fallbackMeta.savedAt
@@ -487,6 +505,7 @@
         state: raw.state,
         currentScene: raw.currentScene || null,
         storyChain: raw.storyChain || null,
+        lineIdx: (rawLineIdx > 0 && isFinite(rawLineIdx)) ? Math.floor(rawLineIdx) : 0,
         backlog: Array.isArray(raw.backlog) ? raw.backlog : []
       };
     }
@@ -508,6 +527,7 @@
         state: raw.data,
         currentScene: null,
         storyChain: null,
+        lineIdx: 0,
         backlog: []
       };
     }
@@ -560,14 +580,21 @@
     var ts = Date.now();
     var curSc = typeof currentScene !== 'undefined' ? currentScene : null;
     var curChain = typeof storyChain !== 'undefined' && storyChain ? deepClone(storyChain) : null;
+    var lineIdx = Math.max(0, Math.floor(Number(st._lineIdx || 0) || 0));
+    var clonedState = deepClone(st);
+    if (clonedState && typeof clonedState === 'object') {
+      delete clonedState._resumeSceneId;
+      delete clonedState._resumeLineIdx;
+    }
     var payload = {
       version: 2,
       slotId: sid,
       ts: ts,
       meta: buildMeta(st, curSc, ts),
-      state: deepClone(st),
+      state: clonedState,
       currentScene: curSc,
       storyChain: curChain,
+      lineIdx: lineIdx,
       backlog: deepClone(backlogList)
     };
     var all = readManualSlots();
@@ -663,7 +690,7 @@
     }
   }
 
-  function applyRestoredPayload(rawState, curSc, curChain, restoredBacklog) {
+  function applyRestoredPayload(rawState, curSc, curChain, restoredBacklog, restoredLineIdx) {
     if (!rawState || typeof rawState !== 'object') return false;
     var restored = typeof migrateStorySave === 'function' ? migrateStorySave(deepClone(rawState)) : deepClone(rawState);
     if (typeof baseState === 'function') {
@@ -703,19 +730,35 @@
       try { root.RaisingHub.onStateLoaded(restored); } catch (e) {}
     }
 
+    var resumeLine = Math.max(0, Math.floor(Number(restoredLineIdx != null ? restoredLineIdx : (rawState && rawState._lineIdx)) || 0));
     if (willResumeScene) {
+      if (resumeLine > 0) {
+        restored._resumeSceneId = curSc;
+        restored._resumeLineIdx = resumeLine;
+        if (root.S && root.S !== restored) {
+          root.S._resumeSceneId = curSc;
+          root.S._resumeLineIdx = resumeLine;
+        }
+      } else {
+        delete restored._resumeSceneId;
+        delete restored._resumeLineIdx;
+      }
       if (curChain && Array.isArray(curChain.queue) && curChain.queue.length && typeof runSceneQueue === 'function') {
         var resumeIdx = Math.max(0, (curChain.idx || 1) - 1);
         runSceneQueue(curChain.queue, resumeIdx);
       } else if (typeof runScene === 'function') {
         runScene(curSc);
       }
-    } else if (typeof resumePendingStories === 'function' && resumePendingStories()) {
-      // resumed pending
-    } else if (typeof checkStoryGates === 'function' && checkStoryGates()) {
-      // triggered due gates
-    } else if (typeof enterFreeRoam === 'function') {
-      enterFreeRoam({ restoreLoc: true });
+    } else {
+      delete restored._resumeSceneId;
+      delete restored._resumeLineIdx;
+      if (typeof resumePendingStories === 'function' && resumePendingStories()) {
+        // resumed pending
+      } else if (typeof checkStoryGates === 'function' && checkStoryGates()) {
+        // triggered due gates
+      } else if (typeof enterFreeRoam === 'function') {
+        enterFreeRoam({ restoreLoc: true });
+      }
     }
     return true;
   }
@@ -727,7 +770,7 @@
         var autoRaw = localStorage.getItem(typeof SAVE_KEY !== 'undefined' ? SAVE_KEY : 'ojousama_save_v1');
         if (!autoRaw) return { ok: false, reason: 'empty' };
         var parsedAuto = JSON.parse(autoRaw);
-        applyRestoredPayload(parsedAuto, null, null, null);
+        applyRestoredPayload(parsedAuto, null, null, null, 0);
         playSfx('page_open');
         showToast('已读取自动存档');
         return { ok: true };
@@ -739,7 +782,7 @@
     var all = readManualSlots();
     var slot = all[String(sid)];
     if (!slot || !slot.state) return { ok: false, reason: 'empty' };
-    applyRestoredPayload(slot.state, slot.currentScene, slot.storyChain, slot.backlog);
+    applyRestoredPayload(slot.state, slot.currentScene, slot.storyChain, slot.backlog, slot.lineIdx);
     playSfx('page_open');
     showToast('已读取存档槽 ' + sid);
     return { ok: true, slot: slot };
@@ -771,6 +814,8 @@
         if (!autoMeta || !autoMeta.name) {
           var parsed = JSON.parse(rawAuto);
           autoMeta = buildMeta(parsed, null, Date.now());
+        } else if (autoMeta.chapterTitle) {
+          autoMeta.chapterTitle = dedupChapterTitle(autoMeta.chapterTitle);
         }
       }
     } catch (e) {}
@@ -839,7 +884,7 @@
         : '<div class="sl-meta">' +
             '<div class="sl-line1"><b>' + escapeHtml(meta.name || '希尔维亚') + '</b> · ' + escapeHtml(meta.ageStr || '0岁') + ' · Lv.' + (meta.lv || 1) + '</div>' +
             '<div class="sl-line2">' + escapeHtml([meta.phaseName, meta.locName].filter(Boolean).join(' · ')) + '</div>' +
-            '<div class="sl-chap">' + escapeHtml(meta.chapterTitle || '') + '</div>' +
+            '<div class="sl-chap">' + escapeHtml(dedupChapterTitle(meta.chapterTitle || '')) + '</div>' +
             '<div class="sl-time">' + escapeHtml(meta.savedAt || '') + '</div>' +
           '</div>';
 
@@ -868,7 +913,7 @@
         '<div class="vn-modal-head">' +
           '<div class="vn-modal-head-copy">' +
             '<h2><span class="vn-head-ico" aria-hidden="true">' + getSvg('save') + '</span><span>存档与读档中心（6 槽位 + 自动存档）</span></h2>' +
-            '<p class="vn-modal-sub">' + (inGame ? '完整保留属性、命运暗流、随身铭记配装与对话回看记录' : '可从标题页直接读取任意手动槽位或自动存档继续游玩') + '</p>' +
+            '<p class="vn-modal-sub">' + (inGame ? '完整保留属性、命运暗流、随身铭记与对话回看记录' : '可从标题页直接读取任意手动槽位或自动存档继续游玩') + '</p>' +
           '</div>' +
           '<button type="button" class="modal-close-x" id="sl-close" aria-label="关闭存档中心">×</button>' +
         '</div>' +
@@ -1180,12 +1225,12 @@
         '<div class="vn-modal-head">' +
           '<div class="vn-modal-head-copy">' +
             '<h2><span class="vn-head-ico" aria-hidden="true">' + getSvg('bookmark') + '</span><span>章节速览与快速重温</span></h2>' +
-            '<p class="vn-modal-sub">随时重温已解锁章节，或通过快捷试玩直达各卷核心舞台</p>' +
+            '<p class="vn-modal-sub">随时重温已解锁章节，或通过章节跳转直抵各卷名幕</p>' +
           '</div>' +
           '<button type="button" class="modal-close-x" id="vc-close" aria-label="关闭章节速览">×</button>' +
         '</div>' +
         '<div class="vn-modal-scroll">' +
-          '<h4 class="rel-sec-title is-first"><span class="vn-inline-ico" aria-hidden="true">' + getSvg('star') + '</span><span>快捷试玩直达入口</span></h4>' +
+          '<h4 class="rel-sec-title is-first"><span class="vn-inline-ico" aria-hidden="true">' + getSvg('star') + '</span><span>各卷要幕直达入口</span></h4>' +
           '<div class="chap-quick-grid">' + quickHtml + '</div>' +
           '<h4 class="rel-sec-title"><span class="vn-inline-ico" aria-hidden="true">' + getSvg('book') + '</span><span>全卷章节记录</span></h4>' +
           '<div class="chap-list">' + listHtml + '</div>' +
@@ -1398,16 +1443,23 @@
     var hasStored = false;
     try { hasStored = !!localStorage.getItem(VN_PREFS_KEY); } catch (e) {}
     var p = loadPrefs();
-    applyPrefToEngine('typeSpeed', p.typeSpeed);
-    applyPrefToEngine('fxEnabled', p.fxEnabled);
-    if (hasStored) {
-      applyPrefToEngine('bgmVol', p.bgmVol);
-      applyPrefToEngine('sfxVol', p.sfxVol);
-      applyPrefToEngine('voiceVol', p.voiceVol);
-      applyPrefToEngine('voiceEnabled', p.voiceEnabled);
-      applyPrefToEngine('voiceAutoWait', p.voiceAutoWait);
-      applyPrefToEngine('bright', p.bright);
-    } else {
+    var prevSync = inExternalAudioSync;
+    inExternalAudioSync = true;
+    try {
+      applyPrefToEngine('typeSpeed', p.typeSpeed);
+      applyPrefToEngine('fxEnabled', p.fxEnabled);
+      if (hasStored) {
+        applyPrefToEngine('bgmVol', p.bgmVol);
+        applyPrefToEngine('sfxVol', p.sfxVol);
+        applyPrefToEngine('voiceVol', p.voiceVol);
+        applyPrefToEngine('voiceEnabled', p.voiceEnabled);
+        applyPrefToEngine('voiceAutoWait', p.voiceAutoWait);
+        applyPrefToEngine('bright', p.bright);
+      }
+    } finally {
+      inExternalAudioSync = prevSync;
+    }
+    if (!hasStored) {
       syncExternalAudioPrefs();
     }
   }
@@ -1451,14 +1503,21 @@
   function resetPrefs() {
     vnPrefs = Object.assign({}, DEFAULT_PREFS);
     persistPrefs();
-    applyPrefToEngine('bgmVol', vnPrefs.bgmVol);
-    applyPrefToEngine('sfxVol', vnPrefs.sfxVol);
-    applyPrefToEngine('voiceVol', vnPrefs.voiceVol);
-    applyPrefToEngine('voiceEnabled', vnPrefs.voiceEnabled);
-    applyPrefToEngine('voiceAutoWait', vnPrefs.voiceAutoWait);
-    applyPrefToEngine('typeSpeed', vnPrefs.typeSpeed);
-    applyPrefToEngine('fxEnabled', vnPrefs.fxEnabled);
-    applyPrefToEngine('bright', vnPrefs.bright);
+    var prevSync = inExternalAudioSync;
+    inExternalAudioSync = true;
+    try {
+      applyPrefToEngine('bgmVol', vnPrefs.bgmVol);
+      applyPrefToEngine('sfxVol', vnPrefs.sfxVol);
+      applyPrefToEngine('voiceVol', vnPrefs.voiceVol);
+      applyPrefToEngine('voiceEnabled', vnPrefs.voiceEnabled);
+      applyPrefToEngine('voiceAutoWait', vnPrefs.voiceAutoWait);
+      applyPrefToEngine('typeSpeed', vnPrefs.typeSpeed);
+      applyPrefToEngine('fxEnabled', vnPrefs.fxEnabled);
+      applyPrefToEngine('bright', vnPrefs.bright);
+    } finally {
+      inExternalAudioSync = prevSync;
+    }
+    persistPrefs();
     syncPrefsModalDOM();
     return Object.assign({}, vnPrefs);
   }
@@ -3324,7 +3383,7 @@
         '<article class="ach-card' + (got ? ' unlocked' : ' locked') + '">' +
           '<div class="ach-card-top">' +
             '<span class="ach-badge" aria-hidden="true">' + (got ? getSvg('star') : getSvg('lock')) + '</span>' +
-            '<b>' + escapeHtml(got ? a.name : (isSecret ? '隐秘彩蛋 · ???' : a.name)) + '</b>' +
+            '<b>' + escapeHtml(got ? a.name : (isSecret ? '尘封轶闻 · ???' : a.name)) + '</b>' +
             (got && a.reward ? '<span class="ach-reward-pill">' + escapeHtml(a.reward) + '</span>' : '') +
           '</div>' +
           '<p class="ach-desc">' + escapeHtml(got ? a.desc : (isSecret ? '隐藏在角落里的细碎回响，静待有心人发掘。' : '尚未达成 · 继续旅途即可开启。')) + '</p>' +
@@ -3799,7 +3858,7 @@
         var bCh = document.createElement('button');
         bCh.id = 'btn-chapters';
         bCh.className = 'chip chip-vn';
-        bCh.title = '章节速览与快速试玩';
+        bCh.title = '章节速览与重温';
         bCh.setAttribute('aria-label', '章节速览');
         bCh.innerHTML = SVG_CHAP;
         bCh.onclick = function () { openChaptersModal(); };
@@ -4189,11 +4248,20 @@
       if (bs && !bs.classList.contains('hidden')) return;
 
       if (e.key === 'l' || e.key === 'L') {
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
         var gs = document.getElementById('game-screen');
-        if (gs && !gs.classList.contains('hidden')) {
+        if (!gs || gs.classList.contains('hidden')) return;
+        if (document.body && (document.body.classList.contains('cg-mode') || document.body.classList.contains('ui-hidden'))) return;
+        if (isModalVisible(document.getElementById('cg-screen'))) return;
+        var backlogOv = document.getElementById('vn-backlog-modal');
+        if (isModalVisible(backlogOv)) {
           e.preventDefault();
-          toggleBacklogModal();
+          closeBacklogModal();
+          return;
         }
+        if (isAnyBlockingOverlayOpen()) return;
+        e.preventDefault();
+        openBacklogModal();
       }
     });
   }

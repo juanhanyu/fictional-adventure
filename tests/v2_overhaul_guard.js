@@ -537,6 +537,7 @@ async function run() {
   // 3d) 五大弹窗开合与 Escape 关闭
   win.__getS().phase = 'academy';
   win.__getS().ageY = 12;
+  win.__getS().loc = 'cafeteria';
   win.__getS().freeRoam = true;
   const modalSpecs = [
     { name: 'openSchedulePlanner', args: () => [] },
@@ -633,6 +634,8 @@ async function run() {
 
   // 3f) S.gold 永不跌破 0（剧情扣款 + 商店零银币购买双重验证）
   const goldS = win.__getS();
+  goldS.loc = 'cafeteria';
+  goldS.ageY = 12;
   goldS.gold = 5;
   if (typeof win.applyLineEffects === 'function') {
     win.applyLineEffects({ gold: -30 });
@@ -642,7 +645,7 @@ async function run() {
   let buyRejected = true;
   if (RH && typeof RH.buyCozyItem === 'function' && Array.isArray(RH.COZY_SHOP_CATALOG) && RH.COZY_SHOP_CATALOG.length) {
     const buyRes = RH.buyCozyItem(RH.COZY_SHOP_CATALOG[0].id, win.__getS());
-    buyRejected = !!(buyRes && buyRes.ok === false);
+    buyRejected = !!(buyRes && buyRes.ok === false && buyRes.reason === 'no_gold');
   }
   if (RH && typeof RH.openShopModal === 'function') {
     const beforeShop = snapshotVisibleModals();
@@ -662,6 +665,175 @@ async function run() {
   ok('S.gold 在剧情扣费与商店零银币购买场景下均严守 >= 0 不为负',
     afterLineGold >= 0 && finalGold >= 0 && buyRejected,
     `afterLineGold=${afterLineGold}, finalGold=${finalGold}, buyRejected=${buyRejected}`);
+
+  // 3g) 分地域集市商铺守卫（非商业地点隐藏入口+拒买+纯礼囊赠礼，6 处商铺精准展示对应货架，舆图预载与终幕入口门控）
+  const venueExpectations = {
+    town: {
+      name: '利维莫尔镇集市',
+      shortBadge: '镇集市',
+      items: ['shop_caramel_cookie', 'shop_mint_tea', 'shop_honey_pancake', 'shop_parchment_journal', 'shop_frost_cedar_sachet', 'shop_silver_moon_clip', 'shop_ice_bookmark', 'shop_sword_tassel_oil'],
+      forbidden: 'shop_osmanthus_cake',
+    },
+    market: {
+      name: '王都中央材料市场',
+      shortBadge: '王都集市',
+      items: ['shop_parchment_journal', 'shop_ice_bookmark', 'shop_sword_tassel_oil', 'shop_frost_cedar_sachet', 'shop_silver_moon_clip', 'shop_magic_theory_notes', 'shop_warming_frost_stone'],
+      forbidden: 'shop_honey_pancake',
+    },
+    cafeteria: {
+      name: '学院食堂 · 甜点茶饮柜',
+      shortBadge: '甜点柜',
+      items: ['shop_caramel_cookie', 'shop_mint_tea', 'shop_honey_pancake'],
+      forbidden: 'shop_magic_theory_notes',
+    },
+    flowerhouse: {
+      name: '校园花坊 · 温室花礼角',
+      shortBadge: '花坊',
+      items: ['shop_polar_lily_dried', 'shop_frost_cedar_sachet', 'shop_mint_tea'],
+      forbidden: 'shop_caramel_cookie',
+    },
+    chenglan_guild: {
+      name: '澄岚街市与公会补给柜',
+      shortBadge: '澄岚集市',
+      items: ['shop_osmanthus_cake', 'shop_caramel_cookie', 'shop_mint_tea', 'shop_parchment_journal', 'shop_sword_tassel_oil', 'shop_silver_moon_clip', 'shop_frost_cedar_sachet'],
+      forbidden: 'shop_warming_frost_stone',
+    },
+    ice_canyon: {
+      name: '北境前线 · 行商补给摊',
+      shortBadge: '行商摊',
+      items: ['shop_warming_frost_stone', 'shop_polar_lily_dried', 'shop_ice_bookmark', 'shop_sword_tassel_oil', 'shop_caramel_cookie', 'shop_mint_tea'],
+      forbidden: 'shop_osmanthus_cake',
+    },
+  };
+  const shopFails = [];
+  const shopS = win.__getS();
+  shopS.freeRoam = true;
+  shopS.gold = 200;
+  shopS.ageY = 12;
+  shopS.phase = 'academy';
+  if (!RH || !RH.SHOP_VENUES || typeof RH.getShopVenueAtLoc !== 'function' || typeof RH.isShopLocation !== 'function') {
+    shopFails.push('missing SHOP_VENUES/getShopVenueAtLoc/isShopLocation');
+  } else {
+    const venueKeys = Object.keys(RH.SHOP_VENUES).sort();
+    const expectedKeys = Object.keys(venueExpectations).sort();
+    if (venueKeys.join(',') !== expectedKeys.join(',')) {
+      shopFails.push(`venues=${venueKeys.join(',')}`);
+    }
+    if (Object.prototype.hasOwnProperty.call(RH.SHOP_VENUES, 'parlor')) {
+      shopFails.push('parlor-still-in-SHOP_VENUES');
+    }
+
+    // 4 岁以下在任何地点均返回 null/false 且隐藏按钮
+    shopS.ageY = 3;
+    shopS.loc = 'town';
+    RH.syncSylviaHub(shopS);
+    if (RH.getShopVenueAtLoc('town', shopS) !== null || RH.isShopLocation('town', shopS) !== false) {
+      shopFails.push('age<4-allowed-shop');
+    }
+    if (isElVisible($('btn-raising-shop'))) {
+      shopFails.push('age<4-btn-visible');
+    }
+
+    // 非商业地点（dorm / parlor / northforest）：按钮隐藏、货架空、拒买、openShopModal('gift'|'market') 纯礼囊无购买钮
+    shopS.ageY = 12;
+    for (const nonLoc of ['dorm', 'parlor', 'northforest']) {
+      shopS.loc = nonLoc;
+      shopS.gold = 200;
+      RH.syncSylviaHub(shopS);
+      const btnShop = $('btn-raising-shop');
+      if (RH.isShopLocation(nonLoc, shopS)) shopFails.push(`${nonLoc}:isShopLocation`);
+      if (btnShop && !btnShop.classList.contains('hidden')) shopFails.push(`${nonLoc}:btn-not-hidden`);
+      const avail = RH.getAvailableShopItems(shopS);
+      if (!Array.isArray(avail) || avail.length !== 0) shopFails.push(`${nonLoc}:stock=${avail && avail.length}`);
+      const crossBuy = RH.buyCozyItem('shop_caramel_cookie', shopS);
+      if (!crossBuy || crossBuy.ok !== false || crossBuy.reason !== 'not_sold_here' || shopS.gold !== 200) {
+        shopFails.push(`${nonLoc}:crossBuy=${JSON.stringify(crossBuy)}`);
+      }
+      for (const tabArg of ['gift', 'market']) {
+        const shopEl = RH.openShopModal(tabArg);
+        const h2Text = ((shopEl && shopEl.querySelector('h2') && shopEl.querySelector('h2').textContent) || '').trim();
+        const hasMarketTab = !!(shopEl && shopEl.querySelector('[data-shop-tab="market"]'));
+        const buyBtns = shopEl ? Array.from(shopEl.querySelectorAll('[data-buy-item], button')).filter((b) => b.hasAttribute('data-buy-item') || /买|购/.test(b.textContent || '')) : [];
+        if (h2Text !== '随身礼囊 · 心意赠礼' || hasMarketTab || buyBtns.length > 0) {
+          shopFails.push(`${nonLoc}:${tabArg}(h2=${h2Text},mktTab=${hasMarketTab},buyBtns=${buyBtns.length})`);
+        }
+        pressEscape();
+      }
+    }
+
+    // 6 处分地域商铺：按钮显隐与动态文案、专属货架、跨地拒买、弹窗精准渲染
+    for (const [locId, exp] of Object.entries(venueExpectations)) {
+      shopS.loc = locId;
+      shopS.gold = 200;
+      RH.syncSylviaHub(shopS);
+      const btnShop = $('btn-raising-shop');
+      const fullLbl = btnShop && btnShop.querySelector('.rh-dc-full');
+      if (!RH.isShopLocation(locId, shopS)) shopFails.push(`${locId}:not-shop`);
+      if (!btnShop || btnShop.classList.contains('hidden')) shopFails.push(`${locId}:btn-hidden`);
+      if (!fullLbl || fullLbl.textContent.trim() !== exp.shortBadge) {
+        shopFails.push(`${locId}:badge=${fullLbl && fullLbl.textContent}`);
+      }
+      const stockIds = RH.getAvailableShopItems(shopS).map((x) => x.id);
+      if (stockIds.join(',') !== exp.items.join(',')) {
+        shopFails.push(`${locId}:stockMismatch(${stockIds.join(',')})`);
+      }
+      const crossBuy = RH.buyCozyItem(exp.forbidden, shopS);
+      if (!crossBuy || crossBuy.ok !== false || crossBuy.reason !== 'not_sold_here') {
+        shopFails.push(`${locId}:allowedForbidden=${exp.forbidden}`);
+      }
+      const shopEl = RH.openShopModal('market');
+      const h2Text = ((shopEl && shopEl.querySelector('h2') && shopEl.querySelector('h2').textContent) || '').trim();
+      const cardIds = shopEl ? Array.from(shopEl.querySelectorAll('.rh-shop-card[data-item-id]')).map((el) => el.getAttribute('data-item-id')) : [];
+      if (h2Text !== exp.name || cardIds.join(',') !== exp.items.join(',')) {
+        shopFails.push(`${locId}:modalMismatch(h2=${h2Text},cards=${cardIds.length})`);
+      }
+      pressEscape();
+    }
+
+    // 舆图校验：全量 loading="eager" decoding="sync"、parlor 无商铺标、flowerhouse 显示「花坊」、秘闻替代彩蛋
+    shopS.phase = 'academy';
+    shopS.loc = 'dorm';
+    Object.values(win.__LOCS || {}).forEach((L) => {
+      L.unlock = (L.area === '魔法大学' || L.area === '王都');
+    });
+    RH.renderVisualMap(shopS);
+    const mapImgs = Array.from(doc.querySelectorAll('#map-grid .rh-map-thumb > img'));
+    const allEagerSync = mapImgs.length > 0 && mapImgs.every((img) => img.getAttribute('loading') === 'eager' && img.getAttribute('decoding') === 'sync');
+    const flowerShopBadge = doc.querySelector('#map-grid [data-loc="flowerhouse"] .badge-shop');
+    const cafeShopBadge = doc.querySelector('#map-grid [data-loc="cafeteria"] .badge-shop');
+    const mapText = ($('map-grid') && $('map-grid').textContent) || '';
+    const hasSecretBadge = !!doc.querySelector('#map-grid .badge-egg') && mapText.includes('秘闻') && !mapText.includes('彩蛋');
+    if (!allEagerSync) shopFails.push(`mapImgLazy(count=${mapImgs.length})`);
+    if (!flowerShopBadge || flowerShopBadge.textContent.trim() !== '花坊') shopFails.push('map:missing-flowerhouse-badge');
+    if (!cafeShopBadge || cafeShopBadge.textContent.trim() !== '甜点柜') shopFails.push('map:missing-cafeteria-badge');
+    if (!hasSecretBadge) shopFails.push('map:egg-not-renamed-to-秘闻');
+    shopS.phase = 'youth';
+    shopS.loc = 'parlor';
+    Object.values(win.__LOCS || {}).forEach((L) => {
+      L.unlock = (L.area === '公爵府' || L.area === '领地');
+    });
+    RH.renderVisualMap(shopS);
+    if (doc.querySelector('#map-grid [data-loc="parlor"] .badge-shop')) shopFails.push('map:parlor-has-shop-badge');
+    const townShopBadge = doc.querySelector('#map-grid [data-loc="town"] .badge-shop');
+    if (!townShopBadge || townShopBadge.textContent.trim() !== '镇集市') shopFails.push('map:missing-town-badge');
+    if ($('map-overlay')) $('map-overlay').classList.add('hidden');
+
+    // 终幕回响门控：刚进 journey 未达终章不露出，达 ch_leaky_cup / finale 后显示
+    shopS.phase = 'journey';
+    shopS.flags = { named: 1, did_turnpoint: 1, arrived_jikan: 1, ch_distant_wind_1: 1 };
+    RH.syncSylviaHub(shopS);
+    if (RH.canOpenEndingForecast(shopS) || !$('btn-raising-ending').classList.contains('hidden')) {
+      shopFails.push('ending-exposed-early-journey');
+    }
+    shopS.flags.ch_leaky_cup = 1;
+    RH.syncSylviaHub(shopS);
+    if (!RH.canOpenEndingForecast(shopS) || $('btn-raising-ending').classList.contains('hidden')) {
+      shopFails.push('ending-hidden-after-leaky-cup');
+    }
+  }
+  ok('分地域集市商铺（6 处特产货架 / 非商业地隐藏入口拒买与纯赠礼态 / 舆图 eager 加载与秘闻标 / 终幕入口门控）全部达标',
+    shopFails.length === 0,
+    shopFails.slice(0, 8).join('; '));
 
   // =========================================================================
   // 4. Static Bright Crystal-Fantasy Palette & Layout Guard

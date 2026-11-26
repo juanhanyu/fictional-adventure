@@ -831,7 +831,7 @@
               ]
             },
             {
-              text: '✦【灵魂交谈】用自己的话自由回应爱丽丝（AI 推进并进入下幕）',
+              text: '✦【灵魂交谈】用自己的话自由回应爱丽丝（亲口答复）',
               do: function () {
                 launchVignetteFreeTalk('v_alice_shade', 'alice', '爱丽丝正坐在午后图书室光斑边问你发呆时在想什么', 'independence', [
                   duoLine(['sylvia', '希尔维亚', 'smile'], ['alice', '爱丽丝', 'happy'], 'alice', '……嗯。姐姐大人说的话，我都记在心里了。'),
@@ -882,7 +882,7 @@
               ]
             },
             {
-              text: '✦【灵魂交谈】亲自对爱丽丝许下关于风与未来的约定（AI 收束）',
+              text: '✦【灵魂交谈】亲自对爱丽丝许下关于风与未来的约定（亲口立约）',
               do: function () {
                 launchVignetteFreeTalk('v_alice_shade', 'alice', '爱丽丝按住干叶书签，轻声问长大后风会不会把姐妹吹散', 'independence', [
                   duoLine(['sylvia', '希尔维亚', 'smile'], ['alice', '爱丽丝', 'happy'], 'alice', '……好。这枚干叶书签我夹好了，一言为定。'),
@@ -935,7 +935,7 @@
               ]
             },
             {
-              text: '✦【灵魂交谈】在练武场夜风里自由询问姐姐（AI 推进并进入下幕）',
+              text: '✦【灵魂交谈】在练武场夜风里自由询问姐姐（亲口答复）',
               do: function () {
                 launchVignetteFreeTalk('v_beatrice_practice', 'beatrice', '晚宴后你在练武场撞见偷偷拿木梳练微火控温的贝阿特丽丝', null, [
                   duoLine(['sylvia', '希尔维亚', 'normal'], ['beatrice', '贝阿特丽丝', 'sad'], 'beatrice', '……既然被你撞见了，跟你说实话也没关系。'),
@@ -986,7 +986,7 @@
               ]
             },
             {
-              text: '✦【灵魂交谈】回应姐姐想守护全家的心事（AI 收束）',
+              text: '✦【灵魂交谈】回应姐姐想守护全家的心事（亲口立约）',
               do: function () {
                 if (typeof flag === 'function') flag('heard_duke_border_worry', 1);
                 launchVignetteFreeTalk('v_beatrice_practice', 'beatrice', '贝阿特丽丝倾诉了父亲书房提到的王都边防压力，以及想保护妹妹的心意', null, [
@@ -1040,7 +1040,7 @@
               ]
             },
             {
-              text: '✦【灵魂交谈】在钟塔顶层与诺艾儿自由对话（AI 推进并进入下幕）',
+              text: '✦【灵魂交谈】在钟塔顶层与诺艾儿自由对话（亲口答复）',
               do: function () {
                 launchVignetteFreeTalk('v_noelle_clocktower', 'noelle', '钟塔顶层诺艾儿正笨拙面对蹭腿的橘猫，左手背写满日程表，书还拿反了', 'partnership', [
                   duoLine(['sylvia', '希尔维亚', 'smile'], ['noelle', '诺艾儿', 'normal'], 'noelle', '……把书放平就放平吧。反正旁边的石阶空着，随便坐。'),
@@ -1092,7 +1092,7 @@
               ]
             },
             {
-              text: '✦【灵魂交谈】边陪她顺猫毛边聊聊手背上的省魔课题（AI 收束）',
+              text: '✦【灵魂交谈】边陪她顺猫毛边聊聊手背上的省魔课题（亲口立约）',
               do: function () {
                 launchVignetteFreeTalk('v_noelle_clocktower', 'noelle', '橘猫在石阶吃面包屑，诺艾儿不知怎么摸猫，手背上写着省两成魔力路径', 'partnership', [
                   duoLine(['sylvia', '希尔维亚', 'smile'], ['noelle', '诺艾儿', 'smile'], 'noelle', '……下次上来看书，带杯热水就行。这只猫大概也记住你了。'),
@@ -1146,7 +1146,7 @@
               ]
             },
             {
-              text: '✦【灵魂交谈】在花坊冰雾旁自由与艾诺聊聊（AI 推进并进入下幕）',
+              text: '✦【灵魂交谈】在花坊冰雾旁自由与艾诺聊聊（亲口答复）',
               do: function () {
                 launchVignetteFreeTalk('v_aino_flowerhouse', 'aino', '花坊午后艾诺刚吃完温吞咖喱打了个掉雪花的小喷嚏，身旁是北极铃兰伊诺', 'kinship', [
                   duoLine(['sylvia', '希尔维亚', 'normal'], ['aino', '艾诺', 'normal'], 'aino', '……过来。趁现在手稳，给你看一样东西。'),
@@ -1199,7 +1199,7 @@
               ]
             },
             {
-              text: '✦【灵魂交谈】一边覆上恒温冰膜一边与艾诺立下约定（AI 收束）',
+              text: '✦【灵魂交谈】一边覆上恒温冰膜一边与艾诺立下约定（亲口立约）',
               do: function () {
                 unlockClue('polar_lily_bond');
                 launchVignetteFreeTalk('v_aino_flowerhouse', 'aino', '艾诺亲手演示了北极铃兰的恒温冰膜，即将毕业回赫兰前将花交接给你', 'kinship', [
@@ -1253,7 +1253,7 @@
               ]
             },
             {
-              text: '✦【灵魂交谈】在雨后纪念林与夏洛特自由交锋（AI 推进并进入下幕）',
+              text: '✦【灵魂交谈】在雨后纪念林与夏洛特自由交锋（亲口答复）',
               do: function () {
                 launchVignetteFreeTalk('v_charlotte_memorial', 'charlotte', '雨后纪念林夏洛特刚给两棵树挖好排水沟，耳根泛红端着架子', 'candor', [
                   duoLine(['sylvia', '希尔维亚', 'normal'], ['charlotte', '夏洛特', 'normal'], 'charlotte', '……哼，既然没有旁人在场，站在树底下歇口气也无妨。'),
@@ -1306,7 +1306,7 @@
               ]
             },
             {
-              text: '✦【灵魂交谈】就王都风向与林中默契自由回应夏洛特（AI 收束）',
+              text: '✦【灵魂交谈】就王都风向与林中默契自由回应夏洛特（亲口立约）',
               do: function () {
                 unlockClue('belmont_troop_shift');
                 launchVignetteFreeTalk('v_charlotte_memorial', 'charlotte', '夏洛特在雨后林间无意透露了贝尔蒙外务管事调换东郊私军轮值的烦闷', 'candor', [
@@ -1360,7 +1360,7 @@
               ]
             },
             {
-              text: '✦【灵魂交谈】在日落长廊宽慰海伦娜并询问盘查（AI 推进并进入下幕）',
+              text: '✦【灵魂交谈】在日落长廊宽慰海伦娜并询问盘查（亲口答复）',
               do: function () {
                 unlockClue('belmont_troop_shift');
                 launchVignetteFreeTalk('v_helena_corridor', 'helena', '日落长廊上海伦娜聊起回神殿的压力与边境盘查变严的心事', null, [
@@ -1410,7 +1410,7 @@
               ]
             },
             {
-              text: '✦【灵魂交谈】收下三颗星星地址笺并与海伦娜约定书信（AI 收束）',
+              text: '✦【灵魂交谈】收下三颗星星地址笺并与海伦娜约定书信（亲口立约）',
               do: function () {
                 launchVignetteFreeTalk('v_helena_corridor', 'helena', '海伦娜把画着三颗小星星的希里昂神殿通讯地址交给你，期盼以后通信', null, [
                   duoLine(['sylvia', '希尔维亚', 'smile'], ['helena', '海伦娜', 'wink'], 'helena', '约好了哦！每封信末尾我都会画上笑脸和星星，希尔维亚一定要按时吃饭！'),
@@ -1463,7 +1463,7 @@
               ]
             },
             {
-              text: '✦【灵魂交谈】就小本子上的反常记录直接询问阿琼（AI 推进并进入下幕）',
+              text: '✦【灵魂交谈】就小本子上的反常记录直接询问阿琼（亲口答复）',
               do: function () {
                 launchVignetteFreeTalk('v_ajun_kitchen', 'ajun', '公共厨房里阿琼的小本子上记着使团表叔转问的公爵府银杯纹章与客房换班细节', null, [
                   duoLine(['sylvia', '希尔维亚', 'serious'], ['ajun', '阿琼', 'surprised'], 'ajun', '啊，说到这个，信纸背面好像还有一句附言呢！'),
@@ -1499,7 +1499,7 @@
               lines: [
                 duoLine(['sylvia', '希尔维亚', 'serious'], ['ajun', '阿琼', 'normal'], 'sylvia', '就像你祖母严守独门香料配比一样，各家宅院的门径换班也有规矩。回信只写甜汤就够了，其余划掉吧。'),
                 duoLine(['sylvia', '希尔维亚', 'normal'], ['ajun', '阿琼', 'happy'], 'ajun', '用祖传配方一比喻我就全明白啦！我这就擦干净！来来来，这罐红叶茶你带回寝室热着喝！'),
-                { text: '接过微烫的茶罐，我在意识深处将「使团礼宾官暗探公爵府」这一页彻底冻结存档。', love: 'ajun', loveD: 1, know: 'ajun', knowD: 12, freeRoam: true }
+                { text: '接过微烫的茶罐，我在意识深处将「使团礼宾官暗探公爵府」这一页彻底冰封铭记。', love: 'ajun', loveD: 1, know: 'ajun', knowD: 12, freeRoam: true }
               ]
             },
             {
@@ -1515,7 +1515,7 @@
               ]
             },
             {
-              text: '✦【灵魂交谈】叮嘱阿琼涂掉侧门记录并锁定使团暗探线索（AI 收束）',
+              text: '✦【灵魂交谈】叮嘱阿琼涂掉侧门记录并锁定使团暗探线索（亲口立约）',
               do: function () {
                 unlockClue('bayi_banquet_leak');
                 launchVignetteFreeTalk('v_ajun_kitchen', 'ajun', '使团礼宾官借阿琼表叔打听公爵府冬假侧门与夜巡，请温和提醒单纯的阿琼涂掉宅邸记录', null, [
@@ -1575,7 +1575,7 @@
               ]
             },
             {
-              text: '✦【灵魂交谈】以「渔」的身份在夜廊与霁岚交心（AI 推进并进入下幕）',
+              text: '✦【灵魂交谈】以「渔」的身份在夜廊与霁岚交心（亲口答复）',
               do: function () {
                 unlockClue('wind_god_echo');
                 launchVignetteFreeTalk('v_jilan_night', 'jilan', '澄岚冬夜二楼木廊，霁岚对着院角老树与黑发少女「渔」聊起母亲留下的名字', 'hearth', [
@@ -1627,7 +1627,7 @@
               ]
             },
             {
-              text: '✦【灵魂交谈】对着半编好的紫色剑穗与霁岚定下重逢之约（AI 收束）',
+              text: '✦【灵魂交谈】对着半编好的紫色剑穗与霁岚定下重逢之约（亲口立约）',
               do: function () {
                 launchVignetteFreeTalk('v_jilan_night', 'jilan', '霁岚攥着编了一半的紫色剑穗，问「渔」开春远行后还会不会记得霁馆', 'hearth', [
                   duoLine(['sylvia', '渔', 'smile'], ['jilan', '霁岚', 'happy'], 'jilan', '好啦夜里风硬，快回屋钻被窝吧！明早第三排第四把竹剑还等着你呢！'),
@@ -2270,8 +2270,134 @@
     return list;
   }
 
+  function resolvePresentPortraitXs() {
+    var xs = [];
+    if (typeof document !== 'undefined') {
+      var pRoot = document.getElementById('portraits');
+      if (pRoot) {
+        var slots = pRoot.querySelectorAll('.p-slot');
+        for (var i = 0; i < slots.length; i++) {
+          var el = slots[i];
+          if (!el || el.classList.contains('hidden') || el.classList.contains('ps-leave')) continue;
+          var lv = parseFloat(el.style && el.style.left);
+          if (!isNaN(lv)) xs.push(lv);
+        }
+      }
+    }
+    if (!xs.length) {
+      var count = 0;
+      if (typeof stage !== 'undefined' && Array.isArray(stage) && stage.length) {
+        count = Math.min(4, stage.length);
+      } else if (typeof whoIsHere === 'function') {
+        try { count = Math.min(4, (whoIsHere() || []).length); } catch (e) {}
+      }
+      if (count === 1) xs = [50];
+      else if (count === 2) xs = [30, 70];
+      else if (count === 3) xs = [20, 50, 80];
+      else if (count >= 4) xs = [14, 38, 62, 86];
+    }
+    return xs;
+  }
+
+  function pickClearVignetteSpot(v, idx, portraitXs, occupied) {
+    var vw = (typeof window !== 'undefined' && window.innerWidth) ? window.innerWidth : 1280;
+    var isCompact = vw <= 1040;
+    var minX = isCompact ? 13 : 11;
+    var maxX = isCompact ? 87 : 89;
+    var prefX = Math.max(minX, Math.min(maxX, typeof v.x === 'number' ? v.x : (idx % 2 === 0 ? 14 : 86)));
+    var prefY = Math.max(15, Math.min(62, typeof v.y === 'number' ? v.y : (26 + idx * 10)));
+    var preferRight = prefX >= 50;
+    var pCount = portraitXs.length;
+    var spotHalfX = isCompact ? 11.5 : 8.5;
+    var portraitHalfX = pCount >= 3 ? (isCompact ? 11.5 : 9.2) : (isCompact ? 13.5 : 10.5);
+    var safeClearX = portraitHalfX + spotHalfX * 0.7;
+
+    var candidates = [{ x: prefX, y: prefY }];
+    var edgeFirst = preferRight ? [maxX, minX] : [minX, maxX];
+    if (pCount === 0) {
+      candidates.push(
+        { x: edgeFirst[0], y: 24 }, { x: edgeFirst[1], y: 24 },
+        { x: edgeFirst[0], y: 42 }, { x: edgeFirst[1], y: 42 }
+      );
+    } else if (pCount === 1) {
+      candidates.push(
+        { x: edgeFirst[0], y: 22 }, { x: edgeFirst[1], y: 22 },
+        { x: edgeFirst[0], y: 38 }, { x: edgeFirst[1], y: 38 },
+        { x: edgeFirst[0], y: 54 }, { x: edgeFirst[1], y: 54 },
+        { x: edgeFirst[0], y: 14 }, { x: edgeFirst[1], y: 14 }
+      );
+    } else if (pCount === 2) {
+      if (isCompact) {
+        candidates.push(
+          { x: edgeFirst[0], y: 13 }, { x: 50, y: 14 }, { x: edgeFirst[1], y: 13 },
+          { x: 50, y: 24 }, { x: edgeFirst[0], y: 22 }, { x: edgeFirst[1], y: 22 },
+          { x: edgeFirst[0], y: 48 }, { x: edgeFirst[1], y: 48 }
+        );
+      } else {
+        candidates.push(
+          { x: edgeFirst[0], y: 20 }, { x: edgeFirst[1], y: 20 },
+          { x: 50, y: 16 }, { x: edgeFirst[0], y: 38 }, { x: edgeFirst[1], y: 38 },
+          { x: edgeFirst[0], y: 14 }, { x: edgeFirst[1], y: 14 }, { x: 50, y: 30 }
+        );
+      }
+    } else if (pCount === 3) {
+      candidates.push(
+        { x: preferRight ? 65 : 35, y: 13 }, { x: preferRight ? 35 : 65, y: 13 },
+        { x: edgeFirst[0], y: 13 }, { x: edgeFirst[1], y: 13 },
+        { x: preferRight ? 65 : 35, y: 22 }, { x: preferRight ? 35 : 65, y: 22 },
+        { x: edgeFirst[0], y: 56 }, { x: edgeFirst[1], y: 56 }
+      );
+    } else {
+      candidates.push(
+        { x: preferRight ? 74 : 26, y: 12 }, { x: 50, y: 12 }, { x: preferRight ? 26 : 74, y: 12 },
+        { x: edgeFirst[0], y: 12 }, { x: edgeFirst[1], y: 12 },
+        { x: preferRight ? 74 : 26, y: 21 }, { x: preferRight ? 26 : 74, y: 21 }
+      );
+    }
+
+    var best = candidates[0];
+    var bestScore = Infinity;
+    for (var ci = 0; ci < candidates.length; ci++) {
+      var c = candidates[ci];
+      var cx = Math.max(minX, Math.min(maxX, c.x));
+      var cy = Math.max(12, Math.min(64, c.y));
+      var score = 0;
+
+      for (var pi = 0; pi < pCount; pi++) {
+        var dx = Math.abs(cx - portraitXs[pi]);
+        if (cy >= 16) {
+          if (dx < safeClearX) {
+            var overlap = safeClearX - dx;
+            score += overlap * (cy >= 20 && cy <= 58 ? 14 : 8);
+          }
+        } else if (dx < portraitHalfX * 0.85) {
+          score += (portraitHalfX * 0.85 - dx) * 1.6;
+        }
+      }
+
+      for (var oi = 0; oi < occupied.length; oi++) {
+        var ox = Math.abs(cx - occupied[oi].x);
+        var oy = Math.abs(cy - occupied[oi].y);
+        var minGapX = isCompact ? 23 : 18;
+        if (ox < minGapX && oy < 12) {
+          score += 90 + (minGapX - ox) * 3 + (12 - oy) * 4;
+        }
+      }
+
+      var isEdge = (cx <= 20 || cx >= 80);
+      if (!isEdge && pCount <= 1) score += 12;
+      score += Math.abs(cx - prefX) * 0.04 + Math.abs(cy - prefY) * 0.03;
+
+      if (score < bestScore) {
+        bestScore = score;
+        best = { x: cx, y: cy };
+      }
+    }
+    return best;
+  }
+
   /**
-   * 在自由探索舞台上渲染可玩小场景微光入口（自动避开中心立绘区域，且层级高于立绘容器）
+   * 在自由探索舞台上渲染可玩闲暇轶事微光入口（依据在场立绘与屏幕宽度自动避让立绘头身与已有热点）
    */
   function renderVignetteHotspots() {
     if (typeof document === 'undefined') return;
@@ -2281,15 +2407,25 @@
     var avail = getAvailableVignettesHere(st);
     if (!avail.length) return;
     box.classList.remove('hidden');
+
+    var portraitXs = resolvePresentPortraitXs();
+    var occupied = [];
+    var existingSpots = box.querySelectorAll('.hotspot');
+    for (var ei = 0; ei < existingSpots.length; ei++) {
+      var ex = parseFloat(existingSpots[ei].style && existingSpots[ei].style.left);
+      var ey = parseFloat(existingSpots[ei].style && existingSpots[ei].style.top);
+      if (!isNaN(ex) && !isNaN(ey)) occupied.push({ x: ex, y: ey });
+    }
+
     avail.forEach(function (v, idx) {
       if (box.querySelector('[data-vignette="' + v.id + '"]')) return;
       var btn = document.createElement('button');
       btn.className = 'hotspot vignette-spot' + (v.isPayoffScene ? ' payoff-spot' : '');
       btn.setAttribute('data-vignette', v.id);
-      var posX = typeof v.x === 'number' ? v.x : (idx % 2 === 0 ? 14 : 86);
-      var posY = Math.max(17, Math.min(64, typeof v.y === 'number' ? v.y : (26 + idx * 10)));
-      btn.style.left = posX + '%';
-      btn.style.top = posY + '%';
+      var picked = pickClearVignetteSpot(v, idx, portraitXs, occupied);
+      occupied.push(picked);
+      btn.style.left = picked.x + '%';
+      btn.style.top = picked.y + '%';
       btn.innerHTML = '<span class="hs-icon">' + v.icon + '</span><span class="hs-title">' + v.title + '</span>';
       btn.onclick = function (e) {
         if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
@@ -2299,6 +2435,16 @@
       };
       box.appendChild(btn);
     });
+    if (typeof window !== 'undefined' && typeof window.layoutRoamSkyBandHotspots === 'function') {
+      window.layoutRoamSkyBandHotspots();
+    } else if (typeof window !== 'undefined' && window.innerWidth <= 1040 && portraitXs.length >= 2) {
+      var allSpots = box.querySelectorAll('.hotspot');
+      for (var si = 0; si < allSpots.length; si++) {
+        allSpots[si].classList.add('sky-band');
+        allSpots[si].style.top = '19px';
+        allSpots[si].style.left = (allSpots.length === 1 ? 64 : (32 + (si * 58) / (allSpots.length - 1))).toFixed(2) + '%';
+      }
+    }
   }
 
   /**
@@ -2370,7 +2516,7 @@
         badge: '静水初雪',
         title: '初雪未落 · 静水待明',
         subtitle: '星轨尚在蓄势，因果之弦待你落笔',
-        summary: '各条关系双轴与暗线拼图仍处于初始平衡。前往小场景与灵魂交谈，你的每次回应都会拨动远方终局的指针。'
+        summary: '各条关系双轴与暗线拼图仍处于初始平衡。前往闲暇轶事与灵魂交谈，你的每次回应都会拨动远方终局的指针。'
       },
       dawn_reunion: {
         id: 'dawn_reunion',
@@ -2583,7 +2729,7 @@
           '<circle class="sw-node-halo" cx="' + cx + '" cy="' + cy + '" r="11" fill="rgba(255,255,255,0.82)" stroke="rgba(22,88,235,0.44)" stroke-width="1.2" stroke-dasharray="3 3"/>' +
           '<circle class="sw-node-dot" cx="' + cx + '" cy="' + cy + '" r="3.2" fill="#2563EB"/>' +
           '<text class="sw-node-title" x="' + tx + '" y="' + ty + '" text-anchor="' + textAnchor + '" fill="#243E6B" font-size="12" font-weight="600">' + (fogged ? '◇ ？？？' : '◇ 未启封') + '</text>' +
-          '<text class="sw-node-sub" x="' + tx + '" y="' + subY + '" text-anchor="' + textAnchor + '" fill="#3A5685" font-size="11.5">' + (fogged ? '推进主线启封' : sub) + '</text>' +
+          '<text class="sw-node-sub" x="' + tx + '" y="' + subY + '" text-anchor="' + textAnchor + '" fill="#3A5685" font-size="11.5">' + (fogged ? '静待旅途启封' : sub) + '</text>' +
         '</g>'
       );
     }
@@ -2673,10 +2819,10 @@
         return (
           '<div class="astral-scale-card is-fogged" data-axis-char="' + cid + '">' +
             '<div class="as-header">' +
-              '<span class="as-char"><i class="as-glyph">◇</i> <b>？？？ · 推进主线启封</b></span>' +
+              '<span class="as-char"><i class="as-glyph">◇</i> <b>？？？ · 静待旅途启封</b></span>' +
               '<span class="as-badge">未结识</span>' +
             '</div>' +
-            '<div class="as-desc">此道羁绊星轨尚未启封，随主线推进结识对应人物后显现。</div>' +
+            '<div class="as-desc">此道羁绊星轨尚未启封，随旅途前行结识对应人物后显现。</div>' +
           '</div>'
         );
       }
@@ -2714,8 +2860,8 @@
       );
       return (
         '<div class="clue-tile ' + (unlocked ? 'lit' : 'dimmed') + (clueFogged ? ' is-fogged' : '') + '" data-clue="' + ck + '">' +
-          '<div class="ct-head">' + (unlocked ? '<i class="as-glyph">✦</i> ' + cm.title : (clueFogged ? '<i class="as-glyph">◇</i> ？？？ · 推进主线启封' : '<i class="as-glyph">◇</i> 尚未启封的暗流档案')) + '</div>' +
-          '<div class="ct-body">' + (unlocked ? cm.summary : (clueFogged ? '当前篇章尚无相关端倪，随主线推进至对应章节后启封线索提示。' : cm.hint)) + '</div>' +
+          '<div class="ct-head">' + (unlocked ? '<i class="as-glyph">✦</i> ' + cm.title : (clueFogged ? '<i class="as-glyph">◇</i> ？？？ · 静待旅途启封' : '<i class="as-glyph">◇</i> 尚未启封的暗流档案')) + '</div>' +
+          '<div class="ct-body">' + (unlocked ? cm.summary : (clueFogged ? '当前篇章尚无相关端倪，随旅途前行至对应章节后启封线索提示。' : cm.hint)) + '</div>' +
         '</div>'
       );
     }).join('');
@@ -2740,12 +2886,12 @@
       if (payoffFogged) {
         return (
           '<div class="payoff-row pending is-fogged" data-payoff="' + pk + '">' +
-            '<div class="pr-top"><span><i class="as-glyph">◇</i> <b>？？？ · 推进主线启封</b></span><em class="pr-status">◇ 迷雾未散</em></div>' +
-            '<div class="pr-desc">未启封的后章命运节点，随主线推进与暗流积累逐步揭晓。</div>' +
+            '<div class="pr-top"><span><i class="as-glyph">◇</i> <b>？？？ · 静待旅途启封</b></span><em class="pr-status">◇ 迷雾未散</em></div>' +
+            '<div class="pr-desc">未启封的往后轨迹，随旅途前行与暗流积累逐步揭晓。</div>' +
           '</div>'
         );
       }
-      var badge = triggered ? '✦ 已引爆主线变向' : (ready ? '◈ 暗流已蓄满（待主线触发）' : '◇ 潜流积蓄中');
+      var badge = triggered ? '✦ 命运轨迹已偏移' : (ready ? '◈ 暗流已蓄满（静待时至）' : '◇ 潜流积蓄中');
       var cls = triggered ? 'triggered' : (ready ? 'ready' : 'pending');
       return (
         '<div class="payoff-row ' + cls + '" data-payoff="' + pk + '">' +
@@ -2767,21 +2913,21 @@
             '</div>'
           );
         }).join('')
-      : '<p class="causal-empty">尚未留下高权重诺言。前往各地点带「✦」的小场景或开启灵魂交谈，你的话语将在重逢时回响。</p>';
+      : '<p class="causal-empty">尚未留下铭心之诺。前往各地点带「✦」的闲暇轶事或开启灵魂交谈，你的话语将在重逢时回响。</p>';
 
     var tendencyCardHtml = maskTendency
       ? (
         '<div class="cd-tendency-card is-fogged" data-ending-tendency="fogged">' +
           '<div class="cd-tendency-head">' +
-            '<span class="cd-tendency-title">◈ 终局星轨预兆 · ？？？ · 推进主线启封</span>' +
+            '<span class="cd-tendency-title">◈ 终局星轨预兆 · ？？？ · 静待旅途启封</span>' +
             '<div class="cd-tendency-actions">' +
               '<span class="cd-tendency-badge">星轨未明</span>' +
-              '<button type="button" id="btn-open-ending-forecast" class="cd-forecast-btn" disabled title="推进主线启封终局星轨推演">' +
-                '◇ ？？？ · 推进主线启封' +
+              '<button type="button" id="btn-open-ending-forecast" class="cd-forecast-btn" disabled title="静待旅途启封终局星轨推演">' +
+                '◇ ？？？ · 静待旅途启封' +
               '</button>' +
             '</div>' +
           '</div>' +
-          '<div class="cd-tendency-summary">命运暗流尚处于初起阶段，推进主线剧情并点亮暗线拼图后，终局星轨的轮廓才会浮现。</div>' +
+          '<div class="cd-tendency-summary">命运暗流尚处于初起阶段，随旅途前行并点亮暗线拼图后，终局星轨的轮廓才会浮现。</div>' +
         '</div>'
       )
       : (
@@ -2791,7 +2937,7 @@
             '<div class="cd-tendency-actions">' +
               '<span class="cd-tendency-badge">' + escapeHtml(tendency.badge) + ' · 收束度 ' + tendency.confidence + '%</span>' +
               '<button type="button" id="btn-open-ending-forecast" class="cd-forecast-btn"' + (canForecast ? '' : ' disabled') +
-                ' title="' + (canForecast ? '推演当前星轨指向的终局归宿' : '推进至第三卷后启封终局推演') + '">' +
+                ' title="' + (canForecast ? '推演当前星轨指向的终局归宿' : '行至第三卷后启封终局推演') + '">' +
                 (canForecast ? '✦ 开启终局星轨推演 ▸' : '◇ 终局推演（第三卷启封）') +
               '</button>' +
             '</div>' +
@@ -2803,9 +2949,9 @@
     return (
       '<div class="causal-dashboard">' +
         '<div class="cd-banner">' +
-          '<div><b>✦ 命运暗流 · 星轨档案</b><span>五组关系双轴、暗线星轨与高权重往昔回声在此交汇，折射终局分流</span></div>' +
+          '<div><b>✦ 命运暗流 · 星轨档案</b><span>五组关系双轴、暗线星轨与铭心之诺在此交汇，折射终局分流</span></div>' +
           '<div class="cd-pills">' +
-            '<span class="cd-pill">小场景 ' + doneCount + '/8</span>' +
+            '<span class="cd-pill">闲暇轶事 ' + doneCount + '/8</span>' +
             '<span class="cd-pill">星轨拼图 ' + litClues + '/4</span>' +
             '<span class="cd-pill">已变向 ' + triggeredPayoffs + '/6</span>' +
           '</div>' +
@@ -2817,7 +2963,7 @@
         '<div class="astral-scales-grid">' + scalesHtml + '</div>' +
         '<h4 class="cd-sec-title">暗线情报档案</h4>' +
         '<div class="clues-grid">' + cluesHtml + '</div>' +
-        '<h4 class="cd-sec-title">主线蝴蝶效应台账</h4>' +
+        '<h4 class="cd-sec-title">命运因果涟漪录</h4>' +
         '<div class="payoffs-list">' + payoffsHtml + '</div>' +
         '<h4 class="cd-sec-title">往昔回声留痕墙</h4>' +
         '<div class="echoes-list">' + echoesHtml + '</div>' +

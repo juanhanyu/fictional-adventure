@@ -856,8 +856,13 @@ body.roam #portraits .p-slot {
   transition: filter 0.3s, transform 0.3s;
 }
 
+.p-slot.dim:not(.ps-enter):not(.ps-leave) {
+  opacity: 1;
+}
+
 .p-slot.dim img {
-  filter: brightness(0.54) saturate(0.84) drop-shadow(0 4px 10px rgba(18, 24, 34, 0.24));
+  opacity: 1;
+  filter: brightness(0.68) saturate(0.82) drop-shadow(0 4px 10px rgba(18, 24, 34, 0.24));
 }
 
 .p-slot.active img {
@@ -1170,22 +1175,29 @@ body.roam #text-box.dialog-rows-2 #text {
   display: none !important;
 }
 
-/* Choices (z-index: 16) · Floating Centered Above #text-box */
+/* Choices (z-index: 16) · Floating Centered Above #text-box & #vn-read-controls */
 #choices,
 #stage > #choices {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: calc(var(--boxh) + 18px);
+  bottom: calc(var(--boxh) + 52px);
   display: flex;
   flex-direction: column;
   gap: 8px;
   width: min(calc(100% - 36px), 940px);
   margin: 0;
   z-index: 16;
-  max-height: min(46vh, calc(100% - var(--boxh) - 86px));
+  max-height: min(44vh, calc(100% - var(--boxh) - 118px));
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+@media (max-width: 1024px), (max-height: 640px) {
+  body:not(.roam) #stage > #choices {
+    bottom: calc(var(--boxh) + 46px);
+    max-height: min(42vh, calc(100% - var(--boxh) - 110px));
+  }
 }
 
 @media (min-width: 821px) {
@@ -1468,23 +1480,100 @@ body.roam.roam-dialog #game-screen #action-bar {
 }
 
 .abtn:disabled { opacity: 0.4; cursor: not-allowed; }
+#action-bar .ab-btn.is-unavailable,
+#action-bar .abtn.is-unavailable {
+  opacity: 0.45;
+}
+#action-bar .ab-btn.is-unavailable:hover:not(:disabled),
+#action-bar .abtn.is-unavailable:hover:not(:disabled) {
+  opacity: 0.65;
+}
 .abtn small { opacity: 0.92; font-size: 11.5px; font-weight: 600; color: #526078; }
 .abtn.primary small,
 .abtn[data-act="next"] small { color: #DCEBFF; }
 
+@media (max-width: 1024px) {
+  #action-bar,
+  #game-screen #action-bar {
+    flex-wrap: nowrap;
+    height: 52px;
+    max-height: 52px;
+    gap: 6px;
+    padding: 5px 14px calc(5px + env(safe-area-inset-bottom));
+  }
+  #action-bar .ab-scroll {
+    flex-wrap: nowrap;
+    min-width: 0;
+    flex: 0 1 auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    gap: 0;
+  }
+  #action-bar .ab-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  #action-bar .abtn,
+  #action-bar .ab-btn {
+    height: 36px;
+    padding: 0 8px;
+    font-size: 11.5px;
+    gap: 4px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  #action-bar .abtn svg,
+  #action-bar .ab-btn svg {
+    width: 13px;
+    height: 13px;
+  }
+  #action-bar .abtn small,
+  #action-bar .ab-btn small {
+    font-size: 10.5px;
+  }
+  #action-bar .abtn.primary,
+  #action-bar .abtn[data-act="next"],
+  #action-bar .ab-next-pinned {
+    height: 36px;
+    padding: 0 16px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+  }
+}
+
 /* ===== OVERLAYS & ARCHITECTURAL FOLIO MODAL SHELLS (z-index: 70) ===== */
+@keyframes modalCardIn {
+  from {
+    opacity: 0.92;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .overlay {
   position: fixed;
   inset: 0;
   z-index: 70;
-  background: rgba(20, 28, 42, 0.36);
+  background: rgba(20, 28, 42, 0.42);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  animation: fadeIn 0.2s ease;
+  opacity: 1;
+  isolation: isolate;
+}
+
+.overlay > .end-card,
+.overlay > .modal-shell,
+.overlay > .vn-modal-card {
+  animation: modalCardIn 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .end-card {
@@ -1560,6 +1649,9 @@ body.roam.roam-dialog #game-screen #action-bar {
 }
 
 .modal-scroll {
+  position: relative;
+  z-index: 1;
+  contain: paint;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -1567,6 +1659,8 @@ body.roam.roam-dialog #game-screen #action-bar {
 }
 
 .modal-foot {
+  position: relative;
+  z-index: 8;
   flex-shrink: 0;
   padding: 12px 24px 14px;
   border-top: 1px solid rgba(27, 35, 51, 0.12);
@@ -2105,12 +2199,30 @@ body #card {
 /* ===== HOTSPOTS (z-index: 6) · Delicate Floating Hairline Signposts ===== */
 #hotspots {
   position: absolute;
-  top: 56px;
+  top: 4px;
   left: 10px;
   right: 10px;
   bottom: calc(var(--boxh) + 52px);
   z-index: 6;
   pointer-events: none;
+}
+#stage #hotspots .hotspot.sky-band,
+#stage #hotspots .hotspot.vignette-spot.sky-band,
+#stage #hotspots .hotspot.shop-spot.sky-band {
+  padding: 4px 12px 4px 10px !important;
+  font-size: 11.5px;
+  line-height: 1.25;
+  gap: 5px;
+  white-space: nowrap;
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%) !important;
+}
+@media (max-width: 1040px) {
+  body.roam #loc-bar {
+    max-width: 235px;
+  }
 }
 body.roam #hotspots {
   bottom: calc(var(--abh, 52px) + 52px);
@@ -2193,6 +2305,18 @@ body.roam.roam-dialog #hotspots .hotspot {
 .hotspot.egg { border-top-color: #0A8762; background: rgba(247, 253, 250, 0.92); }
 .hotspot.egg::before { background: #0A8762; }
 .hotspot.egg .hs-icon { color: #0A8762; }
+.hotspot.shop-spot {
+  border: 1px solid rgba(22, 88, 235, 0.24);
+  border-top: none;
+  border-radius: 0;
+  background:
+    linear-gradient(90deg, #0A8762 0%, #169B7B 46%, #1658EB 100%) top / 100% 2px no-repeat,
+    linear-gradient(158deg, rgba(255, 255, 255, 0.96) 0%, rgba(242, 250, 252, 0.93) 58%, rgba(232, 244, 255, 0.92) 100%);
+  color: #1A2436;
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+.hotspot.shop-spot::before { background: #0A8762; }
+.hotspot.shop-spot .hs-icon { color: #0A8762; }
 .hotspot.locked-baby { opacity: 0.9; border-style: dashed; }
 
 #portraits.roam-npc .p-slot { pointer-events: auto; cursor: pointer; }

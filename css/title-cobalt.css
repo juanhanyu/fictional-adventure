@@ -2758,6 +2758,161 @@ body #card.hidden {
 }
 
 /* =========================================================================
+   10.5 紧凑桌面窗口适配 (960×600 等 max-height: 680px / max-width: 1024px)
+        确保 #v3-archive-meta 与 .v3-edge-footer 净空 >= 10px，且设置区底部桌面按钮完整可见不腰斩
+   ========================================================================= */
+
+@media (max-height: 680px) and (min-width: 721px), (max-width: 1024px) and (min-width: 721px) {
+  #title-screen .v3-right-folio {
+    top: 46%;
+  }
+
+  #title-screen[data-title-mode="settings"] .v3-right-folio {
+    top: 47%;
+  }
+
+  #title-screen .v3-title-lockup {
+    margin: 0 0 10px;
+    padding-bottom: 8px;
+  }
+
+  #title-screen .v3-title-lockup .title-main {
+    font-size: clamp(30px, 3.3vw, 40px);
+  }
+
+  #title-screen .v3-title-lockup .title-sub {
+    margin-top: 4px;
+  }
+
+  #title-screen .v3-title-lockup .v3-kicker {
+    margin-top: 4px;
+  }
+
+  #title-screen .title-menu {
+    gap: 0;
+  }
+
+  #title-screen .title-menu .tbtn.tbtn-editorial,
+  #title-screen .title-menu .tbtn.tbtn-editorial.tbtn-lead,
+  #title-screen .title-menu .tbtn.tbtn-editorial.ghost,
+  #title-screen .title-menu .tbtn.tbtn-editorial.arena-btn {
+    min-height: 30px;
+    padding: 3px 12px 3px 2px;
+  }
+
+  #title-screen .v3-cta-zone {
+    margin-top: 10px;
+  }
+
+  #title-screen .v3-prism-cta-wrap {
+    padding: 8px 0;
+  }
+
+  #title-screen .v3-cta-zone .tbtn.v3-prism-cta,
+  #title-screen .v3-cta-zone .v3-prism-cta {
+    min-height: 48px;
+    padding: 7px 30px;
+  }
+
+  #title-screen #v3-archive-meta,
+  #title-screen .v3-archive-meta {
+    margin: 6px 0 0;
+    padding: 6px 0 0;
+    font-size: 11.5px;
+    line-height: 1.35;
+  }
+
+  #title-screen .v3-edge-footer {
+    bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  #title-screen .v3-edge-link {
+    min-height: 30px;
+  }
+}
+
+@media (max-height: 680px) and (min-width: 721px) {
+  #title-screen .v3-set-head {
+    padding-bottom: 8px;
+    gap: 10px;
+  }
+
+  #title-screen .v3-set-heading {
+    font-size: clamp(19px, 1.9vw, 23px);
+  }
+
+  #title-screen .v3-set-tab {
+    min-height: 30px;
+    padding: 3px 0 6px;
+  }
+
+  #title-screen #v3-view-settings .v3-set-body,
+  #title-screen .v3-set-body {
+    padding: 8px 0 6px;
+    max-height: calc(100vh - 155px);
+    max-height: calc(100dvh - 155px);
+  }
+
+  #title-screen #v3-view-settings .v3-set-section,
+  #title-screen .v3-set-section {
+    margin-bottom: 10px;
+  }
+
+  #title-screen #v3-view-settings .v3-set-sec-lbl,
+  #title-screen .v3-set-sec-lbl {
+    margin-bottom: 4px;
+    font-size: 11.5px;
+  }
+
+  #title-screen #v3-view-settings .v3-slider-row,
+  #title-screen #v3-view-settings .v3-switch-row,
+  #title-screen .v3-slider-row,
+  #title-screen .v3-switch-row {
+    min-height: 29px;
+    padding: 1px 0;
+  }
+
+  #title-screen #v3-view-settings .v3-hairline-range,
+  #title-screen .v3-hairline-range {
+    height: 22px;
+  }
+
+  #title-screen #v3-view-settings .v3-sw-arrow,
+  #title-screen .v3-sw-arrow {
+    min-height: 26px;
+  }
+
+  #title-screen #v3-view-settings .indie-settings-section {
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+
+  #title-screen #v3-view-settings .indie-settings-head {
+    margin-bottom: 4px;
+  }
+
+  #title-screen #v3-view-settings .indie-settings-row {
+    min-height: 28px;
+    padding: 2px 0;
+  }
+
+  #title-screen #v3-view-settings .indie-action-btn {
+    min-height: 24px;
+    padding: 2px 8px;
+    font-size: 11.5px;
+  }
+
+  #title-screen .v3-set-foot {
+    padding-top: 6px;
+  }
+
+  #title-screen .v3-return-btn {
+    min-height: 30px;
+    padding: 2px 8px 2px 0;
+  }
+}
+
+/* =========================================================================
    11. 横屏手机紧凑布局 (844×390 / 667×375，单屏容纳零裁切，>= 40px 触控)
    ========================================================================= */
 

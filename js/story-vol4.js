@@ -6,7 +6,7 @@
   'use strict';
 
   const STORY_VOL4_CHAPTERS = [
-    { id: 's_interlude_white_night', vol: '间章', title: '间章·白昼里的夜', phase: 'youth' },
+    { id: 's_interlude_white_night', vol: '间章', title: '白昼里的夜', phase: 'youth' },
   ];
 
   const T = (text, extra) => Object.assign({ text }, extra || {});
@@ -81,7 +81,7 @@
     bg: 'bg-img-forest bg-forest',
     loc: 'road',
     useOriginalSylvia: true,
-    card: { vol: '间章', t: '间章', s: '白昼里的夜' },
+    card: { vol: '间章', t: '白昼里的夜', s: '静止的日蚀' },
     lines: [
       {
         do: () => {
@@ -314,7 +314,7 @@
         text: '叔叔抬脚踩地，松软的泥土翻涌扣住罗文脚踝，歪斜的石碑随之倾倒切出窄道——此刻是否亲自进入乱葬岗活捉战？',
         choices: [
           {
-            text: '依原著节拍施放蔓地薄冰与两道冰壁夹杖，直接收网活捉',
+            text: '趁势施放蔓地薄冰与两道冰壁夹杖，直接收网活捉',
             lines: [
               T('罗文炸开土层穿过石碑窄道，却迎面撞上叔叔等在出口的一掌！他横杖格挡向后滑出数步，脚下正好踩上我刚才铺开的薄冰，重心骤偏！', { sfx: 'magic', portraits: [] }),
               T('冰层沿小腿向上冻结，叔叔抓住他慢了半步的空隙按肩灌入土系魔力，几道石棱破土卡住他的膝弯、手肘和后背！罗文反手虚刺叔叔肋下，短杖却脱手旋飞直取我面门！'),

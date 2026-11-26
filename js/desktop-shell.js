@@ -343,7 +343,7 @@
 
   function exitApp() {
     if (!isTauri()) {
-      notifyToast('当前处于浏览器试玩模式，关闭标签页即可退出');
+      notifyToast('旅途进度已妥善封存，直接关闭当前页面即可离开。');
       return Promise.resolve(false);
     }
     return storageApi.flush()

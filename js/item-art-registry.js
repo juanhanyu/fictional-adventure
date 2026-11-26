@@ -49,7 +49,7 @@
       category: 'staff',
       rarity: 'legendary',
       src: BASE_PATH + 'eclipse_wand.webp',
-      desc: '外层黑曜星环嵌合冰晶棱芯的法杖。最大魔力 +24%，施法视作 100% 真实魔伤且无自创惩罚。',
+      desc: '外层黑曜星环嵌合冰晶棱芯的法杖。最大魔力 +24%，施法视作 100% 真实魔伤且随心塑形毫无滞碍。',
       lore: '王都旧藏与秘闻交织的晦轮法杖，希尔维亚执握时绝不触发日蚀反噬。'
     },
     north_saint_staff: {
@@ -58,7 +58,7 @@
       category: 'staff',
       rarity: 'legendary',
       src: BASE_PATH + 'north_saint_staff.webp',
-      desc: '极北寒晶雕琢的圣域法杖。法攻倍率 ×1.28、暴伤 +20%，增幅额外耗蓝降低 25%。',
+      desc: '极北寒晶雕琢的圣域法杖。魔导威力显著提升、会心威势增强，魔力增幅耗损降低。',
       lore: '凝萃极北冻土终年不化之冰髓而成的白银圣杖，杖首六棱冰晶清辉凛然。'
     },
     ice_pebble: {

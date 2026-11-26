@@ -595,8 +595,8 @@
         iconHtml: wandIconHtml,
         pathLabel: '魔法真伤',
         foot: isOn ? '真伤已展开 · 穿法抗与魔盾' : '收鞘态 · 展开享100%魔法真伤',
-        cost: wandBtn.disabled ? '不可用' : (isOn ? 'ON' : 'OFF'),
-        oppLabel: isOn ? '✦ 真伤 ON' : '',
+        cost: wandBtn.disabled ? '不可用' : (isOn ? '已展开' : '收鞘'),
+        oppLabel: isOn ? '✦ 晦轮展开' : '',
         disabled: !!wandBtn.disabled,
         sourceBtn: wandBtn,
       });
@@ -1758,7 +1758,7 @@
       btn.type = 'button';
       btn.id = 'cb-btn-prism-toggle';
       btn.className = 'cb-tool-btn prism-toggle-btn' + (uiState.enabled ? ' active' : '');
-      btn.title = '切换 P5 棱晶放射指令翼 / 传统底部技能栏';
+      btn.title = '切换 棱晶放射翼 / 经典底栏列阵';
       btn.textContent = uiState.enabled ? '◆ 棱晶翼' : '◇ 传统列';
       btn.addEventListener('click', () => {
         setEnabled(!uiState.enabled);
@@ -2055,7 +2055,7 @@
     if (selfAdvancePct > 0) {
       forecastEl.classList.remove('gold');
       forecastEl.classList.add('show');
-      forecastEl.textContent = `✦ 疾步拉条 · 自提前 ${Math.round(selfAdvancePct * 100)}%`;
+      forecastEl.textContent = `✦ 疾步抢先 · 身法提前 ${Math.round(selfAdvancePct * 100)}%`;
       return forecastEl;
     }
 
@@ -2261,6 +2261,18 @@
       ':where(.cb-pwing:not(.hero-prism):not(:disabled):hover .cb-amp-pip.lit-t2){background:linear-gradient(135deg,#DBEAFE,#93C5FD);}',
       ':where(.cb-pwing:not(.hero-prism):not(:disabled):hover .cb-amp-pip.lit-t3){background:linear-gradient(135deg,#FFF7D6,#E5C06E);}',
       ':where(.cb-pwing:not(.hero-prism):not(:disabled):hover .cb-amp-val){color:rgba(232,245,255,0.96);}',
+      '#cb-pw-amp.has-mana-cycle #cb-pw-amp-sub.cb-amp-meta{display:flex;width:100%;align-items:center;gap:5px;min-width:0;}',
+      '#cb-pw-amp.has-mana-cycle #cb-pw-amp-pips{margin-right:0;gap:3px;}',
+      '.cb-amp-cycle{display:inline-flex;align-items:center;margin-left:auto;font-size:10px;font-weight:700;line-height:1.2;padding:1px 5px;white-space:nowrap;flex-shrink:0;letter-spacing:0.02em;color:#0E4FD6;background:rgba(22,88,235,0.10);border-left:2px solid #1658EB;}',
+      '#cb-pw-amp.amp-t1 .cb-amp-cycle{color:#0369A1;background:rgba(14,165,233,0.13);border-left-color:#0EA5E9;}',
+      '#cb-pw-amp.amp-t2 .cb-amp-cycle{color:#1246C4;background:rgba(22,88,235,0.14);border-left-color:#1658EB;}',
+      '#cb-pw-amp.amp-t3 .cb-amp-cycle{color:#8C641E;background:rgba(212,169,74,0.18);border-left-color:#C9A04A;}',
+      '#cb-pw-amp.amp-t0:not(:disabled):hover .cb-amp-cycle,#cb-pw-amp.amp-t1:not(:disabled):hover .cb-amp-cycle,#cb-pw-amp.amp-t2:not(:disabled):hover .cb-amp-cycle,.cb-pwing-wrap.hovered #cb-pw-amp.amp-t0:not(:disabled) .cb-amp-cycle,.cb-pwing-wrap.hovered #cb-pw-amp.amp-t1:not(:disabled) .cb-amp-cycle,.cb-pwing-wrap.hovered #cb-pw-amp.amp-t2:not(:disabled) .cb-amp-cycle{color:#D9F5FF;background:rgba(155,244,255,0.18);border-left-color:#9BF4FF;}',
+      '#cb-pw-amp.amp-t3:not(:disabled):hover .cb-amp-cycle,.cb-pwing-wrap.hovered #cb-pw-amp.amp-t3:not(:disabled) .cb-amp-cycle{color:#FFF4CE;background:rgba(245,214,125,0.22);border-left-color:#F5D67D;}',
+      '.cb-prism-rig.compact-multi #cb-pw-amp.has-mana-cycle #cb-pw-amp-sub.cb-amp-meta,.cb-prism-rig.narrow-desktop #cb-pw-amp.has-mana-cycle #cb-pw-amp-sub.cb-amp-meta{gap:4px;}',
+      '.cb-prism-rig.compact-multi #cb-pw-amp.has-mana-cycle #cb-pw-amp-pips .cb-amp-pip,.cb-prism-rig.narrow-desktop #cb-pw-amp.has-mana-cycle #cb-pw-amp-pips .cb-amp-pip{width:6.5px;height:6.5px;}',
+      '.cb-prism-rig.compact-multi #cb-pw-amp.has-mana-cycle .cb-amp-val,.cb-prism-rig.narrow-desktop #cb-pw-amp.has-mana-cycle .cb-amp-val{font-size:10px;min-width:0;overflow:hidden;text-overflow:ellipsis;}',
+      '.cb-prism-rig.compact-multi #cb-pw-amp.has-mana-cycle .cb-amp-cycle,.cb-prism-rig.narrow-desktop #cb-pw-amp.has-mana-cycle .cb-amp-cycle{font-size:9.5px;padding:1px 4px;letter-spacing:0;}',
       ':where(.cb-mini-key){display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;flex-shrink:0;background:rgba(22,88,235,0.14);color:var(--pr-sapphire,#1658eb);font-family:var(--pr-mono,monospace);font-size:10.5px;font-weight:800;clip-path:polygon(3px 0,100% 0,calc(100% - 3px) 100%,0 100%);}',
       ':where(.cb-amp-pips-mini){gap:3px;}',
       ':where(.cb-amp-pips-mini .cb-amp-pip){width:6.5px;height:6.5px;}',
@@ -2310,8 +2322,12 @@
     return `<span class="cb-amp-pips" id="cb-pw-amp-pips" aria-hidden="true">${pips}</span>`;
   }
 
-  function formatAmpValText(ampInfo) {
+  function formatAmpValText(ampInfo, compactCycle) {
     if (!ampInfo || !ampInfo.enabled) return '不可增幅';
+    if (compactCycle) {
+      if (ampInfo.pctInt <= 0) return '+0%';
+      return ampInfo.extraMp > 0 ? `+${ampInfo.pctInt}%·${ampInfo.extraMp}MP` : `+${ampInfo.pctInt}%`;
+    }
     if (ampInfo.pctInt <= 0) return '+0% · 0 MP';
     const mpStr = ampInfo.extraMp > 0 ? `+${ampInfo.extraMp} MP` : '0 MP';
     return `+${ampInfo.pctInt}% · ${mpStr}`;
@@ -2738,7 +2754,9 @@
       const ampEn = document.getElementById('cb-pw-amp-en');
       const ampSub = document.getElementById('cb-pw-amp-sub');
       if (ampBtn && ampSub) {
+        const hasCycle = !!ampInfo.hasManaCycle;
         ampBtn.disabled = !ampInfo.enabled;
+        ampBtn.classList.toggle('has-mana-cycle', hasCycle);
         ampBtn.classList.toggle('amp-t0', !ampInfo.enabled || ampTier === 0);
         ampBtn.classList.toggle('amp-t1', ampInfo.enabled && ampTier === 1);
         ampBtn.classList.toggle('amp-t2', ampInfo.enabled && ampTier === 2);
@@ -2749,7 +2767,9 @@
         ampBtn.classList.toggle('amp-tier-3', ampInfo.enabled && ampTier >= 3);
         ampBtn.classList.toggle('amp-max', ampInfo.enabled && ampTier >= 3);
         ampBtn.title = ampInfo.enabled
-          ? `魔力增幅（左键 / E 升档 · 右键 / Shift+E 降档 · 滚轮微调；当前：${ampInfo.badge} · +${ampInfo.extraMp} MP · ${ampInfo.multBadge}）`
+          ? (hasCycle
+            ? `魔战循环 · 魔力增幅（施法命中等量回蓝；左键 / E 升档 · 右键 / Shift+E 降档 · 滚轮微调；当前：${ampInfo.badge} · +${ampInfo.extraMp} MP · ${ampInfo.multBadge}）`
+            : `魔力增幅（左键 / E 升档 · 右键 / Shift+E 降档 · 滚轮微调；当前：${ampInfo.badge} · +${ampInfo.extraMp} MP · ${ampInfo.multBadge}）`)
           : '当前不可增幅';
         if (ampEn) {
           ampEn.textContent = (!uiState.compactMulti && ampInfo.enabled && ampInfo.lockHint)
@@ -2757,8 +2777,11 @@
             : ampInfo.multBadge;
         }
         const pipsHtml = renderAmpPipsHtml(ampInfo, false);
-        const valText = formatAmpValText(ampInfo);
-        ampSub.innerHTML = `${pipsHtml}<span class="cb-amp-val" id="cb-pw-amp-val">${escapeHtml(valText)}</span>`;
+        const valText = formatAmpValText(ampInfo, hasCycle && (uiState.compactMulti || uiState.narrowDesktop));
+        const cycleBadgeHtml = hasCycle
+          ? '<span class="cb-amp-cycle" id="cb-pw-amp-cycle">✦ 魔战循环</span>'
+          : '';
+        ampSub.innerHTML = `${pipsHtml}<span class="cb-amp-val" id="cb-pw-amp-val">${escapeHtml(valText)}</span>${cycleBadgeHtml}`;
       }
 
       // Sync Root Wing [A]

@@ -1561,6 +1561,62 @@ body.cb-battle-active #fx {
   box-shadow: none;
 }
 
+#battle-screen #cb-btn-mute,
+#battle-screen #cb-btn-prefs {
+  padding: 4px 8px;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--cb-ink-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+#battle-screen #cb-btn-mute svg,
+#battle-screen #cb-btn-prefs svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+#battle-screen #cb-btn-mute:hover:not(:disabled),
+#battle-screen #cb-btn-prefs:hover:not(:disabled) {
+  background: rgba(22, 88, 235, 0.06);
+  border-bottom-color: var(--cb-sapphire);
+  color: var(--cb-sapphire);
+}
+
+#battle-screen #cb-btn-mute:focus-visible,
+#battle-screen #cb-btn-prefs:focus-visible {
+  outline: 2px solid var(--cb-sapphire);
+  outline-offset: -2px;
+}
+
+#battle-screen #cb-btn-mute .ico-sound-off {
+  display: none;
+}
+
+#battle-screen #cb-btn-mute.is-muted,
+#battle-screen #cb-btn-mute.muted,
+#battle-screen #cb-btn-mute[aria-pressed="true"] {
+  background: rgba(196, 37, 68, 0.05);
+  border-bottom-color: rgba(196, 37, 68, 0.48);
+  color: var(--cb-crimson-deep);
+}
+
+#battle-screen #cb-btn-mute.is-muted .ico-sound-on,
+#battle-screen #cb-btn-mute.muted .ico-sound-on,
+#battle-screen #cb-btn-mute[aria-pressed="true"] .ico-sound-on {
+  display: none;
+}
+
+#battle-screen #cb-btn-mute.is-muted .ico-sound-off,
+#battle-screen #cb-btn-mute.muted .ico-sound-off,
+#battle-screen #cb-btn-mute[aria-pressed="true"] .ico-sound-off {
+  display: inline-block;
+  color: var(--cb-crimson);
+}
+
 .cb-kbd {
   display: inline-block;
   padding: 0 4px;
@@ -7116,6 +7172,16 @@ body.cb-battle-active #fx {
   z-index: 8;
 }
 
+#battle-screen .cb-vfx-edition-a-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  contain: strict;
+  z-index: 9;
+}
+
 #battle-screen .cb-player-pane,
 #battle-screen .cb-e-plate {
   z-index: 14;
@@ -9030,6 +9096,25 @@ body.cb-battle-active #fx {
 
 /* 9. 1280×720 桌面紧凑适配 */
 @media (max-width: 1360px), (max-height: 760px) {
+  #battle-screen .cb-top-tools {
+    gap: 1px;
+    flex-wrap: nowrap;
+  }
+
+  #battle-screen .cb-tool-btn {
+    padding: 4px 8px;
+    font-size: 11.5px;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  #battle-screen #cb-btn-mute,
+  #battle-screen #cb-btn-prefs {
+    padding: 3px 6px;
+    font-size: 11px;
+    gap: 3px;
+  }
+
   #battle-screen .cb-arena-field {
     grid-template-columns: minmax(300px, 32%) minmax(220px, 1fr) minmax(300px, 32%);
   }
@@ -9476,6 +9561,19 @@ body.cb-battle-active #fx {
     padding: 3px 7px;
     font-size: 10.5px;
     gap: 3px;
+  }
+
+  #battle-screen #cb-btn-mute,
+  #battle-screen #cb-btn-prefs {
+    padding: 2px 5px;
+    font-size: 10px;
+    gap: 2px;
+  }
+
+  #battle-screen #cb-btn-mute svg,
+  #battle-screen #cb-btn-prefs svg {
+    width: 12px;
+    height: 12px;
   }
 
   /* 紧凑舞台盒（224px–264px）：上方精灵对阵区（y >= 52px）+ 底部并排双列紧凑带（左 49% / 右 49%，高 <= 72px） */

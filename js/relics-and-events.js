@@ -16,7 +16,7 @@
       id: 'none',
       name: '徒手导魔',
       shortTag: '常规无杖',
-      desc: '标准原味构筑 · 零法杖附加词条',
+      desc: '徒手引魔 · 无外物法杖加持',
       fallbackKey: 'prism'
     },
     eclipse_wand: {
@@ -307,7 +307,7 @@
       tag: '经手筑盾',
       effectText: '每回合首次施放【经手构筑】技能时，额外凝结 8 点寒霜护盾。',
       lore: '年幼时在公爵府花坛边拾得的冰蓝小石，握在掌心总是凉丝丝的。',
-      unlockHint: '在公爵府花园彩蛋或地窖寒痕奇遇中解锁。',
+      unlockHint: '在公爵府花园秘闻或地窖寒痕奇遇中解锁。',
       unlockAliases: []
     },
     blue_vial: {
@@ -385,8 +385,8 @@
         3: {
           count: 3,
           name: '群星同盟',
-          desc: '全部魔法技能消耗再降 15%，暴击倍率由 1.5× 升至 1.65×。',
-          shortDesc: '全魔法耗蓝再 -15% · 暴击倍率升至 1.65×'
+          desc: '全部魔法技能消耗再降 15%，会心一击威势显著跃升。',
+          shortDesc: '全魔法耗蓝再 -15% · 会心威势显著跃升'
         }
       }
     },
@@ -3553,7 +3553,7 @@
             '</span>'
           );
         }).join('')
-      : '<span class="arena-rel-empty">未装配铭记（标准原味难度）</span>';
+      : '<span class="arena-rel-empty">未佩随身铭记（素身试演）</span>';
     var synPills = activeSyns.map(function (syn) {
       return (
         '<span class="arena-rel-pill synergy" data-synergy-id="' + syn.id + '" title="' + escapeHtml(syn.shortDesc) + '">' +
@@ -3574,7 +3574,7 @@
         '</div>' +
         '<div class="alb-actions">' +
           '<button type="button" class="arena-mode-chip" id="am-open-loadout">✦ 法杖 / 12 秘宝 / 援护 (' + equipped.length + '/3)</button>' +
-          (hasAnyCustom ? '<button type="button" class="arena-mode-chip" id="am-clear-loadout">清空配装</button>' : '') +
+          (hasAnyCustom ? '<button type="button" class="arena-mode-chip" id="am-clear-loadout">恢复素装</button>' : '') +
         '</div>' +
       '</div>'
     );
@@ -3652,7 +3652,7 @@
       ov.innerHTML =
         '<div class="end-card rumor-card alm-loadout-shell">' +
           '<div class="rumor-head">' +
-            '<div><h2>✦ 演武沙盒 · 法杖与铭记整备</h2><p class="rumor-sub">自由切换试炼法杖，并组合至多 3 件经典秘宝与 1 名伙伴心念援护（零存档污染）</p></div>' +
+            '<div><h2>✦ 演武整备 · 法杖与随身铭记</h2><p class="rumor-sub">自由择执试炼法杖，并佩带随身铭记与伙伴心念援护（不涉主途行囊）</p></div>' +
             '<div class="rumor-head-actions">' +
               '<button type="button" class="modal-close-x" id="alm-close-x" aria-label="关闭铭记整备">×</button>' +
             '</div>' +
@@ -3664,7 +3664,7 @@
           '<div class="modal-foot end-btns alm-foot">' +
             '<span class="alm-foot-meta">执杖：<b>' + escapeHtml(staffMeta.name) + '</b> · 秘宝 <b>' + equipped.length + ' / ' + MAX_EQUIPPED_RELICS + '</b> · 援护：<b>' + (assistMeta ? escapeHtml(assistMeta.name) : '未选定') + '</b></span>' +
             '<div class="alm-foot-actions">' +
-              (hasAnyCustom ? '<button type="button" class="tbtn ghost" id="alm-clear-all">清空配装</button>' : '') +
+              (hasAnyCustom ? '<button type="button" class="tbtn ghost" id="alm-clear-all">恢复素装</button>' : '') +
               '<button type="button" class="tbtn primary" id="alm-close-done">完成整备</button>' +
             '</div>' +
           '</div>' +

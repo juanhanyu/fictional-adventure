@@ -886,6 +886,12 @@
   let _subFxW = 0;
   let _subFxH = 0;
   let _canvasDirty = false;
+  let _hdCanvas = null;
+  let _hdW = 0;
+  let _hdH = 0;
+  let _editionA = null;
+  let _editionADirty = false;
+  const _statusMicroThrottle = new Map();
   let _lastBattleRef = null;
   let _lastBattleId = '';
   let _lastWaveIdx = -1;
@@ -2534,6 +2540,68 @@
     }
   }
 
+  function getEditionAApi() {
+    const api = global.VfxEditionAFull;
+    if (api && typeof api.create === 'function' && typeof api.resolveSkillId === 'function') {
+      return api;
+    }
+    return null;
+  }
+
+  function hasEditionA() {
+    return !!(isEnabled() && _editionA && getEditionAApi());
+  }
+
+  function editionAShakeToTrauma(intensity) {
+    const val = Number(intensity) || 0;
+    if (val <= 0) return 0;
+    if (val <= 1) return clamp(val, 0.12, 0.9);
+    return clamp(val / 13.5, 0.18, 0.88);
+  }
+
+  function playEditionA(skillId, opts) {
+    if (!hasEditionA()) return null;
+    const resolved = _editionA.play(skillId, opts || {});
+    _editionADirty = true;
+    ensureLoopRunning();
+    return resolved;
+  }
+
+  function toLogicalPt(pt) {
+    const bw = _bufW || 320;
+    const bh = _bufH || 160;
+    const lx = clamp((pt && Number.isFinite(pt.x) ? pt.x : bw * 0.5) * (640 / bw), 8, 632);
+    const ly = clamp((pt && Number.isFinite(pt.y) ? pt.y : bh * 0.65) * (360 / bh), 8, 352);
+    return { x: Math.round(lx * 10) / 10, y: Math.round(ly * 10) / 10 };
+  }
+
+  function toLogicalPts(pts) {
+    if (!pts) {
+      return {
+        anchor: { x: 160, y: 286 },
+        cast: { x: 176, y: 216 },
+        hit: { x: 160, y: 218 },
+        head: { x: 160, y: 156 },
+        groundY: 286,
+      };
+    }
+    const anchor = toLogicalPt(pts.anchor);
+    const hit = toLogicalPt(pts.hit);
+    const rawCast = toLogicalPt(pts.cast);
+    const cast = {
+      x: Math.round(clamp(lerp(hit.x, rawCast.x, 0.4), 8, 632) * 10) / 10,
+      y: rawCast.y,
+    };
+    const head = toLogicalPt(pts.head);
+    return {
+      anchor,
+      cast,
+      hit,
+      head,
+      groundY: anchor.y,
+    };
+  }
+
   function ensureVfxCanvas(forceMeasure) {
     if (!isEnabled()) return null;
     const field = document.querySelector('#battle-screen .cb-arena-field');
@@ -2549,6 +2617,16 @@
       field.appendChild(canvas);
     }
 
+    const edApi = getEditionAApi();
+    let hdCanvas = field.querySelector('#cb-vfx-edition-a-canvas');
+    if (!hdCanvas && edApi) {
+      hdCanvas = document.createElement('canvas');
+      hdCanvas.id = 'cb-vfx-edition-a-canvas';
+      hdCanvas.className = 'cb-vfx-edition-a-canvas';
+      hdCanvas.setAttribute('aria-hidden', 'true');
+      field.appendChild(hdCanvas);
+    }
+
     if (
       !forceMeasure &&
       _cachedFieldRect &&
@@ -2558,7 +2636,8 @@
       _ctx &&
       _imgData &&
       _bufW > 0 &&
-      _bufH > 0
+      _bufH > 0 &&
+      (!edApi || (_hdCanvas === hdCanvas && _editionA && _hdW > 0 && _hdH > 0))
     ) {
       return _canvas;
     }
@@ -2598,6 +2677,33 @@
         _frame = global.PixelFX.createFrame(_bufW, _bufH);
       }
       _actorPointsCache.clear();
+    }
+
+    if (edApi && hdCanvas) {
+      const dpr = Math.min((typeof window !== 'undefined' && window.devicePixelRatio) || 1, 1.5);
+      const hdW = clamp(Math.round(w * dpr), 640, 1440);
+      const hdH = clamp(Math.round(h * dpr), 360, 810);
+      const canvasChanged = _hdCanvas !== hdCanvas || !_editionA;
+      if (
+        canvasChanged ||
+        Math.abs(_hdW - hdW) >= 2 ||
+        Math.abs(_hdH - hdH) >= 2 ||
+        hdCanvas.width !== hdW ||
+        hdCanvas.height !== hdH
+      ) {
+        if (canvasChanged && _editionA && typeof _editionA.clear === 'function') {
+          try { _editionA.clear(); } catch (e) {}
+        }
+        _hdCanvas = hdCanvas;
+        _hdW = hdW;
+        _hdH = hdH;
+        _hdCanvas.width = _hdW;
+        _hdCanvas.height = _hdH;
+        if (canvasChanged) {
+          _editionA = edApi.create(_hdCanvas, { autoClear: true });
+          _editionADirty = false;
+        }
+      }
     }
     return _canvas;
   }
@@ -3276,6 +3382,260 @@
     const pPts = getActorCanvasPoints('player', false);
     const tPts = getActorCanvasPoints(targetKey, false);
 
+    if (hasEditionA()) {
+      const edApi = getEditionAApi();
+      const isShieldOrVeil =
+        skillId === 'hand_water_veil' ||
+        skillId === 'water_veil' ||
+        SHIELD_GUARD_SKILLS.has(skillId) ||
+        skillId === 'ice_shield' ||
+        skillId === 'mirror_frost_wall' ||
+        skillId === 'steel_ice_curtain';
+      const isFootwork = SWORD_FOOTWORK_SKILLS.has(skillId) || skillId === 'wind_afterimage';
+      const isSelfSkill = isShieldOrVeil || isFootwork;
+      const isMelee =
+        MELEE_DASH_SKILLS.has(skillId) ||
+        skillId === 'water_cleave' ||
+        skillId === 'sword_send_slash' ||
+        skillId === 'sword_riposte_flash';
+      const isSetupOnly = skillId === 'hand_frost_floor' || skillId === 'frost_step_floor';
+      const isMultiAoe =
+        skillId === 'hand_thorn_field' ||
+        skillId === 'frost_thorn_field' ||
+        skillId === 'frost_breath' ||
+        skillId === 'starfrost_scatter' ||
+        isSetupOnly;
+      const hitList = isSetupOnly
+        ? getLivingEnemyIndices(battleState, primaryIdx)
+        : (isMultiAoe
+          ? ((Array.isArray(info.targetIndices) && info.targetIndices.length) ? info.targetIndices : getLivingEnemyIndices(battleState, primaryIdx))
+          : targets);
+
+      const isSingleTargetMagic =
+        !isSelfSkill &&
+        !isMelee &&
+        !isMultiAoe &&
+        skillId !== 'insight_rowan_prism' &&
+        hitList.length <= 1;
+
+      let resolvedId = null;
+      if (info.usedWand && isSingleTargetMagic) {
+        resolvedId = edApi.resolveSkillId('eclipse_true_cast');
+      } else if (skillId === 'hand_root_shield') {
+        resolvedId =
+          (typeof edApi.hasSkill === 'function' && edApi.hasSkill('prism_aegis') && edApi.resolveSkillId('prism_aegis')) ||
+          edApi.resolveSkillId('steel_ice_curtain') ||
+          edApi.resolveSkillId(skillId);
+      } else {
+        resolvedId = edApi.resolveSkillId(skillId);
+      }
+      if (!resolvedId) resolvedId = 'ice_crystal';
+
+      const pLog = toLogicalPts(pPts);
+      const tLog = toLogicalPts(tPts);
+      const targetLogList = hitList.map(eIdx => {
+        const ePts = getActorCanvasPoints(`enemy:${eIdx}`, false);
+        const eLog = toLogicalPts(ePts);
+        return { x: eLog.hit.x, y: eLog.hit.y, groundY: eLog.anchor.y, enemyIdx: eIdx };
+      });
+      const firstTargetLog = targetLogList[0] || { x: tLog.hit.x, y: tLog.hit.y, groundY: tLog.anchor.y, enemyIdx: primaryIdx };
+
+      // 整理命中后需叠放的系统反馈集合（暴击 / 破锁 / ONE MORE / 敌盾承伤碎盾）
+      const critSet = new Set(
+        Array.isArray(info.critTargetIndices)
+          ? info.critTargetIndices
+          : (info.didCrit ? [primaryIdx] : [])
+      );
+      const brokenSet = new Set(
+        Array.isArray(info.brokenIndices)
+          ? info.brokenIndices
+          : (info.didBreak ? [primaryIdx] : [])
+      );
+      const oneMoreSet = new Set(
+        Array.isArray(info.oneMoreIndices)
+          ? info.oneMoreIndices
+          : ((info.didOneMore || info.oneMore) ? (brokenSet.size ? Array.from(brokenSet) : [primaryIdx]) : [])
+      );
+      const shieldHitMap = new Map();
+      if (Array.isArray(info.shieldHitTargets)) {
+        info.shieldHitTargets.forEach(item => {
+          if (typeof item === 'number') {
+            shieldHitMap.set(item, !!info.shieldBroken);
+          } else if (item && typeof item === 'object') {
+            const sIdx = item.enemyIdx != null ? item.enemyIdx : (item.idx != null ? item.idx : (item.targetIdx != null ? item.targetIdx : primaryIdx));
+            shieldHitMap.set(sIdx, !!(item.shattered || item.broken));
+          }
+        });
+      } else if (info.shieldBroken) {
+        shieldHitMap.set(primaryIdx, true);
+      }
+
+      const overlayFired = new Set();
+      const applyEnemyImpactAt = (eIdx, posObj) => {
+        if (isSelfSkill || isSetupOnly || info.missed) return;
+        const eKey = `enemy:${eIdx}`;
+        triggerHitReaction(eKey, isHeavy ? 18 : 12, isHeavy);
+        if (overlayFired.has(eIdx)) return;
+        overlayFired.add(eIdx);
+
+        if (critSet.has(eIdx)) {
+          playEditionA('fx_crit_starburst', {
+            pos: posObj,
+            to: posObj,
+            targetGroundY: posObj.groundY,
+            facing: 1,
+            amp: ampTier,
+          });
+        }
+        if (brokenSet.has(eIdx) || oneMoreSet.has(eIdx)) {
+          playEditionA('fx_weakness_break', {
+            pos: posObj,
+            to: posObj,
+            targetGroundY: posObj.groundY,
+            facing: 1,
+            amp: ampTier,
+            oneMore: oneMoreSet.has(eIdx),
+          });
+        }
+        if (shieldHitMap.has(eIdx)) {
+          playEditionA('fx_shield_hit', {
+            pos: posObj,
+            from: posObj,
+            groundY: posObj.groundY,
+            side: 'enemy',
+            facing: -1,
+            amp: ampTier,
+            shattered: !!shieldHitMap.get(eIdx),
+          });
+        }
+      };
+
+      // 保留像素精灵动作编排（姿态 / 冲刺 / 挤压），零旧 PixelFX 叠放
+      if (skillId === 'insight_rowan_prism') {
+        setActorPoseInternal('player', magicWindupPose, 160, false);
+        squashActor('player', 0.93, 1.08, 160);
+        scheduleAction(140, () => {
+          if (myGen === _playerActionGen) {
+            setActorPoseInternal('player', magicCastPose, 320, false);
+            dashActor('player', 16, 0, 110, 'outQuad', true, 'ice');
+          }
+        });
+        scheduleAction(420, () => {
+          if (myGen === _playerActionGen) dashActor('player', 0, 0, 210, 'outCubic', false);
+        });
+      } else if (isShieldOrVeil) {
+        setActorPoseInternal('player', magicWindupPose, 120, false);
+        squashActor('player', 1.06, 0.94, 130);
+        scheduleAction(110, () => {
+          if (myGen === _playerActionGen) {
+            setActorPoseInternal('player', magicCastPose, 320, false);
+            squashActor('player', 0.94, 1.08, 220);
+          }
+        });
+      } else if (isFootwork) {
+        const isWind = skillId === 'sword_wind_afterimage' || skillId === 'wind_afterimage';
+        setActorPoseInternal('player', 'windup', 95, false);
+        dashActor('player', -12, 0, 80, 'inQuad', false);
+        scheduleAction(85, () => {
+          if (myGen !== _playerActionGen) return;
+          dashActor('player', 34, 0, 115, 'outCubic', true, isWind ? 'wind' : 'ice', { pose: 'run' });
+        });
+        scheduleAction(205, () => {
+          if (myGen === _playerActionGen) setActorPoseInternal('player', 'windup', 120, false);
+        });
+        scheduleAction(325, () => {
+          if (myGen === _playerActionGen) {
+            dashActor('player', 0, 0, 175, 'outCubic', true, isWind ? 'wind' : 'ice', { pose: 'run', returnIdle: true });
+          }
+        });
+      } else if (isMelee) {
+        const dashVec = computeMeleeDashVector(pPts, tPts, 'right', 96, 54);
+        setActorPoseInternal('player', 'windup', 95, false);
+        squashActor('player', 1.1, 0.92, 95);
+        dashActor('player', -14, 0, 80, 'inQuad', false);
+        scheduleAction(85, () => {
+          if (myGen !== _playerActionGen) return;
+          dashActor('player', dashVec.dx, dashVec.dy, 110, 'outQuart', true, 'ice', { pose: 'run' });
+        });
+        scheduleAction(195, () => {
+          if (myGen === _playerActionGen) {
+            setActorPoseInternal('player', 'strike', 210, false);
+            squashActor('player', 1.12, 0.9, 170);
+          }
+        });
+        scheduleAction(445, () => {
+          if (myGen === _playerActionGen) {
+            dashActor('player', 0, 0, 200, 'outCubic', false, 'ice', { pose: 'run', returnIdle: true });
+          }
+        });
+      } else if (ICE_AOE_GROUND_SKILLS.has(skillId) || isMultiAoe) {
+        setActorPoseInternal('player', magicWindupPose, 160, false);
+        squashActor('player', 0.93, 1.08, 150);
+        scheduleAction(145, () => {
+          if (myGen === _playerActionGen) {
+            setActorPoseInternal('player', magicCastPose, 340, false);
+            squashActor('player', 1.1, 0.92, 180);
+          }
+        });
+      } else {
+        setActorPoseInternal('player', magicWindupPose, 150, false);
+        squashActor('player', 0.94, 1.07, 150);
+        scheduleAction(140, () => {
+          if (myGen === _playerActionGen) {
+            setActorPoseInternal('player', magicCastPose, 300, false);
+            squashActor('player', 1.08, 0.94, 170);
+            dashActor('player', 12, 0, 95, 'outQuad', false);
+          }
+        });
+        scheduleAction(360, () => {
+          if (myGen === _playerActionGen) dashActor('player', 0, 0, 180, 'outCubic', false);
+        });
+      }
+
+      playEditionA(resolvedId, {
+        from: pLog.cast,
+        to: { x: firstTargetLog.x, y: firstTargetLog.y },
+        groundY: pLog.anchor.y,
+        targetGroundY: firstTargetLog.groundY,
+        targets: targetLogList,
+        facing: 1,
+        amp: ampTier,
+        ampTier,
+        heavy: isHeavy,
+        usedWand: !!info.usedWand,
+        spriteId: pSpriteId,
+        onImpact(hitOrder, pt, isLast) {
+          if (isSelfSkill || isSetupOnly || info.missed) return;
+          const slot = targetLogList[hitOrder] || firstTargetLog;
+          const posObj = {
+            x: (pt && Number.isFinite(pt.x)) ? pt.x : slot.x,
+            y: (pt && Number.isFinite(pt.y)) ? pt.y : slot.y,
+            groundY: slot.groundY,
+          };
+          if (isLast || targetLogList.length > 1) {
+            applyEnemyImpactAt(slot.enemyIdx, posObj);
+          } else {
+            triggerHitReaction(`enemy:${slot.enemyIdx}`, isHeavy ? 14 : 10, isHeavy);
+          }
+          if (isLast && targetLogList.length > 1) {
+            for (let ti = 0; ti < targetLogList.length; ti++) {
+              const tg = targetLogList[ti];
+              if (!overlayFired.has(tg.enemyIdx)) {
+                applyEnemyImpactAt(tg.enemyIdx, tg);
+              }
+            }
+          }
+        },
+        onShake(px) {
+          if (!info.missed) triggerTrauma(editionAShakeToTrauma(px));
+        },
+        onHitStop(ms) {
+          if (!isSelfSkill && !isSetupOnly && !info.missed) triggerHitStop(ms);
+        },
+      });
+      return;
+    }
+
     // 1) 罗文专属看破：双镜合拢夹杖（eclipse + time_stop + parry + ice_shatter）
     if (skillId === 'insight_rowan_prism') {
       setActorPoseInternal('player', magicWindupPose, 160, false);
@@ -3595,6 +3955,246 @@
       || (targetActorKey === 'player' ? resolvePlayerSpriteId(battleState, false) : 'reno');
     const targetDualMagic = hasMagicCastFrames(targetSpriteId);
     const isAllyRenoTarget = targetActorKey === 'ally:reno' || targetSpriteId === 'reno';
+
+    if (hasEditionA()) {
+      const edApi = getEditionAApi();
+      const resolvedEnemyVfx =
+        (intent.moveName && edApi.resolveSkillId(intent.moveName)) ||
+        (intent.moveKey && edApi.resolveSkillId(intent.moveKey)) ||
+        edApi.resolveSkillId(`enemy_${spriteId}`) ||
+        'enemy_wolf_frost_claw';
+
+      const eLog = toLogicalPts(ePts);
+      const tLog = toLogicalPts(targetPts);
+      let impactApplied = false;
+
+      const applyTargetImpactEditionA = () => {
+        if (impactApplied) return;
+        impactApplied = true;
+
+        const freshTPts = getActorCanvasPoints(targetActorKey, false);
+        const freshEPts = getActorCanvasPoints(eKey, false);
+        const freshTLog = toLogicalPts(freshTPts);
+        const freshELog = toLogicalPts(freshEPts);
+        const tPos = { x: freshTLog.hit.x, y: freshTLog.hit.y, groundY: freshTLog.anchor.y };
+
+        if (info.parried) {
+          setActorPoseInternal(targetActorKey, 'strike', 220, false);
+          dashActor(targetActorKey, 24, clamp((freshEPts.screenY - freshTPts.screenY) * 0.18, -22, 22), 90, 'outQuad', true, 'ice');
+          playEditionA('fx_block_perfect', {
+            pos: tPos,
+            from: freshTLog.hit,
+            groundY: freshTLog.anchor.y,
+            side: 'player',
+            facing: 1,
+            onShake(px) { triggerTrauma(editionAShakeToTrauma(px)); },
+            onHitStop(ms) { triggerHitStop(ms); },
+          });
+          playEditionA('sword_riposte_flash', {
+            from: freshTLog.cast,
+            groundY: freshTLog.anchor.y,
+            to: freshELog.hit,
+            targetGroundY: freshELog.anchor.y,
+            facing: 1,
+            spriteId: targetSpriteId,
+            onImpact() { triggerHitReaction(eKey, 16, true); },
+            onShake(px) { triggerTrauma(editionAShakeToTrauma(px)); },
+            onHitStop(ms) { triggerHitStop(ms); },
+          });
+          scheduleAction(260, () => dashActor(targetActorKey, 0, 0, 170, 'outCubic', false, 'ice', { pose: 'run', returnIdle: true }));
+          return;
+        }
+        if (info.evaded) {
+          dashActor(targetActorKey, -24, 0, 95, 'outQuad', true, 'wind', { pose: 'run' });
+          playEditionA('fx_status_micro', {
+            pos: tPos,
+            from: freshTLog.hit,
+            groundY: freshTLog.anchor.y,
+            side: 'player',
+            facing: 1,
+            variant: 'buff',
+          });
+          scheduleAction(200, () => dashActor(targetActorKey, 0, 0, 170, 'outCubic', false, 'wind', { pose: 'run', returnIdle: true }));
+          return;
+        }
+        if (info.blocked) {
+          const guardPose = isAllyRenoTarget ? 'earth_step' : (targetDualMagic ? 'magic_windup' : 'windup');
+          setActorPoseInternal(targetActorKey, guardPose, 220, false);
+          squashActor(targetActorKey, 1.08, 0.94, 180);
+          playEditionA('fx_block_great', {
+            pos: tPos,
+            from: freshTLog.hit,
+            groundY: freshTLog.anchor.y,
+            side: 'player',
+            facing: 1,
+            onShake(px) { triggerTrauma(editionAShakeToTrauma(px)); },
+          });
+          if (info.shieldShattered || (info.shieldAbsorbed > 0)) {
+            playEditionA('fx_shield_hit', {
+              pos: tPos,
+              from: freshTLog.hit,
+              groundY: freshTLog.anchor.y,
+              side: 'player',
+              facing: 1,
+              shattered: !!info.shieldShattered,
+            });
+          }
+          return;
+        }
+
+        triggerHitReaction(targetActorKey, heavy ? -16 : -10, heavy);
+        if ((info.shieldAbsorbed > 0) && (info.hpLoss > 0)) {
+          playEditionA('fx_block_good', {
+            pos: tPos,
+            from: freshTLog.hit,
+            groundY: freshTLog.anchor.y,
+            side: 'player',
+            facing: 1,
+          });
+        } else if ((info.hpLoss >= 45) || info.bypassMagicPlayerShield) {
+          playEditionA('fx_block_bad', {
+            pos: tPos,
+            from: freshTLog.hit,
+            groundY: freshTLog.anchor.y,
+            side: 'player',
+            facing: 1,
+          });
+        }
+        if (info.shieldShattered || (info.shieldAbsorbed > 0)) {
+          playEditionA('fx_shield_hit', {
+            pos: tPos,
+            from: freshTLog.hit,
+            groundY: freshTLog.anchor.y,
+            side: 'player',
+            facing: 1,
+            shattered: !!info.shieldShattered,
+          });
+        }
+      };
+
+      // 敌方像素精灵动作编排（完整保留 6 大敌方原型姿势/跨行冲刺/雷纳德挡灾），特效全权委托方案 A
+      if (spriteId === 'beatrice' || spriteId === 'eastwing_commander' || spriteId === 'corridor_vanguard' || spriteId === 'flame_mage') {
+        const moveText = String(intent.moveName || '');
+        let isMelee;
+        if (spriteId === 'flame_mage') {
+          isMelee = false;
+        } else if (spriteId === 'eastwing_commander') {
+          const isEastwingMagic = intent.stance === 'DUAL_CAST'
+            || (intent.gainShield > 0 && intent.stance !== 'CLOSE_LUNGE' && !/戟/.test(moveText))
+            || (intent.elem === 'fire' && intent.stance !== 'CLOSE_LUNGE' && !/劈|斩|刺/.test(moveText));
+          isMelee = !isEastwingMagic;
+        } else if (spriteId === 'beatrice') {
+          isMelee = intent.stance === 'CLOSE_LUNGE' || intent.stance === 'GUARD_COUNTER';
+        } else {
+          isMelee = intent.stance === 'CLOSE_LUNGE' || intent.stance === 'GUARD_COUNTER' || intent.elem === 'phys';
+        }
+        const enemyDualMagic = hasMagicCastFrames(spriteId);
+        if (isMelee) {
+          const dashVec = computeMeleeDashVector(ePts, targetPts, 'left', 104, 48);
+          setActorPoseInternal(eKey, 'windup', 105, false);
+          squashActor(eKey, 1.08, 0.93, 100);
+          dashActor(eKey, 12, 0, 85, 'inQuad', false);
+          scheduleAction(95, () => {
+            dashActor(eKey, dashVec.dx, dashVec.dy, 115, 'outQuart', true, 'fire', { pose: 'run' });
+          });
+          scheduleAction(210, () => {
+            setActorPoseInternal(eKey, 'strike', 240, false);
+            squashActor(eKey, 1.12, 0.9, 170);
+          });
+          scheduleAction(465, () => {
+            dashActor(eKey, 0, 0, 200, 'outCubic', false, 'fire', { pose: 'run', returnIdle: true });
+          });
+        } else {
+          setActorPoseInternal(eKey, enemyDualMagic ? 'magic_windup' : 'windup', 135, false);
+          squashActor(eKey, 0.95, 1.07, 120);
+          dashActor(eKey, 10, 0, 90, 'inQuad', false);
+          scheduleAction(115, () => {
+            setActorPoseInternal(eKey, enemyDualMagic ? 'magic_cast' : 'strike', 310, false);
+            dashActor(eKey, -10, 0, 90, 'outQuad', false);
+            scheduleAction(280, () => dashActor(eKey, 0, 0, 175, 'outCubic', false));
+          });
+        }
+      } else {
+        setActorPoseInternal(eKey, 'windup', 110, false);
+        squashActor(eKey, 1.08, 0.93, 105);
+        dashActor(eKey, 12, 0, 85, 'inQuad', false);
+
+        if (spriteId === 'rowan') {
+          const recentLog = battleState && Array.isArray(battleState.log) ? battleState.log.slice(-4).join(' ') : '';
+          const guardAllyKey = info.guardedByAlly || 'ally:reno';
+          const didRenoBlock = !!(info.renoRockBlock || info.guardedByAlly || (intent.renoRockBlock && (
+            recentLog.includes('雷纳德') ||
+            info.blocked ||
+            intent.eclipseTrueMagic ||
+            (battleState && battleState.player && battleState.player.shield > 0)
+          )));
+          if (didRenoBlock) {
+            if (hasResidentAlly(guardAllyKey)) {
+              scheduleAction(45, () => playAllyGuard(battleState, { actorKey: guardAllyKey, targetActorKey, reason: 'rock_block' }));
+            } else {
+              scheduleAction(55, () => playRenoSupport('earth', { reason: 'rock_block', skipPlayerPose: true }));
+            }
+          }
+          scheduleAction(110, () => {
+            setActorPoseInternal(eKey, 'strike', 320, false);
+            dashActor(eKey, -16, 0, 100, 'outQuad', false);
+            scheduleAction(310, () => dashActor(eKey, 0, 0, 180, 'outCubic', false));
+          });
+        } else if (spriteId === 'alice' || spriteId === 'wind_god_avatar') {
+          const dashVec = computeMeleeDashVector(ePts, targetPts, 'left', 108, 44);
+          scheduleAction(95, () => {
+            dashActor(eKey, dashVec.dx, dashVec.dy, 110, 'outQuart', true, 'wind', { pose: 'run' });
+          });
+          scheduleAction(205, () => {
+            setActorPoseInternal(eKey, 'strike', 240, false);
+            squashActor(eKey, 1.1, 0.92, 170);
+          });
+          scheduleAction(455, () => {
+            dashActor(eKey, 0, 0, 195, 'outCubic', false, 'wind', { pose: 'run', returnIdle: true });
+          });
+        } else if (spriteId === 'aino' || spriteId === 'noelle') {
+          scheduleAction(110, () => {
+            setActorPoseInternal(eKey, 'strike', 310, false);
+            dashActor(eKey, -12, 0, 90, 'outQuad', false);
+            scheduleAction(290, () => dashActor(eKey, 0, 0, 180, 'outCubic', false));
+          });
+        } else {
+          const isIceBeast = spriteId === 'abyss_behemoth' || spriteId === 'tundra_brute' || spriteId === 'frost_hound';
+          const dashVec = computeMeleeDashVector(ePts, targetPts, 'left', 102, 52);
+          scheduleAction(95, () => {
+            dashActor(eKey, dashVec.dx, dashVec.dy, 105, 'outQuart', true, isIceBeast ? 'ice' : 'claw', { pose: 'run' });
+          });
+          scheduleAction(200, () => {
+            setActorPoseInternal(eKey, 'strike', 240, false);
+            squashActor(eKey, 1.14, 0.88, 170);
+          });
+          scheduleAction(455, () => {
+            dashActor(eKey, 0, 0, 200, 'outCubic', false, isIceBeast ? 'ice' : 'claw', { pose: 'run', returnIdle: true });
+          });
+        }
+      }
+
+      playEditionA(resolvedEnemyVfx, {
+        from: eLog.cast,
+        to: tLog.hit,
+        groundY: eLog.anchor.y,
+        targetGroundY: tLog.anchor.y,
+        targets: [{ x: tLog.hit.x, y: tLog.hit.y, groundY: tLog.anchor.y }],
+        facing: -1,
+        spriteId,
+        heavy,
+        onImpact() {
+          applyTargetImpactEditionA();
+        },
+        onShake(px) {
+          if (!info.evaded) triggerTrauma(editionAShakeToTrauma(px));
+        },
+        onHitStop(ms) {
+          if (!info.evaded) triggerHitStop(ms);
+        },
+      });
+      return;
+    }
 
     const applyTargetImpact = () => {
       if (info.parried) {
@@ -4071,6 +4671,84 @@
     const tPts = getActorCanvasPoints(targetKey, false);
     const rowNudgeY = clamp((tPts.screenY - rPts.screenY) * 0.14, -22, 22);
 
+    if (hasEditionA()) {
+      const edApi = getEditionAApi();
+      const rLog = toLogicalPts(rPts);
+      const tLog = toLogicalPts(tPts);
+      const allyVfxId =
+        elem === 'earth' ? 'ally_reno_earth'
+        : elem === 'fire' ? 'ally_reno_fire'
+        : elem === 'wind' ? 'ally_reno_wind'
+        : (edApi.resolveSkillId('ally_reno_water') || 'raging_surge');
+
+      if (elem === 'earth') {
+        setActorPoseInternal(rawAllyKey, 'earth_windup', 100, false);
+        squashActor(rawAllyKey, 0.94, 1.07, 100);
+        dashActor(rawAllyKey, -6, 0, 80, 'inQuad', false);
+        scheduleAction(95, () => {
+          if (!_actors.has(rawAllyKey)) return;
+          setActorPoseInternal(rawAllyKey, 'earth_cast', 260, false);
+          dashActor(rawAllyKey, 18, rowNudgeY, 95, 'outQuad', false);
+        });
+        scheduleAction(175, () => {
+          if (_actors.has(rawAllyKey)) squashActor(rawAllyKey, 1.10, 0.91, 180);
+        });
+        scheduleAction(440, () => {
+          if (_actors.has(rawAllyKey)) dashActor(rawAllyKey, 0, 0, 185, 'outCubic', false);
+        });
+      } else if (elem === 'fire') {
+        setActorPoseInternal(rawAllyKey, 'fire_windup', 130, false);
+        squashActor(rawAllyKey, 0.94, 1.07, 120);
+        scheduleAction(120, () => {
+          if (!_actors.has(rawAllyKey)) return;
+          setActorPoseInternal(rawAllyKey, 'fire_cast', 320, false);
+          squashActor(rawAllyKey, 1.09, 0.93, 180);
+          dashActor(rawAllyKey, 14, rowNudgeY * 0.5, 90, 'outQuad', false);
+        });
+        scheduleAction(380, () => {
+          if (_actors.has(rawAllyKey)) dashActor(rawAllyKey, 0, 0, 180, 'outCubic', false);
+        });
+      } else if (elem === 'wind') {
+        setActorPoseInternal(rawAllyKey, 'wind_windup', 125, false);
+        squashActor(rawAllyKey, 0.94, 1.07, 115);
+        scheduleAction(115, () => {
+          if (!_actors.has(rawAllyKey)) return;
+          setActorPoseInternal(rawAllyKey, 'wind_cast', 320, false);
+          squashActor(rawAllyKey, 1.09, 0.93, 175);
+          dashActor(rawAllyKey, 14, rowNudgeY * 0.5, 90, 'outQuad', false);
+        });
+        scheduleAction(370, () => {
+          if (_actors.has(rawAllyKey)) dashActor(rawAllyKey, 0, 0, 180, 'outCubic', false);
+        });
+      } else {
+        setActorPoseInternal(rawAllyKey, 'water_windup', 125, false);
+        squashActor(rawAllyKey, 0.94, 1.07, 115);
+        scheduleAction(115, () => {
+          if (_actors.has(rawAllyKey)) setActorPoseInternal(rawAllyKey, 'water_cast', 320, false);
+        });
+      }
+
+      playEditionA(allyVfxId, {
+        from: rLog.cast,
+        to: tLog.hit,
+        groundY: rLog.anchor.y,
+        targetGroundY: tLog.anchor.y,
+        facing: 1,
+        spriteId: st.spriteId,
+        heavy,
+        onImpact() {
+          if (!act.missed) triggerHitReaction(targetKey, heavy ? 16 : 12, heavy);
+        },
+        onShake(px) {
+          if (!act.missed) triggerTrauma(editionAShakeToTrauma(px));
+        },
+        onHitStop(ms) {
+          if (!act.missed) triggerHitStop(ms);
+        },
+      });
+      return true;
+    }
+
     if (elem === 'earth') {
       // 土系三段施法：earth_windup(3) -> earth_step(4) -> earth_cast(5) + ground_slam + 石棱破土特效
       setActorPoseInternal(rawAllyKey, 'earth_windup', 100, false);
@@ -4246,6 +4924,21 @@
     squashActor(actorKey, 1.09, 0.92, 180);
     dashActor(actorKey, 22, stepY, 110, 'outQuad', false);
 
+    if (hasEditionA()) {
+      const rLog = toLogicalPts(rPts);
+      playEditionA('ally_reno_guard', {
+        pos: { x: rLog.hit.x, y: rLog.hit.y, groundY: rLog.anchor.y },
+        from: rLog.hit,
+        groundY: rLog.anchor.y,
+        facing: 1,
+        onShake(px) { triggerTrauma(editionAShakeToTrauma(px)); },
+      });
+      scheduleAction(340, () => {
+        if (_actors.has(actorKey)) dashActor(actorKey, 0, 0, 190, 'outCubic', false);
+      });
+      return true;
+    }
+
     const slabX = clamp(rPts.anchor.x + 18, 12, Math.max(20, _bufW - 12));
     spawnFx('ground_slam', {
       x: slabX,
@@ -4277,8 +4970,8 @@
 
     // 若场上已有常驻前排雷纳德，直接驱动常驻骨骼，绝不另建重影 cameo
     if (hasResidentAlly('ally:reno')) {
-      if (opts.reason === 'rock_block') {
-        playAllyGuard(_lastBattleRef, { actorKey: 'ally:reno', reason: 'rock_block' });
+      if (opts.reason === 'rock_block' || opts.reason === 'bond') {
+        playAllyGuard(_lastBattleRef, { actorKey: 'ally:reno', reason: opts.reason });
       } else {
         playAllyAction(_lastBattleRef, {
           actorKey: 'ally:reno',
@@ -4306,6 +4999,63 @@
       onReady(actorKey, rPts) {
         const pPts = getActorCanvasPoints('player', false);
         const tPts = getActorCanvasPoints(primaryEnemyKey, false);
+
+        if (hasEditionA()) {
+          const edApi = getEditionAApi();
+          const pLog = toLogicalPts(pPts);
+          const rLog = toLogicalPts(rPts);
+          const tLog = toLogicalPts(tPts);
+          const isGuardMode = normElem === 'earth' && (opts.reason === 'rock_block' || opts.reason === 'bond' || opts.enemyIdx == null);
+
+          if (normElem === 'earth') {
+            setActorPoseInternal(actorKey, 'earth_windup', 100, false);
+            squashActor(actorKey, 0.94, 1.07, 100);
+            scheduleAction(90, () => {
+              if (_actors.has(actorKey)) setActorPoseInternal(actorKey, 'earth_step', 95, false);
+            });
+            scheduleAction(175, () => {
+              if (!_actors.has(actorKey)) return;
+              setActorPoseInternal(actorKey, 'earth_cast', 340, false);
+              squashActor(actorKey, 1.08, 0.93, 180);
+            });
+          } else {
+            setActorPoseInternal(actorKey, windupPose, 125, false);
+            squashActor(actorKey, 0.94, 1.07, 120);
+            scheduleAction(115, () => {
+              if (!_actors.has(actorKey)) return;
+              setActorPoseInternal(actorKey, castPose, 340, false);
+              squashActor(actorKey, 1.08, 0.93, 180);
+            });
+          }
+
+          if (isGuardMode) {
+            playEditionA('ally_reno_guard', {
+              pos: { x: pLog.hit.x, y: pLog.hit.y, groundY: pLog.anchor.y },
+              from: pLog.hit,
+              groundY: pLog.anchor.y,
+              facing: 1,
+              onShake(px) { triggerTrauma(editionAShakeToTrauma(px)); },
+            });
+          } else {
+            const vfxId =
+              normElem === 'fire' ? 'ally_reno_fire'
+              : normElem === 'wind' ? 'ally_reno_wind'
+              : normElem === 'earth' ? 'ally_reno_earth'
+              : (edApi.resolveSkillId('ally_reno_water') || 'raging_surge');
+            playEditionA(vfxId, {
+              from: rLog.cast,
+              to: tLog.hit,
+              groundY: rLog.anchor.y,
+              targetGroundY: tLog.anchor.y,
+              facing: 1,
+              spriteId: 'reno',
+              onImpact() { triggerHitReaction(primaryEnemyKey, 13, normElem === 'fire'); },
+              onShake(px) { triggerTrauma(editionAShakeToTrauma(px)); },
+              onHitStop(ms) { triggerHitStop(ms); },
+            });
+          }
+          return;
+        }
 
         if (normElem === 'earth') {
           // 土系三段帧：[3: earth_windup, 4: earth_step, 5: earth_cast]
@@ -4414,6 +5164,10 @@
       applyActorVisual(st);
       dashActor(key, 0, 0, dur, 'outCubic', false, 'claw', { pose: 'run', returnIdle: true });
     });
+
+    if (hasEditionA()) {
+      playEditionA('fx_wave_transition', { facing: 1 });
+    }
     return true;
   }
 
@@ -4426,6 +5180,24 @@
     const pSpriteId = (playerSt && playerSt.spriteId) || resolvePlayerSpriteId(_lastBattleRef, false);
     const useDualMagic = hasMagicCastFrames(pSpriteId);
     setActorPoseInternal('player', useDualMagic ? 'magic_windup' : 'windup', 140, false);
+
+    if (hasEditionA()) {
+      const pPts = getActorCanvasPoints('player', true, true);
+      const pLog = toLogicalPts(pPts);
+      playEditionA('eclipse_wand_toggle', {
+        from: pLog.cast,
+        groundY: pLog.anchor.y,
+        facing: 1,
+        onShake(px) { triggerTrauma(editionAShakeToTrauma(px)); },
+      });
+      scheduleAction(120, () => {
+        if (myGen === _playerActionGen) {
+          setActorPoseInternal('player', useDualMagic ? 'magic_cast' : 'strike', 300, false);
+        }
+      });
+      return;
+    }
+
     scheduleAction(120, () => {
       if (myGen === _playerActionGen) {
         setActorPoseInternal('player', useDualMagic ? 'magic_cast' : 'strike', 300, false);
@@ -4442,6 +5214,23 @@
     if (!isEnabled()) return;
     ensureVfxCanvas();
     ensureLoopRunning();
+    if (hasEditionA()) {
+      const pLog = toLogicalPts(getActorCanvasPoints('player', false));
+      const alive = getLivingEnemyIndices(_lastBattleRef, 0);
+      const targetLogs = alive.map(eIdx => {
+        const eLog = toLogicalPts(getActorCanvasPoints(`enemy:${eIdx}`, false));
+        return { x: eLog.hit.x, y: eLog.hit.y, groundY: eLog.anchor.y };
+      });
+      playEditionA('palace_time_stop', {
+        from: pLog.cast,
+        groundY: pLog.anchor.y,
+        targets: targetLogs,
+        facing: 1,
+        onShake(px) { triggerTrauma(editionAShakeToTrauma(px)); },
+        onHitStop(ms) { triggerHitStop(ms); },
+      });
+      return;
+    }
     spawnFx('time_stop', { x: _bufW * 0.5, y: _bufH * 0.76, palette: PALETTES.ice }, { stopAt: 1.12 });
     spawnFx('snowflake_burst', { x: _bufW * 0.5, y: _bufH * 0.52, count: 11, palette: PALETTES.ice }, { stopAt: 1.05, scale: 0.64 });
   }
@@ -4451,6 +5240,19 @@
     ensureVfxCanvas();
     const eKey = `enemy:${enemyIdx != null ? enemyIdx : 0}`;
     const tPts = getActorCanvasPoints(eKey, false);
+    if (hasEditionA()) {
+      const tLog = toLogicalPts(tPts);
+      playEditionA('support_aino_spear', {
+        from: { x: clamp(tLog.hit.x - 160, 24, 580), y: 40 },
+        to: tLog.hit,
+        targetGroundY: tLog.anchor.y,
+        facing: 1,
+        onImpact() { triggerHitReaction(eKey, 18, true); },
+        onShake(px) { triggerTrauma(editionAShakeToTrauma(px)); },
+        onHitStop(ms) { triggerHitStop(ms); },
+      });
+      return;
+    }
     const skyOrigin = { x: Math.max(24, tPts.hit.x - 110), y: 12 };
     spawnProjectile('ice_lance', skyOrigin, tPts.hit, { palette: PALETTES.ice, length: 52 }, 165, () => {
       spawnFx('icicle_fall', { x: tPts.anchor.x, y: tPts.anchor.y, palette: PALETTES.ice }, { stopAt: 0.88 });
@@ -4468,7 +5270,7 @@
     const cid = String(charId || '').toLowerCase();
 
     if (cid === 'reno') {
-      playRenoSupport('earth');
+      playRenoSupport('earth', { reason: 'bond' });
       return;
     }
 
@@ -4493,6 +5295,71 @@
 
           setActorPoseInternal(actorKey, windup, 115, false);
           squashActor(actorKey, 0.95, 1.06, 110);
+
+          if (hasEditionA()) {
+            const edApi = getEditionAApi();
+            const bondId = edApi.resolveSkillId(`bond_${cid}`) || 'bond_charlotte_noble';
+            const pLog = toLogicalPts(pPts);
+            const cLog = toLogicalPts(cPts);
+            const tLog = toLogicalPts(tPts);
+
+            scheduleAction(105, () => {
+              if (!_actors.has(actorKey)) return;
+              setActorPoseInternal(actorKey, cast, 340, false);
+              squashActor(actorKey, 1.08, 0.94, 170);
+              if (cid === 'jilan') {
+                dashActor(actorKey, 28, 0, 100, 'outQuad', true, 'ice');
+              }
+            });
+
+            if (cid === 'aino') {
+              const alive = getLivingEnemyIndices(_lastBattleRef, targetIdx);
+              const targetsLog = alive.map(eIdx => {
+                const eLog = toLogicalPts(getActorCanvasPoints(`enemy:${eIdx}`, false));
+                return { x: eLog.hit.x, y: eLog.hit.y, groundY: eLog.anchor.y, enemyIdx: eIdx };
+              });
+              const firstT = targetsLog[0] || { x: tLog.hit.x, y: tLog.hit.y, groundY: tLog.anchor.y, enemyIdx: targetIdx };
+              playEditionA(bondId, {
+                from: cLog.cast,
+                groundY: cLog.anchor.y,
+                to: { x: firstT.x, y: firstT.y },
+                targetGroundY: firstT.groundY,
+                targets: targetsLog,
+                facing: 1,
+                spriteId: 'aino',
+                onImpact(hitOrder) {
+                  const slot = targetsLog[hitOrder] || firstT;
+                  triggerHitReaction(`enemy:${slot.enemyIdx}`, 13, false);
+                },
+                onShake(px) { triggerTrauma(editionAShakeToTrauma(px)); },
+                onHitStop(ms) { triggerHitStop(ms); },
+              });
+            } else if (cid === 'jilan' || cid === 'beatrice') {
+              playEditionA(bondId, {
+                from: cLog.cast,
+                groundY: cLog.anchor.y,
+                to: tLog.hit,
+                targetGroundY: tLog.anchor.y,
+                facing: 1,
+                spriteId: cid,
+                onImpact() { triggerHitReaction(targetKey, 14, true); },
+                onShake(px) { triggerTrauma(editionAShakeToTrauma(px)); },
+                onHitStop(ms) { triggerHitStop(ms); },
+              });
+            } else {
+              playEditionA(bondId, {
+                pos: { x: pLog.hit.x, y: pLog.hit.y, groundY: pLog.anchor.y },
+                from: pLog.hit,
+                groundY: pLog.anchor.y,
+                to: tLog.hit,
+                targetGroundY: tLog.anchor.y,
+                facing: 1,
+                spriteId: cid,
+                onShake(px) { triggerTrauma(editionAShakeToTrauma(px)); },
+              });
+            }
+            return;
+          }
 
           scheduleAction(105, () => {
             if (!_actors.has(actorKey)) return;
@@ -4529,8 +5396,209 @@
     }
 
     setActorPoseInternal('player', playerDualMagic ? 'magic_cast' : 'strike', 300, false);
+    if (hasEditionA()) {
+      const edApi = getEditionAApi();
+      const pLog = toLogicalPts(pPts);
+      const bondId = edApi.resolveSkillId(`bond_${cid}`) || 'bond_charlotte_noble';
+      playEditionA(bondId, {
+        pos: { x: pLog.hit.x, y: pLog.hit.y, groundY: pLog.anchor.y },
+        from: pLog.hit,
+        groundY: pLog.anchor.y,
+        facing: 1,
+      });
+      return;
+    }
     spawnFx('magic_circle_cast', { x: pPts.anchor.x, y: pPts.anchor.y, palette: PALETTES.ice }, { stopAt: 0.8 });
     spawnFx('snowflake_burst', { x: pPts.hit.x, y: pPts.hit.y, count: 8, palette: PALETTES.ice }, { stopAt: 0.85, scale: 0.52 });
+  }
+
+  /* -------------------- 方案 A 新增对外接口：法杖切换 / 格挡分级 / 系统反馈 -------------------- */
+  function playStaffSwitch(staffId) {
+    if (!isEnabled()) return false;
+    ensureVfxCanvas(true);
+    ensureLoopRunning();
+
+    const sid = String(staffId || '').toLowerCase().trim();
+    const myGen = ++_playerActionGen;
+    const playerSt = _actors.get('player');
+    const pSpriteId = (playerSt && playerSt.spriteId) || resolvePlayerSpriteId(_lastBattleRef, false);
+    const useDualMagic = hasMagicCastFrames(pSpriteId);
+    setActorPoseInternal('player', useDualMagic ? 'magic_windup' : 'windup', 140, false);
+    scheduleAction(120, () => {
+      if (myGen === _playerActionGen) {
+        setActorPoseInternal('player', useDualMagic ? 'magic_cast' : 'strike', 300, false);
+      }
+    });
+
+    if (hasEditionA()) {
+      const edApi = getEditionAApi();
+      const targetVfx =
+        (sid === 'north_saint_staff' || sid.includes('saint') || sid.includes('north')) ? 'saint_staff_resonance'
+        : (sid === 'eclipse_wand' || sid.includes('eclipse') || sid.includes('wand')) ? 'eclipse_wand_toggle'
+        : (edApi.resolveSkillId(sid) || 'saint_staff_resonance');
+      const pPts = getActorCanvasPoints('player', true, true);
+      const pLog = toLogicalPts(pPts);
+      playEditionA(targetVfx, {
+        from: pLog.cast,
+        groundY: pLog.anchor.y,
+        facing: 1,
+        onShake(px) { triggerTrauma(editionAShakeToTrauma(px)); },
+      });
+      return true;
+    }
+
+    if (sid.includes('eclipse') || sid.includes('wand')) {
+      playWandToggle();
+    } else {
+      const pPts = getActorCanvasPoints('player', true, true);
+      if (pPts) {
+        spawnFx('magic_circle_cast', { x: pPts.anchor.x, y: pPts.anchor.y, palette: PALETTES.crit }, { stopAt: 0.72 });
+        spawnFx('snowflake_burst', { x: pPts.hit.x, y: pPts.hit.y, count: 8, palette: PALETTES.crit }, { stopAt: 0.76, scale: 0.52 });
+      }
+    }
+    return true;
+  }
+
+  function playBlock(grade, actorKey) {
+    if (!isEnabled()) return false;
+    ensureVfxCanvas(false);
+    ensureLoopRunning();
+
+    const rawGrade = String(grade || 'good').toLowerCase().trim();
+    const normGrade = (rawGrade === 'bad' || rawGrade === 'good' || rawGrade === 'great' || rawGrade === 'perfect')
+      ? rawGrade
+      : 'good';
+    const key = actorKey ? String(actorKey) : 'player';
+    const isEnemy = key.startsWith('enemy:');
+    const facing = isEnemy ? -1 : 1;
+    const aPts = getActorCanvasPoints(key, true);
+
+    if (hasEditionA()) {
+      const aLog = toLogicalPts(aPts);
+      const posObj = { x: aLog.hit.x, y: aLog.hit.y, groundY: aLog.anchor.y };
+      playEditionA(`fx_block_${normGrade}`, {
+        pos: posObj,
+        from: aLog.hit,
+        groundY: aLog.anchor.y,
+        side: isEnemy ? 'enemy' : 'player',
+        facing,
+        onShake(px) { triggerTrauma(editionAShakeToTrauma(px)); },
+        onHitStop(ms) { triggerHitStop(ms); },
+      });
+      return true;
+    }
+
+    spawnFx('parry', {
+      x: aPts.anchor.x + (isEnemy ? -12 : 12),
+      y: aPts.anchor.y,
+      palette: PALETTES.ice,
+    }, { stopAt: 0.62 });
+    return true;
+  }
+
+  function playSystemFx(fxId, opts) {
+    if (!isEnabled() || !fxId) return false;
+    opts = opts || {};
+    ensureVfxCanvas(false);
+    ensureLoopRunning();
+    if (!hasEditionA()) return false;
+
+    const edApi = getEditionAApi();
+    const resolvedId = edApi.resolveSkillId(fxId) || String(fxId);
+
+    const resolveAnchorKey = () => {
+      if (opts.actorKey) return String(opts.actorKey);
+      if (opts.side === 'enemy' || (opts.side == null && opts.enemyIdx != null && resolvedId !== 'fx_mana_cycle_flow')) {
+        return `enemy:${opts.enemyIdx != null ? opts.enemyIdx : 0}`;
+      }
+      if (opts.side === 'ally') {
+        return opts.allyKey ? String(opts.allyKey) : 'ally:reno';
+      }
+      return 'player';
+    };
+
+    const actorKey = resolveAnchorKey();
+    const inferredVariant = String(
+      opts.variant || opts.mode || (String(fxId).toLowerCase().startsWith('status_') ? String(fxId).slice(7) : 'buff')
+    ).toLowerCase();
+
+    // 对 fx_status_micro 按 (actorKey, variant) 做 250ms 节流防堆叠
+    if (resolvedId === 'fx_status_micro') {
+      const throttleKey = `${actorKey}|${inferredVariant}`;
+      const nowTs = nowPerf();
+      const lastTs = _statusMicroThrottle.get(throttleKey) || 0;
+      if (nowTs - lastTs < 250) {
+        return false;
+      }
+      _statusMicroThrottle.set(throttleKey, nowTs);
+    }
+
+    const executePlay = () => {
+      if (!hasEditionA()) return;
+      const playOpts = {
+        amp: opts.amp != null ? opts.amp : (opts.ampTier != null ? opts.ampTier : 0),
+        oneMore: !!opts.oneMore,
+        shattered: !!opts.shattered,
+      };
+      if (opts.theme != null) playOpts.theme = opts.theme;
+      if (opts.variant != null) {
+        playOpts.variant = opts.variant;
+      } else if (resolvedId === 'fx_status_micro') {
+        playOpts.variant = inferredVariant;
+      }
+      if (opts.mode != null) playOpts.mode = opts.mode;
+      if (!opts.skipShake) {
+        playOpts.onShake = px => triggerTrauma(editionAShakeToTrauma(px));
+      }
+      if (!opts.skipHitStop) {
+        playOpts.onHitStop = ms => triggerHitStop(ms);
+      }
+
+      if (resolvedId === 'fx_mana_cycle_flow') {
+        // 保持 from = player, to = enemy（Pack 2 内部自反流向敌→我）
+        const fromKey = opts.fromKey ? String(opts.fromKey) : 'player';
+        const fallbackEIdx = (_lastBattleRef && _lastBattleRef.targetIdx != null) ? _lastBattleRef.targetIdx : 0;
+        const toKey = opts.toKey ? String(opts.toKey) : `enemy:${opts.enemyIdx != null ? opts.enemyIdx : fallbackEIdx}`;
+        const fromLog = toLogicalPts(getActorCanvasPoints(fromKey, true));
+        const toLog = toLogicalPts(getActorCanvasPoints(toKey, false));
+        playOpts.from = fromLog.hit;
+        playOpts.groundY = fromLog.anchor.y;
+        playOpts.to = toLog.hit;
+        playOpts.targetGroundY = toLog.anchor.y;
+        playOpts.facing = opts.facing != null ? opts.facing : 1;
+      } else if (resolvedId === 'fx_wave_transition') {
+        playOpts.facing = opts.facing != null ? opts.facing : 1;
+      } else if (opts.fromKey && opts.toKey) {
+        const fromLog = toLogicalPts(getActorCanvasPoints(String(opts.fromKey), true));
+        const toLog = toLogicalPts(getActorCanvasPoints(String(opts.toKey), false));
+        playOpts.from = fromLog.cast;
+        playOpts.groundY = fromLog.anchor.y;
+        playOpts.to = toLog.hit;
+        playOpts.targetGroundY = toLog.anchor.y;
+        playOpts.facing = opts.facing != null ? opts.facing : (toLog.hit.x >= fromLog.hit.x ? 1 : -1);
+      } else {
+        const aLog = toLogicalPts(getActorCanvasPoints(actorKey, true));
+        const isEnemy = actorKey.startsWith('enemy:');
+        const posObj = { x: aLog.hit.x, y: aLog.hit.y, groundY: aLog.anchor.y };
+        playOpts.pos = posObj;
+        playOpts.from = aLog.hit;
+        playOpts.groundY = aLog.anchor.y;
+        playOpts.to = aLog.hit;
+        playOpts.targetGroundY = aLog.anchor.y;
+        playOpts.side = opts.side || (isEnemy ? 'enemy' : 'player');
+        playOpts.facing = opts.facing != null ? opts.facing : (isEnemy ? -1 : 1);
+      }
+
+      playEditionA(resolvedId, playOpts);
+    };
+
+    const delayMs = Number(opts.delayMs) || 0;
+    if (delayMs > 0) {
+      scheduleAction(delayMs, executePlay);
+    } else {
+      executePlay();
+    }
+    return true;
   }
 
   /* -------------------- 舞台 DOM 同步与统一单 RAF 主循环 -------------------- */
@@ -4980,6 +6048,18 @@
       _fxIntervalMs = FX_BASE_INTERVAL_MS;
     }
 
+    // 3.5) 驱动方案 A 高清双 Canvas 管线（640×360 逻辑坐标 → #cb-vfx-edition-a-canvas）
+    if (_editionA && _hdCanvas) {
+      if (_editionA.isActive()) {
+        _editionA.update(simDt * 1000);
+        _editionA.render(false);
+        _editionADirty = _editionA.isActive();
+      } else if (_editionADirty) {
+        _editionA.render(false);
+        _editionADirty = false;
+      }
+    }
+
     } finally {
       _inTick = false;
       if (isEnabled() && !_rafId && (gen === undefined || gen === _rafGen)) {
@@ -4997,6 +6077,11 @@
     _playerActionGen += 1;
     _scheduled.length = 0;
     _activeEffects.length = 0;
+    _statusMicroThrottle.clear();
+    if (_editionA && typeof _editionA.clear === 'function') {
+      try { _editionA.clear(); } catch (e) {}
+    }
+    _editionADirty = false;
     _auraShockwaves.length = 0;
     _auraBurstParticles.length = 0;
     _auraBurstTs = 0;
@@ -5083,6 +6168,11 @@
     }
     invalidateFieldRect();
     clearEffects();
+    _hdCanvas = null;
+    _hdW = 0;
+    _hdH = 0;
+    _editionA = null;
+    _editionADirty = false;
     _rawTimers.forEach(tid => clearTimeout(tid));
     _rawTimers.clear();
     _actors.forEach(st => {
@@ -5170,10 +6260,17 @@
       };
     });
     const amp = getManaAmpState(_lastBattleRef);
+    const edApi = getEditionAApi();
     return {
       enabled: isEnabled(),
       canvasW: _bufW,
       canvasH: _bufH,
+      hdCanvasW: _hdW,
+      hdCanvasH: _hdH,
+      editionAActive: hasEditionA(),
+      editionAPlaying: !!(_editionA && _editionA.isActive()),
+      editionASkillCount: edApi && Array.isArray(edApi.SKILLS) ? edApi.SKILLS.length : 0,
+      editionAStats: _editionA && typeof _editionA.getStats === 'function' ? _editionA.getStats() : null,
       fxIntervalMs: _fxIntervalMs,
       budgetTrips: _fxDrawBudgetTrips,
       activeEffects: _activeEffects.map(e => e.name),
@@ -5248,6 +6345,7 @@
     ENEMY_SPRITE_ALIAS,
     PALETTES,
     isEnabled,
+    hasEditionA,
     getManaAmpState,
     getSpriteMeta,
     getRunFramesInfo,
@@ -5266,6 +6364,9 @@
     playAllyGuard,
     playWaveTransition,
     playWandToggle,
+    playStaffSwitch,
+    playBlock,
+    playSystemFx,
     playAmpChargeBurst,
     playPalaceTimeStop,
     playAinoSpearSupport,

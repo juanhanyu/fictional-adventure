@@ -26,3 +26,7 @@
 ```powershell
 node tests/run.js
 ```
+
+## 参考素材留档说明
+
+- [references/奇幻风格插画合集_参考素材](references/奇幻风格插画合集_参考素材/README.md)：**仅作参考素材留档，并非游戏采用的道具素材**（未接入运行期 `assets/`）。

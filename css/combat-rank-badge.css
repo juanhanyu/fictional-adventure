@@ -75,7 +75,33 @@
 }
 
 .cb-rank-badge.cb-rank-t5 {
-  filter: drop-shadow(0 1.5px 4px rgba(150, 110, 42, 0.34));
+  filter: drop-shadow(0 1px 2.5px rgba(94, 58, 0, 0.30));
+}
+
+/* 王级实战缩略态（11px–18px）高对比精校：清晰浅金底 #fff5d6 + 深皇棕字 #5e3a00（>9:1 对比度）+ 锐利金边 */
+.cb-rank-badge.cb-rank-t5:not(.is-macro) svg > polygon:first-of-type {
+  fill: #FFF5D6;
+  stroke: rgba(154, 102, 12, 0.96);
+  stroke-width: 3.9;
+}
+
+.cb-rank-badge.cb-rank-t5:not(.is-macro) svg > polygon:nth-of-type(2) {
+  opacity: 0.14;
+}
+
+.cb-rank-badge.cb-rank-t5:not(.is-macro) svg > line:nth-of-type(2),
+.cb-rank-badge.cb-rank-t5:not(.is-macro) svg > line:nth-of-type(3) {
+  stroke: rgba(154, 102, 12, 0.62);
+}
+
+.cb-rank-badge.cb-rank-t5:not(.is-macro) svg > polygon:nth-of-type(3),
+.cb-rank-badge.cb-rank-t5:not(.is-macro) svg > path {
+  fill: #5E3A00;
+}
+
+.cb-rank-badge.cb-rank-t5:not(.is-macro) svg > text {
+  fill: #5E3A00;
+  font-weight: 900;
 }
 
 .cb-rank-badge.cb-rank-t6 {
@@ -197,7 +223,7 @@
 }
 
 #battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-rank-badge {
-  height: 11px;
+  height: 12px;
   margin-right: 2px;
   vertical-align: middle;
   transform: translateY(-0.5px);
@@ -229,12 +255,34 @@
   }
 
   #battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-rank-badge {
-    height: 10.5px;
+    height: 11.5px;
   }
 
   #battle-screen .cb-enemy-card .cb-e-title > .cb-rank-badge,
   #battle-screen .cb-enemy-card .cb-e-title .cb-rank-badge {
     height: 11px;
+    margin-right: 2px;
+  }
+}
+
+/* 960×600 (<1024px) 紧凑适配 */
+@media (max-width: 1023px) {
+  #battle-screen #cb-target-detail-pane .cb-td-title > .cb-rank-badge,
+  #battle-screen #cb-target-detail-pane .cb-td-title .cb-rank-badge {
+    height: 13px;
+  }
+
+  #battle-screen #cb-party-panes[data-party-layout="1-2"] .cb-rank-badge {
+    height: 12px;
+  }
+
+  #battle-screen #cb-party-panes[data-party-layout="3-6"] .cb-rank-badge {
+    height: 11px;
+  }
+
+  #battle-screen .cb-enemy-card .cb-e-title > .cb-rank-badge,
+  #battle-screen .cb-enemy-card .cb-e-title .cb-rank-badge {
+    height: 10px;
     margin-right: 2px;
   }
 }

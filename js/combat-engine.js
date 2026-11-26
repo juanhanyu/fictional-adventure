@@ -154,6 +154,35 @@
     return String(raw || '').replace(/（[^）]*）\s*$/, '').replace(/\([^)]*\)\s*$/, '').trim();
   }
 
+  function shortEnemyPlateName(name) {
+    const raw = String(name || '').trim();
+    if (!raw) return '';
+    const stripped = raw
+      .replace(/[（(][^）)]*[）)]/g, '')
+      .replace(/[·・]?\s*「[^」]*」\s*$/, '')
+      .trim();
+    return stripped || raw.replace(/[（()）]/g, '').trim() || raw;
+  }
+
+  function shortPartyCardName(name) {
+    const base = shortEnemyPlateName(name);
+    if (base.length > 5 && /[·・]/.test(base)) {
+      const head = base.split(/[·・]/)[0].trim();
+      if (head) return head;
+    }
+    return base;
+  }
+
+  function shortAllyRoleLabel(role, fallback) {
+    const raw = String(role || '').trim();
+    if (!raw) return fallback || '前排主力';
+    if (raw.length > 6 && /\s*[·・]\s*/.test(raw)) {
+      const head = raw.split(/\s*[·・]\s*/)[0].trim();
+      if (head) return head;
+    }
+    return raw;
+  }
+
   const ELEM_LABEL = {
     ice: '冰系',
     water: '水系',
@@ -1049,7 +1078,7 @@
         {
           id: 'reno',
           name: '雷纳德',
-          title: '前排主力 · 维斯特利亚',
+          title: '前排主力',
           spriteId: 'reno',
           role: 'vanguard',
           slot: 4,
@@ -7636,6 +7665,7 @@
     const pImg = resolveCharImg('sylvia', p.hp < p.mhp * 0.4 ? 'serious' : 'normal', stageAge, { disguise: isVol3Disguise });
     const allies = Array.isArray(b.allies) ? b.allies : [];
     const totalParty = 1 + allies.length;
+    const isCompactParty = totalParty >= 3;
     const hasVanguardAlly = allies.length > 0;
     const playerStage = document.getElementById('cb-player-stage');
     if (playerStage) {
@@ -7749,12 +7779,19 @@
         const elemMeta = ALLY_ELEM_META[nextElem] || ALLY_ELEM_META.earth;
         const aHpPct = Math.max(0, Math.min(100, (primaryAlly.hp / Math.max(1, primaryAlly.mhp)) * 100));
         const aShPct = Math.max(0, Math.min(100, ((primaryAlly.shield || 0) / Math.max(1, primaryAlly.maxShield || 160)) * 100));
+        const primaryAllyDisplayName = isCompactParty ? shortPartyCardName(primaryAlly.name) : primaryAlly.name;
+        const primaryAllyRole = shortAllyRoleLabel(primaryAlly.title, '前排主力');
+        const primaryAllyTitleAttr = String(primaryAlly.name || '').replace(/"/g, '&quot;');
+        const primaryAllyHpNumHtml = isCompactParty
+          ? `<span class="cb-party-hp-num" title="HP ${primaryAlly.hp}/${primaryAlly.mhp}">${primaryAlly.hp}/${primaryAlly.mhp}</span>`
+          : '';
         allyPane.innerHTML = `
           <div class="cb-ally-header">
             <div class="cb-ally-title">
-              <div class="cb-ally-name">${primaryAlly.name}</div>
-              <div class="cb-ally-role">${primaryAlly.title || '前排主力'}</div>
+              <div class="cb-ally-name" title="${primaryAllyTitleAttr}">${primaryAllyDisplayName}</div>
+              <div class="cb-ally-role">${primaryAllyRole}</div>
             </div>
+            ${primaryAllyHpNumHtml}
             <span class="cb-ally-elem-badge elem-${nextElem}" data-next-elem="${nextElem}">下回合 · ${elemMeta.badge}</span>
           </div>
           <div class="cb-bars-wrap">
@@ -7849,12 +7886,19 @@
                   <div class="cb-stat-top"><span>护壁</span><span class="cb-ally-shield-txt">${exShield}/${exMaxShield}</span></div>
                   <div class="cb-stat-track"><div class="cb-stat-fill shield ally-shield" style="width:${exShPct.toFixed(1)}%"></div></div>
                 </div>`;
+            const exDisplayName = isCompactParty ? shortPartyCardName(exName) : exName;
+            const exRoleLabel = shortAllyRoleLabel(extraAlly.title, '同队协战');
+            const exTitleAttr = String(exName).replace(/"/g, '&quot;');
+            const exHpNumHtml = isCompactParty
+              ? `<span class="cb-party-hp-num" title="HP ${exHp}/${exMhp}">${exHp}/${exMhp}</span>`
+              : '';
             exPane.innerHTML = `
               <div class="cb-ally-header">
                 <div class="cb-ally-title">
-                  <div class="cb-ally-name">${exName}</div>
-                  <div class="cb-ally-role">${extraAlly.title || '同队协战'}</div>
+                  <div class="cb-ally-name" title="${exTitleAttr}">${exDisplayName}</div>
+                  <div class="cb-ally-role">${exRoleLabel}</div>
                 </div>
+                ${exHpNumHtml}
                 <span class="cb-ally-elem-badge elem-${exElem}" data-next-elem="${exElem}">${exBadgeTxt}</span>
               </div>
               <div class="cb-bars-wrap">
@@ -7885,8 +7929,34 @@
       });
     }
 
-    document.getElementById('cb-p-name').textContent = p.name;
+    const pNameEl = document.getElementById('cb-p-name');
+    if (pNameEl) {
+      pNameEl.textContent = isCompactParty ? shortPartyCardName(p.name) : p.name;
+      pNameEl.title = p.name || '';
+    }
     document.getElementById('cb-p-sub').textContent = `物攻 ${p.atk} · 魔攻 ${p.matk} · 双抗 ${p.def}/${p.mdef}`;
+
+    const pHeaderEl = pane ? pane.querySelector('.cb-p-header') : null;
+    if (pHeaderEl) {
+      let pHpNumEl = document.getElementById('cb-p-hp-num');
+      if (isCompactParty) {
+        if (!pHpNumEl) {
+          pHpNumEl = document.createElement('span');
+          pHpNumEl.id = 'cb-p-hp-num';
+          pHpNumEl.className = 'cb-party-hp-num';
+          const apRowEl = document.getElementById('cb-ap-row');
+          if (apRowEl && apRowEl.parentNode === pHeaderEl) {
+            pHeaderEl.insertBefore(pHpNumEl, apRowEl);
+          } else {
+            pHeaderEl.appendChild(pHpNumEl);
+          }
+        }
+        pHpNumEl.textContent = `${p.hp}/${p.mhp}`;
+        pHpNumEl.title = `HP ${p.hp}/${p.mhp}${p.shield > 0 ? ` (+盾${p.shield})` : ''}`;
+      } else if (pHpNumEl && pHpNumEl.parentNode) {
+        pHpNumEl.remove();
+      }
+    }
 
     let gemsHtml = '';
     for (let i = 0; i < b.apMax; i++) {
@@ -8066,6 +8136,9 @@
           })}</div>`
         : `<div class="cb-e-avatar${eVisual.isSvg ? ' is-svg' : ''}${eVisual.isCgPortrait ? ' is-cg-portrait' : ''}">${eVisual.html}</div>`;
 
+      const safeEnemyFullName = String(e.name || '').replace(/"/g, '&quot;');
+      const shortEnemyName = shortEnemyPlateName(e.name);
+
       return `
         <div class="cb-slot cb-enemy-slot is-occupied" data-side="enemy" data-slot="${coords.slot}" data-row="${coords.row}" data-col="${coords.col}">
           <div class="cb-slot-pad"></div>
@@ -8079,7 +8152,7 @@
               <span class="cb-hp-microtag" data-eidx="${idx}"></span>
               <div class="cb-e-micro-head">
                 <span class="cb-lock-diamond" aria-hidden="true"></span>
-                <span class="cb-e-title">${e.name}</span>
+                <span class="cb-e-title" title="${safeEnemyFullName}">${shortEnemyName}</span>
                 ${lockPipHtml}
               </div>
               <div class="cb-stat-track">
@@ -8768,6 +8841,8 @@
     document.querySelectorAll('#battle-screen .cb-ally-extra-slot, #battle-screen .cb-ally-extra-pane').forEach(el => {
       if (el && el.parentNode) el.remove();
     });
+    const pHpNum = document.getElementById('cb-p-hp-num');
+    if (pHpNum && pHpNum.parentNode) pHpNum.remove();
     const partyPanes = document.getElementById('cb-party-panes');
     if (partyPanes) {
       partyPanes.setAttribute('data-party-layout', '1-2');
@@ -9012,6 +9087,8 @@
     bs.querySelectorAll('.cb-ally-extra-slot, .cb-ally-extra-pane').forEach(el => {
       if (el && el.parentNode) el.remove();
     });
+    const pHpNum = bs.querySelector('#cb-p-hp-num');
+    if (pHpNum && pHpNum.parentNode) pHpNum.remove();
     const partyPanes = bs.querySelector('#cb-party-panes');
     if (partyPanes) {
       partyPanes.setAttribute('data-party-layout', '1-2');

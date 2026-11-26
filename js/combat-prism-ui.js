@@ -131,6 +131,11 @@
     hoveredWingIdx: null,
     hoveredBladeIdx: null,
     hoveredSkillId: null,
+    lastHoveredSkillId: null,
+    hoveringAmpMini: false,
+    hoverLeaveTimer: 0,
+    lastSkillCastAt: 0,
+    castFlashTimer: 0,
     ampPulseTimer: 0,
     lastAmpPct: -1,
     lastAmpWheelAt: 0,
@@ -149,6 +154,7 @@
     avForecastEl: null,
     currentItems: [],
     lastBattleWaveKey: '',
+    lastBattleTurn: -1,
     lastBattleState: null,
     lastBladeSig: '',
     lastAvSig: '',
@@ -210,13 +216,21 @@
     return null;
   }
 
+  function isEnemyTurnState(state) {
+    if (!state) return false;
+    if (state.isEnemyTurn || state.enemyTurn) return true;
+    if (state.turnPhase && state.turnPhase !== 'player') return true;
+    if (state.turnOwner && state.turnOwner !== 'player') return true;
+    return false;
+  }
+
   function shouldHardDissolve(battleOverride) {
     const bs = getBattleScreen();
     if (!bs || !isVisible(bs)) return true;
     if (document.getElementById('cb-palace-modal') || document.getElementById('cb-result-modal')) return true;
     if (hasBlockingOverlay()) return true;
     const b = battleOverride || getEngineBattle();
-    if (b && b.over) return true;
+    if (b && (b.over || isEnemyTurnState(b))) return true;
     return false;
   }
 
@@ -252,6 +266,58 @@
       uiState.animDissolveUntil = 0;
       sync();
     }, 95);
+  }
+
+  function readRemainingAp(state) {
+    if (!state) return 0;
+    if (typeof state.ap === 'number' && isFinite(state.ap)) return state.ap;
+    if (state.player && typeof state.player.ap === 'number' && isFinite(state.player.ap)) return state.player.ap;
+    return 0;
+  }
+
+  function isPlayerTurnActive(state) {
+    if (!state || state.over) return false;
+    if (isEnemyTurnState(state)) return false;
+    if (typeof document !== 'undefined') {
+      const endBtn = document.getElementById('cb-btn-endturn');
+      if (endBtn && endBtn.disabled) return false;
+    }
+    return true;
+  }
+
+  function triggerEndTurnAction() {
+    cancelDissolve();
+    const realEnd = document.getElementById('cb-btn-endturn');
+    if (!realEnd || realEnd.disabled) return false;
+    uiState.menuMode = 'root';
+    uiState.hoveredBladeIdx = null;
+    uiState.hoveringAmpMini = false;
+    uiState.lastBladeSig = '';
+    uiState.lastSkillCastAt = 0;
+    clearRealHover({ resetLast: true });
+    realEnd.click();
+    const nextState = getEngineBattle();
+    if (!shouldHardDissolve(nextState)) {
+      startBriefDissolve();
+    }
+    sync(nextState);
+    return true;
+  }
+
+  function triggerCastFlash() {
+    if (!uiState.cascadeListEl || !uiState.cascadeListEl.isConnected) return;
+    if (uiState.castFlashTimer) {
+      clearTimeout(uiState.castFlashTimer);
+      uiState.castFlashTimer = 0;
+    }
+    const target = uiState.cascadeListEl;
+    target.classList.remove('is-cast-flash');
+    void target.offsetWidth;
+    target.classList.add('is-cast-flash');
+    uiState.castFlashTimer = setTimeout(() => {
+      uiState.castFlashTimer = 0;
+      if (target && target.isConnected) target.classList.remove('is-cast-flash');
+    }, 180);
   }
 
   function readSkillCards() {
@@ -578,7 +644,73 @@
     }, 360);
   }
 
-  function applyAmpPct(pct) {
+  function cancelPendingHoverClear() {
+    if (uiState.hoverLeaveTimer) {
+      clearTimeout(uiState.hoverLeaveTimer);
+      uiState.hoverLeaveTimer = 0;
+    }
+  }
+
+  function findSkillItemAndBtn(skillId) {
+    if (!skillId) return { item: null, btn: null };
+    const item = uiState.currentItems.find(it => it && it.kind === 'skill' && it.skillId === skillId) || null;
+    if (item) {
+      return { item, btn: resolveLiveSourceBtn(item) };
+    }
+    if (typeof document !== 'undefined') {
+      const box = getSkillSourceContainer();
+      if (box) {
+        const cards = box.querySelectorAll('.cb-skill-card');
+        for (let i = 0; i < cards.length; i++) {
+          if (cards[i].getAttribute('data-sk') === skillId) {
+            return { item: null, btn: cards[i] };
+          }
+        }
+      }
+    }
+    return { item: null, btn: null };
+  }
+
+  function resolveHoveredBladeSkillId() {
+    if (uiState.menuMode !== 'skills' && uiState.menuMode !== 'guard') return null;
+    if (uiState.cascadeListEl) {
+      try {
+        const hoveredBtn = uiState.cascadeListEl.querySelector('.cb-blade:hover');
+        if (hoveredBtn) {
+          const sid = hoveredBtn.getAttribute('data-sk') || '';
+          if (sid) return sid;
+        }
+      } catch (e) {}
+    }
+    if (uiState.hoveredBladeIdx != null) {
+      const it = uiState.currentItems[uiState.hoveredBladeIdx];
+      if (it && it.kind === 'skill' && it.skillId) return it.skillId;
+    }
+    return null;
+  }
+
+  function applySkillHoverPreviewNow(skillId, battleState) {
+    if (!skillId) return false;
+    cancelPendingHoverClear();
+    const { btn } = findSkillItemAndBtn(skillId);
+    syncSkillHoverPreview(btn, true, skillId);
+    syncAvForecast(skillId, battleState || uiState.lastBattleState || getEngineBattle());
+    return true;
+  }
+
+  function scheduleHoverLeaveClear(expectedSkillId) {
+    cancelPendingHoverClear();
+    uiState.hoverLeaveTimer = setTimeout(() => {
+      uiState.hoverLeaveTimer = 0;
+      if (uiState.hoveringAmpMini) return;
+      if (resolveHoveredBladeSkillId()) return;
+      if (uiState.hoveredBladeIdx != null) return;
+      if (expectedSkillId && uiState.hoveredSkillId && uiState.hoveredSkillId !== expectedSkillId) return;
+      clearRealHover();
+    }, 65);
+  }
+
+  function applyAmpPct(pct, opts) {
     const info = readOvercastInfo();
     if (!info.enabled) return false;
     let val = Number(pct);
@@ -586,6 +718,24 @@
     if (val > 1) val = val / 100;
     val = Math.max(0, Math.min(info.maxAmpCap, val));
     val = Math.round(val * 100) / 100;
+
+    const inSkillCascade = uiState.menuMode === 'skills' || uiState.menuMode === 'guard';
+    let previewSid = resolveHoveredBladeSkillId();
+    if (!previewSid && inSkillCascade && uiState.hoveredSkillId) {
+      previewSid = uiState.hoveredSkillId;
+    }
+    if (!previewSid && inSkillCascade && (uiState.hoveringAmpMini || (opts && opts.preserveLastHover)) && uiState.lastHoveredSkillId) {
+      previewSid = uiState.lastHoveredSkillId;
+    }
+    if (previewSid && !findSkillItemAndBtn(previewSid).btn && !uiState.currentItems.some(it => it && it.kind === 'skill' && it.skillId === previewSid)) {
+      previewSid = null;
+    }
+
+    // 升/降档前先锁定引擎悬停技能，避免 renderCombatUI 重绘双血条时预扣段归零后再缓慢爬升
+    if (previewSid) {
+      cancelPendingHoverClear();
+      syncSkillHoverPreview(findSkillItemAndBtn(previewSid).btn, true, previewSid);
+    }
 
     const targetInt = Math.round(val * 100);
     if (global.CombatEngine && typeof global.CombatEngine.setOvercastPct === 'function') {
@@ -599,6 +749,15 @@
     if (!uiState.syncing && uiState.lastAmpPct !== targetInt) {
       sync();
     }
+
+    if (uiState.menuMode === 'skills' || uiState.menuMode === 'guard') {
+      const liveHoverSid = resolveHoveredBladeSkillId();
+      const activeSid = liveHoverSid || previewSid;
+      if (activeSid) {
+        if (liveHoverSid) uiState.lastHoveredSkillId = liveHoverSid;
+        applySkillHoverPreviewNow(activeSid, getEngineBattle());
+      }
+    }
     return true;
   }
 
@@ -609,7 +768,7 @@
     return applyAmpPct(pct);
   }
 
-  function cycleAmp(delta) {
+  function cycleAmp(delta, opts) {
     const wasDissolving = cancelDissolve();
     const step = delta < 0 ? -1 : 1;
     const info = readOvercastInfo();
@@ -624,7 +783,7 @@
       // 1:1 标杆左键/E 原地升档：0% → 20% → 40% → 60% → 0%（按 maxAmpCap 动态封顶循环）
       const higher = tiers.find(v => v > cur + 0.005);
       const nextVal = higher != null ? higher : tiers[0];
-      return applyAmpPct(nextVal);
+      return applyAmpPct(nextVal, opts);
     }
 
     // 1:1 标杆右键/Shift+E 原地降档：60% → 40% → 20% → 0%（已在 0% 时静默止步）
@@ -640,10 +799,10 @@
       if (wasDissolving) sync();
       return false;
     }
-    return applyAmpPct(nextVal);
+    return applyAmpPct(nextVal, opts);
   }
 
-  function stepAmpByWheel(delta) {
+  function stepAmpByWheel(delta, opts) {
     cancelDissolve();
     const step = delta < 0 ? -1 : 1;
     const info = readOvercastInfo();
@@ -654,7 +813,7 @@
     if (step > 0) {
       const higher = tiers.find(v => v > cur + 0.005);
       if (higher == null) return false;
-      return applyAmpPct(higher);
+      return applyAmpPct(higher, opts);
     }
     let lower = null;
     for (let i = tiers.length - 1; i >= 0; i--) {
@@ -664,17 +823,17 @@
       }
     }
     if (lower == null) return false;
-    return applyAmpPct(lower);
+    return applyAmpPct(lower, opts);
   }
 
-  function onAmpWheel(ev) {
+  function onAmpWheel(ev, opts) {
     ev.preventDefault();
     ev.stopPropagation();
     if (!ev.deltaY) return;
     const now = Date.now();
     if (now - uiState.lastAmpWheelAt < 90) return;
     uiState.lastAmpWheelAt = now;
-    stepAmpByWheel(ev.deltaY < 0 ? 1 : -1);
+    stepAmpByWheel(ev.deltaY < 0 ? 1 : -1, opts);
   }
 
   function resolveLiveSourceBtn(item) {
@@ -706,7 +865,6 @@
       if (isEnter) {
         if (btn && typeof btn.onfocus === 'function') {
           btn.onfocus();
-          return;
         }
         if (skillId && global.CombatEngine && typeof global.CombatEngine.syncHoverEnemyGlow === 'function') {
           global.CombatEngine.syncHoverEnemyGlow(skillId);
@@ -722,7 +880,11 @@
     } catch (e) {}
   }
 
-  function clearRealHover() {
+  function clearRealHover(opts) {
+    cancelPendingHoverClear();
+    if (opts && opts.resetLast) {
+      uiState.lastHoveredSkillId = null;
+    }
     const cards = readSkillCards();
     if (cards.length && cards[0].sourceBtn) {
       syncSkillHoverPreview(cards[0].sourceBtn, false, null);
@@ -742,24 +904,111 @@
     } else {
       if (!liveBtn || liveBtn.disabled) return false;
     }
-    uiState.hoveredBladeIdx = null;
-    uiState.hoveredWingIdx = null;
-    uiState.menuMode = 'root';
-    uiState.lastBladeSig = '';
+
+    const prevMode = uiState.menuMode;
+    const prevWaveKey = uiState.lastBattleWaveKey;
+    const keepSkillsMode = isSkill && prevMode === 'skills';
+
     cancelDissolve();
-    clearRealHover();
+    cancelPendingHoverClear();
+    uiState.hoveredWingIdx = null;
+    if (keepSkillsMode) {
+      // 先保持 mode-skills 并在施法后按剩余 AP 判定是否续留，避免过早收合导致连点落空
+      clearRealHover();
+    } else {
+      uiState.hoveredBladeIdx = null;
+      uiState.hoveringAmpMini = false;
+      uiState.menuMode = 'root';
+      uiState.lastBladeSig = '';
+      clearRealHover({ resetLast: true });
+    }
+
+    let res = null;
     if (isSkill && global.CombatEngine && typeof global.CombatEngine.useSkill === 'function') {
       // 直接调用 CombatEngine.useSkill，绕开屏外隐藏 .cb-skill-card 的粗触控两段确认与 140ms 防抖
-      const res = global.CombatEngine.useSkill(item.skillId);
+      res = global.CombatEngine.useSkill(item.skillId);
       if (res && res.ok === false) {
         sync();
         return false;
       }
-      startBriefDissolve();
     } else if (liveBtn) {
-      if (isSkill) startBriefDissolve();
       liveBtn.click();
     }
+
+    if (isSkill) {
+      uiState.lastSkillCastAt = Date.now();
+      const nextState = getEngineBattle();
+      const nextWaveKey = nextState ? `${nextState.battleInstanceId || 0}:${nextState.waveIdx || 0}` : '';
+      const waveChanged = !!(prevWaveKey && nextWaveKey && nextWaveKey !== prevWaveKey);
+      const canContinueSkills = keepSkillsMode
+        && !(res && (res.battleEndedOrAdvanced || res.exposedFail || res.defeated))
+        && !waveChanged
+        && isPlayerTurnActive(nextState)
+        && readRemainingAp(nextState) > 0;
+
+      if (canContinueSkills) {
+        // 仍有 AP 可继续出招：停留在 mode-skills 原地刷新扇叶，绝不叠加阻塞点击的 .dissolved 锁
+        uiState.menuMode = 'skills';
+        sync(nextState);
+        triggerCastFlash();
+
+        let keptHoverSid = null;
+        let keptHoverWrap = null;
+        if (uiState.cascadeListEl) {
+          try {
+            const hoveredBtn = uiState.cascadeListEl.querySelector('.cb-blade:hover');
+            if (hoveredBtn && !hoveredBtn.disabled) {
+              const hIdx = Number(hoveredBtn.getAttribute('data-prism-idx'));
+              const hSid = hoveredBtn.getAttribute('data-sk') || '';
+              if (isFinite(hIdx)) uiState.hoveredBladeIdx = hIdx;
+              if (hSid) keptHoverSid = hSid;
+              keptHoverWrap = hoveredBtn.closest('.cb-blade-wrap');
+            }
+          } catch (e) {}
+        }
+        if (keptHoverSid) {
+          uiState.lastHoveredSkillId = keptHoverSid;
+          if (keptHoverWrap) {
+            const rot = keptHoverWrap.dataset.rot || '0';
+            keptHoverWrap.classList.add('hovered');
+            keptHoverWrap.style.transform = `translateX(0) rotate(${rot}deg) scale(1.015)`;
+          }
+          applySkillHoverPreviewNow(keptHoverSid, nextState);
+        } else {
+          uiState.hoveredBladeIdx = null;
+          if (uiState.cascadeListEl) {
+            uiState.cascadeListEl.querySelectorAll('.cb-blade-wrap.hovered').forEach(w => {
+              w.classList.remove('hovered');
+              const rot = w.dataset.rot || '0';
+              w.style.transform = `rotate(${rot}deg)`;
+            });
+          }
+        }
+        renderCurrentSvg();
+        return true;
+      }
+
+      uiState.hoveredBladeIdx = null;
+      uiState.hoveringAmpMini = false;
+      uiState.menuMode = 'root';
+      uiState.lastBladeSig = '';
+      clearRealHover({ resetLast: true });
+      if (!shouldHardDissolve(nextState)) {
+        startBriefDissolve();
+      }
+      sync(nextState);
+      return true;
+    }
+
+    if (item.skillId === 'tool_endturn') {
+      const nextState = getEngineBattle();
+      if (!shouldHardDissolve(nextState)) {
+        startBriefDissolve();
+      }
+      sync(nextState);
+      return true;
+    }
+
     sync();
     return true;
   }
@@ -774,7 +1023,10 @@
       ? nextMode
       : 'root';
     if (uiState.menuMode !== valid) {
-      clearRealHover();
+      cancelPendingHoverClear();
+      clearRealHover({ resetLast: true });
+      if (valid !== 'skills') uiState.lastSkillCastAt = 0;
+      if (valid === 'root') uiState.hoveringAmpMini = false;
       uiState.menuMode = valid;
       uiState.hoveredWingIdx = null;
       uiState.hoveredBladeIdx = null;
@@ -797,11 +1049,7 @@
       setMode('guard');
       return;
     }
-    const endBtn = document.getElementById('cb-btn-endturn');
-    if (endBtn && !endBtn.disabled) {
-      endBtn.click();
-      sync();
-    }
+    triggerEndTurnAction();
   }
   function openAssist() { setMode('assist'); }
   function closeCascade() { setMode('root'); }
@@ -1496,15 +1744,7 @@
       endTop.title = '结束本回合，留存最多 1 点 AP（快捷键 X）';
       endTop.innerHTML = '结束回合 <span class="cb-kbd">X</span>';
       endTop.addEventListener('click', () => {
-        cancelDissolve();
-        const realEnd = document.getElementById('cb-btn-endturn');
-        if (realEnd && !realEnd.disabled) {
-          uiState.menuMode = 'root';
-          uiState.lastBladeSig = '';
-          clearRealHover();
-          realEnd.click();
-          sync();
-        }
+        triggerEndTurnAction();
       });
       if (retreatBtn && retreatBtn.parentNode === tools) {
         tools.insertBefore(endTop, retreatBtn);
@@ -2038,8 +2278,10 @@
       ':where(.cb-av-row.ally-row .cb-av-fallback){color:#8B5B1E;}',
       '@keyframes cbAmpPulse{0%{filter:brightness(1);transform:scale(1);}35%{filter:brightness(1.20) drop-shadow(0 0 10px rgba(56,189,248,0.62));transform:scale(1.032);}100%{filter:brightness(1);transform:scale(1);}}',
       '@keyframes cbAmpPulseGold{0%{filter:brightness(1);transform:scale(1);}35%{filter:brightness(1.24) drop-shadow(0 0 14px rgba(229,192,110,0.85));transform:scale(1.04);}100%{filter:brightness(1);transform:scale(1);}}',
+      '@keyframes cbCastFlash{0%{opacity:1;}28%{opacity:0.84;}100%{opacity:1;}}',
       ':where(.is-amp-pulse){animation:cbAmpPulse 0.34s cubic-bezier(0.22,1,0.36,1);}',
       ':where(.amp-t3.is-amp-pulse){animation:cbAmpPulseGold 0.36s cubic-bezier(0.22,1,0.36,1);}',
+      ':where(#cb-prism-blade-list.is-cast-flash){animation:cbCastFlash 0.16s ease-out;}',
     ].join('');
     (document.head || document.documentElement).appendChild(style);
   }
@@ -2099,7 +2341,7 @@
                 <span class="cb-pw-title">冰水术式</span>
                 <span class="cb-pw-en">MAGIC</span>
               </div>
-              <span class="cb-pw-sub" id="cb-pw-magic-sub">展开全部可用战术术式</span>
+              <span class="cb-pw-sub" id="cb-pw-magic-sub">展开可用术式</span>
             </div>
             <span class="cb-pw-arrow">▸</span>
           </button>
@@ -2185,9 +2427,26 @@
     nav.querySelector('#cb-pw-guard').addEventListener('click', () => { cancelDissolve(); openGuard(); });
     nav.querySelector('#cb-pw-assist').addEventListener('click', () => { cancelDissolve(); openAssist(); });
     nav.querySelector('#cb-pw-back').addEventListener('click', () => { cancelDissolve(); closeCascade(); });
-    ampMiniBtn.addEventListener('click', () => { cancelDissolve(); cycleAmp(1); });
-    ampMiniBtn.addEventListener('contextmenu', ev => { ev.preventDefault(); ev.stopPropagation(); cancelDissolve(); cycleAmp(-1); });
-    ampMiniBtn.addEventListener('wheel', onAmpWheel, { passive: false });
+    ampMiniBtn.addEventListener('mouseenter', () => {
+      uiState.hoveringAmpMini = true;
+      cancelPendingHoverClear();
+      if ((uiState.menuMode === 'skills' || uiState.menuMode === 'guard') && uiState.lastHoveredSkillId) {
+        const sid = uiState.lastHoveredSkillId;
+        const stillInCascade = uiState.currentItems.some(it => it && it.kind === 'skill' && it.skillId === sid);
+        if (stillInCascade && uiState.hoveredSkillId !== sid) {
+          applySkillHoverPreviewNow(sid, uiState.lastBattleState || getEngineBattle());
+        }
+      }
+    });
+    ampMiniBtn.addEventListener('mouseleave', ev => {
+      uiState.hoveringAmpMini = false;
+      const nextEl = ev && ev.relatedTarget;
+      if (nextEl && nextEl.closest && nextEl.closest('.cb-blade, #cb-pw-amp-mini')) return;
+      scheduleHoverLeaveClear(uiState.hoveredSkillId);
+    });
+    ampMiniBtn.addEventListener('click', () => { cancelDissolve(); cycleAmp(1, { preserveLastHover: true }); });
+    ampMiniBtn.addEventListener('contextmenu', ev => { ev.preventDefault(); ev.stopPropagation(); cancelDissolve(); cycleAmp(-1, { preserveLastHover: true }); });
+    ampMiniBtn.addEventListener('wheel', ev => onAmpWheel(ev, { preserveLastHover: true }), { passive: false });
 
     return nav;
   }
@@ -2234,6 +2493,114 @@
     ).join('||') + `|${uiState.partyLayout || ''}:${Math.round(uiState.partyDockTop || 0)}:${Math.round(uiState.targetPaneLeft || 0)}:${Math.round(uiState.targetPaneTop || 0)}`;
   }
 
+  function canPatchExistingBlades(listItems) {
+    if (!uiState.cascadeListEl) return false;
+    const wraps = uiState.cascadeListEl.children;
+    if (wraps.length !== listItems.length) return false;
+    for (let i = 0; i < listItems.length; i++) {
+      const wrap = wraps[i];
+      if (!wrap || wrap.getAttribute('data-prism-mode') !== uiState.menuMode) return false;
+      const btn = wrap.querySelector('.cb-blade');
+      if (!btn) return false;
+      if ((btn.getAttribute('data-sk') || '') !== (listItems[i].skillId || '')) return false;
+      if (btn.getAttribute('data-prism-idx') !== String(i)) return false;
+    }
+    return true;
+  }
+
+  function buildBladeRightTagsHtml(item) {
+    const expHtml = item.expKind === 'warn'
+      ? `<span class="cb-bl-exp is-warn" title="耳目近在咫尺，施放将增加暴露度">${escapeHtml(item.expText)}</span>`
+      : (item.expKind === 'safe'
+        ? `<span class="cb-bl-exp is-safe" title="${escapeHtml(item.expText || '隐蔽安全')}">隐蔽</span>`
+        : '');
+    const badgeHtml = item.oppLabel
+      ? `<span class="cb-bl-tag opp">${escapeHtml(item.oppLabel)}</span>`
+      : (!expHtml && item.pathLabel ? `<span class="cb-bl-tag">◆${escapeHtml(item.pathLabel)}</span>` : '');
+    return {
+      innerHtml: expHtml + badgeHtml,
+      key: `${item.expKind || ''}|${item.expText || ''}|${item.oppLabel || ''}|${item.pathLabel || ''}`,
+    };
+  }
+
+  function patchBladeElement(wrap, btn, item, g, idx) {
+    const rotStr = String(g.rot);
+    const isHovered = uiState.hoveredBladeIdx === idx;
+    wrap.setAttribute('data-prism-mode', uiState.menuMode);
+    wrap.dataset.rot = rotStr;
+    wrap.style.left = `${g.left}px`;
+    wrap.style.top = `${g.top}px`;
+    wrap.classList.toggle('hovered', isHovered);
+    wrap.style.transform = isHovered
+      ? `translateX(0) rotate(${rotStr}deg) scale(1.015)`
+      : `rotate(${rotStr}deg)`;
+
+    const expCls = item.expKind === 'warn' ? ' is-exp-warn' : (item.expKind === 'safe' ? ' is-exp-safe' : '');
+    btn.className = 'cb-blade' + (g.compact ? ' compact' : '') + (item.oppLabel ? ' opp-ready' : '') + expCls;
+    btn.disabled = !!item.disabled;
+    btn.setAttribute('data-prism-idx', String(idx));
+    if (item.skillId) btn.setAttribute('data-sk', item.skillId);
+    else btn.removeAttribute('data-sk');
+
+    if (g.forceHeight && g.bladeH) {
+      btn.style.height = `${g.bladeH}px`;
+      btn.style.minHeight = `${g.bladeH}px`;
+    } else {
+      btn.style.height = '';
+      btn.style.minHeight = '';
+    }
+    if (g.forceWidth && g.bladeW) {
+      btn.style.width = `${g.bladeW}px`;
+    } else {
+      btn.style.width = '';
+    }
+
+    const keyEl = btn.querySelector('.cb-bl-key');
+    if (keyEl && keyEl.textContent !== item.key) keyEl.textContent = item.key;
+
+    const nameEl = btn.querySelector('.cb-bl-name');
+    if (nameEl) {
+      const hasArt = !!item.iconHtml;
+      const nameKey = `${item.name}|${hasArt ? 1 : 0}`;
+      if (nameEl.getAttribute('data-name-key') !== nameKey) {
+        nameEl.setAttribute('data-name-key', nameKey);
+        nameEl.classList.toggle('has-art', hasArt);
+        if (hasArt) {
+          nameEl.innerHTML = `<span class="cb-bl-art-wrap" aria-hidden="true">${item.iconHtml}</span>${escapeHtml(item.name)}`;
+        } else {
+          nameEl.textContent = item.name;
+        }
+      }
+    }
+
+    const topRow = btn.querySelector('.cb-bl-top');
+    if (topRow) {
+      const { innerHtml, key: tagsKey } = buildBladeRightTagsHtml(item);
+      let tagsEl = topRow.querySelector('.cb-bl-tags-right');
+      if (innerHtml) {
+        if (!tagsEl) {
+          tagsEl = document.createElement('span');
+          tagsEl.className = 'cb-bl-tags-right';
+          topRow.appendChild(tagsEl);
+        }
+        if (tagsEl.getAttribute('data-tags-key') !== tagsKey) {
+          tagsEl.setAttribute('data-tags-key', tagsKey);
+          tagsEl.innerHTML = innerHtml;
+        }
+      } else if (tagsEl) {
+        tagsEl.remove();
+      }
+    }
+
+    const metaEl = btn.querySelector('.cb-bl-meta');
+    const metaText = item.foot || item.desc || '';
+    if (metaEl && metaEl.textContent !== metaText) metaEl.textContent = metaText;
+
+    const costEl = btn.querySelector('.cb-bl-cost');
+    const costText = item.cost || '';
+    if (costEl && costEl.textContent !== costText) costEl.textContent = costText;
+  }
+
   function sync(battleOverride) {
     if (uiState.syncing) return;
     uiState.syncing = true;
@@ -2246,22 +2613,45 @@
       const bwKey = b ? `${b.battleInstanceId || 0}:${b.waveIdx || 0}` : '';
       if (bwKey && bwKey !== uiState.lastBattleWaveKey) {
         uiState.lastBattleWaveKey = bwKey;
+        uiState.lastBattleTurn = (b && typeof b.turn === 'number') ? b.turn : -1;
         uiState.menuMode = 'root';
         uiState.logExpanded = false;
         uiState.hoveredWingIdx = null;
         uiState.hoveredBladeIdx = null;
         uiState.hoveredSkillId = null;
+        uiState.lastHoveredSkillId = null;
+        uiState.hoveringAmpMini = false;
+        uiState.lastSkillCastAt = 0;
         uiState.lastAmpPct = -1;
         uiState.lastBladeSig = '';
         uiState.lastAvSig = '';
         uiState.animDissolveUntil = 0;
+        cancelPendingHoverClear();
         if (uiState.dissolveTimer) {
           clearTimeout(uiState.dissolveTimer);
           uiState.dissolveTimer = 0;
         }
+        if (uiState.castFlashTimer) {
+          clearTimeout(uiState.castFlashTimer);
+          uiState.castFlashTimer = 0;
+        }
         if (uiState.ampPulseTimer) {
           clearTimeout(uiState.ampPulseTimer);
           uiState.ampPulseTimer = 0;
+        }
+      } else if (b) {
+        const turnChanged = typeof b.turn === 'number' && uiState.lastBattleTurn >= 0 && b.turn !== uiState.lastBattleTurn;
+        if (typeof b.turn === 'number') uiState.lastBattleTurn = b.turn;
+        if (turnChanged || isEnemyTurnState(b)) {
+          if (uiState.menuMode !== 'root' || uiState.hoveredSkillId || uiState.lastHoveredSkillId) {
+            uiState.menuMode = 'root';
+            uiState.hoveredWingIdx = null;
+            uiState.hoveredBladeIdx = null;
+            uiState.hoveringAmpMini = false;
+            uiState.lastSkillCastAt = 0;
+            uiState.lastBladeSig = '';
+            clearRealHover({ resetLast: true });
+          }
         }
       }
 
@@ -2330,15 +2720,15 @@
           : '结束回合 <span class="cb-kbd">X</span>';
       }
 
-      // Sync Root Wing [W]
+      // Sync Root Wing [W]（1280×720 窄翼零截断精简副标）
       const magicSub = document.getElementById('cb-pw-magic-sub');
       if (magicSub) {
         if (enabledSkills.length === 0 && b && !b.over) {
-          magicSub.textContent = 'AP 已用尽 · 请点击「结束回合 [X]」';
+          magicSub.textContent = 'AP 用尽 · 结束回合 [X]';
         } else if (oppSkills.length > 0) {
-          magicSub.textContent = `✦ ${oppSkills.length} 项破招/看破就绪 · 共 ${enabledSkills.length}/${allSkills.length} 式`;
+          magicSub.textContent = `✦ ${oppSkills.length} 破招就绪 · ${enabledSkills.length}/${allSkills.length}式`;
         } else {
-          magicSub.textContent = `展开术式级联 · 可用 ${enabledSkills.length}/${allSkills.length} 式`;
+          magicSub.textContent = `已就绪 ${enabledSkills.length}/${allSkills.length} 式`;
         }
       }
 
@@ -2464,100 +2854,80 @@
         const nextSig = buildItemsSignature(uiState.menuMode, listItems);
         if (nextSig !== uiState.lastBladeSig) {
           uiState.lastBladeSig = nextSig;
-          uiState.cascadeListEl.innerHTML = '';
 
-          listItems.forEach((item, idx) => {
-            const g = coords[idx];
-            const wrap = document.createElement('div');
-            wrap.className = 'cb-blade-wrap' + (uiState.hoveredBladeIdx === idx ? ' hovered' : '');
-            wrap.style.left = `${g.left}px`;
-            wrap.style.top = `${g.top}px`;
-            wrap.style.transform = uiState.hoveredBladeIdx === idx
-              ? `translateX(0) rotate(${g.rot}deg) scale(1.015)`
-              : `rotate(${g.rot}deg)`;
-
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            const expCls = item.expKind === 'warn' ? ' is-exp-warn' : (item.expKind === 'safe' ? ' is-exp-safe' : '');
-            btn.className = 'cb-blade' + (g.compact ? ' compact' : '') + (item.oppLabel ? ' opp-ready' : '') + expCls;
-            btn.disabled = !!item.disabled;
-            btn.setAttribute('data-prism-idx', String(idx));
-            if (item.skillId) btn.setAttribute('data-sk', item.skillId);
-            if (g.forceHeight && g.bladeH) {
-              btn.style.height = `${g.bladeH}px`;
-              btn.style.minHeight = `${g.bladeH}px`;
+          if (canPatchExistingBlades(listItems)) {
+            // 就地刷新蓝耗/伤害/可用态与坐标，保留既有扇叶 DOM 与悬停状态，避免调档或连招后鼠标 hover 丢失
+            const wraps = uiState.cascadeListEl.children;
+            for (let idx = 0; idx < listItems.length; idx++) {
+              const wrap = wraps[idx];
+              const btn = wrap.querySelector('.cb-blade');
+              patchBladeElement(wrap, btn, listItems[idx], coords[idx], idx);
             }
-            if (g.forceWidth && g.bladeW) {
-              btn.style.width = `${g.bladeW}px`;
-            }
+          } else {
+            uiState.cascadeListEl.innerHTML = '';
 
-            const expHtml = item.expKind === 'warn'
-              ? `<span class="cb-bl-exp is-warn" title="耳目近在咫尺，施放将增加暴露度">${escapeHtml(item.expText)}</span>`
-              : (item.expKind === 'safe'
-                ? `<span class="cb-bl-exp is-safe" title="${escapeHtml(item.expText || '隐蔽安全')}">隐蔽</span>`
-                : '');
-            const badgeHtml = item.oppLabel
-              ? `<span class="cb-bl-tag opp">${escapeHtml(item.oppLabel)}</span>`
-              : (!expHtml && item.pathLabel ? `<span class="cb-bl-tag">◆${escapeHtml(item.pathLabel)}</span>` : '');
-            const rightTagsHtml = (expHtml || badgeHtml)
-              ? `<span class="cb-bl-tags-right">${expHtml}${badgeHtml}</span>`
-              : '';
+            listItems.forEach((item, idx) => {
+              const g = coords[idx];
+              const wrap = document.createElement('div');
+              wrap.className = 'cb-blade-wrap';
 
-            const nameIconHtml = item.iconHtml
-              ? `<span class="cb-bl-art-wrap" aria-hidden="true">${item.iconHtml}</span>`
-              : '';
-            btn.innerHTML = `
-              <span class="cb-bl-key">${escapeHtml(item.key)}</span>
-              <div class="cb-bl-content">
-                <div class="cb-bl-top">
-                  <span class="cb-bl-name${item.iconHtml ? ' has-art' : ''}">${nameIconHtml}${escapeHtml(item.name)}</span>
-                  ${rightTagsHtml}
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.innerHTML = `
+                <span class="cb-bl-key"></span>
+                <div class="cb-bl-content">
+                  <div class="cb-bl-top">
+                    <span class="cb-bl-name"></span>
+                  </div>
+                  <div class="cb-bl-bot">
+                    <span class="cb-bl-meta"></span>
+                    <span class="cb-bl-cost"></span>
+                  </div>
                 </div>
-                <div class="cb-bl-bot">
-                  <span class="cb-bl-meta">${escapeHtml(item.foot || item.desc)}</span>
-                  <span class="cb-bl-cost">${escapeHtml(item.cost)}</span>
-                </div>
-              </div>
-            `;
+              `;
+              patchBladeElement(wrap, btn, item, g, idx);
 
-            const onBladeEnter = () => {
-              const liveItem = uiState.currentItems[idx];
-              uiState.hoveredBladeIdx = idx;
-              wrap.classList.add('hovered');
-              wrap.style.transform = `translateX(0) rotate(${g.rot}deg) scale(1.015)`;
-              if (liveItem && liveItem.kind === 'skill') {
-                syncSkillHoverPreview(resolveLiveSourceBtn(liveItem), true, liveItem.skillId);
-                syncAvForecast(liveItem.skillId, uiState.lastBattleState || getEngineBattle());
-              } else {
-                syncAvForecast(null, uiState.lastBattleState || getEngineBattle());
-              }
-              renderCurrentSvg();
-            };
-            const onBladeLeave = () => {
-              const liveItem = uiState.currentItems[idx];
-              if (uiState.hoveredBladeIdx === idx) uiState.hoveredBladeIdx = null;
-              wrap.classList.remove('hovered');
-              wrap.style.transform = `rotate(${g.rot}deg)`;
-              if (liveItem && liveItem.kind === 'skill') {
-                syncSkillHoverPreview(resolveLiveSourceBtn(liveItem), false, liveItem.skillId);
-                if (uiState.hoveredSkillId === liveItem.skillId) {
+              const onBladeEnter = () => {
+                cancelPendingHoverClear();
+                const liveItem = uiState.currentItems[idx];
+                const rot = wrap.dataset.rot || '0';
+                uiState.hoveredBladeIdx = idx;
+                wrap.classList.add('hovered');
+                wrap.style.transform = `translateX(0) rotate(${rot}deg) scale(1.015)`;
+                if (liveItem && liveItem.kind === 'skill') {
+                  uiState.lastHoveredSkillId = liveItem.skillId || null;
+                  applySkillHoverPreviewNow(liveItem.skillId, uiState.lastBattleState || getEngineBattle());
+                } else {
                   syncAvForecast(null, uiState.lastBattleState || getEngineBattle());
                 }
-              }
-              renderCurrentSvg();
-            };
-            btn.addEventListener('mouseenter', onBladeEnter);
-            btn.addEventListener('mouseleave', onBladeLeave);
-            btn.addEventListener('focus', onBladeEnter);
-            btn.addEventListener('blur', onBladeLeave);
-            btn.addEventListener('click', () => {
-              const liveItem = uiState.currentItems[idx];
-              if (liveItem) triggerSourceButton(liveItem);
-            });
+                renderCurrentSvg();
+              };
+              const onBladeLeave = ev => {
+                const liveItem = uiState.currentItems[idx];
+                const rot = wrap.dataset.rot || '0';
+                if (uiState.hoveredBladeIdx === idx) uiState.hoveredBladeIdx = null;
+                wrap.classList.remove('hovered');
+                wrap.style.transform = `rotate(${rot}deg)`;
+                const nextEl = ev && ev.relatedTarget;
+                const movingWithinCascadeControls = !!(nextEl && nextEl.closest && nextEl.closest('#cb-pw-amp-mini, .cb-blade'));
+                if (!movingWithinCascadeControls && uiState.hoveredBladeIdx == null && !uiState.hoveringAmpMini && liveItem && liveItem.kind === 'skill') {
+                  scheduleHoverLeaveClear(liveItem.skillId);
+                }
+                renderCurrentSvg();
+              };
+              btn.addEventListener('mouseenter', onBladeEnter);
+              btn.addEventListener('mouseleave', onBladeLeave);
+              btn.addEventListener('focus', onBladeEnter);
+              btn.addEventListener('blur', onBladeLeave);
+              btn.addEventListener('click', () => {
+                const liveItem = uiState.currentItems[idx];
+                if (liveItem) triggerSourceButton(liveItem);
+              });
 
-            wrap.appendChild(btn);
-            uiState.cascadeListEl.appendChild(wrap);
-          });
+              wrap.appendChild(btn);
+              uiState.cascadeListEl.appendChild(wrap);
+            });
+          }
         }
       }
 
@@ -2621,8 +2991,17 @@
       ev.preventDefault();
       ev.stopImmediatePropagation();
       cancelDissolve();
-      if (uiState.menuMode === 'skills') closeCascade();
-      else openSkills();
+      if (uiState.menuMode === 'skills') {
+        if (uiState.lastSkillCastAt && (Date.now() - uiState.lastSkillCastAt) < 1200) {
+          // 兼容 W→2→W→3 肌肉记忆：施法后 1.2s 内首次按 W 视作确认留在技能页并消费标志，再按 W 或按 Esc 立刻返回主翼
+          uiState.lastSkillCastAt = 0;
+          sync();
+        } else {
+          closeCascade();
+        }
+      } else {
+        openSkills();
+      }
       return;
     }
 
@@ -2657,12 +3036,7 @@
       if (realEnd && !realEnd.disabled) {
         ev.preventDefault();
         ev.stopImmediatePropagation();
-        cancelDissolve();
-        uiState.menuMode = 'root';
-        uiState.lastBladeSig = '';
-        clearRealHover();
-        realEnd.click();
-        sync();
+        triggerEndTurnAction();
       }
       return;
     }
@@ -2695,7 +3069,9 @@
     uiState.enabled = !!flag;
     uiState.menuMode = 'root';
     uiState.lastBladeSig = '';
-    clearRealHover();
+    uiState.lastSkillCastAt = 0;
+    uiState.hoveringAmpMini = false;
+    clearRealHover({ resetLast: true });
     sync();
   }
 
@@ -2755,10 +3131,15 @@
       clearTimeout(uiState.dissolveTimer);
       uiState.dissolveTimer = 0;
     }
+    if (uiState.castFlashTimer) {
+      clearTimeout(uiState.castFlashTimer);
+      uiState.castFlashTimer = 0;
+    }
     if (uiState.ampPulseTimer) {
       clearTimeout(uiState.ampPulseTimer);
       uiState.ampPulseTimer = 0;
     }
+    cancelPendingHoverClear();
     if (uiState.bsObserver) {
       uiState.bsObserver.disconnect();
       uiState.bsObserver = null;
@@ -2791,8 +3172,13 @@
     uiState.avListEl = null;
     uiState.avForecastEl = null;
     uiState.lastAvSig = '';
+    uiState.lastBattleWaveKey = '';
+    uiState.lastBattleTurn = -1;
     uiState.lastBattleState = null;
     uiState.hoveredSkillId = null;
+    uiState.lastHoveredSkillId = null;
+    uiState.hoveringAmpMini = false;
+    uiState.lastSkillCastAt = 0;
     uiState.lastAmpPct = -1;
     const bs = getBattleScreen();
     if (bs) bs.classList.remove('prism-radial-active');
@@ -2830,6 +3216,7 @@
       anchorY: uiState.lastAnchorY,
       avRailMounted: !!(uiState.avRailEl && uiState.avRailEl.isConnected),
       hoveredSkillId: uiState.hoveredSkillId,
+      lastHoveredSkillId: uiState.lastHoveredSkillId,
     }),
   };
 

@@ -3939,7 +3939,13 @@
     if (!target || target.hp <= 0) return false;
     b.targetIdx = idx;
     armedSkillId = null;
-    if (!b.headless) applyTargetSelectionInPlace(b);
+    if (!b.headless) {
+      applyTargetSelectionInPlace(b);
+      const s3d = global.CombatStage3D;
+      if (s3d && typeof s3d.onTargetChanged === 'function' && (typeof s3d.isActive !== 'function' || s3d.isActive())) {
+        try { s3d.onTargetChanged(idx); } catch (e) {}
+      }
+    }
     return true;
   }
 
@@ -4162,7 +4168,20 @@
         global.CombatPixelVFX.cleanup();
       }
     }
+    if (global.CombatStage3D) {
+      if (preserveWaveContext) {
+        if (typeof global.CombatStage3D.clearEffects === 'function') {
+          try { global.CombatStage3D.clearEffects(); } catch (e) {}
+        }
+      } else if (typeof global.CombatStage3D.cleanup === 'function') {
+        try { global.CombatStage3D.cleanup(); } catch (e) {}
+      }
+    }
     if (typeof document !== 'undefined') {
+      if (!preserveWaveContext) {
+        const bsEl = document.getElementById('battle-screen');
+        if (bsEl) bsEl.classList.remove('is-3d-stage');
+      }
       const field = document.querySelector('#battle-screen .cb-arena-field');
       if (field) field.classList.remove('cb-hitstop', 'cb-hitstop-75');
       const fl = document.getElementById('cb-vfx-flash');
@@ -4461,6 +4480,34 @@
 
     let positioned = false;
     if (!isJsdomEnv()) {
+      const s3d = global.CombatStage3D;
+      if (s3d && typeof s3d.isActive === 'function' && s3d.isActive() && typeof s3d.projectActorPoints === 'function') {
+        let actorKey = 'player';
+        if (side === 'enemy') {
+          actorKey = 'enemy:' + Math.max(0, Number(enemyIdx) || 0);
+        } else if (side === 'ally') {
+          const allyIdx = (typeof enemyIdx === 'number' && Number.isFinite(enemyIdx) && enemyIdx >= 0) ? enemyIdx : 0;
+          const allyObj = (b && Array.isArray(b.allies) && (b.allies[allyIdx] || b.allies.find(a => a && a.hp > 0) || b.allies[0])) || null;
+          if (typeof enemyIdx === 'string' && enemyIdx) {
+            actorKey = enemyIdx.startsWith('ally:') ? enemyIdx : ('ally:' + enemyIdx);
+          } else if (allyObj && allyObj.id) {
+            actorKey = 'ally:' + allyObj.id;
+          } else {
+            const allyEl = document.getElementById('cb-ally-vanguard-slot');
+            actorKey = (allyEl && allyEl.getAttribute('data-actor-key')) || 'ally:reno';
+          }
+        }
+        const p3 = s3d.projectActorPoints(actorKey, true);
+        if (p3 && p3.head && p3.fieldW > 40 && p3.fieldH > 40 && Number.isFinite(p3.head.x) && Number.isFinite(p3.head.y)) {
+          const yOffset = kind === 'mp' ? 18 : kind === 'shield' ? 6 : -14;
+          const leftPct = Math.max(6, Math.min(94, (p3.head.x / p3.fieldW) * 100));
+          const topPct = Math.max(8, Math.min(82, ((p3.head.y + yOffset) / p3.fieldH) * 100));
+          div.style.left = leftPct.toFixed(1) + '%';
+          div.style.top = topPct.toFixed(1) + '%';
+          positioned = true;
+        }
+      }
+      if (!positioned) {
       const field = document.querySelector('#battle-screen .cb-arena-field');
       if (field && typeof field.getBoundingClientRect === 'function') {
         const fRect = field.getBoundingClientRect();
@@ -4491,6 +4538,7 @@
             }
           }
         }
+      }
       }
     }
 
@@ -10206,7 +10254,7 @@
     const bs = document.getElementById('battle-screen');
     if (bs) {
       bs.classList.add('hidden');
-      bs.classList.remove('palace-timestop', 'wand-refract', 'hit-shake', 'heavy-shake');
+      bs.classList.remove('palace-timestop', 'wand-refract', 'hit-shake', 'heavy-shake', 'is-3d-stage');
     }
     if (document.body) document.body.classList.remove('cb-battle-active');
     const ds = document.getElementById('duel-screen');
@@ -10489,7 +10537,7 @@
     if (ao) ao.classList.add('hidden');
     const cardEl = typeof document !== 'undefined' ? document.getElementById('card') : null;
     if (cardEl && cardEl.classList) cardEl.classList.add('hidden');
-    bs.classList.remove('palace-timestop', 'wand-refract', 'hit-shake', 'heavy-shake', 'hidden');
+    bs.classList.remove('palace-timestop', 'wand-refract', 'hit-shake', 'heavy-shake', 'is-3d-stage', 'hidden');
   }
 
   function prewarmVictoryBgm() {

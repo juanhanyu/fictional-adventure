@@ -177,7 +177,9 @@
     logBarEl: null,
     avRailEl: null,
     avListEl: null,
+    avEventEl: null,
     avForecastEl: null,
+    avCamResetEl: null,
     currentItems: [],
     lastBattleWaveKey: '',
     lastBattleTurn: -1,
@@ -195,6 +197,8 @@
     skyTopY: 0,
     skyBotY: 540,
     portraitRight: 210,
+    paneTop: 560,
+    allyPaneTop: 560,
     allyPaneRight: 0,
     enemyLeftX: 0,
     hasMidCorridor: false,
@@ -206,9 +210,14 @@
     partyDockTop: 0,
     targetPaneLeft: 0,
     targetPaneTop: 0,
+    targetPaneFound: false,
+    avRailBounds: null,
+    cachedBoundsFieldKey: '',
+    is3dStage: false,
     obstacles: [],
     twoColBlades: false,
     animDissolveUntil: 0,
+    castDissolving: false,
   };
 
   function getBattleScreen() {
@@ -261,6 +270,86 @@
       || null;
   }
 
+  function getStage3D() {
+    return (typeof window !== 'undefined' && window.CombatStage3D)
+      || global.CombatStage3D
+      || null;
+  }
+
+  function isStage3DActive() {
+    const api = getStage3D();
+    try {
+      return !!(api && typeof api.isActive === 'function' && api.isActive());
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function focusStage3DCamera(mode, actorKey) {
+    const api = getStage3D();
+    if (!api || typeof api.focusCameraOn !== 'function') return false;
+    try {
+      if (actorKey !== undefined) {
+        api.focusCameraOn(mode, actorKey);
+      } else {
+        api.focusCameraOn(mode);
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function normalizeStage3DBox(box3d, actorKey, field, fRectFallback) {
+    if (!box3d || typeof box3d !== 'object') return null;
+    const leftRaw = Number(box3d.left);
+    const topRaw = Number(box3d.top);
+    let rightRaw = Number(box3d.right);
+    let bottomRaw = Number(box3d.bottom);
+    let width = Number(box3d.width);
+    let height = Number(box3d.height);
+    if (!isFinite(leftRaw) || !isFinite(topRaw)) return null;
+    if (!isFinite(width) && isFinite(rightRaw)) width = rightRaw - leftRaw;
+    if (!isFinite(height) && isFinite(bottomRaw)) height = bottomRaw - topRaw;
+    if (!isFinite(rightRaw) && isFinite(width)) rightRaw = leftRaw + width;
+    if (!isFinite(bottomRaw) && isFinite(height)) bottomRaw = topRaw + height;
+    if (!isFinite(width) || !isFinite(height) || width < 8 || height < 8) return null;
+
+    let offX = 0;
+    let offY = 0;
+    if (box3d.coordSpace === 'viewport' || box3d.isViewport === true) {
+      const fRect = fRectFallback || (field ? field.getBoundingClientRect() : null);
+      if (fRect) {
+        offX = fRect.left || 0;
+        offY = fRect.top || 0;
+      }
+    }
+
+    const enemyFrontRaw = Number(box3d.enemyFrontLeftX);
+    const enemyFrontLeftX = isFinite(enemyFrontRaw) && enemyFrontRaw > 0
+      ? (enemyFrontRaw - offX)
+      : null;
+
+    const safeAnchorRightRaw = Number(box3d.safeAnchorRightX);
+    const safeAnchorRightX = isFinite(safeAnchorRightRaw) && safeAnchorRightRaw > 0
+      ? (safeAnchorRightRaw - offX)
+      : null;
+
+    return {
+      left: leftRaw - offX,
+      top: topRaw - offY,
+      right: rightRaw - offX,
+      bottom: bottomRaw - offY,
+      width,
+      height,
+      actorKey: box3d.actorKey || actorKey || 'player',
+      enemyFrontLeftX,
+      safeAnchorRightX,
+      is3d: true,
+      el: null,
+    };
+  }
+
   function isTimingRingActive() {
     const api = getTimingRingApi();
     try {
@@ -272,13 +361,13 @@
 
   function isAsyncPhaseActive(battleOverride) {
     const b = battleOverride || getEngineBattle();
-    if (b && b._asyncPhaseActive) return true;
+    if (b && (b._asyncPhaseActive || b.busy || b.timingBusy)) return true;
     const raw = getRawEngineBattle();
-    return !!(raw && raw._asyncPhaseActive);
+    return !!(raw && (raw._asyncPhaseActive || raw.busy || raw._timingBusy));
   }
 
   function isTimingOrAsyncDissolved(battleOverride) {
-    return isTimingRingActive() || isAsyncPhaseActive(battleOverride);
+    return isTimingRingActive() || isAsyncPhaseActive(battleOverride) || !!uiState.castDissolving;
   }
 
   function isGauntletOffMode() {
@@ -1286,27 +1375,54 @@
       clearRealHover({ resetLast: true });
     }
 
-    let res = null;
-    if (isSkill && global.CombatEngine && typeof global.CombatEngine.useSkill === 'function') {
-      // 直接调用 CombatEngine.useSkill，绕开屏外隐藏 .cb-skill-card 的粗触控两段确认与 140ms 防抖
-      res = global.CombatEngine.useSkill(item.skillId);
-      if (res && res.ok === false) {
-        sync();
-        return false;
+    if (isSkill) {
+      // 点击非禁用技能出手瞬间立即溶隐棱晶翼，确保 75 项特效与 0.25× 慢镜缩圈期战场中路 100% 净空
+      uiState.castDissolving = true;
+      if (uiState.rigEl) {
+        uiState.rigEl.classList.add('dissolved', 'is-timing-dissolved');
       }
-    } else if (liveBtn) {
-      liveBtn.click();
+    }
+
+    let res = null;
+    try {
+      if (isSkill && global.CombatEngine && typeof global.CombatEngine.useSkill === 'function') {
+        // 直接调用 CombatEngine.useSkill，绕开屏外隐藏 .cb-skill-card 的粗触控两段确认与 140ms 防抖
+        res = global.CombatEngine.useSkill(item.skillId);
+        if (res && res.ok === false) {
+          uiState.castDissolving = false;
+          sync();
+          return false;
+        }
+      } else if (liveBtn) {
+        liveBtn.click();
+      }
+    } catch (err) {
+      if (isSkill) {
+        uiState.castDissolving = false;
+        sync();
+      }
+      throw err;
     }
 
     if (isSkill) {
       if (res && typeof res.then === 'function') {
         sync(getEngineBattle());
+        let resolvedVal = null;
+        let castFailed = false;
         res.then(
-          resolved => finalizeSkillCast(resolved, keepSkillsMode, prevWaveKey),
-          () => sync()
-        );
+          resolved => { resolvedVal = resolved; },
+          () => { castFailed = true; }
+        ).finally(() => {
+          uiState.castDissolving = false;
+          if (castFailed) {
+            sync();
+          } else {
+            finalizeSkillCast(resolvedVal, keepSkillsMode, prevWaveKey);
+          }
+        });
         return true;
       }
+      uiState.castDissolving = false;
       if (isTimingOrAsyncDissolved()) {
         sync(getEngineBattle());
         return true;
@@ -1335,7 +1451,8 @@
     const valid = normalized === 'skills' || normalized === 'items'
       ? normalized
       : 'root';
-    if (uiState.menuMode !== valid) {
+    const prevMode = uiState.menuMode;
+    if (prevMode !== valid) {
       cancelPendingHoverClear();
       clearRealHover({ resetLast: true });
       if (valid !== 'skills') uiState.lastSkillCastAt = 0;
@@ -1345,6 +1462,11 @@
       uiState.hoveredBladeIdx = null;
       uiState.lastBladeSig = '';
       safeSfx('ui_tick');
+      if (valid === 'skills') {
+        focusStage3DCamera('clash');
+      } else if (valid === 'root' && prevMode !== 'root') {
+        focusStage3DCamera('actor');
+      }
     } else if (wasCollapsed) {
       safeSfx('ui_tick', { gain: 0.78 });
     }
@@ -1355,6 +1477,7 @@
   function setCollapsed(flag, opts) {
     const next = !!flag;
     const prev = !!uiState.collapsed;
+    const prevMode = uiState.menuMode;
     const silent = !!(opts && opts.silent);
     const skipSync = !!(opts && opts.skipSync);
 
@@ -1369,6 +1492,9 @@
       cancelPendingHoverClear();
       clearRealHover({ resetLast: true });
       syncAvForecast(null, uiState.lastBattleState || getEngineBattle());
+      if (prevMode === 'skills') {
+        focusStage3DCamera('actor');
+      }
       if (!silent && !prev) {
         safeSfx('ui_tick', { gain: 0.72 });
       }
@@ -1411,6 +1537,13 @@
       safeTop = Math.max(safeTop, (uiState.skyTopY || 0) + 8);
       if (uiState.skyBotY > safeTop + 120) {
         safeBot = Math.min(safeBot, uiState.skyBotY - 8);
+      }
+    }
+    const avBox = uiState.avRailBounds;
+    if (avBox && avBox.right > absLeft - 6 && avBox.left < absRight + 6) {
+      const belowAv = avBox.bottom + 6;
+      if (safeBot - belowAv >= 164) {
+        safeTop = Math.max(safeTop, belowAv);
       }
     }
     const obs = Array.isArray(uiState.obstacles) ? uiState.obstacles : [];
@@ -1464,9 +1597,12 @@
     const naturalSingleW = (isTightDesktop || uiState.compactMulti) ? 288 : 326;
     const preferredBaseX = (isTightDesktop || uiState.compactMulti) ? 28 : 48;
     const preferredArcX = (isTightDesktop || uiState.compactMulti) ? 10 : 18;
-    const availSideSpan = flipLeft
+    let availSideSpan = flipLeft
       ? Math.max(236, anchorX - 14)
       : Math.max(236, fieldW - anchorX - 14);
+    if (uiState.is3dStage && !flipLeft && uiState.enemyLeftX > anchorX + 256) {
+      availSideSpan = Math.min(availSideSpan, uiState.enemyLeftX - anchorX - 14);
+    }
     const singleW = Math.max(220, Math.min(naturalSingleW, availSideSpan - 16));
     const singleForceW = singleW < naturalSingleW;
     let singleBaseX = preferredBaseX;
@@ -1686,10 +1822,10 @@
     parts.push('</g>');
 
     parts.push('<g class="rig-hub-group">');
-    parts.push('<polygon class="rig-hub-outer" fill="none" stroke="rgba(239,224,190,0.72)" stroke-width="1" points="0,-14 14,0 0,14 -14,0" />');
-    parts.push('<polygon class="rig-hub-mid" fill="#1658EB" points="0,-8 8,0 0,8 -8,0" />');
-    parts.push('<polygon class="rig-hub-inner" fill="#EFE0BE" points="0,-4.5 4.5,0 0,4.5 -4.5,0" />');
-    parts.push('<polygon class="rig-hub-core" fill="#FFFFFF" points="0,-2 2,0 0,2 -2,0" />');
+    parts.push('<polygon class="rig-hub-outer" fill="rgba(14,43,120,0.42)" stroke="#E5C272" stroke-width="1.6" points="0,-16 16,0 0,16 -16,0" />');
+    parts.push('<polygon class="rig-hub-mid" fill="#1658EB" stroke="#FFF4CE" stroke-width="0.9" points="0,-9.5 9.5,0 0,9.5 -9.5,0" />');
+    parts.push('<polygon class="rig-hub-inner" fill="#EFE0BE" points="0,-5 5,0 0,5 -5,0" />');
+    parts.push('<polygon class="rig-hub-core" fill="#FFFFFF" points="0,-2.2 2.2,0 0,2.2 -2.2,0" />');
     parts.push('</g>');
     uiState.svgEl.innerHTML = parts.join('');
   }
@@ -1813,6 +1949,87 @@
     const active = getActiveActorSpec(b);
     const actorKey = active.actorKey || 'player';
 
+    const stage3d = getStage3D();
+    if (isStage3DActive() && stage3d && typeof stage3d.getActorScreenBox === 'function') {
+      try {
+        let box3d = stage3d.getActorScreenBox(actorKey);
+        if (!box3d && actorKey !== 'player') {
+          box3d = stage3d.getActorScreenBox('player');
+        }
+        const normalized3d = normalizeStage3DBox(box3d, actorKey, hostField, fRectFallback);
+        if (normalized3d) {
+          if (normalized3d.enemyFrontLeftX == null && b && Array.isArray(b.enemies)) {
+            let minEnemyLeft = Infinity;
+            for (let ei = 0; ei < b.enemies.length; ei++) {
+              const en = b.enemies[ei];
+              if (!en || en.alive === false || (typeof en.hp === 'number' && en.hp <= 0)) continue;
+              const eKey = `enemy:${typeof en.idx === 'number' ? en.idx : ei}`;
+              const eRaw = stage3d.getActorScreenBox(eKey);
+              if (!eRaw || eRaw.onScreen === false) continue;
+              const eNorm = normalizeStage3DBox(eRaw, eKey, hostField, fRectFallback);
+              if (eNorm && eNorm.left > Math.max(120, normalized3d.left)) {
+                minEnemyLeft = Math.min(minEnemyLeft, eNorm.left);
+              }
+            }
+            if (isFinite(minEnemyLeft)) {
+              normalized3d.enemyFrontLeftX = minEnemyLeft;
+            }
+          }
+
+          // 检测前排友军（如 2v1 罗文乱葬岗中雷纳德站在希尔维亚右前方），防止四行棱镜菜单遮挡前排队友
+          let maxBlockingAllyRight = 0;
+          const activeKey3d = normalized3d.actorKey || actorKey || 'player';
+          const checkedAllyKeys = new Set([activeKey3d]);
+          const inspectAllyKey = candidateKey => {
+            if (!candidateKey || checkedAllyKeys.has(candidateKey)) return false;
+            checkedAllyKeys.add(candidateKey);
+            const aRaw = stage3d.getActorScreenBox(candidateKey);
+            if (!aRaw || aRaw.onScreen === false) return false;
+            const aNorm = normalizeStage3DBox(aRaw, candidateKey, hostField, fRectFallback);
+            if (!aNorm) return false;
+            const leftOfEnemies = normalized3d.enemyFrontLeftX == null || aNorm.left < normalized3d.enemyFrontLeftX;
+            if (leftOfEnemies && aNorm.right > normalized3d.right + 4) {
+              maxBlockingAllyRight = Math.max(maxBlockingAllyRight, aNorm.right);
+            }
+            return true;
+          };
+
+          if (activeKey3d !== 'player') {
+            inspectAllyKey('player');
+          }
+          if (b && Array.isArray(b.allies)) {
+            for (let ai = 0; ai < b.allies.length; ai++) {
+              const al = b.allies[ai];
+              if (!al || al.alive === false || (typeof al.hp === 'number' && al.hp <= 0)) continue;
+              const primaryKey = `ally:${al.id != null && al.id !== '' ? al.id : ai}`;
+              if (!inspectAllyKey(primaryKey)) {
+                const idxKey = `ally:${typeof al.idx === 'number' ? al.idx : ai}`;
+                if (!inspectAllyKey(idxKey) && al.spriteId) {
+                  inspectAllyKey(`ally:${al.spriteId}`);
+                }
+              }
+            }
+          }
+          if (b && Array.isArray(b.actionQueue)) {
+            for (let qi = 0; qi < b.actionQueue.length; qi++) {
+              const qItem = b.actionQueue[qi];
+              if (!qItem || qItem.side !== 'ally') continue;
+              const qKey = qItem.actorKey
+                ? String(qItem.actorKey)
+                : (qItem.id ? `ally:${qItem.id}` : (qItem.allyIdx != null && qItem.allyIdx >= 0 ? `ally:${qItem.allyIdx}` : ''));
+              if (qKey.startsWith('ally:')) {
+                inspectAllyKey(qKey);
+              }
+            }
+          }
+          if (maxBlockingAllyRight > 0) {
+            normalized3d.blockingAllyMaxRight = maxBlockingAllyRight;
+          }
+          return normalized3d;
+        }
+      } catch (e) {}
+    }
+
     const tryMeasure = el => {
       if (!el || !isDisplayedInLayout(el)) return null;
       const m = measureBoxInField(el, hostField, fRectFallback);
@@ -1870,33 +2087,52 @@
     return otherHit || pickFirst(playerCandidates());
   }
 
-  function syncRigAnchor(battleOverride) {
-    if (!uiState.rigEl) return;
+  function computeAndApplyRigAnchor(battleOverride, opts) {
+    if (!uiState.rigEl || !uiState.rigEl.isConnected) return false;
+    const isFast = !!(opts && opts.fast);
     const field = uiState.rigEl.parentElement;
-    const playerStage = document.getElementById('cb-player-stage');
-    if (!field || !playerStage) return;
-    const fRectFallback = field.getBoundingClientRect();
-    const fieldW = field.offsetWidth > 0 ? field.offsetWidth : fRectFallback.width;
-    const fieldH = field.offsetHeight > 0 ? field.offsetHeight : fRectFallback.height;
-    const pBox = measureBoxInField(playerStage, field, fRectFallback);
-    if (fieldW < 100 || !pBox || pBox.width < 40) return;
+    if (!field) return false;
+
+    const is3dActive = isStage3DActive();
+    uiState.is3dStage = is3dActive;
+
+    let fRectFallback = null;
+    let fieldW = field.offsetWidth || 0;
+    let fieldH = field.offsetHeight || 0;
+    if (fieldW <= 0 || fieldH <= 0) {
+      fRectFallback = field.getBoundingClientRect();
+      fieldW = fieldW > 0 ? fieldW : fRectFallback.width;
+      fieldH = fieldH > 0 ? fieldH : fRectFallback.height;
+    }
+    if (fieldW < 100 || fieldH < 100) return false;
 
     const bs = getBattleScreen();
     const b = battleOverride || uiState.lastBattleState || getEngineBattle();
-    const aBox = resolveActiveActorBox(b, field, fRectFallback) || {
-      left: pBox.left,
-      top: pBox.top,
-      right: pBox.right,
-      bottom: pBox.bottom,
-      width: pBox.width,
-      height: pBox.height,
-      actorKey: 'player',
-      el: playerStage,
-    };
 
-    const eZone = document.getElementById('cb-enemy-zone');
-    const enemyCount = eZone ? eZone.querySelectorAll('.cb-enemy-card').length : 0;
-    const isMulti = enemyCount >= 3;
+    let aBox = null;
+    if (is3dActive) {
+      // 3D 舞台激活时跳过 #cb-player-stage 的 2D width >= 40 早退门卫，直读 3D 精准投影包围盒
+      aBox = resolveActiveActorBox(b, field, fRectFallback);
+    }
+    if (!aBox) {
+      const playerStage = document.getElementById('cb-player-stage');
+      if (!playerStage) return false;
+      if (!fRectFallback) fRectFallback = field.getBoundingClientRect();
+      const pBox = measureBoxInField(playerStage, field, fRectFallback);
+      if (!pBox || pBox.width < 40) return false;
+      aBox = resolveActiveActorBox(b, field, fRectFallback) || {
+        left: pBox.left,
+        top: pBox.top,
+        right: pBox.right,
+        bottom: pBox.bottom,
+        width: pBox.width,
+        height: pBox.height,
+        actorKey: 'player',
+        el: playerStage,
+      };
+    }
+
+    const is3dBox = !!aBox.is3d;
     const viewportW = typeof window !== 'undefined' ? window.innerWidth : 1440;
     const viewportH = typeof window !== 'undefined' ? window.innerHeight : 900;
     const isShortViewport = viewportH <= 760;
@@ -1906,153 +2142,239 @@
     uiState.shortViewport = isShortViewport;
     uiState.narrowDesktop = isNarrowDesktop;
 
-    // 测算敌方静态容器与双底角面板避障边界（仅用于竖向安全区与状态诊断；锚点严格跟手当前操作角色 aBox）
-    let intentMaxBottom = 0;
+    const boundsFieldKey = `${Math.round(fieldW)}x${Math.round(fieldH)}:${is3dBox ? 1 : 0}`;
+    const canReuseCachedBounds = isFast && is3dBox && uiState.cachedBoundsFieldKey === boundsFieldKey;
+
+    let intentMaxBottom = canReuseCachedBounds ? (uiState.skyTopY || 0) : 0;
     let enemyMinTop = fieldH;
     let enemyMinLeft = fieldW;
-    let hasVanguardActor = !!field.querySelector('#cb-ally-vanguard-slot, .cb-ally-vanguard-slot');
-    let paneTop = fieldH;
-    let allyPaneTop = fieldH;
-    let allyPaneRight = 0;
-    let partyLayout = '';
-    let partyDockTop = 0;
-    let targetPaneLeft = 0;
-    let targetPaneTop = 0;
-    let targetPaneFound = false;
-    const obstacles = [];
-    const seenObstacleEls = new Set();
+    let isMulti = false;
+    let hasVanguardActor = uiState.hasVanguardActor;
+    let paneTop = canReuseCachedBounds ? uiState.paneTop : fieldH;
+    let allyPaneTop = canReuseCachedBounds ? uiState.allyPaneTop : fieldH;
+    let allyPaneRight = canReuseCachedBounds ? uiState.allyPaneRight : 0;
+    let partyLayout = canReuseCachedBounds ? uiState.partyLayout : '';
+    let partyDockTop = canReuseCachedBounds ? uiState.partyDockTop : 0;
+    let targetPaneLeft = canReuseCachedBounds ? uiState.targetPaneLeft : 0;
+    let targetPaneTop = canReuseCachedBounds ? uiState.targetPaneTop : 0;
+    let targetPaneFound = canReuseCachedBounds ? !!uiState.targetPaneFound : false;
+    let avRailBounds = canReuseCachedBounds ? uiState.avRailBounds : null;
+    let hasMidCorridor = canReuseCachedBounds ? uiState.hasMidCorridor : false;
+    let corridorLeft = canReuseCachedBounds ? uiState.corridorLeft : 0;
+    let corridorRight = canReuseCachedBounds ? uiState.corridorRight : 0;
+    let corridorW = canReuseCachedBounds ? uiState.corridorW : 0;
+    let obstacles = canReuseCachedBounds ? uiState.obstacles : [];
 
-    const pushObstacle = (el, kind, role, preMeasured) => {
-      if (!el || seenObstacleEls.has(el) || !isDisplayedInLayout(el)) return null;
-      const m = preMeasured || measureBoxInField(el, field, fRectFallback);
-      if (!m || m.width < 4 || m.height < 4) return null;
-      seenObstacleEls.add(el);
-      const box = {
-        kind,
-        role: role || '',
-        left: m.left,
-        top: m.top,
-        right: m.right,
-        bottom: m.bottom,
+    if (!canReuseCachedBounds) {
+      if (!fRectFallback) fRectFallback = field.getBoundingClientRect();
+      obstacles = [];
+      const seenObstacleEls = new Set();
+
+      const pushObstacle = (el, kind, role, preMeasured) => {
+        if (!el || seenObstacleEls.has(el) || !isDisplayedInLayout(el)) return null;
+        const m = preMeasured || measureBoxInField(el, field, fRectFallback);
+        if (!m || m.width < 4 || m.height < 4) return null;
+        seenObstacleEls.add(el);
+        const box = {
+          kind,
+          role: role || '',
+          left: m.left,
+          top: m.top,
+          right: m.right,
+          bottom: m.bottom,
+        };
+        obstacles.push(box);
+        return box;
       };
-      obstacles.push(box);
-      return box;
-    };
 
-    if (eZone) {
-      eZone.querySelectorAll('.cb-enemy-card').forEach(card => {
-        const box = pushObstacle(card, 'enemy-card', 'enemy');
-        if (box) {
-          enemyMinLeft = Math.min(enemyMinLeft, box.left);
-        }
-      });
-      eZone.querySelectorAll('.cb-intent-banner').forEach(el => {
-        if (!el || seenObstacleEls.has(el) || !isDisplayedInLayout(el)) return;
-        const m = measureBoxInField(el, field, fRectFallback);
-        if (!m || m.width < 4 || m.height < 4) return;
-        const ownerCard = el.closest ? el.closest('.cb-enemy-card') : null;
-        const ownerStage = ownerCard ? ownerCard.querySelector('.cb-e-stage') : null;
-        let isFootBanner = false;
-        if (ownerStage && isDisplayedInLayout(ownerStage)) {
-          const stageM = measureBoxInField(ownerStage, field, fRectFallback);
-          if (stageM && stageM.height >= 4 && m.top >= stageM.bottom - 18) {
-            isFootBanner = true;
+      const eZone = !is3dBox ? document.getElementById('cb-enemy-zone') : null;
+      const enemyCount = eZone ? eZone.querySelectorAll('.cb-enemy-card').length : 0;
+      isMulti = enemyCount >= 3;
+      hasVanguardActor = !!field.querySelector('#cb-ally-vanguard-slot, .cb-ally-vanguard-slot');
+
+      if (eZone) {
+        eZone.querySelectorAll('.cb-enemy-card').forEach(card => {
+          const box = pushObstacle(card, 'enemy-card', 'enemy');
+          if (box) {
+            enemyMinLeft = Math.min(enemyMinLeft, box.left);
           }
+        });
+        eZone.querySelectorAll('.cb-intent-banner').forEach(el => {
+          if (!el || seenObstacleEls.has(el) || !isDisplayedInLayout(el)) return;
+          const m = measureBoxInField(el, field, fRectFallback);
+          if (!m || m.width < 4 || m.height < 4) return;
+          const ownerCard = el.closest ? el.closest('.cb-enemy-card') : null;
+          const ownerStage = ownerCard ? ownerCard.querySelector('.cb-e-stage') : null;
+          let isFootBanner = false;
+          if (ownerStage && isDisplayedInLayout(ownerStage)) {
+            const stageM = measureBoxInField(ownerStage, field, fRectFallback);
+            if (stageM && stageM.height >= 4 && m.top >= stageM.bottom - 18) {
+              isFootBanner = true;
+            }
+          }
+          const isUpperIntent = !isFootBanner && m.bottom < fieldH * 0.42 && m.top < fieldH * 0.35;
+          const intentKind = isUpperIntent ? 'intent' : (m.top >= fieldH * 0.58 ? 'lower' : 'enemy-card');
+          const box = pushObstacle(el, intentKind, 'enemy-intent', m);
+          if (box && isUpperIntent) {
+            intentMaxBottom = Math.max(intentMaxBottom, box.bottom);
+          }
+        });
+        eZone.querySelectorAll('.cb-e-stage, .cb-e-plate').forEach(el => {
+          const box = pushObstacle(el, 'lower', 'enemy-lower');
+          if (box && (box.bottom - box.top) > 12) {
+            enemyMinTop = Math.min(enemyMinTop, box.top);
+          }
+        });
+      }
+
+      if (field.querySelectorAll('#cb-ally-formation .cb-ally-slot.is-occupied').length >= 2) {
+        hasVanguardActor = true;
+      }
+
+      // 测量顶中精简 AV 回合条边界（防 3D 推镜或高站位角色顶翼碰撞）
+      const avRailEl = (uiState.avRailEl && uiState.avRailEl.isConnected)
+        ? uiState.avRailEl
+        : document.getElementById('cb-av-rail');
+      const avBarEl = avRailEl ? (avRailEl.querySelector('.cb-av-bar') || avRailEl) : null;
+      if (avRailEl && isDisplayedInLayout(avRailEl) && avBarEl) {
+        const avM = measureBoxInField(avBarEl, field, fRectFallback);
+        if (avM && avM.width >= 20 && avM.height >= 16) {
+          avRailBounds = {
+            left: avM.left,
+            top: avM.top,
+            right: avM.right,
+            bottom: avM.bottom,
+          };
         }
-        const isUpperIntent = !isFootBanner && m.bottom < fieldH * 0.42 && m.top < fieldH * 0.35;
-        const intentKind = isUpperIntent ? 'intent' : (m.top >= fieldH * 0.58 ? 'lower' : 'enemy-card');
-        const box = pushObstacle(el, intentKind, 'enemy-intent', m);
-        if (box && isUpperIntent) {
-          intentMaxBottom = Math.max(intentMaxBottom, box.bottom);
+      }
+
+      // 底部双锚点面板扫描（左下 1–6 队卡 #cb-party-panes / #cb-player-pane / #cb-ally-pane / .cb-ally-pane 与右下锁定详情卡 #cb-target-detail-pane）
+      const bottomPanelEls = new Set();
+      field.querySelectorAll('#cb-party-panes, #cb-player-pane, #cb-ally-pane, .cb-ally-pane, #cb-target-detail-pane').forEach(el => {
+        bottomPanelEls.add(el);
+      });
+      const partyDockEl = field.querySelector('#cb-party-panes') || document.getElementById('cb-party-panes');
+      if (partyDockEl && (!bs || bs.contains(partyDockEl))) {
+        partyLayout = partyDockEl.getAttribute('data-party-layout') || '';
+        bottomPanelEls.add(partyDockEl);
+      }
+      const targetDetailEl = field.querySelector('#cb-target-detail-pane') || document.getElementById('cb-target-detail-pane');
+      if (targetDetailEl && (!bs || bs.contains(targetDetailEl))) {
+        bottomPanelEls.add(targetDetailEl);
+      }
+
+      bottomPanelEls.forEach(el => {
+        const isTargetDetail = el.id === 'cb-target-detail-pane';
+        const isPartyDock = el.id === 'cb-party-panes';
+        const role = isTargetDetail
+          ? 'target-detail-pane'
+          : (isPartyDock ? 'party-panes' : (el.id === 'cb-player-pane' ? 'player-pane' : 'ally-pane'));
+        const box = pushObstacle(el, 'lower', role);
+        if (!box) return;
+        if (isPartyDock) {
+          partyDockTop = Math.round(box.top);
+        }
+        if (isTargetDetail) {
+          targetPaneLeft = Math.round(box.left);
+          targetPaneTop = Math.round(box.top);
+          targetPaneFound = true;
+        }
+        paneTop = Math.min(paneTop, box.top);
+        if (!isTargetDetail) {
+          allyPaneTop = Math.min(allyPaneTop, box.top);
+          allyPaneRight = Math.max(allyPaneRight, box.right);
         }
       });
-      eZone.querySelectorAll('.cb-e-stage, .cb-e-plate').forEach(el => {
-        const box = pushObstacle(el, 'lower', 'enemy-lower');
-        if (box && (box.bottom - box.top) > 12) {
-          enemyMinTop = Math.min(enemyMinTop, box.top);
+      if (!partyDockTop && allyPaneTop < fieldH) {
+        partyDockTop = Math.round(allyPaneTop);
+      }
+
+      // 仅作状态诊断记录中场走廊尺寸（严禁用它强推当前角色菜单到雷纳德右侧）
+      const midCorridor = !is3dBox
+        ? (document.getElementById('cb-mid-corridor') || field.querySelector('.cb-mid-corridor'))
+        : null;
+      if (midCorridor && isVisible(midCorridor)) {
+        const mr = measureBoxInField(midCorridor, field, fRectFallback);
+        if (mr && mr.width > 40) {
+          hasMidCorridor = true;
+          corridorLeft = Math.round(mr.left);
+          corridorRight = Math.round(mr.right);
+          corridorW = Math.round(mr.width);
         }
-      });
-    }
-
-    if (field.querySelectorAll('#cb-ally-formation .cb-ally-slot.is-occupied').length >= 2) {
-      hasVanguardActor = true;
-    }
-
-    // 底部双锚点面板扫描（左下 1–6 队卡 #cb-party-panes / #cb-player-pane / #cb-ally-pane / .cb-ally-pane 与右下锁定详情卡 #cb-target-detail-pane）
-    const bottomPanelEls = new Set();
-    field.querySelectorAll('#cb-party-panes, #cb-player-pane, #cb-ally-pane, .cb-ally-pane, #cb-target-detail-pane').forEach(el => {
-      bottomPanelEls.add(el);
-    });
-    const partyDockEl = field.querySelector('#cb-party-panes') || document.getElementById('cb-party-panes');
-    if (partyDockEl && (!bs || bs.contains(partyDockEl))) {
-      partyLayout = partyDockEl.getAttribute('data-party-layout') || '';
-      bottomPanelEls.add(partyDockEl);
-    }
-    const targetDetailEl = field.querySelector('#cb-target-detail-pane') || document.getElementById('cb-target-detail-pane');
-    if (targetDetailEl && (!bs || bs.contains(targetDetailEl))) {
-      bottomPanelEls.add(targetDetailEl);
-    }
-
-    bottomPanelEls.forEach(el => {
-      const isTargetDetail = el.id === 'cb-target-detail-pane';
-      const isPartyDock = el.id === 'cb-party-panes';
-      const role = isTargetDetail
-        ? 'target-detail-pane'
-        : (isPartyDock ? 'party-panes' : (el.id === 'cb-player-pane' ? 'player-pane' : 'ally-pane'));
-      const box = pushObstacle(el, 'lower', role);
-      if (!box) return;
-      if (isPartyDock) {
-        partyDockTop = Math.round(box.top);
       }
-      if (isTargetDetail) {
-        targetPaneLeft = Math.round(box.left);
-        targetPaneTop = Math.round(box.top);
-        targetPaneFound = true;
-      }
-      paneTop = Math.min(paneTop, box.top);
-      if (!isTargetDetail) {
-        allyPaneTop = Math.min(allyPaneTop, box.top);
-        allyPaneRight = Math.max(allyPaneRight, box.right);
-      }
-    });
-    if (!partyDockTop && allyPaneTop < fieldH) {
-      partyDockTop = Math.round(allyPaneTop);
+
+      uiState.paneTop = paneTop;
+      uiState.allyPaneTop = allyPaneTop;
+      uiState.targetPaneFound = targetPaneFound;
+      uiState.avRailBounds = avRailBounds;
+      uiState.cachedBoundsFieldKey = boundsFieldKey;
     }
 
-    // 仅作状态诊断记录中场走廊尺寸（严禁用它强推当前角色菜单到雷纳德右侧）
-    let hasMidCorridor = false;
-    let corridorLeft = 0;
-    let corridorRight = 0;
-    let corridorW = 0;
-    const midCorridor = document.getElementById('cb-mid-corridor') || field.querySelector('.cb-mid-corridor');
-    if (midCorridor && isVisible(midCorridor)) {
-      const mr = measureBoxInField(midCorridor, field, fRectFallback);
-      if (mr && mr.width > 40) {
-        hasMidCorridor = true;
-        corridorLeft = Math.round(mr.left);
-        corridorRight = Math.round(mr.right);
-        corridorW = Math.round(mr.width);
+    if (is3dBox) {
+      const rawEnemyFrontX = aBox.enemyFrontLeftX;
+      if (typeof rawEnemyFrontX === 'number' && isFinite(rawEnemyFrontX) && rawEnemyFrontX > Math.max(120, aBox.left)) {
+        enemyMinLeft = rawEnemyFrontX;
+      } else {
+        enemyMinLeft = fieldW;
       }
     }
 
-    // 严格以当前操作角色 aBox 的右肩锚定，绝不取全体友军 Math.max，绝不被 #cb-mid-corridor 推飞
+    // 2D 模式严格贴合当前角色右肩；3D 模式若存在前排友军挡在右前方（如 2v1 罗文乱葬岗），右移至最右侧友军右肩外侧 (+12px)
     const shoulderPull = Math.min(28, Math.round(aBox.width * 0.14));
-    const idealAnchorX = Math.round(aBox.right - shoulderPull);
-    const enemyLeftBound = enemyMinLeft < fieldW ? Math.round(enemyMinLeft) : Math.round(fieldW - 14);
+    let idealAnchorX = Math.round(aBox.right - shoulderPull);
+    let hasFrontAllyShift = false;
+    if (is3dBox) {
+      let clearedRightX = idealAnchorX;
+      if (typeof aBox.safeAnchorRightX === 'number' && isFinite(aBox.safeAnchorRightX)) {
+        clearedRightX = Math.max(clearedRightX, Math.round(aBox.safeAnchorRightX));
+      }
+      if (typeof aBox.blockingAllyMaxRight === 'number' && isFinite(aBox.blockingAllyMaxRight)) {
+        clearedRightX = Math.max(clearedRightX, Math.round(aBox.blockingAllyMaxRight + 12));
+      }
+      if (clearedRightX > idealAnchorX) {
+        idealAnchorX = clearedRightX;
+        hasFrontAllyShift = true;
+      }
+    }
+    const hasEnemyBound = enemyMinLeft < fieldW && enemyMinLeft > 0;
+    const enemyLeftBound = hasEnemyBound ? Math.round(enemyMinLeft) : Math.round(fieldW - 14);
     const availRightToEnemy = enemyLeftBound - idealAnchorX;
-    const compactRig = isNarrowDesktop
-      || (enemyMinLeft < fieldW && availRightToEnemy < 380)
-      || (!hasMidCorridor && isMulti);
 
+    let compactRig;
+    if (is3dBox && isFast) {
+      const tightThreshold = uiState.compactMulti ? 404 : 380;
+      compactRig = isNarrowDesktop || (hasEnemyBound && availRightToEnemy < tightThreshold);
+    } else {
+      compactRig = isNarrowDesktop
+        || (hasEnemyBound && availRightToEnemy < 380)
+        || (!is3dBox && !hasMidCorridor && isMulti);
+    }
+
+    const prevCompact = uiState.compactMulti;
+    const prevFlip = uiState.anchorFlipLeft;
     uiState.compactMulti = compactRig;
-    uiState.rigEl.classList.toggle('compact-multi', compactRig);
+    if (!isFast || prevCompact !== compactRig) {
+      uiState.rigEl.classList.toggle('compact-multi', compactRig);
+    }
     uiState.rigEl.classList.toggle('narrow-desktop', isNarrowDesktop);
 
     const wingMinLeft = compactRig ? 24 : 46;
-    const rightSpan = compactRig ? (isNarrowDesktop ? 268 : 284) : 348;
-    const shouldFlipLeft = aBox.left > fieldW * 0.5 && (fieldW - idealAnchorX) < (rightSpan + 14);
+    const rightSpan = compactRig ? (isNarrowDesktop ? 260 : 272) : 348;
+    const enemyMargin3d = hasFrontAllyShift ? 12 : 16;
+
+    let shouldFlipLeft = aBox.left > fieldW * 0.5 && (fieldW - idealAnchorX) < (rightSpan + 14);
+    if (is3dBox && !shouldFlipLeft && hasEnemyBound) {
+      const minShoulderAx = Math.max(56, Math.round(aBox.left + aBox.width * 0.16));
+      const maxAxByEnemy = Math.round(enemyLeftBound - rightSpan - enemyMargin3d);
+      const canFlipLeftComfortably = (aBox.left + shoulderPull) >= (rightSpan + 16);
+      if (maxAxByEnemy < minShoulderAx && canFlipLeftComfortably) {
+        shouldFlipLeft = true;
+      }
+    }
     uiState.anchorFlipLeft = shouldFlipLeft;
-    uiState.rigEl.classList.toggle('anchor-flip-left', shouldFlipLeft);
+    if (!isFast || prevFlip !== shouldFlipLeft) {
+      uiState.rigEl.classList.toggle('anchor-flip-left', shouldFlipLeft);
+    }
 
     let anchorX;
     if (shouldFlipLeft) {
@@ -2060,6 +2382,16 @@
       const minFlipAx = Math.min(fieldW - 68, rightSpan + 14);
       const maxFlipAx = Math.max(minFlipAx, Math.min(fieldW - 68, Math.round(aBox.right - aBox.width * 0.35)));
       anchorX = Math.round(Math.max(minFlipAx, Math.min(maxFlipAx, leftIdealX)));
+    } else if (is3dBox) {
+      // 3D 模式智能右边界钳位：优先避让前排友军并贴合右肩，同时绝不越过敌方前排人脸或视口右缘
+      const maxAxViewport = Math.round(fieldW - rightSpan - 14);
+      const maxAxEnemy = hasEnemyBound
+        ? Math.round(enemyLeftBound - rightSpan - enemyMargin3d)
+        : maxAxViewport;
+      const effectiveMaxAx = Math.max(56, Math.min(maxAxViewport, maxAxEnemy));
+      const preferredMinAx = Math.max(56, Math.round(aBox.left + aBox.width * 0.22));
+      const minAx = Math.min(preferredMinAx, effectiveMaxAx);
+      anchorX = Math.round(Math.max(minAx, Math.min(effectiveMaxAx, idealAnchorX)));
     } else {
       const minAx = Math.max(68, Math.round(aBox.left + aBox.width * 0.35));
       const maxAx = Math.max(minAx, Math.round(fieldW - rightSpan - 14));
@@ -2068,7 +2400,7 @@
 
     const wingTopExtent = (compactRig && isNarrowDesktop) ? 106 : (compactRig ? 120 : 128);
     const wingBotExtent = (compactRig && isNarrowDesktop) ? 132 : (compactRig ? 156 : 164);
-    const safeTop = 8;
+    let safeTop = 8;
     let safeBot = fieldH - 10;
     const wingAbsLeft = shouldFlipLeft ? (anchorX - rightSpan) : (anchorX + wingMinLeft);
     const wingAbsRight = shouldFlipLeft ? (anchorX - wingMinLeft) : (anchorX + rightSpan);
@@ -2080,6 +2412,12 @@
     }
     if (paneTop < fieldH && (paneTop - 8 - wingBotExtent) >= (safeTop + wingTopExtent)) {
       safeBot = Math.min(safeBot, paneTop - 8);
+    }
+    if (avRailBounds && wingAbsRight > avRailBounds.left - 6 && wingAbsLeft < avRailBounds.right + 6) {
+      const belowAvTop = Math.round(avRailBounds.bottom + 6);
+      if (safeBot - belowAvTop >= wingTopExtent + wingBotExtent) {
+        safeTop = Math.max(safeTop, belowAvTop);
+      }
     }
 
     let minAy = safeTop + wingTopExtent;
@@ -2097,7 +2435,7 @@
     const anchorY = Math.round(Math.max(minAy, Math.min(maxAy, actorCy)));
 
     const nextActorKey = aBox.actorKey || 'player';
-    if (uiState.lastActiveActorKey && nextActorKey !== uiState.lastActiveActorKey) {
+    if (!isFast && uiState.lastActiveActorKey && nextActorKey !== uiState.lastActiveActorKey) {
       uiState.collapsed = false;
     }
     uiState.lastActiveActorKey = nextActorKey;
@@ -2107,7 +2445,7 @@
     uiState.skyBotY = Math.max(uiState.skyTopY + 140, Math.round(Math.min(enemyMinTop, paneTop)));
     uiState.portraitRight = Math.round(aBox.right);
     uiState.allyPaneRight = Math.round(allyPaneRight);
-    uiState.enemyLeftX = enemyMinLeft < fieldW ? Math.round(enemyMinLeft) : 0;
+    uiState.enemyLeftX = hasEnemyBound ? Math.round(enemyMinLeft) : 0;
     uiState.hasMidCorridor = hasMidCorridor;
     uiState.corridorLeft = corridorLeft;
     uiState.corridorRight = corridorRight;
@@ -2119,10 +2457,28 @@
     uiState.targetPaneTop = targetPaneTop;
     uiState.obstacles = obstacles;
 
+    const posChanged = anchorX !== uiState.lastAnchorX || anchorY !== uiState.lastAnchorY;
     uiState.lastAnchorX = anchorX;
     uiState.lastAnchorY = anchorY;
-    uiState.rigEl.style.left = `${anchorX}px`;
-    uiState.rigEl.style.top = `${anchorY}px`;
+    if (!isFast || posChanged || !uiState.rigEl.style.left || !uiState.rigEl.style.top) {
+      uiState.rigEl.style.left = `${anchorX}px`;
+      uiState.rigEl.style.top = `${anchorY}px`;
+    }
+    if (isFast && (prevCompact !== compactRig || prevFlip !== shouldFlipLeft)) {
+      renderCurrentSvg();
+    }
+    return true;
+  }
+
+  function syncRigAnchor(battleOverride) {
+    return computeAndApplyRigAnchor(battleOverride, { fast: false });
+  }
+
+  function syncRigAnchorFast() {
+    if (!uiState.rigEl || !uiState.rigEl.isConnected) return false;
+    const bs = getBattleScreen();
+    if (!bs || !bs.classList.contains('prism-radial-active') || !isVisible(bs)) return false;
+    return computeAndApplyRigAnchor(uiState.lastBattleState || getEngineBattle(), { fast: true });
   }
 
   function ensureTopBarButtons() {
@@ -2286,7 +2642,11 @@
     if (item.side === 'ally') {
       const allies = battleState && Array.isArray(battleState.allies) ? battleState.allies : null;
       const allyObj = (allies && item.allyIdx != null && item.allyIdx >= 0) ? allies[item.allyIdx] : null;
-      return item.spriteId || (allyObj && allyObj.spriteId) || 'reno';
+      return item.spriteId
+        || (allyObj && (allyObj.spriteId || allyObj.charId || allyObj.id))
+        || item.charId
+        || item.id
+        || 'reno';
     }
     if (item.side === 'enemy') {
       const enemies = battleState && Array.isArray(battleState.enemies) ? battleState.enemies : null;
@@ -2353,10 +2713,16 @@
       if (!uiState.avListEl || !uiState.avListEl.isConnected) {
         uiState.avListEl = uiState.avRailEl.querySelector('#cb-av-list');
       }
+      if (!uiState.avEventEl || !uiState.avEventEl.isConnected) {
+        uiState.avEventEl = uiState.avRailEl.querySelector('#cb-av-event-strip');
+      }
       if (!uiState.avForecastEl || !uiState.avForecastEl.isConnected) {
         uiState.avForecastEl = uiState.avRailEl.querySelector('#cb-av-forecast');
       }
-      if (uiState.avListEl && uiState.avForecastEl) {
+      if (!uiState.avCamResetEl || !uiState.avCamResetEl.isConnected) {
+        uiState.avCamResetEl = uiState.avRailEl.querySelector('#cb-av-cam-reset');
+      }
+      if (uiState.avListEl && uiState.avForecastEl && uiState.avCamResetEl) {
         return uiState.avRailEl;
       }
     }
@@ -2371,14 +2737,26 @@
     rail.id = 'cb-av-rail';
     rail.setAttribute('aria-label', '行动顺序条');
     rail.innerHTML = [
-      '<div class="cb-av-list" id="cb-av-list"></div>',
+      '<div class="cb-av-bar">',
+      '  <div class="cb-av-list" id="cb-av-list"></div>',
+      '  <button type="button" id="cb-av-cam-reset" class="cb-av-cam-reset" data-indie-tip="重置 3D 战场全景视角">全景</button>',
+      '</div>',
+      '<div class="cb-av-event-strip hidden" id="cb-av-event-strip"></div>',
       '<div class="cb-av-forecast" id="cb-av-forecast"></div>',
     ].join('');
 
     host.appendChild(rail);
     uiState.avRailEl = rail;
     uiState.avListEl = rail.querySelector('#cb-av-list');
+    uiState.avEventEl = rail.querySelector('#cb-av-event-strip');
     uiState.avForecastEl = rail.querySelector('#cb-av-forecast');
+    uiState.avCamResetEl = rail.querySelector('#cb-av-cam-reset');
+    if (uiState.avCamResetEl) {
+      uiState.avCamResetEl.addEventListener('click', () => {
+        safeSfx('ui_tick', { gain: 0.62 });
+        focusStage3DCamera('default');
+      });
+    }
     uiState.lastAvSig = '';
     return rail;
   }
@@ -2500,6 +2878,10 @@
         uiState.avListEl.innerHTML = '';
         uiState.lastAvSig = '__empty__';
       }
+      if (uiState.avEventEl) {
+        uiState.avEventEl.classList.add('hidden');
+        uiState.avEventEl.textContent = '';
+      }
       rail.classList.add('hidden');
       syncAvForecast(null, state);
       return rail;
@@ -2510,7 +2892,7 @@
     const hasVanguard = Array.isArray(state.allies) && state.allies.length > 0;
     rail.classList.toggle('is-vanguard-compact', hasVanguard);
 
-    const maxRows = hasVanguard ? 3 : 4;
+    const maxRows = Math.min(6, queue.length);
     const visibleQueue = queue.slice(0, maxRows);
     const pxApi = global.CombatPixelVFX || null;
     const stageId = state.stageId || state.id || '';
@@ -2521,33 +2903,45 @@
       const side = item && item.side ? item.side : 'player';
       const spriteId = resolveAvSpriteId(item, state, pxApi);
       const avVal = Math.max(0, Math.round(Number(item && item.av) || 0));
+      const id = (item && item.id) || '';
+      const allyIdx = (item && item.allyIdx != null) ? Number(item.allyIdx) : -1;
+      const enemyIdx = (item && item.enemyIdx != null) ? Number(item.enemyIdx) : -1;
+      const actorKey = (item && item.actorKey)
+        ? String(item.actorKey)
+        : (side === 'player'
+          ? 'player'
+          : (side === 'ally'
+            ? `ally:${id || (allyIdx >= 0 ? allyIdx : '0')}`
+            : `enemy:${enemyIdx >= 0 ? enemyIdx : (id || '0')}`));
       return {
         idx,
         side,
         spriteId,
         avVal,
-        id: (item && item.id) || '',
-        allyIdx: (item && item.allyIdx != null) ? Number(item.allyIdx) : -1,
-        enemyIdx: (item && item.enemyIdx != null) ? Number(item.enemyIdx) : -1,
+        id,
+        actorKey,
+        allyIdx,
+        enemyIdx,
         fullName: (item && item.name) || (side === 'player' ? '希尔维亚' : side === 'ally' ? '友军' : '敌方'),
       };
     });
 
     const nextAvSig = [
       stageId,
-      hasVanguard ? '1' : '0',
       oneMoreActive ? '1' : '0',
       pxReady,
-      rowEntries.map(r => `${r.side}|${r.id}|${r.allyIdx}|${r.enemyIdx}|${r.avVal}|${r.spriteId}|${r.fullName}`).join(';'),
+      rowEntries.map(r => `${r.side}|${r.id}|${r.actorKey}|${r.allyIdx}|${r.enemyIdx}|${r.avVal}|${r.spriteId}|${r.fullName}`).join(';'),
     ].join('::');
 
     if (nextAvSig !== uiState.lastAvSig || uiState.avListEl.children.length === 0) {
-      uiState.lastAvSig = nextAvSig;
       uiState.avListEl.innerHTML = '';
 
       const seenUnits = new Set();
+      let allHeadsDrawn = true;
+      let hasOneMoreBanner = false;
+
       rowEntries.forEach(entry => {
-        const { idx, side, spriteId, avVal, allyIdx, enemyIdx, fullName, id } = entry;
+        const { idx, side, spriteId, avVal, allyIdx, enemyIdx, fullName, id, actorKey } = entry;
         const unitKey = side === 'player'
           ? 'player'
           : (side === 'ally'
@@ -2558,7 +2952,9 @@
 
         const isActing = idx === 0;
         const isOneMoreRow = oneMoreActive && side === 'player' && isActing && !isGhost;
+        if (isOneMoreRow) hasOneMoreBanner = true;
         const shortName = formatAvShortName(fullName, side === 'player' ? '希尔维亚' : side === 'ally' ? '友军' : '敌方');
+        const tipText = `${fullName} · AV ${avVal}`;
 
         const row = document.createElement('div');
         row.className = 'cb-av-row'
@@ -2568,23 +2964,42 @@
           + (isGhost ? ' ghost' : '')
           + (isOneMoreRow ? ' flash-onemore' : '');
         row.setAttribute('data-side', side);
+        row.setAttribute('data-actor-key', actorKey);
+        row.setAttribute('role', 'button');
+        row.setAttribute('tabindex', '0');
+        row.setAttribute('aria-label', tipText);
+        row.setAttribute('data-indie-tip', tipText);
+
         if (side === 'enemy' && enemyIdx >= 0) {
           row.setAttribute('data-eidx', String(enemyIdx));
-          row.setAttribute('role', 'button');
-          row.setAttribute('tabindex', '0');
-          row.addEventListener('click', () => {
+          const onEnemyFocus = () => {
             selectAvEnemyTarget(enemyIdx);
-          });
+            focusStage3DCamera('clash', `enemy:${enemyIdx}`);
+          };
+          row.addEventListener('click', onEnemyFocus);
           row.addEventListener('keydown', ev => {
             if (ev.key === 'Enter' || ev.key === ' ') {
               ev.preventDefault();
-              selectAvEnemyTarget(enemyIdx);
+              onEnemyFocus();
             }
           });
-        } else if (side === 'ally' && allyIdx >= 0) {
-          row.setAttribute('data-aidx', String(allyIdx));
+        } else {
+          if (side === 'ally' && allyIdx >= 0) {
+            row.setAttribute('data-aidx', String(allyIdx));
+          }
+          const focusActorKey = actorKey || 'player';
+          const onAllyFocus = () => {
+            safeSfx('ui_tick', { gain: 0.58 });
+            focusStage3DCamera('actor', focusActorKey);
+          };
+          row.addEventListener('click', onAllyFocus);
+          row.addEventListener('keydown', ev => {
+            if (ev.key === 'Enter' || ev.key === ' ') {
+              ev.preventDefault();
+              onAllyFocus();
+            }
+          });
         }
-        row.setAttribute('data-indie-tip', fullName);
 
         const inner = document.createElement('div');
         inner.className = 'cb-av-row-in';
@@ -2593,19 +3008,20 @@
         portrait.className = 'cb-av-portrait';
         const canvas = document.createElement('canvas');
         canvas.className = 'cb-av-canvas';
-        canvas.width = 34;
-        canvas.height = 34;
+        canvas.width = 36;
+        canvas.height = 36;
         portrait.appendChild(canvas);
 
         let drawn = false;
         if (pxApi && typeof pxApi.drawHeadCanvas === 'function' && spriteId) {
           try {
-            drawn = !!pxApi.drawHeadCanvas(canvas, spriteId, 34);
+            drawn = !!pxApi.drawHeadCanvas(canvas, spriteId, 36);
           } catch (e) {
             drawn = false;
           }
         }
         if (!drawn) {
+          allHeadsDrawn = false;
           portrait.classList.add('is-fallback');
           canvas.style.display = 'none';
           const fallbackEl = document.createElement('span');
@@ -2615,27 +3031,27 @@
           portrait.appendChild(fallbackEl);
         }
 
-        const nameEl = document.createElement('div');
-        nameEl.className = 'cb-av-name';
-        nameEl.textContent = shortName;
-
         const valEl = document.createElement('div');
         valEl.className = 'cb-av-val';
         valEl.textContent = String(avVal);
 
         inner.appendChild(portrait);
-        inner.appendChild(nameEl);
         inner.appendChild(valEl);
         row.appendChild(inner);
         uiState.avListEl.appendChild(row);
-
-        if (isOneMoreRow) {
-          const eventStrip = document.createElement('div');
-          eventStrip.className = 'cb-av-event-strip';
-          eventStrip.textContent = '⚡ 击破再动 · 0';
-          uiState.avListEl.appendChild(eventStrip);
-        }
       });
+
+      if (uiState.avEventEl) {
+        if (hasOneMoreBanner) {
+          uiState.avEventEl.textContent = '⚡ 击破再动 · 0';
+          uiState.avEventEl.classList.remove('hidden');
+        } else {
+          uiState.avEventEl.textContent = '';
+          uiState.avEventEl.classList.add('hidden');
+        }
+      }
+
+      uiState.lastAvSig = allHeadsDrawn ? nextAvSig : `${nextAvSig}:partial`;
     }
 
     syncAvRailTargetHighlight(state.targetIdx);
@@ -2671,14 +3087,14 @@
       '.cb-bl-beat.beat-b3{color:#8c641e;background:rgba(212,169,74,0.18);border-left:2px solid #c9a04a;}',
       '.cb-bl-beat.beat-aoe{color:#1d4ed8;background:rgba(59,130,246,0.14);border-left:2px solid #2563eb;}',
       '.cb-blade.compact .cb-bl-beat,.cb-prism-rig.two-col-blades.narrow-desktop .cb-bl-beat{font-size:9.5px;padding:1px 4px;letter-spacing:0;}',
-      '.cb-blade:not(:disabled):hover .cb-bl-beat,.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-beat{color:#d9f5ff;background:rgba(155,244,255,0.18);border-left-color:#9bf4ff;}',
-      '.cb-blade:not(:disabled):hover .cb-bl-beat.beat-b3,.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-beat.beat-b3{color:#fff1be;background:rgba(245,214,125,0.22);border-left-color:#fde68a;}',
+      '.cb-blade:not(:disabled):hover .cb-bl-beat,.cb-blade:not(:disabled):focus-visible .cb-bl-beat,.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-beat,.cb-blade:not(:disabled):hover .cb-blade-beat,.cb-blade:not(:disabled):focus-visible .cb-blade-beat,.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-blade-beat{color:#FFFFFF;background:rgba(255,255,255,0.22);border-left-color:#FFFFFF;text-shadow:0 1px 2px rgba(8,22,68,0.55);}',
+      '.cb-blade:not(:disabled):hover .cb-bl-beat.beat-b3,.cb-blade:not(:disabled):focus-visible .cb-bl-beat.beat-b3,.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-beat.beat-b3{color:#FFFFFF;background:rgba(255,255,255,0.22);border-left-color:#FDE68A;text-shadow:0 1px 2px rgba(8,22,68,0.55);}',
       /* V3.2 top-bar casual mode soft micro-badge (hidden by default, zero footprint) */
       '.cb-casual-badge{display:inline-flex;align-items:center;gap:4px;margin-left:6px;padding:1px 7px;font-size:11px;font-weight:700;letter-spacing:0.04em;color:#0e6c78;background:linear-gradient(90deg,rgba(186,230,253,0.42),rgba(224,242,254,0.22));border-left:2px solid #38bdf8;white-space:nowrap;flex-shrink:0;line-height:1.4;}',
       '.cb-casual-badge.hidden{display:none!important;}',
-      /* V3.2 timing-ring / async phase unobstructed temporary dissolve */
-      '.cb-prism-rig.dissolved.is-timing-dissolved{opacity:0;pointer-events:none;transition:opacity 0.14s ease;}',
-      '.cb-prism-rig.dissolved.is-timing-dissolved *{pointer-events:none!important;}',
+      /* V3.2 timing-ring / cast / async phase unobstructed instant dissolve */
+      '.cb-prism-rig.dissolved,.cb-prism-rig.dissolved.is-timing-dissolved{opacity:0;visibility:hidden;pointer-events:none;transition:none;}',
+      '.cb-prism-rig.dissolved *,.cb-prism-rig.dissolved.is-timing-dissolved *{pointer-events:none!important;}',
       /* Zero-specificity fallbacks for direct-press amp pips, tier themes (ice-cyan -> royal blue -> champagne gold), and pulse */
       ':where(.cb-amp-meta){display:inline-flex;align-items:center;gap:6px;}',
       ':where(.cb-amp-pips){display:inline-flex;align-items:center;gap:4px;vertical-align:middle;line-height:1;flex-shrink:0;}',
@@ -2726,9 +3142,9 @@
       ':where(.cb-spine-btn.amp-mini.amp-t1 .cb-amp-pip,.cb-spine-btn.amp-mini.amp-t2 .cb-amp-pip,.cb-spine-btn.amp-mini:hover .cb-amp-pip){background:rgba(255,255,255,0.30);}',
       ':where(.cb-spine-btn.amp-mini.amp-t1 .cb-amp-pip.on,.cb-spine-btn.amp-mini.amp-t2 .cb-amp-pip.on){background:#FFFFFF;filter:drop-shadow(0 0 3px rgba(255,255,255,0.85));}',
       ':where(.cb-spine-btn.amp-mini.amp-t3 .cb-amp-pip.on){background:linear-gradient(135deg,#FFFFFF,#7C5310);filter:drop-shadow(0 0 3px rgba(255,248,220,0.90));}',
-      ':where(.cb-av-fallback){display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-family:var(--pr-serif,serif);font-size:15px;font-weight:800;line-height:1;color:var(--pr-sapphire-deep,#0e2b78);user-select:none;}',
-      ':where(.cb-av-row.enemy-row .cb-av-fallback){color:#9E1B3A;}',
-      ':where(.cb-av-row.ally-row .cb-av-fallback){color:#8B5B1E;}',
+      ':where(.cb-av-fallback){display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-family:var(--pr-serif,serif);font-size:15px;font-weight:800;line-height:1;color:var(--pr-sapphire-deep,#0e2b78);background:radial-gradient(circle at 50% 34%,#FFFFFF 0%,#DFEEFF 75%,#C2DAF8 100%);clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);user-select:none;}',
+      ':where(.cb-av-row.enemy-row .cb-av-fallback){color:#9E1B3A;background:radial-gradient(circle at 50% 34%,#FFF7F9 0%,#FAD9E0 78%,#F0B6C6 100%);}',
+      ':where(.cb-av-row.ally-row .cb-av-fallback){color:#1658EB;background:radial-gradient(circle at 50% 34%,#FFFFFF 0%,#E4F0FF 68%,#EFE2C4 100%);}',
       '.cb-prism-rig.mode-items .cb-prism-cascade{display:block;opacity:1;transform:none;animation:prCascadeSnap 0.14s var(--pr-ease) both;}',
       '.cb-prism-rig.mode-items #cb-pw-amp-mini{display:none!important;}',
       '.cb-pwing.needs-endturn::before{background:var(--pr-caustic),linear-gradient(112deg,rgba(255,252,242,0.97) 0%,rgba(236,246,255,0.95) 56%,rgba(220,238,255,0.93) 100%);box-shadow:inset 0 0 0 1px rgba(212,169,74,0.72);}',
@@ -3132,10 +3548,13 @@
         uiState.lastAmpPct = -1;
         uiState.lastBladeSig = '';
         uiState.lastAvSig = '';
+        uiState.cachedBoundsFieldKey = '';
+        uiState.avRailBounds = null;
         uiState.activeActorOverride = null;
         uiState.lastActiveActorKey = 'player';
         uiState.guardSplitIdx = -1;
         uiState.animDissolveUntil = 0;
+        uiState.castDissolving = false;
         cancelPendingHoverClear();
         if (uiState.dissolveTimer) {
           clearTimeout(uiState.dissolveTimer);
@@ -3152,6 +3571,9 @@
       } else if (b) {
         const turnChanged = typeof b.turn === 'number' && uiState.lastBattleTurn >= 0 && b.turn !== uiState.lastBattleTurn;
         if (typeof b.turn === 'number') uiState.lastBattleTurn = b.turn;
+        if (turnChanged && !isAsyncPhaseActive(b)) {
+          uiState.castDissolving = false;
+        }
         if (turnChanged || isEnemyTurnState(b)) {
           if (uiState.collapsed) {
             uiState.collapsed = false;
@@ -3185,7 +3607,7 @@
       if (field) attachFieldObserver(field);
 
       const hardDissolved = shouldHardDissolve(b);
-      const timingDissolved = isTimingOrAsyncDissolved(b);
+      const timingDissolved = isTimingOrAsyncDissolved(b) || !!(b && (b.busy || b.timingBusy || b._asyncPhaseActive)) || !!uiState.castDissolving;
       const dissolved = hardDissolved || timingDissolved || isBriefDissolving();
       if (timingDissolved) {
         startTimingRestoreWatch();
@@ -3506,7 +3928,7 @@
   function onKeyDown(ev) {
     if (typeof window !== 'undefined' && window.CombatTimingRing && typeof window.CombatTimingRing.isActive === 'function' && window.CombatTimingRing.isActive()) return;
     if (global.CombatTimingRing && typeof global.CombatTimingRing.isActive === 'function' && global.CombatTimingRing.isActive()) return;
-    if (isAsyncPhaseActive()) return;
+    if (isAsyncPhaseActive() || uiState.castDissolving) return;
     if (!isActive() || shouldHardDissolve()) return;
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
     const tgt = ev.target;
@@ -3798,7 +4220,12 @@
     uiState.logBarEl = null;
     uiState.avRailEl = null;
     uiState.avListEl = null;
+    uiState.avEventEl = null;
     uiState.avForecastEl = null;
+    uiState.avCamResetEl = null;
+    uiState.avRailBounds = null;
+    uiState.cachedBoundsFieldKey = '';
+    uiState.is3dStage = false;
     uiState.collapsed = false;
     uiState.lastAvSig = '';
     uiState.lastBattleWaveKey = '';
@@ -3813,6 +4240,7 @@
     uiState.hoveringAmpMini = false;
     uiState.lastSkillCastAt = 0;
     uiState.lastAmpPct = -1;
+    uiState.castDissolving = false;
     const bs = getBattleScreen();
     if (bs) bs.classList.remove('prism-radial-active');
   }
@@ -3822,6 +4250,8 @@
     mount,
     unmount,
     sync,
+    syncRigAnchor,
+    syncRigAnchorFast,
     ensureAvRail,
     syncAvRail,
     syncAvForecast,
@@ -3850,6 +4280,7 @@
       enabled: uiState.enabled,
       mounted: uiState.mounted,
       active: isActive(),
+      is3dStage: isStage3DActive(),
       menuMode: uiState.menuMode,
       collapsed: !!uiState.collapsed,
       logExpanded: uiState.logExpanded,
@@ -3857,6 +4288,7 @@
       ampPct: uiState.lastAmpPct,
       ampTiersVersion: 'V3.2',
       timingDissolved: isTimingOrAsyncDissolved(),
+      castDissolving: !!uiState.castDissolving,
       casualMode: isCasualModeActive(),
       gauntletOff: isGauntletOffMode(),
       activeActorKey: uiState.lastActiveActorKey,

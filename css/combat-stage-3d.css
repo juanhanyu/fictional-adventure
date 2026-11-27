@@ -1,0 +1,566 @@
+/* =========================================================================
+   《转生千金》正式版 HD-2D 实时 3D 战斗舞台样式表 (css/combat-stage-3d.css)
+   严格作用域：全部规则限定于 #battle-screen.is-3d-stage，
+               非 3D / 无 WebGL / jsdom 环境 100% 沿用原版 2D 舞台零副作用。
+   视觉语言：雪瓷冰白 (#F8FBFF) × 皇家蓝 (#1658EB) × 冰青 (#7DD3FC) × 香槟金 (#C4A46C)
+   性能与规范红线：
+     - 零毛玻璃实时模糊，全清透雪瓷底面消除合成器卡顿
+     - 零圆框套圆框 (border-radius: 0)，保持 45° 切角与 1px 建筑细线
+     - 保留原版 DOM 骨架与事件连接（严禁对纸片人节点使用 display: none）
+   ========================================================================= */
+
+/* ==================== 1. 3D Canvas 挂载层与 2D 扁平背景隐身 ==================== */
+#battle-screen.is-3d-stage #cb-stage-3d-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 4;
+  pointer-events: none;
+  display: block;
+}
+
+#battle-screen.is-3d-stage #cb-backdrop,
+#battle-screen.is-3d-stage .cb-backdrop,
+#battle-screen.is-3d-stage .cb-vignette {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#battle-screen.is-3d-stage > #cb-palace-frost,
+#battle-screen.is-3d-stage > #cb-vfx-flash {
+  z-index: 5;
+}
+
+#battle-screen.is-3d-stage > .cb-shell {
+  z-index: 6;
+}
+
+/* ==================== 2. 保留 DOM 骨架并隐身 2D 纸片人 + 舞台分层守卫 ==================== */
+#battle-screen.is-3d-stage .cb-px-actor,
+#battle-screen.is-3d-stage .cb-magic-circle,
+#battle-screen.is-3d-stage .cb-slot-pad,
+#battle-screen.is-3d-stage .cb-e-avatar,
+#battle-screen.is-3d-stage .cb-p-portrait > img,
+#battle-screen.is-3d-stage .cb-ally-portrait > img,
+#battle-screen.is-3d-stage .cb-p-portrait > svg,
+#battle-screen.is-3d-stage .cb-ally-portrait > svg {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+#battle-screen.is-3d-stage .cb-arena-field {
+  position: relative;
+  overflow: visible;
+}
+
+#battle-screen.is-3d-stage #cb-pixel-vfx-canvas,
+#battle-screen.is-3d-stage .cb-pixel-vfx-canvas {
+  z-index: 8;
+}
+
+#battle-screen.is-3d-stage #cb-vfx-edition-a-canvas,
+#battle-screen.is-3d-stage .cb-vfx-edition-a-canvas {
+  z-index: 9;
+}
+
+#battle-screen.is-3d-stage #cb-party-panes {
+  z-index: 22;
+}
+
+#battle-screen.is-3d-stage #cb-target-detail-pane {
+  z-index: 22;
+}
+
+#battle-screen.is-3d-stage #cb-target-detail-pane:hover,
+#battle-screen.is-3d-stage #cb-target-detail-pane:focus-within,
+#battle-screen.is-3d-stage #cb-target-detail-pane:has(.cb-trait-wrap.tip-open) {
+  z-index: 46;
+}
+
+#battle-screen.is-3d-stage #cb-callout-layer,
+#battle-screen.is-3d-stage .cb-callout-layer {
+  z-index: 25;
+}
+
+#battle-screen.is-3d-stage #cb-prism-rig,
+#battle-screen.is-3d-stage .cb-prism-rig {
+  z-index: 45;
+}
+
+#battle-screen.is-3d-stage .cb-arena-field .cb-timing-ring-layer,
+#battle-screen.is-3d-stage .cb-timing-ring-layer {
+  z-index: 48;
+}
+
+/* ==================== 3. 敌方脚底雪瓷名牌贴合 3D 屏幕投影 ==================== */
+#battle-screen.is-3d-stage #cb-enemy-zone,
+#battle-screen.is-3d-stage #cb-enemy-zone.cb-enemy-grid,
+#battle-screen.is-3d-stage #cb-enemy-zone.cb-formation-grid,
+#battle-screen.is-3d-stage:not(.prism-radial-active) #cb-enemy-zone,
+#battle-screen.is-3d-stage:not(.prism-radial-active) #cb-enemy-zone.cb-enemy-grid,
+#battle-screen.is-3d-stage:not(.prism-radial-active) #cb-enemy-zone.cb-formation-grid {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  pointer-events: none;
+  z-index: 14;
+  overflow: visible;
+}
+
+#battle-screen.is-3d-stage #cb-enemy-zone .cb-enemy-slot,
+#battle-screen.is-3d-stage #cb-enemy-zone.multi-enemies .cb-enemy-slot,
+#battle-screen.is-3d-stage #cb-enemy-zone > .cb-enemy-slot[data-row="0"][data-col="front"],
+#battle-screen.is-3d-stage #cb-enemy-zone > .cb-enemy-slot[data-row="0"][data-col="back"],
+#battle-screen.is-3d-stage #cb-enemy-zone > .cb-enemy-slot[data-row="1"][data-col="front"],
+#battle-screen.is-3d-stage #cb-enemy-zone > .cb-enemy-slot[data-row="1"][data-col="back"],
+#battle-screen.is-3d-stage #cb-enemy-zone > .cb-enemy-slot[data-row="2"][data-col="front"],
+#battle-screen.is-3d-stage #cb-enemy-zone > .cb-enemy-slot[data-row="2"][data-col="back"] {
+  position: static;
+  width: 0;
+  height: 0;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  pointer-events: none;
+  transform: none;
+}
+
+#battle-screen.is-3d-stage .cb-enemy-card,
+#battle-screen.is-3d-stage #cb-enemy-zone:not(.multi-enemies) .cb-enemy-card,
+#battle-screen.is-3d-stage #cb-enemy-zone.multi-enemies .cb-enemy-card,
+#battle-screen.is-3d-stage #cb-enemy-zone:not(.multi-enemies) .cb-enemy-slot > .cb-enemy-card:has(.cb-px-actor) {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 156px;
+  min-width: 0;
+  max-width: none;
+  height: auto;
+  min-height: 0;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  margin-left: -78px;
+  margin-top: -12px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  pointer-events: auto;
+  z-index: 14;
+  overflow: visible;
+  will-change: transform;
+}
+
+#battle-screen.is-3d-stage .cb-enemy-card.targeted {
+  z-index: 16;
+}
+
+#battle-screen.is-3d-stage .cb-enemy-card:hover,
+#battle-screen.is-3d-stage .cb-enemy-card:focus-within,
+#battle-screen.is-3d-stage .cb-enemy-card.tip-open,
+#battle-screen.is-3d-stage .cb-enemy-card:has(.cb-intent-banner.tip-open) {
+  z-index: 42;
+}
+
+#battle-screen.is-3d-stage .cb-enemy-card.dead {
+  opacity: 0.42;
+  pointer-events: none;
+}
+
+#battle-screen.is-3d-stage .cb-enemy-card .cb-e-stage {
+  height: 0;
+  min-height: 0;
+  max-height: 0;
+  flex: 0 0 0;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+#battle-screen.is-3d-stage .cb-enemy-card .cb-e-plate,
+#battle-screen.is-3d-stage #cb-enemy-zone:not(.multi-enemies) .cb-enemy-card .cb-e-plate,
+#battle-screen.is-3d-stage #cb-enemy-zone.multi-enemies .cb-enemy-card .cb-e-plate,
+#battle-screen.is-3d-stage #cb-enemy-zone[data-enemy-count="1"] .cb-enemy-card .cb-e-plate,
+#battle-screen.is-3d-stage #cb-enemy-zone[data-enemy-count="2"] .cb-enemy-card .cb-e-plate,
+#battle-screen.is-3d-stage #cb-enemy-zone[data-enemy-count="3"] .cb-enemy-card .cb-e-plate,
+#battle-screen.is-3d-stage #cb-enemy-zone[data-enemy-count="4"] .cb-enemy-card .cb-e-plate {
+  width: 156px;
+  min-width: 156px;
+  max-width: 168px;
+}
+
+/* 敌方 >= 4 只：非锁定敌怪适度紧缩至 132px，悬停或展开提示时舒展，锁定目标保持完整 156px */
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted) {
+  width: 132px;
+  margin-left: -66px;
+}
+
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted) .cb-e-plate,
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] #cb-enemy-zone .cb-enemy-card:not(.targeted) .cb-e-plate {
+  width: 132px;
+  min-width: 132px;
+  max-width: 132px;
+  padding: 1.5px 4px 2px;
+  gap: 1.5px;
+}
+
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted) .cb-e-micro-head {
+  height: 14px;
+  min-height: 14px;
+  max-height: 14px;
+  gap: 3px;
+}
+
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted) .cb-e-micro-head .cb-e-title {
+  font-size: 10px;
+  line-height: 14px;
+}
+
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted) .cb-intent-banner {
+  height: 15px;
+  min-height: 15px;
+  max-height: 15px;
+  padding: 0 2px;
+  margin-top: 0;
+}
+
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted) .cb-intent-banner .ib-move-name {
+  display: none;
+}
+
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted) .cb-intent-banner .ib-dmg-pill {
+  font-size: 8.5px;
+}
+
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted):hover,
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted):focus-within,
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted).tip-open,
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted):has(.cb-intent-banner.tip-open) {
+  width: 164px;
+  margin-left: -82px;
+}
+
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted):hover .cb-e-plate,
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted):focus-within .cb-e-plate,
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted).tip-open .cb-e-plate,
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted):has(.cb-intent-banner.tip-open) .cb-e-plate {
+  width: 164px;
+  min-width: 164px;
+  max-width: 196px;
+  padding: 2px 5px 3px;
+  gap: 2px;
+}
+
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted):hover .cb-intent-banner,
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted):focus-within .cb-intent-banner,
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted).tip-open .cb-intent-banner,
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted):has(.cb-intent-banner.tip-open) .cb-intent-banner {
+  height: 18px;
+  min-height: 18px;
+  max-height: 18px;
+}
+
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted):hover .cb-intent-banner .ib-move-name,
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted):focus-within .cb-intent-banner .ib-move-name,
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted).tip-open .cb-intent-banner .ib-move-name,
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted):has(.cb-intent-banner.tip-open) .cb-intent-banner .ib-move-name {
+  display: inline;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9px;
+  color: #1A2436;
+}
+
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card.targeted,
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] #cb-enemy-zone .cb-enemy-card.targeted {
+  width: 156px;
+  margin-left: -78px;
+}
+
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card.targeted .cb-e-plate,
+#battle-screen.is-3d-stage[data-enemy-count-many="1"] #cb-enemy-zone .cb-enemy-card.targeted .cb-e-plate {
+  width: 156px;
+  min-width: 156px;
+  max-width: 176px;
+  padding: 2px 5px 3px;
+  gap: 2px;
+}
+
+/* 3D 舞台敌方意图提示弹窗：近脚底投影保持向内安全展开不裁边 */
+#battle-screen.is-3d-stage .cb-enemy-card .cb-intent-tip {
+  z-index: 48;
+}
+
+/* ==================== 4. 顶部安全留白与顶中水平回合条 (#cb-av-rail) ==================== */
+#battle-screen.is-3d-stage .cb-topbar {
+  z-index: 24;
+  min-height: 36px;
+  padding: 4px 14px;
+}
+
+#battle-screen.is-3d-stage #cb-av-rail,
+#battle-screen.is-3d-stage .cb-av-rail,
+#battle-screen.is-3d-stage #cb-av-rail.is-vanguard-compact,
+#battle-screen.is-3d-stage .cb-av-rail.is-vanguard-compact {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: auto;
+  max-width: calc(100% - 48px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  z-index: 22;
+  pointer-events: auto;
+}
+
+#battle-screen.is-3d-stage #cb-av-rail .cb-av-list,
+#battle-screen.is-3d-stage .cb-av-rail .cb-av-list,
+#battle-screen.is-3d-stage .cb-av-rail.is-vanguard-compact .cb-av-list {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  padding: 2px 10px 3px;
+  background: linear-gradient(
+    90deg,
+    rgba(248, 251, 255, 0) 0%,
+    rgba(248, 251, 255, 0.86) 8%,
+    rgba(255, 255, 255, 0.92) 50%,
+    rgba(248, 251, 255, 0.86) 92%,
+    rgba(248, 251, 255, 0) 100%
+  );
+}
+
+#battle-screen.is-3d-stage #cb-av-rail .cb-av-list::after,
+#battle-screen.is-3d-stage .cb-av-rail .cb-av-list::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(125, 211, 252, 0.20) 0%,
+    rgba(22, 88, 235, 0.65) 26%,
+    rgba(196, 164, 108, 0.80) 56%,
+    rgba(209, 52, 86, 0.56) 84%,
+    rgba(125, 211, 252, 0.20) 100%
+  );
+  pointer-events: none;
+}
+
+#battle-screen.is-3d-stage #cb-av-rail .cb-av-row,
+#battle-screen.is-3d-stage .cb-av-rail .cb-av-row,
+#battle-screen.is-3d-stage .cb-av-rail.is-vanguard-compact .cb-av-row {
+  width: auto;
+  min-width: 112px;
+  max-width: 152px;
+  flex: 0 0 auto;
+  padding: 1.5px;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  filter: drop-shadow(0 4px 10px rgba(10, 28, 82, 0.16));
+}
+
+#battle-screen.is-3d-stage #cb-av-rail .cb-av-row-in,
+#battle-screen.is-3d-stage .cb-av-rail .cb-av-row-in,
+#battle-screen.is-3d-stage .cb-av-rail.is-vanguard-compact .cb-av-row-in {
+  gap: 6px;
+  padding: 3px 9px 3px 7px;
+  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+}
+
+#battle-screen.is-3d-stage #cb-av-rail .cb-av-row.acting,
+#battle-screen.is-3d-stage .cb-av-rail .cb-av-row.acting,
+#battle-screen.is-3d-stage .cb-av-rail.is-vanguard-compact .cb-av-row.acting {
+  transform: translateY(1px);
+  filter: drop-shadow(0 6px 14px rgba(22, 88, 235, 0.32));
+}
+
+#battle-screen.is-3d-stage #cb-av-rail .cb-av-row.enemy-row:not(.acting):hover,
+#battle-screen.is-3d-stage .cb-av-rail .cb-av-row.enemy-row:not(.acting):hover {
+  transform: translateY(-1px);
+}
+
+#battle-screen.is-3d-stage #cb-av-rail .cb-av-row.flash-delay,
+#battle-screen.is-3d-stage #cb-av-rail .cb-av-row.enemy-row.flash-delay {
+  transform: translateY(1px);
+}
+
+#battle-screen.is-3d-stage #cb-av-rail .cb-av-portrait,
+#battle-screen.is-3d-stage .cb-av-rail .cb-av-portrait,
+#battle-screen.is-3d-stage .cb-av-rail.is-vanguard-compact .cb-av-portrait {
+  width: 24px;
+  height: 24px;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+}
+
+#battle-screen.is-3d-stage #cb-av-rail .cb-av-name,
+#battle-screen.is-3d-stage .cb-av-rail .cb-av-name,
+#battle-screen.is-3d-stage .cb-av-rail.is-vanguard-compact .cb-av-name {
+  font-size: 11.5px;
+  line-height: 1.15;
+}
+
+#battle-screen.is-3d-stage #cb-av-rail .cb-av-val,
+#battle-screen.is-3d-stage .cb-av-rail .cb-av-val,
+#battle-screen.is-3d-stage .cb-av-rail.is-vanguard-compact .cb-av-val {
+  font-size: 12px;
+  line-height: 1.1;
+}
+
+#battle-screen.is-3d-stage #cb-av-rail .cb-av-event-strip,
+#battle-screen.is-3d-stage .cb-av-rail .cb-av-event-strip,
+#battle-screen.is-3d-stage .cb-av-rail.is-vanguard-compact .cb-av-event-strip {
+  flex: 0 0 auto;
+  padding: 3px 8px;
+  font-size: 10px;
+}
+
+#battle-screen.is-3d-stage #cb-av-rail .cb-av-forecast,
+#battle-screen.is-3d-stage .cb-av-rail .cb-av-forecast,
+#battle-screen.is-3d-stage .cb-av-rail.is-vanguard-compact .cb-av-forecast {
+  position: static;
+  left: auto;
+  top: auto;
+  margin-top: 1px;
+  width: max-content;
+  max-width: 340px;
+  padding: 3px 10px;
+  font-size: 10.5px;
+  z-index: 26;
+}
+
+/* ==================== 5. 1280×720 桌面紧凑适配（保证顶排 3D 角色头顶净空） ==================== */
+@media (max-width: 1360px), (max-height: 760px) {
+  #battle-screen.is-3d-stage .cb-topbar {
+    min-height: 34px;
+    padding: 3px 10px;
+  }
+
+  #battle-screen.is-3d-stage #cb-av-rail,
+  #battle-screen.is-3d-stage .cb-av-rail,
+  #battle-screen.is-3d-stage #cb-av-rail.is-vanguard-compact,
+  #battle-screen.is-3d-stage .cb-av-rail.is-vanguard-compact {
+    top: 2px;
+    max-width: calc(100% - 28px);
+    gap: 2px;
+  }
+
+  #battle-screen.is-3d-stage #cb-av-rail .cb-av-list,
+  #battle-screen.is-3d-stage .cb-av-rail .cb-av-list,
+  #battle-screen.is-3d-stage .cb-av-rail.is-vanguard-compact .cb-av-list {
+    gap: 4px;
+    padding: 1.5px 8px 2.5px;
+  }
+
+  #battle-screen.is-3d-stage #cb-av-rail .cb-av-row,
+  #battle-screen.is-3d-stage .cb-av-rail .cb-av-row,
+  #battle-screen.is-3d-stage .cb-av-rail.is-vanguard-compact .cb-av-row {
+    min-width: 96px;
+    max-width: 132px;
+    padding: 1px;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+  }
+
+  #battle-screen.is-3d-stage #cb-av-rail .cb-av-row-in,
+  #battle-screen.is-3d-stage .cb-av-rail .cb-av-row-in,
+  #battle-screen.is-3d-stage .cb-av-rail.is-vanguard-compact .cb-av-row-in {
+    gap: 5px;
+    padding: 2px 7px 2px 6px;
+    clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 5px 100%, 0 calc(100% - 5px));
+  }
+
+  #battle-screen.is-3d-stage #cb-av-rail .cb-av-portrait,
+  #battle-screen.is-3d-stage .cb-av-rail .cb-av-portrait,
+  #battle-screen.is-3d-stage .cb-av-rail.is-vanguard-compact .cb-av-portrait {
+    width: 20px;
+    height: 20px;
+  }
+
+  #battle-screen.is-3d-stage #cb-av-rail .cb-av-name,
+  #battle-screen.is-3d-stage .cb-av-rail .cb-av-name,
+  #battle-screen.is-3d-stage .cb-av-rail.is-vanguard-compact .cb-av-name {
+    font-size: 10.5px;
+  }
+
+  #battle-screen.is-3d-stage #cb-av-rail .cb-av-val,
+  #battle-screen.is-3d-stage .cb-av-rail .cb-av-val,
+  #battle-screen.is-3d-stage .cb-av-rail.is-vanguard-compact .cb-av-val {
+    font-size: 11px;
+  }
+
+  #battle-screen.is-3d-stage #cb-av-rail .cb-av-forecast,
+  #battle-screen.is-3d-stage .cb-av-rail .cb-av-forecast,
+  #battle-screen.is-3d-stage .cb-av-rail.is-vanguard-compact .cb-av-forecast {
+    padding: 2px 8px;
+    font-size: 10px;
+  }
+
+  #battle-screen.is-3d-stage .cb-enemy-card,
+  #battle-screen.is-3d-stage #cb-enemy-zone:not(.multi-enemies) .cb-enemy-card,
+  #battle-screen.is-3d-stage #cb-enemy-zone.multi-enemies .cb-enemy-card,
+  #battle-screen.is-3d-stage #cb-enemy-zone:not(.multi-enemies) .cb-enemy-slot > .cb-enemy-card:has(.cb-px-actor) {
+    width: 144px;
+    margin-left: -72px;
+    margin-top: -10px;
+  }
+
+  #battle-screen.is-3d-stage .cb-enemy-card .cb-e-plate,
+  #battle-screen.is-3d-stage #cb-enemy-zone:not(.multi-enemies) .cb-enemy-card .cb-e-plate,
+  #battle-screen.is-3d-stage #cb-enemy-zone.multi-enemies .cb-enemy-card .cb-e-plate,
+  #battle-screen.is-3d-stage #cb-enemy-zone[data-enemy-count="1"] .cb-enemy-card .cb-e-plate,
+  #battle-screen.is-3d-stage #cb-enemy-zone[data-enemy-count="2"] .cb-enemy-card .cb-e-plate,
+  #battle-screen.is-3d-stage #cb-enemy-zone[data-enemy-count="3"] .cb-enemy-card .cb-e-plate,
+  #battle-screen.is-3d-stage #cb-enemy-zone[data-enemy-count="4"] .cb-enemy-card .cb-e-plate {
+    width: 144px;
+    min-width: 144px;
+    max-width: 156px;
+  }
+
+  #battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted) {
+    width: 124px;
+    margin-left: -62px;
+  }
+
+  #battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card:not(.targeted) .cb-e-plate,
+  #battle-screen.is-3d-stage[data-enemy-count-many="1"] #cb-enemy-zone .cb-enemy-card:not(.targeted) .cb-e-plate {
+    width: 124px;
+    min-width: 124px;
+    max-width: 124px;
+  }
+
+  #battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card.targeted,
+  #battle-screen.is-3d-stage[data-enemy-count-many="1"] #cb-enemy-zone .cb-enemy-card.targeted {
+    width: 144px;
+    margin-left: -72px;
+  }
+
+  #battle-screen.is-3d-stage[data-enemy-count-many="1"] .cb-enemy-card.targeted .cb-e-plate,
+  #battle-screen.is-3d-stage[data-enemy-count-many="1"] #cb-enemy-zone .cb-enemy-card.targeted .cb-e-plate {
+    width: 144px;
+    min-width: 144px;
+    max-width: 156px;
+  }
+}

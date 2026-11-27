@@ -905,6 +905,8 @@
   let _lastBattleRef = null;
   let _lastBattleId = '';
   let _lastWaveIdx = -1;
+  let _lastEnemyPhase2Count = 0;
+  let _lastBattlePhase2 = false;
   let _fxSeed = 11;
   let _pfxWarmed = false;
   let _cachedFieldRect = null;
@@ -1604,10 +1606,11 @@
       st.el.classList.toggle('is-running', isRunning);
     }
 
+    const combSX = st.sx * (isRunning ? (st.runSX || 1) : 1);
+    const combSY = st.sy * (isRunning ? (st.runSY || 1) : 1);
+    const tiltDeg = (!reduced && isRunning) ? (st.runTiltDeg || 0) : 0;
+
     if (st.rigEl) {
-      const combSX = st.sx * (isRunning ? (st.runSX || 1) : 1);
-      const combSY = st.sy * (isRunning ? (st.runSY || 1) : 1);
-      const tiltDeg = (!reduced && isRunning) ? (st.runTiltDeg || 0) : 0;
       const needRig = Math.abs(totalY) > 0.05 || Math.abs(combSX - 1) > 0.004 || Math.abs(combSY - 1) > 0.004 || Math.abs(tiltDeg) > 0.1;
       let rigTransform = '';
       if (needRig) {
@@ -1636,6 +1639,24 @@
     } else if (st.shadowEl && st._lastShadowTransform !== '') {
       st._lastShadowTransform = '';
       st.shadowEl.style.transform = '';
+    }
+
+    const s3d = global.CombatStage3D;
+    if (s3d && typeof s3d.isActive === 'function' && s3d.isActive() && typeof s3d.updateActorVisual === 'function') {
+      s3d.updateActorVisual(st.key, {
+        spriteId: st.spriteId,
+        frame,
+        pose: poseName,
+        dx: st.dx,
+        dy: st.dy,
+        sx: combSX,
+        sy: combSY,
+        totalY,
+        tiltDeg,
+        hitFlash: st.flashLeft > 0,
+        dead: !!st.dead,
+        flipped: !!st.flipped,
+      });
     }
   }
 
@@ -2202,6 +2223,10 @@
         _auraLastIntensity = 0;
         _auraBurstTs = 0;
         _auraBurstTier = 0;
+        const s3dOff = global.CombatStage3D;
+        if (s3dOff && typeof s3dOff.isActive === 'function' && s3dOff.isActive() && typeof s3dOff.syncPlayerAuraCanvases === 'function') {
+          s3dOff.syncPlayerAuraCanvases(st.auraBackEl || null, st.auraFrontEl || null, false);
+        }
       }
       return;
     }
@@ -2228,6 +2253,10 @@
       drawAuraBurstPass(st.auraFrontCtx, cx, faceY, true);
       st.auraBackCtx.globalAlpha = 1;
       st.auraFrontCtx.globalAlpha = 1;
+      const s3dBurst = global.CombatStage3D;
+      if (s3dBurst && typeof s3dBurst.isActive === 'function' && s3dBurst.isActive() && typeof s3dBurst.syncPlayerAuraCanvases === 'function') {
+        s3dBurst.syncPlayerAuraCanvases(st.auraBackEl, st.auraFrontEl, true);
+      }
       return;
     }
 
@@ -2455,6 +2484,10 @@
 
     bCtx.globalAlpha = 1;
     fCtx.globalAlpha = 1;
+    const s3dAura = global.CombatStage3D;
+    if (s3dAura && typeof s3dAura.isActive === 'function' && s3dAura.isActive() && typeof s3dAura.syncPlayerAuraCanvases === 'function') {
+      s3dAura.syncPlayerAuraCanvases(st.auraBackEl, st.auraFrontEl, tier > 0);
+    }
   }
 
   let _liveGhostCount = 0;
@@ -2476,6 +2509,18 @@
 
   function spawnDashGhost(st, tone) {
     if (!st || !st.el || !st.sheetEl || prefersReducedMotion()) return;
+    const s3d = global.CombatStage3D;
+    if (s3d && typeof s3d.isActive === 'function' && s3d.isActive() && typeof s3d.spawnDashGhost === 'function') {
+      s3d.spawnDashGhost(st.key, {
+        spriteId: st.spriteId,
+        frame: st.frame | 0,
+        dx: st.dx,
+        dy: st.dy,
+        tone: tone || 'ice',
+        flipped: !!st.flipped,
+      });
+      return;
+    }
     if (_liveGhostCount >= 2) return;
     if (st.el.classList.contains('is-sheet-missing')) return;
     const parent = st.el.parentElement;
@@ -2789,6 +2834,44 @@
 
   function getActorCanvasPoints(actorKey, includeDash, forceFresh) {
     ensureVfxCanvas(!!forceFresh);
+    const s3d = global.CombatStage3D;
+    if (s3d && typeof s3d.isActive === 'function' && s3d.isActive() && typeof s3d.projectActorPoints === 'function') {
+      const p3 = s3d.projectActorPoints(actorKey, !!includeDash);
+      if (p3 && p3.anchor && p3.hit) {
+        const fieldW = Math.max(1, Number(p3.fieldW) || (_cachedFieldRect && _cachedFieldRect.width) || 960);
+        const fieldH = Math.max(1, Number(p3.fieldH) || (_cachedFieldRect && _cachedFieldRect.height) || 440);
+        if (fieldW > 32 && fieldH > 32 && _bufW > 0 && _bufH > 0) {
+          const exp = computeTargetVfxBufSize(fieldW, fieldH);
+          if (Math.abs(_bufW - exp.targetW) >= 2 || Math.abs(_bufH - exp.targetH) >= 2) {
+            ensureVfxCanvas(true);
+          }
+        }
+        const bw = _bufW || 320;
+        const bh = _bufH || 160;
+        const scaleX = bw / fieldW;
+        const scaleY = bh / fieldH;
+        const toBuf = (pt, fallbackPt) => {
+          const src = (pt && Number.isFinite(pt.x) && Number.isFinite(pt.y)) ? pt : fallbackPt;
+          return clampCanvasPt({ x: src.x * scaleX, y: src.y * scaleY });
+        };
+        const anchorCss = p3.anchor;
+        const hitCss = p3.hit || anchorCss;
+        const castCss = p3.cast || hitCss;
+        const headCss = p3.head || hitCss;
+        return {
+          anchor: toBuf(anchorCss, anchorCss),
+          cast: toBuf(castCss, hitCss),
+          hit: toBuf(hitCss, anchorCss),
+          head: toBuf(headCss, hitCss),
+          screenX: Number.isFinite(p3.screenX) ? p3.screenX : anchorCss.x,
+          screenY: Number.isFinite(p3.screenY) ? p3.screenY : anchorCss.y,
+          screenW: Number.isFinite(p3.screenW) ? p3.screenW : 120,
+          screenH: Number.isFinite(p3.screenH) ? p3.screenH : 120,
+          fieldW,
+          fieldH,
+        };
+      }
+    }
     const st = _actors.get(actorKey);
     const cached = !forceFresh ? _actorPointsCache.get(actorKey) : null;
     if (cached && cached.bufW === _bufW && cached.bufH === _bufH) {
@@ -3017,6 +3100,10 @@
     const prev = _slowMoScale;
     const next = clamp(Number(scale) || 1, 0.05, 1.0);
     _slowMoScale = next;
+    const s3d = global.CombatStage3D;
+    if (s3d && typeof s3d.isActive === 'function' && s3d.isActive() && typeof s3d.setTimeScale === 'function') {
+      s3d.setTimeScale(_hitStopScale * _slowMoScale);
+    }
     if (prev < 0.99 && next >= 0.99) {
       _editionAForceRender = true;
       if (_scheduled.length > 0) {
@@ -3437,6 +3524,10 @@
     const myId = _hitStopId;
     const dur = clamp(Number(durationMs) || 70, 45, 130);
     _hitStopScale = 0.06;
+    const s3dStart = global.CombatStage3D;
+    if (s3dStart && typeof s3dStart.isActive === 'function' && s3dStart.isActive() && typeof s3dStart.setTimeScale === 'function') {
+      s3dStart.setTimeScale(_hitStopScale * _slowMoScale);
+    }
 
     const field = document.querySelector('#battle-screen .cb-arena-field');
     if (field) field.classList.add('cb-hitstop-75');
@@ -3450,6 +3541,10 @@
       if (myId === _hitStopId) {
         _hitStopScale = 1.0;
         _hitStopTimer = null;
+        const s3dEnd = global.CombatStage3D;
+        if (s3dEnd && typeof s3dEnd.isActive === 'function' && s3dEnd.isActive() && typeof s3dEnd.setTimeScale === 'function') {
+          s3dEnd.setTimeScale(_hitStopScale * _slowMoScale);
+        }
         const curField = document.querySelector('#battle-screen .cb-arena-field');
         if (curField) curField.classList.remove('cb-hitstop-75');
       }
@@ -3460,6 +3555,10 @@
     if (!isEnabled() || prefersReducedMotion()) return;
     if (global.CombatEngine && typeof global.CombatEngine.addCombatTrauma === 'function') {
       global.CombatEngine.addCombatTrauma(amount);
+    }
+    const s3d = global.CombatStage3D;
+    if (s3d && typeof s3d.isActive === 'function' && s3d.isActive() && typeof s3d.addCameraTrauma === 'function') {
+      s3d.addCameraTrauma(amount);
     }
   }
 
@@ -5421,6 +5520,10 @@
         _actors.delete(actorKey);
       }
       _actorPointsCache.delete(actorKey);
+      const s3d = global.CombatStage3D;
+      if (s3d && typeof s3d.isActive === 'function' && s3d.isActive() && typeof s3d.removeCameo === 'function') {
+        s3d.removeCameo(actorKey);
+      }
     }
   }
 
@@ -5568,6 +5671,14 @@
     st.sx = 1;
     st.sy = 1;
     applyActorCssVars(actorEl, meta);
+    const s3d = global.CombatStage3D;
+    if (s3d && typeof s3d.isActive === 'function' && s3d.isActive() && typeof s3d.summonCameo === 'function') {
+      const rawSlotAttr = chosenSlot && chosenSlot.el ? chosenSlot.el.getAttribute('data-slot') : null;
+      const slotIdx = (rawSlotAttr != null && rawSlotAttr !== '' && Number.isFinite(Number(rawSlotAttr)))
+        ? Number(rawSlotAttr)
+        : 3;
+      s3d.summonCameo(actorKey, spriteId, slotIdx);
+    }
     applyActorVisual(st);
 
     const timers = [];
@@ -6587,6 +6698,15 @@
     if (!bs || bs.classList.contains('hidden')) return;
 
     const field = bs.querySelector('.cb-arena-field');
+    const s3d = global.CombatStage3D;
+    if (field && s3d && typeof s3d.isSupported === 'function' && s3d.isSupported()) {
+      const mounted = typeof s3d.isMounted === 'function'
+        ? s3d.isMounted(field)
+        : (typeof s3d.isActive === 'function' && s3d.isActive());
+      if (!mounted && typeof s3d.mountForBattle === 'function') {
+        try { s3d.mountForBattle(_lastBattleRef, field); } catch (e) {}
+      }
+    }
     const fRect = field ? field.getBoundingClientRect() : null;
     const fW = fRect && fRect.width > 0 ? Math.round(fRect.width) : (field ? (field.clientWidth | 0) : 0);
     const fH = fRect && fRect.height > 0 ? Math.round(fRect.height) : (field ? (field.clientHeight | 0) : 0);
@@ -6648,7 +6768,6 @@
       st.dead = el.classList.contains('is-dead');
       st.flipped = el.classList.contains('is-flipped');
       applyActorCssVars(el, meta);
-      applyActorVisual(st);
     });
 
     // 移除已离开当前波次的旧敌人状态
@@ -6656,20 +6775,51 @@
       if (!seenKeys.has(k)) _actors.delete(k);
     });
 
-    // 检测同场多波次推进：自动触发疾奔入场（使用 run 步态，绝不播施法/挥砍帧）
-    const curBid = battleState
-      ? (battleState.battleInstanceId != null
-        ? `${battleState.id || ''}:${battleState.battleInstanceId}`
-        : String(battleState.id || ''))
+    if (s3d && typeof s3d.isActive === 'function' && s3d.isActive() && typeof s3d.syncRoster === 'function') {
+      try { s3d.syncRoster(_lastBattleRef, _actors); } catch (e) {}
+    }
+
+    _actors.forEach(st => {
+      applyActorVisual(st);
+    });
+
+    // 检测同场多波次推进或首领二阶段觉醒：自动触发疾奔入场与 3D 舞台波次/阶段切换
+    const curB = _lastBattleRef;
+    const curBid = curB
+      ? (curB.battleInstanceId != null
+        ? `${curB.id || ''}:${curB.battleInstanceId}`
+        : String(curB.id || ''))
       : '';
-    const curWave = battleState && typeof battleState.waveIdx === 'number' ? battleState.waveIdx : -1;
+    const curWave = curB && typeof curB.waveIdx === 'number' ? curB.waveIdx : -1;
+    const curEnemyPhase2Count = (curB && Array.isArray(curB.enemies))
+      ? curB.enemies.reduce((acc, e) => acc + ((e && (e.phase || 1) >= 2) ? 1 : 0), 0)
+      : 0;
+    const curBattlePhase2 = !!(curB && (
+      (typeof curB.phase === 'number' && curB.phase >= 2) ||
+      (curB.metrics && curB.metrics.phase2Triggered)
+    ));
+    let waveOrPhaseChanged = false;
     if (curBid && curWave >= 0) {
-      const isWaveAdvance = curBid === _lastBattleId && _lastWaveIdx >= 0 && curWave > _lastWaveIdx;
+      const sameBattle = curBid === _lastBattleId;
+      const isWaveAdvance = sameBattle && _lastWaveIdx >= 0 && curWave > _lastWaveIdx;
+      const isPhase2Advance = sameBattle && curWave === _lastWaveIdx && (
+        curEnemyPhase2Count > _lastEnemyPhase2Count ||
+        (curBattlePhase2 && !_lastBattlePhase2)
+      );
       _lastBattleId = curBid;
       _lastWaveIdx = curWave;
+      _lastEnemyPhase2Count = curEnemyPhase2Count;
+      _lastBattlePhase2 = curBattlePhase2;
       if (isWaveAdvance) {
-        playWaveTransition(battleState);
+        playWaveTransition(curB);
+        waveOrPhaseChanged = true;
       }
+      if (isPhase2Advance) {
+        waveOrPhaseChanged = true;
+      }
+    }
+    if (waveOrPhaseChanged && s3d && typeof s3d.isActive === 'function' && s3d.isActive() && typeof s3d.onWaveOrPhaseChange === 'function') {
+      try { s3d.onWaveOrPhaseChange(curB); } catch (e) {}
     }
 
     // 同步一次魔力增幅 3D 光环状态（切换倾注档位即时反馈）
@@ -7143,6 +7293,15 @@
       const field = document.querySelector('#battle-screen .cb-arena-field');
       if (field) field.classList.remove('cb-hitstop-75');
     }
+    const s3dClear = global.CombatStage3D;
+    if (s3dClear && typeof s3dClear.isActive === 'function' && s3dClear.isActive()) {
+      if (typeof s3dClear.setTimeScale === 'function') {
+        try { s3dClear.setTimeScale(1.0); } catch (e) {}
+      }
+      if (typeof s3dClear.clearEffects === 'function') {
+        try { s3dClear.clearEffects(); } catch (e) {}
+      }
+    }
   }
 
   function cleanup() {
@@ -7156,6 +7315,8 @@
     _lastBattleRef = null;
     _lastBattleId = '';
     _lastWaveIdx = -1;
+    _lastEnemyPhase2Count = 0;
+    _lastBattlePhase2 = false;
     _fxDrawBudgetTrips = 0;
     _auraDirty = false;
     _auraLastTier = 0;
@@ -7191,6 +7352,10 @@
       if (st.el) st.el.removeAttribute('data-mana-amp');
     });
     _actors.clear();
+    const s3dClean = global.CombatStage3D;
+    if (s3dClean && typeof s3dClean.cleanup === 'function') {
+      try { s3dClean.cleanup(); } catch (e) {}
+    }
   }
 
   /* -------------------- QA 实时触发与单帧检查 API -------------------- */

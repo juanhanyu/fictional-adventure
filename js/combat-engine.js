@@ -8588,7 +8588,7 @@
       );
       if (isDisguise) {
         return (pMap && (pMap[`sylvia_disguise_${emotion}`] || pMap.sylvia_disguise_normal))
-          || 'assets/portraits/sylvia_disguise_normal.png';
+          || 'assets/portraits/sylvia_disguise_normal.webp';
       }
     }
 

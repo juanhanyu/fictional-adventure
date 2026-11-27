@@ -104,13 +104,13 @@ win.updateHUD();
 const allDisguiseValid = DISGUISE_EMOS.every((emo) => {
   const rel = win.resolvePortrait('sylvia', emo);
   const abs = rel ? path.join(ROOT, rel) : '';
-  return rel === `assets/portraits/sylvia_disguise_${emo}.png` && fs.existsSync(abs) && fs.statSync(abs).size > 20000;
+  return new RegExp('^assets/portraits/sylvia_disguise_' + emo + '\\.(webp|png)$').test(rel || '') && fs.existsSync(abs) && fs.statSync(abs).size > 20000;
 });
 ok('伪装身份「眷寒渔」全部 9 种表情均解析为黑发墨绿眼伪装立绘', allDisguiseValid);
-ok('HUD 头像同步切换为黑发墨绿眼伪装立绘', ($('hud-face-img').getAttribute('src') || '').includes('sylvia_disguise_normal.png'));
+ok('HUD 头像同步切换为黑发墨绿眼伪装立绘', ($('hud-face-img').getAttribute('src') || '').includes('sylvia_disguise_normal.webp'));
 
 win.setSpeaker('渔', 'sylvia');
-ok('对话框小胸像在「渔」说话时显示伪装立绘且无空 src', ($('tb-speaker-img').getAttribute('src') || '').includes('sylvia_disguise_normal.png'));
+ok('对话框小胸像在「渔」说话时显示伪装立绘且无空 src', ($('tb-speaker-img').getAttribute('src') || '').includes('sylvia_disguise_normal.webp'));
 win.setSpeaker('路人甲', null);
 ok('无立绘路人说话时移除 img[src] 并隐藏小胸像（零破图图标）', !$('tb-speaker-img').hasAttribute('src') && $('tb-speaker-img').style.display === 'none');
 
@@ -192,7 +192,7 @@ ok('s_north_forest 弹出实时 statusPanelHTML() 面板 (Lv.38 且法抗 S.mdef
 win.enterLoc('chenglan_guild');
 const mashaSlot = $('p-left');
 ok('澄岚公会自由探索展示玛莎立绘且可点击交互',
-  !mashaSlot.classList.contains('hidden') && (mashaSlot.querySelector('img').getAttribute('src') || '').includes('masha_normal.png'));
+  !mashaSlot.classList.contains('hidden') && (mashaSlot.querySelector('img').getAttribute('src') || '').includes('masha_normal.webp'));
 mashaSlot.onclick({ stopPropagation() {}, detail: 0 });
 driveCurrentScene();
 ok('点击舞台上的玛莎成功触发对话并增加了解度', (win.__getS().know.masha || 0) > 0 && win.__getS().freeRoam === true);

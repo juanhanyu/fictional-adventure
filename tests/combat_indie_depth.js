@@ -132,12 +132,12 @@ console.log('\n[1] COMBAT_BALANCE_V32 唯一数值事实源、线性增幅/省�
   const bNoDisc = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: [] });
   CE.setOvercastPct(0.40, bNoDisc);
   const stNoDisc = CE.getBattleState(bNoDisc);
-  const ampCostScale = (CE.BALANCE && typeof CE.BALANCE.ampMpCostScale === 'number') ? CE.BALANCE.ampMpCostScale : 0.50;
-  ok('无省蓝折扣时 ampDiscountFactor===1 且 ampExtraMp / ampTierExtraMps 与 MaxMP×ampMpCostScale 100% 对齐',
+  ok('无省蓝折扣时 ampDiscountFactor===1、ampMpCostScale===1 且 ampExtraMp / ampTierExtraMps 与 MaxMP 100% 对齐',
     stNoDisc.ampDiscountFactor === 1 &&
-    stNoDisc.ampExtraMp === Math.round(bNoDisc.player.mmp * 0.40 * ampCostScale) &&
-    JSON.stringify(stNoDisc.ampTierExtraMps) === JSON.stringify([0, Math.round(bNoDisc.player.mmp * 0.20 * ampCostScale), Math.round(bNoDisc.player.mmp * 0.40 * ampCostScale), Math.round(bNoDisc.player.mmp * 0.60 * ampCostScale)]),
-    JSON.stringify({ df: stNoDisc.ampDiscountFactor, ex: stNoDisc.ampExtraMp, tiers: stNoDisc.ampTierExtraMps }));
+    B32.ampMpCostScale === 1.00 &&
+    stNoDisc.ampExtraMp === Math.round(bNoDisc.player.mmp * 0.40) &&
+    JSON.stringify(stNoDisc.ampTierExtraMps) === JSON.stringify([0, Math.round(bNoDisc.player.mmp * 0.20), Math.round(bNoDisc.player.mmp * 0.40), Math.round(bNoDisc.player.mmp * 0.60)]),
+    JSON.stringify({ df: stNoDisc.ampDiscountFactor, scale: B32.ampMpCostScale, ex: stNoDisc.ampExtraMp, tiers: stNoDisc.ampTierExtraMps }));
 
   const bDisc = CE.startStage('north_forest_hunt', {
     headless: true,

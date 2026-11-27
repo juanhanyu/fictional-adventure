@@ -25,7 +25,7 @@
     MAX_DEF_PIERCE: 0.75,
     minMpDiscountFloor: 0.60,
     MIN_MP_DISCOUNT_FLOOR: 0.60,
-    ampMpCostScale: 0.50,
+    ampMpCostScale: 1.00,
     manaCycleReturnRatio: 1.00,
     grades: ['BAD', 'GOOD', 'GREAT', 'PERFECT'],
     ringAtkBonus: { BAD: -0.10, GOOD: 0.10, GREAT: 0.20, PERFECT: 0.30 },
@@ -46,7 +46,7 @@
     ],
     OVERCAST: {
       linearSlope: 1.00,
-      mpCostScale: 0.50,
+      mpCostScale: 1.00,
       seg1End: 0.20,
       seg1Slope: 1.00,
       seg2End: 0.40,
@@ -3148,7 +3148,7 @@
     const pct = Math.max(0, Number(ampPct) || 0);
     if (pct <= 0) return 0;
     const safeMmp = Math.max(1, Number(mmp) || 100);
-    const ampScale = COMBAT_BALANCE_V32.ampMpCostScale != null ? COMBAT_BALANCE_V32.ampMpCostScale : 0.50;
+    const ampScale = COMBAT_BALANCE_V32.ampMpCostScale != null ? COMBAT_BALANCE_V32.ampMpCostScale : 1.00;
     const df = Math.max(COMBAT_BALANCE_V32.minMpDiscountFloor, Number(discountFactor) || 1.0);
     return Math.max(1, Math.round(safeMmp * pct * ampScale * df));
   }
@@ -3157,7 +3157,7 @@
     opts = opts || {};
     const mmp = Math.max(1, (player && player.mmp) || 100);
     const mpNow = Math.max(0, (player && player.mp) || 0);
-    const ampScale = COMBAT_BALANCE_V32.ampMpCostScale != null ? COMBAT_BALANCE_V32.ampMpCostScale : 0.50;
+    const ampScale = COMBAT_BALANCE_V32.ampMpCostScale != null ? COMBAT_BALANCE_V32.ampMpCostScale : 1.00;
     const discountFactor = computeAmpDiscountFactor(player);
     if (!canPlayerAmp(player) || !isAmpableSkill(skill)) {
       return { ampPct: 0, requestedAmpPct: 0, addDmg: 0, mult: 1.0, shieldMult: 1.0, tier: 0, extraLocks: 0, defPierce: 0, label: '', extraMp: 0, discountedExtraMp: 0, discountFactor };

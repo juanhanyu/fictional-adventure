@@ -720,9 +720,10 @@
       ? b.ampDiscountFactor
       : (p && typeof p.ampDiscountFactor === 'number' && isFinite(p.ampDiscountFactor) ? p.ampDiscountFactor : 1);
     const ampDiscountFactor = Math.max(0, rawDiscount);
-    const ampMpCostScale = (CE && CE.BALANCE && typeof CE.BALANCE.ampMpCostScale === 'number')
-      ? CE.BALANCE.ampMpCostScale
-      : 0.50;
+    const balCfg = (CE && (CE.COMBAT_BALANCE_V32 || CE.BALANCE)) || null;
+    const ampMpCostScale = (balCfg && typeof balCfg.ampMpCostScale === 'number')
+      ? balCfg.ampMpCostScale
+      : 1.00;
     const calcFallbackExtraMp = pct => Math.max(0, Math.round(maxMp * pct * ampMpCostScale * ampDiscountFactor));
 
     const pctInt = Math.round(overcastPct * 100);

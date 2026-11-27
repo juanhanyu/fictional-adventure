@@ -267,7 +267,7 @@
       duration: 1440,
       peakMs: 590,
       accent: '#DBEAFE',
-      desc: '双手压地展开极北高空冰晶方阵，七道斜向镜冰光矛疾坠引发纯银雪花冰环爆'
+      desc: '寒脉震地展开极北高空冰晶方阵，七道斜向镜冰光矛疾坠引发纯银雪花冰环爆'
     },
 
     // 第 5 幕 诺艾尔（3 项）
@@ -361,7 +361,7 @@
       duration: 1420,
       peakMs: 560,
       accent: '#FB923C',
-      desc: '双手结印张开高空红莲法阵，六道斜坠赤金火流星轰然引爆炽亮红莲炎环'
+      desc: '炎印炽涌张开高空红莲法阵，六道斜坠赤金火流星轰然引爆炽亮红莲炎环'
     },
     {
       id: 'enemy_vanguard_halberd',
@@ -4477,6 +4477,9 @@
     '绯红火球': 'enemy_beatrice_ruby_orb',
     '贵族耀焰': 'enemy_beatrice_noble_flare',
     '变步近身·烈火疾斩': 'enemy_beatrice_flame_lash',
+    '烈焰塑形·暴走火蛇': 'enemy_beatrice_flame_lash',
+    '烈焰塑形·暴走火蛇（宜凝华冰晶冻核）': 'enemy_beatrice_flame_lash',
+    '双手塑形·暴走火蛇': 'enemy_beatrice_flame_lash',
     '双手塑形·暴走火蛇（宜凝华冰晶冻核）': 'enemy_beatrice_flame_lash',
     '烈焰剑障·融冰防反（宜覆潮水弹浇灭，忌冰晶）': 'enemy_beatrice_flame_lash',
     '看破路数·烈焰剑障反劈（忌复读单招！）': 'enemy_beatrice_flame_lash',
@@ -4488,6 +4491,7 @@
     '血晶印阵': 'enemy_rowan_blood_sigil',
     '墓园灵潮': 'enemy_rowan_grave_surge',
     '晦轮银环·越位蚀心黑光': 'enemy_rowan_eclipse_bolt',
+    '虚刺雷纳德·飞旋掷杖袭心': 'enemy_rowan_eclipse_bolt',
     '虚刺雷纳德·脱手旋杖袭心': 'enemy_rowan_eclipse_bolt',
     '血魔炸土·碎壁穿心刺': 'enemy_rowan_blood_sigil',
     '血魔震土·石碑窄道突围': 'enemy_rowan_grave_surge',
@@ -4497,6 +4501,7 @@
     '侧滑扬尘 + 绕侧风刃': 'enemy_alice_gale_ribbon',
     '借风掠影·透明风刃': 'enemy_alice_gale_ribbon',
     '旋风障壁·回旋风镰': 'enemy_alice_gale_ribbon',
+    '聚风成涡·狂躁风暴蓄力': 'enemy_alice_petal_cyclone',
     '双手合拢·狂躁风暴蓄力': 'enemy_alice_petal_cyclone',
     '狂岚破幕卷（粉碎护盾）': 'enemy_alice_petal_cyclone',
 
@@ -4508,6 +4513,7 @@
     '贴地滑冰·变向双刺': 'enemy_aino_glacier_sweep',
     '贴地滑冰·近身双刺': 'enemy_aino_glacier_sweep',
     '破土三连冰锥（正面镜冰）': 'enemy_aino_north_hail',
+    '寒脉震地·极寒双翼刺阵': 'enemy_aino_north_hail',
     '双手压地·极寒双翼刺阵': 'enemy_aino_north_hail',
 
     '星轨魔阵': 'enemy_noelle_arcane_grid',
@@ -4544,10 +4550,14 @@
     '金钢戟斩': 'enemy_vanguard_halberd',
     '十字银斩': 'enemy_eastwing_cross_slash',
     '辉盾冲锋': 'enemy_eastwing_phalanx_rush',
+    '炎印炽涌·封廊赤炎火墙': 'enemy_flame_mage_cast',
     '双手结印·封廊赤炎火墙': 'enemy_flame_mage_cast',
     '赤炎爆裂火球': 'enemy_flame_mage_cast',
     '炎环护身·反灼火弧': 'enemy_flame_mage_cast',
     '红莲铁幕·封廊锁火（高危必断咏唱！）': 'enemy_flame_mage_cast',
+    '炽焰引燃·长廊炎壁': 'enemy_flame_mage_cast',
+    '炽焰引燃·长廊炎壁（可隔空截断）': 'enemy_flame_mage_cast',
+    '双手引火·长廊炎壁': 'enemy_flame_mage_cast',
     '双手引火·长廊炎壁（可隔空截断）': 'enemy_flame_mage_cast',
     '破阵重戟斩（粉碎护盾！）': 'enemy_vanguard_halberd',
     '十字长戟·走廊突刺': 'enemy_vanguard_halberd',

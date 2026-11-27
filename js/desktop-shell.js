@@ -8,6 +8,7 @@
  * 3. 本地文件存档桥接（DesktopShell.storage）：在 Tauri v2 `.exe` 环境下将游戏存档键透明镜像至
  *    操作系统应用数据目录 Vesteria/saves/*.json，启动时自动回灌，避免缓存清理导致丢档
  * 4. 在标题页底缘页脚与系统设置页无侵入注入极简 1px 细线桌面控制项
+ * 5. 全站拦截剥离浏览器原生 title 灰框，统一转为 data-indie-tip 并由雪瓷斜切游戏内 Tooltip 渲染
  */
 (function (globalScope) {
   'use strict';
@@ -39,6 +40,8 @@
     inFlightPromises: new Set(),
     activeResolution: '1280x720',
     settingsObserver: null,
+    titleObserver: null,
+    tooltipBound: false,
   };
 
   /* ==================== 1. 运行时与参数探测 ==================== */
@@ -669,13 +672,13 @@
     group.setAttribute('aria-label', '桌面显示与窗口控制');
 
     var html = '' +
-      '<button id="btn-indie-fullscreen" type="button" class="indie-win-btn" data-indie-act="fullscreen" aria-pressed="false" title="切换全屏显示 (F11 / Alt+Enter)">' +
+      '<button id="btn-indie-fullscreen" type="button" class="indie-win-btn" data-indie-act="fullscreen" aria-pressed="false" data-indie-tip="切换全屏显示 (F11 / Alt+Enter)">' +
         makeSvg('<path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10"/>') +
         '<span class="indie-win-label">全屏切换</span>' +
         '<span class="indie-win-kbd">[F11]</span>' +
       '</button>' +
       '<span class="indie-win-sep" aria-hidden="true"></span>' +
-      '<button id="btn-indie-saves" type="button" class="indie-win-btn" data-indie-act="saves" title="' +
+      '<button id="btn-indie-saves" type="button" class="indie-win-btn" data-indie-act="saves" data-indie-tip="' +
         (tauriMode ? '打开本地存档文件夹 (Vesteria/saves)' : '导出本地存档备份文件 (.json)') + '">' +
         makeSvg('<path d="M2.5 3.5h4.2l1.3 1.5h5.5v7.5h-11z"/>') +
         '<span class="indie-win-label">' + (tauriMode ? '存档目录' : '存档备份') + '</span>' +
@@ -684,7 +687,7 @@
     if (tauriMode) {
       html += '' +
         '<span class="indie-win-sep" aria-hidden="true"></span>' +
-        '<button id="btn-indie-exit" type="button" class="indie-win-btn indie-win-btn-danger" data-indie-act="exit" title="保存并退出桌面版">' +
+        '<button id="btn-indie-exit" type="button" class="indie-win-btn indie-win-btn-danger" data-indie-act="exit" data-indie-tip="保存并退出桌面版">' +
           makeSvg('<path d="M6.5 2.5h-4v11h4M9.5 5l3.5 3-3.5 3M6 8h7"/>') +
           '<span class="indie-win-label">退出游戏</span>' +
         '</button>';
@@ -815,7 +818,346 @@
     } catch (e) {}
   }
 
-  /* ==================== 7. 启动初始化 ==================== */
+  /* ==================== 7. 全站零原生 title 拦截与雪瓷自定义 Tooltip ==================== */
+
+  var TIP_ATTR = 'data-indie-tip';
+  var TIP_EXEMPT_SELECTOR = '#text-box, .cb-trait-pill, .ib-info-btn, .aid-icon-btn[data-tip], [data-no-indie-tip]';
+  var TIP_SHOW_DELAY_MS = 220;
+  var TIP_EDGE_MARGIN = 12;
+  var TIP_TARGET_GAP = 9;
+
+  var tipState = {
+    el: null,
+    target: null,
+    timer: null,
+    visible: false,
+    lastPointerDownAt: 0,
+  };
+
+  function isExemptTipEl(el) {
+    if (!el || el.nodeType !== 1 || typeof el.matches !== 'function') return false;
+    try {
+      return el.matches(TIP_EXEMPT_SELECTOR);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function ensureTooltipEl() {
+    if (!document.body) return null;
+    var el = tipState.el || document.getElementById('indie-tooltip');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'indie-tooltip';
+      el.className = 'indie-tooltip';
+      el.setAttribute('role', 'tooltip');
+      el.setAttribute('aria-hidden', 'true');
+    }
+    if (!document.body.contains(el)) {
+      document.body.appendChild(el);
+    }
+    tipState.el = el;
+    return el;
+  }
+
+  function clearTipTimer() {
+    if (tipState.timer !== null) {
+      clearTimeout(tipState.timer);
+      tipState.timer = null;
+    }
+  }
+
+  function hideTooltip() {
+    clearTipTimer();
+    tipState.target = null;
+    tipState.visible = false;
+    var el = tipState.el || document.getElementById('indie-tooltip');
+    if (el) {
+      el.classList.remove('is-visible');
+      el.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function isTipTargetVisible(el) {
+    if (!el || !document.body || !document.body.contains(el)) return false;
+    if (el.hidden) return false;
+    var cur = el;
+    while (cur && cur.nodeType === 1) {
+      if (cur.classList && cur.classList.contains('hidden')) return false;
+      if (typeof window.getComputedStyle === 'function') {
+        try {
+          var cs = window.getComputedStyle(cur);
+          if (cs && (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0')) {
+            return false;
+          }
+        } catch (e) {}
+      }
+      if (cur === document.body) break;
+      cur = cur.parentElement;
+    }
+    if (typeof el.getBoundingClientRect === 'function' && typeof document.body.getBoundingClientRect === 'function') {
+      try {
+        var bodyRect = document.body.getBoundingClientRect();
+        if (bodyRect && bodyRect.height > 0) {
+          var r = el.getBoundingClientRect();
+          if (r && r.width === 0 && r.height === 0) return false;
+        }
+      } catch (e) {}
+    }
+    return true;
+  }
+
+  function positionTooltip(targetEl, tipEl) {
+    if (!targetEl || !tipEl || typeof targetEl.getBoundingClientRect !== 'function') return;
+    var rect = targetEl.getBoundingClientRect();
+    var vw = window.innerWidth || (document.documentElement && document.documentElement.clientWidth) || 1280;
+    var vh = window.innerHeight || (document.documentElement && document.documentElement.clientHeight) || 720;
+
+    // 临时复位至左上原点，避免贴近右边界导致折行宽度测量偏差
+    tipEl.style.left = '0px';
+    tipEl.style.top = '0px';
+    var tipRect = typeof tipEl.getBoundingClientRect === 'function' ? tipEl.getBoundingClientRect() : { width: 0, height: 0 };
+    var tipW = tipEl.offsetWidth || Math.ceil(tipRect.width) || 0;
+    var tipH = tipEl.offsetHeight || Math.ceil(tipRect.height) || 0;
+
+    var rawLeft = rect.left + (rect.width - tipW) / 2;
+    var maxLeft = Math.max(TIP_EDGE_MARGIN, vw - tipW - TIP_EDGE_MARGIN);
+    var left = Math.min(Math.max(rawLeft, TIP_EDGE_MARGIN), maxLeft);
+
+    var topAbove = rect.top - tipH - TIP_TARGET_GAP;
+    var topBelow = rect.bottom + TIP_TARGET_GAP;
+    var placement = 'top';
+    var top = topAbove;
+
+    if (topAbove < TIP_EDGE_MARGIN) {
+      if (topBelow + tipH <= vh - TIP_EDGE_MARGIN || (vh - rect.bottom) >= rect.top) {
+        placement = 'bottom';
+        top = topBelow;
+      }
+    }
+
+    var maxTop = Math.max(TIP_EDGE_MARGIN, vh - tipH - TIP_EDGE_MARGIN);
+    top = Math.min(Math.max(top, TIP_EDGE_MARGIN), maxTop);
+
+    tipEl.setAttribute('data-placement', placement);
+    tipEl.style.left = Math.round(left) + 'px';
+    tipEl.style.top = Math.round(top) + 'px';
+  }
+
+  function showTooltipFor(targetEl) {
+    if (!targetEl || isExemptTipEl(targetEl) || !isTipTargetVisible(targetEl)) {
+      hideTooltip();
+      return;
+    }
+    var text = String(targetEl.getAttribute(TIP_ATTR) || '').trim();
+    if (!text) {
+      hideTooltip();
+      return;
+    }
+    var tipEl = ensureTooltipEl();
+    if (!tipEl) return;
+
+    tipEl.textContent = text;
+    positionTooltip(targetEl, tipEl);
+    tipState.target = targetEl;
+    tipState.visible = true;
+    tipEl.setAttribute('aria-hidden', 'false');
+    tipEl.classList.add('is-visible');
+  }
+
+  function scheduleTooltip(targetEl) {
+    if (!targetEl || isExemptTipEl(targetEl)) {
+      hideTooltip();
+      return;
+    }
+    if (tipState.target === targetEl && (tipState.visible || tipState.timer !== null)) {
+      return;
+    }
+    clearTipTimer();
+    if (tipState.visible && tipState.target !== targetEl && tipState.el) {
+      tipState.el.classList.remove('is-visible');
+      tipState.el.setAttribute('aria-hidden', 'true');
+      tipState.visible = false;
+    }
+    tipState.target = targetEl;
+    tipState.timer = setTimeout(function () {
+      tipState.timer = null;
+      if (tipState.target !== targetEl) return;
+      showTooltipFor(targetEl);
+    }, TIP_SHOW_DELAY_MS);
+  }
+
+  function harvestTitleAttr(el) {
+    if (!el || el.nodeType !== 1 || typeof el.hasAttribute !== 'function') return false;
+    if (!el.hasAttribute('title')) return false;
+
+    var raw = el.getAttribute('title');
+    var text = raw == null ? '' : String(raw).trim();
+    try {
+      el.removeAttribute('title');
+    } catch (e) {}
+
+    if (isExemptTipEl(el)) {
+      if (tipState.target === el) hideTooltip();
+      return true;
+    }
+
+    if (text) {
+      try {
+        el.setAttribute(TIP_ATTR, text);
+      } catch (e) {}
+      if (tipState.target === el && tipState.visible && tipState.el) {
+        tipState.el.textContent = text;
+        positionTooltip(el, tipState.el);
+      }
+    } else {
+      try {
+        el.removeAttribute(TIP_ATTR);
+      } catch (e) {}
+      if (tipState.target === el) hideTooltip();
+    }
+    return true;
+  }
+
+  function harvestTitlesInTree(root) {
+    if (!root) return 0;
+    var count = 0;
+    if (root.nodeType === 1) {
+      if (harvestTitleAttr(root)) count++;
+      if (!root.firstElementChild) return count;
+    }
+    if (typeof root.querySelectorAll === 'function') {
+      try {
+        var nodes = root.querySelectorAll('[title]');
+        for (var i = 0; i < nodes.length; i++) {
+          if (harvestTitleAttr(nodes[i])) count++;
+        }
+      } catch (e) {}
+    }
+    return count;
+  }
+
+  function findTipTarget(node) {
+    if (!node) return null;
+    var el = node.nodeType === 1 ? node : node.parentElement;
+    if (!el || typeof el.closest !== 'function') return null;
+    // 防御：同步脚本刚写入 title 且 MutationObserver 微任务尚未冲刷时当场收割
+    var rawTitleHost = el.closest('[title]');
+    if (rawTitleHost) {
+      harvestTitleAttr(rawTitleHost);
+    }
+    var host = el.closest('[' + TIP_ATTR + ']');
+    if (!host || isExemptTipEl(host)) return null;
+    var text = String(host.getAttribute(TIP_ATTR) || '').trim();
+    if (!text) return null;
+    return host;
+  }
+
+  function installTitleHarvester() {
+    harvestTitlesInTree(document);
+    if (state.titleObserver || typeof MutationObserver === 'undefined') return;
+    var observeRoot = document.documentElement || document.body;
+    if (!observeRoot) return;
+    try {
+      state.titleObserver = new MutationObserver(function (mutations) {
+        var activeRemoved = false;
+        for (var i = 0; i < mutations.length; i++) {
+          var m = mutations[i];
+          if (m.type === 'attributes' && m.attributeName === 'title') {
+            harvestTitleAttr(m.target);
+          } else if (m.type === 'childList') {
+            if (m.addedNodes && m.addedNodes.length) {
+              for (var j = 0; j < m.addedNodes.length; j++) {
+                var added = m.addedNodes[j];
+                if (added && (added.nodeType === 1 || added.nodeType === 11)) {
+                  harvestTitlesInTree(added);
+                }
+              }
+            }
+            if (tipState.target && !activeRemoved && m.removedNodes && m.removedNodes.length) {
+              if (!document.body || !document.body.contains(tipState.target)) {
+                activeRemoved = true;
+              }
+            }
+          }
+        }
+        if (activeRemoved) {
+          hideTooltip();
+        }
+      });
+      state.titleObserver.observe(observeRoot, {
+        attributes: true,
+        attributeFilter: ['title'],
+        childList: true,
+        subtree: true,
+      });
+    } catch (e) {}
+  }
+
+  function bindTooltipEvents() {
+    ensureTooltipEl();
+    if (state.tooltipBound) return;
+    state.tooltipBound = true;
+
+    document.addEventListener('pointerover', function (ev) {
+      if (ev && ev.pointerType === 'touch') return;
+      var host = findTipTarget(ev && ev.target);
+      if (host) {
+        scheduleTooltip(host);
+      } else if (tipState.target && (!ev.target || !tipState.target.contains(ev.target))) {
+        hideTooltip();
+      }
+    }, false);
+
+    document.addEventListener('pointerout', function (ev) {
+      if (!tipState.target) return;
+      var related = ev && ev.relatedTarget;
+      if (related && tipState.target.contains(related)) return;
+      hideTooltip();
+    }, false);
+
+    document.addEventListener('focusin', function (ev) {
+      if (Date.now() - tipState.lastPointerDownAt < 350) return;
+      var host = findTipTarget(ev && ev.target);
+      if (host) {
+        scheduleTooltip(host);
+      } else {
+        hideTooltip();
+      }
+    }, true);
+
+    document.addEventListener('focusout', function (ev) {
+      if (!tipState.target) return;
+      var related = ev && ev.relatedTarget;
+      if (related && tipState.target.contains(related)) return;
+      hideTooltip();
+    }, true);
+
+    document.addEventListener('pointerdown', function () {
+      tipState.lastPointerDownAt = Date.now();
+      hideTooltip();
+    }, true);
+
+    document.addEventListener('click', hideTooltip, true);
+
+    document.addEventListener('scroll', hideTooltip, { capture: true, passive: true });
+    window.addEventListener('wheel', hideTooltip, { capture: true, passive: true });
+
+    document.addEventListener('keydown', function (ev) {
+      if (ev && ev.key === 'Escape') {
+        hideTooltip();
+      }
+    }, true);
+
+    window.addEventListener('blur', hideTooltip);
+    window.addEventListener('resize', hideTooltip);
+    window.addEventListener('pagehide', hideTooltip);
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) hideTooltip();
+    });
+  }
+
+  /* ==================== 8. 启动初始化 ==================== */
 
   function onDomReady() {
     try {
@@ -828,6 +1170,8 @@
 
     injectTitleFooterControls();
     observeSettingsMount();
+    installTitleHarvester();
+    bindTooltipEvents();
     syncFullscreenUi();
   }
 
@@ -837,6 +1181,7 @@
 
     installStorageMirror();
     bindBrowserSuppression();
+    installTitleHarvester();
 
     document.addEventListener('fullscreenchange', syncFullscreenUi);
     document.addEventListener('webkitfullscreenchange', syncFullscreenUi);
@@ -871,10 +1216,12 @@
     openSavesFolder: openSavesFolder,
     exportSavesZip: exportSavesZip,
     importSavesBackup: importSavesBackup,
+    hideTooltip: hideTooltip,
     storage: storageApi,
     refreshControls: function () {
       injectTitleFooterControls();
       injectTitleSettingsControls();
+      harvestTitlesInTree(document);
       syncFullscreenUi();
     },
   };

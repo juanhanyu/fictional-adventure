@@ -64,9 +64,11 @@
   );
 }
 
-/* 锚点容器：以目标受击点绝对居中，零边框零背景 */
+/* 锚点容器：以目标受击点绝对居中，零边框零背景（配合纯 translate3d GPU 定位） */
 .cb-tr-anchor {
   position: absolute;
+  left: 0;
+  top: 0;
   z-index: 20;
   width: var(--tr-size);
   height: var(--tr-size);
@@ -75,7 +77,7 @@
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  will-change: left, top, transform, opacity;
+  will-change: transform, opacity;
 }
 
 .cb-tr-anchor.is-telegraph {
@@ -84,6 +86,14 @@
 
 .cb-tr-anchor.is-resolved {
   animation: cb-tr-resolve-fade 160ms ease-out forwards;
+}
+
+.cb-tr-anchor.is-telegraph .cb-tr-svg {
+  animation: cb-tr-svg-telegraph-in 145ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.cb-tr-anchor.is-resolved .cb-tr-svg {
+  animation: cb-tr-svg-resolve-fade 160ms ease-out forwards;
 }
 
 /* 单层锐利 SVG 棱晶环 */
@@ -98,45 +108,53 @@
 
 .cb-tr-halo {
   fill: none;
-  stroke: rgba(248, 251, 255, 0.42);
-  stroke-width: 7;
+  stroke: rgba(248, 251, 255, 0.56);
+  stroke-width: 7.5;
+}
+
+.cb-tr-anchor.is-block .cb-tr-halo {
+  stroke: rgba(56, 189, 248, 0.34);
+  stroke-width: 8;
+}
+
+.cb-tr-anchor.is-sweet .cb-tr-halo {
+  stroke: rgba(253, 230, 138, 0.48);
+  stroke-width: 8.5;
 }
 
 .cb-tr-target {
-  fill: rgba(248, 251, 255, 0.14);
+  fill: rgba(248, 251, 255, 0.16);
   stroke: var(--tr-royal);
-  stroke-width: 2.25;
-  filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.72));
+  stroke-width: 2.5;
   transition: stroke 90ms ease, stroke-width 90ms ease;
 }
 
 .cb-tr-anchor.is-block .cb-tr-target {
-  fill: rgba(56, 189, 248, 0.12);
+  fill: rgba(56, 189, 248, 0.15);
   stroke: var(--tr-cyan);
-  filter: drop-shadow(0 0 5px rgba(22, 88, 235, 0.78));
+  stroke-width: 2.6;
 }
 
 .cb-tr-anchor.is-sweet .cb-tr-target {
   stroke: var(--tr-gold);
-  stroke-width: 2.85;
-  filter: drop-shadow(0 0 7px rgba(253, 230, 138, 0.92));
+  stroke-width: 3.1;
 }
 
 .cb-tr-tick {
   stroke: var(--tr-snow);
-  stroke-width: 1.5;
+  stroke-width: 1.75;
   stroke-linecap: square;
-  opacity: 0.92;
-  filter: drop-shadow(0 0 2px rgba(22, 88, 235, 0.65));
+  opacity: 0.96;
 }
 
-/* 匀速收缩冰晶外圈 */
+/* 匀速收缩冰晶外圈（匹配 SVG viewBox="0 0 160 160" 中心纯 GPU scale() 缩圈，零动态高斯模糊） */
 .cb-tr-shrink {
   fill: none;
   stroke: var(--tr-cyan);
-  stroke-width: 2.75;
-  opacity: 0.96;
-  filter: drop-shadow(0 0 5px rgba(22, 88, 235, 0.72)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.9));
+  stroke-width: 3.2;
+  opacity: 0.98;
+  transform-origin: 80px 80px;
+  will-change: transform;
 }
 
 .cb-tr-anchor.is-telegraph .cb-tr-shrink {
@@ -145,21 +163,22 @@
 
 .cb-tr-anchor.is-block .cb-tr-shrink {
   stroke: var(--tr-snow);
-  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.95));
+  stroke-width: 3.2;
 }
 
 .cb-tr-anchor.is-sweet .cb-tr-shrink {
   stroke: var(--tr-gold);
-  stroke-width: 3.1;
-  filter: drop-shadow(0 0 8px rgba(253, 230, 138, 0.95));
+  stroke-width: 3.8;
 }
 
 .cb-tr-shrink-glint {
   fill: none;
   stroke: var(--tr-snow);
-  stroke-width: 1.15;
+  stroke-width: 1.35;
   stroke-dasharray: 8 10;
-  opacity: 0.85;
+  opacity: 0.9;
+  transform-origin: 80px 80px;
+  will-change: transform;
 }
 
 .cb-tr-anchor.is-telegraph .cb-tr-shrink-glint {
@@ -198,7 +217,7 @@
   stroke-width: 1.8;
 }
 
-/* 45° 切角键帽徽标（纯单层切角几何，绝无圆角与外框嵌套） */
+/* 45° 切角键帽徽标（纯单层切角几何，绝无圆角与外框嵌套，极轻单层零模糊阴影） */
 .cb-tr-keycap {
   position: relative;
   z-index: 2;
@@ -217,6 +236,7 @@
   letter-spacing: 0.04em;
   color: var(--tr-ink);
   background: linear-gradient(155deg, #ffffff 0%, #eef6ff 55%, #dbeafe 100%);
+  box-shadow: inset 0 0 0 1.5px rgba(22, 88, 235, 0.62);
   clip-path: polygon(
     7px 0,
     calc(100% - 7px) 0,
@@ -227,9 +247,7 @@
     0 calc(100% - 7px),
     0 7px
   );
-  filter:
-    drop-shadow(0 0 1.25px rgba(22, 88, 235, 0.96))
-    drop-shadow(0 2px 6px rgba(14, 43, 120, 0.34));
+  filter: drop-shadow(0 1.5px 0 rgba(14, 43, 120, 0.84));
   transition: transform 80ms ease, color 80ms ease, background 80ms ease;
 }
 
@@ -242,6 +260,7 @@
   letter-spacing: 0.14em;
   color: var(--tr-royal-deep);
   background: linear-gradient(155deg, #ffffff 0%, #e0f2fe 58%, #bae6fd 100%);
+  box-shadow: inset 0 0 0 1.5px rgba(56, 189, 248, 0.78);
   clip-path: polygon(
     6px 0,
     calc(100% - 6px) 0,
@@ -252,18 +271,15 @@
     0 calc(100% - 6px),
     0 6px
   );
-  filter:
-    drop-shadow(0 0 1.3px rgba(56, 189, 248, 0.98))
-    drop-shadow(0 2px 7px rgba(14, 43, 120, 0.38));
+  filter: drop-shadow(0 1.5px 0 rgba(14, 43, 120, 0.88));
 }
 
 .cb-tr-anchor.is-sweet .cb-tr-keycap {
   color: var(--tr-royal);
   background: linear-gradient(155deg, #ffffff 0%, #fffbeb 56%, #fde68a 100%);
+  box-shadow: inset 0 0 0 1.5px rgba(253, 230, 138, 0.92);
   transform: scale(1.06);
-  filter:
-    drop-shadow(0 0 1.5px rgba(253, 230, 138, 1))
-    drop-shadow(0 2px 8px rgba(22, 88, 235, 0.42));
+  filter: drop-shadow(0 1.5px 0 rgba(22, 88, 235, 0.9));
 }
 
 /* 多拍钻石刻点（无外框胶囊） */
@@ -314,7 +330,7 @@
   background: var(--tr-bad-rose);
 }
 
-/* 锐利英文判定飘字（单层 45° 切角雪瓷深蓝微底带 + 高对比皇家蓝描边，零圆框套圆框，z-index: 48 严高于缩圈锚点与画布特效层） */
+/* 锐利英文判定飘字（单层 45° 切角雪瓷深蓝微底带 + 高对比皇家蓝描边，零圆框套圆框，单层零模糊投影，z-index: 48 严高于缩圈锚点与画布特效层） */
 .cb-tr-judge {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -333,6 +349,7 @@
     rgba(14, 43, 120, 0.78) 78%,
     rgba(14, 43, 120, 0.54) 100%
   );
+  box-shadow: inset 0 1px 0 rgba(186, 230, 253, 0.52);
   clip-path: polygon(
     7px 0,
     calc(100% - 7px) 0,
@@ -343,12 +360,11 @@
     0 calc(100% - 7px),
     0 7px
   );
-  filter:
-    drop-shadow(0 0 1px rgba(186, 230, 253, 0.86))
-    drop-shadow(0 3px 8px rgba(14, 43, 120, 0.44));
+  filter: drop-shadow(0 2px 0 rgba(11, 34, 96, 0.72));
   pointer-events: none;
   white-space: nowrap;
   z-index: 48;
+  will-change: transform, opacity;
   animation: cb-tr-judge-float 660ms cubic-bezier(0.18, 0.88, 0.32, 1) forwards;
 }
 
@@ -361,9 +377,8 @@
     rgba(14, 43, 120, 0.88) 80%,
     rgba(11, 34, 96, 0.68) 100%
   );
-  filter:
-    drop-shadow(0 0 1.25px rgba(56, 189, 248, 0.96))
-    drop-shadow(0 3px 10px rgba(11, 34, 96, 0.56));
+  box-shadow: inset 0 1px 0 rgba(56, 189, 248, 0.72);
+  filter: drop-shadow(0 2px 0 rgba(11, 34, 96, 0.82));
 }
 
 .cb-tr-judge-word {
@@ -396,9 +411,8 @@
 
 /* PERFECT · 香槟金辉 */
 .cb-tr-judge.is-perfect {
-  filter:
-    drop-shadow(0 0 1.2px rgba(253, 230, 138, 0.94))
-    drop-shadow(0 3px 10px rgba(14, 43, 120, 0.52));
+  box-shadow: inset 0 1px 0 rgba(253, 230, 138, 0.82);
+  filter: drop-shadow(0 2px 0 rgba(14, 43, 120, 0.82));
 }
 
 .cb-tr-judge.is-perfect .cb-tr-judge-word {
@@ -426,9 +440,8 @@
 
 /* GREAT · 冰青流光 */
 .cb-tr-judge.is-great {
-  filter:
-    drop-shadow(0 0 1.15px rgba(56, 189, 248, 0.94))
-    drop-shadow(0 3px 9px rgba(14, 43, 120, 0.48));
+  box-shadow: inset 0 1px 0 rgba(56, 189, 248, 0.78);
+  filter: drop-shadow(0 2px 0 rgba(14, 43, 120, 0.78));
 }
 
 .cb-tr-judge.is-great .cb-tr-judge-word {
@@ -488,9 +501,8 @@
     rgba(14, 38, 98, 0.90) 80%,
     rgba(11, 28, 72, 0.72) 100%
   );
-  filter:
-    drop-shadow(0 0 1.15px rgba(244, 166, 184, 0.88))
-    drop-shadow(0 3px 9px rgba(11, 28, 72, 0.56));
+  box-shadow: inset 0 1px 0 rgba(244, 166, 184, 0.70);
+  filter: drop-shadow(0 2px 0 rgba(11, 28, 72, 0.84));
 }
 
 .cb-tr-judge.is-bad .cb-tr-judge-word {
@@ -517,26 +529,40 @@
     0 1px 4px rgba(11, 28, 72, 0.98);
 }
 
-/* 关键帧动画 */
+/* 关键帧动画（锚点容器仅过渡 opacity 以免覆写 JS translate3d 定位，缩放动效落于内层 SVG） */
 @keyframes cb-tr-telegraph-in {
   0% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(1.16);
   }
   100% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
   }
 }
 
 @keyframes cb-tr-resolve-fade {
   0% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(1.06);
+  }
+}
+
+@keyframes cb-tr-svg-telegraph-in {
+  0% {
+    transform: scale(1.16);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes cb-tr-svg-resolve-fade {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.06);
   }
 }
 
@@ -668,7 +694,9 @@
     transition: none;
   }
 
-  .cb-tr-anchor.is-telegraph {
+  .cb-tr-anchor.is-telegraph,
+  .cb-tr-anchor.is-telegraph .cb-tr-svg,
+  .cb-tr-anchor.is-resolved .cb-tr-svg {
     animation: none;
   }
 

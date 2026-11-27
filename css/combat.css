@@ -5280,9 +5280,9 @@ body.cb-battle-active #fx {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.48) 0%, rgba(241, 244, 249, 0.8) 72%);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.56) 0%, rgba(244, 248, 254, 0.9) 72%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   animation: cbPhase2In 2.2s cubic-bezier(.16, .84, .44, 1) forwards;
 }
 
@@ -7394,9 +7394,7 @@ body.cb-battle-active #fx {
   opacity: 0.44;
 }
 
-#battle-screen .cb-arena-field.cb-hitstop-75 .cb-px-sheet {
-  filter: contrast(1.08) brightness(1.05);
-}
+/* 顿帧期间保留动画冻结本身，移除全场 .cb-px-sheet CSS filter 切换以消除重绘尖峰 */
 
 /* 左翼援护出场像素角色容器（雷纳德 / 夏洛特 / 霁岚 / 心念援护） */
 #battle-screen .cb-ally-cameo {
@@ -7827,16 +7825,19 @@ body.cb-battle-active #fx {
   height: 100%;
   min-width: 0;
   min-height: 0;
-  padding: 108px 4px 178px;
+  padding: 86px 4px 156px;
   box-sizing: border-box;
   overflow: visible;
 }
 
+#battle-screen #cb-ally-formation:has(.cb-ally-extra-slot) {
+  padding-bottom: 142px;
+}
+
 #battle-screen #cb-enemy-zone.cb-enemy-grid,
 #battle-screen #cb-enemy-zone.cb-formation-grid {
-  padding-top: 52px;
-  padding-bottom: 206px;
-  gap: 12px 8px;
+  padding: 38px 4px 184px;
+  gap: 10px 8px;
 }
 
 #battle-screen:not(.prism-radial-active) #cb-ally-formation,
@@ -7885,7 +7886,7 @@ body.cb-battle-active #fx {
 
 /* 4. 三排景深透视比例（通过 --depth-scale 乘入 --px-scale，严禁对 .cb-slot / .cb-px-actor 套 transform: scale()） */
 #battle-screen .cb-slot[data-row="0"] {
-  --depth-scale: 0.86;
+  --depth-scale: 0.88;
   z-index: 2;
 }
 
@@ -7895,58 +7896,58 @@ body.cb-battle-active #fx {
 }
 
 #battle-screen .cb-slot[data-row="2"] {
-  --depth-scale: 1.12;
+  --depth-scale: 1.10;
   z-index: 6;
 }
 
 #battle-screen .cb-ally-grid .cb-slot,
 #battle-screen #cb-ally-formation .cb-slot {
-  --px-base-scale: 1.56;
-  --px-scale: calc(var(--px-base-scale, 1.56) * var(--depth-scale, 1));
+  --px-base-scale: 1.82;
+  --px-scale: calc(var(--px-base-scale, 1.82) * var(--depth-scale, 1));
 }
 
 /* 3–6 人满编友军雁阵：三排全占时与敌侧 5–6 人档保持景深视觉对称，杜绝撞入左上 AV 行动条与排间压头 */
 #battle-screen #cb-ally-formation:has(.cb-ally-extra-slot) .cb-slot {
-  --px-base-scale: 0.96;
-  --px-scale: calc(var(--px-base-scale, 0.96) * var(--depth-scale, 1));
+  --px-base-scale: 1.26;
+  --px-scale: calc(var(--px-base-scale, 1.26) * var(--depth-scale, 1));
 }
 
 #battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-slot,
 #battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-e-stage.has-px-actor {
-  --px-base-scale: 1.68;
-  --px-scale: calc(var(--px-base-scale, 1.68) * var(--depth-scale, 1));
+  --px-base-scale: 1.92;
+  --px-scale: calc(var(--px-base-scale, 1.92) * var(--depth-scale, 1));
 }
 
 #battle-screen .cb-enemy-grid.multi-enemies .cb-slot,
 #battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor,
 #battle-screen .cb-enemy-grid.multi-enemies .cb-e-stage.has-px-actor {
-  --px-base-scale: 1.38;
-  --px-scale: calc(var(--px-base-scale, 1.38) * var(--depth-scale, 1));
+  --px-base-scale: 1.64;
+  --px-scale: calc(var(--px-base-scale, 1.64) * var(--depth-scale, 1));
 }
 
 #battle-screen #cb-enemy-zone[data-enemy-count="3"] .cb-slot,
 #battle-screen #cb-enemy-zone[data-enemy-count="3"] .cb-e-stage.has-px-actor {
-  --px-base-scale: 0.90;
-  --px-scale: calc(var(--px-base-scale, 0.90) * var(--depth-scale, 1));
+  --px-base-scale: 1.24;
+  --px-scale: calc(var(--px-base-scale, 1.24) * var(--depth-scale, 1));
 }
 
 #battle-screen #cb-enemy-zone[data-enemy-count="4"] .cb-slot,
 #battle-screen #cb-enemy-zone[data-enemy-count="4"] .cb-e-stage.has-px-actor {
-  --px-base-scale: 1.18;
-  --px-scale: calc(var(--px-base-scale, 1.18) * var(--depth-scale, 1));
+  --px-base-scale: 1.44;
+  --px-scale: calc(var(--px-base-scale, 1.44) * var(--depth-scale, 1));
 }
 
 #battle-screen #cb-enemy-zone[data-enemy-count="5"] .cb-slot,
 #battle-screen #cb-enemy-zone[data-enemy-count="6"] .cb-slot,
 #battle-screen #cb-enemy-zone[data-enemy-count="5"] .cb-e-stage.has-px-actor,
 #battle-screen #cb-enemy-zone[data-enemy-count="6"] .cb-e-stage.has-px-actor {
-  --px-base-scale: 0.78;
-  --px-scale: calc(var(--px-base-scale, 0.78) * var(--depth-scale, 1));
+  --px-base-scale: 1.06;
+  --px-scale: calc(var(--px-base-scale, 1.06) * var(--depth-scale, 1));
 }
 
 #battle-screen .cb-px-actor {
-  width: calc(var(--px-fw, 142px) * var(--px-scale, calc(var(--px-base-scale, 1.56) * var(--depth-scale, 1))) * var(--px-sm, 1));
-  height: calc(var(--px-fh, 124px) * var(--px-scale, calc(var(--px-base-scale, 1.56) * var(--depth-scale, 1))) * var(--px-sm, 1));
+  width: calc(var(--px-fw, 142px) * var(--px-scale, calc(var(--px-base-scale, 1.82) * var(--depth-scale, 1))) * var(--px-sm, 1));
+  height: calc(var(--px-fh, 124px) * var(--px-scale, calc(var(--px-base-scale, 1.82) * var(--depth-scale, 1))) * var(--px-sm, 1));
 }
 
 /* 5. 左右镜像 V 型锐角雁阵错位（我方 ">" 锐角推进 / 敌方 "<" 镜像包抄，仅平移零缩放） */
@@ -7960,10 +7961,10 @@ body.cb-battle-active #fx {
   transform: translate(12px, 0px);
 }
 #battle-screen #cb-ally-formation > .cb-ally-slot[data-row="1"][data-col="front"] {
-  transform: translate(24px, 0px);
+  transform: translate(18px, 0px);
 }
 #battle-screen #cb-ally-formation > .cb-ally-slot[data-row="2"][data-col="back"] {
-  transform: translate(-16px, 0px);
+  transform: translate(-12px, 0px);
 }
 #battle-screen #cb-ally-formation > .cb-ally-slot[data-row="2"][data-col="front"] {
   transform: translate(-8px, 0px);
@@ -7976,7 +7977,7 @@ body.cb-battle-active #fx {
   transform: translate(14px, 4px);
 }
 #battle-screen #cb-enemy-zone > .cb-enemy-slot[data-row="1"][data-col="front"] {
-  transform: translate(-24px, 0px);
+  transform: translate(-18px, 0px);
 }
 #battle-screen #cb-enemy-zone > .cb-enemy-slot[data-row="1"][data-col="back"] {
   transform: translate(-12px, 0px);
@@ -7985,7 +7986,7 @@ body.cb-battle-active #fx {
   transform: translate(8px, 0px);
 }
 #battle-screen #cb-enemy-zone > .cb-enemy-slot[data-row="2"][data-col="back"] {
-  transform: translate(16px, 0px);
+  transform: translate(12px, 0px);
 }
 
 /* 意图浮层展开时提层，确保悬停提示不被近排或底角详情卡裁切 */
@@ -8037,7 +8038,12 @@ body.cb-battle-active #fx {
 }
 
 #battle-screen .cb-enemy-card .cb-e-stage .cb-px-actor {
-  margin-bottom: 0;
+  margin-bottom: -4px;
+}
+
+#battle-screen .cb-enemy-zone.multi-enemies .cb-enemy-card .cb-e-stage .cb-px-actor,
+#battle-screen .cb-enemy-grid.multi-enemies .cb-enemy-card .cb-e-stage .cb-px-actor {
+  margin-bottom: -3px;
 }
 
 #battle-screen .cb-enemy-card.targeted .cb-e-stage .cb-px-shadow {
@@ -8067,9 +8073,9 @@ body.cb-battle-active #fx {
   padding: 2px 5px 3px;
   margin: 0;
   border-radius: 0;
-  background: rgba(250, 251, 253, 0.84);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(248, 251, 255, 0.94);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border: none;
   border-bottom: 1px solid rgba(125, 211, 252, 0.78);
   box-shadow: 0 2px 8px rgba(10, 28, 82, 0.12);
@@ -8375,9 +8381,9 @@ body.cb-battle-active #fx {
   flex-direction: column;
   gap: 0;
   color: var(--cb-ink);
-  background: rgba(250, 251, 253, 0.94);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  background: rgba(248, 251, 255, 0.95);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border: 1px solid rgba(196, 164, 108, 0.42);
   border-top: 2px solid #1658EB;
   border-radius: 0;
@@ -8720,9 +8726,9 @@ body.cb-battle-active #fx {
   border: 1px solid rgba(96, 128, 180, 0.24);
   border-left: 3px solid #1658EB;
   border-radius: 0;
-  background: rgba(250, 251, 253, 0.94);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  background: rgba(248, 251, 255, 0.95);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow: 0 8px 20px rgba(10, 28, 82, 0.16);
 }
 
@@ -8890,9 +8896,9 @@ body.cb-battle-active #fx {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  background: rgba(250, 251, 253, 0.92);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(248, 251, 255, 0.95);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow: 0 2px 6px rgba(10, 28, 82, 0.14);
 }
 
@@ -8936,9 +8942,9 @@ body.cb-battle-active #fx {
   border: 1px solid rgba(96, 128, 180, 0.24);
   border-left: 3px solid #1658EB;
   border-radius: 0;
-  background: rgba(250, 251, 253, 0.94);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(248, 251, 255, 0.95);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow: 0 5px 14px rgba(10, 28, 82, 0.14);
 }
 
@@ -9119,15 +9125,16 @@ body.cb-battle-active #fx {
     grid-template-columns: minmax(300px, 32%) minmax(220px, 1fr) minmax(300px, 32%);
   }
 
-  #battle-screen #cb-ally-formation {
+  #battle-screen #cb-ally-formation,
+  #battle-screen #cb-ally-formation:has(.cb-ally-extra-slot) {
     gap: 8px 6px;
-    padding: 66px 2px 158px;
+    padding: 56px 2px 138px;
   }
 
   #battle-screen #cb-enemy-zone.cb-enemy-grid,
   #battle-screen #cb-enemy-zone.cb-formation-grid {
-    gap: 10px 6px;
-    padding: 28px 2px 178px;
+    gap: 8px 6px;
+    padding: 20px 2px 158px;
   }
 
   #battle-screen:not(.prism-radial-active) #cb-ally-formation,
@@ -9155,46 +9162,46 @@ body.cb-battle-active #fx {
 
   #battle-screen .cb-ally-grid .cb-slot,
   #battle-screen #cb-ally-formation .cb-slot {
-    --px-base-scale: 1.26;
-    --px-scale: calc(var(--px-base-scale, 1.26) * var(--depth-scale, 1));
+    --px-base-scale: 1.48;
+    --px-scale: calc(var(--px-base-scale, 1.48) * var(--depth-scale, 1));
   }
 
   #battle-screen #cb-ally-formation:has(.cb-ally-extra-slot) .cb-slot {
-    --px-base-scale: 0.72;
-    --px-scale: calc(var(--px-base-scale, 0.72) * var(--depth-scale, 1));
+    --px-base-scale: 0.96;
+    --px-scale: calc(var(--px-base-scale, 0.96) * var(--depth-scale, 1));
   }
 
   #battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-slot,
   #battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-e-stage.has-px-actor {
-    --px-base-scale: 1.38;
-    --px-scale: calc(var(--px-base-scale, 1.38) * var(--depth-scale, 1));
+    --px-base-scale: 1.58;
+    --px-scale: calc(var(--px-base-scale, 1.58) * var(--depth-scale, 1));
   }
 
   #battle-screen .cb-enemy-grid.multi-enemies .cb-slot,
   #battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor,
   #battle-screen .cb-enemy-grid.multi-enemies .cb-e-stage.has-px-actor {
-    --px-base-scale: 1.02;
-    --px-scale: calc(var(--px-base-scale, 1.02) * var(--depth-scale, 1));
+    --px-base-scale: 1.26;
+    --px-scale: calc(var(--px-base-scale, 1.26) * var(--depth-scale, 1));
   }
 
   #battle-screen #cb-enemy-zone[data-enemy-count="3"] .cb-slot,
   #battle-screen #cb-enemy-zone[data-enemy-count="3"] .cb-e-stage.has-px-actor {
-    --px-base-scale: 0.66;
-    --px-scale: calc(var(--px-base-scale, 0.66) * var(--depth-scale, 1));
+    --px-base-scale: 0.90;
+    --px-scale: calc(var(--px-base-scale, 0.90) * var(--depth-scale, 1));
   }
 
   #battle-screen #cb-enemy-zone[data-enemy-count="4"] .cb-slot,
   #battle-screen #cb-enemy-zone[data-enemy-count="4"] .cb-e-stage.has-px-actor {
-    --px-base-scale: 0.88;
-    --px-scale: calc(var(--px-base-scale, 0.88) * var(--depth-scale, 1));
+    --px-base-scale: 1.10;
+    --px-scale: calc(var(--px-base-scale, 1.10) * var(--depth-scale, 1));
   }
 
   #battle-screen #cb-enemy-zone[data-enemy-count="5"] .cb-slot,
   #battle-screen #cb-enemy-zone[data-enemy-count="6"] .cb-slot,
   #battle-screen #cb-enemy-zone[data-enemy-count="5"] .cb-e-stage.has-px-actor,
   #battle-screen #cb-enemy-zone[data-enemy-count="6"] .cb-e-stage.has-px-actor {
-    --px-base-scale: 0.55;
-    --px-scale: calc(var(--px-base-scale, 0.55) * var(--depth-scale, 1));
+    --px-base-scale: 0.76;
+    --px-scale: calc(var(--px-base-scale, 0.76) * var(--depth-scale, 1));
   }
 
   /* 1280×720 镜像 V 型雁阵错位收敛 */
@@ -9620,6 +9627,7 @@ body.cb-battle-active #fx {
   }
 
   #battle-screen #cb-ally-formation,
+  #battle-screen #cb-ally-formation:has(.cb-ally-extra-slot),
   #battle-screen #cb-enemy-zone.cb-enemy-grid,
   #battle-screen #cb-enemy-zone.cb-formation-grid,
   #battle-screen:not(.prism-radial-active) #cb-ally-formation,
@@ -9675,52 +9683,58 @@ body.cb-battle-active #fx {
     max-height: none;
   }
 
+  #battle-screen .cb-enemy-card .cb-e-stage .cb-px-actor,
+  #battle-screen .cb-enemy-zone.multi-enemies .cb-enemy-card .cb-e-stage .cb-px-actor,
+  #battle-screen .cb-enemy-grid.multi-enemies .cb-enemy-card .cb-e-stage .cb-px-actor {
+    margin-bottom: -1px;
+  }
+
   #battle-screen .cb-slot[data-row="0"] { --depth-scale: 0.92; }
   #battle-screen .cb-slot[data-row="1"] { --depth-scale: 1.00; }
   #battle-screen .cb-slot[data-row="2"] { --depth-scale: 1.04; }
 
   #battle-screen .cb-ally-grid .cb-slot,
   #battle-screen #cb-ally-formation .cb-slot {
-    --px-base-scale: 0.78;
-    --px-scale: calc(var(--px-base-scale, 0.78) * var(--depth-scale, 1));
+    --px-base-scale: 0.87;
+    --px-scale: calc(var(--px-base-scale, 0.87) * var(--depth-scale, 1));
   }
 
   #battle-screen #cb-ally-formation:has(.cb-ally-extra-slot) .cb-slot {
-    --px-base-scale: 0.29;
-    --px-scale: calc(var(--px-base-scale, 0.29) * var(--depth-scale, 1));
+    --px-base-scale: 0.33;
+    --px-scale: calc(var(--px-base-scale, 0.33) * var(--depth-scale, 1));
   }
 
   #battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-slot,
   #battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-e-stage.has-px-actor {
-    --px-base-scale: 0.80;
-    --px-scale: calc(var(--px-base-scale, 0.80) * var(--depth-scale, 1));
+    --px-base-scale: 0.90;
+    --px-scale: calc(var(--px-base-scale, 0.90) * var(--depth-scale, 1));
   }
 
   #battle-screen .cb-enemy-grid.multi-enemies .cb-slot,
   #battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor,
   #battle-screen .cb-enemy-grid.multi-enemies .cb-e-stage.has-px-actor {
-    --px-base-scale: 0.34;
-    --px-scale: calc(var(--px-base-scale, 0.34) * var(--depth-scale, 1));
+    --px-base-scale: 0.38;
+    --px-scale: calc(var(--px-base-scale, 0.38) * var(--depth-scale, 1));
   }
 
   #battle-screen #cb-enemy-zone[data-enemy-count="3"] .cb-slot,
   #battle-screen #cb-enemy-zone[data-enemy-count="3"] .cb-e-stage.has-px-actor {
-    --px-base-scale: 0.25;
-    --px-scale: calc(var(--px-base-scale, 0.25) * var(--depth-scale, 1));
+    --px-base-scale: 0.28;
+    --px-scale: calc(var(--px-base-scale, 0.28) * var(--depth-scale, 1));
   }
 
   #battle-screen #cb-enemy-zone[data-enemy-count="4"] .cb-slot,
   #battle-screen #cb-enemy-zone[data-enemy-count="4"] .cb-e-stage.has-px-actor {
-    --px-base-scale: 0.33;
-    --px-scale: calc(var(--px-base-scale, 0.33) * var(--depth-scale, 1));
+    --px-base-scale: 0.37;
+    --px-scale: calc(var(--px-base-scale, 0.37) * var(--depth-scale, 1));
   }
 
   #battle-screen #cb-enemy-zone[data-enemy-count="5"] .cb-slot,
   #battle-screen #cb-enemy-zone[data-enemy-count="6"] .cb-slot,
   #battle-screen #cb-enemy-zone[data-enemy-count="5"] .cb-e-stage.has-px-actor,
   #battle-screen #cb-enemy-zone[data-enemy-count="6"] .cb-e-stage.has-px-actor {
-    --px-base-scale: 0.19;
-    --px-scale: calc(var(--px-base-scale, 0.19) * var(--depth-scale, 1));
+    --px-base-scale: 0.23;
+    --px-scale: calc(var(--px-base-scale, 0.23) * var(--depth-scale, 1));
   }
 
   #battle-screen .cb-slot.is-occupied .cb-slot-pad {

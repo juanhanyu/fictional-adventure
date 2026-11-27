@@ -156,8 +156,12 @@
     keyListener: null,
     layerEl: null,
     anchorEl: null,
+    preTelegraph: null,
+    fadingAnchors: [],
     cancelResolve: null,
     onKeyAttempt: null,
+    layoutVersion: 0,
+    activeAnchorTracker: null,
   };
 
   /* -------------------- 基础工具 -------------------- */
@@ -612,17 +616,25 @@
     return 0;
   }
 
+  function applyAnchorTransform(anchor, x, y) {
+    if (!anchor) return;
+    anchor.style.transform = 'translate3d(' + x + 'px, ' + y + 'px, 0) translate(-50%, -50%)';
+  }
+
   function resolveActorPoint(actorKey, field, mode) {
-    var fRect = field && typeof field.getBoundingClientRect === 'function'
-      ? field.getBoundingClientRect()
-      : { left: 0, top: 0, width: 1280, height: 520 };
-    var fW = fRect.width > 40 ? fRect.width : 1280;
-    var fH = fRect.height > 40 ? fRect.height : 520;
     var keyStr = String(actorKey || 'enemy:0');
     var isLeft = keyStr === 'player' || keyStr.indexOf('ally:') === 0;
     var attackLiftY = getAttackAnchorLiftY(mode);
+    var fRect = null;
+    var getFRect = function () {
+      if (fRect) return fRect;
+      fRect = field && typeof field.getBoundingClientRect === 'function'
+        ? field.getBoundingClientRect()
+        : { left: 0, top: 0, width: 1280, height: 520 };
+      return fRect;
+    };
 
-    // 优先通过 CombatPixelVFX.getActorScreenPoint 获取精确受击点
+    // 优先通过 CombatPixelVFX.getActorScreenPoint 获取内存缓存的精确受击点（零 DOM 布局回流）
     try {
       var vfx = global && global.CombatPixelVFX;
       if (vfx && typeof vfx.getActorScreenPoint === 'function') {
@@ -631,17 +643,26 @@
           var vx = isFinite(pt.x) ? pt.x : (isFinite(pt.hitX) ? pt.hitX : (isFinite(pt.screenX) ? pt.screenX : NaN));
           var vy = isFinite(pt.y) ? pt.y : (isFinite(pt.hitY) ? pt.hitY : (isFinite(pt.screenY) ? pt.screenY : NaN));
           if (isFinite(vx) && isFinite(vy)) {
-            if (pt.viewport && fRect.width > 40) {
-              vx -= fRect.left;
-              vy -= fRect.top;
+            if (!pt.viewport && isFinite(pt.fieldW) && pt.fieldW > 40 && isFinite(pt.fieldH) && pt.fieldH > 40) {
+              return clampPointToField(vx, vy - attackLiftY, pt.fieldW, pt.fieldH);
             }
-            return clampPointToField(vx, vy - attackLiftY, fW, fH);
+            var vr = getFRect();
+            if (pt.viewport && vr.width > 40) {
+              vx -= vr.left;
+              vy -= vr.top;
+            }
+            var vW = vr.width > 40 ? vr.width : 1280;
+            var vH = vr.height > 40 ? vr.height : 520;
+            return clampPointToField(vx, vy - attackLiftY, vW, vH);
           }
         }
       }
     } catch (e) {}
 
-    // DOM 节点兜底定位
+    // DOM 节点兜底定位（仅当内存受击点不可用时触碰布局读取）
+    var rect = getFRect();
+    var fW = rect.width > 40 ? rect.width : 1280;
+    var fH = rect.height > 40 ? rect.height : 520;
     try {
       if (field && typeof field.querySelector === 'function') {
         var el = field.querySelector('.cb-px-actor[data-actor-key="' + keyStr.replace(/"/g, '') + '"]');
@@ -661,8 +682,8 @@
         if (el && typeof el.getBoundingClientRect === 'function') {
           var r = el.getBoundingClientRect();
           if (r.width > 8 && r.height > 8) {
-            var dx = (r.left - fRect.left) + r.width * 0.5;
-            var dy = (r.top - fRect.top) + r.height * 0.48;
+            var dx = (r.left - rect.left) + r.width * 0.5;
+            var dy = (r.top - rect.top) + r.height * 0.48;
             return clampPointToField(dx, dy - attackLiftY, fW, fH);
           }
         }
@@ -676,6 +697,29 @@
       fW,
       fH
     );
+  }
+
+  function handleViewportResize() {
+    runtime.layoutVersion += 1;
+    if (runtime.preTelegraph) {
+      runtime.preTelegraph.layoutDirty = true;
+    }
+    var tracker = runtime.activeAnchorTracker;
+    if (tracker && tracker.anchor && tracker.anchor.isConnected) {
+      var refreshed = resolveActorPoint(tracker.actorKey, tracker.field, tracker.mode);
+      applyAnchorTransform(tracker.anchor, refreshed.x, refreshed.y);
+      if (typeof tracker.onUpdate === 'function') {
+        tracker.onUpdate(refreshed);
+      }
+    }
+  }
+
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    try {
+      window.addEventListener('resize', handleViewportResize, { passive: true });
+    } catch (e) {
+      window.addEventListener('resize', handleViewportResize);
+    }
   }
 
   function clampPointToField(x, y, fW, fH) {
@@ -728,8 +772,7 @@
     var targetR = isBlock ? R_TARGET_BLOCK : R_TARGET_ATTACK;
     var anchor = document.createElement('div');
     anchor.className = 'cb-tr-anchor ' + (isBlock ? 'is-block' : 'is-attack') + ' is-telegraph';
-    anchor.style.left = opts.x + 'px';
-    anchor.style.top = opts.y + 'px';
+    applyAnchorTransform(anchor, opts.x, opts.y);
 
     // 单层锐利 SVG 棱晶缩圈
     var svg = createSvgEl('svg', {
@@ -777,22 +820,28 @@
       }));
     }
 
-    // 外层匀速收缩冰晶主环
+    // 外层匀速收缩冰晶主环（固定 r="64"，逐帧仅改写纯 GPU scale，配合 non-scaling-stroke 保持线宽匀称）
     var shrinkRing = createSvgEl('circle', {
       class: 'cb-tr-shrink',
       cx: '80',
       cy: '80',
       r: String(R_START),
+      'vector-effect': 'non-scaling-stroke',
     });
+    shrinkRing.style.transformOrigin = '80px 80px';
+    shrinkRing.style.transform = 'scale(1)';
     svg.appendChild(shrinkRing);
 
-    // 同半径细折光高亮虚环（增强高速缩圈可读性）
+    // 同半径细折光高亮虚环（固定 r="64"，逐帧仅改写纯 GPU scale）
     var shrinkGlint = createSvgEl('circle', {
       class: 'cb-tr-shrink-glint',
       cx: '80',
       cy: '80',
       r: String(R_START),
+      'vector-effect': 'non-scaling-stroke',
     });
+    shrinkGlint.style.transformOrigin = '80px 80px';
+    shrinkGlint.style.transform = 'scale(1)';
     svg.appendChild(shrinkGlint);
 
     // 命中爆裂波纹环
@@ -843,6 +892,22 @@
     };
   }
 
+  function clearFadingAnchors() {
+    if (!runtime.fadingAnchors || !runtime.fadingAnchors.length) return;
+    for (var i = 0; i < runtime.fadingAnchors.length; i++) {
+      var el = runtime.fadingAnchors[i];
+      try {
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+      } catch (e) {}
+    }
+    runtime.fadingAnchors.length = 0;
+  }
+
+  function removeRuntimeTimer(tid) {
+    var idx = runtime.timers.indexOf(tid);
+    if (idx >= 0) runtime.timers.splice(idx, 1);
+  }
+
   function unmountAnchor() {
     if (runtime.anchorEl) {
       try {
@@ -852,6 +917,20 @@
       } catch (e) {}
       runtime.anchorEl = null;
     }
+  }
+
+  function scheduleResolvedAnchorCleanup(anchorEl, delayMs) {
+    if (!anchorEl) return;
+    runtime.fadingAnchors.push(anchorEl);
+    var tid = setTimeout(function () {
+      removeRuntimeTimer(tid);
+      var idx = runtime.fadingAnchors.indexOf(anchorEl);
+      if (idx >= 0) runtime.fadingAnchors.splice(idx, 1);
+      try {
+        if (anchorEl.parentNode) anchorEl.parentNode.removeChild(anchorEl);
+      } catch (e) {}
+    }, delayMs || 220);
+    runtime.timers.push(tid);
   }
 
   function spawnJudgeFloat(layer, x, y, grade, subText, mode) {
@@ -877,6 +956,7 @@
 
     layer.appendChild(pop);
     var tid = setTimeout(function () {
+      removeRuntimeTimer(tid);
       try {
         if (pop.parentNode) pop.parentNode.removeChild(pop);
       } catch (e) {}
@@ -1014,17 +1094,29 @@
     return new Promise(function (resolve) {
       var layer = ensureLayer();
       var field = getArenaField();
-      var pt = resolveActorPoint(params.actorKey, field, params.mode);
+      var cachedPt = resolveActorPoint(params.actorKey, field, params.mode);
 
       var ui = layer ? mountReticle(layer, {
         mode: params.mode,
         expectedKey: params.expectedKey,
-        x: pt.x,
-        y: pt.y,
+        x: cachedPt.x,
+        y: cachedPt.y,
         beatIndex: params.beatIndex,
         totalBeats: params.totalBeats,
         prevGrades: params.prevGrades,
       }) : null;
+
+      if (ui && ui.anchor) {
+        runtime.activeAnchorTracker = {
+          actorKey: params.actorKey,
+          field: field,
+          mode: params.mode,
+          anchor: ui.anchor,
+          onUpdate: function (nextPt) {
+            cachedPt = nextPt;
+          },
+        };
+      }
 
       // Phase 1: TELEGRAPH（t = 0ms 立即亮键 + 播 ring_telegraph）
       runtime.phase = 'TELEGRAPH';
@@ -1040,6 +1132,9 @@
         if (settled) return;
         settled = true;
         runtime.onKeyAttempt = null;
+        if (runtime.activeAnchorTracker && ui && runtime.activeAnchorTracker.anchor === ui.anchor) {
+          runtime.activeAnchorTracker = null;
+        }
         if (runtime.rafId && typeof cancelAnimationFrame === 'function') {
           cancelAnimationFrame(runtime.rafId);
           runtime.rafId = 0;
@@ -1054,10 +1149,7 @@
         triggerVfxHitStop(HITSTOP_MS);
         playCue('judge_' + grade.toLowerCase());
 
-        var livePt = resolveActorPoint(params.actorKey, field, params.mode);
         if (ui && ui.anchor) {
-          ui.anchor.style.left = livePt.x + 'px';
-          ui.anchor.style.top = livePt.y + 'px';
           ui.anchor.classList.remove('is-telegraph', 'is-shrinking', 'is-sweet');
           ui.anchor.classList.add('is-resolved', 'is-grade-' + grade.toLowerCase());
         }
@@ -1066,15 +1158,15 @@
           ? params.formatSubText(grade)
           : '';
         // 上移至目标外环正上方外侧（y - targetR - 26px，上边界 >= 18px），与下一拍 .cb-tr-keycap 保持 0px 重叠
-        var judgeY = Math.max(18, Math.round(livePt.y - targetR - 26));
-        spawnJudgeFloat(layer, livePt.x, judgeY, grade, subText, params.mode);
+        var judgeY = Math.max(18, Math.round(cachedPt.y - targetR - 26));
+        spawnJudgeFloat(layer, cachedPt.x, judgeY, grade, subText, params.mode);
 
         var result = {
           grade: grade,
           deltaMs: Math.round(deltaMs),
           pressedKey: pressedKey,
-          x: livePt.x,
-          y: livePt.y,
+          x: cachedPt.x,
+          y: cachedPt.y,
         };
         resolve(result);
       };
@@ -1083,11 +1175,13 @@
       var telegraphElapsed = 0;
       var shrinkElapsed = 0;
       var inShrink = false;
+      var lastSweet = false;
       var lastTs = nowMs();
 
       var enterShrinkSlowMo = function () {
         if (settled || token !== runtime.sessionToken) return;
         inShrink = true;
+        lastTs = nowMs();
         runtime.phase = 'SHRINK_SLOWMO';
         setVfxSlowMo(params.slowMoScale);
         if (layer) {
@@ -1103,7 +1197,8 @@
 
         runtime.onKeyAttempt = function (pressedKey) {
           if (settled || token !== runtime.sessionToken) return;
-          var deltaMs = shrinkElapsed - shrinkWindow.targetTimeMs;
+          var liveElapsed = shrinkElapsed + Math.max(0, Math.min(64, nowMs() - lastTs));
+          var deltaMs = liveElapsed - shrinkWindow.targetTimeMs;
           var isRightKey = params.mode === 'block'
             ? pressedKey === 'Space'
             : pressedKey === params.expectedKey;
@@ -1118,13 +1213,6 @@
         var realDt = clamp(cur - lastTs, 0, 64);
         lastTs = cur;
 
-        // 实时跟踪受击点坐标，防止角色位移造成错位
-        if (ui && ui.anchor) {
-          var trackPt = resolveActorPoint(params.actorKey, field, params.mode);
-          ui.anchor.style.left = trackPt.x + 'px';
-          ui.anchor.style.top = trackPt.y + 'px';
-        }
-
         if (!inShrink) {
           telegraphElapsed += realDt;
           if (telegraphElapsed >= TELEGRAPH_MS) {
@@ -1138,12 +1226,14 @@
         shrinkElapsed += realDt;
         var currentR = Math.max(R_MIN, R_START - shrinkVelocity * shrinkElapsed);
         if (ui && ui.shrinkRing) {
-          var rStr = currentR.toFixed(2);
-          ui.shrinkRing.setAttribute('r', rStr);
-          if (ui.shrinkGlint) ui.shrinkGlint.setAttribute('r', rStr);
+          var scaleStr = 'scale(' + (currentR / R_START).toFixed(4) + ')';
+          ui.shrinkRing.style.transform = scaleStr;
+          if (ui.shrinkGlint) ui.shrinkGlint.style.transform = scaleStr;
           var absD = Math.abs(shrinkElapsed - shrinkWindow.targetTimeMs);
-          if (ui.anchor) {
-            if (absD <= shrinkWindow.greatMs) ui.anchor.classList.add('is-sweet');
+          var isSweet = absD <= shrinkWindow.greatMs;
+          if (ui.anchor && isSweet !== lastSweet) {
+            lastSweet = isSweet;
+            if (isSweet) ui.anchor.classList.add('is-sweet');
             else ui.anchor.classList.remove('is-sweet');
           }
         }
@@ -1193,6 +1283,7 @@
     runtime.mode = null;
     runtime.phase = 'IDLE';
     runtime.onKeyAttempt = null;
+    runtime.activeAnchorTracker = null;
 
     if (runtime.rafId && typeof cancelAnimationFrame === 'function') {
       try { cancelAnimationFrame(runtime.rafId); } catch (e) {}
@@ -1200,6 +1291,8 @@
     runtime.rafId = 0;
 
     clearRuntimeTimers();
+    cancelPreTelegraph();
+    clearFadingAnchors();
     detachKeyListener();
     setVfxSlowMo(1.0);
     unmountAnchor();
@@ -1578,6 +1671,435 @@
     });
   }
 
+  /* -------------------- 9B. 门控单拍接口：showPreTelegraph / cancelPreTelegraph / runGateBeat -------------------- */
+  function cancelPreTelegraph() {
+    var pre = runtime.preTelegraph;
+    if (!pre) return false;
+    runtime.preTelegraph = null;
+    if (pre.rafId && typeof cancelAnimationFrame === 'function') {
+      try { cancelAnimationFrame(pre.rafId); } catch (e) {}
+    }
+    if (pre.safetyTimer) {
+      try { clearTimeout(pre.safetyTimer); } catch (e) {}
+    }
+    if (pre.ui && pre.ui.anchor) {
+      if (runtime.activeAnchorTracker && runtime.activeAnchorTracker.anchor === pre.ui.anchor) {
+        runtime.activeAnchorTracker = null;
+      }
+      try {
+        if (pre.ui.anchor.parentNode) {
+          pre.ui.anchor.parentNode.removeChild(pre.ui.anchor);
+        }
+      } catch (e) {}
+      if (runtime.anchorEl === pre.ui.anchor) {
+        runtime.anchorEl = null;
+      }
+    }
+    return true;
+  }
+
+  function showPreTelegraph(options) {
+    var opts = options && typeof options === 'object' ? options : {};
+    cancelPreTelegraph();
+
+    var assistMode = opts.assistMode !== undefined ? normalizeAssistMode(opts.assistMode) : getAssistMode();
+    if (assistMode === 'off' || !canRunInteractive(opts)) {
+      return false;
+    }
+
+    var mode = opts.mode === 'block' ? 'block' : 'attack';
+    var expectedKey = mode === 'block'
+      ? 'Space'
+      : String(opts.key || opts.expectedKey || 'Q').trim().toUpperCase();
+    var beatIndex = Math.max(0, Math.floor(Number(opts.beatIdx != null ? opts.beatIdx : opts.beatIndex) || 0));
+    var totalBeats = Math.max(1, Math.floor(Number(opts.totalBeats != null ? opts.totalBeats : opts.beats) || 1));
+    var actorKey = opts.anchorTargetKey || opts.actorKey || opts.targetActorKey || (mode === 'block' ? 'player' : 'enemy:0');
+
+    var layer = ensureLayer();
+    var field = getArenaField();
+    if (!layer) return false;
+
+    clearFadingAnchors();
+    var cachedPt = resolveActorPoint(actorKey, field, mode);
+    var ui = mountReticle(layer, {
+      mode: mode,
+      expectedKey: expectedKey,
+      x: cachedPt.x,
+      y: cachedPt.y,
+      beatIndex: beatIndex,
+      totalBeats: totalBeats,
+      prevGrades: Array.isArray(opts.prevGrades) ? opts.prevGrades : [],
+    });
+
+    playCue('ring_telegraph');
+
+    var preState = {
+      ui: ui,
+      mode: mode,
+      expectedKey: expectedKey,
+      actorKey: actorKey,
+      beatIndex: beatIndex,
+      totalBeats: totalBeats,
+      pt: cachedPt,
+      layoutVersion: runtime.layoutVersion,
+      layoutDirty: false,
+      rafId: 0,
+      safetyTimer: null,
+      startedAt: nowMs(),
+    };
+    runtime.preTelegraph = preState;
+
+    if (ui && ui.anchor) {
+      runtime.activeAnchorTracker = {
+        actorKey: actorKey,
+        field: field,
+        mode: mode,
+        anchor: ui.anchor,
+        onUpdate: function (nextPt) {
+          preState.pt = nextPt;
+          preState.layoutVersion = runtime.layoutVersion;
+          preState.layoutDirty = false;
+        },
+      };
+    }
+
+    preState.safetyTimer = setTimeout(function () {
+      if (runtime.preTelegraph === preState) {
+        cancelPreTelegraph();
+      }
+    }, 2600);
+
+    return true;
+  }
+
+  function runGateBeat(options) {
+    var opts = options && typeof options === 'object' ? options : {};
+    var mode = opts.mode === 'block' ? 'block' : 'attack';
+    var assistMode = opts.assistMode !== undefined ? normalizeAssistMode(opts.assistMode) : getAssistMode();
+    var casualMode = opts.casualMode !== undefined ? coerceBool(opts.casualMode) : isCasualMode();
+    var beatIdx = Math.max(0, Math.floor(Number(opts.beatIdx != null ? opts.beatIdx : opts.beatIndex) || 0));
+    var totalBeats = Math.max(1, Math.floor(Number(opts.totalBeats != null ? opts.totalBeats : opts.beats) || 1));
+    var isFinalBeat = opts.isFinalBeat !== undefined ? coerceBool(opts.isFinalBeat) : (beatIdx >= totalBeats - 1);
+    var actorKey = opts.anchorTargetKey || opts.actorKey || opts.targetActorKey || (mode === 'block' ? 'player' : 'enemy:0');
+    var expectedKey = mode === 'block'
+      ? 'Space'
+      : String(opts.key || opts.expectedKey || pickRandomKey(opts.rng, null)).trim().toUpperCase();
+    var defRank = clamp(Math.round(Number(opts.playerRank != null ? opts.playerRank : opts.defRank) || 1), 1, 7);
+    var atkRank = clamp(Math.round(Number(opts.enemyRank != null ? opts.enemyRank : opts.atkRank) || 1), 1, 7);
+
+    var rawSlowMo = Number(opts.slowMoScale);
+    var spec = opts.skillId ? getBeatSpec(opts.skillId, { aliveCount: totalBeats }) : null;
+    var effSlowMoScale;
+    if (isFinite(rawSlowMo) && rawSlowMo > 0) {
+      effSlowMoScale = clamp(rawSlowMo, 0.05, 1.0);
+    } else if (mode === 'block') {
+      effSlowMoScale = SLOWMO_SCALE;
+    } else if (spec && spec.dynamic && !isFinalBeat) {
+      effSlowMoScale = SLOWMO_FAST_SCALE;
+    } else {
+      effSlowMoScale = SLOWMO_SCALE;
+    }
+
+    // 辅助关闭或无头环境安全降级（零阻塞、直接返回 GOOD）
+    if (assistMode === 'off' || !canRunInteractive(opts)) {
+      cancelPreTelegraph();
+      var skipBlockReduce = mode === 'block' ? calcBlockRate('GOOD', defRank, atkRank) : 0;
+      var skipBonus = mode === 'attack' ? calcRingBonus(['GOOD'], { casualMode: casualMode }) : 0;
+      var skipRes = {
+        grade: 'GOOD',
+        effectiveGrade: 'GOOD',
+        bonus: skipBonus,
+        multiplier: round6(1 + skipBonus),
+        blockReduce: skipBlockReduce,
+        blockRate: skipBlockReduce,
+        deltaMs: 0,
+        pressedKey: null,
+        timedOut: false,
+        skipped: true,
+        cancelled: false,
+        assistMode: assistMode,
+        casualMode: casualMode,
+        key: expectedKey,
+        beatIdx: beatIdx,
+        totalBeats: totalBeats,
+      };
+      if (typeof opts.onResolve === 'function') {
+        try { opts.onResolve(skipRes); } catch (e) {}
+      }
+      return Promise.resolve(skipRes);
+    }
+
+    // 尝试无缝承接 showPreTelegraph 已挂载的预告键帽，避免闪屏重载并复用已缓存坐标
+    var adoptedUi = null;
+    var adoptedPt = null;
+    if (!runtime.active && runtime.preTelegraph) {
+      var pre = runtime.preTelegraph;
+      var sameAnchor = (
+        pre.mode === mode &&
+        pre.expectedKey === expectedKey &&
+        pre.actorKey === actorKey &&
+        pre.beatIndex === beatIdx &&
+        pre.totalBeats === totalBeats &&
+        pre.ui && pre.ui.anchor && pre.ui.anchor.isConnected
+      );
+      if (sameAnchor) {
+        runtime.preTelegraph = null;
+        if (pre.rafId && typeof cancelAnimationFrame === 'function') {
+          try { cancelAnimationFrame(pre.rafId); } catch (e) {}
+        }
+        if (pre.safetyTimer) {
+          try { clearTimeout(pre.safetyTimer); } catch (e) {}
+        }
+        adoptedUi = pre.ui;
+        if (!pre.layoutDirty && pre.layoutVersion === runtime.layoutVersion && pre.pt) {
+          adoptedPt = pre.pt;
+        }
+      } else {
+        cancelPreTelegraph();
+      }
+    } else {
+      cancelPreTelegraph();
+    }
+
+    if (runtime.active) {
+      cancel('superseded');
+    }
+
+    var token = ++runtime.sessionToken;
+    runtime.active = true;
+    runtime.mode = mode;
+    runtime.phase = 'SHRINK_SLOWMO';
+    attachKeyListener();
+
+    var win = mode === 'block'
+      ? resolveBlockWindow(assistMode)
+      : resolveAttackWindow(opts.ampPct, assistMode);
+    var layer = ensureLayer();
+    var field = getArenaField();
+    var cachedPt = adoptedPt || resolveActorPoint(actorKey, field, mode);
+
+    var ui = adoptedUi;
+    if (!ui && layer) {
+      clearFadingAnchors();
+      ui = mountReticle(layer, {
+        mode: mode,
+        expectedKey: expectedKey,
+        x: cachedPt.x,
+        y: cachedPt.y,
+        beatIndex: beatIdx,
+        totalBeats: totalBeats,
+        prevGrades: Array.isArray(opts.prevGrades) ? opts.prevGrades : [],
+      });
+    } else if (ui && ui.anchor) {
+      runtime.anchorEl = ui.anchor;
+      if (!adoptedPt) {
+        applyAnchorTransform(ui.anchor, cachedPt.x, cachedPt.y);
+      }
+    }
+
+    if (ui && ui.anchor) {
+      runtime.activeAnchorTracker = {
+        actorKey: actorKey,
+        field: field,
+        mode: mode,
+        anchor: ui.anchor,
+        onUpdate: function (nextPt) {
+          cachedPt = nextPt;
+        },
+      };
+    }
+
+    if (typeof opts.onStart === 'function') {
+      try {
+        opts.onStart({
+          mode: mode,
+          key: expectedKey,
+          beatIdx: beatIdx,
+          totalBeats: totalBeats,
+          actorKey: actorKey,
+          slowMoScale: effSlowMoScale,
+        });
+      } catch (e) {}
+    }
+
+    return new Promise(function (resolve) {
+      var settled = false;
+      var targetR = ui ? ui.targetR : (mode === 'block' ? R_TARGET_BLOCK : R_TARGET_ATTACK);
+      var shrinkVelocity = (R_START - targetR) / Math.max(1, win.targetTimeMs);
+      var shrinkElapsed = 0;
+      var lastSweet = false;
+      var lastTs = nowMs();
+
+      var cleanupSessionState = function () {
+        if (runtime.rafId && typeof cancelAnimationFrame === 'function') {
+          try { cancelAnimationFrame(runtime.rafId); } catch (e) {}
+        }
+        runtime.rafId = 0;
+        if (runtime.activeAnchorTracker && ui && runtime.activeAnchorTracker.anchor === ui.anchor) {
+          runtime.activeAnchorTracker = null;
+        }
+        if (token === runtime.sessionToken) {
+          runtime.active = false;
+          runtime.mode = null;
+          runtime.phase = 'IDLE';
+          runtime.onKeyAttempt = null;
+          runtime.cancelResolve = null;
+          detachKeyListener();
+          setVfxSlowMo(1.0);
+        }
+        if (layer) {
+          layer.classList.remove('is-slowmo', 'is-block-mode');
+        }
+      };
+
+      var finishGateBeat = function (grade, deltaMs, pressedKey, timedOut) {
+        if (settled) return;
+        settled = true;
+        cleanupSessionState();
+
+        // 唯一一次命中顿帧 (55ms) 与即时判定音效
+        triggerVfxHitStop(HITSTOP_MS);
+        playCue('judge_' + grade.toLowerCase());
+
+        if (ui && ui.anchor) {
+          ui.anchor.classList.remove('is-telegraph', 'is-shrinking', 'is-sweet');
+          ui.anchor.classList.add('is-resolved', 'is-grade-' + grade.toLowerCase());
+          if (runtime.anchorEl === ui.anchor) {
+            runtime.anchorEl = null;
+          }
+          scheduleResolvedAnchorCleanup(ui.anchor, 220);
+        }
+
+        var blockReduce = mode === 'block' ? calcBlockRate(grade, defRank, atkRank) : 0;
+        var effGrade = (mode === 'attack' && casualMode && grade === 'BAD') ? 'GOOD' : grade;
+        var bonus = mode === 'attack' ? calcRingBonus([grade], { casualMode: casualMode }) : 0;
+        var subText = mode === 'block'
+          ? formatBlockSubText(blockReduce)
+          : formatAttackSubText(grade, casualMode);
+        var judgeY = Math.max(18, Math.round(cachedPt.y - targetR - 26));
+        spawnJudgeFloat(layer, cachedPt.x, judgeY, grade, subText, mode);
+
+        var result = {
+          grade: grade,
+          effectiveGrade: effGrade,
+          bonus: bonus,
+          multiplier: round6(1 + bonus),
+          blockReduce: blockReduce,
+          blockRate: blockReduce,
+          deltaMs: Math.round(deltaMs),
+          pressedKey: pressedKey,
+          timedOut: !!timedOut,
+          skipped: false,
+          cancelled: false,
+          assistMode: assistMode,
+          casualMode: casualMode,
+          key: expectedKey,
+          beatIdx: beatIdx,
+          totalBeats: totalBeats,
+        };
+        if (typeof opts.onResolve === 'function') {
+          try { opts.onResolve(result); } catch (e) {}
+        }
+        resolve(result);
+      };
+
+      runtime.cancelResolve = function (reason) {
+        if (settled) return;
+        settled = true;
+        cleanupSessionState();
+        unmountAnchor();
+        var cancelBonus = mode === 'attack' ? calcRingBonus(['BAD'], { casualMode: casualMode }) : 0;
+        var cancelRes = {
+          grade: 'BAD',
+          effectiveGrade: (mode === 'attack' && casualMode) ? 'GOOD' : 'BAD',
+          bonus: cancelBonus,
+          multiplier: round6(1 + cancelBonus),
+          blockReduce: 0,
+          blockRate: 0,
+          deltaMs: 0,
+          pressedKey: null,
+          timedOut: false,
+          skipped: false,
+          cancelled: true,
+          cancelReason: reason || 'cancelled',
+          assistMode: assistMode,
+          casualMode: casualMode,
+          key: expectedKey,
+          beatIdx: beatIdx,
+          totalBeats: totalBeats,
+        };
+        if (typeof opts.onResolve === 'function') {
+          try { opts.onResolve(cancelRes); } catch (e) {}
+        }
+        resolve(cancelRes);
+      };
+
+      // 零延迟直入 slowMoScale 慢镜缩圈
+      setVfxSlowMo(effSlowMoScale);
+      if (layer) {
+        layer.classList.add('is-slowmo');
+        if (mode === 'block') layer.classList.add('is-block-mode');
+        else layer.classList.remove('is-block-mode');
+      }
+      if (ui && ui.anchor) {
+        ui.anchor.classList.remove('is-telegraph');
+        ui.anchor.classList.add('is-shrinking');
+      }
+      playCue('ring_slowmo_in');
+
+      runtime.onKeyAttempt = function (pressedKey) {
+        if (settled || token !== runtime.sessionToken) return;
+        var liveElapsed = shrinkElapsed + Math.max(0, Math.min(64, nowMs() - lastTs));
+        var deltaMs = liveElapsed - win.targetTimeMs;
+        var isRightKey = mode === 'block'
+          ? pressedKey === 'Space'
+          : pressedKey === expectedKey;
+        var grade = isRightKey ? judgeDelta(deltaMs, win) : 'BAD';
+        finishGateBeat(grade, deltaMs, pressedKey, false);
+      };
+
+      var tickGateFrame = function () {
+        if (settled || token !== runtime.sessionToken) return;
+        var cur = nowMs();
+        var realDt = clamp(cur - lastTs, 0, 64);
+        lastTs = cur;
+
+        shrinkElapsed += realDt;
+        var currentR = Math.max(R_MIN, R_START - shrinkVelocity * shrinkElapsed);
+        if (ui && ui.shrinkRing) {
+          var scaleStr = 'scale(' + (currentR / R_START).toFixed(4) + ')';
+          ui.shrinkRing.style.transform = scaleStr;
+          if (ui.shrinkGlint) ui.shrinkGlint.style.transform = scaleStr;
+          var absD = Math.abs(shrinkElapsed - win.targetTimeMs);
+          var isSweet = absD <= win.greatMs;
+          if (ui.anchor && isSweet !== lastSweet) {
+            lastSweet = isSweet;
+            if (isSweet) ui.anchor.classList.add('is-sweet');
+            else ui.anchor.classList.remove('is-sweet');
+          }
+        }
+
+        if (shrinkElapsed >= win.durationMs) {
+          finishGateBeat('BAD', shrinkElapsed - win.targetTimeMs, null, true);
+          return;
+        }
+
+        runtime.rafId = requestAnimationFrame(tickGateFrame);
+      };
+
+      if (typeof requestAnimationFrame === 'function') {
+        runtime.rafId = requestAnimationFrame(tickGateFrame);
+      } else {
+        var endTid = setTimeout(function () {
+          removeRuntimeTimer(endTid);
+          if (settled || token !== runtime.sessionToken) return;
+          finishGateBeat('BAD', win.durationMs - win.targetTimeMs, null, true);
+        }, win.durationMs);
+        runtime.timers.push(endTid);
+      }
+    });
+  }
+
   /* -------------------- 10. 全局与 CommonJS 导出 -------------------- */
   var api = {
     getAssistMode: getAssistMode,
@@ -1589,6 +2111,9 @@
     calcRingBonus: calcRingBonus,
     calcBlockRate: calcBlockRate,
     isActive: isActive,
+    showPreTelegraph: showPreTelegraph,
+    cancelPreTelegraph: cancelPreTelegraph,
+    runGateBeat: runGateBeat,
     runAttackSequence: runAttackSequence,
     runBlockPrompt: runBlockPrompt,
     cancel: cancel,

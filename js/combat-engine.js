@@ -452,15 +452,15 @@
 
   const PATH_META = {
     HAND: { tag: '【冰水术式】', short: '冰水术式', pill: '术式', desc: '凝聚冰霜与水流正面破局、控场护御，可自由调配魔力增幅档位' },
-    REMOTE: { tag: '【进阶断咏】', short: '进阶断咏', pill: '断咏', desc: '高阶冰水术式可精准打断双手控场蓄势' },
+    REMOTE: { tag: '【进阶断咏】', short: '进阶断咏', pill: '断咏', desc: '高阶冰水术式可精准打断重术蓄势' },
     SWORD: { tag: '【剑步身法】', short: '剑步身法', pill: '剑步', desc: '近身导魔回蓝并迎锋化解贴身突袭，收束外显波动' },
     INSIGHT: { tag: '【精算研判】', short: '精算研判', pill: '研判', desc: '精准捕捉敌方破绽并针对性破局' },
   };
 
   const STANCE_META = {
     DUAL_CAST: {
-      short: '双手控场',
-      badge: '双手控场 · 侧翼空档',
+      short: '重术蓄势',
+      badge: '重术蓄势 · 咏唱空档',
       hint: '宜用进阶冰水术式或一阶以上魔力增幅截断蓄势',
     },
     CLOSE_LUNGE: {
@@ -826,8 +826,8 @@
       beats: 3,
       keyRule: 'same_3',
       beatSpec: SKILL_BEAT_SPEC_V32.ice_2_prism,
-      shortDesc: '3拍同键 · 可断双手控场',
-      desc: '折射出三棱晶簇连射压迫，抓住双手控场空档即可瞬断敌方蓄势。',
+      shortDesc: '3拍同键 · 可断重术蓄势',
+      desc: '折射出三棱晶簇连射压迫，抓住重术蓄势空档即可瞬断敌方咏唱。',
     },
     ice_3_starfrost: {
       id: 'ice_3_starfrost',
@@ -852,8 +852,8 @@
       keyRule: 'diff_2',
       vfxIcicles: [2, 2],
       beatSpec: SKILL_BEAT_SPEC_V32.ice_3_starfrost,
-      shortDesc: '2拍异键 · 寒冷2 · 穿抗8% · 断控场',
-      desc: '四枚极寒晶锥化作星霜齐射，固有穿透法抗并打断双手控场蓄势。',
+      shortDesc: '2拍异键 · 寒冷2 · 穿抗8% · 断蓄势',
+      desc: '四枚极寒晶锥化作星霜齐射，固有穿透法抗并打断重术蓄势。',
     },
 
     // —— 线 2：水系破局线 ——
@@ -905,8 +905,8 @@
       beats: 2,
       keyRule: 'diff_2',
       beatSpec: SKILL_BEAT_SPEC_V32.water_2_surge,
-      shortDesc: '2拍异键 · 灭火净灼 · 断控场',
-      desc: '两重急流交错奔涌，冲熄火灵并涤净自身灼烧与致盲，可截断双手控场。',
+      shortDesc: '2拍异键 · 灭火净灼 · 断蓄势',
+      desc: '两重急流交错奔涌，冲熄火灵并涤净自身灼烧与致盲，可截断重术蓄势。',
     },
     water_3_blade: {
       id: 'water_3_blade',
@@ -934,7 +934,7 @@
       keyRule: 'diff_2',
       beatSpec: SKILL_BEAT_SPEC_V32.water_3_blade,
       shortDesc: '2拍异键 · 穿半盾 · 穿抗25% · 灭火2',
-      desc: '极压水刃切开半数护盾并深入法抗裂隙，双层灭火涤净异常且可截断控场。',
+      desc: '极压水刃切开半数护盾并深入法抗裂隙，双层灭火涤净异常且可截断重术蓄势。',
     },
 
     // —— 线 3：霜域控场线 ——
@@ -1271,8 +1271,8 @@
       bg: 'bg-img-night bg-night',
       bgmType: 'battle',
       mainline: true,
-      tags: ['8岁童年配装', '王级雷纳德主攻', '冰履岩棱合围', '冰盾拦脱手旋杖'],
-      summary: '王级雷纳德立于前排以火土风三系压制强敌，你须在后排以冰履铺场配合岩棱合围，并在脱手旋杖袭心回合立起冰盾反制活捉。',
+      tags: ['8岁童年配装', '王级雷纳德主攻', '冰履岩棱合围', '冰盾拦飞旋掷杖'],
+      summary: '王级雷纳德立于前排以火土风三系压制强敌，你须在后排以冰履铺场配合岩棱合围，并在飞旋掷杖袭心回合立起冰盾反制活捉。',
       sealRule: true,
       allies: [
         {
@@ -1311,7 +1311,7 @@
       reward: { exp: 140, gold: 0 },
       waves: [
         {
-          intro: '雷纳德从歪脖子树跳下挡在你身前：「别当着家长的面打小孩。」前排交由雷纳德主攻压制，留意绕后黑光与脱手旋杖，立冰盾自保并铺冰履合围活捉！',
+          intro: '雷纳德从歪脖子树跳下挡在你身前：「别当着家长的面打小孩。」前排交由雷纳德主攻压制，留意绕后黑光与飞旋掷杖，立冰盾自保并铺冰履合围活捉！',
           enemies: [
             {
               id: 'rowan',
@@ -1329,7 +1329,7 @@
               spd: 114,
               maxLocks: 5,
               noBlockPrompt: false,
-              trait: '圣级刺客：正面交锋由雷纳德承担，绕后晦轮黑光与脱手旋杖直袭后排；立冰盾可阻尼并截停旋杖，铺冰履可配合岩棱大幅推进活捉。',
+              trait: '圣级刺客：正面交锋由雷纳德承担，绕后晦轮黑光与飞旋掷杖直袭后排；立冰盾可阻尼并截停旋杖，铺冰履可配合岩棱大幅推进活捉。',
               aiType: 'rowan',
             },
           ],
@@ -1406,8 +1406,8 @@
       bg: 'bg-img-training bg-plain',
       bgmType: 'duel',
       mainline: true,
-      tags: ['三击定胜负', '七回合限时', '镜霜壁反刺开窗', '三棱冰晶断控场'],
-      summary: '纯冰系切磋，七回合内抢满三次有效命中方能取胜！以三棱冰晶截断双手控场，或借镜霜壁反刺撕开正面镜冰空档。',
+      tags: ['三击定胜负', '七回合限时', '镜霜壁反刺开窗', '三棱冰晶断蓄势'],
+      summary: '纯冰系切磋，七回合内抢满三次有效命中方能取胜！以三棱冰晶截断重术蓄势，或借镜霜壁反刺撕开正面镜冰空档。',
       hitRule: true,
       targetHits: 3,
       turnLimit: 7,
@@ -1446,7 +1446,7 @@
               maxLocks: 3,
               mirrorGuard: true,
               noBlockPrompt: false,
-              trait: '无瑕镜冰：常态正面拦截普通攻势；抓住双手压地空档以三棱冰晶截断，或用镜霜壁反刺开窗后追击记作有效命中。',
+              trait: '无瑕镜冰：常态正面拦截普通攻势；抓住寒脉蓄势空档以三棱冰晶截断，或用镜霜壁反刺开窗后追击记作有效命中。',
               aiType: 'aino',
             },
           ],
@@ -1734,7 +1734,7 @@
               spd: 102,
               maxLocks: 3,
               noBlockPrompt: false,
-              trait: '走廊纵火：双手结印蓄起火墙并附加灼烧，宜用激流涌截断并净灼。',
+              trait: '走廊纵火：炎印蓄势燃起火墙并附加灼烧，宜用激流涌截断并净灼。',
               aiType: 'flame_mage',
             },
           ],
@@ -2372,7 +2372,7 @@
     const wt = b.waveTurn || b.turn || 1;
     const ai = enemy.aiType || 'generic';
 
-    // 1. 贝阿特丽丝（四拍切换：抬肩重劈 / 双手火蛇 / 融冰防反 / 爆炎重劈）
+    // 1. 贝阿特丽丝（四拍切换：抬肩重劈 / 暴走火蛇 / 融冰防反 / 爆炎重劈）
     if (ai === 'beatrice') {
       const step = (wt - 1) % 4;
       const fa = enemy.fireStacks || 0;
@@ -2388,7 +2388,7 @@
       } else if (step === 1) {
         enemy.intent = {
           stance: 'DUAL_CAST',
-          moveName: '双手塑形·暴走火蛇',
+          moveName: '烈焰塑形·暴走火蛇',
           dmg: 42 + fa * 4,
           elem: 'fire',
           addBurn: 1,
@@ -2415,7 +2415,7 @@
       return;
     }
 
-    // 2. 罗文（四回合紧致协同活捉节拍：越位黑光 / 窄道突围 / 脱手旋杖袭心）
+    // 2. 罗文（四回合紧致协同活捉节拍：越位黑光 / 窄道突围 / 飞旋掷杖袭心）
     if (ai === 'rowan') {
       const step = (wt - 1) % 3;
       if (step === 0) {
@@ -2444,7 +2444,7 @@
       } else {
         enemy.intent = {
           stance: 'CLOSE_LUNGE',
-          moveName: '虚刺雷纳德·脱手旋杖袭心',
+          moveName: '虚刺雷纳德·飞旋掷杖袭心',
           dmg: 60,
           allyDmg: 68,
           elem: 'dark',
@@ -2463,7 +2463,7 @@
       if (isStormTurn) {
         enemy.intent = {
           stance: 'DUAL_CAST',
-          moveName: '双手合拢·狂躁风暴蓄力',
+          moveName: '聚风成涡·狂躁风暴蓄力',
           dmg: 96,
           elem: 'wind',
           mpCost: 22,
@@ -2502,13 +2502,13 @@
       return;
     }
 
-    // 4. 艾诺（冰上三击制紧致节拍：双手压地 / 近身双刺 / 破土冰莲）
+    // 4. 艾诺（冰上三击制紧致节拍：寒脉蓄势 / 近身双刺 / 破土冰莲）
     if (ai === 'aino') {
       const step = (wt - 1) % 3;
       if (step === 0) {
         enemy.intent = {
           stance: 'DUAL_CAST',
-          moveName: '双手压地·极寒双翼刺阵',
+          moveName: '寒脉震地·极寒双翼刺阵',
           dmg: 54,
           elem: 'ice',
           slipStrike: true,
@@ -2701,7 +2701,7 @@
       if (step === 0) {
         enemy.intent = {
           stance: 'DUAL_CAST',
-          moveName: '双手结印·封廊赤炎火墙',
+          moveName: '炎印炽涌·封廊赤炎火墙',
           dmg: 82,
           elem: 'fire',
           addBurn: 2,
@@ -2753,7 +2753,7 @@
       if (step === 0) {
         enemy.intent = {
           stance: 'DUAL_CAST',
-          moveName: '双手引火·长廊炎壁',
+          moveName: '炽焰引燃·长廊炎壁',
           dmg: 130,
           elem: 'fire',
           gainShield: 38,
@@ -2888,7 +2888,7 @@
     decideEnemyIntent(cloneE, fakeB);
     const nextSt = cloneE.intent ? cloneE.intent.stance : 'HEAVY_WINDUP';
     const labelMap = {
-      DUAL_CAST: '双手控场（可留进阶冰水术式或一阶增幅截断）',
+      DUAL_CAST: '重术蓄势（可留进阶冰水术式或一阶增幅截断）',
       CLOSE_LUNGE: '贴身突袭（可备寒锋斩迎击或风行残像避险）',
       HEAVY_WINDUP: '蓄力重击（宜提前立起冰盾护御）',
       GUARD_COUNTER: '严密防反（宜切换克制属性或霜域破防）',
@@ -3401,7 +3401,7 @@
 
     const elemMult = zeroMpFallback ? 1.0 : getElemMult(skill.elem, e.elem);
 
-    // 艾诺正面镜冰阻挡：需以截断控场或镜霜壁反刺窗口破镜
+    // 艾诺正面镜冰阻挡：需以截断蓄势或镜霜壁反刺窗口破镜
     const mirrorRiposteReady = !!(p.status && p.status.mirrorRiposteWindow > 0 && skill.line === 1);
     const frostMirrorOpen = !!(skill.line === 3 && ampProfile && ampProfile.tier >= 1);
     if (e.mirrorGuard && !willInterrupt && !mirrorRiposteReady && !frostMirrorOpen) {
@@ -3551,7 +3551,7 @@
       headline = `魔力不足兜底平斩（回蓝 +${manaReturn} MP）`;
       kind = 'normal';
     } else if (est.mirrorBlocked) {
-      headline = '将被正面镜冰格挡（宜抓双手控场或镜霜壁反刺开窗）';
+      headline = '将被正面镜冰格挡（宜抓重术蓄势或镜霜壁反刺开窗）';
       kind = 'warn';
     } else if (evadeBlocked) {
       headline = `将被敌方闪避层抵消（余 ${e.evadeCharges} 层）`;
@@ -3724,9 +3724,8 @@
 
     const intent = primary.intent || { stance: 'STAGGERED', moveName: '已倒下', dmg: 0 };
     const sm = STANCE_META[intent.stance] || STANCE_META.HEAVY_WINDUP;
-    const safeTrait = String(primary.trait || '').replace(/"/g, '&quot;');
     const traitHtml = primary.trait
-      ? `<span class="cb-trait-wrap"><button type="button" class="cb-trait-pill" title="${safeTrait}">特性</button><span class="cb-trait-tip" role="tooltip">${primary.trait}</span></span>`
+      ? `<span class="cb-trait-wrap"><button type="button" class="cb-trait-pill">特性</button><span class="cb-trait-tip" role="tooltip">${primary.trait}</span></span>`
       : '';
     const hpPct = primary.nonLethalSpar
       ? 100
@@ -4513,6 +4512,159 @@
   }
 
   const _pendingAsyncDelays = new Set();
+  const _activeGateBrokers = new Set();
+  const _activeVfxHandles = new Set();
+
+  function parseGateCallbackArgs(arg0, arg1) {
+    if (arg0 && typeof arg0 === 'object') {
+      const idx = arg0.beatIdx != null
+        ? arg0.beatIdx
+        : (arg0.beatIndex != null ? arg0.beatIndex : (arg0.gateIdx != null ? arg0.gateIdx : 0));
+      return { k: Math.max(0, Number(idx) || 0), meta: arg0 };
+    }
+    return {
+      k: Math.max(0, Number(arg0) || 0),
+      meta: (arg1 && typeof arg1 === 'object') ? arg1 : {},
+    };
+  }
+
+  function createBeatGateBroker(gateCount) {
+    const readyMeta = new Map();
+    const waiters = new Map();
+    const timers = new Set();
+    let aborted = false;
+
+    const broker = {
+      gateCount: Math.max(1, Number(gateCount) || 1),
+      notifyReady(beatIdx, meta) {
+        if (aborted) return;
+        const k = Math.max(0, Number(beatIdx) || 0);
+        const m = (meta && typeof meta === 'object') ? meta : {};
+        if (waiters.has(k)) {
+          const w = waiters.get(k);
+          waiters.delete(k);
+          if (w.tid != null) {
+            clearTimeout(w.tid);
+            timers.delete(w.tid);
+          }
+          w.resolve({ timedOut: false, aborted: false, meta: m });
+        } else {
+          readyMeta.set(k, m);
+        }
+      },
+      waitForBeat(beatIdx, timeoutMs) {
+        const k = Math.max(0, Number(beatIdx) || 0);
+        if (aborted) return Promise.resolve({ timedOut: true, aborted: true, meta: {} });
+        if (readyMeta.has(k)) {
+          const m = readyMeta.get(k);
+          readyMeta.delete(k);
+          return Promise.resolve({ timedOut: false, aborted: false, meta: m });
+        }
+        return new Promise(resolve => {
+          const tid = setTimeout(() => {
+            timers.delete(tid);
+            const cur = waiters.get(k);
+            if (cur && cur.tid === tid) {
+              waiters.delete(k);
+              resolve({ timedOut: true, aborted: false, meta: {} });
+            }
+          }, Math.max(200, Number(timeoutMs) || 2500));
+          if (tid && typeof tid.unref === 'function') tid.unref();
+          timers.add(tid);
+          waiters.set(k, { resolve, tid });
+        });
+      },
+      abort() {
+        aborted = true;
+        timers.forEach(tid => { try { clearTimeout(tid); } catch (e) {} });
+        timers.clear();
+        waiters.forEach(w => {
+          try { w.resolve({ timedOut: true, aborted: true, meta: {} }); } catch (e) {}
+        });
+        waiters.clear();
+        readyMeta.clear();
+      },
+    };
+    _activeGateBrokers.add(broker);
+    return broker;
+  }
+
+  function releaseGateBroker(broker) {
+    if (!broker) return;
+    _activeGateBrokers.delete(broker);
+    try { broker.abort(); } catch (e) {}
+  }
+
+  function abortVfxHandle(h) {
+    if (!h) return;
+    _activeVfxHandles.delete(h);
+    try { if (typeof h.releaseAll === 'function') h.releaseAll(); } catch (e) {}
+    try { if (typeof h.abort === 'function') h.abort(); } catch (e) {}
+    try { if (typeof h.finishActorReturn === 'function') h.finishActorReturn(); } catch (e) {}
+  }
+
+  function isUsableVfxHandle(h, pxApi) {
+    if (!h || typeof h.releaseGate !== 'function') return false;
+    if (h.noop || h.isNoop) return false;
+    if (pxApi && typeof pxApi.isEnabled === 'function' && !pxApi.isEnabled()) return false;
+    return true;
+  }
+
+  function buildSkillBeatPlan(skillId, primaryPos, targetActorKeys, aliveCount, effBeats) {
+    const ctr = global.CombatTimingRing;
+    const spec = (ctr && typeof ctr.getBeatSpec === 'function')
+      ? ctr.getBeatSpec(skillId, { aliveCount: Math.max(1, aliveCount || 1), targetActorKeys })
+      : null;
+    const total = Math.max(1, effBeats || (spec && spec.beats) || 1);
+    let keys = (ctr && typeof ctr.generateKeySequence === 'function')
+      ? ctr.generateKeySequence(spec || skillId, { aliveCount: Math.max(1, aliveCount || 1) })
+      : [];
+    const pool = ['Q', 'W', 'E', 'A', 'S', 'D'];
+    if (!Array.isArray(keys) || keys.length !== total) {
+      keys = [];
+      if (skillId === 'ice_2_prism') {
+        const fixed = pool[Math.floor(Math.random() * pool.length)];
+        for (let i = 0; i < total; i++) keys.push(fixed);
+      } else {
+        let prev = null;
+        for (let i = 0; i < total; i++) {
+          const cands = pool.filter(ch => ch !== prev);
+          const pick = cands[Math.floor(Math.random() * cands.length)] || pool[0];
+          keys.push(pick);
+          prev = pick;
+        }
+      }
+    }
+    const beats = [];
+    const hasMultiTargets = total > 1 && Array.isArray(targetActorKeys) && targetActorKeys.length > 1;
+    for (let k = 0; k < total; k++) {
+      const anchorKey = hasMultiTargets
+        ? targetActorKeys[k % targetActorKeys.length]
+        : `enemy:${primaryPos}`;
+      const smScale = (spec && Array.isArray(spec.beatSlowMoScales) && spec.beatSlowMoScales[k] > 0)
+        ? spec.beatSlowMoScales[k]
+        : ((skillId === 'frost_3_thorns' && k < total - 1) ? 0.38 : 0.25);
+      beats.push({
+        beatIdx: k,
+        key: String(keys[k] || pool[k % pool.length]).toUpperCase(),
+        anchorTargetKey: anchorKey,
+        slowMoScale: smScale,
+      });
+    }
+    return beats;
+  }
+
+  function forwardPreTelegraphToRing(payload) {
+    try {
+      const c = global.CombatTimingRing;
+      if (!c) return;
+      if (typeof c.showPreTelegraph === 'function') {
+        c.showPreTelegraph(payload);
+      } else if (typeof c.preTelegraph === 'function') {
+        c.preTelegraph(payload);
+      }
+    } catch (e) {}
+  }
 
   function sleepTracked(ms) {
     return new Promise(resolve => {
@@ -4536,6 +4688,12 @@
 
   function cancelTimingRing(reason) {
     cancelPendingAsyncDelays();
+    _activeGateBrokers.forEach(broker => {
+      try { broker.abort(); } catch (e) {}
+    });
+    _activeGateBrokers.clear();
+    Array.from(_activeVfxHandles).forEach(h => abortVfxHandle(h));
+    _activeVfxHandles.clear();
     _actionInProgress = false;
     if (activeBattle) {
       activeBattle._timingBusy = false;
@@ -4555,7 +4713,10 @@
     if (typeof document === 'undefined' || typeof window === 'undefined') return false;
     if (getAssistMode() === 'off') return false;
     const ctr = global.CombatTimingRing;
-    if (!ctr || typeof ctr.runAttackSequence !== 'function' || typeof ctr.runBlockPrompt !== 'function') return false;
+    if (!ctr) return false;
+    const hasGate = typeof ctr.runGateBeat === 'function';
+    const hasLegacy = typeof ctr.runAttackSequence === 'function' && typeof ctr.runBlockPrompt === 'function';
+    if (!hasGate && !hasLegacy) return false;
     return true;
   }
 
@@ -5410,13 +5571,21 @@
         : computeAmpProfile(p, sk);
       const usedWand = !zeroMpFallback && isEclipseStaffForSkill(p, sk);
 
-      // 提前亮键：立即播放语音锚点并启动像素施法动作（命中前切入 0.25x 慢镜缩圈）
+      // 提前亮键：立即播放语音锚点并按 V3.2 规则预生成拍键序列
       const mappedCue = resolveSkillVoiceCue(skillId);
       emitCombatVoiceCue(b, mappedCue, { skillId, path: sk.path, fallbackCueKey: `skill_path_${sk.path}`, charId: 'sylvia' });
+      const ctr = global.CombatTimingRing;
       const pxApi = getPixelVfxApi();
+      const beats = buildSkillBeatPlan(skillId, primaryPos, targetActorKeys, aliveIndices.length || 1, effBeats);
+      const collectedGrades = [];
+      const wantsGatedSync = !!(ctr && typeof ctr.runGateBeat === 'function' && pxApi && typeof pxApi.playSkillAction === 'function');
+      const gateBroker = wantsGatedSync ? createBeatGateBroker(beats.length) : null;
+      let vfxHandle = null;
+      let preCastPlayed = false;
+
       if (pxApi && typeof pxApi.playSkillAction === 'function') {
         try {
-          pxApi.playSkillAction(b, {
+          const playPayload = {
             type: 'skill',
             skillId,
             targetIdx: primaryPos,
@@ -5429,20 +5598,187 @@
             usedWand,
             ampPct: ampProfile ? ampProfile.ampPct : 0,
             ampTier: ampProfile ? ampProfile.tier : 0,
-            beats: effBeats,
+            beats: beats.length,
+            beatKeys: beats.map(bt => bt.key),
             missed: false,
-          });
+          };
+          if (wantsGatedSync) {
+            playPayload.gated = true;
+            playPayload.gateCount = beats.length;
+            playPayload.onPreTelegraph = (kArg, metaArg) => {
+              const parsed = parseGateCallbackArgs(kArg, metaArg);
+              const bt = beats[parsed.k] || beats[0];
+              if (!bt) return;
+              forwardPreTelegraphToRing({
+                skillId,
+                key: bt.key,
+                mode: 'attack',
+                beatIdx: parsed.k,
+                beatIndex: parsed.k,
+                totalBeats: beats.length,
+                ampPct: ampProfile ? ampProfile.ampPct : 0,
+                anchorTargetKey: parsed.meta.anchorTargetKey || parsed.meta.actorKey || bt.anchorTargetKey,
+                prevGrades: collectedGrades.slice(),
+                assistMode: getAssistMode(),
+              });
+            };
+            playPayload.onBeatReady = (kArg, metaArg) => {
+              const parsed = parseGateCallbackArgs(kArg, metaArg);
+              if (gateBroker) gateBroker.notifyReady(parsed.k, parsed.meta);
+            };
+          }
+          const maybeHandle = pxApi.playSkillAction(b, playPayload);
+          preCastPlayed = true;
+          if (isUsableVfxHandle(maybeHandle, pxApi)) {
+            vfxHandle = maybeHandle;
+            _activeVfxHandles.add(vfxHandle);
+          }
         } catch (e) {}
       }
 
       emitCombatStateChange(b);
 
       return (async () => {
+        let finalGateReleased = false;
+        let finalBeatIdx = Math.max(0, beats.length - 1);
+        const buildReleasePayload = (summary, rawGrade, ringEval) => {
+          const s = summary || {};
+          const critIdxs = Array.isArray(s.critTargetIndices) ? s.critTargetIndices : [];
+          const brkIdxs = Array.isArray(s.brokenIndices) ? s.brokenIndices : [];
+          const omIdxs = Array.isArray(s.oneMoreIndices) ? s.oneMoreIndices : [];
+          const shTargets = Array.isArray(s.shieldHitTargets) ? s.shieldHitTargets : [];
+          const hitIdxs = (Array.isArray(s.hitTargetIndices) && s.hitTargetIndices.length) ? s.hitTargetIndices : targetIndices;
+          return {
+            isMidBeat: false,
+            isFinalBeat: true,
+            grade: rawGrade || 'GOOD',
+            grades: ringEval ? ringEval.grades : collectedGrades.slice(),
+            ringBonus: ringEval ? ringEval.avgBonus : 0,
+            dmg: Number(s.dmg) || 0,
+            totalDmg: Number(s.dmg) || 0,
+            crit: !!s.crit,
+            didCrit: !!s.crit,
+            broken: !!s.broken,
+            didBreak: !!s.broken,
+            oneMore: !!s.oneMore,
+            didOneMore: !!s.oneMore,
+            shieldShattered: !!s.shieldShattered,
+            shieldBroken: !!s.shieldShattered,
+            didRiposte: !!s.didRiposte,
+            missed: !!s.missed,
+            critTargetIndices: critIdxs,
+            brokenIndices: brkIdxs,
+            oneMoreIndices: omIdxs,
+            shieldHitTargets: shTargets,
+            hitTargetIndices: hitIdxs,
+            targetIndices: hitIdxs,
+          };
+        };
+
         try {
-          const ringRes = await global.CombatTimingRing.runAttackSequence({
+          if (vfxHandle && gateBroker && ctr && typeof ctr.runGateBeat === 'function') {
+            let finalOut = null;
+            for (let k = 0; k < beats.length; k++) {
+              const waitRes = await gateBroker.waitForBeat(k, 2500);
+              if (!activeBattle || activeBattle !== b || b.battleInstanceId !== instId || b.over) {
+                abortVfxHandle(vfxHandle);
+                return { ok: false, reason: 'stale_battle' };
+              }
+              const meta = (waitRes && waitRes.meta) || {};
+              const beat = beats[k];
+              const isFinalBeat = (k === beats.length - 1);
+              const beatAnchorKey = meta.anchorTargetKey || meta.actorKey || beat.anchorTargetKey;
+              const beatSlowMo = (meta.slowMoScale != null && Number.isFinite(Number(meta.slowMoScale)))
+                ? Number(meta.slowMoScale)
+                : beat.slowMoScale;
+
+              const beatRes = await ctr.runGateBeat({
+                skillId,
+                key: beat.key,
+                mode: 'attack',
+                beatIdx: k,
+                beatIndex: k,
+                totalBeats: beats.length,
+                prevGrades: collectedGrades.slice(),
+                ampPct: ampProfile ? ampProfile.ampPct : 0,
+                anchorTargetKey: beatAnchorKey,
+                actorKey: beatAnchorKey,
+                slowMoScale: beatSlowMo,
+                isFinalBeat,
+                casualMode: !!b.casualMode,
+                assistMode: getAssistMode(),
+              });
+              if (!activeBattle || activeBattle !== b || b.battleInstanceId !== instId || b.over) {
+                abortVfxHandle(vfxHandle);
+                return { ok: false, reason: 'stale_battle' };
+              }
+
+              const rawGrade = (beatRes && !beatRes.cancelled && beatRes.grade)
+                ? normalizeRingGrade(beatRes.grade)
+                : 'GOOD';
+              collectedGrades.push(rawGrade);
+
+              if (!isFinalBeat) {
+                try {
+                  vfxHandle.releaseGate(k, {
+                    isMidBeat: true,
+                    isFinalBeat: false,
+                    grade: rawGrade,
+                    beatIdx: k,
+                    totalBeats: beats.length,
+                    anchorTargetKey: beatAnchorKey,
+                  });
+                } catch (e) {}
+              } else {
+                const ringEval = evaluateRingAttackResult({ judgments: collectedGrades }, !!b.casualMode);
+                finalBeatIdx = k;
+                _logBatchDepth += 1;
+                try {
+                  finalOut = _useSkillCore(skillId, targetIdx, b, {
+                    ringBonus: ringEval.avgBonus,
+                    ringGrades: ringEval.grades,
+                    skipPreCastAction: true,
+                    skipPlayAction: true,
+                    skipVoiceCue: true,
+                    onImpactResolved(impactSummary) {
+                      if (finalGateReleased) return;
+                      finalGateReleased = true;
+                      try {
+                        vfxHandle.releaseGate(k, buildReleasePayload(impactSummary, rawGrade, ringEval));
+                      } catch (e) {}
+                    },
+                  });
+                } finally {
+                  _logBatchDepth = Math.max(0, _logBatchDepth - 1);
+                  if (_logBatchDepth === 0) flushCombatLogDOM(b);
+                }
+
+                if (!finalGateReleased) {
+                  finalGateReleased = true;
+                  try {
+                    vfxHandle.releaseGate(k, buildReleasePayload(finalOut, rawGrade, ringEval));
+                  } catch (e) {}
+                }
+
+                if (typeof vfxHandle.finishActorReturn === 'function') {
+                  try {
+                    const retP = vfxHandle.finishActorReturn();
+                    if (!b.over && retP && typeof retP.then === 'function') {
+                      await Promise.race([retP, sleepTracked(460)]);
+                    }
+                  } catch (e) {}
+                }
+              }
+            }
+            return finalOut || { ok: true };
+          }
+
+          // 兼容回退轨：当门控句柄或 runGateBeat 不可用时走原序列化缩圈轨（无重复 HitStop）
+          const ringRes = await ctr.runAttackSequence({
             skillId,
             ampPct: ampProfile ? ampProfile.ampPct : 0,
             aliveCount: aliveIndices.length || 1,
+            keys: beats.map(bt => bt.key),
             targetActorKey: `enemy:${primaryPos}`,
             targetActorKeys,
             casualMode: !!b.casualMode,
@@ -5454,21 +5790,22 @@
           const ringEval = evaluateRingAttackResult(ringRes, !!b.casualMode);
           _logBatchDepth += 1;
           try {
-            const out = _useSkillCore(skillId, targetIdx, b, {
+            return _useSkillCore(skillId, targetIdx, b, {
               ringBonus: ringEval.avgBonus,
               ringGrades: ringEval.grades,
-              skipPreCastAction: true,
+              skipPreCastAction: preCastPlayed,
               skipVoiceCue: true,
             });
-            if (out && out.ok && !b.headless) {
-              triggerImpactHitStop(COMBAT_BALANCE_V32.slowMoQte.hitStopMs);
-            }
-            return out;
           } finally {
             _logBatchDepth = Math.max(0, _logBatchDepth - 1);
             if (_logBatchDepth === 0) flushCombatLogDOM(b);
           }
         } catch (err) {
+          if (vfxHandle && !finalGateReleased) {
+            finalGateReleased = true;
+            try { vfxHandle.releaseGate(finalBeatIdx, buildReleasePayload(null, 'GOOD', null)); } catch (e) {}
+            try { if (typeof vfxHandle.finishActorReturn === 'function') vfxHandle.finishActorReturn(); } catch (e) {}
+          }
           if (!activeBattle || activeBattle !== b || b.battleInstanceId !== instId || b.over) {
             return { ok: false, reason: 'error' };
           }
@@ -5477,7 +5814,8 @@
             return _useSkillCore(skillId, targetIdx, b, {
               ringBonus: 0,
               ringGrades: ['GOOD'],
-              skipPreCastAction: true,
+              skipPreCastAction: preCastPlayed,
+              skipPlayAction: !!vfxHandle,
               skipVoiceCue: true,
             });
           } finally {
@@ -5485,6 +5823,8 @@
             if (_logBatchDepth === 0) flushCombatLogDOM(b);
           }
         } finally {
+          releaseGateBroker(gateBroker);
+          if (vfxHandle) _activeVfxHandles.delete(vfxHandle);
           _actionInProgress = false;
           if (b) {
             b._timingBusy = false;
@@ -5728,16 +6068,16 @@
         }
       }
 
-      // 第 2 幕罗文：脱手旋杖袭心回合立起冰盾折射拦截并推进活捉！
+      // 第 2 幕罗文：飞旋掷杖袭心回合立起冰盾折射拦截并推进活捉！
       if (b.stageCfg && b.stageCfg.sealRule && primary && primary.hp > 0 && primary.intent && primary.intent.thrownStaff) {
         const boost = ampProfile.tier >= 1 ? 22 : 18;
         b.sealProgress = Math.min(100, (b.sealProgress || 0) + boost);
         primary.status.stagger = 1;
         b.metrics.interrupts += 1;
         decideEnemyIntent(primary, b);
-        spawnBanner(b, '🛡️❄️ 冰盾折射 · 截停脱手旋杖！', 'interrupt');
+        spawnBanner(b, '🛡️❄️ 冰盾折射 · 截停飞旋掷杖！', 'interrupt');
         triggerBreakJuice(b, 'break_chime');
-        pushLog(b, logTag('cbl-star', `🛡️❄️ 你的实体冰盾硬生生折射夹停了脱手飞来的晦轮杖，罗文架势受挫——合围封锁度 +${boost}%（${b.sealProgress}%）！`, true));
+        pushLog(b, logTag('cbl-star', `🛡️❄️ 你的实体冰盾硬生生折射夹停了飞旋掷来的晦轮杖，罗文架势受挫——合围封锁度 +${boost}%（${b.sealProgress}%）！`, true));
       }
     }
 
@@ -5767,6 +6107,8 @@
     let anyDidBreak = false;
     let anyDidRiposte = false;
     let anyShieldShattered = false;
+    let totalSkillDmg = 0;
+    const skipPlayAction = !!(timingOpts.skipPlayAction || timingOpts.skipPreCastAction);
     const hitTargetIndices = [];
     const critTargetIndices = [];
     const brokenIndices = [];
@@ -5776,7 +6118,7 @@
     if ((!sk.power || sk.power <= 0) && (sk.shieldBase || sk.afterimage || washedBlindJustNow)) {
       const defVfxKind = sk.elem === 'water' ? 'water' : (sk.path === 'SWORD' || sk.elem === 'phys') ? 'sword' : 'ice';
       queueElementVFX(b, defVfxKind, 'player', 0, { skipHitStop: true });
-      if (!timingOpts.skipPreCastAction) {
+      if (!skipPlayAction) {
         queuePixelAction(b, {
           type: 'skill',
           skillId,
@@ -5813,7 +6155,7 @@
         }
         syncDerivedBattleState(b);
         const missIdx = Math.max(0, b.enemies.indexOf(primary));
-        if (!timingOpts.skipPreCastAction) {
+        if (!skipPlayAction) {
           queuePixelAction(b, {
             type: 'skill',
             skillId,
@@ -6094,6 +6436,7 @@
         if (ePos >= 0) hitTargetIndices.push(ePos);
         if (didInterrupt || brokeStillness) anyDidBreak = true;
         if (didLungeRiposte || didTempestRiposte) anyDidRiposte = true;
+        totalSkillDmg += finalDmg;
         if (dmgRes.actualHpLoss > 0 || dmgRes.shieldAbsorbed > 0 || finalDmg > 0) {
           const ringTag = ringGrades.length ? ` ${ringGrades[ringGrades.length - 1]}` : '';
           let floatLabel;
@@ -6228,7 +6571,7 @@
         addCombatTrauma(peakCastTrauma, b);
       }
       const primaryPos = Math.max(0, b.enemies.indexOf(primary));
-      if (!timingOpts.skipPreCastAction) {
+      if (!skipPlayAction) {
         queuePixelAction(b, {
           type: 'skill',
           skillId,
@@ -6247,8 +6590,8 @@
           ampTier: ampProfile ? ampProfile.tier : 0,
           missed: !anyHitDealt,
         });
-      } else {
-        // 慢镜缩圈已完成，补发破锁/暴击系统级特效反馈
+      } else if (!timingOpts.skipPlayAction) {
+        // 兼容非门控旧回退轨：补发破锁系统级特效（门控轨已由 releaseGate 同帧释放，绝不双播）
         brokenIndices.forEach(bIdx => {
           queuePixelAction(b, {
             type: 'system_fx',
@@ -6356,13 +6699,31 @@
       }
     }
 
+    const impactSummary = {
+      dmg: totalSkillDmg,
+      crit: anyDidCrit,
+      broken: anyDidBreak,
+      oneMore: oneMoreIndices.length > 0,
+      shieldShattered: anyShieldShattered,
+      didRiposte: anyDidRiposte,
+      missed: !!(sk.power > 0 && !anyHitDealt),
+      hitTargetIndices,
+      critTargetIndices,
+      brokenIndices,
+      oneMoreIndices,
+      shieldHitTargets,
+    };
+    if (typeof timingOpts.onImpactResolved === 'function') {
+      try { timingOpts.onImpactResolved(impactSummary); } catch (e) {}
+    }
+
     if (checkImmediateVictoryOrNextWave(b)) {
       if (!b.headless) renderCombatUI();
-      return { ok: true, battleEndedOrAdvanced: true, ringGrades, ringBonus };
+      return Object.assign({ ok: true, battleEndedOrAdvanced: true, ringGrades, ringBonus }, impactSummary);
     }
 
     if (!b.headless) renderCombatUI();
-    return { ok: true, ringGrades, ringBonus, zeroMpFallback };
+    return Object.assign({ ok: true, ringGrades, ringBonus, zeroMpFallback }, impactSummary);
   }
 
   function applyTurnBoundaryCleanup(b, bankedAp) {
@@ -6705,7 +7066,127 @@
     return { ended: false, acted: anyActed };
   }
 
-  function resolveEnemyHitOnPlayer(b, e, intent, blockGrade, followupGrade, banked) {
+  function resolveEnemyFollowupHit(b, e, intent, followupGrade, normGrade, opts) {
+    opts = opts || {};
+    const p = b.player;
+    const dmgScale = b.casualMode ? COMBAT_BALANCE_V32.casualMode.enemyDmgMult : 1.0;
+    const pxApi = getPixelVfxApi();
+    if (!(intent && intent.followupDmg > 0 && p.hp > 0)) {
+      return { fLoss: 0, fGrade: 'NONE', fBlk: 0, shieldAbsorbed: 0, shieldShattered: false };
+    }
+    let fInc = intent.followupDmg * dmgScale;
+    if (e.status.chill > 0) fInc *= 0.86;
+    if (p.status.fortress > 0) fInc *= 0.88;
+    if (p.status.lungeMitigate > 0 && intent.stance === 'CLOSE_LUNGE') fInc *= 0.45;
+    fInc *= (COMBAT_BALANCE_V32.defK / (COMBAT_BALANCE_V32.defK + Math.max(0, p.mdef || 0)));
+    const fGrade = normalizeRingGrade(followupGrade || normGrade || 'GOOD');
+    const fBlk = computeBlockRate(p.rank || 2, e.rank || 7, fGrade);
+    fInc = Math.max(0, Math.round(fInc * (1 - fBlk)));
+    const shBefore = Math.max(0, p.shield || 0);
+    const fsBlk = Math.min(Math.floor(shBefore * 0.5), fInc);
+    p.shield = Math.max(0, shBefore - fsBlk);
+    const fLoss = Math.max(0, fInc - fsBlk);
+    const fShattered = shBefore > 0 && p.shield <= 0;
+    p.hp = Math.max(0, p.hp - fLoss);
+    if (!opts.skipImmediateBlockVfx && b._directPlayEnemyVfx && pxApi && typeof pxApi.playBlock === 'function') {
+      pxApi.playBlock(fGrade, 'player');
+    }
+    if (fLoss > 0) {
+      spawnCombatFloat(b, 'player', `-${fLoss} 余岚`, 'enemy-dmg');
+      if (!b.headless) safeSfx('bad');
+      pushLog(b, logTag('cbl-danger', `🌪️ ${e.name} 追加风刃造成 ${fLoss} 伤害 [${fGrade}]！`));
+    }
+    return {
+      fLoss,
+      fGrade,
+      fBlk,
+      blocked: fLoss === 0,
+      shieldAbsorbed: fsBlk,
+      shieldShattered: fShattered,
+    };
+  }
+
+  function resolveEnemyPostHitEffects(b, e, intent, hpLoss, banked, deferredActions) {
+    const p = b.player;
+    const defer = Array.isArray(deferredActions);
+    const runOrDefer = fn => { if (defer) deferredActions.push(fn); else fn(); };
+
+    if (intent.inflictBlind) {
+      p.status.blind = (p.status.blind || 0) + intent.inflictBlind;
+      runOrDefer(() => {
+        queuePixelAction(b, { type: 'system_fx', fxId: 'fx_status_micro', variant: 'debuff', side: 'player', actorKey: 'player', delayMs: 220 });
+        pushLog(b, logTag('cbl-star', `🌫️ 扬尘遮蔽视线（可用水系术式洗净，或以霜域全体覆盖）！`));
+      });
+    }
+    if (intent.addBurn && hpLoss > 0) {
+      p.status.burn = (p.status.burn || 0) + intent.addBurn;
+      runOrDefer(() => {
+        queuePixelAction(b, { type: 'system_fx', fxId: 'fx_status_micro', variant: 'burn', side: 'player', actorKey: 'player', delayMs: 220 });
+      });
+    }
+
+    if (p.hp > 0 && b._hadNobleReflectThisTurn && e.hp > 0) {
+      const refDmg = Math.round(p.mdef * 1.4 + 28);
+      dealDamageToEnemy(b, e, refDmg, {});
+      runOrDefer(() => {
+        pushLog(b, logTag('cbl-star', `👑【贵族体面·回敬】礼仪冰霜震退 ${e.name}，反伤 ${refDmg}！`));
+      });
+      if (defer) {
+        deferredActions.push(() => { checkImmediateVictoryOrNextWave(b, { fromEndTurn: true, bankedAp: banked }); });
+      } else if (checkImmediateVictoryOrNextWave(b, { fromEndTurn: true, bankedAp: banked })) {
+        return { battleEnded: true };
+      }
+    }
+
+    if (p.hp > 0 && p.hp < p.mhp * 0.35 && !b._blueVialTriggered && hasRelic(p, 'blue_vial')) {
+      b._blueVialTriggered = true;
+      const vialHeal = Math.max(15, Math.round(p.mhp * 0.25));
+      const beforeVialHp = p.hp;
+      p.hp = Math.min(p.mhp, p.hp + vialHeal);
+      p.status.afterimage = (p.status.afterimage || 0) + 1;
+      const healed = p.hp > beforeVialHp;
+      runOrDefer(() => {
+        if (healed) {
+          queuePixelAction(b, { type: 'system_fx', fxId: 'fx_heal_emerald', side: 'player', actorKey: 'player', delayMs: 260 });
+        }
+        if (!b.headless) safeSfx('buff');
+        pushLog(b, logTag('cbl-ice', `🧪【淡蓝小瓶】濒危安神凉雾散开，回复 ${vialHeal} 生命并幻化 1 层「风行残像」！`, true));
+      });
+    }
+
+    if (p.hp <= 0) {
+      if (defer) {
+        deferredActions.push(() => { if (!b.over) finishBattle(b, false, 'hp_zero'); });
+        return { battleEnded: false, pendingDefeat: true };
+      }
+      finishBattle(b, false, 'hp_zero');
+      return { battleEnded: true };
+    }
+    return { battleEnded: false };
+  }
+
+  function resolveEnemyHitOnPlayer(b, e, intent, blockGrade, followupGrade, banked, opts) {
+    if (followupGrade && typeof followupGrade === 'object') {
+      opts = followupGrade;
+      followupGrade = opts.followupGrade != null ? opts.followupGrade : blockGrade;
+      banked = opts.banked != null ? opts.banked : 0;
+    }
+    opts = opts || {};
+    const skipPlayAction = !!opts.skipPlayAction;
+    const skipImmediateBlockVfx = !!opts.skipImmediateBlockVfx;
+    const deferImpactFeedback = !!opts.deferImpactFeedback;
+    const skipFollowup = !!opts.skipFollowup;
+    const deferredActions = deferImpactFeedback ? [] : null;
+    const runOrDefer = fn => { if (deferredActions) deferredActions.push(fn); else fn(); };
+    let feedbackFlushed = false;
+    const flushImpactFeedback = () => {
+      if (feedbackFlushed || !deferredActions) return;
+      feedbackFlushed = true;
+      for (let i = 0; i < deferredActions.length; i++) {
+        try { deferredActions[i](); } catch (err) {}
+      }
+    };
+
     const p = b.player;
     const dmgScale = b.casualMode ? COMBAT_BALANCE_V32.casualMode.enemyDmgMult : 1.0;
     const eIdx = b.enemies.indexOf(e);
@@ -6722,24 +7203,47 @@
       p.status.afterimage = Math.max(0, p.status.afterimage - 1);
       if (intent.pierceAfterimage) {
         afterimageShearMult = 0.60;
-        pushLog(b, logTag('cbl-emerald', `🌪️ ${e.name} 御风震散「风行残像」，仍削去四成余岚冲击！`));
+        runOrDefer(() => {
+          pushLog(b, logTag('cbl-emerald', `🌪️ ${e.name} 御风震散「风行残像」，仍削去四成余岚冲击！`));
+        });
       } else {
-        pushLog(b, logTag('cbl-emerald', `💨 「风行残像」碎裂，你真身避开了 ${e.name} 的「${intent.moveName}」！`));
-        emitCombatVoiceCue(b, 'dodge', { enemyId: e.id, charId: 'sylvia' });
-        queuePixelAction(b, { type: 'enemy_attack', enemyIdx: eIdx, enemy: e, intent, hpLoss: 0, evaded: true, blockGrade: 'NONE', shieldAbsorbed: 0, shieldShattered: false, bypassMagicPlayerShield: false, targetActorKey: 'player' });
+        let cakeGain = 0;
         if (hasRelic(p, 'alice_flower_cake')) {
           const beforeMp = p.mp;
           p.mp = Math.min(p.mmp, p.mp + 10);
-          if (p.mp > beforeMp) pushLog(b, logTag('cbl-emerald', `🌼【风之花饼】借风轻落回蓄 ${p.mp - beforeMp} MP！`));
+          cakeGain = Math.max(0, p.mp - beforeMp);
         }
-        return { battleEnded: false, evaded: true };
+        runOrDefer(() => {
+          pushLog(b, logTag('cbl-emerald', `💨 「风行残像」碎裂，你真身避开了 ${e.name} 的「${intent.moveName}」！`));
+          emitCombatVoiceCue(b, 'dodge', { enemyId: e.id, charId: 'sylvia' });
+          if (cakeGain > 0) pushLog(b, logTag('cbl-emerald', `🌼【风之花饼】借风轻落回蓄 ${cakeGain} MP！`));
+        });
+        if (!skipPlayAction) {
+          queuePixelAction(b, { type: 'enemy_attack', enemyIdx: eIdx, enemy: e, intent, hpLoss: 0, evaded: true, blockGrade: 'NONE', shieldAbsorbed: 0, shieldShattered: false, bypassMagicPlayerShield: false, targetActorKey: 'player' });
+        }
+        return {
+          battleEnded: false,
+          evaded: true,
+          hpLoss: 0,
+          blocked: false,
+          blockGrade: 'NONE',
+          blockRate: 0,
+          shieldAbsorbed: 0,
+          shieldShattered: false,
+          bypassMagicPlayerShield: false,
+          guardedByAlly: null,
+          flushImpactFeedback,
+        };
       }
     }
 
     let playerShieldAbsorbed = 0;
     let playerShieldShattered = false;
     if (intent.shatterPlayerShield && p.shield > 0) {
-      pushLog(b, logTag('cbl-danger', `💥 ${e.name} 的「${intent.moveName}」正面轰碎了你全部 ${p.shield} 点护盾！`));
+      const shShatteredAmt = p.shield;
+      runOrDefer(() => {
+        pushLog(b, logTag('cbl-danger', `💥 ${e.name} 的「${intent.moveName}」正面轰碎了你全部 ${shShatteredAmt} 点护盾！`));
+      });
       playerShieldAbsorbed += p.shield;
       playerShieldShattered = true;
       p.shield = 0;
@@ -6772,7 +7276,9 @@
     if (isRowanEclipseTrue) {
       if (p.shield > 0 && playerShieldKind === 'solid') {
         incoming *= (intent.renoRockBlock ? 0.25 : 0.50);
-        pushLog(b, logTag('cbl-star', `🪨 实体冰盾与雷纳德岩板合力阻尼晦轮黑芒！`));
+        runOrDefer(() => {
+          pushLog(b, logTag('cbl-star', `🪨 实体冰盾与雷纳德岩板合力阻尼晦轮黑芒！`));
+        });
       } else if (intent.renoRockBlock) {
         incoming *= 0.65;
       }
@@ -6808,13 +7314,17 @@
     if (p.status.iceThorns > 0 && (intent.stance === 'HEAVY_WINDUP' || intent.stance === 'CLOSE_LUNGE')) {
       if (e.aiType === 'aino') {
         p.status.mirrorRiposteWindow = 1;
-        pushLog(b, logTag('cbl-star', `❄️【镜霜反刺】反震冰芒逼开艾诺正面镜壁，下一次冰晶主炮可直击得分！`, true));
+        runOrDefer(() => {
+          pushLog(b, logTag('cbl-star', `❄️【镜霜反刺】反震冰芒逼开艾诺正面镜壁，下一次冰晶主炮可直击得分！`, true));
+        });
       }
       if (e.hp > 1) {
         const chip = Math.min(e.hp - 1, p.status.iceThorns);
         if (chip > 0) {
           e.hp -= chip;
-          pushLog(b, logTag('cbl-ice', `❄️ 霜壁表面反刺震伤 ${e.name} ${chip} 点。`));
+          runOrDefer(() => {
+            pushLog(b, logTag('cbl-ice', `❄️ 霜壁表面反刺震伤 ${e.name} ${chip} 点。`));
+          });
         }
       }
     }
@@ -6838,98 +7348,91 @@
     };
 
     const pxApi = getPixelVfxApi();
-    if (b._directPlayEnemyVfx && pxApi) {
-      if (typeof pxApi.playEnemyAction === 'function') pxApi.playEnemyAction(b, enemyActionPayload);
-      if (!noBlock && typeof pxApi.playBlock === 'function') pxApi.playBlock(normGrade, 'player');
-    } else {
-      queuePixelAction(b, enemyActionPayload);
+    if (!skipPlayAction) {
+      if (b._directPlayEnemyVfx && pxApi) {
+        if (typeof pxApi.playEnemyAction === 'function') {
+          pxApi.playEnemyAction(b, enemyActionPayload);
+        } else if (!skipImmediateBlockVfx && !noBlock && typeof pxApi.playBlock === 'function') {
+          pxApi.playBlock(normGrade, 'player');
+        }
+      } else {
+        queuePixelAction(b, enemyActionPayload);
+      }
     }
+
+    const baseHitSummary = {
+      battleEnded: false,
+      evaded: false,
+      hpLoss,
+      followupHpLoss: 0,
+      blocked: hpLoss === 0,
+      blockGrade: normGrade,
+      blockRate,
+      shieldAbsorbed: playerShieldAbsorbed,
+      shieldShattered: playerShieldShattered,
+      bypassMagicPlayerShield,
+      guardedByAlly: allyGuarded ? `ally:${frontAlly.id}` : null,
+      flushImpactFeedback,
+    };
 
     const blockTag = (!noBlock && blockRate > 0) ? ` [${normGrade} 格挡-${Math.round(blockRate * 100)}%]` : '';
     if (hpLoss > 0) {
-      if (!pxApi) triggerShake(b, hpLoss >= 45);
-      spawnCombatFloat(b, 'player', `-${hpLoss}`, 'enemy-dmg');
-      queueHitPulse(b, 'player', 0);
       const eHitVfx = intent.elem === 'water' ? 'water' : intent.elem === 'ice' ? 'ice' : 'sword';
-      queueElementVFX(b, eHitVfx, 'player', 0, { skipHitStop: true });
-      if (!b.headless) safeSfx('bad');
-      emitCombatVoiceCue(b, hpLoss >= 45 ? 'player_hit_heavy' : 'player_hit', { hpLoss, enemyId: e.id, charId: 'sylvia' });
-      pushLog(b, logTag('cbl-danger', `❗ ${e.name} 施展「${intent.moveName}」，造成 ${hpLoss} 伤害${hpLoss < incoming ? `（护盾抵消 ${incoming - hpLoss}）` : ''}${blockTag}！`));
+      runOrDefer(() => {
+        if (!pxApi) triggerShake(b, hpLoss >= 45);
+        spawnCombatFloat(b, 'player', `-${hpLoss}`, 'enemy-dmg');
+        queueHitPulse(b, 'player', 0);
+        queueElementVFX(b, eHitVfx, 'player', 0, { skipHitStop: true });
+        if (!b.headless) safeSfx('bad');
+        emitCombatVoiceCue(b, hpLoss >= 45 ? 'player_hit_heavy' : 'player_hit', { hpLoss, enemyId: e.id, charId: 'sylvia' });
+        pushLog(b, logTag('cbl-danger', `❗ ${e.name} 施展「${intent.moveName}」，造成 ${hpLoss} 伤害${hpLoss < incoming ? `（护盾抵消 ${incoming - hpLoss}）` : ''}${blockTag}！`));
+      });
       if (intent.scoresHit && b.stageCfg.hitRule && normGrade !== 'PERFECT') {
         const hitGain = (intent.slipStrike && !p.status.rooted) ? 2 : 1;
         b.enemyHits = Math.min(b.stageCfg.targetHits || 3, b.enemyHits + hitGain);
-        pushLog(b, logTag('cbl-danger', `⚠️ ${hitGain > 1 ? '脚底打滑连中两刺！' : '被艾诺有效命中！'}比分：${b.playerHits} : ${b.enemyHits}！`, true));
+        const curPlayerHits = b.playerHits;
+        const curEnemyHits = b.enemyHits;
+        runOrDefer(() => {
+          pushLog(b, logTag('cbl-danger', `⚠️ ${hitGain > 1 ? '脚底打滑连中两刺！' : '被艾诺有效命中！'}比分：${curPlayerHits} : ${curEnemyHits}！`, true));
+        });
         if (b.enemyHits >= (b.stageCfg.targetHits || 3)) {
-          finishBattle(b, false, 'enemy_three_hits');
-          return { battleEnded: true };
+          if (deferredActions) {
+            deferredActions.push(() => { if (!b.over) finishBattle(b, false, 'enemy_three_hits'); });
+          } else {
+            finishBattle(b, false, 'enemy_three_hits');
+            return Object.assign(baseHitSummary, { battleEnded: true });
+          }
         }
       }
     } else {
-      if (!b.headless) safeSfx('shield_block');
-      emitCombatVoiceCue(b, 'shield_block', { enemyId: e.id, charId: 'sylvia' });
-      pushLog(b, logTag('cbl-ice', `🛡️ 护盾稳稳挡下了 ${e.name} 的「${intent.moveName}」${blockTag}！`));
+      runOrDefer(() => {
+        if (!b.headless) safeSfx('shield_block');
+        emitCombatVoiceCue(b, 'shield_block', { enemyId: e.id, charId: 'sylvia' });
+        pushLog(b, logTag('cbl-ice', `🛡️ 护盾稳稳挡下了 ${e.name} 的「${intent.moveName}」${blockTag}！`));
+      });
+    }
+
+    if (skipFollowup) {
+      if (p.hp <= 0) {
+        finishBattle(b, false, 'hp_zero');
+        return Object.assign(baseHitSummary, { battleEnded: true });
+      }
+      return baseHitSummary;
     }
 
     // 风神追加连击（followupDmg）
     if (intent.followupDmg > 0 && p.hp > 0) {
-      let fInc = intent.followupDmg * dmgScale;
-      if (e.status.chill > 0) fInc *= 0.86;
-      if (p.status.fortress > 0) fInc *= 0.88;
-      if (p.status.lungeMitigate > 0 && intent.stance === 'CLOSE_LUNGE') fInc *= 0.45;
-      fInc *= (COMBAT_BALANCE_V32.defK / (COMBAT_BALANCE_V32.defK + Math.max(0, p.mdef || 0)));
-      const fGrade = normalizeRingGrade(followupGrade || normGrade || 'GOOD');
-      const fBlk = computeBlockRate(p.rank || 2, e.rank || 7, fGrade);
-      fInc = Math.max(0, Math.round(fInc * (1 - fBlk)));
-      const fsBlk = Math.min(Math.floor(Math.max(0, p.shield) * 0.5), fInc);
-      p.shield = Math.max(0, p.shield - fsBlk);
-      const fLoss = Math.max(0, fInc - fsBlk);
-      p.hp = Math.max(0, p.hp - fLoss);
-      if (b._directPlayEnemyVfx && pxApi && typeof pxApi.playBlock === 'function') {
-        pxApi.playBlock(fGrade, 'player');
-      }
-      if (fLoss > 0) {
-        spawnCombatFloat(b, 'player', `-${fLoss} 余岚`, 'enemy-dmg');
-        pushLog(b, logTag('cbl-danger', `🌪️ ${e.name} 追加风刃造成 ${fLoss} 伤害 [${fGrade}]！`));
-      }
+      const fOut = resolveEnemyFollowupHit(b, e, intent, followupGrade, normGrade, {
+        skipImmediateBlockVfx,
+      });
+      baseHitSummary.followupHpLoss = fOut.fLoss || 0;
     }
 
-    if (intent.inflictBlind) {
-      p.status.blind = (p.status.blind || 0) + intent.inflictBlind;
-      queuePixelAction(b, { type: 'system_fx', fxId: 'fx_status_micro', variant: 'debuff', side: 'player', actorKey: 'player', delayMs: 220 });
-      pushLog(b, logTag('cbl-star', `🌫️ 扬尘遮蔽视线（可用水系术式洗净，或以霜域全体覆盖）！`));
+    const postRes = resolveEnemyPostHitEffects(b, e, intent, hpLoss, banked, deferredActions);
+    if (postRes.battleEnded) {
+      return Object.assign(baseHitSummary, { battleEnded: true });
     }
-    if (intent.addBurn && hpLoss > 0) {
-      p.status.burn = (p.status.burn || 0) + intent.addBurn;
-      queuePixelAction(b, { type: 'system_fx', fxId: 'fx_status_micro', variant: 'burn', side: 'player', actorKey: 'player', delayMs: 220 });
-    }
-
-    if (p.hp > 0 && b._hadNobleReflectThisTurn && e.hp > 0) {
-      const refDmg = Math.round(p.mdef * 1.4 + 28);
-      dealDamageToEnemy(b, e, refDmg, {});
-      pushLog(b, logTag('cbl-star', `👑【贵族体面·回敬】礼仪冰霜震退 ${e.name}，反伤 ${refDmg}！`));
-      if (checkImmediateVictoryOrNextWave(b, { fromEndTurn: true, bankedAp: banked })) {
-        return { battleEnded: true };
-      }
-    }
-
-    if (p.hp > 0 && p.hp < p.mhp * 0.35 && !b._blueVialTriggered && hasRelic(p, 'blue_vial')) {
-      b._blueVialTriggered = true;
-      const vialHeal = Math.max(15, Math.round(p.mhp * 0.25));
-      const beforeVialHp = p.hp;
-      p.hp = Math.min(p.mhp, p.hp + vialHeal);
-      p.status.afterimage = (p.status.afterimage || 0) + 1;
-      if (p.hp > beforeVialHp) {
-        queuePixelAction(b, { type: 'system_fx', fxId: 'fx_heal_emerald', side: 'player', actorKey: 'player', delayMs: 260 });
-      }
-      if (!b.headless) safeSfx('buff');
-      pushLog(b, logTag('cbl-ice', `🧪【淡蓝小瓶】濒危安神凉雾散开，回复 ${vialHeal} 生命并幻化 1 层「风行残像」！`, true));
-    }
-
-    if (p.hp <= 0) {
-      finishBattle(b, false, 'hp_zero');
-      return { battleEnded: true };
-    }
-    return { battleEnded: false };
+    return baseHitSummary;
   }
 
   function resolveEnemyPreStrike(b, e, banked) {
@@ -7211,44 +7714,342 @@
               }
 
               const intent = pre.intent;
+              const eIdx = b.enemies.indexOf(e);
+              const pxApi = getPixelVfxApi();
+              const ctr = global.CombatTimingRing;
               const willFullEvade = !!(p.status.afterimage > 0 && !intent.pierceAfterimage);
               let blockGrade = 'GOOD';
               let followupGrade = 'GOOD';
 
               if (e.noBlockPrompt) {
-                // 群怪杂兵：无空格格挡弹窗，600ms 极速连贯出招
+                // 群怪杂兵：不弹 Space，将伤害飘字与受击反馈精准挂入 onImpact（500ms 安全兜底），消除提前掉血
                 blockGrade = 'NONE';
-                resolveEnemyHitOnPlayer(b, e, intent, 'NONE', 'NONE', banked);
-                renderCombatUI();
-                if (b.over) return true;
-                if (tickEnemyEndTurn(b, e)) { renderCombatUI(); return true; }
-                await sleepTracked(600);
-              } else {
-                if (!willFullEvade) {
-                  const blkRes = await global.CombatTimingRing.runBlockPrompt({
-                    defRank: p.rank || 2,
-                    atkRank: e.rank || 2,
-                    actorKey: 'player',
-                    assistMode: getAssistMode(),
+                if (pxApi && typeof pxApi.playEnemyAction === 'function') {
+                  const hitOut = resolveEnemyHitOnPlayer(b, e, intent, 'NONE', 'NONE', banked, {
+                    skipPlayAction: true,
+                    skipImmediateBlockVfx: true,
+                    deferImpactFeedback: true,
                   });
-                  if (!activeBattle || activeBattle !== b || b.battleInstanceId !== instId || b.over) return false;
-                  blockGrade = (blkRes && !blkRes.cancelled && blkRes.grade) ? normalizeRingGrade(blkRes.grade) : 'GOOD';
-                  if (intent.followupDmg > 0) {
-                    const fRes = await global.CombatTimingRing.runBlockPrompt({
+                  await new Promise(resolveImpact => {
+                    let impactDone = false;
+                    const cancelEntry = { tid: null, resolve: null };
+                    const finishImpact = () => {
+                      if (impactDone) return;
+                      impactDone = true;
+                      if (cancelEntry.tid != null) {
+                        clearTimeout(cancelEntry.tid);
+                        cancelEntry.tid = null;
+                      }
+                      _pendingAsyncDelays.delete(cancelEntry);
+                      if (activeBattle === b && b.battleInstanceId === instId && !b.over) {
+                        if (hitOut && typeof hitOut.flushImpactFeedback === 'function') {
+                          hitOut.flushImpactFeedback();
+                        }
+                        if (!b.over) renderCombatUI();
+                      }
+                      resolveImpact();
+                    };
+                    cancelEntry.resolve = () => {
+                      if (!impactDone) {
+                        impactDone = true;
+                        resolveImpact();
+                      }
+                    };
+                    cancelEntry.tid = setTimeout(finishImpact, 500);
+                    if (cancelEntry.tid && typeof cancelEntry.tid.unref === 'function') cancelEntry.tid.unref();
+                    _pendingAsyncDelays.add(cancelEntry);
+                    try {
+                      pxApi.playEnemyAction(b, {
+                        type: 'enemy_attack',
+                        enemyIdx: eIdx,
+                        enemy: e,
+                        intent,
+                        hpLoss: hitOut.hpLoss || 0,
+                        blocked: !!hitOut.blocked,
+                        evaded: !!hitOut.evaded,
+                        blockGrade: 'NONE',
+                        blockRate: 0,
+                        noBlockPrompt: true,
+                        shieldAbsorbed: hitOut.shieldAbsorbed || 0,
+                        shieldShattered: !!hitOut.shieldShattered,
+                        bypassMagicPlayerShield: !!hitOut.bypassMagicPlayerShield,
+                        targetActorKey: 'player',
+                        guardedByAlly: hitOut.guardedByAlly || null,
+                        gated: false,
+                        onImpact: finishImpact,
+                      });
+                    } catch (err) {
+                      finishImpact();
+                    }
+                  });
+                  if (!activeBattle || activeBattle !== b || b.battleInstanceId !== instId) return false;
+                  if (b.over) return true;
+                  if (tickEnemyEndTurn(b, e, { evaded: !!hitOut.evaded })) { renderCombatUI(); return true; }
+                  await sleepTracked(300);
+                } else {
+                  const hitOut = resolveEnemyHitOnPlayer(b, e, intent, 'NONE', 'NONE', banked);
+                  renderCombatUI();
+                  if (hitOut.battleEnded || b.over) return true;
+                  if (tickEnemyEndTurn(b, e, { evaded: !!hitOut.evaded })) { renderCombatUI(); return true; }
+                  await sleepTracked(600);
+                }
+              } else if (willFullEvade) {
+                const hitOut = resolveEnemyHitOnPlayer(b, e, intent, 'NONE', 'NONE', banked, {
+                  skipPlayAction: !!(pxApi && typeof pxApi.playEnemyAction === 'function'),
+                  skipImmediateBlockVfx: true,
+                });
+                if (pxApi && typeof pxApi.playEnemyAction === 'function') {
+                  try {
+                    pxApi.playEnemyAction(b, {
+                      type: 'enemy_attack',
+                      enemyIdx: eIdx,
+                      enemy: e,
+                      intent,
+                      hpLoss: 0,
+                      evaded: true,
+                      blockGrade: 'NONE',
+                      shieldAbsorbed: 0,
+                      shieldShattered: false,
+                      bypassMagicPlayerShield: false,
+                      targetActorKey: 'player',
+                      gated: false,
+                    });
+                  } catch (err) {}
+                }
+                renderCombatUI();
+                if (hitOut.battleEnded || b.over) return true;
+                if (tickEnemyEndTurn(b, e, { evaded: true })) { renderCombatUI(); return true; }
+                await sleepTracked(460);
+              } else {
+                // 需格挡敌人：正序翻转（敌先起手/冲刺/发射弹道 -> 临面门控缩圈 Space -> 按键当帧单次格挡 VFX + 伤害飘字）
+                const hasFollowup = !!(intent.followupDmg > 0);
+                const gateCount = hasFollowup ? 2 : 1;
+                const canUseGatedBlock = !!(ctr && typeof ctr.runGateBeat === 'function' && pxApi && typeof pxApi.playEnemyAction === 'function');
+                const gateBroker = canUseGatedBlock ? createBeatGateBroker(gateCount) : null;
+                let vfxHandle = null;
+                let playedEnemyAlready = false;
+
+                if (canUseGatedBlock) {
+                  try {
+                    const maybeHandle = pxApi.playEnemyAction(b, {
+                      type: 'enemy_attack',
+                      enemyIdx: eIdx,
+                      enemy: e,
+                      intent,
+                      targetActorKey: 'player',
+                      noBlockPrompt: false,
+                      gated: true,
+                      autoImpactGate: true,
+                      gateCount,
+                      onPreTelegraph(kArg, metaArg) {
+                        const parsed = parseGateCallbackArgs(kArg, metaArg);
+                        forwardPreTelegraphToRing({
+                          mode: 'block',
+                          key: 'Space',
+                          beatIdx: parsed.k,
+                          beatIndex: parsed.k,
+                          totalBeats: gateCount,
+                          enemyRank: parsed.k > 0 ? (e.rank || 7) : (e.rank || 2),
+                          playerRank: p.rank || 2,
+                          atkRank: parsed.k > 0 ? (e.rank || 7) : (e.rank || 2),
+                          defRank: p.rank || 2,
+                          anchorTargetKey: parsed.meta.anchorTargetKey || 'player',
+                          assistMode: getAssistMode(),
+                        });
+                      },
+                      onBeatReady(kArg, metaArg) {
+                        const parsed = parseGateCallbackArgs(kArg, metaArg);
+                        if (gateBroker) gateBroker.notifyReady(parsed.k, parsed.meta);
+                      },
+                    });
+                    playedEnemyAlready = true;
+                    if (isUsableVfxHandle(maybeHandle, pxApi)) {
+                      vfxHandle = maybeHandle;
+                      _activeVfxHandles.add(vfxHandle);
+                    }
+                  } catch (err) {
+                    vfxHandle = null;
+                  }
+                }
+
+                try {
+                  if (vfxHandle && gateBroker) {
+                    const wait0 = await gateBroker.waitForBeat(0, 2500);
+                    if (!activeBattle || activeBattle !== b || b.battleInstanceId !== instId || b.over) {
+                      abortVfxHandle(vfxHandle);
+                      return false;
+                    }
+                    const meta0 = (wait0 && wait0.meta) || {};
+                    const anchor0 = meta0.anchorTargetKey || meta0.actorKey || 'player';
+                    const blkRes = await ctr.runGateBeat({
+                      mode: 'block',
+                      key: 'Space',
+                      beatIdx: 0,
+                      beatIndex: 0,
+                      totalBeats: gateCount,
+                      enemyRank: e.rank || 2,
+                      playerRank: p.rank || 2,
+                      atkRank: e.rank || 2,
                       defRank: p.rank || 2,
-                      atkRank: e.rank || 7,
+                      anchorTargetKey: anchor0,
+                      actorKey: anchor0,
+                      slowMoScale: (meta0.slowMoScale != null && Number.isFinite(Number(meta0.slowMoScale))) ? Number(meta0.slowMoScale) : 0.25,
+                      isFinalBeat: !hasFollowup,
+                      assistMode: getAssistMode(),
+                    });
+                    if (!activeBattle || activeBattle !== b || b.battleInstanceId !== instId || b.over) {
+                      abortVfxHandle(vfxHandle);
+                      return false;
+                    }
+                    blockGrade = (blkRes && !blkRes.cancelled && blkRes.grade) ? normalizeRingGrade(blkRes.grade) : 'GOOD';
+
+                    if (!hasFollowup) {
+                      const hitOut = resolveEnemyHitOnPlayer(b, e, intent, blockGrade, 'GOOD', banked, {
+                        skipPlayAction: true,
+                        skipImmediateBlockVfx: true,
+                      });
+                      const gatePayload = {
+                        isMidBeat: false,
+                        isFinalBeat: true,
+                        hpLoss: hitOut.hpLoss || 0,
+                        blocked: !!hitOut.blocked,
+                        evaded: !!hitOut.evaded,
+                        blockGrade: hitOut.blockGrade || blockGrade,
+                        blockRate: hitOut.blockRate || 0,
+                        shieldAbsorbed: hitOut.shieldAbsorbed || 0,
+                        shieldShattered: !!hitOut.shieldShattered,
+                        bypassMagicPlayerShield: !!hitOut.bypassMagicPlayerShield,
+                        guardedByAlly: hitOut.guardedByAlly || null,
+                      };
+                      try { vfxHandle.releaseGate(0, gatePayload); } catch (err) {}
+                      let returnPromise = null;
+                      if (typeof vfxHandle.finishActorReturn === 'function') {
+                        try { returnPromise = vfxHandle.finishActorReturn(gatePayload); } catch (err) {}
+                      }
+                      renderCombatUI();
+                      if (hitOut.battleEnded || b.over) return true;
+                      if (tickEnemyEndTurn(b, e, { evaded: !!hitOut.evaded })) { renderCombatUI(); return true; }
+                      if (returnPromise && typeof returnPromise.then === 'function') {
+                        await Promise.race([returnPromise, sleepTracked(520)]);
+                      } else {
+                        await sleepTracked(380);
+                      }
+                    } else {
+                      // 双段攻击（如风神追加风刃）：第 1 拍即时结算主击并释放 gate 0，第 2 拍衔接追加风刃格挡
+                      const hitOut = resolveEnemyHitOnPlayer(b, e, intent, blockGrade, 'GOOD', banked, {
+                        skipPlayAction: true,
+                        skipImmediateBlockVfx: true,
+                        skipFollowup: true,
+                      });
+                      const gate0Payload = {
+                        isMidBeat: true,
+                        isFinalBeat: false,
+                        hpLoss: hitOut.hpLoss || 0,
+                        blocked: !!hitOut.blocked,
+                        evaded: !!hitOut.evaded,
+                        blockGrade: hitOut.blockGrade || blockGrade,
+                        blockRate: hitOut.blockRate || 0,
+                        shieldAbsorbed: hitOut.shieldAbsorbed || 0,
+                        shieldShattered: !!hitOut.shieldShattered,
+                        bypassMagicPlayerShield: !!hitOut.bypassMagicPlayerShield,
+                        guardedByAlly: hitOut.guardedByAlly || null,
+                      };
+                      try { vfxHandle.releaseGate(0, gate0Payload); } catch (err) {}
+                      renderCombatUI();
+                      if (hitOut.battleEnded || b.over) {
+                        try { if (typeof vfxHandle.finishActorReturn === 'function') vfxHandle.finishActorReturn(); } catch (err) {}
+                        return true;
+                      }
+
+                      const wait1 = await gateBroker.waitForBeat(1, 700);
+                      if (!activeBattle || activeBattle !== b || b.battleInstanceId !== instId || b.over) {
+                        abortVfxHandle(vfxHandle);
+                        return false;
+                      }
+                      const meta1 = (wait1 && wait1.meta) || {};
+                      const anchor1 = meta1.anchorTargetKey || meta1.actorKey || 'player';
+                      const fRes = await ctr.runGateBeat({
+                        mode: 'block',
+                        key: 'Space',
+                        beatIdx: 1,
+                        beatIndex: 1,
+                        totalBeats: 2,
+                        enemyRank: e.rank || 7,
+                        playerRank: p.rank || 2,
+                        atkRank: e.rank || 7,
+                        defRank: p.rank || 2,
+                        anchorTargetKey: anchor1,
+                        actorKey: anchor1,
+                        slowMoScale: (meta1.slowMoScale != null && Number.isFinite(Number(meta1.slowMoScale))) ? Number(meta1.slowMoScale) : 0.25,
+                        isFinalBeat: true,
+                        assistMode: getAssistMode(),
+                      });
+                      if (!activeBattle || activeBattle !== b || b.battleInstanceId !== instId || b.over) {
+                        abortVfxHandle(vfxHandle);
+                        return false;
+                      }
+                      followupGrade = (fRes && !fRes.cancelled && fRes.grade) ? normalizeRingGrade(fRes.grade) : blockGrade;
+                      const fOut = resolveEnemyFollowupHit(b, e, intent, followupGrade, blockGrade, {
+                        skipImmediateBlockVfx: !wait1.timedOut,
+                      });
+                      const postRes = resolveEnemyPostHitEffects(b, e, intent, hitOut.hpLoss || 0, banked, null);
+                      const gate1Payload = {
+                        isMidBeat: false,
+                        isFinalBeat: true,
+                        hpLoss: fOut.fLoss || 0,
+                        blocked: !!fOut.blocked,
+                        blockGrade: fOut.fGrade || followupGrade,
+                        blockRate: fOut.fBlk || 0,
+                        shieldAbsorbed: fOut.shieldAbsorbed || 0,
+                        shieldShattered: !!fOut.shieldShattered,
+                      };
+                      try { vfxHandle.releaseGate(1, gate1Payload); } catch (err) {}
+                      let returnPromise = null;
+                      if (typeof vfxHandle.finishActorReturn === 'function') {
+                        try { returnPromise = vfxHandle.finishActorReturn(gate1Payload); } catch (err) {}
+                      }
+                      renderCombatUI();
+                      if (postRes.battleEnded || b.over) return true;
+                      if (tickEnemyEndTurn(b, e, { evaded: false })) { renderCombatUI(); return true; }
+                      if (returnPromise && typeof returnPromise.then === 'function') {
+                        await Promise.race([returnPromise, sleepTracked(520)]);
+                      } else {
+                        await sleepTracked(380);
+                      }
+                    }
+                  } else {
+                    // 兼容回退轨（旧版无门控句柄或 runGateBeat 不可用）
+                    const blkRes = await ctr.runBlockPrompt({
+                      defRank: p.rank || 2,
+                      atkRank: e.rank || 2,
                       actorKey: 'player',
                       assistMode: getAssistMode(),
                     });
                     if (!activeBattle || activeBattle !== b || b.battleInstanceId !== instId || b.over) return false;
-                    followupGrade = (fRes && !fRes.cancelled && fRes.grade) ? normalizeRingGrade(fRes.grade) : blockGrade;
+                    blockGrade = (blkRes && !blkRes.cancelled && blkRes.grade) ? normalizeRingGrade(blkRes.grade) : 'GOOD';
+                    if (hasFollowup) {
+                      const fRes = await ctr.runBlockPrompt({
+                        defRank: p.rank || 2,
+                        atkRank: e.rank || 7,
+                        actorKey: 'player',
+                        assistMode: getAssistMode(),
+                      });
+                      if (!activeBattle || activeBattle !== b || b.battleInstanceId !== instId || b.over) return false;
+                      followupGrade = (fRes && !fRes.cancelled && fRes.grade) ? normalizeRingGrade(fRes.grade) : blockGrade;
+                    }
+                    const hitOut = resolveEnemyHitOnPlayer(b, e, intent, blockGrade, followupGrade, banked, {
+                      skipPlayAction: playedEnemyAlready,
+                      skipImmediateBlockVfx: !playedEnemyAlready,
+                    });
+                    renderCombatUI();
+                    if (hitOut.battleEnded || b.over) return true;
+                    if (tickEnemyEndTurn(b, e, { evaded: !!hitOut.evaded })) { renderCombatUI(); return true; }
+                    await sleepTracked(460);
                   }
+                } finally {
+                  releaseGateBroker(gateBroker);
+                  if (vfxHandle) _activeVfxHandles.delete(vfxHandle);
                 }
-                const hitOut = resolveEnemyHitOnPlayer(b, e, intent, blockGrade, followupGrade, banked);
-                renderCombatUI();
-                if (hitOut.battleEnded || b.over) return true;
-                if (tickEnemyEndTurn(b, e, { evaded: !!hitOut.evaded })) { renderCombatUI(); return true; }
-                await sleepTracked(460);
               }
             }
           } finally {
@@ -7699,7 +8500,7 @@
                 <button type="button" class="cb-oc-btn" data-oc="0" data-amp="0" title="0% 常规施法 · 1.00× 常规魔导出力">0% 常规</button>
                 <button type="button" class="cb-oc-btn" data-oc="1" data-amp="0.20" title="★一阶·魔力盈溢（20%）：+1破锁 · 10%穿抗 · +20%增伤（护盾1.25×）">★20%</button>
                 <button type="button" class="cb-oc-btn" data-oc="2" data-amp="0.40" title="★★二阶·极寒过载（40%）：+2破锁 · 22%穿抗 · +40%增伤（护盾1.50×·钢霜壁垒）">★★40%</button>
-                <button type="button" class="cb-oc-btn all-in" data-oc="3" data-amp="0.60" title="★★★三阶·星霜极限（60%）：+3破锁 · 35%穿抗 · +60%增伤（限手持重术）">★★★60%</button>
+                <button type="button" class="cb-oc-btn all-in" data-oc="3" data-amp="0.60" title="★★★三阶·星霜极限（60%）：+3破锁 · 35%穿抗 · +60%增伤（三阶输出上限）">★★★60%</button>
               </div>
               <div class="cb-oc-slider-row" id="cb-oc-slider-row" style="display:flex;align-items:center;gap:8px;margin-top:5px;padding:0;">
                 <input type="range" class="cb-oc-slider" id="cb-oc-slider" min="0" max="60" step="1" value="0" aria-label="魔力增幅百分比微调" style="flex:1;min-width:0;height:4px;margin:0;accent-color:#1658eb;cursor:pointer;" />
@@ -8565,7 +9366,6 @@
       const dmgPillText = intent.dmg > 0
         ? (intent.shatterPlayerShield ? `预计 ${intent.dmg} · 破盾` : `预计 ${intent.dmg}`)
         : '失衡';
-      const fullTipAttr = String(`${sm.badge} | 招式：${intent.moveName} | ${sm.hint}`).replace(/"/g, '&quot;');
       const lockPipHtml = e.broken
         ? `<span class="cb-e-lock-pip is-broken" title="弱点击破">BREAK</span>`
         : (e.maxLocks > 0 && e.hp > 0
@@ -8615,7 +9415,7 @@
                   <span class="ib-stance-tag">${sm.short}</span>
                   <span class="ib-move-name">${shortMove}</span>
                   <span class="ib-dmg-pill">${dmgPillText}</span>
-                  <button type="button" class="ib-info-btn" aria-label="查看架势对策" title="${fullTipAttr}">i</button>
+                  <button type="button" class="ib-info-btn" aria-label="查看架势对策">i</button>
                 </div>
                 ${nextLine}
                 <div class="cb-intent-tip" role="tooltip">
@@ -8944,13 +9744,13 @@
     const parts = [];
     if (!b.won) {
       if (b.stageCfg && b.stageCfg.sealRule) {
-        parts.push('罗文的晦轮黑光与脱手旋杖会绕过前排雷纳德直袭后排；面对偷袭回合务必立起冰墙自保，配合雷纳德压制与蔓地薄冰即可稳妥合围活捉。');
+        parts.push('罗文的晦轮黑光与飞旋掷杖会绕过前排雷纳德直袭后排；面对偷袭回合务必立起冰墙自保，配合雷纳德压制与蔓地薄冰即可稳妥合围活捉。');
       } else if (b.endReason === 'crate_destroyed') {
         parts.push('医疗药箱在持续冲撞下失守；面对蓄力撞箱回合应将钢冰护幕增幅至二阶钢霜壁垒协防，并以星霜冰柱或裂流斩截断蓄势、累积艾诺共鸣。');
       } else if (b.endReason === 'exposed') {
         parts.push('耳目近在咫尺之际魔力外显过高，招致巡查逼近；第二波多以魔剑基础、寒锋斩与冰晶射收束魔力痕迹。');
       } else if (b.endReason === 'enemy_three_hits') {
-        parts.push('正面硬攻屡遭镜壁反刺丢分；可立起镜霜壁反震破开镜壁，或在艾诺双手压地蓄势时出折射冰棱直接截断抢分。');
+        parts.push('正面硬攻屡遭镜壁反刺丢分；可立起镜霜壁反震破开镜壁，或在艾诺寒脉蓄势时出折射冰棱直接截断抢分。');
       } else if (m.phase2Triggered) {
         parts.push('已成功逼出敌将倾力变阵，终盘却在高压杀招下受挫；变阵后须把握觉醒空档补盾留行动点，以截断或寒锋迎击化解杀招。');
       } else {
@@ -8976,7 +9776,7 @@
           ? '关键节点一击破招直入要害，以干脆高效的攻势节奏速战速决。'
           : '凭借凌厉的攻势压制与五线术式轮转抢先定局，未给对手留下反扑余地。');
       } else {
-        parts.push(`主动反制偏少（${counters} 次），多针对双手控场与贴身突袭切换克制术式可再提一层上限。`);
+        parts.push(`主动反制偏少（${counters} 次），多针对重术蓄势与贴身突袭切换克制术式可再提一层上限。`);
       }
 
       if (perfects >= 2) {
@@ -9037,7 +9837,7 @@
       }
     } else {
       rewardText = (b.stageCfg && b.stageCfg.sealRule)
-        ? '战术提示：雷纳德顶在前排主攻，留意罗文偷袭黑光与脱手旋杖回合立起冰墙自保！'
+        ? '战术提示：雷纳德顶在前排主攻，留意罗文偷袭黑光与飞旋掷杖回合立起冰墙自保！'
         : '战术提示：紧盯敌方架势预告，灵活搭配增幅破锁、霜域控场与空格格挡！';
     }
 
@@ -9695,7 +10495,7 @@
               mdef: t.mdef || 5,
               spd: t.spd || 96,
               maxLocks: t.maxLocks || 3,
-              trait: t.desc || '留意双手蓄势空档与贴身扑击。',
+              trait: t.desc || '留意重术蓄势空档与贴身扑击。',
               aiType: cfg.aiType || 'generic',
             },
           ],
@@ -9837,9 +10637,14 @@
     const staffDef = getEquippedStaffDef(p);
     const primary = getPrimaryAliveEnemy(b);
     const hasAllies = Array.isArray(b.allies) && b.allies.length > 0;
+    const playerSlot = hasAllies ? 1 : 4;
     const enemySlotMap = resolveEnemyFormationSlots(b.enemies);
     return {
       id: b.id,
+      activeActor: (b.activeActor && typeof b.activeActor === 'object')
+        ? Object.assign({ actorKey: 'player', id: 'sylvia', side: 'ally', slot: playerSlot }, b.activeActor)
+        : { actorKey: 'player', id: 'sylvia', side: 'ally', slot: playerSlot },
+      battleItems: Array.isArray(b.battleItems) ? b.battleItems.slice() : [],
       battleInstanceId: b.battleInstanceId || 0,
       bgmType: b.bgmType || (b.stageCfg && b.stageCfg.bgmType) || 'battle',
       bgmKey: b.bgmKey || null,
@@ -10054,6 +10859,17 @@
     return useSkill(skillId, targetIdx, b);
   }
 
+  function useBattleItem(itemId, targetIdx, b) {
+    b = b || activeBattle;
+    if (!b || b.over) return { ok: false, reason: 'over' };
+    return {
+      ok: false,
+      reason: 'not_implemented',
+      itemId: itemId || null,
+      targetIdx: targetIdx != null ? targetIdx : null,
+    };
+  }
+
   function mapCharToStageId(charId) {
     if (charId === 'beatrice') return 'beatrice_11';
     if (charId === 'alice') return 'alice_9';
@@ -10166,6 +10982,7 @@
     inspectClue,
     useSkill,
     useSkillById,
+    useBattleItem,
     endTurn,
     exitBattle,
     simulateBattle,

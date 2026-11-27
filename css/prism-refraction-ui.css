@@ -1976,14 +1976,24 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
 
 /* ==================== 8. 实机战斗界面 (#battle-screen · Designer 2 棱镜冰晶顶栏 / 敌方档案 + Option 2 P5 放射指令翼) ==================== */
 
+/* 战斗舞台覆盖于双动画 Canvas 之上：统一零 backdrop-filter 模糊 + 0.94–0.96 清爽雪瓷底面，消除每帧多块实时高斯模糊重算 */
+#battle-screen {
+  --pr-glass-plate: linear-gradient(
+    154deg,
+    rgba(252, 254, 255, 0.96) 0%,
+    rgba(248, 251, 255, 0.95) 56%,
+    rgba(238, 246, 255, 0.95) 100%
+  );
+}
+
 /* 8.1 顶部棱镜冰晶战术条 (.cb-topbar · 桌面单行不折行 + 模式开关降权) */
 #battle-screen .cb-topbar {
   position: relative;
   border: none;
   border-bottom: 1px solid rgba(84, 122, 188, 0.26);
-  background: linear-gradient(180deg, rgba(252, 254, 255, 0.94) 0%, rgba(238, 245, 254, 0.88) 100%);
-  backdrop-filter: blur(18px) saturate(145%);
-  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  background: linear-gradient(180deg, rgba(252, 254, 255, 0.96) 0%, rgba(244, 249, 255, 0.94) 100%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow: 0 10px 26px rgba(10, 28, 82, 0.16);
   padding: 5px 14px;
   gap: 6px 10px;
@@ -2217,9 +2227,9 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   position: relative;
   border: none;
   border-bottom: 1px solid rgba(125, 211, 252, 0.80);
-  background: linear-gradient(180deg, rgba(250, 251, 253, 0.86) 0%, rgba(238, 246, 255, 0.82) 100%);
-  backdrop-filter: blur(10px) saturate(135%);
-  -webkit-backdrop-filter: blur(10px) saturate(135%);
+  background: linear-gradient(180deg, rgba(248, 251, 255, 0.95) 0%, rgba(240, 247, 255, 0.94) 100%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow: 0 3px 10px rgba(10, 28, 82, 0.14);
   filter: none;
   overflow: visible;
@@ -2236,7 +2246,7 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
 #battle-screen .cb-enemy-card.targeted .cb-e-plate {
   border: none;
   border-bottom: 1px solid var(--pr-sapphire);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(236, 246, 255, 0.90) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(240, 248, 255, 0.94) 100%);
   box-shadow: 0 3px 12px rgba(22, 88, 235, 0.26);
   filter: none;
   transform: none;
@@ -2245,7 +2255,7 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
 #battle-screen .cb-enemy-card.counter-target-glow .cb-e-plate {
   border: none;
   border-bottom: 1px solid #1267A8;
-  background: linear-gradient(180deg, rgba(244, 251, 255, 0.94) 0%, rgba(222, 242, 255, 0.88) 100%);
+  background: linear-gradient(180deg, rgba(246, 252, 255, 0.96) 0%, rgba(228, 244, 255, 0.94) 100%);
   box-shadow: 0 3px 12px rgba(18, 103, 168, 0.28);
   filter: none;
   transform: none;
@@ -2263,7 +2273,7 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
 #battle-screen .cb-enemy-card.phase2-boss .cb-e-plate {
   border: none;
   border-bottom: 1px solid var(--pr-crimson);
-  background: linear-gradient(180deg, rgba(255, 248, 250, 0.92) 0%, rgba(252, 236, 241, 0.88) 100%);
+  background: linear-gradient(180deg, rgba(255, 249, 251, 0.96) 0%, rgba(253, 238, 243, 0.94) 100%);
   box-shadow: 0 3px 12px rgba(209, 52, 86, 0.26);
   filter: none;
   transform: none;
@@ -2340,8 +2350,8 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   inset: 0;
   z-index: -1;
   background: var(--pr-caustic), var(--pr-glass-plate);
-  backdrop-filter: blur(18px) saturate(145%);
-  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border-top: 2px solid var(--pr-sapphire);
   clip-path: polygon(12px 0%, 100% 0%, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0% 100%, 0% 12px);
   box-shadow:
@@ -2384,8 +2394,8 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   inset: 0;
   z-index: -1;
   background: var(--pr-caustic), var(--pr-glass-plate);
-  backdrop-filter: blur(18px) saturate(145%);
-  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border-left: 3px solid var(--pr-sapphire);
   clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
   box-shadow:
@@ -2411,7 +2421,7 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   border-left-color: #C68B3E;
   background:
     var(--pr-caustic),
-    linear-gradient(154deg, rgba(255, 253, 248, 0.95) 0%, rgba(247, 239, 224, 0.90) 100%);
+    linear-gradient(154deg, rgba(255, 253, 248, 0.96) 0%, rgba(247, 239, 224, 0.94) 100%);
   box-shadow:
     inset 0 1px 0 rgba(198, 139, 62, 0.34),
     inset 0 -1px 0 rgba(196, 164, 108, 0.28);
@@ -2598,8 +2608,8 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
     border-top: 1px solid rgba(125, 211, 252, 0.65);
     border-left: 3px solid var(--pr-sapphire);
     background: var(--pr-glass-plate);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 100%, 0 100%);
     color: var(--pr-ink);
     filter: drop-shadow(0 6px 14px rgba(10, 28, 82, 0.14));
@@ -2631,7 +2641,7 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   top: 46%;
   width: 0;
   height: 0;
-  z-index: 28;
+  z-index: 45;
   opacity: 1;
   visibility: visible;
   pointer-events: none;
@@ -2814,13 +2824,88 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
 .cb-pwing,
 #cb-pw-magic,
 #cb-pw-amp,
-#cb-pw-guard,
-#cb-pw-assist {
+#cb-pw-items,
+#cb-pw-endturn {
   background: transparent;
   border: none;
   box-shadow: none;
   clip-path: none;
   overflow: visible;
+}
+
+/* [D] 结束回合直触翼：无右箭头；行动耗尽 .needs-endturn 触发皇家蓝冰晶脉冲高亮 */
+@keyframes prWingEndTurnPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(22, 88, 235, 0.42)) brightness(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.72)) brightness(1.13);
+  }
+}
+
+#cb-pw-endturn .cb-pw-arrow {
+  display: none;
+}
+
+#cb-pw-endturn.needs-endturn,
+#cb-pw-endturn.needs-endturn:not(:disabled):hover,
+#cb-pw-endturn.needs-endturn:focus-visible,
+.cb-pwing-wrap.hovered #cb-pw-endturn.needs-endturn:not(:disabled) {
+  background: transparent;
+  box-shadow: none;
+  color: #FFFFFF;
+  animation: prWingEndTurnPulse 1.45s ease-in-out infinite;
+}
+
+#cb-pw-endturn.needs-endturn::before,
+#cb-pw-endturn.needs-endturn:not(:disabled):hover::before,
+#cb-pw-endturn.needs-endturn:focus-visible::before,
+.cb-pwing-wrap.hovered #cb-pw-endturn.needs-endturn:not(:disabled)::before {
+  background: var(--pr-caustic), var(--pr-sapphire-prism);
+  box-shadow: inset 0 0 0 1px rgba(155, 231, 255, 0.72);
+}
+
+#cb-pw-endturn.needs-endturn::after,
+#cb-pw-endturn.needs-endturn:not(:disabled):hover::after,
+#cb-pw-endturn.needs-endturn:focus-visible::after,
+.cb-pwing-wrap.hovered #cb-pw-endturn.needs-endturn:not(:disabled)::after {
+  background: linear-gradient(180deg, #E0F7FF 0%, #7DD3FC 48%, #EFE0BE 100%);
+}
+
+#cb-pw-endturn.needs-endturn .cb-pw-title,
+#cb-pw-endturn.needs-endturn:not(:disabled):hover .cb-pw-title,
+#cb-pw-endturn.needs-endturn:focus-visible .cb-pw-title,
+.cb-pwing-wrap.hovered #cb-pw-endturn.needs-endturn:not(:disabled) .cb-pw-title {
+  color: #FFFFFF;
+}
+
+#cb-pw-endturn.needs-endturn .cb-pw-en,
+#cb-pw-endturn.needs-endturn .cb-pw-sub,
+#cb-pw-endturn.needs-endturn:not(:disabled):hover .cb-pw-en,
+#cb-pw-endturn.needs-endturn:not(:disabled):hover .cb-pw-sub,
+#cb-pw-endturn.needs-endturn:focus-visible .cb-pw-en,
+#cb-pw-endturn.needs-endturn:focus-visible .cb-pw-sub,
+.cb-pwing-wrap.hovered #cb-pw-endturn.needs-endturn:not(:disabled) .cb-pw-en,
+.cb-pwing-wrap.hovered #cb-pw-endturn.needs-endturn:not(:disabled) .cb-pw-sub {
+  color: #DCF4FF;
+}
+
+#cb-pw-endturn.needs-endturn .cb-pw-key,
+#cb-pw-endturn.needs-endturn:not(:disabled):hover .cb-pw-key,
+#cb-pw-endturn.needs-endturn:focus-visible .cb-pw-key,
+.cb-pwing-wrap.hovered #cb-pw-endturn.needs-endturn:not(:disabled) .cb-pw-key {
+  background: rgba(255, 255, 255, 0.24);
+  color: #FFF3D1;
+  text-shadow: 0 1px 2px rgba(8, 22, 68, 0.48);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #cb-pw-endturn.needs-endturn,
+  #cb-pw-endturn.needs-endturn:not(:disabled):hover,
+  #cb-pw-endturn.needs-endturn:focus-visible,
+  .cb-pwing-wrap.hovered #cb-pw-endturn.needs-endturn:not(:disabled) {
+    animation: none;
+  }
 }
 
 .cb-prism-rig.compact-multi .cb-pwing {
@@ -3496,7 +3581,7 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   color: rgba(232, 245, 255, 0.96);
 }
 
-/* STATE B: 展开斜切术式/守势/辅助级联翼 */
+/* STATE B: 展开斜切术式/道具级联翼 */
 .cb-prism-cascade {
   position: absolute;
   left: 0;
@@ -3512,8 +3597,8 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
 
 .cb-prism-rig.mode-skills .cb-prism-cascade,
 .cb-prism-rig.mode-amp .cb-prism-cascade,
-.cb-prism-rig.mode-guard .cb-prism-cascade,
-.cb-prism-rig.mode-assist .cb-prism-cascade {
+.cb-prism-rig.mode-items .cb-prism-cascade,
+.cb-prism-rig.mode-guard .cb-prism-cascade {
   display: block;
   opacity: 1;
   transform: none;
@@ -3747,8 +3832,8 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   top: -120px;
   width: 372px;
   background: var(--pr-caustic), var(--pr-glass-plate);
-  backdrop-filter: blur(20px) saturate(145%);
-  -webkit-backdrop-filter: blur(20px) saturate(145%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
   box-shadow: inset 0 0 0 1px rgba(96, 146, 224, 0.38);
   filter: drop-shadow(0 14px 30px rgba(8, 22, 68, 0.34));
@@ -4434,6 +4519,226 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   cursor: not-allowed;
 }
 
+/* 守势/护盾/机动叶片 (.is-guard)：翠玉左侧晶条 #0E7C5B 与攻伐皇家蓝清晰区分，零圆框套圆框 */
+.cb-blade.is-guard::before {
+  background: linear-gradient(112deg, rgba(250, 254, 253, 0.96) 0%, rgba(235, 249, 244, 0.94) 100%);
+}
+
+.cb-blade.is-guard::after {
+  background: linear-gradient(180deg, #5EEAD4 0%, #0E7C5B 54%, #065F46 100%);
+}
+
+.cb-blade.is-guard .cb-bl-key {
+  background: rgba(14, 124, 91, 0.13);
+  color: #0E7C5B;
+}
+
+.cb-blade.is-guard .cb-bl-tag {
+  color: #0E7C5B;
+}
+
+.cb-blade.is-guard:not(:disabled):hover,
+.cb-blade-wrap.hovered .cb-blade.is-guard:not(:disabled) {
+  background: transparent;
+  color: #FFFFFF;
+}
+
+.cb-blade.is-guard:not(:disabled):hover::before,
+.cb-blade-wrap.hovered .cb-blade.is-guard:not(:disabled)::before {
+  background: linear-gradient(108deg, #064E3B 0%, #0E7C5B 54%, #10966F 100%);
+}
+
+.cb-blade.is-guard:not(:disabled):hover::after,
+.cb-blade-wrap.hovered .cb-blade.is-guard:not(:disabled)::after {
+  background: linear-gradient(180deg, #CCFBF1 0%, #5EEAD4 56%, #EFE0BE 100%);
+}
+
+.cb-blade.is-guard:not(:disabled):hover .cb-bl-key,
+.cb-blade-wrap.hovered .cb-blade.is-guard:not(:disabled) .cb-bl-key {
+  background: rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
+  text-shadow: 0 1px 2px rgba(6, 78, 59, 0.52);
+}
+
+.cb-blade.is-guard:not(:disabled):hover .cb-bl-tag,
+.cb-blade.is-guard:not(:disabled):hover .cb-bl-cost,
+.cb-blade.is-guard:not(:disabled):hover .cb-bl-meta,
+.cb-blade-wrap.hovered .cb-blade.is-guard:not(:disabled) .cb-bl-tag,
+.cb-blade-wrap.hovered .cb-blade.is-guard:not(:disabled) .cb-bl-cost,
+.cb-blade-wrap.hovered .cb-blade.is-guard:not(:disabled) .cb-bl-meta {
+  color: #D1FAE5;
+}
+
+/* 暂无战斗道具占位信息叶 (.is-placeholder)：雪瓷冰白微透斜切，静默可读无悬停跳变 */
+.cb-blade.is-placeholder,
+.cb-blade.is-placeholder:disabled {
+  min-height: 54px;
+  opacity: 0.92;
+  color: var(--pr-ink-mid);
+  cursor: default;
+}
+
+.cb-blade.is-placeholder::before,
+.cb-blade.is-placeholder:hover::before,
+.cb-blade-wrap.hovered .cb-blade.is-placeholder::before {
+  background: linear-gradient(112deg, rgba(252, 254, 255, 0.88) 0%, rgba(238, 245, 255, 0.82) 100%);
+  box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.50);
+}
+
+.cb-blade.is-placeholder::after,
+.cb-blade.is-placeholder:hover::after,
+.cb-blade-wrap.hovered .cb-blade.is-placeholder::after {
+  background: linear-gradient(180deg, rgba(186, 230, 253, 0.92) 0%, rgba(125, 211, 252, 0.78) 54%, rgba(148, 178, 216, 0.72) 100%);
+}
+
+.cb-blade-wrap:has(.cb-blade.is-placeholder):hover,
+.cb-blade-wrap.hovered:has(.cb-blade.is-placeholder) {
+  filter: drop-shadow(0 8px 20px rgba(8, 22, 68, 0.30));
+  z-index: 2;
+}
+
+.cb-blade.is-placeholder:hover,
+.cb-blade-wrap.hovered .cb-blade.is-placeholder {
+  color: var(--pr-ink-mid);
+}
+
+.cb-blade.is-placeholder:hover .cb-bl-name,
+.cb-blade-wrap.hovered .cb-blade.is-placeholder .cb-bl-name {
+  color: var(--pr-ink-mid);
+}
+
+.cb-blade.is-placeholder:hover .cb-bl-meta,
+.cb-blade.is-placeholder:hover .cb-bl-tag,
+.cb-blade.is-placeholder:hover .cb-bl-cost,
+.cb-blade-wrap.hovered .cb-blade.is-placeholder .cb-bl-meta,
+.cb-blade-wrap.hovered .cb-blade.is-placeholder .cb-bl-tag,
+.cb-blade-wrap.hovered .cb-blade.is-placeholder .cb-bl-cost {
+  color: var(--pr-ink-muted);
+}
+
+.cb-blade.is-placeholder .cb-bl-key,
+.cb-blade.is-placeholder:hover .cb-bl-key,
+.cb-blade-wrap.hovered .cb-blade.is-placeholder .cb-bl-key {
+  background: rgba(22, 88, 235, 0.08);
+  color: var(--pr-ink-muted);
+  text-shadow: none;
+}
+
+.cb-blade.is-placeholder .cb-bl-meta {
+  white-space: normal;
+  line-height: 1.32;
+}
+
+.cb-blade.is-placeholder:hover .cb-bl-content,
+.cb-blade-wrap.hovered .cb-blade.is-placeholder .cb-bl-content {
+  transform: none;
+}
+
+/* 向左展开镜像支持 (.anchor-flip-left)：预留右半场操作角色扩展，星轨与折面水平镜像、文案保持正向可读 */
+.cb-prism-rig.anchor-flip-left .cb-prism-svg {
+  transform-origin: 42px 250px;
+  transform: scaleX(-1);
+}
+
+.cb-prism-rig.anchor-flip-left .cb-pwing-wrap[data-wing="0"] { left: auto; right: 52px; --rot: 4.0deg; }
+.cb-prism-rig.anchor-flip-left .cb-pwing-wrap[data-wing="1"] { left: auto; right: 82px; --rot: 1.3deg; }
+.cb-prism-rig.anchor-flip-left .cb-pwing-wrap[data-wing="2"] { left: auto; right: 76px; --rot: -1.7deg; }
+.cb-prism-rig.anchor-flip-left .cb-pwing-wrap[data-wing="3"] { left: auto; right: 46px; --rot: -4.4deg; }
+
+.cb-prism-rig.anchor-flip-left.compact-multi .cb-pwing-wrap[data-wing="0"] { left: auto; right: 26px; --rot: 3.2deg; }
+.cb-prism-rig.anchor-flip-left.compact-multi .cb-pwing-wrap[data-wing="1"] { left: auto; right: 38px; --rot: 1.0deg; }
+.cb-prism-rig.anchor-flip-left.compact-multi .cb-pwing-wrap[data-wing="2"] { left: auto; right: 34px; --rot: -1.2deg; }
+.cb-prism-rig.anchor-flip-left.compact-multi .cb-pwing-wrap[data-wing="3"] { left: auto; right: 24px; --rot: -3.4deg; }
+
+.cb-prism-rig.anchor-flip-left.compact-multi.narrow-desktop .cb-pwing-wrap[data-wing="0"] { left: auto; right: 26px; --rot: 2.8deg; }
+.cb-prism-rig.anchor-flip-left.compact-multi.narrow-desktop .cb-pwing-wrap[data-wing="1"] { left: auto; right: 38px; --rot: 0.9deg; }
+.cb-prism-rig.anchor-flip-left.compact-multi.narrow-desktop .cb-pwing-wrap[data-wing="2"] { left: auto; right: 34px; --rot: -1.0deg; }
+.cb-prism-rig.anchor-flip-left.compact-multi.narrow-desktop .cb-pwing-wrap[data-wing="3"] { left: auto; right: 24px; --rot: -2.8deg; }
+
+.cb-prism-rig.anchor-flip-left .cb-pwing {
+  padding: 0 18px 0 22px;
+}
+
+.cb-prism-rig.anchor-flip-left.compact-multi .cb-pwing {
+  padding: 0 14px 0 18px;
+}
+
+.cb-prism-rig.anchor-flip-left.compact-multi.narrow-desktop .cb-pwing {
+  padding: 0 13px 0 16px;
+}
+
+.cb-prism-rig.anchor-flip-left .cb-pwing::before {
+  clip-path: polygon(14px 0, calc(100% - 14px) 0, calc(100% - 7px) 50%, 100% 100%, 20px 100%, 0 50%);
+}
+
+.cb-prism-rig.anchor-flip-left .cb-pwing.hero-prism::before,
+.cb-prism-rig.anchor-flip-left #cb-pw-magic.hero-prism::before {
+  clip-path: polygon(16px 0, calc(100% - 16px) 0, calc(100% - 8px) 50%, 100% 100%, 22px 100%, 0 50%);
+}
+
+.cb-prism-rig.anchor-flip-left .cb-pwing::after {
+  left: auto;
+  right: 0;
+  clip-path: polygon(calc(100% - 8px) 0, 0 0, calc(100% - 4px) 50%, 0 100%, 100% 100%, calc(100% - 7px) 50%);
+}
+
+.cb-prism-rig.anchor-flip-left .cb-pwing:not(:disabled):hover .cb-pw-body,
+.cb-prism-rig.anchor-flip-left .cb-pwing-wrap.hovered .cb-pwing:not(:disabled) .cb-pw-body,
+.cb-prism-rig.anchor-flip-left .cb-pwing:not(:disabled):hover .cb-pw-arrow,
+.cb-prism-rig.anchor-flip-left .cb-pwing-wrap.hovered .cb-pwing:not(:disabled) .cb-pw-arrow {
+  transform: translateX(-2px);
+}
+
+.cb-prism-rig.anchor-flip-left .cb-cascade-spine {
+  left: auto;
+  right: 44px;
+  transform: rotate(2.2deg);
+}
+
+.cb-prism-rig.anchor-flip-left.compact-multi .cb-cascade-spine {
+  left: auto;
+  right: 24px;
+  transform: rotate(1.2deg);
+}
+
+.cb-prism-rig.anchor-flip-left.mode-amp .cb-cascade-spine {
+  transform: rotate(1.0deg);
+}
+
+.cb-prism-rig.anchor-flip-left .cb-prism-amp-panel {
+  left: auto;
+  right: 56px;
+}
+
+.cb-prism-rig.anchor-flip-left .cb-prism-amp-panel::after {
+  left: auto;
+  right: 0;
+}
+
+.cb-prism-rig.anchor-flip-left .cb-blade {
+  padding: 5px 15px 5px 22px;
+}
+
+.cb-prism-rig.anchor-flip-left.compact-multi .cb-blade,
+.cb-prism-rig.anchor-flip-left.narrow-desktop .cb-blade {
+  padding: 4px 13px 4px 18px;
+}
+
+.cb-prism-rig.anchor-flip-left .cb-blade::before {
+  clip-path: polygon(13px 0, calc(100% - 13px) 0, calc(100% - 6px) 50%, 100% 100%, 20px 100%, 0 50%);
+}
+
+.cb-prism-rig.anchor-flip-left .cb-blade::after {
+  left: auto;
+  right: 0;
+  clip-path: polygon(calc(100% - 7px) 0, 0 0, calc(100% - 3px) 50%, 0 100%, 100% 100%, calc(100% - 6px) 50%);
+}
+
+.cb-prism-rig.anchor-flip-left .cb-blade:not(:disabled):not(.is-placeholder):hover .cb-bl-content,
+.cb-prism-rig.anchor-flip-left .cb-blade-wrap.hovered .cb-blade:not(:disabled):not(.is-placeholder) .cb-bl-content {
+  transform: translateX(-2px);
+}
+
 .cb-bl-key {
   position: relative;
   z-index: 2;
@@ -4720,11 +5025,11 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   box-sizing: border-box;
   padding: 0 12px 0 14px;
   margin: 0;
-  background: rgba(246, 250, 255, 0.90);
+  background: rgba(248, 251, 255, 0.95);
   border-top: 1px solid rgba(22, 88, 235, 0.22);
   border-left: 3px solid var(--pr-gold-deep);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   color: var(--pr-ink);
   font-size: 11.5px;
 }
@@ -4867,9 +5172,9 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   align-items: center;
   gap: 10px;
   padding: 5px 14px 5px 11px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(235, 244, 255, 0.88) 100%);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  background: linear-gradient(135deg, rgba(252, 254, 255, 0.96) 0%, rgba(240, 247, 255, 0.94) 100%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   clip-path: polygon(0 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
   overflow: hidden;
 }
@@ -5280,9 +5585,9 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
     font-size: 10px;
   }
 
-  /* 1280×720 罗文战双人阵：微收 Slot 1 8岁希尔维亚像素比例（脚底仍紧贴踏位），把头顶安全下移约 16px；3–6 人满编阵交由统一多排比例掌控 */
+  /* 1280×720 罗文战双人阵：同步梯度放大 Slot 1 8岁希尔维亚像素比例（1.18 → 1.34，脚底紧贴踏位且避开左上 AV 栏）；3–6 人满编阵交由统一多排比例掌控 */
   #battle-screen .cb-player-stage.has-vanguard-ally:not(:has(.cb-ally-extra-slot)) .cb-ally-slot[data-slot="1"] .cb-px-actor {
-    --px-scale: 1.18;
+    --px-scale: 1.34;
   }
 }
 

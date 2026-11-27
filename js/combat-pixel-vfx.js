@@ -381,7 +381,7 @@
       hitY: 72 / 130,
       headX: 89 / 178,
       headY: 36 / 130,
-      scaleMult: 1.0,
+      scaleMult: 0.94,
       shadowW: 78,
       floatAmp: 0,
       archetype: 'boss',
@@ -486,7 +486,7 @@
       hitY: 69 / 124,
       headX: 85 / 170,
       headY: 34 / 124,
-      scaleMult: 1.0,
+      scaleMult: 0.94,
       shadowW: 78,
       floatAmp: 0,
       archetype: 'beast',
@@ -594,6 +594,10 @@
   // 扩展 run 帧：由 bank.animMap.run (或 run1/run2/run3) 提供；无专用 run 帧时优雅回退至 [0,1] 疾步弹跳，绝不使用 3/4/5！
   const DUAL_MAGIC_SPRITES = new Set(['beatrice', 'sylvia_disguise', 'eastwing_commander']);
   const TRI_ELEM_SPRITES = new Set(['reno']);
+  const SCALE_MULT_OVERRIDES = {
+    abyss_behemoth: 0.94,
+    tundra_brute: 0.94,
+  };
 
   const POSE_TO_FRAME = {
     idle: 0,
@@ -607,6 +611,7 @@
     windup: 3,
     charge: 3,
     cast_step: 4,
+    strike_ready: 4,
     strike: 5,
     attack: 5,
     cast: 5,
@@ -764,6 +769,7 @@
       case 'earth_windup':
         return count > 3 ? 3 : count - 1;
       case 'cast_step':
+      case 'strike_ready':
       case 'earth_step':
         return is7 ? 4 : (count > 3 ? 3 : count - 1);
       case 'strike':
@@ -887,11 +893,14 @@
   let _subFxW = 0;
   let _subFxH = 0;
   let _canvasDirty = false;
+  const EDITION_A_SLOWMO_RENDER_INTERVAL_MS = 33;
   let _hdCanvas = null;
   let _hdW = 0;
   let _hdH = 0;
   let _editionA = null;
   let _editionADirty = false;
+  let _editionALastRenderTs = 0;
+  let _editionAForceRender = false;
   const _statusMicroThrottle = new Map();
   let _lastBattleRef = null;
   let _lastBattleId = '';
@@ -1001,6 +1010,7 @@
     meta.frameNames = bank.frameNames || null;
     if (typeof bank.facing === 'string') meta.facing = bank.facing;
     if (typeof bank.scaleMult === 'number' && Number.isFinite(bank.scaleMult)) meta.scaleMult = bank.scaleMult;
+    if (SCALE_MULT_OVERRIDES[meta.id] != null) meta.scaleMult = SCALE_MULT_OVERRIDES[meta.id];
     if (bank.anchors) {
       if (Array.isArray(bank.anchors.feet)) {
         meta.anchorX = bank.anchors.feet[0] / bank.w;
@@ -2541,9 +2551,36 @@
     }
   }
 
+  let _editionAAliasesPatched = false;
+  let _enemyActionEpoch = 0;
+  const _enemyActionGen = new Map();
+  let _lastGateBlockFx = null;
+
+  function ensureEditionAAliases(api) {
+    if (_editionAAliasesPatched || !api) return;
+    _editionAAliasesPatched = true;
+    try {
+      if (typeof api.registerAliases === 'function') {
+        api.registerAliases({ move_afterimage: ['wind_afterimage', 'sword_root_step'] });
+      } else if (api.SKILL_ALIASES) {
+        api.SKILL_ALIASES.move_afterimage = ['wind_afterimage', 'sword_root_step'];
+      }
+    } catch (e) {}
+  }
+
+  function createNoopActionHandle() {
+    return {
+      releaseGate() {},
+      releaseAll() {},
+      finishActorReturn() {},
+      donePromise: Promise.resolve(),
+    };
+  }
+
   function getEditionAApi() {
     const api = global.VfxEditionAFull;
     if (api && typeof api.create === 'function' && typeof api.resolveSkillId === 'function') {
+      ensureEditionAAliases(api);
       return api;
     }
     return null;
@@ -2564,8 +2601,42 @@
     if (!hasEditionA()) return null;
     const resolved = _editionA.play(skillId, opts || {});
     _editionADirty = true;
+    _editionAForceRender = true;
     ensureLoopRunning();
     return resolved;
+  }
+
+  function resizeEditionACanvas(hdCanvas, edApi, w, h) {
+    if (!edApi || !hdCanvas) return;
+    const rawDpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+    // 桌面宽屏舞台 (>= 1200px，如 1280×720 / 1440×900) 收敛 DPR 上限至 1.0，逻辑画布本就是 640×360，避免填充率暴增 2.25×
+    const maxDpr = w >= 1200 ? 1.0 : 1.5;
+    const dpr = Math.min(rawDpr, maxDpr);
+    const hdW = clamp(Math.round(w * dpr), 640, 1440);
+    const hdH = clamp(Math.round(h * dpr), 360, 810);
+    const canvasChanged = _hdCanvas !== hdCanvas || !_editionA;
+    if (
+      canvasChanged ||
+      Math.abs(_hdW - hdW) >= 2 ||
+      Math.abs(_hdH - hdH) >= 2 ||
+      hdCanvas.width !== hdW ||
+      hdCanvas.height !== hdH
+    ) {
+      if (canvasChanged && _editionA && typeof _editionA.clear === 'function') {
+        try { _editionA.clear(); } catch (e) {}
+      }
+      _hdCanvas = hdCanvas;
+      _hdW = hdW;
+      _hdH = hdH;
+      _hdCanvas.width = _hdW;
+      _hdCanvas.height = _hdH;
+      if (canvasChanged) {
+        _editionA = edApi.create(_hdCanvas, { autoClear: true });
+        _editionADirty = false;
+        _editionALastRenderTs = 0;
+        _editionAForceRender = true;
+      }
+    }
   }
 
   function toLogicalPt(pt) {
@@ -2681,30 +2752,7 @@
     }
 
     if (edApi && hdCanvas) {
-      const dpr = Math.min((typeof window !== 'undefined' && window.devicePixelRatio) || 1, 1.5);
-      const hdW = clamp(Math.round(w * dpr), 640, 1440);
-      const hdH = clamp(Math.round(h * dpr), 360, 810);
-      const canvasChanged = _hdCanvas !== hdCanvas || !_editionA;
-      if (
-        canvasChanged ||
-        Math.abs(_hdW - hdW) >= 2 ||
-        Math.abs(_hdH - hdH) >= 2 ||
-        hdCanvas.width !== hdW ||
-        hdCanvas.height !== hdH
-      ) {
-        if (canvasChanged && _editionA && typeof _editionA.clear === 'function') {
-          try { _editionA.clear(); } catch (e) {}
-        }
-        _hdCanvas = hdCanvas;
-        _hdW = hdW;
-        _hdH = hdH;
-        _hdCanvas.width = _hdW;
-        _hdCanvas.height = _hdH;
-        if (canvasChanged) {
-          _editionA = edApi.create(_hdCanvas, { autoClear: true });
-          _editionADirty = false;
-        }
-      }
+      resizeEditionACanvas(hdCanvas, edApi, w, h);
     }
     return _canvas;
   }
@@ -2919,6 +2967,10 @@
       ];
       for (let i = 0; i < candList.length; i++) {
         if (!candList[i]) continue;
+        if (candList[i] === 'move_afterimage') {
+          const mvHit = edApi.resolveSkillId('wind_afterimage') || edApi.resolveSkillId('sword_root_step');
+          if (mvHit) return mvHit;
+        }
         const hit = edApi.resolveSkillId(candList[i]);
         if (hit) return hit;
       }
@@ -2931,6 +2983,14 @@
         edApi.resolveSkillId(raw) ||
         edApi.resolveSkillId(`enemy_${raw}`) ||
         'enemy_wolf_frost_claw'
+      );
+    }
+    if (raw === 'move_afterimage') {
+      return (
+        edApi.resolveSkillId('wind_afterimage') ||
+        edApi.resolveSkillId('sword_root_step') ||
+        edApi.resolveSkillId(raw) ||
+        'wind_afterimage'
       );
     }
     if (raw === 'hand_root_shield') {
@@ -2957,12 +3017,15 @@
     const prev = _slowMoScale;
     const next = clamp(Number(scale) || 1, 0.05, 1.0);
     _slowMoScale = next;
-    if (prev < 0.99 && next >= 0.99 && _scheduled.length > 0) {
-      const now = nowPerf();
-      for (let i = 0; i < _scheduled.length; i++) {
-        const item = _scheduled[i];
-        if (item && item.wait > 0) {
-          item.dueAt = Math.max(item.dueAt || 0, now + item.wait * 1000);
+    if (prev < 0.99 && next >= 0.99) {
+      _editionAForceRender = true;
+      if (_scheduled.length > 0) {
+        const now = nowPerf();
+        for (let i = 0; i < _scheduled.length; i++) {
+          const item = _scheduled[i];
+          if (item && item.wait > 0) {
+            item.dueAt = Math.max(item.dueAt || 0, now + item.wait * 1000);
+          }
         }
       }
     }
@@ -3292,7 +3355,7 @@
     const isReturningHome = Math.abs(targetX) < 0.5 && Math.abs(targetY) < 0.5;
     const shouldRun = opts.pose === 'run' || opts.useRunPose || (
       isReturningHome && travelDist > 24 &&
-      (st.poseOverride === 'cast_step' || st.poseOverride === 'strike' || st.poseOverride === 'attack' || st.poseOverride === 'cast')
+      (st.poseOverride === 'cast_step' || st.poseOverride === 'strike_ready' || st.poseOverride === 'strike' || st.poseOverride === 'attack' || st.poseOverride === 'cast')
     );
 
     if (shouldRun && st.poseOverride !== 'hurt') {
@@ -3478,7 +3541,7 @@
   }
 
   function playSkillAction(battleState, info) {
-    if (!isEnabled() || !info) return;
+    if (!isEnabled() || !info) return createNoopActionHandle();
     ensureVfxCanvas();
     ensureLoopRunning();
 
@@ -3510,6 +3573,11 @@
 
     if (hasEditionA()) {
       const edApi = getEditionAApi();
+      const isGated = !!info.gated;
+      const expectedGateCount = Math.max(
+        1,
+        Number(info.gateCount != null ? info.gateCount : info.beats) || 1
+      );
       const isShieldOrVeil =
         skillId === 'hand_water_veil' ||
         skillId === 'water_veil' ||
@@ -3552,7 +3620,12 @@
         hitList.length <= 1;
 
       let resolvedId = null;
-      if (info.usedWand && isSingleTargetMagic && !V32_DIRECT_SKILL_IDS.has(skillId)) {
+      if (skillId === 'move_afterimage') {
+        resolvedId =
+          edApi.resolveSkillId('wind_afterimage') ||
+          edApi.resolveSkillId('sword_root_step') ||
+          edApi.resolveSkillId(skillId);
+      } else if (info.usedWand && isSingleTargetMagic && !V32_DIRECT_SKILL_IDS.has(skillId)) {
         resolvedId = edApi.resolveSkillId('eclipse_true_cast');
       } else if (skillId === 'hand_root_shield' || skillId === 'shield_3_steel') {
         resolvedId =
@@ -3572,6 +3645,14 @@
         return { x: eLog.hit.x, y: eLog.hit.y, groundY: eLog.anchor.y, enemyIdx: eIdx };
       });
       const firstTargetLog = targetLogList[0] || { x: tLog.hit.x, y: tLog.hit.y, groundY: tLog.anchor.y, enemyIdx: primaryIdx };
+      const resolveSlotByEnemyIdx = eIdx => {
+        for (let i = 0; i < targetLogList.length; i++) {
+          if (targetLogList[i].enemyIdx === eIdx) return targetLogList[i];
+        }
+        const livePts = getActorCanvasPoints(`enemy:${eIdx}`, false);
+        const liveLog = toLogicalPts(livePts);
+        return { x: liveLog.hit.x, y: liveLog.hit.y, groundY: liveLog.anchor.y, enemyIdx: eIdx };
+      };
 
       // 整理命中后需叠放的系统反馈集合（暴击 / 破锁 / ONE MORE / 敌盾承伤碎盾）
       const critSet = new Set(
@@ -3604,6 +3685,55 @@
       }
 
       const overlayFired = new Set();
+      const critBeatPlayed = new Set();
+      const breakEnemyPlayed = new Set();
+      const shieldBeatPlayed = new Set();
+      const gateReactedEnemies = new Set();
+      let gateControlledImpact = false;
+      let suppressVfxHitStopUntil = 0;
+      let releaseCallCount = 0;
+
+      const fireCritOverlay = (eIdx, posObj, beatKey) => {
+        const k = `${eIdx}:${beatKey}`;
+        if (critBeatPlayed.has(k)) return;
+        critBeatPlayed.add(k);
+        playEditionA('fx_crit_starburst', {
+          pos: posObj,
+          to: posObj,
+          targetGroundY: posObj.groundY,
+          facing: 1,
+          amp: ampTier,
+        });
+      };
+
+      const fireBreakOverlay = (eIdx, posObj, isOneMore) => {
+        if (breakEnemyPlayed.has(eIdx)) return;
+        breakEnemyPlayed.add(eIdx);
+        playEditionA('fx_weakness_break', {
+          pos: posObj,
+          to: posObj,
+          targetGroundY: posObj.groundY,
+          facing: 1,
+          amp: ampTier,
+          oneMore: !!isOneMore,
+        });
+      };
+
+      const fireShieldOverlay = (eIdx, posObj, shattered, beatKey) => {
+        const k = `${eIdx}:${beatKey}`;
+        if (shieldBeatPlayed.has(k)) return;
+        shieldBeatPlayed.add(k);
+        playEditionA('fx_shield_hit', {
+          pos: posObj,
+          from: posObj,
+          groundY: posObj.groundY,
+          side: 'enemy',
+          facing: -1,
+          amp: ampTier,
+          shattered: !!shattered,
+        });
+      };
+
       const applyEnemyImpactAt = (eIdx, posObj) => {
         if (isSelfSkill || isSetupOnly || info.missed) return;
         const eKey = `enemy:${eIdx}`;
@@ -3612,35 +3742,77 @@
         overlayFired.add(eIdx);
 
         if (critSet.has(eIdx)) {
-          playEditionA('fx_crit_starburst', {
-            pos: posObj,
-            to: posObj,
-            targetGroundY: posObj.groundY,
-            facing: 1,
-            amp: ampTier,
-          });
+          fireCritOverlay(eIdx, posObj, 'legacy');
         }
         if (brokenSet.has(eIdx) || oneMoreSet.has(eIdx)) {
-          playEditionA('fx_weakness_break', {
-            pos: posObj,
-            to: posObj,
-            targetGroundY: posObj.groundY,
-            facing: 1,
-            amp: ampTier,
-            oneMore: oneMoreSet.has(eIdx),
-          });
+          fireBreakOverlay(eIdx, posObj, oneMoreSet.has(eIdx));
         }
         if (shieldHitMap.has(eIdx)) {
-          playEditionA('fx_shield_hit', {
-            pos: posObj,
-            from: posObj,
-            groundY: posObj.groundY,
-            side: 'enemy',
-            facing: -1,
-            amp: ampTier,
-            shattered: !!shieldHitMap.get(eIdx),
-          });
+          fireShieldOverlay(eIdx, posObj, !!shieldHitMap.get(eIdx), 'legacy');
         }
+      };
+
+      let actorReturned = false;
+      let strikeFired = false;
+      let lastStrikeTs = 0;
+      let safetyReturnTimer = null;
+      let edHandle = null;
+      let doneSettled = false;
+      let resolveDone = null;
+      const donePromise = new Promise(resolve => { resolveDone = resolve; });
+
+      const clearSafetyTimer = () => {
+        if (safetyReturnTimer) {
+          clearTimeout(safetyReturnTimer);
+          _rawTimers.delete(safetyReturnTimer);
+          safetyReturnTimer = null;
+        }
+      };
+
+      const markDone = () => {
+        if (doneSettled) return;
+        doneSettled = true;
+        if (resolveDone) resolveDone();
+      };
+
+      const finishActorReturn = immediate => {
+        if (actorReturned) return;
+        actorReturned = true;
+        clearSafetyTimer();
+        if (myGen !== _playerActionGen) return;
+
+        const doReturnDash = () => {
+          if (myGen !== _playerActionGen) return;
+          const st = _actors.get('player');
+          if (!st) return;
+          st.poseLock = false;
+          const displaced = Math.abs(st.dx) > 0.5 || Math.abs(st.dy) > 0.5;
+          if (displaced) {
+            const retDur = isMelee ? 200 : 180;
+            const retOpts = isMelee ? { pose: 'run', returnIdle: true } : { returnIdle: true };
+            dashActor('player', 0, 0, retDur, 'outCubic', false, 'ice', retOpts);
+          } else if (st.poseOverride === 'strike_ready') {
+            setActorPoseInternal('player', 'idle', 0, false);
+          }
+        };
+
+        const holdLeft = (!immediate && lastStrikeTs > 0)
+          ? Math.max(0, 180 - (nowPerf() - lastStrikeTs))
+          : 0;
+        if (holdLeft > 12) {
+          scheduleAction(holdLeft, doReturnDash);
+        } else {
+          doReturnDash();
+        }
+      };
+
+      const armSafetyReturn = ms => {
+        clearSafetyTimer();
+        safetyReturnTimer = trackRealTimer(() => {
+          safetyReturnTimer = null;
+          finishActorReturn(true);
+          markDone();
+        }, Math.max(1200, Number(ms) || 6000));
       };
 
       // 保留像素精灵动作编排（姿态 / 冲刺 / 挤压），零旧 PixelFX 叠放
@@ -3648,19 +3820,23 @@
         setActorPoseInternal('player', magicWindupPose, 160, false);
         squashActor('player', 0.93, 1.08, 160);
         scheduleAction(140, () => {
-          if (myGen === _playerActionGen) {
+          if (myGen === _playerActionGen && !actorReturned) {
             setActorPoseInternal('player', magicCastPose, 320, false);
             dashActor('player', 16, 0, 110, 'outQuad', true, 'ice');
           }
         });
-        scheduleAction(420, () => {
-          if (myGen === _playerActionGen) dashActor('player', 0, 0, 210, 'outCubic', false);
-        });
+        if (isGated) {
+          armSafetyReturn(Math.max(5500, expectedGateCount * 2000 + 2500));
+        } else {
+          scheduleAction(420, () => {
+            if (myGen === _playerActionGen) dashActor('player', 0, 0, 210, 'outCubic', false);
+          });
+        }
       } else if (isShieldOrVeil) {
         setActorPoseInternal('player', magicWindupPose, 120, false);
         squashActor('player', 1.06, 0.94, 130);
         scheduleAction(110, () => {
-          if (myGen === _playerActionGen) {
+          if (myGen === _playerActionGen && !actorReturned) {
             setActorPoseInternal('player', magicCastPose, 320, false);
             squashActor('player', 0.94, 1.08, 220);
           }
@@ -3670,14 +3846,14 @@
         setActorPoseInternal('player', 'windup', 95, false);
         dashActor('player', -12, 0, 80, 'inQuad', false);
         scheduleAction(85, () => {
-          if (myGen !== _playerActionGen) return;
+          if (myGen !== _playerActionGen || actorReturned) return;
           dashActor('player', 34, 0, 115, 'outCubic', true, isWind ? 'wind' : 'ice', { pose: 'run' });
         });
         scheduleAction(205, () => {
-          if (myGen === _playerActionGen) setActorPoseInternal('player', 'windup', 120, false);
+          if (myGen === _playerActionGen && !actorReturned) setActorPoseInternal('player', 'windup', 120, false);
         });
         scheduleAction(325, () => {
-          if (myGen === _playerActionGen) {
+          if (myGen === _playerActionGen && !actorReturned) {
             dashActor('player', 0, 0, 175, 'outCubic', true, isWind ? 'wind' : 'ice', { pose: 'run', returnIdle: true });
           }
         });
@@ -3687,42 +3863,59 @@
         squashActor('player', 1.1, 0.92, 95);
         dashActor('player', -14, 0, 80, 'inQuad', false);
         scheduleAction(85, () => {
-          if (myGen !== _playerActionGen) return;
+          if (myGen !== _playerActionGen || actorReturned) return;
           dashActor('player', dashVec.dx, dashVec.dy, 110, 'outQuart', true, 'ice', { pose: 'run' });
         });
-        scheduleAction(195, () => {
-          if (myGen === _playerActionGen) {
-            setActorPoseInternal('player', 'strike', 210, false);
-            squashActor('player', 1.12, 0.9, 170);
-          }
-        });
-        scheduleAction(445, () => {
-          if (myGen === _playerActionGen) {
-            dashActor('player', 0, 0, 200, 'outCubic', false, 'ice', { pose: 'run', returnIdle: true });
-          }
-        });
+        if (isGated) {
+          // 门控近战：冲锋到位后锁定 strike_ready，等待每次 releaseGate 挥砍，直待 finishActorReturn / onAllBeatsComplete 奔回归位
+          scheduleAction(195, () => {
+            if (myGen === _playerActionGen && !actorReturned && !strikeFired) {
+              setActorPoseInternal('player', 'strike_ready', 0, true);
+            }
+          });
+          armSafetyReturn(Math.max(5500, expectedGateCount * 2000 + 2500));
+        } else {
+          scheduleAction(195, () => {
+            if (myGen === _playerActionGen) {
+              setActorPoseInternal('player', 'strike', 210, false);
+              squashActor('player', 1.12, 0.9, 170);
+            }
+          });
+          scheduleAction(445, () => {
+            if (myGen === _playerActionGen) {
+              dashActor('player', 0, 0, 200, 'outCubic', false, 'ice', { pose: 'run', returnIdle: true });
+            }
+          });
+        }
       } else if (ICE_AOE_GROUND_SKILLS.has(skillId) || isMultiAoe) {
         setActorPoseInternal('player', magicWindupPose, 160, false);
         squashActor('player', 0.93, 1.08, 150);
         scheduleAction(145, () => {
-          if (myGen === _playerActionGen) {
+          if (myGen === _playerActionGen && !actorReturned) {
             setActorPoseInternal('player', magicCastPose, 340, false);
             squashActor('player', 1.1, 0.92, 180);
           }
         });
+        if (isGated) {
+          armSafetyReturn(Math.max(5500, expectedGateCount * 2000 + 2500));
+        }
       } else {
         setActorPoseInternal('player', magicWindupPose, 150, false);
         squashActor('player', 0.94, 1.07, 150);
         scheduleAction(140, () => {
-          if (myGen === _playerActionGen) {
+          if (myGen === _playerActionGen && !actorReturned) {
             setActorPoseInternal('player', magicCastPose, 300, false);
             squashActor('player', 1.08, 0.94, 170);
             dashActor('player', 12, 0, 95, 'outQuad', false);
           }
         });
-        scheduleAction(360, () => {
-          if (myGen === _playerActionGen) dashActor('player', 0, 0, 180, 'outCubic', false);
-        });
+        if (isGated) {
+          armSafetyReturn(Math.max(5500, expectedGateCount * 2000 + 2500));
+        } else {
+          scheduleAction(360, () => {
+            if (myGen === _playerActionGen) dashActor('player', 0, 0, 180, 'outCubic', false);
+          });
+        }
       }
 
       const playOpts = {
@@ -3743,6 +3936,13 @@
             try { info.onImpact(hitOrder, pt, isLast, slot.enemyIdx); } catch (e) {}
           }
           if (isSelfSkill || isSetupOnly || info.missed) return;
+          if (isGated && gateControlledImpact) {
+            if (!gateReactedEnemies.has(slot.enemyIdx)) {
+              gateReactedEnemies.add(slot.enemyIdx);
+              triggerHitReaction(`enemy:${slot.enemyIdx}`, isHeavy ? 16 : 11, isHeavy);
+            }
+            return;
+          }
           const posObj = {
             x: (pt && Number.isFinite(pt.x)) ? pt.x : slot.x,
             y: (pt && Number.isFinite(pt.y)) ? pt.y : slot.y,
@@ -3766,18 +3966,196 @@
           if (!info.missed) triggerTrauma(editionAShakeToTrauma(px));
         },
         onHitStop(ms) {
-          if (!isSelfSkill && !isSetupOnly && !info.missed) triggerHitStop(ms);
+          if (isSelfSkill || isSetupOnly || info.missed) return;
+          if (isGated && nowPerf() < suppressVfxHitStopUntil) return;
+          triggerHitStop(ms);
         },
       };
+      if (info.gated !== undefined) playOpts.gated = !!info.gated;
+      if (info.autoImpactGate !== undefined) playOpts.autoImpactGate = !!info.autoImpactGate;
+      if (info.gateCount != null && Number.isFinite(Number(info.gateCount))) {
+        playOpts.gateCount = Number(info.gateCount);
+      }
+      if (info.beats != null && Number.isFinite(Number(info.beats))) {
+        playOpts.beats = Number(info.beats);
+      }
+      if (typeof info.onPreTelegraph === 'function') {
+        playOpts.onPreTelegraph = info.onPreTelegraph;
+      }
+      if (typeof info.onBeatReady === 'function') {
+        playOpts.onBeatReady = info.onBeatReady;
+      }
+      if (isGated || typeof info.onAllBeatsComplete === 'function') {
+        playOpts.onAllBeatsComplete = (...args) => {
+          finishActorReturn(false);
+          if (typeof info.onAllBeatsComplete === 'function') {
+            try { info.onAllBeatsComplete(...args); } catch (e) {}
+          }
+        };
+      }
       if (info.beatGapMs != null && Number.isFinite(Number(info.beatGapMs))) {
         playOpts.beatGapMs = Number(info.beatGapMs);
       }
-      if (typeof info.onComplete === 'function') {
-        playOpts.onComplete = info.onComplete;
+      playOpts.onComplete = (...args) => {
+        if (isGated) finishActorReturn(false);
+        markDone();
+        if (typeof info.onComplete === 'function') {
+          try { info.onComplete(...args); } catch (e) {}
+        }
+      };
+
+      const edRet = playEditionA(resolvedId, playOpts);
+      edHandle = (edRet && typeof edRet === 'object') ? edRet : null;
+      if (edHandle && edHandle.donePromise && typeof edHandle.donePromise.then === 'function') {
+        edHandle.donePromise.then(
+          () => {
+            if (isGated) finishActorReturn(false);
+            markDone();
+          },
+          () => {
+            if (isGated) finishActorReturn(true);
+            markDone();
+          }
+        );
       }
-      playEditionA(resolvedId, playOpts);
-      return;
+
+      const releaseGate = (beatIdx, payload) => {
+        const idx = Number.isFinite(Number(beatIdx)) ? Number(beatIdx) : releaseCallCount;
+        releaseCallCount += 1;
+        const p = (payload && typeof payload === 'object') ? payload : null;
+
+        if (p && p.cancelled) {
+          if (edHandle && typeof edHandle.releaseAll === 'function') {
+            try { edHandle.releaseAll(p); } catch (e) {}
+          } else if (edHandle && typeof edHandle.releaseGate === 'function') {
+            try { edHandle.releaseGate(idx, p); } catch (e) {}
+          }
+          _editionAForceRender = true;
+          finishActorReturn(true);
+          return;
+        }
+
+        if (isGated) {
+          armSafetyReturn(4500);
+        }
+        if (p && !p.skipped) {
+          suppressVfxHitStopUntil = nowPerf() + 260;
+        }
+
+        // 近战门控每拍释放触发一次真实挥砍，多拍中段自动回落 strike_ready 待命
+        if (isMelee && isGated && myGen === _playerActionGen && !actorReturned) {
+          strikeFired = true;
+          lastStrikeTs = nowPerf();
+          setActorPoseInternal('player', 'strike', 200, false);
+          squashActor('player', 1.12, 0.9, 170);
+          if (expectedGateCount > 1 && idx < expectedGateCount - 1) {
+            const strikeStamp = lastStrikeTs;
+            scheduleAction(210, () => {
+              if (myGen === _playerActionGen && !actorReturned && lastStrikeTs === strikeStamp) {
+                setActorPoseInternal('player', 'strike_ready', 0, true);
+              }
+            });
+          }
+        }
+
+        // 爆裂当帧按真实结算信息精准播 1 次受击微震 / 暴击 / 破锁 / 敌盾特效
+        if (!isSelfSkill && !isSetupOnly && !(p && p.missed) && !info.missed) {
+          gateControlledImpact = true;
+          let beatEnemyIdx = primaryIdx;
+          if (p && p.enemyIdx != null && Number.isFinite(Number(p.enemyIdx))) {
+            beatEnemyIdx = Number(p.enemyIdx);
+          } else if (p && p.targetIdx != null && Number.isFinite(Number(p.targetIdx))) {
+            beatEnemyIdx = Number(p.targetIdx);
+          } else if (targetLogList.length > 1 && idx >= 0 && idx < targetLogList.length) {
+            beatEnemyIdx = targetLogList[idx].enemyIdx;
+          } else {
+            beatEnemyIdx = firstTargetLog.enemyIdx;
+          }
+          const beatSlot = resolveSlotByEnemyIdx(beatEnemyIdx);
+          const beatHeavy = !!(
+            isHeavy ||
+            (p && (p.crit || p.didCrit || p.broken || p.didBreak || p.oneMore || p.didOneMore || p.shieldShattered || p.shieldBroken))
+          );
+
+          gateReactedEnemies.add(beatSlot.enemyIdx);
+          triggerHitReaction(`enemy:${beatSlot.enemyIdx}`, beatHeavy ? 18 : 12, beatHeavy);
+
+          if (p) {
+            const critTargets = Array.isArray(p.critTargetIndices)
+              ? p.critTargetIndices
+              : ((p.crit || p.didCrit) ? [beatSlot.enemyIdx] : []);
+            for (let ci = 0; ci < critTargets.length; ci++) {
+              const cSlot = resolveSlotByEnemyIdx(critTargets[ci]);
+              fireCritOverlay(cSlot.enemyIdx, cSlot, idx);
+            }
+
+            const brokenList = Array.isArray(p.brokenIndices)
+              ? p.brokenIndices
+              : ((p.broken || p.didBreak) ? [beatSlot.enemyIdx] : []);
+            const oneMoreList = Array.isArray(p.oneMoreIndices)
+              ? p.oneMoreIndices
+              : ((p.oneMore || p.didOneMore) ? (brokenList.length ? brokenList : [beatSlot.enemyIdx]) : []);
+            const oneMoreSetLocal = new Set(oneMoreList);
+            const breakUnion = new Set(brokenList.concat(oneMoreList));
+            breakUnion.forEach(bIdx => {
+              const bSlot = resolveSlotByEnemyIdx(bIdx);
+              fireBreakOverlay(bSlot.enemyIdx, bSlot, oneMoreSetLocal.has(bIdx));
+            });
+
+            if (Array.isArray(p.shieldHitTargets)) {
+              p.shieldHitTargets.forEach(item => {
+                if (typeof item === 'number') {
+                  const sSlot = resolveSlotByEnemyIdx(item);
+                  fireShieldOverlay(sSlot.enemyIdx, sSlot, !!(p.shieldShattered || p.shieldBroken), idx);
+                } else if (item && typeof item === 'object') {
+                  const sIdx = item.enemyIdx != null ? item.enemyIdx : (item.idx != null ? item.idx : (item.targetIdx != null ? item.targetIdx : beatSlot.enemyIdx));
+                  const sSlot = resolveSlotByEnemyIdx(sIdx);
+                  fireShieldOverlay(sSlot.enemyIdx, sSlot, !!(item.shattered || item.broken), idx);
+                }
+              });
+            } else if (p.shieldShattered || p.shieldBroken || p.shieldAbsorbed > 0) {
+              fireShieldOverlay(beatSlot.enemyIdx, beatSlot, !!(p.shieldShattered || p.shieldBroken), idx);
+            }
+          }
+        }
+
+        if (edHandle && typeof edHandle.releaseGate === 'function') {
+          try { edHandle.releaseGate(idx, p); } catch (e) {}
+        }
+        _editionAForceRender = true;
+      };
+
+      const releaseAll = payload => {
+        const p = (payload && typeof payload === 'object') ? payload : null;
+        if (edHandle && typeof edHandle.releaseAll === 'function') {
+          try { edHandle.releaseAll(p); } catch (e) {}
+        }
+        _editionAForceRender = true;
+        finishActorReturn(!!(p && p.cancelled));
+      };
+
+      return {
+        releaseGate,
+        releaseAll,
+        finishActorReturn: () => finishActorReturn(false),
+        donePromise,
+      };
     }
+
+    const legacyHandle = {
+      releaseGate() {},
+      releaseAll() {
+        if (myGen === _playerActionGen) {
+          dashActor('player', 0, 0, 180, 'outCubic', false, 'ice', { pose: 'run', returnIdle: true });
+        }
+      },
+      finishActorReturn() {
+        if (myGen === _playerActionGen) {
+          dashActor('player', 0, 0, 180, 'outCubic', false, 'ice', { pose: 'run', returnIdle: true });
+        }
+      },
+      donePromise: Promise.resolve(),
+    };
 
     // 1) 罗文专属看破：双镜合拢夹杖（eclipse + time_stop + parry + ice_shatter）
     if (skillId === 'insight_rowan_prism') {
@@ -3800,7 +4178,7 @@
       scheduleAction(420, () => {
         if (myGen === _playerActionGen) dashActor('player', 0, 0, 210, 'outCubic', false);
       });
-      return;
+      return legacyHandle;
     }
 
     // 2) 冰晶投射 / 侧翼瞬凝精准打击（sylvia_disguise 9帧使用 magic_windup(7) -> magic_cast(8) 持乌木剑施冰法）
@@ -3847,7 +4225,7 @@
       scheduleAction(360, () => {
         if (myGen === _playerActionGen) dashActor('player', 0, 0, 180, 'outCubic', false);
       });
-      return;
+      return legacyHandle;
     }
 
     // 3) 冰系群体 / 地脉控场（冰棘群刺阵、蔓地薄冰、寒霜吐息、星霜散华、封肩地下冰柱、十字冰栏、冻彻断流、伊诺共鸣）
@@ -3902,7 +4280,7 @@
           });
         });
       });
-      return;
+      return legacyHandle;
     }
 
     // 4) 水系魔法（水球术 / 覆潮水弹 / 激流涌 / 折射水幕）
@@ -3941,7 +4319,7 @@
           triggerTrauma(isHeavy ? Math.min(0.84, 0.68 + ampRatio * 0.12) : 0.38 + ampRatio * 0.14);
         });
       });
-      return;
+      return legacyHandle;
     }
 
     if (skillId === 'hand_water_veil') {
@@ -3954,7 +4332,7 @@
         spawnFx('splash', { x: pPts.anchor.x, y: pPts.anchor.y, stone: false, palette: PALETTES.water }, { stopAt: 0.75 });
         spawnFx('divine_shield', { x: pPts.anchor.x, y: pPts.anchor.y, radius: 30, palette: PALETTES.water }, { stopAt: 0.92 });
       });
-      return;
+      return legacyHandle;
     }
 
     // 5) 护盾与立障（钢冰生根盾 / 凝水厚冰墙 / 冰晶护盾 / 镜霜冰壁，支持最高 +40% 魔力增幅强化护盾光环）
@@ -3973,7 +4351,7 @@
           spawnFx('snowflake_burst', { x: pPts.hit.x, y: pPts.hit.y, count: ampTier >= 1 ? 8 : 5, palette: ampTier >= 1 ? PALETTES.crit : PALETTES.ice }, { stopAt: 0.76 });
         }
       });
-      return;
+      return legacyHandle;
     }
 
     // 6) 霁馆步法 / 风行残像 / 残像瞬移（侧滑步法走 run 帧，定步后再亮剑势，回位走 run 帧绝不拖带挥砍/施法帧）
@@ -3997,7 +4375,7 @@
       scheduleAction(325, () => {
         if (myGen === _playerActionGen) dashActor('player', 0, 0, 175, 'outCubic', true, isWind ? 'wind' : 'ice', { pose: 'run', returnIdle: true });
       });
-      return;
+      return legacyHandle;
     }
 
     // 7) 剑术冲刺突斩（平斩、断水刃、冷刃送刀斩、看破封喉/回风/穿心：蓄力 windup(3) -> 2D 跨行疾奔 run -> 贴身 cast_step(4)/strike(5) -> 奔回 run -> idle）
@@ -4069,16 +4447,22 @@
         }
       });
     }
+    return legacyHandle;
   }
 
   /* -------------------- 敌方回合动作全套编排（支持 6+6 二维跨行冲刺 + targetActorKey 定向攻击常驻友军） -------------------- */
   function playEnemyAction(battleState, info) {
-    if (!isEnabled() || !info) return;
+    if (!isEnabled() || !info) return createNoopActionHandle();
     ensureVfxCanvas();
     ensureLoopRunning();
 
     const eIdx = info.enemyIdx != null ? info.enemyIdx : 0;
     const eKey = `enemy:${eIdx}`;
+    const myEnemyEpoch = _enemyActionEpoch;
+    const myEnemyGen = (_enemyActionGen.get(eKey) || 0) + 1;
+    _enemyActionGen.set(eKey, myEnemyGen);
+    const isCurEnemyGen = () => myEnemyEpoch === _enemyActionEpoch && _enemyActionGen.get(eKey) === myEnemyGen;
+
     const spriteId = info.spriteId || resolveEnemySpriteId(info.enemy);
     const ePts = getActorCanvasPoints(eKey, false);
 
@@ -4100,16 +4484,22 @@
     const targetDualMagic = hasMagicCastFrames(targetSpriteId);
     const isAllyRenoTarget = targetActorKey === 'ally:reno' || targetSpriteId === 'reno';
 
-    const rawBlockGrade = info.blockGrade != null ? String(info.blockGrade).trim().toLowerCase() : '';
-    const blockGrade = (rawBlockGrade === 'bad' || rawBlockGrade === 'good' || rawBlockGrade === 'great' || rawBlockGrade === 'perfect')
-      ? rawBlockGrade
-      : '';
+    const normalizeBlockGrade = val => {
+      const s = val != null ? String(val).trim().toLowerCase() : '';
+      return (s === 'bad' || s === 'good' || s === 'great' || s === 'perfect') ? s : '';
+    };
+    const blockGrade = normalizeBlockGrade(info.blockGrade);
     const noBlockPrompt = info.noBlockPrompt != null
       ? !!info.noBlockPrompt
       : !!(info.enemy && info.enemy.noBlockPrompt);
 
     if (hasEditionA()) {
       const edApi = getEditionAApi();
+      const isGated = !!info.gated;
+      const expectedGateCount = Math.max(
+        1,
+        Number(info.gateCount != null ? info.gateCount : info.beats) || 1
+      );
       const resolvedEnemyVfx =
         (info.vfxId && edApi.resolveSkillId(info.vfxId)) ||
         (intent.moveName && edApi.resolveSkillId(intent.moveName)) ||
@@ -4120,10 +4510,22 @@
       const eLog = toLogicalPts(ePts);
       const tLog = toLogicalPts(targetPts);
       let impactApplied = false;
+      let enemyGateImpactHandled = false;
+      let enemyGateBlockPlayed = false;
+      let suppressEnemyVfxHitStopUntil = 0;
+      let enemyReleaseCount = 0;
+      const enemyBeatSettled = new Set();
 
-      const applyTargetImpactEditionA = () => {
-        if (impactApplied) return;
-        impactApplied = true;
+      const applyEnemySettlement = (beatIdx, settleSrc, fromGate) => {
+        const src = (settleSrc && typeof settleSrc === 'object') ? settleSrc : {};
+        if (fromGate) {
+          if (enemyBeatSettled.has(beatIdx)) return;
+          enemyBeatSettled.add(beatIdx);
+          enemyGateImpactHandled = true;
+        } else {
+          if (impactApplied) return;
+          impactApplied = true;
+        }
 
         const freshTPts = getActorCanvasPoints(targetActorKey, false);
         const freshEPts = getActorCanvasPoints(eKey, false);
@@ -4131,22 +4533,75 @@
         const freshELog = toLogicalPts(freshEPts);
         const tPos = { x: freshTLog.hit.x, y: freshTLog.hit.y, groundY: freshTLog.anchor.y };
 
-        if (typeof info.onImpact === 'function') {
+        if (!fromGate && typeof info.onImpact === 'function') {
           try { info.onImpact(tPos); } catch (e) {}
         }
 
-        if (info.parried) {
+        const effParried = src.parried !== undefined ? !!src.parried : !!info.parried;
+        const effEvaded = src.evaded !== undefined ? !!src.evaded : !!info.evaded;
+        const effNoBlockPrompt = src.noBlockPrompt !== undefined ? !!src.noBlockPrompt : noBlockPrompt;
+        const effHpLoss = src.hpLoss !== undefined ? Number(src.hpLoss) || 0 : (Number(info.hpLoss) || 0);
+        const effBlocked = src.blocked !== undefined ? !!src.blocked : !!info.blocked;
+        const effShieldShattered = src.shieldShattered !== undefined
+          ? !!src.shieldShattered
+          : (src.shieldBroken !== undefined ? !!src.shieldBroken : !!info.shieldShattered);
+        const effShieldAbsorbed = src.shieldAbsorbed !== undefined
+          ? Number(src.shieldAbsorbed) || 0
+          : (Number(info.shieldAbsorbed) || 0);
+        const effBypassMagic = src.bypassMagicPlayerShield !== undefined
+          ? !!src.bypassMagicPlayerShield
+          : !!info.bypassMagicPlayerShield;
+        const effSkipped = !!src.skipped;
+        const effHeavy = !!(heavy || effHpLoss >= 45 || effShieldShattered);
+        const rawG = src.blockGrade !== undefined
+          ? src.blockGrade
+          : (fromGate && src.grade !== undefined && !effNoBlockPrompt ? src.grade : info.blockGrade);
+        const effBlockGrade = normalizeBlockGrade(rawG);
+        const effCrit = !!(src.crit || src.didCrit);
+        const effBroken = !!(src.broken || src.didBreak);
+        const effOneMore = !!(src.oneMore || src.didOneMore);
+
+        const playExtraCritBreak = () => {
+          if (effCrit) {
+            playEditionA('fx_crit_starburst', {
+              pos: tPos,
+              to: tPos,
+              targetGroundY: freshTLog.anchor.y,
+              facing: -1,
+              amp: 1,
+            });
+          }
+          if (effBroken || effOneMore) {
+            playEditionA('fx_weakness_break', {
+              pos: tPos,
+              to: tPos,
+              targetGroundY: freshTLog.anchor.y,
+              facing: -1,
+              amp: 1,
+              oneMore: effOneMore,
+            });
+          }
+        };
+
+        if (effParried) {
           setActorPoseInternal(targetActorKey, 'strike', 220, false);
           dashActor(targetActorKey, 24, clamp((freshEPts.screenY - freshTPts.screenY) * 0.18, -22, 22), 90, 'outQuad', true, 'ice');
-          playEditionA('fx_block_perfect', {
+          if (fromGate) {
+            enemyGateBlockPlayed = true;
+            _lastGateBlockFx = { actorKey: targetActorKey, grade: 'perfect', ts: nowPerf() };
+          }
+          const parryOpts = {
             pos: tPos,
             from: freshTLog.hit,
             groundY: freshTLog.anchor.y,
             side: 'player',
             facing: 1,
             onShake(px) { triggerTrauma(editionAShakeToTrauma(px)); },
-            onHitStop(ms) { triggerHitStop(ms); },
-          });
+          };
+          if (!fromGate || effSkipped) {
+            parryOpts.onHitStop = ms => triggerHitStop(ms);
+          }
+          playEditionA('fx_block_perfect', parryOpts);
           playEditionA('sword_riposte_flash', {
             from: freshTLog.cast,
             groundY: freshTLog.anchor.y,
@@ -4156,12 +4611,12 @@
             spriteId: targetSpriteId,
             onImpact() { triggerHitReaction(eKey, 16, true); },
             onShake(px) { triggerTrauma(editionAShakeToTrauma(px)); },
-            onHitStop(ms) { triggerHitStop(ms); },
+            onHitStop(ms) { if (!fromGate || effSkipped) triggerHitStop(ms); },
           });
           scheduleAction(260, () => dashActor(targetActorKey, 0, 0, 170, 'outCubic', false, 'ice', { pose: 'run', returnIdle: true }));
           return;
         }
-        if (info.evaded) {
+        if (effEvaded) {
           dashActor(targetActorKey, -24, 0, 95, 'outQuad', true, 'wind', { pose: 'run' });
           playEditionA('fx_status_micro', {
             pos: tPos,
@@ -4175,32 +4630,37 @@
           return;
         }
 
-        // 杂兵无格挡提示（info.noBlockPrompt）：不播放任何格挡盾光，直播受击反馈
-        if (noBlockPrompt) {
-          if (info.blocked && !(info.hpLoss > 0)) {
+        // 杂兵无格挡提示（noBlockPrompt）：不播放任何格挡盾光，直播受击反馈
+        if (effNoBlockPrompt) {
+          if (effBlocked && !(effHpLoss > 0)) {
             const guardPose = isAllyRenoTarget ? 'earth_step' : (targetDualMagic ? 'magic_windup' : 'windup');
             setActorPoseInternal(targetActorKey, guardPose, 180, false);
             squashActor(targetActorKey, 1.06, 0.95, 160);
           } else {
-            triggerHitReaction(targetActorKey, heavy ? -16 : -10, heavy);
+            triggerHitReaction(targetActorKey, effHeavy ? -16 : -10, effHeavy);
           }
-          if (info.shieldShattered || (info.shieldAbsorbed > 0)) {
+          if (effShieldShattered || effShieldAbsorbed > 0) {
             playEditionA('fx_shield_hit', {
               pos: tPos,
               from: freshTLog.hit,
               groundY: freshTLog.anchor.y,
               side: 'player',
               facing: 1,
-              shattered: !!info.shieldShattered,
+              shattered: effShieldShattered,
             });
           }
+          playExtraCritBreak();
           return;
         }
 
-        // V3.2 实时格挡评级透传：精准播放 fx_block_{bad|good|great|perfect}
-        if (blockGrade) {
+        // V3.2 实时格挡评级透传：精准在爆裂当帧只播 1 次 fx_block_{bad|good|great|perfect}
+        if (effBlockGrade) {
+          if (fromGate) {
+            enemyGateBlockPlayed = true;
+            _lastGateBlockFx = { actorKey: targetActorKey, grade: effBlockGrade, ts: nowPerf() };
+          }
           const guardPose = isAllyRenoTarget ? 'earth_step' : (targetDualMagic ? 'magic_windup' : 'windup');
-          if (blockGrade === 'perfect' || blockGrade === 'great') {
+          if (effBlockGrade === 'perfect' || effBlockGrade === 'great') {
             setActorPoseInternal(targetActorKey, guardPose, 220, false);
             squashActor(targetActorKey, 1.08, 0.94, 180);
             const blkOpts = {
@@ -4211,12 +4671,12 @@
               facing: 1,
               onShake(px) { triggerTrauma(editionAShakeToTrauma(px)); },
             };
-            if (blockGrade === 'perfect') {
+            if (effBlockGrade === 'perfect' && (!fromGate || effSkipped)) {
               blkOpts.onHitStop = ms => triggerHitStop(ms);
             }
-            playEditionA(`fx_block_${blockGrade}`, blkOpts);
-          } else if (blockGrade === 'good') {
-            if (info.hpLoss > 0 && !info.blocked) {
+            playEditionA(`fx_block_${effBlockGrade}`, blkOpts);
+          } else if (effBlockGrade === 'good') {
+            if (effHpLoss > 0 && !effBlocked) {
               triggerHitReaction(targetActorKey, -8, false);
             } else {
               setActorPoseInternal(targetActorKey, guardPose, 200, false);
@@ -4230,7 +4690,7 @@
               facing: 1,
             });
           } else {
-            triggerHitReaction(targetActorKey, heavy ? -16 : -10, heavy);
+            triggerHitReaction(targetActorKey, effHeavy ? -16 : -10, effHeavy);
             playEditionA('fx_block_bad', {
               pos: tPos,
               from: freshTLog.hit,
@@ -4239,23 +4699,28 @@
               facing: 1,
             });
           }
-          if (info.shieldShattered || (info.shieldAbsorbed > 0)) {
+          if (effShieldShattered || effShieldAbsorbed > 0) {
             playEditionA('fx_shield_hit', {
               pos: tPos,
               from: freshTLog.hit,
               groundY: freshTLog.anchor.y,
               side: 'player',
               facing: 1,
-              shattered: !!info.shieldShattered,
+              shattered: effShieldShattered,
             });
           }
+          playExtraCritBreak();
           return;
         }
 
-        if (info.blocked) {
+        if (effBlocked) {
           const guardPose = isAllyRenoTarget ? 'earth_step' : (targetDualMagic ? 'magic_windup' : 'windup');
           setActorPoseInternal(targetActorKey, guardPose, 220, false);
           squashActor(targetActorKey, 1.08, 0.94, 180);
+          if (fromGate) {
+            enemyGateBlockPlayed = true;
+            _lastGateBlockFx = { actorKey: targetActorKey, grade: 'great', ts: nowPerf() };
+          }
           playEditionA('fx_block_great', {
             pos: tPos,
             from: freshTLog.hit,
@@ -4264,21 +4729,22 @@
             facing: 1,
             onShake(px) { triggerTrauma(editionAShakeToTrauma(px)); },
           });
-          if (info.shieldShattered || (info.shieldAbsorbed > 0)) {
+          if (effShieldShattered || effShieldAbsorbed > 0) {
             playEditionA('fx_shield_hit', {
               pos: tPos,
               from: freshTLog.hit,
               groundY: freshTLog.anchor.y,
               side: 'player',
               facing: 1,
-              shattered: !!info.shieldShattered,
+              shattered: effShieldShattered,
             });
           }
+          playExtraCritBreak();
           return;
         }
 
-        triggerHitReaction(targetActorKey, heavy ? -16 : -10, heavy);
-        if ((info.shieldAbsorbed > 0) && (info.hpLoss > 0)) {
+        triggerHitReaction(targetActorKey, effHeavy ? -16 : -10, effHeavy);
+        if (effShieldAbsorbed > 0 && effHpLoss > 0) {
           playEditionA('fx_block_good', {
             pos: tPos,
             from: freshTLog.hit,
@@ -4286,7 +4752,7 @@
             side: 'player',
             facing: 1,
           });
-        } else if ((info.hpLoss >= 45) || info.bypassMagicPlayerShield) {
+        } else if (effHpLoss >= 45 || effBypassMagic) {
           playEditionA('fx_block_bad', {
             pos: tPos,
             from: freshTLog.hit,
@@ -4295,59 +4761,145 @@
             facing: 1,
           });
         }
-        if (info.shieldShattered || (info.shieldAbsorbed > 0)) {
+        if (effShieldShattered || effShieldAbsorbed > 0) {
           playEditionA('fx_shield_hit', {
             pos: tPos,
             from: freshTLog.hit,
             groundY: freshTLog.anchor.y,
             side: 'player',
             facing: 1,
-            shattered: !!info.shieldShattered,
+            shattered: effShieldShattered,
           });
+        }
+        playExtraCritBreak();
+      };
+
+      let isEnemyMelee = false;
+      let enemyGhostTone = 'fire';
+      let enemyReturned = false;
+      let enemyStrikeFired = false;
+      let lastEnemyStrikeTs = 0;
+      let enemySafetyTimer = null;
+      let edHandle = null;
+      let doneSettled = false;
+      let resolveDone = null;
+      const donePromise = new Promise(resolve => { resolveDone = resolve; });
+
+      const clearEnemySafetyTimer = () => {
+        if (enemySafetyTimer) {
+          clearTimeout(enemySafetyTimer);
+          _rawTimers.delete(enemySafetyTimer);
+          enemySafetyTimer = null;
         }
       };
 
-      // 敌方像素精灵动作编排（完整保留 6 大敌方原型姿势/跨行冲刺/雷纳德挡灾），特效全权委托方案 A
+      const markDone = () => {
+        if (doneSettled) return;
+        doneSettled = true;
+        if (resolveDone) resolveDone();
+      };
+
+      const finishActorReturn = immediate => {
+        if (enemyReturned) return;
+        enemyReturned = true;
+        clearEnemySafetyTimer();
+        if (!isCurEnemyGen()) return;
+
+        const doEnemyReturn = () => {
+          if (!isCurEnemyGen()) return;
+          const st = _actors.get(eKey);
+          if (!st) return;
+          st.poseLock = false;
+          const displaced = Math.abs(st.dx) > 0.5 || Math.abs(st.dy) > 0.5;
+          if (displaced) {
+            const retDur = isEnemyMelee ? 200 : 180;
+            const retOpts = isEnemyMelee ? { pose: 'run', returnIdle: true } : { returnIdle: true };
+            dashActor(eKey, 0, 0, retDur, 'outCubic', false, enemyGhostTone, retOpts);
+          } else if (st.poseOverride === 'strike_ready') {
+            setActorPoseInternal(eKey, 'idle', 0, false);
+          }
+        };
+
+        const holdLeft = (!immediate && lastEnemyStrikeTs > 0)
+          ? Math.max(0, 180 - (nowPerf() - lastEnemyStrikeTs))
+          : 0;
+        if (holdLeft > 12) {
+          scheduleAction(holdLeft, doEnemyReturn);
+        } else {
+          doEnemyReturn();
+        }
+      };
+
+      const armEnemySafetyReturn = ms => {
+        clearEnemySafetyTimer();
+        enemySafetyTimer = trackRealTimer(() => {
+          enemySafetyTimer = null;
+          finishActorReturn(true);
+          markDone();
+        }, Math.max(1200, Number(ms) || 6000));
+      };
+
+      // 敌方像素精灵动作编排（完整保留 6 大敌方原型姿势/跨行冲刺/雷纳德挡灾），门控近战锁 strike_ready 杜绝提前归位
       if (spriteId === 'beatrice' || spriteId === 'eastwing_commander' || spriteId === 'corridor_vanguard' || spriteId === 'flame_mage') {
         const moveText = String(intent.moveName || '');
-        let isMelee;
         if (spriteId === 'flame_mage') {
-          isMelee = false;
+          isEnemyMelee = false;
         } else if (spriteId === 'eastwing_commander') {
           const isEastwingMagic = intent.stance === 'DUAL_CAST'
             || (intent.gainShield > 0 && intent.stance !== 'CLOSE_LUNGE' && !/戟/.test(moveText))
             || (intent.elem === 'fire' && intent.stance !== 'CLOSE_LUNGE' && !/劈|斩|刺/.test(moveText));
-          isMelee = !isEastwingMagic;
+          isEnemyMelee = !isEastwingMagic;
         } else if (spriteId === 'beatrice') {
-          isMelee = intent.stance === 'CLOSE_LUNGE' || intent.stance === 'GUARD_COUNTER';
+          isEnemyMelee = intent.stance === 'CLOSE_LUNGE' || intent.stance === 'GUARD_COUNTER';
         } else {
-          isMelee = intent.stance === 'CLOSE_LUNGE' || intent.stance === 'GUARD_COUNTER' || intent.elem === 'phys';
+          isEnemyMelee = intent.stance === 'CLOSE_LUNGE' || intent.stance === 'GUARD_COUNTER' || intent.elem === 'phys';
         }
+        enemyGhostTone = 'fire';
         const enemyDualMagic = hasMagicCastFrames(spriteId);
-        if (isMelee) {
+        if (isEnemyMelee) {
           const dashVec = computeMeleeDashVector(ePts, targetPts, 'left', 104, 48);
           setActorPoseInternal(eKey, 'windup', 105, false);
           squashActor(eKey, 1.08, 0.93, 100);
           dashActor(eKey, 12, 0, 85, 'inQuad', false);
           scheduleAction(95, () => {
+            if (!isCurEnemyGen() || enemyReturned) return;
             dashActor(eKey, dashVec.dx, dashVec.dy, 115, 'outQuart', true, 'fire', { pose: 'run' });
           });
-          scheduleAction(210, () => {
-            setActorPoseInternal(eKey, 'strike', 240, false);
-            squashActor(eKey, 1.12, 0.9, 170);
-          });
-          scheduleAction(465, () => {
-            dashActor(eKey, 0, 0, 200, 'outCubic', false, 'fire', { pose: 'run', returnIdle: true });
-          });
+          if (isGated) {
+            scheduleAction(210, () => {
+              if (isCurEnemyGen() && !enemyReturned && !enemyStrikeFired) {
+                setActorPoseInternal(eKey, 'strike_ready', 0, true);
+              }
+            });
+            armEnemySafetyReturn(Math.max(5500, expectedGateCount * 2000 + 2500));
+          } else {
+            scheduleAction(210, () => {
+              if (!isCurEnemyGen()) return;
+              setActorPoseInternal(eKey, 'strike', 240, false);
+              squashActor(eKey, 1.12, 0.9, 170);
+            });
+            scheduleAction(465, () => {
+              if (!isCurEnemyGen()) return;
+              dashActor(eKey, 0, 0, 200, 'outCubic', false, 'fire', { pose: 'run', returnIdle: true });
+            });
+          }
         } else {
           setActorPoseInternal(eKey, enemyDualMagic ? 'magic_windup' : 'windup', 135, false);
           squashActor(eKey, 0.95, 1.07, 120);
           dashActor(eKey, 10, 0, 90, 'inQuad', false);
           scheduleAction(115, () => {
+            if (!isCurEnemyGen() || enemyReturned) return;
             setActorPoseInternal(eKey, enemyDualMagic ? 'magic_cast' : 'strike', 310, false);
             dashActor(eKey, -10, 0, 90, 'outQuad', false);
-            scheduleAction(280, () => dashActor(eKey, 0, 0, 175, 'outCubic', false));
+            if (!isGated) {
+              scheduleAction(280, () => {
+                if (isCurEnemyGen()) dashActor(eKey, 0, 0, 175, 'outCubic', false);
+              });
+            }
           });
+          if (isGated) {
+            armEnemySafetyReturn(Math.max(5500, expectedGateCount * 2000 + 2500));
+          }
         }
       } else {
         setActorPoseInternal(eKey, 'windup', 110, false);
@@ -4355,6 +4907,8 @@
         dashActor(eKey, 12, 0, 85, 'inQuad', false);
 
         if (spriteId === 'rowan') {
+          isEnemyMelee = false;
+          enemyGhostTone = 'ice';
           const recentLog = battleState && Array.isArray(battleState.log) ? battleState.log.slice(-4).join(' ') : '';
           const guardAllyKey = info.guardedByAlly || 'ally:reno';
           const didRenoBlock = !!(info.renoRockBlock || info.guardedByAlly || (intent.renoRockBlock && (
@@ -4371,41 +4925,87 @@
             }
           }
           scheduleAction(110, () => {
+            if (!isCurEnemyGen() || enemyReturned) return;
             setActorPoseInternal(eKey, 'strike', 320, false);
             dashActor(eKey, -16, 0, 100, 'outQuad', false);
-            scheduleAction(310, () => dashActor(eKey, 0, 0, 180, 'outCubic', false));
+            if (!isGated) {
+              scheduleAction(310, () => {
+                if (isCurEnemyGen()) dashActor(eKey, 0, 0, 180, 'outCubic', false);
+              });
+            }
           });
+          if (isGated) {
+            armEnemySafetyReturn(Math.max(5500, expectedGateCount * 2000 + 2500));
+          }
         } else if (spriteId === 'alice' || spriteId === 'wind_god_avatar') {
+          isEnemyMelee = true;
+          enemyGhostTone = 'wind';
           const dashVec = computeMeleeDashVector(ePts, targetPts, 'left', 108, 44);
           scheduleAction(95, () => {
+            if (!isCurEnemyGen() || enemyReturned) return;
             dashActor(eKey, dashVec.dx, dashVec.dy, 110, 'outQuart', true, 'wind', { pose: 'run' });
           });
-          scheduleAction(205, () => {
-            setActorPoseInternal(eKey, 'strike', 240, false);
-            squashActor(eKey, 1.1, 0.92, 170);
-          });
-          scheduleAction(455, () => {
-            dashActor(eKey, 0, 0, 195, 'outCubic', false, 'wind', { pose: 'run', returnIdle: true });
-          });
+          if (isGated) {
+            scheduleAction(205, () => {
+              if (isCurEnemyGen() && !enemyReturned && !enemyStrikeFired) {
+                setActorPoseInternal(eKey, 'strike_ready', 0, true);
+              }
+            });
+            armEnemySafetyReturn(Math.max(5500, expectedGateCount * 2000 + 2500));
+          } else {
+            scheduleAction(205, () => {
+              if (!isCurEnemyGen()) return;
+              setActorPoseInternal(eKey, 'strike', 240, false);
+              squashActor(eKey, 1.1, 0.92, 170);
+            });
+            scheduleAction(455, () => {
+              if (!isCurEnemyGen()) return;
+              dashActor(eKey, 0, 0, 195, 'outCubic', false, 'wind', { pose: 'run', returnIdle: true });
+            });
+          }
         } else if (spriteId === 'aino' || spriteId === 'noelle') {
+          isEnemyMelee = false;
+          enemyGhostTone = 'ice';
           scheduleAction(110, () => {
+            if (!isCurEnemyGen() || enemyReturned) return;
             setActorPoseInternal(eKey, 'strike', 310, false);
             dashActor(eKey, -12, 0, 90, 'outQuad', false);
-            scheduleAction(290, () => dashActor(eKey, 0, 0, 180, 'outCubic', false));
+            if (!isGated) {
+              scheduleAction(290, () => {
+                if (isCurEnemyGen()) dashActor(eKey, 0, 0, 180, 'outCubic', false);
+              });
+            }
           });
+          if (isGated) {
+            armEnemySafetyReturn(Math.max(5500, expectedGateCount * 2000 + 2500));
+          }
         } else {
           const isIceBeast = spriteId === 'abyss_behemoth' || spriteId === 'tundra_brute' || spriteId === 'frost_hound';
+          isEnemyMelee = true;
+          enemyGhostTone = isIceBeast ? 'ice' : 'claw';
           const dashVec = computeMeleeDashVector(ePts, targetPts, 'left', 102, 52);
           scheduleAction(95, () => {
-            dashActor(eKey, dashVec.dx, dashVec.dy, 105, 'outQuart', true, isIceBeast ? 'ice' : 'claw', { pose: 'run' });
+            if (!isCurEnemyGen() || enemyReturned) return;
+            dashActor(eKey, dashVec.dx, dashVec.dy, 105, 'outQuart', true, enemyGhostTone, { pose: 'run' });
           });
-          scheduleAction(200, () => {
-            setActorPoseInternal(eKey, 'strike', 240, false);
-            squashActor(eKey, 1.14, 0.88, 170);
-          });
-          scheduleAction(455, () => {
-            dashActor(eKey, 0, 0, 200, 'outCubic', false, isIceBeast ? 'ice' : 'claw', { pose: 'run', returnIdle: true });
-          });
+          if (isGated) {
+            scheduleAction(200, () => {
+              if (isCurEnemyGen() && !enemyReturned && !enemyStrikeFired) {
+                setActorPoseInternal(eKey, 'strike_ready', 0, true);
+              }
+            });
+            armEnemySafetyReturn(Math.max(5500, expectedGateCount * 2000 + 2500));
+          } else {
+            scheduleAction(200, () => {
+              if (!isCurEnemyGen()) return;
+              setActorPoseInternal(eKey, 'strike', 240, false);
+              squashActor(eKey, 1.14, 0.88, 170);
+            });
+            scheduleAction(455, () => {
+              if (!isCurEnemyGen()) return;
+              dashActor(eKey, 0, 0, 200, 'outCubic', false, enemyGhostTone, { pose: 'run', returnIdle: true });
+            });
+          }
         }
       }
 
@@ -4418,22 +5018,150 @@
         facing: -1,
         spriteId,
         heavy,
-        onImpact() {
-          applyTargetImpactEditionA();
+        onImpact(hitOrder, pt, isLast) {
+          if (isGated && (enemyGateImpactHandled || enemyGateBlockPlayed)) {
+            if (typeof info.onImpact === 'function') {
+              const freshTLog = toLogicalPts(getActorCanvasPoints(targetActorKey, false));
+              try { info.onImpact({ x: freshTLog.hit.x, y: freshTLog.hit.y, groundY: freshTLog.anchor.y }, hitOrder, pt, isLast); } catch (e) {}
+            }
+            return;
+          }
+          applyEnemySettlement(hitOrder != null ? hitOrder : 0, info, false);
         },
         onShake(px) {
           if (!info.evaded) triggerTrauma(editionAShakeToTrauma(px));
         },
         onHitStop(ms) {
-          if (!info.evaded) triggerHitStop(ms);
+          if (info.evaded) return;
+          if (isGated && nowPerf() < suppressEnemyVfxHitStopUntil) return;
+          triggerHitStop(ms);
         },
       };
-      if (typeof info.onComplete === 'function') {
-        enemyPlayOpts.onComplete = info.onComplete;
+      if (info.gated !== undefined) enemyPlayOpts.gated = !!info.gated;
+      if (info.autoImpactGate !== undefined) enemyPlayOpts.autoImpactGate = !!info.autoImpactGate;
+      if (info.gateCount != null && Number.isFinite(Number(info.gateCount))) {
+        enemyPlayOpts.gateCount = Number(info.gateCount);
       }
-      playEditionA(resolvedEnemyVfx, enemyPlayOpts);
-      return;
+      if (info.beats != null && Number.isFinite(Number(info.beats))) {
+        enemyPlayOpts.beats = Number(info.beats);
+      }
+      if (info.beatGapMs != null && Number.isFinite(Number(info.beatGapMs))) {
+        enemyPlayOpts.beatGapMs = Number(info.beatGapMs);
+      }
+      if (typeof info.onPreTelegraph === 'function') {
+        enemyPlayOpts.onPreTelegraph = info.onPreTelegraph;
+      }
+      if (typeof info.onBeatReady === 'function') {
+        enemyPlayOpts.onBeatReady = info.onBeatReady;
+      }
+      if (isGated || typeof info.onAllBeatsComplete === 'function') {
+        enemyPlayOpts.onAllBeatsComplete = (...args) => {
+          finishActorReturn(false);
+          if (typeof info.onAllBeatsComplete === 'function') {
+            try { info.onAllBeatsComplete(...args); } catch (e) {}
+          }
+        };
+      }
+      enemyPlayOpts.onComplete = (...args) => {
+        if (isGated) finishActorReturn(false);
+        markDone();
+        if (typeof info.onComplete === 'function') {
+          try { info.onComplete(...args); } catch (e) {}
+        }
+      };
+
+      const edRet = playEditionA(resolvedEnemyVfx, enemyPlayOpts);
+      edHandle = (edRet && typeof edRet === 'object') ? edRet : null;
+      if (edHandle && edHandle.donePromise && typeof edHandle.donePromise.then === 'function') {
+        edHandle.donePromise.then(
+          () => {
+            if (isGated) finishActorReturn(false);
+            markDone();
+          },
+          () => {
+            if (isGated) finishActorReturn(true);
+            markDone();
+          }
+        );
+      }
+
+      const releaseGate = (beatIdx, payload) => {
+        const idx = Number.isFinite(Number(beatIdx)) ? Number(beatIdx) : enemyReleaseCount;
+        enemyReleaseCount += 1;
+        const p = (payload && typeof payload === 'object') ? payload : null;
+
+        if (p && p.cancelled) {
+          if (edHandle && typeof edHandle.releaseAll === 'function') {
+            try { edHandle.releaseAll(p); } catch (e) {}
+          } else if (edHandle && typeof edHandle.releaseGate === 'function') {
+            try { edHandle.releaseGate(idx, p); } catch (e) {}
+          }
+          _editionAForceRender = true;
+          finishActorReturn(true);
+          return;
+        }
+
+        if (isGated) {
+          armEnemySafetyReturn(4500);
+        }
+        if (p && !p.skipped) {
+          suppressEnemyVfxHitStopUntil = nowPerf() + 260;
+        }
+
+        if (isEnemyMelee && isGated && isCurEnemyGen() && !enemyReturned) {
+          enemyStrikeFired = true;
+          lastEnemyStrikeTs = nowPerf();
+          setActorPoseInternal(eKey, 'strike', 220, false);
+          squashActor(eKey, 1.12, 0.9, 170);
+          if (expectedGateCount > 1 && idx < expectedGateCount - 1) {
+            const strikeStamp = lastEnemyStrikeTs;
+            scheduleAction(220, () => {
+              if (isCurEnemyGen() && !enemyReturned && lastEnemyStrikeTs === strikeStamp) {
+                setActorPoseInternal(eKey, 'strike_ready', 0, true);
+              }
+            });
+          }
+        }
+
+        applyEnemySettlement(idx, p || info, true);
+
+        if (edHandle && typeof edHandle.releaseGate === 'function') {
+          try { edHandle.releaseGate(idx, p); } catch (e) {}
+        }
+        _editionAForceRender = true;
+      };
+
+      const releaseAll = payload => {
+        const p = (payload && typeof payload === 'object') ? payload : null;
+        if (edHandle && typeof edHandle.releaseAll === 'function') {
+          try { edHandle.releaseAll(p); } catch (e) {}
+        }
+        _editionAForceRender = true;
+        finishActorReturn(!!(p && p.cancelled));
+      };
+
+      return {
+        releaseGate,
+        releaseAll,
+        finishActorReturn: () => finishActorReturn(false),
+        donePromise,
+      };
     }
+
+    const legacyEnemyHandle = {
+      releaseGate() {},
+      releaseAll() {
+        if (isCurEnemyGen()) {
+          dashActor(eKey, 0, 0, 180, 'outCubic', false, 'ice', { pose: 'run', returnIdle: true });
+        }
+      },
+      finishActorReturn() {
+        if (isCurEnemyGen()) {
+          dashActor(eKey, 0, 0, 180, 'outCubic', false, 'ice', { pose: 'run', returnIdle: true });
+        }
+      },
+      donePromise: Promise.resolve(),
+    };
 
     const applyTargetImpact = () => {
       if (info.parried) {
@@ -4535,7 +5263,7 @@
           scheduleAction(280, () => dashActor(eKey, 0, 0, 175, 'outCubic', false));
         });
       }
-      return;
+      return legacyEnemyHandle;
     }
 
     // 0ms: 其他敌方标准蓄力后拉
@@ -4570,7 +5298,7 @@
         });
         scheduleAction(310, () => dashActor(eKey, 0, 0, 180, 'outCubic', false));
       });
-      return;
+      return legacyEnemyHandle;
     }
 
     // C) 爱丽丝 / 风神化身：青岚 2D 跨行疾奔 run -> 贴身疾风双斩 strike -> 奔回 run -> idle
@@ -4589,7 +5317,7 @@
       scheduleAction(455, () => {
         dashActor(eKey, 0, 0, 195, 'outCubic', false, 'wind', { pose: 'run', returnIdle: true });
       });
-      return;
+      return legacyEnemyHandle;
     }
 
     // D) 艾诺：无气泡极寒冰枪 + 地棘
@@ -4603,7 +5331,7 @@
         });
         scheduleAction(290, () => dashActor(eKey, 0, 0, 180, 'outCubic', false));
       });
-      return;
+      return legacyEnemyHandle;
     }
 
     // E) 诺艾儿：高压水箭 + 浪涛拍岸
@@ -4620,7 +5348,7 @@
         });
         scheduleAction(290, () => dashActor(eKey, 0, 0, 180, 'outCubic', false));
       });
-      return;
+      return legacyEnemyHandle;
     }
 
     // F) 魔兽系：灰棘头狼 / 灰棘狼 / 霜脊影豺 / 冻土重甲兽 / 霜原狂狼 / 寒脊爪兽 / 霜渊裂地兽领主（2D 跨行扑击）
@@ -4642,6 +5370,7 @@
     scheduleAction(455, () => {
       dashActor(eKey, 0, 0, 200, 'outCubic', false, isIceBeast ? 'ice' : 'claw', { pose: 'run', returnIdle: true });
     });
+    return legacyEnemyHandle;
   }
 
   function playEnemySequence(battleState, actions) {
@@ -5709,6 +6438,9 @@
       ? rawGrade
       : 'good';
     const key = actorKey ? String(actorKey) : 'player';
+    if (_lastGateBlockFx && _lastGateBlockFx.actorKey === key && (nowPerf() - _lastGateBlockFx.ts) < 120) {
+      return true;
+    }
     const isEnemy = key.startsWith('enemy:');
     const facing = isEnemy ? -1 : 1;
     const aPts = getActorCanvasPoints(key, true);
@@ -6302,14 +7034,30 @@
     }
 
     // 3.5) 驱动方案 A 高清双 Canvas 管线（640×360 逻辑坐标 → #cb-vfx-edition-a-canvas）
+    // 慢镜/顿帧期仍按 simDt 正常推进粒子状态，仅将 canvas 重绘节流至 ~30fps (>= 33ms)；
+    // 恢复 1.0x 或 releaseGate 爆裂 / 新特效起播时通过 _editionAForceRender 当帧零延迟重绘
     if (_editionA && _hdCanvas) {
+      const edThrottled = _slowMoScale < 0.99 || _hitStopScale < 0.5;
       if (_editionA.isActive()) {
         _editionA.update(simDt * 1000);
-        _editionA.render(false);
-        _editionADirty = _editionA.isActive();
+        const stillActive = _editionA.isActive();
+        const shouldRender =
+          !edThrottled ||
+          _editionAForceRender ||
+          !stillActive ||
+          _editionALastRenderTs === 0 ||
+          (now - _editionALastRenderTs) >= EDITION_A_SLOWMO_RENDER_INTERVAL_MS;
+        if (shouldRender) {
+          _editionA.render(false);
+          _editionALastRenderTs = now;
+          _editionAForceRender = false;
+        }
+        _editionADirty = stillActive;
       } else if (_editionADirty) {
         _editionA.render(false);
         _editionADirty = false;
+        _editionALastRenderTs = 0;
+        _editionAForceRender = false;
       }
     }
 
@@ -6328,6 +7076,9 @@
   /* -------------------- 清理重置 -------------------- */
   function clearEffects() {
     _playerActionGen += 1;
+    _enemyActionEpoch += 1;
+    _enemyActionGen.clear();
+    _lastGateBlockFx = null;
     _scheduled.length = 0;
     _activeEffects.length = 0;
     _statusMicroThrottle.clear();
@@ -6335,6 +7086,8 @@
       try { _editionA.clear(); } catch (e) {}
     }
     _editionADirty = false;
+    _editionALastRenderTs = 0;
+    _editionAForceRender = false;
     _auraShockwaves.length = 0;
     _auraBurstParticles.length = 0;
     _auraBurstTs = 0;
@@ -6428,6 +7181,8 @@
     _hdH = 0;
     _editionA = null;
     _editionADirty = false;
+    _editionALastRenderTs = 0;
+    _editionAForceRender = false;
     _rawTimers.forEach(tid => clearTimeout(tid));
     _rawTimers.clear();
     _actors.forEach(st => {
@@ -6594,8 +7349,11 @@
       _lastRafTs = 0;
       _lastFxDrawTs = 0;
       _lastAuraDrawTs = 0;
+      _editionALastRenderTs = 0;
     });
   }
+
+  ensureEditionAAliases(global.VfxEditionAFull);
 
   global.CombatPixelVFX = {
     SPRITE_MANIFEST,

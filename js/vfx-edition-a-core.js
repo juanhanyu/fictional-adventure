@@ -205,6 +205,59 @@
     return s;
   }
 
+  /* -------------------- PixelFX 每槽专属帧缓存画布池（慢镜/同帧跳过软光栅与 putImageData） -------------------- */
+  const _slotCanvasPool = new Map();
+  const MAX_SLOT_POOL_PER_SIZE = 16;
+  let _pfxSlotSeq = 0;
+  const _palCacheIds = typeof WeakMap === 'function' ? new WeakMap() : null;
+  let _palCacheSeq = 0;
+
+  function getPaletteCacheId(pal) {
+    if (pal == null) return '';
+    if (typeof pal === 'object') {
+      if (!_palCacheIds) return 'obj';
+      let id = _palCacheIds.get(pal);
+      if (!id) {
+        id = ++_palCacheSeq;
+        _palCacheIds.set(pal, id);
+      }
+      return id;
+    }
+    return String(pal);
+  }
+
+  function acquireSlotCanvas(w, h) {
+    if (typeof document === 'undefined' || typeof document.createElement !== 'function') return null;
+    const key = `${w}x${h}`;
+    const bucket = _slotCanvasPool.get(key);
+    if (bucket && bucket.length > 0) {
+      return bucket.pop();
+    }
+    const cvs = document.createElement('canvas');
+    cvs.width = w;
+    cvs.height = h;
+    const ctx = cvs.getContext('2d', { alpha: true });
+    if (!ctx) return null;
+    ctx.imageSmoothingEnabled = false;
+    return { canvas: cvs, ctx, w, h, key };
+  }
+
+  function releaseSlotCanvas(sl) {
+    if (!sl) return;
+    const surf = sl._cacheSurf;
+    sl._cacheSurf = null;
+    sl._lastCacheKey = null;
+    if (!surf) return;
+    let bucket = _slotCanvasPool.get(surf.key);
+    if (!bucket) {
+      bucket = [];
+      _slotCanvasPool.set(surf.key, bucket);
+    }
+    if (bucket.length < MAX_SLOT_POOL_PER_SIZE) {
+      bucket.push(surf);
+    }
+  }
+
   /* -------------------- 插件化技能注册表与现役 / V3.1 别名路由 -------------------- */
   const SKILLS = [];
   const SKILL_MAP = Object.create(null);
@@ -1441,8 +1494,16 @@
   }
 
   function drawIceVein(ctx, vein) {
-    const grow = easeOutCubic(clamp(vein.age / vein.growMs, 0, 1));
-    const exit = vein.age > vein.dur - 320 ? clamp((vein.dur - vein.age) / 320, 0, 1) : 1;
+    const grow = vein._isHolding
+      ? clamp(vein.holdProgress != null ? vein.holdProgress : 0.88, 0, 1)
+      : (vein._holdSnapped
+        ? 1
+        : (vein._gatedHold
+          ? 0.86 * easeOutCubic(clamp(vein.age / vein.growMs, 0, 1))
+          : easeOutCubic(clamp(vein.age / vein.growMs, 0, 1))));
+    const exit = vein._isHolding
+      ? 1
+      : (vein.age > vein.dur - 320 ? clamp((vein.dur - vein.age) / 320, 0, 1) : 1);
     if (grow <= 0.01 || exit <= 0.01) return;
 
     const pts = vein.pts;
@@ -1515,7 +1576,8 @@
       const frac = maxSeg - idx;
       const hx = lerp(pts[idx].x, pts[idx + 1].x, frac);
       const hy = lerp(pts[idx].y, pts[idx + 1].y, frac);
-      drawStarFlare(ctx, hx, hy, 12, 0.28, 4, vein.age * 0.02, col.sparkOuter, col.sparkCore, 1);
+      const flareR = vein._isHolding ? (14 + 3 * Math.sin((vein._holdWaitMs || 0) * 0.02)) : 12;
+      drawStarFlare(ctx, hx, hy, flareR, 0.28, 4, (vein.age + (vein._holdWaitMs || 0)) * 0.02, col.sparkOuter, col.sparkCore, 1);
     }
 
     ctx.restore();
@@ -1524,7 +1586,7 @@
   /* 高空倾斜落下的明亮星霜冰柱/光雨（支持可选 colors / palette 覆写） */
   function drawSkyIcicleBeam(ctx, bm) {
     const p = clamp(bm.age / bm.dur, 0, 1);
-    if (p <= 0 || p >= 1) return;
+    if (!bm._isHolding && (p <= 0 || p >= 1)) return;
 
     const pal = resolvePalette(bm.palette);
     const c = bm.colors || {};
@@ -1535,8 +1597,23 @@
     const impactColor = c.impact || (pal ? pickPal(pal, 0.65) : (bm.gold ? '#FDE68A' : '#38BDF8'));
     const coreColor = c.core || '#FFFFFF';
 
-    const fallP = easeInQuad(clamp(p / 0.48, 0, 1));
-    const fade = p < 0.48 ? 1 : clamp(1 - (p - 0.48) / 0.52, 0, 1);
+    const travelRef = Number.isFinite(bm.holdTravelMs) && bm.holdTravelMs > 0 ? bm.holdTravelMs : (bm.dur * 0.48);
+    let fallP;
+    let fade;
+    let showImpact = false;
+    if (bm._isHolding) {
+      fallP = clamp(bm.holdProgress != null ? bm.holdProgress : 0.88, 0.05, 0.96);
+      fade = 1;
+      showImpact = false;
+    } else if (bm._gatedHold && !bm._holdSnapped) {
+      fallP = 0.86 * easeInQuad(clamp(bm.age / travelRef, 0, 1));
+      fade = 1;
+      showImpact = false;
+    } else {
+      fallP = easeInQuad(clamp(p / 0.48, 0, 1));
+      fade = p < 0.48 ? 1 : clamp(1 - (p - 0.48) / 0.52, 0, 1);
+      showImpact = p >= 0.46;
+    }
 
     const headX = lerp(bm.x0, bm.x1, fallP);
     const headY = lerp(bm.y0, bm.y1, fallP);
@@ -1573,7 +1650,7 @@
     ctx.lineTo(headX, headY);
     ctx.stroke();
 
-    if (p < 0.58) {
+    if (bm._isHolding || (bm._gatedHold && !bm._holdSnapped) || p < 0.58) {
       const ang = Math.atan2(bm.y1 - bm.y0, bm.x1 - bm.x0);
       ctx.save();
       ctx.translate(headX, headY);
@@ -1597,7 +1674,7 @@
       ctx.restore();
     }
 
-    if (p >= 0.46) {
+    if (showImpact) {
       const ip = clamp((p - 0.46) / 0.54, 0, 1);
       const ir = 10 + easeOutCubic(ip) * 28;
       ctx.strokeStyle = impactColor;
@@ -1615,7 +1692,9 @@
   function drawLuminousRibbon(ctx, rb) {
     const pts = rb.pts;
     if (!pts || pts.length < 2) return;
-    const fade = rb.age > rb.dur - rb.fadeOut ? clamp((rb.dur - rb.age) / rb.fadeOut, 0, 1) : 1;
+    const fade = rb._isHolding
+      ? 1
+      : (rb.age > rb.dur - rb.fadeOut ? clamp((rb.dur - rb.age) / rb.fadeOut, 0, 1) : 1);
     if (fade <= 0.01) return;
 
     ctx.save();
@@ -1689,8 +1768,16 @@
   }
 
   function drawWaterStreamOverlay(ctx, ws) {
-    const grow = easeOutCubic(clamp(ws.age / ws.extendMs, 0, 1));
-    const fade = ws.age > ws.dur - 190 ? clamp((ws.dur - ws.age) / 190, 0, 1) : 1;
+    const grow = ws._isHolding
+      ? clamp(ws.holdProgress != null ? ws.holdProgress : 0.88, 0, 1)
+      : (ws._holdSnapped
+        ? 1
+        : (ws._gatedHold
+          ? 0.86 * easeOutCubic(clamp(ws.age / ws.extendMs, 0, 1))
+          : easeOutCubic(clamp(ws.age / ws.extendMs, 0, 1))));
+    const fade = ws._isHolding
+      ? 1
+      : (ws.age > ws.dur - 190 ? clamp((ws.dur - ws.age) / 190, 0, 1) : 1);
     if (grow <= 0.02 || fade <= 0.02) return;
 
     const col = resolveWaterStreamTheme(ws);
@@ -1699,7 +1786,8 @@
     const dist = Math.hypot(dx, dy) || 1;
     const ang = Math.atan2(dy, dx);
     const len = dist * grow;
-    const w = ws.width * (0.85 + 0.15 * Math.sin(ws.age * 0.045));
+    const animAge = ws.age + (ws._holdWaitMs || 0);
+    const w = ws.width * (0.85 + 0.15 * Math.sin(animAge * 0.045));
 
     ctx.save();
     ctx.translate(ws.x0, ws.y0);
@@ -2090,33 +2178,34 @@
   ];
 
   const CORE_HANDLERS = {
-    /* ---------- 1. 冰晶术 (ice_crystal，可由 Pack 1 覆盖缩小 -33%) ---------- */
+    /* ---------- 1. 冰晶术 (ice_crystal，1 拍门控，可由 Pack 1 覆盖) ---------- */
     ice_crystal(kit, o) {
       const { from, to, groundY, targetGroundY, amp, ampScale, icePal } = o;
+      const dir = o.facing < 0 ? -1 : 1;
       const travelMs = 200;
       kit.scheduleTimeline([
         {
           at: 0,
           fn() {
             kit.spawnPfx('magic_circle_cast', { palette: icePal }, {
-              x: from.x - 16, y: groundY + 2, scale: 1.2 * ampScale,
+              x: from.x - 16 * dir, y: groundY + 2, scale: 1.2 * ampScale,
               preWarmSec: 0.92, timeScale: 2.1, durMs: 420, layer: 'back',
               glowColor: 'rgba(56,189,248,0.45)', glowRadius: 48, glowAlpha: 0.45
             });
             kit.addMagicCircle({
-              x: from.x - 16, y: groundY + 2, radius: 42 * ampScale, sy: 0.32,
+              x: from.x - 16 * dir, y: groundY + 2, radius: 42 * ampScale, sy: 0.32,
               goldTriple: amp >= 3, dur: 460
             });
-            kit.spawnPfx('ice_crystal', { palette: icePal, height: 30 }, {
-              x: from.x + 8, y: from.y + 34, scale: 1.25 * ampScale,
+            kit.spawnPfx('ice_crystal', { palette: icePal, height: 22 }, {
+              x: from.x + 8 * dir, y: from.y + 24, scale: 0.84 * ampScale,
               durMs: 260, fadeOutMs: 80, layer: 'front'
             });
             kit.addStarFlare({
-              x: from.x + 8, y: from.y, r0: 4, r1: 28 * ampScale,
+              x: from.x + 8 * dir, y: from.y, r0: 4, r1: 28 * ampScale,
               outerColor: '#38BDF8', coreColor: '#FFFFFF', dur: 240
             });
-            kit.triggerAmpCastAura(from.x - 16, groundY, amp, false);
-            kit.spawnBurstParticles(from.x + 8, from.y, 12, 'star', {
+            kit.triggerAmpCastAura(from.x - 16 * dir, groundY, amp, false);
+            kit.spawnBurstParticles(from.x + 8 * dir, from.y, 12, 'star', {
               spdMin: 25, spdMax: 85, colors: ['#E0F7FF', '#67E8F9', '#38BDF8'],
               gravity: -20, lifeMin: 220, lifeMax: 380
             });
@@ -2125,59 +2214,70 @@
         {
           at: 165,
           fn() {
-            const dx = to.x - from.x;
+            const startX = from.x + 6 * dir;
+            const dx = to.x - startX;
             const dy = to.y - from.y;
             const ang = Math.atan2(dy, dx);
             const ribbon = kit.addRibbon({
-              pts: [{ x: from.x + 6, y: from.y }],
-              width: 9 * ampScale,
+              pts: [{ x: startX, y: from.y }],
+              width: 6.0 * ampScale,
               outerColor: '#1658EB',
               midColor: '#38BDF8',
               alpha: 0.92,
               dur: 420,
-              fadeOut: 220
+              fadeOut: 220,
+              holdGate: 0,
+              holdTravelMs: travelMs
             });
 
-            kit.spawnPfx('ice_lance', { palette: icePal, length: 54 }, {
-              x: from.x + 6, y: from.y,
+            kit.spawnPfx('ice_lance', { palette: icePal, length: 44 }, {
+              x: startX, y: from.y,
               angle: ang,
-              scale: 1.62 * ampScale,
+              scale: 1.15 * ampScale,
               timeScale: 1.4,
               durMs: travelMs + 70,
               fadeInMs: 25,
               fadeOutMs: 60,
               layer: 'front',
-              glowColor: 'rgba(56,189,248,0.55)', glowRadius: 36, glowAlpha: 0.5,
+              glowColor: 'rgba(56,189,248,0.50)', glowRadius: 26, glowAlpha: 0.44,
+              holdGate: 0,
+              holdTravelMs: travelMs,
+              snapFadeMs: 55,
               onUpdate(slot, dtSec, age) {
-                const p = easeOutCubic(clamp(age / travelMs, 0, 1));
-                slot.x = lerp(from.x + 6, to.x, p);
+                const p = kit.evalHoldProgress(slot, travelMs);
+                slot.x = lerp(startX, to.x, p);
                 slot.y = lerp(from.y, to.y, p);
-                if (p < 1) {
+                if (p < 0.995) {
                   ribbon.pts.push({ x: slot.x, y: slot.y });
                   if (ribbon.pts.length > 20) ribbon.pts.shift();
-                  kit.addParticle({
-                    kind: Math.random() < 0.55 ? 'shard' : 'star',
-                    x: slot.x - Math.cos(ang) * 14 + (Math.random() - 0.5) * 12,
-                    y: slot.y - Math.sin(ang) * 14 + (Math.random() - 0.5) * 12,
-                    vx: -Math.cos(ang) * 55 + (Math.random() - 0.5) * 40,
-                    vy: -Math.sin(ang) * 55 + (Math.random() - 0.5) * 40,
-                    size: 3 + Math.random() * 3.2,
-                    color: Math.random() < 0.35 ? '#FFFFFF' : '#67E8F9',
-                    color2: '#1658EB',
-                    life: 240 + Math.random() * 180
-                  });
+                  if (!slot._isHolding || Math.random() < 0.35) {
+                    kit.addParticle({
+                      kind: Math.random() < 0.55 ? 'shard' : 'star',
+                      x: slot.x - Math.cos(ang) * 12 + (Math.random() - 0.5) * 10,
+                      y: slot.y - Math.sin(ang) * 12 + (Math.random() - 0.5) * 10,
+                      vx: -Math.cos(ang) * 52 + (Math.random() - 0.5) * 36,
+                      vy: -Math.sin(ang) * 52 + (Math.random() - 0.5) * 36,
+                      size: 2.2 + Math.random() * 2.2,
+                      color: Math.random() < 0.35 ? '#FFFFFF' : '#67E8F9',
+                      color2: '#1658EB',
+                      life: 220 + Math.random() * 160
+                    });
+                  }
                 }
               }
             });
 
             kit.addShockRing({
-              x: from.x + 12, y: from.y, r0: 6, r1: 30, sy: 0.85,
-              color: '#67E8F9', coreColor: '#FFFFFF', lineW: 3, dur: 200, layer: 'front'
+              x: from.x + 12 * dir, y: from.y, r0: 6, r1: 28, sy: 0.85,
+              color: '#67E8F9', coreColor: '#FFFFFF', lineW: 2.8, dur: 200, layer: 'front'
             });
           }
         },
         {
           at: 365,
+          gate: 0,
+          preTelegraphMs: 110,
+          gateMeta: { beatIdx: 0, totalBeats: 1, targetIdx: 0 },
           fn() {
             kit.safeCall(o.onImpact, 0, to, true);
             kit.safeCall(o.onShake, 6.5 + amp * 2.2, 240);
@@ -2185,42 +2285,42 @@
 
             kit.spawnPfx('ice_shatter', { palette: icePal }, {
               x: to.x, y: targetGroundY - 2,
-              scale: 1.98 * ampScale,
-              preWarmSec: 0.42,
+              scale: 1.18 * ampScale,
+              preWarmSec: 0.50,
               timeScale: 1.68,
-              durMs: 840,
+              durMs: 820,
               fadeInMs: 12,
               fadeOutMs: 220,
               layer: 'main',
-              glowColor: 'rgba(56,189,248,0.46)', glowRadius: 62 * ampScale, glowAlpha: 0.42
+              glowColor: 'rgba(56,189,248,0.44)', glowRadius: 40 * ampScale, glowAlpha: 0.40
             });
 
-            kit.spawnPfx('hit_spark', { palette: PALETTES.slash, height: 22, aim: 0.1 }, {
-              x: to.x, y: to.y + 30, scale: 1.65 * ampScale,
-              durMs: 380, layer: 'front'
+            kit.spawnPfx('hit_spark', { palette: PALETTES.slash, height: 20, aim: 0.1 }, {
+              x: to.x, y: to.y + 24, scale: 1.22 * ampScale,
+              durMs: 360, layer: 'front'
             });
 
-            kit.addFlash(to.x, to.y, 52 * ampScale, '#38BDF8', 150, 0.42);
+            kit.addFlash(to.x, to.y, 38 * ampScale, '#38BDF8', 150, 0.40);
             kit.addStarFlare({
-              x: to.x, y: to.y, r0: 10, r1: 46 * ampScale, points: 8,
+              x: to.x, y: to.y, r0: 8, r1: 38 * ampScale, points: 8,
               outerColor: '#38BDF8', coreColor: '#FFFFFF', dur: 260
             });
             kit.addShockRing({
-              x: to.x, y: targetGroundY + 2, r0: 12, r1: 86 * ampScale, sy: 0.30,
-              color: '#0EA5E9', coreColor: '#FFFFFF', lineW: 4, dur: 440
+              x: to.x, y: targetGroundY + 2, r0: 10, r1: 66 * ampScale, sy: 0.30,
+              color: '#0EA5E9', coreColor: '#FFFFFF', lineW: 3.4, dur: 440
             });
 
-            kit.spawnBurstParticles(to.x, to.y, 24 + amp * 8, 'shard', {
-              spdMin: 80, spdMax: 250, sizeMin: 3.6, sizeMax: 7.5,
+            kit.spawnBurstParticles(to.x, to.y, 22 + amp * 7, 'shard', {
+              spdMin: 72, spdMax: 225, sizeMin: 2.5, sizeMax: 5.2,
               colors: ['#FFFFFF', '#E0F7FF', '#67E8F9', '#38BDF8'],
               color2: '#1658EB',
-              groundY: targetGroundY, bounce: 0.44, lifeMin: 480, lifeMax: 800
+              groundY: targetGroundY, bounce: 0.44, lifeMin: 440, lifeMax: 740
             });
 
             if (amp >= 2) {
-              kit.spawnPfx('frost_nova', { palette: icePal, reach: 68 }, {
-                x: to.x, y: targetGroundY + 2, scale: 1.35 * ampScale,
-                preWarmSec: 0.38, timeScale: 1.45, durMs: 680, layer: 'back'
+              kit.spawnPfx('frost_nova', { palette: icePal, reach: 56 }, {
+                x: to.x, y: targetGroundY + 2, scale: 0.96 * ampScale,
+                preWarmSec: 0.38, timeScale: 1.45, durMs: 640, layer: 'back'
               });
             }
             kit.triggerAmpImpactUpgrade(to.x, to.y, targetGroundY, amp);
@@ -2229,58 +2329,59 @@
         {
           at: 510,
           fn() {
-            kit.safeCall(o.onShake, 5.2 + amp, 180);
-            kit.addFlash(to.x, to.y - 6, 56 * ampScale, '#67E8F9', 160, 0.40);
+            kit.safeCall(o.onShake, 5.0 + amp, 170);
+            kit.addFlash(to.x, to.y - 6, 38 * ampScale, '#67E8F9', 155, 0.36);
             kit.addStarFlare({
-              x: to.x, y: to.y - 8, r0: 10, r1: 52 * ampScale, points: 8,
-              outerColor: amp >= 3 ? '#FDE68A' : '#38BDF8', coreColor: '#FFFFFF', dur: 320
+              x: to.x, y: to.y - 8, r0: 8, r1: 40 * ampScale, points: 8,
+              outerColor: amp >= 3 ? '#FDE68A' : '#38BDF8', coreColor: '#FFFFFF', dur: 300
             });
             kit.addShockRing({
-              x: to.x, y: to.y - 6, r0: 14, r1: 78 * ampScale, sy: 0.85,
-              color: '#67E8F9', coreColor: '#FFFFFF', lineW: 3.4, dur: 340, layer: 'front'
+              x: to.x, y: to.y - 6, r0: 12, r1: 56 * ampScale, sy: 0.85,
+              color: '#67E8F9', coreColor: '#FFFFFF', lineW: 2.9, dur: 320, layer: 'front'
             });
-            kit.spawnBurstParticles(to.x, to.y - 8, 36, 'shard', {
-              spdMin: 115, spdMax: 320, upBias: 110, sizeMin: 4.0, sizeMax: 9.2,
+            kit.spawnBurstParticles(to.x, to.y - 8, 28, 'shard', {
+              spdMin: 95, spdMax: 260, upBias: 92, sizeMin: 2.6, sizeMax: 5.8,
               colors: ['#FFFFFF', '#E0F7FF', '#67E8F9', '#38BDF8', '#0EA5E9'],
               color2: '#1658EB',
-              groundY: targetGroundY, bounce: 0.48, lifeMin: 460, lifeMax: 760
+              groundY: targetGroundY, bounce: 0.46, lifeMin: 400, lifeMax: 680
             });
-            kit.spawnBurstParticles(to.x, to.y - 18, 20, 'snow', {
-              spdMin: 22, spdMax: 78, upBias: 55, gravity: 24,
-              sizeMin: 3.2, sizeMax: 6.2,
+            kit.spawnBurstParticles(to.x, to.y - 16, 16, 'snow', {
+              spdMin: 20, spdMax: 72, upBias: 48, gravity: 24,
+              sizeMin: 2.4, sizeMax: 4.4,
               colors: ['#FFFFFF', '#E0F7FF'], color2: '#38BDF8',
-              lifeMin: 480, lifeMax: 740
+              lifeMin: 420, lifeMax: 680
             });
           }
         }
       ]);
     },
 
-    /* ---------- 2. 三棱冰晶 (tri_prism_ice，原版照搬) ---------- */
+    /* ---------- 2. 三棱冰晶 (tri_prism_ice，精致缩容 + 3 拍串行门控) ---------- */
     tri_prism_ice(kit, o) {
       const { from, to, groundY, targetGroundY, amp, ampScale, icePal } = o;
-      const arcs = [-62, 0, 48];
-      const stagger = 110;
-      const travelMs = 215;
+      const dir = o.facing < 0 ? -1 : 1;
+      const arcs = [-44, 0, 36];
+      const travelMs = 170;
+      const betweenBeatGap = 60;
 
       const cues = [
         {
           at: 0,
           fn() {
             kit.spawnPfx('magic_circle_cast', { palette: icePal }, {
-              x: from.x - 14, y: groundY + 2, scale: 1.25 * ampScale,
-              preWarmSec: 0.95, timeScale: 2.2, durMs: 560, layer: 'back'
+              x: from.x - 14 * dir, y: groundY + 2, scale: 1.12 * ampScale,
+              preWarmSec: 0.95, timeScale: 2.2, durMs: 780, layer: 'back'
             });
             kit.addMagicCircle({
-              x: from.x - 14, y: groundY + 2, radius: 44 * ampScale, sy: 0.32,
-              goldTriple: amp >= 3, dur: 600
+              x: from.x - 14 * dir, y: groundY + 2, radius: 40 * ampScale, sy: 0.32,
+              goldTriple: amp >= 3, dur: 860
             });
-            kit.triggerAmpCastAura(from.x - 14, groundY, amp, false);
+            kit.triggerAmpCastAura(from.x - 14 * dir, groundY, amp, false);
             for (let k = 0; k < 3; k++) {
-              const cy = from.y + (k - 1) * 20;
+              const cy = from.y + (k - 1) * 14;
               kit.addStarFlare({
-                x: from.x + 10, y: cy, r0: 4, r1: 22,
-                outerColor: '#38BDF8', coreColor: '#FFFFFF', dur: 240 + k * 90
+                x: from.x + 10 * dir, y: cy, r0: 3, r1: 18,
+                outerColor: '#38BDF8', coreColor: '#FFFFFF', dur: 220 + k * 70
               });
             }
           }
@@ -2288,55 +2389,65 @@
       ];
 
       for (let k = 0; k < 3; k++) {
-        const launchAt = 120 + k * stagger;
+        const launchAt = 110 + k * (travelMs + betweenBeatGap);
         const hitAt = launchAt + travelMs;
         const arcLift = arcs[k];
-        const p0 = { x: from.x + 10, y: from.y + (k - 1) * 14 };
-        const p2 = { x: to.x + (k - 1) * 10, y: to.y + (k - 1) * 14 };
+        const p0 = { x: from.x + 10 * dir, y: from.y + (k - 1) * 10 };
+        const p2 = { x: to.x + (k - 1) * 8, y: to.y + (k - 1) * 10 };
         const p1 = { x: (p0.x + p2.x) * 0.5, y: (p0.y + p2.y) * 0.5 + arcLift };
 
         cues.push({
           at: launchAt,
           fn() {
-            const ribbon = kit.addRibbon({
-              pts: [p0],
-              width: 8.2 * ampScale,
-              outerColor: '#1658EB',
-              midColor: k === 1 ? '#67E8F9' : '#38BDF8',
-              alpha: 0.95,
-              dur: 640,
-              fadeOut: 240
+            kit.addStarFlare({
+              x: p0.x, y: p0.y, r0: 3, r1: 17 * ampScale, points: 4,
+              outerColor: k === 2 && amp >= 2 ? '#FDE68A' : '#67E8F9', coreColor: '#FFFFFF', dur: 170
             });
 
-            kit.spawnPfx('ice_lance', { palette: icePal, length: 50 }, {
+            const ribbon = kit.addRibbon({
+              pts: [p0],
+              width: 4.6 * ampScale,
+              outerColor: '#1658EB',
+              midColor: k === 1 ? '#67E8F9' : '#38BDF8',
+              alpha: 0.94,
+              dur: 480,
+              fadeOut: 200,
+              holdGate: k,
+              holdTravelMs: travelMs
+            });
+
+            kit.spawnPfx('ice_lance', { palette: icePal, length: 38 }, {
               x: p0.x, y: p0.y,
               angle: quadBezierTangent(p0, p1, p2, 0),
-              scale: 1.52 * ampScale,
+              scale: 0.98 * ampScale,
               timeScale: 1.45,
-              durMs: travelMs + 65,
-              fadeInMs: 18,
-              fadeOutMs: 55,
+              durMs: travelMs + 55,
+              fadeInMs: 16,
+              fadeOutMs: 48,
               layer: 'front',
-              glowColor: 'rgba(56,189,248,0.46)', glowRadius: 30, glowAlpha: 0.4,
+              glowColor: 'rgba(56,189,248,0.44)', glowRadius: 18, glowAlpha: 0.38,
+              holdGate: k,
+              holdTravelMs: travelMs,
+              snapFadeMs: 45,
               onUpdate(slot, dtSec, age) {
-                const t = easeOutCubic(clamp(age / travelMs, 0, 1));
+                const t = kit.evalHoldProgress(slot, travelMs);
                 const pos = quadBezier(p0, p1, p2, t);
                 slot.x = pos.x;
                 slot.y = pos.y;
                 slot.angle = quadBezierTangent(p0, p1, p2, Math.min(0.99, t));
-                if (t < 1) {
+                if (t < 0.995) {
                   ribbon.pts.push({ x: pos.x, y: pos.y });
-                  if (ribbon.pts.length > 26) ribbon.pts.shift();
-                  if (Math.random() < 0.72) {
+                  if (ribbon.pts.length > 22) ribbon.pts.shift();
+                  if ((!slot._isHolding && Math.random() < 0.64) || (slot._isHolding && Math.random() < 0.28)) {
                     kit.addParticle({
                       kind: 'star',
-                      x: pos.x + (Math.random() - 0.5) * 10,
-                      y: pos.y + (Math.random() - 0.5) * 10,
-                      vx: (Math.random() - 0.5) * 45,
-                      vy: (Math.random() - 0.5) * 45,
-                      size: 3.0 + Math.random() * 2.5,
+                      x: pos.x + (Math.random() - 0.5) * 8,
+                      y: pos.y + (Math.random() - 0.5) * 8,
+                      vx: (Math.random() - 0.5) * 38,
+                      vy: (Math.random() - 0.5) * 38,
+                      size: 2.2 + Math.random() * 2.0,
                       color: k === 1 ? '#FFFFFF' : '#67E8F9',
-                      life: 280 + Math.random() * 160
+                      life: 220 + Math.random() * 140
                     });
                   }
                 }
@@ -2347,58 +2458,61 @@
 
         cues.push({
           at: hitAt,
+          gate: k,
+          preTelegraphMs: 110,
+          gateMeta: { beatIdx: k, totalBeats: 3, targetIdx: 0 },
           fn() {
             const isLast = k === 2;
             kit.safeCall(o.onImpact, 0, p2, isLast);
-            kit.safeCall(o.onShake, isLast ? (8 + amp * 2.2) : 4.5, isLast ? 240 : 120);
-            kit.safeCall(o.onHitStop, isLast ? (60 + amp * 12) : 28);
+            kit.safeCall(o.onShake, isLast ? (7.5 + amp * 2.0) : 4.2, isLast ? 220 : 110);
+            kit.safeCall(o.onHitStop, isLast ? (56 + amp * 12) : 26);
 
             kit.spawnPfx(isLast ? 'crit_hit' : 'hit_spark', {
               palette: isLast ? icePal : PALETTES.slash,
-              height: 22,
+              height: 20,
               aim: (k - 1) * 0.28
             }, {
-              x: p2.x, y: p2.y + 30,
-              scale: (isLast ? 1.65 : 1.52) * ampScale,
-              durMs: isLast ? 560 : 420,
+              x: p2.x, y: p2.y + 22,
+              scale: (isLast ? 1.12 : 0.95) * ampScale,
+              durMs: isLast ? 500 : 360,
               layer: 'front'
             });
 
-            kit.addFlash(p2.x, p2.y, (isLast ? 56 : 38) * ampScale, '#38BDF8', 140, isLast ? 0.44 : 0.36);
+            kit.addFlash(p2.x, p2.y, (isLast ? 38 : 26) * ampScale, '#38BDF8', 130, isLast ? 0.42 : 0.34);
             kit.addStarFlare({
               x: p2.x, y: p2.y,
-              r0: 8, r1: (isLast ? 52 : 36) * ampScale,
+              r0: 6, r1: (isLast ? 36 : 24) * ampScale,
               points: isLast ? 8 : 4,
               outerColor: isLast && amp >= 2 ? '#FDE68A' : '#38BDF8',
               coreColor: '#FFFFFF',
-              dur: isLast ? 340 : 280
+              dur: isLast ? 300 : 230
             });
             kit.addShockRing({
-              x: p2.x, y: p2.y, r0: 8, r1: (isLast ? 68 : 48) * ampScale, sy: 0.78,
-              color: '#67E8F9', coreColor: '#FFFFFF', lineW: 3.2, dur: 340, layer: 'front'
+              x: p2.x, y: p2.y, r0: 6, r1: (isLast ? 48 : 34) * ampScale, sy: 0.78,
+              color: '#67E8F9', coreColor: '#FFFFFF', lineW: isLast ? 2.8 : 2.2, dur: 290, layer: 'front'
             });
 
-            kit.addLightning(p2.x - 28, p2.y - 28, p2.x + 30, p2.y + 24, {
-              outerColor: '#1658EB', midColor: '#67E8F9', width: 2.2, dur: 260, branches: 2
+            kit.addLightning(p2.x - 22, p2.y - 22, p2.x + 24, p2.y + 18, {
+              outerColor: '#1658EB', midColor: '#67E8F9', width: 1.8, dur: 220, branches: 2
             });
 
-            kit.spawnBurstParticles(p2.x, p2.y, isLast ? 28 : 16, 'shard', {
-              spdMin: 85, spdMax: 260, sizeMin: 3.4, sizeMax: 7.0,
+            kit.spawnBurstParticles(p2.x, p2.y, isLast ? 22 : 12, 'shard', {
+              spdMin: 72, spdMax: 215, sizeMin: 2.4, sizeMax: 4.6,
               colors: ['#FFFFFF', '#E0F7FF', '#67E8F9', '#38BDF8'],
               color2: '#1658EB',
-              groundY: targetGroundY, bounce: 0.4, lifeMin: 400, lifeMax: 700
+              groundY: targetGroundY, bounce: 0.4, lifeMin: 360, lifeMax: 620
             });
-            kit.spawnBurstParticles(p2.x, p2.y, isLast ? 20 : 10, 'spark', {
-              spdMin: 140, spdMax: 330, sizeMin: 2.4, sizeMax: 4.2,
+            kit.spawnBurstParticles(p2.x, p2.y, isLast ? 16 : 8, 'spark', {
+              spdMin: 120, spdMax: 280, sizeMin: 2.0, sizeMax: 3.4,
               colors: ['#FFFFFF', '#67E8F9', '#FDE68A'],
-              gravity: 160, lifeMin: 240, lifeMax: 440
+              gravity: 160, lifeMin: 220, lifeMax: 380
             });
 
             if (isLast) {
               kit.spawnPfx('ice_shatter', { palette: icePal }, {
-                x: to.x, y: targetGroundY - 2, scale: 1.72 * ampScale,
-                preWarmSec: 0.56, timeScale: 1.75, durMs: 740, layer: 'main',
-                glowColor: 'rgba(56,189,248,0.44)', glowRadius: 56 * ampScale, glowAlpha: 0.4
+                x: to.x, y: targetGroundY - 2, scale: 1.12 * ampScale,
+                preWarmSec: 0.56, timeScale: 1.75, durMs: 680, layer: 'main',
+                glowColor: 'rgba(56,189,248,0.42)', glowRadius: 36 * ampScale, glowAlpha: 0.38
               });
               kit.triggerAmpImpactUpgrade(to.x, to.y, targetGroundY, amp);
             }
@@ -2409,218 +2523,375 @@
       kit.scheduleTimeline(cues);
     },
 
-    /* ---------- 3. 星霜散华 (starfrost_scatter，原版照搬) ---------- */
+    /* ---------- 3. 星霜散华 (starfrost_scatter，精致微收 + [2, 2] 两拍四锥串行门控) ---------- */
     starfrost_scatter(kit, o) {
       const { from, to, groundY, targetGroundY, amp, ampScale, icePal } = o;
+      const dir = o.facing < 0 ? -1 : 1;
+      const diveMs1 = 180;
+      const diveMs2 = 185;
+      const beat1Launch = 150;
+      const beat1Hit = beat1Launch + diveMs1; // 330
+      const beat2Launch = beat1Hit + 110;     // 440 (+110ms)
+      const beat2Hit = beat2Launch + diveMs2; // 625
+
+      const beat1Offsets = [-46, 38];
+      const beat2Offsets = [-20, 22];
+
       const cues = [
         {
           at: 0,
           fn() {
             kit.spawnPfx('magic_circle_cast', { palette: icePal }, {
-              x: from.x - 10, y: groundY + 4, scale: 1.55 * ampScale,
-              preWarmSec: 0.88, timeScale: 1.9, durMs: 760, layer: 'back',
-              glowColor: 'rgba(56,189,248,0.42)', glowRadius: 56, glowAlpha: 0.38
+              x: from.x - 10 * dir, y: groundY + 4, scale: 1.42 * ampScale,
+              preWarmSec: 0.88, timeScale: 1.9, durMs: 820, layer: 'back',
+              glowColor: 'rgba(56,189,248,0.40)', glowRadius: 50, glowAlpha: 0.36
             });
             kit.addMagicCircle({
-              x: from.x - 10, y: groundY + 4, radius: 56 * ampScale, sy: 0.30,
-              goldTriple: amp >= 2, dur: 880, fadeIn: 140, fadeOut: 240
+              x: from.x - 10 * dir, y: groundY + 4, radius: 52 * ampScale, sy: 0.30,
+              goldTriple: amp >= 2, dur: 960, fadeIn: 140, fadeOut: 240
             });
             kit.addMagicCircle({
-              x: to.x - 24, y: 46, radius: 96 * ampScale, sy: 0.27,
+              x: to.x - 18 * dir, y: 46, radius: 86 * ampScale, sy: 0.27,
               rimColor: '#0EA5E9', starColor: '#FDE68A', runeColor: '#FFFFFF',
               innerGlow: 'rgba(224,247,255,0.62)', outerGlow: 'rgba(56,189,248,0.28)',
-              goldTriple: true, lineW: 2.6,
-              dur: 1120, fadeIn: 150, fadeOut: 260, layer: 'front'
+              goldTriple: true, lineW: 2.4,
+              dur: 1200, fadeIn: 140, fadeOut: 260, layer: 'front'
             });
-            kit.triggerAmpCastAura(from.x - 10, groundY, amp, false);
+            kit.triggerAmpCastAura(from.x - 10 * dir, groundY, amp, false);
+          }
+        },
+        // 拍 1：2 枚冰蓝冰锥俯冲
+        {
+          at: beat1Launch,
+          fn() {
+            for (let i = 0; i < beat1Offsets.length; i++) {
+              const tx = to.x + beat1Offsets[i];
+              const ty = targetGroundY + (i === 0 ? -4 : 4);
+              kit.addSkyBeam({
+                x0: tx - 86 * dir, y0: -16,
+                x1: tx, y1: ty,
+                width: 4.4 * ampScale,
+                gold: amp >= 3,
+                dur: 460,
+                holdGate: 0,
+                holdTravelMs: diveMs1
+              });
+            }
+          }
+        },
+        {
+          at: beat1Hit,
+          gate: 0,
+          preTelegraphMs: 110,
+          gateMeta: { beatIdx: 0, totalBeats: 2, targetIdx: 0 },
+          fn() {
+            kit.safeCall(o.onImpact, 0, to, false);
+            kit.safeCall(o.onShake, 5.8 + amp * 1.4, 175);
+            kit.safeCall(o.onHitStop, 42 + amp * 8);
+
+            for (let i = 0; i < beat1Offsets.length; i++) {
+              const tx = to.x + beat1Offsets[i];
+              const ty = targetGroundY + (i === 0 ? -4 : 4);
+              kit.spawnPfx('icicle_fall', { palette: amp >= 3 ? PALETTES.iceGold : PALETTES.ice }, {
+                x: tx, y: ty, scale: 1.15 * ampScale,
+                preWarmSec: 0.50, timeScale: 1.75, durMs: 640, layer: 'main'
+              });
+              kit.addStarFlare({
+                x: tx, y: ty - 14, r0: 6, r1: 32 * ampScale, points: 6,
+                outerColor: '#38BDF8', coreColor: '#FFFFFF', dur: 270
+              });
+              kit.spawnBurstParticles(tx, ty - 8, 12, 'shard', {
+                spdMin: 60, spdMax: 180, upBias: 68, sizeMin: 2.6, sizeMax: 5.0,
+                colors: ['#FFFFFF', '#BAE6FD', '#38BDF8'],
+                groundY: ty, bounce: 0.36, lifeMin: 320, lifeMax: 560
+              });
+            }
+            kit.addFlash(to.x, to.y - 6, 46 * ampScale, '#7DD3FC', 145, 0.34);
+            kit.addShockRing({
+              x: to.x, y: targetGroundY + 2, r0: 12, r1: 88 * ampScale, sy: 0.28,
+              color: '#38BDF8', coreColor: '#FFFFFF', lineW: 3.2, dur: 380
+            });
+          }
+        },
+        // 拍 2（+110ms）：2 枚金冰主锥俯冲
+        {
+          at: beat2Launch,
+          fn() {
+            kit.addStarFlare({
+              x: to.x - 18 * dir, y: 46, r0: 8, r1: 42 * ampScale, points: 8,
+              outerColor: '#FDE68A', coreColor: '#FFFFFF', dur: 240
+            });
+            for (let i = 0; i < beat2Offsets.length; i++) {
+              const tx = to.x + beat2Offsets[i];
+              const ty = targetGroundY + (i === 0 ? -2 : 2);
+              kit.addSkyBeam({
+                x0: tx - 92 * dir, y0: -18,
+                x1: tx, y1: ty,
+                width: 5.6 * ampScale,
+                gold: true,
+                dur: 520,
+                holdGate: 1,
+                holdTravelMs: diveMs2
+              });
+            }
+          }
+        },
+        {
+          at: beat2Hit,
+          gate: 1,
+          preTelegraphMs: 110,
+          gateMeta: { beatIdx: 1, totalBeats: 2, targetIdx: 0 },
+          fn() {
+            kit.safeCall(o.onImpact, 0, to, true);
+            kit.safeCall(o.onShake, 10.2 + amp * 2.4, 340);
+            kit.safeCall(o.onHitStop, 72 + amp * 14);
+
+            for (let i = 0; i < beat2Offsets.length; i++) {
+              const tx = to.x + beat2Offsets[i];
+              const ty = targetGroundY + (i === 0 ? -2 : 2);
+              kit.spawnPfx('icicle_fall', { palette: PALETTES.iceGold }, {
+                x: tx, y: ty, scale: 1.15 * ampScale,
+                preWarmSec: 0.50, timeScale: 1.75, durMs: 680, layer: 'main'
+              });
+            }
+
+            kit.spawnPfx('frost_nova', { palette: amp >= 2 ? PALETTES.iceGold : PALETTES.ice, reach: 96 }, {
+              x: to.x, y: targetGroundY + 4,
+              scale: 1.40 * ampScale,
+              preWarmSec: 0.42, timeScale: 1.42, durMs: 880,
+              layer: 'back',
+              glowColor: 'rgba(56,189,248,0.34)', glowRadius: 58 * ampScale, glowAlpha: 0.30
+            });
+
+            kit.spawnPfx('snowflake_burst', { palette: PALETTES.ice, count: 11 }, {
+              x: to.x, y: targetGroundY + 10,
+              scale: 1.48 * ampScale,
+              preWarmSec: 0.22, timeScale: 1.25, durMs: 920,
+              layer: 'front',
+              glowColor: 'rgba(125,211,252,0.28)', glowRadius: 48, glowAlpha: 0.26
+            });
+
+            kit.spawnPfx('crit_hit', { palette: PALETTES.gold, height: 24, aim: 0.08 }, {
+              x: to.x, y: to.y + 30,
+              scale: 1.42 * ampScale, durMs: 520, layer: 'front'
+            });
+
+            kit.addFlash(to.x, to.y - 10, 56 * ampScale, '#7DD3FC', 180, 0.34);
+            kit.addStarFlare({
+              x: to.x, y: to.y - 12, r0: 12, r1: 62 * ampScale, inner: 0.16, points: 8,
+              outerColor: '#FDE68A', coreColor: '#FFFFFF', dur: 460
+            });
+            kit.addStarFlare({
+              x: to.x, y: to.y - 12, r0: 8, r1: 48 * ampScale, inner: 0.22, points: 6, rot: 0.3,
+              outerColor: '#38BDF8', coreColor: '#FFFFFF', dur: 420
+            });
+            kit.addShockRing({
+              x: to.x, y: targetGroundY + 4, r0: 16, r1: 118 * ampScale, sy: 0.28,
+              color: '#F59E0B', coreColor: '#FEF9C3', lineW: 4.0, dur: 520
+            });
+            kit.addShockRing({
+              x: to.x, y: targetGroundY + 4, r0: 10, r1: 96 * ampScale, sy: 0.28,
+              color: '#38BDF8', coreColor: '#FFFFFF', lineW: 3.2, dur: 480
+            });
+
+            kit.spawnBurstParticles(to.x, to.y - 16, 30 + amp * 8, 'star', {
+              spdMin: 68, spdMax: 255, upBias: 68, gravity: 95,
+              sizeMin: 3.4, sizeMax: 7.0,
+              colors: ['#FDE68A', '#FCD34D', '#FFFFFF', '#67E8F9', '#38BDF8'],
+              lifeMin: 520, lifeMax: 880
+            });
+            kit.spawnBurstParticles(to.x, to.y - 32, 30, 'snow', {
+              spdMin: 42, spdMax: 165, upBias: 80, gravity: 26,
+              sizeMin: 3.4, sizeMax: 6.8,
+              colors: ['#FFFFFF', '#E0F7FF', '#FEF9C3'], color2: '#0EA5E9',
+              lifeMin: 580, lifeMax: 920
+            });
+
+            kit.triggerAmpImpactUpgrade(to.x, to.y, targetGroundY, amp);
           }
         }
       ];
 
-      const rainOffsets = [-84, -40, 14, 64, -62, -10, 42, 76];
-      for (let i = 0; i < 8; i++) {
-        const dropAt = 210 + i * 68;
-        const ox = rainOffsets[i];
-        const tx = to.x + ox;
-        const ty = targetGroundY + (i % 3 - 1) * 7;
-        const isGold = i % 3 === 2 || amp >= 3;
-
-        cues.push({
-          at: dropAt,
-          fn() {
-            kit.addSkyBeam({
-              x0: tx - 96, y0: -16,
-              x1: tx, y1: ty,
-              width: (i % 2 === 0 ? 7.8 : 6.0) * ampScale,
-              gold: isGold,
-              dur: 540
-            });
-            if (i % 2 === 0) {
-              kit.spawnPfx('icicle_fall', { palette: isGold ? PALETTES.iceGold : PALETTES.ice }, {
-                x: tx, y: ty, scale: 1.55 * ampScale,
-                preWarmSec: 0.50, timeScale: 1.75, durMs: 700, layer: 'main'
-              });
-            }
-          }
-        });
-
-        cues.push({
-          at: dropAt + 220,
-          fn() {
-            kit.safeCall(o.onShake, 3.2, 90);
-            kit.spawnBurstParticles(tx, ty - 6, 8, 'shard', {
-              spdMin: 55, spdMax: 165, upBias: 60, sizeMin: 2.8, sizeMax: 5.5,
-              colors: isGold ? ['#FEF9C3', '#FDE68A', '#67E8F9'] : ['#FFFFFF', '#BAE6FD', '#38BDF8'],
-              groundY: ty, bounce: 0.35, lifeMin: 300, lifeMax: 520
-            });
-          }
-        });
-      }
-
-      cues.push({
-        at: 710,
-        fn() {
-          kit.safeCall(o.onImpact, 0, to, true);
-          kit.safeCall(o.onShake, 10.5 + amp * 2.5, 340);
-          kit.safeCall(o.onHitStop, 75 + amp * 15);
-
-          kit.spawnPfx('frost_nova', { palette: amp >= 2 ? PALETTES.iceGold : PALETTES.ice, reach: 108 }, {
-            x: to.x, y: targetGroundY + 4,
-            scale: 1.92 * ampScale,
-            preWarmSec: 0.42, timeScale: 1.42, durMs: 920,
-            layer: 'back',
-            glowColor: 'rgba(56,189,248,0.34)', glowRadius: 72 * ampScale, glowAlpha: 0.32
-          });
-
-          kit.spawnPfx('snowflake_burst', { palette: PALETTES.ice, count: 11 }, {
-            x: to.x, y: targetGroundY + 12,
-            scale: 2.15 * ampScale,
-            preWarmSec: 0.22, timeScale: 1.25, durMs: 980,
-            layer: 'front',
-            glowColor: 'rgba(125,211,252,0.28)', glowRadius: 60, glowAlpha: 0.28
-          });
-
-          kit.spawnPfx('crit_hit', { palette: PALETTES.gold, height: 26, aim: 0.08 }, {
-            x: to.x, y: to.y + 34,
-            scale: 1.78 * ampScale, durMs: 560, layer: 'front'
-          });
-
-          kit.addFlash(to.x, to.y - 10, 72 * ampScale, '#7DD3FC', 190, 0.36);
-          kit.addStarFlare({
-            x: to.x, y: to.y - 12, r0: 14, r1: 78 * ampScale, inner: 0.16, points: 8,
-            outerColor: '#FDE68A', coreColor: '#FFFFFF', dur: 480
-          });
-          kit.addStarFlare({
-            x: to.x, y: to.y - 12, r0: 10, r1: 60 * ampScale, inner: 0.22, points: 6, rot: 0.3,
-            outerColor: '#38BDF8', coreColor: '#FFFFFF', dur: 440
-          });
-          kit.addShockRing({
-            x: to.x, y: targetGroundY + 4, r0: 18, r1: 142 * ampScale, sy: 0.28,
-            color: '#F59E0B', coreColor: '#FEF9C3', lineW: 4.5, dur: 560
-          });
-          kit.addShockRing({
-            x: to.x, y: targetGroundY + 4, r0: 10, r1: 116 * ampScale, sy: 0.28,
-            color: '#38BDF8', coreColor: '#FFFFFF', lineW: 3.5, dur: 500
-          });
-
-          kit.spawnBurstParticles(to.x, to.y - 16, 36 + amp * 10, 'star', {
-            spdMin: 70, spdMax: 290, upBias: 70, gravity: 95,
-            sizeMin: 4, sizeMax: 8.5,
-            colors: ['#FDE68A', '#FCD34D', '#FFFFFF', '#67E8F9', '#38BDF8'],
-            lifeMin: 560, lifeMax: 940
-          });
-          kit.spawnBurstParticles(to.x, to.y - 36, 38, 'snow', {
-            spdMin: 45, spdMax: 180, upBias: 85, gravity: 26,
-            sizeMin: 4.0, sizeMax: 8.2,
-            colors: ['#FFFFFF', '#E0F7FF', '#FEF9C3'], color2: '#0EA5E9',
-            lifeMin: 640, lifeMax: 980
-          });
-
-          kit.triggerAmpImpactUpgrade(to.x, to.y, targetGroundY, amp);
-        }
-      });
-
       kit.scheduleTimeline(cues);
     },
 
-    /* ---------- 4. 激流涌 (raging_surge，原版照搬) ---------- */
+    /* ---------- 4. 激流涌 (raging_surge，双浪串行 2 拍门控) ---------- */
     raging_surge(kit, o) {
       const { from, to, groundY, targetGroundY, amp, ampScale } = o;
-      const jetStart = { x: from.x + 8, y: from.y - 2 };
+      const dir = o.facing < 0 ? -1 : 1;
+      const jetStart = { x: from.x + 8 * dir, y: from.y - 2 };
       const jetEnd = { x: to.x, y: to.y - 4 };
       const dx = jetEnd.x - jetStart.x;
       const dy = jetEnd.y - jetStart.y;
       const dist = Math.hypot(dx, dy);
       const ang = Math.atan2(dy, dx);
-      const jetScale = 1.55 * (1 + amp * 0.06);
-      const extendMs = 155;
+      const wave1Scale = 1.28 * (1 + amp * 0.05);
+      const wave2Scale = 1.60 * (1 + amp * 0.06);
+      const extendMs1 = 165;
+      const extendMs2 = 170;
+      const wave1Launch = 110;
+      const wave1Hit = wave1Launch + extendMs1; // 275
+      const wave2Launch = wave1Hit + 110;       // 385 (+110ms 蓄势)
+      const wave2Hit = wave2Launch + extendMs2; // 555
 
       kit.scheduleTimeline([
         {
           at: 0,
           fn() {
             kit.addMagicCircle({
-              x: from.x - 8, y: groundY + 2, radius: 44 * ampScale, sy: 0.30,
+              x: from.x - 8 * dir, y: groundY + 2, radius: 44 * ampScale, sy: 0.30,
               rimColor: '#0284C7', starColor: '#22D3EE', runeColor: '#CFFAFE',
               innerGlow: 'rgba(207,250,254,0.72)', outerGlow: 'rgba(6,182,212,0.34)',
-              goldTriple: amp >= 3, dur: 520
+              goldTriple: amp >= 3, dur: 760
             });
             kit.spawnPfx('splash', { palette: PALETTES.water, stone: false }, {
-              x: from.x - 4, y: groundY + 4, scale: 1.35 * ampScale,
-              preWarmSec: 0.22, timeScale: 1.45, durMs: 520, layer: 'back'
+              x: from.x - 4 * dir, y: groundY + 4, scale: 1.32 * ampScale,
+              preWarmSec: 0.22, timeScale: 1.45, durMs: 500, layer: 'back'
             });
             kit.addShockRing({
-              x: jetStart.x, y: jetStart.y, r0: 6, r1: 34, sy: 0.85,
-              color: '#22D3EE', coreColor: '#FFFFFF', lineW: 3.5, dur: 260, layer: 'front'
+              x: jetStart.x, y: jetStart.y, r0: 6, r1: 32, sy: 0.85,
+              color: '#22D3EE', coreColor: '#FFFFFF', lineW: 3.4, dur: 240, layer: 'front'
             });
-            kit.triggerAmpCastAura(from.x - 8, groundY, amp, false);
-            kit.spawnBurstParticles(jetStart.x, jetStart.y, 16, 'drop', {
-              spdMin: 55, spdMax: 160, upBias: 60, sizeMin: 3, sizeMax: 5.5,
+            kit.triggerAmpCastAura(from.x - 8 * dir, groundY, amp, false);
+            kit.spawnBurstParticles(jetStart.x, jetStart.y, 14, 'drop', {
+              spdMin: 55, spdMax: 155, upBias: 55, sizeMin: 2.8, sizeMax: 5.2,
               colors: ['#CFFAFE', '#67E8F9', '#22D3EE'], color2: '#0284C7',
-              groundY, lifeMin: 280, lifeMax: 460
+              groundY, lifeMin: 260, lifeMax: 420
             });
           }
         },
+        // 拍 1：急流飞矢逼近
         {
-          at: 165,
+          at: wave1Launch,
           fn() {
-            const pfxLen = Math.max(60, Math.min(205, Math.round(dist / jetScale)));
-            kit.spawnPfx('water_jet', { palette: PALETTES.water, length: pfxLen }, {
-              x: jetStart.x, y: jetStart.y - 6,
+            const pfxLen1 = Math.max(60, Math.min(205, Math.round(dist / wave1Scale)));
+            kit.spawnPfx('water_jet', { palette: PALETTES.water, length: pfxLen1 }, {
+              x: jetStart.x, y: jetStart.y - 4,
               angle: ang,
-              scale: jetScale,
-              timeScale: 1.35,
-              durMs: 620,
-              fadeInMs: 25,
-              fadeOutMs: 180,
+              scale: wave1Scale,
+              timeScale: 1.45,
+              durMs: 360,
+              fadeInMs: 20,
+              fadeOutMs: 130,
               layer: 'front',
               clipRight: 0.08,
-              glowColor: 'rgba(34,211,238,0.38)', glowRadius: 38, glowAlpha: 0.36,
+              glowColor: 'rgba(34,211,238,0.36)', glowRadius: 32, glowAlpha: 0.34,
+              holdGate: 0,
+              holdTravelMs: extendMs1,
+              snapFadeMs: 145,
               onUpdate(slot, dtSec, age) {
-                slot.clipRight = easeOutCubic(clamp(age / extendMs, 0.08, 1));
+                const p = kit.evalHoldProgress(slot, extendMs1);
+                slot.clipRight = clamp(0.08 + 0.92 * p, 0.08, 1);
               }
             });
 
             kit.addWaterStream({
               x0: jetStart.x, y0: jetStart.y,
               x1: jetEnd.x, y1: jetEnd.y,
-              width: 17 * ampScale,
-              extendMs,
-              dur: 620
+              width: 12.5 * ampScale,
+              extendMs: extendMs1,
+              dur: 370,
+              holdGate: 0,
+              holdTravelMs: extendMs1,
+              snapFadeMs: 145
             });
           }
         },
+        // 拍 1 爆裂
         {
-          at: 165 + extendMs,
+          at: wave1Hit,
+          gate: 0,
+          preTelegraphMs: 110,
+          gateMeta: { beatIdx: 0, totalBeats: 2, targetIdx: 0 },
+          fn() {
+            kit.safeCall(o.onImpact, 0, to, false);
+            kit.safeCall(o.onShake, 5.6 + amp * 1.4, 170);
+            kit.safeCall(o.onHitStop, 38 + amp * 8);
+
+            kit.spawnPfx('splash', { palette: PALETTES.water, stone: false }, {
+              x: to.x, y: targetGroundY + 4,
+              scale: 1.56 * ampScale,
+              preWarmSec: 0.18, timeScale: 1.38, durMs: 620,
+              layer: 'front'
+            });
+            kit.addFlash(to.x, to.y, 46 * ampScale, '#22D3EE', 140, 0.38);
+            kit.addStarFlare({
+              x: to.x, y: to.y, r0: 8, r1: 38 * ampScale, points: 6,
+              outerColor: '#22D3EE', coreColor: '#FFFFFF', dur: 260
+            });
+            kit.addShockRing({
+              x: to.x, y: targetGroundY + 4, r0: 12, r1: 92 * ampScale, sy: 0.28,
+              color: '#0EA5E9', coreColor: '#CFFAFE', lineW: 3.6, dur: 400
+            });
+            kit.spawnBurstParticles(to.x, to.y, 26 + amp * 6, 'drop', {
+              spdMin: 85, spdMax: 270, upBias: 110, gravity: 430,
+              sizeMin: 3.0, sizeMax: 6.0,
+              colors: ['#FFFFFF', '#CFFAFE', '#67E8F9', '#22D3EE'],
+              color2: '#0284C7',
+              groundY: targetGroundY, bounce: 0.30, lifeMin: 380, lifeMax: 680
+            });
+          }
+        },
+        // 110ms 蓄势 → 拍 2 高压巨浪逼近
+        {
+          at: wave2Launch,
+          fn() {
+            kit.addShockRing({
+              x: jetStart.x, y: jetStart.y, r0: 36 * ampScale, r1: 8, sy: 0.85,
+              color: '#67E8F9', coreColor: '#FFFFFF', lineW: 3.8, dur: 170, layer: 'front'
+            });
+            kit.spawnBurstParticles(jetStart.x, jetStart.y, 18, 'drop', {
+              spdMin: 70, spdMax: 195, upBias: 60, sizeMin: 3.0, sizeMax: 5.8,
+              colors: ['#FFFFFF', '#CFFAFE', '#22D3EE'], color2: '#0284C7',
+              groundY, lifeMin: 240, lifeMax: 420
+            });
+
+            const pfxLen2 = Math.max(60, Math.min(205, Math.round(dist / wave2Scale)));
+            kit.spawnPfx('water_jet', { palette: PALETTES.water, length: pfxLen2 }, {
+              x: jetStart.x, y: jetStart.y - 6,
+              angle: ang,
+              scale: wave2Scale,
+              timeScale: 1.35,
+              durMs: 560,
+              fadeInMs: 22,
+              fadeOutMs: 180,
+              layer: 'front',
+              clipRight: 0.08,
+              glowColor: 'rgba(34,211,238,0.42)', glowRadius: 40, glowAlpha: 0.38,
+              holdGate: 1,
+              holdTravelMs: extendMs2,
+              onUpdate(slot, dtSec, age) {
+                const p = kit.evalHoldProgress(slot, extendMs2);
+                slot.clipRight = clamp(0.08 + 0.92 * p, 0.08, 1);
+              }
+            });
+
+            kit.addWaterStream({
+              x0: jetStart.x, y0: jetStart.y,
+              x1: jetEnd.x, y1: jetEnd.y,
+              width: 18.5 * ampScale,
+              extendMs: extendMs2,
+              dur: 560,
+              holdGate: 1,
+              holdTravelMs: extendMs2
+            });
+          }
+        },
+        // 拍 2 巨浪终爆
+        {
+          at: wave2Hit,
+          gate: 1,
+          preTelegraphMs: 110,
+          gateMeta: { beatIdx: 1, totalBeats: 2, targetIdx: 0 },
           fn() {
             kit.safeCall(o.onImpact, 0, to, true);
-            kit.safeCall(o.onShake, 8.8 + amp * 2.2, 320);
-            kit.safeCall(o.onHitStop, 55 + amp * 12);
+            kit.safeCall(o.onShake, 9.2 + amp * 2.2, 320);
+            kit.safeCall(o.onHitStop, 60 + amp * 12);
 
             kit.spawnPfx('wave_crash', { palette: PALETTES.water }, {
-              x: to.x + 36, y: targetGroundY + 6,
+              x: to.x + 36 * dir, y: targetGroundY + 6,
               scale: 2.02 * ampScale,
-              preWarmSec: 0.56, timeScale: 1.48, durMs: 980,
+              preWarmSec: 0.56, timeScale: 1.48, durMs: 960,
               layer: 'main',
               glowColor: 'rgba(14,165,233,0.42)', glowRadius: 72 * ampScale, glowAlpha: 0.42
             });
@@ -2628,14 +2899,14 @@
             kit.spawnPfx('splash', { palette: PALETTES.water, stone: false }, {
               x: to.x, y: targetGroundY + 4,
               scale: 1.98 * ampScale,
-              preWarmSec: 0.24, timeScale: 1.32, durMs: 880,
+              preWarmSec: 0.24, timeScale: 1.32, durMs: 860,
               layer: 'front'
             });
 
             kit.addFlash(to.x, to.y, 62 * ampScale, '#22D3EE', 175, 0.44);
             kit.addStarFlare({
-              x: to.x, y: to.y, r0: 10, r1: 50 * ampScale, points: 6,
-              outerColor: '#22D3EE', coreColor: '#FFFFFF', dur: 300
+              x: to.x, y: to.y, r0: 10, r1: 52 * ampScale, points: 8,
+              outerColor: amp >= 3 ? '#FDE68A' : '#22D3EE', coreColor: '#FFFFFF', dur: 320
             });
             kit.addShockRing({
               x: to.x, y: targetGroundY + 4, r0: 16, r1: 128 * ampScale, sy: 0.28,
@@ -2660,33 +2931,38 @@
           }
         },
         {
-          at: 540,
+          at: wave2Hit + 165,
           fn() {
-            kit.spawnBurstParticles(to.x + 12, targetGroundY - 26, 26, 'drop', {
-              spdMin: 80, spdMax: 250, upBias: 120, gravity: 420,
-              sizeMin: 3, sizeMax: 6.2,
+            kit.spawnBurstParticles(to.x + 12 * dir, targetGroundY - 26, 24, 'drop', {
+              spdMin: 80, spdMax: 245, upBias: 115, gravity: 420,
+              sizeMin: 3, sizeMax: 6.0,
               colors: ['#FFFFFF', '#CFFAFE', '#67E8F9', '#38BDF8'],
               color2: '#0369A1',
-              groundY: targetGroundY, bounce: 0.28, lifeMin: 400, lifeMax: 700
+              groundY: targetGroundY, bounce: 0.28, lifeMin: 380, lifeMax: 680
             });
             kit.addShockRing({
-              x: to.x + 6, y: targetGroundY + 4, r0: 24, r1: 152 * ampScale, sy: 0.26,
-              color: '#22D3EE', coreColor: '#FFFFFF', lineW: 3.2, dur: 520
+              x: to.x + 6 * dir, y: targetGroundY + 4, r0: 24, r1: 148 * ampScale, sy: 0.26,
+              color: '#22D3EE', coreColor: '#FFFFFF', lineW: 3.2, dur: 500
             });
           }
         }
       ]);
     },
 
-    /* ---------- 5. 断水刃 (water_cleave，原版照搬) ---------- */
+    /* ---------- 5. 断水刃 (water_cleave，2 拍串行：跃进斜斩 → 旋身蓄刃上挑终爆) ---------- */
     water_cleave(kit, o) {
       const { from, to, groundY, targetGroundY, amp, ampScale } = o;
+      const dir = o.facing < 0 ? -1 : 1;
       const dashMs = 195;
+      const spinChargeAt = dashMs + 110; // 305 (+110ms 旋身蓄刃)
+      const spinDur = 155;
+      const beat2Hit = spinChargeAt + spinDur; // 460
       const p0 = { x: from.x, y: from.y + 12 };
-      const p2 = { x: to.x - 36, y: to.y + 4 };
+      const p2 = { x: to.x - 32 * dir, y: to.y + 4 };
       const p1 = { x: (p0.x + p2.x) * 0.5, y: Math.min(p0.y, p2.y) - 52 };
 
       kit.scheduleTimeline([
+        // 拍 1 蓄势：跃进斜斩疾驰
         {
           at: 0,
           fn() {
@@ -2698,99 +2974,202 @@
 
             const dashRibbon = kit.addRibbon({
               pts: [p0],
-              width: 11 * ampScale,
+              width: 10.5 * ampScale,
               outerColor: '#0284C7',
               midColor: '#22D3EE',
-              alpha: 0.9,
+              alpha: 0.90,
               dur: 460,
-              fadeOut: 240
+              fadeOut: 220,
+              holdGate: 0,
+              holdTravelMs: dashMs
             });
 
-            const stepN = 14;
-            for (let i = 1; i <= stepN; i++) {
-              const t = i / stepN;
-              dashRibbon.pts.push(quadBezier(p0, p1, p2, t));
-            }
-            kit.spawnBurstParticles(from.x + 12, from.y, 16, 'drop', {
-              angleBase: -0.3, spread: 0.9, spdMin: 120, spdMax: 260,
+            kit.addCustomDrawable('front', {
+              age: 0, dur: dashMs + 45,
+              holdGate: 0,
+              holdTravelMs: dashMs,
+              snapFadeMs: 45,
+              update() {
+                const t = kit.evalHoldProgress(this, dashMs);
+                const pos = quadBezier(p0, p1, p2, t);
+                this.cx = pos.x;
+                this.cy = pos.y;
+                this.ang = quadBezierTangent(p0, p1, p2, Math.min(0.99, t));
+                if (t < 0.995) {
+                  dashRibbon.pts.push({ x: pos.x, y: pos.y });
+                  if (dashRibbon.pts.length > 22) dashRibbon.pts.shift();
+                }
+              },
+              draw(ctx) {
+                const cx = this.cx != null ? this.cx : p0.x;
+                const cy = this.cy != null ? this.cy : p0.y;
+                const pulse = this._isHolding ? (1 + 0.16 * Math.sin((this._holdWaitMs || 0) * 0.025)) : 1;
+                drawStarFlare(ctx, cx, cy, 22 * ampScale * pulse, 0.20, 4, (this.ang || 0) - 0.4, '#22D3EE', '#FFFFFF', 0.95);
+              }
+            });
+
+            kit.spawnBurstParticles(from.x + 12 * dir, from.y, 16, 'drop', {
+              angleBase: dir > 0 ? -0.3 : Math.PI + 0.3, spread: 0.9, spdMin: 120, spdMax: 260,
               sizeMin: 2.8, sizeMax: 5.5,
               colors: ['#FFFFFF', '#67E8F9', '#22D3EE'], color2: '#0284C7',
               groundY, lifeMin: 260, lifeMax: 450
             });
           }
         },
+        // 拍 1：水月斩
         {
           at: dashMs,
+          gate: 0,
+          preTelegraphMs: 110,
+          gateMeta: { beatIdx: 0, totalBeats: 2, targetIdx: 0 },
           fn() {
-            kit.safeCall(o.onShake, 5.2, 130);
-            kit.safeCall(o.onHitStop, 35);
+            kit.safeCall(o.onImpact, 0, to, false);
+            kit.safeCall(o.onShake, 5.4 + amp * 1.2, 145);
+            kit.safeCall(o.onHitStop, 38 + amp * 8);
+
+            const swScale = 1.72 * ampScale;
+            kit.spawnPfx('sword_slash', {
+              palette: amp >= 3 ? PALETTES.slashGold : PALETTES.slash,
+              sparks: PALETTES.aquaSpark,
+              radius: 44
+            }, {
+              x: to.x - 24 * dir * swScale,
+              y: to.y + 34 * swScale,
+              scale: swScale,
+              flipX: dir < 0,
+              timeScale: 1.15,
+              durMs: 520,
+              fadeInMs: 10,
+              fadeOutMs: 150,
+              layer: 'front'
+            });
+
+            kit.addSlash({
+              x: to.x - 4 * dir, y: to.y + 2,
+              rx: 88 * ampScale, ry: 54 * ampScale,
+              tilt: dir > 0 ? -0.58 : 0.58,
+              startAngle: dir > 0 ? -2.45 : 2.45,
+              endAngle: dir > 0 ? 0.72 : -0.72,
+              thickness: 22 * ampScale,
+              outerColor: '#0284C7',
+              midColor: '#22D3EE',
+              hiColor: '#A5F3FC',
+              dur: 460
+            });
+
+            kit.addStarFlare({
+              x: to.x, y: to.y, r0: 8, r1: 38 * ampScale, points: 4, rot: -0.58,
+              outerColor: '#22D3EE', coreColor: '#FFFFFF', dur: 260
+            });
+
+            kit.spawnBurstParticles(to.x, to.y, 22, 'drop', {
+              angleBase: dir > 0 ? -0.6 : Math.PI + 0.6, spread: 1.3, spdMin: 110, spdMax: 290, upBias: 60,
+              sizeMin: 3.2, sizeMax: 6.2,
+              colors: ['#FFFFFF', '#CFFAFE', '#67E8F9', '#22D3EE'],
+              color2: '#0284C7', groundY: targetGroundY, bounce: 0.35,
+              lifeMin: 360, lifeMax: 620
+            });
+          }
+        },
+        // 110ms 旋身蓄刃
+        {
+          at: spinChargeAt,
+          fn() {
+            kit.addCustomDrawable('front', {
+              age: 0, dur: spinDur + 45,
+              holdGate: 1,
+              holdTravelMs: spinDur,
+              snapFadeMs: 45,
+              draw(ctx) {
+                const t = kit.evalHoldProgress(this, spinDur);
+                const r = lerp(52, 24, t) * ampScale;
+                const ang0 = lerp(Math.PI * 0.9, -Math.PI * 0.35, t) * dir;
+                ctx.save();
+                ctx.translate(to.x - 10 * dir, to.y + 12);
+                ctx.strokeStyle = '#22D3EE';
+                ctx.lineWidth = (3.4 + t * 2.4) * ampScale;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.arc(0, 0, r, ang0 - 1.25, ang0);
+                ctx.stroke();
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 1.8 * ampScale;
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 0.94, ang0 - 0.85, ang0);
+                ctx.stroke();
+                const tipX = Math.cos(ang0) * r;
+                const tipY = Math.sin(ang0) * r;
+                const pulse = this._isHolding ? (1 + 0.18 * Math.sin((this._holdWaitMs || 0) * 0.028)) : 1;
+                drawStarFlare(ctx, tipX, tipY, 20 * ampScale * pulse, 0.20, 4, ang0, '#38BDF8', '#FFFFFF', 0.95);
+                ctx.restore();
+              }
+            });
+
+            kit.spawnBurstParticles(to.x - 10 * dir, to.y + 14, 14, 'drop', {
+              spdMin: 50, spdMax: 150, upBias: 95, sizeMin: 2.6, sizeMax: 5.0,
+              colors: ['#FFFFFF', '#CFFAFE', '#22D3EE'], color2: '#0284C7',
+              groundY: targetGroundY, lifeMin: 220, lifeMax: 400
+            });
+          }
+        },
+        // 拍 2：上挑十字水刃终爆
+        {
+          at: beat2Hit,
+          gate: 1,
+          preTelegraphMs: 110,
+          gateMeta: { beatIdx: 1, totalBeats: 2, targetIdx: 0 },
+          fn() {
+            kit.safeCall(o.onImpact, 0, to, true);
+            kit.safeCall(o.onShake, 8.6 + amp * 2.2, 240);
+            kit.safeCall(o.onHitStop, 62 + amp * 12);
 
             const dsScale = 1.92 * ampScale;
             kit.spawnPfx('double_slash', {
               palette: amp >= 3 ? PALETTES.slashGold : PALETTES.slash,
               sparks: PALETTES.aquaSpark
             }, {
-              x: to.x - 34 * dsScale,
+              x: to.x - 34 * dir * dsScale,
               y: to.y + 23 * dsScale,
               scale: dsScale,
-              timeScale: 1.05,
-              durMs: 760,
+              flipX: dir < 0,
+              timeScale: 1.08,
+              durMs: 720,
               fadeInMs: 10,
               fadeOutMs: 180,
               layer: 'front'
             });
 
             kit.addSlash({
-              x: to.x - 4, y: to.y + 2,
-              rx: 88 * ampScale, ry: 54 * ampScale,
-              tilt: -0.58,
-              startAngle: -2.45, endAngle: 0.72,
-              thickness: 22 * ampScale,
-              outerColor: '#0284C7',
-              midColor: '#22D3EE',
-              hiColor: '#A5F3FC',
-              dur: 480
-            });
-
-            kit.addStarFlare({
-              x: to.x, y: to.y, r0: 8, r1: 36 * ampScale, points: 4, rot: -0.58,
-              outerColor: '#22D3EE', coreColor: '#FFFFFF', dur: 260
-            });
-
-            kit.spawnBurstParticles(to.x, to.y, 22, 'drop', {
-              angleBase: -0.6, spread: 1.3, spdMin: 110, spdMax: 290, upBias: 60,
-              sizeMin: 3.2, sizeMax: 6.4,
-              colors: ['#FFFFFF', '#CFFAFE', '#67E8F9', '#22D3EE'],
-              color2: '#0284C7', groundY: targetGroundY, bounce: 0.35,
-              lifeMin: 380, lifeMax: 660
-            });
-          }
-        },
-        {
-          at: dashMs + 145,
-          fn() {
-            kit.safeCall(o.onImpact, 0, to, true);
-            kit.safeCall(o.onShake, 8.2 + amp * 2.2, 240);
-            kit.safeCall(o.onHitStop, 60 + amp * 12);
-
-            kit.addSlash({
-              x: to.x + 2, y: to.y - 2,
+              x: to.x + 2 * dir, y: to.y - 2,
               rx: 94 * ampScale, ry: 58 * ampScale,
-              tilt: 0.56,
-              startAngle: 2.48, endAngle: -0.78,
+              tilt: dir > 0 ? 0.56 : -0.56,
+              startAngle: dir > 0 ? 2.48 : -2.48,
+              endAngle: dir > 0 ? -0.78 : 0.78,
               thickness: 25 * ampScale,
               outerColor: '#1658EB',
               midColor: '#0EA5E9',
               hiColor: '#67E8F9',
               dur: 460
             });
+            kit.addSlash({
+              x: to.x - 2 * dir, y: to.y,
+              rx: 84 * ampScale, ry: 48 * ampScale,
+              tilt: dir > 0 ? -0.52 : 0.52,
+              startAngle: dir > 0 ? -2.35 : 2.35,
+              endAngle: dir > 0 ? 0.72 : -0.72,
+              thickness: 19 * ampScale,
+              outerColor: '#0284C7',
+              midColor: '#67E8F9',
+              hiColor: '#FFFFFF',
+              dur: 420
+            });
 
             kit.spawnPfx('splash', { palette: PALETTES.water, stone: false }, {
-              x: to.x + 6, y: targetGroundY + 2, scale: 1.55 * ampScale,
+              x: to.x + 6 * dir, y: targetGroundY + 2, scale: 1.55 * ampScale,
               preWarmSec: 0.24, timeScale: 1.38, durMs: 680, layer: 'main'
             });
 
-            kit.addFlash(to.x, to.y, 48 * ampScale, '#38BDF8', 150, 0.34);
+            kit.addFlash(to.x, to.y, 48 * ampScale, '#38BDF8', 150, 0.36);
             kit.addStarFlare({
               x: to.x, y: to.y, r0: 10, r1: 48 * ampScale, points: 8, rot: 0.56,
               outerColor: amp >= 3 ? '#FDE68A' : '#38BDF8', coreColor: '#FFFFFF', dur: 320
@@ -2814,98 +3193,161 @@
       ]);
     },
 
-    /* ---------- 6. 霜域棘阵 · 3 目标群攻 (frost_thorn_field，支持 o.beatGapMs 多拍穿刺节奏) ---------- */
+    /* ---------- 6. 霜域棘阵 · 动态 1–6 目标逐拍穿刺门控 (frost_thorn_field) ---------- */
     frost_thorn_field(kit, o) {
       const { from, groundY, targets, amp, ampScale, icePal } = o;
+      const dir = o.facing < 0 ? -1 : 1;
+      const targetCount = Math.max(1, targets.length);
       const rawBeatGap = Number(o.beatGapMs);
-      const beatMs = (Number.isFinite(rawBeatGap) && rawBeatGap >= 20) ? clamp(rawBeatGap, 20, 600) : 70;
-      const spanMs = Math.max(0, targets.length - 1) * beatMs;
+      const hasCustomGap = Number.isFinite(rawBeatGap) && rawBeatGap >= 20;
+      const firstSpreadMs = 185;
+      const nextSpreadMs = o.gated ? 155 : (hasCustomGap ? clamp(rawBeatGap, 50, 520) : 140);
+      const chainGapMs = o.gated ? 45 : (hasCustomGap ? 20 : 30);
+
+      let cursorAt = 95;
+      let lastEruptAt = cursorAt + firstSpreadMs;
+      const totalSpanEst = firstSpreadMs + Math.max(0, targetCount - 1) * (nextSpreadMs + chainGapMs);
+
       const cues = [
         {
           at: 0,
           fn() {
             kit.spawnPfx('magic_circle_cast', { palette: icePal }, {
-              x: from.x - 10, y: groundY + 4, scale: 1.38 * ampScale,
-              preWarmSec: 0.95, timeScale: 2.0, durMs: Math.max(560, 340 + spanMs), layer: 'back'
+              x: from.x - 10 * dir, y: groundY + 4, scale: 1.38 * ampScale,
+              preWarmSec: 0.95, timeScale: 2.0, durMs: Math.max(620, 360 + totalSpanEst), layer: 'back'
             });
             kit.addMagicCircle({
-              x: from.x - 10, y: groundY + 4, radius: 48 * ampScale, sy: 0.30,
-              goldTriple: amp >= 3, dur: Math.max(620, 400 + spanMs)
+              x: from.x - 10 * dir, y: groundY + 4, radius: 48 * ampScale, sy: 0.30,
+              goldTriple: amp >= 3, dur: Math.max(680, 420 + totalSpanEst)
             });
-            kit.triggerAmpCastAura(from.x - 10, groundY, amp, false);
-          }
-        },
-        {
-          at: 115,
-          fn() {
-            const rng = makeRng(kit.nextSeed());
-            for (let idx = 0; idx < targets.length; idx++) {
-              const tg = targets[idx];
-              const sx = from.x + 6;
-              const sy = groundY + 2;
-              const ex = tg.x;
-              const ey = tg.groundY + 2;
-              const segs = 7;
-              const pts = [{ x: sx, y: sy }];
-              const spurs = [];
-              for (let s = 1; s < segs; s++) {
-                const u = s / segs;
-                const jx = (rng() - 0.5) * 14;
-                const jy = (rng() - 0.5) * 12;
-                const px = lerp(sx, ex, u) + jx;
-                const py = lerp(sy, ey, u) + jy;
-                pts.push({ x: px, y: py });
-                spurs.push({
-                  at: u,
-                  x: px, y: py,
-                  dx: (rng() - 0.3) * 26,
-                  dy: (rng() < 0.5 ? -1 : 1) * (10 + rng() * 14)
-                });
-              }
-              pts.push({ x: ex, y: ey });
-
-              kit.addIceVein({
-                pts,
-                spurs,
-                width: 3.4 * ampScale,
-                growMs: 225 + idx * beatMs,
-                dur: Math.max(1220, 960 + spanMs)
-              });
-            }
-
-            kit.spawnPfx('ice_spikes', { palette: icePal, reach: 138, height: 34 }, {
-              x: from.x + 28, y: groundY + 4,
-              scale: 1.38 * ampScale,
-              timeScale: 1.75, durMs: Math.max(780, 520 + spanMs), layer: 'back'
-            });
+            kit.triggerAmpCastAura(from.x - 10 * dir, groundY, amp, false);
           }
         }
       ];
 
       for (let idx = 0; idx < targets.length; idx++) {
         const tg = targets[idx];
-        const eruptAt = 340 + idx * beatMs;
+        const prev = idx === 0
+          ? { x: from.x + 6 * dir, y: groundY + 2 }
+          : { x: targets[idx - 1].x, y: targets[idx - 1].groundY + 2 };
+        const spreadAt = idx === 0 ? cursorAt : (lastEruptAt + chainGapMs);
+        const spreadDur = idx === 0 ? firstSpreadMs : nextSpreadMs;
+        const eruptAt = spreadAt + spreadDur;
+        lastEruptAt = eruptAt;
         const isLast = idx === targets.length - 1;
+        const targetRealIdx = Number.isFinite(tg.enemyIdx) ? tg.enemyIdx : idx;
+        const anchorTargetKey = tg.anchorTargetKey || `enemy:${targetRealIdx}`;
+
+        cues.push({
+          at: spreadAt,
+          fn() {
+            const rng = makeRng(kit.nextSeed() + idx * 17);
+            const sx = prev.x;
+            const sy = prev.y;
+            const ex = tg.x;
+            const ey = tg.groundY + 2;
+            const segs = 7;
+            const pts = [{ x: sx, y: sy }];
+            const spurs = [];
+            for (let s = 1; s < segs; s++) {
+              const u = s / segs;
+              const jx = (rng() - 0.5) * 14;
+              const jy = (rng() - 0.5) * 12;
+              const px = lerp(sx, ex, u) + jx;
+              const py = lerp(sy, ey, u) + jy;
+              pts.push({ x: px, y: py });
+              spurs.push({
+                at: u,
+                x: px, y: py,
+                dx: (rng() - 0.3) * 24,
+                dy: (rng() < 0.5 ? -1 : 1) * (10 + rng() * 12)
+              });
+            }
+            pts.push({ x: ex, y: ey });
+
+            kit.addIceVein({
+              pts,
+              spurs,
+              width: 3.4 * ampScale,
+              growMs: spreadDur,
+              dur: 1120,
+              holdGate: idx,
+              holdTravelMs: spreadDur
+            });
+
+            // 目标脚下破土蓄裂冰环（随脉络抵达 0.85->0.96 蓄压发光）
+            kit.addCustomDrawable('back', {
+              age: 0, dur: spreadDur + 80,
+              holdGate: idx,
+              holdTravelMs: spreadDur,
+              snapFadeMs: 55,
+              draw(ctx) {
+                const p = kit.evalHoldProgress(this, spreadDur);
+                const build = clamp((p - 0.52) / 0.48, 0, 1);
+                if (build <= 0.02) return;
+                const pulse = this._isHolding ? (1 + 0.14 * Math.sin((this._holdWaitMs || 0) * 0.026)) : 1;
+                const rx = (22 + 18 * build) * ampScale * pulse;
+                const ry = rx * 0.32;
+                ctx.save();
+                ctx.translate(tg.x, tg.groundY + 3);
+                ctx.globalAlpha = 0.86 * build;
+                const gg = ctx.createRadialGradient(0, 0, 2, 0, 0, rx);
+                gg.addColorStop(0, 'rgba(255,255,255,0.88)');
+                gg.addColorStop(0.55, 'rgba(56,189,248,0.52)');
+                gg.addColorStop(1, 'rgba(22,88,235,0)');
+                ctx.fillStyle = gg;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, rx, ry, 0, 0, TAU);
+                ctx.fill();
+                ctx.strokeStyle = '#E0F7FF';
+                ctx.lineWidth = 2.0;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, rx * 0.86, ry * 0.86, 0, 0, TAU);
+                ctx.stroke();
+                ctx.restore();
+              }
+            });
+
+            if (idx === 0) {
+              kit.spawnPfx('ice_spikes', { palette: icePal, reach: 130, height: 32 }, {
+                x: from.x + 28 * dir, y: groundY + 4,
+                scale: 1.32 * ampScale,
+                flipX: dir < 0,
+                timeScale: 1.75, durMs: Math.max(700, 480 + totalSpanEst), layer: 'back'
+              });
+            }
+          }
+        });
 
         cues.push({
           at: eruptAt,
+          gate: idx,
+          preTelegraphMs: 110,
+          gateMeta: {
+            beatIdx: idx,
+            totalBeats: targets.length,
+            targetIdx: idx,
+            targetRealIdx,
+            anchorTargetKey
+          },
           fn() {
             kit.safeCall(o.onImpact, idx, tg, isLast);
             kit.safeCall(o.onShake, isLast ? (9 + amp * 2) : 5.2, isLast ? 280 : 140);
             if (isLast) kit.safeCall(o.onHitStop, 58 + amp * 12);
 
             kit.spawnPfx('ice_spikes', { palette: icePal, reach: 58, height: 64 }, {
-              x: tg.x - 36, y: tg.groundY + 5,
-              scale: 1.65 * ampScale,
-              preWarmSec: 0.08, timeScale: 1.48, durMs: 960,
+              x: tg.x - 36 * dir, y: tg.groundY + 5,
+              scale: 1.62 * ampScale,
+              flipX: dir < 0,
+              preWarmSec: 0.08, timeScale: 1.48, durMs: 920,
               layer: 'main',
-              glowColor: 'rgba(56,189,248,0.58)', glowRadius: 56 * ampScale, glowAlpha: 0.52
+              glowColor: 'rgba(56,189,248,0.56)', glowRadius: 54 * ampScale, glowAlpha: 0.50
             });
 
             kit.spawnPfx('frost_nova', { palette: icePal, reach: 48 }, {
               x: tg.x, y: tg.groundY + 4,
-              scale: 1.28 * ampScale,
-              preWarmSec: 0.42, timeScale: 1.5, durMs: 760,
+              scale: 1.26 * ampScale,
+              preWarmSec: 0.42, timeScale: 1.5, durMs: 740,
               layer: 'back'
             });
 
@@ -2913,13 +3355,13 @@
             kit.addHeroThorns({
               x: tg.x, y: tg.groundY + 4,
               goldAccent: amp >= 3,
-              dur: 980,
+              dur: 960,
               spikes: [
                 { dx: -24, h: 52 * ampScale, w: 15, lean: -14, delay: 20, primary: false },
                 { dx: 24,  h: 56 * ampScale, w: 16, lean: 16,  delay: 25, primary: false },
                 { dx: -8,  h: 82 * ampScale, w: 20, lean: -7,  delay: 0,  primary: true },
                 { dx: 10,  h: 74 * ampScale, w: 18, lean: 10,  delay: 12, primary: true },
-                { dx: 0,   h: (94 + rng() * 10) * ampScale, w: 23, lean: (idx - 1) * 6, delay: 0, primary: true }
+                { dx: 0,   h: (94 + rng() * 10) * ampScale, w: 23, lean: ((idx % 3) - 1) * 6, delay: 0, primary: true }
               ]
             });
 
@@ -2934,10 +3376,10 @@
             });
 
             kit.spawnBurstParticles(tg.x, tg.groundY - 12, 18 + amp * 4, 'shard', {
-              spdMin: 75, spdMax: 230, upBias: 135, sizeMin: 3.4, sizeMax: 7.2,
+              spdMin: 75, spdMax: 230, upBias: 135, sizeMin: 3.2, sizeMax: 6.8,
               colors: ['#FFFFFF', '#E0F7FF', '#67E8F9', '#38BDF8'],
               color2: '#1658EB',
-              groundY: tg.groundY, bounce: 0.4, lifeMin: 440, lifeMax: 780
+              groundY: tg.groundY, bounce: 0.4, lifeMin: 440, lifeMax: 760
             });
 
             if (isLast) {
@@ -2952,23 +3394,23 @@
       }
 
       cues.push({
-        at: Math.max(430, 340 + spanMs - 50),
+        at: lastEruptAt + 110,
         fn() {
           const leftX = targets[0].x;
           const rightX = targets[targets.length - 1].x;
           const midX = (leftX + rightX) * 0.5;
 
           kit.spawnPfx('snowflake_burst', { palette: icePal, count: 9 }, {
-            x: leftX + 10, y: groundY - 4, scale: 1.52 * ampScale,
-            preWarmSec: 0.14, timeScale: 1.25, durMs: 960, layer: 'front'
+            x: leftX + 10, y: groundY - 4, scale: 1.46 * ampScale,
+            preWarmSec: 0.14, timeScale: 1.25, durMs: 900, layer: 'front'
           });
           kit.spawnPfx('snowflake_burst', { palette: icePal, count: 9 }, {
-            x: rightX - 10, y: groundY + 4, scale: 1.52 * ampScale,
-            preWarmSec: 0.14, timeScale: 1.25, durMs: 960, layer: 'front'
+            x: rightX - 10, y: groundY + 4, scale: 1.46 * ampScale,
+            preWarmSec: 0.14, timeScale: 1.25, durMs: 900, layer: 'front'
           });
 
           const rng = makeRng(kit.nextSeed());
-          for (let i = 0; i < 46; i++) {
+          for (let i = 0; i < 42; i++) {
             kit.addParticle({
               kind: i % 4 === 0 ? 'star' : 'snow',
               x: midX + (rng() - 0.5) * 260,
@@ -2977,12 +3419,12 @@
               vy: 24 + rng() * 44,
               gravity: 10,
               drag: 0.4,
-              size: 3.4 + rng() * 4.4,
+              size: 3.2 + rng() * 4.2,
               rot: rng() * TAU,
               vrot: (rng() - 0.5) * 3.2,
               color: i % 5 === 0 && amp >= 3 ? '#FDE68A' : '#FFFFFF',
               color2: '#38BDF8',
-              life: 720 + rng() * 440,
+              life: 700 + rng() * 420,
               groundY: groundY + 22
             });
           }
@@ -3108,94 +3550,134 @@
       ]);
     },
 
-    /* ---------- 8. 送刀斩 (sword_send_slash，原版照搬) ---------- */
+    /* ---------- 8. 送刀斩 (sword_send_slash，1 拍门控：0→195ms 疾奔蓄刃 → gate:0 十字二连斩) ---------- */
     sword_send_slash(kit, o) {
       const { from, to, groundY, targetGroundY, amp, ampScale } = o;
+      const dir = o.facing < 0 ? -1 : 1;
+      const dashMs = 195;
+      const p0 = { x: from.x + 8 * dir, y: from.y };
+      const p2 = { x: to.x - 24 * dir, y: to.y };
 
       kit.scheduleTimeline([
         {
           at: 0,
           fn() {
             kit.addStarFlare({
-              x: from.x + 12, y: from.y - 4, r0: 6, r1: 38 * ampScale, points: 4,
+              x: from.x + 12 * dir, y: from.y - 4, r0: 6, r1: 36 * ampScale, points: 4,
               outerColor: '#67E8F9', coreColor: '#FFFFFF', dur: 220
             });
-            kit.triggerAmpCastAura(from.x - 10, groundY, amp, false);
+            kit.addShockRing({
+              x: from.x - 6 * dir, y: groundY + 2, r0: 8, r1: 42 * ampScale, sy: 0.30,
+              color: '#38BDF8', coreColor: '#FFFFFF', lineW: 3.0, dur: 240
+            });
+            kit.triggerAmpCastAura(from.x - 10 * dir, groundY, amp, false);
 
-            const dashPts = [];
-            for (let i = 0; i <= 10; i++) {
-              const t = i / 10;
-              dashPts.push({
-                x: lerp(from.x + 8, to.x - 24, t),
-                y: lerp(from.y, to.y, t) - Math.sin(t * Math.PI) * 14
-              });
-            }
-            kit.addRibbon({
-              pts: dashPts,
-              width: 9.5 * ampScale,
+            const dashRibbon = kit.addRibbon({
+              pts: [p0],
+              width: 9.2 * ampScale,
               outerColor: '#1658EB',
               midColor: '#67E8F9',
               alpha: 0.94,
-              dur: 440,
-              fadeOut: 220
+              dur: 460,
+              fadeOut: 220,
+              holdGate: 0,
+              holdTravelMs: dashMs
+            });
+
+            // 0→195ms 贴身疾奔蓄刃光锋（gate:0 挂起时于 0.85→0.96 蓄压闪烁）
+            kit.addCustomDrawable('front', {
+              age: 0, dur: dashMs + 50,
+              holdGate: 0,
+              holdTravelMs: dashMs,
+              snapFadeMs: 45,
+              update() {
+                const t = kit.evalHoldProgress(this, dashMs);
+                const cx = lerp(p0.x, p2.x, t);
+                const cy = lerp(p0.y, p2.y, t) - Math.sin(t * Math.PI) * 14;
+                this.cx = cx;
+                this.cy = cy;
+                this.prog = t;
+                if (t < 0.995) {
+                  dashRibbon.pts.push({ x: cx, y: cy });
+                  if (dashRibbon.pts.length > 20) dashRibbon.pts.shift();
+                  if ((!this._isHolding && Math.random() < 0.65) || (this._isHolding && Math.random() < 0.25)) {
+                    kit.addParticle({
+                      kind: 'spark',
+                      x: cx + (Math.random() - 0.5) * 10,
+                      y: cy + (Math.random() - 0.5) * 10,
+                      vx: -dir * (65 + Math.random() * 80),
+                      vy: (Math.random() - 0.5) * 55,
+                      size: 2.2 + Math.random() * 1.8,
+                      color: Math.random() < 0.4 ? '#FFFFFF' : '#67E8F9',
+                      gravity: 80,
+                      life: 180 + Math.random() * 140
+                    });
+                  }
+                }
+              },
+              draw(ctx) {
+                const cx = this.cx != null ? this.cx : p0.x;
+                const cy = this.cy != null ? this.cy : p0.y;
+                const t = this.prog || 0;
+                const pulse = this._isHolding ? (1 + 0.20 * Math.sin((this._holdWaitMs || 0) * 0.03)) : 1;
+                const bladeLen = (24 + t * 22) * ampScale * pulse;
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(dir > 0 ? -0.35 : 0.35);
+                ctx.strokeStyle = '#38BDF8';
+                ctx.lineWidth = 4.2 * ampScale;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(-bladeLen * 0.65 * dir, 0);
+                ctx.lineTo(bladeLen * 0.65 * dir, 0);
+                ctx.stroke();
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 2.0 * ampScale;
+                ctx.beginPath();
+                ctx.moveTo(-bladeLen * 0.52 * dir, 0);
+                ctx.lineTo(bladeLen * 0.52 * dir, 0);
+                ctx.stroke();
+                drawStarFlare(ctx, bladeLen * 0.25 * dir, 0, (16 + t * 14) * ampScale * pulse, 0.16, 4, 0, '#67E8F9', '#FFFFFF', 0.96);
+                ctx.restore();
+              }
             });
           }
         },
         {
-          at: 165,
-          fn() {
-            kit.safeCall(o.onShake, 5.8, 150);
-            kit.safeCall(o.onHitStop, 40);
-
-            const swScale = 2.08 * ampScale;
-            kit.spawnPfx('sword_slash', {
-              palette: amp >= 3 ? PALETTES.slashGold : PALETTES.slash,
-              sparks: PALETTES.cyanSpark,
-              radius: 48
-            }, {
-              x: to.x - 26 * swScale,
-              y: to.y + 38 * swScale,
-              scale: swScale,
-              durMs: 640,
-              fadeInMs: 10,
-              fadeOutMs: 160,
-              layer: 'front'
-            });
-
-            kit.addSlash({
-              x: to.x - 12, y: to.y + 6,
-              rx: 114 * ampScale, ry: 74 * ampScale,
-              tilt: -0.22,
-              startAngle: -2.65, endAngle: 0.88,
-              thickness: 27 * ampScale,
-              outerColor: '#1658EB',
-              midColor: '#38BDF8',
-              hiColor: '#CFFAFE',
-              dur: 480
-            });
-
-            kit.spawnBurstParticles(to.x, to.y, 18, 'spark', {
-              spdMin: 150, spdMax: 340, sizeMin: 2.5, sizeMax: 4.5,
-              colors: ['#FFFFFF', '#67E8F9', '#38BDF8'],
-              gravity: 140, lifeMin: 240, lifeMax: 420
-            });
-          }
-        },
-        {
-          at: 345,
+          at: dashMs,
+          gate: 0,
+          preTelegraphMs: 110,
+          gateMeta: { beatIdx: 0, totalBeats: 1, targetIdx: 0 },
           fn() {
             kit.safeCall(o.onImpact, 0, to, true);
             kit.safeCall(o.onShake, 9.8 + amp * 2.4, 280);
             kit.safeCall(o.onHitStop, 72 + amp * 15);
+
+            const swScale = 1.78 * ampScale;
+            kit.spawnPfx('sword_slash', {
+              palette: amp >= 3 ? PALETTES.slashGold : PALETTES.slash,
+              sparks: PALETTES.cyanSpark,
+              radius: 46
+            }, {
+              x: to.x - 24 * dir * swScale,
+              y: to.y + 34 * swScale,
+              scale: swScale,
+              flipX: dir < 0,
+              durMs: 560,
+              fadeInMs: 10,
+              fadeOutMs: 150,
+              layer: 'front'
+            });
 
             const dsScale = 1.98 * ampScale;
             kit.spawnPfx('double_slash', {
               palette: amp >= 3 ? PALETTES.slashGold : PALETTES.slash,
               sparks: amp >= 2 ? PALETTES.goldSpark : PALETTES.cyanSpark
             }, {
-              x: to.x - 34 * dsScale,
+              x: to.x - 34 * dir * dsScale,
               y: to.y + 23 * dsScale,
               scale: dsScale,
+              flipX: dir < 0,
               durMs: 740,
               fadeInMs: 10,
               fadeOutMs: 190,
@@ -3204,10 +3686,11 @@
 
             kit.addSlash({
               x: to.x, y: to.y,
-              rx: 98 * ampScale, ry: 54 * ampScale,
-              tilt: 0.68,
-              startAngle: 2.55, endAngle: -0.78,
-              thickness: 24 * ampScale,
+              rx: 102 * ampScale, ry: 56 * ampScale,
+              tilt: dir > 0 ? 0.68 : -0.68,
+              startAngle: dir > 0 ? 2.55 : -2.55,
+              endAngle: dir > 0 ? -0.78 : 0.78,
+              thickness: 25 * ampScale,
               outerColor: '#1658EB',
               midColor: '#0EA5E9',
               hiColor: '#E0F9FF',
@@ -3215,10 +3698,11 @@
             });
             kit.addSlash({
               x: to.x, y: to.y,
-              rx: 94 * ampScale, ry: 50 * ampScale,
-              tilt: -0.68,
-              startAngle: -2.55, endAngle: 0.78,
-              thickness: 22 * ampScale,
+              rx: 96 * ampScale, ry: 52 * ampScale,
+              tilt: dir > 0 ? -0.68 : 0.68,
+              startAngle: dir > 0 ? -2.55 : 2.55,
+              endAngle: dir > 0 ? 0.78 : -0.78,
+              thickness: 23 * ampScale,
               outerColor: '#0284C7',
               midColor: '#67E8F9',
               hiColor: '#FFFFFF',
@@ -3230,16 +3714,16 @@
               height: 26, aim: 0.05
             }, {
               x: to.x, y: to.y + 38,
-              scale: 1.85 * ampScale, durMs: 640, layer: 'front',
+              scale: 1.82 * ampScale, durMs: 640, layer: 'front',
               lightGain: 0.85,
-              glowColor: 'rgba(103,232,249,0.32)', glowRadius: 54 * ampScale, glowAlpha: 0.28
+              glowColor: 'rgba(103,232,249,0.32)', glowRadius: 52 * ampScale, glowAlpha: 0.28
             });
 
             kit.spawnPfx('parry', {
               palette: amp >= 2 ? PALETTES.gold7 : PALETTES.slash,
               height: 28
             }, {
-              x: to.x, y: to.y + 42, scale: 1.62 * ampScale,
+              x: to.x, y: to.y + 42, scale: 1.58 * ampScale,
               durMs: 520, layer: 'front'
             });
 
@@ -3468,8 +3952,14 @@
       return (_seedSeq % 9999) + 1;
     };
 
+    let _playSeq = 0;
+    let _lastPlayId = null;
+    let _lastPlayHandle = null;
+    let _currentPlaySession = null;
+
     const state = {
       timeMs: 0,
+      playSessions: new Map(),
       timelines: [],
       pfxSlots: [],
       magicCircles: [],
@@ -3493,7 +3983,157 @@
       }
     };
 
-    /* --- PixelFX 48 槽位生成器（完整支持 flipX / angle / palette 覆写 / layer） --- */
+    /* --- 节拍门实体绑定与 0.85→0.96 蓄压悬停辅助 --- */
+    function bindSessionEntity(item, src, extraOpts) {
+      const s = src || {};
+      const ex = extraOpts || {};
+      const sess = _currentPlaySession;
+      item._playId = sess ? sess.id : null;
+      item._session = sess || null;
+      const hg = Number.isInteger(s.holdGate) && s.holdGate >= 0 ? s.holdGate : null;
+      item.holdGate = hg;
+      item.holdTravelMs = Number.isFinite(s.holdTravelMs) && s.holdTravelMs > 0
+        ? s.holdTravelMs
+        : (Number.isFinite(ex.defaultTravelMs) ? ex.defaultTravelMs : null);
+      item.snapFadeMs = Number.isFinite(s.snapFadeMs) && s.snapFadeMs > 0 ? s.snapFadeMs : null;
+      item._keepAliveOnGate = !!ex.keepAliveOnGate;
+      item._gatedHold = !!(sess && sess.gated && hg != null);
+      item._isHolding = false;
+      item._holdSnapped = false;
+      item._holdWaitMs = 0;
+      item.holdProgress = 0;
+      item._autoHeld = false;
+      return item;
+    }
+
+    function computeHoldHover(waitMs) {
+      const w = Math.max(0, Number(waitMs) || 0);
+      const val = 0.86 + 0.092 * (1 - Math.exp(-w / 340)) + 0.005 * Math.sin(w * 0.022);
+      return clamp(val, 0.85, 0.96);
+    }
+
+    function evalHoldProgress(entity, travelMs, easeFn) {
+      const ease = typeof easeFn === 'function' ? easeFn : easeOutCubic;
+      const dur = (Number.isFinite(travelMs) && travelMs > 0)
+        ? travelMs
+        : ((entity && (entity.holdTravelMs || entity.extendMs || entity.growMs || entity.dur)) || 200);
+      if (!entity || !entity._gatedHold) {
+        return ease(clamp((entity ? entity.age : 0) / dur, 0, 1));
+      }
+      if (entity._holdSnapped) return 1;
+      if (entity._isHolding) {
+        return clamp(entity.holdProgress != null ? entity.holdProgress : 0.88, 0.85, 0.96);
+      }
+      return 0.86 * ease(clamp(entity.age / dur, 0, 1));
+    }
+
+    function sessionHasWaitingGate(sess) {
+      if (!sess || !sess.gated) return false;
+      for (let i = 0; i < sess.timelines.length; i++) {
+        const tl = sess.timelines[i];
+        if (!tl.done && tl.waitingCue && !tl.waitingCue.released) return true;
+      }
+      return false;
+    }
+
+    function sessionIsGateWaiting(sess, beatIdx) {
+      if (!sess || !sess.gated) return false;
+      for (let i = 0; i < sess.timelines.length; i++) {
+        const tl = sess.timelines[i];
+        if (!tl.done && tl.waitingCue && tl.waitingCue.gate === beatIdx && !tl.waitingCue.released) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function stepEntityAge(item, dt, defaultTravelMs) {
+      if (item._gatedHold && !item._holdSnapped) {
+        const sess = item._session;
+        if (!sess || sess.completed || sess.releasedGates.has(item.holdGate)) {
+          item._holdSnapped = true;
+          item._isHolding = false;
+          item.holdProgress = 1;
+          item.age += dt;
+          return item.age >= item.dur;
+        }
+        const travelMs = Math.max(1, item.holdTravelMs || defaultTravelMs || item.dur || 180);
+        const gateWaiting = sessionIsGateWaiting(sess, item.holdGate);
+        if (gateWaiting || item.age + dt >= travelMs) {
+          item._isHolding = true;
+          item._holdWaitMs = (item._holdWaitMs || 0) + dt;
+          item.holdProgress = computeHoldHover(item._holdWaitMs);
+          item.age = Math.min(travelMs, Math.max(1, item.dur - 2));
+          return false;
+        }
+        item.age += dt;
+        item.holdProgress = 0.86 * easeOutCubic(clamp(item.age / travelMs, 0, 1));
+        return false;
+      }
+
+      if (item._session && sessionHasWaitingGate(item._session) && (item._session.autoImpactGate || item._keepAliveOnGate)) {
+        item._autoHeld = true;
+        item._holdWaitMs = (item._holdWaitMs || 0) + dt;
+        const safeCap = Math.max(1, item.dur - Math.max(item.fadeOut || 0, 48) - 2);
+        if (item.age < safeCap) {
+          item.age = Math.min(safeCap, item.age + dt * 0.15);
+        }
+        return false;
+      }
+
+      item._autoHeld = false;
+      item.age += dt;
+      return item.age >= item.dur;
+    }
+
+    function snapHoldEntities(playId, beatIdx) {
+      const snapOne = (it, kind) => {
+        if (!it || it._playId !== playId) return;
+        if (it._autoHeld) it._autoHeld = false;
+        if (it.holdGate !== beatIdx || it._holdSnapped) return;
+        it._holdSnapped = true;
+        it._isHolding = false;
+        it.holdProgress = 1;
+        if (kind === 'skyBeam') {
+          const hitAge = it.dur * 0.48;
+          if (it.age < hitAge) it.age = hitAge;
+        } else if (kind === 'waterStream') {
+          if (it.age < it.extendMs) it.age = it.extendMs;
+        } else if (kind === 'iceVein') {
+          if (it.age < it.growMs) it.age = it.growMs;
+        } else if (Number.isFinite(it.holdTravelMs) && it.age < it.holdTravelMs) {
+          it.age = it.holdTravelMs;
+        }
+        const prevSess = _currentPlaySession;
+        _currentPlaySession = it._session || null;
+        try {
+          if (typeof it.onUpdate === 'function') {
+            try { it.onUpdate(it, 0, it.age, 1); } catch (e) {}
+          }
+          if (typeof it.update === 'function') {
+            try { it.update(0, 0, 1); } catch (e) {}
+          }
+        } finally {
+          _currentPlaySession = prevSess;
+        }
+        if (Number.isFinite(it.snapFadeMs)) {
+          it.dur = Math.min(it.dur, it.age + Math.max(1, it.snapFadeMs));
+        }
+      };
+
+      for (let i = 0; i < state.pfxSlots.length; i++) snapOne(state.pfxSlots[i], 'pfx');
+      for (let i = 0; i < state.ribbons.length; i++) snapOne(state.ribbons[i], 'ribbon');
+      for (let i = 0; i < state.waterStreams.length; i++) snapOne(state.waterStreams[i], 'waterStream');
+      for (let i = 0; i < state.iceVeins.length; i++) snapOne(state.iceVeins[i], 'iceVein');
+      for (let i = 0; i < state.skyBeams.length; i++) snapOne(state.skyBeams[i], 'skyBeam');
+      const layers = ['back', 'main', 'front'];
+      for (let l = 0; l < layers.length; l++) {
+        const list = state.customDrawables[layers[l]];
+        for (let i = 0; i < list.length; i++) snapOne(list[i], 'custom');
+      }
+    }
+
+    /* --- PixelFX 48 槽位生成器（完整支持 flipX / angle / palette 覆写 / layer / holdGate） --- */
     function spawnPfx(fxName, opts, cfgSlot) {
       const PFX = getPixelFX();
       if (!PFX || !PFX.FX || !PFX.FX[fxName]) return null;
@@ -3502,7 +4142,7 @@
       const b = PFX_BOUNDS[fxName] || { w: 160, h: 120, ox: -80, oy: -80 };
 
       if (state.pfxSlots.length >= MAX_PFX_SLOTS) {
-        state.pfxSlots.shift();
+        releaseSlotCanvas(state.pfxSlots.shift());
       }
 
       const rawOpts = opts || {};
@@ -3576,8 +4216,12 @@
         dur: c.durMs || 900,
         fadeIn: c.fadeInMs != null ? c.fadeInMs : 40,
         fadeOut: c.fadeOutMs != null ? c.fadeOutMs : 180,
-        onUpdate: c.onUpdate || null
+        onUpdate: c.onUpdate || null,
+        _pfxId: ++_pfxSlotSeq,
+        _cacheSurf: null,
+        _lastCacheKey: null
       };
+      bindSessionEntity(slot, c, { defaultTravelMs: c.holdTravelMs || c.durMs || 900 });
       state.pfxSlots.push(slot);
       return slot;
     }
@@ -3667,6 +4311,7 @@
         lineW: 2.2, alpha: 0.95, goldTriple: false,
         age: 0, dur: 520, fadeIn: 130, fadeOut: 180, layer: 'back'
       }, palDefaults, src);
+      bindSessionEntity(item, src, { keepAliveOnGate: true });
       state.magicCircles.push(item);
       return item;
     }
@@ -3699,11 +4344,13 @@
         dur: 480,
         fadeOut: 220
       }, palDefaults, src);
+      bindSessionEntity(item, src, { defaultTravelMs: src.holdTravelMs || item.dur });
       state.ribbons.push(item);
       return item;
     }
 
     function addWaterStream(ws) {
+      const src = ws || {};
       const item = Object.assign({
         x0: 0, y0: 0, x1: 100, y1: 0,
         width: 16,
@@ -3712,7 +4359,8 @@
         palette: null,
         age: 0,
         dur: 600
-      }, ws);
+      }, src);
+      bindSessionEntity(item, src, { defaultTravelMs: src.holdTravelMs || item.extendMs });
       state.waterStreams.push(item);
       return item;
     }
@@ -3751,6 +4399,7 @@
         age: 0,
         dur: 1100
       }, src, { pts: pts || [], spurs: spurs || [] });
+      bindSessionEntity(item, src, { defaultTravelMs: src.holdTravelMs || item.growMs });
       state.iceVeins.push(item);
       return item;
     }
@@ -3820,6 +4469,7 @@
     }
 
     function addSkyBeam(bm) {
+      const src = bm || {};
       const item = Object.assign({
         x0: 0, y0: -16, x1: 100, y1: 280,
         width: 7,
@@ -3828,7 +4478,8 @@
         palette: null,
         age: 0,
         dur: 540
-      }, bm);
+      }, src);
+      bindSessionEntity(item, src, { defaultTravelMs: src.holdTravelMs || (item.dur * 0.48) });
       state.skyBeams.push(item);
       return item;
     }
@@ -3863,6 +4514,7 @@
       if (!Number.isFinite(item.age)) item.age = 0;
       if (!Number.isFinite(item.dur) || item.dur <= 0) item.dur = 600;
       item.layer = normLayer;
+      bindSessionEntity(item, item, { defaultTravelMs: item.holdTravelMs || item.dur });
       state.customDrawables[normLayer].push(item);
       return item;
     }
@@ -4007,27 +4659,348 @@
       }
     }
 
-    function scheduleTimeline(cues) {
-      const list = Array.isArray(cues) ? cues : [];
-      const tl = {
-        age: 0,
-        cues: list.map(c => ({ at: c.at || 0, fn: c.fn, fired: false })),
-        done: false
-      };
-      for (let i = 0; i < tl.cues.length; i++) {
-        if (tl.cues[i].at <= 0) {
-          tl.cues[i].fired = true;
-          if (typeof tl.cues[i].fn === 'function') tl.cues[i].fn();
-        }
-      }
-      state.timelines.push(tl);
-      return tl;
-    }
-
+    /* --- 原生节拍门时间轴引擎 (gate / preTelegraphMs / autoImpactGate / releaseGate) --- */
     function safeCall(fn, ...args) {
       if (typeof fn === 'function') {
         try { fn(...args); } catch (e) {}
       }
+    }
+
+    function runCueFn(cue, session) {
+      if (typeof cue.fn !== 'function') return;
+      const prevSess = _currentPlaySession;
+      _currentPlaySession = session || null;
+      try {
+        cue.fn(cue.releasePayload);
+      } finally {
+        _currentPlaySession = prevSess;
+      }
+    }
+
+    function cueContainsImpact(c) {
+      if (c.isImpact) return true;
+      if (typeof c.fn !== 'function') return false;
+      try {
+        return /\bonImpact\b/.test(Function.prototype.toString.call(c.fn));
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function injectAutoImpactGates(tl, session) {
+      const desired = (session.gateCount != null && session.gateCount > 0) ? session.gateCount : 1;
+      const impactCues = [];
+      for (let i = 0; i < tl.cues.length; i++) {
+        if (cueContainsImpact(tl.cues[i])) impactCues.push(tl.cues[i]);
+      }
+      let assigned = 0;
+      let lastGatedCue = null;
+      for (let i = 0; i < impactCues.length && assigned < desired; i++) {
+        impactCues[i].gate = assigned;
+        lastGatedCue = impactCues[i];
+        assigned++;
+      }
+      if (assigned === 0) {
+        const fallbackCue = tl.cues.find(c => c.at > 0) || tl.cues[0];
+        if (fallbackCue) {
+          fallbackCue.gate = 0;
+          lastGatedCue = fallbackCue;
+          assigned = 1;
+        }
+      }
+      if (assigned < desired && lastGatedCue) {
+        for (let i = 0; i < tl.cues.length && assigned < desired; i++) {
+          const c = tl.cues[i];
+          if (c.gate == null && c.at >= lastGatedCue.at + 40) {
+            c.gate = assigned;
+            lastGatedCue = c;
+            assigned++;
+          }
+        }
+        while (assigned < desired) {
+          const synthAt = lastGatedCue.at + 200;
+          const synthCue = {
+            at: synthAt,
+            fn: null,
+            gate: assigned,
+            gateMeta: null,
+            preTelegraphMs: session.opts.preTelegraphMs,
+            isImpact: true,
+            fired: false,
+            preTelegraphFired: false,
+            readyFired: false,
+            released: false,
+            waiting: false,
+            waitMs: 0,
+            releasePayload: undefined,
+            _origIdx: tl.cues.length
+          };
+          tl.cues.push(synthCue);
+          lastGatedCue = synthCue;
+          assigned++;
+        }
+      }
+    }
+
+    function buildGateMeta(cue, session) {
+      const rawMeta = cue.gateMeta || {};
+      const opts = session.opts;
+      const targetIdx = Number.isFinite(rawMeta.targetIdx)
+        ? rawMeta.targetIdx
+        : (Number.isFinite(opts.targetIdx) ? opts.targetIdx : 0);
+      const tg = (Array.isArray(opts.targets) && (opts.targets[targetIdx] || opts.targets[0])) || null;
+      const targetRealIdx = Number.isFinite(rawMeta.targetRealIdx)
+        ? rawMeta.targetRealIdx
+        : ((tg && Number.isFinite(tg.enemyIdx)) ? tg.enemyIdx : targetIdx);
+      const anchorTargetKey = rawMeta.anchorTargetKey
+        || opts.anchorTargetKey
+        || (tg && tg.anchorTargetKey)
+        || (opts.facing < 0 ? 'player' : `enemy:${targetRealIdx}`);
+      const totalBeats = Number.isFinite(rawMeta.totalBeats)
+        ? rawMeta.totalBeats
+        : Math.max(1, session.totalBeats);
+      return Object.assign({}, rawMeta, {
+        playId: session.id,
+        skillId: session.skillId,
+        beatIdx: cue.gate,
+        totalBeats,
+        targetIdx,
+        targetRealIdx,
+        anchorTargetKey,
+        at: cue.at
+      });
+    }
+
+    function checkSessionComplete(session) {
+      if (!session || session.completed) return;
+      for (let i = 0; i < session.timelines.length; i++) {
+        if (!session.timelines[i].done) return;
+      }
+      session.completed = true;
+      state.playSessions.delete(session.id);
+      if (session.gated && !session.allBeatsCompleteFired) {
+        session.allBeatsCompleteFired = true;
+        safeCall(session.opts.onAllBeatsComplete, session.id, session.skillId);
+      }
+      if (session.gated && session.pendingOnComplete && !session.onCompleteFired) {
+        session.onCompleteFired = true;
+        safeCall(session.pendingOnComplete, session.skillId, session.opts);
+      }
+    }
+
+    function scheduleTimeline(cues) {
+      const list = Array.isArray(cues) ? cues : [];
+      const session = _currentPlaySession;
+      const isGated = !!(session && session.gated);
+      const defaultPreMs = (session && Number.isFinite(session.opts.preTelegraphMs))
+        ? session.opts.preTelegraphMs
+        : 110;
+
+      const normalized = list.map((c, idx) => ({
+        at: Number.isFinite(c && c.at) ? c.at : 0,
+        fn: c && c.fn,
+        gate: (c && Number.isInteger(c.gate) && c.gate >= 0) ? c.gate : null,
+        gateMeta: (c && c.gateMeta) || null,
+        preTelegraphMs: (c && Number.isFinite(c.preTelegraphMs)) ? Math.max(0, c.preTelegraphMs) : defaultPreMs,
+        isImpact: !!(c && c.isImpact),
+        fired: false,
+        preTelegraphFired: false,
+        readyFired: false,
+        released: false,
+        waiting: false,
+        waitMs: 0,
+        releasePayload: undefined,
+        resolvedMeta: null,
+        _origIdx: idx
+      }));
+
+      normalized.sort((a, b) => (a.at - b.at) || (a._origIdx - b._origIdx));
+
+      const tl = {
+        age: 0,
+        cues: normalized,
+        done: false,
+        session: session || null,
+        waitingCue: null
+      };
+
+      if (isGated) {
+        const hasExplicitGate = tl.cues.some(c => c.gate != null);
+        if (!hasExplicitGate && session.autoImpactGate) {
+          injectAutoImpactGates(tl, session);
+          tl.cues.sort((a, b) => (a.at - b.at) || (a._origIdx - b._origIdx));
+        }
+        const gatedCues = tl.cues.filter(c => c.gate != null);
+        if (gatedCues.length) {
+          session.totalBeats = Math.max(session.totalBeats, gatedCues.length);
+          for (let i = 0; i < gatedCues.length; i++) {
+            const gc = gatedCues[i];
+            if (session.releasedGates.has(gc.gate)) gc.released = true;
+            session.gates.set(gc.gate, { tl, cue: gc });
+          }
+          for (let i = 0; i < gatedCues.length; i++) {
+            gatedCues[i].resolvedMeta = buildGateMeta(gatedCues[i], session);
+          }
+        }
+        session.timelines.push(tl);
+      } else if (session) {
+        session.timelines.push(tl);
+      }
+
+      for (let i = 0; i < tl.cues.length; i++) {
+        const c = tl.cues[i];
+        if (c.at <= 0 && !(isGated && c.gate != null && !c.released)) {
+          c.fired = true;
+          runCueFn(c, session);
+        }
+      }
+
+      if (tl.cues.every(c => c.fired)) {
+        tl.done = true;
+        if (session) checkSessionComplete(session);
+        return tl;
+      }
+
+      state.timelines.push(tl);
+      return tl;
+    }
+
+    function releaseCueImmediate(tl, cue, payload) {
+      const session = tl.session;
+      cue.released = true;
+      cue.releasePayload = payload;
+      if (session) {
+        session.releasedGates.add(cue.gate);
+        snapHoldEntities(session.id, cue.gate);
+      }
+      if (tl.waitingCue === cue) {
+        cue.waiting = false;
+        tl.waitingCue = null;
+        if (!cue.fired) {
+          cue.fired = true;
+          runCueFn(cue, session);
+        }
+        // 放行后立刻执行同时间戳的后续非门控 cue（不越过下一道未放行门）
+        for (let i = 0; i < tl.cues.length; i++) {
+          const c = tl.cues[i];
+          if (c.fired) continue;
+          if (c.at > tl.age) break;
+          if (c.gate != null && !c.released) break;
+          c.fired = true;
+          runCueFn(c, session);
+        }
+        if (tl.cues.every(c => c.fired)) {
+          tl.done = true;
+          const idx = state.timelines.indexOf(tl);
+          if (idx >= 0) state.timelines.splice(idx, 1);
+          if (session) checkSessionComplete(session);
+        }
+      }
+      return true;
+    }
+
+    function resolveTargetSessions(playIdOrAll) {
+      if (playIdOrAll == null || playIdOrAll === 'all' || playIdOrAll === '*') {
+        return Array.from(state.playSessions.values());
+      }
+      if (typeof playIdOrAll === 'object') {
+        const id = playIdOrAll.id || playIdOrAll.playId;
+        if (id && state.playSessions.has(id)) return [state.playSessions.get(id)];
+        return [];
+      }
+      if (typeof playIdOrAll === 'string' && state.playSessions.has(playIdOrAll)) {
+        return [state.playSessions.get(playIdOrAll)];
+      }
+      return [];
+    }
+
+    function releaseGate(playIdOrAll, beatIdx, payload) {
+      let targetArg = playIdOrAll;
+      let targetBeat = beatIdx;
+      let relPayload = payload;
+      if (typeof playIdOrAll === 'number') {
+        targetBeat = playIdOrAll;
+        relPayload = beatIdx;
+        targetArg = 'all';
+      }
+      const sessions = resolveTargetSessions(targetArg);
+      let releasedAny = false;
+      for (let sIdx = 0; sIdx < sessions.length; sIdx++) {
+        const sess = sessions[sIdx];
+        if (!sess || !sess.gated) continue;
+        let rec = null;
+        if (Number.isInteger(targetBeat) && targetBeat >= 0) {
+          rec = sess.gates.get(targetBeat) || null;
+        } else {
+          // 未指定 beatIdx 时优先放行当前等待中的门，否则放行最早未触发的门
+          for (let t = 0; t < sess.timelines.length; t++) {
+            const tl = sess.timelines[t];
+            if (!tl.done && tl.waitingCue && !tl.waitingCue.fired) {
+              rec = { tl, cue: tl.waitingCue };
+              break;
+            }
+          }
+          if (!rec) {
+            for (const entry of sess.gates.values()) {
+              if (!entry.cue.fired && !entry.cue.released) {
+                rec = entry;
+                break;
+              }
+            }
+          }
+        }
+        if (rec && rec.cue && !rec.cue.fired) {
+          releaseCueImmediate(rec.tl, rec.cue, relPayload);
+          releasedAny = true;
+        }
+      }
+      return releasedAny;
+    }
+
+    function releaseAllGates(playIdOrAll, payload) {
+      let targetArg = playIdOrAll;
+      let relPayload = payload;
+      if (playIdOrAll && typeof playIdOrAll === 'object' && !playIdOrAll.id && !playIdOrAll.playId) {
+        relPayload = playIdOrAll;
+        targetArg = 'all';
+      }
+      const sessions = resolveTargetSessions(targetArg);
+      let releasedAny = false;
+      for (let sIdx = 0; sIdx < sessions.length; sIdx++) {
+        const sess = sessions[sIdx];
+        if (!sess || !sess.gated) continue;
+        for (const [bIdx, rec] of sess.gates.entries()) {
+          if (!rec.cue.fired) {
+            rec.cue.released = true;
+            rec.cue.releasePayload = relPayload;
+            sess.releasedGates.add(bIdx);
+            snapHoldEntities(sess.id, bIdx);
+            releasedAny = true;
+          }
+        }
+        for (let t = 0; t < sess.timelines.length; t++) {
+          const tl = sess.timelines[t];
+          if (!tl.done && tl.waitingCue && !tl.waitingCue.fired) {
+            releaseCueImmediate(tl, tl.waitingCue, relPayload);
+            releasedAny = true;
+          }
+        }
+      }
+      return releasedAny;
+    }
+
+    function getPendingGates(playId) {
+      const sess = state.playSessions.get(playId);
+      if (!sess) return [];
+      const out = [];
+      for (const [bIdx, rec] of sess.gates.entries()) {
+        if (!rec.cue.fired && !rec.cue.released) out.push(bIdx);
+      }
+      return out;
+    }
+
+    function getLastPlayHandle() {
+      return _lastPlayHandle;
     }
 
     /* --- 共享运行时 kit 工具箱（供所有内置招式与外部 Pack 统一调用） --- */
@@ -4058,6 +5031,7 @@
       nextSeed,
       makeRng,
       safeCall,
+      evalHoldProgress,
       scheduleTimeline,
       spawnPfx,
       addMagicCircle,
@@ -4103,19 +5077,25 @@
         ? raw.targetGroundY
         : (raw.to && Number.isFinite(raw.to.groundY) ? raw.to.groundY : groundY);
       const targets = Array.isArray(raw.targets) && raw.targets.length
-        ? raw.targets.map(t => ({
+        ? raw.targets.map((t, idx) => Object.assign({}, t, {
             x: Number.isFinite(t.x) ? t.x : to.x,
             y: Number.isFinite(t.y) ? t.y : to.y,
             groundY: Number.isFinite(t.groundY)
               ? t.groundY
-              : (Number.isFinite(t.footY) ? t.footY : targetGroundY)
+              : (Number.isFinite(t.footY) ? t.footY : targetGroundY),
+            enemyIdx: Number.isFinite(t.enemyIdx)
+              ? t.enemyIdx
+              : (Number.isFinite(t.targetRealIdx)
+                ? t.targetRealIdx
+                : (Number.isFinite(t.realIdx) ? t.realIdx : idx))
           }))
         : [
-            { x: 410, y: 210, groundY: groundY - 12 },
-            { x: 486, y: 222, groundY: groundY },
-            { x: 560, y: 234, groundY: groundY + 10 }
+            { x: 410, y: 210, groundY: groundY - 12, enemyIdx: 0 },
+            { x: 486, y: 222, groundY: groundY, enemyIdx: 1 },
+            { x: 560, y: 234, groundY: groundY + 10, enemyIdx: 2 }
           ];
       const icePal = amp >= 3 ? PALETTES.iceGold : PALETTES.ice;
+      const rawGateCount = Number(raw.gateCount);
 
       return Object.assign({}, raw, {
         rawSkillId,
@@ -4141,6 +5121,15 @@
         fizzle: !!raw.fizzle,
         spriteId: raw.spriteId || null,
         oneMore: !!raw.oneMore,
+        gated: raw.gated === true,
+        autoImpactGate: raw.autoImpactGate === true,
+        gateCount: (Number.isFinite(rawGateCount) && rawGateCount > 0) ? Math.round(rawGateCount) : null,
+        preTelegraphMs: Number.isFinite(Number(raw.preTelegraphMs)) ? Math.max(0, Number(raw.preTelegraphMs)) : 110,
+        anchorTargetKey: raw.anchorTargetKey || null,
+        targetIdx: Number.isFinite(Number(raw.targetIdx)) ? Math.round(Number(raw.targetIdx)) : 0,
+        onPreTelegraph: raw.onPreTelegraph,
+        onBeatReady: raw.onBeatReady,
+        onAllBeatsComplete: raw.onAllBeatsComplete,
         onImpact: raw.onImpact,
         onShake: raw.onShake,
         onHitStop: raw.onHitStop,
@@ -4152,21 +5141,105 @@
       const resolvedId = resolveSkillId(skillId) || 'ice_crystal';
       const handler = HANDLERS[resolvedId] || HANDLERS.ice_crystal;
       const o = normalizePlayOpts(skillId, resolvedId, opts);
-      if (typeof handler === 'function') {
-        handler(kit, o);
-      }
-      if (typeof o.onComplete === 'function') {
-        let dur = getDuration(resolvedId);
-        if (resolvedId === 'frost_thorn_field') {
-          const rawBeatGap = Number(o.beatGapMs);
-          if (Number.isFinite(rawBeatGap) && rawBeatGap > 70) {
-            const extraBeats = Math.max(0, (Array.isArray(o.targets) ? o.targets.length : 1) - 1);
-            dur += extraBeats * (clamp(rawBeatGap, 20, 600) - 70);
-          }
+      const playId = `play_${++_playSeq}`;
+
+      const session = {
+        id: playId,
+        skillId: resolvedId,
+        rawSkillId: skillId,
+        opts: o,
+        gated: o.gated === true,
+        autoImpactGate: o.autoImpactGate === true,
+        gateCount: o.gateCount,
+        timelines: [],
+        gates: new Map(),
+        releasedGates: new Set(),
+        totalBeats: 0,
+        completed: false,
+        allBeatsCompleteFired: false,
+        pendingOnComplete: typeof o.onComplete === 'function' ? o.onComplete : null,
+        onCompleteFired: false
+      };
+
+      state.playSessions.set(playId, session);
+      const prevSession = _currentPlaySession;
+      _currentPlaySession = session;
+      try {
+        if (typeof handler === 'function') {
+          handler(kit, o);
         }
-        scheduleTimeline([{ at: dur, fn: () => safeCall(o.onComplete, resolvedId, o) }]);
+        if (session.gated) {
+          // 在主时间轴末尾挂载收尾结算锚点，确保末拍释放并播完收尾后再触发 onAllBeatsComplete / onComplete
+          const activeTl = session.timelines.find(t => !t.done && t.cues.some(c => c.gate != null))
+            || session.timelines.find(t => !t.done)
+            || null;
+          if (activeTl) {
+            let maxCueAt = 0;
+            let maxGateAt = -1;
+            for (let i = 0; i < activeTl.cues.length; i++) {
+              const c = activeTl.cues[i];
+              if (c.at > maxCueAt) maxCueAt = c.at;
+              if (c.gate != null && c.at > maxGateAt) maxGateAt = c.at;
+            }
+            const outroAt = maxGateAt >= 0
+              ? Math.max(maxCueAt + 40, maxGateAt + 220)
+              : (maxCueAt + 160);
+            activeTl.cues.push({
+              at: outroAt,
+              fn: null,
+              gate: null,
+              gateMeta: null,
+              preTelegraphMs: 0,
+              isImpact: false,
+              fired: false,
+              preTelegraphFired: false,
+              readyFired: false,
+              released: false,
+              waiting: false,
+              waitMs: 0,
+              releasePayload: undefined,
+              resolvedMeta: null,
+              _origIdx: activeTl.cues.length
+            });
+          } else {
+            scheduleTimeline([{ at: 160, fn: null }]);
+          }
+        } else if (typeof o.onComplete === 'function') {
+          let dur = getDuration(resolvedId);
+          if (resolvedId === 'frost_thorn_field') {
+            const rawBeatGap = Number(o.beatGapMs);
+            if (Number.isFinite(rawBeatGap) && rawBeatGap > 70) {
+              const extraBeats = Math.max(0, (Array.isArray(o.targets) ? o.targets.length : 1) - 1);
+              dur += extraBeats * (clamp(rawBeatGap, 20, 600) - 70);
+            }
+          }
+          scheduleTimeline([{ at: dur, fn: () => safeCall(o.onComplete, resolvedId, o) }]);
+        }
+      } finally {
+        _currentPlaySession = prevSession;
       }
-      return resolvedId;
+
+      if (!session.gated && session.timelines.every(t => t.done)) {
+        checkSessionComplete(session);
+      }
+
+      const handle = {
+        id: playId,
+        playId,
+        skillId: resolvedId,
+        resolvedId,
+        gated: session.gated,
+        releaseGate: (beatIdx, payload) => releaseGate(playId, beatIdx, payload),
+        releaseAll: (payload) => releaseAllGates(playId, payload),
+        releaseAllGates: (payload) => releaseAllGates(playId, payload),
+        getPendingGates: () => getPendingGates(playId),
+        isDone: () => !!session.completed,
+        toString: () => resolvedId
+      };
+      _lastPlayId = playId;
+      _lastPlayHandle = handle;
+
+      return session.gated ? handle : resolvedId;
     }
 
     /* -------------------- 状态推进 update(dtMs) -------------------- */
@@ -4175,35 +5248,152 @@
       const dtSec = dt * 0.001;
       state.timeMs += dt;
 
-      // 1. 调度时间轴
+      // 1. 调度时间轴（含原生节拍门控 + 透明直通双路径）
       for (let i = state.timelines.length - 1; i >= 0; i--) {
         const tl = state.timelines[i];
-        tl.age += dt;
-        let allFired = true;
+        const session = tl.session;
+        const isGated = !!(session && session.gated);
+
+        if (!isGated) {
+          tl.age += dt;
+          let allFired = true;
+          for (let j = 0; j < tl.cues.length; j++) {
+            const c = tl.cues[j];
+            if (!c.fired) {
+              if (tl.age >= c.at) {
+                c.fired = true;
+                runCueFn(c, session);
+              } else {
+                allFired = false;
+              }
+            }
+          }
+          if (allFired) {
+            tl.done = true;
+            state.timelines.splice(i, 1);
+            if (session) checkSessionComplete(session);
+          }
+          continue;
+        }
+
+        // 门控路径：当前有门挂起未放行时，严格锁住 tl.age = cue.at
+        if (tl.waitingCue && !tl.waitingCue.released) {
+          tl.age = tl.waitingCue.at;
+          tl.waitingCue.waitMs = (tl.waitingCue.waitMs || 0) + dt;
+          continue;
+        }
+
+        const nextAge = tl.age + dt;
+
+        // 查找最早一道尚未放行且将被触及的门控 cue
+        let blockingCue = null;
+        let nextPendingGate = null;
         for (let j = 0; j < tl.cues.length; j++) {
           const c = tl.cues[j];
-          if (!c.fired) {
-            if (tl.age >= c.at) {
-              c.fired = true;
-              if (typeof c.fn === 'function') c.fn();
-            } else {
-              allFired = false;
+          if (c.fired) continue;
+          if (c.gate != null && !c.released) {
+            if (!nextPendingGate) nextPendingGate = c;
+            if (nextAge >= c.at && !blockingCue) {
+              blockingCue = c;
+              break;
             }
           }
         }
-        if (allFired) state.timelines.splice(i, 1);
+
+        const targetAge = blockingCue ? blockingCue.at : nextAge;
+
+        // 到达 cue.at - preTelegraphMs 时触发一次 onPreTelegraph（仅针对下一道待触发门）
+        if (nextPendingGate && !nextPendingGate.preTelegraphFired) {
+          const preAt = Math.max(0, nextPendingGate.at - nextPendingGate.preTelegraphMs);
+          if (targetAge >= preAt) {
+            nextPendingGate.preTelegraphFired = true;
+            safeCall(session.opts.onPreTelegraph, nextPendingGate.gate, nextPendingGate.resolvedMeta);
+          }
+        }
+
+        // 先执行所有早于阻塞门（或早于 nextAge）的非阻塞 cue
+        let blockedNow = false;
+        for (let j = 0; j < tl.cues.length; j++) {
+          const c = tl.cues[j];
+          if (c.fired) continue;
+          if (c === blockingCue) {
+            tl.age = c.at;
+            if (!c.released) {
+              c.waiting = true;
+              c.waitMs = 0;
+              tl.waitingCue = c;
+              if (!c.readyFired) {
+                c.readyFired = true;
+                safeCall(session.opts.onBeatReady, c.gate, c.resolvedMeta);
+              }
+              // 若 onBeatReady 内同步调用了 releaseGate，c.fired 已为 true
+              if (!c.released && !c.fired) {
+                blockedNow = true;
+                break;
+              }
+            } else {
+              c.fired = true;
+              runCueFn(c, session);
+            }
+            continue;
+          }
+          if (c.at <= targetAge) {
+            if (c.gate != null && !c.released) {
+              tl.age = c.at;
+              c.waiting = true;
+              c.waitMs = 0;
+              tl.waitingCue = c;
+              if (!c.preTelegraphFired) {
+                c.preTelegraphFired = true;
+                safeCall(session.opts.onPreTelegraph, c.gate, c.resolvedMeta);
+              }
+              if (!c.readyFired) {
+                c.readyFired = true;
+                safeCall(session.opts.onBeatReady, c.gate, c.resolvedMeta);
+              }
+              if (!c.released && !c.fired) {
+                blockedNow = true;
+                break;
+              }
+            } else {
+              c.fired = true;
+              runCueFn(c, session);
+            }
+          }
+        }
+
+        if (!blockedNow && !tl.waitingCue) {
+          tl.age = targetAge;
+        }
+
+        if (tl.cues.every(c => c.fired)) {
+          tl.done = true;
+          const curIdx = state.timelines.indexOf(tl);
+          if (curIdx >= 0) state.timelines.splice(curIdx, 1);
+          checkSessionComplete(session);
+        }
       }
 
-      // 2. PixelFX 48 并发池推进
+      // 2. PixelFX 48 并发池推进（支持 holdGate 蓄压与自动敌攻悬停）
       for (let i = state.pfxSlots.length - 1; i >= 0; i--) {
         const sl = state.pfxSlots[i];
-        sl.age += dt;
-        if (sl.age >= sl.dur) {
+        const expired = stepEntityAge(sl, dt, sl.holdTravelMs || sl.dur);
+        if (expired) {
+          releaseSlotCanvas(sl);
           state.pfxSlots.splice(i, 1);
           continue;
         }
-        if (sl.onUpdate) sl.onUpdate(sl, dtSec, sl.age);
-        let stepRem = dtSec * sl.timeScale;
+        if (sl.onUpdate) {
+          const prevSess = _currentPlaySession;
+          _currentPlaySession = sl._session || null;
+          try {
+            sl.onUpdate(sl, dtSec, sl.age, sl._gatedHold ? evalHoldProgress(sl, sl.holdTravelMs || sl.dur) : clamp(sl.age / sl.dur, 0, 1));
+          } finally {
+            _currentPlaySession = prevSess;
+          }
+        }
+        const rateMul = (sl._isHolding || sl._autoHeld) ? 0.32 : 1.0;
+        let stepRem = dtSec * sl.timeScale * rateMul;
         while (stepRem > 1e-4) {
           const d = stepRem > 0.04 ? 0.04 : stepRem;
           sl.inst.update(d);
@@ -4212,19 +5402,19 @@
       }
 
       // 3. 其余矢量图层推进
-      const advanceList = (list, extra) => {
+      const advanceList = (list, extra, travelKey) => {
         for (let i = list.length - 1; i >= 0; i--) {
           const it = list[i];
-          it.age += dt;
+          const expired = stepEntityAge(it, dt, travelKey ? it[travelKey] : it.dur);
           if (extra) extra(it, dt, dtSec);
-          if (it.age >= it.dur) list.splice(i, 1);
+          if (expired) list.splice(i, 1);
         }
       };
 
       advanceList(state.magicCircles, mc => { mc.rot += mc.vrot * dt; });
       advanceList(state.ribbons);
-      advanceList(state.waterStreams);
-      advanceList(state.iceVeins);
+      advanceList(state.waterStreams, null, 'extendMs');
+      advanceList(state.iceVeins, null, 'growMs');
       advanceList(state.heroThorns);
       advanceList(state.shields);
       advanceList(state.slashes);
@@ -4241,11 +5431,18 @@
         const list = state.customDrawables[customLayers[l]];
         for (let i = list.length - 1; i >= 0; i--) {
           const it = list[i];
-          it.age += dt;
+          const expired = stepEntityAge(it, dt, it.holdTravelMs || it.dur);
           if (typeof it.update === 'function') {
-            try { it.update(dt, dtSec, clamp(it.age / it.dur, 0, 1)); } catch (e) {}
+            const prevSess = _currentPlaySession;
+            _currentPlaySession = it._session || null;
+            try {
+              const effP = it._gatedHold ? evalHoldProgress(it, it.holdTravelMs || it.dur) : clamp(it.age / it.dur, 0, 1);
+              it.update(dt, dtSec, effP);
+            } catch (e) {} finally {
+              _currentPlaySession = prevSess;
+            }
           }
-          if (it.age >= it.dur) {
+          if (expired) {
             list.splice(i, 1);
           }
         }
@@ -4286,7 +5483,7 @@
       }
     }
 
-    /* -------------------- PixelFX 单槽高清亮彩光栅合成 -------------------- */
+    /* -------------------- PixelFX 单槽高清亮彩光栅合成（按逻辑帧签名缓存，跳过同帧重绘） -------------------- */
     function renderPfxLayer(layerName) {
       const PFX = getPixelFX();
       if (!PFX) return;
@@ -4295,16 +5492,54 @@
         if (sl.layer !== layerName) continue;
 
         const envIn = sl.fadeIn > 0 ? clamp(sl.age / sl.fadeIn, 0, 1) : 1;
-        const envOut = sl.age > sl.dur - sl.fadeOut ? clamp((sl.dur - sl.age) / Math.max(1, sl.fadeOut), 0, 1) : 1;
+        const envOut = (sl._isHolding || sl._autoHeld)
+          ? 1
+          : (sl.age > sl.dur - sl.fadeOut ? clamp((sl.dur - sl.age) / Math.max(1, sl.fadeOut), 0, 1) : 1);
         const alpha = envIn * envOut * sl.alpha;
         if (alpha <= 0.01) continue;
 
-        const surf = getScratchSurface(PFX, sl.bufW, sl.bufH, sl.ox, sl.oy);
-        if (!surf) continue;
-        PFX.clearFrame(surf.frame);
-        sl.inst.draw(surf.frame);
-        PFX.composite(surf.frame, surf.imgData.data, null, sl.lightGain);
-        surf.ctx.putImageData(surf.imgData, 0, 0);
+        const bufW = sl.bufW;
+        const bufH = sl.bufH;
+        const oxI = sl.ox | 0;
+        const oyI = sl.oy | 0;
+
+        let slotSurf = sl._cacheSurf;
+        if (slotSurf && (slotSurf.w !== bufW || slotSurf.h !== bufH)) {
+          releaseSlotCanvas(sl);
+          slotSurf = null;
+        }
+        if (!slotSurf) {
+          slotSurf = acquireSlotCanvas(bufW, bufH);
+          if (!slotSurf) continue;
+          sl._cacheSurf = slotSurf;
+          sl._lastCacheKey = null;
+        }
+
+        const inst = sl.inst;
+        const meta = inst && inst.meta;
+        const fps = (meta && meta.fps > 0) ? meta.fps : 30;
+        const rawT = (inst && Number.isFinite(inst.t)) ? inst.t : 0;
+        const frameIdx = Math.floor(rawT * fps + 1e-6);
+        const opt = inst && inst.options;
+        const optLight = (opt && opt.light != null) ? opt.light : 1;
+        const optHue = (sl.hue != null) ? sl.hue : ((opt && opt.hue != null) ? opt.hue : 0);
+        const optFlip = (opt && opt.flip) ? 1 : 0;
+        const optAng = (opt && opt.angle) || 0;
+        const optX = (opt && opt.x) || 0;
+        const optY = (opt && opt.y) || 0;
+        const palId = getPaletteCacheId(sl.palette != null ? sl.palette : (opt && opt.palette));
+        const sparksId = getPaletteCacheId(sl.sparks != null ? sl.sparks : (opt && opt.sparks));
+        const cacheKey = `${sl._pfxId}|${sl.fxName}|${frameIdx}|${bufW}x${bufH}|${oxI},${oyI}|${sl.lightGain}|${optLight}|${optHue}|${optFlip}|${optAng}|${optX},${optY}|${palId}|${sparksId}`;
+
+        if (sl._lastCacheKey !== cacheKey) {
+          const scratch = getScratchSurface(PFX, bufW, bufH, oxI, oyI);
+          if (!scratch) continue;
+          PFX.clearFrame(scratch.frame);
+          inst.draw(scratch.frame);
+          PFX.composite(scratch.frame, scratch.imgData.data, null, sl.lightGain);
+          slotSurf.ctx.putImageData(scratch.imgData, 0, 0);
+          sl._lastCacheKey = cacheKey;
+        }
 
         ctx.save();
         ctx.translate(sl.x, sl.y);
@@ -4327,10 +5562,10 @@
         ctx.imageSmoothingEnabled = false;
 
         if (sl.clipRight < 0.999) {
-          const visW = Math.max(2, Math.floor(sl.bufW * sl.clipRight));
-          ctx.drawImage(surf.canvas, 0, 0, visW, sl.bufH, sl.ox, sl.oy, visW, sl.bufH);
+          const visW = Math.max(2, Math.floor(bufW * sl.clipRight));
+          ctx.drawImage(slotSurf.canvas, 0, 0, visW, bufH, sl.ox, sl.oy, visW, bufH);
         } else {
-          ctx.drawImage(surf.canvas, sl.ox, sl.oy);
+          ctx.drawImage(slotSurf.canvas, sl.ox, sl.oy);
         }
 
         ctx.restore();
@@ -4476,7 +5711,11 @@
     }
 
     function clear() {
+      state.playSessions.clear();
       state.timelines.length = 0;
+      for (let i = 0; i < state.pfxSlots.length; i++) {
+        releaseSlotCanvas(state.pfxSlots[i]);
+      }
       state.pfxSlots.length = 0;
       state.magicCircles.length = 0;
       state.ribbons.length = 0;
@@ -4547,6 +5786,12 @@
 
     return {
       play,
+      releaseGate,
+      releaseAllGates,
+      getLastPlayHandle,
+      get lastPlayId() {
+        return _lastPlayId;
+      },
       update,
       render,
       clear,

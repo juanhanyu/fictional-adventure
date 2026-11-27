@@ -271,10 +271,28 @@
     return null;
   }
 
+  function isBattleScreenVisible() {
+    if (!isBrowserDoc()) return false;
+    var battleScreen = document.getElementById('battle-screen');
+    return !!(battleScreen && (!battleScreen.classList || !battleScreen.classList.contains('hidden')));
+  }
+
+  function skipIfBattleVisible() {
+    if (!isBattleScreenVisible()) return false;
+    if (state.syncTimer) {
+      clearTimeout(state.syncTimer);
+      state.syncTimer = 0;
+    }
+    if (state.activeSurface || state.activeLens || state.activeEl) {
+      teardownActiveLens();
+    }
+    return true;
+  }
+
   function detectDesiredSurface() {
     if (!isBrowserDoc() || isJsdomEnv()) return null;
     if (!state.enabled || isReducedMotion()) return null;
-    if (document.hidden) return null;
+    if (document.hidden || isBattleScreenVisible()) return null;
     if (hasBlockingOverlay()) return null;
 
     var titleScreen = document.getElementById('title-screen');
@@ -355,6 +373,7 @@
       state.syncTimer = 0;
     }
     if (!state.initialized) return;
+    if (skipIfBattleVisible()) return;
 
     sanitizeProtectedCoreHud();
 
@@ -383,6 +402,7 @@
 
   function scheduleSync(delayMs) {
     if (!isBrowserDoc() || isJsdomEnv()) return;
+    if (skipIfBattleVisible()) return;
     if (state.initialized && (state.activeSurface || state.activeLens)) {
       var desiredNow = detectDesiredSurface();
       if (!desiredNow || desiredNow.kind !== state.activeSurface || desiredNow.target.el !== state.activeEl) {
@@ -434,48 +454,13 @@
       } catch (e) {}
     };
 
-    var observedOverlays = typeof WeakSet === 'function' ? new WeakSet() : null;
-    var observedOverlayList = [];
-
-    var isTrackedOverlayNode = function (n) {
-      if (!n || n.nodeType !== 1) return false;
-      var nId = n.id || '';
-      var nCls = typeof n.className === 'string' ? n.className : '';
-      return (
-        nId === 'ice-deduction-modal' ||
-        nId === 'cg-lightbox' ||
-        nId === 'ai-drawer' ||
-        nId === 'ending-screen' ||
-        nId === 'hud-drawer' ||
-        /\boverlay\b/.test(nCls)
-      );
-    };
-
-    var watchOverlayAttrs = function (n) {
-      if (!isTrackedOverlayNode(n)) return;
-      if (observedOverlays) {
-        if (observedOverlays.has(n)) return;
-        observedOverlays.add(n);
-      } else {
-        if (observedOverlayList.indexOf(n) !== -1) return;
-        observedOverlayList.push(n);
-      }
-      observeNode(n, { attributes: true, attributeFilter: ['class', 'style'] }, onLayoutMutation);
-    };
-
     var onLayoutMutation = function (records) {
+      if (skipIfBattleVisible()) return;
       var needSync = false;
       for (var i = 0; i < records.length; i++) {
         var rec = records[i];
         var target = rec.target;
         if (!target) continue;
-        if (target.id === 'ambient-fx-canvas' && rec.attributeName === 'data-enabled') {
-          syncEnabledFromAmbientCanvas();
-          continue;
-        }
-        if (target.id !== 'battle-screen' && target.closest && target.closest('#battle-screen')) {
-          continue;
-        }
         if (target.hasAttribute && (
           target.hasAttribute('data-liquid-ignore') ||
           target.hasAttribute('data-liquid-prism') ||
@@ -485,45 +470,14 @@
         }
         if (rec.attributeName === 'class' || rec.attributeName === 'style') {
           var id = target.id || '';
-          var cls = typeof target.className === 'string' ? target.className : '';
           if (
             target === document.body ||
             id === 'title-screen' ||
             id === 'game-screen' ||
-            id === 'battle-screen' ||
-            id === 'card' ||
-            id === 'cg-screen' ||
-            id === 'sys-popup' ||
-            id === 'letter-demo' ||
-            id === 'ice-deduction-modal' ||
-            id === 'cg-lightbox' ||
-            id === 'ai-drawer' ||
-            id === 'ending-screen' ||
-            id === 'hud-drawer' ||
-            /\boverlay\b/.test(cls)
+            id === 'battle-screen'
           ) {
             needSync = true;
-          }
-        }
-        if (rec.type === 'childList') {
-          var added = rec.addedNodes;
-          for (var j = 0; j < added.length; j++) {
-            var n = added[j];
-            if (n && n.nodeType === 1) {
-              if (n.id === 'ambient-fx-canvas') {
-                observeNode(n, { attributes: true, attributeFilter: ['data-enabled'] }, syncEnabledFromAmbientCanvas);
-                syncEnabledFromAmbientCanvas();
-              } else if (isTrackedOverlayNode(n)) {
-                watchOverlayAttrs(n);
-                needSync = true;
-              }
-            }
-          }
-          var removed = rec.removedNodes;
-          for (var k = 0; k < removed.length; k++) {
-            if (isTrackedOverlayNode(removed[k])) {
-              needSync = true;
-            }
+            break;
           }
         }
       }
@@ -532,31 +486,23 @@
       }
     };
 
-    var app = document.getElementById('app');
-    if (app) {
-      observeNode(app, {
-        attributes: true,
-        attributeFilter: ['class', 'style'],
-        childList: true,
-        subtree: true
-      }, onLayoutMutation);
-    }
-
-    observeNode(document.body, {
+    var screenObserveOpts = {
       attributes: true,
-      attributeFilter: ['class'],
-      childList: true
-    }, onLayoutMutation);
+      attributeFilter: ['class', 'style'],
+      subtree: false
+    };
 
-    if (document.body && document.body.children) {
-      for (var cIdx = 0; cIdx < document.body.children.length; cIdx++) {
-        watchOverlayAttrs(document.body.children[cIdx]);
-      }
+    // 仅监听直接顶层屏节点与 document.body，严禁对 #app 开启 subtree/childList，杜绝战斗期逐帧 MutationRecord 空转
+    var topScreenIds = ['title-screen', 'game-screen', 'battle-screen'];
+    for (var sIdx = 0; sIdx < topScreenIds.length; sIdx++) {
+      observeNode(document.getElementById(topScreenIds[sIdx]), screenObserveOpts, onLayoutMutation);
     }
+
+    observeNode(document.body, screenObserveOpts, onLayoutMutation);
 
     var afxCanvas = document.getElementById('ambient-fx-canvas');
     if (afxCanvas) {
-      observeNode(afxCanvas, { attributes: true, attributeFilter: ['data-enabled'] }, syncEnabledFromAmbientCanvas);
+      observeNode(afxCanvas, { attributes: true, attributeFilter: ['data-enabled'], subtree: false }, syncEnabledFromAmbientCanvas);
     }
 
     var onVisibility = function () {
@@ -651,6 +597,7 @@
       init();
       return api;
     }
+    if (skipIfBattleVisible()) return api;
     syncNow();
     return api;
   }

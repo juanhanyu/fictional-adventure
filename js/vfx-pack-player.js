@@ -284,8 +284,7 @@
   const HANDLERS = {
     /* ========================================================================
        1. 冰晶术 (ice_crystal) — 同名覆盖 Core 索引 0
-       1:1 保留 Core 版完整节奏、色板、法阵、星辉与增幅演出，
-       仅主冰晶块与冰晶爆发体量精确缩小 33.3%（1.98 -> 1.32，关联冰块 ~0.67x）
+       1 拍原生节拍门控 + 精致缩容（ice_lance 1.15 / ribbon 6.0 / ice_shatter 1.18）
        ======================================================================== */
     ice_crystal(kit, o) {
       const { from, to, groundY, targetGroundY, amp, ampScale, icePal } = o;
@@ -293,6 +292,9 @@
       const PALETTES = kit.PALETTES;
       const dir = getDir(o);
       const travelMs = 200;
+      const evalP = (ent, ms) => (typeof kit.evalHoldProgress === 'function'
+        ? kit.evalHoldProgress(ent, ms)
+        : easeOutCubic(clamp(ent.age / ms, 0, 1)));
 
       kit.scheduleTimeline([
         {
@@ -307,7 +309,7 @@
               x: from.x - 16 * dir, y: groundY + 2, radius: 42 * ampScale, sy: 0.32,
               goldTriple: amp >= 3, dur: 460
             });
-            // 起手凝聚冰晶块：原 1.25 -> 缩小 33.3% 至 0.84
+            // 起手凝聚冰晶块
             kit.spawnPfx('ice_crystal', { palette: icePal, height: 22 }, {
               x: from.x + 8 * dir, y: from.y + 24, scale: 0.84 * ampScale,
               durMs: 260, fadeOutMs: 80, layer: 'front'
@@ -332,43 +334,50 @@
             const ang = Math.atan2(dy, dx);
             const ribbon = kit.addRibbon({
               pts: [{ x: startX, y: from.y }],
-              width: 8.2 * ampScale,
+              width: 6.0 * ampScale,
               outerColor: '#1658EB',
               midColor: '#38BDF8',
               alpha: 0.92,
               dur: 420,
-              fadeOut: 220
+              fadeOut: 220,
+              holdGate: 0,
+              holdTravelMs: travelMs
             });
 
-            // 飞射电光冰枪：体量精致收敛 1.62 -> 1.32
-            kit.spawnPfx('ice_lance', { palette: icePal, length: 48 }, {
+            // 飞射电光冰枪：精致收敛至 1.15 + holdGate:0 悬停蓄压
+            kit.spawnPfx('ice_lance', { palette: icePal, length: 44 }, {
               x: startX, y: from.y,
               angle: ang,
-              scale: 1.32 * ampScale,
+              scale: 1.15 * ampScale,
               timeScale: 1.4,
               durMs: travelMs + 70,
               fadeInMs: 25,
               fadeOutMs: 60,
               layer: 'front',
-              glowColor: 'rgba(56,189,248,0.52)', glowRadius: 30, glowAlpha: 0.46,
+              glowColor: 'rgba(56,189,248,0.50)', glowRadius: 26, glowAlpha: 0.44,
+              holdGate: 0,
+              holdTravelMs: travelMs,
+              snapFadeMs: 55,
               onUpdate(slot, dtSec, age) {
-                const p = easeOutCubic(clamp(age / travelMs, 0, 1));
+                const p = evalP(slot, travelMs);
                 slot.x = lerp(startX, to.x, p);
                 slot.y = lerp(from.y, to.y, p);
-                if (p < 1) {
+                if (p < 0.995) {
                   ribbon.pts.push({ x: slot.x, y: slot.y });
                   if (ribbon.pts.length > 20) ribbon.pts.shift();
-                  kit.addParticle({
-                    kind: Math.random() < 0.55 ? 'shard' : 'star',
-                    x: slot.x - Math.cos(ang) * 12 + (Math.random() - 0.5) * 10,
-                    y: slot.y - Math.sin(ang) * 12 + (Math.random() - 0.5) * 10,
-                    vx: -Math.cos(ang) * 52 + (Math.random() - 0.5) * 36,
-                    vy: -Math.sin(ang) * 52 + (Math.random() - 0.5) * 36,
-                    size: 2.3 + Math.random() * 2.4,
-                    color: Math.random() < 0.35 ? '#FFFFFF' : '#67E8F9',
-                    color2: '#1658EB',
-                    life: 230 + Math.random() * 170
-                  });
+                  if (!slot._isHolding || Math.random() < 0.35) {
+                    kit.addParticle({
+                      kind: Math.random() < 0.55 ? 'shard' : 'star',
+                      x: slot.x - Math.cos(ang) * 12 + (Math.random() - 0.5) * 10,
+                      y: slot.y - Math.sin(ang) * 12 + (Math.random() - 0.5) * 10,
+                      vx: -Math.cos(ang) * 52 + (Math.random() - 0.5) * 36,
+                      vy: -Math.sin(ang) * 52 + (Math.random() - 0.5) * 36,
+                      size: 2.2 + Math.random() * 2.2,
+                      color: Math.random() < 0.35 ? '#FFFFFF' : '#67E8F9',
+                      color2: '#1658EB',
+                      life: 220 + Math.random() * 160
+                    });
+                  }
                 }
               }
             });
@@ -381,26 +390,29 @@
         },
         {
           at: 365,
+          gate: 0,
+          preTelegraphMs: 110,
+          gateMeta: { beatIdx: 0, totalBeats: 1, targetIdx: 0 },
           fn() {
             kit.safeCall(o.onImpact, 0, to, true);
             kit.safeCall(o.onShake, 6.5 + amp * 2.2, 240);
             kit.safeCall(o.onHitStop, 50 + amp * 14);
 
-            // 主冰晶爆发体量精确缩小 33.3%：原 1.98 -> 1.32，光晕 62 -> 42
+            // 主冰晶爆发体量精致收敛：1.32 -> 1.18
             kit.spawnPfx('ice_shatter', { palette: icePal }, {
               x: to.x, y: targetGroundY - 2,
-              scale: 1.32 * ampScale,
+              scale: 1.18 * ampScale,
               preWarmSec: 0.50,
               timeScale: 1.68,
               durMs: 820,
               fadeInMs: 12,
               fadeOutMs: 220,
               layer: 'main',
-              glowColor: 'rgba(56,189,248,0.44)', glowRadius: 42 * ampScale, glowAlpha: 0.40
+              glowColor: 'rgba(56,189,248,0.44)', glowRadius: 38 * ampScale, glowAlpha: 0.40
             });
 
             kit.spawnPfx('hit_spark', { palette: PALETTES.slash, height: 20, aim: 0.1 }, {
-              x: to.x, y: to.y + 24, scale: 1.28 * ampScale,
+              x: to.x, y: to.y + 24, scale: 1.22 * ampScale,
               durMs: 360, layer: 'front'
             });
 
@@ -410,13 +422,13 @@
               outerColor: '#38BDF8', coreColor: '#FFFFFF', dur: 260
             });
             kit.addShockRing({
-              x: to.x, y: targetGroundY + 2, r0: 10, r1: 66 * ampScale, sy: 0.30,
+              x: to.x, y: targetGroundY + 2, r0: 10, r1: 64 * ampScale, sy: 0.30,
               color: '#0EA5E9', coreColor: '#FFFFFF', lineW: 3.4, dur: 440
             });
 
-            // 飞散晶块按 ~0.67x 精细收敛
+            // 飞散晶块精细收敛
             kit.spawnBurstParticles(to.x, to.y, 22 + amp * 7, 'shard', {
-              spdMin: 72, spdMax: 225, sizeMin: 2.5, sizeMax: 5.2,
+              spdMin: 72, spdMax: 225, sizeMin: 2.4, sizeMax: 5.0,
               colors: ['#FFFFFF', '#E0F7FF', '#67E8F9', '#38BDF8'],
               color2: '#1658EB',
               groundY: targetGroundY, bounce: 0.44, lifeMin: 440, lifeMax: 740
@@ -434,25 +446,25 @@
         {
           at: 510,
           fn() {
-            kit.safeCall(o.onShake, 5.2 + amp, 180);
-            kit.addFlash(to.x, to.y - 6, 40 * ampScale, '#67E8F9', 160, 0.38);
+            kit.safeCall(o.onShake, 5.0 + amp, 170);
+            kit.addFlash(to.x, to.y - 6, 38 * ampScale, '#67E8F9', 155, 0.36);
             kit.addStarFlare({
-              x: to.x, y: to.y - 8, r0: 8, r1: 42 * ampScale, points: 8,
-              outerColor: amp >= 3 ? '#FDE68A' : '#38BDF8', coreColor: '#FFFFFF', dur: 310
+              x: to.x, y: to.y - 8, r0: 8, r1: 40 * ampScale, points: 8,
+              outerColor: amp >= 3 ? '#FDE68A' : '#38BDF8', coreColor: '#FFFFFF', dur: 300
             });
             kit.addShockRing({
-              x: to.x, y: to.y - 6, r0: 12, r1: 58 * ampScale, sy: 0.85,
-              color: '#67E8F9', coreColor: '#FFFFFF', lineW: 3.0, dur: 330, layer: 'front'
+              x: to.x, y: to.y - 6, r0: 12, r1: 56 * ampScale, sy: 0.85,
+              color: '#67E8F9', coreColor: '#FFFFFF', lineW: 2.9, dur: 320, layer: 'front'
             });
-            kit.spawnBurstParticles(to.x, to.y - 8, 32, 'shard', {
-              spdMin: 98, spdMax: 270, upBias: 95, sizeMin: 2.7, sizeMax: 6.1,
+            kit.spawnBurstParticles(to.x, to.y - 8, 28, 'shard', {
+              spdMin: 95, spdMax: 260, upBias: 92, sizeMin: 2.6, sizeMax: 5.8,
               colors: ['#FFFFFF', '#E0F7FF', '#67E8F9', '#38BDF8', '#0EA5E9'],
               color2: '#1658EB',
-              groundY: targetGroundY, bounce: 0.48, lifeMin: 400, lifeMax: 680
+              groundY: targetGroundY, bounce: 0.46, lifeMin: 400, lifeMax: 680
             });
-            kit.spawnBurstParticles(to.x, to.y - 16, 18, 'snow', {
+            kit.spawnBurstParticles(to.x, to.y - 16, 16, 'snow', {
               spdMin: 20, spdMax: 72, upBias: 48, gravity: 24,
-              sizeMin: 2.4, sizeMax: 4.5,
+              sizeMin: 2.4, sizeMax: 4.4,
               colors: ['#FFFFFF', '#E0F7FF'], color2: '#38BDF8',
               lifeMin: 420, lifeMax: 680
             });
@@ -587,8 +599,8 @@
     },
 
     /* ========================================================================
-       3. 水球术 (water_orb)
-       通透多层次折射水球沿轻盈抛物弧疾射，命中爆开晶莹水花穹顶与漫天水珠
+       3. 水球术 (water_orb) — 1 拍门控
+       通透多层次折射水球沿轻盈抛物弧疾射，飞至目标前 88% 挂 gate:0，放行瞬间炸裂
        ======================================================================== */
     water_orb(kit, o) {
       const { from, to, groundY, targetGroundY, amp, ampScale } = o;
@@ -596,6 +608,9 @@
       const PALETTES = kit.PALETTES;
       const dir = getDir(o);
       const travelMs = 215;
+      const evalP = (ent, ms) => (typeof kit.evalHoldProgress === 'function'
+        ? kit.evalHoldProgress(ent, ms)
+        : easeOutCubic(clamp(ent.age / ms, 0, 1)));
 
       const p0 = { x: from.x + 12 * dir, y: from.y - 6 };
       const p2 = { x: to.x, y: to.y - 2 };
@@ -657,22 +672,27 @@
               palette: 'water',
               alpha: 0.90,
               dur: 460,
-              fadeOut: 220
+              fadeOut: 220,
+              holdGate: 0,
+              holdTravelMs: travelMs
             });
 
-            // 晶透立体水球飞行主体（带高光气泡 + 旋转碧青水环）
+            // 晶透立体水球飞行主体（holdGate:0 悬停蓄压在目标前 0.85→0.96）
             kit.addCustomDrawable('front', {
               age: 0, dur: travelMs + 30,
-              update(dt, dtSec, p) {
-                const t = easeOutCubic(clamp(this.age / travelMs, 0, 1));
+              holdGate: 0,
+              holdTravelMs: travelMs,
+              snapFadeMs: 28,
+              update() {
+                const t = evalP(this, travelMs);
                 const pos = quadBezier(p0, p1, p2, t);
                 this.cx = pos.x;
                 this.cy = pos.y;
                 this.ang = quadBezierTangent(p0, p1, p2, Math.min(0.99, t));
-                if (t < 0.99) {
+                if (t < 0.995) {
                   ribbon.pts.push({ x: pos.x, y: pos.y });
                   if (ribbon.pts.length > 22) ribbon.pts.shift();
-                  if (Math.random() < 0.8) {
+                  if ((!this._isHolding && Math.random() < 0.8) || (this._isHolding && Math.random() < 0.35)) {
                     kit.addParticle({
                       kind: Math.random() < 0.72 ? 'drop' : 'star',
                       x: pos.x + (Math.random() - 0.5) * 14,
@@ -693,7 +713,9 @@
                 const cx = this.cx != null ? this.cx : p0.x;
                 const cy = this.cy != null ? this.cy : p0.y;
                 const ang = this.ang || 0;
-                const r = (15.5 + Math.sin(p * 12) * 1.4) * ampScale;
+                const animP = p + ((this._holdWaitMs || 0) * 0.002);
+                const pulse = this._isHolding ? (1 + 0.08 * Math.sin((this._holdWaitMs || 0) * 0.025)) : 1;
+                const r = (15.5 + Math.sin(animP * 12) * 1.4) * ampScale * pulse;
 
                 ctx.translate(cx, cy);
                 ctx.rotate(ang);
@@ -739,7 +761,7 @@
                 ctx.strokeStyle = '#E0F9FF';
                 ctx.lineWidth = 1.6;
                 ctx.beginPath();
-                ctx.ellipse(0, 0, r * 1.32, r * 0.56, p * 8, 0, Math.PI * 1.45);
+                ctx.ellipse(0, 0, r * 1.32, r * 0.56, animP * 8, 0, Math.PI * 1.45);
                 ctx.stroke();
               }
             });
@@ -747,6 +769,9 @@
         },
         {
           at: 145 + travelMs,
+          gate: 0,
+          preTelegraphMs: 110,
+          gateMeta: { beatIdx: 0, totalBeats: 1, targetIdx: 0 },
           fn() {
             kit.safeCall(o.onImpact, 0, to, true);
             kit.safeCall(o.onShake, 6.8 + amp * 2.0, 220);
@@ -820,15 +845,18 @@
     },
 
     /* ========================================================================
-       4. 蔓地薄冰 / 寒霜滑步 (frost_step_floor)
-       脚底轻盈寒霜滑步起势 → 地表六角冰镜迅速铺展 → 敌群足下薄冰锁腿
+       4. 蔓地薄冰 / 寒霜滑步 (frost_step_floor) — 1 拍门控
+       脚底轻盈寒霜滑步起势 → 地表六角冰镜铺至目标前 88% 挂 gate:0 → 放行锁足冰爆
        ======================================================================== */
     frost_step_floor(kit, o) {
       const { from, groundY, amp, ampScale, icePal } = o;
       const { TAU, clamp, lerp, easeOutCubic } = kit.math;
       const targets = resolveTargetList(o);
       const dir = getDir(o);
-      const beatMs = 65;
+      const spreadMs = 215;
+      const evalP = (ent, ms) => (typeof kit.evalHoldProgress === 'function'
+        ? kit.evalHoldProgress(ent, ms)
+        : easeOutCubic(clamp(ent.age / ms, 0, 1)));
 
       const avgX = targets.reduce((s, t) => s + t.x, 0) / targets.length;
       const avgGY = targets.reduce((s, t) => s + t.groundY, 0) / targets.length;
@@ -857,18 +885,23 @@
         {
           at: 105,
           fn() {
-            // 通透贴地六角冰镜薄冰毯（沿着地面从施法者铺至敌阵脚底）
+            // 通透贴地六角冰镜薄冰毯（holdGate:0 铺至 88% 蓄压待爆）
             kit.addCustomDrawable('back', {
               age: 0, dur: 1180,
-              draw(ctx, p) {
-                const grow = easeOutCubic(clamp(this.age / 260, 0, 1));
-                const fade = this.age > 880 ? clamp((1180 - this.age) / 300, 0, 1) : 1;
+              holdGate: 0,
+              holdTravelMs: spreadMs,
+              draw(ctx) {
+                const grow = evalP(this, spreadMs);
+                const fade = this._isHolding
+                  ? 1
+                  : (this.age > 880 ? clamp((1180 - this.age) / 300, 0, 1) : 1);
                 if (fade <= 0.02) return;
 
                 const rx = (spanX * 0.62) * grow * ampScale;
                 const ry = 28 * grow * ampScale;
                 const cx = lerp(from.x + 48 * dir, avgX, grow);
                 const cy = lerp(groundY + 2, avgGY + 4, grow);
+                const animAge = this.age + (this._holdWaitMs || 0);
 
                 ctx.globalAlpha = fade * 0.92;
 
@@ -902,7 +935,7 @@
                 }
 
                 // 掠过冰面的镜光扫带
-                const sweepX = cx - rx + ((this.age * 0.34) % (rx * 2 + 40));
+                const sweepX = cx - rx + ((animAge * 0.34) % (rx * 2 + 40));
                 const sg = ctx.createLinearGradient(sweepX - 24, cy, sweepX + 24, cy);
                 sg.addColorStop(0, 'rgba(255,255,255,0)');
                 sg.addColorStop(0.5, 'rgba(255,255,255,0.58)');
@@ -926,88 +959,96 @@
                 x0: from.x + 12 * dir, y0: groundY + 2,
                 x1: tg.x, y1: tg.groundY + 3,
                 width: 3.0 * ampScale,
-                growMs: 210 + idx * beatMs,
+                growMs: spreadMs,
                 palette: icePal,
-                dur: 1080
+                dur: 1080,
+                holdGate: 0,
+                holdTravelMs: spreadMs
               });
+            }
+          }
+        },
+        {
+          at: 105 + spreadMs,
+          gate: 0,
+          preTelegraphMs: 110,
+          gateMeta: { beatIdx: 0, totalBeats: 1, targetIdx: 0 },
+          fn() {
+            kit.safeCall(o.onShake, 5.4 + amp * 1.5, 165);
+            kit.safeCall(o.onHitStop, 38 + amp * 10);
+
+            for (let idx = 0; idx < targets.length; idx++) {
+              const tg = targets[idx];
+              const isLast = idx === targets.length - 1;
+              const spikeDelay = idx * 18;
+              kit.safeCall(o.onImpact, idx, tg, isLast);
+
+              kit.spawnPfx('frost_nova', { palette: icePal, reach: 64 }, {
+                x: tg.x, y: tg.groundY + 3,
+                scale: 1.24 * ampScale,
+                preWarmSec: 0.34, timeScale: 1.48, durMs: 720,
+                layer: 'back'
+              });
+
+              // 锁足低矮精致冰晶环棘（紧贴脚踝、晶莹通透）
+              kit.addHeroThorns({
+                x: tg.x, y: tg.groundY + 3,
+                palette: icePal,
+                goldAccent: amp >= 3,
+                dur: 780,
+                spikes: [
+                  { dx: -22, h: 30 * ampScale, w: 12, lean: -10, delay: 12 + spikeDelay, primary: false },
+                  { dx: 22,  h: 32 * ampScale, w: 12, lean: 11,  delay: 16 + spikeDelay, primary: false },
+                  { dx: -9,  h: 44 * ampScale, w: 14, lean: -5,  delay: spikeDelay,      primary: true },
+                  { dx: 10,  h: 40 * ampScale, w: 13, lean: 6,   delay: 8 + spikeDelay,  primary: true }
+                ]
+              });
+
+              kit.addShockRing({
+                x: tg.x, y: tg.groundY + 3, r0: 10, r1: 62 * ampScale, sy: 0.28,
+                color: '#38BDF8', coreColor: '#FFFFFF', lineW: 3.2, dur: 420
+              });
+              kit.addStarFlare({
+                x: tg.x, y: tg.groundY - 12, r0: 6, r1: 30 * ampScale, points: 6,
+                outerColor: amp >= 3 ? '#FDE68A' : '#67E8F9', coreColor: '#FFFFFF', dur: 290
+              });
+
+              kit.spawnBurstParticles(tg.x, tg.groundY - 6, 14 + amp * 4, 'shard', {
+                spdMin: 55, spdMax: 165, upBias: 90, sizeMin: 2.6, sizeMax: 5.0,
+                colors: ['#FFFFFF', '#E0F7FF', '#7DD3FC', '#38BDF8'], color2: '#1658EB',
+                groundY: tg.groundY, bounce: 0.35, lifeMin: 360, lifeMax: 620
+              });
+              kit.spawnBurstParticles(tg.x, tg.groundY - 14, 12, 'snow', {
+                spdMin: 20, spdMax: 85, upBias: 60, gravity: 20,
+                sizeMin: 2.8, sizeMax: 5.4,
+                colors: ['#FFFFFF', '#E0F7FF'], color2: '#38BDF8',
+                lifeMin: 460, lifeMax: 740
+              });
+
+              if (isLast) {
+                kit.triggerAmpImpactUpgrade(tg.x, tg.y, tg.groundY, amp);
+              }
             }
           }
         }
       ];
 
-      for (let idx = 0; idx < targets.length; idx++) {
-        const tg = targets[idx];
-        const hitAt = 320 + idx * beatMs;
-        const isLast = idx === targets.length - 1;
-
-        cues.push({
-          at: hitAt,
-          fn() {
-            kit.safeCall(o.onImpact, idx, tg, isLast);
-            kit.safeCall(o.onShake, isLast ? (5.4 + amp * 1.5) : 3.4, 150);
-            if (isLast) kit.safeCall(o.onHitStop, 38 + amp * 10);
-
-            kit.spawnPfx('frost_nova', { palette: icePal, reach: 64 }, {
-              x: tg.x, y: tg.groundY + 3,
-              scale: 1.24 * ampScale,
-              preWarmSec: 0.34, timeScale: 1.48, durMs: 720,
-              layer: 'back'
-            });
-
-            // 锁足低矮精致冰晶环棘（紧贴脚踝、晶莹通透）
-            kit.addHeroThorns({
-              x: tg.x, y: tg.groundY + 3,
-              palette: icePal,
-              goldAccent: amp >= 3,
-              dur: 780,
-              spikes: [
-                { dx: -22, h: 30 * ampScale, w: 12, lean: -10, delay: 12, primary: false },
-                { dx: 22,  h: 32 * ampScale, w: 12, lean: 11,  delay: 16, primary: false },
-                { dx: -9,  h: 44 * ampScale, w: 14, lean: -5,  delay: 0,  primary: true },
-                { dx: 10,  h: 40 * ampScale, w: 13, lean: 6,   delay: 8,  primary: true }
-              ]
-            });
-
-            kit.addShockRing({
-              x: tg.x, y: tg.groundY + 3, r0: 10, r1: 62 * ampScale, sy: 0.28,
-              color: '#38BDF8', coreColor: '#FFFFFF', lineW: 3.2, dur: 420
-            });
-            kit.addStarFlare({
-              x: tg.x, y: tg.groundY - 12, r0: 6, r1: 30 * ampScale, points: 6,
-              outerColor: amp >= 3 ? '#FDE68A' : '#67E8F9', coreColor: '#FFFFFF', dur: 290
-            });
-
-            kit.spawnBurstParticles(tg.x, tg.groundY - 6, 14 + amp * 4, 'shard', {
-              spdMin: 55, spdMax: 165, upBias: 90, sizeMin: 2.6, sizeMax: 5.0,
-              colors: ['#FFFFFF', '#E0F7FF', '#7DD3FC', '#38BDF8'], color2: '#1658EB',
-              groundY: tg.groundY, bounce: 0.35, lifeMin: 360, lifeMax: 620
-            });
-            kit.spawnBurstParticles(tg.x, tg.groundY - 14, 12, 'snow', {
-              spdMin: 20, spdMax: 85, upBias: 60, gravity: 20,
-              sizeMin: 2.8, sizeMax: 5.4,
-              colors: ['#FFFFFF', '#E0F7FF'], color2: '#38BDF8',
-              lifeMin: 460, lifeMax: 740
-            });
-
-            if (isLast) {
-              kit.triggerAmpImpactUpgrade(tg.x, tg.y, tg.groundY, amp);
-            }
-          }
-        });
-      }
-
       kit.scheduleTimeline(cues);
     },
 
     /* ========================================================================
-       5. 寒霜吐息 (frost_breath)
-       明亮晶透的扇形极寒流光吐息波 + 密集飘飞雪晶与冰花覆场
+       5. 寒霜吐息 (frost_breath) — 1 拍门控
+       明亮晶透的扇形极寒流光吐息波逼近 88% 挂 gate:0 → 放行瞬间覆场冻结爆裂
        ======================================================================== */
     frost_breath(kit, o) {
       const { from, to, groundY, targetGroundY, amp, ampScale, icePal } = o;
       const { clamp, easeOutCubic } = kit.math;
       const targets = resolveTargetList(o);
       const dir = getDir(o);
+      const extendMs = 205;
+      const evalP = (ent, ms) => (typeof kit.evalHoldProgress === 'function'
+        ? kit.evalHoldProgress(ent, ms)
+        : easeOutCubic(clamp(ent.age / ms, 0, 1)));
 
       const mouth = { x: from.x + 14 * dir, y: from.y - 8 };
       const aimX = targets.reduce((s, t) => s + t.x, 0) / targets.length;
@@ -1039,16 +1080,21 @@
         {
           at: 135,
           fn() {
-            // 扇形清透极寒吐息锥（明亮雪青-冰蓝-纯白流光丝，零脏灰）
+            // 扇形清透极寒吐息锥（holdGate:0 延展至目标前 0.85→0.96 蓄压）
             kit.addCustomDrawable('main', {
               age: 0, dur: 760,
-              draw(ctx, p) {
-                const extend = easeOutCubic(clamp(this.age / 210, 0, 1));
-                const fade = this.age > 520 ? clamp((760 - this.age) / 240, 0, 1) : 1;
+              holdGate: 0,
+              holdTravelMs: extendMs,
+              draw(ctx) {
+                const extend = evalP(this, extendMs);
+                const fade = this._isHolding
+                  ? 1
+                  : (this.age > 520 ? clamp((760 - this.age) / 240, 0, 1) : 1);
                 if (fade <= 0.02) return;
 
                 const len = dist * extend;
                 const spread = (64 + amp * 8) * ampScale;
+                const animAge = this.age + (this._holdWaitMs || 0);
 
                 ctx.translate(mouth.x, mouth.y);
                 ctx.rotate(ang);
@@ -1074,7 +1120,7 @@
                 for (let s = -2; s <= 2; s++) {
                   const frac = s / 2;
                   const endY = frac * spread * 0.78;
-                  const ph = this.age * 0.028 + s * 1.3;
+                  const ph = animAge * 0.028 + s * 1.3;
                   ctx.strokeStyle = s === 0 ? '#FFFFFF' : (Math.abs(s) === 1 ? '#E0F7FF' : '#7DD3FC');
                   ctx.lineWidth = s === 0 ? 3.2 : 2.0;
                   ctx.beginPath();
@@ -1089,7 +1135,7 @@
                 }
 
                 // 喷口菱形冰焰核心
-                kit.drawStarFlare(ctx, 12, 0, 18 * ampScale, 0.25, 4, this.age * 0.01, '#67E8F9', '#FFFFFF', fade * 0.9);
+                kit.drawStarFlare(ctx, 12, 0, 18 * ampScale, 0.25, 4, animAge * 0.01, '#67E8F9', '#FFFFFF', fade * 0.9);
               }
             });
 
@@ -1104,8 +1150,11 @@
               fadeInMs: 30, fadeOutMs: 180,
               layer: 'main',
               clipRight: 0.1,
-              onUpdate(slot, dtSec, age) {
-                slot.clipRight = easeOutCubic(clamp(age / 190, 0.1, 1));
+              holdGate: 0,
+              holdTravelMs: extendMs,
+              onUpdate(slot) {
+                const p = evalP(slot, extendMs);
+                slot.clipRight = clamp(0.1 + 0.9 * p, 0.1, 1);
               }
             });
 
@@ -1119,7 +1168,10 @@
           }
         },
         {
-          at: 340,
+          at: 135 + extendMs,
+          gate: 0,
+          preTelegraphMs: 110,
+          gateMeta: { beatIdx: 0, totalBeats: 1, targetIdx: 0 },
           fn() {
             kit.safeCall(o.onShake, 6.2 + amp * 1.8, 220);
             kit.safeCall(o.onHitStop, 44 + amp * 10);

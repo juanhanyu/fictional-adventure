@@ -4590,7 +4590,7 @@ const COURSES = {
   border_blade:{id:'border_blade', name:'覆冰剑技', phase:['journey','finale'], teacher:'自修·实战', needAge:15, needFlag:'ch_distant_wind_1',
     stat:{body:3, mana:2}, st:3, desc:'将极薄钢冰贴合乌木铁刃，锤炼拔剑与收力。', skillAt:2, skill:{id:'frost_edge', name:'覆冰锋', type:'passive', desc:'剑刃覆薄冰，近战衔接更敏锐。'}},
   helan_tactics:{id:'helan_tactics', name:'冻土防务', phase:['journey','finale'], teacher:'艾诺', needAge:15, needFlag:'ch_distant_wind_1',
-    stat:{mana:3, mind:2}, st:3, desc:'与机动防卫队演练窄道控场与不经手凝冰。', skillAt:2, skill:{id:'instant_ice', name:'隔空凝冰', type:'active', desc:'跳过手部节点直接凝冰截击，高概率冰冻。'}},
+    stat:{mana:3, mind:2}, st:3, desc:'与机动防卫队演练窄道控场与隔空凝冰。', skillAt:2, skill:{id:'instant_ice', name:'隔空凝冰', type:'active', desc:'跳过手部节点直接凝冰截击，高概率冰冻。'}},
 };
 
 function addStat(k, v){
@@ -5528,7 +5528,7 @@ const MAIN_STAFF_DEFS = {
     name: '徒手导魔',
     shortEffect: '常规构筑 · 零额外耗蓝与暴露风险',
     desc: '不借外物法杖，以自身魔力回路直接构筑术式。常规魔导出力，无额外耗蓝与耳目暴露风险。',
-    lore: '希尔维亚自幼锤炼的徒手塑形技艺，经手构筑沉稳精准，随时可切换随身法器。'
+    lore: '希尔维亚自幼锤炼的徒手塑形技艺，徒手构筑沉稳精准，随时可切换随身法器。'
   },
   eclipse_wand: {
     id: 'eclipse_wand',
@@ -6434,7 +6434,7 @@ function openPanel(tab, opts){
     const fallbackDescs = {
       root_step: '生根步：沉腰稳步、在滑冰与泥地也能稳住身位并蓄势反击。',
       frost_edge: '覆冰锋：以极薄霜膜覆于剑刃之上，提升挥斩锐度与破招威力。',
-      instant_ice: '隔空凝冰：不经手直接于空中凝结冰锥，打断敌方吟唱与远距控场。',
+      instant_ice: '隔空凝冰：隔空直接于空中凝结冰锥，打断敌方吟唱与远距控场。',
       soft_cut: '送刀：不用蛮力的灵巧剑势，低消耗斩击并附带少量冰水魔力。',
       stealth_edge: '覆水无痕：以薄水膜隐去锋芒与破风声，令剑势难以预判并提升暴击威力。',
       etiquette: '贵族礼仪与仪态修养，交涉与正式场合检定小幅提升。',

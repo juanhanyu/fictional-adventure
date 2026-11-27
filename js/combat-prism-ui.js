@@ -1,16 +1,15 @@
 /* =========================================================================
-   《转生千金》Option 2 · P5 式希尔维亚周身棱晶放射指令翼适配器 (js/combat-prism-ui.js)
+   《转生千金》Option 2 · P5 式角色锚定棱晶放射指令翼适配器 (js/combat-prism-ui.js)
    职责：
-     - 挂载于 #battle-screen .cb-arena-field，在桌面端（>=1024px）锚定于中场空区 #cb-mid-corridor 偏左，
-       将技能选择转化为 Persona 5 式角色锚定多面体蓝宝棱晶放射翼：
-         [W] 冰水术式  → 展开实时同步自 #b-actions 的 5+1 进化术式级联翼（支持 [1..9] 直施与拍数微标）
-         [E] 魔力增幅  → 1:1 复刻标杆外露直按三阶魔力增幅（左键/E 原地升档 0%→20%→40%→60%→0%，
+     - 挂载于 #battle-screen .cb-arena-field，在桌面端（>=1024px）动态锚定于「当前操作角色」身旁，
+       将战斗指令转化为 Persona 5 式角色跟手多面体蓝宝棱晶放射四行主翼：
+         [W] 施放技能  → 展开实时同步自 #b-actions 的全部攻守术式（攻伐在先、守御身法紧随，[1..9] 直施）
+         [E] 魔力增幅  → 1:1 外露直按三阶魔力增幅（左键/E 原地升档 0%→20%→40%→60%→0%，
                          右键/Shift+E 原地降档 60%→40%→20%→0%，滚轮微调；技能列表顶脊 #cb-pw-amp-mini 同款直按不跳离）
-         [A] 守势/护盾 → 优先瞬发当前可用守势护盾技，多项时展开守势翼，无可用时稳守回合
-         [D] 演武辅助  → 展开心念援护 / 晦轮杖 / 结束回合战术翼
-         [X] 结束回合  → 顶栏常驻一键结束回合（AP 归零时流光提示，绝与 [E] 增幅互不冲突）
+         [A] 使用道具  → 展开战斗行囊道具叶（预留 battleState.battleItems / registerItemProvider 接入）
+         [D] 结束回合  → 直接结束本回合（与顶栏 [X] 同步，AP 耗尽时流光提示）
          [L] 战报手札  → 棱晶模式底部单行实况战报条 + 可展开历史记录
-     - 适配 6+6 站位（含雷纳德前排 #cb-ally-vanguard-slot、.cb-ally-pane 与 #cb-enemy-zone .cb-enemy-card 避障）
+     - 适配 6+6 站位与多友军编队，严格测量当前操作角色静止立绘容器并避让顶栏与底角队卡
      - 适配 V3.2 命中前缩圈与休闲模式：缩圈期间完全让出键盘并无阻塞暂隐棱晶翼，护手关闭时清爽隐藏拍数微标
      - 由 combat:statechange / combat:prefschange 事件驱动同步 + 签名差分复绘，彻底根除悬停与 60fps 像素帧触发的 DOM 销毁抖动
      - 零破坏既有 DOM ID 与自动化测试（JSDOM 环境下静默旁路）
@@ -84,7 +83,7 @@
       title: '★★★三阶 · 星霜极限 60%',
       short: '★★★60% 星霜极限',
       multLabel: '1.60×',
-      effect: '+3破锁 · 35%穿抗 · 限手持重术',
+      effect: '+3破锁 · 35%穿抗 · 三阶输出上限',
     }),
   ]);
   const HIGHER_OVERLAY_IDS = [
@@ -97,6 +96,7 @@
     'w', 'e', 'a', 'd', 'x', 'l', 'r', 'f', 'escape',
     '1', '2', '3', '4', '5', '6', '7', '8', '9',
   ]);
+  const itemProviders = [];
 
   function isJsdomEnv() {
     try {
@@ -147,7 +147,7 @@
     shortViewport: false,
     viewportW: 1440,
     viewportH: 900,
-    menuMode: 'root', // 'root' | 'skills' | 'guard' | 'assist'
+    menuMode: 'root', // 'root' | 'skills' | 'items'
     logExpanded: false,
     hoveredWingIdx: null,
     hoveredBladeIdx: null,
@@ -182,6 +182,10 @@
     lastBattleState: null,
     lastBladeSig: '',
     lastAvSig: '',
+    activeActorOverride: null,
+    lastActiveActorKey: 'player',
+    anchorFlipLeft: false,
+    guardSplitIdx: -1,
     lastAnchorX: 280,
     lastAnchorY: 280,
     lastFieldW: 1280,
@@ -604,6 +608,9 @@
       const expText = expWarnText || expSafeText;
       const expKind = expWarnText ? 'warn' : (expSafeText ? 'safe' : '');
       const pathText = pathEl ? pathEl.textContent.replace(/^\d+\s*/, '').trim() : '';
+      const isPureGuard = skObj
+        ? !!(skObj.shieldBase || skObj.afterimage || (btn.classList.contains('is-guard') && !(skObj.power > 0)))
+        : btn.classList.contains('is-guard');
       return {
         kind: 'skill',
         slotIdx: idx,
@@ -619,7 +626,7 @@
         oppLabel: oppEl ? oppEl.textContent.trim() : '',
         expText,
         expKind,
-        isGuard: btn.classList.contains('is-guard'),
+        isGuard: isPureGuard,
         disabled: !!btn.disabled,
         sourceBtn: btn,
       };
@@ -768,73 +775,104 @@
     };
   }
 
-  function readAssistItems(battleOverride) {
-    const items = [];
-    const b = battleOverride || getEngineBattle();
-    const p = b && b.player ? b.player : null;
+  function registerItemProvider(fn) {
+    if (typeof fn !== 'function') return false;
+    if (itemProviders.indexOf(fn) === -1) {
+      itemProviders.push(fn);
+    }
+    return function unregisterItemProvider() {
+      const idx = itemProviders.indexOf(fn);
+      if (idx >= 0) itemProviders.splice(idx, 1);
+    };
+  }
 
-    const assistBtn = document.getElementById('cb-btn-assist');
-    const hasConfiguredAssist = p ? !!p.bondAssist : !!(assistBtn && !assistBtn.classList.contains('locked-hint'));
-    if (hasConfiguredAssist && assistBtn && isVisible(assistBtn)) {
-      const cleanedAssist = assistBtn.textContent
-        .replace(/\s+/g, ' ')
-        .replace(/\bF\b/g, '')
-        .replace(/^心念援护[·・:\s]*/u, '')
-        .trim();
-      const used = !!(p && p.bondAssistUsed);
-      items.push({
-        kind: 'tool',
-        key: 'F',
-        skillId: 'tool_assist',
-        name: '心念援护',
-        pathLabel: '羁绊连携',
-        foot: cleanedAssist || (used ? '本场已发动羁绊支援' : '呼唤羁绊角色协同援护'),
-        cost: used ? '已使用' : (assistBtn.disabled ? '未就绪' : '可用'),
-        oppLabel: !assistBtn.disabled ? '✦ 可援护' : '',
-        disabled: !!assistBtn.disabled,
-        sourceBtn: assistBtn,
-      });
+  function normalizeBattleItem(raw, idx) {
+    if (!raw || typeof raw !== 'object') return null;
+    const count = typeof raw.count === 'number'
+      ? raw.count
+      : (typeof raw.qty === 'number' ? raw.qty : null);
+    const disabled = !!raw.disabled || (count != null && count <= 0);
+    const rawId = raw.id != null && raw.id !== '' ? String(raw.id) : `item_${idx}`;
+    return {
+      kind: 'item',
+      slotIdx: idx,
+      key: idx < 9 ? String(idx + 1) : '·',
+      skillId: `item:${rawId}`,
+      itemId: rawId,
+      name: String(raw.name || '道具'),
+      iconHtml: raw.iconHtml || '',
+      pathLabel: String(raw.tag || raw.category || '道具'),
+      beatLabel: '',
+      beatKind: '',
+      cost: raw.cost != null ? String(raw.cost) : (count != null ? `×${count}` : ''),
+      desc: String(raw.desc || ''),
+      foot: String(raw.foot || raw.desc || ''),
+      oppLabel: String(raw.badge || ''),
+      expText: '',
+      expKind: '',
+      isGuard: false,
+      isPlaceholder: false,
+      disabled,
+      onUse: typeof raw.onUse === 'function' ? raw.onUse : (typeof raw.use === 'function' ? raw.use : null),
+      sourceBtn: raw.sourceBtn || null,
+      rawItem: raw,
+    };
+  }
+
+  function readBattleItems(battleState) {
+    const b = battleState || uiState.lastBattleState || getEngineBattle();
+    const collected = [];
+    const seenIds = new Set();
+
+    const pushRawList = list => {
+      if (!Array.isArray(list)) return;
+      for (let i = 0; i < list.length; i++) {
+        const entry = list[i];
+        if (!entry || typeof entry !== 'object') continue;
+        const idKey = entry.id != null && entry.id !== '' ? String(entry.id) : '';
+        if (idKey && seenIds.has(idKey)) continue;
+        if (idKey) seenIds.add(idKey);
+        const normalized = normalizeBattleItem(entry, collected.length);
+        if (normalized) collected.push(normalized);
+      }
+    };
+
+    if (b && Array.isArray(b.battleItems)) {
+      pushRawList(b.battleItems);
+    }
+    for (let i = 0; i < itemProviders.length; i++) {
+      try {
+        const supplied = itemProviders[i](b);
+        pushRawList(supplied);
+      } catch (e) {}
     }
 
-    const wandBtn = document.getElementById('cb-btn-wand');
-    if (wandBtn && isVisible(wandBtn)) {
-      const isOn = wandBtn.classList.contains('active');
-      const artApi = (typeof window !== 'undefined' && window.ItemArtRegistry) || global.ItemArtRegistry || null;
-      const wandIconHtml = (artApi && typeof artApi.renderIconHTML === 'function')
-        ? (artApi.renderIconHTML('eclipse_wand', { size: 20, cls: 'cb-bl-art-icon', decorative: true, eager: true }) || '')
-        : '';
-      items.push({
-        kind: 'tool',
-        key: 'R',
-        skillId: 'tool_wand',
-        name: '晦轮杖',
-        iconHtml: wandIconHtml,
-        pathLabel: '魔法真伤',
-        foot: isOn ? '真伤已展开 · 穿法抗与魔盾' : '收鞘态 · 展开享100%魔法真伤',
-        cost: wandBtn.disabled ? '不可用' : (isOn ? '已展开' : '收鞘'),
-        oppLabel: isOn ? '✦ 晦轮展开' : '',
-        disabled: !!wandBtn.disabled,
-        sourceBtn: wandBtn,
-      });
-    }
+    return collected;
+  }
 
-    const endBtn = document.getElementById('cb-btn-endturn');
-    if (endBtn && isVisible(endBtn)) {
-      items.push({
-        kind: 'tool',
-        key: 'X',
-        skillId: 'tool_endturn',
-        name: '结束本回合',
-        pathLabel: '流转敌回',
-        foot: '可留存 1 点 AP 进入下回合',
-        cost: 'END',
-        oppLabel: '',
-        disabled: !!endBtn.disabled,
-        sourceBtn: endBtn,
-      });
-    }
-
-    return items;
+  function buildEmptyItemsPlaceholder() {
+    return [{
+      kind: 'placeholder',
+      slotIdx: 0,
+      key: '◇',
+      skillId: 'item_placeholder_empty',
+      itemId: '',
+      name: '行囊中暂无战斗道具',
+      iconHtml: '',
+      pathLabel: '后续开放',
+      beatLabel: '',
+      beatKind: '',
+      cost: '',
+      desc: '药剂与战术道具将于后续章节实装 · 按 [ESC] 或右键返回',
+      foot: '药剂与战术道具将于后续章节实装 · 按 [ESC] 或右键返回',
+      oppLabel: '',
+      expText: '',
+      expKind: '',
+      isGuard: false,
+      isPlaceholder: true,
+      disabled: true,
+      sourceBtn: null,
+    }];
   }
 
   function triggerAmpPulse() {
@@ -888,7 +926,7 @@
   }
 
   function resolveHoveredBladeSkillId() {
-    if (uiState.menuMode !== 'skills' && uiState.menuMode !== 'guard') return null;
+    if (uiState.menuMode !== 'skills') return null;
     if (uiState.cascadeListEl) {
       try {
         const hoveredBtn = uiState.cascadeListEl.querySelector('.cb-blade:hover');
@@ -935,7 +973,7 @@
     val = Math.max(0, Math.min(info.maxAmpCap, val));
     val = Math.round(val * 100) / 100;
 
-    const inSkillCascade = uiState.menuMode === 'skills' || uiState.menuMode === 'guard';
+    const inSkillCascade = uiState.menuMode === 'skills';
     let previewSid = resolveHoveredBladeSkillId();
     if (!previewSid && inSkillCascade && uiState.hoveredSkillId) {
       previewSid = uiState.hoveredSkillId;
@@ -966,7 +1004,7 @@
       sync();
     }
 
-    if (uiState.menuMode === 'skills' || uiState.menuMode === 'guard') {
+    if (uiState.menuMode === 'skills') {
       const liveHoverSid = resolveHoveredBladeSkillId();
       const activeSid = liveHoverSid || previewSid;
       if (activeSid) {
@@ -1064,10 +1102,6 @@
             if (cards[i].getAttribute('data-sk') === item.skillId) return cards[i];
           }
         }
-      } else if (item.kind === 'tool') {
-        if (item.skillId === 'tool_assist') return document.getElementById('cb-btn-assist');
-        if (item.skillId === 'tool_wand') return document.getElementById('cb-btn-wand');
-        if (item.skillId === 'tool_endturn') return document.getElementById('cb-btn-endturn');
       }
     }
     return item.sourceBtn || null;
@@ -1180,8 +1214,34 @@
 
   function triggerSourceButton(item) {
     if (!item || isTimingOrAsyncDissolved()) return false;
-    const isSkill = (item.kind === 'skill' && !!item.skillId)
-      || (!!item.skillId && item.kind !== 'tool' && !String(item.skillId).startsWith('tool_'));
+    if (item.isPlaceholder || item.kind === 'placeholder') return false;
+
+    if (item.kind === 'item') {
+      if (item.disabled) return false;
+      const liveBtn = resolveLiveSourceBtn(item);
+      cancelDissolve();
+      cancelPendingHoverClear();
+      uiState.hoveredWingIdx = null;
+      uiState.hoveredBladeIdx = null;
+      uiState.hoveringAmpMini = false;
+      uiState.menuMode = 'root';
+      uiState.lastBladeSig = '';
+      clearRealHover({ resetLast: true });
+      if (typeof item.onUse === 'function') {
+        item.onUse(getEngineBattle(), item.rawItem);
+      } else if (global.CombatEngine && typeof global.CombatEngine.useBattleItem === 'function' && item.itemId) {
+        global.CombatEngine.useBattleItem(item.itemId);
+      } else if (liveBtn && !liveBtn.disabled) {
+        liveBtn.click();
+      } else {
+        sync();
+        return false;
+      }
+      sync();
+      return true;
+    }
+
+    const isSkill = (item.kind === 'skill' && !!item.skillId);
     const liveBtn = resolveLiveSourceBtn(item);
     if (isSkill) {
       if (item.disabled || (liveBtn && liveBtn.disabled)) return false;
@@ -1235,15 +1295,6 @@
       return finalizeSkillCast(res, keepSkillsMode, prevWaveKey);
     }
 
-    if (item.skillId === 'tool_endturn') {
-      const nextState = getEngineBattle();
-      if (!shouldHardDissolve(nextState) && !isTimingOrAsyncDissolved(nextState)) {
-        startBriefDissolve();
-      }
-      sync(nextState);
-      return true;
-    }
-
     sync();
     return true;
   }
@@ -1252,10 +1303,14 @@
     cancelDissolve();
     if (nextMode === 'amp') {
       cycleAmp(1);
-      return;
+      return true;
     }
-    const valid = nextMode === 'skills' || nextMode === 'guard' || nextMode === 'assist'
-      ? nextMode
+    if (nextMode === 'assist') {
+      return false;
+    }
+    const normalized = nextMode === 'guard' ? 'skills' : nextMode;
+    const valid = normalized === 'skills' || normalized === 'items'
+      ? normalized
       : 'root';
     if (uiState.menuMode !== valid) {
       cancelPendingHoverClear();
@@ -1269,26 +1324,16 @@
       safeSfx('ui_tick');
     }
     sync();
+    return true;
   }
 
-  function openSkills() { setMode('skills'); }
+  function openSkills() { return setMode('skills'); }
   function openAmp() { return cycleAmp(1); }
-  function openGuard() {
-    cancelDissolve();
-    const guards = readSkillCards().filter(c => c.isGuard && !c.disabled);
-    if (guards.length === 1) {
-      triggerSourceButton(guards[0]);
-      return;
-    }
-    if (guards.length > 1) {
-      setMode('guard');
-      return;
-    }
-    triggerEndTurnAction();
-  }
-  function openAssist() { setMode('assist'); }
+  function openItems() { return setMode('items'); }
+  function openGuard() { return openSkills(); }
+  function openAssist() { return false; }
   function openPalace() { return false; }
-  function closeCascade() { setMode('root'); }
+  function closeCascade() { return setMode('root'); }
 
   function toggleLogDrawer() {
     uiState.logExpanded = !uiState.logExpanded;
@@ -1331,12 +1376,20 @@
     };
   }
 
-  function computeBladeGeometry(count) {
+  function computeBladeGeometry(count, guardSplitIdx, isPlaceholderSingle) {
     const safeCount = Math.max(1, count);
+    const resolvedGuardSplit = typeof guardSplitIdx === 'number'
+      ? guardSplitIdx
+      : (uiState.menuMode === 'skills' ? uiState.guardSplitIdx : -1);
+    const resolvedPlaceholderSingle = typeof isPlaceholderSingle === 'boolean'
+      ? isPlaceholderSingle
+      : (safeCount === 1 && uiState.currentItems.length === 1 && !!uiState.currentItems[0].isPlaceholder);
+
     const fieldW = Math.max(640, uiState.lastFieldW || 1200);
     const fieldH = Math.max(360, uiState.lastFieldH || 560);
-    const anchorX = Math.max(110, uiState.lastAnchorX || 260);
-    const anchorY = Math.max(110, uiState.lastAnchorY || Math.round(fieldH * 0.45));
+    const anchorX = Math.max(68, uiState.lastAnchorX || 220);
+    const anchorY = Math.max(88, uiState.lastAnchorY || Math.round(fieldH * 0.45));
+    const flipLeft = !!uiState.anchorFlipLeft;
     const viewportW = uiState.viewportW || (typeof window !== 'undefined' ? window.innerWidth : 1440);
     const viewportH = uiState.viewportH || (typeof window !== 'undefined' ? window.innerHeight : 900);
     const isTightDesktop = viewportH <= 760 || viewportW <= 1320 || !!uiState.narrowDesktop || !!uiState.shortViewport;
@@ -1345,110 +1398,65 @@
     const spineH = isCompactSpine ? 26 : 30;
     const spineGap = isCompactSpine ? 6 : 8;
 
-    const allyRight = Math.max(120, uiState.portraitRight || 210);
-    const enemyLeft = uiState.enemyLeftX > 0
-      ? uiState.enemyLeftX
-      : (uiState.hasMidCorridor && uiState.corridorRight > 0 ? uiState.corridorRight : fieldW - 14);
-    const freeLeftAbs = Math.max(uiState.hasMidCorridor ? uiState.corridorLeft : 0, allyRight + 10);
-    const freeRightAbs = Math.min(fieldW - 12, enemyLeft - 12);
-    const freeWidth = Math.max(0, freeRightAbs - freeLeftAbs);
-    const minLeftFromAlly = Math.max(14, freeLeftAbs - anchorX);
-
-    // 1. 预评估中场空区单列几何：在三列 6+6 舞台下，中场走廊纵贯全场，单列可无遮挡容纳 1–12 项术式
+    // 紧贴当前操作角色 anchorX 相对偏移（仅防越屏边 fieldW - 14 / 14，绝不向雷纳德右侧或中场走廊推飞）
     const naturalSingleW = (isTightDesktop || uiState.compactMulti) ? 288 : 326;
-    const availRightW = uiState.hasMidCorridor
-      ? Math.max(0, freeRightAbs - Math.max(freeLeftAbs, anchorX + 14))
-      : freeWidth;
-    const effectiveFreeW = availRightW > 0 ? Math.min(freeWidth, availRightW) : freeWidth;
-    const singleW = effectiveFreeW >= 232
-      ? Math.max(224, Math.min(naturalSingleW, effectiveFreeW - 14))
-      : naturalSingleW;
+    const preferredBaseX = (isTightDesktop || uiState.compactMulti) ? 28 : 48;
+    const preferredArcX = (isTightDesktop || uiState.compactMulti) ? 10 : 18;
+    const availSideSpan = flipLeft
+      ? Math.max(236, anchorX - 14)
+      : Math.max(236, fieldW - anchorX - 14);
+    const singleW = Math.max(220, Math.min(naturalSingleW, availSideSpan - 16));
     const singleForceW = singleW < naturalSingleW;
-    let singleMinLeft = minLeftFromAlly;
-    if (uiState.allyPaneRight > 0 && anchorX + singleMinLeft < uiState.allyPaneRight + 6) {
-      const paneClearLeft = (uiState.allyPaneRight + 8) - anchorX;
-      if (anchorX + paneClearLeft + singleW <= freeRightAbs) {
-        singleMinLeft = Math.max(singleMinLeft, Math.round(paneClearLeft));
-      }
+    let singleBaseX = preferredBaseX;
+    let singleArcX = preferredArcX;
+    if (singleBaseX + singleArcX + singleW > availSideSpan) {
+      singleBaseX = Math.max(14, Math.min(singleBaseX, availSideSpan - singleW));
+      singleArcX = Math.max(0, Math.min(singleArcX, availSideSpan - singleBaseX - singleW));
     }
-    let singleMaxLeft = (freeRightAbs - anchorX) - singleW;
-    if (uiState.targetPaneLeft > 0 && anchorX + singleMaxLeft + singleW > uiState.targetPaneLeft - 8) {
-      const targetClearMaxLeft = (uiState.targetPaneLeft - 8) - anchorX - singleW;
-      if (targetClearMaxLeft >= singleMinLeft) {
-        singleMaxLeft = Math.min(singleMaxLeft, Math.round(targetClearMaxLeft));
-      }
-    }
-    const singleSlack = Math.max(0, singleMaxLeft - singleMinLeft);
-    const singleArcX = Math.max(0, Math.min(uiState.compactMulti || isTightDesktop ? 10 : 18, Math.floor(singleSlack * 0.45)));
-    let singleBaseX = uiState.hasMidCorridor
-      ? Math.round(Math.max(singleMinLeft, Math.min(singleMaxLeft - singleArcX, uiState.compactMulti ? 26 : 42)))
-      : (uiState.compactMulti ? Math.max(30, singleMinLeft) : Math.max(52, singleMinLeft));
-    if (uiState.hasMidCorridor && singleMaxLeft < singleMinLeft) {
-      singleBaseX = Math.round(singleMinLeft);
-    }
-    const singleBounds = resolveBladeVerticalBounds(
-      anchorX + singleBaseX,
-      anchorX + singleBaseX + singleW + singleArcX,
-      fieldH
-    );
+
+    const singleAbsLeft = flipLeft
+      ? Math.max(14, anchorX - (singleBaseX + singleArcX + singleW))
+      : (anchorX + singleBaseX);
+    const singleAbsRight = flipLeft
+      ? (anchorX - singleBaseX)
+      : Math.min(fieldW - 14, anchorX + singleBaseX + singleW + singleArcX);
+
+    const singleBounds = resolveBladeVerticalBounds(singleAbsLeft, singleAbsRight, fieldH);
     const singleMinTopOff = (singleBounds.safeTop + spineH + spineGap) - anchorY;
     const singleMaxBotOff = singleBounds.safeBot - anchorY;
     const singleAvailSpan = Math.max(120, singleMaxBotOff - singleMinTopOff);
+    const hasGuardSplit = !resolvedPlaceholderSingle && resolvedGuardSplit > 0 && resolvedGuardSplit < safeCount;
+    const desiredGuardGap = hasGuardSplit ? (isTightDesktop ? 6 : 9) : 0;
     const minSingleH = isTightDesktop ? 32 : 34;
     const minSingleGap = safeCount >= 10 ? 2 : 3;
-    const singleNeededH = safeCount * minSingleH + Math.max(0, safeCount - 1) * minSingleGap;
-    const singleFitsCorridor = uiState.hasMidCorridor && effectiveFreeW >= 224 && singleAvailSpan >= singleNeededH;
+    const singleNeededH = safeCount * minSingleH + Math.max(0, safeCount - 1) * minSingleGap + desiredGuardGap;
 
-    // 2. 双列触发判定：
-    //    - 中场走廊极宽（单敌远置等）足以零遮挡容纳双列且技能 >= 7 时，切双列；
-    //    - 若中场走廊单列能完整无遮挡容纳（含 6–12 技能），优先走中场单列彻底零压敌卡；
-    //    - 若无中场走廊或窗口极矮单列放不下，退回避障双列天区排版。
-    const twoColBladeW = isTightDesktop ? 262 : 286;
-    const twoColIdealGap = isTightDesktop ? 12 : 16;
-    const twoColFitsCorridor = safeCount >= 7 && availRightW >= (twoColBladeW * 2 + twoColIdealGap + 12);
-    const needTwoColFallback = !singleFitsCorridor && (
-      safeCount >= 7 || (isTightDesktop && safeCount >= 6) || (!!uiState.compactMulti && safeCount >= 6)
-    );
-    const twoCol = twoColFitsCorridor || needTwoColFallback;
+    // 最多 6 招始终单列直显；仅 7 招以上且单列竖向空间不足时启用跟手双列
+    const twoCol = safeCount >= 7 && singleAvailSpan < singleNeededH;
 
     if (twoCol) {
       const col1Count = Math.ceil(safeCount / 2);
       const col2Count = safeCount - col1Count;
-      let bladeW = twoColBladeW;
-      let colGap = twoColIdealGap;
-      let col1Left = minLeftFromAlly;
-      if (twoColFitsCorridor && uiState.allyPaneRight > 0 && anchorX + col1Left < uiState.allyPaneRight + 6) {
-        const paneClearLeft = (uiState.allyPaneRight + 8) - anchorX;
-        if (anchorX + paneClearLeft + bladeW * 2 + colGap <= freeRightAbs) {
-          col1Left = Math.max(col1Left, Math.round(paneClearLeft));
+      let bladeW = isTightDesktop ? 262 : 286;
+      let colGap = isTightDesktop ? 12 : 16;
+      let col1Dist = Math.min(preferredBaseX, 36);
+      const maxSpanInRig = availSideSpan;
+      if (col1Dist + bladeW * 2 + colGap > maxSpanInRig) {
+        const overflow = (col1Dist + bladeW * 2 + colGap) - maxSpanInRig;
+        const shiftedDist = Math.max(14, col1Dist - overflow);
+        let rem = Math.max(0, overflow - (col1Dist - shiftedDist));
+        col1Dist = shiftedDist;
+        const nextGap = Math.max(8, colGap - rem);
+        rem = Math.max(0, rem - (colGap - nextGap));
+        colGap = nextGap;
+        if (rem > 0) {
+          bladeW = Math.max(210, Math.floor((maxSpanInRig - col1Dist - colGap) / 2));
         }
       }
-      let col2Left = col1Left + bladeW + colGap;
+      const col2Dist = col1Dist + bladeW + colGap;
 
-      // 优先贴紧中场/友方右侧，严格避免双列右沿跨入敌方卡片区
-      if (uiState.enemyLeftX > 0) {
-        const enemyLimitInRig = (uiState.enemyLeftX - 10) - anchorX;
-        if (col2Left + bladeW > enemyLimitInRig) {
-          colGap = isTightDesktop ? 10 : 12;
-          const tightLeft = Math.max(12, (allyRight - anchorX) + 6);
-          const neededShift = (col1Left + bladeW * 2 + colGap) - enemyLimitInRig;
-          col1Left = Math.max(tightLeft, col1Left - Math.max(0, neededShift));
-          col2Left = col1Left + bladeW + colGap;
-        }
-      }
-
-      const maxRightInRig = fieldW - anchorX - 14;
-      if (col2Left + bladeW > maxRightInRig) {
-        const overflow = (col2Left + bladeW) - maxRightInRig;
-        const shiftedLeft = Math.max(14, col1Left - overflow);
-        const remOverflow = Math.max(0, overflow - (col1Left - shiftedLeft));
-        col1Left = shiftedLeft;
-        colGap = Math.max(8, colGap - remOverflow);
-        col2Left = col1Left + bladeW + colGap;
-      }
-
-      const absLeft = anchorX + col1Left;
-      const absRight = anchorX + col2Left + bladeW + 10;
+      const absLeft = flipLeft ? Math.max(14, anchorX - (col2Dist + bladeW)) : (anchorX + col1Dist);
+      const absRight = flipLeft ? (anchorX - col1Dist) : Math.min(fieldW - 14, anchorX + col2Dist + bladeW + 8);
       const { safeTop, safeBot } = resolveBladeVerticalBounds(absLeft, absRight, fieldH);
       const minTopOffset = (safeTop + spineH + spineGap) - anchorY;
       const maxBotOffset = safeBot - anchorY;
@@ -1477,14 +1485,16 @@
         const idxInCol = inCol2 ? (i - col1Count) : i;
         const colSize = inCol2 ? col2Count : col1Count;
         const frac = colSize <= 1 ? 0.5 : idxInCol / (colSize - 1);
-        const baseX = inCol2 ? col2Left : col1Left;
+        const baseDist = inCol2 ? col2Dist : col1Dist;
         const arcX = inCol2 ? 6 : 10;
-        const curveX = Math.round(baseX + Math.sin(frac * Math.PI) * arcX);
+        const radialX = Math.round(baseDist + Math.sin(frac * Math.PI) * arcX);
+        const left = flipLeft ? -(radialX + bladeW) : radialX;
         const topY = Math.round((inCol2 ? col2StartY : startY) + idxInCol * stepY);
         const maxRot = inCol2 ? 0.7 : 1.0;
-        const rot = Number((-maxRot + frac * (maxRot * 2)).toFixed(2));
+        const baseRot = Number((-maxRot + frac * (maxRot * 2)).toFixed(2));
+        const rot = flipLeft ? -baseRot : baseRot;
         coords.push({
-          left: curveX,
+          left,
           top: topY,
           rot,
           compact: true,
@@ -1494,30 +1504,33 @@
           bladeH,
           bladeW,
           forceHeight,
-          forceWidth: false,
-          tipX: curveX + 4,
+          forceWidth: bladeW < (isTightDesktop ? 262 : 286),
+          tipX: radialX + 4,
           tipY: topY + Math.round(bladeH * 0.5),
-          elbowX: Math.round(curveX * 0.52),
+          elbowX: Math.round(radialX * 0.52),
           elbowY: Math.round((topY + Math.round(bladeH * 0.5)) * 0.65),
         });
       }
       return {
         coords,
         spineTop: Math.max(safeTop - anchorY, startY - (spineH + spineGap)),
-        spineLeft: col1Left,
+        spineLeft: flipLeft ? -(col1Dist + bladeW) : col1Dist,
         bladeH,
         twoCol: true,
       };
     }
 
-    // 3. 单列中场棱晶翼（覆盖少技能经典弧线与 6–12 技能中场空区纵向展开，严格不压友方前排与敌方卡片）
+    // 单列跟手棱晶翼（1–6 招单列直显，攻伐在前、守御身法留轻分组间距）
     const { safeTop, safeBot } = singleBounds;
     const minTopOffset = singleMinTopOff;
     const maxBotOffset = singleMaxBotOff;
     const availSpan = singleAvailSpan;
     let defaultBladeH;
     let idealStep;
-    if (safeCount <= 4) {
+    if (resolvedPlaceholderSingle) {
+      defaultBladeH = 60;
+      idealStep = 64;
+    } else if (safeCount <= 4) {
       defaultBladeH = compact ? 42 : 48;
       idealStep = compact ? 54 : 62;
     } else if (safeCount === 5) {
@@ -1533,28 +1546,35 @@
       defaultBladeH = isTightDesktop ? 36 : 40;
       idealStep = isTightDesktop ? 39 : 44;
     }
-    const fitBladeH = safeCount > 0 ? Math.floor((availSpan - Math.max(0, safeCount - 1) * minSingleGap) / safeCount) : defaultBladeH;
-    const bladeH = Math.max(30, Math.min(defaultBladeH, fitBladeH));
-    const forceHeight = bladeH < defaultBladeH || safeCount >= 7;
-    const maxAllowedStep = safeCount > 1 ? Math.floor((availSpan - bladeH) / (safeCount - 1)) : idealStep;
+    const effectiveGuardGap = hasGuardSplit
+      ? Math.max(0, Math.min(desiredGuardGap, Math.floor(availSpan - safeCount * 30 - Math.max(0, safeCount - 1) * 2)))
+      : 0;
+    const usableSpan = Math.max(90, availSpan - effectiveGuardGap);
+    const fitBladeH = safeCount > 0 ? Math.floor((usableSpan - Math.max(0, safeCount - 1) * minSingleGap) / safeCount) : defaultBladeH;
+    const bladeH = resolvedPlaceholderSingle ? defaultBladeH : Math.max(30, Math.min(defaultBladeH, fitBladeH));
+    const forceHeight = !resolvedPlaceholderSingle && (bladeH < defaultBladeH || safeCount >= 7);
+    const maxAllowedStep = safeCount > 1 ? Math.floor((usableSpan - bladeH) / (safeCount - 1)) : idealStep;
     const stepY = safeCount > 1 ? Math.max(bladeH + 2, Math.min(idealStep, maxAllowedStep)) : idealStep;
 
-    const totalH = (safeCount - 1) * stepY + bladeH;
+    const totalH = (safeCount - 1) * stepY + bladeH + effectiveGuardGap;
     let startY = -Math.round(totalH * 0.50);
     if (startY < minTopOffset) startY = minTopOffset;
     if (startY + totalH > maxBotOffset) startY = Math.max(minTopOffset, maxBotOffset - totalH);
 
-    const arcX = uiState.hasMidCorridor ? singleArcX : (uiState.compactMulti ? 16 : 28);
-    const maxRot = safeCount >= 9 ? 0.9 : (compact ? 1.4 : 2.2);
+    const arcX = resolvedPlaceholderSingle ? 0 : singleArcX;
+    const maxRot = resolvedPlaceholderSingle ? 0 : (safeCount >= 9 ? 0.9 : (compact ? 1.4 : 2.2));
 
     const coords = [];
     for (let i = 0; i < safeCount; i++) {
       const frac = safeCount === 1 ? 0.5 : i / (safeCount - 1);
-      const curveX = Math.round(singleBaseX + Math.sin(frac * Math.PI) * arcX);
-      const topY = Math.round(startY + i * stepY);
-      const rot = Number((-maxRot + frac * (maxRot * 2)).toFixed(2));
+      const radialX = Math.round(singleBaseX + Math.sin(frac * Math.PI) * arcX);
+      const left = flipLeft ? -(radialX + singleW) : radialX;
+      const groupOffset = (hasGuardSplit && i >= resolvedGuardSplit) ? effectiveGuardGap : 0;
+      const topY = Math.round(startY + i * stepY + groupOffset);
+      const baseRot = Number((-maxRot + frac * (maxRot * 2)).toFixed(2));
+      const rot = flipLeft ? -baseRot : baseRot;
       coords.push({
-        left: curveX,
+        left,
         top: topY,
         rot,
         compact,
@@ -1565,16 +1585,15 @@
         bladeW: singleW,
         forceHeight,
         forceWidth: singleForceW,
-        tipX: curveX + 4,
+        tipX: radialX + 4,
         tipY: topY + Math.round(bladeH * 0.5),
-        elbowX: Math.round(curveX * 0.54),
+        elbowX: Math.round(radialX * 0.54),
         elbowY: Math.round((topY + Math.round(bladeH * 0.5)) * 0.65),
       });
     }
-    const maxSpineLeft = uiState.hasMidCorridor
-      ? Math.max(singleMinLeft - 4, (freeRightAbs - anchorX) - Math.min(singleW, 250))
-      : singleBaseX - 8;
-    const spineLeft = Math.round(Math.max(singleMinLeft - 6, Math.min(singleBaseX - 4, maxSpineLeft)));
+    const spineLeft = flipLeft
+      ? -(singleBaseX + singleW)
+      : Math.max(12, singleBaseX - 6);
     return {
       coords,
       spineTop: Math.max(safeTop - anchorY, startY - (spineH + spineGap)),
@@ -1657,7 +1676,131 @@
     return true;
   }
 
-  function syncRigAnchor() {
+  function normalizeActiveActor(input) {
+    if (!input) {
+      return { actorKey: 'player', id: 'sylvia', side: 'ally' };
+    }
+    if (typeof input === 'string') {
+      const s = input.trim();
+      if (!s || s === 'player' || s === 'sylvia') {
+        return { actorKey: 'player', id: 'sylvia', side: 'ally' };
+      }
+      if (s.startsWith('ally:')) {
+        return { actorKey: s, id: s.slice(5), side: 'ally' };
+      }
+      if (s.startsWith('enemy:')) {
+        return { actorKey: s, id: s.slice(6), side: 'enemy' };
+      }
+      return { actorKey: `ally:${s}`, id: s, side: 'ally' };
+    }
+    if (typeof input === 'object') {
+      const rawKey = typeof input.actorKey === 'string' ? input.actorKey.trim() : '';
+      const rawId = typeof input.id === 'string' ? input.id.trim() : '';
+      const side = input.side || 'ally';
+      if (rawKey) {
+        if (rawKey === 'player' || rawKey === 'sylvia') {
+          return { actorKey: 'player', id: rawId || 'sylvia', side: 'ally' };
+        }
+        return { actorKey: rawKey, id: rawId || rawKey.replace(/^(?:ally|enemy):/, ''), side };
+      }
+      if (rawId && rawId !== 'sylvia' && rawId !== 'player') {
+        const prefix = side === 'enemy' ? 'enemy:' : 'ally:';
+        return { actorKey: `${prefix}${rawId}`, id: rawId, side };
+      }
+    }
+    return { actorKey: 'player', id: 'sylvia', side: 'ally' };
+  }
+
+  function getActiveActorSpec(state) {
+    if (uiState.activeActorOverride) return uiState.activeActorOverride;
+    if (state && state.activeActor) return normalizeActiveActor(state.activeActor);
+    return { actorKey: 'player', id: 'sylvia', side: 'ally' };
+  }
+
+  function setActiveActor(actorKey) {
+    if (actorKey == null || actorKey === '') {
+      uiState.activeActorOverride = null;
+    } else {
+      uiState.activeActorOverride = normalizeActiveActor(actorKey);
+    }
+    uiState.lastBladeSig = '';
+    const resolved = getActiveActorSpec(uiState.lastBattleState || getEngineBattle());
+    uiState.lastActiveActorKey = resolved.actorKey;
+    if (uiState.mounted) {
+      sync();
+    }
+    return resolved.actorKey;
+  }
+
+  function resolveActiveActorBox(state, field, fRectFallback) {
+    if (typeof document === 'undefined') return null;
+    const hostField = field
+      || (uiState.rigEl && uiState.rigEl.parentElement)
+      || document.querySelector('#battle-screen .cb-arena-field');
+    if (!hostField) return null;
+
+    const b = state || uiState.lastBattleState || getEngineBattle();
+    const active = getActiveActorSpec(b);
+    const actorKey = active.actorKey || 'player';
+
+    const tryMeasure = el => {
+      if (!el || !isDisplayedInLayout(el)) return null;
+      const m = measureBoxInField(el, hostField, fRectFallback);
+      if (!m || m.width < 20 || m.height < 20) return null;
+      return {
+        left: m.left,
+        top: m.top,
+        right: m.right,
+        bottom: m.bottom,
+        width: m.width,
+        height: m.height,
+        actorKey,
+        el,
+      };
+    };
+
+    const pickFirst = candidates => {
+      for (let i = 0; i < candidates.length; i++) {
+        const res = tryMeasure(candidates[i]);
+        if (res) return res;
+      }
+      return null;
+    };
+
+    const playerCandidates = () => [
+      hostField.querySelector('#cb-p-portrait') || document.getElementById('cb-p-portrait'),
+      hostField.querySelector('#cb-player-standee-wrap') || document.getElementById('cb-player-standee-wrap'),
+      hostField.querySelector('.cb-ally-slot .cb-standee-wrap:not(.cb-ally-standee)'),
+      document.getElementById('cb-player-stage'),
+    ];
+
+    if (actorKey === 'player') {
+      return pickFirst(playerCandidates());
+    }
+
+    const safeKey = actorKey.replace(/["\\]/g, '');
+    const safeId = String(active.id || actorKey.replace(/^(?:ally|enemy):/, '')).replace(/["\\]/g, '');
+
+    if (actorKey.startsWith('ally:')) {
+      const allyHit = pickFirst([
+        hostField.querySelector(`[data-actor-key="${safeKey}"]:not(.cb-px-actor) .cb-ally-portrait`),
+        hostField.querySelector(`.cb-ally-vanguard-slot[data-actor-key="${safeKey}"], .cb-ally-extra-slot[data-actor-key="${safeKey}"]`),
+        hostField.querySelector(`[data-ally-id="${safeId}"]:not(.cb-ally-pane) .cb-ally-portrait`),
+        hostField.querySelector(`.cb-ally-vanguard-slot[data-ally-id="${safeId}"], .cb-ally-extra-slot[data-ally-id="${safeId}"]`),
+        hostField.querySelector(`[data-actor-key="${safeKey}"]:not(.cb-px-actor)`),
+      ]);
+      if (allyHit) return allyHit;
+      return pickFirst(playerCandidates());
+    }
+
+    const otherHit = pickFirst([
+      hostField.querySelector(`[data-actor-key="${safeKey}"]:not(.cb-px-actor) .cb-e-stage`),
+      hostField.querySelector(`[data-actor-key="${safeKey}"]:not(.cb-px-actor)`),
+    ]);
+    return otherHit || pickFirst(playerCandidates());
+  }
+
+  function syncRigAnchor(battleOverride) {
     if (!uiState.rigEl) return;
     const field = uiState.rigEl.parentElement;
     const playerStage = document.getElementById('cb-player-stage');
@@ -1669,6 +1812,18 @@
     if (fieldW < 100 || !pBox || pBox.width < 40) return;
 
     const bs = getBattleScreen();
+    const b = battleOverride || uiState.lastBattleState || getEngineBattle();
+    const aBox = resolveActiveActorBox(b, field, fRectFallback) || {
+      left: pBox.left,
+      top: pBox.top,
+      right: pBox.right,
+      bottom: pBox.bottom,
+      width: pBox.width,
+      height: pBox.height,
+      actorKey: 'player',
+      el: playerStage,
+    };
+
     const eZone = document.getElementById('cb-enemy-zone');
     const enemyCount = eZone ? eZone.querySelectorAll('.cb-enemy-card').length : 0;
     const isMulti = enemyCount >= 3;
@@ -1681,17 +1836,11 @@
     uiState.shortViewport = isShortViewport;
     uiState.narrowDesktop = isNarrowDesktop;
 
-    // 实时测算 6+6 对称剧场静止槽位/容器避障边界（严禁测量受冲刺 transform: translate3d 驱动的 .cb-px-actor！）：
-    //   - 敌方：#cb-enemy-zone .cb-enemy-card、.cb-intent-banner（区分上半区与脚下微标）、.cb-e-stage、.cb-e-plate
-    //   - 友方：#cb-ally-vanguard-slot、.cb-ally-vanguard-slot、#cb-p-portrait、#cb-ally-formation .cb-ally-slot.is-occupied
-    //   - 双底角面板：#cb-party-panes / #cb-player-pane / #cb-ally-pane / .cb-ally-pane 与 #cb-target-detail-pane
-    //   - 中场留空走廊：#cb-mid-corridor
+    // 测算敌方静态容器与双底角面板避障边界（仅用于竖向安全区与状态诊断；锚点严格跟手当前操作角色 aBox）
     let intentMaxBottom = 0;
     let enemyMinTop = fieldH;
     let enemyMinLeft = fieldW;
-    let allyActorRight = 0;
-    let hasVanguardActor = false;
-    let occupiedAllySlots = 0;
+    let hasVanguardActor = !!field.querySelector('#cb-ally-vanguard-slot, .cb-ally-vanguard-slot');
     let paneTop = fieldH;
     let allyPaneTop = fieldH;
     let allyPaneRight = 0;
@@ -1731,7 +1880,6 @@
         if (!el || seenObstacleEls.has(el) || !isDisplayedInLayout(el)) return;
         const m = measureBoxInField(el, field, fRectFallback);
         if (!m || m.width < 4 || m.height < 4) return;
-        // Stage B 敌方脚下意图微标绝不误判为顶部天花板：仅舞台上半区且位于精灵上方时作为 kind:'intent' 更新 intentMaxBottom
         const ownerCard = el.closest ? el.closest('.cb-enemy-card') : null;
         const ownerStage = ownerCard ? ownerCard.querySelector('.cb-e-stage') : null;
         let isFootBanner = false;
@@ -1748,7 +1896,6 @@
           intentMaxBottom = Math.max(intentMaxBottom, box.bottom);
         }
       });
-      // 仅测静止容器 .cb-e-stage / .cb-e-plate，彻底免疫敌方 .cb-px-actor 冲刺位移
       eZone.querySelectorAll('.cb-e-stage, .cb-e-plate').forEach(el => {
         const box = pushObstacle(el, 'lower', 'enemy-lower');
         if (box && (box.bottom - box.top) > 12) {
@@ -1757,27 +1904,7 @@
       });
     }
 
-    // 友方多编队（1–6 人）静止槽位/容器右沿扫描（严格只测静止槽位，绝不测冲刺中的 .cb-px-actor）
-    field.querySelectorAll('#cb-ally-vanguard-slot, .cb-ally-vanguard-slot').forEach(vSlot => {
-      const box = pushObstacle(vSlot, 'ally', 'vanguard');
-      if (box) {
-        hasVanguardActor = true;
-        allyActorRight = Math.max(allyActorRight, box.right);
-      }
-    });
-    const sylviaPortrait = playerStage.querySelector('#cb-p-portrait') || document.getElementById('cb-p-portrait');
-    if (sylviaPortrait) {
-      const box = pushObstacle(sylviaPortrait, 'ally', 'sylvia');
-      if (box) allyActorRight = Math.max(allyActorRight, box.right);
-    }
-    field.querySelectorAll('#cb-ally-formation .cb-ally-slot.is-occupied').forEach(slotEl => {
-      const box = pushObstacle(slotEl, 'ally', 'ally-slot');
-      if (box) {
-        occupiedAllySlots += 1;
-        allyActorRight = Math.max(allyActorRight, box.right);
-      }
-    });
-    if (occupiedAllySlots >= 2) {
+    if (field.querySelectorAll('#cb-ally-formation .cb-ally-slot.is-occupied').length >= 2) {
       hasVanguardActor = true;
     }
 
@@ -1822,7 +1949,7 @@
       partyDockTop = Math.round(allyPaneTop);
     }
 
-    // 中场留空走廊测量（三列经典舞台；若 #cb-mid-corridor 尚未挂载亦自动识别列1与列3间真实空隙）
+    // 仅作状态诊断记录中场走廊尺寸（严禁用它强推当前角色菜单到雷纳德右侧）
     let hasMidCorridor = false;
     let corridorLeft = 0;
     let corridorRight = 0;
@@ -1837,43 +1964,74 @@
         corridorW = Math.round(mr.width);
       }
     }
-    if (!hasMidCorridor && eZone) {
-      const eBox = measureBoxInField(eZone, field, fRectFallback);
-      if (eBox) {
-        const impliedLeft = Math.round(pBox.right);
-        const impliedRight = Math.round(eBox.left);
-        const impliedW = impliedRight - impliedLeft;
-        if (eBox.width > 40 && impliedW >= 160) {
-          hasMidCorridor = true;
-          corridorLeft = impliedLeft;
-          corridorRight = impliedRight;
-          corridorW = impliedW;
-        }
-      }
-    }
 
-    const portraitRight = allyActorRight > 12
-      ? Math.round(allyActorRight)
-      : Math.round(pBox.right - 80);
-    const allyRightBound = Math.max(120, portraitRight);
-    const enemyLeftBound = enemyMinLeft < fieldW
-      ? Math.round(enemyMinLeft)
-      : (hasMidCorridor ? corridorRight : Math.round(fieldW * 0.68));
-    const openStart = hasMidCorridor ? Math.max(allyRightBound + 8, corridorLeft) : (allyRightBound + 8);
-    const openSpan = Math.max(0, enemyLeftBound - openStart);
-    const compactRig = hasMidCorridor
-      ? (openSpan < 400 || isNarrowDesktop)
-      : (isMulti || (hasVanguardActor && openSpan < 400));
+    // 严格以当前操作角色 aBox 的右肩锚定，绝不取全体友军 Math.max，绝不被 #cb-mid-corridor 推飞
+    const shoulderPull = Math.min(28, Math.round(aBox.width * 0.14));
+    const idealAnchorX = Math.round(aBox.right - shoulderPull);
+    const enemyLeftBound = enemyMinLeft < fieldW ? Math.round(enemyMinLeft) : Math.round(fieldW - 14);
+    const availRightToEnemy = enemyLeftBound - idealAnchorX;
+    const compactRig = isNarrowDesktop
+      || (enemyMinLeft < fieldW && availRightToEnemy < 380)
+      || (!hasMidCorridor && isMulti);
 
     uiState.compactMulti = compactRig;
     uiState.rigEl.classList.toggle('compact-multi', compactRig);
     uiState.rigEl.classList.toggle('narrow-desktop', isNarrowDesktop);
 
+    const wingMinLeft = compactRig ? 24 : 46;
+    const rightSpan = compactRig ? (isNarrowDesktop ? 268 : 284) : 348;
+    const shouldFlipLeft = aBox.left > fieldW * 0.5 && (fieldW - idealAnchorX) < (rightSpan + 14);
+    uiState.anchorFlipLeft = shouldFlipLeft;
+    uiState.rigEl.classList.toggle('anchor-flip-left', shouldFlipLeft);
+
+    let anchorX;
+    if (shouldFlipLeft) {
+      const leftIdealX = Math.round(aBox.left + shoulderPull);
+      const minFlipAx = Math.min(fieldW - 68, rightSpan + 14);
+      const maxFlipAx = Math.max(minFlipAx, Math.min(fieldW - 68, Math.round(aBox.right - aBox.width * 0.35)));
+      anchorX = Math.round(Math.max(minFlipAx, Math.min(maxFlipAx, leftIdealX)));
+    } else {
+      const minAx = Math.max(68, Math.round(aBox.left + aBox.width * 0.35));
+      const maxAx = Math.max(minAx, Math.round(fieldW - rightSpan - 14));
+      anchorX = Math.round(Math.max(minAx, Math.min(maxAx, idealAnchorX)));
+    }
+
+    const wingTopExtent = (compactRig && isNarrowDesktop) ? 106 : (compactRig ? 120 : 128);
+    const wingBotExtent = (compactRig && isNarrowDesktop) ? 132 : (compactRig ? 156 : 164);
+    const safeTop = 8;
+    let safeBot = fieldH - 10;
+    const wingAbsLeft = shouldFlipLeft ? (anchorX - rightSpan) : (anchorX + wingMinLeft);
+    const wingAbsRight = shouldFlipLeft ? (anchorX - wingMinLeft) : (anchorX + rightSpan);
+    if (allyPaneTop < fieldH && allyPaneRight > 0 && wingAbsLeft < allyPaneRight + 6) {
+      safeBot = Math.min(safeBot, allyPaneTop - 8);
+    }
+    if (targetPaneFound && targetPaneTop < fieldH && targetPaneLeft > 0 && wingAbsRight > targetPaneLeft - 6) {
+      safeBot = Math.min(safeBot, targetPaneTop - 8);
+    }
+    if (paneTop < fieldH && (paneTop - 8 - wingBotExtent) >= (safeTop + wingTopExtent)) {
+      safeBot = Math.min(safeBot, paneTop - 8);
+    }
+
+    let minAy = safeTop + wingTopExtent;
+    let maxAy = safeBot - wingBotExtent;
+    if (maxAy < minAy) {
+      const fieldMaxAy = fieldH - 8 - wingBotExtent;
+      if (fieldMaxAy >= minAy) {
+        maxAy = Math.max(minAy, Math.min(fieldMaxAy, Math.round((safeBot + fieldH - 8) * 0.5 - wingBotExtent)));
+      } else {
+        minAy = Math.min(minAy, Math.max(8 + wingTopExtent, Math.round(fieldH * 0.44)));
+        maxAy = minAy;
+      }
+    }
+    const actorCy = aBox.top + aBox.height * 0.48;
+    const anchorY = Math.round(Math.max(minAy, Math.min(maxAy, actorCy)));
+
+    uiState.lastActiveActorKey = aBox.actorKey || 'player';
     uiState.lastFieldW = Math.round(fieldW);
     uiState.lastFieldH = Math.round(fieldH);
     uiState.skyTopY = Math.max(0, Math.round(intentMaxBottom));
     uiState.skyBotY = Math.max(uiState.skyTopY + 140, Math.round(Math.min(enemyMinTop, paneTop)));
-    uiState.portraitRight = allyRightBound;
+    uiState.portraitRight = Math.round(aBox.right);
     uiState.allyPaneRight = Math.round(allyPaneRight);
     uiState.enemyLeftX = enemyMinLeft < fieldW ? Math.round(enemyMinLeft) : 0;
     uiState.hasMidCorridor = hasMidCorridor;
@@ -1886,80 +2044,6 @@
     uiState.targetPaneLeft = targetPaneLeft;
     uiState.targetPaneTop = targetPaneTop;
     uiState.obstacles = obstacles;
-
-    let anchorX;
-    let anchorY;
-    if (hasMidCorridor) {
-      // 中场走廊居中取锚：在左翼最前锋占槽右沿与右翼最前排敌卡左沿之间丝滑居中，同时保证展开扇叶右沿不压敌阵
-      const wingMinLeft = compactRig ? 24 : 46;
-      const wingMaxRight = compactRig ? (isNarrowDesktop ? 260 : 272) : 352;
-      const corridorOpenLeft = Math.max(corridorLeft, allyRightBound + 10);
-      const corridorOpenRight = Math.min(fieldW - 12, enemyLeftBound - 10);
-      const expectedFreeW = Math.max(0, (enemyLeftBound - 12) - corridorOpenLeft);
-      const naturalBladeW = (compactRig || isNarrowDesktop) ? 288 : 326;
-      const expectedBladeW = expectedFreeW >= 232
-        ? Math.max(224, Math.min(naturalBladeW, expectedFreeW - 14))
-        : naturalBladeW;
-      const minAnchorX = Math.max(110, allyRightBound - wingMinLeft + 10);
-      const maxAnchorX = enemyLeftBound - wingMaxRight - 10;
-      const bladeFitMaxAnchorX = (enemyLeftBound - 12) - expectedBladeW - 14;
-      const effectiveMaxAnchorX = maxAnchorX >= minAnchorX
-        ? Math.max(minAnchorX, Math.min(maxAnchorX, bladeFitMaxAnchorX))
-        : maxAnchorX;
-      const centeredAnchor = Math.round((corridorOpenLeft + corridorOpenRight) * 0.5 - wingMaxRight * 0.5);
-      const floorAnchor = Math.max(corridorLeft + (compactRig ? 8 : 12), allyRightBound + 12);
-      const preferredAnchor = Math.max(floorAnchor, centeredAnchor);
-      if (maxAnchorX >= minAnchorX) {
-        anchorX = Math.round(Math.max(minAnchorX, Math.min(effectiveMaxAnchorX, preferredAnchor)));
-      } else {
-        const midGapX = Math.round((allyRightBound + enemyLeftBound) * 0.5 - (wingMinLeft + wingMaxRight) * 0.5);
-        anchorX = Math.round(Math.max(110, Math.min(fieldW - wingMaxRight - 8, midGapX)));
-      }
-
-      const wingTopExtent = (compactRig && isNarrowDesktop) ? 104 : (compactRig ? 118 : 126);
-      const wingBotExtent = (compactRig && isNarrowDesktop) ? 132 : (compactRig ? 156 : 164);
-      const wingsOverlapAllyPane = allyPaneRight > 0 && (anchorX + wingMinLeft) < (allyPaneRight + 6);
-      const wingsOverlapTargetPane = targetPaneFound && targetPaneLeft > 0 && (anchorX + wingMaxRight) > (targetPaneLeft - 6);
-      let botLimit = fieldH - 10;
-      if (wingsOverlapAllyPane && allyPaneTop < fieldH) {
-        botLimit = Math.min(botLimit, allyPaneTop - 8);
-      }
-      if (wingsOverlapTargetPane && targetPaneTop < fieldH) {
-        botLimit = Math.min(botLimit, targetPaneTop - 8);
-      }
-      // 双底角面板上方净空保底：上方空间充足时优先将四片根翼稳稳悬于双底角之上并纵向居中
-      if (paneTop < fieldH && (paneTop - 8 - wingBotExtent) >= (wingTopExtent + 8)) {
-        botLimit = Math.min(botLimit, paneTop - 8);
-      }
-      const topLimit = 8;
-      const minAy = Math.min(topLimit + wingTopExtent + 6, Math.round(fieldH * 0.42));
-      const maxAy = Math.max(minAy, Math.round(botLimit - wingBotExtent));
-      const stageMidAy = Math.round((topLimit + botLimit) * 0.5 - (wingBotExtent - wingTopExtent) * 0.5);
-      const idealAy = paneTop < fieldH ? Math.min(Math.round(fieldH * 0.45), stageMidAy) : Math.round(fieldH * 0.45);
-      anchorY = Math.round(Math.max(minAy, Math.min(maxAy, idealAy)));
-    } else {
-      const stageRight = pBox.right;
-      if (compactRig) {
-        const pullLeft = isNarrowDesktop ? 106 : 82;
-        const minX = isNarrowDesktop ? 152 : 176;
-        anchorX = Math.round(Math.min(fieldW * 0.24, Math.max(minX, stageRight - pullLeft)));
-        const skyMid = Math.round((uiState.skyTopY + uiState.skyBotY) * 0.52);
-        if (isNarrowDesktop) {
-          const minAy = Math.min(180, Math.round(fieldH * 0.34));
-          const maxAy = Math.max(minAy, Math.round(fieldH - 220));
-          anchorY = Math.round(Math.max(minAy, Math.min(maxAy, skyMid)));
-        } else {
-          const minAy = Math.min(200, Math.round(fieldH * 0.38));
-          const maxAy = Math.max(minAy, Math.round(fieldH - 190));
-          anchorY = Math.round(Math.max(minAy, Math.min(maxAy, skyMid)));
-        }
-      } else {
-        anchorX = Math.round(Math.min(fieldW * 0.34, Math.max(196, stageRight - 44)));
-        const minAy = Math.min(200, Math.round(fieldH * 0.42));
-        const maxAy = Math.max(minAy, Math.round(fieldH - 172));
-        anchorY = Math.round(Math.max(minAy, Math.min(maxAy, fieldH * 0.44)));
-      }
-    }
 
     uiState.lastAnchorX = anchorX;
     uiState.lastAnchorY = anchorY;
@@ -1977,7 +2061,7 @@
       endTop.type = 'button';
       endTop.id = 'cb-btn-endturn-top';
       endTop.className = 'cb-tool-btn prism-endturn-top';
-      endTop.title = '结束本回合，留存最多 1 点 AP（快捷键 X）';
+      endTop.setAttribute('data-indie-tip', '结束本回合 [X]（最多留存 1 AP）');
       endTop.innerHTML = '结束回合 <span class="cb-kbd">X</span>';
       endTop.addEventListener('click', () => {
         triggerEndTurnAction();
@@ -1994,7 +2078,7 @@
       btn.type = 'button';
       btn.id = 'cb-btn-prism-toggle';
       btn.className = 'cb-tool-btn prism-toggle-btn' + (uiState.enabled ? ' active' : '');
-      btn.title = '切换 棱晶放射翼 / 经典底栏列阵';
+      btn.setAttribute('data-indie-tip', '切换棱晶菜单 / 经典底栏');
       btn.textContent = uiState.enabled ? '◆ 棱晶翼' : '◇ 传统列';
       btn.addEventListener('click', () => {
         setEnabled(!uiState.enabled);
@@ -2026,7 +2110,7 @@
       badge.id = 'cb-casual-mode-badge';
       badge.className = 'cb-casual-badge';
       badge.textContent = '✦ 休闲模式';
-      badge.title = '休闲模式已开启：节奏护佑生效，放缓攻防节奏并降低受击压力';
+      badge.setAttribute('data-indie-tip', '休闲模式已开启：敌伤降低，每回合额外回蓝');
       const turnEl = document.getElementById('cb-turn');
       if (turnEl && turnEl.parentNode === stageInfo) {
         stageInfo.insertBefore(badge, turnEl.nextSibling);
@@ -2054,7 +2138,7 @@
     bar.className = 'cb-prism-log-bar';
     bar.innerHTML = `
       <div class="cb-plog-latest" id="cb-plog-latest">✦ 战斗推演就绪</div>
-      <button type="button" class="cb-plog-toggle" id="cb-plog-toggle" title="展开/收起近期战报（快捷键 L）">战报 [L]</button>
+      <button type="button" class="cb-plog-toggle" id="cb-plog-toggle" data-indie-tip="展开/收起近期战报 [L]">战报 [L]</button>
       <div class="cb-plog-drawer hidden" id="cb-plog-drawer"></div>
     `;
     shell.insertBefore(bar, forecast);
@@ -2426,7 +2510,7 @@
         } else if (side === 'ally' && allyIdx >= 0) {
           row.setAttribute('data-aidx', String(allyIdx));
         }
-        row.setAttribute('title', fullName);
+        row.setAttribute('data-indie-tip', fullName);
 
         const inner = document.createElement('div');
         inner.className = 'cb-av-row-in';
@@ -2571,6 +2655,28 @@
       ':where(.cb-av-fallback){display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-family:var(--pr-serif,serif);font-size:15px;font-weight:800;line-height:1;color:var(--pr-sapphire-deep,#0e2b78);user-select:none;}',
       ':where(.cb-av-row.enemy-row .cb-av-fallback){color:#9E1B3A;}',
       ':where(.cb-av-row.ally-row .cb-av-fallback){color:#8B5B1E;}',
+      '.cb-prism-rig.mode-items .cb-prism-cascade{display:block;opacity:1;transform:none;animation:prCascadeSnap 0.14s var(--pr-ease) both;}',
+      '.cb-prism-rig.mode-items #cb-pw-amp-mini{display:none!important;}',
+      '.cb-pwing.needs-endturn::before{background:var(--pr-caustic),linear-gradient(112deg,rgba(255,252,242,0.97) 0%,rgba(236,246,255,0.95) 56%,rgba(220,238,255,0.93) 100%);box-shadow:inset 0 0 0 1px rgba(212,169,74,0.72);}',
+      '.cb-pwing.needs-endturn::after{background:linear-gradient(180deg,#FFF3CE 0%,#E5C06E 48%,#1658EB 100%);}',
+      '.cb-pwing.needs-endturn .cb-pw-key{background:rgba(212,169,74,0.22);color:#8C641E;}',
+      '.cb-pwing.needs-endturn .cb-pw-en{color:#8C641E;font-weight:800;}',
+      '.cb-blade.is-placeholder,.cb-blade.is-placeholder:disabled{opacity:0.96;cursor:default;min-height:58px;height:auto;padding-top:8px;padding-bottom:8px;}',
+      '.cb-blade.is-placeholder::before{background:linear-gradient(154deg,rgba(255,255,255,0.96) 0%,rgba(235,244,255,0.93) 100%);box-shadow:inset 0 0 0 1px rgba(96,146,224,0.34);}',
+      '.cb-blade.is-placeholder::after{background:linear-gradient(180deg,#CBDDF5 0%,#7EA6DC 55%,#4A72B0 100%);}',
+      '.cb-blade.is-placeholder .cb-bl-key{background:rgba(22,88,235,0.08);color:#5272A0;}',
+      '.cb-blade.is-placeholder .cb-bl-name{color:#16294D;}',
+      '.cb-blade.is-placeholder .cb-bl-meta{white-space:normal;line-height:1.38;overflow:visible;text-overflow:clip;color:#4A6288;}',
+      '.cb-blade-wrap.is-placeholder:hover,.cb-blade-wrap.is-placeholder.hovered{filter:drop-shadow(0 8px 20px rgba(8,22,68,0.34));}',
+      ':where(.cb-prism-rig.anchor-flip-left .cb-prism-svg){transform-origin:42px 250px;transform:scaleX(-1);}',
+      ':where(.cb-prism-rig.anchor-flip-left .cb-pwing-wrap[data-wing="0"]){left:auto;right:52px;--rot:4.0deg;}',
+      ':where(.cb-prism-rig.anchor-flip-left .cb-pwing-wrap[data-wing="1"]){left:auto;right:82px;--rot:1.3deg;}',
+      ':where(.cb-prism-rig.anchor-flip-left .cb-pwing-wrap[data-wing="2"]){left:auto;right:76px;--rot:-1.7deg;}',
+      ':where(.cb-prism-rig.anchor-flip-left .cb-pwing-wrap[data-wing="3"]){left:auto;right:46px;--rot:-4.4deg;}',
+      ':where(.cb-prism-rig.compact-multi.anchor-flip-left .cb-pwing-wrap[data-wing="0"]){left:auto;right:26px;--rot:3.2deg;}',
+      ':where(.cb-prism-rig.compact-multi.anchor-flip-left .cb-pwing-wrap[data-wing="1"]){left:auto;right:38px;--rot:1.0deg;}',
+      ':where(.cb-prism-rig.compact-multi.anchor-flip-left .cb-pwing-wrap[data-wing="2"]){left:auto;right:34px;--rot:-1.2deg;}',
+      ':where(.cb-prism-rig.compact-multi.anchor-flip-left .cb-pwing-wrap[data-wing="3"]){left:auto;right:24px;--rot:-3.4deg;}',
       '@keyframes cbAmpPulse{0%{filter:brightness(1);transform:scale(1);}35%{filter:brightness(1.20) drop-shadow(0 0 10px rgba(56,189,248,0.62));transform:scale(1.032);}100%{filter:brightness(1);transform:scale(1);}}',
       '@keyframes cbAmpPulseGold{0%{filter:brightness(1);transform:scale(1);}35%{filter:brightness(1.24) drop-shadow(0 0 14px rgba(229,192,110,0.85));transform:scale(1.04);}100%{filter:brightness(1);transform:scale(1);}}',
       '@keyframes cbCastFlash{0%{opacity:1;}28%{opacity:0.84;}100%{opacity:1;}}',
@@ -2627,7 +2733,7 @@
     const nav = document.createElement('nav');
     nav.id = 'cb-prism-rig';
     nav.className = 'cb-prism-rig mode-root';
-    nav.setAttribute('aria-label', '希尔维亚棱晶放射指令翼');
+    nav.setAttribute('aria-label', '战斗棱晶指令翼');
 
     nav.innerHTML = `
       <svg class="cb-prism-svg" id="cb-prism-svg" viewBox="-42 -250 470 500" aria-hidden="true"></svg>
@@ -2637,17 +2743,17 @@
             <span class="cb-pw-key">W</span>
             <div class="cb-pw-body">
               <div class="cb-pw-top">
-                <span class="cb-pw-title">冰水术式</span>
-                <span class="cb-pw-en">MAGIC</span>
+                <span class="cb-pw-title">施放技能</span>
+                <span class="cb-pw-en">SKILLS</span>
               </div>
-              <span class="cb-pw-sub" id="cb-pw-magic-sub">展开可用术式</span>
+              <span class="cb-pw-sub" id="cb-pw-magic-sub">展开攻守术式</span>
             </div>
             <span class="cb-pw-arrow">▸</span>
           </button>
         </div>
 
         <div class="cb-pwing-wrap" data-wing="1">
-          <button type="button" class="cb-pwing cb-prism-wing amp-t0" id="cb-pw-amp" title="魔力增幅（左键 / E 原地升档 · 右键 / Shift+E 原地降档 · 滚轮微调）">
+          <button type="button" class="cb-pwing cb-prism-wing amp-t0" id="cb-pw-amp" data-indie-tip="左键/E 升档 · 右键/Shift+E 降档">
             <span class="cb-pw-key">E</span>
             <div class="cb-pw-body">
               <div class="cb-pw-top">
@@ -2660,29 +2766,29 @@
         </div>
 
         <div class="cb-pwing-wrap" data-wing="2">
-          <button type="button" class="cb-pwing cb-prism-wing" id="cb-pw-guard">
+          <button type="button" class="cb-pwing cb-prism-wing" id="cb-pw-items">
             <span class="cb-pw-key">A</span>
             <div class="cb-pw-body">
               <div class="cb-pw-top">
-                <span class="cb-pw-title">守势/护盾</span>
-                <span class="cb-pw-en">GUARD</span>
+                <span class="cb-pw-title">使用道具</span>
+                <span class="cb-pw-en">ITEMS</span>
               </div>
-              <span class="cb-pw-sub" id="cb-pw-guard-sub">构筑冰盾或剑步卸力</span>
+              <span class="cb-pw-sub" id="cb-pw-items-sub">暂无战斗道具 · 后续开放</span>
             </div>
+            <span class="cb-pw-arrow">▸</span>
           </button>
         </div>
 
         <div class="cb-pwing-wrap" data-wing="3">
-          <button type="button" class="cb-pwing cb-prism-wing" id="cb-pw-assist">
+          <button type="button" class="cb-pwing cb-prism-wing" id="cb-pw-endturn">
             <span class="cb-pw-key">D</span>
             <div class="cb-pw-body">
               <div class="cb-pw-top">
-                <span class="cb-pw-title">演武辅助</span>
-                <span class="cb-pw-en">ASSIST</span>
+                <span class="cb-pw-title">结束回合</span>
+                <span class="cb-pw-en">END TURN</span>
               </div>
-              <span class="cb-pw-sub" id="cb-pw-assist-sub">援护 · 晦轮杖 · 回合 [X]</span>
+              <span class="cb-pw-sub" id="cb-pw-endturn-sub">流转敌方回合 · 可留存 1 AP</span>
             </div>
-            <span class="cb-pw-arrow">▸</span>
           </button>
         </div>
       </div>
@@ -2690,7 +2796,7 @@
       <div class="cb-prism-cascade" id="cb-prism-cascade">
         <div class="cb-cascade-spine" id="cb-cascade-spine">
           <button type="button" class="cb-spine-btn" id="cb-pw-back">← 返回 [ESC]</button>
-          <button type="button" class="cb-spine-btn amp-mini amp-t0" id="cb-pw-amp-mini" title="原地调档（左键 / E 升档 · 右键 / Shift+E 降档 · 滚轮微调）"><span class="cb-mini-key">E</span> <span class="cb-amp-pips cb-amp-pips-mini" aria-hidden="true"><span class="cb-amp-pip"></span><span class="cb-amp-pip"></span><span class="cb-amp-pip"></span></span><span class="cb-amp-mini-val" id="cb-pw-amp-mini-val">增幅 +0%</span></button>
+          <button type="button" class="cb-spine-btn amp-mini amp-t0" id="cb-pw-amp-mini" data-indie-tip="左键/E 升档 · 右键降档"><span class="cb-mini-key">E</span> <span class="cb-amp-pips cb-amp-pips-mini" aria-hidden="true"><span class="cb-amp-pip"></span><span class="cb-amp-pip"></span><span class="cb-amp-pip"></span></span><span class="cb-amp-mini-val" id="cb-pw-amp-mini-val">增幅 +0%</span></button>
         </div>
         <div id="cb-prism-blade-list" class="cb-prism-blade-list"></div>
         <div id="cb-prism-amp-panel" class="cb-prism-amp-panel hidden" hidden aria-hidden="true" style="display:none"></div>
@@ -2723,13 +2829,13 @@
     ampWingBtn.addEventListener('click', () => { cancelDissolve(); cycleAmp(1); });
     ampWingBtn.addEventListener('contextmenu', ev => { ev.preventDefault(); ev.stopPropagation(); cancelDissolve(); cycleAmp(-1); });
     ampWingBtn.addEventListener('wheel', onAmpWheel, { passive: false });
-    nav.querySelector('#cb-pw-guard').addEventListener('click', () => { cancelDissolve(); openGuard(); });
-    nav.querySelector('#cb-pw-assist').addEventListener('click', () => { cancelDissolve(); openAssist(); });
+    nav.querySelector('#cb-pw-items').addEventListener('click', () => { cancelDissolve(); openItems(); });
+    nav.querySelector('#cb-pw-endturn').addEventListener('click', () => { triggerEndTurnAction(); });
     nav.querySelector('#cb-pw-back').addEventListener('click', () => { cancelDissolve(); closeCascade(); });
     ampMiniBtn.addEventListener('mouseenter', () => {
       uiState.hoveringAmpMini = true;
       cancelPendingHoverClear();
-      if ((uiState.menuMode === 'skills' || uiState.menuMode === 'guard') && uiState.lastHoveredSkillId) {
+      if (uiState.menuMode === 'skills' && uiState.lastHoveredSkillId) {
         const sid = uiState.lastHoveredSkillId;
         const stillInCascade = uiState.currentItems.some(it => it && it.kind === 'skill' && it.skillId === sid);
         if (stillInCascade && uiState.hoveredSkillId !== sid) {
@@ -2787,8 +2893,8 @@
   }
 
   function buildItemsSignature(mode, items) {
-    return `${mode}|${isGauntletOffMode() ? 1 : 0}|${uiState.twoColBlades ? 1 : 0}|${uiState.lastFieldW}x${uiState.lastFieldH}|${uiState.lastAnchorX},${uiState.lastAnchorY}|${uiState.portraitRight}:${uiState.allyPaneRight}:${uiState.corridorLeft}-${uiState.corridorRight}:${uiState.hasMidCorridor ? 1 : 0}|${uiState.skyTopY}:${uiState.skyBotY}:${uiState.enemyLeftX}|${uiState.compactMulti ? 1 : 0}|${uiState.narrowDesktop ? 1 : 0}|${uiState.shortViewport ? 1 : 0}|` + items.map((it, idx) =>
-      `${idx}:${it.key}:${it.slotIdx != null ? it.slotIdx : ''}:${it.skillId || ''}:${it.name || ''}:${it.iconHtml ? 1 : 0}:${it.pathLabel || ''}:${it.beatKind || ''}:${it.beatLabel || ''}:${it.cost}:${it.foot || it.desc || ''}:${it.oppLabel || ''}:${it.expKind || ''}:${it.expText || ''}:${it.disabled ? 1 : 0}`
+    return `${mode}|${uiState.lastActiveActorKey || 'player'}|${uiState.anchorFlipLeft ? 1 : 0}|${uiState.guardSplitIdx}|${isGauntletOffMode() ? 1 : 0}|${uiState.twoColBlades ? 1 : 0}|${uiState.lastFieldW}x${uiState.lastFieldH}|${uiState.lastAnchorX},${uiState.lastAnchorY}|${uiState.portraitRight}:${uiState.allyPaneRight}:${uiState.skyTopY}:${uiState.skyBotY}:${uiState.enemyLeftX}|${uiState.compactMulti ? 1 : 0}|${uiState.narrowDesktop ? 1 : 0}|${uiState.shortViewport ? 1 : 0}|` + items.map((it, idx) =>
+      `${idx}:${it.key}:${it.slotIdx != null ? it.slotIdx : ''}:${it.skillId || ''}:${it.name || ''}:${it.iconHtml ? 1 : 0}:${it.pathLabel || ''}:${it.beatKind || ''}:${it.beatLabel || ''}:${it.cost}:${it.foot || it.desc || ''}:${it.oppLabel || ''}:${it.expKind || ''}:${it.expText || ''}:${it.isGuard ? 1 : 0}:${it.isPlaceholder ? 1 : 0}:${it.disabled ? 1 : 0}`
     ).join('||') + `|${uiState.partyLayout || ''}:${Math.round(uiState.partyDockTop || 0)}:${Math.round(uiState.targetPaneLeft || 0)}:${Math.round(uiState.targetPaneTop || 0)}`;
   }
 
@@ -2809,13 +2915,13 @@
 
   function buildBladeRightTagsHtml(item) {
     const expHtml = item.expKind === 'warn'
-      ? `<span class="cb-bl-exp is-warn" title="耳目近在咫尺，施放将增加暴露度">${escapeHtml(item.expText)}</span>`
+      ? `<span class="cb-bl-exp is-warn" data-indie-tip="施放将增加暴露度">${escapeHtml(item.expText)}</span>`
       : (item.expKind === 'safe'
-        ? `<span class="cb-bl-exp is-safe" title="${escapeHtml(item.expText || '隐蔽安全')}">隐蔽</span>`
+        ? `<span class="cb-bl-exp is-safe" data-indie-tip="${escapeHtml(item.expText || '隐蔽安全')}">隐蔽</span>`
         : '');
     const beatKind = item.beatKind || '';
     const beatHtml = item.beatLabel
-      ? `<span class="cb-bl-beat${beatKind ? ` beat-${escapeHtml(beatKind)}` : ''}" title="${escapeHtml(item.beatLabel === '瞬发' ? '瞬发术式，无需蓄拍' : `命中节奏：${item.beatLabel}`)}">${escapeHtml(item.beatLabel)}</span>`
+      ? `<span class="cb-bl-beat${beatKind ? ` beat-${escapeHtml(beatKind)}` : ''}" data-indie-tip="${escapeHtml(item.beatLabel === '瞬发' ? '瞬发，无需蓄拍' : `命中节奏：${item.beatLabel}`)}">${escapeHtml(item.beatLabel)}</span>`
       : '';
     const showPath = !expHtml && !!item.pathLabel && (!beatHtml || !uiState.twoColBlades);
     const badgeHtml = item.oppLabel
@@ -2829,26 +2935,34 @@
 
   function patchBladeElement(wrap, btn, item, g, idx) {
     const rotStr = String(g.rot);
-    const isHovered = uiState.hoveredBladeIdx === idx;
+    const isPlaceholder = !!item.isPlaceholder;
+    const isHovered = !isPlaceholder && uiState.hoveredBladeIdx === idx;
     wrap.setAttribute('data-prism-mode', uiState.menuMode);
     wrap.dataset.rot = rotStr;
     wrap.style.left = `${g.left}px`;
     wrap.style.top = `${g.top}px`;
+    wrap.classList.toggle('is-placeholder', isPlaceholder);
+    wrap.classList.toggle('is-guard', !!item.isGuard);
     wrap.classList.toggle('hovered', isHovered);
     wrap.style.transform = isHovered
       ? `translateX(0) rotate(${rotStr}deg) scale(1.015)`
       : `rotate(${rotStr}deg)`;
 
     const expCls = item.expKind === 'warn' ? ' is-exp-warn' : (item.expKind === 'safe' ? ' is-exp-safe' : '');
-    btn.className = 'cb-blade' + (g.compact ? ' compact' : '') + (item.oppLabel ? ' opp-ready' : '') + expCls;
-    btn.disabled = !!item.disabled;
+    btn.className = 'cb-blade'
+      + (g.compact ? ' compact' : '')
+      + (item.oppLabel ? ' opp-ready' : '')
+      + (item.isGuard ? ' is-guard' : '')
+      + (isPlaceholder ? ' is-placeholder' : '')
+      + expCls;
+    btn.disabled = !!item.disabled || isPlaceholder;
     btn.setAttribute('data-prism-idx', String(idx));
     if (item.skillId) btn.setAttribute('data-sk', item.skillId);
     else btn.removeAttribute('data-sk');
     if (item.beatLabel) btn.setAttribute('data-beats', item.beatLabel);
     else btn.removeAttribute('data-beats');
 
-    if (g.forceHeight && g.bladeH) {
+    if (g.forceHeight && g.bladeH && !isPlaceholder) {
       btn.style.height = `${g.bladeH}px`;
       btn.style.minHeight = `${g.bladeH}px`;
     } else {
@@ -2931,6 +3045,9 @@
         uiState.lastAmpPct = -1;
         uiState.lastBladeSig = '';
         uiState.lastAvSig = '';
+        uiState.activeActorOverride = null;
+        uiState.lastActiveActorKey = 'player';
+        uiState.guardSplitIdx = -1;
         uiState.animDissolveUntil = 0;
         cancelPendingHoverClear();
         if (uiState.dissolveTimer) {
@@ -3005,16 +3122,21 @@
       if (!field) return;
       buildRigDOM(field);
       syncLogBar(b);
-      syncRigAnchor();
+      syncRigAnchor(b);
 
       const allSkills = readSkillCards(b);
-      const enabledSkills = allSkills.filter(s => !s.disabled);
+      const offenseSkills = allSkills.filter(s => !s.isGuard);
+      const guardSkillsAll = allSkills.filter(s => s.isGuard);
+      const orderedSkills = offenseSkills.concat(guardSkillsAll);
+      const guardSplitIdx = (offenseSkills.length > 0 && guardSkillsAll.length > 0) ? offenseSkills.length : -1;
+      uiState.guardSplitIdx = guardSplitIdx;
+      const enabledSkills = orderedSkills.filter(s => !s.disabled);
       const oppSkills = enabledSkills.filter(s => !!s.oppLabel);
-      const guardSkills = allSkills.filter(s => s.isGuard && !s.disabled);
       const ampInfo = readOvercastInfo(b);
-      const assistItems = readAssistItems(b);
+      const battleItems = readBattleItems(b);
+      const usableItems = battleItems.filter(it => !it.disabled);
 
-      if (uiState.menuMode === 'amp') {
+      if (uiState.menuMode !== 'root' && uiState.menuMode !== 'skills' && uiState.menuMode !== 'items') {
         uiState.menuMode = 'root';
       }
 
@@ -3023,37 +3145,37 @@
       uiState.rigEl.classList.toggle('is-hard-dissolved', hardDissolved);
       uiState.rigEl.classList.toggle('mode-root', uiState.menuMode === 'root');
       uiState.rigEl.classList.toggle('mode-skills', uiState.menuMode === 'skills');
-      uiState.rigEl.classList.remove('mode-amp');
-      uiState.rigEl.classList.toggle('mode-guard', uiState.menuMode === 'guard');
-      uiState.rigEl.classList.toggle('mode-assist', uiState.menuMode === 'assist');
+      uiState.rigEl.classList.toggle('mode-items', uiState.menuMode === 'items');
+      uiState.rigEl.classList.remove('mode-amp', 'mode-guard', 'mode-assist');
+
+      const noActionsLeft = !!(b && !b.over && (b.ap <= 0 || enabledSkills.length === 0));
+      const realEnd = document.getElementById('cb-btn-endturn');
+      const endTurnDisabled = !!(b && b.over) || !!(realEnd && realEnd.disabled);
 
       // Sync Top Bar End-Turn Button (pulses when AP === 0 or no skills affordable!)
       const endTopBtn = document.getElementById('cb-btn-endturn-top');
       if (endTopBtn) {
-        const noActionsLeft = !!(b && !b.over && (b.ap <= 0 || enabledSkills.length === 0));
-        endTopBtn.disabled = !!(b && b.over);
-        endTopBtn.classList.toggle('needs-endturn', noActionsLeft);
+        endTopBtn.disabled = endTurnDisabled;
+        endTopBtn.classList.toggle('needs-endturn', noActionsLeft && !endTurnDisabled);
         endTopBtn.innerHTML = noActionsLeft
           ? '✦ 结束回合 <span class="cb-kbd">X</span>'
           : '结束回合 <span class="cb-kbd">X</span>';
       }
 
-      // Sync Root Wing [W]（1280×720 窄翼零截断精简副标）
+      // Sync Root Wing [W] — 施放技能 (SKILLS)
       const magicSub = document.getElementById('cb-pw-magic-sub');
       if (magicSub) {
         if (enabledSkills.length === 0 && b && !b.over) {
-          magicSub.textContent = 'AP 用尽 · 结束回合 [X]';
+          magicSub.textContent = 'AP 用尽 · 结束回合 [D]';
         } else if (oppSkills.length > 0) {
-          magicSub.textContent = `✦ ${oppSkills.length} 破招就绪 · ${enabledSkills.length}/${allSkills.length}式`;
+          magicSub.textContent = `✦ ${oppSkills.length} 破招就绪 · ${enabledSkills.length}/${orderedSkills.length}式`;
         } else {
-          magicSub.textContent = `已就绪 ${enabledSkills.length}/${allSkills.length} 式`;
+          magicSub.textContent = `攻守就绪 ${enabledSkills.length}/${orderedSkills.length} 式`;
         }
       }
 
       // Sync Root Wing [E] — 1:1 exposed direct-press amp meter (3 diamond pips .cb-amp-pips + #cb-pw-amp-val + tier theme classes)
       const ampTier = ampInfo.enabled ? Math.min(3, Math.max(0, ampInfo.tier)) : 0;
-      const curAmpSpec = V32_AMP_TIERS[ampTier] || V32_AMP_TIERS[0];
-      const ampEffectHint = curAmpSpec && curAmpSpec.effect ? ` · ${curAmpSpec.effect}` : '';
       const ampBtn = document.getElementById('cb-pw-amp');
       const ampEn = document.getElementById('cb-pw-amp-en');
       const ampSub = document.getElementById('cb-pw-amp-sub');
@@ -3070,11 +3192,13 @@
         ampBtn.classList.toggle('amp-tier-2', ampInfo.enabled && ampTier === 2);
         ampBtn.classList.toggle('amp-tier-3', ampInfo.enabled && ampTier >= 3);
         ampBtn.classList.toggle('amp-max', ampInfo.enabled && ampTier >= 3);
-        ampBtn.title = ampInfo.enabled
-          ? (hasCycle
-            ? `魔战循环 · 魔力增幅（施法命中等量回蓝；左键 / E 升档 · 右键 / Shift+E 降档 · 滚轮微调；当前：${ampInfo.badge} · +${ampInfo.extraMp} MP · ${ampInfo.multBadge}${ampEffectHint}）`
-            : `魔力增幅（左键 / E 升档 · 右键 / Shift+E 降档 · 滚轮微调；当前：${ampInfo.badge} · +${ampInfo.extraMp} MP · ${ampInfo.multBadge}${ampEffectHint}）`)
-          : '当前不可增幅';
+        ampBtn.removeAttribute('title');
+        ampBtn.setAttribute(
+          'data-indie-tip',
+          ampInfo.enabled
+            ? `左键/E 升档 · 右键降档（${ampInfo.shortLabel} · ${ampInfo.multBadge}${hasCycle ? ' · 魔战循环' : ''}）`
+            : '当前不可增幅'
+        );
         if (ampEn) {
           ampEn.textContent = (!uiState.compactMulti && ampInfo.enabled && ampInfo.lockHint)
             ? `${ampInfo.multBadge}${ampInfo.lockHint}`
@@ -3088,40 +3212,32 @@
         ampSub.innerHTML = `${pipsHtml}<span class="cb-amp-val" id="cb-pw-amp-val">${escapeHtml(valText)}</span>${cycleBadgeHtml}`;
       }
 
-      // Sync Root Wing [A]
-      const guardSub = document.getElementById('cb-pw-guard-sub');
-      if (guardSub) {
-        if (guardSkills.length === 1) {
-          guardSub.textContent = `${guardSkills[0].name} · 立即构筑`;
-        } else if (guardSkills.length > 1) {
-          guardSub.textContent = `${guardSkills.length} 项守势术式 · 展开选择`;
+      // Sync Root Wing [A] — 使用道具 (ITEMS)
+      const itemsSub = document.getElementById('cb-pw-items-sub');
+      if (itemsSub) {
+        if (battleItems.length === 0) {
+          itemsSub.textContent = '暂无战斗道具 · 后续开放';
+        } else if (usableItems.length > 0) {
+          itemsSub.textContent = `行囊可用 ${usableItems.length}/${battleItems.length} 项`;
         } else {
-          guardSub.textContent = '稳守结束回合 · 留存 1 AP';
+          itemsSub.textContent = `已携带 ${battleItems.length} 项 · 暂不可用`;
         }
       }
 
-      // Sync Root Wing [D]
-      const assistSub = document.getElementById('cb-pw-assist-sub');
-      if (assistSub) {
-        const readyHighlights = assistItems.filter(it => !it.disabled && it.key !== 'X').map(it => it.name);
-        if (readyHighlights.length) {
-          assistSub.textContent = `✦ ${readyHighlights.join(' / ')} 就绪`;
-        } else {
-          const hasAssistItem = assistItems.some(it => it.skillId === 'tool_assist');
-          const hasWandItem = assistItems.some(it => it.skillId === 'tool_wand');
-          if (hasAssistItem && hasWandItem) {
-            assistSub.textContent = '援护 · 晦轮杖 · 回合 [X]';
-          } else if (hasAssistItem) {
-            assistSub.textContent = '心念援护 · 结束回合 [X]';
-          } else if (hasWandItem) {
-            assistSub.textContent = '晦轮杖 · 结束回合 [X]';
-          } else {
-            assistSub.textContent = '战术辅助 · 结束回合 [X]';
-          }
-        }
+      // Sync Root Wing [D] — 结束回合 (END TURN)
+      const endWingBtn = document.getElementById('cb-pw-endturn');
+      const endWingSub = document.getElementById('cb-pw-endturn-sub');
+      if (endWingBtn) {
+        endWingBtn.disabled = endTurnDisabled;
+        endWingBtn.classList.toggle('needs-endturn', noActionsLeft && !endTurnDisabled);
+      }
+      if (endWingSub) {
+        endWingSub.textContent = noActionsLeft
+          ? '✦ AP 用尽 · 立即结束回合'
+          : '流转敌方回合 · 可留存 1 AP';
       }
 
-      // Sync Spine Mini Amp Button (in-place direct step inside skill/guard/assist cascades!)
+      // Sync Spine Mini Amp Button (in-place direct step inside skills cascade)
       const miniAmp = document.getElementById('cb-pw-amp-mini');
       if (miniAmp) {
         miniAmp.disabled = !ampInfo.enabled;
@@ -3134,9 +3250,11 @@
         miniAmp.classList.toggle('tier-2', ampInfo.enabled && ampTier === 2);
         miniAmp.classList.toggle('tier-3', ampInfo.enabled && ampTier >= 3);
         miniAmp.classList.toggle('max-tier', ampInfo.enabled && ampTier >= 3);
-        miniAmp.title = ampInfo.enabled
-          ? `原地调档不离列表（左键 / E 升档 · 右键 / Shift+E 降档 · 滚轮微调；当前 +${ampInfo.pctInt}% · +${ampInfo.extraMp} MP）`
-          : '当前不可增幅';
+        miniAmp.removeAttribute('title');
+        miniAmp.setAttribute(
+          'data-indie-tip',
+          ampInfo.enabled ? `左键/E 升档 · 右键降档（+${ampInfo.pctInt}%）` : '当前不可增幅'
+        );
         if (!ampInfo.enabled) {
           miniAmp.textContent = '◇ 不可增幅';
         } else {
@@ -3156,21 +3274,24 @@
       // Populate Active Cascade Mode
       let rawItems = [];
       if (uiState.menuMode === 'skills') {
-        rawItems = allSkills;
-      } else if (uiState.menuMode === 'guard') {
-        rawItems = allSkills.filter(s => s.isGuard);
-      } else if (uiState.menuMode === 'assist') {
-        rawItems = assistItems;
+        rawItems = orderedSkills;
+      } else if (uiState.menuMode === 'items') {
+        rawItems = battleItems.length ? battleItems : buildEmptyItemsPlaceholder();
       }
       const listItems = rawItems.map((it, idx) => (
-        it.kind === 'skill'
+        it.kind === 'skill' || it.kind === 'item'
           ? Object.assign({}, it, { key: idx < 9 ? String(idx + 1) : '·', displayIdx: idx })
           : Object.assign({}, it, { displayIdx: idx })
       ));
       uiState.currentItems = listItems;
 
       if (uiState.cascadeListEl && uiState.menuMode !== 'root') {
-        const { coords, spineTop, spineLeft, twoCol } = computeBladeGeometry(listItems.length);
+        const isPlaceholderSingle = listItems.length === 1 && !!listItems[0].isPlaceholder;
+        const { coords, spineTop, spineLeft, twoCol } = computeBladeGeometry(
+          listItems.length,
+          uiState.menuMode === 'skills' ? guardSplitIdx : -1,
+          isPlaceholderSingle
+        );
         uiState.twoColBlades = !!twoCol;
         uiState.rigEl.classList.toggle('two-col-blades', !!twoCol);
         if (uiState.spineEl) {
@@ -3217,6 +3338,7 @@
               const onBladeEnter = () => {
                 cancelPendingHoverClear();
                 const liveItem = uiState.currentItems[idx];
+                if (liveItem && liveItem.isPlaceholder) return;
                 const rot = wrap.dataset.rot || '0';
                 uiState.hoveredBladeIdx = idx;
                 wrap.classList.add('hovered');
@@ -3231,6 +3353,7 @@
               };
               const onBladeLeave = ev => {
                 const liveItem = uiState.currentItems[idx];
+                if (liveItem && liveItem.isPlaceholder) return;
                 const rot = wrap.dataset.rot || '0';
                 if (uiState.hoveredBladeIdx === idx) uiState.hoveredBladeIdx = null;
                 wrap.classList.remove('hovered');
@@ -3248,7 +3371,7 @@
               btn.addEventListener('blur', onBladeLeave);
               btn.addEventListener('click', () => {
                 const liveItem = uiState.currentItems[idx];
-                if (liveItem) triggerSourceButton(liveItem);
+                if (liveItem && !liveItem.isPlaceholder) triggerSourceButton(liveItem);
               });
 
               wrap.appendChild(btn);
@@ -3347,21 +3470,12 @@
       ev.preventDefault();
       ev.stopImmediatePropagation();
       cancelDissolve();
-      if (uiState.menuMode === 'guard') closeCascade();
-      else openGuard();
+      if (uiState.menuMode === 'items') closeCascade();
+      else openItems();
       return;
     }
 
-    if (k === 'd') {
-      ev.preventDefault();
-      ev.stopImmediatePropagation();
-      cancelDissolve();
-      if (uiState.menuMode === 'assist') closeCascade();
-      else openAssist();
-      return;
-    }
-
-    if (k === 'x') {
+    if (k === 'd' || k === 'x') {
       const realEnd = document.getElementById('cb-btn-endturn');
       if (realEnd && !realEnd.disabled) {
         ev.preventDefault();
@@ -3374,7 +3488,7 @@
     if (ev.key >= '1' && ev.key <= '9' && uiState.menuMode !== 'root') {
       const idx = Number(ev.key) - 1;
       const item = uiState.currentItems[idx];
-      if (item && !item.disabled) {
+      if (item && !item.disabled && !item.isPlaceholder) {
         ev.preventDefault();
         ev.stopImmediatePropagation();
         cancelDissolve();
@@ -3570,6 +3684,10 @@
     uiState.lastBattleWaveKey = '';
     uiState.lastBattleTurn = -1;
     uiState.lastBattleState = null;
+    uiState.activeActorOverride = null;
+    uiState.lastActiveActorKey = 'player';
+    uiState.anchorFlipLeft = false;
+    uiState.guardSplitIdx = -1;
     uiState.hoveredSkillId = null;
     uiState.lastHoveredSkillId = null;
     uiState.hoveringAmpMini = false;
@@ -3587,12 +3705,18 @@
     ensureAvRail,
     syncAvRail,
     syncAvForecast,
+    resolveActiveActorBox,
+    setActiveActor,
+    readBattleItems,
+    registerItemProvider,
     setMode,
     openSkills,
     openAmp,
+    openItems,
     openGuard,
     openAssist,
     openPalace,
+    endTurn: triggerEndTurnAction,
     closeCascade,
     toggleLogDrawer,
     cycleAmp,
@@ -3612,6 +3736,8 @@
       timingDissolved: isTimingOrAsyncDissolved(),
       casualMode: isCasualModeActive(),
       gauntletOff: isGauntletOffMode(),
+      activeActorKey: uiState.lastActiveActorKey,
+      anchorFlipLeft: uiState.anchorFlipLeft,
       hasMidCorridor: uiState.hasMidCorridor,
       anchorX: uiState.lastAnchorX,
       anchorY: uiState.lastAnchorY,

@@ -1587,6 +1587,8 @@
       emoji: '🏔️',
       bg: 'bg-snow',
       bgmType: 'battle',
+      bgmKey: 'battle1',
+      wave2BgmKey: 'battle2',
       mainline: true,
       bossWaveRetry: true,
       crateRule: true,
@@ -1673,6 +1675,8 @@
       emoji: '🔥',
       bg: 'bg-img-hallway bg-battle',
       bgmType: 'battle',
+      bgmKey: 'battle1',
+      phase2BgmKey: 'battle2',
       mainline: true,
       bossWaveRetry: true,
       tags: ['14岁东翼突围', '红莲铁幕二阶段', '水克火断锁火', '晦轮杖穿魔盾'],
@@ -1779,6 +1783,8 @@
       emoji: '🌪️',
       bg: 'bg-img-training bg-battle',
       bgmType: 'battle',
+      bgmKey: 'battle1',
+      phase2BgmKey: 'boss_finale',
       mainline: false,
       arenaTestOnly: true,
       godTierChallenge: true,
@@ -4665,9 +4671,21 @@
       aiType: enemy.aiType,
       charId: enemy.aiType === 'wind_god_boss' ? 'fengshen' : (enemy.aiType === 'eastwing_boss' ? 'eastwing_commander' : enemy.id),
     });
+    const phase2BgmKey = (b.stageCfg && b.stageCfg.phase2BgmKey)
+      || (enemy && enemy.phase2BgmKey)
+      || (b.bgmType === 'duel' ? null : 'battle2');
+    if (phase2BgmKey) {
+      b.bgmKey = phase2BgmKey;
+      const resolvedP2Type = (typeof global.bgmResolveTypeForKey === 'function' && global.bgmResolveTypeForKey(phase2BgmKey))
+        || (phase2BgmKey === 'boss_finale' ? 'finale_boss' : 'battle');
+      b.bgmType = resolvedP2Type;
+    }
     if (!b.headless) {
       safeSfx('phase2');
-      if (typeof global.bgmShiftBattlePhase2 === 'function') global.bgmShiftBattlePhase2();
+      if (typeof global.bgmShiftBattlePhase2 === 'function') {
+        if (phase2BgmKey) global.bgmShiftBattlePhase2(phase2BgmKey);
+        else if (b.bgmType !== 'duel') global.bgmShiftBattlePhase2();
+      }
     }
     return true;
   }
@@ -4711,7 +4729,8 @@
     });
   }
 
-  function initWave(b, waveIdx) {
+  function initWave(b, waveIdx, waveOpts) {
+    waveOpts = waveOpts || {};
     const sc = b.stageCfg;
     const w = sc.waves[waveIdx];
     const hpShdScale = b.casualMode ? COMBAT_BALANCE_V32.casualMode.enemyHpShieldMult : 1.0;
@@ -4843,6 +4862,19 @@
     }
 
     if (waveIdx > 0) {
+      const hasSinglePhaseWaveBoss = Array.isArray(b.enemies) && b.enemies.some(e => e && e.boss && !e.phase2HpPct);
+      const waveBgmKey = (w && w.bgmKey)
+        || (waveIdx === 1 && sc && sc.wave2BgmKey)
+        || ((b.bgmType !== 'duel' && hasSinglePhaseWaveBoss) ? 'battle2' : null);
+      if (waveBgmKey) {
+        b.bgmKey = waveBgmKey;
+        const resolvedWaveType = (typeof global.bgmResolveTypeForKey === 'function' && global.bgmResolveTypeForKey(waveBgmKey))
+          || (waveBgmKey === 'boss_finale' ? 'finale_boss' : 'battle');
+        b.bgmType = resolvedWaveType;
+        if (!b.headless && !waveOpts.skipWaveBgm && typeof global.bgmShiftBattlePhase2 === 'function') {
+          global.bgmShiftBattlePhase2(waveBgmKey);
+        }
+      }
       emitCombatVoiceCue(b, `stage_start_${b.id}_w${waveIdx + 1}`, { stageId: b.id, waveIdx, charId: 'sylvia' });
     }
   }
@@ -4856,11 +4888,14 @@
     const player = buildPlayerCombatant(stageCfg, opts);
     const allies = buildAllyCombatants(stageCfg);
     const casual = opts.casualMode !== undefined ? !!opts.casualMode : isCasualMode();
+    const initBgmType = opts.bgmType || stageCfg.bgmType || 'battle';
+    const initBgmKey = opts.bgmKey || stageCfg.bgmKey || (initBgmType === 'duel' ? 'duel1' : null);
     const b = {
       id: stageCfg.id,
       battleInstanceId: ++_battleInstanceSeq,
       stageCfg,
-      bgmType: opts.bgmType || stageCfg.bgmType || 'battle',
+      bgmType: initBgmType,
+      bgmKey: initBgmKey,
       casualMode: casual,
       _usePreset: opts.usePreset,
       _timingBusy: false,
@@ -9435,31 +9470,51 @@
     bs.classList.remove('palace-timestop', 'wand-refract', 'hit-shake', 'heavy-shake', 'hidden');
   }
 
-  function ensureBattleBgmOnStart(bgmType, preferKey) {
+  function ensureBattleBgmOnStart(bgmType, preferKey, b) {
     if (typeof global.bgmUnlock === 'function') global.bgmUnlock();
     const targetType = bgmType || 'battle';
     const targetKey = preferKey || (targetType === 'duel' ? 'duel1' : null);
     const st = (typeof global.bgmGetState === 'function') ? global.bgmGetState() : null;
 
+    const syncBattleBgmState = () => {
+      if (!b) return;
+      const stAfter = (typeof global.bgmGetState === 'function') ? global.bgmGetState() : null;
+      if (stAfter && stAfter.key) {
+        b.bgmKey = stAfter.key;
+        if (stAfter.type) b.bgmType = stAfter.type;
+      } else {
+        b.bgmType = targetType;
+        if (targetKey) b.bgmKey = targetKey;
+      }
+    };
+
     if (targetType === 'duel') {
       const alreadyTargetDuel = !!(st && st.type === 'duel' && (!targetKey || st.key === targetKey) && !st.paused);
-      if (alreadyTargetDuel) return;
+      if (alreadyTargetDuel) {
+        syncBattleBgmState();
+        return;
+      }
       if (typeof global.bgmPlayType === 'function') {
         // 演武大厅播 duel2 时进切磋关可流畅切至 duel1；若已在播 duel1 且未暂停则上方已提前返回
         global.bgmPlayType('duel', { force: true, fade: true, key: targetKey });
       } else if (typeof global.bgmPlay === 'function' && targetKey) {
         global.bgmPlay(targetKey, { fade: true, type: 'duel' });
       }
+      syncBattleBgmState();
       return;
     }
 
-    if (typeof global.bgmPlayType !== 'function') return;
-    const alreadyBattlePlaying = !!(st && st.type === targetType && st.key && !st.paused);
+    if (typeof global.bgmPlayType !== 'function') {
+      syncBattleBgmState();
+      return;
+    }
+    const alreadyBattlePlaying = !!(st && st.type === targetType && st.key && !st.paused && (!targetKey || st.key === targetKey));
     if (alreadyBattlePlaying) {
       global.bgmPlayType(targetType, { force: false });
     } else {
       global.bgmPlayType(targetType, { force: true, key: targetKey || undefined });
     }
+    syncBattleBgmState();
   }
 
   function startStage(stageId, opts) {
@@ -9482,7 +9537,8 @@
       if (ds) ds.classList.add('hidden');
       if (typeof global.setBG === 'function') global.setBG(sc.bg || 'bg-battle');
       const stageBgmType = b.bgmType || sc.bgmType || 'battle';
-      ensureBattleBgmOnStart(stageBgmType, stageBgmType === 'duel' ? 'duel1' : null);
+      const stageBgmKey = b.bgmKey || sc.bgmKey || (stageBgmType === 'duel' ? 'duel1' : null);
+      ensureBattleBgmOnStart(stageBgmType, stageBgmKey, b);
       const bs = ensureBattleDOM();
       resetBattleDomForStart(bs);
       if (document.body) document.body.classList.add('cb-battle-active');
@@ -9552,7 +9608,7 @@
     b.ap = b.apMax;
     b.log = [];
 
-    initWave(b, targetWave);
+    initWave(b, targetWave, { skipWaveBgm: true });
 
     // 对齐快照时点的药箱与护盾，避免重复叠加跨波回复
     if (snap.crateHp != null) {
@@ -9580,7 +9636,8 @@
       if (ds) ds.classList.add('hidden');
       if (typeof global.setBG === 'function') global.setBG(sc.bg || 'bg-battle');
       const stageBgmType = b.bgmType || sc.bgmType || 'battle';
-      ensureBattleBgmOnStart(stageBgmType, stageBgmType === 'duel' ? 'duel1' : null);
+      const stageBgmKey = b.bgmKey || sc.bgmKey || (stageBgmType === 'duel' ? 'duel1' : null);
+      ensureBattleBgmOnStart(stageBgmType, stageBgmKey, b);
       const bs = ensureBattleDOM();
       resetBattleDomForStart(bs);
       if (document.body) document.body.classList.add('cb-battle-active');
@@ -9656,7 +9713,8 @@
     if (ds) ds.classList.add('hidden');
     if (typeof global.setBG === 'function') global.setBG(customStage.bg || 'bg-battle');
     const customBgmType = b.bgmType || customStage.bgmType || 'battle';
-    ensureBattleBgmOnStart(customBgmType, customBgmType === 'duel' ? 'duel1' : null);
+    const customBgmKey = b.bgmKey || customStage.bgmKey || (customBgmType === 'duel' ? 'duel1' : null);
+    ensureBattleBgmOnStart(customBgmType, customBgmKey, b);
     const bs = ensureBattleDOM();
     resetBattleDomForStart(bs);
     if (typeof document !== 'undefined' && document.body) document.body.classList.add('cb-battle-active');
@@ -9783,6 +9841,8 @@
     return {
       id: b.id,
       battleInstanceId: b.battleInstanceId || 0,
+      bgmType: b.bgmType || (b.stageCfg && b.stageCfg.bgmType) || 'battle',
+      bgmKey: b.bgmKey || null,
       title: b.stageCfg ? b.stageCfg.title : '',
       chapter: b.stageCfg ? b.stageCfg.chapter : '',
       turn: b.turn,

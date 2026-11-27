@@ -2776,11 +2776,13 @@
     sacred: '星霜圣域 · Sacred',
     emotional: '深情余韵 · Emotional',
     romantic: '炉火余韵 · Romantic',
+    flight: '星夜自由 · Starry Flight',
     sad: '寒夜离歌 · Melancholic',
     suspense: '冰晶推演 · Suspense',
     upset: '暗潮骤起 · Upset',
     duel: '学院切磋 · Sparring Duel',
     battle: '交锋决意 · Battle & Tension',
+    finale_boss: '终章史诗 · Dragon Finale',
     comedy_medium: '轻快趣景 · Comical (中速)',
     comedy_fast: '喧闹追逐 · Comical (疾速)'
   };
@@ -2800,6 +2802,7 @@
     sacred2: '冰晶宫殿 II',         // Music/Sacred 2.mp3
     emotional1: '霜月挽歌',         // Music/Emotional 1.mp3
     romantic: '炉火余韵',           // Music/Romantic.mp3
+    starry_flight: '星河乘风',      // Music/Story - Starry Flight.mp3
     sad1: '寒夜哀歌',               // Music/Melancholic & Sad 1.mp3
     suspense1: '冰晶复调',          // Music/Suspense - Investigation.mp3
     upset: '上锁书房',              // Music/Upset.mp3
@@ -2808,7 +2811,8 @@
     duel1: '学院剑舞 I',            // Music/Battle - Sparring Duel.mp3
     duel2: '演武晴锋 II',           // Music/Battle - Arena Lobby.mp3
     battle1: '锋刃交错 I',          // Music/Battle & Tension 1.mp3
-    battle2: '霜原决意 II'          // Music/Battle & Tension 2.mp3
+    battle2: '霜原决意 II',         // Music/Battle & Tension 2.mp3
+    boss_finale: '破冰终章'         // Music/Battle - Dragon Finale.mp3
   };
 
   // 音乐室副标题：直白标注适用场景与情绪用途
@@ -2826,6 +2830,7 @@
     sacred2: '礼拜堂 · 觉醒 · 七座山',
     emotional1: '离巢告别 · 冰融 · 双轨终幕',
     romantic: '海与贝壳 · 黄昏谈心 · 求婚',
+    starry_flight: '萤尾羊星河 · 乘风飞翔',
     sad1: '政变火夜 · 悲剧哀悼',
     suspense1: '血案推理 · 寒夜推演盘',
     upset: '暗潮对峙 · 地下酒窖 · 冰封峡谷',
@@ -2834,7 +2839,8 @@
     duel1: '姐妹切磋 · 学院比试战',
     duel2: '演武大厅 · 贵族试手',
     battle1: '魔兽遭遇 · 血案死斗 · 突围战',
-    battle2: '强敌二阶段 · Boss 压轴'
+    battle2: '强敌二阶段 · 宿命死斗',
+    boss_finale: '风神二阶段 · 终章斩龙史诗'
   };
 
   var BGM_MOOD_SCENE_FALLBACK = {
@@ -2846,11 +2852,13 @@
     sacred: '大礼堂与礼拜堂 · 庄严仪典',
     emotional: '离巢告别 · 冰融与深情终幕',
     romantic: '海与贝壳 · 黄昏谈心与告白',
+    flight: '萤尾羊星河 · 乘风飞翔',
     sad: '政变火夜 · 寒夜悲剧哀悼',
     suspense: '血案推理 · 寒夜推演盘',
     upset: '暗潮对峙 · 地下酒窖与峡谷危机',
     duel: '学院比试 · 演武大厅轻快切磋',
     battle: '生死实战 · 突围与强敌死斗',
+    finale_boss: '风神二阶段 · 终章斩龙史诗',
     comedy_medium: '微服私访 · 轻快诙谐日常',
     comedy_fast: '高速搞笑 · 追逐彩蛋'
   };
@@ -3285,11 +3293,15 @@
     if (preCodexBgmSnapshot) return;
     var gs = typeof document !== 'undefined' ? document.getElementById('game-screen') : null;
     var ts = typeof document !== 'undefined' ? document.getElementById('title-screen') : null;
+    var bs = typeof document !== 'undefined' ? document.getElementById('battle-screen') : null;
+    var ao = typeof document !== 'undefined' ? document.getElementById('arena-overlay') : null;
     var bgEl = typeof document !== 'undefined' ? document.getElementById('bg') : null;
     var st = getS();
     preCodexBgmSnapshot = {
       inGame: !!(gs && !gs.classList.contains('hidden')),
       onTitle: !!(ts && !ts.classList.contains('hidden')),
+      inBattle: !!(bs && !bs.classList.contains('hidden')),
+      inArena: !!(ao && !ao.classList.contains('hidden')),
       freeRoam: !!(st && st.freeRoam),
       phase: st ? st.phase : null,
       loc: st ? st.loc : null,
@@ -3305,7 +3317,8 @@
     codexPlayingTrack = null;
     codexAuditionDirty = false;
 
-    if (!snap || (!snap.inGame && snap.onTitle)) {
+    var hasActiveStage = !!(snap && (snap.inGame || snap.inBattle || snap.inArena));
+    if (!snap || (!hasActiveStage && snap.onTitle)) {
       var mutedNow = !!(root && typeof root.isMuted === 'function' && root.isMuted());
       if (!mutedNow && root && typeof root.bgmPlayTitle === 'function') {
         try { root.bgmPlayTitle({ fade: true }); return; } catch (e) {}
@@ -3314,7 +3327,7 @@
       return;
     }
 
-    if (!snap.inGame) {
+    if (!hasActiveStage) {
       callBgmStop();
       return;
     }

@@ -177,7 +177,8 @@ const BGM_FILES = {
   sacred1:'Music/Sacred 1.mp3',                           // 贵族纹章 I · 大礼堂/勇者之赐/仪典
   sacred2:'Music/Sacred 2.mp3',                           // 冰晶宫殿 II · 礼拜堂/觉醒/七座山
   battle1:'Music/Battle & Tension 1.mp3',                 // 锋刃交错 I · 魔兽遭遇/血案死斗/突围战
-  battle2:'Music/Battle & Tension 2.mp3',                 // 霜原决意 II · 强敌二阶段/Boss压轴
+  battle2:'Music/Battle & Tension 2.mp3',                 // 霜原决意 II · 强敌二阶段/宿命死斗
+  boss_finale:'Music/Battle - Dragon Finale.mp3',         // 破冰终章 · 风神二阶段/终章斩龙史诗
   duel1:'Music/Battle - Sparring Duel.mp3',               // 学院剑舞 I · 姐妹切磋/学院比试战
   duel2:'Music/Battle - Arena Lobby.mp3',                 // 演武晴锋 II · 演武大厅/贵族试手
   cheerful1:'Music/Cheerful 1.mp3',                       // 阳光集市 I · 集市小镇/花园/海滨
@@ -193,6 +194,7 @@ const BGM_FILES = {
   comedy_fast:'Music/Comical_fast-speed.mp3',             // 追风闹剧 · 高速搞笑/追逐彩蛋
   comedy_medium:'Music/Comical_medium-speed.mp3',         // 微服谐趣 · 微服私访/轻快诙谐
   romantic:'Music/Romantic.mp3',                          // 炉火余韵 · 海与贝壳/黄昏谈心/求婚
+  starry_flight:'Music/Story - Starry Flight.mp3',        // 星河乘风 · 萤尾羊星河/乘风飞翔高潮
   suspense1:'Music/Suspense - Investigation.mp3',         // 冰晶复调 · 血案推理/寒夜推演盘
   upset:'Music/Upset.mp3',                                // 上锁书房 · 暗潮对峙/地下酒窖/冰封峡谷
 };
@@ -205,6 +207,7 @@ const BGM_TRACK_GAIN = {
   relax2: 0.88,
   emotional1: 1.0,
   romantic: 1.0,
+  starry_flight: 0.92,
   sad1: 0.94,
   suspense1: 0.98,
   upset: 1.0,
@@ -219,7 +222,8 @@ const BGM_TRACK_GAIN = {
   duel1: 0.98,
   duel2: 0.98,
   battle1: 0.58,
-  battle2: 0.54,
+  battle2: 1.0,
+  boss_finale: 0.95,
 };
 let bgmEl = null;         // 当前 Audio 元素
 let bgmKey = null;        // 当前播放的曲目 key
@@ -275,6 +279,7 @@ function notifyBgmStateChange(){
 const BGM_GROUPS = {
   title:    ['title_overture'],
   battle:   ['battle1','battle2'],
+  finale_boss:['boss_finale'],
   duel:     ['duel1','duel2'],
   cheerful: ['cheerful1','cheerful2'],
   academy:  ['academy1','academy2'],
@@ -283,6 +288,7 @@ const BGM_GROUPS = {
   sacred:   ['sacred1','sacred2'],
   sad:      ['sad1'],
   emotional:['emotional1'],
+  flight:   ['starry_flight'],
   comedy_fast:['comedy_fast'],
   comedy_medium:['comedy_medium'],
   romantic:['romantic'],
@@ -687,8 +693,21 @@ function bgmLeaveArenaHub(returnToTitle){
   }
   bgmRestoreContext();
 }
-// 强敌二阶段切曲强化：在两首战斗曲之间平滑切换增强张力
-function bgmShiftBattlePhase2(){
+// 强敌二阶段/领主波次切曲强化：支持显式 preferKey（如 boss_finale / battle2）；默认优先升级至 battle2
+function bgmShiftBattlePhase2(preferKey){
+  if(preferKey && BGM_FILES[preferKey]){
+    const targetType = bgmResolveTypeForKey(preferKey) || 'battle';
+    bgmCurType = targetType;
+    const grp = BGM_GROUPS[targetType];
+    if(Array.isArray(grp)){
+      const gi = grp.indexOf(preferKey);
+      if(gi >= 0) bgmGroupIdx[targetType] = gi;
+    }
+    if(bgmKey !== preferKey){
+      bgmPlay(preferKey, { fade: true, type: targetType });
+    }
+    return;
+  }
   const targetKey = (bgmKey === 'battle2') ? 'battle1' : 'battle2';
   bgmCurType = 'battle';
   bgmGroupIdx.battle = targetKey === 'battle2' ? 1 : 0;
@@ -706,11 +725,15 @@ function bgmRestoreContext(){
       const curB = (typeof window !== 'undefined' && window.CombatEngine && typeof window.CombatEngine.getState === 'function')
         ? window.CombatEngine.getState()
         : null;
-      const bType = (curB && curB.bgmType) || 'battle';
-      if(bType === 'duel'){
+      const bKey = (curB && curB.bgmKey && BGM_FILES[curB.bgmKey]) ? curB.bgmKey : null;
+      const rawType = (curB && curB.bgmType) || (bKey ? bgmResolveTypeForKey(bKey) : null) || 'battle';
+      const bType = BGM_GROUPS[rawType] ? rawType : ((bKey && bgmResolveTypeForKey(bKey)) || 'battle');
+      if(bKey){
+        bgmPlayType(bType, { force: false, fade: true, key: bKey });
+      } else if(bType === 'duel'){
         bgmPlayType('duel', { force: false, fade: true, key: 'duel1' });
       } else {
-        bgmPlayType('battle', { force: false, fade: true });
+        bgmPlayType(bType, { force: false, fade: true });
       }
       return;
     }
@@ -8365,6 +8388,7 @@ if(typeof window !== 'undefined'){
   window.bgmEnterArenaHub = typeof bgmEnterArenaHub !== 'undefined' ? bgmEnterArenaHub : ()=>{};
   window.bgmLeaveArenaHub = typeof bgmLeaveArenaHub !== 'undefined' ? bgmLeaveArenaHub : ()=>{};
   window.bgmShiftBattlePhase2 = typeof bgmShiftBattlePhase2 !== 'undefined' ? bgmShiftBattlePhase2 : ()=>{};
+  window.bgmResolveTypeForKey = typeof bgmResolveTypeForKey !== 'undefined' ? bgmResolveTypeForKey : ()=>null;
   window.bgmEndBattle = typeof bgmEndBattle !== 'undefined' ? bgmEndBattle : ()=>{};
   window.bgmIsActuallyPlaying = typeof bgmIsActuallyPlaying !== 'undefined' ? bgmIsActuallyPlaying : ()=>false;
   window.bgmGetState = typeof bgmGetState !== 'undefined' ? bgmGetState : ()=>({});

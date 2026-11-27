@@ -50,7 +50,9 @@ ok('兜底 → peaceful', t('bg-img-title bg-title','prologue')==='peaceful');
 // ---- ② 类型分组正确 ----
 const groups = win.BGM_GROUPS || {};
 ok('BGM_GROUPS 含 title（雪晶序曲）', Array.isArray(groups.title) && groups.title.includes('title_overture'));
-ok('BGM_GROUPS 含 battle', Array.isArray(groups.battle) && groups.battle.length>=1);
+ok('BGM_GROUPS 含 battle 两首（battle1/battle2）', Array.isArray(groups.battle) && groups.battle.length===2 && groups.battle.includes('battle1') && groups.battle.includes('battle2'));
+ok('BGM_GROUPS 含 finale_boss（boss_finale）', Array.isArray(groups.finale_boss) && groups.finale_boss.includes('boss_finale'));
+ok('BGM_GROUPS 含 flight（starry_flight）', Array.isArray(groups.flight) && groups.flight.includes('starry_flight'));
 ok('BGM_GROUPS 含 duel 两首（duel1/duel2）', Array.isArray(groups.duel) && groups.duel.length===2 && groups.duel.includes('duel1') && groups.duel.includes('duel2'));
 ok('BGM_GROUPS 含 suspense（suspense1）', Array.isArray(groups.suspense) && groups.suspense.includes('suspense1'));
 ok('BGM_GROUPS 含 sacred 两首', Array.isArray(groups.sacred) && groups.sacred.length===2);
@@ -75,9 +77,13 @@ ok('BGM_FILES.duel1 指向 Music/Battle - Sparring Duel.mp3', files.duel1 === 'M
 ok('Music/Battle - Sparring Duel.mp3 存在于磁盘', fs.existsSync(path.join(ROOT, 'Music/Battle - Sparring Duel.mp3')));
 ok('BGM_FILES.duel2 指向 Music/Battle - Arena Lobby.mp3', files.duel2 === 'Music/Battle - Arena Lobby.mp3');
 ok('Music/Battle - Arena Lobby.mp3 存在于磁盘', fs.existsSync(path.join(ROOT, 'Music/Battle - Arena Lobby.mp3')));
+ok('BGM_FILES.starry_flight 指向 Music/Story - Starry Flight.mp3', files.starry_flight === 'Music/Story - Starry Flight.mp3');
+ok('Music/Story - Starry Flight.mp3 存在于磁盘', fs.existsSync(path.join(ROOT, 'Music/Story - Starry Flight.mp3')));
+ok('BGM_FILES.boss_finale 指向 Music/Battle - Dragon Finale.mp3', files.boss_finale === 'Music/Battle - Dragon Finale.mp3');
+ok('Music/Battle - Dragon Finale.mp3 存在于磁盘', fs.existsSync(path.join(ROOT, 'Music/Battle - Dragon Finale.mp3')));
 
 // ---- ③ 所有曲目文件存在与响度平衡表覆盖 ----
-ok('BGM_FILES 定义全部 22 首曲目', Object.keys(files).length === 22);
+ok('BGM_FILES 定义全部 24 首曲目', Object.keys(files).length === 24);
 let missing = [];
 Object.entries(files).forEach(([key, fp])=>{
   if(!fs.existsSync(path.join(ROOT, fp))) missing.push(fp);
@@ -87,8 +93,10 @@ if(missing.length) missing.forEach(m=>console.log('    缺失: '+m));
 
 const trackGain = win.BGM_TRACK_GAIN || {};
 const missingGain = Object.keys(files).filter(k => !(typeof trackGain[k] === 'number' && trackGain[k] > 0 && trackGain[k] <= 1));
-ok('BGM_TRACK_GAIN 覆盖全部 22 首且增益在 (0, 1]', missingGain.length === 0);
+ok('BGM_TRACK_GAIN 覆盖全部 24 首且增益在 (0, 1]', missingGain.length === 0 && Object.keys(trackGain).length === 24);
 if(missingGain.length) console.log('    缺失或异常增益: ' + missingGain.join(', '));
+ok('批次 3 响度补偿精准：battle2 === 1.0, starry_flight === 0.92, boss_finale === 0.95',
+  trackGain.battle2 === 1.0 && trackGain.starry_flight === 0.92 && trackGain.boss_finale === 0.95);
 
 // ---- ④ 每个场景都必须显式配置 bgm（全覆盖，禁止依赖推断兜底）----
 const SCENES = win.SCENES || {};
@@ -105,11 +113,21 @@ const beachScene = SCENES.s_beach;
 ok('s_beach 开头保持 cheerful 且中段含 romantic 切曲',
   !!(beachScene && beachScene.bgm === 'cheerful' && Array.isArray(beachScene.lines) && beachScene.lines.some(ln => ln && ln.bgm === 'romantic')));
 
-// ---- ⑥ 播放器 Bug 1 / Bug 2 / Bug 3、覆层升级与 9 幕分级配乐回归守卫 ----
+// ---- ⑥ 播放器 Bug 1 / Bug 2 / Bug 3、覆层升级、强敌升调与 9 幕分级配乐回归守卫 ----
 // Bug 2：直接 bgmPlay(key) 反向同步 bgmCurType
 win.bgmPlay('battle1', { fade: false });
 const stAfterDirectPlay = win.bgmGetState();
 ok('Bug 2 修复：bgmPlay 直接播指定曲时同步更新 state.type', stAfterDirectPlay.key === 'battle1' && stAfterDirectPlay.type === 'battle');
+
+// 批次 3：bgmShiftBattlePhase2(preferKey) 默认升阶 battle2、显式 boss_finale 切 finale_boss
+win.bgmPlay('battle1', { fade: false });
+win.bgmShiftBattlePhase2();
+const stShiftDefault = win.bgmGetState();
+ok('bgmShiftBattlePhase2() 默认从 battle1 升阶至 battle2', stShiftDefault.key === 'battle2' && stShiftDefault.type === 'battle');
+win.bgmShiftBattlePhase2('boss_finale');
+const stShiftFinale = win.bgmGetState();
+ok('bgmShiftBattlePhase2("boss_finale") 切换至 boss_finale / finale_boss', stShiftFinale.key === 'boss_finale' && stShiftFinale.type === 'finale_boss');
+win.bgmStop(false);
 
 // Bug 1：bgmStop(false, { preserveContext: true }) 保留 sceneType 与 overlays
 win.bgmSceneStart('peaceful');
@@ -152,7 +170,7 @@ if (dedModal) {
 }
 win.bgmStop(false);
 
-// 典藏图鉴音乐室全量 22 首曲目渲染且零 undefined
+// 典藏图鉴音乐室全量 24 首曲目渲染且零 undefined
 if (win.VNUx && typeof win.VNUx.openCodexGallery === 'function') {
   win.VNUx.openCodexGallery('bgm');
   const bgmRows = Array.from(win.document.querySelectorAll('#codex-list .bgm-track-row'));
@@ -160,6 +178,8 @@ if (win.VNUx && typeof win.VNUx.openCodexGallery === 'function') {
   const hasSuspenseRow = !!win.document.querySelector('#codex-list [data-bgm-row="suspense1"]');
   const hasDuelRows = !!win.document.querySelector('#codex-list [data-bgm-row="duel1"]')
     && !!win.document.querySelector('#codex-list [data-bgm-row="duel2"]');
+  const hasBatch3Rows = !!win.document.querySelector('#codex-list [data-bgm-row="starry_flight"]')
+    && !!win.document.querySelector('#codex-list [data-bgm-row="boss_finale"]');
   const titleOf = k => {
     const el = win.document.querySelector(`#codex-list [data-bgm-row="${k}"] .bgm-track-title`);
     return el ? el.textContent.trim() : '';
@@ -177,15 +197,21 @@ if (win.VNUx && typeof win.VNUx.openCodexGallery === 'function') {
     && titleOf('sacred1') === '贵族纹章 I'
     && titleOf('romantic') === '炉火余韵'
     && titleOf('upset') === '上锁书房'
-    && titleOf('comedy_fast') === '追风闹剧';
-  ok('典藏图鉴音乐室渲染全部 22 首曲目且含 suspense1 / duel1 / duel2 且零 undefined',
-    bgmRows.length === 22 && !hasUndefined && hasSuspenseRow && hasDuelRows);
-  ok('典藏图鉴音乐室展示优雅文艺中文曲名与直白场景副标（双层命名同步）', literaryOk);
+    && titleOf('comedy_fast') === '追风闹剧'
+    && titleOf('battle2') === '霜原决意 II'
+    && subOf('battle2') === '强敌二阶段 · 宿命死斗'
+    && titleOf('starry_flight') === '星河乘风'
+    && subOf('starry_flight') === '萤尾羊星河 · 乘风飞翔'
+    && titleOf('boss_finale') === '破冰终章'
+    && subOf('boss_finale') === '风神二阶段 · 终章斩龙史诗';
+  ok('典藏图鉴音乐室渲染全部 24 首曲目且含 starry_flight / boss_finale 且零 undefined',
+    bgmRows.length === 24 && !hasUndefined && hasSuspenseRow && hasDuelRows && hasBatch3Rows);
+  ok('典藏图鉴音乐室展示优雅文艺中文曲名与直白场景副标（全 24 首双层命名同步）', literaryOk);
   const codexEl = win.document.getElementById('codex');
   if (codexEl) codexEl.classList.add('hidden');
 }
 
-// 9 幕 STAGE_CONFIGS 切磋(duel) vs 死斗(battle) 分级配置守卫
+// 9 幕 STAGE_CONFIGS 切磋(duel) vs 死斗(battle) 分级配置与强敌升调配置守卫
 const stages = (win.CombatEngine && win.CombatEngine.STAGES) || {};
 const DUEL_STAGE_IDS = ['beatrice_11', 'alice_9', 'aino_sparring', 'noelle_14'];
 const BATTLE_STAGE_IDS = ['rowan_graveyard', 'north_forest_hunt', 'hulan_beast_tide', 'turning_point_corridor', 'wind_god_eye'];
@@ -193,6 +219,10 @@ const duelStagesOk = DUEL_STAGE_IDS.every(id => stages[id] && stages[id].bgmType
 const battleStagesOk = BATTLE_STAGE_IDS.every(id => stages[id] && stages[id].bgmType === 'battle');
 ok('9 幕 STAGE_CONFIGS 分级正确：4 幕切磋为 duel、5 幕死斗为 battle',
   Object.keys(stages).length === 9 && duelStagesOk && battleStagesOk);
+ok('Act 09 wind_god_eye 配置 phase2BgmKey === "boss_finale"',
+  !!(stages.wind_god_eye && stages.wind_god_eye.phase2BgmKey === 'boss_finale'));
+ok('Act 07 hulan_beast_tide 配置 wave2BgmKey === "battle2"',
+  !!(stages.hulan_beast_tide && stages.hulan_beast_tide.wave2BgmKey === 'battle2'));
 
 const audioEl = win.document.getElementById('bgm-audio');
 if (audioEl) {
@@ -232,6 +262,81 @@ if (win.CombatEngine && typeof win.CombatEngine.startStage === 'function') {
   const stInBattle = win.bgmGetState();
   ok('Bug 3 修复：剧情已切 battle 且播放中，进死斗关 rowan_graveyard 不强行轮换至 battle2',
     stInBattle.type === 'battle' && stInBattle.key === 'battle1');
+  if (typeof win.CombatEngine.exitBattle === 'function') win.CombatEngine.exitBattle(false);
+
+  // Act 09 wind_god_eye 二阶段切 boss_finale + 音乐室试听后 bgmRestoreContext 精准恢复
+  win.bgmStop(false);
+  const bWind = win.CombatEngine.startStage('wind_god_eye', { headless: false, usePreset: true });
+  if (bWind && bWind.enemies && bWind.enemies[0] && typeof win.CombatEngine.triggerBossPhase2 === 'function') {
+    win.CombatEngine.triggerBossPhase2(bWind, bWind.enemies[0]);
+  }
+  const stWindP2 = win.bgmGetState();
+  const bsWindP2 = typeof win.CombatEngine.getBattleState === 'function' ? win.CombatEngine.getBattleState(bWind) : null;
+  ok('Act 09 风神·岚二阶段自动切入 boss_finale / finale_boss 并同步 battleState',
+    stWindP2.key === 'boss_finale' && stWindP2.type === 'finale_boss'
+    && !!(bWind && bWind.bgmKey === 'boss_finale' && bWind.bgmType === 'finale_boss')
+    && !!(bsWindP2 && bsWindP2.bgmKey === 'boss_finale' && bsWindP2.bgmType === 'finale_boss'));
+  // 模拟战斗中打开音乐室试听他曲后关闭恢复
+  win.bgmPlay('peaceful1', { fade: false });
+  win.bgmRestoreContext();
+  const stWindRestore = win.bgmGetState();
+  ok('Act 09 二阶段打开并关闭音乐室后 bgmRestoreContext 精准恢复 boss_finale',
+    stWindRestore.key === 'boss_finale' && stWindRestore.type === 'finale_boss');
+  if (typeof win.CombatEngine.exitBattle === 'function') win.CombatEngine.exitBattle(false);
+
+  // Act 08 turning_point_corridor 常规 Boss 二阶段切 battle2
+  win.bgmStop(false);
+  const bEast = win.CombatEngine.startStage('turning_point_corridor', { headless: false, usePreset: true });
+  if (bEast && Array.isArray(bEast.enemies)) {
+    const prevAssist8 = typeof win.CombatEngine.getAssistMode === 'function' ? win.CombatEngine.getAssistMode() : 'standard';
+    if (typeof win.CombatEngine.setAssistMode === 'function') win.CombatEngine.setAssistMode('off');
+    bEast.enemies.forEach((e, idx) => { e.hp = idx === bEast.enemies.length - 1 ? 1 : 0; e.shield = 0; });
+    bEast.targetIdx = bEast.enemies.length - 1;
+    bEast.ap = Math.max(bEast.ap || 0, 2);
+    if (typeof win.CombatEngine.useSkillById === 'function') {
+      win.CombatEngine.useSkillById('sword_1_basic', bEast.targetIdx, bEast);
+    }
+    if (typeof win.CombatEngine.setAssistMode === 'function') win.CombatEngine.setAssistMode(prevAssist8);
+  }
+  const stEastW2P1 = win.bgmGetState();
+  if (bEast && bEast.enemies && bEast.enemies[0] && typeof win.CombatEngine.triggerBossPhase2 === 'function') {
+    win.CombatEngine.triggerBossPhase2(bEast, bEast.enemies[0]);
+  }
+  const stEastP2 = win.bgmGetState();
+  ok('Act 08 东翼火廊 Wave 2 一阶段保持 battle1，半血二阶段觉醒自动切入 battle2',
+    !!(bEast && bEast.waveIdx === 1) && stEastW2P1.key === 'battle1'
+    && stEastP2.key === 'battle2' && stEastP2.type === 'battle'
+    && !!(bEast && bEast.bgmKey === 'battle2' && bEast.bgmType === 'battle'));
+  if (typeof win.CombatEngine.exitBattle === 'function') win.CombatEngine.exitBattle(false);
+
+  // Act 07 hulan_beast_tide Wave 1 -> Wave 2 领主降临自动切入 battle2 + 上下文恢复
+  win.bgmStop(false);
+  const bHulan = win.CombatEngine.startStage('hulan_beast_tide', { headless: false, usePreset: true });
+  const stHulanW1 = win.bgmGetState();
+  if (bHulan && Array.isArray(bHulan.enemies) && bHulan.enemies.length >= 3) {
+    const prevAssist7 = typeof win.CombatEngine.getAssistMode === 'function' ? win.CombatEngine.getAssistMode() : 'standard';
+    if (typeof win.CombatEngine.setAssistMode === 'function') win.CombatEngine.setAssistMode('off');
+    bHulan.enemies[0].hp = 0;
+    bHulan.enemies[1].hp = 0;
+    bHulan.enemies[2].hp = 1;
+    bHulan.enemies[2].shield = 0;
+    bHulan.targetIdx = 2;
+    bHulan.ap = Math.max(bHulan.ap || 0, 2);
+    if (typeof win.CombatEngine.useSkillById === 'function') {
+      win.CombatEngine.useSkillById('sword_2_cold_edge', 2, bHulan);
+    }
+    if (typeof win.CombatEngine.setAssistMode === 'function') win.CombatEngine.setAssistMode(prevAssist7);
+  }
+  const stHulanW2 = win.bgmGetState();
+  ok('Act 07 赫兰兽潮 Wave 1 为 battle1，进入 Wave 2 领主降临自动升调至 battle2',
+    stHulanW1.key === 'battle1'
+    && !!(bHulan && bHulan.waveIdx === 1 && bHulan.bgmKey === 'battle2' && bHulan.bgmType === 'battle')
+    && stHulanW2.key === 'battle2' && stHulanW2.type === 'battle');
+  win.bgmPlay('peaceful1', { fade: false });
+  win.bgmRestoreContext();
+  const stHulanRestore = win.bgmGetState();
+  ok('Act 07 Wave 2 打开并关闭音乐室后 bgmRestoreContext 精准恢复 battle2',
+    stHulanRestore.key === 'battle2' && stHulanRestore.type === 'battle');
   if (typeof win.CombatEngine.exitBattle === 'function') win.CombatEngine.exitBattle(false);
 }
 

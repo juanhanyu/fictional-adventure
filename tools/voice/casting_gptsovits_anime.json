@@ -4,10 +4,9 @@
   "purpose": "GPT-SoVITS v2ProPlus + 微调二次元全角色日语配音统一选角清单（25 套零撞车二次元/声优角色 + 100 条 3~10s 情绪参考音频 + SSOT 映射契约）",
   "engineSummary": {
     "totalProfiles": 25,
-    "finetunedProfiles": [
-      "sylvia"
-    ],
+    "finetunedProfiles": [],
     "v2ProPlusSvProfiles": [
+      "sylvia",
       "alice",
       "beatrice",
       "aino",
@@ -296,14 +295,13 @@
       "animeSource": "9-nine-そらいろそらうたそらのおと",
       "seiyuu": "种崎敦美 (Atsumi Tanezaki)",
       "voiceDirection": "清冷淡泊、略带懒散的银发冰系少女音；日常语速舒缓克制、少情绪起伏，吐槽精准简短，实战咏唱与独白沉静如雪原寒镜，绝不大喊大叫。",
-      "engineMode": "finetuned",
+      "engineMode": "v2ProPlus_sv",
       "weights": {
-        "version": "v1",
-        "repoId": "spaces/10086mea/GPT-SoVITS-NIMI_SORA",
-        "gptWeightUrl": "https://huggingface.co/spaces/10086mea/GPT-SoVITS-NIMI_SORA/resolve/main/9nine/nimi_sora/nimi_sora-e5.ckpt",
-        "gptAssetRelPath": "weights/sylvia/nimi_sora-e5.ckpt",
-        "sovitsWeightUrl": "https://huggingface.co/spaces/10086mea/GPT-SoVITS-NIMI_SORA/resolve/main/9nine/nimi_sora/nimi_sora_e100_s29900.pth",
-        "sovitsAssetRelPath": "weights/sylvia/nimi_sora_e100_s29900.pth"
+        "version": "v2ProPlus",
+        "repoId": "lj1995/GPT-SoVITS",
+        "gptPretrainedRelPath": "s1v3.ckpt",
+        "sovitsPretrainedRelPath": "v2Pro/s2Gv2ProPlus.pth",
+        "svPretrainedRelPath": "sv/pretrained_eres2netv2w24s4ep4.ckpt"
       },
       "defaultSlot": "calm",
       "emotionMap": {
@@ -366,15 +364,15 @@
       },
       "aux_ref_urls": [
         "https://huggingface.co/spaces/10086mea/GPT-SoVITS-NIMI_SORA/resolve/main/9nine/nimi_sora/reference_audio/sr0345.wav",
-        "https://huggingface.co/spaces/10086mea/GPT-SoVITS-NIMI_SORA/resolve/main/9nine/nimi_sora/reference_audio/sr1725.wav",
+        "https://huggingface.co/spaces/10086mea/GPT-SoVITS-NIMI_SORA/resolve/main/9nine/nimi_sora/reference_audio/sr0448.wav",
         "https://huggingface.co/spaces/10086mea/GPT-SoVITS-NIMI_SORA/resolve/main/9nine/nimi_sora/reference_audio/sr2517.wav",
-        "https://huggingface.co/spaces/10086mea/GPT-SoVITS-NIMI_SORA/resolve/main/9nine/nimi_sora/reference_audio/sr2527.wav"
+        "https://huggingface.co/spaces/10086mea/GPT-SoVITS-NIMI_SORA/resolve/main/9nine/nimi_sora/reference_audio/sr0044.wav"
       ],
       "aux_ref_rel_paths": [
         "refs/sylvia/calm.wav",
-        "refs/sylvia/serious.wav",
+        "refs/sylvia/serious_v2.wav",
         "refs/sylvia/soft.wav",
-        "refs/sylvia/retort.wav"
+        "refs/sylvia/retort_v2.wav"
       ],
       "refs": {
         "calm": {
@@ -388,11 +386,11 @@
         },
         "serious": {
           "slot": "serious",
-          "assetRelPath": "refs/sylvia/serious.wav",
-          "url": "https://huggingface.co/spaces/10086mea/GPT-SoVITS-NIMI_SORA/resolve/main/9nine/nimi_sora/reference_audio/sr1725.wav",
-          "prompt_text": "存在感を常にゼロにされちゃってる感じ。声をかけても、もう気づいてもらえない",
+          "assetRelPath": "refs/sylvia/serious_v2.wav",
+          "url": "https://huggingface.co/spaces/10086mea/GPT-SoVITS-NIMI_SORA/resolve/main/9nine/nimi_sora/reference_audio/sr0448.wav",
+          "prompt_text": "その基準は？ 意味が一致する言葉に置き換えられるなら、 名前はなにとなにが一致してんの？",
           "prompt_lang": "all_ja",
-          "duration_sec": 6.8368,
+          "duration_sec": 6.7207,
           "sample_rate": 35000
         },
         "soft": {
@@ -406,11 +404,11 @@
         },
         "retort": {
           "slot": "retort",
-          "assetRelPath": "refs/sylvia/retort.wav",
-          "url": "https://huggingface.co/spaces/10086mea/GPT-SoVITS-NIMI_SORA/resolve/main/9nine/nimi_sora/reference_audio/sr2527.wav",
-          "prompt_text": "そういう優しさいらない。ちゃんと起こしてくれる優しさが欲しかった",
+          "assetRelPath": "refs/sylvia/retort_v2.wav",
+          "url": "https://huggingface.co/spaces/10086mea/GPT-SoVITS-NIMI_SORA/resolve/main/9nine/nimi_sora/reference_audio/sr0044.wav",
+          "prompt_text": "あ、出た。また。ユーザー？ それ、なに？ 二人の造語？ それとも世界共通の言葉？",
           "prompt_lang": "all_ja",
-          "duration_sec": 4.8138,
+          "duration_sec": 6.1344,
           "sample_rate": 35000
         }
       }
@@ -497,25 +495,25 @@
         "neutral": "calm"
       },
       "aux_ref_urls": [
-        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Ganyu/Japanese/272825_audio.wav",
+        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Ganyu/Japanese/132781_audio.wav",
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Ganyu/Japanese/290998_audio.wav",
-        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Ganyu/Japanese/190038_audio.wav",
+        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Ganyu/Japanese/136043_audio.wav",
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Ganyu/Japanese/330852_audio.wav"
       ],
       "aux_ref_rel_paths": [
-        "refs/alice/soft.wav",
+        "refs/alice/soft_v2.wav",
         "refs/alice/calm.wav",
-        "refs/alice/cheerful.wav",
+        "refs/alice/cheerful_v2.wav",
         "refs/alice/serious.wav"
       ],
       "refs": {
         "soft": {
           "slot": "soft",
-          "assetRelPath": "refs/alice/soft.wav",
-          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Ganyu/Japanese/272825_audio.wav",
-          "prompt_text": "庭で雨の音を聞くのが好きですが、少し贅沢すぎますね。",
+          "assetRelPath": "refs/alice/soft_v2.wav",
+          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Ganyu/Japanese/132781_audio.wav",
+          "prompt_text": "それは、あなたの父もその苦労と幸せを過ごしてきたからでしょう。",
           "prompt_lang": "all_ja",
-          "duration_sec": 6.4053,
+          "duration_sec": 7.136,
           "sample_rate": 48000
         },
         "calm": {
@@ -529,11 +527,11 @@
         },
         "cheerful": {
           "slot": "cheerful",
-          "assetRelPath": "refs/alice/cheerful.wav",
-          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Ganyu/Japanese/190038_audio.wav",
-          "prompt_text": "はい！それでは、一番適した種を探してまいりますね。",
+          "assetRelPath": "refs/alice/cheerful_v2.wav",
+          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Ganyu/Japanese/136043_audio.wav",
+          "prompt_text": "しかし、あなたと一緒に育てた野菜なら、きっと自分を制御できると思います！",
           "prompt_lang": "all_ja",
-          "duration_sec": 5.6067,
+          "duration_sec": 7.4467,
           "sample_rate": 48000
         },
         "serious": {
@@ -632,25 +630,25 @@
         "wink": "energetic"
       },
       "aux_ref_urls": [
-        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Navia/Japanese/219813_audio.wav",
+        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Navia/Japanese/147638_audio.wav",
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Navia/Japanese/118166_audio.wav",
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Navia/Japanese/17594_audio.wav",
-        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Navia/Japanese/14249_audio.wav"
+        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Navia/Japanese/180405_audio.wav"
       ],
       "aux_ref_rel_paths": [
-        "refs/beatrice/energetic.wav",
+        "refs/beatrice/energetic_v2.wav",
         "refs/beatrice/calm.wav",
         "refs/beatrice/soft.wav",
-        "refs/beatrice/serious.wav"
+        "refs/beatrice/serious_v2.wav"
       ],
       "refs": {
         "energetic": {
           "slot": "energetic",
-          "assetRelPath": "refs/beatrice/energetic.wav",
-          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Navia/Japanese/219813_audio.wav",
-          "prompt_text": "なあに、その言い草。棘薔薇の会の会長はいつだって果敢で行き届いてるでしょ？",
+          "assetRelPath": "refs/beatrice/energetic_v2.wav",
+          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Navia/Japanese/147638_audio.wav",
+          "prompt_text": "じゃ、すべてうまく行くよう祈ってるよ。またね、相棒！",
           "prompt_lang": "all_ja",
-          "duration_sec": 6.9067,
+          "duration_sec": 4.4427,
           "sample_rate": 48000
         },
         "calm": {
@@ -673,11 +671,11 @@
         },
         "serious": {
           "slot": "serious",
-          "assetRelPath": "refs/beatrice/serious.wav",
-          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Navia/Japanese/14249_audio.wav",
-          "prompt_text": "法律に則って、相応の措置をとって。棘薔薇の会からは何のコメントもないから。",
+          "assetRelPath": "refs/beatrice/serious_v2.wav",
+          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Navia/Japanese/180405_audio.wav",
+          "prompt_text": "相手の名前を教えて。着るものがなくなる感覚を、「棘薔薇の会」がみっちり教えてあげるから！",
           "prompt_lang": "all_ja",
-          "duration_sec": 7.0667,
+          "duration_sec": 7.5267,
           "sample_rate": 48000
         }
       }
@@ -767,13 +765,13 @@
       "aux_ref_urls": [
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Clorinde/Japanese/222030_audio.wav",
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Clorinde/Japanese/131837_audio.wav",
-        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Clorinde/Japanese/194939_audio.wav",
+        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Clorinde/Japanese/294350_audio.wav",
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Clorinde/Japanese/120887_audio.wav"
       ],
       "aux_ref_rel_paths": [
         "refs/aino/serious.wav",
         "refs/aino/calm.wav",
-        "refs/aino/soft.wav",
+        "refs/aino/soft_v2.wav",
         "refs/aino/cheerful.wav"
       ],
       "refs": {
@@ -797,11 +795,11 @@
         },
         "soft": {
           "slot": "soft",
-          "assetRelPath": "refs/aino/soft.wav",
-          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Clorinde/Japanese/194939_audio.wav",
-          "prompt_text": "…付き合ってもいい。ところで、タオルはある？髪を拭きたいんだ。",
+          "assetRelPath": "refs/aino/soft_v2.wav",
+          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Clorinde/Japanese/294350_audio.wav",
+          "prompt_text": "あの方はほとんど休暇を取ったことがない。半日空けただけでも賞賛すべき大進歩だろう。",
           "prompt_lang": "all_ja",
-          "duration_sec": 5.9573,
+          "duration_sec": 7.1813,
           "sample_rate": 48000
         },
         "cheerful": {
@@ -825,9 +823,9 @@
         "jilan"
       ],
       "lineCount": 53,
-      "animeCharacter": "九条裟罗 (Kujou Sara)",
+      "animeCharacter": "宵宫 (Yoimiya)",
       "animeSource": "原神 (Genshin Impact)",
-      "seiyuu": "濑户麻沙美 (Asami Seto)",
+      "seiyuu": "植田佳奈 (Kana Ueda)",
       "voiceDirection": "飒爽利落、大嗓门直脾气的澄岚剑馆少女音；白日练剑吐槽老爹时两倍速干脆清脆，夜廊谈起空房钉孔与北上分别时流露藏不住的细腻热忱。",
       "engineMode": "v2ProPlus_sv",
       "weights": {
@@ -899,52 +897,52 @@
         "wink": "energetic"
       },
       "aux_ref_urls": [
-        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Kujou%20Sara/Japanese/16944_audio.wav",
-        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Kujou%20Sara/Japanese/19479_audio.wav",
-        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Kujou%20Sara/Japanese/211234_audio.wav",
-        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Kujou%20Sara/Japanese/185036_audio.wav"
+        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Yoimiya/Japanese/112806_audio.wav",
+        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Yoimiya/Japanese/10208_audio.wav",
+        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Yoimiya/Japanese/141092_audio.wav",
+        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Yoimiya/Japanese/147904_audio.wav"
       ],
       "aux_ref_rel_paths": [
-        "refs/jilan/energetic.wav",
-        "refs/jilan/calm.wav",
-        "refs/jilan/soft.wav",
-        "refs/jilan/serious.wav"
+        "refs/jilan/energetic_v2.wav",
+        "refs/jilan/calm_v2.wav",
+        "refs/jilan/soft_v2.wav",
+        "refs/jilan/serious_v2.wav"
       ],
       "refs": {
         "energetic": {
           "slot": "energetic",
-          "assetRelPath": "refs/jilan/energetic.wav",
-          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Kujou%20Sara/Japanese/16944_audio.wav",
-          "prompt_text": "今回の「陣前比武」、お前が抵抗軍を代表して出陣するというのはどうだ？",
+          "assetRelPath": "refs/jilan/energetic_v2.wav",
+          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Yoimiya/Japanese/112806_audio.wav",
+          "prompt_text": "わあ！フォンテーヌの建物って、みんな背が高うてでっかいんやな！",
           "prompt_lang": "all_ja",
-          "duration_sec": 5.688,
+          "duration_sec": 6.0707,
           "sample_rate": 48000
         },
         "calm": {
           "slot": "calm",
-          "assetRelPath": "refs/jilan/calm.wav",
-          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Kujou%20Sara/Japanese/19479_audio.wav",
-          "prompt_text": "だが、鳴神島と海祇島が友好関係を結んだ今、皆が友人だ。",
+          "assetRelPath": "refs/jilan/calm_v2.wav",
+          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Yoimiya/Japanese/10208_audio.wav",
+          "prompt_text": "なんか、流星雨の物語とおんなじ匂いがするな。",
           "prompt_lang": "all_ja",
-          "duration_sec": 6.1093,
+          "duration_sec": 4.5667,
           "sample_rate": 48000
         },
         "soft": {
           "slot": "soft",
-          "assetRelPath": "refs/jilan/soft.wav",
-          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Kujou%20Sara/Japanese/211234_audio.wav",
-          "prompt_text": "昼に休むという習慣はない。だがお前が休みたいと言うなら、待っていてやろう。",
+          "assetRelPath": "refs/jilan/soft_v2.wav",
+          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Yoimiya/Japanese/141092_audio.wav",
+          "prompt_text": "きっと時が深まるほど、この花火はあんたらの心で綺麗になっていくことやろ。",
           "prompt_lang": "all_ja",
-          "duration_sec": 6.0027,
+          "duration_sec": 5.8427,
           "sample_rate": 48000
         },
         "serious": {
           "slot": "serious",
-          "assetRelPath": "refs/jilan/serious.wav",
-          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Kujou%20Sara/Japanese/185036_audio.wav",
-          "prompt_text": "答えられなければ、それ相応の罰を受けてもらおう、覚悟はいいか？",
+          "assetRelPath": "refs/jilan/serious_v2.wav",
+          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Yoimiya/Japanese/147904_audio.wav",
+          "prompt_text": "ほなら、手伝ったる！ここの武器がぜ～んぶ完成したら、鉱石の加工をしてくれるってことやろ？",
           "prompt_lang": "all_ja",
-          "duration_sec": 5.4907,
+          "duration_sec": 6.7027,
           "sample_rate": 48000
         }
       }
@@ -1036,13 +1034,13 @@
       "aux_ref_urls": [
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Wriothesley/Japanese/162612_audio.wav",
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Wriothesley/Japanese/111361_audio.wav",
-        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Wriothesley/Japanese/327646_audio.wav",
+        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Wriothesley/Japanese/172320_audio.wav",
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Wriothesley/Japanese/296975_audio.wav"
       ],
       "aux_ref_rel_paths": [
         "refs/ji/calm.wav",
         "refs/ji/serious.wav",
-        "refs/ji/warm.wav",
+        "refs/ji/warm_v2.wav",
         "refs/ji/playful.wav"
       ],
       "refs": {
@@ -1066,11 +1064,11 @@
         },
         "warm": {
           "slot": "warm",
-          "assetRelPath": "refs/ji/warm.wav",
-          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Wriothesley/Japanese/327646_audio.wav",
-          "prompt_text": "何しろ——こんなに素敵な場所が、あんたの帰りを待ってるんだから。",
+          "assetRelPath": "refs/ji/warm_v2.wav",
+          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Wriothesley/Japanese/172320_audio.wav",
+          "prompt_text": "食べ終わったかい？なら、居房エリアへ行って休むといい。明日は働かないといけないからな。",
           "prompt_lang": "all_ja",
-          "duration_sec": 6.2733,
+          "duration_sec": 8.3093,
           "sample_rate": 48000
         },
         "playful": {
@@ -1170,13 +1168,13 @@
       "aux_ref_urls": [
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Kamisato%20Ayaka/Japanese/127602_audio.wav",
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Kamisato%20Ayaka/Japanese/134568_audio.wav",
-        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Kamisato%20Ayaka/Japanese/179342_audio.wav",
+        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Kamisato%20Ayaka/Japanese/185877_audio.wav",
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Kamisato%20Ayaka/Japanese/155952_audio.wav"
       ],
       "aux_ref_rel_paths": [
         "refs/sophia/calm.wav",
         "refs/sophia/cheerful.wav",
-        "refs/sophia/soft.wav",
+        "refs/sophia/soft_v2.wav",
         "refs/sophia/serious.wav"
       ],
       "refs": {
@@ -1200,11 +1198,11 @@
         },
         "soft": {
           "slot": "soft",
-          "assetRelPath": "refs/sophia/soft.wav",
-          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Kamisato%20Ayaka/Japanese/179342_audio.wav",
-          "prompt_text": "貴方の手を…握ってもよろしいでしょうか？",
+          "assetRelPath": "refs/sophia/soft_v2.wav",
+          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Kamisato%20Ayaka/Japanese/185877_audio.wav",
+          "prompt_text": "今日ここで貴方がたと一緒にお祭りに参加できて、本当によかったです。",
           "prompt_lang": "all_ja",
-          "duration_sec": 4.744,
+          "duration_sec": 5.5827,
           "sample_rate": 48000
         },
         "serious": {
@@ -1302,13 +1300,13 @@
         "neutral": "calm"
       },
       "aux_ref_urls": [
-        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Nilou/Japanese/12175_audio.wav",
+        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Nilou/Japanese/10256_audio.wav",
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Nilou/Japanese/13221_audio.wav",
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Nilou/Japanese/113052_audio.wav",
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Nilou/Japanese/130257_audio.wav"
       ],
       "aux_ref_rel_paths": [
-        "refs/helena/calm.wav",
+        "refs/helena/calm_v2.wav",
         "refs/helena/cheerful.wav",
         "refs/helena/soft.wav",
         "refs/helena/serious.wav"
@@ -1316,11 +1314,11 @@
       "refs": {
         "calm": {
           "slot": "calm",
-          "assetRelPath": "refs/helena/calm.wav",
-          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Nilou/Japanese/12175_audio.wav",
-          "prompt_text": "みんな、ありがとう。みんなの応援のおかげで、私もだいぶ心が落ち着いたよ。",
+          "assetRelPath": "refs/helena/calm_v2.wav",
+          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Nilou/Japanese/10256_audio.wav",
+          "prompt_text": "だって、私たちが掴めるのは、今この瞬間の「選択」だけだもん。",
           "prompt_lang": "all_ja",
-          "duration_sec": 7.0307,
+          "duration_sec": 5.3507,
           "sample_rate": 48000
         },
         "cheerful": {
@@ -1844,25 +1842,25 @@
         "neutral": "calm"
       },
       "aux_ref_urls": [
-        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Venti/Japanese/158794_audio.wav",
+        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Venti/Japanese/1027_audio.wav",
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Venti/Japanese/151181_audio.wav",
-        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Venti/Japanese/1170_audio.wav",
+        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Venti/Japanese/106425_audio.wav",
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Venti/Japanese/170524_audio.wav"
       ],
       "aux_ref_rel_paths": [
-        "refs/fengshen/calm.wav",
+        "refs/fengshen/calm_v2.wav",
         "refs/fengshen/cheerful.wav",
-        "refs/fengshen/soft.wav",
+        "refs/fengshen/soft_v2.wav",
         "refs/fengshen/serious.wav"
       ],
       "refs": {
         "calm": {
           "slot": "calm",
-          "assetRelPath": "refs/fengshen/calm.wav",
-          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Venti/Japanese/158794_audio.wav",
-          "prompt_text": "たとえ心が乱れていても、風が吹けば冷静に考えられる。",
+          "assetRelPath": "refs/fengshen/calm_v2.wav",
+          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Venti/Japanese/1027_audio.wav",
+          "prompt_text": "じゃあ、真実の物語を演奏したら、信じてくれる？",
           "prompt_lang": "all_ja",
-          "duration_sec": 5.648,
+          "duration_sec": 4.8147,
           "sample_rate": 48000
         },
         "cheerful": {
@@ -1876,11 +1874,11 @@
         },
         "soft": {
           "slot": "soft",
-          "assetRelPath": "refs/fengshen/soft.wav",
-          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Venti/Japanese/1170_audio.wav",
-          "prompt_text": "木々のすき間から流れる風は心地よく、ボクの好きな匂いがする…",
+          "assetRelPath": "refs/fengshen/soft_v2.wav",
+          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Venti/Japanese/106425_audio.wav",
+          "prompt_text": "公園で休んでいる人のほとんどは上機嫌だから、落ち着いてボクの歌を聞いてくれるんだ。",
           "prompt_lang": "all_ja",
-          "duration_sec": 5.1893,
+          "duration_sec": 5.8627,
           "sample_rate": 48000
         },
         "serious": {
@@ -3344,13 +3342,13 @@
       "aux_ref_urls": [
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Diluc/Japanese/8733_audio.wav",
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Diluc/Japanese/133228_audio.wav",
-        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Diluc/Japanese/408037_audio.wav",
+        "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Diluc/Japanese/325360_audio.wav",
         "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Diluc/Japanese/116254_audio.wav"
       ],
       "aux_ref_rel_paths": [
         "refs/npc_knight_m/serious.wav",
         "refs/npc_knight_m/calm.wav",
-        "refs/npc_knight_m/warm.wav",
+        "refs/npc_knight_m/warm_v2.wav",
         "refs/npc_knight_m/playful.wav"
       ],
       "refs": {
@@ -3374,11 +3372,11 @@
         },
         "warm": {
           "slot": "warm",
-          "assetRelPath": "refs/npc_knight_m/warm.wav",
-          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Diluc/Japanese/408037_audio.wav",
-          "prompt_text": "自分の道を信じてさえいれば、天気が晴れか雨かなんてどうでもいいんだよ。",
+          "assetRelPath": "refs/npc_knight_m/warm_v2.wav",
+          "url": "https://huggingface.co/datasets/AquaV/genshin-voices-separated/resolve/main/Diluc/Japanese/325360_audio.wav",
+          "prompt_text": "このドリンクには名前がなくてね。レシピを変えたからには、元の名前は使えない。",
           "prompt_lang": "all_ja",
-          "duration_sec": 6.1613,
+          "duration_sec": 7.1467,
           "sample_rate": 48000
         },
         "playful": {

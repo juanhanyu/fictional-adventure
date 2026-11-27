@@ -58,12 +58,36 @@ import numpy as np
 import requests
 from requests.adapters import HTTPAdapter
 
+SHORT_EDGE_TRIM_AF = "silenceremove=start_periods=1:start_threshold=-55dB:start_silence=0.06"
+
 EDGE_TRIM_AF = (
     "silenceremove=start_periods=1:start_threshold=-55dB:start_silence=0.08,"
     "areverse,"
-    "silenceremove=start_periods=1:start_threshold=-55dB:start_silence=0.22,"
+    "silenceremove=start_periods=1:start_threshold=-58dB:start_silence=0.25,"
     "areverse"
 )
+
+EXPRESSIVE_SLOTS = frozenset({"energetic", "cheerful", "retort", "playful"})
+EXPRESSIVE_EMOS = frozenset({
+    "angry",
+    "battle",
+    "cheerful",
+    "combat",
+    "cry",
+    "energetic",
+    "excited",
+    "happy",
+    "panic",
+    "playful",
+    "proud",
+    "retort",
+    "shocked",
+    "shout",
+    "smug",
+    "surprised",
+    "tease",
+    "urgent",
+})
 
 RETRY_SCHEDULE = [
     {"attempt": 1, "temperature": 0.80, "top_p": 0.92, "top_k": 15, "seed_base": -1, "split_override": None},
@@ -83,6 +107,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--script", required=True, help="Path to tools/voice/script_jp_master.json")
     p.add_argument("--casting", required=True, help="Path to tools/voice/casting_gptsovits_anime.json")
     p.add_argument("--out-dir", required=True, help="Output root directory (audioPath is resolved under out-dir)")
+    p.add_argument(
+        "--retake-plan",
+        default="",
+        help="Optional path to tools/voice/retake_v2_plan.json for targeted retake synthesis",
+    )
+    p.add_argument(
+        "--takes",
+        type=int,
+        choices=(1, 2),
+        default=1,
+        help="Number of takes per line (1=standard audioPath, 2=differentiated Take 1 & Take 2 under retake2x/)",
+    )
     p.add_argument(
         "--ids",
         default="",
@@ -126,28 +162,205 @@ JP_G2P_LEXICON_FIXES: tuple[tuple[str, str], ...] = (
     ("聖級", "せいきゅう"),
     ("乱葬崗", "らんそうこう"),
     ("蘇秦の文字で「嵐」", "そしんの文字で「らん」"),
+    ("ヘラン", "へらん"),
 )
 
 
 def clean_spoken_jp_text(raw_jp: str) -> str:
-    """Strip stray markup, leading ellipses/punctuation, internal multi-ellipses, apply G2P fixes, and ensure terminal punctuation."""
+    """Strip stray markup, normalize dashes & ヘラン, apply G2P fixes, and ensure terminal punctuation."""
     s = str(raw_jp or "")
     s = BRACKET_TAG_RE.sub("", s)
     s = XML_TAG_RE.sub("", s)
     s = s.replace("\r\n", " ").replace("\n", " ")
+    s = re.sub(r"[―—]{2,}", "、", s)
     s = re.sub(r"[ \t\u3000]+", " ", s).strip()
-    s = re.sub(r"^[….\u3000\s、，・〜～ー\-]+", "", s)
+    s = re.sub(r"^[….\u3000\s、，・〜～ー\-―—]+", "", s)
     s = re.sub(r"[….]{2,}", "、", s)
     for src, dst in JP_G2P_LEXICON_FIXES:
         if src in s:
             s = s.replace(src, dst)
-    s = s.strip()
+    s = re.sub(r"、{2,}", "、", s).strip()
     if not s:
         return ""
     s = re.sub(r"^([^。！？]{1,4})。(?=\S)", r"\1、", s)
     if s[-1] not in "。！？♪":
         s += "。"
     return s
+
+
+def clean_retake_tts_text(raw_tts: str) -> str:
+    """Minimal safe whitespace/dash cleanup for pre-verified retake plan tts_text (never overrides verified kana)."""
+    s = str(raw_tts or "")
+    s = BRACKET_TAG_RE.sub("", s)
+    s = XML_TAG_RE.sub("", s)
+    s = s.replace("\r\n", " ").replace("\n", " ")
+    s = re.sub(r"[―—]{2,}", "、", s)
+    s = s.replace("ヘラン", "へらん")
+    s = re.sub(r"[ \t\u3000]+", " ", s).strip()
+    s = re.sub(r"^[….\u3000\s、，・〜～ー\-―—]+", "", s)
+    s = re.sub(r"、{2,}", "、", s).strip()
+    if not s:
+        return ""
+    if s[-1] not in "。！？♪":
+        s += "。"
+    return s
+
+
+def load_retake_plan(plan_path: Path) -> tuple[list[str], dict[str, dict[str, Any]]]:
+    """Load retake_v2_plan.json supporting entries as list[dict] or dict[voiceId, dict]."""
+    raw = json.loads(plan_path.read_text(encoding="utf-8"))
+    entries_raw = raw.get("entries") if isinstance(raw, dict) else raw
+    ordered_ids: list[str] = []
+    by_vid: dict[str, dict[str, Any]] = {}
+    if isinstance(entries_raw, list):
+        for ent in entries_raw:
+            if not isinstance(ent, dict):
+                continue
+            vid = str(ent.get("voiceId") or ent.get("id") or "").strip()
+            if vid and vid not in by_vid:
+                ordered_ids.append(vid)
+                by_vid[vid] = ent
+    elif isinstance(entries_raw, dict):
+        for vid, ent in entries_raw.items():
+            if isinstance(ent, dict):
+                v = str(ent.get("voiceId") or vid).strip()
+                if v and v not in by_vid:
+                    ordered_ids.append(v)
+                    by_vid[v] = ent
+    else:
+        raise ValueError(f"Unsupported retake plan format in {plan_path}: expected 'entries' list or dict")
+    return ordered_ids, by_vid
+
+
+def resolve_audio_rel_stem(line: dict[str, Any]) -> str:
+    """Resolve audioRelPath stem (e.g. 'story/s_start/s_start__beatrice__609115c1') from a script line."""
+    rel = str(line.get("audioRelPath") or "").replace("\\", "/").lstrip("/")
+    if not rel:
+        audio_path = str(line.get("audioPath") or "").replace("\\", "/").lstrip("/")
+        if audio_path.startswith("assets/voice/"):
+            rel = audio_path[len("assets/voice/") :]
+        else:
+            rel = audio_path
+    if rel.lower().endswith(".mp3"):
+        rel = rel[:-4]
+    elif "." in Path(rel).name:
+        rel = rel.rsplit(".", 1)[0]
+    return rel
+
+
+def resolve_valid_slot(requested: str | None, fallback_slot: str, profile: dict[str, Any]) -> str:
+    """Validate requested ref slot against profile['refs']; if invalid, fall back to profile defaultSlot."""
+    valid_slots = list((profile.get("refs") or {}).keys())
+    valid_set = set(valid_slots)
+    default_slot = str(profile.get("defaultSlot") or (valid_slots[0] if valid_slots else ""))
+    if default_slot not in valid_set and valid_slots:
+        default_slot = valid_slots[0]
+
+    req = str(requested or "").strip()
+    if req:
+        if req in valid_set:
+            return req
+        return default_slot
+    if fallback_slot in valid_set:
+        return fallback_slot
+    return default_slot
+
+
+def select_secondary_slot(primary_slot: str, profile: dict[str, Any]) -> str:
+    """Pick an alternate slot for Take 2 when no explicit slot_take2 is supplied."""
+    valid_slots = list((profile.get("refs") or {}).keys())
+    default_slot = str(profile.get("defaultSlot") or (valid_slots[0] if valid_slots else ""))
+    if primary_slot != default_slot and default_slot in valid_slots:
+        return default_slot
+    for preferred in ("warm", "soft", "cheerful", "energetic", "serious", "playful", "calm", "retort"):
+        if preferred in valid_slots and preferred != primary_slot:
+            return preferred
+    for s in valid_slots:
+        if s != primary_slot:
+            return s
+    return primary_slot
+
+
+def is_expressive_take(plan_entry: dict[str, Any] | None, line: dict[str, Any], slot: str, text: str) -> bool:
+    """Determine whether a take should use expressive temperature/pacing parameters."""
+    if plan_entry is not None and "expressive" in plan_entry:
+        return bool(plan_entry["expressive"])
+    if slot in EXPRESSIVE_SLOTS:
+        return True
+    emo = str(line.get("emo") or "").strip().lower()
+    if emo in EXPRESSIVE_EMOS:
+        return True
+    return ("！" in text) or ("!" in text)
+
+
+def build_take_schedule(take_idx: int, takes_count: int, expressive: bool, vid_hash: int) -> list[dict[str, Any]]:
+    """Build 2-attempt sampling schedule: standard for --takes 1, differentiated Steady/Expressive for --takes 2."""
+    if takes_count <= 1:
+        return [
+            {
+                "attempt": 1,
+                "temperature": 0.80,
+                "top_p": 0.92,
+                "top_k": 15,
+                "speed_factor": 1.0,
+                "seed": -1,
+                "split_override": None,
+            },
+            {
+                "attempt": 2,
+                "temperature": 0.65,
+                "top_p": 0.85,
+                "top_k": 10,
+                "speed_factor": 1.0,
+                "seed": int(1337 + vid_hash),
+                "split_override": "cut5",
+            },
+        ]
+
+    if take_idx == 1:
+        # Take 1 (Steady Studio Anchor)
+        return [
+            {
+                "attempt": 1,
+                "temperature": 0.78 if expressive else 0.72,
+                "top_p": 0.88,
+                "top_k": 12,
+                "speed_factor": 1.0,
+                "seed": int(10007 + vid_hash),
+                "split_override": None,
+            },
+            {
+                "attempt": 2,
+                "temperature": 0.66 if expressive else 0.64,
+                "top_p": 0.84,
+                "top_k": 10,
+                "speed_factor": 1.0,
+                "seed": int(20011 + vid_hash),
+                "split_override": "cut5",
+            },
+        ]
+
+    # Take 2 (Expressive Alternate)
+    return [
+        {
+            "attempt": 1,
+            "temperature": 0.98 if expressive else 0.92,
+            "top_p": 0.96,
+            "top_k": 20,
+            "speed_factor": 1.04 if expressive else 0.98,
+            "seed": int(50021 + vid_hash),
+            "split_override": None,
+        },
+        {
+            "attempt": 2,
+            "temperature": 0.84 if expressive else 0.78,
+            "top_p": 0.90,
+            "top_k": 15,
+            "speed_factor": 1.02 if expressive else 0.98,
+            "seed": int(60029 + vid_hash),
+            "split_override": "cut5",
+        },
+    ]
 
 
 def normalize_prompt_text(raw_prompt: str) -> str:
@@ -595,7 +808,9 @@ def master_wav_to_mp3(
     """
     Studio FFmpeg single-pass mastering (supports both 3-arg (audio_np, sr, out_mp3_path)
     and 4-arg (audio_i16, sr, est_trimmed_dur, target_mp3)):
-      - Leading & trailing silence trim ONLY via double-areverse (never stop_periods=-1!)
+      - When raw_dur < 2.6s: leading-edge silence trim ONLY (no areverse tail trim) to preserve
+        short phrase final consonants/particles.
+      - When raw_dur >= 2.6s: gentle double-areverse edge trim (-58dB / 250ms tail room).
       - EBU R128 loudnorm=I=-16:TP=-1.5:LRA=11 for clips >= 0.8s
       - Exact -3.0 dBFS peak normalize fallback when duration < 0.8s
       - Output: 32000 Hz, mono, libmp3lame -q:a 1, atomic thread-safe rename
@@ -606,9 +821,10 @@ def master_wav_to_mp3(
     else:
         pcm_i16 = arr.astype(np.int16, copy=False)
 
+    raw_dur = pcm_i16.size / float(sr)
     if target_mp3 is None:
         out_mp3 = Path(est_trimmed_dur)
-        est_dur = pcm_i16.size / float(sr)
+        est_dur = raw_dur
     else:
         out_mp3 = Path(target_mp3)
         est_dur = float(est_trimmed_dur)
@@ -617,10 +833,12 @@ def master_wav_to_mp3(
     peak_norm_ratio = max(float(np.max(np.abs(pcm_i16.astype(np.int32)))) / 32768.0, 1e-4)
     peak_dbfs = 20.0 * math.log10(peak_norm_ratio)
     gain_to_minus3db = max(-12.0, min(24.0, -3.0 - peak_dbfs))
-    peak_af = f"{EDGE_TRIM_AF},volume={gain_to_minus3db:.2f}dB,alimiter=limit=-1.5dB:level=false"
-    loudnorm_af = f"{EDGE_TRIM_AF},loudnorm=I=-16:TP=-1.5:LRA=11"
 
-    use_loudnorm = est_dur >= 0.80 and (pcm_i16.size / float(sr)) >= 0.80
+    trim_af = SHORT_EDGE_TRIM_AF if raw_dur < 2.6 else EDGE_TRIM_AF
+    peak_af = f"{trim_af},volume={gain_to_minus3db:.2f}dB,alimiter=limit=-1.5dB:level=false"
+    loudnorm_af = f"{trim_af},loudnorm=I=-16:TP=-1.5:LRA=11"
+
+    use_loudnorm = est_dur >= 0.80 and raw_dur >= 0.80
 
     with tempfile.TemporaryDirectory(prefix="gsv_master_") as tmp_dir:
         tmp_wav = Path(tmp_dir) / "raw.wav"
@@ -662,6 +880,47 @@ def master_wav_to_mp3(
 
         tmp_mp3.unlink(missing_ok=True)
         raise RuntimeError(f"FFmpeg mastering failed for {out_mp3}: {last_err}")
+
+
+def probe_audio_duration(audio_path: Path) -> float | None:
+    """Return duration in seconds via ffprobe, or None if unavailable."""
+    if not audio_path.is_file():
+        return None
+    try:
+        proc = subprocess.run(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration",
+                "-of",
+                "default=noprint_wrappers=1:nokey=1",
+                str(audio_path),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if proc.returncode == 0:
+            val = float(proc.stdout.strip())
+            if math.isfinite(val) and val > 0.0:
+                return round(val, 3)
+    except Exception:
+        pass
+    return None
+
+
+def _master_and_probe(
+    audio_i16: np.ndarray,
+    sr: int,
+    est_trimmed_dur: float,
+    target_mp3: Path,
+) -> tuple[int, str, float]:
+    size_bytes, mode_name = master_wav_to_mp3(audio_i16, sr, est_trimmed_dur, target_mp3)
+    probed = probe_audio_duration(target_mp3)
+    final_dur = probed if probed is not None else round(float(est_trimmed_dur), 3)
+    return size_bytes, mode_name, final_dur
 
 
 def clear_prompt_cache(tts_pipeline: Any) -> None:
@@ -789,7 +1048,7 @@ def patch_gsv_runtime(TTS_cls: Any) -> None:
                     def _patched_session_init(self: Any, decoder: Any, request: Any, *a: Any, **kw: Any) -> None:
                         if getattr(request, "max_decode_steps", None) is None and getattr(request, "x_lens", None) is not None:
                             max_x = int(request.x_lens.max().item())
-                            request.max_decode_steps = max(95, min(420, int(max_x * 3.0 + 48)))
+                            request.max_decode_steps = max(105, min(460, int(max_x * 3.2 + 55)))
                         _orig_fn(self, decoder, request, *a, **kw)
 
                     _patched_session_init._gsv_patched = True  # type: ignore[attr-defined]
@@ -833,6 +1092,7 @@ def main(argv: list[str] | None = None) -> int:
     t_global0 = time.perf_counter()
     cwd_initial = Path.cwd().resolve()
     args = parse_args(argv)
+    takes_count = int(args.takes)
 
     # CRITICAL #2: Resolve ALL paths to absolute Paths BEFORE os.chdir(gsv_root)!
     gsv_root = Path(args.gsv_root).expanduser().resolve()
@@ -840,6 +1100,7 @@ def main(argv: list[str] | None = None) -> int:
     script_path = Path(args.script).expanduser().resolve()
     casting_path = Path(args.casting).expanduser().resolve()
     out_dir = Path(args.out_dir).expanduser().resolve()
+    retake_plan_path = Path(args.retake_plan).expanduser().resolve() if args.retake_plan else None
     id_filter = load_id_filter(args.ids, cwd_initial)
 
     if args.qa_report:
@@ -855,25 +1116,57 @@ def main(argv: list[str] | None = None) -> int:
         raise FileNotFoundError(f"--script file does not exist: {script_path}")
     if not casting_path.is_file():
         raise FileNotFoundError(f"--casting file does not exist: {casting_path}")
+    if retake_plan_path is not None and not retake_plan_path.is_file():
+        raise FileNotFoundError(f"--retake-plan file does not exist: {retake_plan_path}")
 
     assets_dir.mkdir(parents=True, exist_ok=True)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load script & casting manifests
+    # Load script, casting, and optional retake plan manifests
     script_raw = json.loads(script_path.read_text(encoding="utf-8"))
     all_lines: list[dict[str, Any]] = (
         script_raw if isinstance(script_raw, list) else script_raw.get("lines") or script_raw.get("entries") or script_raw.get("items") or []
     )
+    by_vid: dict[str, dict[str, Any]] = {ln["voiceId"]: ln for ln in all_lines}
     casting = json.loads(casting_path.read_text(encoding="utf-8"))
     profiles: dict[str, dict[str, Any]] = casting["profiles"]
 
-    # Apply --ids and --limit filters
-    if id_filter is not None:
-        by_vid = {ln["voiceId"]: ln for ln in all_lines}
+    retake_plan_map: dict[str, dict[str, Any]] | None = None
+    if retake_plan_path is not None:
+        plan_ids, retake_plan_map = load_retake_plan(retake_plan_path)
+        if id_filter is not None:
+            plan_id_set = set(plan_ids)
+            seen_ids: set[str] = set()
+            target_ids: list[str] = []
+            for vid in id_filter:
+                if vid in plan_id_set and vid not in seen_ids:
+                    seen_ids.add(vid)
+                    target_ids.append(vid)
+        else:
+            target_ids = list(plan_ids)
+
+        selected_lines: list[dict[str, Any]] = []
+        missing_in_script: list[str] = []
+        for vid in target_ids:
+            ln = by_vid.get(vid)
+            if ln is None:
+                ent = retake_plan_map[vid]
+                if ent.get("audioPath") or ent.get("audioRelPath"):
+                    ln = dict(ent)
+                    ln.setdefault("voiceId", vid)
+                else:
+                    missing_in_script.append(vid)
+                    continue
+            selected_lines.append(ln)
+        if missing_in_script:
+            raise KeyError(
+                f"Retake plan voiceIds not found in script ({len(missing_in_script)}): {missing_in_script[:10]}"
+            )
+    elif id_filter is not None:
         missing_ids = [vid for vid in id_filter if vid not in by_vid]
         if missing_ids:
             raise KeyError(f"Requested --ids not found in script ({len(missing_ids)}): {missing_ids[:10]}")
-        seen_ids: set[str] = set()
+        seen_ids = set()
         selected_lines = []
         for vid in id_filter:
             if vid not in seen_ids:
@@ -885,44 +1178,142 @@ def main(argv: list[str] | None = None) -> int:
     if args.limit and args.limit > 0:
         selected_lines = selected_lines[: args.limit]
 
-    # Automatic resume filter (> 1500 bytes existing .mp3 skipped unless --overwrite)
+    retake2x_dir = out_dir / "retake2x"
+    retake2x_manifest_path = retake2x_dir / "retake2x_manifest.json"
+    existing_manifest: dict[str, Any] = {}
+    if takes_count == 2 and retake2x_manifest_path.is_file():
+        try:
+            loaded_m = json.loads(retake2x_manifest_path.read_text(encoding="utf-8"))
+            if isinstance(loaded_m, dict):
+                existing_manifest = loaded_m
+        except Exception:
+            existing_manifest = {}
+
+    # Build per-take synthesis items & automatic resume filter (> 1500 bytes existing .mp3 skipped unless --overwrite)
     todo_items: list[dict[str, Any]] = []
+    manifest_entries: dict[str, dict[str, Any]] = {}
+    resume_probe_tasks: list[tuple[str, str, Path]] = []
     skipped_resume = 0
+
     for ln in selected_lines:
-        rel_audio = str(ln["audioPath"]).replace("\\", "/").lstrip("/")
-        target_mp3 = out_dir / rel_audio
-        if not args.overwrite and target_mp3.is_file() and target_mp3.stat().st_size > 1500:
-            skipped_resume += 1
-            continue
-
-        pid = ln["profileId"]
+        vid = ln["voiceId"]
+        plan_entry = retake_plan_map.get(vid) if retake_plan_map is not None else None
+        override_pid = str(plan_entry.get("overrideProfileId") or "").strip() if plan_entry else ""
+        pid = override_pid or str(ln["profileId"])
         if pid not in profiles:
-            raise KeyError(f"Unknown profileId '{pid}' on voiceId '{ln['voiceId']}'")
+            raise KeyError(f"Unknown profileId '{pid}' on voiceId '{vid}'")
         prof = profiles[pid]
-        slot = route_emotion_slot(ln, prof)
-        todo_items.append({
-            "line": ln,
-            "profileId": pid,
-            "engineMode": prof["engineMode"],
-            "slot": slot,
-            "targetMp3": target_mp3,
-        })
 
+        if plan_entry is not None and str(plan_entry.get("tts_text") or "").strip():
+            tts_text = clean_retake_tts_text(plan_entry["tts_text"])
+        else:
+            tts_text = clean_spoken_jp_text(ln.get("jp_text", ""))
+
+        routed_slot = route_emotion_slot(ln, prof)
+        slot1 = resolve_valid_slot(plan_entry.get("slot_take1") if plan_entry else None, routed_slot, prof)
+
+        if takes_count == 1:
+            rel_audio = str(ln["audioPath"]).replace("\\", "/").lstrip("/")
+            target_mp3 = out_dir / rel_audio
+            if not args.overwrite and target_mp3.is_file() and target_mp3.stat().st_size > 1500:
+                skipped_resume += 1
+                continue
+            todo_items.append({
+                "line": ln,
+                "planEntry": plan_entry,
+                "profileId": pid,
+                "engineMode": prof["engineMode"],
+                "slot": slot1,
+                "takeIndex": 1,
+                "ttsText": tts_text,
+                "expressive": is_expressive_take(plan_entry, ln, slot1, tts_text),
+                "targetMp3": target_mp3,
+            })
+        else:
+            slot2 = resolve_valid_slot(
+                plan_entry.get("slot_take2") if plan_entry else None,
+                select_secondary_slot(slot1, prof),
+                prof,
+            )
+            rel_stem = resolve_audio_rel_stem(ln)
+            take1_rel = f"retake2x/{rel_stem}__take1.mp3"
+            take2_rel = f"retake2x/{rel_stem}__take2.mp3"
+            take1_mp3 = out_dir / take1_rel
+            take2_mp3 = out_dir / take2_rel
+
+            prev = existing_manifest.get(vid) if isinstance(existing_manifest.get(vid), dict) else {}
+            prev_dur1 = float(prev.get("take1Dur") or 0.0) if not args.overwrite else 0.0
+            prev_dur2 = float(prev.get("take2Dur") or 0.0) if not args.overwrite else 0.0
+            manifest_entries[vid] = {
+                "take1Path": take1_rel,
+                "take2Path": take2_rel,
+                "take1Dur": round(prev_dur1, 3),
+                "take2Dur": round(prev_dur2, 3),
+                "profileId": pid,
+                "slot1": slot1,
+                "slot2": slot2,
+                "ttsText": tts_text,
+            }
+
+            for take_idx, take_slot, take_mp3, dur_key in (
+                (1, slot1, take1_mp3, "take1Dur"),
+                (2, slot2, take2_mp3, "take2Dur"),
+            ):
+                if not args.overwrite and take_mp3.is_file() and take_mp3.stat().st_size > 1500:
+                    skipped_resume += 1
+                    if manifest_entries[vid][dur_key] <= 0.0:
+                        resume_probe_tasks.append((vid, dur_key, take_mp3))
+                    continue
+                todo_items.append({
+                    "line": ln,
+                    "planEntry": plan_entry,
+                    "profileId": pid,
+                    "engineMode": prof["engineMode"],
+                    "slot": take_slot,
+                    "takeIndex": take_idx,
+                    "ttsText": tts_text,
+                    "expressive": is_expressive_take(plan_entry, ln, take_slot, tts_text),
+                    "targetMp3": take_mp3,
+                })
+
+    def write_retake2x_manifest() -> None:
+        if takes_count != 2:
+            return
+        if resume_probe_tasks:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=4) as probe_pool:
+                futs = [
+                    (probe_pool.submit(probe_audio_duration, mp3_p), v_id, d_key)
+                    for v_id, d_key, mp3_p in resume_probe_tasks
+                ]
+                for pf, v_id, d_key in futs:
+                    dur_val = pf.result()
+                    if dur_val is not None:
+                        manifest_entries[v_id][d_key] = dur_val
+        retake2x_dir.mkdir(parents=True, exist_ok=True)
+        tmp_manifest = retake2x_manifest_path.with_name(f"{retake2x_manifest_path.name}.tmp.{os.getpid()}")
+        tmp_manifest.write_text(json.dumps(manifest_entries, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        os.replace(tmp_manifest, retake2x_manifest_path)
+
+    total_target_clips = len(selected_lines) * takes_count
     print(
-        f"[gsv-init] Script lines={len(all_lines)} | selected={len(selected_lines)} | "
+        f"[gsv-init] Script lines={len(all_lines)} | selected_lines={len(selected_lines)} | "
+        f"takes={takes_count} (target_clips={total_target_clips}) | "
         f"resume_skipped={skipped_resume} | to_synthesize={len(todo_items)}",
         flush=True,
     )
 
     if not todo_items:
+        write_retake2x_manifest()
         summary = {
             "status": "ok",
             "stats": {
                 "totalInScript": len(all_lines),
                 "totalSelected": len(selected_lines),
+                "takesPerLine": takes_count,
+                "totalTargetClips": total_target_clips,
                 "skippedResume": skipped_resume,
                 "toSynthesize": 0,
-                "succeeded": len(selected_lines),
+                "succeeded": skipped_resume,
                 "newlySynthesized": 0,
                 "qcWarnings": 0,
                 "failed": 0,
@@ -932,9 +1323,14 @@ def main(argv: list[str] | None = None) -> int:
             "warnings": [],
             "failures": [],
         }
+        if takes_count == 2:
+            summary["retake2xManifest"] = str(retake2x_manifest_path)
         qa_report_path.parent.mkdir(parents=True, exist_ok=True)
         qa_report_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        print(f"[gsv-done] All {len(selected_lines)} selected lines already synthesized on disk. Report: {qa_report_path}", flush=True)
+        print(
+            f"[gsv-done] All {total_target_clips} target clips already synthesized on disk. Report: {qa_report_path}",
+            flush=True,
+        )
         return 0
 
     # Download base + needed profile assets BEFORE initializing TTS
@@ -986,14 +1382,16 @@ def main(argv: list[str] | None = None) -> int:
     TTS.init_bert_weights = _skip_bert_weights
     patch_gsv_runtime(TTS)
 
-    # CRITICAL #6: Smart grouping — all "v2ProPlus_sv" profiles back-to-back (0 weight swaps across 24 chars),
-    # then "finetuned" profiles grouped by profileId (1 weight swap per finetuned char), sorted by slot within profile.
+    # CRITICAL #6: Smart cache-optimal grouping — all "v2ProPlus_sv" profiles back-to-back (0 weight swaps),
+    # then "finetuned" profiles grouped by profileId, then by take slot & takeIndex so prompt_cache & sv_cache
+    # stay ~95%+ hot across all takes!
     profile_order_index = {pid: idx for idx, pid in enumerate(profiles.keys())}
     todo_items.sort(
         key=lambda it: (
             0 if it["engineMode"] == "v2ProPlus_sv" else 1,
             profile_order_index.get(it["profileId"], 999),
             it["slot"],
+            it["takeIndex"],
             it["line"]["voiceId"],
         )
     )
@@ -1053,7 +1451,7 @@ def main(argv: list[str] | None = None) -> int:
     qc_warnings: list[dict[str, Any]] = []
     failures: list[dict[str, Any]] = []
     by_profile_done: collections.Counter[str] = collections.Counter()
-    mp3_futures: list[tuple[concurrent.futures.Future[tuple[int, str]], str, str, str, Path]] = []
+    mp3_futures: list[tuple[concurrent.futures.Future[tuple[int, str, float]], str, str, str, int, Path]] = []
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as mp3_pool:
         for idx, item in enumerate(todo_items, 1):
@@ -1061,6 +1459,7 @@ def main(argv: list[str] | None = None) -> int:
             vid: str = ln["voiceId"]
             pid: str = item["profileId"]
             slot: str = item["slot"]
+            take_idx: int = item["takeIndex"]
             target_mp3: Path = item["targetMp3"]
             prof = profiles[pid]
 
@@ -1097,9 +1496,12 @@ def main(argv: list[str] | None = None) -> int:
                     flush=True,
                 )
 
-            jp_clean = clean_spoken_jp_text(ln.get("jp_text", ""))
+            jp_clean = item["ttsText"]
             if not jp_clean:
-                failures.append({"voiceId": vid, "profileId": pid, "error": "empty_jp_text"})
+                fail_rec: dict[str, Any] = {"voiceId": vid, "profileId": pid, "error": "empty_jp_text"}
+                if takes_count > 1:
+                    fail_rec["take"] = take_idx
+                failures.append(fail_rec)
                 print(f"  [{idx}/{len(todo_items)}] FAIL {vid}: empty jp_text", flush=True)
                 continue
 
@@ -1111,18 +1513,18 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 aux_wav_paths = []
 
-            base_split = "cut3" if (jp_clean.count("。") >= 2 or len(jp_clean) > 48) else "cut0"
+            base_split = "cut3" if (jp_clean.count("。") >= 2 or len(jp_clean) > 42) else "cut0"
             vid_hash = zlib.crc32(vid.encode("utf-8")) & 0xFFFF
+            schedule = build_take_schedule(take_idx, takes_count, bool(item["expressive"]), vid_hash)
 
             best_candidate: dict[str, Any] | None = None
             chosen_attempt = 0
             last_exc: str = ""
             t_line0 = time.perf_counter()
 
-            for sched in RETRY_SCHEDULE:
+            for sched in schedule:
                 att_num = sched["attempt"]
                 split_method = sched["split_override"] or base_split
-                seed_val = -1 if sched["seed_base"] == -1 else int(sched["seed_base"] + vid_hash)
 
                 inputs = {
                     "text": jp_clean,
@@ -1136,9 +1538,9 @@ def main(argv: list[str] | None = None) -> int:
                     "temperature": sched["temperature"],
                     "text_split_method": split_method,
                     "batch_size": 8,
-                    "speed_factor": 1.0,
-                    "fragment_interval": 0.22,
-                    "seed": seed_val,
+                    "speed_factor": sched["speed_factor"],
+                    "fragment_interval": 0.18,
+                    "seed": sched["seed"],
                     "parallel_infer": True,
                     "repetition_penalty": 1.35,
                 }
@@ -1160,14 +1562,18 @@ def main(argv: list[str] | None = None) -> int:
                     last_exc = f"{type(exc).__name__}: {exc}"
                     clear_prompt_cache(tts_pipeline)
 
+            take_tag = f"[T{take_idx}] " if takes_count > 1 else ""
             if best_candidate is None:
-                failures.append({"voiceId": vid, "profileId": pid, "slot": slot, "error": last_exc or "all_attempts_failed"})
-                print(f"  [{idx}/{len(todo_items)}] FAIL {vid} ({pid}/{slot}): {last_exc}", flush=True)
+                fail_rec = {"voiceId": vid, "profileId": pid, "slot": slot, "error": last_exc or "all_attempts_failed"}
+                if takes_count > 1:
+                    fail_rec["take"] = take_idx
+                failures.append(fail_rec)
+                print(f"  [{idx}/{len(todo_items)}] FAIL {take_tag}{vid} ({pid}/{slot}): {last_exc}", flush=True)
                 continue
 
             if not best_candidate["qc_ok"]:
                 chosen_attempt = best_candidate["attempt"]
-                warn_entry = {
+                warn_entry: dict[str, Any] = {
                     "voiceId": vid,
                     "profileId": pid,
                     "slot": slot,
@@ -1176,39 +1582,48 @@ def main(argv: list[str] | None = None) -> int:
                     "rawDurSec": round(best_candidate["raw_dur"], 3),
                     "maxInternalSilenceSec": round(best_candidate["max_internal_silence"], 3),
                 }
+                if takes_count > 1:
+                    warn_entry["take"] = take_idx
                 qc_warnings.append(warn_entry)
                 print(
-                    f"  [WARN] {vid}: soft QC note on attempt {chosen_attempt} ({best_candidate['reason']})",
+                    f"  [WARN] {take_tag}{vid}: soft QC note on attempt {chosen_attempt} ({best_candidate['reason']})",
                     flush=True,
                 )
 
             fut = mp3_pool.submit(
-                master_wav_to_mp3,
+                _master_and_probe,
                 best_candidate["audio_np"].copy(),
                 best_candidate["sr"],
                 best_candidate["est_trimmed_dur"],
                 target_mp3,
             )
-            mp3_futures.append((fut, vid, pid, slot, target_mp3))
+            mp3_futures.append((fut, vid, pid, slot, take_idx, target_mp3))
             dt_line = time.perf_counter() - t_line0
             print(
-                f"  [{idx}/{len(todo_items)}] GPU-OK {vid} | {pid}:{slot} | att={chosen_attempt} | "
+                f"  [{idx}/{len(todo_items)}] GPU-OK {take_tag}{vid} | {pid}:{slot} | att={chosen_attempt} | "
                 f"dur={best_candidate['raw_dur']:.2f}s | gpu={dt_line:.2f}s (queued mp3)",
                 flush=True,
             )
 
         # Drain & verify all background FFmpeg mastering futures before exiting
         ffmpeg_errors: list[str] = []
-        for fut, vid, pid, slot, target_mp3 in mp3_futures:
+        for fut, vid, pid, slot, take_idx, target_mp3 in mp3_futures:
             try:
-                _mp3_bytes, _norm_mode = fut.result()
+                _mp3_bytes, _norm_mode, final_dur = fut.result()
                 newly_synthesized += 1
                 by_profile_done[pid] += 1
+                if takes_count == 2 and vid in manifest_entries:
+                    manifest_entries[vid][f"take{take_idx}Dur"] = round(float(final_dur), 3)
             except Exception as exc:
                 err_msg = f"{vid} ({target_mp3}): {exc}"
                 ffmpeg_errors.append(err_msg)
-                failures.append({"voiceId": vid, "profileId": pid, "slot": slot, "error": f"ffmpeg: {exc}"})
+                fail_rec = {"voiceId": vid, "profileId": pid, "slot": slot, "error": f"ffmpeg: {exc}"}
+                if takes_count > 1:
+                    fail_rec["take"] = take_idx
+                failures.append(fail_rec)
                 print(f"  [FFMPEG-FAIL] {err_msg}", flush=True)
+
+    write_retake2x_manifest()
 
     if ffmpeg_errors:
         raise RuntimeError(f"{len(ffmpeg_errors)} FFmpeg mastering future(s) failed; first: {ffmpeg_errors[0]}")
@@ -1221,6 +1636,8 @@ def main(argv: list[str] | None = None) -> int:
         "stats": {
             "totalInScript": len(all_lines),
             "totalSelected": len(selected_lines),
+            "takesPerLine": takes_count,
+            "totalTargetClips": total_target_clips,
             "skippedResume": skipped_resume,
             "toSynthesize": len(todo_items),
             "newlySynthesized": newly_synthesized,
@@ -1234,11 +1651,13 @@ def main(argv: list[str] | None = None) -> int:
         "warnings": qc_warnings,
         "failures": failures,
     }
+    if takes_count == 2:
+        summary["retake2xManifest"] = str(retake2x_manifest_path)
     qa_report_path.parent.mkdir(parents=True, exist_ok=True)
     qa_report_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     print(
-        f"\n[gsv-done] Completed in {total_elapsed:.1f}s | succeeded={total_succeeded}/{len(selected_lines)} "
+        f"\n[gsv-done] Completed in {total_elapsed:.1f}s | succeeded={total_succeeded}/{total_target_clips} "
         f"(new={newly_synthesized}, resumed={skipped_resume}) | warnings={len(qc_warnings)} | "
         f"failed={len(failures)} | weight_swaps={weight_swaps} | report={qa_report_path}",
         flush=True,

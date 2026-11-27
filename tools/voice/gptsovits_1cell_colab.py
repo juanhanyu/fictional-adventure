@@ -11,6 +11,7 @@ import signal
 import subprocess
 import sys
 import time
+import wave
 import zipfile
 from pathlib import Path
 
@@ -20,7 +21,7 @@ from pathlib import Path
 t_cell_start = time.perf_counter()
 DRIVE_MOUNT_POINT = Path("/content/drive")
 DRIVE_MYDRIVE = DRIVE_MOUNT_POINT / "MyDrive"
-DRIVE_CACHE_VOICE_DIR = DRIVE_MYDRIVE / "ojousama_gptsovits_cache" / "assets_voice"
+DRIVE_CACHE_VOICE_DIR = DRIVE_MYDRIVE / "ojousama_gptsovits_v2_cache" / "assets_voice"
 DRIVE_ZIP_PRIMARY = DRIVE_MYDRIVE / "ojousama_jp_voice_pack.zip"
 DRIVE_ZIP_GSV = DRIVE_MYDRIVE / "ojousama_jp_voice_pack_gptsovits.zip"
 
@@ -179,8 +180,9 @@ if not (GSV_DIR / "GPT_SoVITS" / "TTS_infer_pack" / "TTS.py").is_file():
 else:
     print(f"✅ 复用本地已存在的 GPT-SoVITS 引擎目录: {GSV_DIR}", flush=True)
 
-# 若云盘存在上一次中断留下的 GPT-SoVITS 断点缓存，先考回本地 SSD 以便秒级断点续传
+# 先彻底清空本地 assets/voice（防止同会话旧版中断残留的异常 MP3 污染），再从 v2 云盘断点目录恢复有效音频
 repo_voice_dir = REPO_DIR / "assets" / "voice"
+shutil.rmtree(repo_voice_dir, ignore_errors=True)
 repo_voice_dir.mkdir(parents=True, exist_ok=True)
 if drive_mounted and DRIVE_CACHE_VOICE_DIR.is_dir():
     restored = 0
@@ -193,16 +195,23 @@ if drive_mounted and DRIVE_CACHE_VOICE_DIR.is_dir():
                 shutil.copy2(cached_mp3, dst)
                 restored += 1
     if restored > 0:
-        print(f"♻️ 已从 Google Drive 恢复 {restored} 条已完成 MP3 至本地 SSD 断点续跑！", flush=True)
+        print(f"♻️ 已从 Google Drive (v2 cache) 恢复 {restored} 条已完成 MP3 至本地 SSD 断点续跑！", flush=True)
 
 # ==============================================================================
 # 5. 安装经实测验证的最小化 GPT-SoVITS 依赖集（零重装 Colab 原生 CUDA PyTorch）
 # ==============================================================================
 print("\n📦 [Step 4/7] 安装 GPT-SoVITS 最小验证依赖包...", flush=True)
 VERIFIED_PIP_PACKAGES = [
-    "torchcodec",
     "resampy",
     "soundfile",
+    "scipy",
+    "PyYAML",
+    "tqdm",
+    "requests",
+    "nltk",
+    "matplotlib",
+    "rich",
+    "loguru",
     "pyopenjtalk>=0.4.1",
     "fast_langdetect>=0.3.1",
     "split-lang",
@@ -235,6 +244,36 @@ run_stream(
         *VERIFIED_PIP_PACKAGES,
     ]
 )
+
+# 1 秒轻量探测 torchaudio.load（写入 0.1s /content/_ta_probe.wav），仅在返回非零时按需补装 torchcodec，避免无谓触发 torch 重解析
+_ta_probe_wav = CONTENT_ROOT / "_ta_probe.wav"
+try:
+    with wave.open(str(_ta_probe_wav), "wb") as _wf:
+        _wf.setnchannels(1)
+        _wf.setsampwidth(2)
+        _wf.setframerate(16000)
+        _wf.writeframes(b"\x00\x00" * 1600)
+    _ta_probe_rc = subprocess.run(
+        [sys.executable, "-c", f"import torchaudio; torchaudio.load({str(_ta_probe_wav)!r})"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    ).returncode
+    if _ta_probe_rc != 0:
+        print("🔧 探测到 torchaudio.load 需要 torchcodec 后端，正在按需安装 torchcodec ...", flush=True)
+        run_stream(
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "-q",
+                "--upgrade-strategy",
+                "only-if-needed",
+                "torchcodec",
+            ]
+        )
+finally:
+    _ta_probe_wav.unlink(missing_ok=True)
 
 # ==============================================================================
 # 6. 全量运行 1,276 条台词合成（智能分组零重复换模 + 3 档重试质检 + 双重静音精修）

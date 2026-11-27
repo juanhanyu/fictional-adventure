@@ -37,6 +37,8 @@ import argparse
 import collections
 import concurrent.futures
 import contextlib
+import gc
+import importlib
 import io
 import json
 import math
@@ -45,6 +47,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import wave
 import zlib
@@ -63,9 +66,8 @@ EDGE_TRIM_AF = (
 )
 
 RETRY_SCHEDULE = [
-    {"attempt": 1, "temperature": 0.85, "top_p": 0.95, "top_k": 15, "seed_base": 42, "split_override": None},
-    {"attempt": 2, "temperature": 0.72, "top_p": 0.90, "top_k": 12, "seed_base": 1337, "split_override": None},
-    {"attempt": 3, "temperature": 0.60, "top_p": 0.85, "top_k": 10, "seed_base": 9001, "split_override": "cut5"},
+    {"attempt": 1, "temperature": 0.80, "top_p": 0.92, "top_k": 15, "seed_base": -1, "split_override": None},
+    {"attempt": 2, "temperature": 0.65, "top_p": 0.85, "top_k": 10, "seed_base": 1337, "split_override": "cut5"},
 ]
 
 BRACKET_TAG_RE = re.compile(r"\[[^\]]*\]")
@@ -127,17 +129,111 @@ JP_G2P_LEXICON_FIXES: tuple[tuple[str, str], ...] = (
 )
 
 
-def clean_spoken_jp_text(jp_text: str) -> str:
-    """Strip any stray [...] or <...> markup from jp_text and apply surgical G2P fixes; NEVER pass drama3_input here."""
-    txt = str(jp_text or "")
-    txt = BRACKET_TAG_RE.sub("", txt)
-    txt = XML_TAG_RE.sub("", txt)
-    txt = txt.replace("\r\n", " ").replace("\n", " ")
-    txt = re.sub(r"[ \t\u3000]+", " ", txt).strip()
+def clean_spoken_jp_text(raw_jp: str) -> str:
+    """Strip stray markup, leading ellipses/punctuation, internal multi-ellipses, apply G2P fixes, and ensure terminal punctuation."""
+    s = str(raw_jp or "")
+    s = BRACKET_TAG_RE.sub("", s)
+    s = XML_TAG_RE.sub("", s)
+    s = s.replace("\r\n", " ").replace("\n", " ")
+    s = re.sub(r"[ \t\u3000]+", " ", s).strip()
+    s = re.sub(r"^[….\u3000\s、，・〜～ー\-]+", "", s)
+    s = re.sub(r"[….]{2,}", "、", s)
     for src, dst in JP_G2P_LEXICON_FIXES:
-        if src in txt:
-            txt = txt.replace(src, dst)
-    return txt
+        if src in s:
+            s = s.replace(src, dst)
+    s = s.strip()
+    if not s:
+        return ""
+    s = re.sub(r"^([^。！？]{1,4})。(?=\S)", r"\1、", s)
+    if s[-1] not in "。！？♪":
+        s += "。"
+    return s
+
+
+def normalize_prompt_text(raw_prompt: str) -> str:
+    """Normalize reference prompt_text: strip leading ellipses/commas/spaces and ensure terminal 。！？."""
+    p = re.sub(r"^[….、\u3000\s]+", "", str(raw_prompt or "")).strip()
+    if p and p[-1] not in "。！？":
+        p += "。"
+    return p
+
+
+def trim_reference_wav_inplace(wav_path: Path) -> None:
+    """
+    Trim leading/trailing silence below -46 dBFS (rms <= 164.0 in int16 scale) from reference WAVs
+    with 0.04s lead pad and 0.08s tail pad, clamped safely to [3.20s, 9.60s] and memoized via .wav.trimmed_v2.
+    """
+    wav_path = Path(wav_path)
+    marker = wav_path.with_suffix(".wav.trimmed_v2")
+    if marker.is_file():
+        return
+    if not wav_path.is_file():
+        return
+
+    with wave.open(str(wav_path), "rb") as wf:
+        ch = wf.getnchannels()
+        sw = wf.getsampwidth()
+        sr = wf.getframerate()
+        nframes = wf.getnframes()
+        raw_bytes = wf.readframes(nframes)
+
+    if sw != 2 or sr <= 0 or nframes <= 0 or ch < 1:
+        marker.touch()
+        return
+
+    pcm = np.frombuffer(raw_bytes, dtype=np.int16)
+    total_frames = pcm.size // ch
+    if total_frames <= 0:
+        marker.touch()
+        return
+    pcm_frames = pcm[: total_frames * ch].reshape(total_frames, ch)
+    mono_f32 = pcm_frames.astype(np.float32).mean(axis=1) if ch > 1 else pcm_frames[:, 0].astype(np.float32)
+
+    orig_dur = total_frames / float(sr)
+    frame_len = max(1, int(round(sr * 0.020)))
+    n_win = total_frames // frame_len
+    if n_win <= 0:
+        marker.touch()
+        return
+
+    framed = mono_f32[: n_win * frame_len].reshape(n_win, frame_len)
+    rms = np.sqrt(np.mean(framed * framed, axis=1))
+    active = np.flatnonzero(rms > 164.0)
+    if active.size == 0:
+        marker.touch()
+        return
+
+    lead_pad = int(round(sr * 0.04))
+    tail_pad = int(round(sr * 0.08))
+    s_idx = max(0, int(active[0]) * frame_len - lead_pad)
+    e_idx = min(total_frames, (int(active[-1]) + 1) * frame_len + tail_pad)
+
+    span_dur = (e_idx - s_idx) / float(sr)
+    if span_dur < 3.20:
+        target_dur = max(3.20, min(orig_dur, 3.35))
+        target_samples = min(total_frames, int(math.ceil(target_dur * sr)))
+        need = target_samples - (e_idx - s_idx)
+        if need > 0:
+            half = need // 2
+            new_s = max(0, s_idx - half)
+            new_e = min(total_frames, new_s + target_samples)
+            new_s = max(0, new_e - target_samples)
+            s_idx, e_idx = new_s, new_e
+
+    final_dur = (e_idx - s_idx) / float(sr)
+    if 3.20 <= final_dur <= 9.60 and (s_idx > 0 or e_idx < total_frames):
+        tmp_wav = wav_path.with_name(f"{wav_path.name}.trim.{os.getpid()}.wav")
+        try:
+            with wave.open(str(tmp_wav), "wb") as wf_out:
+                wf_out.setnchannels(ch)
+                wf_out.setsampwidth(2)
+                wf_out.setframerate(sr)
+                wf_out.writeframes(pcm_frames[s_idx:e_idx].astype("<i2", copy=False).tobytes())
+            os.replace(tmp_wav, wav_path)
+        finally:
+            tmp_wav.unlink(missing_ok=True)
+
+    marker.touch()
 
 
 def route_emotion_slot(line: dict[str, Any], profile: dict[str, Any]) -> str:
@@ -353,11 +449,18 @@ def ensure_assets_downloaded(
             else:
                 cached_cnt += 1
 
+    wav_targets = [t["dst"] for t in all_tasks if t["kind"] == "wav"]
+    for wav_dst in wav_targets:
+        trim_reference_wav_inplace(wav_dst)
+
     print(
         f"[gsv-assets] Ready in {time.perf_counter() - t0:.2f}s "
-        f"(downloaded={downloaded_cnt}, cached={cached_cnt}, total={len(all_tasks)})",
+        f"(downloaded={downloaded_cnt}, cached={cached_cnt}, trimmed_checked={len(wav_targets)}, total={len(all_tasks)})",
         flush=True,
     )
+
+
+download_required_assets = ensure_assets_downloaded
 
 
 def evaluate_waveform_qc(
@@ -453,8 +556,15 @@ def evaluate_waveform_qc(
         reasons.append(f"internal_silence({max_internal_sil:.2f}s>1.45s)")
         penalty += (max_internal_sil - 1.45) * 8.0
 
+    hard_ok = not (
+        peak_i16 <= 600
+        or raw_dur < min_dur
+        or raw_dur > max_dur * 1.35
+        or max_internal_sil > 2.5
+    )
+
     return {
-        "hard_ok": True,
+        "hard_ok": hard_ok,
         "qc_ok": len(reasons) == 0,
         "penalty": penalty,
         "reason": "; ".join(reasons) if reasons else "ok",
@@ -479,30 +589,43 @@ def write_pcm16_wav(wav_path: Path, audio_i16: np.ndarray, sr: int) -> None:
 def master_wav_to_mp3(
     audio_i16: np.ndarray,
     sr: int,
-    est_trimmed_dur: float,
-    target_mp3: Path,
+    est_trimmed_dur: float | Path,
+    target_mp3: Path | None = None,
 ) -> tuple[int, str]:
     """
-    Studio FFmpeg single-pass mastering:
+    Studio FFmpeg single-pass mastering (supports both 3-arg (audio_np, sr, out_mp3_path)
+    and 4-arg (audio_i16, sr, est_trimmed_dur, target_mp3)):
       - Leading & trailing silence trim ONLY via double-areverse (never stop_periods=-1!)
       - EBU R128 loudnorm=I=-16:TP=-1.5:LRA=11 for clips >= 0.8s
-      - Exact -3.0 dBFS peak normalize fallback when duration < 0.8s (since ebur128 loudnorm
-        behaves poorly on sub-0.8s interjections)
-      - Output: 32000 Hz, mono, libmp3lame -q:a 1, atomic rename
+      - Exact -3.0 dBFS peak normalize fallback when duration < 0.8s
+      - Output: 32000 Hz, mono, libmp3lame -q:a 1, atomic thread-safe rename
     """
-    target_mp3.parent.mkdir(parents=True, exist_ok=True)
-    peak_norm_ratio = max(float(np.max(np.abs(audio_i16.astype(np.int32)))) / 32768.0, 1e-4)
+    arr = np.asarray(audio_i16).reshape(-1)
+    if np.issubdtype(arr.dtype, np.floating):
+        pcm_i16 = np.clip(np.round(arr * 32767.0), -32768, 32767).astype(np.int16)
+    else:
+        pcm_i16 = arr.astype(np.int16, copy=False)
+
+    if target_mp3 is None:
+        out_mp3 = Path(est_trimmed_dur)
+        est_dur = pcm_i16.size / float(sr)
+    else:
+        out_mp3 = Path(target_mp3)
+        est_dur = float(est_trimmed_dur)
+
+    out_mp3.parent.mkdir(parents=True, exist_ok=True)
+    peak_norm_ratio = max(float(np.max(np.abs(pcm_i16.astype(np.int32)))) / 32768.0, 1e-4)
     peak_dbfs = 20.0 * math.log10(peak_norm_ratio)
     gain_to_minus3db = max(-12.0, min(24.0, -3.0 - peak_dbfs))
     peak_af = f"{EDGE_TRIM_AF},volume={gain_to_minus3db:.2f}dB,alimiter=limit=-1.5dB:level=false"
     loudnorm_af = f"{EDGE_TRIM_AF},loudnorm=I=-16:TP=-1.5:LRA=11"
 
-    use_loudnorm = est_trimmed_dur >= 0.80 and (audio_i16.size / float(sr)) >= 0.80
+    use_loudnorm = est_dur >= 0.80 and (pcm_i16.size / float(sr)) >= 0.80
 
     with tempfile.TemporaryDirectory(prefix="gsv_master_") as tmp_dir:
         tmp_wav = Path(tmp_dir) / "raw.wav"
-        write_pcm16_wav(tmp_wav, audio_i16, sr)
-        tmp_mp3 = target_mp3.with_name(f"{target_mp3.name}.tmp.{os.getpid()}.mp3")
+        write_pcm16_wav(tmp_wav, pcm_i16, sr)
+        tmp_mp3 = out_mp3.with_name(f"{out_mp3.name}.tmp.{os.getpid()}.{threading.get_ident()}.mp3")
         tmp_mp3.unlink(missing_ok=True)
 
         filter_candidates = [("loudnorm", loudnorm_af), ("peak_-3dB", peak_af)] if use_loudnorm else [("peak_-3dB", peak_af)]
@@ -533,12 +656,12 @@ def master_wav_to_mp3(
             ]
             proc = subprocess.run(cmd, capture_output=True, text=True)
             if proc.returncode == 0 and tmp_mp3.is_file() and tmp_mp3.stat().st_size > 400:
-                os.replace(tmp_mp3, target_mp3)
-                return target_mp3.stat().st_size, mode_name
+                os.replace(tmp_mp3, out_mp3)
+                return out_mp3.stat().st_size, mode_name
             last_err = proc.stderr.strip() or f"exit={proc.returncode}"
 
         tmp_mp3.unlink(missing_ok=True)
-        raise RuntimeError(f"FFmpeg mastering failed for {target_mp3}: {last_err}")
+        raise RuntimeError(f"FFmpeg mastering failed for {out_mp3}: {last_err}")
 
 
 def clear_prompt_cache(tts_pipeline: Any) -> None:
@@ -548,6 +671,162 @@ def clear_prompt_cache(tts_pipeline: Any) -> None:
     tts_pipeline.prompt_cache["refer_spec"] = []
     tts_pipeline.prompt_cache["prompt_semantic"] = None
     tts_pipeline.prompt_cache["prompt_text"] = None
+
+
+def patch_gsv_runtime(TTS_cls: Any) -> None:
+    """
+    Surgical runtime monkeypatches for GPT-SoVITS:
+      1. Disable per-line TTS.empty_cache() CUDA sync; skip set_seed(-1) TF32 clobbering.
+      2. Enable TF32 on Ampere+ GPUs (matmul & cudnn).
+      3. Fix GPT_SoVITS.Accel sample_naive in-place logits mutation, token-0 scatter bug, and top_p shift.
+      4. Cap T2SSession max_decode_steps dynamically by phoneme length instead of hardcoded 640 (25.90s).
+    """
+    import torch
+    import torch.nn.functional as F
+
+    if TTS_cls is not None:
+        TTS_cls.empty_cache = lambda self: None
+        tts_mod = sys.modules.get(getattr(TTS_cls, "__module__", ""))
+        if tts_mod is not None and hasattr(tts_mod, "set_seed") and not getattr(tts_mod.set_seed, "_gsv_patched", False):
+            _orig_set_seed = tts_mod.set_seed
+
+            def _fast_set_seed(seed: int) -> int:
+                s = int(seed)
+                if s == -1:
+                    torch.backends.cuda.matmul.allow_tf32 = True
+                    torch.backends.cudnn.allow_tf32 = True
+                    return -1
+                res = _orig_set_seed(s)
+                torch.backends.cuda.matmul.allow_tf32 = True
+                torch.backends.cudnn.allow_tf32 = True
+                return res
+
+            _fast_set_seed._gsv_patched = True  # type: ignore[attr-defined]
+            tts_mod.set_seed = _fast_set_seed  # type: ignore[attr-defined]
+
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+
+    for pkg_prefix in ("GPT_SoVITS.Accel.PyTorch.AR", "Accel.PyTorch.AR"):
+        try:
+            _sf = importlib.import_module(f"{pkg_prefix}.sample_funcs")
+            _st = importlib.import_module(f"{pkg_prefix}.structs")
+        except Exception:
+            continue
+
+        try:
+            def _make_clean_sampler(_sf_mod: Any) -> Any:
+                def _clean_sample_naive(
+                    logits: Any,
+                    valid_lens: Any,
+                    previous_tokens: Any,
+                    repetition_penalty: Any,
+                    temperature: Any,
+                    top_k: Any,
+                    top_p: Any,
+                ) -> Any:
+                    # Clone FIRST so runner.py:349 argmax_token inspects UNMUTATED raw logits for EOS (1024)
+                    logits = logits.clone()
+
+                    if torch.any(repetition_penalty != 1.0):
+                        bsz = logits.size(0)
+                        vocab_lim = logits.size(1)
+                        for b in range(bsz):
+                            rp_val = float(repetition_penalty[b].item())
+                            if rp_val == 1.0:
+                                continue
+                            vlen = int(valid_lens[b].item())
+                            if vlen <= 0:
+                                continue
+                            uniq = previous_tokens[b, :vlen].long().unique()
+                            uniq = uniq[(uniq >= 0) & (uniq < vocab_lim)]
+                            if uniq.numel() > 0:
+                                row_scores = logits[b, uniq]
+                                logits[b, uniq] = torch.where(
+                                    row_scores < 0,
+                                    row_scores * rp_val,
+                                    row_scores / rp_val,
+                                )
+
+                    greedy_mask = temperature <= 1e-5
+                    temp_mask = (~greedy_mask) & (temperature != 1.0)
+                    if torch.any(temp_mask):
+                        temp_div = torch.where(
+                            temp_mask,
+                            temperature.to(logits.dtype).clamp_min(1e-5),
+                            torch.ones_like(temperature, dtype=logits.dtype),
+                        )
+                        logits = logits / temp_div.unsqueeze(1)
+
+                    if torch.any(top_k < logits.size(1)):
+                        sorted_logits, _ = torch.sort(logits, descending=True, dim=-1)
+                        k_idx = (top_k.long() - 1).clamp(0, logits.size(1) - 1).unsqueeze(1)
+                        pivot = torch.gather(sorted_logits, dim=1, index=k_idx)
+                        logits = torch.where(logits < pivot, -float("Inf"), logits)
+
+                    if torch.any(top_p < 1.0):
+                        sorted_logits, sorted_indices = torch.sort(logits, descending=True, dim=-1)
+                        cum_probs = torch.cumsum(F.softmax(sorted_logits, dim=-1), dim=-1)
+                        sorted_indices_to_remove = cum_probs > top_p.to(cum_probs.dtype).unsqueeze(1)
+                        sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
+                        sorted_indices_to_remove[..., 0] = False
+                        indices_to_remove = torch.zeros_like(sorted_indices_to_remove).scatter(
+                            dim=1, index=sorted_indices, src=sorted_indices_to_remove
+                        )
+                        logits = logits.masked_fill(indices_to_remove, -float("Inf"))
+
+                    return _sf_mod.apply_sampling(logits, greedy_mask)
+
+                _clean_sample_naive._gsv_patched = True  # type: ignore[attr-defined]
+                return _clean_sample_naive
+
+            _sf.sample_naive.__call__ = staticmethod(_make_clean_sampler(_sf))
+
+            if not getattr(_st.T2SSession.__init__, "_gsv_patched", False):
+                _orig_session_init = _st.T2SSession.__init__
+
+                def _make_patched_session_init(_orig_fn: Any) -> Any:
+                    def _patched_session_init(self: Any, decoder: Any, request: Any, *a: Any, **kw: Any) -> None:
+                        if getattr(request, "max_decode_steps", None) is None and getattr(request, "x_lens", None) is not None:
+                            max_x = int(request.x_lens.max().item())
+                            request.max_decode_steps = max(95, min(420, int(max_x * 3.0 + 48)))
+                        _orig_fn(self, decoder, request, *a, **kw)
+
+                    _patched_session_init._gsv_patched = True  # type: ignore[attr-defined]
+                    return _patched_session_init
+
+                _st.T2SSession.__init__ = _make_patched_session_init(_orig_session_init)
+
+            try:
+                _rn = importlib.import_module(f"{pkg_prefix}.runner")
+                _rn.sample_naive = _sf.sample_naive
+                _rn.T2SSession = _st.T2SSession
+            except Exception:
+                pass
+        except Exception as exc:
+            print(f"[gsv-patch] Warning patching {pkg_prefix}: {exc}", flush=True)
+
+
+def wrap_sv_cache(tts_pipeline: Any, sv_cache_dict: dict[tuple[int, tuple[int, ...]], Any]) -> None:
+    """Memoize sv_model.compute_embedding3(audio_tensor) across lines within the same profile."""
+    sv_model = getattr(tts_pipeline, "sv_model", None)
+    if sv_model is None:
+        return
+    orig_fn = getattr(sv_model, "compute_embedding3", None)
+    if orig_fn is None or getattr(orig_fn, "_gsv_sv_cached", False):
+        return
+
+    def _cached_compute_embedding3(audio_tensor: Any) -> Any:
+        key = (int(audio_tensor.data_ptr()), tuple(audio_tensor.shape))
+        cached = sv_cache_dict.get(key)
+        if cached is not None:
+            return cached
+        emb = orig_fn(audio_tensor)
+        sv_cache_dict[key] = emb
+        return emb
+
+    _cached_compute_embedding3._gsv_sv_cached = True  # type: ignore[attr-defined]
+    sv_model.compute_embedding3 = _cached_compute_embedding3
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -696,7 +975,7 @@ def main(argv: list[str] | None = None) -> int:
     _ = LangSegmenter.getTexts("魔力増幅60％", "ja")
     print(f"[gsv-prewarm] Linguistic & G2P pre-warm completed in {time.perf_counter() - t_warm0:.2f}s", flush=True)
 
-    # CRITICAL #4: Zero-BERT Bypass (skip 1.3 GB chinese-roberta-wwm-ext-large for pure JA/EN)
+    # CRITICAL #4: Zero-BERT Bypass + Accel/TF32 runtime patches
     from TTS_infer_pack.TTS import TTS, TTS_Config
 
     def _skip_bert_weights(self: Any, base_path: str) -> None:
@@ -705,6 +984,7 @@ def main(argv: list[str] | None = None) -> int:
         self.bert_model = None
 
     TTS.init_bert_weights = _skip_bert_weights
+    patch_gsv_runtime(TTS)
 
     # CRITICAL #6: Smart grouping — all "v2ProPlus_sv" profiles back-to-back (0 weight swaps across 24 chars),
     # then "finetuned" profiles grouped by profileId (1 weight swap per finetuned char), sorted by slot within profile.
@@ -753,10 +1033,12 @@ def main(argv: list[str] | None = None) -> int:
         }
     }
 
+    sv_cache_dict: dict[tuple[int, tuple[int, ...]], Any] = {}
     t_model0 = time.perf_counter()
     with (contextlib.nullcontext() if args.verbose_gsv else contextlib.redirect_stdout(io.StringIO())):
         tts_config = TTS_Config(init_cfg)
         tts_pipeline = TTS(tts_config)
+    wrap_sv_cache(tts_pipeline, sv_cache_dict)
     current_weights = (first_gpt, first_sov)
     current_profile_id: str | None = None
     weight_swaps = 0
@@ -771,145 +1053,165 @@ def main(argv: list[str] | None = None) -> int:
     qc_warnings: list[dict[str, Any]] = []
     failures: list[dict[str, Any]] = []
     by_profile_done: collections.Counter[str] = collections.Counter()
+    mp3_futures: list[tuple[concurrent.futures.Future[tuple[int, str]], str, str, str, Path]] = []
 
-    for idx, item in enumerate(todo_items, 1):
-        ln = item["line"]
-        vid: str = ln["voiceId"]
-        pid: str = item["profileId"]
-        slot: str = item["slot"]
-        target_mp3: Path = item["targetMp3"]
-        prof = profiles[pid]
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as mp3_pool:
+        for idx, item in enumerate(todo_items, 1):
+            ln = item["line"]
+            vid: str = ln["voiceId"]
+            pid: str = item["profileId"]
+            slot: str = item["slot"]
+            target_mp3: Path = item["targetMp3"]
+            prof = profiles[pid]
 
-        # Weight swap only if crossing between v2ProPlus_sv and finetuned (or between two finetuned chars)
-        ver, want_gpt, want_sov = resolve_weights_for_profile(pid)
-        if (want_gpt, want_sov) != current_weights:
-            t_sw0 = time.perf_counter()
-            with (contextlib.nullcontext() if args.verbose_gsv else contextlib.redirect_stdout(io.StringIO())):
-                tts_pipeline.init_vits_weights(str(want_sov))
-                tts_pipeline.init_t2s_weights(str(want_gpt))
-            clear_prompt_cache(tts_pipeline)
-            current_weights = (want_gpt, want_sov)
-            current_profile_id = None
-            weight_swaps += 1
-            print(
-                f"[gsv-swap #{weight_swaps}] Switched weights -> {pid} ({ver}: {want_gpt.name} + {want_sov.name}) "
-                f"in {time.perf_counter() - t_sw0:.2f}s",
-                flush=True,
-            )
-
-        # Always clear prompt_cache when switching profiles!
-        if current_profile_id != pid:
-            clear_prompt_cache(tts_pipeline)
-            current_profile_id = pid
-            print(
-                f"[gsv-profile] >>> {pid} ({prof['animeCharacter']} / {prof['seiyuu']}, mode={prof['engineMode']})",
-                flush=True,
-            )
-
-        jp_clean = clean_spoken_jp_text(ln.get("jp_text", ""))
-        if not jp_clean:
-            failures.append({"voiceId": vid, "profileId": pid, "error": "empty_jp_text"})
-            print(f"  [{idx}/{len(todo_items)}] FAIL {vid}: empty jp_text", flush=True)
-            continue
-
-        ref_entry = prof["refs"][slot]
-        ref_wav_path = str((assets_dir / ref_entry["assetRelPath"]).resolve())
-        prompt_text = ref_entry["prompt_text"]
-        if prof["engineMode"] == "v2ProPlus_sv" or "Pro" in ver:
-            aux_wav_paths = [str((assets_dir / rel).resolve()) for rel in prof["aux_ref_rel_paths"]]
-        else:
-            aux_wav_paths = []
-
-        base_split = "cut0" if len(jp_clean) <= 72 else "cut1"
-        vid_hash = zlib.crc32(vid.encode("utf-8")) & 0xFFFF
-
-        best_candidate: dict[str, Any] | None = None
-        chosen_attempt = 0
-        last_exc: str = ""
-        t_line0 = time.perf_counter()
-
-        for sched in RETRY_SCHEDULE:
-            att_num = sched["attempt"]
-            split_method = sched["split_override"] or base_split
-            seed_val = int(sched["seed_base"] + vid_hash)
-
-            inputs = {
-                "text": jp_clean,
-                "text_lang": "all_ja",
-                "ref_audio_path": ref_wav_path,
-                "aux_ref_audio_paths": aux_wav_paths,
-                "prompt_text": prompt_text,
-                "prompt_lang": "all_ja",
-                "top_k": sched["top_k"],
-                "top_p": sched["top_p"],
-                "temperature": sched["temperature"],
-                "text_split_method": split_method,
-                "batch_size": 1,
-                "speed_factor": 1.0,
-                "fragment_interval": 0.3,
-                "seed": seed_val,
-                "parallel_infer": True,
-                "repetition_penalty": 1.35,
-            }
-
-            try:
-                buf = io.StringIO()
-                with (contextlib.nullcontext() if args.verbose_gsv else contextlib.redirect_stdout(buf)):
-                    sr, audio_np = next(tts_pipeline.run(inputs))
-                qc = evaluate_waveform_qc(audio_np, int(sr), len(jp_clean))
-                if qc["hard_ok"]:
-                    if best_candidate is None or qc["penalty"] < best_candidate["penalty"]:
-                        best_candidate = {**qc, "attempt": att_num}
-                    if qc["qc_ok"]:
-                        chosen_attempt = att_num
-                        best_candidate = {**qc, "attempt": att_num}
-                        break
-                else:
-                    last_exc = qc["reason"]
-            except Exception as exc:
-                last_exc = f"{type(exc).__name__}: {exc}"
+            # Weight swap only if crossing between v2ProPlus_sv and finetuned (or between two finetuned chars)
+            ver, want_gpt, want_sov = resolve_weights_for_profile(pid)
+            if (want_gpt, want_sov) != current_weights:
+                t_sw0 = time.perf_counter()
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                with (contextlib.nullcontext() if args.verbose_gsv else contextlib.redirect_stdout(io.StringIO())):
+                    tts_pipeline.init_vits_weights(str(want_sov))
+                    tts_pipeline.init_t2s_weights(str(want_gpt))
+                sv_cache_dict.clear()
+                wrap_sv_cache(tts_pipeline, sv_cache_dict)
                 clear_prompt_cache(tts_pipeline)
+                current_weights = (want_gpt, want_sov)
+                current_profile_id = None
+                weight_swaps += 1
+                print(
+                    f"[gsv-swap #{weight_swaps}] Switched weights -> {pid} ({ver}: {want_gpt.name} + {want_sov.name}) "
+                    f"in {time.perf_counter() - t_sw0:.2f}s",
+                    flush=True,
+                )
 
-        if best_candidate is None:
-            failures.append({"voiceId": vid, "profileId": pid, "slot": slot, "error": last_exc or "all_attempts_failed"})
-            print(f"  [{idx}/{len(todo_items)}] FAIL {vid} ({pid}/{slot}): {last_exc}", flush=True)
-            continue
+            # Always clear prompt_cache and sv_cache when switching profiles!
+            if current_profile_id != pid:
+                clear_prompt_cache(tts_pipeline)
+                sv_cache_dict.clear()
+                wrap_sv_cache(tts_pipeline, sv_cache_dict)
+                current_profile_id = pid
+                print(
+                    f"[gsv-profile] >>> {pid} ({prof['animeCharacter']} / {prof['seiyuu']}, mode={prof['engineMode']})",
+                    flush=True,
+                )
 
-        if not best_candidate["qc_ok"]:
-            chosen_attempt = best_candidate["attempt"]
-            warn_entry = {
-                "voiceId": vid,
-                "profileId": pid,
-                "slot": slot,
-                "attemptKept": chosen_attempt,
-                "reason": best_candidate["reason"],
-                "rawDurSec": round(best_candidate["raw_dur"], 3),
-                "maxInternalSilenceSec": round(best_candidate["max_internal_silence"], 3),
-            }
-            qc_warnings.append(warn_entry)
-            print(
-                f"  [WARN] {vid}: soft QC fallback kept attempt {chosen_attempt} ({best_candidate['reason']})",
-                flush=True,
+            jp_clean = clean_spoken_jp_text(ln.get("jp_text", ""))
+            if not jp_clean:
+                failures.append({"voiceId": vid, "profileId": pid, "error": "empty_jp_text"})
+                print(f"  [{idx}/{len(todo_items)}] FAIL {vid}: empty jp_text", flush=True)
+                continue
+
+            ref_entry = prof["refs"][slot]
+            ref_wav_path = str((assets_dir / ref_entry["assetRelPath"]).resolve())
+            prompt_text = normalize_prompt_text(ref_entry["prompt_text"])
+            if prof["engineMode"] == "v2ProPlus_sv" or "Pro" in ver:
+                aux_wav_paths = [str((assets_dir / rel).resolve()) for rel in prof["aux_ref_rel_paths"]]
+            else:
+                aux_wav_paths = []
+
+            base_split = "cut3" if (jp_clean.count("。") >= 2 or len(jp_clean) > 48) else "cut0"
+            vid_hash = zlib.crc32(vid.encode("utf-8")) & 0xFFFF
+
+            best_candidate: dict[str, Any] | None = None
+            chosen_attempt = 0
+            last_exc: str = ""
+            t_line0 = time.perf_counter()
+
+            for sched in RETRY_SCHEDULE:
+                att_num = sched["attempt"]
+                split_method = sched["split_override"] or base_split
+                seed_val = -1 if sched["seed_base"] == -1 else int(sched["seed_base"] + vid_hash)
+
+                inputs = {
+                    "text": jp_clean,
+                    "text_lang": "all_ja",
+                    "ref_audio_path": ref_wav_path,
+                    "aux_ref_audio_paths": aux_wav_paths,
+                    "prompt_text": prompt_text,
+                    "prompt_lang": "all_ja",
+                    "top_k": sched["top_k"],
+                    "top_p": sched["top_p"],
+                    "temperature": sched["temperature"],
+                    "text_split_method": split_method,
+                    "batch_size": 8,
+                    "speed_factor": 1.0,
+                    "fragment_interval": 0.22,
+                    "seed": seed_val,
+                    "parallel_infer": True,
+                    "repetition_penalty": 1.35,
+                }
+
+                try:
+                    buf = io.StringIO()
+                    with (contextlib.nullcontext() if args.verbose_gsv else contextlib.redirect_stdout(buf)):
+                        sr, audio_np = next(tts_pipeline.run(inputs))
+                    qc = evaluate_waveform_qc(audio_np, int(sr), len(jp_clean))
+                    if qc.get("peak_i16", 0) > 600 and (best_candidate is None or qc["penalty"] < best_candidate["penalty"]):
+                        best_candidate = {**qc, "audio_np": qc["audio_i16"], "attempt": att_num}
+                        chosen_attempt = att_num
+                    if qc["hard_ok"]:
+                        chosen_attempt = att_num
+                        best_candidate = {**qc, "audio_np": qc["audio_i16"], "attempt": att_num}
+                        break
+                    last_exc = qc["reason"]
+                except Exception as exc:
+                    last_exc = f"{type(exc).__name__}: {exc}"
+                    clear_prompt_cache(tts_pipeline)
+
+            if best_candidate is None:
+                failures.append({"voiceId": vid, "profileId": pid, "slot": slot, "error": last_exc or "all_attempts_failed"})
+                print(f"  [{idx}/{len(todo_items)}] FAIL {vid} ({pid}/{slot}): {last_exc}", flush=True)
+                continue
+
+            if not best_candidate["qc_ok"]:
+                chosen_attempt = best_candidate["attempt"]
+                warn_entry = {
+                    "voiceId": vid,
+                    "profileId": pid,
+                    "slot": slot,
+                    "attemptKept": chosen_attempt,
+                    "reason": best_candidate["reason"],
+                    "rawDurSec": round(best_candidate["raw_dur"], 3),
+                    "maxInternalSilenceSec": round(best_candidate["max_internal_silence"], 3),
+                }
+                qc_warnings.append(warn_entry)
+                print(
+                    f"  [WARN] {vid}: soft QC note on attempt {chosen_attempt} ({best_candidate['reason']})",
+                    flush=True,
+                )
+
+            fut = mp3_pool.submit(
+                master_wav_to_mp3,
+                best_candidate["audio_np"].copy(),
+                best_candidate["sr"],
+                best_candidate["est_trimmed_dur"],
+                target_mp3,
             )
-
-        try:
-            mp3_bytes, norm_mode = master_wav_to_mp3(
-                audio_i16=best_candidate["audio_i16"],
-                sr=best_candidate["sr"],
-                est_trimmed_dur=best_candidate["est_trimmed_dur"],
-                target_mp3=target_mp3,
-            )
-            newly_synthesized += 1
-            by_profile_done[pid] += 1
+            mp3_futures.append((fut, vid, pid, slot, target_mp3))
             dt_line = time.perf_counter() - t_line0
             print(
-                f"  [{idx}/{len(todo_items)}] OK {vid} | {pid}:{slot} | att={chosen_attempt} | "
-                f"dur={best_candidate['raw_dur']:.2f}s | {norm_mode} | {mp3_bytes / 1024:.1f}KB | {dt_line:.2f}s",
+                f"  [{idx}/{len(todo_items)}] GPU-OK {vid} | {pid}:{slot} | att={chosen_attempt} | "
+                f"dur={best_candidate['raw_dur']:.2f}s | gpu={dt_line:.2f}s (queued mp3)",
                 flush=True,
             )
-        except Exception as exc:
-            failures.append({"voiceId": vid, "profileId": pid, "slot": slot, "error": f"ffmpeg: {exc}"})
-            print(f"  [{idx}/{len(todo_items)}] FAIL {vid} (ffmpeg): {exc}", flush=True)
+
+        # Drain & verify all background FFmpeg mastering futures before exiting
+        ffmpeg_errors: list[str] = []
+        for fut, vid, pid, slot, target_mp3 in mp3_futures:
+            try:
+                _mp3_bytes, _norm_mode = fut.result()
+                newly_synthesized += 1
+                by_profile_done[pid] += 1
+            except Exception as exc:
+                err_msg = f"{vid} ({target_mp3}): {exc}"
+                ffmpeg_errors.append(err_msg)
+                failures.append({"voiceId": vid, "profileId": pid, "slot": slot, "error": f"ffmpeg: {exc}"})
+                print(f"  [FFMPEG-FAIL] {err_msg}", flush=True)
+
+    if ffmpeg_errors:
+        raise RuntimeError(f"{len(ffmpeg_errors)} FFmpeg mastering future(s) failed; first: {ffmpeg_errors[0]}")
 
     total_elapsed = time.perf_counter() - t_global0
     total_succeeded = skipped_resume + newly_synthesized

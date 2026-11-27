@@ -499,20 +499,34 @@
   function shouldShowSylviaHub(targetS) {
     var st = targetS || getS();
     if (!st || typeof document === 'undefined') return false;
-    if (!st.freeRoam) return false;
-    if (Number(st.ageY || 0) < 1) return false;
     var body = document.body;
     if (!body) return false;
+    var inRoamDialog = body.classList.contains('roam') && body.classList.contains('roam-dialog');
+    if (!st.freeRoam && !inRoamDialog) return false;
+    if (Number(st.ageY || 0) < 1) return false;
     if (
       body.classList.contains('ui-hidden') ||
       body.classList.contains('pov-hidden') ||
       body.classList.contains('cg-mode') ||
       body.classList.contains('stage-pre-system') ||
       body.classList.contains('stage-story') ||
-      body.classList.contains('stage-infant')
+      body.classList.contains('stage-infant') ||
+      body.classList.contains('cb-battle-active')
     ) {
       return false;
     }
+    var curSc = (typeof currentScene !== 'undefined' && currentScene)
+      ? currentScene
+      : (root && typeof root.currentScene !== 'undefined' ? root.currentScene : null);
+    var curChain = (typeof storyChain !== 'undefined' && storyChain)
+      ? storyChain
+      : (root && typeof root.getStoryChain === 'function' ? root.getStoryChain() : null);
+    if (curSc || curChain) return false;
+    if (!st.freeRoam && (st.phase === 'prologue' || (Array.isArray(st.storyPending) && st.storyPending.length > 0))) {
+      return false;
+    }
+    var bs = document.getElementById('battle-screen');
+    if (bs && !bs.classList.contains('hidden')) return false;
     var gs = document.getElementById('game-screen');
     if (gs && gs.classList.contains('hidden')) return false;
     return true;

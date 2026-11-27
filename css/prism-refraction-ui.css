@@ -548,23 +548,14 @@ body.ui-hidden #btn-ui {
   --tb-inner-h: calc(var(--boxh) - var(--tb-pad-top) - var(--tb-pad-bot));
 }
 
-body.roam #stage {
-  --boxh: 108px;
-  --tb-pad-top: 18px;
-  --tb-pad-bot: 16px;
-  --tb-fs: 17.5px;
-  --tb-lh: 1.56;
-  --tb-row: 27px;
-  --tb-inner-h: calc(var(--boxh) - var(--tb-pad-top) - var(--tb-pad-bot));
-}
-
+body.roam #stage,
 body.roam.roam-dialog #stage {
-  --boxh: 136px;
-  --tb-pad-top: 22px;
+  --boxh: 146px;
+  --tb-pad-top: 24px;
   --tb-pad-bot: 20px;
   --tb-fs: 19px;
-  --tb-lh: 1.58;
-  --tb-row: 30px;
+  --tb-lh: 1.62;
+  --tb-row: 31px;
   --tb-inner-h: calc(var(--boxh) - var(--tb-pad-top) - var(--tb-pad-bot));
 }
 
@@ -578,24 +569,17 @@ body.roam.roam-dialog #stage {
     --tb-row: 30px;
     --tb-inner-h: calc(var(--boxh) - var(--tb-pad-top) - var(--tb-pad-bot));
   }
+}
 
-  body.roam #stage {
-    --boxh: 98px;
-    --tb-pad-top: 15px;
-    --tb-pad-bot: 13px;
-    --tb-fs: 16.5px;
-    --tb-lh: 1.54;
-    --tb-row: 25.5px;
-    --tb-inner-h: calc(var(--boxh) - var(--tb-pad-top) - var(--tb-pad-bot));
-  }
-
+@media (max-height: 780px) {
+  body.roam #stage,
   body.roam.roam-dialog #stage {
-    --boxh: 126px;
-    --tb-pad-top: 20px;
+    --boxh: 138px;
+    --tb-pad-top: 22px;
     --tb-pad-bot: 18px;
     --tb-fs: 18px;
-    --tb-lh: 1.56;
-    --tb-row: 28px;
+    --tb-lh: 1.60;
+    --tb-row: 29px;
     --tb-inner-h: calc(var(--boxh) - var(--tb-pad-top) - var(--tb-pad-bot));
   }
 }
@@ -633,7 +617,8 @@ body.roam #text-box {
 }
 
 body.roam #text-box.season-flavor {
-  padding-left: max(72px, calc((100% - 960px) / 2));
+  padding-left: 56px;
+  padding-right: 56px;
 }
 
 #text-box::before {
@@ -937,37 +922,189 @@ body:not(.roam) #stage > #choices {
   text-shadow: 0 1px 6px rgba(8, 26, 84, 0.46), 0 0 12px rgba(125, 211, 252, 0.34);
 }
 
-/* 1.6 底部探索行动栏 (#action-bar) */
+/* 1.6 底部探索行动栏 (#action-bar · 还原方案 B Demo 悬浮四斜切居中底座) */
 #action-bar {
   position: relative;
-  background: linear-gradient(180deg, rgba(250, 253, 255, 0.94) 0%, rgba(235, 244, 254, 0.96) 100%);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  border-top: 1px solid rgba(96, 128, 180, 0.26);
-  box-shadow: 0 -6px 20px rgba(14, 43, 120, 0.08);
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 20px;
+  border: none;
+  border-top: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: visible;
+  filter: drop-shadow(0 -10px 30px rgba(14, 43, 120, 0.16));
 }
 
 #action-bar::before {
   content: '';
   position: absolute;
-  left: 0;
-  right: 0;
-  top: -1px;
-  height: 1.5px;
-  background: linear-gradient(90deg, transparent 0%, rgba(125, 211, 252, 0.85) 26%, rgba(196, 164, 108, 0.65) 54%, rgba(22, 88, 235, 0.82) 82%, transparent 100%);
+  inset: 0;
+  height: auto;
+  z-index: 0;
+  background: var(--pr-rim);
+  clip-path: polygon(
+    16px 0,
+    calc(100% - 16px) 0,
+    100% 16px,
+    100% calc(100% - 12px),
+    calc(100% - 12px) 100%,
+    12px 100%,
+    0 calc(100% - 12px),
+    0 16px
+  );
   pointer-events: none;
+}
+
+#action-bar::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  z-index: 0;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(125, 211, 252, 0.92) 0%,
+      rgba(22, 88, 235, 0.72) 34%,
+      rgba(255, 255, 255, 0.96) 52%,
+      rgba(196, 164, 108, 0.78) 76%,
+      rgba(125, 211, 252, 0.72) 100%
+    ) top / 100% 1.5px no-repeat,
+    var(--pr-caustic),
+    linear-gradient(
+      158deg,
+      rgba(250, 251, 253, 0.90) 0%,
+      rgba(246, 250, 255, 0.86) 52%,
+      rgba(236, 245, 255, 0.88) 100%
+    );
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  clip-path: polygon(
+    15.5px 0,
+    calc(100% - 15.5px) 0,
+    100% 15.5px,
+    100% calc(100% - 11.5px),
+    calc(100% - 11.5px) 100%,
+    11.5px 100%,
+    0 calc(100% - 11.5px),
+    0 15.5px
+  );
+  pointer-events: none;
+}
+
+#action-bar > * {
+  position: relative;
+  z-index: 2;
+}
+
+#action-bar .ab-scroll {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+#action-bar .ab-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 #action-bar .ab-scroll .abtn,
 #action-bar .ab-scroll .ab-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 13px;
   color: var(--pr-ink);
   font-family: var(--pr-serif);
-  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  clip-path: none;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+#action-bar .ab-scroll .abtn::before,
+#action-bar .ab-scroll .abtn::after,
+#action-bar .ab-scroll .ab-btn::before,
+#action-bar .ab-scroll .ab-btn::after {
+  content: none;
+  display: none;
+}
+
+/* 项间 1px × 14px 冰晶细竖线分隔（零冗余前导/尾随竖线） */
+#action-bar .ab-scroll .abtn:not(.hidden) ~ .abtn:not(.hidden)::before,
+#action-bar .ab-scroll .ab-btn:not(.hidden) ~ .ab-btn:not(.hidden)::before {
+  content: '';
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 1px;
+  height: 14px;
+  transform: translateY(-50%);
+  background: rgba(96, 128, 180, 0.26);
+  opacity: 1;
+  pointer-events: none;
+}
+
+body.stage-infant #action-bar .ab-scroll .abtn[data-act="talk"]::before {
+  display: none;
+}
+
+#action-bar .ab-scroll .abtn svg,
+#action-bar .ab-scroll .ab-btn svg {
+  color: var(--pr-ink-muted);
+  flex-shrink: 0;
+  transition: color 0.16s ease;
+}
+
+#action-bar .ab-scroll .abtn .ab-cost,
+#action-bar .ab-scroll .ab-btn .ab-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  font-family: var(--pr-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--pr-ink-muted);
 }
 
 #action-bar .ab-scroll .abtn:hover:not(:disabled),
 #action-bar .ab-scroll .ab-btn:hover:not(:disabled) {
-  background: rgba(22, 88, 235, 0.08);
+  background: rgba(22, 88, 235, 0.09);
+  color: var(--pr-sapphire);
+  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+  transform: none;
+}
+
+#action-bar .ab-scroll .abtn:hover:not(:disabled)::before,
+#action-bar .ab-scroll .ab-btn:hover:not(:disabled)::before {
+  opacity: 0;
+  transform: translateY(-50%);
+}
+
+#action-bar .ab-scroll .abtn:hover:not(:disabled) svg,
+#action-bar .ab-scroll .abtn:hover:not(:disabled) .ab-cost,
+#action-bar .ab-scroll .ab-btn:hover:not(:disabled) svg,
+#action-bar .ab-scroll .ab-btn:hover:not(:disabled) .ab-cost {
   color: var(--pr-sapphire);
 }
 
@@ -985,40 +1122,51 @@ body:not(.roam) #stage > #choices {
 #action-bar .abtn[data-act="next"],
 #action-bar .ab-next-pinned {
   position: relative;
-  padding: 9px 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 26px;
   background: var(--pr-sapphire-prism);
   color: #FFFFFF;
   font-family: var(--pr-serif);
+  font-size: 13.5px;
+  font-weight: 700;
   letter-spacing: 0.14em;
-  clip-path: polygon(14px 0%, calc(100% - 14px) 0%, 100% 50%, calc(100% - 14px) 100%, 14px 100%, 0% 50%);
+  clip-path: polygon(13px 0%, calc(100% - 13px) 0%, 100% 50%, calc(100% - 13px) 100%, 13px 100%, 0% 50%);
   box-shadow: none;
-  filter: drop-shadow(0 6px 16px rgba(14, 43, 120, 0.28));
+  filter: drop-shadow(0 5px 14px rgba(14, 43, 120, 0.28));
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 #action-bar .abtn.primary:hover:not(:disabled),
 #action-bar .abtn[data-act="next"]:hover:not(:disabled),
 #action-bar .ab-next-pinned:hover:not(:disabled) {
-  filter: brightness(1.12) drop-shadow(0 8px 20px rgba(22, 88, 235, 0.36));
+  filter: brightness(1.12) drop-shadow(0 7px 18px rgba(22, 88, 235, 0.36));
 }
 
-@media (min-width: 681px) and (max-width: 1024px) {
+@media (min-width: 681px) and (max-width: 1040px) {
   #app #game-screen #action-bar,
   body.roam:not(.ai-drawer-open) #app #game-screen #action-bar {
     flex-wrap: nowrap;
-    height: 52px;
-    max-height: 52px;
-    gap: 6px;
-    padding: 5px 14px calc(5px + env(safe-area-inset-bottom));
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
+    gap: 8px;
+    padding: 0 14px;
   }
 
   #game-screen #action-bar .ab-scroll {
     flex-wrap: nowrap;
     min-width: 0;
-    flex: 0 1 auto;
+    flex: 1 1 auto;
+    justify-content: flex-start;
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: none;
-    gap: 0;
+    gap: 1px;
   }
 
   #game-screen #action-bar .ab-scroll::-webkit-scrollbar {
@@ -1027,9 +1175,9 @@ body:not(.roam) #stage > #choices {
 
   #game-screen #action-bar .ab-scroll .abtn,
   #game-screen #action-bar .ab-scroll .ab-btn {
-    height: 36px;
-    padding: 0 8px;
-    font-size: 11.5px;
+    height: 32px;
+    padding: 0 9px;
+    font-size: 12px;
     gap: 4px;
     letter-spacing: 0.02em;
     white-space: nowrap;
@@ -1050,10 +1198,10 @@ body:not(.roam) #stage > #choices {
   #game-screen #action-bar .abtn.primary,
   #game-screen #action-bar .abtn[data-act="next"],
   #game-screen #action-bar .ab-next-pinned {
-    height: 36px;
-    padding: 0 16px;
-    font-size: 12px;
-    letter-spacing: 0.08em;
+    height: 32px;
+    padding: 0 18px;
+    font-size: 12.5px;
+    letter-spacing: 0.10em;
     clip-path: polygon(10px 0%, calc(100% - 10px) 0%, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0% 50%);
     flex-shrink: 0;
     white-space: nowrap;
@@ -1112,19 +1260,59 @@ body:not(.roam) #stage > #choices {
 }
 
 /* ==================== 2. 养成中枢 (#sylvia-hub / #raising-hub) ==================== */
-/* 外层 .sh-corner-controls 统一承接雪瓷冰晶细线轻条；内部项彻底透明无框零 clip-path（与底部落位无缝配合） */
+/* 外层 .sh-corner-controls 彻底去除多余直角 border 与矩形底色，恢复方案 B 纯净单层 45° 双斜切雪瓷玻璃，
+   稳居右上角 #hud-right 正下方（right: 20px，top: 64px，高 34px，z-index: 22），零双边框、零圆框套圆框 */
 #sylvia-hub .sh-corner-controls,
 #raising-hub .sh-corner-controls {
-  border: 1px solid rgba(96, 128, 180, 0.28);
+  position: fixed;
+  top: calc(64px + env(safe-area-inset-top));
+  bottom: auto;
+  right: 20px;
+  left: auto;
+  z-index: 22;
+  height: 34px;
+  min-height: 34px;
+  padding: 0 12px 0 14px;
+  border: none;
   border-top: none;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  clip-path: none;
+  box-shadow: none;
+  filter: drop-shadow(0 8px 20px rgba(14, 43, 120, 0.13));
+}
+
+#sylvia-hub .sh-corner-controls::before,
+#raising-hub .sh-corner-controls::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--pr-rim);
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  pointer-events: none;
+}
+
+#sylvia-hub .sh-corner-controls::after,
+#raising-hub .sh-corner-controls::after {
+  content: '';
+  position: absolute;
+  inset: 1.5px;
+  z-index: 0;
   background:
-    linear-gradient(90deg, var(--pr-sapphire) 0%, var(--pr-cyan) 42%, var(--pr-gold) 78%, rgba(22, 88, 235, 0.52) 100%) top / 100% 1.5px no-repeat,
-    linear-gradient(180deg, rgba(252, 254, 255, 0.92) 0%, rgba(238, 246, 255, 0.90) 100%);
+    linear-gradient(90deg, var(--pr-sapphire) 0%, var(--pr-cyan) 44%, var(--pr-gold) 80%, rgba(22, 88, 235, 0.45) 100%) top / 100% 1.5px no-repeat,
+    var(--pr-glass-plate);
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
-  clip-path: none;
-  box-shadow: 0 6px 18px rgba(14, 43, 120, 0.11);
-  filter: none;
+  clip-path: polygon(11px 0, 100% 0, 100% calc(100% - 11px), calc(100% - 11px) 100%, 0 100%, 0 11px);
+  pointer-events: none;
+}
+
+#sylvia-hub .sh-corner-controls > *,
+#raising-hub .sh-corner-controls > * {
+  position: relative;
+  z-index: 2;
 }
 
 #sylvia-hub .hud-mood-pill,
@@ -1164,13 +1352,21 @@ body:not(.roam) #stage > #choices {
 }
 
 #sylvia-hub .sylvia-bubble,
-#raising-hub .sylvia-bubble,
-#sylvia-hub .sh-charm-popover,
-#raising-hub .sh-charm-popover {
+#raising-hub .sylvia-bubble {
   border: none;
   border-top: 2px solid var(--pr-sapphire);
   background: var(--pr-glass-plate);
   clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  filter: drop-shadow(0 12px 26px rgba(14, 43, 120, 0.18));
+}
+
+#sylvia-hub .sh-charm-popover,
+#raising-hub .sh-charm-popover {
+  border: none;
+  border-top: none;
+  background: transparent;
+  clip-path: none;
+  box-shadow: none;
   filter: drop-shadow(0 12px 26px rgba(14, 43, 120, 0.18));
 }
 
@@ -5097,12 +5293,16 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   }
 }
 
-/* ==================== 10. 自由探索方案 B · 立绘固底 × 悬浮半透磨砂雪瓷切角薄幕 × 三态联动 (STRICTLY body.roam) ==================== */
+/* ==================== 10. 自由探索方案 B · 立绘固底 × 悬浮四斜切居中底座 × 同位舒展薄幕 × 右上角养成条 (STRICTLY body.roam) ==================== */
 
-/* 10.1 舞台容器与立绘永久固底绝对零跳动（Δy === 0.0px, Δh === 0.0px；严格不触及非 .roam 主线剧情） */
+/* 10.1 舞台容器令牌与立绘永久固底绝对零跳动（Δy === 0.0px, Δh === 0.0px；严格不触及非 .roam 主线剧情） */
 body.roam #game-screen {
   position: relative;
-  --abh: 52px;
+  --roam-dock-bottom: 14px;
+  --roam-dock-width: min(1140px, calc(100% - 48px));
+  --roam-dock-explore-h: 56px;
+  --roam-dock-dialog-h: 146px;
+  --abh: 56px;
 }
 
 body.roam #game-screen #portraits,
@@ -5156,88 +5356,160 @@ body.roam #portraits .p-slot.dim img {
   }
 }
 
-/* 10.2 自由探索底栏绝对定位解耦（保留 52px 高度、calc(100% - 32px) 宽度与 45° 双层削角冰晶边） */
+/* 10.2 自由探索底栏：还原 Demo B 悬浮四斜切居中底座（1440: bottom 14px / min(1140px, 100%-48px) / h 56px；
+   四周八角 45° 斜切顶 16px / 底 12px + 磨砂雪瓷玻璃；左紧凑操作组 + 1px×14px 冰晶竖线，右固定六角皇家蓝「下个季度」） */
+body.roam #app #game-screen #action-bar,
 body.roam #game-screen #action-bar {
   position: absolute;
-  bottom: 0;
+  bottom: var(--roam-dock-bottom, 14px);
   left: 50%;
+  right: auto;
   transform: translateX(-50%) translateY(0);
-  z-index: 11;
-  width: 100%;
+  z-index: 12;
+  width: var(--roam-dock-width, min(1140px, calc(100% - 48px)));
+  height: var(--roam-dock-explore-h, 56px);
+  min-height: var(--roam-dock-explore-h, 56px);
+  max-height: none;
   margin-left: 0;
   margin-right: 0;
-  transition: opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1), transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  padding: 0 20px;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: none;
+  border-top: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: visible;
+  filter: drop-shadow(0 -10px 30px rgba(14, 43, 120, 0.16));
+  transition: opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1), transform 0.26s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@media (min-width: 681px) {
-  body.roam:not(.ai-drawer-open) #game-screen #action-bar {
-    width: calc(100% - 32px);
-    padding-left: 24px;
-    padding-right: 24px;
-  }
+body.roam #app #game-screen #action-bar::before,
+body.roam #game-screen #action-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  height: auto;
+  z-index: 0;
+  background: var(--pr-rim);
+  clip-path: polygon(
+    16px 0,
+    calc(100% - 16px) 0,
+    100% 16px,
+    100% calc(100% - 12px),
+    calc(100% - 12px) 100%,
+    12px 100%,
+    0 calc(100% - 12px),
+    0 16px
+  );
+  pointer-events: none;
 }
 
-/* 态 C（场景内对话）：底栏平滑淡隐下沉 */
-body.roam.roam-dialog #game-screen #action-bar {
+body.roam #app #game-screen #action-bar::after,
+body.roam #game-screen #action-bar::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  z-index: 0;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(125, 211, 252, 0.92) 0%,
+      rgba(22, 88, 235, 0.72) 34%,
+      rgba(255, 255, 255, 0.96) 52%,
+      rgba(196, 164, 108, 0.78) 76%,
+      rgba(125, 211, 252, 0.72) 100%
+    ) top / 100% 1.5px no-repeat,
+    var(--pr-caustic),
+    linear-gradient(
+      158deg,
+      rgba(250, 251, 253, 0.90) 0%,
+      rgba(246, 250, 255, 0.86) 52%,
+      rgba(236, 245, 255, 0.88) 100%
+    );
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  clip-path: polygon(
+    15.5px 0,
+    calc(100% - 15.5px) 0,
+    100% 15.5px,
+    100% calc(100% - 11.5px),
+    calc(100% - 11.5px) 100%,
+    11.5px 100%,
+    0 calc(100% - 11.5px),
+    0 15.5px
+  );
+  pointer-events: none;
+}
+
+/* 凡探索期显示 #text-box（含 roam-dialog、人物问候语或季度风物），#action-bar 平滑淡隐让位，彻底杜绝 172px 双层堆叠 */
+body.roam:not(.dialog-hidden) #app #game-screen #action-bar,
+body.roam:not(.dialog-hidden) #game-screen #action-bar,
+body.roam.roam-dialog #app #game-screen #action-bar,
+body.roam.roam-dialog #game-screen #action-bar,
+body.roam #app #game-screen:has(#text-box:not(.dialog-hidden)) #action-bar,
+body.roam #game-screen:has(#text-box:not(.dialog-hidden)) #action-bar {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translateX(-50%) translateY(12px);
+  transform: translateX(-50%) translateY(0);
 }
 
-/* 10.3 悬浮半透磨砂雪瓷切角薄幕 (body.roam #text-box) */
+/* 10.3 自由探索同位舒展悬浮薄幕 (body.roam #text-box · 严禁影响主线 body:not(.roam) #text-box) */
 body.roam #game-screen #text-box {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(var(--abh, 52px) + 12px);
-  margin-left: auto;
-  margin-right: auto;
-  transform: translateY(0);
-  width: min(calc(100% - 48px), 960px);
+  left: 50%;
+  right: auto;
+  bottom: var(--roam-dock-bottom, 14px);
+  margin-left: 0;
+  margin-right: 0;
+  transform: translateX(-50%) translateY(0);
+  width: var(--roam-dock-width, min(1140px, calc(100% - 48px)));
   max-width: none;
-  height: 108px;
-  min-height: 108px;
-  padding: var(--tb-pad-top) 50px var(--tb-pad-bot) 42px;
-  z-index: 12;
+  height: var(--roam-dock-dialog-h, 146px);
+  min-height: 0;
+  padding: var(--tb-pad-top, 24px) 56px var(--tb-pad-bot, 20px) 56px;
+  z-index: 13;
   overflow: visible;
   border: none;
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  filter: drop-shadow(0 -12px 30px rgba(13, 38, 104, 0.17));
-  transition: opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1), transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), bottom 0.24s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  filter: drop-shadow(0 -14px 36px rgba(13, 38, 104, 0.20));
+  transition: height 0.26s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.26s cubic-bezier(0.22, 1, 0.36, 1), transform 0.26s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.26s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 body.roam #game-screen #text-box.has-cameo {
-  padding-left: 96px;
+  padding-left: 112px;
 }
 
 body.roam #game-screen #text-box.season-flavor {
-  padding-left: 42px;
-  padding-right: 50px;
+  padding-left: 56px;
+  padding-right: 56px;
 }
 
-/* 双层伪元素 45° 双斜切角工艺：外层连续 1px 冰青→皇家蓝→香槟金棱镜折光边 + 内层半透磨砂雪瓷薄幕 */
+body.roam #game-screen #text {
+  max-height: 100%;
+}
+
+/* 与底栏完全一致的四周八角 45° 斜切（顶 16px / 底 12px）+ 虹彩棱镜边 + 磨砂雪瓷玻璃 */
 body.roam #game-screen #text-box::before {
   inset: 0;
-  background: linear-gradient(
-    132deg,
-    rgba(125, 211, 252, 0.96) 0%,
-    rgba(22, 88, 235, 0.66) 28%,
-    rgba(255, 255, 255, 0.98) 50%,
-    rgba(196, 164, 108, 0.80) 74%,
-    rgba(46, 119, 248, 0.88) 100%
-  );
+  background: var(--pr-rim);
   clip-path: polygon(
     16px 0,
-    calc(100% - 22px) 0,
-    100% 22px,
-    100% calc(100% - 14px),
-    calc(100% - 14px) 100%,
-    14px 100%,
-    0 calc(100% - 14px),
+    calc(100% - 16px) 0,
+    100% 16px,
+    100% calc(100% - 12px),
+    calc(100% - 12px) 100%,
+    12px 100%,
+    0 calc(100% - 12px),
     0 16px
   );
 }
@@ -5248,28 +5520,28 @@ body.roam #game-screen #text-box::after {
     linear-gradient(
       90deg,
       rgba(125, 211, 252, 0.92) 0%,
-      rgba(22, 88, 235, 0.68) 34%,
+      rgba(22, 88, 235, 0.72) 34%,
       rgba(255, 255, 255, 0.96) 52%,
-      rgba(196, 164, 108, 0.76) 76%,
+      rgba(196, 164, 108, 0.78) 76%,
       rgba(125, 211, 252, 0.72) 100%
     ) top / 100% 1.5px no-repeat,
     var(--pr-caustic),
     linear-gradient(
       158deg,
-      rgba(250, 251, 253, 0.86) 0%,
-      rgba(248, 251, 255, 0.84) 52%,
-      rgba(236, 245, 255, 0.85) 100%
+      rgba(250, 251, 253, 0.90) 0%,
+      rgba(246, 250, 255, 0.86) 52%,
+      rgba(236, 245, 255, 0.88) 100%
     );
   backdrop-filter: blur(18px) saturate(145%);
   -webkit-backdrop-filter: blur(18px) saturate(145%);
   clip-path: polygon(
     15.5px 0,
-    calc(100% - 21.5px) 0,
-    100% 21.5px,
-    100% calc(100% - 13.5px),
-    calc(100% - 13.5px) 100%,
-    13.5px 100%,
-    0 calc(100% - 13.5px),
+    calc(100% - 15.5px) 0,
+    100% 15.5px,
+    100% calc(100% - 11.5px),
+    calc(100% - 11.5px) 100%,
+    11.5px 100%,
+    0 calc(100% - 11.5px),
     0 15.5px
   );
 }
@@ -5277,76 +5549,42 @@ body.roam #game-screen #text-box::after {
 /* 悬浮薄幕内探出切角名牌与继续菱形符对齐 */
 body.roam #game-screen #text-box > #tb-speaker,
 body.roam #game-screen #tb-speaker {
-  left: 26px;
-  top: -16px;
+  left: 34px;
+  top: -19px;
 }
 
 body.roam #game-screen #text-box > #more,
 body.roam #game-screen #text-box > #tb-next {
-  right: 22px;
-  bottom: 12px;
+  right: 28px;
+  bottom: 14px;
 }
 
-/* 态 A（收起态）：保持绝对定位，零布局挤压 */
+/* 态 A（收起态）：同底边收束至探索栏高度 56px 并平滑隐去，展开时由同位向上舒展至 146px */
 body.roam #game-screen #text-box.dialog-hidden {
+  height: var(--roam-dock-explore-h, 56px);
+  min-height: 0;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translateY(10px);
+  transform: translateX(-50%) translateY(0);
 }
 
-/* 态 B（场景问候语 / 季度风物薄幕）：轻悬于 52px 削角底栏正上方 */
-body.roam:not(.roam-dialog) #game-screen #text-box:not(.dialog-hidden) {
-  bottom: calc(var(--abh, 52px) + 12px);
-  height: 108px;
-  min-height: 108px;
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: translateY(0);
-}
-
-/* 态 C（场景内人物对话薄幕）：优雅落位底边 16px，轻覆立绘最底端衣摆 */
+/* 态 B（场景问候语 / 季度风物）与态 C（场景内人物对话）：同位锚定 bottom 14px、舒展至 146px（720p 138px） */
+body.roam #game-screen #text-box:not(.dialog-hidden),
 body.roam.roam-dialog #game-screen #text-box:not(.dialog-hidden) {
-  bottom: 16px;
-  height: 136px;
-  min-height: 136px;
+  bottom: var(--roam-dock-bottom, 14px);
+  height: var(--roam-dock-dialog-h, 146px);
+  min-height: 0;
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
-  transform: translateY(0);
-  filter: drop-shadow(0 -14px 34px rgba(13, 38, 104, 0.20));
+  transform: translateX(-50%) translateY(0);
+  filter: drop-shadow(0 -14px 36px rgba(13, 38, 104, 0.20));
 }
 
-body.roam.roam-dialog #game-screen #text-box::before {
-  clip-path: polygon(
-    18px 0,
-    calc(100% - 26px) 0,
-    100% 26px,
-    100% calc(100% - 14px),
-    calc(100% - 14px) 100%,
-    14px 100%,
-    0 calc(100% - 14px),
-    0 18px
-  );
-}
-
-body.roam.roam-dialog #game-screen #text-box::after {
-  clip-path: polygon(
-    17.5px 0,
-    calc(100% - 25.5px) 0,
-    100% 25.5px,
-    100% calc(100% - 13.5px),
-    calc(100% - 13.5px) 100%,
-    13.5px 100%,
-    0 calc(100% - 13.5px),
-    0 17.5px
-  );
-}
-
-/* 10.4 #hotspots / #choices / #sylvia-hub 子元素三态联动（绝不对 #sylvia-hub 写 display: none） */
+/* 10.4 #hotspots / 自由探索 #choices / 右上角 #sylvia-hub 联动（绝不触碰主线 body:not(.roam) #choices） */
 body.roam #game-screen #stage #hotspots {
-  bottom: calc(var(--abh, 52px) + 52px);
+  bottom: calc(var(--roam-dock-bottom, 14px) + var(--roam-dock-explore-h, 56px) + 28px);
   transition: opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.22s cubic-bezier(0.22, 1, 0.36, 1), right 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -5361,71 +5599,174 @@ body.roam.roam-dialog #game-screen #stage #hotspots .hotspot {
 }
 
 body.roam #game-screen #stage > #choices {
-  bottom: calc(var(--abh, 52px) + 18px);
-  width: min(calc(100% - 48px), 880px);
+  bottom: calc(var(--roam-dock-bottom, 14px) + var(--roam-dock-explore-h, 56px) + 18px);
+  width: min(var(--roam-dock-width, min(1140px, calc(100% - 48px))), 880px);
   z-index: 16;
 }
 
-body.roam:not(.roam-dialog) #game-screen #stage:has(#text-box:not(.dialog-hidden)) > #choices {
-  bottom: calc(var(--abh, 52px) + 12px + 108px + 18px);
-}
-
-body.roam.roam-dialog #game-screen #stage > #choices {
-  bottom: calc(16px + 136px + 34px);
-  width: min(calc(100% - 48px), 880px);
-  max-height: min(44vh, calc(100% - 206px));
+body.roam:not(.dialog-hidden) #game-screen #stage > #choices,
+body.roam.roam-dialog #game-screen #stage > #choices,
+body.roam #game-screen #stage:has(#text-box:not(.dialog-hidden)) > #choices {
+  bottom: calc(var(--roam-dock-bottom, 14px) + var(--roam-dock-dialog-h, 146px) + 34px);
+  width: min(var(--roam-dock-width, min(1140px, calc(100% - 48px))), 880px);
+  max-height: min(44vh, calc(100% - var(--roam-dock-bottom, 14px) - var(--roam-dock-dialog-h, 146px) - 70px));
   z-index: 16;
 }
 
+/* 养成条稳居右上角 #hud-right 正下方（留 8px 净空，右缘严齐平 right: 20px，高 34px，z-index: 22），探索与对话均常驻清晰 */
 body.roam #game-screen #sylvia-hub .sh-corner-controls {
-  bottom: calc(var(--abh, 52px) + 10px);
-  right: 16px;
+  position: fixed;
+  top: calc(64px + env(safe-area-inset-top));
+  bottom: auto;
+  right: 20px;
+  left: auto;
+  z-index: 22;
+  height: 34px;
+  min-height: 34px;
+  padding: 0 12px 0 14px;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
 }
 
 body.roam #game-screen #sylvia-hub #sh-charm-popover,
 body.roam #game-screen #sylvia-hub .sh-charm-popover {
-  bottom: calc(var(--abh, 52px) + 48px);
-  right: 16px;
+  position: fixed;
+  top: calc(106px + env(safe-area-inset-top));
+  bottom: auto;
+  right: 20px;
+  left: auto;
+  z-index: 23;
 }
 
-body.roam #stage:has(#text-box:not(.dialog-hidden)) #sylvia-hub .sh-corner-controls,
-body.roam #stage:has(#text-box:not(.dialog-hidden)) #sylvia-hub #sh-charm-popover,
-body.roam #stage:has(#text-box:not(.dialog-hidden)) #sylvia-hub .sh-charm-popover,
-body.roam.roam-dialog #game-screen #sylvia-hub .sh-corner-controls,
-body.roam.roam-dialog #game-screen #sylvia-hub #sh-charm-popover,
-body.roam.roam-dialog #game-screen #sylvia-hub .sh-charm-popover {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transform: translateY(6px);
+/* 战斗态严格隐藏养成条 */
+body.cb-battle-active #sylvia-hub,
+body:has(#battle-screen:not(.hidden)) #sylvia-hub {
+  display: none !important;
 }
 
-/* 10.5 720p 桌面紧凑高度适配 (max-height: 760px) */
-@media (max-height: 760px) {
-  body.roam #game-screen #text-box,
-  body.roam:not(.roam-dialog) #game-screen #text-box:not(.dialog-hidden) {
-    height: 98px;
-    min-height: 98px;
+/* 10.5 720p (1280×720, max-height: 780px) 与 960×600 (max-width: 1040px) 桌面响应式对齐 */
+@media (max-height: 780px) {
+  body.roam #game-screen {
+    --roam-dock-bottom: 10px;
+    --roam-dock-width: min(1080px, calc(100% - 36px));
+    --roam-dock-explore-h: 50px;
+    --roam-dock-dialog-h: 138px;
+    --abh: 50px;
   }
 
-  body.roam.roam-dialog #game-screen #text-box,
-  body.roam.roam-dialog #game-screen #text-box:not(.dialog-hidden) {
-    height: 126px;
-    min-height: 126px;
+  body.roam #app #game-screen #action-bar,
+  body.roam #game-screen #action-bar {
+    padding: 0 18px;
+  }
+
+  body.roam #game-screen #action-bar .ab-scroll .abtn,
+  body.roam #game-screen #action-bar .ab-scroll .ab-btn {
+    height: 34px;
+    padding: 0 11px;
+    font-size: 13px;
+  }
+
+  body.roam #game-screen #action-bar .abtn.primary,
+  body.roam #game-screen #action-bar .abtn[data-act="next"],
+  body.roam #game-screen #action-bar .ab-next-pinned {
+    height: 34px;
+    padding: 0 22px;
+    font-size: 13px;
+  }
+
+  body.roam #game-screen #text-box {
+    padding: var(--tb-pad-top, 22px) 48px var(--tb-pad-bot, 18px) 48px;
+  }
+
+  body.roam #game-screen #text-box.has-cameo {
+    padding-left: 104px;
+  }
+
+  body.roam #game-screen #text-box.season-flavor {
+    padding-left: 48px;
+    padding-right: 48px;
   }
 
   body.roam #game-screen #text-box > #tb-speaker,
   body.roam #game-screen #tb-speaker {
-    top: -14px;
+    left: 30px;
+    top: -16px;
   }
 
-  body.roam:not(.roam-dialog) #game-screen #stage:has(#text-box:not(.dialog-hidden)) > #choices {
-    bottom: calc(var(--abh, 52px) + 12px + 98px + 14px);
+  body.roam #game-screen #sylvia-hub .sh-corner-controls {
+    top: calc(64px + env(safe-area-inset-top));
+    right: 20px;
+    height: 32px;
+    min-height: 32px;
+    padding: 0 10px 0 12px;
   }
 
-  body.roam.roam-dialog #game-screen #stage > #choices {
-    bottom: calc(16px + 126px + 32px);
-    max-height: min(42vh, calc(100% - 194px));
+  body.roam #game-screen #sylvia-hub #sh-charm-popover,
+  body.roam #game-screen #sylvia-hub .sh-charm-popover {
+    top: calc(104px + env(safe-area-inset-top));
+    right: 20px;
+  }
+}
+
+@media (max-width: 1040px) {
+  body.roam #game-screen {
+    --roam-dock-bottom: 8px;
+    --roam-dock-width: calc(100% - 24px);
+    --roam-dock-explore-h: 48px;
+    --roam-dock-dialog-h: 138px;
+    --abh: 48px;
+  }
+
+  body.roam #app #game-screen #action-bar,
+  body.roam #game-screen #action-bar {
+    padding: 0 14px;
+  }
+
+  body.roam #game-screen #action-bar .ab-scroll .abtn,
+  body.roam #game-screen #action-bar .ab-scroll .ab-btn {
+    height: 32px;
+    padding: 0 9px;
+    font-size: 12px;
+    gap: 4px;
+  }
+
+  body.roam #game-screen #action-bar .abtn.primary,
+  body.roam #game-screen #action-bar .abtn[data-act="next"],
+  body.roam #game-screen #action-bar .ab-next-pinned {
+    height: 32px;
+    padding: 0 18px;
+    font-size: 12.5px;
+    letter-spacing: 0.10em;
+    clip-path: polygon(10px 0%, calc(100% - 10px) 0%, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0% 50%);
+  }
+
+  body.roam #game-screen #text-box {
+    padding: var(--tb-pad-top, 20px) 38px var(--tb-pad-bot, 16px) 38px;
+  }
+
+  body.roam #game-screen #text-box.has-cameo {
+    padding-left: 96px;
+  }
+
+  body.roam #game-screen #text-box.season-flavor {
+    padding-left: 38px;
+    padding-right: 38px;
+  }
+
+  body.roam #game-screen #sylvia-hub .sh-corner-controls {
+    top: calc(64px + env(safe-area-inset-top));
+    right: 20px;
+    height: 30px;
+    min-height: 30px;
+    padding: 0 9px 0 11px;
+  }
+
+  body.roam #game-screen #sylvia-hub #sh-charm-popover,
+  body.roam #game-screen #sylvia-hub .sh-charm-popover {
+    top: calc(102px + env(safe-area-inset-top));
+    right: 20px;
   }
 }
 
@@ -5437,11 +5778,12 @@ body.roam.roam-dialog #game-screen #sylvia-hub .sh-charm-popover {
   }
 
   body.roam.ai-drawer-open #game-screen #text-box {
-    left: 18px;
-    right: 420px;
-    width: min(calc(100% - 438px), 900px);
+    left: calc((100% - 402px) / 2);
+    right: auto;
+    transform: translateX(-50%) translateY(0);
+    width: calc(100% - 426px);
     max-width: none;
-    margin: 0 auto;
+    margin: 0;
     border-right: none;
     padding-left: 36px;
     padding-right: 48px;
@@ -5466,16 +5808,17 @@ body.roam.roam-dialog #game-screen #sylvia-hub .sh-charm-popover {
     right: 20px;
   }
 
+  body.roam.ai-drawer-open #app #game-screen #action-bar,
   body.roam.ai-drawer-open #game-screen #action-bar {
     left: calc((100% - 402px) / 2);
+    right: auto;
     width: calc(100% - 426px);
     max-width: none;
     margin-left: 0;
     margin-right: 0;
     border-right: none;
     overflow: visible;
-    padding-left: 18px;
-    padding-right: 18px;
+    padding: 0 16px;
   }
 
   body.roam.ai-drawer-open #game-screen #stage > #choices {
@@ -5490,9 +5833,34 @@ body.roam.roam-dialog #game-screen #sylvia-hub .sh-charm-popover {
 }
 
 /* 10.7 窄屏兜底与减弱动效偏好 */
+@media (max-width: 820px) {
+  body.roam #game-screen #sylvia-hub .sh-corner-controls {
+    top: calc(60px + env(safe-area-inset-top));
+    right: 8px;
+  }
+
+  body.roam #game-screen #sylvia-hub #sh-charm-popover,
+  body.roam #game-screen #sylvia-hub .sh-charm-popover {
+    top: calc(100px + env(safe-area-inset-top));
+    right: 8px;
+  }
+}
+
 @media (max-width: 680px) {
+  body.roam #game-screen {
+    --roam-dock-bottom: 6px;
+    --roam-dock-width: calc(100% - 16px);
+    --roam-dock-explore-h: 48px;
+    --roam-dock-dialog-h: 130px;
+    --abh: 48px;
+  }
+
+  body.roam #app #game-screen #action-bar,
+  body.roam #game-screen #action-bar {
+    padding: 0 10px;
+  }
+
   body.roam #game-screen #text-box {
-    width: calc(100% - 16px);
     padding-left: 18px;
     padding-right: 28px;
   }

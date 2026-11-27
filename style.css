@@ -725,7 +725,7 @@ body.ui-hidden #btn-ui .ico-sun { display: block; }
 
 body.roam #game-screen {
   position: relative;
-  --abh: 52px;
+  --abh: 56px;
 }
 
 #stage {
@@ -743,7 +743,7 @@ body.roam #game-screen {
 }
 
 body.roam #stage {
-  --boxh: 108px;
+  --boxh: 146px;
 }
 
 @media (min-width: 1080px) {
@@ -1001,7 +1001,7 @@ body.roam #text-box.dialog-hidden {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translateX(-50%) translateY(10px);
+  transform: translateX(-50%) translateY(0);
 }
 
 .tb-corner {
@@ -1124,22 +1124,26 @@ body:not(.roam) #text-box.dialog-rows-3 #text {
 }
 
 body.roam #text-box {
-  padding-top: 16px;
-  padding-bottom: 12px;
+  padding-top: 24px;
+  padding-bottom: 20px;
 }
 body.roam #text-box.season-flavor {
-  padding-left: max(48px, calc((100% - 920px) / 2));
+  padding-left: 56px;
+  padding-right: 56px;
 }
 body.roam #text {
-  height: calc(var(--boxh) - 28px);
-  font-size: 16px;
-  line-height: 1.65;
+  height: calc(var(--boxh) - 44px);
+  font-size: 19px;
+  line-height: 1.62;
 }
 body.roam #text-box.dialog-rows-1 #text {
-  padding-top: max(0px, calc((var(--boxh) - 28px - 1.65em) / 2));
+  padding-top: max(0px, calc((var(--boxh) - 44px - 1.62em) / 2));
 }
 body.roam #text-box.dialog-rows-2 #text {
-  padding-top: max(0px, calc((var(--boxh) - 28px - 3.3em) / 2));
+  padding-top: max(0px, calc((var(--boxh) - 44px - 3.24em) / 2));
+}
+body.roam #text-box.dialog-rows-3 #text {
+  padding-top: max(0px, calc((var(--boxh) - 44px - 4.86em) / 2));
 }
 
 #text .sys { color: #1C4CB8; font-weight: 600; font-size: 16.5px; }
@@ -1302,9 +1306,17 @@ body.roam #text-box.dialog-rows-2 #text {
   box-shadow: 0 -4px 16px rgba(18, 24, 34, 0.06);
 }
 
-/* 顶部双切角悬浮雪瓷棱镜底座：与上方 #sylvia-hub 削角及 [下个季度] 棱镜按钮呼应，双层伪元素 1px 冰晶斜切边，严格保持原纤薄高度 */
+/* 方案 B 悬浮四斜切居中雪瓷棱镜底座：四周 45° 斜切（顶 16px / 底 12px），双层伪元素 1px 虹彩冰晶边 + 磨砂雪瓷玻璃，左侧操作组紧凑左起、右侧固定「下个季度」棱镜主按钮 */
 #game-screen #action-bar {
   position: relative;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: 56px;
+  min-height: 56px;
+  padding: 0 20px;
   border: none;
   border-top: none;
   background: transparent;
@@ -1312,45 +1324,34 @@ body.roam #text-box.dialog-rows-2 #text {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   overflow: visible;
-  filter: drop-shadow(0 -6px 18px rgba(14, 43, 120, 0.13));
+  filter: drop-shadow(0 -10px 30px rgba(14, 43, 120, 0.16));
 }
 
-@media (min-width: 681px) {
-  body:not(.ai-drawer-open) #game-screen #action-bar {
-    width: calc(100% - 32px);
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 24px;
-    padding-right: 24px;
-  }
-}
-
-/* 方案 B · 自由探索底栏绝对定位脱离 flex 挤压，保留 52px 高度与 45° 双层削角冰晶边 */
+/* 方案 B · 自由探索底栏悬浮居中（bottom: 14px，收束居中宽度 min(1140px, calc(100% - 48px))，高 56px），脱离 flex 挤压 */
 body.roam #game-screen #action-bar {
   position: absolute;
-  bottom: 0;
+  bottom: 14px;
   left: 50%;
+  right: auto;
   transform: translateX(-50%) translateY(0);
-  z-index: 11;
-  width: 100%;
+  z-index: 12;
+  width: min(1140px, calc(100% - 48px));
+  height: 56px;
+  min-height: 56px;
   margin-left: 0;
   margin-right: 0;
-  transition: opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1), transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  padding: 0 20px;
+  transition: opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1), transform 0.26s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@media (min-width: 681px) {
-  body.roam:not(.ai-drawer-open) #game-screen #action-bar {
-    width: calc(100% - 32px);
-    padding-left: 24px;
-    padding-right: 24px;
-  }
-}
-
-body.roam.roam-dialog #game-screen #action-bar {
+/* 任意自由探索期显示 #text-box（含问候/风物薄幕与 roam-dialog）时，#action-bar 平滑淡隐让位，彻底杜绝双层堆叠 */
+body.roam:not(.dialog-hidden) #game-screen #action-bar,
+body.roam.roam-dialog #game-screen #action-bar,
+body.roam #game-screen:has(#text-box:not(.dialog-hidden)) #action-bar {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translateX(-50%) translateY(12px);
+  transform: translateX(-50%) translateY(0);
 }
 
 #game-screen #action-bar::before {
@@ -1364,32 +1365,47 @@ body.roam.roam-dialog #game-screen #action-bar {
   height: auto;
   z-index: 0;
   background: linear-gradient(
-    90deg,
-    rgba(64, 148, 245, 0.88) 0%,
-    rgba(125, 211, 252, 0.92) 22%,
-    rgba(22, 88, 235, 0.72) 44%,
-    rgba(196, 164, 108, 0.82) 72%,
-    rgba(46, 119, 248, 0.86) 100%
+    132deg,
+    rgba(125, 211, 252, 0.96) 0%,
+    rgba(22, 88, 235, 0.64) 28%,
+    rgba(255, 255, 255, 0.98) 50%,
+    rgba(196, 164, 108, 0.78) 74%,
+    rgba(46, 119, 248, 0.88) 100%
   );
-  clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%, 0 14px);
+  clip-path: polygon(
+    16px 0,
+    calc(100% - 16px) 0,
+    100% 16px,
+    100% calc(100% - 12px),
+    calc(100% - 12px) 100%,
+    12px 100%,
+    0 calc(100% - 12px),
+    0 16px
+  );
   pointer-events: none;
 }
 
 #game-screen #action-bar::after {
   content: '';
   position: absolute;
-  top: 1px;
-  left: 1px;
-  right: 1px;
-  bottom: 0;
+  inset: 1px;
   z-index: 0;
   background:
-    linear-gradient(90deg, rgba(125, 211, 252, 0.78) 0%, rgba(22, 88, 235, 0.44) 28%, rgba(255, 255, 255, 0.92) 50%, rgba(196, 164, 108, 0.56) 74%, rgba(125, 211, 252, 0.72) 100%) top / 100% 1.5px no-repeat,
-    linear-gradient(112deg, transparent 14%, rgba(255, 255, 255, 0.56) 28%, rgba(125, 211, 252, 0.14) 36%, transparent 50%, rgba(239, 224, 190, 0.12) 78%, transparent 94%),
-    linear-gradient(180deg, rgba(252, 254, 255, 0.94) 0%, rgba(242, 248, 255, 0.93) 56%, rgba(232, 243, 254, 0.96) 100%);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  clip-path: polygon(13.5px 0, calc(100% - 13.5px) 0, 100% 13.5px, 100% 100%, 0 100%, 0 13.5px);
+    linear-gradient(90deg, rgba(125, 211, 252, 0.92) 0%, rgba(22, 88, 235, 0.72) 34%, rgba(255, 255, 255, 0.96) 52%, rgba(196, 164, 108, 0.78) 76%, rgba(125, 211, 252, 0.72) 100%) top / 100% 1.5px no-repeat,
+    linear-gradient(112deg, transparent 12%, rgba(255, 255, 255, 0.56) 26%, rgba(125, 211, 252, 0.14) 34%, transparent 48%, rgba(239, 224, 190, 0.12) 76%, transparent 92%),
+    linear-gradient(158deg, rgba(250, 251, 253, 0.90) 0%, rgba(246, 250, 255, 0.86) 52%, rgba(236, 245, 255, 0.88) 100%);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  clip-path: polygon(
+    15.5px 0,
+    calc(100% - 15.5px) 0,
+    100% 15.5px,
+    100% calc(100% - 11.5px),
+    calc(100% - 11.5px) 100%,
+    11.5px 100%,
+    0 calc(100% - 11.5px),
+    0 15.5px
+  );
   pointer-events: none;
 }
 
@@ -1400,10 +1416,12 @@ body.roam.roam-dialog #game-screen #action-bar {
 
 #action-bar .ab-scroll {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 2px;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 #action-bar .ab-next-pinned {
@@ -1492,32 +1510,56 @@ body.roam.roam-dialog #game-screen #action-bar {
 .abtn.primary small,
 .abtn[data-act="next"] small { color: #DCEBFF; }
 
-@media (max-width: 1024px) {
+@media (max-height: 780px) {
+  body.roam #game-screen {
+    --abh: 50px;
+  }
+  body.roam #stage {
+    --boxh: 138px;
+  }
+  body.roam #game-screen #action-bar {
+    bottom: 10px;
+    width: min(1080px, calc(100% - 36px));
+    height: 50px;
+    min-height: 50px;
+    padding: 0 18px;
+  }
+}
+
+@media (max-width: 1040px) {
+  body.roam #game-screen {
+    --abh: 48px;
+  }
   #action-bar,
-  #game-screen #action-bar {
+  #game-screen #action-bar,
+  body.roam #game-screen #action-bar {
     flex-wrap: nowrap;
-    height: 52px;
-    max-height: 52px;
-    gap: 6px;
-    padding: 5px 14px calc(5px + env(safe-area-inset-bottom));
+    bottom: 8px;
+    width: calc(100% - 24px);
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
+    gap: 8px;
+    padding: 0 14px;
   }
   #action-bar .ab-scroll {
     flex-wrap: nowrap;
     min-width: 0;
-    flex: 0 1 auto;
+    flex: 1 1 auto;
+    justify-content: flex-start;
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: none;
-    gap: 0;
+    gap: 1px;
   }
   #action-bar .ab-scroll::-webkit-scrollbar {
     display: none;
   }
   #action-bar .abtn,
   #action-bar .ab-btn {
-    height: 36px;
-    padding: 0 8px;
-    font-size: 11.5px;
+    height: 32px;
+    padding: 0 9px;
+    font-size: 12px;
     gap: 4px;
     letter-spacing: 0.02em;
     white-space: nowrap;
@@ -1535,10 +1577,10 @@ body.roam.roam-dialog #game-screen #action-bar {
   #action-bar .abtn.primary,
   #action-bar .abtn[data-act="next"],
   #action-bar .ab-next-pinned {
-    height: 36px;
-    padding: 0 16px;
-    font-size: 12px;
-    letter-spacing: 0.08em;
+    height: 32px;
+    padding: 0 18px;
+    font-size: 12.5px;
+    letter-spacing: 0.10em;
     flex-shrink: 0;
   }
 }
@@ -2225,7 +2267,7 @@ body #card {
   }
 }
 body.roam #hotspots {
-  bottom: calc(var(--abh, 52px) + 52px);
+  bottom: calc(var(--abh, 56px) + 42px);
   transition: opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.22s cubic-bezier(0.22, 1, 0.36, 1), right 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 body.roam.roam-dialog #hotspots {

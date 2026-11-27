@@ -1,64 +1,54 @@
 /* =========================================================================
-   转生千金 · Ice-Prism Liquid Glass Controller (js/liquid-prism.js)
-   基于 naughtyduk/liquidGL v3.0.0（自动降级链：WebGPU → WebGL2 → WebGL1 → CSS backdrop-filter）
+   转生千金 · Ice-Prism Glass Controller (js/liquid-prism.js)
    导出：window.LiquidPrism = { init, refresh, setEnabled, isEnabled, getBackend, destroy }
 
-   克制定向玻璃棱镜表面（仅作用于两处核心冰晶视窗，绝不滥用）：
-   1. 标题页右下角阿斯特莱亚钟楼坐标徽标（.title-sector-card / .title-stage-badge）
-      - 淡霜白滤色 rgba(244, 248, 255, 0.22)、锐利棱边折射与微弱色散 (aberration: 0.014)
-      - 离开 #title-screen 或打开弹窗遮罩时立即同步销毁释放 GPU 资源
-   2. 局内左上角角色状态棱镜（#hud .hud-left / #hud）
-      - 冰瓷晴空晶透滤色 rgba(248, 251, 255, 0.34)、冷霜高光边缘、随背景切换自动刷新折射快照
-      - 弹窗/标题页/CG/沉浸/POV 模式下立即同步暂停并释放 GPU 资源
+   安全策略（P0 防隐身根治）：
+   1. 局内核心交互界面（#hud / #hud .hud-left / #action-bar / #text-box）已由
+      css/prism-refraction-ui.css 完整实现纯 CSS 切面棱镜玻璃，严禁挂载
+      liquidGL GPU 劫持（避免 WebGPU 快照失败导致内联 opacity:0 / pointer-events:none 滞留）。
+   2. 仅对标题页可选装饰徽标（.title-sector-card / .title-stage-badge）提供
+      非阻塞纯 CSS 磨砂棱镜增强，绝不写入内联 opacity:0 或 pointer-events:none；
+      卸载或离开标题页时彻底清理注入属性、内联样式与 <style id="liquid-prism-styles">。
    ========================================================================= */
 (function (root) {
   'use strict';
 
   var STORAGE_KEY = 'ojousama_fx_enabled_v1';
   var STYLE_ID = 'liquid-prism-styles';
-
-  var TITLE_LENS_CONFIG = {
-    tint: 'rgba(244, 248, 255, 0.22)',
-    refraction: 0.026,
-    aberration: 0.014,
-    bevelDepth: 0.11,
-    bevelWidth: 0.18,
-    frost: 2.2,
-    magnify: 1.035,
-    resolution: 1.5
-  };
-
-  var HUD_LENS_CONFIG = {
-    tint: 'rgba(248, 251, 255, 0.34)',
-    refraction: 0.02,
-    aberration: 0.008,
-    bevelDepth: 0.09,
-    bevelWidth: 0.15,
-    frost: 2.4,
-    magnify: 1.025,
-    resolution: 1.25,
-    zIndex: 4
-  };
+  var PROTECTED_CORE_SELECTORS = ['#hud', '#hud .hud-left', '#action-bar', '#text-box'];
+  var LIQUID_GL_INLINE_PROPS = [
+    'opacity',
+    'pointer-events',
+    'background',
+    'background-color',
+    'background-image',
+    'backdrop-filter',
+    '-webkit-backdrop-filter',
+    'box-shadow',
+    'transition',
+    'position',
+    'transform',
+    'transform-style',
+    'transform-origin',
+    'cursor',
+    'touch-action'
+  ];
 
   var state = {
     initialized: false,
     enabled: true,
     reducedMotion: false,
     backend: 'disabled',
-    gpuSupport: null, // null = unknown, 'gpu' = WebGPU/WebGL available, 'none' = fallback only
-    gpuProbePromise: null,
-    activeSurface: null, // 'title' | 'hud' | null
+    activeSurface: null, // 'title' | null
     activeLens: null,
     activeEl: null,
     activeHostEl: null,
-    activeMode: null, // 'gpu' | 'css-fallback' | null
+    activeMode: null, // 'css-fallback' | null
     syncTimer: 0,
-    bgRefreshTimer: 0,
     mql: null,
     mqlHandler: null,
     observers: [],
-    cleanups: [],
-    mountSeq: 0
+    cleanups: []
   };
 
   function isBrowserDoc() {
@@ -67,15 +57,6 @@
 
   function isJsdomEnv() {
     return typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent || '');
-  }
-
-  function isTouchOrNarrowMobile() {
-    if (!isBrowserDoc()) return false;
-    try {
-      if (typeof window.innerWidth === 'number' && window.innerWidth <= 768) return true;
-      if (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches) return true;
-    } catch (e) {}
-    return false;
   }
 
   function readSavedEnabled() {
@@ -135,56 +116,80 @@
     return !!state.reducedMotion;
   }
 
-  function hasSyncWebGL() {
-    if (!isBrowserDoc()) return false;
+  function isProtectedCoreSurface(el) {
+    if (!el || el.nodeType !== 1) return false;
     try {
-      var c = document.createElement('canvas');
-      var ctx = c.getContext('webgl2') || c.getContext('webgl') || c.getContext('experimental-webgl');
-      if (!ctx) return false;
-      try {
-        var lose = ctx.getExtension && ctx.getExtension('WEBGL_lose_context');
-        if (lose && typeof lose.loseContext === 'function') lose.loseContext();
-      } catch (e) {}
-      return true;
-    } catch (e) {
-      return false;
+      if (el.id === 'hud' || el.id === 'action-bar' || el.id === 'text-box' || el.id === 'loc-bar') {
+        return true;
+      }
+      if (typeof el.matches === 'function') {
+        for (var i = 0; i < PROTECTED_CORE_SELECTORS.length; i++) {
+          if (el.matches(PROTECTED_CORE_SELECTORS[i])) return true;
+        }
+      }
+      if (typeof el.closest === 'function' && el.closest('#hud, #action-bar, #text-box')) {
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  function clearActiveAttributes(el, hostEl) {
+    if (el && el.removeAttribute) {
+      el.removeAttribute('data-liquid-prism');
+      el.removeAttribute('data-liquid-prism-role');
+      el.removeAttribute('data-liquid-prism-backend');
+      el.removeAttribute('data-liquidgl-tilt');
+    }
+    if (hostEl && hostEl.removeAttribute) {
+      hostEl.removeAttribute('data-liquid-prism-host');
     }
   }
 
-  function probeGpuSupport() {
-    if (state.gpuSupport) return Promise.resolve(state.gpuSupport);
-    if (state.gpuProbePromise) return state.gpuProbePromise;
-
-    if (isJsdomEnv() || !isBrowserDoc() || typeof window.liquidGL !== 'function') {
-      state.gpuSupport = 'none';
-      return Promise.resolve('none');
+  function clearLiquidGLInlineStyles(el) {
+    if (!el || !el.style) return;
+    for (var i = 0; i < LIQUID_GL_INLINE_PROPS.length; i++) {
+      try {
+        el.style.removeProperty(LIQUID_GL_INLINE_PROPS[i]);
+      } catch (e) {}
     }
+  }
 
-    if (window.__liquidGLNoWebGL__ === true) {
-      state.gpuSupport = 'none';
-      return Promise.resolve('none');
+  function sanitizeProtectedCoreHud() {
+    if (!isBrowserDoc()) return;
+    for (var i = 0; i < PROTECTED_CORE_SELECTORS.length; i++) {
+      var nodes = null;
+      try {
+        nodes = document.querySelectorAll(PROTECTED_CORE_SELECTORS[i]);
+      } catch (e) {
+        nodes = null;
+      }
+      if (!nodes || !nodes.length) continue;
+      for (var j = 0; j < nodes.length; j++) {
+        var node = nodes[j];
+        if (!node || node.nodeType !== 1) continue;
+        var hadPrismAttr = !!(
+          node.hasAttribute('data-liquid-prism') ||
+          node.hasAttribute('data-liquid-prism-role') ||
+          node.hasAttribute('data-liquid-prism-backend') ||
+          node.hasAttribute('data-liquid-prism-host') ||
+          node.hasAttribute('data-liquidgl-tilt')
+        );
+        clearActiveAttributes(node, node);
+        if (hadPrismAttr) {
+          clearLiquidGLInlineStyles(node);
+        }
+        if (node.style) {
+          var rawOp = String(node.style.opacity || '').trim();
+          if (rawOp === '0' || (rawOp !== '' && !isNaN(parseFloat(rawOp)) && parseFloat(rawOp) <= 0.01)) {
+            node.style.removeProperty('opacity');
+          }
+          if (String(node.style.pointerEvents || '').trim() === 'none') {
+            node.style.removeProperty('pointer-events');
+          }
+        }
+      }
     }
-
-    if (hasSyncWebGL()) {
-      state.gpuSupport = 'gpu';
-      return Promise.resolve('gpu');
-    }
-
-    if (typeof navigator !== 'undefined' && navigator.gpu && typeof navigator.gpu.requestAdapter === 'function') {
-      state.gpuProbePromise = navigator.gpu.requestAdapter().then(function (adapter) {
-        state.gpuSupport = adapter ? 'gpu' : 'none';
-        state.gpuProbePromise = null;
-        return state.gpuSupport;
-      }).catch(function () {
-        state.gpuSupport = 'none';
-        state.gpuProbePromise = null;
-        return 'none';
-      });
-      return state.gpuProbePromise;
-    }
-
-    state.gpuSupport = 'none';
-    return Promise.resolve('none');
   }
 
   function ensureScopedStyles() {
@@ -194,30 +199,7 @@
     var style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent =
-      '/* Scoped Ice-Prism Liquid Glass surface refinements */\n' +
-      '[data-liquid-prism-host="title"] {\n' +
-      '  position: fixed !important;\n' +
-      '}\n' +
-      '[data-liquid-prism-role="title"][data-liquid-prism="active"] {\n' +
-      '  border-radius: 6px !important;\n' +
-      '  clip-path: none !important;\n' +
-      '  border: 1px solid rgba(255, 255, 255, 0.62) !important;\n' +
-      '  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), inset 0 -1px 0 rgba(125, 211, 252, 0.34), 0 14px 32px -12px rgba(7, 20, 46, 0.42) !important;\n' +
-      '}\n' +
-      '[data-liquid-prism-role="title"][data-liquid-prism="active"] .title-badge-crest {\n' +
-      '  background: rgba(18, 80, 230, 0.86) !important;\n' +
-      '  border-right: 1px solid rgba(255, 255, 255, 0.36);\n' +
-      '}\n' +
-      '[data-liquid-prism-role="title"][data-liquid-prism="active"] .title-badge-meta {\n' +
-      '  background: linear-gradient(135deg, rgba(246, 250, 255, 0.62) 0%, rgba(232, 244, 255, 0.44) 100%) !important;\n' +
-      '}\n' +
-      '[data-liquid-prism-role="title"][data-liquid-prism="active"] .title-badge-sector {\n' +
-      '  color: #06132b !important;\n' +
-      '  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);\n' +
-      '}\n' +
-      '[data-liquid-prism-role="title"][data-liquid-prism="active"] .title-badge-volrow {\n' +
-      '  color: #163569 !important;\n' +
-      '}\n' +
+      '/* Scoped Ice-Prism non-blocking CSS glass (title decorative badge only) */\n' +
       '[data-liquid-prism-role="title"][data-liquid-prism="css-fallback"] {\n' +
       '  border-radius: 6px !important;\n' +
       '  clip-path: none !important;\n' +
@@ -226,37 +208,6 @@
       '  backdrop-filter: blur(14px) saturate(1.25) !important;\n' +
       '  -webkit-backdrop-filter: blur(14px) saturate(1.25) !important;\n' +
       '  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 16px 34px -10px rgba(7, 20, 46, 0.34) !important;\n' +
-      '}\n' +
-      '[data-liquid-prism-role="hud"][data-liquid-prism="active"] {\n' +
-      '  border-radius: 10px !important;\n' +
-      '  border: 1px solid rgba(125, 211, 252, 0.42) !important;\n' +
-      '  border-top-color: rgba(255, 255, 255, 0.72) !important;\n' +
-      '  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 10px 26px -12px rgba(13, 31, 68, 0.20) !important;\n' +
-      '}\n' +
-      '[data-liquid-prism-role="hud"][data-liquid-prism="active"]::before {\n' +
-      '  content: "";\n' +
-      '  position: absolute;\n' +
-      '  inset: 0;\n' +
-      '  border-radius: inherit;\n' +
-      '  background: linear-gradient(100deg, rgba(248, 251, 255, 0.78) 0%, rgba(242, 248, 255, 0.66) 76%, rgba(238, 246, 255, 0.52) 100%);\n' +
-      '  pointer-events: none;\n' +
-      '  z-index: 0;\n' +
-      '}\n' +
-      '[data-liquid-prism-role="hud"][data-liquid-prism="active"] > * {\n' +
-      '  position: relative;\n' +
-      '  z-index: 1;\n' +
-      '}\n' +
-      '[data-liquid-prism-role="hud"][data-liquid-prism="active"] #hud-name,\n' +
-      '[data-liquid-prism-role="hud"][data-liquid-prism="active"] .hb-val {\n' +
-      '  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);\n' +
-      '}\n' +
-      '[data-liquid-prism-role="hud"][data-liquid-prism="css-fallback"] {\n' +
-      '  border-radius: 10px !important;\n' +
-      '  border: 1px solid rgba(56, 189, 248, 0.36) !important;\n' +
-      '  background: linear-gradient(100deg, rgba(248, 251, 255, 0.90) 0%, rgba(244, 249, 255, 0.84) 78%, rgba(238, 246, 255, 0.78) 100%) !important;\n' +
-      '  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 10px 24px -10px rgba(13, 31, 68, 0.16) !important;\n' +
-      '  backdrop-filter: blur(16px) saturate(1.22) !important;\n' +
-      '  -webkit-backdrop-filter: blur(16px) saturate(1.22) !important;\n' +
       '}\n';
     document.head.appendChild(style);
   }
@@ -314,17 +265,9 @@
 
   function resolveTitleTarget() {
     var sector = document.querySelector('#title-screen .title-sector-card') || document.querySelector('.title-sector-card');
-    if (sector) return { el: sector, selector: '.title-sector-card' };
+    if (sector && !isProtectedCoreSurface(sector)) return { el: sector, selector: '.title-sector-card' };
     var badge = document.querySelector('#title-screen .title-stage-badge') || document.querySelector('.title-stage-badge');
-    if (badge) return { el: badge, selector: '.title-stage-badge' };
-    return null;
-  }
-
-  function resolveHudTarget() {
-    var hudLeft = document.querySelector('#hud .hud-left');
-    if (hudLeft) return { el: hudLeft, selector: '#hud .hud-left' };
-    var hud = document.getElementById('hud');
-    if (hud) return { el: hud, selector: '#hud' };
+    if (badge && !isProtectedCoreSurface(badge)) return { el: badge, selector: '.title-stage-badge' };
     return null;
   }
 
@@ -340,65 +283,12 @@
       if (titleTarget && isElementVisible(titleTarget.el)) {
         return { kind: 'title', target: titleTarget };
       }
-      return null;
-    }
-
-    var gameScreen = document.getElementById('game-screen');
-    if (gameScreen && isElementVisible(gameScreen)) {
-      var body = document.body;
-      if (body && (
-        body.classList.contains('ui-hidden') ||
-        body.classList.contains('pov-hidden') ||
-        body.classList.contains('cg-mode') ||
-        body.classList.contains('stage-pre-system') ||
-        body.classList.contains('stage-story')
-      )) {
-        return null;
-      }
-      var hudTarget = resolveHudTarget();
-      if (hudTarget && isElementVisible(hudTarget.el)) {
-        return { kind: 'hud', target: hudTarget };
-      }
     }
 
     return null;
   }
 
-  function inspectLensBackend(lens) {
-    if (!lens) return 'disabled';
-    var renderer = lens.renderer;
-    if (!renderer) return 'css-fallback';
-    var backend = renderer.backend;
-    if (!backend) return renderer._backendFailed ? 'css-fallback' : 'initializing';
-    if (backend.kind === 'webgpu') return 'webgpu';
-    if (backend.kind === 'webgl') {
-      try {
-        if (typeof WebGL2RenderingContext !== 'undefined' && backend.gl instanceof WebGL2RenderingContext) {
-          return 'webgl2';
-        }
-      } catch (e) {}
-      return 'webgl1';
-    }
-    return 'css-fallback';
-  }
-
-  function clearActiveAttributes(el, hostEl) {
-    if (el && el.removeAttribute) {
-      el.removeAttribute('data-liquid-prism');
-      el.removeAttribute('data-liquid-prism-role');
-      el.removeAttribute('data-liquid-prism-backend');
-    }
-    if (hostEl && hostEl.removeAttribute) {
-      hostEl.removeAttribute('data-liquid-prism-host');
-    }
-  }
-
   function teardownActiveLens() {
-    state.mountSeq++;
-    if (state.bgRefreshTimer) {
-      clearTimeout(state.bgRefreshTimer);
-      state.bgRefreshTimer = 0;
-    }
     var lens = state.activeLens;
     var el = state.activeEl;
     var hostEl = state.activeHostEl;
@@ -413,7 +303,14 @@
         lens.destroy();
       } catch (e) {}
     }
-    clearActiveAttributes(el, hostEl);
+    if (el) {
+      clearActiveAttributes(el, hostEl);
+      clearLiquidGLInlineStyles(el);
+    } else if (hostEl) {
+      clearActiveAttributes(null, hostEl);
+    }
+    removeScopedStyles();
+    sanitizeProtectedCoreHud();
 
     if (!state.enabled || isReducedMotion() || isJsdomEnv()) {
       state.backend = 'disabled';
@@ -421,7 +318,12 @@
   }
 
   function mountCssFallback(kind, targetEl) {
+    if (!targetEl || isProtectedCoreSurface(targetEl)) {
+      sanitizeProtectedCoreHud();
+      return;
+    }
     ensureScopedStyles();
+    clearLiquidGLInlineStyles(targetEl);
     targetEl.setAttribute('data-liquid-prism-role', kind);
     targetEl.setAttribute('data-liquid-prism', 'css-fallback');
     targetEl.setAttribute('data-liquid-prism-backend', 'css-fallback');
@@ -434,164 +336,17 @@
   }
 
   function mountSurface(spec) {
-    var seq = ++state.mountSeq;
-    var kind = spec.kind;
-    var targetEl = spec.target.el;
-    var targetSelector = spec.target.selector;
-
-    if (!isElementVisible(targetEl)) {
+    if (!spec || spec.kind !== 'title' || !spec.target || !spec.target.el) {
       teardownActiveLens();
       return;
     }
-
-    if (isTouchOrNarrowMobile()) {
-      mountCssFallback(kind, targetEl);
+    var targetEl = spec.target.el;
+    if (isProtectedCoreSurface(targetEl) || !isElementVisible(targetEl)) {
+      teardownActiveLens();
       return;
     }
-
-    var snapshotSelector = 'body';
-    var snapshotEl = document.body;
-    var hostEl = null;
-
-    if (kind === 'title') {
-      var blade = document.querySelector('#title-screen .title-stage-blade');
-      var titleScreen = document.getElementById('title-screen');
-      if (blade && isElementVisible(blade) && blade.scrollWidth > 0 && blade.scrollHeight > 0) {
-        snapshotSelector = '#title-screen .title-stage-blade';
-        snapshotEl = blade;
-        if (blade.contains(targetEl)) {
-          hostEl = blade;
-        }
-      } else if (titleScreen && isElementVisible(titleScreen) && titleScreen.scrollWidth > 0 && titleScreen.scrollHeight > 0) {
-        snapshotSelector = '#title-screen';
-        snapshotEl = titleScreen;
-      }
-    } else if (kind === 'hud') {
-      var bgEl = document.getElementById('bg');
-      if (bgEl && bgEl.scrollWidth > 0 && bgEl.scrollHeight > 0) {
-        snapshotSelector = '#bg';
-        snapshotEl = bgEl;
-      }
-    }
-
-    if (!snapshotEl || snapshotEl.scrollWidth <= 0 || snapshotEl.scrollHeight <= 0) {
-      return;
-    }
-
-    probeGpuSupport().then(function (support) {
-      if (seq !== state.mountSeq) return;
-      if (!state.enabled || isReducedMotion() || document.hidden) return;
-      if (!isElementVisible(targetEl) || hasBlockingOverlay()) return;
-
-      if (isTouchOrNarrowMobile() || support !== 'gpu' || typeof window.liquidGL !== 'function') {
-        mountCssFallback(kind, targetEl);
-        return;
-      }
-
-      ensureScopedStyles();
-      if (hostEl) {
-        hostEl.setAttribute('data-liquid-prism-host', kind);
-      }
-      targetEl.setAttribute('data-liquid-prism-role', kind);
-      targetEl.setAttribute('data-liquid-prism', 'active');
-
-      var cfg = kind === 'title' ? TITLE_LENS_CONFIG : HUD_LENS_CONFIG;
-      var useContentLayer = kind === 'title' && !hostEl;
-      var options = {
-        engine: 'auto',
-        snapshot: snapshotSelector,
-        target: targetSelector,
-        content: useContentLayer ? targetSelector : false,
-        zIndex: kind === 'title' ? (hostEl ? undefined : 5) : cfg.zIndex,
-        resolution: cfg.resolution,
-        refraction: cfg.refraction,
-        aberration: cfg.aberration,
-        bevelDepth: cfg.bevelDepth,
-        bevelWidth: cfg.bevelWidth,
-        frost: cfg.frost,
-        shadow: false,
-        specular: true,
-        reveal: 'none',
-        tilt: false,
-        draggable: false,
-        interaction: 'none',
-        magnify: cfg.magnify,
-        tint: cfg.tint,
-        helper: false,
-        on: {
-          init: function (instance) {
-            if (seq !== state.mountSeq || state.activeLens !== instance) return;
-            var bk = inspectLensBackend(instance);
-            if (bk !== 'initializing') {
-              state.backend = bk;
-              targetEl.setAttribute('data-liquid-prism-backend', bk);
-            }
-          }
-        }
-      };
-
-      var result = null;
-      try {
-        result = window.liquidGL(options);
-      } catch (e) {
-        clearActiveAttributes(targetEl, hostEl);
-        mountCssFallback(kind, targetEl);
-        return;
-      }
-
-      var lens = Array.isArray(result) ? result[0] : result;
-      if (!lens) {
-        clearActiveAttributes(targetEl, hostEl);
-        mountCssFallback(kind, targetEl);
-        return;
-      }
-
-      state.activeSurface = kind;
-      state.activeEl = targetEl;
-      state.activeHostEl = hostEl;
-      state.activeLens = lens;
-
-      if (!lens.renderer) {
-        if (hostEl) {
-          hostEl.removeAttribute('data-liquid-prism-host');
-          state.activeHostEl = null;
-        }
-        state.activeMode = 'css-fallback';
-        state.backend = 'css-fallback';
-        targetEl.setAttribute('data-liquid-prism', 'css-fallback');
-        targetEl.setAttribute('data-liquid-prism-backend', 'css-fallback');
-        return;
-      }
-
-      state.activeMode = 'gpu';
-      var immediateBk = inspectLensBackend(lens);
-      if (immediateBk !== 'initializing') {
-        state.backend = immediateBk;
-        targetEl.setAttribute('data-liquid-prism-backend', immediateBk);
-      }
-
-      if (lens.renderer._backendReady && typeof lens.renderer._backendReady.then === 'function') {
-        lens.renderer._backendReady.then(function (ready) {
-          if (seq !== state.mountSeq || state.activeLens !== lens) return;
-          if (!ready || !lens.renderer || !lens.renderer.backend) {
-            try { lens.destroy(); } catch (e) {}
-            state.activeLens = null;
-            clearActiveAttributes(targetEl, hostEl);
-            mountCssFallback(kind, targetEl);
-            return;
-          }
-          var bk = inspectLensBackend(lens);
-          state.backend = bk;
-          targetEl.setAttribute('data-liquid-prism-backend', bk);
-        }).catch(function () {
-          if (seq !== state.mountSeq || state.activeLens !== lens) return;
-          try { lens.destroy(); } catch (e) {}
-          state.activeLens = null;
-          clearActiveAttributes(targetEl, hostEl);
-          mountCssFallback(kind, targetEl);
-        });
-      }
-    });
+    // 使用纯 CSS 非阻塞磨砂增强，彻底规避 liquidGL GPU 劫持写入内联 opacity:0 / pointer-events:none
+    mountCssFallback('title', targetEl);
   }
 
   function syncNow() {
@@ -601,25 +356,24 @@
     }
     if (!state.initialized) return;
 
+    sanitizeProtectedCoreHud();
+
     var desired = detectDesiredSurface();
     if (!desired) {
       if (state.activeSurface || state.activeLens || state.activeEl) {
         teardownActiveLens();
-      } else if (!state.enabled || isReducedMotion() || isJsdomEnv()) {
-        state.backend = 'disabled';
+      } else {
+        removeScopedStyles();
+        if (!state.enabled || isReducedMotion() || isJsdomEnv()) {
+          state.backend = 'disabled';
+        } else {
+          state.backend = 'css-fallback';
+        }
       }
       return;
     }
 
-    if (state.activeSurface === desired.kind && state.activeEl === desired.target.el) {
-      var wantFallbackOnly = isTouchOrNarrowMobile();
-      if (
-        (wantFallbackOnly && state.activeMode === 'gpu') ||
-        (!wantFallbackOnly && state.activeMode === 'css-fallback' && state.gpuSupport !== 'none')
-      ) {
-        teardownActiveLens();
-        mountSurface(desired);
-      }
+    if (state.activeSurface === desired.kind && state.activeEl === desired.target.el && state.activeMode === 'css-fallback') {
       return;
     }
 
@@ -629,7 +383,6 @@
 
   function scheduleSync(delayMs) {
     if (!isBrowserDoc() || isJsdomEnv()) return;
-    // Teardown synchronously the moment a modal opens or a surface disappears
     if (state.initialized && (state.activeSurface || state.activeLens)) {
       var desiredNow = detectDesiredSurface();
       if (!desiredNow || desiredNow.kind !== state.activeSurface || desiredNow.target.el !== state.activeEl) {
@@ -648,35 +401,6 @@
       state.syncTimer = 0;
     }
     state.syncTimer = setTimeout(syncNow, typeof delayMs === 'number' ? delayMs : 50);
-  }
-
-  function scheduleBgRecapture() {
-    if (!state.initialized || state.activeSurface !== 'hud') return;
-    if (state.activeMode !== 'gpu' || !state.activeLens || !state.activeLens.renderer) return;
-    if (state.bgRefreshTimer) {
-      clearTimeout(state.bgRefreshTimer);
-      state.bgRefreshTimer = 0;
-    }
-    state.bgRefreshTimer = setTimeout(function () {
-      state.bgRefreshTimer = 0;
-      if (state.activeSurface !== 'hud' || !state.activeLens || !state.activeLens.renderer) return;
-      var renderer = state.activeLens.renderer;
-      if (renderer._destroyed) return;
-      var bgEl = document.getElementById('bg');
-      if (bgEl) {
-        try {
-          var op = parseFloat(window.getComputedStyle(bgEl).opacity);
-          if (!isNaN(op) && op < 0.5) {
-            scheduleBgRecapture();
-            return;
-          }
-        } catch (e) {}
-      }
-      try {
-        renderer._captureGeneration = (renderer._captureGeneration || 0) + 1;
-        renderer.captureSnapshot();
-      } catch (e) {}
-    }, 340);
   }
 
   function syncEnabledFromAmbientCanvas() {
@@ -830,13 +554,6 @@
       }
     }
 
-    var bgEl = document.getElementById('bg');
-    if (bgEl) {
-      observeNode(bgEl, { attributes: true, attributeFilter: ['class', 'style'] }, function () {
-        scheduleBgRecapture();
-      });
-    }
-
     var afxCanvas = document.getElementById('ambient-fx-canvas');
     if (afxCanvas) {
       observeNode(afxCanvas, { attributes: true, attributeFilter: ['data-enabled'] }, syncEnabledFromAmbientCanvas);
@@ -906,6 +623,7 @@
   function init() {
     state.enabled = readSavedEnabled();
     checkReducedMotion();
+    sanitizeProtectedCoreHud();
 
     if (!isBrowserDoc() || isJsdomEnv()) {
       state.initialized = true;
@@ -923,43 +641,17 @@
     syncEnabledFromAmbientCanvas();
     scheduleSync(80);
 
-    if (document.readyState !== 'complete') {
-      var onLoad = function () {
-        window.removeEventListener('load', onLoad);
-        if (!state.initialized) return;
-        if (!state.activeSurface) {
-          scheduleSync(40);
-        } else if (state.activeMode === 'gpu' && state.activeLens && state.activeLens.renderer && !state.activeLens.renderer._destroyed) {
-          try {
-            var r = state.activeLens.renderer;
-            r._captureGeneration = (r._captureGeneration || 0) + 1;
-            r.captureSnapshot();
-          } catch (e) {}
-        }
-      };
-      window.addEventListener('load', onLoad);
-      state.cleanups.push(function () {
-        window.removeEventListener('load', onLoad);
-      });
-    }
-
     return api;
   }
 
   function refresh() {
+    sanitizeProtectedCoreHud();
     if (!isBrowserDoc() || isJsdomEnv()) return api;
     if (!state.initialized) {
       init();
       return api;
     }
     syncNow();
-    if (state.activeMode === 'gpu' && state.activeLens && state.activeLens.renderer && !state.activeLens.renderer._destroyed) {
-      try {
-        var r = state.activeLens.renderer;
-        r._captureGeneration = (r._captureGeneration || 0) + 1;
-        r.captureSnapshot();
-      } catch (e) {}
-    }
     return api;
   }
 
@@ -983,11 +675,7 @@
     if (!state.enabled || isReducedMotion() || isJsdomEnv() || !isBrowserDoc()) {
       return 'disabled';
     }
-    if (state.activeLens) {
-      var live = inspectLensBackend(state.activeLens);
-      if (live !== 'initializing') state.backend = live;
-    }
-    return state.backend || 'disabled';
+    return state.backend || 'css-fallback';
   }
 
   function destroy() {
@@ -998,6 +686,7 @@
     teardownActiveLens();
     disconnectObservers();
     removeScopedStyles();
+    sanitizeProtectedCoreHud();
     state.initialized = false;
     state.backend = 'disabled';
     return api;

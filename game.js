@@ -1979,13 +1979,13 @@ function spendST(n){
   return true;
 }
 function forceRest(){
-  S.freeRoam=false;
+  const fromRoam = !!(S.freeRoam || roamDialogActive || (!currentScene && !storyChain));
   playLines([
     {text:'眼前一黑……体力已经到极限了。'},
     {text:'不知被谁扶回了房间。'},
     {do:()=>{ S.st=Math.floor(S.mst*0.5); S.loc=S.lastSafe||'nursery'; updateLocBar(); },
      text:'休息之后，体力恢复了一些。', freeRoam:true}
-  ]);
+  ], null, fromRoam ? { roamDialog: true } : undefined);
 }
 function checkAgeEvents(){
   // handled by phase scenes mostly
@@ -2175,8 +2175,14 @@ function syncStageChromeMode(){
   const cl = document.body.classList;
   const age = Number(S.ageY) || 0;
   const awakened = isSystemAwakened();
+  const inMainStory = !S.freeRoam && !roamDialogActive && (
+    !!currentScene ||
+    !!storyChain ||
+    S.phase === 'prologue' ||
+    (Array.isArray(S.storyPending) && S.storyPending.length > 0)
+  );
   cl.toggle('stage-pre-system', !awakened);
-  cl.toggle('stage-story', !S.freeRoam && !roamDialogActive);
+  cl.toggle('stage-story', inMainStory);
   cl.toggle('stage-infant', age < 1);
   cl.toggle('stage-early-child', age >= 1 && age < 4);
   cl.toggle('stage-no-arena', !hasSkill('virtual_duel') && S.phase !== 'academy' && S.phase !== 'journey' && S.phase !== 'finale');
@@ -2194,6 +2200,15 @@ function setDialogHidden(hidden){
   if(typeof document !== 'undefined' && document.body){
     document.body.classList.toggle('dialog-hidden', on);
   }
+}
+function shouldPreHideDialogOnRoamLoad(curSc, curChain){
+  if(!S || !S.freeRoam) return false;
+  if(curSc && SCENES[curSc]) return false;
+  if(curChain && Array.isArray(curChain.queue) && curChain.idx < curChain.queue.length) return false;
+  if(Array.isArray(S.storyPending) && S.storyPending.some(id => SCENES[id])) return false;
+  if(typeof checkStoryGates === 'function' && checkStoryGates({ peek: true })) return false;
+  if(S.seasonFlavorPending) return false;
+  return true;
 }
 function setAwaitingChoiceUI(on){
   const tb = $('text-box');
@@ -2770,7 +2785,7 @@ function advanceDialog(){
     if(!isAutoOrSkip) sfx('ui_tick', { gain: 0.46 });
     const fn = lineCB;
     lineCB = null;
-    try { fn(); } catch(err){ console.error('lineCB error', err); enterFreeRoam(); }
+    try { fn(); } catch(err){ console.error('lineCB error', err); enterFreeRoam({ deferGreeting: true }); }
   }
 }
 
@@ -2925,7 +2940,7 @@ function playLines(lines, done, opts){
   const baseIdx = (opts && Number.isFinite(opts.baseIdx)) ? Math.max(0, Math.floor(opts.baseIdx)) : 0;
   const trackSceneIdx = !!(opts && opts.trackSceneIdx);
   let i = startIdx;
-  const keepRoamStage = !!((S.freeRoam || roamDialogActive) && !currentScene && !storyChain);
+  const keepRoamStage = !!(((opts && opts.roamDialog) || S.freeRoam || roamDialogActive) && !currentScene && !storyChain);
   S.freeRoam = false;
   roamDialogActive = keepRoamStage;
   awaitingChoice = false;
@@ -2960,10 +2975,10 @@ function playLines(lines, done, opts){
     awaitingChoice = false;
     setAwaitingChoiceUI(false);
     if(typeof done === 'function'){
-      try { done(); } catch(e){ console.error(e); enterFreeRoam(); }
+      try { done(); } catch(e){ console.error(e); enterFreeRoam({ deferGreeting: true }); }
     } else if(!S.freeRoam){
       // never leave the player with a dead text box
-      enterFreeRoam();
+      enterFreeRoam({ deferGreeting: true });
     }
   }
 
@@ -3122,10 +3137,10 @@ function playLines(lines, done, opts){
           if(typeof VNUx!=='undefined'&&VNUx.recordLine) VNUx.recordLine({ speaker: L.speaker||null, charId: curSpeakerId, text: L.text, voiceId: roamVoiceId });
           typeText(L.text, ()=>{
             if(gen !== lineGen) return;
-            enterFreeRoam();
+            enterFreeRoam({ deferGreeting: true });
           });
         } else {
-          enterFreeRoam();
+          enterFreeRoam({ deferGreeting: true });
         }
         return;
       }
@@ -3186,7 +3201,7 @@ function showChoices(choices, onEmpty){
     awaitingChoice = false;
     setAwaitingChoiceUI(false);
     if(onEmpty) onEmpty();
-    else enterFreeRoam();
+    else enterFreeRoam({ deferGreeting: true });
     return;
   }
 
@@ -3223,11 +3238,11 @@ function showChoices(choices, onEmpty){
           if($('duel-screen') && !$('duel-screen').classList.contains('hidden')) return;
           if($('ai-drawer') && !$('ai-drawer').classList.contains('hidden')) return;
           if($('choices').children.length) return;
-          enterFreeRoam();
+          enterFreeRoam({ deferGreeting: true });
         }, 100);
       } catch(err){
         console.error('choice error', err);
-        enterFreeRoam();
+        enterFreeRoam({ deferGreeting: true });
       }
     };
     box.appendChild(b);
@@ -3853,7 +3868,7 @@ function renderHotspots(){
         }
         return;
       }
-      if(ex.combatStage){ startBattle({stageId: ex.combatStage, fullRestore: true}, ()=>enterFreeRoam()); return; }
+      if(ex.combatStage){ startBattle({stageId: ex.combatStage, fullRestore: true}, ()=>enterFreeRoam({ deferGreeting: true })); return; }
       if(ex.babyFuss){ doBabyFuss(ex.fussTo || 'parlor', ex.st || 0); return; }
       enterLoc(ex.to);
     };
@@ -4015,7 +4030,8 @@ function enterFreeRoam(options={}){
   renderHotspots();
   // 由季度推进触发的剧情全部结束后，再补显示该季度的风物提示。
   if(showPendingSeasonFlavor()) return;
-  if(!options.deferGreeting) maybeShowRoamGreeting();
+  const shouldDeferGreeting = !!(options.deferGreeting || (options.restoreLoc && options.allowGreeting !== true));
+  if(!shouldDeferGreeting) maybeShowRoamGreeting();
 }
 
 const SEASON_FLAVOR = [
@@ -4073,8 +4089,8 @@ function enterLoc(id){
   if(moved) sfx('footstep');
   updateLocBar(); clearPortraits();
   if(tryLocEgg(id)) return;
-  // 普通进入地点不再播放环境描述；自由探索会自动显示本季度尚未关闭的角色问候。
-  enterFreeRoam();
+  // 自由探索入场保持单层悬浮底栏，待点击人物或触发事件再展开薄幕。
+  enterFreeRoam({ deferGreeting: true });
 }
 const ROAM_PLACE_DETAIL = {
   nursery:'窗边的光很暖。', ownroom:'房间里很安静。', hallway:'走廊今天很安静。',
@@ -4363,7 +4379,7 @@ function doTalk(){
     text:`和${CHARS[id]?.short||id}说话`,
     do:()=>talkTo(id)
   }));
-  choices.push({text:'还是算了', do:()=>enterFreeRoam()});
+  choices.push({text:'还是算了', do:()=>enterFreeRoam({ deferGreeting: true })});
   playLines([{text:'要和谁说话？', choices}]);
 }
 
@@ -4396,7 +4412,7 @@ function talkTo(id){
     playLines([{text:`（${CHARS[id].short}看了看你，什么也没说。空气有点微妙。）`, freeRoam:true}]);
     return;
   }
-  playLines(lines, ()=>enterFreeRoam());
+  playLines(lines, ()=>enterFreeRoam({ deferGreeting: true }));
 }
 
 function talkLines(id){
@@ -4638,7 +4654,7 @@ function doCourse(){
     text:`${c.name}（${c.teacher}）· 体${c.st||2}`,
     do:()=>takeCourse(c.id)
   }));
-  choices.push({text:'取消', do:()=>enterFreeRoam()});
+  choices.push({text:'取消', do:()=>enterFreeRoam({ deferGreeting: true })});
   playLines([{text:'要上哪一门课？', choices}]);
 }
 function courseTeacherCharId(teacherName){
@@ -4683,7 +4699,7 @@ function doTrain(){
   if(S.sickUntil > S.dayCount){
     playLines([{text:'你还在生病状态中，是否继续修行？', choices:[
       {text:'继续（触发生病剧情）', do:()=>{ if(!spendST(3)) return; S.lastAction = 'train'; triggerSickPlot(); }},
-      {text:'取消', do:()=>enterFreeRoam()}
+      {text:'取消', do:()=>enterFreeRoam({ deferGreeting: true })}
     ]}]);
     return;
   }
@@ -4950,7 +4966,7 @@ function dismissPickScreen(){
   } else if(ap && typeof ap.done === 'function'){
     ap.done();
   } else if(!S.freeRoam && !typing && !lineCB && !awaitingChoice){
-    enterFreeRoam();
+    enterFreeRoam({ deferGreeting: true });
   }
 }
 function triggerBraveGift(tier){
@@ -5214,7 +5230,7 @@ function renderBattle(){
   pass.disabled=B.over; pass.onclick=()=>endPlayerTurn(true);
   acts.appendChild(pass);
   const run=document.createElement('button'); run.className='choice'; run.textContent='逃跑';
-  run.onclick=()=>{ if(B.over) return; bgmEndBattle(); battleLog('你逃跑了。'); toast('逃跑成功'); const d=B.done; B=null; if(d) d(); else if(S.freeRoam) enterFreeRoam(); };
+  run.onclick=()=>{ if(B.over) return; bgmEndBattle(); battleLog('你逃跑了。'); toast('逃跑成功'); const d=B.done; B=null; if(d) d(); else if(S.freeRoam) enterFreeRoam({ deferGreeting: true }); };
   acts.appendChild(run);
 }
 function playerAct(sk){
@@ -5293,13 +5309,13 @@ function winBattle(){
   battleLog(`击败了 ${B.enemy.name}！经验+${B.enemy.exp} 金币+${B.enemy.gold}`);
   addExp(B.enemy.exp); S.gold+=B.enemy.gold||0; updateHUD(); sfx('level');
   const done=B.done, enemy=B.enemy;
-  setTimeout(()=>{ bgmEndBattle(); B=null; if(done) done(); else if(S.freeRoam) enterFreeRoam(); }, 800);
+  setTimeout(()=>{ bgmEndBattle(); B=null; if(done) done(); else if(S.freeRoam) enterFreeRoam({ deferGreeting: true }); }, 800);
 }
 function defeat(){
   if(!B||B.over) return;
   B.over=true; S.deaths++; S.hp=1;
   battleLog('……意识模糊。被人救了回来。');
-  setTimeout(()=>{ bgmEndBattle(); B=null; S.loc=S.lastSafe; enterFreeRoam(); toast('重伤撤回'); }, 800);
+  setTimeout(()=>{ bgmEndBattle(); B=null; S.loc=S.lastSafe; enterFreeRoam({ deferGreeting: true }); toast('重伤撤回'); }, 800);
 }
 
 // ========== VIRTUAL DUEL ==========
@@ -5311,7 +5327,7 @@ function openDuelMenu(){
     text:`挑战 ${CHARS[id]?.short||id}（了解度 ${S.know[id]}%）`,
     do:()=>runDuel(id)
   }));
-  choices.push({text:'取消', do:()=>enterFreeRoam()});
+  choices.push({text:'取消', do:()=>enterFreeRoam({ deferGreeting: true })});
   playLines([{text:'要挑战谁？', choices}]);
 }
 function runDuel(id){
@@ -5321,7 +5337,7 @@ function runDuel(id){
       return;
     }
     toast('请通过「战术演武」大厅进入虚拟决斗');
-    enterFreeRoam();
+    enterFreeRoam({ deferGreeting: true });
     return;
   }
   const n=S.know[id]||90;
@@ -5345,7 +5361,7 @@ function winDuel(id){
   if(rew.id && !hasSkill(rew.id)) addSkill(rew.id);
   ach('virtual_first');
   battleLog(`胜利！获得：${rew.name}`);
-  if($('duel-actions')) $('duel-actions').innerHTML=`<button class="choice" onclick="document.getElementById('duel-screen')?.classList.add('hidden');bgmRestoreScene();B=null;enterFreeRoam()">确认</button>`;
+  if($('duel-actions')) $('duel-actions').innerHTML=`<button class="choice" onclick="document.getElementById('duel-screen')?.classList.add('hidden');bgmRestoreScene();B=null;enterFreeRoam({ deferGreeting: true })">确认</button>`;
   addExp(30); sfx('ok');
   updateHUD();
 }
@@ -5866,11 +5882,20 @@ function loadFromManualSlot(slotId){
   if(typeof RelicsAndEvents !== 'undefined' && RelicsAndEvents.ensureRelicsState){
     RelicsAndEvents.ensureRelicsState(S);
   }
+  currentScene = null;
+  storyChain = null;
   roamDialogActive = false;
-  if(typeof document !== 'undefined' && document.body) document.body.classList.remove('roam-dialog');
+  if(typeof document !== 'undefined' && document.body) document.body.classList.remove('roam', 'roam-dialog');
   bgmLoc = null;
   syncLocUnlocksForState();
   save();
+  const preHideRoamDialog = shouldPreHideDialogOnRoamLoad();
+  if(preHideRoamDialog){
+    if(typeof document !== 'undefined' && document.body) document.body.classList.add('roam');
+    setDialogHidden(true);
+  } else {
+    setDialogHidden(false);
+  }
   show('panel', 0);
   show('title-screen', 0);
   uiShow();
@@ -5879,8 +5904,8 @@ function loadFromManualSlot(slotId){
   updateLocBar();
   if(resumePendingStories()) return;
   if(checkStoryGates()) return;
-  if(S.freeRoam) enterFreeRoam({ restoreLoc: true });
-  else playLines([{text:`（读取档案 ${slotId}）${dateStr()} · ${LOCS[S.loc]?.name||''}`, freeRoam:true}]);
+  if(S.freeRoam) enterFreeRoam({ restoreLoc: true, deferGreeting: true });
+  else playLines([{text:`（读取档案 ${slotId}）${dateStr()} · ${LOCS[S.loc]?.name||''}`, freeRoam:true}], null, { roamDialog: true });
 }
 function deleteManualSlot(slotId){
   if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.deleteSlot === 'function'){
@@ -6995,6 +7020,7 @@ function checkStoryGates(options={}){
 
   const validQueue=queue.filter((id,index)=>SCENES[id] && queue.indexOf(id)===index);
   if(!validQueue.length) return false;
+  if(options.peek) return true;
   if(options.defer){
     S.storyPending=validQueue.slice();
     save();
@@ -7130,7 +7156,7 @@ function stepChain(){
     // 只有场景确实播放结束，才写入对应的“已完成”门控标记。
     markStoryGateCompleted(id);
     if(storyChain && storyChain.idx < storyChain.queue.length){ stepChain(); }
-    else { storyChain = null; enterFreeRoam(); }
+    else { storyChain = null; enterFreeRoam({ deferGreeting: true }); }
   }, { startIdx: resumeIdx, trackSceneIdx: true });
   if(sc.card && resumeIdx === 0) showCard(sc.card.vol, sc.card.t, sc.card.s, go);
   else go();
@@ -7144,7 +7170,7 @@ function runScene(id){
   storyChain = null;
   S.storyPending=[id];
   const sc = SCENES[id];
-  if(!sc){ console.warn('missing scene', id); toast('前路迷雾未散，暂且折返歇脚。'); enterFreeRoam(); return; }
+  if(!sc){ console.warn('missing scene', id); toast('前路迷雾未散，暂且折返歇脚。'); enterFreeRoam({ deferGreeting: true }); return; }
   currentScene = id;
   if(typeof window!=='undefined'&&window.VoiceEngine&&typeof window.VoiceEngine.stop==='function') window.VoiceEngine.stop({ reason: 'scene_change', clearCurrent: true });
   if(typeof VNUx!=='undefined'&&VNUx.onSceneStart) VNUx.onSceneStart(id);
@@ -7650,6 +7676,8 @@ function newGame(){
 function continueGame(){
   if(!load()){ toast('没有存档'); sfx('bad'); return; }
   if(typeof window !== 'undefined') window.S = S;
+  currentScene = null;
+  storyChain = null;
   roamDialogActive = false;
   closeHudMoreDrawer();
   setPov(false);
@@ -7663,6 +7691,13 @@ function continueGame(){
   bgmOverlayStack = [];
   sceneBgmType = null;
   syncLocUnlocksForState();
+  const preHideRoamDialog = shouldPreHideDialogOnRoamLoad();
+  if(preHideRoamDialog){
+    document.body.classList.add('roam');
+    setDialogHidden(true);
+  } else {
+    setDialogHidden(false);
+  }
   uiShow();
   show('title-screen',0); show('game-screen',1);
   spawnCardExitVeil();
@@ -7674,8 +7709,11 @@ function continueGame(){
   // 先恢复被刷新中断的剧情；旧存档则重新检查并补播已到期剧情。
   if(resumePendingStories()) return;
   if(checkStoryGates()) return;
-  if(S.freeRoam) enterFreeRoam({ restoreLoc: true });
-  else playLines([{text:`（读取存档）${dateStr()} · ${LOCS[S.loc]?.name||''}`, freeRoam:true}]);
+  if(S.freeRoam) enterFreeRoam({ restoreLoc: true, deferGreeting: true });
+  else {
+    updateLocBar();
+    playLines([{text:`（读取存档）${dateStr()} · ${LOCS[S.loc]?.name||''}`, freeRoam:true}], null, { roamDialog: true });
+  }
 }
 
 function syncMuteBtn(){
@@ -8449,12 +8487,19 @@ if(typeof window !== 'undefined'){
     storyChain = curChain || null;
     roamDialogActive = false;
     if(typeof document !== 'undefined' && document.body){
-      document.body.classList.remove('roam-dialog');
+      document.body.classList.remove('roam', 'roam-dialog');
     }
     bgmLoc = null;
     bgmOverlayStack = [];
     sceneBgmType = null;
     syncLocUnlocksForState();
+    const preHideRoamDialog = shouldPreHideDialogOnRoamLoad(curSc, curChain);
+    if(preHideRoamDialog){
+      if(typeof document !== 'undefined' && document.body) document.body.classList.add('roam');
+      setDialogHidden(true);
+    } else {
+      setDialogHidden(false);
+    }
     syncStageChromeMode();
     syncRaisingHubSafe();
   };

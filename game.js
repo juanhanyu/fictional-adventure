@@ -1967,18 +1967,46 @@ function forceRest(){
 function checkAgeEvents(){
   // handled by phase scenes mostly
 }
+const AGE_FLOOR_V3 = {
+  7:  { mhp: 145, mmp: 225, atk: 11, mag: 50,  pdef: 8,  mdef: 11 },
+  8:  { mhp: 150, mmp: 235, atk: 12, mag: 52,  pdef: 8,  mdef: 11 },
+  9:  { mhp: 162, mmp: 230, atk: 14, mag: 58,  pdef: 9,  mdef: 12 },
+  11: { mhp: 170, mmp: 275, atk: 15, mag: 68,  pdef: 10, mdef: 14 },
+  12: { mhp: 185, mmp: 285, atk: 18, mag: 82,  pdef: 12, mdef: 16 },
+  14: { mhp: 218, mmp: 300, atk: 24, mag: 105, pdef: 15, mdef: 21 },
+  15: { mhp: 235, mmp: 315, atk: 42, mag: 118, pdef: 17, mdef: 23 },
+  16: { mhp: 255, mmp: 330, atk: 46, mag: 130, pdef: 19, mdef: 26 },
+};
+const AGE_FLOOR_V3_KEYS = [7, 8, 9, 11, 12, 14, 15, 16];
+
 function syncStatsToAge(){
   // 体力上限：初始5，每2岁+1，最多额外+10（20岁时封顶15）
   S.mst = Math.max(S.mst, 5 + Math.min(10, Math.floor(S.ageY / 2)));
   S.st = Math.min(S.st, S.mst);
-  // 其他属性随年龄成长
+  // 0–6 岁基础成长保底（保持原著幼年曲线零破坏）
   if(S.ageY>=1 && S.ageY<3){ S.mhp=Math.max(S.mhp,18); S.mmp=Math.max(S.mmp,20); }
   if(S.ageY>=3){ S.mhp=Math.max(S.mhp,35); S.mmp=Math.max(S.mmp,52); S.mag=Math.max(S.mag,12); }
   if(S.ageY>=5){ S.mhp=Math.max(S.mhp,55); S.mmp=Math.max(S.mmp,80); S.mag=Math.max(S.mag,22); S.lv=Math.max(S.lv,8); }
-  if(S.ageY>=8){ S.mhp=Math.max(S.mhp,100); S.mmp=Math.max(S.mmp,150); S.mag=Math.max(S.mag,45); S.atk=Math.max(S.atk,12); S.lv=Math.max(S.lv,15); if(S.phase==='prologue'||S.phase==='childhood') S.phase='youth'; }
-  if(S.ageY>=10){ S.mhp=Math.max(S.mhp,164); S.mmp=Math.max(S.mmp,285); S.mag=Math.max(S.mag,67); S.lv=Math.max(S.lv,22); }
+  // 7–16 岁 V3.2 年龄成长保底表 (AGE_FLOOR_V3)
+  if(S.ageY>=7){
+    let floorKey = 7;
+    for(let i = 0; i < AGE_FLOOR_V3_KEYS.length; i++){
+      if(S.ageY >= AGE_FLOOR_V3_KEYS[i]) floorKey = AGE_FLOOR_V3_KEYS[i];
+    }
+    const fl = AGE_FLOOR_V3[floorKey];
+    if(fl){
+      S.mhp = Math.max(S.mhp||0, fl.mhp);
+      S.mmp = Math.max(S.mmp||0, fl.mmp);
+      S.atk = Math.max(S.atk||0, fl.atk);
+      S.mag = Math.max(S.mag||0, fl.mag);
+      S.pdef = Math.max(S.pdef||0, fl.pdef);
+      S.mdef = Math.max(S.mdef||0, fl.mdef);
+    }
+  }
+  if(S.ageY>=8){ S.lv=Math.max(S.lv,15); if(S.phase==='prologue'||S.phase==='childhood') S.phase='youth'; }
+  if(S.ageY>=10){ S.lv=Math.max(S.lv,22); }
   if(S.ageY>=12){ S.lv=Math.max(S.lv,28); }
-  if(S.ageY>=13){ S.lv=Math.max(S.lv,31); S.mmp=Math.max(S.mmp,324); S.mag=Math.max(S.mag,112); }
+  if(S.ageY>=13){ S.lv=Math.max(S.lv,31); }
   // 不回满任何条
   S.hp=Math.min(S.hp, S.mhp); S.mp=Math.min(S.mp, S.mmp); S.st=Math.min(S.st, S.mst);
   S.next = Math.max(S.next, 100+S.lv*20);
@@ -5473,8 +5501,8 @@ const MAIN_STAFF_DEFS = {
   north_saint_staff: {
     id: 'north_saint_staff',
     name: '极北圣晶杖',
-    shortEffect: '魔导威力提升 28% · 暴伤 +20% · 增幅耗蓝 -25%',
-    desc: '极北寒晶雕琢的圣域法杖。魔导威力提升 28%、暴击伤害 +20%，魔力增幅额外耗蓝降低 25%。',
+    shortEffect: '魔导威力 +14% · 会心威势 +10% · 魔力增幅耗损降低 10%',
+    desc: '极北寒晶雕琢的圣域法杖。魔导威力 +14%、会心威势 +10%，魔力增幅耗损降低 10%。',
     lore: '凝萃极北冻土终年不化之冰髓而成的白银圣杖，杖首六棱冰晶清辉凛然。'
   }
 };
@@ -6320,6 +6348,10 @@ function openPanel(tab, opts){
     if(t) openPanel(t, { fromTab: true });
   };
   const body=$('panel-body');
+  if(body && body.classList) body.classList.toggle('is-settings-tab', tab==='settings');
+  if(body && body.parentElement && body.parentElement.classList && body.parentElement.classList.contains('modal-scroll')){
+    body.parentElement.classList.toggle('is-settings-scroll', tab==='settings');
+  }
   if(tab==='status'){
     const statsJumpBtn = isInfant ? '' : `<button type="button" class="sc-jump-stats-btn" onclick="show('panel',0);openStatsOverlay();">查看养成四维星象盘 →</button>`;
     body.innerHTML= statusPanelHTML() + `<div class="sc-foot-note">
@@ -6545,23 +6577,51 @@ function openPanel(tab, opts){
     const voicePct = Math.round(Math.max(0, Math.min(1, liveVoiceVol)) * 100);
     const brightVal = Number.isFinite(Number(cur.bright)) ? Number(cur.bright) : 1;
     const brightPct = Math.round(brightVal * 100);
-    body.innerHTML = `<div class="p-stat" style="grid-template-columns:1fr">
+    const assistMode = getCombatRingAssistMode();
+    const assistLabel = COMBAT_RING_ASSIST_LABELS[assistMode] || '标准';
+    const casualOn = getCombatCasualMode();
+    const segBtnStyle = (active, withDivider) =>
+      `flex:1;padding:5px 10px;border:none;${withDivider ? 'border-left:1px solid rgba(27,35,51,0.14);' : ''}border-radius:0;cursor:pointer;font-size:12.5px;transition:background .15s,color .15s;background:${active ? 'rgba(22,88,235,0.10)' : 'transparent'};color:${active ? '#1658eb' : '#526078'};font-weight:${active ? '700' : '500'};`;
+    const casualBtnStyle = (on) =>
+      `padding:4px 12px;border-radius:2px;cursor:pointer;font-size:12.5px;font-weight:600;border:1px solid ${on ? '#0e2b78' : 'rgba(27,35,51,0.20)'};background:${on ? '#1658eb' : 'transparent'};color:${on ? '#fafbfd' : '#323d52'};transition:background .15s,color .15s,border-color .15s;`;
+    body.innerHTML = `<div class="p-stat panel-settings-pane" style="grid-template-columns:1fr">
       <div class="set-row-head"><b>BGM 音量</b><span id="set-bgm-val" class="set-val">${bgmPct}%</span></div>
       <input type="range" id="set-bgm" min="0" max="100" value="${bgmPct}" style="width:100%">
-      <div class="set-row-head" style="margin-top:14px"><b>音效音量 (SFX)</b><span id="set-sfx-val" class="set-val">${sfxPct}%</span></div>
+      <div class="set-row-head"><b>音效音量 (SFX)</b><span id="set-sfx-val" class="set-val">${sfxPct}%</span></div>
       <input type="range" id="set-sfx" min="0" max="100" value="${sfxPct}" style="width:100%">
-      <div class="set-row-head" style="margin-top:14px"><b>角色语音音量</b><span id="set-voice-val" class="set-val">${voicePct}%</span></div>
+      <div class="set-row-head"><b>角色语音音量</b><span id="set-voice-val" class="set-val">${voicePct}%</span></div>
       <input type="range" id="set-voice" min="0" max="100" value="${voicePct}" style="width:100%">
-      <div class="set-row-head" style="margin-top:14px"><b>背景明度</b><span id="set-bright-val" class="set-val">${brightPct}%</span></div>
+      <div class="set-row-head"><b>背景明度</b><span id="set-bright-val" class="set-val">${brightPct}%</span></div>
       <input type="range" id="set-bright" min="50" max="150" value="${brightPct}" style="width:100%">
-      <div style="color:#526078;font-size:12px">100% 为默认画面明度，调节背景明度不影响音乐与语音播放</div>
+      <div class="set-hint">100% 为默认画面明度，调节背景明度不影响音乐与语音播放</div>
+      <div class="set-row-head"><b>精准施放与格挡护手</b><span id="set-ring-assist-val" class="set-val">${assistLabel}</span></div>
+      <div id="set-ring-assist-seg" role="group" aria-label="精准施放与格挡护手" style="display:flex;padding:0;border:1px solid rgba(27,35,51,0.16);border-radius:2px;overflow:hidden">
+        <button type="button" class="set-seg-btn${assistMode==='standard'?' active':''}" data-set-ring-assist="standard" aria-pressed="${assistMode==='standard'?'true':'false'}" style="${segBtnStyle(assistMode==='standard', false)}">标准</button>
+        <button type="button" class="set-seg-btn${assistMode==='relaxed'?' active':''}" data-set-ring-assist="relaxed" aria-pressed="${assistMode==='relaxed'?'true':'false'}" style="${segBtnStyle(assistMode==='relaxed', true)}">宽松</button>
+        <button type="button" class="set-seg-btn${assistMode==='off'?' active':''}" data-set-ring-assist="off" aria-pressed="${assistMode==='off'?'true':'false'}" style="${segBtnStyle(assistMode==='off', true)}">自动</button>
+      </div>
+      <div class="set-hint">标准为常规缩圈节奏，宽松放宽判定窗口，自动跳过缩圈直接按 GOOD 结算</div>
+      <div class="set-row-head set-row-casual"><b>休闲模式</b><button type="button" id="set-casual-toggle" class="${casualOn?'on':''}" aria-pressed="${casualOn?'true':'false'}" style="${casualBtnStyle(casualOn)}">${casualOn ? '已开启 · 休闲剧情' : '已关闭 · 标准挑战'}</button></div>
+      <div id="set-casual-desc" class="set-hint">开启后战斗难度大幅下降，适合想要轻松享受剧情的休闲玩家</div>
     </div>
-    <button class="tbtn" id="set-reset" style="margin-top:18px">全部恢复默认</button>`;
+    <button class="tbtn" id="set-reset">全部恢复默认</button>`;
     // 同步绑定事件，杜绝刚打开弹窗时立即交互漏绑
     const bm=$('set-bgm'); if(bm) bm.oninput=()=>{ setSetting('bgm', bm.value/100); };
     const sx=$('set-sfx'); if(sx) sx.oninput=()=>{ setSetting('sfx', sx.value/100); };
     const vc=$('set-voice'); if(vc) vc.oninput=()=>{ setSetting('voiceVol', vc.value/100); };
     const br=$('set-bright'); if(br) br.oninput=()=>{ setSetting('bright', br.value/100); };
+    body.querySelectorAll('[data-set-ring-assist]').forEach(btn => {
+      btn.onclick = ()=>{
+        const mode = btn.getAttribute('data-set-ring-assist');
+        sfx('tab_switch');
+        setCombatRingAssistMode(mode, { source: 'game-panel' });
+      };
+    });
+    const csBtn=$('set-casual-toggle');
+    if(csBtn) csBtn.onclick=()=>{
+      sfx('tab_switch');
+      setCombatCasualMode(!getCombatCasualMode(), { source: 'game-panel' });
+    };
     const rs=$('set-reset'); if(rs) rs.onclick=()=>{ resetSettings(); openPanel('settings'); toast('已恢复默认设置'); };
   }
   const scrollWrap = body && body.parentElement;
@@ -6577,12 +6637,158 @@ function openPanel(tab, opts){
   }
 }
 
+// ========== 战斗体验偏好（精准施放与格挡护手 / 休闲模式，全站四端实时联动） ==========
+const COMBAT_RING_ASSIST_KEY = 'combat_ring_assist_mode';
+const COMBAT_CASUAL_MODE_KEY = 'combat_casual_mode';
+const COMBAT_RING_ASSIST_LABELS = { standard: '标准', relaxed: '宽松', off: '自动' };
+let _combatPrefsEventSeen = false;
+
+function normalizeCombatRingAssist(v){
+  const s = String(v == null ? '' : v).trim().toLowerCase();
+  return (s === 'relaxed' || s === 'off') ? s : 'standard';
+}
+function normalizeCombatCasualMode(v){
+  if(typeof v === 'boolean') return v;
+  if(typeof v === 'string'){
+    const s = v.trim().toLowerCase();
+    return s === 'true' || s === '1' || s === 'on';
+  }
+  return !!v;
+}
+function getCombatRingAssistMode(){
+  try {
+    if(typeof window !== 'undefined' && window.CombatTimingRing && typeof window.CombatTimingRing.getAssistMode === 'function'){
+      return normalizeCombatRingAssist(window.CombatTimingRing.getAssistMode());
+    }
+  } catch(e){}
+  try {
+    const raw = localStorage.getItem(COMBAT_RING_ASSIST_KEY);
+    if(raw !== null && raw !== '') return normalizeCombatRingAssist(raw);
+  } catch(e){}
+  return 'standard';
+}
+function getCombatCasualMode(){
+  try {
+    if(typeof window !== 'undefined' && window.CombatTimingRing && typeof window.CombatTimingRing.isCasualMode === 'function'){
+      return !!window.CombatTimingRing.isCasualMode();
+    }
+  } catch(e){}
+  try {
+    const raw = localStorage.getItem(COMBAT_CASUAL_MODE_KEY);
+    if(raw !== null && raw !== '') return normalizeCombatCasualMode(raw);
+  } catch(e){}
+  return false;
+}
+function syncCombatPrefsTargets(assistMode, casualMode, source){
+  try {
+    localStorage.setItem(COMBAT_RING_ASSIST_KEY, assistMode);
+    localStorage.setItem(COMBAT_CASUAL_MODE_KEY, casualMode ? 'true' : 'false');
+    const raw = JSON.parse(localStorage.getItem(VN_PREFS_KEY) || '{}');
+    if(raw && typeof raw === 'object'){
+      raw.combatRingAssist = assistMode;
+      raw.combatCasualMode = !!casualMode;
+      localStorage.setItem(VN_PREFS_KEY, JSON.stringify(raw));
+    }
+  } catch(e){}
+  try {
+    if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.syncExternalAudioPrefs === 'function'){
+      window.VNUx.syncExternalAudioPrefs({ combatRingAssist: assistMode, combatCasualMode: !!casualMode });
+    }
+    if(typeof window !== 'undefined' && window.TitleDirector && typeof window.TitleDirector.syncSettingsDOM === 'function'){
+      window.TitleDirector.syncSettingsDOM();
+    }
+  } catch(e){}
+  if(!_combatPrefsEventSeen){
+    try {
+      if(typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function'){
+        window.dispatchEvent(new CustomEvent('combat:prefschange', {
+          detail: {
+            assistMode,
+            ringAssistMode: assistMode,
+            combatRingAssist: assistMode,
+            casualMode: !!casualMode,
+            combatCasualMode: !!casualMode,
+            source: source || 'game-settings'
+          }
+        }));
+      }
+    } catch(e){}
+  }
+}
+function setCombatRingAssistMode(mode, opts){
+  const norm = normalizeCombatRingAssist(mode);
+  const casualNow = getCombatCasualMode();
+  _combatPrefsEventSeen = false;
+  try { localStorage.setItem(COMBAT_RING_ASSIST_KEY, norm); } catch(e){}
+  try {
+    if(typeof window !== 'undefined' && window.CombatTimingRing && typeof window.CombatTimingRing.setAssistMode === 'function'){
+      window.CombatTimingRing.setAssistMode(norm);
+    }
+  } catch(e){}
+  syncCombatPrefsTargets(norm, casualNow, (opts && opts.source) || 'game-settings');
+  syncSettingsPanelCombatDOM();
+  return norm;
+}
+function setCombatCasualMode(on, opts){
+  const next = normalizeCombatCasualMode(on);
+  const assistNow = getCombatRingAssistMode();
+  _combatPrefsEventSeen = false;
+  try { localStorage.setItem(COMBAT_CASUAL_MODE_KEY, next ? 'true' : 'false'); } catch(e){}
+  try {
+    if(typeof window !== 'undefined' && window.CombatTimingRing && typeof window.CombatTimingRing.setCasualMode === 'function'){
+      window.CombatTimingRing.setCasualMode(next);
+    }
+  } catch(e){}
+  syncCombatPrefsTargets(assistNow, next, (opts && opts.source) || 'game-settings');
+  syncSettingsPanelCombatDOM();
+  return next;
+}
+function syncSettingsPanelCombatDOM(){
+  const panelEl = $('panel');
+  if(!panelEl || panelEl.classList.contains('hidden')) return;
+  const assistMode = getCombatRingAssistMode();
+  const casualOn = getCombatCasualMode();
+  const valEl = $('set-ring-assist-val');
+  if(valEl) valEl.textContent = COMBAT_RING_ASSIST_LABELS[assistMode] || '标准';
+  panelEl.querySelectorAll('[data-set-ring-assist]').forEach(btn => {
+    const active = btn.getAttribute('data-set-ring-assist') === assistMode;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    btn.style.background = active ? 'rgba(22,88,235,0.10)' : 'transparent';
+    btn.style.color = active ? '#1658eb' : '#526078';
+    btn.style.fontWeight = active ? '700' : '500';
+  });
+  const casualBtn = $('set-casual-toggle');
+  if(casualBtn){
+    casualBtn.classList.toggle('on', casualOn);
+    casualBtn.setAttribute('aria-pressed', casualOn ? 'true' : 'false');
+    casualBtn.textContent = casualOn ? '已开启 · 休闲剧情' : '已关闭 · 标准挑战';
+    casualBtn.style.background = casualOn ? '#1658eb' : 'transparent';
+    casualBtn.style.color = casualOn ? '#fafbfd' : '#323d52';
+    casualBtn.style.borderColor = casualOn ? '#0e2b78' : 'rgba(27,35,51,0.20)';
+  }
+}
+if(typeof window !== 'undefined' && typeof window.addEventListener === 'function'){
+  window.addEventListener('combat:prefschange', ()=>{
+    _combatPrefsEventSeen = true;
+    syncSettingsPanelCombatDOM();
+  });
+}
+
 // ========== 设置（音量/亮度等，持久化） ==========
 function getSettings(){
   try { return Object.assign({bgm:0.5, sfx:0.65, voiceVol:0.90, voiceEnabled:true, bright:1}, JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')); }
   catch(e){ return {bgm:0.5, sfx:0.65, voiceVol:0.90, voiceEnabled:true, bright:1}; }
 }
 function setSetting(k, v){
+  if(k==='combatRingAssist' || k===COMBAT_RING_ASSIST_KEY){
+    setCombatRingAssistMode(v, { source: 'game-setSetting' });
+    return;
+  }
+  if(k==='combatCasualMode' || k===COMBAT_CASUAL_MODE_KEY){
+    setCombatCasualMode(v, { source: 'game-setSetting' });
+    return;
+  }
   const s = getSettings(); s[k]=v;
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch(e){}
   // 只应用被改动的项：改亮度绝不触碰 bgm / voice，避免滑动亮度时音频反复淡入淡出卡顿
@@ -6661,6 +6867,8 @@ function resetSettings(){
     }
   } catch(e){}
   applyBrightness(1);
+  setCombatRingAssistMode('standard', { source: 'game-reset' });
+  setCombatCasualMode(false, { source: 'game-reset' });
   try {
     const raw = JSON.parse(localStorage.getItem(VN_PREFS_KEY) || '{}');
     if(raw && typeof raw === 'object'){
@@ -6670,10 +6878,12 @@ function resetSettings(){
       raw.voiceEnabled = true;
       raw.voiceAutoWait = true;
       raw.bright = 1;
+      raw.combatRingAssist = 'standard';
+      raw.combatCasualMode = false;
       localStorage.setItem(VN_PREFS_KEY, JSON.stringify(raw));
     }
     if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.syncExternalAudioPrefs === 'function'){
-      window.VNUx.syncExternalAudioPrefs({ bgmVol: 0.5, sfxVol: 0.65, voiceVol: 0.90, voiceEnabled: true, voiceAutoWait: true });
+      window.VNUx.syncExternalAudioPrefs({ bgmVol: 0.5, sfxVol: 0.65, voiceVol: 0.90, voiceEnabled: true, voiceAutoWait: true, combatRingAssist: 'standard', combatCasualMode: false });
     }
   } catch(e){}
 }
@@ -8189,7 +8399,14 @@ if(typeof window !== 'undefined'){
   window.migrateStorySave = migrateStorySave;
   window.runSceneQueue = runSceneQueue;
   window.resumePendingStories = resumePendingStories;
+  window.AGE_FLOOR_V3 = AGE_FLOOR_V3;
+  window.MAIN_STAFF_DEFS = MAIN_STAFF_DEFS;
   window.syncStatsToAge = syncStatsToAge;
+  window.getCombatRingAssistMode = getCombatRingAssistMode;
+  window.setCombatRingAssistMode = setCombatRingAssistMode;
+  window.getCombatCasualMode = getCombatCasualMode;
+  window.setCombatCasualMode = setCombatCasualMode;
+  window.syncSettingsPanelCombatDOM = syncSettingsPanelCombatDOM;
   window.setBG = setBG;
   window.setPov = setPov;
   window.cgHide = cgHide;

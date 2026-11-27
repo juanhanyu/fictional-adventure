@@ -129,8 +129,8 @@ function driveUntilFree(maxSteps = 20000) {
   $('btn-arena').click();
   ok('点击 HUD ⚔️ 打开战术演武大厅 (#arena-overlay 可见)', vis('arena-overlay'));
   win.CombatEngine.startStage('hulan_beast_tide', { fromArena: true, usePreset: true });
-  ok('演武大厅启动「北境协防·冰封峡谷」关卡成功进入战斗且具备冰晶宫殿与魔战倾注面板',
-    vis('battle-screen') && !!$('cb-btn-palace') && !!$('cb-oc-seg'));
+  ok('演武大厅启动「北境协防·冰封峡谷」关卡成功进入战斗且具备魔力增幅面板与护手控件（旧冰宫按钮已移除）',
+    vis('battle-screen') && !$('cb-btn-palace') && !!$('cb-oc-seg') && !!$('cb-btn-assist-mode'));
   win.CombatEngine.exitBattle(false);
   win.CombatEngine.closeArenaHub();
   ok('退出战斗与演武大厅后无缝恢复自由探索，且第三卷存档状态零破坏',
@@ -361,25 +361,39 @@ function driveUntilFree(maxSteps = 20000) {
   baseC.skills = ['root_step', 'soft_cut'];
   win.__setS(baseC);
   const bWithout = win.CombatEngine.startStage('north_forest_hunt', { headless: true, usePreset: false });
-  const swordSk = win.CombatEngine.SKILLS.sword_water_edge;
-  const remoteSk = win.CombatEngine.SKILLS.remote_snap_spike;
+  const swordSk = win.CombatEngine.SKILLS.sword_2_cold_edge;
+  const ice3Sk = win.CombatEngine.SKILLS.ice_3_starfrost;
   const dmgSwordBase = win.CombatEngine.estimateSkillDamage(bWithout, swordSk, bWithout.enemies[0]).dmg;
-  const dmgRemoteBase = win.CombatEngine.estimateSkillDamage(bWithout, remoteSk, bWithout.enemies[0]).dmg;
 
   baseC.skills = ['root_step', 'soft_cut', 'frost_edge', 'instant_ice'];
   const bWith = win.CombatEngine.startStage('north_forest_hunt', { headless: false, usePreset: false });
   const dmgSwordBoost = win.CombatEngine.estimateSkillDamage(bWith, swordSk, bWith.enemies[0]).dmg;
-  const dmgRemoteBoost = win.CombatEngine.estimateSkillDamage(bWith, remoteSk, bWith.enemies[0]).dmg;
+  const dmgIce3 = win.CombatEngine.estimateSkillDamage(bWith, ice3Sk, bWith.enemies[0]).dmg;
   const buffHtml = ($('cb-p-buffs') && $('cb-p-buffs').innerHTML) || '';
   win.CombatEngine.exitBattle(false, { silent: true });
-  ok('第三卷课程技能 frost_edge / instant_ice 真实接入 C1 战斗引擎并提升剑技与隔空瞬凝伤害、展示被动徽章',
+
+  // 验证 instant_ice 在早年存档中提前将线 1 进化为 ice_2_prism（高伤害 + 可断咏）
+  const earlyC = win.__getS();
+  earlyC.ageY = 9; earlyC.phase = 'youth'; earlyC.skills = [];
+  win.__setS(earlyC);
+  const bEarlyBase = win.CombatEngine.startStage('beatrice_11', { headless: true, usePreset: false });
+  const earlyBaseHasCrystal = bEarlyBase.player.skills.includes('ice_1_crystal') && !bEarlyBase.player.skills.includes('ice_2_prism');
+  earlyC.skills = ['instant_ice'];
+  const bEarlyInstant = win.CombatEngine.startStage('beatrice_11', { headless: true, usePreset: false });
+  const earlyInstantEvolved = bEarlyInstant.player.skills.includes('ice_2_prism')
+    && win.CombatEngine.estimateSkillDamage(bEarlyInstant, win.CombatEngine.SKILLS.ice_2_prism, bEarlyInstant.enemies[0]).dmg
+      > win.CombatEngine.estimateSkillDamage(bEarlyBase, win.CombatEngine.SKILLS.ice_1_crystal, bEarlyBase.enemies[0]).dmg;
+
+  ok('第三卷课程技能 frost_edge / instant_ice 真实接入 C1 战斗引擎（寒锋斩+5%覆冰锋徽章、星霜散华就绪与隔空凝冰提前进化三棱冰晶）',
     bWith.player.passives.includes('frost_edge')
     && bWith.player.passives.includes('instant_ice')
-    && bWith.player.skills.includes('remote_snap_spike')
+    && bWith.player.skills.includes('sword_2_cold_edge')
+    && bWith.player.skills.includes('ice_3_starfrost')
     && dmgSwordBoost > dmgSwordBase
-    && dmgRemoteBoost > dmgRemoteBase
-    && buffHtml.includes('覆冰锋') && buffHtml.includes('隔空凝冰'),
-    `sword:${dmgSwordBase}->${dmgSwordBoost}, remote:${dmgRemoteBase}->${dmgRemoteBoost}`);
+    && dmgIce3 > 0
+    && buffHtml.includes('覆冰锋')
+    && earlyBaseHasCrystal && earlyInstantEvolved,
+    `sword:${dmgSwordBase}->${dmgSwordBoost}, ice3:${dmgIce3}, early:${earlyBaseHasCrystal}/${earlyInstantEvolved}`);
 
   // 7) 再次确认全过程无新增运行时 JS 异常
   const finalRealErrors = h.errors.filter((e) => !/HTMLMediaElement|play\(\)/.test(e));

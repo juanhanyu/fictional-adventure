@@ -1,0 +1,679 @@
+/* =========================================================================
+   《转生千金》V3.2 · 0.25x 命中前慢镜缩圈与格挡判定样式表
+   文件：css/combat-timing-ring.css
+   视觉规范：
+   - 雪瓷冰白 (#f8fbff) + 皇家蓝 (#1658eb) + 冰青 (#38bdf8) + 香槟金 (#fde68a)
+   - 严禁圆框套圆框：单层锐利 SVG 棱晶环 + 45° 切角键帽（无外框嵌套）+ 锐利英文飘字
+   - 零旧暗黑底色与旧棕金色板；完整适配 1440x900 / 1280x720 / 960x600
+   ========================================================================= */
+
+#battle-screen .cb-arena-field .cb-timing-ring-layer,
+.cb-timing-ring-layer {
+  --tr-size: 164px;
+  --tr-key-size: 34px;
+  --tr-space-w: 62px;
+  --tr-space-h: 24px;
+  --tr-snow: #f8fbff;
+  --tr-royal: #1658eb;
+  --tr-royal-deep: #0e2b78;
+  --tr-cyan: #38bdf8;
+  --tr-cyan-soft: #bae6fd;
+  --tr-gold: #fde68a;
+  --tr-gold-bright: #fffbeb;
+  --tr-bad-rose: #f4a6b8;
+  --tr-bad-slate: #cbd5e1;
+  --tr-ink: #0f1f44;
+  --tr-font-display: 'Cinzel', 'Trajan Pro', 'Segoe UI', 'Noto Sans SC', sans-serif;
+  --tr-font-key: 'JetBrains Mono', 'Cascadia Mono', ui-monospace, 'SFMono-Regular', Consolas, sans-serif;
+
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 48;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 极轻慢镜边缘冰霜暗角过渡（明亮冰晶雾晕，杜绝暗黑黑屏压迫） */
+.cb-timing-ring-layer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(248, 251, 255, 0) 56%,
+    rgba(186, 230, 253, 0.22) 84%,
+    rgba(22, 88, 235, 0.18) 100%
+  );
+  transition: opacity 115ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cb-timing-ring-layer.is-slowmo::before {
+  opacity: 1;
+}
+
+.cb-timing-ring-layer.is-slowmo.is-block-mode::before {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(248, 251, 255, 0) 54%,
+    rgba(56, 189, 248, 0.24) 82%,
+    rgba(14, 43, 120, 0.20) 100%
+  );
+}
+
+/* 锚点容器：以目标受击点绝对居中，零边框零背景 */
+.cb-tr-anchor {
+  position: absolute;
+  z-index: 20;
+  width: var(--tr-size);
+  height: var(--tr-size);
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  will-change: left, top, transform, opacity;
+}
+
+.cb-tr-anchor.is-telegraph {
+  animation: cb-tr-telegraph-in 145ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.cb-tr-anchor.is-resolved {
+  animation: cb-tr-resolve-fade 160ms ease-out forwards;
+}
+
+/* 单层锐利 SVG 棱晶环 */
+.cb-tr-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.cb-tr-halo {
+  fill: none;
+  stroke: rgba(248, 251, 255, 0.42);
+  stroke-width: 7;
+}
+
+.cb-tr-target {
+  fill: rgba(248, 251, 255, 0.14);
+  stroke: var(--tr-royal);
+  stroke-width: 2.25;
+  filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.72));
+  transition: stroke 90ms ease, stroke-width 90ms ease;
+}
+
+.cb-tr-anchor.is-block .cb-tr-target {
+  fill: rgba(56, 189, 248, 0.12);
+  stroke: var(--tr-cyan);
+  filter: drop-shadow(0 0 5px rgba(22, 88, 235, 0.78));
+}
+
+.cb-tr-anchor.is-sweet .cb-tr-target {
+  stroke: var(--tr-gold);
+  stroke-width: 2.85;
+  filter: drop-shadow(0 0 7px rgba(253, 230, 138, 0.92));
+}
+
+.cb-tr-tick {
+  stroke: var(--tr-snow);
+  stroke-width: 1.5;
+  stroke-linecap: square;
+  opacity: 0.92;
+  filter: drop-shadow(0 0 2px rgba(22, 88, 235, 0.65));
+}
+
+/* 匀速收缩冰晶外圈 */
+.cb-tr-shrink {
+  fill: none;
+  stroke: var(--tr-cyan);
+  stroke-width: 2.75;
+  opacity: 0.96;
+  filter: drop-shadow(0 0 5px rgba(22, 88, 235, 0.72)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.9));
+}
+
+.cb-tr-anchor.is-telegraph .cb-tr-shrink {
+  opacity: 0.42;
+}
+
+.cb-tr-anchor.is-block .cb-tr-shrink {
+  stroke: var(--tr-snow);
+  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.95));
+}
+
+.cb-tr-anchor.is-sweet .cb-tr-shrink {
+  stroke: var(--tr-gold);
+  stroke-width: 3.1;
+  filter: drop-shadow(0 0 8px rgba(253, 230, 138, 0.95));
+}
+
+.cb-tr-shrink-glint {
+  fill: none;
+  stroke: var(--tr-snow);
+  stroke-width: 1.15;
+  stroke-dasharray: 8 10;
+  opacity: 0.85;
+}
+
+.cb-tr-anchor.is-telegraph .cb-tr-shrink-glint {
+  opacity: 0.3;
+}
+
+/* 命中爆裂波纹 */
+.cb-tr-burst {
+  fill: none;
+  stroke: var(--tr-snow);
+  stroke-width: 2.5;
+  opacity: 0;
+  transform-origin: 80px 80px;
+}
+
+.cb-tr-anchor.is-resolved .cb-tr-burst {
+  animation: cb-tr-burst-out 210ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cb-tr-anchor.is-grade-perfect .cb-tr-burst {
+  stroke: var(--tr-gold);
+  stroke-width: 3.5;
+}
+
+.cb-tr-anchor.is-grade-great .cb-tr-burst {
+  stroke: var(--tr-cyan);
+  stroke-width: 3;
+}
+
+.cb-tr-anchor.is-grade-good .cb-tr-burst {
+  stroke: var(--tr-royal);
+}
+
+.cb-tr-anchor.is-grade-bad .cb-tr-burst {
+  stroke: var(--tr-bad-rose);
+  stroke-width: 1.8;
+}
+
+/* 45° 切角键帽徽标（纯单层切角几何，绝无圆角与外框嵌套） */
+.cb-tr-keycap {
+  position: relative;
+  z-index: 2;
+  min-width: var(--tr-key-size);
+  height: var(--tr-key-size);
+  padding: 0 4px;
+  border: none;
+  border-radius: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--tr-font-key);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--tr-ink);
+  background: linear-gradient(155deg, #ffffff 0%, #eef6ff 55%, #dbeafe 100%);
+  clip-path: polygon(
+    7px 0,
+    calc(100% - 7px) 0,
+    100% 7px,
+    100% calc(100% - 7px),
+    calc(100% - 7px) 100%,
+    7px 100%,
+    0 calc(100% - 7px),
+    0 7px
+  );
+  filter:
+    drop-shadow(0 0 1.25px rgba(22, 88, 235, 0.96))
+    drop-shadow(0 2px 6px rgba(14, 43, 120, 0.34));
+  transition: transform 80ms ease, color 80ms ease, background 80ms ease;
+}
+
+.cb-tr-keycap.is-space {
+  min-width: var(--tr-space-w);
+  height: var(--tr-space-h);
+  padding: 0 9px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--tr-royal-deep);
+  background: linear-gradient(155deg, #ffffff 0%, #e0f2fe 58%, #bae6fd 100%);
+  clip-path: polygon(
+    6px 0,
+    calc(100% - 6px) 0,
+    100% 6px,
+    100% calc(100% - 6px),
+    calc(100% - 6px) 100%,
+    6px 100%,
+    0 calc(100% - 6px),
+    0 6px
+  );
+  filter:
+    drop-shadow(0 0 1.3px rgba(56, 189, 248, 0.98))
+    drop-shadow(0 2px 7px rgba(14, 43, 120, 0.38));
+}
+
+.cb-tr-anchor.is-sweet .cb-tr-keycap {
+  color: var(--tr-royal);
+  background: linear-gradient(155deg, #ffffff 0%, #fffbeb 56%, #fde68a 100%);
+  transform: scale(1.06);
+  filter:
+    drop-shadow(0 0 1.5px rgba(253, 230, 138, 1))
+    drop-shadow(0 2px 8px rgba(22, 88, 235, 0.42));
+}
+
+/* 多拍钻石刻点（无外框胶囊） */
+.cb-tr-beats {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.cb-tr-pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 0;
+  transform: rotate(45deg);
+  background: rgba(248, 251, 255, 0.48);
+  box-shadow: 0 0 3px rgba(14, 43, 120, 0.45);
+  transition: transform 110ms ease, background-color 110ms ease;
+}
+
+.cb-tr-pip.is-current {
+  background: var(--tr-cyan);
+  transform: rotate(45deg) scale(1.35);
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.95);
+}
+
+.cb-tr-pip.is-done.is-perfect {
+  background: var(--tr-gold);
+  box-shadow: 0 0 5px rgba(253, 230, 138, 0.9);
+}
+
+.cb-tr-pip.is-done.is-great {
+  background: var(--tr-cyan);
+}
+
+.cb-tr-pip.is-done.is-good {
+  background: var(--tr-royal);
+}
+
+.cb-tr-pip.is-done.is-bad {
+  background: var(--tr-bad-rose);
+}
+
+/* 锐利英文判定飘字（单层 45° 切角雪瓷深蓝微底带 + 高对比皇家蓝描边，零圆框套圆框，z-index: 48 严高于缩圈锚点与画布特效层） */
+.cb-tr-judge {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 3px 13px 4px;
+  border: none;
+  border-radius: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(14, 43, 120, 0.54) 0%,
+    rgba(14, 43, 120, 0.78) 22%,
+    rgba(15, 31, 68, 0.84) 50%,
+    rgba(14, 43, 120, 0.78) 78%,
+    rgba(14, 43, 120, 0.54) 100%
+  );
+  clip-path: polygon(
+    7px 0,
+    calc(100% - 7px) 0,
+    100% 7px,
+    100% calc(100% - 7px),
+    calc(100% - 7px) 100%,
+    7px 100%,
+    0 calc(100% - 7px),
+    0 7px
+  );
+  filter:
+    drop-shadow(0 0 1px rgba(186, 230, 253, 0.86))
+    drop-shadow(0 3px 8px rgba(14, 43, 120, 0.44));
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 48;
+  animation: cb-tr-judge-float 660ms cubic-bezier(0.18, 0.88, 0.32, 1) forwards;
+}
+
+.cb-tr-judge.is-block {
+  background: linear-gradient(
+    90deg,
+    rgba(11, 34, 96, 0.68) 0%,
+    rgba(14, 43, 120, 0.88) 20%,
+    rgba(15, 31, 68, 0.92) 50%,
+    rgba(14, 43, 120, 0.88) 80%,
+    rgba(11, 34, 96, 0.68) 100%
+  );
+  filter:
+    drop-shadow(0 0 1.25px rgba(56, 189, 248, 0.96))
+    drop-shadow(0 3px 10px rgba(11, 34, 96, 0.56));
+}
+
+.cb-tr-judge-word {
+  font-family: var(--tr-font-display);
+  font-size: 24px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.10em;
+  line-height: 1.04;
+  text-transform: uppercase;
+  -webkit-text-stroke: 1px rgba(11, 34, 96, 0.94);
+  paint-order: stroke fill;
+}
+
+.cb-tr-judge-sub {
+  font-family: var(--tr-font-key);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  -webkit-text-stroke: 0.6px rgba(11, 34, 96, 0.92);
+  paint-order: stroke fill;
+}
+
+.cb-tr-judge.is-block .cb-tr-judge-sub {
+  font-size: 12.5px;
+  letter-spacing: 0.10em;
+}
+
+/* PERFECT · 香槟金辉 */
+.cb-tr-judge.is-perfect {
+  filter:
+    drop-shadow(0 0 1.2px rgba(253, 230, 138, 0.94))
+    drop-shadow(0 3px 10px rgba(14, 43, 120, 0.52));
+}
+
+.cb-tr-judge.is-perfect .cb-tr-judge-word {
+  color: var(--tr-gold-bright);
+  text-shadow:
+    0 0 12px rgba(253, 230, 138, 0.98),
+    0 0 4px rgba(253, 230, 138, 0.92),
+    0 1.5px 0 #0b2260,
+    0 -1.5px 0 #0b2260,
+    1.5px 0 0 #0b2260,
+    -1.5px 0 0 #0b2260,
+    1.2px 1.2px 0 #0b2260,
+    -1.2px -1.2px 0 #0b2260;
+}
+
+.cb-tr-judge.is-perfect .cb-tr-judge-sub {
+  color: var(--tr-gold);
+  text-shadow:
+    0 1px 0 #0b2260,
+    0 -1px 0 #0b2260,
+    1px 0 0 #0b2260,
+    -1px 0 0 #0b2260,
+    0 0 6px rgba(253, 230, 138, 0.72);
+}
+
+/* GREAT · 冰青流光 */
+.cb-tr-judge.is-great {
+  filter:
+    drop-shadow(0 0 1.15px rgba(56, 189, 248, 0.94))
+    drop-shadow(0 3px 9px rgba(14, 43, 120, 0.48));
+}
+
+.cb-tr-judge.is-great .cb-tr-judge-word {
+  color: #e0f2fe;
+  text-shadow:
+    0 0 11px rgba(56, 189, 248, 0.96),
+    0 0 4px rgba(56, 189, 248, 0.9),
+    0 1.5px 0 #0b2260,
+    0 -1.5px 0 #0b2260,
+    1.5px 0 0 #0b2260,
+    -1.5px 0 0 #0b2260,
+    1.2px 1.2px 0 #0b2260,
+    -1.2px -1.2px 0 #0b2260;
+}
+
+.cb-tr-judge.is-great .cb-tr-judge-sub {
+  color: var(--tr-cyan-soft);
+  text-shadow:
+    0 1px 0 #0b2260,
+    0 -1px 0 #0b2260,
+    1px 0 0 #0b2260,
+    -1px 0 0 #0b2260,
+    0 1px 4px rgba(11, 34, 96, 0.95);
+}
+
+/* GOOD · 皇家蓝澄澈 */
+.cb-tr-judge.is-good .cb-tr-judge-word {
+  color: var(--tr-snow);
+  text-shadow:
+    0 0 10px rgba(22, 88, 235, 0.96),
+    0 0 3px rgba(22, 88, 235, 0.92),
+    0 1.5px 0 #0b2260,
+    0 -1.5px 0 #0b2260,
+    1.5px 0 0 #0b2260,
+    -1.5px 0 0 #0b2260,
+    1.2px 1.2px 0 #1658eb,
+    -1.2px -1.2px 0 #0b2260;
+}
+
+.cb-tr-judge.is-good .cb-tr-judge-sub {
+  color: var(--tr-snow);
+  text-shadow:
+    0 1px 0 #0b2260,
+    0 -1px 0 #0b2260,
+    1px 0 0 #0b2260,
+    -1px 0 0 #0b2260,
+    0 0 4px rgba(22, 88, 235, 0.85);
+}
+
+/* BAD · 深皇家蓝描边高对比淡绯雪瓷 */
+.cb-tr-judge.is-bad {
+  background: linear-gradient(
+    90deg,
+    rgba(11, 28, 72, 0.72) 0%,
+    rgba(14, 38, 98, 0.90) 20%,
+    rgba(15, 31, 68, 0.92) 50%,
+    rgba(14, 38, 98, 0.90) 80%,
+    rgba(11, 28, 72, 0.72) 100%
+  );
+  filter:
+    drop-shadow(0 0 1.15px rgba(244, 166, 184, 0.88))
+    drop-shadow(0 3px 9px rgba(11, 28, 72, 0.56));
+}
+
+.cb-tr-judge.is-bad .cb-tr-judge-word {
+  color: #ffd6e0;
+  font-size: 21px;
+  -webkit-text-stroke: 1.1px #0b2260;
+  text-shadow:
+    0 0 8px rgba(244, 166, 184, 0.72),
+    0 1.6px 0 #0b2260,
+    0 -1.6px 0 #0b2260,
+    1.6px 0 0 #0b2260,
+    -1.6px 0 0 #0b2260,
+    1.2px 1.2px 0 #0b2260,
+    -1.2px -1.2px 0 #0b2260;
+}
+
+.cb-tr-judge.is-bad .cb-tr-judge-sub {
+  color: #f1f5f9;
+  text-shadow:
+    0 1px 0 #0b2260,
+    0 -1px 0 #0b2260,
+    1px 0 0 #0b2260,
+    -1px 0 0 #0b2260,
+    0 1px 4px rgba(11, 28, 72, 0.98);
+}
+
+/* 关键帧动画 */
+@keyframes cb-tr-telegraph-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.16);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes cb-tr-resolve-fade {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+}
+
+@keyframes cb-tr-burst-out {
+  0% {
+    opacity: 0.96;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.85);
+  }
+}
+
+@keyframes cb-tr-judge-float {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.82);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -64%) scale(1.06);
+  }
+  34% {
+    opacity: 1;
+    transform: translate(-50%, -70%) scale(1);
+  }
+  78% {
+    opacity: 1;
+    transform: translate(-50%, -88%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -104%) scale(0.96);
+  }
+}
+
+/* 1280x720 桌面紧凑适配 */
+@media (max-width: 1360px), (max-height: 760px) {
+  #battle-screen .cb-arena-field .cb-timing-ring-layer,
+  .cb-timing-ring-layer {
+    --tr-size: 146px;
+    --tr-key-size: 30px;
+    --tr-space-w: 56px;
+    --tr-space-h: 22px;
+  }
+
+  .cb-tr-keycap {
+    font-size: 16px;
+  }
+
+  .cb-tr-keycap.is-space {
+    font-size: 11px;
+  }
+
+  .cb-tr-judge {
+    padding: 2.5px 11px 3px;
+  }
+
+  .cb-tr-judge-word {
+    font-size: 21px;
+  }
+
+  .cb-tr-judge.is-bad .cb-tr-judge-word {
+    font-size: 19px;
+  }
+}
+
+/* 960x600 紧凑窗口适配 */
+@media (max-width: 1024px), (max-height: 640px) {
+  #battle-screen .cb-arena-field .cb-timing-ring-layer,
+  .cb-timing-ring-layer {
+    --tr-size: 128px;
+    --tr-key-size: 27px;
+    --tr-space-w: 50px;
+    --tr-space-h: 20px;
+  }
+
+  .cb-tr-keycap {
+    font-size: 14px;
+  }
+
+  .cb-tr-keycap.is-space {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+  }
+
+  .cb-tr-beats {
+    bottom: 6px;
+    gap: 6px;
+  }
+
+  .cb-tr-pip {
+    width: 5px;
+    height: 5px;
+  }
+
+  .cb-tr-judge {
+    padding: 2px 9px 2.5px;
+    clip-path: polygon(
+      5px 0,
+      calc(100% - 5px) 0,
+      100% 5px,
+      100% calc(100% - 5px),
+      calc(100% - 5px) 100%,
+      5px 100%,
+      0 calc(100% - 5px),
+      0 5px
+    );
+  }
+
+  .cb-tr-judge-word {
+    font-size: 18px;
+  }
+
+  .cb-tr-judge.is-bad .cb-tr-judge-word {
+    font-size: 16px;
+  }
+
+  .cb-tr-judge-sub,
+  .cb-tr-judge.is-block .cb-tr-judge-sub {
+    font-size: 11px;
+  }
+}
+
+/* 降动效偏好温和收敛（保留缩圈功能可读性，减弱装饰脉冲） */
+@media (prefers-reduced-motion: reduce) {
+  .cb-timing-ring-layer::before {
+    transition: none;
+  }
+
+  .cb-tr-anchor.is-telegraph {
+    animation: none;
+  }
+
+  .cb-tr-anchor.is-resolved .cb-tr-burst {
+    animation: none;
+    opacity: 0;
+  }
+}

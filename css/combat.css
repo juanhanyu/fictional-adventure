@@ -9538,7 +9538,7 @@ body.cb-battle-active #fx {
   #battle-screen .cb-topbar #cb-title,
   #battle-screen .cb-stage-title {
     font-size: 12.5px;
-    max-width: 240px;
+    max-width: 260px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -10186,6 +10186,581 @@ body.cb-battle-active #fx {
   }
 }
 
+/* ==================== V3.2 新增战斗控件雪瓷样式精修 ==================== */
+
+/* 1. 顶栏护手速切钮 (#cb-btn-assist-mode)：雪瓷冰白切角 + 皇家蓝细边，紧凑零挤爆 */
+#battle-screen .cb-topbar #cb-btn-assist-mode {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 10px 0 9px;
+  border: none;
+  border-top: 1px solid rgba(22, 88, 235, 0.26);
+  border-bottom: 1.5px solid #1658EB;
+  border-radius: 0;
+  clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(238, 245, 255, 0.90) 100%);
+  color: #143B96;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 1px 2px rgba(14, 43, 120, 0.08));
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, filter 0.16s ease;
+}
+
+#battle-screen .cb-topbar #cb-btn-assist-mode::before {
+  content: "";
+  position: static;
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  transform: rotate(45deg);
+  background: #1658EB;
+  flex-shrink: 0;
+  pointer-events: none;
+  transition: background-color 0.16s ease;
+}
+
+#battle-screen .cb-topbar #cb-btn-assist-mode[data-assist-mode="relaxed"] {
+  border-top-color: rgba(14, 165, 233, 0.36);
+  border-bottom-color: #0284C7;
+  background: linear-gradient(180deg, rgba(240, 250, 255, 0.96) 0%, rgba(224, 242, 254, 0.90) 100%);
+  color: #0C5E8A;
+}
+
+#battle-screen .cb-topbar #cb-btn-assist-mode[data-assist-mode="relaxed"]::before {
+  background: #38BDF8;
+}
+
+#battle-screen .cb-topbar #cb-btn-assist-mode[data-assist-mode="off"] {
+  border-top-color: rgba(82, 96, 120, 0.24);
+  border-bottom-color: rgba(82, 96, 120, 0.54);
+  background: linear-gradient(180deg, rgba(248, 250, 253, 0.94) 0%, rgba(235, 240, 248, 0.88) 100%);
+  color: #46556E;
+}
+
+#battle-screen .cb-topbar #cb-btn-assist-mode[data-assist-mode="off"]::before {
+  background: #64748B;
+}
+
+#battle-screen .cb-topbar #cb-btn-assist-mode:hover:not(:disabled) {
+  border-top-color: rgba(22, 88, 235, 0.44);
+  border-bottom-color: #1658EB;
+  background: linear-gradient(180deg, #F0F7FF 0%, #DBEAFE 100%);
+  color: #0C2566;
+  filter: drop-shadow(0 2px 6px rgba(22, 88, 235, 0.18));
+}
+
+#battle-screen .cb-topbar #cb-btn-assist-mode[data-assist-mode="relaxed"]:hover:not(:disabled) {
+  border-top-color: rgba(2, 132, 199, 0.52);
+  border-bottom-color: #0284C7;
+  background: linear-gradient(180deg, #E0F2FE 0%, #BAE6FD 100%);
+  color: #0E2B78;
+}
+
+#battle-screen .cb-topbar #cb-btn-assist-mode[data-assist-mode="off"]:hover:not(:disabled) {
+  border-top-color: rgba(22, 88, 235, 0.34);
+  border-bottom-color: #1658EB;
+  background: linear-gradient(180deg, #F5F8FD 0%, #E6EEF9 100%);
+  color: #143B96;
+}
+
+#battle-screen .cb-topbar #cb-btn-assist-mode:focus-visible {
+  outline: 2px solid #1658EB;
+  outline-offset: 2px;
+  box-shadow: inset 0 0 0 1.5px #1658EB;
+}
+
+#battle-screen .cb-topbar #cb-btn-assist-mode:active:not(:disabled) {
+  filter: brightness(0.97);
+}
+
+/* 2. 顶栏休闲模式柔和徽标 (#cb-casual-mode-badge)：极简无外框冰青微底 + 左侧 2px 细竖脊，与 #cb-turn 等高 20px 对齐 */
+#battle-screen .cb-topbar #cb-turn {
+  height: 20px;
+  line-height: 20px;
+  box-sizing: border-box;
+}
+
+#battle-screen .cb-topbar #cb-casual-mode-badge:not(.hidden) {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  box-sizing: border-box;
+  gap: 3px;
+  margin-left: 0;
+  padding: 0 7px 0 6px;
+  border: none;
+  border-left: 2px solid #38BDF8;
+  border-radius: 0;
+  background: linear-gradient(90deg, rgba(186, 230, 253, 0.34) 0%, rgba(236, 248, 255, 0.16) 100%);
+  color: #0E6478;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: none;
+}
+
+#battle-screen .cb-topbar #cb-casual-mode-badge.hidden {
+  display: none !important;
+}
+
+/* 3. 棱镜技能扇叶节奏微标 (.cb-bl-beat)：无圆角嵌套、极细冰线与轻色块对齐扇叶右缘 */
+#battle-screen .cb-prism-rig .cb-blade .cb-bl-top {
+  align-items: center;
+  gap: 6px;
+}
+
+#battle-screen .cb-prism-rig .cb-blade .cb-bl-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#battle-screen .cb-prism-rig .cb-blade .cb-bl-tags-right {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+#battle-screen .cb-prism-rig .cb-blade .cb-bl-bot {
+  align-items: baseline;
+  gap: 6px;
+}
+
+#battle-screen .cb-prism-rig .cb-blade .cb-bl-meta {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#battle-screen .cb-prism-rig .cb-blade .cb-bl-cost {
+  flex-shrink: 0;
+}
+
+#battle-screen .cb-prism-rig .cb-blade .cb-bl-beat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 16px;
+  padding: 0 5px;
+  border: none;
+  border-left: 1.5px solid rgba(22, 88, 235, 0.62);
+  border-bottom: 1px solid rgba(22, 88, 235, 0.20);
+  border-radius: 0;
+  background: rgba(22, 88, 235, 0.08);
+  color: #143B96;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: none;
+  transition: background-color 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+}
+
+#battle-screen .cb-prism-rig .cb-blade .cb-bl-beat.beat-instant {
+  color: #0B6B7D;
+  background: rgba(56, 189, 248, 0.11);
+  border-left-color: #38BDF8;
+  border-bottom-color: rgba(56, 189, 248, 0.28);
+}
+
+#battle-screen .cb-prism-rig .cb-blade .cb-bl-beat.beat-b1 {
+  color: #1444B8;
+  background: rgba(22, 88, 235, 0.08);
+  border-left-color: #1658EB;
+  border-bottom-color: rgba(22, 88, 235, 0.22);
+}
+
+#battle-screen .cb-prism-rig .cb-blade .cb-bl-beat.beat-b2 {
+  color: #0D5596;
+  background: rgba(14, 165, 233, 0.13);
+  border-left-color: #0284C7;
+  border-bottom-color: rgba(2, 132, 199, 0.28);
+}
+
+#battle-screen .cb-prism-rig .cb-blade .cb-bl-beat.beat-b3 {
+  color: #8A6118;
+  background: rgba(229, 192, 110, 0.20);
+  border-left-color: #C99E3D;
+  border-bottom-color: rgba(201, 158, 61, 0.34);
+}
+
+#battle-screen .cb-prism-rig .cb-blade .cb-bl-beat.beat-aoe {
+  color: #1648C4;
+  background: linear-gradient(90deg, rgba(22, 88, 235, 0.11) 0%, rgba(56, 189, 248, 0.14) 100%);
+  border-left-color: #2563EB;
+  border-bottom-color: rgba(56, 189, 248, 0.36);
+}
+
+#battle-screen .cb-prism-rig .cb-blade.compact .cb-bl-beat,
+#battle-screen .cb-prism-rig.two-col-blades .cb-blade .cb-bl-beat {
+  height: 15px;
+  padding: 0 4px;
+  font-size: 9.5px;
+  letter-spacing: 0.01em;
+}
+
+#battle-screen .cb-prism-rig.two-col-blades.narrow-desktop .cb-blade .cb-bl-beat {
+  height: 14px;
+  padding: 0 3.5px;
+  font-size: 9px;
+  letter-spacing: 0;
+}
+
+#battle-screen .cb-prism-rig .cb-blade:not(:disabled):hover .cb-bl-beat,
+#battle-screen .cb-prism-rig .cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-beat {
+  color: #E0F7FF;
+  background: rgba(186, 230, 253, 0.18);
+  border-left-color: #7DD3FC;
+  border-bottom-color: rgba(186, 230, 253, 0.38);
+}
+
+#battle-screen .cb-prism-rig .cb-blade:not(:disabled):hover .cb-bl-beat.beat-b3,
+#battle-screen .cb-prism-rig .cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-beat.beat-b3 {
+  color: #FFF7D6;
+  background: rgba(253, 230, 138, 0.22);
+  border-left-color: #FDE68A;
+  border-bottom-color: rgba(253, 230, 138, 0.44);
+}
+
+/* 4. 战果弹窗 (#cb-result-modal)：内联休闲勾选带 + 雪瓷切角主次按钮清晰排布 */
+#cb-result-modal .cr-casual-row {
+  display: flex;
+  align-items: center;
+  gap: 9px !important;
+  margin: 12px 0 0 !important;
+  padding: 8px 11px !important;
+  border: none;
+  border-top: 1px solid rgba(22, 88, 235, 0.16) !important;
+  border-bottom: 1px solid var(--cb-hairline-soft);
+  border-left: 2px solid rgba(56, 189, 248, 0.68);
+  border-radius: 0;
+  background: linear-gradient(90deg, rgba(236, 247, 255, 0.72) 0%, rgba(250, 252, 255, 0.42) 100%);
+  color: var(--cb-ink-body) !important;
+  font-family: var(--font-sans);
+  font-size: 12px !important;
+  line-height: 1.48;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+#cb-result-modal .cr-casual-row:hover {
+  background: linear-gradient(90deg, rgba(224, 242, 254, 0.86) 0%, rgba(240, 248, 255, 0.68) 100%);
+  border-left-color: #1658EB;
+  color: var(--cb-ink) !important;
+}
+
+#cb-result-modal .cr-casual-row:has(#cr-casual-checkbox:checked) {
+  background: linear-gradient(90deg, rgba(186, 230, 253, 0.34) 0%, rgba(238, 246, 255, 0.56) 100%);
+  border-top-color: rgba(22, 88, 235, 0.28) !important;
+  border-left-color: #1658EB;
+  color: var(--cb-sapphire-deep) !important;
+}
+
+#cb-result-modal .cr-casual-row > span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#cb-result-modal #cr-casual-checkbox {
+  flex-shrink: 0;
+  margin: 0;
+  width: 15px !important;
+  height: 15px !important;
+  accent-color: #1658EB !important;
+  border-radius: 0;
+}
+
+#cb-result-modal #cr-casual-checkbox:focus-visible {
+  outline: 2px solid #1658EB;
+  outline-offset: 2px;
+}
+
+#cb-result-modal .end-btns {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--cb-hairline-soft);
+}
+
+#cb-result-modal .end-btns .tbtn {
+  height: 36px;
+  min-height: 36px;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border-radius: 0;
+}
+
+/* 主 CTA：确认返回（雕刻皇家蓝宝石六角切面） */
+#cb-result-modal #cr-done {
+  min-width: 124px;
+  padding: 0 22px;
+  clip-path: polygon(10px 0%, calc(100% - 10px) 0%, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0% 50%);
+}
+
+#cb-result-modal #cr-done:focus-visible {
+  outline: 2px solid #1658EB;
+  outline-offset: 2px;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.85);
+}
+
+/* 次主 CTA：从首领波重开（冰晶雪瓷切面，与主确认清晰分阶不争艳） */
+#cb-result-modal #cr-retry-boss {
+  min-width: 132px;
+  padding: 0 19px;
+  border: none;
+  border-top: 1.5px solid #38BDF8;
+  border-bottom: 1.5px solid #1658EB;
+  border-radius: 0;
+  clip-path: polygon(10px 0%, calc(100% - 10px) 0%, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0% 50%);
+  background:
+    linear-gradient(132deg, rgba(255, 255, 255, 0.94) 0%, rgba(224, 242, 254, 0.92) 52%, rgba(191, 219, 254, 0.90) 100%);
+  color: #0E2B78;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  box-shadow: none;
+  filter: drop-shadow(0 4px 12px rgba(22, 88, 235, 0.16));
+}
+
+#cb-result-modal #cr-retry-boss:hover {
+  background:
+    linear-gradient(132deg, #EFF6FF 0%, #BAE6FD 54%, #93C5FD 100%);
+  border-top-color: #0EA5E9;
+  border-bottom-color: #1244BA;
+  color: #0C2566;
+  transform: translateY(-1px);
+  filter: drop-shadow(0 6px 16px rgba(22, 88, 235, 0.24));
+}
+
+#cb-result-modal #cr-retry-boss:focus-visible {
+  outline: 2px solid #1658EB;
+  outline-offset: 2px;
+  box-shadow: inset 0 0 0 1.5px #1658EB;
+}
+
+/* 快捷次钮：1 秒再战 [R] / 再次挑战（雪瓷斜切细边） */
+#cb-result-modal #cr-retry {
+  min-width: 112px;
+  padding: 0 17px;
+  border: none;
+  border-top: 1px solid rgba(22, 88, 235, 0.26);
+  border-bottom: 1.5px solid rgba(22, 88, 235, 0.58);
+  border-radius: 0;
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(241, 246, 253, 0.90) 100%);
+  color: var(--cb-sapphire-mid);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  box-shadow: none;
+  filter: drop-shadow(0 2px 6px rgba(18, 24, 34, 0.08));
+}
+
+#cb-result-modal #cr-retry:hover {
+  background: linear-gradient(180deg, #F0F7FF 0%, #DBEAFE 100%);
+  border-top-color: rgba(22, 88, 235, 0.44);
+  border-bottom-color: #1658EB;
+  color: var(--cb-sapphire-deep);
+  transform: translateY(-1px);
+  filter: drop-shadow(0 4px 10px rgba(22, 88, 235, 0.16));
+}
+
+#cb-result-modal #cr-retry:focus-visible {
+  outline: 2px solid #1658EB;
+  outline-offset: 2px;
+  box-shadow: inset 0 0 0 1.5px #1658EB;
+}
+
+/* V3.2 桌面紧凑适配 (1280×720) */
+@media (max-width: 1360px), (max-height: 760px) {
+  #battle-screen .cb-topbar #cb-btn-assist-mode {
+    height: 22px;
+    padding: 0 8px 0 7px;
+    font-size: 10.5px;
+    gap: 4px;
+  }
+
+  #battle-screen .cb-topbar #cb-btn-assist-mode::before {
+    width: 4.5px;
+    height: 4.5px;
+  }
+
+  #battle-screen .cb-topbar #cb-casual-mode-badge:not(.hidden) {
+    height: 20px;
+    padding: 0 6px 0 5px;
+    font-size: 10.5px;
+    line-height: 1;
+    letter-spacing: 0.02em;
+  }
+
+  #battle-screen .cb-topbar .cb-stage-info:has(#cb-casual-mode-badge:not(.hidden)) #cb-title {
+    max-width: 280px;
+  }
+
+  #cb-result-modal .cr-casual-row {
+    margin: 10px 0 0 !important;
+    padding: 7px 10px !important;
+    font-size: 11.5px !important;
+  }
+
+  #cb-result-modal .end-btns {
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 10px;
+  }
+
+  #cb-result-modal .end-btns .tbtn {
+    height: 34px;
+    min-height: 34px;
+  }
+
+  #cb-result-modal #cr-done {
+    min-width: 116px;
+    padding: 0 20px;
+    font-size: 13px;
+  }
+
+  #cb-result-modal #cr-retry-boss {
+    min-width: 124px;
+    padding: 0 17px;
+    font-size: 12.5px;
+  }
+
+  #cb-result-modal #cr-retry {
+    min-width: 106px;
+    padding: 0 15px;
+    font-size: 12px;
+  }
+}
+
+/* V3.2 窄桌面 / 高 DPI 适配 (960×600) */
+@media (max-width: 1023px) {
+  #battle-screen .cb-topbar #cb-btn-assist-mode {
+    height: 20px;
+    padding: 0 6px 0 5px;
+    font-size: 10px;
+    gap: 3px;
+    letter-spacing: 0;
+  }
+
+  #battle-screen .cb-topbar #cb-btn-assist-mode::before {
+    width: 4px;
+    height: 4px;
+  }
+
+  #battle-screen .cb-topbar #cb-casual-mode-badge:not(.hidden) {
+    height: 20px;
+    padding: 0 5px 0 4px;
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  #battle-screen .cb-topbar .cb-stage-info:has(#cb-casual-mode-badge:not(.hidden)) #cb-title {
+    max-width: 260px;
+  }
+
+  #cb-result-modal {
+    padding: 12px;
+  }
+
+  #cb-result-modal .cb-result-card {
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+
+  #cb-result-modal .cr-head {
+    padding: 11px 18px;
+  }
+
+  #cb-result-modal .cr-body {
+    padding: 12px 18px 15px;
+  }
+
+  #cb-result-modal .cr-casual-row {
+    margin: 9px 0 0 !important;
+    padding: 6px 9px !important;
+    font-size: 11.5px !important;
+    line-height: 1.4;
+  }
+
+  #cb-result-modal .end-btns {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 9px;
+  }
+
+  #cb-result-modal .end-btns .tbtn {
+    height: 34px;
+    min-height: 34px;
+  }
+
+  #cb-result-modal #cr-done {
+    min-width: 112px;
+    padding: 0 18px;
+    font-size: 12.5px;
+  }
+
+  #cb-result-modal #cr-retry-boss {
+    min-width: 120px;
+    padding: 0 16px;
+    font-size: 12px;
+  }
+
+  #cb-result-modal #cr-retry {
+    min-width: 102px;
+    padding: 0 14px;
+    font-size: 11.5px;
+  }
+}
+
+/* V3.2 极窄屏回退 (<=720px) */
+@media (max-width: 720px) {
+  #cb-result-modal .end-btns {
+    flex-wrap: wrap;
+    justify-content: stretch;
+  }
+
+  #cb-result-modal .end-btns .tbtn,
+  #cb-result-modal #cr-done,
+  #cb-result-modal #cr-retry-boss,
+  #cb-result-modal #cr-retry {
+    flex: 1 1 auto;
+    min-width: 116px;
+  }
+}
+
 /* 降动效无障碍护栏 */
 @media (prefers-reduced-motion: reduce) {
   #arena-overlay,
@@ -10214,7 +10789,12 @@ body.cb-battle-active #fx {
     display: none !important;
   }
 
-  #battle-screen .cb-ally-cameo {
+  #battle-screen .cb-ally-cameo,
+  #battle-screen .cb-topbar #cb-btn-assist-mode,
+  #battle-screen .cb-prism-rig .cb-blade .cb-bl-beat,
+  #cb-result-modal .cr-casual-row,
+  #cb-result-modal #cr-retry-boss,
+  #cb-result-modal #cr-retry {
     transition: none !important;
   }
 

@@ -145,6 +145,7 @@ const scriptFiles = [
   'js/voice-manifest.js',
   'js/voice-engine.js',
   'js/branching-director.js',
+  'js/combat-timing-ring.js',
   'js/combat-engine.js',
   'js/ai-chat-panel.js',
   'js/relics-and-events.js',

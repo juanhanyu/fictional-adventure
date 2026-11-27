@@ -3442,7 +3442,24 @@
     north_staff:             'saint_staff_resonance',
     polar_saint_staff:       'saint_staff_resonance',
     staff_north_saint:       'saint_staff_resonance',
-    saint_resonance:         'saint_staff_resonance'
+    saint_resonance:         'saint_staff_resonance',
+
+    // 19. V3.2 全 15 招规范技能 ID 精准路由别名
+    ice_1_crystal:           'ice_crystal',
+    ice_2_prism:             'tri_prism_ice',
+    ice_3_starfrost:         'starfrost_scatter',
+    water_1_ball:            'water_orb',
+    water_2_surge:           'raging_surge',
+    water_3_blade:           'water_cleave',
+    frost_1_step:            'frost_step_floor',
+    frost_2_breath:          'frost_breath',
+    frost_3_thorns:          'frost_thorn_field',
+    shield_1_ice:            'ice_shield',
+    shield_2_mirror:         'mirror_frost_wall',
+    shield_3_steel:          ['prism_aegis', 'steel_ice_curtain'],
+    sword_1_basic:           'basic_attack',
+    sword_2_cold_edge:       ['sword_send_slash', 'silver_ice_slash'],
+    move_afterimage:         ['sword_root_step', 'wind_afterimage']
   };
 
   const PACK_NAME = 'pack1_player_core';

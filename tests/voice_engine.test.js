@@ -462,7 +462,7 @@ async function run() {
 
   const bHeadless = CE.startStage('beatrice_11', { headless: true, usePreset: true });
   CE.setOvercastPct(0.40, bHeadless);
-  CE.useSkill('hand_ice_crystal', 0, bHeadless);
+  CE.useSkill('ice_1_crystal', 0, bHeadless);
   CE.endTurn(bHeadless);
   const headlessZeroCues = combatCues.length === 0 && !VE.isPlaying();
   ok('headless 战斗严格拦截所有 combat:voice 事件与 VoiceEngine 播放',
@@ -480,13 +480,15 @@ async function run() {
   // 艾诺薄冰镜挡招 -> boss_aino_block
   bAino.ap = 3;
   bAino.player.mp = bAino.player.mmp;
-  CE.useSkill('hand_ice_crystal', 0, bAino);
-  // 艾诺三击认输 -> boss_aino_surrender
+  bAino.enemies[0].intent = { stance: 'HEAVY_WINDUP', moveName: '直刺寒枪', dmg: 35, elem: 'ice' };
+  CE.useSkill('ice_2_prism', 0, bAino);
+  // 镜霜壁反刺开窗 + ice_2_prism 三击认输 -> boss_aino_surrender
+  CE.useSkill('shield_2_mirror', 0, bAino);
+  CE.endTurn(bAino);
   bAino.playerHits = 2;
   bAino.ap = 3;
   bAino.player.mp = bAino.player.mmp;
-  if (!bAino.player.skills.includes('insight_aino_bead')) bAino.player.skills.push('insight_aino_bead');
-  CE.useSkill('insight_aino_bead', 0, bAino);
+  CE.useSkill('ice_2_prism', 0, bAino);
 
   const bLive = CE.startStage('noelle_14', { headless: false, usePreset: true });
   // 增幅防抖：升阶触发 + 650ms 冷却 + 降阶不触发
@@ -503,22 +505,18 @@ async function run() {
   CE.toggleEclipseWand(true, bLive);
   CE.toggleEclipseWand(false, bLive);
 
-  bLive.waveTurn = 2;
-  bLive.player.palaceLeft = 1;
-  CE.inspectClue('ice_crack_waterline', 'freeze_seep', bLive);
-
   bLive.player.bondAssist = 'alice';
   bLive.player.bondAssistUsed = false;
   CE.useBondAssist(bLive);
 
-  // skill_path_HAND 回退
+  // skill_path_HAND 回退（V3.2 三棱冰晶）
   bLive.ap = 3;
   bLive.player.mp = bLive.player.mmp;
-  bLive.enemies[0].locks = 1;
+  bLive.enemies[0].locks = 5;
   bLive.enemies[0].shield = 0;
-  bLive.enemies[0].hp = 260;
+  bLive.enemies[0].hp = 900;
   CE.setOvercastPct(0, bLive, { silent: true });
-  CE.useSkill('hand_ice_crystal', 0, bLive);
+  CE.useSkill('ice_2_prism', 0, bLive);
 
   // dodge / shield_block / player_hit / player_hit_heavy
   bLive.enemies[0].intent = { stance: 'HEAVY_WINDUP', moveName: '测试水击', dmg: 30, elem: 'water' };
@@ -553,16 +551,20 @@ async function run() {
     || { id: 'eastwing_commander', aiType: 'eastwing_boss', name: '东翼封锁官', boss: true, phase: 1, mhp: 620, hp: 310, shield: 0, status: {} };
   CE.triggerBossPhase2(bEast, eastBoss);
 
-  // 风神开场 + 二阶段 + 闪反 + 战败 (boss_fengshen_intro / boss_fengshen_phase2 / parry / defeat)
+  // 风神开场 + 二阶段 (<=55%) + 寒锋斩迎击闪反 + 战败 (boss_fengshen_intro / boss_fengshen_phase2 / parry / defeat)
   const bWind = CE.startStage('wind_god_eye', { headless: false, usePreset: true });
   bWind.enemies[0].shield = 0;
   bWind.enemies[0].evadeCharges = 0;
-  bWind.enemies[0].hp = Math.floor(bWind.enemies[0].mhp * 0.5) + 5;
+  bWind.enemies[0].hp = Math.floor(bWind.enemies[0].mhp * 0.55) + 5;
   bWind.ap = 3;
-  CE.useSkill('hand_ice_crystal', 0, bWind);
-  bWind.player.status.lungeParry = 1;
-  bWind.enemies[0].intent = { stance: 'CLOSE_LUNGE', moveName: '疾风突刺', dmg: 50, elem: 'wind' };
-  CE.endTurn(bWind);
+  CE.useSkill('ice_3_starfrost', 0, bWind);
+  // 清除二阶段觉醒缓冲以测试寒锋斩迎击闪反与战败语音
+  bWind.enemies[0].status.stagger = 0;
+  bWind.enemies[0].evadeCharges = 0;
+  bWind.enemies[0].intent = { stance: 'CLOSE_LUNGE', moveName: '真空连刃', dmg: 50, elem: 'wind', tempestVacuum: true };
+  bWind.ap = 3;
+  CE.useSkill('sword_2_cold_edge', 0, bWind);
+  bWind.enemies[0].status.stagger = 0;
   bWind.player.shield = 0;
   bWind.player.hp = 1;
   bWind.enemies[0].intent = { stance: 'HEAVY_WINDUP', moveName: '终结风暴', dmg: 200, elem: 'wind' };
@@ -574,7 +576,7 @@ async function run() {
   bHulan.enemies[0].locks = 1;
   bHulan.ainoResonance = 1;
   bHulan.ap = 3;
-  CE.useSkill('remote_snap_spike', 0, bHulan);
+  CE.useSkill('ice_3_starfrost', 0, bHulan);
 
   CE.exitBattle(false, { silent: true });
   win.removeEventListener('combat:voice', onCombatVoice);
@@ -593,7 +595,6 @@ async function run() {
     'boss_fengshen_intro',
     'boss_fengshen_phase2',
     'eclipse_wand',
-    'insight_success',
     'bond_assist_alice',
     'skill_path_HAND',
     'dodge',
@@ -609,7 +610,7 @@ async function run() {
   const missingCues = requiredCues.filter((c) => !combatCues.includes(c));
   const hasVictoryCue = combatCues.includes('victory') || combatCues.includes('victory_s');
 
-  // 与 casting_fish_audio.json 54 项 combatCueKeys 交叉核验
+  // 与 casting_fish_audio.json 54 项 combatCueKeys 交叉核验（V3.2 全部 15 招经 resolveSkillVoiceCue 零 404 映射）
   let ssotCombatOk = true;
   let ssotCombatDetail = '';
   const castingPath = path.join(ROOT, 'tools', 'voice', 'casting_fish_audio.json');
@@ -622,9 +623,13 @@ async function run() {
       ...(casting.combatCueKeys.sylviaSystem || []),
       ...(casting.combatCueKeys.sylviaSkills || []),
     ];
-    const skillsOk = Object.keys(CE.SKILLS || {}).every((sid) => allSsotKeys.includes(`skill_${sid}`));
+    const skillIds = Object.keys(CE.SKILLS || {});
+    const unmappedSkills = skillIds.filter((sid) => !allSsotKeys.includes(CE.resolveSkillVoiceCue(sid)));
+    const skillsOk = skillIds.length === 15
+      && typeof CE.resolveSkillVoiceCue === 'function'
+      && unmappedSkills.length === 0;
     ssotCombatOk = allSsotKeys.length === 54 && skillsOk;
-    ssotCombatDetail = `ssotCount=${allSsotKeys.length}, skillsOk=${skillsOk}`;
+    ssotCombatDetail = `ssotCount=${allSsotKeys.length}, skillCount=${skillIds.length}, skillsOk=${skillsOk}${unmappedSkills.length ? ', unmapped=' + JSON.stringify(unmappedSkills) : ''}`;
   }
 
   ok('战斗全黄金锚点 cue 完整派发且与 casting_fish_audio.json 54 项 SSOT 完全对齐',

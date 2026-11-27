@@ -2935,6 +2935,68 @@ body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-grid .sl-card
   }
 }
 
+/* ===== 综合面板 #panel「设置」页紧凑排版与矮屏可视滚动条兜底 ===== */
+#panel .modal-scroll.is-settings-scroll {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+#panel #panel-body.is-settings-tab {
+  min-height: 0;
+  padding-bottom: 4px;
+  line-height: 1.46;
+}
+#panel #panel-body.is-settings-tab .panel-settings-pane > .set-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 8px;
+}
+#panel #panel-body.is-settings-tab .panel-settings-pane > .set-row-head:first-child {
+  margin-top: 0;
+}
+#panel #panel-body.is-settings-tab .panel-settings-pane > input[type="range"] {
+  margin: 5px 0 4px;
+}
+#panel #panel-body.is-settings-tab .panel-settings-pane > .set-hint {
+  color: #526078;
+  font-size: 11.5px;
+  line-height: 1.36;
+  padding: 2px 0 8px;
+}
+#panel #panel-body.is-settings-tab #set-reset {
+  margin-top: 10px;
+}
+@media (max-height: 640px) {
+  #panel .modal-scroll {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(28, 76, 184, 0.36) rgba(27, 35, 51, 0.05);
+  }
+  #panel .modal-scroll::-webkit-scrollbar {
+    width: 7px;
+  }
+  #panel .modal-scroll::-webkit-scrollbar-track {
+    background: rgba(27, 35, 51, 0.05);
+  }
+  #panel .modal-scroll::-webkit-scrollbar-thumb {
+    background: rgba(28, 76, 184, 0.34);
+    border-radius: 3px;
+  }
+  #panel #panel-body.is-settings-tab .panel-settings-pane > .set-row-head {
+    margin-top: 5px;
+  }
+  #panel #panel-body.is-settings-tab .panel-settings-pane > input[type="range"] {
+    margin: 4px 0 3px;
+  }
+  #panel #panel-body.is-settings-tab .panel-settings-pane > .set-hint {
+    padding: 1px 0 6px;
+  }
+  #panel #panel-body.is-settings-tab #set-reset {
+    margin-top: 8px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .letter-frost i,
   .letter-demo::before {

@@ -3,15 +3,16 @@
    职责：
      - 挂载于 #battle-screen .cb-arena-field，在桌面端（>=1024px）锚定于中场空区 #cb-mid-corridor 偏左，
        将技能选择转化为 Persona 5 式角色锚定多面体蓝宝棱晶放射翼：
-         [W] 冰水术式  → 展开实时同步自 #b-actions 的斜切术式级联翼（支持 [1..9] 直施）
+         [W] 冰水术式  → 展开实时同步自 #b-actions 的 5+1 进化术式级联翼（支持 [1..9] 直施与拍数微标）
          [E] 魔力增幅  → 1:1 复刻标杆外露直按三阶魔力增幅（左键/E 原地升档 0%→20%→40%→60%→0%，
                          右键/Shift+E 原地降档 60%→40%→20%→0%，滚轮微调；技能列表顶脊 #cb-pw-amp-mini 同款直按不跳离）
          [A] 守势/护盾 → 优先瞬发当前可用守势护盾技，多项时展开守势翼，无可用时稳守回合
-         [D] 演武辅助  → 展开冰晶宫殿 / 心念援护 / 晦轮杖 / 结束回合四项战术翼
+         [D] 演武辅助  → 展开心念援护 / 晦轮杖 / 结束回合战术翼
          [X] 结束回合  → 顶栏常驻一键结束回合（AP 归零时流光提示，绝与 [E] 增幅互不冲突）
          [L] 战报手札  → 棱晶模式底部单行实况战报条 + 可展开历史记录
      - 适配 6+6 站位（含雷纳德前排 #cb-ally-vanguard-slot、.cb-ally-pane 与 #cb-enemy-zone .cb-enemy-card 避障）
-     - 由 combat:statechange 事件驱动同步 + 签名差分复绘，彻底根除悬停与 60fps 像素帧触发的 DOM 销毁抖动
+     - 适配 V3.2 命中前缩圈与休闲模式：缩圈期间完全让出键盘并无阻塞暂隐棱晶翼，护手关闭时清爽隐藏拍数微标
+     - 由 combat:statechange / combat:prefschange 事件驱动同步 + 签名差分复绘，彻底根除悬停与 60fps 像素帧触发的 DOM 销毁抖动
      - 零破坏既有 DOM ID 与自动化测试（JSDOM 环境下静默旁路）
    ========================================================================= */
 (function (global) {
@@ -20,52 +21,72 @@
   const DESKTOP_MIN_W = 1024;
   const MAX_AMP_PCT = 0.60;
   const MAX_AMP_INT = 60;
-  const V22_AMP_TIERS = [
-    {
+  const V32_AMP_TIERS = Object.freeze([
+    Object.freeze({
       idx: 0,
       key: '1',
       pct: 0,
       tier: 0,
+      mult: 1.00,
+      penPct: 0,
+      lockBonus: 0,
+      shieldMult: 1.00,
+      steelFrostBarrier: false,
       name: '常规 · 0%',
       title: '常规 · 0%',
       short: '常规',
       multLabel: '1.00×',
       effect: '常规施法 · 1.00×',
-    },
-    {
+    }),
+    Object.freeze({
       idx: 1,
       key: '2',
       pct: 0.20,
       tier: 1,
+      mult: 1.20,
+      penPct: 0.10,
+      lockBonus: 1,
+      shieldMult: 1.25,
+      steelFrostBarrier: false,
       name: '★一阶 · 魔力盈溢 20%',
       title: '★一阶 · 魔力盈溢 20%',
       short: '★20% 盈溢',
-      multLabel: '1.43×',
-      effect: '+1破锁 · 10%穿抗 · 护盾+35%',
-    },
-    {
+      multLabel: '1.20×',
+      effect: '+1破锁 · 10%穿抗 · 护盾1.25×',
+    }),
+    Object.freeze({
       idx: 2,
       key: '3',
       pct: 0.40,
       tier: 2,
+      mult: 1.40,
+      penPct: 0.22,
+      lockBonus: 2,
+      shieldMult: 1.50,
+      steelFrostBarrier: true,
       name: '★★二阶 · 极寒过载 40%',
       title: '★★二阶 · 极寒过载 40%',
       short: '★★40% 过载',
-      multLabel: '1.70×',
-      effect: '+2破锁 · 20%穿抗 · 护盾+45%',
-    },
-    {
+      multLabel: '1.40×',
+      effect: '+2破锁 · 22%穿抗 · 护盾1.50× · 钢霜壁垒',
+    }),
+    Object.freeze({
       idx: 3,
       key: '4',
       pct: 0.60,
       tier: 3,
+      mult: 1.60,
+      penPct: 0.35,
+      lockBonus: 3,
+      shieldMult: 1.50,
+      steelFrostBarrier: false,
       name: '★★★三阶 · 星霜极限 60%',
       title: '★★★三阶 · 星霜极限 60%',
       short: '★★★60% 星霜极限',
-      multLabel: '1.98×',
-      effect: '+3破锁 · 30%穿抗 · 限手持重术',
-    },
-  ];
+      multLabel: '1.60×',
+      effect: '+3破锁 · 35%穿抗 · 限手持重术',
+    }),
+  ]);
   const HIGHER_OVERLAY_IDS = [
     'cg-lightbox', 'sys-popup', 'arena-loadout-modal', 'vn-prefs-modal',
     'vn-backlog-modal', 'vn-saveload-modal', 'vn-chapters-modal',
@@ -73,7 +94,7 @@
     'stats-overlay', 'ai-drawer', 'help-screen', 'map-overlay', 'backlog-overlay',
   ];
   const PRISM_COMBAT_HOTKEYS = new Set([
-    'w', 'e', 'a', 'd', 'x', 'l', 'q', 'r', 'f', 'escape',
+    'w', 'e', 'a', 'd', 'x', 'l', 'r', 'f', 'escape',
     '1', '2', '3', '4', '5', '6', '7', '8', '9',
   ]);
 
@@ -141,8 +162,11 @@
     lastAmpWheelAt: 0,
     bsObserver: null,
     modalObserver: null,
+    fieldObserver: null,
+    fieldObservedEl: null,
     rafId: 0,
     dissolveTimer: 0,
+    timingRestoreTimer: 0,
     rigEl: null,
     svgEl: null,
     cascadeListEl: null,
@@ -216,6 +240,96 @@
     return null;
   }
 
+  function getRawEngineBattle() {
+    try {
+      if (global.CombatEngine && typeof global.CombatEngine.getState === 'function') {
+        return global.CombatEngine.getState();
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function getTimingRingApi() {
+    return (typeof window !== 'undefined' && window.CombatTimingRing)
+      || global.CombatTimingRing
+      || null;
+  }
+
+  function isTimingRingActive() {
+    const api = getTimingRingApi();
+    try {
+      return !!(api && typeof api.isActive === 'function' && api.isActive());
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function isAsyncPhaseActive(battleOverride) {
+    const b = battleOverride || getEngineBattle();
+    if (b && b._asyncPhaseActive) return true;
+    const raw = getRawEngineBattle();
+    return !!(raw && raw._asyncPhaseActive);
+  }
+
+  function isTimingOrAsyncDissolved(battleOverride) {
+    return isTimingRingActive() || isAsyncPhaseActive(battleOverride);
+  }
+
+  function isGauntletOffMode() {
+    const api = getTimingRingApi();
+    if (api) {
+      try {
+        if (typeof api.getAssistMode === 'function') {
+          const m = String(api.getAssistMode() || '').toLowerCase();
+          if (m) return m === 'off' || m === 'auto' || m === 'none';
+        }
+        if (typeof api.getGauntletMode === 'function') {
+          const m = String(api.getGauntletMode() || '').toLowerCase();
+          if (m) return m === 'off' || m === 'auto' || m === 'none';
+        }
+        if (typeof api.getMode === 'function') {
+          const m = String(api.getMode() || '').toLowerCase();
+          if (m) return m === 'off' || m === 'auto' || m === 'none';
+        }
+        if (typeof api.isGauntletOff === 'function') {
+          return !!api.isGauntletOff();
+        }
+      } catch (e) {}
+    }
+    const b = uiState.lastBattleState || getEngineBattle();
+    if (b && (b.assistMode != null || b.gauntletMode != null)) {
+      const m = String(b.assistMode != null ? b.assistMode : b.gauntletMode).toLowerCase();
+      return m === 'off' || m === 'auto' || m === 'none';
+    }
+    return false;
+  }
+
+  function isCasualModeActive() {
+    const api = getTimingRingApi();
+    try {
+      return !!(api && typeof api.isCasualMode === 'function' && api.isCasualMode() === true);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function stopTimingRestoreWatch() {
+    if (uiState.timingRestoreTimer) {
+      clearInterval(uiState.timingRestoreTimer);
+      uiState.timingRestoreTimer = 0;
+    }
+  }
+
+  function startTimingRestoreWatch() {
+    if (uiState.timingRestoreTimer) return;
+    uiState.timingRestoreTimer = setInterval(() => {
+      if (!uiState.mounted || !isTimingOrAsyncDissolved()) {
+        stopTimingRestoreWatch();
+        if (uiState.mounted) sync();
+      }
+    }, 60);
+  }
+
   function isEnemyTurnState(state) {
     if (!state) return false;
     if (state.isEnemyTurn || state.enemyTurn) return true;
@@ -227,7 +341,7 @@
   function shouldHardDissolve(battleOverride) {
     const bs = getBattleScreen();
     if (!bs || !isVisible(bs)) return true;
-    if (document.getElementById('cb-palace-modal') || document.getElementById('cb-result-modal')) return true;
+    if (document.getElementById('cb-result-modal')) return true;
     if (hasBlockingOverlay()) return true;
     const b = battleOverride || getEngineBattle();
     if (b && (b.over || isEnemyTurnState(b))) return true;
@@ -239,7 +353,7 @@
   }
 
   function shouldDissolve(battleOverride) {
-    return shouldHardDissolve(battleOverride) || isBriefDissolving();
+    return shouldHardDissolve(battleOverride) || isTimingOrAsyncDissolved(battleOverride) || isBriefDissolving();
   }
 
   function cancelDissolve() {
@@ -249,8 +363,8 @@
     }
     const wasDissolving = uiState.animDissolveUntil > 0;
     uiState.animDissolveUntil = 0;
-    if (uiState.rigEl && !shouldHardDissolve()) {
-      uiState.rigEl.classList.remove('dissolved');
+    if (uiState.rigEl && !shouldHardDissolve() && !isTimingOrAsyncDissolved()) {
+      uiState.rigEl.classList.remove('dissolved', 'is-timing-dissolved');
     }
     return wasDissolving;
   }
@@ -320,12 +434,163 @@
     }, 180);
   }
 
-  function readSkillCards() {
+  function formatBeatSpecBadge(rawSpec, skillObj) {
+    if (rawSpec == null || rawSpec === '') return { label: '', kind: '' };
+
+    if (typeof rawSpec === 'string') {
+      const trimmed = rawSpec.trim();
+      if (!trimmed) return { label: '', kind: '' };
+      if (trimmed.charAt(0) === '{') {
+        try {
+          return formatBeatSpecBadge(JSON.parse(trimmed), skillObj);
+        } catch (e) {}
+      }
+      const low = trimmed.toLowerCase();
+      if (low === 'off' || low === 'auto') return { label: '', kind: '' };
+      if (low === '0' || low === 'instant' || low === 'none' || trimmed === '瞬发') {
+        return { label: '瞬发', kind: 'instant' };
+      }
+      if (
+        low === 'aoe' || low === 'all' || low === 'all_enemies' || low === 'all-enemies' ||
+        low === 'dynamic_targets' || low === 'per_enemy' || low === 'dynamic' ||
+        trimmed === '全敌' || trimmed === '全敌拍'
+      ) {
+        return { label: '全敌拍', kind: 'aoe' };
+      }
+      if (low === '1' || low === 'single' || trimmed === '1拍') {
+        return { label: '1拍', kind: 'b1' };
+      }
+      if (low === '2' || low === 'double' || low === 'combo_distinct' || trimmed === '2拍') {
+        return { label: '2拍', kind: 'b2' };
+      }
+      if (low === '3' || low === 'triple' || low === 'triple_same' || low === 'combo' || trimmed === '3拍' || trimmed === '3拍连击') {
+        return { label: '3拍连击', kind: 'b3' };
+      }
+      if (/^\d+$/.test(low)) {
+        const n = Number(low);
+        if (n <= 0) return { label: '瞬发', kind: 'instant' };
+        if (n === 1) return { label: '1拍', kind: 'b1' };
+        if (n === 2) return { label: '2拍', kind: 'b2' };
+        return { label: `${n}拍连击`, kind: 'b3' };
+      }
+      if (trimmed.length <= 6) return { label: trimmed, kind: 'b1' };
+      return { label: '', kind: '' };
+    }
+
+    if (typeof rawSpec === 'number' && isFinite(rawSpec)) {
+      const n = Math.round(rawSpec);
+      if (n <= 0) return { label: '瞬发', kind: 'instant' };
+      if (n === 1) return { label: '1拍', kind: 'b1' };
+      if (n === 2) return { label: '2拍', kind: 'b2' };
+      return { label: `${n}拍连击`, kind: 'b3' };
+    }
+
+    if (typeof rawSpec === 'object') {
+      if (rawSpec.disabled || rawSpec.off || rawSpec.auto) return { label: '', kind: '' };
+      const modeStr = String(rawSpec.mode || rawSpec.type || rawSpec.kind || rawSpec.pattern || '').toLowerCase();
+      const explicit = typeof rawSpec.badge === 'string' && rawSpec.badge.trim()
+        ? rawSpec.badge.trim()
+        : (typeof rawSpec.shortLabel === 'string' && rawSpec.shortLabel.trim()
+          ? rawSpec.shortLabel.trim()
+          : (typeof rawSpec.label === 'string' && rawSpec.label.trim().length > 0 && rawSpec.label.trim().length <= 5
+            ? rawSpec.label.trim()
+            : ''));
+
+      let n = null;
+      if (Array.isArray(rawSpec.beats)) n = rawSpec.beats.length;
+      else if (typeof rawSpec.beats === 'number' && isFinite(rawSpec.beats)) n = Math.round(rawSpec.beats);
+      else if (typeof rawSpec.count === 'number' && isFinite(rawSpec.count)) n = Math.round(rawSpec.count);
+      else if (typeof rawSpec.beatCount === 'number' && isFinite(rawSpec.beatCount)) n = Math.round(rawSpec.beatCount);
+      else if (Array.isArray(rawSpec.keys)) n = rawSpec.keys.length;
+
+      const isDynamicAoe = !!(
+        rawSpec.dynamic === true ||
+        rawSpec.aoe === true ||
+        rawSpec.allEnemies === true ||
+        rawSpec.perEnemy === true ||
+        rawSpec.scope === 'all' ||
+        modeStr === 'dynamic_targets' ||
+        modeStr === 'aoe' ||
+        modeStr === 'all_enemies' ||
+        modeStr === 'per_enemy' ||
+        modeStr.indexOf('全敌') >= 0
+      );
+      if (isDynamicAoe) {
+        return { label: explicit || '全敌拍', kind: 'aoe' };
+      }
+
+      const isInstant = !!(rawSpec.instant === true || modeStr === 'instant' || modeStr === 'none' || n === 0);
+      if (isInstant) {
+        return { label: explicit || '瞬发', kind: 'instant' };
+      }
+
+      if (modeStr === 'triple_same' || (typeof n === 'number' && n >= 3)) {
+        const cnt = typeof n === 'number' && n >= 3 ? n : 3;
+        return { label: explicit || `${cnt}拍连击`, kind: 'b3' };
+      }
+      if (modeStr === 'combo_distinct' || n === 2) {
+        return { label: explicit || '2拍', kind: 'b2' };
+      }
+      if (modeStr === 'single' || n === 1) {
+        if (skillObj && skillObj.aoe && !explicit) return { label: '全敌拍', kind: 'aoe' };
+        return { label: explicit || '1拍', kind: 'b1' };
+      }
+      if (explicit) return { label: explicit, kind: 'b1' };
+    }
+
+    return { label: '', kind: '' };
+  }
+
+  function resolveSkillBeatInfo(skillId, skillObj, btn, battleState) {
+    if (isGauntletOffMode()) return { label: '', kind: '' };
+
+    let attrBeats = '';
+    if (btn) {
+      const directAttr = btn.getAttribute('data-beats');
+      if (directAttr != null && directAttr !== '') {
+        attrBeats = directAttr;
+      } else {
+        const subBeat = btn.querySelector('[data-beats]');
+        if (subBeat) attrBeats = subBeat.getAttribute('data-beats') || '';
+      }
+    }
+
+    let apiSpec = null;
+    const api = getTimingRingApi();
+    if (api && typeof api.getBeatSpec === 'function' && skillId) {
+      try {
+        apiSpec = api.getBeatSpec(skillId, battleState || undefined);
+      } catch (e) {
+        apiSpec = null;
+      }
+    }
+
+    if (apiSpec && (apiSpec.dynamic || apiSpec.mode === 'dynamic_targets' || (typeof apiSpec.beats === 'number' && apiSpec.beats > 0))) {
+      return formatBeatSpecBadge(apiSpec, skillObj);
+    }
+    if (attrBeats) {
+      return formatBeatSpecBadge(attrBeats, skillObj);
+    }
+    if (skillObj && skillObj.beatSpec != null) {
+      return formatBeatSpecBadge(skillObj.beatSpec, skillObj);
+    }
+    if (apiSpec) {
+      return formatBeatSpecBadge(apiSpec, skillObj);
+    }
+    return { label: '', kind: '' };
+  }
+
+  function readSkillCards(battleOverride) {
     const box = getSkillSourceContainer();
     if (!box) return [];
+    const b = battleOverride || uiState.lastBattleState || getEngineBattle();
+    const stateSkills = (b && b.player && Array.isArray(b.player.skills)) ? b.player.skills : [];
+    const engineSkills = (global.CombatEngine && global.CombatEngine.SKILLS) ? global.CombatEngine.SKILLS : null;
     const btns = Array.from(box.querySelectorAll('.cb-skill-card'));
     return btns.map((btn, idx) => {
       const sid = btn.getAttribute('data-sk') || '';
+      const skObj = stateSkills.find(s => s && s.id === sid) || (engineSkills && engineSkills[sid]) || null;
+      const beatInfo = resolveSkillBeatInfo(sid, skObj, btn, b);
       const nameEl = btn.querySelector('.csc-name');
       const pathEl = btn.querySelector('.csc-path');
       const costEl = btn.querySelector('.csc-cost');
@@ -346,6 +611,8 @@
         skillId: sid,
         name: nameEl ? nameEl.textContent.trim() : sid,
         pathLabel: pathText,
+        beatLabel: beatInfo.label,
+        beatKind: beatInfo.kind,
         cost: costEl ? costEl.textContent.trim() : '',
         desc: descEl ? descEl.textContent.trim() : '',
         foot: footEl ? footEl.textContent.trim() : '',
@@ -359,16 +626,9 @@
     });
   }
 
-  function computeV22FallbackMult(pct) {
+  function computeV32FallbackMult(pct) {
     const dm = Math.max(0, Math.min(MAX_AMP_PCT, Number(pct) || 0));
-    const seg1 = Math.min(dm, 0.20);
-    const seg2 = Math.max(0, Math.min(dm, 0.40) - 0.20);
-    const seg3 = Math.max(0, dm - 0.40);
-    const base = 1.0 + seg1 * 1.60 + seg2 * 0.60 + seg3 * 0.40;
-    if (dm >= 0.60 - 1e-4) return base * 1.30;
-    if (dm >= 0.40 - 1e-4) return base * 1.18;
-    if (dm >= 0.20 - 1e-4) return base * 1.08;
-    return base;
+    return Number((1.0 + dm).toFixed(4));
   }
 
   function formatAmpBadge(overcastPct, tier) {
@@ -442,7 +702,7 @@
     else if (rawTier && typeof rawTier.label === 'string' && rawTier.label) ampTierName = rawTier.label;
     else ampTierName = tier >= 3 ? '星霜极限' : tier >= 2 ? '极寒过载' : tier >= 1 ? '魔力盈溢' : '常规';
 
-    let ampMult = computeV22FallbackMult(overcastPct);
+    let ampMult = computeV32FallbackMult(overcastPct);
     if (b && typeof b.ampMult === 'number' && isFinite(b.ampMult)) ampMult = b.ampMult;
     else if (p && typeof p.ampMult === 'number' && isFinite(p.ampMult)) ampMult = p.ampMult;
 
@@ -463,7 +723,7 @@
     const rawTierExtraMps = (b && Array.isArray(b.ampTierExtraMps) && b.ampTierExtraMps.length > 0)
       ? b.ampTierExtraMps
       : (p && Array.isArray(p.ampTierExtraMps) && p.ampTierExtraMps.length > 0 ? p.ampTierExtraMps : null);
-    const ampTierExtraMps = V22_AMP_TIERS.map(t => (
+    const ampTierExtraMps = V32_AMP_TIERS.map(t => (
       rawTierExtraMps && typeof rawTierExtraMps[t.tier] === 'number' && isFinite(rawTierExtraMps[t.tier])
         ? Math.max(0, Math.round(rawTierExtraMps[t.tier]))
         : calcFallbackExtraMp(t.pct)
@@ -473,11 +733,11 @@
     const multBadge = !canAmp ? 'LOCK' : `${ampMult.toFixed(2)}×`;
     const badge = !canAmp ? '不可增幅' : formatAmpBadge(overcastPct, tier);
     const shortLabel = !canAmp ? '锁定' : formatAmpShort(overcastPct, tier);
-    const allowedTiers = V22_AMP_TIERS.filter(t => t.pct <= maxAmpCap + 1e-4);
+    const allowedTiers = V32_AMP_TIERS.filter(t => t.pct <= maxAmpCap + 1e-4);
 
     const ampTierMults = (b && Array.isArray(b.ampTierMults) && b.ampTierMults.length >= 4)
       ? b.ampTierMults
-      : null;
+      : V32_AMP_TIERS.map(t => t.mult);
 
     return {
       overcastPct,
@@ -512,50 +772,6 @@
     const items = [];
     const b = battleOverride || getEngineBattle();
     const p = b && b.player ? b.player : null;
-
-    const palBtn = document.getElementById('cb-btn-palace');
-    if (palBtn && isVisible(palBtn)) {
-      let palFoot = '审视敌方招式死角';
-      let palCost = palBtn.disabled ? '暂不可用' : '就绪';
-      if (p) {
-        const palMax = Number(p.palaceMax) || 0;
-        const palLeft = Number(p.palaceLeft) || 0;
-        const waveTurn = Number(b.waveTurn) || 1;
-        if (palMax <= 0) {
-          palFoot = '尚未习得并行推演';
-          palCost = '未习得';
-        } else if (palLeft > 0 && waveTurn < 2) {
-          palFoot = `收集线索 ${Math.min(1, waveTurn)}/2 · 第2回合就绪`;
-          palCost = '采集中';
-        } else if (palLeft > 0 && !palBtn.disabled) {
-          palFoot = '推演就绪 · 锁定敌方招式死角';
-          palCost = `${palLeft}/${palMax} 就绪`;
-        } else if (palLeft <= 0) {
-          const hasNextWave = typeof b.waveIdx === 'number' && typeof b.totalWaves === 'number' && (b.waveIdx + 1 < b.totalWaves);
-          palFoot = hasNextWave ? '本波已推演 · 下波重置' : '本场推演机会已用尽';
-          palCost = '已使用';
-        }
-      } else {
-        const cleaned = palBtn.textContent
-          .replace(/\s+/g, ' ')
-          .replace(/\bQ\b/g, '')
-          .replace(/^冰晶宫殿[·・:\s]*/u, '')
-          .trim();
-        if (cleaned) palFoot = cleaned;
-      }
-      items.push({
-        kind: 'tool',
-        key: 'Q',
-        skillId: 'tool_palace',
-        name: '冰晶宫殿',
-        pathLabel: '冰镜并行',
-        foot: palFoot,
-        cost: palCost,
-        oppLabel: !palBtn.disabled && palBtn.classList.contains('pulse-hint') ? '✦ 可审视' : '',
-        disabled: !!palBtn.disabled,
-        sourceBtn: palBtn,
-      });
-    }
 
     const assistBtn = document.getElementById('cb-btn-assist');
     const hasConfiguredAssist = p ? !!p.bondAssist : !!(assistBtn && !assistBtn.classList.contains('locked-hint'));
@@ -849,7 +1065,6 @@
           }
         }
       } else if (item.kind === 'tool') {
-        if (item.skillId === 'tool_palace') return document.getElementById('cb-btn-palace');
         if (item.skillId === 'tool_assist') return document.getElementById('cb-btn-assist');
         if (item.skillId === 'tool_wand') return document.getElementById('cb-btn-wand');
         if (item.skillId === 'tool_endturn') return document.getElementById('cb-btn-endturn');
@@ -894,8 +1109,77 @@
     syncAvForecast(null, uiState.lastBattleState);
   }
 
+  function finalizeSkillCast(res, keepSkillsMode, prevWaveKey) {
+    if (res && res.ok === false) {
+      sync();
+      return false;
+    }
+    uiState.lastSkillCastAt = Date.now();
+    const nextState = getEngineBattle();
+    const nextWaveKey = nextState ? `${nextState.battleInstanceId || 0}:${nextState.waveIdx || 0}` : '';
+    const waveChanged = !!(prevWaveKey && nextWaveKey && nextWaveKey !== prevWaveKey);
+    const canContinueSkills = keepSkillsMode
+      && !(res && (res.battleEndedOrAdvanced || res.exposedFail || res.defeated))
+      && !waveChanged
+      && isPlayerTurnActive(nextState)
+      && readRemainingAp(nextState) > 0;
+
+    if (canContinueSkills) {
+      // 仍有 AP 可继续出招：停留在 mode-skills 原地刷新扇叶，绝不叠加阻塞点击的 .dissolved 锁
+      uiState.menuMode = 'skills';
+      sync(nextState);
+      triggerCastFlash();
+
+      let keptHoverSid = null;
+      let keptHoverWrap = null;
+      if (uiState.cascadeListEl) {
+        try {
+          const hoveredBtn = uiState.cascadeListEl.querySelector('.cb-blade:hover');
+          if (hoveredBtn && !hoveredBtn.disabled) {
+            const hIdx = Number(hoveredBtn.getAttribute('data-prism-idx'));
+            const hSid = hoveredBtn.getAttribute('data-sk') || '';
+            if (isFinite(hIdx)) uiState.hoveredBladeIdx = hIdx;
+            if (hSid) keptHoverSid = hSid;
+            keptHoverWrap = hoveredBtn.closest('.cb-blade-wrap');
+          }
+        } catch (e) {}
+      }
+      if (keptHoverSid) {
+        uiState.lastHoveredSkillId = keptHoverSid;
+        if (keptHoverWrap) {
+          const rot = keptHoverWrap.dataset.rot || '0';
+          keptHoverWrap.classList.add('hovered');
+          keptHoverWrap.style.transform = `translateX(0) rotate(${rot}deg) scale(1.015)`;
+        }
+        applySkillHoverPreviewNow(keptHoverSid, nextState);
+      } else {
+        uiState.hoveredBladeIdx = null;
+        if (uiState.cascadeListEl) {
+          uiState.cascadeListEl.querySelectorAll('.cb-blade-wrap.hovered').forEach(w => {
+            w.classList.remove('hovered');
+            const rot = w.dataset.rot || '0';
+            w.style.transform = `rotate(${rot}deg)`;
+          });
+        }
+      }
+      renderCurrentSvg();
+      return true;
+    }
+
+    uiState.hoveredBladeIdx = null;
+    uiState.hoveringAmpMini = false;
+    uiState.menuMode = 'root';
+    uiState.lastBladeSig = '';
+    clearRealHover({ resetLast: true });
+    if (!shouldHardDissolve(nextState) && !isTimingOrAsyncDissolved(nextState)) {
+      startBriefDissolve();
+    }
+    sync(nextState);
+    return true;
+  }
+
   function triggerSourceButton(item) {
-    if (!item) return false;
+    if (!item || isTimingOrAsyncDissolved()) return false;
     const isSkill = (item.kind === 'skill' && !!item.skillId)
       || (!!item.skillId && item.kind !== 'tool' && !String(item.skillId).startsWith('tool_'));
     const liveBtn = resolveLiveSourceBtn(item);
@@ -936,73 +1220,24 @@
     }
 
     if (isSkill) {
-      uiState.lastSkillCastAt = Date.now();
-      const nextState = getEngineBattle();
-      const nextWaveKey = nextState ? `${nextState.battleInstanceId || 0}:${nextState.waveIdx || 0}` : '';
-      const waveChanged = !!(prevWaveKey && nextWaveKey && nextWaveKey !== prevWaveKey);
-      const canContinueSkills = keepSkillsMode
-        && !(res && (res.battleEndedOrAdvanced || res.exposedFail || res.defeated))
-        && !waveChanged
-        && isPlayerTurnActive(nextState)
-        && readRemainingAp(nextState) > 0;
-
-      if (canContinueSkills) {
-        // 仍有 AP 可继续出招：停留在 mode-skills 原地刷新扇叶，绝不叠加阻塞点击的 .dissolved 锁
-        uiState.menuMode = 'skills';
-        sync(nextState);
-        triggerCastFlash();
-
-        let keptHoverSid = null;
-        let keptHoverWrap = null;
-        if (uiState.cascadeListEl) {
-          try {
-            const hoveredBtn = uiState.cascadeListEl.querySelector('.cb-blade:hover');
-            if (hoveredBtn && !hoveredBtn.disabled) {
-              const hIdx = Number(hoveredBtn.getAttribute('data-prism-idx'));
-              const hSid = hoveredBtn.getAttribute('data-sk') || '';
-              if (isFinite(hIdx)) uiState.hoveredBladeIdx = hIdx;
-              if (hSid) keptHoverSid = hSid;
-              keptHoverWrap = hoveredBtn.closest('.cb-blade-wrap');
-            }
-          } catch (e) {}
-        }
-        if (keptHoverSid) {
-          uiState.lastHoveredSkillId = keptHoverSid;
-          if (keptHoverWrap) {
-            const rot = keptHoverWrap.dataset.rot || '0';
-            keptHoverWrap.classList.add('hovered');
-            keptHoverWrap.style.transform = `translateX(0) rotate(${rot}deg) scale(1.015)`;
-          }
-          applySkillHoverPreviewNow(keptHoverSid, nextState);
-        } else {
-          uiState.hoveredBladeIdx = null;
-          if (uiState.cascadeListEl) {
-            uiState.cascadeListEl.querySelectorAll('.cb-blade-wrap.hovered').forEach(w => {
-              w.classList.remove('hovered');
-              const rot = w.dataset.rot || '0';
-              w.style.transform = `rotate(${rot}deg)`;
-            });
-          }
-        }
-        renderCurrentSvg();
+      if (res && typeof res.then === 'function') {
+        sync(getEngineBattle());
+        res.then(
+          resolved => finalizeSkillCast(resolved, keepSkillsMode, prevWaveKey),
+          () => sync()
+        );
         return true;
       }
-
-      uiState.hoveredBladeIdx = null;
-      uiState.hoveringAmpMini = false;
-      uiState.menuMode = 'root';
-      uiState.lastBladeSig = '';
-      clearRealHover({ resetLast: true });
-      if (!shouldHardDissolve(nextState)) {
-        startBriefDissolve();
+      if (isTimingOrAsyncDissolved()) {
+        sync(getEngineBattle());
+        return true;
       }
-      sync(nextState);
-      return true;
+      return finalizeSkillCast(res, keepSkillsMode, prevWaveKey);
     }
 
     if (item.skillId === 'tool_endturn') {
       const nextState = getEngineBattle();
-      if (!shouldHardDissolve(nextState)) {
+      if (!shouldHardDissolve(nextState) && !isTimingOrAsyncDissolved(nextState)) {
         startBriefDissolve();
       }
       sync(nextState);
@@ -1052,6 +1287,7 @@
     triggerEndTurnAction();
   }
   function openAssist() { setMode('assist'); }
+  function openPalace() { return false; }
   function closeCascade() { setMode('root'); }
 
   function toggleLogDrawer() {
@@ -1771,6 +2007,37 @@
     }
   }
 
+  function syncCasualModeBadge() {
+    if (typeof document === 'undefined') return;
+    const isCasual = isCasualModeActive();
+    let badge = document.getElementById('cb-casual-mode-badge');
+    if (!isCasual) {
+      if (badge) {
+        badge.classList.add('hidden');
+        badge.setAttribute('aria-hidden', 'true');
+      }
+      return;
+    }
+    ensurePrismExposureStyle();
+    if (!badge) {
+      const stageInfo = document.querySelector('#battle-screen .cb-stage-info');
+      if (!stageInfo) return;
+      badge = document.createElement('span');
+      badge.id = 'cb-casual-mode-badge';
+      badge.className = 'cb-casual-badge';
+      badge.textContent = '✦ 休闲模式';
+      badge.title = '休闲模式已开启：节奏护佑生效，放缓攻防节奏并降低受击压力';
+      const turnEl = document.getElementById('cb-turn');
+      if (turnEl && turnEl.parentNode === stageInfo) {
+        stageInfo.insertBefore(badge, turnEl.nextSibling);
+      } else {
+        stageInfo.appendChild(badge);
+      }
+    }
+    badge.classList.remove('hidden');
+    badge.removeAttribute('aria-hidden');
+  }
+
   function ensureLogBar() {
     const bs = getBattleScreen();
     if (!bs) return null;
@@ -2238,6 +2505,22 @@
       '.cb-bl-exp.is-safe{color:#0b6e76;background:rgba(15,139,146,0.11);border-left:2px solid #0f8b92;}',
       '.cb-blade:not(:disabled):hover .cb-bl-exp.is-warn,.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-exp.is-warn{color:#ffe082;background:rgba(255,209,128,0.22);border-left-color:#ffd180;}',
       '.cb-blade:not(:disabled):hover .cb-bl-exp.is-safe,.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-exp.is-safe{color:#c4f9ff;background:rgba(155,244,255,0.18);border-left-color:#9bf4ff;}',
+      /* V3.2 skill blade rhythm beat micro-badges (sharp flat accent bar, zero nested rounded box) */
+      '.cb-bl-beat{font-size:10px;font-weight:700;line-height:1.2;padding:1px 5px;white-space:nowrap;flex-shrink:0;letter-spacing:0.02em;}',
+      '.cb-bl-beat.beat-instant{color:#0b6e76;background:rgba(14,165,233,0.10);border-left:2px solid #38bdf8;}',
+      '.cb-bl-beat.beat-b1{color:#1246c4;background:rgba(22,88,235,0.10);border-left:2px solid #1658eb;}',
+      '.cb-bl-beat.beat-b2{color:#0c4a9e;background:rgba(14,165,233,0.15);border-left:2px solid #0284c7;}',
+      '.cb-bl-beat.beat-b3{color:#8c641e;background:rgba(212,169,74,0.18);border-left:2px solid #c9a04a;}',
+      '.cb-bl-beat.beat-aoe{color:#1d4ed8;background:rgba(59,130,246,0.14);border-left:2px solid #2563eb;}',
+      '.cb-blade.compact .cb-bl-beat,.cb-prism-rig.two-col-blades.narrow-desktop .cb-bl-beat{font-size:9.5px;padding:1px 4px;letter-spacing:0;}',
+      '.cb-blade:not(:disabled):hover .cb-bl-beat,.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-beat{color:#d9f5ff;background:rgba(155,244,255,0.18);border-left-color:#9bf4ff;}',
+      '.cb-blade:not(:disabled):hover .cb-bl-beat.beat-b3,.cb-blade-wrap.hovered .cb-blade:not(:disabled) .cb-bl-beat.beat-b3{color:#fff1be;background:rgba(245,214,125,0.22);border-left-color:#fde68a;}',
+      /* V3.2 top-bar casual mode soft micro-badge (hidden by default, zero footprint) */
+      '.cb-casual-badge{display:inline-flex;align-items:center;gap:4px;margin-left:6px;padding:1px 7px;font-size:11px;font-weight:700;letter-spacing:0.04em;color:#0e6c78;background:linear-gradient(90deg,rgba(186,230,253,0.42),rgba(224,242,254,0.22));border-left:2px solid #38bdf8;white-space:nowrap;flex-shrink:0;line-height:1.4;}',
+      '.cb-casual-badge.hidden{display:none!important;}',
+      /* V3.2 timing-ring / async phase unobstructed temporary dissolve */
+      '.cb-prism-rig.dissolved.is-timing-dissolved{opacity:0;pointer-events:none;transition:opacity 0.14s ease;}',
+      '.cb-prism-rig.dissolved.is-timing-dissolved *{pointer-events:none!important;}',
       /* Zero-specificity fallbacks for direct-press amp pips, tier themes (ice-cyan -> royal blue -> champagne gold), and pulse */
       ':where(.cb-amp-meta){display:inline-flex;align-items:center;gap:6px;}',
       ':where(.cb-amp-pips){display:inline-flex;align-items:center;gap:4px;vertical-align:middle;line-height:1;flex-shrink:0;}',
@@ -2397,7 +2680,7 @@
                 <span class="cb-pw-title">演武辅助</span>
                 <span class="cb-pw-en">ASSIST</span>
               </div>
-              <span class="cb-pw-sub" id="cb-pw-assist-sub">推演 / 回合 [X]</span>
+              <span class="cb-pw-sub" id="cb-pw-assist-sub">援护 · 晦轮杖 · 回合 [X]</span>
             </div>
             <span class="cb-pw-arrow">▸</span>
           </button>
@@ -2504,8 +2787,8 @@
   }
 
   function buildItemsSignature(mode, items) {
-    return `${mode}|${uiState.lastFieldW}x${uiState.lastFieldH}|${uiState.lastAnchorX},${uiState.lastAnchorY}|${uiState.portraitRight}:${uiState.allyPaneRight}:${uiState.corridorLeft}-${uiState.corridorRight}:${uiState.hasMidCorridor ? 1 : 0}|${uiState.skyTopY}:${uiState.skyBotY}:${uiState.enemyLeftX}|${uiState.compactMulti ? 1 : 0}|${uiState.narrowDesktop ? 1 : 0}|${uiState.shortViewport ? 1 : 0}|` + items.map((it, idx) =>
-      `${idx}:${it.key}:${it.slotIdx != null ? it.slotIdx : ''}:${it.skillId || ''}:${it.name || ''}:${it.iconHtml ? 1 : 0}:${it.pathLabel || ''}:${it.cost}:${it.foot || it.desc || ''}:${it.oppLabel || ''}:${it.expKind || ''}:${it.expText || ''}:${it.disabled ? 1 : 0}`
+    return `${mode}|${isGauntletOffMode() ? 1 : 0}|${uiState.twoColBlades ? 1 : 0}|${uiState.lastFieldW}x${uiState.lastFieldH}|${uiState.lastAnchorX},${uiState.lastAnchorY}|${uiState.portraitRight}:${uiState.allyPaneRight}:${uiState.corridorLeft}-${uiState.corridorRight}:${uiState.hasMidCorridor ? 1 : 0}|${uiState.skyTopY}:${uiState.skyBotY}:${uiState.enemyLeftX}|${uiState.compactMulti ? 1 : 0}|${uiState.narrowDesktop ? 1 : 0}|${uiState.shortViewport ? 1 : 0}|` + items.map((it, idx) =>
+      `${idx}:${it.key}:${it.slotIdx != null ? it.slotIdx : ''}:${it.skillId || ''}:${it.name || ''}:${it.iconHtml ? 1 : 0}:${it.pathLabel || ''}:${it.beatKind || ''}:${it.beatLabel || ''}:${it.cost}:${it.foot || it.desc || ''}:${it.oppLabel || ''}:${it.expKind || ''}:${it.expText || ''}:${it.disabled ? 1 : 0}`
     ).join('||') + `|${uiState.partyLayout || ''}:${Math.round(uiState.partyDockTop || 0)}:${Math.round(uiState.targetPaneLeft || 0)}:${Math.round(uiState.targetPaneTop || 0)}`;
   }
 
@@ -2530,12 +2813,17 @@
       : (item.expKind === 'safe'
         ? `<span class="cb-bl-exp is-safe" title="${escapeHtml(item.expText || '隐蔽安全')}">隐蔽</span>`
         : '');
+    const beatKind = item.beatKind || '';
+    const beatHtml = item.beatLabel
+      ? `<span class="cb-bl-beat${beatKind ? ` beat-${escapeHtml(beatKind)}` : ''}" title="${escapeHtml(item.beatLabel === '瞬发' ? '瞬发术式，无需蓄拍' : `命中节奏：${item.beatLabel}`)}">${escapeHtml(item.beatLabel)}</span>`
+      : '';
+    const showPath = !expHtml && !!item.pathLabel && (!beatHtml || !uiState.twoColBlades);
     const badgeHtml = item.oppLabel
       ? `<span class="cb-bl-tag opp">${escapeHtml(item.oppLabel)}</span>`
-      : (!expHtml && item.pathLabel ? `<span class="cb-bl-tag">◆${escapeHtml(item.pathLabel)}</span>` : '');
+      : (showPath ? `<span class="cb-bl-tag">◆${escapeHtml(item.pathLabel)}</span>` : '');
     return {
-      innerHtml: expHtml + badgeHtml,
-      key: `${item.expKind || ''}|${item.expText || ''}|${item.oppLabel || ''}|${item.pathLabel || ''}`,
+      innerHtml: expHtml + beatHtml + badgeHtml,
+      key: `${item.expKind || ''}|${item.expText || ''}|${beatKind}|${item.beatLabel || ''}|${item.oppLabel || ''}|${showPath ? item.pathLabel : ''}`,
     };
   }
 
@@ -2557,6 +2845,8 @@
     btn.setAttribute('data-prism-idx', String(idx));
     if (item.skillId) btn.setAttribute('data-sk', item.skillId);
     else btn.removeAttribute('data-sk');
+    if (item.beatLabel) btn.setAttribute('data-beats', item.beatLabel);
+    else btn.removeAttribute('data-beats');
 
     if (g.forceHeight && g.bladeH) {
       btn.style.height = `${g.bladeH}px`;
@@ -2677,6 +2967,7 @@
       }
 
       ensureTopBarButtons();
+      syncCasualModeBadge();
       const toggleBtn = document.getElementById('cb-btn-prism-toggle');
       if (toggleBtn) {
         toggleBtn.classList.toggle('active', uiState.enabled);
@@ -2684,8 +2975,17 @@
       }
 
       const field = bs.querySelector('.cb-arena-field');
+      if (field) attachFieldObserver(field);
+
       const hardDissolved = shouldHardDissolve(b);
-      const dissolved = hardDissolved || isBriefDissolving();
+      const timingDissolved = isTimingOrAsyncDissolved(b);
+      const dissolved = hardDissolved || timingDissolved || isBriefDissolving();
+      if (timingDissolved) {
+        startTimingRestoreWatch();
+      } else {
+        stopTimingRestoreWatch();
+      }
+
       if (!usePrism || uiState.menuMode === 'root' || dissolved) {
         if (uiState.hoveredSkillId) {
           syncAvForecast(null, b);
@@ -2697,7 +2997,8 @@
       }
 
       if (!usePrism) {
-        if (uiState.rigEl) uiState.rigEl.classList.remove('dissolved', 'is-hard-dissolved');
+        if (uiState.rigEl) uiState.rigEl.classList.remove('dissolved', 'is-timing-dissolved', 'is-hard-dissolved');
+        stopTimingRestoreWatch();
         return;
       }
 
@@ -2706,7 +3007,7 @@
       syncLogBar(b);
       syncRigAnchor();
 
-      const allSkills = readSkillCards();
+      const allSkills = readSkillCards(b);
       const enabledSkills = allSkills.filter(s => !s.disabled);
       const oppSkills = enabledSkills.filter(s => !!s.oppLabel);
       const guardSkills = allSkills.filter(s => s.isGuard && !s.disabled);
@@ -2718,6 +3019,7 @@
       }
 
       uiState.rigEl.classList.toggle('dissolved', dissolved);
+      uiState.rigEl.classList.toggle('is-timing-dissolved', timingDissolved);
       uiState.rigEl.classList.toggle('is-hard-dissolved', hardDissolved);
       uiState.rigEl.classList.toggle('mode-root', uiState.menuMode === 'root');
       uiState.rigEl.classList.toggle('mode-skills', uiState.menuMode === 'skills');
@@ -2750,6 +3052,8 @@
 
       // Sync Root Wing [E] — 1:1 exposed direct-press amp meter (3 diamond pips .cb-amp-pips + #cb-pw-amp-val + tier theme classes)
       const ampTier = ampInfo.enabled ? Math.min(3, Math.max(0, ampInfo.tier)) : 0;
+      const curAmpSpec = V32_AMP_TIERS[ampTier] || V32_AMP_TIERS[0];
+      const ampEffectHint = curAmpSpec && curAmpSpec.effect ? ` · ${curAmpSpec.effect}` : '';
       const ampBtn = document.getElementById('cb-pw-amp');
       const ampEn = document.getElementById('cb-pw-amp-en');
       const ampSub = document.getElementById('cb-pw-amp-sub');
@@ -2768,8 +3072,8 @@
         ampBtn.classList.toggle('amp-max', ampInfo.enabled && ampTier >= 3);
         ampBtn.title = ampInfo.enabled
           ? (hasCycle
-            ? `魔战循环 · 魔力增幅（施法命中等量回蓝；左键 / E 升档 · 右键 / Shift+E 降档 · 滚轮微调；当前：${ampInfo.badge} · +${ampInfo.extraMp} MP · ${ampInfo.multBadge}）`
-            : `魔力增幅（左键 / E 升档 · 右键 / Shift+E 降档 · 滚轮微调；当前：${ampInfo.badge} · +${ampInfo.extraMp} MP · ${ampInfo.multBadge}）`)
+            ? `魔战循环 · 魔力增幅（施法命中等量回蓝；左键 / E 升档 · 右键 / Shift+E 降档 · 滚轮微调；当前：${ampInfo.badge} · +${ampInfo.extraMp} MP · ${ampInfo.multBadge}${ampEffectHint}）`
+            : `魔力增幅（左键 / E 升档 · 右键 / Shift+E 降档 · 滚轮微调；当前：${ampInfo.badge} · +${ampInfo.extraMp} MP · ${ampInfo.multBadge}${ampEffectHint}）`)
           : '当前不可增幅';
         if (ampEn) {
           ampEn.textContent = (!uiState.compactMulti && ampInfo.enabled && ampInfo.lockHint)
@@ -2806,13 +3110,13 @@
           const hasAssistItem = assistItems.some(it => it.skillId === 'tool_assist');
           const hasWandItem = assistItems.some(it => it.skillId === 'tool_wand');
           if (hasAssistItem && hasWandItem) {
-            assistSub.textContent = '推演 · 援护 · 晦轮杖';
+            assistSub.textContent = '援护 · 晦轮杖 · 回合 [X]';
           } else if (hasAssistItem) {
-            assistSub.textContent = '推演 · 援护 · 回合 [X]';
+            assistSub.textContent = '心念援护 · 结束回合 [X]';
           } else if (hasWandItem) {
-            assistSub.textContent = '推演 · 晦轮杖 · 回合 [X]';
+            assistSub.textContent = '晦轮杖 · 结束回合 [X]';
           } else {
-            assistSub.textContent = '推演 / 回合 [X]';
+            assistSub.textContent = '战术辅助 · 结束回合 [X]';
           }
         }
       }
@@ -2973,6 +3277,9 @@
   }
 
   function onKeyDown(ev) {
+    if (typeof window !== 'undefined' && window.CombatTimingRing && typeof window.CombatTimingRing.isActive === 'function' && window.CombatTimingRing.isActive()) return;
+    if (global.CombatTimingRing && typeof global.CombatTimingRing.isActive === 'function' && global.CombatTimingRing.isActive()) return;
+    if (isAsyncPhaseActive()) return;
     if (!isActive() || shouldHardDissolve()) return;
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
     const tgt = ev.target;
@@ -3077,6 +3384,7 @@
   }
 
   function onContextMenu(ev) {
+    if (isTimingOrAsyncDissolved()) return;
     if (!isActive() || uiState.menuMode === 'root') return;
     if (ev.target && ev.target.closest && ev.target.closest('#cb-pw-amp, #cb-pw-amp-mini')) return;
     ev.preventDefault();
@@ -3086,6 +3394,15 @@
   function onCombatStateChange(ev) {
     const snap = ev && ev.detail && ev.detail.player ? ev.detail : null;
     sync(snap);
+  }
+
+  function onCombatPrefsChange() {
+    uiState.lastBladeSig = '';
+    sync();
+  }
+
+  function onCombatTimingChange() {
+    sync();
   }
 
   function setEnabled(flag) {
@@ -3107,6 +3424,41 @@
     }
   }
 
+  function attachFieldObserver(fieldEl) {
+    if (typeof MutationObserver === 'undefined') return;
+    const target = fieldEl || document.querySelector('#battle-screen .cb-arena-field');
+    if (!target) return;
+    if (uiState.fieldObserver && uiState.fieldObservedEl === target) return;
+    if (uiState.fieldObserver) {
+      uiState.fieldObserver.disconnect();
+      uiState.fieldObserver = null;
+      uiState.fieldObservedEl = null;
+    }
+    const isTimingLayerNode = node => !!(
+      node && node.nodeType === 1 && node.classList && node.classList.contains('cb-timing-ring-layer')
+    );
+    uiState.fieldObservedEl = target;
+    uiState.fieldObserver = new MutationObserver(records => {
+      let timingLayerChanged = false;
+      for (let i = 0; i < records.length; i++) {
+        const rec = records[i];
+        if (rec.addedNodes && Array.from(rec.addedNodes).some(isTimingLayerNode)) {
+          timingLayerChanged = true;
+          break;
+        }
+        if (rec.removedNodes && Array.from(rec.removedNodes).some(isTimingLayerNode)) {
+          timingLayerChanged = true;
+          break;
+        }
+      }
+      if (timingLayerChanged) {
+        sync();
+      }
+    });
+    // 仅监听 .cb-arena-field 直接子节点，绝不监听子树，确保 0 帧率开销
+    uiState.fieldObserver.observe(target, { childList: true, subtree: false });
+  }
+
   function mount() {
     if (typeof document === 'undefined' || uiState.mounted) return;
     const bs = getBattleScreen();
@@ -3124,6 +3476,7 @@
         });
         if (!needsSync) return;
         attachModalObserver();
+        attachFieldObserver();
         sync();
       });
       uiState.bsObserver.observe(bs, {
@@ -3134,9 +3487,14 @@
         subtree: false,
       });
       attachModalObserver();
+      attachFieldObserver();
     }
 
     window.addEventListener('combat:statechange', onCombatStateChange);
+    window.addEventListener('combat:prefschange', onCombatPrefsChange);
+    window.addEventListener('combat:timingstart', onCombatTimingChange);
+    window.addEventListener('combat:timingend', onCombatTimingChange);
+    window.addEventListener('combat:timingchange', onCombatTimingChange);
     window.addEventListener('keydown', onKeyDown, true);
     window.addEventListener('contextmenu', onContextMenu);
     window.addEventListener('resize', scheduleSync);
@@ -3154,6 +3512,7 @@
       clearTimeout(uiState.dissolveTimer);
       uiState.dissolveTimer = 0;
     }
+    stopTimingRestoreWatch();
     if (uiState.castFlashTimer) {
       clearTimeout(uiState.castFlashTimer);
       uiState.castFlashTimer = 0;
@@ -3171,7 +3530,16 @@
       uiState.modalObserver.disconnect();
       uiState.modalObserver = null;
     }
+    if (uiState.fieldObserver) {
+      uiState.fieldObserver.disconnect();
+      uiState.fieldObserver = null;
+      uiState.fieldObservedEl = null;
+    }
     window.removeEventListener('combat:statechange', onCombatStateChange);
+    window.removeEventListener('combat:prefschange', onCombatPrefsChange);
+    window.removeEventListener('combat:timingstart', onCombatTimingChange);
+    window.removeEventListener('combat:timingend', onCombatTimingChange);
+    window.removeEventListener('combat:timingchange', onCombatTimingChange);
     window.removeEventListener('keydown', onKeyDown, true);
     window.removeEventListener('contextmenu', onContextMenu);
     window.removeEventListener('resize', scheduleSync);
@@ -3184,6 +3552,10 @@
     const avRail = uiState.avRailEl || (typeof document !== 'undefined' ? document.getElementById('cb-av-rail') : null);
     if (avRail && avRail.parentNode) {
       avRail.parentNode.removeChild(avRail);
+    }
+    const casualBadge = typeof document !== 'undefined' ? document.getElementById('cb-casual-mode-badge') : null;
+    if (casualBadge && casualBadge.parentNode) {
+      casualBadge.parentNode.removeChild(casualBadge);
     }
     uiState.rigEl = null;
     uiState.svgEl = null;
@@ -3208,6 +3580,7 @@
   }
 
   const CombatPrismUI = {
+    V32_AMP_TIERS,
     mount,
     unmount,
     sync,
@@ -3219,6 +3592,7 @@
     openAmp,
     openGuard,
     openAssist,
+    openPalace,
     closeCascade,
     toggleLogDrawer,
     cycleAmp,
@@ -3234,6 +3608,10 @@
       logExpanded: uiState.logExpanded,
       itemCount: uiState.currentItems.length,
       ampPct: uiState.lastAmpPct,
+      ampTiersVersion: 'V3.2',
+      timingDissolved: isTimingOrAsyncDissolved(),
+      casualMode: isCasualModeActive(),
+      gauntletOff: isGauntletOffMode(),
       hasMidCorridor: uiState.hasMidCorridor,
       anchorX: uiState.lastAnchorX,
       anchorY: uiState.lastAnchorY,

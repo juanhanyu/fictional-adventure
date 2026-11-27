@@ -25,6 +25,8 @@ const RUNTIME_FILES = [
   'manifest.json',
   'css/combat-rank-badge.css',
   'js/combat-rank-badge.js',
+  'css/combat-timing-ring.css',
+  'js/combat-timing-ring.js',
 ];
 
 const RUNTIME_DIRS = [

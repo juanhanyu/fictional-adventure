@@ -68,6 +68,15 @@
     { value: 'normal', label: '舒缓' }
   ];
 
+  var COMBAT_RING_ASSIST_KEY = 'combat_ring_assist_mode';
+  var COMBAT_CASUAL_MODE_KEY = 'combat_casual_mode';
+
+  var RING_ASSIST_OPTS = [
+    { value: 'standard', label: '标准' },
+    { value: 'relaxed', label: '宽松' },
+    { value: 'off', label: '自动' }
+  ];
+
   var st = {
     inited: false,
     mode: 'main',
@@ -2757,6 +2766,7 @@
       folio.appendChild(setView);
     }
     if (!setView.querySelector('#v3-set-bgm')) {
+      ensureCombatSettingsStyle();
       setView.setAttribute('aria-label', '系统设置');
       setView.innerHTML =
         '<div class="v3-set-head">' +
@@ -2826,6 +2836,27 @@
                   '<button type="button" id="v3-fx-next" class="v3-sw-arrow" aria-label="切换霜尘特效">›</button>' +
                 '</div>' +
               '</div>' +
+            '</div>' +
+            '<div class="v3-set-section v3-combat-section">' +
+              '<div class="v3-set-sec-lbl">COMBAT / 战斗</div>' +
+              '<div class="v3-switch-row">' +
+                '<span class="v3-slider-lbl">精准护手</span>' +
+                '<div class="v3-bare-switcher">' +
+                  '<button type="button" id="v3-ring-assist-prev" class="v3-sw-arrow" aria-label="上一档精准护手">‹</button>' +
+                  '<span id="v3-ring-assist-val" class="v3-sw-val">标准</span>' +
+                  '<button type="button" id="v3-ring-assist-next" class="v3-sw-arrow" aria-label="下一档精准护手">›</button>' +
+                '</div>' +
+              '</div>' +
+              '<div class="v3-switch-row v3-casual-row">' +
+                '<span class="v3-slider-lbl">休闲模式</span>' +
+                '<div class="v3-bare-switcher">' +
+                  '<button type="button" id="v3-set-casual-toggle" class="is-off" aria-pressed="false" aria-label="切换休闲模式">' +
+                    '<span class="v3-casual-dot" aria-hidden="true"></span>' +
+                    '<span id="v3-casual-toggle-val" class="v3-sw-val">关闭</span>' +
+                  '</button>' +
+                '</div>' +
+              '</div>' +
+              '<p class="v3-combat-sub">开启后战斗难度大幅下降，适合想要轻松享受剧情的休闲玩家</p>' +
             '</div>' +
           '</div>' +
           '<div class="v3-set-pane hidden" data-v3-pane="soundtrack">' +
@@ -3073,8 +3104,127 @@
      5. 无框平移系统设置与曲库试听逻辑
      ========================================================================= */
 
+  function normalizeRingAssist(val) {
+    var s = String(val == null ? '' : val).trim().toLowerCase();
+    if (s === 'relaxed' || s === 'off') return s;
+    return 'standard';
+  }
+
+  function normalizeCasualMode(val) {
+    if (typeof val === 'boolean') return val;
+    if (typeof val === 'string') {
+      var s = val.trim().toLowerCase();
+      return s === 'true' || s === '1' || s === 'on';
+    }
+    return !!val;
+  }
+
+  function getCombatTimingRingApi() {
+    if (root && root.CombatTimingRing) return root.CombatTimingRing;
+    return null;
+  }
+
+  function ensureCombatSettingsStyle() {
+    if (!hasDom() || !document.head || document.getElementById('v3-combat-settings-style')) return;
+    var style = document.createElement('style');
+    style.id = 'v3-combat-settings-style';
+    style.textContent =
+      '#title-screen #v3-view-settings .v3-set-body{' +
+        'max-height:min(620px,68vh);' +
+        'padding:12px 0 8px;' +
+      '}' +
+      '#title-screen #v3-view-settings .v3-set-section{margin-bottom:12px;}' +
+      '#title-screen #v3-view-settings .v3-combat-section{margin-bottom:8px;}' +
+      '#title-screen #v3-view-settings .v3-casual-row{min-height:30px;padding-bottom:0;}' +
+      '#title-screen #v3-set-casual-toggle{' +
+        'display:inline-flex;align-items:center;justify-content:center;gap:8px;' +
+        'width:100%;min-height:32px;padding:0 4px;' +
+        'border:none;border-bottom:1px solid rgba(22,88,235,0.24);border-radius:0;' +
+        'background:transparent;color:#1b2333;font-size:13.5px;font-weight:600;' +
+        'letter-spacing:0.05em;cursor:pointer;' +
+        'transition:color 0.18s ease,border-bottom-color 0.18s ease,background-color 0.18s ease;' +
+      '}' +
+      '#title-screen #v3-set-casual-toggle .v3-sw-val{flex:0 0 auto;}' +
+      '#title-screen #v3-set-casual-toggle:hover,#title-screen #v3-set-casual-toggle:focus-visible{' +
+        'color:#1658eb;border-bottom-color:#1658eb;background:rgba(22,88,235,0.04);' +
+      '}' +
+      '#title-screen #v3-set-casual-toggle.is-off{' +
+        'color:#64748b;border-bottom-color:rgba(100,116,139,0.26);' +
+      '}' +
+      '#title-screen #v3-set-casual-toggle .v3-casual-dot{' +
+        'width:6px;height:6px;transform:rotate(45deg);background:#1658eb;flex-shrink:0;' +
+        'transition:background-color 0.18s ease,opacity 0.18s ease;' +
+      '}' +
+      '#title-screen #v3-set-casual-toggle.is-off .v3-casual-dot{background:#94a3b8;opacity:0.55;}' +
+      '#title-screen .v3-combat-sub{' +
+        'margin:1px 0 0;padding:0;font-size:11.5px;line-height:1.35;' +
+        'letter-spacing:0.02em;color:#526078;' +
+      '}' +
+      '@media (max-height:760px) and (min-width:721px){' +
+        '#title-screen #v3-view-settings .v3-set-body{padding:8px 0 6px;max-height:min(540px,70vh);}' +
+        '#title-screen #v3-view-settings .v3-set-section{margin-bottom:9px;}' +
+        '#title-screen #v3-view-settings .v3-set-sec-lbl{margin-bottom:4px;font-size:11.5px;}' +
+        '#title-screen #v3-view-settings .v3-slider-row,' +
+        '#title-screen #v3-view-settings .v3-switch-row{min-height:29px;padding:1px 0;}' +
+        '#title-screen #v3-view-settings .v3-bare-switcher .v3-sw-arrow,' +
+        '#title-screen #v3-set-voice-toggle,' +
+        '#title-screen #v3-set-casual-toggle{min-height:26px;}' +
+        '#title-screen #v3-view-settings .indie-settings-section{margin-top:8px;padding-top:8px;}' +
+        '#title-screen #v3-view-settings .indie-settings-row{min-height:30px;padding:2px 0;}' +
+      '}' +
+      '@media (max-height:680px) and (min-width:721px){' +
+        '#title-screen #v3-view-settings .v3-set-body{' +
+          'padding:6px 0 4px;max-height:calc(100vh - 140px);max-height:calc(100dvh - 140px);' +
+        '}' +
+        '#title-screen #v3-view-settings .v3-set-section{margin-bottom:6px;}' +
+        '#title-screen #v3-view-settings .v3-set-sec-lbl{margin-bottom:2px;font-size:11px;line-height:1.25;}' +
+        '#title-screen #v3-view-settings .v3-slider-row,' +
+        '#title-screen #v3-view-settings .v3-switch-row{min-height:25px;padding:0;}' +
+        '#title-screen #v3-view-settings .v3-hairline-range{height:20px;}' +
+        '#title-screen #v3-view-settings .v3-bare-switcher .v3-sw-arrow,' +
+        '#title-screen #v3-set-voice-toggle,' +
+        '#title-screen #v3-set-casual-toggle{min-height:24px;font-size:12.5px;}' +
+        '#title-screen .v3-combat-sub{margin:1px 0 0;font-size:11px;line-height:1.28;}' +
+        '#title-screen #v3-view-settings .indie-settings-section{margin-top:6px;padding-top:6px;}' +
+        '#title-screen #v3-view-settings .indie-settings-head{margin-bottom:3px;}' +
+        '#title-screen #v3-view-settings .indie-settings-row{min-height:24px;padding:1px 0;}' +
+        '#title-screen #v3-view-settings .indie-action-btn{min-height:22px;padding:1px 8px;font-size:11px;}' +
+      '}';
+    document.head.appendChild(style);
+  }
+
+  function dispatchFallbackCombatPrefsEvent(assist, casual) {
+    if (!root || typeof root.dispatchEvent !== 'function') return;
+    var CE = root.CustomEvent || (typeof CustomEvent !== 'undefined' ? CustomEvent : null);
+    if (!CE) return;
+    try {
+      var norm = normalizeRingAssist(assist);
+      var cas = !!casual;
+      root.dispatchEvent(new CE('combat:prefschange', {
+        detail: {
+          assistMode: norm,
+          ringAssistMode: norm,
+          combatRingAssist: norm,
+          casualMode: cas,
+          combatCasualMode: cas,
+          source: 'title-director'
+        }
+      }));
+    } catch (e) {}
+  }
+
   function readLiveSettings() {
-    var res = { bgm: 0.5, sfx: 0.65, voiceVol: 0.90, voiceEnabled: true, bright: 1, typeSpeed: 'normal', fxEnabled: true };
+    var res = {
+      bgm: 0.5,
+      sfx: 0.65,
+      voiceVol: 0.90,
+      voiceEnabled: true,
+      bright: 1,
+      typeSpeed: 'normal',
+      fxEnabled: true,
+      combatRingAssist: 'standard',
+      combatCasualMode: false
+    };
     try {
       if (root && root.VNUx && typeof root.VNUx.getPrefs === 'function') {
         var p = root.VNUx.getPrefs();
@@ -3086,8 +3236,16 @@
           if (typeof p.bright === 'number') res.bright = clamp(p.bright, 0.45, 1.0);
           if (p.typeSpeed) res.typeSpeed = String(p.typeSpeed);
           if (typeof p.fxEnabled === 'boolean') res.fxEnabled = p.fxEnabled;
+          if (p.combatRingAssist != null) res.combatRingAssist = normalizeRingAssist(p.combatRingAssist);
+          if (p.combatCasualMode != null) res.combatCasualMode = normalizeCasualMode(p.combatCasualMode);
         }
       }
+    } catch (e) {}
+    try {
+      var lsAssist = localStorage.getItem(COMBAT_RING_ASSIST_KEY);
+      if (lsAssist !== null && lsAssist !== '') res.combatRingAssist = normalizeRingAssist(lsAssist);
+      var lsCasual = localStorage.getItem(COMBAT_CASUAL_MODE_KEY);
+      if (lsCasual !== null && lsCasual !== '') res.combatCasualMode = normalizeCasualMode(lsCasual);
     } catch (e) {}
     try {
       if (root && typeof root.bgmGetVolume === 'function') {
@@ -3108,6 +3266,29 @@
       if (root && typeof root.getTypeSpeed === 'function') {
         var ts = root.getTypeSpeed();
         if (ts) res.typeSpeed = String(ts);
+      }
+      var ctr = getCombatTimingRingApi();
+      if (ctr) {
+        var engAssist = null;
+        if (typeof ctr.getAssistMode === 'function') engAssist = ctr.getAssistMode();
+        else if (typeof ctr.getRingAssistMode === 'function') engAssist = ctr.getRingAssistMode();
+        else if (typeof ctr.getMode === 'function') engAssist = ctr.getMode();
+        else if (typeof ctr.getPrefs === 'function') {
+          var cp = ctr.getPrefs();
+          if (cp) engAssist = cp.assistMode != null ? cp.assistMode : (cp.ringAssistMode != null ? cp.ringAssistMode : cp.combatRingAssist);
+        }
+        if (engAssist != null && engAssist !== '') res.combatRingAssist = normalizeRingAssist(engAssist);
+
+        var engCasual = null;
+        if (typeof ctr.isCasualMode === 'function') engCasual = ctr.isCasualMode();
+        else if (typeof ctr.getCasualMode === 'function') engCasual = ctr.getCasualMode();
+        else if (typeof ctr.isCombatCasualMode === 'function') engCasual = ctr.isCombatCasualMode();
+        else if (typeof ctr.getCombatCasualMode === 'function') engCasual = ctr.getCombatCasualMode();
+        else if (typeof ctr.getPrefs === 'function') {
+          var cp2 = ctr.getPrefs();
+          if (cp2) engCasual = cp2.casualMode != null ? cp2.casualMode : cp2.combatCasualMode;
+        }
+        if (engCasual != null) res.combatCasualMode = normalizeCasualMode(engCasual);
       }
     } catch (e) {}
     return res;
@@ -3147,6 +3328,23 @@
 
     var fxEl = document.getElementById('v3-fx-val');
     if (fxEl) fxEl.textContent = s.fxEnabled ? '开启' : '关闭';
+
+    var assistEl = document.getElementById('v3-ring-assist-val');
+    if (assistEl) {
+      var assistFound = RING_ASSIST_OPTS[0];
+      for (var j = 0; j < RING_ASSIST_OPTS.length; j++) {
+        if (RING_ASSIST_OPTS[j].value === s.combatRingAssist) { assistFound = RING_ASSIST_OPTS[j]; break; }
+      }
+      assistEl.textContent = assistFound.label;
+    }
+
+    var casualBtn = document.getElementById('v3-set-casual-toggle');
+    var casualVal = document.getElementById('v3-casual-toggle-val');
+    if (casualBtn) {
+      casualBtn.classList.toggle('is-off', !s.combatCasualMode);
+      casualBtn.setAttribute('aria-pressed', s.combatCasualMode ? 'true' : 'false');
+    }
+    if (casualVal) casualVal.textContent = s.combatCasualMode ? '开启' : '关闭';
 
     renderSoundtrackRows();
   }
@@ -3195,6 +3393,41 @@
         stopDustLoop();
         var c = document.getElementById('v3-dust-canvas');
         if (c) { try { var cx = c.getContext('2d'); if (cx) cx.clearRect(0, 0, c.width, c.height); } catch (e) {} }
+      }
+      playSfxSafe('glass_tap');
+    } else if (kind === 'combatRingAssist') {
+      var assistMode = normalizeRingAssist(val);
+      if (root && root.VNUx && typeof root.VNUx.setPref === 'function') {
+        try { root.VNUx.setPref('combatRingAssist', assistMode); } catch (e) {}
+      } else {
+        try { localStorage.setItem(COMBAT_RING_ASSIST_KEY, assistMode); } catch (e) {}
+        var ctrA = getCombatTimingRingApi();
+        var handledA = false;
+        if (ctrA) {
+          try {
+            if (typeof ctrA.setAssistMode === 'function') { ctrA.setAssistMode(assistMode); handledA = true; }
+            else if (typeof ctrA.setRingAssistMode === 'function') { ctrA.setRingAssistMode(assistMode); handledA = true; }
+            else if (typeof ctrA.setMode === 'function') { ctrA.setMode(assistMode); handledA = true; }
+          } catch (e) {}
+        }
+        if (!handledA) dispatchFallbackCombatPrefsEvent(assistMode, readLiveSettings().combatCasualMode);
+      }
+      playSfxSafe('glass_tap');
+    } else if (kind === 'combatCasualMode') {
+      var casualOn = normalizeCasualMode(val);
+      if (root && root.VNUx && typeof root.VNUx.setPref === 'function') {
+        try { root.VNUx.setPref('combatCasualMode', casualOn); } catch (e) {}
+      } else {
+        try { localStorage.setItem(COMBAT_CASUAL_MODE_KEY, casualOn ? 'true' : 'false'); } catch (e) {}
+        var ctrC = getCombatTimingRingApi();
+        var handledC = false;
+        if (ctrC) {
+          try {
+            if (typeof ctrC.setCasualMode === 'function') { ctrC.setCasualMode(casualOn); handledC = true; }
+            else if (typeof ctrC.setCombatCasualMode === 'function') { ctrC.setCombatCasualMode(casualOn); handledC = true; }
+          } catch (e) {}
+        }
+        if (!handledC) dispatchFallbackCombatPrefsEvent(readLiveSettings().combatRingAssist, casualOn);
       }
       playSfxSafe('glass_tap');
     }
@@ -3357,6 +3590,30 @@
     var fxNext = panel.querySelector('#v3-fx-next');
     if (fxPrev) fxPrev.addEventListener('click', toggleFx);
     if (fxNext) fxNext.addEventListener('click', toggleFx);
+
+    var stepRingAssist = function (delta) {
+      var s = readLiveSettings();
+      var idx = 0;
+      for (var k = 0; k < RING_ASSIST_OPTS.length; k++) {
+        if (RING_ASSIST_OPTS[k].value === s.combatRingAssist) { idx = k; break; }
+      }
+      idx = (idx + delta + RING_ASSIST_OPTS.length) % RING_ASSIST_OPTS.length;
+      applySettingValue('combatRingAssist', RING_ASSIST_OPTS[idx].value);
+      syncSettingsDOM();
+    };
+    var raPrev = panel.querySelector('#v3-ring-assist-prev');
+    var raNext = panel.querySelector('#v3-ring-assist-next');
+    if (raPrev) raPrev.addEventListener('click', function () { stepRingAssist(-1); });
+    if (raNext) raNext.addEventListener('click', function () { stepRingAssist(1); });
+
+    var casualToggleBtn = panel.querySelector('#v3-set-casual-toggle');
+    if (casualToggleBtn) {
+      casualToggleBtn.addEventListener('click', function () {
+        var s = readLiveSettings();
+        applySettingValue('combatCasualMode', !s.combatCasualMode);
+        syncSettingsDOM();
+      });
+    }
 
     var retBtn = panel.querySelector('#v3-set-return');
     if (retBtn) {
@@ -3994,6 +4251,14 @@
     };
     document.addEventListener('keydown', onKeyDown, true);
     st.cleanups.push(function () { document.removeEventListener('keydown', onKeyDown, true); });
+
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      var onCombatPrefsChange = function () {
+        syncSettingsDOM();
+      };
+      window.addEventListener('combat:prefschange', onCombatPrefsChange);
+      st.cleanups.push(function () { window.removeEventListener('combat:prefschange', onCombatPrefsChange); });
+    }
 
     if (isJsdom()) return;
 

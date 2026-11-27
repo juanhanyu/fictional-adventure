@@ -871,6 +871,7 @@
   let _hitStopId = 0;
   let _hitStopScale = 1.0;
   let _hitStopTimer = null;
+  let _slowMoScale = 1.0;
   let _playerActionGen = 0;
 
   let _canvas = null;
@@ -2877,6 +2878,101 @@
     };
   }
 
+  /* 将角色 hit 锚点转换为 #battle-screen .cb-arena-field 相对 CSS 坐标 { x, y, fieldW, fieldH } */
+  function getActorScreenPoint(actorKey) {
+    const key = actorKey ? String(actorKey) : 'player';
+    if (typeof document === 'undefined') {
+      const isLeft = key === 'player' || key.startsWith('ally:');
+      return {
+        x: Math.round(960 * (isLeft ? 0.2 : 0.72) * 10) / 10,
+        y: Math.round(440 * 0.56 * 10) / 10,
+        fieldW: 960,
+        fieldH: 440,
+      };
+    }
+    const pts = getActorCanvasPoints(key, false);
+    const bw = _bufW || 320;
+    const bh = _bufH || 160;
+    const fieldW = (pts && Number.isFinite(pts.fieldW) && pts.fieldW > 0) ? pts.fieldW : 960;
+    const fieldH = (pts && Number.isFinite(pts.fieldH) && pts.fieldH > 0) ? pts.fieldH : 440;
+    const hitX = (pts && pts.hit && Number.isFinite(pts.hit.x)) ? pts.hit.x : bw * 0.5;
+    const hitY = (pts && pts.hit && Number.isFinite(pts.hit.y)) ? pts.hit.y : bh * 0.56;
+    return {
+      x: Math.round((hitX / bw) * fieldW * 10) / 10,
+      y: Math.round((hitY / bh) * fieldH * 10) / 10,
+      fieldW,
+      fieldH,
+    };
+  }
+
+  function resolveVfxIdForTiming(skillOrMoveId, isEnemy) {
+    const edApi = getEditionAApi();
+    if (!edApi) return null;
+    if (skillOrMoveId && typeof skillOrMoveId === 'object') {
+      const candList = [
+        skillOrMoveId.vfxId,
+        skillOrMoveId.moveName,
+        skillOrMoveId.moveKey,
+        skillOrMoveId.skillId,
+        skillOrMoveId.id,
+        skillOrMoveId.spriteId ? `enemy_${skillOrMoveId.spriteId}` : null,
+      ];
+      for (let i = 0; i < candList.length; i++) {
+        if (!candList[i]) continue;
+        const hit = edApi.resolveSkillId(candList[i]);
+        if (hit) return hit;
+      }
+      return isEnemy ? 'enemy_wolf_frost_claw' : 'ice_crystal';
+    }
+    const raw = skillOrMoveId != null ? String(skillOrMoveId).trim() : '';
+    if (!raw) return isEnemy ? 'enemy_wolf_frost_claw' : 'ice_crystal';
+    if (isEnemy) {
+      return (
+        edApi.resolveSkillId(raw) ||
+        edApi.resolveSkillId(`enemy_${raw}`) ||
+        'enemy_wolf_frost_claw'
+      );
+    }
+    if (raw === 'hand_root_shield') {
+      return (
+        (typeof edApi.hasSkill === 'function' && edApi.hasSkill('prism_aegis') && edApi.resolveSkillId('prism_aegis')) ||
+        edApi.resolveSkillId('steel_ice_curtain') ||
+        edApi.resolveSkillId(raw) ||
+        'ice_crystal'
+      );
+    }
+    return edApi.resolveSkillId(raw) || 'ice_crystal';
+  }
+
+  function resolveVfxPeakMs(skillOrMoveId, isEnemy) {
+    const edApi = getEditionAApi();
+    if (!edApi || typeof edApi.getPeakTime !== 'function') {
+      return isEnemy ? 420 : 480;
+    }
+    const resolvedId = resolveVfxIdForTiming(skillOrMoveId, !!isEnemy);
+    return edApi.getPeakTime(resolvedId);
+  }
+
+  function setSlowMoScale(scale) {
+    const prev = _slowMoScale;
+    const next = clamp(Number(scale) || 1, 0.05, 1.0);
+    _slowMoScale = next;
+    if (prev < 0.99 && next >= 0.99 && _scheduled.length > 0) {
+      const now = nowPerf();
+      for (let i = 0; i < _scheduled.length; i++) {
+        const item = _scheduled[i];
+        if (item && item.wait > 0) {
+          item.dueAt = Math.max(item.dueAt || 0, now + item.wait * 1000);
+        }
+      }
+    }
+    return _slowMoScale;
+  }
+
+  function getSlowMoScale() {
+    return _slowMoScale;
+  }
+
   /* -------------------- PixelFX 特效调度 -------------------- */
   function evictOldestEffect() {
     if (!_activeEffects.length) return;
@@ -3057,7 +3153,7 @@
       stopAt: travelSec + 0.04,
       maxAgeMs: Math.round((travelSec + 0.35) * 1000),
       onUpdate(dt, entry) {
-        const wallP = (nowPerf() - entry.bornAt) / (travelSec * 1000);
+        const wallP = _slowMoScale < 0.99 ? 0 : (nowPerf() - entry.bornAt) / (travelSec * 1000);
         const p = clamp(Math.max(entry.elapsed / travelSec, wallP), 0, 1);
         const eased = EASE.outCubic(p);
         entry.inst.options.x = lerp(safeFrom.x, safeTo.x, eased);
@@ -3304,9 +3400,28 @@
     }
   }
 
-  /* -------------------- 玩家技能全套编排 (21 项技能全覆盖) -------------------- */
+  /* -------------------- 玩家技能全套编排 (覆盖现役 + V3.2 全 15 招规范 ID) -------------------- */
+  const V32_DIRECT_SKILL_IDS = new Set([
+    'ice_1_crystal',
+    'ice_2_prism',
+    'ice_3_starfrost',
+    'water_1_ball',
+    'water_2_surge',
+    'water_3_blade',
+    'frost_1_step',
+    'frost_2_breath',
+    'frost_3_thorns',
+    'shield_1_ice',
+    'shield_2_mirror',
+    'shield_3_steel',
+    'sword_1_basic',
+    'sword_2_cold_edge',
+    'move_afterimage',
+  ]);
   const ICE_PROJECTILE_SKILLS = new Set([
     'hand_ice_crystal',
+    'ice_1_crystal',
+    'ice_2_prism',
     'remote_blind_shot',
     'remote_snap_spike',
     'insight_aino_bead',
@@ -3315,6 +3430,10 @@
   const ICE_AOE_GROUND_SKILLS = new Set([
     'hand_thorn_field',
     'hand_frost_floor',
+    'ice_3_starfrost',
+    'frost_1_step',
+    'frost_2_breath',
+    'frost_3_thorns',
     'insight_beatrice_pillar',
     'insight_alice_cage',
     'insight_noelle_sever',
@@ -3322,6 +3441,9 @@
   ]);
   const MELEE_DASH_SKILLS = new Set([
     'basic_attack',
+    'sword_1_basic',
+    'sword_2_cold_edge',
+    'water_3_blade',
     'sword_water_edge',
     'insight_jackal_throat',
     'insight_eastwing_draft',
@@ -3330,10 +3452,14 @@
   const SWORD_FOOTWORK_SKILLS = new Set([
     'sword_root_step',
     'sword_wind_afterimage',
+    'move_afterimage',
   ]);
   const SHIELD_GUARD_SKILLS = new Set([
     'hand_root_shield',
     'hand_ice_wall',
+    'shield_1_ice',
+    'shield_2_mirror',
+    'shield_3_steel',
   ]);
 
   function getLivingEnemyIndices(battleState, preferredIdx) {
@@ -3398,15 +3524,22 @@
         skillId === 'water_cleave' ||
         skillId === 'sword_send_slash' ||
         skillId === 'sword_riposte_flash';
-      const isSetupOnly = skillId === 'hand_frost_floor' || skillId === 'frost_step_floor';
+      const hasDirectDmg = !!(info.totalDmg > 0 || info.dmg > 0 || info.didCrit || info.didBreak);
+      const isSetupOnly =
+        skillId === 'hand_frost_floor' ||
+        skillId === 'frost_step_floor' ||
+        (skillId === 'frost_1_step' && !hasDirectDmg);
       const isMultiAoe =
         skillId === 'hand_thorn_field' ||
         skillId === 'frost_thorn_field' ||
+        skillId === 'frost_1_step' ||
+        skillId === 'frost_2_breath' ||
+        skillId === 'frost_3_thorns' ||
         skillId === 'frost_breath' ||
         skillId === 'starfrost_scatter' ||
         isSetupOnly;
       const hitList = isSetupOnly
-        ? getLivingEnemyIndices(battleState, primaryIdx)
+        ? ((Array.isArray(info.targetIndices) && info.targetIndices.length) ? info.targetIndices : getLivingEnemyIndices(battleState, primaryIdx))
         : (isMultiAoe
           ? ((Array.isArray(info.targetIndices) && info.targetIndices.length) ? info.targetIndices : getLivingEnemyIndices(battleState, primaryIdx))
           : targets);
@@ -3419,9 +3552,9 @@
         hitList.length <= 1;
 
       let resolvedId = null;
-      if (info.usedWand && isSingleTargetMagic) {
+      if (info.usedWand && isSingleTargetMagic && !V32_DIRECT_SKILL_IDS.has(skillId)) {
         resolvedId = edApi.resolveSkillId('eclipse_true_cast');
-      } else if (skillId === 'hand_root_shield') {
+      } else if (skillId === 'hand_root_shield' || skillId === 'shield_3_steel') {
         resolvedId =
           (typeof edApi.hasSkill === 'function' && edApi.hasSkill('prism_aegis') && edApi.resolveSkillId('prism_aegis')) ||
           edApi.resolveSkillId('steel_ice_curtain') ||
@@ -3533,7 +3666,7 @@
           }
         });
       } else if (isFootwork) {
-        const isWind = skillId === 'sword_wind_afterimage' || skillId === 'wind_afterimage';
+        const isWind = skillId === 'sword_wind_afterimage' || skillId === 'wind_afterimage' || skillId === 'move_afterimage';
         setActorPoseInternal('player', 'windup', 95, false);
         dashActor('player', -12, 0, 80, 'inQuad', false);
         scheduleAction(85, () => {
@@ -3592,7 +3725,7 @@
         });
       }
 
-      playEditionA(resolvedId, {
+      const playOpts = {
         from: pLog.cast,
         to: { x: firstTargetLog.x, y: firstTargetLog.y },
         groundY: pLog.anchor.y,
@@ -3605,8 +3738,11 @@
         usedWand: !!info.usedWand,
         spriteId: pSpriteId,
         onImpact(hitOrder, pt, isLast) {
-          if (isSelfSkill || isSetupOnly || info.missed) return;
           const slot = targetLogList[hitOrder] || firstTargetLog;
+          if (typeof info.onImpact === 'function') {
+            try { info.onImpact(hitOrder, pt, isLast, slot.enemyIdx); } catch (e) {}
+          }
+          if (isSelfSkill || isSetupOnly || info.missed) return;
           const posObj = {
             x: (pt && Number.isFinite(pt.x)) ? pt.x : slot.x,
             y: (pt && Number.isFinite(pt.y)) ? pt.y : slot.y,
@@ -3632,7 +3768,14 @@
         onHitStop(ms) {
           if (!isSelfSkill && !isSetupOnly && !info.missed) triggerHitStop(ms);
         },
-      });
+      };
+      if (info.beatGapMs != null && Number.isFinite(Number(info.beatGapMs))) {
+        playOpts.beatGapMs = Number(info.beatGapMs);
+      }
+      if (typeof info.onComplete === 'function') {
+        playOpts.onComplete = info.onComplete;
+      }
+      playEditionA(resolvedId, playOpts);
       return;
     }
 
@@ -3707,12 +3850,13 @@
       return;
     }
 
-    // 3) 冰系群体 / 地脉控场（冰棘群刺阵、蔓地薄冰、封肩地下冰柱、十字冰栏、冻彻断流、伊诺共鸣）
+    // 3) 冰系群体 / 地脉控场（冰棘群刺阵、蔓地薄冰、寒霜吐息、星霜散华、封肩地下冰柱、十字冰栏、冻彻断流、伊诺共鸣）
     if (ICE_AOE_GROUND_SKILLS.has(skillId)) {
-      const isSetupOnly = skillId === 'hand_frost_floor';
+      const isSetupOnly = skillId === 'hand_frost_floor' || (skillId === 'frost_1_step' && !(info.totalDmg > 0 || info.dmg > 0));
+      const isAoeSpread = skillId === 'hand_thorn_field' || skillId === 'frost_1_step' || skillId === 'frost_2_breath' || skillId === 'frost_3_thorns';
       const hitList = isSetupOnly
         ? getLivingEnemyIndices(battleState, primaryIdx)
-        : (skillId === 'hand_thorn_field'
+        : (isAoeSpread
           ? ((Array.isArray(info.targetIndices) && info.targetIndices.length) ? info.targetIndices : getLivingEnemyIndices(battleState, primaryIdx))
           : targets);
 
@@ -3743,7 +3887,7 @@
             spawnFx('snowflake_burst', { x: ePts.hit.x, y: ePts.hit.y, count: ampTier >= 2 ? 9 : 6, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.ice }, { stopAt: 0.78, scale: 0.52 });
 
             if (!isSetupOnly) {
-              if (skillId === 'hand_thorn_field' || skillId === 'insight_hulan_resonance' || skillId === 'insight_alice_cage') {
+              if (skillId === 'hand_thorn_field' || skillId === 'frost_3_thorns' || skillId === 'ice_3_starfrost' || skillId === 'insight_hulan_resonance' || skillId === 'insight_alice_cage') {
                 spawnFx('icicle_fall', { x: ePts.anchor.x, y: ePts.anchor.y, palette: PALETTES.ice }, { stopAt: 0.88 });
               }
               triggerHitReaction(eKey, isHeavy ? 15 : 10, isHeavy);
@@ -3761,8 +3905,8 @@
       return;
     }
 
-    // 4) 水系魔法（覆潮水弹 / 折射水幕）
-    if (skillId === 'hand_water_surge') {
+    // 4) 水系魔法（水球术 / 覆潮水弹 / 激流涌 / 折射水幕）
+    if (skillId === 'hand_water_surge' || skillId === 'water_1_ball' || skillId === 'water_2_surge') {
       setActorPoseInternal('player', magicWindupPose, 145, false);
       spawnFx('magic_circle_cast', { x: pPts.anchor.x, y: pPts.anchor.y, palette: ampTier >= 2 ? PALETTES.crit : PALETTES.water }, { stopAt: 0.5 + ampRatio * 0.12 });
 
@@ -3813,7 +3957,7 @@
       return;
     }
 
-    // 5) 护盾与立障（钢冰生根盾 / 凝水厚冰墙，支持最高 +40% 魔力增幅强化护盾光环）
+    // 5) 护盾与立障（钢冰生根盾 / 凝水厚冰墙 / 冰晶护盾 / 镜霜冰壁，支持最高 +40% 魔力增幅强化护盾光环）
     if (SHIELD_GUARD_SKILLS.has(skillId)) {
       setActorPoseInternal('player', magicWindupPose, 120, false);
       squashActor('player', 1.06, 0.94, 130);
@@ -3832,9 +3976,9 @@
       return;
     }
 
-    // 6) 霁馆步法 / 风行残像（侧滑步法走 run 帧，定步后再亮剑势，回位走 run 帧绝不拖带挥砍/施法帧）
+    // 6) 霁馆步法 / 风行残像 / 残像瞬移（侧滑步法走 run 帧，定步后再亮剑势，回位走 run 帧绝不拖带挥砍/施法帧）
     if (SWORD_FOOTWORK_SKILLS.has(skillId)) {
-      const isWind = skillId === 'sword_wind_afterimage';
+      const isWind = skillId === 'sword_wind_afterimage' || skillId === 'move_afterimage';
       setActorPoseInternal('player', 'windup', 95, false);
       dashActor('player', -12, 0, 80, 'inQuad', false);
       scheduleAction(85, () => {
@@ -3856,10 +4000,10 @@
       return;
     }
 
-    // 7) 剑术冲刺突斩（平斩、送刀覆水极薄冰锋、看破封喉/回风/穿心：蓄力 windup(3) -> 2D 跨行疾奔 run -> 贴身 cast_step(4)/strike(5) -> 奔回 run -> idle）
+    // 7) 剑术冲刺突斩（平斩、断水刃、冷刃送刀斩、看破封喉/回风/穿心：蓄力 windup(3) -> 2D 跨行疾奔 run -> 贴身 cast_step(4)/strike(5) -> 奔回 run -> idle）
     if (MELEE_DASH_SKILLS.has(skillId) || true) {
       const dashVec = computeMeleeDashVector(pPts, tPts, 'right', 96, 54);
-      const useDouble = !!(isHeavy || skillId !== 'basic_attack');
+      const useDouble = !!(isHeavy || (skillId !== 'basic_attack' && skillId !== 'sword_1_basic'));
       const slashPal = skillId === 'insight_wind_stillness' ? PALETTES.wind : PALETTES.swordIce;
 
       // 0ms: 蓄力收腰
@@ -3956,9 +4100,18 @@
     const targetDualMagic = hasMagicCastFrames(targetSpriteId);
     const isAllyRenoTarget = targetActorKey === 'ally:reno' || targetSpriteId === 'reno';
 
+    const rawBlockGrade = info.blockGrade != null ? String(info.blockGrade).trim().toLowerCase() : '';
+    const blockGrade = (rawBlockGrade === 'bad' || rawBlockGrade === 'good' || rawBlockGrade === 'great' || rawBlockGrade === 'perfect')
+      ? rawBlockGrade
+      : '';
+    const noBlockPrompt = info.noBlockPrompt != null
+      ? !!info.noBlockPrompt
+      : !!(info.enemy && info.enemy.noBlockPrompt);
+
     if (hasEditionA()) {
       const edApi = getEditionAApi();
       const resolvedEnemyVfx =
+        (info.vfxId && edApi.resolveSkillId(info.vfxId)) ||
         (intent.moveName && edApi.resolveSkillId(intent.moveName)) ||
         (intent.moveKey && edApi.resolveSkillId(intent.moveKey)) ||
         edApi.resolveSkillId(`enemy_${spriteId}`) ||
@@ -3977,6 +4130,10 @@
         const freshTLog = toLogicalPts(freshTPts);
         const freshELog = toLogicalPts(freshEPts);
         const tPos = { x: freshTLog.hit.x, y: freshTLog.hit.y, groundY: freshTLog.anchor.y };
+
+        if (typeof info.onImpact === 'function') {
+          try { info.onImpact(tPos); } catch (e) {}
+        }
 
         if (info.parried) {
           setActorPoseInternal(targetActorKey, 'strike', 220, false);
@@ -4017,6 +4174,84 @@
           scheduleAction(200, () => dashActor(targetActorKey, 0, 0, 170, 'outCubic', false, 'wind', { pose: 'run', returnIdle: true }));
           return;
         }
+
+        // 杂兵无格挡提示（info.noBlockPrompt）：不播放任何格挡盾光，直播受击反馈
+        if (noBlockPrompt) {
+          if (info.blocked && !(info.hpLoss > 0)) {
+            const guardPose = isAllyRenoTarget ? 'earth_step' : (targetDualMagic ? 'magic_windup' : 'windup');
+            setActorPoseInternal(targetActorKey, guardPose, 180, false);
+            squashActor(targetActorKey, 1.06, 0.95, 160);
+          } else {
+            triggerHitReaction(targetActorKey, heavy ? -16 : -10, heavy);
+          }
+          if (info.shieldShattered || (info.shieldAbsorbed > 0)) {
+            playEditionA('fx_shield_hit', {
+              pos: tPos,
+              from: freshTLog.hit,
+              groundY: freshTLog.anchor.y,
+              side: 'player',
+              facing: 1,
+              shattered: !!info.shieldShattered,
+            });
+          }
+          return;
+        }
+
+        // V3.2 实时格挡评级透传：精准播放 fx_block_{bad|good|great|perfect}
+        if (blockGrade) {
+          const guardPose = isAllyRenoTarget ? 'earth_step' : (targetDualMagic ? 'magic_windup' : 'windup');
+          if (blockGrade === 'perfect' || blockGrade === 'great') {
+            setActorPoseInternal(targetActorKey, guardPose, 220, false);
+            squashActor(targetActorKey, 1.08, 0.94, 180);
+            const blkOpts = {
+              pos: tPos,
+              from: freshTLog.hit,
+              groundY: freshTLog.anchor.y,
+              side: 'player',
+              facing: 1,
+              onShake(px) { triggerTrauma(editionAShakeToTrauma(px)); },
+            };
+            if (blockGrade === 'perfect') {
+              blkOpts.onHitStop = ms => triggerHitStop(ms);
+            }
+            playEditionA(`fx_block_${blockGrade}`, blkOpts);
+          } else if (blockGrade === 'good') {
+            if (info.hpLoss > 0 && !info.blocked) {
+              triggerHitReaction(targetActorKey, -8, false);
+            } else {
+              setActorPoseInternal(targetActorKey, guardPose, 200, false);
+              squashActor(targetActorKey, 1.06, 0.95, 160);
+            }
+            playEditionA('fx_block_good', {
+              pos: tPos,
+              from: freshTLog.hit,
+              groundY: freshTLog.anchor.y,
+              side: 'player',
+              facing: 1,
+            });
+          } else {
+            triggerHitReaction(targetActorKey, heavy ? -16 : -10, heavy);
+            playEditionA('fx_block_bad', {
+              pos: tPos,
+              from: freshTLog.hit,
+              groundY: freshTLog.anchor.y,
+              side: 'player',
+              facing: 1,
+            });
+          }
+          if (info.shieldShattered || (info.shieldAbsorbed > 0)) {
+            playEditionA('fx_shield_hit', {
+              pos: tPos,
+              from: freshTLog.hit,
+              groundY: freshTLog.anchor.y,
+              side: 'player',
+              facing: 1,
+              shattered: !!info.shieldShattered,
+            });
+          }
+          return;
+        }
+
         if (info.blocked) {
           const guardPose = isAllyRenoTarget ? 'earth_step' : (targetDualMagic ? 'magic_windup' : 'windup');
           setActorPoseInternal(targetActorKey, guardPose, 220, false);
@@ -4174,7 +4409,7 @@
         }
       }
 
-      playEditionA(resolvedEnemyVfx, {
+      const enemyPlayOpts = {
         from: eLog.cast,
         to: tLog.hit,
         groundY: eLog.anchor.y,
@@ -4192,7 +4427,11 @@
         onHitStop(ms) {
           if (!info.evaded) triggerHitStop(ms);
         },
-      });
+      };
+      if (typeof info.onComplete === 'function') {
+        enemyPlayOpts.onComplete = info.onComplete;
+      }
+      playEditionA(resolvedEnemyVfx, enemyPlayOpts);
       return;
     }
 
@@ -4216,7 +4455,7 @@
         scheduleAction(200, () => dashActor(targetActorKey, 0, 0, 170, 'outCubic', false, 'wind', { pose: 'run', returnIdle: true }));
         return;
       }
-      if (info.blocked) {
+      if (!noBlockPrompt && (blockGrade === 'perfect' || blockGrade === 'great' || (!blockGrade && info.blocked))) {
         // 护盾格挡（雷纳德持岩壁走 earth_step + 土系色板，主角走冰系护盾）
         const guardPose = isAllyRenoTarget ? 'earth_step' : (targetDualMagic ? 'magic_windup' : 'windup');
         const guardPal = isAllyRenoTarget ? PALETTES.earth : PALETTES.ice;
@@ -4224,10 +4463,11 @@
         squashActor(targetActorKey, 1.08, 0.94, 180);
         spawnFx('parry', { x: targetPts.anchor.x + 14, y: targetPts.anchor.y, palette: guardPal }, { stopAt: 0.62 });
         spawnFx('divine_shield', { x: targetPts.anchor.x, y: targetPts.anchor.y, radius: 28, palette: guardPal }, { stopAt: 0.48 });
+        if (blockGrade === 'perfect') triggerHitStop(60);
         triggerTrauma(0.22);
         return;
       }
-      // 目标真实受击（精准落到 player 或 ally:reno）
+      // 目标真实受击（精准落到 player 或 ally:reno；杂兵 noBlockPrompt 直播受击）
       triggerHitReaction(targetActorKey, heavy ? -16 : -10, heavy);
       spawnFx('hit_spark', { x: targetPts.anchor.x, y: targetPts.anchor.y, flip: true }, { stopAt: 0.45 });
       if (heavy) {
@@ -5744,7 +5984,9 @@
     const rawElapsedSec = _lastRafTs > 0 ? Math.max(0.001, (now - _lastRafTs) / 1000) : 0.016;
     const realDt = clamp(rawElapsedSec, 0.001, 0.05);
     _lastRafTs = now;
-    const simDt = realDt * _hitStopScale;
+    const simDt = realDt * _hitStopScale * _slowMoScale;
+    const isSlowMo = _slowMoScale < 0.99;
+    const slowMoCompMs = isSlowMo ? Math.max(0, (realDt - simDt) * 1000) : 0;
     const reduced = prefersReducedMotion();
 
     // 首帧在干净布局期预缓存各角色锚点，避免技能点击写入 DOM 后立即读取 getBoundingClientRect 触发同步重排
@@ -5752,12 +5994,19 @@
       _actors.forEach((_, key) => { getActorCanvasPoints(key, false); });
     }
 
-    // 1) 推进编排事件队列（同时核验真实墙钟 dueAt，避免慢帧/顿帧期编排队列积压）
+    // 1) 推进编排事件队列（慢镜期对 item.dueAt 补偿累加并跳过墙钟抢跑判定，确保精灵姿势/回撤绝不提前切走）
     const dueFns = [];
     for (let i = _scheduled.length - 1; i >= 0; i--) {
       const item = _scheduled[i];
       item.wait -= simDt;
-      if (item.wait <= 0 || (item.dueAt && now >= item.dueAt)) {
+      if (isSlowMo && item.dueAt) {
+        item.dueAt += slowMoCompMs;
+        if (item.wait > 0) {
+          const minDue = now + item.wait * 1000;
+          if (item.dueAt < minDue) item.dueAt = minDue;
+        }
+      }
+      if (item.wait <= 0 || (!isSlowMo && item.dueAt && now >= item.dueAt)) {
         _scheduled.splice(i, 1);
         dueFns.push(item.fn);
       }
@@ -5933,19 +6182,23 @@
     if (_activeEffects.length > 0 && PFX && _frame && _ctx && _imgData) {
       const fxElapsedSinceDraw = _lastFxDrawTs > 0 ? (now - _lastFxDrawTs) : _fxIntervalMs;
       if (fxElapsedSinceDraw >= _fxIntervalMs && now >= _deferFxDrawUntil && (nowPerf() - now) < 12) {
-        const fxDt = clamp(fxElapsedSinceDraw / 1000, 0.008, 0.05) * _hitStopScale;
+        const fxDt = clamp(fxElapsedSinceDraw / 1000, 0.008, 0.05) * _hitStopScale * _slowMoScale;
+        const fxSlowCompMs = isSlowMo ? Math.max(0, fxElapsedSinceDraw - fxDt * 1000) : 0;
         _lastFxDrawTs = now;
         const fxStart = nowPerf();
 
         for (let i = _activeEffects.length - 1; i >= 0; i--) {
           const entry = _activeEffects[i];
+          if (isSlowMo && entry.bornAt) {
+            entry.bornAt += fxSlowCompMs;
+          }
           const wallAgeMs = now - entry.bornAt;
           entry.elapsed += fxDt;
-          if (!entry.stopped && entry.stopAt > 0 && (entry.elapsed >= entry.stopAt || wallAgeMs >= entry.stopAt * 1000)) {
+          if (!entry.stopped && entry.stopAt > 0 && (entry.elapsed >= entry.stopAt || (!isSlowMo && wallAgeMs >= entry.stopAt * 1000))) {
             entry.stopped = true;
             entry.inst.stop();
           }
-          if (wallAgeMs >= entry.maxAgeMs) {
+          if (!isSlowMo && wallAgeMs >= entry.maxAgeMs) {
             _activeEffects.splice(i, 1);
             if (entry.onDone) {
               try { entry.onDone(); } catch (e) {}
@@ -6095,6 +6348,7 @@
     _burstWindowStart = 0;
     _hitStopId += 1;
     _hitStopScale = 1.0;
+    _slowMoScale = 1.0;
     if (_hitStopTimer) {
       clearTimeout(_hitStopTimer);
       _rawTimers.delete(_hitStopTimer);
@@ -6161,6 +6415,7 @@
     _auraBurstParticles.length = 0;
     _auraElapsed = 0;
     _lastAuraDrawTs = 0;
+    _slowMoScale = 1.0;
     if (_fieldResizeObserver) {
       try { _fieldResizeObserver.disconnect(); } catch (e) {}
       _fieldResizeObserver = null;
@@ -6192,7 +6447,7 @@
     syncStage(b);
     const idx = enemyIdx != null ? enemyIdx : (b && b.targetIdx ? b.targetIdx : 0);
     const sid = skillId || 'hand_ice_crystal';
-    const isAoe = sid === 'hand_thorn_field' || sid === 'hand_frost_floor';
+    const isAoe = sid === 'hand_thorn_field' || sid === 'hand_frost_floor' || sid === 'frost_1_step' || sid === 'frost_2_breath' || sid === 'frost_3_thorns';
     const targetIndices = isAoe ? getLivingEnemyIndices(b, idx) : [idx];
     playSkillAction(b, {
       skillId: sid,
@@ -6281,7 +6536,9 @@
       auraTier: amp.tier,
       auraShockwaves: _auraShockwaves.length,
       auraBurstParticles: _auraBurstParticles.length,
-      timeScale: _hitStopScale,
+      timeScale: _hitStopScale * _slowMoScale,
+      hitStopScale: _hitStopScale,
+      slowMoScale: _slowMoScale,
       hitStopId: _hitStopId,
       actors: actorSummary,
     };
@@ -6373,6 +6630,10 @@
     playRenoSupport,
     summonAllyCameo,
     playBondAssist,
+    setSlowMoScale,
+    getSlowMoScale,
+    getActorScreenPoint,
+    resolveVfxPeakMs,
     triggerHitStop,
     triggerTrauma,
     spawnFx,
@@ -6383,4 +6644,7 @@
     clearEffects,
     cleanup,
   };
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = global.CombatPixelVFX;
+  }
 })(typeof window !== 'undefined' ? window : globalThis);

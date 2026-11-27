@@ -323,7 +323,24 @@
     enemy_beast_slam:        ['enemy_beast_slam', 'enemy_ground_slam', 'frost_thorn_field'],
     enemy_parried:           ['enemy_parried', 'parry_riposte', 'sword_send_slash'],
     enemy_evaded:            ['enemy_evaded', 'wind_evade', 'wind_afterimage'],
-    enemy_blocked:           ['enemy_blocked', 'shield_block', 'steel_ice_curtain']
+    enemy_blocked:           ['enemy_blocked', 'shield_block', 'steel_ice_curtain'],
+
+    // 5) V3.2 全 15 招规范技能 ID 精准路由别名
+    ice_1_crystal:           ['ice_crystal'],
+    ice_2_prism:             ['tri_prism_ice'],
+    ice_3_starfrost:         ['starfrost_scatter'],
+    water_1_ball:            ['water_orb', 'raging_surge'],
+    water_2_surge:           ['raging_surge'],
+    water_3_blade:           ['water_cleave'],
+    frost_1_step:            ['frost_step_floor', 'frost_thorn_field'],
+    frost_2_breath:          ['frost_breath', 'frost_thorn_field'],
+    frost_3_thorns:          ['frost_thorn_field'],
+    shield_1_ice:            ['ice_shield', 'steel_ice_curtain'],
+    shield_2_mirror:         ['mirror_frost_wall', 'steel_ice_curtain'],
+    shield_3_steel:          ['prism_aegis', 'steel_ice_curtain'],
+    sword_1_basic:           ['basic_attack', 'sword_basic_slash', 'sword_send_slash'],
+    sword_2_cold_edge:       ['sword_send_slash', 'silver_ice_slash'],
+    move_afterimage:         ['sword_root_step', 'wind_afterimage']
   });
 
   function resolveSkillId(rawId) {
@@ -2797,21 +2814,23 @@
       ]);
     },
 
-    /* ---------- 6. 霜域棘阵 · 3 目标群攻 (frost_thorn_field，原版照搬) ---------- */
+    /* ---------- 6. 霜域棘阵 · 3 目标群攻 (frost_thorn_field，支持 o.beatGapMs 多拍穿刺节奏) ---------- */
     frost_thorn_field(kit, o) {
       const { from, groundY, targets, amp, ampScale, icePal } = o;
-      const beatMs = 70;
+      const rawBeatGap = Number(o.beatGapMs);
+      const beatMs = (Number.isFinite(rawBeatGap) && rawBeatGap >= 20) ? clamp(rawBeatGap, 20, 600) : 70;
+      const spanMs = Math.max(0, targets.length - 1) * beatMs;
       const cues = [
         {
           at: 0,
           fn() {
             kit.spawnPfx('magic_circle_cast', { palette: icePal }, {
               x: from.x - 10, y: groundY + 4, scale: 1.38 * ampScale,
-              preWarmSec: 0.95, timeScale: 2.0, durMs: 560, layer: 'back'
+              preWarmSec: 0.95, timeScale: 2.0, durMs: Math.max(560, 340 + spanMs), layer: 'back'
             });
             kit.addMagicCircle({
               x: from.x - 10, y: groundY + 4, radius: 48 * ampScale, sy: 0.30,
-              goldTriple: amp >= 3, dur: 620
+              goldTriple: amp >= 3, dur: Math.max(620, 400 + spanMs)
             });
             kit.triggerAmpCastAura(from.x - 10, groundY, amp, false);
           }
@@ -2850,14 +2869,14 @@
                 spurs,
                 width: 3.4 * ampScale,
                 growMs: 225 + idx * beatMs,
-                dur: 1220
+                dur: Math.max(1220, 960 + spanMs)
               });
             }
 
             kit.spawnPfx('ice_spikes', { palette: icePal, reach: 138, height: 34 }, {
               x: from.x + 28, y: groundY + 4,
               scale: 1.38 * ampScale,
-              timeScale: 1.75, durMs: 780, layer: 'back'
+              timeScale: 1.75, durMs: Math.max(780, 520 + spanMs), layer: 'back'
             });
           }
         }
@@ -2933,7 +2952,7 @@
       }
 
       cues.push({
-        at: 430,
+        at: Math.max(430, 340 + spanMs - 50),
         fn() {
           const leftX = targets[0].x;
           const rightX = targets[targets.length - 1].x;
@@ -4137,7 +4156,14 @@
         handler(kit, o);
       }
       if (typeof o.onComplete === 'function') {
-        const dur = getDuration(resolvedId);
+        let dur = getDuration(resolvedId);
+        if (resolvedId === 'frost_thorn_field') {
+          const rawBeatGap = Number(o.beatGapMs);
+          if (Number.isFinite(rawBeatGap) && rawBeatGap > 70) {
+            const extraBeats = Math.max(0, (Array.isArray(o.targets) ? o.targets.length : 1) - 1);
+            dur += extraBeats * (clamp(rawBeatGap, 20, 600) - 70);
+          }
+        }
         scheduleTimeline([{ at: dur, fn: () => safeCall(o.onComplete, resolvedId, o) }]);
       }
       return resolvedId;

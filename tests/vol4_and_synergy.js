@@ -99,41 +99,78 @@ ok('RelicsAndEvents.getActiveSynergies 准确识别全部 4 套铭记共鸣的 2
 
   bDk3.player.mp = 40;
   const beforeAi = bDk3.player.status.afterimage || 0;
-  CE.useSkill('hand_water_surge', 0, bDk3);
+  CE.useSkill('water_1_ball', 0, bDk3);
   const elemRecOk = bDk3._synDukedomElemTurn === bDk3.turn;
-  CE.useSkill('hand_ice_wall', 0, bDk3);
+  CE.useSkill('shield_1_ice', 0, bDk3);
   const shieldAiOk = (bDk3.player.status.afterimage || 0) === beforeAi + 1;
   ok('【公爵府遗忆】2/3 件实效：首回合 +1 AP/+10 盾，首水冰技回蓝且首盾技附 1 层风行残像',
     t1Ok && elemRecOk && shieldAiOk,
     `ap=${bDk2.ap}, sh=${bDk2.player.shield}, elemRec=${elemRecOk}, ai=${beforeAi}->${bDk3.player.status.afterimage}`);
 }
 
-// 1.3) 学院星辉 (academy_stars): 2pc 冰宫看破附 2 层易伤 + 回 12% MP；3pc 额外省蓝 15% + 1.65x 暴击
+// 1.3) 学院星辉 (academy_stars): 2pc 破招/击破回 12% MP + 断招多破 1 锁；3pc 0.85× 省蓝地板 + 暴伤 +10% 叠加圣晶杖上限 1.70×
 {
-  const bAc2 = CE.startStage('beatrice_11', { headless: true, usePreset: true, relics: ['belmont_schedule', 'cross'] });
-  bAc2.waveTurn = 2;
-  bAc2.player.mp = 40;
-  const cfg = CE.getCurrentPalaceConfig(bAc2);
-  const cOk = cfg.clues.find((c) => c.correct);
-  const dOk = cfg.deductions.find((d) => d.correct);
-  const expectedMp = 40 + Math.max(10, Math.round(bAc2.player.mmp * 0.12));
-  const res = CE.inspectClue(cOk.id, dOk.id, bAc2);
-  const t2Ok = res.correct && (bAc2.enemies[0].status.vuln || 0) >= 2 && bAc2.player.mp === expectedMp;
+  // 2pc 破招：多破 1 锁 + 回 12% MP
+  const bNoSyn = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: [] });
+  const bAc2 = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: ['belmont_schedule', 'cross'] });
+  bNoSyn.enemies[0].intent = { stance: 'DUAL_CAST', moveName: '双冰蛇阵', dmg: 30 };
+  bAc2.enemies[0].intent = { stance: 'DUAL_CAST', moveName: '双冰蛇阵', dmg: 30 };
+  bNoSyn.enemies[0].locks = 5; bAc2.enemies[0].locks = 5;
+  bNoSyn.enemies[0].shield = 500; bAc2.enemies[0].shield = 500;
+  bNoSyn.player.mp = 80; bAc2.player.mp = 80;
+  const expectedMpGain = Math.max(8, Math.round(bAc2.player.mmp * 0.12));
+  CE.useSkill('ice_2_prism', 0, bNoSyn);
+  CE.useSkill('ice_2_prism', 0, bAc2);
+  const t2IntOk = bAc2.enemies[0].locks === bNoSyn.enemies[0].locks - 1
+    && bAc2.player.mp === bNoSyn.player.mp + expectedMpGain;
 
+  // 2pc 弱点击破回 12% MP
+  const bBrkBase = CE.startStage('beatrice_11', { headless: true, usePreset: true, relics: [] });
+  const bBrkAc2 = CE.startStage('beatrice_11', { headless: true, usePreset: true, relics: ['belmont_schedule', 'cross'] });
+  bBrkBase.enemies[0].locks = 1; bBrkAc2.enemies[0].locks = 1;
+  bBrkBase.enemies[0].shield = 500; bBrkAc2.enemies[0].shield = 500;
+  bBrkBase.enemies[0].intent = { stance: 'HEAVY_WINDUP', moveName: '烈焰斩', dmg: 20 };
+  bBrkAc2.enemies[0].intent = { stance: 'HEAVY_WINDUP', moveName: '烈焰斩', dmg: 20 };
+  bBrkBase.player.mp = 80; bBrkAc2.player.mp = 80;
+  const expectedBrkMp = Math.max(8, Math.round(bBrkAc2.player.mmp * 0.12));
+  CE.useSkill('water_1_ball', 0, bBrkBase);
+  CE.useSkill('water_1_ball', 0, bBrkAc2);
+  const t2BrkOk = bBrkAc2.player.mp === bBrkBase.player.mp + expectedBrkMp;
+
+  // 3pc：0.85× 基础省蓝（遵循 0.60× 地板）+ 暴伤 +10%（1.50× -> 1.60×），叠加极北圣晶杖（+10%）封顶 1.70×
   const bSingle = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: ['noelle_manuscript'], forceCrit: true });
   const bAc3 = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: ['noelle_manuscript', 'belmont_schedule', 'cross'], forceCrit: true });
-  const mpSingle = CE.computeSkillMpCost(bSingle.player, CE.SKILLS.hand_ice_crystal);
-  const mpAc3 = CE.computeSkillMpCost(bAc3.player, CE.SKILLS.hand_ice_crystal);
-  bSingle.enemies[0].shield = 0; bAc3.enemies[0].shield = 0;
-  const hpS0 = bSingle.enemies[0].hp; const hp30 = bAc3.enemies[0].hp;
-  CE.useSkill('hand_ice_crystal', 0, bSingle);
-  CE.useSkill('hand_ice_crystal', 0, bAc3);
+  const bAc3Saint = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: ['noelle_manuscript', 'belmont_schedule', 'cross'], staff: 'north_saint_staff', forceCrit: true });
+  const prismSk = CE.SKILLS.ice_2_prism;
+  const mpSingle = CE.computeSkillMpCost(bSingle.player, prismSk);
+  const mpAc3 = CE.computeSkillMpCost(bAc3.player, prismSk);
+  const mpFloorOk = mpAc3 < mpSingle && mpAc3 >= Math.round(prismSk.mp * 0.60);
+
+  // 叠算魔力精算 + 省魔手稿 + 学院星辉3件仍受 0.60× 省蓝地板约束
+  const bStackFloor = CE.startStage('north_forest_hunt', { headless: true, usePreset: true, relics: ['noelle_manuscript', 'belmont_schedule', 'cross'] });
+  const mpStackFloor = CE.computeSkillMpCost(bStackFloor.player, CE.SKILLS.ice_3_starfrost);
+  const stackFloorOk = mpStackFloor >= Math.round(CE.SKILLS.ice_3_starfrost.mp * 0.60);
+
+  bSingle.enemies[0].shield = 0; bAc3.enemies[0].shield = 0; bAc3Saint.enemies[0].shield = 0;
+  const estSingle = CE.estimateSkillDamage(bSingle, prismSk, bSingle.enemies[0]);
+  const estAc3 = CE.estimateSkillDamage(bAc3, prismSk, bAc3.enemies[0]);
+  const estAc3Saint = CE.estimateSkillDamage(bAc3Saint, prismSk, bAc3Saint.enemies[0]);
+  const hpS0 = bSingle.enemies[0].hp; const hp30 = bAc3.enemies[0].hp; const hpSt0 = bAc3Saint.enemies[0].hp;
+  CE.useSkill('ice_2_prism', 0, bSingle);
+  CE.useSkill('ice_2_prism', 0, bAc3);
+  CE.useSkill('ice_2_prism', 0, bAc3Saint);
   const dmgSingle = hpS0 - bSingle.enemies[0].hp;
   const dmgAc3 = hp30 - bAc3.enemies[0].hp;
+  const dmgAc3Saint = hpSt0 - bAc3Saint.enemies[0].hp;
+  const critScaleOk = dmgSingle === Math.round(estSingle.dmg * 1.50)
+    && dmgAc3 === Math.round(estAc3.dmg * 1.60)
+    && dmgAc3 > dmgSingle
+    && dmgAc3Saint === Math.round(estAc3Saint.dmg * 1.70)
+    && CE.COMBAT_BALANCE_V32.critMaxMult === 1.70;
 
-  ok('【学院星辉】2/3 件实效：冰宫看破附 2 层易伤并回 12% MP，3 件再省蓝 15% 且暴击升至 1.65x',
-    t2Ok && mpAc3 < mpSingle && dmgAc3 > dmgSingle,
-    `vuln=${bAc2.enemies[0].status.vuln}, mp=${bAc2.player.mp}/${expectedMp}, cost=${mpSingle}->${mpAc3}, critDmg=${dmgSingle}->${dmgAc3}`);
+  ok('【学院星辉】2/3 件实效：破招/击破回 12% MP 且断招多破 1 锁，3 件 0.85× 省蓝守 0.60× 地板且暴伤 +10% 叠圣晶杖上限 1.70×',
+    t2IntOk && t2BrkOk && mpFloorOk && stackFloorOk && critScaleOk,
+    `locks=${bNoSyn.enemies[0].locks}->${bAc2.enemies[0].locks}, mpInt=${bNoSyn.player.mp}->${bAc2.player.mp}, mpBrk=${bBrkBase.player.mp}->${bBrkAc2.player.mp}, cost=${mpSingle}->${mpAc3}, crit=${dmgSingle}/${dmgAc3}/${dmgAc3Saint}`);
 }
 
 // 1.4) 霁馆剑心 (jikan_blade): 2pc 剑技暴击/破招额外 +1 AP + 迎锋反制魔战双倍回蓝
@@ -145,27 +182,32 @@ ok('RelicsAndEvents.getActiveSynergies 准确识别全部 4 套铭记共鸣的 2
   bJk.enemies[0].intent = { stance: 'CLOSE_LUNGE', moveName: '扑咬', dmg: 24 };
   bEb.player.mp = 40; bJk.player.mp = 40;
   bEb.ap = 2; bJk.ap = 2;
-  CE.useSkill('sword_water_edge', 0, bEb);
-  CE.useSkill('sword_water_edge', 0, bJk);
-  ok('【霁馆剑心】2 件实效：剑技暴击额外返还 AP 且迎锋反制魔战回蓝翻倍',
+  CE.useSkill('sword_2_cold_edge', 0, bEb);
+  CE.useSkill('sword_2_cold_edge', 0, bJk);
+  ok('【霁馆剑心】2 件实效：寒锋斩暴击额外返还 AP 且迎锋反制魔战回蓝翻倍',
     bJk.ap === 3 && bEb.ap === 2 && bJk.metrics.manaRecycled > bEb.metrics.manaRecycled && bJk.player.mp > bEb.player.mp,
     `ap:${bEb.ap}->${bJk.ap}, recycled:${bEb.metrics.manaRecycled}->${bJk.metrics.manaRecycled}`);
 }
 
-// 1.5) 北境霜锋 (north_frost): 2pc 开局 +10 盾 + 冰系穿 15% 法抗；3pc 首隔空冰技附 2 层寒颤 + 15% 碎霜伤
+// 1.5) 北境霜锋 (north_frost): 2pc 开局 +10 盾 + 冰系穿 15% 法抗；3pc 首冰晶/霜域技附 2 层寒颤 + 5% 加法增伤
 {
   const bNf1 = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: ['aino_academy_handkerchief'] });
   const bNf2 = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: ['aino_academy_handkerchief', 'aino_frost_shard'] });
   const bNf3 = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: ['aino_academy_handkerchief', 'aino_frost_shard', 'northwind_pass'] });
   const shOk = bNf1.player.shield === 0 && bNf2.player.shield >= 10 && bNf3.player.shield >= 22;
-  const iceDmg1 = CE.estimateSkillDamage(bNf1, CE.SKILLS.hand_ice_crystal, bNf1.enemies[0]).dmg;
-  const iceDmg2 = CE.estimateSkillDamage(bNf2, CE.SKILLS.hand_ice_crystal, bNf2.enemies[0]).dmg;
-  const remDmg2 = CE.estimateSkillDamage(bNf2, CE.SKILLS.remote_snap_spike, bNf2.enemies[0]).dmg;
-  const remEst3 = CE.estimateSkillDamage(bNf3, CE.SKILLS.remote_snap_spike, bNf3.enemies[0]);
-  CE.useSkill('remote_snap_spike', 0, bNf3);
-  ok('【北境霜锋】2/3 件实效：回合初 +10 盾、冰系穿抗 15%，3 件首隔空冰技碎霜增伤并附 2 层寒颤',
-    shOk && iceDmg2 > iceDmg1 && remEst3.northFrostShatter && remEst3.dmg > remDmg2 && (bNf3.enemies[0].status.chill || 0) >= 2,
-    `sh:${bNf1.player.shield}/${bNf2.player.shield}/${bNf3.player.shield}, ice:${iceDmg1}->${iceDmg2}, rem:${remDmg2}->${remEst3.dmg}, chill=${bNf3.enemies[0].status.chill}`);
+  const iceEst1 = CE.estimateSkillDamage(bNf1, CE.SKILLS.ice_2_prism, bNf1.enemies[0]);
+  const iceEst2 = CE.estimateSkillDamage(bNf2, CE.SKILLS.ice_2_prism, bNf2.enemies[0]);
+  const iceEst3 = CE.estimateSkillDamage(bNf3, CE.SKILLS.ice_2_prism, bNf3.enemies[0]);
+  const frostEst2 = CE.estimateSkillDamage(bNf2, CE.SKILLS.frost_2_breath, bNf2.enemies[0]);
+  const frostEst3 = CE.estimateSkillDamage(bNf3, CE.SKILLS.frost_2_breath, bNf3.enemies[0]);
+  const addPoolDeltaOk = iceEst3.addPool === Number((iceEst2.addPool + 0.05).toFixed(6))
+    && frostEst3.addPool === Number((frostEst2.addPool + 0.05).toFixed(6));
+  CE.useSkill('ice_2_prism', 0, bNf3);
+  ok('【北境霜锋】2/3 件实效：回合初 +10 盾、冰系穿抗 15%，3 件首冰晶/霜域技 +5% 增伤并附 2 层寒颤',
+    shOk && iceEst2.dmg > iceEst1.dmg && iceEst3.northFrostShatter && frostEst3.northFrostShatter
+    && addPoolDeltaOk && iceEst3.dmg > iceEst2.dmg && frostEst3.dmg > frostEst2.dmg
+    && (bNf3.enemies[0].status.chill || 0) >= 2 && bNf3._synNorthFrostTurn === bNf3.turn,
+    `sh:${bNf1.player.shield}/${bNf2.player.shield}/${bNf3.player.shield}, ice:${iceEst1.dmg}->${iceEst2.dmg}->${iceEst3.dmg}, frost:${frostEst2.dmg}->${frostEst3.dmg}, chill=${bNf3.enemies[0].status.chill}`);
 }
 
 console.log('\n===== 2. 跨季多幕链式奇遇 (chain_peilin_trade / chain_white_moss / chain_astrolabe_letter) =====');
@@ -268,23 +310,46 @@ ok('演武新增第 8 幕 (turning_point_corridor) 与第 9 幕 (wind_god_eye) �
   !!(CE.STAGES.turning_point_corridor && CE.STAGES.turning_point_corridor.order === 8
     && CE.STAGES.wind_god_eye && CE.STAGES.wind_god_eye.order === 9));
 
-// 3.1) 第 8 幕 Wave 2 Boss 半血触发二阶段
+// 3.1) 第 8 幕 Wave 2 Boss <=50% HP 触发二阶段（含觉醒缓冲 stagger>=1）+ 战败 #cr-retry-boss 从首领波重开
 {
-  const b8 = CE.startStage('turning_point_corridor', { headless: true, usePreset: true, relics: [] });
+  win.show('title-screen', 0);
+  win.show('game-screen', 1);
+  const b8 = CE.startStage('turning_point_corridor', { headless: false, fromArena: true, usePreset: true, relics: [] });
   b8.enemies.forEach((e) => { e.shield = 0; e.hp = 1; });
-  CE.useSkill('hand_thorn_field', 0, b8); // 清掉第 1 波进入第 2 波红莲铁幕
+  CE.useSkill('frost_2_breath', 0, b8); // 清掉第 1 波进入第 2 波红莲铁幕
   const boss = b8.enemies[0];
   const inWave2 = b8.waveIdx === 1 && boss && boss.id === 'eastwing_commander';
   boss.shield = 0;
-  boss.hp = Math.floor(boss.mhp * 0.5) + 8;
+  boss.hp = Math.floor(boss.mhp * 0.50) + 8;
   b8.ap = 2;
-  CE.useSkill('hand_water_surge', 0, b8);
-  ok('第 8 幕「转折点·东翼火廊突围战」红莲铁幕 <=50% HP 触发二阶段蜕变 (phase2Triggered + 刷盾)',
-    inWave2 && boss.phase === 2 && b8.metrics.phase2Triggered === true && boss.shield >= 72,
-    `wave=${b8.waveIdx}, phase=${boss && boss.phase}, p2=${b8.metrics.phase2Triggered}, sh=${boss && boss.shield}`);
+  CE.useSkill('water_2_surge', 0, b8);
+  const p2Ok8 = inWave2 && boss.phase === 2 && b8.metrics.phase2Triggered === true
+    && boss.shield >= 112 && (boss.status && boss.status.stagger >= 1);
+
+  // 模拟第 2 波战败 -> 渲染 #cr-retry-boss 并可一键从首领波重开
+  boss.status.stagger = 0;
+  boss.intent = { stance: 'HEAVY_WINDUP', moveName: '红莲斩决', dmg: 300, elem: 'fire' };
+  b8.player.shield = 0;
+  b8.player.hp = 1;
+  CE.endTurn(b8);
+  const retryBossBtn = $('cr-retry-boss');
+  const hasRetryBossBtn = !!retryBossBtn;
+  let retryBossOk = false;
+  if (retryBossBtn) {
+    retryBossBtn.click();
+    const b8Retry = CE.getState();
+    retryBossOk = !!(b8Retry && !b8Retry.over && b8Retry.waveIdx === 1
+      && b8Retry.enemies[0] && b8Retry.enemies[0].id === 'eastwing_commander'
+      && b8Retry.player.hp >= Math.round(b8Retry.player.mhp * 0.80));
+  }
+  CE.exitBattle(false, { silent: true });
+
+  ok('第 8 幕「转折点·东翼火廊突围战」<=50% HP 触发二阶段（刷盾 + 觉醒缓冲 stagger>=1）且战败后 #cr-retry-boss 可从首领波重开',
+    p2Ok8 && hasRetryBossBtn && retryBossOk,
+    `p2=${p2Ok8}(wave=${b8.waveIdx}, phase=${boss && boss.phase}, sh=${boss && boss.shield}, stag=${boss && boss.status && boss.status.stagger}), btn=${hasRetryBossBtn}, retryOk=${retryBossOk}`);
 }
 
-// 3.2) 第 9 幕风神半血触发二阶段 + showResultModal 渲染 S/A/B 战术复盘拆解
+// 3.2) 第 9 幕风神 <=55% HP 触发二阶段（含觉醒缓冲 stagger>=1）+ showResultModal 渲染 S/A/B 战术复盘拆解
 {
   win.show('title-screen', 0);
   win.show('game-screen', 1);
@@ -292,16 +357,17 @@ ok('演武新增第 8 幕 (turning_point_corridor) 与第 9 幕 (wind_god_eye) �
   const boss = b9.enemies[0];
   boss.evadeCharges = 0;
   boss.shield = 0;
-  boss.hp = Math.floor(boss.mhp * 0.5) + 10;
-  CE.useSkill('hand_ice_crystal', 0, b9);
-  const p2Ok = boss.phase === 2 && b9.metrics.phase2Triggered === true && boss.shield >= 68;
+  boss.hp = Math.floor(boss.mhp * 0.55) + 10;
+  CE.useSkill('ice_3_starfrost', 0, b9);
+  const p2Ok = boss.phase === 2 && b9.metrics.phase2Triggered === true
+    && boss.shield >= 195 && (boss.status && boss.status.stagger >= 1);
 
   // 击破 Boss 弹出结算复盘弹窗
   boss.evadeCharges = 0;
   boss.shield = 0;
   boss.hp = 1;
   b9.ap = 2;
-  CE.useSkill('hand_ice_crystal', 0, b9);
+  CE.useSkill('ice_3_starfrost', 0, b9);
   const modal = $('cb-result-modal');
   const breakdown = modal && modal.querySelector('.cr-tactical-breakdown');
   const pillText = (modal && modal.querySelector('.crtb-tier-pill') && modal.querySelector('.crtb-tier-pill').textContent) || '';
@@ -311,11 +377,11 @@ ok('演武新增第 8 幕 (turning_point_corridor) 与第 9 幕 (wind_god_eye) �
   const tbB = CE.buildTacticalBreakdown({ won: true, grade: 'B', turn: 9, metrics: { interrupts: 0, ripostes: 0, insights: 0, manaRecycled: 20, phase2Triggered: false }, player: { hp: 60, mhp: 200, shield: 0, hasManaCycle: true, palaceMax: 1 } });
   CE.exitBattle(true, { silent: true });
 
-  ok('第 9 幕「风神·风暴眼试剑」半血触发二阶段，且 showResultModal 渲染 S/A/B 战术复盘拆解卡',
+  ok('第 9 幕「风神·风暴眼试剑」<=55% HP 触发二阶段（刷盾 + 觉醒缓冲 stagger>=1），且 showResultModal 渲染 S/A/B 战术复盘拆解卡',
     p2Ok && !!breakdown && /[SAB] 级/.test(pillText) && commentaryText.length >= 10
     && tbS.tier === 'S' && tbA.tier === 'A' && tbB.tier === 'B'
     && tbS.tierLabel.includes('S') && tbA.tierLabel.includes('A') && tbB.tierLabel.includes('B'),
-    `p2=${p2Ok}, pill=${pillText}`);
+    `p2=${p2Ok}(phase=${boss && boss.phase}, sh=${boss && boss.shield}, stag=${boss && boss.status && boss.status.stagger}), pill=${pillText}`);
 }
 
 // 3.3) wolf_alpha vs pack_wolf SVG 徽章视觉区分（含第 8/9 幕徽章）

@@ -118,60 +118,83 @@ assert.strictEqual(sRel.equippedRelics.length, 3, '演武沙盒配装不污染�
 RE.setArenaSandboxRelics([]);
 
 // 逐件验证全部 12 件秘宝的实战规则生效：
-// (1) aino_academy_handkerchief：Turn 1 首次隔空瞬凝 0 AP + 冰系伤 +20%
+// (1) aino_academy_handkerchief：Turn 1 首次线 1 冰晶主炮 0 AP + 冰系伤 +2%
 {
   const bBase = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: [] });
   const bRel = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: ['aino_academy_handkerchief'] });
-  const remoteSk = CE.SKILLS.remote_snap_spike;
-  const iceSk = CE.SKILLS.hand_ice_crystal;
-  assert.strictEqual(CE.computeSkillApCost(bBase, remoteSk), 1, '无手帕时隔空瞬凝消耗 1 AP');
-  assert.strictEqual(CE.computeSkillApCost(bRel, remoteSk), 0, '雪纹手帕首回合首次隔空瞬凝 0 AP');
-  const dBase = CE.estimateSkillDamage(bBase, iceSk, bBase.enemies[0]).dmg;
-  const dRel = CE.estimateSkillDamage(bRel, iceSk, bRel.enemies[0]).dmg;
-  assert(dRel > dBase, `雪纹手帕应提升冰系伤害（${dRel} > ${dBase}）`);
-  const useRes = CE.useSkill('remote_snap_spike', 0, bRel);
+  const iceSk = CE.SKILLS.ice_2_prism;
+  assert.strictEqual(CE.computeSkillApCost(bBase, iceSk), 1, '无手帕时三棱冰晶消耗 1 AP');
+  assert.strictEqual(CE.computeSkillApCost(bRel, iceSk), 0, '雪纹手帕首回合首次冰晶主炮 0 AP');
+  const estBase = CE.estimateSkillDamage(bBase, iceSk, bBase.enemies[0]);
+  const estRel = CE.estimateSkillDamage(bRel, iceSk, bRel.enemies[0]);
+  assert.strictEqual(estRel.addPool, Number((estBase.addPool + 0.02).toFixed(6)), '雪纹手帕冰系增伤应为 +2%');
+  assert(estRel.dmg > estBase.dmg, `雪纹手帕应提升冰系伤害（${estRel.dmg} > ${estBase.dmg}）`);
+  const useRes = CE.useSkill('ice_2_prism', 0, bRel);
   assert(useRes.ok);
-  assert.strictEqual(bRel.ap, 2, '首回合首次隔空瞬凝应不扣 AP');
+  assert.strictEqual(bRel.ap, 2, '首回合首次冰晶主炮应不扣 AP');
+  assert.strictEqual(CE.computeSkillApCost(bRel, iceSk), 1, '首回合第二次冰晶主炮恢复 1 AP 消耗');
 }
 
-// (2) aino_frost_shard：破招激活 frostPierce，下一次冰系攻击无视 25% 冰抗并消耗
+// (2) aino_frost_shard：破招激活 frostPierce，下一次冰系攻击（ice_2_prism / ice_3_starfrost）无视 25% 冰抗并消耗
 {
   const bNo = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: [] });
   const bShard = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: ['aino_frost_shard'] });
   bNo.enemies[0].intent = { stance: 'DUAL_CAST', moveName: '测试双施法', dmg: 10 };
   bShard.enemies[0].intent = { stance: 'DUAL_CAST', moveName: '测试双施法', dmg: 10 };
-  CE.useSkill('remote_snap_spike', 0, bNo);
-  CE.useSkill('remote_snap_spike', 0, bShard);
+  CE.useSkill('ice_2_prism', 0, bNo);
+  CE.useSkill('ice_2_prism', 0, bShard);
   assert.strictEqual(bShard.player.status.frostPierce, 1, '钢冰试炼笺破招后应激活 frostPierce');
-  const eNo = CE.estimateSkillDamage(bNo, CE.SKILLS.hand_ice_crystal, bNo.enemies[0]).dmg;
-  const eSh = CE.estimateSkillDamage(bShard, CE.SKILLS.hand_ice_crystal, bShard.enemies[0]).dmg;
-  assert(eSh > eNo, `钢冰试炼笺应穿透 25% 抗性提高冰伤（${eSh} > ${eNo}）`);
-  CE.useSkill('hand_ice_crystal', 0, bShard);
+  const eNo2 = CE.estimateSkillDamage(bNo, CE.SKILLS.ice_2_prism, bNo.enemies[0]).dmg;
+  const eSh2 = CE.estimateSkillDamage(bShard, CE.SKILLS.ice_2_prism, bShard.enemies[0]).dmg;
+  const eNo3 = CE.estimateSkillDamage(bNo, CE.SKILLS.ice_3_starfrost, bNo.enemies[0]).dmg;
+  const eSh3 = CE.estimateSkillDamage(bShard, CE.SKILLS.ice_3_starfrost, bShard.enemies[0]).dmg;
+  assert(eSh2 > eNo2 && eSh3 > eNo3, `钢冰试炼笺应穿透 25% 法抗提高冰系伤害（prism ${eSh2} > ${eNo2}, starfrost ${eSh3} > ${eNo3}）`);
+  CE.useSkill('ice_2_prism', 0, bShard);
   assert.strictEqual(bShard.player.status.frostPierce, undefined, '打出冰系攻击后应消耗 frostPierce');
 }
 
-// (3) noelle_manuscript：基础蓝耗 -20%，半蓝过载额外消耗减半同时保留伤害倍增
+// (3) noelle_manuscript：基础蓝耗 0.85×、增幅额外蓝耗 0.80×，叠算仍受 0.60× 省蓝地板约束且保留增幅伤害
 {
   const bNo = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: [] });
   const bMs = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: ['noelle_manuscript'] });
-  const sk = CE.SKILLS.hand_ice_crystal;
+  const sk = CE.SKILLS.ice_2_prism;
   const baseMpNo = CE.computeSkillMpCost(bNo.player, sk);
   const baseMpMs = CE.computeSkillMpCost(bMs.player, sk);
+  assert.strictEqual(baseMpMs, Math.round(sk.mp * 0.85), `省魔手稿基础蓝耗应为 0.85×（${baseMpMs}）`);
   assert(baseMpMs < baseMpNo, `省魔手稿常规耗蓝更低（${baseMpMs} < ${baseMpNo}）`);
   bNo.player.overcastMode = 1;
   bMs.player.overcastMode = 1;
+  const profMs = CE.computeAmpProfile(bMs.player, sk);
+  assert.strictEqual(profMs.discountFactor, 0.80, `省魔手稿增幅额外耗蓝系数应为 0.80×（实得 ${profMs.discountFactor}）`);
   const ocSpendNo = CE.computeSkillMpCost(bNo.player, sk);
   const ocSpendMs = CE.computeSkillMpCost(bMs.player, sk);
-  assert(ocSpendMs < ocSpendNo, `省魔手稿半蓝强击实扣应减半缓冲（${ocSpendMs} < ${ocSpendNo}）`);
+  assert(ocSpendMs < ocSpendNo, `省魔手稿魔力增幅实扣应显著降低（${ocSpendMs} < ${ocSpendNo}）`);
   const dNo = CE.estimateSkillDamage(bNo, sk, bNo.enemies[0]).dmg;
   const dMs = CE.estimateSkillDamage(bMs, sk, bMs.enemies[0]).dmg;
-  assert.strictEqual(dMs, dNo, '省魔手稿不削减魔战倾注爆发倍率');
+  assert.strictEqual(dMs, dNo, '省魔手稿不削减魔力增幅输出倍率');
+
+  // 验证 0.60× 省蓝总地板（叠算魔力精算 + 省魔手稿 + 学院星辉3件 / 圣晶杖）
+  assert.strictEqual(CE.COMBAT_BALANCE_V32.minMpDiscountFloor, 0.60, '省蓝总地板须为 0.60×');
+  const bFloor = CE.startStage('north_forest_hunt', {
+    headless: true,
+    usePreset: true,
+    relics: ['noelle_manuscript', 'belmont_schedule', 'cross'],
+    staff: 'north_saint_staff',
+  });
+  const starSk = CE.SKILLS.ice_3_starfrost;
+  const floorBaseMp = CE.computeSkillMpCost(bFloor.player, starSk);
+  assert(floorBaseMp >= Math.round(starSk.mp * 0.60), `叠算基础蓝耗不得跌破 0.60× 地板（${floorBaseMp} >= ${Math.round(starSk.mp * 0.60)}）`);
+  bFloor.player.overcastMode = 2;
+  const floorProf = CE.computeAmpProfile(bFloor.player, starSk);
+  assert(floorProf.discountFactor >= 0.60, `叠算增幅折扣不得跌破 0.60× 地板（实得 ${floorProf.discountFactor}）`);
 }
 
-// (4) belmont_schedule：暴击率 +15% 且 UI 敌方意图条显示下回合预判
+// (4) belmont_schedule：基暴 5% → 20%（+15%）且 UI 敌方意图条显示下回合预判
 {
+  const bBaseCrit = CE.startStage('aino_sparring', { headless: true, usePreset: true, relics: [] });
+  assert(Math.abs(bBaseCrit.player.critChance - 0.05) < 1e-6, `未配抄件基础暴击率应为 5%（实得 ${bBaseCrit.player.critChance}）`);
   const bSched = CE.startStage('aino_sparring', { headless: false, usePreset: true, relics: ['belmont_schedule'] });
-  assert(bSched.player.critChance >= 0.15, '无名巡防抄件应提供 >= 15% 暴击率');
+  assert(Math.abs(bSched.player.critChance - 0.20) < 1e-6, `无名巡防抄件应将暴击率由 5% 升至 20%（实得 ${bSched.player.critChance}）`);
   const nextHtml = win.document.getElementById('cb-enemy-zone').innerHTML;
   assert(nextHtml.includes('下回合预判'), '无名巡防抄件应在敌方意图栏显示下回合架势预判');
   CE.exitBattle(false, { silent: true });
@@ -188,35 +211,60 @@ RE.setArenaSandboxRelics([]);
   assert.strictEqual(bCake.player.mp, 50, '风之花饼借残像避击后应回复 10 MP');
 }
 
-// (6) ebony_sword：剑步零冰系暴露 + 暴击返还 1 AP + 增伤
+// (6) ebony_sword：寒锋斩（sword_2_cold_edge）零冰系暴露 + 暴击返还 1 AP + 增伤
 {
   const bNo = CE.startStage('north_forest_hunt', { headless: true, usePreset: true, relics: [] });
   const bEb = CE.startStage('north_forest_hunt', { headless: true, usePreset: true, relics: ['ebony_sword'], forceCrit: true });
   bNo.witnessActive = true; bEb.witnessActive = true;
   bNo.exposure = 10; bEb.exposure = 10;
-  const dNo = CE.estimateSkillDamage(bNo, CE.SKILLS.sword_water_edge, bNo.enemies[0]).dmg;
-  const dEb = CE.estimateSkillDamage(bEb, CE.SKILLS.sword_water_edge, bEb.enemies[0]).dmg;
-  assert(dEb > dNo, `乌木紫穗剑应提升霁馆剑步伤害（${dEb} > ${dNo}）`);
+  const dNo = CE.estimateSkillDamage(bNo, CE.SKILLS.sword_2_cold_edge, bNo.enemies[0]).dmg;
+  const dEb = CE.estimateSkillDamage(bEb, CE.SKILLS.sword_2_cold_edge, bEb.enemies[0]).dmg;
+  assert(dEb > dNo, `乌木紫穗剑应提升寒锋斩伤害（${dEb} > ${dNo}）`);
   const apBefore = bEb.ap;
-  CE.useSkill('sword_water_edge', 0, bEb);
+  CE.useSkill('sword_2_cold_edge', 0, bEb);
   assert(bEb.exposure <= 10, '乌木紫穗剑应保持零正向冰系暴露');
-  assert.strictEqual(bEb.ap, apBefore, '霁馆剑步消耗 1 AP 后因暴击应立刻返还 1 AP');
+  assert.strictEqual(bEb.ap, apBefore, '寒锋斩消耗 1 AP 后因暴击应立刻返还 1 AP');
 }
 
-// (7) frost_cipher：冰晶宫殿看破后立即回复 18% MP 与 +1 AP
+// (7) frost_cipher：每场首次触发截断破招或弱点击破立即回复 18% MP 与 +1 AP
 {
-  const bCip = CE.startStage('beatrice_11', { headless: true, usePreset: true, relics: ['frost_cipher'] });
-  bCip.waveTurn = 2;
-  bCip.ap = 1;
-  bCip.player.mp = 50;
-  const cfg = CE.getCurrentPalaceConfig(bCip);
-  const cOk = cfg.clues.find(c => c.correct);
-  const dOk = cfg.deductions.find(d => d.correct);
+  // (7a) 截断破招触发
+  const bNo = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: [] });
+  const bCip = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: ['frost_cipher'] });
+  bNo.enemies[0].intent = { stance: 'DUAL_CAST', moveName: '双冰蛇阵', dmg: 30 };
+  bCip.enemies[0].intent = { stance: 'DUAL_CAST', moveName: '双冰蛇阵', dmg: 30 };
+  bNo.enemies[0].locks = 5; bCip.enemies[0].locks = 5;
+  bNo.enemies[0].shield = 500; bCip.enemies[0].shield = 500;
+  bNo.ap = 2; bCip.ap = 2;
+  bNo.player.mp = 80; bCip.player.mp = 80;
   const expectedMpGain = Math.max(10, Math.round(bCip.player.mmp * 0.18));
-  const res = CE.inspectClue(cOk.id, dOk.id, bCip);
-  assert(res.correct);
-  assert.strictEqual(bCip.ap, 2, '霜封暗记看破后应 +1 AP');
-  assert.strictEqual(bCip.player.mp, Math.min(bCip.player.mmp, 50 + expectedMpGain), '霜封暗记应回复 18% MP');
+  assert(CE.useSkill('ice_2_prism', 0, bNo).ok);
+  assert(CE.useSkill('ice_2_prism', 0, bCip).ok);
+  assert.strictEqual(bCip._frostSealUsed, true, '霜封暗记首次破招应标记已触发');
+  assert.strictEqual(bCip.ap, bNo.ap + 1, '霜封暗记首次破招应额外 +1 AP');
+  assert.strictEqual(bCip.player.mp, bNo.player.mp + expectedMpGain, '霜封暗记首次破招应回复 18% MP');
+
+  // 确认每场仅触发一次
+  bCip.enemies[0].intent = { stance: 'DUAL_CAST', moveName: '双冰蛇阵', dmg: 30 };
+  const apBeforeSecond = bCip.ap;
+  assert(CE.useSkill('ice_2_prism', 0, bCip).ok);
+  assert.strictEqual(bCip.ap, apBeforeSecond - 1, '霜封暗记同场第二次破招不应重复返还 AP');
+
+  // (7b) 弱点击破触发
+  const bNoBrk = CE.startStage('beatrice_11', { headless: true, usePreset: true, relics: [] });
+  const bCipBrk = CE.startStage('beatrice_11', { headless: true, usePreset: true, relics: ['frost_cipher'] });
+  bNoBrk.enemies[0].intent = { stance: 'HEAVY_WINDUP', moveName: '焰击', dmg: 20 };
+  bCipBrk.enemies[0].intent = { stance: 'HEAVY_WINDUP', moveName: '焰击', dmg: 20 };
+  bNoBrk.enemies[0].locks = 1; bCipBrk.enemies[0].locks = 1;
+  bNoBrk.enemies[0].shield = 500; bCipBrk.enemies[0].shield = 500;
+  bNoBrk.ap = 1; bCipBrk.ap = 1;
+  bNoBrk.player.mp = 80; bCipBrk.player.mp = 80;
+  const expectedBrkMp = Math.max(10, Math.round(bCipBrk.player.mmp * 0.18));
+  assert(CE.useSkill('water_1_ball', 0, bNoBrk).ok);
+  assert(CE.useSkill('water_1_ball', 0, bCipBrk).ok);
+  assert.strictEqual(bCipBrk._frostSealUsed, true, '霜封暗记首次弱点击破应标记已触发');
+  assert.strictEqual(bCipBrk.ap, bNoBrk.ap + 1, '霜封暗记首次弱点击破应额外 +1 AP');
+  assert.strictEqual(bCipBrk.player.mp, bNoBrk.player.mp + expectedBrkMp, '霜封暗记首次弱点击破应回复 18% MP');
 }
 
 // (8) northwind_pass：开局/每回合 +12 寒铁护盾 + 减免药箱受击 4 点
@@ -234,15 +282,15 @@ RE.setArenaSandboxRelics([]);
   assert(bPass.player.shield >= 12, '新回合开始北风堡木牌再次提供 12 点寒铁护盾');
 }
 
-// (9) cross：防御盾技 +20% 护盾且净化异常，回合末回复 6% 最大生命
+// (9) cross：防御盾技 +15% 护盾且净化异常，回合末回复 6% 最大生命
 {
   const bNo = CE.startStage('beatrice_11', { headless: true, usePreset: true, relics: [] });
   const bCr = CE.startStage('beatrice_11', { headless: true, usePreset: true, relics: ['cross'] });
   bCr.player.status.burn = 2;
   bCr.player.hp = 100;
-  CE.useSkill('hand_ice_wall', 0, bNo);
-  CE.useSkill('hand_ice_wall', 0, bCr);
-  assert(bCr.player.shield > bNo.player.shield, `银十字架应 +20% 护盾（${bCr.player.shield} > ${bNo.player.shield}）`);
+  CE.useSkill('shield_1_ice', 0, bNo);
+  CE.useSkill('shield_1_ice', 0, bCr);
+  assert(bCr.player.shield > bNo.player.shield, `银十字架应 +15% 护盾（${bCr.player.shield} > ${bNo.player.shield}）`);
   assert(!bCr.player.status.burn, '银十字架使用盾技应净化 burn 异常');
   bCr.enemies.forEach(e => { e.intent = { stance: 'HEAVY_WINDUP', moveName: '无伤观察', dmg: 0 }; });
   const hpBeforeEnd = bCr.player.hp;
@@ -250,29 +298,36 @@ RE.setArenaSandboxRelics([]);
   assert.strictEqual(bCr.player.hp, hpBeforeEnd + Math.max(2, Math.round(bCr.player.mhp * 0.06)), '银十字架回合末应回复 6% HP');
 }
 
-// (10) shell_pin：水风技 +18% 伤害 + 连携追击额外回 8% MP
+// (10) shell_pin：水风技（water_2_surge / water_3_blade）+3% 伤害 + 破招回涌额外回 8% MP
 {
-  const bNo = CE.startStage('beatrice_11', { headless: true, usePreset: true, relics: [] });
-  const bPin = CE.startStage('beatrice_11', { headless: true, usePreset: true, relics: ['shell_pin'] });
-  const dNo = CE.estimateSkillDamage(bNo, CE.SKILLS.hand_water_surge, bNo.enemies[0]).dmg;
-  const dPin = CE.estimateSkillDamage(bPin, CE.SKILLS.hand_water_surge, bPin.enemies[0]).dmg;
-  assert(dPin > dNo, `月虹螺胸针应提高水系伤害（${dPin} > ${dNo}）`);
-  bNo.player.status.breakChain = 1; bNo.player.mp = 80;
-  bPin.player.status.breakChain = 1; bPin.player.mp = 80;
-  const rNo = CE.useSkill('hand_water_surge', 0, bNo);
-  const rPin = CE.useSkill('hand_water_surge', 0, bPin);
-  assert(rNo.ok && rPin.ok, '水弹应有足够 MP 施放');
-  assert(bPin.player.mp > bNo.player.mp, `月虹螺胸针触发连携应额外多回 8% MP（${bPin.player.mp} > ${bNo.player.mp}）`);
+  const bNo = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: [] });
+  const bPin = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: ['shell_pin'] });
+  const dNo2 = CE.estimateSkillDamage(bNo, CE.SKILLS.water_2_surge, bNo.enemies[0]).dmg;
+  const dPin2 = CE.estimateSkillDamage(bPin, CE.SKILLS.water_2_surge, bPin.enemies[0]).dmg;
+  const dNo3 = CE.estimateSkillDamage(bNo, CE.SKILLS.water_3_blade, bNo.enemies[0]).dmg;
+  const dPin3 = CE.estimateSkillDamage(bPin, CE.SKILLS.water_3_blade, bPin.enemies[0]).dmg;
+  assert(dPin2 > dNo2 && dPin3 > dNo3, `月虹螺胸针应提高水系伤害（surge ${dPin2} > ${dNo2}, blade ${dPin3} > ${dNo3}）`);
+  bNo.player.status.breakChain = 1; bNo.player.mp = 80; bNo.enemies[0].shield = 200;
+  bPin.player.status.breakChain = 1; bPin.player.mp = 80; bPin.enemies[0].shield = 200;
+  const rNo = CE.useSkill('water_2_surge', 0, bNo);
+  const rPin = CE.useSkill('water_2_surge', 0, bPin);
+  assert(rNo.ok && rPin.ok, '激流涌应有足够 MP 施放');
+  assert.strictEqual(bPin.player.mp, bNo.player.mp + Math.round(bPin.player.mmp * 0.08), `月虹螺胸针触发连携回涌应额外多回 8% MP（${bPin.player.mp} vs ${bNo.player.mp}）`);
 }
 
-// (11) ice_pebble：每回合首次经手构筑额外 +8 护盾
+// (11) ice_pebble：每回合首次施放魔攻/护盾技（线 1-4）额外 +8 护盾
 {
   const bPeb = CE.startStage('beatrice_11', { headless: true, usePreset: true, relics: ['ice_pebble'] });
-  const r1 = CE.useSkill('hand_water_surge', 0, bPeb);
-  assert(r1.ok, '手牌经手构筑应成功施放');
-  assert.strictEqual(bPeb.player.shield, 8, '冰蓝石子首次施放经手构筑应额外凝结 8 点护盾');
-  CE.useSkill('hand_ice_crystal', 0, bPeb);
+  const r1 = CE.useSkill('water_1_ball', 0, bPeb);
+  assert(r1.ok, '水球术应成功施放');
+  assert.strictEqual(bPeb.player.shield, 8, '冰蓝石子首次施放魔攻应额外凝结 8 点护盾');
+  CE.useSkill('ice_1_crystal', 0, bPeb);
   assert.strictEqual(bPeb.player.shield, 8, '每回合仅触发 1 次额外 +8 护盾');
+
+  const bBaseSh = CE.startStage('beatrice_11', { headless: true, usePreset: true, relics: [] });
+  const bPebSh = CE.startStage('beatrice_11', { headless: true, usePreset: true, relics: ['ice_pebble'] });
+  assert(CE.useSkill('shield_1_ice', 0, bBaseSh).ok && CE.useSkill('shield_1_ice', 0, bPebSh).ok);
+  assert.strictEqual(bPebSh.player.shield, bBaseSh.player.shield + 8, '冰蓝石子首次施放护盾技同样额外 +8 护盾');
 }
 
 // (12) blue_vial：首次生命跌破 35% 自启回复 25% 最大生命并获 1 层风行残像
@@ -360,53 +415,62 @@ assert(!win.document.getElementById('rumor-overlay').classList.contains('hidden'
 RE.closeRumorBoard();
 
 // ---------------------------------------------------------------------------
-// 3. 战斗深度：实时战术悬停预测 / 破招连锁窗口 / 5 大羁绊心念援护
+// 3. 战斗深度：实时战术悬停预测 / 弱点击破 +10% & 破招回涌 / 5 大羁绊心念援护
 // ---------------------------------------------------------------------------
-console.log('--- 3. 验证实时悬停预测、破招连锁窗口与 5 大羁绊心念援护 ---');
+console.log('--- 3. 验证实时悬停预测、弱点击破 +10%、破招回涌与 5 大羁绊心念援护 ---');
 {
   const bUi = CE.startStage('noelle_14', { headless: false, usePreset: true, relics: [] });
   bUi.enemies[0].intent = { stance: 'DUAL_CAST', moveName: '悬空凝冰', dmg: 30 };
-  // 悬停隔空瞬凝 -> 应预测触发截断破招 + 更新敌方血条预扣宽度
-  const remoteBtn = win.document.querySelector('#b-actions [data-sk="remote_snap_spike"]');
-  assert(remoteBtn, '技能栏应存在瞬发断咏冰锥按钮');
-  remoteBtn.onmouseenter();
+  // 悬停三棱冰晶 -> 应预测触发截断破招 + 更新敌方血条预扣宽度
+  const prismBtn = win.document.querySelector('#b-actions [data-sk="ice_2_prism"]');
+  assert(prismBtn, '技能栏应存在三棱冰晶按钮');
+  prismBtn.onmouseenter();
   const fcBar = win.document.getElementById('cb-forecast-bar');
-  assert(fcBar.textContent.includes('截断破招'), `悬停瞬发断咏冰锥应显示破招预测（实得：${fcBar.textContent}）`);
+  assert(fcBar.textContent.includes('截断破招'), `悬停三棱冰晶应显示破招预测（实得：${fcBar.textContent}）`);
   const previewBar = win.document.querySelector('.cb-ehp-preview[data-eidx="0"]');
   assert(previewBar && parseFloat(previewBar.style.width) > 0, '悬停技能时敌方血条应出现预扣区段');
+  CE.exitBattle(false, { silent: true });
 
-  // 切至严密防反，预测应给出警告
-  bUi.enemies[0].intent = { stance: 'GUARD_COUNTER', moveName: '高密冰盾', dmg: 18, counterRemoteHit: true };
-  remoteBtn.onmouseenter();
-  assert(fcBar.textContent.includes('严密防反'), '面对 GUARD_COUNTER 悬停远程应警示将衰减反击');
+  // 面对融冰防反守势，悬停冰系攻击应警示将招致反击
+  const bGuard = CE.startStage('beatrice_11', { headless: false, usePreset: true, relics: [] });
+  bGuard.enemies[0].intent = { stance: 'GUARD_COUNTER', moveName: '融冰剑障', dmg: 18, meltIceCounter: true };
+  const iceBtn = win.document.querySelector('#b-actions [data-sk="ice_1_crystal"]');
+  assert(iceBtn, '技能栏应存在冰晶术按钮');
+  iceBtn.onmouseenter();
+  assert(win.document.getElementById('cb-forecast-bar').textContent.includes('防反守势'), '面对 GUARD_COUNTER 融冰剑障悬停冰晶术应警示将招致反击');
   CE.exitBattle(false, { silent: true });
 }
 
-// 破招连锁窗口 (breakChain): 1.35× 伤害 + 额外返还 15% MP，且 basic_attack 不消耗
+// 弱点击破 +10% 增伤 + 破招连锁回涌（sword_1_basic 不消耗 breakChain）
 {
   const bNoChain = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: [] });
   const bChain = CE.startStage('noelle_14', { headless: true, usePreset: true, relics: [] });
   bChain.enemies[0].intent = { stance: 'DUAL_CAST', moveName: '双冰蛇阵', dmg: 40 };
-  CE.useSkill('remote_snap_spike', 0, bChain);
-  assert.strictEqual(bChain.player.status.breakChain, 1, '成功截断破招后本回合应开启连携追击状态');
+  CE.useSkill('ice_2_prism', 0, bChain);
+  assert.strictEqual(bChain.player.status.breakChain, 1, '成功截断破招后本回合应开启破招回涌状态');
 
-  // basic_attack 不触发也不消耗 breakChain
+  // sword_1_basic 不触发也不消耗 breakChain
   bChain.ap = 3;
-  assert.strictEqual(CE.useSkill('basic_attack', 0, bChain).ok, true);
-  assert.strictEqual(bChain.player.status.breakChain, 1, '基础平砍不应白白消耗连携追击');
+  assert.strictEqual(CE.useSkill('sword_1_basic', 0, bChain).ok, true);
+  assert.strictEqual(bChain.player.status.breakChain, 1, '普通攻击不应白白消耗破招回涌');
+
+  // 弱点击破（broken = true）提供 +10% 加法增伤（addPool 1.00 -> 1.10）
+  bNoChain.enemies[0].broken = false;
+  bChain.enemies[0].broken = true;
+  const estPlain = CE.estimateSkillDamage(bNoChain, CE.SKILLS.ice_3_starfrost, bNoChain.enemies[0]);
+  const estBroken = CE.estimateSkillDamage(bChain, CE.SKILLS.ice_3_starfrost, bChain.enemies[0]);
+  assert.strictEqual(estBroken.addPool, Number((estPlain.addPool + 0.10).toFixed(6)), '弱点击破应提供 +10% 加法增伤');
+  const ratio = estBroken.dmg / Math.max(1, estPlain.dmg);
+  assert(ratio >= 1.07 && ratio <= 1.13, `弱点击破增伤倍率应约 1.10×（实测 ${ratio.toFixed(3)}×）`);
 
   bChain.player.mp = 40;
   bNoChain.player.mp = 40;
-  bNoChain.enemies[0].status.stagger = 1; // 同步失衡系数以确保只对比 breakChain 本身！
-  bNoChain.enemies[0].intent = { stance: 'STAGGERED', moveName: '架势崩解', dmg: 0 };
-  const dmgPlain = CE.estimateSkillDamage(bNoChain, CE.SKILLS.hand_ice_crystal, bNoChain.enemies[0]).dmg;
-  const dmgBoosted = CE.estimateSkillDamage(bChain, CE.SKILLS.hand_ice_crystal, bChain.enemies[0]).dmg;
-  const ratio = dmgBoosted / Math.max(1, dmgPlain);
-  assert(ratio >= 1.30 && ratio <= 1.42, `连携追击增伤倍率应约 1.35×（实测 ${ratio.toFixed(3)}×）`);
-
-  assert.strictEqual(CE.useSkill('hand_ice_crystal', 0, bChain).ok, true);
-  assert(!bChain.player.status.breakChain, '打出非基础攻击牌后应消耗连携追击窗口');
-  assert(bChain.player.mp > 40, '连携追击消耗后应返还额外魔力');
+  bChain.enemies[0].shield = 200;
+  bNoChain.enemies[0].shield = 200;
+  assert.strictEqual(CE.useSkill('ice_2_prism', 0, bNoChain).ok, true);
+  assert.strictEqual(CE.useSkill('ice_2_prism', 0, bChain).ok, true);
+  assert(!bChain.player.status.breakChain, '打出非普通攻击技能后应消耗破招回涌窗口');
+  assert(bChain.player.mp > bNoChain.player.mp, `破招回涌消耗后应额外返还 12% MP（${bChain.player.mp} > ${bNoChain.player.mp}）`);
 }
 
 // 5 大羁绊心念援护：story+羁绊解锁门控、0 AP、每场 1 次、5 人效果全实装
@@ -435,31 +499,32 @@ console.log('--- 3. 验证实时悬停预测、破招连锁窗口与 5 大羁绊
   const bNoe = CE.startStage('noelle_14', { headless: true, usePreset: true, bondAssist: 'noelle' });
   bNoe.player.mp = 20;
   assert.strictEqual(CE.useBondAssist(bNoe).ok, true);
-  assert.strictEqual(CE.computeSkillMpCost(bNoe.player, CE.SKILLS.hand_ice_crystal), 0, '诺艾儿援护本回合零耗蓝');
+  assert.strictEqual(CE.computeSkillMpCost(bNoe.player, CE.SKILLS.ice_2_prism), 0, '诺艾儿援护本回合三棱冰晶零耗蓝');
+  assert.strictEqual(CE.computeSkillMpCost(bNoe.player, CE.SKILLS.ice_3_starfrost), 0, '诺艾儿援护本回合星霜散华零耗蓝');
   assert(bNoe.player.mp > 20);
 
-  // Aino：全体附加 2 层易伤与寒颤 + 当前目标削盾 30%
+  // Aino：全体附加 2 层寒颤 + 当前目标削盾 30%
   const bAi = CE.startStage('noelle_14', { headless: true, usePreset: true, bondAssist: 'aino' });
   const sh0 = bAi.enemies[0].shield;
   assert.strictEqual(CE.useBondAssist(bAi).ok, true);
-  assert.strictEqual(bAi.enemies[0].status.vuln, 2);
   assert.strictEqual(bAi.enemies[0].status.chill, 2);
   assert(bAi.enemies[0].shield <= Math.floor(sh0 * 0.7));
 
-  // Jilan：+1 AP + 剑势蓄力 + 破目标 1 层闪避
+  // Jilan：+1 AP + 破目标 1 层闪避 + 净化 1 层异常
   const bJi = CE.startStage('alice_9', { headless: true, usePreset: true, bondAssist: 'jilan' });
   bJi.ap = 1;
+  bJi.player.status.blind = 1;
   const ev0 = bJi.enemies[0].evadeCharges;
   assert.strictEqual(CE.useBondAssist(bJi).ok, true);
   assert.strictEqual(bJi.ap, 2);
-  assert.strictEqual(bJi.player.status.poise, 1);
+  assert(!bJi.player.status.blind, '霁岚援护应净化 1 层不良状态');
   assert.strictEqual(bJi.enemies[0].evadeCharges, Math.max(0, ev0 - 1));
 
-  // Charlotte：护盾补满（至少 +40）并开启冰镜反震，受击时反伤敌人
+  // Charlotte：护盾强化（+45，受上限约束）并开启冰镜反震，受击时反伤敌人
   const bCh = CE.startStage('beatrice_11', { headless: true, usePreset: true, bondAssist: 'charlotte' });
   bCh.player.shield = 0;
   assert.strictEqual(CE.useBondAssist(bCh).ok, true);
-  assert(bCh.player.shield >= bCh.player.maxShield);
+  assert(bCh.player.shield >= 45, `夏洛特援护应强化护盾至少 +45（实得 ${bCh.player.shield}）`);
   assert.strictEqual(bCh.player.status.nobleReflect, 1);
   const eHp0 = bCh.enemies[0].hp;
   bCh.enemies[0].intent = { stance: 'HEAVY_WINDUP', moveName: '重劈', dmg: 20, elem: 'phys' };

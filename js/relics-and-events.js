@@ -23,14 +23,14 @@
       id: 'eclipse_wand',
       name: '晦轮杖',
       shortTag: '真实魔伤',
-      desc: '魔力上限显著提升 · 穿透真实魔伤',
+      desc: '穿透法抗与魔盾 · 真实魔伤 · 额外耗蓝',
       fallbackKey: 'star'
     },
     north_saint_staff: {
       id: 'north_saint_staff',
       name: '极北圣晶杖',
       shortTag: '圣晶增幅',
-      desc: '高阶魔导增幅 · 施法省蓝',
+      desc: '魔导威力进阶 · 会心增幅 · 施法省蓝',
       fallbackKey: 'iceShard'
     }
   };
@@ -174,8 +174,8 @@
       iconKey: 'snowflake',
       icon: relIco('snowflake', 15),
       owner: '艾诺 · 极北知己',
-      tag: '瞬凝先制 · 冰锋',
-      effectText: '首回合首次【隔空瞬凝】免 1 AP 消耗；所有冰系攻击伤害 +20%。',
+      tag: '主炮先制 · 冰锋微增',
+      effectText: '首回合首次施放【冰晶主炮】免 1 AP 消耗；所有冰系攻击伤害小幅提升。',
       lore: '边角绣着六瓣赫兰冰纹的洁白亚麻帕，总带着雪后松林般的清冽寒意。',
       unlockHint: '在学院艾诺知己线、冰封峡谷重逢或北境哨卡奇遇中解锁。',
       unlockAliases: ['aino_handkerchief']
@@ -188,7 +188,7 @@
       icon: relIco('iceShard', 15),
       owner: '艾诺 · 严苛试炼',
       tag: '破招穿抗 · 寒颤',
-      effectText: '触发截断破招或卸力闪反后，下一次冰系技能无视目标 25% 法抗并附带寒颤。',
+      effectText: '触发截断破招或迎击反制后，下一次冰系技能穿透目标部分法抗并附带寒颤。',
       lore: '没有半点气泡的通透薄冰片，内部凝着枪冰三式交错收束的发力轨迹。',
       unlockHint: '在艾诺试炼线毕业赠别或学院冰系对练奇遇中解锁。',
       unlockAliases: []
@@ -200,8 +200,8 @@
       iconKey: 'compass',
       icon: relIco('compass', 15),
       owner: '诺艾儿 · 平等同盟',
-      tag: '精算减耗 · 增幅减负',
-      effectText: '所有魔法基础耗蓝降低 20%；开启【魔力增幅】时保留一半额外增幅魔力。',
+      tag: '精算减耗 · 增幅省蓝',
+      effectText: '魔法基础耗蓝与【魔力增幅】额外耗蓝同步缩减，各项省蓝叠算仍遵循总省蓝底线。',
       lore: '夹着橘猫胡须书签的推导手稿，每道水幕回路都算清了最省力的路径。',
       unlockHint: '在诺艾儿同盟线赠礼、自尊勘误线或学院图书馆奇遇中解锁。',
       unlockAliases: ['noelle_errata']
@@ -213,8 +213,8 @@
       iconKey: 'scroll',
       icon: relIco('scroll', 15),
       owner: '夏洛特 · 体面默契',
-      tag: '先觉预判 · 暴击',
-      effectText: '敌方意图栏额外揭示下回合架势倾向；全技能暴击率 +15%（暴击 1.5 倍伤）。',
+      tag: '先觉预判 · 会心',
+      effectText: '敌方意图栏额外揭示下回合架势倾向；全技能会心暴击率显著提升。',
       lore: '带着淡淡薄荷茶香的工整抄件，字里行间将傲气藏进了分毫不差的刻度里。',
       unlockHint: '在夏洛特东逃回响、战书线或学院冷薄荷茶奇遇中解锁。',
       unlockAliases: ['belmont_challenge']
@@ -239,8 +239,8 @@
       iconKey: 'sword',
       icon: relIco('sword', 15),
       owner: '澄岚霁馆 · 老霁与霁岚',
-      tag: '剑步暴击返 AP · 零暴露',
-      effectText: '【霁馆剑步】暴击率 +25%、伤害 +15%；剑步暴击返还 1 AP（每回合限 1 次）且保持零冰系暴露。',
+      tag: '剑步返 AP · 零暴露',
+      effectText: '普通攻击与【寒锋斩】会心暴击率大幅提升、伤害小幅增强；暴击返还 1 AP（每回合限 1 次）且保持零冰系暴露。',
       lore: '乌木鞘朴素沉稳，剑柄末端的紫色剑穗陪着走过澄岚到塞北的长路。',
       unlockHint: '在第三卷澄岚霁馆辞行北上时由老霁与霁岚亲赠。',
       unlockAliases: []
@@ -252,8 +252,8 @@
       iconKey: 'prism',
       icon: relIco('prism', 15),
       owner: '公爵书房 · 暗潮先觉',
-      tag: '冰宫回蓝回 AP',
-      effectText: '每次开启「冰晶宫殿」成功看破死角后，立即回复 18% 最大 MP 与 1 AP。',
+      tag: '破招回蓝 · 增援 AP',
+      effectText: '每场战斗首次触发截断破招或弱点击破时，立即回复可观魔力并额外获得 1 AP。',
       lore: '暗流拼图合拢后留下的银质联络暗徽，寒意沉静，总能在绝境中稳住呼吸。',
       unlockHint: '在第二卷末夜书房推演拼出暗潮先觉时获赠。',
       unlockAliases: []
@@ -279,7 +279,7 @@
       icon: relIco('cross', 15),
       owner: '海伦娜 · 神殿信物',
       tag: '每回合续航 · 净化强盾',
-      effectText: '每回合结束回复 6% 最大生命；防御盾技额外 +20% 护盾并净化 1 层不良状态。',
+      effectText: '每回合结束温和回复自身生命；防御盾技额外增厚护盾并净化 1 层不良状态。',
       lore: '希里昂见习生唯一的银质信物，在离校分别的礼堂前郑重放进掌心。',
       unlockHint: '在第二卷交换生欢送仪式上接受海伦娜赠礼解锁。',
       unlockAliases: []
@@ -291,8 +291,8 @@
       iconKey: 'shell',
       icon: relIco('shell', 15),
       owner: '三姐妹 · 夏日礁石',
-      tag: '水风增伤 · 连携回蓝',
-      effectText: '水系与风系攻击技能伤害 +18%；触发「连携追击」时额外回复 8% 最大 MP。',
+      tag: '水风微增 · 连携回蓝',
+      effectText: '水系与风系攻击技能伤害小幅提升；触发「连携追击」时额外回复一缕魔力。',
       lore: '三姐妹并肩潜入海湾拾起的月虹螺，螺壳内侧至今留着淡淡的潮声虹彩。',
       unlockHint: '在海滨暑假与姐姐、妹妹同捞月虹螺后解锁。',
       unlockAliases: []
@@ -304,8 +304,8 @@
       iconKey: 'gem',
       icon: relIco('gem', 15),
       owner: '公爵府 · 花园微光',
-      tag: '经手筑盾',
-      effectText: '每回合首次施放【经手构筑】技能时，额外凝结 8 点寒霜护盾。',
+      tag: '施法筑盾',
+      effectText: '每回合首次施放魔法或护盾技能时，额外凝结 8 点寒霜护盾。',
       lore: '年幼时在公爵府花坛边拾得的冰蓝小石，握在掌心总是凉丝丝的。',
       unlockHint: '在公爵府花园秘闻或地窖寒痕奇遇中解锁。',
       unlockAliases: []
@@ -318,7 +318,7 @@
       icon: relIco('vial', 15),
       owner: '药神 · 圣域恩泽',
       tag: '濒危药雾保命',
-      effectText: '每场战斗首次生命跌破 35% 时，透出安神凉雾回复 25% 最大生命并获 1 层「风行残像」。',
+      effectText: '每场战斗首次生命危殆告急时，透出安神凉雾大幅回复生命并获 1 层「风行残像」。',
       lore: '如同装了一小块晴空的小玻璃瓶。瓶塞始终紧封，却在意识危殆时护住心脉。',
       unlockHint: '在四岁药神宴会收下礼物后自动解锁。',
       unlockAliases: []
@@ -362,8 +362,8 @@
         3: {
           count: 3,
           name: '银与蓝的誓约',
-          desc: '每回合首次水/冰系技额外回复 10% 最大魔力，首次护盾技附带 1 层风行残影。',
-          shortDesc: '首水/冰技回 10% MP · 首护盾技附 1 层风行残影'
+          desc: '每回合首次水系或冰系技能额外回复一缕魔力，首次护盾技能附带 1 层「风行残像」。',
+          shortDesc: '首水/冰技回蓝 · 首护盾技附 1 层风行残像'
         }
       }
     },
@@ -379,14 +379,14 @@
         2: {
           count: 2,
           name: '精算共鸣',
-          desc: '冰晶宫殿洞察或破招成功后，额外对目标施加 2 层脆弱并回复 12% 魔力。',
-          shortDesc: '洞察/破招附 2 层脆弱 · 回 12% MP'
+          desc: '触发截断破招或弱点击破时，额外削减 1 层弱点锁并回复一缕魔力。',
+          shortDesc: '破招/击破多破 1 锁 · 额外回蓝'
         },
         3: {
           count: 3,
           name: '群星同盟',
-          desc: '全部魔法技能消耗再降 15%，会心一击威势显著跃升。',
-          shortDesc: '全魔法耗蓝再 -15% · 会心威势显著跃升'
+          desc: '全部魔法基础耗蓝进一步缩减（遵循总省蓝底线），会心一击威势显著跃升。',
+          shortDesc: '全魔法基础再省蓝 · 会心威势跃升'
         }
       }
     },
@@ -402,7 +402,7 @@
         2: {
           count: 2,
           name: '生根剑意',
-          desc: '剑技反制与破招的魔战回蓝翻倍，剑技暴击或破招后额外获 +1 AP（每回合限一次）。',
+          desc: '剑技反制与截断破招的魔战回蓝翻倍，剑技暴击或破招后额外获 +1 AP（每回合限 1 次）。',
           shortDesc: '剑技反制/破招回蓝翻倍 · 暴击/破招 +1 AP（每回合限 1 次）'
         }
       }
@@ -419,14 +419,14 @@
         2: {
           count: 2,
           name: '冰墙守望',
-          desc: '每回合初额外 +10 护盾，所有冰系攻击额外穿透 15% 法抗。',
-          shortDesc: '回合初 +10 护盾 · 冰系攻击穿透 15% 法抗'
+          desc: '每回合初额外获得 10 点护盾，所有冰系攻击穿透目标部分法抗。',
+          shortDesc: '回合初 +10 护盾 · 冰系攻击穿透部分法抗'
         },
         3: {
           count: 3,
           name: '极北同调',
-          desc: '每回合首次远程/隔空冰系技必附 2 层寒颤并追加 15% 碎冰穿透伤害。',
-          shortDesc: '首远程/隔空冰技必附 2 层寒颤 · 追加 15% 碎冰穿透伤'
+          desc: '每回合首次施放【冰晶主炮】或【霜域控场】技能必附 2 层寒颤并小幅增伤。',
+          shortDesc: '首冰晶主炮/霜域技必附 2 层寒颤并小幅增伤'
         }
       }
     }
@@ -580,7 +580,7 @@
       iconKey: 'snowflake',
       icon: relIco('snowflake', 15),
       quote: '别只盯着正面那面盾。看准冻裂的那一寸空隙，贯进去。',
-      effectDesc: '0 AP · 全体敌方附加 2 回合「易伤」与「寒颤」，并直接削减当前目标 30% 护盾。',
+      effectDesc: '0 AP · 全体敌方附加 2 回合「寒颤」与破防震慑，并大幅削减当前目标护盾。',
       canUnlockStory: function (st) {
         return !!(st && ((st.flags && st.flags.met_aino) || (st.know && (st.know.aino || 0) >= 20)));
       }
@@ -593,7 +593,7 @@
       iconKey: 'butterfly',
       icon: relIco('butterfly', 15),
       quote: '底盘沉住！借我这一步踏开身位，剩下的剑路你自己走！',
-      effectDesc: '0 AP · 立即 +1 AP、获「剑势蓄力」、破除目标 1 层闪避并净化自身 1 层异常。',
+      effectDesc: '0 AP · 额外获得行动点、破除目标一层闪避，并净化自身一项异常状态。',
       canUnlockStory: function (st) {
         return !!(st && ((st.flags && st.flags.arrived_jikan) || (st.know && (st.know.jilan || 0) >= 15)));
       }
@@ -606,7 +606,7 @@
       iconKey: 'crown',
       icon: relIco('crown', 15),
       quote: '维斯特利亚，可别在那种家伙面前丢了同辈较量的格调！',
-      effectDesc: '0 AP · 将护盾补满至上限（至少 +40），并赋予本回合「冰镜反震」反伤攻势。',
+      effectDesc: '0 AP · 凝结厚实贵族晶盾，并附带本回合「冰镜反震」护幕弹回敌方攻势。',
       canUnlockStory: function (st) {
         return !!(st && ((st.flags && st.flags.met_charlotte) || (st.know && (st.know.charlotte || 0) >= 20)));
       }

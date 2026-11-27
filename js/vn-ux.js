@@ -21,6 +21,8 @@
   var CODEX_ARCHIVE_KEY = 'ojousama_codex_archive_v1';
   var ENDINGS_UNLOCKED_KEY = 'ojousama_endings_unlocked_v1';
   var SETTINGS_KEY = 'ojousama_settings_v1';
+  var COMBAT_RING_ASSIST_KEY = 'combat_ring_assist_mode';
+  var COMBAT_CASUAL_MODE_KEY = 'combat_casual_mode';
 
   var vnInitialized = false;
   var backlogList = [];
@@ -35,7 +37,9 @@
     voiceEnabled: true,
     voiceAutoWait: true,
     fxEnabled: true,
-    bright: 1
+    bright: 1,
+    combatRingAssist: 'standard',
+    combatCasualMode: false
   };
   var vnPrefs = null;
   var readLinesSet = null;
@@ -45,6 +49,8 @@
   var skipTimer = null;
   var autoVoiceWaitGen = 0;
   var inExternalAudioSync = false;
+  var inExternalCombatSync = false;
+  var combatEventSeenDuringApply = false;
   var currentLineMeta = null;
 
   var pendingDeleteSlotId = null;
@@ -1264,6 +1270,145 @@
     return (val === 'slow' || val === 'normal' || val === 'fast' || val === 'instant') ? val : 'normal';
   }
 
+  function normalizeCombatRingAssist(val) {
+    var s = String(val == null ? '' : val).trim().toLowerCase();
+    if (s === 'relaxed' || s === 'off') return s;
+    return 'standard';
+  }
+
+  function normalizeCombatCasualMode(val) {
+    if (typeof val === 'boolean') return val;
+    if (typeof val === 'string') {
+      var s = val.trim().toLowerCase();
+      return s === 'true' || s === '1' || s === 'on';
+    }
+    return !!val;
+  }
+
+  function getCombatTimingRingApi() {
+    if (root && root.CombatTimingRing) return root.CombatTimingRing;
+    if (typeof CombatTimingRing !== 'undefined' && CombatTimingRing) return CombatTimingRing;
+    return null;
+  }
+
+  function readExternalCombatPrefs() {
+    var res = {
+      assist: DEFAULT_PREFS.combatRingAssist,
+      casual: DEFAULT_PREFS.combatCasualMode,
+      hasAssist: false,
+      hasCasual: false,
+      hasStoredAssist: false,
+      hasStoredCasual: false
+    };
+    try {
+      var storedAssist = localStorage.getItem(COMBAT_RING_ASSIST_KEY);
+      if (storedAssist !== null && storedAssist !== '') {
+        res.assist = normalizeCombatRingAssist(storedAssist);
+        res.hasAssist = true;
+        res.hasStoredAssist = true;
+      }
+      var storedCasual = localStorage.getItem(COMBAT_CASUAL_MODE_KEY);
+      if (storedCasual !== null && storedCasual !== '') {
+        res.casual = normalizeCombatCasualMode(storedCasual);
+        res.hasCasual = true;
+        res.hasStoredCasual = true;
+      }
+    } catch (e) {}
+
+    var ctr = getCombatTimingRingApi();
+    if (ctr) {
+      try {
+        var engAssist = null;
+        if (typeof ctr.getAssistMode === 'function') engAssist = ctr.getAssistMode();
+        else if (typeof ctr.getRingAssistMode === 'function') engAssist = ctr.getRingAssistMode();
+        else if (typeof ctr.getMode === 'function') engAssist = ctr.getMode();
+        else if (typeof ctr.getPrefs === 'function') {
+          var cp = ctr.getPrefs();
+          if (cp) engAssist = cp.assistMode != null ? cp.assistMode : (cp.ringAssistMode != null ? cp.ringAssistMode : cp.combatRingAssist);
+        }
+        if (engAssist != null && engAssist !== '') {
+          res.assist = normalizeCombatRingAssist(engAssist);
+          res.hasAssist = true;
+        }
+      } catch (e) {}
+      try {
+        var engCasual = null;
+        if (typeof ctr.isCasualMode === 'function') engCasual = ctr.isCasualMode();
+        else if (typeof ctr.getCasualMode === 'function') engCasual = ctr.getCasualMode();
+        else if (typeof ctr.isCombatCasualMode === 'function') engCasual = ctr.isCombatCasualMode();
+        else if (typeof ctr.getCombatCasualMode === 'function') engCasual = ctr.getCombatCasualMode();
+        else if (typeof ctr.getPrefs === 'function') {
+          var cp2 = ctr.getPrefs();
+          if (cp2) engCasual = cp2.casualMode != null ? cp2.casualMode : cp2.combatCasualMode;
+        }
+        if (engCasual != null) {
+          res.casual = normalizeCombatCasualMode(engCasual);
+          res.hasCasual = true;
+        }
+      } catch (e) {}
+    }
+    return res;
+  }
+
+  function mirrorCombatStorage(key, val) {
+    try {
+      if (key === 'combatRingAssist') {
+        localStorage.setItem(COMBAT_RING_ASSIST_KEY, normalizeCombatRingAssist(val));
+      } else if (key === 'combatCasualMode') {
+        localStorage.setItem(COMBAT_CASUAL_MODE_KEY, val ? 'true' : 'false');
+      }
+    } catch (e) {}
+  }
+
+  function dispatchCombatPrefsEvent(assist, casual, source) {
+    if (!root || typeof root.dispatchEvent !== 'function') return;
+    var CE = root.CustomEvent || (typeof CustomEvent !== 'undefined' ? CustomEvent : null);
+    if (!CE) return;
+    try {
+      root.dispatchEvent(new CE('combat:prefschange', {
+        detail: {
+          assistMode: normalizeCombatRingAssist(assist),
+          ringAssistMode: normalizeCombatRingAssist(assist),
+          combatRingAssist: normalizeCombatRingAssist(assist),
+          casualMode: !!casual,
+          combatCasualMode: !!casual,
+          source: source || 'vn-ux'
+        }
+      }));
+    } catch (e) {}
+  }
+
+  function onExternalCombatPrefsChange(ev) {
+    combatEventSeenDuringApply = true;
+    if (inExternalCombatSync) return;
+    var p = loadPrefs();
+    var detail = ev && ev.detail && typeof ev.detail === 'object' ? ev.detail : null;
+    var ext = readExternalCombatPrefs();
+    var assistRaw = detail
+      ? (detail.assistMode != null ? detail.assistMode : (detail.ringAssistMode != null ? detail.ringAssistMode : detail.combatRingAssist))
+      : null;
+    var casualRaw = detail
+      ? (detail.casualMode != null ? detail.casualMode : detail.combatCasualMode)
+      : null;
+
+    if (assistRaw != null && assistRaw !== '') {
+      p.combatRingAssist = normalizeCombatRingAssist(assistRaw);
+    } else if (ext.hasAssist) {
+      p.combatRingAssist = ext.assist;
+    }
+
+    if (casualRaw != null) {
+      p.combatCasualMode = normalizeCombatCasualMode(casualRaw);
+    } else if (ext.hasCasual) {
+      p.combatCasualMode = ext.casual;
+    }
+
+    mirrorCombatStorage('combatRingAssist', p.combatRingAssist);
+    mirrorCombatStorage('combatCasualMode', p.combatCasualMode);
+    persistPrefs();
+    syncPrefsModalDOM();
+  }
+
   function readExternalBrightness() {
     var getSetFn = (root && typeof root.getSettings === 'function')
       ? root.getSettings
@@ -1296,8 +1441,9 @@
         if (typeof root.VoiceEngine.getAutoWait === 'function') merged.voiceAutoWait = !!root.VoiceEngine.getAutoWait();
       }
     } catch (e) {}
+    var raw = null;
     try {
-      var raw = JSON.parse(localStorage.getItem(VN_PREFS_KEY) || 'null');
+      raw = JSON.parse(localStorage.getItem(VN_PREFS_KEY) || 'null');
       if (raw && typeof raw === 'object') {
         if (raw.autoSpeed != null) merged.autoSpeed = clampNum(raw.autoSpeed, 300, 6000);
         if (raw.typeSpeed != null) merged.typeSpeed = normalizeTypeSpeed(raw.typeSpeed);
@@ -1308,8 +1454,17 @@
         if (raw.voiceAutoWait != null) merged.voiceAutoWait = !!raw.voiceAutoWait;
         if (raw.fxEnabled != null) merged.fxEnabled = !!raw.fxEnabled;
         if (raw.bright != null) merged.bright = clampNum(raw.bright, 0.5, 1.5);
+        if (raw.combatRingAssist != null) merged.combatRingAssist = normalizeCombatRingAssist(raw.combatRingAssist);
+        if (raw.combatCasualMode != null) merged.combatCasualMode = normalizeCombatCasualMode(raw.combatCasualMode);
       }
     } catch (e) {}
+    var extCombat = readExternalCombatPrefs();
+    if (extCombat.hasAssist && (extCombat.hasStoredAssist || !raw || raw.combatRingAssist == null || extCombat.assist !== DEFAULT_PREFS.combatRingAssist)) {
+      merged.combatRingAssist = extCombat.assist;
+    }
+    if (extCombat.hasCasual && (extCombat.hasStoredCasual || !raw || raw.combatCasualMode == null || extCombat.casual !== DEFAULT_PREFS.combatCasualMode)) {
+      merged.combatCasualMode = extCombat.casual;
+    }
     vnPrefs = merged;
     return vnPrefs;
   }
@@ -1327,7 +1482,7 @@
     } catch (e) {}
   }
 
-  function applyPrefToEngine(key, val) {
+  function applyPrefToEngine(key, val, opts) {
     if (key === 'bgmVol') {
       var bgmFn = (root && typeof root.bgmSetVolume === 'function')
         ? root.bgmSetVolume
@@ -1384,6 +1539,34 @@
           if (bgEl) bgEl.style.filter = (val && Math.abs(val - 1) > 0.005) ? ('brightness(' + val + ')') : '';
         }
       }
+    } else if (key === 'combatRingAssist' || key === 'combatCasualMode') {
+      var p = loadPrefs();
+      var emitFallback = !(opts && opts.emitFallback === false);
+      mirrorCombatStorage(key, val);
+      var prevCombatSync = inExternalCombatSync;
+      inExternalCombatSync = true;
+      combatEventSeenDuringApply = false;
+      try {
+        var ctr = getCombatTimingRingApi();
+        if (ctr) {
+          if (key === 'combatRingAssist') {
+            var normAssist = normalizeCombatRingAssist(val);
+            if (typeof ctr.setAssistMode === 'function') ctr.setAssistMode(normAssist);
+            else if (typeof ctr.setRingAssistMode === 'function') ctr.setRingAssistMode(normAssist);
+            else if (typeof ctr.setMode === 'function') ctr.setMode(normAssist);
+          } else {
+            var normCasual = normalizeCombatCasualMode(val);
+            if (typeof ctr.setCasualMode === 'function') ctr.setCasualMode(normCasual);
+            else if (typeof ctr.setCombatCasualMode === 'function') ctr.setCombatCasualMode(normCasual);
+          }
+        }
+        if (emitFallback && !combatEventSeenDuringApply) {
+          dispatchCombatPrefsEvent(p.combatRingAssist, p.combatCasualMode, 'vn-ux');
+        }
+      } catch (e) {
+      } finally {
+        inExternalCombatSync = prevCombatSync;
+      }
     }
   }
 
@@ -1424,12 +1607,19 @@
           }
         } catch (e) {}
       }
+      var extCombat = readExternalCombatPrefs();
+      if (extCombat.hasAssist) p.combatRingAssist = extCombat.assist;
+      if (extCombat.hasCasual) p.combatCasualMode = extCombat.casual;
       if (patch && typeof patch === 'object') {
         if (patch.bgmVol != null) p.bgmVol = clampNum(patch.bgmVol, 0, 1);
         if (patch.sfxVol != null) p.sfxVol = clampNum(patch.sfxVol, 0, 1);
         if (patch.voiceVol != null) p.voiceVol = clampNum(patch.voiceVol, 0, 1);
         if (patch.voiceEnabled != null) p.voiceEnabled = !!patch.voiceEnabled;
         if (patch.voiceAutoWait != null) p.voiceAutoWait = !!patch.voiceAutoWait;
+        if (patch.combatRingAssist != null) p.combatRingAssist = normalizeCombatRingAssist(patch.combatRingAssist);
+        else if (patch.assistMode != null) p.combatRingAssist = normalizeCombatRingAssist(patch.assistMode);
+        if (patch.combatCasualMode != null) p.combatCasualMode = normalizeCombatCasualMode(patch.combatCasualMode);
+        else if (patch.casualMode != null) p.combatCasualMode = normalizeCombatCasualMode(patch.casualMode);
       }
       p.bright = readExternalBrightness();
       syncPrefsModalDOM();
@@ -1444,7 +1634,9 @@
     try { hasStored = !!localStorage.getItem(VN_PREFS_KEY); } catch (e) {}
     var p = loadPrefs();
     var prevSync = inExternalAudioSync;
+    var prevCombatSync = inExternalCombatSync;
     inExternalAudioSync = true;
+    inExternalCombatSync = true;
     try {
       applyPrefToEngine('typeSpeed', p.typeSpeed);
       applyPrefToEngine('fxEnabled', p.fxEnabled);
@@ -1455,9 +1647,12 @@
         applyPrefToEngine('voiceEnabled', p.voiceEnabled);
         applyPrefToEngine('voiceAutoWait', p.voiceAutoWait);
         applyPrefToEngine('bright', p.bright);
+        applyPrefToEngine('combatRingAssist', p.combatRingAssist, { emitFallback: false });
+        applyPrefToEngine('combatCasualMode', p.combatCasualMode, { emitFallback: false });
       }
     } finally {
       inExternalAudioSync = prevSync;
+      inExternalCombatSync = prevCombatSync;
     }
     if (!hasStored) {
       syncExternalAudioPrefs();
@@ -1488,6 +1683,10 @@
       p.fxEnabled = !!value;
     } else if (key === 'bright') {
       p.bright = clampNum(value, 0.5, 1.5);
+    } else if (key === 'combatRingAssist') {
+      p.combatRingAssist = normalizeCombatRingAssist(value);
+    } else if (key === 'combatCasualMode') {
+      p.combatCasualMode = normalizeCombatCasualMode(value);
     } else {
       return Object.assign({}, p);
     }
@@ -1497,6 +1696,9 @@
       scheduleAutoStep();
     }
     syncPrefsModalDOM();
+    if ((key === 'combatRingAssist' || key === 'combatCasualMode') && root && root.TitleDirector && typeof root.TitleDirector.syncSettingsDOM === 'function') {
+      try { root.TitleDirector.syncSettingsDOM(); } catch (e) {}
+    }
     return Object.assign({}, p);
   }
 
@@ -1504,7 +1706,10 @@
     vnPrefs = Object.assign({}, DEFAULT_PREFS);
     persistPrefs();
     var prevSync = inExternalAudioSync;
+    var prevCombatSync = inExternalCombatSync;
     inExternalAudioSync = true;
+    inExternalCombatSync = true;
+    var combatEventEmitted = false;
     try {
       applyPrefToEngine('bgmVol', vnPrefs.bgmVol);
       applyPrefToEngine('sfxVol', vnPrefs.sfxVol);
@@ -1514,11 +1719,22 @@
       applyPrefToEngine('typeSpeed', vnPrefs.typeSpeed);
       applyPrefToEngine('fxEnabled', vnPrefs.fxEnabled);
       applyPrefToEngine('bright', vnPrefs.bright);
+      applyPrefToEngine('combatRingAssist', vnPrefs.combatRingAssist, { emitFallback: false });
+      combatEventEmitted = combatEventEmitted || combatEventSeenDuringApply;
+      applyPrefToEngine('combatCasualMode', vnPrefs.combatCasualMode, { emitFallback: false });
+      combatEventEmitted = combatEventEmitted || combatEventSeenDuringApply;
+      if (!combatEventEmitted) {
+        dispatchCombatPrefsEvent(vnPrefs.combatRingAssist, vnPrefs.combatCasualMode, 'vn-ux-reset');
+      }
     } finally {
       inExternalAudioSync = prevSync;
+      inExternalCombatSync = prevCombatSync;
     }
     persistPrefs();
     syncPrefsModalDOM();
+    if (root && root.TitleDirector && typeof root.TitleDirector.syncSettingsDOM === 'function') {
+      try { root.TitleDirector.syncSettingsDOM(); } catch (e) {}
+    }
     return Object.assign({}, vnPrefs);
   }
 
@@ -2012,6 +2228,21 @@
       fxBtn.textContent = p.fxEnabled ? '已开启 · 星霜微尘' : '已关闭 · 纯净画面';
       fxBtn.setAttribute('aria-pressed', p.fxEnabled ? 'true' : 'false');
     }
+
+    var ringAssist = normalizeCombatRingAssist(p.combatRingAssist);
+    ov.querySelectorAll('[data-pref-combat-ring]').forEach(function (btn) {
+      var active = btn.getAttribute('data-pref-combat-ring') === ringAssist;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+
+    var casualBtn = ov.querySelector('#pref-combat-casual-toggle');
+    if (casualBtn) {
+      var casualOn = !!p.combatCasualMode;
+      casualBtn.classList.toggle('on', casualOn);
+      casualBtn.textContent = casualOn ? '已开启 · 休闲剧情' : '已关闭 · 标准挑战';
+      casualBtn.setAttribute('aria-pressed', casualOn ? 'true' : 'false');
+    }
   }
 
   function closePrefsModal() {
@@ -2042,13 +2273,15 @@
     var sfxPct = Math.round(p.sfxVol * 100);
     var voicePct = Math.round(clampNum(p.voiceVol != null ? p.voiceVol : 0.90, 0, 1) * 100);
     var brightPct = Math.round(clampNum(p.bright != null ? p.bright : 1, 0.5, 1.5) * 100);
+    var ringAssist = normalizeCombatRingAssist(p.combatRingAssist);
+    var casualOn = !!p.combatCasualMode;
 
     ov.innerHTML =
       '<div class="end-card vn-modal-card vn-prefs-card">' +
         '<div class="vn-modal-head">' +
           '<div class="vn-modal-head-copy">' +
             '<h2><span class="vn-head-ico" aria-hidden="true">' + getSvg('sliders') + '</span><span>阅读与音效设置</span></h2>' +
-            '<p class="vn-modal-sub">所有偏好自动保存至本地，实时同步打字机、独立音量、画面明度与氛围粒子</p>' +
+            '<p class="vn-modal-sub">所有偏好自动保存至本地，实时同步打字机、独立音量、画面明度与战斗设置</p>' +
           '</div>' +
           '<button type="button" class="modal-close-x" id="pref-close" aria-label="关闭阅读与音效设置">×</button>' +
         '</div>' +
@@ -2119,6 +2352,22 @@
               '<div class="prefs-label"><b>场景氛围粒子与棱镜</b><span>飞雪、微光、冰尘与晶透折射视觉层</span></div>' +
               '<button type="button" class="prefs-toggle' + (p.fxEnabled ? ' on' : '') + '" id="pref-fx-toggle" aria-pressed="' + (p.fxEnabled ? 'true' : 'false') + '">' +
                 (p.fxEnabled ? '已开启 · 星霜微尘' : '已关闭 · 纯净画面') +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="prefs-group">' +
+            '<div class="prefs-row">' +
+              '<div class="prefs-label" style="flex:1 1 220px;min-width:0;"><b>精准施放与格挡护手</b><span>控制进攻慢镜按拍与敌方攻击空格格挡的判定松紧</span></div>' +
+              '<div class="prefs-seg" role="group" aria-label="精准施放与格挡护手">' +
+                '<button type="button" class="prefs-seg-btn' + (ringAssist === 'standard' ? ' active' : '') + '" data-pref-combat-ring="standard" aria-pressed="' + (ringAssist === 'standard' ? 'true' : 'false') + '">标准</button>' +
+                '<button type="button" class="prefs-seg-btn' + (ringAssist === 'relaxed' ? ' active' : '') + '" data-pref-combat-ring="relaxed" aria-pressed="' + (ringAssist === 'relaxed' ? 'true' : 'false') + '">宽松</button>' +
+                '<button type="button" class="prefs-seg-btn' + (ringAssist === 'off' ? ' active' : '') + '" data-pref-combat-ring="off" aria-pressed="' + (ringAssist === 'off' ? 'true' : 'false') + '">自动</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="prefs-row">' +
+              '<div class="prefs-label" style="flex:1 1 220px;min-width:0;"><b>休闲模式</b><span>开启后战斗难度大幅下降，适合想要轻松享受剧情的休闲玩家</span></div>' +
+              '<button type="button" class="prefs-toggle' + (casualOn ? ' on' : '') + '" id="pref-combat-casual-toggle" aria-pressed="' + (casualOn ? 'true' : 'false') + '">' +
+                (casualOn ? '已开启 · 休闲剧情' : '已关闭 · 标准挑战') +
               '</button>' +
             '</div>' +
           '</div>' +
@@ -2196,6 +2445,19 @@
       fxBtn.onclick = function () {
         playSfx('glass_tap');
         setPref('fxEnabled', !loadPrefs().fxEnabled);
+      };
+    }
+    ov.querySelectorAll('[data-pref-combat-ring]').forEach(function (btn) {
+      btn.onclick = function () {
+        playSfx('glass_tap');
+        setPref('combatRingAssist', btn.getAttribute('data-pref-combat-ring'));
+      };
+    });
+    var casualToggleBtn = ov.querySelector('#pref-combat-casual-toggle');
+    if (casualToggleBtn) {
+      casualToggleBtn.onclick = function () {
+        playSfx('glass_tap');
+        setPref('combatCasualMode', !loadPrefs().combatCasualMode);
       };
     }
     return ov;
@@ -4270,18 +4532,21 @@
     if (vnInitialized) return;
     vnInitialized = true;
     loadPrefs();
+    if (root && typeof root.addEventListener === 'function') {
+      root.addEventListener('voice:statechange', updateVoiceReplayButton);
+      root.addEventListener('combat:prefschange', onExternalCombatPrefsChange);
+    }
     syncSavedPrefsToEngine();
     ensureVNUIButtons();
     bindHotkeys();
-    if (root && typeof root.addEventListener === 'function') {
-      root.addEventListener('voice:statechange', updateVoiceReplayButton);
-    }
     updateVoiceReplayButton();
   }
 
   var API = {
     MAX_BACKLOG: MAX_BACKLOG,
     VN_PREFS_KEY: VN_PREFS_KEY,
+    COMBAT_RING_ASSIST_KEY: COMBAT_RING_ASSIST_KEY,
+    COMBAT_CASUAL_MODE_KEY: COMBAT_CASUAL_MODE_KEY,
     READ_LINES_KEY: READ_LINES_KEY,
     CODEX_ARCHIVE_KEY: CODEX_ARCHIVE_KEY,
     ENDINGS_UNLOCKED_KEY: ENDINGS_UNLOCKED_KEY,

@@ -2677,6 +2677,272 @@
           });
         }
       }
+    },
+
+    // --- V3.2 命中前 0.25x 慢镜缩圈与四档判定专属音效 ---
+    ring_telegraph: {
+      prio: 3,
+      cooldown: 20,
+      fn: function (c, t, now, vol, prio) {
+        // 提前亮键提示：清脆高音冰晶锁定微响
+        playCelesta(c, t, now, vol, prio, {
+          freq: NOTE.A6,
+          delay: 0,
+          dur: 0.095,
+          attack: 0.002,
+          gain: 0.40,
+          overtoneRatio: 2.0,
+          overtoneGain: 0.22,
+          pan: -0.06,
+          reverbSend: 0.24
+        });
+        playCrystalFM(c, t, now, vol, prio, {
+          freq: NOTE.D7,
+          delay: 0.014,
+          dur: 0.078,
+          attack: 0.002,
+          gain: 0.22,
+          modIndex: 0.85,
+          pan: 0.08,
+          reverbSend: 0.30,
+          ornament: true
+        });
+        playNoise(c, t, now, vol, prio, {
+          kind: 'crackle',
+          delay: 0,
+          dur: 0.028,
+          attack: 0.002,
+          gain: 0.14,
+          filter: { type: 'bandpass', freq: 4200, endFreq: 5400, q: 2.4 },
+          reverbSend: 0.18,
+          ornament: true
+        });
+      }
+    },
+
+    ring_slowmo_in: {
+      prio: 3,
+      cooldown: 20,
+      fn: function (c, t, now, vol, prio) {
+        // 切入 0.25x 霜晶缓时：清透冰息气流回吸 + 柔滑下行晶振余晕
+        playNoise(c, t, now, vol, prio, {
+          kind: 'pink',
+          delay: 0,
+          dur: 0.22,
+          attack: 0.012,
+          gain: 0.24,
+          pan: 0,
+          reverbSend: 0.42,
+          filter: { type: 'bandpass', freq: 3400, endFreq: 980, q: 2.0 }
+        });
+        playTone(c, t, now, vol, prio, {
+          freq: NOTE.A5,
+          slideTo: NOTE.D5,
+          wave: 'sine',
+          delay: 0,
+          dur: 0.21,
+          attack: 0.008,
+          gain: 0.32,
+          pan: -0.08,
+          reverbSend: 0.46
+        });
+        playCrystalFM(c, t, now, vol, prio, {
+          freq: NOTE.Fs6,
+          slideTo: NOTE.D6,
+          delay: 0.012,
+          dur: 0.24,
+          attack: 0.006,
+          gain: 0.22,
+          modIndex: 0.95,
+          pan: 0.10,
+          reverbSend: 0.56,
+          ornament: true
+        });
+      }
+    },
+
+    judge_bad: {
+      prio: 4,
+      cooldown: 20,
+      fn: function (c, t, now, vol, prio) {
+        // BAD 判定：克制沉闷的薄冰微裂与短促下行闷音
+        playTone(c, t, now, vol, prio, {
+          freq: NOTE.E4,
+          slideTo: NOTE.D4 * 0.94,
+          wave: 'triangle',
+          delay: 0,
+          dur: 0.145,
+          attack: 0.003,
+          gain: 0.38,
+          filter: { type: 'lowpass', freq: 1120, q: 0.8 },
+          pan: -0.04,
+          reverbSend: 0.12
+        });
+        playTone(c, t, now, vol, prio, {
+          freq: 146,
+          slideTo: 86,
+          wave: 'sine',
+          delay: 0,
+          dur: 0.115,
+          attack: 0.003,
+          gain: 0.28,
+          filter: { type: 'lowpass', freq: 260, q: 0.9 },
+          reverbSend: 0.06
+        });
+        playNoise(c, t, now, vol, prio, {
+          kind: 'crackle',
+          delay: 0.004,
+          dur: 0.056,
+          attack: 0.003,
+          gain: 0.18,
+          filter: { type: 'bandpass', freq: 1350, endFreq: 620, q: 1.5 },
+          reverbSend: 0.10,
+          ornament: true
+        });
+      }
+    },
+
+    judge_good: {
+      prio: 4,
+      cooldown: 20,
+      fn: function (c, t, now, vol, prio) {
+        // GOOD 判定：清澈平稳的 D 大调双音雪铃确认
+        playCelesta(c, t, now, vol, prio, {
+          freq: NOTE.D6,
+          delay: 0,
+          dur: 0.19,
+          attack: 0.003,
+          gain: 0.48,
+          pan: -0.06,
+          reverbSend: 0.32
+        });
+        playCelesta(c, t, now, vol, prio, {
+          freq: NOTE.Fs6,
+          delay: 0.032,
+          dur: 0.22,
+          attack: 0.003,
+          gain: 0.42,
+          pan: 0.08,
+          reverbSend: 0.38,
+          ornament: true
+        });
+      }
+    },
+
+    judge_great: {
+      prio: 4,
+      cooldown: 20,
+      fn: function (c, t, now, vol, prio) {
+        // GREAT 判定：清亮冰青棱镜三连升阶铃鸣
+        playNoise(c, t, now, vol, prio, {
+          kind: 'white',
+          delay: 0,
+          dur: 0.038,
+          attack: 0.002,
+          gain: 0.16,
+          filter: { type: 'highpass', freq: 3600, q: 0.9 },
+          reverbSend: 0.28,
+          ornament: true
+        });
+        playCelesta(c, t, now, vol, prio, {
+          freq: NOTE.Fs6,
+          delay: 0,
+          dur: 0.22,
+          attack: 0.002,
+          gain: 0.48,
+          pan: -0.14,
+          reverbSend: 0.40
+        });
+        playCelesta(c, t, now, vol, prio, {
+          freq: NOTE.A6,
+          delay: 0.030,
+          dur: 0.26,
+          attack: 0.002,
+          gain: 0.50,
+          pan: 0.06,
+          reverbSend: 0.48
+        });
+        playCrystalFM(c, t, now, vol, prio, {
+          freq: NOTE.D7,
+          delay: 0.060,
+          dur: 0.30,
+          attack: 0.002,
+          gain: 0.36,
+          modIndex: 1.25,
+          pan: 0.16,
+          reverbSend: 0.58,
+          ornament: true
+        });
+      }
+    },
+
+    judge_perfect: {
+      prio: 4,
+      cooldown: 20,
+      fn: function (c, t, now, vol, prio) {
+        // PERFECT 判定：香槟金星霜绽放 · 碎晶闪击 + D 大调八度晶钟齐鸣
+        playNoise(c, t, now, vol, prio, {
+          kind: 'crackle',
+          delay: 0,
+          dur: 0.052,
+          attack: 0.002,
+          gain: 0.24,
+          filter: { type: 'bandpass', freq: 3800, endFreq: 7200, q: 2.2 },
+          reverbSend: 0.38,
+          ornament: true
+        });
+        playTone(c, t, now, vol, prio, {
+          freq: NOTE.D5,
+          slideTo: NOTE.A5,
+          wave: 'triangle',
+          delay: 0,
+          dur: 0.085,
+          attack: 0.002,
+          gain: 0.34,
+          filter: { type: 'lowpass', freq: 2800, q: 0.8 },
+          reverbSend: 0.25
+        });
+        playCelesta(c, t, now, vol, prio, {
+          freq: NOTE.D6,
+          delay: 0,
+          dur: 0.28,
+          attack: 0.002,
+          gain: 0.52,
+          pan: -0.18,
+          reverbSend: 0.50
+        });
+        playCelesta(c, t, now, vol, prio, {
+          freq: NOTE.A6,
+          delay: 0.024,
+          dur: 0.32,
+          attack: 0.002,
+          gain: 0.50,
+          pan: 0,
+          reverbSend: 0.58
+        });
+        playCrystalFM(c, t, now, vol, prio, {
+          freq: NOTE.D7,
+          delay: 0.048,
+          dur: 0.42,
+          attack: 0.002,
+          gain: 0.46,
+          modIndex: 1.45,
+          pan: 0.18,
+          reverbSend: 0.72
+        });
+        playCelesta(c, t, now, vol, prio, {
+          freq: NOTE.Fs7,
+          delay: 0.078,
+          dur: 0.48,
+          attack: 0.003,
+          gain: 0.34,
+          detune: 5,
+          overtone: false,
+          pan: -0.12,
+          reverbSend: 0.80,
+          ornament: true
+        });
+      }
     }
   };
 
@@ -3131,5 +3397,8 @@
 
   if (root) {
     root.CrystalSFX = api;
+    if (typeof root.playSfx !== 'function') {
+      root.playSfx = play;
+    }
   }
 })(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : this));

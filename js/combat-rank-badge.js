@@ -164,7 +164,7 @@
     charlotte: 2,
     jilan: 4,
     aino: 3,
-    alice: 3,
+    alice: 2,
     beatrice: 2,
     noelle: 3,
   });
@@ -182,9 +182,9 @@
     rowan_eclipse: 4,
     rowan_graveyard: 4,
 
-    // 第 3 幕：爱丽丝（9岁虚拟决斗时尚为初级，当年稍后才破中级）
-    alice: 1,
-    alice_9: 1,
+    // 第 3 幕：爱丽丝（中级风系天才，对齐 V3.2 表 7.2）
+    alice: 2,
+    alice_9: 2,
 
     // 第 4 幕：艾诺·塔尔维（学院冰系顶尖前辈）
     aino: 3,
@@ -224,6 +224,7 @@
     // 第 8 幕：转折点东翼火廊（赤炎术士中级 / 突击队长高级 / 东翼封锁官圣级）
     flame_mage: 2,
     flame_mage_a: 2,
+    flame_mage_b: 2,
     slime_fire: 1,
     corridor_vanguard: 3,
     inquisitor: 3,
@@ -468,8 +469,9 @@
     return null;
   }
 
-  function isLikelyPresetBattle(rawBattle, battleState) {
-    if (!rawBattle) return !!(battleState && battleState.id && STAGE_PLAYER_RANK[battleState.id]);
+  function isLikelyPresetBattle(rawBattle, battleState, stageId) {
+    const sid = stageId || (battleState && battleState.id) || '';
+    if (!rawBattle) return !!(sid && STAGE_PLAYER_RANK[sid]);
     if (!rawBattle.fromArena) return false;
     const preset = rawBattle.stageCfg && rawBattle.stageCfg.preset;
     const rp = rawBattle.player;
@@ -492,7 +494,7 @@
     const rawBattle = getSafeRawBattle(ctx);
     const stageId = (ctx && ctx.stageId) || (bState && bState.id) || (rawBattle && rawBattle.id) || '';
     const liveS = getLiveSaveState();
-    const usePresetRank = isLikelyPresetBattle(rawBattle, bState);
+    const usePresetRank = isLikelyPresetBattle(rawBattle, bState, stageId);
 
     // 2. 故事模式或演武「实时存档」模式：优先读取 game.js 实时存档 S.tier
     if (!usePresetRank && liveS && typeof liveS.tier === 'number' && liveS.tier >= 1) {
@@ -548,7 +550,7 @@
     if (fromNameRank) return fromNameRank;
     if (name.indexOf('雷纳德') >= 0) return RANK_BY_TIER[5];
     if (name.indexOf('艾诺') >= 0 || name.indexOf('诺艾儿') >= 0) return RANK_BY_TIER[3];
-    if (name.indexOf('贝阿特丽丝') >= 0 || name.indexOf('夏洛特') >= 0) return RANK_BY_TIER[2];
+    if (name.indexOf('爱丽丝') >= 0 || name.indexOf('贝阿特丽丝') >= 0 || name.indexOf('夏洛特') >= 0) return RANK_BY_TIER[2];
     if (name.indexOf('霁岚') >= 0) return RANK_BY_TIER[4];
     return RANK_BY_TIER[5];
   }
@@ -582,7 +584,10 @@
     }
 
     // 4. 名称关键词兜底（覆盖动态/剧情扩展敌人）
-    if (name.indexOf('风神') >= 0 || name.indexOf('岚') >= 0 || name.indexOf('法神') >= 0 || name.indexOf('药神') >= 0) {
+    if (name.indexOf('霁岚') >= 0) {
+      return RANK_BY_TIER[4];
+    }
+    if (name.indexOf('风神') >= 0 || name === '岚' || name.indexOf('·岚') >= 0 || name.indexOf('法神') >= 0 || name.indexOf('药神') >= 0) {
       return RANK_BY_TIER[7];
     }
     if (name.indexOf('罗文') >= 0 || name.indexOf('封锁官') >= 0 || name.indexOf('红莲铁幕') >= 0 || name.indexOf('领主') >= 0 || name.indexOf('裂地兽') >= 0 || name.indexOf('统领') >= 0) {
@@ -593,8 +598,7 @@
     }
     if (name.indexOf('爱丽丝') >= 0) {
       if (name.indexOf('12岁') >= 0) return RANK_BY_TIER[3];
-      if (name.indexOf('10岁') >= 0 || name.indexOf('11岁') >= 0) return RANK_BY_TIER[2];
-      return RANK_BY_TIER[1];
+      return RANK_BY_TIER[2];
     }
     if (name.indexOf('贝阿特丽丝') >= 0) {
       if (name.indexOf('16岁') >= 0 || name.indexOf('17岁') >= 0) return RANK_BY_TIER[3];
@@ -623,15 +627,33 @@
   function resolveUnitRank(unit, context) {
     const ctx = context && typeof context === 'object' ? context : {};
     const side = ctx.side || (unit && typeof unit === 'object' && (unit.side || unit.role)) || '';
-    if (unit === 'player' || unit === 'sylvia' || side === 'player') {
-      return resolvePlayerRank(unit === 'player' || unit === 'sylvia' ? null : unit, ctx);
+    const rawBattle = getSafeRawBattle(ctx);
+    if (
+      unit === 'player' ||
+      unit === 'sylvia' ||
+      side === 'player' ||
+      (typeof unit === 'string' && (/^sylvia(?:_|$)/i.test(unit) || unit.indexOf('希尔维亚') >= 0 || unit.indexOf('眷寒渔') >= 0))
+    ) {
+      return resolvePlayerRank(typeof unit === 'object' ? unit : null, ctx);
     }
-    if (side === 'ally' || side === 'vanguard' || unit === 'reno') {
+    if (
+      side === 'ally' ||
+      side === 'vanguard' ||
+      unit === 'reno' ||
+      (typeof unit === 'string' && (unit === 'jilan' || unit === 'charlotte' || unit.indexOf('雷纳德') >= 0 || unit.indexOf('霁岚') >= 0))
+    ) {
       return resolveAllyRank(unit);
     }
     if (unit && typeof unit === 'object') {
       const uName = String(unit.name || '');
-      if (uName.indexOf('希尔维亚') >= 0 || uName.indexOf('眷寒渔') >= 0) {
+      if (
+        unit.id === 'player' ||
+        unit.id === 'sylvia' ||
+        unit.isPlayer === true ||
+        (rawBattle && rawBattle.player && unit === rawBattle.player) ||
+        uName.indexOf('希尔维亚') >= 0 ||
+        uName.indexOf('眷寒渔') >= 0
+      ) {
         return resolvePlayerRank(unit, ctx);
       }
       if (unit.id === 'reno' || uName.indexOf('雷纳德') >= 0) {
@@ -639,6 +661,25 @@
       }
     }
     return resolveEnemyRank(unit);
+  }
+
+  /**
+   * 返回任意战斗单位或标识的等阶整数（1..7），供 CombatEngine 与 CombatTimingRing 计算线性等阶差格挡
+   */
+  function getRankTier(unitOrId, context) {
+    if (unitOrId == null) return 1;
+    if (typeof unitOrId === 'number' && isFinite(unitOrId)) {
+      return Math.max(1, Math.min(7, Math.round(unitOrId)));
+    }
+    if (typeof unitOrId === 'string') {
+      const directSpec = getRankSpec(unitOrId);
+      if (directSpec) return directSpec.tier;
+    }
+    const spec = resolveUnitRank(unitOrId, context);
+    if (spec && typeof spec.tier === 'number' && isFinite(spec.tier)) {
+      return Math.max(1, Math.min(7, Math.round(spec.tier)));
+    }
+    return 1;
   }
 
   /**
@@ -1070,6 +1111,7 @@
   const CombatRankBadge = {
     RANKS,
     getRankSpec,
+    getRankTier,
     resolveUnitRank,
     renderBadgeHTML,
     syncBattleBadges,

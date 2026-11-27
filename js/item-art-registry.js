@@ -49,7 +49,7 @@
       category: 'staff',
       rarity: 'legendary',
       src: BASE_PATH + 'eclipse_wand.webp',
-      desc: '外层黑曜星环嵌合冰晶棱芯的法杖。最大魔力 +24%，施法视作 100% 真实魔伤且随心塑形毫无滞碍。',
+      desc: '外层黑曜星环嵌合冰晶棱芯的短杖。施法视作 100% 真实魔伤（无视法抗与魔盾，仅受实体重甲减免），每次施法额外耗蓝 24% 最大魔力；希尔维亚执握永不触发日蚀。',
       lore: '王都旧藏与秘闻交织的晦轮法杖，希尔维亚执握时绝不触发日蚀反噬。'
     },
     north_saint_staff: {
@@ -58,7 +58,7 @@
       category: 'staff',
       rarity: 'legendary',
       src: BASE_PATH + 'north_saint_staff.webp',
-      desc: '极北寒晶雕琢的圣域法杖。魔导威力显著提升、会心威势增强，魔力增幅耗损降低。',
+      desc: '极北寒晶雕琢的圣域法杖。魔导威力 +14%、会心威势 +10%，魔力增幅耗损降低 10%。',
       lore: '凝萃极北冻土终年不化之冰髓而成的白银圣杖，杖首六棱冰晶清辉凛然。'
     },
     ice_pebble: {
@@ -67,7 +67,7 @@
       category: 'relic',
       rarity: 'rare',
       src: BASE_PATH + 'ice_pebble.webp',
-      desc: '公爵府花园拾得的寒凉小石。每回合首次【经手构筑】额外凝结 8 点寒霜护盾。',
+      desc: '公爵府花园拾得的寒凉小石。每回合首次施放魔法或护盾技能时，额外凝结 8 点寒霜护盾。',
       lore: '年幼时在公爵府花坛边拾得的冰蓝小石，握在掌心总是凉丝丝的，总能定神。'
     },
     blue_vial: {
@@ -76,7 +76,7 @@
       category: 'relic',
       rarity: 'epic',
       src: BASE_PATH + 'blue_vial.webp',
-      desc: '药神所赠晴空玻璃瓶。每场战斗首次生命跌破 35% 时回复 25% 最大生命并获 1 层风行残像。',
+      desc: '药神所赠晴空玻璃瓶。每场战斗首次生命跌破 35% 时回复 25% 最大生命并获 1 层「风行残像」。',
       lore: '如同装了一小块晴空的小玻璃瓶。瓶塞始终紧封，却在意识危殆时护住心脉。'
     },
     alice_flower_cake: {
@@ -85,7 +85,7 @@
       category: 'relic',
       rarity: 'rare',
       src: BASE_PATH + 'alice_flower_cake.webp',
-      desc: '爱丽丝亲手烤制的蜂蜜花饼。每场战斗开局自带 1 层风行残像，残像闪避时额外回复 10 MP。',
+      desc: '爱丽丝亲手烤制的蜂蜜花饼。每场战斗开局自带 1 层「风行残像」，残像闪避时额外回复 10 MP。',
       lore: '花瓣摆成笑脸的蜂蜜烤饼，风吹过饼屑时总像有人悄悄托住了衣袖。'
     },
     noelle_manuscript: {
@@ -94,7 +94,7 @@
       category: 'relic',
       rarity: 'epic',
       src: BASE_PATH + 'noelle_manuscript.webp',
-      desc: '诺艾儿并肩推演的魔导手稿。全魔法基础耗蓝降低 20%，开启魔力增幅时保留一半额外增幅魔力。',
+      desc: '诺艾儿并肩推演的魔导手稿。魔法基础耗蓝降低 15%，魔力增幅额外耗蓝降低 20%（各项省蓝叠算不低于 60% 耗蓝）。',
       lore: '夹着橘猫胡须书签的推导手稿，每道水幕回路都算清了最省力的路径。'
     },
     shell_pin: {
@@ -103,7 +103,7 @@
       category: 'relic',
       rarity: 'rare',
       src: BASE_PATH + 'shell_pin.webp',
-      desc: '三姐妹夏日礁石纪念胸针。水/风系攻击伤害 +18%，触发连携追击时额外回复 8% 最大 MP。',
+      desc: '三姐妹夏日礁石纪念胸针。水系与风系攻击伤害 +3%，触发连携追击时额外回复 8% 最大 MP。',
       lore: '三姐妹并肩潜入海湾拾起的月虹螺，螺壳内侧至今留着淡淡的潮声虹彩。'
     },
     belmont_schedule: {
@@ -121,7 +121,7 @@
       category: 'relic',
       rarity: 'epic',
       src: BASE_PATH + 'cross.webp',
-      desc: '海伦娜赠予的神殿银质信物。每回合结束回复 6% 最大生命，护盾技 +20% 护盾并净化 1 层负面状态。',
+      desc: '海伦娜赠予的神殿银质信物。每回合结束回复 6% 最大生命，护盾技额外 +20% 护盾并净化 1 层不良状态。',
       lore: '希里昂见习生唯一的银质信物，在离校分别的礼堂前郑重放进掌心。'
     },
     ebony_sword: {
@@ -130,7 +130,7 @@
       category: 'relic',
       rarity: 'legendary',
       src: BASE_PATH + 'ebony_sword.webp',
-      desc: '老霁与霁岚辞行相赠的百炼长剑。【霁馆剑步】暴击率 +25%、伤害 +15%，暴击返 1 AP 且零冰系暴露。',
+      desc: '老霁与霁岚辞行相赠的百炼长剑。普通攻击与【寒锋斩】暴击率 +25%、伤害 +4%，暴击返 1 AP 且零冰系暴露。',
       lore: '乌木鞘朴素沉稳，剑柄末端系着霁岚亲手编织的紫色蝶穗，陪着走过澄岚到塞北的长路。'
     },
     frost_cipher: {
@@ -139,7 +139,7 @@
       category: 'relic',
       rarity: 'epic',
       src: BASE_PATH + 'frost_cipher.webp',
-      desc: '公爵书房交托的银质联络暗徽。开启冰晶宫殿看破死角后，立即回复 18% 最大 MP 与 1 AP。',
+      desc: '公爵书房交托的银质联络暗徽。每场战斗首次触发截断破招或弱点击破时，立即回复 18% 最大 MP 与 1 AP。',
       lore: '政变前夜暗流拼图合拢后留下的隐秘银徽，寒意沉静，总能在绝境中稳住呼吸。'
     },
     aino_academy_handkerchief: {
@@ -148,7 +148,7 @@
       category: 'relic',
       rarity: 'epic',
       src: BASE_PATH + 'aino_academy_handkerchief.webp',
-      desc: '艾诺留赠的赫兰六瓣冰纹亚麻帕。首回合首次【隔空瞬凝】免 1 AP，全冰系攻击伤害 +20%。',
+      desc: '艾诺留赠的赫兰六瓣冰纹亚麻帕。首回合首次施放【冰晶主炮】免 1 AP，全冰系攻击伤害 +2%。',
       lore: '边角绣着六瓣赫兰冰纹的洁白亚麻帕，总带着雪后松林般的清冽寒意。'
     },
     aino_frost_shard: {
@@ -157,7 +157,7 @@
       category: 'relic',
       rarity: 'epic',
       src: BASE_PATH + 'aino_frost_shard.webp',
-      desc: '艾诺凝结的零气泡薄冰铭牌。破招或卸力闪反后，下次冰系技无视 25% 法抗并附带寒颤。',
+      desc: '艾诺凝结的零气泡薄冰铭牌。触发截断破招或迎击反制后，下次冰系技无视 25% 法抗并附带寒颤。',
       lore: '没有半点气泡的通透薄冰片，内部凝着赫兰枪冰三式交错收束的发力轨迹。'
     },
     northwind_pass: {

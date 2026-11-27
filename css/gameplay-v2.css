@@ -1474,6 +1474,179 @@ body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-hint {
   color: var(--ap-ink-muted);
 }
 
+/* 桌面端宽幅双列精排（>=720px）：消除 1440/1280 纵向溢出并保持 1px 建筑细线审美 */
+@media (min-width: 720px) {
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card.vn-prefs-card {
+    width: min(92vw, 784px);
+    max-width: 784px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(1) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 20px;
+    row-gap: 10px;
+    align-items: center;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(1) .prefs-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px 10px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(1) .prefs-label {
+    min-width: 0;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(2) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 20px;
+    row-gap: 10px;
+    align-items: start;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(2) .prefs-row.prefs-slider-row {
+    order: -1;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(2) .prefs-row.prefs-slider-row .prefs-label {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(2) .prefs-row.prefs-slider-row .prefs-label b {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(2) .prefs-row.prefs-slider-row .prefs-label span {
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(2) .prefs-slider-wrap {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+    gap: 10px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(2) .prefs-slider {
+    margin: 5px 0;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(2) .prefs-row:not(.prefs-slider-row) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px 10px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(27, 35, 51, 0.11);
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(2) .prefs-row:not(.prefs-slider-row) .prefs-label {
+    min-width: 0;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(2) .prefs-toggle {
+    white-space: nowrap;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(3) .prefs-row,
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(4) .prefs-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px 16px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(3) .prefs-label,
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(4) .prefs-label {
+    min-width: 0;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-toggle,
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-seg {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+}
+
+/* 综合面板 #panel「设置」页紧凑排版（高于 system-chronicle.css 特异性，确保 1280×720 一屏 0 裁切） */
+#app #panel .modal-scroll.is-settings-scroll {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+#app #panel #panel-body.is-settings-tab {
+  padding-bottom: 4px;
+  line-height: 1.46;
+}
+
+#app #panel #panel-body.is-settings-tab .panel-settings-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+#app #panel #panel-body.is-settings-tab .panel-settings-pane > .set-row-head {
+  margin-top: 8px;
+  padding: 2px 0 0 !important;
+  border-bottom: none;
+  line-height: 1.38;
+}
+
+#app #panel #panel-body.is-settings-tab .panel-settings-pane > .set-row-head:first-child {
+  margin-top: 0;
+}
+
+#app #panel #panel-body.is-settings-tab .panel-settings-pane > input[type="range"] {
+  margin: 5px 0 4px;
+  width: 100%;
+}
+
+#app #panel #panel-body.is-settings-tab .panel-settings-pane > .set-hint {
+  padding: 2px 0 8px;
+  color: #526078;
+  font-size: 11.5px;
+  line-height: 1.36;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.10);
+}
+
+#app #panel #panel-body.is-settings-tab .panel-settings-pane > .set-hint:last-child {
+  border-bottom: none;
+  padding-bottom: 4px;
+}
+
+#app #panel #panel-body.is-settings-tab .panel-settings-pane > #set-ring-assist-seg {
+  padding: 0;
+  margin-top: 5px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid rgba(27, 35, 51, 0.16);
+}
+
+#app #panel #panel-body.is-settings-tab .panel-settings-pane > .set-row-head.set-row-casual {
+  align-items: center;
+  margin-top: 9px;
+}
+
+#app #panel #panel-body.is-settings-tab #set-reset {
+  margin-top: 10px;
+  padding: 6px 16px;
+}
+
 /* ---------- 7. 季度奇遇与链式传闻板 (#rumor-overlay · 去盒子化 1px 细线编辑部行) ---------- */
 body section#rumor-overlay.overlay .end-card.rumor-card .rumor-scroll {
   gap: 0;
@@ -4305,6 +4478,220 @@ body section#arena-loadout-modal.overlay .relics-dashboard .rc-lore {
     max-width: 720px;
     padding: 12px 16px;
     box-sizing: border-box;
+  }
+}
+
+/* 1280×720（max-height: 780px）紧凑高度适配：#vn-prefs-modal 零溢出且战斗休闲开关稳落视口内可直接点击 */
+@media (max-height: 780px) {
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card.vn-prefs-card {
+    max-height: min(92vh, 668px);
+    max-height: min(92dvh, 668px);
+  }
+
+  body section#vn-prefs-modal.overlay .vn-modal-head {
+    padding: 11px 20px 10px 22px;
+  }
+
+  body section#vn-prefs-modal.overlay .vn-modal-head h2 {
+    font-size: 16.5px;
+    margin-bottom: 1px;
+  }
+
+  body section#vn-prefs-modal.overlay .vn-modal-sub {
+    font-size: 11.5px;
+    line-height: 1.38;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-body {
+    padding: 4px 22px 6px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group {
+    padding: 9px 2px;
+    gap: 8px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(2) {
+    row-gap: 8px;
+    column-gap: 20px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(2) .prefs-row:not(.prefs-slider-row) {
+    padding-top: 6px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-label {
+    gap: 1px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-label b {
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-label span {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-slider {
+    margin: 4px 0;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-seg-btn {
+    padding: 4px 9px 5px;
+    font-size: 12px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-toggle {
+    padding: 5px 12px;
+    font-size: 11.5px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-foot {
+    padding: 9px 22px 11px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card #pref-reset {
+    padding: 6px 14px;
+    font-size: 12px;
+  }
+
+  #app #panel .modal-scroll.is-settings-scroll {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  #app #panel #panel-body.is-settings-tab .panel-settings-pane > .set-row-head {
+    margin-top: 6px;
+  }
+
+  #app #panel #panel-body.is-settings-tab .panel-settings-pane > input[type="range"] {
+    margin: 4px 0 3px;
+  }
+
+  #app #panel #panel-body.is-settings-tab .panel-settings-pane > .set-hint {
+    padding: 1px 0 6px;
+  }
+
+  #app #panel #panel-body.is-settings-tab #set-reset {
+    margin-top: 8px;
+    padding: 6px 15px;
+  }
+}
+
+/* 960×600（max-height: 640px）矮屏精缩：防腰斩 + 加宽可视细滚动条 + 纯 CSS 动态滚动淡影 */
+@media (max-height: 640px) {
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card.vn-prefs-card {
+    max-height: min(94vh, 572px);
+    max-height: min(94dvh, 572px);
+  }
+
+  body section#vn-prefs-modal.overlay .vn-modal-head {
+    padding: 8px 18px 8px 20px;
+  }
+
+  body section#vn-prefs-modal.overlay .vn-modal-head h2 {
+    font-size: 15.5px;
+  }
+
+  body section#vn-prefs-modal.overlay .vn-modal-sub {
+    font-size: 11px;
+    line-height: 1.32;
+  }
+
+  body section#vn-prefs-modal.overlay .vn-modal-scroll,
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-body {
+    padding: 3px 18px 6px 20px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(28, 76, 184, 0.38) rgba(27, 35, 51, 0.05);
+    background:
+      linear-gradient(var(--ap-canvas) 35%, rgba(250, 251, 253, 0)) center top / 100% 20px no-repeat local,
+      linear-gradient(rgba(250, 251, 253, 0), var(--ap-canvas) 65%) center bottom / 100% 24px no-repeat local,
+      linear-gradient(rgba(28, 76, 184, 0.09), rgba(28, 76, 184, 0)) center top / 100% 8px no-repeat scroll,
+      linear-gradient(rgba(28, 76, 184, 0), rgba(14, 43, 120, 0.14)) center bottom / 100% 14px no-repeat scroll,
+      var(--ap-canvas);
+  }
+
+  body section#vn-prefs-modal.overlay .vn-modal-scroll::-webkit-scrollbar,
+  body section#vn-prefs-modal.overlay .prefs-body::-webkit-scrollbar {
+    width: 7px;
+  }
+
+  body section#vn-prefs-modal.overlay .vn-modal-scroll::-webkit-scrollbar-track,
+  body section#vn-prefs-modal.overlay .prefs-body::-webkit-scrollbar-track {
+    background: rgba(27, 35, 51, 0.05);
+  }
+
+  body section#vn-prefs-modal.overlay .vn-modal-scroll::-webkit-scrollbar-thumb,
+  body section#vn-prefs-modal.overlay .prefs-body::-webkit-scrollbar-thumb {
+    background: rgba(28, 76, 184, 0.36);
+    border-radius: 3px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group {
+    padding: 7px 2px;
+    gap: 6px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(2) {
+    row-gap: 6px;
+    column-gap: 18px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group:nth-of-type(2) .prefs-row:not(.prefs-slider-row) {
+    padding-top: 5px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-label b {
+    font-size: 12.5px;
+    line-height: 1.24;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-label span {
+    font-size: 10.5px;
+    line-height: 1.24;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-seg-btn {
+    padding: 3px 8px 4px;
+    font-size: 11.5px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-toggle {
+    padding: 4px 10px;
+    font-size: 11.5px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-foot {
+    padding: 7px 20px 8px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card #pref-reset {
+    padding: 5px 12px;
+    font-size: 11.5px;
+  }
+
+  #app #panel .modal-scroll,
+  #app #panel #panel-body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(28, 76, 184, 0.38) rgba(27, 35, 51, 0.05);
+  }
+
+  #app #panel .modal-scroll::-webkit-scrollbar,
+  #app #panel #panel-body::-webkit-scrollbar {
+    width: 7px;
+  }
+
+  #app #panel .modal-scroll::-webkit-scrollbar-track,
+  #app #panel #panel-body::-webkit-scrollbar-track {
+    background: rgba(27, 35, 51, 0.05);
+  }
+
+  #app #panel .modal-scroll::-webkit-scrollbar-thumb,
+  #app #panel #panel-body::-webkit-scrollbar-thumb {
+    background: rgba(28, 76, 184, 0.36);
+    border-radius: 3px;
   }
 }
 

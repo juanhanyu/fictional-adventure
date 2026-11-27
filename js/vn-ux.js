@@ -23,6 +23,7 @@
   var SETTINGS_KEY = 'ojousama_settings_v1';
   var COMBAT_RING_ASSIST_KEY = 'combat_ring_assist_mode';
   var COMBAT_CASUAL_MODE_KEY = 'combat_casual_mode';
+  var COMBAT_AUTO_END_KEY = 'combat_auto_end_turn';
 
   var vnInitialized = false;
   var backlogList = [];
@@ -39,7 +40,8 @@
     fxEnabled: true,
     bright: 1,
     combatRingAssist: 'standard',
-    combatCasualMode: false
+    combatCasualMode: false,
+    combatAutoEndTurn: true
   };
   var vnPrefs = null;
   var readLinesSet = null;
@@ -1285,9 +1287,24 @@
     return !!val;
   }
 
+  function normalizeCombatAutoEndTurn(val) {
+    if (val === false) return false;
+    if (val == null || val === true) return true;
+    if (typeof val === 'number') return isNaN(val) ? true : val !== 0;
+    var s = String(val).trim().toLowerCase();
+    if (s === 'false' || s === '0' || s === 'off' || s === 'no') return false;
+    return true;
+  }
+
   function getCombatTimingRingApi() {
     if (root && root.CombatTimingRing) return root.CombatTimingRing;
     if (typeof CombatTimingRing !== 'undefined' && CombatTimingRing) return CombatTimingRing;
+    return null;
+  }
+
+  function getCombatEngineApi() {
+    if (root && root.CombatEngine) return root.CombatEngine;
+    if (typeof CombatEngine !== 'undefined' && CombatEngine) return CombatEngine;
     return null;
   }
 
@@ -1295,10 +1312,13 @@
     var res = {
       assist: DEFAULT_PREFS.combatRingAssist,
       casual: DEFAULT_PREFS.combatCasualMode,
+      autoEnd: DEFAULT_PREFS.combatAutoEndTurn,
       hasAssist: false,
       hasCasual: false,
+      hasAutoEnd: false,
       hasStoredAssist: false,
-      hasStoredCasual: false
+      hasStoredCasual: false,
+      hasStoredAutoEnd: false
     };
     try {
       var storedAssist = localStorage.getItem(COMBAT_RING_ASSIST_KEY);
@@ -1312,6 +1332,12 @@
         res.casual = normalizeCombatCasualMode(storedCasual);
         res.hasCasual = true;
         res.hasStoredCasual = true;
+      }
+      var storedAutoEnd = localStorage.getItem(COMBAT_AUTO_END_KEY);
+      if (storedAutoEnd !== null && storedAutoEnd !== '') {
+        res.autoEnd = normalizeCombatAutoEndTurn(storedAutoEnd);
+        res.hasAutoEnd = true;
+        res.hasStoredAutoEnd = true;
       }
     } catch (e) {}
 
@@ -1347,6 +1373,31 @@
         }
       } catch (e) {}
     }
+
+    var engAutoEnd = null;
+    var ce = getCombatEngineApi();
+    if (ce) {
+      try {
+        if (typeof ce.isAutoEndTurn === 'function') engAutoEnd = ce.isAutoEndTurn();
+        else if (typeof ce.getAutoEndTurn === 'function') engAutoEnd = ce.getAutoEndTurn();
+        else if (typeof ce.isCombatAutoEndTurn === 'function') engAutoEnd = ce.isCombatAutoEndTurn();
+        else if (typeof ce.getCombatAutoEndTurn === 'function') engAutoEnd = ce.getCombatAutoEndTurn();
+      } catch (e) {}
+    }
+    if (engAutoEnd == null && ctr) {
+      try {
+        if (typeof ctr.isAutoEndTurn === 'function') engAutoEnd = ctr.isAutoEndTurn();
+        else if (typeof ctr.getAutoEndTurn === 'function') engAutoEnd = ctr.getAutoEndTurn();
+        else if (typeof ctr.getPrefs === 'function') {
+          var cp3 = ctr.getPrefs();
+          if (cp3) engAutoEnd = cp3.autoEndTurn != null ? cp3.autoEndTurn : cp3.combatAutoEndTurn;
+        }
+      } catch (e) {}
+    }
+    if (engAutoEnd != null && engAutoEnd !== '') {
+      res.autoEnd = normalizeCombatAutoEndTurn(engAutoEnd);
+      res.hasAutoEnd = true;
+    }
     return res;
   }
 
@@ -1356,15 +1407,18 @@
         localStorage.setItem(COMBAT_RING_ASSIST_KEY, normalizeCombatRingAssist(val));
       } else if (key === 'combatCasualMode') {
         localStorage.setItem(COMBAT_CASUAL_MODE_KEY, val ? 'true' : 'false');
+      } else if (key === 'combatAutoEndTurn') {
+        localStorage.setItem(COMBAT_AUTO_END_KEY, normalizeCombatAutoEndTurn(val) ? 'true' : 'false');
       }
     } catch (e) {}
   }
 
-  function dispatchCombatPrefsEvent(assist, casual, source) {
+  function dispatchCombatPrefsEvent(assist, casual, autoEnd, source) {
     if (!root || typeof root.dispatchEvent !== 'function') return;
     var CE = root.CustomEvent || (typeof CustomEvent !== 'undefined' ? CustomEvent : null);
     if (!CE) return;
     try {
+      var normAutoEnd = normalizeCombatAutoEndTurn(autoEnd);
       root.dispatchEvent(new CE('combat:prefschange', {
         detail: {
           assistMode: normalizeCombatRingAssist(assist),
@@ -1372,6 +1426,8 @@
           combatRingAssist: normalizeCombatRingAssist(assist),
           casualMode: !!casual,
           combatCasualMode: !!casual,
+          autoEndTurn: normAutoEnd,
+          combatAutoEndTurn: normAutoEnd,
           source: source || 'vn-ux'
         }
       }));
@@ -1390,6 +1446,9 @@
     var casualRaw = detail
       ? (detail.casualMode != null ? detail.casualMode : detail.combatCasualMode)
       : null;
+    var autoEndRaw = detail
+      ? (detail.autoEndTurn != null ? detail.autoEndTurn : (detail.combatAutoEndTurn != null ? detail.combatAutoEndTurn : detail.combat_auto_end_turn))
+      : null;
 
     if (assistRaw != null && assistRaw !== '') {
       p.combatRingAssist = normalizeCombatRingAssist(assistRaw);
@@ -1403,8 +1462,15 @@
       p.combatCasualMode = ext.casual;
     }
 
+    if (autoEndRaw != null) {
+      p.combatAutoEndTurn = normalizeCombatAutoEndTurn(autoEndRaw);
+    } else if (ext.hasAutoEnd) {
+      p.combatAutoEndTurn = ext.autoEnd;
+    }
+
     mirrorCombatStorage('combatRingAssist', p.combatRingAssist);
     mirrorCombatStorage('combatCasualMode', p.combatCasualMode);
+    mirrorCombatStorage('combatAutoEndTurn', p.combatAutoEndTurn);
     persistPrefs();
     syncPrefsModalDOM();
   }
@@ -1456,6 +1522,7 @@
         if (raw.bright != null) merged.bright = clampNum(raw.bright, 0.5, 1.5);
         if (raw.combatRingAssist != null) merged.combatRingAssist = normalizeCombatRingAssist(raw.combatRingAssist);
         if (raw.combatCasualMode != null) merged.combatCasualMode = normalizeCombatCasualMode(raw.combatCasualMode);
+        if (raw.combatAutoEndTurn != null) merged.combatAutoEndTurn = normalizeCombatAutoEndTurn(raw.combatAutoEndTurn);
       }
     } catch (e) {}
     var extCombat = readExternalCombatPrefs();
@@ -1464,6 +1531,9 @@
     }
     if (extCombat.hasCasual && (extCombat.hasStoredCasual || !raw || raw.combatCasualMode == null || extCombat.casual !== DEFAULT_PREFS.combatCasualMode)) {
       merged.combatCasualMode = extCombat.casual;
+    }
+    if (extCombat.hasAutoEnd && (extCombat.hasStoredAutoEnd || !raw || raw.combatAutoEndTurn == null || extCombat.autoEnd !== DEFAULT_PREFS.combatAutoEndTurn)) {
+      merged.combatAutoEndTurn = extCombat.autoEnd;
     }
     vnPrefs = merged;
     return vnPrefs;
@@ -1539,7 +1609,7 @@
           if (bgEl) bgEl.style.filter = (val && Math.abs(val - 1) > 0.005) ? ('brightness(' + val + ')') : '';
         }
       }
-    } else if (key === 'combatRingAssist' || key === 'combatCasualMode') {
+    } else if (key === 'combatRingAssist' || key === 'combatCasualMode' || key === 'combatAutoEndTurn') {
       var p = loadPrefs();
       var emitFallback = !(opts && opts.emitFallback === false);
       mirrorCombatStorage(key, val);
@@ -1548,20 +1618,33 @@
       combatEventSeenDuringApply = false;
       try {
         var ctr = getCombatTimingRingApi();
-        if (ctr) {
-          if (key === 'combatRingAssist') {
-            var normAssist = normalizeCombatRingAssist(val);
+        var ce = getCombatEngineApi();
+        if (key === 'combatRingAssist') {
+          var normAssist = normalizeCombatRingAssist(val);
+          if (ctr) {
             if (typeof ctr.setAssistMode === 'function') ctr.setAssistMode(normAssist);
             else if (typeof ctr.setRingAssistMode === 'function') ctr.setRingAssistMode(normAssist);
             else if (typeof ctr.setMode === 'function') ctr.setMode(normAssist);
-          } else {
-            var normCasual = normalizeCombatCasualMode(val);
+          }
+        } else if (key === 'combatCasualMode') {
+          var normCasual = normalizeCombatCasualMode(val);
+          if (ctr) {
             if (typeof ctr.setCasualMode === 'function') ctr.setCasualMode(normCasual);
             else if (typeof ctr.setCombatCasualMode === 'function') ctr.setCombatCasualMode(normCasual);
           }
+        } else {
+          var normAutoEnd = normalizeCombatAutoEndTurn(val);
+          if (ce) {
+            if (typeof ce.setAutoEndTurn === 'function') ce.setAutoEndTurn(normAutoEnd);
+            else if (typeof ce.setCombatAutoEndTurn === 'function') ce.setCombatAutoEndTurn(normAutoEnd);
+          }
+          if (ctr) {
+            if (typeof ctr.setAutoEndTurn === 'function') ctr.setAutoEndTurn(normAutoEnd);
+            else if (typeof ctr.setCombatAutoEndTurn === 'function') ctr.setCombatAutoEndTurn(normAutoEnd);
+          }
         }
         if (emitFallback && !combatEventSeenDuringApply) {
-          dispatchCombatPrefsEvent(p.combatRingAssist, p.combatCasualMode, 'vn-ux');
+          dispatchCombatPrefsEvent(p.combatRingAssist, p.combatCasualMode, p.combatAutoEndTurn, 'vn-ux');
         }
       } catch (e) {
       } finally {
@@ -1610,6 +1693,7 @@
       var extCombat = readExternalCombatPrefs();
       if (extCombat.hasAssist) p.combatRingAssist = extCombat.assist;
       if (extCombat.hasCasual) p.combatCasualMode = extCombat.casual;
+      if (extCombat.hasAutoEnd) p.combatAutoEndTurn = extCombat.autoEnd;
       if (patch && typeof patch === 'object') {
         if (patch.bgmVol != null) p.bgmVol = clampNum(patch.bgmVol, 0, 1);
         if (patch.sfxVol != null) p.sfxVol = clampNum(patch.sfxVol, 0, 1);
@@ -1620,6 +1704,8 @@
         else if (patch.assistMode != null) p.combatRingAssist = normalizeCombatRingAssist(patch.assistMode);
         if (patch.combatCasualMode != null) p.combatCasualMode = normalizeCombatCasualMode(patch.combatCasualMode);
         else if (patch.casualMode != null) p.combatCasualMode = normalizeCombatCasualMode(patch.casualMode);
+        if (patch.combatAutoEndTurn != null) p.combatAutoEndTurn = normalizeCombatAutoEndTurn(patch.combatAutoEndTurn);
+        else if (patch.autoEndTurn != null) p.combatAutoEndTurn = normalizeCombatAutoEndTurn(patch.autoEndTurn);
       }
       p.bright = readExternalBrightness();
       syncPrefsModalDOM();
@@ -1649,6 +1735,7 @@
         applyPrefToEngine('bright', p.bright);
         applyPrefToEngine('combatRingAssist', p.combatRingAssist, { emitFallback: false });
         applyPrefToEngine('combatCasualMode', p.combatCasualMode, { emitFallback: false });
+        applyPrefToEngine('combatAutoEndTurn', p.combatAutoEndTurn, { emitFallback: false });
       }
     } finally {
       inExternalAudioSync = prevSync;
@@ -1687,6 +1774,8 @@
       p.combatRingAssist = normalizeCombatRingAssist(value);
     } else if (key === 'combatCasualMode') {
       p.combatCasualMode = normalizeCombatCasualMode(value);
+    } else if (key === 'combatAutoEndTurn') {
+      p.combatAutoEndTurn = normalizeCombatAutoEndTurn(value);
     } else {
       return Object.assign({}, p);
     }
@@ -1696,7 +1785,7 @@
       scheduleAutoStep();
     }
     syncPrefsModalDOM();
-    if ((key === 'combatRingAssist' || key === 'combatCasualMode') && root && root.TitleDirector && typeof root.TitleDirector.syncSettingsDOM === 'function') {
+    if ((key === 'combatRingAssist' || key === 'combatCasualMode' || key === 'combatAutoEndTurn') && root && root.TitleDirector && typeof root.TitleDirector.syncSettingsDOM === 'function') {
       try { root.TitleDirector.syncSettingsDOM(); } catch (e) {}
     }
     return Object.assign({}, p);
@@ -1709,7 +1798,6 @@
     var prevCombatSync = inExternalCombatSync;
     inExternalAudioSync = true;
     inExternalCombatSync = true;
-    var combatEventEmitted = false;
     try {
       applyPrefToEngine('bgmVol', vnPrefs.bgmVol);
       applyPrefToEngine('sfxVol', vnPrefs.sfxVol);
@@ -1719,12 +1807,14 @@
       applyPrefToEngine('typeSpeed', vnPrefs.typeSpeed);
       applyPrefToEngine('fxEnabled', vnPrefs.fxEnabled);
       applyPrefToEngine('bright', vnPrefs.bright);
+      mirrorCombatStorage('combatRingAssist', vnPrefs.combatRingAssist);
+      mirrorCombatStorage('combatCasualMode', vnPrefs.combatCasualMode);
+      mirrorCombatStorage('combatAutoEndTurn', vnPrefs.combatAutoEndTurn);
       applyPrefToEngine('combatRingAssist', vnPrefs.combatRingAssist, { emitFallback: false });
-      combatEventEmitted = combatEventEmitted || combatEventSeenDuringApply;
       applyPrefToEngine('combatCasualMode', vnPrefs.combatCasualMode, { emitFallback: false });
-      combatEventEmitted = combatEventEmitted || combatEventSeenDuringApply;
-      if (!combatEventEmitted) {
-        dispatchCombatPrefsEvent(vnPrefs.combatRingAssist, vnPrefs.combatCasualMode, 'vn-ux-reset');
+      applyPrefToEngine('combatAutoEndTurn', vnPrefs.combatAutoEndTurn, { emitFallback: false });
+      if (!combatEventSeenDuringApply) {
+        dispatchCombatPrefsEvent(vnPrefs.combatRingAssist, vnPrefs.combatCasualMode, vnPrefs.combatAutoEndTurn, 'vn-ux-reset');
       }
     } finally {
       inExternalAudioSync = prevSync;
@@ -2243,6 +2333,14 @@
       casualBtn.textContent = casualOn ? '已开启 · 休闲剧情' : '已关闭 · 标准挑战';
       casualBtn.setAttribute('aria-pressed', casualOn ? 'true' : 'false');
     }
+
+    var autoEndBtn = ov.querySelector('#pref-combat-auto-end-toggle');
+    if (autoEndBtn) {
+      var autoEndOn = normalizeCombatAutoEndTurn(p.combatAutoEndTurn);
+      autoEndBtn.classList.toggle('on', autoEndOn);
+      autoEndBtn.textContent = autoEndOn ? '已开启 · 自动' : '已关闭 · 手动';
+      autoEndBtn.setAttribute('aria-pressed', autoEndOn ? 'true' : 'false');
+    }
   }
 
   function closePrefsModal() {
@@ -2275,6 +2373,7 @@
     var brightPct = Math.round(clampNum(p.bright != null ? p.bright : 1, 0.5, 1.5) * 100);
     var ringAssist = normalizeCombatRingAssist(p.combatRingAssist);
     var casualOn = !!p.combatCasualMode;
+    var autoEndOn = normalizeCombatAutoEndTurn(p.combatAutoEndTurn);
 
     ov.innerHTML =
       '<div class="end-card vn-modal-card vn-prefs-card">' +
@@ -2355,7 +2454,7 @@
               '</button>' +
             '</div>' +
           '</div>' +
-          '<div class="prefs-group">' +
+          '<div class="prefs-group prefs-group-combat">' +
             '<div class="prefs-row">' +
               '<div class="prefs-label" style="flex:1 1 220px;min-width:0;"><b>精准施放与格挡护手</b><span>控制进攻慢镜按拍与敌方攻击空格格挡的判定松紧</span></div>' +
               '<div class="prefs-seg" role="group" aria-label="精准施放与格挡护手">' +
@@ -2365,9 +2464,15 @@
               '</div>' +
             '</div>' +
             '<div class="prefs-row">' +
-              '<div class="prefs-label" style="flex:1 1 220px;min-width:0;"><b>休闲模式</b><span>开启后战斗难度大幅下降，适合想要轻松享受剧情的休闲玩家</span></div>' +
-              '<button type="button" class="prefs-toggle' + (casualOn ? ' on' : '') + '" id="pref-combat-casual-toggle" aria-pressed="' + (casualOn ? 'true' : 'false') + '">' +
+              '<div class="prefs-label" data-indie-tip="开启后战斗难度大幅下降，适合想要轻松享受剧情的休闲玩家"><b>休闲模式</b><span>大幅降低难度，轻松享受剧情</span></div>' +
+              '<button type="button" class="prefs-toggle' + (casualOn ? ' on' : '') + '" id="pref-combat-casual-toggle" data-indie-tip="开启后战斗难度大幅下降，适合想要轻松享受剧情的休闲玩家" aria-pressed="' + (casualOn ? 'true' : 'false') + '">' +
                 (casualOn ? '已开启 · 休闲剧情' : '已关闭 · 标准挑战') +
+              '</button>' +
+            '</div>' +
+            '<div class="prefs-row">' +
+              '<div class="prefs-label" data-indie-tip="无可用行动后自动切敌回合；关闭后可手动结束回合"><b>自动结束回合</b><span>无可用行动后自动切敌回合</span></div>' +
+              '<button type="button" class="prefs-toggle' + (autoEndOn ? ' on' : '') + '" id="pref-combat-auto-end-toggle" data-indie-tip="无可用行动后自动切敌回合；关闭后可手动结束回合" aria-pressed="' + (autoEndOn ? 'true' : 'false') + '">' +
+                (autoEndOn ? '已开启 · 自动' : '已关闭 · 手动') +
               '</button>' +
             '</div>' +
           '</div>' +
@@ -2458,6 +2563,13 @@
       casualToggleBtn.onclick = function () {
         playSfx('glass_tap');
         setPref('combatCasualMode', !loadPrefs().combatCasualMode);
+      };
+    }
+    var autoEndToggleBtn = ov.querySelector('#pref-combat-auto-end-toggle');
+    if (autoEndToggleBtn) {
+      autoEndToggleBtn.onclick = function () {
+        playSfx('glass_tap');
+        setPref('combatAutoEndTurn', !normalizeCombatAutoEndTurn(loadPrefs().combatAutoEndTurn));
       };
     }
     return ov;
@@ -4560,6 +4672,7 @@
     VN_PREFS_KEY: VN_PREFS_KEY,
     COMBAT_RING_ASSIST_KEY: COMBAT_RING_ASSIST_KEY,
     COMBAT_CASUAL_MODE_KEY: COMBAT_CASUAL_MODE_KEY,
+    COMBAT_AUTO_END_KEY: COMBAT_AUTO_END_KEY,
     READ_LINES_KEY: READ_LINES_KEY,
     CODEX_ARCHIVE_KEY: CODEX_ARCHIVE_KEY,
     ENDINGS_UNLOCKED_KEY: ENDINGS_UNLOCKED_KEY,

@@ -4,25 +4,26 @@
    导出：window.CombatTimingRing（兼容 CommonJS module.exports）
    职责：
    - 15 招精确拍数与左手 6 键 (Q/W/E/A/S/D) 序列生成（含旧别名映射）
-   - 攻击缩圈平直奖励（BAD -10% / GOOD 0% / GREAT +8% / PERFECT +15%）与休闲模式兜底
+   - 攻击缩圈平直奖励（BAD -10% / GOOD +10% / GREAT +20% / PERFECT +30%）与休闲模式兜底
    - 原著七阶 (1-7) 线性等阶差空格格挡减伤公式（无人工封顶与保底）
    - 纯 realDt 60fps RAF 状态机（TELEGRAPH -> SHRINK_SLOWMO -> RESOLVE）
-   - 受管持久化偏好 (combat_ring_assist_mode / combat_casual_mode) 与事件通知
+   - 受管持久化偏好 (combat_ring_assist_mode / combat_casual_mode / combat_auto_end_turn) 与事件通知
    ========================================================================= */
 (function (global) {
   'use strict';
 
   var STORAGE_KEY_ASSIST = 'combat_ring_assist_mode';
   var STORAGE_KEY_CASUAL = 'combat_casual_mode';
+  var AUTO_END_TURN_KEY = 'combat_auto_end_turn';
 
   var GRADES = Object.freeze(['BAD', 'GOOD', 'GREAT', 'PERFECT']);
   var GRADE_ORDER = Object.freeze({ BAD: 0, GOOD: 1, GREAT: 2, PERFECT: 3 });
 
   var RING_BONUS = Object.freeze({
     BAD: -0.10,
-    GOOD: 0.00,
-    GREAT: 0.08,
-    PERFECT: 0.15,
+    GOOD: 0.10,
+    GREAT: 0.20,
+    PERFECT: 0.30,
   });
 
   var BLOCK_BASE = Object.freeze({
@@ -37,7 +38,8 @@
   var ASSIST_MODES = Object.freeze(['standard', 'relaxed', 'off']);
 
   var RELAXED_SCALE = 1.35;
-  var TELEGRAPH_MS = 165;
+  var TELEGRAPH_MS = 240;
+  var MIN_PRE_TELEGRAPH_MS = 220;
   var SLOWMO_SCALE = 0.25;
   var SLOWMO_FAST_SCALE = 0.38;
   var HITSTOP_MS = 55;
@@ -51,24 +53,24 @@
   var R_MIN = 8;
 
   var ATTACK_WINDOWS = Object.freeze({
-    0:  Object.freeze({ durationMs: 580, perfectMs: 46, greatMs: 105, goodMs: 190 }),
-    20: Object.freeze({ durationMs: 530, perfectMs: 42, greatMs: 96,  goodMs: 175 }),
-    40: Object.freeze({ durationMs: 480, perfectMs: 38, greatMs: 88,  goodMs: 160 }),
-    60: Object.freeze({ durationMs: 430, perfectMs: 34, greatMs: 78,  goodMs: 142 }),
+    0:  Object.freeze({ durationMs: 680, perfectMs: 55, greatMs: 120, goodMs: 210 }),
+    20: Object.freeze({ durationMs: 630, perfectMs: 50, greatMs: 112, goodMs: 195 }),
+    40: Object.freeze({ durationMs: 580, perfectMs: 46, greatMs: 104, goodMs: 180 }),
+    60: Object.freeze({ durationMs: 530, perfectMs: 42, greatMs: 95,  goodMs: 165 }),
   });
 
   var BLOCK_WINDOW = Object.freeze({
-    durationMs: 540,
-    perfectMs: 45,
-    greatMs: 102,
-    goodMs: 185,
+    durationMs: 620,
+    perfectMs: 52,
+    greatMs: 115,
+    goodMs: 200,
   });
 
   var CONSTANTS = Object.freeze({
     BAD: -0.10,
-    GOOD: 0,
-    GREAT: 0.08,
-    PERFECT: 0.15,
+    GOOD: 0.10,
+    GREAT: 0.20,
+    PERFECT: 0.30,
     GRADES: GRADES,
     RING_BONUS: RING_BONUS,
     BLOCK_BASE: BLOCK_BASE,
@@ -81,14 +83,17 @@
     ASSIST_MODES: ASSIST_MODES,
     RELAXED_SCALE: RELAXED_SCALE,
     TELEGRAPH_MS: TELEGRAPH_MS,
+    MIN_PRE_TELEGRAPH_MS: MIN_PRE_TELEGRAPH_MS,
     SLOWMO_SCALE: SLOWMO_SCALE,
     SLOWMO_FAST_SCALE: SLOWMO_FAST_SCALE,
     HITSTOP_MS: HITSTOP_MS,
     ATTACK_WINDOWS: ATTACK_WINDOWS,
     BLOCK_WINDOW: BLOCK_WINDOW,
+    AUTO_END_TURN_KEY: AUTO_END_TURN_KEY,
     STORAGE_KEYS: Object.freeze({
       ASSIST_MODE: STORAGE_KEY_ASSIST,
       CASUAL_MODE: STORAGE_KEY_CASUAL,
+      AUTO_END_TURN: AUTO_END_TURN_KEY,
     }),
   });
 
@@ -143,6 +148,7 @@
   var prefsCache = {
     assistMode: 'standard',
     casualMode: false,
+    autoEndTurn: true,
     initialized: false,
   };
 
@@ -248,15 +254,28 @@
     if (rawCasual !== null) {
       prefsCache.casualMode = coerceBool(rawCasual);
     }
+    var rawAutoEnd = readStorage(AUTO_END_TURN_KEY);
+    if (rawAutoEnd !== null && rawAutoEnd !== '') {
+      prefsCache.autoEndTurn = coerceBool(rawAutoEnd);
+    }
   }
 
   function dispatchPrefsChange() {
     try {
       if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+        var assist = getAssistMode();
+        var casual = isCasualMode();
+        var autoEnd = isAutoEndTurn();
         window.dispatchEvent(new CustomEvent('combat:prefschange', {
           detail: {
-            assistMode: getAssistMode(),
-            casualMode: isCasualMode(),
+            assistMode: assist,
+            ringAssistMode: assist,
+            combatRingAssist: assist,
+            casualMode: casual,
+            combatCasualMode: casual,
+            autoEndTurn: autoEnd,
+            combatAutoEndTurn: autoEnd,
+            source: 'combat-timing-ring',
           },
         }));
       }
@@ -273,12 +292,14 @@
     return prefsCache.assistMode;
   }
 
-  function setAssistMode(mode) {
+  function setAssistMode(mode, opts) {
     ensurePrefsLoaded();
     var valid = normalizeAssistMode(mode);
     prefsCache.assistMode = valid;
     writeStorage(STORAGE_KEY_ASSIST, valid);
-    dispatchPrefsChange();
+    if (!(opts && opts.silent)) {
+      dispatchPrefsChange();
+    }
     return valid;
   }
 
@@ -291,12 +312,34 @@
     return !!prefsCache.casualMode;
   }
 
-  function setCasualMode(bool) {
+  function setCasualMode(bool, opts) {
     ensurePrefsLoaded();
     var next = coerceBool(bool);
     prefsCache.casualMode = next;
     writeStorage(STORAGE_KEY_CASUAL, next ? 'true' : 'false');
-    dispatchPrefsChange();
+    if (!(opts && opts.silent)) {
+      dispatchPrefsChange();
+    }
+    return next;
+  }
+
+  function isAutoEndTurn() {
+    ensurePrefsLoaded();
+    var stored = readStorage(AUTO_END_TURN_KEY);
+    if (stored !== null && stored !== '') {
+      prefsCache.autoEndTurn = coerceBool(stored);
+    }
+    return !!prefsCache.autoEndTurn;
+  }
+
+  function setAutoEndTurn(val, opts) {
+    ensurePrefsLoaded();
+    var next = val === undefined ? true : coerceBool(val);
+    prefsCache.autoEndTurn = next;
+    writeStorage(AUTO_END_TURN_KEY, next ? 'true' : 'false');
+    if (!(opts && opts.silent)) {
+      dispatchPrefsChange();
+    }
     return next;
   }
 
@@ -1349,7 +1392,7 @@
         grade: 'GOOD',
         effectiveGrade: 'GOOD',
         deltaMs: 0,
-        bonus: 0,
+        bonus: RING_BONUS.GOOD,
         slowMoScale: 1.0,
       };
       judgments.push('GOOD');
@@ -1830,6 +1873,7 @@
     }
 
     // 尝试无缝承接 showPreTelegraph 已挂载的预告键帽，避免闪屏重载并复用已缓存坐标
+    var adoptedPre = null;
     var adoptedUi = null;
     var adoptedPt = null;
     if (!runtime.active && runtime.preTelegraph) {
@@ -1850,6 +1894,7 @@
         if (pre.safetyTimer) {
           try { clearTimeout(pre.safetyTimer); } catch (e) {}
         }
+        adoptedPre = pre;
         adoptedUi = pre.ui;
         if (!pre.layoutDirty && pre.layoutVersion === runtime.layoutVersion && pre.pt) {
           adoptedPt = pre.pt;
@@ -1865,10 +1910,13 @@
       cancel('superseded');
     }
 
+    var shownMs = adoptedPre ? Math.max(0, nowMs() - adoptedPre.startedAt) : 0;
+    var holdTelegraphMs = Math.max(0, MIN_PRE_TELEGRAPH_MS - shownMs);
+
     var token = ++runtime.sessionToken;
     runtime.active = true;
     runtime.mode = mode;
-    runtime.phase = 'SHRINK_SLOWMO';
+    runtime.phase = holdTelegraphMs > 0 ? 'TELEGRAPH' : 'SHRINK_SLOWMO';
     attachKeyListener();
 
     var win = mode === 'block'
@@ -1929,8 +1977,24 @@
       var shrinkElapsed = 0;
       var lastSweet = false;
       var lastTs = nowMs();
+      var holdTid = null;
+      var endTid = null;
+
+      var clearLocalTimers = function () {
+        if (holdTid !== null) {
+          try { clearTimeout(holdTid); } catch (e) {}
+          removeRuntimeTimer(holdTid);
+          holdTid = null;
+        }
+        if (endTid !== null) {
+          try { clearTimeout(endTid); } catch (e) {}
+          removeRuntimeTimer(endTid);
+          endTid = null;
+        }
+      };
 
       var cleanupSessionState = function () {
+        clearLocalTimers();
         if (runtime.rafId && typeof cancelAnimationFrame === 'function') {
           try { cancelAnimationFrame(runtime.rafId); } catch (e) {}
         }
@@ -2034,30 +2098,6 @@
         resolve(cancelRes);
       };
 
-      // 零延迟直入 slowMoScale 慢镜缩圈
-      setVfxSlowMo(effSlowMoScale);
-      if (layer) {
-        layer.classList.add('is-slowmo');
-        if (mode === 'block') layer.classList.add('is-block-mode');
-        else layer.classList.remove('is-block-mode');
-      }
-      if (ui && ui.anchor) {
-        ui.anchor.classList.remove('is-telegraph');
-        ui.anchor.classList.add('is-shrinking');
-      }
-      playCue('ring_slowmo_in');
-
-      runtime.onKeyAttempt = function (pressedKey) {
-        if (settled || token !== runtime.sessionToken) return;
-        var liveElapsed = shrinkElapsed + Math.max(0, Math.min(64, nowMs() - lastTs));
-        var deltaMs = liveElapsed - win.targetTimeMs;
-        var isRightKey = mode === 'block'
-          ? pressedKey === 'Space'
-          : pressedKey === expectedKey;
-        var grade = isRightKey ? judgeDelta(deltaMs, win) : 'BAD';
-        finishGateBeat(grade, deltaMs, pressedKey, false);
-      };
-
       var tickGateFrame = function () {
         if (settled || token !== runtime.sessionToken) return;
         var cur = nowMs();
@@ -2087,25 +2127,86 @@
         runtime.rafId = requestAnimationFrame(tickGateFrame);
       };
 
-      if (typeof requestAnimationFrame === 'function') {
-        runtime.rafId = requestAnimationFrame(tickGateFrame);
-      } else {
-        var endTid = setTimeout(function () {
-          removeRuntimeTimer(endTid);
+      var startGateShrink = function () {
+        if (settled || token !== runtime.sessionToken) return;
+        runtime.phase = 'SHRINK_SLOWMO';
+        shrinkElapsed = 0;
+        lastSweet = false;
+        lastTs = nowMs();
+
+        if (ui && ui.anchor) {
+          ui.anchor.classList.remove('is-telegraph');
+          ui.anchor.classList.add('is-shrinking');
+        }
+        playCue('ring_slowmo_in');
+
+        runtime.onKeyAttempt = function (pressedKey) {
           if (settled || token !== runtime.sessionToken) return;
-          finishGateBeat('BAD', win.durationMs - win.targetTimeMs, null, true);
-        }, win.durationMs);
-        runtime.timers.push(endTid);
+          var liveElapsed = shrinkElapsed + Math.max(0, Math.min(64, nowMs() - lastTs));
+          var deltaMs = liveElapsed - win.targetTimeMs;
+          var isRightKey = mode === 'block'
+            ? pressedKey === 'Space'
+            : pressedKey === expectedKey;
+          var grade = isRightKey ? judgeDelta(deltaMs, win) : 'BAD';
+          finishGateBeat(grade, deltaMs, pressedKey, false);
+        };
+
+        if (typeof requestAnimationFrame === 'function') {
+          runtime.rafId = requestAnimationFrame(tickGateFrame);
+        } else {
+          endTid = setTimeout(function () {
+            var finishedTid = endTid;
+            endTid = null;
+            if (finishedTid !== null) removeRuntimeTimer(finishedTid);
+            if (settled || token !== runtime.sessionToken) return;
+            finishGateBeat('BAD', win.durationMs - win.targetTimeMs, null, true);
+          }, win.durationMs);
+          runtime.timers.push(endTid);
+        }
+      };
+
+      // 立即切慢镜锁住 VFX 门控帧；短招若预亮不足 MIN_PRE_TELEGRAPH_MS 则补足清晰静止键帽缓冲后再缩圈
+      setVfxSlowMo(effSlowMoScale);
+      if (layer) {
+        layer.classList.add('is-slowmo');
+        if (mode === 'block') layer.classList.add('is-block-mode');
+        else layer.classList.remove('is-block-mode');
+      }
+
+      if (holdTelegraphMs > 0) {
+        runtime.phase = 'TELEGRAPH';
+        runtime.onKeyAttempt = null;
+        if (ui && ui.anchor) {
+          ui.anchor.classList.remove('is-shrinking', 'is-sweet');
+          ui.anchor.classList.add('is-telegraph');
+          if (ui.shrinkRing) ui.shrinkRing.style.transform = 'scale(1)';
+          if (ui.shrinkGlint) ui.shrinkGlint.style.transform = 'scale(1)';
+        }
+        if (!adoptedPre) {
+          playCue('ring_telegraph');
+        }
+        holdTid = setTimeout(function () {
+          var firedTid = holdTid;
+          holdTid = null;
+          if (firedTid !== null) removeRuntimeTimer(firedTid);
+          startGateShrink();
+        }, holdTelegraphMs);
+        runtime.timers.push(holdTid);
+      } else {
+        startGateShrink();
       }
     });
   }
 
   /* -------------------- 10. 全局与 CommonJS 导出 -------------------- */
   var api = {
+    AUTO_END_TURN_KEY: AUTO_END_TURN_KEY,
     getAssistMode: getAssistMode,
     setAssistMode: setAssistMode,
     isCasualMode: isCasualMode,
     setCasualMode: setCasualMode,
+    isAutoEndTurn: isAutoEndTurn,
+    setAutoEndTurn: setAutoEndTurn,
     getBeatSpec: getBeatSpec,
     generateKeySequence: generateKeySequence,
     calcRingBonus: calcRingBonus,

@@ -2977,7 +2977,7 @@ body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-grid .sl-card
   }
 }
 
-/* ===== 综合面板 #panel「设置」页紧凑排版与矮屏可视滚动条兜底 ===== */
+/* ===== 综合面板 #panel「设置」页双列紧凑排版与矮屏可视滚动条兜底 ===== */
 #panel .modal-scroll.is-settings-scroll {
   padding-top: 12px;
   padding-bottom: 12px;
@@ -2987,26 +2987,90 @@ body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-grid .sl-card
   padding-bottom: 4px;
   line-height: 1.46;
 }
-#panel #panel-body.is-settings-tab .panel-settings-pane > .set-row-head {
+#panel #panel-body.is-settings-tab .panel-settings-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+#panel #panel-body.is-settings-tab .panel-settings-pane > div {
+  padding: 0;
+  border-bottom: none;
+}
+#panel #panel-body.is-settings-tab .panel-settings-pane .set-sliders-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px 0;
+  padding: 0 0 10px;
+}
+#panel #panel-body.is-settings-tab .panel-settings-pane .set-slider-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+#panel #panel-body.is-settings-tab .panel-settings-pane .set-row-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-top: 8px;
-}
-#panel #panel-body.is-settings-tab .panel-settings-pane > .set-row-head:first-child {
+  gap: 10px;
   margin-top: 0;
 }
-#panel #panel-body.is-settings-tab .panel-settings-pane > input[type="range"] {
-  margin: 5px 0 4px;
+#panel #panel-body.is-settings-tab .panel-settings-pane input[type="range"] {
+  margin: 5px 0 2px;
 }
-#panel #panel-body.is-settings-tab .panel-settings-pane > .set-hint {
+#panel #panel-body.is-settings-tab .panel-settings-pane .set-hint {
   color: #526078;
   font-size: 11.5px;
   line-height: 1.36;
-  padding: 2px 0 8px;
+  padding: 2px 0 0;
+}
+#panel #panel-body.is-settings-tab .panel-settings-pane .set-combat-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(27, 35, 51, 0.10);
+}
+#panel #panel-body.is-settings-tab .panel-settings-pane .set-combat-ring-block {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+#panel #panel-body.is-settings-tab .panel-settings-pane .set-toggles-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(27, 35, 51, 0.11);
+}
+#panel #panel-body.is-settings-tab .panel-settings-pane .set-toggle-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+#panel #panel-body.is-settings-tab .panel-settings-pane .set-row-head.set-row-casual,
+#panel #panel-body.is-settings-tab .panel-settings-pane .set-row-head.set-row-auto-end {
+  align-items: center;
+}
+#panel #panel-body.is-settings-tab .panel-settings-pane #set-casual-toggle,
+#panel #panel-body.is-settings-tab .panel-settings-pane #set-auto-end-toggle {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+@media (min-width: 640px) {
+  #panel #panel-body.is-settings-tab .panel-settings-pane .set-sliders-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 24px;
+  }
+  #panel #panel-body.is-settings-tab .panel-settings-pane .set-toggles-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 24px;
+    align-items: start;
+  }
 }
 #panel #panel-body.is-settings-tab #set-reset {
-  margin-top: 10px;
+  margin-top: 12px;
 }
 @media (max-height: 640px) {
   #panel .modal-scroll {
@@ -3025,14 +3089,23 @@ body section#vn-saveload-modal.overlay .end-card.vn-modal-card .sl-grid .sl-card
     background: rgba(28, 76, 184, 0.34);
     border-radius: 3px;
   }
-  #panel #panel-body.is-settings-tab .panel-settings-pane > .set-row-head {
-    margin-top: 5px;
+  #panel #panel-body.is-settings-tab .panel-settings-pane .set-sliders-grid {
+    gap: 6px 20px;
+    padding-bottom: 8px;
   }
-  #panel #panel-body.is-settings-tab .panel-settings-pane > input[type="range"] {
-    margin: 4px 0 3px;
+  #panel #panel-body.is-settings-tab .panel-settings-pane input[type="range"] {
+    margin: 4px 0 2px;
   }
-  #panel #panel-body.is-settings-tab .panel-settings-pane > .set-hint {
-    padding: 1px 0 6px;
+  #panel #panel-body.is-settings-tab .panel-settings-pane .set-combat-section {
+    gap: 8px;
+    padding-top: 8px;
+  }
+  #panel #panel-body.is-settings-tab .panel-settings-pane .set-toggles-grid {
+    gap: 8px 20px;
+    padding-top: 8px;
+  }
+  #panel #panel-body.is-settings-tab .panel-settings-pane .set-hint {
+    padding: 1px 0 0;
   }
   #panel #panel-body.is-settings-tab #set-reset {
     margin-top: 8px;

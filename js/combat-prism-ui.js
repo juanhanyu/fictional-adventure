@@ -148,6 +148,7 @@
     viewportW: 1440,
     viewportH: 900,
     menuMode: 'root', // 'root' | 'skills' | 'items'
+    collapsed: false,
     logExpanded: false,
     hoveredWingIdx: null,
     hoveredBladeIdx: null,
@@ -169,6 +170,7 @@
     timingRestoreTimer: 0,
     rigEl: null,
     svgEl: null,
+    hubToggleEl: null,
     cascadeListEl: null,
     ampPanelEl: null,
     spineEl: null,
@@ -407,6 +409,7 @@
     cancelDissolve();
     const realEnd = document.getElementById('cb-btn-endturn');
     if (!realEnd || realEnd.disabled) return false;
+    uiState.collapsed = false;
     uiState.menuMode = 'root';
     uiState.hoveredBladeIdx = null;
     uiState.hoveringAmpMini = false;
@@ -1024,10 +1027,14 @@
 
   function cycleAmp(delta, opts) {
     const wasDissolving = cancelDissolve();
+    const wasCollapsed = !!uiState.collapsed;
+    if (wasCollapsed) {
+      uiState.collapsed = false;
+    }
     const step = delta < 0 ? -1 : 1;
     const info = readOvercastInfo();
     if (!info.enabled || !info.allowedTiers.length) {
-      if (wasDissolving) sync();
+      if (wasDissolving || wasCollapsed) sync();
       return false;
     }
     const tiers = info.allowedTiers.map(t => t.pct);
@@ -1037,7 +1044,11 @@
       // 1:1 标杆左键/E 原地升档：0% → 20% → 40% → 60% → 0%（按 maxAmpCap 动态封顶循环）
       const higher = tiers.find(v => v > cur + 0.005);
       const nextVal = higher != null ? higher : tiers[0];
-      return applyAmpPct(nextVal, opts);
+      const changed = applyAmpPct(nextVal, opts);
+      if (wasCollapsed && !uiState.syncing && uiState.rigEl && uiState.rigEl.classList.contains('is-collapsed')) {
+        sync();
+      }
+      return changed;
     }
 
     // 1:1 标杆右键/Shift+E 原地降档：60% → 40% → 20% → 0%（已在 0% 时静默止步）
@@ -1050,10 +1061,14 @@
     }
     const nextVal = lower != null ? lower : tiers[0];
     if (Math.abs(nextVal - cur) <= 1e-4) {
-      if (wasDissolving) sync();
+      if (wasDissolving || wasCollapsed) sync();
       return false;
     }
-    return applyAmpPct(nextVal, opts);
+    const changed = applyAmpPct(nextVal, opts);
+    if (wasCollapsed && !uiState.syncing && uiState.rigEl && uiState.rigEl.classList.contains('is-collapsed')) {
+      sync();
+    }
+    return changed;
   }
 
   function stepAmpByWheel(delta, opts) {
@@ -1308,6 +1323,10 @@
     if (nextMode === 'assist') {
       return false;
     }
+    const wasCollapsed = !!uiState.collapsed;
+    if (wasCollapsed) {
+      uiState.collapsed = false;
+    }
     const normalized = nextMode === 'guard' ? 'skills' : nextMode;
     const valid = normalized === 'skills' || normalized === 'items'
       ? normalized
@@ -1322,9 +1341,48 @@
       uiState.hoveredBladeIdx = null;
       uiState.lastBladeSig = '';
       safeSfx('ui_tick');
+    } else if (wasCollapsed) {
+      safeSfx('ui_tick', { gain: 0.78 });
     }
     sync();
     return true;
+  }
+
+  function setCollapsed(flag, opts) {
+    const next = !!flag;
+    const prev = !!uiState.collapsed;
+    const silent = !!(opts && opts.silent);
+    const skipSync = !!(opts && opts.skipSync);
+
+    if (next) {
+      uiState.collapsed = true;
+      uiState.menuMode = 'root';
+      uiState.hoveredWingIdx = null;
+      uiState.hoveredBladeIdx = null;
+      uiState.hoveringAmpMini = false;
+      uiState.lastBladeSig = '';
+      uiState.lastSkillCastAt = 0;
+      cancelPendingHoverClear();
+      clearRealHover({ resetLast: true });
+      syncAvForecast(null, uiState.lastBattleState || getEngineBattle());
+      if (!silent && !prev) {
+        safeSfx('ui_tick', { gain: 0.72 });
+      }
+    } else {
+      uiState.collapsed = false;
+      if (!silent && prev) {
+        safeSfx('ui_tick', { gain: 0.78 });
+      }
+    }
+
+    if (!skipSync) {
+      sync();
+    }
+    return uiState.collapsed;
+  }
+
+  function toggleCollapsed(opts) {
+    return setCollapsed(!uiState.collapsed, opts);
   }
 
   function openSkills() { return setMode('skills'); }
@@ -1606,6 +1664,7 @@
   function renderSvgHairlines(targets, hoveredIdx) {
     if (!uiState.svgEl) return;
     const parts = [];
+    parts.push('<g class="rig-rays-layer">');
     parts.push('<path class="rig-orbit-gold" d="M 8 -166 A 174 174 0 0 1 74 174" />');
     parts.push('<path class="rig-orbit-blue" d="M -8 -138 A 144 144 0 0 1 54 150" />');
     parts.push('<polygon class="rig-node-gem" points="30,-136 35,-128 30,-120 25,-128" opacity="0.88" />');
@@ -1620,11 +1679,14 @@
       const gCls = 'rig-node-gem' + (pt.hero ? ' blue' : '') + (lit ? ' lit' : '');
       parts.push(`<polygon class="${gCls}" points="${pt.tipX},${pt.tipY - 4.5} ${pt.tipX + 4.5},${pt.tipY} ${pt.tipX},${pt.tipY + 4.5} ${pt.tipX - 4.5},${pt.tipY}" />`);
     });
+    parts.push('</g>');
 
-    parts.push('<polygon fill="none" stroke="rgba(239,224,190,0.72)" stroke-width="1" points="0,-14 14,0 0,14 -14,0" />');
-    parts.push('<polygon fill="#1658EB" points="0,-8 8,0 0,8 -8,0" />');
-    parts.push('<polygon fill="#EFE0BE" points="0,-4.5 4.5,0 0,4.5 -4.5,0" />');
-    parts.push('<polygon fill="#FFFFFF" points="0,-2 2,0 0,2 -2,0" />');
+    parts.push('<g class="rig-hub-group">');
+    parts.push('<polygon class="rig-hub-outer" fill="none" stroke="rgba(239,224,190,0.72)" stroke-width="1" points="0,-14 14,0 0,14 -14,0" />');
+    parts.push('<polygon class="rig-hub-mid" fill="#1658EB" points="0,-8 8,0 0,8 -8,0" />');
+    parts.push('<polygon class="rig-hub-inner" fill="#EFE0BE" points="0,-4.5 4.5,0 0,4.5 -4.5,0" />');
+    parts.push('<polygon class="rig-hub-core" fill="#FFFFFF" points="0,-2 2,0 0,2 -2,0" />');
+    parts.push('</g>');
     uiState.svgEl.innerHTML = parts.join('');
   }
 
@@ -1718,6 +1780,7 @@
   }
 
   function setActiveActor(actorKey) {
+    const prevActorKey = uiState.lastActiveActorKey;
     if (actorKey == null || actorKey === '') {
       uiState.activeActorOverride = null;
     } else {
@@ -1725,6 +1788,9 @@
     }
     uiState.lastBladeSig = '';
     const resolved = getActiveActorSpec(uiState.lastBattleState || getEngineBattle());
+    if (resolved.actorKey !== prevActorKey) {
+      uiState.collapsed = false;
+    }
     uiState.lastActiveActorKey = resolved.actorKey;
     if (uiState.mounted) {
       sync();
@@ -2026,7 +2092,11 @@
     const actorCy = aBox.top + aBox.height * 0.48;
     const anchorY = Math.round(Math.max(minAy, Math.min(maxAy, actorCy)));
 
-    uiState.lastActiveActorKey = aBox.actorKey || 'player';
+    const nextActorKey = aBox.actorKey || 'player';
+    if (uiState.lastActiveActorKey && nextActorKey !== uiState.lastActiveActorKey) {
+      uiState.collapsed = false;
+    }
+    uiState.lastActiveActorKey = nextActorKey;
     uiState.lastFieldW = Math.round(fieldW);
     uiState.lastFieldH = Math.round(fieldH);
     uiState.skyTopY = Math.max(0, Math.round(intentMaxBottom));
@@ -2801,14 +2871,26 @@
         <div id="cb-prism-blade-list" class="cb-prism-blade-list"></div>
         <div id="cb-prism-amp-panel" class="cb-prism-amp-panel hidden" hidden aria-hidden="true" style="display:none"></div>
       </div>
+
+      <button type="button" class="cb-prism-hub-toggle" id="cb-pw-hub-toggle" aria-label="收起战斗菜单" aria-expanded="true" data-indie-tip="收起战斗菜单"></button>
     `;
 
     field.appendChild(nav);
     uiState.rigEl = nav;
     uiState.svgEl = nav.querySelector('#cb-prism-svg');
+    uiState.hubToggleEl = nav.querySelector('#cb-pw-hub-toggle');
     uiState.cascadeListEl = nav.querySelector('#cb-prism-blade-list');
     uiState.ampPanelEl = nav.querySelector('#cb-prism-amp-panel');
     uiState.spineEl = nav.querySelector('#cb-cascade-spine');
+
+    if (uiState.hubToggleEl) {
+      uiState.hubToggleEl.addEventListener('click', ev => {
+        ev.stopPropagation();
+        if (shouldHardDissolve() || isTimingOrAsyncDissolved()) return;
+        cancelDissolve();
+        toggleCollapsed();
+      });
+    }
 
     nav.querySelectorAll('.cb-pwing-wrap').forEach(wrap => {
       const idx = Number(wrap.getAttribute('data-wing'));
@@ -3035,6 +3117,7 @@
         uiState.lastBattleWaveKey = bwKey;
         uiState.lastBattleTurn = (b && typeof b.turn === 'number') ? b.turn : -1;
         uiState.menuMode = 'root';
+        uiState.collapsed = false;
         uiState.logExpanded = false;
         uiState.hoveredWingIdx = null;
         uiState.hoveredBladeIdx = null;
@@ -3066,6 +3149,9 @@
         const turnChanged = typeof b.turn === 'number' && uiState.lastBattleTurn >= 0 && b.turn !== uiState.lastBattleTurn;
         if (typeof b.turn === 'number') uiState.lastBattleTurn = b.turn;
         if (turnChanged || isEnemyTurnState(b)) {
+          if (uiState.collapsed) {
+            uiState.collapsed = false;
+          }
           if (uiState.menuMode !== 'root' || uiState.hoveredSkillId || uiState.lastHoveredSkillId) {
             uiState.menuMode = 'root';
             uiState.hoveredWingIdx = null;
@@ -3103,7 +3189,7 @@
         stopTimingRestoreWatch();
       }
 
-      if (!usePrism || uiState.menuMode === 'root' || dissolved) {
+      if (!usePrism || uiState.menuMode === 'root' || dissolved || uiState.collapsed) {
         if (uiState.hoveredSkillId) {
           syncAvForecast(null, b);
         }
@@ -3140,13 +3226,27 @@
         uiState.menuMode = 'root';
       }
 
+      const collapsed = !!uiState.collapsed;
       uiState.rigEl.classList.toggle('dissolved', dissolved);
       uiState.rigEl.classList.toggle('is-timing-dissolved', timingDissolved);
       uiState.rigEl.classList.toggle('is-hard-dissolved', hardDissolved);
+      uiState.rigEl.classList.toggle('is-collapsed', collapsed);
       uiState.rigEl.classList.toggle('mode-root', uiState.menuMode === 'root');
       uiState.rigEl.classList.toggle('mode-skills', uiState.menuMode === 'skills');
       uiState.rigEl.classList.toggle('mode-items', uiState.menuMode === 'items');
       uiState.rigEl.classList.remove('mode-amp', 'mode-guard', 'mode-assist');
+
+      const hubToggle = (uiState.hubToggleEl && uiState.hubToggleEl.isConnected)
+        ? uiState.hubToggleEl
+        : document.getElementById('cb-pw-hub-toggle');
+      if (hubToggle) {
+        uiState.hubToggleEl = hubToggle;
+        const hubTip = collapsed ? '展开战斗菜单' : '收起战斗菜单';
+        hubToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        hubToggle.setAttribute('aria-label', hubTip);
+        hubToggle.setAttribute('data-indie-tip', hubTip);
+        hubToggle.removeAttribute('title');
+      }
 
       const noActionsLeft = !!(b && !b.over && (b.ap <= 0 || enabledSkills.length === 0));
       const realEnd = document.getElementById('cb-btn-endturn');
@@ -3444,6 +3544,11 @@
       ev.preventDefault();
       ev.stopImmediatePropagation();
       cancelDissolve();
+      if (uiState.collapsed) {
+        uiState.collapsed = false;
+        openSkills();
+        return;
+      }
       if (uiState.menuMode === 'skills') {
         if (uiState.lastSkillCastAt && (Date.now() - uiState.lastSkillCastAt) < 1200) {
           // 兼容 W→2→W→3 肌肉记忆：施法后 1.2s 内首次按 W 视作确认留在技能页并消费标志，再按 W 或按 Esc 立刻返回主翼
@@ -3470,6 +3575,11 @@
       ev.preventDefault();
       ev.stopImmediatePropagation();
       cancelDissolve();
+      if (uiState.collapsed) {
+        uiState.collapsed = false;
+        openItems();
+        return;
+      }
       if (uiState.menuMode === 'items') closeCascade();
       else openItems();
       return;
@@ -3480,12 +3590,15 @@
       if (realEnd && !realEnd.disabled) {
         ev.preventDefault();
         ev.stopImmediatePropagation();
+        if (uiState.collapsed) {
+          uiState.collapsed = false;
+        }
         triggerEndTurnAction();
       }
       return;
     }
 
-    if (ev.key >= '1' && ev.key <= '9' && uiState.menuMode !== 'root') {
+    if (ev.key >= '1' && ev.key <= '9' && uiState.menuMode !== 'root' && !uiState.collapsed) {
       const idx = Number(ev.key) - 1;
       const item = uiState.currentItems[idx];
       if (item && !item.disabled && !item.isPlaceholder) {
@@ -3499,7 +3612,7 @@
 
   function onContextMenu(ev) {
     if (isTimingOrAsyncDissolved()) return;
-    if (!isActive() || uiState.menuMode === 'root') return;
+    if (!isActive() || uiState.menuMode === 'root' || uiState.collapsed) return;
     if (ev.target && ev.target.closest && ev.target.closest('#cb-pw-amp, #cb-pw-amp-mini')) return;
     ev.preventDefault();
     closeCascade();
@@ -3522,6 +3635,7 @@
   function setEnabled(flag) {
     uiState.enabled = !!flag;
     uiState.menuMode = 'root';
+    uiState.collapsed = false;
     uiState.lastBladeSig = '';
     uiState.lastSkillCastAt = 0;
     uiState.hoveringAmpMini = false;
@@ -3673,6 +3787,7 @@
     }
     uiState.rigEl = null;
     uiState.svgEl = null;
+    uiState.hubToggleEl = null;
     uiState.cascadeListEl = null;
     uiState.ampPanelEl = null;
     uiState.spineEl = null;
@@ -3680,6 +3795,7 @@
     uiState.avRailEl = null;
     uiState.avListEl = null;
     uiState.avForecastEl = null;
+    uiState.collapsed = false;
     uiState.lastAvSig = '';
     uiState.lastBattleWaveKey = '';
     uiState.lastBattleTurn = -1;
@@ -3710,6 +3826,8 @@
     readBattleItems,
     registerItemProvider,
     setMode,
+    setCollapsed,
+    toggleCollapsed,
     openSkills,
     openAmp,
     openItems,
@@ -3729,6 +3847,7 @@
       mounted: uiState.mounted,
       active: isActive(),
       menuMode: uiState.menuMode,
+      collapsed: !!uiState.collapsed,
       logExpanded: uiState.logExpanded,
       itemCount: uiState.currentItems.length,
       ampPct: uiState.lastAmpPct,

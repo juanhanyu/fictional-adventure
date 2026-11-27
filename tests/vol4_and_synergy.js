@@ -324,7 +324,7 @@ ok('演武新增第 8 幕 (turning_point_corridor) 与第 9 幕 (wind_god_eye) �
   b8.ap = 2;
   CE.useSkill('water_2_surge', 0, b8);
   const p2Ok8 = inWave2 && boss.phase === 2 && b8.metrics.phase2Triggered === true
-    && boss.shield >= 112 && (boss.status && boss.status.stagger >= 1);
+    && boss.shield >= 86 && (boss.status && boss.status.stagger >= 1);
 
   // 模拟第 2 波战败 -> 渲染 #cr-retry-boss 并可一键从首领波重开
   boss.status.stagger = 0;
@@ -360,7 +360,7 @@ ok('演武新增第 8 幕 (turning_point_corridor) 与第 9 幕 (wind_god_eye) �
   boss.hp = Math.floor(boss.mhp * 0.55) + 10;
   CE.useSkill('ice_3_starfrost', 0, b9);
   const p2Ok = boss.phase === 2 && b9.metrics.phase2Triggered === true
-    && boss.shield >= 195 && (boss.status && boss.status.stagger >= 1);
+    && boss.shield >= 145 && (boss.status && boss.status.stagger >= 1);
 
   // 击破 Boss 弹出结算复盘弹窗
   boss.evadeCharges = 0;

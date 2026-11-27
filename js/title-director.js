@@ -72,6 +72,7 @@
 
   var COMBAT_RING_ASSIST_KEY = 'combat_ring_assist_mode';
   var COMBAT_CASUAL_MODE_KEY = 'combat_casual_mode';
+  var COMBAT_AUTO_END_KEY = 'combat_auto_end_turn';
 
   var RING_ASSIST_OPTS = [
     { value: 'standard', label: '标准' },
@@ -2852,13 +2853,22 @@
               '<div class="v3-switch-row v3-casual-row">' +
                 '<span class="v3-slider-lbl">休闲模式</span>' +
                 '<div class="v3-bare-switcher">' +
-                  '<button type="button" id="v3-set-casual-toggle" class="is-off" aria-pressed="false" aria-label="切换休闲模式">' +
-                    '<span class="v3-casual-dot" aria-hidden="true"></span>' +
+                  '<button type="button" id="v3-set-casual-toggle" class="v3-combat-toggle is-off" aria-pressed="false" aria-label="切换休闲模式" data-indie-tip="开启后战斗难度大幅下降，适合想要轻松享受剧情的休闲玩家">' +
+                    '<span class="v3-casual-dot v3-combat-dot" aria-hidden="true"></span>' +
                     '<span id="v3-casual-toggle-val" class="v3-sw-val">关闭</span>' +
                   '</button>' +
                 '</div>' +
               '</div>' +
               '<p class="v3-combat-sub">开启后战斗难度大幅下降，适合想要轻松享受剧情的休闲玩家</p>' +
+              '<div class="v3-switch-row v3-auto-end-row">' +
+                '<span class="v3-slider-lbl">自动结束</span>' +
+                '<div class="v3-bare-switcher">' +
+                  '<button type="button" id="v3-set-auto-end-toggle" class="v3-combat-toggle" aria-pressed="true" aria-label="切换自动结束回合" data-indie-tip="无可用行动后自动切敌回合；关闭后可手动结束回合">' +
+                    '<span class="v3-casual-dot v3-combat-dot" aria-hidden="true"></span>' +
+                    '<span id="v3-auto-end-toggle-val" class="v3-sw-val">自动切回合</span>' +
+                  '</button>' +
+                '</div>' +
+              '</div>' +
             '</div>' +
           '</div>' +
           '<div class="v3-set-pane hidden" data-v3-pane="soundtrack">' +
@@ -3121,9 +3131,97 @@
     return !!val;
   }
 
+  function normalizeAutoEndTurn(val) {
+    if (val === false) return false;
+    if (val == null || val === true) return true;
+    if (typeof val === 'number') return isNaN(val) ? true : val !== 0;
+    var s = String(val).trim().toLowerCase();
+    if (s === 'false' || s === '0' || s === 'off' || s === 'no') return false;
+    return true;
+  }
+
   function getCombatTimingRingApi() {
     if (root && root.CombatTimingRing) return root.CombatTimingRing;
     return null;
+  }
+
+  function getCombatEngineApi() {
+    if (root && root.CombatEngine) return root.CombatEngine;
+    return null;
+  }
+
+  function readAutoEndTurnSetting() {
+    var val = true;
+    try {
+      if (root && root.VNUx && typeof root.VNUx.getPrefs === 'function') {
+        var p = root.VNUx.getPrefs();
+        if (p && p.combatAutoEndTurn != null) val = normalizeAutoEndTurn(p.combatAutoEndTurn);
+      }
+    } catch (e) {}
+    try {
+      var lsAutoEnd = localStorage.getItem(COMBAT_AUTO_END_KEY);
+      if (lsAutoEnd !== null && lsAutoEnd !== '') val = normalizeAutoEndTurn(lsAutoEnd);
+    } catch (e) {}
+    try {
+      var engAutoEnd = null;
+      var ce = getCombatEngineApi();
+      if (ce) {
+        if (typeof ce.isAutoEndTurn === 'function') engAutoEnd = ce.isAutoEndTurn();
+        else if (typeof ce.getAutoEndTurn === 'function') engAutoEnd = ce.getAutoEndTurn();
+        else if (typeof ce.isCombatAutoEndTurn === 'function') engAutoEnd = ce.isCombatAutoEndTurn();
+        else if (typeof ce.getCombatAutoEndTurn === 'function') engAutoEnd = ce.getCombatAutoEndTurn();
+      }
+      if (engAutoEnd == null) {
+        var ctr = getCombatTimingRingApi();
+        if (ctr) {
+          if (typeof ctr.isAutoEndTurn === 'function') engAutoEnd = ctr.isAutoEndTurn();
+          else if (typeof ctr.getAutoEndTurn === 'function') engAutoEnd = ctr.getAutoEndTurn();
+          else if (typeof ctr.getPrefs === 'function') {
+            var cp = ctr.getPrefs();
+            if (cp) engAutoEnd = cp.autoEndTurn != null ? cp.autoEndTurn : cp.combatAutoEndTurn;
+          }
+        }
+      }
+      if (engAutoEnd != null && engAutoEnd !== '') val = normalizeAutoEndTurn(engAutoEnd);
+    } catch (e) {}
+    return val;
+  }
+
+  function writeAutoEndTurnSetting(val) {
+    var next = normalizeAutoEndTurn(val);
+    if (root && root.VNUx && typeof root.VNUx.setPref === 'function') {
+      try { root.VNUx.setPref('combatAutoEndTurn', next); } catch (e) {}
+      return next;
+    }
+    try { localStorage.setItem(COMBAT_AUTO_END_KEY, next ? 'true' : 'false'); } catch (e) {}
+    try {
+      var vnKey = (root && root.VNUx && root.VNUx.VN_PREFS_KEY) || 'ojousama_vn_prefs_v1';
+      var raw = JSON.parse(localStorage.getItem(vnKey) || '{}');
+      if (raw && typeof raw === 'object') {
+        raw.combatAutoEndTurn = next;
+        localStorage.setItem(vnKey, JSON.stringify(raw));
+      }
+    } catch (e) {}
+    var handled = false;
+    var ce = getCombatEngineApi();
+    if (ce) {
+      try {
+        if (typeof ce.setAutoEndTurn === 'function') { ce.setAutoEndTurn(next); handled = true; }
+        else if (typeof ce.setCombatAutoEndTurn === 'function') { ce.setCombatAutoEndTurn(next); handled = true; }
+      } catch (e) {}
+    }
+    var ctr = getCombatTimingRingApi();
+    if (ctr) {
+      try {
+        if (typeof ctr.setAutoEndTurn === 'function') { ctr.setAutoEndTurn(next); handled = true; }
+        else if (typeof ctr.setCombatAutoEndTurn === 'function') { ctr.setCombatAutoEndTurn(next); handled = true; }
+      } catch (e) {}
+    }
+    if (!handled) {
+      var live = readLiveSettings();
+      dispatchFallbackCombatPrefsEvent(live.combatRingAssist, live.combatCasualMode, next);
+    }
+    return next;
   }
 
   function ensureCombatSettingsStyle() {
@@ -3133,12 +3231,13 @@
     style.textContent =
       '#title-screen #v3-view-settings .v3-set-body{' +
         'max-height:min(620px,68vh);' +
-        'padding:12px 0 8px;' +
+        'padding:10px 0 6px;' +
       '}' +
-      '#title-screen #v3-view-settings .v3-set-section{margin-bottom:12px;}' +
-      '#title-screen #v3-view-settings .v3-combat-section{margin-bottom:8px;}' +
-      '#title-screen #v3-view-settings .v3-casual-row{min-height:30px;padding-bottom:0;}' +
-      '#title-screen #v3-set-casual-toggle{' +
+      '#title-screen #v3-view-settings .v3-set-section{margin-bottom:10px;}' +
+      '#title-screen #v3-view-settings .v3-combat-section{margin-bottom:6px;}' +
+      '#title-screen #v3-view-settings .v3-casual-row,' +
+      '#title-screen #v3-view-settings .v3-auto-end-row{min-height:30px;padding-bottom:0;}' +
+      '#title-screen #v3-view-settings .v3-combat-toggle{' +
         'display:inline-flex;align-items:center;justify-content:center;gap:8px;' +
         'width:100%;min-height:32px;padding:0 4px;' +
         'border:none;border-bottom:1px solid rgba(22,88,235,0.24);border-radius:0;' +
@@ -3146,62 +3245,69 @@
         'letter-spacing:0.05em;cursor:pointer;' +
         'transition:color 0.18s ease,border-bottom-color 0.18s ease,background-color 0.18s ease;' +
       '}' +
-      '#title-screen #v3-set-casual-toggle .v3-sw-val{flex:0 0 auto;}' +
-      '#title-screen #v3-set-casual-toggle:hover,#title-screen #v3-set-casual-toggle:focus-visible{' +
+      '#title-screen #v3-view-settings .v3-combat-toggle .v3-sw-val{flex:0 0 auto;}' +
+      '#title-screen #v3-view-settings .v3-combat-toggle:hover,' +
+      '#title-screen #v3-view-settings .v3-combat-toggle:focus-visible{' +
         'color:#1658eb;border-bottom-color:#1658eb;background:rgba(22,88,235,0.04);' +
       '}' +
-      '#title-screen #v3-set-casual-toggle.is-off{' +
+      '#title-screen #v3-view-settings .v3-combat-toggle.is-off{' +
         'color:#64748b;border-bottom-color:rgba(100,116,139,0.26);' +
       '}' +
-      '#title-screen #v3-set-casual-toggle .v3-casual-dot{' +
+      '#title-screen #v3-view-settings .v3-combat-toggle .v3-casual-dot,' +
+      '#title-screen #v3-view-settings .v3-combat-toggle .v3-combat-dot{' +
         'width:6px;height:6px;transform:rotate(45deg);background:#1658eb;flex-shrink:0;' +
         'transition:background-color 0.18s ease,opacity 0.18s ease;' +
       '}' +
-      '#title-screen #v3-set-casual-toggle.is-off .v3-casual-dot{background:#94a3b8;opacity:0.55;}' +
+      '#title-screen #v3-view-settings .v3-combat-toggle.is-off .v3-casual-dot,' +
+      '#title-screen #v3-view-settings .v3-combat-toggle.is-off .v3-combat-dot{background:#94a3b8;opacity:0.55;}' +
       '#title-screen .v3-combat-sub{' +
-        'margin:1px 0 0;padding:0;font-size:11.5px;line-height:1.35;' +
+        'margin:1px 0 2px;padding:0;font-size:11.5px;line-height:1.32;' +
         'letter-spacing:0.02em;color:#526078;' +
       '}' +
       '@media (max-height:760px) and (min-width:721px){' +
-        '#title-screen #v3-view-settings .v3-set-body{padding:8px 0 6px;max-height:min(540px,70vh);}' +
-        '#title-screen #v3-view-settings .v3-set-section{margin-bottom:9px;}' +
-        '#title-screen #v3-view-settings .v3-set-sec-lbl{margin-bottom:4px;font-size:11.5px;}' +
+        '#title-screen #v3-view-settings .v3-set-body{padding:6px 0 4px;max-height:min(550px,72vh);}' +
+        '#title-screen #v3-view-settings .v3-set-section{margin-bottom:7px;}' +
+        '#title-screen #v3-view-settings .v3-combat-section{margin-bottom:5px;}' +
+        '#title-screen #v3-view-settings .v3-set-sec-lbl{margin-bottom:3px;font-size:11.5px;}' +
         '#title-screen #v3-view-settings .v3-slider-row,' +
-        '#title-screen #v3-view-settings .v3-switch-row{min-height:29px;padding:1px 0;}' +
+        '#title-screen #v3-view-settings .v3-switch-row{min-height:27px;padding:1px 0;}' +
         '#title-screen #v3-view-settings .v3-bare-switcher .v3-sw-arrow,' +
         '#title-screen #v3-set-voice-toggle,' +
-        '#title-screen #v3-set-casual-toggle{min-height:26px;}' +
-        '#title-screen #v3-view-settings .indie-settings-section{margin-top:8px;padding-top:8px;}' +
-        '#title-screen #v3-view-settings .indie-settings-row{min-height:30px;padding:2px 0;}' +
+        '#title-screen #v3-view-settings .v3-combat-toggle{min-height:25px;}' +
+        '#title-screen .v3-combat-sub{margin:0 0 1px;font-size:11px;line-height:1.25;}' +
+        '#title-screen #v3-view-settings .indie-settings-section{margin-top:6px;padding-top:6px;}' +
+        '#title-screen #v3-view-settings .indie-settings-row{min-height:26px;padding:1px 0;}' +
       '}' +
       '@media (max-height:680px) and (min-width:721px){' +
         '#title-screen #v3-view-settings .v3-set-body{' +
-          'padding:6px 0 4px;max-height:calc(100vh - 140px);max-height:calc(100dvh - 140px);' +
+          'padding:4px 0 2px;max-height:calc(100vh - 136px);max-height:calc(100dvh - 136px);' +
         '}' +
-        '#title-screen #v3-view-settings .v3-set-section{margin-bottom:6px;}' +
-        '#title-screen #v3-view-settings .v3-set-sec-lbl{margin-bottom:2px;font-size:11px;line-height:1.25;}' +
+        '#title-screen #v3-view-settings .v3-set-section{margin-bottom:5px;}' +
+        '#title-screen #v3-view-settings .v3-combat-section{margin-bottom:4px;}' +
+        '#title-screen #v3-view-settings .v3-set-sec-lbl{margin-bottom:2px;font-size:10.5px;line-height:1.2;}' +
         '#title-screen #v3-view-settings .v3-slider-row,' +
-        '#title-screen #v3-view-settings .v3-switch-row{min-height:25px;padding:0;}' +
-        '#title-screen #v3-view-settings .v3-hairline-range{height:20px;}' +
+        '#title-screen #v3-view-settings .v3-switch-row{min-height:23px;padding:0;}' +
+        '#title-screen #v3-view-settings .v3-hairline-range{height:18px;}' +
         '#title-screen #v3-view-settings .v3-bare-switcher .v3-sw-arrow,' +
         '#title-screen #v3-set-voice-toggle,' +
-        '#title-screen #v3-set-casual-toggle{min-height:24px;font-size:12.5px;}' +
-        '#title-screen .v3-combat-sub{margin:1px 0 0;font-size:11px;line-height:1.28;}' +
-        '#title-screen #v3-view-settings .indie-settings-section{margin-top:6px;padding-top:6px;}' +
-        '#title-screen #v3-view-settings .indie-settings-head{margin-bottom:3px;}' +
-        '#title-screen #v3-view-settings .indie-settings-row{min-height:24px;padding:1px 0;}' +
-        '#title-screen #v3-view-settings .indie-action-btn{min-height:22px;padding:1px 8px;font-size:11px;}' +
+        '#title-screen #v3-view-settings .v3-combat-toggle{min-height:22px;font-size:12px;}' +
+        '#title-screen .v3-combat-sub{margin:0 0 1px;font-size:10.5px;line-height:1.2;}' +
+        '#title-screen #v3-view-settings .indie-settings-section{margin-top:5px;padding-top:5px;}' +
+        '#title-screen #v3-view-settings .indie-settings-head{margin-bottom:2px;}' +
+        '#title-screen #v3-view-settings .indie-settings-row{min-height:22px;padding:0;}' +
+        '#title-screen #v3-view-settings .indie-action-btn{min-height:21px;padding:1px 8px;font-size:11px;}' +
       '}';
     document.head.appendChild(style);
   }
 
-  function dispatchFallbackCombatPrefsEvent(assist, casual) {
+  function dispatchFallbackCombatPrefsEvent(assist, casual, autoEnd) {
     if (!root || typeof root.dispatchEvent !== 'function') return;
     var CE = root.CustomEvent || (typeof CustomEvent !== 'undefined' ? CustomEvent : null);
     if (!CE) return;
     try {
       var norm = normalizeRingAssist(assist);
       var cas = !!casual;
+      var autoEndVal = normalizeAutoEndTurn(autoEnd);
       root.dispatchEvent(new CE('combat:prefschange', {
         detail: {
           assistMode: norm,
@@ -3209,6 +3315,8 @@
           combatRingAssist: norm,
           casualMode: cas,
           combatCasualMode: cas,
+          autoEndTurn: autoEndVal,
+          combatAutoEndTurn: autoEndVal,
           source: 'title-director'
         }
       }));
@@ -3225,7 +3333,8 @@
       typeSpeed: 'normal',
       fxEnabled: true,
       combatRingAssist: 'standard',
-      combatCasualMode: false
+      combatCasualMode: false,
+      combatAutoEndTurn: true
     };
     try {
       if (root && root.VNUx && typeof root.VNUx.getPrefs === 'function') {
@@ -3240,6 +3349,7 @@
           if (typeof p.fxEnabled === 'boolean') res.fxEnabled = p.fxEnabled;
           if (p.combatRingAssist != null) res.combatRingAssist = normalizeRingAssist(p.combatRingAssist);
           if (p.combatCasualMode != null) res.combatCasualMode = normalizeCasualMode(p.combatCasualMode);
+          if (p.combatAutoEndTurn != null) res.combatAutoEndTurn = normalizeAutoEndTurn(p.combatAutoEndTurn);
         }
       }
     } catch (e) {}
@@ -3293,6 +3403,7 @@
         if (engCasual != null) res.combatCasualMode = normalizeCasualMode(engCasual);
       }
     } catch (e) {}
+    res.combatAutoEndTurn = readAutoEndTurnSetting();
     return res;
   }
 
@@ -3304,8 +3415,16 @@
     if (valEl) valEl.textContent = valPct + '%';
   }
 
-  function syncSettingsDOM() {
+  function syncSettingsDOM(patch) {
     var s = readLiveSettings();
+    if (patch && typeof patch === 'object') {
+      var patchAssist = patch.assistMode != null ? patch.assistMode : (patch.ringAssistMode != null ? patch.ringAssistMode : patch.combatRingAssist);
+      if (patchAssist != null && patchAssist !== '') s.combatRingAssist = normalizeRingAssist(patchAssist);
+      var patchCasual = patch.casualMode != null ? patch.casualMode : patch.combatCasualMode;
+      if (patchCasual != null) s.combatCasualMode = normalizeCasualMode(patchCasual);
+      var patchAutoEnd = patch.autoEndTurn != null ? patch.autoEndTurn : (patch.combatAutoEndTurn != null ? patch.combatAutoEndTurn : patch.combat_auto_end_turn);
+      if (patchAutoEnd != null) s.combatAutoEndTurn = normalizeAutoEndTurn(patchAutoEnd);
+    }
     updateSliderVisual(document.getElementById('v3-set-bgm'), document.getElementById('v3-set-bgm-val'), Math.round(s.bgm * 100), 0, 100);
     updateSliderVisual(document.getElementById('v3-set-sfx'), document.getElementById('v3-set-sfx-val'), Math.round(s.sfx * 100), 0, 100);
     updateSliderVisual(document.getElementById('v3-set-voice'), document.getElementById('v3-set-voice-val'), Math.round(s.voiceVol * 100), 0, 100);
@@ -3347,6 +3466,15 @@
       casualBtn.setAttribute('aria-pressed', s.combatCasualMode ? 'true' : 'false');
     }
     if (casualVal) casualVal.textContent = s.combatCasualMode ? '开启' : '关闭';
+
+    var autoEndBtn = document.getElementById('v3-set-auto-end-toggle');
+    var autoEndVal = document.getElementById('v3-auto-end-toggle-val');
+    var autoEndOn = normalizeAutoEndTurn(s.combatAutoEndTurn);
+    if (autoEndBtn) {
+      autoEndBtn.classList.toggle('is-off', !autoEndOn);
+      autoEndBtn.setAttribute('aria-pressed', autoEndOn ? 'true' : 'false');
+    }
+    if (autoEndVal) autoEndVal.textContent = autoEndOn ? '自动切回合' : '手动结束';
 
     renderSoundtrackRows();
   }
@@ -3412,7 +3540,10 @@
             else if (typeof ctrA.setMode === 'function') { ctrA.setMode(assistMode); handledA = true; }
           } catch (e) {}
         }
-        if (!handledA) dispatchFallbackCombatPrefsEvent(assistMode, readLiveSettings().combatCasualMode);
+        if (!handledA) {
+          var liveA = readLiveSettings();
+          dispatchFallbackCombatPrefsEvent(assistMode, liveA.combatCasualMode, liveA.combatAutoEndTurn);
+        }
       }
       playSfxSafe('glass_tap');
     } else if (kind === 'combatCasualMode') {
@@ -3429,8 +3560,14 @@
             else if (typeof ctrC.setCombatCasualMode === 'function') { ctrC.setCombatCasualMode(casualOn); handledC = true; }
           } catch (e) {}
         }
-        if (!handledC) dispatchFallbackCombatPrefsEvent(readLiveSettings().combatRingAssist, casualOn);
+        if (!handledC) {
+          var liveC = readLiveSettings();
+          dispatchFallbackCombatPrefsEvent(liveC.combatRingAssist, casualOn, liveC.combatAutoEndTurn);
+        }
       }
+      playSfxSafe('glass_tap');
+    } else if (kind === 'combatAutoEndTurn') {
+      writeAutoEndTurnSetting(val);
       playSfxSafe('glass_tap');
     }
   }
@@ -3613,6 +3750,15 @@
       casualToggleBtn.addEventListener('click', function () {
         var s = readLiveSettings();
         applySettingValue('combatCasualMode', !s.combatCasualMode);
+        syncSettingsDOM();
+      });
+    }
+
+    var autoEndToggleBtn = panel.querySelector('#v3-set-auto-end-toggle');
+    if (autoEndToggleBtn) {
+      autoEndToggleBtn.addEventListener('click', function () {
+        var s = readLiveSettings();
+        applySettingValue('combatAutoEndTurn', !normalizeAutoEndTurn(s.combatAutoEndTurn));
         syncSettingsDOM();
       });
     }
@@ -4255,8 +4401,8 @@
     st.cleanups.push(function () { document.removeEventListener('keydown', onKeyDown, true); });
 
     if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
-      var onCombatPrefsChange = function () {
-        syncSettingsDOM();
+      var onCombatPrefsChange = function (ev) {
+        syncSettingsDOM(ev && ev.detail);
       };
       window.addEventListener('combat:prefschange', onCombatPrefsChange);
       st.cleanups.push(function () { window.removeEventListener('combat:prefschange', onCombatPrefsChange); });

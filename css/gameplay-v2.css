@@ -1577,6 +1577,37 @@ body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-hint {
     min-width: 0;
   }
 
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group.prefs-group-combat {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 20px;
+    row-gap: 8px;
+    align-items: center;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group.prefs-group-combat > .prefs-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px 10px;
+    min-width: 0;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group.prefs-group-combat > .prefs-row:first-child {
+    grid-column: 1 / -1;
+    gap: 8px 16px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group.prefs-group-combat > .prefs-row:not(:first-child) {
+    padding-top: 8px;
+    border-top: 1px dashed rgba(27, 35, 51, 0.11);
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group.prefs-group-combat .prefs-label {
+    min-width: 0;
+    flex: initial;
+  }
+
   body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-toggle,
   body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-seg {
     flex-shrink: 0;
@@ -1584,7 +1615,7 @@ body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-hint {
   }
 }
 
-/* 综合面板 #panel「设置」页紧凑排版（高于 system-chronicle.css 特异性，确保 1280×720 一屏 0 裁切） */
+/* 综合面板 #panel「设置」页双列零溢出排版（高于 system-chronicle.css 特异性，确保 1440/1280/960 一屏 0 裁切） */
 #app #panel .modal-scroll.is-settings-scroll {
   padding-top: 12px;
   padding-bottom: 12px;
@@ -1601,49 +1632,115 @@ body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-hint {
   gap: 0;
 }
 
-#app #panel #panel-body.is-settings-tab .panel-settings-pane > .set-row-head {
-  margin-top: 8px;
-  padding: 2px 0 0 !important;
+#app #panel #panel-body.is-settings-tab .panel-settings-pane > div {
+  padding: 0;
   border-bottom: none;
+}
+
+#app #panel #panel-body.is-settings-tab .panel-settings-pane .set-sliders-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px 0;
+  padding: 0 0 10px;
+}
+
+#app #panel #panel-body.is-settings-tab .panel-settings-pane .set-slider-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+#app #panel #panel-body.is-settings-tab .panel-settings-pane .set-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 0;
+  padding: 2px 0 0 !important;
+  border-bottom: none !important;
   line-height: 1.38;
 }
 
-#app #panel #panel-body.is-settings-tab .panel-settings-pane > .set-row-head:first-child {
-  margin-top: 0;
-}
-
-#app #panel #panel-body.is-settings-tab .panel-settings-pane > input[type="range"] {
-  margin: 5px 0 4px;
+#app #panel #panel-body.is-settings-tab .panel-settings-pane input[type="range"] {
+  margin: 5px 0 2px;
   width: 100%;
 }
 
-#app #panel #panel-body.is-settings-tab .panel-settings-pane > .set-hint {
-  padding: 2px 0 8px;
+#app #panel #panel-body.is-settings-tab .panel-settings-pane .set-hint {
+  padding: 2px 0 0;
   color: #526078;
   font-size: 11.5px;
   line-height: 1.36;
-  border-bottom: 1px solid rgba(27, 35, 51, 0.10);
-}
-
-#app #panel #panel-body.is-settings-tab .panel-settings-pane > .set-hint:last-child {
   border-bottom: none;
-  padding-bottom: 4px;
 }
 
-#app #panel #panel-body.is-settings-tab .panel-settings-pane > #set-ring-assist-seg {
+#app #panel #panel-body.is-settings-tab .panel-settings-pane > .set-combat-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(27, 35, 51, 0.10);
+  border-bottom: none;
+}
+
+#app #panel #panel-body.is-settings-tab .panel-settings-pane .set-combat-ring-block {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+#app #panel #panel-body.is-settings-tab .panel-settings-pane #set-ring-assist-seg {
   padding: 0;
   margin-top: 5px;
   margin-bottom: 2px;
   border-bottom: 1px solid rgba(27, 35, 51, 0.16);
 }
 
-#app #panel #panel-body.is-settings-tab .panel-settings-pane > .set-row-head.set-row-casual {
+#app #panel #panel-body.is-settings-tab .panel-settings-pane .set-toggles-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(27, 35, 51, 0.11);
+}
+
+#app #panel #panel-body.is-settings-tab .panel-settings-pane .set-toggle-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+#app #panel #panel-body.is-settings-tab .panel-settings-pane .set-row-head.set-row-casual,
+#app #panel #panel-body.is-settings-tab .panel-settings-pane .set-row-head.set-row-auto-end {
   align-items: center;
-  margin-top: 9px;
+}
+
+#app #panel #panel-body.is-settings-tab .panel-settings-pane #set-casual-toggle,
+#app #panel #panel-body.is-settings-tab .panel-settings-pane #set-auto-end-toggle {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  #app #panel #panel-body.is-settings-tab .panel-settings-pane .set-sliders-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 24px;
+  }
+
+  #app #panel #panel-body.is-settings-tab .panel-settings-pane .set-toggles-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 24px;
+    align-items: start;
+  }
 }
 
 #app #panel #panel-body.is-settings-tab #set-reset {
-  margin-top: 10px;
+  margin-top: 12px;
   padding: 6px 16px;
 }
 
@@ -4520,6 +4617,15 @@ body section#arena-loadout-modal.overlay .relics-dashboard .rc-lore {
     padding-top: 6px;
   }
 
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group.prefs-group-combat {
+    row-gap: 6px;
+    column-gap: 18px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group.prefs-group-combat > .prefs-row:not(:first-child) {
+    padding-top: 6px;
+  }
+
   body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-label {
     gap: 1px;
   }
@@ -4562,21 +4668,32 @@ body section#arena-loadout-modal.overlay .relics-dashboard .rc-lore {
     padding-bottom: 10px;
   }
 
-  #app #panel #panel-body.is-settings-tab .panel-settings-pane > .set-row-head {
-    margin-top: 6px;
+  #app #panel #panel-body.is-settings-tab .panel-settings-pane .set-sliders-grid {
+    gap: 7px 22px;
+    padding-bottom: 8px;
   }
 
-  #app #panel #panel-body.is-settings-tab .panel-settings-pane > input[type="range"] {
-    margin: 4px 0 3px;
+  #app #panel #panel-body.is-settings-tab .panel-settings-pane input[type="range"] {
+    margin: 4px 0 2px;
   }
 
-  #app #panel #panel-body.is-settings-tab .panel-settings-pane > .set-hint {
-    padding: 1px 0 6px;
+  #app #panel #panel-body.is-settings-tab .panel-settings-pane > .set-combat-section {
+    gap: 8px;
+    padding-top: 8px;
+  }
+
+  #app #panel #panel-body.is-settings-tab .panel-settings-pane .set-toggles-grid {
+    gap: 8px 22px;
+    padding-top: 8px;
+  }
+
+  #app #panel #panel-body.is-settings-tab .panel-settings-pane .set-hint {
+    padding: 1px 0 0;
   }
 
   #app #panel #panel-body.is-settings-tab #set-reset {
-    margin-top: 8px;
-    padding: 6px 15px;
+    margin-top: 10px;
+    padding: 5px 15px;
   }
 }
 
@@ -4643,6 +4760,15 @@ body section#arena-loadout-modal.overlay .relics-dashboard .rc-lore {
     padding-top: 5px;
   }
 
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group.prefs-group-combat {
+    row-gap: 5px;
+    column-gap: 16px;
+  }
+
+  body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-group.prefs-group-combat > .prefs-row:not(:first-child) {
+    padding-top: 5px;
+  }
+
   body section#vn-prefs-modal.overlay .end-card.vn-modal-card .prefs-label b {
     font-size: 12.5px;
     line-height: 1.24;
@@ -4692,6 +4818,36 @@ body section#arena-loadout-modal.overlay .relics-dashboard .rc-lore {
   #app #panel #panel-body::-webkit-scrollbar-thumb {
     background: rgba(28, 76, 184, 0.36);
     border-radius: 3px;
+  }
+
+  #app #panel .modal-scroll.is-settings-scroll {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  #app #panel #panel-body.is-settings-tab .panel-settings-pane .set-sliders-grid {
+    gap: 5px 20px;
+    padding-bottom: 7px;
+  }
+
+  #app #panel #panel-body.is-settings-tab .panel-settings-pane > .set-combat-section {
+    gap: 7px;
+    padding-top: 7px;
+  }
+
+  #app #panel #panel-body.is-settings-tab .panel-settings-pane .set-toggles-grid {
+    gap: 7px 20px;
+    padding-top: 7px;
+  }
+
+  #app #panel #panel-body.is-settings-tab .panel-settings-pane .set-hint {
+    font-size: 11px;
+    line-height: 1.28;
+  }
+
+  #app #panel #panel-body.is-settings-tab #set-reset {
+    margin-top: 8px;
+    padding: 5px 14px;
   }
 }
 

@@ -6628,29 +6628,52 @@ function openPanel(tab, opts){
     const assistMode = getCombatRingAssistMode();
     const assistLabel = COMBAT_RING_ASSIST_LABELS[assistMode] || '标准';
     const casualOn = getCombatCasualMode();
+    const autoEndOn = getCombatAutoEndTurn();
     const segBtnStyle = (active, withDivider) =>
       `flex:1;padding:5px 10px;border:none;${withDivider ? 'border-left:1px solid rgba(27,35,51,0.14);' : ''}border-radius:0;cursor:pointer;font-size:12.5px;transition:background .15s,color .15s;background:${active ? 'rgba(22,88,235,0.10)' : 'transparent'};color:${active ? '#1658eb' : '#526078'};font-weight:${active ? '700' : '500'};`;
-    const casualBtnStyle = (on) =>
+    const toggleBtnStyle = (on) =>
       `padding:4px 12px;border-radius:2px;cursor:pointer;font-size:12.5px;font-weight:600;border:1px solid ${on ? '#0e2b78' : 'rgba(27,35,51,0.20)'};background:${on ? '#1658eb' : 'transparent'};color:${on ? '#fafbfd' : '#323d52'};transition:background .15s,color .15s,border-color .15s;`;
-    body.innerHTML = `<div class="p-stat panel-settings-pane" style="grid-template-columns:1fr">
-      <div class="set-row-head"><b>BGM 音量</b><span id="set-bgm-val" class="set-val">${bgmPct}%</span></div>
-      <input type="range" id="set-bgm" min="0" max="100" value="${bgmPct}" style="width:100%">
-      <div class="set-row-head"><b>音效音量 (SFX)</b><span id="set-sfx-val" class="set-val">${sfxPct}%</span></div>
-      <input type="range" id="set-sfx" min="0" max="100" value="${sfxPct}" style="width:100%">
-      <div class="set-row-head"><b>角色语音音量</b><span id="set-voice-val" class="set-val">${voicePct}%</span></div>
-      <input type="range" id="set-voice" min="0" max="100" value="${voicePct}" style="width:100%">
-      <div class="set-row-head"><b>背景明度</b><span id="set-bright-val" class="set-val">${brightPct}%</span></div>
-      <input type="range" id="set-bright" min="50" max="150" value="${brightPct}" style="width:100%">
-      <div class="set-hint">100% 为默认画面明度，调节背景明度不影响音乐与语音播放</div>
-      <div class="set-row-head"><b>精准施放与格挡护手</b><span id="set-ring-assist-val" class="set-val">${assistLabel}</span></div>
-      <div id="set-ring-assist-seg" role="group" aria-label="精准施放与格挡护手" style="display:flex;padding:0;border:1px solid rgba(27,35,51,0.16);border-radius:2px;overflow:hidden">
-        <button type="button" class="set-seg-btn${assistMode==='standard'?' active':''}" data-set-ring-assist="standard" aria-pressed="${assistMode==='standard'?'true':'false'}" style="${segBtnStyle(assistMode==='standard', false)}">标准</button>
-        <button type="button" class="set-seg-btn${assistMode==='relaxed'?' active':''}" data-set-ring-assist="relaxed" aria-pressed="${assistMode==='relaxed'?'true':'false'}" style="${segBtnStyle(assistMode==='relaxed', true)}">宽松</button>
-        <button type="button" class="set-seg-btn${assistMode==='off'?' active':''}" data-set-ring-assist="off" aria-pressed="${assistMode==='off'?'true':'false'}" style="${segBtnStyle(assistMode==='off', true)}">自动</button>
+    body.innerHTML = `<div class="p-stat panel-settings-pane">
+      <div class="set-sliders-grid">
+        <div class="set-slider-item">
+          <div class="set-row-head"><b>BGM 音量</b><span id="set-bgm-val" class="set-val">${bgmPct}%</span></div>
+          <input type="range" id="set-bgm" min="0" max="100" value="${bgmPct}" style="width:100%">
+        </div>
+        <div class="set-slider-item">
+          <div class="set-row-head"><b>音效音量 (SFX)</b><span id="set-sfx-val" class="set-val">${sfxPct}%</span></div>
+          <input type="range" id="set-sfx" min="0" max="100" value="${sfxPct}" style="width:100%">
+        </div>
+        <div class="set-slider-item">
+          <div class="set-row-head"><b>角色语音音量</b><span id="set-voice-val" class="set-val">${voicePct}%</span></div>
+          <input type="range" id="set-voice" min="0" max="100" value="${voicePct}" style="width:100%">
+        </div>
+        <div class="set-slider-item">
+          <div class="set-row-head"><b>背景明度</b><span id="set-bright-val" class="set-val">${brightPct}%</span></div>
+          <input type="range" id="set-bright" min="50" max="150" value="${brightPct}" style="width:100%">
+          <div class="set-hint">100% 为默认明度，调节不影响配乐与语音</div>
+        </div>
       </div>
-      <div class="set-hint">标准为常规缩圈节奏，宽松放宽判定窗口，自动跳过缩圈直接按 GOOD 结算</div>
-      <div class="set-row-head set-row-casual"><b>休闲模式</b><button type="button" id="set-casual-toggle" class="${casualOn?'on':''}" aria-pressed="${casualOn?'true':'false'}" style="${casualBtnStyle(casualOn)}">${casualOn ? '已开启 · 休闲剧情' : '已关闭 · 标准挑战'}</button></div>
-      <div id="set-casual-desc" class="set-hint">开启后战斗难度大幅下降，适合想要轻松享受剧情的休闲玩家</div>
+      <div class="set-combat-section">
+        <div class="set-combat-ring-block">
+          <div class="set-row-head"><b>精准施放与格挡护手</b><span id="set-ring-assist-val" class="set-val">${assistLabel}</span></div>
+          <div id="set-ring-assist-seg" role="group" aria-label="精准施放与格挡护手" style="display:flex;padding:0;border:1px solid rgba(27,35,51,0.16);border-radius:2px;overflow:hidden">
+            <button type="button" class="set-seg-btn${assistMode==='standard'?' active':''}" data-set-ring-assist="standard" aria-pressed="${assistMode==='standard'?'true':'false'}" style="${segBtnStyle(assistMode==='standard', false)}">标准</button>
+            <button type="button" class="set-seg-btn${assistMode==='relaxed'?' active':''}" data-set-ring-assist="relaxed" aria-pressed="${assistMode==='relaxed'?'true':'false'}" style="${segBtnStyle(assistMode==='relaxed', true)}">宽松</button>
+            <button type="button" class="set-seg-btn${assistMode==='off'?' active':''}" data-set-ring-assist="off" aria-pressed="${assistMode==='off'?'true':'false'}" style="${segBtnStyle(assistMode==='off', true)}">自动</button>
+          </div>
+          <div class="set-hint">标准为常规缩圈节奏，宽松放宽判定窗口，自动跳过缩圈直接按 GOOD 结算</div>
+        </div>
+        <div class="set-toggles-grid">
+          <div class="set-toggle-item">
+            <div class="set-row-head set-row-casual"><b>休闲模式</b><button type="button" id="set-casual-toggle" class="${casualOn?'on':''}" aria-pressed="${casualOn?'true':'false'}" data-indie-tip="开启后战斗难度大幅下降，适合想要轻松享受剧情的休闲玩家" style="${toggleBtnStyle(casualOn)}">${casualOn ? '已开启 · 休闲剧情' : '已关闭 · 标准挑战'}</button></div>
+            <div id="set-casual-desc" class="set-hint">开启后战斗难度大幅下降，轻松享受剧情</div>
+          </div>
+          <div class="set-toggle-item">
+            <div class="set-row-head set-row-auto-end"><b>自动结束回合</b><button type="button" id="set-auto-end-toggle" class="${autoEndOn?'on':''}" aria-pressed="${autoEndOn?'true':'false'}" data-indie-tip="无可用行动后自动切敌回合；关闭后可手动按 X 或点击结束回合" style="${toggleBtnStyle(autoEndOn)}">${autoEndOn ? '已开启 · 自动' : '已关闭 · 手动'}</button></div>
+            <div id="set-auto-end-desc" class="set-hint">无可用行动后自动切敌回合</div>
+          </div>
+        </div>
+      </div>
     </div>
     <button class="tbtn" id="set-reset">全部恢复默认</button>`;
     // 同步绑定事件，杜绝刚打开弹窗时立即交互漏绑
@@ -6670,6 +6693,11 @@ function openPanel(tab, opts){
       sfx('tab_switch');
       setCombatCasualMode(!getCombatCasualMode(), { source: 'game-panel' });
     };
+    const aeBtn=$('set-auto-end-toggle');
+    if(aeBtn) aeBtn.onclick=()=>{
+      sfx('tab_switch');
+      setCombatAutoEndTurn(!getCombatAutoEndTurn(), { source: 'game-panel' });
+    };
     const rs=$('set-reset'); if(rs) rs.onclick=()=>{ resetSettings(); openPanel('settings'); toast('已恢复默认设置'); };
   }
   const scrollWrap = body && body.parentElement;
@@ -6685,11 +6713,13 @@ function openPanel(tab, opts){
   }
 }
 
-// ========== 战斗体验偏好（精准施放与格挡护手 / 休闲模式，全站四端实时联动） ==========
+// ========== 战斗体验偏好（精准施放与格挡护手 / 休闲模式 / 自动结束回合，全站四端实时联动） ==========
 const COMBAT_RING_ASSIST_KEY = 'combat_ring_assist_mode';
 const COMBAT_CASUAL_MODE_KEY = 'combat_casual_mode';
+const COMBAT_AUTO_END_KEY = 'combat_auto_end_turn';
 const COMBAT_RING_ASSIST_LABELS = { standard: '标准', relaxed: '宽松', off: '自动' };
 let _combatPrefsEventSeen = false;
+let _inCombatAutoEndSync = false;
 
 function normalizeCombatRingAssist(v){
   const s = String(v == null ? '' : v).trim().toLowerCase();
@@ -6702,6 +6732,17 @@ function normalizeCombatCasualMode(v){
     return s === 'true' || s === '1' || s === 'on';
   }
   return !!v;
+}
+function normalizeCombatAutoEndTurn(v){
+  if(v === undefined || v === null || v === '') return true;
+  if(typeof v === 'boolean') return v;
+  if(typeof v === 'string'){
+    const s = v.trim().toLowerCase();
+    if(s === '' || s === 'true' || s === '1' || s === 'on') return true;
+    if(s === 'false' || s === '0' || s === 'off') return false;
+    return true;
+  }
+  return Boolean(v);
 }
 function getCombatRingAssistMode(){
   try {
@@ -6727,20 +6768,48 @@ function getCombatCasualMode(){
   } catch(e){}
   return false;
 }
-function syncCombatPrefsTargets(assistMode, casualMode, source){
+function getCombatAutoEndTurn(){
+  try {
+    if(typeof window !== 'undefined' && window.CombatEngine){
+      if(typeof window.CombatEngine.isAutoEndTurn === 'function') return normalizeCombatAutoEndTurn(window.CombatEngine.isAutoEndTurn());
+      if(typeof window.CombatEngine.getAutoEndTurn === 'function') return normalizeCombatAutoEndTurn(window.CombatEngine.getAutoEndTurn());
+    }
+  } catch(e){}
+  try {
+    if(typeof window !== 'undefined' && window.CombatTimingRing){
+      if(typeof window.CombatTimingRing.isAutoEndTurn === 'function') return normalizeCombatAutoEndTurn(window.CombatTimingRing.isAutoEndTurn());
+      if(typeof window.CombatTimingRing.getAutoEndTurn === 'function') return normalizeCombatAutoEndTurn(window.CombatTimingRing.getAutoEndTurn());
+    }
+  } catch(e){}
+  try {
+    const raw = localStorage.getItem(COMBAT_AUTO_END_KEY);
+    if(raw !== null && raw !== '') return normalizeCombatAutoEndTurn(raw);
+  } catch(e){}
+  return true;
+}
+function syncCombatPrefsTargets(assistMode, casualMode, autoEndTurn, source){
+  if(typeof autoEndTurn === 'string' && source === undefined){
+    source = autoEndTurn;
+    autoEndTurn = getCombatAutoEndTurn();
+  } else if(autoEndTurn === undefined){
+    autoEndTurn = getCombatAutoEndTurn();
+  }
+  const autoEnd = normalizeCombatAutoEndTurn(autoEndTurn);
   try {
     localStorage.setItem(COMBAT_RING_ASSIST_KEY, assistMode);
     localStorage.setItem(COMBAT_CASUAL_MODE_KEY, casualMode ? 'true' : 'false');
+    localStorage.setItem(COMBAT_AUTO_END_KEY, autoEnd ? 'true' : 'false');
     const raw = JSON.parse(localStorage.getItem(VN_PREFS_KEY) || '{}');
     if(raw && typeof raw === 'object'){
       raw.combatRingAssist = assistMode;
       raw.combatCasualMode = !!casualMode;
+      raw.combatAutoEndTurn = autoEnd;
       localStorage.setItem(VN_PREFS_KEY, JSON.stringify(raw));
     }
   } catch(e){}
   try {
     if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.syncExternalAudioPrefs === 'function'){
-      window.VNUx.syncExternalAudioPrefs({ combatRingAssist: assistMode, combatCasualMode: !!casualMode });
+      window.VNUx.syncExternalAudioPrefs({ combatRingAssist: assistMode, combatCasualMode: !!casualMode, combatAutoEndTurn: autoEnd });
     }
     if(typeof window !== 'undefined' && window.TitleDirector && typeof window.TitleDirector.syncSettingsDOM === 'function'){
       window.TitleDirector.syncSettingsDOM();
@@ -6756,6 +6825,8 @@ function syncCombatPrefsTargets(assistMode, casualMode, source){
             combatRingAssist: assistMode,
             casualMode: !!casualMode,
             combatCasualMode: !!casualMode,
+            autoEndTurn: autoEnd,
+            combatAutoEndTurn: autoEnd,
             source: source || 'game-settings'
           }
         }));
@@ -6766,6 +6837,7 @@ function syncCombatPrefsTargets(assistMode, casualMode, source){
 function setCombatRingAssistMode(mode, opts){
   const norm = normalizeCombatRingAssist(mode);
   const casualNow = getCombatCasualMode();
+  const autoEndNow = getCombatAutoEndTurn();
   _combatPrefsEventSeen = false;
   try { localStorage.setItem(COMBAT_RING_ASSIST_KEY, norm); } catch(e){}
   try {
@@ -6773,13 +6845,14 @@ function setCombatRingAssistMode(mode, opts){
       window.CombatTimingRing.setAssistMode(norm);
     }
   } catch(e){}
-  syncCombatPrefsTargets(norm, casualNow, (opts && opts.source) || 'game-settings');
+  syncCombatPrefsTargets(norm, casualNow, autoEndNow, (opts && opts.source) || 'game-settings');
   syncSettingsPanelCombatDOM();
   return norm;
 }
 function setCombatCasualMode(on, opts){
   const next = normalizeCombatCasualMode(on);
   const assistNow = getCombatRingAssistMode();
+  const autoEndNow = getCombatAutoEndTurn();
   _combatPrefsEventSeen = false;
   try { localStorage.setItem(COMBAT_CASUAL_MODE_KEY, next ? 'true' : 'false'); } catch(e){}
   try {
@@ -6787,8 +6860,42 @@ function setCombatCasualMode(on, opts){
       window.CombatTimingRing.setCasualMode(next);
     }
   } catch(e){}
-  syncCombatPrefsTargets(assistNow, next, (opts && opts.source) || 'game-settings');
+  syncCombatPrefsTargets(assistNow, next, autoEndNow, (opts && opts.source) || 'game-settings');
   syncSettingsPanelCombatDOM();
+  return next;
+}
+function setCombatAutoEndTurn(val, opts){
+  const next = normalizeCombatAutoEndTurn(val);
+  if(_inCombatAutoEndSync) return next;
+  _inCombatAutoEndSync = true;
+  const assistNow = getCombatRingAssistMode();
+  const casualNow = getCombatCasualMode();
+  _combatPrefsEventSeen = false;
+  try {
+    try { localStorage.setItem(COMBAT_AUTO_END_KEY, next ? 'true' : 'false'); } catch(e){}
+    try {
+      if(typeof window !== 'undefined' && window.CombatEngine && typeof window.CombatEngine.setAutoEndTurn === 'function'){
+        window.CombatEngine.setAutoEndTurn(next);
+      }
+    } catch(e){}
+    try {
+      if(typeof window !== 'undefined' && window.CombatTimingRing && typeof window.CombatTimingRing.setAutoEndTurn === 'function'){
+        window.CombatTimingRing.setAutoEndTurn(next);
+      }
+    } catch(e){}
+    try {
+      if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.setPref === 'function' && !(opts && opts.fromVnUx)){
+        const curVn = typeof window.VNUx.getPrefs === 'function' ? window.VNUx.getPrefs() : null;
+        if(!curVn || curVn.combatAutoEndTurn !== next){
+          window.VNUx.setPref('combatAutoEndTurn', next);
+        }
+      }
+    } catch(e){}
+    syncCombatPrefsTargets(assistNow, casualNow, next, (opts && opts.source) || 'game-settings');
+    syncSettingsPanelCombatDOM();
+  } finally {
+    _inCombatAutoEndSync = false;
+  }
   return next;
 }
 function syncSettingsPanelCombatDOM(){
@@ -6796,6 +6903,7 @@ function syncSettingsPanelCombatDOM(){
   if(!panelEl || panelEl.classList.contains('hidden')) return;
   const assistMode = getCombatRingAssistMode();
   const casualOn = getCombatCasualMode();
+  const autoEndOn = getCombatAutoEndTurn();
   const valEl = $('set-ring-assist-val');
   if(valEl) valEl.textContent = COMBAT_RING_ASSIST_LABELS[assistMode] || '标准';
   panelEl.querySelectorAll('[data-set-ring-assist]').forEach(btn => {
@@ -6815,10 +6923,29 @@ function syncSettingsPanelCombatDOM(){
     casualBtn.style.color = casualOn ? '#fafbfd' : '#323d52';
     casualBtn.style.borderColor = casualOn ? '#0e2b78' : 'rgba(27,35,51,0.20)';
   }
+  const autoEndBtn = $('set-auto-end-toggle');
+  if(autoEndBtn){
+    autoEndBtn.classList.toggle('on', autoEndOn);
+    autoEndBtn.setAttribute('aria-pressed', autoEndOn ? 'true' : 'false');
+    autoEndBtn.textContent = autoEndOn ? '已开启 · 自动' : '已关闭 · 手动';
+    autoEndBtn.style.background = autoEndOn ? '#1658eb' : 'transparent';
+    autoEndBtn.style.color = autoEndOn ? '#fafbfd' : '#323d52';
+    autoEndBtn.style.borderColor = autoEndOn ? '#0e2b78' : 'rgba(27,35,51,0.20)';
+  }
 }
 if(typeof window !== 'undefined' && typeof window.addEventListener === 'function'){
-  window.addEventListener('combat:prefschange', ()=>{
+  window.addEventListener('combat:prefschange', (ev)=>{
     _combatPrefsEventSeen = true;
+    try {
+      const d = ev && ev.detail && typeof ev.detail === 'object' ? ev.detail : null;
+      if(d){
+        const rawAuto = d.autoEndTurn !== undefined ? d.autoEndTurn : d.combatAutoEndTurn;
+        if(rawAuto !== undefined && rawAuto !== null && rawAuto !== ''){
+          const nextAuto = normalizeCombatAutoEndTurn(rawAuto);
+          try { localStorage.setItem(COMBAT_AUTO_END_KEY, nextAuto ? 'true' : 'false'); } catch(e){}
+        }
+      }
+    } catch(e){}
     syncSettingsPanelCombatDOM();
   });
 }
@@ -6835,6 +6962,10 @@ function setSetting(k, v){
   }
   if(k==='combatCasualMode' || k===COMBAT_CASUAL_MODE_KEY){
     setCombatCasualMode(v, { source: 'game-setSetting' });
+    return;
+  }
+  if(k==='combatAutoEndTurn' || k===COMBAT_AUTO_END_KEY){
+    setCombatAutoEndTurn(v, { source: 'game-setSetting' });
     return;
   }
   const s = getSettings(); s[k]=v;
@@ -6917,6 +7048,7 @@ function resetSettings(){
   applyBrightness(1);
   setCombatRingAssistMode('standard', { source: 'game-reset' });
   setCombatCasualMode(false, { source: 'game-reset' });
+  setCombatAutoEndTurn(true, { source: 'game-reset' });
   try {
     const raw = JSON.parse(localStorage.getItem(VN_PREFS_KEY) || '{}');
     if(raw && typeof raw === 'object'){
@@ -6928,10 +7060,11 @@ function resetSettings(){
       raw.bright = 1;
       raw.combatRingAssist = 'standard';
       raw.combatCasualMode = false;
+      raw.combatAutoEndTurn = true;
       localStorage.setItem(VN_PREFS_KEY, JSON.stringify(raw));
     }
     if(typeof window !== 'undefined' && window.VNUx && typeof window.VNUx.syncExternalAudioPrefs === 'function'){
-      window.VNUx.syncExternalAudioPrefs({ bgmVol: 0.5, sfxVol: 0.65, voiceVol: 0.90, voiceEnabled: true, voiceAutoWait: true, combatRingAssist: 'standard', combatCasualMode: false });
+      window.VNUx.syncExternalAudioPrefs({ bgmVol: 0.5, sfxVol: 0.65, voiceVol: 0.90, voiceEnabled: true, voiceAutoWait: true, combatRingAssist: 'standard', combatCasualMode: false, combatAutoEndTurn: true });
     }
   } catch(e){}
 }
@@ -8468,6 +8601,8 @@ if(typeof window !== 'undefined'){
   window.setCombatRingAssistMode = setCombatRingAssistMode;
   window.getCombatCasualMode = getCombatCasualMode;
   window.setCombatCasualMode = setCombatCasualMode;
+  window.getCombatAutoEndTurn = getCombatAutoEndTurn;
+  window.setCombatAutoEndTurn = setCombatAutoEndTurn;
   window.syncSettingsPanelCombatDOM = syncSettingsPanelCombatDOM;
   window.setBG = setBG;
   window.setPov = setPov;

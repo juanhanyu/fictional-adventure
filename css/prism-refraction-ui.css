@@ -2719,6 +2719,145 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   fill: #FFFFFF;
 }
 
+.cb-prism-svg .rig-rays-layer {
+  transform-origin: 0px 0px;
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.18s var(--pr-ease), transform 0.2s var(--pr-ease);
+}
+
+#cb-prism-rig.is-collapsed .cb-prism-svg .rig-rays-layer {
+  opacity: 0;
+  transform: scale(0.24);
+}
+
+.cb-prism-svg .rig-hub-group {
+  transform-origin: 0px 0px;
+  transition: transform 0.16s var(--pr-ease), filter 0.16s ease;
+}
+
+.cb-prism-svg .rig-hub-group .rig-hub-outer {
+  transition: stroke 0.16s ease, stroke-width 0.16s ease;
+}
+
+.cb-prism-svg .rig-hub-group .rig-hub-mid {
+  transition: fill 0.16s ease;
+}
+
+#cb-prism-rig:has(#cb-pw-hub-toggle:hover, #cb-pw-hub-toggle:focus-visible) .rig-hub-group {
+  transform: scale(1.16);
+  filter: drop-shadow(0 0 8px rgba(125, 211, 252, 0.78)) drop-shadow(0 0 14px rgba(22, 88, 235, 0.48));
+}
+
+#cb-prism-rig:has(#cb-pw-hub-toggle:hover, #cb-pw-hub-toggle:focus-visible) .rig-hub-group .rig-hub-outer {
+  stroke: #FFF4CE;
+  stroke-width: 1.45;
+}
+
+#cb-prism-rig:has(#cb-pw-hub-toggle:hover, #cb-pw-hub-toggle:focus-visible) .rig-hub-group .rig-hub-mid {
+  fill: #2E77F8;
+}
+
+@keyframes prHubCollapsedPulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 5px rgba(125, 211, 252, 0.56)) drop-shadow(0 0 10px rgba(22, 88, 235, 0.36));
+  }
+  50% {
+    transform: scale(1.12);
+    filter: drop-shadow(0 0 10px rgba(239, 224, 190, 0.88)) drop-shadow(0 0 16px rgba(46, 119, 248, 0.62));
+  }
+}
+
+#cb-prism-rig.is-collapsed .rig-hub-group {
+  animation: prHubCollapsedPulse 2.2s ease-in-out infinite;
+}
+
+#cb-prism-rig.is-collapsed:has(#cb-pw-hub-toggle:hover, #cb-pw-hub-toggle:focus-visible) .rig-hub-group {
+  animation: none;
+  transform: scale(1.2);
+  filter: drop-shadow(0 0 10px rgba(239, 224, 190, 0.92)) drop-shadow(0 0 16px rgba(46, 119, 248, 0.68));
+}
+
+/* 棱镜枢纽双菱形点热区按钮：透明无圆框，悬停驱动菱形枢纽微扩，键盘焦点呈斜切菱形光环 */
+.cb-prism-hub-toggle,
+#cb-pw-hub-toggle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 36px;
+  height: 36px;
+  transform: translate(-50%, -50%);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+  box-shadow: none;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 12;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.cb-prism-hub-toggle:focus-visible,
+#cb-pw-hub-toggle:focus-visible {
+  outline: none;
+}
+
+.cb-prism-hub-toggle:focus-visible::after,
+#cb-pw-hub-toggle:focus-visible::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border: 1.5px solid #7DD3FC;
+  box-shadow: 0 0 0 1px rgba(22, 88, 235, 0.72), 0 0 10px rgba(125, 211, 252, 0.76);
+  pointer-events: none;
+}
+
+.cb-prism-rig.is-hard-dissolved .cb-prism-hub-toggle,
+.cb-prism-rig.is-timing-dissolved .cb-prism-hub-toggle {
+  pointer-events: none !important;
+}
+
+/* 高权重收起态：覆盖 .mode-root / .mode-skills 及内联 .mode-items 样式，彻底释放底层队友/敌方点击 */
+#cb-prism-rig.is-collapsed .cb-prism-root,
+#cb-prism-rig.is-collapsed .cb-prism-cascade {
+  animation: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-16px) scale(0.92);
+  pointer-events: none;
+}
+
+#cb-prism-rig.is-collapsed .cb-prism-root *,
+#cb-prism-rig.is-collapsed .cb-prism-cascade * {
+  pointer-events: none !important;
+}
+
+#cb-prism-rig.anchor-flip-left.is-collapsed .cb-prism-root,
+#cb-prism-rig.anchor-flip-left.is-collapsed .cb-prism-cascade {
+  transform: translateX(16px) scale(0.92);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cb-prism-svg .rig-rays-layer,
+  .cb-prism-svg .rig-hub-group,
+  .cb-prism-root,
+  .cb-prism-cascade {
+    transition: none;
+  }
+
+  #cb-prism-rig.is-collapsed .rig-hub-group {
+    animation: none;
+  }
+}
+
 @keyframes prRootSnap {
   from {
     opacity: 0.88;
@@ -2744,7 +2883,11 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   top: 0;
   display: block;
   opacity: 1;
+  visibility: visible;
+  transform: none;
+  transform-origin: 0 0;
   pointer-events: none;
+  transition: opacity 0.16s var(--pr-ease), transform 0.18s var(--pr-ease);
 }
 
 .cb-prism-rig.mode-root .cb-prism-root {
@@ -3588,7 +3731,11 @@ body section#vn-prefs-modal.overlay .tbtn.ghost:hover:not(:disabled),
   top: 0;
   display: none;
   opacity: 1;
+  visibility: visible;
+  transform: none;
+  transform-origin: 0 0;
   pointer-events: none;
+  transition: opacity 0.16s var(--pr-ease), transform 0.18s var(--pr-ease);
 }
 
 .cb-prism-blade-list {

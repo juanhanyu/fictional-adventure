@@ -2276,7 +2276,7 @@
         {
           at: 365,
           gate: 0,
-          preTelegraphMs: 110,
+          preTelegraphMs: 240,
           gateMeta: { beatIdx: 0, totalBeats: 1, targetIdx: 0 },
           fn() {
             kit.safeCall(o.onImpact, 0, to, true);
@@ -2459,7 +2459,7 @@
         cues.push({
           at: hitAt,
           gate: k,
-          preTelegraphMs: 110,
+          preTelegraphMs: 240,
           gateMeta: { beatIdx: k, totalBeats: 3, targetIdx: 0 },
           fn() {
             const isLast = k === 2;
@@ -2582,7 +2582,7 @@
         {
           at: beat1Hit,
           gate: 0,
-          preTelegraphMs: 110,
+          preTelegraphMs: 240,
           gateMeta: { beatIdx: 0, totalBeats: 2, targetIdx: 0 },
           fn() {
             kit.safeCall(o.onImpact, 0, to, false);
@@ -2639,7 +2639,7 @@
         {
           at: beat2Hit,
           gate: 1,
-          preTelegraphMs: 110,
+          preTelegraphMs: 240,
           gateMeta: { beatIdx: 1, totalBeats: 2, targetIdx: 0 },
           fn() {
             kit.safeCall(o.onImpact, 0, to, true);
@@ -2801,7 +2801,7 @@
         {
           at: wave1Hit,
           gate: 0,
-          preTelegraphMs: 110,
+          preTelegraphMs: 240,
           gateMeta: { beatIdx: 0, totalBeats: 2, targetIdx: 0 },
           fn() {
             kit.safeCall(o.onImpact, 0, to, false);
@@ -2881,7 +2881,7 @@
         {
           at: wave2Hit,
           gate: 1,
-          preTelegraphMs: 110,
+          preTelegraphMs: 240,
           gateMeta: { beatIdx: 1, totalBeats: 2, targetIdx: 0 },
           fn() {
             kit.safeCall(o.onImpact, 0, to, true);
@@ -3020,7 +3020,7 @@
         {
           at: dashMs,
           gate: 0,
-          preTelegraphMs: 110,
+          preTelegraphMs: 240,
           gateMeta: { beatIdx: 0, totalBeats: 2, targetIdx: 0 },
           fn() {
             kit.safeCall(o.onImpact, 0, to, false);
@@ -3116,7 +3116,7 @@
         {
           at: beat2Hit,
           gate: 1,
-          preTelegraphMs: 110,
+          preTelegraphMs: 240,
           gateMeta: { beatIdx: 1, totalBeats: 2, targetIdx: 0 },
           fn() {
             kit.safeCall(o.onImpact, 0, to, true);
@@ -3322,7 +3322,7 @@
         cues.push({
           at: eruptAt,
           gate: idx,
-          preTelegraphMs: 110,
+          preTelegraphMs: 240,
           gateMeta: {
             beatIdx: idx,
             totalBeats: targets.length,
@@ -3646,7 +3646,7 @@
         {
           at: dashMs,
           gate: 0,
-          preTelegraphMs: 110,
+          preTelegraphMs: 240,
           gateMeta: { beatIdx: 0, totalBeats: 1, targetIdx: 0 },
           fn() {
             kit.safeCall(o.onImpact, 0, to, true);
@@ -4794,7 +4794,7 @@
       const isGated = !!(session && session.gated);
       const defaultPreMs = (session && Number.isFinite(session.opts.preTelegraphMs))
         ? session.opts.preTelegraphMs
-        : 110;
+        : 240;
 
       const normalized = list.map((c, idx) => ({
         at: Number.isFinite(c && c.at) ? c.at : 0,
@@ -4852,6 +4852,14 @@
         if (c.at <= 0 && !(isGated && c.gate != null && !c.released)) {
           c.fired = true;
           runCueFn(c, session);
+        }
+      }
+
+      if (isGated) {
+        const nextPendingGate = tl.cues.find(c => !c.fired && c.gate != null && !c.released);
+        if (nextPendingGate && !nextPendingGate.preTelegraphFired && (nextPendingGate.at - nextPendingGate.preTelegraphMs) <= 0) {
+          nextPendingGate.preTelegraphFired = true;
+          safeCall(session.opts.onPreTelegraph, nextPendingGate.gate, nextPendingGate.resolvedMeta);
         }
       }
 
@@ -5124,7 +5132,7 @@
         gated: raw.gated === true,
         autoImpactGate: raw.autoImpactGate === true,
         gateCount: (Number.isFinite(rawGateCount) && rawGateCount > 0) ? Math.round(rawGateCount) : null,
-        preTelegraphMs: Number.isFinite(Number(raw.preTelegraphMs)) ? Math.max(0, Number(raw.preTelegraphMs)) : 110,
+        preTelegraphMs: Number.isFinite(Number(raw.preTelegraphMs)) ? Math.max(0, Number(raw.preTelegraphMs)) : 240,
         anchorTargetKey: raw.anchorTargetKey || null,
         targetIdx: Number.isFinite(Number(raw.targetIdx)) ? Math.round(Number(raw.targetIdx)) : 0,
         onPreTelegraph: raw.onPreTelegraph,

@@ -81,15 +81,15 @@ console.log('\n[1] COMBAT_BALANCE_V32 唯一数值事实源、线性增幅/省�
     B32.CRATE_GUARD_RETAIN_RATE.fortress === 0.50,
     JSON.stringify({ tierAdd, tierPierce, tierLocks, tierShield, t2: B32.ampTiers[2] }));
 
-  ok('缩圈平直增伤池：BAD=-0.10 / GOOD=0 / GREAT=+0.08 / PERFECT=+0.15（Engine 与 TimingRing 100% 一致）',
+  ok('缩圈平直增伤池：BAD=-0.10 / GOOD=+0.10 / GREAT=+0.20 / PERFECT=+0.30（Engine 与 TimingRing 100% 一致）',
     B32.ringAtkBonus.BAD === -0.10 &&
-    B32.ringAtkBonus.GOOD === 0 &&
-    B32.ringAtkBonus.GREAT === 0.08 &&
-    B32.ringAtkBonus.PERFECT === 0.15 &&
+    B32.ringAtkBonus.GOOD === 0.10 &&
+    B32.ringAtkBonus.GREAT === 0.20 &&
+    B32.ringAtkBonus.PERFECT === 0.30 &&
     CTR.CONSTANTS.RING_BONUS.BAD === -0.10 &&
-    CTR.CONSTANTS.RING_BONUS.GOOD === 0 &&
-    CTR.CONSTANTS.RING_BONUS.GREAT === 0.08 &&
-    CTR.CONSTANTS.RING_BONUS.PERFECT === 0.15,
+    CTR.CONSTANTS.RING_BONUS.GOOD === 0.10 &&
+    CTR.CONSTANTS.RING_BONUS.GREAT === 0.20 &&
+    CTR.CONSTANTS.RING_BONUS.PERFECT === 0.30,
     JSON.stringify({ eng: B32.ringAtkBonus, ctr: CTR.CONSTANTS.RING_BONUS }));
 
   const ns = B32.STAVES.north_saint_staff;
@@ -118,14 +118,14 @@ console.log('\n[1] COMBAT_BALANCE_V32 唯一数值事实源、线性增幅/省�
   const p20 = CE.computeAmpProfile(Object.assign({}, bLin.player, { ampPct: 0.20, overcastPct: 0.20, overcastMode: 1, _lastOvercastMode: 1 }), CE.SKILLS.ice_3_starfrost, { clampToMp: false });
   const p40 = CE.computeAmpProfile(Object.assign({}, bLin.player, { ampPct: 0.40, overcastPct: 0.40, overcastMode: 2, _lastOvercastMode: 2 }), CE.SKILLS.ice_3_starfrost, { clampToMp: false });
   const p60 = CE.computeAmpProfile(bLin.player, CE.SKILLS.ice_3_starfrost, { clampToMp: false });
-  const estNormal = CE.estimateSkillDamage(bLin, CE.SKILLS.ice_3_starfrost, bLin.enemies[0], { ringBonus: 0.15 });
+  const estNormal = CE.estimateSkillDamage(bLin, CE.SKILLS.ice_3_starfrost, bLin.enemies[0], { ringBonus: 0.30 });
   bLin.enemies[0].broken = true;
-  const estBroken = CE.estimateSkillDamage(bLin, CE.SKILLS.ice_3_starfrost, bLin.enemies[0], { ringBonus: 0.15 });
-  ok('线性相加增伤池运行时自洽：ampTierMults=[1,1.2,1.4,1.6]、PERFECT=+0.15、breakAdd=+0.10 精确叠加',
+  const estBroken = CE.estimateSkillDamage(bLin, CE.SKILLS.ice_3_starfrost, bLin.enemies[0], { ringBonus: 0.30 });
+  ok('线性相加增伤池运行时自洽：ampTierMults=[1,1.2,1.4,1.6]、PERFECT=+0.30、breakAdd=+0.10 精确叠加 (1.90/2.00)',
     JSON.stringify(stLin.ampTierMults) === '[1,1.2,1.4,1.6]' &&
     approx(p0.addDmg, 0) && approx(p20.addDmg, 0.20) && approx(p40.addDmg, 0.40) && approx(p60.addDmg, 0.60) &&
-    approx(estNormal.addPool, 1.00 + 0.60 + 0.15) &&
-    approx(estBroken.addPool, 1.00 + 0.60 + 0.15 + 0.10),
+    approx(estNormal.addPool, 1.90) &&
+    approx(estBroken.addPool, 2.00),
     JSON.stringify({ tierMults: stLin.ampTierMults, normalPool: estNormal.addPool, brokenPool: estBroken.addPool }));
 
   // 运行时校验：省蓝折扣系数与 0.60 下限 + ampExtraMp 同源
@@ -316,7 +316,7 @@ console.log('\n[2] 全 15 招 5+1 进化技能、SKILL_BEAT_SPEC_V32 与 CombatT
     instantOk && singleOk && diff2Ok && prismOk && thornsOk,
     JSON.stringify({ instantOk, singleOk, diff2Ok, prismOk, thornsOk, prismSeq, thornsSeq4 }));
 
-  // CombatTimingRing.calcRingBonus() 标准与休闲模式（含 BAD=-0.10 与 BAD->GOOD）
+  // CombatTimingRing.calcRingBonus() 标准与休闲模式（含 BAD=-0.10 与 BAD->GOOD +0.10）
   const bBadStd = CTR.calcRingBonus(['BAD'], { casualMode: false });
   const bGoodStd = CTR.calcRingBonus(['GOOD'], { casualMode: false });
   const bGreatStd = CTR.calcRingBonus(['GREAT'], { casualMode: false });
@@ -324,9 +324,9 @@ console.log('\n[2] 全 15 招 5+1 进化技能、SKILL_BEAT_SPEC_V32 与 CombatT
   const bMixStd = CTR.calcRingBonus(['PERFECT', 'BAD'], { casualMode: false });
   const bBadCas = CTR.calcRingBonus(['BAD'], { casualMode: true });
   const bMixCas = CTR.calcRingBonus(['BAD', 'PERFECT'], { casualMode: true });
-  ok('CombatTimingRing.calcRingBonus 精确计算：标准 BAD=-0.10/GOOD=0/GREAT=+0.08/PERFECT=+0.15，休闲 BAD→GOOD 免负罚',
-    bBadStd === -0.10 && bGoodStd === 0 && bGreatStd === 0.08 && bPerfStd === 0.15 &&
-    approx(bMixStd, 0.025) && bBadCas === 0 && approx(bMixCas, 0.075),
+  ok('CombatTimingRing.calcRingBonus 精确计算：标准 BAD=-0.10/GOOD=+0.10/GREAT=+0.20/PERFECT=+0.30，休闲 BAD→GOOD(+0.10) 免负罚',
+    bBadStd === -0.10 && bGoodStd === 0.10 && bGreatStd === 0.20 && bPerfStd === 0.30 &&
+    approx(bMixStd, 0.10) && bBadCas === 0.10 && approx(bMixCas, 0.20),
     JSON.stringify({ bBadStd, bGoodStd, bGreatStd, bPerfStd, bMixStd, bBadCas, bMixCas }));
 
   // sword_1_basic：0 蓝立即回 +6% MaxMP，且纯物理不触发魔战生命回蓝
@@ -468,7 +468,7 @@ console.log('\n[4] Boss 转 P2 觉醒缓冲(stagger>=1)、双波 bossWaveRetry �
   CE.useSkill('water_2_surge', 0, bP2East); // 跨过 50% 阈值触发 P2
   const eastAwakeOk = eastBoss.phase === 2 && eastBoss.status.stagger >= 1 && eastBoss._phase2Awakening === true &&
     eastBoss.intent.stance === 'STAGGERED' && eastBoss.locks === eastBoss.maxLocks && eastBoss.broken === false &&
-    eastBoss.shield >= 112 && bP2East.metrics.phase2Triggered === true;
+    eastBoss.shield >= 86 && bP2East.metrics.phase2Triggered === true;
   const eastActionsBefore = bP2East.metrics.enemyActions;
   const eastPlayerHpBefore = bP2East.player.hp;
   CE.endTurn(bP2East); // 觉醒缓冲回合：Boss 不得直接出手秒人
@@ -483,7 +483,7 @@ console.log('\n[4] Boss 转 P2 觉醒缓冲(stagger>=1)、双波 bossWaveRetry �
   wgBoss.hp = Math.floor(wgBoss.mhp * wgBoss.phase2HpPct) + 10;
   CE.useSkill('frost_3_thorns', 0, bP2Wg); // 跨过 55% 阈值触发 P2
   const wgAwakeOk = wgBoss.phase === 2 && wgBoss.status.stagger >= 1 && wgBoss._phase2Awakening === true &&
-    wgBoss.intent.stance === 'STAGGERED' && wgBoss.locks === 7 && wgBoss.shield >= 195;
+    wgBoss.intent.stance === 'STAGGERED' && wgBoss.locks === 7 && wgBoss.shield >= 145;
   const wgActionsBefore = bP2Wg.metrics.enemyActions;
   CE.endTurn(bP2Wg);
   const wgSkipOk = bP2Wg.metrics.enemyActions === wgActionsBefore && wgBoss._phase2Awakening === false &&
@@ -584,14 +584,14 @@ console.log('\n[4] Boss 转 P2 觉醒缓冲(stagger>=1)、双波 bossWaveRetry �
   const expectedCasMp = Math.round(bMpCas.player.mmp * 0.15);
   const lever3Mp = bMpStd.player.mp === 50 && bMpCas.player.mp === 50 + expectedCasMp;
 
-  // 杠杆 4：BAD → GOOD 免负罚
-  const lever4NoBad = CTR.calcRingBonus(['BAD']) === 0 && CTR.calcRingBonus(['BAD'], { casualMode: false }) === -0.10;
+  // 杠杆 4：BAD → GOOD (+10%) 免负罚
+  const lever4NoBad = CTR.calcRingBonus(['BAD']) === 0.10 && CTR.calcRingBonus(['BAD'], { casualMode: false }) === -0.10;
 
   CE.setCasualMode(false);
   const prefSyncOff = CE.isCasualMode() === false && CTR.isCasualMode() === false &&
     win.localStorage.getItem('combat_casual_mode') === 'false';
 
-  ok('独立休闲模式 4 杠杆全部精准生效（偏好同步 / 敌血盾×0.70 / 敌伤与箱伤×0.60 / 回合末+15%MaxMP / BAD→GOOD）',
+  ok('独立休闲模式 4 杠杆全部精准生效（偏好同步 / 敌血盾×0.70 / 敌伤与箱伤×0.60 / 回合末+15%MaxMP / BAD→GOOD +10%）',
     prefSyncOn && prefSyncOff && lever1HpShield && lever2Dmg && lever3Mp && lever4NoBad,
     JSON.stringify({ prefSyncOn, prefSyncOff, lever1HpShield, lever2Dmg, dmg: [casLoss, stdLoss], cr: [casCrLoss, stdCrLoss], lever3Mp, lever4NoBad }));
 }
@@ -672,7 +672,7 @@ console.log('\n[5] 主线 1–8 幕常规可解性（含罗文活捉/第5幕无�
     r4.won && r4.endReason === 'three_hits' && r4.playerHits >= 3 && r4.turns <= 7,
     JSON.stringify({ won: r4.won, turns: r4.turns, hits: `${r4.playerHits}:${r4.enemyHits}` }));
 
-  // 5) 诺艾儿（第 5 幕：严测无 move_afterimage 防卡关！预设禁用残像 + 14岁主线未习风行残像存档双通 + 硬吃115暗流不秒杀）
+  // 5) 诺艾儿（第 5 幕：严测无 move_afterimage 防卡关！预设禁用残像 + 14岁主线未习风行残像存档双通 + 硬吃82暗流不秒杀）
   const noellePolicyNoAfterimage = b => {
     const e = b.enemies[0], st = e.intent ? e.intent.stance : '';
     if (st === 'UNDER_SEEP' && !e.seepSevered && canUseSkill(b, 'frost_2_breath')) {
@@ -709,17 +709,17 @@ console.log('\n[5] 主线 1–8 幕常规可解性（含罗文活捉/第5幕无�
   const bNoMoveDeck = CE.startStage('noelle_14', { headless: true, usePreset: false, fullRestore: true });
   const noAfterimageInDeck = !bNoMoveDeck.player.skills.includes('move_afterimage') && bNoMoveDeck.player.hasManaCycle === true;
   const r5SaveNoMove = CE.simulateBattle('noelle_14', noellePolicyNoAfterimage, { usePreset: false });
-  // 校验脚底暗流硬吃 115 伤防软锁
+  // 校验脚底暗流硬吃 82 伤防软锁
   const bTrapCheck = CE.startStage('noelle_14', { headless: true, usePreset: true });
   bTrapCheck.enemies[0].hp = Math.round(bTrapCheck.enemies[0].mhp * 0.45);
   bTrapCheck.enemies[0].seepTriggeredOnce = true;
-  bTrapCheck.enemies[0].intent = { stance: 'UNDER_SEEP', moveName: '残魔退守·冰缝暗流', dmg: 132, trapDmg: 115, ambushTrap: true, elem: 'water', mpCost: 10 };
+  bTrapCheck.enemies[0].intent = { stance: 'UNDER_SEEP', moveName: '残魔退守·冰缝暗流', dmg: 132, trapDmg: 82, ambushTrap: true, elem: 'water', mpCost: 10 };
   const hpBeforeTrap = bTrapCheck.player.hp;
   CE.useSkill('ice_2_prism', 0, bTrapCheck);
-  ok(`主线第 5 幕「诺艾儿」无 move_afterimage 防卡关双验通过（预设${r5Preset.turns}T + 无残像存档${r5SaveNoMove.turns}T + 暗流硬吃115可存活）`,
+  ok(`主线第 5 幕「诺艾儿」无 move_afterimage 防卡关双验通过（预设${r5Preset.turns}T + 无残像存档${r5SaveNoMove.turns}T + 暗流硬吃82可存活）`,
     r5Preset.won && r5Preset.metrics.enteredUnderSeep === true &&
     noAfterimageInDeck && r5SaveNoMove.won && r5SaveNoMove.metrics.enteredUnderSeep === true &&
-    (hpBeforeTrap - bTrapCheck.player.hp) === 115 && bTrapCheck.player.hp > 0,
+    (hpBeforeTrap - bTrapCheck.player.hp) === 82 && bTrapCheck.player.hp > 0,
     JSON.stringify({ preset: r5Preset.won, save: r5SaveNoMove.won, noAfterimageInDeck, trapLoss: hpBeforeTrap - bTrapCheck.player.hp }));
 
   // 6) 北林双波次（W1 霜域清狼 + W2 寒锋迎击影豺 + 断水刃零暴露）
@@ -939,7 +939,7 @@ console.log('\n[5] 主线 1–8 幕常规可解性（含罗文活捉/第5幕无�
   const wgCfg = CE.STAGES.wind_god_eye;
   const wgTpl = wgCfg.waves[0].enemies[0];
   const wgMetaOk = wgCfg.mainline === false && wgCfg.arenaTestOnly === true && wgCfg.godTierChallenge === true &&
-    wgTpl.rank === 7 && wgTpl.spd === 160 && wgTpl.hp === 2810 && wgTpl.maxLocks === 7 && wgTpl.phase2HpPct === 0.55;
+    wgTpl.rank === 7 && wgTpl.spd === 160 && wgTpl.hp === 2200 && wgTpl.maxLocks === 7 && wgTpl.phase2HpPct === 0.55;
 
   const bWgMech = CE.startStage('wind_god_eye', { headless: true, usePreset: true, relics: [] });
   const preStrikeOk = bWgMech.player.hp < bWgMech.player.mhp && bWgMech.log.some(l => l.includes('神威疾风压境'));
@@ -1307,11 +1307,47 @@ console.log('\n[7] 6+6 站位 DOM、原地切靶零重建、演武沙盒零污�
   } else {
     ok('CrystalSFX 模块就绪可测 amp_charge', false, 'CrystalSFX or AudioContext missing');
   }
+
+  // 7.5 自动结束回合偏好与 hasAnyPlayerActionAvailable 防误切回合校验
+  const hasAutoEndApi = typeof CE.isAutoEndTurn === 'function' &&
+    typeof CE.setAutoEndTurn === 'function' &&
+    typeof CE.hasAnyPlayerActionAvailable === 'function';
+  if (hasAutoEndApi) {
+    const autoDef = CE.isAutoEndTurn() === true;
+    CE.setAutoEndTurn(false);
+    const autoOff = CE.isAutoEndTurn() === false;
+    CE.setAutoEndTurn(true);
+    const autoOn = CE.isAutoEndTurn() === true;
+
+    const bAuto = CE.startStage('north_forest_hunt', { headless: true, usePreset: true, relics: [] });
+    bAuto.player.skills = ['ice_3_starfrost'];
+    bAuto.player.bondAssist = null;
+    bAuto.player.bondAssistUsed = true;
+    bAuto.player.mp = bAuto.player.mmp;
+    CE.setOvercastPct(0, bAuto);
+    const mpCost0 = CE.computeSkillMpCost(bAuto.player, CE.SKILLS.ice_3_starfrost);
+    CE.setOvercastPct(0.60, bAuto);
+    const mpCost60 = CE.computeSkillMpCost(bAuto.player, CE.SKILLS.ice_3_starfrost);
+
+    bAuto.ap = 0;
+    const availAp0 = CE.hasAnyPlayerActionAvailable(bAuto);
+
+    bAuto.ap = 1;
+    bAuto.player.mp = mpCost0; // 仅 0% 增幅够蓝、60% 增幅不够蓝
+    const availAp1LowMpAt60 = CE.hasAnyPlayerActionAvailable(bAuto);
+
+    ok('自动结束回合默认开启/切换与 hasAnyPlayerActionAvailable 精确判定（AP=0→false，AP=1仅60%增幅蓝不足时0%够蓝→true防误切）',
+      autoDef && autoOff && autoOn && mpCost0 < mpCost60 && availAp0 === false && availAp1LowMpAt60 === true,
+      JSON.stringify({ autoDef, autoOff, autoOn, mpCost0, mpCost60, availAp0, availAp1LowMpAt60 }));
+  } else {
+    ok('CombatEngine 自动结束回合 API 就绪（isAutoEndTurn/setAutoEndTurn/hasAnyPlayerActionAvailable）', false, 'API missing');
+  }
 }
 
 // 恢复默认偏好
 CE.setCasualMode(false);
 CE.setAssistMode('standard');
+if (typeof CE.setAutoEndTurn === 'function') CE.setAutoEndTurn(true);
 
 console.log(fail === 0 ? `\n  ✅ V3.2 核心战斗深度单测全部 ${pass}/${pass} 项断言 100% 通过！` : `\n  ❌ ${fail} 项断言失败（通过 ${pass} 项）`);
 process.exit(fail ? 1 : 0);

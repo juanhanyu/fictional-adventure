@@ -391,7 +391,7 @@
         {
           at: 365,
           gate: 0,
-          preTelegraphMs: 110,
+          preTelegraphMs: 240,
           gateMeta: { beatIdx: 0, totalBeats: 1, targetIdx: 0 },
           fn() {
             kit.safeCall(o.onImpact, 0, to, true);
@@ -770,7 +770,7 @@
         {
           at: 145 + travelMs,
           gate: 0,
-          preTelegraphMs: 110,
+          preTelegraphMs: 240,
           gateMeta: { beatIdx: 0, totalBeats: 1, targetIdx: 0 },
           fn() {
             kit.safeCall(o.onImpact, 0, to, true);
@@ -971,7 +971,7 @@
         {
           at: 105 + spreadMs,
           gate: 0,
-          preTelegraphMs: 110,
+          preTelegraphMs: 240,
           gateMeta: { beatIdx: 0, totalBeats: 1, targetIdx: 0 },
           fn() {
             kit.safeCall(o.onShake, 5.4 + amp * 1.5, 165);
@@ -1170,7 +1170,7 @@
         {
           at: 135 + extendMs,
           gate: 0,
-          preTelegraphMs: 110,
+          preTelegraphMs: 240,
           gateMeta: { beatIdx: 0, totalBeats: 1, targetIdx: 0 },
           fn() {
             kit.safeCall(o.onShake, 6.2 + amp * 1.8, 220);

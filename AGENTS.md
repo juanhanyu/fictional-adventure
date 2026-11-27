@@ -115,3 +115,4 @@
   - 严禁裸放后台静态服（如 `http.server &`）；临时服与非交互长命令统一套 `python3 tools/run_safe.py [--serve .] --timeout <秒> -- <命令>`（或 Python 内 `temp_http_server`），自动关 `stdin` 并在结束/超时按进程组清剿后代树。
   - 超过 10 秒的 `run_command` 必设 `NotificationTimeoutSeconds`；发现子代理挂起及时查 `transcript` 处置，阶段交付完成后及时 `kill` 已完工空闲子代理。
 - **环境与禁用技能备注**：推送仓库依赖 `github` 插件；常用工具与内置技能含 Node 22、Python 3.12、Playwright Chromium、`generate_image`（或 `tools/art_pipeline/codex_imggen.py`）、`game-ui-ux`、`game-feel`、`visual-novel`、`github`；**`game-dev-combat-skill-polish` 已永久停用**。
+- **Colab 高端卡三卡通用铁律（G4 / A100-80GB / H100）**：凡面向 Google Colab 高端 GPU 编写的脚本与 Notebook，必须同时兼容 **G4（Blackwell `sm_120` 96GB）**、**A100（Ampere `sm_80` 80GB）** 与 **H100（Hopper `sm_90` 80GB）**——动态探测 `get_device_capability()` 与显存（`>=75GB` 统一归入高端档，严禁硬编码卡名）、禁止降级重装 Colab 原生 CUDA PyTorch（用 `--upgrade-strategy only-if-needed`）、对 `flash_attn`/`xformers`/FP8 等分代扩展提供 Blackwell `sm_120` 与 Ampere `sm_80` 自动安全回退（优先原生 SDPA / CUDA Graph），且高速缓存严格隔离在 `/content/` 本地 SSD。

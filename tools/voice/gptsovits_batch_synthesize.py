@@ -937,8 +937,10 @@ def patch_gsv_runtime(TTS_cls: Any) -> None:
     Surgical runtime monkeypatches for GPT-SoVITS:
       1. Disable per-line TTS.empty_cache() CUDA sync; skip set_seed(-1) TF32 clobbering.
       2. Enable TF32 on Ampere+ GPUs (matmul & cudnn).
-      3. Fix GPT_SoVITS.Accel sample_naive in-place logits mutation, token-0 scatter bug, and top_p shift.
-      4. Cap T2SSession max_decode_steps dynamically by phoneme length instead of hardcoded 640 (25.90s).
+      3. On Blackwell (sm_120 / major >= 10), force tools.acceleration.flash_attention_available -> False
+         so GPT-SoVITS uses PyTorch native SDPA + torch_static_cuda_graph cleanly.
+      4. Fix GPT_SoVITS.Accel sample_naive in-place logits mutation, token-0 scatter bug, and top_p shift.
+      5. Cap T2SSession max_decode_steps dynamically by phoneme length instead of hardcoded 640 (25.90s).
     """
     import torch
     import torch.nn.functional as F
@@ -965,6 +967,13 @@ def patch_gsv_runtime(TTS_cls: Any) -> None:
 
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
+
+    if torch.cuda.is_available() and torch.cuda.get_device_capability(0)[0] >= 10:
+        try:
+            _acc = importlib.import_module("tools.acceleration")
+            _acc.flash_attention_available = lambda *a, **kw: False
+        except Exception:
+            pass
 
     for pkg_prefix in ("GPT_SoVITS.Accel.PyTorch.AR", "Accel.PyTorch.AR"):
         try:

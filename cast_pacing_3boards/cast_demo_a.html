@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>方案 A · 疾速剧场聚光宣言 — 技能衔接停顿竞标</title>
+  <style>
+    :root {
+      --porcelain: rgba(248, 252, 255, 0.92);
+      --porcelain-strong: rgba(252, 254, 255, 0.96);
+      --porcelain-soft: rgba(238, 246, 255, 0.78);
+      --royal: #1658eb;
+      --royal-deep: #0f3fb2;
+      --royal-tint: rgba(22, 88, 235, 0.09);
+      --ice: #22a8ff;
+      --ice-pale: #cfe9ff;
+      --gold: #cfa046;
+      --gold-bright: #e8c26d;
+      --gold-tint: rgba(207, 160, 70, 0.13);
+      --crimson: #c63149;
+      --amethyst: #7e3ff2;
+      --ink: #12213d;
+      --ink-muted: #526585;
+      --hairline: rgba(22, 88, 235, 0.17);
+      --hairline-strong: rgba(22, 88, 235, 0.34);
+      --shadow-porcelain: 0 10px 30px rgba(15, 38, 84, 0.14), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+      --banner-dur: 110ms;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #eaf3fc;
+      color: var(--ink);
+      font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+    }
+
+    /* ── Fullscreen 3D Stage & 2D VFX Overlay ─────────────────────────── */
+    #stage-wrap {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      background: linear-gradient(180deg, #ddebfa 0%, #f3f8ff 100%);
+    }
+
+    #stage-host {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+
+    #vfx-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 6;
+      pointer-events: none;
+    }
+
+    /* Subtle theatrical framing hairlines triggered during spotlight dim */
+    #cinema-edge {
+      position: absolute;
+      inset: 44px 0 0 0;
+      z-index: 12;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 90ms ease;
+    }
+    #cinema-edge.active {
+      opacity: 1;
+    }
+    #cinema-edge::before,
+    #cinema-edge::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent 4%, rgba(34, 168, 255, 0.72) 28%, rgba(232, 194, 109, 0.9) 50%, rgba(34, 168, 255, 0.72) 72%, transparent 96%);
+    }
+    #cinema-edge::before { top: 0; }
+    #cinema-edge::after { bottom: 0; }
+    #cinema-edge.is-boss::before,
+    #cinema-edge.is-boss::after {
+      background: linear-gradient(90deg, transparent 4%, rgba(126, 63, 242, 0.8) 28%, rgba(232, 194, 109, 0.92) 50%, rgba(198, 49, 73, 0.8) 72%, transparent 96%);
+    }
+
+    /* ── Top Navigation Bar (Porcelain, Flat Hairline Tabs, Zero Nested Boxes) ── */
+    .top-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 44px;
+      z-index: 40;
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      padding: 0 16px;
+      background: var(--porcelain-strong);
+      border-bottom: 1px solid var(--hairline);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .nav-group {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+    }
+
+    .nav-link {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 16px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--ink-muted);
+      text-decoration: none;
+      border-right: 1px solid var(--hairline);
+      transition: background-color 140ms ease, color 140ms ease;
+      white-space: nowrap;
+    }
+
+    .nav-link:first-child {
+      padding-left: 6px;
+      padding-right: 16px;
+      color: var(--royal);
+      font-weight: 700;
+    }
+
+    .nav-link:last-child {
+      border-right: none;
+    }
+
+    .nav-link:hover {
+      background: var(--royal-tint);
+      color: var(--royal);
+    }
+
+    .nav-link.active {
+      color: var(--royal);
+      font-weight: 700;
+      background: linear-gradient(180deg, rgba(22, 88, 235, 0.04) 0%, rgba(22, 88, 235, 0.11) 100%);
+      pointer-events: none;
+    }
+
+    .nav-link.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -1px;
+      height: 2.5px;
+      background: linear-gradient(90deg, var(--royal), var(--ice) 68%, var(--gold));
+    }
+
+    .nav-diamond {
+      width: 7px;
+      height: 7px;
+      transform: rotate(45deg);
+      background: var(--royal);
+      box-shadow: 0 0 0 2px rgba(207, 160, 70, 0.45);
+      flex-shrink: 0;
+    }
+
+    .nav-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--ink-muted);
+      letter-spacing: 0.03em;
+    }
+
+    .nav-meta-accent {
+      color: var(--royal);
+      font-weight: 700;
+    }
+
+    .nav-meta-sep {
+      width: 1px;
+      height: 14px;
+      background: var(--hairline);
+    }
+
+    /* ── Top-Center 6-Slot AV Action Bar ──────────────────────────────── */
+    #av-bar {
+      position: fixed;
+      top: 52px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+      min-height: 48px;
+      pointer-events: auto;
+    }
+
+    /* ── Top-Left Compact Live Beat Telemetry (Single Outer Chamfered Panel) ── */
+    .telemetry-panel {
+      position: fixed;
+      top: 56px;
+      left: 16px;
+      z-index: 30;
+      width: 288px;
+      background: var(--porcelain);
+      border: 1px solid var(--hairline-strong);
+      border-left: 3px solid var(--royal);
+      clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+      box-shadow: var(--shadow-porcelain);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 10px 14px 9px;
+    }
+
+    .tele-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      padding-bottom: 7px;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .tele-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.09em;
+      color: var(--royal);
+      text-transform: uppercase;
+    }
+
+    .tele-ms-wrap {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tele-ms-label {
+      font-size: 10px;
+      color: var(--ink-muted);
+      font-weight: 600;
+    }
+
+    .tele-ms-val {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--ink);
+      line-height: 1;
+      transition: color 120ms ease;
+    }
+
+    .tele-ms-val.is-active {
+      color: var(--royal);
+    }
+
+    .tele-ms-val.is-apex {
+      color: #a97319;
+    }
+
+    .tele-steps {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 0 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--ink-muted);
+    }
+
+    .tele-step {
+      text-align: center;
+      padding: 3px 2px;
+      border-bottom: 2px solid transparent;
+      transition: color 90ms ease, background-color 90ms ease, border-color 90ms ease;
+      white-space: nowrap;
+    }
+
+    .tele-step.active {
+      color: var(--royal);
+      font-weight: 800;
+      background: var(--royal-tint);
+      border-bottom-color: var(--royal);
+    }
+
+    .tele-step.done {
+      color: var(--ink);
+      border-bottom-color: rgba(207, 160, 70, 0.65);
+    }
+
+    .tele-arrow {
+      font-size: 10px;
+      color: rgba(22, 88, 235, 0.36);
+      font-weight: 700;
+    }
+
+    .tele-progress {
+      width: 100%;
+      height: 2px;
+      background: rgba(22, 88, 235, 0.12);
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .tele-progress-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--royal), var(--ice), var(--gold));
+      transition: width 70ms linear;
+    }
+
+    .tele-shared-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--ink-muted);
+      min-height: 16px;
+    }
+
+    #stage-status {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tele-chain-flag {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--royal);
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 120ms ease;
+    }
+
+    .tele-chain-flag.visible {
+      opacity: 1;
+    }
+
+    /* ── Top-Upper Prism Skill Declaration Banner (Avoids AV Bar: top 118px) ── */
+    #banner-layer {
+      position: fixed;
+      top: 118px;
+      left: 0;
+      right: 0;
+      z-index: 35;
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .prism-banner {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      min-width: 310px;
+      padding: 10px 38px;
+      background: linear-gradient(100deg, rgba(255, 255, 255, 0.96) 0%, rgba(239, 248, 255, 0.95) 62%, rgba(255, 251, 242, 0.95) 100%);
+      border-top: 1.5px solid var(--royal);
+      border-bottom: 1.5px solid rgba(207, 160, 70, 0.85);
+      clip-path: polygon(18px 0, 100% 0, calc(100% - 18px) 100%, 0 100%);
+      box-shadow: 0 14px 34px rgba(15, 50, 128, 0.22);
+      overflow: hidden;
+      opacity: 0;
+      transform: translateX(-34px) skewX(-2deg) scale(0.96);
+      transition:
+        opacity var(--banner-dur) cubic-bezier(0.16, 1, 0.3, 1),
+        transform var(--banner-dur) cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+
+    .prism-banner.show {
+      opacity: 1;
+      transform: translateX(0) skewX(0deg) scale(1);
+    }
+
+    .prism-banner.hide-out {
+      opacity: 0;
+      transform: translateX(30px) scale(0.98);
+    }
+
+    /* Left blade accent */
+    .prism-banner::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 24px;
+      background: linear-gradient(180deg, var(--royal) 0%, var(--ice) 100%);
+      clip-path: polygon(16px 0, 24px 0, 8px 100%, 0 100%);
+    }
+
+    /* Diagonal specular sweep */
+    .prism-banner::after {
+      content: "";
+      position: absolute;
+      top: -30%;
+      bottom: -30%;
+      left: -45%;
+      width: 42%;
+      background: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, 0.88) 46%, rgba(207, 160, 70, 0.35) 58%, transparent 100%);
+      transform: skewX(-22deg);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .prism-banner.sweep::after {
+      animation: prismSweep 260ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes prismSweep {
+      0% { left: -45%; opacity: 0.95; }
+      100% { left: 125%; opacity: 0; }
+    }
+
+    .banner-glyph {
+      width: 10px;
+      height: 10px;
+      transform: rotate(45deg);
+      background: var(--royal);
+      box-shadow: 0 0 0 3px rgba(34, 168, 255, 0.25);
+      flex-shrink: 0;
+    }
+
+    .banner-text {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      z-index: 1;
+    }
+
+    .banner-main {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      color: var(--ink);
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    .banner-slash {
+      color: var(--royal);
+      font-weight: 900;
+      letter-spacing: -0.04em;
+    }
+
+    .banner-sub {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--royal);
+      white-space: nowrap;
+    }
+
+    .banner-sub:empty {
+      display: none;
+    }
+
+    /* Variant: Regular Flame (Reno) */
+    .prism-banner.variant-flame {
+      border-top-color: #d95b16;
+      border-bottom-color: var(--gold);
+      background: linear-gradient(100deg, rgba(255, 253, 250, 0.96) 0%, rgba(255, 245, 236, 0.95) 68%, rgba(255, 250, 240, 0.96) 100%);
+    }
+    .prism-banner.variant-flame::before {
+      background: linear-gradient(180deg, #dc4e14 0%, #f59e0b 100%);
+    }
+    .prism-banner.variant-flame .banner-glyph {
+      background: #dc4e14;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.26);
+    }
+    .prism-banner.variant-flame .banner-slash,
+    .prism-banner.variant-flame .banner-sub {
+      color: #c2410c;
+    }
+
+    /* Variant: Mob Fast Flash (wolf_bite - compact crimson-gold) */
+    .prism-banner.variant-mob {
+      min-width: 230px;
+      padding: 6px 26px;
+      border-top: 1.5px solid var(--crimson);
+      border-bottom: 1.5px solid var(--gold);
+      background: linear-gradient(100deg, rgba(255, 250, 251, 0.95) 0%, rgba(255, 239, 242, 0.94) 100%);
+      box-shadow: 0 10px 24px rgba(145, 25, 48, 0.22);
+    }
+    .prism-banner.variant-mob::before {
+      width: 18px;
+      background: linear-gradient(180deg, var(--crimson) 0%, var(--gold) 100%);
+    }
+    .prism-banner.variant-mob .banner-glyph {
+      width: 8px;
+      height: 8px;
+      background: var(--crimson);
+      box-shadow: 0 0 0 2px rgba(207, 160, 70, 0.4);
+    }
+    .prism-banner.variant-mob .banner-main {
+      font-size: 16px;
+      letter-spacing: 0.12em;
+      color: #5b1121;
+    }
+    .prism-banner.variant-mob .banner-slash {
+      color: var(--crimson);
+    }
+    .prism-banner.variant-mob .banner-sub {
+      display: none;
+    }
+
+    /* Variant: Ally Apex (starfrost_apex - widened champagne-gold + royal-blue prism) */
+    .prism-banner.variant-apex {
+      min-width: 470px;
+      padding: 13px 56px;
+      border-top: 2px solid var(--gold);
+      border-bottom: 2px solid var(--royal);
+      background: linear-gradient(100deg, rgba(255, 254, 249, 0.97) 0%, rgba(236, 247, 255, 0.97) 48%, rgba(255, 248, 230, 0.97) 100%);
+      box-shadow: 0 18px 46px rgba(16, 62, 168, 0.28), 0 0 28px rgba(232, 194, 109, 0.32);
+    }
+    .prism-banner.variant-apex::before {
+      width: 32px;
+      background: linear-gradient(180deg, var(--gold) 0%, var(--royal) 55%, var(--ice) 100%);
+      clip-path: polygon(20px 0, 32px 0, 12px 100%, 0 100%);
+    }
+    .prism-banner.variant-apex .banner-glyph {
+      width: 12px;
+      height: 12px;
+      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+      box-shadow: 0 0 0 3px rgba(22, 88, 235, 0.24);
+    }
+    .prism-banner.variant-apex .banner-main {
+      font-size: 26px;
+      letter-spacing: 0.18em;
+      color: #0d2149;
+    }
+    .prism-banner.variant-apex .banner-slash {
+      color: var(--gold);
+    }
+    .prism-banner.variant-apex .banner-sub {
+      font-size: 11px;
+      letter-spacing: 0.3em;
+      color: var(--royal);
+    }
+
+    /* Variant: Boss Ultimate (eclipse_rift - widened amethyst + champagne-gold prism) */
+    .prism-banner.variant-boss {
+      min-width: 470px;
+      padding: 13px 56px;
+      border-top: 2px solid var(--amethyst);
+      border-bottom: 2px solid var(--gold-bright);
+      background: linear-gradient(100deg, rgba(26, 17, 46, 0.94) 0%, rgba(44, 24, 72, 0.94) 55%, rgba(36, 16, 44, 0.95) 100%);
+      box-shadow: 0 18px 48px rgba(45, 16, 92, 0.42), 0 0 26px rgba(126, 63, 242, 0.3);
+    }
+    .prism-banner.variant-boss::before {
+      width: 32px;
+      background: linear-gradient(180deg, var(--gold-bright) 0%, var(--amethyst) 55%, var(--crimson) 100%);
+      clip-path: polygon(20px 0, 32px 0, 12px 100%, 0 100%);
+    }
+    .prism-banner.variant-boss .banner-glyph {
+      width: 12px;
+      height: 12px;
+      background: var(--gold-bright);
+      box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.38);
+    }
+    .prism-banner.variant-boss .banner-main {
+      font-size: 26px;
+      letter-spacing: 0.18em;
+      color: #f8f4ff;
+    }
+    .prism-banner.variant-boss .banner-slash {
+      color: var(--gold-bright);
+    }
+    .prism-banner.variant-boss .banner-sub {
+      font-size: 11px;
+      letter-spacing: 0.3em;
+      color: #d8b4fe;
+    }
+
+    /* ── Bottom Compact Snow-Porcelain Control Dock (ZERO Nested Rounded Boxes) ── */
+    .control-dock {
+      position: fixed;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 35;
+      display: flex;
+      align-items: stretch;
+      max-width: calc(100vw - 24px);
+      background: var(--porcelain-strong);
+      border: 1px solid var(--hairline-strong);
+      border-top: 2px solid var(--royal);
+      clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+      box-shadow: var(--shadow-porcelain);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      overflow: hidden;
+    }
+
+    .dock-seg {
+      display: flex;
+      align-items: stretch;
+      border-right: 1px solid var(--hairline);
+    }
+
+    .dock-seg:last-child {
+      border-right: none;
+    }
+
+    /* All inner controls are borderless flat blocks separated by 1px hairlines */
+    .dock-btn {
+      position: relative;
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 700;
+      padding: 10px 13px;
+      cursor: pointer;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      line-height: 1.15;
+      white-space: nowrap;
+      border-right: 1px solid rgba(22, 88, 235, 0.1);
+      transition: background-color 120ms ease, color 120ms ease;
+    }
+
+    .dock-btn:last-child {
+      border-right: none;
+    }
+
+    .dock-btn:hover {
+      background: var(--royal-tint);
+      color: var(--royal);
+    }
+
+    .dock-btn:focus-visible {
+      outline: 2px solid var(--royal);
+      outline-offset: -2px;
+    }
+
+    .dock-btn.is-playing {
+      background: rgba(22, 88, 235, 0.14);
+      color: var(--royal);
+    }
+
+    .dock-btn.is-playing::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 2.5px;
+      background: var(--royal);
+    }
+
+    /* Primary 4-chain CTA */
+    .dock-btn-primary {
+      flex-direction: row;
+      gap: 7px;
+      padding: 10px 18px 10px 22px;
+      background: linear-gradient(135deg, var(--royal) 0%, #1d6bf7 100%);
+      color: #ffffff;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+    }
+
+    .dock-btn-primary:hover {
+      background: linear-gradient(135deg, var(--royal-deep) 0%, var(--royal) 100%);
+      color: #ffffff;
+    }
+
+    .dock-btn-primary.is-running {
+      background: linear-gradient(135deg, #0d3a9e 0%, #b58328 100%);
+      color: #ffffff;
+    }
+
+    .btn-ms {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--ink-muted);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+    }
+
+    .dock-btn:hover .btn-ms,
+    .dock-btn.is-playing .btn-ms {
+      color: var(--royal);
+    }
+
+    .btn-tier-apex .btn-ms {
+      color: #a97319;
+    }
+
+    .btn-tier-mob .btn-ms {
+      color: var(--crimson);
+    }
+
+    .btn-tier-boss .btn-ms {
+      color: var(--amethyst);
+    }
+
+    /* Segmented toggle buttons (speed / biome / sound) */
+    .seg-label {
+      display: inline-flex;
+      align-items: center;
+      padding: 0 8px 0 11px;
+      font-size: 10.5px;
+      font-weight: 800;
+      color: var(--ink-muted);
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      background: rgba(22, 88, 235, 0.03);
+    }
+
+    .dock-toggle {
+      position: relative;
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--ink-muted);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 10px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background-color 120ms ease, color 120ms ease;
+    }
+
+    .dock-toggle:hover {
+      background: var(--royal-tint);
+      color: var(--royal);
+    }
+
+    .dock-toggle:focus-visible {
+      outline: 2px solid var(--royal);
+      outline-offset: -2px;
+    }
+
+    .dock-toggle.active {
+      color: var(--royal);
+      background: rgba(22, 88, 235, 0.11);
+      font-weight: 800;
+    }
+
+    .dock-toggle.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 2.5px;
+      background: var(--royal);
+    }
+
+    .dock-sound {
+      padding: 10px 18px 10px 13px;
+      color: var(--royal);
+      font-weight: 800;
+    }
+
+    .dock-sound.muted {
+      color: var(--ink-muted);
+      background: rgba(82, 101, 133, 0.08);
+    }
+
+    /* Compact adaptation for 1280×720 */
+    @media (max-width: 1340px) {
+      .dock-btn {
+        padding: 9px 10px;
+        font-size: 12px;
+      }
+      .dock-btn-primary {
+        padding: 9px 14px 9px 18px;
+        font-size: 12.5px;
+      }
+      .dock-toggle {
+        padding: 9px 8px;
+        font-size: 11.5px;
+      }
+      .seg-label {
+        padding: 0 6px 0 8px;
+      }
+      .telemetry-panel {
+        width: 264px;
+        padding: 8px 11px 8px;
+      }
+      .prism-banner.variant-apex,
+      .prism-banner.variant-boss {
+        min-width: 410px;
+        padding: 11px 44px;
+      }
+      .prism-banner.variant-apex .banner-main,
+      .prism-banner.variant-boss .banner-main {
+        font-size: 23px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Fullscreen 3D Stage & 2D VFX Overlay -->
+  <div id="stage-wrap">
+    <div id="stage-host"></div>
+    <canvas id="vfx-canvas"></canvas>
+    <div id="cinema-edge" aria-hidden="true"></div>
+  </div>
+
+  <!-- Top Navigation Bar -->
+  <header class="top-nav">
+    <nav class="nav-group" aria-label="竞标方案切换">
+      <a class="nav-link" href="./cast_hub.html">‹ 竞标总台</a>
+      <a class="nav-link active" href="./cast_demo_a.html" aria-current="page">
+        <span class="nav-diamond" aria-hidden="true"></span>
+        <span>方案 A·剧场聚光（当前）</span>
+      </a>
+      <a class="nav-link" href="./cast_demo_b.html">方案 B·明亮切镜</a>
+      <a class="nav-link" href="./cast_demo_c.html">方案 C·闪电Cut-In</a>
+    </nav>
+    <div class="nav-meta">
+      <span class="nav-meta-accent">用户原案 · 快节奏聚光宣言</span>
+      <span class="nav-meta-sep" aria-hidden="true"></span>
+      <span>杂兵 140ms / 常规 280ms / 大招 390ms</span>
+    </div>
+  </header>
+
+  <!-- Top-Center 6-Slot Pixel Avatar AV Action Bar -->
+  <div id="av-bar" aria-label="行动值行动条"></div>
+
+  <!-- Top-Left Compact Live Beat Telemetry -->
+  <aside class="telemetry-panel" aria-label="实时节拍仪表">
+    <div class="tele-head">
+      <span class="tele-title">方案 A · 节拍仪表</span>
+      <span class="tele-ms-wrap">
+        <span class="tele-ms-label">中间停顿</span>
+        <span id="beat-ms-val" class="tele-ms-val">280 ms</span>
+      </span>
+    </div>
+    <div class="tele-steps">
+      <span id="step-1" class="tele-step">聚光压暗</span>
+      <span class="tele-arrow" aria-hidden="true">→</span>
+      <span id="step-2" class="tele-step">晶鸣亮名</span>
+      <span class="tele-arrow" aria-hidden="true">→</span>
+      <span id="step-3" class="tele-step">恢复放招</span>
+    </div>
+    <div class="tele-progress">
+      <div id="tele-progress-fill" class="tele-progress-fill"></div>
+    </div>
+    <div class="tele-shared-row">
+      <div id="stage-status">待机 · 点击下方招式或 4 连动回放</div>
+      <span id="chain-flag" class="tele-chain-flag"></span>
+    </div>
+  </aside>
+
+  <!-- Top-Upper Prism Skill Declaration Banner (top: 118px, below AV Bar) -->
+  <div id="banner-layer" aria-live="polite">
+    <div id="prism-banner" class="prism-banner">
+      <span class="banner-glyph" aria-hidden="true"></span>
+      <div class="banner-text">
+        <div class="banner-main">
+          <span class="banner-slash">//</span>
+          <span id="banner-name">冰晶连棱</span>
+        </div>
+        <div id="banner-sub" class="banner-sub"></div>
+      </div>
+      <span class="banner-glyph" aria-hidden="true"></span>
+    </div>
+  </div>
+
+  <!-- Bottom Compact Snow-Porcelain Control Dock -->
+  <footer class="control-dock" aria-label="方案 A 演示控制台">
+    <div class="dock-seg">
+      <button id="btn-chain" type="button" class="dock-btn dock-btn-primary">
+        <span id="chain-icon">▶</span>
+        <span id="chain-label">4 连动快节奏回放</span>
+      </button>
+    </div>
+
+    <div class="dock-seg">
+      <button type="button" class="dock-btn" data-skill="ice_prism" data-base-ms="280">
+        <span>冰晶连棱</span>
+        <span class="btn-ms">280ms</span>
+      </button>
+      <button type="button" class="dock-btn btn-tier-apex" data-skill="starfrost_apex" data-base-ms="390">
+        <span>星霜极限</span>
+        <span class="btn-ms">390ms</span>
+      </button>
+      <button type="button" class="dock-btn btn-tier-mob" data-skill="wolf_bite" data-base-ms="140">
+        <span>狂狼快攻</span>
+        <span class="btn-ms">140ms</span>
+      </button>
+      <button type="button" class="dock-btn btn-tier-boss" data-skill="eclipse_rift" data-base-ms="390">
+        <span>罗文绝招</span>
+        <span class="btn-ms">390ms</span>
+      </button>
+    </div>
+
+    <div class="dock-seg">
+      <span class="seg-label">节奏</span>
+      <button type="button" class="dock-toggle" data-speed="0.75">0.75×</button>
+      <button type="button" class="dock-toggle active" data-speed="1">1.0×</button>
+      <button type="button" class="dock-toggle" data-speed="1.25">1.25×</button>
+    </div>
+
+    <div class="dock-seg">
+      <span class="seg-label">场景</span>
+      <button type="button" class="dock-toggle active" data-biome="academy">学院雪庭</button>
+      <button type="button" class="dock-toggle" data-biome="forest">月夜雾林</button>
+    </div>
+
+    <div class="dock-seg">
+      <button id="btn-sound" type="button" class="dock-toggle dock-sound" aria-pressed="true">音效 开</button>
+    </div>
+  </footer>
+
+  <!-- Sprite Skeletons (Zero-PNG Pixel Assets) -->
+  <script src="../../js/sprites/sylvia_silver.js"></script>
+  <script src="../../js/sprites/reno.js"></script>
+  <script src="../../js/sprites/rowan.js"></script>
+  <script src="../../js/sprites/tundra_brute.js"></script>
+  <script src="../../js/sprites/frost_hound.js"></script>
+
+  <!-- Scheme A Choreography Module -->
+  <script type="module">
+    import { initCastDemoStage } from './cast_stage_shared.js';
+
+    const stage = await initCastDemoStage({
+      schemeId: 'A',
+      schemeName: '方案 A · 疾速剧场聚光',
+      stageEl: document.getElementById('stage-host'),
+      vfxCanvas: document.getElementById('vfx-canvas'),
+      avBarEl: document.getElementById('av-bar'),
+      statusEl: document.getElementById('stage-status'),
+    });
+
+    const SKILL_FALLBACK = {
+      ice_prism: {
+        key: 'ice_prism',
+        caster: 'sylvia',
+        name: '冰晶连棱',
+        sub: 'ICE PRISM',
+        tier: 'regular',
+        side: 'ally',
+      },
+      flame_lance: {
+        key: 'flame_lance',
+        caster: 'reno',
+        name: '炎岩贯冲',
+        sub: 'FLAME LANCE',
+        tier: 'regular',
+        side: 'ally',
+      },
+      wolf_bite: {
+        key: 'wolf_bite',
+        caster: 'wolf',
+        name: '裂霜扑咬',
+        sub: '',
+        tier: 'mob',
+        side: 'enemy',
+      },
+      starfrost_apex: {
+        key: 'starfrost_apex',
+        caster: 'sylvia',
+        name: '星霜极限',
+        sub: 'STARFROST APEX',
+        tier: 'apex',
+        side: 'ally',
+      },
+      eclipse_rift: {
+        key: 'eclipse_rift',
+        caster: 'rowan',
+        name: '蚀月裂界',
+        sub: 'ECLIPSE RIFT',
+        tier: 'boss',
+        side: 'enemy',
+      },
+    };
+
+    const CHAIN_SEQUENCE = ['ice_prism', 'flame_lance', 'wolf_bite', 'eclipse_rift'];
+
+    const bannerEl = document.getElementById('prism-banner');
+    const bannerNameEl = document.getElementById('banner-name');
+    const bannerSubEl = document.getElementById('banner-sub');
+    const cinemaEdgeEl = document.getElementById('cinema-edge');
+    const beatMsValEl = document.getElementById('beat-ms-val');
+    const progressFillEl = document.getElementById('tele-progress-fill');
+    const chainFlagEl = document.getElementById('chain-flag');
+    const stepEls = [
+      document.getElementById('step-1'),
+      document.getElementById('step-2'),
+      document.getElementById('step-3'),
+    ];
+    const btnChain = document.getElementById('btn-chain');
+    const chainIcon = document.getElementById('chain-icon');
+    const chainLabel = document.getElementById('chain-label');
+    const btnSound = document.getElementById('btn-sound');
+    const skillBtns = Array.from(document.querySelectorAll('[data-skill]'));
+    const speedBtns = Array.from(document.querySelectorAll('[data-speed]'));
+    const biomeBtns = Array.from(document.querySelectorAll('[data-biome]'));
+
+    let speedMultiplier = 1.0;
+    let activeRunId = 0;
+    let isChainRunning = false;
+
+    function getSkillMeta(skillKey) {
+      const base = SKILL_FALLBACK[skillKey] || {
+        key: skillKey,
+        caster: 'sylvia',
+        name: skillKey,
+        sub: '',
+        tier: 'regular',
+        side: 'ally',
+      };
+      const shared = stage.SKILLS && stage.SKILLS[skillKey] ? stage.SKILLS[skillKey] : {};
+      return Object.assign({}, base, shared);
+    }
+
+    function updateSpeedLabels() {
+      const s = 1 / speedMultiplier;
+      document.documentElement.style.setProperty('--banner-dur', Math.max(55, Math.round(95 * s)) + 'ms');
+      for (const btn of skillBtns) {
+        const baseMs = Number(btn.dataset.baseMs || 280);
+        const msSpan = btn.querySelector('.btn-ms');
+        if (msSpan) {
+          msSpan.textContent = Math.round(baseMs * s) + 'ms';
+        }
+      }
+    }
+
+    function setTelemetryStep(stepIndex, phaseText, pauseMs, isApex) {
+      const roundedMs = Math.round(pauseMs);
+      beatMsValEl.textContent = roundedMs + ' ms';
+      beatMsValEl.classList.toggle('is-active', stepIndex > 0 && !isApex);
+      beatMsValEl.classList.toggle('is-apex', stepIndex > 0 && Boolean(isApex));
+
+      stepEls.forEach((el, idx) => {
+        const num = idx + 1;
+        el.classList.toggle('active', num === stepIndex);
+        el.classList.toggle('done', stepIndex > num);
+      });
+
+      const progressMap = { 0: '0%', 1: '34%', 2: '72%', 3: '100%' };
+      progressFillEl.style.width = progressMap[stepIndex] || '0%';
+
+      if (typeof stage.setTimelineStatus === 'function') {
+        stage.setTimelineStatus(phaseText, roundedMs);
+      }
+    }
+
+    function showBanner(name, sub, variant) {
+      bannerEl.className = 'prism-banner';
+      if (variant) {
+        bannerEl.classList.add('variant-' + variant);
+      }
+      bannerNameEl.textContent = name;
+      bannerSubEl.textContent = sub || '';
+      void bannerEl.offsetWidth;
+      bannerEl.classList.add('show', 'sweep');
+    }
+
+    function hideBanner() {
+      bannerEl.classList.remove('show', 'sweep');
+      bannerEl.classList.add('hide-out');
+    }
+
+    function resetBannerInstant() {
+      bannerEl.className = 'prism-banner';
+      cinemaEdgeEl.className = '';
+    }
+
+    function markActiveSkillButton(skillKey) {
+      for (const btn of skillBtns) {
+        btn.classList.toggle('is-playing', btn.dataset.skill === skillKey);
+      }
+    }
+
+    function setChainUI(running, idx, total) {
+      isChainRunning = running;
+      btnChain.classList.toggle('is-running', running);
+      chainIcon.textContent = running ? '■' : '▶';
+      chainLabel.textContent = running ? '停止 4 连动' : '4 连动快节奏回放';
+      if (running) {
+        chainFlagEl.textContent = '连动 ' + idx + '/' + total;
+        chainFlagEl.classList.add('visible');
+      } else {
+        chainFlagEl.textContent = '';
+        chainFlagEl.classList.remove('visible');
+      }
+    }
+
+    async function waitGuarded(ms, runId) {
+      await stage.wait(Math.max(10, Math.round(ms)));
+      return runId === activeRunId;
+    }
+
+    /**
+     * Scheme A Choreography:
+     * 1) Mob fast attack (wolf_bite): 140ms * s
+     * 2) Regular skill (ice_prism / flame_lance): 280ms * s
+     * 3) Apex / Boss ultimate (starfrost_apex / eclipse_rift): 390ms * s
+     */
+    async function executeSchemeASkill(skillKey, runId) {
+      const sk = getSkillMeta(skillKey);
+      const s = 1 / speedMultiplier;
+      markActiveSkillButton(skillKey);
+
+      if (skillKey === 'wolf_bite') {
+        const totalPause = 140 * s;
+        cinemaEdgeEl.className = 'active';
+        setTelemetryStep(1, '聚光压暗 · 狂狼扑击', totalPause, false);
+
+        stage.focusCamera('wolf', Math.round(70 * s));
+        stage.setEnvDim(0.12, 'wolf', Math.round(70 * s));
+        stage.playPose('wolf', 'windup');
+        stage.playSFX('enemy_warn');
+
+        setTelemetryStep(2, '晶鸣亮名 · ' + sk.name, totalPause, false);
+        showBanner(sk.name, '', 'mob');
+
+        if (!(await waitGuarded(95 * s, runId))) return false;
+
+        hideBanner();
+        cinemaEdgeEl.className = '';
+        stage.setEnvDim(0, null, Math.round(45 * s));
+        stage.focusCamera('impact_ally', Math.round(90 * s));
+        setTelemetryStep(3, '恢复放招 · ' + sk.name, totalPause, false);
+
+        if (!(await waitGuarded(45 * s, runId))) return false;
+
+        await stage.playSkillImpact('wolf_bite');
+        if (runId !== activeRunId) return false;
+        stage.focusCamera('wide', Math.round(140 * s));
+        return true;
+      }
+
+      if (skillKey === 'starfrost_apex' || skillKey === 'eclipse_rift') {
+        const totalPause = 390 * s;
+        const isBoss = skillKey === 'eclipse_rift';
+        const deepCam = sk.caster === 'sylvia'
+          ? 'sylvia_low'
+          : (sk.caster === 'rowan' ? 'rowan_low' : sk.caster);
+        const impactCam = isBoss ? 'impact_ally' : 'impact_enemy';
+        const ringPrimary = isBoss ? '#8b5cf6' : '#22a8ff';
+        const ringOuter = isBoss ? '#e2b458' : '#e8c26d';
+        const bannerSub = isBoss ? 'ECLIPSE RIFT' : 'STARFROST APEX';
+
+        cinemaEdgeEl.className = isBoss ? 'active is-boss' : 'active';
+        setTelemetryStep(1, '深度聚光 · ' + sk.name, totalPause, true);
+
+        stage.focusCamera(deepCam, Math.round(110 * s));
+        stage.setEnvDim(0.32, sk.caster, Math.round(110 * s));
+        stage.playPose(sk.caster, 'windup');
+        stage.spawnMagicRing(sk.caster, ringPrimary, 1.05);
+
+        if (!(await waitGuarded(45 * s, runId))) return false;
+        stage.spawnMagicRing(sk.caster, ringOuter, 1.48);
+
+        if (!(await waitGuarded(30 * s, runId))) return false;
+
+        setTelemetryStep(2, '重晶鸣宣言 · ' + sk.name, totalPause, true);
+        stage.playSFX(isBoss ? 'enemy_warn' : 'chime_apex');
+        showBanner(sk.name, bannerSub, isBoss ? 'boss' : 'apex');
+
+        if (!(await waitGuarded(250 * s, runId))) return false;
+
+        hideBanner();
+        cinemaEdgeEl.className = '';
+        stage.setEnvDim(0, null, Math.round(65 * s));
+        stage.focusCamera(impactCam, Math.round(115 * s));
+        setTelemetryStep(3, '恢复放招 · ' + sk.name, totalPause, true);
+
+        if (!(await waitGuarded(65 * s, runId))) return false;
+
+        await stage.playSkillImpact(skillKey);
+        if (runId !== activeRunId) return false;
+        stage.focusCamera('wide', Math.round(190 * s));
+        return true;
+      }
+
+      // Regular skill: ice_prism / flame_lance — 280ms * s
+      const totalPause = 280 * s;
+      const isFlame = skillKey === 'flame_lance';
+      const ringColor = isFlame ? '#f97316' : '#22a8ff';
+      const bannerVariant = isFlame ? 'flame' : '';
+
+      cinemaEdgeEl.className = 'active';
+      setTelemetryStep(1, '聚光压暗 · ' + sk.name, totalPause, false);
+
+      stage.focusCamera(sk.caster, Math.round(85 * s));
+      stage.setEnvDim(0.24, sk.caster, Math.round(85 * s));
+      stage.playPose(sk.caster, 'windup');
+      stage.spawnMagicRing(sk.caster, ringColor, 1.0);
+
+      if (!(await waitGuarded(65 * s, runId))) return false;
+
+      setTelemetryStep(2, '晶鸣亮名 · ' + sk.name, totalPause, false);
+      stage.playSFX('chime_soft');
+      showBanner(sk.name, sk.sub || (isFlame ? 'FLAME LANCE' : 'ICE PRISM'), bannerVariant);
+
+      if (!(await waitGuarded(165 * s, runId))) return false;
+
+      hideBanner();
+      cinemaEdgeEl.className = '';
+      stage.setEnvDim(0, null, Math.round(55 * s));
+      stage.focusCamera('impact_enemy', Math.round(110 * s));
+      setTelemetryStep(3, '恢复放招 · ' + sk.name, totalPause, false);
+
+      if (!(await waitGuarded(50 * s, runId))) return false;
+
+      await stage.playSkillImpact(skillKey);
+      if (runId !== activeRunId) return false;
+      stage.focusCamera('wide', Math.round(160 * s));
+      return true;
+    }
+
+    function abortCurrentSequence() {
+      activeRunId += 1;
+      resetBannerInstant();
+      setChainUI(false, 0, CHAIN_SEQUENCE.length);
+      markActiveSkillButton('');
+      stage.setEnvDim(0, null, 70);
+      stage.focusCamera('wide', 120);
+      setTelemetryStep(0, '已归位 · 选择招式或 4 连动回放', 280 / speedMultiplier, false);
+    }
+
+    async function runSingleSkill(skillKey) {
+      activeRunId += 1;
+      const runId = activeRunId;
+      setChainUI(false, 0, CHAIN_SEQUENCE.length);
+      resetBannerInstant();
+
+      const ok = await executeSchemeASkill(skillKey, runId);
+      if (!ok || runId !== activeRunId) return;
+
+      await stage.wait(Math.round(180 / speedMultiplier));
+      if (runId !== activeRunId) return;
+      markActiveSkillButton('');
+      const sk = getSkillMeta(skillKey);
+      const baseMs = skillKey === 'wolf_bite' ? 140 : ((skillKey === 'starfrost_apex' || skillKey === 'eclipse_rift') ? 390 : 280);
+      setTelemetryStep(0, '完成 · ' + sk.name, baseMs / speedMultiplier, false);
+    }
+
+    async function runFourChainReplay() {
+      if (isChainRunning) {
+        abortCurrentSequence();
+        return;
+      }
+
+      activeRunId += 1;
+      const runId = activeRunId;
+      resetBannerInstant();
+
+      for (let i = 0; i < CHAIN_SEQUENCE.length; i += 1) {
+        if (runId !== activeRunId) return;
+        const skillKey = CHAIN_SEQUENCE[i];
+        setChainUI(true, i + 1, CHAIN_SEQUENCE.length);
+        const ok = await executeSchemeASkill(skillKey, runId);
+        if (!ok || runId !== activeRunId) return;
+
+        if (i < CHAIN_SEQUENCE.length - 1) {
+          if (!(await waitGuarded(220 / speedMultiplier, runId))) return;
+        }
+      }
+
+      if (runId !== activeRunId) return;
+      setChainUI(false, 0, CHAIN_SEQUENCE.length);
+      markActiveSkillButton('');
+      setTelemetryStep(0, '4 连动回放完成 · 随时重播', 280 / speedMultiplier, false);
+    }
+
+    // Bind bottom dock events
+    btnChain.addEventListener('click', () => {
+      runFourChainReplay();
+    });
+
+    for (const btn of skillBtns) {
+      btn.addEventListener('click', () => {
+        runSingleSkill(btn.dataset.skill);
+      });
+    }
+
+    for (const btn of speedBtns) {
+      btn.addEventListener('click', () => {
+        speedMultiplier = Number(btn.dataset.speed || 1);
+        speedBtns.forEach((b) => b.classList.toggle('active', b === btn));
+        updateSpeedLabels();
+        if (!isChainRunning) {
+          setTelemetryStep(0, '节奏已切至 ' + speedMultiplier + '×', 280 / speedMultiplier, false);
+        }
+      });
+    }
+
+    for (const btn of biomeBtns) {
+      btn.addEventListener('click', () => {
+        const biome = btn.dataset.biome;
+        biomeBtns.forEach((b) => b.classList.toggle('active', b === btn));
+        stage.setBiome(biome);
+      });
+    }
+
+    function syncSoundButton() {
+      const enabled = typeof stage.isSoundEnabled === 'function' ? stage.isSoundEnabled() : true;
+      btnSound.textContent = enabled ? '音效 开' : '音效 关';
+      btnSound.classList.toggle('muted', !enabled);
+      btnSound.setAttribute('aria-pressed', String(enabled));
+    }
+
+    btnSound.addEventListener('click', () => {
+      const next = !(typeof stage.isSoundEnabled === 'function' ? stage.isSoundEnabled() : true);
+      if (typeof stage.setSoundEnabled === 'function') {
+        stage.setSoundEnabled(next);
+      }
+      syncSoundButton();
+    });
+
+    // Keyboard shortcuts for crisp live auditioning
+    window.addEventListener('keydown', (e) => {
+      if (e.repeat) return;
+      if (e.key === '1') runSingleSkill('ice_prism');
+      else if (e.key === '2') runSingleSkill('starfrost_apex');
+      else if (e.key === '3') runSingleSkill('wolf_bite');
+      else if (e.key === '4') runSingleSkill('eclipse_rift');
+      else if (e.key === ' ' || e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        runFourChainReplay();
+      } else if (e.key === 'Escape') {
+        abortCurrentSequence();
+      }
+    });
+
+    updateSpeedLabels();
+    syncSoundButton();
+    setTelemetryStep(0, '就绪 · 点击 4 连动或单招试演', 280, false);
+  </script>
+</body>
+</html>

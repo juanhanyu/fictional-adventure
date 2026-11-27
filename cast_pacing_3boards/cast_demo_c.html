@@ -1,0 +1,1801 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>方案 C · 极速轻拍 + 绝招闪电立绘棱镜 Cut-In｜技能衔接停顿竞标</title>
+<style>
+  :root {
+    --porcelain: #f7faff;
+    --porcelain-panel: rgba(247, 250, 255, 0.92);
+    --porcelain-solid: #f2f7ff;
+    --ink: #112240;
+    --ink-muted: #4b5f82;
+    --royal: #1658eb;
+    --royal-deep: #0e3fb3;
+    --ice-cyan: #38bdf8;
+    --gold: #d4a84f;
+    --gold-bright: #f2d282;
+    --crimson: #dc2626;
+    --violet: #7c3aed;
+    --violet-bright: #a855f7;
+    --line: rgba(22, 88, 235, 0.18);
+    --line-strong: rgba(22, 88, 235, 0.34);
+    --shadow-soft: 0 8px 28px rgba(15, 39, 92, 0.12);
+    --font-ui: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+    --font-display: "Noto Serif SC", "Songti SC", "STSong", "PingFang SC", serif;
+    --font-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Consolas, monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--porcelain);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  img {
+    -webkit-user-drag: none;
+    user-drag: none;
+  }
+
+  .app-shell {
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: linear-gradient(180deg, #eef5ff 0%, #f7faff 100%);
+  }
+
+  /* ================= 顶栏导航（雪瓷冰白 · 无圆框套圆框） ================= */
+  .top-nav {
+    position: relative;
+    z-index: 40;
+    height: 46px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    padding: 0 18px;
+    background: rgba(248, 251, 255, 0.95);
+    border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(10px);
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .nav-item {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--ink-muted);
+    text-decoration: none;
+    border-right: 1px solid rgba(22, 88, 235, 0.1);
+    transition: color 0.16s ease, background 0.16s ease;
+  }
+
+  .nav-item:first-child {
+    padding-left: 4px;
+    color: var(--royal);
+    font-weight: 700;
+  }
+
+  .nav-item:hover {
+    color: var(--royal);
+    background: rgba(22, 88, 235, 0.05);
+  }
+
+  .nav-item.active {
+    color: var(--royal);
+    font-weight: 800;
+    background: linear-gradient(180deg, rgba(22, 88, 235, 0.04) 0%, rgba(22, 88, 235, 0.1) 100%);
+  }
+
+  .nav-item.active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--royal) 0%, var(--ice-cyan) 62%, var(--gold) 100%);
+  }
+
+  .nav-badge-dot {
+    width: 7px;
+    height: 7px;
+    background: var(--gold);
+    transform: rotate(45deg);
+    box-shadow: 0 0 8px rgba(212, 168, 79, 0.7);
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+
+  .nav-spec-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .nav-spec-tag .hi-fast {
+    color: var(--royal);
+  }
+
+  .nav-spec-tag .hi-cutin {
+    color: #9e6c12;
+  }
+
+  .nav-divider {
+    width: 1px;
+    height: 14px;
+    background: var(--line);
+  }
+
+  /* ================= 舞台主区 ================= */
+  .stage-viewport {
+    position: relative;
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    overflow: hidden;
+    background: #dce8f8;
+  }
+
+  #stage {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+  }
+
+  #vfx-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 14;
+    pointer-events: none;
+  }
+
+  /* ================= 顶中 6 槽像素头像 AV 行动条 ================= */
+  #av-bar {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 26;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 46px;
+    padding: 5px 12px;
+    background: rgba(248, 251, 255, 0.88);
+    border: 1px solid rgba(22, 88, 235, 0.22);
+    border-top: 2px solid var(--royal);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 6px 20px rgba(15, 39, 92, 0.12);
+    clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%, 0 10px);
+  }
+
+  /* ================= 左上紧凑实时节拍仪表（无圆框套圆框） ================= */
+  .beat-meter {
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    z-index: 26;
+    width: 268px;
+    background: rgba(248, 251, 255, 0.91);
+    border: 1px solid rgba(22, 88, 235, 0.24);
+    border-left: 3px solid var(--royal);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-soft);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+    transition: border-left-color 0.16s ease;
+  }
+
+  .beat-meter[data-tier="fast"] {
+    border-left-color: var(--royal);
+  }
+
+  .beat-meter[data-tier="mob"] {
+    border-left-color: var(--crimson);
+  }
+
+  .beat-meter[data-tier="cutin-ally"] {
+    border-left-color: var(--gold);
+  }
+
+  .beat-meter[data-tier="cutin-boss"] {
+    border-left-color: var(--violet);
+  }
+
+  .bm-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 12px 6px;
+    border-bottom: 1px solid rgba(22, 88, 235, 0.12);
+  }
+
+  .bm-kicker {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--royal);
+  }
+
+  .bm-combo-step {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--ink-muted);
+  }
+
+  .bm-body {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    gap: 8px;
+    padding: 8px 12px 7px;
+  }
+
+  .bm-tier-label {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bm-ms-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bm-ms-val {
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--royal);
+    letter-spacing: -0.02em;
+  }
+
+  .beat-meter[data-tier="mob"] .bm-ms-val { color: var(--crimson); }
+  .beat-meter[data-tier="cutin-ally"] .bm-ms-val { color: #b47b16; }
+  .beat-meter[data-tier="cutin-boss"] .bm-ms-val { color: var(--violet); }
+
+  .bm-ms-unit {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-muted);
+  }
+
+  .bm-progress-track {
+    position: relative;
+    height: 3px;
+    width: 100%;
+    background: rgba(22, 88, 235, 0.1);
+    overflow: hidden;
+  }
+
+  .bm-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--royal) 0%, var(--ice-cyan) 100%);
+    transform-origin: left center;
+  }
+
+  .beat-meter[data-tier="mob"] .bm-progress-fill {
+    background: linear-gradient(90deg, #ef4444 0%, #f97316 100%);
+  }
+
+  .beat-meter[data-tier="cutin-ally"] .bm-progress-fill {
+    background: linear-gradient(90deg, var(--royal) 0%, var(--gold) 100%);
+  }
+
+  .beat-meter[data-tier="cutin-boss"] .bm-progress-fill {
+    background: linear-gradient(90deg, #5b21b6 0%, #c084fc 100%);
+  }
+
+  .bm-foot {
+    padding: 6px 12px 7px;
+    font-size: 11.5px;
+    line-height: 1.35;
+    color: var(--ink-muted);
+    border-top: 1px solid rgba(22, 88, 235, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  #timeline-status {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .bm-contrast-hint {
+    padding: 4px 12px 6px;
+    border-top: 1px solid rgba(22, 88, 235, 0.08);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ================= 顶部极细切角提示条（常规技能 170ms / 杂兵快攻 120ms） ================= */
+  .quick-callout {
+    position: absolute;
+    top: 72px;
+    left: 50%;
+    z-index: 28;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 26px 6px 22px;
+    min-width: 240px;
+    justify-content: center;
+    opacity: 0;
+    transform: translate(-50%, -10px) skewX(-12deg) scaleX(0.88);
+    clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+    transition: opacity 70ms ease-out, transform 80ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .quick-callout.visible {
+    opacity: 1;
+    transform: translate(-50%, 0) skewX(-12deg) scaleX(1);
+  }
+
+  .quick-callout.exiting {
+    opacity: 0;
+    transform: translate(-50%, -6px) skewX(-12deg) scaleX(1.08);
+    transition: opacity 75ms ease-in, transform 75ms ease-in;
+  }
+
+  .quick-callout[data-style="ally-fast"] {
+    background: linear-gradient(95deg, rgba(247, 250, 255, 0.96) 0%, rgba(223, 238, 255, 0.94) 72%, rgba(22, 88, 235, 0.18) 100%);
+    border-top: 2px solid var(--royal);
+    border-bottom: 1.5px solid var(--gold);
+    box-shadow: 0 6px 22px rgba(22, 88, 235, 0.22);
+    color: var(--ink);
+  }
+
+  .quick-callout[data-style="ally-flame"] {
+    background: linear-gradient(95deg, rgba(255, 250, 242, 0.96) 0%, rgba(254, 237, 210, 0.94) 72%, rgba(212, 168, 79, 0.24) 100%);
+    border-top: 2px solid #d97706;
+    border-bottom: 1.5px solid var(--royal);
+    box-shadow: 0 6px 22px rgba(217, 119, 6, 0.22);
+    color: #3a1d06;
+  }
+
+  .quick-callout[data-style="enemy-fast"] {
+    background: linear-gradient(95deg, rgba(255, 245, 245, 0.96) 0%, rgba(254, 220, 220, 0.95) 68%, rgba(220, 38, 38, 0.28) 100%);
+    border-top: 2px solid var(--crimson);
+    border-bottom: 1.5px solid #991b1b;
+    box-shadow: 0 6px 22px rgba(220, 38, 38, 0.26);
+    color: #5a0b0b;
+  }
+
+  .qc-inner {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    transform: skewX(12deg);
+  }
+
+  .qc-slash {
+    font-family: var(--font-mono);
+    font-weight: 900;
+    font-size: 13px;
+    letter-spacing: -0.05em;
+    color: var(--royal);
+  }
+
+  .quick-callout[data-style="ally-flame"] .qc-slash { color: #d97706; }
+  .quick-callout[data-style="enemy-fast"] .qc-slash { color: var(--crimson); }
+
+  .qc-title {
+    font-size: 15px;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+  }
+
+  .qc-meta {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    opacity: 0.72;
+    letter-spacing: 0.08em;
+  }
+
+  /* ================= 屏幕中段斜切冰晶棱镜立绘特写条（Cut-In Strip） ================= */
+  .cutin-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 32;
+    pointer-events: none;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .cutin-layer.active,
+  .cutin-layer.shatter {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  /* 瞬发高能闪光线 */
+  .cutin-flash-beam {
+    position: absolute;
+    left: -10%;
+    width: 120%;
+    height: 4px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-4.2deg) scaleY(0.2);
+    background: linear-gradient(90deg, transparent 0%, #ffffff 30%, #d4a84f 55%, #ffffff 80%, transparent 100%);
+    opacity: 0;
+    filter: blur(0.5px);
+  }
+
+  .cutin-layer.active .cutin-flash-beam {
+    animation: cutinFlashBeam var(--cutin-dur, 280ms) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .cutin-layer[data-theme="boss"] .cutin-flash-beam {
+    background: linear-gradient(90deg, transparent 0%, #ffffff 30%, #c084fc 55%, #ffffff 80%, transparent 100%);
+  }
+
+  @keyframes cutinFlashBeam {
+    0% { opacity: 0.95; transform: translateY(-50%) rotate(-4.2deg) scaleY(10); }
+    24% { opacity: 0.85; transform: translateY(-50%) rotate(-4.2deg) scaleY(1.8); }
+    100% { opacity: 0; transform: translateY(-50%) rotate(-4.2deg) scaleY(0.3); }
+  }
+
+  /* 斜切主棱镜带（严禁圆框套圆框：纯几何多边形切角 + 双线冰晶边框） */
+  .cutin-stage-band {
+    position: relative;
+    width: 108%;
+    height: clamp(164px, 24.5vh, 218px);
+    transform: rotate(-4.2deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* 棱镜上下双线斜切边轨 */
+  .cutin-rail {
+    position: absolute;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+    z-index: 6;
+    transition: transform var(--shatter-dur, 75ms) cubic-bezier(0.55, 0.06, 0.68, 0.19),
+                opacity var(--shatter-dur, 75ms) ease-in;
+  }
+
+  .cutin-rail-top-outer {
+    top: -6px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent 0%, var(--royal) 16%, var(--ice-cyan) 50%, var(--gold-bright) 84%, transparent 100%);
+    box-shadow: 0 0 12px rgba(22, 88, 235, 0.65);
+  }
+
+  .cutin-rail-top-inner {
+    top: 1px;
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent 4%, var(--gold) 22%, #ffffff 55%, var(--gold) 88%, transparent 100%);
+  }
+
+  .cutin-rail-bot-inner {
+    bottom: 1px;
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent 4%, var(--gold) 18%, #ffffff 52%, var(--gold) 86%, transparent 100%);
+  }
+
+  .cutin-rail-bot-outer {
+    bottom: -6px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent 0%, var(--gold) 18%, var(--royal) 55%, var(--ice-cyan) 88%, transparent 100%);
+    box-shadow: 0 0 14px rgba(212, 168, 79, 0.55);
+  }
+
+  .cutin-layer[data-theme="boss"] .cutin-rail-top-outer {
+    background: linear-gradient(90deg, transparent 0%, #6d28d9 16%, #c084fc 50%, #f8fafc 84%, transparent 100%);
+    box-shadow: 0 0 14px rgba(168, 85, 247, 0.72);
+  }
+
+  .cutin-layer[data-theme="boss"] .cutin-rail-top-inner,
+  .cutin-layer[data-theme="boss"] .cutin-rail-bot-inner {
+    background: linear-gradient(90deg, transparent 4%, #e2e8f0 22%, #ffffff 55%, #d8b4fe 88%, transparent 100%);
+  }
+
+  .cutin-layer[data-theme="boss"] .cutin-rail-bot-outer {
+    background: linear-gradient(90deg, transparent 0%, #f1f5f9 18%, #7c3aed 55%, #a855f7 88%, transparent 100%);
+    box-shadow: 0 0 14px rgba(139, 92, 246, 0.65);
+  }
+
+  /* 主体玻璃棱镜内容容器 */
+  .cutin-prism-body {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(
+      102deg,
+      rgba(244, 249, 255, 0.96) 0%,
+      rgba(214, 234, 255, 0.93) 34%,
+      rgba(34, 102, 240, 0.91) 66%,
+      rgba(14, 53, 150, 0.95) 100%
+    );
+    backdrop-filter: blur(8px) saturate(1.25);
+    box-shadow:
+      0 14px 48px rgba(14, 46, 128, 0.34),
+      inset 0 0 36px rgba(255, 255, 255, 0.45);
+    transform: translateX(-14%) scaleY(0.14);
+    opacity: 0;
+  }
+
+  .cutin-layer[data-theme="boss"] .cutin-prism-body {
+    background: linear-gradient(
+      102deg,
+      rgba(246, 243, 255, 0.96) 0%,
+      rgba(218, 206, 250, 0.92) 34%,
+      rgba(96, 44, 198, 0.93) 66%,
+      rgba(39, 17, 94, 0.96) 100%
+    );
+    box-shadow:
+      0 14px 48px rgba(49, 17, 110, 0.42),
+      inset 0 0 36px rgba(241, 245, 249, 0.35);
+  }
+
+  .cutin-layer.active .cutin-prism-body {
+    animation: cutinSlamIn 95ms cubic-bezier(0.08, 0.96, 0.24, 1) forwards;
+  }
+
+  @keyframes cutinSlamIn {
+    0% {
+      opacity: 0.3;
+      transform: translateX(-8%) scaleY(0.12);
+    }
+    55% {
+      opacity: 1;
+      transform: translateX(0.6%) scaleY(1.04);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0) scaleY(1);
+    }
+  }
+
+  /* 极速斜线冰晶流光背景层 */
+  .cutin-streaks {
+    position: absolute;
+    inset: -20px;
+    pointer-events: none;
+    z-index: 1;
+    background:
+      repeating-linear-gradient(
+        -24deg,
+        transparent 0px,
+        transparent 22px,
+        rgba(255, 255, 255, 0.22) 22px,
+        rgba(255, 255, 255, 0.22) 24px,
+        transparent 24px,
+        transparent 58px,
+        rgba(212, 168, 79, 0.22) 58px,
+        rgba(212, 168, 79, 0.22) 60px
+      );
+    opacity: 0.78;
+  }
+
+  .cutin-layer[data-theme="boss"] .cutin-streaks {
+    background:
+      repeating-linear-gradient(
+        -24deg,
+        transparent 0px,
+        transparent 20px,
+        rgba(241, 245, 249, 0.22) 20px,
+        rgba(241, 245, 249, 0.22) 22px,
+        transparent 22px,
+        transparent 52px,
+        rgba(192, 132, 252, 0.28) 52px,
+        rgba(192, 132, 252, 0.28) 55px
+      );
+  }
+
+  .cutin-layer.active .cutin-streaks {
+    animation: cutinStreaksFlow 320ms linear infinite;
+  }
+
+  @keyframes cutinStreaksFlow {
+    from { transform: translateX(-80px); }
+    to { transform: translateX(80px); }
+  }
+
+  /* 高速横向高光扫光 */
+  .cutin-sheen {
+    position: absolute;
+    top: -30%;
+    bottom: -30%;
+    left: -30%;
+    width: 34%;
+    z-index: 4;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.78) 50%, transparent 100%);
+    transform: skewX(-28deg);
+    opacity: 0;
+  }
+
+  .cutin-layer.active .cutin-sheen {
+    animation: cutinSheenSweep 260ms cubic-bezier(0.12, 0.88, 0.24, 1) 25ms forwards;
+  }
+
+  @keyframes cutinSheenSweep {
+    0% { left: -28%; opacity: 0.9; }
+    100% { left: 118%; opacity: 0; }
+  }
+
+  /* Cut-In 内部安全居中容器（逆旋转回正一点或保留锋利斜角） */
+  .cutin-inner {
+    position: relative;
+    z-index: 3;
+    width: min(1160px, 90vw);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    gap: 28px;
+  }
+
+  /* 左侧立绘斜切冰晶特写窗 */
+  .cutin-portrait-slice {
+    position: relative;
+    width: clamp(320px, 34vw, 440px);
+    height: 118%;
+    flex-shrink: 0;
+    clip-path: polygon(11% 0, 100% 0, 87% 100%, 0% 100%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(186, 222, 255, 0.85));
+    overflow: hidden;
+    box-shadow: 0 0 32px rgba(22, 88, 235, 0.35);
+    transition: transform var(--shatter-dur, 75ms) cubic-bezier(0.55, 0.06, 0.68, 0.19),
+                opacity var(--shatter-dur, 75ms) ease-in;
+  }
+
+  .cutin-layer[data-theme="boss"] .cutin-portrait-slice {
+    background: linear-gradient(135deg, rgba(241, 245, 249, 0.9), rgba(124, 58, 237, 0.65));
+  }
+
+  .cutin-portrait-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 18%;
+    transform: rotate(4.2deg) scale(1.16);
+    filter: contrast(1.06) saturate(1.1);
+  }
+
+  .cutin-layer.active .cutin-portrait-img {
+    animation: cutinPortraitPunch 280ms cubic-bezier(0.14, 0.9, 0.25, 1) forwards;
+  }
+
+  @keyframes cutinPortraitPunch {
+    0% { transform: rotate(4.2deg) scale(1.34) translateX(-18px); }
+    45% { transform: rotate(4.2deg) scale(1.15) translateX(0); }
+    100% { transform: rotate(4.2deg) scale(1.19) translateX(8px); }
+  }
+
+  /* 立绘斜边折射高光边线 */
+  .cutin-portrait-edge {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 6%;
+    width: 4px;
+    transform: skewX(-16deg);
+    background: linear-gradient(180deg, #ffffff 0%, var(--gold-bright) 50%, #ffffff 100%);
+    box-shadow: 0 0 14px rgba(255, 255, 255, 0.9);
+  }
+
+  .cutin-layer[data-theme="boss"] .cutin-portrait-edge {
+    background: linear-gradient(180deg, #ffffff 0%, #d8b4fe 50%, #ffffff 100%);
+  }
+
+  /* 右侧锐利斜体巨字招式名区 */
+  .cutin-title-block {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    padding-left: 8px;
+    transform: rotate(2.2deg);
+    transition: transform var(--shatter-dur, 75ms) cubic-bezier(0.55, 0.06, 0.68, 0.19),
+                opacity var(--shatter-dur, 75ms) ease-in;
+  }
+
+  .cutin-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 1.15vw, 13.5px);
+    font-weight: 800;
+    letter-spacing: 0.24em;
+    color: var(--gold-bright);
+    text-shadow: 0 2px 10px rgba(8, 25, 72, 0.55);
+    margin-bottom: 6px;
+  }
+
+  .cutin-layer[data-theme="boss"] .cutin-eyebrow {
+    color: #f1f5f9;
+    text-shadow: 0 2px 10px rgba(25, 10, 62, 0.72);
+  }
+
+  .cutin-eyebrow-bar {
+    width: 34px;
+    height: 2px;
+    background: currentColor;
+  }
+
+  .cutin-main-title {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 900;
+    font-size: clamp(44px, 5.4vw, 72px);
+    line-height: 1.04;
+    letter-spacing: 0.1em;
+    color: #ffffff;
+    text-shadow:
+      0 3px 0 rgba(12, 43, 126, 0.85),
+      0 8px 26px rgba(10, 32, 96, 0.55),
+      0 0 24px rgba(186, 230, 255, 0.65);
+    white-space: nowrap;
+  }
+
+  .cutin-layer[data-theme="boss"] .cutin-main-title {
+    color: #f8fafc;
+    text-shadow:
+      0 3px 0 rgba(59, 7, 100, 0.92),
+      0 8px 28px rgba(34, 10, 74, 0.68),
+      0 0 26px rgba(216, 180, 254, 0.7);
+  }
+
+  .cutin-layer.active .cutin-main-title {
+    animation: cutinTextSlide 240ms cubic-bezier(0.1, 0.94, 0.22, 1) forwards;
+  }
+
+  @keyframes cutinTextSlide {
+    0% { transform: translateX(48px) skewX(-10deg); opacity: 0; }
+    45% { transform: translateX(-4px) skewX(-5deg); opacity: 1; }
+    100% { transform: translateX(0) skewX(-5deg); opacity: 1; }
+  }
+
+  .cutin-sub-row {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .cutin-sub-label {
+    font-family: var(--font-mono);
+    font-size: clamp(12px, 1.25vw, 15px);
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    color: rgba(240, 248, 255, 0.94);
+    text-shadow: 0 2px 8px rgba(10, 28, 76, 0.6);
+  }
+
+  .cutin-diamond {
+    width: 8px;
+    height: 8px;
+    background: var(--gold-bright);
+    transform: rotate(45deg);
+    box-shadow: 0 0 10px rgba(242, 210, 130, 0.9);
+  }
+
+  .cutin-layer[data-theme="boss"] .cutin-diamond {
+    background: #e9d5ff;
+    box-shadow: 0 0 10px rgba(233, 213, 255, 0.9);
+  }
+
+  /* 棱镜碎裂高速错位退散（355ms*s → 430ms*s） */
+  .cutin-layer.shatter .cutin-prism-body {
+    animation: none;
+    opacity: 0;
+    transform: translateX(6%) scaleY(0.76) skewX(-14deg);
+    transition: transform var(--shatter-dur, 75ms) cubic-bezier(0.55, 0.06, 0.68, 0.19),
+                opacity var(--shatter-dur, 75ms) ease-in;
+  }
+
+  .cutin-layer.shatter .cutin-portrait-slice {
+    transform: translate(-110px, -16px) skewX(-16deg) scale(1.06);
+    opacity: 0;
+  }
+
+  .cutin-layer.shatter .cutin-title-block {
+    transform: rotate(2.2deg) translate(135px, 14px) skewX(-14deg);
+    opacity: 0;
+  }
+
+  .cutin-layer.shatter .cutin-rail-top-outer,
+  .cutin-layer.shatter .cutin-rail-top-inner {
+    transform: translateX(120px) translateY(-18px);
+    opacity: 0;
+  }
+
+  .cutin-layer.shatter .cutin-rail-bot-outer,
+  .cutin-layer.shatter .cutin-rail-bot-inner {
+    transform: translateX(-120px) translateY(18px);
+    opacity: 0;
+  }
+
+  /* 碎镜装饰晶体碎片 */
+  .cutin-shard {
+    position: absolute;
+    pointer-events: none;
+    z-index: 7;
+    opacity: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(56, 189, 248, 0.55));
+    clip-path: polygon(50% 0, 100% 38%, 74% 100%, 0 64%);
+    transition: transform var(--shatter-dur, 75ms) ease-out, opacity var(--shatter-dur, 75ms) ease-out;
+  }
+
+  .cutin-layer[data-theme="boss"] .cutin-shard {
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.92), rgba(168, 85, 247, 0.65));
+  }
+
+  .cutin-shard.s1 { width: 28px; height: 14px; top: 18%; left: 32%; }
+  .cutin-shard.s2 { width: 22px; height: 12px; bottom: 20%; left: 46%; }
+  .cutin-shard.s3 { width: 34px; height: 14px; top: 24%; right: 18%; }
+  .cutin-shard.s4 { width: 20px; height: 10px; bottom: 24%; right: 28%; }
+
+  .cutin-layer.active .cutin-shard { opacity: 0.72; }
+  .cutin-layer.shatter .cutin-shard.s1 { transform: translate(-90px, -42px) rotate(-32deg); opacity: 0; }
+  .cutin-layer.shatter .cutin-shard.s2 { transform: translate(-60px, 48px) rotate(28deg); opacity: 0; }
+  .cutin-layer.shatter .cutin-shard.s3 { transform: translate(110px, -36px) rotate(36deg); opacity: 0; }
+  .cutin-layer.shatter .cutin-shard.s4 { transform: translate(85px, 44px) rotate(-25deg); opacity: 0; }
+
+  /* ================= 底部紧凑雪瓷操控条（无圆框套圆框 · 1px 分隔线） ================= */
+  .control-dock {
+    position: relative;
+    z-index: 40;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0;
+    padding: 8px 16px;
+    background: rgba(248, 251, 255, 0.96);
+    border-top: 1px solid var(--line-strong);
+    box-shadow: 0 -6px 22px rgba(15, 39, 92, 0.08);
+    backdrop-filter: blur(10px);
+  }
+
+  .dock-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    border-right: 1px solid rgba(22, 88, 235, 0.14);
+  }
+
+  .dock-group:first-child {
+    padding-left: 0;
+  }
+
+  .dock-group:last-child {
+    padding-right: 0;
+    border-right: none;
+  }
+
+  .dock-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    margin-right: 2px;
+    white-space: nowrap;
+  }
+
+  /* 按钮基底：锐利雪瓷切角/直角，绝无外框套圆框 */
+  .btn {
+    appearance: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: rgba(22, 88, 235, 0.06);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 7px 11px;
+    line-height: 1.2;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease, transform 0.1s ease;
+  }
+
+  .btn:hover {
+    background: rgba(22, 88, 235, 0.13);
+    color: var(--royal);
+  }
+
+  .btn:active {
+    transform: translateY(1px);
+  }
+
+  .btn:focus-visible {
+    outline: 2px solid var(--royal);
+    outline-offset: 2px;
+  }
+
+  /* 主控 5 连动反差回放英雄按钮 */
+  .btn-hero {
+    background: linear-gradient(105deg, var(--royal) 0%, #246bf7 72%, #1d57d8 100%);
+    color: #ffffff;
+    font-weight: 800;
+    padding: 8px 16px;
+    border-bottom: 2px solid var(--gold);
+    clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 0 100%);
+    box-shadow: 0 4px 14px rgba(22, 88, 235, 0.28);
+  }
+
+  .btn-hero:hover {
+    background: linear-gradient(105deg, var(--royal-deep) 0%, var(--royal) 75%, #2563eb 100%);
+    color: #ffffff;
+  }
+
+  .btn-hero.playing {
+    background: linear-gradient(105deg, #b91c1c 0%, #dc2626 100%);
+    border-bottom-color: #fca5a5;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.28);
+  }
+
+  /* 4 个单招按钮：左侧色条区分轻重档位，绝无内套边框盒 */
+  .btn-skill {
+    position: relative;
+    padding: 7px 11px 7px 13px;
+    background: rgba(235, 243, 255, 0.72);
+    border-left: 3px solid var(--royal);
+  }
+
+  .btn-skill[data-kind="cutin-ally"] {
+    border-left-color: var(--gold);
+    background: linear-gradient(90deg, rgba(212, 168, 79, 0.15) 0%, rgba(235, 243, 255, 0.76) 45%);
+  }
+
+  .btn-skill[data-kind="mob"] {
+    border-left-color: var(--crimson);
+    background: linear-gradient(90deg, rgba(220, 38, 38, 0.11) 0%, rgba(248, 244, 246, 0.8) 45%);
+  }
+
+  .btn-skill[data-kind="cutin-boss"] {
+    border-left-color: var(--violet);
+    background: linear-gradient(90deg, rgba(124, 58, 237, 0.14) 0%, rgba(241, 238, 255, 0.8) 45%);
+  }
+
+  .btn-skill.is-casting {
+    background: var(--royal);
+    color: #ffffff;
+  }
+
+  .btn-skill[data-kind="cutin-ally"].is-casting {
+    background: linear-gradient(90deg, #b47b16, var(--royal));
+    color: #ffffff;
+  }
+
+  .btn-skill[data-kind="mob"].is-casting {
+    background: var(--crimson);
+    color: #ffffff;
+  }
+
+  .btn-skill[data-kind="cutin-boss"].is-casting {
+    background: var(--violet);
+    color: #ffffff;
+  }
+
+  .btn-ms-tag {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 800;
+    opacity: 0.76;
+  }
+
+  /* 分段控制（节奏 / 场景 / 音效） */
+  .seg-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .btn-seg {
+    padding: 6px 9px;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    background: transparent;
+    color: var(--ink-muted);
+    border-bottom: 2px solid transparent;
+  }
+
+  .btn-seg.btn-cn {
+    font-family: var(--font-ui);
+    padding: 6px 10px;
+  }
+
+  .btn-seg:hover {
+    background: rgba(22, 88, 235, 0.08);
+    color: var(--royal);
+  }
+
+  .btn-seg.active {
+    background: rgba(22, 88, 235, 0.12);
+    color: var(--royal);
+    font-weight: 800;
+    border-bottom-color: var(--royal);
+  }
+
+  /* ================= 自定义雪瓷 Tooltip（全站零原生系统提示） ================= */
+  .porcelain-tip {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    max-width: 280px;
+    padding: 6px 10px;
+    background: rgba(248, 251, 255, 0.97);
+    color: var(--ink);
+    border: 1px solid var(--line-strong);
+    border-left: 3px solid var(--royal);
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.4;
+    box-shadow: 0 8px 24px rgba(15, 39, 92, 0.16);
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.12s ease, transform 0.12s ease;
+  }
+
+  .porcelain-tip.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ================= 1280×720 紧凑适配 ================= */
+  @media (max-width: 1340px) {
+    .top-nav { height: 42px; padding: 0 12px; }
+    .nav-item { padding: 0 11px; font-size: 12.5px; }
+    .beat-meter { width: 242px; left: 12px; top: 10px; }
+    .bm-ms-val { font-size: 19px; }
+    .control-dock { padding: 7px 10px; }
+    .dock-group { padding: 0 8px; gap: 4px; }
+    .btn { font-size: 11.5px; padding: 6px 8px; }
+    .btn-hero { padding: 7px 12px; }
+    .btn-skill { padding: 6px 8px 6px 10px; }
+    .dock-label { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <!-- 顶栏导航 -->
+  <header class="top-nav">
+    <nav class="nav-links" aria-label="竞标方案切换">
+      <a class="nav-item" href="./cast_hub.html" data-tip="返回三方案横向评测总台">‹ 竞标总台</a>
+      <a class="nav-item" href="./cast_demo_a.html" data-tip="查看方案 A · 剧场聚光压暗与慢拍仪式感">方案 A · 剧场聚光</a>
+      <a class="nav-item" href="./cast_demo_b.html" data-tip="查看方案 B · 明亮切镜与浅景深推进">方案 B · 明亮切镜</a>
+      <span class="nav-item active" aria-current="page">
+        <span class="nav-badge-dot"></span>方案 C · 闪电Cut-In（当前）
+      </span>
+    </nav>
+    <div class="nav-right">
+      <div class="nav-spec-tag">
+        <span class="hi-fast">常规 170ms / 杂兵 120ms</span>
+        <span class="nav-divider"></span>
+        <span class="hi-cutin">绝招闪电棱镜 Cut-In 430ms</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 战斗舞台视口 -->
+  <main class="stage-viewport">
+    <div id="stage"></div>
+    <canvas id="vfx-canvas"></canvas>
+
+    <!-- 顶中 6 槽像素头像 AV 行动条 -->
+    <div id="av-bar" aria-label="6槽行动值轨道"></div>
+
+    <!-- 左上紧凑实时节拍仪表 -->
+    <aside class="beat-meter" id="beat-meter" data-tier="fast" aria-live="polite">
+      <div class="bm-head">
+        <span class="bm-kicker">方案 C · 节拍仪表</span>
+        <span class="bm-combo-step" id="bm-combo-step">待命就绪</span>
+      </div>
+      <div class="bm-body">
+        <div class="bm-tier-label" id="bm-tier-label">极速轻拍 170ms / 绝招 430ms</div>
+        <div class="bm-ms-wrap">
+          <span class="bm-ms-val" id="bm-ms-val">0</span>
+          <span class="bm-ms-unit">ms</span>
+        </div>
+      </div>
+      <div class="bm-progress-track">
+        <div class="bm-progress-fill" id="bm-progress-fill"></div>
+      </div>
+      <div class="bm-foot">
+        <span id="timeline-status">点击下方「5 连动」或单招体验轻重极限反差</span>
+      </div>
+      <div class="bm-contrast-hint">
+        <span id="bm-speed-hint">倍速 1.00×</span>
+        <span>零压暗轻拍 × 棱镜Cut-In</span>
+      </div>
+    </aside>
+
+    <!-- 顶部极细切角提示条（常规技能 170ms / 杂兵快攻 120ms） -->
+    <div class="quick-callout" id="quick-callout" data-style="ally-fast" aria-hidden="true">
+      <div class="qc-inner">
+        <span class="qc-slash" id="qc-slash">//</span>
+        <span class="qc-title" id="qc-title">冰晶连棱</span>
+        <span class="qc-meta" id="qc-meta">170ms</span>
+      </div>
+    </div>
+
+    <!-- 屏幕中段斜切冰晶棱镜立绘特写条（绝招 Cut-In 430ms） -->
+    <div class="cutin-layer" id="cutin-layer" data-theme="ally" aria-hidden="true">
+      <div class="cutin-flash-beam"></div>
+      <div class="cutin-stage-band">
+        <div class="cutin-rail cutin-rail-top-outer"></div>
+        <div class="cutin-rail cutin-rail-top-inner"></div>
+        <div class="cutin-prism-body">
+          <div class="cutin-streaks"></div>
+          <div class="cutin-sheen"></div>
+          <div class="cutin-inner">
+            <div class="cutin-portrait-slice">
+              <img class="cutin-portrait-img" id="cutin-portrait-img" src="../../assets/portraits/sylvia_teenage_normal.webp" alt="绝招角色特写立绘" />
+              <div class="cutin-portrait-edge"></div>
+            </div>
+            <div class="cutin-title-block">
+              <div class="cutin-eyebrow">
+                <span class="cutin-eyebrow-bar"></span>
+                <span id="cutin-eyebrow-text">PRISM OVERDRIVE // CUT-IN</span>
+              </div>
+              <div class="cutin-main-title" id="cutin-main-title">星霜极限</div>
+              <div class="cutin-sub-row">
+                <span class="cutin-diamond"></span>
+                <span class="cutin-sub-label" id="cutin-sub-label">STARFROST APEX · ★★★</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cutin-rail cutin-rail-bot-inner"></div>
+        <div class="cutin-rail cutin-rail-bot-outer"></div>
+        <div class="cutin-shard s1"></div>
+        <div class="cutin-shard s2"></div>
+        <div class="cutin-shard s3"></div>
+        <div class="cutin-shard s4"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 底部紧凑雪瓷操控条 -->
+  <footer class="control-dock">
+    <div class="dock-group">
+      <button type="button" class="btn btn-hero" id="btn-combo" data-tip="按序连播：冰晶连棱(170ms) → 炎岩贯冲(170ms) → 裂霜扑咬(120ms) → 星霜极限(Cut-In 430ms) → 诡道暗流(Cut-In 430ms)（快捷键 Space）">
+        <span id="btn-combo-icon">▶</span>
+        <span id="btn-combo-text">5 连动快慢反差回放</span>
+      </button>
+    </div>
+
+    <div class="dock-group">
+      <span class="dock-label">单招点验</span>
+      <button type="button" class="btn btn-skill" data-skill="ice_prism" data-kind="fast" data-tip="常规技能：零压暗、轻推镜+切角速闪，170ms 秒出冰晶连棱特效">
+        <span>冰晶连棱</span><span class="btn-ms-tag" data-base-ms="170">170ms</span>
+      </button>
+      <button type="button" class="btn btn-skill" data-skill="starfrost_apex" data-kind="cutin-ally" data-tip="三阶大招：75ms 压镜蓄能 → 斜切雪瓷蓝金棱镜立绘 Cut-In → 355ms 碎镜亮回 → 430ms 满屏轰击">
+        <span>星霜极限·Cut-In</span><span class="btn-ms-tag" data-base-ms="430">430ms</span>
+      </button>
+      <button type="button" class="btn btn-skill" data-skill="wolf_bite" data-kind="mob" data-tip="杂兵快攻：轻推镜头 + 极细切角红条闪现 + 短警鸣，120ms 秒出扑咬">
+        <span>狂狼快攻</span><span class="btn-ms-tag" data-base-ms="120">120ms</span>
+      </button>
+      <button type="button" class="btn btn-skill" data-skill="eclipse_rift" data-kind="cutin-boss" data-tip="BOSS 绝招：75ms 压镜蓄能 → 霜夜冷紫银白棱镜立绘 Cut-In → 355ms 碎镜退散 → 430ms 暗流爆发">
+        <span>罗文绝招·Cut-In</span><span class="btn-ms-tag" data-base-ms="430">430ms</span>
+      </button>
+    </div>
+
+    <div class="dock-group">
+      <span class="dock-label">节奏</span>
+      <div class="seg-row" id="speed-group">
+        <button type="button" class="btn btn-seg" data-speed="0.75" data-tip="慢放审阅（停顿拉长至 1.33×）">0.75×</button>
+        <button type="button" class="btn btn-seg active" data-speed="1" data-tip="标准实机节拍（1.0×）">1.0×</button>
+        <button type="button" class="btn btn-seg" data-speed="1.25" data-tip="高速连战节拍（停顿压缩至 0.8×）">1.25×</button>
+      </div>
+    </div>
+
+    <div class="dock-group">
+      <span class="dock-label">场景</span>
+      <div class="seg-row" id="biome-group">
+        <button type="button" class="btn btn-seg btn-cn active" data-biome="academy" data-tip="切换明亮学院雪庭昼景">学院雪庭</button>
+        <button type="button" class="btn btn-seg btn-cn" data-biome="forest" data-tip="切换月夜雾林暗景检验 Cut-In 对比度">月夜雾林</button>
+      </div>
+    </div>
+
+    <div class="dock-group">
+      <button type="button" class="btn btn-seg btn-cn active" id="btn-sound" data-tip="切换合成音效开关">音效 开</button>
+    </div>
+  </footer>
+</div>
+
+<!-- 自定义雪瓷 Tooltip 容器 -->
+<div class="porcelain-tip" id="porcelain-tip" role="tooltip"></div>
+
+<!-- 必引像素骨骼脚本 -->
+<script src="../../js/sprites/sylvia_silver.js"></script>
+<script src="../../js/sprites/reno.js"></script>
+<script src="../../js/sprites/rowan.js"></script>
+<script src="../../js/sprites/tundra_brute.js"></script>
+<script src="../../js/sprites/frost_hound.js"></script>
+
+<script type="module">
+import { initCastDemoStage } from './cast_stage_shared.js';
+
+const PORTRAITS = {
+  sylvia: '../../assets/portraits/sylvia_teenage_normal.webp',
+  rowan: '../../assets/monsters/rowan_eclipse.webp',
+  reno: '../../assets/cg/reno_battle.jpg',
+};
+
+const SKILL_META = {
+  ice_prism: {
+    tier: 'fast',
+    basePauseMs: 170,
+    tierText: '极速轻拍 170ms',
+    calloutStyle: 'ally-fast',
+    calloutSlash: '//',
+    calloutTitle: '冰晶连棱',
+    ringColor: '#38bdf8',
+    ringScale: 0.96,
+  },
+  flame_lance: {
+    tier: 'fast',
+    basePauseMs: 170,
+    tierText: '极速轻拍 170ms',
+    calloutStyle: 'ally-flame',
+    calloutSlash: '//',
+    calloutTitle: '炎岩贯冲',
+    ringColor: '#f59e0b',
+    ringScale: 0.98,
+  },
+  wolf_bite: {
+    tier: 'mob',
+    basePauseMs: 120,
+    tierText: '杂兵快攻 120ms',
+    calloutStyle: 'enemy-fast',
+    calloutSlash: '!',
+    calloutTitle: '裂霜扑咬',
+  },
+  starfrost_apex: {
+    tier: 'cutin-ally',
+    basePauseMs: 430,
+    tierText: '闪电 Cut-In 430ms',
+    cutinTheme: 'ally',
+    eyebrow: 'STARFROST OVERDRIVE // ★★★',
+    mainTitle: '星霜极限',
+    subLabel: 'STARFROST APEX · ★★★',
+    portrait: PORTRAITS.sylvia,
+  },
+  eclipse_rift: {
+    tier: 'cutin-boss',
+    basePauseMs: 430,
+    tierText: '闪电 Cut-In 430ms',
+    cutinTheme: 'boss',
+    eyebrow: 'BOSS PHANTASM // ECLIPSE',
+    mainTitle: '诡道暗流',
+    subLabel: 'ECLIPSE RIFT · BOSS',
+    portrait: PORTRAITS.rowan,
+  },
+};
+
+const COMBO_SEQUENCE = [
+  'ice_prism',
+  'flame_lance',
+  'wolf_bite',
+  'starfrost_apex',
+  'eclipse_rift',
+];
+
+// 预热真实立绘缓存，确保 430ms 闪电 Cut-In 首次触发零解码卡顿
+Object.values(PORTRAITS).forEach((src) => {
+  const img = new Image();
+  img.src = src;
+});
+
+const stageEl = document.getElementById('stage');
+const vfxCanvas = document.getElementById('vfx-canvas');
+const avBarEl = document.getElementById('av-bar');
+const statusEl = document.getElementById('timeline-status');
+
+const beatMeterEl = document.getElementById('beat-meter');
+const bmComboStepEl = document.getElementById('bm-combo-step');
+const bmTierLabelEl = document.getElementById('bm-tier-label');
+const bmMsValEl = document.getElementById('bm-ms-val');
+const bmProgressFillEl = document.getElementById('bm-progress-fill');
+const bmSpeedHintEl = document.getElementById('bm-speed-hint');
+
+const quickCalloutEl = document.getElementById('quick-callout');
+const qcSlashEl = document.getElementById('qc-slash');
+const qcTitleEl = document.getElementById('qc-title');
+const qcMetaEl = document.getElementById('qc-meta');
+
+const cutinLayerEl = document.getElementById('cutin-layer');
+const cutinPortraitImgEl = document.getElementById('cutin-portrait-img');
+const cutinEyebrowTextEl = document.getElementById('cutin-eyebrow-text');
+const cutinMainTitleEl = document.getElementById('cutin-main-title');
+const cutinSubLabelEl = document.getElementById('cutin-sub-label');
+
+const btnCombo = document.getElementById('btn-combo');
+const btnComboIcon = document.getElementById('btn-combo-icon');
+const btnComboText = document.getElementById('btn-combo-text');
+const btnSound = document.getElementById('btn-sound');
+const skillButtons = Array.from(document.querySelectorAll('.btn-skill'));
+const speedButtons = Array.from(document.querySelectorAll('#speed-group .btn-seg'));
+const biomeButtons = Array.from(document.querySelectorAll('#biome-group .btn-seg'));
+
+let stage = null;
+let speedMultiplier = 1.0;
+let runToken = 0;
+let isComboRunning = false;
+let meterRafId = 0;
+
+function safeCall(fn, ...args) {
+  try {
+    if (typeof fn === 'function') return fn(...args);
+  } catch (err) {
+    console.warn('[Demo C] safeCall warning:', err);
+  }
+  return undefined;
+}
+
+function getScale() {
+  return 1 / speedMultiplier;
+}
+
+function stopMeterTicker() {
+  if (meterRafId) {
+    cancelAnimationFrame(meterRafId);
+    meterRafId = 0;
+  }
+}
+
+function startMeterTicker(tier, tierLabel, targetPauseMs, stepLabel) {
+  stopMeterTicker();
+  beatMeterEl.dataset.tier = tier;
+  bmTierLabelEl.textContent = tierLabel;
+  if (stepLabel !== undefined) {
+    bmComboStepEl.textContent = stepLabel;
+  }
+  bmMsValEl.textContent = String(targetPauseMs);
+  bmProgressFillEl.style.width = '0%';
+
+  const t0 = performance.now();
+  const dur = Math.max(1, targetPauseMs);
+
+  const tick = (now) => {
+    const elapsed = now - t0;
+    const pct = Math.min(1, elapsed / dur);
+    bmProgressFillEl.style.width = `${(pct * 100).toFixed(1)}%`;
+    if (pct < 1) {
+      meterRafId = requestAnimationFrame(tick);
+    } else {
+      meterRafId = 0;
+    }
+  };
+  meterRafId = requestAnimationFrame(tick);
+}
+
+function showQuickCallout(style, slash, title, pauseMs) {
+  quickCalloutEl.dataset.style = style;
+  qcSlashEl.textContent = slash;
+  qcTitleEl.textContent = title;
+  qcMetaEl.textContent = `${pauseMs}ms`;
+  quickCalloutEl.classList.remove('exiting');
+  void quickCalloutEl.offsetWidth;
+  quickCalloutEl.classList.add('visible');
+}
+
+function hideQuickCallout() {
+  if (!quickCalloutEl.classList.contains('visible')) return;
+  quickCalloutEl.classList.remove('visible');
+  quickCalloutEl.classList.add('exiting');
+}
+
+function showCutIn(meta, sk, scale) {
+  const activeMs = Math.max(140, Math.round(280 * scale));
+  const shatterMs = Math.max(50, Math.round(75 * scale));
+  cutinLayerEl.style.setProperty('--cutin-dur', `${activeMs}ms`);
+  cutinLayerEl.style.setProperty('--shatter-dur', `${shatterMs}ms`);
+  cutinLayerEl.dataset.theme = meta.cutinTheme || (sk.side === 'ally' ? 'ally' : 'boss');
+
+  const portraitSrc = meta.portrait || sk.portrait || PORTRAITS[sk.caster] || PORTRAITS.sylvia;
+  cutinPortraitImgEl.src = portraitSrc;
+  cutinEyebrowTextEl.textContent = meta.eyebrow;
+  cutinMainTitleEl.textContent = meta.mainTitle;
+  cutinSubLabelEl.textContent = meta.subLabel;
+
+  cutinLayerEl.classList.remove('shatter', 'active');
+  void cutinLayerEl.offsetWidth;
+  cutinLayerEl.classList.add('active');
+}
+
+function shatterCutIn() {
+  if (!cutinLayerEl.classList.contains('active')) return;
+  cutinLayerEl.classList.remove('active');
+  cutinLayerEl.classList.add('shatter');
+}
+
+function hideCutInImmediate() {
+  cutinLayerEl.classList.remove('active', 'shatter');
+}
+
+function setActiveSkillButton(skillKey) {
+  skillButtons.forEach((btn) => {
+    btn.classList.toggle('is-casting', Boolean(skillKey && btn.dataset.skill === skillKey));
+  });
+}
+
+function updateComboButtonUI(playing) {
+  isComboRunning = playing;
+  btnCombo.classList.toggle('playing', playing);
+  btnComboIcon.textContent = playing ? '■' : '▶';
+  btnComboText.textContent = playing ? '停止 5 连动回放' : '5 连动快慢反差回放';
+}
+
+function refreshScaledLabels() {
+  const s = getScale();
+  bmSpeedHintEl.textContent = `倍速 ${speedMultiplier.toFixed(2).replace(/\.00$/, '.0')}×`;
+  document.querySelectorAll('.btn-ms-tag[data-base-ms]').forEach((el) => {
+    const base = Number(el.dataset.baseMs || 0);
+    el.textContent = `${Math.round(base * s)}ms`;
+  });
+}
+
+function resetStageOverlays() {
+  stopMeterTicker();
+  hideQuickCallout();
+  hideCutInImmediate();
+  setActiveSkillButton(null);
+  if (stage) {
+    safeCall(stage.setEnvDim, 0, null, 70);
+    safeCall(stage.setBrightDoF, 0, 70);
+  }
+}
+
+async function castSkillSchemeC(skillKey, token, stepLabel) {
+  if (!stage || token !== runToken) return;
+  const sk = stage.SKILLS && stage.SKILLS[skillKey];
+  const meta = SKILL_META[skillKey];
+  if (!sk || !meta) return;
+
+  const s = getScale();
+  const totalPauseMs = Math.round(meta.basePauseMs * s);
+  setActiveSkillButton(skillKey);
+
+  // =========================================================
+  // 1) 杂兵快攻 (wolf_bite) — 总中间停顿仅 120ms × s
+  // =========================================================
+  if (skillKey === 'wolf_bite') {
+    startMeterTicker('mob', `杂兵快攻 ${totalPauseMs}ms`, totalPauseMs, stepLabel || '杂兵快攻');
+    safeCall(stage.setEnvDim, 0, null, 40);
+    safeCall(stage.setTimelineStatus, `杂兵快攻 · 裂霜扑咬（${totalPauseMs}ms 秒出）`, totalPauseMs);
+    safeCall(stage.focusCamera, sk.caster, Math.round(68 * s));
+    safeCall(stage.playPose, sk.caster, 'windup');
+    safeCall(stage.playSFX, 'warn');
+    showQuickCallout(meta.calloutStyle, meta.calloutSlash, meta.calloutTitle, totalPauseMs);
+
+    await stage.wait(totalPauseMs);
+    if (token !== runToken) return;
+
+    hideQuickCallout();
+    safeCall(stage.focusCamera, 'impact_ally', Math.round(75 * s));
+    await stage.playSkillImpact(skillKey);
+    if (token !== runToken) return;
+
+    await stage.wait(Math.round(210 * s));
+    if (token !== runToken) return;
+    safeCall(stage.focusCamera, 'wide', Math.round(160 * s));
+    setActiveSkillButton(null);
+    return;
+  }
+
+  // =========================================================
+  // 2) 常规技能 (ice_prism / flame_lance) — 总中间停顿仅 170ms × s
+  //    零压暗、零长停顿！轻量 3D 推镜 80ms*s + chime 轻鸣 + 极细蓝金切角条 + 轻法阵
+  // =========================================================
+  if (skillKey === 'ice_prism' || skillKey === 'flame_lance') {
+    startMeterTicker('fast', `极速轻拍 ${totalPauseMs}ms`, totalPauseMs, stepLabel || '常规轻拍');
+    safeCall(stage.setEnvDim, 0, null, 40);
+    safeCall(stage.setTimelineStatus, `极速轻拍 · ${meta.calloutTitle}（零压暗 ${totalPauseMs}ms）`, totalPauseMs);
+    safeCall(stage.focusCamera, sk.caster, Math.round(80 * s));
+    safeCall(stage.playPose, sk.caster, 'windup');
+    safeCall(stage.playSFX, 'chime');
+    safeCall(stage.spawnMagicRing, sk.caster, meta.ringColor, meta.ringScale);
+    showQuickCallout(meta.calloutStyle, meta.calloutSlash, meta.calloutTitle, totalPauseMs);
+
+    await stage.wait(totalPauseMs);
+    if (token !== runToken) return;
+
+    hideQuickCallout();
+    safeCall(stage.focusCamera, sk.side === 'ally' ? 'impact_enemy' : 'impact_ally', Math.round(85 * s));
+    await stage.playSkillImpact(skillKey);
+    if (token !== runToken) return;
+
+    await stage.wait(Math.round(240 * s));
+    if (token !== runToken) return;
+    safeCall(stage.focusCamera, 'wide', Math.round(170 * s));
+    setActiveSkillButton(null);
+    return;
+  }
+
+  // =========================================================
+  // 3) 三阶大招 / BOSS 绝招 (starfrost_apex / eclipse_rift) — 总中间停顿 430ms × s
+  //    0–75ms*s 压镜蓄能 -> 75ms*s 斜切棱镜立绘 Cut-In -> 355ms*s 碎镜错位退散&亮回 -> 430ms*s 满屏轰击
+  // =========================================================
+  const tWindup = Math.round(75 * s);
+  const tCutinHold = Math.round(280 * s); // 75ms*s -> 355ms*s
+  const tShatter = Math.max(40, totalPauseMs - tWindup - tCutinHold); // 355ms*s -> 430ms*s
+
+  startMeterTicker(meta.tier, `闪电 Cut-In ${totalPauseMs}ms`, totalPauseMs, stepLabel || '绝招特写');
+  safeCall(stage.setTimelineStatus, `闪电 Cut-In · ${meta.mainTitle}（0–${tWindup}ms 压镜蓄能）`, totalPauseMs);
+  safeCall(stage.focusCamera, sk.caster, tWindup);
+  safeCall(stage.setEnvDim, 0.34, sk.caster, tWindup);
+  safeCall(stage.playPose, sk.caster, 'windup');
+  safeCall(stage.spawnMagicRing, sk.caster, sk.side === 'ally' ? '#d4a84f' : '#a855f7', 1.35);
+
+  await stage.wait(tWindup);
+  if (token !== runToken) return;
+
+  // 75ms*s：立绘棱镜 Cut-In 高速切入！
+  safeCall(stage.playSFX, 'slash_cutin');
+  safeCall(stage.setTimelineStatus, `闪电 Cut-In · ${meta.mainTitle}（棱镜立绘切入！）`, totalPauseMs);
+  showCutIn(meta, sk, s);
+
+  await stage.wait(tCutinHold);
+  if (token !== runToken) return;
+
+  // 355ms*s：棱镜碎裂高速错位退散 + 环境瞬间亮回！
+  shatterCutIn();
+  safeCall(stage.setEnvDim, 0, null, Math.round(70 * s));
+  safeCall(stage.setTimelineStatus, `闪电 Cut-In · ${meta.mainTitle}（碎镜爆发！）`, totalPauseMs);
+
+  await stage.wait(tShatter);
+  if (token !== runToken) return;
+
+  // 430ms*s：无缝接满屏大招特效轰击！
+  hideCutInImmediate();
+  safeCall(stage.focusCamera, sk.side === 'ally' ? 'impact_enemy' : 'impact_ally', Math.round(90 * s));
+  await stage.playSkillImpact(skillKey);
+  if (token !== runToken) return;
+
+  await stage.wait(Math.round(300 * s));
+  if (token !== runToken) return;
+  safeCall(stage.focusCamera, 'wide', Math.round(190 * s));
+  setActiveSkillButton(null);
+}
+
+async function triggerSingleSkill(skillKey) {
+  runToken += 1;
+  const token = runToken;
+  updateComboButtonUI(false);
+  resetStageOverlays();
+  await castSkillSchemeC(skillKey, token, '单招点验');
+  if (token === runToken) {
+    bmComboStepEl.textContent = '单招完成';
+  }
+}
+
+async function toggleComboPlayback() {
+  if (isComboRunning) {
+    runToken += 1;
+    updateComboButtonUI(false);
+    resetStageOverlays();
+    if (stage) {
+      safeCall(stage.focusCamera, 'wide', 140);
+      safeCall(stage.setTimelineStatus, '已停止 5 连动回放', 0);
+    }
+    bmComboStepEl.textContent = '已停止';
+    return;
+  }
+
+  runToken += 1;
+  const token = runToken;
+  updateComboButtonUI(true);
+  resetStageOverlays();
+
+  for (let i = 0; i < COMBO_SEQUENCE.length; i += 1) {
+    if (token !== runToken) return;
+    const key = COMBO_SEQUENCE[i];
+    const stepText = `连动 ${i + 1}/${COMBO_SEQUENCE.length}`;
+    await castSkillSchemeC(key, token, stepText);
+    if (token !== runToken) return;
+    if (i < COMBO_SEQUENCE.length - 1) {
+      await stage.wait(Math.round(340 * getScale()));
+    }
+  }
+
+  if (token === runToken) {
+    updateComboButtonUI(false);
+    bmComboStepEl.textContent = '5 连动完成';
+    safeCall(stage.setTimelineStatus, '5 连动回放完成 · 轻拍 120–170ms × Cut-In 430ms', 0);
+  }
+}
+
+// 自定义雪瓷 Tooltip（全站零原生系统灰框提示）
+function initPorcelainTooltip() {
+  const tipEl = document.getElementById('porcelain-tip');
+  let activeEl = null;
+
+  function placeTip(target) {
+    const rect = target.getBoundingClientRect();
+    const tipRect = tipEl.getBoundingClientRect();
+    let left = rect.left + rect.width / 2 - tipRect.width / 2;
+    left = Math.max(10, Math.min(window.innerWidth - tipRect.width - 10, left));
+    let top = rect.top - tipRect.height - 10;
+    if (top < 10) top = rect.bottom + 10;
+    tipEl.style.left = `${Math.round(left)}px`;
+    tipEl.style.top = `${Math.round(top)}px`;
+  }
+
+  document.addEventListener('pointerover', (e) => {
+    const target = e.target.closest('[data-tip]');
+    if (!target || target === activeEl) return;
+    activeEl = target;
+    tipEl.textContent = target.dataset.tip;
+    tipEl.classList.add('show');
+    placeTip(target);
+  });
+
+  document.addEventListener('pointerout', (e) => {
+    if (!activeEl) return;
+    const related = e.relatedTarget;
+    if (related && activeEl.contains(related)) return;
+    activeEl = null;
+    tipEl.classList.remove('show');
+  });
+
+  document.addEventListener('pointerdown', () => {
+    activeEl = null;
+    tipEl.classList.remove('show');
+  });
+}
+
+async function boot() {
+  initPorcelainTooltip();
+  refreshScaledLabels();
+
+  stage = await initCastDemoStage({
+    schemeId: 'C',
+    schemeName: '方案 C · 极速轻拍+闪电Cut-In',
+    stageEl,
+    vfxCanvas,
+    avBarEl,
+    statusEl,
+  });
+
+  // 同步音效按钮初态
+  const initialSound = safeCall(stage.isSoundEnabled);
+  const soundOn = initialSound !== false;
+  btnSound.textContent = soundOn ? '音效 开' : '音效 关';
+  btnSound.classList.toggle('active', soundOn);
+
+  // 绑定操控按钮
+  btnCombo.addEventListener('click', toggleComboPlayback);
+
+  skillButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.skill;
+      if (key) triggerSingleSkill(key);
+    });
+  });
+
+  speedButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      speedMultiplier = Number(btn.dataset.speed || 1);
+      speedButtons.forEach((b) => b.classList.toggle('active', b === btn));
+      refreshScaledLabels();
+    });
+  });
+
+  biomeButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const biome = btn.dataset.biome;
+      if (!biome) return;
+      biomeButtons.forEach((b) => b.classList.toggle('active', b === btn));
+      safeCall(stage.setBiome, biome);
+    });
+  });
+
+  btnSound.addEventListener('click', () => {
+    const cur = safeCall(stage.isSoundEnabled);
+    const next = cur === false;
+    safeCall(stage.setSoundEnabled, next);
+    btnSound.textContent = next ? '音效 开' : '音效 关';
+    btnSound.classList.toggle('active', next);
+  });
+
+  // 桌面快捷键：Space 播/停 5 连动，1-4 触发四单招
+  window.addEventListener('keydown', (e) => {
+    if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      toggleComboPlayback();
+    } else if (e.key === '1') {
+      triggerSingleSkill('ice_prism');
+    } else if (e.key === '2') {
+      triggerSingleSkill('starfrost_apex');
+    } else if (e.key === '3') {
+      triggerSingleSkill('wolf_bite');
+    } else if (e.key === '4') {
+      triggerSingleSkill('eclipse_rift');
+    } else if (e.key === '5') {
+      triggerSingleSkill('flame_lance');
+    }
+  });
+}
+
+boot().catch((err) => {
+  console.error('[Demo C] 初始化失败:', err);
+  statusEl.textContent = `舞台初始化异常：${err && err.message ? err.message : err}`;
+});
+</script>
+</body>
+</html>

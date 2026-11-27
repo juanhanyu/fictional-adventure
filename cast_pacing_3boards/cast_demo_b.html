@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>方案 B · 明亮浅景深切镜 × 角色肩侧动态铭牌 — 技能衔接停顿竞标</title>
+  <style>
+    :root {
+      --snow-canvas: #eef4fc;
+      --snow-surface: rgba(252, 254, 255, 0.94);
+      --snow-surface-solid: #fafdff;
+      --snow-tint: #eff5ff;
+      --snow-hover: #e5effe;
+      --ink-primary: #142038;
+      --ink-secondary: #3f5170;
+      --ink-muted: #657899;
+      --royal: #1658eb;
+      --royal-deep: #0e42b8;
+      --royal-soft: rgba(22, 88, 235, 0.09);
+      --royal-line: rgba(22, 88, 235, 0.22);
+      --ice: #38bdf8;
+      --ice-bright: #9ce6ff;
+      --ice-soft: rgba(56, 189, 248, 0.14);
+      --gold: #cf9b36;
+      --gold-bright: #f2cb72;
+      --gold-soft: rgba(207, 155, 54, 0.14);
+      --crimson: #cf2f52;
+      --crimson-soft: rgba(207, 47, 82, 0.11);
+      --arcane: #7c4dff;
+      --arcane-bright: #c4a8ff;
+      --arcane-soft: rgba(124, 77, 255, 0.12);
+      --ember: #e06d1a;
+      --hairline: rgba(22, 54, 118, 0.14);
+      --hairline-light: rgba(22, 54, 118, 0.08);
+      --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", ui-monospace, monospace;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--snow-canvas);
+      color: var(--ink-primary);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: linear-gradient(180deg, #f7faff 0%, #eaf2fc 100%);
+    }
+
+    /* ================= Top Navigation Bar (0 nested rounded boxes) ================= */
+    .top-nav {
+      flex: 0 0 44px;
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      padding: 0 18px;
+      background: var(--snow-surface-solid);
+      border-bottom: 1px solid var(--hairline);
+      position: relative;
+      z-index: 50;
+    }
+
+    .top-nav::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -1px;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(22, 88, 235, 0.35), rgba(56, 189, 248, 0.45) 45%, rgba(207, 155, 54, 0.35) 85%, transparent);
+      pointer-events: none;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+    }
+
+    .nav-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 14px;
+      color: var(--ink-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      position: relative;
+      border-right: 1px solid var(--hairline-light);
+      transition: background 140ms ease, color 140ms ease;
+      white-space: nowrap;
+    }
+
+    .nav-item:first-child {
+      padding-left: 4px;
+      color: var(--ink-primary);
+      font-weight: 600;
+    }
+
+    .nav-item:hover {
+      background: var(--snow-tint);
+      color: var(--royal);
+    }
+
+    .nav-item.is-active {
+      color: var(--royal);
+      font-weight: 700;
+      background: linear-gradient(180deg, rgba(22, 88, 235, 0.04) 0%, rgba(22, 88, 235, 0.1) 100%);
+    }
+
+    .nav-item.is-active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 2.5px;
+      background: linear-gradient(90deg, var(--royal), var(--ice));
+    }
+
+    .nav-diamond {
+      width: 7px;
+      height: 7px;
+      background: var(--royal);
+      transform: rotate(45deg);
+      display: inline-block;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+    }
+
+    .nav-tagline {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--ink-muted);
+      white-space: nowrap;
+    }
+
+    .nav-tagline-mark {
+      color: var(--royal);
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .nav-tagline-sep {
+      width: 1px;
+      height: 12px;
+      background: var(--hairline);
+    }
+
+    /* ================= Main 3D Stage Viewport ================= */
+    .stage-viewport {
+      flex: 1 1 auto;
+      position: relative;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 38%, #f8fbff 0%, #e4eefb 62%, #d5e4f7 100%);
+    }
+
+    #stage-root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    #vfx-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    /* Bright Luminous Optical Glint Layer (STRICTLY 0% DARKENING!) */
+    .bright-optics-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 24;
+      opacity: 0;
+      transition: opacity 110ms cubic-bezier(0.22, 1, 0.36, 1);
+      overflow: hidden;
+    }
+
+    .bright-optics-layer.is-active {
+      opacity: 1;
+    }
+
+    .bright-optics-layer::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 68% 58% at var(--focus-x, 50%) var(--focus-y, 50%),
+          transparent 44%,
+          rgba(244, 250, 255, 0.26) 76%,
+          rgba(235, 246, 255, 0.48) 100%);
+    }
+
+    .bright-optics-layer::after {
+      content: "";
+      position: absolute;
+      inset: -10%;
+      background: repeating-linear-gradient(
+        -18deg,
+        transparent 0px,
+        transparent 28px,
+        rgba(255, 255, 255, 0.16) 29px,
+        transparent 31px
+      );
+      opacity: var(--streak-opacity, 0.55);
+      transform: translateX(var(--streak-shift, 0px));
+      transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .bright-optics-layer.mode-apex::before {
+      background:
+        radial-gradient(ellipse 60% 54% at var(--focus-x, 50%) var(--focus-y, 50%),
+          rgba(255, 253, 245, 0.08) 0%,
+          transparent 42%,
+          rgba(245, 249, 255, 0.34) 76%,
+          rgba(253, 244, 220, 0.52) 100%);
+    }
+
+    .bright-optics-layer.mode-boss::before {
+      background:
+        radial-gradient(ellipse 60% 54% at var(--focus-x, 50%) var(--focus-y, 50%),
+          rgba(248, 244, 255, 0.08) 0%,
+          transparent 42%,
+          rgba(240, 237, 255, 0.34) 78%,
+          rgba(229, 220, 255, 0.50) 100%);
+    }
+
+    /* ================= Top-Center 6-Slot Pixel Avatar AV Action Bar ================= */
+    .av-bar-dock {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 36;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ================= Top-Left Compact Real-Time Beat Telemetry ================= */
+    .beat-telemetry {
+      position: absolute;
+      top: 10px;
+      left: 14px;
+      z-index: 36;
+      width: 316px;
+      background: var(--snow-surface);
+      border-left: 3px solid var(--royal);
+      border-top: 1px solid var(--hairline);
+      border-right: 1px solid var(--hairline);
+      border-bottom: 1px solid var(--hairline);
+      box-shadow: 0 6px 18px rgba(22, 64, 148, 0.09);
+      backdrop-filter: blur(10px);
+      padding: 8px 12px 9px;
+      pointer-events: none;
+    }
+
+    .beat-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid var(--hairline-light);
+    }
+
+    .beat-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--royal);
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .beat-pulse-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--ice);
+      transform: rotate(45deg);
+      transition: background 120ms ease, transform 120ms ease;
+    }
+
+    .beat-telemetry.is-live .beat-pulse-dot {
+      background: var(--royal);
+      transform: rotate(45deg) scale(1.25);
+    }
+
+    .beat-ms-readout {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ink-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .beat-ms-unit {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ink-muted);
+      margin-left: 2px;
+    }
+
+    .beat-phases {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--ink-muted);
+      white-space: nowrap;
+    }
+
+    .phase-step {
+      padding: 2px 5px;
+      background: transparent;
+      color: var(--ink-muted);
+      font-weight: 500;
+      transition: background 120ms ease, color 120ms ease;
+    }
+
+    .phase-step.is-on {
+      background: var(--royal-soft);
+      color: var(--royal);
+      font-weight: 700;
+    }
+
+    .phase-step.is-on.tone-gold {
+      background: var(--gold-soft);
+      color: #9e6e14;
+    }
+
+    .phase-step.is-on.tone-crimson {
+      background: var(--crimson-soft);
+      color: var(--crimson);
+    }
+
+    .phase-step.is-on.tone-arcane {
+      background: var(--arcane-soft);
+      color: var(--arcane);
+    }
+
+    .phase-arrow {
+      color: rgba(22, 54, 118, 0.3);
+      font-size: 10px;
+    }
+
+    .beat-status-line {
+      margin-top: 5px;
+      font-size: 11.5px;
+      color: var(--ink-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ================= Shoulder-Side Dynamic Nameplate (Scheme B Signature) ================= */
+    .shoulder-plaque-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 32;
+      overflow: hidden;
+    }
+
+    .shoulder-plaque {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      will-change: transform, opacity;
+      pointer-events: none;
+      filter: drop-shadow(0 8px 18px rgba(22, 68, 168, 0.18));
+    }
+
+    .shoulder-plaque-body {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: linear-gradient(112deg, rgba(255, 255, 255, 0.96) 0%, rgba(242, 248, 255, 0.94) 68%, rgba(228, 241, 255, 0.92) 100%);
+      padding: 8px 20px 8px 16px;
+      clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+      overflow: hidden;
+      min-width: 176px;
+    }
+
+    /* Leading accent edge bar (no inner rounded boxes!) */
+    .shoulder-plaque-edge {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 5px;
+      background: linear-gradient(180deg, var(--royal), var(--ice));
+    }
+
+    .shoulder-plaque.is-enemy-side .shoulder-plaque-body {
+      padding: 8px 16px 8px 20px;
+      clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 100%, 10px 100%);
+      text-align: right;
+    }
+
+    .shoulder-plaque.is-enemy-side .shoulder-plaque-edge {
+      left: auto;
+      right: 0;
+    }
+
+    /* Speed-line optical shimmer streak inside plaque */
+    .shoulder-plaque-sheen {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        105deg,
+        transparent 18%,
+        rgba(255, 255, 255, 0.85) 38%,
+        rgba(156, 230, 255, 0.38) 46%,
+        transparent 62%
+      );
+      transform: translateX(-120%);
+      pointer-events: none;
+    }
+
+    .shoulder-plaque.is-visible .shoulder-plaque-sheen {
+      animation: plaqueSheen 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes plaqueSheen {
+      from { transform: translateX(-115%); }
+      to { transform: translateX(135%); }
+    }
+
+    /* Micro kinetic hairline behind nameplate */
+    .shoulder-speed-lines {
+      position: absolute;
+      left: -26px;
+      right: -26px;
+      top: 50%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.72) 22%, rgba(22, 88, 235, 0.55) 78%, transparent);
+      transform: translateY(-50%) scaleX(0.4);
+      opacity: 0;
+      transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), opacity 130ms ease;
+    }
+
+    .shoulder-plaque.is-visible .shoulder-speed-lines {
+      transform: translateY(-50%) scaleX(1.06);
+      opacity: 1;
+    }
+
+    .shoulder-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--royal);
+      text-transform: uppercase;
+      position: relative;
+      z-index: 2;
+    }
+
+    .shoulder-plaque.is-enemy-side .shoulder-meta {
+      justify-content: flex-end;
+    }
+
+    .shoulder-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      color: var(--ink-primary);
+      line-height: 1.2;
+      margin-top: 1px;
+      position: relative;
+      z-index: 2;
+      white-space: nowrap;
+    }
+
+    .shoulder-subline {
+      height: 2px;
+      margin-top: 4px;
+      background: linear-gradient(90deg, var(--royal), var(--ice) 65%, transparent);
+      opacity: 0.85;
+      position: relative;
+      z-index: 2;
+    }
+
+    .shoulder-plaque.is-enemy-side .shoulder-subline {
+      background: linear-gradient(270deg, var(--crimson), rgba(207, 47, 82, 0.35) 65%, transparent);
+    }
+
+    /* Tier 1: Compact Mob Fast-Attack Red-Edge Tag (140ms) */
+    .shoulder-plaque.tier-fast .shoulder-plaque-body {
+      min-width: 128px;
+      padding: 5px 14px 5px 16px;
+      background: linear-gradient(112deg, rgba(255, 252, 253, 0.96) 0%, rgba(254, 241, 244, 0.94) 100%);
+    }
+
+    .shoulder-plaque.tier-fast .shoulder-plaque-edge {
+      width: 4px;
+      background: linear-gradient(180deg, #e11d48, #fb7185);
+    }
+
+    .shoulder-plaque.tier-fast .shoulder-meta {
+      color: var(--crimson);
+      font-size: 9.5px;
+    }
+
+    .shoulder-plaque.tier-fast .shoulder-title {
+      font-size: 15px;
+      letter-spacing: 0.04em;
+    }
+
+    .shoulder-plaque.tier-fast .shoulder-speed-lines {
+      background: linear-gradient(90deg, transparent, rgba(225, 29, 72, 0.65) 30%, transparent);
+    }
+
+    /* Tier 2: Regular Skill Snow-Porcelain Royal Blue (230ms) */
+    .shoulder-plaque.tier-regular.tone-ember .shoulder-plaque-edge {
+      background: linear-gradient(180deg, #ea580c, #fbbf24);
+    }
+
+    .shoulder-plaque.tier-regular.tone-ember .shoulder-meta {
+      color: #c2410c;
+    }
+
+    .shoulder-plaque.tier-regular.tone-ember .shoulder-subline {
+      background: linear-gradient(90deg, #ea580c, #f59e0b 65%, transparent);
+    }
+
+    /* Tier 3: Apex / Boss Declaration Plaque (310ms) */
+    .shoulder-plaque.tier-apex {
+      filter: drop-shadow(0 10px 26px rgba(207, 155, 54, 0.28));
+    }
+
+    .shoulder-plaque.tier-apex .shoulder-plaque-body {
+      min-width: 234px;
+      padding: 11px 26px 11px 20px;
+      background: linear-gradient(112deg, rgba(255, 254, 250, 0.98) 0%, rgba(253, 247, 232, 0.96) 62%, rgba(242, 248, 255, 0.95) 100%);
+      clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+    }
+
+    .shoulder-plaque.tier-apex .shoulder-plaque-edge {
+      width: 6px;
+      background: linear-gradient(180deg, #b87e14, #f5cf74, #cf9b36);
+    }
+
+    .shoulder-plaque.tier-apex .shoulder-meta {
+      color: #a67113;
+      font-size: 10.5px;
+      letter-spacing: 0.12em;
+    }
+
+    .shoulder-plaque.tier-apex .shoulder-title {
+      font-size: 23px;
+      letter-spacing: 0.09em;
+      background: linear-gradient(90deg, #16233d 0%, #1658eb 68%, #9e6b12 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .shoulder-plaque.tier-apex .shoulder-subline {
+      height: 2.5px;
+      background: linear-gradient(90deg, var(--gold), var(--gold-bright) 50%, var(--ice) 85%, transparent);
+    }
+
+    .shoulder-plaque.tier-apex .shoulder-speed-lines {
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(207, 155, 54, 0.8) 25%, rgba(56, 189, 248, 0.7) 75%, transparent);
+    }
+
+    /* Boss Ultimate Variant (Bright Luminous Arcane Violet Edge — ZERO black screen!) */
+    .shoulder-plaque.tier-apex.tone-boss {
+      filter: drop-shadow(0 10px 26px rgba(124, 77, 255, 0.28));
+    }
+
+    .shoulder-plaque.tier-apex.tone-boss .shoulder-plaque-body {
+      padding: 11px 20px 11px 26px;
+      background: linear-gradient(112deg, rgba(252, 250, 255, 0.98) 0%, rgba(242, 236, 255, 0.96) 68%, rgba(236, 244, 255, 0.95) 100%);
+      clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 100%, 14px 100%);
+    }
+
+    .shoulder-plaque.tier-apex.tone-boss .shoulder-plaque-edge {
+      background: linear-gradient(180deg, #5b21b6, #a78bfa, #7c4dff);
+    }
+
+    .shoulder-plaque.tier-apex.tone-boss .shoulder-meta {
+      color: #6d28d9;
+    }
+
+    .shoulder-plaque.tier-apex.tone-boss .shoulder-title {
+      background: linear-gradient(90deg, #4c1d95 0%, #6d28d9 52%, #1d4ed8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .shoulder-plaque.tier-apex.tone-boss .shoulder-subline {
+      background: linear-gradient(270deg, #7c4dff, #c4b5fd 55%, #38bdf8 85%, transparent);
+    }
+
+    .shoulder-plaque.tier-apex.tone-boss .shoulder-speed-lines {
+      background: linear-gradient(90deg, transparent, rgba(124, 77, 255, 0.78) 30%, rgba(196, 168, 255, 0.65) 75%, transparent);
+    }
+
+    /* Plaque Enter & Sweep-Exit Motion */
+    .shoulder-plaque.anim-in {
+      opacity: 1;
+      transition: transform 95ms cubic-bezier(0.16, 1, 0.3, 1), opacity 80ms ease-out;
+    }
+
+    .shoulder-plaque.anim-out {
+      opacity: 0;
+      transition: transform 110ms cubic-bezier(0.55, 0, 1, 0.45), opacity 95ms ease-in;
+    }
+
+    /* ================= Bottom Compact Snow-Porcelain Control Dock ================= */
+    .control-dock {
+      flex: 0 0 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 0 16px;
+      background: var(--snow-surface-solid);
+      border-top: 1px solid var(--hairline);
+      position: relative;
+      z-index: 50;
+      white-space: nowrap;
+    }
+
+    .control-dock::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: -1px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(22, 88, 235, 0.3) 20%, rgba(56, 189, 248, 0.35) 55%, rgba(207, 155, 54, 0.28) 85%, transparent);
+      pointer-events: none;
+    }
+
+    .dock-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .dock-sep {
+      width: 1px;
+      height: 24px;
+      background: var(--hairline);
+      flex: 0 0 1px;
+    }
+
+    .dock-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ink-muted);
+      margin-right: 4px;
+      letter-spacing: 0.03em;
+    }
+
+    /* Sharp / chamfered architectural buttons — ZERO nested rounded boxes */
+    .btn {
+      appearance: none;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--ink-primary);
+      font-family: var(--font-sans);
+      font-size: 12.5px;
+      font-weight: 600;
+      height: 34px;
+      padding: 0 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      position: relative;
+      transition: background 130ms ease, color 130ms ease, transform 90ms ease;
+      white-space: nowrap;
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--royal);
+      outline-offset: -2px;
+    }
+
+    .btn:disabled {
+      opacity: 0.52;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(105deg, var(--royal) 0%, #246af4 65%, #3088f8 100%);
+      color: #ffffff;
+      padding: 0 15px;
+      clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+      letter-spacing: 0.02em;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(105deg, var(--royal-deep) 0%, var(--royal) 70%, #257bf4 100%);
+    }
+
+    .btn-primary:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    .btn-skill {
+      background: var(--snow-tint);
+      border-bottom: 2px solid transparent;
+      padding: 0 10px;
+    }
+
+    .btn-skill:hover:not(:disabled) {
+      background: var(--snow-hover);
+      color: var(--royal);
+      border-bottom-color: var(--royal);
+    }
+
+    .btn-skill.is-playing {
+      background: rgba(22, 88, 235, 0.13);
+      color: var(--royal);
+      border-bottom-color: var(--royal);
+    }
+
+    .btn-skill.tone-gold:hover:not(:disabled),
+    .btn-skill.tone-gold.is-playing {
+      background: var(--gold-soft);
+      color: #9e6b12;
+      border-bottom-color: var(--gold);
+    }
+
+    .btn-skill.tone-crimson:hover:not(:disabled),
+    .btn-skill.tone-crimson.is-playing {
+      background: var(--crimson-soft);
+      color: var(--crimson);
+      border-bottom-color: var(--crimson);
+    }
+
+    .btn-skill.tone-arcane:hover:not(:disabled),
+    .btn-skill.tone-arcane.is-playing {
+      background: var(--arcane-soft);
+      color: var(--arcane);
+      border-bottom-color: var(--arcane);
+    }
+
+    .ms-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ink-muted);
+    }
+
+    .btn-skill.is-playing .ms-tag {
+      color: inherit;
+    }
+
+    /* Segmented Flat Tabs (hairline dividers only, 0 inner rounded borders) */
+    .seg-group {
+      display: inline-flex;
+      align-items: center;
+      background: var(--snow-tint);
+      height: 32px;
+    }
+
+    .seg-btn {
+      appearance: none;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--ink-secondary);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 600;
+      height: 32px;
+      padding: 0 9px;
+      cursor: pointer;
+      position: relative;
+      transition: background 120ms ease, color 120ms ease;
+    }
+
+    .seg-btn + .seg-btn::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 7px;
+      bottom: 7px;
+      width: 1px;
+      background: var(--hairline);
+    }
+
+    .seg-btn:hover {
+      color: var(--royal);
+      background: rgba(22, 88, 235, 0.06);
+    }
+
+    .seg-btn.is-active {
+      background: var(--royal);
+      color: #ffffff;
+    }
+
+    .seg-btn.is-active + .seg-btn::before,
+    .seg-btn.is-active::before {
+      display: none;
+    }
+
+    .seg-btn:focus-visible {
+      outline: 2px solid var(--royal);
+      outline-offset: -2px;
+    }
+
+    .btn-sound {
+      background: var(--snow-tint);
+      height: 32px;
+      padding: 0 10px;
+      font-size: 12px;
+      color: var(--ink-secondary);
+    }
+
+    .btn-sound.is-on {
+      color: var(--royal);
+      background: var(--royal-soft);
+    }
+
+    .btn-sound:hover {
+      background: var(--snow-hover);
+      color: var(--royal);
+    }
+
+    @media (max-width: 1320px) {
+      .nav-tagline {
+        display: none;
+      }
+      .control-dock {
+        padding: 0 10px;
+        gap: 6px;
+      }
+      .btn {
+        font-size: 12px;
+        padding: 0 9px;
+      }
+      .btn-primary {
+        padding: 0 12px;
+      }
+      .dock-label {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Top Navigation Bar -->
+    <header class="top-nav">
+      <nav class="nav-links" aria-label="竞标方案导航">
+        <a class="nav-item" href="./cast_hub.html">‹ 竞标总台</a>
+        <a class="nav-item" href="./cast_demo_a.html">方案 A·剧场聚光</a>
+        <span class="nav-item is-active" aria-current="page">
+          <span class="nav-diamond" aria-hidden="true"></span>
+          方案 B·明亮切镜（当前）
+        </span>
+        <a class="nav-item" href="./cast_demo_c.html">方案 C·闪电Cut-In</a>
+      </nav>
+      <div class="nav-tagline">
+        <span class="nav-tagline-mark">100% 雪白明亮 · 绝不压暗</span>
+        <span class="nav-tagline-sep"></span>
+        <span>3D 过肩低机位快切 · 浅景深 · 肩侧动态铭牌 · 随招甩镜</span>
+      </div>
+    </header>
+
+    <!-- Main Battle Stage Viewport -->
+    <main class="stage-viewport" id="stage-viewport">
+      <div id="stage-root"></div>
+      <canvas id="vfx-canvas"></canvas>
+
+      <!-- Luminous Bright Optical Glint Overlay (No Darkening) -->
+      <div id="bright-optics" class="bright-optics-layer" aria-hidden="true"></div>
+
+      <!-- Top-Center 6-Slot Pixel Avatar AV Action Bar -->
+      <div id="av-bar" class="av-bar-dock" aria-label="AV 行动条"></div>
+
+      <!-- Top-Left Compact Real-Time Beat Telemetry -->
+      <aside id="beat-telemetry" class="beat-telemetry" aria-live="polite">
+        <div class="beat-head">
+          <span class="beat-title">
+            <span class="beat-pulse-dot" aria-hidden="true"></span>
+            方案 B 节拍仪表
+          </span>
+          <span class="beat-ms-readout">
+            <span id="pause-ms-value">230</span><span class="beat-ms-unit">ms</span>
+          </span>
+        </div>
+        <div class="beat-phases">
+          <span id="phase-1" class="phase-step">短呼吸</span>
+          <span class="phase-arrow">→</span>
+          <span id="phase-2" class="phase-step">3D 浅景深切镜+肩侧铭牌</span>
+          <span class="phase-arrow">→</span>
+          <span id="phase-3" class="phase-step">随招甩镜</span>
+        </div>
+        <div id="status-readout" class="beat-status-line">就绪 · 点击下方按钮体验明亮浅景深切镜</div>
+      </aside>
+
+      <!-- Shoulder-Side Dynamic Nameplate Layer -->
+      <div id="shoulder-plaque-layer" class="shoulder-plaque-layer" aria-hidden="true">
+        <div id="shoulder-plaque" class="shoulder-plaque">
+          <div class="shoulder-speed-lines"></div>
+          <div class="shoulder-plaque-body">
+            <div class="shoulder-plaque-edge"></div>
+            <div class="shoulder-plaque-sheen"></div>
+            <div id="plaque-meta" class="shoulder-meta">冰晶系 · 230ms</div>
+            <div id="plaque-title" class="shoulder-title">冰晶连棱</div>
+            <div class="shoulder-subline"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Compact Snow-Porcelain Control Dock -->
+    <footer class="control-dock" aria-label="演示操控条">
+      <div class="dock-group">
+        <button id="btn-combo" type="button" class="btn btn-primary">▶ 4 连动快节奏回放</button>
+      </div>
+
+      <span class="dock-sep"></span>
+
+      <div class="dock-group">
+        <button type="button" class="btn btn-skill" data-skill="ice_prism">
+          冰晶连棱 <span class="ms-tag" data-base-ms="230">230ms</span>
+        </button>
+        <button type="button" class="btn btn-skill tone-gold" data-skill="starfrost_apex">
+          星霜极限 <span class="ms-tag" data-base-ms="310">310ms</span>
+        </button>
+        <button type="button" class="btn btn-skill tone-crimson" data-skill="wolf_bite">
+          狂狼快攻 <span class="ms-tag" data-base-ms="140">140ms</span>
+        </button>
+        <button type="button" class="btn btn-skill tone-arcane" data-skill="eclipse_rift">
+          罗文绝招 <span class="ms-tag" data-base-ms="310">310ms</span>
+        </button>
+      </div>
+
+      <span class="dock-sep"></span>
+
+      <div class="dock-group">
+        <span class="dock-label">节奏</span>
+        <div class="seg-group" role="group" aria-label="节奏倍速">
+          <button type="button" class="seg-btn" data-speed="0.75">0.75×</button>
+          <button type="button" class="seg-btn is-active" data-speed="1">1.0×</button>
+          <button type="button" class="seg-btn" data-speed="1.25">1.25×</button>
+        </div>
+      </div>
+
+      <span class="dock-sep"></span>
+
+      <div class="dock-group">
+        <span class="dock-label">场景</span>
+        <div class="seg-group" role="group" aria-label="战斗场景切换">
+          <button type="button" class="seg-btn is-active" data-biome="academy">学院雪庭</button>
+          <button type="button" class="seg-btn" data-biome="forest">月夜雾林</button>
+        </div>
+      </div>
+
+      <span class="dock-sep"></span>
+
+      <div class="dock-group">
+        <button id="btn-sound" type="button" class="btn btn-sound is-on">🔊 音效 开</button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Pixel Sprite Packs -->
+  <script src="../../js/sprites/sylvia_silver.js"></script>
+  <script src="../../js/sprites/reno.js"></script>
+  <script src="../../js/sprites/rowan.js"></script>
+  <script src="../../js/sprites/tundra_brute.js"></script>
+  <script src="../../js/sprites/frost_hound.js"></script>
+
+  <!-- Scheme B Choreography Module -->
+  <script type="module">
+    import { initCastDemoStage } from './cast_stage_shared.js';
+
+    const stageViewport = document.getElementById('stage-viewport');
+    const stageEl = document.getElementById('stage-root');
+    const vfxCanvas = document.getElementById('vfx-canvas');
+    const avBarEl = document.getElementById('av-bar');
+    const statusEl = document.getElementById('status-readout');
+
+    const brightOpticsEl = document.getElementById('bright-optics');
+    const telemetryEl = document.getElementById('beat-telemetry');
+    const pauseMsEl = document.getElementById('pause-ms-value');
+    const phase1El = document.getElementById('phase-1');
+    const phase2El = document.getElementById('phase-2');
+    const phase3El = document.getElementById('phase-3');
+
+    const plaqueEl = document.getElementById('shoulder-plaque');
+    const plaqueMetaEl = document.getElementById('plaque-meta');
+    const plaqueTitleEl = document.getElementById('plaque-title');
+
+    const comboBtn = document.getElementById('btn-combo');
+    const soundBtn = document.getElementById('btn-sound');
+    const skillBtns = Array.from(document.querySelectorAll('[data-skill]'));
+    const speedBtns = Array.from(document.querySelectorAll('[data-speed]'));
+    const biomeBtns = Array.from(document.querySelectorAll('[data-biome]'));
+
+    const SCHEME_B_META = {
+      wolf_bite: {
+        tier: 'fast',
+        basePause: 140,
+        casterFallback: 'wolf',
+        nameFallback: '裂霜扑咬',
+        tag: '杂兵突袭',
+        side: 'enemy',
+        impactCam: 'impact_ally',
+        toneClass: 'tone-crimson',
+        phaseTone: 'tone-crimson',
+        opticsMode: ''
+      },
+      ice_prism: {
+        tier: 'regular',
+        basePause: 230,
+        casterFallback: 'sylvia',
+        nameFallback: '冰晶连棱',
+        tag: '冰晶系 · 常规技',
+        side: 'ally',
+        impactCam: 'impact_enemy',
+        ringHex: '#38bdf8',
+        toneClass: '',
+        phaseTone: '',
+        opticsMode: ''
+      },
+      flame_lance: {
+        tier: 'regular',
+        basePause: 230,
+        casterFallback: 'reno',
+        nameFallback: '烈焰长枪',
+        tag: '炎枪系 · 常规技',
+        side: 'ally',
+        impactCam: 'impact_enemy',
+        ringHex: '#38bdf8',
+        toneClass: 'tone-ember',
+        phaseTone: '',
+        opticsMode: ''
+      },
+      starfrost_apex: {
+        tier: 'apex',
+        basePause: 310,
+        casterFallback: 'sylvia',
+        nameFallback: '星霜极限',
+        tag: '★★★ 三阶奥义宣言',
+        side: 'ally',
+        impactCam: 'impact_enemy',
+        ringInnerHex: '#38bdf8',
+        ringOuterHex: '#e8bf60',
+        sfx: 'chime_apex',
+        toneClass: '',
+        phaseTone: 'tone-gold',
+        opticsMode: 'mode-apex'
+      },
+      eclipse_rift: {
+        tier: 'apex',
+        basePause: 310,
+        casterFallback: 'rowan',
+        nameFallback: '蚀月裂界',
+        tag: '◆ BOSS 绝招宣言',
+        side: 'enemy',
+        impactCam: 'impact_ally',
+        ringInnerHex: '#7c4dff',
+        ringOuterHex: '#c4a8ff',
+        sfx: 'enemy_warn',
+        toneClass: 'tone-boss',
+        phaseTone: 'tone-arcane',
+        opticsMode: 'mode-boss'
+      }
+    };
+
+    const FALLBACK_ANCHORS = {
+      sylvia: { rx: 0.28, ry: 0.56 },
+      reno: { rx: 0.19, ry: 0.62 },
+      wolf: { rx: 0.68, ry: 0.61 },
+      brute: { rx: 0.74, ry: 0.58 },
+      rowan: { rx: 0.78, ry: 0.50 }
+    };
+
+    const COMBO_SEQUENCE = ['ice_prism', 'flame_lance', 'wolf_bite', 'eclipse_rift'];
+
+    let stage = null;
+    let speedMultiplier = 1.0;
+    let isBusy = false;
+    let plaqueHideTimer = null;
+
+    function getScale() {
+      return 1 / speedMultiplier;
+    }
+
+    function setPhaseActive(stepIdx, toneClass = '') {
+      [phase1El, phase2El, phase3El].forEach((el, idx) => {
+        el.className = 'phase-step';
+        if (idx + 1 === stepIdx) {
+          el.classList.add('is-on');
+          if (toneClass) el.classList.add(toneClass);
+        }
+      });
+      telemetryEl.classList.toggle('is-live', stepIdx > 0);
+    }
+
+    function updateStatus(text, pauseMs) {
+      if (typeof pauseMs === 'number' && Number.isFinite(pauseMs)) {
+        pauseMsEl.textContent = String(Math.round(pauseMs));
+      }
+      if (stage && typeof stage.setTimelineStatus === 'function') {
+        stage.setTimelineStatus(text, pauseMs);
+      } else {
+        statusEl.textContent = text;
+      }
+    }
+
+    function resolveActorScreenPos(actorId) {
+      const rect = stageViewport.getBoundingClientRect();
+      const w = rect.width || window.innerWidth;
+      const h = rect.height || window.innerHeight;
+      const raw = stage && typeof stage.getActorScreen === 'function'
+        ? stage.getActorScreen(actorId)
+        : null;
+
+      let x = w * 0.5;
+      let y = h * 0.54;
+      let topY = null;
+      let width = 120;
+      if (raw && typeof raw.x === 'number' && typeof raw.y === 'number') {
+        const isNormalized = raw.x >= 0 && raw.x <= 1.05 && raw.y >= 0 && raw.y <= 1.05;
+        x = isNormalized ? raw.x * w : raw.x;
+        y = isNormalized ? raw.y * h : raw.y;
+        if (typeof raw.topY === 'number') topY = raw.topY;
+        if (typeof raw.width === 'number') width = raw.width;
+      } else if (raw && typeof raw.left === 'number' && typeof raw.top === 'number') {
+        x = raw.left;
+        y = raw.top;
+      } else {
+        const fb = FALLBACK_ANCHORS[actorId] || { rx: 0.5, ry: 0.54 };
+        x = w * fb.rx;
+        y = h * fb.ry;
+      }
+      return { x, y, topY, width, w, h };
+    }
+
+    function setBrightOptics(active, actorId, modeClass = '', streakShift = 0) {
+      brightOpticsEl.className = 'bright-optics-layer';
+      if (modeClass) brightOpticsEl.classList.add(modeClass);
+      if (active) {
+        const pos = resolveActorScreenPos(actorId);
+        const fx = ((pos.x / Math.max(1, pos.w)) * 100).toFixed(1) + '%';
+        const fy = ((pos.y / Math.max(1, pos.h)) * 100).toFixed(1) + '%';
+        brightOpticsEl.style.setProperty('--focus-x', fx);
+        brightOpticsEl.style.setProperty('--focus-y', fy);
+        brightOpticsEl.style.setProperty('--streak-shift', `${streakShift}px`);
+        brightOpticsEl.classList.add('is-active');
+      }
+    }
+
+    function showShoulderPlaque({ actorId, title, metaText, tier, side, toneClass }) {
+      if (plaqueHideTimer) {
+        clearTimeout(plaqueHideTimer);
+        plaqueHideTimer = null;
+      }
+
+      const pos = resolveActorScreenPos(actorId);
+      const isEnemy = side === 'enemy';
+
+      plaqueEl.className = `shoulder-plaque tier-${tier}${isEnemy ? ' is-enemy-side' : ''}${toneClass ? ' ' + toneClass : ''}`;
+      plaqueMetaEl.textContent = metaText;
+      plaqueTitleEl.textContent = title;
+
+      // Measure width after content update for tight shoulder hugging without viewport clipping
+      const approxW = tier === 'fast' ? 148 : tier === 'apex' ? 256 : 196;
+      const approxH = tier === 'fast' ? 44 : tier === 'apex' ? 74 : 56;
+      const shoulderGap = Math.max(38, Math.round((pos.width || 110) * 0.42));
+      const offsetX = tier === 'fast' ? Math.max(34, shoulderGap - 4) : tier === 'apex' ? shoulderGap + 8 : shoulderGap;
+      const shoulderY = typeof pos.topY === 'number'
+        ? pos.topY + (tier === 'apex' ? 4 : 14)
+        : pos.y + (tier === 'fast' ? -58 : tier === 'apex' ? -84 : -70);
+
+      let left = isEnemy ? (pos.x - offsetX - approxW) : (pos.x + offsetX);
+      let top = shoulderY;
+
+      // Clamp cleanly below top AV bar and above bottom dock
+      left = Math.max(20, Math.min(pos.w - approxW - 20, left));
+      top = Math.max(76, Math.min(pos.h - approxH - 22, top));
+
+      const entryDx = isEnemy ? 26 : -26;
+      plaqueEl.style.left = `${Math.round(left)}px`;
+      plaqueEl.style.top = `${Math.round(top)}px`;
+      plaqueEl.style.transform = `translate3d(${entryDx}px, 6px, 0) scale(0.95)`;
+      plaqueEl.style.opacity = '0';
+
+      // Trigger crisp kinetic slide-in
+      void plaqueEl.offsetWidth;
+      plaqueEl.classList.add('anim-in', 'is-visible');
+      plaqueEl.style.transform = 'translate3d(0px, 0px, 0) scale(1)';
+      plaqueEl.style.opacity = '1';
+    }
+
+    function dismissShoulderPlaque(side, isApex = false) {
+      const exitDx = side === 'enemy' ? (isApex ? -64 : -42) : (isApex ? 64 : 42);
+      plaqueEl.classList.remove('anim-in', 'is-visible');
+      plaqueEl.classList.add('anim-out');
+      plaqueEl.style.transform = `translate3d(${exitDx}px, -4px, 0) scale(${isApex ? 1.04 : 0.98})`;
+      plaqueEl.style.opacity = '0';
+
+      plaqueHideTimer = setTimeout(() => {
+        plaqueEl.className = 'shoulder-plaque';
+      }, 150);
+    }
+
+    function setControlsLocked(locked, activeSkillKey = null) {
+      isBusy = locked;
+      comboBtn.disabled = locked;
+      skillBtns.forEach((btn) => {
+        btn.disabled = locked;
+        btn.classList.toggle('is-playing', locked && btn.dataset.skill === activeSkillKey);
+      });
+    }
+
+    function refreshSkillMsLabels() {
+      const s = getScale();
+      document.querySelectorAll('.ms-tag[data-base-ms]').forEach((tag) => {
+        const base = Number(tag.dataset.baseMs) || 230;
+        tag.textContent = `${Math.round(base * s)}ms`;
+      });
+    }
+
+    /**
+     * Scheme B Core Choreography:
+     * Bright Snow-Porcelain Daylight (0% Darkening) + 3D Over-Shoulder Low-Angle Cut
+     * + Bright DoF + Shoulder-Side Dynamic Nameplate + Kinetic Whip-Pan on Impact
+     */
+    async function runSchemeBSkill(skillKey, prefixLabel = '') {
+      if (!stage) return;
+      const meta = SCHEME_B_META[skillKey];
+      if (!meta) return;
+
+      const sk = (stage.SKILLS && stage.SKILLS[skillKey]) || {};
+      const caster = sk.caster || meta.casterFallback;
+      const skillName = sk.name || sk.label || meta.nameFallback;
+      const s = getScale();
+      const totalPauseMs = Math.round(meta.basePause * s);
+      const tagPrefix = prefixLabel ? `${prefixLabel} · ` : '';
+
+      // Highlight active caster on top-center AV action bar & guarantee 100% brightness
+      if (typeof stage.renderAvBar === 'function') {
+        stage.renderAvBar(caster);
+      }
+      if (typeof stage.setEnvDim === 'function') {
+        stage.setEnvDim(0, null, 0);
+      }
+
+      try {
+        if (skillKey === 'wolf_bite') {
+          // 1. Fast Mob Strike — Total mid-pause 140ms × s
+          setPhaseActive(2, meta.phaseTone);
+          updateStatus(`${tagPrefix}${skillName} · 低机位快切 + 紧凑肩侧红边名签`, totalPauseMs);
+
+          stage.focusCamera('wolf_low', Math.round(75 * s));
+          stage.setBrightDoF(0.35, Math.round(75 * s));
+          stage.playPose('wolf', 'windup');
+          stage.playSFX('pan_whoosh');
+          setBrightOptics(true, 'wolf', '', -14);
+
+          showShoulderPlaque({
+            actorId: 'wolf',
+            title: skillName,
+            metaText: `${meta.tag} · ${totalPauseMs}ms`,
+            tier: 'fast',
+            side: 'enemy',
+            toneClass: meta.toneClass
+          });
+
+          await stage.wait(totalPauseMs);
+
+          // 140ms*s: Dismiss tag swiftly + whip-pan to impact_ally
+          setPhaseActive(3, meta.phaseTone);
+          updateStatus(`${tagPrefix}${skillName} · 随扑咬甩镜命中`, totalPauseMs);
+          dismissShoulderPlaque('enemy', false);
+          setBrightOptics(false, 'wolf');
+          stage.focusCamera('impact_ally', Math.round(85 * s));
+
+          await stage.playSkillImpact('wolf_bite');
+
+          stage.setBrightDoF(0, Math.round(140 * s));
+          stage.focusCamera('wide', Math.round(140 * s));
+          await stage.wait(Math.round(140 * s));
+        } else if (meta.tier === 'regular') {
+          // 2. Regular Skills (ice_prism / flame_lance) — Total mid-pause 230ms × s
+          const breathMs = Math.round(50 * s);
+          const plaqueAtMs = Math.round(75 * s);
+          const prePlaqueWait = Math.max(0, plaqueAtMs - breathMs);
+          const postPlaqueWait = Math.max(0, totalPauseMs - plaqueAtMs);
+
+          setPhaseActive(1);
+          updateStatus(`${tagPrefix}${skillName} · 短呼吸 → 3D 浅景深低机位侧切`, totalPauseMs);
+
+          stage.focusCamera(`${caster}_low`, Math.round(100 * s));
+          stage.setBrightDoF(0.65, Math.round(100 * s));
+          stage.playPose(caster, 'windup');
+          stage.spawnMagicRing(caster, meta.ringHex || '#38bdf8', 1.05);
+          setBrightOptics(true, caster, '', 18);
+
+          await stage.wait(breathMs);
+
+          setPhaseActive(2);
+          if (prePlaqueWait > 0) {
+            await stage.wait(prePlaqueWait);
+          }
+
+          // 75ms*s: pan_whoosh + shoulder-side snow-porcelain Royal-Blue nameplate
+          stage.playSFX('pan_whoosh');
+          updateStatus(`${tagPrefix}${skillName} · 浅景深切镜 + 肩侧动态铭牌`, totalPauseMs);
+          showShoulderPlaque({
+            actorId: caster,
+            title: skillName,
+            metaText: `${meta.tag} · ${totalPauseMs}ms`,
+            tier: 'regular',
+            side: meta.side,
+            toneClass: meta.toneClass
+          });
+
+          await stage.wait(postPlaqueWait);
+
+          // 230ms*s: Sweep-dismiss nameplate + dynamic whip-pan along trajectory
+          setPhaseActive(3);
+          updateStatus(`${tagPrefix}${skillName} · 随弹道动感甩镜`, totalPauseMs);
+          dismissShoulderPlaque(meta.side, false);
+          setBrightOptics(false, caster);
+          stage.focusCamera(meta.impactCam, Math.round(95 * s));
+
+          await stage.playSkillImpact(skillKey);
+
+          stage.setBrightDoF(0, Math.round(150 * s));
+          stage.focusCamera('wide', Math.round(150 * s));
+          await stage.wait(Math.round(150 * s));
+        } else {
+          // 3. Tier-3 Apex / Boss Ultimate (starfrost_apex / eclipse_rift) — Total mid-pause 310ms × s
+          const isBoss = skillKey === 'eclipse_rift';
+          const breathMs = Math.round(55 * s);
+          const holdMs = Math.max(0, totalPauseMs - breathMs);
+
+          setPhaseActive(1, meta.phaseTone);
+          updateStatus(`${tagPrefix}${skillName} · 英雄低机位深推镜 + 双环爆发`, totalPauseMs);
+
+          stage.focusCamera(`${caster}_low`, Math.round(120 * s));
+          stage.setBrightDoF(0.9, Math.round(120 * s));
+          stage.playPose(caster, 'windup');
+          stage.spawnMagicRing(caster, meta.ringInnerHex, 1.24);
+          setBrightOptics(true, caster, meta.opticsMode, isBoss ? -28 : 28);
+
+          await stage.wait(breathMs);
+
+          setPhaseActive(2, meta.phaseTone);
+          stage.spawnMagicRing(caster, meta.ringOuterHex, 1.66);
+          stage.playSFX(meta.sfx);
+          stage.playSFX('pan_whoosh');
+          updateStatus(
+            `${tagPrefix}${skillName} · ${isBoss ? '紫边肩侧宣言铭牌' : '金边肩侧宣言铭牌'}`,
+            totalPauseMs
+          );
+
+          showShoulderPlaque({
+            actorId: caster,
+            title: skillName,
+            metaText: `${meta.tag} · ${totalPauseMs}ms`,
+            tier: 'apex',
+            side: meta.side,
+            toneClass: meta.toneClass
+          });
+
+          await stage.wait(holdMs);
+
+          // 310ms*s: Fierce whip-pan launch!
+          setPhaseActive(3, meta.phaseTone);
+          updateStatus(`${tagPrefix}${skillName} · 猛烈甩镜释放绝招`, totalPauseMs);
+          dismissShoulderPlaque(meta.side, true);
+          setBrightOptics(false, caster);
+          stage.focusCamera(meta.impactCam, Math.round(90 * s));
+
+          await stage.playSkillImpact(skillKey);
+
+          stage.setBrightDoF(0, Math.round(170 * s));
+          stage.focusCamera('wide', Math.round(170 * s));
+          await stage.wait(Math.round(170 * s));
+        }
+      } finally {
+        setBrightOptics(false, caster);
+      }
+    }
+
+    async function triggerSingleSkill(skillKey) {
+      if (isBusy || !stage) return;
+      setControlsLocked(true, skillKey);
+      try {
+        await runSchemeBSkill(skillKey);
+        const totalMs = Math.round((SCHEME_B_META[skillKey]?.basePause || 230) * getScale());
+        setPhaseActive(0);
+        updateStatus(`完成 · 保持 100% 明亮雪白景深回位`, totalMs);
+      } finally {
+        setControlsLocked(false);
+      }
+    }
+
+    async function triggerComboReplay() {
+      if (isBusy || !stage) return;
+      setControlsLocked(true);
+      comboBtn.textContent = '⏳ 4 连动回放中…';
+      try {
+        const s = getScale();
+        for (let i = 0; i < COMBO_SEQUENCE.length; i += 1) {
+          const key = COMBO_SEQUENCE[i];
+          skillBtns.forEach((btn) => {
+            btn.classList.toggle('is-playing', btn.dataset.skill === key);
+          });
+          await runSchemeBSkill(key, `连动 ${i + 1}/${COMBO_SEQUENCE.length}`);
+          if (i < COMBO_SEQUENCE.length - 1) {
+            await stage.wait(Math.round(160 * s));
+          }
+        }
+        setPhaseActive(0);
+        updateStatus('4 连动快节奏回放完毕 · 全程雪白明亮无暗场', Math.round(230 * s));
+      } finally {
+        comboBtn.textContent = '▶ 4 连动快节奏回放';
+        setControlsLocked(false);
+      }
+    }
+
+    function syncSoundButton() {
+      const enabled = stage && typeof stage.isSoundEnabled === 'function' ? stage.isSoundEnabled() : true;
+      soundBtn.classList.toggle('is-on', enabled);
+      soundBtn.textContent = enabled ? '🔊 音效 开' : '🔇 音效 关';
+    }
+
+    async function boot() {
+      stage = await initCastDemoStage({
+        schemeId: 'B',
+        schemeName: '方案 B · 明亮浅景深切镜',
+        stageEl,
+        vfxCanvas,
+        avBarEl,
+        statusEl
+      });
+
+      if (typeof stage.setEnvDim === 'function') {
+        stage.setEnvDim(0, null, 0);
+      }
+      refreshSkillMsLabels();
+      syncSoundButton();
+      updateStatus('就绪 · 短呼吸 → 3D 浅景深切镜+肩侧铭牌 → 随招甩镜', 230);
+
+      comboBtn.addEventListener('click', triggerComboReplay);
+
+      skillBtns.forEach((btn) => {
+        btn.addEventListener('click', () => triggerSingleSkill(btn.dataset.skill));
+      });
+
+      speedBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          speedMultiplier = Number(btn.dataset.speed) || 1.0;
+          speedBtns.forEach((b) => b.classList.toggle('is-active', b === btn));
+          refreshSkillMsLabels();
+          const sampleMs = Math.round(230 * getScale());
+          if (!isBusy) {
+            updateStatus(`节奏已切换为 ${speedMultiplier}×（常规技能停顿 ${sampleMs}ms）`, sampleMs);
+          }
+        });
+      });
+
+      biomeBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const biome = btn.dataset.biome;
+          biomeBtns.forEach((b) => b.classList.toggle('is-active', b === btn));
+          if (stage && typeof stage.setBiome === 'function') {
+            stage.setBiome(biome);
+          }
+          if (!isBusy) {
+            updateStatus(`场景已切换：${biome === 'forest' ? '月夜雾林' : '学院雪庭'}`, Math.round(230 * getScale()));
+          }
+        });
+      });
+
+      soundBtn.addEventListener('click', () => {
+        if (!stage) return;
+        const next = typeof stage.isSoundEnabled === 'function' ? !stage.isSoundEnabled() : false;
+        if (typeof stage.setSoundEnabled === 'function') {
+          stage.setSoundEnabled(next);
+        }
+        syncSoundButton();
+      });
+    }
+
+    boot().catch((err) => {
+      console.error('[CastDemoB] 初始化失败:', err);
+      statusEl.textContent = `初始化失败：${err?.message || err}`;
+    });
+  </script>
+</body>
+</html>

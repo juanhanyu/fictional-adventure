@@ -29,7 +29,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const st=win.__getS();
   ok('场景无崩溃', !err);
   ok('触发 CG 演出（>=6）', cgCount>=6);
-  ok('帝级段使用 reno_diji', seen.has('reno_diji.jpg'));
+  ok('帝级段使用 reno_diji', seen.has('reno_diji.webp'));
   console.log('  CG图集:', [...seen].join(', '));
   ok('走到自由探索', st.freeRoam===true);
   ok('已切换眷寒渔身份', st.alias==='眷寒渔');

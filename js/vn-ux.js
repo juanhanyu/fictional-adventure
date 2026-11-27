@@ -2607,12 +2607,12 @@
       unlockChapters: ['s_reno_arrive']
     },
     {
-      id: 'parents_battle.jpg',
-      file: 'parents_battle.jpg',
+      id: 'parents_battle.webp',
+      file: 'parents_battle.webp',
       title: '西翼走廊 · 夫妇并肩',
       vol: '第二卷 · 学院篇',
       quote: '「短杖落在掌心，西翼走廊轰然炸开。两个人守住一条线，只为给女儿多争片刻脱身光阴。」',
-      unlockKey: 'parents_battle.jpg',
+      unlockKey: 'parents_battle.webp',
       unlockFlags: ['did_turnpoint'],
       unlockChapters: ['s_turnpoint']
     },
@@ -2637,22 +2637,22 @@
       unlockChapters: ['s_turnpoint']
     },
     {
-      id: 'reno_battle.jpg',
-      file: 'reno_battle.jpg',
+      id: 'reno_battle.webp',
+      file: 'reno_battle.webp',
       title: '十字路口 · 岩廊独守',
       vol: '第二卷 · 学院篇',
       quote: '「石板翘起、碎裂、重组，四条走廊化作坚固迷宫。每多撑一会儿，侄女们便能多跑出一段。」',
-      unlockKey: 'reno_battle.jpg',
+      unlockKey: 'reno_battle.webp',
       unlockFlags: ['did_turnpoint'],
       unlockChapters: ['s_turnpoint']
     },
     {
-      id: 'reno_diji.jpg',
-      file: 'reno_diji.jpg',
+      id: 'reno_diji.webp',
+      file: 'reno_diji.webp',
       title: '铁锈余温 · 浪人谢幕',
       vol: '第二卷 · 学院篇',
       quote: '「……贝尔蒙家的私军。他靠着石墙慢慢合上眼，默默数着拖下的光阴——应该够了。」',
-      unlockKey: 'reno_diji.jpg',
+      unlockKey: 'reno_diji.webp',
       unlockFlags: ['did_turnpoint'],
       unlockChapters: ['s_turnpoint']
     },

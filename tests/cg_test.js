@@ -8,7 +8,7 @@ let fail=0; const ok=(l,c)=>{console.log(`  ${c?'✓':'✗'} ${l}`); if(!c)fail+
 win.__resetS();
 
 // 直接调用 CG 函数
-win.cgShow('reno_battle.jpg');
+win.cgShow('reno_battle.webp');
 ok('cgShow 显示 cg-screen', !$('cg-screen').classList.contains('hidden'));
 ok('cgShow 设置背景图', $('cg-bg').style.backgroundImage.includes('reno_battle'));
 ok('cgShow 加 cg-mode 类', win.document.body.classList.contains('cg-mode'));

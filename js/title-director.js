@@ -36,7 +36,7 @@
     { x: 188, y: 186, rot: -26, sc: 0.56, z: 19, variant: 3, slotId: null }
   ];
 
-  // 标题页曲库试听目录（全 24 首：优雅西幻文艺曲名 + 清晰场景副标；注释标注磁盘英文功能文件名）
+  // 标题页曲库试听目录（全 27 首：优雅西幻文艺曲名 + 清晰场景副标；注释标注磁盘英文功能文件名）
   var SOUNDTRACK_CATALOG = [
     { key: 'title_overture', title: '雪晶序曲', mood: '主界面 · 奇幻开篇' },           // Title - Main Theme.mp3
     { key: 'peaceful1', title: '晨光圆舞 I', mood: '第一章 · 宅邸清晨日常' },         // Peaceful 1.mp3
@@ -51,6 +51,7 @@
     { key: 'sacred2', title: '冰晶宫殿 II', mood: '礼拜堂 · 觉醒 · 七座山' },         // Sacred 2.mp3
     { key: 'emotional1', title: '霜月挽歌', mood: '离巢告别 · 冰融 · 双轨终幕' },     // Emotional 1.mp3
     { key: 'romantic', title: '炉火余韵', mood: '海与贝壳 · 黄昏谈心 · 求婚' },       // Romantic.mp3
+    { key: 'northern_frontier', title: '北境远行', mood: '北风堡 · 赫兰雪原与冻土孤旅' }, // Travel - Northern Frontier.mp3
     { key: 'starry_flight', title: '星河乘风', mood: '萤尾羊星河 · 乘风飞翔' },       // Story - Starry Flight.mp3
     { key: 'sad1', title: '寒夜哀歌', mood: '政变火夜 · 悲剧哀悼' },                  // Melancholic & Sad 1.mp3
     { key: 'suspense1', title: '冰晶复调', mood: '血案推理 · 寒夜推演盘' },           // Suspense - Investigation.mp3
@@ -61,7 +62,9 @@
     { key: 'duel2', title: '演武晴锋 II', mood: '演武大厅 · 贵族试手' },              // Battle - Arena Lobby.mp3
     { key: 'battle1', title: '锋刃交错 I', mood: '魔兽遭遇 · 血案死斗 · 突围战' },    // Battle & Tension 1.mp3
     { key: 'battle2', title: '霜原决意 II', mood: '强敌二阶段 · 宿命死斗' },          // Battle & Tension 2.mp3
-    { key: 'boss_finale', title: '破冰终章', mood: '风神二阶段 · 终章斩龙史诗' }      // Battle - Dragon Finale.mp3
+    { key: 'boss_windgod', title: '风神试剑', mood: '列强试炼 · 风神一阶段专属' },     // Battle - Wind God Trial.mp3
+    { key: 'boss_finale', title: '破冰终章', mood: '风神二阶段 · 终章斩龙史诗' },     // Battle - Dragon Finale.mp3
+    { key: 'victory1', title: '凯旋乐章', mood: '战斗胜利 · 战术制胜与演武凯旋' }     // Battle - Victory March.mp3
   ];
 
   var TYPE_SPEED_OPTS = [

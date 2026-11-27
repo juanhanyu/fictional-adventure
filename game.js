@@ -178,7 +178,9 @@ const BGM_FILES = {
   sacred2:'Music/Sacred 2.mp3',                           // 冰晶宫殿 II · 礼拜堂/觉醒/七座山
   battle1:'Music/Battle & Tension 1.mp3',                 // 锋刃交错 I · 魔兽遭遇/血案死斗/突围战
   battle2:'Music/Battle & Tension 2.mp3',                 // 霜原决意 II · 强敌二阶段/宿命死斗
+  boss_windgod:'Music/Battle - Wind God Trial.mp3',       // 风神试剑 · 列强试炼/风神一阶段专属
   boss_finale:'Music/Battle - Dragon Finale.mp3',         // 破冰终章 · 风神二阶段/终章斩龙史诗
+  victory1:'Music/Battle - Victory March.mp3',            // 凯旋乐章 · 战斗胜利结算与演武凯旋
   duel1:'Music/Battle - Sparring Duel.mp3',               // 学院剑舞 I · 姐妹切磋/学院比试战
   duel2:'Music/Battle - Arena Lobby.mp3',                 // 演武晴锋 II · 演武大厅/贵族试手
   cheerful1:'Music/Cheerful 1.mp3',                       // 阳光集市 I · 集市小镇/花园/海滨
@@ -194,6 +196,7 @@ const BGM_FILES = {
   comedy_fast:'Music/Comical_fast-speed.mp3',             // 追风闹剧 · 高速搞笑/追逐彩蛋
   comedy_medium:'Music/Comical_medium-speed.mp3',         // 微服谐趣 · 微服私访/轻快诙谐
   romantic:'Music/Romantic.mp3',                          // 炉火余韵 · 海与贝壳/黄昏谈心/求婚
+  northern_frontier:'Music/Travel - Northern Frontier.mp3', // 北境远行 · 北风堡/赫兰雪原/冻土孤旅
   starry_flight:'Music/Story - Starry Flight.mp3',        // 星河乘风 · 萤尾羊星河/乘风飞翔高潮
   suspense1:'Music/Suspense - Investigation.mp3',         // 冰晶复调 · 血案推理/寒夜推演盘
   upset:'Music/Upset.mp3',                                // 上锁书房 · 暗潮对峙/地下酒窖/冰封峡谷
@@ -207,6 +210,7 @@ const BGM_TRACK_GAIN = {
   relax2: 0.88,
   emotional1: 1.0,
   romantic: 1.0,
+  northern_frontier: 0.90,
   starry_flight: 0.92,
   sad1: 0.94,
   suspense1: 0.98,
@@ -223,7 +227,9 @@ const BGM_TRACK_GAIN = {
   duel2: 0.98,
   battle1: 0.58,
   battle2: 1.0,
+  boss_windgod: 1.0,
   boss_finale: 0.95,
+  victory1: 1.0,
 };
 let bgmEl = null;         // 当前 Audio 元素
 let bgmKey = null;        // 当前播放的曲目 key
@@ -279,7 +285,9 @@ function notifyBgmStateChange(){
 const BGM_GROUPS = {
   title:    ['title_overture'],
   battle:   ['battle1','battle2'],
+  wind_god: ['boss_windgod'],
   finale_boss:['boss_finale'],
+  victory:  ['victory1'],
   duel:     ['duel1','duel2'],
   cheerful: ['cheerful1','cheerful2'],
   academy:  ['academy1','academy2'],
@@ -288,6 +296,7 @@ const BGM_GROUPS = {
   sacred:   ['sacred1','sacred2'],
   sad:      ['sad1'],
   emotional:['emotional1'],
+  journey:  ['northern_frontier'],
   flight:   ['starry_flight'],
   comedy_fast:['comedy_fast'],
   comedy_medium:['comedy_medium'],
@@ -319,6 +328,7 @@ function bgmFadeTo(el, target, ms, done){
   }
   const startVol = Number.isFinite(el.volume) ? el.volume : 0;
   const t0 = Date.now();
+  const stepMs = dur <= 120 ? 20 : 40;
   el._fadeIv = setInterval(()=>{
     const p = Math.min(1, Math.max(0, (Date.now() - t0) / dur));
     const nextVol = p >= 1 ? dst : Math.max(0, Math.min(1, startVol + (dst - startVol) * p));
@@ -327,7 +337,7 @@ function bgmFadeTo(el, target, ms, done){
       bgmCancelFade(el);
       if(done) done();
     }
-  }, 40);
+  }, stepMs);
 }
 function bgmResolveTypeForKey(key){
   if(!key) return null;
@@ -340,6 +350,9 @@ function bgmResolveTypeForKey(key){
 function bgmStop(fade=true, opts){
   opts = opts || {};
   const preserveContext = !!opts.preserveContext;
+  const fadeOutMs = (typeof opts.fadeOutMs === 'number' && Number.isFinite(opts.fadeOutMs))
+    ? Math.max(0, opts.fadeOutMs)
+    : 500;
   const seq = ++_bgmSeq;
   const el = bgmEl || (typeof document !== 'undefined' ? document.getElementById('bgm-audio') : null);
   const prevKey = bgmKey;
@@ -355,10 +368,10 @@ function bgmStop(fade=true, opts){
     try{ el.pause(); }catch(e){}
     notifyBgmStateChange();
   };
-  if(fade && !el.paused && el.volume > 0.005){
+  if(fade && fadeOutMs > 0 && !el.paused && el.volume > 0.005){
     bgmCancelFade(el);
     try{ el.volume = Math.min(el.volume, bgmEffectiveVolume(prevKey)); }catch(e){}
-    bgmFadeTo(el, 0, 500, kill);
+    bgmFadeTo(el, 0, fadeOutMs, kill);
   } else {
     kill();
   }
@@ -425,6 +438,14 @@ function bgmGetState(){
 function bgmPlay(key, opts){
   opts = opts || {};
   const fade = opts.fade !== undefined ? !!opts.fade : true;
+  const fadeOutMs = (typeof opts.fadeOutMs === 'number' && Number.isFinite(opts.fadeOutMs))
+    ? Math.max(0, opts.fadeOutMs)
+    : 550;
+  const fadeInMs = (typeof opts.fadeInMs === 'number' && Number.isFinite(opts.fadeInMs))
+    ? Math.max(0, opts.fadeInMs)
+    : 600;
+  const shouldFadeOut = fade && fadeOutMs > 0;
+  const shouldFadeIn = fade && fadeInMs > 0;
   if(!key) return;
   const file = BGM_FILES[key]; if(!file) return;
   const resolvedType = opts.type !== undefined ? opts.type : bgmResolveTypeForKey(key);
@@ -451,7 +472,7 @@ function bgmPlay(key, opts){
     const targetVol = bgmEffectiveVolume(key);
     try { el.src = encodeAudioPath(file); el.loop = true; } catch(e){ return; } // 逐段 encodeURIComponent 编码空格与 &
     bgmEl = el;
-    if(fade && targetVol > 0){
+    if(shouldFadeIn && targetVol > 0){
       try { el.volume = 0; } catch(e){}
     } else {
       try { el.volume = targetVol; } catch(e){}
@@ -474,19 +495,19 @@ function bgmPlay(key, opts){
       bgmPendingPlay = false;
       notifyBgmStateChange();
     }
-    // 淡入；非淡入或静音状态直接锁定目标音量（修复音乐室淡出后静音播放与静音泄漏）
-    if(fade && targetVol > 0){
-      bgmFadeTo(el, targetVol, 600);
+    // 淡入；非淡入、fadeInMs===0 或静音状态直接以目标有效音量瞬发起播（修复音乐室淡出后静音播放与静音泄漏）
+    if(shouldFadeIn && targetVol > 0){
+      bgmFadeTo(el, targetVol, fadeInMs);
     } else {
       bgmCancelFade(el);
       try { el.volume = targetVol; } catch(e){}
     }
     notifyBgmStateChange();
   };
-  if(prev && prev.src && fade && !wasBlocked){
+  if(prev && prev.src && shouldFadeOut && !wasBlocked){
     bgmCancelFade(prev);
     try{ prev.volume = Math.min(prev.volume, bgmEffectiveVolume(prevKey)); }catch(e){}
-    bgmFadeTo(prev, 0, 550, ()=>{
+    bgmFadeTo(prev, 0, fadeOutMs, ()=>{
       if(_bgmSeq === seq && bgmKey === key){
         startNew();
       } else if(!bgmKey){
@@ -588,7 +609,7 @@ const BG_CLASS_TYPE = {
   'bg-img-ice-classroom':'academy', 'bg-img-library':'academy', 'bg-img-cafeteria':'academy',
   'bg-img-clocktower':'academy', 'bg-img-flowerhouse':'relax', 'bg-img-memorial':'emotional',
   'bg-img-auditorium':'sacred', 'bg-img-forest':'sad', 'bg-img-jikan':'peaceful',
-  'bg-img-uni':'academy', 'bg-img-plain':'emotional',
+  'bg-img-uni':'academy', 'bg-img-plain':'journey',
   'bg-img-crosswalk-accident':'sad',
   'bg-img-classroom-locust':'upset',
   'bg-img-ice-canyon':'upset',
@@ -596,7 +617,7 @@ const BG_CLASS_TYPE = {
   'bg-img-north-forest':'sad',
   'bg-img-glow-sheep-hill':'relax',
   'bg-img-northwind-tavern':'relax',
-  'bg-img-border-snowroad':'sad',
+  'bg-img-border-snowroad':'journey',
   'bg-img-night':'relax',
 };
 // 依据 bg 类 / phase 决定情境【类型】（而非固定单曲）。兜底 peaceful，保证全覆盖。
@@ -612,7 +633,7 @@ function bgmTypeForBg(cls, phase, loc){
   if(phase==='journey' || phase==='finale') return 'sacred';
   return 'peaceful';
 }
-// 按类型播放：同类型不打断；支持可选 opts.key 锁定首播曲；切换类型时在同组曲目间顺序轮换
+// 按类型播放：同类型不打断；支持可选 opts.key 锁定首播曲与自定义 fadeOutMs/fadeInMs；切换类型时在同组曲目间顺序轮换
 function bgmPlayType(type, opts){
   opts = opts || {};
   const force = !!opts.force;
@@ -620,6 +641,9 @@ function bgmPlayType(type, opts){
   const preferKey = (opts.key && BGM_FILES[opts.key]) ? opts.key : null;
   const group = BGM_GROUPS[type];
   if(!group || !group.length) return;
+  const playOpts = { fade, type };
+  if(opts.fadeOutMs !== undefined) playOpts.fadeOutMs = opts.fadeOutMs;
+  if(opts.fadeInMs !== undefined) playOpts.fadeInMs = opts.fadeInMs;
   if(preferKey){
     if(!force && bgmKey === preferKey && bgmEl){
       bgmCurType = type;
@@ -628,14 +652,14 @@ function bgmPlayType(type, opts){
     const ki = group.indexOf(preferKey);
     if(ki >= 0) bgmGroupIdx[type] = ki;
     bgmCurType = type;
-    bgmPlay(preferKey, { fade, type });
+    bgmPlay(preferKey, playOpts);
     return;
   }
   if(!force && bgmCurType === type && bgmEl) return; // 同类型继续，不打断（不看 paused，避免同类型地点误切换曲）
   const idx = ((bgmGroupIdx[type] ?? -1) + 1) % group.length;
   bgmGroupIdx[type] = idx;
   bgmCurType = type;
-  bgmPlay(group[idx], { fade, type });
+  bgmPlay(group[idx], playOpts);
 }
 // 场景开始：记录场景 bgm 并强制播放，贯穿整个场景
 function bgmSceneStart(type){
@@ -725,6 +749,16 @@ function bgmRestoreContext(){
       const curB = (typeof window !== 'undefined' && window.CombatEngine && typeof window.CombatEngine.getState === 'function')
         ? window.CombatEngine.getState()
         : null;
+      if(curB && curB.over && !curB.won){
+        if(bgmKey || bgmCurType) bgmStop(true, { preserveContext: true, fadeOutMs: 220 });
+        return;
+      }
+      if(curB && curB.over && curB.won){
+        const winKey = (curB.bgmKey && BGM_FILES[curB.bgmKey]) ? curB.bgmKey : 'victory1';
+        const winType = (curB.bgmType && BGM_GROUPS[curB.bgmType]) ? curB.bgmType : (bgmResolveTypeForKey(winKey) || 'victory');
+        bgmPlayType(winType, { force: false, fade: true, key: winKey });
+        return;
+      }
       const bKey = (curB && curB.bgmKey && BGM_FILES[curB.bgmKey]) ? curB.bgmKey : null;
       const rawType = (curB && curB.bgmType) || (bKey ? bgmResolveTypeForKey(bKey) : null) || 'battle';
       const bType = BGM_GROUPS[rawType] ? rawType : ((bKey && bgmResolveTypeForKey(bKey)) || 'battle');
@@ -8564,6 +8598,7 @@ if(typeof window !== 'undefined'){
   window.bgmIsActuallyPlaying = typeof bgmIsActuallyPlaying !== 'undefined' ? bgmIsActuallyPlaying : ()=>false;
   window.bgmGetState = typeof bgmGetState !== 'undefined' ? bgmGetState : ()=>({});
   window.bgmSetTitleUserPaused = function(v){ bgmUserPausedTitle = !!v; notifyBgmStateChange(); };
+  window.encodeAudioPath = typeof encodeAudioPath !== 'undefined' ? encodeAudioPath : (f => String(f || ''));
   window.BGM_FILES = typeof BGM_FILES !== 'undefined' ? BGM_FILES : {};
   window.BGM_GROUPS = typeof BGM_GROUPS !== 'undefined' ? BGM_GROUPS : {};
   window.BGM_TRACK_GAIN = typeof BGM_TRACK_GAIN !== 'undefined' ? BGM_TRACK_GAIN : {};

@@ -57,9 +57,9 @@
 
 ## 五、音频与 BGM 规范
 
-- **全覆盖配置与双层命名铁律**：全曲库共注册 24 首 MP3（`BGM_FILES`），主界面现已由音乐总管升级并永久固定为 `Music/Title - Main Theme.mp3`（`title_overture` · `雪晶序曲`）；每个 `SCENES` 须显式配置 `bgm` 贴合剧情情绪，新增背景类同步 `BG_CLASS_TYPE`，所引用 `.mp3` 须真实存在于 `Music/`；全部 24 首曲目响度通过 `game.js` 中 `BGM_TRACK_GAIN` 平衡表无损补偿至约 `-14.5 LUFS`（兼容 `VoiceEngine` Ducking 且不改写 `bgmGetVolume()`）。全曲库采用**双层命名规则**：磁盘 `Music/*.mp3` 统一使用直白英文情绪/功能名便于代码与总管识别，游戏 UI（标题页与音乐室）向玩家展示优雅西幻文艺中文曲名并附清晰场景副标。
-- **【音乐资产保护说明】**：批次 1 已验收的新版 Suno 纯西幻曲目资产包含 `Music/Title - Main Theme.mp3`（主界面 `title_overture` · `雪晶序曲`）、`Music/Sacred 1.mp3`、`Music/Sacred 2.mp3`、`Music/Peaceful & Relaxing 1.mp3`、`Music/Peaceful & Relaxing 2.mp3`、`Music/Emotional 1.mp3`、`Music/Romantic.mp3`、`Music/Melancholic & Sad 1.mp3`；**批次 2 已验收的 9 首纯西幻正式资产**包含 `Music/Peaceful 1.mp3`、`Music/Peaceful 2.mp3`、`Music/Cheerful 1.mp3`、`Music/Cheerful 2.mp3`、`Music/Comical_medium-speed.mp3`、`Music/Upset.mp3`、`Music/Suspense - Investigation.mp3`、`Music/Battle - Sparring Duel.mp3`、`Music/Battle - Arena Lobby.mp3`；**批次 3 已验收的 3 首纯西幻正式资产**包含 `Music/Battle & Tension 2.mp3`（强敌二阶段管风琴合唱曲，响度增益 `1.00`）、`Music/Story - Starry Flight.mp3`（`starry_flight` · `星河乘风`，增益 `0.92`）、`Music/Battle - Dragon Finale.mp3`（`boss_finale` · `破冰终章`，增益 `0.95`）。其他总管**严禁擅自将主界面曲回退为 `Comical_medium-speed.mp3` 或旧版曲目、严禁覆盖、删改或回退 `Music/` 下任何已验收曲目**；所有落选候选曲统一归档在 `archive/music-candidates` 分支，严禁混入 `main`。
-- **全曲库 24 首双层对照表（中文文艺名 ↔ 英文功能文件名 ↔ 情绪/用途）**：
+- **全覆盖配置与双层命名铁律**：全曲库共注册 27 首 MP3（`BGM_FILES`），主界面现已由音乐总管升级并永久固定为 `Music/Title - Main Theme.mp3`（`title_overture` · `雪晶序曲`）；每个 `SCENES` 须显式配置 `bgm` 贴合剧情情绪，新增背景类同步 `BG_CLASS_TYPE`，所引用 `.mp3` 须真实存在于 `Music/`；全部 27 首曲目响度通过 `game.js` 中 `BGM_TRACK_GAIN` 平衡表无损补偿至约 `-14.5 LUFS`（兼容 `VoiceEngine` Ducking 且不改写 `bgmGetVolume()`）。全曲库采用**双层命名规则**：磁盘 `Music/*.mp3` 统一使用直白英文情绪/功能名便于代码与总管识别，游戏 UI（标题页与音乐室）向玩家展示优雅西幻文艺中文曲名并附清晰场景副标。
+- **【音乐资产保护说明】**：批次 1 已验收的新版 Suno 纯西幻曲目资产包含 `Music/Title - Main Theme.mp3`（主界面 `title_overture` · `雪晶序曲`）、`Music/Sacred 1.mp3`、`Music/Sacred 2.mp3`、`Music/Peaceful & Relaxing 1.mp3`、`Music/Peaceful & Relaxing 2.mp3`、`Music/Emotional 1.mp3`、`Music/Romantic.mp3`、`Music/Melancholic & Sad 1.mp3`；**批次 2 已验收的 9 首纯西幻正式资产**包含 `Music/Peaceful 1.mp3`、`Music/Peaceful 2.mp3`、`Music/Cheerful 1.mp3`、`Music/Cheerful 2.mp3`、`Music/Comical_medium-speed.mp3`、`Music/Upset.mp3`、`Music/Suspense - Investigation.mp3`、`Music/Battle - Sparring Duel.mp3`、`Music/Battle - Arena Lobby.mp3`；**批次 3 已验收的 3 首纯西幻正式资产**包含 `Music/Battle & Tension 2.mp3`（强敌二阶段管风琴合唱曲，响度增益 `1.00`）、`Music/Story - Starry Flight.mp3`（`starry_flight` · `星河乘风`，增益 `0.92`）、`Music/Battle - Dragon Finale.mp3`（`boss_finale` · `破冰终章`，增益 `0.95`）；**批次 4 已验收的 3 首纯西幻正式资产**包含 `Music/Battle - Wind God Trial.mp3`（`boss_windgod` · `风神试剑`，增益 `1.00`）、`Music/Travel - Northern Frontier.mp3`（`northern_frontier` · `北境远行`，增益 `0.90`）、`Music/Battle - Victory March.mp3`（`victory1` · `凯旋乐章`，增益 `1.00`）。其他总管**严禁擅自将主界面曲回退为 `Comical_medium-speed.mp3` 或旧版曲目、严禁覆盖、删改或回退 `Music/` 下任何已验收曲目**；所有落选候选曲统一归档在 `archive/music-candidates` 分支，严禁混入 `main`。
+- **全曲库 27 首双层对照表（中文文艺名 ↔ 英文功能文件名 ↔ 情绪/用途）**：
   - `title_overture`：`雪晶序曲` ↔ `Music/Title - Main Theme.mp3`（主界面 · 奇幻开篇）
   - `peaceful1`：`晨光圆舞 I` ↔ `Music/Peaceful 1.mp3`（日常平静 · 第一章锁播/宅邸清晨日常）
   - `peaceful2`：`公爵午后 II` ↔ `Music/Peaceful 2.mp3`（日常平静 · 宅邸午后/霁馆烟火）
@@ -73,6 +73,7 @@
   - `sacred2`：`冰晶宫殿 II` ↔ `Music/Sacred 2.mp3`（庄严神圣 · 礼拜堂/觉醒/七座山）
   - `emotional1`：`霜月挽歌` ↔ `Music/Emotional 1.mp3`（温柔催泪 · 离巢告别/冰融/双轨终幕）
   - `romantic`：`炉火余韵` ↔ `Music/Romantic.mp3`（深情温暖 · 海与贝壳/黄昏谈心/求婚）
+  - `northern_frontier`：`北境远行` ↔ `Music/Travel - Northern Frontier.mp3`（北境远行 · 北风堡/赫兰雪原与冻土孤旅）
   - `starry_flight`：`星河乘风` ↔ `Music/Story - Starry Flight.mp3`（星夜自由 · 萤尾羊星河/乘风飞翔）
   - `sad1`：`寒夜哀歌` ↔ `Music/Melancholic & Sad 1.mp3`（沉痛悲伤 · 政变火夜/悲剧哀悼）
   - `suspense1`：`冰晶复调` ↔ `Music/Suspense - Investigation.mp3`（冷静悬疑 · 血案推理/寒夜推演盘）
@@ -83,13 +84,18 @@
   - `duel2`：`演武晴锋 II` ↔ `Music/Battle - Arena Lobby.mp3`（切磋备战 · 演武大厅/贵族试手）
   - `battle1`：`锋刃交错 I` ↔ `Music/Battle & Tension 1.mp3`（紧张实战 · 魔兽遭遇/血案死斗/突围战）
   - `battle2`：`霜原决意 II` ↔ `Music/Battle & Tension 2.mp3`（高潮死斗 · 强敌二阶段/宿命死斗）
+  - `boss_windgod`：`风神试剑` ↔ `Music/Battle - Wind God Trial.mp3`（列强试炼 · 风神一阶段专属）
   - `boss_finale`：`破冰终章` ↔ `Music/Battle - Dragon Finale.mp3`（终章史诗 · 风神二阶段/终章斩龙史诗）
-- **战斗分级、强敌升调与覆层配乐**：
-  - 9 幕 `STAGE_CONFIGS` 显式配置 `bgmType`：学院比试/轻快切磋 4 幕（`beatrice_11`、`alice_9`、`aino_sparring`、`noelle_14`）及全角色梦境虚拟决斗 `runDuel` 统一走 `duel`（优先 `duel1` `Music/Battle - Sparring Duel.mp3`，零重金属）；血案死斗/魔兽狩猎/火廊突围/列强试剑 5 幕（`rowan_graveyard`、`north_forest_hunt`、`hulan_beast_tide`、`turning_point_corridor`、`wind_god_eye`）保留 `battle`（剧情前文已播 `battle` 守卫保持不变）。
-  - **强敌分层升调（`bgmShiftBattlePhase2(preferKey)`）**：Act 07 `hulan_beast_tide` 第二波（Wave 2）4 阶领主「霜渊裂地兽」降临自动触发 `bgmShiftBattlePhase2('battle2')`；Act 08 `turning_point_corridor` 东翼封锁官等常规 Boss 半血二阶段切 `battle2`（新版管风琴合唱曲）；Act 09 `wind_god_eye`（配置 `phase2BgmKey: 'boss_finale'`）风神·岚半血风暴眼全开二阶段自动切入 `boss_finale`（`Music/Battle - Dragon Finale.mp3`）；战斗状态同步维护 `bgmType` / `bgmKey`，确保音乐室试听返回后 `bgmRestoreContext()` 精准复原当前战乐。
-  - **剧情高潮飞翔切曲**：《萤尾羊》与《风暴眼》高潮乘风飞翔桥段切入 `flight`（`starry_flight` · `Music/Story - Starry Flight.mp3`）。
+  - `victory1`：`凯旋乐章` ↔ `Music/Battle - Victory March.mp3`（凯旋捷音 · 战斗胜利结算与演武凯旋）
+- **战斗分级、强敌升调、胜利/战败播法与覆层配乐**：
+  - 9 幕 `STAGE_CONFIGS` 显式配置 `bgmType`：学院比试/轻快切磋 4 幕（`beatrice_11`、`alice_9`、`aino_sparring`、`noelle_14`）及全角色梦境虚拟决斗 `runDuel` 统一走 `duel`（优先 `duel1` `Music/Battle - Sparring Duel.mp3`，零重金属）；血案死斗/魔兽狩猎/火廊突围 4 幕（`rowan_graveyard`、`north_forest_hunt`、`hulan_beast_tide`、`turning_point_corridor`）保留 `battle`（剧情前文已播 `battle` 守卫保持不变）；Act 09 `wind_god_eye` 一阶段专属配置 `bgmType: 'wind_god'`、`bgmKey: 'boss_windgod'`（《风神试剑》）。
+  - **强敌分层升调（`bgmShiftBattlePhase2(preferKey)`）**：Act 07 `hulan_beast_tide` 第二波（Wave 2）4 阶领主「霜渊裂地兽」降临自动触发 `bgmShiftBattlePhase2('battle2')`；Act 08 `turning_point_corridor` 东翼封锁官等常规 Boss 半血二阶段切 `battle2`（新版管风琴合唱曲）；Act 09 `wind_god_eye` 一阶段播放 `boss_windgod`（《风神试剑》），半血（55%）风暴眼全开二阶段自动切入 `phase2BgmKey: 'boss_finale'`（`Music/Battle - Dragon Finale.mp3`《破冰终章》）；战斗状态同步维护 `bgmType` / `bgmKey`，确保音乐室试听返回后 `bgmRestoreContext()` 精准复原当前战乐。
+  - **战斗胜利/战败结算播法与上下文保护**：
+    - **胜利三段式黄金声场**：进战时静默预热 `Music/Battle - Victory March.mp3` 缓存；胜利弹窗瞬间（`t = 0ms`）以 `fadeOutMs: 100`、`fadeInMs: 0` 瞬切至 `victory` / `victory1`（100ms 收战曲、0ms 全音量起号角），同步 `b.bgmType = 'victory'`、`b.bgmKey = 'victory1'`；非 S 胜用短促 `safeSfx('ok')` 避免与铜管号角冲突（S 胜保留 `grade_s`）；常规胜利经 **`1350ms`** 黄金号角独占窗后经可取消定时器 `_victoryVoiceTimer` 触发胜利语音（在 `exitBattle` / `startStage` / `startCustomOrStageBattle` / `startFromBossWaveSnapshot` 入口统一清理防串音；认输语音播映期仍走 `onEndedOnce`）。
+    - **战败静音收束**：战败保留 `safeSfx('bad')` 与 `defeat` 语音，同时调用 `bgmStop(true, { preserveContext: true, fadeOutMs: 450 })` 平滑收静并清空 `b.bgmType = null`、`b.bgmKey = null`；`bgmRestoreContext()` 在战败结算弹窗期间保持静音不拉回战斗曲、胜利结算弹窗期间精准恢复 `victory1`，退出战斗后按保留上下文完好恢复外部 BGM。
+  - **剧情高潮飞翔与北境远行切曲**：《萤尾羊》与《风暴眼》高潮乘风飞翔桥段切入 `flight`（`starry_flight` · `Music/Story - Starry Flight.mp3`）；第三卷北上冻土官道/雪原（`bg-img-border-snowroad` / `bg-img-plain`、`s_jikan_north_vow` 辞行踏入北境官道等）切入 `journey`（`northern_frontier` · `Music/Travel - Northern Frontier.mp3`）。
   - 演武大厅（`bgmEnterArenaHub`）播放 `duel` / `duel2`（`Music/Battle - Arena Lobby.mp3`），进切磋关时流畅切换至 `duel1`；寒夜冰晶推演盘（`deduction` overlay）播放 `suspense`（`Music/Suspense - Investigation.mp3`）；地下酒窖（`bg-img-cellar`）映射 `upset`（`Music/Upset.mp3`）。
-- **章节连贯性**：普通日常/成长对话保持单一连贯 BGM（第一章 `s_start` 永久锁单一 `peaceful` → `Music/Peaceful 1.mp3`，零中途切曲），仅重大幕间转折、暗流推演揭示、高潮乘风飞翔或突袭战斗高潮处切曲。
+- **章节连贯性**：普通日常/成长对话保持单一连贯 BGM（第一章 `s_start` 永久锁单一 `peaceful` → `Music/Peaceful 1.mp3`，零中途切曲），仅重大幕间转折、暗流推演揭示、北境启程、高潮乘风飞翔或突袭战斗高潮处切曲。
 
 ## 六、原著基准与叙事 / 舞台 / 面板规范
 

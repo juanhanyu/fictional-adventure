@@ -1697,7 +1697,7 @@
         duoLine(['sylvia', '渔', 'smile'], ['jilan', '霁岚', 'normal'], 'sylvia', '嗯，记下了。这枚紫蝶剑穗，我会护得干干净净。'),
         { text: '次日破晓，薄霜还覆在灰瓦檐角。我背起行囊推开房门，门槛边的竹篮里端正摞着四张温热的糖面饼。', portraits: [] },
         { text: '油纸包得严实，这回连边角都没焦。二楼木窗后闪过一抹亮紫色的蝴蝶发饰，又飞快缩回窗棂内侧。', portraits: [] },
-        { text: '我将糖面饼贴身收好，按住腰间乌木铁剑，转身踏上通往苏秦北境的碎石官道。', loc: 'road', bg: 'bg-img-plain bg-plain', portraits: [] },
+        { text: '我将糖面饼贴身收好，按住腰间乌木铁剑，转身踏上通往苏秦北境的碎石官道。', loc: 'road', bg: 'bg-img-plain bg-plain', bgm: 'journey', portraits: [] },
         { text: '北行十余日，空气干冷如刮骨薄刃。地平线尽头浮现出苏秦与赫兰交界的边塞重镇——北风堡。', portraits: [{ id: 'sylvia', slot: 'center', emo: 'serious', active: true }] },
         { text: '结满黑霜的石砌关墙下挤满受阻的车马，几名披着巴依纹章斗篷的随军药师正围着十几只木箱焦急踱步。', portraits: [{ id: 'sylvia', slot: 'center', emo: 'serious', active: false }] },
         {

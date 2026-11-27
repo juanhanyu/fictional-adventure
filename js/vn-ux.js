@@ -2888,13 +2888,16 @@
     sacred: '星霜圣域 · Sacred',
     emotional: '深情余韵 · Emotional',
     romantic: '炉火余韵 · Romantic',
+    journey: '北境远行 · Northern Frontier',
     flight: '星夜自由 · Starry Flight',
     sad: '寒夜离歌 · Melancholic',
     suspense: '冰晶推演 · Suspense',
     upset: '暗潮骤起 · Upset',
     duel: '学院切磋 · Sparring Duel',
     battle: '交锋决意 · Battle & Tension',
+    wind_god: '列强试炼 · God-Tier Trial',
     finale_boss: '终章史诗 · Dragon Finale',
+    victory: '凯旋捷音 · Victory March',
     comedy_medium: '轻快趣景 · Comical (中速)',
     comedy_fast: '喧闹追逐 · Comical (疾速)'
   };
@@ -2914,6 +2917,7 @@
     sacred2: '冰晶宫殿 II',         // Music/Sacred 2.mp3
     emotional1: '霜月挽歌',         // Music/Emotional 1.mp3
     romantic: '炉火余韵',           // Music/Romantic.mp3
+    northern_frontier: '北境远行',  // Music/Travel - Northern Frontier.mp3
     starry_flight: '星河乘风',      // Music/Story - Starry Flight.mp3
     sad1: '寒夜哀歌',               // Music/Melancholic & Sad 1.mp3
     suspense1: '冰晶复调',          // Music/Suspense - Investigation.mp3
@@ -2924,7 +2928,9 @@
     duel2: '演武晴锋 II',           // Music/Battle - Arena Lobby.mp3
     battle1: '锋刃交错 I',          // Music/Battle & Tension 1.mp3
     battle2: '霜原决意 II',         // Music/Battle & Tension 2.mp3
-    boss_finale: '破冰终章'         // Music/Battle - Dragon Finale.mp3
+    boss_windgod: '风神试剑',       // Music/Battle - Wind God Trial.mp3
+    boss_finale: '破冰终章',        // Music/Battle - Dragon Finale.mp3
+    victory1: '凯旋乐章'            // Music/Battle - Victory March.mp3
   };
 
   // 音乐室副标题：直白标注适用场景与情绪用途
@@ -2942,6 +2948,7 @@
     sacred2: '礼拜堂 · 觉醒 · 七座山',
     emotional1: '离巢告别 · 冰融 · 双轨终幕',
     romantic: '海与贝壳 · 黄昏谈心 · 求婚',
+    northern_frontier: '北风堡 · 赫兰雪原与冻土孤旅',
     starry_flight: '萤尾羊星河 · 乘风飞翔',
     sad1: '政变火夜 · 悲剧哀悼',
     suspense1: '血案推理 · 寒夜推演盘',
@@ -2952,7 +2959,9 @@
     duel2: '演武大厅 · 贵族试手',
     battle1: '魔兽遭遇 · 血案死斗 · 突围战',
     battle2: '强敌二阶段 · 宿命死斗',
-    boss_finale: '风神二阶段 · 终章斩龙史诗'
+    boss_windgod: '列强试炼 · 风神一阶段专属',
+    boss_finale: '风神二阶段 · 终章斩龙史诗',
+    victory1: '战斗胜利 · 战术制胜与演武凯旋'
   };
 
   var BGM_MOOD_SCENE_FALLBACK = {
@@ -2964,13 +2973,16 @@
     sacred: '大礼堂与礼拜堂 · 庄严仪典',
     emotional: '离巢告别 · 冰融与深情终幕',
     romantic: '海与贝壳 · 黄昏谈心与告白',
+    journey: '北风堡 · 赫兰雪原与冻土孤旅',
     flight: '萤尾羊星河 · 乘风飞翔',
     sad: '政变火夜 · 寒夜悲剧哀悼',
     suspense: '血案推理 · 寒夜推演盘',
     upset: '暗潮对峙 · 地下酒窖与峡谷危机',
     duel: '学院比试 · 演武大厅轻快切磋',
     battle: '生死实战 · 突围与强敌死斗',
+    wind_god: '列强试炼 · 风神一阶段专属',
     finale_boss: '风神二阶段 · 终章斩龙史诗',
+    victory: '战斗胜利 · 战术制胜与演武凯旋',
     comedy_medium: '微服私访 · 轻快诙谐日常',
     comedy_fast: '高速搞笑 · 追逐彩蛋'
   };

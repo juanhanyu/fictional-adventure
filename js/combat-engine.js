@@ -192,6 +192,9 @@
   let _assistModeMem = 'standard';
   let _autoEndTurnMem = true;
   let _autoEndTurnTimer = null;
+  const VICTORY_VOICE_DELAY_MS = 1350;
+  let _victoryVoiceTimer = null;
+  let _victoryBgmPrewarmed = false;
 
   function normalizeAssistMode(val) {
     const s = String(val == null ? '' : val).toLowerCase().trim();
@@ -225,6 +228,13 @@
     if (_autoEndTurnTimer != null) {
       clearTimeout(_autoEndTurnTimer);
       _autoEndTurnTimer = null;
+    }
+  }
+
+  function cancelVictoryVoiceTimer() {
+    if (_victoryVoiceTimer != null) {
+      clearTimeout(_victoryVoiceTimer);
+      _victoryVoiceTimer = null;
     }
   }
 
@@ -1852,8 +1862,8 @@
       crestKind: 'wind_god',
       emoji: '🌪️',
       bg: 'bg-img-training bg-battle',
-      bgmType: 'battle',
-      bgmKey: 'battle1',
+      bgmType: 'wind_god',
+      bgmKey: 'boss_windgod',
       phase2BgmKey: 'boss_finale',
       mainline: false,
       arenaTestOnly: true,
@@ -8450,6 +8460,7 @@
 
   function finishBattle(b, won, reason) {
     if (b.over) return;
+    cancelVictoryVoiceTimer();
     b.over = true;
     b.won = !!won;
     b.endReason = reason || '';
@@ -8458,7 +8469,14 @@
 
     if (won) {
       saveArenaRecord(b.id, b.grade, b.turn, !!b.casualMode);
-      if (!b.headless) safeSfx(b.grade === 'S' ? 'grade_s' : 'level');
+      b.bgmType = 'victory';
+      b.bgmKey = 'victory1';
+      if (!b.headless) {
+        if (typeof global.bgmPlayType === 'function') {
+          global.bgmPlayType('victory', { key: 'victory1', force: true, fade: true, fadeOutMs: 100, fadeInMs: 0 });
+        }
+        safeSfx(b.grade === 'S' ? 'grade_s' : 'ok');
+      }
       const winCue = b.grade === 'S' ? 'victory_s' : 'victory';
       const isSurrenderWin = reason === 'three_hits' || !!(b.metrics && b.metrics.manaFizzleWin);
       const veWin = (typeof window !== 'undefined' && window.VoiceEngine) ? window.VoiceEngine : null;
@@ -8467,13 +8485,29 @@
         && (activeVid === 'combat__boss_aino_surrender' || activeVid === 'combat__boss_alice_surrender');
       if (!b.headless && surrenderPlaying && typeof veWin.onEndedOnce === 'function') {
         veWin.onEndedOnce(() => {
-          if (activeBattle === b) emitCombatVoiceCue(b, winCue, { grade: b.grade, stageId: b.id, charId: 'sylvia' });
+          if (activeBattle === b && b.over && b.won) {
+            emitCombatVoiceCue(b, winCue, { grade: b.grade, stageId: b.id, charId: 'sylvia' });
+          }
         });
+      } else if (!b.headless && !isJsdomEnv()) {
+        _victoryVoiceTimer = setTimeout(() => {
+          _victoryVoiceTimer = null;
+          if (activeBattle === b && b.over && b.won) {
+            emitCombatVoiceCue(b, winCue, { grade: b.grade, stageId: b.id, charId: 'sylvia' });
+          }
+        }, VICTORY_VOICE_DELAY_MS);
       } else {
         emitCombatVoiceCue(b, winCue, { grade: b.grade, stageId: b.id, charId: 'sylvia' });
       }
     } else {
-      if (!b.headless) safeSfx('bad');
+      b.bgmType = null;
+      b.bgmKey = null;
+      if (!b.headless) {
+        if (typeof global.bgmStop === 'function') {
+          global.bgmStop(true, { preserveContext: true, fadeOutMs: 450 });
+        }
+        safeSfx('bad');
+      }
       emitCombatVoiceCue(b, 'defeat', { reason: b.endReason, stageId: b.id, charId: 'sylvia' });
     }
     applyStageRewardsToGame(b);
@@ -10118,6 +10152,7 @@
   function exitBattle(won, opts) {
     opts = opts || {};
     const b = activeBattle;
+    cancelVictoryVoiceTimer();
     cancelTimingRing('exit');
     _actionInProgress = false;
     if (typeof window !== 'undefined' && window.VoiceEngine && typeof window.VoiceEngine.stop === 'function') {
@@ -10457,8 +10492,30 @@
     bs.classList.remove('palace-timestop', 'wand-refract', 'hit-shake', 'heavy-shake', 'hidden');
   }
 
+  function prewarmVictoryBgm() {
+    if (_victoryBgmPrewarmed || isJsdomEnv()) return;
+    if (typeof fetch !== 'function') return;
+    try {
+      const proto = (typeof window !== 'undefined' && window.location && window.location.protocol) || '';
+      if (proto && proto !== 'http:' && proto !== 'https:' && proto !== 'tauri:' && proto !== 'asset:') return;
+    } catch (e) {}
+    const files = (typeof global !== 'undefined' && global.BGM_FILES) || null;
+    const rawPath = (files && files.victory1) || 'Music/Battle - Victory March.mp3';
+    const url = (typeof global.encodeAudioPath === 'function')
+      ? global.encodeAudioPath(rawPath)
+      : String(rawPath).split('/').map(seg => encodeURIComponent(seg)).join('/');
+    _victoryBgmPrewarmed = true;
+    try {
+      const req = fetch(url, { cache: 'force-cache' });
+      if (req && typeof req.then === 'function') {
+        req.then(res => (res && res.ok && typeof res.arrayBuffer === 'function' ? res.arrayBuffer() : null)).catch(() => {});
+      }
+    } catch (e) {}
+  }
+
   function ensureBattleBgmOnStart(bgmType, preferKey, b) {
     if (typeof global.bgmUnlock === 'function') global.bgmUnlock();
+    prewarmVictoryBgm();
     const targetType = bgmType || 'battle';
     const targetKey = preferKey || (targetType === 'duel' ? 'duel1' : null);
     const st = (typeof global.bgmGetState === 'function') ? global.bgmGetState() : null;
@@ -10509,6 +10566,7 @@
     const sc = STAGE_CONFIGS[stageId];
     if (!sc) return null;
 
+    cancelVictoryVoiceTimer();
     cancelTimingRing('restart');
     _actionInProgress = false;
     const b = createBattleState(sc, opts);
@@ -10557,6 +10615,7 @@
     const targetWave = Number(snap.waveIdx) || 1;
     if (!sc.waves || !sc.waves[targetWave]) return null;
 
+    cancelVictoryVoiceTimer();
     cancelTimingRing('boss_wave_retry');
     _actionInProgress = false;
 
@@ -10635,6 +10694,7 @@
 
   function startCustomOrStageBattle(cfg, done) {
     cfg = cfg || {};
+    cancelVictoryVoiceTimer();
     cancelTimingRing('restart');
     _actionInProgress = false;
     closeGlobalModalsBeforeBattle();
@@ -10833,7 +10893,7 @@
         : { actorKey: 'player', id: 'sylvia', side: 'ally', slot: playerSlot },
       battleItems: Array.isArray(b.battleItems) ? b.battleItems.slice() : [],
       battleInstanceId: b.battleInstanceId || 0,
-      bgmType: b.bgmType || (b.stageCfg && b.stageCfg.bgmType) || 'battle',
+      bgmType: b.bgmType === null ? null : (b.bgmType || (b.stageCfg && b.stageCfg.bgmType) || 'battle'),
       bgmKey: b.bgmKey || null,
       title: b.stageCfg ? b.stageCfg.title : '',
       chapter: b.stageCfg ? b.stageCfg.chapter : '',

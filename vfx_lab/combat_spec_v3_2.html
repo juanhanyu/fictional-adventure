@@ -1595,7 +1595,7 @@ table.spec-table tr.row-stage-head td {
             <span class="upg-title">取消增幅×完美共振，全档固定平直四档英文判定</span>
           </div>
           <p class="upg-body">
-            彻底移除 V3.1 残留的「高增幅 × PERFECT 叠加共振」，全站统一纯英文判定标识，施放精准修正与魔力增幅完全解耦：<strong><span class="grade-bad">BAD -15%</span> / <span class="grade-good">GOOD 0%</span> / <span class="grade-great">GREAT +8%</span> / <span class="grade-perfect">PERFECT +15%</span></strong>，多拍招式取各拍算术均值。
+            彻底移除 V3.1 残留的「高增幅 × PERFECT 叠加共振」，全站统一纯英文判定标识，施放精准修正与魔力增幅完全解耦：<strong><span class="grade-bad">BAD -10%</span> / <span class="grade-good">GOOD 0%</span> / <span class="grade-great">GREAT +8%</span> / <span class="grade-perfect">PERFECT +15%</span></strong>，多拍招式取各拍算术均值。
           </p>
           <div class="upg-metrics">
             <span><b>全站标识</b>BAD / GOOD / GREAT / PERFECT</span>
@@ -1699,7 +1699,7 @@ table.spec-table tr.row-stage-head td {
               <td><strong>施放精准奖惩</strong></td>
               <td>独立连乘 <code>1.35×</code></td>
               <td>含「增幅 × PERFECT 共振」最高 <code>+40%</code></td>
-              <td><strong>取消共振，全档固定平直：<code>BAD -15%</code>｜<code>GOOD 0%</code>｜<code>GREAT +8%</code>｜<code>PERFECT +15%</code></strong></td>
+              <td><strong>取消共振，全档固定平直：<code>BAD -10%</code>｜<code>GOOD 0%</code>｜<code>GREAT +8%</code>｜<code>PERFECT +15%</code></strong></td>
             </tr>
             <tr>
               <td><strong>魔力增幅倍率</strong></td>
@@ -1816,7 +1816,7 @@ table.spec-table tr.row-stage-head td {
                 <span class="val-readout" id="gradeRuleNote">2 拍异字母 · 缩圈 480ms</span>
               </div>
               <div class="seg-group" id="gradeSeg" role="group" aria-label="施放精准判定四档">
-                <button type="button" class="seg-btn" data-grade="BAD">BAD (-15%)</button>
+                <button type="button" class="seg-btn" data-grade="BAD">BAD (-10%)</button>
                 <button type="button" class="seg-btn active" data-grade="GOOD">GOOD (0%)</button>
                 <button type="button" class="seg-btn" data-grade="GREAT">GREAT (+8%)</button>
                 <button type="button" class="seg-btn" data-grade="PERFECT">PERFECT (+15%)</button>
@@ -2061,7 +2061,7 @@ d = defRank − atkRank
   × 防御承伤率 DefMit [ 80 / (80 + effDef) ]
 ))
 
-AddPool = max(0.35, 1.00本体 + AmpAdd(0–0.60) + RingBonus(-0.15~+0.15) + BreakAdd(+0.10) + PassiveAdd + RelicAdd)
+AddPool = max(0.35, 1.00本体 + AmpAdd(0–0.60) + RingBonus(-0.10~+0.15) + BreakAdd(+0.10) + PassiveAdd + RelicAdd)
 主线满配上限：1.00 + 0.60 + 0.15 + 0.10 + 0.02(手帕) = 1.87×  （本体恒占 53.5%–100.0%）</pre>
         <div class="formula-notes">
           <div class="formula-note-item">
@@ -2421,7 +2421,7 @@ AddPool = max(0.35, 1.00本体 + AmpAdd(0–0.60) + RingBonus(-0.15~+0.15) + Bre
               </tr>
             </thead>
             <tbody>
-              <tr><td class="ctr"><span class="grade-bad">BAD</span></td><td class="ctr mono" style="color:var(--crimson);font-weight:700;">-15%</td><td class="ctr">强提为 <strong>GOOD (0%)</strong></td><td class="ctr mono">0.0%</td></tr>
+              <tr><td class="ctr"><span class="grade-bad">BAD</span></td><td class="ctr mono" style="color:var(--crimson);font-weight:700;">-10%</td><td class="ctr">强提为 <strong>GOOD (0%)</strong></td><td class="ctr mono">0.0%</td></tr>
               <tr><td class="ctr"><span class="grade-good">GOOD</span></td><td class="ctr mono">0%</td><td class="ctr mono">0%</td><td class="ctr mono">8.0%</td></tr>
               <tr><td class="ctr"><span class="grade-great">GREAT</span></td><td class="ctr mono" style="color:var(--ice-cyan);font-weight:700;">+8%</td><td class="ctr mono">+8%</td><td class="ctr mono">18.0%</td></tr>
               <tr><td class="ctr"><span class="grade-perfect">PERFECT</span></td><td class="ctr mono" style="color:var(--gold);font-weight:700;">+15%</td><td class="ctr mono">+15%</td><td class="ctr mono">30.0%</td></tr>
@@ -2829,7 +2829,7 @@ const COMBAT_BALANCE_V32 = {
   minMpDiscountFloor: 0.60,
   manaCycleReturnRatio: 1.00, // 第 5 幕起有效 HP 魔伤 100% 等量回蓝
   grades: ['BAD', 'GOOD', 'GREAT', 'PERFECT'],
-  ringAtkBonus: { BAD: -0.15, GOOD: 0.00, GREAT: 0.08, PERFECT: 0.15 }, // 全档固定平直，零共振
+  ringAtkBonus: { BAD: -0.10, GOOD: 0.00, GREAT: 0.08, PERFECT: 0.15 }, // 全档固定平直，零共振
   blockBaseSameRank: { BAD: 0.00, GOOD: 0.08, GREAT: 0.18, PERFECT: 0.30 },
   blockRankSlope: { higher: 0.12, lower: 0.10 }, // d>=0: *(1+0.12d); d<0: *max(0, 1-0.10|d|)
   ampTiers: [
@@ -2904,7 +2904,7 @@ const SKILL_BEAT_SPEC_V32 = {
   const MIN_MP_DISCOUNT_FLOOR = 0.60;
 
   const RANK_NAMES = { 1: '初级', 2: '中级', 3: '高级', 4: '圣级', 5: '王级', 6: '帝级', 7: '神级' };
-  const RING_ATK_BONUS = { BAD: -0.15, GOOD: 0.00, GREAT: 0.08, PERFECT: 0.15 };
+  const RING_ATK_BONUS = { BAD: -0.10, GOOD: 0.00, GREAT: 0.08, PERFECT: 0.15 };
   const BLOCK_BASE = { BAD: 0.00, GOOD: 0.08, GREAT: 0.18, PERFECT: 0.30 };
   const RING_WINDOWS = [580, 530, 480, 430];
 
@@ -3288,13 +3288,13 @@ const SKILL_BEAT_SPEC_V32 = {
     document.getElementById('outPoolLabel').textContent = '总相加池 AddPool';
     document.getElementById('outPoolVal').textContent = addPool.toFixed(2) + '×';
     document.getElementById('outPoolSub').textContent =
-      effGrade === 'BAD' ? '含 BAD -15% 扣伤惩罚' : (addPool >= 1.87 ? '达到或超过主线 1.87× 上界' : '主线满配上界 1.87×');
+      effGrade === 'BAD' ? '含 BAD -10% 扣伤惩罚' : (addPool >= 1.87 ? '达到或超过主线 1.87× 上界' : '主线满配上界 1.87×');
 
     document.getElementById('outShareLabel').textContent = '技能本体占比';
     document.getElementById('outShareVal').textContent = baseSharePct.toFixed(1) + '%';
     document.getElementById('outShareSub').textContent =
       ringBonus < 0
-        ? `本体 1.00（BAD 扣 -0.15 → 净 ${addPool.toFixed(2)}×）`
+        ? `本体 1.00（BAD 扣 -0.10 → 净 ${addPool.toFixed(2)}×）`
         : `本体 1.00 / 总池 ${addPool.toFixed(2)}（外部 +${(addPool - 1).toFixed(2)}）`;
 
     // 渲染堆叠条
@@ -3317,7 +3317,7 @@ const SKILL_BEAT_SPEC_V32 = {
       }
     });
     if (ringBonus < 0) {
-      legHtml += `<span style="color:var(--crimson);font-weight:700;">▪ BAD 扣减 -15%（净池 ${addPool.toFixed(2)}×）</span>`;
+      legHtml += `<span style="color:var(--crimson);font-weight:700;">▪ BAD 扣减 -10%（净池 ${addPool.toFixed(2)}×）</span>`;
     }
     document.getElementById('stackedBar').innerHTML = barHtml;
     document.getElementById('poolLegend').innerHTML = legHtml;

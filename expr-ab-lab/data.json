@@ -1,0 +1,622 @@
+{
+  "meta": {
+    "title": "GPT vs Gemini 蒙板表情 A/B 实时点击换脸对比实验室",
+    "subject": "希尔维亚（少女） sylvia_teenage",
+    "resolution": [
+      1152,
+      1536
+    ],
+    "face_anchor_origin": {
+      "x_pct": 50.0,
+      "y_pct": 22.9
+    },
+    "normal_opaque_bbox": [
+      194,
+      77,
+      962,
+      1535
+    ],
+    "assets_total_mb": 6.35
+  },
+  "backgrounds": [
+    {
+      "id": "garden",
+      "label": "庭院日光",
+      "type": "image",
+      "src": "assets/bg/garden.webp"
+    },
+    {
+      "id": "library",
+      "label": "午后书库",
+      "type": "image",
+      "src": "assets/bg/library.webp"
+    },
+    {
+      "id": "balcony",
+      "label": "寒夜露台",
+      "type": "image",
+      "src": "assets/bg/balcony.webp"
+    },
+    {
+      "id": "white",
+      "label": "纯白审图",
+      "type": "solid",
+      "color": "#ffffff"
+    },
+    {
+      "id": "checker",
+      "label": "透明棋盘格",
+      "type": "checker"
+    }
+  ],
+  "summary": {
+    "gpt": {
+      "channel_label": "GPT 蒙板融合（codex-imggen 双账号并发）",
+      "gen_wall_sec": 113.64,
+      "gen_per_emo_avg_sec": 94.6,
+      "gen_per_emo_min_sec": 86.02,
+      "gen_per_emo_max_sec": 113.63,
+      "postprocess_total_sec": 110.42,
+      "end_to_end_sec": 224.06,
+      "concurrency_note": "双账号 6 路并发（peak=6，6/6 一次成功，1 张 2:3 触发自动补边至 3:4）",
+      "mean_outer_ncc": 0.9729,
+      "min_outer_ncc": 0.92845,
+      "max_outer_ncc": 0.98454,
+      "mean_seam_error": 11.2,
+      "seam_metric_unit": "L1 (RGB 0–255)",
+      "all_outer_diff_zero": true,
+      "all_alpha_diff_zero": true,
+      "blush_ear_redness_shift": 26.26,
+      "mask_spec": {
+        "feather_px": 20.0,
+        "bottom_feather_px": 15.0,
+        "normal_chin_tip": [
+          539,
+          435
+        ],
+        "core_bbox_xyxy": [
+          452,
+          262,
+          700,
+          448
+        ],
+        "outer_bbox_xyxy": [
+          433,
+          243,
+          719,
+          462
+        ],
+        "chin_core_reach_below_normal_px": 13,
+        "chin_feather_reach_below_normal_px": 27,
+        "ear_right_edge_covered_x": 700,
+        "active_pixels": 45155,
+        "core_pixels": 31282,
+        "alpha_pixels_touched": 0
+      },
+      "stability_note": "受双账号配额与高峰排队影响（单张 86–114s）；blush_shy 偶发 1024×1536 宽高比漂移（经补边后外轮廓 NCC 降至 0.9285，需二次微调缩放）"
+    },
+    "gemini": {
+      "channel_label": "Gemini 蒙板融合（generate_image 原生并发）",
+      "gen_wall_sec": 23.0,
+      "gen_per_emo_avg_sec": 13.0,
+      "gen_per_emo_min_sec": 11.0,
+      "gen_per_emo_max_sec": 14.0,
+      "postprocess_total_sec": 70.45,
+      "end_to_end_sec": 93.45,
+      "concurrency_note": "6 路全并发原生调用（23.0s 齐出 6 张，单张 11–14s，6/6 一次成功零补边）",
+      "mean_outer_ncc": 0.99093,
+      "min_outer_ncc": 0.99089,
+      "max_outer_ncc": 0.99096,
+      "mean_seam_error": 7.11,
+      "seam_metric_unit": "MAE (RGB 0–255)",
+      "all_outer_diff_zero": true,
+      "all_alpha_diff_zero": true,
+      "blush_ear_redness_shift": 35.93,
+      "mask_spec": {
+        "support_bbox": [
+          436,
+          241,
+          713,
+          459
+        ],
+        "core_bbox_gt99": [
+          456,
+          261,
+          698,
+          444
+        ],
+        "normal_chin_tip": [
+          538,
+          435
+        ],
+        "extended_chin_core_y": 443,
+        "extended_chin_support_y": 459,
+        "chin_extension_px": 24,
+        "ear_coverage_bbox": [
+          654,
+          312,
+          697,
+          378
+        ],
+        "feather_px_range": [
+          17,
+          22
+        ],
+        "feather_profile": "smooth_cosine_sdf",
+        "alpha_silhouette_untouched": true
+      },
+      "stability_note": "无限流排队与账号切换负担，6 张全部精准锁定 scale=1.000、外轮廓 NCC 稳定 0.9909（波动 <0.0001），批量 200+ 张产线吞吐优势显著"
+    },
+    "speedup": {
+      "gen_wall_ratio": 4.94,
+      "gen_per_emo_ratio": 7.28,
+      "end_to_end_ratio": 2.4
+    }
+  },
+  "emotions": [
+    {
+      "id": "normal",
+      "key": "0",
+      "cn": "常态",
+      "scene": "午后书库 · 静观筹谋",
+      "line": "「这一世既然重来一遍，与其急着抢风头，不如先把退路、银币和魔力底牌都算个明白。」",
+      "note": "基准精抠原件（1152×1536 RGBA），作为所有表情蒙板的绝对外轮廓与Alpha母版。",
+      "is_baseline": true,
+      "assets": {
+        "normal": "assets/normal.webp",
+        "gpt_masked": "assets/normal.webp",
+        "gpt_raw": "assets/normal.webp",
+        "gpt_overlay": "assets/gpt/mask_overlay.webp",
+        "gemini_masked": "assets/normal.webp",
+        "gemini_raw": "assets/normal.webp",
+        "gemini_overlay": "assets/gemini/mask_overlay.webp"
+      },
+      "gpt": null,
+      "gemini": null
+    },
+    {
+      "id": "warm_smile",
+      "key": "1",
+      "cn": "温情浅笑",
+      "scene": "庭院日光 · 姐妹茶歇",
+      "line": "「茶点刚端上来还热着呢——碧翠丝，先坐下歇一口气，外头那些琐事待会儿再说也不迟。」",
+      "note": "闭唇温柔微笑；检验眉眼弧度自然度与唇角融合边界。",
+      "is_baseline": false,
+      "assets": {
+        "normal": "assets/normal.webp",
+        "gpt_masked": "assets/gpt/masked_warm_smile.webp",
+        "gpt_raw": "assets/gpt/raw_warm_smile.webp",
+        "gpt_overlay": "assets/gpt/mask_overlay.webp",
+        "gemini_masked": "assets/gemini/masked_warm_smile.webp",
+        "gemini_raw": "assets/gemini/raw_warm_smile.webp",
+        "gemini_overlay": "assets/gemini/mask_overlay.webp"
+      },
+      "gpt": {
+        "outer_ncc": 0.98454,
+        "head_anchor_ncc": 0.96544,
+        "feat_ncc": 0.92933,
+        "outer_max_abs_diff": 0.0,
+        "alpha_max_abs_diff": 0.0,
+        "collar_max_abs_diff": 0.0,
+        "seam_error": 8.77,
+        "seam_error_before": 8.98,
+        "seam_metric_name": "接缝 L1",
+        "tone_shift_rgb": [
+          -3.0,
+          -2.0,
+          -2.0
+        ],
+        "dx": 0.136,
+        "dy": 0.234,
+        "scale": 1.0605,
+        "ear_redness_shift": 1.65,
+        "ear_rgb_delta": 14.89,
+        "chin_ext_rgb_delta": 8.11,
+        "gen_sec": 96.84,
+        "postprocess_sec": 15.09,
+        "gen_size": [
+          1086,
+          1448
+        ],
+        "auto_padded_3_4": false,
+        "slot": "acc1#1",
+        "attempts": 1
+      },
+      "gemini": {
+        "outer_ncc": 0.990945,
+        "outer_max_abs_diff": 0.0,
+        "outer_diff_mean": 0.0,
+        "alpha_max_abs_diff": 0.0,
+        "seam_error": 5.91,
+        "seam_grad_delta": 3.69,
+        "seam_metric_name": "接缝 MAE",
+        "tone_shift_rgb": [
+          2.2,
+          2.29,
+          0.95
+        ],
+        "dx": -0.008,
+        "dy": -0.007,
+        "scale": 1.0,
+        "ear_redness_shift": -2.4,
+        "gen_sec": 13.0,
+        "postprocess_sec": 12.01,
+        "orig_size": [
+          896,
+          1200
+        ],
+        "aspect_correction": "uniform_1200_to_1536 (896->900 center-crop exact)"
+      }
+    },
+    {
+      "id": "bright_laugh",
+      "key": "2",
+      "cn": "开怀明朗笑",
+      "scene": "庭院日光 · 难得清闲",
+      "line": "「哈哈，好久没这么痛快了！若是每天都能这样晒着太阳喝红茶，哪还有什么烦心事呀。」",
+      "note": "大笑张口伴随下巴自然下探；重点检验下巴延伸区覆盖与颈部阴影衔接。",
+      "is_baseline": false,
+      "assets": {
+        "normal": "assets/normal.webp",
+        "gpt_masked": "assets/gpt/masked_bright_laugh.webp",
+        "gpt_raw": "assets/gpt/raw_bright_laugh.webp",
+        "gpt_overlay": "assets/gpt/mask_overlay.webp",
+        "gemini_masked": "assets/gemini/masked_bright_laugh.webp",
+        "gemini_raw": "assets/gemini/raw_bright_laugh.webp",
+        "gemini_overlay": "assets/gemini/mask_overlay.webp"
+      },
+      "gpt": {
+        "outer_ncc": 0.9842,
+        "head_anchor_ncc": 0.96125,
+        "feat_ncc": 0.93084,
+        "outer_max_abs_diff": 0.0,
+        "alpha_max_abs_diff": 0.0,
+        "collar_max_abs_diff": 0.0,
+        "seam_error": 15.04,
+        "seam_error_before": 15.22,
+        "seam_metric_name": "接缝 L1",
+        "tone_shift_rgb": [
+          -6.0,
+          -3.0,
+          -5.0
+        ],
+        "dx": 0.016,
+        "dy": 0.242,
+        "scale": 1.0605,
+        "ear_redness_shift": 6.29,
+        "ear_rgb_delta": 14.65,
+        "chin_ext_rgb_delta": 10.35,
+        "gen_sec": 113.63,
+        "postprocess_sec": 14.09,
+        "gen_size": [
+          1086,
+          1448
+        ],
+        "auto_padded_3_4": false,
+        "slot": "acc2#1",
+        "attempts": 1
+      },
+      "gemini": {
+        "outer_ncc": 0.990964,
+        "outer_max_abs_diff": 0.0,
+        "outer_diff_mean": 0.0,
+        "alpha_max_abs_diff": 0.0,
+        "seam_error": 9.96,
+        "seam_grad_delta": 5.31,
+        "seam_metric_name": "接缝 MAE",
+        "tone_shift_rgb": [
+          2.23,
+          2.26,
+          1.62
+        ],
+        "dx": -0.007,
+        "dy": -0.006,
+        "scale": 1.0,
+        "ear_redness_shift": -1.88,
+        "gen_sec": 13.0,
+        "postprocess_sec": 11.66,
+        "orig_size": [
+          896,
+          1200
+        ],
+        "aspect_correction": "uniform_1200_to_1536 (896->900 center-crop exact)"
+      }
+    },
+    {
+      "id": "wry_smile",
+      "key": "3",
+      "cn": "无奈苦笑",
+      "scene": "午后书库 · 面对麻烦",
+      "line": "「……我就知道，想在阿斯拉安安稳稳混到毕业，果然还是我想得太美了。」",
+      "note": "微垂眉梢与抿唇苦笑；检验细微情绪神态与脸颊色温一致性。",
+      "is_baseline": false,
+      "assets": {
+        "normal": "assets/normal.webp",
+        "gpt_masked": "assets/gpt/masked_wry_smile.webp",
+        "gpt_raw": "assets/gpt/raw_wry_smile.webp",
+        "gpt_overlay": "assets/gpt/mask_overlay.webp",
+        "gemini_masked": "assets/gemini/masked_wry_smile.webp",
+        "gemini_raw": "assets/gemini/raw_wry_smile.webp",
+        "gemini_overlay": "assets/gemini/mask_overlay.webp"
+      },
+      "gpt": {
+        "outer_ncc": 0.98342,
+        "head_anchor_ncc": 0.97386,
+        "feat_ncc": 0.94522,
+        "outer_max_abs_diff": 0.0,
+        "alpha_max_abs_diff": 0.0,
+        "collar_max_abs_diff": 0.0,
+        "seam_error": 6.44,
+        "seam_error_before": 9.12,
+        "seam_metric_name": "接缝 L1",
+        "tone_shift_rgb": [
+          -7.0,
+          -4.0,
+          -10.0
+        ],
+        "dx": 0.083,
+        "dy": -0.108,
+        "scale": 1.062,
+        "ear_redness_shift": 1.51,
+        "ear_rgb_delta": 12.07,
+        "chin_ext_rgb_delta": 6.34,
+        "gen_sec": 86.02,
+        "postprocess_sec": 14.84,
+        "gen_size": [
+          1086,
+          1448
+        ],
+        "auto_padded_3_4": false,
+        "slot": "acc1#2",
+        "attempts": 1
+      },
+      "gemini": {
+        "outer_ncc": 0.990927,
+        "outer_max_abs_diff": 0.0,
+        "outer_diff_mean": 0.0,
+        "alpha_max_abs_diff": 0.0,
+        "seam_error": 6.01,
+        "seam_grad_delta": 3.65,
+        "seam_metric_name": "接缝 MAE",
+        "tone_shift_rgb": [
+          2.62,
+          2.56,
+          1.11
+        ],
+        "dx": -0.01,
+        "dy": -0.007,
+        "scale": 1.0,
+        "ear_redness_shift": -2.98,
+        "gen_sec": 13.0,
+        "postprocess_sec": 10.81,
+        "orig_size": [
+          896,
+          1200
+        ],
+        "aspect_correction": "uniform_1200_to_1536 (896->900 center-crop exact)"
+      }
+    },
+    {
+      "id": "blush_shy",
+      "key": "4",
+      "cn": "脸红害羞",
+      "scene": "寒夜露台 · 猝不及防",
+      "line": "「等、等一下！这种话怎么能在大庭广众下顺口说出来……别一直盯着我看啦。」",
+      "note": "双颊与右耳尖同步泛红；核心检验右耳蒙板覆盖与耳尖红度增幅（R−G）。",
+      "is_baseline": false,
+      "assets": {
+        "normal": "assets/normal.webp",
+        "gpt_masked": "assets/gpt/masked_blush_shy.webp",
+        "gpt_raw": "assets/gpt/raw_blush_shy.webp",
+        "gpt_overlay": "assets/gpt/mask_overlay.webp",
+        "gemini_masked": "assets/gemini/masked_blush_shy.webp",
+        "gemini_raw": "assets/gemini/raw_blush_shy.webp",
+        "gemini_overlay": "assets/gemini/mask_overlay.webp"
+      },
+      "gpt": {
+        "outer_ncc": 0.92845,
+        "head_anchor_ncc": 0.89009,
+        "feat_ncc": 0.82826,
+        "outer_max_abs_diff": 0.0,
+        "alpha_max_abs_diff": 0.0,
+        "collar_max_abs_diff": 0.0,
+        "seam_error": 20.15,
+        "seam_error_before": 20.53,
+        "seam_metric_name": "接缝 L1",
+        "tone_shift_rgb": [
+          -1.0,
+          0.0,
+          -8.0
+        ],
+        "dx": 0.872,
+        "dy": 0.377,
+        "scale": 1.0045,
+        "ear_redness_shift": 26.26,
+        "ear_rgb_delta": 35.19,
+        "chin_ext_rgb_delta": 14.8,
+        "gen_sec": 92.43,
+        "postprocess_sec": 35.43,
+        "gen_size": [
+          1152,
+          1536
+        ],
+        "auto_padded_3_4": true,
+        "slot": "acc2#2",
+        "attempts": 1
+      },
+      "gemini": {
+        "outer_ncc": 0.990887,
+        "outer_max_abs_diff": 0.0,
+        "outer_diff_mean": 0.0,
+        "alpha_max_abs_diff": 0.0,
+        "seam_error": 6.61,
+        "seam_grad_delta": 4.04,
+        "seam_metric_name": "接缝 MAE",
+        "tone_shift_rgb": [
+          3.58,
+          3.36,
+          2.11
+        ],
+        "dx": -0.008,
+        "dy": -0.006,
+        "scale": 1.0,
+        "ear_redness_shift": 35.93,
+        "gen_sec": 14.0,
+        "postprocess_sec": 10.86,
+        "orig_size": [
+          896,
+          1200
+        ],
+        "aspect_correction": "uniform_1200_to_1536 (896->900 center-crop exact)"
+      }
+    },
+    {
+      "id": "shocked",
+      "key": "5",
+      "cn": "愕然吃惊",
+      "scene": "寒夜露台 · 突闻异变",
+      "line": "「慢着——刚才那道魔力波动不对劲，那个人……怎么会出现在结界内侧？！」",
+      "note": "瞳孔收缩与 O 形张口下巴下探；重点检验下颌延伸与高对比五官自然度。",
+      "is_baseline": false,
+      "assets": {
+        "normal": "assets/normal.webp",
+        "gpt_masked": "assets/gpt/masked_shocked.webp",
+        "gpt_raw": "assets/gpt/raw_shocked.webp",
+        "gpt_overlay": "assets/gpt/mask_overlay.webp",
+        "gemini_masked": "assets/gemini/masked_shocked.webp",
+        "gemini_raw": "assets/gemini/raw_shocked.webp",
+        "gemini_overlay": "assets/gemini/mask_overlay.webp"
+      },
+      "gpt": {
+        "outer_ncc": 0.97764,
+        "head_anchor_ncc": 0.96901,
+        "feat_ncc": 0.93591,
+        "outer_max_abs_diff": 0.0,
+        "alpha_max_abs_diff": 0.0,
+        "collar_max_abs_diff": 0.0,
+        "seam_error": 7.53,
+        "seam_error_before": 10.61,
+        "seam_metric_name": "接缝 L1",
+        "tone_shift_rgb": [
+          -9.0,
+          -6.0,
+          -9.0
+        ],
+        "dx": 0.294,
+        "dy": 0.459,
+        "scale": 1.062,
+        "ear_redness_shift": 6.63,
+        "ear_rgb_delta": 15.43,
+        "chin_ext_rgb_delta": 7.49,
+        "gen_sec": 87.77,
+        "postprocess_sec": 13.88,
+        "gen_size": [
+          1086,
+          1448
+        ],
+        "auto_padded_3_4": false,
+        "slot": "acc1#3",
+        "attempts": 1
+      },
+      "gemini": {
+        "outer_ncc": 0.990952,
+        "outer_max_abs_diff": 0.0,
+        "outer_diff_mean": 0.0,
+        "alpha_max_abs_diff": 0.0,
+        "seam_error": 8.17,
+        "seam_grad_delta": 4.69,
+        "seam_metric_name": "接缝 MAE",
+        "tone_shift_rgb": [
+          2.37,
+          2.67,
+          1.69
+        ],
+        "dx": -0.008,
+        "dy": -0.005,
+        "scale": 1.0,
+        "ear_redness_shift": -3.35,
+        "gen_sec": 14.0,
+        "postprocess_sec": 11.01,
+        "orig_size": [
+          896,
+          1200
+        ],
+        "aspect_correction": "uniform_1200_to_1536 (896->900 center-crop exact)"
+      }
+    },
+    {
+      "id": "teary_sad",
+      "key": "6",
+      "cn": "委屈含泪",
+      "scene": "寒夜露台 · 霜夜心事",
+      "line": "「明明已经很小心了……可有些事，就算提前知道了结局，还是会让人觉得好难过。」",
+      "note": "眼眶泛红含泪与微颤下唇；检验泪光质感、皮肤色调过渡与发丝边界。",
+      "is_baseline": false,
+      "assets": {
+        "normal": "assets/normal.webp",
+        "gpt_masked": "assets/gpt/masked_teary_sad.webp",
+        "gpt_raw": "assets/gpt/raw_teary_sad.webp",
+        "gpt_overlay": "assets/gpt/mask_overlay.webp",
+        "gemini_masked": "assets/gemini/masked_teary_sad.webp",
+        "gemini_raw": "assets/gemini/raw_teary_sad.webp",
+        "gemini_overlay": "assets/gemini/mask_overlay.webp"
+      },
+      "gpt": {
+        "outer_ncc": 0.97916,
+        "head_anchor_ncc": 0.96871,
+        "feat_ncc": 0.93585,
+        "outer_max_abs_diff": 0.0,
+        "alpha_max_abs_diff": 0.0,
+        "collar_max_abs_diff": 0.0,
+        "seam_error": 9.25,
+        "seam_error_before": 9.84,
+        "seam_metric_name": "接缝 L1",
+        "tone_shift_rgb": [
+          -3.0,
+          -3.0,
+          -6.0
+        ],
+        "dx": -0.004,
+        "dy": 0.334,
+        "scale": 1.0615,
+        "ear_redness_shift": 10.99,
+        "ear_rgb_delta": 17.17,
+        "chin_ext_rgb_delta": 14.14,
+        "gen_sec": 90.89,
+        "postprocess_sec": 14.2,
+        "gen_size": [
+          1086,
+          1448
+        ],
+        "auto_padded_3_4": false,
+        "slot": "acc2#3",
+        "attempts": 1
+      },
+      "gemini": {
+        "outer_ncc": 0.990921,
+        "outer_max_abs_diff": 0.0,
+        "outer_diff_mean": 0.0,
+        "alpha_max_abs_diff": 0.0,
+        "seam_error": 6.01,
+        "seam_grad_delta": 3.65,
+        "seam_metric_name": "接缝 MAE",
+        "tone_shift_rgb": [
+          3.04,
+          3.12,
+          1.67
+        ],
+        "dx": -0.008,
+        "dy": -0.005,
+        "scale": 1.0,
+        "ear_redness_shift": -1.94,
+        "gen_sec": 11.0,
+        "postprocess_sec": 10.6,
+        "orig_size": [
+          896,
+          1200
+        ],
+        "aspect_correction": "uniform_1200_to_1536 (896->900 center-crop exact)"
+      }
+    }
+  ]
+}

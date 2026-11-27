@@ -1,0 +1,2766 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPT vs Gemini 蒙板表情 A/B 实时换脸对比实验室 · 转生千金</title>
+<style>
+/* ==========================================================================
+   《转生千金》蒙板表情 A/B 实时点击换脸对比实验室
+   - 雪瓷冰白 #f6f9fe / #ffffff + 皇家蓝 #1658eb + 冰青 #7dd3fc + 淡金 #c4a46c
+   - 铁律：严禁暗黑控制台、严禁圆框套圆框（直角/切角棱镜 + 1px 细线 + 留白字重）
+   - 严禁原生 HTML title 属性（使用 data-tip 自定义雪瓷提示）
+   - 100% 离线/GitHub Pages 自包含，零外链 CDN
+   ========================================================================== */
+:root {
+  --bg-canvas: #f6f9fe;
+  --bg-surface: #ffffff;
+  --bg-frost: rgba(255, 255, 255, 0.94);
+  --bg-tint: #f2f7fd;
+  --bg-tint-strong: #e8f1fc;
+  --bg-gold-tint: #fbf7ee;
+  --bg-gold-soft: #f5ebd4;
+  --bg-emerald-tint: #ebf8f3;
+  --bg-rose-tint: #fdf1f4;
+
+  --ink: #1a2436;
+  --ink-mid: #3a4b66;
+  --ink-muted: #5f728f;
+  --ink-faint: #8a9bb5;
+
+  --sapphire-hi: #2e77f8;
+  --sapphire: #1658eb;
+  --sapphire-mid: #103fa8;
+  --sapphire-deep: #0e2b78;
+  --sapphire-prism: linear-gradient(135deg, #2e77f8 0%, #1658eb 50%, #0e2b78 100%);
+
+  --cyan: #7dd3fc;
+  --cyan-deep: #0284c7;
+  --cyan-tint: #ebf7ff;
+
+  --gold: #c4a46c;
+  --gold-deep: #8b6826;
+  --emerald: #0e8a64;
+  --rose: #c93b60;
+
+  --line-soft: rgba(96, 128, 180, 0.22);
+  --line-mid: rgba(22, 88, 235, 0.34);
+  --line-gold: rgba(196, 164, 108, 0.45);
+  --prism-hairline: linear-gradient(90deg, #7dd3fc 0%, #1658eb 28%, #ffffff 50%, #c4a46c 74%, #2e77f8 100%);
+
+  --font-serif: "Songti SC", "Source Han Serif SC", "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  --font-sans: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  border-radius: 0;
+}
+
+html {
+  background: var(--bg-canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(ellipse 88% 45% at 50% -10%, #ffffff 0%, #f6f9fe 58%, #ecf3fc 100%);
+  color: var(--ink);
+  user-select: none;
+  padding-bottom: 120px;
+}
+
+body.dock-collapsed {
+  padding-bottom: 50px;
+}
+
+img {
+  -webkit-user-drag: none;
+  user-select: none;
+  display: block;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  color: inherit;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--sapphire);
+  outline-offset: -2px;
+}
+
+/* 极细桌面滚动条 */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #edf3fc; }
+::-webkit-scrollbar-thumb { background: rgba(22, 88, 235, 0.28); }
+::-webkit-scrollbar-thumb:hover { background: rgba(22, 88, 235, 0.52); }
+
+/* ==================== 顶部导航与模式切换 ==================== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--bg-frost);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line-soft);
+  box-shadow: 0 3px 16px rgba(16, 45, 110, 0.05);
+}
+
+.topbar::before {
+  content: "";
+  display: block;
+  height: 2px;
+  width: 100%;
+  background: var(--prism-hairline);
+}
+
+.topbar-inner {
+  max-width: 1520px;
+  margin: 0 auto;
+  padding: 0 18px;
+}
+
+.topbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 46px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.brand-prism {
+  width: 18px;
+  height: 18px;
+  background: var(--sapphire-prism);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.brand-prism::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+}
+
+.brand-title {
+  font-family: var(--font-serif);
+  font-size: 15.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.brand-sub {
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  padding-left: 10px;
+  border-left: 1px solid var(--line-soft);
+  white-space: nowrap;
+}
+
+.mode-tabs {
+  display: flex;
+  align-items: stretch;
+  height: 46px;
+  border-left: 1px solid var(--line-soft);
+  border-right: 1px solid var(--line-soft);
+}
+
+.mode-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-mid);
+  border-right: 1px solid var(--line-soft);
+  transition: background 0.14s ease, color 0.14s ease;
+  white-space: nowrap;
+}
+
+.mode-tab:last-child {
+  border-right: none;
+}
+
+.mode-tab:hover {
+  background: var(--bg-tint);
+  color: var(--sapphire);
+}
+
+.mode-tab.active {
+  background: var(--bg-tint-strong);
+  color: var(--sapphire-deep);
+}
+
+.mode-tab.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2.5px;
+  background: var(--sapphire);
+}
+
+.mode-num {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--sapphire);
+  opacity: 0.85;
+}
+
+.preload-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.preload-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--gold);
+  transform: rotate(45deg);
+}
+
+.preload-status.ready .preload-dot {
+  background: var(--emerald);
+}
+
+.preload-status.ready {
+  color: var(--emerald);
+}
+
+/* ==================== 控制区（7表情 + 场景/视角/图层） ==================== */
+.control-shell {
+  max-width: 1520px;
+  margin: 10px auto 0;
+  padding: 0 18px;
+}
+
+.control-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--line-soft);
+  box-shadow: 0 2px 10px rgba(16, 45, 110, 0.035);
+}
+
+.emo-bar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.emo-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 6px;
+  border-right: 1px solid var(--line-soft);
+  background: var(--bg-surface);
+  transition: background 0.12s ease, color 0.12s ease;
+  min-width: 0;
+}
+
+.emo-btn:last-child {
+  border-right: none;
+}
+
+.emo-btn:hover {
+  background: var(--bg-tint);
+}
+
+.emo-key {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tint-strong);
+  color: var(--sapphire-deep);
+  flex-shrink: 0;
+}
+
+.emo-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.emo-cn {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.emo-en {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+.emo-btn.active {
+  background: var(--sapphire-prism);
+  color: #ffffff;
+}
+
+.emo-btn.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2.5px;
+  background: var(--gold);
+}
+
+.emo-btn.active .emo-key {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.emo-btn.active .emo-cn {
+  color: #ffffff;
+}
+
+.emo-btn.active .emo-en {
+  color: rgba(219, 238, 255, 0.88);
+}
+
+.toolbar-row {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  background: #fafcff;
+}
+
+.tool-group {
+  display: flex;
+  align-items: center;
+  border-right: 1px solid var(--line-soft);
+  padding: 5px 10px;
+  gap: 2px;
+}
+
+.tool-group:last-child {
+  border-right: none;
+}
+
+.tool-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-muted);
+  margin-right: 6px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.seg-btn {
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-mid);
+  background: transparent;
+  transition: background 0.12s ease, color 0.12s ease;
+  white-space: nowrap;
+}
+
+.seg-btn:hover {
+  background: var(--bg-tint-strong);
+  color: var(--sapphire);
+}
+
+.seg-btn.active {
+  background: var(--sapphire);
+  color: #ffffff;
+}
+
+.seg-btn.gold-active {
+  background: var(--gold-deep);
+  color: #ffffff;
+}
+
+.hotkey-hint {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  font-size: 11px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.kbd {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  background: var(--bg-tint-strong);
+  color: var(--sapphire-deep);
+}
+
+/* ==================== 主内容容器 ==================== */
+.main-wrap {
+  max-width: 1520px;
+  margin: 10px auto 0;
+  padding: 0 18px;
+}
+
+.view-section {
+  display: none;
+}
+
+.view-section.active {
+  display: block;
+}
+
+/* ==================== 模式 1：实机双屏同步换脸 ==================== */
+.dual-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.stage-card {
+  position: relative;
+  background: var(--bg-surface);
+  border: 1px solid var(--line-soft);
+  box-shadow: 0 6px 24px rgba(16, 45, 110, 0.055);
+  overflow: hidden;
+}
+
+.stage-card.gpt-card {
+  border-top: 2px solid var(--gold);
+}
+
+.stage-card.gemini-card {
+  border-top: 2px solid var(--sapphire);
+}
+
+.stage-viewport {
+  position: relative;
+  width: 100%;
+  height: clamp(438px, calc(100vh - 252px), 618px);
+  overflow: hidden;
+  background-color: #ffffff;
+  background-size: cover;
+  background-position: center;
+}
+
+.stage-viewport.bg-white {
+  background-image: none !important;
+  background-color: #ffffff;
+}
+
+.stage-viewport.bg-checker {
+  background-image:
+    linear-gradient(45deg, #e5edf8 25%, transparent 25%),
+    linear-gradient(-45deg, #e5edf8 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e5edf8 75%),
+    linear-gradient(-45deg, transparent 75%, #e5edf8 75%) !important;
+  background-size: 20px 20px !important;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0 !important;
+  background-color: #ffffff !important;
+}
+
+/* 顶部极简无框标签与角落指标条 */
+.stage-hud-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  pointer-events: none;
+}
+
+.channel-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 7px;
+  background: rgba(255, 255, 255, 0.90);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-left: 3px solid var(--sapphire);
+  box-shadow: 0 2px 10px rgba(16, 45, 110, 0.08);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.gpt-card .channel-tag {
+  border-left-color: var(--gold);
+}
+
+.channel-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: 0.01em;
+}
+
+.channel-layer-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--sapphire-deep);
+  background: var(--bg-tint-strong);
+  padding: 1px 5px;
+}
+
+.gpt-card .channel-layer-tag {
+  color: var(--gold-deep);
+  background: var(--bg-gold-tint);
+}
+
+/* 角落极简无框指标条 */
+.corner-metrics {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.90);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 10px rgba(16, 45, 110, 0.08);
+  min-width: 0;
+}
+
+.cm-item {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  padding: 3.5px 6px;
+  border-left: 1px solid rgba(96, 128, 180, 0.22);
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.cm-item:first-child {
+  border-left: none;
+}
+
+.cm-k {
+  color: var(--ink-muted);
+  font-size: 10px;
+}
+
+.cm-v {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.cm-v.good { color: var(--emerald); }
+.cm-v.accent { color: var(--sapphire); }
+.cm-v.warn { color: var(--gold-deep); }
+.cm-v.rose { color: var(--rose); }
+
+/* 角色立绘层 */
+.portrait-stage-box {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 96%;
+  aspect-ratio: 1152 / 1536;
+  pointer-events: none;
+}
+
+.portrait-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: 50% 23%;
+  transform: translateY(0%) scale(1);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+/* 2.7× 面部/下巴/耳尖特写精准居中（兼顾底部对话框有无） */
+.stage-viewport.is-closeup .portrait-img {
+  transform: translateY(18%) scale(2.7);
+}
+
+.stage-viewport.is-closeup.no-dialogue .portrait-img {
+  transform: translateY(22%) scale(2.7);
+}
+
+/* Raw / Overlay 模式下给原图淡淡白边提示已含底色 */
+.stage-viewport.is-raw-layer .portrait-stage-box {
+  box-shadow: 0 0 0 1px rgba(22, 88, 235, 0.22);
+}
+
+/* 实机雪瓷冰白对话框 */
+.vn-dialogue {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 10px;
+  z-index: 12;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.93) 0%, rgba(244, 249, 255, 0.95) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 2px solid var(--sapphire);
+  border-left: 1px solid rgba(22, 88, 235, 0.22);
+  border-right: 1px solid rgba(22, 88, 235, 0.22);
+  border-bottom: 1px solid rgba(22, 88, 235, 0.22);
+  padding: 10px 14px 11px;
+  box-shadow: 0 6px 20px rgba(14, 43, 120, 0.12);
+}
+
+.stage-viewport.no-dialogue .vn-dialogue {
+  display: none;
+}
+
+.vn-dlg-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.vn-speaker-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vn-speaker {
+  display: inline-block;
+  padding: 2px 12px 2px 9px;
+  background: var(--sapphire-prism);
+  color: #ffffff;
+  font-family: var(--font-serif);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 100%, 0 100%);
+}
+
+.vn-scene-tag {
+  font-size: 11px;
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
+.vn-emo-pill {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--sapphire-deep);
+  background: var(--bg-tint-strong);
+  padding: 1px 6px;
+}
+
+.vn-text {
+  font-family: var(--font-serif);
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink);
+  letter-spacing: 0.015em;
+  min-height: 2.8em;
+}
+
+/* ==================== 模式 2：卷帘 / 闪烁显微直比 ==================== */
+.inspect-layout {
+  display: grid;
+  grid-template-columns: 1fr 348px;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.micro-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--line-soft);
+  border-top: 2px solid var(--sapphire);
+  box-shadow: 0 6px 24px rgba(16, 45, 110, 0.055);
+  display: flex;
+  flex-direction: column;
+}
+
+.micro-subbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #fafcff;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.micro-btn-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.micro-action-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--sapphire-deep);
+  background: var(--bg-tint-strong);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.micro-action-btn:hover {
+  background: var(--sapphire);
+  color: #ffffff;
+}
+
+.micro-action-btn.holding {
+  background: var(--gold-deep);
+  color: #ffffff;
+}
+
+.micro-viewport {
+  position: relative;
+  width: 100%;
+  height: clamp(410px, calc(100vh - 288px), 584px);
+  overflow: hidden;
+  background-color: #ffffff;
+  background-size: cover;
+  background-position: center;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.micro-viewport.not-split {
+  cursor: default;
+}
+
+.micro-viewport.bg-white {
+  background-image: none !important;
+  background-color: #ffffff;
+}
+
+.micro-viewport.bg-checker {
+  background-image:
+    linear-gradient(45deg, #e5edf8 25%, transparent 25%),
+    linear-gradient(-45deg, #e5edf8 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e5edf8 75%),
+    linear-gradient(-45deg, transparent 75%, #e5edf8 75%) !important;
+  background-size: 20px 20px !important;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0 !important;
+  background-color: #ffffff !important;
+}
+
+.micro-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.micro-portrait-wrap {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 96%;
+  aspect-ratio: 1152 / 1536;
+}
+
+.micro-portrait-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: 50% 23%;
+  transform: translateY(22%) scale(var(--micro-zoom, 2.7));
+}
+
+#micro-layer-gpt {
+  z-index: 3;
+  clip-path: inset(0 calc(100% - var(--split, 50%)) 0 0);
+}
+
+#micro-layer-gemini {
+  z-index: 2;
+}
+
+#micro-layer-normal {
+  z-index: 4;
+  opacity: 0;
+}
+
+.micro-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--split, 50%);
+  width: 2px;
+  margin-left: -1px;
+  z-index: 15;
+  background: linear-gradient(180deg, #7dd3fc 0%, #1658eb 50%, #c4a46c 100%);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.75);
+  pointer-events: none;
+}
+
+.micro-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  width: 28px;
+  height: 28px;
+  background: var(--sapphire-prism);
+  border: 2px solid #ffffff;
+  box-shadow: 0 3px 12px rgba(14, 43, 120, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.micro-handle::after {
+  content: "⇄";
+  transform: rotate(-45deg);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.micro-hud-row {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  right: 12px;
+  z-index: 16;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.micro-side-tag {
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink);
+  box-shadow: 0 2px 10px rgba(16, 45, 110, 0.08);
+}
+
+.micro-side-tag.left {
+  border-left: 3px solid var(--gold);
+}
+
+.micro-side-tag.right {
+  border-right: 3px solid var(--sapphire);
+}
+
+.micro-live-banner {
+  padding: 4px 12px;
+  background: rgba(22, 88, 235, 0.92);
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.micro-live-banner.flashing {
+  background: var(--gold-deep);
+}
+
+/* 右侧显微指标边栏 */
+.micro-rail {
+  background: var(--bg-surface);
+  border: 1px solid var(--line-soft);
+  border-top: 2px solid var(--gold);
+  display: flex;
+  flex-direction: column;
+}
+
+.rail-section {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.rail-section:last-child {
+  border-bottom: none;
+}
+
+.rail-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--sapphire-deep);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.rail-emo-head {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.rail-note {
+  font-size: 12px;
+  color: var(--ink-mid);
+  line-height: 1.5;
+}
+
+.rail-compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+}
+
+.rail-compare-table th {
+  text-align: left;
+  padding: 5px 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--line-mid);
+}
+
+.rail-compare-table th:not(:first-child),
+.rail-compare-table td:not(:first-child) {
+  text-align: right;
+  font-family: var(--font-mono);
+}
+
+.rail-compare-table td {
+  padding: 6px 4px;
+  border-bottom: 1px solid rgba(96, 128, 180, 0.14);
+}
+
+.rail-compare-table tr:last-child td {
+  border-bottom: none;
+}
+
+.val-win {
+  color: var(--emerald);
+  font-weight: 800;
+}
+
+.val-gpt {
+  color: var(--gold-deep);
+  font-weight: 700;
+}
+
+.val-gem {
+  color: var(--sapphire);
+  font-weight: 700;
+}
+
+.rail-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--ink-mid);
+}
+
+.rail-check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 5px 8px;
+  background: var(--bg-tint);
+}
+
+.rail-check-mark {
+  color: var(--sapphire);
+  font-weight: 800;
+  font-family: var(--font-mono);
+}
+
+/* ==================== 模式 3：全 6 表情矩阵 & 实测指标总表 ==================== */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--bg-surface);
+  border: 1px solid var(--line-soft);
+  border-top: 2px solid var(--sapphire);
+  margin-bottom: 14px;
+}
+
+.kpi-cell {
+  padding: 13px 16px;
+  border-right: 1px solid var(--line-soft);
+}
+
+.kpi-cell:last-child {
+  border-right: none;
+}
+
+.kpi-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-muted);
+  margin-bottom: 4px;
+}
+
+.kpi-main {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--sapphire-deep);
+  line-height: 1.2;
+}
+
+.kpi-sub {
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--ink-mid);
+}
+
+.kpi-badge-em {
+  font-weight: 700;
+  color: var(--emerald);
+}
+
+.section-block {
+  background: var(--bg-surface);
+  border: 1px solid var(--line-soft);
+  margin-bottom: 14px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #fafcff;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.section-head-title {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.section-head-sub {
+  font-size: 11.5px;
+  color: var(--ink-muted);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 9px 14px;
+  background: var(--bg-tint);
+  color: var(--ink-mid);
+  font-weight: 700;
+  border-bottom: 1px solid var(--line-mid);
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 9px 14px;
+  border-bottom: 1px solid rgba(96, 128, 180, 0.16);
+  vertical-align: top;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table .mono {
+  font-family: var(--font-mono);
+}
+
+.col-gpt {
+  background: rgba(251, 247, 238, 0.45);
+}
+
+.col-gem {
+  background: rgba(235, 247, 255, 0.45);
+}
+
+.win-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 5px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--bg-emerald-tint);
+  color: var(--emerald);
+}
+
+.warn-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 5px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--bg-gold-soft);
+  color: var(--gold-deep);
+}
+
+/* 6 行 × 3 列放大特写矩阵 */
+.matrix-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.matrix-row {
+  background: var(--bg-surface);
+  border: 1px solid var(--line-soft);
+}
+
+.matrix-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  background: #fafcff;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.matrix-row-title {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.matrix-row-idx {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 1px 6px;
+  background: var(--sapphire);
+  color: #ffffff;
+}
+
+.matrix-row-cn {
+  font-family: var(--font-serif);
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.matrix-row-note {
+  font-size: 11.5px;
+  color: var(--ink-muted);
+}
+
+.matrix-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.jump-btn {
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: var(--bg-tint-strong);
+  color: var(--sapphire-deep);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.jump-btn:hover {
+  background: var(--sapphire);
+  color: #ffffff;
+}
+
+.matrix-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.matrix-cell {
+  border-right: 1px solid var(--line-soft);
+  display: flex;
+  flex-direction: column;
+}
+
+.matrix-cell:last-child {
+  border-right: none;
+}
+
+.matrix-crop {
+  position: relative;
+  height: 292px;
+  overflow: hidden;
+  background-color: #ffffff;
+  background-size: cover;
+  background-position: center;
+}
+
+.matrix-crop.bg-white {
+  background-image: none !important;
+  background-color: #ffffff;
+}
+
+.matrix-crop.bg-checker {
+  background-image:
+    linear-gradient(45deg, #e5edf8 25%, transparent 25%),
+    linear-gradient(-45deg, #e5edf8 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e5edf8 75%),
+    linear-gradient(-45deg, transparent 75%, #e5edf8 75%) !important;
+  background-size: 18px 18px !important;
+  background-position: 0 0, 0 9px, 9px -9px, -9px 0 !important;
+  background-color: #ffffff !important;
+}
+
+.matrix-crop-wrap {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 100%;
+  aspect-ratio: 1152 / 1536;
+}
+
+.matrix-crop-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: 50% 23%;
+  transform: translateY(22%) scale(2.7);
+}
+
+.matrix-col-badge {
+  position: absolute;
+  top: 7px;
+  left: 8px;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.92);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ink);
+  border-left: 3px solid var(--ink-muted);
+}
+
+.matrix-col-badge.gpt { border-left-color: var(--gold); }
+.matrix-col-badge.gem { border-left-color: var(--sapphire); }
+
+.matrix-cell-meta {
+  padding: 7px 10px;
+  background: #fafcff;
+  border-top: 1px solid var(--line-soft);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-mid);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ==================== 底部「一键拍板复制条」 ==================== */
+.decision-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid var(--line-mid);
+  box-shadow: 0 -6px 24px rgba(14, 43, 120, 0.085);
+}
+
+.decision-dock::before {
+  content: "";
+  display: block;
+  height: 2px;
+  width: 100%;
+  background: var(--prism-hairline);
+}
+
+.dock-inner {
+  max-width: 1520px;
+  margin: 0 auto;
+  padding: 7px 18px 8px;
+}
+
+.dock-bar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dock-head-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.dock-title {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--sapphire-deep);
+  white-space: nowrap;
+}
+
+.dock-summary-preview {
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dock-head-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.dock-collapse-btn {
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-mid);
+  background: var(--bg-tint);
+}
+
+.dock-collapse-btn:hover {
+  background: var(--bg-tint-strong);
+  color: var(--sapphire);
+}
+
+.copy-cta {
+  padding: 6px 18px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #ffffff;
+  background: var(--sapphire-prism);
+  letter-spacing: 0.03em;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  transition: filter 0.14s ease, transform 0.1s ease;
+  white-space: nowrap;
+}
+
+.copy-cta:hover {
+  filter: brightness(1.08);
+}
+
+.copy-cta:active {
+  transform: translateY(1px);
+}
+
+.dock-groups {
+  display: grid;
+  grid-template-columns: 1.15fr 1.35fr 0.9fr;
+  gap: 0;
+  margin-top: 6px;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 6px;
+}
+
+body.dock-collapsed .dock-groups {
+  display: none;
+}
+
+.dock-group {
+  padding: 0 10px 0 0;
+  margin-right: 10px;
+  border-right: 1px solid var(--line-soft);
+  min-width: 0;
+}
+
+.dock-group:last-child {
+  border-right: none;
+  margin-right: 0;
+  padding-right: 0;
+}
+
+.dock-group-label {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--ink-muted);
+  margin-bottom: 4px;
+  letter-spacing: 0.03em;
+}
+
+.dock-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.opt-btn {
+  padding: 3.5px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-mid);
+  background: var(--bg-tint);
+  transition: background 0.12s ease, color 0.12s ease;
+  text-align: left;
+  line-height: 1.3;
+}
+
+.opt-btn:hover {
+  background: var(--bg-tint-strong);
+  color: var(--sapphire);
+}
+
+.opt-btn.selected {
+  background: var(--sapphire);
+  color: #ffffff;
+}
+
+/* ==================== 自定义雪瓷 Tooltip & Toast ==================== */
+#ice-tooltip {
+  position: fixed;
+  z-index: 999;
+  pointer-events: none;
+  opacity: 0;
+  padding: 5px 9px;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid var(--line-mid);
+  border-left: 3px solid var(--sapphire);
+  color: var(--ink);
+  font-size: 11.5px;
+  box-shadow: 0 4px 16px rgba(14, 43, 120, 0.14);
+  max-width: 280px;
+  transition: opacity 0.12s ease;
+}
+
+#ice-tooltip.show {
+  opacity: 1;
+}
+
+#toast {
+  position: fixed;
+  right: 22px;
+  bottom: 124px;
+  z-index: 100;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid var(--sapphire);
+  border-left: 4px solid var(--emerald);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(14, 43, 120, 0.16);
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+#toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ==================== 1280×720 紧凑桌面适配 ==================== */
+@media (max-width: 1340px) {
+  .brand-sub { display: none; }
+  .mode-tab { padding: 0 12px; font-size: 12px; }
+  .emo-btn { padding: 7px 4px; gap: 5px; }
+  .emo-cn { font-size: 12px; }
+  .emo-en { font-size: 9.5px; }
+  .tool-group { padding: 4px 7px; }
+  .tool-label { margin-right: 4px; font-size: 10.5px; }
+  .seg-btn { padding: 3.5px 6.5px; font-size: 11px; }
+  .stage-viewport { height: clamp(416px, calc(100vh - 236px), 560px); }
+  .micro-viewport { height: clamp(384px, calc(100vh - 274px), 530px); }
+  .inspect-layout { grid-template-columns: 1fr 312px; }
+  .vn-dialogue { padding: 8px 12px 9px; }
+  .vn-text { font-size: 12.5px; min-height: 2.5em; }
+  .opt-btn { font-size: 10.5px; padding: 3px 6.5px; }
+  .hotkey-hint { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ==================== 顶部导航与三大模式 ==================== -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-row">
+      <div class="brand">
+        <div class="brand-prism" aria-hidden="true"></div>
+        <div class="brand-title">GPT vs Gemini 蒙板表情 A/B 实时换脸实验室</div>
+        <div class="brand-sub">希尔维亚（少女）· 1152×1536 RGBA 零外轮廓抖动实测</div>
+      </div>
+
+      <nav class="mode-tabs" aria-label="对比模式切换">
+        <button class="mode-tab active" data-mode="dual" data-tip="左右双屏同步换脸、5背景切换、对话框台词与2.7×面部特写">
+          <span class="mode-num">01</span>实机双屏同步换脸
+        </button>
+        <button class="mode-tab" data-mode="inspect" data-tip="2.7×面部放大，支持鼠标拖动卷帘与按住 Space 原地瞬切">
+          <span class="mode-num">02</span>卷帘 / 闪烁显微直比
+        </button>
+        <button class="mode-tab" data-mode="matrix" data-tip="6表情×3列放大特写矩阵与全维度实测工程指标总表">
+          <span class="mode-num">03</span>全 6 表情矩阵 &amp; 实测总表
+        </button>
+      </nav>
+
+      <div class="preload-status" id="preload-status">
+        <span class="preload-dot"></span>
+        <span id="preload-text">正在预载 0/28</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ==================== 统一控制条 ==================== -->
+<section class="control-shell">
+  <div class="control-panel">
+    <div class="emo-bar" id="emo-bar"></div>
+
+    <div class="toolbar-row">
+      <div class="tool-group" id="bg-group">
+        <span class="tool-label">背景</span>
+        <div id="bg-buttons" style="display:flex;gap:2px;"></div>
+      </div>
+
+      <div class="tool-group" id="view-group">
+        <span class="tool-label">视角</span>
+        <button class="seg-btn active" data-view="full" data-tip="以实机 bottom:0 全身站位检验比例与整体氛围（快捷键 Z）">实机全身 (bottom:0)</button>
+        <button class="seg-btn" data-view="closeup" data-tip="2.7× 自动聚焦头面部（50% 23%），居中审视双眼、下巴延伸与右耳泛红（快捷键 Z）">2.7× 面部/下巴/耳尖特写</button>
+      </div>
+
+      <div class="tool-group" id="layer-group">
+        <span class="tool-label">图层</span>
+        <button class="seg-btn active" data-layer="masked" data-tip="蒙板融合后的最终透明 RGBA 实机成品（外轮廓与 Alpha 差均 0.0）">蒙板融合 (Masked)</button>
+        <button class="seg-btn" data-layer="overlay" data-tip="查看下巴延伸 + 右耳尖柔边余弦蒙板边界叠加示意图">蒙板边界叠加 (Overlay)</button>
+        <button class="seg-btn" data-layer="raw" data-tip="查看未蒙板的原始生图输出，一键检验蒙板前后外轮廓零抖动差异">未蒙板原件 (Raw)</button>
+      </div>
+
+      <div class="tool-group" id="dialogue-group">
+        <span class="tool-label">对话框</span>
+        <button class="seg-btn active" id="dlg-toggle-btn" data-tip="开关实机雪瓷冰白对话框与希尔维亚轻小说台词（快捷键 T）">已开启</button>
+      </div>
+
+      <div class="hotkey-hint">
+        <span><span class="kbd">0</span>–<span class="kbd">6</span> 秒切表情</span>
+        <span><span class="kbd">Z</span> 全身/特写</span>
+        <span><span class="kbd">Space</span> 显微瞬切</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 主体三大模式视区 ==================== -->
+<main class="main-wrap">
+
+  <!-- 模式 1：实机双屏同步换脸 -->
+  <section class="view-section active" id="section-dual">
+    <div class="dual-grid">
+      <!-- 左屏：GPT 蒙板融合 -->
+      <article class="stage-card gpt-card">
+        <div class="stage-viewport" id="stage-gpt">
+          <div class="stage-hud-top">
+            <div class="channel-tag">
+              <span class="channel-name">GPT 蒙板融合</span>
+              <span class="channel-layer-tag" id="layer-tag-gpt">RGBA 透明成品</span>
+            </div>
+            <div class="corner-metrics" id="metrics-gpt"></div>
+          </div>
+
+          <div class="portrait-stage-box">
+            <img class="portrait-img" id="img-dual-gpt" alt="希尔维亚 GPT 蒙板融合立绘">
+          </div>
+
+          <div class="vn-dialogue">
+            <div class="vn-dlg-head">
+              <div class="vn-speaker-wrap">
+                <span class="vn-speaker">希尔维亚</span>
+                <span class="vn-scene-tag" id="dlg-scene-gpt"></span>
+              </div>
+              <span class="vn-emo-pill" id="dlg-emo-gpt"></span>
+            </div>
+            <div class="vn-text" id="dlg-text-gpt"></div>
+          </div>
+        </div>
+      </article>
+
+      <!-- 右屏：Gemini 蒙板融合 -->
+      <article class="stage-card gemini-card">
+        <div class="stage-viewport" id="stage-gemini">
+          <div class="stage-hud-top">
+            <div class="channel-tag">
+              <span class="channel-name">Gemini 蒙板融合</span>
+              <span class="channel-layer-tag" id="layer-tag-gemini">RGBA 透明成品</span>
+            </div>
+            <div class="corner-metrics" id="metrics-gemini"></div>
+          </div>
+
+          <div class="portrait-stage-box">
+            <img class="portrait-img" id="img-dual-gemini" alt="希尔维亚 Gemini 蒙板融合立绘">
+          </div>
+
+          <div class="vn-dialogue">
+            <div class="vn-dlg-head">
+              <div class="vn-speaker-wrap">
+                <span class="vn-speaker">希尔维亚</span>
+                <span class="vn-scene-tag" id="dlg-scene-gemini"></span>
+              </div>
+              <span class="vn-emo-pill" id="dlg-emo-gemini"></span>
+            </div>
+            <div class="vn-text" id="dlg-text-gemini"></div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 模式 2：卷帘 / 闪烁显微直比 -->
+  <section class="view-section" id="section-inspect">
+    <div class="inspect-layout">
+      <div class="micro-card">
+        <div class="micro-subbar">
+          <div class="micro-btn-row">
+            <span class="tool-label">对比方式</span>
+            <button class="seg-btn active" data-micro-mode="split">卷帘直比 (GPT | Gemini)</button>
+            <button class="seg-btn" data-micro-mode="gpt">单看 GPT</button>
+            <button class="seg-btn" data-micro-mode="gemini">单看 Gemini</button>
+            <button class="seg-btn" data-micro-mode="normal">单看 normal 基准</button>
+          </div>
+
+          <div class="micro-btn-row">
+            <button class="micro-action-btn" id="btn-cycle-flicker" data-tip="原地循环切换 GPT → Gemini → normal，零位移专检下巴伸长与右耳泛红（快捷键 F）">原地轮切 (F)</button>
+            <button class="micro-action-btn" id="btn-hold-flash" data-tip="按住鼠标或键盘 Space 瞬间切换对照帧，松开即刻复原">按住 Space 瞬切</button>
+          </div>
+
+          <div class="micro-btn-row">
+            <span class="tool-label">倍率</span>
+            <button class="seg-btn" data-zoom="2.2">2.2×</button>
+            <button class="seg-btn active" data-zoom="2.7">2.7×</button>
+            <button class="seg-btn" data-zoom="3.4">3.4×</button>
+          </div>
+        </div>
+
+        <div class="micro-viewport" id="micro-viewport" style="--split:50%;--micro-zoom:2.7;">
+          <div class="micro-hud-row">
+            <div class="micro-side-tag left" id="micro-tag-left">◀ 左侧：GPT 蒙板</div>
+            <div class="micro-live-banner" id="micro-live-banner">卷帘 50% · GPT ◀ ▶ Gemini</div>
+            <div class="micro-side-tag right" id="micro-tag-right">右侧：Gemini 蒙板 ▶</div>
+          </div>
+
+          <div class="micro-layer" id="micro-layer-gemini">
+            <div class="micro-portrait-wrap">
+              <img id="img-micro-gemini" alt="显微直比 Gemini 图层">
+            </div>
+          </div>
+
+          <div class="micro-layer" id="micro-layer-gpt">
+            <div class="micro-portrait-wrap">
+              <img id="img-micro-gpt" alt="显微直比 GPT 图层">
+            </div>
+          </div>
+
+          <div class="micro-layer" id="micro-layer-normal">
+            <div class="micro-portrait-wrap">
+              <img id="img-micro-normal" alt="显微直比 normal 基准图层">
+            </div>
+          </div>
+
+          <div class="micro-divider" id="micro-divider">
+            <div class="micro-handle"></div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="micro-rail">
+        <div class="rail-section">
+          <div class="rail-title">当前审检表情</div>
+          <div class="rail-emo-head" id="rail-emo-head">—</div>
+          <div class="rail-note" id="rail-emo-note">—</div>
+        </div>
+
+        <div class="rail-section">
+          <div class="rail-title">双通道实时指标对照</div>
+          <table class="rail-compare-table">
+            <thead>
+              <tr>
+                <th>指标项</th>
+                <th>GPT</th>
+                <th>Gemini</th>
+              </tr>
+            </thead>
+            <tbody id="rail-metrics-body"></tbody>
+          </table>
+        </div>
+
+        <div class="rail-section">
+          <div class="rail-title">快捷卷帘定位 &amp; 核验焦点</div>
+          <div style="display:flex;gap:4px;margin-bottom:9px;">
+            <button class="jump-btn" data-snap="25">卷帘 25%</button>
+            <button class="jump-btn" data-snap="50">居中 50%</button>
+            <button class="jump-btn" data-snap="75">卷帘 75%</button>
+          </div>
+          <div class="rail-checks">
+            <div class="rail-check-row"><span class="rail-check-mark">01</span><span><strong>下巴伸长区</strong>：切至 2 开怀笑 / 5 吃惊，按住 Space 瞬切 normal 核验下颌延伸与颈影衔接。</span></div>
+            <div class="rail-check-row"><span class="rail-check-mark">02</span><span><strong>右耳尖泛红</strong>：切至 4 脸红害羞，拖卷帘过右耳核验耳尖红度 Δ(R−G) 与发丝羽化。</span></div>
+            <div class="rail-check-row"><span class="rail-check-mark">03</span><span><strong>外轮廓零抖动</strong>：切至「未蒙板原件」再切回「蒙板融合」，验证衣领、发梢与 Alpha 轮廓 0.0 偏移。</span></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- 模式 3：全 6 表情矩阵 & 实测指标总表 -->
+  <section class="view-section" id="section-matrix">
+    <div class="kpi-strip" id="kpi-strip"></div>
+
+    <div class="section-block">
+      <div class="section-head">
+        <div class="section-head-title">GPT vs Gemini 蒙板产线实测指标总表（直接读取自双方 metrics.json）</div>
+        <div class="section-head-sub">全部数值为本次 6 表情实跑真实记录，零估算、零手填</div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width:20%;">评测维度</th>
+            <th style="width:34%;">GPT 蒙板融合（codex-imggen 双账号并发）</th>
+            <th style="width:34%;">Gemini 蒙板融合（generate_image 原生并发）</th>
+            <th style="width:12%;">结论参考</th>
+          </tr>
+        </thead>
+        <tbody id="summary-table-body"></tbody>
+      </table>
+    </div>
+
+    <div class="section-block">
+      <div class="section-head">
+        <div class="section-head-title">全 6 表情逐项实测明细表</div>
+        <div class="section-head-sub">外轮廓 NCC 越高越贴近母版 · 接缝误差越低过渡越无痕 · blush_shy 关注右耳红度 Δ(R−G)</div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>表情</th>
+            <th>GPT 外轮廓 NCC</th>
+            <th>Gemini 外轮廓 NCC</th>
+            <th>GPT 接缝 L1</th>
+            <th>Gemini 接缝 MAE</th>
+            <th>GPT / Gemini 右耳红度 Δ</th>
+            <th>GPT / Gemini 生成耗时</th>
+            <th>外轮廓 &amp; Alpha 最大差</th>
+          </tr>
+        </thead>
+        <tbody id="per-emo-table-body"></tbody>
+      </table>
+    </div>
+
+    <div class="section-head" style="background:var(--bg-surface);border:1px solid var(--line-soft);margin-bottom:10px;">
+      <div class="section-head-title">6 行表情 × 3 列 2.7× 面部/下巴/耳尖放大特写矩阵</div>
+      <div class="section-head-sub">左 = normal 基准 ｜ 中 = GPT 蒙板 ｜ 右 = Gemini 蒙板（随上方背景切换同步更新）</div>
+    </div>
+    <div class="matrix-list" id="matrix-list"></div>
+  </section>
+</main>
+
+<!-- ==================== 底部「一键拍板复制条」 ==================== -->
+<footer class="decision-dock" id="decision-dock">
+  <div class="dock-inner">
+    <div class="dock-bar-top">
+      <div class="dock-head-left">
+        <span class="dock-title">一键拍板复制条</span>
+        <span class="dock-summary-preview" id="dock-summary-preview"></span>
+      </div>
+      <div class="dock-head-right">
+        <button class="dock-collapse-btn" id="dock-collapse-btn" data-tip="收起或展开下方三组拍板选项，腾出更多审图视野">收起选项</button>
+        <button class="copy-cta" id="btn-copy-decision" data-tip="按当前所选三组拍板配置生成 Markdown 决策指令并复制到剪贴板">复制拍板指令</button>
+      </div>
+    </div>
+
+    <div class="dock-groups">
+      <div class="dock-group">
+        <div class="dock-group-label">① 表情引擎拍板</div>
+        <div class="dock-options" id="opt-engine">
+          <button class="opt-btn selected" data-group="engine" data-val="Gemini 蒙板（速度快5倍/对齐0.991/无限流）">Gemini 蒙板（速度快5倍/对齐0.991/无限流）</button>
+          <button class="opt-btn" data-group="engine" data-val="GPT 蒙板">GPT 蒙板</button>
+          <button class="opt-btn" data-group="engine" data-val="混用（核心S档GPT+其余Gemini）">混用（核心S档GPT+其余Gemini）</button>
+        </div>
+      </div>
+
+      <div class="dock-group">
+        <div class="dock-group-label">② 覆盖档位</div>
+        <div class="dock-options" id="opt-tier">
+          <button class="opt-btn" data-group="tier" data-val="方案1·仅S档(6单元·107张)">方案1·仅S档(6单元·107张)</button>
+          <button class="opt-btn selected" data-group="tier" data-val="方案2·S+A档(18单元·218张·推荐)">方案2·S+A档(18单元·218张·推荐)</button>
+          <button class="opt-btn" data-group="tier" data-val="方案3·S+A+B档(36单元·293张)">方案3·S+A+B档(36单元·293张)</button>
+          <button class="opt-btn" data-group="tier" data-val="方案4·全站拉满(48单元·307张)">方案4·全站拉满(48单元·307张)</button>
+        </div>
+      </div>
+
+      <div class="dock-group">
+        <div class="dock-group-label">③ 剧情错配标签同步改接</div>
+        <div class="dock-options" id="opt-story">
+          <button class="opt-btn selected" data-group="story" data-val="同步排查改接剧情错配标签">同步排查改接剧情错配标签</button>
+          <button class="opt-btn" data-group="story" data-val="先只做图与注册，剧情标签稍后改">先只做图与注册，剧情标签稍后改</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div id="ice-tooltip" role="tooltip"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  const state = {
+    data: null,
+    mode: 'dual',            // 'dual' | 'inspect' | 'matrix'
+    emoId: 'warm_smile',     // default to warm_smile so user sees an instant expression diff immediately, or normal? Let's start on blush_shy or warm_smile! Wait: warm_smile is #1 and shows instant expression + metrics!
+    bgId: 'garden',          // 'garden' | 'library' | 'balcony' | 'white' | 'checker'
+    view: 'full',            // 'full' | 'closeup'
+    layer: 'masked',         // 'masked' | 'overlay' | 'raw'
+    dialogueOn: true,
+    microMode: 'split',      // 'split' | 'gpt' | 'gemini' | 'normal'
+    microSplit: 50,          // 0..100
+    microZoom: 2.7,
+    isFlashing: false,
+    decision: {
+      engine: 'Gemini 蒙板（速度快5倍/对齐0.991/无限流）',
+      tier: '方案2·S+A档(18单元·218张·推荐)',
+      story: '同步排查改接剧情错配标签'
+    },
+    preloaded: new Map()
+  };
+
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+  function getEmo(id) {
+    return state.data.emotions.find(e => e.id === id) || state.data.emotions[0];
+  }
+
+  function getBg(id) {
+    return state.data.backgrounds.find(b => b.id === id) || state.data.backgrounds[0];
+  }
+
+  function getAssetForChannel(emo, channel, layer) {
+    if (layer === 'overlay') {
+      return channel === 'gpt' ? emo.assets.gpt_overlay : emo.assets.gemini_overlay;
+    }
+    if (layer === 'raw') {
+      return channel === 'gpt' ? emo.assets.gpt_raw : emo.assets.gemini_raw;
+    }
+    return channel === 'gpt' ? emo.assets.gpt_masked : emo.assets.gemini_masked;
+  }
+
+  function getLayerLabel(layer, isBaseline) {
+    if (layer === 'overlay') return '蒙板边界叠加';
+    if (layer === 'raw') return isBaseline ? '基准母版原件' : '未蒙板生图原件';
+    return isBaseline ? '基准 RGBA 母版' : 'RGBA 蒙板成品';
+  }
+
+  function fmtSigned(v, digits = 2) {
+    if (v === null || v === undefined || Number.isNaN(v)) return '—';
+    const s = Number(v).toFixed(digits);
+    return Number(v) > 0 ? `+${s}` : s;
+  }
+
+  function showToast(msg) {
+    const el = $('#toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => el.classList.remove('show'), 2600);
+  }
+
+  // ==================== 自定义雪瓷 Tooltip（彻底替代原生 title） ====================
+  function initCustomTooltips() {
+    const tip = $('#ice-tooltip');
+    let activeTarget = null;
+
+    function positionTip(e) {
+      const pad = 12;
+      const rect = tip.getBoundingClientRect();
+      let x = e.clientX + 14;
+      let y = e.clientY + 18;
+      if (x + rect.width > window.innerWidth - pad) {
+        x = Math.max(pad, e.clientX - rect.width - 14);
+      }
+      if (y + rect.height > window.innerHeight - pad) {
+        y = Math.max(pad, e.clientY - rect.height - 14);
+      }
+      tip.style.left = x + 'px';
+      tip.style.top = y + 'px';
+    }
+
+    document.addEventListener('mouseover', (e) => {
+      const t = e.target.closest('[data-tip]');
+      if (!t) return;
+      activeTarget = t;
+      tip.textContent = t.getAttribute('data-tip');
+      tip.classList.add('show');
+      positionTip(e);
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (activeTarget && tip.classList.contains('show')) {
+        positionTip(e);
+      }
+    });
+
+    document.addEventListener('mouseout', (e) => {
+      if (!activeTarget) return;
+      if (!e.relatedTarget || !activeTarget.contains(e.relatedTarget)) {
+        activeTarget = null;
+        tip.classList.remove('show');
+      }
+    });
+  }
+
+  // ==================== 全资产预加载防闪烁 ====================
+  function preloadAllAssets() {
+    const urls = new Set();
+    state.data.backgrounds.forEach(bg => {
+      if (bg.src) urls.add(bg.src);
+    });
+    state.data.emotions.forEach(e => {
+      Object.values(e.assets).forEach(u => urls.add(u));
+    });
+    const list = Array.from(urls);
+    const total = list.length;
+    let done = 0;
+
+    const statusEl = $('#preload-status');
+    const textEl = $('#preload-text');
+    textEl.textContent = `正在预载 0/${total}`;
+
+    list.forEach(url => {
+      const im = new Image();
+      im.decoding = 'async';
+      im.onload = im.onerror = () => {
+        done++;
+        if (done >= total) {
+          statusEl.classList.add('ready');
+          textEl.textContent = `资源就绪 ${total}/${total} · 零闪烁`;
+        } else {
+          textEl.textContent = `正在预载 ${done}/${total}`;
+        }
+      };
+      im.src = url;
+      state.preloaded.set(url, im);
+    });
+  }
+
+  // ==================== 应用背景样式 ====================
+  function applyBackgroundToElement(el, bg) {
+    el.classList.remove('bg-white', 'bg-checker');
+    if (bg.type === 'solid') {
+      el.classList.add('bg-white');
+      el.style.backgroundImage = 'none';
+    } else if (bg.type === 'checker') {
+      el.classList.add('bg-checker');
+      el.style.backgroundImage = '';
+    } else {
+      el.style.backgroundImage = `url("${bg.src}")`;
+    }
+  }
+
+  // ==================== 渲染控件栏 ====================
+  function renderEmotionBar() {
+    const bar = $('#emo-bar');
+    bar.innerHTML = state.data.emotions.map(e => `
+      <button class="emo-btn ${e.id === state.emoId ? 'active' : ''}" data-emo="${e.id}" data-tip="按键盘 ${e.key} 立即切换：${e.cn}（${e.id}）">
+        <span class="emo-key">${e.key}</span>
+        <span class="emo-text">
+          <span class="emo-cn">${e.cn}</span>
+          <span class="emo-en">${e.id}</span>
+        </span>
+      </button>
+    `).join('');
+
+    bar.querySelectorAll('.emo-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.emoId = btn.dataset.emo;
+        syncAll();
+      });
+    });
+  }
+
+  function renderBgButtons() {
+    const box = $('#bg-buttons');
+    box.innerHTML = state.data.backgrounds.map(b => `
+      <button class="seg-btn ${b.id === state.bgId ? 'active' : ''}" data-bg="${b.id}">${b.label}</button>
+    `).join('');
+
+    box.querySelectorAll('.seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.bgId = btn.dataset.bg;
+        syncAll();
+      });
+    });
+  }
+
+  // ==================== 渲染模式 1：双屏同步 ====================
+  function renderCornerMetrics(el, channel, emo) {
+    if (emo.is_baseline) {
+      el.innerHTML = `
+        <div class="cm-item"><span class="cm-k">规格</span><span class="cm-v accent">1152×1536 RGBA</span></div>
+        <div class="cm-item"><span class="cm-k">外轮廓Δ</span><span class="cm-v good">0.0</span></div>
+        <div class="cm-item"><span class="cm-k">AlphaΔ</span><span class="cm-v good">0.0</span></div>
+        <div class="cm-item"><span class="cm-k">角色</span><span class="cm-v">绝对母版</span></div>
+      `;
+      return;
+    }
+    const m = channel === 'gpt' ? emo.gpt : emo.gemini;
+    const nccClass = m.outer_ncc >= 0.99 ? 'good' : (m.outer_ncc < 0.95 ? 'warn' : 'accent');
+    const seamClass = m.seam_error <= 8.5 ? 'good' : (m.seam_error >= 15 ? 'warn' : '');
+    const earItem = emo.id === 'blush_shy'
+      ? `<div class="cm-item"><span class="cm-k">右耳红Δ</span><span class="cm-v rose">${fmtSigned(m.ear_redness_shift, 1)}</span></div>`
+      : '';
+    el.innerHTML = `
+      <div class="cm-item"><span class="cm-k">NCC</span><span class="cm-v ${nccClass}">${m.outer_ncc.toFixed(4)}</span></div>
+      <div class="cm-item"><span class="cm-k">外轮廓差</span><span class="cm-v good">${m.outer_max_abs_diff.toFixed(1)}</span></div>
+      <div class="cm-item"><span class="cm-k">Alpha差</span><span class="cm-v good">${m.alpha_max_abs_diff.toFixed(1)}</span></div>
+      <div class="cm-item"><span class="cm-k">${m.seam_metric_name}</span><span class="cm-v ${seamClass}">${m.seam_error.toFixed(2)}</span></div>
+      ${earItem}
+      <div class="cm-item"><span class="cm-k">耗时</span><span class="cm-v ${channel === 'gemini' ? 'good' : ''}">${m.gen_sec.toFixed(1)}s</span></div>
+    `;
+  }
+
+  function renderDualMode() {
+    const emo = getEmo(state.emoId);
+    const bg = getBg(state.bgId);
+    const stageGpt = $('#stage-gpt');
+    const stageGem = $('#stage-gemini');
+
+    [stageGpt, stageGem].forEach(st => {
+      applyBackgroundToElement(st, bg);
+      st.classList.toggle('is-closeup', state.view === 'closeup');
+      st.classList.toggle('no-dialogue', !state.dialogueOn);
+      st.classList.toggle('is-raw-layer', state.layer !== 'masked');
+    });
+
+    const srcGpt = getAssetForChannel(emo, 'gpt', state.layer);
+    const srcGem = getAssetForChannel(emo, 'gemini', state.layer);
+    const imgGpt = $('#img-dual-gpt');
+    const imgGem = $('#img-dual-gemini');
+    if (imgGpt.getAttribute('src') !== srcGpt) imgGpt.src = srcGpt;
+    if (imgGem.getAttribute('src') !== srcGem) imgGem.src = srcGem;
+
+    $('#layer-tag-gpt').textContent = getLayerLabel(state.layer, emo.is_baseline);
+    $('#layer-tag-gemini').textContent = getLayerLabel(state.layer, emo.is_baseline);
+
+    renderCornerMetrics($('#metrics-gpt'), 'gpt', emo);
+    renderCornerMetrics($('#metrics-gemini'), 'gemini', emo);
+
+    ['gpt', 'gemini'].forEach(ch => {
+      $(`#dlg-scene-${ch}`).textContent = emo.scene;
+      $(`#dlg-emo-${ch}`).textContent = `${emo.key} · ${emo.cn} (${emo.id})`;
+      $(`#dlg-text-${ch}`).textContent = emo.line;
+    });
+  }
+
+  // ==================== 渲染模式 2：卷帘 / 闪烁显微直比 ====================
+  function getEffectiveMicroDisplay() {
+    if (state.isFlashing) {
+      if (state.microMode === 'split') return 'normal';
+      if (state.microMode === 'gpt') return 'gemini';
+      if (state.microMode === 'gemini') return 'gpt';
+      return 'gemini';
+    }
+    return state.microMode;
+  }
+
+  function renderInspectMode() {
+    const emo = getEmo(state.emoId);
+    const bg = getBg(state.bgId);
+    const vp = $('#micro-viewport');
+
+    applyBackgroundToElement(vp, bg);
+    vp.style.setProperty('--split', state.microSplit + '%');
+    vp.style.setProperty('--micro-zoom', String(state.microZoom));
+
+    const srcGpt = getAssetForChannel(emo, 'gpt', state.layer);
+    const srcGem = getAssetForChannel(emo, 'gemini', state.layer);
+    const srcNorm = emo.assets.normal;
+
+    const imgG = $('#img-micro-gpt');
+    const imgM = $('#img-micro-gemini');
+    const imgN = $('#img-micro-normal');
+    if (imgG.getAttribute('src') !== srcGpt) imgG.src = srcGpt;
+    if (imgM.getAttribute('src') !== srcGem) imgM.src = srcGem;
+    if (imgN.getAttribute('src') !== srcNorm) imgN.src = srcNorm;
+
+    const disp = getEffectiveMicroDisplay();
+    const layerG = $('#micro-layer-gpt');
+    const layerM = $('#micro-layer-gemini');
+    const layerN = $('#micro-layer-normal');
+    const divider = $('#micro-divider');
+    const banner = $('#micro-live-banner');
+    const tagL = $('#micro-tag-left');
+    const tagR = $('#micro-tag-right');
+
+    const layerSuffix = state.layer === 'masked' ? '蒙板' : (state.layer === 'overlay' ? '蒙板叠加' : '原件 Raw');
+    tagL.textContent = `◀ 左侧：GPT ${layerSuffix}`;
+    tagR.textContent = `右侧：Gemini ${layerSuffix} ▶`;
+
+    vp.classList.toggle('not-split', disp !== 'split');
+    banner.classList.toggle('flashing', state.isFlashing);
+
+    if (disp === 'split') {
+      layerG.style.opacity = '1';
+      layerG.style.clipPath = `inset(0 calc(100% - ${state.microSplit}%) 0 0)`;
+      layerM.style.opacity = '1';
+      layerN.style.opacity = '0';
+      divider.style.display = 'block';
+      tagL.style.opacity = '1';
+      tagR.style.opacity = '1';
+      banner.textContent = `卷帘 ${Math.round(state.microSplit)}% · GPT ◀ ▶ Gemini（按住 Space 瞬切 normal）`;
+    } else if (disp === 'gpt') {
+      layerG.style.opacity = '1';
+      layerG.style.clipPath = 'inset(0 0 0 0)';
+      layerM.style.opacity = '0';
+      layerN.style.opacity = '0';
+      divider.style.display = 'none';
+      tagL.style.opacity = '1';
+      tagR.style.opacity = '0.25';
+      banner.textContent = state.isFlashing ? `⚡ 瞬切对照：GPT ${layerSuffix}` : `单屏锁定：GPT ${layerSuffix}（按住 Space 瞬切 Gemini）`;
+    } else if (disp === 'gemini') {
+      layerG.style.opacity = '0';
+      layerM.style.opacity = '1';
+      layerN.style.opacity = '0';
+      divider.style.display = 'none';
+      tagL.style.opacity = '0.25';
+      tagR.style.opacity = '1';
+      banner.textContent = state.isFlashing ? `⚡ 瞬切对照：Gemini ${layerSuffix}` : `单屏锁定：Gemini ${layerSuffix}（按住 Space 瞬切 GPT）`;
+    } else {
+      layerG.style.opacity = '0';
+      layerM.style.opacity = '0';
+      layerN.style.opacity = '1';
+      divider.style.display = 'none';
+      tagL.style.opacity = '0.25';
+      tagR.style.opacity = '0.25';
+      banner.textContent = state.isFlashing ? '⚡ 瞬切对照：normal 基准母版' : '单屏锁定：normal 基准母版（1152×1536 RGBA）';
+    }
+
+    // 更新右侧显微指标边栏
+    $('#rail-emo-head').textContent = `${emo.key} · ${emo.cn} (${emo.id})`;
+    $('#rail-emo-note').textContent = emo.note;
+
+    const tbody = $('#rail-metrics-body');
+    if (emo.is_baseline) {
+      tbody.innerHTML = `
+        <tr><td>图像尺寸</td><td colspan="2" class="val-gem">1152 × 1536 RGBA</td></tr>
+        <tr><td>外轮廓最大差</td><td class="val-win">0.0</td><td class="val-win">0.0</td></tr>
+        <tr><td>Alpha 轮廓差</td><td class="val-win">0.0</td><td class="val-win">0.0</td></tr>
+        <tr><td>说明</td><td colspan="2" style="font-family:var(--font-sans);color:var(--ink-muted);">请按 1–6 切至任意表情对比</td></tr>
+      `;
+    } else {
+      const g = emo.gpt;
+      const m = emo.gemini;
+      tbody.innerHTML = `
+        <tr>
+          <td>外轮廓 NCC</td>
+          <td class="${g.outer_ncc > m.outer_ncc ? 'val-win' : 'val-gpt'}">${g.outer_ncc.toFixed(5)}</td>
+          <td class="${m.outer_ncc >= g.outer_ncc ? 'val-win' : 'val-gem'}">${m.outer_ncc.toFixed(5)}</td>
+        </tr>
+        <tr>
+          <td>外轮廓最大差</td>
+          <td class="val-win">${g.outer_max_abs_diff.toFixed(1)}</td>
+          <td class="val-win">${m.outer_max_abs_diff.toFixed(1)}</td>
+        </tr>
+        <tr>
+          <td>Alpha 轮廓差</td>
+          <td class="val-win">${g.alpha_max_abs_diff.toFixed(1)}</td>
+          <td class="val-win">${m.alpha_max_abs_diff.toFixed(1)}</td>
+        </tr>
+        <tr>
+          <td>接缝误差 (L1/MAE)</td>
+          <td class="val-gpt">${g.seam_error.toFixed(2)}</td>
+          <td class="val-win">${m.seam_error.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td>对齐缩放 scale</td>
+          <td class="val-gpt">${g.scale.toFixed(4)}×</td>
+          <td class="val-win">${m.scale.toFixed(4)}×</td>
+        </tr>
+        <tr>
+          <td>位移 dx / dy (px)</td>
+          <td>${fmtSigned(g.dx, 2)} / ${fmtSigned(g.dy, 2)}</td>
+          <td>${fmtSigned(m.dx, 2)} / ${fmtSigned(m.dy, 2)}</td>
+        </tr>
+        <tr>
+          <td>右耳红度 Δ(R−G)</td>
+          <td class="${emo.id === 'blush_shy' ? 'val-gpt' : ''}">${fmtSigned(g.ear_redness_shift, 2)}</td>
+          <td class="${emo.id === 'blush_shy' ? 'val-win' : ''}">${fmtSigned(m.ear_redness_shift, 2)}</td>
+        </tr>
+        <tr>
+          <td>单张生成耗时</td>
+          <td class="val-gpt">${g.gen_sec.toFixed(2)}s</td>
+          <td class="val-win">${m.gen_sec.toFixed(1)}s</td>
+        </tr>
+        <tr>
+          <td>蒙板后处理耗时</td>
+          <td>${g.postprocess_sec.toFixed(2)}s</td>
+          <td class="val-win">${m.postprocess_sec.toFixed(2)}s</td>
+        </tr>
+      `;
+    }
+
+    // 同步按钮高亮
+    $$('[data-micro-mode]').forEach(b => b.classList.toggle('active', b.dataset.microMode === state.microMode));
+    $$('[data-zoom]').forEach(b => b.classList.toggle('active', Number(b.dataset.zoom) === state.microZoom));
+    $('#btn-hold-flash').classList.toggle('holding', state.isFlashing);
+  }
+
+  // ==================== 渲染模式 3：矩阵 & 总表 ====================
+  let matrixBuilt = false;
+
+  function renderMatrixMode() {
+    const bg = getBg(state.bgId);
+    if (!matrixBuilt) {
+      buildMatrixStatic();
+      matrixBuilt = true;
+    }
+    $$('#matrix-list .matrix-crop').forEach(el => applyBackgroundToElement(el, bg));
+  }
+
+  function buildMatrixStatic() {
+    const sg = state.data.summary.gpt;
+    const sm = state.data.summary.gemini;
+    const sp = state.data.summary.speedup;
+
+    // KPI Strip
+    $('#kpi-strip').innerHTML = `
+      <div class="kpi-cell">
+        <div class="kpi-label">6 表情并发墙钟生成耗时</div>
+        <div class="kpi-main">${sm.gen_wall_sec.toFixed(1)}s <span style="font-size:13px;color:var(--ink-muted);font-weight:600;">vs ${sg.gen_wall_sec.toFixed(1)}s</span></div>
+        <div class="kpi-sub">Gemini 较 GPT 并发提速 <span class="kpi-badge-em">${sp.gen_wall_ratio}×</span>（单张均值快 ${sp.gen_per_emo_ratio}×）</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-label">全流程端到端耗时（含蒙板融合）</div>
+        <div class="kpi-main">${sm.end_to_end_sec.toFixed(1)}s <span style="font-size:13px;color:var(--ink-muted);font-weight:600;">vs ${sg.end_to_end_sec.toFixed(1)}s</span></div>
+        <div class="kpi-sub">Gemini 端到端提速 <span class="kpi-badge-em">${sp.end_to_end_ratio}×</span>（后处理 ${sm.postprocess_total_sec.toFixed(1)}s vs ${sg.postprocess_total_sec.toFixed(1)}s）</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-label">外轮廓对齐平均 NCC</div>
+        <div class="kpi-main">${sm.mean_outer_ncc.toFixed(5)} <span style="font-size:13px;color:var(--ink-muted);font-weight:600;">vs ${sg.mean_outer_ncc.toFixed(5)}</span></div>
+        <div class="kpi-sub">Gemini 最低 <span class="kpi-badge-em">${sm.min_outer_ncc.toFixed(5)}</span>（GPT 最低 ${sg.min_outer_ncc.toFixed(5)}）</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-label">外轮廓 &amp; Alpha 轮廓最大差</div>
+        <div class="kpi-main" style="color:var(--emerald);">0.0 / 0.0</div>
+        <div class="kpi-sub">双通道 6/6 均达成零外轮廓抖动与零 Alpha 越界</div>
+      </div>
+    `;
+
+    // Summary Table
+    $('#summary-table-body').innerHTML = `
+      <tr>
+        <td><strong>并发生成墙钟耗时（6 表情）</strong></td>
+        <td class="col-gpt mono">${sg.gen_wall_sec.toFixed(2)}s</td>
+        <td class="col-gem mono"><strong>${sm.gen_wall_sec.toFixed(1)}s</strong><span class="win-tag">快 ${sp.gen_wall_ratio}×</span></td>
+        <td>Gemini 胜出</td>
+      </tr>
+      <tr>
+        <td><strong>单张平均生成耗时（范围）</strong></td>
+        <td class="col-gpt mono">${sg.gen_per_emo_avg_sec.toFixed(2)}s（${sg.gen_per_emo_min_sec.toFixed(1)}–${sg.gen_per_emo_max_sec.toFixed(1)}s）</td>
+        <td class="col-gem mono"><strong>${sm.gen_per_emo_avg_sec.toFixed(2)}s</strong>（${sm.gen_per_emo_min_sec.toFixed(1)}–${sm.gen_per_emo_max_sec.toFixed(1)}s）<span class="win-tag">快 ${sp.gen_per_emo_ratio}×</span></td>
+        <td>Gemini 胜出</td>
+      </tr>
+      <tr>
+        <td><strong>蒙板对齐与后处理耗时</strong></td>
+        <td class="col-gpt mono">${sg.postprocess_total_sec.toFixed(2)}s（blush_shy 补边复算耗时 35.43s）</td>
+        <td class="col-gem mono"><strong>${sm.postprocess_total_sec.toFixed(2)}s</strong>（6 张均值 11.74s）</td>
+        <td>Gemini 胜出</td>
+      </tr>
+      <tr>
+        <td><strong>全流程端到端耗时</strong></td>
+        <td class="col-gpt mono">${sg.end_to_end_sec.toFixed(2)}s</td>
+        <td class="col-gem mono"><strong>${sm.end_to_end_sec.toFixed(2)}s</strong><span class="win-tag">快 ${sp.end_to_end_ratio}×</span></td>
+        <td>Gemini 胜出</td>
+      </tr>
+      <tr>
+        <td><strong>外轮廓对齐 NCC（均值 / 最低）</strong></td>
+        <td class="col-gpt mono">${sg.mean_outer_ncc.toFixed(5)} / ${sg.min_outer_ncc.toFixed(5)}<span class="warn-tag">blush_shy 2:3 补边降幅</span></td>
+        <td class="col-gem mono"><strong>${sm.mean_outer_ncc.toFixed(5)} / ${sm.min_outer_ncc.toFixed(5)}</strong><span class="win-tag">全 1.000× 锁定</span></td>
+        <td>Gemini 更稳</td>
+      </tr>
+      <tr>
+        <td><strong>接缝融合误差（调色后均值）</strong></td>
+        <td class="col-gpt mono">L1 = ${sg.mean_seam_error.toFixed(2)}（范围 6.44–20.15，RGB 0–255）</td>
+        <td class="col-gem mono"><strong>MAE = ${sm.mean_seam_error.toFixed(2)}</strong>（范围 5.91–9.96，边缘梯度 Δ 3.65–5.31）</td>
+        <td>Gemini 更平滑</td>
+      </tr>
+      <tr>
+        <td><strong>外轮廓最大差 / Alpha 差</strong></td>
+        <td class="col-gpt mono"><strong>0.0 / 0.0</strong>（6/6 全部通过）</td>
+        <td class="col-gem mono"><strong>0.0 / 0.0</strong>（6/6 全部通过）</td>
+        <td>双方持平</td>
+      </tr>
+      <tr>
+        <td><strong>blush_shy 右耳红度增幅 Δ(R−G)</strong></td>
+        <td class="col-gpt mono">+${sg.blush_ear_redness_shift.toFixed(2)}（耳区 RGB 综合 Δ = 35.19）</td>
+        <td class="col-gem mono"><strong>+${sm.blush_ear_redness_shift.toFixed(2)}</strong><span class="win-tag">耳尖泛红更饱满</span></td>
+        <td>双通道均达标</td>
+      </tr>
+      <tr>
+        <td><strong>并发吞吐与风控/限流稳定性</strong></td>
+        <td class="col-gpt">${sg.concurrency_note}；${sg.stability_note}</td>
+        <td class="col-gem">${sm.concurrency_note}；${sm.stability_note}</td>
+        <td>批量产线推荐 Gemini</td>
+      </tr>
+    `;
+
+    // Per-Emotion Breakdown Table
+    const emos = state.data.emotions.filter(e => !e.is_baseline);
+    $('#per-emo-table-body').innerHTML = emos.map(e => {
+      const g = e.gpt;
+      const m = e.gemini;
+      return `
+        <tr>
+          <td><strong>${e.key} · ${e.cn}</strong> <span class="mono" style="color:var(--ink-faint);font-size:11px;">${e.id}</span></td>
+          <td class="col-gpt mono">${g.outer_ncc.toFixed(5)}${g.auto_padded_3_4 ? '<span class="warn-tag">自动补边</span>' : ''}</td>
+          <td class="col-gem mono"><strong>${m.outer_ncc.toFixed(5)}</strong></td>
+          <td class="col-gpt mono">${g.seam_error.toFixed(2)}</td>
+          <td class="col-gem mono"><strong>${m.seam_error.toFixed(2)}</strong></td>
+          <td class="mono">${fmtSigned(g.ear_redness_shift, 2)} / <strong style="color:${e.id === 'blush_shy' ? 'var(--rose)' : 'var(--ink)'};">${fmtSigned(m.ear_redness_shift, 2)}</strong></td>
+          <td class="mono">${g.gen_sec.toFixed(1)}s / <strong style="color:var(--emerald);">${m.gen_sec.toFixed(1)}s</strong></td>
+          <td class="mono" style="color:var(--emerald);font-weight:700;">0.0 / 0.0</td>
+        </tr>
+      `;
+    }).join('');
+
+    // 6 × 3 Magnified Face Matrix
+    const list = $('#matrix-list');
+    list.innerHTML = emos.map(e => {
+      const g = e.gpt;
+      const m = e.gemini;
+      return `
+        <div class="matrix-row">
+          <div class="matrix-row-head">
+            <div class="matrix-row-title">
+              <span class="matrix-row-idx">${e.key}</span>
+              <span class="matrix-row-cn">${e.cn}</span>
+              <span class="mono" style="font-size:11px;color:var(--ink-faint);">${e.id}</span>
+              <span class="matrix-row-note">— ${e.note}</span>
+            </div>
+            <div class="matrix-row-actions">
+              <button class="jump-btn" data-jump-mode="dual" data-jump-emo="${e.id}">跳至双屏实机</button>
+              <button class="jump-btn" data-jump-mode="inspect" data-jump-emo="${e.id}">跳至显微卷帘</button>
+            </div>
+          </div>
+
+          <div class="matrix-cards">
+            <div class="matrix-cell">
+              <div class="matrix-crop">
+                <div class="matrix-crop-wrap"><img src="${e.assets.normal}" alt="normal 基准特写" loading="lazy"></div>
+                <span class="matrix-col-badge">normal 基准</span>
+              </div>
+              <div class="matrix-cell-meta">
+                <span>1152×1536 RGBA 母版</span>
+                <span>外轮廓锚点 0.0</span>
+              </div>
+            </div>
+
+            <div class="matrix-cell">
+              <div class="matrix-crop">
+                <div class="matrix-crop-wrap"><img src="${e.assets.gpt_masked}" alt="GPT 蒙板 ${e.cn} 特写" loading="lazy"></div>
+                <span class="matrix-col-badge gpt">GPT 蒙板</span>
+              </div>
+              <div class="matrix-cell-meta">
+                <span>NCC ${g.outer_ncc.toFixed(4)}</span>
+                <span>L1 ${g.seam_error.toFixed(2)}</span>
+                <span>耳红 ${fmtSigned(g.ear_redness_shift, 1)}</span>
+                <span>${g.gen_sec.toFixed(1)}s</span>
+              </div>
+            </div>
+
+            <div class="matrix-cell">
+              <div class="matrix-crop">
+                <div class="matrix-crop-wrap"><img src="${e.assets.gemini_masked}" alt="Gemini 蒙板 ${e.cn} 特写" loading="lazy"></div>
+                <span class="matrix-col-badge gem">Gemini 蒙板</span>
+              </div>
+              <div class="matrix-cell-meta">
+                <span style="color:var(--emerald);font-weight:700;">NCC ${m.outer_ncc.toFixed(4)}</span>
+                <span>MAE ${m.seam_error.toFixed(2)}</span>
+                <span style="${e.id === 'blush_shy' ? 'color:var(--rose);font-weight:700;' : ''}">耳红 ${fmtSigned(m.ear_redness_shift, 1)}</span>
+                <span style="color:var(--emerald);font-weight:700;">${m.gen_sec.toFixed(1)}s</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    list.querySelectorAll('[data-jump-mode]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.emoId = btn.dataset.jumpEmo;
+        state.mode = btn.dataset.jumpMode;
+        syncAll();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+  }
+
+  // ==================== 拍板复制条逻辑 ====================
+  function updateDecisionPreview() {
+    const d = state.decision;
+    $('#dock-summary-preview').textContent = `当前选择：${d.engine}  |  ${d.tier}  |  ${d.story}`;
+  }
+
+  function buildDecisionMarkdown() {
+    const d = state.decision;
+    const sg = state.data.summary.gpt;
+    const sm = state.data.summary.gemini;
+    const sp = state.data.summary.speedup;
+    return [
+      '### 蒙板表情 A/B 实测拍板指令（希尔维亚试点验收通过）',
+      '',
+      `- **表情生成引擎**：${d.engine}`,
+      `- **全站覆盖档位**：${d.tier}`,
+      `- **剧情标签处理**：${d.story}`,
+      '',
+      '> 附本次 6 表情实测基准（`expr-ab-lab`）：',
+      `> - 并发生成墙钟：Gemini ${sm.gen_wall_sec.toFixed(1)}s vs GPT ${sg.gen_wall_sec.toFixed(2)}s（Gemini 快 ${sp.gen_wall_ratio}×）`,
+      `> - 端到端全流程：Gemini ${sm.end_to_end_sec.toFixed(2)}s vs GPT ${sg.end_to_end_sec.toFixed(2)}s（快 ${sp.end_to_end_ratio}×）`,
+      `> - 外轮廓平均 NCC：Gemini ${sm.mean_outer_ncc.toFixed(5)} vs GPT ${sg.mean_outer_ncc.toFixed(5)}；双通道外轮廓差 & Alpha 差均为 0.0`,
+      `> - 接缝误差均值：Gemini MAE ${sm.mean_seam_error.toFixed(2)} vs GPT L1 ${sg.mean_seam_error.toFixed(2)}；blush_shy 右耳红度 Δ(R−G)：Gemini +${sm.blush_ear_redness_shift.toFixed(2)} vs GPT +${sg.blush_ear_redness_shift.toFixed(2)}`,
+      '',
+      '请按上述拍板方案正式启动蒙板表情批量产线！'
+    ].join('\n');
+  }
+
+  async function copyDecisionToClipboard() {
+    const text = buildDecisionMarkdown();
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        throw new Error('fallback');
+      }
+      showToast('已复制拍板 Markdown 指令到剪贴板，可直接发送给总管！');
+    } catch (_) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('已复制拍板 Markdown 指令到剪贴板！');
+    }
+  }
+
+  // ==================== 全局状态同步 ====================
+  function syncAll() {
+    // Mode tabs & sections
+    $$('.mode-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === state.mode));
+    $('#section-dual').classList.toggle('active', state.mode === 'dual');
+    $('#section-inspect').classList.toggle('active', state.mode === 'inspect');
+    $('#section-matrix').classList.toggle('active', state.mode === 'matrix');
+
+    // Mode-specific control visibility
+    $('#emo-bar').style.display = state.mode === 'matrix' ? 'none' : 'grid';
+    $('#view-group').style.display = state.mode === 'dual' ? 'flex' : 'none';
+    $('#dialogue-group').style.display = state.mode === 'dual' ? 'flex' : 'none';
+    $('#layer-group').style.display = state.mode === 'matrix' ? 'none' : 'flex';
+
+    // Sync active states in controls
+    $$('#emo-bar .emo-btn').forEach(b => b.classList.toggle('active', b.dataset.emo === state.emoId));
+    $$('#bg-buttons .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.bg === state.bgId));
+    $$('[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === state.view));
+    $$('[data-layer]').forEach(b => b.classList.toggle('active', b.dataset.layer === state.layer));
+
+    const dlgBtn = $('#dlg-toggle-btn');
+    dlgBtn.classList.toggle('active', state.dialogueOn);
+    dlgBtn.textContent = state.dialogueOn ? '已开启' : '已隐藏';
+
+    renderDualMode();
+    renderInspectMode();
+    if (state.mode === 'matrix') {
+      renderMatrixMode();
+    }
+    updateDecisionPreview();
+  }
+
+  // ==================== 交互事件绑定 ====================
+  function bindEvents() {
+    // 顶部三模式切换
+    $$('.mode-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        state.mode = tab.dataset.mode;
+        syncAll();
+      });
+    });
+
+    // 视角切换
+    $$('[data-view]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.view = btn.dataset.view;
+        syncAll();
+      });
+    });
+
+    // 图层切换
+    $$('[data-layer]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.layer = btn.dataset.layer;
+        syncAll();
+      });
+    });
+
+    // 对话框开关
+    $('#dlg-toggle-btn').addEventListener('click', () => {
+      state.dialogueOn = !state.dialogueOn;
+      syncAll();
+    });
+
+    // 模式 2 子模式 & 倍率
+    $$('[data-micro-mode]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.microMode = btn.dataset.microMode;
+        syncAll();
+      });
+    });
+
+    $$('[data-zoom]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.microZoom = Number(btn.dataset.zoom);
+        syncAll();
+      });
+    });
+
+    $$('[data-snap]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.microMode = 'split';
+        state.microSplit = Number(btn.dataset.snap);
+        syncAll();
+      });
+    });
+
+    // 原地三态轮切
+    $('#btn-cycle-flicker').addEventListener('click', () => {
+      const order = ['gpt', 'gemini', 'normal'];
+      const idx = order.indexOf(state.microMode);
+      state.microMode = order[(idx + 1) % order.length];
+      syncAll();
+    });
+
+    // 按住瞬切按钮
+    const flashBtn = $('#btn-hold-flash');
+    const startFlash = () => { state.isFlashing = true; renderInspectMode(); };
+    const stopFlash = () => { if (state.isFlashing) { state.isFlashing = false; renderInspectMode(); } };
+    flashBtn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      flashBtn.setPointerCapture(e.pointerId);
+      startFlash();
+    });
+    flashBtn.addEventListener('pointerup', stopFlash);
+    flashBtn.addEventListener('pointercancel', stopFlash);
+    flashBtn.addEventListener('lostpointercapture', stopFlash);
+
+    // 卷帘拖动
+    const microVp = $('#micro-viewport');
+    let dragging = false;
+    function updateSplitFromPointer(clientX) {
+      const rect = microVp.getBoundingClientRect();
+      const pct = Math.max(2, Math.min(98, ((clientX - rect.left) / rect.width) * 100));
+      state.microSplit = pct;
+      renderInspectMode();
+    }
+    microVp.addEventListener('pointerdown', (e) => {
+      if (state.microMode !== 'split') return;
+      dragging = true;
+      microVp.setPointerCapture(e.pointerId);
+      updateSplitFromPointer(e.clientX);
+    });
+    microVp.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      updateSplitFromPointer(e.clientX);
+    });
+    const endDrag = () => { dragging = false; };
+    microVp.addEventListener('pointerup', endDrag);
+    microVp.addEventListener('pointercancel', endDrag);
+
+    // 底部拍板选项组
+    $$('.opt-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const g = btn.dataset.group;
+        state.decision[g] = btn.dataset.val;
+        $$(`.opt-btn[data-group="${g}"]`).forEach(x => x.classList.toggle('selected', x === btn));
+        updateDecisionPreview();
+      });
+    });
+
+    $('#btn-copy-decision').addEventListener('click', copyDecisionToClipboard);
+
+    $('#dock-collapse-btn').addEventListener('click', () => {
+      const collapsed = document.body.classList.toggle('dock-collapsed');
+      $('#dock-collapse-btn').textContent = collapsed ? '展开选项' : '收起选项';
+    });
+
+    // 全局键盘快捷键
+    window.addEventListener('keydown', (e) => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+
+      // 0-6 秒切表情
+      if (/^[0-6]$/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const emo = state.data.emotions.find(x => x.key === e.key);
+        if (emo) {
+          e.preventDefault();
+          state.emoId = emo.id;
+          syncAll();
+        }
+        return;
+      }
+
+      // Z 切换全身 / 2.7× 特写
+      if ((e.key === 'z' || e.key === 'Z') && state.mode === 'dual') {
+        e.preventDefault();
+        state.view = state.view === 'full' ? 'closeup' : 'full';
+        syncAll();
+        return;
+      }
+
+      // T 开关对话框
+      if ((e.key === 't' || e.key === 'T') && state.mode === 'dual') {
+        e.preventDefault();
+        state.dialogueOn = !state.dialogueOn;
+        syncAll();
+        return;
+      }
+
+      // M 切换图层
+      if ((e.key === 'm' || e.key === 'M') && state.mode !== 'matrix') {
+        e.preventDefault();
+        const layers = ['masked', 'overlay', 'raw'];
+        state.layer = layers[(layers.indexOf(state.layer) + 1) % layers.length];
+        syncAll();
+        return;
+      }
+
+      // 模式 2：Space 按住瞬切 & F 三态轮切 & 左右键微调卷帘
+      if (state.mode === 'inspect') {
+        if (e.code === 'Space') {
+          e.preventDefault();
+          if (!state.isFlashing) {
+            state.isFlashing = true;
+            renderInspectMode();
+          }
+          return;
+        }
+        if (e.key === 'f' || e.key === 'F') {
+          e.preventDefault();
+          const order = ['gpt', 'gemini', 'normal'];
+          const idx = order.indexOf(state.microMode);
+          state.microMode = order[(idx + 1) % order.length];
+          syncAll();
+          return;
+        }
+        if (e.key === 'ArrowLeft' && state.microMode === 'split') {
+          e.preventDefault();
+          state.microSplit = Math.max(2, state.microSplit - 4);
+          renderInspectMode();
+          return;
+        }
+        if (e.key === 'ArrowRight' && state.microMode === 'split') {
+          e.preventDefault();
+          state.microSplit = Math.min(98, state.microSplit + 4);
+          renderInspectMode();
+          return;
+        }
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'Space' && state.isFlashing) {
+        e.preventDefault();
+        state.isFlashing = false;
+        renderInspectMode();
+      }
+    });
+
+    window.addEventListener('blur', () => {
+      if (state.isFlashing) {
+        state.isFlashing = false;
+        renderInspectMode();
+      }
+    });
+  }
+
+  // ==================== 启动入口 ====================
+  async function boot() {
+    initCustomTooltips();
+    try {
+      const resp = await fetch('./data.json', { cache: 'no-cache' });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      state.data = await resp.json();
+    } catch (err) {
+      document.body.innerHTML = `<div style="padding:40px;font-family:sans-serif;color:#c93b60;">无法加载 data.json：${err.message}</div>`;
+      return;
+    }
+
+    renderEmotionBar();
+    renderBgButtons();
+    bindEvents();
+    preloadAllAssets();
+    syncAll();
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>

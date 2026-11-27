@@ -3643,6 +3643,126 @@ body.indie-fullscreen .indie-win-btn[data-indie-act="fullscreen"] {
   100% { opacity: 0.96; }
 }
 
+/* ===== 实机演武传送门（全屏雪瓷覆层 + 紧凑底中切角切换条） ===== */
+#v3-battle-portal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #f2f7fe;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+#v3-battle-portal.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+#v3-battle-portal.hidden {
+  display: none;
+}
+.v3-battle-iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: #f2f7fe;
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+#v3-battle-portal.is-ready .v3-battle-iframe {
+  opacity: 1;
+}
+.v3-battle-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.96) 0%, #eef5fe 62%, #e4effc 100%);
+  color: #16305c;
+  transition: opacity 0.22s ease, visibility 0.22s ease;
+}
+#v3-battle-portal.is-ready .v3-battle-loading {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.v3-battle-loading-diamond {
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid #1658eb;
+  background: linear-gradient(135deg, rgba(22, 88, 235, 0.14), rgba(196, 162, 92, 0.22));
+  transform: rotate(45deg);
+  animation: v3PortalSpin 1.35s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+@keyframes v3PortalSpin {
+  0% { transform: rotate(45deg) scale(0.92); opacity: 0.72; }
+  50% { transform: rotate(225deg) scale(1.06); opacity: 1; }
+  100% { transform: rotate(405deg) scale(0.92); opacity: 0.72; }
+}
+.v3-battle-loading-txt {
+  font-family: 'Noto Serif SC', 'Noto Serif CJK SC', 'Source Han Serif SC', serif;
+  font-size: 13.5px;
+  letter-spacing: 0.12em;
+  color: #214073;
+}
+/* 极薄 26px 雪瓷切角底中浮条：单层切角边框 + 1px 细分隔线（零遮挡顶栏与底角卡片） */
+.v3-portal-dock {
+  position: fixed;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10001;
+  height: 26px;
+  display: inline-flex;
+  align-items: stretch;
+  background: rgba(246, 250, 255, 0.90);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(22, 88, 235, 0.26);
+  box-shadow: 0 4px 16px rgba(15, 42, 96, 0.12);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+.v3-portal-btn {
+  appearance: none;
+  border: 0;
+  margin: 0;
+  padding: 0 12px;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  color: #1c3a6e;
+  font-family: 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+.v3-portal-btn:hover {
+  background: rgba(22, 88, 235, 0.10);
+  color: #1658eb;
+}
+.v3-portal-btn:focus-visible {
+  outline: 2px solid #1658eb;
+  outline-offset: -2px;
+}
+.v3-portal-btn-primary {
+  color: #1658eb;
+}
+.v3-portal-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 5px 0;
+  background: rgba(22, 88, 235, 0.22);
+}
+
 </style>
 </head>
 <body>
@@ -3731,7 +3851,7 @@ body.indie-fullscreen .indie-win-btn[data-indie-act="fullscreen"] {
       </div>
       <div class="v3-edge-right">
         <div class="indie-win-controls">
-          <button id="btn-demo-fullscreen" type="button" class="indie-win-btn" data-indie-act="fullscreen" aria-pressed="false" title="切换全屏显示 (F11 / Alt+Enter)">
+          <button id="btn-demo-fullscreen" type="button" class="indie-win-btn" data-indie-act="fullscreen" aria-pressed="false" data-tip="切换全屏显示 (F11 / Alt+Enter)">
             <span class="indie-win-glyph" aria-hidden="true">
               <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="square">
                 <polyline points="2,6 2,2 6,2"/>
@@ -3800,6 +3920,20 @@ body.indie-fullscreen .indie-win-btn[data-indie-act="fullscreen"] {
   </section>
 
   <div id="toast" class="hidden" role="status" aria-live="polite"></div>
+</div>
+
+<!-- ===== 实机演武传送门：同源直通正式版战斗与 3D 方案C纯舞台 ===== -->
+<div id="v3-battle-portal" class="hidden" aria-hidden="true" role="dialog" aria-label="维斯特利亚实机演武传送门">
+  <div id="v3-battle-loading" class="v3-battle-loading">
+    <div class="v3-battle-loading-diamond" aria-hidden="true"></div>
+    <div id="v3-battle-loading-txt" class="v3-battle-loading-txt">正在展开演武幻境…</div>
+  </div>
+  <iframe id="v3-battle-iframe" class="v3-battle-iframe" allow="autoplay; fullscreen" aria-label="维斯特利亚实机战斗舞台"></iframe>
+  <div class="v3-portal-dock" role="toolbar" aria-label="演武传送门切换">
+    <button id="v3-portal-back" type="button" class="v3-portal-btn v3-portal-btn-primary" aria-label="返回主界面">‹ 返回主界面</button>
+    <span class="v3-portal-sep" aria-hidden="true"></span>
+    <button id="v3-portal-switch" type="button" class="v3-portal-btn" aria-label="切换 3D 方案C纯舞台">3D 方案C纯舞台</button>
+  </div>
 </div>
 
 <script>
@@ -4292,7 +4426,8 @@ body.indie-fullscreen .indie-win-btn[data-indie-act="fullscreen"] {
   root.VNUx = {
     isAnyBlockingOverlayOpen: function () {
       var ld = document.getElementById('letter-demo');
-      return !!(ld && !ld.classList.contains('hidden'));
+      var bp = document.getElementById('v3-battle-portal');
+      return !!((ld && !ld.classList.contains('hidden')) || (bp && !bp.classList.contains('hidden')));
     },
     getPrefs: function () {
       return {
@@ -11582,6 +11717,278 @@ body.indie-fullscreen .indie-win-btn[data-indie-act="fullscreen"] {
     document.addEventListener('webkitfullscreenchange', syncFsBtn);
   }
 
+  /* ---------- 实机演武全屏传送门（同源直通 ../index.html 与 3D 方案C纯舞台） ---------- */
+  var BattlePortal = (function () {
+    var PROD_GAME_URL = '../index.html';
+    var STAGE_3D_C_URL = './hd2d_stage_3boards/hd2d_demo_c.html';
+    var portalOpen = false;
+    var portalMode = 'arena';
+    var loadToken = 0;
+    var innerObserver = null;
+    var closeTimer = null;
+    var resumeBgmOnClose = false;
+
+    function getEls() {
+      return {
+        portal: $('v3-battle-portal'),
+        iframe: $('v3-battle-iframe'),
+        loadingTxt: $('v3-battle-loading-txt'),
+        btnBack: $('v3-portal-back'),
+        btnSwitch: $('v3-portal-switch')
+      };
+    }
+
+    function detachInnerObserver() {
+      if (innerObserver) {
+        try { innerObserver.disconnect(); } catch (e) {}
+        innerObserver = null;
+      }
+    }
+
+    function pauseOuterBgm() {
+      var wasMuted = (typeof root.isMuted === 'function') ? !!root.isMuted() : false;
+      resumeBgmOnClose = !wasMuted;
+      try {
+        if (typeof root.bgmSetTitleUserPaused === 'function') root.bgmSetTitleUserPaused(true);
+      } catch (e) {}
+      try {
+        if (typeof root.bgmStop === 'function') root.bgmStop(true);
+      } catch (e) {}
+    }
+
+    function resumeOuterBgm() {
+      var isMutedNow = (typeof root.isMuted === 'function') ? !!root.isMuted() : false;
+      if (!resumeBgmOnClose || isMutedNow) return;
+      try {
+        if (typeof root.bgmSetTitleUserPaused === 'function') root.bgmSetTitleUserPaused(false);
+        if (typeof root.bgmUnlock === 'function') root.bgmUnlock();
+        if (typeof root.bgmPlayTitle === 'function') root.bgmPlayTitle({ fade: true });
+        if (root.TitleDirector && typeof root.TitleDirector.syncAudioButton === 'function') {
+          root.TitleDirector.syncAudioButton(false);
+        }
+      } catch (e) {}
+    }
+
+    function syncSwitchBtn() {
+      var els = getEls();
+      if (!els.btnSwitch) return;
+      if (portalMode === 'stage3d') {
+        els.btnSwitch.textContent = '正式版演武';
+        els.btnSwitch.setAttribute('aria-label', '切换回正式版演武场');
+      } else {
+        els.btnSwitch.textContent = '3D 方案C纯舞台';
+        els.btnSwitch.setAttribute('aria-label', '切换至 3D 方案C纯舞台');
+      }
+    }
+
+    function attachInnerReturnWatcher(win, doc, token) {
+      detachInnerObserver();
+      var innerTitle = doc.getElementById('title-screen');
+      if (!innerTitle) return;
+
+      var exitToDemoTitle = function () {
+        if (!portalOpen || token !== loadToken) return;
+        try { innerTitle.classList.add('hidden'); } catch (e) {}
+        try { if (typeof win.bgmStop === 'function') win.bgmStop(false); } catch (e) {}
+        close(false);
+      };
+
+      try {
+        if (typeof win.returnToTitle === 'function' && !win.__v3PortalWrappedReturn) {
+          win.__v3PortalWrappedReturn = true;
+          win.returnToTitle = function () { exitToDemoTitle(); };
+        }
+      } catch (e) {}
+
+      if (typeof MutationObserver !== 'function') return;
+      innerObserver = new MutationObserver(function () {
+        if (!portalOpen || token !== loadToken) return;
+        var ao = doc.getElementById('arena-overlay');
+        var bs = doc.getElementById('battle-screen');
+        var titleShown = !innerTitle.classList.contains('hidden');
+        var arenaHidden = !ao || ao.classList.contains('hidden');
+        var battleHidden = !bs || bs.classList.contains('hidden');
+        if (titleShown && arenaHidden && battleHidden) {
+          exitToDemoTitle();
+        }
+      });
+      innerObserver.observe(innerTitle, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    function bootOfficialGame(iframe, mode, token) {
+      var els = getEls();
+      var attempts = 0;
+
+      function revealReady(win) {
+        if (!portalOpen || token !== loadToken) return;
+        if (els.portal) els.portal.classList.add('is-ready');
+        try { if (win && typeof win.focus === 'function') win.focus(); } catch (e) {}
+      }
+
+      function tryLaunch() {
+        if (!portalOpen || token !== loadToken) return;
+        var win = null;
+        var doc = null;
+        try {
+          win = iframe.contentWindow;
+          doc = iframe.contentDocument || (win && win.document);
+        } catch (e) {
+          revealReady(null);
+          return;
+        }
+        if (!win || !doc) {
+          revealReady(null);
+          return;
+        }
+
+        var ce = win.CombatEngine;
+        var ready = !!(ce && typeof ce.openArenaHub === 'function' && typeof ce.startStage === 'function');
+        if (!ready && attempts < 80) {
+          attempts += 1;
+          setTimeout(tryLaunch, 50);
+          return;
+        }
+
+        try {
+          var innerTitle = doc.getElementById('title-screen');
+          var innerGame = doc.getElementById('game-screen');
+          if (innerTitle) innerTitle.classList.add('hidden');
+          if (innerGame) innerGame.classList.add('hidden');
+          if (typeof win.bgmStop === 'function') win.bgmStop(false);
+          if (typeof win.bgmUnlock === 'function') win.bgmUnlock();
+
+          if (mode === 'battle' && ce && typeof ce.startStage === 'function') {
+            if (typeof ce.openArenaHub === 'function') {
+              ce.openArenaHub({ fromTitle: true, _silentOpen: true });
+              var ao = doc.getElementById('arena-overlay');
+              if (ao) ao.classList.add('hidden');
+            }
+            ce.startStage('beatrice_11', { fromArena: true, fullRestore: true });
+          } else if (ce && typeof ce.openArenaHub === 'function') {
+            ce.openArenaHub({ fromTitle: true });
+          } else if (typeof win.openArenaHub === 'function') {
+            win.openArenaHub({ fromTitle: true });
+          } else {
+            var innerArenaBtn = doc.getElementById('btn-arena-title') || doc.getElementById('btn-arena');
+            if (innerArenaBtn) innerArenaBtn.click();
+          }
+
+          if (innerTitle) innerTitle.classList.add('hidden');
+          attachInnerReturnWatcher(win, doc, token);
+        } catch (e) {}
+
+        revealReady(win);
+      }
+
+      tryLaunch();
+    }
+
+    function loadTarget(mode) {
+      var els = getEls();
+      if (!els.portal || !els.iframe) return;
+      portalMode = mode;
+      loadToken += 1;
+      var myToken = loadToken;
+      detachInnerObserver();
+      syncSwitchBtn();
+
+      els.portal.classList.remove('is-ready');
+      if (els.loadingTxt) {
+        if (mode === 'stage3d') els.loadingTxt.textContent = '正在切入 3D 方案C纯舞台…';
+        else if (mode === 'battle') els.loadingTxt.textContent = '正在展开第一幕实战…';
+        else els.loadingTxt.textContent = '正在展开九幕演武幻境…';
+      }
+
+      var targetUrl = (mode === 'stage3d') ? STAGE_3D_C_URL : PROD_GAME_URL;
+      els.iframe.onload = function () {
+        if (!portalOpen || myToken !== loadToken) return;
+        if (mode === 'stage3d') {
+          els.portal.classList.add('is-ready');
+          try { if (els.iframe.contentWindow) els.iframe.contentWindow.focus(); } catch (e) {}
+          return;
+        }
+        bootOfficialGame(els.iframe, mode, myToken);
+      };
+      els.iframe.src = targetUrl;
+    }
+
+    function open(mode) {
+      var els = getEls();
+      if (!els.portal || !els.iframe) return;
+      if (closeTimer) {
+        clearTimeout(closeTimer);
+        closeTimer = null;
+      }
+      if (typeof root.sfx === 'function') {
+        root.sfx(mode === 'battle' ? 'title_start' : 'open');
+      }
+      if (!portalOpen) pauseOuterBgm();
+      portalOpen = true;
+      els.portal.classList.remove('hidden');
+      els.portal.setAttribute('aria-hidden', 'false');
+      requestAnimationFrame(function () {
+        if (portalOpen && els.portal) els.portal.classList.add('is-open');
+      });
+      loadTarget(mode || 'arena');
+    }
+
+    function close(silent) {
+      var els = getEls();
+      if (!portalOpen) return;
+      portalOpen = false;
+      loadToken += 1;
+      detachInnerObserver();
+      if (!silent && typeof root.sfx === 'function') root.sfx('modal_close');
+      if (els.iframe) {
+        try {
+          if (els.iframe.contentWindow && typeof els.iframe.contentWindow.bgmStop === 'function') {
+            els.iframe.contentWindow.bgmStop(false);
+          }
+        } catch (e) {}
+        els.iframe.onload = null;
+        els.iframe.src = 'about:blank';
+      }
+      if (els.portal) {
+        els.portal.classList.remove('is-open');
+        els.portal.classList.remove('is-ready');
+        els.portal.setAttribute('aria-hidden', 'true');
+        closeTimer = setTimeout(function () {
+          closeTimer = null;
+          if (!portalOpen && els.portal) els.portal.classList.add('hidden');
+        }, 250);
+      }
+      resumeOuterBgm();
+    }
+
+    function toggleStage3D() {
+      if (!portalOpen) return;
+      if (typeof root.sfx === 'function') root.sfx('tab_switch');
+      if (portalMode === 'stage3d') {
+        loadTarget('arena');
+      } else {
+        loadTarget('stage3d');
+      }
+    }
+
+    function bind() {
+      var els = getEls();
+      if (els.btnBack) {
+        els.btnBack.onclick = function () { close(false); };
+      }
+      if (els.btnSwitch) {
+        els.btnSwitch.onclick = function () { toggleStage3D(); };
+      }
+    }
+
+    return {
+      bind: bind,
+      open: open,
+      close: close,
+      toggleStage3D: toggleStage3D,
+      isOpen: function () { return portalOpen; }
+    };
+  })();
+
   /* ---------- 主菜单与主 CTA 交互接线 ---------- */
   function bindTitleActions() {
     var previewNotice = function (cue, msg) {
@@ -11593,12 +12000,12 @@ body.indie-fullscreen .indie-win-btn[data-indie-act="fullscreen"] {
 
     var btnNew = $('btn-new');
     if (btnNew) {
-      btnNew.onclick = previewNotice('title_start', '✦ 当前为主界面预览版 Demo · 完整版可开启旅程与战斗');
+      btnNew.onclick = function () { BattlePortal.open('battle'); };
     }
 
     var btnPrismStart = $('v3-prism-start');
     if (btnPrismStart) {
-      btnPrismStart.onclick = previewNotice('title_start', '✦ 当前为主界面预览版 Demo · 完整版可开启旅程与战斗');
+      btnPrismStart.onclick = function () { BattlePortal.open('battle'); };
     }
 
     var btnContinue = $('btn-continue');
@@ -11635,7 +12042,7 @@ body.indie-fullscreen .indie-win-btn[data-indie-act="fullscreen"] {
 
     var btnArena = $('btn-arena-title');
     if (btnArena) {
-      btnArena.onclick = previewNotice('glass_tap', '✦ 当前为主界面预览版 Demo · 完整版可体验冰晶棱镜战术演武');
+      btnArena.onclick = function () { BattlePortal.open('arena'); };
     }
 
     var btnCodex = $('btn-codex');
@@ -11668,6 +12075,7 @@ body.indie-fullscreen .indie-win-btn[data-indie-act="fullscreen"] {
     bindGlobalUnlock();
     bindDesktopGuards();
     bindLetterDemo();
+    BattlePortal.bind();
     bindTitleActions();
     syncFsBtn();
     if (root.__TITLE_DEMO_BRIDGE__) root.__TITLE_DEMO_BRIDGE__.applyBrightness();

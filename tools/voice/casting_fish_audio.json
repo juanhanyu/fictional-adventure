@@ -1045,15 +1045,6 @@
         "axu"
       ],
       "primary": {
-        "title": "Anya",
-        "id": "c3c5599aec5c45e1a4c826baae1e08f8",
-        "url": "https://fish.audio/m/c3c5599aec5c45e1a4c826baae1e08f8/",
-        "likes": 87,
-        "uses": 13710,
-        "animeRef": "间谍过家家 · 阿尼亚·福杰",
-        "seiyuuRef": "种崎敦美"
-      },
-      "backup": {
         "title": "幼い子供の声",
         "id": "1d0c9878f3a54a4f968a2c4ef68c6c22",
         "url": "https://fish.audio/m/1d0c9878f3a54a4f968a2c4ef68c6c22/",
@@ -1061,6 +1052,15 @@
         "uses": 1387,
         "animeRef": "清澈童声",
         "seiyuuRef": "原生日语幼童女声"
+      },
+      "backup": {
+        "title": "Anya",
+        "id": "c3c5599aec5c45e1a4c826baae1e08f8",
+        "url": "https://fish.audio/m/c3c5599aec5c45e1a4c826baae1e08f8/",
+        "likes": 87,
+        "uses": 13710,
+        "animeRef": "间谍过家家 · 阿尼亚·福杰",
+        "seiyuuRef": "种崎敦美"
       },
       "voiceDirection": "天真脆亮、充满山野灵气的牧羊小女孩童声；喊萤尾羊和拉着渔奔跑时欢脱清脆、毫无阴霾。",
       "defaultDrama3Tag": "(cheerful)",

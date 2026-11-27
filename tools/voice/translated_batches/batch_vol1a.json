@@ -37,7 +37,7 @@
       "context_prev": "旁白: 大约两岁左右，金色的头发扎成两个小揪揪，正趴在矮桌边玩着什么。听到门开的声音，她转过头来，圆圆的眼睛一下子亮了。",
       "audioRelPath": "story/s_start/s_start__beatrice__ae1c6d08.mp3",
       "jp_text": "ママ！……妹！",
-      "drama3_input": "[bright, excited] ママ！[short pause] <emphasis>……妹！</emphasis>",
+      "drama3_input": "[bright] ママ、妹！",
       "audition": false
     },
     {
@@ -73,7 +73,7 @@
       "context_prev": "旁白: 两岁的孩子还说不太清楚话，但她凑近了仔细看我，眼睛睁得大大的，像是在观察什么稀奇的东西。 然后她伸出胖乎乎的小手，戳了戳我的脸颊。",
       "audioRelPath": "story/s_start/s_start__beatrice__609115c1.mp3",
       "jp_text": "ふわふわ！妹、すっごくかわいい！",
-      "drama3_input": "[cheerful, delighted] <emphasis>ふわふわ！</emphasis>妹、すっごくかわいい！",
+      "drama3_input": "[bright] ふわふわ！妹、すっごくかわいい！",
       "audition": false
     },
     {
@@ -163,7 +163,7 @@
       "context_prev": "希尔维亚: 贝……蒂。",
       "audioRelPath": "story/s_first_word/s_first_word__beatrice__67345b81.mp3",
       "jp_text": "呼んでくれた！！ママ！！パパ！！シルヴィアがしゃべったよ！！ベティって呼んでくれた！！",
-      "drama3_input": "[overjoyed, ecstatic] <forceful>呼んでくれた！！</forceful>ママ！！パパ！！シルヴィアがしゃべったよ！！<emphasis>ベティって呼んでくれた！！</emphasis>",
+      "drama3_input": "[bright, happy] 呼んでくれた！ママ、パパ、シルヴィアがしゃべったよ！ベティって呼んでくれた！",
       "audition": false
     },
     {
@@ -253,7 +253,7 @@
       "context_prev": "克劳德: 爸爸呢？",
       "audioRelPath": "story/s_first_word/s_first_word__sylvia__580e40d3.mp3",
       "jp_text": "……パパ。",
-      "drama3_input": "[soft, quiet, gentle] <soft>……パパ。</soft>",
+      "drama3_input": "[gentle] パパ。",
       "audition": false
     },
     {
@@ -415,7 +415,7 @@
       "context_prev": "旁白: 姐姐不太习惯。 她趴在婴儿床边，皱着眉头。",
       "audioRelPath": "story/s_child_days/s_child_days__beatrice__6dc82aba.mp3",
       "jp_text": "どうして泣かないの？病気なのかな？",
-      "drama3_input": "[curious, worried] どうして泣かないの？びょうきなのかな？",
+      "drama3_input": "[bright, innocent, curious] どうして泣かないの？ びょうきなのかな？",
       "audition": false
     },
     {
@@ -451,7 +451,7 @@
       "context_prev": "母亲: 没有生病。爱丽丝只是比较安静。",
       "audioRelPath": "story/s_child_days/s_child_days__beatrice__afefffc2.mp3",
       "jp_text": "でもシルヴィアは赤ちゃんのとき泣いてたよ！",
-      "drama3_input": "[puzzled, lively] でもシルヴィアは赤ちゃんのとき泣いてたよ！",
+      "drama3_input": "[bright, lively] でも、シルヴィアは、赤ちゃんのとき泣いてたよ！",
       "audition": false
     },
     {
@@ -487,7 +487,7 @@
       "context_prev": "旁白: 有一次我从门口走到床边，她的眼珠似乎真的跟着转动了一下。蓝色的眼睛清澈见底，没有婴儿常见的混沌，反而显得有些……通透？ 我停下脚步，试探性地看着她。",
       "audioRelPath": "story/s_child_days/s_child_days__sylvia__1a8d24b9.mp3",
       "jp_text": "……アリス？",
-      "drama3_input": "[calm, curious, low energy] ……アリス？",
+      "drama3_input": "[gentle] アリス？",
       "audition": false
     },
     {
@@ -505,7 +505,7 @@
       "context_prev": "旁白: 那天姐姐在给她表演「贝阿特丽丝大人的厉害之处」——其实就是转圈圈加手舞足蹈——突然，爱丽丝笑了。 声音很小，咯咯的，像是银铃。",
       "audioRelPath": "story/s_child_days/s_child_days__beatrice__246cefd2.mp3",
       "jp_text": "笑った！わたしを見て笑ったよ！",
-      "drama3_input": "[delighted, excited] <emphasis>笑った！</emphasis>わたしを見て笑ったよ！",
+      "drama3_input": "[delighted, cheerful] わらった！ わたしを見て、わらったよ！",
       "audition": false
     },
     {
@@ -523,7 +523,7 @@
       "context_prev": "旁白: 姐姐叉着腰对我说——",
       "audioRelPath": "story/s_child_days/s_child_days__beatrice__584475a9.mp3",
       "jp_text": "よく聞いて！アリスはわたしが一番好きなんだから！わたしに一番笑ってくれるんだもん！",
-      "drama3_input": "[proud, energetic] よく聞いて！アリスはわたしが<stress>いちばん</stress>好きなんだから！わたしにいちばん笑ってくれるんだもん！",
+      "drama3_input": "[proud, cheerful] よく聞いて！ アリスは、わたしがいちばん好きなんだから！ わたしにいちばん、わらってくれるんだもん。",
       "audition": false
     },
     {
@@ -541,7 +541,7 @@
       "context_prev": "旁白: 家庭教师是个年轻的女性，棕色的头发扎成马尾，语速很快，走路带风。她叫什么来着……我没太记住。 反正她教的东西不难，识字、算数、基础礼仪，我前世都学过，只是换了一套符号系统。",
       "audioRelPath": "story/s_child_days/s_child_days__teacher__ba3915e0.mp3",
       "jp_text": "シルヴィアお嬢様は本当に飲み込みが早いですね！こんなにお小さいのに、もうこんなに字が読めるなんて！",
-      "drama3_input": "[bright, impressed, brisk] シルヴィアお嬢様はほんとうに飲み込みが早いですね！こんなにお小さいのに、もうこんなに<emphasis>字</emphasis>が読めるなんて！",
+      "drama3_input": "[bright, amazed, brisk] シルヴィアお嬢様は、ほんとうに飲み込みが早いですね！ こんなにお小さいのに、もうこんなに、じが読めるなんて！",
       "audition": true
     },
     {
@@ -559,7 +559,7 @@
       "context_prev": "旁白: 课程结束后，我照例去看妹妹。 爱丽丝已经会走路了，虽然走得不太稳。她正站在窗边，踮着脚尖想看外面的花园。 我走过去，蹲下身。",
       "audioRelPath": "story/s_child_days/s_child_days__sylvia__c1f34a30.mp3",
       "jp_text": "外に出たいの？",
-      "drama3_input": "[calm, gentle, low energy] そとに出たいの？",
+      "drama3_input": "[gentle] 外に出たいの？",
       "audition": false
     },
     {
@@ -613,7 +613,7 @@
       "context_prev": "旁白: 很小的声音。 我转头看她。 那是她说的第一个词。",
       "audioRelPath": "story/s_child_days/s_child_days__sylvia__b28f45ee.mp3",
       "jp_text": "話せるようになったんだ。",
-      "drama3_input": "[calm, mildly surprised] 話せるようになったんだ。",
+      "drama3_input": "[calm] 話せるようになったんだ。",
       "audition": false
     },
     {
@@ -671,7 +671,7 @@
       "context_prev": "贝蒂: 爱丽丝！你喜欢红色还是蓝色？",
       "audioRelPath": "story/s_child_days/s_child_days__alice__7df83e68.mp3",
       "jp_text": "……青。",
-      "drama3_input": "[soft, quiet, breathy] ……青。",
+      "drama3_input": "[gentle] 青。",
       "audition": false
     },
     {
@@ -707,7 +707,7 @@
       "context_prev": "贝蒂: 为什么？",
       "audioRelPath": "story/s_child_days/s_child_days__alice__42da4b45.mp3",
       "jp_text": "……きれいだから。",
-      "drama3_input": "[soft, breathy] ……きれいだから。",
+      "drama3_input": "[gentle] きれいだから。",
       "audition": false
     },
     {
@@ -725,7 +725,7 @@
       "context_prev": "爱丽丝: ……好看。",
       "audioRelPath": "story/s_child_days/s_child_days__beatrice__06688787.mp3",
       "jp_text": "どこがきれいなの？",
-      "drama3_input": "[curious, bright] どこがきれいなの？",
+      "drama3_input": "[bright, curious] どこが、きれいなの？",
       "audition": false
     },
     {
@@ -761,7 +761,7 @@
       "context_prev": "爱丽丝: ……姐姐。",
       "audioRelPath": "story/s_child_days/s_child_days__sylvia__abcc185a.mp3",
       "jp_text": "どうしたの？",
-      "drama3_input": "[calm, low energy] どうしたの？",
+      "drama3_input": "[calm] どうしたの？",
       "audition": false
     },
     {
@@ -797,7 +797,7 @@
       "context_prev": "旁白: 我看了她一眼，又看了看绘本。 封面画着一只仰头看天的兔子，白天的天空里挂着一弯淡淡的月亮，标题是《月亮借走了影子》。",
       "audioRelPath": "story/s_child_days/s_child_days__sylvia__716a1cde.mp3",
       "jp_text": "読んでほしいの？",
-      "drama3_input": "[calm, gentle] 読んでほしいの？",
+      "drama3_input": "[gentle] 読んでほしいの？",
       "audition": false
     },
     {
@@ -851,7 +851,7 @@
       "context_prev": "旁白: 她抬头看我，眼睛亮亮的。",
       "audioRelPath": "story/s_child_days/s_child_days__alice__3140761c.mp3",
       "jp_text": "……うん、まだ。",
-      "drama3_input": "[soft, eager, breathy] ……うん、まだ。",
+      "drama3_input": "[gentle] うん、まだ。",
       "audition": false
     },
     {
@@ -887,7 +887,7 @@
       "context_prev": "旁白: 带着敬意，又带着依赖。 从一个一岁半的小女孩嘴里说出来，有种说不出的……可爱？",
       "audioRelPath": "story/s_child_days/s_child_days__sylvia__e996d219.mp3",
       "jp_text": "……どこでその呼び方を覚えたの？",
-      "drama3_input": "[calm, mildly curious] ……どこでその呼び方を覚えたの？",
+      "drama3_input": "[calm] どこで、その呼び方を覚えたの？",
       "audition": false
     },
     {
@@ -995,7 +995,7 @@
       "context_prev": "贝蒂: 我会用魔法了！厉害吧？快夸我！",
       "audioRelPath": "story/s_age4/s_age4__sylvia__61b3999b.mp3",
       "jp_text": "すごいすごい。",
-      "drama3_input": "[flat, deadpan, low energy] すごいすごい。",
+      "drama3_input": "[calm] すごい、すごい。",
       "audition": false
     },
     {
@@ -1049,7 +1049,7 @@
       "context_prev": "爱丽丝: ……厉害。",
       "audioRelPath": "story/s_age4/s_age4__beatrice__239bcf0f.mp3",
       "jp_text": "でしょでしょ！",
-      "drama3_input": "[delighted, smug] でしょでしょ！",
+      "drama3_input": "[bright, cheerful] でしょ、でしょ！",
       "audition": false
     },
     {
@@ -1067,7 +1067,7 @@
       "context_prev": "贝蒂: 对吧对吧！",
       "audioRelPath": "story/s_age4/s_age4__alice__7a558fd6.mp3",
       "jp_text": "……でも、シルヴィアお姉様も魔法が使えるよ。",
-      "drama3_input": "[soft, matter-of-fact, breathy] ……でも、シルヴィアお姉様も魔法が使えるよ。",
+      "drama3_input": "[gentle] でも、シルヴィアお姉様も、魔法が使えるよ。",
       "audition": false
     },
     {
@@ -1085,7 +1085,7 @@
       "context_prev": "旁白: 姐姐一愣，转头看我。",
       "audioRelPath": "story/s_age4/s_age4__beatrice__bfda5ec9.mp3",
       "jp_text": "あんたも使えるようになったの？",
-      "drama3_input": "[surprised, startled] あんたも使えるようになったの？",
+      "drama3_input": "[surprised, bright] あんたも、つかえるようになったの？",
       "audition": false
     },
     {
@@ -1139,7 +1139,7 @@
       "context_prev": "旁白: 我随口说。",
       "audioRelPath": "story/s_age4/s_age4__beatrice__dbddc5f4.mp3",
       "jp_text": "そ、それなら火だって水を全部乾かせるもん！",
-      "drama3_input": "[flustered, defensive] そ、それなら<stress>火</stress>だって水をぜんぶ乾かせるもん！",
+      "drama3_input": "[flustered, lively] そ、それなら、ひだって、みずをぜんぶ、かわかせるもん。",
       "audition": false
     },
     {
@@ -1193,7 +1193,7 @@
       "context_prev": "爱丽丝: ……都厉害。",
       "audioRelPath": "story/s_age4/s_age4__beatrice__30f79b0b.mp3",
       "jp_text": "それじゃあごまかしじゃない！",
-      "drama3_input": "[pouting, energetic] それじゃあごまかしじゃない！",
+      "drama3_input": "[lively, indignant] それじゃあ、ごまかしじゃない！",
       "audition": false
     },
     {
@@ -1287,7 +1287,7 @@
         "s_age4:54"
       ],
       "jp_text": "……わかった。",
-      "drama3_input": "[soft, obedient, breathy] ……わかった。",
+      "drama3_input": "[gentle] わかった。",
       "audition": false
     },
     {
@@ -1341,7 +1341,7 @@
       "context_prev": "爱丽丝: 姐姐大人，那本书我看完了。",
       "audioRelPath": "story/s_age4/s_age4__alice__ef671282.mp3",
       "jp_text": "お姉様、ベアトリスお姉ちゃんがまた自慢してる。",
-      "drama3_input": "[soft, deadpan, breathy] お姉様、ベアトリスおねえちゃんがまた自慢してる。",
+      "drama3_input": "[calm] お姉様、ベアトリスお姉ちゃんが、また自慢してる。",
       "audition": false
     },
     {
@@ -1359,7 +1359,7 @@
       "context_prev": "旁白: 而且我发现，她对某些事情特别感兴趣。 比如书。 有一次我在看一本关于魔法理论的书，她走过来，站在旁边，眼睛盯着书页。",
       "audioRelPath": "story/s_age4/s_age4__alice__0ad1a51a.mp3",
       "jp_text": "……お姉様、何を読んでるの？",
-      "drama3_input": "[curious, soft, breathy] ……お姉様、なにを読んでるの？",
+      "drama3_input": "[gentle] お姉様、なにを読んでるの？",
       "audition": false
     },
     {
@@ -1413,7 +1413,7 @@
       "context_prev": "旁白: 她的语气还是平平的，但眼睛忽然变得很亮。",
       "audioRelPath": "story/s_age4/s_age4__sylvia__1aafca3c.mp3",
       "jp_text": "まだ二歳でしょ、読めないよ。",
-      "drama3_input": "[calm, matter-of-fact] まだにさいでしょ、読めないよ。",
+      "drama3_input": "[calm] まだ二歳でしょ、読めないよ。",
       "audition": false
     },
     {
@@ -1431,7 +1431,7 @@
       "context_prev": "希尔维亚: 你才两岁，看不懂吧。",
       "audioRelPath": "story/s_age4/s_age4__alice__47b4d181.mp3",
       "jp_text": "……覚えられるよ。",
-      "drama3_input": "[soft, determined, breathy] ……覚えられるよ。",
+      "drama3_input": "[gentle] 覚えられるよ。",
       "audition": false
     },
     {
@@ -1449,7 +1449,7 @@
       "context_prev": "旁白: 从最基础的开始讲。 什么是魔力，什么是亲和，什么是魔法阵…… 爱丽丝听得很认真。偶尔会问问题，问题还挺有想法。",
       "audioRelPath": "story/s_age4/s_age4__alice__81c0f94b.mp3",
       "jp_text": "……じゃあ、親和性は勉強しても覚えられなくて、生まれつき持ってるものなの？",
-      "drama3_input": "[thoughtful, soft, breathy] ……じゃあ、しんわせいは勉強しても覚えられなくて、生まれつき持ってるものなの？",
+      "drama3_input": "[gentle] じゃあ、親和性は勉強しても覚えられなくて、生まれつき持ってるものなの？",
       "audition": false
     },
     {
@@ -1471,7 +1471,7 @@
         "s_age4:104"
       ],
       "jp_text": "そう。",
-      "drama3_input": "[calm, low energy] そう。",
+      "drama3_input": "[calm] そう。",
       "audition": false
     },
     {
@@ -1489,7 +1489,7 @@
       "context_prev": "希尔维亚: 对。",
       "audioRelPath": "story/s_age4/s_age4__alice__1b00ac2b.mp3",
       "jp_text": "……自分にどんな親和性があるか、どうやってわかるの？",
-      "drama3_input": "[curious, soft, breathy] ……自分にどんなしんわせいがあるか、どうやってわかるの？",
+      "drama3_input": "[calm] 自分にどんな親和性があるか、どうやってわかるの？",
       "audition": false
     },
     {
@@ -1525,7 +1525,7 @@
       "context_prev": "希尔维亚: 要等大一点，做测试。",
       "audioRelPath": "story/s_age4/s_age4__alice__c0dcec8d.mp3",
       "jp_text": "……知りたいな。",
-      "drama3_input": "[soft, wistful, breathy] <soft>……知りたいな。</soft>",
+      "drama3_input": "[gentle] 知りたいな。",
       "audition": false
     },
     {
@@ -1543,7 +1543,7 @@
       "context_prev": "爱丽丝: ……我想知道。",
       "audioRelPath": "story/s_age4/s_age4__sylvia__2c2f99f4.mp3",
       "jp_text": "あと何年か待ってね。",
-      "drama3_input": "[calm, gentle] あとなんねんか待ってね。",
+      "drama3_input": "[gentle] あと何年か、待ってね。",
       "audition": false
     },
     {
@@ -1633,7 +1633,7 @@
       "context_prev": "爱丽丝: ……抱歉，姐姐大人。",
       "audioRelPath": "story/s_age4/s_age4__sylvia__f761452a.mp3",
       "jp_text": "気にしなくていいよ。",
-      "drama3_input": "[calm, gentle] 気にしなくていいよ。",
+      "drama3_input": "[gentle] 気にしなくていいよ。",
       "audition": false
     },
     {
@@ -1651,7 +1651,7 @@
       "context_prev": "旁白: 平时装得淡淡的，其实对感兴趣的事情很热情。 只是不太擅长表达。",
       "audioRelPath": "story/s_age4/s_age4__sylvia__0f811adb.mp3",
       "jp_text": "おいで。",
-      "drama3_input": "[warm, soft, calm] おいで。",
+      "drama3_input": "[gentle] おいで。",
       "audition": false
     },
     {
@@ -1687,7 +1687,7 @@
       "context_prev": "旁白: 我让冰晶在指尖慢慢融化，水珠顺着手指滑下来，又在指尖重新冻结。",
       "audioRelPath": "story/s_age4/s_age4__alice__0e4834cd.mp3",
       "jp_text": "目に見えない気体？",
-      "drama3_input": "[curious, soft, breathy] 目に見えないきたい？",
+      "drama3_input": "[calm] 目に見えない気体？",
       "audition": false
     },
     {
@@ -1723,7 +1723,7 @@
       "context_prev": "希尔维亚: 嗯。你烧水的时候壶嘴冒出来的白雾，其实就是水。",
       "audioRelPath": "story/s_age4/s_age4__alice__3ecbaa54.mp3",
       "jp_text": "あの白いもやは、煙じゃないの？",
-      "drama3_input": "[curious, soft, breathy] あの白いもやは、煙じゃないの？",
+      "drama3_input": "[calm] あの白いもやは、煙じゃないの？",
       "audition": false
     },
     {
@@ -1813,7 +1813,7 @@
       "context_prev": "旁白: 「会变成……」 我差点说出「绝对零度」三个字。 咽回去了。",
       "audioRelPath": "story/s_age4/s_age4__sylvia__c0d32c0f.mp3",
       "jp_text": "すごくすごく冷たい氷になるよ。何でも切れるくらい硬い氷。",
-      "drama3_input": "[calm, thoughtful] すごくすごく冷たい氷になるよ。[short pause] なんでも切れるくらい硬い氷。",
+      "drama3_input": "[calm] すごく、すごく冷たい氷になるよ。何でも切れるくらい、硬い氷。",
       "audition": false
     },
     {
@@ -1831,7 +1831,7 @@
       "context_prev": "旁白: 我又凝出一颗冰晶，比刚才那颗大一些。捏成了一个——大概是兔子的形状。耳朵有点歪。严格来说更像一只耳朵被门夹过的猫。",
       "audioRelPath": "story/s_age4/s_age4__sylvia__62fbf7a8.mp3",
       "jp_text": "はい、あげる。",
-      "drama3_input": "[calm, gentle] はい、あげる。",
+      "drama3_input": "[gentle] はい。あげる。",
       "audition": false
     },
     {
@@ -1849,7 +1849,7 @@
       "context_prev": "旁白: 她双手接过去。捧在掌心里。非常小心。",
       "audioRelPath": "story/s_age4/s_age4__alice__0c7d1af3.mp3",
       "jp_text": "溶けちゃうよ。",
-      "drama3_input": "[soft, quiet, breathy] <soft>溶けちゃうよ。</soft>",
+      "drama3_input": "[gentle] 溶けちゃうよ。",
       "audition": false
     },
     {
@@ -1867,7 +1867,7 @@
       "context_prev": "旁白: 她说。语气平平的。但手捧得更紧了一点。",
       "audioRelPath": "story/s_age4/s_age4__sylvia__c23d1369.mp3",
       "jp_text": "うん。でも、また作ってあげるよ。",
-      "drama3_input": "[calm, reassuring, gentle] うん。でも、また作ってあげるよ。",
+      "drama3_input": "[gentle] うん。でも、また作ってあげるよ。",
       "audition": false
     },
     {
@@ -1975,7 +1975,7 @@
       "context_prev": "希尔维亚: 因为大地在把水往下拉。所有东西都会被大地拉住。你跳起来会落下来，也是一样的道理。",
       "audioRelPath": "story/s_age4/s_age4__alice__c75503b2.mp3",
       "jp_text": "大地が引っ張ってるの？",
-      "drama3_input": "[curious, soft, breathy] 大地が引っ張ってるの？",
+      "drama3_input": "[calm] 大地が、引っ張ってるの？",
       "audition": false
     },
     {
@@ -2011,7 +2011,7 @@
       "context_prev": "希尔维亚: 嗯。像有一只很大的、看不见的手。什么都往下拽。",
       "audioRelPath": "story/s_age4/s_age4__alice__7bc97fa6.mp3",
       "jp_text": "じゃあ、どうして雲は落ちてこないの？",
-      "drama3_input": "[curious, thoughtful, soft] じゃあ、どうして雲は落ちてこないの？",
+      "drama3_input": "[calm] じゃあどうして、雲は落ちてこないの？",
       "audition": false
     },
     {
@@ -2083,7 +2083,7 @@
       "context_prev": "希尔维亚: 云攒多了就沉了。就像你在树叶上一直加沙子，加到一定程度——",
       "audioRelPath": "story/s_age4/s_age4__alice__1014847f.mp3",
       "jp_text": "沈んじゃう。",
-      "drama3_input": "[soft, understanding, breathy] 沈んじゃう。",
+      "drama3_input": "[calm] 沈んじゃう。",
       "audition": false
     },
     {
@@ -2119,7 +2119,7 @@
       "context_prev": "爱丽丝: 所以下雨就是云太胖了。",
       "audioRelPath": "story/s_age4/s_age4__sylvia__b4905355.mp3",
       "jp_text": "……まあ、そう考えてもいいよ。",
-      "drama3_input": "[dry, mildly amused, calm] ……まあ、そう考えてもいいよ。",
+      "drama3_input": "[calm] まあ、そう考えてもいいよ。",
       "audition": false
     },
     {
@@ -2137,7 +2137,7 @@
       "context_prev": "旁白: 掌心的冰兔子已经化了大半。只剩一个湿漉漉的轮廓。",
       "audioRelPath": "story/s_age4/s_age4__sylvia__9ae713bc.mp3",
       "jp_text": "もう一つ作ろうか？",
-      "drama3_input": "[calm, gentle] もうひとつ作ろうか？",
+      "drama3_input": "[gentle] もう一つ、作ろうか？",
       "audition": false
     },
     {
@@ -2191,7 +2191,7 @@
       "context_prev": "希尔维亚: 还好吧。",
       "audioRelPath": "story/s_age4/s_age4__alice__b2449f16.mp3",
       "jp_text": "執事が、公爵家の図書館には三千冊も本があるって言ってたよ。お姉様は全部読んだの？",
-      "drama3_input": "[curious, soft, breathy] 執事が、こうしゃくけの図書館にはさんぜんさつも本があるって言ってたよ。お姉様はぜんぶ読んだの？",
+      "drama3_input": "[calm] しつじが、公爵家の図書館には、三千冊も本があるって言ってたよ。お姉様は全部読んだの？",
       "audition": false
     },
     {
@@ -2245,7 +2245,7 @@
       "context_prev": "爱丽丝: 那姐姐大人刚才说的那些，是从哪里知道的？",
       "audioRelPath": "story/s_age4/s_age4__sylvia__5eead9cf.mp3",
       "jp_text": "……自分で考えたの。",
-      "drama3_input": "[calm, slightly evasive, low energy] ……じぶんで考えたの。",
+      "drama3_input": "[calm] 自分で考えたの。",
       "audition": false
     },
     {
@@ -2281,7 +2281,7 @@
       "context_prev": "爱丽丝: 想出来的？",
       "audioRelPath": "story/s_age4/s_age4__sylvia__4843a29d.mp3",
       "jp_text": "うん。ぼーっとしてるときにね。",
-      "drama3_input": "[calm, casual, low energy] うん。ぼーっとしてるときにね。",
+      "drama3_input": "[calm] うん。ぼーっとしてる時にね。",
       "audition": false
     },
     {
@@ -2317,7 +2317,7 @@
       "context_prev": "爱丽丝: 姐姐大人发呆的时候在想大地为什么会拉东西。",
       "audioRelPath": "story/s_age4/s_age4__sylvia__c3a74989.mp3",
       "jp_text": "たまにね。",
-      "drama3_input": "[flat, low energy] たまにね。",
+      "drama3_input": "[calm] たまにね。",
       "audition": false
     },
     {
@@ -2353,7 +2353,7 @@
       "context_prev": "爱丽丝: ……姐姐大人发呆的内容好奇怪。",
       "audioRelPath": "story/s_age4/s_age4__sylvia__6f978a43.mp3",
       "jp_text": "ありがとう。",
-      "drama3_input": "[flat, deadpan] ありがとう。",
+      "drama3_input": "[calm] ありがとう。",
       "audition": false
     },
     {
@@ -2389,7 +2389,7 @@
       "context_prev": "索菲亚: 今天来的是很重要的客人，是巴依王国的贵宾。你们要乖乖的，知道吗？",
       "audioRelPath": "story/s_yaoshen/s_yaoshen__beatrice__bf5a3709.mp3",
       "jp_text": "はーい！わかった！",
-      "drama3_input": "[bright, cheerful] はーい！わかった！",
+      "drama3_input": "[cheerful, clear] はーい、わかった！",
       "audition": false
     },
     {
@@ -2425,7 +2425,7 @@
       "context_prev": "旁白: 皮肤是深褐色的，眼睛细长，留着浓密的胡须，穿着一身我没见过的异域服饰——宽松的白色长袍，上面绑着金色的腰带，腰间挂着许多小瓶子。 他正微笑着看着我，眼角的皱纹堆在一起，看起来很和蔼。",
       "audioRelPath": "story/s_yaoshen/s_yaoshen__sylvia__6b74eb6d.mp3",
       "jp_text": "おじさんは……？",
-      "drama3_input": "[calm, polite, curious] おじさんは……？",
+      "drama3_input": "[gentle] おじさんは？",
       "audition": false
     },
     {
@@ -2461,7 +2461,7 @@
       "context_prev": "旁白: 药神。这个称呼很奇怪。 但比起好奇这个，我更在意另一件事—— 「您腰上挂的是什么？」我指着那些小瓶子问。",
       "audioRelPath": "story/s_yaoshen/s_yaoshen__yaoshen__3b01918f.mp3",
       "jp_text": "薬じゃよ。いろんな薬じゃ。病を治すもの、毒を消すもの、体を強くするもの……たくさんあるぞ。たとえばこれ、頭痛に効く薬じゃ。ひと口飲めば、すぐによくなるよ。",
-      "drama3_input": "[warm, cheerful, explanatory] 薬じゃよ。いろんな<emphasis>薬</emphasis>じゃ。やまいを治すもの、毒を消すもの、体を強くするもの……たくさんあるぞ。[short pause] たとえばこれ、頭痛にきく薬じゃ。ひとくち飲めば、すぐによくなるよ。",
+      "drama3_input": "[warm, gentle, grandfatherly] くすりじゃよ。いろんなくすりじゃ。やまいを治すもの、毒を消すもの、体を強くするもの、たくさんあるぞ。たとえばこれ、頭痛にきくくすりじゃ。ひとくち飲めば、すぐによくなるよ。",
       "audition": false
     },
     {
@@ -2533,7 +2533,7 @@
       "context_prev": "旁白: 药神挑了挑眉，似乎有些意外。",
       "audioRelPath": "story/s_yaoshen/s_yaoshen__yaoshen__68064555.mp3",
       "jp_text": "治癒魔法でもできるが、効き方が少し違うんじゃよ。魔法は体の自然治癒を助けるもの、薬は症状に直接働きかけるもの。一長一短じゃな。",
-      "drama3_input": "[impressed, warm, thoughtful] ちゆまほうでもできるが、ききかたが少し違うんじゃよ。魔法は体のしぜんちゆを助けるもの、薬はしょうじょうに直接働きかけるもの。[short pause] いっちょういったんじゃな。",
+      "drama3_input": "[wise, warm, clear] 治癒魔法でもできるが、ききかたが少し違うんじゃよ。魔法は体のしぜんちゆを助けるもの。くすりは、しょうじょうに直接働きかけるもの。いっちょういったんじゃな。",
       "audition": false
     },
     {
@@ -2605,7 +2605,7 @@
       "context_prev": "希尔维亚: 巴依王国的魔法和阿斯拉有什么区别？",
       "audioRelPath": "story/s_yaoshen/s_yaoshen__yaoshen__b16b59b4.mp3",
       "jp_text": "わしらは薬と魔法の組み合わせを重んじるんじゃ。アスラは純粋な魔法戦を重視するからのう。",
-      "drama3_input": "[warm, explanatory] わしらは薬と魔法の組み合わせを重んじるんじゃ。アスラは純粋な魔法戦を重視するからのう。",
+      "drama3_input": "[wise, warm, calm] わしらは、くすりと魔法の組み合わせを重んじるんじゃ。アスラは、純粋な魔法戦を重視するからのう。",
       "audition": false
     },
     {
@@ -2641,7 +2641,7 @@
       "context_prev": "希尔维亚: 那您是用药物战斗的吗？",
       "audioRelPath": "story/s_yaoshen/s_yaoshen__yaoshen__d7ec7f31.mp3",
       "jp_text": "そう言ってもいいのう。薬も立派な武器じゃよ。",
-      "drama3_input": "[warm, chuckling] そう言ってもいいのう。薬も立派な武器じゃよ。",
+      "drama3_input": "[warm, gentle, grandfatherly] そう言っても、いいのう。くすりも立派な武器じゃよ。",
       "audition": false
     },
     {
@@ -2749,7 +2749,7 @@
       "context_prev": "药神: 好了，我得去那边了。和小公主聊天很开心。",
       "audioRelPath": "story/s_yaoshen/s_yaoshen__sylvia__649df89a.mp3",
       "jp_text": "わたしもです。",
-      "drama3_input": "[calm, polite, gently pleased] わたしもです。",
+      "drama3_input": "[gentle] 私もです。",
       "audition": false
     },
     {
@@ -2785,7 +2785,7 @@
       "context_prev": "旁白: 他递过来一个小瓶子。 瓶子很小，只有我拇指那么大，里面装着淡蓝色的液体。",
       "audioRelPath": "story/s_yaoshen/s_yaoshen__yaoshen__9957e218.mp3",
       "jp_text": "ちょっとしたおもちゃじゃ、持っていきなさい。ただし開けちゃいかんぞ、中身は少し刺激性があるからのう。飾りとして楽しんでおくれ。",
-      "drama3_input": "[warm, playful, gentle] ちょっとしたおもちゃじゃ、持っていきなさい。[short pause] ただし開けちゃいかんぞ、なかみは少ししげきせいがあるからのう。飾りとして楽しんでおくれ。",
+      "drama3_input": "[wise, warm, gentle] ちょっとした、おもちゃじゃ、持っていきなさい。ただし開けちゃいかんぞ、なかみは少ししげきせいがあるからのう。飾りとして楽しんでおくれ。",
       "audition": true
     },
     {
@@ -2803,7 +2803,7 @@
       "context_prev": "旁白: 我接过瓶子，看了看。 瓶身是透明的，淡蓝色的液体在里面轻轻晃动，在灯光下泛着星星点点的微光。 很漂亮。",
       "audioRelPath": "story/s_yaoshen/s_yaoshen__sylvia__6f978a43.mp3",
       "jp_text": "ありがとうございます。",
-      "drama3_input": "[calm, polite, sincere] ありがとうございます。",
+      "drama3_input": "[gentle] ありがとうございます。",
       "audition": false
     },
     {
@@ -2911,7 +2911,7 @@
       "context_prev": "旁白: 她低着头，双手交叠放在膝盖上，声音软软糯糯。",
       "audioRelPath": "story/s_sisters_grow/s_sisters_grow__alice__0a284730.mp3",
       "jp_text": "……先生のおかげです。それに、お姉様たちに比べたら、わたしなんてまだまだです。",
-      "drama3_input": "[shy, humble, soft] ……先生のおかげです。[short pause] それに、お姉様たちに比べたら、<soft>わたしなんてまだまだです。</soft>",
+      "drama3_input": "[gentle] 先生のおかげです。それに、お姉様たちに比べたら、わたしなんてまだまだです。",
       "audition": false
     },
     {
@@ -2965,7 +2965,7 @@
       "context_prev": "旁白: 当然，偶尔也要用来处理一些突发状况。",
       "audioRelPath": "story/s_sisters_grow/s_sisters_grow__beatrice__8bc86049.mp3",
       "jp_text": "シルヴィア！緊急事態！助けて！",
-      "drama3_input": "[panicked, frantic] シルヴィア！<forceful>緊急事態！助けて！</forceful>",
+      "drama3_input": "[urgent, lively] シルヴィア、きんきゅうじたい！ たすけて！",
       "audition": false
     },
     {
@@ -3019,7 +3019,7 @@
       "context_prev": "贝阿特丽丝: 得救了！",
       "audioRelPath": "story/s_sisters_grow/s_sisters_grow__beatrice__c02b7a9f.mp3",
       "jp_text": "シルヴィア、ほんとすごすぎる！",
-      "drama3_input": "[excited, admiring] シルヴィア、<emphasis>ほんとすごすぎる！</emphasis>",
+      "drama3_input": "[cheerful, admiring] シルヴィア、ほんと、すごすぎる！",
       "audition": false
     },
     {
@@ -3073,7 +3073,7 @@
       "context_prev": "希尔维亚: ……姐姐，你是在报复我吗？",
       "audioRelPath": "story/s_sisters_grow/s_sisters_grow__beatrice__b6c824fe.mp3",
       "jp_text": "もう、どうせ着替えるんだからいいじゃない！",
-      "drama3_input": "[cheerful, playful] もう、どうせ着替えるんだからいいじゃない！",
+      "drama3_input": "[bright, lively] もう、どうせきがえるんだから、いいじゃない！",
       "audition": false
     },
     {
@@ -3109,7 +3109,7 @@
       "context_prev": "爱丽丝: ……姐姐大人用魔法控制住了那么大的水流？",
       "audioRelPath": "story/s_sisters_grow/s_sisters_grow__sylvia__a94bd179.mp3",
       "jp_text": "まあ、なんとかね。",
-      "drama3_input": "[calm, modest, low energy] まあ、なんとかね。",
+      "drama3_input": "[calm] まあ、なんとかね。",
       "audition": false
     },
     {

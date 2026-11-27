@@ -55,7 +55,7 @@
       "context_prev": "旁白: 迈进林缘后，我放慢脚步，将魔力感知向四周铺开。枯树、落叶、冻土下的虫豸都成了静止的底色，唯有活物的气息才会亮起。",
       "audioRelPath": "story/s_north_forest/s_north_forest__sylvia__72e70814.mp3",
       "jp_text": "周囲に誰もいないと確かめて、ようやく抑え込んでいた魔力を緩める。逃げ出してからの半月余り、人目を避けるために外では水魔法しか使わず、氷は飲み水を冷やしたり保存食を保ったりする程度にとどめてきた。",
-      "drama3_input": "[quiet, introspective] 周囲に誰もいないと確かめて、ようやく抑え込んでいた魔力を緩める。[short pause] 逃げ出してからの半月あまり、人目を避けるために外ではみずまほうしか使わず、氷は飲み水を冷やしたり保存食を保ったりする程度にとどめてきた。",
+      "drama3_input": "[calm] しゅういに、誰もいないと確かめて、ようやく抑え込んでいた魔力を緩める。逃げ出してからの半月あまり、人目を避けるために外では水魔法しか使わず、氷は飲み水を冷やしたり、保存食を保ったりする程度にとどめてきた。",
       "audition": false
     },
     {
@@ -91,7 +91,7 @@
       "context_prev": "旁白: 我抬手立起一面冰盾。头狼一头撞在盾面上，撞击处炸开一圈蛛网般的裂纹，裂纹随即化作倒刺反扎回去，划得它满脸是血，哀嚎着滚落一旁。",
       "audioRelPath": "story/s_north_forest/s_north_forest__sylvia__db66768b.mp3",
       "jp_text": "両脇からまた灰棘狼が回り込んでくる。五本の指を広げ、氷晶弾を扇状に放つ。",
-      "drama3_input": "[focused, crisp] りょうわきからまたかいきょくろうが回り込んでくる。ごほんの指を広げ、<emphasis>ひょうしょうだん</emphasis>をおうぎ状に放つ。",
+      "drama3_input": "[serious] 両脇から、また、かいきょくろうが回り込んでくる。五本の指を広げ、氷晶弾をおうぎ状に放つ。",
       "audition": false
     },
     {
@@ -127,7 +127,7 @@
       "context_prev": "旁白: 冰面一铺开，成群的巨兽便在林间东倒西歪地打滑，连冲锋的势头都攒不起来。切下鹿角收好后，任务单上的目标便已全部结清。",
       "audioRelPath": "story/s_north_forest/s_north_forest__sylvia__8f2b9b62.mp3",
       "jp_text": "それでも町へは急いで戻らず、北の森のさらに奥へと踏み込んでいく。今の私にとって、ギルドの報酬など暮らしをつなぐ程度にしかならない。本当に命を救ってくれるのは、確かな位階だけだ。",
-      "drama3_input": "[quiet, resolved] それでも町へは急いで戻らず、北の森のさらに奥へと踏み込んでいく。[short pause] 今の私にとって、ギルドの報酬など暮らしをつなぐ程度にしかならない。本当に命を救ってくれるのは、<emphasis>確かないかい</emphasis>だけだ。",
+      "drama3_input": "[serious] それでも町へは急いで戻らず、北の森のさらに奥へと踏み込んでいく。今の私にとって、ギルドの報酬など、暮らしをつなぐ程度にしかならない。本当に命を救ってくれるのは、確かな位階だけだ。",
       "audition": false
     },
     {
@@ -163,7 +163,7 @@
       "context_prev": "旁白: 于是这片冬天略显萧索的林子，成了最合适的练级场。枯木底下的草蛇窝、拖着火苗乱窜的火鼠群、皮糙肉厚却只会直线猛冲的铁牙猪——沿途亮起气息的魔物，我都顺手清了个干净。",
       "audioRelPath": "story/s_north_forest/s_north_forest__sylvia__ca7adc01.mp3",
       "jp_text": "氷の欠片はひとつも残さず、切り口にはすべて水魔力の湿り気だけを残しておく。",
-      "drama3_input": "[calm, cautious] 氷のかけらはひとつも残さず、切り口にはすべてみずまりょくのしめり気だけを残しておく。",
+      "drama3_input": "[calm] 氷の欠片はひとつも残さず、切り口にはすべて、水魔力の湿り気だけを残しておく。",
       "audition": false
     },
     {
@@ -253,7 +253,7 @@
       "context_prev": "霁岚: 蜂蜜糕吃完就没了，这棵树明天还在。后天也在。",
       "audioRelPath": "story/s_north_forest/s_north_forest__sylvia__c73f91d0.mp3",
       "jp_text": "「明日もここにある。明後日も。」早春の風が枝先のほころんだ蕾を撫でる。木陰に立ち、私はその言葉を胸の内でそっと繰り返した。",
-      "drama3_input": "[gentle, wistful] <soft>明日もここにある。あさっても。</soft>[short pause] そうしゅんの風が枝先のほころんだつぼみをなでる。こかげに立ち、私はその言葉をむねのうちでそっと繰り返した。",
+      "drama3_input": "[gentle] あしたもここにある。あさっても。早春の風が、枝先のほころんだ蕾を撫でる。木陰に立ち、私はその言葉を胸の内でそっと繰り返した。",
       "audition": false
     },
     {
@@ -307,7 +307,7 @@
       "context_prev": "旁白: 「……血腥味是从前头谷地传来的，动作都放轻点，别惊动了大家伙。」 「队长，你看这树干上的撞痕，刚留下的！」",
       "audioRelPath": "story/s_north_forest/s_north_forest__sylvia__d18105d0.mp3",
       "jp_text": "地面に手のひらを押し当て、残った氷の欠片を澄んだ水へ戻して枯れ葉の下へ染み込ませる。日陰の岩壁に沿うように退くと、茂みの隙間から、銀級徽章をつけた三つの人影が忍び込んでくるのが見えた。",
-      "drama3_input": "[tense, quiet] 地面に手のひらを押し当て、残った氷のかけらを澄んだ水へ戻してかれはの下へ染み込ませる。[short pause] 日陰のがんぺきに沿うようにひくと、茂みの隙間から、ぎんきゅうきしょうをつけたみっつの人影が忍び込んでくるのが見えた。",
+      "drama3_input": "[serious] 地面に手のひらを押し当て、残った氷の欠片を、澄んだ水へ戻して枯れ葉の下へ染み込ませる。日陰の岩壁に沿うようにひくと、茂みの隙間から、銀級きしょうをつけた三つの人影が、忍び込んでくるのが見えた。",
       "audition": false
     },
     {
@@ -325,7 +325,7 @@
       "context_prev": "旁白: 我手掌按地将残余冰屑化作清水渗入枯叶之下，贴着背阴岩壁后退。透过灌木缝隙，能瞥见三道别着银级徽章的身影正摸进来。",
       "audioRelPath": "story/s_north_forest/s_north_forest__sylvia__90fb3d1c.mp3",
       "jp_text": "ここで氷魔力を晒すわけにはいかない。岩場の裏手から谷を抜けようとした矢先、頭上の崖から何の前触れもなく影が落ちてきた――血生臭い風が顔を打つ！",
-      "drama3_input": "[urgent, tense] ここでこおりまりょくをさらすわけにはいかない。岩場の裏手から谷を抜けようとした矢先、[short pause] ずじょうの崖から何の前触れもなく影が落ちてきた――<fast>ちなまぐさい風が顔を打つ！</fast>",
+      "drama3_input": "[serious] ここで氷魔力を晒すわけにはいかない。岩場の裏手から谷を抜けようとした矢先、頭上の崖から何の前触れもなく影が落ちてきた。血生臭い風が、顔を打つ！",
       "audition": false
     },
     {
@@ -397,7 +397,7 @@
       "context_prev": "旁白: 叮。银级魔物的经验和「魔战循环」收回来的魔力一起涌进身体，卡了好些天的等级条终于动了，一口气跳到了三十八级。",
       "audioRelPath": "story/s_north_forest/s_north_forest__sylvia__2d9fc6a7.mp3",
       "jp_text": "枯れ枝の水滴を振り払って薄氷を解き、影ジャッカルの耳先をひとつ切り落として背嚢へ押し込む。そのまま「風行残像」を発動し、側面の低い崖へと駆け上がった。",
-      "drama3_input": "[composed, brisk] 枯れ枝の水滴を振り払ってはくひょうを解き、影ジャッカルの耳先をひとつ切り落としてはいのうへ押し込む。そのままふうこうざんぞうを発動し、側面の低い崖へと駆け上がった。",
+      "drama3_input": "[serious] 枯れ枝の水滴を振り払って、はくひょうを解き、影ジャッカルの耳先をひとつ切り落として、はいのうへ押し込む。そのまま、ふうこうざんぞうを発動し、側面の低い崖へと駆け上がった。",
       "audition": false
     },
     {
@@ -433,7 +433,7 @@
       "context_prev": "旁白: 比起刚到澄岚那会儿，等级一路冲上了三十八级，攻击更是翻了将近一倍。那暴涨的攻击力，大半归功于这段日子在砂地上日复一日的步法与挥剑。",
       "audioRelPath": "story/s_north_forest/s_north_forest__sylvia__1066ab0c.mp3",
       "jp_text": "システムは身体に積み上がった力の伸びを律儀に記録し、まるでステータス画面の中に、もう一本の道をそっと拓いてくれたかのようだ。攻撃力も魔力もまだ隔たりはあるけれど、少なくとも懐へ飛び込まれて為す術もないまま終わることはなくなった。",
-      "drama3_input": "[quiet, introspective] システムは身体に積み上がった力の伸びをりちぎに記録し、まるでステータス画面の中に、もういっぽんの道をそっとひらいてくれたかのようだ。[short pause] 攻撃力も魔力もまだ隔たりはあるけれど、少なくともふところへ飛び込まれてなすすべもないまま終わることはなくなった。",
+      "drama3_input": "[calm] システムは、からだに積み上がった力の伸びを律儀に記録し、まるでステータス画面の中に、もう一本の道をそっとひらいてくれたかのようだ。攻撃力も魔力もまだ隔たりはあるけれど、少なくとも懐へ飛び込まれて、なすすべもないまま終わることはなくなった。",
       "audition": false
     },
     {
@@ -451,7 +451,7 @@
       "context_prev": "旁白: 这一夜，睡意迟迟不来。 白天去北林跑了一趟，回来又在砂地上走了一下午步法，身子倦得发沉，脑子却像一盏忘了吹熄的灯，怎么也暗不下去。",
       "audioRelPath": "story/s_glow_sheep/s_glow_sheep__sylvia__34b33cae.mp3",
       "jp_text": "寝返りを打って、何も考えないことにした。羊でも数えよう。羊が一匹、羊が二匹、羊が三匹……",
-      "drama3_input": "[sleepy, soft] 寝返りを打って、何も考えないことにした。羊でも数えよう。[short pause] <slow>羊がいっぴき、羊がにひき、羊がさんびき……</slow>",
+      "drama3_input": "[gentle] 寝返りを打って、何も考えないことにした。羊でも数えよう。羊がいっぴき、羊がにひき、羊がさんびき。",
       "audition": false
     },
     {
@@ -631,7 +631,7 @@
       "context_prev": "凯尔: 他们以重新审查条约为由，把原本每年冬天运往赫兰的越冬军需、粮草和抗寒药剂全给掐断了。赫兰前线既缺粮草又缺药师，好些防线全靠地方贵族硬撑着。",
       "audioRelPath": "story/s_distant_wind_1/s_distant_wind_1__sylvia__e2ea1591.mp3",
       "jp_text": "マントの下で、私の指先が少しずつ強く握りしめられる。父が書斎の地図の前で注釈を入れていた北境条約、母が髪によく挿していたヘラン霜杉のかんざし、そして姉が論文に綴っていた辺境貿易の相互信頼――",
-      "drama3_input": "[tense, restrained] マントの下で、私の指先が少しずつ強く握りしめられる。[short pause] 父が書斎の地図の前でちゅうしゃくを入れていたほっきょう条約、母が髪によくさしていたヘランそうさんのかんざし、そして姉が論文につづっていたへんきょう貿易の相互信頼――",
+      "drama3_input": "[serious] マントの下で、私の指先が少しずつ強く握りしめられる。父が書斎の地図の前で注釈を入れていたほっきょう条約、母が髪によく挿していたヘランそうさんのかんざし、そして姉が論文に綴っていたへんきょう貿易の相互信頼。",
       "audition": false
     },
     {
@@ -649,7 +649,7 @@
       "context_prev": "旁白: 斗篷底下，我的手指一点点攥紧。父亲在书房地图前批注过的北境条约，母亲发间常戴的那根赫兰霜杉木簪，还有姐姐论文里写过的边贸互信——",
       "audioRelPath": "story/s_distant_wind_1/s_distant_wind_1__sylvia__f6587968.mp3",
       "jp_text": "公爵家が倒れて巻き込まれたのは、私たち家族だけではなかったのだ。北の国境の防衛線まで、生き延びる道を絶たれていた。そしてアイノは今、間違いなくその食糧も薬も尽きかけた前線に立っている。",
-      "drama3_input": "[quiet, grave] こうしゃくけが倒れて巻き込まれたのは、私たち家族だけではなかったのだ。北の国境の防衛線まで、生き延びる道を絶たれていた。[short pause] そしてアイノは今、<emphasis>間違いなく</emphasis>その食糧も薬も尽きかけた前線に立っている。",
+      "drama3_input": "[serious] 公爵家が倒れて巻き込まれたのは、私たち家族だけではなかったのだ。北の国境の防衛線まで、生き延びる道を、たたれていた。そしてアイノは今、間違いなく、その食糧も薬も尽きかけた前線に立っている。",
       "audition": false
     },
     {
@@ -667,7 +667,7 @@
       "context_prev": "旁白: 「单人铜级不编入主战序列。后勤营正缺会冰系控温的人手押送急需药材去冰封峡谷，管吃住，日结两枚银币，去不去？」",
       "audioRelPath": "story/s_distant_wind_1/s_distant_wind_1__sylvia__c890ba12.mp3",
       "jp_text": "剣の柄を押さえて三寸ほど抜き放つと、一筋の凛とした冷気が机の隅の蓋の開いたインク壺の口に薄い霜を張り、続けて指先に透き通る氷の花をひとつ咲かせて、すぐさま収めた。",
-      "drama3_input": "[calm, poised] 剣のつかを押さえてさんずんほど抜き放つと、ひとすじのりんとした冷気が机のすみのふたの開いたインクつぼの口に薄い霜を張り、続けて指先に透き通る氷の花をひとつ咲かせて、すぐさま収めた。",
+      "drama3_input": "[serious] けんの、つかを押さえて、さんずんほど抜き放つと、一筋の凛とした冷気が、机の隅の、蓋の開いたインク壺の口に、薄い霜を張り、続けて、指先に透き通る氷の花をひとつ咲かせて、すぐさま収めた。",
       "audition": false
     },
     {
@@ -703,7 +703,7 @@
       "context_prev": "旁白: 第二天清晨，满载药材与军粮的辎重车队驶出北风堡，跨过了苏秦与赫兰的国境线。",
       "audioRelPath": "story/s_distant_wind_1/s_distant_wind_1__sylvia__ae66404e.mp3",
       "jp_text": "国境の標石を越えた瞬間、正面から吹きつける北風の重みが一変した。鉛色の空から舞い落ちる大雪を巻き込み、幌の上をさらさらと叩きつける。",
-      "drama3_input": "[quiet, atmospheric] 国境のひょうせきを越えた瞬間、正面から吹きつける北風の重みが一変した。なまり色の空から舞い落ちる大雪を巻き込み、ほろの上をさらさらと叩きつける。",
+      "drama3_input": "[serious] 国境のひょうせきを越えた瞬間、正面から吹きつける北風の重みが一変した。なまり色の空から舞い落ちる、おおゆきを巻き込み、ほろの上をさらさらと叩きつける。",
       "audition": false
     },
     {
@@ -721,7 +721,7 @@
       "context_prev": "旁白: 越过界碑的那一刻，迎面扑来的北风陡然变了分量，夹着铅灰色天幕下的漫天大雪，扑簌簌地砸在车篷上。",
       "audioRelPath": "story/s_distant_wind_1/s_distant_wind_1__sylvia__71f1a39b.mp3",
       "jp_text": "薬を積んだ馬車の後端に腰を下ろし、腰の黒檀の長剣に手を添えたまま、もう一方の手を伸ばして手のひらへ舞い降りたひとひらの雪を受け止める。",
-      "drama3_input": "[quiet, introspective] 薬を積んだ馬車のこうたんに腰を下ろし、腰のこくたんのちょうけんに手を添えたまま、もういっぽうの手を伸ばして手のひらへ舞い降りたひとひらの雪を受け止める。",
+      "drama3_input": "[calm] 薬を積んだ、ばしゃのこうたんに腰を下ろし、腰のこくたんの長剣に手を添えたまま、もう一方の手を伸ばして、手のひらへ舞い降りたひとひらの雪を受け止める。",
       "audition": false
     },
     {
@@ -739,7 +739,7 @@
       "context_prev": "旁白: 我坐在运药马车的尾端，手按着腰间的乌木长剑，伸手接住一片飘落掌心的雪花。",
       "audioRelPath": "story/s_distant_wind_1/s_distant_wind_1__sylvia__1dca4270.mp3",
       "jp_text": "見渡す限り、天地の間には果てしない白だけが広がっている。ここがヘラン公国。冬の子は、いずれ冬へと還るのだ。",
-      "drama3_input": "[quiet, introspective] 見渡す限り、てんちのあいだには果てしない白だけが広がっている。[short pause] ここがヘランこうこく。[short pause] <slow>冬の子は、いずれ冬へとかえるのだ。</slow>",
+      "drama3_input": "[gentle] 見渡す限り、てんちの間には、果てしない白だけが広がっている。ここが、ヘラン公国。冬の子は、いずれ冬へとかえるのだ。",
       "audition": true
     },
     {
@@ -793,7 +793,7 @@
       "context_prev": "旁白: 「贝蒂姐姐说，要吃饭，要睡觉，也要保护好自己。吃饭：包袱里的干粮，半块。睡觉：没有。保护好自己：做到了。」",
       "audioRelPath": "story/s_words_to_wind/s_words_to_wind__alice__edd2bd24.mp3",
       "jp_text": "袖口に血が跳ねて、雪で擦っても落ちなかった。もう擦るのはやめて、上着を裏返して着た。ベティ姉様のブレスレットは、手帳の表紙の隙間に隠した。家紋は誰にも見られてはいけない。",
-      "drama3_input": "[quiet, detached] そでぐちに血がはねて、雪でこすっても落ちなかった。もうこするのはやめて、上着を裏返して着た。[short pause] ベティねえさまのブレスレットは、手帳の表紙の隙間に隠した。<soft>かもんは誰にも見られてはいけない。</soft>",
+      "drama3_input": "[calm] 袖口に血が跳ねて、雪でこすっても落ちなかった。もうこするのはやめて、上着を裏返して着た。ベティ姉様のブレスレットは、手帳の表紙の隙間に隠した。家紋は、誰にも見られてはいけない。",
       "audition": false
     },
     {
@@ -847,7 +847,7 @@
       "context_prev": "旁白: 「贝蒂姐姐想等春天，再去看纪念林的树。我不替她去。等找到姐姐大人，我们带她一起去。」",
       "audioRelPath": "story/s_words_to_wind/s_words_to_wind__alice__90d2f634.mp3",
       "jp_text": "無風。髪があまりにも白いから、誰も住んでいない家の冷えた竈から灰を一掴み取って、髪に塗り込んだ。今はもう灰色になった。灰色でもいい。少しだけ、お姉様の髪に似てきたから。",
-      "drama3_input": "[quiet, tender] むふう。髪があまりにも白いから、誰も住んでいない家のひえたかまどから灰をひとつかみ取って、髪に塗り込んだ。[short pause] 今はもうはいいろになった。<soft>はいいろでもいい。少しだけ、おねえさまの髪に似てきたから。</soft>",
+      "drama3_input": "[calm] 無風。髪があまりにも白いから、誰も住んでいない家の冷えたかまどから灰をひとつかみ取って、髪に塗り込んだ。今はもう灰色になった。灰色でもいい。少しだけ、お姉様の髪に似てきたから。",
       "audition": false
     },
     {
@@ -901,7 +901,7 @@
       "context_prev": "旁白: 「南风，很湿。他们牵着狗，狗不看头发。每天晚上我都把那句话说给风听。风走得比我快，说不定哪一天，它会先替我找到你。」",
       "audioRelPath": "story/s_words_to_wind/s_words_to_wind__alice__1a106ccc.mp3",
       "jp_text": "「風が強い。海の向こうでずっと雷が鳴っている。犬の鳴き声が近い。お姉様、必ずあなたを見つけます。」最後の一画が長く引きずられ、そのまま紙の端からはみ出していた。",
-      "drama3_input": "[urgent, fragile] 風が強い。海の向こうでずっと雷が鳴っている。犬の鳴き声が近い。[short pause] <emphasis>おねえさま、必ずあなたを見つけます。</emphasis>[short pause] <whisper>最後のいっかくが長く引きずられ、そのまま紙の端からはみ出していた。</whisper>",
+      "drama3_input": "[serious] 風が強い。海の向こうでずっと雷が鳴っている。犬の鳴き声が近い。お姉様、必ずあなたを見つけます。最後のいっかくが長く引きずられ、そのまま紙の端からはみ出していた。",
       "audition": true
     },
     {
@@ -937,7 +937,7 @@
       "context_prev": "旁白: 此后她在日复一日的沉默里疯了似地苦修，直到终于迎来了那一天——迎来了她的魔法造诣跨过天堑、强大到父亲再也无法窥测她脑中分毫的那一天。那一夜，她连头都没回，直接撞碎屋顶逃离了那个家！",
       "audioRelPath": "story/s_eye_of_storm/s_eye_of_storm__fengshen__6bb0655d.mp3",
       "jp_text": "痛快だわ、痛快よ――自由だわ！もう食卓で、偽りのいい子を演じ続けなくて済むのよ！けれど高空の冷たい風が背中を撫でた瞬間、床一面の尖った木屑と歪んだ鍵の取っ手が、また胸の奥で焼けるように疼くの……",
-      "drama3_input": "[exhilarated, bittersweet] つうかいだわ、つうかいよ――<emphasis>自由だわ！</emphasis>もう食卓で、いつわりのいい子を演じ続けなくて済むのよ！[short pause] けれどこうくうの冷たい風が背中をなでた瞬間、<slow>床一面のとがったきくずとゆがんだ鍵のとってが、また胸の奥で焼けるようにうずくの……</slow>",
+      "drama3_input": "[emotional, earnest, serious] つうかいだわ、つうかいよ、自由だわ！ もう食卓で、いつわりのいい子を演じ続けなくて済むのよ！ けれど、こうくうの冷たい風が背中をなでた瞬間、床一面のとがったきくずと、ゆがんだ鍵のとってが、また胸の奥で焼けるようにうずくの。",
       "audition": false
     },
     {
@@ -1027,7 +1027,7 @@
       "context_prev": "旁白: 直到那个雷霆与海啸交加的暗夜里，有一丝微弱却执拗到极点的声音穿过漫天狂暴的气流，直直撞进了死寂的风暴眼中心—— 「姐姐，我一定会找到你。」",
       "audioRelPath": "story/s_eye_of_storm/s_eye_of_storm__fengshen__f29a2b6b.mp3",
       "jp_text": "家族、ね……その声を呆然と聞いているうち、胸の奥を何かにそっと焼き付けられたような気がした。気づいたときには、私はやっぱり降りしきる風雨を押し分けて、あの子の前へ降り立っていたわ。",
-      "drama3_input": "[soft, moved] <soft>家族、ね……</soft>[short pause] その声をぼうぜんと聞いているうち、胸の奥を何かにそっと焼き付けられたような気がした。[short pause] 気づいたときには、私はやっぱり降りしきるふううを押し分けて、あの子の前へ降り立っていたわ。",
+      "drama3_input": "[gentle, warm, sincere] 家族、ね。その声をぼうぜんと聞いているうち、胸の奥を何かにそっと焼き付けられたような気がした。気づいたときには、私はやっぱり降りしきるふううを押し分けて、あの子の前へ降り立っていたわ。",
       "audition": false
     },
     {
@@ -1045,7 +1045,7 @@
       "context_prev": "旁白: 岚盘腿坐在火堆对面，随手捡了根枯枝拨弄炭火，垂下眼盯着炭火里发红的木芯，忽然觉得胸口莫名堵得慌。",
       "audioRelPath": "story/s_leaky_cup/s_leaky_cup__fengshen__c300994e.mp3",
       "jp_text": "……怒り、か。本当に滑稽ね。堂々たる「風神」が、家を失ったばかりの小娘の昔話を聞いて最初に湧いた感情が、よりによって怒りだなんて。",
-      "drama3_input": "[quiet, self-mocking] ……怒り、か。本当にこっけいね。[short pause] 堂々たるふうじんが、家を失ったばかりのこむすめの昔話を聞いて最初に湧いた感情が、<soft>よりによって怒りだなんて。</soft>",
+      "drama3_input": "[calm, reflective, serious] いかり、か。本当にこっけいね。堂々たるふうじんが、家を失ったばかりのこむすめの昔話を聞いて、最初に湧いた感情が、よりによって怒りだなんて。",
       "audition": false
     },
     {
@@ -1063,7 +1063,7 @@
       "context_prev": "旁白: 谁也没法选自己生在哪个家里。外头的人提起「风神」，总爱夸她洒脱、爱笑，走到哪座城都能跟酒馆里的陌生人碰杯聊到天亮，连街边卖糖的老奶奶都能跟她唠上半个下午。",
       "audioRelPath": "story/s_leaky_cup/s_leaky_cup__fengshen__ba6f9808.mp3",
       "jp_text": "けれど私だけは知っている。あの気さくさの底に押し隠しているのは恐れ――足元がすっかり宙に浮いてしまうような怯えよ。南境のあの屋敷では、優しい「あなたのため」の一言すべてに値札が付き、どの贈り物の裏にも読心と透視で編まれた網が潜んでいた。",
-      "drama3_input": "[quiet, introspective] けれど私だけは知っている。あのきさくさの底に押し隠しているのは恐れ――足元がすっかりちゅうに浮いてしまうようなおびえよ。[short pause] なんきょうのあの屋敷では、優しい、あなたのため、のひとことすべてにねふだが付き、どの贈り物の裏にも<soft>どくしんととうしで編まれたあみがひそんでいた。</soft>",
+      "drama3_input": "[calm, serious, reflective] けれど私だけは知っている。あのきさくさの底に押し隠しているのは恐れ、足元がすっかりちゅうに浮いてしまうようなおびえよ。なんきょうのあの屋敷では、優しい、あなたのため、のひとことすべてにねふだが付き、どの贈り物の裏にも、どくしんととうしであまれたあみがひそんでいた。",
       "audition": false
     },
     {
@@ -1279,7 +1279,7 @@
       "context_prev": "旁白: 直到当天晚上，我坐在床边，把准备交给调查组的那张纸重新展开。",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__sylvia__83063c7b.mp3",
       "jp_text": "店主を殺したとき、マルコはまだポンチで二つの穴を開けるしかなかった。それが今日の正午には、自身の口から牙を生やし、素手でサムの剣をへし折った――その間に、誰かが彼を噛んだのだ。",
-      "drama3_input": "[grave, analytical] 店主を殺したとき、マルコはまだポンチでふたつの穴を開けるしかなかった。それが今日のしょうごには、じしんの口からきばを生やし、すででサムの剣をへし折った――[short pause] その間に、<emphasis>誰かが彼をかんだのだ。</emphasis>",
+      "drama3_input": "[serious] てんしゅを殺したとき、マルコはまだポンチで二つの穴を開けるしかなかった。それが、きょうの正午には、自身の口から牙を生やし、素手でサムの剣をへし折った。その間に、誰かが彼を噛んだのだ。",
       "audition": false
     },
     {
@@ -1315,7 +1315,7 @@
       "context_prev": "选项: 定格第四段记忆：阳光重回街道时，罗文的手已离开剑柄，地面投影却还没有",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__sylvia__f3fb85cf.mp3",
       "jp_text": "四つ目の記憶の前で足が止まった――ローワンの手はもう剣の柄から離れているのに、地面の影の手はまだ離れていない！三つ目へ戻って焦点を変えて見直すと、振り返るマルコの足元の輪郭は本体と寸分違わず噛み合っている。",
-      "drama3_input": "[startled, sharp] よっつめの記憶の前で足が止まった――ローワンの手はもう剣のつかから離れているのに、<emphasis>地面の影の手はまだ離れていない！</emphasis>[short pause] みっつめへ戻って焦点を変えて見直すと、振り返るマルコの足元のりんかくは本体とすんぶんたがわず噛み合っている。",
+      "drama3_input": "[serious] 四つ目の記憶の前で足が止まった。ローワンの手は、もう、けんのつかから離れているのに、地面の影の手は、まだ離れていない！三つ目へ戻って焦点を変えて見直すと、振り返るマルコの足元の輪郭は、本体と寸分、たがわず噛み合っている。",
       "audition": false
     },
     {
@@ -1333,7 +1333,7 @@
       "context_prev": "旁白: 我在第四段记忆前停住——罗文的手已经离开剑柄，可地面影子的手还没有！再退回第三段换个重点细看，马尔科转身时脚下轮廓和身形严丝合缝，一步没错。",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__sylvia__0d9e7624.mp3",
       "jp_text": "一方、剣を振るったローワンの側は、刃がもう届いているのに、剣の影がまだ宙に浮いたままだ！影が遅れている人間と、遅れていない人間が同じ情景の中に立っている――日蝕を引き起こしたのは別にいる。これまで誰もローワンを疑わなかった。今、私こそが初めて彼を見抜いた人間だ。",
-      "drama3_input": "[icy, focused] いっぽう、剣を振るったローワンのがわは、やいばがもう届いているのに、剣の影がまだちゅうに浮いたままだ！[short pause] 影が遅れている人間と、遅れていない人間が同じ情景の中に立っている――にっしょくを引き起こしたのは別にいる。これまで誰もローワンを疑わなかった。<emphasis>今、私こそが初めて彼を見抜いた人間だ。</emphasis>",
+      "drama3_input": "[serious] 一方、剣を振るったローワンの側は、刃がもう届いているのに、剣の影がまだ宙に浮いたままだ！影が遅れている人間と、遅れていない人間が、同じ情景の中に立っている。にっしょくを引き起こしたのは別にいる。これまで誰もローワンを疑わなかった。今、私こそが初めて彼を見抜いた人間だ。",
       "audition": false
     },
     {
@@ -1387,7 +1387,7 @@
       "context_prev": "选项: 沿着另一条长廊调取《传说魔杖考》：核对红墨圈出的那一行字",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__sylvia__ac465a5a.mp3",
       "jp_text": "回廊を辿って前に凍らせておいた『伝説魔杖考』を呼び出し、三つ目と四つ目の記憶を照らし合わせる――マルコの影には一歩の狂いもない。ローワンは剣を突き出す瞬間も手を放す瞬間も、影が本体より半拍遅れている。赤いインクの注釈と寸分違わず一致した！",
-      "drama3_input": "[icy, analytical] かいろうをたどって前に凍らせておいたでんせつまじょうこうを呼び出し、みっつめとよっつめの記憶を照らし合わせる――マルコの影にはいっぽの狂いもない。[short pause] ローワンは剣を突き出す瞬間も手を放す瞬間も、影が本体よりはんぱく遅れている。<emphasis>赤いインクのちゅうしゃくとすんぶんたがわず一致した！</emphasis>",
+      "drama3_input": "[serious] 回廊を辿って、前に凍らせておいた、でんせつまじょうこうを呼び出し、三つ目と四つ目の記憶を照らし合わせる。マルコの影には一歩の狂いもない。ローワンは剣を突き出す瞬間も、手を放す瞬間も、影が本体より、はんぱく遅れている。赤いインクの注釈と、寸分、たがわず一致した！",
       "audition": false
     },
     {
@@ -1405,7 +1405,7 @@
       "context_prev": "旁白: 我沿长廊调出先前冻下的《传说魔杖考》，再回头比对第三、第四段记忆——马尔科的影子一步没错，罗文无论出剑还是松手，影子都比身体慢了半拍，正与红墨注脚严丝合缝！",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__sylvia__ab49daf1.mp3",
       "jp_text": "昼間、この穏やかで礼儀正しい護衛に微塵の疑いも向ける者はいなかった。この半拍ずれた月影が私の目に映った瞬間、この芝居の黒幕が初めて姿を現したのだ。",
-      "drama3_input": "[quiet, chilling] 昼間、この穏やかで礼儀正しいごえいにみじんの疑いも向ける者はいなかった。[short pause] このはんぱくずれたつきかげが私の目に映った瞬間、<emphasis>この芝居のくろまくが初めて姿を現したのだ。</emphasis>",
+      "drama3_input": "[serious] 昼間、この穏やかで礼儀正しい護衛に、みじんの疑いも向ける者はいなかった。この、はんぱく・ずれた月影が、私の目に映った瞬間、この芝居の黒幕が初めて姿を現したのだ。",
       "audition": false
     },
     {
@@ -1441,7 +1441,7 @@
       "context_prev": "旁白: 那一页记了两条。其一：能将少量魔力作用于月亮的人，可以借它挪动月影与天光，让本不在此地的日蚀降临并停驻。杖不会替人把魔力送上月亮，它只会挪动已经落在那里的那一点魔力。",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__sylvia__63cdf89e.mp3",
       "jp_text": "二つ目、この杖を通して放たれる魔法のダメージは、すべて防御を無視する真ダメージへと変換される。私のように月へ魔力を届けられない者は、たとえ将来これを手にしても日蝕は呼べない。そして頁の末尾には、先人が赤いインクで囲んだ一文が残されていた――",
-      "drama3_input": "[calm, analytical] ふたつめ、この杖を通して放たれる魔法のダメージは、すべて防御を無視するしんダメージへと変換される。[short pause] 私のように月へ魔力を届けられない者は、たとえ将来これを手にしてもにっしょくは呼べない。そしてページのまつびには、せんじんが赤いインクで囲んだいちぶんが残されていた――",
+      "drama3_input": "[calm] 二つ目。この杖を通して放たれる魔法のダメージは、すべて防御を無視する、しんダメージへと変換される。私のように月へ魔力を届けられない者は、たとえ将来これを手にしても、にっしょくは呼べない。そしてページの末尾には、先人が赤いインクで囲んだ一文が残されていた。",
       "audition": false
     },
     {
@@ -1477,7 +1477,7 @@
       "context_prev": "旁白: 我转过身，罗文从一块歪斜的墓碑后走出来。他换了一身便于行动的黑衣，右手握着一根不到手臂长的短杖——深蓝的杖身托着一圈悬浮的冰蓝色细环，环心静静停着一枚黑色的核，像一场停在半空的日蚀。",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__sylvia__74590481.mp3",
       "jp_text": "「静止の日蝕」。彼は私からそう遠くない場所で足を止めた――実に計算された間合いだ。言葉を交わすには十分で、私が背を向けた瞬間に追いつける距離でもある。",
-      "drama3_input": "[icy, alert] せいしのにっしょく。[short pause] 彼は私からそう遠くない場所で足を止めた――実に計算されたまあいだ。言葉を交わすには十分で、私が背を向けた瞬間に追いつける距離でもある。",
+      "drama3_input": "[serious] 静止のにっしょく。彼は、わたしからそう遠くない場所で足を止めた。実に計算された、間合いだ。言葉を交わすには十分で、わたしが背を向けた瞬間に、追いつける距離でもある。",
       "audition": false
     },
     {
@@ -1513,7 +1513,7 @@
       "context_prev": "旁白: 冰层沿小腿向上冻结，叔叔抓住他慢了半步的空隙按肩灌入土系魔力，几道石棱破土卡住他的膝弯、手肘和后背！罗文反手虚刺叔叔肋下，短杖却脱手旋飞直取我面门！",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__sylvia__8e825443.mp3",
       "jp_text": "また不意打ちか、とっくに読んでいた！二枚の氷壁が宙で閉じ合い、唸りを上げる短杖をがっちりと挟み込むと、石の稜柱も続けて完全に閉じた。彼が右手を上げかけた瞬間、一本の氷の杭が袖口を貫いてその手を地面へ縫い留める――貫いたのは袖口だけ、皮一枚傷つけてはいない。",
-      "drama3_input": "[icy, sharp] また不意打ちか、とっくに読んでいた！にまいのひょうへきがちゅうで閉じ合い、うなりを上げるたんじょうをがっちりと挟み込むと、石のりょうちゅうも続けて完全に閉じた。[short pause] 彼が右手を上げかけた瞬間、いっぽんの氷のくいがそでぐちを貫いてその手を地面へぬいとめる――<emphasis>貫いたのはそでぐちだけ、皮いちまい傷つけてはいない。</emphasis>",
+      "drama3_input": "[serious] また不意打ちか、とっくに読んでいた！二枚の氷壁が宙で閉じ合い、唸りを上げる短杖をがっちりと挟み込むと、石のりょうちゅうも、つづけて完全に閉じた。彼が右手を上げかけた瞬間、一本の氷の杭が袖口を貫いて、その手を地面へ縫い留める。貫いたのは袖口だけ、皮一枚、傷つけてはいない。",
       "audition": false
     },
     {
@@ -1773,7 +1773,7 @@
       "context_prev": "第四幕冰上三击战：三击已满艾诺认输",
       "audioRelPath": "combat/combat__boss_aino_surrender.mp3",
       "jp_text": "……今の、命中だ。三撃揃った。お前の勝ちだ。",
-      "drama3_input": "[quiet, conceding] ……今の、命中だ。[short pause] さんげき揃った。お前の勝ちだ。",
+      "drama3_input": "[calm, steady, clear] いまの、めいちゅうだ。さんげきそろった。おまえのかちだ。",
       "audition": false
     },
     {
@@ -1821,7 +1821,7 @@
       "context_prev": "战斗：魔力增幅一阶（20%·魔力盈溢）蓄力",
       "audioRelPath": "combat/combat__amp_tier_1.mp3",
       "jp_text": "魔力盈溢……これで足りる。",
-      "drama3_input": "[calm, focused] まりょくえいいつ……これで足りる。",
+      "drama3_input": "[serious] 魔力・えいいつ。これで足りる。",
       "audition": false
     },
     {
@@ -1837,7 +1837,7 @@
       "context_prev": "战斗：魔力增幅二阶（40%·极寒过载）蓄力",
       "audioRelPath": "combat/combat__amp_tier_2.mp3",
       "jp_text": "極寒過負荷。凍りつけ。",
-      "drama3_input": "[icy, sharp] ごっかんかふか。<emphasis>凍りつけ。</emphasis>",
+      "drama3_input": "[serious] 極寒、過負荷。凍りつけ。",
       "audition": false
     },
     {
@@ -1853,7 +1853,7 @@
       "context_prev": "战斗：魔力增幅三阶（60%·星霜极限）满载",
       "audioRelPath": "combat/combat__amp_tier_3.mp3",
       "jp_text": "星霜極限――すべてを収束する。",
-      "drama3_input": "[focused, powerful] せいそうきょくげん――<forceful>すべてをしゅうそくする。</forceful>",
+      "drama3_input": "[serious, clear] せいそう、きょくげん。すべてを収束する。",
       "audition": true
     },
     {
@@ -1885,7 +1885,7 @@
       "context_prev": "战斗：冰晶宫殿两步看破推演成功",
       "audioRelPath": "combat/combat__insight_success.mp3",
       "jp_text": "見切った。綻びはここだ。",
-      "drama3_input": "[icy, sharp] <whisper>見切った。</whisper> ほころびはここだ。",
+      "drama3_input": "[serious, clear] 見切った。ほころびは、ここだ。",
       "audition": true
     },
     {
@@ -1901,7 +1901,7 @@
       "context_prev": "战斗：隔空瞬凝截断敌方咏唱 / 破招",
       "audioRelPath": "combat/combat__interrupt.mp3",
       "jp_text": "流れは断った。",
-      "drama3_input": "[icy, crisp] 流れは断った。",
+      "drama3_input": "[serious, clear] 流れは、たった。",
       "audition": false
     },
     {
@@ -1917,7 +1917,7 @@
       "context_prev": "战斗：生根步卸力闪反 / 斩风瞬反",
       "audioRelPath": "combat/combat__parry.mp3",
       "jp_text": "受け流した。こちらの番だ。",
-      "drama3_input": "[calm, sharp] 受け流した。<emphasis>こちらの番だ。</emphasis>",
+      "drama3_input": "[serious, clear] 受け流した。こちらの番だ。",
       "audition": false
     },
     {
@@ -1981,7 +1981,7 @@
       "context_prev": "战斗：冰盾/水幕完全抵消敌方攻击",
       "audioRelPath": "combat/combat__shield_block.mp3",
       "jp_text": "防いだ。",
-      "drama3_input": "[calm, cool] 防いだ。",
+      "drama3_input": "[calm, steady] 防いだ。",
       "audition": false
     },
     {
@@ -1997,7 +1997,7 @@
       "context_prev": "战斗：风行残像闪避敌方攻击",
       "audioRelPath": "combat/combat__dodge.mp3",
       "jp_text": "空振りだ。",
-      "drama3_input": "[cool, light] 空振りだ。",
+      "drama3_input": "[calm, steady] 空振りだ。",
       "audition": false
     },
     {
@@ -2029,7 +2029,7 @@
       "context_prev": "战斗：常规胜利结算",
       "audioRelPath": "combat/combat__victory.mp3",
       "jp_text": "終わった。お疲れ様。",
-      "drama3_input": "[calm, soft] 終わった。お疲れ様。",
+      "drama3_input": "[calm, clear] 終わった。おつかれさま。",
       "audition": false
     },
     {
@@ -2045,7 +2045,7 @@
       "context_prev": "战斗：落败撤退",
       "audioRelPath": "combat/combat__defeat.mp3",
       "jp_text": "……一手読み違えた。一度引こう。",
-      "drama3_input": "[quiet, composed] ……いって読み違えた。<soft>一度引こう。</soft>",
+      "drama3_input": "[calm, clear] いって、読み違えた。いちど、引こう。",
       "audition": false
     },
     {
@@ -2062,7 +2062,7 @@
       "context_prev": "战斗技能短咏唱：防身平斩（SWORD/phys）",
       "audioRelPath": "combat/combat__skill_basic_attack.mp3",
       "jp_text": "下がれ。",
-      "drama3_input": "[cool, crisp] 下がれ。",
+      "drama3_input": "[firm, clear] 下がれ。",
       "audition": false
     },
     {
@@ -2079,7 +2079,7 @@
       "context_prev": "战斗技能短咏唱：覆潮水弹（HAND/water）",
       "audioRelPath": "combat/combat__skill_hand_water_surge.mp3",
       "jp_text": "覆潮水弾。",
-      "drama3_input": "[calm, crisp] ふくちょうすいだん。",
+      "drama3_input": "[serious, clear] ふくちょう、すいだん。",
       "audition": false
     },
     {
@@ -2130,7 +2130,7 @@
       "context_prev": "战斗技能短咏唱：蔓地薄冰（HAND/ice）",
       "audioRelPath": "combat/combat__skill_hand_frost_floor.mp3",
       "jp_text": "地を這う薄氷、広がれ。",
-      "drama3_input": "[calm, cool] 地をはうはくひょう、広がれ。",
+      "drama3_input": "[calm, steady] 地をはう、はくひょう。広がれ。",
       "audition": false
     },
     {
@@ -2147,7 +2147,7 @@
       "context_prev": "战斗技能短咏唱：钢冰生根盾（HAND/ice）",
       "audioRelPath": "combat/combat__skill_hand_root_shield.mp3",
       "jp_text": "地に根を張れ、鋼氷の盾。",
-      "drama3_input": "[steady, firm] 地に根を張れ、<emphasis>こうひょうの盾。</emphasis>",
+      "drama3_input": "[firm, clear] 地に根を張れ。こうひょうの盾。",
       "audition": false
     },
     {
@@ -2164,7 +2164,7 @@
       "context_prev": "战斗技能短咏唱：折射水幕（HAND/water）",
       "audioRelPath": "combat/combat__skill_hand_water_veil.mp3",
       "jp_text": "屈折水幕、展開。",
-      "drama3_input": "[calm, clear] くっせつすいまく、てんかい。",
+      "drama3_input": "[calm, clear] 屈折、すいまく、展開。",
       "audition": false
     },
     {
@@ -2181,7 +2181,7 @@
       "context_prev": "战斗技能短咏唱：冰棘群刺阵（HAND/ice）",
       "audioRelPath": "combat/combat__skill_hand_thorn_field.mp3",
       "jp_text": "氷棘群刺陣――起て。",
-      "drama3_input": "[icy, sharp] ひょうきょくぐんしじん――<forceful>たて。</forceful>",
+      "drama3_input": "[serious, clear] ひょうきょく、ぐんしじん。立て。",
       "audition": false
     },
     {
@@ -2198,7 +2198,7 @@
       "context_prev": "战斗技能短咏唱：侧翼盲区冰弹（REMOTE/ice）",
       "audioRelPath": "combat/combat__skill_remote_blind_shot.mp3",
       "jp_text": "死角……ここだ。",
-      "drama3_input": "[icy, sharp] 死角……<emphasis>ここだ。</emphasis>",
+      "drama3_input": "[serious, clear] 死角、ここだ。",
       "audition": false
     },
     {
@@ -2215,7 +2215,7 @@
       "context_prev": "战斗技能短咏唱：瞬发断咏冰锥（REMOTE/ice）",
       "audioRelPath": "combat/combat__skill_remote_snap_spike.mp3",
       "jp_text": "瞬凝、断詠。",
-      "drama3_input": "[icy, fast] <fast>しゅんぎょう、だんえい。</fast>",
+      "drama3_input": "[serious, clear] しゅんぎょう、だんえい。",
       "audition": false
     },
     {
@@ -2232,7 +2232,7 @@
       "context_prev": "战斗技能短咏唱：生根步·卸力侧滑（SWORD/phys）",
       "audioRelPath": "combat/combat__skill_sword_root_step.mp3",
       "jp_text": "生根歩、身を沈めて受け流す。",
-      "drama3_input": "[calm, grounded] せいこんほ、身を沈めて受け流す。",
+      "drama3_input": "[calm, steady] せいこんほ。身を沈めて、受け流す。",
       "audition": false
     },
     {
@@ -2249,7 +2249,7 @@
       "context_prev": "战斗技能短咏唱：送刀·覆水极薄冰锋（SWORD/water）",
       "audioRelPath": "combat/combat__skill_sword_water_edge.mp3",
       "jp_text": "覆水極薄刃、通す。",
-      "drama3_input": "[icy, crisp] ふくすいごくうすば、<emphasis>通す。</emphasis>",
+      "drama3_input": "[serious, clear] 覆水、ごくうすば、通す。",
       "audition": false
     },
     {
@@ -2266,7 +2266,7 @@
       "context_prev": "战斗技能短咏唱：风行残像（SWORD/wind）",
       "audioRelPath": "combat/combat__skill_sword_wind_afterimage.mp3",
       "jp_text": "風行残像。",
-      "drama3_input": "[cool, swift] ふうこうざんぞう。",
+      "drama3_input": "[calm, steady] ふうこう、残像。",
       "audition": false
     },
     {
@@ -2300,7 +2300,7 @@
       "context_prev": "战斗技能短咏唱：❄️ 看破·双镜合拢夹杖（INSIGHT/ice）",
       "audioRelPath": "combat/combat__skill_insight_rowan_prism.mp3",
       "jp_text": "双鏡収束、杖を挟み込め。",
-      "drama3_input": "[icy, sharp] そうきょうしゅうそく、<emphasis>杖を挟み込め。</emphasis>",
+      "drama3_input": "[serious, clear] そうきょう、収束。杖を挟み込め。",
       "audition": false
     },
     {
@@ -2334,7 +2334,7 @@
       "context_prev": "战斗技能短咏唱：❄️ 看破·盲区弹指冰珠（INSIGHT/ice）",
       "audioRelPath": "combat/combat__skill_insight_aino_bead.mp3",
       "jp_text": "体側三十センチ――氷珠。",
-      "drama3_input": "[icy, sharp] たいそくさんじゅっセンチ――<emphasis>ひょうじゅ。</emphasis>",
+      "drama3_input": "[serious, clear] 体側、三十センチ。ひょうじゅ。",
       "audition": false
     },
     {
@@ -2385,7 +2385,7 @@
       "context_prev": "战斗技能短咏唱：❄️ 看破·伊诺共鸣锁核（INSIGHT/ice）",
       "audioRelPath": "combat/combat__skill_insight_hulan_resonance.mp3",
       "jp_text": "腹下の晶核――頼む、アイノ。",
-      "drama3_input": "[focused, crisp] ふくかのしょうかく――<emphasis>頼む、アイノ。</emphasis>",
+      "drama3_input": "[serious, clear] ふくかの晶核。頼む、アイノ。",
       "audition": false
     },
     {
@@ -2402,7 +2402,7 @@
       "context_prev": "战斗技能短咏唱：❄️ 看破·仆道回风破幕（INSIGHT/water）",
       "audioRelPath": "combat/combat__skill_insight_eastwing_draft.mp3",
       "jp_text": "裏通路の冷風を借りる――鉄幕を押し崩せ。",
-      "drama3_input": "[focused, crisp] うらつうろのれいふうを借りる――<forceful>てつまくを押し崩せ。</forceful>",
+      "drama3_input": "[serious, clear] 裏通路の冷風を借りる。てつまくを、押し崩せ。",
       "audition": false
     },
     {
@@ -2419,7 +2419,7 @@
       "context_prev": "战斗技能短咏唱：❄️ 看破·风眼静滞穿心（INSIGHT/ice）",
       "audioRelPath": "combat/combat__skill_insight_wind_stillness.mp3",
       "jp_text": "嵐の目が静止する刹那――貫け。",
-      "drama3_input": "[focused, sharp] あらしのめが静止するせつな――<forceful>貫け。</forceful>",
+      "drama3_input": "[serious, clear] 嵐の目が静止する刹那、つらぬけ。",
       "audition": false
     },
     {
@@ -2436,7 +2436,7 @@
       "context_prev": "战斗技能短咏唱：❄️ 看破·凝霜贯隙刺（INSIGHT/ice）",
       "audioRelPath": "combat/combat__skill_insight_generic_flaw.mp3",
       "jp_text": "凝霜貫隙――今だ。",
-      "drama3_input": "[icy, sharp] ぎょうそうかんげき――<forceful>今だ。</forceful>",
+      "drama3_input": "[serious, clear] ぎょうそう、かんげき。今だ。",
       "audition": false
     }
   ]

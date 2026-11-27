@@ -19,7 +19,7 @@
       "context_prev": "旁白: 不像公爵家的人了。 这正是我要的。",
       "audioRelPath": "story/s_black_name/s_black_name__sylvia__9d8ffcd8.mp3",
       "jp_text": "ケン・カンユー。",
-      "drama3_input": "[calm, low, resolute] ケン・カンユー。",
+      "drama3_input": "[serious] ケン、カンユー。",
       "audition": false
     },
     {
@@ -217,7 +217,7 @@
       "context_prev": "玛莎: ……这就全清完了？",
       "audioRelPath": "story/s_north_forest/s_north_forest__masha__bda2c7e5.mp3",
       "jp_text": "あんた、水魔法の火力もしっかりしてるね。昇格審査を受ける気があるなら、いつでもアイアン級に上がれるよ。",
-      "drama3_input": "[impressed, brisk, lively] あんた、水魔法の火力もしっかりしてるね。昇格審査を受ける気があるなら、いつでもアイアン級に上がれるよ。",
+      "drama3_input": "[matter-of-fact, brisk, calm] あんた、水魔法のかりょくもしっかりしてるね。昇格審査を受ける気があるなら、いつでもアイアン級に上がれるよ。",
       "audition": false
     },
     {
@@ -289,7 +289,7 @@
       "context_prev": "渔: 三十五枚银币。",
       "audioRelPath": "story/s_north_forest/s_north_forest__jilan__24dafe83.mp3",
       "jp_text": "うわぁ……銀貨三十五枚かぁ、午前中だけでそんなに稼ぐなんて。父さんが何年も剣を教えて、弟子が一番多かった頃でも月謝ぜんぶ合わせて銀貨四十枚くらいだったのに。今じゃ人っ子一人いやしないんだから。",
-      "drama3_input": "[amazed, lively] うわぁ……銀貨三十五枚かぁ、午前中だけでそんなに稼ぐなんて。父さんが何年も剣を教えて、弟子が一番多かった頃でもげっしゃぜんぶ合わせて銀貨四十枚くらいだったのに。[sighs] <soft>今じゃひとっこひとりいやしないんだから。</soft>",
+      "drama3_input": "[amazed, lively] うわぁ、ぎんかさんじゅうごまいかぁ、ごぜんちゅうだけで、そんなにかせぐなんて。とうさんがなんねんもけんをおしえて、でしがいちばんおおかったころでも、げっしゃぜんぶあわせて、ぎんかよんじゅうまいくらいだったのに。いまじゃ、ひとっこひとり、いやしないんだから。",
       "audition": false
     },
     {
@@ -379,7 +379,7 @@
       "context_prev": "旁白: 正说着，老霁便拎着一小袋盐和两根还没削过的青竹从院门外晃了进来。他把盐袋丢进灶房，将新竹子往墙根一靠，拍拍手站到砂地中央冲我招手。",
       "audioRelPath": "story/s_north_forest/s_north_forest__ji__fa4cc171.mp3",
       "jp_text": "腹が膨れたら少し体を動かすぞ。昨日は握り方を教えたな、今日は歩法だ。",
-      "drama3_input": "[relaxed, steady] 腹が膨れたら少し体を動かすぞ。昨日は握り方を教えたな、今日はほほうだ。",
+      "drama3_input": "[warm, steady, clear] はらがふくれたら、すこしからだをうごかすぞ。きのうは、にぎりかたをおしえたな。きょうは、ホホウだ。",
       "audition": false
     },
     {
@@ -415,7 +415,7 @@
       "context_prev": "旁白: 他边说边走过来，用脚尖轻轻碰了碰我的脚踝。",
       "audioRelPath": "story/s_north_forest/s_north_forest__ji__6a02561a.mp3",
       "jp_text": "ちゃんと立てたか？",
-      "drama3_input": "[casual, steady] ちゃんと立てたか？",
+      "drama3_input": "[warm, clear, steady] ちゃんと、たてたか？",
       "audition": false
     },
     {
@@ -433,7 +433,7 @@
       "context_prev": "老霁: 站稳了没？",
       "audioRelPath": "story/s_north_forest/s_north_forest__sylvia__8fb2217e.mp3",
       "jp_text": "立っ——",
-      "drama3_input": "[calm, cut off] 立っ——",
+      "drama3_input": "[calm] たっ……！",
       "audition": false
     },
     {
@@ -541,7 +541,7 @@
       "context_prev": "旁白: 我照着他的动作挥了十几剑。老霁站在旁边看了一阵，忽然开口。",
       "audioRelPath": "story/s_north_forest/s_north_forest__ji__4e5bdb86.mp3",
       "jp_text": "手首に余計な力がこもってるな。",
-      "drama3_input": "[calm, observant] 手首に余計な力がこもってるな。",
+      "drama3_input": "[warm, steady, clear] てくびに、よけいなちからが、こもってるな。",
       "audition": false
     },
     {
@@ -757,7 +757,7 @@
       "context_prev": "渔: 你把火开太大了。",
       "audioRelPath": "story/s_north_forest/s_north_forest__ji__0917ead1.mp3",
       "jp_text": "これは強火で形を決めるってやつだ！ほら、焦げた面を下に隠せば、見た目には文句なしだろ——人間、最初から失敗の予算は組んどくもんだよ。",
-      "drama3_input": "[deadpan, humorous, proud] <emphasis>これは強火で形を決めるってやつだ！</emphasis>ほら、こげた面を下に隠せば、見た目には文句なしだろ——人間、最初から失敗の予算は組んどくもんだよ。",
+      "drama3_input": "[warm, humorous, proud] これは、つよびでかたちをきめるってやつだ！ ほら、こげためんをしたにかくせば、みためには、もんくなしだろ。にんげん、さいしょから、しっぱいのよさんはくんどくもんだよ。",
       "audition": true
     },
     {
@@ -883,7 +883,7 @@
       "context_prev": "霁岚: 这棵树每年都是全镇最早开花的。生日嘛，总得看点什么。",
       "audioRelPath": "story/s_north_forest/s_north_forest__jilan__190df069.mp3",
       "jp_text": "はちみつ菓子は食べたらなくなっちゃうけど、この木は明日もここにあるし。明後日も、ずっとあるよ。",
-      "drama3_input": "[soft, sincere, warm] はちみつ菓子は食べたらなくなっちゃうけど、この木は明日もここにあるし。<soft>あさっても、ずっとあるよ。</soft>",
+      "drama3_input": "[warm, gentle, clear] はちみつがしは、食べたらなくなっちゃうけど、この木は、あしたもここにあるし。あさっても、ずっとあるよ。",
       "audition": false
     },
     {
@@ -919,7 +919,7 @@
       "context_prev": "旁白: 等我跨进院门，老霁正蹲在井边洗一把竹剑。那把竹剑的前端裂开了长长的一道缝，像是内部纤维承受不住穿过它的力量，从里往外生生撕裂开来。",
       "audioRelPath": "story/s_north_forest/s_north_forest__ji__cbca403a.mp3",
       "jp_text": "おっ、今日は帰りが遅かったな。",
-      "drama3_input": "[casual, relaxed] おっ、今日は帰りが遅かったな。",
+      "drama3_input": "[warm, clear, steady] おっ、きょうはかえりが、おそかったな。",
       "audition": false
     },
     {
@@ -1027,7 +1027,7 @@
       "context_prev": "渔: 好吃。",
       "audioRelPath": "story/s_north_forest/s_north_forest__ji__4859d73d.mp3",
       "jp_text": "そりゃそうだろ！——って待て、お前、普段は俺の飯を褒めたことなんかないよな。",
-      "drama3_input": "[proud, then puzzled] そりゃそうだろ！——って待て、お前、普段は俺のめしをほめたことなんかないよな。",
+      "drama3_input": "[warm, amused, clear] そりゃそうだろ！ ってまて、おまえ、ふだんはおれのめしを、ほめたことなんか、ないよな。",
       "audition": false
     },
     {
@@ -1081,7 +1081,7 @@
       "context_prev": "霁岚: 一转眼都三个月了呢。三个月前我在公会门口拉到了一个客人，三个月后这个客人还住在这儿，中间再没来过第二个人。",
       "audioRelPath": "story/s_north_forest/s_north_forest__jilan__78fa35e1.mp3",
       "jp_text": "「満室」と「一部屋しか埋まってない」を同時にやれるのなんて、チョウラン中でもうちくらいじゃない？……あー、今日の風、気持ちいいね。",
-      "drama3_input": "[wry, then relaxed] 「満室」と「一部屋しか埋まってない」を同時にやれるのなんて、チョウランじゅうでもうちくらいじゃない？……あー、<soft>今日の風、気持ちいいね。</soft>",
+      "drama3_input": "[warm, cheerful, relaxed] 「まんしつ」と、「ひとへやしかうまってない」をどうじにやれるのなんて、チョウランじゅうでも、うちくらいじゃない？ あー、きょうのかぜ、きもちいいね。",
       "audition": false
     },
     {
@@ -1135,7 +1135,7 @@
       "context_prev": "霁岚: 你也睡不着呀？",
       "audioRelPath": "story/s_glow_sheep/s_glow_sheep__sylvia__9f587182.mp3",
       "jp_text": "うん。",
-      "drama3_input": "[quiet, soft] うん。",
+      "drama3_input": "[calm, gentle] うん。",
       "audition": false
     },
     {
@@ -1261,7 +1261,7 @@
       "context_prev": "渔: 你平时睡不着，就坐在廊下？",
       "audioRelPath": "story/s_glow_sheep/s_glow_sheep__jilan__eb29e343.mp3",
       "jp_text": "うん。庭をぼーっと眺めてると、そのうち眠くなってくるんだ。眠気って必ず来るもんね、たまに来るのがちょっと遅いだけで。",
-      "drama3_input": "[soft, slightly muffled, wistful] うん。庭をぼーっと眺めてると、そのうち眠くなってくるんだ。<soft>眠気って必ず来るもんね、たまに来るのがちょっと遅いだけで。</soft>",
+      "drama3_input": "[gentle, warm, calm] うん、にわをぼーっとながめてると、そのうちねむくなってくるんだ。ねむけって、かならず来るもんね、たまに来るのが、ちょっとおそいだけで。",
       "audition": false
     },
     {
@@ -1279,7 +1279,7 @@
       "context_prev": "旁白: 天上的星星多得不讲道理，密密麻麻地压下来，低得好像伸手就能捞一把。",
       "audioRelPath": "story/s_glow_sheep/s_glow_sheep__jilan__0805ad80.mp3",
       "jp_text": "わぁ……。",
-      "drama3_input": "[awed, breathless, soft] <soft>わぁ……。</soft>",
+      "drama3_input": "[amazed, gentle] わぁ。",
       "audition": false
     },
     {
@@ -1315,7 +1315,7 @@
       "context_prev": "霁岚: 它好像挺喜欢你。",
       "audioRelPath": "story/s_glow_sheep/s_glow_sheep__sylvia__3d81f7cb.mp3",
       "jp_text": "草を食べるのに忙しくて、嫌がる暇がないだけ。",
-      "drama3_input": "[calm, dry, quiet] 草を食べるのに忙しくて、嫌がる暇がないだけ。",
+      "drama3_input": "[calm] 草を食べるのに忙しくて、嫌がる暇がないだけ。",
       "audition": false
     },
     {
@@ -1405,7 +1405,7 @@
       "context_prev": "旁白: 小女孩打量了我们一会儿，大概觉得两个披着外衣、鞋上沾着露水的姐姐不太像贼，这才把灯放低。",
       "audioRelPath": "story/s_glow_sheep/s_glow_sheep__axu__13d0cd64.mp3",
       "jp_text": "あたし、アスっていうの。苜蓿の字だよ。この子はホタルオヒツジ。すごく珍しくて、一生見られない人だっていっぱいいるんだよ。",
-      "drama3_input": "[earnest, proud, childish] あたし、アスっていうの。もくしゅくの字だよ。この子はホタルオヒツジ。すごくめずらしくて、一生見られない人だっていっぱいいるんだよ。",
+      "drama3_input": "[animated, innocent, childish] あたし、アスっていうの。もくしゅくの字だよ。この子はホタルオヒツジ。すごくめずらしくて、一生見られない人だっていっぱいいるんだよ。",
       "audition": true
     },
     {
@@ -1459,7 +1459,7 @@
       "context_prev": "霁岚: 做梦的时候？",
       "audioRelPath": "story/s_glow_sheep/s_glow_sheep__axu__ad3fff81.mp3",
       "jp_text": "うん！おいしいものの夢を見ると、しっぽがランタンみたいにぴかぴか光るの。隣の羊たちが眩しくて眠れないから、頭でぐいぐい柵の端っこまで押し出しちゃってね。この子、細いから、ぎゅって隙間から抜け出しちゃうんだよ。",
-      "drama3_input": "[cheerful, lively, childish] うん！おいしいものの夢を見ると、しっぽがランタンみたいにぴかぴか光るの。隣の羊たちがまぶしくて眠れないから、頭でぐいぐいさくの端っこまで押し出しちゃってね。この子、細いから、ぎゅってすき間から抜け出しちゃうんだよ。",
+      "drama3_input": "[animated, innocent, childish] うん、おいしいものの夢を見ると、しっぽがランタンみたいにぴかぴか光るの。隣の羊たちがまぶしくて眠れないから、頭でぐいぐい、柵の端っこまで押し出しちゃってね。この子、細いから、ぎゅってすき間から抜け出しちゃうんだよ。",
       "audition": false
     },
     {
@@ -1495,7 +1495,7 @@
       "context_prev": "渔: 那它听见了吗？",
       "audioRelPath": "story/s_glow_sheep/s_glow_sheep__axu__2a938392.mp3",
       "jp_text": "聞こえてるよ。ただ、まだ食べ終わってないだけ。",
-      "drama3_input": "[matter-of-fact, innocent, childish] 聞こえてるよ。ただ、まだ食べ終わってないだけ。",
+      "drama3_input": "[animated, innocent, childish] きこえてるよ。ただ、まだ食べ終わってないだけ。",
       "audition": false
     },
     {
@@ -1513,7 +1513,7 @@
       "context_prev": "旁白: 我回过头——坡上亮起了光。先是一点，两点，紧接着一团团青黄色的柔光顺着草坡往下淌，像有人在山坡上打翻了一整罐星星！",
       "audioRelPath": "story/s_glow_sheep/s_glow_sheep__axu__b18bf538.mp3",
       "jp_text": "……あたし、出てくるとき、柵のかんぬき閉め忘れたかな？",
-      "drama3_input": "[sheepish, nervous, childish] ……あたし、出てくるとき、<soft>さくのかんぬき閉め忘れたかな？</soft>",
+      "drama3_input": "[wary, hesitant, childish] あたし、出てくるとき、柵のかんぬき、閉め忘れたかな？",
       "audition": false
     },
     {
@@ -1531,7 +1531,7 @@
       "context_prev": "旁白: 咩——咩咩——！羊全来了，撒着欢涌进原野，转眼开满了会走路的灯，一直铺到看不清的地方去。",
       "audioRelPath": "story/s_glow_sheep/s_glow_sheep__axu__660fe644.mp3",
       "jp_text": "追い戻さなきゃ！夜が明ける前に絶対戻さなきゃ！あれが大角、群れのリーダーだよ！大きい子なら人だって乗せられるから、首の毛をしっかり掴んで！耳は引っ張っちゃダメだよ！",
-      "drama3_input": "[urgent, frantic, childish] <fast>追い戻さなきゃ！夜が明ける前に絶対戻さなきゃ！</fast>あれがおおづの、群れのリーダーだよ！大きい子なら人だって乗せられるから、首の毛をしっかりつかんで！<emphasis>耳は引っ張っちゃダメだよ！</emphasis>",
+      "drama3_input": "[scolding, energetic, childish] 追い戻さなきゃ！ 夜が明ける前に絶対戻さなきゃ！ あれが、おおづの、群れのリーダーだよ！ 大きい子なら人だって乗せられるから、首の毛をしっかりつかんで！ 耳は引っ張っちゃダメだよ！",
       "audition": true
     },
     {
@@ -1549,7 +1549,7 @@
       "context_prev": "旁白: 阿蓿手脚并用爬上老角的背摇响铃铛；霁岚挽起棉褂袖子，一撑一跃骑上最近一只大羊。",
       "audioRelPath": "story/s_glow_sheep/s_glow_sheep__jilan__e4912471.mp3",
       "jp_text": "早くーっ！",
-      "drama3_input": "[excited, laughing, loud] 早くーっ！",
+      "drama3_input": "[cheerful, bright] はやくー！",
       "audition": false
     },
     {
@@ -1567,7 +1567,7 @@
       "context_prev": "旁白: 一只小羊脱了队往小溪那边冲，我从羊背上滑下来追了几步，指尖一点，一缕凉雾白蒙蒙地一闪，小家伙打了个转又乖乖跑回了光河里。",
       "audioRelPath": "story/s_glow_sheep/s_glow_sheep__axu__84215722.mp3",
       "jp_text": "すごーい！もう一回やって！",
-      "drama3_input": "[delighted, excited, childish] <emphasis>すごーい！</emphasis>もう一回やって！",
+      "drama3_input": "[animated, innocent, childish] すごーい！ もういっかいやって！",
       "audition": false
     },
     {
@@ -1585,7 +1585,7 @@
       "context_prev": "阿蓿: 好厉害！再来一个！",
       "audioRelPath": "story/s_glow_sheep/s_glow_sheep__sylvia__fc8dc590.mp3",
       "jp_text": "もうおしまい！",
-      "drama3_input": "[amused, bright, light] もうおしまい！",
+      "drama3_input": "[bright] もう、おしまい！",
       "audition": false
     },
     {
@@ -1603,7 +1603,7 @@
       "context_prev": "渔: 没有了！",
       "audioRelPath": "story/s_glow_sheep/s_glow_sheep__axu__b62747fd.mp3",
       "jp_text": "けちーっ！",
-      "drama3_input": "[pouting, playful, childish] けちーっ！",
+      "drama3_input": "[scolding, energetic, childish] ケチっ！",
       "audition": false
     },
     {
@@ -1621,7 +1621,7 @@
       "context_prev": "旁白: 阿蓿跳下来站在门边挨个摸羊脑袋小声点数；我和霁岚靠着石栅栏坐下，腿是软的，手心里全是羊毛的味道。",
       "audioRelPath": "story/s_glow_sheep/s_glow_sheep__jilan__8ca74dfd.mp3",
       "jp_text": "明日、父さんに「なんでそんなに羊くさいんだ」って聞かれたらどうしよっか……。",
-      "drama3_input": "[tired, amused, wry] 明日、父さんに「なんでそんなに羊くさいんだ」って聞かれたらどうしよっか……。",
+      "drama3_input": "[gentle, wry, clear] あした、とうさんに、「なんでそんなに、ひつじくさいんだ」って聞かれたら、どうしよっか。",
       "audition": false
     },
     {
@@ -1657,7 +1657,7 @@
       "context_prev": "渔: 就说梦见了羊。",
       "audioRelPath": "story/s_glow_sheep/s_glow_sheep__jilan__4ad5baa6.mp3",
       "jp_text": "どんな夢見たら、体じゅう羊くさくなるのよ！",
-      "drama3_input": "[laughing, exasperated, bright] どんな夢見たら、体じゅう羊くさくなるのよ！",
+      "drama3_input": "[cheerful, lively] どんなゆめ見たら、からだじゅう、ひつじくさくなるのよ！",
       "audition": false
     },
     {
@@ -1693,7 +1693,7 @@
       "context_prev": "玛莎: 最近北林深处安静得有些反常。往年开春，总有采药人和低阶小队被中层的凶兽追得狼狈逃回来。",
       "audioRelPath": "story/s_distant_wind_1/s_distant_wind_1__masha__b389b11b.mp3",
       "jp_text": "それがここんとこ、外周も中層もきれいさっぱり片付いちまって。北東の谷に住み着いてた古株のシャドウジャッカルまで、一撃で喉を裂かれてたっていうじゃないか。",
-      "drama3_input": "[impressed, sharp, lively] それがここんとこ、外周も中層もきれいさっぱり片付いちまって。ほくとうの谷に住み着いてたふるかぶのシャドウジャッカルまで、一撃で喉を裂かれてたっていうじゃないか。",
+      "drama3_input": "[matter-of-fact, brisk] それがここんとこ、外周も中層もきれいさっぱり片付いちまって。ほくとうの谷に、住み着いてたふるかぶの、シャドウジャッカルまで、一撃で喉を裂かれてたっていうじゃないか。",
       "audition": false
     },
     {
@@ -1819,7 +1819,7 @@
       "context_prev": "渔: 你们认错人了。",
       "audioRelPath": "story/s_distant_wind_1/s_distant_wind_1__kyle__876cd6f6.mp3",
       "jp_text": "我々が駆けつける直前、わずかな水系統の魔力反応を感知し、直後に風を纏って崖の上へ駆け抜ける残影を目にしました。誤解なさらないでください。戦利品の帰属は明白ですし、手柄を横取りするつもりなど毛頭ありません。",
-      "drama3_input": "[sincere, respectful, steady] 我々が駆けつける直前、わずかな水系統の魔力反応を感知し、直後に風をまとって崖の上へ駆け抜けるざんえいを目にしました。誤解なさらないでください。戦利品のきぞくは明白ですし、てがらを横取りするつもりなどもうとうありません。",
+      "drama3_input": "[polite, earnest, composed] 我々が駆けつける直前、わずかな水系統の魔力反応を感知し、直後に風をまとって崖の上へ駆け抜ける、ざんえいを目にしました。誤解なさらないでください。戦利品のきぞくは明白ですし、てがらを横取りするつもりなどもうとうありません。",
       "audition": false
     },
     {
@@ -1837,7 +1837,7 @@
       "context_prev": "凯尔: 我们在赶到前感应到了短暂的水系魔力波动，随后只看到一道借风掠上崖顶的残影。别误会，战利品归属很清楚，我们绝没有抢功的意思。",
       "audioRelPath": "story/s_distant_wind_1/s_distant_wind_1__kyle__04b3da9f.mp3",
       "jp_text": "ただ、あのシャドウジャッカルの喉を一太刀で断った傷口が気になってしまいまして。残留していたのは紛れもなく水系統の魔力なのに、切断面はまるで名家の剣士による一閃のように滑らかだったのです。",
-      "drama3_input": "[thoughtful, respectful, serious] ただ、あのシャドウジャッカルの喉をひとたちで断った傷口が気になってしまいまして。残留していたのはまぎれもなく水系統の魔力なのに、せつだんめんはまるで名家の剣士によるいっせんのようになめらかだったのです。",
+      "drama3_input": "[serious, solemn, composed] ただ、あのシャドウジャッカルの喉を、ひと太刀で、たった傷口が気になってしまいまして。残留していたのはまぎれもなく水系統の魔力なのに、せつだんめんはまるで名家の剣士によるいっせんのようになめらかだったのです。",
       "audition": false
     },
     {
@@ -1855,7 +1855,7 @@
       "context_prev": "凯尔: 只是那头影豺喉间一刀毙命，残留的明明是水系魔力，切口却平滑得像被名家快剑斩开一样。",
       "audioRelPath": "story/s_distant_wind_1/s_distant_wind_1__kyle__e2b96827.mp3",
       "jp_text": "我々のパーティはこれから北上する予定なのですが、足止めと火力を兼ね備えた実力者がどうしても足りません。そこで不躾ながら、我々と組んでいただけないかとお伺いした次第です。",
-      "drama3_input": "[earnest, courteous, steady] 我々のパーティはこれから北上する予定なのですが、あしどめと火力を兼ね備えた実力者がどうしても足りません。そこでぶしつけながら、我々と組んでいただけないかとお伺いした次第です。",
+      "drama3_input": "[polite, earnest, composed] 我々のパーティはこれから北上する予定なのですが、あしどめと、かりょくを兼ね備えた実力者がどうしても足りません。そこでぶしつけながら、我々と組んでいただけないかとお伺いした次第です。",
       "audition": true
     },
     {
@@ -2035,7 +2035,7 @@
       "context_prev": "旁白: 院子里安静了一瞬，只有墙头那只胖灰猫轻轻甩了下尾巴。老霁脸上的笑意慢慢沉淀下来，化作一种早就料到会有这一天的温和。",
       "audioRelPath": "story/s_distant_wind_1/s_distant_wind_1__ji__7f2d3070.mp3",
       "jp_text": "どっちへ向かうんだ？",
-      "drama3_input": "[calm, gentle, low] どっちへ向かうんだ？",
+      "drama3_input": "[warm, gentle, clear] どっちへ、むかうんだ？",
       "audition": false
     },
     {
@@ -2053,7 +2053,7 @@
       "context_prev": "老霁: 往哪边走？",
       "audioRelPath": "story/s_distant_wind_1/s_distant_wind_1__sylvia__2577939b.mp3",
       "jp_text": "北へ。ヘラン公国に行く。",
-      "drama3_input": "[calm, resolute] 北へ。ヘラン公国に行く。",
+      "drama3_input": "[serious] 北へ、ヘラン公国に行く。",
       "audition": false
     },
     {
@@ -2125,7 +2125,7 @@
       "context_prev": "老霁: 往北边去，手里光拿根竹条可糊弄不了那些皮糙肉厚的畜生。带上它，就当是你交的那几枚铜币学费的回礼。",
       "audioRelPath": "story/s_distant_wind_1/s_distant_wind_1__sylvia__d64ad634.mp3",
       "jp_text": "こんな大事なもの、もらえない。私が払ったのは銅貨数枚だけで——",
-      "drama3_input": "[hesitant, sincere, quiet] こんな大事なもの、もらえない。私が払ったのは銅貨数枚だけで——",
+      "drama3_input": "[gentle] こんな、だいじな物、もらえない。私が払ったのは、銅貨数枚だけで。",
       "audition": false
     },
     {
@@ -2179,7 +2179,7 @@
       "context_prev": "霁岚: 本来是编给我爸的，他嫌紫色太扎眼不肯要，便宜你了。",
       "audioRelPath": "story/s_distant_wind_1/s_distant_wind_1__jilan__ef08f1cc.mp3",
       "jp_text": "北に着いたら……もし宿場町を見つけたら、元気でやってるって、ちゃんと手紙書いてよ。",
-      "drama3_input": "[soft, teary, slightly muffled] 北に着いたら……<soft>もししゅくばまちを見つけたら、元気でやってるって、ちゃんと手紙書いてよ。</soft>",
+      "drama3_input": "[gentle, warm, sincere] きたについたら、もし、しゅくばまちを見つけたら、げんきでやってるって、ちゃんとてがみ書いてよ。",
       "audition": true
     },
     {
@@ -2251,7 +2251,7 @@
       "context_prev": "穆萨: 这丫头控温的手艺比我见过的专职冰法师还匀！",
       "audioRelPath": "story/s_distant_wind_1/s_distant_wind_1__musa__773de933.mp3",
       "jp_text": "ワシは従軍薬師のムサだ。道中の止血草と保温薬箱の管理は、ぜひユーお嬢ちゃんにお願いしたい！",
-      "drama3_input": "[hearty, enthusiastic, warm] ワシはじゅうぐんやくしのムサだ。道中のしけつそうとほおんくすりばこの管理は、ぜひユーお嬢ちゃんにお願いしたい！",
+      "drama3_input": "[warm, calm, sincere] ワシは、じゅうぐんやくしのムサだ。どうちゅうの止血草と、ほおん、くすりばこの管理は、ぜひユーお嬢ちゃんにお願いしたい。",
       "audition": false
     },
     {
@@ -2287,7 +2287,7 @@
       "context_prev": "旁白: 这一回，风捎来的，是压得极低的说话声。",
       "audioRelPath": "story/s_words_to_wind/s_words_to_wind__servant_a__f71fcb3d.mp3",
       "jp_text": "……川を渡れば水車小屋だ。あそこで引き渡せば金が手に入る。上の指示だ、小さいほうは生かしておけとよ。",
-      "drama3_input": "[low, tense, hushed] <whisper>……川を渡ればすいしゃごやだ。あそこで引き渡せば金が手に入る。上の指示だ、小さいほうは生かしておけとよ。</whisper>",
+      "drama3_input": "[low, grim, hushed] 川を渡ればすいしゃごやだ。あそこで引き渡せば金が手に入る。上の指示だ、小さいほうは生かしておけとよ。",
       "audition": false
     },
     {
@@ -2377,7 +2377,7 @@
       "context_prev": "旁白: 女人笑出了声，笑声又亮又响，好像刚才那场风暴从来没有来过。她朝爱丽丝伸出手。",
       "audioRelPath": "story/s_words_to_wind/s_words_to_wind__fengshen__cb2c9cd1.mp3",
       "jp_text": "今日から君は、あたしの直弟子ね〜。あっ、自己紹介忘れてた。あたしの名前はラン。",
-      "drama3_input": "[cheerful, airy, playful] 今日から君は、あたしのじきでしね〜。あっ、自己紹介忘れてた。あたしの名前はラン。",
+      "drama3_input": "[cheerful, playful, bright] 今日から君は、あたしの、直弟子ね〜。あっ、自己紹介忘れてた。あたしの名前はラン。",
       "audition": false
     },
     {
@@ -2467,7 +2467,7 @@
       "context_prev": "岚: 走啦～",
       "audioRelPath": "story/s_eye_of_storm/s_eye_of_storm__jiqing__45c8273d.mp3",
       "jp_text": "いやこっちじゃないって！一通目は東通りの鍛冶屋なんだよ！そっち西に飛んでるってばーっ！",
-      "drama3_input": "[frantic, energetic, boyish] <fast>いやこっちじゃないって！一通目はひがしどおりのかじやなんだよ！</fast><emphasis>そっち西に飛んでるってばーっ！</emphasis>",
+      "drama3_input": "[startled, panicked, boyish] いや、こっちじゃないって！ いっつうめは、ひがしどおりのかじやなんだよ！ そっち、西に飛んでるってばーっ！",
       "audition": true
     },
     {
@@ -2575,7 +2575,7 @@
       "context_prev": "霁清: 兰，你的梦想是什么？",
       "audioRelPath": "story/s_eye_of_storm/s_eye_of_storm__fengshen__ccfe129e.mp3",
       "jp_text": "ひとすじの風になって、大陸じゅうに愛を届けることかな〜。君は？",
-      "drama3_input": "[soft, dreamy, airy] <soft>ひとすじの風になって、大陸じゅうに愛を届けることかな〜。</soft>君は？",
+      "drama3_input": "[gentle, warm, playful] ひとすじの風になって、大陸じゅうに愛を届けることかな。君は？",
       "audition": false
     },
     {
@@ -2611,7 +2611,7 @@
       "context_prev": "旁白: 高烧刚退下去的爱丽丝裹着岚宽大的外袍靠坐在树根旁，脸色还有些发白，手腕露在袍袖外头，一条歪歪扭扭的贝壳手链沾着海盐和泥印，被火光照得一闪一闪。",
       "audioRelPath": "story/s_leaky_cup/s_leaky_cup__fengshen__e86e2436.mp3",
       "jp_text": "熱いうちにスープを飲みなさい。あたしの手は風を起こして波を割るためのものなんだから、熱でふらふらの病人さんの看病なんて柄じゃないのよ〜。",
-      "drama3_input": "[teasing, casual, airy] 熱いうちにスープを飲みなさい。あたしの手は風を起こして波を割るためのものなんだから、熱でふらふらの病人さんの看病なんてがらじゃないのよ〜。",
+      "drama3_input": "[teasing, casual, warm] あついうちに、スープを飲みなさい。あたしの手は風を起こして波を割るためのものなんだから、熱でふらふらの病人さんの看病なんて、がらじゃないのよ。",
       "audition": false
     },
     {
@@ -2629,7 +2629,7 @@
       "context_prev": "岚: 趁热把汤喝了。我这双手只管刮风掀海浪，可不会伺候烧糊涂的小病号。",
       "audioRelPath": "story/s_leaky_cup/s_leaky_cup__alice__09781f8e.mp3",
       "jp_text": "……ありがとうございます、師匠。ブレスレットの潮と泥は、夜が明けて小川を見つけたらゆっくり洗いますから。",
-      "drama3_input": "[weak, grateful, gentle] <soft>……ありがとうございます、師匠。</soft>ブレスレットのしおと泥は、夜が明けて小川を見つけたらゆっくり洗いますから。",
+      "drama3_input": "[gentle] ありがとうございます、師匠。ブレスレットの潮と泥は、夜が明けて小川を見つけたら、ゆっくり洗いますから。",
       "audition": false
     },
     {
@@ -2665,7 +2665,7 @@
       "context_prev": "旁白: 大概是高烧烧得人发软，又或许是终于确定身后没了追兵，她捧着热汤，少见地多说了几句话，断断续续提起了公爵府里的旧事。",
       "audioRelPath": "story/s_leaky_cup/s_leaky_cup__alice__b97d0b54.mp3",
       "jp_text": "……ベアトリスお姉様って、いつも声が大きいのに、本当は水も怖いんです。",
-      "drama3_input": "[soft, nostalgic, gentle] <soft>……ベアトリスお姉様って、いつも声が大きいのに、本当は水も怖いんです。</soft>",
+      "drama3_input": "[gentle] ベアトリスお姉様って、いつも声が大きいのに、本当は水も怖いんです。",
       "audition": false
     },
     {
@@ -2791,7 +2791,7 @@
       "context_prev": "爱丽丝: 父亲大人和母亲大人在学院开放日那天，穿了蹩脚得一眼就能认出来的便装。",
       "audioRelPath": "story/s_leaky_cup/s_leaky_cup__alice__5bcf1ce3.mp3",
       "jp_text": "……礼式も護衛もすべて外して、公開日の人混みにこっそり紛れ込んでいたんです。ただ、私たちを一目見るためだけに。",
-      "drama3_input": "[shy, warm, heartfelt] <soft>……れいしきも護衛もすべて外して、公開日の人混みにこっそりまぎれ込んでいたんです。ただ、私たちを一目見るためだけに。</soft>",
+      "drama3_input": "[gentle] れいしきも、ごえいも、すべて外して、公開日の人混みにこっそり紛れ込んでいたんです。ただ、私たちを一目見るためだけに。",
       "audition": false
     },
     {
@@ -2827,7 +2827,7 @@
       "context_prev": "岚: 堂堂公爵夫妇，穿一身蹩脚便装去挤人群？",
       "audioRelPath": "story/s_leaky_cup/s_leaky_cup__alice__a8a2a54f.mp3",
       "jp_text": "……はい。ベティお姉様が、一目で気づいてしまって。",
-      "drama3_input": "[soft, fondly smiling] ……はい。ベティお姉様が、一目で気づいてしまって。",
+      "drama3_input": "[gentle] はい、ベティお姉様が、一目で気づいてしまって。",
       "audition": false
     },
     {
@@ -2845,7 +2845,7 @@
       "context_prev": "旁白: 吟游诗人传唱了百年的英雄谭，戏台上演了无数遍的骑士与公主，还有旧帆布包里陌生人写给陌生人的信笺——那些隔着一层风的故事永远停在落笔的那一刻，不会因为某天没做好就突然翻脸露出獠牙。",
       "audioRelPath": "story/s_leaky_cup/s_leaky_cup__alice__a3ee59f9.mp3",
       "jp_text": "……お姉様。",
-      "drama3_input": "[soft, fragile, sleepy] <whisper>……お姉様。</whisper>",
+      "drama3_input": "[gentle] お姉様。",
       "audition": false
     },
     {
@@ -2863,7 +2863,7 @@
       "context_prev": "旁白: 爱丽丝紧锁的眉头慢慢松开，呼吸重新变得平缓。岚靠回身后的树干，把玩着手里那截烧黑了一半的枯枝，嘴角勾起一点漫不经心的弧度。",
       "audioRelPath": "story/s_leaky_cup/s_leaky_cup__fengshen__24043720.mp3",
       "jp_text": "まったく……割に合わない商売だこと。",
-      "drama3_input": "[soft, fond, wry] まったく……[sighs] <soft>わりにあわない商売だこと。</soft>",
+      "drama3_input": "[warm, fond, wry] まったく、わりにあわない商売だこと。",
       "audition": false
     },
     {
@@ -2917,7 +2917,7 @@
       "context_prev": "旁白: 后来我才知道，他叫罗文。",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__rowan__0244fdf8.mp3",
       "jp_text": "御者ですね。死後、少なくとも一晩は経っております。首に傷があり、目立った金品は身につけておりません。",
-      "drama3_input": "[calm, polite, slow] ぎょしゃですね。死後、少なくとも一晩は経っております。首に傷があり、目立った金品は身につけておりません。",
+      "drama3_input": "[calm, clear, polite] ぎょしゃですね。死後、少なくとも一晩は経っております。首に傷があり、目立った金品は身につけておりません。",
       "audition": false
     },
     {
@@ -2957,7 +2957,7 @@
         "s_interlude_white_night:57"
       ],
       "jp_text": "それほどでも。",
-      "drama3_input": "[calm, deadpan, brief] それほどでも。",
+      "drama3_input": "[calm] それほどでも。",
       "audition": false
     },
     {
@@ -2993,7 +2993,7 @@
       "context_prev": "旁白: 昨夜下过雨，林道上全是泥。一个自己走进灌木丛的人，靴底不该那么干净。",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__sylvia__eb1052fe.mp3",
       "jp_text": "あの人、誰かにここまで運ばれてきたの。",
-      "drama3_input": "[calm, observant, quiet] あの人、誰かにここまで運ばれてきたの。",
+      "drama3_input": "[calm] あの人。誰かに、ここまで運ばれてきたの。",
       "audition": false
     },
     {
@@ -3029,7 +3029,7 @@
       "context_prev": "罗文: 为什么？",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__sylvia__a0fbdbc0.mp3",
       "jp_text": "泥。",
-      "drama3_input": "[calm, brief] 泥。",
+      "drama3_input": "[calm] どろ。",
       "audition": false
     },
     {
@@ -3137,7 +3137,7 @@
       "context_prev": "旁白: 贝阿特丽丝姐姐正往嘴里塞一块奶油蛋糕，当场差点噎住。",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__beatrice__3a2f3358.mp3",
       "jp_text": "げほっ、ごほっ——う、うちの領地に吸血鬼がいるの！？",
-      "drama3_input": "[coughing, shocked, loud] げほっ、ごほっ——う、うちの領地にきゅうけつきがいるの！？",
+      "drama3_input": "[surprised, flustered] げほっ、ごほっ。うっ、うちのりょうちに、きゅうけつきがいるの！？",
       "audition": false
     },
     {
@@ -3155,7 +3155,7 @@
       "context_prev": "贝蒂: 咳、咳咳——我们领地有吸血鬼？！",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__claude__9e123b67.mp3",
       "jp_text": "ただの噂にすぎん。",
-      "drama3_input": "[calm, deep, dignified] ただの噂にすぎん。",
+      "drama3_input": "[calm, deep, steady] ただの噂に過ぎん。",
       "audition": false
     },
     {
@@ -3173,7 +3173,7 @@
       "context_prev": "父亲: 只是传闻。",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__beatrice__b7877db5.mp3",
       "jp_text": "それでもダメよ！もし公爵邸になんて来たら、あたしが丸焦げにして灰にしてやるんだから！",
-      "drama3_input": "[fired-up, loud, indignant] それでもダメよ！もしこうしゃくていになんて来たら、<emphasis>あたしがまるこげにして灰にしてやるんだから！</emphasis>",
+      "drama3_input": "[bright, energetic, proud] それでもだめよ！ もし、こうしゃくていになんて来たら、あたしがまるこげにして、はいにしてやるんだから！",
       "audition": false
     },
     {
@@ -3263,7 +3263,7 @@
       "context_prev": "问询骑士: 当时天气怎么样？",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__sylvia__afef55e4.mp3",
       "jp_text": "前の晩に雨が降って、朝になってやっと上がった。林道沿いの白樺の並木から、まだ雫が垂れていた。",
-      "drama3_input": "[calm, precise, clear] 前の晩に雨が降って、朝になってやっと上がった。りんどうぞいのしらかばの並木から、まだしずくがたれていた。",
+      "drama3_input": "[calm] 前の晩に雨が降って、朝になってやっと上がった。林道ぞいの白樺の並木から、まだ雫が垂れていた。",
       "audition": false
     },
     {
@@ -3335,7 +3335,7 @@
       "context_prev": "旁白: 哼，明明我在当年案件最开始就提出了异常，却多半因为最后没有查出结果，就直接不作记录，真是便利呢。要不要让父亲减减他们的薪水？",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__sylvia__02fc55fb.mp3",
       "jp_text": "一晩中雨が降って、林道は泥だらけだった。自分で茂みに入った人の靴底が綺麗なはずがない。ズボンの裾も無傷だった。あの一帯は茨しかないのに。",
-      "drama3_input": "[calm, sharp, precise] ひとばんじゅう雨が降って、林道は泥だらけだった。自分でしげみに入った人のくつぞこが綺麗なはずがない。ズボンのすそもむきずだった。あの一帯はいばらしかないのに。",
+      "drama3_input": "[calm] 一晩中、雨が降って、林道は泥だらけだった。自分で茂みに入った人の靴底が、綺麗なはずがない。ズボンの裾も無傷だった。あの一帯は、いばらしかないのに。",
       "audition": false
     },
     {
@@ -3353,7 +3353,7 @@
       "context_prev": "旁白: 骑士的笔悬了一会儿，没落下去。",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__servant_a__c2825edf.mp3",
       "jp_text": "お嬢様、それは確かに昨年ご覧になった遺体でお間違いないでしょうか？",
-      "drama3_input": "[puzzled, formal, cautious] お嬢様、それは確かに昨年ご覧になった遺体でお間違いないでしょうか？",
+      "drama3_input": "[formal, professional] お嬢様、それは確かに、昨年ご覧になった遺体でお間違いないでしょうか？",
       "audition": false
     },
     {
@@ -3605,7 +3605,7 @@
       "context_prev": "旁白: 念头刚闪过去，屋顶上便落下一道人影：苍白、瘦削，嘴角沾着暗红血迹，两颗犬齿异常尖长，眼里没有焦点，落地后径直朝我扑了过来！",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__rowan__5aa3e9dd.mp3",
       "jp_text": "お伏せください！",
-      "drama3_input": "[urgent, crisp, composed] <emphasis>おふせください！</emphasis>",
+      "drama3_input": "[firm, clear, composed] おふせください！",
       "audition": false
     },
     {
@@ -3641,7 +3641,7 @@
       "context_prev": "罗文: 二小姐，受伤了吗？",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__sylvia__4a7d8ffd.mp3",
       "jp_text": "ない。",
-      "drama3_input": "[calm, quiet, guarded] ない。",
+      "drama3_input": "[calm] ない。",
       "audition": false
     },
     {
@@ -3677,7 +3677,7 @@
       "context_prev": "旁白: 「静止的日蚀」。他走到离我不远的地方停下——这个距离很讲究，足够说话，也足够我一转身就被追上。",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__sylvia__39575bc6.mp3",
       "jp_text": "最初の三人を殺したのは、あなた。マルコが店主を殺したことを突き止めて、昨夜彼を噛み、私を襲わせた。",
-      "drama3_input": "[cold, sharp, resolute] 最初の三人を殺したのは、あなた。マルコが店主を殺したことを突き止めて、昨夜彼をかみ、私を襲わせた。",
+      "drama3_input": "[serious] 最初の三人を殺したのは、あなた。マルコが、てんしゅを殺したことを突き止めて、さくや、彼を噛み、私を襲わせた。",
       "audition": false
     },
     {
@@ -3749,7 +3749,7 @@
       "context_prev": "罗文: 传闻会停，调查组会离开。所有人都亲眼看见只有我救下了您，以后您出门只需要带我一个。这对您更安全。",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__sylvia__df735f40.mp3",
       "jp_text": "そして、あなたを代わりが利かない存在にするため。",
-      "drama3_input": "[cold, sharp] そして、あなたを代わりがきかない存在にするため。",
+      "drama3_input": "[serious] そして、あなたを、代わりが利かない存在にするため。",
       "audition": false
     },
     {
@@ -3785,7 +3785,7 @@
       "context_prev": "罗文: 被二小姐需要，算不上什么可耻的愿望。我不想杀您，我想继续做您的侍卫。我没有碰过公爵府里任何一个无辜的人，也从没想过伤害您的家人。",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__sylvia__f7429154.mp3",
       "jp_text": "サム。今、彼の名前を省いた。",
-      "drama3_input": "[cold, razor-sharp] サム。今、彼の名前をはぶいた。",
+      "drama3_input": "[serious] サム、今、彼の名前を省いた。",
       "audition": false
     },
     {
@@ -3947,7 +3947,7 @@
       "context_prev": "雷纳德: 一个人查案，一个人赴约，临开打前还要说句漂亮话——你的主角瘾过够没有？",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__sylvia__36401b40.mp3",
       "jp_text": "……まあまあ。あと半拍遅かったら、寝たものと思うところだった。",
-      "drama3_input": "[calm, dry, mildly wry] ……まあまあ。あとはんぱく遅かったら、寝たものと思うところだった。",
+      "drama3_input": "[calm] まあまあ。あと、はんぱく遅かったら、寝たものと思うところだった。",
       "audition": false
     },
     {
@@ -4109,7 +4109,7 @@
       "context_prev": "旁白: 真实答案是四段冻结的记忆、天文台没有预告的日蚀，以及罗文比身体慢了半拍的影子。这些当然不能说。",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__sylvia__e3aa5fae.mp3",
       "jp_text": "マルコに私の経路を知る術はないけれど、ローワンは知っていた。襲撃が始まる前に彼が叫んだのは「お伏せください」。初撃がサムを越えて私の頭を狙うと、最初から知っていたの。それに、殺すのが早すぎた。口封じにしか見えなかった。",
-      "drama3_input": "[calm, analytical, clear] マルコに私のけいろを知るすべはないけれど、ローワンは知っていた。襲撃が始まる前に彼が叫んだのは「おふせください」。しょげきがサムを越えて私の頭を狙うと、最初から知っていたの。それに、殺すのが早すぎた。くちふうじにしか見えなかった。",
+      "drama3_input": "[calm] マルコに私の経路を知る術はないけれど、ローワンは知っていた。襲撃が始まる前に彼が叫んだのは、「お伏せください」。初撃がサムを越えて私の頭を狙うと、最初から知っていたの。それに、殺すのが早すぎた。口封じにしか見えなかった。",
       "audition": false
     },
     {
@@ -4235,7 +4235,7 @@
       "context_prev": "罗文: 您会留下我？",
       "audioRelPath": "story/s_interlude_white_night/s_interlude_white_night__sylvia__59423707.mp3",
       "jp_text": "分からない。でも、サムは生きていた。",
-      "drama3_input": "[cold, quiet, resolute] 分からない。<slow>でも、サムは生きていた。</slow>",
+      "drama3_input": "[serious] 分からない。でも、サムは生きていた。",
       "audition": false
     },
     {

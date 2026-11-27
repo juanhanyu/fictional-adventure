@@ -11,17 +11,17 @@ Fish Audio Drama 3 / Fish Cloud API 日语语音批量生产、四层工业级�
 2. 严格遵守 SGLang-Omni Drama 3 采样铁律：
    - `temperature: 1.0`, `top_p: 0.9`
    - 严禁传 `top_k`（避免中途静音）与 `seed`（服务端拒绝）
-   - 动态估算 `max_new_tokens`（日文字数 → 时长 × 21.5 帧/秒 × 1.8 冗余，夹在 [220, 1024]）
-   - 首词静音 Bug 防护：若 `drama3_input` 以 `[sighs]`/`[pause]` 等开头自动微调
+    - 动态估算 `max_new_tokens`（短句 `<=12` 字收紧至 `[110, 220]` 防尾部续写参考音；长句夹在 `[220, 1024]`）
+    - 首词静音 Bug 防护：若 `drama3_input` 以 `[sighs]`/`[pause]` 等开头自动微调
 3. 四档生产范围 `--scope`：`audition` (~50) / `p1` (~380) / `main` (~965) / `all` (~1,330)，
    以及 `--only-ids` 精准单句返修。
 4. SHA-256 断点续传缓存键：`sha256(drama3_input + ref_hash + backend + model_id)`。
 5. 四层工业级自动质检 + 后处理：
-   (1) 时长/语速合理性校验（4.5–8 字/秒基准，拦截吞字截断与尾部幻觉）
+   (1) 时长/语速合理性校验 + 句中异常死寂硬门禁（`internal_max_silence > 1.35s @ <-46dB` → `internal_silence_gap`）
    (2) 削波/峰值检测与无声文件拦截
-   (3) 可选 `--asr-qc`：`litagin/anime-whisper` 反向转写（严禁传 `initial_prompt`！）+ Kana CER，
-       CER > 18% 自动重抽最多 `--max-retries 3` 次并保留最低 CER 版本
-   (4) FFmpeg 静音修剪（保留前 40ms + 后 120ms 防切爆破音）+ 双遍 `loudnorm`
+   (3) 可选 `--asr-qc`：`litagin/anime-whisper` 全句长覆盖反向转写（含 1–5 字短句，严禁传 `initial_prompt`！）
+       + Kana CER + 幻觉暴涨拦截（`asr_hallucination_extra`）+ 句首/句尾吞字拦截（`asr_tail_truncated`）
+   (4) FFmpeg 极保守静音修剪（`-55dB` 门限，保留前 `100ms` + 后 `240ms`；`<3.2s` 短句不裁句尾）+ 双遍 `loudnorm`
        至 `-16 LUFS / -1.5 dBTP / LRA=7`（显式 `-ar 44100 -ac 1` 避开 192kHz 坑）
        → 编码 `MP3 64 kbps mono` 落盘 `assets/voice/<audioRelPath>`。
 6. 输出 `tools/voice/qa_report.json` 并自动调用 `node tools/voice/build_manifest.mjs`。
@@ -34,6 +34,7 @@ import array
 import concurrent.futures
 import datetime as dt
 import hashlib
+import inspect
 import json
 import math
 import os
@@ -62,6 +63,23 @@ TOKEN_REDUNDANCY = 1.8
 MIN_NEW_TOKENS = 220
 MAX_NEW_TOKENS = 1024
 
+# 短句（纯日文口语字符 <= 12）紧凑 token 预算，彻底根治念完台词后接着背诵参考音频幻觉
+SHORT_SPOKEN_CHARS_MAX = 12
+SHORT_MIN_NEW_TOKENS = 110
+SHORT_MAX_NEW_TOKENS = 220
+SHORT_TOKEN_REDUNDANCY = 1.6
+SHORT_TOKEN_FLAT_PAD = 40
+
+# 极保守首尾静音修剪与句中死寂断档门禁常量
+TRIM_SILENCE_DB = -55.0
+SHORT_DEAD_SILENCE_DB = -58.0
+SHORT_NO_TAIL_TRIM_MAX_RAW_SEC = 3.2
+SHORT_DEAD_TAIL_KEEP_SEC = 0.60
+TRIM_PAD_HEAD_SEC = 0.100
+TRIM_PAD_TAIL_SEC = 0.240
+INTERNAL_SILENCE_DB = -46.0
+INTERNAL_MAX_SILENCE_LIMIT_SEC = 1.35
+
 # 本项目真实第一章 + 关键高潮幕场景 ID（用于 --scope p1 默认兜底筛选）
 P1_SCENE_IDS = frozenset(
     {
@@ -81,6 +99,7 @@ P1_SCENE_IDS = frozenset(
 
 SPEAKER_TAG_RE = re.compile(r"<\|speaker:\d+\|>\s*", re.IGNORECASE)
 INLINE_TAG_RE = re.compile(r"\[[^\]]{1,48}\]")
+XML_PROSODY_TAG_RE = re.compile(r"</?[a-zA-Z_][a-zA-Z0-9_\s-]{0,31}>")
 
 # 易诱发首词后静音 Bug 的开头呼吸/停顿标签
 LEADING_PAUSE_TAG_RE = re.compile(
@@ -96,7 +115,19 @@ LEADING_BREATH_TAG_RE = re.compile(
 
 PUNCT_PAUSE_RE = re.compile(r"[、。，．！？!?,.;:…―—]+")
 SPOKEN_CHAR_RE = re.compile(r"[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\u3400-\u4DBFA-Za-z0-9ー]")
+KANJI_CHAR_RE = re.compile(r"[\u4E00-\u9FFF\u3400-\u4DBF]")
 FISH_URL_ID_RE = re.compile(r"(?:fish\.audio/(?:[a-zA-Z-]+/)?m/)([a-zA-Z0-9_-]{12,64})", re.IGNORECASE)
+
+_HIRA_VOWEL_GROUPS = (
+    ("あかさたなはまやらわがざだばぱぁゃゎ", "あ"),
+    ("いきしちにひみりゐぎじぢびぴぃ", "い"),
+    ("うくすつぬふむゆるぐずづぶぷぅゅ", "う"),
+    ("えけせてねへめれゑげぜでべぺぇ", "え"),
+    ("おこそとのほもよろをごぞどぼぽぉょ", "お"),
+)
+_HIRA_TO_VOWEL: dict[str, str] = {
+    ch: vowel for chars, vowel in _HIRA_VOWEL_GROUPS for ch in chars
+}
 
 
 def _extract_model_id(raw: Any) -> str | None:
@@ -137,6 +168,36 @@ def _katakana_to_hiragana(text: str) -> str:
         else:
             out.append(ch)
     return "".join(out)
+
+
+def _expand_prolonged_sound_mark(hira_text: str) -> str:
+    """将长音符 `ー`/`〜`/`～` 按前一假名母音段展开为对应平假名母音，消除 `そー` vs `そう` 误差。"""
+    out: list[str] = []
+    for ch in hira_text:
+        if ch in ("ー", "〜", "～"):
+            if out and out[-1] in _HIRA_TO_VOWEL:
+                out.append(_HIRA_TO_VOWEL[out[-1]])
+            continue
+        out.append(ch)
+    return "".join(out)
+
+
+def _fold_phonetic_equiv(kana: str) -> str:
+    """
+    折叠日语语音学常见同音异写等价形式（用于 CER 与句首/句尾吞字比对）：
+    - 助词与四假名同音：`わ↔は`、`え↔へ`、`お↔を`、`じ↔ぢ`、`ず↔づ`
+    - 长音同音：`おう↔おお`（お段+う→お）、`えい↔ええ`（え段+い→え）
+    """
+    s = (
+        kana.replace("ぢ", "じ")
+        .replace("づ", "ず")
+        .replace("を", "お")
+        .replace("は", "わ")
+        .replace("へ", "え")
+    )
+    s = re.sub(r"([おこごそぞとどのほぼぽもよろょぉ])う", r"\1お", s)
+    s = re.sub(r"([えけげせぜてでねへべぺめれぇ])い", r"\1え", s)
+    return s
 
 
 def levenshtein_distance(a: str, b: str) -> int:
@@ -180,26 +241,43 @@ class KanaNormalizer:
         self._ensure_kks()
         cleaned = SPEAKER_TAG_RE.sub("", text or "")
         cleaned = INLINE_TAG_RE.sub("", cleaned)
+        cleaned = XML_PROSODY_TAG_RE.sub("", cleaned)
         cleaned = unicodedata.normalize("NFKC", cleaned)
         if self._kks is not None:
             cleaned = "".join(item.get("hira", "") for item in self._kks.convert(cleaned))
         cleaned = _katakana_to_hiragana(cleaned)
-        # 去除所有中/日/英标点、括号、空白与长音符波动（保留核心读音字符）
+        cleaned = _expand_prolonged_sound_mark(cleaned)
+        # 去除所有中/日/英标点、括号与空白（保留核心读音字符）
         cleaned = re.sub(r"[^\u3040-\u309F\u4E00-\u9FFF0-9a-zA-Z]", "", cleaned)
         return cleaned.lower()
 
+    def estimate_mora_len(self, kana_or_mixed: str) -> int:
+        """若未装 pykakasi 导致残留汉字，按 1 汉字≈2 假名折算期望拍数，避免误触发幻觉暴涨判定。"""
+        if not kana_or_mixed:
+            return 0
+        if self._kks is not None:
+            return len(kana_or_mixed)
+        kanji_n = len(KANJI_CHAR_RE.findall(kana_or_mixed))
+        return len(kana_or_mixed) + kanji_n
+
     def kana_cer(self, ref_jp: str, hyp_jp: str) -> float:
-        r = self.to_kana(ref_jp)
-        h = self.to_kana(hyp_jp)
-        if not r:
-            return 0.0 if not h else 1.0
-        return round(levenshtein_distance(r, h) / float(len(r)), 4)
+        r_raw = self.to_kana(ref_jp)
+        h_raw = self.to_kana(hyp_jp)
+        if not r_raw:
+            return 0.0 if not h_raw else 1.0
+        raw_cer = levenshtein_distance(r_raw, h_raw) / float(len(r_raw))
+        r_ph = _fold_phonetic_equiv(r_raw)
+        h_ph = _fold_phonetic_equiv(h_raw)
+        ph_cer = levenshtein_distance(r_ph, h_ph) / float(max(1, len(r_ph)))
+        return round(min(raw_cer, ph_cer), 4)
 
 
 class AnimeWhisperQC:
     """
     同卡反向转写质检器（litagin/anime-whisper）。
-    铁律：严禁传 `initial_prompt`！
+    铁律：
+    1. 严禁传 `initial_prompt`！
+    2. 全句长覆盖（含 1–5 字短句，绝不免检）！
     """
 
     def __init__(self, device: str = "auto") -> None:
@@ -228,18 +306,26 @@ class AnimeWhisperQC:
             torch_dtype = torch.float16 if str(device).startswith("cuda") else torch.float32
 
         print(f"[ASR-QC] 正在加载 litagin/anime-whisper (device={device}) ...", flush=True)
-        self._pipe = pipeline(
-            "automatic-speech-recognition",
-            model="litagin/anime-whisper",
-            device=device,
-            torch_dtype=torch_dtype,
-            chunk_length_s=30.0,
-        )
+        pipe_kwargs: dict[str, Any] = {
+            "model": "litagin/anime-whisper",
+            "device": device,
+            "chunk_length_s": 30.0,
+        }
+        try:
+            sig_params = inspect.signature(pipeline).parameters
+            if "dtype" in sig_params and "torch_dtype" not in sig_params:
+                pipe_kwargs["dtype"] = torch_dtype
+            else:
+                pipe_kwargs["torch_dtype"] = torch_dtype
+        except Exception:
+            pipe_kwargs["torch_dtype"] = torch_dtype
 
-    def evaluate(self, wav_path: Path, ref_jp: str) -> tuple[str, float]:
+        self._pipe = pipeline("automatic-speech-recognition", **pipe_kwargs)
+
+    def _transcribe_raw(self, wav_path: Path) -> str:
         with self._lock:
             self._ensure_loaded()
-            # 铁律：严禁传入 initial_prompt！
+            # 铁律：严禁传入 initial_prompt！短句（1-5字）同样强制执行反向转写！
             generate_kwargs = {
                 "language": "Japanese",
                 "no_repeat_ngram_size": 5,
@@ -247,9 +333,83 @@ class AnimeWhisperQC:
             }
             assert "initial_prompt" not in generate_kwargs
             res = self._pipe(str(wav_path), generate_kwargs=generate_kwargs)
-            hyp = str(res.get("text", "") if isinstance(res, dict) else res).strip()
+            return str(res.get("text", "") if isinstance(res, dict) else res).strip()
+
+    def evaluate(self, wav_path: Path, ref_jp: str) -> tuple[str, float]:
+        hyp = self._transcribe_raw(wav_path)
         cer = self.normalizer.kana_cer(ref_jp, hyp)
         return hyp, cer
+
+    def evaluate_detailed(
+        self,
+        wav_path: Path,
+        ref_jp: str,
+        pcm_metrics: dict[str, Any],
+    ) -> dict[str, Any]:
+        """
+        执行全句长 ASR 质检（含 1–5 字短句），除总 Kana CER 外额外拦截：
+        1. `asr_hallucination_extra`：`len(hyp_kana) > max(len(exp_kana) * 1.45 + 4, len(exp_kana) + 8)`
+        2. `asr_tail_truncated`：`len(exp_kana) >= 4` 且转写丢失句首/句末 1–2 个关键假名（兼容 `おう↔おお`、
+           `わ↔は`、`え↔へ`、`お↔を` 等同音等价）且音频有效时长偏短。
+        """
+        hyp = self._transcribe_raw(wav_path)
+        exp_kana = self.normalizer.to_kana(ref_jp)
+        hyp_kana = self.normalizer.to_kana(hyp)
+        cer = self.normalizer.kana_cer(ref_jp, hyp)
+        extra_issues: list[str] = []
+
+        exp_len = self.normalizer.estimate_mora_len(exp_kana)
+        hyp_len = len(hyp_kana)
+
+        # 1. 幻觉暴涨拦截（如念完短句后接着背出参考音频台词）
+        if exp_len > 0 and hyp_len > max(exp_len * 1.45 + 4.0, float(exp_len + 8)):
+            extra_issues.append("asr_hallucination_extra")
+
+        # 2. 句首/句尾吞字拦截（兼容常见长音/助词等价）
+        exp_ph = _fold_phonetic_equiv(exp_kana).rstrip("っ")
+        hyp_ph = _fold_phonetic_equiv(hyp_kana).rstrip("っ")
+        exp_cmp = re.sub(r"([あいうえお])\1$", r"\1", exp_ph)
+        hyp_cmp = re.sub(r"([あいうえお])\1$", r"\1", hyp_ph)
+
+        if len(exp_kana) >= 4 and len(exp_cmp) >= 4:
+            _, punct_groups, _ = count_spoken_units(ref_jp)
+            active_dur = float(pcm_metrics.get("active_duration", 0.0))
+            expected_norm_dur = exp_len * 0.185 + max(0, punct_groups - 1) * 0.20 + 0.15
+            is_short_audio = active_dur < expected_norm_dur
+
+            tail_lost = False
+            head_lost = False
+            if not hyp_cmp:
+                tail_lost = True
+            elif len(hyp_cmp) < len(exp_cmp):
+                # 句末丢失 1–2 个关键假名
+                if hyp_cmp[-1] != exp_cmp[-1]:
+                    suf_probe = hyp_cmp[-min(2, len(hyp_cmp)) :]
+                    if (
+                        exp_cmp[:-1].endswith(suf_probe)
+                        or (len(exp_cmp) >= 5 and exp_cmp[:-2].endswith(suf_probe))
+                        or (len(exp_cmp) >= 6 and exp_cmp[:-3].endswith(suf_probe))
+                        or (exp_cmp[-1] not in hyp_cmp[-2:] and len(hyp_cmp) <= len(exp_cmp) - 2)
+                    ):
+                        tail_lost = True
+                # 句首丢失 1–2 个关键假名（如「話せる」被吃成「なせる」）
+                if hyp_cmp[0] != exp_cmp[0] and len(hyp_cmp) >= 2:
+                    pre_probe = hyp_cmp[:2]
+                    if exp_cmp[1:].startswith(pre_probe) or (
+                        len(exp_cmp) >= 5 and exp_cmp[2:].startswith(pre_probe)
+                    ):
+                        head_lost = True
+
+            if (tail_lost or head_lost) and is_short_audio:
+                extra_issues.append("asr_tail_truncated")
+
+        return {
+            "hyp": hyp,
+            "cer": cer,
+            "exp_kana": exp_kana,
+            "hyp_kana": hyp_kana,
+            "extra_issues": extra_issues,
+        }
 
 
 def sanitize_drama3_input(raw_text: str) -> tuple[str, bool, str]:
@@ -297,9 +457,9 @@ def sanitize_drama3_input(raw_text: str) -> tuple[str, bool, str]:
 
 
 def count_spoken_units(text: str) -> tuple[int, int, int]:
-    """返回 (口语字符数, 停顿标点段数, 行内动作标签数)。"""
+    """返回 (口语字符数, 停顿标点段数, 行内动作标签数)。剔除 `[...]` 与 `<soft>` 等标签避免虚增字数。"""
     tags = INLINE_TAG_RE.findall(text or "")
-    plain = INLINE_TAG_RE.sub("", SPEAKER_TAG_RE.sub("", text or ""))
+    plain = XML_PROSODY_TAG_RE.sub("", INLINE_TAG_RE.sub("", SPEAKER_TAG_RE.sub("", text or "")))
     spoken_chars = len(SPOKEN_CHAR_RE.findall(plain))
     punct_groups = len(PUNCT_PAUSE_RE.findall(plain))
     return spoken_chars, punct_groups, len(tags)
@@ -307,13 +467,23 @@ def count_spoken_units(text: str) -> tuple[int, int, int]:
 
 def compute_max_new_tokens(text: str, retry_bump: int = 0) -> int:
     """
-    按日文字数动态估算时长 × 21.5 帧/秒 × 1.8 冗余，并严格夹在 [220, 1024]。
-    彻底防止 Drama 3 尾部死寂/拖音幻觉，并匹配 A100 40GB max_new_tokens=1024 上限。
+    按日文字数分级估算 `max_new_tokens`：
+    - 短台词（纯日文 `<= 12` 字）：收紧在 `[110, 220]` 紧凑区间（`max(110, int(est_sec * 21.5 * 1.6 + 40))`，
+      硬上限 `<= 220`），避免给短句过多帧数导致模型念完剧本后把参考音频台词接着背出来！
+    - 常规/长台词（`> 12` 字）：时长 × 21.5 帧/秒 × 1.8 冗余，夹在 `[220, 1024]`。
     """
     spoken_chars, punct_groups, tag_count = count_spoken_units(text)
+    if spoken_chars <= SHORT_SPOKEN_CHARS_MAX:
+        est_sec = max(0.8, spoken_chars / 5.0 + punct_groups * 0.22 + tag_count * 0.35)
+        short_frames = max(
+            SHORT_MIN_NEW_TOKENS,
+            int(est_sec * CODEC_FPS * SHORT_TOKEN_REDUNDANCY + SHORT_TOKEN_FLAT_PAD),
+        ) + max(0, min(retry_bump, 32))
+        return min(SHORT_MAX_NEW_TOKENS, short_frames)
+
     # 日语动画演出语速中枢约 5.0 字/秒 + 标点停顿 0.22s + 行内气息标签 0.55s
     est_sec = max(1.2, spoken_chars / 5.0 + punct_groups * 0.22 + tag_count * 0.55)
-    raw_frames = int(math.ceil(est_sec * CODEC_FPS * TOKEN_REDUNDANCY)) + retry_bump
+    raw_frames = int(math.ceil(est_sec * CODEC_FPS * TOKEN_REDUNDANCY)) + max(0, retry_bump)
     return max(MIN_NEW_TOKENS, min(MAX_NEW_TOKENS, raw_frames))
 
 
@@ -806,9 +976,11 @@ def finalize_raw_to_pcm_wav(raw_bytes: bytes, raw_path: Path, clean_wav: Path) -
 
 def analyze_pcm_wav_and_speech_bounds(wav_path: Path) -> dict[str, Any]:
     """
-    第二层质检 + 静音边界精准测量：
-    在 44.1 kHz 16-bit PCM 上以 10ms 窗口计算 RMS/峰值/削波率与起止有声边界，
-    避免 ffmpeg silenceremove 误切首尾爆破音。
+    第二层质检 + 极保守静音边界与句中异常断档精准测量：
+    1. 在 44.1 kHz 16-bit PCM 上以 10ms 窗口计算 RMS/峰值/削波率；
+    2. 按极保守门限 `-55 dBFS`（兜底 `-58 dBFS`）测定起止有声边界，绝不误切清擦音 `s/k/t/h`
+       和轻声尾助词 `だ/よ/な/ね/る/か？`；同时记录 `-58 dBFS` 末端边界供 `<3.2s` 短句保护使用；
+    3. 检测首尾非静音区间（`-46 dBFS`）内部的连续静音断档 `internal_max_silence`（`> 1.35s` 即触发重抽）。
     """
     with wave.open(str(wav_path), "rb") as wf:
         sr = wf.getframerate()
@@ -821,6 +993,8 @@ def analyze_pcm_wav_and_speech_bounds(wav_path: Path) -> dict[str, Any]:
             "active_duration": 0.0,
             "speech_start": 0.0,
             "speech_end": 0.0,
+            "dead58_end": 0.0,
+            "internal_max_silence": 0.0,
             "rms_dbfs": -99.0,
             "peak_dbfs": -99.0,
             "clip_ratio": 0.0,
@@ -860,7 +1034,7 @@ def analyze_pcm_wav_and_speech_bounds(wav_path: Path) -> dict[str, Any]:
     rms_dbfs = 20.0 * math.log10(rms / 32768.0) if rms > 0 else -99.0
     clip_ratio = clipped / float(total)
 
-    # 10ms 窗计算有声区间（先按 -42 dBFS 检测，低声耳语回退 -50 dBFS）
+    # 10ms 窗计算分贝曲线
     win = max(1, int(sr * 0.010))
     win_dbfs: list[float] = []
     for start in range(0, total, win):
@@ -871,7 +1045,7 @@ def analyze_pcm_wav_and_speech_bounds(wav_path: Path) -> dict[str, Any]:
         w_rms = math.sqrt(w_sq / float(end - start))
         win_dbfs.append(20.0 * math.log10(w_rms / 32768.0) if w_rms > 0 else -99.0)
 
-    def _find_bounds(thresh_db: float) -> tuple[float, float] | None:
+    def _find_idx_bounds(thresh_db: float) -> tuple[int, int] | None:
         first_idx = None
         last_idx = None
         for i, db in enumerate(win_dbfs):
@@ -881,13 +1055,40 @@ def analyze_pcm_wav_and_speech_bounds(wav_path: Path) -> dict[str, Any]:
                 last_idx = i
         if first_idx is None or last_idx is None:
             return None
+        return first_idx, last_idx
+
+    def _idx_to_sec_bounds(idx_pair: tuple[int, int] | None) -> tuple[float, float] | None:
+        if idx_pair is None:
+            return None
+        first_idx, last_idx = idx_pair
         return first_idx * 0.010, min(raw_dur, (last_idx + 1) * 0.010)
 
-    bounds = _find_bounds(-42.0) or _find_bounds(-50.0)
+    # 极保守首尾有声边界：门限降到 -55 dBFS（兜底 -58 dBFS），保护清擦音与轻声尾助词
+    bounds_55 = _idx_to_sec_bounds(_find_idx_bounds(TRIM_SILENCE_DB))
+    bounds_58 = _idx_to_sec_bounds(_find_idx_bounds(SHORT_DEAD_SILENCE_DB))
+    bounds = bounds_55 or bounds_58
     if bounds is None:
         speech_start, speech_end = 0.0, 0.0
     else:
         speech_start, speech_end = bounds
+
+    dead58_end = bounds_58[1] if bounds_58 is not None else speech_end
+
+    # 句中连续静音断档检测（首尾 >= -46dB 非静音区间内部的 < -46dB 连续静音段）
+    idx_46 = _find_idx_bounds(INTERNAL_SILENCE_DB)
+    internal_max_silence = 0.0
+    if idx_46 is not None:
+        first_46, last_46 = idx_46
+        cur_sil_wins = 0
+        max_sil_wins = 0
+        for w_i in range(first_46 + 1, last_46):
+            if win_dbfs[w_i] < INTERNAL_SILENCE_DB:
+                cur_sil_wins += 1
+                if cur_sil_wins > max_sil_wins:
+                    max_sil_wins = cur_sil_wins
+            else:
+                cur_sil_wins = 0
+        internal_max_silence = round(max_sil_wins * 0.010, 3)
 
     active_dur = max(0.0, speech_end - speech_start)
     is_silent = (rms_dbfs < -45.0) or (peak_dbfs < -32.0) or (active_dur < 0.12)
@@ -898,6 +1099,8 @@ def analyze_pcm_wav_and_speech_bounds(wav_path: Path) -> dict[str, Any]:
         "active_duration": round(active_dur, 3),
         "speech_start": round(speech_start, 3),
         "speech_end": round(speech_end, 3),
+        "dead58_end": round(dead58_end, 3),
+        "internal_max_silence": internal_max_silence,
         "rms_dbfs": round(rms_dbfs, 2),
         "peak_dbfs": round(peak_dbfs, 2),
         "clip_ratio": round(clip_ratio, 6),
@@ -963,7 +1166,11 @@ def trim_and_loudnorm_to_mp3(
 ) -> float:
     """
     第四层后处理：
-    1. 静音修剪：精确保留首 40ms + 尾 120ms 防切爆破音与自然余韵，加 8ms/15ms 微淡入淡出防爆音；
+    1. 极保守静音修剪（`-55dB` 门限）：
+       - 首部保留 `100ms` 保护缓冲（绝不误切清擦音 `s/k/t/h`）；
+       - 尾部保留 `240ms` 保护缓冲（绝不误切轻声尾助词 `だ/よ/な/ね/る/か？`）；
+       - 原始时长 `< 3.2s` 的短语音不裁切句尾（仅裁掉末尾超过 `0.6s` 的纯 `-58dB` 死寂），100% 保住最后一个假名；
+       - 先补齐首尾缓冲再在缓冲最外缘施加 `8ms`/`15ms` 微淡入淡出防爆音，绝不衰减有效语音采样；
     2. 双遍 EBU R128 `loudnorm` 至 `-16 LUFS / -1.5 dBTP / LRA=7`，
        显式指定 `aresample=44100` 与 `-ar 44100 -ac 1` 避开 FFmpeg loudnorm 192 kHz 采样坑；
     3. 编码为 `MP3 64 kbps mono` 并原子落盘。
@@ -972,12 +1179,24 @@ def trim_and_loudnorm_to_mp3(
     raw_dur = pcm_metrics["raw_duration"]
     s_start = pcm_metrics["speech_start"]
     s_end = pcm_metrics["speech_end"]
+    dead58_end = float(pcm_metrics.get("dead58_end", s_end))
 
-    # 保留前 40ms + 后 120ms（若原音频前/后余量不足，则补齐微量静音防爆破音硬切）
-    trim_start = max(0.0, s_start - 0.040)
-    trim_end = min(raw_dur, s_end + 0.120)
-    pad_head_ms = max(0, int(round((0.040 - (s_start - trim_start)) * 1000)))
-    pad_tail_sec = max(0.0, 0.120 - (trim_end - s_end))
+    # 首部保护缓冲 100ms（若原音频前部余量不足 100ms，则补齐静音防擦音/爆破音硬切）
+    trim_start = max(0.0, s_start - TRIM_PAD_HEAD_SEC)
+    pad_head_ms = max(0, int(round((TRIM_PAD_HEAD_SEC - (s_start - trim_start)) * 1000)))
+
+    # 尾部修剪：< 3.2s 短句不裁切句尾（仅裁掉末尾 > 0.6s 的纯 -58dB 死寂）；>= 3.2s 保留 240ms 保护缓冲
+    if raw_dur < SHORT_NO_TAIL_TRIM_MAX_RAW_SEC:
+        trailing_dead_58 = max(0.0, raw_dur - dead58_end)
+        if trailing_dead_58 > SHORT_DEAD_TAIL_KEEP_SEC:
+            trim_end = min(raw_dur, dead58_end + SHORT_DEAD_TAIL_KEEP_SEC)
+            pad_tail_sec = 0.0
+        else:
+            trim_end = raw_dur
+            pad_tail_sec = max(0.0, TRIM_PAD_TAIL_SEC - max(0.0, raw_dur - s_end))
+    else:
+        trim_end = min(raw_dur, s_end + TRIM_PAD_TAIL_SEC)
+        pad_tail_sec = max(0.0, TRIM_PAD_TAIL_SEC - (trim_end - s_end))
 
     if trim_end <= trim_start + 0.05:
         trim_start, trim_end = 0.0, raw_dur
@@ -985,15 +1204,17 @@ def trim_and_loudnorm_to_mp3(
 
     trimmed_wav = tmp_dir / "trimmed.wav"
     trim_filters = [f"atrim=start={trim_start:.4f}:end={trim_end:.4f}", "asetpts=PTS-STARTPTS"]
-    clip_dur = max(0.05, trim_end - trim_start)
-    if clip_dur > 0.08:
-        fade_out_st = max(0.0, clip_dur - 0.015)
-        trim_filters.append("afade=t=in:st=0:d=0.008")
-        trim_filters.append(f"afade=t=out:st={fade_out_st:.4f}:d=0.015")
     if pad_head_ms > 0:
         trim_filters.append(f"adelay={pad_head_ms}:all=1")
-    if pad_tail_sec > 0.005:
-        trim_filters.append(f"apad=pad_dur={pad_tail_sec:.4f}")
+    applied_pad_tail = pad_tail_sec if pad_tail_sec > 0.005 else 0.0
+    if applied_pad_tail > 0.0:
+        trim_filters.append(f"apad=pad_dur={applied_pad_tail:.4f}")
+
+    total_padded_dur = max(0.05, (trim_end - trim_start) + (pad_head_ms / 1000.0) + applied_pad_tail)
+    if total_padded_dur > 0.08:
+        fade_out_st = max(0.0, total_padded_dur - 0.015)
+        trim_filters.append("afade=t=in:st=0:d=0.008")
+        trim_filters.append(f"afade=t=out:st={fade_out_st:.4f}:d=0.015")
 
     cmd_trim = [
         "ffmpeg",
@@ -1108,7 +1329,9 @@ def synthesize_one_line(
     asr_qc: AnimeWhisperQC | None,
 ) -> dict[str, Any]:
     """
-    合成单句语音并执行四层自动质检 + 最多 --max-retries 次自动重抽（保留最低 CER / 最佳版本）。
+    合成单句语音并执行四层自动质检 + 最多 --max-retries 次自动重抽：
+    优先采用 passed==True 候选；若均未完全达标，严格优先选无 `internal_silence_gap`、
+    无 `asr_hallucination_extra` 且综合 `(len(issues), cer)` 最小的最优轨。
     """
     voice_id = line["voiceId"]
     profile_id = line["profileId"]
@@ -1136,6 +1359,7 @@ def synthesize_one_line(
 
     best_candidate: dict[str, Any] | None = None
     attempt_logs: list[dict[str, Any]] = []
+    need_trunc_token_bump = 0
 
     with tempfile.TemporaryDirectory(prefix=f"tts_{voice_id}_") as tmp_root_str:
         tmp_root = Path(tmp_root_str)
@@ -1146,10 +1370,9 @@ def synthesize_one_line(
             raw_file = attempt_dir / "raw.wav"
             clean_wav = attempt_dir / "clean.wav"
 
-            # 重抽时微调温度以跳出不良采样轨迹，并按需小幅放宽 token 预算
+            # 重抽时微调温度以跳出不良采样轨迹；仅当上一轮出现吞字/截断时按需小幅放宽 token（防幻觉暴涨）
             retry_temp = max(0.75, args.temperature - attempt_idx * 0.06)
-            retry_bump = attempt_idx * 48
-            max_tokens = compute_max_new_tokens(sanitized_text, retry_bump=retry_bump)
+            max_tokens = compute_max_new_tokens(sanitized_text, retry_bump=need_trunc_token_bump)
 
             try:
                 t0 = time.monotonic()
@@ -1179,9 +1402,13 @@ def synthesize_one_line(
                 finalize_raw_to_pcm_wav(audio_bytes, raw_file, clean_wav)
                 pcm = analyze_pcm_wav_and_speech_bounds(clean_wav)
 
-                # 第 1 + 2 层质检
-                dur_ok, dur_issues, cps = check_layer1_duration(line["jp_text"] or sanitized_text, pcm)
+                # 第 1 + 2 层质检（含句中异常死寂断档硬门禁 internal_max_silence > 1.35s @ <-46dB）
+                ref_jp_text = line["jp_text"] or sanitized_text
+                dur_ok, dur_issues, cps = check_layer1_duration(ref_jp_text, pcm)
                 hard_issues = list(dur_issues)
+                has_internal_gap = float(pcm.get("internal_max_silence", 0.0)) > INTERNAL_MAX_SILENCE_LIMIT_SEC
+                if has_internal_gap:
+                    hard_issues.append("internal_silence_gap")
                 if pcm["is_silent"]:
                     hard_issues.append(
                         f"无声/极低音量 (rms={pcm['rms_dbfs']}dB, peak={pcm['peak_dbfs']}dB)"
@@ -1191,27 +1418,54 @@ def synthesize_one_line(
                         f"削波失真 (clip={pcm['clip_ratio']:.4f}, run={pcm['max_clip_run']})"
                     )
 
-                # 第 3 层质检：可选 anime-whisper 反向转写 + Kana CER
+                # 第 3 层质检：全句长（含 1–5 字短句）anime-whisper 反向转写 + CER + 幻觉暴涨 + 首尾吞字守护
                 asr_text: str | None = None
                 cer: float | None = None
                 asr_ok = True
                 if asr_qc is not None and not pcm["is_silent"]:
-                    asr_text, cer = asr_qc.evaluate(clean_wav, line["jp_text"] or sanitized_text)
+                    asr_detail = asr_qc.evaluate_detailed(clean_wav, ref_jp_text, pcm)
+                    asr_text = asr_detail["hyp"]
+                    cer = asr_detail["cer"]
                     if cer > args.asr_cer_threshold:
                         asr_ok = False
                         hard_issues.append(
                             f"ASR Kana CER 偏高 ({cer * 100:.1f}% > {args.asr_cer_threshold * 100:.0f}%)"
                         )
+                    for extra_iss in asr_detail["extra_issues"]:
+                        asr_ok = False
+                        if extra_iss not in hard_issues:
+                            hard_issues.append(extra_iss)
 
-                all_passed = dur_ok and (not pcm["is_silent"]) and (not pcm["is_clipped"]) and asr_ok
+                if any("吞字/截断" in x or x == "asr_tail_truncated" for x in hard_issues) and (
+                    "asr_hallucination_extra" not in hard_issues
+                ):
+                    need_trunc_token_bump += 32
 
-                # 综合排序键：越小越好（优先全部通过 > 无静音/削波 > 最低 CER > 合理时长）
+                all_passed = (
+                    dur_ok
+                    and (not has_internal_gap)
+                    and (not pcm["is_silent"])
+                    and (not pcm["is_clipped"])
+                    and asr_ok
+                )
+
+                has_silence_gap = "internal_silence_gap" in hard_issues
+                has_hallucination = "asr_hallucination_extra" in hard_issues
+                has_tail_trunc = "asr_tail_truncated" in hard_issues
+
+                # 多次 retry 择优排序键（越小越优）：
+                # 1. passed == True 最优先；
+                # 2. 若均未完全达标，严格优先选无 internal_silence_gap、无 asr_hallucination_extra、无死寂/削波，
+                #    且综合 (len(issues), cer) 最小的一轨！
                 rank_key = (
                     0 if all_passed else 1,
                     1 if pcm["is_silent"] else 0,
+                    1 if has_silence_gap else 0,
+                    1 if has_hallucination else 0,
                     1 if pcm["is_clipped"] else 0,
-                    0 if dur_ok else 1,
+                    len(hard_issues),
                     cer if cer is not None else 0.0,
+                    1 if has_tail_trunc else 0,
                     abs(cps - 6.0),
                 )
 
@@ -1235,6 +1489,7 @@ def synthesize_one_line(
                         "attempt": attempt_idx + 1,
                         "passed": all_passed,
                         "active_sec": pcm["active_duration"],
+                        "internal_max_silence_sec": pcm["internal_max_silence"],
                         "cps": cps,
                         "cer": cer,
                         "issues": hard_issues,
@@ -1278,6 +1533,7 @@ def synthesize_one_line(
         "selectedAttempt": best_candidate["attempt"],
         "durationSec": final_dur,
         "activeSec": best_candidate["pcm"]["active_duration"],
+        "internalMaxSilenceSec": best_candidate["pcm"]["internal_max_silence"],
         "charsPerSec": best_candidate["cps"],
         "rmsDbfs": best_candidate["pcm"]["rms_dbfs"],
         "peakDbfs": best_candidate["pcm"]["peak_dbfs"],
@@ -1771,8 +2027,11 @@ def main(argv: list[str] | None = None) -> int:
             "channels": 1,
             "codec": "mp3",
             "bitrateKbps": 64,
-            "trimPadHeadMs": 40,
-            "trimPadTailMs": 120,
+            "trimSilenceDb": TRIM_SILENCE_DB,
+            "trimPadHeadMs": int(round(TRIM_PAD_HEAD_SEC * 1000)),
+            "trimPadTailMs": int(round(TRIM_PAD_TAIL_SEC * 1000)),
+            "shortNoTailTrimUnderSec": SHORT_NO_TAIL_TRIM_MAX_RAW_SEC,
+            "internalMaxSilenceLimitSec": INTERNAL_MAX_SILENCE_LIMIT_SEC,
         },
         "stats": {
             "totalSelected": len(selected),

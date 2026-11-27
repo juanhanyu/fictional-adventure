@@ -67,6 +67,12 @@ EDGE_TRIM_AF = (
     "areverse"
 )
 
+SAFE_FALLBACK_DYNAUDNORM_AF = "highpass=f=65,dynaudnorm"
+MIN_VALID_MP3_BYTES = 1500
+FFMPEG_TIMEOUT_SEC = 25
+FFPROBE_TIMEOUT_SEC = 20
+MAX_INFLIGHT_MP3 = 32
+
 EXPRESSIVE_SLOTS = frozenset({"energetic", "cheerful", "retort", "playful"})
 EXPRESSIVE_EMOS = frozenset({
     "angry",
@@ -799,21 +805,135 @@ def write_pcm16_wav(wav_path: Path, audio_i16: np.ndarray, sr: int) -> None:
         wf.writeframes(audio_i16.astype("<i2", copy=False).tobytes())
 
 
+def get_mp3_worker_count() -> int:
+    """Scale FFmpeg mastering workers to host vCPUs (4..12) so G4/A100/H100 high-RAM VMs stay saturated."""
+    return min(12, max(4, (os.cpu_count() or 8)))
+
+
+def is_valid_mp3_header(header: bytes) -> bool:
+    """Check whether leading bytes match an ID3 tag or MPEG frame sync (0xFF + 0xE0 mask)."""
+    if len(header) >= 3 and header[:3] == b"ID3":
+        return True
+    if len(header) >= 2 and header[0] == 0xFF and (header[1] & 0xE0) == 0xE0:
+        return True
+    return False
+
+
+def is_valid_mp3_file(mp3_path: Path, min_bytes: int = MIN_VALID_MP3_BYTES) -> bool:
+    """Validate that an MP3 file exists, meets minimum byte threshold, and begins with a valid MP3 header."""
+    try:
+        if not mp3_path.is_file():
+            return False
+        if mp3_path.stat().st_size < min_bytes:
+            return False
+        with mp3_path.open("rb") as fp:
+            hdr = fp.read(4)
+        return is_valid_mp3_header(hdr)
+    except OSError:
+        return False
+
+
+def cleanup_stale_tmp_mp3s(dirs: list[Path], recursive_roots: list[Path] | None = None) -> int:
+    """Remove leftover *.tmp.mp3 / *.tmp.*.mp3 partial writes so half-written files never pollute resume or zips."""
+    removed = 0
+    seen_files: set[Path] = set()
+
+    def _maybe_remove(p: Path) -> None:
+        nonlocal removed
+        if p in seen_files:
+            return
+        seen_files.add(p)
+        try:
+            if p.is_file():
+                p.unlink(missing_ok=True)
+                removed += 1
+        except OSError:
+            pass
+
+    for root in recursive_roots or []:
+        if root.is_dir():
+            for pat in ("*.tmp.mp3", "*.tmp.*.mp3"):
+                for p in root.rglob(pat):
+                    _maybe_remove(p)
+
+    seen_dirs: set[Path] = set()
+    for d in dirs:
+        if d in seen_dirs or not d.is_dir():
+            continue
+        seen_dirs.add(d)
+        for pat in ("*.tmp.mp3", "*.tmp.*.mp3"):
+            for p in d.glob(pat):
+                _maybe_remove(p)
+
+    return removed
+
+
+def trim_audio_edges_np(
+    audio_np: np.ndarray,
+    sr: int,
+    *,
+    trim_tail: bool = True,
+    threshold_db: float = -42.0,
+    lead_pad_ms: float = 25.0,
+    tail_pad_ms: float = 60.0,
+    min_dur_sec: float = 0.25,
+) -> np.ndarray:
+    """
+    Pure-NumPy leading/trailing silence trim (-42 dBFS default) with safe lead/tail padding.
+    Replaces FFmpeg silenceremove/areverse to completely prevent the FFmpeg 6.1 silenceremove+loudnorm
+    deadlock on 0ms-onset clips while never trimming any clip below min_dur_sec (0.25s).
+    """
+    arr = np.asarray(audio_np).reshape(-1)
+    n = arr.size
+    if n == 0 or sr <= 0:
+        return arr
+    min_samples = min(n, max(1, int(round(sr * min_dur_sec))))
+    if n <= min_samples:
+        return arr
+
+    thresh_linear = 10.0 ** (threshold_db / 20.0)
+    if np.issubdtype(arr.dtype, np.floating):
+        active = np.flatnonzero(np.abs(arr) >= thresh_linear)
+    else:
+        active = np.flatnonzero(np.abs(arr.astype(np.int32)) >= (thresh_linear * 32768.0))
+
+    if active.size == 0:
+        return arr
+
+    lead_pad = int(round(sr * (lead_pad_ms / 1000.0)))
+    tail_pad = int(round(sr * (tail_pad_ms / 1000.0)))
+    start = max(0, int(active[0]) - lead_pad)
+    end = min(n, int(active[-1]) + 1 + tail_pad) if trim_tail else n
+
+    if (end - start) < min_samples:
+        need = min_samples - (end - start)
+        half = need // 2
+        start = max(0, start - half)
+        end = min(n, start + min_samples)
+        start = max(0, end - min_samples)
+
+    return arr[start:end]
+
+
 def master_wav_to_mp3(
     audio_i16: np.ndarray,
     sr: int,
     est_trimmed_dur: float | Path,
     target_mp3: Path | None = None,
+    *,
+    ffmpeg_timeout: int = FFMPEG_TIMEOUT_SEC,
 ) -> tuple[int, str]:
     """
     Studio FFmpeg single-pass mastering (supports both 3-arg (audio_np, sr, out_mp3_path)
     and 4-arg (audio_i16, sr, est_trimmed_dur, target_mp3)):
-      - When raw_dur < 2.6s: leading-edge silence trim ONLY (no areverse tail trim) to preserve
-        short phrase final consonants/particles.
-      - When raw_dur >= 2.6s: gentle double-areverse edge trim (-58dB / 250ms tail room).
-      - EBU R128 loudnorm=I=-16:TP=-1.5:LRA=11 for clips >= 0.8s
-      - Exact -3.0 dBFS peak normalize fallback when duration < 0.8s
-      - Output: 32000 Hz, mono, libmp3lame -q:a 1, atomic thread-safe rename
+      - Pure-NumPy edge trim (-42 dBFS, 25ms lead pad, 60ms tail pad; leading-only for < 2.6s clips;
+        >= 0.25s duration floor) BEFORE writing WAV — eliminates FFmpeg 6.1 silenceremove+loudnorm hang.
+      - FFmpeg filtergraph: highpass=f=65,loudnorm=I=-16:TP=-1.5:LRA=11 for clips >= 0.8s;
+        highpass=f=65 + exact -3.0 dBFS peak normalize + limiter for < 0.8s.
+      - Hardened subprocess execution: -nostdin, -threads 1, stdin=DEVNULL, timeout=25s.
+      - Defense-in-depth fallback (highpass=f=65,dynaudnorm -> plain libmp3lame -q:a 2) on
+        any timeout, error, or undersized/invalid output so one tricky clip never deadlocks a batch.
+      - Atomic thread-safe rename only after output passes >= 1500B & MP3 header validation.
     """
     arr = np.asarray(audio_i16).reshape(-1)
     if np.issubdtype(arr.dtype, np.floating):
@@ -829,16 +949,18 @@ def master_wav_to_mp3(
         out_mp3 = Path(target_mp3)
         est_dur = float(est_trimmed_dur)
 
+    pcm_i16 = trim_audio_edges_np(pcm_i16, sr, trim_tail=(raw_dur >= 2.6))
+    trimmed_dur = pcm_i16.size / float(sr)
+
     out_mp3.parent.mkdir(parents=True, exist_ok=True)
     peak_norm_ratio = max(float(np.max(np.abs(pcm_i16.astype(np.int32)))) / 32768.0, 1e-4)
     peak_dbfs = 20.0 * math.log10(peak_norm_ratio)
     gain_to_minus3db = max(-12.0, min(24.0, -3.0 - peak_dbfs))
 
-    trim_af = SHORT_EDGE_TRIM_AF if raw_dur < 2.6 else EDGE_TRIM_AF
-    peak_af = f"{trim_af},volume={gain_to_minus3db:.2f}dB,alimiter=limit=-1.5dB:level=false"
-    loudnorm_af = f"{trim_af},loudnorm=I=-16:TP=-1.5:LRA=11"
+    peak_af = f"highpass=f=65,volume={gain_to_minus3db:.2f}dB,alimiter=limit=-1.5dB:level=false"
+    loudnorm_af = "highpass=f=65,loudnorm=I=-16:TP=-1.5:LRA=11"
 
-    use_loudnorm = est_dur >= 0.80 and raw_dur >= 0.80
+    use_loudnorm = est_dur >= 0.80 and trimmed_dur >= 0.80
 
     with tempfile.TemporaryDirectory(prefix="gsv_master_") as tmp_dir:
         tmp_wav = Path(tmp_dir) / "raw.wav"
@@ -846,43 +968,96 @@ def master_wav_to_mp3(
         tmp_mp3 = out_mp3.with_name(f"{out_mp3.name}.tmp.{os.getpid()}.{threading.get_ident()}.mp3")
         tmp_mp3.unlink(missing_ok=True)
 
-        filter_candidates = [("loudnorm", loudnorm_af), ("peak_-3dB", peak_af)] if use_loudnorm else [("peak_-3dB", peak_af)]
-        last_err = ""
-        for mode_name, af_chain in filter_candidates:
-            tmp_mp3.unlink(missing_ok=True)
-            cmd = [
-                "ffmpeg",
-                "-y",
-                "-hide_banner",
-                "-loglevel",
-                "error",
-                "-i",
-                str(tmp_wav),
-                "-af",
-                af_chain,
-                "-ar",
-                "32000",
-                "-ac",
-                "1",
-                "-codec:a",
-                "libmp3lame",
-                "-q:a",
-                "1",
-                "-f",
-                "mp3",
-                str(tmp_mp3),
+        filter_candidates: list[tuple[str, str | None, str]] = (
+            [
+                ("loudnorm", loudnorm_af, "1"),
+                ("safe_dynaudnorm", SAFE_FALLBACK_DYNAUDNORM_AF, "2"),
+                ("safe_plain", None, "2"),
             ]
-            proc = subprocess.run(cmd, capture_output=True, text=True)
-            if proc.returncode == 0 and tmp_mp3.is_file() and tmp_mp3.stat().st_size > 400:
-                os.replace(tmp_mp3, out_mp3)
-                return out_mp3.stat().st_size, mode_name
-            last_err = proc.stderr.strip() or f"exit={proc.returncode}"
+            if use_loudnorm
+            else [
+                ("peak_-3dB", peak_af, "1"),
+                ("safe_dynaudnorm", SAFE_FALLBACK_DYNAUDNORM_AF, "2"),
+                ("safe_plain", None, "2"),
+            ]
+        )
 
-        tmp_mp3.unlink(missing_ok=True)
+        last_err = ""
+        try:
+            for idx_cand, (mode_name, af_chain, quality_q) in enumerate(filter_candidates):
+                tmp_mp3.unlink(missing_ok=True)
+                cmd = [
+                    "ffmpeg",
+                    "-nostdin",
+                    "-y",
+                    "-hide_banner",
+                    "-loglevel",
+                    "error",
+                    "-threads",
+                    "1",
+                    "-i",
+                    str(tmp_wav),
+                ]
+                if af_chain:
+                    cmd.extend(["-af", af_chain])
+                cmd.extend([
+                    "-ar",
+                    "32000",
+                    "-ac",
+                    "1",
+                    "-codec:a",
+                    "libmp3lame",
+                    "-q:a",
+                    quality_q,
+                    "-f",
+                    "mp3",
+                    str(tmp_mp3),
+                ])
+                try:
+                    proc = subprocess.run(
+                        cmd,
+                        stdin=subprocess.DEVNULL,
+                        capture_output=True,
+                        text=True,
+                        timeout=ffmpeg_timeout,
+                    )
+                except subprocess.TimeoutExpired:
+                    tmp_mp3.unlink(missing_ok=True)
+                    last_err = f"{mode_name}: timeout after {ffmpeg_timeout}s"
+                    if idx_cand + 1 < len(filter_candidates):
+                        next_mode = filter_candidates[idx_cand + 1][0]
+                        print(
+                            f"  [FFMPEG-FALLBACK] {out_mp3.name}: {last_err} -> retrying with {next_mode}",
+                            flush=True,
+                        )
+                    continue
+
+                if proc.returncode == 0 and is_valid_mp3_file(tmp_mp3, min_bytes=MIN_VALID_MP3_BYTES):
+                    final_size = tmp_mp3.stat().st_size
+                    os.replace(tmp_mp3, out_mp3)
+                    return final_size, mode_name
+
+                actual_sz = tmp_mp3.stat().st_size if tmp_mp3.is_file() else 0
+                stderr_txt = (proc.stderr or "").strip()
+                last_err = (
+                    f"{mode_name}: {stderr_txt}"
+                    if stderr_txt
+                    else f"{mode_name}: exit={proc.returncode}, size={actual_sz}B (min={MIN_VALID_MP3_BYTES}B)"
+                )
+                tmp_mp3.unlink(missing_ok=True)
+                if idx_cand + 1 < len(filter_candidates):
+                    next_mode = filter_candidates[idx_cand + 1][0]
+                    print(
+                        f"  [FFMPEG-FALLBACK] {out_mp3.name}: {last_err} -> retrying with {next_mode}",
+                        flush=True,
+                    )
+        finally:
+            tmp_mp3.unlink(missing_ok=True)
+
         raise RuntimeError(f"FFmpeg mastering failed for {out_mp3}: {last_err}")
 
 
-def probe_audio_duration(audio_path: Path) -> float | None:
+def probe_audio_duration(audio_path: Path, *, timeout: int = FFPROBE_TIMEOUT_SEC) -> float | None:
     """Return duration in seconds via ffprobe, or None if unavailable."""
     if not audio_path.is_file():
         return None
@@ -898,9 +1073,10 @@ def probe_audio_duration(audio_path: Path) -> float | None:
                 "default=noprint_wrappers=1:nokey=1",
                 str(audio_path),
             ],
+            stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
-            timeout=10,
+            timeout=timeout,
         )
         if proc.returncode == 0:
             val = float(proc.stdout.strip())
@@ -921,6 +1097,154 @@ def _master_and_probe(
     probed = probe_audio_duration(target_mp3)
     final_dur = probed if probed is not None else round(float(est_trimmed_dur), 3)
     return size_bytes, mode_name, final_dur
+
+
+class BoundedMp3Pool:
+    """
+    Bounded-backpressure ThreadPoolExecutor for MP3 mastering with live disk progress.
+
+    Prevents fast GPUs (G4 / A100 / H100) from queuing 1,000+ raw numpy waveforms in RAM
+    and guarantees continuous flushed stdout progress both during synthesis and final drain.
+    """
+
+    def __init__(
+        self,
+        *,
+        total_expected: int,
+        max_workers: int | None = None,
+        max_inflight: int = MAX_INFLIGHT_MP3,
+        progress_every: int = 25,
+        drain_progress_every: int = 10,
+        worker_fn: Any = _master_and_probe,
+        on_success: Any = None,
+        on_error: Any = None,
+    ) -> None:
+        self.total_expected = max(0, int(total_expected))
+        self.max_workers = max(1, int(max_workers if max_workers is not None else get_mp3_worker_count()))
+        self.max_inflight = max(1, int(max_inflight))
+        self.progress_every = max(1, int(progress_every))
+        self.drain_progress_every = max(1, int(drain_progress_every))
+        self._worker_fn = worker_fn
+        self._on_success = on_success
+        self._on_error = on_error
+
+        self._pool: concurrent.futures.ThreadPoolExecutor | None = None
+        self.in_flight: dict[concurrent.futures.Future[Any], dict[str, Any]] = {}
+        self.submitted = 0
+        self.completed = 0
+        self.written = 0
+        self.failed = 0
+        self.max_observed_inflight = 0
+        self.errors: list[str] = []
+        self.t0 = time.perf_counter()
+
+    def __enter__(self) -> BoundedMp3Pool:
+        self._pool = concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers)
+        self.t0 = time.perf_counter()
+        return self
+
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+        if self._pool is not None:
+            self._pool.shutdown(wait=True)
+            self._pool = None
+
+    def _harvest_futures(self, done_futs: set[concurrent.futures.Future[Any]], *, in_drain: bool) -> int:
+        harvested = 0
+        for fut in done_futs:
+            meta = self.in_flight.pop(fut, {})
+            try:
+                res = fut.result()
+                self.written += 1
+                if self._on_success is not None:
+                    self._on_success(meta, res)
+            except Exception as exc:
+                self.failed += 1
+                err_msg = f"{meta.get('vid', '?')} ({meta.get('target_mp3', '?')}): {exc}"
+                self.errors.append(err_msg)
+                if self._on_error is not None:
+                    self._on_error(meta, exc, err_msg)
+                print(f"  [FFMPEG-FAIL] {err_msg}", flush=True)
+            self.completed += 1
+            harvested += 1
+
+            elapsed = time.perf_counter() - self.t0
+            if not in_drain:
+                if self.completed % self.progress_every == 0 or (
+                    self.total_expected > 0 and self.completed == self.total_expected
+                ):
+                    print(
+                        f"  [MP3-DISK {self.completed}/{self.total_expected}] "
+                        f"written={self.written} failed={self.failed} "
+                        f"inflight={len(self.in_flight)} elapsed={elapsed:.1f}s",
+                        flush=True,
+                    )
+            else:
+                rem = len(self.in_flight)
+                if self.completed % self.drain_progress_every == 0 or rem <= 5:
+                    print(
+                        f"  [MP3-DRAIN] {self.completed}/{self.total_expected} "
+                        f"written={self.written} failed={self.failed} "
+                        f"remaining={rem} elapsed={elapsed:.1f}s",
+                        flush=True,
+                    )
+        return harvested
+
+    def harvest_ready(self, *, block_for_one: bool = False) -> int:
+        if not self.in_flight:
+            return 0
+        if block_for_one:
+            done, _ = concurrent.futures.wait(
+                self.in_flight.keys(),
+                return_when=concurrent.futures.FIRST_COMPLETED,
+            )
+            return self._harvest_futures(done, in_drain=False)
+        done = {f for f in self.in_flight if f.done()}
+        if not done:
+            return 0
+        return self._harvest_futures(done, in_drain=False)
+
+    def submit(self, args_tuple: tuple[Any, ...], meta: dict[str, Any]) -> None:
+        if self._pool is None:
+            raise RuntimeError("BoundedMp3Pool must be used as a context manager")
+        self.harvest_ready(block_for_one=False)
+        while len(self.in_flight) >= self.max_inflight:
+            self.harvest_ready(block_for_one=True)
+        fut = self._pool.submit(self._worker_fn, *args_tuple)
+        self.in_flight[fut] = meta
+        self.submitted += 1
+        cur_inflight = len(self.in_flight)
+        if cur_inflight > self.max_observed_inflight:
+            self.max_observed_inflight = cur_inflight
+
+    def drain(self) -> None:
+        if self.in_flight:
+            print(
+                f"[MP3-DRAIN] draining remaining {len(self.in_flight)} jobs "
+                f"(completed={self.completed}/{self.total_expected}, written={self.written}, failed={self.failed})...",
+                flush=True,
+            )
+            while self.in_flight:
+                done, _ = concurrent.futures.wait(
+                    self.in_flight.keys(),
+                    timeout=15.0,
+                    return_when=concurrent.futures.FIRST_COMPLETED,
+                )
+                if not done:
+                    elapsed = time.perf_counter() - self.t0
+                    print(
+                        f"  [MP3-DRAIN] heartbeat: remaining={len(self.in_flight)} "
+                        f"written={self.written} failed={self.failed} elapsed={elapsed:.1f}s",
+                        flush=True,
+                    )
+                    continue
+                self._harvest_futures(done, in_drain=True)
+        elapsed = time.perf_counter() - self.t0
+        print(
+            f"[MP3-DRAIN-DONE] completed={self.completed}/{self.total_expected} "
+            f"written={self.written} failed={self.failed} "
+            f"max_inflight={self.max_observed_inflight} elapsed={elapsed:.1f}s",
+            flush=True,
+        )
 
 
 def clear_prompt_cache(tts_pipeline: Any) -> None:
@@ -1198,11 +1522,35 @@ def main(argv: list[str] | None = None) -> int:
         except Exception:
             existing_manifest = {}
 
-    # Build per-take synthesis items & automatic resume filter (> 1500 bytes existing .mp3 skipped unless --overwrite)
+    # Clean up leftover *.tmp.mp3 / *.tmp.*.mp3 partial writes on resume before inspecting existing MP3s
+    expected_target_mp3s: list[Path] = []
+    target_parent_dirs: list[Path] = []
+    for ln in selected_lines:
+        if takes_count == 1:
+            rel_audio = str(ln["audioPath"]).replace("\\", "/").lstrip("/")
+            p_one = out_dir / rel_audio
+            expected_target_mp3s.append(p_one)
+            target_parent_dirs.append(p_one.parent)
+        else:
+            rel_stem = resolve_audio_rel_stem(ln)
+            p_t1 = out_dir / f"retake2x/{rel_stem}__take1.mp3"
+            p_t2 = out_dir / f"retake2x/{rel_stem}__take2.mp3"
+            expected_target_mp3s.extend((p_t1, p_t2))
+            target_parent_dirs.append(p_t1.parent)
+
+    stale_tmp_removed = cleanup_stale_tmp_mp3s(
+        target_parent_dirs,
+        recursive_roots=[retake2x_dir] if takes_count == 2 else None,
+    )
+    if stale_tmp_removed > 0:
+        print(f"[gsv-cleanup] Removed {stale_tmp_removed} stale leftover .tmp*.mp3 file(s)", flush=True)
+
+    # Build per-take synthesis items & strict resume filter (>=1500B + valid MP3 header unless --overwrite)
     todo_items: list[dict[str, Any]] = []
     manifest_entries: dict[str, dict[str, Any]] = {}
     resume_probe_tasks: list[tuple[str, str, Path]] = []
     skipped_resume = 0
+    corrupt_removed = 0
 
     for ln in selected_lines:
         vid = ln["voiceId"]
@@ -1224,9 +1572,12 @@ def main(argv: list[str] | None = None) -> int:
         if takes_count == 1:
             rel_audio = str(ln["audioPath"]).replace("\\", "/").lstrip("/")
             target_mp3 = out_dir / rel_audio
-            if not args.overwrite and target_mp3.is_file() and target_mp3.stat().st_size > 1500:
+            if not args.overwrite and is_valid_mp3_file(target_mp3, MIN_VALID_MP3_BYTES):
                 skipped_resume += 1
                 continue
+            if not args.overwrite and target_mp3.is_file():
+                target_mp3.unlink(missing_ok=True)
+                corrupt_removed += 1
             todo_items.append({
                 "line": ln,
                 "planEntry": plan_entry,
@@ -1268,11 +1619,14 @@ def main(argv: list[str] | None = None) -> int:
                 (1, slot1, take1_mp3, "take1Dur"),
                 (2, slot2, take2_mp3, "take2Dur"),
             ):
-                if not args.overwrite and take_mp3.is_file() and take_mp3.stat().st_size > 1500:
+                if not args.overwrite and is_valid_mp3_file(take_mp3, MIN_VALID_MP3_BYTES):
                     skipped_resume += 1
                     if manifest_entries[vid][dur_key] <= 0.0:
                         resume_probe_tasks.append((vid, dur_key, take_mp3))
                     continue
+                if not args.overwrite and take_mp3.is_file():
+                    take_mp3.unlink(missing_ok=True)
+                    corrupt_removed += 1
                 todo_items.append({
                     "line": ln,
                     "planEntry": plan_entry,
@@ -1285,11 +1639,43 @@ def main(argv: list[str] | None = None) -> int:
                     "targetMp3": take_mp3,
                 })
 
+    if corrupt_removed > 0:
+        print(
+            f"[gsv-resume] Removed {corrupt_removed} corrupt/truncated MP3(s) (<{MIN_VALID_MP3_BYTES}B or invalid header) for re-synthesis",
+            flush=True,
+        )
+
+    def run_disk_audit() -> tuple[int, list[Path], int]:
+        valid_targets = 0
+        missing_targets: list[Path] = []
+        for mp3_p in expected_target_mp3s:
+            if is_valid_mp3_file(mp3_p, MIN_VALID_MP3_BYTES):
+                valid_targets += 1
+            else:
+                missing_targets.append(mp3_p)
+        dir_valid_mp3s = valid_targets
+        if takes_count == 2 and retake2x_dir.is_dir():
+            dir_valid_mp3s = sum(
+                1
+                for p in retake2x_dir.rglob("*.mp3")
+                if ".tmp." not in p.name and not p.name.endswith(".tmp.mp3") and is_valid_mp3_file(p, MIN_VALID_MP3_BYTES)
+            )
+        print(
+            f"[gsv-disk-audit] valid_mp3_on_disk={valid_targets}/{len(expected_target_mp3s)} "
+            f"(>= {MIN_VALID_MP3_BYTES}B + valid MP3 header) | missing={len(missing_targets)}"
+            + (f" | retake2x_dir_total={dir_valid_mp3s}" if takes_count == 2 else ""),
+            flush=True,
+        )
+        if missing_targets:
+            sample = ", ".join(str(p.relative_to(out_dir)) for p in missing_targets[:10])
+            print(f"[gsv-disk-audit] MISSING sample ({min(10, len(missing_targets))}/{len(missing_targets)}): {sample}", flush=True)
+        return valid_targets, missing_targets, dir_valid_mp3s
+
     def write_retake2x_manifest() -> None:
         if takes_count != 2:
             return
         if resume_probe_tasks:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=4) as probe_pool:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=get_mp3_worker_count()) as probe_pool:
                 futs = [
                     (probe_pool.submit(probe_audio_duration, mp3_p), v_id, d_key)
                     for v_id, d_key, mp3_p in resume_probe_tasks
@@ -1313,8 +1699,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if not todo_items:
         write_retake2x_manifest()
+        disk_valid, disk_missing, dir_valid_mp3s = run_disk_audit()
         summary = {
-            "status": "ok",
+            "status": "ok" if not disk_missing else "partial_failure",
             "stats": {
                 "totalInScript": len(all_lines),
                 "totalSelected": len(selected_lines),
@@ -1325,8 +1712,11 @@ def main(argv: list[str] | None = None) -> int:
                 "succeeded": skipped_resume,
                 "newlySynthesized": 0,
                 "qcWarnings": 0,
-                "failed": 0,
+                "failed": len(disk_missing),
                 "weightSwaps": 0,
+                "diskValidMp3s": disk_valid,
+                "diskMissingMp3s": len(disk_missing),
+                "dirValidMp3s": dir_valid_mp3s,
                 "elapsedSec": round(time.perf_counter() - t_global0, 2),
             },
             "warnings": [],
@@ -1340,7 +1730,7 @@ def main(argv: list[str] | None = None) -> int:
             f"[gsv-done] All {total_target_clips} target clips already synthesized on disk. Report: {qa_report_path}",
             flush=True,
         )
-        return 0
+        return 0 if not disk_missing else 1
 
     # Download base + needed profile assets BEFORE initializing TTS
     needed_pids = {item["profileId"] for item in todo_items}
@@ -1450,9 +1840,22 @@ def main(argv: list[str] | None = None) -> int:
     current_profile_id: str | None = None
     weight_swaps = 0
 
+    gpu_info_str = device_str
+    if device_str == "cuda" and torch.cuda.is_available():
+        cc_maj, cc_min = torch.cuda.get_device_capability(0)
+        vram_gb = torch.cuda.get_device_properties(0).total_memory / (1024**3)
+        tier = "high-end>=75GB" if vram_gb >= 75.0 else "standard"
+        gpu_info_str = f"{torch.cuda.get_device_name(0)} (sm_{cc_maj}{cc_min}, {vram_gb:.1f}GB, {tier})"
+
+    mp3_workers = get_mp3_worker_count()
     print(
-        f"[gsv-model] Loaded initial TTS ({first_ver}, device={device_str}, fp16={is_half}) "
+        f"[gsv-model] Loaded initial TTS ({first_ver}, device={gpu_info_str}, fp16={is_half}) "
         f"in {time.perf_counter() - t_model0:.2f}s",
+        flush=True,
+    )
+    print(
+        f"[gsv-mp3pool] workers={mp3_workers} | max_inflight={MAX_INFLIGHT_MP3} | "
+        f"ffmpeg_timeout={FFMPEG_TIMEOUT_SEC}s | ffprobe_timeout={FFPROBE_TIMEOUT_SEC}s",
         flush=True,
     )
 
@@ -1460,9 +1863,38 @@ def main(argv: list[str] | None = None) -> int:
     qc_warnings: list[dict[str, Any]] = []
     failures: list[dict[str, Any]] = []
     by_profile_done: collections.Counter[str] = collections.Counter()
-    mp3_futures: list[tuple[concurrent.futures.Future[tuple[int, str, float]], str, str, str, int, Path]] = []
+    ffmpeg_errors: list[str] = []
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as mp3_pool:
+    def _on_mp3_ok(meta: dict[str, Any], result: tuple[int, str, float]) -> None:
+        nonlocal newly_synthesized
+        _mp3_bytes, _norm_mode, final_dur = result
+        newly_synthesized += 1
+        by_profile_done[meta["pid"]] += 1
+        if takes_count == 2 and meta["vid"] in manifest_entries:
+            manifest_entries[meta["vid"]][f"take{meta['take_idx']}Dur"] = round(float(final_dur), 3)
+
+    def _on_mp3_err(meta: dict[str, Any], exc: Exception, err_msg: str) -> None:
+        ffmpeg_errors.append(err_msg)
+        fail_rec: dict[str, Any] = {
+            "voiceId": meta["vid"],
+            "profileId": meta["pid"],
+            "slot": meta["slot"],
+            "error": f"ffmpeg: {exc}",
+        }
+        if takes_count > 1:
+            fail_rec["take"] = meta["take_idx"]
+        failures.append(fail_rec)
+
+    with BoundedMp3Pool(
+        total_expected=len(todo_items),
+        max_workers=mp3_workers,
+        max_inflight=MAX_INFLIGHT_MP3,
+        progress_every=25,
+        drain_progress_every=10,
+        worker_fn=_master_and_probe,
+        on_success=_on_mp3_ok,
+        on_error=_on_mp3_err,
+    ) as mp3_pool:
         for idx, item in enumerate(todo_items, 1):
             ln = item["line"]
             vid: str = ln["voiceId"]
@@ -1599,49 +2031,40 @@ def main(argv: list[str] | None = None) -> int:
                     flush=True,
                 )
 
-            fut = mp3_pool.submit(
-                _master_and_probe,
-                best_candidate["audio_np"].copy(),
-                best_candidate["sr"],
-                best_candidate["est_trimmed_dur"],
-                target_mp3,
+            mp3_pool.submit(
+                (
+                    best_candidate["audio_np"].copy(),
+                    best_candidate["sr"],
+                    best_candidate["est_trimmed_dur"],
+                    target_mp3,
+                ),
+                {
+                    "vid": vid,
+                    "pid": pid,
+                    "slot": slot,
+                    "take_idx": take_idx,
+                    "target_mp3": target_mp3,
+                },
             )
-            mp3_futures.append((fut, vid, pid, slot, take_idx, target_mp3))
             dt_line = time.perf_counter() - t_line0
             print(
                 f"  [{idx}/{len(todo_items)}] GPU-OK {take_tag}{vid} | {pid}:{slot} | att={chosen_attempt} | "
-                f"dur={best_candidate['raw_dur']:.2f}s | gpu={dt_line:.2f}s (queued mp3)",
+                f"dur={best_candidate['raw_dur']:.2f}s | gpu={dt_line:.2f}s "
+                f"(mp3 disk={mp3_pool.written}, inflight={len(mp3_pool.in_flight)})",
                 flush=True,
             )
 
-        # Drain & verify all background FFmpeg mastering futures before exiting
-        ffmpeg_errors: list[str] = []
-        for fut, vid, pid, slot, take_idx, target_mp3 in mp3_futures:
-            try:
-                _mp3_bytes, _norm_mode, final_dur = fut.result()
-                newly_synthesized += 1
-                by_profile_done[pid] += 1
-                if takes_count == 2 and vid in manifest_entries:
-                    manifest_entries[vid][f"take{take_idx}Dur"] = round(float(final_dur), 3)
-            except Exception as exc:
-                err_msg = f"{vid} ({target_mp3}): {exc}"
-                ffmpeg_errors.append(err_msg)
-                fail_rec = {"voiceId": vid, "profileId": pid, "slot": slot, "error": f"ffmpeg: {exc}"}
-                if takes_count > 1:
-                    fail_rec["take"] = take_idx
-                failures.append(fail_rec)
-                print(f"  [FFMPEG-FAIL] {err_msg}", flush=True)
+        # Drain & verify all remaining bounded FFmpeg mastering futures with live progress
+        mp3_pool.drain()
 
     write_retake2x_manifest()
-
-    if ffmpeg_errors:
-        raise RuntimeError(f"{len(ffmpeg_errors)} FFmpeg mastering future(s) failed; first: {ffmpeg_errors[0]}")
+    disk_valid, disk_missing, dir_valid_mp3s = run_disk_audit()
 
     total_elapsed = time.perf_counter() - t_global0
     total_succeeded = skipped_resume + newly_synthesized
     summary = {
-        "status": "ok" if len(failures) == 0 else "partial_failure",
-        "device": device_str,
+        "status": "ok" if (len(failures) == 0 and len(disk_missing) == 0) else "partial_failure",
+        "device": gpu_info_str,
         "stats": {
             "totalInScript": len(all_lines),
             "totalSelected": len(selected_lines),
@@ -1654,6 +2077,11 @@ def main(argv: list[str] | None = None) -> int:
             "qcWarnings": len(qc_warnings),
             "failed": len(failures),
             "weightSwaps": weight_swaps,
+            "mp3Workers": mp3_workers,
+            "maxInflightMp3": MAX_INFLIGHT_MP3,
+            "diskValidMp3s": disk_valid,
+            "diskMissingMp3s": len(disk_missing),
+            "dirValidMp3s": dir_valid_mp3s,
             "elapsedSec": round(total_elapsed, 2),
         },
         "byProfileSynthesized": dict(by_profile_done),
@@ -1665,13 +2093,16 @@ def main(argv: list[str] | None = None) -> int:
     qa_report_path.parent.mkdir(parents=True, exist_ok=True)
     qa_report_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
+    if ffmpeg_errors:
+        raise RuntimeError(f"{len(ffmpeg_errors)} FFmpeg mastering future(s) failed; first: {ffmpeg_errors[0]}")
+
     print(
         f"\n[gsv-done] Completed in {total_elapsed:.1f}s | succeeded={total_succeeded}/{total_target_clips} "
-        f"(new={newly_synthesized}, resumed={skipped_resume}) | warnings={len(qc_warnings)} | "
-        f"failed={len(failures)} | weight_swaps={weight_swaps} | report={qa_report_path}",
+        f"(new={newly_synthesized}, resumed={skipped_resume}, disk_valid={disk_valid}/{total_target_clips}) | "
+        f"warnings={len(qc_warnings)} | failed={len(failures)} | weight_swaps={weight_swaps} | report={qa_report_path}",
         flush=True,
     )
-    return 0 if len(failures) == 0 else 1
+    return 0 if (len(failures) == 0 and len(disk_missing) == 0) else 1
 
 
 if __name__ == "__main__":

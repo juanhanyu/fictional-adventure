@@ -135,6 +135,23 @@ h3 { font-size: 14px; font-weight: 600; color: var(--text-main); }
   background: linear-gradient(90deg, var(--cobalt), var(--ice-cyan)); transition: width 0.08s linear;
 }
 
+.prog-track { flex: 0 0 auto !important; width: 100% !important; height: 5px !important; min-height: 5px !important; max-height: 5px !important; margin: 10px 0 8px 0 !important; background: #E2E8F0 !important; overflow: hidden; cursor: pointer; }
+.prog-fill { height: 100% !important; background: #1658EB !important; }
+.sec-block { margin-top: 22px !important; }
+.ctrl-row { display: flex !important; flex-wrap: wrap !important; gap: 6px !important; align-items: center !important; }
+.telemetry-strip { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 16px !important; }
+
+.prog-bar, .prog-track { flex: 0 0 auto !important; width: 100% !important; height: 5px !important; min-height: 5px !important; max-height: 5px !important; margin: 10px 0 8px 0 !important; background: #E2E8F0 !important; overflow: hidden; cursor: pointer; }
+.prog-fill { height: 100% !important; background: #1658EB !important; }
+.spot-section, .sec-block { margin-top: 22px !important; margin-bottom: 26px !important; }
+.btn-row, .ctrl-row { display: flex !important; flex-wrap: wrap !important; gap: 6px !important; align-items: center !important; margin-top: auto !important; padding-top: 8px !important; border-top: 1px solid var(--line-hair) !important; }
+.card-meta, .meta-row { display: flex !important; flex-wrap: wrap !important; align-items: center !important; gap: 6px !important; }
+.verdict-row { display: flex !important; flex-wrap: wrap !important; align-items: flex-start !important; gap: 6px !important; }
+.verdict-row .verdict-badge { margin-left: 0 !important; }
+.verdict-row .ai-note { flex: 1 1 100% !important; }
+.telemetry-strip { width: 100% !important; display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 16px !important; font-size: 13px; color: var(--text-body); }
+.toolbar { margin-bottom: 18px !important; }
+
   </style>
 </head>
 <body>

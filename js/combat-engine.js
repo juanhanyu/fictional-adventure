@@ -25,6 +25,7 @@
     MAX_DEF_PIERCE: 0.75,
     minMpDiscountFloor: 0.60,
     MIN_MP_DISCOUNT_FLOOR: 0.60,
+    ampMpCostScale: 0.50,
     manaCycleReturnRatio: 1.00,
     grades: ['BAD', 'GOOD', 'GREAT', 'PERFECT'],
     ringAtkBonus: { BAD: -0.10, GOOD: 0.10, GREAT: 0.20, PERFECT: 0.30 },
@@ -45,6 +46,7 @@
     ],
     OVERCAST: {
       linearSlope: 1.00,
+      mpCostScale: 0.50,
       seg1End: 0.20,
       seg1Slope: 1.00,
       seg2End: 0.40,
@@ -859,7 +861,7 @@
       elem: 'ice',
       atkKind: 'matk',
       ap: 1,
-      mp: 26,
+      mp: 13,
       cooldown: 0,
       power: 1.55,
       overcastCap: 0.60,
@@ -883,7 +885,7 @@
       elem: 'ice',
       atkKind: 'matk',
       ap: 1,
-      mp: 36,
+      mp: 18,
       cooldown: 0,
       power: 1.80,
       overcastCap: 0.60,
@@ -907,7 +909,7 @@
       elem: 'ice',
       atkKind: 'matk',
       ap: 1,
-      mp: 42,
+      mp: 21,
       cooldown: 0,
       power: 2.02,
       overcastCap: 0.60,
@@ -935,7 +937,7 @@
       elem: 'water',
       atkKind: 'matk',
       ap: 1,
-      mp: 22,
+      mp: 10,
       cooldown: 0,
       power: 1.38,
       overcastCap: 0.60,
@@ -960,7 +962,7 @@
       elem: 'water',
       atkKind: 'matk',
       ap: 1,
-      mp: 30,
+      mp: 15,
       cooldown: 0,
       power: 1.62,
       overcastCap: 0.60,
@@ -986,7 +988,7 @@
       elem: 'water',
       atkKind: 'matk',
       ap: 1,
-      mp: 36,
+      mp: 18,
       cooldown: 0,
       power: 1.78,
       overcastCap: 0.60,
@@ -1016,7 +1018,7 @@
       elem: 'ice',
       atkKind: 'matk',
       ap: 1,
-      mp: 18,
+      mp: 9,
       cooldown: 1,
       power: 0.85,
       overcastCap: 0.60,
@@ -1042,7 +1044,7 @@
       elem: 'ice',
       atkKind: 'matk',
       ap: 1,
-      mp: 34,
+      mp: 17,
       cooldown: 1,
       power: 1.18,
       overcastCap: 0.60,
@@ -1071,7 +1073,7 @@
       elem: 'ice',
       atkKind: 'matk',
       ap: 2,
-      mp: 56,
+      mp: 28,
       cooldown: 1,
       power: 1.56,
       overcastCap: 0.60,
@@ -1103,7 +1105,7 @@
       elem: 'ice',
       atkKind: 'matk',
       ap: 1,
-      mp: 26,
+      mp: 13,
       cooldown: 1,
       power: 0,
       overcastCap: 0.40,
@@ -1132,7 +1134,7 @@
       elem: 'ice',
       atkKind: 'matk',
       ap: 1,
-      mp: 32,
+      mp: 16,
       cooldown: 1,
       power: 0,
       overcastCap: 0.40,
@@ -1163,7 +1165,7 @@
       elem: 'ice',
       atkKind: 'matk',
       ap: 1,
-      mp: 36,
+      mp: 18,
       cooldown: 1,
       power: 0,
       overcastCap: 0.40,
@@ -1221,7 +1223,7 @@
       elem: 'water',
       atkKind: 'hybrid',
       ap: 1,
-      mp: 12,
+      mp: 6,
       cooldown: 0,
       power: 1.35,
       lungeRipostePower: 2.10,
@@ -1252,7 +1254,7 @@
       elem: 'wind',
       atkKind: 'atk',
       ap: 1,
-      mp: 18,
+      mp: 9,
       cooldown: 3,
       power: 0,
       noOvercast: true,
@@ -3146,14 +3148,16 @@
     const pct = Math.max(0, Number(ampPct) || 0);
     if (pct <= 0) return 0;
     const safeMmp = Math.max(1, Number(mmp) || 100);
+    const ampScale = COMBAT_BALANCE_V32.ampMpCostScale != null ? COMBAT_BALANCE_V32.ampMpCostScale : 0.50;
     const df = Math.max(COMBAT_BALANCE_V32.minMpDiscountFloor, Number(discountFactor) || 1.0);
-    return Math.max(1, Math.round(safeMmp * pct * df));
+    return Math.max(1, Math.round(safeMmp * pct * ampScale * df));
   }
 
   function computeAmpProfile(player, skill, opts) {
     opts = opts || {};
     const mmp = Math.max(1, (player && player.mmp) || 100);
     const mpNow = Math.max(0, (player && player.mp) || 0);
+    const ampScale = COMBAT_BALANCE_V32.ampMpCostScale != null ? COMBAT_BALANCE_V32.ampMpCostScale : 0.50;
     const discountFactor = computeAmpDiscountFactor(player);
     if (!canPlayerAmp(player) || !isAmpableSkill(skill)) {
       return { ampPct: 0, requestedAmpPct: 0, addDmg: 0, mult: 1.0, shieldMult: 1.0, tier: 0, extraLocks: 0, defPierce: 0, label: '', extraMp: 0, discountedExtraMp: 0, discountFactor };
@@ -3169,7 +3173,7 @@
       const reqFixed = base + wandExtra;
       if (mpNow >= reqFixed && mpNow < reqFixed + desiredDiscounted && desiredDiscounted > 0) {
         actualDiscounted = Math.max(0, mpNow - reqFixed);
-        actualAmpPct = Math.min(requestedAmpPct, (actualDiscounted / Math.max(0.05, discountFactor)) / mmp);
+        actualAmpPct = Math.min(requestedAmpPct, (actualDiscounted / Math.max(0.05, discountFactor * ampScale)) / mmp);
       }
     }
 
@@ -3188,7 +3192,7 @@
       extraLocks: tierInfo.extraLocks,
       defPierce: tierInfo.defPierce,
       label: tierInfo.label,
-      extraMp: Math.round(mmp * actualAmpPct),
+      extraMp: Math.round(mmp * actualAmpPct * ampScale),
       discountedExtraMp: actualDiscounted,
       discountFactor,
     };

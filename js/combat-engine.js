@@ -591,17 +591,6 @@
     palaceFrostAccent: '<svg class="cp-head-frost-svg" viewBox="0 0 120 72" width="120" height="72" fill="none" aria-hidden="true"><g stroke="#1658EB" stroke-opacity="0.22" stroke-width="1.2"><polygon points="60,6 84,20 84,48 60,62 36,48 36,20" fill="#38BDF8" fill-opacity="0.08"/><polygon points="60,16 74,34 60,52 46,34" fill="#FFFFFF" fill-opacity="0.32"/><path d="M60 2v64M32 18l56 32M88 18L32 50"/><polygon points="104,14 112,24 104,34 96,24" fill="#38BDF8" fill-opacity="0.14"/><polygon points="18,38 25,46 18,54 11,46" fill="#1658EB" fill-opacity="0.1"/></g></svg>',
   };
 
-  function resolveBattleBgUrl(stageCfg) {
-    const id = stageCfg && stageCfg.id ? stageCfg.id : '';
-    if (id === 'hulan_beast_tide') return 'assets/bg/ice_canyon.jpg';
-    if (id === 'aino_sparring') return 'assets/bg/ice_classroom.jpg';
-    if (id === 'rowan_graveyard') return 'assets/bg_night.jpg';
-    if (id === 'north_forest_hunt') return 'assets/bg/north_forest.jpg';
-    if (id === 'turning_point_corridor') return 'assets/bg/hallway.jpg';
-    if (id === 'wind_god_eye') return 'assets/bg/training.jpg';
-    return 'assets/bg/training.jpg';
-  }
-
   const MONSTER_ART_FILES = {
     rowan: 'assets/monsters/rowan_eclipse.webp',
     rowan_graveyard: 'assets/monsters/rowan_eclipse.webp',
@@ -8680,14 +8669,12 @@
     const allySlotsHtml = [0, 3, 1, 4, 2, 5].map(s => {
       const c = getFormationSlotCoords('ally', s);
       const standeeHtml = s === 4
-        ? '<div class="cb-standee-wrap" id="cb-player-standee-wrap"><div class="cb-magic-circle" aria-hidden="true"></div><div class="cb-p-portrait" id="cb-p-portrait"></div></div>'
+        ? '<div class="cb-standee-wrap" id="cb-player-standee-wrap"><div class="cb-p-portrait" id="cb-p-portrait"></div></div>'
         : '';
-      return `<div class="cb-slot cb-ally-slot${s === 4 ? ' is-occupied' : ' is-empty'}" data-side="ally" data-slot="${c.slot}" data-row="${c.row}" data-col="${c.col}"><div class="cb-slot-pad"></div>${standeeHtml}</div>`;
+      return `<div class="cb-slot cb-ally-slot${s === 4 ? ' is-occupied' : ' is-empty'}" data-side="ally" data-slot="${c.slot}" data-row="${c.row}" data-col="${c.col}">${standeeHtml}</div>`;
     }).join('');
 
     root.innerHTML = `
-      <div class="cb-backdrop" id="cb-backdrop"></div>
-      <div class="cb-vignette" aria-hidden="true"></div>
       <div class="cb-palace-frost" id="cb-palace-frost" aria-hidden="true"></div>
       <div class="cb-vfx-flash" id="cb-vfx-flash" aria-hidden="true"></div>
       <div class="cb-shell">
@@ -9101,17 +9088,8 @@
     syncAssistModeBtn();
 
     const p = b.player;
-    const stageAge = (b.fromArena && b.stageCfg && b.stageCfg.preset && b.stageCfg.preset.age) || null;
     root.classList.toggle('wand-refract', !!p.wandActive);
     root.classList.toggle('palace-timestop', !!document.getElementById('cb-palace-modal'));
-    const backdropEl = document.getElementById('cb-backdrop');
-    if (backdropEl) {
-      const nextBgUrl = `url('${resolveBattleBgUrl(b.stageCfg)}')`;
-      if (backdropEl.dataset.bgUrl !== nextBgUrl) {
-        backdropEl.dataset.bgUrl = nextBgUrl;
-        backdropEl.style.backgroundImage = nextBgUrl;
-      }
-    }
 
     document.getElementById('cb-wave').textContent = `WAVE ${b.waveIdx + 1}/${b.totalWaves}`;
     document.getElementById('cb-title').textContent = b.stageCfg.title;
@@ -9181,8 +9159,6 @@
     pane.classList.toggle('wand-aura', !!p.wandActive);
 
     const pxApi = getPixelVfxApi();
-    const isVol3Disguise = VOL3_DISGUISE_STAGES.has(b.id) || (p.name && p.name.includes('眷寒渔'));
-    const pImg = resolveCharImg('sylvia', p.hp < p.mhp * 0.4 ? 'serious' : 'normal', stageAge, { disguise: isVol3Disguise });
     const allies = Array.isArray(b.allies) ? b.allies : [];
     const totalParty = 1 + allies.length;
     const isCompactParty = totalParty >= 3;
@@ -9204,27 +9180,10 @@
       }
     }
 
-    if (pxApi && pPortEl) {
-      const pSpriteId = pxApi.resolvePlayerSpriteId(b, isVol3Disguise);
-      pPortEl.classList.remove('is-svg');
-      pPortEl.classList.add('has-px-actor');
-      if (pStandeeWrap) pStandeeWrap.classList.add('has-px-actor');
-      const existingPx = pPortEl.querySelector(`.cb-px-actor[data-sprite-id="${pSpriteId}"]`);
-      if (!existingPx) {
-        pPortEl.innerHTML = pxApi.renderActorMarkup(pSpriteId, {
-          actorKey: 'player',
-          label: p.name,
-          dead: p.hp <= 0,
-          fallbackImg: pImg,
-        });
-      } else {
-        existingPx.classList.toggle('is-dead', p.hp <= 0);
-      }
-    } else if (pPortEl) {
-      pPortEl.classList.remove('has-px-actor');
-      if (pStandeeWrap) pStandeeWrap.classList.remove('has-px-actor');
-      pPortEl.classList.toggle('is-svg', !pImg);
-      pPortEl.innerHTML = pImg ? `<img src="${pImg}" alt="${p.name}"/>` : renderBeastCrestSVG('wolf');
+    if (pPortEl) {
+      pPortEl.setAttribute('data-actor-key', 'player');
+      pPortEl.classList.toggle('is-dead', p.hp <= 0);
+      if (pPortEl.innerHTML) pPortEl.innerHTML = '';
     }
 
     const primaryAlly = allies[0] || null;
@@ -9246,12 +9205,11 @@
       const aTargetSlot = allyGrid.querySelector(`.cb-ally-slot[data-slot="${aSlotIdx}"]`);
       let vWrap = document.getElementById('cb-ally-vanguard-slot');
       const aActorKey = `ally:${primaryAlly.id}`;
-      const aSpriteId = primaryAlly.spriteId || primaryAlly.id || 'reno';
       if (!vWrap) {
         vWrap = document.createElement('div');
         vWrap.id = 'cb-ally-vanguard-slot';
         vWrap.className = 'cb-ally-vanguard-slot';
-        vWrap.innerHTML = `<div class="cb-standee-wrap cb-ally-standee"><div class="cb-magic-circle ally" aria-hidden="true"></div><div class="cb-ally-portrait" id="cb-ally-portrait"></div></div>`;
+        vWrap.innerHTML = '<div class="cb-standee-wrap cb-ally-standee"><div class="cb-ally-portrait" id="cb-ally-portrait"></div></div>';
       }
       vWrap.setAttribute('data-ally-id', primaryAlly.id);
       vWrap.setAttribute('data-aidx', '0');
@@ -9260,29 +9218,11 @@
       if (aTargetSlot && vWrap.parentElement !== aTargetSlot) {
         aTargetSlot.appendChild(vWrap);
       }
-      const allyStandee = vWrap.querySelector('.cb-ally-standee');
       const allyPortEl = vWrap.querySelector('#cb-ally-portrait');
-      const aImg = resolveCharImg(primaryAlly.id, 'normal', stageAge);
-      if (pxApi && allyPortEl) {
-        allyPortEl.classList.remove('is-svg');
-        allyPortEl.classList.add('has-px-actor');
-        if (allyStandee) allyStandee.classList.add('has-px-actor');
-        const existingAllyPx = allyPortEl.querySelector(`.cb-px-actor[data-sprite-id="${aSpriteId}"][data-actor-key="${aActorKey}"]`);
-        if (!existingAllyPx) {
-          allyPortEl.innerHTML = pxApi.renderActorMarkup(aSpriteId, {
-            actorKey: aActorKey,
-            label: primaryAlly.name,
-            dead: primaryAlly.hp <= 0,
-            fallbackImg: aImg,
-          });
-        } else {
-          existingAllyPx.classList.toggle('is-dead', primaryAlly.hp <= 0);
-        }
-      } else if (allyPortEl) {
-        allyPortEl.classList.remove('has-px-actor');
-        if (allyStandee) allyStandee.classList.remove('has-px-actor');
-        allyPortEl.classList.toggle('is-svg', !aImg);
-        allyPortEl.innerHTML = aImg ? `<img src="${aImg}" alt="${primaryAlly.name}"/>` : `<span class="cb-ally-fallback-badge">${primaryAlly.name}</span>`;
+      if (allyPortEl) {
+        allyPortEl.setAttribute('data-actor-key', aActorKey);
+        allyPortEl.classList.toggle('is-dead', primaryAlly.hp <= 0);
+        if (allyPortEl.innerHTML) allyPortEl.innerHTML = '';
       }
 
       if (partyPanes) {
@@ -9341,7 +9281,6 @@
           const exTargetSlot = allyGrid.querySelector(`.cb-ally-slot[data-slot="${exSlotIdx}"]`);
           const exId = extraAlly.id || `ally_${aIdx}`;
           const exActorKey = `ally:${exId}`;
-          const exSpriteId = extraAlly.spriteId || extraAlly.id || 'reno';
           const exName = extraAlly.name || '友军';
 
           const exWrap = document.createElement('div');
@@ -9350,31 +9289,15 @@
           exWrap.setAttribute('data-aidx', String(aIdx));
           exWrap.setAttribute('data-actor-key', exActorKey);
           exWrap.setAttribute('data-slot', String(exSlotIdx));
-          exWrap.innerHTML = `<div class="cb-standee-wrap cb-ally-standee"><div class="cb-magic-circle ally" aria-hidden="true"></div><div class="cb-ally-portrait"></div></div>`;
+          exWrap.innerHTML = '<div class="cb-standee-wrap cb-ally-standee"><div class="cb-ally-portrait"></div></div>';
           if (exTargetSlot) {
             exTargetSlot.appendChild(exWrap);
           }
 
-          const exStandee = exWrap.querySelector('.cb-ally-standee');
           const exPortEl = exWrap.querySelector('.cb-ally-portrait');
-          const exImg = resolveCharImg(extraAlly.charId || extraAlly.id, 'normal', stageAge);
-          if (pxApi && exPortEl) {
-            exPortEl.classList.remove('is-svg');
-            exPortEl.classList.add('has-px-actor');
-            if (exStandee) exStandee.classList.add('has-px-actor');
-            exPortEl.innerHTML = pxApi.renderActorMarkup(exSpriteId, {
-              actorKey: exActorKey,
-              label: exName,
-              dead: (extraAlly.hp || 0) <= 0,
-              fallbackImg: exImg,
-            });
-          } else if (exPortEl) {
-            exPortEl.classList.remove('has-px-actor');
-            if (exStandee) exStandee.classList.remove('has-px-actor');
-            exPortEl.classList.toggle('is-svg', !exImg);
-            exPortEl.innerHTML = exImg
-              ? `<img src="${exImg}" alt="${exName}"/>`
-              : `<span class="cb-ally-fallback-badge">${exName}</span>`;
+          if (exPortEl) {
+            exPortEl.setAttribute('data-actor-key', exActorKey);
+            exPortEl.classList.toggle('is-dead', (extraAlly.hp || 0) <= 0);
           }
 
           if (partyPanes) {
@@ -9578,20 +9501,6 @@
     eZone.classList.toggle('multi-enemies', isMultiEnemy);
     eZone.setAttribute('data-enemy-count', String(b.enemies.length));
 
-    // 复用既有敌方像素精灵 DOM：严格核对 battleInstanceId 与 waveIdx，杜绝跨波次/重开串用残态精灵！
-    const waveSig = `${b.battleInstanceId || 0}:${b.waveIdx || 0}`;
-    const preservedEnemyActors = new Map();
-    if (pxApi && eZone.dataset.waveSig === waveSig) {
-      eZone.querySelectorAll('.cb-px-actor[data-actor-key]').forEach(el => {
-        const aKey = el.getAttribute('data-actor-key');
-        const spId = el.getAttribute('data-sprite-id');
-        if (aKey && spId) {
-          preservedEnemyActors.set(`${aKey}:${spId}`, el);
-        }
-      });
-    }
-    eZone.dataset.waveSig = waveSig;
-
     const enemySlotAssignments = resolveEnemyFormationSlots(b.enemies);
     const enemyBySlot = new Map();
     b.enemies.forEach((e, idx) => {
@@ -9605,13 +9514,11 @@
       const coords = getFormationSlotCoords('enemy', s);
       const entry = enemyBySlot.get(s);
       if (!entry) {
-        return `<div class="cb-slot cb-enemy-slot is-empty" data-side="enemy" data-slot="${coords.slot}" data-row="${coords.row}" data-col="${coords.col}"><div class="cb-slot-pad"></div></div>`;
+        return `<div class="cb-slot cb-enemy-slot is-empty" data-side="enemy" data-slot="${coords.slot}" data-row="${coords.row}" data-col="${coords.col}"></div>`;
       }
       const { e, idx, slot } = entry;
       const intent = e.intent || { stance: 'STAGGERED', moveName: '已倒下', dmg: 0 };
       const sm = STANCE_META[intent.stance] || STANCE_META.HEAVY_WINDUP;
-      const eImg = e.charId ? resolveCharImg(e.charId, 'normal', stageAge) : null;
-      const crestKey = [e.crestKind, e.id, e.aiType, e.name].filter(Boolean).join(':');
       const isHeavyWarn = !!(e.hp > 0 && intent && (
         intent.heavyWarn ||
         intent.stance === 'HEAVY_WINDUP' ||
@@ -9623,13 +9530,6 @@
       const nextLine = (showNextTendency && e.hp > 0)
         ? `<div class="ib-next-tendency cb-sr-only">✦ 下回合预判：${predictNextIntentTendency(e, b)}</div>`
         : '';
-
-      const eVisual = renderEnemyVisualHTML({
-        charImg: eImg,
-        alt: e.name,
-        monsterKeys: [e.id, e.aiType, e.crestKind],
-        crestKey,
-      });
 
       const shortMove = formatShortMoveName(intent.moveName);
       const dmgPillText = intent.dmg > 0
@@ -9644,29 +9544,13 @@
         ? 100
         : Math.max(0, Math.min(100, (e.hp / Math.max(1, e.mhp)) * 100));
 
-      const eSpriteId = pxApi ? pxApi.resolveEnemySpriteId(e) : null;
-      const eActorKey = `enemy:${idx}`;
-      const canReusePx = !!(pxApi && eSpriteId && preservedEnemyActors.has(`${eActorKey}:${eSpriteId}`));
-      const eStageHtml = pxApi
-        ? `<div class="cb-e-avatar has-px-actor" data-px-slot="${eActorKey}:${eSpriteId}">${canReusePx ? '' : pxApi.renderActorMarkup(eSpriteId, {
-            actorKey: eActorKey,
-            label: e.name,
-            dead: e.hp <= 0,
-            fallbackHtml: eVisual.html,
-          })}</div>`
-        : `<div class="cb-e-avatar${eVisual.isSvg ? ' is-svg' : ''}${eVisual.isCgPortrait ? ' is-cg-portrait' : ''}">${eVisual.html}</div>`;
-
       const safeEnemyFullName = String(e.name || '').replace(/"/g, '&quot;');
       const shortEnemyName = shortEnemyPlateName(e.name);
 
       return `
         <div class="cb-slot cb-enemy-slot is-occupied" data-side="enemy" data-slot="${coords.slot}" data-row="${coords.row}" data-col="${coords.col}">
-          <div class="cb-slot-pad"></div>
-          <article class="cb-enemy-card${idx === b.targetIdx ? ' targeted' : ''}${e.hp <= 0 ? ' dead' : ''}${intent.stance === 'STAGGERED' ? ' staggered' : ''}${isHeavyWarn ? ' intent-heavy-warn' : ''}${e.boss && (e.phase || 1) >= 2 ? ' phase2-boss' : ''}" data-eidx="${idx}" data-slot="${slot}">
-            <div class="cb-e-stage${pxApi ? ' has-px-actor' : ''}">
-              <div class="cb-magic-circle enemy" aria-hidden="true"></div>
-              ${eStageHtml}
-            </div>
+          <article class="cb-enemy-card${idx === b.targetIdx ? ' targeted' : ''}${e.hp <= 0 ? ' dead' : ''}${intent.stance === 'STAGGERED' ? ' staggered' : ''}${isHeavyWarn ? ' intent-heavy-warn' : ''}${e.boss && (e.phase || 1) >= 2 ? ' phase2-boss' : ''}" data-eidx="${idx}" data-slot="${slot}" data-actor-key="enemy:${idx}">
+            <div class="cb-e-stage"></div>
 
             <div class="cb-e-plate">
               <span class="cb-hp-microtag" data-eidx="${idx}"></span>
@@ -9698,20 +9582,6 @@
         </div>
       `;
     }).join('');
-
-    if (pxApi && preservedEnemyActors.size > 0) {
-      b.enemies.forEach((e, idx) => {
-        const eSpriteId = pxApi.resolveEnemySpriteId(e);
-        const slotKey = `enemy:${idx}:${eSpriteId}`;
-        const reused = preservedEnemyActors.get(slotKey);
-        if (!reused) return;
-        const slotEl = eZone.querySelector(`.cb-e-avatar[data-px-slot="${slotKey}"]`);
-        if (slotEl) {
-          reused.classList.toggle('is-dead', e.hp <= 0);
-          slotEl.appendChild(reused);
-        }
-      });
-    }
 
     renderTargetDetailPane(b);
     updateOvercastPreviewUI(b, hoveredSkillId);
@@ -9960,7 +9830,7 @@
             ? document.getElementById('cb-p-portrait')
             : pt.side === 'ally'
               ? (document.getElementById('cb-ally-portrait') || document.getElementById('cb-ally-vanguard-slot'))
-              : eZone.querySelector(`.cb-enemy-card[data-eidx="${pt.enemyIdx}"] .cb-e-avatar`);
+              : eZone.querySelector(`.cb-enemy-card[data-eidx="${pt.enemyIdx}"] .cb-e-stage`);
           if (el) {
             el.classList.remove('cb-unit-hit');
             void el.offsetWidth;
@@ -10224,8 +10094,6 @@
       actGrid._lastHtml = '';
       actGrid._lastBattleId = 0;
     }
-    const eZone = document.getElementById('cb-enemy-zone');
-    if (eZone) delete eZone.dataset.waveSig;
     const tdPane = document.getElementById('cb-target-detail-pane');
     if (tdPane) {
       tdPane.innerHTML = '';
@@ -10506,8 +10374,6 @@
       actGrid._lastHtml = '';
       actGrid._lastBattleId = 0;
     }
-    const eZone = bs.querySelector('#cb-enemy-zone');
-    if (eZone) delete eZone.dataset.waveSig;
     const tdPane = bs.querySelector('#cb-target-detail-pane');
     if (tdPane) {
       tdPane.innerHTML = '';

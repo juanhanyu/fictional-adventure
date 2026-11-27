@@ -1540,11 +1540,11 @@
       }
     }
     const avBox = uiState.avRailBounds;
-    if (avBox && avBox.right > absLeft - 6 && avBox.left < absRight + 6) {
-      const belowAv = avBox.bottom + 6;
-      if (safeBot - belowAv >= 164) {
-        safeTop = Math.max(safeTop, belowAv);
-      }
+    const avClearance = (uiState.compactMulti || uiState.narrowDesktop) ? 10 : 12;
+    const avNear = !!(avBox && avBox.bottom > 0 && (uiState.is3dStage || (avBox.right > absLeft - 24 && avBox.left < absRight + 24)));
+    const avFloorTop = avNear ? Math.ceil(avBox.bottom + avClearance) : 6;
+    if (avNear) {
+      safeTop = Math.max(safeTop, avFloorTop);
     }
     const obs = Array.isArray(uiState.obstacles) ? uiState.obstacles : [];
     for (let i = 0; i < obs.length; i++) {
@@ -1557,16 +1557,16 @@
         safeBot = Math.min(safeBot, ob.top - 8);
       }
     }
-    // 兜底防极矮窗口上下包络反转：优先保障叶片落于可视场内
+    // 兜底防极矮窗口上下包络反转：优先硬守顶中 AV 条下缘净空
     if (safeBot - safeTop < 156) {
       const relaxedBot = Math.min(fieldH - 10, Math.max(safeBot, safeTop + 156));
       safeBot = relaxedBot;
       if (safeBot - safeTop < 156) {
-        safeTop = Math.max(6, safeBot - 156);
+        safeTop = Math.max(avFloorTop, safeBot - 156);
       }
     }
     return {
-      safeTop: Math.max(6, Math.round(safeTop)),
+      safeTop: Math.max(avFloorTop, Math.round(safeTop)),
       safeBot: Math.min(fieldH - 8, Math.round(safeBot)),
     };
   }
@@ -2143,7 +2143,7 @@
     uiState.narrowDesktop = isNarrowDesktop;
 
     const boundsFieldKey = `${Math.round(fieldW)}x${Math.round(fieldH)}:${is3dBox ? 1 : 0}`;
-    const canReuseCachedBounds = isFast && is3dBox && uiState.cachedBoundsFieldKey === boundsFieldKey;
+    const canReuseCachedBounds = isFast && is3dBox && uiState.cachedBoundsFieldKey === boundsFieldKey && uiState.avRailBounds !== null;
 
     let intentMaxBottom = canReuseCachedBounds ? (uiState.skyTopY || 0) : 0;
     let enemyMinTop = fieldH;
@@ -2231,19 +2231,43 @@
         hasVanguardActor = true;
       }
 
-      // 测量顶中精简 AV 回合条边界（防 3D 推镜或高站位角色顶翼碰撞）
+      // 测量顶中精简 AV 回合条边界（合并 .cb-av-rail / .cb-av-bar / 可见 .cb-av-forecast 的最大下沿，杜绝顶翼撞条）
       const avRailEl = (uiState.avRailEl && uiState.avRailEl.isConnected)
         ? uiState.avRailEl
         : document.getElementById('cb-av-rail');
       const avBarEl = avRailEl ? (avRailEl.querySelector('.cb-av-bar') || avRailEl) : null;
-      if (avRailEl && isDisplayedInLayout(avRailEl) && avBarEl) {
-        const avM = measureBoxInField(avBarEl, field, fRectFallback);
-        if (avM && avM.width >= 20 && avM.height >= 16) {
+      const avForecastEl = avRailEl ? avRailEl.querySelector('.cb-av-forecast') : null;
+      if (avRailEl && isDisplayedInLayout(avRailEl)) {
+        const avRailBox = measureBoxInField(avRailEl, field, fRectFallback);
+        const avBarBox = (avBarEl && avBarEl !== avRailEl && isDisplayedInLayout(avBarEl))
+          ? measureBoxInField(avBarEl, field, fRectFallback)
+          : null;
+        const avForecastBox = (avForecastEl && isDisplayedInLayout(avForecastEl) && avForecastEl.classList.contains('show'))
+          ? measureBoxInField(avForecastEl, field, fRectFallback)
+          : null;
+        const validRail = avRailBox && avRailBox.width >= 20 && avRailBox.height >= 16;
+        const validBar = avBarBox && avBarBox.width >= 20 && avBarBox.height >= 16;
+        if (validRail || validBar) {
+          let avLeft = validBar ? avBarBox.left : avRailBox.left;
+          let avTop = validBar ? avBarBox.top : avRailBox.top;
+          let avRight = validBar ? avBarBox.right : avRailBox.right;
+          let avBottom = validBar ? avBarBox.bottom : avRailBox.bottom;
+          if (validRail) {
+            avLeft = Math.min(avLeft, avRailBox.left);
+            avTop = Math.min(avTop, avRailBox.top);
+            avRight = Math.max(avRight, avRailBox.right);
+            avBottom = Math.max(avBottom, avRailBox.bottom);
+          }
+          if (avForecastBox && avForecastBox.width >= 16 && avForecastBox.height >= 10) {
+            avLeft = Math.min(avLeft, avForecastBox.left);
+            avRight = Math.max(avRight, avForecastBox.right);
+            avBottom = Math.max(avBottom, avForecastBox.bottom);
+          }
           avRailBounds = {
-            left: avM.left,
-            top: avM.top,
-            right: avM.right,
-            bottom: avM.bottom,
+            left: avLeft,
+            top: avTop,
+            right: avRight,
+            bottom: avBottom,
           };
         }
       }
@@ -2383,23 +2407,37 @@
       const maxFlipAx = Math.max(minFlipAx, Math.min(fieldW - 68, Math.round(aBox.right - aBox.width * 0.35)));
       anchorX = Math.round(Math.max(minFlipAx, Math.min(maxFlipAx, leftIdealX)));
     } else if (is3dBox) {
-      // 3D 模式智能右边界钳位：优先避让前排友军并贴合右肩，同时绝不越过敌方前排人脸或视口右缘
+      // 3D 模式智能右边界钳位：优先避让前排友军并守住角色右缘净空，仅在右侧敌方紧贴挤压时温和压缩
       const maxAxViewport = Math.round(fieldW - rightSpan - 14);
       const maxAxEnemy = hasEnemyBound
         ? Math.round(enemyLeftBound - rightSpan - enemyMargin3d)
         : maxAxViewport;
-      const effectiveMaxAx = Math.max(56, Math.min(maxAxViewport, maxAxEnemy));
+      const actorBladeClearAx = Math.ceil(aBox.right + 12 - wingMinLeft);
+      const actorHubClearAx = Math.ceil(aBox.right + 16);
+      const targetAnchorX = (!hasFrontAllyShift && compactRig)
+        ? Math.max(idealAnchorX, actorHubClearAx)
+        : Math.max(idealAnchorX, actorBladeClearAx);
+      let effectiveMaxAx = Math.min(maxAxViewport, maxAxEnemy);
+      if (hasEnemyBound && !hasFrontAllyShift && effectiveMaxAx < targetAnchorX) {
+        const maxAxEnemyTight = Math.min(maxAxViewport, Math.round(enemyLeftBound - rightSpan));
+        const maxAxEnemySoft = Math.min(maxAxViewport, Math.round(enemyLeftBound - rightSpan + 28));
+        const hubProtectedAx = Math.min(targetAnchorX, maxAxEnemyTight);
+        const bladeProtectedAx = Math.min(Math.max(actorBladeClearAx + 4, hubProtectedAx), maxAxEnemySoft);
+        effectiveMaxAx = Math.max(effectiveMaxAx, hubProtectedAx, bladeProtectedAx);
+      }
+      effectiveMaxAx = Math.max(56, effectiveMaxAx);
       const preferredMinAx = Math.max(56, Math.round(aBox.left + aBox.width * 0.22));
       const minAx = Math.min(preferredMinAx, effectiveMaxAx);
-      anchorX = Math.round(Math.max(minAx, Math.min(effectiveMaxAx, idealAnchorX)));
+      anchorX = Math.round(Math.max(minAx, Math.min(effectiveMaxAx, targetAnchorX)));
     } else {
       const minAx = Math.max(68, Math.round(aBox.left + aBox.width * 0.35));
       const maxAx = Math.max(minAx, Math.round(fieldW - rightSpan - 14));
       anchorX = Math.round(Math.max(minAx, Math.min(maxAx, idealAnchorX)));
     }
 
-    const wingTopExtent = (compactRig && isNarrowDesktop) ? 106 : (compactRig ? 120 : 128);
+    const wingTopExtent = (compactRig && isNarrowDesktop) ? 110 : (compactRig ? 124 : 136);
     const wingBotExtent = (compactRig && isNarrowDesktop) ? 132 : (compactRig ? 156 : 164);
+    const topClearance = (compactRig || isNarrowDesktop) ? 10 : 12;
     let safeTop = 8;
     let safeBot = fieldH - 10;
     const wingAbsLeft = shouldFlipLeft ? (anchorX - rightSpan) : (anchorX + wingMinLeft);
@@ -2410,25 +2448,33 @@
     if (targetPaneFound && targetPaneTop < fieldH && targetPaneLeft > 0 && wingAbsRight > targetPaneLeft - 6) {
       safeBot = Math.min(safeBot, targetPaneTop - 8);
     }
+    let hardAvMinAy = 0;
+    if (avRailBounds && avRailBounds.bottom > 0) {
+      const belowAvTop = Math.ceil(avRailBounds.bottom + topClearance);
+      const nearAvHoriz = wingAbsRight > avRailBounds.left - 24 && wingAbsLeft < avRailBounds.right + 24;
+      if (nearAvHoriz || is3dBox) {
+        safeTop = Math.max(safeTop, belowAvTop);
+        hardAvMinAy = belowAvTop + wingTopExtent;
+      }
+    }
     if (paneTop < fieldH && (paneTop - 8 - wingBotExtent) >= (safeTop + wingTopExtent)) {
       safeBot = Math.min(safeBot, paneTop - 8);
     }
-    if (avRailBounds && wingAbsRight > avRailBounds.left - 6 && wingAbsLeft < avRailBounds.right + 6) {
-      const belowAvTop = Math.round(avRailBounds.bottom + 6);
-      if (safeBot - belowAvTop >= wingTopExtent + wingBotExtent) {
-        safeTop = Math.max(safeTop, belowAvTop);
-      }
-    }
 
-    let minAy = safeTop + wingTopExtent;
-    let maxAy = safeBot - wingBotExtent;
-    if (maxAy < minAy) {
+    let minAy = Math.max(safeTop + wingTopExtent, hardAvMinAy);
+    let maxAy = Math.max(minAy, safeBot - wingBotExtent);
+    if (safeBot - wingBotExtent < minAy) {
       const fieldMaxAy = fieldH - 8 - wingBotExtent;
       if (fieldMaxAy >= minAy) {
         maxAy = Math.max(minAy, Math.min(fieldMaxAy, Math.round((safeBot + fieldH - 8) * 0.5 - wingBotExtent)));
       } else {
-        minAy = Math.min(minAy, Math.max(8 + wingTopExtent, Math.round(fieldH * 0.44)));
-        maxAy = minAy;
+        if (hardAvMinAy > 0) {
+          minAy = hardAvMinAy;
+          maxAy = Math.max(minAy, safeBot - wingBotExtent);
+        } else {
+          minAy = Math.min(minAy, Math.max(8 + wingTopExtent, Math.round(fieldH * 0.44)));
+          maxAy = minAy;
+        }
       }
     }
     const actorCy = aBox.top + aBox.height * 0.48;

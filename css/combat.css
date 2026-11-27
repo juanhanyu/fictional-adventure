@@ -72,16 +72,6 @@
 }
 
 /* ==================== 动效关键帧 ==================== */
-@keyframes cbSpinSlow {
-  from { transform: translate(-50%, -50%) rotate(0deg); }
-  to { transform: translate(-50%, -50%) rotate(360deg); }
-}
-
-@keyframes cbHeroFloat {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-4px); }
-}
-
 @keyframes cbHitShake {
   0%, 100% { transform: translate(0, 0); }
   15% { transform: translate(-6px, 2px); }
@@ -1160,33 +1150,6 @@ body.cb-battle-active #fx {
   display: none !important;
 }
 
-.cb-backdrop {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background-color: #E8EEF7;
-  background-size: cover;
-  background-position: center;
-  transform: scale(1.03);
-  transition: filter 0.38s ease, background-image 0.3s ease;
-}
-
-.cb-vignette {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background:
-    linear-gradient(
-      180deg,
-      rgba(250, 251, 253, 0.62) 0%,
-      rgba(250, 251, 253, 0.05) 30%,
-      rgba(250, 251, 253, 0.06) 64%,
-      rgba(246, 248, 252, 0.86) 100%
-    ),
-    radial-gradient(ellipse 92% 76% at 50% 44%, transparent 58%, rgba(232, 238, 248, 0.38) 100%);
-  pointer-events: none;
-}
-
 .cb-palace-frost {
   position: absolute;
   inset: 0;
@@ -1201,10 +1164,6 @@ body.cb-battle-active #fx {
       rgba(28, 76, 184, 0.16) 100%
     );
   transition: opacity 0.3s ease;
-}
-
-#battle-screen.palace-timestop .cb-backdrop {
-  filter: brightness(0.96) saturate(0.42) contrast(1.04) hue-rotate(-6deg);
 }
 
 #battle-screen.palace-timestop .cb-palace-frost {
@@ -1222,10 +1181,6 @@ body.cb-battle-active #fx {
 
 .cb-vfx-flash.active {
   animation: cbShatterFlash 0.45s ease-out forwards;
-}
-
-#battle-screen.wand-refract .cb-vignette {
-  box-shadow: inset 0 8px 46px rgba(18, 24, 34, 0.15);
 }
 
 .cb-shell {
@@ -1800,7 +1755,7 @@ body.cb-battle-active #fx {
   padding: 2px 4px 2px 2px;
 }
 
-/* ---------- 经典左 6 / 右 6 站位网格与雪瓷切角地纹 (.cb-formation-grid / .cb-slot / .cb-slot-pad) ---------- */
+/* ---------- 经典左 6 / 右 6 站位网格与雪瓷切角地纹 (.cb-formation-grid / .cb-slot) ---------- */
 #battle-screen .cb-formation-grid,
 #battle-screen .cb-ally-grid,
 #battle-screen #cb-ally-formation,
@@ -1909,138 +1864,6 @@ body.cb-battle-active #fx {
   z-index: 24;
 }
 
-/* 站位底纹地标：极细雪瓷皇家蓝切角菱形（空槽低调隐现，占槽/选中渐次点亮） */
-#battle-screen .cb-slot-pad {
-  position: absolute;
-  left: 50%;
-  bottom: 6px;
-  width: min(84%, 144px);
-  height: 26px;
-  transform: translateX(-50%);
-  pointer-events: none;
-  z-index: 1;
-  opacity: 0.36;
-  clip-path: polygon(16% 0%, 84% 0%, 100% 50%, 84% 100%, 16% 100%, 0% 50%);
-  background: linear-gradient(
-    135deg,
-    rgba(125, 211, 252, 0.56) 0%,
-    rgba(22, 88, 235, 0.42) 52%,
-    rgba(250, 251, 253, 0.62) 100%
-  );
-  transition: opacity 0.18s ease, background 0.18s ease;
-}
-
-#battle-screen .cb-slot-pad::after {
-  content: "";
-  position: absolute;
-  inset: 1.5px;
-  clip-path: polygon(16% 0%, 84% 0%, 100% 50%, 84% 100%, 16% 100%, 0% 50%);
-  background: linear-gradient(
-    180deg,
-    rgba(250, 251, 253, 0.50) 0%,
-    rgba(228, 240, 255, 0.22) 100%
-  );
-}
-
-#battle-screen .cb-enemy-grid .cb-slot-pad {
-  bottom: 54px;
-  background: linear-gradient(
-    135deg,
-    rgba(250, 251, 253, 0.56) 0%,
-    rgba(22, 88, 235, 0.34) 48%,
-    rgba(209, 52, 86, 0.36) 100%
-  );
-}
-
-#battle-screen .cb-enemy-grid .cb-slot-pad::after {
-  background: linear-gradient(
-    180deg,
-    rgba(250, 251, 253, 0.42) 0%,
-    rgba(248, 234, 240, 0.18) 100%
-  );
-}
-
-/* 占槽地标略微点亮 */
-#battle-screen .cb-slot.is-occupied .cb-slot-pad,
-#battle-screen .cb-slot.occupied .cb-slot-pad,
-#battle-screen .cb-slot:has(.cb-enemy-card) .cb-slot-pad,
-#battle-screen .cb-slot:has(.cb-px-actor) .cb-slot-pad,
-#battle-screen .cb-slot:has(.cb-standee-wrap) .cb-slot-pad {
-  opacity: 0.78;
-}
-
-#battle-screen .cb-ally-grid .cb-slot.is-occupied .cb-slot-pad::after,
-#battle-screen .cb-ally-grid .cb-slot.occupied .cb-slot-pad::after,
-#battle-screen .cb-ally-grid .cb-slot:has(.cb-px-actor) .cb-slot-pad::after,
-#battle-screen .cb-ally-grid .cb-slot:has(.cb-standee-wrap) .cb-slot-pad::after,
-#battle-screen #cb-ally-formation .cb-slot.is-occupied .cb-slot-pad::after,
-#battle-screen #cb-ally-formation .cb-slot:has(.cb-px-actor) .cb-slot-pad::after {
-  background: radial-gradient(
-    ellipse at center,
-    rgba(125, 211, 252, 0.38) 0%,
-    rgba(22, 88, 235, 0.16) 56%,
-    rgba(250, 251, 253, 0.28) 100%
-  );
-}
-
-/* 前排雷纳德占槽琥珀岩金微光 */
-#battle-screen .cb-ally-grid .cb-slot.slot-ally-reno .cb-slot-pad,
-#battle-screen .cb-ally-grid .cb-slot[data-unit="reno"] .cb-slot-pad,
-#battle-screen #cb-ally-vanguard-slot .cb-slot-pad {
-  background: linear-gradient(
-    135deg,
-    rgba(239, 224, 190, 0.72) 0%,
-    rgba(198, 139, 62, 0.62) 52%,
-    rgba(250, 251, 253, 0.68) 100%
-  );
-}
-
-#battle-screen .cb-enemy-grid .cb-slot.is-occupied .cb-slot-pad::after,
-#battle-screen .cb-enemy-grid .cb-slot.occupied .cb-slot-pad::after,
-#battle-screen .cb-enemy-grid .cb-slot:has(.cb-enemy-card) .cb-slot-pad::after {
-  background: radial-gradient(
-    ellipse at center,
-    rgba(209, 52, 86, 0.24) 0%,
-    rgba(22, 88, 235, 0.12) 58%,
-    rgba(250, 251, 253, 0.24) 100%
-  );
-}
-
-/* 选中敌方槽位：皇家蓝×淡金高亮，零位移 */
-#battle-screen .cb-enemy-grid .cb-slot.is-targeted .cb-slot-pad,
-#battle-screen .cb-enemy-grid .cb-slot.targeted .cb-slot-pad,
-#battle-screen .cb-enemy-grid .cb-slot:has(.cb-enemy-card.targeted) .cb-slot-pad {
-  opacity: 0.96;
-  background: linear-gradient(
-    135deg,
-    rgba(125, 211, 252, 0.88) 0%,
-    rgba(22, 88, 235, 0.76) 52%,
-    rgba(196, 164, 108, 0.82) 100%
-  );
-}
-
-#battle-screen .cb-slot:has(.cb-slot-pad) .cb-magic-circle {
-  display: none;
-}
-
-#battle-screen .cb-slot > .cb-standee-wrap,
-#battle-screen .cb-slot > .cb-ally-standee,
-#battle-screen .cb-slot > .cb-ally-stage,
-#battle-screen .cb-slot > .cb-ally-unit {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  height: 100%;
-  flex: 1 1 0;
-  min-height: 0;
-  max-height: none;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  overflow: visible;
-  pointer-events: none;
-}
-
 #battle-screen .cb-slot > .cb-enemy-card {
   width: 100%;
   height: 100%;
@@ -2049,91 +1872,8 @@ body.cb-battle-active #fx {
   z-index: 2;
 }
 
-/* 单敌模式（含像素骨骼）：卡片底沿稳锁原槽位底线，允许向正上方空槽安全延展，彻底杜绝意图条横穿头颈 */
-#battle-screen #cb-enemy-zone:not(.multi-enemies) .cb-enemy-slot > .cb-enemy-card:has(.cb-px-actor) {
-  height: auto;
-  min-height: 100%;
-  flex: 0 0 auto;
-  justify-content: flex-end;
-  gap: 2px;
-}
-
 #battle-screen #cb-enemy-zone.multi-enemies .cb-enemy-slot {
   padding: 1px 2px 3px;
-}
-
-.cb-standee-wrap {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.cb-magic-circle {
-  position: absolute;
-  left: 50%;
-  bottom: 4px;
-  width: 236px;
-  height: 50px;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(107, 197, 248, 0.14) 0%, rgba(28, 76, 184, 0.05) 56%, transparent 74%);
-  border: 1px solid rgba(28, 76, 184, 0.32);
-  box-shadow: none;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.cb-player-stage .cb-magic-circle {
-  bottom: -6px;
-  width: 224px;
-  height: 44px;
-}
-
-.cb-magic-circle::after {
-  content: "";
-  position: absolute;
-  inset: 7px 18px;
-  border-radius: 50%;
-  border: 1px dashed rgba(27, 35, 51, 0.22);
-}
-
-.cb-magic-circle.enemy {
-  background: radial-gradient(ellipse at center, rgba(196, 37, 68, 0.14) 0%, rgba(196, 37, 68, 0.04) 55%, transparent 74%);
-  border-color: rgba(196, 37, 68, 0.3);
-  box-shadow: none;
-}
-
-.cb-magic-circle.enemy::after {
-  border-color: rgba(196, 37, 68, 0.22);
-}
-
-.cb-p-portrait {
-  position: relative;
-  z-index: 2;
-  height: 100%;
-  max-height: 308px;
-  width: 100%;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  animation: cbHeroFloat 5.2s ease-in-out infinite;
-}
-
-.cb-p-portrait img {
-  max-height: 100%;
-  max-width: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  object-position: bottom center;
-  filter: drop-shadow(0 12px 22px rgba(18, 24, 34, 0.22));
-  -webkit-mask-image: linear-gradient(to bottom, #000 78%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 78%, transparent 100%);
 }
 
 /* 左侧底部双层状态承托区（希尔维亚 #cb-player-pane + 雷纳德前排 #cb-ally-pane） */
@@ -2982,86 +2722,6 @@ body.cb-battle-active #fx {
   color: var(--cb-ink-body);
 }
 
-/* 敌方立绘舞台 */
-.cb-e-stage {
-  position: relative;
-  width: 100%;
-  flex: 1 1 0;
-  min-height: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  overflow: visible;
-  margin: 2px 0;
-}
-
-.cb-e-avatar {
-  position: relative;
-  z-index: 2;
-  height: 100%;
-  max-height: 312px;
-  width: 100%;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.cb-e-avatar img {
-  max-height: 100%;
-  max-width: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  object-position: bottom center;
-  filter: drop-shadow(0 12px 22px rgba(18, 24, 34, 0.24));
-  -webkit-mask-image: linear-gradient(to bottom, #000 78%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 78%, transparent 100%);
-}
-
-/* 风神 / CG 肖像四边羽化溶入 (.is-cg-portrait · 零白框硬边) */
-.cb-e-avatar.is-cg-portrait img,
-.cb-e-avatar img.is-cg-portrait,
-.cb-e-avatar img[src*="assets/cg/"] {
-  max-height: calc(100% - 4px);
-  padding: 0;
-  border-radius: 0;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  -webkit-mask-image: radial-gradient(ellipse 48% 46% at 50% 44%, #000 50%, transparent 98%);
-  mask-image: radial-gradient(ellipse 48% 46% at 50% 44%, #000 50%, transparent 98%);
-  object-fit: cover;
-  object-position: center 22%;
-  filter: none;
-}
-
-.cb-e-avatar.is-svg svg {
-  height: 172px;
-  width: auto;
-  max-width: 100%;
-  filter: drop-shadow(0 10px 20px rgba(18, 24, 34, 0.22));
-}
-
-.cb-e-avatar .cb-crest-fallback {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.cb-e-avatar .cb-monster-img {
-  max-height: 100%;
-  max-width: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  object-position: bottom center;
-  -webkit-mask-image: none;
-  mask-image: none;
-  filter: drop-shadow(0 12px 18px rgba(18, 24, 34, 0.34));
-}
-
 /* 敌方瘦身雪瓷底座名牌（单敌 Boss 224–256px × ~62–72px，position: relative 承托绝不跳动的绝对定位 microtag） */
 .cb-e-plate {
   position: relative;
@@ -3266,36 +2926,6 @@ body.cb-battle-active #fx {
 }
 
 /* 多怪 / 6 站位卡片：贴合单槽真实宽幅（204–218px @1440 / 188–198px @1280），确保全名与实体甲%零裁切 */
-.cb-enemy-zone.multi-enemies .cb-magic-circle {
-  width: min(176px, 84%);
-  bottom: 0;
-}
-
-.cb-enemy-zone.multi-enemies .cb-e-stage,
-.cb-enemy-grid .cb-e-stage {
-  min-height: 0;
-  flex: 1 1 0;
-}
-
-.cb-enemy-zone.multi-enemies .cb-e-stage,
-.cb-enemy-grid.multi-enemies .cb-e-stage {
-  margin: 0;
-}
-
-.cb-enemy-zone.multi-enemies .cb-e-avatar {
-  max-height: 196px;
-}
-
-.cb-enemy-zone.multi-enemies .cb-e-avatar img,
-.cb-enemy-zone.multi-enemies .cb-e-avatar .cb-monster-img {
-  max-height: 100%;
-  filter: drop-shadow(0 12px 18px rgba(18, 24, 34, 0.34));
-}
-
-.cb-enemy-zone.multi-enemies .cb-e-avatar.is-svg svg {
-  height: 124px;
-}
-
 .cb-enemy-zone.multi-enemies .cb-intent-banner,
 .cb-enemy-grid.multi-enemies .cb-intent-banner {
   width: clamp(204px, 96%, 218px);
@@ -3433,15 +3063,6 @@ body.cb-battle-active #fx {
     padding: 0 2px;
   }
 
-  #battle-screen .cb-slot-pad {
-    width: min(82%, 126px);
-    height: 22px;
-  }
-
-  #battle-screen .cb-enemy-grid .cb-slot-pad {
-    bottom: 50px;
-  }
-
   #battle-screen #cb-ally-pane,
   #battle-screen .cb-ally-pane {
     padding: 5px 9px;
@@ -3453,28 +3074,6 @@ body.cb-battle-active #fx {
     padding: 1px 5px;
     font-size: 10.5px;
     line-height: 1.2;
-  }
-
-  .cb-standee-wrap {
-    min-height: 92px;
-    max-height: 152px;
-  }
-
-  #battle-screen .cb-slot > .cb-standee-wrap {
-    min-height: 0;
-    max-height: none;
-  }
-
-  .cb-p-portrait {
-    max-height: 148px;
-  }
-
-  #battle-screen .cb-slot .cb-p-portrait {
-    max-height: none;
-  }
-
-  .cb-p-portrait img {
-    max-height: 144px;
   }
 
   .cb-player-pane {
@@ -3570,13 +3169,6 @@ body.cb-battle-active #fx {
     font-size: 9.5px;
   }
 
-  .cb-enemy-zone.multi-enemies .cb-e-stage {
-    min-height: 0;
-  }
-
-  .cb-enemy-zone.multi-enemies .cb-e-avatar {
-    max-height: 142px;
-  }
 }
 
 /* ---------- 实时战术预测细线带 (#battle-screen .cb-forecast-bar · 严格锁高 32px 零换行挤压) ---------- */
@@ -4359,16 +3951,6 @@ body.cb-battle-active #fx {
 
 #battle-screen .cb-arena-field {
   will-change: transform;
-}
-
-#battle-screen .cb-standee-wrap {
-  position: relative;
-}
-
-#battle-screen .cb-arena-field.cb-hitstop-75 .cb-e-avatar:not(.has-px-actor),
-#battle-screen .cb-arena-field.cb-hitstop-75 .cb-p-portrait:not(.has-px-actor) {
-  animation-play-state: paused !important;
-  filter: contrast(1.12) brightness(1.06);
 }
 
 /* 冰晶 / 水纹 / 霜剑 / 棱镜粒子层 */
@@ -5573,26 +5155,6 @@ body.cb-battle-active #fx {
     font-size: 14.5px;
   }
 
-  .cb-standee-wrap,
-  .cb-e-stage {
-    min-height: 90px;
-    max-height: 138px;
-  }
-
-  .cb-p-portrait,
-  .cb-e-avatar {
-    max-height: 134px;
-  }
-
-  .cb-p-portrait img,
-  .cb-e-avatar img {
-    max-height: 130px;
-  }
-
-  .cb-e-avatar.is-svg svg {
-    height: 108px;
-  }
-
   .cb-enemy-zone.multi-enemies {
     flex-wrap: wrap;
     gap: 8px;
@@ -5602,20 +5164,6 @@ body.cb-battle-active #fx {
     flex: 1 1 calc(50% - 6px);
     min-width: 175px;
     padding: 6px 8px;
-  }
-
-  .cb-enemy-zone.multi-enemies .cb-e-stage {
-    min-height: 70px;
-    max-height: 88px;
-  }
-
-  .cb-enemy-zone.multi-enemies .cb-e-avatar,
-  .cb-enemy-zone.multi-enemies .cb-e-avatar img {
-    max-height: 82px;
-  }
-
-  .cb-enemy-zone.multi-enemies .cb-e-avatar.is-svg svg {
-    height: 70px;
   }
 
   #battle-screen .cfb-meta {
@@ -5699,10 +5247,6 @@ body.cb-battle-active #fx {
     min-height: 16px;
   }
 
-  #battle-screen .cb-slot-pad {
-    height: 16px;
-    bottom: 2px;
-  }
 }
 
 /* 窄横屏桌面 / 平板横屏 (721px–1023px 且高 >520px，如 960×600)：横向三列紧凑操作台，全技能首屏直达 */
@@ -6020,41 +5564,6 @@ body.cb-battle-active #fx {
     box-shadow: 0 5px 14px rgba(18, 24, 34, 0.06);
   }
 
-  #battle-screen .cb-standee-wrap {
-    flex: 0 0 46px;
-    width: 46px;
-    height: 46px;
-    min-height: 46px;
-    max-height: 46px;
-    border-radius: 2px;
-    overflow: hidden;
-    border: 1px solid #B5C2D6;
-    background: #FFFFFF;
-    padding: 1px;
-  }
-
-  .cb-standee-wrap .cb-magic-circle {
-    display: none;
-  }
-
-  .cb-p-portrait {
-    width: 44px;
-    height: 44px;
-    max-height: 44px;
-    animation: none;
-  }
-
-  .cb-p-portrait img {
-    width: 100%;
-    height: 100%;
-    max-height: 44px;
-    object-fit: cover;
-    object-position: top center;
-    -webkit-mask-image: none;
-    mask-image: none;
-    filter: none;
-  }
-
   .cb-player-pane {
     flex: 1;
     min-width: 0;
@@ -6126,52 +5635,6 @@ body.cb-battle-active #fx {
     min-width: 0;
     justify-content: flex-start;
     padding: 0 2px;
-  }
-
-  .cb-e-stage {
-    min-height: 76px;
-    max-height: 128px;
-    margin: 2px 0;
-  }
-
-  .cb-e-avatar {
-    max-height: 124px;
-  }
-
-  .cb-e-avatar img {
-    max-height: 120px;
-  }
-
-  .cb-e-avatar.is-svg svg {
-    height: 86px;
-  }
-
-  .cb-enemy-zone.multi-enemies .cb-e-stage {
-    min-height: 42px;
-    max-height: 46px;
-    margin: 0;
-  }
-
-  .cb-enemy-zone.multi-enemies .cb-e-avatar,
-  .cb-enemy-zone.multi-enemies .cb-e-avatar img,
-  .cb-enemy-zone.multi-enemies .cb-e-avatar .cb-monster-img {
-    max-height: 45px;
-  }
-
-  .cb-enemy-zone.multi-enemies .cb-e-avatar.is-svg svg {
-    height: 46px;
-  }
-
-  .cb-magic-circle {
-    width: 148px;
-    height: 34px;
-    bottom: 2px;
-  }
-
-  .cb-enemy-zone.multi-enemies .cb-magic-circle {
-    width: 108px;
-    height: 20px;
-    bottom: 0;
   }
 
   .cb-intent-banner {
@@ -6489,29 +5952,6 @@ body.cb-battle-active #fx {
     gap: 16px 14px;
   }
 
-  .cb-e-stage {
-    min-height: 150px;
-    max-height: 224px;
-    margin: 6px 0;
-  }
-
-  .cb-e-avatar,
-  .cb-e-avatar img,
-  .cb-e-avatar .cb-monster-img {
-    max-height: 214px;
-  }
-
-  .cb-enemy-zone.multi-enemies .cb-e-stage {
-    min-height: 136px;
-    max-height: 190px;
-  }
-
-  .cb-enemy-zone.multi-enemies .cb-e-avatar,
-  .cb-enemy-zone.multi-enemies .cb-e-avatar img,
-  .cb-enemy-zone.multi-enemies .cb-e-avatar .cb-monster-img {
-    max-height: 182px;
-  }
-
   #battle-screen #b-actions .cb-skill-card {
     flex: 0 0 184px;
     min-width: 184px;
@@ -6738,7 +6178,7 @@ body.cb-battle-active #fx {
     mask-image: none;
   }
 
-  /* 左侧 188px 紧凑主角面板 + 36×36 银框头像（高权重覆盖 #battle-screen .cb-standee-wrap） */
+  /* 左侧 188px 紧凑主角面板 + 36×36 银框头像 */
   .cb-player-stage {
     position: relative;
     flex-direction: column;
@@ -6750,45 +6190,6 @@ body.cb-battle-active #fx {
     border: 1px solid var(--cb-hairline);
     border-top: 2px solid var(--cb-sapphire);
     box-shadow: 0 5px 14px rgba(18, 24, 34, 0.06);
-  }
-
-  #battle-screen .cb-standee-wrap {
-    position: absolute;
-    top: 6px;
-    left: 8px;
-    width: 36px;
-    height: 36px;
-    min-height: 36px;
-    max-height: 36px;
-    margin: 0;
-    padding: 1px;
-    border-radius: 2px;
-    overflow: hidden;
-    border: 1px solid #B5C2D6;
-    background: #FFFFFF;
-    z-index: 6;
-  }
-
-  .cb-standee-wrap .cb-magic-circle {
-    display: none;
-  }
-
-  .cb-p-portrait {
-    width: 34px;
-    height: 34px;
-    max-height: 34px;
-    animation: none;
-  }
-
-  .cb-p-portrait img {
-    width: 100%;
-    height: 100%;
-    max-height: 34px;
-    object-fit: cover;
-    object-position: top center;
-    -webkit-mask-image: none;
-    mask-image: none;
-    filter: none;
   }
 
   .cb-player-pane {
@@ -6877,41 +6278,6 @@ body.cb-battle-active #fx {
     justify-content: flex-start;
     gap: 2px;
     padding: 0 1px;
-  }
-
-  .cb-e-stage {
-    min-height: 46px;
-    max-height: 58px;
-    margin: 1px 0;
-  }
-
-  .cb-e-avatar,
-  .cb-e-avatar img,
-  .cb-e-avatar .cb-monster-img {
-    max-height: 56px;
-  }
-
-  .cb-enemy-zone.multi-enemies .cb-e-stage {
-    flex: 0 0 auto;
-    min-height: 44px;
-    max-height: 52px;
-    margin: 0;
-  }
-
-  .cb-enemy-zone.multi-enemies .cb-e-avatar,
-  .cb-enemy-zone.multi-enemies .cb-e-avatar img,
-  .cb-enemy-zone.multi-enemies .cb-e-avatar .cb-monster-img {
-    max-height: 50px;
-  }
-
-  .cb-e-avatar.is-svg svg {
-    height: 48px;
-  }
-
-  .cb-magic-circle {
-    width: 118px;
-    height: 22px;
-    bottom: 0;
   }
 
   .cb-intent-banner {
@@ -7149,14 +6515,8 @@ body.cb-battle-active #fx {
   }
 }
 
-/* ==================== Z. 60fps 像素精灵战台 × patch-gg/pixelfx 画布层 ==================== */
-@keyframes cbPxGhostFade {
-  0% { opacity: 0.56; }
-  100% { opacity: 0; }
-}
-
+/* ==================== Z. 战斗 VFX 画布层与基础层叠守卫 ==================== */
 #battle-screen {
-  --px-scale: 2.35;
   contain: layout style;
 }
 
@@ -7202,452 +6562,6 @@ body.cb-battle-active #fx {
   z-index: 42;
 }
 
-#battle-screen .cb-standee-wrap.has-px-actor {
-  overflow: visible;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 4px;
-}
-
-#battle-screen .cb-p-portrait.has-px-actor {
-  animation: none;
-  overflow: visible;
-  align-items: flex-end;
-  justify-content: center;
-  z-index: auto;
-}
-
-#battle-screen .cb-e-stage.has-px-actor,
-#battle-screen .cb-e-avatar.has-px-actor {
-  overflow: visible;
-  align-items: flex-end;
-  justify-content: center;
-  z-index: auto;
-}
-
-#battle-screen .cb-standee-wrap.has-px-actor .cb-magic-circle,
-#battle-screen .cb-e-stage.has-px-actor .cb-magic-circle {
-  opacity: 0.62;
-  bottom: -2px;
-}
-
-#battle-screen .cb-px-actor {
-  position: relative;
-  width: calc(var(--px-fw, 142px) * var(--px-scale, 2) * var(--px-sm, 1));
-  height: calc(var(--px-fh, 124px) * var(--px-scale, 2) * var(--px-sm, 1));
-  flex: 0 0 auto;
-  display: block;
-  pointer-events: none;
-  user-select: none;
-  z-index: 3;
-  will-change: transform;
-}
-
-#battle-screen .cb-px-actor.is-dashing {
-  z-index: 7;
-}
-
-#battle-screen .cb-px-actor.is-flipped .cb-px-sheet {
-  transform: scaleX(-1);
-}
-
-#battle-screen .cb-px-shadow {
-  position: absolute;
-  left: var(--px-ax, 50%);
-  top: var(--px-ay, 96%);
-  width: var(--px-sw, 58%);
-  height: 13%;
-  transform: translate(-50%, -45%);
-  border-radius: 50%;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(13, 31, 68, 0.34) 0%,
-    rgba(13, 31, 68, 0.14) 56%,
-    transparent 78%
-  );
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* 3D 前后环绕魔力增幅冰晶光环双层画布（后层 z:1 穿行于希尔维亚背后，前层 z:4 掠过身前） */
-#battle-screen .cb-px-aura-back,
-#battle-screen .cb-px-aura-front {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 126%;
-  height: 118%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
-}
-
-#battle-screen .cb-px-aura-back {
-  z-index: 1;
-}
-
-#battle-screen .cb-px-aura-front {
-  z-index: 4;
-}
-
-#battle-screen .cb-px-rig {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  z-index: 2;
-  transform-origin: var(--px-ax, 50%) var(--px-ay, 96%);
-  will-change: transform;
-}
-
-#battle-screen .cb-px-sheet {
-  display: block;
-  width: 100%;
-  height: 100%;
-  background-repeat: no-repeat;
-  background-size: 700% 100%;
-  background-position: 0% 0%;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
-  filter: drop-shadow(0 6px 8px rgba(13, 31, 68, 0.22));
-}
-
-#battle-screen canvas.cb-px-sheet {
-  display: block;
-  width: 100%;
-  height: 100%;
-  max-width: none;
-  max-height: none;
-  background: none;
-  filter: none;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
-}
-
-#battle-screen .cb-px-rig.is-hit-flash .cb-px-sheet {
-  filter: brightness(2.55) saturate(0.18) contrast(1.12);
-}
-
-#battle-screen .cb-px-actor.is-dead .cb-px-sheet {
-  filter: grayscale(0.86) brightness(0.76);
-  opacity: 0.5;
-}
-
-#battle-screen .cb-px-actor.is-dead .cb-px-shadow {
-  opacity: 0.36;
-}
-
-#battle-screen .cb-px-fallback {
-  display: none;
-  width: 100%;
-  height: 100%;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-#battle-screen .cb-px-actor.is-sheet-missing .cb-px-rig,
-#battle-screen .cb-px-actor.is-sheet-missing .cb-px-shadow {
-  display: none;
-}
-
-#battle-screen .cb-px-actor.is-sheet-missing .cb-px-fallback {
-  display: flex;
-}
-
-#battle-screen .cb-px-ghost {
-  position: absolute;
-  display: block;
-  background-repeat: no-repeat;
-  background-size: 700% 100%;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
-  pointer-events: none;
-  z-index: 6;
-  animation: cbPxGhostFade 0.22s ease-out forwards;
-}
-
-#battle-screen canvas.cb-px-ghost {
-  background: none;
-}
-
-#battle-screen .cb-px-ghost.tone-ice {
-  filter: brightness(1.32);
-  opacity: 0.48;
-}
-
-#battle-screen .cb-px-ghost.tone-wind {
-  filter: brightness(1.26);
-  opacity: 0.45;
-}
-
-#battle-screen .cb-px-ghost.tone-fire {
-  filter: brightness(1.24);
-  opacity: 0.48;
-}
-
-#battle-screen .cb-px-ghost.tone-claw {
-  filter: brightness(1.18);
-  opacity: 0.44;
-}
-
-/* 顿帧期间保留动画冻结本身，移除全场 .cb-px-sheet CSS filter 切换以消除重绘尖峰 */
-
-/* 左翼援护出场像素角色容器（雷纳德 / 夏洛特 / 霁岚 / 心念援护） */
-#battle-screen .cb-ally-cameo {
-  position: absolute;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  pointer-events: none;
-  z-index: 5;
-  --px-scale: 1.95;
-  opacity: 1;
-  transition: opacity 0.18s ease;
-}
-
-#battle-screen .cb-ally-cameo.is-leaving {
-  opacity: 0;
-}
-
-#battle-screen .cb-ally-cameo-tag {
-  margin-top: -4px;
-  padding: 2px 9px;
-  border-radius: 0;
-  background: rgba(250, 251, 253, 0.94);
-  border: none;
-  border-left: 2px solid var(--cb-sapphire);
-  border-bottom: 1px solid var(--cb-hairline);
-  font-family: var(--font-serif);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--cb-ink);
-  white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(18, 24, 34, 0.12);
-}
-
-#battle-screen .cb-ally-cameo.ally-reno .cb-ally-cameo-tag {
-  border-left-color: #A9825C;
-}
-
-#battle-screen .cb-ally-cameo.ally-alice .cb-ally-cameo-tag {
-  border-left-color: var(--cb-emerald);
-}
-
-#battle-screen .cb-ally-cameo.ally-beatrice .cb-ally-cameo-tag {
-  border-left-color: var(--cb-crimson);
-}
-
-/* 桌面 6+6 阵型与多怪同屏自适应清晰缩放（零行溢出、零裁切、零重叠） */
-#battle-screen .cb-ally-grid .cb-slot,
-#battle-screen #cb-ally-formation .cb-slot {
-  --px-scale: 1.65;
-}
-
-#battle-screen .cb-ally-grid .cb-standee-wrap.has-px-actor,
-#battle-screen .cb-ally-grid .cb-p-portrait.has-px-actor,
-#battle-screen #cb-ally-formation .cb-standee-wrap.has-px-actor,
-#battle-screen #cb-ally-formation .cb-p-portrait.has-px-actor,
-#battle-screen .cb-enemy-grid .cb-e-stage.has-px-actor,
-#battle-screen .cb-enemy-grid .cb-e-avatar.has-px-actor {
-  min-height: 0;
-  max-height: none;
-  overflow: visible;
-}
-
-#battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-e-stage.has-px-actor {
-  --px-scale: 1.92;
-  flex: 0 0 auto;
-  margin: 0;
-}
-
-#battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-e-avatar.has-px-actor {
-  height: auto;
-  max-height: none;
-}
-
-#battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor,
-#battle-screen .cb-enemy-grid.multi-enemies .cb-e-stage.has-px-actor {
-  --px-scale: 1.24;
-  min-height: 0;
-}
-
-#battle-screen .cb-enemy-zone.multi-enemies .cb-e-avatar.has-px-actor {
-  max-height: none;
-}
-
-#battle-screen .cb-enemy-zone.multi-enemies .cb-px-actor {
-  margin-bottom: 0;
-}
-
-/* 1280×720 桌面紧凑视口：保持清晰像素精灵比例，严守 6+6 三行零溢出 */
-@media (max-width: 1360px), (max-height: 760px) {
-  #battle-screen {
-    --px-scale: 1.55;
-  }
-
-  #battle-screen .cb-ally-grid .cb-slot,
-  #battle-screen #cb-ally-formation .cb-slot {
-    --px-scale: 1.32;
-  }
-
-  #battle-screen .cb-ally-cameo {
-    --px-scale: 1.38;
-  }
-
-  #battle-screen .cb-standee-wrap.has-px-actor {
-    min-height: 120px;
-    max-height: 220px;
-  }
-
-  #battle-screen .cb-ally-grid .cb-standee-wrap.has-px-actor,
-  #battle-screen #cb-ally-formation .cb-standee-wrap.has-px-actor {
-    min-height: 0;
-    max-height: none;
-  }
-
-  #battle-screen .cb-p-portrait.has-px-actor {
-    max-height: 212px;
-  }
-
-  #battle-screen .cb-ally-grid .cb-p-portrait.has-px-actor,
-  #battle-screen #cb-ally-formation .cb-p-portrait.has-px-actor {
-    max-height: none;
-  }
-
-  #battle-screen .cb-e-stage.has-px-actor {
-    min-height: 0;
-  }
-
-  #battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-e-stage.has-px-actor {
-    --px-scale: 1.50;
-  }
-
-  #battle-screen .cb-e-avatar.has-px-actor {
-    max-height: 220px;
-  }
-
-  #battle-screen .cb-enemy-grid .cb-e-avatar.has-px-actor {
-    max-height: none;
-  }
-
-  #battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor,
-  #battle-screen .cb-enemy-grid.multi-enemies .cb-e-stage.has-px-actor {
-    --px-scale: 0.88;
-    min-height: 0;
-  }
-
-  #battle-screen .cb-enemy-zone.multi-enemies .cb-e-avatar.has-px-actor {
-    max-height: none;
-  }
-
-  #battle-screen .cb-enemy-zone.multi-enemies .cb-px-actor {
-    margin-bottom: 0;
-  }
-}
-
-/* 窄桌面 / 150% DPI 缩放 (<1024px) 紧凑精灵比例：适配 220–360px 紧凑战场高度，确保角色与敌方完整可见 */
-@media (max-width: 1023px) {
-  #battle-screen {
-    --px-scale: 1.05;
-  }
-
-  #battle-screen .cb-ally-grid .cb-slot,
-  #battle-screen #cb-ally-formation .cb-slot {
-    --px-scale: 0.92;
-  }
-
-  #battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-e-stage.has-px-actor {
-    --px-scale: 1.05;
-  }
-
-  #battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor,
-  #battle-screen .cb-enemy-grid.multi-enemies .cb-e-stage.has-px-actor {
-    --px-scale: 0.72;
-  }
-}
-
-/* 移动端竖屏 (390×844)：保留 46×46 紧凑头像与整数 1× 清晰敌方像素精灵 */
-@media (max-width: 720px) {
-  #battle-screen .cb-standee-wrap.has-px-actor {
-    overflow: hidden;
-    min-height: 46px;
-    max-height: 46px;
-    padding: 1px;
-    align-items: center;
-  }
-
-  #battle-screen .cb-p-portrait.has-px-actor {
-    overflow: hidden;
-    max-height: 44px;
-    align-items: center;
-    --px-scale: 0.35;
-  }
-
-  #battle-screen .cb-p-portrait.has-px-actor .cb-px-shadow {
-    display: none;
-  }
-
-  #battle-screen .cb-e-stage.has-px-actor {
-    min-height: 118px;
-    max-height: 144px;
-    --px-scale: 1;
-  }
-
-  #battle-screen .cb-e-avatar.has-px-actor {
-    max-height: 140px;
-  }
-
-  #battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor {
-    --px-scale: 0.5;
-    min-height: 64px;
-    max-height: 76px;
-  }
-
-  #battle-screen .cb-enemy-zone.multi-enemies .cb-e-avatar.has-px-actor {
-    max-height: 72px;
-  }
-}
-
-/* 移动端横屏 (844×390)：紧贴三段锁高不溢出 */
-@media (max-height: 520px) and (orientation: landscape) {
-  #battle-screen .cb-standee-wrap.has-px-actor {
-    overflow: hidden;
-    min-height: 36px;
-    max-height: 36px;
-    padding: 1px;
-    align-items: center;
-  }
-
-  #battle-screen .cb-p-portrait.has-px-actor {
-    overflow: hidden;
-    max-height: 34px;
-    align-items: center;
-    --px-scale: 0.28;
-  }
-
-  #battle-screen .cb-p-portrait.has-px-actor .cb-px-shadow {
-    display: none;
-  }
-
-  #battle-screen .cb-e-stage.has-px-actor {
-    min-height: 88px;
-    max-height: 114px;
-    --px-scale: 0.75;
-  }
-
-  #battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor {
-    --px-scale: 0.5;
-    min-height: 64px;
-    max-height: 76px;
-  }
-}
-
 /* ==================== Z2. 对称剧场雁阵 Stage B（镜面对称雁阵 / 敌脚下微条 / 右下锁定详情卡 / 左下 1-6 队卡） ==================== */
 
 /* 1. 屏幕阅读器隐藏辅助（保留 DOM / innerHTML 供测试与无障碍读取） */
@@ -7675,118 +6589,6 @@ body.cb-battle-active #fx {
   background: transparent;
   border-color: transparent;
   box-shadow: none;
-}
-
-#battle-screen .cb-slot.is-empty .cb-slot-pad {
-  display: none !important;
-  opacity: 0;
-  visibility: hidden;
-}
-
-/* 占槽脚底柔光锚点（左翼雪瓷冰蓝柔光晕 + 地平微光脊，替代厚重格板、严守零圆框套圆框） */
-#battle-screen .cb-slot.is-occupied .cb-slot-pad {
-  width: min(82%, 124px);
-  height: 20px;
-  bottom: 4px;
-  opacity: 0.88;
-  clip-path: none;
-  border-radius: 50%;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(255, 255, 255, 0.62) 0%,
-    rgba(125, 211, 252, 0.56) 34%,
-    rgba(22, 88, 235, 0.26) 62%,
-    transparent 82%
-  );
-  transition: opacity 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
-}
-
-#battle-screen .cb-slot.is-occupied .cb-slot-pad::after {
-  display: none;
-}
-
-#battle-screen #cb-ally-formation .cb-slot.is-occupied .cb-slot-pad::after {
-  content: "";
-  display: block;
-  position: absolute;
-  left: 16%;
-  right: 16%;
-  top: 50%;
-  height: 1.5px;
-  transform: translateY(-50%);
-  clip-path: none;
-  border-radius: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.88) 30%,
-    rgba(125, 211, 252, 0.96) 50%,
-    rgba(255, 255, 255, 0.88) 70%,
-    transparent 100%
-  );
-  opacity: 0.82;
-}
-
-#battle-screen #cb-ally-formation .cb-px-shadow {
-  background: radial-gradient(
-    ellipse at center,
-    rgba(13, 31, 68, 0.42) 0%,
-    rgba(22, 88, 235, 0.20) 52%,
-    transparent 78%
-  );
-}
-
-#battle-screen .cb-ally-grid .cb-slot.is-occupied:has([data-ally-id="reno"]) .cb-slot-pad,
-#battle-screen .cb-ally-grid .cb-slot.slot-ally-reno .cb-slot-pad,
-#battle-screen .cb-ally-grid .cb-slot[data-unit="reno"] .cb-slot-pad {
-  background: radial-gradient(
-    ellipse at center,
-    rgba(255, 251, 235, 0.58) 0%,
-    rgba(239, 224, 190, 0.62) 38%,
-    rgba(198, 139, 62, 0.30) 64%,
-    transparent 82%
-  );
-}
-
-#battle-screen #cb-ally-formation .cb-slot.is-occupied:has([data-ally-id="reno"]) .cb-slot-pad::after,
-#battle-screen #cb-ally-formation .cb-slot.slot-ally-reno .cb-slot-pad::after,
-#battle-screen #cb-ally-formation .cb-slot[data-unit="reno"] .cb-slot-pad::after {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 251, 235, 0.88) 30%,
-    rgba(239, 224, 190, 0.96) 50%,
-    rgba(255, 251, 235, 0.88) 70%,
-    transparent 100%
-  );
-}
-
-#battle-screen .cb-enemy-grid .cb-slot.is-occupied .cb-slot-pad {
-  width: min(76%, 116px);
-  height: 16px;
-  bottom: 45px;
-  opacity: 0.68;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(209, 52, 86, 0.30) 0%,
-    rgba(22, 88, 235, 0.12) 54%,
-    transparent 78%
-  );
-}
-
-/* 锁定目标脚下微光环（皇家蓝 × 香槟金柔光，严守 Δy === 0px） */
-#battle-screen .cb-enemy-grid .cb-slot.is-targeted .cb-slot-pad,
-#battle-screen .cb-enemy-grid .cb-slot.targeted .cb-slot-pad,
-#battle-screen .cb-enemy-grid .cb-slot:has(.cb-enemy-card.targeted) .cb-slot-pad {
-  opacity: 0.96;
-  width: min(82%, 126px);
-  background: radial-gradient(
-    ellipse at center,
-    rgba(239, 224, 190, 0.56) 0%,
-    rgba(22, 88, 235, 0.44) 44%,
-    rgba(125, 211, 252, 0.24) 68%,
-    transparent 84%
-  );
 }
 
 /* 3. 左右镜像宽屏剧场舞台布局（1440×900 基准，双底角面板脱离流绝对定位，两侧舞台完全对称） */
@@ -7871,83 +6673,17 @@ body.cb-battle-active #fx {
   pointer-events: none;
 }
 
-#battle-screen .cb-ally-vanguard-slot > .cb-ally-standee,
-#battle-screen .cb-ally-extra-slot > .cb-ally-standee,
-#battle-screen .cb-ally-portrait.has-px-actor {
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  max-height: none;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  overflow: visible;
-}
-
-/* 4. 三排景深透视比例（通过 --depth-scale 乘入 --px-scale，严禁对 .cb-slot / .cb-px-actor 套 transform: scale()） */
+/* 4. 三排槽位层叠层级 */
 #battle-screen .cb-slot[data-row="0"] {
-  --depth-scale: 0.88;
   z-index: 2;
 }
 
 #battle-screen .cb-slot[data-row="1"] {
-  --depth-scale: 1.00;
   z-index: 4;
 }
 
 #battle-screen .cb-slot[data-row="2"] {
-  --depth-scale: 1.10;
   z-index: 6;
-}
-
-#battle-screen .cb-ally-grid .cb-slot,
-#battle-screen #cb-ally-formation .cb-slot {
-  --px-base-scale: 1.82;
-  --px-scale: calc(var(--px-base-scale, 1.82) * var(--depth-scale, 1));
-}
-
-/* 3–6 人满编友军雁阵：三排全占时与敌侧 5–6 人档保持景深视觉对称，杜绝撞入左上 AV 行动条与排间压头 */
-#battle-screen #cb-ally-formation:has(.cb-ally-extra-slot) .cb-slot {
-  --px-base-scale: 1.26;
-  --px-scale: calc(var(--px-base-scale, 1.26) * var(--depth-scale, 1));
-}
-
-#battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-slot,
-#battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-e-stage.has-px-actor {
-  --px-base-scale: 1.92;
-  --px-scale: calc(var(--px-base-scale, 1.92) * var(--depth-scale, 1));
-}
-
-#battle-screen .cb-enemy-grid.multi-enemies .cb-slot,
-#battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor,
-#battle-screen .cb-enemy-grid.multi-enemies .cb-e-stage.has-px-actor {
-  --px-base-scale: 1.64;
-  --px-scale: calc(var(--px-base-scale, 1.64) * var(--depth-scale, 1));
-}
-
-#battle-screen #cb-enemy-zone[data-enemy-count="3"] .cb-slot,
-#battle-screen #cb-enemy-zone[data-enemy-count="3"] .cb-e-stage.has-px-actor {
-  --px-base-scale: 1.24;
-  --px-scale: calc(var(--px-base-scale, 1.24) * var(--depth-scale, 1));
-}
-
-#battle-screen #cb-enemy-zone[data-enemy-count="4"] .cb-slot,
-#battle-screen #cb-enemy-zone[data-enemy-count="4"] .cb-e-stage.has-px-actor {
-  --px-base-scale: 1.44;
-  --px-scale: calc(var(--px-base-scale, 1.44) * var(--depth-scale, 1));
-}
-
-#battle-screen #cb-enemy-zone[data-enemy-count="5"] .cb-slot,
-#battle-screen #cb-enemy-zone[data-enemy-count="6"] .cb-slot,
-#battle-screen #cb-enemy-zone[data-enemy-count="5"] .cb-e-stage.has-px-actor,
-#battle-screen #cb-enemy-zone[data-enemy-count="6"] .cb-e-stage.has-px-actor {
-  --px-base-scale: 1.06;
-  --px-scale: calc(var(--px-base-scale, 1.06) * var(--depth-scale, 1));
-}
-
-#battle-screen .cb-px-actor {
-  width: calc(var(--px-fw, 142px) * var(--px-scale, calc(var(--px-base-scale, 1.82) * var(--depth-scale, 1))) * var(--px-sm, 1));
-  height: calc(var(--px-fh, 124px) * var(--px-scale, calc(var(--px-base-scale, 1.82) * var(--depth-scale, 1))) * var(--px-sm, 1));
 }
 
 /* 5. 左右镜像 V 型锐角雁阵错位（我方 ">" 锐角推进 / 敌方 "<" 镜像包抄，仅平移零缩放） */
@@ -7999,8 +6735,7 @@ body.cb-battle-active #fx {
 /* 6. 敌方脚下超薄微条（彻底消灭敌方大白墙，严守 targeted Δy === 0px） */
 #battle-screen .cb-enemy-card,
 #battle-screen .cb-enemy-zone:not(.multi-enemies) .cb-enemy-card,
-#battle-screen .cb-enemy-zone.multi-enemies .cb-enemy-card,
-#battle-screen #cb-enemy-zone:not(.multi-enemies) .cb-enemy-slot > .cb-enemy-card:has(.cb-px-actor) {
+#battle-screen .cb-enemy-zone.multi-enemies .cb-enemy-card {
   position: relative;
   width: 100%;
   height: 100%;
@@ -8022,38 +6757,6 @@ body.cb-battle-active #fx {
   -webkit-backdrop-filter: none;
   overflow: visible;
   transform: none;
-}
-
-#battle-screen .cb-enemy-card .cb-e-stage {
-  position: relative;
-  width: 100%;
-  flex: 1 1 0;
-  min-height: 0;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  overflow: visible;
-}
-
-#battle-screen .cb-enemy-card .cb-e-stage .cb-px-actor {
-  margin-bottom: -4px;
-}
-
-#battle-screen .cb-enemy-zone.multi-enemies .cb-enemy-card .cb-e-stage .cb-px-actor,
-#battle-screen .cb-enemy-grid.multi-enemies .cb-enemy-card .cb-e-stage .cb-px-actor {
-  margin-bottom: -3px;
-}
-
-#battle-screen .cb-enemy-card.targeted .cb-e-stage .cb-px-shadow {
-  background: radial-gradient(
-    ellipse at center,
-    rgba(22, 88, 235, 0.46) 0%,
-    rgba(125, 211, 252, 0.28) 46%,
-    rgba(196, 164, 108, 0.20) 70%,
-    transparent 86%
-  );
 }
 
 #battle-screen .cb-enemy-card .cb-e-plate,
@@ -9148,62 +7851,6 @@ body.cb-battle-active #fx {
     padding: 0 2px 6px;
   }
 
-  #battle-screen .cb-slot.is-occupied .cb-slot-pad {
-    width: min(80%, 108px);
-    height: 16px;
-    bottom: 2px;
-  }
-
-  #battle-screen .cb-enemy-grid .cb-slot.is-occupied .cb-slot-pad {
-    width: min(74%, 102px);
-    height: 14px;
-    bottom: 40px;
-  }
-
-  #battle-screen .cb-ally-grid .cb-slot,
-  #battle-screen #cb-ally-formation .cb-slot {
-    --px-base-scale: 1.48;
-    --px-scale: calc(var(--px-base-scale, 1.48) * var(--depth-scale, 1));
-  }
-
-  #battle-screen #cb-ally-formation:has(.cb-ally-extra-slot) .cb-slot {
-    --px-base-scale: 0.96;
-    --px-scale: calc(var(--px-base-scale, 0.96) * var(--depth-scale, 1));
-  }
-
-  #battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-slot,
-  #battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-e-stage.has-px-actor {
-    --px-base-scale: 1.58;
-    --px-scale: calc(var(--px-base-scale, 1.58) * var(--depth-scale, 1));
-  }
-
-  #battle-screen .cb-enemy-grid.multi-enemies .cb-slot,
-  #battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor,
-  #battle-screen .cb-enemy-grid.multi-enemies .cb-e-stage.has-px-actor {
-    --px-base-scale: 1.26;
-    --px-scale: calc(var(--px-base-scale, 1.26) * var(--depth-scale, 1));
-  }
-
-  #battle-screen #cb-enemy-zone[data-enemy-count="3"] .cb-slot,
-  #battle-screen #cb-enemy-zone[data-enemy-count="3"] .cb-e-stage.has-px-actor {
-    --px-base-scale: 0.90;
-    --px-scale: calc(var(--px-base-scale, 0.90) * var(--depth-scale, 1));
-  }
-
-  #battle-screen #cb-enemy-zone[data-enemy-count="4"] .cb-slot,
-  #battle-screen #cb-enemy-zone[data-enemy-count="4"] .cb-e-stage.has-px-actor {
-    --px-base-scale: 1.10;
-    --px-scale: calc(var(--px-base-scale, 1.10) * var(--depth-scale, 1));
-  }
-
-  #battle-screen #cb-enemy-zone[data-enemy-count="5"] .cb-slot,
-  #battle-screen #cb-enemy-zone[data-enemy-count="6"] .cb-slot,
-  #battle-screen #cb-enemy-zone[data-enemy-count="5"] .cb-e-stage.has-px-actor,
-  #battle-screen #cb-enemy-zone[data-enemy-count="6"] .cb-e-stage.has-px-actor {
-    --px-base-scale: 0.76;
-    --px-scale: calc(var(--px-base-scale, 0.76) * var(--depth-scale, 1));
-  }
-
   /* 1280×720 镜像 V 型雁阵错位收敛 */
   #battle-screen #cb-ally-formation > .cb-ally-slot[data-row="0"][data-col="back"] {
     transform: translate(-10px, 2px);
@@ -9655,12 +8302,8 @@ body.cb-battle-active #fx {
     transform: none !important;
   }
 
-  #battle-screen .cb-slot > .cb-standee-wrap,
   #battle-screen .cb-slot > .cb-ally-vanguard-slot,
-  #battle-screen .cb-slot > .cb-ally-extra-slot,
-  #battle-screen .cb-ally-vanguard-slot > .cb-ally-standee,
-  #battle-screen .cb-ally-extra-slot > .cb-ally-standee,
-  #battle-screen .cb-ally-portrait.has-px-actor {
+  #battle-screen .cb-slot > .cb-ally-extra-slot {
     height: auto;
     flex: 0 0 auto;
   }
@@ -9668,83 +8311,11 @@ body.cb-battle-active #fx {
   /* 保证 .cb-enemy-card 盒模型高度严格非零，不因 flex: 1 1 0 塌陷 */
   #battle-screen .cb-enemy-card,
   #battle-screen .cb-enemy-zone:not(.multi-enemies) .cb-enemy-card,
-  #battle-screen .cb-enemy-zone.multi-enemies .cb-enemy-card,
-  #battle-screen #cb-enemy-zone:not(.multi-enemies) .cb-enemy-slot > .cb-enemy-card:has(.cb-px-actor) {
+  #battle-screen .cb-enemy-zone.multi-enemies .cb-enemy-card {
     height: auto;
     min-height: 48px;
     flex: 0 0 auto;
     gap: 1px;
-  }
-
-  #battle-screen .cb-enemy-card .cb-e-stage {
-    flex: 0 0 auto;
-    height: auto;
-    min-height: 0;
-    max-height: none;
-  }
-
-  #battle-screen .cb-enemy-card .cb-e-stage .cb-px-actor,
-  #battle-screen .cb-enemy-zone.multi-enemies .cb-enemy-card .cb-e-stage .cb-px-actor,
-  #battle-screen .cb-enemy-grid.multi-enemies .cb-enemy-card .cb-e-stage .cb-px-actor {
-    margin-bottom: -1px;
-  }
-
-  #battle-screen .cb-slot[data-row="0"] { --depth-scale: 0.92; }
-  #battle-screen .cb-slot[data-row="1"] { --depth-scale: 1.00; }
-  #battle-screen .cb-slot[data-row="2"] { --depth-scale: 1.04; }
-
-  #battle-screen .cb-ally-grid .cb-slot,
-  #battle-screen #cb-ally-formation .cb-slot {
-    --px-base-scale: 0.87;
-    --px-scale: calc(var(--px-base-scale, 0.87) * var(--depth-scale, 1));
-  }
-
-  #battle-screen #cb-ally-formation:has(.cb-ally-extra-slot) .cb-slot {
-    --px-base-scale: 0.33;
-    --px-scale: calc(var(--px-base-scale, 0.33) * var(--depth-scale, 1));
-  }
-
-  #battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-slot,
-  #battle-screen .cb-enemy-grid:not(.multi-enemies) .cb-e-stage.has-px-actor {
-    --px-base-scale: 0.90;
-    --px-scale: calc(var(--px-base-scale, 0.90) * var(--depth-scale, 1));
-  }
-
-  #battle-screen .cb-enemy-grid.multi-enemies .cb-slot,
-  #battle-screen .cb-enemy-zone.multi-enemies .cb-e-stage.has-px-actor,
-  #battle-screen .cb-enemy-grid.multi-enemies .cb-e-stage.has-px-actor {
-    --px-base-scale: 0.38;
-    --px-scale: calc(var(--px-base-scale, 0.38) * var(--depth-scale, 1));
-  }
-
-  #battle-screen #cb-enemy-zone[data-enemy-count="3"] .cb-slot,
-  #battle-screen #cb-enemy-zone[data-enemy-count="3"] .cb-e-stage.has-px-actor {
-    --px-base-scale: 0.28;
-    --px-scale: calc(var(--px-base-scale, 0.28) * var(--depth-scale, 1));
-  }
-
-  #battle-screen #cb-enemy-zone[data-enemy-count="4"] .cb-slot,
-  #battle-screen #cb-enemy-zone[data-enemy-count="4"] .cb-e-stage.has-px-actor {
-    --px-base-scale: 0.37;
-    --px-scale: calc(var(--px-base-scale, 0.37) * var(--depth-scale, 1));
-  }
-
-  #battle-screen #cb-enemy-zone[data-enemy-count="5"] .cb-slot,
-  #battle-screen #cb-enemy-zone[data-enemy-count="6"] .cb-slot,
-  #battle-screen #cb-enemy-zone[data-enemy-count="5"] .cb-e-stage.has-px-actor,
-  #battle-screen #cb-enemy-zone[data-enemy-count="6"] .cb-e-stage.has-px-actor {
-    --px-base-scale: 0.23;
-    --px-scale: calc(var(--px-base-scale, 0.23) * var(--depth-scale, 1));
-  }
-
-  #battle-screen .cb-slot.is-occupied .cb-slot-pad {
-    width: min(74%, 84px);
-    height: 12px;
-    bottom: 1px;
-  }
-
-  #battle-screen .cb-enemy-grid .cb-slot.is-occupied .cb-slot-pad {
-    bottom: 34px;
   }
 
   #battle-screen .cb-enemy-card .cb-e-plate,
@@ -10784,7 +9355,6 @@ body.cb-battle-active #fx {
     scroll-behavior: auto !important;
   }
 
-  #battle-screen .cb-p-portrait,
   #battle-screen .cb-tool-btn.palace-btn.pulse-hint,
   #battle-screen .cb-buff-chip.chain-active,
   #battle-screen .cb-enemy-card.intent-heavy-warn,
@@ -10799,21 +9369,12 @@ body.cb-battle-active #fx {
     animation: none !important;
   }
 
-  #battle-screen .cb-px-ghost {
-    display: none !important;
-  }
-
-  #battle-screen .cb-ally-cameo,
   #battle-screen .cb-topbar #cb-btn-assist-mode,
   #battle-screen .cb-prism-rig .cb-blade .cb-bl-beat,
   #cb-result-modal .cr-casual-row,
   #cb-result-modal #cr-retry-boss,
   #cb-result-modal #cr-retry {
     transition: none !important;
-  }
-
-  #battle-screen .cb-px-rig.is-hit-flash .cb-px-sheet {
-    filter: brightness(1.22) contrast(1.05);
   }
 
   #battle-screen .cb-endturn-btn::after {

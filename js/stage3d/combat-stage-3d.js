@@ -17,6 +17,10 @@ import { createPBRTextureLibrary } from './textures-pbr.js';
 import { buildAcademyBiome } from './biome-academy.js';
 import { buildForestBiome } from './biome-forest.js';
 import { buildAltarBiome } from './biome-altar.js';
+import { buildGraveyardBiome } from './biome-graveyard.js';
+import { buildCanyonBiome } from './biome-canyon.js';
+import { buildCorridorBiome } from './biome-corridor.js';
+import { buildDuelBiome } from './biome-duel.js';
 import { createHD2DPostPipeline } from './atmosphere-post.js';
 
 /* ============================================================================
@@ -47,29 +51,34 @@ const BIOME_BUILDERS = Object.freeze({
   academy: buildAcademyBiome,
   forest: buildForestBiome,
   altar: buildAltarBiome,
+  graveyard: buildGraveyardBiome,
+  canyon: buildCanyonBiome,
+  corridor: buildCorridorBiome,
+  duel: buildDuelBiome,
 });
 
 const STAGE_SCENE_MAP = Object.freeze({
-  beatrice_11: { biome: 'academy', mood: 'sunny_snow' },
-  rowan_graveyard: { biome: 'forest', mood: 'graveyard_mist' },
-  alice_9: { biome: 'academy', mood: 'breeze_day' },
-  aino_sparring: { biome: 'academy', mood: 'frost_mirror' },
-  noelle_14: { biome: 'academy', mood: 'thaw_twilight' },
-  north_forest_hunt: { biome: 'forest', mood: 'deep_pine' },
+  beatrice_11: { biomeId: 'duel', moodKey: 'sunny_snow' },
+  rowan_graveyard: { biomeId: 'graveyard', moodKey: 'graveyard_mist' },
+  alice_9: { biomeId: 'duel', moodKey: 'breeze_day' },
+  aino_sparring: { biomeId: 'academy', moodKey: 'frost_mirror' },
+  noelle_14: { biomeId: 'duel', moodKey: 'thaw_twilight' },
+  north_forest_hunt: { biomeId: 'forest', moodKey: 'deep_pine' },
   hulan_beast_tide: {
-    biome: 'forest',
-    mood: 'blizzard_canyon',
-    wave2Mood: 'blizzard_canyon_w2',
+    biomeId: 'canyon',
+    moodKey: 'blizzard_canyon',
+    wave2MoodKey: 'blizzard_canyon_w2',
+    phase2MoodKey: 'blizzard_canyon_w2',
   },
   turning_point_corridor: {
-    biome: 'academy',
-    mood: 'fire_corridor',
-    phase2Mood: 'fire_corridor_p2',
+    biomeId: 'corridor',
+    moodKey: 'fire_corridor',
+    phase2MoodKey: 'fire_corridor_p2',
   },
   wind_god_eye: {
-    biome: 'altar',
-    mood: 'cloud_eye',
-    phase2Mood: 'storm_eye',
+    biomeId: 'altar',
+    moodKey: 'cloud_eye',
+    phase2MoodKey: 'storm_eye',
   },
 });
 
@@ -90,7 +99,7 @@ const MOOD_PRESETS = Object.freeze({
       godRayColor: 0xfff3d6,
       godRayOpacity: 0.22,
       bloomStrength: 0.34,
-      bloomThreshold: 0.80,
+      bloomThreshold: 0.92,
       bloomRadius: 0.60,
       focusDepth: 0.56,
       blurAmount: 1.65,
@@ -100,10 +109,10 @@ const MOOD_PRESETS = Object.freeze({
   breeze_day: {
     background: 0xc4e3fa,
     fog: { color: 0xdaf0fc, near: 20, far: 58 },
-    exposure: 1.09,
+    exposure: 1.04,
     sky: { zenith: 0x458ef0, mid: 0x98d4fc, horizon: 0xeef9ff, sunWarm: 0xfff7e2 },
     light: { sunTint: 0xfff9ee, sunMult: 1.06, hemiSky: 0xdff5ff, hemiGnd: 0xdde8f2, hemiMult: 1.06, ambMult: 1.04 },
-    rimTint: [0.98, 1.01, 1.04],
+    rimTint: [1.03, 1.02, 0.98],
     accent: null,
     post: {
       particleType: 'windMotes',
@@ -111,9 +120,9 @@ const MOOD_PRESETS = Object.freeze({
       particleSecondaryColor: 0xfff4d0,
       particleCount: 360,
       godRayColor: 0xf4fbff,
-      godRayOpacity: 0.24,
-      bloomStrength: 0.36,
-      bloomThreshold: 0.80,
+      godRayOpacity: 0.20,
+      bloomStrength: 0.32,
+      bloomThreshold: 0.94,
       bloomRadius: 0.62,
       focusDepth: 0.56,
       blurAmount: 1.55,
@@ -126,7 +135,7 @@ const MOOD_PRESETS = Object.freeze({
     exposure: 1.05,
     sky: { zenith: 0x2c6ad4, mid: 0x7cbcf5, horizon: 0xe4f6ff, sunWarm: 0xe8f9ff },
     light: { sunTint: 0xeef9ff, sunMult: 1.02, hemiSky: 0xc7ecff, hemiGnd: 0xc8def4, hemiMult: 1.05, ambMult: 1.05 },
-    rimTint: [0.93, 1.0, 1.08],
+    rimTint: [0.95, 1.01, 1.03],
     accent: { color: 0x76e8ff, intensity: 1.1, distance: 18, pos: [0, 3.6, -1.5], pulseAmp: 0.16, pulseSpeed: 2.2 },
     post: {
       particleType: 'iceDust',
@@ -134,9 +143,9 @@ const MOOD_PRESETS = Object.freeze({
       particleSecondaryColor: 0xffffff,
       particleCount: 480,
       godRayColor: 0xdbf6ff,
-      godRayOpacity: 0.28,
-      bloomStrength: 0.42,
-      bloomThreshold: 0.76,
+      godRayOpacity: 0.20,
+      bloomStrength: 0.34,
+      bloomThreshold: 0.92,
       bloomRadius: 0.64,
       focusDepth: 0.56,
       blurAmount: 1.75,
@@ -788,39 +797,81 @@ function resolveStageScene(battleState) {
   const stageId = String(b.id || b.stageId || (b.stageCfg && b.stageCfg.id) || '').trim();
   const waveIdx = Number.isFinite(b.waveIdx) ? b.waveIdx : 0;
   const hasPhase2 = detectHasPhase2(b);
+  const isW2 = waveIdx >= 1;
+  const isP2 = hasPhase2;
 
   const exact = STAGE_SCENE_MAP[stageId];
   if (exact) {
-    let mood = exact.mood;
-    if (exact.wave2Mood && waveIdx >= 1) {
-      mood = exact.wave2Mood;
-    } else if (exact.phase2Mood && hasPhase2) {
-      mood = exact.phase2Mood;
+    let moodKey = exact.moodKey || exact.mood || 'sunny_snow';
+    if (exact.wave2MoodKey && isW2) {
+      moodKey = exact.wave2MoodKey;
+    } else if (exact.phase2MoodKey && isP2) {
+      moodKey = exact.phase2MoodKey;
     }
-    return { biomeId: exact.biome, moodKey: mood, stageId, waveIdx, hasPhase2 };
+    return {
+      biomeId: exact.biomeId || exact.biome || 'academy',
+      moodKey,
+      stageId,
+      waveIdx,
+      hasPhase2,
+    };
   }
 
-  const bgStr = String(
-    b.bg || (b.stageCfg && b.stageCfg.bg) || ''
-  ).toLowerCase();
+  let rawBg = b.bg || (b.stageCfg && b.stageCfg.bg) || '';
+  if (
+    !rawBg &&
+    stageId &&
+    typeof window !== 'undefined' &&
+    window.B &&
+    window.B.id === stageId &&
+    window.B.stageCfg &&
+    window.B.stageCfg.bg
+  ) {
+    rawBg = window.B.stageCfg.bg;
+  }
+  const bg = String(rawBg).toLowerCase();
+  const bgmType = String(b.bgmType || (b.stageCfg && b.stageCfg.bgmType) || '').toLowerCase();
+  const isCanyonBg = bg.includes('snow') || bg.includes('canyon');
+
+  const hasForestBeast =
+    Array.isArray(b.enemies) &&
+    b.enemies.some((e) => {
+      if (!e || typeof e !== 'object') return false;
+      const token = [e.spriteId, e.id, e.charId, e.crestKind]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return (
+        token.includes('shadow_jackal') ||
+        token.includes('pack_wolf') ||
+        token.includes('wolf_alpha')
+      );
+    });
+
+  if (stageId === 'custom_shadow_jackal' || (hasForestBeast && !isCanyonBg)) {
+    return { biomeId: 'forest', moodKey: 'deep_pine', stageId, waveIdx, hasPhase2 };
+  }
 
   let biomeId = 'academy';
   let moodKey = 'sunny_snow';
-  if (bgStr.includes('hallway')) {
-    biomeId = 'academy';
-    moodKey = hasPhase2 ? 'fire_corridor_p2' : 'fire_corridor';
-  } else if (bgStr.includes('forest')) {
+  if (bg.includes('duel') || (stageId === 'custom_encounter' && bgmType === 'duel')) {
+    biomeId = 'duel';
+    moodKey = 'sunny_snow';
+  } else if (bg.includes('hallway')) {
+    biomeId = 'corridor';
+    moodKey = isP2 ? 'fire_corridor_p2' : 'fire_corridor';
+  } else if (isCanyonBg) {
+    biomeId = 'canyon';
+    moodKey = isW2 ? 'blizzard_canyon_w2' : 'blizzard_canyon';
+  } else if (bg.includes('night') || bg.includes('grave')) {
+    biomeId = 'graveyard';
+    moodKey = 'graveyard_mist';
+  } else if (bg.includes('forest')) {
     biomeId = 'forest';
     moodKey = 'deep_pine';
-  } else if (bgStr.includes('snow') || bgStr.includes('canyon')) {
-    biomeId = 'forest';
-    moodKey = waveIdx >= 1 ? 'blizzard_canyon_w2' : 'blizzard_canyon';
-  } else if (bgStr.includes('night') || bgStr.includes('grave')) {
-    biomeId = 'forest';
-    moodKey = 'graveyard_mist';
-  } else if (bgStr.includes('wind') || bgStr.includes('altar')) {
+  } else if (bg.includes('wind') || bg.includes('altar')) {
     biomeId = 'altar';
-    moodKey = hasPhase2 ? 'storm_eye' : 'cloud_eye';
+    moodKey = isP2 ? 'storm_eye' : 'cloud_eye';
   }
 
   return { biomeId, moodKey, stageId, waveIdx, hasPhase2 };
@@ -906,61 +957,157 @@ function fallbackResolveSpriteId(kind, entity, battleState) {
 }
 
 /* ============================================================================
- * 5. Dynamic Wide-Beast Z/X Staggered Formation Layout
+ * 5. Real-Scale 22-Sprite Height Table & Wide-Beast Staggered Formation Layout
  * ============================================================================ */
 
+const DEFAULT_SPRITE_WORLD_HEIGHT = 2.52;
+
+const SPRITE_WORLD_HEIGHT = Object.freeze({
+  // 幼年人类
+  sylvia_young: 2.28,
+  alice: 2.22,
+  beatrice: 2.38,
+  // 少年少女人类
+  sylvia_silver: 2.52,
+  sylvia_disguise: 2.54,
+  aino: 2.50,
+  noelle: 2.52,
+  charlotte: 2.54,
+  jilan: 2.52,
+  // 成年人类（不论敌我、不论是否 BOSS，一律保持真实成年身高，绝不巨人化）
+  reno: 2.76,
+  rowan: 2.78,
+  corridor_vanguard: 2.74,
+  flame_mage: 2.70,
+  eastwing_commander: 2.82,
+  // 神灵化身
+  wind_god_avatar: 2.95,
+  // 大型魔兽（凶猛冰原巨狼 / 影豺 / 爪兽）
+  pack_wolf: 2.08,
+  shadow_jackal: 2.18,
+  wolf_alpha: 2.32,
+  frost_hound: 2.26,
+  ridge_claw: 2.38,
+  // 重装巨兽
+  tundra_brute: 2.72,
+  // 领主巨兽 BOSS
+  abyss_behemoth: 3.25,
+});
+
+function getSpriteWorldHeight(spriteId) {
+  const h = SPRITE_WORLD_HEIGHT[spriteId];
+  return Number.isFinite(h) ? h : DEFAULT_SPRITE_WORLD_HEIGHT;
+}
+
+function computeDynamicCameraBase(allyN, enemyN, hasWide, hasGiant) {
+  let zAdd = 0;
+  let yAdd = 0;
+  let lookX = 0;
+  let lookYAdd = 0;
+
+  if (hasWide && enemyN >= 2) {
+    if (enemyN >= 5) {
+      zAdd = 1.80;
+      yAdd = 0.42;
+      lookX = 0.35;
+      lookYAdd = 0.06;
+    } else if (enemyN === 4) {
+      zAdd = 1.80;
+      yAdd = 0.40;
+      lookX = 0.38;
+      lookYAdd = 0.05;
+    } else if (enemyN === 3) {
+      zAdd = 1.60;
+      yAdd = 0.32;
+      lookX = 0.35;
+      lookYAdd = 0.06;
+    } else {
+      zAdd = hasGiant ? 1.60 : 1.35;
+      yAdd = hasGiant ? 0.32 : 0.24;
+      lookX = hasGiant ? 0.32 : 0.24;
+      lookYAdd = hasGiant ? 0.12 : 0.05;
+    }
+  } else if (hasGiant && enemyN === 1) {
+    zAdd = 0.85;
+    yAdd = 0.18;
+    lookX = 0.12;
+    lookYAdd = 0.12;
+  } else if (enemyN >= 5 || allyN >= 5) {
+    zAdd = 1.15;
+    yAdd = 0.25;
+    lookX = 0.0;
+    lookYAdd = 0.04;
+  }
+
+  return {
+    pos: [SCHEME_C_BASE_POS[0], SCHEME_C_BASE_POS[1] + yAdd, SCHEME_C_BASE_POS[2] + zAdd],
+    look: [SCHEME_C_BASE_LOOK[0] + lookX, SCHEME_C_BASE_LOOK[1] + lookYAdd, SCHEME_C_BASE_LOOK[2]],
+  };
+}
+
 const ALLY_SLOTS_6 = Object.freeze([
-  { pos: [-1.95, 0, 0.92], heightWorld: 2.22 }, // 0: player front-lower C-spot
-  { pos: [-3.00, 0, -0.45], heightWorld: 2.20 },
-  { pos: [-4.15, 0, -1.90], heightWorld: 2.18 },
-  { pos: [-3.80, 0, 0.85], heightWorld: 2.18 },
-  { pos: [-4.85, 0, -0.60], heightWorld: 2.18 },
-  { pos: [-5.75, 0, -2.00], heightWorld: 2.18 },
+  { pos: [-1.95, 0, 0.92] }, // 0: player front-lower C-spot
+  { pos: [-3.05, 0, -0.45] },
+  { pos: [-4.20, 0, -1.90] },
+  { pos: [-3.85, 0, 0.90] },
+  { pos: [-4.95, 0, -0.60] },
+  { pos: [-5.85, 0, -2.00] },
+]);
+
+const ENEMY_WIDE_SLOTS_2 = Object.freeze([
+  { pos: [1.55, 0, 1.85] },  // 0: front-inner flanker (e.g. ridge_claw)
+  { pos: [5.15, 0, -2.15] }, // 1: back-outer giant/boss (e.g. abyss_behemoth)
 ]);
 
 const ENEMY_WIDE_SLOTS_3 = Object.freeze([
-  { pos: [1.45, 0, 1.20], heightWorld: 1.56 },
-  { pos: [3.65, 0, -1.55], heightWorld: 1.54 },
-  { pos: [5.15, 0, 0.70], heightWorld: 1.52 },
+  { pos: [3.70, 0, -2.40] }, // 0: back-center commanding heavy beast (e.g. tundra_brute)
+  { pos: [1.45, 0, 1.85] },  // 1: front-left flanker
+  { pos: [5.35, 0, 0.95] },  // 2: mid-front-right flanker
 ]);
 
 const ENEMY_WIDE_SLOTS_4 = Object.freeze([
-  { pos: [1.35, 0, 1.30], heightWorld: 1.54 },
-  { pos: [2.95, 0, -1.55], heightWorld: 1.52 },
-  { pos: [4.25, 0, 0.85], heightWorld: 1.50 },
-  { pos: [5.55, 0, -1.45], heightWorld: 1.48 },
+  { pos: [2.55, 0, -2.65] }, // 0: back-inner alpha/leader
+  { pos: [1.25, 0, 1.95] },  // 1: front-inner flanker
+  { pos: [4.15, 0, 1.55] },  // 2: front-outer flanker
+  { pos: [6.60, 0, -2.45] }, // 3: back-outer flanker
+]);
+
+const ENEMY_HUMANOID_SLOTS_3 = Object.freeze([
+  { pos: [1.95, 0, 1.15] },
+  { pos: [3.45, 0, -1.35] },
+  { pos: [5.00, 0, 0.70] },
 ]);
 
 const ENEMY_HUMANOID_SLOTS_4 = Object.freeze([
-  { pos: [1.95, 0, 1.05], heightWorld: 2.38 },
-  { pos: [2.85, 0, -0.95], heightWorld: 2.34 },
-  { pos: [4.10, 0, 0.65], heightWorld: 2.30 },
-  { pos: [4.90, 0, -1.35], heightWorld: 2.26 },
+  { pos: [1.95, 0, 1.15] },
+  { pos: [2.95, 0, -1.15] },
+  { pos: [4.25, 0, 0.75] },
+  { pos: [5.25, 0, -1.45] },
 ]);
 
 const ENEMY_6_INNER_HUMANOID = Object.freeze([
-  { pos: [1.85, 0, 0.95], heightWorld: 2.20 },
-  { pos: [2.95, 0, -0.50], heightWorld: 2.20 },
-  { pos: [4.05, 0, -1.95], heightWorld: 2.18 },
-  { pos: [2.55, 0, 1.15], heightWorld: 2.16 },
-  { pos: [3.60, 0, -0.25], heightWorld: 2.16 },
-  { pos: [4.65, 0, -1.65], heightWorld: 2.14 },
+  { pos: [1.85, 0, 1.10] },
+  { pos: [2.95, 0, -0.55] },
+  { pos: [4.10, 0, -2.05] },
+  { pos: [2.75, 0, 1.30] },
+  { pos: [3.85, 0, -0.30] },
+  { pos: [4.95, 0, -1.75] },
 ]);
 
 const ENEMY_6_OUTER_WIDE = Object.freeze([
-  { pos: [5.15, 0, -2.25], heightWorld: 1.76 },
-  { pos: [4.85, 0, -0.35], heightWorld: 1.64 },
-  { pos: [4.10, 0, 1.15], heightWorld: 1.54 },
-  { pos: [2.65, 0, -2.20], heightWorld: 1.58 },
-  { pos: [2.30, 0, -0.35], heightWorld: 1.54 },
-  { pos: [1.95, 0, 1.25], heightWorld: 1.52 },
+  { pos: [6.30, 0, -2.75] },
+  { pos: [2.55, 0, -2.70] },
+  { pos: [5.75, 0, -0.30] },
+  { pos: [1.95, 0, -0.25] },
+  { pos: [4.75, 0, 1.95] },
+  { pos: [1.25, 0, 2.05] },
 ]);
 
 const CAMEO_SLOTS = Object.freeze([
-  { pos: [-1.55, 0, 1.40], heightWorld: 2.40 },
-  { pos: [-2.65, 0, -1.55], heightWorld: 2.34 },
-  { pos: [-3.85, 0, 1.25], heightWorld: 2.32 },
-  { pos: [-4.65, 0, -1.50], heightWorld: 2.28 },
+  { pos: [-1.55, 0, 1.40] },
+  { pos: [-2.65, 0, -1.55] },
+  { pos: [-3.85, 0, 1.25] },
+  { pos: [-4.65, 0, -1.50] },
 ]);
 
 function computeAllyPositions(allyList) {
@@ -969,7 +1116,11 @@ function computeAllyPositions(allyList) {
   if (n === 0) return out;
 
   if (n === 1) {
-    out.set(allyList[0].key, { pos: [-3.10, 0, 0.25], heightWorld: 2.75 });
+    const a = allyList[0];
+    out.set(a.key, {
+      pos: [-3.10, 0, 0.25],
+      heightWorld: getSpriteWorldHeight(a.spriteId),
+    });
     return out;
   }
 
@@ -977,8 +1128,14 @@ function computeAllyPositions(allyList) {
     // Player in back row, primary vanguard ally in front row (e.g. Sylvia back + Reno front)
     const pItem = allyList.find((a) => a.key === 'player') || allyList[0];
     const vItem = allyList.find((a) => a !== pItem) || allyList[1];
-    out.set(pItem.key, { pos: [-4.30, 0, -0.75], heightWorld: 2.48 });
-    out.set(vItem.key, { pos: [-2.95, 0, 1.15], heightWorld: 2.62 });
+    out.set(pItem.key, {
+      pos: [-4.30, 0, -0.75],
+      heightWorld: getSpriteWorldHeight(pItem.spriteId),
+    });
+    out.set(vItem.key, {
+      pos: [-2.95, 0, 1.15],
+      heightWorld: getSpriteWorldHeight(vItem.spriteId),
+    });
     return out;
   }
 
@@ -988,15 +1145,16 @@ function computeAllyPositions(allyList) {
     if (b.key === 'player') return 1;
     return a.order - b.order;
   });
+  const allyScale = n >= 5 ? 0.88 : 0.94;
 
   for (let i = 0; i < ordered.length; i++) {
+    const item = ordered[i];
     const slot = ALLY_SLOTS_6[i] || {
-      pos: [clamp(-5.75 + (i % 3) * 0.45, -5.75, -1.95), 0, -1.8 + (i % 3) * 1.3],
-      heightWorld: 2.18,
+      pos: [clamp(-5.85 + (i % 3) * 0.45, -5.85, -1.95), 0, -1.8 + (i % 3) * 1.3],
     };
-    out.set(ordered[i].key, {
+    out.set(item.key, {
       pos: slot.pos.slice(),
-      heightWorld: slot.heightWorld,
+      heightWorld: getSpriteWorldHeight(item.spriteId) * allyScale,
     });
   }
   return out;
@@ -1009,43 +1167,45 @@ function computeEnemyPositions(enemyList) {
 
   if (n === 1) {
     const e = enemyList[0];
-    let h = 2.85;
-    if (e.isBoss || e.spriteId === 'wind_god_avatar') {
-      if (e.spriteId === 'wind_god_avatar') h = 3.55;
-      else if (e.isWideBeast) h = 2.95;
-      else h = 3.40;
-    } else if (e.isWideBeast) {
-      h = 2.42;
-    }
-    out.set(e.key, { pos: [3.05, 0, 0.10], heightWorld: h });
+    // Strict real-scale height from SPRITE_WORLD_HEIGHT — never inflate human BOSSes
+    out.set(e.key, {
+      pos: [3.05, 0, 0.10],
+      heightWorld: getSpriteWorldHeight(e.spriteId),
+    });
     return out;
   }
 
   if (n === 2) {
     const anyWide = enemyList.some((e) => e.isWideBeast);
     if (anyWide) {
-      const slots = [
-        { pos: [2.00, 0, 1.05], baseH: 2.05 },
-        { pos: [4.45, 0, -1.25], baseH: 2.00 },
-      ];
-      for (let i = 0; i < 2; i++) {
-        const e = enemyList[i];
-        let h = slots[i].baseH;
-        if (e.isWideBeast) {
-          h = e.isBoss ? 2.18 : 1.98;
-        } else {
-          h = e.isBoss ? 2.85 : 2.52;
-        }
-        out.set(e.key, { pos: slots[i].pos.slice(), heightWorld: h });
-      }
+      // Place larger/boss beast (e.g. abyss_behemoth 3.25) in deep outer slot, smaller flanker in front-inner
+      const ranked = enemyList
+        .map((e, i) => ({
+          e,
+          i,
+          sizeScore:
+            getSpriteWorldHeight(e.spriteId) +
+            (e.spriteId === 'abyss_behemoth' ? 2.0 : 0) +
+            (e.isWideBeast ? 0.5 : 0),
+        }))
+        .sort((a, b) => a.sizeScore - b.sizeScore || a.i - b.i);
+
+      out.set(ranked[0].e.key, {
+        pos: ENEMY_WIDE_SLOTS_2[0].pos.slice(),
+        heightWorld: getSpriteWorldHeight(ranked[0].e.spriteId),
+      });
+      out.set(ranked[1].e.key, {
+        pos: ENEMY_WIDE_SLOTS_2[1].pos.slice(),
+        heightWorld: getSpriteWorldHeight(ranked[1].e.spriteId),
+      });
     } else {
       out.set(enemyList[0].key, {
-        pos: [2.15, 0, 0.85],
-        heightWorld: enemyList[0].isBoss ? 2.85 : 2.58,
+        pos: [2.05, 0, 1.05],
+        heightWorld: getSpriteWorldHeight(enemyList[0].spriteId),
       });
       out.set(enemyList[1].key, {
-        pos: [4.15, 0, -1.05],
-        heightWorld: enemyList[1].isBoss ? 2.80 : 2.52,
+        pos: [4.55, 0, -1.25],
+        heightWorld: getSpriteWorldHeight(enemyList[1].spriteId),
       });
     }
     return out;
@@ -1053,22 +1213,47 @@ function computeEnemyPositions(enemyList) {
 
   if (n === 3 || n === 4) {
     const anyWide = enemyList.some((e) => e.isWideBeast);
-    const table = anyWide
-      ? (n === 3 ? ENEMY_WIDE_SLOTS_3 : ENEMY_WIDE_SLOTS_4)
-      : ENEMY_HUMANOID_SLOTS_4;
-    for (let i = 0; i < n; i++) {
-      const e = enemyList[i];
-      const slot = table[i];
-      let h = slot.heightWorld;
-      if (anyWide && !e.isWideBeast) {
-        h = e.isBoss ? 2.45 : 2.22;
+    if (anyWide) {
+      const table = n === 3 ? ENEMY_WIDE_SLOTS_3 : ENEMY_WIDE_SLOTS_4;
+      const wideScale = n === 3 ? 0.94 : 0.88;
+      const humScale = n === 3 ? 1.0 : 0.96;
+      // Put largest wide beast (e.g. tundra_brute / wolf_alpha) in back-center commanding slot 0
+      const ranked = enemyList
+        .map((e, i) => ({
+          e,
+          i,
+          score:
+            (e.isWideBeast ? getSpriteWorldHeight(e.spriteId) : 0) +
+            (e.spriteId === 'abyss_behemoth' ? 2.0 : 0) +
+            (e.isBoss && e.isWideBeast ? 0.6 : 0),
+        }))
+        .sort((a, b) => b.score - a.score || a.i - b.i);
+
+      for (let i = 0; i < ranked.length; i++) {
+        const e = ranked[i].e;
+        const slot = table[i];
+        const mult = e.isWideBeast ? wideScale : humScale;
+        out.set(e.key, {
+          pos: slot.pos.slice(),
+          heightWorld: getSpriteWorldHeight(e.spriteId) * mult,
+        });
       }
-      out.set(e.key, { pos: slot.pos.slice(), heightWorld: h });
+    } else {
+      const table = n === 3 ? ENEMY_HUMANOID_SLOTS_3 : ENEMY_HUMANOID_SLOTS_4;
+      const humScale = n === 3 ? 1.0 : 0.96;
+      for (let i = 0; i < n; i++) {
+        const e = enemyList[i];
+        const slot = table[i];
+        out.set(e.key, {
+          pos: slot.pos.slice(),
+          heightWorld: getSpriteWorldHeight(e.spriteId) * humScale,
+        });
+      }
     }
     return out;
   }
 
-  // 5-6 enemies: narrow humanoids in inner front/mid cols, wide beasts in outer large-Z tiers
+  // 5-6 enemies: narrow humanoids in inner front/mid cols, wide beasts in outer staggered Z tiers
   const humanoids = [];
   const wideBeasts = [];
   for (let i = 0; i < n; i++) {
@@ -1076,31 +1261,32 @@ function computeEnemyPositions(enemyList) {
     else humanoids.push(enemyList[i]);
   }
 
-  // Sort wide beasts so largest/boss takes the deep outer high tier (z = -2.25)
+  // Sort wide beasts so largest beast takes the deep outer high tier (z = -2.75)
   wideBeasts.sort((a, b) => {
-    const scoreA = (a.isBoss ? 10 : 0) + (a.spriteId === 'abyss_behemoth' ? 5 : 0);
-    const scoreB = (b.isBoss ? 10 : 0) + (b.spriteId === 'abyss_behemoth' ? 5 : 0);
+    const scoreA = getSpriteWorldHeight(a.spriteId) + (a.spriteId === 'abyss_behemoth' ? 2.0 : 0);
+    const scoreB = getSpriteWorldHeight(b.spriteId) + (b.spriteId === 'abyss_behemoth' ? 2.0 : 0);
     return scoreB - scoreA;
   });
 
   for (let i = 0; i < humanoids.length; i++) {
     const e = humanoids[i];
     const slot = ENEMY_6_INNER_HUMANOID[i] || {
-      pos: [clamp(1.85 + (i % 3) * 1.1, 1.85, 4.05), 0, -1.5 + (i % 3) * 1.2],
-      heightWorld: 2.14,
+      pos: [clamp(1.85 + (i % 3) * 1.1, 1.85, 4.95), 0, -1.6 + (i % 3) * 1.3],
     };
-    out.set(e.key, { pos: slot.pos.slice(), heightWorld: slot.heightWorld });
+    out.set(e.key, {
+      pos: slot.pos.slice(),
+      heightWorld: getSpriteWorldHeight(e.spriteId) * 0.90,
+    });
   }
 
   for (let i = 0; i < wideBeasts.length; i++) {
     const e = wideBeasts[i];
     const slot = ENEMY_6_OUTER_WIDE[i] || {
-      pos: [Math.min(5.30, 4.10 + (i % 2) * 0.95), 0, -2.1 + (i % 3) * 1.6],
-      heightWorld: 1.54,
+      pos: [Math.min(6.30, 4.10 + (i % 2) * 1.1), 0, -2.4 + (i % 3) * 1.8],
     };
     out.set(e.key, {
-      pos: [Math.min(5.35, slot.pos[0]), 0, slot.pos[2]],
-      heightWorld: clamp(slot.heightWorld, 1.50, 1.78),
+      pos: [Math.min(6.35, slot.pos[0]), 0, slot.pos[2]],
+      heightWorld: getSpriteWorldHeight(e.spriteId) * 0.82,
     });
   }
 
@@ -1189,6 +1375,8 @@ function createCombatStage3D() {
   let selectedEnemyKey = 'enemy:0';
   let allyCount = 1;
   let enemyCount = 1;
+  let hasWideBeast = false;
+  let hasGiantBoss = false;
 
   // Player aura canvases bridge
   let auraBackCanvas = null;
@@ -1508,9 +1696,8 @@ function createCombatStage3D() {
     if (!active || !scene) return;
     const key = MOOD_PRESETS[moodKey] ? moodKey : 'sunny_snow';
     const preset = MOOD_PRESETS[key];
-    currentMoodKey = key;
 
-    // 1. Invoke native biome.applyMood first to unlock all 12 calibrated biome lighting/sky/VFX moods
+    // 1. Invoke native biome.applyMood first to unlock all calibrated biome lighting/sky/VFX moods
     let res = null;
     if (currentBiome && typeof currentBiome.applyMood === 'function') {
       try {
@@ -1519,14 +1706,16 @@ function createCombatStage3D() {
         res = null;
       }
     }
+    currentMoodKey = moodKey || (res && res.moodId) || key;
 
+    // 2. Strictly prefer native biome background & fog over legacy MOOD_PRESETS fallback
     const bgColor =
       res && res.background != null
         ? res.background
-        : preset.background != null
-          ? preset.background
-          : currentBiome && currentBiome.background != null
-            ? currentBiome.background
+        : currentBiome && currentBiome.background != null
+          ? currentBiome.background
+          : preset.background != null
+            ? preset.background
             : null;
     if (bgColor != null) {
       scene.background = new THREE.Color(bgColor);
@@ -1534,8 +1723,10 @@ function createCombatStage3D() {
 
     const fogSpec =
       (res && res.fog && typeof res.fog === 'object' ? res.fog : null) ||
-      preset.fog ||
-      (currentBiome && currentBiome.fog);
+      (currentBiome && currentBiome.fog && typeof currentBiome.fog === 'object'
+        ? currentBiome.fog
+        : null) ||
+      preset.fog;
     if (fogSpec && typeof fogSpec === 'object') {
       scene.fog = new THREE.Fog(
         fogSpec.color,
@@ -1546,12 +1737,25 @@ function createCombatStage3D() {
       scene.fog = null;
     }
 
+    const resAtmo =
+      res && res.atmospherePreset && typeof res.atmospherePreset === 'object'
+        ? res.atmospherePreset
+        : currentBiome &&
+            currentBiome.atmospherePreset &&
+            typeof currentBiome.atmospherePreset === 'object'
+          ? currentBiome.atmospherePreset
+          : null;
+
     const exposure =
       res && Number.isFinite(res.exposure)
         ? res.exposure
-        : Number.isFinite(preset.exposure)
-          ? preset.exposure
-          : null;
+        : resAtmo && Number.isFinite(resAtmo.exposure)
+          ? resAtmo.exposure
+          : currentBiome && Number.isFinite(currentBiome.exposure)
+            ? currentBiome.exposure
+            : Number.isFinite(preset.exposure)
+              ? preset.exposure
+              : null;
     if (renderer && exposure != null) {
       renderer.toneMappingExposure = exposure;
     }
@@ -1619,20 +1823,16 @@ function createCombatStage3D() {
       }
     }
 
-    // Post-processing atmosphere preset: prioritize biome's res.atmospherePreset,
+    // Post-processing atmosphere preset: 100% pass-through of native biome atmospherePreset,
     // falling back to MOOD_PRESETS.post only for fields not supplied by the biome
-    const resAtmo =
-      res && res.atmospherePreset && typeof res.atmospherePreset === 'object'
-        ? res.atmospherePreset
-        : null;
     if (postPipeline) {
       const mergedPost = resAtmo
         ? Object.assign({}, preset.post || {}, resAtmo)
-        : Object.assign({}, (currentBiome && currentBiome.atmospherePreset) || {}, preset.post || {});
+        : Object.assign({}, preset.post || {});
       postPipeline.applyPreset(mergedPost);
     }
 
-    // Sprite rim tint: prefer res.atmospherePreset.spriteRimTint, fallback to MOOD_PRESETS.rimTint
+    // Sprite rim tint: prefer native biome atmospherePreset.spriteRimTint, fallback to MOOD_PRESETS.rimTint
     const effectiveRimTint =
       resAtmo && Array.isArray(resAtmo.spriteRimTint) && resAtmo.spriteRimTint.length >= 3
         ? resAtmo.spriteRimTint
@@ -1719,28 +1919,32 @@ function createCombatStage3D() {
     actor.currentFrameData = data;
     if (actor.spriteMat.map !== data.texture) {
       actor.spriteMat.map = data.texture;
-      actor.spriteMat.emissiveMap = data.texture;
       actor.depthMat.map = data.texture;
     }
   }
 
   function updateActorMaterialTint(actor) {
     if (!actor || !actor.spriteMat) return;
-    const deadMult = actor.dead ? 0.42 : 1.0;
-    const flash = actor.hitFlash ? 1.0 : 0.0;
+    _colB.setRGB(
+      Math.min(rimTintColor.r, 1.03),
+      Math.min(rimTintColor.g, 1.03),
+      Math.min(rimTintColor.b, 1.03)
+    );
+    _colA.copy(_whiteCol).lerp(_colB, 0.36);
 
-    _colA.copy(_whiteCol).lerp(rimTintColor, 0.36);
-    actor.spriteMat.color.copy(_colA).multiplyScalar(deadMult);
-
-    _colB.copy(_whiteCol).lerp(rimTintColor, 0.18);
-    if (flash > 0.001) {
-      _colB.lerp(_flashCol, 0.88);
+    if (actor.dead) {
+      actor.spriteMat.color.copy(_colA).multiplyScalar(0.42);
+      return;
     }
-    actor.spriteMat.emissive.copy(_colB);
 
-    const activeBoost = actor.key === activeActorKey && !actor.dead ? 0.07 : 0;
-    const flashBoost = flash * 0.92;
-    actor.spriteMat.emissiveIntensity = 0.54 * deadMult + activeBoost + flashBoost;
+    if (actor.hitFlash) {
+      _colA.lerp(_flashCol, 0.55);
+      actor.spriteMat.color.copy(_colA).multiplyScalar(1.42);
+      return;
+    }
+
+    const baseGain = actor.key === activeActorKey ? 0.91 : 0.88;
+    actor.spriteMat.color.copy(_colA).multiplyScalar(baseGain);
   }
 
   function attachPlayerAuraPlanes(actor) {
@@ -1894,18 +2098,14 @@ function createCombatStage3D() {
     root.add(spritePivot);
 
     const spriteGeo = new THREE.PlaneGeometry(planeW, planeH);
-    const spriteMat = new THREE.MeshStandardMaterial({
+    const spriteMat = new THREE.MeshBasicMaterial({
       map: frame0.texture,
-      emissiveMap: frame0.texture,
-      emissive: new THREE.Color(0xffffff),
-      emissiveIntensity: 0.54,
       color: new THREE.Color(0xffffff),
-      roughness: 0.92,
-      metalness: 0.0,
       alphaTest: 0.5,
       transparent: false,
       side: THREE.DoubleSide,
       depthWrite: true,
+      fog: false,
     });
     const depthMat = new THREE.MeshDepthMaterial({
       depthPacking: THREE.RGBADepthPacking,
@@ -2078,6 +2278,30 @@ function createCombatStage3D() {
     };
   }
 
+  function syncCameraFramingForRoster(snapImmediately = false) {
+    if (!camState) return;
+    const framing = computeDynamicCameraBase(
+      allyCount,
+      enemyCount,
+      hasWideBeast,
+      hasGiantBoss
+    );
+    camState.basePos.set(framing.pos[0], framing.pos[1], framing.pos[2]);
+    camState.baseLookAt.set(framing.look[0], framing.look[1], framing.look[2]);
+    if (snapImmediately) {
+      camState.curPos.copy(camState.basePos);
+      camState.curLookAt.copy(camState.baseLookAt);
+      camState.curFov = camState.baseFov;
+      if (camera) {
+        camera.position.copy(camState.curPos);
+        camera.lookAt(camState.curLookAt);
+        camera.fov = camState.curFov;
+        camera.updateProjectionMatrix();
+        camera.updateMatrixWorld(true);
+      }
+    }
+  }
+
   function getActorTorsoWorldPos(actor, outVec) {
     return outVec.set(
       actor.basePos.x,
@@ -2093,9 +2317,10 @@ function createCombatStage3D() {
     camState.pointerX = lerp(camState.pointerX, camState.pointerTargetX, ptrAlpha);
     camState.pointerY = lerp(camState.pointerY, camState.pointerTargetY, ptrAlpha);
 
-    const isCrowded = enemyCount >= 4 || allyCount >= 4;
+    const isWidePack = hasWideBeast && enemyCount >= 2;
+    const isCrowded = enemyCount >= 4 || allyCount >= 4 || isWidePack;
     const maxPanX = isCrowded ? 0.65 : 1.45;
-    const maxZoom = isCrowded ? 1.05 : 1.08;
+    const maxZoom = isWidePack ? 1.04 : isCrowded ? 1.05 : 1.08;
 
     _goalPos.copy(camState.basePos);
     _goalLook.copy(camState.baseLookAt);
@@ -3148,204 +3373,213 @@ function createCombatStage3D() {
       document.querySelector('#battle-screen .cb-arena-field');
     if (!resolvedField) return false;
 
-    // Reuse active mount if same field element is still connected
-    if (active && fieldEl === resolvedField && canvasEl && canvasEl.isConnected) {
-      lastBattleState = battleState || lastBattleState;
-      ensureBiomeAndMood(lastBattleState);
-      syncRoster(lastBattleState);
-      handleResize();
-      scheduleImmediateRedraw();
-      return true;
-    }
+    try {
+      // Reuse active mount if same field element is still connected
+      if (active && fieldEl === resolvedField && canvasEl && canvasEl.isConnected) {
+        lastBattleState = battleState || lastBattleState;
+        ensureBiomeAndMood(lastBattleState);
+        syncRoster(lastBattleState);
+        handleResize();
+        scheduleImmediateRedraw();
+        return true;
+      }
 
-    if (active) {
-      cleanup();
-    }
+      if (active) {
+        cleanup();
+      }
 
-    ensureScratchMath();
+      ensureScratchMath();
 
-    const probe = probeWebGL();
-    isSoftwareRenderer = probe.isSoftware;
-    rendererInfo = probe.rendererName;
+      const probe = probeWebGL();
+      isSoftwareRenderer = probe.isSoftware;
+      rendererInfo = probe.rendererName;
 
-    fieldEl = resolvedField;
-    battleScreenEl =
-      document.getElementById('battle-screen') ||
-      (typeof fieldEl.closest === 'function' ? fieldEl.closest('#battle-screen') : null);
-    canvasHostEl = battleScreenEl || fieldEl;
+      fieldEl = resolvedField;
+      battleScreenEl =
+        document.getElementById('battle-screen') ||
+        (typeof fieldEl.closest === 'function' ? fieldEl.closest('#battle-screen') : null);
+      canvasHostEl = battleScreenEl || fieldEl;
 
-    const canReusePool = isPooledWebGLHealthy();
-    if (!canReusePool && renderer) {
-      destroyWebGLPool();
-    }
+      const canReusePool = isPooledWebGLHealthy();
+      if (!canReusePool && renderer) {
+        destroyWebGLPool();
+      }
 
-    if (!canReusePool) {
-      canvasEl = document.createElement('canvas');
-      canvasEl.id = 'cb-stage-3d-canvas';
-      canvasEl.className = 'cb-stage-3d-canvas';
-      canvasEl.setAttribute('aria-hidden', 'true');
-      canvasEl.style.position = 'absolute';
-      canvasEl.style.inset = '0';
-      canvasEl.style.width = '100%';
-      canvasEl.style.height = '100%';
-      canvasEl.style.display = 'block';
-      canvasEl.style.pointerEvents = 'none';
-      canvasEl.style.zIndex = battleScreenEl ? '4' : '0';
+      if (!canReusePool) {
+        canvasEl = document.createElement('canvas');
+        canvasEl.id = 'cb-stage-3d-canvas';
+        canvasEl.className = 'cb-stage-3d-canvas';
+        canvasEl.setAttribute('aria-hidden', 'true');
+        canvasEl.style.position = 'absolute';
+        canvasEl.style.inset = '0';
+        canvasEl.style.width = '100%';
+        canvasEl.style.height = '100%';
+        canvasEl.style.display = 'block';
+        canvasEl.style.pointerEvents = 'none';
+        canvasEl.style.zIndex = battleScreenEl ? '4' : '0';
 
-      try {
         renderer = new THREE.WebGLRenderer({
           canvas: canvasEl,
           antialias: !isSoftwareRenderer,
           powerPreference: 'high-performance',
           preserveDrawingBuffer: false,
         });
-      } catch (_) {
-        renderer = null;
-        canvasEl = null;
-        canvasHostEl = null;
-        fieldEl = null;
-        battleScreenEl = null;
-        return false;
+      } else {
+        canvasEl.style.zIndex = battleScreenEl ? '4' : '0';
       }
-    } else {
-      canvasEl.style.zIndex = battleScreenEl ? '4' : '0';
-    }
 
-    // Mount directly inside #battle-screen (z-index: 4, behind #cb-palace-frost & .cb-shell)
-    canvasHostEl.insertBefore(canvasEl, canvasHostEl.firstChild);
-    fieldEl.classList.add('is-3d-stage', 'cb-stage3d-active');
-    fieldEl.setAttribute('data-stage3d', 'active');
-    if (battleScreenEl) {
-      battleScreenEl.classList.add('is-3d-stage', 'cb-stage3d-active');
-    }
+      // Mount directly inside #battle-screen (z-index: 4, behind #cb-palace-frost & .cb-shell)
+      canvasHostEl.insertBefore(canvasEl, canvasHostEl.firstChild);
+      fieldEl.classList.add('is-3d-stage', 'cb-stage3d-active');
+      fieldEl.setAttribute('data-stage3d', 'active');
+      if (battleScreenEl) {
+        battleScreenEl.classList.add('is-3d-stage', 'cb-stage3d-active');
+      }
 
-    const sz = getLiveStageRects();
-    lastStageRects = sz;
-    viewportW = sz.width;
-    viewportH = sz.height;
-    fieldW = sz.fieldW;
-    fieldH = sz.fieldH;
-    fieldOffX = sz.fieldOffX;
-    fieldOffY = sz.fieldOffY;
-    currentDpr = isSoftwareRenderer
-      ? SOFTWARE_PIXEL_RATIO
-      : Math.min(
-          typeof window !== 'undefined' && window.devicePixelRatio
-            ? window.devicePixelRatio
-            : 1,
-          2
+      const sz = getLiveStageRects();
+      lastStageRects = sz;
+      viewportW = sz.width;
+      viewportH = sz.height;
+      fieldW = sz.fieldW;
+      fieldH = sz.fieldH;
+      fieldOffX = sz.fieldOffX;
+      fieldOffY = sz.fieldOffY;
+      currentDpr = isSoftwareRenderer
+        ? SOFTWARE_PIXEL_RATIO
+        : Math.min(
+            typeof window !== 'undefined' && window.devicePixelRatio
+              ? window.devicePixelRatio
+              : 1,
+            2
+          );
+
+      renderer.shadowMap.enabled = !isSoftwareRenderer;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.06;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.setPixelRatio(currentDpr);
+      renderer.setSize(viewportW, viewportH, false);
+
+      if (!canReusePool) {
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(
+          SCHEME_C_BASE_FOV,
+          viewportW / viewportH,
+          0.1,
+          180
         );
+        camera.position.set(...SCHEME_C_BASE_POS);
+        camera.lookAt(...SCHEME_C_BASE_LOOK);
+        camera.updateMatrixWorld(true);
 
-    renderer.shadowMap.enabled = !isSoftwareRenderer;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.06;
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.setPixelRatio(currentDpr);
-    renderer.setSize(viewportW, viewportH, false);
+        texLib = createPBRTextureLibrary(THREE);
+        postPipeline = createHD2DPostPipeline(THREE, renderer, scene, camera, texLib, {
+          qualityMode: isSoftwareRenderer ? 'software' : 'ultra',
+        });
 
-    if (!canReusePool) {
-      scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(
-        SCHEME_C_BASE_FOV,
-        viewportW / viewportH,
-        0.1,
-        180
-      );
-      camera.position.set(...SCHEME_C_BASE_POS);
-      camera.lookAt(...SCHEME_C_BASE_LOOK);
-      camera.updateMatrixWorld(true);
+        stageGroup = new THREE.Group();
+        stageGroup.name = 'CombatStage3D_Root';
+        actorsGroup = new THREE.Group();
+        actorsGroup.name = 'CombatStage3D_Actors';
+        ghostsGroup = new THREE.Group();
+        ghostsGroup.name = 'CombatStage3D_Ghosts';
+        stageGroup.add(actorsGroup);
+        stageGroup.add(ghostsGroup);
 
-      texLib = createPBRTextureLibrary(THREE);
-      postPipeline = createHD2DPostPipeline(THREE, renderer, scene, camera, texLib, {
-        qualityMode: isSoftwareRenderer ? 'software' : 'ultra',
-      });
+        moodAccentLight = new THREE.PointLight(0xffffff, 0, 20, 1.6);
+        moodAccentLight.position.set(0, 3.6, -1.5);
+        stageGroup.add(moodAccentLight);
 
-      stageGroup = new THREE.Group();
-      stageGroup.name = 'CombatStage3D_Root';
-      actorsGroup = new THREE.Group();
-      actorsGroup.name = 'CombatStage3D_Actors';
-      ghostsGroup = new THREE.Group();
-      ghostsGroup.name = 'CombatStage3D_Ghosts';
-      stageGroup.add(actorsGroup);
-      stageGroup.add(ghostsGroup);
+        scene.add(stageGroup);
 
-      moodAccentLight = new THREE.PointLight(0xffffff, 0, 20, 1.6);
-      moodAccentLight.position.set(0, 3.6, -1.5);
-      stageGroup.add(moodAccentLight);
+        unitDiscGeo = new THREE.PlaneGeometry(1, 1);
+        unitDiscGeo.rotateX(-Math.PI / 2);
+        ownedGeometries.push(unitDiscGeo);
 
-      scene.add(stageGroup);
-
-      unitDiscGeo = new THREE.PlaneGeometry(1, 1);
-      unitDiscGeo.rotateX(-Math.PI / 2);
-      ownedGeometries.push(unitDiscGeo);
-
-      softGlowTex =
-        (texLib && texLib.softGlowDisc) ||
-        (() => {
-          const t = createSoftGlowDiscTexture(128);
-          ownedTextures.push(t);
-          return t;
-        })();
-      allyOuterRingTex = createAllyOuterRingTexture(256);
-      allyInnerRingTex = createAllyInnerRingTexture(256);
-      enemyOuterRingTex = createEnemyOuterReticleTexture(256);
-      enemyInnerRingTex = createEnemyInnerReticleTexture(256);
-      ownedTextures.push(
-        allyOuterRingTex,
-        allyInnerRingTex,
-        enemyOuterRingTex,
-        enemyInnerRingTex
-      );
-    } else {
-      // Reset camera & resize pooled post-pipeline instantly without rebuilding WebGL or 23 PBR textures
-      camera.fov = SCHEME_C_BASE_FOV;
-      camera.aspect = viewportW / viewportH;
-      camera.position.set(...SCHEME_C_BASE_POS);
-      camera.lookAt(...SCHEME_C_BASE_LOOK);
-      camera.updateProjectionMatrix();
-      camera.updateMatrixWorld(true);
-      if (postPipeline) {
-        postPipeline.resize(viewportW, viewportH, currentDpr);
+        softGlowTex =
+          (texLib && texLib.softGlowDisc) ||
+          (() => {
+            const t = createSoftGlowDiscTexture(128);
+            ownedTextures.push(t);
+            return t;
+          })();
+        allyOuterRingTex = createAllyOuterRingTexture(256);
+        allyInnerRingTex = createAllyInnerRingTexture(256);
+        enemyOuterRingTex = createEnemyOuterReticleTexture(256);
+        enemyInnerRingTex = createEnemyInnerReticleTexture(256);
+        ownedTextures.push(
+          allyOuterRingTex,
+          allyInnerRingTex,
+          enemyOuterRingTex,
+          enemyInnerRingTex
+        );
+      } else {
+        // Reset camera & resize pooled post-pipeline instantly without rebuilding WebGL or 23 PBR textures
+        camera.fov = SCHEME_C_BASE_FOV;
+        camera.aspect = viewportW / viewportH;
+        camera.position.set(...SCHEME_C_BASE_POS);
+        camera.lookAt(...SCHEME_C_BASE_LOOK);
+        camera.updateProjectionMatrix();
+        camera.updateMatrixWorld(true);
+        if (postPipeline) {
+          postPipeline.resize(viewportW, viewportH, currentDpr);
+        }
       }
-    }
 
-    initCameraState();
+      initCameraState();
 
-    fieldEl.addEventListener('pointermove', handleFieldPointerMove, { passive: true });
-    fieldEl.addEventListener('pointerleave', handleFieldPointerLeave, { passive: true });
-    fieldEl.addEventListener('click', handleFieldClick);
+      fieldEl.addEventListener('pointermove', handleFieldPointerMove, { passive: true });
+      fieldEl.addEventListener('pointerleave', handleFieldPointerLeave, { passive: true });
+      fieldEl.addEventListener('click', handleFieldClick);
 
-    if (typeof ResizeObserver !== 'undefined') {
-      resizeObserver = new ResizeObserver(() => handleResize());
-      resizeObserver.observe(fieldEl);
-      if (canvasHostEl && canvasHostEl !== fieldEl) {
-        resizeObserver.observe(canvasHostEl);
+      if (typeof ResizeObserver !== 'undefined') {
+        resizeObserver = new ResizeObserver(() => handleResize());
+        resizeObserver.observe(fieldEl);
+        if (canvasHostEl && canvasHostEl !== fieldEl) {
+          resizeObserver.observe(canvasHostEl);
+        }
       }
-    }
-    if (typeof window !== 'undefined') {
-      window.addEventListener('resize', handleResize, { passive: true });
-    }
+      if (typeof window !== 'undefined') {
+        window.addEventListener('resize', handleResize, { passive: true });
+      }
 
-    active = true;
-    timeScale = 1.0;
-    startTimeMs = 0;
-    lastFrameMs = 0;
-    lastRenderEndMs = 0;
-    simElapsedSec = 0;
-    lastBattleState = battleState || null;
-    lastPrismAnchorX = NaN;
-    lastPrismAnchorY = NaN;
-    currentMoodKey = null;
+      active = true;
+      timeScale = 1.0;
+      startTimeMs = 0;
+      lastFrameMs = 0;
+      lastRenderEndMs = 0;
+      simElapsedSec = 0;
+      lastBattleState = battleState || null;
+      lastPrismAnchorX = NaN;
+      lastPrismAnchorY = NaN;
+      currentMoodKey = null;
 
-    ensureBiomeAndMood(lastBattleState);
-    if (lastBattleState) {
-      syncRoster(lastBattleState);
+      ensureBiomeAndMood(lastBattleState);
+      if (lastBattleState) {
+        syncRoster(lastBattleState);
+        syncCameraFramingForRoster(true);
+      }
+
+      renderFrame(nowMs(), true);
+      rafId = requestAnimationFrame(tick);
+      return true;
+    } catch (err) {
+      if (typeof console !== 'undefined' && console.error) {
+        console.error('[CombatStage3D] mountForBattle failed:', err);
+      }
+      try {
+        cleanup();
+      } catch (_) {
+        // ignore cleanup error
+      }
+      try {
+        destroyWebGLPool();
+      } catch (_) {
+        // ignore pool dispose error
+      }
+      return false;
     }
-
-    renderFrame(nowMs(), true);
-    rafId = requestAnimationFrame(tick);
-    return true;
   }
 
   function syncRoster(battleState, actorsMap) {
@@ -3492,6 +3726,9 @@ function createCombatStage3D() {
 
     allyCount = allyList.length;
     enemyCount = enemyList.length;
+    hasWideBeast = enemyList.some((e) => e.isWideBeast);
+    hasGiantBoss = enemyList.some((e) => e.spriteId === 'abyss_behemoth');
+    syncCameraFramingForRoster(false);
     if (battleScreenEl) {
       if (enemyCount >= 4) {
         battleScreenEl.setAttribute('data-enemy-count-many', '1');
@@ -3582,15 +3819,19 @@ function createCombatStage3D() {
     // If actor swapped sprite mid-battle (e.g. disguise toggle), rebuild in place
     if (actor && snap.spriteId && snap.spriteId !== actor.spriteId) {
       const idx = actors.indexOf(actor);
+      const nextSpriteId = String(snap.spriteId);
+      const prevBaseH = getSpriteWorldHeight(actor.spriteId);
+      const nextBaseH = getSpriteWorldHeight(nextSpriteId);
+      const scaledHeight = actor.heightWorld * (nextBaseH / Math.max(0.1, prevBaseH));
       const spec = {
         key: actor.key,
-        spriteId: String(snap.spriteId),
+        spriteId: nextSpriteId,
         side: actor.side,
         enemyIdx: actor.enemyIdx,
         isBoss: actor.isBoss,
         isCameo: actor.isCameo,
         pos: [actor.basePos.x, actor.basePos.y, actor.basePos.z],
-        heightWorld: actor.heightWorld,
+        heightWorld: scaledHeight,
         dead: Boolean(snap.dead),
       };
       if (idx >= 0) actors.splice(idx, 1);
@@ -3742,13 +3983,15 @@ function createCombatStage3D() {
       ? clamp(slotIdx | 0, 0, CAMEO_SLOTS.length - 1)
       : cameoKeys.size % CAMEO_SLOTS.length;
     const slot = CAMEO_SLOTS[sIdx] || CAMEO_SLOTS[0];
+    const resolvedSpriteId = String(spriteId || key.replace(/^ally:/, '') || 'reno');
+    const cameoScale = allyCount >= 4 ? 0.90 : 1.0;
 
     const created = buildActorObject({
       key,
-      spriteId: String(spriteId || key.replace(/^ally:/, '') || 'reno'),
+      spriteId: resolvedSpriteId,
       side: 'ally',
       pos: slot.pos.slice(),
-      heightWorld: slot.heightWorld,
+      heightWorld: getSpriteWorldHeight(resolvedSpriteId) * cameoScale,
       isCameo: true,
     });
     actors.push(created);
@@ -4128,6 +4371,8 @@ function createCombatStage3D() {
     selectedEnemyKey = 'enemy:0';
     allyCount = 1;
     enemyCount = 1;
+    hasWideBeast = false;
+    hasGiantBoss = false;
     lastPrismAnchorX = NaN;
     lastPrismAnchorY = NaN;
     lastPrismActorKey = '';
@@ -4244,6 +4489,65 @@ export const CombatStage3D = createCombatStage3D();
 
 if (typeof window !== 'undefined') {
   window.CombatStage3D = CombatStage3D;
+  try {
+    window.dispatchEvent(new CustomEvent('combatstage3d:ready', { detail: CombatStage3D }));
+  } catch (_) {
+    // ignore CustomEvent dispatch errors in non-DOM environments
+  }
+  try {
+    if (
+      window.CombatEngine &&
+      typeof window.CombatEngine.getBattleState === 'function'
+    ) {
+      const curB = window.CombatEngine.getBattleState();
+      const bs = typeof document !== 'undefined' ? document.getElementById('battle-screen') : null;
+      if (
+        curB &&
+        bs &&
+        !bs.classList.contains('hidden') &&
+        !CombatStage3D.isActive() &&
+        window.CombatPixelVFX &&
+        typeof window.CombatPixelVFX.syncStage === 'function'
+      ) {
+        const upgradeTo3D = () => {
+          try {
+            const latestB =
+              window.CombatEngine && typeof window.CombatEngine.getBattleState === 'function'
+                ? window.CombatEngine.getBattleState()
+                : curB;
+            const liveBs = typeof document !== 'undefined' ? document.getElementById('battle-screen') : null;
+            if (
+              latestB &&
+              liveBs &&
+              !liveBs.classList.contains('hidden') &&
+              !CombatStage3D.isActive() &&
+              window.CombatPixelVFX &&
+              typeof window.CombatPixelVFX.syncStage === 'function'
+            ) {
+              window.CombatPixelVFX.syncStage(latestB);
+            }
+          } catch (err) {
+            if (typeof console !== 'undefined' && console.error) {
+              console.error('[CombatStage3D] deferred auto-upgrade syncStage failed:', err);
+            }
+          }
+        };
+        if (typeof queueMicrotask === 'function') {
+          queueMicrotask(upgradeTo3D);
+        } else if (typeof Promise === 'function') {
+          Promise.resolve().then(upgradeTo3D);
+        } else if (typeof requestAnimationFrame === 'function') {
+          requestAnimationFrame(upgradeTo3D);
+        } else {
+          upgradeTo3D();
+        }
+      }
+    }
+  } catch (err) {
+    if (typeof console !== 'undefined' && console.error) {
+      console.error('[CombatStage3D] ready auto-upgrade check failed:', err);
+    }
+  }
 }
 
 export default CombatStage3D;

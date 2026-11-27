@@ -31,6 +31,12 @@ function resolveTex(entry) {
   return null;
 }
 
+function resolveTexChannel(entry, channel) {
+  if (!entry || entry.isTexture) return null;
+  const tex = entry[channel];
+  return tex && tex.isTexture ? tex : null;
+}
+
 function makeTiledTex(THREE, tex, repeatX, repeatY) {
   if (!tex) return null;
   const cloned = tex.clone();
@@ -295,6 +301,696 @@ function createCurvedBeamGeometry(THREE, radius, startAngle, endAngle, width, he
 }
 
 // ---------------------------------------------------------------------------
+// 通用轻量几何合并工具（合并为单一 non-indexed BufferGeometry，显著压缩 DrawCall）
+// ---------------------------------------------------------------------------
+function mergeSimpleGeometries(THREE, geometries, disposeInputs = true) {
+  const prepared = [];
+  let totalVerts = 0;
+  let allHaveColor = geometries.length > 0;
+
+  for (let i = 0; i < geometries.length; i++) {
+    const src = geometries[i];
+    if (!src || !src.attributes || !src.attributes.position) continue;
+    const g = src.index ? src.toNonIndexed() : src.clone();
+    if (!g.attributes.normal) {
+      g.computeVertexNormals();
+    }
+    if (!g.attributes.color) {
+      allHaveColor = false;
+    }
+    totalVerts += g.attributes.position.count;
+    prepared.push(g);
+    if (disposeInputs) {
+      src.dispose();
+    }
+  }
+
+  const positions = new Float32Array(totalVerts * 3);
+  const normals = new Float32Array(totalVerts * 3);
+  const uvs = new Float32Array(totalVerts * 2);
+  const colors = allHaveColor ? new Float32Array(totalVerts * 3) : null;
+
+  let vOffset = 0;
+  for (let i = 0; i < prepared.length; i++) {
+    const g = prepared[i];
+    const p = g.attributes.position;
+    const n = g.attributes.normal;
+    const u = g.attributes.uv;
+    const c = allHaveColor ? g.attributes.color : null;
+    const count = p.count;
+
+    positions.set(p.array, vOffset * 3);
+    if (n) normals.set(n.array, vOffset * 3);
+    if (u) {
+      uvs.set(u.array, vOffset * 2);
+    }
+    if (colors && c) {
+      colors.set(c.array, vOffset * 3);
+    }
+    vOffset += count;
+    g.dispose();
+  }
+
+  const merged = new THREE.BufferGeometry();
+  merged.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  merged.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+  merged.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  if (colors) {
+    merged.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  }
+  return merged;
+}
+
+// ---------------------------------------------------------------------------
+// 程序化几何体构造：AAA 多面体不对称削面棱晶（双尖天然晶簇削面 + 硬法线折光）
+// ---------------------------------------------------------------------------
+function createFacetedCrystalPrismGeometry(THREE, opts = {}) {
+  const {
+    radius = 0.52,
+    height = 2.2,
+    sides = 6,
+    topRatio = 0.56,
+    crownY = 0.34,
+    upperY = 0.16,
+    lowerY = -0.22,
+    bevelSkew = 0.12,
+    twist = 0.11,
+    asym = 0.16,
+    seed = 1.0
+  } = opts;
+
+  const rRng = createRng((Math.abs(seed * 9973) | 0) + 131);
+  const halfH = height * 0.5;
+  const botTipY = -halfH * (1.0 - (topRatio - 0.5) * 0.65);
+  const topTipY = halfH * (1.0 + (topRatio - 0.5) * 0.65);
+
+  // 为每条晶棱构造不对称角距与径向削面偏差（打破机械正多边形感）
+  const baseAngles = [];
+  const sideScale = [];
+  let angleSum = 0;
+  const rawSteps = [];
+  for (let j = 0; j < sides; j++) {
+    const step = 1.0 + (rRng() - 0.5) * asym * 1.4;
+    rawSteps.push(step);
+    angleSum += step;
+  }
+  let acc = rRng() * Math.PI * 2;
+  for (let j = 0; j < sides; j++) {
+    baseAngles.push(acc);
+    acc += (rawSteps[j] / angleSum) * Math.PI * 2;
+    sideScale.push(1.0 + (rRng() - 0.5) * asym);
+  }
+
+  const skewPhase = rRng() * Math.PI * 2;
+  const ringDefs = [
+    { y: lowerY * height, rMul: 0.78, twistOff: -twist * 0.5, skewMul: -0.75, v: 0.22 },
+    { y: upperY * height, rMul: 1.02, twistOff: twist * 0.35, skewMul: 1.0, v: 0.58 },
+    { y: crownY * height, rMul: 0.56, twistOff: twist * 0.85, skewMul: 0.55, v: 0.82 }
+  ];
+
+  const rings = ringDefs.map((rd) => {
+    const pts = [];
+    for (let j = 0; j < sides; j++) {
+      const a = baseAngles[j] + rd.twistOff;
+      const rr = radius * rd.rMul * sideScale[j];
+      const ySkew = Math.sin(a + skewPhase) * bevelSkew * height * rd.skewMul;
+      pts.push([Math.cos(a) * rr, rd.y + ySkew, Math.sin(a) * rr]);
+    }
+    return pts;
+  });
+
+  const topTip = [
+    Math.cos(skewPhase) * radius * 0.14 * asym,
+    topTipY,
+    Math.sin(skewPhase) * radius * 0.14 * asym
+  ];
+  const botTip = [
+    -Math.cos(skewPhase + 0.8) * radius * 0.12 * asym,
+    botTipY,
+    -Math.sin(skewPhase + 0.8) * radius * 0.12 * asym
+  ];
+
+  const posArr = [];
+  const uvArr = [];
+  const pushTri = (p0, uv0, p1, uv1, p2, uv2) => {
+    posArr.push(p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2]);
+    uvArr.push(uv0[0], uv0[1], uv1[0], uv1[1], uv2[0], uv2[1]);
+  };
+
+  // 底锥（外法线向下外张）
+  for (let j = 0; j < sides; j++) {
+    const jn = (j + 1) % sides;
+    const u0 = j / sides;
+    const u1 = (j + 1) / sides;
+    pushTri(botTip, [(u0 + u1) * 0.5, 0.0], rings[0][j], [u0, ringDefs[0].v], rings[0][jn], [u1, ringDefs[0].v]);
+  }
+
+  // 中间双层多面体削面棱身
+  for (let rIdx = 0; rIdx < rings.length - 1; rIdx++) {
+    const rA = rings[rIdx];
+    const rB = rings[rIdx + 1];
+    const vA = ringDefs[rIdx].v;
+    const vB = ringDefs[rIdx + 1].v;
+    for (let j = 0; j < sides; j++) {
+      const jn = (j + 1) % sides;
+      const u0 = j / sides;
+      const u1 = (j + 1) / sides;
+      pushTri(rA[j], [u0, vA], rB[j], [u0, vB], rA[jn], [u1, vA]);
+      pushTri(rA[jn], [u1, vA], rB[j], [u0, vB], rB[jn], [u1, vB]);
+    }
+  }
+
+  // 顶冠多面尖锋
+  const lastRing = rings[rings.length - 1];
+  const lastV = ringDefs[ringDefs.length - 1].v;
+  for (let j = 0; j < sides; j++) {
+    const jn = (j + 1) % sides;
+    const u0 = j / sides;
+    const u1 = (j + 1) / sides;
+    pushTri(lastRing[j], [u0, lastV], topTip, [(u0 + u1) * 0.5, 1.0], lastRing[jn], [u1, lastV]);
+  }
+
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(posArr, 3));
+  geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvArr, 2));
+  geom.computeVertexNormals();
+  return geom;
+}
+
+// ---------------------------------------------------------------------------
+// 程序化几何体构造：古典 S 形雕刻涡卷托座（Scroll Corbel，ExtrudeGeometry）
+// ---------------------------------------------------------------------------
+function createScrollCorbelGeometry(THREE) {
+  const s = new THREE.Shape();
+  // +X 朝圆台外沿，+Y 贴合下檐底面，-X 嵌入岩基，-Y 收束为垂饰小涡卷
+  s.moveTo(-0.54, 0.44);
+  s.lineTo(0.70, 0.44);
+  s.lineTo(0.70, 0.34);
+  s.lineTo(0.60, 0.30);
+  // 上部大涡卷外凸 S 曲线
+  s.bezierCurveTo(0.78, 0.23, 0.76, -0.04, 0.48, -0.08);
+  // 中部凹腰与爵床叶卷肚
+  s.bezierCurveTo(0.30, -0.12, 0.42, -0.34, 0.25, -0.50);
+  // 下部反卷小涡卷
+  s.bezierCurveTo(0.14, -0.60, 0.24, -0.78, 0.04, -0.85);
+  s.bezierCurveTo(-0.12, -0.90, -0.26, -0.82, -0.34, -0.68);
+  s.lineTo(-0.54, -0.22);
+  s.closePath();
+
+  const geom = new THREE.ExtrudeGeometry(s, {
+    depth: 0.34,
+    bevelEnabled: true,
+    bevelThickness: 0.052,
+    bevelSize: 0.042,
+    bevelSegments: 2,
+    curveSegments: 14
+  });
+  geom.translate(0, 0, -0.17);
+  geom.computeVertexNormals();
+  return geom;
+}
+
+function createScrollCorbelTrimGeometry(THREE) {
+  const s = new THREE.Shape();
+  s.moveTo(0.56, 0.36);
+  s.lineTo(0.68, 0.36);
+  s.bezierCurveTo(0.84, 0.26, 0.82, -0.05, 0.52, -0.10);
+  s.bezierCurveTo(0.36, -0.14, 0.46, -0.36, 0.29, -0.52);
+  s.bezierCurveTo(0.19, -0.62, 0.27, -0.79, 0.06, -0.86);
+  s.lineTo(-0.02, -0.78);
+  s.bezierCurveTo(0.14, -0.72, 0.08, -0.58, 0.19, -0.46);
+  s.bezierCurveTo(0.33, -0.32, 0.24, -0.10, 0.44, -0.04);
+  s.bezierCurveTo(0.68, 0.01, 0.70, 0.21, 0.56, 0.29);
+  s.closePath();
+
+  const geom = new THREE.ExtrudeGeometry(s, {
+    depth: 0.11,
+    bevelEnabled: true,
+    bevelThickness: 0.02,
+    bevelSize: 0.018,
+    bevelSegments: 1,
+    curveSegments: 12
+  });
+  geom.translate(0, 0, -0.055);
+  geom.computeVertexNormals();
+  return geom;
+}
+
+// ---------------------------------------------------------------------------
+// 程序化几何体构造：石缝风化切角圆台外缘压顶石板（供 InstancedMesh 32 块拼接）
+// ---------------------------------------------------------------------------
+function createWeatheredCopingSlabGeometry(THREE) {
+  const s = new THREE.Shape();
+  // 梯形弧段压顶石（带斜向石缝倒角，+X 朝外）
+  const innerHalfW = 0.94;
+  const outerHalfW = 1.04;
+  s.moveTo(-0.46, -innerHalfW);
+  s.lineTo(0.46, -outerHalfW);
+  s.lineTo(0.50, -outerHalfW * 0.92);
+  s.lineTo(0.50, outerHalfW * 0.92);
+  s.lineTo(0.46, outerHalfW);
+  s.lineTo(-0.46, innerHalfW);
+  s.lineTo(-0.50, innerHalfW * 0.92);
+  s.lineTo(-0.50, -innerHalfW * 0.92);
+  s.closePath();
+
+  const geom = new THREE.ExtrudeGeometry(s, {
+    depth: 0.14,
+    bevelEnabled: true,
+    bevelThickness: 0.032,
+    bevelSize: 0.028,
+    bevelSegments: 2
+  });
+  // 转入 XZ 水平面，顶面略齐于 y = 0
+  geom.rotateX(-Math.PI * 0.5);
+  geom.translate(0, -0.17, 0);
+  geom.computeVertexNormals();
+  return geom;
+}
+
+// ---------------------------------------------------------------------------
+// 程序化几何体构造：礼仪石阶侧缘雕花护沿（阶梯斜坡石护墙）
+// ---------------------------------------------------------------------------
+function createSteppedCheekWallGeometry(THREE) {
+  const s = new THREE.Shape();
+  // +X 沿石阶向下方向（长度 ~2.12m），+Y 朝上
+  s.moveTo(-0.18, -0.45);
+  s.lineTo(2.08, -0.92);
+  s.lineTo(2.14, -0.46);
+  s.bezierCurveTo(2.05, -0.34, 1.92, -0.34, 1.80, -0.36);
+  s.lineTo(0.14, 0.09);
+  s.bezierCurveTo(0.02, 0.13, -0.12, 0.12, -0.18, 0.05);
+  s.closePath();
+
+  const geom = new THREE.ExtrudeGeometry(s, {
+    depth: 0.28,
+    bevelEnabled: true,
+    bevelThickness: 0.035,
+    bevelSize: 0.032,
+    bevelSegments: 2,
+    curveSegments: 10
+  });
+  geom.translate(0, 0, -0.14);
+  geom.computeVertexNormals();
+  return geom;
+}
+
+// ---------------------------------------------------------------------------
+// 程序化几何体构造：神柱古典涡卷角饰 / 风神羽翼浮雕 / 凹弧线脚顶板
+// ---------------------------------------------------------------------------
+function createCapitalVoluteGeometry(THREE) {
+  const s = new THREE.Shape();
+  s.moveTo(0.0, 0.0);
+  s.bezierCurveTo(0.12, 0.02, 0.26, 0.18, 0.34, 0.44);
+  s.bezierCurveTo(0.42, 0.66, 0.24, 0.82, 0.08, 0.74);
+  s.bezierCurveTo(-0.04, 0.68, -0.02, 0.52, 0.10, 0.50);
+  s.bezierCurveTo(0.18, 0.48, 0.20, 0.58, 0.13, 0.61);
+  s.bezierCurveTo(0.22, 0.66, 0.28, 0.54, 0.20, 0.42);
+  s.bezierCurveTo(0.12, 0.28, 0.02, 0.22, -0.08, 0.16);
+  s.closePath();
+
+  const geom = new THREE.ExtrudeGeometry(s, {
+    depth: 0.13,
+    bevelEnabled: true,
+    bevelThickness: 0.022,
+    bevelSize: 0.018,
+    bevelSegments: 2,
+    curveSegments: 12
+  });
+  geom.translate(0, 0, -0.065);
+  geom.computeVertexNormals();
+  return geom;
+}
+
+function createWindWingReliefGeometry(THREE) {
+  // 单侧三层风神羽翼（镜像拼合即为对称圣翼，+X 向外伸展，+Y 向上轻扬）
+  const s = new THREE.Shape();
+  s.moveTo(0.0, 0.06);
+  // 第一道最上层主飞羽
+  s.bezierCurveTo(0.24, 0.14, 0.56, 0.34, 0.88, 0.62);
+  s.bezierCurveTo(0.74, 0.40, 0.58, 0.30, 0.44, 0.25);
+  // 第二道中层翎羽
+  s.bezierCurveTo(0.62, 0.28, 0.76, 0.36, 0.84, 0.42);
+  s.bezierCurveTo(0.68, 0.22, 0.50, 0.16, 0.34, 0.14);
+  // 第三道下层覆羽
+  s.bezierCurveTo(0.50, 0.14, 0.62, 0.20, 0.68, 0.24);
+  s.bezierCurveTo(0.46, 0.04, 0.20, -0.02, 0.0, -0.05);
+  s.closePath();
+
+  const geom = new THREE.ExtrudeGeometry(s, {
+    depth: 0.08,
+    bevelEnabled: true,
+    bevelThickness: 0.024,
+    bevelSize: 0.02,
+    bevelSegments: 2,
+    curveSegments: 10
+  });
+  geom.translate(0, 0, -0.04);
+  geom.computeVertexNormals();
+  return geom;
+}
+
+function createMoldedAbacusGeometry(THREE) {
+  // 科林斯凹弧四边线脚顶板（水平面 Extrude 后旋转至 XZ 平面）
+  const r = 0.90;
+  const pull = 0.74;
+  const s = new THREE.Shape();
+  s.moveTo(-r, -r);
+  s.quadraticCurveTo(0, -pull, r, -r);
+  s.quadraticCurveTo(pull, 0, r, r);
+  s.quadraticCurveTo(0, pull, -r, r);
+  s.quadraticCurveTo(-pull, 0, -r, -r);
+  s.closePath();
+
+  const geom = new THREE.ExtrudeGeometry(s, {
+    depth: 0.16,
+    bevelEnabled: true,
+    bevelThickness: 0.055,
+    bevelSize: 0.052,
+    bevelSegments: 3,
+    curveSegments: 10
+  });
+  geom.rotateX(-Math.PI * 0.5);
+  geom.translate(0, -0.08, 0);
+  geom.computeVertexNormals();
+  return geom;
+}
+
+// ---------------------------------------------------------------------------
+// 程序化几何体构造：哥特拱肋梯形楔石（Voussoir）与断裂处参差石茬
+// ---------------------------------------------------------------------------
+function createVoussoirGeometry(THREE, topW, botW, height, depth) {
+  const s = new THREE.Shape();
+  const ht = topW * 0.5;
+  const hb = botW * 0.5;
+  const hh = height * 0.5;
+  // +Y 为拱背外缘（较宽），-Y 为拱腹内缘（收窄形成楔形咬合）
+  s.moveTo(-hb, -hh);
+  s.lineTo(hb, -hh);
+  s.lineTo(ht, hh);
+  s.lineTo(-ht, hh);
+  s.closePath();
+
+  const geom = new THREE.ExtrudeGeometry(s, {
+    depth,
+    bevelEnabled: true,
+    bevelThickness: 0.045,
+    bevelSize: 0.036,
+    bevelSegments: 2
+  });
+  geom.translate(0, 0, -depth * 0.5);
+  geom.computeVertexNormals();
+  return geom;
+}
+
+function createFractureToothGeometry(THREE, length, width, depth, seed) {
+  const rRng = createRng((Math.abs(seed * 4129) | 0) + 17);
+  const s = new THREE.Shape();
+  // +X 为沿拱切线向断裂口伸出的参差尖岩茬
+  const hw = width * 0.5;
+  s.moveTo(-0.08, -hw);
+  s.lineTo(length * (0.45 + rRng() * 0.2), -hw * (0.72 + rRng() * 0.2));
+  s.lineTo(length * (0.78 + rRng() * 0.22), -hw * (0.15 + rRng() * 0.25));
+  s.lineTo(length, hw * (0.05 + rRng() * 0.25));
+  s.lineTo(length * (0.62 + rRng() * 0.22), hw * (0.68 + rRng() * 0.22));
+  s.lineTo(-0.08, hw);
+  s.closePath();
+
+  const geom = new THREE.ExtrudeGeometry(s, {
+    depth,
+    bevelEnabled: true,
+    bevelThickness: 0.026,
+    bevelSize: 0.022,
+    bevelSegments: 1
+  });
+  geom.translate(0, 0, -depth * 0.5);
+  geom.computeVertexNormals();
+  return geom;
+}
+
+// ---------------------------------------------------------------------------
+// 程序化几何体构造：多面雕刻方尖碑（削角四方碑身 + 阶梯凹槽 + 金字塔尖顶）
+// ---------------------------------------------------------------------------
+function createCarvedObeliskGeometry(THREE) {
+  const deg = (d) => (d * Math.PI) / 180;
+  // 4 宽碑面 + 4 切角斜楞，构成建筑感极强的雕刻方尖碑截面
+  const angles = [33, 57, 123, 147, 213, 237, 303, 327].map(deg);
+  const sides = angles.length;
+
+  const tiers = [
+    { y: -2.05, r: 0.62, v: 0.04 },
+    { y: -1.68, r: 1.06, v: 0.14 },
+    { y: -1.35, r: 0.94, v: 0.24 },
+    { y: -1.24, r: 0.85, v: 0.28 },
+    { y: 0.20,  r: 0.78, v: 0.60 },
+    { y: 0.30,  r: 0.71, v: 0.64 },
+    { y: 1.56,  r: 0.58, v: 0.86 },
+    { y: 1.66,  r: 0.65, v: 0.90 }
+  ];
+
+  const rings = tiers.map((tr) =>
+    angles.map((a) => [Math.cos(a) * tr.r, tr.y, Math.sin(a) * tr.r])
+  );
+  const botTip = [0, -2.55, 0];
+  const topTip = [0, 2.52, 0];
+
+  const posArr = [];
+  const uvArr = [];
+  const pushTri = (p0, uv0, p1, uv1, p2, uv2) => {
+    posArr.push(p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2]);
+    uvArr.push(uv0[0], uv0[1], uv1[0], uv1[1], uv2[0], uv2[1]);
+  };
+
+  for (let j = 0; j < sides; j++) {
+    const jn = (j + 1) % sides;
+    const u0 = j / sides;
+    const u1 = (j + 1) / sides;
+    pushTri(botTip, [(u0 + u1) * 0.5, 0], rings[0][j], [u0, tiers[0].v], rings[0][jn], [u1, tiers[0].v]);
+  }
+  for (let r = 0; r < rings.length - 1; r++) {
+    const rA = rings[r];
+    const rB = rings[r + 1];
+    for (let j = 0; j < sides; j++) {
+      const jn = (j + 1) % sides;
+      const u0 = j / sides;
+      const u1 = (j + 1) / sides;
+      pushTri(rA[j], [u0, tiers[r].v], rB[j], [u0, tiers[r + 1].v], rA[jn], [u1, tiers[r].v]);
+      pushTri(rA[jn], [u1, tiers[r].v], rB[j], [u0, tiers[r + 1].v], rB[jn], [u1, tiers[r + 1].v]);
+    }
+  }
+  const topRing = rings[rings.length - 1];
+  const topV = tiers[tiers.length - 1].v;
+  for (let j = 0; j < sides; j++) {
+    const jn = (j + 1) % sides;
+    const u0 = j / sides;
+    const u1 = (j + 1) / sides;
+    pushTri(topRing[j], [u0, topV], topTip, [(u0 + u1) * 0.5, 1.0], topRing[jn], [u1, topV]);
+  }
+
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(posArr, 3));
+  geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvArr, 2));
+  geom.computeVertexNormals();
+  return geom;
+}
+
+// ---------------------------------------------------------------------------
+// 程序化几何体构造：风神遗迹垂挂断链（单次合并几何体，1 DrawCall）
+// ---------------------------------------------------------------------------
+function createHangingChainGeometry(THREE, linkCount = 8, swayX = 0.24, seed = 1) {
+  const parts = [];
+  const stepY = 0.23;
+
+  // 顶部锚环
+  const anchor = new THREE.TorusGeometry(0.12, 0.036, 6, 12);
+  anchor.rotateX(Math.PI * 0.5);
+  parts.push(anchor);
+
+  for (let k = 0; k < linkCount; k++) {
+    const t = (k + 1) / linkCount;
+    const isLast = k === linkCount - 1;
+    // 末节做成半缺口断链环
+    const link = new THREE.TorusGeometry(0.105, 0.032, 5, 10, isLast ? Math.PI * 1.35 : Math.PI * 2);
+    link.scale(0.74, 1.32, 1.0);
+    if (k % 2 === 1) {
+      link.rotateY(Math.PI * 0.5);
+    }
+    // 随高空风势轻柔弧形飘摆
+    const curveX = Math.pow(t, 1.65) * swayX;
+    const curveZ = Math.sin(t * Math.PI + seed) * 0.06;
+    link.rotateZ(t * swayX * 0.55);
+    link.translate(curveX, -(k + 1) * stepY, curveZ);
+    parts.push(link);
+  }
+
+  return mergeSimpleGeometries(THREE, parts, true);
+}
+
+// ---------------------------------------------------------------------------
+// 程序化几何体构造：浮空岩块底部锥刺削面岩层簇（锐利岩刺 + 阶梯削面）
+// ---------------------------------------------------------------------------
+function createSpikedRockClusterGeometry(THREE, baseRadius, depth, spikeCount, seed) {
+  const rRng = createRng((Math.abs(seed * 7919) | 0) + 73);
+  const parts = [];
+  const cTop = new THREE.Color(0xdbe6f5);
+  const cMid = new THREE.Color(0x9fb5d4);
+  const cBot = new THREE.Color(0x5d7aa4);
+  const cVein = new THREE.Color(0x7be0ff);
+  const tmpC = new THREE.Color();
+
+  const buildSpike = (topR, h, offsetX, offsetY, offsetZ, tiltX, tiltZ, sSeed) => {
+    const g = new THREE.CylinderGeometry(topR, topR * 0.03, h, 7, 4, false);
+    g.translate(0, -h * 0.5, 0);
+    const pos = g.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      let x = pos.getX(i);
+      let y = pos.getY(i);
+      let z = pos.getZ(i);
+      const t = THREE.MathUtils.clamp(-y / h, 0, 1);
+      const a = Math.atan2(z, x);
+      const ledge = 1.0 + Math.sin(t * Math.PI * 4.0 + sSeed) * 0.14 + Math.cos(a * 3.0 + sSeed) * 0.18;
+      x *= ledge;
+      z *= ledge;
+      pos.setXYZ(i, x, y, z);
+    }
+    const flat = g.toNonIndexed();
+    g.dispose();
+    flat.rotateX(tiltX);
+    flat.rotateZ(tiltZ);
+    flat.translate(offsetX, offsetY, offsetZ);
+
+    const fp = flat.attributes.position;
+    const cols = new Float32Array(fp.count * 3);
+    for (let i = 0; i < fp.count; i++) {
+      const y = fp.getY(i);
+      const t = THREE.MathUtils.clamp(-y / Math.max(depth, 0.5), 0, 1);
+      if (t < 0.45) tmpC.lerpColors(cTop, cMid, t / 0.45);
+      else tmpC.lerpColors(cMid, cBot, (t - 0.45) / 0.55);
+      const vein = Math.pow(Math.max(0, Math.sin(fp.getX(i) * 3.2 + y * 2.4 + sSeed)), 10.0) * t;
+      tmpC.lerp(cVein, vein * 0.45);
+      cols[i * 3] = tmpC.r;
+      cols[i * 3 + 1] = tmpC.g;
+      cols[i * 3 + 2] = tmpC.b;
+    }
+    flat.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+    flat.computeVertexNormals();
+    return flat;
+  };
+
+  // 中央主锥刺
+  parts.push(buildSpike(baseRadius * 0.62, depth, 0, 0, 0, 0.04, -0.05, seed));
+
+  // 外围环绕不对称削面岩刺
+  for (let k = 0; k < spikeCount; k++) {
+    const a = (k / spikeCount) * Math.PI * 2 + rRng() * 0.5;
+    const dist = baseRadius * (0.36 + rRng() * 0.34);
+    const rSp = baseRadius * (0.26 + rRng() * 0.22);
+    const hSp = depth * (0.42 + rRng() * 0.46);
+    const tilt = 0.08 + rRng() * 0.14;
+    parts.push(
+      buildSpike(
+        rSp,
+        hSp,
+        Math.cos(a) * dist,
+        0.12 - rRng() * 0.25,
+        Math.sin(a) * dist,
+        Math.sin(a) * tilt,
+        -Math.cos(a) * tilt,
+        seed + k * 3.7
+      )
+    );
+  }
+
+  return mergeSimpleGeometries(THREE, parts, true);
+}
+
+// ---------------------------------------------------------------------------
+// 程序化几何体构造：立体堆积云球簇（平底膨顶柔和云泡）与连续波浪云脊
+// ---------------------------------------------------------------------------
+function createOrganicCloudLobeGeometry(THREE, seed = 1.0) {
+  const geom = new THREE.SphereGeometry(1.0, 20, 14);
+  const pos = geom.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    let x = pos.getX(i);
+    let y = pos.getY(i);
+    let z = pos.getZ(i);
+
+    // 多谐波立体云团起伏，彻底摆脱几何圆球僵硬感
+    const billow =
+      Math.sin(x * 2.9 + seed) * Math.cos(z * 2.6 - seed * 0.7) * 0.13 +
+      Math.sin(y * 3.4 + x * 2.1 + seed * 1.4) * 0.08 +
+      Math.cos(z * 4.1 - y * 2.7 + seed * 2.1) * 0.05;
+    const radMul = 1.0 + billow;
+    x *= radMul * 1.18;
+    z *= radMul * 1.08;
+    // 云底柔平托举、云顶圆润隆起
+    if (y < 0) {
+      y *= 0.56 * radMul;
+    } else {
+      y *= 0.96 * radMul;
+    }
+    pos.setXYZ(i, x, y, z);
+  }
+  geom.computeVertexNormals();
+  return geom;
+}
+
+function createCloudRidgeGeometry(THREE, radius, startAngle, endAngle, baseHalfW, baseH, arcSegs, ringSegs, seed) {
+  const positions = [];
+  const uvs = [];
+  const indices = [];
+
+  for (let i = 0; i <= arcSegs; i++) {
+    const u = i / arcSegs;
+    const a = THREE.MathUtils.lerp(startAngle, endAngle, u);
+    const outX = Math.cos(a);
+    const outZ = Math.sin(a);
+
+    // 沿地平线呈柔和波浪状起伏的立体云脊轮廓，两端自然收窄消融
+    const endTaper = Math.sin(u * Math.PI);
+    const peakWave =
+      0.55 +
+      0.32 * Math.sin(u * Math.PI * 5.0 + seed) +
+      0.18 * Math.cos(u * Math.PI * 9.0 - seed * 1.4);
+    const localR = radius + Math.sin(u * Math.PI * 4.0 + seed) * 2.4;
+    const localW = baseHalfW * (0.45 + 0.55 * endTaper) * (0.82 + 0.26 * peakWave);
+    const localH = baseH * Math.pow(Math.max(0.02, endTaper), 0.55) * peakWave;
+    const cx = outX * localR;
+    const cz = outZ * localR;
+
+    for (let j = 0; j <= ringSegs; j++) {
+      const v = j / ringSegs;
+      const phi = v * Math.PI * 2.0;
+      const cp = Math.cos(phi);
+      const sp = Math.sin(phi);
+      const puff = 1.0 + 0.12 * Math.sin(u * 26.0 + phi * 2.0 + seed);
+      const rOff = cp * localW * puff;
+      const yOff = (sp < 0 ? sp * 0.42 : sp) * localH * puff;
+      positions.push(cx + outX * rOff, yOff, cz + outZ * rOff);
+      uvs.push(u, v);
+    }
+  }
+
+  const stride = ringSegs + 1;
+  for (let i = 0; i < arcSegs; i++) {
+    for (let j = 0; j < ringSegs; j++) {
+      const a0 = i * stride + j;
+      const a1 = (i + 1) * stride + j;
+      const b0 = i * stride + (j + 1);
+      const b1 = (i + 1) * stride + (j + 1);
+      indices.push(a0, b0, a1, b0, b1, a1);
+    }
+  }
+
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geom.setIndex(indices);
+  geom.computeVertexNormals();
+  return geom;
+}
+
+// ---------------------------------------------------------------------------
 // 主入口：构建云巅风神祭坛 3D 战场
 // ---------------------------------------------------------------------------
 export function buildAltarBiome(THREE, texLib = {}) {
@@ -307,6 +1003,7 @@ export function buildAltarBiome(THREE, texLib = {}) {
   const ownedGeometries = [];
   const ownedMaterials = [];
   const ownedTextures = [];
+  const ownedInstancedMeshes = [];
   const trackGeo = (g) => {
     ownedGeometries.push(g);
     return g;
@@ -319,11 +1016,22 @@ export function buildAltarBiome(THREE, texLib = {}) {
     ownedTextures.push(t);
     return t;
   };
+  const trackInst = (im) => {
+    ownedInstancedMeshes.push(im);
+    return im;
+  };
 
-  // 解析 texLib
+  // 解析 texLib（安全读取 map + 可选 PBR normalMap / roughnessMap / emissiveMap）
   const rawMarble = resolveTex(texLib.marble);
+  const rawMarbleNorm = resolveTexChannel(texLib.marble, 'normalMap');
+  const rawMarbleRough = resolveTexChannel(texLib.marble, 'roughnessMap');
   const rawStone = resolveTex(texLib.courtyardStone);
+  const rawStoneNorm = resolveTexChannel(texLib.courtyardStone, 'normalMap');
+  const rawStoneRough = resolveTexChannel(texLib.courtyardStone, 'roughnessMap');
   const rawIce = resolveTex(texLib.iceCrystal);
+  const rawIceNorm = resolveTexChannel(texLib.iceCrystal, 'normalMap');
+  const rawIceRough = resolveTexChannel(texLib.iceCrystal, 'roughnessMap');
+  const rawIceEmis = resolveTexChannel(texLib.iceCrystal, 'emissiveMap');
   const rawArcane = resolveTex(texLib.arcaneFloorDecal);
   const rawCloud = resolveTex(texLib.cloudNoise);
   const rawGlow = resolveTex(texLib.softGlowDisc);
@@ -338,20 +1046,31 @@ export function buildAltarBiome(THREE, texLib = {}) {
   const hoveringDrums = [];
   const rotatingRings = [];
   const pulsedLights = [];
+  const swayingChains = [];
+  const driftingClouds = [];
 
   // =========================================================================
-  // 共享核心 PBR 材质（雪瓷白大理石 · 香槟金镶边 · 苍穹星晶 · 浮空岩基）
+  // 共享核心 PBR 材质（雪瓷白大理石 · 香槟金镶边 · 双层折光星晶 · 浮空岩基）
   // 兼顾无 envMap 时同样通透明亮，高光不发黑、白瓷不爆曝
   // =========================================================================
   const marbleFloorTex = makeTiledTex(THREE, rawMarble, 4.4, 4.4);
+  const marbleFloorNorm = makeTiledTex(THREE, rawMarbleNorm, 4.4, 4.4);
   const marbleColTex = makeTiledTex(THREE, rawMarble, 1.4, 2.8);
+  const marbleColNorm = makeTiledTex(THREE, rawMarbleNorm, 1.4, 2.8);
   const stoneTrimTex = makeTiledTex(THREE, rawStone || rawMarble, 6.0, 1.4);
-  const iceShardTex = makeTiledTex(THREE, rawIce, 1.2, 1.6);
+  const stoneTrimNorm = makeTiledTex(THREE, rawStoneNorm || rawMarbleNorm, 6.0, 1.4);
+  const stoneTrimRough = makeTiledTex(THREE, rawStoneRough || rawMarbleRough, 6.0, 1.4);
+  const iceShardTex = makeTiledTex(THREE, rawIce, 1.3, 1.7);
+  const iceShardNorm = makeTiledTex(THREE, rawIceNorm, 1.3, 1.7);
+  const iceShardRough = makeTiledTex(THREE, rawIceRough, 1.3, 1.7);
+  const iceShardEmis = makeTiledTex(THREE, rawIceEmis, 1.3, 1.7);
 
   const matMarbleFloor = trackMat(
     new THREE.MeshStandardMaterial({
       color: 0xf0f4fc,
       map: marbleFloorTex,
+      normalMap: marbleFloorNorm,
+      normalScale: new THREE.Vector2(0.45, 0.45),
       roughness: 0.42,
       metalness: 0.04
     })
@@ -361,6 +1080,8 @@ export function buildAltarBiome(THREE, texLib = {}) {
     new THREE.MeshStandardMaterial({
       color: 0xf4f7fe,
       map: marbleColTex,
+      normalMap: marbleColNorm,
+      normalScale: new THREE.Vector2(0.55, 0.55),
       roughness: 0.36,
       metalness: 0.05
     })
@@ -370,17 +1091,39 @@ export function buildAltarBiome(THREE, texLib = {}) {
     new THREE.MeshStandardMaterial({
       color: 0xeef3fb,
       map: stoneTrimTex,
-      roughness: 0.4,
+      normalMap: stoneTrimNorm,
+      normalScale: new THREE.Vector2(0.65, 0.65),
+      roughness: 0.42,
       metalness: 0.05
     })
   );
 
   const matStonePlinth = trackMat(
     new THREE.MeshStandardMaterial({
-      color: 0xe2eaf6,
+      color: 0xe0e9f6,
       map: stoneTrimTex,
-      roughness: 0.56,
+      normalMap: stoneTrimNorm,
+      normalScale: new THREE.Vector2(0.75, 0.75),
+      roughnessMap: stoneTrimRough,
+      roughness: 0.58,
       metalness: 0.04
+    })
+  );
+
+  const matWeatheredJoint = trackMat(
+    new THREE.MeshStandardMaterial({
+      color: 0xb7c8e0,
+      map: stoneTrimTex,
+      roughness: 0.78,
+      metalness: 0.04
+    })
+  );
+
+  const matNicheRecess = trackMat(
+    new THREE.MeshStandardMaterial({
+      color: 0x6f8db8,
+      roughness: 0.76,
+      metalness: 0.08
     })
   );
 
@@ -398,9 +1141,19 @@ export function buildAltarBiome(THREE, texLib = {}) {
     new THREE.MeshStandardMaterial({
       color: 0xffe4a0,
       emissive: 0x9b742a,
-      emissiveIntensity: 0.42,
-      roughness: 0.2,
-      metalness: 0.62
+      emissiveIntensity: 0.40,
+      roughness: 0.20,
+      metalness: 0.64
+    })
+  );
+
+  const matAncientChain = trackMat(
+    new THREE.MeshStandardMaterial({
+      color: 0x9fa9bc,
+      emissive: 0x262d3c,
+      emissiveIntensity: 0.14,
+      roughness: 0.38,
+      metalness: 0.72
     })
   );
 
@@ -408,6 +1161,8 @@ export function buildAltarBiome(THREE, texLib = {}) {
     new THREE.MeshStandardMaterial({
       vertexColors: true,
       map: stoneTrimTex,
+      normalMap: stoneTrimNorm,
+      normalScale: new THREE.Vector2(0.85, 0.85),
       roughness: 0.84,
       metalness: 0.04
     })
@@ -417,29 +1172,94 @@ export function buildAltarBiome(THREE, texLib = {}) {
     new THREE.MeshStandardMaterial({
       color: 0xc9d7ea,
       map: stoneTrimTex,
-      roughness: 0.72,
-      metalness: 0.08
+      normalMap: stoneTrimNorm,
+      normalScale: new THREE.Vector2(0.75, 0.75),
+      roughness: 0.68,
+      metalness: 0.08,
+      flatShading: true
     })
   );
 
+  // 星晶内层主晶身（硬切面冰晶折光）
   const matStarCrystal = trackMat(
     new THREE.MeshStandardMaterial({
-      color: 0xa4f0ff,
+      color: 0x96ecff,
       map: iceShardTex,
+      normalMap: iceShardNorm,
+      normalScale: new THREE.Vector2(0.95, 0.95),
+      roughnessMap: iceShardRough,
       emissive: 0x38bfff,
+      emissiveMap: iceShardEmis,
       emissiveIntensity: 0.92,
-      roughness: 0.15,
-      metalness: 0.16,
+      roughness: 0.14,
+      metalness: 0.18,
+      flatShading: true,
       transparent: true,
-      opacity: 0.91
+      opacity: 0.88
     })
   );
 
-  const matCrystalCore = trackMat(
-    new THREE.MeshBasicMaterial({
-      color: 0xeafcff,
+  // 星晶外层半透折光晶壳（微扩裹覆，捕捉锐利菲涅耳削面高光）
+  const matStarCrystalShell = trackMat(
+    new THREE.MeshStandardMaterial({
+      color: 0xd8fbff,
+      map: iceShardTex,
+      normalMap: iceShardNorm,
+      normalScale: new THREE.Vector2(0.65, 0.65),
+      emissive: 0x62d8ff,
+      emissiveIntensity: 0.42,
+      roughness: 0.07,
+      metalness: 0.24,
+      flatShading: true,
       transparent: true,
-      opacity: 0.92
+      opacity: 0.42,
+      depthWrite: false
+    })
+  );
+
+  // 内发光青金核芯（由下至上呈现香槟金星核 → 冰晶苍青脉冲光晕）
+  const crystalHeartUniforms = {
+    uTime: { value: 0 },
+    uStormLevel: { value: 0.0 }
+  };
+  shaderUniforms.push(crystalHeartUniforms);
+
+  const matCrystalCore = trackMat(
+    new THREE.ShaderMaterial({
+      uniforms: crystalHeartUniforms,
+      transparent: true,
+      depthWrite: true,
+      vertexShader: /* glsl */ `
+        varying vec3 vLocalPos;
+        varying vec3 vNormalView;
+        varying vec3 vViewDir;
+        void main() {
+          vLocalPos = position;
+          vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+          vNormalView = normalize(normalMatrix * normal);
+          vViewDir = normalize(-mvPos.xyz);
+          gl_Position = projectionMatrix * mvPos;
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        uniform float uTime;
+        uniform float uStormLevel;
+        varying vec3 vLocalPos;
+        varying vec3 vNormalView;
+        varying vec3 vViewDir;
+        void main() {
+          float h = clamp(vLocalPos.y * 0.45 + 0.5, 0.0, 1.0);
+          float ndotv = clamp(abs(dot(normalize(vNormalView), normalize(vViewDir))), 0.0, 1.0);
+          float coreHot = pow(ndotv, 1.35);
+          float pulse = 0.88 + 0.12 * sin(uTime * 2.6 + vLocalPos.y * 3.0);
+          // 中心暖香槟金星核 → 外缘高透冰晶青白
+          vec3 colGold = mix(vec3(1.00, 0.88, 0.56), vec3(1.00, 0.94, 0.72), uStormLevel);
+          vec3 colCyan = mix(vec3(0.46, 0.92, 1.00), vec3(0.32, 0.96, 1.00), uStormLevel);
+          vec3 col = mix(colCyan, colGold, coreHot * (0.62 - 0.16 * h));
+          col += vec3(0.18, 0.22, 0.24) * (1.0 - ndotv) * (0.4 + 0.45 * uStormLevel);
+          gl_FragColor = vec4(col * pulse * (1.02 + uStormLevel * 0.14), 0.95);
+        }
+      `
     })
   );
 
@@ -458,6 +1278,178 @@ export function buildAltarBiome(THREE, texLib = {}) {
       opacity: 0.88
     })
   );
+
+  // 共享 AAA 雕刻削面星晶几何池（供主冠核、柱间晶、尖塔晶、前柱碎晶与外围浮石复用）
+  const geoCrystalHero7 = trackGeo(
+    createFacetedCrystalPrismGeometry(THREE, {
+      radius: 0.58, height: 3.15, sides: 7, topRatio: 0.58, crownY: 0.34, upperY: 0.14, lowerY: -0.24, bevelSkew: 0.11, twist: 0.10, asym: 0.16, seed: 3.1
+    })
+  );
+  const geoCrystalMain6 = trackGeo(
+    createFacetedCrystalPrismGeometry(THREE, {
+      radius: 0.42, height: 2.35, sides: 6, topRatio: 0.57, crownY: 0.35, upperY: 0.15, lowerY: -0.25, bevelSkew: 0.14, twist: 0.12, asym: 0.18, seed: 7.4
+    })
+  );
+  const geoCrystalSide5 = trackGeo(
+    createFacetedCrystalPrismGeometry(THREE, {
+      radius: 0.26, height: 1.48, sides: 5, topRatio: 0.62, crownY: 0.36, upperY: 0.12, lowerY: -0.28, bevelSkew: 0.16, twist: -0.10, asym: 0.22, seed: 13.7
+    })
+  );
+  const geoCrystalSplinter = trackGeo(
+    createFacetedCrystalPrismGeometry(THREE, {
+      radius: 0.16, height: 0.92, sides: 5, topRatio: 0.60, crownY: 0.34, upperY: 0.10, lowerY: -0.30, bevelSkew: 0.15, twist: 0.14, asym: 0.24, seed: 29.3
+    })
+  );
+  const geoOrbitalBead = trackGeo(
+    createFacetedCrystalPrismGeometry(THREE, {
+      radius: 0.085, height: 0.22, sides: 4, topRatio: 0.5, crownY: 0.26, upperY: 0.05, lowerY: -0.05, bevelSkew: 0.02, twist: 0.0, asym: 0.04, seed: 5.0
+    })
+  );
+
+  // -------------------------------------------------------------------------
+  // 工厂函数：构建 AAA 多面体不对称双层星晶簇
+  // （长短主副削面棱晶 + 内发光青金核芯 + 半透折光外晶壳 + 细金星轨环饰）
+  // -------------------------------------------------------------------------
+  function buildStarCrystalCluster({
+    hero = false,
+    scale = 1.0,
+    subCount = 3,
+    includeOuterShell = true,
+    includeGoldCollar = true,
+    orbitRadius = 0,
+    secondaryOrbitRadius = 0,
+    orbitColorGold = true,
+    seed = 1
+  } = {}) {
+    const cRng = createRng((Math.abs(seed * 6131) | 0) + 41);
+    const cluster = new THREE.Group();
+    const spinPivot = new THREE.Group();
+    cluster.add(spinPivot);
+
+    const primaryGeo = hero ? geoCrystalHero7 : geoCrystalMain6;
+
+    // 1. 主削面棱晶（内发光青金核芯 + 硬削面晶身 + 半透折光外晶壳）
+    const mainBody = new THREE.Mesh(primaryGeo, matStarCrystal);
+    mainBody.scale.setScalar(scale);
+    spinPivot.add(mainBody);
+
+    const mainHeart = new THREE.Mesh(primaryGeo, matCrystalCore);
+    mainHeart.scale.set(scale * 0.52, scale * 0.64, scale * 0.52);
+    spinPivot.add(mainHeart);
+
+    if (includeOuterShell) {
+      const mainShell = new THREE.Mesh(primaryGeo, matStarCrystalShell);
+      mainShell.scale.set(scale * 1.11, scale * 1.06, scale * 1.11);
+      mainShell.rotation.y = 0.22;
+      spinPivot.add(mainShell);
+    }
+
+    // 2. 长短不对称副削面棱晶群（围绕主晶斜向簇生）
+    for (let k = 0; k < subCount; k++) {
+      const ang = (k / Math.max(1, subCount)) * Math.PI * 2 + (cRng() - 0.5) * 0.55;
+      const lenMul = (0.58 + cRng() * 0.42) * scale;
+      const radMul = (0.68 + cRng() * 0.34) * scale;
+      const offR = (hero ? 0.38 : 0.26) * scale * (0.85 + cRng() * 0.35);
+      const offY = ((k % 2 === 0 ? -0.26 : 0.08) + (cRng() - 0.5) * 0.16) * scale;
+      const tilt = 0.22 + cRng() * 0.24;
+
+      const subGeo = k % 2 === 0 ? geoCrystalSide5 : geoCrystalSplinter;
+      const subPivot = new THREE.Group();
+      subPivot.position.set(Math.cos(ang) * offR, offY, Math.sin(ang) * offR);
+      subPivot.rotation.set(Math.sin(ang) * tilt, ang + cRng() * 0.7, -Math.cos(ang) * tilt);
+
+      const subMesh = new THREE.Mesh(subGeo, matStarCrystal);
+      subMesh.scale.set(radMul, lenMul, radMul);
+      subPivot.add(subMesh);
+
+      const subHeart = new THREE.Mesh(subGeo, matCrystalCore);
+      subHeart.scale.set(radMul * 0.48, lenMul * 0.60, radMul * 0.48);
+      subPivot.add(subHeart);
+
+      if (includeOuterShell && k < 2) {
+        const subShell = new THREE.Mesh(subGeo, matStarCrystalShell);
+        subShell.scale.set(radMul * 1.12, lenMul * 1.05, radMul * 1.12);
+        subPivot.add(subShell);
+      }
+
+      spinPivot.add(subPivot);
+    }
+
+    // 3. 贴身细金星轨箍与棱钻缀饰
+    if (includeGoldCollar) {
+      const collarR = (hero ? 0.66 : 0.48) * scale;
+      const collar = new THREE.Mesh(
+        trackGeo(new THREE.TorusGeometry(collarR, 0.026 * Math.max(0.75, scale), 6, 28)),
+        matBrightGold
+      );
+      collar.rotation.x = Math.PI * 0.5 + 0.24;
+      collar.rotation.z = -0.18;
+      collar.position.y = -0.12 * scale;
+      spinPivot.add(collar);
+
+      const studs = hero ? 4 : 3;
+      for (let s = 0; s < studs; s++) {
+        const sa = (s / studs) * Math.PI * 2;
+        const bead = new THREE.Mesh(geoOrbitalBead, s % 2 === 0 ? matBrightGold : matRuneGlowCyan);
+        bead.position.set(Math.cos(sa) * collarR, Math.sin(sa) * collarR, 0);
+        bead.scale.setScalar(scale * 0.85);
+        collar.add(bead);
+      }
+    }
+
+    // 4. 外围细金星轨仪环（可选单环或双反旋环）
+    let ringA = null;
+    let ringB = null;
+    if (orbitRadius > 0) {
+      ringA = new THREE.Group();
+      const ringATorus = new THREE.Mesh(
+        trackGeo(new THREE.TorusGeometry(orbitRadius, hero ? 0.048 : 0.028, 8, hero ? 52 : 34)),
+        orbitColorGold ? matBrightGold : matRuneGlowCyan
+      );
+      ringA.add(ringATorus);
+
+      const fineInner = new THREE.Mesh(
+        trackGeo(new THREE.TorusGeometry(orbitRadius * 0.88, hero ? 0.02 : 0.014, 6, hero ? 44 : 28)),
+        orbitColorGold ? matRuneGlowCyan : matChampagneGold
+      );
+      ringA.add(fineInner);
+
+      const nodeCount = hero ? 4 : 2;
+      for (let n = 0; n < nodeCount; n++) {
+        const na = (n / nodeCount) * Math.PI * 2;
+        const node = new THREE.Mesh(geoOrbitalBead, matBrightGold);
+        node.position.set(Math.cos(na) * orbitRadius, Math.sin(na) * orbitRadius, 0);
+        node.rotation.z = na;
+        node.scale.setScalar(hero ? 1.35 : 0.85);
+        ringA.add(node);
+      }
+      ringA.rotation.x = Math.PI * 0.5 + 0.28;
+      cluster.add(ringA);
+    }
+
+    if (secondaryOrbitRadius > 0) {
+      ringB = new THREE.Group();
+      const ringBTorus = new THREE.Mesh(
+        trackGeo(new THREE.TorusGeometry(secondaryOrbitRadius, hero ? 0.04 : 0.024, 8, hero ? 56 : 36)),
+        matChampagneGold
+      );
+      ringB.add(ringBTorus);
+      const tickCount = hero ? 8 : 4;
+      for (let n = 0; n < tickCount; n++) {
+        const na = (n / tickCount) * Math.PI * 2;
+        const node = new THREE.Mesh(geoOrbitalBead, n % 2 === 0 ? matRuneGlowGold : matRuneGlowCyan);
+        node.position.set(Math.cos(na) * secondaryOrbitRadius, Math.sin(na) * secondaryOrbitRadius, 0);
+        node.rotation.z = na;
+        node.scale.setScalar(hero ? 0.95 : 0.65);
+        ringB.add(node);
+      }
+      ringB.rotation.x = Math.PI * 0.34;
+      ringB.rotation.y = 0.45;
+      cluster.add(ringB);
+    }
+
+    return { cluster, spinPivot, ringA, ringB };
+  }
 
   // =========================================================================
   // 1. 高空蔚蓝 → 香槟金渐变苍穹 + 远空日光晕 + 神圣主光源与双色半球光
@@ -867,87 +1859,279 @@ export function buildAltarBiome(THREE, texLib = {}) {
   platformGroup.add(arcaneInnerPlane);
   rotatingRings.push({ mesh: arcaneInnerPlane, axis: 'z', speed: -0.115 });
 
-  // 外缘阶梯石阶底座（直径 23.2 ~ 24.4，均位于 y <= -0.14 向下逐层递进，绝不遮挡台面）
+  // 外缘古典线脚浮雕檐口底座（LatheGeometry 精密线脚 + 32 块石缝风化切角压顶石，均位于 y <= 0 绝不遮挡作战区）
+  const corniceUpperProfile = [
+    new THREE.Vector2(10.58, -0.02),
+    new THREE.Vector2(11.46, -0.02),
+    new THREE.Vector2(11.56, -0.10),
+    new THREE.Vector2(11.48, -0.18),
+    new THREE.Vector2(11.62, -0.26),
+    new THREE.Vector2(11.72, -0.44),
+    new THREE.Vector2(11.56, -0.52),
+    new THREE.Vector2(10.58, -0.52)
+  ];
   const midPlinth = new THREE.Mesh(
-    trackGeo(new THREE.CylinderGeometry(11.48, 11.66, 0.38, 16)),
+    trackGeo(new THREE.LatheGeometry(corniceUpperProfile, 48)),
     matStonePlinth
   );
-  midPlinth.position.y = -0.33;
   midPlinth.receiveShadow = true;
   midPlinth.castShadow = true;
   platformGroup.add(midPlinth);
 
+  const corniceLowerProfile = [
+    new THREE.Vector2(11.35, -0.50),
+    new THREE.Vector2(12.24, -0.50),
+    new THREE.Vector2(12.34, -0.58),
+    new THREE.Vector2(12.22, -0.68),
+    new THREE.Vector2(12.06, -0.84),
+    new THREE.Vector2(11.86, -0.96),
+    new THREE.Vector2(11.68, -1.08),
+    new THREE.Vector2(11.20, -1.08)
+  ];
   const lowerCornice = new THREE.Mesh(
-    trackGeo(new THREE.CylinderGeometry(12.22, 11.72, 0.56, 16)),
+    trackGeo(new THREE.LatheGeometry(corniceLowerProfile, 16)),
     matMarbleArch
   );
-  lowerCornice.position.y = -0.78;
+  lowerCornice.rotation.y = Math.PI / 16;
   lowerCornice.receiveShadow = true;
   lowerCornice.castShadow = true;
   platformGroup.add(lowerCornice);
 
-  // 台沿双道香槟金金属嵌条环
+  // 石缝暗槽底垫环（衬托 32 块切角压顶石之间的风化石缝层次）
+  const jointBedRing = new THREE.Mesh(
+    trackGeo(new THREE.RingGeometry(10.42, 11.44, 48)),
+    matWeatheredJoint
+  );
+  jointBedRing.rotation.x = -Math.PI * 0.5;
+  jointBedRing.position.y = -0.045;
+  jointBedRing.receiveShadow = true;
+  platformGroup.add(jointBedRing);
+
+  // 32 块石缝风化切角压顶石板（InstancedMesh，1 DrawCall，自带微小风化倾角起伏）
+  const geoCopingSlab = trackGeo(createWeatheredCopingSlabGeometry(THREE));
+  const copingInst = trackInst(new THREE.InstancedMesh(geoCopingSlab, matMarbleFloor, 32));
+  copingInst.receiveShadow = true;
+  copingInst.castShadow = true;
+  const dummyObj = new THREE.Object3D();
+  for (let i = 0; i < 32; i++) {
+    const a = (i / 32) * Math.PI * 2;
+    const weatherY = (rng() - 0.5) * 0.014;
+    const weatherTilt = (rng() - 0.5) * 0.016;
+    dummyObj.position.set(Math.cos(a) * 10.94, 0.002 + weatherY, Math.sin(a) * 10.94);
+    dummyObj.rotation.set(weatherTilt, -a, (rng() - 0.5) * 0.012);
+    dummyObj.scale.set(0.96, 1.0, 0.94 + (i % 3) * 0.015);
+    dummyObj.updateMatrix();
+    copingInst.setMatrixAt(i, dummyObj.matrix);
+  }
+  copingInst.instanceMatrix.needsUpdate = true;
+  platformGroup.add(copingInst);
+
+  // 48 枚古典齿饰檐块（Cornice Dentils，InstancedMesh，1 DrawCall）
+  const geoDentil = trackGeo(new THREE.BoxGeometry(0.24, 0.16, 0.28));
+  const dentilInst = trackInst(new THREE.InstancedMesh(geoDentil, matMarbleArch, 48));
+  dentilInst.castShadow = true;
+  for (let i = 0; i < 48; i++) {
+    const a = (i / 48) * Math.PI * 2;
+    dummyObj.position.set(Math.cos(a) * 11.72, -0.46, Math.sin(a) * 11.72);
+    dummyObj.rotation.set(0, -a, 0);
+    dummyObj.scale.set(1, 1, 1);
+    dummyObj.updateMatrix();
+    dentilInst.setMatrixAt(i, dummyObj.matrix);
+  }
+  dentilInst.instanceMatrix.needsUpdate = true;
+  platformGroup.add(dentilInst);
+
+  // 台沿三道浮雕金边檐线（Molded Gold Cornice Fillets）
   const goldRimTop = new THREE.Mesh(
-    trackGeo(new THREE.TorusGeometry(11.49, 0.075, 10, 48)),
-    matChampagneGold
+    trackGeo(new THREE.TorusGeometry(11.53, 0.072, 10, 48)),
+    matBrightGold
   );
   goldRimTop.rotation.x = Math.PI * 0.5;
-  goldRimTop.position.y = -0.14;
+  goldRimTop.position.y = -0.10;
   platformGroup.add(goldRimTop);
 
+  const goldRimMid = new THREE.Mesh(
+    trackGeo(new THREE.TorusGeometry(11.68, 0.046, 8, 48)),
+    matChampagneGold
+  );
+  goldRimMid.rotation.x = Math.PI * 0.5;
+  goldRimMid.position.y = -0.34;
+  platformGroup.add(goldRimMid);
+
   const goldRimLower = new THREE.Mesh(
-    trackGeo(new THREE.TorusGeometry(12.21, 0.095, 10, 16)),
+    trackGeo(new THREE.TorusGeometry(12.28, 0.088, 10, 16)),
     matChampagneGold
   );
   goldRimLower.rotation.x = Math.PI * 0.5;
   goldRimLower.rotation.z = Math.PI / 16;
-  goldRimLower.position.y = -0.52;
+  goldRimLower.position.y = -0.56;
   platformGroup.add(goldRimLower);
 
-  // 16 组台底雕花托座（Corbels）与镶嵌星晶发光石
-  const corbelGeo = trackGeo(new THREE.BoxGeometry(0.46, 0.92, 0.88));
-  const rimGemGeo = trackGeo(new THREE.OctahedronGeometry(0.18, 0));
+  const goldRimUnder = new THREE.Mesh(
+    trackGeo(new THREE.TorusGeometry(11.74, 0.052, 8, 16)),
+    matChampagneGold
+  );
+  goldRimUnder.rotation.x = Math.PI * 0.5;
+  goldRimUnder.rotation.z = Math.PI / 16;
+  goldRimUnder.position.y = -1.04;
+  platformGroup.add(goldRimUnder);
+
+  // 16 组 ExtrudeGeometry 雕刻古典涡卷托座（Scroll Corbels + 金脊饰条 + 涡眼花饰 + 切面星晶宝石嵌座）
+  const geoScrollCorbel = trackGeo(createScrollCorbelGeometry(THREE));
+  const geoScrollTrim = trackGeo(createScrollCorbelTrimGeometry(THREE));
+  const geoScrollEye = trackGeo(new THREE.CylinderGeometry(0.085, 0.085, 0.44, 12));
+  geoScrollEye.rotateX(Math.PI * 0.5);
+  const geoRimGemBezel = trackGeo(new THREE.CylinderGeometry(0.24, 0.28, 0.12, 4));
+  geoRimGemBezel.rotateZ(Math.PI * 0.5);
+  const geoRimFacetGem = trackGeo(
+    createFacetedCrystalPrismGeometry(THREE, {
+      radius: 0.14, height: 0.46, sides: 6, topRatio: 0.5, crownY: 0.28, upperY: 0.10, lowerY: -0.10, bevelSkew: 0.04, twist: 0.04, asym: 0.08, seed: 19.2
+    })
+  );
+
   for (let i = 0; i < 16; i++) {
     const a = (i / 16) * Math.PI * 2 + Math.PI / 16;
-    const corbel = new THREE.Mesh(corbelGeo, matStonePlinth);
-    corbel.position.set(Math.cos(a) * 11.45, -1.28, Math.sin(a) * 11.45);
-    corbel.rotation.y = -a + Math.PI * 0.5;
-    corbel.rotation.x = 0.24;
-    platformGroup.add(corbel);
+    const corbelGroup = new THREE.Group();
+    corbelGroup.position.set(Math.cos(a) * 11.20, -1.42, Math.sin(a) * 11.20);
+    // +X 严格指向圆台外沿径向
+    corbelGroup.rotation.y = -a;
 
-    const rimGem = new THREE.Mesh(rimGemGeo, i % 2 === 0 ? matRuneGlowCyan : matBrightGold);
-    rimGem.position.set(Math.cos(a) * 12.15, -0.76, Math.sin(a) * 12.15);
-    rimGem.scale.set(0.75, 1.35, 0.75);
-    platformGroup.add(rimGem);
+    const corbelBody = new THREE.Mesh(geoScrollCorbel, matStonePlinth);
+    corbelBody.castShadow = true;
+    corbelBody.receiveShadow = true;
+    corbelGroup.add(corbelBody);
+
+    const corbelTrim = new THREE.Mesh(geoScrollTrim, matChampagneGold);
+    corbelGroup.add(corbelTrim);
+
+    const scrollEye = new THREE.Mesh(geoScrollEye, matBrightGold);
+    scrollEye.position.set(0.46, 0.12, 0);
+    corbelGroup.add(scrollEye);
+
+    platformGroup.add(corbelGroup);
+
+    // 檐口切面星晶宝石与香槟金棱形嵌框
+    const gemHolder = new THREE.Group();
+    gemHolder.position.set(Math.cos(a) * 12.14, -0.78, Math.sin(a) * 12.14);
+    gemHolder.rotation.y = -a;
+    const bezel = new THREE.Mesh(geoRimGemBezel, matChampagneGold);
+    gemHolder.add(bezel);
+    const rimGem = new THREE.Mesh(geoRimFacetGem, i % 2 === 0 ? matStarCrystal : matBrightGold);
+    rimGem.position.x = 0.06;
+    gemHolder.add(rimGem);
+    platformGroup.add(gemHolder);
   }
 
-  // 前景礼仪悬空石阶（沿 +Z 边缘向下步入深渊云海，视角可清晰俯瞰浮空断崖感）
+  // 前景礼仪悬空石阶（沿 +Z 边缘向下步入深渊云海）+ 左右对称雕花石护沿（Balustrade Curbs）
   for (let s = 0; s < 4; s++) {
     const w = 6.2 - s * 0.55;
+    const stepY = -0.10 - s * 0.16;
+    const stepZ = 10.72 + s * 0.44;
     const stepMesh = new THREE.Mesh(
       trackGeo(new THREE.BoxGeometry(w, 0.18, 0.52)),
       s % 2 === 0 ? matMarbleFloor : matStonePlinth
     );
-    stepMesh.position.set(0, -0.10 - s * 0.16, 10.72 + s * 0.44);
+    stepMesh.position.set(0, stepY, stepZ);
     stepMesh.receiveShadow = true;
+    stepMesh.castShadow = true;
     platformGroup.add(stepMesh);
 
+    // 台阶暗影退台踢面（增强石阶立体层次）
+    const riser = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(w - 0.14, 0.11, 0.44)),
+      matWeatheredJoint
+    );
+    riser.position.set(0, stepY - 0.12, stepZ - 0.03);
+    platformGroup.add(riser);
+
     const stepGold = new THREE.Mesh(
-      trackGeo(new THREE.BoxGeometry(w + 0.08, 0.04, 0.08)),
+      trackGeo(new THREE.BoxGeometry(w + 0.08, 0.042, 0.085)),
       matChampagneGold
     );
-    stepGold.position.set(0, -0.02 - s * 0.16, 10.97 + s * 0.44);
+    stepGold.position.set(0, stepY + 0.08, stepZ + 0.25);
     platformGroup.add(stepGold);
   }
 
-  // 后方神殿高台延伸（位于 z < -10.3，托起主拱门双柱）
-  const rearDais = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(7.8, 0.48, 2.5)), matMarbleFloor);
-  rearDais.position.set(0, 0.04, -11.45);
+  // 左右两侧雕花石护沿（沿四级石阶收窄边缘贴合顺降）
+  const geoCheekWall = trackGeo(createSteppedCheekWallGeometry(THREE));
+  const geoCheekCapTrim = trackGeo(new THREE.BoxGeometry(1.96, 0.048, 0.22));
+  const geoCheekRelief = trackGeo(new THREE.BoxGeometry(1.42, 0.16, 0.34));
+  const geoNewelBase = trackGeo(new THREE.BoxGeometry(0.46, 0.38, 0.46));
+  const geoNewelCap = trackGeo(new THREE.CylinderGeometry(0.18, 0.28, 0.12, 8));
+
+  for (const side of [-1, 1]) {
+    const startX = side * 3.24;
+    const startZ = 10.48;
+    const endX = side * 2.40;
+    const endZ = 12.34;
+    const dx = endX - startX;
+    const dz = endZ - startZ;
+    const wallYaw = Math.atan2(-dz, dx);
+
+    const cheekGroup = new THREE.Group();
+    cheekGroup.position.set(startX, -0.02, startZ);
+    cheekGroup.rotation.y = wallYaw;
+
+    const cheekMesh = new THREE.Mesh(geoCheekWall, matMarbleArch);
+    cheekMesh.castShadow = true;
+    cheekMesh.receiveShadow = true;
+    cheekGroup.add(cheekMesh);
+
+    // 护沿斜顶香槟金压条
+    const capTrim = new THREE.Mesh(geoCheekCapTrim, matChampagneGold);
+    capTrim.position.set(0.97, -0.10, 0);
+    capTrim.rotation.z = -0.265;
+    cheekGroup.add(capTrim);
+
+    // 护沿外侧浮雕石板框饰
+    const reliefPanel = new THREE.Mesh(geoCheekRelief, matStonePlinth);
+    reliefPanel.position.set(0.95, -0.34, 0);
+    reliefPanel.rotation.z = -0.265;
+    cheekGroup.add(reliefPanel);
+
+    platformGroup.add(cheekGroup);
+
+    // 上端与下端雕花石望柱（高度严控，绝不侵入作战区及相机主视锥）
+    const topNewel = new THREE.Group();
+    topNewel.position.set(startX, 0.02, startZ);
+    const tnBody = new THREE.Mesh(geoNewelBase, matMarbleArch);
+    tnBody.position.y = -0.04;
+    const tnCap = new THREE.Mesh(geoNewelCap, matChampagneGold);
+    tnCap.position.y = 0.18;
+    const tnGem = new THREE.Mesh(geoOrbitalBead, matStarCrystal);
+    tnGem.position.y = 0.32;
+    tnGem.scale.set(1.2, 1.4, 1.2);
+    topNewel.add(tnBody, tnCap, tnGem);
+    platformGroup.add(topNewel);
+
+    const botNewel = new THREE.Group();
+    botNewel.position.set(endX, -0.54, endZ);
+    const bnBody = new THREE.Mesh(geoNewelBase, matMarbleArch);
+    const bnCap = new THREE.Mesh(geoNewelCap, matChampagneGold);
+    bnCap.position.y = 0.22;
+    const bnGem = new THREE.Mesh(geoOrbitalBead, matRuneGlowCyan);
+    bnGem.position.y = 0.36;
+    bnGem.scale.set(1.15, 1.4, 1.15);
+    botNewel.add(bnBody, bnCap, bnGem);
+    platformGroup.add(botNewel);
+  }
+
+  // 后方神殿高台延伸（位于 z < -10.3，托起主拱门双柱，增补阶梯线脚与金边浮雕）
+  const rearDaisLower = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(8.35, 0.24, 2.86)), matStonePlinth);
+  rearDaisLower.position.set(0, -0.10, -11.45);
+  rearDaisLower.receiveShadow = true;
+  platformGroup.add(rearDaisLower);
+  const rearDais = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(7.8, 0.44, 2.5)), matMarbleFloor);
+  rearDais.position.set(0, 0.06, -11.45);
   rearDais.receiveShadow = true;
+  rearDais.castShadow = true;
   platformGroup.add(rearDais);
-  const rearDaisTrim = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(8.0, 0.09, 2.62)), matChampagneGold);
-  rearDaisTrim.position.set(0, 0.26, -11.45);
+  const rearDaisTrim = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(8.02, 0.09, 2.66)), matChampagneGold);
+  rearDaisTrim.position.set(0, 0.28, -11.45);
   platformGroup.add(rearDaisTrim);
+  const rearDaisLowerGold = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(8.42, 0.055, 2.92)), matChampagneGold);
+  rearDaisLowerGold.position.set(0, 0.02, -11.45);
+  platformGroup.add(rearDaisLowerGold);
 
   // 下垂倒锥形浮空岩基（y = -1.0 至 -8.8，透视边缘清晰可见浮空神殿质感）
   const underVault = new THREE.Mesh(
@@ -1019,31 +2203,42 @@ export function buildAltarBiome(THREE, texLib = {}) {
   colonnadeGroup.name = 'ruined_colonnade';
   group.add(colonnadeGroup);
 
-  // 共享柱座与柱头几何体（LatheGeometry 精细古典线脚）
+  // 共享柱座、羽翼涡卷柱头与凹弧线脚顶板几何体
   const baseProfile = [
     new THREE.Vector2(0.0, 0.0),
-    new THREE.Vector2(0.76, 0.0),
-    new THREE.Vector2(0.76, 0.16),
-    new THREE.Vector2(0.66, 0.24),
-    new THREE.Vector2(0.70, 0.34),
-    new THREE.Vector2(0.56, 0.44),
-    new THREE.Vector2(0.51, 0.56)
+    new THREE.Vector2(0.80, 0.0),
+    new THREE.Vector2(0.80, 0.14),
+    new THREE.Vector2(0.70, 0.22),
+    new THREE.Vector2(0.73, 0.34),
+    new THREE.Vector2(0.58, 0.44),
+    new THREE.Vector2(0.53, 0.56)
   ];
-  const geoColBase = trackGeo(new THREE.LatheGeometry(baseProfile, 20));
-  const geoColPlinth = trackGeo(new THREE.BoxGeometry(1.56, 0.34, 1.56));
+  const geoColBase = trackGeo(new THREE.LatheGeometry(baseProfile, 24));
+  const geoColPlinth = trackGeo(new THREE.BoxGeometry(1.62, 0.34, 1.62));
+  const geoColPlinthStep = trackGeo(new THREE.BoxGeometry(1.74, 0.12, 1.74));
   const geoColGoldCollar = trackGeo(new THREE.TorusGeometry(0.52, 0.048, 8, 24));
   geoColGoldCollar.rotateX(Math.PI * 0.5);
 
   const capProfile = [
     new THREE.Vector2(0.45, 0.0),
-    new THREE.Vector2(0.52, 0.12),
-    new THREE.Vector2(0.56, 0.32),
-    new THREE.Vector2(0.72, 0.58),
-    new THREE.Vector2(0.78, 0.72),
-    new THREE.Vector2(0.0, 0.72)
+    new THREE.Vector2(0.54, 0.08),
+    new THREE.Vector2(0.49, 0.16),
+    new THREE.Vector2(0.55, 0.34),
+    new THREE.Vector2(0.68, 0.56),
+    new THREE.Vector2(0.82, 0.72),
+    new THREE.Vector2(0.76, 0.78),
+    new THREE.Vector2(0.0, 0.78)
   ];
-  const geoColCap = trackGeo(new THREE.LatheGeometry(capProfile, 20));
-  const geoColAbacus = trackGeo(new THREE.BoxGeometry(1.66, 0.22, 1.66));
+  const geoColCap = trackGeo(new THREE.LatheGeometry(capProfile, 24));
+  const geoColAbacus = trackGeo(createMoldedAbacusGeometry(THREE));
+  const geoColVolute = trackGeo(createCapitalVoluteGeometry(THREE));
+  const geoColWing = trackGeo(createWindWingReliefGeometry(THREE));
+  const geoVoluteEye = trackGeo(new THREE.CylinderGeometry(0.06, 0.06, 0.18, 10));
+  geoVoluteEye.rotateX(Math.PI * 0.5);
+  const geoColFleuron = trackGeo(new THREE.CylinderGeometry(0.11, 0.14, 0.07, 6));
+  geoColFleuron.rotateX(Math.PI * 0.5);
+  const geoColFracToothA = trackGeo(createFractureToothGeometry(THREE, 0.42, 0.24, 0.20, 11));
+  const geoColFracToothB = trackGeo(createFractureToothGeometry(THREE, 0.34, 0.20, 0.18, 23));
 
   const deg2rad = (d) => (d * Math.PI) / 180;
 
@@ -1080,9 +2275,15 @@ export function buildAltarBiome(THREE, texLib = {}) {
     colObj.rotation.y = -rad + Math.PI * 0.5;
     colonnadeGroup.add(colObj);
 
-    // 方座 + 线脚基座 + 金项圈
+    // 阶梯方座 + 线脚基座 + 金项圈
+    const plinthStep = new THREE.Mesh(geoColPlinthStep, matWeatheredJoint);
+    plinthStep.position.y = 0.06;
+    plinthStep.scale.set(scaleXZ, 1, scaleXZ);
+    plinthStep.receiveShadow = true;
+    colObj.add(plinthStep);
+
     const plinth = new THREE.Mesh(geoColPlinth, matStonePlinth);
-    plinth.position.y = 0.17;
+    plinth.position.y = 0.19;
     plinth.scale.set(scaleXZ, 1, scaleXZ);
     plinth.castShadow = true;
     plinth.receiveShadow = true;
@@ -1120,71 +2321,167 @@ export function buildAltarBiome(THREE, texLib = {}) {
     colObj.add(shaft);
 
     if (!def.broken) {
-      // 完整柱头 + 金环 + 方形顶板
+      // 完整神柱柱头：双金颈环 + 钟形柱头 + 四角古典涡卷 + 风神羽翼浮雕 + 凹弧线脚顶板
+      const capY = 0.88 + shaftH;
       const topCollar = new THREE.Mesh(geoColGoldCollar, matChampagneGold);
-      topCollar.position.y = 0.88 + shaftH - 0.04;
+      topCollar.position.y = capY - 0.04;
       topCollar.scale.set(0.92 * scaleXZ, 1, 0.92 * scaleXZ);
       colObj.add(topCollar);
 
+      const upperNeckGold = new THREE.Mesh(geoColGoldCollar, matBrightGold);
+      upperNeckGold.position.y = capY + 0.12;
+      upperNeckGold.scale.set(0.98 * scaleXZ, 0.72, 0.98 * scaleXZ);
+      colObj.add(upperNeckGold);
+
       const cap = new THREE.Mesh(geoColCap, matMarbleColumn);
-      cap.position.y = 0.88 + shaftH;
+      cap.position.y = capY;
       cap.scale.set(scaleXZ, 1, scaleXZ);
       cap.castShadow = true;
       colObj.add(cap);
 
+      // 4 角古典涡卷雕花（Volutes，托举凹弧顶板四角）
+      const capOrnament = new THREE.Group();
+      capOrnament.position.y = capY;
+      capOrnament.scale.set(scaleXZ, 1, scaleXZ);
+      colObj.add(capOrnament);
+
+      for (let vIdx = 0; vIdx < 4; vIdx++) {
+        const va = (vIdx / 4) * Math.PI * 2 + Math.PI * 0.25;
+        const volGroup = new THREE.Group();
+        volGroup.position.set(Math.cos(va) * 0.44, 0.06, Math.sin(va) * 0.44);
+        volGroup.rotation.y = -va;
+        const volMesh = new THREE.Mesh(geoColVolute, matMarbleArch);
+        volMesh.castShadow = true;
+        volGroup.add(volMesh);
+        const volEye = new THREE.Mesh(geoVoluteEye, matBrightGold);
+        volEye.position.set(0.14, 0.56, 0);
+        volGroup.add(volEye);
+        capOrnament.add(volGroup);
+      }
+
+      // 风神羽翼对称浮雕（面向祭坛内侧 -Z 与外侧 +Z 双向展开，主门双柱加配香槟金翎脊）
+      const wingScale = def.grand ? 1.18 : 0.96;
+      for (const faceZ of [-1, 1]) {
+        const crestGroup = new THREE.Group();
+        crestGroup.position.set(0, 0.30, faceZ * 0.56);
+        if (faceZ < 0) crestGroup.rotation.y = Math.PI;
+        crestGroup.scale.setScalar(wingScale);
+
+        for (const wSide of [-1, 1]) {
+          const wingMesh = new THREE.Mesh(geoColWing, matMarbleColumn);
+          wingMesh.scale.x = wSide;
+          wingMesh.position.set(wSide * 0.06, 0, 0);
+          wingMesh.rotation.y = -wSide * 0.24;
+          wingMesh.castShadow = true;
+          crestGroup.add(wingMesh);
+
+          if (def.grand || faceZ < 0) {
+            const wingGold = new THREE.Mesh(geoColWing, matChampagneGold);
+            wingGold.scale.set(wSide * 0.72, 0.72, 1.32);
+            wingGold.position.set(wSide * 0.08, 0.04, 0.01);
+            wingGold.rotation.y = -wSide * 0.24;
+            crestGroup.add(wingGold);
+          }
+        }
+
+        // 羽翼中央菱形风神纹徽
+        const emblem = new THREE.Mesh(geoOrbitalBead, def.grand ? matBrightGold : matChampagneGold);
+        emblem.position.set(0, 0.08, 0.04);
+        emblem.scale.set(1.25, 1.45, 0.9);
+        crestGroup.add(emblem);
+        capOrnament.add(crestGroup);
+      }
+
+      // 科林斯凹弧线脚顶板 + 中心花饰 + 香槟金上檐线脚
       const abacus = new THREE.Mesh(geoColAbacus, matMarbleArch);
-      abacus.position.y = 0.88 + shaftH + 0.82;
+      abacus.position.y = capY + 0.85;
       abacus.scale.set(scaleXZ, 1, scaleXZ);
       abacus.castShadow = true;
       colObj.add(abacus);
 
-      const abacusGold = new THREE.Mesh(
-        trackGeo(new THREE.BoxGeometry(1.74 * scaleXZ, 0.06, 1.74 * scaleXZ)),
-        matChampagneGold
-      );
-      abacusGold.position.y = 0.88 + shaftH + 0.95;
+      for (let fIdx = 0; fIdx < 4; fIdx++) {
+        const fa = (fIdx / 4) * Math.PI * 2;
+        const fl = new THREE.Mesh(geoColFleuron, matBrightGold);
+        fl.position.set(Math.cos(fa) * 0.78 * scaleXZ, capY + 0.86, Math.sin(fa) * 0.78 * scaleXZ);
+        fl.rotation.y = -fa + Math.PI * 0.5;
+        colObj.add(fl);
+      }
+
+      const abacusGold = new THREE.Mesh(geoColAbacus, matChampagneGold);
+      abacusGold.position.y = capY + 0.97;
+      abacusGold.scale.set(1.04 * scaleXZ, 0.28, 1.04 * scaleXZ);
       colObj.add(abacusGold);
-    } else if (def.hasDrum) {
-      // 悬浮在断柱上方缓慢自转微浮的碎裂石鼓与金环
-      const drumGroup = new THREE.Group();
-      const baseY = def.h + 1.15;
-      drumGroup.position.set(0, baseY, 0);
-      colObj.add(drumGroup);
-
-      const drumGeo = trackGeo(createFlutedColumnGeometry(THREE, 0.44, 0.42, 1.18, true, (def.tilt || 0) + 1.2, rng));
-      const drumMesh = new THREE.Mesh(drumGeo, matMarbleColumn);
-      drumMesh.position.y = -0.58;
-      drumMesh.rotation.z = 0.16;
-      drumMesh.castShadow = true;
-      drumGroup.add(drumMesh);
-
-      const drumHalo = new THREE.Mesh(trackGeo(new THREE.TorusGeometry(0.66, 0.03, 8, 24)), matRuneGlowCyan);
-      drumHalo.rotation.x = Math.PI * 0.5 + 0.14;
-      drumGroup.add(drumHalo);
-
-      hoveringDrums.push({
-        group: drumGroup,
-        baseY,
-        amp: 0.24,
-        speed: 0.9 + i * 0.18,
-        phase: i * 1.4,
-        rotSpeed: 0.24 * (i % 2 === 0 ? 1 : -1)
-      });
     } else {
-      // 低矮前翼断柱上方悬浮一枚精致星晶碎片
-      const tinyShard = new THREE.Mesh(trackGeo(new THREE.OctahedronGeometry(0.32, 0)), matStarCrystal);
-      tinyShard.scale.set(0.68, 1.65, 0.68);
-      const baseY = def.h + 0.92;
-      tinyShard.position.set(0, baseY, 0);
-      colObj.add(tinyShard);
-      hoveringDrums.push({
-        group: tinyShard,
-        baseY,
-        amp: 0.18,
-        speed: 1.45,
-        phase: i * 2.1,
-        rotSpeed: 0.65
-      });
+      // 断柱断口参差风化石茬（自然贴合斜断顶面）
+      const breakY = 0.88 + shaftH;
+      for (let sIdx = 0; sIdx < 4; sIdx++) {
+        const sa = (sIdx / 4) * Math.PI * 2 + (def.tilt || 0) * 0.5;
+        const tooth = new THREE.Mesh(sIdx % 2 === 0 ? geoColFracToothA : geoColFracToothB, matMarbleArch);
+        tooth.position.set(Math.cos(sa) * 0.30, breakY - 0.08 + Math.cos(sa - (def.tilt || 0)) * 0.14, Math.sin(sa) * 0.30);
+        tooth.rotation.set(0, -sa, Math.PI * 0.5 + (sIdx % 2 === 0 ? 0.16 : -0.14));
+        tooth.scale.setScalar(0.85 + (sIdx % 2) * 0.22);
+        colObj.add(tooth);
+      }
+
+      if (def.hasDrum) {
+        // 悬浮在断柱上方缓慢自转微浮的碎裂石鼓与双金青星环
+        const drumGroup = new THREE.Group();
+        const baseY = def.h + 1.15;
+        drumGroup.position.set(0, baseY, 0);
+        colObj.add(drumGroup);
+
+        const drumGeo = trackGeo(createFlutedColumnGeometry(THREE, 0.44, 0.42, 1.18, true, (def.tilt || 0) + 1.2, rng));
+        const drumMesh = new THREE.Mesh(drumGeo, matMarbleColumn);
+        drumMesh.position.y = -0.58;
+        drumMesh.rotation.z = 0.16;
+        drumMesh.castShadow = true;
+        drumGroup.add(drumMesh);
+
+        const drumHalo = new THREE.Mesh(trackGeo(new THREE.TorusGeometry(0.68, 0.032, 8, 28)), matRuneGlowCyan);
+        drumHalo.rotation.x = Math.PI * 0.5 + 0.14;
+        drumGroup.add(drumHalo);
+
+        const drumGoldHalo = new THREE.Mesh(trackGeo(new THREE.TorusGeometry(0.76, 0.018, 6, 28)), matBrightGold);
+        drumGoldHalo.rotation.x = Math.PI * 0.5 - 0.22;
+        drumGroup.add(drumGoldHalo);
+
+        hoveringDrums.push({
+          group: drumGroup,
+          baseY,
+          amp: 0.24,
+          speed: 0.9 + i * 0.18,
+          phase: i * 1.4,
+          rotSpeed: 0.24 * (i % 2 === 0 ? 1 : -1)
+        });
+      } else {
+        // 低矮前翼断柱上方悬浮 AAA 不对称双层碎晶簇（含内发光青金核芯 + 半透折光外晶壳 + 细金星轨环）
+        const shardCluster = buildStarCrystalCluster({
+          hero: false,
+          scale: 0.44,
+          subCount: 2,
+          includeOuterShell: true,
+          includeGoldCollar: true,
+          orbitRadius: 0.62,
+          secondaryOrbitRadius: 0,
+          orbitColorGold: i % 2 === 0,
+          seed: 55 + i * 19
+        });
+        const baseY = def.h + 1.02;
+        shardCluster.cluster.position.set(0, baseY, 0);
+        colObj.add(shardCluster.cluster);
+
+        floatingCrystals.push({
+          group: shardCluster.cluster,
+          crystal: shardCluster.spinPivot,
+          ringA: shardCluster.ringA,
+          ringB: null,
+          baseY,
+          amp: 0.20,
+          speed: 1.42,
+          phase: i * 2.1,
+          spinSpeed: 0.68 * (i % 2 === 0 ? 1 : -1)
+        });
+      }
     }
   }
 
@@ -1199,7 +2496,7 @@ export function buildAltarBiome(THREE, texLib = {}) {
     beam.receiveShadow = true;
     colonnadeGroup.add(beam);
 
-    const trimGeo = trackGeo(createCurvedBeamGeometry(THREE, 11.30, a1, a2, 1.32, 0.12, 18));
+    const trimGeo = trackGeo(createCurvedBeamGeometry(THREE, 11.30, a1, a2, 1.34, 0.12, 18));
     const trim = new THREE.Mesh(trimGeo, matChampagneGold);
     trim.position.y = yBase + 0.42;
     colonnadeGroup.add(trim);
@@ -1208,7 +2505,8 @@ export function buildAltarBiome(THREE, texLib = {}) {
   buildWingEntablature(-161, -119, 8.78);
   buildWingEntablature(-61, -19, 8.78);
 
-  // 柱间哥特尖拱肋条（连接翼柱顶端优雅起拱）
+  // 柱间哥特尖拱肋条 + 拱顶梯形雕花拱心石
+  const geoBayKeystone = trackGeo(createVoussoirGeometry(THREE, 0.42, 0.26, 0.56, 0.46));
   function addGothicBayArch(degA, degB, topY) {
     const r = 11.30;
     const ra = deg2rad(degA);
@@ -1228,7 +2526,16 @@ export function buildAltarBiome(THREE, texLib = {}) {
     const goldR = new THREE.Mesh(trackGeo(new THREE.TubeGeometry(curveR, 14, 0.055, 6, false)), matChampagneGold);
     goldL.position.y = -0.14;
     goldR.position.y = -0.14;
-    colonnadeGroup.add(archL, archR, goldL, goldR);
+
+    const keystone = new THREE.Mesh(geoBayKeystone, matMarbleColumn);
+    keystone.position.copy(pApex);
+    keystone.rotation.y = -rm + Math.PI * 0.5;
+    const keyGem = new THREE.Mesh(geoOrbitalBead, matBrightGold);
+    keyGem.position.set(0, -0.02, -0.24);
+    keyGem.scale.set(1.3, 1.4, 0.8);
+    keystone.add(keyGem);
+
+    colonnadeGroup.add(archL, archR, goldL, goldR, keystone);
   }
 
   addGothicBayArch(-158, -140, 8.35);
@@ -1236,7 +2543,17 @@ export function buildAltarBiome(THREE, texLib = {}) {
   addGothicBayArch(-58, -40, 8.55);
   addGothicBayArch(-40, -22, 8.35);
 
-  // 中央圣殿「破碎哥特星冠拱门」（双弧从 9.8m 高柱直冲 13.8m 天穹，顶端开放托举悬浮星晶星轨仪）
+  // 中央圣殿「破碎哥特星冠拱门」
+  // 在圆管拱肋基础上精雕：18 枚梯度梯形楔石（Voussoirs）+ 雕花起拱托块 + 断裂处参差石茬 + 悬空碎石块
+  const geoArchVoussoirA = trackGeo(createVoussoirGeometry(THREE, 0.52, 0.34, 0.86, 0.90));
+  const geoArchVoussoirB = trackGeo(createVoussoirGeometry(THREE, 0.48, 0.32, 0.98, 0.98));
+  const geoVoussoirGoldRib = trackGeo(createVoussoirGeometry(THREE, 0.14, 0.10, 1.02, 1.04));
+  const geoArchSpringer = trackGeo(new THREE.BoxGeometry(1.18, 0.52, 1.18));
+  const geoArchFracA = trackGeo(createFractureToothGeometry(THREE, 0.88, 0.36, 0.38, 101));
+  const geoArchFracB = trackGeo(createFractureToothGeometry(THREE, 0.66, 0.28, 0.30, 207));
+  const geoArchFracC = trackGeo(createFractureToothGeometry(THREE, 0.48, 0.22, 0.24, 313));
+  const geoFloatingRubble = trackGeo(createVoussoirGeometry(THREE, 0.32, 0.22, 0.42, 0.36));
+
   for (const side of [-1, 1]) {
     const startX = side * 2.75;
     const baseZ = -11.01;
@@ -1244,36 +2561,167 @@ export function buildAltarBiome(THREE, texLib = {}) {
       new THREE.Vector3(startX, 9.75, baseZ),
       new THREE.Vector3(startX * 0.86, 11.45, baseZ),
       new THREE.Vector3(startX * 0.54, 12.95, baseZ),
-      new THREE.Vector3(side * 0.68, 13.78, baseZ)
+      new THREE.Vector3(side * 0.72, 13.76, baseZ)
     ]);
+
+    // 雕花起拱石座（连接大柱顶板与拱肋起势处）
+    const springer = new THREE.Mesh(geoArchSpringer, matMarbleArch);
+    springer.position.set(startX, 9.95, baseZ);
+    springer.castShadow = true;
+    colonnadeGroup.add(springer);
+    const springerGold = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(1.26, 0.10, 1.26)), matChampagneGold);
+    springerGold.position.set(startX, 10.22, baseZ);
+    colonnadeGroup.add(springerGold);
+
+    // 核心石拱骨架 + 金边内拱肋 + 细冰蓝符文内槽线
     const ribMarble = new THREE.Mesh(
-      trackGeo(new THREE.TubeGeometry(archCurve, 22, 0.34, 10, false)),
+      trackGeo(new THREE.TubeGeometry(archCurve, 24, 0.34, 10, false)),
       matMarbleArch
     );
     ribMarble.castShadow = true;
     const ribGold = new THREE.Mesh(
-      trackGeo(new THREE.TubeGeometry(archCurve, 22, 0.11, 8, false)),
+      trackGeo(new THREE.TubeGeometry(archCurve, 24, 0.115, 8, false)),
       matBrightGold
     );
-    ribGold.position.y = -0.34;
-    colonnadeGroup.add(ribMarble, ribGold);
+    ribGold.position.y = -0.35;
+    const ribCyanVein = new THREE.Mesh(
+      trackGeo(new THREE.TubeGeometry(archCurve, 22, 0.048, 6, false)),
+      matRuneGlowCyan
+    );
+    ribCyanVein.position.y = -0.44;
+    colonnadeGroup.add(ribMarble, ribGold, ribCyanVein);
+
+    // 9 枚沿拱线法向紧密扇形排布的雕花梯形楔石（Voussoirs）
+    const voussoirCount = 9;
+    const pt = new THREE.Vector3();
+    const tan = new THREE.Vector3();
+    for (let v = 0; v < voussoirCount; v++) {
+      const t = 0.08 + (v / (voussoirCount - 1)) * 0.83;
+      archCurve.getPointAt(t, pt);
+      archCurve.getTangentAt(t, tan).normalize();
+
+      // XY 平面内指向拱外背的径向法线
+      const outX = side < 0 ? -tan.y : tan.y;
+      const outY = side < 0 ? tan.x : -tan.x;
+      const rotZ = Math.atan2(-outX, outY);
+
+      const isBoss = v % 2 === 1;
+      const vGroup = new THREE.Group();
+      vGroup.position.set(pt.x + outX * 0.06, pt.y + outY * 0.06, baseZ);
+      vGroup.rotation.z = rotZ;
+
+      const stoneBlock = new THREE.Mesh(
+        isBoss ? geoArchVoussoirB : geoArchVoussoirA,
+        isBoss ? matMarbleColumn : matMarbleArch
+      );
+      stoneBlock.castShadow = true;
+      stoneBlock.receiveShadow = true;
+      vGroup.add(stoneBlock);
+
+      if (isBoss) {
+        const goldBand = new THREE.Mesh(geoVoussoirGoldRib, matChampagneGold);
+        vGroup.add(goldBand);
+        // 正背双面雕花菱形缀饰
+        for (const zDir of [-1, 1]) {
+          const bossGem = new THREE.Mesh(geoOrbitalBead, v === 5 ? matRuneGlowCyan : matBrightGold);
+          bossGem.position.set(0, 0.05, zDir * 0.52);
+          bossGem.scale.set(1.15, 1.35, 0.65);
+          vGroup.add(bossGem);
+        }
+      }
+      colonnadeGroup.add(vGroup);
+    }
+
+    // 断裂处参差石茬与折断金筋（位于顶端 t = 0.98 断裂截面，塑造古老神殿残缺史诗张力）
+    const endPt = archCurve.getPointAt(0.98);
+    const endTan = archCurve.getTangentAt(0.98).normalize();
+    const endOutX = side < 0 ? -endTan.y : endTan.y;
+    const endOutY = side < 0 ? endTan.x : -endTan.x;
+    const tanYawZ = Math.atan2(endTan.y, endTan.x);
+
+    const fractureAnchor = new THREE.Group();
+    fractureAnchor.position.set(endPt.x, endPt.y, baseZ);
+    fractureAnchor.rotation.z = tanYawZ;
+    colonnadeGroup.add(fractureAnchor);
+
+    const stubSpecs = [
+      { geo: geoArchFracA, y: 0.24,  z: 0.16,  rx: 0.12, rz: 0.08,  sc: 1.05, mat: matMarbleArch },
+      { geo: geoArchFracB, y: -0.04, z: -0.22, rx: -0.1, rz: -0.06, sc: 0.96, mat: matMarbleColumn },
+      { geo: geoArchFracC, y: -0.26, z: 0.08,  rx: 0.06, rz: -0.14, sc: 0.88, mat: matStonePlinth },
+      { geo: geoArchFracB, y: 0.14,  z: -0.12, rx: 0.08, rz: 0.15,  sc: 0.78, mat: matMarbleArch },
+      { geo: geoArchFracC, y: 0.32,  z: -0.18, rx: -0.1, rz: 0.22,  sc: 0.72, mat: matWeatheredJoint }
+    ];
+    for (const st of stubSpecs) {
+      const m = new THREE.Mesh(st.geo, st.mat);
+      m.position.set(-0.08, st.y, st.z);
+      m.rotation.set(st.rx, 0, st.rz);
+      m.scale.setScalar(st.sc);
+      m.castShadow = true;
+      fractureAnchor.add(m);
+    }
+
+    // 折断伸出的香槟金拱骨残筋
+    const snappedGoldBar = new THREE.Mesh(
+      trackGeo(new THREE.CylinderGeometry(0.035, 0.062, 0.62, 6)),
+      matBrightGold
+    );
+    snappedGoldBar.rotation.z = -Math.PI * 0.5 + 0.18;
+    snappedGoldBar.position.set(0.24, -0.26, 0);
+    fractureAnchor.add(snappedGoldBar);
+
+    // 断裂缺口中受风神重力悬浮的 2 块碎裂楔石残块
+    for (let dIdx = 0; dIdx < 2; dIdx++) {
+      const rubble = new THREE.Group();
+      const rx = endPt.x + endTan.x * (0.42 + dIdx * 0.34) + endOutX * (dIdx === 0 ? 0.22 : -0.18);
+      const ry = endPt.y + endTan.y * (0.42 + dIdx * 0.34) + endOutY * (dIdx === 0 ? 0.22 : -0.18);
+      rubble.position.set(rx, ry, baseZ + (dIdx === 0 ? 0.14 : -0.16));
+      const rMesh = new THREE.Mesh(geoFloatingRubble, dIdx === 0 ? matMarbleColumn : matStonePlinth);
+      rMesh.scale.setScalar(0.72 - dIdx * 0.18);
+      rMesh.rotation.set(0.35 * side, 0.5 * dIdx, tanYawZ + 0.4 * side);
+      rubble.add(rMesh);
+      colonnadeGroup.add(rubble);
+
+      hoveringDrums.push({
+        group: rubble,
+        baseY: ry,
+        amp: 0.16 + dIdx * 0.05,
+        speed: 1.25 + dIdx * 0.35,
+        phase: side * 1.4 + dIdx * 2.1,
+        rotSpeed: 0.38 * side * (dIdx === 0 ? 1 : -1)
+      });
+    }
   }
 
-  // 圣殿拱门中心悬浮「风神星轨冠核」（双层香槟金平衡环 + 发光冰晶主核 + 柔和光晕）
+  // 圣殿拱门中心悬浮「风神星轨冠核」（AAA 双层不对称削面星晶簇 + 内发光青金核芯 + 双层细金星轨仪环）
   const crownGroup = new THREE.Group();
   crownGroup.position.set(0, 12.15, -11.01);
   colonnadeGroup.add(crownGroup);
 
-  const crownCrystal = new THREE.Mesh(trackGeo(new THREE.OctahedronGeometry(0.92, 0)), matStarCrystal);
-  crownCrystal.scale.set(0.66, 1.68, 0.66);
-  const crownInnerCore = new THREE.Mesh(trackGeo(new THREE.OctahedronGeometry(0.45, 0)), matCrystalCore);
-  crownInnerCore.scale.set(0.62, 1.55, 0.62);
-  crownGroup.add(crownCrystal, crownInnerCore);
+  const crownBuilt = buildStarCrystalCluster({
+    hero: true,
+    scale: 1.04,
+    subCount: 5,
+    includeOuterShell: true,
+    includeGoldCollar: true,
+    orbitRadius: 1.62,
+    secondaryOrbitRadius: 2.16,
+    orbitColorGold: true,
+    seed: 101
+  });
+  crownGroup.add(crownBuilt.cluster);
 
-  const gimbalRing1 = new THREE.Mesh(trackGeo(new THREE.TorusGeometry(1.55, 0.055, 10, 48)), matBrightGold);
-  const gimbalRing2 = new THREE.Mesh(trackGeo(new THREE.TorusGeometry(2.05, 0.045, 10, 56)), matChampagneGold);
-  gimbalRing2.rotation.x = Math.PI * 0.35;
-  crownGroup.add(gimbalRing1, gimbalRing2);
+  // 2 枚环绕主冠核微距悬游的极细星晶游离锋芒
+  for (let sp = 0; sp < 2; sp++) {
+    const sideDir = sp === 0 ? -1 : 1;
+    const floater = new THREE.Mesh(geoCrystalSplinter, matStarCrystal);
+    floater.position.set(sideDir * 0.92, sp === 0 ? 0.56 : -0.44, sideDir * 0.28);
+    floater.rotation.set(0.24 * sideDir, sp * 1.6, -0.32 * sideDir);
+    floater.scale.set(0.62, 0.78, 0.62);
+    const floaterCore = new THREE.Mesh(geoCrystalSplinter, matCrystalCore);
+    floaterCore.scale.set(0.50, 0.62, 0.50);
+    floater.add(floaterCore);
+    crownBuilt.spinPivot.add(floater);
+  }
 
   if (rawGlow) {
     const crownGlowMat = trackMat(
@@ -1281,7 +2729,7 @@ export function buildAltarBiome(THREE, texLib = {}) {
         color: 0x92ecff,
         map: rawGlow,
         transparent: true,
-        opacity: 0.68,
+        opacity: 0.56,
         blending: THREE.AdditiveBlending,
         depthWrite: false
       })
@@ -1292,20 +2740,17 @@ export function buildAltarBiome(THREE, texLib = {}) {
 
   floatingCrystals.push({
     group: crownGroup,
-    crystal: crownCrystal,
-    ringA: gimbalRing1,
-    ringB: gimbalRing2,
+    crystal: crownBuilt.spinPivot,
+    ringA: crownBuilt.ringA,
+    ringB: crownBuilt.ringB,
     baseY: 12.15,
     amp: 0.32,
     speed: 1.05,
     phase: 0.2,
-    spinSpeed: 0.55
+    spinSpeed: 0.52
   });
 
-  // 8 枚柱间悬浮发光星晶锥体（缓慢上下浮沉自转 + 倾角金环）
-  const geoBayCrystal = trackGeo(new THREE.OctahedronGeometry(0.54, 0));
-  const geoBayCore = trackGeo(new THREE.OctahedronGeometry(0.28, 0));
-  const geoBayHalo = trackGeo(new THREE.TorusGeometry(0.86, 0.032, 8, 32));
+  // 8 枚柱间悬浮 AAA 双层不对称星晶簇（主副削面棱晶 + 内发光青金核芯 + 半透折光外晶壳 + 细金星轨环饰）
   const bayAngles = [-170, -149, -131, -113, -67, -49, -31, -10];
 
   for (let i = 0; i < bayAngles.length; i++) {
@@ -1316,17 +2761,21 @@ export function buildAltarBiome(THREE, texLib = {}) {
     cg.position.set(Math.cos(a) * r, baseY, Math.sin(a) * r);
     colonnadeGroup.add(cg);
 
-    const cry = new THREE.Mesh(geoBayCrystal, matStarCrystal);
-    cry.scale.set(0.62, 1.85, 0.62);
-    const core = new THREE.Mesh(geoBayCore, matCrystalCore);
-    core.scale.set(0.55, 1.72, 0.55);
-    cry.add(core);
-    cg.add(cry);
-
-    const halo = new THREE.Mesh(geoBayHalo, i % 2 === 0 ? matBrightGold : matRuneGlowCyan);
-    halo.rotation.x = Math.PI * 0.5 + 0.28;
-    halo.rotation.y = a;
-    cg.add(halo);
+    const bayBuilt = buildStarCrystalCluster({
+      hero: false,
+      scale: 0.66,
+      subCount: 3,
+      includeOuterShell: true,
+      includeGoldCollar: true,
+      orbitRadius: 0.94,
+      secondaryOrbitRadius: i % 2 === 0 ? 1.18 : 0,
+      orbitColorGold: i % 2 === 0,
+      seed: 210 + i * 17
+    });
+    if (bayBuilt.ringA) {
+      bayBuilt.ringA.rotation.y = a;
+    }
+    cg.add(bayBuilt.cluster);
 
     if (rawGlow) {
       const glowSpriteMat = trackMat(
@@ -1334,7 +2783,7 @@ export function buildAltarBiome(THREE, texLib = {}) {
           color: 0x7ce6ff,
           map: rawGlow,
           transparent: true,
-          opacity: 0.48,
+          opacity: 0.42,
           blending: THREE.AdditiveBlending,
           depthWrite: false
         })
@@ -1346,68 +2795,225 @@ export function buildAltarBiome(THREE, texLib = {}) {
 
     floatingCrystals.push({
       group: cg,
-      crystal: cry,
-      ringA: halo,
-      ringB: null,
+      crystal: bayBuilt.spinPivot,
+      ringA: bayBuilt.ringA,
+      ringB: bayBuilt.ringB,
       baseY,
       amp: 0.34,
       speed: 1.15 + (i % 4) * 0.16,
       phase: i * 0.85,
-      spinSpeed: 0.62 * (i % 2 === 0 ? 1 : -1)
+      spinSpeed: 0.58 * (i % 2 === 0 ? 1 : -1)
     });
   }
 
-  // 2 座远景发光星晶石塔（立于祭坛后左右外侧浮空岛礁之上，烘托苍穹神域纵深）
+  // 2 座远景哥特云巅星晶尖塔（带凹槽浮雕塔身 + 4 面尖拱龛 + 飞扶壁小尖顶 + AAA 双层星晶簇）
+  // 共享哥特尖拱龛框几何体（Pointed Gothic Lancet Arch Frame）
+  const gothicArchFrameShape = new THREE.Shape();
+  gothicArchFrameShape.moveTo(-0.42, 0.0);
+  gothicArchFrameShape.lineTo(0.42, 0.0);
+  gothicArchFrameShape.lineTo(0.42, 1.32);
+  gothicArchFrameShape.quadraticCurveTo(0.40, 1.82, 0.0, 2.12);
+  gothicArchFrameShape.quadraticCurveTo(-0.40, 1.82, -0.42, 1.32);
+  gothicArchFrameShape.closePath();
+
+  const gothicArchHole = new THREE.Path();
+  gothicArchHole.moveTo(-0.26, 0.14);
+  gothicArchHole.lineTo(0.26, 0.14);
+  gothicArchHole.lineTo(0.26, 1.28);
+  gothicArchHole.quadraticCurveTo(0.24, 1.66, 0.0, 1.88);
+  gothicArchHole.quadraticCurveTo(-0.24, 1.66, -0.26, 1.28);
+  gothicArchHole.closePath();
+  gothicArchFrameShape.holes.push(gothicArchHole);
+
+  const geoTowerArchFrame = trackGeo(
+    new THREE.ExtrudeGeometry(gothicArchFrameShape, {
+      depth: 0.18,
+      bevelEnabled: true,
+      bevelThickness: 0.025,
+      bevelSize: 0.022,
+      bevelSegments: 2,
+      curveSegments: 10
+    })
+  );
+  geoTowerArchFrame.translate(0, 0, -0.09);
+  geoTowerArchFrame.computeVertexNormals();
+
+  const geoTowerNicheBack = trackGeo(new THREE.BoxGeometry(0.56, 1.84, 0.08));
+  const geoTowerButtressLower = trackGeo(new THREE.BoxGeometry(0.42, 2.25, 0.56));
+  const geoTowerButtressUpper = trackGeo(new THREE.BoxGeometry(0.30, 1.35, 0.40));
+  const geoTowerPinnacle = trackGeo(new THREE.ConeGeometry(0.20, 0.96, 4));
+  const geoTowerMerlon = trackGeo(new THREE.BoxGeometry(0.28, 0.34, 0.22));
+  const geoTowerChainA = trackGeo(createHangingChainGeometry(THREE, 9, 0.32, 3.3));
+  const geoTowerChainB = trackGeo(createHangingChainGeometry(THREE, 7, -0.24, 8.1));
+
   const spireTowerPositions = [
     { x: -14.8, y: 1.6, z: -15.2, scale: 1.08, phase: 0.6 },
     { x: 14.8,  y: 1.9, z: -15.2, scale: 1.02, phase: 2.4 }
   ];
-  for (const tp of spireTowerPositions) {
+  for (let tIdx = 0; tIdx < spireTowerPositions.length; tIdx++) {
+    const tp = spireTowerPositions[tIdx];
     const tower = new THREE.Group();
     tower.position.set(tp.x, tp.y, tp.z);
     tower.scale.setScalar(tp.scale);
     group.add(tower);
 
-    // 浮空底座岩岛
+    // 浮空底座岩岛 + 底部锥刺削面岩层 + 垂挂冰晶棱柱 + 悬垂断链
     const isletRock = new THREE.Mesh(
-      trackGeo(createFloatingRockSpireGeometry(THREE, 2.55, 4.6, 12, 6, tp.phase * 5.0)),
+      trackGeo(createFloatingRockSpireGeometry(THREE, 2.62, 4.8, 12, 6, tp.phase * 5.0)),
       matRockSpire
     );
     tower.add(isletRock);
 
-    const isletCap = new THREE.Mesh(trackGeo(new THREE.CylinderGeometry(2.55, 2.65, 0.34, 8)), matMarbleArch);
-    isletCap.position.y = 0.17;
+    const isletSpikes = new THREE.Mesh(
+      trackGeo(createSpikedRockClusterGeometry(THREE, 2.15, 3.6, 5, 41 + tIdx * 17)),
+      matRockSpire
+    );
+    isletSpikes.position.y = -1.6;
+    tower.add(isletSpikes);
+
+    for (let ic = 0; ic < 3; ic++) {
+      const ia = (ic / 3) * Math.PI * 2 + tIdx * 0.9;
+      const hangIce = new THREE.Mesh(geoCrystalSide5, matStarCrystal);
+      hangIce.position.set(Math.cos(ia) * 1.45, -1.45 - ic * 0.22, Math.sin(ia) * 1.45);
+      hangIce.rotation.set(Math.PI + 0.16 * Math.sin(ia), ia, -0.16 * Math.cos(ia));
+      hangIce.scale.set(0.62, 0.95 + ic * 0.18, 0.62);
+      tower.add(hangIce);
+    }
+
+    for (let ch = 0; ch < 2; ch++) {
+      const ca = (ch === 0 ? -0.6 : 2.2) + tIdx * 0.7;
+      const chainMesh = new THREE.Mesh(ch === 0 ? geoTowerChainA : geoTowerChainB, matAncientChain);
+      chainMesh.position.set(Math.cos(ca) * 2.15, -0.45, Math.sin(ca) * 2.15);
+      tower.add(chainMesh);
+      swayingChains.push({
+        mesh: chainMesh,
+        baseRotZ: 0,
+        amp: 0.08 + ch * 0.03,
+        speed: 1.15 + ch * 0.3,
+        phase: tp.phase + ch * 1.9
+      });
+    }
+
+    // 阶梯八角哥特塔座与金檐圈
+    const isletCap = new THREE.Mesh(trackGeo(new THREE.CylinderGeometry(2.55, 2.72, 0.36, 8)), matMarbleArch);
+    isletCap.position.y = 0.18;
     tower.add(isletCap);
+    const isletCapGold = new THREE.Mesh(trackGeo(new THREE.TorusGeometry(2.56, 0.065, 8, 8)), matChampagneGold);
+    isletCapGold.rotation.x = Math.PI * 0.5;
+    isletCapGold.rotation.z = Math.PI / 8;
+    isletCapGold.position.y = 0.36;
+    tower.add(isletCapGold);
 
-    // 三段悬浮叠升星晶尖塔
-    const seg1 = new THREE.Mesh(trackGeo(new THREE.CylinderGeometry(0.72, 1.05, 3.2, 6)), matMarbleColumn);
-    seg1.position.y = 1.95;
-    tower.add(seg1);
+    const towerBasePedestal = new THREE.Mesh(trackGeo(new THREE.CylinderGeometry(1.48, 1.72, 0.56, 8)), matStonePlinth);
+    towerBasePedestal.position.y = 0.62;
+    tower.add(towerBasePedestal);
 
-    const segGold = new THREE.Mesh(trackGeo(new THREE.TorusGeometry(1.18, 0.065, 8, 24)), matBrightGold);
+    // 哥特凹槽浮雕主塔身（16 凹槽大理石柱身 + 双道金腰线）
+    const flutedShaft = new THREE.Mesh(
+      trackGeo(createFlutedColumnGeometry(THREE, 1.12, 0.92, 3.15, false, 0, rng)),
+      matMarbleColumn
+    );
+    flutedShaft.position.y = 0.86;
+    tower.add(flutedShaft);
+
+    const beltMid = new THREE.Mesh(trackGeo(new THREE.TorusGeometry(1.08, 0.055, 8, 24)), matChampagneGold);
+    beltMid.rotation.x = Math.PI * 0.5;
+    beltMid.position.y = 2.48;
+    tower.add(beltMid);
+
+    // 4 面哥特尖拱龛（带深蓝石龛背、尖拱框饰与龛内发光星晶圣物）
+    for (let nIdx = 0; nIdx < 4; nIdx++) {
+      const na = (nIdx / 4) * Math.PI * 2;
+      const nicheGroup = new THREE.Group();
+      nicheGroup.position.set(Math.cos(na) * 1.02, 1.04, Math.sin(na) * 1.02);
+      nicheGroup.rotation.y = -na + Math.PI * 0.5;
+
+      const backPlate = new THREE.Mesh(geoTowerNicheBack, matNicheRecess);
+      backPlate.position.set(0, 0.96, -0.04);
+      nicheGroup.add(backPlate);
+
+      const archFrame = new THREE.Mesh(geoTowerArchFrame, matMarbleArch);
+      nicheGroup.add(archFrame);
+
+      const archGoldTip = new THREE.Mesh(geoOrbitalBead, matBrightGold);
+      archGoldTip.position.set(0, 2.22, 0.04);
+      archGoldTip.scale.set(1.2, 1.5, 0.9);
+      nicheGroup.add(archGoldTip);
+
+      // 尖拱龛内微型发光星晶
+      const nicheRelic = new THREE.Mesh(geoCrystalSplinter, matStarCrystal);
+      nicheRelic.position.set(0, 0.96, 0.06);
+      nicheRelic.scale.set(0.62, 0.74, 0.62);
+      nicheGroup.add(nicheRelic);
+
+      tower.add(nicheGroup);
+    }
+
+    // 4 角哥特飞扶壁柱墩与尖顶小尖塔（Pinnacles）
+    for (let bIdx = 0; bIdx < 4; bIdx++) {
+      const ba = (bIdx / 4) * Math.PI * 2 + Math.PI * 0.25;
+      const buttGroup = new THREE.Group();
+      buttGroup.position.set(Math.cos(ba) * 1.24, 0.86, Math.sin(ba) * 1.24);
+      buttGroup.rotation.y = -ba + Math.PI * 0.5;
+
+      const bLow = new THREE.Mesh(geoTowerButtressLower, matStonePlinth);
+      bLow.position.y = 1.12;
+      buttGroup.add(bLow);
+
+      const bUp = new THREE.Mesh(geoTowerButtressUpper, matMarbleArch);
+      bUp.position.set(0, 2.86, -0.08);
+      buttGroup.add(bUp);
+
+      const bPin = new THREE.Mesh(geoTowerPinnacle, matMarbleColumn);
+      bPin.position.set(0, 4.02, -0.08);
+      buttGroup.add(bPin);
+
+      const bFinial = new THREE.Mesh(geoOrbitalBead, matBrightGold);
+      bFinial.position.set(0, 4.56, -0.08);
+      bFinial.scale.set(1.0, 1.4, 1.0);
+      buttGroup.add(bFinial);
+
+      tower.add(buttGroup);
+    }
+
+    // 塔顶哥特花冠挑檐平台 + 8 枚矮堞花冠
+    const towerCrownDeck = new THREE.Mesh(trackGeo(new THREE.CylinderGeometry(1.36, 1.10, 0.36, 8)), matMarbleArch);
+    towerCrownDeck.position.y = 4.10;
+    tower.add(towerCrownDeck);
+
+    const segGold = new THREE.Mesh(trackGeo(new THREE.TorusGeometry(1.36, 0.072, 8, 24)), matBrightGold);
     segGold.rotation.x = Math.PI * 0.5;
-    segGold.position.y = 3.75;
+    segGold.position.y = 4.28;
     tower.add(segGold);
 
-    const spireCrystal = new THREE.Mesh(trackGeo(new THREE.OctahedronGeometry(1.12, 0)), matStarCrystal);
-    spireCrystal.scale.set(0.68, 2.35, 0.68);
-    spireCrystal.position.y = 6.2;
-    tower.add(spireCrystal);
+    for (let mIdx = 0; mIdx < 8; mIdx++) {
+      const ma = (mIdx / 8) * Math.PI * 2;
+      const merlon = new THREE.Mesh(geoTowerMerlon, matMarbleColumn);
+      merlon.position.set(Math.cos(ma) * 1.24, 4.44, Math.sin(ma) * 1.24);
+      merlon.rotation.y = -ma + Math.PI * 0.5;
+      tower.add(merlon);
+    }
 
-    const spireCore = new THREE.Mesh(trackGeo(new THREE.OctahedronGeometry(0.55, 0)), matCrystalCore);
-    spireCore.scale.set(0.6, 2.1, 0.6);
-    spireCrystal.add(spireCore);
-
-    const towerRing = new THREE.Mesh(trackGeo(new THREE.TorusGeometry(1.75, 0.05, 8, 36)), matRuneGlowCyan);
-    towerRing.rotation.x = Math.PI * 0.5 + 0.22;
-    towerRing.position.y = 6.2;
-    tower.add(towerRing);
+    // 塔顶悬浮 AAA 双层不对称星晶簇 + 双层细金/苍青星轨仪环
+    const spireBuilt = buildStarCrystalCluster({
+      hero: true,
+      scale: 1.10,
+      subCount: 4,
+      includeOuterShell: true,
+      includeGoldCollar: true,
+      orbitRadius: 1.82,
+      secondaryOrbitRadius: 2.28,
+      orbitColorGold: false,
+      seed: 310 + tIdx * 37
+    });
+    spireBuilt.cluster.position.y = 6.55;
+    tower.add(spireBuilt.cluster);
 
     floatingCrystals.push({
       group: tower,
-      crystal: spireCrystal,
-      ringA: towerRing,
-      ringB: segGold,
+      crystal: spireBuilt.spinPivot,
+      ringA: spireBuilt.ringA,
+      ringB: spireBuilt.ringB,
       baseY: tp.y,
       amp: 0.42,
       speed: 0.72,
@@ -1423,11 +3029,83 @@ export function buildAltarBiome(THREE, texLib = {}) {
   islandsGroup.name = 'floating_rune_monoliths';
   group.add(islandsGroup);
 
-  // 共享几何体：符文巨石与星晶碎片
-  const geoMonolith = trackGeo(new THREE.CylinderGeometry(0.75, 1.15, 3.8, 6));
-  const geoMonolithBand = trackGeo(new THREE.TorusGeometry(1.02, 0.045, 6, 6));
-  geoMonolithBand.rotateX(Math.PI * 0.5);
-  const geoShardSmall = trackGeo(new THREE.OctahedronGeometry(0.52, 0));
+  // 共享几何体：多面雕刻方尖碑、底部锥刺岩层簇、风神遗迹残柱/石鼓与悬垂断链
+  const geoCarvedObelisk = trackGeo(createCarvedObeliskGeometry(THREE));
+  const geoObeliskCollar = trackGeo(new THREE.TorusGeometry(0.84, 0.048, 6, 8));
+  geoObeliskCollar.rotateX(Math.PI * 0.5);
+  geoObeliskCollar.rotateY(Math.PI / 8);
+  const geoObeliskRuneStrip = trackGeo(new THREE.BoxGeometry(0.085, 2.25, 0.045));
+  const geoObeliskGoldCap = trackGeo(new THREE.ConeGeometry(0.45, 0.62, 4));
+  geoObeliskGoldCap.rotateY(Math.PI * 0.25);
+
+  const geoSpikedUnderA = trackGeo(createSpikedRockClusterGeometry(THREE, 1.85, 3.1, 5, 51.3));
+  const geoSpikedUnderB = trackGeo(createSpikedRockClusterGeometry(THREE, 1.45, 2.75, 4, 83.7));
+  const geoSpikedUnderC = trackGeo(createSpikedRockClusterGeometry(THREE, 1.15, 2.45, 4, 117.1));
+
+  const geoChainShort = trackGeo(createHangingChainGeometry(THREE, 6, 0.22, 1.7));
+  const geoChainMed = trackGeo(createHangingChainGeometry(THREE, 8, -0.28, 4.9));
+  const geoChainLong = trackGeo(createHangingChainGeometry(THREE, 10, 0.34, 9.2));
+
+  const geoIsletCap = trackGeo(new THREE.CylinderGeometry(1.94, 2.08, 0.30, 8));
+  const geoIsletCapGold = trackGeo(new THREE.TorusGeometry(1.96, 0.052, 6, 8));
+  geoIsletCapGold.rotateX(Math.PI * 0.5);
+  geoIsletCapGold.rotateZ(Math.PI / 8);
+  const geoMiniPlinth = trackGeo(new THREE.BoxGeometry(0.84, 0.24, 0.84));
+  const geoFallenDrum = trackGeo(createFlutedColumnGeometry(THREE, 0.27, 0.26, 0.94, true, 1.15, rng));
+  const geoRuinArchStub = trackGeo(
+    new THREE.TubeGeometry(
+      new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-0.55, 0.0, 0),
+        new THREE.Vector3(-0.42, 0.72, 0),
+        new THREE.Vector3(-0.08, 1.14, 0)
+      ]),
+      10,
+      0.13,
+      7,
+      false
+    )
+  );
+
+  // 辅助：在浮空岩块底部挂载垂挂冰晶棱柱与飘摆古遗迹断链
+  function attachUnderIceAndChains(parent, radius, baseY, iceCount, chainCount, seedIdx) {
+    for (let ic = 0; ic < iceCount; ic++) {
+      const ia = (ic / Math.max(1, iceCount)) * Math.PI * 2 + seedIdx * 0.77;
+      const dist = radius * (0.45 + (ic % 2) * 0.28);
+      const hangGeo = ic % 2 === 0 ? geoCrystalSide5 : geoCrystalSplinter;
+      const icePivot = new THREE.Group();
+      icePivot.position.set(Math.cos(ia) * dist, baseY - 0.15 - (ic % 3) * 0.18, Math.sin(ia) * dist);
+      icePivot.rotation.set(Math.PI + 0.18 * Math.sin(ia), ia, -0.18 * Math.cos(ia));
+
+      const iceLen = 0.72 + (ic % 3) * 0.24;
+      const iceBody = new THREE.Mesh(hangGeo, matStarCrystal);
+      iceBody.scale.set(0.62, iceLen, 0.62);
+      icePivot.add(iceBody);
+
+      const iceCore = new THREE.Mesh(hangGeo, matCrystalCore);
+      iceCore.scale.set(0.32, iceLen * 0.62, 0.32);
+      icePivot.add(iceCore);
+
+      parent.add(icePivot);
+    }
+
+    const chainPool = [geoChainShort, geoChainMed, geoChainLong];
+    for (let ch = 0; ch < chainCount; ch++) {
+      const ca = (ch / Math.max(1, chainCount)) * Math.PI * 2 + seedIdx * 1.15 + 0.4;
+      const chainGeo = chainPool[(seedIdx + ch) % chainPool.length];
+      const chainMesh = new THREE.Mesh(chainGeo, matAncientChain);
+      chainMesh.position.set(Math.cos(ca) * radius * 0.86, baseY + 0.22, Math.sin(ca) * radius * 0.86);
+      chainMesh.rotation.y = ca;
+      parent.add(chainMesh);
+
+      swayingChains.push({
+        mesh: chainMesh,
+        baseRotZ: 0,
+        amp: 0.085 + (ch % 2) * 0.04,
+        speed: 1.05 + ((seedIdx + ch) % 4) * 0.22,
+        phase: seedIdx * 0.9 + ch * 2.1
+      });
+    }
+  }
 
   // 精选 18 组角度与半径（广角全景环绕后方与左右两侧，前侧低洼处仅 2 块深渊碎岩不遮镜头）
   const islandBlueprints = [
@@ -1463,59 +3141,156 @@ export function buildAltarBiome(THREE, texLib = {}) {
     islandsGroup.add(holder);
 
     if (bp.type === 'islet') {
-      // 浮空小岛：倒锥岩基 + 白瓷顶盖 + 迷你断柱或发光晶簇
+      // 浮空遗迹小岛：倒锥岩基 + 底部锥刺削面岩层 + 垂挂冰晶棱柱 + 飘摆断链 + 风神残柱/残拱 + 双层星晶簇
       const rock = new THREE.Mesh(
-        trackGeo(createFloatingRockSpireGeometry(THREE, 1.9, 3.3, 10, 5, 30 + i * 2.7)),
+        trackGeo(createFloatingRockSpireGeometry(THREE, 1.95, 3.25, 10, 5, 30 + i * 2.7)),
         matRockSpire
       );
       holder.add(rock);
 
-      const cap = new THREE.Mesh(trackGeo(new THREE.CylinderGeometry(1.88, 1.95, 0.28, 8)), matMarbleArch);
-      cap.position.y = 0.14;
+      const underSpikes = new THREE.Mesh(i % 2 === 0 ? geoSpikedUnderA : geoSpikedUnderB, matRockSpire);
+      underSpikes.position.y = -1.15;
+      underSpikes.rotation.y = i * 1.1;
+      holder.add(underSpikes);
+
+      attachUnderIceAndChains(holder, 1.55, -0.78, 3, i % 2 === 0 ? 2 : 1, i);
+
+      const cap = new THREE.Mesh(geoIsletCap, matMarbleArch);
+      cap.position.y = 0.15;
       holder.add(cap);
+      const capGold = new THREE.Mesh(geoIsletCapGold, matChampagneGold);
+      capGold.position.y = 0.30;
+      holder.add(capGold);
+
+      // 风神遗迹残柱 + 方座 + 倾倒残石鼓 / 断拱残臂
+      const ruinPlinth = new THREE.Mesh(geoMiniPlinth, matStonePlinth);
+      ruinPlinth.position.set(-0.56, 0.42, 0.24);
+      holder.add(ruinPlinth);
+
+      const miniPillar = new THREE.Mesh(
+        trackGeo(createFlutedColumnGeometry(THREE, 0.30, 0.27, 1.85 + (i % 3) * 0.32, true, i * 0.9, rng)),
+        matMarbleColumn
+      );
+      miniPillar.position.set(-0.56, 0.54, 0.24);
+      holder.add(miniPillar);
 
       if (i % 2 === 0) {
-        const miniPillar = new THREE.Mesh(
-          trackGeo(createFlutedColumnGeometry(THREE, 0.32, 0.29, 1.9, true, i * 0.9, rng)),
-          matMarbleColumn
-        );
-        miniPillar.position.set(-0.4, 0.28, 0.2);
-        holder.add(miniPillar);
+        // 倾倒斜卧的凹槽石鼓
+        const fallenDrum = new THREE.Mesh(geoFallenDrum, matMarbleArch);
+        fallenDrum.position.set(-0.08, 0.54, 0.82);
+        fallenDrum.rotation.set(Math.PI * 0.44, i * 0.7, 0.42);
+        holder.add(fallenDrum);
+      } else {
+        // 残缺风神小石拱残臂
+        const archStub = new THREE.Mesh(geoRuinArchStub, matMarbleArch);
+        archStub.position.set(-0.02, 1.62, 0.24);
+        archStub.rotation.y = 0.35;
+        holder.add(archStub);
       }
-      const miniCrystal = new THREE.Mesh(geoShardSmall, matStarCrystal);
-      miniCrystal.scale.set(0.65, 1.85, 0.65);
-      miniCrystal.position.set(0.45, 1.1, -0.2);
-      holder.add(miniCrystal);
-    } else if (bp.type === 'monolith') {
-      // 符文巨石：六棱柱石碑 + 双道发光青/金符文环
-      const stone = new THREE.Mesh(geoMonolith, matMonolithStone);
-      stone.rotation.set((rng() - 0.5) * 0.18, rng() * Math.PI, (rng() - 0.5) * 0.18);
-      holder.add(stone);
 
-      const band1 = new THREE.Mesh(geoMonolithBand, i % 2 === 0 ? matRuneGlowCyan : matRuneGlowGold);
-      band1.position.y = 0.55;
-      stone.add(band1);
-      const band2 = new THREE.Mesh(geoMonolithBand, i % 2 === 0 ? matRuneGlowGold : matRuneGlowCyan);
-      band2.position.y = -0.65;
-      band2.scale.setScalar(1.12);
-      stone.add(band2);
+      // 岛上雕琢双层星晶簇
+      const isletCrystal = buildStarCrystalCluster({
+        hero: false,
+        scale: 0.48,
+        subCount: 2,
+        includeOuterShell: true,
+        includeGoldCollar: false,
+        orbitRadius: 0.68,
+        secondaryOrbitRadius: 0,
+        orbitColorGold: i % 2 === 0,
+        seed: 410 + i * 19
+      });
+      isletCrystal.cluster.position.set(0.62, 1.18, -0.26);
+      holder.add(isletCrystal.cluster);
+    } else if (bp.type === 'monolith') {
+      // 多面雕刻浮空方尖碑：底部锥刺岩基 + 垂挂冰晶与断链 + 削角八面雕刻碑身 + 竖向发光符文槽 + 金顶锥 + 尖顶微晶信标
+      const stoneGroup = new THREE.Group();
+      stoneGroup.rotation.set((rng() - 0.5) * 0.14, rng() * Math.PI, (rng() - 0.5) * 0.14);
+      holder.add(stoneGroup);
+
+      const obeliskRock = new THREE.Mesh(geoSpikedUnderC, matRockSpire);
+      obeliskRock.position.y = -1.62;
+      obeliskRock.rotation.y = i * 0.8;
+      stoneGroup.add(obeliskRock);
+
+      attachUnderIceAndChains(stoneGroup, 0.92, -1.55, 2, 1, i + 30);
+
+      const obeliskBody = new THREE.Mesh(geoCarvedObelisk, matMonolithStone);
+      stoneGroup.add(obeliskBody);
+
+      // 4 面竖向发光青/金符文槽嵌条
+      const primaryRuneMat = i % 2 === 0 ? matRuneGlowCyan : matRuneGlowGold;
+      const secondaryRuneMat = i % 2 === 0 ? matRuneGlowGold : matRuneGlowCyan;
+      for (let f = 0; f < 4; f++) {
+        const fa = (f / 4) * Math.PI * 2;
+        const runeStrip = new THREE.Mesh(geoObeliskRuneStrip, f % 2 === 0 ? primaryRuneMat : secondaryRuneMat);
+        runeStrip.position.set(Math.cos(fa) * 0.67, 0.12, Math.sin(fa) * 0.67);
+        runeStrip.rotation.y = -fa + Math.PI * 0.5;
+        stoneGroup.add(runeStrip);
+      }
+
+      // 上下双道八角削角金青符文箍
+      const band1 = new THREE.Mesh(geoObeliskCollar, primaryRuneMat);
+      band1.position.y = 0.25;
+      band1.scale.setScalar(0.95);
+      stoneGroup.add(band1);
+      const band2 = new THREE.Mesh(geoObeliskCollar, secondaryRuneMat);
+      band2.position.y = -1.28;
+      band2.scale.setScalar(1.14);
+      stoneGroup.add(band2);
+      const bandGold = new THREE.Mesh(geoObeliskCollar, matChampagneGold);
+      bandGold.position.y = 1.62;
+      bandGold.scale.setScalar(0.80);
+      stoneGroup.add(bandGold);
+
+      // 方尖碑金字塔冠顶 + 悬空微型星晶信标
+      const capGold = new THREE.Mesh(geoObeliskGoldCap, matBrightGold);
+      capGold.position.y = 2.24;
+      stoneGroup.add(capGold);
+
+      const beaconCrystal = new THREE.Mesh(geoCrystalSplinter, matStarCrystal);
+      beaconCrystal.position.y = 3.05;
+      beaconCrystal.scale.set(0.68, 0.85, 0.68);
+      const beaconCore = new THREE.Mesh(geoCrystalSplinter, matCrystalCore);
+      beaconCore.scale.set(0.45, 0.62, 0.45);
+      beaconCrystal.add(beaconCore);
+      stoneGroup.add(beaconCrystal);
     } else {
-      // 星晶岩簇：多面体浮岩 + 3 枚斜插发光星晶
+      // 浮空锥刺星晶岩簇：多层硬削面悬崖岩块 + 锥刺底岩 + 垂挂冰晶棱柱 + 遗迹残柱与断链 + AAA 双层星晶簇
       const crag = new THREE.Mesh(
-        trackGeo(new THREE.DodecahedronGeometry(1.35, 0)),
+        trackGeo(new THREE.DodecahedronGeometry(1.32, 0)),
         matMonolithStone
       );
-      crag.scale.set(1.15, 0.85, 1.0);
+      crag.scale.set(1.18, 0.72, 1.04);
       holder.add(crag);
 
-      for (let k = 0; k < 3; k++) {
-        const shard = new THREE.Mesh(geoShardSmall, matStarCrystal);
-        shard.scale.set(0.55, 1.7 + k * 0.35, 0.55);
-        const ka = (k / 3) * Math.PI * 2 + i;
-        shard.position.set(Math.cos(ka) * 0.65, 0.65 + k * 0.15, Math.sin(ka) * 0.65);
-        shard.rotation.set(0.28 * Math.sin(ka), ka, -0.28 * Math.cos(ka));
-        holder.add(shard);
-      }
+      const cragSpikes = new THREE.Mesh(geoSpikedUnderB, matRockSpire);
+      cragSpikes.position.y = -0.35;
+      cragSpikes.rotation.y = i * 1.3;
+      holder.add(cragSpikes);
+
+      attachUnderIceAndChains(holder, 1.25, -0.52, 3, 2, i + 60);
+
+      // 岩块侧缘嵌生一段倾折的风神遗迹凹槽断柱
+      const jutPillar = new THREE.Mesh(geoFallenDrum, matMarbleColumn);
+      jutPillar.position.set(-0.92, 0.35, 0.48);
+      jutPillar.rotation.set(0.28, i * 0.6, 0.44);
+      holder.add(jutPillar);
+
+      // 顶部 AAA 多面体双层不对称星晶簇
+      const cragCluster = buildStarCrystalCluster({
+        hero: false,
+        scale: 0.64,
+        subCount: 4,
+        includeOuterShell: true,
+        includeGoldCollar: true,
+        orbitRadius: 0.94,
+        secondaryOrbitRadius: 0,
+        orbitColorGold: i % 2 === 1,
+        seed: 610 + i * 29
+      });
+      cragCluster.cluster.position.set(0.18, 1.22, -0.06);
+      holder.add(cragCluster.cluster);
     }
 
     floatingIslands.push({
@@ -1707,60 +3482,239 @@ export function buildAltarBiome(THREE, texLib = {}) {
   });
   group.add(cloudLower, cloudUpper);
 
-  // 远景日照金边积云峰（10 组软羽化云朵立于后方地平线云海之上，丰富天空地平线剪影）
-  const puffUniforms = {
-    uTime: { value: 0 },
-    uCloudTex: { value: cloudSampleTex },
-    uHasCloudTex: { value: rawCloud ? 1.0 : 0.0 }
-  };
-  shaderUniforms.push(puffUniforms);
+  // 远景多层立体堆积云峰与连续波浪云脊（彻底告别直立纸片平面，采用 3D 球簇与柔和菲涅耳散射体积着色）
+  const volCloudLayers = [];
+  function createVolumetricCloudMat(opacity, heightScale, speed) {
+    const uniforms = {
+      uTime: { value: 0 },
+      uCloudTex: { value: cloudSampleTex },
+      uHasCloudTex: { value: rawCloud ? 1.0 : 0.0 },
+      uSunDir: { value: sunDir.clone() },
+      uFogColor: { value: new THREE.Color(0xd9e8f9) },
+      uOpacity: { value: opacity },
+      uHeightScale: { value: heightScale },
+      uSpeed: { value: speed },
+      uStormLevel: { value: 0.0 }
+    };
+    shaderUniforms.push(uniforms);
+    volCloudLayers.push({ uniforms, baseSpeed: speed });
 
-  const cloudPuffMat = trackMat(
-    new THREE.ShaderMaterial({
-      uniforms: puffUniforms,
-      transparent: true,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-      vertexShader: /* glsl */ `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: /* glsl */ `
-        uniform float uTime;
-        uniform sampler2D uCloudTex;
-        uniform float uHasCloudTex;
-        varying vec2 vUv;
-        void main() {
-          vec2 p = (vUv - vec2(0.5, 0.42)) * vec2(2.0, 2.35);
-          float baseShape = 1.0 - smoothstep(0.28, 0.96, length(p));
-          float n = texture2D(uCloudTex, vUv * 1.4 + vec2(uTime * 0.008, 0.0)).r;
-          float nMix = mix(0.65, n, uHasCloudTex);
-          float alpha = smoothstep(0.24, 0.72, baseShape * (0.62 + nMix * 0.65));
-          alpha *= smoothstep(0.0, 0.25, vUv.y);
+    return trackMat(
+      new THREE.ShaderMaterial({
+        uniforms,
+        transparent: true,
+        depthWrite: false,
+        side: THREE.FrontSide,
+        vertexShader: /* glsl */ `
+          uniform float uTime;
+          uniform float uSpeed;
+          uniform float uHeightScale;
+          varying vec3 vWorldPos;
+          varying vec3 vWorldNormal;
+          varying vec3 vViewDir;
+          varying float vHeightNorm;
+          void main() {
+            vec4 baseWp = modelMatrix * vec4(position, 1.0);
+            float billow = sin(baseWp.x * 0.13 + uTime * 0.42 * uSpeed + baseWp.z * 0.11) *
+                           cos(baseWp.z * 0.12 - uTime * 0.31 * uSpeed) * 0.14;
+            vec3 displaced = position + normal * billow;
+            vec4 wp = modelMatrix * vec4(displaced, 1.0);
+            vWorldPos = wp.xyz;
+            vWorldNormal = normalize(mat3(modelMatrix) * normal);
+            vViewDir = normalize(cameraPosition - wp.xyz);
+            vHeightNorm = clamp(position.y / max(uHeightScale, 0.2) * 0.52 + 0.48, 0.0, 1.0);
+            gl_Position = projectionMatrix * viewMatrix * wp;
+          }
+        `,
+        fragmentShader: /* glsl */ `
+          uniform float uTime;
+          uniform sampler2D uCloudTex;
+          uniform float uHasCloudTex;
+          uniform vec3 uSunDir;
+          uniform vec3 uFogColor;
+          uniform float uOpacity;
+          uniform float uSpeed;
+          uniform float uStormLevel;
+          varying vec3 vWorldPos;
+          varying vec3 vWorldNormal;
+          varying vec3 vViewDir;
+          varying float vHeightNorm;
 
-          // 云顶暖香槟金受光 + 云底晴空浅蓝
-          vec3 col = mix(vec3(0.76, 0.86, 0.97), vec3(1.0, 0.95, 0.84), smoothstep(0.22, 0.82, vUv.y));
-          col += vec3(0.22, 0.14, 0.04) * smoothstep(0.62, 0.95, vUv.y);
-          if (alpha < 0.01) discard;
-          gl_FragColor = vec4(col, alpha * 0.56);
-        }
-      `
-    })
+          float hashC(vec2 p) {
+            p = fract(p * vec2(127.1, 311.7));
+            p += dot(p, p + 34.5);
+            return fract(p.x * p.y);
+          }
+
+          float noiseC(vec2 p) {
+            vec2 i = floor(p);
+            vec2 f = fract(p);
+            f = f * f * (3.0 - 2.0 * f);
+            return mix(
+              mix(hashC(i), hashC(i + vec2(1.0, 0.0)), f.x),
+              mix(hashC(i + vec2(0.0, 1.0)), hashC(i + vec2(1.0, 1.0)), f.x),
+              f.y
+            );
+          }
+
+          void main() {
+            vec3 N = normalize(vWorldNormal);
+            vec3 V = normalize(vViewDir);
+            vec3 L = normalize(uSunDir);
+
+            // 3D 菲涅耳边缘柔化羽化（从任意视角均消除球体硬轮廓与纸片边界感）
+            float ndotv = clamp(abs(dot(N, V)), 0.0, 1.0);
+            float softEdge = smoothstep(0.08, 0.74, ndotv);
+
+            // 世界空间云絮流动噪波调制
+            vec2 cUv = vWorldPos.xz * 0.026 + vec2(uTime * 0.012 * uSpeed, vWorldPos.y * 0.032);
+            float procN = noiseC(cUv * 6.0) * 0.65 + noiseC(cUv * 12.5 - vec2(uTime * 0.015, 0.0)) * 0.35;
+            float texN = texture2D(uCloudTex, cUv).r;
+            float wisp = mix(procN, texN, uHasCloudTex);
+
+            float hGrad = clamp(vHeightNorm, 0.0, 1.0);
+            float baseFade = smoothstep(0.02, 0.30, hGrad);
+            float alpha = softEdge * baseFade * (0.68 + 0.42 * wisp) * uOpacity;
+
+            // 日照立体受光：苍青云腹 → 雪白云体 → 香槟金/青金风暴云冠
+            float ndotl = dot(N, L) * 0.5 + 0.5;
+            float forwardScatter = pow(max(dot(-V, L), 0.0), 3.2);
+            vec3 colBelly = mix(vec3(0.56, 0.74, 0.93), vec3(0.30, 0.60, 0.88), uStormLevel);
+            vec3 colBody  = mix(vec3(0.95, 0.98, 1.00), vec3(0.84, 0.96, 1.00), uStormLevel);
+            vec3 colGold  = mix(vec3(1.00, 0.90, 0.70), vec3(0.74, 0.95, 1.00), uStormLevel * 0.42);
+
+            vec3 col = mix(colBelly, colBody, smoothstep(0.14, 0.76, hGrad * 0.62 + ndotl * 0.48));
+            float rimLit = clamp((hGrad * 0.58 + forwardScatter * 0.55) * ndotl + (1.0 - ndotv) * 0.25 * hGrad, 0.0, 0.80);
+            col = mix(col, colGold, rimLit * 0.74);
+
+            // 风暴眼二阶段云脊隐现青金电辉
+            if (uStormLevel > 0.01) {
+              float flash = pow(hGrad, 1.6) * (0.5 + 0.5 * sin(uTime * 3.4 + vWorldPos.x * 0.14 - vWorldPos.z * 0.09));
+              col += vec3(0.30, 0.88, 1.00) * flash * uStormLevel * 0.24;
+            }
+
+            // 远景大气雾融（与天空地平线丝滑融合）
+            float distXZ = length(vWorldPos.xz);
+            float fogMix = smoothstep(34.0, 76.0, distXZ);
+            col = mix(col, uFogColor, fogMix * 0.72);
+
+            if (alpha < 0.008) discard;
+            gl_FragColor = vec4(col, alpha);
+          }
+        `
+      })
+    );
+  }
+
+  const volCloudMidMat = createVolumetricCloudMat(0.39, 1.0, 1.0);
+  const volCloudFarMat = createVolumetricCloudMat(0.28, 1.0, 0.65);
+  const volCloudRidgeMidMat = createVolumetricCloudMat(0.32, 4.2, 0.85);
+  const volCloudRidgeFarMat = createVolumetricCloudMat(0.24, 7.2, 0.52);
+
+  const horizonCloudGroup = new THREE.Group();
+  horizonCloudGroup.name = 'volumetric_horizon_clouds';
+  group.add(horizonCloudGroup);
+
+  // 层级 A：2 道环绕地平线的连续立体波浪云脊（无缝衔接下层流云海）
+  const cloudRidgeMid = new THREE.Mesh(
+    trackGeo(createCloudRidgeGeometry(THREE, 35.5, deg2rad(-176), deg2rad(-4), 5.6, 4.4, 56, 12, 2.3)),
+    volCloudRidgeMidMat
   );
+  cloudRidgeMid.position.y = -3.35;
+  cloudRidgeMid.renderOrder = -1;
+  horizonCloudGroup.add(cloudRidgeMid);
 
-  const geoCloudPuff = trackGeo(new THREE.PlaneGeometry(24, 11));
-  for (let i = 0; i < 10; i++) {
-    const a = deg2rad(-166 + (i / 9) * 152);
-    const r = 37 + (i % 3) * 4.5;
-    const puff = new THREE.Mesh(geoCloudPuff, cloudPuffMat);
-    const py = -1.6 + (i % 3) * 1.65;
-    puff.position.set(Math.cos(a) * r, py, Math.sin(a) * r);
-    puff.lookAt(0, py + 1.5, 0);
-    puff.scale.set(0.85 + (i % 3) * 0.24, 0.8 + (i % 2) * 0.35, 1);
-    group.add(puff);
+  const cloudRidgeFar = new THREE.Mesh(
+    trackGeo(createCloudRidgeGeometry(THREE, 52.5, deg2rad(-179), deg2rad(-1), 7.8, 7.4, 60, 12, 7.9)),
+    volCloudRidgeFarMat
+  );
+  cloudRidgeFar.position.y = -2.45;
+  cloudRidgeFar.renderOrder = -3;
+  horizonCloudGroup.add(cloudRidgeFar);
+
+  // 共享 3 款不对称立体膨顶云泡几何体
+  const geoCloudLobeA = trackGeo(createOrganicCloudLobeGeometry(THREE, 1.7));
+  const geoCloudLobeB = trackGeo(createOrganicCloudLobeGeometry(THREE, 5.3));
+  const geoCloudLobeC = trackGeo(createOrganicCloudLobeGeometry(THREE, 11.1));
+  const cloudLobeGeos = [geoCloudLobeA, geoCloudLobeB, geoCloudLobeC];
+
+  // 层级 B：12 组中远景多层立体堆积云峰（每峰由 5 颗低不透明柔和云泡交叠堆积成蓬松积云山峰）
+  const midCloudLobeLayout = [
+    { ox: 0.0,  oy: 0.0,  oz: 0.0,  sx: 4.8, sy: 2.5, sz: 4.2 },
+    { ox: -3.2, oy: 0.5,  oz: 0.9,  sx: 3.6, sy: 2.3, sz: 3.4 },
+    { ox: 3.1,  oy: 0.4,  oz: -0.7, sx: 3.7, sy: 2.4, sz: 3.3 },
+    { ox: -0.8, oy: 1.9,  oz: -0.5, sx: 3.3, sy: 2.8, sz: 3.0 },
+    { ox: 1.5,  oy: 1.6,  oz: 0.6,  sx: 2.8, sy: 2.3, sz: 2.7 }
+  ];
+  for (let i = 0; i < 12; i++) {
+    const a = deg2rad(-171 + (i / 11) * 162);
+    const r = 32.5 + (i % 3) * 3.4;
+    const py = -2.65 + (i % 3) * 1.15;
+    const bank = new THREE.Group();
+    bank.position.set(Math.cos(a) * r, py, Math.sin(a) * r);
+    bank.rotation.y = -a + Math.PI * 0.5;
+    const bankScale = 0.88 + (i % 4) * 0.14;
+    bank.scale.set(bankScale, bankScale * (0.92 + (i % 2) * 0.24), bankScale);
+
+    for (let k = 0; k < midCloudLobeLayout.length; k++) {
+      const lp = midCloudLobeLayout[k];
+      const lobe = new THREE.Mesh(cloudLobeGeos[(i + k) % 3], volCloudMidMat);
+      lobe.position.set(lp.ox, lp.oy, lp.oz);
+      lobe.scale.set(lp.sx, lp.sy, lp.sz);
+      lobe.rotation.y = (i * 0.7 + k * 1.3);
+      lobe.renderOrder = -1;
+      bank.add(lobe);
+    }
+    horizonCloudGroup.add(bank);
+    driftingClouds.push({
+      group: bank,
+      baseAngle: a,
+      radius: r,
+      baseY: py,
+      driftAmp: 0.024 + (i % 3) * 0.008,
+      bobAmp: 0.22 + (i % 2) * 0.12,
+      speed: 0.16 + (i % 4) * 0.04,
+      phase: i * 1.15
+    });
+  }
+
+  // 层级 C：9 组远景宏伟高耸积云山峦（更柔和低不透明，拉出云巅苍穹纵深视差）
+  const farCloudLobeLayout = [
+    { ox: 0.0,  oy: 0.0,  oz: 0.0,  sx: 7.4, sy: 3.8, sz: 6.2 },
+    { ox: -4.8, oy: 0.8,  oz: 1.4,  sx: 5.5, sy: 3.4, sz: 4.8 },
+    { ox: 4.9,  oy: 0.9,  oz: -1.1, sx: 5.4, sy: 3.5, sz: 4.8 },
+    { ox: 0.4,  oy: 3.1,  oz: -0.8, sx: 4.9, sy: 4.2, sz: 4.4 }
+  ];
+  for (let i = 0; i < 9; i++) {
+    const a = deg2rad(-174 + (i / 8) * 168);
+    const r = 47.5 + (i % 3) * 4.8;
+    const py = -1.6 + (i % 3) * 1.55;
+    const farBank = new THREE.Group();
+    farBank.position.set(Math.cos(a) * r, py, Math.sin(a) * r);
+    farBank.rotation.y = -a + Math.PI * 0.5;
+    const fScale = 0.96 + (i % 3) * 0.18;
+    farBank.scale.set(fScale, fScale * (0.95 + (i % 2) * 0.22), fScale);
+
+    for (let k = 0; k < farCloudLobeLayout.length; k++) {
+      const lp = farCloudLobeLayout[k];
+      const lobe = new THREE.Mesh(cloudLobeGeos[(i + k + 1) % 3], volCloudFarMat);
+      lobe.position.set(lp.ox, lp.oy, lp.oz);
+      lobe.scale.set(lp.sx, lp.sy, lp.sz);
+      lobe.rotation.y = (i * 0.9 + k * 1.1);
+      lobe.renderOrder = -3;
+      farBank.add(lobe);
+    }
+    horizonCloudGroup.add(farBank);
+    driftingClouds.push({
+      group: farBank,
+      baseAngle: a,
+      radius: r,
+      baseY: py,
+      driftAmp: 0.016 + (i % 2) * 0.006,
+      bobAmp: 0.30,
+      speed: 0.11 + (i % 3) * 0.03,
+      phase: i * 1.6 + 0.8
+    });
   }
 
   // =========================================================================
@@ -2050,9 +4004,9 @@ export function buildAltarBiome(THREE, texLib = {}) {
         godRayColor: 0xffe8b0,
         godRayOpacity: 0.26,
         godRayOrigin: [0, 16, -14],
-        bloomStrength: 0.44,
-        bloomThreshold: 0.78,
-        bloomRadius: 0.68,
+        bloomStrength: 0.38,
+        bloomThreshold: 0.92,
+        bloomRadius: 0.64,
         focusDepth: 0.56,
         blurAmount: 1.65,
         vignetteStrength: 0.14,
@@ -2061,12 +4015,12 @@ export function buildAltarBiome(THREE, texLib = {}) {
     },
     storm_eye: {
       subtitle: '风暴眼全开 · 青金电弧苍穹',
-      sunColor: 0xfff0c2, sunInt: 2.14,
-      hemiSky: 0x68d6ff, hemiGround: 0xffd27a, hemiInt: 1.18,
-      fillColor: 0xa6eeff, fillInt: 0.88,
-      sanctumColor: 0x4ef0ff, sanctumBase: 3.45, sanctumAmp: 0.95, sanctumSpeed: 3.2,
-      coreColor: 0xffe07d, coreBase: 2.65, coreAmp: 0.75, coreSpeed: 2.6,
-      starCrystalEmissive: 0x4ef0ff, starCrystalEmissiveInt: 1.48,
+      sunColor: 0xfff0c2, sunInt: 2.12,
+      hemiSky: 0x68d6ff, hemiGround: 0xffd27a, hemiInt: 1.16,
+      fillColor: 0xa6eeff, fillInt: 0.84,
+      sanctumColor: 0x4ef0ff, sanctumBase: 3.35, sanctumAmp: 0.90, sanctumSpeed: 3.2,
+      coreColor: 0xffe07d, coreBase: 2.55, coreAmp: 0.72, coreSpeed: 2.6,
+      starCrystalEmissive: 0x4ef0ff, starCrystalEmissiveInt: 1.42,
       stormLevel: 1.0,
       windSpeedMul: 2.25, windOpacityMul: 1.32, windArcIntensity: 1.0,
       cloudSpeedMul: 2.15, ringSpeedMul: 2.15, crystalSpinMul: 1.68,
@@ -2082,13 +4036,13 @@ export function buildAltarBiome(THREE, texLib = {}) {
         godRayColor: 0xc2f6ff,
         godRayOpacity: 0.34,
         godRayOrigin: [0, 16, -14],
-        bloomStrength: 0.56,
-        bloomThreshold: 0.72,
-        bloomRadius: 0.74,
+        bloomStrength: 0.46,
+        bloomThreshold: 0.90,
+        bloomRadius: 0.70,
         focusDepth: 0.56,
         blurAmount: 1.55,
         vignetteStrength: 0.15,
-        spriteRimTint: [0.96, 1.06, 1.12]
+        spriteRimTint: [0.95, 1.01, 1.03]
       }
     }
   };
@@ -2180,6 +4134,9 @@ export function buildAltarBiome(THREE, texLib = {}) {
 
     matStarCrystal.emissive.copy(s.starCrystalEmissive);
     matStarCrystal.emissiveIntensity = s.starCrystalEmissiveInt;
+    matStarCrystalShell.emissive.copy(s.starCrystalEmissive);
+    matStarCrystalShell.emissiveIntensity = 0.42 + s.stormLevel * 0.34;
+    crystalHeartUniforms.uStormLevel.value = s.stormLevel;
 
     skyUniforms.uStormLevel.value = s.stormLevel;
 
@@ -2188,6 +4145,13 @@ export function buildAltarBiome(THREE, texLib = {}) {
       cl.uniforms.uSpeed.value = cl.baseSpeed * s.cloudSpeedMul;
       cl.uniforms.uStormLevel.value = s.stormLevel;
       cl.uniforms.uFogColor.value.copy(s.fogColor);
+    }
+
+    for (let i = 0; i < volCloudLayers.length; i++) {
+      const vc = volCloudLayers[i];
+      vc.uniforms.uSpeed.value = vc.baseSpeed * s.cloudSpeedMul;
+      vc.uniforms.uStormLevel.value = s.stormLevel;
+      vc.uniforms.uFogColor.value.copy(s.fogColor);
     }
 
     for (let i = 0; i < windRibbonItems.length; i++) {
@@ -2248,7 +4212,7 @@ export function buildAltarBiome(THREE, texLib = {}) {
   }
 
   // =========================================================================
-  // 实时动画更新（云海流动、浮石漂浮公转、风带流光、晶塔旋转、法阵缓转）
+  // 实时动画更新（云海流动、立体积云漂移、浮石公转、断链随风摆动、晶簇自转、法阵缓转）
   // =========================================================================
   let disposed = false;
 
@@ -2271,7 +4235,7 @@ export function buildAltarBiome(THREE, texLib = {}) {
       }
     }
 
-    // 1. 更新全部 GLSL 着色器时间（云海、天空卷云、太阳光晕、双层法阵、风丝带、星轨环、风暴电弧）
+    // 1. 更新全部 GLSL 着色器时间（云海、立体积云、天空卷云、太阳光晕、双层法阵、晶核、风丝带、星轨环、风暴电弧）
     for (let i = 0; i < shaderUniforms.length; i++) {
       shaderUniforms[i].uTime.value = t;
     }
@@ -2283,7 +4247,7 @@ export function buildAltarBiome(THREE, texLib = {}) {
       item.mesh.rotation[item.axis] += item.speed * rMul * dt;
     }
 
-    // 3. 悬浮星晶锥体、圣殿冠核与星晶石塔自转上下浮动
+    // 3. 悬浮星晶簇、圣殿冠核与星晶石塔自转上下浮动
     const cMul = moodCur.crystalSpinMul;
     for (let i = 0; i < floatingCrystals.length; i++) {
       const fc = floatingCrystals[i];
@@ -2301,7 +4265,7 @@ export function buildAltarBiome(THREE, texLib = {}) {
       }
     }
 
-    // 4. 断柱上方悬浮碎石鼓与星晶微浮
+    // 4. 断柱上方悬浮碎石鼓与断拱浮石微浮
     for (let i = 0; i < hoveringDrums.length; i++) {
       const hd = hoveringDrums[i];
       hd.group.position.y = hd.baseY + Math.sin(t * hd.speed + hd.phase) * hd.amp;
@@ -2319,7 +4283,24 @@ export function buildAltarBiome(THREE, texLib = {}) {
       fi.group.rotation.z = Math.sin(t * fi.tiltSpeed + fi.phase) * 0.045;
     }
 
-    // 6. 圣坛晶核点光柔和呼吸
+    // 6. 遗迹悬垂断链随高空风势轻摆（风暴眼二阶段摆幅与频率增强）
+    const chainWind = 1.0 + moodCur.stormLevel * 0.85;
+    for (let i = 0; i < swayingChains.length; i++) {
+      const sc = swayingChains[i];
+      sc.mesh.rotation.z = sc.baseRotZ + Math.sin(t * sc.speed * chainWind + sc.phase) * sc.amp * chainWind;
+    }
+
+    // 7. 地平线立体堆积云峰柔和漂移与吐纳起伏
+    const cloudMul = moodCur.cloudSpeedMul;
+    for (let i = 0; i < driftingClouds.length; i++) {
+      const dc = driftingClouds[i];
+      const ang = dc.baseAngle + Math.sin(t * dc.speed * (0.65 + 0.35 * cloudMul) + dc.phase) * dc.driftAmp;
+      dc.group.position.x = Math.cos(ang) * dc.radius;
+      dc.group.position.z = Math.sin(ang) * dc.radius;
+      dc.group.position.y = dc.baseY + Math.sin(t * dc.speed * 1.4 + dc.phase) * dc.bobAmp;
+    }
+
+    // 8. 圣坛晶核点光柔和呼吸
     for (let i = 0; i < pulsedLights.length; i++) {
       const pl = pulsedLights[i];
       pl.light.intensity = pl.base + Math.sin(t * pl.speed + pl.phase) * pl.amp;
@@ -2332,6 +4313,13 @@ export function buildAltarBiome(THREE, texLib = {}) {
   function dispose() {
     if (disposed) return;
     disposed = true;
+
+    for (let i = 0; i < ownedInstancedMeshes.length; i++) {
+      if (ownedInstancedMeshes[i] && typeof ownedInstancedMeshes[i].dispose === 'function') {
+        ownedInstancedMeshes[i].dispose();
+      }
+    }
+    ownedInstancedMeshes.length = 0;
 
     for (let i = 0; i < ownedGeometries.length; i++) {
       ownedGeometries[i].dispose();

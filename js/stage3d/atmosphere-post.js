@@ -817,7 +817,7 @@ export function createHD2DPostPipeline(THREE, renderer, scene, camera, texLib, o
 			bloomPass.radius = state.bloomRadius;
 			bloomPass.enabled = state.bloomStrength > 0.001;
 			if (bloomPass.highPassUniforms && bloomPass.highPassUniforms.smoothWidth) {
-				bloomPass.highPassUniforms.smoothWidth.value = 0.14;
+				bloomPass.highPassUniforms.smoothWidth.value = 0.08;
 			}
 			applyBloomTint(state.godRayColor);
 		}
@@ -855,11 +855,15 @@ export function createHD2DPostPipeline(THREE, renderer, scene, camera, texLib, o
 	function buildComposer(useHalfFloat) {
 		disposeComposerOnly();
 
-		const effW = Math.max(64, Math.round(currentWidth * currentDpr));
-		const effH = Math.max(64, Math.round(currentHeight * currentDpr));
+		const logicalW = Math.max(64, Math.round(currentWidth));
+		const logicalH = Math.max(64, Math.round(currentHeight));
+		const effW = Math.max(64, Math.round(logicalW * currentDpr));
+		const effH = Math.max(64, Math.round(logicalH * currentDpr));
 		const targetType = useHalfFloat ? THREE.HalfFloatType : THREE.UnsignedByteType;
 
-		const rt = new THREE.WebGLRenderTarget(effW, effH, {
+		// Pass logical dimensions to EffectComposer so _width/_height stay logical;
+		// sync pixelRatio & size BEFORE addPass to eliminate transient DPR^2 RT allocations.
+		const rt = new THREE.WebGLRenderTarget(logicalW, logicalH, {
 			type: targetType,
 			minFilter: THREE.LinearFilter,
 			magFilter: THREE.LinearFilter,
@@ -869,6 +873,8 @@ export function createHD2DPostPipeline(THREE, renderer, scene, camera, texLib, o
 		rt.texture.name = useHalfFloat ? 'HD2DComposer.hdr' : 'HD2DComposer.ldr';
 
 		composer = new EffectComposer(renderer, rt);
+		composer.setPixelRatio(currentDpr);
+		composer.setSize(logicalW, logicalH);
 
 		renderPass = new RenderPass(scene, camera);
 
@@ -889,10 +895,6 @@ export function createHD2DPostPipeline(THREE, renderer, scene, camera, texLib, o
 		composer.addPass(bloomPass);
 		composer.addPass(tiltShiftPass);
 		composer.addPass(outputPass);
-
-		// Explicitly sync logical width/height & pixelRatio to prevent DPR^2 sizing when passing custom RT
-		composer.setPixelRatio(currentDpr);
-		composer.setSize(currentWidth, currentHeight);
 
 		renderMode = useHalfFloat ? 'hdr' : 'ldr';
 		syncPostUniforms();

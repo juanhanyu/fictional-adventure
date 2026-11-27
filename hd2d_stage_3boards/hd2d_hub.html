@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>转生千金 · HD-2D 实时 3D 战场三方案竞标总台</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      --bg-base: #f6f9fe;
+      --bg-surface: #ffffff;
+      --bg-frost: #eef4fd;
+      --bg-ice: #e4f3fc;
+      --royal: #1658eb;
+      --royal-deep: #0e3fb3;
+      --royal-ink: #12264f;
+      --ink-body: #32476d;
+      --ink-muted: #60759a;
+      --ice-cyan: #22a7d9;
+      --ice-glow: #5fd4ff;
+      --gold: #c8922e;
+      --gold-soft: #f0c975;
+      --gold-tint: rgba(240, 201, 117, 0.16);
+      --line-subtle: rgba(22, 88, 235, 0.14);
+      --line-strong: rgba(22, 88, 235, 0.34);
+      --line-gold: rgba(200, 146, 46, 0.42);
+      --shadow-card: 0 14px 36px -18px rgba(18, 38, 79, 0.22);
+      --shadow-hover: 0 22px 46px -18px rgba(22, 88, 235, 0.30);
+      --font-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", Georgia, serif;
+      --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      min-height: 100%;
+      background-color: var(--bg-base);
+      color: var(--royal-ink);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      overflow-x: hidden;
+    }
+
+    /* Snow-porcelain refractive lattice background */
+    body {
+      background-image:
+        radial-gradient(ellipse 80% 55% at 15% -5%, rgba(95, 212, 255, 0.22), transparent 62%),
+        radial-gradient(ellipse 70% 50% at 88% 0%, rgba(22, 88, 235, 0.11), transparent 58%),
+        radial-gradient(ellipse 65% 45% at 50% 105%, rgba(240, 201, 117, 0.16), transparent 60%),
+        linear-gradient(135deg, rgba(22, 88, 235, 0.035) 1px, transparent 1px),
+        linear-gradient(45deg, rgba(22, 88, 235, 0.035) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 100% 100%, 44px 44px, 44px 44px;
+      background-position: 0 0, 0 0, 0 0, 0 0, 22px 22px;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.92em;
+      color: var(--royal-deep);
+    }
+
+    .hub-shell {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 14px 26px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ----------------------------------------------------------------------
+       Header & Core Upgrade Highlights (Chamfered 45deg, zero rounded nesting)
+       ---------------------------------------------------------------------- */
+    .hero-frame {
+      position: relative;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(240, 247, 255, 0.94) 55%, rgba(235, 246, 255, 0.92) 100%);
+      clip-path: polygon(18px 0, calc(100% - 18px) 0, 100% 18px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 18px), 0 18px);
+      filter: drop-shadow(0 12px 28px rgba(18, 38, 79, 0.09));
+      padding: 1px;
+    }
+
+    .hero-frame::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(125deg, rgba(22, 88, 235, 0.42), rgba(95, 212, 255, 0.45) 45%, rgba(200, 146, 46, 0.48) 100%);
+      z-index: 0;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      background: linear-gradient(160deg, #ffffff 0%, #f7fbff 64%, #eef6ff 100%);
+      clip-path: polygon(17px 0, calc(100% - 17px) 0, 100% 17px, 100% calc(100% - 17px), calc(100% - 17px) 100%, 17px 100%, 0 calc(100% - 17px), 0 17px);
+      padding: 13px 22px 12px;
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line-subtle);
+    }
+
+    .hero-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .prism-crest {
+      width: 46px;
+      height: 46px;
+      flex: 0 0 46px;
+      display: grid;
+      place-items: center;
+    }
+
+    .prism-crest svg {
+      width: 46px;
+      height: 46px;
+      display: block;
+    }
+
+    @keyframes facetPulse {
+      0%, 100% { opacity: 0.78; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.04); }
+    }
+
+    .prism-crest .crest-core {
+      transform-origin: center;
+      animation: facetPulse 4.6s ease-in-out infinite;
+    }
+
+    .hero-kicker {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 10.8px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--royal);
+      margin-bottom: 3px;
+    }
+
+    .hero-kicker .sep {
+      width: 5px;
+      height: 5px;
+      background: var(--gold);
+      transform: rotate(45deg);
+      display: inline-block;
+    }
+
+    .hero-title {
+      font-family: var(--font-serif);
+      font-size: clamp(20px, 1.85vw, 24px);
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: var(--royal-ink);
+      line-height: 1.22;
+    }
+
+    .hero-title span {
+      color: var(--royal);
+    }
+
+    .hero-sub {
+      margin-top: 3px;
+      font-size: 12.4px;
+      color: var(--ink-muted);
+      line-height: 1.42;
+    }
+
+    .hero-metrics {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      flex: 0 0 auto;
+      background: rgba(22, 88, 235, 0.04);
+      border-left: 2px solid var(--royal);
+    }
+
+    .metric-cell {
+      padding: 6px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-right: 1px solid var(--line-subtle);
+    }
+
+    .metric-cell:last-child {
+      border-right: none;
+    }
+
+    .metric-val {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--royal);
+      line-height: 1.15;
+    }
+
+    .metric-val.gold {
+      color: var(--gold);
+    }
+
+    .metric-lbl {
+      margin-top: 2px;
+      font-size: 11px;
+      color: var(--ink-muted);
+      white-space: nowrap;
+    }
+
+    /* 3 Core Upgrade Highlights Bar (Borderless columns separated by 1px hairline) */
+    .highlights-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0;
+      margin-top: 9px;
+    }
+
+    .highlight-item {
+      padding: 1px 16px 1px 0;
+      border-right: 1px solid var(--line-subtle);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .highlight-item:nth-child(2),
+    .highlight-item:nth-child(3) {
+      padding-left: 16px;
+    }
+
+    .highlight-item:last-child {
+      border-right: none;
+      padding-right: 0;
+    }
+
+    .hl-diamond {
+      width: 9px;
+      height: 9px;
+      margin-top: 5px;
+      flex: 0 0 9px;
+      transform: rotate(45deg);
+      background: linear-gradient(135deg, var(--royal), var(--ice-glow));
+    }
+
+    .hl-diamond.cyan {
+      background: linear-gradient(135deg, var(--ice-cyan), #8be8ff);
+    }
+
+    .hl-diamond.gold {
+      background: linear-gradient(135deg, var(--gold), var(--gold-soft));
+    }
+
+    .hl-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--royal-ink);
+      line-height: 1.3;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hl-code {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--royal);
+      background: rgba(22, 88, 235, 0.08);
+      padding: 1px 6px;
+    }
+
+    .hl-desc {
+      font-size: 11.6px;
+      line-height: 1.44;
+      color: var(--ink-body);
+    }
+
+    /* ----------------------------------------------------------------------
+       3-Way Proposal Comparison Cards (Chamfered outer shell, hairline interior)
+       ---------------------------------------------------------------------- */
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 0 2px;
+    }
+
+    .section-head-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-bar {
+      width: 4px;
+      height: 14px;
+      background: linear-gradient(180deg, var(--royal), var(--ice-cyan));
+    }
+
+    .section-title {
+      font-family: var(--font-serif);
+      font-size: 15.5px;
+      font-weight: 700;
+      color: var(--royal-ink);
+      letter-spacing: 0.03em;
+      line-height: 1.25;
+    }
+
+    .section-note {
+      font-size: 11.8px;
+      color: var(--ink-muted);
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .proposal-wrap {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      padding: 1px;
+      clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% calc(100% - 16px), calc(100% - 16px) 100%, 16px 100%, 0 calc(100% - 16px), 0 16px);
+      background: linear-gradient(155deg, rgba(22, 88, 235, 0.36), rgba(95, 212, 255, 0.32) 52%, rgba(200, 146, 46, 0.34));
+      filter: drop-shadow(0 12px 26px rgba(18, 38, 79, 0.10));
+      transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), filter 0.22s ease;
+    }
+
+    .proposal-wrap:hover {
+      transform: translateY(-4px);
+      filter: drop-shadow(0 20px 36px rgba(22, 88, 235, 0.20));
+    }
+
+    .proposal-wrap.theme-b {
+      background: linear-gradient(155deg, rgba(22, 88, 235, 0.50), rgba(200, 146, 46, 0.56) 55%, rgba(95, 212, 255, 0.44));
+    }
+
+    .proposal-wrap.theme-c {
+      background: linear-gradient(155deg, rgba(34, 167, 217, 0.48), rgba(22, 88, 235, 0.42) 56%, rgba(200, 146, 46, 0.36));
+    }
+
+    .proposal-card {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(180deg, #ffffff 0%, #f9fcff 68%, #f2f7fe 100%);
+      clip-path: polygon(15px 0, calc(100% - 15px) 0, 100% 15px, 100% calc(100% - 15px), calc(100% - 15px) 100%, 15px 100%, 0 calc(100% - 15px), 0 15px);
+      overflow: hidden;
+    }
+
+    /* Top accent ribbon inside card (borderless flush fill) */
+    .card-header {
+      padding: 11px 18px 10px;
+      background: linear-gradient(135deg, rgba(22, 88, 235, 0.065) 0%, rgba(95, 212, 255, 0.06) 100%);
+      border-bottom: 1px solid var(--line-subtle);
+      position: relative;
+    }
+
+    .theme-b .card-header {
+      background: linear-gradient(135deg, rgba(22, 88, 235, 0.08) 0%, rgba(240, 201, 117, 0.12) 100%);
+    }
+
+    .theme-c .card-header {
+      background: linear-gradient(135deg, rgba(34, 167, 217, 0.085) 0%, rgba(22, 88, 235, 0.055) 100%);
+    }
+
+    .card-meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 5px;
+    }
+
+    .plan-id {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 11.2px;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+      color: var(--royal);
+    }
+
+    .plan-id .pip {
+      width: 7px;
+      height: 7px;
+      background: var(--royal);
+      transform: rotate(45deg);
+    }
+
+    .theme-b .plan-id {
+      color: var(--gold);
+    }
+
+    .theme-b .plan-id .pip {
+      background: var(--gold);
+    }
+
+    .theme-c .plan-id {
+      color: #0e7ea8;
+    }
+
+    .theme-c .plan-id .pip {
+      background: var(--ice-cyan);
+    }
+
+    .plan-benchmark {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ink-muted);
+      letter-spacing: 0.02em;
+    }
+
+    .card-title {
+      font-family: var(--font-serif);
+      font-size: 17.5px;
+      font-weight: 700;
+      color: var(--royal-ink);
+      line-height: 1.24;
+    }
+
+    .card-genre {
+      margin-top: 2px;
+      font-size: 11.8px;
+      line-height: 1.38;
+      color: var(--ink-body);
+    }
+
+    /* Visual schematic diagram preview strip (pure SVG, zero rounded nested boxes) */
+    .stage-diagram {
+      height: 68px;
+      padding: 6px 18px;
+      background: linear-gradient(180deg, rgba(226, 240, 255, 0.42) 0%, rgba(246, 250, 255, 0.20) 100%);
+      border-bottom: 1px solid var(--line-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .stage-diagram svg {
+      width: 150px;
+      height: 56px;
+      flex: 0 0 150px;
+      display: block;
+    }
+
+    .ratio-callout {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      text-align: right;
+    }
+
+    .ratio-label {
+      font-size: 10.5px;
+      color: var(--ink-muted);
+      letter-spacing: 0.04em;
+    }
+
+    .ratio-num {
+      font-family: var(--font-mono);
+      font-size: 18.5px;
+      font-weight: 700;
+      color: var(--royal);
+      line-height: 1.15;
+      margin-top: 1px;
+    }
+
+    .theme-b .ratio-num {
+      color: var(--gold);
+    }
+
+    .theme-c .ratio-num {
+      color: #0e7ea8;
+    }
+
+    .ratio-sub {
+      font-size: 10.8px;
+      color: var(--ink-body);
+      margin-top: 1px;
+    }
+
+    /* Structured specification rows inside card (1px dividers only, zero boxed pills) */
+    .spec-list {
+      flex: 1 1 auto;
+      padding: 8px 18px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .spec-row {
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(22, 88, 235, 0.09);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .spec-row:first-child {
+      padding-top: 1px;
+    }
+
+    .spec-row:last-child {
+      border-bottom: none;
+      padding-bottom: 1px;
+    }
+
+    .spec-k {
+      font-size: 10.8px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      line-height: 1.3;
+      color: var(--royal);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .spec-k::before {
+      content: "";
+      width: 12px;
+      height: 1px;
+      background: currentColor;
+      opacity: 0.55;
+    }
+
+    .theme-b .spec-k {
+      color: #a67418;
+    }
+
+    .theme-c .spec-k {
+      color: #0e7ea8;
+    }
+
+    .spec-v {
+      font-size: 12px;
+      line-height: 1.44;
+      color: var(--ink-body);
+    }
+
+    .spec-v strong {
+      color: var(--royal-ink);
+      font-weight: 700;
+    }
+
+    /* Highlighted recommendation strip (borderless tinted bar, left accent line) */
+    .highlight-strip {
+      margin: 0 18px 10px;
+      padding: 7px 11px;
+      background: rgba(22, 88, 235, 0.055);
+      border-left: 3px solid var(--royal);
+      font-size: 11.8px;
+      line-height: 1.44;
+      color: var(--royal-ink);
+    }
+
+    .theme-b .highlight-strip {
+      background: rgba(200, 146, 46, 0.085);
+      border-left-color: var(--gold);
+    }
+
+    .theme-c .highlight-strip {
+      background: rgba(34, 167, 217, 0.08);
+      border-left-color: var(--ice-cyan);
+    }
+
+    .highlight-strip .strip-tag {
+      font-weight: 700;
+      color: var(--royal);
+      margin-right: 4px;
+    }
+
+    .theme-b .highlight-strip .strip-tag {
+      color: #9f6d13;
+    }
+
+    .theme-c .highlight-strip .strip-tag {
+      color: #0b7299;
+    }
+
+    /* Card Footer CTA (Flush full-width chamfer-accent bar, zero nested round border) */
+    .card-cta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 18px;
+      text-decoration: none;
+      background: linear-gradient(90deg, var(--royal) 0%, #2468f2 65%, #1d86e6 100%);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.35;
+      letter-spacing: 0.04em;
+      transition: background 0.2s ease, padding-right 0.2s ease;
+    }
+
+    .card-cta:hover,
+    .card-cta:focus-visible {
+      background: linear-gradient(90deg, var(--royal-deep) 0%, var(--royal) 70%, var(--ice-cyan) 100%);
+      padding-right: 16px;
+      outline: none;
+    }
+
+    .card-cta:focus-visible {
+      box-shadow: inset 0 0 0 2px #ffffff;
+    }
+
+    .theme-b .card-cta {
+      background: linear-gradient(90deg, #1b4fd4 0%, #2d65e3 58%, #b98524 100%);
+    }
+
+    .theme-b .card-cta:hover,
+    .theme-b .card-cta:focus-visible {
+      background: linear-gradient(90deg, #123eb3 0%, #1d55d6 55%, #cf9832 100%);
+    }
+
+    .theme-c .card-cta {
+      background: linear-gradient(90deg, #0d6e96 0%, #1658eb 68%, #22a7d9 100%);
+    }
+
+    .theme-c .card-cta:hover,
+    .theme-c .card-cta:focus-visible {
+      background: linear-gradient(90deg, #0a587a 0%, #0f44be 68%, #1d96c4 100%);
+    }
+
+    .cta-right {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      font-weight: 600;
+      opacity: 0.94;
+    }
+
+    .cta-arrow {
+      font-size: 15px;
+      line-height: 1;
+      transition: transform 0.2s ease;
+    }
+
+    .card-cta:hover .cta-arrow {
+      transform: translateX(3px);
+    }
+
+    /* ----------------------------------------------------------------------
+       Bottom Shortcut & Live Review Guide Panel (Chamfered, hairline columns)
+       ---------------------------------------------------------------------- */
+    .guide-frame {
+      position: relative;
+      padding: 1px;
+      clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
+      background: linear-gradient(120deg, rgba(22, 88, 235, 0.28), rgba(95, 212, 255, 0.30) 50%, rgba(200, 146, 46, 0.28));
+    }
+
+    .guide-inner {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 249, 255, 0.96));
+      clip-path: polygon(13px 0, calc(100% - 13px) 0, 100% 13px, 100% calc(100% - 13px), calc(100% - 13px) 100%, 13px 100%, 0 calc(100% - 13px), 0 13px);
+      padding: 10px 20px 11px;
+    }
+
+    .guide-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding-bottom: 7px;
+      border-bottom: 1px solid var(--line-subtle);
+      margin-bottom: 8px;
+    }
+
+    .guide-heading {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-family: var(--font-serif);
+      font-size: 13.8px;
+      font-weight: 700;
+      color: var(--royal-ink);
+    }
+
+    .guide-heading .g-gem {
+      width: 8px;
+      height: 8px;
+      background: var(--gold);
+      transform: rotate(45deg);
+    }
+
+    .quick-keys {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 11.6px;
+      color: var(--ink-muted);
+    }
+
+    .quick-key-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .kbd-tile {
+      display: inline-block;
+      min-width: 22px;
+      padding: 1px 6px;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 10.8px;
+      font-weight: 700;
+      color: var(--royal);
+      background: rgba(22, 88, 235, 0.09);
+      border-bottom: 2px solid rgba(22, 88, 235, 0.30);
+    }
+
+    .guide-steps {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0;
+    }
+
+    .guide-step {
+      padding: 1px 12px;
+      border-right: 1px solid var(--line-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .guide-step:first-child {
+      padding-left: 0;
+    }
+
+    .guide-step:last-child {
+      border-right: none;
+      padding-right: 0;
+    }
+
+    .step-head {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--royal-ink);
+    }
+
+    .step-num {
+      font-family: var(--font-mono);
+      font-size: 10.8px;
+      font-weight: 700;
+      color: var(--royal);
+      background: rgba(22, 88, 235, 0.08);
+      padding: 1px 5px;
+    }
+
+    .step-body {
+      font-size: 11.3px;
+      line-height: 1.4;
+      color: var(--ink-body);
+    }
+
+    /* Custom Snow-Porcelain Tooltip (replaces all native browser title grey boxes) */
+    #porcelain-tip {
+      position: fixed;
+      z-index: 9999;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.14s ease, transform 0.14s ease;
+      max-width: 290px;
+      padding: 7px 12px;
+      background: rgba(255, 255, 255, 0.97);
+      color: var(--royal-ink);
+      font-size: 12px;
+      line-height: 1.45;
+      border: 1px solid rgba(22, 88, 235, 0.32);
+      border-left: 3px solid var(--royal);
+      box-shadow: 0 10px 24px -8px rgba(18, 38, 79, 0.24);
+    }
+
+    #porcelain-tip.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* 1280x720 & <=780px viewport ergonomic density adaptation (all 3 CTAs above the fold) */
+    @media (max-height: 780px), (max-width: 1360px) {
+      .hub-shell {
+        padding: 10px 18px 14px;
+        gap: 9px;
+      }
+      .hero-inner {
+        padding: 10px 18px 9px;
+      }
+      .hero-top {
+        align-items: center;
+        gap: 14px;
+        padding-bottom: 8px;
+      }
+      .hero-brand {
+        gap: 12px;
+      }
+      .prism-crest,
+      .prism-crest svg {
+        width: 40px;
+        height: 40px;
+        flex-basis: 40px;
+      }
+      .hero-kicker {
+        font-size: 10.5px;
+        margin-bottom: 2px;
+      }
+      .hero-title {
+        font-size: clamp(18px, 1.75vw, 22px);
+        line-height: 1.2;
+      }
+      .hero-sub {
+        margin-top: 2px;
+        font-size: 11.5px;
+        line-height: 1.35;
+      }
+      .metric-cell {
+        padding: 5px 12px;
+      }
+      .metric-val {
+        font-size: 15px;
+      }
+      .metric-lbl {
+        margin-top: 2px;
+        font-size: 10.5px;
+      }
+      .highlights-grid {
+        margin-top: 7px;
+      }
+      .highlight-item {
+        padding: 1px 14px 1px 0;
+        gap: 8px;
+      }
+      .highlight-item:nth-child(2),
+      .highlight-item:nth-child(3) {
+        padding-left: 14px;
+      }
+      .hl-diamond {
+        width: 8px;
+        height: 8px;
+        flex-basis: 8px;
+        margin-top: 4px;
+      }
+      .hl-title {
+        font-size: 12.2px;
+        margin-bottom: 2px;
+      }
+      .hl-code {
+        font-size: 10px;
+        padding: 0 5px;
+      }
+      .hl-desc {
+        font-size: 11px;
+        line-height: 1.36;
+      }
+      .section-bar {
+        height: 14px;
+      }
+      .section-title {
+        font-size: 14.5px;
+      }
+      .section-note {
+        font-size: 11px;
+      }
+      .cards-grid {
+        gap: 14px;
+      }
+      .card-header {
+        padding: 9px 15px 8px;
+      }
+      .card-meta-row {
+        margin-bottom: 4px;
+      }
+      .plan-id {
+        font-size: 10.8px;
+      }
+      .plan-benchmark {
+        font-size: 10.5px;
+      }
+      .card-title {
+        font-size: 16px;
+        line-height: 1.22;
+      }
+      .card-genre {
+        margin-top: 2px;
+        font-size: 11.2px;
+        line-height: 1.32;
+      }
+      .stage-diagram {
+        height: 60px;
+        padding: 5px 15px;
+        gap: 10px;
+      }
+      .stage-diagram svg {
+        width: 142px;
+        height: 50px;
+        flex-basis: 142px;
+      }
+      .ratio-label {
+        font-size: 10px;
+      }
+      .ratio-num {
+        font-size: 17px;
+        margin-top: 1px;
+      }
+      .ratio-sub {
+        font-size: 10.5px;
+        margin-top: 1px;
+      }
+      .spec-list {
+        padding: 6px 15px 7px;
+      }
+      .spec-row {
+        padding: 5px 0;
+        gap: 2px;
+      }
+      .spec-k {
+        font-size: 10.5px;
+      }
+      .spec-v {
+        font-size: 11.5px;
+        line-height: 1.4;
+      }
+      .highlight-strip {
+        margin: 0 15px 8px;
+        padding: 6px 10px;
+        font-size: 11.2px;
+        line-height: 1.38;
+      }
+      .card-cta {
+        padding: 9px 15px;
+        font-size: 12.5px;
+      }
+      .cta-right {
+        font-size: 11px;
+      }
+      .guide-inner {
+        padding: 11px 16px 12px;
+      }
+      .guide-top {
+        padding-bottom: 8px;
+        margin-bottom: 9px;
+      }
+    }
+
+    /* Extra vertical safeguard for browser chrome / 640-700px short viewports */
+    @media (max-height: 700px) {
+      .hub-shell {
+        padding: 8px 16px 12px;
+        gap: 7px;
+      }
+      .hero-inner {
+        padding: 8px 16px 7px;
+      }
+      .hero-top {
+        padding-bottom: 6px;
+      }
+      .highlights-grid {
+        margin-top: 5px;
+      }
+      .hl-desc {
+        font-size: 10.6px;
+        line-height: 1.3;
+      }
+      .stage-diagram {
+        height: 52px;
+      }
+      .stage-diagram svg {
+        height: 44px;
+      }
+      .spec-row {
+        padding: 4px 0;
+      }
+      .spec-v {
+        font-size: 11.2px;
+        line-height: 1.34;
+      }
+      .highlight-strip {
+        margin: 0 15px 6px;
+        padding: 5px 9px;
+      }
+      .card-cta {
+        padding: 8px 15px;
+      }
+    }
+
+    @media (max-width: 1020px) {
+      .hero-top {
+        flex-direction: column;
+      }
+      .highlights-grid,
+      .cards-grid,
+      .guide-steps {
+        grid-template-columns: 1fr;
+      }
+      .highlight-item,
+      .guide-step {
+        border-right: none;
+        border-bottom: 1px solid var(--line-subtle);
+        padding: 10px 0;
+      }
+      .highlight-item:nth-child(2),
+      .highlight-item:nth-child(3) {
+        padding-left: 0;
+      }
+      .highlight-item:last-child,
+      .guide-step:last-child {
+        border-bottom: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="hub-shell">
+    <!-- Top Hero & Core Upgrade Highlights -->
+    <section class="hero-frame" aria-label="本轮 HD-2D 实时 3D 战场核心升级">
+      <div class="hero-inner">
+        <div class="hero-top">
+          <div class="hero-brand">
+            <div class="prism-crest" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="32,3 61,32 32,61 3,32" stroke="#1658eb" stroke-width="1.6" fill="rgba(22,88,235,0.06)"/>
+                <polygon points="32,10 54,32 32,54 10,32" stroke="#c8922e" stroke-width="1.3" fill="rgba(240,201,117,0.10)"/>
+                <polygon class="crest-core" points="32,18 46,32 32,46 18,32" fill="url(#crestGrad)"/>
+                <line x1="32" y1="3" x2="32" y2="61" stroke="rgba(22,88,235,0.28)" stroke-width="1"/>
+                <line x1="3" y1="32" x2="61" y2="32" stroke="rgba(22,88,235,0.28)" stroke-width="1"/>
+                <defs>
+                  <linearGradient id="crestGrad" x1="18" y1="18" x2="46" y2="46" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stop-color="#1658eb"/>
+                    <stop offset="55%" stop-color="#48c4ff"/>
+                    <stop offset="100%" stop-color="#f0c975"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+            <div>
+              <div class="hero-kicker">
+                <span>转生千金～到了异世界就要悠闲地生活</span>
+                <span class="sep"></span>
+                <span>HD-2D 三路竞标审阅总台</span>
+              </div>
+              <h1 class="hero-title">HD-2D 实时 Three.js 3D 战场 <span>× 6v6 像素放大</span> 竞标方案</h1>
+              <p class="hero-sub">全离线自包含 WebGL 实时渲染管线 · 22 套零 PNG 像素骨骼真 3D 落位 · 雪瓷冰白与皇家蓝金棱镜交互体系</p>
+            </div>
+          </div>
+
+          <div class="hero-metrics" aria-label="技术基准指标">
+            <div class="metric-cell" data-tip="圣阿斯拉雪庭演武场、极北冰晶古林、云巅风神祭坛三套可热切 Three.js PBR 场景">
+              <div class="metric-val">3 Biomes</div>
+              <div class="metric-lbl">实时 3D 场景</div>
+            </div>
+            <div class="metric-cell" data-tip="支持 1v1 切磋、2v1 罗文战、1v4 霜狼围猎、6v6 满编决战、Boss 风神终战五套真实阵容">
+              <div class="metric-val">5 Presets</div>
+              <div class="metric-lbl">1v1 至 6v6 阵容</div>
+            </div>
+            <div class="metric-cell" data-tip="逐帧自动测算非透明像素包围盒，真实脚底落位，拒绝透明画布留白虚标">
+              <div class="metric-val gold">True BBox</div>
+              <div class="metric-lbl">实测像素等高放大</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="highlights-grid">
+          <div class="highlight-item">
+            <span class="hl-diamond" aria-hidden="true"></span>
+            <div>
+              <div class="hl-title">3 大实时 Three.js 3D 场景 <span class="hl-code">PBR + DoF</span></div>
+              <div class="hl-desc">圣阿斯拉雪庭演武场、极北冰晶古林、云巅风神祭坛无缝热切；程序化法线贴图、体积丁达尔光束、圆形移轴散景与 GPU 3D 粒子全开。</div>
+            </div>
+          </div>
+
+          <div class="highlight-item">
+            <span class="hl-diamond cyan" aria-hidden="true"></span>
+            <div>
+              <div class="hl-title">真实非透明像素等高放大 <span class="hl-code">Nearest + Feet</span></div>
+              <div class="hl-desc">直解 22 套 RLE 像素骨骼，按第 0 帧真实非透明像素高度归一化尺寸，对齐 <code>anchors.feet</code> 踩地投影，6v6 清晰醒目。</div>
+            </div>
+          </div>
+
+          <div class="highlight-item">
+            <span class="hl-diamond gold" aria-hidden="true"></span>
+            <div>
+              <div class="hl-title">三大 6v6 经典流派实机横评 <span class="hl-code">3-Way Bid</span></div>
+              <div class="hl-desc">分别对标《八方旅人 II》《圣兽之王》《百英雄传》的纵深、极净大人物矩阵与 2.5D 剧场推镜，同引擎直测镜距与雪瓷棱镜手感。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section Header -->
+    <div class="section-head">
+      <div class="section-head-left">
+        <span class="section-bar" aria-hidden="true"></span>
+        <h2 class="section-title">三路实机竞标方案对比</h2>
+      </div>
+      <div class="section-note">全部方案共享同一套 <code>engine3d/demo-shell.js</code> 3D 引擎，差异聚焦于 6v6 角色比例、镜头调度与雪瓷棱镜 HUD 构图</div>
+    </div>
+
+    <!-- 3 Competing Proposals Side-by-Side -->
+    <section class="cards-grid" aria-label="三套 HD-2D 战斗界面竞标方案">
+      <!-- Proposal A: Pure Octopath HD-2D Depth -->
+      <article class="proposal-wrap theme-a">
+        <div class="proposal-card">
+          <div class="card-header">
+            <div class="card-meta-row">
+              <span class="plan-id"><span class="pip" aria-hidden="true"></span>SCHEME A · 八方 HD-2D 纵深</span>
+              <span class="plan-benchmark">对标 八方旅人 II</span>
+            </div>
+            <h3 class="card-title">纯正八方 HD-2D 纵深派</h3>
+            <p class="card-genre">开阔 2.5D 透视地面 · 前后排景深微叠与脚底微血条</p>
+          </div>
+
+          <div class="stage-diagram">
+            <svg viewBox="0 0 160 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <!-- Open 2.5D perspective floor -->
+              <polygon points="22,22 138,22 156,52 4,52" fill="rgba(22,88,235,0.06)" stroke="rgba(22,88,235,0.24)" stroke-width="1"/>
+              <line x1="16" y1="37" x2="144" y2="37" stroke="rgba(22,88,235,0.12)" stroke-width="1" stroke-dasharray="3 3"/>
+              <!-- Left 6 allies front/back depth overlap -->
+              <rect x="18" y="21" width="6" height="15" fill="#7aa7f8"/>
+              <rect x="28" y="25" width="7" height="16" fill="#4f84f2"/>
+              <rect x="39" y="29" width="7" height="18" fill="#1658eb"/>
+              <rect x="25" y="31" width="7" height="17" fill="#3a72f0"/>
+              <rect x="49" y="23" width="6" height="15" fill="#6b9af6"/>
+              <rect x="55" y="29" width="8" height="19" fill="#1658eb"/>
+              <!-- Active prism indicator -->
+              <polygon points="59,22 63,26 59,30 55,26" fill="#f0c975" stroke="#1658eb" stroke-width="1"/>
+              <!-- Right 6 enemies with 14px minimal shield micro-bars under feet -->
+              <rect x="97" y="29" width="8" height="19" fill="#d64262"/>
+              <rect x="95" y="49" width="12" height="2" fill="#e05270"/>
+              <rect x="92" y="48.5" width="2.5" height="2.5" fill="#22a7d9"/>
+              <rect x="110" y="25" width="7" height="17" fill="#e36982"/>
+              <rect x="108" y="43" width="10" height="1.8" fill="#e36982"/>
+              <rect x="121" y="21" width="6" height="15" fill="#ec93a6"/>
+              <rect x="119" y="37" width="9" height="1.6" fill="#ec93a6"/>
+              <rect x="128" y="30" width="7" height="17" fill="#e05270"/>
+              <rect x="126" y="48" width="10" height="1.8" fill="#e05270"/>
+              <rect x="138" y="26" width="6" height="15" fill="#e6738b"/>
+              <rect x="145" y="22" width="6" height="14" fill="#ec93a6"/>
+              <!-- Bottom-left slim party strip & bottom-right target detail card -->
+              <rect x="4" y="55" width="54" height="6" fill="rgba(22,88,235,0.22)"/>
+              <rect x="108" y="54" width="48" height="7" fill="rgba(214,66,98,0.22)" stroke="rgba(214,66,98,0.45)" stroke-width="0.8"/>
+            </svg>
+            <div class="ratio-callout">
+              <span class="ratio-label">6v6 实测非透明占屏高</span>
+              <span class="ratio-num">20% – 23%</span>
+              <span class="ratio-sub">1v1 ~28% · Boss ~35%</span>
+            </div>
+          </div>
+
+          <div class="spec-list">
+            <div class="spec-row">
+              <div class="spec-k">流派与 2.5D 纵深舞台</div>
+              <div class="spec-v"><strong>对标《八方旅人 II》</strong>：开阔 2.5D 透视地面搭配前后排自然景深微叠，稳态镜头零眩晕，全队轮廓层次清晰。</div>
+            </div>
+            <div class="spec-row">
+              <div class="spec-k">微血条与双下角 HUD</div>
+              <div class="spec-v">敌方脚底仅留 <strong><code>14px</code> 极简蓝晶盾微血条</strong>；左下收束小队窄条、右下展示锁定敌详卡，视野清爽。</div>
+            </div>
+            <div class="spec-row">
+              <div class="spec-k">棱镜菜单锚定</div>
+              <div class="spec-v">蓝金双菱形枢纽紧贴当前操作角色，四行指令（<code>W/E/A/D</code>）一键收展释放前排舞台视野。</div>
+            </div>
+          </div>
+
+          <div class="highlight-strip">
+            <span class="strip-tag">推荐亮点：</span>原汁原味八方 HD-2D 空间秩序，兼顾 6v6 全局读图效率与雪瓷留白，长流程最稳妥耐看。
+          </div>
+
+          <a class="card-cta" href="./hd2d_demo_a.html" data-tip="进入方案 A「纯正八方 HD-2D 纵深派」实机审阅（支持快捷键 A 直达）">
+            <span>进入方案 A 实机审阅</span>
+            <span class="cta-right"><span>hd2d_demo_a.html</span><span class="cta-arrow">→</span></span>
+          </a>
+        </div>
+      </article>
+
+      <!-- Proposal B: Octopath Stage x Unicorn Overlord Ultra-Clean Large Sprites -->
+      <article class="proposal-wrap theme-b">
+        <div class="proposal-card">
+          <div class="card-header">
+            <div class="card-meta-row">
+              <span class="plan-id"><span class="pip" aria-hidden="true"></span>SCHEME B · 圣兽极净大人物</span>
+              <span class="plan-benchmark">对标 八方旅人 × 圣兽之王</span>
+            </div>
+            <h3 class="card-title">八方舞台 × 圣兽极净大人物派</h3>
+            <p class="card-genre">释放 90%+ 3D 舞台 · 双下角极薄 2×3 战阵矩阵卡</p>
+          </div>
+
+          <div class="stage-diagram">
+            <svg viewBox="0 0 160 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <!-- Ultra-clean open stage line -->
+              <line x1="6" y1="47" x2="154" y2="47" stroke="rgba(200,146,46,0.34)" stroke-width="1"/>
+              <!-- Enlarged 6v6 sprites (23-26% taller silhouettes) -->
+              <rect x="10" y="16" width="8" height="24" fill="#6b9af6"/>
+              <rect x="21" y="19" width="8" height="25" fill="#3a72f0"/>
+              <rect x="33" y="15" width="9" height="29" fill="#1658eb"/>
+              <rect x="46" y="17" width="8" height="26" fill="#4f84f2"/>
+              <rect x="57" y="14" width="10" height="31" fill="#1658eb"/>
+              <polygon points="62,8 66,12 62,16 58,12" fill="#f0c975" stroke="#1658eb" stroke-width="1"/>
+              <!-- Right enlarged enemies: only shield pip + alert dot under feet -->
+              <rect x="93" y="14" width="10" height="31" fill="#d64262"/>
+              <polygon points="96,47 98,45 100,47 98,49" fill="#22a7d9"/>
+              <circle cx="102" cy="47" r="1.4" fill="#e05270"/>
+              <rect x="107" y="17" width="9" height="27" fill="#e05270"/>
+              <polygon points="110,46 112,44.2 114,46 112,47.8" fill="#22a7d9"/>
+              <rect x="120" y="15" width="9" height="28" fill="#e36982"/>
+              <polygon points="123,45.5 125,43.7 127,45.5 125,47.3" fill="#22a7d9"/>
+              <rect x="133" y="18" width="8" height="25" fill="#e6738b"/>
+              <rect x="144" y="16" width="8" height="24" fill="#ec93a6"/>
+              <!-- Twin bottom-corner ultra-thin 2x3 porcelain formation matrices -->
+              <g fill="rgba(22,88,235,0.22)" stroke="rgba(22,88,235,0.45)" stroke-width="0.6">
+                <rect x="6" y="51" width="15" height="4.5"/><rect x="23" y="51" width="15" height="4.5"/><rect x="40" y="51" width="15" height="4.5"/>
+                <rect x="6" y="57" width="15" height="4.5"/><rect x="23" y="57" width="15" height="4.5"/><rect x="40" y="57" width="15" height="4.5"/>
+              </g>
+              <g fill="rgba(214,66,98,0.18)" stroke="rgba(200,146,46,0.52)" stroke-width="0.6">
+                <rect x="105" y="51" width="15" height="4.5"/><rect x="122" y="51" width="15" height="4.5"/><rect x="139" y="51" width="15" height="4.5"/>
+                <rect x="105" y="57" width="15" height="4.5"/><rect x="122" y="57" width="15" height="4.5"/><rect x="139" y="57" width="15" height="4.5"/>
+              </g>
+            </svg>
+            <div class="ratio-callout">
+              <span class="ratio-label">6v6 实测非透明占屏高</span>
+              <span class="ratio-num">23% – 26%</span>
+              <span class="ratio-sub">1v1 ~31% · Boss ~38%</span>
+            </div>
+          </div>
+
+          <div class="spec-list">
+            <div class="spec-row">
+              <div class="spec-k">极净舞台与大人物比例</div>
+              <div class="spec-v"><strong>融合《圣兽之王》</strong>：释放 <strong>90%+ 3D 舞台</strong>，将 6v6 角色拉升至 <strong>23%–26% 屏高</strong>（1v1 ~31%，Boss ~38%），像素细节最饱满。</div>
+            </div>
+            <div class="spec-row">
+              <div class="spec-k">双下角 2×3 战阵矩阵</div>
+              <div class="spec-v">场上极度干净，未锁定敌脚底仅留<strong>破防盾徽 + 危警点</strong>；双下角收束极薄雪瓷 <strong>2×3 战阵矩阵卡</strong>直控全局。</div>
+            </div>
+            <div class="spec-row">
+              <div class="spec-k">棱镜菜单锚定</div>
+              <div class="spec-v">点舞台人物或 2×3 矩阵均可秒切主控与目标，四行冰晶棱镜菜单随 3D 锚点动态贴合不遮脸。</div>
+            </div>
+          </div>
+
+          <div class="highlight-strip">
+            <span class="strip-tag">推荐亮点：</span>三方案中人物最大、场上最纯净零杂噪，像素骨骼观赏性与 6v6 矩阵点控效率双拉满。
+          </div>
+
+          <a class="card-cta" href="./hd2d_demo_b.html" data-tip="进入方案 B「八方舞台 × 圣兽极净大人物派」实机审阅（支持快捷键 B 直达）">
+            <span>进入方案 B 实机审阅</span>
+            <span class="cta-right"><span>hd2d_demo_b.html</span><span class="cta-arrow">→</span></span>
+          </a>
+        </div>
+      </article>
+
+      <!-- Proposal C: Eiyuden 2.5D Theatrical Focus -->
+      <article class="proposal-wrap theme-c">
+        <div class="proposal-card">
+          <div class="card-header">
+            <div class="card-meta-row">
+              <span class="plan-id"><span class="pip" aria-hidden="true"></span>SCHEME C · 百英雄传剧场聚焦</span>
+              <span class="plan-benchmark">对标 百英雄传</span>
+            </div>
+            <h3 class="card-title">百英雄传 2.5D 剧场聚焦派</h3>
+            <p class="card-genre">16% 黄金交锋带 · 顶中极细序轨与 3D 电影推镜聚焦</p>
+          </div>
+
+          <div class="stage-diagram">
+            <svg viewBox="0 0 160 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <!-- Top-center ultra-thin porcelain turn order rail -->
+              <rect x="42" y="3" width="76" height="5" fill="rgba(255,255,255,0.9)" stroke="rgba(22,88,235,0.34)" stroke-width="0.8"/>
+              <rect x="46" y="4.2" width="8" height="2.6" fill="#1658eb"/>
+              <rect x="57" y="4.2" width="8" height="2.6" fill="#e05270"/>
+              <rect x="68" y="4.2" width="8" height="2.6" fill="#22a7d9"/>
+              <rect x="79" y="4.2" width="8" height="2.6" fill="#e05270"/>
+              <rect x="90" y="4.2" width="8" height="2.6" fill="#5b8ef5"/>
+              <rect x="101" y="4.2" width="8" height="2.6" fill="#c8922e"/>
+              <!-- 16% golden clash lane markers -->
+              <rect x="67" y="13" width="26" height="42" fill="rgba(34,167,217,0.09)"/>
+              <line x1="67" y1="13" x2="67" y2="55" stroke="rgba(34,167,217,0.35)" stroke-width="0.8" stroke-dasharray="2 2"/>
+              <line x1="93" y1="13" x2="93" y2="55" stroke="rgba(34,167,217,0.35)" stroke-width="0.8" stroke-dasharray="2 2"/>
+              <line x1="6" y1="55" x2="154" y2="55" stroke="rgba(34,167,217,0.34)" stroke-width="1"/>
+              <!-- Non-focus dimmed outer units -->
+              <rect x="16" y="30" width="7" height="17" fill="rgba(22,88,235,0.24)"/>
+              <rect x="27" y="28" width="7" height="18" fill="rgba(22,88,235,0.28)"/>
+              <rect x="126" y="28" width="7" height="18" fill="rgba(224,82,112,0.28)"/>
+              <rect x="137" y="30" width="7" height="17" fill="rgba(224,82,112,0.24)"/>
+              <!-- 3D cinematic focus frame brackets -->
+              <path d="M40 16 L40 12 L48 12 M120 16 L120 12 L112 12 M40 51 L40 55 L48 55 M120 51 L120 55 L112 55" stroke="#0e7ea8" stroke-width="1.5"/>
+              <!-- Focused actor & target across tight 16% clash lane -->
+              <rect x="52" y="24" width="11" height="27" fill="#1658eb"/>
+              <rect x="97" y="23" width="11" height="28" fill="#d64262"/>
+              <line x1="65" y1="36" x2="95" y2="34" stroke="#22a7d9" stroke-width="2" stroke-dasharray="4 2"/>
+              <polygon points="96,34 100,30 104,34 100,38" fill="#f0c975"/>
+            </svg>
+            <div class="ratio-callout">
+              <span class="ratio-label">6v6 实测非透明占屏高</span>
+              <span class="ratio-num">21% – 24%</span>
+              <span class="ratio-sub">16% 交锋带 · 3D 推镜聚焦</span>
+            </div>
+          </div>
+
+          <div class="spec-list">
+            <div class="spec-row">
+              <div class="spec-k">16% 黄金交锋带</div>
+              <div class="spec-v"><strong>对标《百英雄传》</strong>：中路收窄至 <strong>16% 黄金交锋带</strong>，敌我列阵距离紧凑，对峙张力与刀光技能贯通感极强。</div>
+            </div>
+            <div class="spec-row">
+              <div class="spec-k">行动序轨与 3D 电影推镜</div>
+              <div class="spec-v">顶中嵌入<strong>极细雪瓷行动序轨</strong>；切角或选敌触发丝滑 <strong>3D 电影推镜聚焦</strong>，非焦点单位柔和压暗突出主角。</div>
+            </div>
+            <div class="spec-row">
+              <div class="spec-k">棱镜菜单锚定</div>
+              <div class="spec-v">斜切冰晶棱镜指令翼紧随推镜后的角色锚点，支持 <code>0%–+60%</code> 四档增幅蓄力变色反馈。</div>
+            </div>
+          </div>
+
+          <div class="highlight-strip">
+            <span class="strip-tag">推荐亮点：</span>镜头演出与戏剧聚焦张力最强，顶中序轨兼顾回合节奏读数，最具 2.5D 剧场大片氛围。
+          </div>
+
+          <a class="card-cta" href="./hd2d_demo_c.html" data-tip="进入方案 C「百英雄传 2.5D 剧场聚焦派」实机审阅（支持快捷键 C 直达）">
+            <span>进入方案 C 实机审阅</span>
+            <span class="cta-right"><span>hd2d_demo_c.html</span><span class="cta-arrow">→</span></span>
+          </a>
+        </div>
+      </article>
+    </section>
+
+    <!-- Bottom Shortcuts & Live Experience Guide -->
+    <section class="guide-frame" aria-label="快捷键与实机体验指引">
+      <div class="guide-inner">
+        <div class="guide-top">
+          <div class="guide-heading">
+            <span class="g-gem" aria-hidden="true"></span>
+            <span>实机审阅操作指引与通用快捷键</span>
+          </div>
+          <div class="quick-keys">
+            <span class="quick-key-item">总台直达：<span class="kbd-tile">A</span> / <span class="kbd-tile">B</span> / <span class="kbd-tile">C</span></span>
+            <span class="quick-key-item">Demo 内棱镜指令：<span class="kbd-tile">W</span> 技能 · <span class="kbd-tile">E</span> 增幅 · <span class="kbd-tile">A</span> 道具 · <span class="kbd-tile">D</span> 结束</span>
+          </div>
+        </div>
+
+        <div class="guide-steps">
+          <div class="guide-step">
+            <div class="step-head"><span class="step-num">01</span><span>切换 5 套真实阵容</span></div>
+            <div class="step-body">在顶部阵容栏一键切换 <code>1v1</code>、<code>2v1 罗文战</code>、<code>1v4 霜狼围猎</code>、<code>6v6 满编决战</code> 与 <code>Boss 终战</code>，即时对比不同人数下的镜头密度。</div>
+          </div>
+
+          <div class="guide-step">
+            <div class="step-head"><span class="step-num">02</span><span>热切 3 大 3D 场景</span></div>
+            <div class="step-body">实时切换圣阿斯拉雪庭演武场、极北冰晶古林与云巅风神祭坛，观察 PBR 材质、丁达尔体积光、角色冷暖边缘染色与 3D 粒子同步变化。</div>
+          </div>
+
+          <div class="guide-step">
+            <div class="step-head"><span class="step-num">03</span><span>点选角色锚定棱镜</span></div>
+            <div class="step-body">直接点击 3D 场景中的像素角色（透明像素自动穿透）：点友方切换当前操作者并重锚四行棱镜菜单，点敌方切换红蓝集火准星。</div>
+          </div>
+
+          <div class="guide-step">
+            <div class="step-head"><span class="step-num">04</span><span>实测 3D 技能与增幅</span></div>
+            <div class="step-body">施放「三棱冰晶」「苍水弹」「星霜贯阵（全体）」「冰镜守御」并调节 <code>0%–+60%</code> 魔力增幅；MP 不足自动补满、敌方归零 1.4s 满血重生可无限试玩。</div>
+          </div>
+
+          <div class="guide-step">
+            <div class="step-head"><span class="step-num">05</span><span>开启身高标尺实测</span></div>
+            <div class="step-body">点击工具栏「身高标尺」叠加头顶至脚底真实非透明像素标尺，直观核验 6v6 占屏百分比（<code>visibleHeightPct</code>）、移轴景深开关与实时 FPS。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="porcelain-tip" role="tooltip" aria-hidden="true"></div>
+
+  <script>
+    (function () {
+      const tipEl = document.getElementById('porcelain-tip');
+      let activeTarget = null;
+
+      function positionTip(ev) {
+        if (!activeTarget || !tipEl) return;
+        const pad = 14;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const rect = tipEl.getBoundingClientRect();
+        let x = ev.clientX + 14;
+        let y = ev.clientY + 16;
+        if (x + rect.width + pad > vw) x = Math.max(pad, ev.clientX - rect.width - 14);
+        if (y + rect.height + pad > vh) y = Math.max(pad, ev.clientY - rect.height - 14);
+        tipEl.style.left = x + 'px';
+        tipEl.style.top = y + 'px';
+      }
+
+      document.addEventListener('pointerover', (ev) => {
+        const host = ev.target && ev.target.closest ? ev.target.closest('[data-tip]') : null;
+        if (!host) return;
+        const text = host.getAttribute('data-tip');
+        if (!text) return;
+        activeTarget = host;
+        tipEl.textContent = text;
+        tipEl.setAttribute('aria-hidden', 'false');
+        tipEl.classList.add('visible');
+        positionTip(ev);
+      });
+
+      document.addEventListener('pointermove', (ev) => {
+        if (activeTarget) positionTip(ev);
+      }, { passive: true });
+
+      document.addEventListener('pointerout', (ev) => {
+        if (!activeTarget) return;
+        const rel = ev.relatedTarget;
+        if (rel && activeTarget.contains(rel)) return;
+        activeTarget = null;
+        tipEl.classList.remove('visible');
+        tipEl.setAttribute('aria-hidden', 'true');
+      });
+
+      // Hub keyboard quick-jump (A / B / C)
+      window.addEventListener('keydown', (ev) => {
+        if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+        const tag = ev.target && ev.target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        const k = String(ev.key || '').toLowerCase();
+        if (k === 'a') window.location.href = './hd2d_demo_a.html';
+        else if (k === 'b') window.location.href = './hd2d_demo_b.html';
+        else if (k === 'c') window.location.href = './hd2d_demo_c.html';
+      });
+    })();
+  </script>
+</body>
+</html>

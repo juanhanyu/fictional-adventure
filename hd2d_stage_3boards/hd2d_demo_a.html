@@ -1,0 +1,2722 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>方案 A · 纯正八方 HD-2D 纵深派 — 转生千金 3D 战斗舞台竞标</title>
+<link rel="icon" href="data:,">
+<style>
+/* ============================================================================
+   方案 A：纯正《八方旅人 II》HD-2D 纵深派 + 6v6 透视拓展
+   雪瓷冰白玻璃 rgba(246,249,254,0.93) × 皇家蓝 #1658eb × 冰青 #38bdf8 × 香槟金 #d9a441
+   硬红线：严禁圆框套圆框（全站 border-radius:0 + 45°切角/1px分隔线）｜全页零原生 title
+   ============================================================================ */
+:root {
+  --snow-glass: rgba(246, 249, 254, 0.93);
+  --snow-glass-strong: rgba(248, 251, 255, 0.96);
+  --snow-glass-soft: rgba(246, 249, 254, 0.89);
+  --ink-primary: #142038;
+  --ink-secondary: #374b6d;
+  --ink-muted: #5d7294;
+  --royal-blue: #1658eb;
+  --royal-blue-hi: #2e77f8;
+  --royal-blue-deep: #0e2e7e;
+  --ice-cyan: #38bdf8;
+  --ice-cyan-pale: #bae6fd;
+  --champagne-gold: #d9a441;
+  --champagne-pale: #f6e4ba;
+  --emerald-guard: #0e7c5b;
+  --emerald-bright: #16a37a;
+  --crimson-hp: #d9264e;
+  --crimson-bright: #f43f5e;
+  --hairline-ice: rgba(22, 88, 235, 0.22);
+  --hairline-soft: rgba(56, 189, 248, 0.30);
+  --hairline-gold: rgba(217, 164, 65, 0.45);
+  --shadow-porcelain: 0 8px 28px rgba(10, 26, 66, 0.16), 0 1px 0 rgba(255, 255, 255, 0.85) inset;
+  --font-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', Georgia, serif;
+  --font-sans: 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Consolas, monospace;
+  --ease-crystal: cubic-bezier(0.22, 1, 0.36, 1);
+  --topbar-h: 38px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border-radius: 0 !important;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0d172c;
+  color: var(--ink-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+button, a {
+  font-family: inherit;
+  color: inherit;
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+button:focus-visible, a:focus-visible {
+  outline: 1.5px solid var(--royal-blue);
+  outline-offset: -1.5px;
+}
+
+/* ==================== 全屏 3D HD-2D 舞台 ==================== */
+#hd2d-root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#hd2d-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 1;
+}
+
+/* ==================== 1. 顶部极薄操控条 (38px ≤ 40px) ==================== */
+.top-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--topbar-h);
+  z-index: 60;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 0;
+  padding: 0 10px;
+  background: var(--snow-glass);
+  border-bottom: 1px solid rgba(22, 88, 235, 0.26);
+  box-shadow: 0 4px 18px rgba(10, 24, 62, 0.14);
+  white-space: nowrap;
+}
+
+.top-bar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1.5px;
+  background: linear-gradient(
+    90deg,
+    var(--royal-blue) 0%,
+    var(--ice-cyan) 30%,
+    rgba(255, 255, 255, 0.92) 52%,
+    var(--champagne-gold) 78%,
+    rgba(22, 88, 235, 0.35) 100%
+  );
+  pointer-events: none;
+}
+
+.tb-group {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.tb-sep {
+  width: 1px;
+  height: 18px;
+  margin: 0 8px;
+  background: rgba(22, 88, 235, 0.20);
+  flex-shrink: 0;
+}
+
+.tb-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 100%;
+  padding: 0 9px 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--royal-blue-deep);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.tb-back:hover {
+  color: var(--royal-blue);
+  background: rgba(22, 88, 235, 0.07);
+}
+
+.tb-back-arrow {
+  color: var(--royal-blue);
+  font-weight: 700;
+}
+
+/* 顶栏分段切换组：外框零嵌套，仅用底部高亮线 + 1px 竖线分隔 */
+.tb-seg {
+  display: inline-flex;
+  align-items: stretch;
+  height: 100%;
+}
+
+.tb-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
+  padding: 0 9px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-secondary);
+}
+
+.tb-btn + .tb-btn::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 1px;
+  background: rgba(22, 88, 235, 0.14);
+}
+
+.tb-btn:hover {
+  color: var(--royal-blue);
+  background: rgba(56, 189, 248, 0.10);
+}
+
+.tb-btn.is-active {
+  color: var(--royal-blue);
+  font-weight: 700;
+  background: linear-gradient(180deg, rgba(22, 88, 235, 0.04) 0%, rgba(56, 189, 248, 0.16) 100%);
+}
+
+.tb-btn.is-active::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  bottom: 0;
+  height: 2.5px;
+  background: linear-gradient(90deg, var(--royal-blue), var(--ice-cyan));
+}
+
+.tb-plan-a.is-active::after {
+  background: linear-gradient(90deg, var(--royal-blue), var(--champagne-gold));
+}
+
+.tb-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+  margin-right: 4px;
+  text-transform: uppercase;
+}
+
+.tb-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 100%;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.tb-toggle:hover {
+  color: var(--royal-blue);
+  background: rgba(22, 88, 235, 0.06);
+}
+
+.tb-toggle.is-on {
+  color: var(--royal-blue-deep);
+}
+
+.tb-dot {
+  width: 6px;
+  height: 6px;
+  transform: rotate(45deg);
+  background: rgba(93, 114, 148, 0.35);
+}
+
+.tb-toggle.is-on .tb-dot {
+  background: var(--royal-blue);
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.9);
+}
+
+.tb-telemetry {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px 0 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-secondary);
+}
+
+.tb-metric {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.tb-metric-k {
+  font-size: 10px;
+  color: var(--ink-muted);
+  font-family: var(--font-sans);
+}
+
+.tb-metric-v {
+  font-weight: 700;
+  color: var(--royal-blue-deep);
+}
+
+.tb-metric-v.is-good {
+  color: var(--emerald-guard);
+}
+
+@media (max-width: 1360px) {
+  .top-bar { padding: 0 6px; }
+  .tb-btn { padding: 0 6px; font-size: 11.5px; }
+  .tb-toggle { padding: 0 6px; font-size: 11.5px; }
+  .tb-sep { margin: 0 5px; }
+  .tb-label { display: none; }
+}
+
+/* ==================== 2. 敌方脚底极简《八方》血盾微条 (≤14px) ==================== */
+#enemy-microbars-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 25;
+  overflow: hidden;
+}
+
+.enemy-microbar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.em-anchor {
+  position: relative;
+  transform: translate(-50%, 0);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 悬停或锁定时在微条上方浮显 1 行精炼名牌与意图 */
+.em-whisper {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translate(-50%, 4px);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  background: var(--snow-glass-strong);
+  border: 1px solid rgba(22, 88, 235, 0.32);
+  border-bottom: 1.5px solid var(--royal-blue);
+  box-shadow: 0 4px 12px rgba(8, 20, 54, 0.18);
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 1.2;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s var(--ease-crystal), transform 0.16s var(--ease-crystal);
+}
+
+.enemy-microbar:hover .em-whisper,
+.enemy-microbar.is-locked .em-whisper {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.enemy-microbar.is-locked .em-whisper {
+  border-color: rgba(217, 164, 65, 0.65);
+  border-bottom-color: var(--champagne-gold);
+}
+
+.em-w-name {
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+.em-w-sep {
+  width: 1px;
+  height: 10px;
+  background: rgba(22, 88, 235, 0.25);
+}
+
+.em-w-intent {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ink-secondary);
+}
+
+.em-w-intent.type-heavy {
+  color: var(--crimson-hp);
+}
+
+.em-w-intent.type-buff {
+  color: var(--royal-blue);
+}
+
+/* 主微条主体：严格高 14px，蓝晶破锁盾徽 + 5px 血条 + 危警意图微点 */
+.em-strip {
+  height: 14px;
+  min-width: 84px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 5px 0 3px;
+  background: rgba(246, 249, 254, 0.90);
+  border: 1px solid rgba(22, 88, 235, 0.34);
+  box-shadow: 0 2px 8px rgba(8, 20, 54, 0.22);
+  clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.enemy-microbar.is-boss .em-strip {
+  min-width: 126px;
+}
+
+.enemy-microbar.is-locked .em-strip {
+  background: rgba(255, 253, 247, 0.96);
+  border-color: var(--champagne-gold);
+  box-shadow: 0 0 0 1px rgba(217, 164, 65, 0.45), 0 3px 12px rgba(22, 88, 235, 0.24);
+}
+
+.enemy-microbar.is-broken .em-strip {
+  border-color: var(--champagne-gold);
+  background: rgba(255, 249, 234, 0.94);
+}
+
+.em-shield {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 12px;
+  padding-right: 4px;
+  border-right: 1px solid rgba(22, 88, 235, 0.20);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--royal-blue-deep);
+}
+
+.em-shield-gem {
+  width: 6px;
+  height: 6px;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--ice-cyan) 0%, var(--royal-blue) 100%);
+  flex-shrink: 0;
+}
+
+.enemy-microbar.is-broken .em-shield {
+  color: #9e6b12;
+}
+
+.enemy-microbar.is-broken .em-shield-gem {
+  background: linear-gradient(135deg, var(--champagne-pale), var(--champagne-gold));
+}
+
+.em-hp-track {
+  position: relative;
+  width: 52px;
+  height: 5px;
+  background: rgba(20, 32, 56, 0.18);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.enemy-microbar.is-boss .em-hp-track {
+  width: 90px;
+}
+
+.em-hp-fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  background: linear-gradient(90deg, #c81e45 0%, #f43f5e 65%, #fb7185 100%);
+  transition: transform 0.24s var(--ease-crystal);
+}
+
+.enemy-microbar.is-boss .em-hp-fill {
+  background: linear-gradient(90deg, #b81d46 0%, #e11d48 55%, #f59e0b 100%);
+}
+
+.em-intent-dot {
+  width: 6px;
+  height: 6px;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+  background: #ea580c;
+}
+
+.em-intent-dot.type-heavy {
+  background: var(--crimson-hp);
+  box-shadow: 0 0 6px rgba(217, 38, 78, 0.85);
+  animation: intentPulse 1.3s ease-in-out infinite;
+}
+
+.em-intent-dot.type-buff {
+  background: var(--ice-cyan);
+  box-shadow: 0 0 5px rgba(56, 189, 248, 0.8);
+}
+
+@keyframes intentPulse {
+  0%, 100% { transform: rotate(45deg) scale(1); opacity: 0.92; }
+  50% { transform: rotate(45deg) scale(1.28); opacity: 1; }
+}
+
+/* ==================== 3. 行动者身旁 4 行棱镜主菜单 (z-index: 45) ==================== */
+#cb-prism-rig {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 45;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.prism-svg {
+  position: absolute;
+  left: -40px;
+  top: -110px;
+  width: 110px;
+  height: 220px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.prism-rays {
+  transition: opacity 0.18s var(--ease-crystal), transform 0.2s var(--ease-crystal);
+  transform-origin: 40px 110px;
+}
+
+#cb-prism-rig.is-collapsed .prism-rays {
+  opacity: 0;
+  transform: scale(0.25);
+}
+
+.prism-hub-group {
+  transform-origin: 40px 110px;
+  transition: transform 0.18s var(--ease-crystal), filter 0.18s ease;
+}
+
+#cb-prism-rig:has(#cb-pw-hub-toggle:hover, #cb-pw-hub-toggle:focus-visible) .prism-hub-group {
+  transform: scale(1.16);
+  filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.85)) drop-shadow(0 0 14px rgba(22, 88, 235, 0.5));
+}
+
+@keyframes hubBreath {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.6));
+  }
+  50% {
+    transform: scale(1.14);
+    filter: drop-shadow(0 0 11px rgba(217, 164, 65, 0.92));
+  }
+}
+
+#cb-prism-rig.is-collapsed .prism-hub-group {
+  animation: hubBreath 2.1s ease-in-out infinite;
+}
+
+/* 蓝金双菱形枢纽节点热区（透明无圆框，支持一键收起/展开释放前排视野） */
+#cb-pw-hub-toggle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 34px;
+  height: 34px;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  z-index: 12;
+  background: transparent;
+}
+
+#cb-pw-hub-toggle:focus-visible {
+  outline: none;
+}
+
+#cb-pw-hub-toggle:focus-visible::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border: 1.5px solid var(--ice-cyan);
+  box-shadow: 0 0 8px rgba(22, 88, 235, 0.7);
+}
+
+/* 棱镜四行指令翼 */
+.prism-root-list {
+  position: absolute;
+  left: 22px;
+  top: -86px;
+  width: 204px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  pointer-events: auto;
+  transition: opacity 0.18s var(--ease-crystal), transform 0.2s var(--ease-crystal), visibility 0.18s;
+}
+
+#cb-prism-rig.is-flip-left .prism-root-list {
+  left: auto;
+  right: 22px;
+}
+
+#cb-prism-rig.is-collapsed .prism-root-list,
+#cb-prism-rig.mode-skills .prism-root-list {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-12px) scale(0.95);
+}
+
+.prism-actor-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 10px 3px 8px;
+  margin-bottom: 2px;
+  background: linear-gradient(90deg, rgba(22, 88, 235, 0.90) 0%, rgba(14, 46, 126, 0.84) 75%, rgba(22, 88, 235, 0.18) 100%);
+  color: #f8fbff;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 100%, 0 100%);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+}
+
+.prism-actor-name {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.prism-actor-amp-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--champagne-pale);
+}
+
+.pwing-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 7px 11px 7px 9px;
+  text-align: left;
+  background: linear-gradient(112deg, rgba(252, 254, 255, 0.95) 0%, rgba(246, 249, 254, 0.93) 100%);
+  border: 1px solid rgba(22, 88, 235, 0.28);
+  border-left: 3px solid var(--royal-blue);
+  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 0 100%);
+  box-shadow: 0 5px 16px rgba(10, 26, 66, 0.16);
+  transition: transform 0.16s var(--ease-crystal), border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.pwing-btn:nth-child(2) { margin-left: 0; }
+.pwing-btn:nth-child(3) { margin-left: 7px; }
+.pwing-btn:nth-child(4) { margin-left: 7px; }
+.pwing-btn:nth-child(5) { margin-left: 0; }
+
+.pwing-btn:hover {
+  transform: translateX(5px);
+  background: linear-gradient(112deg, rgba(255, 255, 255, 0.98) 0%, rgba(224, 242, 254, 0.94) 100%);
+  border-color: var(--royal-blue);
+  box-shadow: 0 7px 20px rgba(22, 88, 235, 0.24);
+}
+
+.pwing-btn.is-amp-t1 { border-left-color: var(--ice-cyan); }
+.pwing-btn.is-amp-t2 { border-left-color: var(--royal-blue-hi); background: linear-gradient(112deg, rgba(240, 249, 255, 0.96) 0%, rgba(219, 238, 255, 0.92) 100%); }
+.pwing-btn.is-amp-t3 {
+  border-left-color: var(--champagne-gold);
+  border-color: rgba(217, 164, 65, 0.65);
+  background: linear-gradient(112deg, rgba(255, 253, 245, 0.96) 0%, rgba(246, 228, 186, 0.85) 100%);
+}
+
+.pwing-btn.is-reserved {
+  border-left-color: rgba(93, 114, 148, 0.45);
+  opacity: 0.84;
+}
+
+.pwing-btn.is-endturn {
+  border-left-color: var(--champagne-gold);
+}
+
+.pwing-key {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffffff;
+  background: linear-gradient(180deg, var(--royal-blue-hi) 0%, var(--royal-blue-deep) 100%);
+  clip-path: polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%);
+}
+
+.pwing-btn.is-amp-t3 .pwing-key {
+  background: linear-gradient(180deg, #e5b85c 0%, #a5731a 100%);
+}
+
+.pwing-btn.is-reserved .pwing-key {
+  background: linear-gradient(180deg, #7488a8 0%, #4a5d7c 100%);
+}
+
+.pwing-btn.is-endturn .pwing-key {
+  background: linear-gradient(180deg, #d9a441 0%, #8c6318 100%);
+}
+
+.pwing-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.pwing-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.pwing-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+.pwing-en {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--ink-muted);
+}
+
+.pwing-sub {
+  font-size: 10.5px;
+  color: var(--ink-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 增幅三晶格（无外边框，纯菱形填充） */
+.amp-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.amp-pip {
+  width: 6px;
+  height: 6px;
+  transform: rotate(45deg);
+  background: rgba(22, 88, 235, 0.18);
+  transition: background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.amp-pip.lit-1 { background: var(--ice-cyan); box-shadow: 0 0 5px rgba(56, 189, 248, 0.85); }
+.amp-pip.lit-2 { background: var(--royal-blue); box-shadow: 0 0 6px rgba(22, 88, 235, 0.85); }
+.amp-pip.lit-3 { background: var(--champagne-gold); box-shadow: 0 0 7px rgba(217, 164, 65, 0.95); }
+
+/* 4 招技能展开翼 */
+.prism-skill-wing {
+  position: absolute;
+  left: 22px;
+  top: -104px;
+  width: 248px;
+  display: flex;
+  flex-direction: column;
+  background: var(--snow-glass-strong);
+  border: 1px solid rgba(22, 88, 235, 0.34);
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  box-shadow: 0 12px 30px rgba(8, 22, 62, 0.22);
+  pointer-events: auto;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-10px) scale(0.96);
+  transition: opacity 0.18s var(--ease-crystal), transform 0.2s var(--ease-crystal), visibility 0.18s;
+}
+
+#cb-prism-rig.is-flip-left .prism-skill-wing {
+  left: auto;
+  right: 22px;
+}
+
+#cb-prism-rig.mode-skills:not(.is-collapsed) .prism-skill-wing {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0) scale(1);
+}
+
+.psw-spine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px;
+  background: linear-gradient(90deg, rgba(22, 88, 235, 0.11) 0%, rgba(56, 189, 248, 0.08) 100%);
+  border-bottom: 1px solid rgba(22, 88, 235, 0.20);
+}
+
+.psw-back {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--royal-blue-deep);
+  padding: 2px 4px;
+}
+
+.psw-back:hover {
+  color: var(--royal-blue);
+}
+
+.psw-amp-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--royal-blue);
+  background: rgba(22, 88, 235, 0.08);
+}
+
+.psw-amp-mini.is-t3 {
+  color: #8c6014;
+  background: rgba(217, 164, 65, 0.22);
+}
+
+.psw-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 技能项严格不套外边框，仅用 1px 底分隔线 + 左侧属性色条（守御为翡翠绿 #0E7C5B） */
+.psw-skill-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 7px 10px 7px 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(22, 88, 235, 0.13);
+  border-left: 3.5px solid var(--royal-blue);
+  transition: background 0.14s ease, padding-left 0.14s var(--ease-crystal);
+}
+
+.psw-skill-btn:last-child {
+  border-bottom: none;
+}
+
+.psw-skill-btn.is-water { border-left-color: var(--ice-cyan); }
+.psw-skill-btn.is-starfrost { border-left-color: var(--champagne-gold); }
+.psw-skill-btn.is-guard { border-left-color: var(--emerald-guard); }
+
+.psw-skill-btn:hover {
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.16) 0%, rgba(255, 255, 255, 0.45) 100%);
+  padding-left: 16px;
+}
+
+.psw-skill-btn.is-guard:hover {
+  background: linear-gradient(90deg, rgba(14, 124, 91, 0.14) 0%, rgba(255, 255, 255, 0.45) 100%);
+}
+
+.psw-sk-row1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.psw-sk-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.psw-sk-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--royal-blue);
+  opacity: 0.8;
+}
+
+.psw-skill-btn.is-guard .psw-sk-num {
+  color: var(--emerald-guard);
+}
+
+.psw-sk-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+.psw-sk-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 0 4px;
+  color: var(--royal-blue-deep);
+  background: rgba(22, 88, 235, 0.10);
+}
+
+.psw-skill-btn.is-guard .psw-sk-tag {
+  color: var(--emerald-guard);
+  background: rgba(14, 124, 91, 0.13);
+}
+
+.psw-skill-btn.is-starfrost .psw-sk-tag {
+  color: #8a5e10;
+  background: rgba(217, 164, 65, 0.18);
+}
+
+.psw-sk-mp {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--royal-blue);
+  flex-shrink: 0;
+}
+
+.psw-sk-desc {
+  font-size: 10.5px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ==================== 4. 左下极薄雪瓷小队窄条 (z-index: 35) ==================== */
+.squad-strip {
+  position: fixed;
+  left: 14px;
+  bottom: 12px;
+  z-index: 35;
+  display: flex;
+  flex-direction: column;
+  max-width: min(560px, 46vw);
+  background: var(--snow-glass);
+  border: 1px solid rgba(22, 88, 235, 0.28);
+  border-left: 3px solid var(--royal-blue);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  box-shadow: var(--shadow-porcelain);
+}
+
+.squad-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 10px;
+  border-bottom: 1px solid rgba(22, 88, 235, 0.15);
+  background: linear-gradient(90deg, rgba(22, 88, 235, 0.08) 0%, transparent 100%);
+  font-size: 10.5px;
+  color: var(--ink-muted);
+}
+
+.squad-head-title {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--royal-blue-deep);
+}
+
+.squad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(126px, 1fr));
+}
+
+.squad-grid.count-1 { grid-template-columns: minmax(176px, 1fr); }
+.squad-grid.count-2 { grid-template-columns: repeat(2, minmax(154px, 1fr)); }
+
+.ally-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 5px 9px 6px 9px;
+  text-align: left;
+  border-right: 1px solid rgba(22, 88, 235, 0.13);
+  border-bottom: 1px solid rgba(22, 88, 235, 0.13);
+  transition: background 0.14s ease;
+}
+
+.ally-cell:hover {
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.ally-cell.is-active {
+  background: linear-gradient(135deg, rgba(22, 88, 235, 0.12) 0%, rgba(56, 189, 248, 0.14) 100%);
+}
+
+.ally-cell.is-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2.5px;
+  background: linear-gradient(180deg, var(--royal-blue), var(--champagne-gold));
+}
+
+.ally-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 5px;
+}
+
+.ally-name {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ally-cell.is-active .ally-name {
+  color: var(--royal-blue);
+}
+
+.ally-tier {
+  font-size: 9.5px;
+  color: var(--ink-muted);
+  flex-shrink: 0;
+}
+
+.ally-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mini-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.mini-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(20, 32, 56, 0.12);
+  overflow: hidden;
+}
+
+.mini-track.mp { height: 3px; }
+
+.mini-fill-hp {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--emerald-guard), var(--emerald-bright));
+  transition: width 0.22s var(--ease-crystal);
+}
+
+.mini-fill-mp {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--royal-blue), var(--ice-cyan));
+  transition: width 0.22s var(--ease-crystal);
+}
+
+.mini-num {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--ink-secondary);
+  width: 30px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ==================== 5. 右下锁定敌方详情卡 (z-index: 35) ==================== */
+.target-card {
+  position: fixed;
+  right: 14px;
+  bottom: 12px;
+  z-index: 35;
+  width: 274px;
+  background: var(--snow-glass);
+  border: 1px solid rgba(22, 88, 235, 0.30);
+  border-right: 3px solid var(--crimson-hp);
+  clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px);
+  box-shadow: var(--shadow-porcelain);
+}
+
+.target-card.is-boss {
+  border-right-color: var(--champagne-gold);
+}
+
+.tc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 10px 5px 12px;
+  border-bottom: 1px solid rgba(22, 88, 235, 0.16);
+  background: linear-gradient(90deg, rgba(217, 38, 78, 0.07) 0%, rgba(22, 88, 235, 0.05) 100%);
+}
+
+.target-card.is-boss .tc-head {
+  background: linear-gradient(90deg, rgba(217, 164, 65, 0.16) 0%, rgba(22, 88, 235, 0.06) 100%);
+}
+
+.tc-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tc-lock-gem {
+  width: 7px;
+  height: 7px;
+  transform: rotate(45deg);
+  background: var(--crimson-hp);
+  flex-shrink: 0;
+}
+
+.target-card.is-boss .tc-lock-gem {
+  background: var(--champagne-gold);
+  box-shadow: 0 0 6px rgba(217, 164, 65, 0.85);
+}
+
+.tc-name {
+  font-family: var(--font-serif);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tc-tier {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  color: var(--royal-blue-deep);
+  background: rgba(22, 88, 235, 0.10);
+  flex-shrink: 0;
+}
+
+.target-card.is-boss .tc-tier {
+  color: #8a5e10;
+  background: rgba(217, 164, 65, 0.24);
+}
+
+.tc-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.tc-nav-btn {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-secondary);
+  background: rgba(22, 88, 235, 0.07);
+}
+
+.tc-nav-btn:hover {
+  color: var(--royal-blue);
+  background: rgba(56, 189, 248, 0.22);
+}
+
+.tc-body {
+  padding: 7px 11px 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tc-hp-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.tc-hp-label {
+  font-weight: 700;
+  color: var(--ink-muted);
+  letter-spacing: 0.04em;
+}
+
+.tc-hp-nums {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+.tc-hp-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(20, 32, 56, 0.14);
+  overflow: hidden;
+}
+
+.tc-hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #be123c 0%, #f43f5e 70%, #fb7185 100%);
+  transition: width 0.24s var(--ease-crystal);
+}
+
+.tc-shield-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 4px;
+  border-top: 1px solid rgba(22, 88, 235, 0.12);
+}
+
+.tc-shield-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tc-sh-pip {
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--ice-cyan), var(--royal-blue));
+}
+
+.tc-sh-pip.is-empty {
+  background: rgba(20, 32, 56, 0.14);
+}
+
+.tc-shield-txt {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--royal-blue-deep);
+}
+
+.tc-shield-txt.is-broken {
+  color: #9e6b12;
+}
+
+.tc-intent-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 7px;
+  background: rgba(22, 88, 235, 0.06);
+  border-left: 2.5px solid var(--crimson-hp);
+  font-size: 11px;
+}
+
+.tc-intent-row.type-buff {
+  border-left-color: var(--ice-cyan);
+  background: rgba(56, 189, 248, 0.10);
+}
+
+.tc-intent-row.type-heavy {
+  border-left-color: var(--crimson-hp);
+  background: rgba(217, 38, 78, 0.09);
+}
+
+.tc-intent-k {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-muted);
+  flex-shrink: 0;
+}
+
+.tc-intent-v {
+  font-weight: 600;
+  color: var(--ink-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ==================== 6. 身高标尺叠加层 (z-index: 32) ==================== */
+#ruler-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 32;
+  pointer-events: none;
+  display: none;
+}
+
+#ruler-layer.is-visible {
+  display: block;
+}
+
+#ruler-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.ruler-summary {
+  position: fixed;
+  top: 46px;
+  left: 14px;
+  padding: 4px 10px;
+  background: var(--snow-glass-strong);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  border-left: 3px solid var(--ice-cyan);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--royal-blue-deep);
+  box-shadow: 0 4px 14px rgba(10, 26, 66, 0.14);
+}
+
+.ruler-tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 1px 5px;
+  background: rgba(246, 249, 254, 0.90);
+  border-left: 2px solid var(--ice-cyan);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--royal-blue-deep);
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(8, 22, 58, 0.14);
+  will-change: transform;
+}
+
+.ruler-tag.is-enemy {
+  border-left-color: var(--crimson-hp);
+  color: #881337;
+}
+
+/* ==================== 7. 3D 命中飘字层 + 轻提示 (z-index: 50 / 70) ==================== */
+#float-nums-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.float-num {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  text-shadow:
+    0 2px 0 #0e2e7e,
+    0 -1px 0 #0e2e7e,
+    1.5px 0 0 #0e2e7e,
+    -1.5px 0 0 #0e2e7e,
+    0 4px 14px rgba(22, 88, 235, 0.55);
+  white-space: nowrap;
+  will-change: transform, opacity;
+  animation: floatRise 1.05s var(--ease-crystal) forwards;
+}
+
+.float-num.is-crit {
+  font-size: 30px;
+  color: #fff6d6;
+  text-shadow:
+    0 2px 0 #7c4d08,
+    0 -1px 0 #7c4d08,
+    1.5px 0 0 #7c4d08,
+    -1.5px 0 0 #7c4d08,
+    0 0 18px rgba(217, 164, 65, 0.85);
+}
+
+.float-num.is-shield {
+  font-size: 22px;
+  color: #d1fae5;
+  text-shadow:
+    0 2px 0 #064e3b,
+    0 -1px 0 #064e3b,
+    1.5px 0 0 #064e3b,
+    -1.5px 0 0 #064e3b,
+    0 0 14px rgba(14, 124, 91, 0.72);
+}
+
+.float-sub-tag {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-align: center;
+  margin-bottom: -3px;
+  color: var(--champagne-pale);
+}
+
+@keyframes floatRise {
+  0% { opacity: 0; transform: translate3d(var(--fx), calc(var(--fy) + 8px), 0) translate(-50%, -50%) scale(0.72); }
+  16% { opacity: 1; transform: translate3d(var(--fx), calc(var(--fy) - 10px), 0) translate(-50%, -50%) scale(1.12); }
+  32% { opacity: 1; transform: translate3d(var(--fx), calc(var(--fy) - 18px), 0) translate(-50%, -50%) scale(1.0); }
+  100% { opacity: 0; transform: translate3d(var(--fx), calc(var(--fy) - 56px), 0) translate(-50%, -50%) scale(0.95); }
+}
+
+/* 雪瓷轻量顶部 Toast */
+#porcelain-toast {
+  position: fixed;
+  top: 48px;
+  left: 50%;
+  z-index: 70;
+  transform: translate(-50%, -8px);
+  padding: 5px 16px;
+  background: var(--snow-glass-strong);
+  border: 1px solid rgba(22, 88, 235, 0.34);
+  border-bottom: 2px solid var(--royal-blue);
+  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+  box-shadow: 0 8px 24px rgba(10, 26, 66, 0.20);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-primary);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s var(--ease-crystal), transform 0.18s var(--ease-crystal);
+}
+
+#porcelain-toast.is-shown {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* 自定义雪瓷悬浮提示（替代浏览器原生 title 灰框） */
+#porcelain-tip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 80;
+  padding: 3px 8px;
+  background: var(--snow-glass-strong);
+  border: 1px solid rgba(22, 88, 235, 0.32);
+  border-left: 2.5px solid var(--royal-blue);
+  box-shadow: 0 6px 18px rgba(10, 26, 66, 0.18);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-primary);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+#porcelain-tip.is-shown {
+  opacity: 1;
+}
+</style>
+</head>
+<body>
+<div id="hd2d-root">
+  <!-- 全屏 Three.js 3D HD-2D 渲染画布 -->
+  <canvas id="hd2d-canvas"></canvas>
+
+  <!-- 1. 顶部极薄操控条 (38px ≤ 40px) -->
+  <header class="top-bar" role="banner">
+    <div class="tb-group">
+      <a class="tb-back" href="./hd2d_hub.html" data-tip="返回 HD-2D 三方案总控台">
+        <span class="tb-back-arrow">←</span>
+        <span>返回总台</span>
+      </a>
+      <span class="tb-sep" aria-hidden="true"></span>
+      <nav class="tb-seg" aria-label="竞标方案切换">
+        <a class="tb-btn tb-plan-a is-active" href="./hd2d_demo_a.html" aria-current="page" data-tip="当前：纯正八方 HD-2D 纵深派">方案 A · 纵深</a>
+        <a class="tb-btn" href="./hd2d_demo_b.html" data-tip="切换至方案 B">方案 B</a>
+        <a class="tb-btn" href="./hd2d_demo_c.html" data-tip="切换至方案 C">方案 C</a>
+      </nav>
+    </div>
+
+    <div class="tb-group">
+      <span class="tb-label">阵容</span>
+      <div class="tb-seg" id="tb-formations" role="group" aria-label="战斗阵容切换"></div>
+      <span class="tb-sep" aria-hidden="true"></span>
+      <span class="tb-label">场景</span>
+      <div class="tb-seg" id="tb-biomes" role="group" aria-label="3D 战斗场景切换"></div>
+    </div>
+
+    <div class="tb-group">
+      <button type="button" class="tb-toggle is-on" id="btn-tiltshift" aria-pressed="true" data-tip="开关 HD-2D 移轴景深散景">
+        <span class="tb-dot" aria-hidden="true"></span>
+        <span>移轴景深</span>
+      </button>
+      <button type="button" class="tb-toggle" id="btn-ruler" aria-pressed="false" data-tip="叠加角色头顶至脚底实测占屏高标尺">
+        <span class="tb-dot" aria-hidden="true"></span>
+        <span>身高标尺</span>
+      </button>
+      <span class="tb-sep" aria-hidden="true"></span>
+      <div class="tb-telemetry" aria-label="实时性能与角色占屏高">
+        <span class="tb-metric"><span class="tb-metric-k">FPS</span><span class="tb-metric-v" id="stat-fps">60</span></span>
+        <span class="tb-metric"><span class="tb-metric-k">均高</span><span class="tb-metric-v is-good" id="stat-avg-h">--%</span></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 2. 敌方脚底极简《八方》血盾微条层 -->
+  <div id="enemy-microbars-layer" aria-label="敌方脚底状态微条"></div>
+
+  <!-- 3. 身高标尺叠加层 -->
+  <div id="ruler-layer" aria-hidden="true">
+    <svg id="ruler-svg"></svg>
+    <div id="ruler-tags"></div>
+    <div class="ruler-summary" id="ruler-summary">身高实测标尺</div>
+  </div>
+
+  <!-- 4. 行动者身旁 4 行棱镜主菜单 (z-index: 45) -->
+  <nav id="cb-prism-rig" aria-label="棱镜战斗指令菜单">
+    <svg class="prism-svg" viewBox="0 0 110 220" aria-hidden="true">
+      <defs>
+        <linearGradient id="prismHubBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#38bdf8" />
+          <stop offset="55%" stop-color="#1658eb" />
+          <stop offset="100%" stop-color="#0e2e7e" />
+        </linearGradient>
+        <linearGradient id="prismHubGold" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fff4d1" />
+          <stop offset="55%" stop-color="#d9a441" />
+          <stop offset="100%" stop-color="#9a6b18" />
+        </linearGradient>
+      </defs>
+      <!-- 棱镜折射细线 -->
+      <g class="prism-rays" id="prism-rays-g">
+        <line x1="40" y1="110" x2="62" y2="54" stroke="rgba(56,189,248,0.85)" stroke-width="1.25" />
+        <line x1="40" y1="110" x2="69" y2="92" stroke="rgba(22,88,235,0.68)" stroke-width="1.15" />
+        <line x1="40" y1="110" x2="69" y2="132" stroke="rgba(22,88,235,0.52)" stroke-width="1.05" />
+        <line x1="40" y1="110" x2="62" y2="170" stroke="rgba(217,164,65,0.78)" stroke-width="1.15" />
+        <polygon points="62,51 65,54 62,57 59,54" fill="#38bdf8" />
+        <polygon points="69,89 72,92 69,95 66,92" fill="#1658eb" />
+        <polygon points="69,129 72,132 69,135 66,132" fill="#5d7294" />
+        <polygon points="62,167 65,170 62,173 59,170" fill="#d9a441" />
+      </g>
+      <!-- 蓝金双菱形枢纽节点 -->
+      <g class="prism-hub-group">
+        <polygon points="40,95 55,110 40,125 25,110" fill="rgba(246,249,254,0.92)" stroke="url(#prismHubGold)" stroke-width="1.7" />
+        <polygon points="40,100 50,110 40,120 30,110" fill="url(#prismHubBlue)" stroke="#bae6fd" stroke-width="0.9" />
+        <polygon points="40,105.5 44.5,110 40,114.5 35.5,110" fill="#fff7dc" />
+      </g>
+    </svg>
+
+    <button
+      type="button"
+      id="cb-pw-hub-toggle"
+      aria-label="收起或展开棱镜指令菜单"
+      aria-expanded="true"
+      data-tip="点击蓝金枢纽：收起 / 展开战斗菜单以释放前排视野"
+    ></button>
+
+    <!-- 四行主菜单：W 施放技能 / E 魔力增幅 / A 使用道具 / D 结束回合 -->
+    <div class="prism-root-list" id="prism-root-list">
+      <div class="prism-actor-ribbon">
+        <span class="prism-actor-name" id="prism-actor-name">希尔维亚</span>
+        <span class="prism-actor-amp-tag" id="prism-actor-amp-tag">增幅 +0%</span>
+      </div>
+
+      <button type="button" class="pwing-btn" id="btn-cmd-skill">
+        <span class="pwing-key">W</span>
+        <span class="pwing-body">
+          <span class="pwing-top">
+            <span class="pwing-title">施放技能</span>
+            <span class="pwing-en">SKILLS</span>
+          </span>
+          <span class="pwing-sub">展开攻守 4 招 · 实时 3D 演出</span>
+        </span>
+      </button>
+
+      <button type="button" class="pwing-btn" id="btn-cmd-amp" data-tip="左键或 E 键升档，右键降档（1:1 线性增幅）">
+        <span class="pwing-key">E</span>
+        <span class="pwing-body">
+          <span class="pwing-top">
+            <span class="pwing-title" id="amp-title">魔力增幅 +0%</span>
+            <span class="amp-pips" id="amp-pips" aria-hidden="true">
+              <span class="amp-pip"></span>
+              <span class="amp-pip"></span>
+              <span class="amp-pip"></span>
+            </span>
+          </span>
+          <span class="pwing-sub" id="amp-sub">常规输出 · +0% 伤 / +0 破锁</span>
+        </span>
+      </button>
+
+      <button type="button" class="pwing-btn is-reserved" id="btn-cmd-item">
+        <span class="pwing-key">A</span>
+        <span class="pwing-body">
+          <span class="pwing-top">
+            <span class="pwing-title">使用道具</span>
+            <span class="pwing-en">ITEMS</span>
+          </span>
+          <span class="pwing-sub">预留接口 · 后续实装</span>
+        </span>
+      </button>
+
+      <button type="button" class="pwing-btn is-endturn" id="btn-cmd-endturn">
+        <span class="pwing-key">D</span>
+        <span class="pwing-body">
+          <span class="pwing-top">
+            <span class="pwing-title">结束回合</span>
+            <span class="pwing-en">END TURN</span>
+          </span>
+          <span class="pwing-sub">切换下一名友方行动者</span>
+        </span>
+      </button>
+    </div>
+
+    <!-- 展开后的 4 招技能翼 -->
+    <div class="prism-skill-wing" id="prism-skill-wing" aria-label="技能列表">
+      <div class="psw-spine">
+        <button type="button" class="psw-back" id="btn-skill-back">← 返回 [ESC]</button>
+        <button type="button" class="psw-amp-mini" id="btn-amp-mini" data-tip="左键升档 / 右键降档">
+          <span>E</span>
+          <span id="amp-mini-val">增幅 +0%</span>
+        </button>
+      </div>
+      <div class="psw-list" id="psw-skill-list"></div>
+    </div>
+  </nav>
+
+  <!-- 5. 左下极薄雪瓷小队窄条 -->
+  <section class="squad-strip" aria-label="我方小队状态">
+    <div class="squad-head">
+      <span class="squad-head-title" id="squad-formation-title">我方阵列 · 6v6 纵深</span>
+      <span>点选切换操作角色</span>
+    </div>
+    <div class="squad-grid" id="squad-grid"></div>
+  </section>
+
+  <!-- 6. 右下锁定敌方详情卡 -->
+  <section class="target-card" id="target-card" aria-label="锁定敌方详情">
+    <div class="tc-head">
+      <div class="tc-title-wrap">
+        <span class="tc-lock-gem" aria-hidden="true"></span>
+        <span class="tc-name" id="tc-name">--</span>
+        <span class="tc-tier" id="tc-tier">--</span>
+      </div>
+      <div class="tc-nav">
+        <button type="button" class="tc-nav-btn" id="btn-enemy-prev" aria-label="上一名敌方" data-tip="锁定上一名敌方">‹</button>
+        <button type="button" class="tc-nav-btn" id="btn-enemy-next" aria-label="下一名敌方" data-tip="锁定下一名敌方 [Tab]">›</button>
+      </div>
+    </div>
+    <div class="tc-body">
+      <div>
+        <div class="tc-hp-meta">
+          <span class="tc-hp-label">HP 生命值</span>
+          <span class="tc-hp-nums" id="tc-hp-nums">-- / --</span>
+        </div>
+        <div class="tc-hp-track">
+          <div class="tc-hp-fill" id="tc-hp-fill" style="width: 100%"></div>
+        </div>
+      </div>
+      <div class="tc-shield-row">
+        <div class="tc-shield-pips" id="tc-shield-pips"></div>
+        <span class="tc-shield-txt" id="tc-shield-txt">护盾 --/--</span>
+      </div>
+      <div class="tc-intent-row" id="tc-intent-row">
+        <span class="tc-intent-k">下步意图</span>
+        <span class="tc-intent-v" id="tc-intent-val">--</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. 3D 飘字层 + 雪瓷提示 -->
+  <div id="float-nums-layer" aria-hidden="true"></div>
+  <div id="porcelain-toast" role="status" aria-live="polite"></div>
+  <div id="porcelain-tip" aria-hidden="true"></div>
+</div>
+
+<!-- 同步加载全部 17 套真实像素骨骼脚本（严格位于 module 之前） -->
+<script src="./sprites/sylvia_silver.js"></script>
+<script src="./sprites/sylvia_young.js"></script>
+<script src="./sprites/sylvia_disguise.js"></script>
+<script src="./sprites/reno.js"></script>
+<script src="./sprites/charlotte.js"></script>
+<script src="./sprites/alice.js"></script>
+<script src="./sprites/jilan.js"></script>
+<script src="./sprites/aino.js"></script>
+<script src="./sprites/beatrice.js"></script>
+<script src="./sprites/rowan.js"></script>
+<script src="./sprites/wind_god_avatar.js"></script>
+<script src="./sprites/eastwing_commander.js"></script>
+<script src="./sprites/corridor_vanguard.js"></script>
+<script src="./sprites/flame_mage.js"></script>
+<script src="./sprites/pack_wolf.js"></script>
+<script src="./sprites/wolf_alpha.js"></script>
+<script src="./sprites/abyss_behemoth.js"></script>
+
+<script type="module">
+import {
+  mountHD2DDemoEngine,
+  BIOME_LIST,
+  FORMATIONS,
+  DEMO_SKILLS,
+} from './engine3d/demo-shell.js';
+
+/* ============================================================================
+   1. 方案 A 专属 3D 摄影机与纵深阵型坐标（对标《八方旅人 II》HD-2D + 6v6 拓展）
+   ============================================================================ */
+const CAMERA_CONFIG = {
+  basePos: [0, 5.45, 14.8],
+  position: [0, 5.45, 14.8],
+  baseLookAt: [0, 1.32, 0],
+  lookAt: [0, 1.32, 0],
+  fov: 34,
+  focusPushStrength: 0.35,
+  parallaxStrength: 0.25,
+  parallaxX: 0.25,
+  parallaxY: 0.12,
+};
+
+const AMP_TIERS = [
+  { pct: 0,  label: '常规',           shortSub: '常规输出 · +0% 伤 / +0 破锁',   breakBonus: 0, pierce: 0 },
+  { pct: 20, label: '★一阶·魔力盈溢',  shortSub: '+20% 伤 · 10% 穿防 · +1 破锁', breakBonus: 1, pierce: 10 },
+  { pct: 40, label: '★★二阶·极寒过载', shortSub: '+40% 伤 · 22% 穿防 · +2 破锁', breakBonus: 2, pierce: 22 },
+  { pct: 60, label: '★★★三阶·星霜极限', shortSub: '+60% 伤 · 35% 穿防 · +3 破锁', breakBonus: 3, pierce: 35 },
+];
+
+const FORMATION_ORDER = ['1v1', '2v1', '1v4', '6v6', 'boss1v1'];
+const FORMATION_SHORT_LABELS = {
+  '1v1': '1v1',
+  '2v1': '2v1',
+  '1v4': '1v4',
+  '6v6': '6v6',
+  'boss1v1': 'Boss',
+};
+
+function formationLayoutFn(key, allies = [], enemies = []) {
+  const placed = [];
+
+  if (key === '1v1') {
+    allies.forEach((a, i) => {
+      placed.push({
+        ...a,
+        side: 'ally',
+        pos: [-3.7 - i * 1.4, 0, 0.25 + i * 0.5],
+        heightWorld: 2.85,
+      });
+    });
+    enemies.forEach((e, i) => {
+      placed.push({
+        ...e,
+        side: 'enemy',
+        pos: [3.7 + i * 1.4, 0, 0.25 + i * 0.5],
+        heightWorld: 2.95,
+      });
+    });
+    return placed;
+  }
+
+  if (key === '2v1') {
+    // 友前 [-3.1, 0, 0.85] (2.70) + 友后 [-5.2, 0, -0.85] (2.55)，敌 [+3.6, 0, 0.2] (2.95)
+    const allySlots = [
+      { pos: [-3.1, 0, 0.85], h: 2.70 },
+      { pos: [-5.2, 0, -0.85], h: 2.55 },
+    ];
+    allies.forEach((a, i) => {
+      const slot = allySlots[i] || { pos: [-4.6 - i * 0.9, 0, -0.4 + i * 0.8], h: 2.55 };
+      placed.push({ ...a, side: 'ally', pos: slot.pos.slice(), heightWorld: slot.h });
+    });
+    enemies.forEach((e, i) => {
+      placed.push({
+        ...e,
+        side: 'enemy',
+        pos: [3.6 + i * 1.2, 0, 0.2],
+        heightWorld: 2.95,
+      });
+    });
+    return placed;
+  }
+
+  if (key === '1v4') {
+    allies.forEach((a, i) => {
+      placed.push({
+        ...a,
+        side: 'ally',
+        pos: [-3.6 - i * 1.2, 0, 0.25],
+        heightWorld: 2.68,
+      });
+    });
+    // 四狼独立无粘连斜阵（横跨 x=1.85..5.10，4 个独立凶悍剪影）
+    const wolfSlots = [
+      { pos: [1.85, 0,  1.05], h: 1.85 },
+      { pos: [3.35, 0, -0.35], h: 1.82 },
+      { pos: [4.85, 0, -1.75], h: 1.80 },
+      { pos: [4.95, 0,  0.70], h: 1.74 },
+    ];
+    enemies.forEach((e, i) => {
+      const slot = wolfSlots[i] || { pos: [2.4 + (i % 2) * 1.3, 0, -1.0 + i * 0.7], h: 1.74 };
+      placed.push({
+        ...e,
+        side: 'enemy',
+        pos: slot.pos.slice(),
+        heightWorld: slot.h,
+      });
+    });
+    return placed;
+  }
+
+  if (key === 'boss1v1') {
+    allies.forEach((a, i) => {
+      placed.push({
+        ...a,
+        side: 'ally',
+        pos: [-4.2 - i * 1.2, 0, 0.35],
+        heightWorld: 2.80,
+      });
+    });
+    enemies.forEach((e, i) => {
+      placed.push({
+        ...e,
+        side: 'enemy',
+        pos: [3.4 + i * 1.5, 0, -0.15],
+        heightWorld: 3.55,
+      });
+    });
+    return placed;
+  }
+
+  // 默认 '6v6'：3D 透视无重叠 6 列独立阵位（0 叠头、0 切边、均高 21%–23%）
+  const ally6Slots = [
+    { pos: [-2.15, 0,  1.15], h: 2.22 }, // 0 希尔维亚
+    { pos: [-3.25, 0, -0.35], h: 2.20 }, // 1 雷纳德
+    { pos: [-4.55, 0, -2.00], h: 2.18 }, // 2 夏洛特
+    { pos: [-6.55, 0, -2.15], h: 2.16 }, // 3 爱丽丝
+    { pos: [-5.45, 0, -0.60], h: 2.18 }, // 4 霁岚
+    { pos: [-4.25, 0,  0.95], h: 2.16 }, // 5 艾诺
+  ];
+  const enemy6Slots = [
+    { pos: [4.65, 0, -2.00], h: 2.20 }, // 0 东翼封锁官
+    { pos: [3.35, 0, -0.35], h: 2.22 }, // 1 宫廷突击队长
+    { pos: [2.15, 0,  1.15], h: 2.22 }, // 2 赤炎术士
+    { pos: [6.45, 0, -2.20], h: 2.08 }, // 3 霜渊裂地兽
+    { pos: [5.45, 0, -0.75], h: 1.82 }, // 4 灰棘头狼
+    { pos: [4.15, 0,  0.85], h: 1.72 }, // 5 灰棘魔狼
+  ];
+
+  allies.forEach((a, i) => {
+    const slot = ally6Slots[i] || { pos: [-3.6 - (i % 2) * 0.7, 0, -1.4 + (i % 3) * 1.2], h: 2.18 };
+    placed.push({ ...a, side: 'ally', pos: slot.pos.slice(), heightWorld: slot.h });
+  });
+
+  enemies.forEach((e, i) => {
+    const slot = enemy6Slots[i] || { pos: [3.4 + (i % 2) * 0.7, 0, -1.4 + (i % 3) * 1.2], h: 2.08 };
+    placed.push({ ...e, side: 'enemy', pos: slot.pos.slice(), heightWorld: slot.h });
+  });
+
+  return placed;
+}
+
+/* ============================================================================
+   2. 本地 UI 状态与 DOM 引用
+   ============================================================================ */
+const ui = {
+  actors: [],
+  actorMap: new Map(),
+  allies: [],
+  enemies: [],
+  activeAllyId: null,
+  selectedEnemyId: null,
+  biomeId: BIOME_LIST?.[0]?.id || 'academy',
+  formationKey: '6v6',
+  tiltShiftOn: true,
+  rulerOn: false,
+  prismCollapsed: false,
+  prismMode: 'root', // 'root' | 'skills'
+  ampIdx: 0,
+  lastCastAmpIdx: 0,
+  latestProjections: {},
+  prismPos: { x: 420, y: 420, initialized: false },
+  fpsSmooth: 60,
+  lastStatUpdateMs: 0,
+  toastTimer: null,
+};
+
+let engine = null;
+
+const elCanvas = document.getElementById('hd2d-canvas');
+const elFormations = document.getElementById('tb-formations');
+const elBiomes = document.getElementById('tb-biomes');
+const elBtnTilt = document.getElementById('btn-tiltshift');
+const elBtnRuler = document.getElementById('btn-ruler');
+const elStatFps = document.getElementById('stat-fps');
+const elStatAvgH = document.getElementById('stat-avg-h');
+
+const elEnemyLayer = document.getElementById('enemy-microbars-layer');
+const elRulerLayer = document.getElementById('ruler-layer');
+const elRulerSvg = document.getElementById('ruler-svg');
+const elRulerTags = document.getElementById('ruler-tags');
+const elRulerSummary = document.getElementById('ruler-summary');
+
+const elPrismRig = document.getElementById('cb-prism-rig');
+const elHubToggle = document.getElementById('cb-pw-hub-toggle');
+const elPrismActorName = document.getElementById('prism-actor-name');
+const elPrismActorAmpTag = document.getElementById('prism-actor-amp-tag');
+const elBtnCmdSkill = document.getElementById('btn-cmd-skill');
+const elBtnCmdAmp = document.getElementById('btn-cmd-amp');
+const elBtnCmdItem = document.getElementById('btn-cmd-item');
+const elBtnCmdEndTurn = document.getElementById('btn-cmd-endturn');
+const elAmpTitle = document.getElementById('amp-title');
+const elAmpSub = document.getElementById('amp-sub');
+const elAmpPips = document.getElementById('amp-pips');
+const elBtnSkillBack = document.getElementById('btn-skill-back');
+const elBtnAmpMini = document.getElementById('btn-amp-mini');
+const elAmpMiniVal = document.getElementById('amp-mini-val');
+const elSkillList = document.getElementById('psw-skill-list');
+
+const elSquadTitle = document.getElementById('squad-formation-title');
+const elSquadGrid = document.getElementById('squad-grid');
+
+const elTargetCard = document.getElementById('target-card');
+const elTcName = document.getElementById('tc-name');
+const elTcTier = document.getElementById('tc-tier');
+const elTcHpNums = document.getElementById('tc-hp-nums');
+const elTcHpFill = document.getElementById('tc-hp-fill');
+const elTcShieldPips = document.getElementById('tc-shield-pips');
+const elTcShieldTxt = document.getElementById('tc-shield-txt');
+const elTcIntentRow = document.getElementById('tc-intent-row');
+const elTcIntentVal = document.getElementById('tc-intent-val');
+const elBtnEnemyPrev = document.getElementById('btn-enemy-prev');
+const elBtnEnemyNext = document.getElementById('btn-enemy-next');
+
+const elFloatLayer = document.getElementById('float-nums-layer');
+const elToast = document.getElementById('porcelain-toast');
+const elTip = document.getElementById('porcelain-tip');
+
+// 节点池（零每帧重建 DOM）
+const enemyBarNodes = new Map();
+const rulerTagNodes = new Map();
+
+function clamp(v, lo, hi) {
+  return v < lo ? lo : v > hi ? hi : v;
+}
+
+function showToast(msg) {
+  elToast.textContent = msg;
+  elToast.classList.add('is-shown');
+  if (ui.toastTimer) clearTimeout(ui.toastTimer);
+  ui.toastTimer = setTimeout(() => {
+    elToast.classList.remove('is-shown');
+  }, 1900);
+}
+
+/* ============================================================================
+   3. 自定义雪瓷 Tooltip（全页零原生 title）
+   ============================================================================ */
+document.addEventListener('pointerover', (ev) => {
+  const target = ev.target && ev.target.closest ? ev.target.closest('[data-tip]') : null;
+  if (!target) return;
+  const text = target.getAttribute('data-tip');
+  if (!text) return;
+  elTip.textContent = text;
+  elTip.classList.add('is-shown');
+  positionTip(ev.clientX, ev.clientY);
+});
+
+document.addEventListener('pointermove', (ev) => {
+  if (!elTip.classList.contains('is-shown')) return;
+  positionTip(ev.clientX, ev.clientY);
+});
+
+document.addEventListener('pointerout', (ev) => {
+  const target = ev.target && ev.target.closest ? ev.target.closest('[data-tip]') : null;
+  if (!target) return;
+  if (ev.relatedTarget && target.contains(ev.relatedTarget)) return;
+  elTip.classList.remove('is-shown');
+});
+
+function positionTip(cx, cy) {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const w = elTip.offsetWidth || 160;
+  const h = elTip.offsetHeight || 26;
+  const x = clamp(cx + 12, 8, vw - w - 8);
+  const y = cy + 20 + h > vh ? cy - h - 10 : cy + 16;
+  elTip.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
+}
+
+/* ============================================================================
+   4. 构建顶栏（阵容 & 3D 场景）与 4 招技能翼
+   ============================================================================ */
+function buildTopControls() {
+  elFormations.innerHTML = '';
+  const keys = FORMATION_ORDER.filter((k) => FORMATIONS && FORMATIONS[k]);
+  const finalKeys = keys.length ? keys : Object.keys(FORMATIONS || {});
+  finalKeys.forEach((k) => {
+    const f = FORMATIONS[k] || {};
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tb-btn' + (k === ui.formationKey ? ' is-active' : '');
+    btn.dataset.formation = k;
+    btn.textContent = FORMATION_SHORT_LABELS[k] || f.label || k;
+    if (f.desc) btn.setAttribute('data-tip', f.desc);
+    btn.addEventListener('click', () => {
+      if (ui.formationKey === k) return;
+      ui.formationKey = k;
+      ui.prismMode = 'root';
+      ui.ampIdx = 0;
+      ui.prismPos.initialized = false;
+      updateTopActiveStates();
+      updatePrismVisualState();
+      engine?.setFormation(k);
+    });
+    elFormations.appendChild(btn);
+  });
+
+  elBiomes.innerHTML = '';
+  const biomes = Array.isArray(BIOME_LIST) && BIOME_LIST.length
+    ? BIOME_LIST
+    : [
+        { id: 'academy', name: '雪庭演武场', subtitle: '阿斯拉魔法学院庭院' },
+        { id: 'forest',  name: '极北冰晶古林', subtitle: '冰棱折射雪林秘境' },
+        { id: 'altar',   name: '云巅风神祭坛', subtitle: '穹顶列柱风暴祭坛' },
+      ];
+  biomes.forEach((b) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tb-btn' + (b.id === ui.biomeId ? ' is-active' : '');
+    btn.dataset.biome = b.id;
+    btn.textContent = b.name;
+    if (b.subtitle) btn.setAttribute('data-tip', b.subtitle);
+    btn.addEventListener('click', () => {
+      if (ui.biomeId === b.id) return;
+      ui.biomeId = b.id;
+      updateTopActiveStates();
+      engine?.setBiome(b.id);
+    });
+    elBiomes.appendChild(btn);
+  });
+}
+
+function updateTopActiveStates() {
+  elFormations.querySelectorAll('.tb-btn').forEach((btn) => {
+    btn.classList.toggle('is-active', btn.dataset.formation === ui.formationKey);
+  });
+  elBiomes.querySelectorAll('.tb-btn').forEach((btn) => {
+    btn.classList.toggle('is-active', btn.dataset.biome === ui.biomeId);
+  });
+}
+
+function getSkillsList() {
+  if (Array.isArray(DEMO_SKILLS) && DEMO_SKILLS.length) return DEMO_SKILLS;
+  return [
+    { id: 'ice_prism', name: '三棱冰晶', mp: 18, type: 'ice', tag: '单体·破锁', isGuard: false, desc: '三道冰棱顺次穿刺目标' },
+    { id: 'water_ball', name: '苍水弹', mp: 14, type: 'water', tag: '单体·水系', isGuard: false, desc: '高压漩涡水弹冲击敌阵' },
+    { id: 'starfrost', name: '星霜贯阵', mp: 32, type: 'starfrost', tag: '群体·霜域', isGuard: false, aoe: true, desc: '星霜光柱贯穿敌方全阵' },
+    { id: 'ice_mirror', name: '冰镜守御', mp: 16, type: 'shield', tag: '守御·护盾', isGuard: true, desc: '展开折射冰镜护盾庇护己方' },
+  ];
+}
+
+function renderSkillWing() {
+  const skills = getSkillsList();
+  const ampTier = AMP_TIERS[ui.ampIdx] || AMP_TIERS[0];
+  elSkillList.innerHTML = '';
+
+  skills.forEach((sk, idx) => {
+    const isGuard = Boolean(sk.isGuard || sk.type === 'shield');
+    const maxAmpForSkill = isGuard ? 40 : 60;
+    const effectiveAmpPct = Math.min(ampTier.pct, maxAmpForSkill);
+    const mpCost = Math.round((Number(sk.mp) || 12) * (1 + effectiveAmpPct / 100));
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'psw-skill-btn' +
+      (isGuard ? ' is-guard' : sk.type === 'water' ? ' is-water' : sk.type === 'starfrost' ? ' is-starfrost' : '');
+    btn.dataset.skillId = sk.id;
+
+    const row1 = document.createElement('span');
+    row1.className = 'psw-sk-row1';
+
+    const left = document.createElement('span');
+    left.className = 'psw-sk-left';
+
+    const num = document.createElement('span');
+    num.className = 'psw-sk-num';
+    num.textContent = String(idx + 1);
+
+    const name = document.createElement('span');
+    name.className = 'psw-sk-name';
+    name.textContent = sk.name;
+
+    const tag = document.createElement('span');
+    tag.className = 'psw-sk-tag';
+    tag.textContent = sk.tag || (isGuard ? '守御' : sk.aoe ? '群体' : '单体');
+
+    left.append(num, name, tag);
+
+    const mp = document.createElement('span');
+    mp.className = 'psw-sk-mp';
+    mp.textContent = `${mpCost} MP`;
+
+    row1.append(left, mp);
+
+    const desc = document.createElement('span');
+    desc.className = 'psw-sk-desc';
+    desc.textContent = sk.desc || '';
+
+    btn.append(row1, desc);
+    btn.addEventListener('click', () => triggerSkillCast(sk));
+    elSkillList.appendChild(btn);
+  });
+}
+
+function updatePrismVisualState() {
+  const activeAlly = ui.actorMap.get(ui.activeAllyId) || ui.allies[0];
+  const amp = AMP_TIERS[ui.ampIdx] || AMP_TIERS[0];
+
+  elPrismRig.classList.toggle('is-collapsed', ui.prismCollapsed);
+  elPrismRig.classList.toggle('mode-skills', ui.prismMode === 'skills');
+  elHubToggle.setAttribute('aria-expanded', String(!ui.prismCollapsed));
+
+  if (activeAlly) {
+    elPrismActorName.textContent = activeAlly.name;
+  }
+  elPrismActorAmpTag.textContent = `增幅 +${amp.pct}%`;
+  elAmpTitle.textContent = `魔力增幅 +${amp.pct}%`;
+  elAmpSub.textContent = amp.shortSub;
+  elAmpMiniVal.textContent = `增幅 +${amp.pct}%`;
+
+  elBtnCmdAmp.classList.remove('is-amp-t1', 'is-amp-t2', 'is-amp-t3');
+  if (ui.ampIdx > 0) elBtnCmdAmp.classList.add(`is-amp-t${ui.ampIdx}`);
+  elBtnAmpMini.classList.toggle('is-t3', ui.ampIdx === 3);
+
+  const pips = elAmpPips.querySelectorAll('.amp-pip');
+  pips.forEach((pip, i) => {
+    pip.className = 'amp-pip';
+    if (i < ui.ampIdx) pip.classList.add(`lit-${ui.ampIdx}`);
+  });
+
+  renderSkillWing();
+}
+
+function cycleAmp(delta = 1) {
+  ui.ampIdx = (ui.ampIdx + delta + AMP_TIERS.length) % AMP_TIERS.length;
+  const amp = AMP_TIERS[ui.ampIdx];
+  updatePrismVisualState();
+  showToast(`魔力增幅切换：+${amp.pct}%（${amp.label}）`);
+}
+
+function triggerSkillCast(skill) {
+  if (!engine || !skill) return;
+  const amp = AMP_TIERS[ui.ampIdx] || AMP_TIERS[0];
+  ui.lastCastAmpIdx = ui.ampIdx;
+  const activeAlly = ui.actorMap.get(ui.activeAllyId) || ui.allies[0];
+  const targetEnemy = ui.actorMap.get(ui.selectedEnemyId) || ui.enemies[0];
+
+  engine.castSkill(skill.id, ui.ampIdx);
+
+  const ampSuffix = amp.pct > 0 ? ` · ${amp.label} (+${amp.pct}%)` : '';
+  const targetLabel = skill.isGuard || skill.type === 'shield'
+    ? (activeAlly ? activeAlly.name : '己方')
+    : skill.aoe
+      ? '敌方全阵'
+      : (targetEnemy ? targetEnemy.name : '目标');
+  showToast(`${activeAlly ? activeAlly.name : '行动者'} 施放【${skill.name}】→ ${targetLabel}${ampSuffix}`);
+
+  // 施放后重置增幅并回到四行主菜单，保持画面通透
+  ui.ampIdx = 0;
+  ui.prismMode = 'root';
+  updatePrismVisualState();
+}
+
+function advanceTurnToNextAlly() {
+  if (!ui.allies.length || !engine) return;
+  const curIdx = ui.allies.findIndex((a) => a.id === ui.activeAllyId);
+  const nextAlly = ui.allies[(curIdx + 1) % ui.allies.length];
+  if (nextAlly) {
+    ui.ampIdx = 0;
+    ui.prismMode = 'root';
+    engine.setActiveActor(nextAlly.id);
+    showToast(`回合流转 · 当前操作：${nextAlly.name}`);
+  }
+}
+
+function cycleSelectedEnemy(delta = 1) {
+  if (!ui.enemies.length || !engine) return;
+  const curIdx = ui.enemies.findIndex((e) => e.id === ui.selectedEnemyId);
+  const nextIdx = (curIdx + delta + ui.enemies.length) % ui.enemies.length;
+  const nextEnemy = ui.enemies[nextIdx];
+  if (nextEnemy) {
+    engine.setSelectedEnemy(nextEnemy.id);
+  }
+}
+
+/* ============================================================================
+   5. 渲染友方窄条、敌方详情卡、敌方脚底极简微条池
+   ============================================================================ */
+function renderSquadStrip() {
+  const fMeta = FORMATIONS?.[ui.formationKey];
+  elSquadTitle.textContent = `我方阵列 · ${fMeta?.label || ui.formationKey}`;
+  elSquadGrid.className = 'squad-grid' + (ui.allies.length <= 2 ? ` count-${ui.allies.length}` : '');
+  elSquadGrid.innerHTML = '';
+
+  ui.allies.forEach((ally) => {
+    const hpPct = ally.maxHp > 0 ? clamp((ally.hp / ally.maxHp) * 100, 0, 100) : 100;
+    const mpPct = ally.maxMp > 0 ? clamp((ally.mp / ally.maxMp) * 100, 0, 100) : 100;
+
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'ally-cell' + (ally.id === ui.activeAllyId ? ' is-active' : '');
+    cell.dataset.actorId = ally.id;
+
+    cell.innerHTML = `
+      <span class="ally-top">
+        <span class="ally-name">${escapeHtml(ally.name)}</span>
+        <span class="ally-tier">${escapeHtml(ally.tier || ally.role || '')}</span>
+      </span>
+      <span class="ally-bars">
+        <span class="mini-bar-row">
+          <span class="mini-track"><span class="mini-fill-hp" style="width:${hpPct.toFixed(1)}%"></span></span>
+          <span class="mini-num">${Math.round(ally.hp)}</span>
+        </span>
+        <span class="mini-bar-row">
+          <span class="mini-track mp"><span class="mini-fill-mp" style="width:${mpPct.toFixed(1)}%"></span></span>
+          <span class="mini-num">${Math.round(ally.mp)}</span>
+        </span>
+      </span>
+    `;
+
+    cell.addEventListener('click', () => {
+      if (!engine) return;
+      ui.prismMode = 'root';
+      ui.prismCollapsed = false;
+      engine.setActiveActor(ally.id);
+    });
+    elSquadGrid.appendChild(cell);
+  });
+}
+
+function renderTargetCard() {
+  const enemy = ui.actorMap.get(ui.selectedEnemyId) || ui.enemies[0];
+  if (!enemy) {
+    elTargetCard.style.display = 'none';
+    return;
+  }
+  elTargetCard.style.display = '';
+  elTargetCard.classList.toggle('is-boss', Boolean(enemy.isBoss));
+
+  elTcName.textContent = enemy.name;
+  elTcTier.textContent = enemy.tier || (enemy.isBoss ? 'BOSS' : '敌方');
+
+  const hpPct = enemy.maxHp > 0 ? clamp((enemy.hp / enemy.maxHp) * 100, 0, 100) : 0;
+  elTcHpNums.textContent = `${Math.max(0, Math.round(enemy.hp))} / ${Math.round(enemy.maxHp)}`;
+  elTcHpFill.style.width = `${hpPct.toFixed(1)}%`;
+
+  const maxSh = Math.max(1, Number(enemy.maxShield) || 0);
+  const curSh = Math.max(0, Number(enemy.shield) || 0);
+  const broken = curSh === 0;
+  const pipCount = maxSh <= 8 ? maxSh : 6;
+  const filledPips = broken ? 0 : (maxSh <= 8 ? Math.min(pipCount, Math.round(curSh)) : Math.max(1, Math.ceil((curSh / maxSh) * pipCount)));
+  elTcShieldPips.innerHTML = '';
+  for (let i = 0; i < pipCount; i++) {
+    const pip = document.createElement('span');
+    pip.className = 'tc-sh-pip' + (i >= filledPips ? ' is-empty' : '');
+    elTcShieldPips.appendChild(pip);
+  }
+  elTcShieldTxt.textContent = broken ? 'BREAK · 破锁' : `护盾 ${Math.round(curSh)} / ${Math.round(maxSh)}`;
+  elTcShieldTxt.classList.toggle('is-broken', broken);
+
+  elTcIntentRow.className = `tc-intent-row type-${enemy.intentType || 'atk'}`;
+  elTcIntentVal.textContent = enemy.intent || '待机蓄势';
+}
+
+function syncEnemyMicrobarsPool() {
+  const aliveIds = new Set(ui.enemies.map((e) => e.id));
+
+  // 移除不再存在的敌方微条
+  for (const [id, rec] of enemyBarNodes.entries()) {
+    if (!aliveIds.has(id)) {
+      rec.el.remove();
+      enemyBarNodes.delete(id);
+    }
+  }
+
+  ui.enemies.forEach((enemy) => {
+    let rec = enemyBarNodes.get(enemy.id);
+    if (!rec) {
+      const el = document.createElement('div');
+      el.className = 'enemy-microbar';
+      el.dataset.actorId = enemy.id;
+      el.innerHTML = `
+        <div class="em-anchor">
+          <div class="em-whisper">
+            <span class="em-w-name"></span>
+            <span class="em-w-sep" aria-hidden="true"></span>
+            <span class="em-w-intent"></span>
+          </div>
+          <div class="em-strip">
+            <span class="em-shield">
+              <span class="em-shield-gem" aria-hidden="true"></span>
+              <span class="em-shield-num"></span>
+            </span>
+            <span class="em-hp-track">
+              <span class="em-hp-fill"></span>
+            </span>
+            <span class="em-intent-dot" aria-hidden="true"></span>
+          </div>
+        </div>
+      `;
+      el.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        engine?.setSelectedEnemy(enemy.id);
+      });
+      elEnemyLayer.appendChild(el);
+      rec = {
+        el,
+        wName: el.querySelector('.em-w-name'),
+        wIntent: el.querySelector('.em-w-intent'),
+        shNum: el.querySelector('.em-shield-num'),
+        hpFill: el.querySelector('.em-hp-fill'),
+        intentDot: el.querySelector('.em-intent-dot'),
+      };
+      enemyBarNodes.set(enemy.id, rec);
+    }
+
+    const curSh = Math.max(0, Math.round(Number(enemy.shield) || 0));
+    const hpRatio = enemy.maxHp > 0 ? clamp(enemy.hp / enemy.maxHp, 0, 1) : 0;
+    const intentType = enemy.intentType || 'atk';
+
+    rec.el.classList.toggle('is-locked', enemy.id === ui.selectedEnemyId);
+    rec.el.classList.toggle('is-boss', Boolean(enemy.isBoss));
+    rec.el.classList.toggle('is-broken', curSh === 0);
+
+    rec.wName.textContent = enemy.name;
+    rec.wIntent.textContent = enemy.intent || '准备行动';
+    rec.wIntent.className = `em-w-intent type-${intentType}`;
+    rec.shNum.textContent = curSh === 0 ? '破' : String(curSh);
+    rec.hpFill.style.transform = `scaleX(${hpRatio.toFixed(4)})`;
+    rec.intentDot.className = `em-intent-dot type-${intentType}`;
+  });
+}
+
+/* ============================================================================
+   6. 零回流 onFrame：translate3d 同步微条、棱镜菜单与身高标尺
+   ============================================================================ */
+function updateProjectedOverlays(projections, fps) {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  // 1) 敌方脚底极简微条（translate3d(feetX, feetY + 6px, 0)）
+  for (let i = 0; i < ui.enemies.length; i++) {
+    const enemy = ui.enemies[i];
+    const rec = enemyBarNodes.get(enemy.id);
+    const p = projections[enemy.id];
+    if (!rec) continue;
+    if (!p || !p.onScreen) {
+      rec.el.style.visibility = 'hidden';
+      continue;
+    }
+    rec.el.style.visibility = 'visible';
+    const fx = Math.round(p.feetX);
+    const fy = Math.round(p.feetY + 6);
+    rec.el.style.transform = `translate3d(${fx}px, ${fy}px, 0)`;
+    rec.el.style.zIndex = enemy.id === ui.selectedEnemyId
+      ? '34'
+      : String(clamp(Math.round(30 - (p.depthZ || 10) * 0.5), 10, 32));
+  }
+
+  // 2) 行动者身旁 4 行棱镜主菜单（动态锚定当前行动友方右侧肩旁，z-index: 45）
+  const activeProj = ui.activeAllyId ? projections[ui.activeAllyId] : null;
+  if (activeProj && activeProj.onScreen) {
+    elPrismRig.style.visibility = 'visible';
+    const shoulderOffset = Math.max(38, Math.min(72, (activeProj.screenWidthPx || 80) * 0.44));
+    let targetX = activeProj.centerX + shoulderOffset;
+    let targetY = activeProj.headY + (activeProj.visibleHeightPx || 180) * 0.34;
+
+    const flipLeft = targetX + 258 > vw - 16;
+    elPrismRig.classList.toggle('is-flip-left', flipLeft);
+    if (flipLeft) {
+      targetX = activeProj.centerX - shoulderOffset;
+    }
+    targetX = clamp(targetX, flipLeft ? 268 : 26, flipLeft ? vw - 26 : vw - 268);
+    targetY = clamp(targetY, 152, vh - 148);
+
+    if (!ui.prismPos.initialized) {
+      ui.prismPos.x = targetX;
+      ui.prismPos.y = targetY;
+      ui.prismPos.initialized = true;
+    } else {
+      ui.prismPos.x += (targetX - ui.prismPos.x) * 0.24;
+      ui.prismPos.y += (targetY - ui.prismPos.y) * 0.24;
+    }
+
+    elPrismRig.style.transform = `translate3d(${Math.round(ui.prismPos.x)}px, ${Math.round(ui.prismPos.y)}px, 0)`;
+  }
+
+  // 3) 身高标尺叠加层（开关开启时逐角色绘制头顶至脚底淡蓝标尺与精确 px / %H）
+  if (ui.rulerOn) {
+    renderHeightRulers(projections, vw, vh);
+  }
+
+  // 4) 实时 FPS 与平均角色占屏高徽章（每 220ms 刷新文本避免频繁写 DOM）
+  const now = performance.now();
+  if (Number.isFinite(fps) && fps > 0) {
+    ui.fpsSmooth = ui.fpsSmooth * 0.8 + fps * 0.2;
+  }
+  if (now - ui.lastStatUpdateMs > 220) {
+    ui.lastStatUpdateMs = now;
+    elStatFps.textContent = String(Math.round(ui.fpsSmooth));
+
+    const vals = Object.values(projections).filter((p) => p && p.onScreen && p.visibleHeightPct > 0);
+    if (vals.length) {
+      const avgPct = vals.reduce((acc, p) => acc + p.visibleHeightPct, 0) / vals.length;
+      elStatAvgH.textContent = `${avgPct.toFixed(1)}%`;
+    } else {
+      elStatAvgH.textContent = '--%';
+    }
+  }
+}
+
+function renderHeightRulers(projections, vw, vh) {
+  const svgParts = [];
+  const activeIds = new Set();
+  let allySum = 0, allyCnt = 0, enemySum = 0, enemyCnt = 0;
+
+  for (let i = 0; i < ui.actors.length; i++) {
+    const actor = ui.actors[i];
+    const p = projections[actor.id];
+    if (!p || !p.onScreen) continue;
+
+    activeIds.add(actor.id);
+    const isEnemy = actor.side === 'enemy';
+    if (isEnemy) { enemySum += p.visibleHeightPct; enemyCnt++; }
+    else { allySum += p.visibleHeightPct; allyCnt++; }
+
+    const offset = Math.max(26, (p.screenWidthPx || 72) * 0.56);
+    const rx = Math.round(clamp(isEnemy ? p.centerX + offset : p.centerX - offset, 12, vw - 12));
+    const yTop = Math.round(Math.min(p.headY, p.feetY));
+    const yBot = Math.round(Math.max(p.headY, p.feetY));
+    const midY = Math.round((yTop + yBot) * 0.5);
+    const stroke = isEnemy ? 'rgba(217, 38, 78, 0.72)' : 'rgba(56, 189, 248, 0.88)';
+    const cap = 6;
+
+    svgParts.push(
+      `<line x1="${rx}" y1="${yTop}" x2="${rx}" y2="${yBot}" stroke="${stroke}" stroke-width="1.35" stroke-dasharray="3 2" />`,
+      `<line x1="${rx - cap}" y1="${yTop}" x2="${rx + cap}" y2="${yTop}" stroke="${stroke}" stroke-width="1.5" />`,
+      `<line x1="${rx - cap}" y1="${yBot}" x2="${rx + cap}" y2="${yBot}" stroke="${stroke}" stroke-width="1.5" />`
+    );
+
+    let tagEl = rulerTagNodes.get(actor.id);
+    if (!tagEl) {
+      tagEl = document.createElement('div');
+      tagEl.className = 'ruler-tag';
+      elRulerTags.appendChild(tagEl);
+      rulerTagNodes.set(actor.id, tagEl);
+    }
+    tagEl.className = 'ruler-tag' + (isEnemy ? ' is-enemy' : '');
+    tagEl.textContent = `${Math.round(p.visibleHeightPx)} px (${p.visibleHeightPct.toFixed(1)}% H)`;
+    const tx = isEnemy ? clamp(rx + 6, 8, vw - 118) : clamp(rx - 108, 8, vw - 118);
+    tagEl.style.transform = `translate3d(${Math.round(tx)}px, ${Math.round(midY - 9)}px, 0)`;
+    tagEl.style.visibility = 'visible';
+  }
+
+  for (const [id, tagEl] of rulerTagNodes.entries()) {
+    if (!activeIds.has(id)) {
+      tagEl.style.visibility = 'hidden';
+    }
+  }
+
+  elRulerSvg.innerHTML = svgParts.join('');
+  const aAvg = allyCnt ? (allySum / allyCnt).toFixed(1) : '--';
+  const eAvg = enemyCnt ? (enemySum / enemyCnt).toFixed(1) : '--';
+  elRulerSummary.textContent = `友均 ${aAvg}% H · 敌均 ${eAvg}% H · 视口 ${vw}×${vh}`;
+}
+
+/* ============================================================================
+   7. 3D 命中飘字反馈
+   ============================================================================ */
+function spawnImpactNumber({ targetId, screenX, screenY, damage, isShield, isCrit, ampPct }) {
+  const p = targetId ? ui.latestProjections[targetId] : null;
+  const x = Number.isFinite(screenX) ? screenX : (p ? p.centerX : window.innerWidth * 0.62);
+  const y = Number.isFinite(screenY) ? screenY : (p ? p.headY + 18 : window.innerHeight * 0.48);
+
+  const effectiveAmpPct = Number.isFinite(ampPct) ? ampPct : (AMP_TIERS[ui.lastCastAmpIdx]?.pct || 0);
+  const displayVal = Math.max(1, Math.round(Number(damage) || 0));
+
+  const el = document.createElement('div');
+  el.className = 'float-num' + (isShield ? ' is-shield' : (isCrit || effectiveAmpPct >= 40) ? ' is-crit' : '');
+  el.style.setProperty('--fx', `${Math.round(x + (Math.random() - 0.5) * 18)}px`);
+  el.style.setProperty('--fy', `${Math.round(y)}px`);
+
+  const subTag = isShield
+    ? '冰镜护盾'
+    : (effectiveAmpPct > 0 ? `增幅 +${effectiveAmpPct}%` : isCrit ? 'CRITICAL' : '');
+
+  el.innerHTML = `${subTag ? `<span class="float-sub-tag">${subTag}</span>` : ''}${isShield ? `+${displayVal}` : `-${displayVal}`}`;
+  elFloatLayer.appendChild(el);
+  el.addEventListener('animationend', () => el.remove(), { once: true });
+}
+
+function escapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* ============================================================================
+   8. 交互事件绑定（鼠标 + 键盘 W/E/A/D/1-4/ESC/Tab）
+   ============================================================================ */
+elHubToggle.addEventListener('click', (ev) => {
+  ev.stopPropagation();
+  ui.prismCollapsed = !ui.prismCollapsed;
+  if (ui.prismCollapsed) ui.prismMode = 'root';
+  updatePrismVisualState();
+});
+
+elBtnCmdSkill.addEventListener('click', () => {
+  ui.prismCollapsed = false;
+  ui.prismMode = 'skills';
+  updatePrismVisualState();
+});
+
+elBtnCmdAmp.addEventListener('click', () => cycleAmp(1));
+elBtnCmdAmp.addEventListener('contextmenu', (ev) => {
+  ev.preventDefault();
+  cycleAmp(-1);
+});
+
+elBtnAmpMini.addEventListener('click', () => cycleAmp(1));
+elBtnAmpMini.addEventListener('contextmenu', (ev) => {
+  ev.preventDefault();
+  cycleAmp(-1);
+});
+
+elBtnCmdItem.addEventListener('click', () => {
+  showToast('使用道具（预留接口）· 当前战斗演示未配置消耗品');
+});
+
+elBtnCmdEndTurn.addEventListener('click', () => {
+  advanceTurnToNextAlly();
+});
+
+elBtnSkillBack.addEventListener('click', () => {
+  ui.prismMode = 'root';
+  updatePrismVisualState();
+});
+
+elBtnEnemyPrev.addEventListener('click', () => cycleSelectedEnemy(-1));
+elBtnEnemyNext.addEventListener('click', () => cycleSelectedEnemy(1));
+
+elBtnTilt.addEventListener('click', () => {
+  ui.tiltShiftOn = !ui.tiltShiftOn;
+  elBtnTilt.classList.toggle('is-on', ui.tiltShiftOn);
+  elBtnTilt.setAttribute('aria-pressed', String(ui.tiltShiftOn));
+  engine?.setTiltShift(ui.tiltShiftOn);
+  showToast(ui.tiltShiftOn ? '移轴景深：已开启（微缩立体纵深）' : '移轴景深：已关闭（全景锐利）');
+});
+
+elBtnRuler.addEventListener('click', () => {
+  ui.rulerOn = !ui.rulerOn;
+  elBtnRuler.classList.toggle('is-on', ui.rulerOn);
+  elBtnRuler.setAttribute('aria-pressed', String(ui.rulerOn));
+  elRulerLayer.classList.toggle('is-visible', ui.rulerOn);
+  if (ui.rulerOn) {
+    renderHeightRulers(ui.latestProjections, window.innerWidth, window.innerHeight);
+  }
+});
+
+window.addEventListener('keydown', (ev) => {
+  if (ev.repeat || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+  const key = ev.key.toLowerCase();
+
+  if (key === 'w') {
+    ev.preventDefault();
+    ui.prismCollapsed = false;
+    ui.prismMode = ui.prismMode === 'skills' ? 'root' : 'skills';
+    updatePrismVisualState();
+  } else if (key === 'e') {
+    ev.preventDefault();
+    ui.prismCollapsed = false;
+    cycleAmp(1);
+  } else if (key === 'a') {
+    ev.preventDefault();
+    showToast('使用道具（预留接口）· 当前战斗演示未配置消耗品');
+  } else if (key === 'd') {
+    ev.preventDefault();
+    advanceTurnToNextAlly();
+  } else if (key === 'escape') {
+    if (ui.prismMode === 'skills') {
+      ui.prismMode = 'root';
+      updatePrismVisualState();
+    } else if (!ui.prismCollapsed) {
+      ui.prismCollapsed = true;
+      updatePrismVisualState();
+    }
+  } else if (key === 'tab') {
+    ev.preventDefault();
+    cycleSelectedEnemy(ev.shiftKey ? -1 : 1);
+  } else if (key >= '1' && key <= '4') {
+    const idx = Number(key) - 1;
+    const skills = getSkillsList();
+    if (skills[idx]) {
+      ev.preventDefault();
+      triggerSkillCast(skills[idx]);
+    }
+  }
+});
+
+/* ============================================================================
+   9. 挂载共享 3D HD-2D 演示内核
+   ============================================================================ */
+function handleActorsSync(actorsList, activeAllyId, selectedEnemyId) {
+  if (Array.isArray(actorsList)) {
+    ui.actors = actorsList;
+    ui.actorMap.clear();
+    ui.allies = [];
+    ui.enemies = [];
+    actorsList.forEach((a) => {
+      if (!a) return;
+      ui.actorMap.set(a.id, a);
+      if (a.side === 'enemy') ui.enemies.push(a);
+      else ui.allies.push(a);
+    });
+  }
+  if (typeof activeAllyId === 'string' && activeAllyId) ui.activeAllyId = activeAllyId;
+  else if (!ui.actorMap.has(ui.activeAllyId) && ui.allies[0]) ui.activeAllyId = ui.allies[0].id;
+
+  if (typeof selectedEnemyId === 'string' && selectedEnemyId) ui.selectedEnemyId = selectedEnemyId;
+  else if (!ui.actorMap.has(ui.selectedEnemyId) && ui.enemies[0]) ui.selectedEnemyId = ui.enemies[0].id;
+
+  syncEnemyMicrobarsPool();
+  renderSquadStrip();
+  renderTargetCard();
+  updatePrismVisualState();
+}
+
+buildTopControls();
+
+engine = mountHD2DDemoEngine({
+  canvas: elCanvas,
+  initialBiome: ui.biomeId,
+  initialFormation: '6v6',
+  cameraConfig: CAMERA_CONFIG,
+  formationLayoutFn,
+  onActorsUpdated(actorsList, metaOrActiveId, legacySelectedId) {
+    let nextAllyId = null;
+    let nextEnemyId = null;
+    if (metaOrActiveId && typeof metaOrActiveId === 'object') {
+      nextAllyId = metaOrActiveId.activeAllyId || null;
+      nextEnemyId = metaOrActiveId.selectedEnemyId || null;
+      if (metaOrActiveId.biomeId && metaOrActiveId.biomeId !== ui.biomeId) {
+        ui.biomeId = metaOrActiveId.biomeId;
+        updateTopActiveStates();
+      }
+      if (metaOrActiveId.formationKey && metaOrActiveId.formationKey !== ui.formationKey) {
+        ui.formationKey = metaOrActiveId.formationKey;
+        updateTopActiveStates();
+      }
+    } else {
+      nextAllyId = metaOrActiveId || null;
+      nextEnemyId = legacySelectedId || null;
+    }
+    handleActorsSync(actorsList, nextAllyId, nextEnemyId);
+  },
+  onFrame({ projections, actors, activeAllyId, selectedEnemyId, fps, biomeId, formationKey }) {
+    if (biomeId && biomeId !== ui.biomeId) {
+      ui.biomeId = biomeId;
+      updateTopActiveStates();
+    }
+    if (formationKey && formationKey !== ui.formationKey) {
+      ui.formationKey = formationKey;
+      updateTopActiveStates();
+    }
+    if (activeAllyId && activeAllyId !== ui.activeAllyId) {
+      ui.activeAllyId = activeAllyId;
+      renderSquadStrip();
+      updatePrismVisualState();
+    }
+    if (selectedEnemyId && selectedEnemyId !== ui.selectedEnemyId) {
+      ui.selectedEnemyId = selectedEnemyId;
+      syncEnemyMicrobarsPool();
+      renderTargetCard();
+    }
+    if (Array.isArray(actors) && actors.length && actors.length !== ui.actors.length) {
+      handleActorsSync(actors, activeAllyId, selectedEnemyId);
+    }
+    if (projections) {
+      ui.latestProjections = projections;
+      updateProjectedOverlays(projections, fps);
+    }
+  },
+  onActorClick(payloadOrId, maybeActor) {
+    const target =
+      maybeActor ||
+      (payloadOrId && typeof payloadOrId === 'object' ? (payloadOrId.actor || payloadOrId) : ui.actorMap.get(payloadOrId));
+    if (!target) return;
+    if (target.side === 'ally') {
+      ui.prismMode = 'root';
+      ui.prismCollapsed = false;
+      updatePrismVisualState();
+      showToast(`切换当前行动角色：${target.name}`);
+    } else {
+      showToast(`锁定敌方目标：${target.name}`);
+    }
+  },
+  onImpact(payload) {
+    if (payload) spawnImpactNumber(payload);
+  },
+});
+
+// 首次挂载后主动拉一次状态兜底，确保即便 onActorsUpdated 同步触发也能立即同步 UI
+if (engine && typeof engine.getState === 'function') {
+  const st = engine.getState();
+  if (st) {
+    if (st.biomeId) ui.biomeId = st.biomeId;
+    if (st.formationKey) ui.formationKey = st.formationKey;
+    updateTopActiveStates();
+    handleActorsSync(st.actors, st.activeAllyId, st.selectedEnemyId);
+  }
+}
+
+window.addEventListener('beforeunload', () => {
+  engine?.dispose?.();
+});
+</script>
+</body>
+</html>

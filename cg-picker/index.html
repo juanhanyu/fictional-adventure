@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>转生千金 · 旧 CG 16:9 无缝外扩宽银幕选品</title>
+<style>
+:root {
+  --bg: #f6f9fe;
+  --surface: #ffffff;
+  --surface-tint: #eef4fc;
+  --surface-deep: #e2ecfb;
+  --ink: #13223b;
+  --ink-muted: #556987;
+  --ink-soft: #7b8fae;
+  --line: #d4e1f4;
+  --line-strong: #b4c9ea;
+  --royal: #1658eb;
+  --royal-hover: #1046c4;
+  --royal-soft: #e6effe;
+  --cyan: #0ea5e9;
+  --gold: #b88424;
+  --gold-soft: #fbf5e7;
+  --header-h: 64px;
+  --footer-h: 64px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'Hiragino Sans GB', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bg);
+  padding-top: var(--header-h);
+  padding-bottom: calc(var(--footer-h) + 28px);
+  user-select: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--royal);
+  outline-offset: 2px;
+}
+
+img {
+  display: block;
+  -webkit-user-drag: none;
+}
+
+/* Top Sticky Bar - Flat Porcelain Ice Crystal Header */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--header-h);
+  background: rgba(246, 249, 254, 0.96);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  gap: 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+}
+
+.brand-mark {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  background: var(--royal);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+  margin-right: 2px;
+}
+
+.brand-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.brand-sub {
+  font-size: 12px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border-left: 1px solid var(--line);
+}
+
+.ctrl-btn {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  border-right: 1px solid var(--line);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: background 0.14s ease, color 0.14s ease;
+  white-space: nowrap;
+}
+
+.ctrl-btn:hover {
+  background: var(--surface-tint);
+  color: var(--ink);
+}
+
+.ctrl-btn.active {
+  background: var(--royal);
+  color: #ffffff;
+}
+
+.ctrl-kbd {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  padding: 1px 5px;
+  background: rgba(22, 88, 235, 0.1);
+  color: var(--royal);
+}
+
+.ctrl-btn.active .ctrl-kbd {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.layout-group {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 12px;
+  border-left: 1px solid var(--line);
+}
+
+.layout-btn {
+  height: 36px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  border-right: 1px solid var(--line);
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.layout-btn:hover {
+  background: var(--surface-tint);
+  color: var(--ink);
+}
+
+.layout-btn.active {
+  background: var(--royal-soft);
+  color: var(--royal);
+  box-shadow: inset 0 -2px 0 var(--royal);
+}
+
+/* Sub Navigation Strip */
+.subnav {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  padding: 0 24px;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 12px;
+  overflow-x: auto;
+}
+
+.subnav-links {
+  display: flex;
+  align-items: stretch;
+}
+
+.subnav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-decoration: none;
+  border-right: 1px solid var(--line);
+  white-space: nowrap;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.subnav-link:first-child {
+  border-left: 1px solid var(--line);
+}
+
+.subnav-link:hover {
+  background: var(--surface-tint);
+  color: var(--royal);
+}
+
+.subnav-idx {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.subnav-pick {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  background: var(--surface-tint);
+  color: var(--ink-soft);
+}
+
+.subnav-pick.picked {
+  background: var(--royal);
+  color: #ffffff;
+}
+
+.subnav-hint {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+/* Main Content */
+.main {
+  max-width: 1640px;
+  margin: 0 auto;
+  padding: 24px 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
+/* CG Section */
+.cg-section {
+  scroll-margin-top: calc(var(--header-h) + 16px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.cg-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(90deg, #f3f7fe 0%, #ffffff 65%);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cg-head-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.cg-num {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--royal);
+  background: var(--royal-soft);
+  padding: 5px 9px;
+  letter-spacing: 0.06em;
+}
+
+.cg-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cg-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cg-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.cg-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.cg-meta {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.cg-head-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.cg-status {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  padding: 5px 12px;
+  background: var(--surface-tint);
+}
+
+.cg-status.picked {
+  color: #ffffff;
+  background: var(--royal);
+}
+
+/* Widescreen Grid */
+.cg-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  padding: 18px;
+  background: var(--bg);
+}
+
+body.cols-1 .cg-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+body.cols-3 .cg-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 980px) {
+  .cg-grid,
+  body.cols-3 .cg-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Card - Strict Flat Architecture (Zero Nested Rounded Boxes) */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease;
+  position: relative;
+}
+
+.card:hover {
+  border-color: var(--line-strong);
+  box-shadow: 0 8px 24px rgba(19, 34, 59, 0.06);
+}
+
+.card.is-selected {
+  border-color: var(--royal);
+  box-shadow: 0 0 0 2px var(--royal), 0 10px 26px rgba(22, 88, 235, 0.14);
+}
+
+.card.is-orig {
+  border-color: var(--line-strong);
+  background: #fbfdff;
+}
+
+/* 16:9 Media Viewport */
+.stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #0f192b;
+  cursor: zoom-in;
+}
+
+.stage img.full-16x9 {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Original 3:2 Centered Inside 16:9 Stage (exact 7.8125% wings) */
+.stage-orig-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      #16233a 0px,
+      #16233a 6px,
+      #1c2d4a 6px,
+      #1c2d4a 12px
+    );
+}
+
+.stage-orig-wrap img.orig-3x2 {
+  width: 84.375%;
+  height: 100%;
+  object-fit: cover;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.orig-wing {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 7.8125%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.orig-wing.left { left: 0; }
+.orig-wing.right { right: 0; }
+
+.orig-wing span {
+  writing-mode: vertical-rl;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: rgba(214, 230, 255, 0.85);
+  font-weight: 600;
+}
+
+/* Corner Flag on Stage */
+.stage-flag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 8;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: rgba(19, 34, 59, 0.78);
+  color: #f6f9fe;
+  pointer-events: none;
+}
+
+.card.is-orig .stage-flag {
+  background: rgba(184, 132, 36, 0.92);
+  color: #ffffff;
+}
+
+.card.is-selected .stage-flag {
+  background: var(--royal);
+  color: #ffffff;
+}
+
+.stage-selected-ribbon {
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 8;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--royal);
+  color: #ffffff;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+}
+
+.card.is-selected .stage-selected-ribbon {
+  display: block;
+}
+
+/* Outpaint 7.8% Guide Overlay */
+.guide-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+  display: none;
+}
+
+body.show-guides .guide-overlay,
+.lightbox.show-guides .guide-overlay {
+  display: block;
+}
+
+.guide-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1.5px dashed rgba(255, 255, 255, 0.94);
+  filter: drop-shadow(0 0 2px rgba(22, 88, 235, 0.95));
+}
+
+.guide-line.left { left: 7.8125%; }
+.guide-line.right { right: 7.8125%; }
+
+.guide-shade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 7.8125%;
+  background: rgba(22, 88, 235, 0.13);
+}
+
+.guide-shade.left { left: 0; }
+.guide-shade.right { right: 0; }
+
+.guide-label {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: rgba(15, 25, 43, 0.72);
+  color: #dcebff;
+  white-space: nowrap;
+}
+
+/* Bottom 18% Dialogue Box Preview Overlay */
+.dialogue-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 18%;
+  z-index: 7;
+  pointer-events: none;
+  display: none;
+  background: linear-gradient(180deg, rgba(246, 249, 254, 0.9) 0%, rgba(238, 244, 252, 0.95) 100%);
+  border-top: 2px solid var(--royal);
+  padding: 0 5.5%;
+  align-items: center;
+  gap: 14px;
+}
+
+body.show-dialogue .dialogue-overlay,
+.lightbox.show-dialogue .dialogue-overlay {
+  display: flex;
+}
+
+.dlg-speaker {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+  background: var(--royal);
+  padding: 3px 10px;
+  letter-spacing: 0.06em;
+}
+
+.dlg-text {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink);
+  font-weight: 500;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.lightbox .dlg-speaker {
+  font-size: 15px;
+  padding: 5px 14px;
+}
+
+.lightbox .dlg-text {
+  font-size: 16px;
+}
+
+/* Card Footer Bar */
+.card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  height: 44px;
+  padding-left: 14px;
+  background: var(--surface);
+}
+
+.card-info {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.card-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.card.is-orig .card-label {
+  font-family: inherit;
+  color: var(--gold);
+}
+
+.card-dim {
+  font-size: 11px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.card-actions {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+}
+
+.card-btn {
+  height: 100%;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  border-left: 1px solid var(--line);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.14s ease, color 0.14s ease;
+  white-space: nowrap;
+}
+
+.card-btn:hover {
+  background: var(--surface-tint);
+  color: var(--royal);
+}
+
+.card-btn.pick-btn {
+  background: var(--royal-soft);
+  color: var(--royal);
+  min-width: 96px;
+  justify-content: center;
+}
+
+.card-btn.pick-btn:hover {
+  background: var(--royal);
+  color: #ffffff;
+}
+
+.card.is-selected .card-btn.pick-btn {
+  background: var(--royal);
+  color: #ffffff;
+}
+
+/* Bottom Fixed Picker Summary Bar */
+.bottombar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--footer-h);
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line-strong);
+  box-shadow: 0 -6px 24px rgba(19, 34, 59, 0.06);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  gap: 16px;
+}
+
+.summary-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.progress-box {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-shrink: 0;
+  padding-right: 14px;
+  border-right: 1px solid var(--line);
+}
+
+.progress-num {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--royal);
+}
+
+.progress-lbl {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.summary-items {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border-left: 1px solid var(--line);
+}
+
+.sum-item {
+  height: 36px;
+  padding: 0 11px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-right: 1px solid var(--line);
+  color: var(--ink-muted);
+  white-space: nowrap;
+  transition: background 0.12s ease;
+}
+
+.sum-item:hover {
+  background: var(--surface-tint);
+  color: var(--ink);
+}
+
+.sum-val {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.sum-item.has-pick .sum-val {
+  color: var(--royal);
+}
+
+.summary-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.btn-reset {
+  height: 40px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  background: var(--surface-tint);
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.btn-reset:hover {
+  background: var(--surface-deep);
+  color: var(--ink);
+}
+
+.btn-copy {
+  height: 40px;
+  padding: 0 22px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  background: var(--royal);
+  letter-spacing: 0.02em;
+  transition: background 0.14s ease;
+}
+
+.btn-copy:hover {
+  background: var(--royal-hover);
+}
+
+/* Fullscreen 16:9 Lightbox */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(10, 18, 34, 0.94);
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.lightbox.open {
+  display: flex;
+}
+
+.lb-top {
+  height: 54px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.lb-top-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.lb-cg-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.lb-slot-badge {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  background: var(--royal);
+  color: #ffffff;
+}
+
+.lb-slot-badge.is-orig {
+  background: var(--gold);
+}
+
+.lb-picked-tag {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--royal);
+  background: var(--royal-soft);
+  padding: 4px 10px;
+  display: none;
+}
+
+.lb-picked-tag.visible {
+  display: inline-block;
+}
+
+.lb-top-right {
+  display: flex;
+  align-items: center;
+  border-left: 1px solid var(--line);
+}
+
+.lb-btn {
+  height: 54px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  border-right: 1px solid var(--line);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.lb-btn:hover {
+  background: var(--surface-tint);
+  color: var(--ink);
+}
+
+.lb-btn.active {
+  background: var(--royal);
+  color: #ffffff;
+}
+
+.lb-btn.close-btn {
+  padding: 0 18px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.lb-btn.close-btn:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.lb-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 16px 64px;
+}
+
+.lb-nav-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 88px;
+  background: rgba(246, 249, 254, 0.12);
+  color: #ffffff;
+  font-size: 26px;
+  font-weight: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.14s ease;
+  z-index: 12;
+}
+
+.lb-nav-arrow:hover {
+  background: var(--royal);
+}
+
+.lb-nav-arrow.prev { left: 10px; }
+.lb-nav-arrow.next { right: 10px; }
+
+.lb-frame {
+  position: relative;
+  width: min(92vw, calc((100vh - 144px) * 16 / 9));
+  aspect-ratio: 16 / 9;
+  background: #0c1424;
+  overflow: hidden;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+}
+
+.lb-img-cand {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lb-orig-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      #142035 0px,
+      #142035 8px,
+      #1b2a46 8px,
+      #1b2a46 16px
+    );
+}
+
+.lb-orig-layer.visible {
+  display: flex;
+}
+
+.lb-orig-layer img {
+  width: 84.375%;
+  height: 100%;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.lb-orig-banner {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  padding: 4px 10px;
+  background: rgba(184, 132, 36, 0.94);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  z-index: 9;
+}
+
+.lb-bottom {
+  height: 58px;
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.lb-cand-strip {
+  display: flex;
+  align-items: center;
+  border-left: 1px solid var(--line);
+}
+
+.lb-cand-tab {
+  height: 40px;
+  min-width: 72px;
+  padding: 0 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-muted);
+  border-right: 1px solid var(--line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.lb-cand-tab:hover {
+  background: var(--surface-tint);
+  color: var(--ink);
+}
+
+.lb-cand-tab.viewing {
+  background: var(--royal-soft);
+  color: var(--royal);
+  box-shadow: inset 0 -3px 0 var(--royal);
+}
+
+.lb-cand-tab.chosen {
+  background: var(--royal);
+  color: #ffffff;
+}
+
+.lb-cand-tab.chosen.viewing {
+  box-shadow: inset 0 -3px 0 #ffd875;
+}
+
+.lb-bottom-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.lb-keys-hint {
+  font-size: 12px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.lb-pick-action {
+  height: 40px;
+  padding: 0 20px;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--royal);
+  color: #ffffff;
+  white-space: nowrap;
+  transition: background 0.14s ease;
+}
+
+.lb-pick-action:hover {
+  background: var(--royal-hover);
+}
+
+.lb-pick-action.is-chosen {
+  background: var(--ink);
+}
+
+/* Toast Notification */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--footer-h) + 18px);
+  transform: translateX(-50%) translateY(10px);
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-left: 3px solid var(--royal);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 200;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  white-space: nowrap;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (max-width: 1120px) {
+  .brand-sub,
+  .subnav-hint,
+  .lb-keys-hint {
+    display: none;
+  }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <h1 class="brand-title">旧 CG 左右无缝外扩 16:9 选品台</h1>
+    <span class="brand-sub">5 组剧情 CG · 每组 1 张原 3:2 基准 + 5 版 1920×1080 外扩候选</span>
+  </div>
+  <div class="controls">
+    <button type="button" class="ctrl-btn" id="btn-guides">
+      <span>外扩界线</span>
+      <span class="ctrl-kbd">G</span>
+    </button>
+    <button type="button" class="ctrl-btn" id="btn-dialogue">
+      <span>底部 18% 对话框预览</span>
+      <span class="ctrl-kbd">D</span>
+    </button>
+    <div class="layout-group" role="group" aria-label="列数切换">
+      <button type="button" class="layout-btn" data-cols="1">1列影院</button>
+      <button type="button" class="layout-btn active" data-cols="2">2列大图</button>
+      <button type="button" class="layout-btn" data-cols="3">3列总览</button>
+    </div>
+  </div>
+</header>
+
+<nav class="subnav" aria-label="CG 分组导航">
+  <div class="subnav-links" id="subnav-links"></div>
+  <div class="subnav-hint">点击任意图进 16:9 全屏灯箱 · ←/→ 盲切 #01–#05 · 1–5 直接选中 · O/空格 对比原 3:2</div>
+</nav>
+
+<main class="main" id="main-root"></main>
+
+<footer class="bottombar">
+  <div class="summary-left">
+    <div class="progress-box">
+      <span class="progress-num" id="progress-num">0 / 5</span>
+      <span class="progress-lbl">已定版</span>
+    </div>
+    <div class="summary-items" id="summary-items"></div>
+  </div>
+  <div class="summary-right">
+    <button type="button" class="btn-reset" id="btn-reset">清空已选</button>
+    <button type="button" class="btn-copy" id="btn-copy">一键复制 CG 选品结果</button>
+  </div>
+</footer>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="全屏 16:9 CG 审图灯箱">
+  <div class="lb-top">
+    <div class="lb-top-left">
+      <span class="lb-cg-name" id="lb-cg-name"></span>
+      <span class="lb-slot-badge" id="lb-slot-badge"></span>
+      <span class="lb-picked-tag" id="lb-picked-tag">✓ 当前已定版</span>
+    </div>
+    <div class="lb-top-right">
+      <button type="button" class="lb-btn" id="lb-prev-cg">上一组 CG</button>
+      <button type="button" class="lb-btn" id="lb-next-cg">下一组 CG</button>
+      <button type="button" class="lb-btn" id="lb-btn-compare">对比原 3:2 (O / 空格)</button>
+      <button type="button" class="lb-btn" id="lb-btn-guides">外扩界线 (G)</button>
+      <button type="button" class="lb-btn" id="lb-btn-dialogue">18% 对话框 (D)</button>
+      <button type="button" class="lb-btn close-btn" id="lb-close">关闭 Esc</button>
+    </div>
+  </div>
+
+  <div class="lb-body" id="lb-body">
+    <button type="button" class="lb-nav-arrow prev" id="lb-prev" aria-label="上一版候选">‹</button>
+    <div class="lb-frame" id="lb-frame">
+      <img class="lb-img-cand" id="lb-img-cand" alt="16:9 外扩候选预览">
+      <div class="lb-orig-layer" id="lb-orig-layer">
+        <span class="lb-orig-banner">原 3:2 基准对照（中央 84.4% 零改动核心区）</span>
+        <img id="lb-img-orig" alt="原 3:2 基准图对照">
+      </div>
+      <div class="guide-overlay">
+        <div class="guide-shade left"></div>
+        <div class="guide-shade right"></div>
+        <div class="guide-line left"></div>
+        <div class="guide-line right"></div>
+        <div class="guide-label">← 左外扩 7.8% ｜ 原 3:2 零改动核心区 ｜ 右外扩 7.8% →</div>
+      </div>
+      <div class="dialogue-overlay">
+        <span class="dlg-speaker" id="lb-dlg-speaker"></span>
+        <span class="dlg-text" id="lb-dlg-text"></span>
+      </div>
+    </div>
+    <button type="button" class="lb-nav-arrow next" id="lb-next" aria-label="下一版候选">›</button>
+  </div>
+
+  <div class="lb-bottom">
+    <div class="lb-cand-strip" id="lb-cand-strip"></div>
+    <div class="lb-bottom-right">
+      <span class="lb-keys-hint">← / → 盲切 · 按 1–5 直接选中 · O / 空格 切原图 · G 界线 · D 对话框</span>
+      <button type="button" class="lb-pick-action" id="lb-pick-action">选中当前版 (Enter)</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var STORAGE_KEY = 'ojousama_cg_picker_v2';
+
+  var CGS = [
+    {
+      id: 'parents_battle',
+      title: '父母之战',
+      shortTitle: '父母之战',
+      origMeta: '1536×1024 (3:2) · assets/cg/parents_battle.jpg',
+      speaker: '希尔维亚',
+      line: '剑光与魔力的余波在庭院间激荡，那是连呼吸都会被寒意冻结的压迫感。'
+    },
+    {
+      id: 'reno_diji',
+      title: '雷纳德 · 破壁突入',
+      shortTitle: '雷纳德·破壁',
+      origMeta: '1536×1024 (3:2) · assets/cg/reno_diji.jpg',
+      speaker: '雷纳德',
+      line: '「退后，希尔维亚！」碎石飞溅之中，那道毫不迟疑的身影已挡在身前。'
+    },
+    {
+      id: 'reno_battle',
+      title: '雷纳德 · 实战交锋',
+      shortTitle: '雷纳德·交锋',
+      origMeta: '1264×843 (3:2) · assets/cg/reno_battle.jpg',
+      speaker: '雷纳德',
+      line: '「别分神——真正的攻势，从现在才刚刚开始。」'
+    },
+    {
+      id: 'vol3_ash_snow',
+      title: '暗渠之外 · 灰烬初雪',
+      shortTitle: '灰烬初雪',
+      origMeta: '1536×1024 (3:2) · 第三卷核心 CG',
+      speaker: '希尔维亚',
+      line: '灰烬与初雪一同落上肩头，走出暗渠的瞬间，北境的风终于扑面而来。'
+    },
+    {
+      id: 'vol3_ice_canyon_clash',
+      title: '风雪重逢 · 隔空钢冰',
+      shortTitle: '隔空钢冰',
+      origMeta: '1536×1024 (3:2) · 第三卷核心 CG',
+      speaker: '希尔维亚',
+      line: '漫天风雪在钢锋与寒冰之间撕裂开来——隔着整座峡谷，我认出了那道剑意。'
+    }
+  ];
+
+  var CAND_COUNT = 5;
+  var state = {
+    picks: {},
+    guides: false,
+    dialogue: false,
+    cols: 2,
+    lbOpen: false,
+    lbCgIdx: 0,
+    lbCand: 1,
+    lbCompareOrig: false
+  };
+
+  var toastTimer = null;
+
+  function pad2(n) {
+    return n < 10 ? '0' + n : String(n);
+  }
+
+  function origSrc(cgId) {
+    return 'img/' + cgId + '/orig.webp';
+  }
+
+  function candSrc(cgId, num) {
+    return 'img/' + cgId + '/cand_' + pad2(num) + '.webp';
+  }
+
+  function loadPicks() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return;
+      var srcObj = parsed.picks && typeof parsed.picks === 'object' ? parsed.picks : parsed;
+      CGS.forEach(function (cg) {
+        var v = Number(srcObj[cg.id]);
+        if (Number.isInteger(v) && v >= 1 && v <= CAND_COUNT) {
+          state.picks[cg.id] = v;
+        }
+      });
+    } catch (_err) {
+      // Ignore storage access errors
+    }
+  }
+
+  function savePicks() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.picks));
+    } catch (_err) {
+      // Ignore storage quota/access errors
+    }
+  }
+
+  function showToast(msg) {
+    var el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+      el.classList.remove('show');
+    }, 2000);
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function buildGuideHtml() {
+    return (
+      '<div class="guide-overlay">' +
+        '<div class="guide-shade left"></div>' +
+        '<div class="guide-shade right"></div>' +
+        '<div class="guide-line left"></div>' +
+        '<div class="guide-line right"></div>' +
+        '<div class="guide-label">← 左外扩 7.8% ｜ 原 3:2 核心区 ｜ 右外扩 7.8% →</div>' +
+      '</div>'
+    );
+  }
+
+  function buildDialogueHtml(cg) {
+    return (
+      '<div class="dialogue-overlay">' +
+        '<span class="dlg-speaker">' + escapeHtml(cg.speaker) + '</span>' +
+        '<span class="dlg-text">' + escapeHtml(cg.line) + '</span>' +
+      '</div>'
+    );
+  }
+
+  function renderAll() {
+    var subnav = document.getElementById('subnav-links');
+    var main = document.getElementById('main-root');
+    var summary = document.getElementById('summary-items');
+
+    var subHtml = '';
+    var mainHtml = '';
+    var sumHtml = '';
+
+    CGS.forEach(function (cg, idx) {
+      var numStr = pad2(idx + 1);
+      subHtml += (
+        '<a class="subnav-link" href="#sec-' + cg.id + '">' +
+          '<span class="subnav-idx">' + numStr + '</span>' +
+          '<span>' + escapeHtml(cg.shortTitle) + '</span>' +
+          '<span class="subnav-pick" id="nav-pick-' + cg.id + '">待选</span>' +
+        '</a>'
+      );
+
+      sumHtml += (
+        '<button type="button" class="sum-item" id="sum-item-' + cg.id + '" data-jump="' + cg.id + '">' +
+          '<span>' + escapeHtml(cg.shortTitle) + '</span>' +
+          '<span class="sum-val" id="sum-val-' + cg.id + '">—</span>' +
+        '</button>'
+      );
+
+      var cardsHtml = '';
+      // Card 0: Original 3:2 reference
+      cardsHtml += (
+        '<article class="card is-orig" data-cg="' + cg.id + '" data-slot="orig">' +
+          '<div class="stage" data-open-lb="' + idx + '" data-open-cand="1" data-open-orig="1">' +
+            '<div class="stage-orig-wrap">' +
+              '<div class="orig-wing left"><span>外扩翼区 +7.8%</span></div>' +
+              '<img class="orig-3x2" src="' + origSrc(cg.id) + '" alt="' + escapeHtml(cg.title) + ' 原 3:2 基准" loading="lazy">' +
+              '<div class="orig-wing right"><span>外扩翼区 +7.8%</span></div>' +
+            '</div>' +
+            '<span class="stage-flag">原 3:2 基准</span>' +
+            buildGuideHtml() +
+            buildDialogueHtml(cg) +
+          '</div>' +
+          '<div class="card-foot">' +
+            '<div class="card-info">' +
+              '<span class="card-label">原 3:2 基准图</span>' +
+              '<span class="card-dim">中央 84.4% 零改动核心</span>' +
+            '</div>' +
+            '<div class="card-actions">' +
+              '<button type="button" class="card-btn" data-open-lb="' + idx + '" data-open-cand="1" data-open-orig="1">灯箱对比</button>' +
+            '</div>' +
+          '</div>' +
+        '</article>'
+      );
+
+      // Cards 1..5: 1920x1080 16:9 candidates
+      for (var c = 1; c <= CAND_COUNT; c++) {
+        var tag = '#' + pad2(c);
+        cardsHtml += (
+          '<article class="card" id="card-' + cg.id + '-' + c + '" data-cg="' + cg.id + '" data-cand="' + c + '">' +
+            '<div class="stage" data-open-lb="' + idx + '" data-open-cand="' + c + '" data-open-orig="0">' +
+              '<img class="full-16x9" src="' + candSrc(cg.id, c) + '" alt="' + escapeHtml(cg.title) + ' 候选 ' + tag + '" loading="lazy">' +
+              '<span class="stage-flag">' + tag + ' · 16:9</span>' +
+              '<span class="stage-selected-ribbon">✓ 已定版</span>' +
+              buildGuideHtml() +
+              buildDialogueHtml(cg) +
+            '</div>' +
+            '<div class="card-foot">' +
+              '<div class="card-info">' +
+                '<span class="card-label">' + tag + '</span>' +
+                '<span class="card-dim">1920×1080 · 16:9 无缝外扩</span>' +
+              '</div>' +
+              '<div class="card-actions">' +
+                '<button type="button" class="card-btn" data-open-lb="' + idx + '" data-open-cand="' + c + '" data-open-orig="0">全屏审图</button>' +
+                '<button type="button" class="card-btn pick-btn" data-pick-cg="' + cg.id + '" data-pick-cand="' + c + '">选用 ' + tag + '</button>' +
+              '</div>' +
+            '</div>' +
+          '</article>'
+        );
+      }
+
+      mainHtml += (
+        '<section class="cg-section" id="sec-' + cg.id + '">' +
+          '<div class="cg-head">' +
+            '<div class="cg-head-left">' +
+              '<span class="cg-num">' + numStr + ' / 05</span>' +
+              '<div class="cg-title-wrap">' +
+                '<div class="cg-title-row">' +
+                  '<h2 class="cg-title">' + escapeHtml(cg.title) + '</h2>' +
+                  '<span class="cg-id">' + cg.id + '</span>' +
+                '</div>' +
+                '<span class="cg-meta">' + escapeHtml(cg.origMeta) + ' → 1920×1080 (16:9)</span>' +
+              '</div>' +
+            '</div>' +
+            '<div class="cg-head-right">' +
+              '<span class="cg-status" id="sec-status-' + cg.id + '">待选定</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="cg-grid">' + cardsHtml + '</div>' +
+        '</section>'
+      );
+    });
+
+    subnav.innerHTML = subHtml;
+    main.innerHTML = mainHtml;
+    summary.innerHTML = sumHtml;
+  }
+
+  function syncSelectionUI() {
+    var count = 0;
+    CGS.forEach(function (cg) {
+      var pick = state.picks[cg.id] || 0;
+      if (pick) count++;
+
+      var navEl = document.getElementById('nav-pick-' + cg.id);
+      var secEl = document.getElementById('sec-status-' + cg.id);
+      var sumItem = document.getElementById('sum-item-' + cg.id);
+      var sumVal = document.getElementById('sum-val-' + cg.id);
+
+      if (pick) {
+        var label = '#' + pad2(pick);
+        navEl.textContent = label;
+        navEl.classList.add('picked');
+        secEl.textContent = '已定版 · ' + label;
+        secEl.classList.add('picked');
+        sumItem.classList.add('has-pick');
+        sumVal.textContent = label;
+      } else {
+        navEl.textContent = '待选';
+        navEl.classList.remove('picked');
+        secEl.textContent = '待选定';
+        secEl.classList.remove('picked');
+        sumItem.classList.remove('has-pick');
+        sumVal.textContent = '—';
+      }
+
+      for (var c = 1; c <= CAND_COUNT; c++) {
+        var card = document.getElementById('card-' + cg.id + '-' + c);
+        if (!card) continue;
+        var btn = card.querySelector('.pick-btn');
+        if (pick === c) {
+          card.classList.add('is-selected');
+          btn.textContent = '✓ 已选用';
+        } else {
+          card.classList.remove('is-selected');
+          btn.textContent = '选用 #' + pad2(c);
+        }
+      }
+    });
+
+    document.getElementById('progress-num').textContent = count + ' / ' + CGS.length;
+    if (state.lbOpen) {
+      renderLightbox();
+    }
+  }
+
+  function syncOverlayToggles() {
+    document.body.classList.toggle('show-guides', state.guides);
+    document.body.classList.toggle('show-dialogue', state.dialogue);
+    document.getElementById('btn-guides').classList.toggle('active', state.guides);
+    document.getElementById('btn-dialogue').classList.toggle('active', state.dialogue);
+
+    var lb = document.getElementById('lightbox');
+    lb.classList.toggle('show-guides', state.guides);
+    lb.classList.toggle('show-dialogue', state.dialogue);
+    document.getElementById('lb-btn-guides').classList.toggle('active', state.guides);
+    document.getElementById('lb-btn-dialogue').classList.toggle('active', state.dialogue);
+  }
+
+  function setCols(cols) {
+    state.cols = cols;
+    document.body.classList.remove('cols-1', 'cols-2', 'cols-3');
+    document.body.classList.add('cols-' + cols);
+    var btns = document.querySelectorAll('.layout-btn');
+    btns.forEach(function (b) {
+      b.classList.toggle('active', Number(b.getAttribute('data-cols')) === cols);
+    });
+  }
+
+  function selectCandidate(cgId, candNum, toggleOff) {
+    var current = state.picks[cgId] || 0;
+    if (toggleOff && current === candNum) {
+      delete state.picks[cgId];
+      savePicks();
+      syncSelectionUI();
+      showToast('已取消 ' + cgId + ' 的选择');
+      return;
+    }
+    state.picks[cgId] = candNum;
+    savePicks();
+    syncSelectionUI();
+    showToast('已选定 ' + cgId + ' → #' + pad2(candNum));
+  }
+
+  function preloadCg(cgId) {
+    var img0 = new Image();
+    img0.src = origSrc(cgId);
+    for (var c = 1; c <= CAND_COUNT; c++) {
+      var im = new Image();
+      im.src = candSrc(cgId, c);
+    }
+  }
+
+  function openLightbox(cgIdx, candNum, compareOrig) {
+    state.lbOpen = true;
+    state.lbCgIdx = (cgIdx + CGS.length) % CGS.length;
+    state.lbCand = candNum >= 1 && candNum <= CAND_COUNT ? candNum : 1;
+    state.lbCompareOrig = Boolean(compareOrig);
+
+    preloadCg(CGS[state.lbCgIdx].id);
+    document.getElementById('lightbox').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    renderLightbox();
+  }
+
+  function closeLightbox() {
+    state.lbOpen = false;
+    document.getElementById('lightbox').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function renderLightbox() {
+    var cg = CGS[state.lbCgIdx];
+    var pick = state.picks[cg.id] || 0;
+    var tag = '#' + pad2(state.lbCand);
+
+    document.getElementById('lb-cg-name').textContent = pad2(state.lbCgIdx + 1) + ' · ' + cg.title + ' (' + cg.id + ')';
+    var badge = document.getElementById('lb-slot-badge');
+    if (state.lbCompareOrig) {
+      badge.textContent = '原 3:2 对照（当前底座 ' + tag + '）';
+      badge.classList.add('is-orig');
+    } else {
+      badge.textContent = tag + ' · 1920×1080';
+      badge.classList.remove('is-orig');
+    }
+
+    var isCurrentPicked = !state.lbCompareOrig && pick === state.lbCand;
+    document.getElementById('lb-picked-tag').classList.toggle('visible', isCurrentPicked);
+    document.getElementById('lb-btn-compare').classList.toggle('active', state.lbCompareOrig);
+
+    var candImg = document.getElementById('lb-img-cand');
+    var origImg = document.getElementById('lb-img-orig');
+    var wantedCand = candSrc(cg.id, state.lbCand);
+    var wantedOrig = origSrc(cg.id);
+    if (candImg.getAttribute('src') !== wantedCand) candImg.setAttribute('src', wantedCand);
+    if (origImg.getAttribute('src') !== wantedOrig) origImg.setAttribute('src', wantedOrig);
+
+    document.getElementById('lb-orig-layer').classList.toggle('visible', state.lbCompareOrig);
+    document.getElementById('lb-dlg-speaker').textContent = cg.speaker;
+    document.getElementById('lb-dlg-text').textContent = cg.line;
+
+    var stripHtml = '';
+    for (var c = 1; c <= CAND_COUNT; c++) {
+      var cls = 'lb-cand-tab';
+      if (!state.lbCompareOrig && c === state.lbCand) cls += ' viewing';
+      if (pick === c) cls += ' chosen';
+      stripHtml += (
+        '<button type="button" class="' + cls + '" data-lb-cand="' + c + '">' +
+          '#' + pad2(c) + (pick === c ? ' ✓' : '') +
+        '</button>'
+      );
+    }
+    document.getElementById('lb-cand-strip').innerHTML = stripHtml;
+
+    var pickBtn = document.getElementById('lb-pick-action');
+    if (pick === state.lbCand) {
+      pickBtn.textContent = '✓ 已选定 ' + tag + '（再按取消）';
+      pickBtn.classList.add('is-chosen');
+    } else {
+      pickBtn.textContent = '选定 ' + tag + ' (Enter / ' + state.lbCand + ')';
+      pickBtn.classList.remove('is-chosen');
+    }
+  }
+
+  function stepCandidate(delta) {
+    state.lbCompareOrig = false;
+    state.lbCand = ((state.lbCand - 1 + delta) % CAND_COUNT + CAND_COUNT) % CAND_COUNT + 1;
+    renderLightbox();
+  }
+
+  function stepCg(delta) {
+    state.lbCgIdx = (state.lbCgIdx + delta + CGS.length) % CGS.length;
+    var cg = CGS[state.lbCgIdx];
+    state.lbCand = state.picks[cg.id] || 1;
+    state.lbCompareOrig = false;
+    preloadCg(cg.id);
+    renderLightbox();
+  }
+
+  function buildCopyText() {
+    var lines = ['【CG 选品结果 · 16:9 外扩】'];
+    CGS.forEach(function (cg) {
+      var pick = state.picks[cg.id];
+      var val = pick ? '#' + pad2(pick) : '未选';
+      lines.push('- ' + cg.id + ': ' + val + '（' + cg.title + '）');
+    });
+    return lines.join('\n');
+  }
+
+  function copyResult() {
+    var text = buildCopyText();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        showToast('已复制 CG 选品结果到剪贴板');
+      }).catch(function () {
+        fallbackCopy(text);
+      });
+    } else {
+      fallbackCopy(text);
+    }
+  }
+
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      showToast('已复制 CG 选品结果到剪贴板');
+    } catch (_err) {
+      showToast('复制失败，请手动查看控制台输出');
+    }
+    document.body.removeChild(ta);
+  }
+
+  function bindEvents() {
+    document.getElementById('btn-guides').addEventListener('click', function () {
+      state.guides = !state.guides;
+      syncOverlayToggles();
+    });
+
+    document.getElementById('btn-dialogue').addEventListener('click', function () {
+      state.dialogue = !state.dialogue;
+      syncOverlayToggles();
+    });
+
+    document.querySelectorAll('.layout-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        setCols(Number(btn.getAttribute('data-cols')));
+      });
+    });
+
+    document.getElementById('main-root').addEventListener('click', function (e) {
+      var pickBtn = e.target.closest('[data-pick-cg]');
+      if (pickBtn) {
+        var cgId = pickBtn.getAttribute('data-pick-cg');
+        var cand = Number(pickBtn.getAttribute('data-pick-cand'));
+        selectCandidate(cgId, cand, true);
+        return;
+      }
+      var openEl = e.target.closest('[data-open-lb]');
+      if (openEl) {
+        var cgIdx = Number(openEl.getAttribute('data-open-lb'));
+        var openCand = Number(openEl.getAttribute('data-open-cand'));
+        var openOrig = openEl.getAttribute('data-open-orig') === '1';
+        openLightbox(cgIdx, openCand, openOrig);
+      }
+    });
+
+    document.getElementById('summary-items').addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-jump]');
+      if (!btn) return;
+      var sec = document.getElementById('sec-' + btn.getAttribute('data-jump'));
+      if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', function () {
+      state.picks = {};
+      savePicks();
+      syncSelectionUI();
+      showToast('已清空全部 CG 选品记录');
+    });
+
+    document.getElementById('btn-copy').addEventListener('click', copyResult);
+
+    // Lightbox controls
+    document.getElementById('lb-close').addEventListener('click', closeLightbox);
+    document.getElementById('lb-prev').addEventListener('click', function () { stepCandidate(-1); });
+    document.getElementById('lb-next').addEventListener('click', function () { stepCandidate(1); });
+    document.getElementById('lb-prev-cg').addEventListener('click', function () { stepCg(-1); });
+    document.getElementById('lb-next-cg').addEventListener('click', function () { stepCg(1); });
+
+    document.getElementById('lb-btn-compare').addEventListener('click', function () {
+      state.lbCompareOrig = !state.lbCompareOrig;
+      renderLightbox();
+    });
+
+    document.getElementById('lb-btn-guides').addEventListener('click', function () {
+      state.guides = !state.guides;
+      syncOverlayToggles();
+    });
+
+    document.getElementById('lb-btn-dialogue').addEventListener('click', function () {
+      state.dialogue = !state.dialogue;
+      syncOverlayToggles();
+    });
+
+    document.getElementById('lb-cand-strip').addEventListener('click', function (e) {
+      var tab = e.target.closest('[data-lb-cand]');
+      if (!tab) return;
+      state.lbCompareOrig = false;
+      state.lbCand = Number(tab.getAttribute('data-lb-cand'));
+      renderLightbox();
+    });
+
+    document.getElementById('lb-pick-action').addEventListener('click', function () {
+      var cg = CGS[state.lbCgIdx];
+      selectCandidate(cg.id, state.lbCand, true);
+    });
+
+    document.getElementById('lb-body').addEventListener('click', function (e) {
+      if (e.target === document.getElementById('lb-body')) {
+        closeLightbox();
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      var tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+      var key = e.key;
+      if (key === 'g' || key === 'G') {
+        e.preventDefault();
+        state.guides = !state.guides;
+        syncOverlayToggles();
+        return;
+      }
+      if (key === 'd' || key === 'D') {
+        e.preventDefault();
+        state.dialogue = !state.dialogue;
+        syncOverlayToggles();
+        return;
+      }
+
+      if (!state.lbOpen) return;
+
+      if (key === 'Escape') {
+        e.preventDefault();
+        closeLightbox();
+      } else if (key === 'ArrowLeft') {
+        e.preventDefault();
+        stepCandidate(-1);
+      } else if (key === 'ArrowRight') {
+        e.preventDefault();
+        stepCandidate(1);
+      } else if (key >= '1' && key <= '5') {
+        e.preventDefault();
+        var n = Number(key);
+        state.lbCompareOrig = false;
+        state.lbCand = n;
+        selectCandidate(CGS[state.lbCgIdx].id, n, false);
+      } else if (key === 'o' || key === 'O' || key === ' ') {
+        e.preventDefault();
+        state.lbCompareOrig = !state.lbCompareOrig;
+        renderLightbox();
+      } else if (key === 'Enter') {
+        e.preventDefault();
+        selectCandidate(CGS[state.lbCgIdx].id, state.lbCand, true);
+      } else if (key === '[') {
+        e.preventDefault();
+        stepCg(-1);
+      } else if (key === ']') {
+        e.preventDefault();
+        stepCg(1);
+      }
+    });
+  }
+
+  loadPicks();
+  renderAll();
+  setCols(2);
+  syncSelectionUI();
+  syncOverlayToggles();
+  bindEvents();
+})();
+</script>
+</body>
+</html>

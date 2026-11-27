@@ -299,7 +299,7 @@ const SKILLS = {
     side: 'ally',
     vfx: 'flame_lance',
     dmg: 965,
-    portrait: '../../assets/cg/reno_battle.jpg',
+    portrait: '../../assets/cg/reno_battle.webp',
   },
   wolf_bite: {
     key: 'wolf_bite',
